@@ -27,7 +27,7 @@ display vty f =
 loop vty i =
   do
     l <- level
-    display vty (\ x y -> (attr, head . show $ findWithDefault Unknown (y,x) l))
+    display vty (\ x y -> (setBG blue attr, head . show $ findWithDefault Unknown (y,x) l))
     -- display vty (\ x y -> (setFG (if (x + y) `mod` 2 == 1 then red else green) attr, head . show $ (x + y + i) `mod` 7))
     e <- V.getEvent vty
     case e of

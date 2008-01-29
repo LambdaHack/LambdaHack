@@ -16,15 +16,14 @@ mkRoom :: Int ->      {- border columns -}
           IO Room     {- this is the upper-left and lower-right corner of the room -}
 mkRoom bd (ym,xm)((y0,x0),(y1,x1)) =
   do
-    (rx0,ry0) <- pointInArea ((y0+bd,x0+bd),(y1-bd-ym+1,x1-bd-xm+1))
-    (rx1,ry1) <- pointInArea ((ry0+bd+ym-1,rx0+bd+xm-1),(y1-bd,x1-bd))
+    (ry0,rx0) <- locInArea ((y0+bd,x0+bd),(y1-bd-ym+1,x1-bd-xm+1))
+    (ry1,rx1) <- locInArea ((ry0+bd+ym-1,rx0+bd+xm-1),(y1-bd,x1-bd))
     return ((ry0,rx0),(ry1,rx1))
 
 mkCorridor :: (Loc,Loc) -> IO [(Y,X)]  {- straight sections of the corridor -}
-mkCorridor ((y0,x0),(y1,x1)) =
+mkCorridor a@((y0,x0),(y1,x1)) =
   do
-    rx <- randomRIO (x0,x1)
-    ry <- randomRIO (y0,y1)
+    (ry,rx) <- locInArea a
     -- (ry,rx) is intermediate point the path crosses
     hv <- randomRIO (False,True)
     -- hv decides whether we start in horizontal or vertical direction
@@ -32,20 +31,19 @@ mkCorridor ((y0,x0),(y1,x1)) =
           else return [(y0,x0),(ry,x0),(ry,x1),(y1,x1)]
 
 connectRooms :: Area -> Area -> IO [Loc]
-connectRooms ((sy0,sx0),(sy1,sx1)) ((ty0,tx0),(ty1,tx1)) =
+connectRooms sa@((sy0,sx0),(sy1,sx1)) ta@((ty0,tx0),(ty1,tx1)) =
   do
-    sx <- randomRIO (sx0,sx1)
-    sy <- randomRIO (sy0,sy1)
-    tx <- randomRIO (tx0,tx1)
-    ty <- randomRIO (ty0,ty1)
+    (sy,sx) <- locInArea sa
+    (ty,tx) <- locInArea ta
     mkCorridor ((sy,sx),(ty,tx))
 
 digCorridor :: Corridor -> Level -> Level
 digCorridor (p1:p2:ps) l =
-  digCorridor (p2:ps) (M.unionWith corridorUpdate (M.fromList [ (ps,Corridor) | ps <- fromTo p1 p2 ]) l)
-    where
-      corridorUpdate _ Floor = Floor
-      corridorUpdate x _     = x
+  digCorridor (p2:ps) 
+    (M.unionWith corridorUpdate (M.fromList [ (ps,Corridor) | ps <- fromTo p1 p2 ]) l)
+  where
+    corridorUpdate _ Floor = Floor
+    corridorUpdate x _     = x
 digCorridor _ l = l
   
 

@@ -17,20 +17,26 @@ data Tile = Rock
           | Corridor
 
 instance Show Tile where
-  show Rock  = " "
+  show Rock  = "#"
   show Floor = "."
   show Unknown = "?"
-  show Corridor = "#"
+  show Corridor = "_"
+
+closed, open :: Tile -> Bool
+closed = not . open
+open Floor = True
+open Corridor = True
+open _ = False
 
 type Loc = (Y,X)
 type Area = ((Y,X),(Y,X))
 
-pointInArea :: Area -> IO Loc
-pointInArea ((y0,x0),(y1,x1)) =
+locInArea :: Area -> IO Loc
+locInArea ((y0,x0),(y1,x1)) =
   do
     rx <- randomRIO (x0,x1)
     ry <- randomRIO (y0,y1)
-    return (rx,ry)
+    return (ry,rx)
 
 grid :: (Y,X) -> Area -> Map (Y,X) Area
 grid (ny,nx) ((y0,x0),(y1,x1)) =
@@ -90,4 +96,5 @@ fromTo1 :: X -> X -> [X]
 fromTo1 x0 x1
   | x0 <= x1  = [x0..x1]
   | otherwise = [x0,x0-1..x1]
+
 

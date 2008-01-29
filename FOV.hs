@@ -61,10 +61,6 @@ fullscan loc lvl =
   S.unions $
   L.map (\ tr -> scan (tr loc) lvl 0 (0,1)) [tr0,tr1,tr2,tr3,tr4,tr5,tr6,tr7]
 
-closed = not . open
-open Floor = True
-open Corridor = True
-open _ = False
 
 downBias, upBias :: (Integral a, Integral b) => Ratio a -> b
 downBias x = round (x - 1 % (denominator x * 3))
