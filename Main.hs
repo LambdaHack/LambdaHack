@@ -31,14 +31,14 @@ display ((y0,x0),(y1,x1)) vty f =
 
 init vty =
   do
-    -- generate random level
-    (lvl0, su0, sd0) <- level
-    (lvl1, su1, sd1) <- level
-    let lvl0' = lvl0 Nothing (Just (lvl1', su1))
-        lvl1' = lvl1 (Just (lvl0', sd0)) Nothing
-        lvl = lvl0'
-    -- generate player position
-    let player = su0
+    -- generate dungeon with 10 levels
+    levels <- replicateM 10 level
+    let player = (\ (_,x,_) -> x) (head levels)
+    let connect [(x,_,_)] = [x Nothing Nothing]
+        connect ((x,_,_):ys@((_,u,_):_)) =
+                            let (z:zs) = connect ys
+                            in  x Nothing (Just (z,u)) : z : zs
+    let lvl = head (connect levels)
     loop vty lvl player
 
 loop vty (lvl@(Level sz lmap)) player =
