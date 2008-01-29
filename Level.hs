@@ -57,6 +57,9 @@ distance ((y0,x0),(y1,x1)) = (y1 - y0)^2 + (x1 - x0)^2
 adjacent :: Loc -> Loc -> Bool
 adjacent s t = distance (s,t) <= 2
 
+shift :: Loc -> Loc -> Loc
+shift (y0,x0) (y1,x1) = (y0+y1,x0+x1)
+
 grid :: (Y,X) -> Area -> Map (Y,X) Area
 grid (ny,nx) ((y0,x0),(y1,x1)) =
   let yd = y1 - y0

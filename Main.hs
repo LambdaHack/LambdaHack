@@ -15,7 +15,7 @@ main :: IO ()
 main =
   do
     vty <- V.mkVty
-    loop vty 0
+    Main.init vty
 
 -- should at the moment match the level size
 screenX = levelX
@@ -29,27 +29,41 @@ display ((y0,x0),(y1,x1)) vty f =
               [ [ (x,y) | x <- [x0..x1] ] | y <- [y0..y1] ]
     in  V.update vty (Pic NoCursor img)
 
-loop vty i =
+init vty =
   do
     -- generate random level
-    lvl@(Level sz lmap) <- level
+    lvl <- level
+    let rmap = M.empty -- remembered tiles
     -- generate player position
     player <- findLoc lvl open
+    loop vty lvl rmap player
+
+loop vty (lvl@(Level sz lmap)) rmap player =
+  do
     -- determine visible fields
     let visible = fullscan player lmap
+    -- update player memory
+    let nrmap = foldr (\ x m -> M.insert x (findWithDefault Unknown x lmap) m) rmap (S.toList visible)
     display ((0,0),sz) vty 
-             (\ loc -> let tile = findWithDefault Unknown loc lmap
+             (\ loc -> let tile = findWithDefault Unknown loc nrmap
                        in
                        ((if S.member loc visible then
                            if light tile || adjacent loc player then setBG blue
                                                                 else setBG magenta
                          else id) attr,
                         if loc == player then '@'
-                        else head . show $ findWithDefault Unknown loc lmap))
+                        else head . show $ tile))
     e <- V.getEvent vty
     case e of
-      V.EvKey KEsc _ -> shutdown vty
-      _              -> loop vty (i+1)
-
+      V.EvKey (KASCII 'k') [] -> move nrmap (-1,0)
+      V.EvKey (KASCII 'j') [] -> move nrmap (1,0)
+      V.EvKey (KASCII 'h') [] -> move nrmap (0,-1)
+      V.EvKey (KASCII 'l') [] -> move nrmap (0,1)
+      V.EvKey KEsc _          -> shutdown vty
+      _                       -> loop vty lvl nrmap player
+ where
+  move nrmap dir
+    | open (findWithDefault Unknown (shift player dir) lmap) = loop vty lvl nrmap (shift player dir)
+    | otherwise = loop vty lvl nrmap player
 
 
