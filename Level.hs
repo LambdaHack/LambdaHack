@@ -10,7 +10,8 @@ type X = Int
 type Y = Int
 
 data Level = Level
-              { lsize :: (Y,X),
+              { lname :: String,
+                lsize :: (Y,X),
                 lmap  :: LMap }
 
 type LMap = Map (Y,X) (Tile,Tile)

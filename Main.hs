@@ -3,6 +3,8 @@ module Main where
 import Data.List as L
 import Data.Map as M
 import Data.Set as S
+import Data.Char
+import qualified Data.ByteString as BS
 import Graphics.Vty as V
 import System.Random
 import Control.Monad
@@ -21,18 +23,23 @@ main =
 screenX = levelX
 screenY = levelY
 
-display :: Area -> Vty -> (Loc -> (Attr, Char)) -> IO ()
-display ((y0,x0),(y1,x1)) vty f =
+display :: Area -> Vty -> (Loc -> (Attr, Char)) -> String -> IO ()
+display ((y0,x0),(y1,x1)) vty f status =
     let img = (foldr (<->) V.empty . 
                L.map (foldr (<|>) V.empty . 
                       L.map (\ (x,y) -> let (a,c) = f (y,x) in renderChar a c)))
               [ [ (x,y) | x <- [x0..x1] ] | y <- [y0..y1] ]
-    in  V.update vty (Pic NoCursor img)
+    in  V.update vty (Pic NoCursor 
+         (img <-> 
+            (renderBS attr (BS.pack (L.map (fromIntegral . ord) (toWidth (x1-x0+1) status))))))
+
+toWidth :: Int -> String -> String
+toWidth n x = take n (x ++ repeat ' ')
 
 init vty =
   do
     -- generate dungeon with 10 levels
-    levels <- replicateM 10 level
+    levels <- mapM (\n -> level $ "The Lambda Cave " ++ show n) [1..10]
     let player = (\ (_,x,_) -> x) (head levels)
     let connect [(x,_,_)] = [x Nothing Nothing]
         connect ((x,_,_):ys@((_,u,_):_)) =
@@ -41,7 +48,7 @@ init vty =
     let lvl = head (connect levels)
     loop vty lvl player
 
-loop vty (lvl@(Level sz lmap)) player =
+loop vty (lvl@(Level nm sz lmap)) player =
   do
     display ((0,0),sz) vty 
              (\ loc -> let tile = nlmap `rememberAt` loc
@@ -52,6 +59,7 @@ loop vty (lvl@(Level sz lmap)) player =
                          else id) attr,
                         if loc == player then '@'
                         else head . show $ tile))
+            nm
     e <- V.getEvent vty
     case e of
       V.EvKey (KASCII 'k') [] -> move (-1,0)
@@ -75,7 +83,7 @@ loop vty (lvl@(Level sz lmap)) player =
   visible = fullscan player lmap
   -- update player memory
   nlmap = foldr (\ x m -> M.update (\ (t,_) -> Just (t,t)) x m) lmap (S.toList visible)
-  nlvl = Level sz nlmap
+  nlvl = Level nm sz nlmap
   -- perform a level change
   lvlchange vdir =
     case nlmap `at` player of
@@ -84,11 +92,11 @@ loop vty (lvl@(Level sz lmap)) player =
           case next of
             Nothing -> -- exit dungeon
                        shutdown vty
-            Just (nlvl@(Level nsz nlmap), nloc) ->
+            Just (nlvl@(Level nnm nsz nlmap), nloc) ->
               -- perform level change
               do
-                let next' = Just (Level sz (M.update (\ (_,r) -> Just (Stairs vdir Nothing,r)) player lmap), player)
-                let new = Level nsz (M.update (\ (Stairs d _,r) -> Just (Stairs d next',r)) nloc nlmap)
+                let next' = Just (Level nm sz (M.update (\ (_,r) -> Just (Stairs vdir Nothing,r)) player lmap), player)
+                let new = Level nnm nsz (M.update (\ (Stairs d _,r) -> Just (Stairs d next',r)) nloc nlmap)
                 loop vty new nloc
                 
       _                -> -- no stairs

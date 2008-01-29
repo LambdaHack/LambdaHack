@@ -61,7 +61,8 @@ levelX = 79
 levelY = 23
 -- TODO next: generate rooms for each grid point, connect the grid, compute
 -- corridors between the rooms as given by the grid connection
-level =
+level :: String -> IO (Maybe (Level, Loc) -> Maybe (Level, Loc) -> Level, Loc, Loc)
+level nm =
   do
     let gs = M.toList (grid (gridY,gridX) ((0,0),(levelY,levelX)))
     rs0 <- mapM (\ (i,r) -> mkRoom 1 (minY,minX) r >>= \ r' -> return (i,r')) gs
@@ -74,13 +75,13 @@ level =
                                r1 = rs ! p1
                            connectRooms r0 r1) connects
     let lmap = foldr digCorridor (foldr digRoom (emptyLMap (levelY,levelX)) rooms) cs
-    let lvl = Level (levelY,levelX) lmap
+    let lvl = Level nm (levelY,levelX) lmap
     su <- findLoc lvl (const (==Floor))
     sd <- findLoc lvl (\ l t -> t == Floor && distance (su,l) > min levelX levelY)
     return $ (\ lu ld ->
       let lmap' = M.insert su (Stairs Up lu, Unknown) $
                   M.insert sd (Stairs Down ld, Unknown) $ lmap
-      in  Level (levelY,levelX) lmap', su, sd)
+      in  Level nm (levelY,levelX) lmap', su, sd)
 
 emptyLMap :: (Y,X) -> LMap
 emptyLMap (my,mx) = M.fromList [ ((y,x),(Rock,Unknown)) | x <- [0..mx], y <- [0..my] ]
