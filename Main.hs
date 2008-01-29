@@ -13,6 +13,7 @@ import Graphics.Vty as V
 import System.Random
 import Control.Monad
 import Control.Exception as E
+import Codec.Compression.Zlib as Z
 
 import Level
 import Dungeon
@@ -43,21 +44,25 @@ display ((y0,x0),(y1,x1)) vty f status =
 toWidth :: Int -> String -> String
 toWidth n x = take n (x ++ repeat ' ')
 
-strictReadFile :: FilePath -> IO LBS.ByteString
-strictReadFile f =
+strictReadCompressedFile :: FilePath -> IO LBS.ByteString
+strictReadCompressedFile f =
     do
       h <- openFile f ReadMode
       c <- LBS.hGetContents h
-      LBS.length c `seq` return c
+      let d = Z.decompress c
+      LBS.length d `seq` return d
 
-strictDecodeFile :: Binary a => FilePath -> IO a
-strictDecodeFile f = fmap decode (strictReadFile f)
+strictDecodeCompressedFile :: Binary a => FilePath -> IO a
+strictDecodeCompressedFile f = fmap decode (strictReadCompressedFile f)
+
+encodeCompressedFile :: Binary a => FilePath -> a -> IO ()
+encodeCompressedFile f x = LBS.writeFile f (Z.compress (encode x))
 
 start vty =
     do
       -- check if we have a savegame
       restored <- E.catch (do
-                             r <- strictDecodeFile savefile
+                             r <- strictDecodeCompressedFile savefile
                              removeFile savefile
                              case r of
                                (x,y,z) -> (z :: Bool) `seq` return $ Just (x,y))
@@ -103,7 +108,7 @@ loop vty (lvl@(Level nm sz lmap)) player =
       V.EvKey (KASCII '<') [] -> lvlchange Up
       V.EvKey (KASCII '>') [] -> lvlchange Down
 
-      V.EvKey (KASCII 'S') [] -> shutdown vty >> encodeFile savefile (lvl,player,False)
+      V.EvKey (KASCII 'S') [] -> shutdown vty >> encodeCompressedFile savefile (lvl,player,False)
       V.EvKey (KASCII 'Q') [] -> shutdown vty
       V.EvKey KEsc _          -> shutdown vty
 
@@ -113,7 +118,7 @@ loop vty (lvl@(Level nm sz lmap)) player =
   reachable = fullscan player lmap
   visible = S.filter (\ loc -> light (lmap `at` loc) || adjacent loc player) reachable
   -- update player memory
-  nlmap = foldr (\ x m -> M.update (\ (t,_) -> Just (t,t)) x m) lmap (S.toList visible)
+  nlmap = foldr (\ x m -> M.update (\ (t,_) -> Just (t,flat t)) x m) lmap (S.toList visible)
   nlvl = Level nm sz nlmap
   -- perform a level change
   lvlchange vdir =

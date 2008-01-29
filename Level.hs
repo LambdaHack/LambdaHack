@@ -18,8 +18,13 @@ data Level = Level
   deriving Show
 
 instance Binary Level where
-  put (Level nm sz lmap) = put nm >> put sz >> put lmap
-  get = liftM3 Level get get get
+  put (Level nm sz@(sy,sx) lmap) = put nm >> put sz >> put [ lmap ! (y,x) | y <- [0..sy], x <- [0..sx] ]
+  get = do
+          nm <- get
+          sz@(sy,sx) <- get
+          xs <- get
+          let lmap = M.fromList (zip [ (y,x) | y <- [0..sy], x <- [0..sx] ] xs)
+          return (Level nm sz lmap)
 
 type LMap = Map (Y,X) (Tile,Tile)
 
@@ -34,6 +39,12 @@ data Tile = Rock
           | Wall HV
           | Stairs VDir (Maybe (Level, Loc))
   deriving Show
+
+-- forget stuff you cannot see anyway
+-- mainly for space efficiency in save files
+flat :: Tile -> Tile
+flat (Stairs d _) = Stairs d Nothing
+flat x            = x
 
 instance Binary Tile where
   put Rock         = putWord8 0
