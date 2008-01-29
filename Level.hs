@@ -11,7 +11,7 @@ type Y = Int
 
 data Level = Level
               { lsize :: (Y,X),
-                lmap  :: Map (Y,X) Tile }
+                lmap  :: LMap }
 
 type LMap = Map (Y,X) Tile
 
