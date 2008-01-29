@@ -16,18 +16,22 @@ main =
     vty <- V.mkVty
     loop vty 0
 
-display :: Vty -> (Int -> Int -> (Attr, Char)) -> IO ()
-display vty f =
+-- should at the moment match the level size
+screenX = levelX
+screenY = levelY
+
+display :: Area -> Vty -> (Loc -> (Attr, Char)) -> IO ()
+display ((y0,x0),(y1,x1)) vty f =
     let img = (foldr (<->) V.empty . 
                L.map (foldr (<|>) V.empty . 
-                      L.map (\ (x,y) -> let (a,c) = f x y in renderChar a c)))
-              [ [ (x,y) | x <- [0..levelX] ] | y <- [0..levelY] ]
+                      L.map (\ (x,y) -> let (a,c) = f (y,x) in renderChar a c)))
+              [ [ (x,y) | x <- [x0..x1] ] | y <- [y0..y1] ]
     in  V.update vty (Pic NoCursor img)
 
 loop vty i =
   do
-    l <- level
-    display vty (\ x y -> (setBG blue attr, head . show $ findWithDefault Unknown (y,x) l))
+    Level sz lmap <- level
+    display ((0,0),sz) vty (\ loc -> (setBG blue attr, head . show $ findWithDefault Unknown loc lmap))
     -- display vty (\ x y -> (setFG (if (x + y) `mod` 2 == 1 then red else green) attr, head . show $ (x + y + i) `mod` 7))
     e <- V.getEvent vty
     case e of

@@ -9,7 +9,11 @@ import Data.List as L
 type X = Int
 type Y = Int
 
-type Level = Map (Y,X) Tile
+data Level = Level
+              { size :: (Y,X),
+                lmap :: Map (Y,X) Tile }
+
+type LMap = Map (Y,X) Tile
 
 data Tile = Rock
           | Floor
@@ -19,7 +23,7 @@ data Tile = Rock
 instance Show Tile where
   show Rock  = "#"
   show Floor = "."
-  show Unknown = "?"
+  show Unknown = " "
   show Corridor = "_"
 
 closed, open :: Tile -> Bool

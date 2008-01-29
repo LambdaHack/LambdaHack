@@ -37,7 +37,7 @@ connectRooms sa@((sy0,sx0),(sy1,sx1)) ta@((ty0,tx0),(ty1,tx1)) =
     (ty,tx) <- locInArea ta
     mkCorridor ((sy,sx),(ty,tx))
 
-digCorridor :: Corridor -> Level -> Level
+digCorridor :: Corridor -> LMap -> LMap
 digCorridor (p1:p2:ps) l =
   digCorridor (p2:ps) 
     (M.unionWith corridorUpdate (M.fromList [ (ps,Corridor) | ps <- fromTo p1 p2 ]) l)
@@ -73,13 +73,14 @@ level =
                            let r0 = rs ! p0
                                r1 = rs ! p1
                            connectRooms r0 r1) connects
-    return (foldr digCorridor (foldr digRoom emptyLevel rooms) cs)
+    let lmap = foldr digCorridor (foldr digRoom (emptyLMap (levelY,levelX)) rooms) cs
+    return (Level (levelY,levelX) lmap)
 
 
-emptyLevel :: Level
-emptyLevel = M.fromList [ ((y,x),Rock) | x <- [0..levelX], y <- [0..levelY] ]
+emptyLMap :: (Y,X) -> LMap
+emptyLMap (my,mx) = M.fromList [ ((y,x),Rock) | x <- [0..mx], y <- [0..my] ]
 
-digRoom :: Room -> Level -> Level
+digRoom :: Room -> LMap -> LMap
 digRoom ((y0,x0),(y1,x1)) l =
   let rm = M.fromList [ ((y,x),Floor) | x <- [x0..x1], y <- [y0..y1] ]
   in M.unionWith const rm l
