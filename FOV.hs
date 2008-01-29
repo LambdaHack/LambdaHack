@@ -71,4 +71,8 @@ downBias x = round (x - 1 % (denominator x * 3))
 upBias   x = round (x + 1 % (denominator x * 3))
 
 test :: Level
-test = M.insert (3,1) Rock $ M.fromList [((x,y), Floor) | x <- [0..10], y <- [0..10]]
+test = M.insert (3,3) Rock $ 
+       M.insert (3,1) Rock $ 
+       M.insert (6,7) Rock $ 
+       M.insert (7,8) Rock $ 
+       M.fromList [((x,y), Floor) | x <- [0..10], y <- [0..10]]
