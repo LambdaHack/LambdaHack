@@ -53,9 +53,8 @@ loop vty (lvl@(Level nm sz lmap)) player =
     display ((0,0),sz) vty 
              (\ loc -> let tile = nlmap `rememberAt` loc
                        in
-                       ((if S.member loc visible then
-                           if light tile || adjacent loc player then setBG blue
-                                                                else setBG magenta
+                       ((if S.member loc visible then setBG blue
+                         else if S.member loc reachable then setBG magenta
                          else id) attr,
                         if loc == player then '@'
                         else head . show $ tile))
@@ -80,7 +79,8 @@ loop vty (lvl@(Level nm sz lmap)) player =
       _                       -> loop vty nlvl player
  where
   -- determine visible fields
-  visible = fullscan player lmap
+  reachable = fullscan player lmap
+  visible = S.filter (\ loc -> light (lmap `at` loc) || adjacent loc player) reachable
   -- update player memory
   nlmap = foldr (\ x m -> M.update (\ (t,_) -> Just (t,t)) x m) lmap (S.toList visible)
   nlvl = Level nm sz nlmap

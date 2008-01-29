@@ -20,38 +20,51 @@ at         l p = fst (findWithDefault (Unknown, Unknown) p l)
 rememberAt l p = snd (findWithDefault (Unknown, Unknown) p l)
 
 data Tile = Rock
+          | Opening
           | Floor
           | Unknown
           | Corridor
+          | Wall HV
           | Stairs VDir (Maybe (Level, Loc))
+
+data HV = Horiz | Vert
+  deriving Eq
 
 data VDir = Up | Down
   deriving Eq
 
 instance Eq Tile where
   Rock == Rock = True
+  Opening == Opening = True
   Floor == Floor = True
   Unknown == Unknown = True
   Corridor == Corridor = True
+  Wall d == Wall d' = d == d'
   Stairs d _ == Stairs d' _ = d == d'
   _ == _ = False
 
 instance Show Tile where
-  show Rock            = "#"
+  show Rock            = " "
+  show Opening         = "."
   show Floor           = "."
   show Unknown         = " "
-  show Corridor        = "_"
+  show Corridor        = "#"
+  show (Wall Horiz)    = "-"
+  show (Wall Vert)     = "|"
   show (Stairs Up _)   = "<"
   show (Stairs Down _) = ">"
 
 closed, open, light :: Tile -> Bool
 closed = not . open
 open Floor = True
+open Opening = True
 open Corridor = True
 open (Stairs _ _) = True
 open _ = False
 light Floor = True
+light Opening = True
 light (Stairs _ _) = True
+light (Wall _) = True
 light _ = False
 
 type Loc = (Y,X)

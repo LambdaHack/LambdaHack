@@ -42,8 +42,10 @@ digCorridor (p1:p2:ps) l =
   digCorridor (p2:ps) 
     (M.unionWith corridorUpdate (M.fromList [ (ps,(Corridor,Unknown)) | ps <- fromTo p1 p2 ]) l)
   where
-    corridorUpdate _ (Floor,u) = (Floor,u)
-    corridorUpdate (x,u) _     = (x,u)
+    corridorUpdate _ (Wall _,u)  = (Opening,u)
+    corridorUpdate _ (Opening,u) = (Opening,u)
+    corridorUpdate _ (Floor,u)   = (Floor,u)
+    corridorUpdate (x,u) _       = (x,u)
 digCorridor _ l = l
   
 
@@ -88,6 +90,8 @@ emptyLMap (my,mx) = M.fromList [ ((y,x),(Rock,Unknown)) | x <- [0..mx], y <- [0.
 
 digRoom :: Room -> LMap -> LMap
 digRoom ((y0,x0),(y1,x1)) l =
-  let rm = M.fromList [ ((y,x),(Floor,Unknown)) | x <- [x0..x1], y <- [y0..y1] ]
+  let rm = M.fromList $ [ ((y,x),(Floor,Unknown)) | x <- [x0..x1], y <- [y0..y1] ]
+                     ++ [ ((y,x),(Wall Horiz,Unknown)) | x <- [x0-1..x1+1], y <- [y0-1,y1+1] ]
+                     ++ [ ((y,x),(Wall Vert,Unknown)) | x <- [x0-1,x1+1], y <- [y0..y1] ]
   in M.unionWith const rm l
 
