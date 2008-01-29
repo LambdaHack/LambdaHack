@@ -59,7 +59,14 @@ loop vty (lvl@(Level sz lmap)) rmap player =
       V.EvKey (KASCII 'j') [] -> move nrmap (1,0)
       V.EvKey (KASCII 'h') [] -> move nrmap (0,-1)
       V.EvKey (KASCII 'l') [] -> move nrmap (0,1)
+      V.EvKey (KASCII 'y') [] -> move nrmap (-1,-1)
+      V.EvKey (KASCII 'u') [] -> move nrmap (-1,1)
+      V.EvKey (KASCII 'b') [] -> move nrmap (1,-1)
+      V.EvKey (KASCII 'n') [] -> move nrmap (1,1)
+
+      V.EvKey (KASCII 'Q') [] -> shutdown vty
       V.EvKey KEsc _          -> shutdown vty
+
       _                       -> loop vty lvl nrmap player
  where
   move nrmap dir
