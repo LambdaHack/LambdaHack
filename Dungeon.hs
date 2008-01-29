@@ -77,8 +77,9 @@ level =
     let lvl = Level (levelY,levelX) lmap
     su <- findLoc lvl (const (==Floor))
     sd <- findLoc lvl (\ l t -> t == Floor && distance (su,l) > min levelX levelY)
-    let lmap' = M.insert su (Stairs Up) $ M.insert sd (Stairs Down) $ lmap
-    return (Level (levelY,levelX) lmap')
+    return $ (\ lu ld ->
+      let lmap' = M.insert su (Stairs Up lu) $ M.insert sd (Stairs Down ld) $ lmap
+      in  Level (levelY,levelX) lmap', su, sd)
 
 emptyLMap :: (Y,X) -> LMap
 emptyLMap (my,mx) = M.fromList [ ((y,x),Rock) | x <- [0..mx], y <- [0..my] ]

@@ -19,28 +19,35 @@ data Tile = Rock
           | Floor
           | Unknown
           | Corridor
-          | Stairs VDir
-  deriving Eq
+          | Stairs VDir (Maybe (Level, Loc))
 
 data VDir = Up | Down
   deriving Eq
 
+instance Eq Tile where
+  Rock == Rock = True
+  Floor == Floor = True
+  Unknown == Unknown = True
+  Corridor == Corridor = True
+  Stairs d _ == Stairs d' _ = d == d'
+  _ == _ = False
+
 instance Show Tile where
-  show Rock          = "#"
-  show Floor         = "."
-  show Unknown       = " "
-  show Corridor      = "_"
-  show (Stairs Up)   = "<"
-  show (Stairs Down) = ">"
+  show Rock            = "#"
+  show Floor           = "."
+  show Unknown         = " "
+  show Corridor        = "_"
+  show (Stairs Up _)   = "<"
+  show (Stairs Down _) = ">"
 
 closed, open, light :: Tile -> Bool
 closed = not . open
 open Floor = True
 open Corridor = True
-open (Stairs _) = True
+open (Stairs _ _) = True
 open _ = False
 light Floor = True
-light (Stairs _) = True
+light (Stairs _ _) = True
 light _ = False
 
 type Loc = (Y,X)

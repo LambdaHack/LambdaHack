@@ -32,18 +32,18 @@ display ((y0,x0),(y1,x1)) vty f =
 init vty =
   do
     -- generate random level
-    lvl <- level
+    (lvl0, su0, sd0) <- level
+    (lvl1, su1, sd1) <- level
+    let lvl0' = lvl0 Nothing (Just (lvl1', su1))
+        lvl1' = lvl1 (Just (lvl0', sd0)) Nothing
+        lvl = lvl0'
     let rmap = M.empty -- remembered tiles
     -- generate player position
-    player <- findLoc lvl (const open)
+    let player = su0
     loop vty lvl rmap player
 
 loop vty (lvl@(Level sz lmap)) rmap player =
   do
-    -- determine visible fields
-    let visible = fullscan player lmap
-    -- update player memory
-    let nrmap = foldr (\ x m -> M.insert x (findWithDefault Unknown x lmap) m) rmap (S.toList visible)
     display ((0,0),sz) vty 
              (\ loc -> let tile = findWithDefault Unknown loc nrmap
                        in
@@ -55,21 +55,46 @@ loop vty (lvl@(Level sz lmap)) rmap player =
                         else head . show $ tile))
     e <- V.getEvent vty
     case e of
-      V.EvKey (KASCII 'k') [] -> move nrmap (-1,0)
-      V.EvKey (KASCII 'j') [] -> move nrmap (1,0)
-      V.EvKey (KASCII 'h') [] -> move nrmap (0,-1)
-      V.EvKey (KASCII 'l') [] -> move nrmap (0,1)
-      V.EvKey (KASCII 'y') [] -> move nrmap (-1,-1)
-      V.EvKey (KASCII 'u') [] -> move nrmap (-1,1)
-      V.EvKey (KASCII 'b') [] -> move nrmap (1,-1)
-      V.EvKey (KASCII 'n') [] -> move nrmap (1,1)
+      V.EvKey (KASCII 'k') [] -> move (-1,0)
+      V.EvKey (KASCII 'j') [] -> move (1,0)
+      V.EvKey (KASCII 'h') [] -> move (0,-1)
+      V.EvKey (KASCII 'l') [] -> move (0,1)
+      V.EvKey (KASCII 'y') [] -> move (-1,-1)
+      V.EvKey (KASCII 'u') [] -> move (-1,1)
+      V.EvKey (KASCII 'b') [] -> move (1,-1)
+      V.EvKey (KASCII 'n') [] -> move (1,1)
+
+      V.EvKey (KASCII '<') [] -> lvlchange Up
+      V.EvKey (KASCII '>') [] -> lvlchange Down
 
       V.EvKey (KASCII 'Q') [] -> shutdown vty
       V.EvKey KEsc _          -> shutdown vty
 
       _                       -> loop vty lvl nrmap player
  where
-  move nrmap dir
+  -- determine visible fields
+  visible = fullscan player lmap
+  -- update player memory
+  nrmap = foldr (\ x m -> M.insert x (findWithDefault Unknown x lmap) m) rmap (S.toList visible)
+  -- perform a level change
+  lvlchange vdir =
+    case findWithDefault Unknown player lmap of
+      Stairs vdir' next
+       | vdir == vdir' -> -- ok
+          case next of
+            Nothing -> -- exit dungeon
+                       shutdown vty
+            Just (nlvl@(Level nsz nlmap), nloc) ->
+              -- perform level change
+              do
+                let next' = Just (Level sz (M.insert player (Stairs vdir Nothing) lmap), player)
+                let new = Level nsz (M.update (\ (Stairs d _) -> Just (Stairs d next')) nloc nlmap)
+                loop vty new M.empty nloc
+                
+      _                -> -- no stairs
+                                      loop vty lvl nrmap player
+  -- perform a player move
+  move dir
     | open (findWithDefault Unknown (shift player dir) lmap) = loop vty lvl nrmap (shift player dir)
     | otherwise = loop vty lvl nrmap player
 
