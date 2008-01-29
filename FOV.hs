@@ -15,19 +15,19 @@ type Progress = Int
 -- The current state of a scan is kept in a variable of Maybe Rational.
 -- If Just something, we're in a visible interval. If Nothing, we're in
 -- a shadowed interval.
-scan :: ((Distance,Progress) -> Loc) -> Level -> Distance -> Interval -> Set Loc
+scan :: ((Distance,Progress) -> Loc) -> LMap -> Distance -> Interval -> Set Loc
 scan tr l d (s,e) = 
     let ps = downBias (s * fromIntegral d)   -- minimal progress to check
         pe = upBias (e * fromIntegral d)     -- maximal progress to check
-        st = if open (l `at` (d,ps)) then (Just s) -- start in light
-                                     else Nothing  -- start in shadow
+        st = if open (l `at` tr (d,ps)) then (Just s) -- start in light
+                                        else Nothing  -- start in shadow
     in 
         -- trace (show (d,s,e,ps,pe)) $
         S.union (S.fromList [tr (d,p) | p <- [ps..pe]]) (scan' st ps pe)
   where
     scan' :: Maybe Rational -> Progress -> Progress -> Set Loc
     -- scan' st ps pe
-      -- | trace (show (st,ps,pe)) False = undefined
+    --   | trace (show (st,ps,pe)) False = undefined
     scan' (Just s) ps pe
       | s  >= e  = S.empty               -- empty interval
       | ps > pe  = scan tr l (d+1) (s,e) -- reached end, scan next
@@ -66,7 +66,7 @@ downBias, upBias :: (Integral a, Integral b) => Ratio a -> b
 downBias x = round (x - 1 % (denominator x * 3))
 upBias   x = round (x + 1 % (denominator x * 3))
 
-test :: Level
+test :: LMap
 test = M.insert (3,3) Rock $ 
        M.insert (3,1) Rock $ 
        M.insert (6,7) Rock $ 

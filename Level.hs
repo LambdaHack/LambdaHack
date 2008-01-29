@@ -10,8 +10,8 @@ type X = Int
 type Y = Int
 
 data Level = Level
-              { size :: (Y,X),
-                lmap :: Map (Y,X) Tile }
+              { lsize :: (Y,X),
+                lmap  :: Map (Y,X) Tile }
 
 type LMap = Map (Y,X) Tile
 
@@ -26,11 +26,13 @@ instance Show Tile where
   show Unknown = " "
   show Corridor = "_"
 
-closed, open :: Tile -> Bool
+closed, open, light :: Tile -> Bool
 closed = not . open
 open Floor = True
 open Corridor = True
 open _ = False
+light Floor = True
+light _ = False
 
 type Loc = (Y,X)
 type Area = ((Y,X),(Y,X))
@@ -41,6 +43,19 @@ locInArea ((y0,x0),(y1,x1)) =
     rx <- randomRIO (x0,x1)
     ry <- randomRIO (y0,y1)
     return (ry,rx)
+
+findLoc :: Level -> (Tile -> Bool) -> IO Loc
+findLoc l@(Level { lsize = sz, lmap = lm }) p =
+  do
+    loc <- locInArea ((0,0),sz)
+    if p (findWithDefault Unknown loc lm) then return loc
+                                          else findLoc l p
+
+distance :: (Loc,Loc) -> Int
+distance ((y0,x0),(y1,x1)) = (y1 - y0)^2 + (x1 - x0)^2
+
+adjacent :: Loc -> Loc -> Bool
+adjacent s t = distance (s,t) <= 2
 
 grid :: (Y,X) -> Area -> Map (Y,X) Area
 grid (ny,nx) ((y0,x0),(y1,x1)) =

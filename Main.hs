@@ -9,6 +9,7 @@ import Control.Monad
 
 import Level
 import Dungeon
+import FOV
 
 main :: IO ()
 main =
@@ -30,9 +31,21 @@ display ((y0,x0),(y1,x1)) vty f =
 
 loop vty i =
   do
-    Level sz lmap <- level
-    display ((0,0),sz) vty (\ loc -> (setBG blue attr, head . show $ findWithDefault Unknown loc lmap))
-    -- display vty (\ x y -> (setFG (if (x + y) `mod` 2 == 1 then red else green) attr, head . show $ (x + y + i) `mod` 7))
+    -- generate random level
+    lvl@(Level sz lmap) <- level
+    -- generate player position
+    player <- findLoc lvl open
+    -- determine visible fields
+    let visible = fullscan player lmap
+    display ((0,0),sz) vty 
+             (\ loc -> let tile = findWithDefault Unknown loc lmap
+                       in
+                       ((if S.member loc visible then
+                           if light tile || adjacent loc player then setBG blue
+                                                                else setBG magenta
+                         else id) attr,
+                        if loc == player then '@'
+                        else head . show $ findWithDefault Unknown loc lmap))
     e <- V.getEvent vty
     case e of
       V.EvKey KEsc _ -> shutdown vty
