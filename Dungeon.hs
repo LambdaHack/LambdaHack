@@ -74,8 +74,11 @@ level =
                                r1 = rs ! p1
                            connectRooms r0 r1) connects
     let lmap = foldr digCorridor (foldr digRoom (emptyLMap (levelY,levelX)) rooms) cs
-    return (Level (levelY,levelX) lmap)
-
+    let lvl = Level (levelY,levelX) lmap
+    su <- findLoc lvl (const (==Floor))
+    sd <- findLoc lvl (\ l t -> t == Floor && distance (su,l) > min levelX levelY)
+    let lmap' = M.insert su (Stairs Up) $ M.insert sd (Stairs Down) $ lmap
+    return (Level (levelY,levelX) lmap')
 
 emptyLMap :: (Y,X) -> LMap
 emptyLMap (my,mx) = M.fromList [ ((y,x),Rock) | x <- [0..mx], y <- [0..my] ]

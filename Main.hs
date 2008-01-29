@@ -35,7 +35,7 @@ init vty =
     lvl <- level
     let rmap = M.empty -- remembered tiles
     -- generate player position
-    player <- findLoc lvl open
+    player <- findLoc lvl (const open)
     loop vty lvl rmap player
 
 loop vty (lvl@(Level sz lmap)) rmap player =
