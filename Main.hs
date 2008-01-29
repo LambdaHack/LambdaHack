@@ -7,6 +7,8 @@ import Graphics.Vty as V
 import System.Random
 import Control.Monad
 
+import Level
+
 main :: IO ()
 main =
   do
@@ -31,25 +33,6 @@ loop vty i =
       V.EvKey KEsc _ -> shutdown vty
       _              -> loop vty (i+1)
 
-type X = Int
-type Y = Int
-
-type Level = Map (Y,X) Tile
-
-data Tile = Rock
-          | Floor
-          | Unknown
-          | Corridor
-
-instance Show Tile where
-  show Rock  = " "
-  show Floor = "."
-  show Unknown = "?"
-  show Corridor = "#"
-
-type Room = Area
-type Loc = (Y,X)
-type Area = ((Y,X),(Y,X))
 
 mkRoom :: Int ->      {- border columns -}
           (Y,X) ->    {- minimum size -}
