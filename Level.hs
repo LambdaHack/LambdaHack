@@ -161,9 +161,26 @@ connectGrid (ny,nx) =
     let candidates  = S.fromList [ (ry,rx) ]
     connectGrid' (ny,nx) unconnected candidates []
 
+randomConnection :: (Y,X) -> IO ((Y,X),(Y,X))
+randomConnection (ny,nx) =
+  do
+    rb  <- randomRIO (False,True)
+    if rb then do
+                 rx  <- randomRIO (0,nx-2)
+                 ry  <- randomRIO (0,ny-1)
+                 return (normalize ((ry,rx),(ry,rx+1)))
+          else do
+                 ry  <- randomRIO (0,ny-2)
+                 rx  <- randomRIO (0,nx-1)
+                 return (normalize ((ry,rx),(ry+1,rx)))
+
+normalize :: ((Y,X),(Y,X)) -> ((Y,X),(Y,X))
+normalize (a,b) | a <= b    = (a,b)
+                | otherwise = (b,a)
+
 connectGrid' :: (Y,X) -> Set (Y,X) -> Set (Y,X) -> [((Y,X),(Y,X))] -> IO [((Y,X),(Y,X))]
 connectGrid' (ny,nx) unconnected candidates acc
-  | S.null candidates = return acc
+  | S.null candidates = return (L.map normalize acc)
   | otherwise = do
                   r <- randomRIO (0,S.size candidates - 1)
                   let c = S.toList candidates !! r

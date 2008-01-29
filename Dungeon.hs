@@ -1,6 +1,7 @@
 module Dungeon where
 
 import System.Random
+import Control.Monad
 
 import Data.Map as M
 import Data.List as L
@@ -17,7 +18,7 @@ mkRoom :: Int ->      {- border columns -}
 mkRoom bd (ym,xm)((y0,x0),(y1,x1)) =
   do
     (ry0,rx0) <- locInArea ((y0+bd,x0+bd),(y1-bd-ym+1,x1-bd-xm+1))
-    (ry1,rx1) <- locInArea ((ry0+bd+ym-1,rx0+bd+xm-1),(y1-bd,x1-bd))
+    (ry1,rx1) <- locInArea ((ry0+ym-1,rx0+xm-1),(y1-bd,x1-bd))
     return ((ry0,rx0),(ry1,rx1))
 
 mkCorridor :: (Loc,Loc) -> IO [(Y,X)]  {- straight sections of the corridor -}
@@ -61,25 +62,29 @@ minX = 2
 minY = 2
 levelX = 79
 levelY = 23
+extraC = 3
+border = 2
 -- TODO next: generate rooms for each grid point, connect the grid, compute
 -- corridors between the rooms as given by the grid connection
 level :: String -> IO (Maybe (Level, Loc) -> Maybe (Level, Loc) -> Level, Loc, Loc)
 level nm =
   do
     let gs = M.toList (grid (gridY,gridX) ((0,0),(levelY,levelX)))
-    rs0 <- mapM (\ (i,r) -> mkRoom 1 (minY,minX) r >>= \ r' -> return (i,r')) gs
+    rs0 <- mapM (\ (i,r) -> mkRoom border (minY,minX) r >>= \ r' -> return (i,r')) gs
     let rooms = L.map snd rs0
     let rs = M.fromList rs0
     connects <- connectGrid (gridY,gridX)
+    extraConnects <- replicateM 3 (randomConnection (gridY,gridX))
+    let allConnects = L.union extraConnects connects
     cs <- mapM
            (\ (p0,p1) -> do
                            let r0 = rs ! p0
                                r1 = rs ! p1
-                           connectRooms r0 r1) connects
+                           connectRooms r0 r1) allConnects
     let lmap = foldr digCorridor (foldr digRoom (emptyLMap (levelY,levelX)) rooms) cs
     let lvl = Level nm (levelY,levelX) lmap
     su <- findLoc lvl (const (==Floor))
-    sd <- findLoc lvl (\ l t -> t == Floor && distance (su,l) > min levelX levelY)
+    sd <- findLoc lvl (\ l t -> t == Floor && distance (su,l) > (levelX `div` gridX)^2)
     return $ (\ lu ld ->
       let lmap' = M.insert su (Stairs Up lu, Unknown) $
                   M.insert sd (Stairs Down ld, Unknown) $ lmap
