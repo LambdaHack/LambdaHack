@@ -46,8 +46,6 @@ scan tr l d (s,e) =
       | otherwise = scan' Nothing (ps+1) pe
                                       -- continue in shadow
 
-at l p = findWithDefault Rock p l
-
 tr0 (oy,ox) (d,p) = (oy+d,ox+p)
 tr1 (oy,ox) (d,p) = (oy+d,ox-p)
 tr2 (oy,ox) (d,p) = (oy-d,ox+p)
@@ -67,8 +65,8 @@ downBias x = round (x - 1 % (denominator x * 3))
 upBias   x = round (x + 1 % (denominator x * 3))
 
 test :: LMap
-test = M.insert (3,3) Rock $ 
-       M.insert (3,1) Rock $ 
-       M.insert (6,7) Rock $ 
-       M.insert (7,8) Rock $ 
-       M.fromList [((x,y), Floor) | x <- [0..10], y <- [0..10]]
+test = M.insert (3,3) (Rock,Unknown) $ 
+       M.insert (3,1) (Rock,Unknown) $ 
+       M.insert (6,7) (Rock,Unknown) $ 
+       M.insert (7,8) (Rock,Unknown) $ 
+       M.fromList [((x,y), (Floor,Unknown)) | x <- [0..10], y <- [0..10]]

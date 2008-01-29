@@ -37,15 +37,14 @@ init vty =
     let lvl0' = lvl0 Nothing (Just (lvl1', su1))
         lvl1' = lvl1 (Just (lvl0', sd0)) Nothing
         lvl = lvl0'
-    let rmap = M.empty -- remembered tiles
     -- generate player position
     let player = su0
-    loop vty lvl rmap player
+    loop vty lvl player
 
-loop vty (lvl@(Level sz lmap)) rmap player =
+loop vty (lvl@(Level sz lmap)) player =
   do
     display ((0,0),sz) vty 
-             (\ loc -> let tile = findWithDefault Unknown loc nrmap
+             (\ loc -> let tile = nlmap `rememberAt` loc
                        in
                        ((if S.member loc visible then
                            if light tile || adjacent loc player then setBG blue
@@ -70,15 +69,16 @@ loop vty (lvl@(Level sz lmap)) rmap player =
       V.EvKey (KASCII 'Q') [] -> shutdown vty
       V.EvKey KEsc _          -> shutdown vty
 
-      _                       -> loop vty lvl nrmap player
+      _                       -> loop vty nlvl player
  where
   -- determine visible fields
   visible = fullscan player lmap
   -- update player memory
-  nrmap = foldr (\ x m -> M.insert x (findWithDefault Unknown x lmap) m) rmap (S.toList visible)
+  nlmap = foldr (\ x m -> M.update (\ (t,_) -> Just (t,t)) x m) lmap (S.toList visible)
+  nlvl = Level sz nlmap
   -- perform a level change
   lvlchange vdir =
-    case findWithDefault Unknown player lmap of
+    case nlmap `at` player of
       Stairs vdir' next
        | vdir == vdir' -> -- ok
           case next of
@@ -87,15 +87,15 @@ loop vty (lvl@(Level sz lmap)) rmap player =
             Just (nlvl@(Level nsz nlmap), nloc) ->
               -- perform level change
               do
-                let next' = Just (Level sz (M.insert player (Stairs vdir Nothing) lmap), player)
-                let new = Level nsz (M.update (\ (Stairs d _) -> Just (Stairs d next')) nloc nlmap)
-                loop vty new M.empty nloc
+                let next' = Just (Level sz (M.update (\ (_,r) -> Just (Stairs vdir Nothing,r)) player lmap), player)
+                let new = Level nsz (M.update (\ (Stairs d _,r) -> Just (Stairs d next',r)) nloc nlmap)
+                loop vty new nloc
                 
       _                -> -- no stairs
-                                      loop vty lvl nrmap player
+                                      loop vty nlvl player
   -- perform a player move
   move dir
-    | open (findWithDefault Unknown (shift player dir) lmap) = loop vty lvl nrmap (shift player dir)
-    | otherwise = loop vty lvl nrmap player
+    | open (lmap `at` shift player dir) = loop vty nlvl (shift player dir)
+    | otherwise = loop vty nlvl player
 
 

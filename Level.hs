@@ -13,7 +13,10 @@ data Level = Level
               { lsize :: (Y,X),
                 lmap  :: LMap }
 
-type LMap = Map (Y,X) Tile
+type LMap = Map (Y,X) (Tile,Tile)
+
+at         l p = fst (findWithDefault (Unknown, Unknown) p l)
+rememberAt l p = snd (findWithDefault (Unknown, Unknown) p l)
 
 data Tile = Rock
           | Floor
@@ -64,8 +67,8 @@ findLoc :: Level -> (Loc -> Tile -> Bool) -> IO Loc
 findLoc l@(Level { lsize = sz, lmap = lm }) p =
   do
     loc <- locInArea ((0,0),sz)
-    if p loc (findWithDefault Unknown loc lm) then return loc
-                                              else findLoc l p
+    if p loc (lm `at` loc) then return loc
+                           else findLoc l p
 
 distance :: (Loc,Loc) -> Int
 distance ((y0,x0),(y1,x1)) = (y1 - y0)^2 + (x1 - x0)^2

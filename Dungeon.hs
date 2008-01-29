@@ -40,10 +40,10 @@ connectRooms sa@((sy0,sx0),(sy1,sx1)) ta@((ty0,tx0),(ty1,tx1)) =
 digCorridor :: Corridor -> LMap -> LMap
 digCorridor (p1:p2:ps) l =
   digCorridor (p2:ps) 
-    (M.unionWith corridorUpdate (M.fromList [ (ps,Corridor) | ps <- fromTo p1 p2 ]) l)
+    (M.unionWith corridorUpdate (M.fromList [ (ps,(Corridor,Unknown)) | ps <- fromTo p1 p2 ]) l)
   where
-    corridorUpdate _ Floor = Floor
-    corridorUpdate x _     = x
+    corridorUpdate _ (Floor,u) = (Floor,u)
+    corridorUpdate (x,u) _     = (x,u)
 digCorridor _ l = l
   
 
@@ -78,14 +78,15 @@ level =
     su <- findLoc lvl (const (==Floor))
     sd <- findLoc lvl (\ l t -> t == Floor && distance (su,l) > min levelX levelY)
     return $ (\ lu ld ->
-      let lmap' = M.insert su (Stairs Up lu) $ M.insert sd (Stairs Down ld) $ lmap
+      let lmap' = M.insert su (Stairs Up lu, Unknown) $
+                  M.insert sd (Stairs Down ld, Unknown) $ lmap
       in  Level (levelY,levelX) lmap', su, sd)
 
 emptyLMap :: (Y,X) -> LMap
-emptyLMap (my,mx) = M.fromList [ ((y,x),Rock) | x <- [0..mx], y <- [0..my] ]
+emptyLMap (my,mx) = M.fromList [ ((y,x),(Rock,Unknown)) | x <- [0..mx], y <- [0..my] ]
 
 digRoom :: Room -> LMap -> LMap
 digRoom ((y0,x0),(y1,x1)) l =
-  let rm = M.fromList [ ((y,x),Floor) | x <- [x0..x1], y <- [y0..y1] ]
+  let rm = M.fromList [ ((y,x),(Floor,Unknown)) | x <- [x0..x1], y <- [y0..y1] ]
   in M.unionWith const rm l
 
