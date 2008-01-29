@@ -1,3 +1,6 @@
+default :
+	ghc -O -o HHack2 --make Main.hs
+
 %.hs : %.hsc
 	hsc2hs -Icbits/ Curses.hsc
 

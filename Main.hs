@@ -1,23 +1,30 @@
 module Main where
 
+import System.Directory
+import System.IO
+import Data.Binary
 import Data.List as L
 import Data.Map as M
 import Data.Set as S
 import Data.Char
 import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy as LBS
 import Graphics.Vty as V
 import System.Random
 import Control.Monad
+import Control.Exception as E
 
 import Level
 import Dungeon
 import FOV
 
+savefile = "HHack2.save"
+
 main :: IO ()
 main =
   do
     vty <- V.mkVty
-    Main.init vty
+    start vty
 
 -- should at the moment match the level size
 screenX = levelX
@@ -36,7 +43,30 @@ display ((y0,x0),(y1,x1)) vty f status =
 toWidth :: Int -> String -> String
 toWidth n x = take n (x ++ repeat ' ')
 
-init vty =
+strictReadFile :: FilePath -> IO LBS.ByteString
+strictReadFile f =
+    do
+      h <- openFile f ReadMode
+      c <- LBS.hGetContents h
+      LBS.length c `seq` return c
+
+strictDecodeFile :: Binary a => FilePath -> IO a
+strictDecodeFile f = fmap decode (strictReadFile f)
+
+start vty =
+    do
+      -- check if we have a savegame
+      restored <- E.catch (do
+                             r <- strictDecodeFile savefile
+                             removeFile savefile
+                             case r of
+                               (x,y,z) -> (z :: Bool) `seq` return $ Just (x,y))
+                          (const $ return Nothing)
+      case restored of
+        Nothing           -> generate vty
+        Just (lvl,player) -> loop vty lvl player
+
+generate vty =
   do
     -- generate dungeon with 10 levels
     levels <- mapM (\n -> level $ "The Lambda Cave " ++ show n) [1..10]
@@ -57,7 +87,7 @@ loop vty (lvl@(Level nm sz lmap)) player =
                          else if S.member loc reachable then setBG magenta
                          else id) attr,
                         if loc == player then '@'
-                        else head . show $ tile))
+                        else view tile))
             nm
     e <- V.getEvent vty
     case e of
@@ -73,6 +103,7 @@ loop vty (lvl@(Level nm sz lmap)) player =
       V.EvKey (KASCII '<') [] -> lvlchange Up
       V.EvKey (KASCII '>') [] -> lvlchange Down
 
+      V.EvKey (KASCII 'S') [] -> shutdown vty >> encodeFile savefile (lvl,player,False)
       V.EvKey (KASCII 'Q') [] -> shutdown vty
       V.EvKey KEsc _          -> shutdown vty
 
