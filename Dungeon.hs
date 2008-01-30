@@ -21,22 +21,30 @@ mkRoom bd (ym,xm)((y0,x0),(y1,x1)) =
     (ry1,rx1) <- locInArea ((ry0+ym-1,rx0+xm-1),(y1-bd,x1-bd))
     return ((ry0,rx0),(ry1,rx1))
 
-mkCorridor :: (Loc,Loc) -> IO [(Y,X)]  {- straight sections of the corridor -}
-mkCorridor a@((y0,x0),(y1,x1)) =
+mkCorridor :: [Y] ->   {- excluded Y positions -}
+              [X] ->   {- excluded X positions -}
+              (Loc,Loc) -> IO [(Y,X)]  {- straight sections of the corridor -}
+mkCorridor xy xx a@((y0,x0),(y1,x1)) =
   do
-    (ry,rx) <- locInArea a
+    (ry,rx) <- findLocInArea a (\ (y,x) -> not (y `elem` xy) || not (x `elem` xx))
     -- (ry,rx) is intermediate point the path crosses
-    hv <- randomRIO (False,True)
+    hv <- if      ry `elem` xy then return True   -- must be horizontal
+          else if rx `elem` xx then return False  -- must be vertical
+                               else randomRIO (False,True)
     -- hv decides whether we start in horizontal or vertical direction
-    if hv then return [(y0,x0),(y0,rx),(y1,rx),(y1,x1)]
-          else return [(y0,x0),(ry,x0),(ry,x1),(y1,x1)]
+    if hv then return [(y0,x0),(y0,rx),(y1,rx),(y1,x1)] -- horizontal
+          else return [(y0,x0),(ry,x0),(ry,x1),(y1,x1)] -- vertical
 
+-- the condition passed to mkCorridor is tricky; there might not always
+-- exist a suitable intermediate point is the rooms are allowed to be close
+-- together ...
 connectRooms :: Area -> Area -> IO [Loc]
 connectRooms sa@((sy0,sx0),(sy1,sx1)) ta@((ty0,tx0),(ty1,tx1)) =
   do
     (sy,sx) <- locInArea sa
     (ty,tx) <- locInArea ta
-    mkCorridor ((sy,sx),(ty,tx))
+    mkCorridor [sy0-1,sy1+1,ty0-1,ty1+1] [sx0-1,sx1+1,tx0-1,tx1+1]
+                                         ((sy,sx),(ty,tx))
 
 digCorridor :: Corridor -> LMap -> LMap
 digCorridor (p1:p2:ps) l =

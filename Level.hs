@@ -118,12 +118,16 @@ light _ = False
 type Loc = (Y,X)
 type Area = ((Y,X),(Y,X))
 
-locInArea :: Area -> IO Loc
-locInArea ((y0,x0),(y1,x1)) =
+findLocInArea :: Area -> (Loc -> Bool) -> IO Loc
+findLocInArea a@((y0,x0),(y1,x1)) p =
   do
     rx <- randomRIO (x0,x1)
     ry <- randomRIO (y0,y1)
-    return (ry,rx)
+    let loc = (ry,rx)
+    if p loc then return loc else findLocInArea a p
+
+locInArea :: Area -> IO Loc
+locInArea a = findLocInArea a (const True)
 
 findLoc :: Level -> (Loc -> Tile -> Bool) -> IO Loc
 findLoc l@(Level { lsize = sz, lmap = lm }) p =
