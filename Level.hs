@@ -38,6 +38,7 @@ data Tile = Rock
           | Corridor
           | Wall HV
           | Stairs VDir (Maybe (Level, Loc))
+          | Door HV Bool
   deriving Show
 
 -- forget stuff you cannot see anyway
@@ -54,6 +55,7 @@ instance Binary Tile where
   put Corridor     = putWord8 4
   put (Wall d)     = putWord8 5 >> put d
   put (Stairs d n) = putWord8 6 >> put d >> put n
+  put (Door d o)   = putWord8 7 >> put d >> put o
   get = do
           tag <- getWord8
           case tag of
@@ -64,6 +66,7 @@ instance Binary Tile where
             4 -> return Corridor
             5 -> liftM Wall get
             6 -> liftM2 Stairs get get
+            7 -> liftM2 Door get get
 
 data HV = Horiz | Vert
   deriving (Eq, Show, Bounded)
@@ -106,28 +109,34 @@ instance Eq Tile where
   Corridor == Corridor = True
   Wall d == Wall d' = d == d'
   Stairs d _ == Stairs d' _ = d == d'
+  Door d o == Door d' o' = d == d' && o == o'
   _ == _ = False
 
 view :: Tile -> Char
-view Rock            = ' '
-view Opening         = '.'
-view Floor           = '.'
-view Unknown         = ' '
-view Corridor        = '#'
-view (Wall Horiz)    = '-'
-view (Wall Vert)     = '|'
-view (Stairs Up _)   = '<'
-view (Stairs Down _) = '>'
+view Rock              = ' '
+view Opening           = '.'
+view Floor             = '.'
+view Unknown           = ' '
+view Corridor          = '#'
+view (Wall Horiz)      = '-'
+view (Wall Vert)       = '|'
+view (Stairs Up _)     = '<'
+view (Stairs Down _)   = '>'
+view (Door _ False)    = '+'
+view (Door Horiz True) = '|'
+view (Door Vert True)  = '-'
 
 closed, open, light :: Tile -> Bool
 closed = not . open
 open Floor = True
 open Opening = True
+open (Door _ _) = True
 open Corridor = True
 open (Stairs _ _) = True
 open _ = False
 light Floor = True
 light Opening = True
+light (Door _ _) = True -- problematic
 light (Stairs _ _) = True
 light (Wall _) = True
 light _ = False

@@ -68,8 +68,27 @@ generate session =
     let lvl = head (connect levels)
     loop session lvl player
 
+loop :: Session -> Level -> Loc -> IO ()
 loop session (lvl@(Level nm sz lmap)) player =
   do
+    displayCurrent "" 
+    e <- nextEvent session
+    handleDirection e move $ 
+      case e of
+        "o" -> opendoor
+        "c" -> closedoor
+
+        "less"    -> lvlchange Up
+        "greater" -> lvlchange Down
+
+        "S"       -> encodeCompressedFile savefile (lvl,player,False) >> shutdown session
+        "Q"       -> shutdown session
+        "Escape"  -> shutdown session
+
+        _   -> loop session nlvl player
+
+ where
+  displayCurrent msg =
     display ((0,0),sz) session 
              (\ loc -> let tile = nlmap `rememberAt` loc
                        in
@@ -78,33 +97,30 @@ loop session (lvl@(Level nm sz lmap)) player =
                          else id) attr,
                         if loc == player then '@'
                         else view tile))
+            msg
             nm
-    e <- nextEvent session
+
+  handleDirection e h k =
     case e of
-      "k" -> move (-1,0)
-      "j" -> move (1,0)
-      "h" -> move (0,-1)
-      "l" -> move (0,1)
-      "y" -> move (-1,-1)
-      "u" -> move (-1,1)
-      "b" -> move (1,-1)
-      "n" -> move (1,1)
+      "k" -> h (-1,0)
+      "j" -> h (1,0)
+      "h" -> h (0,-1)
+      "l" -> h (0,1)
+      "y" -> h (-1,-1)
+      "u" -> h (-1,1)
+      "b" -> h (1,-1)
+      "n" -> h (1,1)
+      _   -> k
 
-      "less"    -> lvlchange Up
-      "greater" -> lvlchange Down
-
-      "S" -> encodeCompressedFile savefile (lvl,player,False) >> shutdown session
-      "Q" -> shutdown session
-      "Escape" -> shutdown session
-
-      _                       -> loop session nlvl player
- where
   -- determine visible fields
   reachable = fullscan player lmap
   visible = S.filter (\ loc -> light (lmap `at` loc) || adjacent loc player) reachable
   -- update player memory
   nlmap = foldr (\ x m -> M.update (\ (t,_) -> Just (t,flat t)) x m) lmap (S.toList visible)
   nlvl = Level nm sz nlmap
+  -- open and close doors
+  opendoor  = displayCurrent "direction?" >> nextEvent session >> loop session nlvl player
+  closedoor = displayCurrent "direction?" >> nextEvent session >> loop session nlvl player
   -- perform a level change
   lvlchange vdir =
     case nlmap `at` player of
@@ -120,9 +136,10 @@ loop session (lvl@(Level nm sz lmap)) player =
                 let new = Level nnm nsz (M.update (\ (Stairs d _,r) -> Just (Stairs d next',r)) nloc nlmap)
                 loop session new nloc
                 
-      _                -> -- no stairs
-                                      loop session nlvl player
+      _ -> -- no stairs
+                loop session nlvl player
   -- perform a player move
+  move :: (Y,X) -> IO ()
   move dir
     | open (lmap `at` shift player dir) = loop session nlvl (shift player dir)
     | otherwise = loop session nlvl player

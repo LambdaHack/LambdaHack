@@ -17,15 +17,16 @@ startup k =
     session <- V.mkVty
     k session
 
-display :: Area -> Session -> (Loc -> (Attr, Char)) -> String -> IO ()
-display ((y0,x0),(y1,x1)) vty f status =
+display :: Area -> Session -> (Loc -> (Attr, Char)) -> String -> String -> IO ()
+display ((y0,x0),(y1,x1)) vty f msg status =
     let img = (foldr (<->) V.empty . 
                L.map (foldr (<|>) V.empty . 
                       L.map (\ (x,y) -> let (a,c) = f (y,x) in renderChar a c)))
               [ [ (x,y) | x <- [x0..x1] ] | y <- [y0..y1] ]
     in  V.update vty (Pic NoCursor 
-         (img <-> 
-            (renderBS attr (BS.pack (L.map (fromIntegral . ord) (toWidth (x1-x0+1) status))))))
+         ((renderBS attr (BS.pack (L.map (fromIntegral . ord) (toWidth (x1-x0+1) msg)))) <->
+          img <-> 
+          (renderBS attr (BS.pack (L.map (fromIntegral . ord) (toWidth (x1-x0+1) status))))))
 
 toWidth :: Int -> String -> String
 toWidth n x = take n (x ++ repeat ' ')

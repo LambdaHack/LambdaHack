@@ -63,8 +63,8 @@ startup k =
 
 shutdown _ = mainQuit
 
-display :: Area -> Session -> (Loc -> (Attr, Char)) -> String -> IO ()
-display ((y0,x0),(y1,x1)) session f status =
+display :: Area -> Session -> (Loc -> (Attr, Char)) -> String -> String -> IO ()
+display ((y0,x0),(y1,x1)) session f msg status =
 {-
   let img = unlines $
             L.map (L.map (\ (x,y) -> let (a,c) = f (y,x) in c))
@@ -76,7 +76,7 @@ display ((y0,x0),(y1,x1)) session f status =
     ttt <- textBufferGetTagTable sbuf
     tb <- textBufferNew (Just ttt)
     let text = unlines [ [ snd (f (y,x)) | x <- [x0..x1] ] | y <- [y0..y1] ]
-    textBufferSetText tb (text ++ status)
+    textBufferSetText tb (msg ++ "\n" ++ text ++ status)
     sequence_ [ setTo tb (stagb session) (stagm session) (y,x) c a | y <- [y0..y1], x <- [x0..x1], let loc = (y,x), let (a,c) = f (y,x) ]
     textViewSetBuffer (sview session) tb
 {-

@@ -1,5 +1,5 @@
 default :
-	ghc -O --make LambdaHack.hs
+	ghc -O --make -cpp LambdaHack.hs
 
 %.hs : %.hsc
 	hsc2hs -Icbits/ Curses.hsc
