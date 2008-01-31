@@ -21,25 +21,15 @@ mkRoom bd (ym,xm)((y0,x0),(y1,x1)) =
     (ry1,rx1) <- locInArea ((ry0+ym-1,rx0+xm-1),(y1-bd,x1-bd))
     return ((ry0,rx0),(ry1,rx1))
 
-mkCorridor :: [Y] ->   {- excluded Y positions -}
-              [X] ->   {- excluded X positions -}
-              (Loc,Loc) -> IO [(Y,X)]  {- straight sections of the corridor -}
-mkCorridor xy xx a@((y0,x0),(y1,x1)) =
+mkCorridor :: HV -> (Loc,Loc) -> Area -> IO [(Y,X)] {- straight sections of the corridor -}
+mkCorridor hv ((y0,x0),(y1,x1)) b =
   do
-    (ry,rx) <- findLocInArea a (\ (y,x) -> 
-                                  let py = y `elem` xy
-                                      px = x `elem` xx
-                                      qy = y `elem` [y0,y1]
-                                      qx = x `elem` [x0,x1]
-                                  in (not px || not py) -- && 
-                                     {- (not px || not qx) && (not py || not qy) -})
-    -- (ry,rx) is intermediate point the path crosses
-    hv <- if      ry `elem` xy then return True   -- must be horizontal
-          else if rx `elem` xx then return False  -- must be vertical
-                               else randomRIO (False,True)
+    (ry,rx) <- findLocInArea b (const True)
+      -- (ry,rx) is intermediate point the path crosses
     -- hv decides whether we start in horizontal or vertical direction
-    if hv then return [(y0,x0),(y0,rx),(y1,rx),(y1,x1)] -- horizontal
-          else return [(y0,x0),(ry,x0),(ry,x1),(y1,x1)] -- vertical
+    case hv of
+      Horiz -> return [(y0,x0),(y0,rx),(y1,rx),(y1,x1)]
+      Vert  -> return [(y0,x0),(ry,x0),(ry,x1),(y1,x1)]
 
 -- the condition passed to mkCorridor is tricky; there might not always
 -- exist a suitable intermediate point is the rooms are allowed to be close
@@ -49,8 +39,15 @@ connectRooms sa@((sy0,sx0),(sy1,sx1)) ta@((ty0,tx0),(ty1,tx1)) =
   do
     (sy,sx) <- locInArea sa
     (ty,tx) <- locInArea ta
-    mkCorridor [sy0-1,sy1+1,ty0-1,ty1+1] [sx0-1,sx1+1,tx0-1,tx1+1]
-                                         ((sy,sx),(ty,tx))
+    let xok = sx1 < tx0 - 3
+    let xarea = normalizeArea ((sy,sx1+2),(ty,tx0-2))
+    let yok = sy1 < ty0 - 3
+    let yarea = normalizeArea ((sy1+2,sx),(ty0-2,tx))
+    let xyarea = normalizeArea ((sy1+2,sx1+2),(ty0-2,tx0-2))
+    (hv,area) <- if xok && yok then fmap (\ hv -> (hv,xyarea)) (binaryChoice Horiz Vert)
+                 else if xok   then return (Horiz,xarea)
+                               else return (Vert,yarea)
+    mkCorridor hv ((sy,sx),(ty,tx)) area
 
 digCorridor :: Corridor -> LMap -> LMap
 digCorridor (p1:p2:ps) l =
@@ -77,11 +74,11 @@ data LevelConfig =
 defaultLevelConfig :: LevelConfig
 defaultLevelConfig =
   LevelConfig {
-    levelGrid         = (2,5), -- (3,3)
+    levelGrid         = (3,3), -- (2,5)
     minRoomSize       = (2,2),
     border            = 2,
     levelSize         = (23,79),
-    extraConnects     = 0,     -- 3
+    extraConnects     = 3,     -- 6
     minStairsDistance = 676 
   }
 

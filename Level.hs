@@ -66,7 +66,24 @@ instance Binary Tile where
             6 -> liftM2 Stairs get get
 
 data HV = Horiz | Vert
-  deriving (Eq, Show)
+  deriving (Eq, Show, Bounded)
+
+fromHV Horiz = True
+fromHV Vert  = False
+
+toHV True  = Horiz
+toHV False = Vert
+
+instance Random HV where
+  randomR (a,b) g = case randomR (fromHV a,fromHV b) g of
+                      (b,g') -> (toHV b,g')
+  random g = randomR (minBound, maxBound) g
+
+binaryChoice :: a -> a -> IO a
+binaryChoice p0 p1 =
+  do
+    b <- randomRIO (False,True)
+    return (if b then p0 else p1)
 
 instance Binary HV where
   put Horiz = put True
@@ -181,6 +198,9 @@ randomConnection (ny,nx) =
 normalize :: ((Y,X),(Y,X)) -> ((Y,X),(Y,X))
 normalize (a,b) | a <= b    = (a,b)
                 | otherwise = (b,a)
+
+normalizeArea :: Area -> Area
+normalizeArea a@((y0,x0),(y1,x1)) = ((min y0 y1, min x0 x1), (max y0 y1, max x0 x1))
 
 connectGrid' :: (Y,X) -> Set (Y,X) -> Set (Y,X) -> [((Y,X),(Y,X))] -> IO [((Y,X),(Y,X))]
 connectGrid' (ny,nx) unconnected candidates acc
