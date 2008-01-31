@@ -17,7 +17,11 @@ import Codec.Compression.Zlib as Z
 import Level
 import Dungeon
 import FOV
+#ifdef GTK
 import Display.Gtk
+#else
+import Display.Vty
+#endif
 
 savefile = "HHack2.save"
 

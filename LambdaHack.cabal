@@ -1,0 +1,23 @@
+cabal-version: >= 1.2
+name:          LambdaHack
+version:       0.1
+license:       GPL
+author:        Andres Loeh <mail@andres-loeh.de>
+maintainer:    Andres Loeh <mail@andres-loeh.de>
+description:   a small roguelike game
+
+flag gtk
+  description:   enable gtk support
+  default:       True
+
+executable LambdaHack
+  main-is:       LambdaHack.hs
+  build-depends: base >= 3, containers >= 0.1, binary >= 0.4,
+                 random >= 1, zlib >= 0.4, bytestring >= 0.9,
+                 directory >= 1
+  extensions:    CPP
+  if flag(gtk)
+    build-depends: gtk >= 0.9.12
+    ghc-options:   -DGTK
+  else
+    build-depends: vty >= 3
