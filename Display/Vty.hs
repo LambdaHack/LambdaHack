@@ -17,7 +17,7 @@ startup k =
     session <- V.mkVty
     k session
 
-display :: Area -> Vty -> (Loc -> (Attr, Char)) -> String -> IO ()
+display :: Area -> Session -> (Loc -> (Attr, Char)) -> String -> IO ()
 display ((y0,x0),(y1,x1)) vty f status =
     let img = (foldr (<->) V.empty . 
                L.map (foldr (<|>) V.empty . 
@@ -35,6 +35,8 @@ nextEvent session =
   do
     e <- V.getEvent session
     case e of
-      V.EvKey (KASCII c) [] -> return [c]
-      V.EvKey KEsc []       -> return "Escape"
-      _                     -> nextEvent session
+      V.EvKey (KASCII '<') [] -> return "less"
+      V.EvKey (KASCII '>') [] -> return "greater"
+      V.EvKey (KASCII c) []   -> return [c]
+      V.EvKey KEsc []         -> return "Escape"
+      _                       -> nextEvent session

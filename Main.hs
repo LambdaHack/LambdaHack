@@ -17,7 +17,7 @@ import Codec.Compression.Zlib as Z
 import Level
 import Dungeon
 import FOV
-import Display.Vty
+import Display.Gtk
 
 savefile = "HHack2.save"
 
@@ -90,10 +90,10 @@ loop session (lvl@(Level nm sz lmap)) player =
       "b" -> move (1,-1)
       "n" -> move (1,1)
 
-      "<" -> lvlchange Up
-      ">" -> lvlchange Down
+      "less"    -> lvlchange Up
+      "greater" -> lvlchange Down
 
-      "S" -> shutdown session >> encodeCompressedFile savefile (lvl,player,False)
+      "S" -> encodeCompressedFile savefile (lvl,player,False) >> shutdown session
       "Q" -> shutdown session
       "Escape" -> shutdown session
 
