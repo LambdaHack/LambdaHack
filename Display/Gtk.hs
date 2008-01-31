@@ -6,6 +6,7 @@ import Control.Monad
 import Control.Concurrent
 import Graphics.UI.Gtk hiding (Attr)
 import Data.List as L
+import Data.IORef
 
 import Level
 
@@ -45,6 +46,29 @@ startup k =
     f <- fontDescriptionNew
     fontDescriptionSetFamily f "Monospace"
     widgetModifyFont tv (Just f)
+    currentfont <- newIORef f
+    onButtonPress tv (\ e -> case e of
+                               Button { eventButton = RightButton } ->
+                                 do
+                                   fsd <- fontSelectionDialogNew "Choose font"
+                                   cf <- readIORef currentfont
+                                   fd <- fontDescriptionToString cf
+                                   fontSelectionDialogSetFontName fsd fd
+                                   fontSelectionDialogSetPreviewText fsd "+##@##-...|"
+                                   response <- dialogRun fsd
+                                   when (response == ResponseOk) $
+                                     do
+                                       fn <- fontSelectionDialogGetFontName fsd
+                                       case fn of
+                                         Just fn' -> do
+                                                       fd <- fontDescriptionFromString fn'
+                                                       writeIORef currentfont fd
+                                                       widgetModifyFont tv (Just fd)
+                                         Nothing  -> return ()
+                                   widgetDestroy fsd
+                                   return True
+                               _ -> return False)
+
     let black = Color minBound minBound minBound
     let white = Color maxBound maxBound maxBound
     widgetModifyBase tv StateNormal black
@@ -96,7 +120,7 @@ setTo tb ttb ttm (ly,lx) x bg =
       Nothing -> return ()
       Just x  ->
         do
-          ib <- textBufferGetIterAtLineOffset tb ly lx
+          ib <- textBufferGetIterAtLineOffset tb (ly+1) lx
           ie <- textIterCopy ib
           textIterForwardChar ie
           textBufferApplyTag tb (if x then ttb else ttm) ib ie
