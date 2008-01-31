@@ -1,6 +1,6 @@
 module Display.Gtk
-  (startup, shutdown,
-   display, nextEvent, setBG, setFG, Session, blue, magenta, attr) where
+  (Display.Gtk.Color, Attr, startup, shutdown,
+   display, nextEvent, setBG, setFG, Session, blue, magenta, red, green, attr) where
 
 import Control.Monad
 import Control.Concurrent
@@ -10,19 +10,20 @@ import Data.IORef
 import Data.Map as M
 
 import Level
-import Color as C
 
 data Session =
   Session {
     schan :: Chan String,
-    stags :: Map C.Color TextTag,
+    stags :: Map AttrKey TextTag,
     sview :: TextView }
 
-color :: C.Color -> String
-color Blue    = "#0000CC"
-color Magenta = "#CC00CC"
-color Green   = "#00CC00"
-color Red     = "#CC0000"
+doAttr :: TextTag -> AttrKey -> IO ()
+doAttr tt (BG Blue)    = set tt [ textTagBackground := "#0000CC" ]
+doAttr tt (BG Magenta) = set tt [ textTagBackground := "#CC00CC" ]
+doAttr tt (BG Green)   = set tt [ textTagBackground := "#00CC00" ]
+doAttr tt (BG Red)     = set tt [ textTagBackground := "#CC0000" ]
+doAttr tt (FG Red)     = set tt [ textTagForeground := "#FF0000" ]
+doAttr tt _            = return ()
 
 startup :: (Session -> IO ()) -> IO ()
 startup k =
@@ -36,9 +37,9 @@ startup k =
            mapM (\ c -> do
                           tt <- textTagNew Nothing
                           textTagTableAdd ttt tt
-                          set tt [ textTagBackground := color c ]
+                          doAttr tt c
                           return (c,tt))
-                [minBound .. maxBound]
+                [ x | c <- [minBound .. maxBound], x <- [FG c, BG c]]
 
     -- text buffer
     tb <- textBufferNew (Just ttt)
@@ -107,7 +108,7 @@ display ((y0,x0),(y1,x1)) session f msg status =
                 y <- [y0..y1], x <- [x0..x1], let loc = (y,x), let (a,c) = f (y,x) ]
     textViewSetBuffer (sview session) tb
 
-setTo :: TextBuffer -> Map C.Color TextTag -> Loc -> Attr -> IO ()
+setTo :: TextBuffer -> Map AttrKey TextTag -> Loc -> Attr -> IO ()
 setTo tb tts (ly,lx) a =
   do
     ib <- textBufferGetIterAtLineOffset tb (ly+1) lx
@@ -118,10 +119,26 @@ setTo tb tts (ly,lx) a =
 nextEvent :: Session -> IO String
 nextEvent session = readChan (schan session)
 
-setBG   = id
-setFG   = id
-blue    = (Blue :)
-magenta = (Magenta :)
+setBG c = (BG c :)
+setFG c = (FG c :)
+blue    = Blue
+magenta = Magenta
+red     = Red
+green   = Green
 attr    = []
 
-type Attr = [C.Color]
+type Attr = [AttrKey]
+
+data AttrKey =
+    FG AttrColor
+  | BG AttrColor
+  deriving (Eq, Ord)
+
+type Color = AttrColor
+
+data AttrColor =
+    Blue
+  | Magenta
+  | Red
+  | Green
+  deriving (Eq, Ord, Enum, Bounded)
