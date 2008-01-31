@@ -22,10 +22,7 @@ import Display.Vty
 savefile = "HHack2.save"
 
 main :: IO ()
-main =
-  do
-    session <- startup
-    start session
+main = startup start
 
 -- should at the moment match the level size
 screenX = levelX

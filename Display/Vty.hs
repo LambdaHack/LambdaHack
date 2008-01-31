@@ -11,8 +11,11 @@ import Level
 
 type Session = V.Vty
 
-startup :: IO Session
-startup = V.mkVty
+startup :: (Session -> IO ()) -> IO ()
+startup k =
+  do
+    session <- V.mkVty
+    k session
 
 display :: Area -> Vty -> (Loc -> (Attr, Char)) -> String -> IO ()
 display ((y0,x0),(y1,x1)) vty f status =
