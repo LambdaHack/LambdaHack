@@ -14,7 +14,7 @@ data Session =
     schan :: Chan String,
     stagb :: TextTag,
     stagm :: TextTag,
-    sbuf  :: TextBuffer }
+    sview :: TextView }
 
 startup :: (Session -> IO ()) -> IO ()
 startup k =
@@ -51,7 +51,7 @@ startup k =
     widgetModifyText tv StateNormal white
 
     ec <- newChan 
-    forkIO $ k (Session ec ttb ttm tb)
+    forkIO $ k (Session ec ttb ttm tv)
     
     onKeyPress tv (\ e -> writeChan ec (eventKeyName e) >> yield >> return True)
 
@@ -72,31 +72,33 @@ display ((y0,x0),(y1,x1)) session f status =
   in  textBufferSetText (sbuf session) (img ++ status)
 -}
   do
-    ttt <- textBufferGetTagTable (sbuf session)
+    sbuf <- textViewGetBuffer (sview session)
+    ttt <- textBufferGetTagTable sbuf
     tb <- textBufferNew (Just ttt)
+    let text = unlines [ [ snd (f (y,x)) | x <- [x0..x1] ] | y <- [y0..y1] ]
+    textBufferSetText tb (text ++ status)
     sequence_ [ setTo tb (stagb session) (stagm session) (y,x) c a | y <- [y0..y1], x <- [x0..x1], let loc = (y,x), let (a,c) = f (y,x) ]
-    textBufferSetText (sbuf session) ""
+    textViewSetBuffer (sview session) tb
+{-
+    textBufferSetText sbuf ""
     iter <- textBufferGetEndIter tb
     textBufferInsert tb iter ("\n" ++ status)
-    iter <- textBufferGetEndIter (sbuf session)
+    iter <- textBufferGetEndIter sbuf
     is <- textBufferGetStartIter tb
     ie <- textBufferGetEndIter tb
-    textBufferInsertRange (sbuf session) iter is ie
+    textBufferInsertRange sbuf iter is ie
+-}
 
 setTo :: TextBuffer -> TextTag -> TextTag -> Loc -> Char -> (Maybe Bool) -> IO ()
 setTo tb ttb ttm (ly,lx) x bg =
   do
-    iter <- textBufferGetEndIter tb
-    when (lx == 0 && ly /= 0) $ textBufferInsert tb iter "\n"
-    iter <- textBufferGetEndIter tb
-    textBufferInsert tb iter [x]
     case bg of
       Nothing -> return ()
       Just x  ->
         do
-          ie <- textBufferGetEndIter tb
-          ib <- textIterCopy ie
-          textIterBackwardChar ib
+          ib <- textBufferGetIterAtLineOffset tb ly lx
+          ie <- textIterCopy ib
+          textIterForwardChar ie
           textBufferApplyTag tb (if x then ttb else ttm) ib ie
 
 nextEvent :: Session -> IO String
