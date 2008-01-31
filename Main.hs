@@ -28,6 +28,18 @@ main = startup start
 screenX = levelX
 screenY = levelY
 
+display :: Area -> Vty -> (Loc -> (Attr, Char)) -> String -> IO ()
+display ((y0,x0),(y1,x1)) vty f status =
+    let img = (foldr (<->) V.empty . 
+               L.map (foldr (<|>) V.empty . 
+                      L.map (\ (x,y) -> let (a,c) = f (y,x) in renderChar a c)))
+              [ [ (x,y) | x <- [x0..x1] ] | y <- [y0..y1] ]
+    in  V.update vty (Pic NoCursor 
+         (img <-> 
+            (renderBS attr (BS.pack (L.map (fromIntegral . ord) (toWidth (x1-x0+1) status))))))
+
+toWidth :: Int -> String -> String
+toWidth n x = take n (x ++ repeat ' ')
 
 strictReadCompressedFile :: FilePath -> IO LBS.ByteString
 strictReadCompressedFile f =
@@ -59,7 +71,7 @@ start session =
 generate session =
   do
     -- generate dungeon with 10 levels
-    levels <- mapM (\n -> level $ "The Lambda Cave " ++ show n) [1..10]
+    levels <- mapM (\n -> level defaultLevelConfig $ "The Lambda Cave " ++ show n) [1..10]
     let player = (\ (_,x,_) -> x) (head levels)
     let connect [(x,_,_)] = [x Nothing Nothing]
         connect ((x,_,_):ys@((_,u,_):_)) =

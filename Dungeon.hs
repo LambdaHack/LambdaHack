@@ -26,7 +26,13 @@ mkCorridor :: [Y] ->   {- excluded Y positions -}
               (Loc,Loc) -> IO [(Y,X)]  {- straight sections of the corridor -}
 mkCorridor xy xx a@((y0,x0),(y1,x1)) =
   do
-    (ry,rx) <- findLocInArea a (\ (y,x) -> not (y `elem` xy) || not (x `elem` xx))
+    (ry,rx) <- findLocInArea a (\ (y,x) -> 
+                                  let py = y `elem` xy
+                                      px = x `elem` xx
+                                      qy = y `elem` [y0,y1]
+                                      qx = x `elem` [x0,x1]
+                                  in (not px || not py) -- && 
+                                     {- (not px || not qx) && (not py || not qy) -})
     -- (ry,rx) is intermediate point the path crosses
     hv <- if      ry `elem` xy then return True   -- must be horizontal
           else if rx `elem` xx then return False  -- must be vertical
@@ -58,45 +64,53 @@ digCorridor (p1:p2:ps) l =
 digCorridor _ l = l
   
 
-{-
-gridX = 6
-gridY = 6
-levelX = 200
-levelY = 70
--}
-gridX = 3
-gridY = 3
-minX = 2
-minY = 2
-levelX = 79
-levelY = 23
-extraC = 3
-border = 2
--- TODO next: generate rooms for each grid point, connect the grid, compute
--- corridors between the rooms as given by the grid connection
-level :: String -> IO (Maybe (Level, Loc) -> Maybe (Level, Loc) -> Level, Loc, Loc)
-level nm =
+data LevelConfig =
+  LevelConfig {
+    levelGrid         :: (Y,X),
+    minRoomSize       :: (Y,X),
+    border            :: Int,      -- must be at least 2!
+    levelSize         :: (Y,X),    -- lower right point
+    extraConnects     :: Int,
+    minStairsDistance :: Int       -- must not be too large
+  }
+    
+defaultLevelConfig :: LevelConfig
+defaultLevelConfig =
+  LevelConfig {
+    levelGrid         = (2,5), -- (3,3)
+    minRoomSize       = (2,2),
+    border            = 2,
+    levelSize         = (23,79),
+    extraConnects     = 0,     -- 3
+    minStairsDistance = 676 
+  }
+
+level :: LevelConfig ->
+         String -> IO (Maybe (Level, Loc) -> Maybe (Level, Loc) -> Level, Loc, Loc)
+level cfg nm =
   do
-    let gs = M.toList (grid (gridY,gridX) ((0,0),(levelY,levelX)))
-    rs0 <- mapM (\ (i,r) -> mkRoom border (minY,minX) r >>= \ r' -> return (i,r')) gs
+    let gs = M.toList (grid (levelGrid cfg) ((0,0),levelSize cfg))
+    rs0 <- mapM (\ (i,r) -> do
+                              r' <- mkRoom (border cfg) (minRoomSize cfg) r
+                              return (i,r')) gs
     let rooms = L.map snd rs0
     let rs = M.fromList rs0
-    connects <- connectGrid (gridY,gridX)
-    extraConnects <- replicateM 3 (randomConnection (gridY,gridX))
-    let allConnects = L.union extraConnects connects
+    connects <- connectGrid (levelGrid cfg)
+    addedConnects <- replicateM (extraConnects cfg) (randomConnection (levelGrid cfg))
+    let allConnects = L.union addedConnects connects
     cs <- mapM
            (\ (p0,p1) -> do
                            let r0 = rs ! p0
                                r1 = rs ! p1
                            connectRooms r0 r1) allConnects
-    let lmap = foldr digCorridor (foldr digRoom (emptyLMap (levelY,levelX)) rooms) cs
-    let lvl = Level nm (levelY,levelX) lmap
+    let lmap = foldr digCorridor (foldr digRoom (emptyLMap (levelSize cfg)) rooms) cs
+    let lvl = Level nm (levelSize cfg) lmap
     su <- findLoc lvl (const (==Floor))
-    sd <- findLoc lvl (\ l t -> t == Floor && distance (su,l) > (levelX `div` gridX)^2)
+    sd <- findLoc lvl (\ l t -> t == Floor && distance (su,l) > minStairsDistance cfg)
     return $ (\ lu ld ->
       let lmap' = M.insert su (Stairs Up lu, Unknown) $
                   M.insert sd (Stairs Down ld, Unknown) $ lmap
-      in  Level nm (levelY,levelX) lmap', su, sd)
+      in  Level nm (levelSize cfg) lmap', su, sd)
 
 emptyLMap :: (Y,X) -> LMap
 emptyLMap (my,mx) = M.fromList [ ((y,x),(Rock,Unknown)) | x <- [0..mx], y <- [0..my] ]
