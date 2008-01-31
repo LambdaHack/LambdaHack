@@ -72,20 +72,22 @@ loop :: Session -> Level -> Loc -> IO ()
 loop session (lvl@(Level nm sz lmap)) player =
   do
     displayCurrent "" 
-    e <- nextEvent session
-    handleDirection e move $ 
-      case e of
-        "o" -> opendoor
-        "c" -> closedoor
+    let h = do
+              e <- nextEvent session
+              handleDirection e move $ 
+                case e of
+                  "o" -> openclose True h
+                  "c" -> openclose False h
 
-        "less"    -> lvlchange Up
-        "greater" -> lvlchange Down
+                  "less"    -> lvlchange Up
+                  "greater" -> lvlchange Down
 
-        "S"       -> encodeCompressedFile savefile (lvl,player,False) >> shutdown session
-        "Q"       -> shutdown session
-        "Escape"  -> shutdown session
+                  "S"       -> encodeCompressedFile savefile (lvl,player,False) >> shutdown session
+                  "Q"       -> shutdown session
+                  "Escape"  -> shutdown session
 
-        _   -> loop session nlvl player
+                  _   -> displayCurrent "unknown command" >> h
+    h
 
  where
   displayCurrent msg =
@@ -100,6 +102,7 @@ loop session (lvl@(Level nm sz lmap)) player =
             msg
             nm
 
+  handleDirection :: String -> ((Y,X) -> IO ()) -> IO () -> IO ()
   handleDirection e h k =
     case e of
       "k" -> h (-1,0)
@@ -119,8 +122,13 @@ loop session (lvl@(Level nm sz lmap)) player =
   nlmap = foldr (\ x m -> M.update (\ (t,_) -> Just (t,flat t)) x m) lmap (S.toList visible)
   nlvl = Level nm sz nlmap
   -- open and close doors
-  opendoor  = displayCurrent "direction?" >> nextEvent session >> loop session nlvl player
-  closedoor = displayCurrent "direction?" >> nextEvent session >> loop session nlvl player
+  openclose o abort =
+    do
+      displayCurrent "direction?"
+      e <- nextEvent session
+      handleDirection e (const $ openclose' o abort) (displayCurrent "never mind" >> abort)
+  openclose' o abort =
+    abort
   -- perform a level change
   lvlchange vdir =
     case nlmap `at` player of
