@@ -7,15 +7,22 @@ import Control.Concurrent
 import Graphics.UI.Gtk hiding (Attr)
 import Data.List as L
 import Data.IORef
+import Data.Map as M
 
 import Level
+import Color as C
 
 data Session =
   Session {
     schan :: Chan String,
-    stagb :: TextTag,
-    stagm :: TextTag,
+    stags :: Map C.Color TextTag,
     sview :: TextView }
+
+color :: C.Color -> String
+color Blue    = "#0000CC"
+color Magenta = "#CC00CC"
+color Green   = "#00CC00"
+color Red     = "#CC0000"
 
 startup :: (Session -> IO ()) -> IO ()
 startup k =
@@ -23,14 +30,15 @@ startup k =
     initGUI
     w <- windowNew
 
-    -- text attributes
-    ttb <- textTagNew Nothing
-    ttm <- textTagNew Nothing
     ttt <- textTagTableNew
-    textTagTableAdd ttt ttb
-    textTagTableAdd ttt ttm
-    set ttb [ textTagBackground := "#0000CC" ]
-    set ttm [ textTagBackground := "#CC00CC" ]
+    -- text attributes
+    tts <- fmap M.fromList $
+           mapM (\ c -> do
+                          tt <- textTagNew Nothing
+                          textTagTableAdd ttt tt
+                          set tt [ textTagBackground := color c ]
+                          return (c,tt))
+                [minBound .. maxBound]
 
     -- text buffer
     tb <- textBufferNew (Just ttt)
@@ -75,7 +83,7 @@ startup k =
     widgetModifyText tv StateNormal white
 
     ec <- newChan 
-    forkIO $ k (Session ec ttb ttm tv)
+    forkIO $ k (Session ec tts tv)
     
     onKeyPress tv (\ e -> writeChan ec (eventKeyName e) >> yield >> return True)
 
@@ -89,49 +97,31 @@ shutdown _ = mainQuit
 
 display :: Area -> Session -> (Loc -> (Attr, Char)) -> String -> String -> IO ()
 display ((y0,x0),(y1,x1)) session f msg status =
-{-
-  let img = unlines $
-            L.map (L.map (\ (x,y) -> let (a,c) = f (y,x) in c))
-            [ [ (x,y) | x <- [x0..x1] ] | y <- [y0..y1] ]
-  in  textBufferSetText (sbuf session) (img ++ status)
--}
   do
     sbuf <- textViewGetBuffer (sview session)
     ttt <- textBufferGetTagTable sbuf
     tb <- textBufferNew (Just ttt)
     let text = unlines [ [ snd (f (y,x)) | x <- [x0..x1] ] | y <- [y0..y1] ]
     textBufferSetText tb (msg ++ "\n" ++ text ++ status)
-    sequence_ [ setTo tb (stagb session) (stagm session) (y,x) c a | y <- [y0..y1], x <- [x0..x1], let loc = (y,x), let (a,c) = f (y,x) ]
+    sequence_ [ setTo tb (stags session) (y,x) a | 
+                y <- [y0..y1], x <- [x0..x1], let loc = (y,x), let (a,c) = f (y,x) ]
     textViewSetBuffer (sview session) tb
-{-
-    textBufferSetText sbuf ""
-    iter <- textBufferGetEndIter tb
-    textBufferInsert tb iter ("\n" ++ status)
-    iter <- textBufferGetEndIter sbuf
-    is <- textBufferGetStartIter tb
-    ie <- textBufferGetEndIter tb
-    textBufferInsertRange sbuf iter is ie
--}
 
-setTo :: TextBuffer -> TextTag -> TextTag -> Loc -> Char -> (Maybe Bool) -> IO ()
-setTo tb ttb ttm (ly,lx) x bg =
+setTo :: TextBuffer -> Map C.Color TextTag -> Loc -> Attr -> IO ()
+setTo tb tts (ly,lx) a =
   do
-    case bg of
-      Nothing -> return ()
-      Just x  ->
-        do
-          ib <- textBufferGetIterAtLineOffset tb (ly+1) lx
-          ie <- textIterCopy ib
-          textIterForwardChar ie
-          textBufferApplyTag tb (if x then ttb else ttm) ib ie
+    ib <- textBufferGetIterAtLineOffset tb (ly+1) lx
+    ie <- textIterCopy ib
+    textIterForwardChar ie
+    mapM_ (\ c -> textBufferApplyTag tb (tts ! c) ib ie) a
 
 nextEvent :: Session -> IO String
 nextEvent session = readChan (schan session)
 
 setBG   = id
 setFG   = id
-blue    = const (Just True)
-magenta = const (Just False) 
-attr    = Nothing 
+blue    = (Blue :)
+magenta = (Magenta :)
+attr    = []
 
-type Attr = Maybe Bool
+type Attr = [C.Color]
