@@ -117,16 +117,13 @@ level cfg nm =
                           else return o
                     _ -> return o) .
                 M.toList $ lmap
-    -- add a monster
-    sm <- findLoc lvl (const (==Floor))
-    let m = Monster Eye 3 sm
     -- locations of the stairs
     su <- findLoc lvl (const (==Floor))
     sd <- findLoc lvl (\ l t -> t == Floor && distance (su,l) > minStairsDistance cfg)
     return $ (\ lu ld ->
       let flmap = M.insert su (Stairs Up lu, Unknown) $
                   M.insert sd (Stairs Down ld, Unknown) $ dlmap
-      in  Level nm (levelSize cfg) [m] flmap, su, sd)
+      in  Level nm (levelSize cfg) [] flmap, su, sd)
 
 emptyLMap :: (Y,X) -> LMap
 emptyLMap (my,mx) = M.fromList [ ((y,x),(Rock,Unknown)) | x <- [0..mx], y <- [0..my] ]

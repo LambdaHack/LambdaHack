@@ -76,13 +76,16 @@ type Time = Int
 loop :: Session -> Level -> Monster -> Time -> String -> IO ()
 loop session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) time oldmsg =
   do
+    -- player HP regeneration, TODO: remove hardcoded max
+    let nphp = if time `mod` 150 == 0 then (php + 1) `min` 10 else php
     -- generate new monsters
-    rc <- randomRIO (1,20)
+    rc <- randomRIO (1,if L.null ms then 5 else 70)
     gms <- if rc == (1 :: Int)
            then do
                   -- TODO: new monsters shouldn't be visible by the player
                   sm <- findLoc lvl (\ l t -> t == Floor && 
-                                              not (l `L.elem` L.map mloc (player : ms)))
+                                              not (l `L.elem` L.map mloc (player : ms)) &&
+                                              distance (ploc, l) > 400)
                   rh <- fmap (+2) (randomRIO (1,3))
                   let m = Monster Eye rh sm
                   return (m : ms)
@@ -109,8 +112,8 @@ loop session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) time oldmsg
                              (lvl { lmonsters = cplayer : (ams ++ oms) })
                              (monsterMoves (m : ams) cplayer cmsg oms) -- abort 
                              m (ry,rx)
-    (fms, fplayer, fmsg) <- monsterMoves [] player oldmsg gms
-    handle session (lvl { lmonsters = fms }) fplayer time fmsg
+    (fms, fplayer, fmsg) <- monsterMoves [] (player { mhp = nphp }) oldmsg gms
+    handle session (lvl { lmonsters = fms }) fplayer (time + 1) fmsg
 
 addMsg [] x  = x
 addMsg xs [] = xs
@@ -152,13 +155,12 @@ handle session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) time oldm
                            "Alt_L"   -> h
                            "Alt_R"   -> h
 
-                           "period"  -> loop session nlvl player ntime ""
+                           "period"  -> loop session nlvl player time ""
 
                            s   -> displayCurrent ("unknown command (" ++ s ++ ")") >> h
              h
 
  where
-  ntime = time + 1
 
   displayCurrent msg =
     display ((0,0),sz) session 
@@ -208,7 +210,7 @@ handle session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) time oldm
       Door hv o' | o == not o' -> -- ok, we can open/close the door      
                                   let nt = Door hv o
                                       clmap = M.insert (shift ploc dir) (nt, flat nt) nlmap
-                                  in loop session (updateLMap lvl (const clmap)) player ntime ""
+                                  in loop session (updateLMap lvl (const clmap)) player time ""
                  | otherwise   -> displayCurrent ("already " ++ txt) >> abort
       _ -> displayCurrent "never mind" >> abort
   -- perform a level change
@@ -224,13 +226,13 @@ handle session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) time oldm
               do
                 let next' = Just (updateLMap lvl (const $ M.update (\ (_,r) -> Just (Stairs vdir Nothing,r)) ploc nlmap), ploc)
                 let new = updateLMap nlvl (M.update (\ (Stairs d _,r) -> Just (Stairs d next',r)) nloc)
-                loop session new (player { mloc = nloc }) ntime ""
+                loop session new (player { mloc = nloc }) time ""
                 
       _ -> -- no stairs
            let txt = if vdir == Up then "up" else "down" in
            displayCurrent ("no stairs " ++ txt) >> abort
   -- perform a player move
-  move abort dir = moveOrAttack (\ l m -> loop session l m ntime) nlvl abort player dir
+  move abort dir = moveOrAttack (\ l m -> loop session l m time) nlvl abort player dir
 
 moveOrAttack :: (Level -> Monster -> String -> IO a) ->     -- success continuation
                 Level ->
