@@ -52,11 +52,11 @@ start session =
                              r <- strictDecodeCompressedFile savefile
                              removeFile savefile
                              case r of
-                               (x,y,z) -> (z :: Bool) `seq` return $ Just (x,y))
+                               (x,y,t,z) -> (z :: Bool) `seq` return $ Just (x,y,t))
                           (const $ return Nothing)
       case restored of
-        Nothing           -> generate session
-        Just (lvl,player) -> handle session lvl player "Restored successfully."
+        Nothing                -> generate session
+        Just (lvl,player,time) -> handle session lvl player time "Restored successfully."
 
 generate session =
   do
@@ -68,11 +68,13 @@ generate session =
                             let (z:zs) = connect ys
                             in  x Nothing (Just (z,u)) : z : zs
     let lvl = head (connect levels)
-    handle session lvl player ""
+    handle session lvl player 0 ""
+
+type Time = Int
 
 -- perform a complete move (i.e., monster moves etc.)
-loop :: Session -> Level -> Monster -> String -> IO ()
-loop session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) oldmsg =
+loop :: Session -> Level -> Monster -> Time -> String -> IO ()
+loop session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) time oldmsg =
   do
     -- generate new monsters
     rc <- randomRIO (1,20)
@@ -108,15 +110,15 @@ loop session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) oldmsg =
                              m (ry,rx))
                  ([], player, oldmsg)
                  gms
-    handle session (lvl { lmonsters = fms }) fplayer fmsg
+    handle session (lvl { lmonsters = fms }) fplayer time fmsg
 
 addMsg [] x  = x
 addMsg xs [] = xs
 addMsg xs x  = xs ++ " " ++ x
 
 -- display and handle the player
-handle :: Session -> Level -> Monster -> String -> IO ()
-handle session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) oldmsg =
+handle :: Session -> Level -> Monster -> Time -> String -> IO ()
+handle session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) time oldmsg =
   do
     -- check for player death
     if php <= 0
@@ -134,7 +136,8 @@ handle session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) oldmsg =
                   "less"    -> lvlchange Up h
                   "greater" -> lvlchange Down h
 
-                  "S"       -> encodeCompressedFile savefile (lvl,player,False) >> shutdown session
+                  "S"       -> encodeCompressedFile savefile (lvl,player,time,False) >>
+                               shutdown session
                   "Q"       -> shutdown session
                   "Escape"  -> shutdown session
 
@@ -148,12 +151,14 @@ handle session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) oldmsg =
                   "Alt_L"   -> h
                   "Alt_R"   -> h
 
-                  "."       -> loop session nlvl player ""
+                  "."       -> loop session nlvl player ntime ""
 
                   s   -> displayCurrent ("unknown command (" ++ s ++ ")") >> h
     h
 
  where
+  ntime = time + 1
+
   displayCurrent msg =
     display ((0,0),sz) session 
              (\ loc -> let tile = nlmap `rememberAt` loc
@@ -168,7 +173,8 @@ handle session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) oldmsg =
                                        else -} id) . ra $
                           attr, rv))
             msg
-            (take 40 (nm ++ repeat ' ') ++ "HP: " ++ show php)
+            (take 40 (nm ++ repeat ' ') ++ take 10 ("HP: " ++ show php ++ repeat ' ') ++
+             take 10 ("T: " ++ show time ++ repeat ' '))
 
   handleDirection :: String -> ((Y,X) -> IO ()) -> IO () -> IO ()
   handleDirection e h k =
@@ -201,7 +207,7 @@ handle session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) oldmsg =
       Door hv o' | o == not o' -> -- ok, we can open/close the door      
                                   let nt = Door hv o
                                       clmap = M.insert (shift ploc dir) (nt, flat nt) nlmap
-                                  in loop session (updateLMap lvl (const clmap)) player ""
+                                  in loop session (updateLMap lvl (const clmap)) player ntime ""
                  | otherwise   -> displayCurrent ("already " ++ txt) >> abort
       _ -> displayCurrent "never mind" >> abort
   -- perform a level change
@@ -217,13 +223,13 @@ handle session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) oldmsg =
               do
                 let next' = Just (updateLMap lvl (const $ M.update (\ (_,r) -> Just (Stairs vdir Nothing,r)) ploc nlmap), ploc)
                 let new = updateLMap nlvl (M.update (\ (Stairs d _,r) -> Just (Stairs d next',r)) nloc)
-                loop session new (player { mloc = nloc }) ""
+                loop session new (player { mloc = nloc }) ntime ""
                 
       _ -> -- no stairs
            let txt = if vdir == Up then "up" else "down" in
            displayCurrent ("no stairs " ++ txt) >> abort
   -- perform a player move
-  move abort dir = moveOrAttack (loop session) nlvl abort player dir
+  move abort dir = moveOrAttack (\ l m -> loop session l m ntime) nlvl abort player dir
 
 moveOrAttack :: (Level -> Monster -> String -> IO a) ->     -- success continuation
                 Level ->
