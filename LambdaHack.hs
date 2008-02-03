@@ -88,8 +88,8 @@ loop session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) time oldmsg
                   return (m : ms)
            else return ms
     -- perform monster moves
-    (fms, fplayer, fmsg)
-        <- foldM (\ (cms, cplayer, cmsg) m ->
+    let monsterMoves ams cplayer cmsg []      = return (ams, cplayer, cmsg)
+        monsterMoves ams cplayer cmsg (m:oms) =
                          do
                            ry <- randomRIO (-1,1)
                            rx <- randomRIO (-1,1)
@@ -100,16 +100,16 @@ loop session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) time oldmsg
                                do
                                  let (p,r) = L.partition (\ m -> mtype m == Player) nms
                                  let h = case p of
-                                           Monster { mhp = h } : _ -> h
+                                           [ Monster { mhp = h } ] -> h
                                            _ -> 0  -- player killed
                                  -- TODO: we forget monster damage
-                                 return (nm : cms, cplayer { mhp = h }, addMsg cmsg msg)
+                                 monsterMoves (nm : ams) (cplayer { mhp = h })
+                                              (addMsg cmsg msg) oms
                              ) -- success
-                             (lvl { lmonsters = player : lmonsters lvl })
-                             (return (m : cms, cplayer, cmsg)) -- abort 
-                             m (ry,rx))
-                 ([], player, oldmsg)
-                 gms
+                             (lvl { lmonsters = cplayer : (ams ++ oms) })
+                             (monsterMoves (m : ams) cplayer cmsg oms) -- abort 
+                             m (ry,rx)
+    (fms, fplayer, fmsg) <- monsterMoves [] player oldmsg gms
     handle session (lvl { lmonsters = fms }) fplayer time fmsg
 
 addMsg [] x  = x
@@ -125,36 +125,37 @@ handle session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) time oldm
       then do
              displayCurrent (addMsg oldmsg "You die ...")
              shutdown session
-      else displayCurrent oldmsg
-    let h = do
-              e <- nextEvent session
-              handleDirection e (move h) $ 
-                case e of
-                  "o" -> openclose True h
-                  "c" -> openclose False h
+      else do
+             displayCurrent oldmsg
+             let h = do
+                       e <- nextEvent session
+                       handleDirection e (move h) $ 
+                         case e of
+                           "o" -> openclose True h
+                           "c" -> openclose False h
 
-                  "less"    -> lvlchange Up h
-                  "greater" -> lvlchange Down h
+                           "less"    -> lvlchange Up h
+                           "greater" -> lvlchange Down h
 
-                  "S"       -> encodeCompressedFile savefile (lvl,player,time,False) >>
-                               shutdown session
-                  "Q"       -> shutdown session
-                  "Escape"  -> shutdown session
+                           "S"       -> encodeCompressedFile savefile (lvl,player,time,False) >>
+                                        shutdown session
+                           "Q"       -> shutdown session
+                           "Escape"  -> shutdown session
 
-                  "Shift_R" -> h
-                  "Shift_L" -> h
-                  "Control_L" -> h
-                  "Control_R" -> h
-                  "Super_L" -> h
-                  "Super_R" -> h
-                  "Menu"    -> h
-                  "Alt_L"   -> h
-                  "Alt_R"   -> h
+                           "Shift_R" -> h
+                           "Shift_L" -> h
+                           "Control_L" -> h
+                           "Control_R" -> h
+                           "Super_L" -> h
+                           "Super_R" -> h
+                           "Menu"    -> h
+                           "Alt_L"   -> h
+                           "Alt_R"   -> h
 
-                  "."       -> loop session nlvl player ntime ""
+                           "period"  -> loop session nlvl player ntime ""
 
-                  s   -> displayCurrent ("unknown command (" ++ s ++ ")") >> h
-    h
+                           s   -> displayCurrent ("unknown command (" ++ s ++ ")") >> h
+             h
 
  where
   ntime = time + 1
