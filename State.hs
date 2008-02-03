@@ -17,15 +17,22 @@ data State = State
 
 defaultState ploc =
   State
-    (Monster Player 10 Nothing ploc)
+    (Monster Player maxHP Nothing ploc)
     Implicit Normal
     0
+
+smellTimeout :: Time
+smellTimeout = 100 -- TODO: make configurable
+maxHP = 20
 
 updatePlayer :: State -> (Monster -> Monster) -> State
 updatePlayer s f = s { splayer = f (splayer s) }
 
 toggleVision :: State -> State
 toggleVision s = s { ssensory = if ssensory s == Vision then Implicit else Vision }
+
+toggleSmell :: State -> State
+toggleSmell s = s { ssensory = if ssensory s == Smell then Implicit else Smell }
 
 toggleOmniscient :: State -> State
 toggleOmniscient s = s { sdisplay = if sdisplay s == Omniscient then Normal else Omniscient }

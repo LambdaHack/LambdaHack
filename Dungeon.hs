@@ -6,6 +6,7 @@ import Control.Monad
 import Data.Map as M
 import Data.List as L
 
+import State
 import Geometry
 import Level
 import Monster
@@ -81,7 +82,7 @@ defaultLevelConfig =
     border            = 2,
     levelSize         = (23,79),
     extraConnects     = 3,     -- 6
-    minStairsDistance = 676 
+    minStairsDistance = 676
   }
 
 level :: LevelConfig ->
@@ -102,8 +103,10 @@ level cfg nm =
                            let r0 = rs ! p0
                                r1 = rs ! p1
                            connectRooms r0 r1) allConnects
+    let smap = M.fromList [ ((y,x),-100) | let (sy,sx) = levelSize cfg,
+                                           y <- [0..sy], x <- [0..sx] ]
     let lmap = foldr digCorridor (foldr digRoom (emptyLMap (levelSize cfg)) rooms) cs
-    let lvl = Level nm (levelSize cfg) [] lmap
+    let lvl = Level nm (levelSize cfg) [] smap lmap
     -- convert openings into doors
     dlmap <- fmap M.fromList . mapM
                 (\ o@((y,x),(t,r)) -> 
@@ -123,7 +126,7 @@ level cfg nm =
     return $ (\ lu ld ->
       let flmap = M.insert su (Stairs Up lu, Unknown) $
                   M.insert sd (Stairs Down ld, Unknown) $ dlmap
-      in  Level nm (levelSize cfg) [] flmap, su, sd)
+      in  Level nm (levelSize cfg) [] smap flmap, su, sd)
 
 emptyLMap :: (Y,X) -> LMap
 emptyLMap (my,mx) = M.fromList [ ((y,x),(Rock,Unknown)) | x <- [0..mx], y <- [0..my] ]

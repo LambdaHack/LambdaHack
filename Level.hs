@@ -10,11 +10,13 @@ import Data.List as L
 
 import Geometry
 import Monster
+import State
 
 data Level = Level
               { lname     :: String,
                 lsize     :: (Y,X),
                 lmonsters :: [Monster],
+                lsmell    :: SMap,
                 lmap      :: LMap }
   deriving Show
 
@@ -22,21 +24,25 @@ updateLMap :: Level -> (LMap -> LMap) -> Level
 updateLMap lvl f = lvl { lmap = f (lmap lvl) }
 
 instance Binary Level where
-  put (Level nm sz@(sy,sx) ms lmap) = 
+  put (Level nm sz@(sy,sx) ms lsmell lmap) = 
         do
           put nm
           put sz
           put ms
+          put [ lsmell ! (y,x) | y <- [0..sy], x <- [0..sx] ]
           put [ lmap ! (y,x) | y <- [0..sy], x <- [0..sx] ]
   get = do
           nm <- get
           sz@(sy,sx) <- get
           ms <- get
           xs <- get
-          let lmap = M.fromList (zip [ (y,x) | y <- [0..sy], x <- [0..sx] ] xs)
-          return (Level nm sz ms lmap)
+          let lsmell = M.fromList (zip [ (y,x) | y <- [0..sy], x <- [0..sx] ] xs)
+          xs <- get
+          let lmap   = M.fromList (zip [ (y,x) | y <- [0..sy], x <- [0..sx] ] xs)
+          return (Level nm sz ms lsmell lmap)
 
 type LMap = Map (Y,X) (Tile,Tile)
+type SMap = Map (Y,X) Time
 
 at         l p = fst (findWithDefault (Unknown, Unknown) p l)
 rememberAt l p = snd (findWithDefault (Unknown, Unknown) p l)

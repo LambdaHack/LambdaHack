@@ -76,12 +76,14 @@ generate session msg =
 
 -- perform a complete move (i.e., monster moves etc.)
 loop :: Session -> Level -> State -> String -> IO ()
-loop session (lvl@(Level nm sz ms lmap))
+loop session (lvl@(Level nm sz ms smap lmap))
              (state@(State { splayer = player@(Monster _ php _ ploc), stime = time }))
              oldmsg =
   do
     -- player HP regeneration, TODO: remove hardcoded max
-    let nphp = if time `mod` 150 == 0 then (php + 1) `min` 10 else php
+    let nphp = if time `mod` 150 == 0 then (php + 1) `min` 20 else php
+    -- update smap
+    let nsmap = M.insert ploc (time + smellTimeout) smap
     -- generate new monsters
     rc <- randomRIO (1,if L.null ms then 5 else 70)
     gms <- if rc == (1 :: Int)
@@ -91,7 +93,8 @@ loop session (lvl@(Level nm sz ms lmap))
                                               not (l `L.elem` L.map mloc (player : ms)) &&
                                               distance (ploc, l) > 400)
                   rh <- fmap (+1) (randomRIO (1,2))
-                  let m = Monster Eye rh Nothing sm
+                  rt <- fmap (\ x -> if x == (1 :: Int) then Nose else Eye) (randomRIO (1,4))
+                  let m = Monster rt rh Nothing sm
                   return (m : ms)
            else return ms
     -- perform monster moves
@@ -100,13 +103,21 @@ loop session (lvl@(Level nm sz ms lmap))
                          do
                            let ns = moves L.\\ maybe [] ((:[]) . neg) (mdir m)
                            let fns = L.filter (\ x -> open (lmap `at` (mloc m `shift` x))) ns
+                           let smells = zip fns
+                                            (L.map (\ x -> (nsmap ! (mloc m `shift` x) - time) `max` 0) fns)
                            nl <- if adjacent ploc (mloc m) then
                                    -- attack player
                                    return (ploc `shift` neg (mloc m))
-                                 else if not (L.null fns) then
+                                 else if mtype m == Eye && not (L.null fns) then
                                    do
                                      i <- randomRIO (0, L.length fns - 1)
                                      return (fns !! i)
+                                 else if mtype m == Nose && (nsmap ! mloc m) - time > 0 &&
+                                      not (L.null smells) then
+                                   do
+                                     let msmell = maximumBy
+                                                    (\ (_,s1) (_,s2) -> compare s1 s2) smells
+                                     return (fst msmell)
                                  else
                                      liftM2 (,) (randomRIO (-1,1)) (randomRIO (-1,1))
                            -- TODO: now the hack that allows the player move
@@ -129,7 +140,7 @@ loop session (lvl@(Level nm sz ms lmap))
                                            oms) -- abort 
                              m nl
     (fms, fplayer, fmsg) <- monsterMoves [] (player { mhp = nphp }) oldmsg gms
-    handle session (lvl { lmonsters = fms })
+    handle session (lvl { lmonsters = fms, lsmell = nsmap })
            (state { splayer = fplayer, stime = time + 1 }) fmsg
 
 addMsg [] x  = x
@@ -138,7 +149,7 @@ addMsg xs x  = xs ++ " " ++ x
 
 -- display and handle the player
 handle :: Session -> Level -> State -> String -> IO ()
-handle session (lvl@(Level nm sz ms lmap))
+handle session (lvl@(Level nm sz ms smap lmap))
                (state@(State { splayer = player@(Monster _ php _ ploc), stime = time }))
                oldmsg =
   do
@@ -176,6 +187,7 @@ handle session (lvl@(Level nm sz ms lmap))
 
                            "period"  -> loop session nlvl state ""
                            "V"       -> handle session nlvl (toggleVision state) oldmsg
+                           "N"       -> handle session nlvl (toggleSmell state) oldmsg
                            "O"       -> handle session nlvl (toggleOmniscient state) oldmsg
 
                            s   -> displayCurrent ("unknown command (" ++ s ++ ")") >> h
@@ -185,6 +197,7 @@ handle session (lvl@(Level nm sz ms lmap))
 
   displayCurrent msg =
     let
+      sSml    = ssensory state == Smell
       sVis    = ssensory state == Vision
       sOmn    = sdisplay state == Omniscient
       lAt     = if sOmn then at else rememberAt
@@ -197,11 +210,13 @@ handle session (lvl@(Level nm sz ms lmap))
     in
       display ((0,0),sz) session 
                (\ loc -> let tile = nlmap `lAt` loc
+                             sml  = ((smap ! loc) - time) `div` 10
                              vis  = S.member loc visible
                              rea  = S.member loc reachable
                              (rv,ra) = case L.find (\ m -> loc == mloc m) (player:ms) of
-                                         Just m | sOmn || vis -> viewMonster (mtype m) 
-                                         _                    -> viewTile tile
+                                         Just m | sOmn || vis  -> viewMonster (mtype m) 
+                                         _ | sSml && sml >= 0  -> viewSmell sml
+                                           | otherwise         -> viewTile tile
                              vision = lVision vis rea
                          in
                            (ra . vision $
@@ -330,5 +345,10 @@ viewTile (Door Vert True)  = ('-', setFG yellow)
 viewMonster :: MonsterType -> (Char, Attr -> Attr)
 viewMonster Player = ('@', setBG white . setFG black)
 viewMonster Eye    = ('e', setFG red)
+viewMonster Nose   = ('n', setFG green)
 
-
+viewSmell :: Int -> (Char, Attr -> Attr)
+viewSmell n = let k | n > 9    = '*'
+                    | n < 0    = '-'
+                    | otherwise = head . show $ n
+              in  (k, setFG black . setBG green)
