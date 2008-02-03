@@ -14,6 +14,7 @@ import Control.Monad
 import Control.Exception as E hiding (handle)
 import Codec.Compression.Zlib as Z
 
+import State
 import Geometry
 import Level
 import Dungeon
@@ -52,29 +53,29 @@ start session =
                              r <- strictDecodeCompressedFile savefile
                              removeFile savefile
                              case r of
-                               (x,y,t,z) -> (z :: Bool) `seq` return $ Just (x,y,t))
+                               (x,y,z) -> (z :: Bool) `seq` return $ Just (x,y))
                           (const $ return Nothing)
       case restored of
-        Nothing                -> generate session
-        Just (lvl,player,time) -> handle session lvl player time "Restored successfully."
+        Nothing          -> generate session
+        Just (lvl,state) -> handle session lvl state "Restored successfully."
 
 generate session =
   do
     -- generate dungeon with 10 levels
     levels <- mapM (\n -> level defaultLevelConfig $ "The Lambda Cave " ++ show n) [1..10]
-    let player = Monster Player 10 ((\ (_,x,_) -> x) (head levels))
+    let state = defaultState ((\ (_,x,_) -> x) (head levels))
     let connect [(x,_,_)] = [x Nothing Nothing]
         connect ((x,_,_):ys@((_,u,_):_)) =
                             let (z:zs) = connect ys
                             in  x Nothing (Just (z,u)) : z : zs
     let lvl = head (connect levels)
-    handle session lvl player 0 ""
-
-type Time = Int
+    handle session lvl state ""
 
 -- perform a complete move (i.e., monster moves etc.)
-loop :: Session -> Level -> Monster -> Time -> String -> IO ()
-loop session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) time oldmsg =
+loop :: Session -> Level -> State -> String -> IO ()
+loop session (lvl@(Level nm sz ms lmap))
+             (state@(State { splayer = player@(Monster _ php _ ploc), stime = time }))
+             oldmsg =
   do
     -- player HP regeneration, TODO: remove hardcoded max
     let nphp = if time `mod` 150 == 0 then (php + 1) `min` 10 else php
@@ -87,13 +88,14 @@ loop session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) time oldmsg
                                               not (l `L.elem` L.map mloc (player : ms)) &&
                                               distance (ploc, l) > 400)
                   rh <- fmap (+2) (randomRIO (1,3))
-                  let m = Monster Eye rh sm
+                  let m = Monster Eye rh Nothing sm
                   return (m : ms)
            else return ms
     -- perform monster moves
     let monsterMoves ams cplayer cmsg []      = return (ams, cplayer, cmsg)
         monsterMoves ams cplayer cmsg (m:oms) =
                          do
+                           let ns = neighbors ((0,0),sz) (mloc m)
                            ry <- randomRIO (-1,1)
                            rx <- randomRIO (-1,1)
                            -- TODO: now the hack that allows the player move
@@ -113,15 +115,18 @@ loop session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) time oldmsg
                              (monsterMoves (m : ams) cplayer cmsg oms) -- abort 
                              m (ry,rx)
     (fms, fplayer, fmsg) <- monsterMoves [] (player { mhp = nphp }) oldmsg gms
-    handle session (lvl { lmonsters = fms }) fplayer (time + 1) fmsg
+    handle session (lvl { lmonsters = fms })
+           (state { splayer = fplayer, stime = time + 1 }) fmsg
 
 addMsg [] x  = x
 addMsg xs [] = xs
 addMsg xs x  = xs ++ " " ++ x
 
 -- display and handle the player
-handle :: Session -> Level -> Monster -> Time -> String -> IO ()
-handle session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) time oldmsg =
+handle :: Session -> Level -> State -> String -> IO ()
+handle session (lvl@(Level nm sz ms lmap))
+               (state@(State { splayer = player@(Monster _ php _ ploc), stime = time }))
+               oldmsg =
   do
     -- check for player death
     if php <= 0
@@ -155,7 +160,7 @@ handle session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) time oldm
                            "Alt_L"   -> h
                            "Alt_R"   -> h
 
-                           "period"  -> loop session nlvl player time ""
+                           "period"  -> loop session nlvl state ""
 
                            s   -> displayCurrent ("unknown command (" ++ s ++ ")") >> h
              h
@@ -218,7 +223,7 @@ handle session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) time oldm
       Door hv o' | o == not o' -> -- ok, we can open/close the door      
                                   let nt = Door hv o
                                       clmap = M.insert (shift ploc dir) (nt, flat nt) nlmap
-                                  in loop session (updateLMap lvl (const clmap)) player time ""
+                                  in loop session (updateLMap lvl (const clmap)) state ""
                  | otherwise   -> displayCurrent ("already " ++ txt) >> abort
       _ -> displayCurrent "never mind" >> abort
   -- perform a level change
@@ -234,13 +239,14 @@ handle session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) time oldm
               do
                 let next' = Just (updateLMap lvl (const $ M.update (\ (_,r) -> Just (Stairs vdir Nothing,r)) ploc nlmap), ploc)
                 let new = updateLMap nlvl (M.update (\ (Stairs d _,r) -> Just (Stairs d next',r)) nloc)
-                loop session new (player { mloc = nloc }) time ""
+                loop session new (updatePlayer state (const (player { mloc = nloc }))) ""
                 
       _ -> -- no stairs
            let txt = if vdir == Up then "up" else "down" in
            displayCurrent ("no stairs " ++ txt) >> abort
   -- perform a player move
-  move abort dir = moveOrAttack (\ l m -> loop session l m time) nlvl abort player dir
+  move abort dir = moveOrAttack (\ l m -> loop session l (updatePlayer state (const m)))
+                                nlvl abort player dir
 
 moveOrAttack :: (Level -> Monster -> String -> IO a) ->     -- success continuation
                 Level ->

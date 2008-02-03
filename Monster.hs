@@ -9,16 +9,18 @@ import Geometry
 data Monster = Monster
                 { mtype :: MonsterType,
                   mhp   :: Int,
+                  mdir  :: Maybe Dir,
                   mloc  :: Loc }
   deriving Show
 
 instance Binary Monster where
-  put (Monster mt mhp ml) =
+  put (Monster mt mhp md ml) =
     do
       put mt
       put mhp
+      put md
       put ml
-  get = liftM3 Monster get get get
+  get = liftM4 Monster get get get get
 
 data MonsterType =
     Player

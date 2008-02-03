@@ -170,9 +170,6 @@ findLoc l@(Level { lsize = sz, lmap = lm }) p =
     if p loc (lm `at` loc) then return loc
                            else findLoc l p
 
-shift :: Loc -> Loc -> Loc
-shift (y0,x0) (y1,x1) = (y0+y1,x0+x1)
-
 grid :: (Y,X) -> Area -> Map (Y,X) Area
 grid (ny,nx) ((y0,x0),(y1,x1)) =
   let yd = y1 - y0
