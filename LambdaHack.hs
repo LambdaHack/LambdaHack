@@ -74,31 +74,56 @@ generate session =
 loop :: Session -> Level -> Monster -> String -> IO ()
 loop session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) oldmsg =
   do
+    -- generate new monsters
+    rc <- randomRIO (1,20)
+    gms <- if rc == (1 :: Int)
+           then do
+                  -- TODO: new monsters shouldn't be visible by the player
+                  sm <- findLoc lvl (\ l t -> t == Floor && 
+                                              not (l `L.elem` L.map mloc (player : ms)))
+                  rh <- fmap (+2) (randomRIO (1,3))
+                  let m = Monster Eye rh sm
+                  return (m : ms)
+           else return ms
     -- perform monster moves
-    ms' <- mapM (\ m -> do
-                          ry <- randomRIO (-1,1)
-                          rx <- randomRIO (-1,1)
-                          -- TODO: now the hack that allows the player move
-                          -- function to be used for monsters
-                          moveOrAttack 
-                            (\ nlvl@(Level { lmonsters = nms }) nm msg ->
-                              do
-                                let fms = case nms of
-                                            Monster { mtype = Player } : rms -> rms
-                                            _ -> nms  -- TODO: actually, player killed
-                                return nm
-                            ) -- success
-                            (lvl { lmonsters = player : lmonsters lvl })
-                            (return m) -- abort 
-                            m (ry,rx))
-                ms
-    handle session (lvl { lmonsters = ms' }) player oldmsg
+    (fms, fplayer, fmsg)
+        <- foldM (\ (cms, cplayer, cmsg) m ->
+                         do
+                           ry <- randomRIO (-1,1)
+                           rx <- randomRIO (-1,1)
+                           -- TODO: now the hack that allows the player move
+                           -- function to be used for monsters
+                           moveOrAttack 
+                             (\ nlvl@(Level { lmonsters = nms }) nm msg ->
+                               do
+                                 let (p,r) = L.partition (\ m -> mtype m == Player) nms
+                                 let h = case p of
+                                           Monster { mhp = h } : _ -> h
+                                           _ -> 0  -- player killed
+                                 -- TODO: we forget monster damage
+                                 return (nm : cms, cplayer { mhp = h }, addMsg cmsg msg)
+                             ) -- success
+                             (lvl { lmonsters = player : lmonsters lvl })
+                             (return (m : cms, cplayer, cmsg)) -- abort 
+                             m (ry,rx))
+                 ([], player, oldmsg)
+                 gms
+    handle session (lvl { lmonsters = fms }) fplayer fmsg
 
--- display and handle event
+addMsg [] x  = x
+addMsg xs [] = xs
+addMsg xs x  = xs ++ " " ++ x
+
+-- display and handle the player
 handle :: Session -> Level -> Monster -> String -> IO ()
 handle session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) oldmsg =
   do
-    displayCurrent oldmsg
+    -- check for player death
+    if php <= 0
+      then do
+             displayCurrent (addMsg oldmsg "You die ...")
+             shutdown session
+      else displayCurrent oldmsg
     let h = do
               e <- nextEvent session
               handleDirection e (move h) $ 
@@ -123,6 +148,8 @@ handle session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) oldmsg =
                   "Alt_L"   -> h
                   "Alt_R"   -> h
 
+                  "."       -> loop session nlvl player ""
+
                   s   -> displayCurrent ("unknown command (" ++ s ++ ")") >> h
     h
 
@@ -136,9 +163,9 @@ handle session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) oldmsg =
                                        Just m | vis -> viewMonster (mtype m) 
                                        _            -> viewTile tile
                        in
-                         ((if      vis then setBG blue
+                         (({- if      vis then setBG blue
                            else if rea then setBG magenta
-                                       else id) . ra $
+                                       else -} id) . ra $
                           attr, rv))
             msg
             (take 40 (nm ++ repeat ' ') ++ "HP: " ++ show php)
@@ -203,6 +230,8 @@ moveOrAttack :: (Level -> Monster -> String -> IO a) ->     -- success continuat
                 IO a ->                                     -- failure continuation
                 Monster -> Loc -> IO a
 moveOrAttack continue nlvl@(Level { lmap = nlmap }) abort player@(Monster { mloc = ploc}) dir
+      -- to prevent monsters from hitting themselves
+    | dir == (0,0) = abort
       -- at the moment, we check whether there is a monster before checking open-ness
       -- i.e., we could attack a monster on a blocked location
     | not (L.null attacked) =
@@ -215,10 +244,13 @@ moveOrAttack continue nlvl@(Level { lmap = nlmap }) abort player@(Monster { mloc
           verb | L.null survivor = "kill"
                | otherwise       = "hit"
         in
-          continue (nlvl { lmonsters = survivor ++ saveds }) player
-                   (subjectMonster (mtype player) ++ " " ++
-                    verbMonster (mtype player) verb ++ " " ++
-                    objectMonster (mtype victim) ++ ".")
+          if (mtype victim == Player) || (mtype player == Player) then
+            continue (nlvl { lmonsters = survivor ++ saveds }) player
+                     (subjectMonster (mtype player) ++ " " ++
+                      verbMonster (mtype player) verb ++ " " ++
+                      objectMonster (mtype victim) ++ ".")
+          else
+            abort  -- currently, we prevent monster from attacking each other
 
     | open target =
         case (source,target) of
@@ -247,7 +279,7 @@ viewTile (Door Horiz True) = ('|', setFG yellow)
 viewTile (Door Vert True)  = ('-', setFG yellow)
 
 viewMonster :: MonsterType -> (Char, Attr -> Attr)
-viewMonster Player = ('@', id)
+viewMonster Player = ('@', setBG white . setFG black)
 viewMonster Eye    = ('e', setFG red)
 
 

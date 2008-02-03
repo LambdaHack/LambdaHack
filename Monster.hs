@@ -23,7 +23,7 @@ instance Binary Monster where
 data MonsterType =
     Player
   | Eye
-  deriving Show
+  deriving (Show, Eq)
 
 instance Binary MonsterType where
   put Player = putWord8 0 
