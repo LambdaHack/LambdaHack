@@ -1,5 +1,6 @@
 module Monster where
 
+import Data.Char
 import Data.Binary
 import Control.Monad
 
@@ -25,9 +26,22 @@ data MonsterType =
   deriving Show
 
 instance Binary MonsterType where
-  put Eye = putWord8 0
+  put Player = putWord8 0 
+  put Eye    = putWord8 1
   get = do
           tag <- getWord8
           case tag of
-            0 -> return Eye
+            0 -> return Player 
+            1 -> return Eye
             _ -> fail "no parse (MonsterType)" 
+
+objectMonster :: MonsterType -> String
+objectMonster Player = "you"
+objectMonster Eye    = "the reducible eye"
+
+subjectMonster :: MonsterType -> String
+subjectMonster x = let (s:r) = objectMonster x in toUpper s : r
+
+verbMonster :: MonsterType -> String -> String
+verbMonster Player v = v
+verbMonster _      v = v ++ "s"

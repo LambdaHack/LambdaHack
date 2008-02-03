@@ -56,7 +56,7 @@ start session =
                           (const $ return Nothing)
       case restored of
         Nothing           -> generate session
-        Just (lvl,player) -> loop session lvl player
+        Just (lvl,player) -> loop session lvl player "Restored successfully."
 
 generate session =
   do
@@ -68,19 +68,19 @@ generate session =
                             let (z:zs) = connect ys
                             in  x Nothing (Just (z,u)) : z : zs
     let lvl = head (connect levels)
-    loop session lvl player
+    loop session lvl player ""
 
 -- perform a complete move (i.e., monster moves etc.)
-loop :: Session -> Level -> Monster -> IO ()
-loop session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) =
+loop :: Session -> Level -> Monster -> String -> IO ()
+loop session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) oldmsg =
   do
-    handle session lvl player
+    handle session lvl player oldmsg
 
 -- display and handle event
-handle :: Session -> Level -> Monster -> IO ()
-handle session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) =
+handle :: Session -> Level -> Monster -> String -> IO ()
+handle session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) oldmsg =
   do
-    displayCurrent "" 
+    displayCurrent oldmsg
     let h = do
               e <- nextEvent session
               handleDirection e (move h) $ 
@@ -123,7 +123,7 @@ handle session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) =
                                        else id) . ra $
                           attr, rv))
             msg
-            nm
+            (take 40 (nm ++ repeat ' ') ++ "HP: " ++ show php)
 
   handleDirection :: String -> ((Y,X) -> IO ()) -> IO () -> IO ()
   handleDirection e h k =
@@ -156,7 +156,7 @@ handle session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) =
       Door hv o' | o == not o' -> -- ok, we can open/close the door      
                                   let nt = Door hv o
                                       clmap = M.insert (shift ploc dir) (nt, flat nt) nlmap
-                                  in loop session (updateLMap lvl (const clmap)) player
+                                  in loop session (updateLMap lvl (const clmap)) player ""
                  | otherwise   -> displayCurrent ("already " ++ txt) >> abort
       _ -> displayCurrent "never mind" >> abort
   -- perform a level change
@@ -172,7 +172,7 @@ handle session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) =
               do
                 let next' = Just (updateLMap lvl (const $ M.update (\ (_,r) -> Just (Stairs vdir Nothing,r)) ploc nlmap), ploc)
                 let new = updateLMap nlvl (M.update (\ (Stairs d _,r) -> Just (Stairs d next',r)) nloc)
-                loop session new (player { mloc = nloc })
+                loop session new (player { mloc = nloc }) ""
                 
       _ -> -- no stairs
            let txt = if vdir == Up then "up" else "down" in
@@ -180,21 +180,39 @@ handle session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) =
   -- perform a player move
   move abort dir = moveOrAttack (loop session) nlvl abort player dir
 
-moveOrAttack :: (Level -> Monster -> IO ()) ->    -- success continuation
+moveOrAttack :: (Level -> Monster -> String -> IO ()) ->    -- success continuation
                 Level ->
-                IO () ->                          -- failure continuation
+                IO () ->                                    -- failure continuation
                 Monster -> Loc -> IO ()
 moveOrAttack continue nlvl@(Level { lmap = nlmap }) abort player@(Monster { mloc = ploc}) dir
+      -- at the moment, we check whether there is a monster before checking open-ness
+      -- i.e., we could attack a monster on a blocked location
+    | not (L.null attacked) =
+        let
+          victim   = head attacked
+          saveds   = tail attacked ++ others
+          survivor = case mhp victim of
+                       1  ->  []
+                       h  ->  [victim { mhp = h - 1 }]
+          verb | L.null survivor = "kill"
+               | otherwise       = "hit"
+        in
+          continue (nlvl { lmonsters = survivor ++ saveds }) player
+                   (subjectMonster (mtype player) ++ " " ++
+                    verbMonster (mtype player) verb ++ " " ++
+                    objectMonster (mtype victim) ++ ".")
+
     | open target =
         case (source,target) of
           (Door _ _,_) | diagonal dir -> abort -- doors aren't accessible diagonally
           (_,Door _ _) | diagonal dir -> abort -- doors aren't accessible diagonally
           _ -> -- ok
-               continue nlvl (player { mloc = nploc })
+               continue nlvl (player { mloc = nploc }) ""
     | otherwise = abort
     where source = nlmap `at` ploc
           nploc  = shift ploc dir
           target = nlmap `at` nploc
+          (attacked, others) = L.partition (\ m -> mloc m == nploc) (lmonsters nlvl)
 
 viewTile :: Tile -> (Char, Attr -> Attr)
 viewTile Rock              = (' ', id)
