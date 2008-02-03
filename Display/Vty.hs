@@ -7,7 +7,7 @@ import Data.List as L
 import Data.Char
 import qualified Data.ByteString as BS
 
-import Level
+import Geometry
 
 type Session = V.Vty
 

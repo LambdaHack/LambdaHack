@@ -6,6 +6,7 @@ import Control.Monad
 import Data.Map as M
 import Data.List as L
 
+import Geometry
 import Level
 
 type Corridor = [(Y,X)]
@@ -101,7 +102,7 @@ level cfg nm =
                                r1 = rs ! p1
                            connectRooms r0 r1) allConnects
     let lmap = foldr digCorridor (foldr digRoom (emptyLMap (levelSize cfg)) rooms) cs
-    let lvl = Level nm (levelSize cfg) lmap
+    let lvl = Level nm (levelSize cfg) [] lmap
     -- convert openings into doors
     dlmap <- fmap M.fromList . mapM
                 (\ o@((y,x),(t,r)) -> 
@@ -120,7 +121,7 @@ level cfg nm =
     return $ (\ lu ld ->
       let flmap = M.insert su (Stairs Up lu, Unknown) $
                   M.insert sd (Stairs Down ld, Unknown) $ dlmap
-      in  Level nm (levelSize cfg) flmap, su, sd)
+      in  Level nm (levelSize cfg) [] flmap, su, sd)
 
 emptyLMap :: (Y,X) -> LMap
 emptyLMap (my,mx) = M.fromList [ ((y,x),(Rock,Unknown)) | x <- [0..mx], y <- [0..my] ]

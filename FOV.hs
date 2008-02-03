@@ -6,6 +6,7 @@ import Data.List as L
 import Data.Ratio
 import Debug.Trace
 
+import Geometry
 import Level
 
 type Interval = (Rational, Rational)

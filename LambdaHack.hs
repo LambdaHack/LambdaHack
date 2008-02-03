@@ -14,6 +14,7 @@ import Control.Monad
 import Control.Exception as E
 import Codec.Compression.Zlib as Z
 
+import Geometry
 import Level
 import Dungeon
 import FOV
@@ -69,7 +70,7 @@ generate session =
     loop session lvl player
 
 loop :: Session -> Level -> Loc -> IO ()
-loop session (lvl@(Level nm sz lmap)) player =
+loop session (lvl@(Level nm sz ms lmap)) player =
   do
     displayCurrent "" 
     let h = do
@@ -122,7 +123,7 @@ loop session (lvl@(Level nm sz lmap)) player =
   visible = S.filter (\ loc -> light (lmap `at` loc) || adjacent loc player) reachable
   -- update player memory
   nlmap = foldr (\ x m -> M.update (\ (t,_) -> Just (t,flat t)) x m) lmap (S.toList visible)
-  nlvl = Level nm sz nlmap
+  nlvl = updateLMap lvl (const nlmap)
   -- open and close doors
   openclose o abort =
     do
@@ -135,7 +136,7 @@ loop session (lvl@(Level nm sz lmap)) player =
       Door hv o' | o == not o' -> -- ok, we can open/close the door      
                                   let nt = Door hv o
                                       clmap = M.insert (shift player dir) (nt, flat nt) nlmap
-                                  in loop session (Level nm sz clmap) player
+                                  in loop session (updateLMap lvl (const clmap)) player
                  | otherwise   -> displayCurrent ("already " ++ txt) >> abort
       _ -> displayCurrent "never mind" >> abort
   -- perform a level change
@@ -146,22 +147,22 @@ loop session (lvl@(Level nm sz lmap)) player =
           case next of
             Nothing -> -- exit dungeon
                        shutdown session
-            Just (nlvl@(Level nnm nsz nlmap), nloc) ->
+            Just (nlvl, nloc) ->
               -- perform level change
               do
-                let next' = Just (Level nm sz (M.update (\ (_,r) -> Just (Stairs vdir Nothing,r)) player lmap), player)
-                let new = Level nnm nsz (M.update (\ (Stairs d _,r) -> Just (Stairs d next',r)) nloc nlmap)
+                let next' = Just (updateLMap lvl (const $ M.update (\ (_,r) -> Just (Stairs vdir Nothing,r)) player nlmap), player)
+                let new = updateLMap nlvl (M.update (\ (Stairs d _,r) -> Just (Stairs d next',r)) nloc)
                 loop session new nloc
                 
       _ -> -- no stairs
            let txt = if vdir == Up then "up" else "down" in
            displayCurrent ("no stairs " ++ txt) >> abort
   -- perform a player move
-  move abort dir@(y,x)
+  move abort dir
     | open target =
         case (source,target) of
-          (Door _ _,_) | y*x /= 0 -> abort -- doors aren't accessible diagonally
-          (_,Door _ _) | y*x /= 0 -> abort -- doors aren't accessible diagonally
+          (Door _ _,_) | diagonal dir -> abort -- doors aren't accessible diagonally
+          (_,Door _ _) | diagonal dir -> abort -- doors aren't accessible diagonally
           _ -> -- ok
                loop session nlvl (shift player dir)
     | otherwise = abort

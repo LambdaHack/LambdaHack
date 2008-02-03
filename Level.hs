@@ -8,23 +8,33 @@ import Data.Map as M
 import Data.Set as S
 import Data.List as L
 
-type X = Int
-type Y = Int
+import Geometry
+import Monster
 
 data Level = Level
-              { lname :: String,
-                lsize :: (Y,X),
-                lmap  :: LMap }
+              { lname     :: String,
+                lsize     :: (Y,X),
+                lmonsters :: [Monster],
+                lmap      :: LMap }
   deriving Show
 
+updateLMap :: Level -> (LMap -> LMap) -> Level
+updateLMap lvl f = lvl { lmap = f (lmap lvl) }
+
 instance Binary Level where
-  put (Level nm sz@(sy,sx) lmap) = put nm >> put sz >> put [ lmap ! (y,x) | y <- [0..sy], x <- [0..sx] ]
+  put (Level nm sz@(sy,sx) ms lmap) = 
+        do
+          put nm
+          put sz
+          put ms
+          put [ lmap ! (y,x) | y <- [0..sy], x <- [0..sx] ]
   get = do
           nm <- get
           sz@(sy,sx) <- get
+          ms <- get
           xs <- get
           let lmap = M.fromList (zip [ (y,x) | y <- [0..sy], x <- [0..sx] ] xs)
-          return (Level nm sz lmap)
+          return (Level nm sz ms lmap)
 
 type LMap = Map (Y,X) (Tile,Tile)
 
@@ -127,9 +137,6 @@ light (Stairs _ _) = True
 light (Wall _) = True
 light _ = False
 
-type Loc = (Y,X)
-type Area = ((Y,X),(Y,X))
-
 findLocInArea :: Area -> (Loc -> Bool) -> IO Loc
 findLocInArea a@((y0,x0),(y1,x1)) p =
   do
@@ -147,12 +154,6 @@ findLoc l@(Level { lsize = sz, lmap = lm }) p =
     loc <- locInArea ((0,0),sz)
     if p loc (lm `at` loc) then return loc
                            else findLoc l p
-
-distance :: (Loc,Loc) -> Int
-distance ((y0,x0),(y1,x1)) = (y1 - y0)^2 + (x1 - x0)^2
-
-adjacent :: Loc -> Loc -> Bool
-adjacent s t = distance (s,t) <= 2
 
 shift :: Loc -> Loc -> Loc
 shift (y0,x0) (y1,x1) = (y0+y1,x0+x1)
