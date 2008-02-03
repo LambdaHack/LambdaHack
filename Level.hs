@@ -77,6 +77,7 @@ instance Binary Tile where
             5 -> liftM Wall get
             6 -> liftM2 Stairs get get
             7 -> liftM2 Door get get
+            _ -> fail "no parse (Tile)"
 
 data HV = Horiz | Vert
   deriving (Eq, Show, Bounded)

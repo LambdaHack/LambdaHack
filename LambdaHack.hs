@@ -17,6 +17,7 @@ import Codec.Compression.Zlib as Z
 import Geometry
 import Level
 import Dungeon
+import Monster
 import FOV
 #ifdef GTK
 import Display.Gtk
@@ -61,7 +62,7 @@ generate session =
   do
     -- generate dungeon with 10 levels
     levels <- mapM (\n -> level defaultLevelConfig $ "The Lambda Cave " ++ show n) [1..10]
-    let player = (\ (_,x,_) -> x) (head levels)
+    let player = Monster Player 10 ((\ (_,x,_) -> x) (head levels))
     let connect [(x,_,_)] = [x Nothing Nothing]
         connect ((x,_,_):ys@((_,u,_):_)) =
                             let (z:zs) = connect ys
@@ -69,8 +70,8 @@ generate session =
     let lvl = head (connect levels)
     loop session lvl player
 
-loop :: Session -> Level -> Loc -> IO ()
-loop session (lvl@(Level nm sz ms lmap)) player =
+loop :: Session -> Level -> Monster -> IO ()
+loop session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) =
   do
     displayCurrent "" 
     let h = do
@@ -103,15 +104,17 @@ loop session (lvl@(Level nm sz ms lmap)) player =
  where
   displayCurrent msg =
     display ((0,0),sz) session 
-             (\ loc -> let tile  = nlmap `rememberAt` loc
-                           (v,a) = view tile
+             (\ loc -> let tile = nlmap `rememberAt` loc
+                           vis  = S.member loc visible
+                           rea  = S.member loc reachable
+                           (rv,ra) = case L.find (\ m -> loc == mloc m) (player:ms) of
+                                       Just m | vis -> viewMonster (mtype m) 
+                                       _            -> viewTile tile
                        in
-                       ((if S.member loc visible then setBG blue
-                         else if S.member loc reachable then setBG magenta
-                         else id) .
-                        (if loc == player then id else a) $ attr,
-                        if loc == player then '@'
-                        else v))
+                         ((if      vis then setBG blue
+                           else if rea then setBG magenta
+                                       else id) . ra $
+                          attr, rv))
             msg
             nm
 
@@ -129,8 +132,8 @@ loop session (lvl@(Level nm sz ms lmap)) player =
       _   -> k
 
   -- determine visible fields
-  reachable = fullscan player lmap
-  visible = S.filter (\ loc -> light (lmap `at` loc) || adjacent loc player) reachable
+  reachable = fullscan ploc lmap
+  visible = S.filter (\ loc -> light (lmap `at` loc) || adjacent loc ploc) reachable
   -- update player memory
   nlmap = foldr (\ x m -> M.update (\ (t,_) -> Just (t,flat t)) x m) lmap (S.toList visible)
   nlvl = updateLMap lvl (const nlmap)
@@ -142,16 +145,16 @@ loop session (lvl@(Level nm sz ms lmap)) player =
       handleDirection e (openclose' o abort) (displayCurrent "never mind" >> abort)
   openclose' o abort dir =
     let txt = if o then "open" else "closed" in
-    case (nlmap `at` shift player dir) of
+    case (nlmap `at` shift ploc dir) of
       Door hv o' | o == not o' -> -- ok, we can open/close the door      
                                   let nt = Door hv o
-                                      clmap = M.insert (shift player dir) (nt, flat nt) nlmap
+                                      clmap = M.insert (shift ploc dir) (nt, flat nt) nlmap
                                   in loop session (updateLMap lvl (const clmap)) player
                  | otherwise   -> displayCurrent ("already " ++ txt) >> abort
       _ -> displayCurrent "never mind" >> abort
   -- perform a level change
   lvlchange vdir abort =
-    case nlmap `at` player of
+    case nlmap `at` ploc of
       Stairs vdir' next
        | vdir == vdir' -> -- ok
           case next of
@@ -160,9 +163,9 @@ loop session (lvl@(Level nm sz ms lmap)) player =
             Just (nlvl, nloc) ->
               -- perform level change
               do
-                let next' = Just (updateLMap lvl (const $ M.update (\ (_,r) -> Just (Stairs vdir Nothing,r)) player nlmap), player)
+                let next' = Just (updateLMap lvl (const $ M.update (\ (_,r) -> Just (Stairs vdir Nothing,r)) ploc nlmap), ploc)
                 let new = updateLMap nlvl (M.update (\ (Stairs d _,r) -> Just (Stairs d next',r)) nloc)
-                loop session new nloc
+                loop session new (player { mloc = nloc })
                 
       _ -> -- no stairs
            let txt = if vdir == Up then "up" else "down" in
@@ -174,23 +177,28 @@ loop session (lvl@(Level nm sz ms lmap)) player =
           (Door _ _,_) | diagonal dir -> abort -- doors aren't accessible diagonally
           (_,Door _ _) | diagonal dir -> abort -- doors aren't accessible diagonally
           _ -> -- ok
-               loop session nlvl (shift player dir)
+               loop session nlvl (player { mloc = nploc })
     | otherwise = abort
-    where source = nlmap `at` player
-          target = nlmap `at` shift player dir
+    where source = nlmap `at` ploc
+          nploc  = shift ploc dir
+          target = nlmap `at` nploc
 
--- view :: Tile -> (Char, Attr -> Attr)
-view Rock              = (' ', id)
-view (Opening _)       = ('.', id)
-view Floor             = ('.', id)
-view Unknown           = (' ', id)
-view Corridor          = ('#', id)
-view (Wall Horiz)      = ('-', id)
-view (Wall Vert)       = ('|', id)
-view (Stairs Up _)     = ('<', id)
-view (Stairs Down _)   = ('>', id)
-view (Door _ False)    = ('+', setFG yellow)
-view (Door Horiz True) = ('|', setFG yellow)
-view (Door Vert True)  = ('-', setFG yellow)
+viewTile :: Tile -> (Char, Attr -> Attr)
+viewTile Rock              = (' ', id)
+viewTile (Opening _)       = ('.', id)
+viewTile Floor             = ('.', id)
+viewTile Unknown           = (' ', id)
+viewTile Corridor          = ('#', id)
+viewTile (Wall Horiz)      = ('-', id)
+viewTile (Wall Vert)       = ('|', id)
+viewTile (Stairs Up _)     = ('<', id)
+viewTile (Stairs Down _)   = ('>', id)
+viewTile (Door _ False)    = ('+', setFG yellow)
+viewTile (Door Horiz True) = ('|', setFG yellow)
+viewTile (Door Vert True)  = ('-', setFG yellow)
+
+viewMonster :: MonsterType -> (Char, Attr -> Attr)
+viewMonster Player = ('@', id)
+viewMonster Eye    = ('e', setFG red)
 
 
