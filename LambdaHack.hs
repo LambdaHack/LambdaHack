@@ -87,7 +87,17 @@ loop session (lvl@(Level nm sz ms lmap)) player =
                   "Q"       -> shutdown session
                   "Escape"  -> shutdown session
 
-                  _   -> displayCurrent "unknown command" >> h
+                  "Shift_R" -> h
+                  "Shift_L" -> h
+                  "Control_L" -> h
+                  "Control_R" -> h
+                  "Super_L" -> h
+                  "Super_R" -> h
+                  "Menu"    -> h
+                  "Alt_L"   -> h
+                  "Alt_R"   -> h
+
+                  s   -> displayCurrent ("unknown command (" ++ s ++ ")") >> h
     h
 
  where

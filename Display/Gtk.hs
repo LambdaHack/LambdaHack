@@ -10,7 +10,7 @@ import Data.List as L
 import Data.IORef
 import Data.Map as M
 
-import Level
+import Geometry
 
 data Session =
   Session {
