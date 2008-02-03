@@ -74,7 +74,25 @@ generate session =
 loop :: Session -> Level -> Monster -> String -> IO ()
 loop session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) oldmsg =
   do
-    handle session lvl player oldmsg
+    -- perform monster moves
+    ms' <- mapM (\ m -> do
+                          ry <- randomRIO (-1,1)
+                          rx <- randomRIO (-1,1)
+                          -- TODO: now the hack that allows the player move
+                          -- function to be used for monsters
+                          moveOrAttack 
+                            (\ nlvl@(Level { lmonsters = nms }) nm msg ->
+                              do
+                                let fms = case nms of
+                                            Monster { mtype = Player } : rms -> rms
+                                            _ -> nms  -- TODO: actually, player killed
+                                return nm
+                            ) -- success
+                            (lvl { lmonsters = player : lmonsters lvl })
+                            (return m) -- abort 
+                            m (ry,rx))
+                ms
+    handle session (lvl { lmonsters = ms' }) player oldmsg
 
 -- display and handle event
 handle :: Session -> Level -> Monster -> String -> IO ()
@@ -180,10 +198,10 @@ handle session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) oldmsg =
   -- perform a player move
   move abort dir = moveOrAttack (loop session) nlvl abort player dir
 
-moveOrAttack :: (Level -> Monster -> String -> IO ()) ->    -- success continuation
+moveOrAttack :: (Level -> Monster -> String -> IO a) ->     -- success continuation
                 Level ->
-                IO () ->                                    -- failure continuation
-                Monster -> Loc -> IO ()
+                IO a ->                                     -- failure continuation
+                Monster -> Loc -> IO a
 moveOrAttack continue nlvl@(Level { lmap = nlmap }) abort player@(Monster { mloc = ploc}) dir
       -- at the moment, we check whether there is a monster before checking open-ness
       -- i.e., we could attack a monster on a blocked location
