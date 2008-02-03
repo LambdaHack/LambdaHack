@@ -11,7 +11,7 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LBS
 import System.Random
 import Control.Monad
-import Control.Exception as E
+import Control.Exception as E hiding (handle)
 import Codec.Compression.Zlib as Z
 
 import Geometry
@@ -70,8 +70,15 @@ generate session =
     let lvl = head (connect levels)
     loop session lvl player
 
+-- perform a complete move (i.e., monster moves etc.)
 loop :: Session -> Level -> Monster -> IO ()
 loop session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) =
+  do
+    handle session lvl player
+
+-- display and handle event
+handle :: Session -> Level -> Monster -> IO ()
+handle session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) =
   do
     displayCurrent "" 
     let h = do
@@ -171,13 +178,19 @@ loop session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) =
            let txt = if vdir == Up then "up" else "down" in
            displayCurrent ("no stairs " ++ txt) >> abort
   -- perform a player move
-  move abort dir
+  move abort dir = moveOrAttack (loop session) nlvl abort player dir
+
+moveOrAttack :: (Level -> Monster -> IO ()) ->    -- success continuation
+                Level ->
+                IO () ->                          -- failure continuation
+                Monster -> Loc -> IO ()
+moveOrAttack continue nlvl@(Level { lmap = nlmap }) abort player@(Monster { mloc = ploc}) dir
     | open target =
         case (source,target) of
           (Door _ _,_) | diagonal dir -> abort -- doors aren't accessible diagonally
           (_,Door _ _) | diagonal dir -> abort -- doors aren't accessible diagonally
           _ -> -- ok
-               loop session nlvl (player { mloc = nploc })
+               continue nlvl (player { mloc = nploc })
     | otherwise = abort
     where source = nlmap `at` ploc
           nploc  = shift ploc dir
