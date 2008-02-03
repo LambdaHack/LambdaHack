@@ -90,7 +90,7 @@ loop session (lvl@(Level nm sz ms lmap))
                   sm <- findLoc lvl (\ l t -> t == Floor && 
                                               not (l `L.elem` L.map mloc (player : ms)) &&
                                               distance (ploc, l) > 400)
-                  rh <- fmap (+2) (randomRIO (1,3))
+                  rh <- fmap (+1) (randomRIO (1,2))
                   let m = Monster Eye rh Nothing sm
                   return (m : ms)
            else return ms
@@ -98,9 +98,17 @@ loop session (lvl@(Level nm sz ms lmap))
     let monsterMoves ams cplayer cmsg []      = return (ams, cplayer, cmsg)
         monsterMoves ams cplayer cmsg (m:oms) =
                          do
-                           let ns = neighbors ((0,0),sz) (mloc m)
-                           ry <- randomRIO (-1,1)
-                           rx <- randomRIO (-1,1)
+                           let ns = moves L.\\ maybe [] ((:[]) . neg) (mdir m)
+                           let fns = L.filter (\ x -> open (lmap `at` (mloc m `shift` x))) ns
+                           nl <- if adjacent ploc (mloc m) then
+                                   -- attack player
+                                   return (ploc `shift` neg (mloc m))
+                                 else if not (L.null fns) then
+                                   do
+                                     i <- randomRIO (0, L.length fns - 1)
+                                     return (fns !! i)
+                                 else
+                                     liftM2 (,) (randomRIO (-1,1)) (randomRIO (-1,1))
                            -- TODO: now the hack that allows the player move
                            -- function to be used for monsters
                            moveOrAttack 
@@ -111,12 +119,15 @@ loop session (lvl@(Level nm sz ms lmap))
                                            [ Monster { mhp = h } ] -> h
                                            _ -> 0  -- player killed
                                  -- TODO: we forget monster damage
-                                 monsterMoves (nm : ams) (cplayer { mhp = h })
+                                 monsterMoves (nm { mdir = Just nl } : ams)
+                                              (cplayer { mhp = h })
                                               (addMsg cmsg msg) oms
                              ) -- success
                              (lvl { lmonsters = cplayer : (ams ++ oms) })
-                             (monsterMoves (m : ams) cplayer cmsg oms) -- abort 
-                             m (ry,rx)
+                             (monsterMoves (m { mdir = Nothing } : ams) cplayer 
+                                           cmsg -- (addMsg cmsg (show (nl,fns)))
+                                           oms) -- abort 
+                             m nl
     (fms, fplayer, fmsg) <- monsterMoves [] (player { mhp = nphp }) oldmsg gms
     handle session (lvl { lmonsters = fms })
            (state { splayer = fplayer, stime = time + 1 }) fmsg

@@ -22,3 +22,5 @@ shift (y0,x0) (y1,x1) = (y0+y1,x0+x1)
 neg :: Dir -> Dir
 neg (y,x) = (-y,-x)
 
+moves :: [Dir]
+moves = [ (x,y) | x <- [-1..1], y <- [-1..1], x /= 0 || y /= 0 ]
