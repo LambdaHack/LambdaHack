@@ -56,7 +56,7 @@ start session =
                           (const $ return Nothing)
       case restored of
         Nothing           -> generate session
-        Just (lvl,player) -> loop session lvl player "Restored successfully."
+        Just (lvl,player) -> handle session lvl player "Restored successfully."
 
 generate session =
   do
@@ -68,7 +68,7 @@ generate session =
                             let (z:zs) = connect ys
                             in  x Nothing (Just (z,u)) : z : zs
     let lvl = head (connect levels)
-    loop session lvl player ""
+    handle session lvl player ""
 
 -- perform a complete move (i.e., monster moves etc.)
 loop :: Session -> Level -> Monster -> String -> IO ()
