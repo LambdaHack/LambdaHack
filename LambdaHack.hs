@@ -53,13 +53,16 @@ start session =
                              r <- strictDecodeCompressedFile savefile
                              removeFile savefile
                              case r of
-                               (x,y,z) -> (z :: Bool) `seq` return $ Just (x,y))
-                          (const $ return Nothing)
+                               (x,y,z) -> (z :: Bool) `seq` return $ Left (x,y))
+                          (\ e -> case e of
+                                    IOException _ -> return (Right "Welcome to LambdaHack!")
+                                    _ -> return (Right $ "Restore failed: " ++
+                                                 (unwords . lines) (show e)))
       case restored of
-        Nothing          -> generate session
-        Just (lvl,state) -> handle session lvl state "Restored successfully."
+        Right msg        -> generate session msg
+        Left (lvl,state) -> handle session lvl state "Restored successfully."
 
-generate session =
+generate session msg =
   do
     -- generate dungeon with 10 levels
     levels <- mapM (\n -> level defaultLevelConfig $ "The Lambda Cave " ++ show n) [1..10]
@@ -69,7 +72,7 @@ generate session =
                             let (z:zs) = connect ys
                             in  x Nothing (Just (z,u)) : z : zs
     let lvl = head (connect levels)
-    handle session lvl state ""
+    handle session lvl state msg
 
 -- perform a complete move (i.e., monster moves etc.)
 loop :: Session -> Level -> State -> String -> IO ()
@@ -145,7 +148,7 @@ handle session (lvl@(Level nm sz ms lmap))
                            "less"    -> lvlchange Up h
                            "greater" -> lvlchange Down h
 
-                           "S"       -> encodeCompressedFile savefile (lvl,player,time,False) >>
+                           "S"       -> encodeCompressedFile savefile (lvl,state,False) >>
                                         shutdown session
                            "Q"       -> shutdown session
                            "Escape"  -> shutdown session
@@ -161,6 +164,8 @@ handle session (lvl@(Level nm sz ms lmap))
                            "Alt_R"   -> h
 
                            "period"  -> loop session nlvl state ""
+                           "V"       -> handle session nlvl (toggleVision state) oldmsg
+                           "O"       -> handle session nlvl (toggleOmniscient state) oldmsg
 
                            s   -> displayCurrent ("unknown command (" ++ s ++ ")") >> h
              h
@@ -168,21 +173,31 @@ handle session (lvl@(Level nm sz ms lmap))
  where
 
   displayCurrent msg =
-    display ((0,0),sz) session 
-             (\ loc -> let tile = nlmap `rememberAt` loc
-                           vis  = S.member loc visible
-                           rea  = S.member loc reachable
-                           (rv,ra) = case L.find (\ m -> loc == mloc m) (player:ms) of
-                                       Just m | vis -> viewMonster (mtype m) 
-                                       _            -> viewTile tile
-                       in
-                         (({- if      vis then setBG blue
-                           else if rea then setBG magenta
-                                       else -} id) . ra $
-                          attr, rv))
-            msg
-            (take 40 (nm ++ repeat ' ') ++ take 10 ("HP: " ++ show php ++ repeat ' ') ++
-             take 10 ("T: " ++ show time ++ repeat ' '))
+    let
+      sVis    = ssensory state == Vision
+      sOmn    = sdisplay state == Omniscient
+      lAt     = if sOmn then at else rememberAt
+      lVision = if sVis
+                  then \ vis rea ->
+                       if      vis then setBG blue
+                       else if rea then setBG magenta
+                                   else id
+                  else \ vis rea -> id
+    in
+      display ((0,0),sz) session 
+               (\ loc -> let tile = nlmap `lAt` loc
+                             vis  = S.member loc visible
+                             rea  = S.member loc reachable
+                             (rv,ra) = case L.find (\ m -> loc == mloc m) (player:ms) of
+                                         Just m | sOmn || vis -> viewMonster (mtype m) 
+                                         _                    -> viewTile tile
+                             vision = lVision vis rea
+                         in
+                           (ra . vision $
+                            attr, rv))
+              msg
+              (take 40 (nm ++ repeat ' ') ++ take 10 ("HP: " ++ show php ++ repeat ' ') ++
+               take 10 ("T: " ++ show time ++ repeat ' '))
 
   handleDirection :: String -> ((Y,X) -> IO ()) -> IO () -> IO ()
   handleDirection e h k =
