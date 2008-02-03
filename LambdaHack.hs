@@ -74,13 +74,13 @@ loop session (lvl@(Level nm sz lmap)) player =
     displayCurrent "" 
     let h = do
               e <- nextEvent session
-              handleDirection e move $ 
+              handleDirection e (move h) $ 
                 case e of
                   "o" -> openclose True h
                   "c" -> openclose False h
 
-                  "less"    -> lvlchange Up
-                  "greater" -> lvlchange Down
+                  "less"    -> lvlchange Up h
+                  "greater" -> lvlchange Down h
 
                   "S"       -> encodeCompressedFile savefile (lvl,player,False) >> shutdown session
                   "Q"       -> shutdown session
@@ -139,7 +139,7 @@ loop session (lvl@(Level nm sz lmap)) player =
                  | otherwise   -> displayCurrent ("already " ++ txt) >> abort
       _ -> displayCurrent "never mind" >> abort
   -- perform a level change
-  lvlchange vdir =
+  lvlchange vdir abort =
     case nlmap `at` player of
       Stairs vdir' next
        | vdir == vdir' -> -- ok
@@ -154,12 +154,19 @@ loop session (lvl@(Level nm sz lmap)) player =
                 loop session new nloc
                 
       _ -> -- no stairs
-                loop session nlvl player
+           let txt = if vdir == Up then "up" else "down" in
+           displayCurrent ("no stairs " ++ txt) >> abort
   -- perform a player move
-  move :: (Y,X) -> IO ()
-  move dir
-    | open (lmap `at` shift player dir) = loop session nlvl (shift player dir)
-    | otherwise = loop session nlvl player
+  move abort dir@(y,x)
+    | open target =
+        case (source,target) of
+          (Door _ _,_) | y*x /= 0 -> abort -- doors aren't accessible diagonally
+          (_,Door _ _) | y*x /= 0 -> abort -- doors aren't accessible diagonally
+          _ -> -- ok
+               loop session nlvl (shift player dir)
+    | otherwise = abort
+    where source = nlmap `at` player
+          target = nlmap `at` shift player dir
 
 -- view :: Tile -> (Char, Attr -> Attr)
 view Rock              = (' ', id)
