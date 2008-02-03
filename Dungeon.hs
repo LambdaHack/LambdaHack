@@ -54,10 +54,10 @@ digCorridor (p1:p2:ps) l =
   digCorridor (p2:ps) 
     (M.unionWith corridorUpdate (M.fromList [ (ps,(Corridor,Unknown)) | ps <- fromTo p1 p2 ]) l)
   where
-    corridorUpdate _ (Wall _,u)  = (Opening,u)
-    corridorUpdate _ (Opening,u) = (Opening,u)
-    corridorUpdate _ (Floor,u)   = (Floor,u)
-    corridorUpdate (x,u) _       = (x,u)
+    corridorUpdate _ (Wall hv,u)    = (Opening hv,u)
+    corridorUpdate _ (Opening hv,u) = (Opening hv,u)
+    corridorUpdate _ (Floor,u)      = (Floor,u)
+    corridorUpdate (x,u) _          = (x,u)
 digCorridor _ l = l
   
 
@@ -102,12 +102,25 @@ level cfg nm =
                            connectRooms r0 r1) allConnects
     let lmap = foldr digCorridor (foldr digRoom (emptyLMap (levelSize cfg)) rooms) cs
     let lvl = Level nm (levelSize cfg) lmap
+    -- convert openings into doors
+    dlmap <- fmap M.fromList . mapM
+                (\ o@((y,x),(t,r)) -> 
+                  case t of
+                    Opening hv ->
+                      do
+                        rb <- randomRIO (False,True) -- TODO: make configurable
+                        ro <- randomRIO (False,True)
+                        if rb
+                          then return ((y,x),(Door hv ro,Unknown))
+                          else return o
+                    _ -> return o) .
+                M.toList $ lmap
     su <- findLoc lvl (const (==Floor))
     sd <- findLoc lvl (\ l t -> t == Floor && distance (su,l) > minStairsDistance cfg)
     return $ (\ lu ld ->
-      let lmap' = M.insert su (Stairs Up lu, Unknown) $
-                  M.insert sd (Stairs Down ld, Unknown) $ lmap
-      in  Level nm (levelSize cfg) lmap', su, sd)
+      let flmap = M.insert su (Stairs Up lu, Unknown) $
+                  M.insert sd (Stairs Down ld, Unknown) $ dlmap
+      in  Level nm (levelSize cfg) flmap, su, sd)
 
 emptyLMap :: (Y,X) -> LMap
 emptyLMap (my,mx) = M.fromList [ ((y,x),(Rock,Unknown)) | x <- [0..mx], y <- [0..my] ]

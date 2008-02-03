@@ -1,6 +1,7 @@
 module Display.Gtk
   (Display.Gtk.Color, Attr, startup, shutdown,
-   display, nextEvent, setBG, setFG, Session, blue, magenta, red, green, attr) where
+   display, nextEvent, setBG, setFG, Session,
+   yellow, blue, magenta, red, green, attr) where
 
 import Control.Monad
 import Control.Concurrent
@@ -23,6 +24,7 @@ doAttr tt (BG Magenta) = set tt [ textTagBackground := "#CC00CC" ]
 doAttr tt (BG Green)   = set tt [ textTagBackground := "#00CC00" ]
 doAttr tt (BG Red)     = set tt [ textTagBackground := "#CC0000" ]
 doAttr tt (FG Red)     = set tt [ textTagForeground := "#FF0000" ]
+doAttr tt (FG Yellow)  = set tt [ textTagForeground := "#CCCC00" ]
 doAttr tt _            = return ()
 
 startup :: (Session -> IO ()) -> IO ()
@@ -124,6 +126,7 @@ setFG c = (FG c :)
 blue    = Blue
 magenta = Magenta
 red     = Red
+yellow  = Yellow
 green   = Green
 attr    = []
 
@@ -141,4 +144,5 @@ data AttrColor =
   | Magenta
   | Red
   | Green
+  | Yellow
   deriving (Eq, Ord, Enum, Bounded)

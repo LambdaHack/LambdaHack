@@ -32,7 +32,7 @@ at         l p = fst (findWithDefault (Unknown, Unknown) p l)
 rememberAt l p = snd (findWithDefault (Unknown, Unknown) p l)
 
 data Tile = Rock
-          | Opening
+          | Opening HV
           | Floor
           | Unknown
           | Corridor
@@ -49,7 +49,7 @@ flat x            = x
 
 instance Binary Tile where
   put Rock         = putWord8 0
-  put Opening      = putWord8 1
+  put (Opening d)  = putWord8 1 >> put d
   put Floor        = putWord8 2
   put Unknown      = putWord8 3
   put Corridor     = putWord8 4
@@ -60,7 +60,7 @@ instance Binary Tile where
           tag <- getWord8
           case tag of
             0 -> return Rock
-            1 -> return Opening
+            1 -> liftM Opening get
             2 -> return Floor
             3 -> return Unknown
             4 -> return Corridor
@@ -103,7 +103,7 @@ instance Binary VDir where
 
 instance Eq Tile where
   Rock == Rock = True
-  Opening == Opening = True
+  Opening d == Opening d' = d == d'
   Floor == Floor = True
   Unknown == Unknown = True
   Corridor == Corridor = True
@@ -112,30 +112,16 @@ instance Eq Tile where
   Door d o == Door d' o' = d == d' && o == o'
   _ == _ = False
 
-view :: Tile -> Char
-view Rock              = ' '
-view Opening           = '.'
-view Floor             = '.'
-view Unknown           = ' '
-view Corridor          = '#'
-view (Wall Horiz)      = '-'
-view (Wall Vert)       = '|'
-view (Stairs Up _)     = '<'
-view (Stairs Down _)   = '>'
-view (Door _ False)    = '+'
-view (Door Horiz True) = '|'
-view (Door Vert True)  = '-'
-
 closed, open, light :: Tile -> Bool
 closed = not . open
 open Floor = True
-open Opening = True
-open (Door _ _) = True
+open (Opening _) = True
+open (Door _ o) = o
 open Corridor = True
 open (Stairs _ _) = True
 open _ = False
 light Floor = True
-light Opening = True
+light (Opening _) = True
 light (Door _ _) = True -- problematic
 light (Stairs _ _) = True
 light (Wall _) = True

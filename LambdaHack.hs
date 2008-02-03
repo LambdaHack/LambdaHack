@@ -92,13 +92,15 @@ loop session (lvl@(Level nm sz lmap)) player =
  where
   displayCurrent msg =
     display ((0,0),sz) session 
-             (\ loc -> let tile = nlmap `rememberAt` loc
+             (\ loc -> let tile  = nlmap `rememberAt` loc
+                           (v,a) = view tile
                        in
                        ((if S.member loc visible then setBG blue
                          else if S.member loc reachable then setBG magenta
-                         else id) attr,
+                         else id) .
+                        (if loc == player then id else a) $ attr,
                         if loc == player then '@'
-                        else view tile))
+                        else v))
             msg
             nm
 
@@ -126,9 +128,16 @@ loop session (lvl@(Level nm sz lmap)) player =
     do
       displayCurrent "direction?"
       e <- nextEvent session
-      handleDirection e (const $ openclose' o abort) (displayCurrent "never mind" >> abort)
-  openclose' o abort =
-    abort
+      handleDirection e (openclose' o abort) (displayCurrent "never mind" >> abort)
+  openclose' o abort dir =
+    let txt = if o then "open" else "closed" in
+    case (nlmap `at` shift player dir) of
+      Door hv o' | o == not o' -> -- ok, we can open/close the door      
+                                  let nt = Door hv o
+                                      clmap = M.insert (shift player dir) (nt, flat nt) nlmap
+                                  in loop session (Level nm sz clmap) player
+                 | otherwise   -> displayCurrent ("already " ++ txt) >> abort
+      _ -> displayCurrent "never mind" >> abort
   -- perform a level change
   lvlchange vdir =
     case nlmap `at` player of
@@ -151,5 +160,19 @@ loop session (lvl@(Level nm sz lmap)) player =
   move dir
     | open (lmap `at` shift player dir) = loop session nlvl (shift player dir)
     | otherwise = loop session nlvl player
+
+-- view :: Tile -> (Char, Attr -> Attr)
+view Rock              = (' ', id)
+view (Opening _)       = ('.', id)
+view Floor             = ('.', id)
+view Unknown           = (' ', id)
+view Corridor          = ('#', id)
+view (Wall Horiz)      = ('-', id)
+view (Wall Vert)       = ('|', id)
+view (Stairs Up _)     = ('<', id)
+view (Stairs Down _)   = ('>', id)
+view (Door _ False)    = ('+', setFG yellow)
+view (Door Horiz True) = ('|', setFG yellow)
+view (Door Vert True)  = ('-', setFG yellow)
 
 
