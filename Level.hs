@@ -133,10 +133,19 @@ open (Stairs _ _) = True
 open _ = False
 light Floor = True
 light (Opening _) = True
-light (Door _ _) = True -- problematic
+light (Door _ True) = True -- open doors are all visible currently
 light (Stairs _ _) = True
-light (Wall _) = True
+light (Wall _) = False
 light _ = False
+passive :: Tile -> (Bool,[(Y,X)])  -- exclusively passive?
+passive (Wall Horiz) = (True, vert ++ [(-1,1),(1,1),(-1,-1),(1,-1)]) -- for corners
+passive (Wall Vert)  = (True, horiz)
+passive (Door Horiz False) = (False, vert)
+passive (Door Vert False)  = (False, horiz)
+passive _ = (False, [])
+
+horiz = [(0,-1),(0,1)]
+vert  = [(-1,0),(1,0)]
 
 findLocInArea :: Area -> (Loc -> Bool) -> IO Loc
 findLocInArea a@((y0,x0),(y1,x1)) p =

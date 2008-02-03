@@ -193,8 +193,16 @@ handle session (lvl@(Level nm sz ms lmap)) player@(Monster _ php ploc) time oldm
       _   -> k
 
   -- determine visible fields
-  reachable = fullscan ploc lmap
-  visible = S.filter (\ loc -> light (lmap `at` loc) || adjacent loc ploc) reachable
+  reachable  = fullscan ploc lmap
+  actVisible = S.filter (\ loc -> light (lmap `at` loc)) reachable
+  pasVisible = S.filter (\ loc -> let (x,p) = passive (lmap `at` loc)
+                                  in  any (\ d -> S.member (shift loc d) actVisible) p ||
+                                      (not x && adjacent loc ploc))
+                                  -- the above "not x" prevents walls from
+                                  -- being visible from the outside when
+                                  -- adjacent
+                        reachable
+  visible = S.union pasVisible actVisible
   -- update player memory
   nlmap = foldr (\ x m -> M.update (\ (t,_) -> Just (t,flat t)) x m) lmap (S.toList visible)
   nlvl = updateLMap lvl (const nlmap)
