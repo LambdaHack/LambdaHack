@@ -123,6 +123,11 @@ instance Eq Tile where
   Door d o == Door d' o' = d == d' && o == o'
   _ == _ = False
 
+-- closed: blocks moves and light
+-- open: allows moves and light
+-- light: is light on its own
+-- passive: reflects light from adjacent positions
+-- exclusively passive: cannot be seen from an adjacent position in darkness
 closed, open, light :: Tile -> Bool
 closed = not . open
 open Floor = True
