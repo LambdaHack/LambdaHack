@@ -66,8 +66,8 @@ startup k =
                                  do
                                    fsd <- fontSelectionDialogNew "Choose font"
                                    cf <- readIORef currentfont
-                                   fd <- fontDescriptionToString cf
-                                   fontSelectionDialogSetFontName fsd fd
+                                   -- fd <- fontDescriptionToString cf
+                                   -- fontSelectionDialogSetFontName fsd fd
                                    fontSelectionDialogSetPreviewText fsd "+##@##-...|"
                                    response <- dialogRun fsd
                                    when (response == ResponseOk) $
