@@ -166,7 +166,7 @@ handle session (lvl@(Level nm sz ms smap lmap))
              displayCurrent oldmsg
              let h = do
                        e <- nextEvent session
-                       handleDirection e (move h) $ 
+                       handleDirection e (move h) $ handleModifier e h $
                          case e of
                            "o" -> openclose True h
                            "c" -> openclose False h
@@ -178,16 +178,6 @@ handle session (lvl@(Level nm sz ms smap lmap))
                                         shutdown session
                            "Q"       -> shutdown session
                            "Escape"  -> shutdown session
-
-                           "Shift_R" -> h
-                           "Shift_L" -> h
-                           "Control_L" -> h
-                           "Control_R" -> h
-                           "Super_L" -> h
-                           "Super_R" -> h
-                           "Menu"    -> h
-                           "Alt_L"   -> h
-                           "Alt_R"   -> h
 
                            "period"  -> loop session nlvl state ""
 
@@ -231,19 +221,6 @@ handle session (lvl@(Level nm sz ms smap lmap))
               msg
               (take 40 (nm ++ repeat ' ') ++ take 10 ("HP: " ++ show php ++ repeat ' ') ++
                take 10 ("T: " ++ show time ++ repeat ' '))
-
-  handleDirection :: String -> ((Y,X) -> IO ()) -> IO () -> IO ()
-  handleDirection e h k =
-    case e of
-      "k" -> h (-1,0)
-      "j" -> h (1,0)
-      "h" -> h (0,-1)
-      "l" -> h (0,1)
-      "y" -> h (-1,-1)
-      "u" -> h (-1,1)
-      "b" -> h (1,-1)
-      "n" -> h (1,1)
-      _   -> k
 
   -- determine visible fields
   reachable  = fullscan ploc lmap
@@ -295,6 +272,36 @@ handle session (lvl@(Level nm sz ms smap lmap))
   -- perform a player move
   move abort dir = moveOrAttack (\ l m -> loop session l (updatePlayer state (const m)))
                                 nlvl abort player dir
+
+handleDirection :: String -> ((Y,X) -> IO ()) -> IO () -> IO ()
+handleDirection e h k =
+  case e of
+    "k" -> h (-1,0)
+    "j" -> h (1,0)
+    "h" -> h (0,-1)
+    "l" -> h (0,1)
+    "y" -> h (-1,-1)
+    "u" -> h (-1,1)
+    "b" -> h (1,-1)
+    "n" -> h (1,1)
+    _   -> k
+
+handleModifier :: String -> IO () -> IO () -> IO ()
+handleModifier e h k =
+  case e of
+    "Shift_R"   -> h
+    "Shift_L"   -> h
+    "Control_L" -> h
+    "Control_R" -> h
+    "Super_L"   -> h
+    "Super_R"   -> h
+    "Menu"      -> h
+    "Alt_L"     -> h
+    "Alt_R"     -> h
+    _           -> k
+
+
+
 
 version :: String
 version = showVersion Self.version ++ " (" ++ displayId ++ " frontend)"
