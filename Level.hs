@@ -161,6 +161,22 @@ unoccupied :: [Monster] -> LMap -> Loc -> Bool
 unoccupied monsters lvl loc =
   all (\ m -> mloc m /= loc) monsters
 
+-- check whether one location is accessible from the other
+-- precondition: the two locations are next to each other
+-- currently only implements that doors aren't accessible diagonally,
+-- and that the target location has to be open
+accessible :: LMap -> Loc -> Loc -> Bool
+accessible lvl source target =
+  let dir = shift source (neg target)
+      src = lvl `at` source
+      tgt = lvl `at` target
+  in  open tgt &&
+      (not (diagonal dir) || 
+       case (src,tgt) of
+         (Door _ _, _) -> False
+         (_, Door _ _) -> False
+         _             -> True)
+
 horiz = [(0,-1),(0,1)]
 vert  = [(-1,0),(1,0)]
 

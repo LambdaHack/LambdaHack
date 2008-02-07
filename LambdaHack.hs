@@ -110,9 +110,11 @@ loop session (lvl@(Level nm sz ms smap lmap))
                                       maybe id
                                             (\ d -> L.filter (\ x -> distance (neg d,x) > 1)) 
                                             (mdir m) moves
-                           let fns = L.filter (\ x -> open (lmap `at` (mloc m `shift` x))) ns
+                           let fns = L.filter (\ x -> accessible lmap (mloc m) (mloc m `shift` x)) ns
                            let smells = zip fns
                                             (L.map (\ x -> (nsmap ! (mloc m `shift` x) - time) `max` 0) fns)
+                           let msmell = maximumBy
+                                          (\ (_,s1) (_,s2) -> compare s1 s2) smells
                            nl <- if adjacent ploc (mloc m) then
                                    -- attack player
                                    return (ploc `shift` neg (mloc m))
@@ -120,11 +122,9 @@ loop session (lvl@(Level nm sz ms smap lmap))
                                    do
                                      i <- randomRIO (0, L.length fns - 1)
                                      return (fns !! i)
-                                 else if mtype m == Nose && (nsmap ! mloc m) - time > 0 &&
-                                      not (L.null smells) then
+                                 else if mtype m == Nose && not (L.null smells) && 
+                                         snd msmell > 0 then
                                    do
-                                     let msmell = maximumBy
-                                                    (\ (_,s1) (_,s2) -> compare s1 s2) smells
                                      return (fst msmell)
                                  else
                                      liftM2 (,) (randomRIO (-1,1)) (randomRIO (-1,1))
@@ -341,12 +341,7 @@ moveOrAttack continue nlvl@(Level { lmap = nlmap }) abort player@(Monster { mloc
           else
             abort  -- currently, we prevent monster from attacking each other
 
-    | open target =
-        case (source,target) of
-          (Door _ _,_) | diagonal dir -> abort -- doors aren't accessible diagonally
-          (_,Door _ _) | diagonal dir -> abort -- doors aren't accessible diagonally
-          _ -> -- ok
-               continue nlvl (player { mloc = nploc }) ""
+    | accessible nlmap ploc nploc = continue nlvl (player { mloc = nploc }) ""
     | otherwise = abort
     where source = nlmap `at` ploc
           nploc  = shift ploc dir
