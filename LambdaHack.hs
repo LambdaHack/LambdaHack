@@ -105,7 +105,11 @@ loop session (lvl@(Level nm sz ms smap lmap))
     let monsterMoves ams cplayer cmsg []      = return (ams, cplayer, cmsg)
         monsterMoves ams cplayer cmsg (m:oms) =
                          do
-                           let ns = moves L.\\ maybe [] ((:[]) . neg) (mdir m)
+                           let ns | mtype m == Nose = moves
+                                  | otherwise       =
+                                      maybe id
+                                            (\ d -> L.filter (\ x -> distance (neg d,x) > 1)) 
+                                            (mdir m) moves
                            let fns = L.filter (\ x -> open (lmap `at` (mloc m `shift` x))) ns
                            let smells = zip fns
                                             (L.map (\ x -> (nsmap ! (mloc m `shift` x) - time) `max` 0) fns)
