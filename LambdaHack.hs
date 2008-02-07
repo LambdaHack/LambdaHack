@@ -243,14 +243,18 @@ handle session (lvl@(Level nm sz ms smap lmap))
       e <- nextEvent session
       handleDirection e (openclose' o abort) (displayCurrent "never mind" >> abort)
   openclose' o abort dir =
-    let txt = if o then "open" else "closed" in
-    case (nlmap `at` shift ploc dir) of
-      Door hv o' | o == not o' -> -- ok, we can open/close the door      
-                                  let nt = Door hv o
-                                      clmap = M.insert (shift ploc dir) (nt, flat nt) nlmap
-                                  in loop session (updateLMap lvl (const clmap)) state ""
-                 | otherwise   -> displayCurrent ("already " ++ txt) >> abort
-      _ -> displayCurrent "never mind" >> abort
+    let txt  = if o then "open" else "closed"
+        dloc = shift ploc dir
+    in
+      case (nlmap `at` dloc) of
+        Door hv o' | o /= not o' -> displayCurrent ("already " ++ txt) >> abort
+                   | not (unoccupied ms nlmap dloc)
+                                 -> displayCurrent "blocked" >> abort
+                   | otherwise   -> -- ok, we can open/close the door      
+                                    let nt = Door hv o
+                                        clmap = M.insert (shift ploc dir) (nt, flat nt) nlmap
+                                    in loop session (updateLMap lvl (const clmap)) state ""
+        _ -> displayCurrent "never mind" >> abort
   -- perform a level change
   lvlchange vdir abort =
     case nlmap `at` ploc of

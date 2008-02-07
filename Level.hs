@@ -155,6 +155,12 @@ passive (Door Horiz False) = (False, vert)
 passive (Door Vert False)  = (False, horiz)
 passive _ = (False, [])
 
+-- checks for the presence of monsters (and items); it does *not* check
+-- if the tile is open ...
+unoccupied :: [Monster] -> LMap -> Loc -> Bool
+unoccupied monsters lvl loc =
+  all (\ m -> mloc m /= loc) monsters
+
 horiz = [(0,-1),(0,1)]
 vert  = [(-1,0),(1,0)]
 
