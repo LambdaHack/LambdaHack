@@ -1,5 +1,5 @@
 module Display.Vty
-  (startup, shutdown, setHalfBright,
+  (displayId, startup, shutdown, setHalfBright,
    display, nextEvent, setBG, setFG, Session,
    green, white, black, red, blue, magenta, yellow, attr, Attr) where
 
@@ -9,6 +9,8 @@ import Data.Char
 import qualified Data.ByteString as BS
 
 import Geometry
+
+displayId = "vty"
 
 type Session = V.Vty
 

@@ -1,5 +1,5 @@
 module Display.Gtk
-  (Display.Gtk.Color, Attr, startup, shutdown,
+  (displayId, Display.Gtk.Color, Attr, startup, shutdown,
    display, nextEvent, setBG, setFG, Session,
    white, black, yellow, blue, magenta, red, green, attr) where
 
@@ -11,6 +11,8 @@ import Data.IORef
 import Data.Map as M
 
 import Geometry
+
+displayId = "gtk"
 
 data Session =
   Session {

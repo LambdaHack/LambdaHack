@@ -4,8 +4,11 @@ default : dist/setup-config
 dist/setup-config :
 	runghc Setup configure -f-gtk --user
 
-configure : dist/setup-config
+vty :
+	runghc Setup configure -f-gtk --user
 
+gtk :
+	runghc Setup configure --user
 
 clean :
 	runghc Setup clean

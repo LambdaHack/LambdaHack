@@ -195,7 +195,7 @@ handle session (lvl@(Level nm sz ms smap lmap))
                            "N"       -> handle session nlvl (toggleSmell state) oldmsg
                            "O"       -> handle session nlvl (toggleOmniscient state) oldmsg
 
-                           "v"       -> displayCurrent ("version " ++ showVersion Self.version) >> h
+                           "v"       -> displayCurrent version >> h
 
                            s   -> displayCurrent ("unknown command (" ++ s ++ ")") >> h
              h
@@ -295,6 +295,9 @@ handle session (lvl@(Level nm sz ms smap lmap))
   -- perform a player move
   move abort dir = moveOrAttack (\ l m -> loop session l (updatePlayer state (const m)))
                                 nlvl abort player dir
+
+version :: String
+version = showVersion Self.version ++ " (" ++ displayId ++ " frontend)"
 
 moveOrAttack :: (Level -> Monster -> String -> IO a) ->     -- success continuation
                 Level ->
