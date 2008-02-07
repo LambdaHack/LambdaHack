@@ -7,12 +7,16 @@ import Data.List as L
 import Data.Map as M
 import Data.Set as S
 import Data.Char
+import Data.Version
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LBS
 import System.Random
 import Control.Monad
 import Control.Exception as E hiding (handle)
 import Codec.Compression.Zlib as Z
+
+-- Cabal
+import qualified Paths_LambdaHack as Self (version)
 
 import State
 import Geometry
@@ -186,9 +190,12 @@ handle session (lvl@(Level nm sz ms smap lmap))
                            "Alt_R"   -> h
 
                            "period"  -> loop session nlvl state ""
+
                            "V"       -> handle session nlvl (toggleVision state) oldmsg
                            "N"       -> handle session nlvl (toggleSmell state) oldmsg
                            "O"       -> handle session nlvl (toggleOmniscient state) oldmsg
+
+                           "v"       -> displayCurrent ("version " ++ showVersion Self.version) >> h
 
                            s   -> displayCurrent ("unknown command (" ++ s ++ ")") >> h
              h

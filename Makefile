@@ -1,11 +1,11 @@
-default :
-	ghc -O --make -cpp LambdaHack.hs
+default : dist/setup-config
+	runghc Setup build
 
-%.hs : %.hsc
-	hsc2hs -Icbits/ Curses.hsc
+dist/setup-config :
+	runghc Setup configure -f-gtk --user
 
-Curses.o : Curses.hs
-	ghc -ffi -c -Icbits/ Curses.hs
+configure : dist/setup-config
+
 
 clean :
-	rm -f *.o *.hi Curses.hs 
+	runghc Setup clean
