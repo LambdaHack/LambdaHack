@@ -377,7 +377,15 @@ moveOrAttack continue nlvl@(Level { lmap = nlmap }) abort player@(Monster { mloc
           (attacked, others) = L.partition (\ m -> mloc m == nploc) (lmonsters nlvl)
 
 viewTile :: Tile -> (Char, Attr -> Attr)
-viewTile (Tile t is) = viewTerrain t
+viewTile (Tile t [])    = viewTerrain t
+viewTile (Tile t (i:_)) = viewItem i
+
+viewItem :: Item -> (Char, Attr -> Attr)
+viewItem Ring   = ('=', id)
+viewItem Scroll = ('?', id)
+viewItem Potion = ('!', id)
+viewItem Wand   = ('/', id)
+viewItem _      = ('~', id)
 
 viewTerrain :: Terrain -> (Char, Attr -> Attr)
 viewTerrain Rock              = (' ', id)

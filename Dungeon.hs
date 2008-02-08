@@ -125,13 +125,17 @@ level cfg nm =
                           else return o
                     _ -> return o) .
                 M.toList $ lmap
+    -- generate a single item
+    si <- findLoc lvl (const ((==Floor) . tterrain))
     -- locations of the stairs
     su <- findLoc lvl (const ((==Floor) . tterrain))
     sd <- findLoc lvl (\ l t -> tterrain t == Floor && distance (su,l) > minStairsDistance cfg)
     let meta = show allConnects
     return $ (\ lu ld ->
       let flmap = M.insert su (newTile (Stairs Up lu)) $
-                  M.insert sd (newTile (Stairs Down ld)) $ dlmap
+                  M.insert sd (newTile (Stairs Down ld)) $
+                  M.update (\ (t,r) -> Just (t { titems = [Ring] }, r)) si $
+                  dlmap
       in  Level nm (levelSize cfg) [] smap flmap meta, su, sd)
 
 emptyLMap :: (Y,X) -> LMap
