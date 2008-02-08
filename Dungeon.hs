@@ -10,6 +10,7 @@ import State
 import Geometry
 import Level
 import Monster
+import Item
 
 type Corridor = [(Y,X)]
 type Room = Area

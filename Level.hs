@@ -10,6 +10,7 @@ import Data.List as L
 
 import Geometry
 import Monster
+import Item
 import State
 
 data Level = Level
@@ -55,33 +56,6 @@ data Tile = Tile
 instance Binary Tile where
   put (Tile t is) = put t >> put is
   get = liftM2 Tile get get
-
--- TODO: Move to its own module.
-data Item =
-   Ring
- | Scroll
- | Potion
- | Wand
- | Amulet
- | Gem
- deriving Show
-
-instance Binary Item where
-  put Ring   = putWord8 0
-  put Scroll = putWord8 1
-  put Potion = putWord8 2
-  put Wand   = putWord8 3
-  put Amulet = putWord8 4
-  put Gem    = putWord8 5
-  get = do
-          tag <- getWord8
-          case tag of
-            0 -> return Ring
-            1 -> return Scroll
-            2 -> return Potion
-            3 -> return Wand
-            4 -> return Amulet
-            5 -> return Gem
 
 at         l p = fst (findWithDefault (unknown, unknown) p l)
 rememberAt l p = snd (findWithDefault (unknown, unknown) p l)

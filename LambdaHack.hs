@@ -23,6 +23,7 @@ import Geometry
 import Level
 import Dungeon
 import Monster
+import Item
 import FOV
 import Display
 
@@ -208,6 +209,9 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                            -- wait
                            "space"   -> loop session nlvl state ""
                            "period"  -> loop session nlvl state ""
+
+                           -- look
+                           "colon"   -> displayCurrent (lookAt nlmap ploc) >> h
 
                            "V"       -> handle session nlvl (toggleVision state) oldmsg
                            "N"       -> handle session nlvl (toggleSmell state) oldmsg
