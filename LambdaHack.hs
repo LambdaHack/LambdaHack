@@ -57,16 +57,7 @@ start session =
       restored <- if x
                     then
                       E.catch (do
-                                 display ((0,0),(0,40)) session (const (attr, ' '))
-                                         "Restoring save game --more--" ""
-                                 let h = do
-                                           e <- nextEvent session
-                                           handleModifier e h $
-                                             case e of
-                                               "space"  -> return ()
-                                               "Return" -> return ()
-                                               _        -> h
-                                 h
+                                 displayBlankConfirm session "Restoring save game"
                                  r <- strictDecodeCompressedFile savefile
                                  removeFile savefile
                                  case r of
@@ -79,6 +70,27 @@ start session =
       case restored of
         Right msg        -> generate session msg
         Left (lvl,state) -> handle session lvl state "Welcome back to LambdaHack."
+
+more = " --more--"
+
+-- | Displays a message on a blank screen. Waits for confirmation.
+displayBlankConfirm :: Session -> String -> IO ()
+displayBlankConfirm session txt =
+  let x = txt ++ more
+  in  do
+        display ((0,0),(0,length x - 1)) session (const (attr, ' ')) x ""
+        getConfirm session
+
+-- | Waits for a space or return.
+getConfirm :: Session -> IO ()
+getConfirm session =
+  do
+    e <- nextEvent session
+    handleModifier e (getConfirm session) $
+      case e of
+        "space"  -> return ()
+        "Return" -> return ()
+        _        -> getConfirm session 
 
 generate session msg =
   do
