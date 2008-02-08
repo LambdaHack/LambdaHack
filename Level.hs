@@ -47,26 +47,40 @@ instance Binary Level where
 type LMap = Map (Y,X) (Tile,Tile)
 type SMap = Map (Y,X) Time
 
-at         l p = fst (findWithDefault (Unknown, Unknown) p l)
-rememberAt l p = snd (findWithDefault (Unknown, Unknown) p l)
+data Tile = Tile
+              { tterrain :: Terrain,
+                titems   :: [Item] }
+  deriving Show
 
-data Tile = Rock
-          | Opening HV
-          | Floor
-          | Unknown
-          | Corridor
-          | Wall HV
-          | Stairs VDir (Maybe (Level, Loc))
-          | Door HV Bool
+instance Binary Tile where
+  put (Tile t is) = put t >> put is
+  get = liftM2 Tile get get
+
+type Item = ()
+
+at         l p = fst (findWithDefault (unknown, unknown) p l)
+rememberAt l p = snd (findWithDefault (unknown, unknown) p l)
+
+unknown :: Tile
+unknown = Tile Unknown []
+
+data Terrain = Rock
+             | Opening HV
+             | Floor
+             | Unknown
+             | Corridor
+             | Wall HV
+             | Stairs VDir (Maybe (Level, Loc))
+             | Door HV Bool
   deriving Show
 
 -- forget stuff you cannot see anyway
 -- mainly for space efficiency in save files
 flat :: Tile -> Tile
-flat (Stairs d _) = Stairs d Nothing
-flat x            = x
+flat (Tile (Stairs d _) is) = Tile (Stairs d Nothing) is
+flat x                      = x
 
-instance Binary Tile where
+instance Binary Terrain where
   put Rock         = putWord8 0
   put (Opening d)  = putWord8 1 >> put d
   put Floor        = putWord8 2
@@ -121,7 +135,7 @@ instance Binary VDir where
   put Down = put False
   get = get >>= \ b -> if b then return Up else return Down
 
-instance Eq Tile where
+instance Eq Terrain where
   Rock == Rock = True
   Opening d == Opening d' = d == d'
   Floor == Floor = True
@@ -132,31 +146,36 @@ instance Eq Tile where
   Door d o == Door d' o' = d == d' && o == o'
   _ == _ = False
 
--- closed: blocks moves and light
--- open: allows moves and light
--- light: is light on its own
--- passive: reflects light from adjacent positions
--- exclusively passive: cannot be seen from an adjacent position in darkness
-closed, open, light :: Tile -> Bool
+-- | blocks moves and vision
+closed :: Tile -> Bool
 closed = not . open
-open Floor = True
-open (Opening _) = True
-open (Door _ o) = o
-open Corridor = True
-open (Stairs _ _) = True
-open _ = False
-light Floor = True
-light (Opening _) = True
-light (Door _ True) = True -- open doors are all visible currently
-light (Stairs _ _) = True
-light (Wall _) = False
-light _ = False
+
+-- | allows moves and vision
+open :: Tile -> Bool
+open (Tile Floor _) = True
+open (Tile (Opening _) _)  = True
+open (Tile (Door _ o) _)   = o
+open (Tile Corridor _)     = True
+open (Tile (Stairs _ _) _) = True
+open _                     = False
+
+-- | is lighted on its own
+light :: Tile -> Bool
+light (Tile Floor _)         = True
+light (Tile (Opening _) _)   = True
+light (Tile (Door _ True) _) = True -- open doors are all visible currently
+light (Tile (Stairs _ _) _)  = True
+light (Tile (Wall _) _)      = False
+light _                      = False
+
+-- | reflects light from adjacent positions;
+-- exclusively passive: cannot be seen from an adjacent position in darkness
 passive :: Tile -> (Bool,[(Y,X)])  -- exclusively passive?
-passive (Wall Horiz) = (True, vert ++ [(-1,1),(1,1),(-1,-1),(1,-1)]) -- for corners
-passive (Wall Vert)  = (True, horiz)
-passive (Door Horiz False) = (False, vert)
-passive (Door Vert False)  = (False, horiz)
-passive _ = (False, [])
+passive (Tile (Wall Horiz) _) = (True, vert ++ [(-1,1),(1,1),(-1,-1),(1,-1)]) -- for corners
+passive (Tile (Wall Vert) _)  = (True, horiz)
+passive (Tile (Door Horiz False) _) = (False, vert)
+passive (Tile (Door Vert False) _)  = (False, horiz)
+passive _                     = (False, [])
 
 -- checks for the presence of monsters (and items); it does *not* check
 -- if the tile is open ...
@@ -175,7 +194,7 @@ accessible lvl source target =
       tgt = lvl `at` target
   in  open tgt &&
       (not (diagonal dir) || 
-       case (src,tgt) of
+       case (tterrain src, tterrain tgt) of
          (Door _ _, _) -> False
          (_, Door _ _) -> False
          _             -> True)

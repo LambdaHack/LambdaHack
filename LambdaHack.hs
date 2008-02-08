@@ -119,7 +119,7 @@ loop session (lvl@(Level nm sz ms smap lmap lmeta))
     gms <- if rc == (1 :: Int)
            then do
                   -- TODO: new monsters shouldn't be visible by the player
-                  sm <- findLoc lvl (\ l t -> t == Floor && 
+                  sm <- findLoc lvl (\ l t -> tterrain t == Floor && 
                                               not (l `L.elem` L.map mloc (player : ms)) &&
                                               distance (ploc, l) > 400)
                   rh <- fmap (+1) (randomRIO (1,2))
@@ -277,19 +277,20 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
     let txt  = if o then "open" else "closed"
         dloc = shift ploc dir
     in
-      case (nlmap `at` dloc) of
-        Door hv o' | o /= not o' -> displayCurrent ("already " ++ txt) >> abort
+      case nlmap `at` dloc of
+        Tile (Door hv o') is
+                   | o /= not o' -> displayCurrent ("already " ++ txt) >> abort
                    | not (unoccupied ms nlmap dloc)
                                  -> displayCurrent "blocked" >> abort
                    | otherwise   -> -- ok, we can open/close the door      
-                                    let nt = Door hv o
+                                    let nt = Tile (Door hv o) is
                                         clmap = M.insert (shift ploc dir) (nt, flat nt) nlmap
                                     in loop session (updateLMap lvl (const clmap)) state ""
         _ -> displayCurrent "never mind" >> abort
   -- perform a level change
   lvlchange vdir abort =
     case nlmap `at` ploc of
-      Stairs vdir' next
+      Tile (Stairs vdir' next) is
        | vdir == vdir' -> -- ok
           case next of
             Nothing -> -- exit dungeon
@@ -297,8 +298,8 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
             Just (nlvl, nloc) ->
               -- perform level change
               do
-                let next' = Just (updateLMap lvl (const $ M.update (\ (_,r) -> Just (Stairs vdir Nothing,r)) ploc nlmap), ploc)
-                let new = updateLMap nlvl (M.update (\ (Stairs d _,r) -> Just (Stairs d next',r)) nloc)
+                let next' = Just (updateLMap lvl (const $ M.update (\ (_,r) -> Just (Tile (Stairs vdir Nothing) is,r)) ploc nlmap), ploc)
+                let new = updateLMap nlvl (M.update (\ (Tile (Stairs d _) is,r) -> Just (Tile (Stairs d next') is,r)) nloc)
                 loop session new (updatePlayer state (const (player { mloc = nloc }))) ""
                 
       _ -> -- no stairs
@@ -376,18 +377,21 @@ moveOrAttack continue nlvl@(Level { lmap = nlmap }) abort player@(Monster { mloc
           (attacked, others) = L.partition (\ m -> mloc m == nploc) (lmonsters nlvl)
 
 viewTile :: Tile -> (Char, Attr -> Attr)
-viewTile Rock              = (' ', id)
-viewTile (Opening _)       = ('.', id)
-viewTile Floor             = ('.', id)
-viewTile Unknown           = (' ', id)
-viewTile Corridor          = ('#', id)
-viewTile (Wall Horiz)      = ('-', id)
-viewTile (Wall Vert)       = ('|', id)
-viewTile (Stairs Up _)     = ('<', id)
-viewTile (Stairs Down _)   = ('>', id)
-viewTile (Door _ False)    = ('+', setFG yellow)
-viewTile (Door Horiz True) = ('|', setFG yellow)
-viewTile (Door Vert True)  = ('-', setFG yellow)
+viewTile (Tile t is) = viewTerrain t
+
+viewTerrain :: Terrain -> (Char, Attr -> Attr)
+viewTerrain Rock              = (' ', id)
+viewTerrain (Opening _)       = ('.', id)
+viewTerrain Floor             = ('.', id)
+viewTerrain Unknown           = (' ', id)
+viewTerrain Corridor          = ('#', id)
+viewTerrain (Wall Horiz)      = ('-', id)
+viewTerrain (Wall Vert)       = ('|', id)
+viewTerrain (Stairs Up _)     = ('<', id)
+viewTerrain (Stairs Down _)   = ('>', id)
+viewTerrain (Door _ False)    = ('+', setFG yellow)
+viewTerrain (Door Horiz True) = ('|', setFG yellow)
+viewTerrain (Door Vert True)  = ('-', setFG yellow)
 
 viewMonster :: MonsterType -> (Char, Attr -> Attr)
 viewMonster Player = ('@', setBG white . setFG black)

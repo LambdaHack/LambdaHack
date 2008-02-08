@@ -65,9 +65,3 @@ downBias, upBias :: (Integral a, Integral b) => Ratio a -> b
 downBias x = round (x - 1 % (denominator x * 3))
 upBias   x = round (x + 1 % (denominator x * 3))
 
-test :: LMap
-test = M.insert (3,3) (Rock,Unknown) $ 
-       M.insert (3,1) (Rock,Unknown) $ 
-       M.insert (6,7) (Rock,Unknown) $ 
-       M.insert (7,8) (Rock,Unknown) $ 
-       M.fromList [((x,y), (Floor,Unknown)) | x <- [0..10], y <- [0..10]]
