@@ -53,18 +53,32 @@ encodeCompressedFile f x = LBS.writeFile f (Z.compress (encode x))
 start session =
     do
       -- check if we have a savegame
-      restored <- E.catch (do
-                             r <- strictDecodeCompressedFile savefile
-                             removeFile savefile
-                             case r of
-                               (x,y,z) -> (z :: Bool) `seq` return $ Left (x,y))
-                          (\ e -> case e of
-                                    IOException _ -> return (Right "Welcome to LambdaHack!")
-                                    _ -> return (Right $ "Restore failed: " ++
-                                                 (unwords . lines) (show e)))
+      x <- doesFileExist savefile
+      restored <- if x
+                    then
+                      E.catch (do
+                                 display ((0,0),(0,40)) session (const (attr, ' '))
+                                         "Restoring save game --more--" ""
+                                 let h = do
+                                           e <- nextEvent session
+                                           handleModifier e h $
+                                             case e of
+                                               "space"  -> return ()
+                                               "Return" -> return ()
+                                               _        -> h
+                                 h
+                                 r <- strictDecodeCompressedFile savefile
+                                 removeFile savefile
+                                 case r of
+                                   (x,y,z) -> (z :: Bool) `seq` return $ Left (x,y))
+                              (\ e -> case e of
+                                        _ -> return (Right $ "Restore failed: " ++
+                                                     (unwords . lines) (show e)))
+                    else
+                      return $ Right "Welcome to LambdaHack!"  -- new game
       case restored of
         Right msg        -> generate session msg
-        Left (lvl,state) -> handle session lvl state "Restored successfully."
+        Left (lvl,state) -> handle session lvl state "Welcome back to LambdaHack."
 
 generate session msg =
   do

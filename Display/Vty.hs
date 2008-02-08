@@ -42,6 +42,8 @@ nextEvent session =
       V.EvKey (KASCII '<') [] -> return "less"
       V.EvKey (KASCII '>') [] -> return "greater"
       V.EvKey (KASCII '.') [] -> return "period"
+      V.EvKey (KASCII ' ') [] -> return "space"
       V.EvKey (KASCII c) []   -> return [c]
       V.EvKey KEsc []         -> return "Escape"
+      V.EvKey KEnter []       -> return "Return"
       _                       -> nextEvent session
