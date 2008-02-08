@@ -205,6 +205,8 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                            "Q"       -> shutdown session
                            "Escape"  -> shutdown session
 
+                           -- wait
+                           "space"   -> loop session nlvl state ""
                            "period"  -> loop session nlvl state ""
 
                            "V"       -> handle session nlvl (toggleVision state) oldmsg
@@ -365,12 +367,21 @@ moveOrAttack continue nlvl@(Level { lmap = nlmap }) abort player@(Monster { mloc
           else
             abort  -- currently, we prevent monster from attacking each other
 
-    | accessible nlmap ploc nploc = continue nlvl (player { mloc = nploc }) ""
+    | accessible nlmap ploc nploc = continue nlvl (player { mloc = nploc }) 
+                                             (if mtype player == Player
+                                              then lookAt nlmap nploc else "") 
     | otherwise = abort
     where source = nlmap `at` ploc
           nploc  = shift ploc dir
           target = nlmap `at` nploc
           (attacked, others) = L.partition (\ m -> mloc m == nploc) (lmonsters nlvl)
+
+-- | Produces a textual description of the items at a location. It's
+-- probably correct to use 'at' rather than 'rememberAt' at this point,
+-- although we could argue that 'rememberAt' reflects what the player can
+-- perceive more correctly ...
+lookAt :: LMap -> Loc -> String
+lookAt lvl loc = unwords $ L.map show $ titems (lvl `at` loc)
 
 viewTile :: Tile -> (Char, Attr -> Attr)
 viewTile (Tile t [])    = viewTerrain t
