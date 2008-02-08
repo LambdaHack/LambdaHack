@@ -24,11 +24,7 @@ import Level
 import Dungeon
 import Monster
 import FOV
-#ifdef GTK
-import Display.Gtk
-#else
-import Display.Vty
-#endif
+import Display
 
 savefile = "HHack2.save"
 
