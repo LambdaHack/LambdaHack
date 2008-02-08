@@ -17,20 +17,22 @@ data Level = Level
                 lsize     :: (Y,X),
                 lmonsters :: [Monster],
                 lsmell    :: SMap,
-                lmap      :: LMap }
+                lmap      :: LMap,
+                lmeta     :: String }
   deriving Show
 
 updateLMap :: Level -> (LMap -> LMap) -> Level
 updateLMap lvl f = lvl { lmap = f (lmap lvl) }
 
 instance Binary Level where
-  put (Level nm sz@(sy,sx) ms lsmell lmap) = 
+  put (Level nm sz@(sy,sx) ms lsmell lmap lmeta) = 
         do
           put nm
           put sz
           put ms
           put [ lsmell ! (y,x) | y <- [0..sy], x <- [0..sx] ]
           put [ lmap ! (y,x) | y <- [0..sy], x <- [0..sx] ]
+          put lmeta
   get = do
           nm <- get
           sz@(sy,sx) <- get
@@ -39,7 +41,8 @@ instance Binary Level where
           let lsmell = M.fromList (zip [ (y,x) | y <- [0..sy], x <- [0..sx] ] xs)
           xs <- get
           let lmap   = M.fromList (zip [ (y,x) | y <- [0..sy], x <- [0..sx] ] xs)
-          return (Level nm sz ms lsmell lmap)
+          lmeta <- get
+          return (Level nm sz ms lsmell lmap lmeta)
 
 type LMap = Map (Y,X) (Tile,Tile)
 type SMap = Map (Y,X) Time

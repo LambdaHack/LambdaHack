@@ -97,7 +97,7 @@ level cfg nm =
     let rs = M.fromList rs0
     connects <- connectGrid (levelGrid cfg)
     addedConnects <- replicateM (extraConnects cfg) (randomConnection (levelGrid cfg))
-    let allConnects = L.union addedConnects connects
+    let allConnects = L.nub (addedConnects ++ connects)
     cs <- mapM
            (\ (p0,p1) -> do
                            let r0 = rs ! p0
@@ -106,7 +106,7 @@ level cfg nm =
     let smap = M.fromList [ ((y,x),-100) | let (sy,sx) = levelSize cfg,
                                            y <- [0..sy], x <- [0..sx] ]
     let lmap = foldr digCorridor (foldr digRoom (emptyLMap (levelSize cfg)) rooms) cs
-    let lvl = Level nm (levelSize cfg) [] smap lmap
+    let lvl = Level nm (levelSize cfg) [] smap lmap ""
     -- convert openings into doors
     dlmap <- fmap M.fromList . mapM
                 (\ o@((y,x),(t,r)) -> 
@@ -123,10 +123,11 @@ level cfg nm =
     -- locations of the stairs
     su <- findLoc lvl (const (==Floor))
     sd <- findLoc lvl (\ l t -> t == Floor && distance (su,l) > minStairsDistance cfg)
+    let meta = show allConnects
     return $ (\ lu ld ->
       let flmap = M.insert su (Stairs Up lu, Unknown) $
                   M.insert sd (Stairs Down ld, Unknown) $ dlmap
-      in  Level nm (levelSize cfg) [] smap flmap, su, sd)
+      in  Level nm (levelSize cfg) [] smap flmap meta, su, sd)
 
 emptyLMap :: (Y,X) -> LMap
 emptyLMap (my,mx) = M.fromList [ ((y,x),(Rock,Unknown)) | x <- [0..mx], y <- [0..my] ]

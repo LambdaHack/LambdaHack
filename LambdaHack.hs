@@ -106,7 +106,7 @@ generate session msg =
 
 -- perform a complete move (i.e., monster moves etc.)
 loop :: Session -> Level -> State -> String -> IO ()
-loop session (lvl@(Level nm sz ms smap lmap))
+loop session (lvl@(Level nm sz ms smap lmap lmeta))
              (state@(State { splayer = player@(Monster _ php _ ploc), stime = time }))
              oldmsg =
   do
@@ -183,7 +183,7 @@ addMsg xs x  = xs ++ " " ++ x
 
 -- display and handle the player
 handle :: Session -> Level -> State -> String -> IO ()
-handle session (lvl@(Level nm sz ms smap lmap))
+handle session (lvl@(Level nm sz ms smap lmap lmeta))
                (state@(State { splayer = player@(Monster _ php _ ploc), stime = time }))
                oldmsg =
   do
@@ -215,6 +215,7 @@ handle session (lvl@(Level nm sz ms smap lmap))
                            "N"       -> handle session nlvl (toggleSmell state) oldmsg
                            "O"       -> handle session nlvl (toggleOmniscient state) oldmsg
 
+                           "M"       -> displayCurrent lmeta >> h
                            "v"       -> displayCurrent version >> h
 
                            s   -> displayCurrent ("unknown command (" ++ s ++ ")") >> h
