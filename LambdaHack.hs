@@ -385,7 +385,7 @@ moveOrAttack continue nlvl@(Level { lmap = nlmap }) abort player@(Monster { mloc
 -- although we could argue that 'rememberAt' reflects what the player can
 -- perceive more correctly ...
 lookAt :: LMap -> Loc -> String
-lookAt lvl loc = unwords $ L.map show $ titems (lvl `at` loc)
+lookAt lvl loc = unwords $ L.map objectItem $ titems (lvl `at` loc)
 
 viewTile :: Tile -> (Char, Attr -> Attr)
 viewTile (Tile t [])    = viewTerrain t

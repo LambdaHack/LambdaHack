@@ -28,4 +28,11 @@ instance Binary Item where
             4 -> return Amulet
             5 -> return Gem
 
+objectItem :: Item -> String
+objectItem Ring   = "a ring"
+objectItem Scroll = "a scroll"
+objectItem Potion = "a potion"
+objectItem Wand   = "a wand"
+objectItem Amulet = "an amulet"
+objectItem Gem    = "a gem"
 
