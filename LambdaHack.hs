@@ -216,6 +216,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                            "V"       -> handle session nlvl (toggleVision state) oldmsg
                            "N"       -> handle session nlvl (toggleSmell state) oldmsg
                            "O"       -> handle session nlvl (toggleOmniscient state) oldmsg
+                           "T"       -> handle session nlvl (toggleTerrain state) oldmsg
 
                            "M"       -> displayCurrent lmeta >> h
                            "v"       -> displayCurrent version >> h
@@ -230,7 +231,8 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
       sSml    = ssensory state == Smell
       sVis    = ssensory state == Vision
       sOmn    = sdisplay state == Omniscient
-      lAt     = if sOmn then at else rememberAt
+      sTer    = sdisplay state == Terrain
+      lAt     = if sOmn || sTer then at else rememberAt
       lVision = if sVis
                   then \ vis rea ->
                        if      vis then setBG blue
@@ -244,6 +246,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                              vis  = S.member loc visible
                              rea  = S.member loc reachable
                              (rv,ra) = case L.find (\ m -> loc == mloc m) (player:ms) of
+                                         _ | sTer              -> viewTerrain (tterrain tile)
                                          Just m | sOmn || vis  -> viewMonster (mtype m) 
                                          _ | sSml && sml >= 0  -> viewSmell sml
                                            | otherwise         -> viewTile tile
