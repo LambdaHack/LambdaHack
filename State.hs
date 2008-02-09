@@ -38,7 +38,7 @@ toggleOmniscient :: State -> State
 toggleOmniscient s = s { sdisplay = if sdisplay s == Omniscient then Normal else Omniscient }
 
 toggleTerrain :: State -> State
-toggleTerrain s = s { sdisplay = if sdisplay s == Terrain then Normal else Terrain }
+toggleTerrain s = s { sdisplay = case sdisplay s of Terrain 1 -> Normal; Terrain n -> Terrain (n-1); _ -> Terrain 4 }
 
 instance Binary State where
   put (State player sense disp time) =
@@ -70,18 +70,18 @@ instance Binary SensoryMode where
 data DisplayMode =
     Normal
   | Omniscient
-  | Terrain
+  | Terrain Int
   deriving (Show, Eq)
 
 instance Binary DisplayMode where
-  put Normal     = putWord8 0
-  put Omniscient = putWord8 1
-  put Terrain    = putWord8 2
+  put Normal      = putWord8 0
+  put Omniscient  = putWord8 1
+  put (Terrain n) = putWord8 2 >> put n
   get = do
           tag <- getWord8
           case tag of
             0 -> return Normal
             1 -> return Omniscient
-            2 -> return Terrain
+            2 -> liftM Terrain get
             _ -> fail "no parse (DisplayMode)"
 

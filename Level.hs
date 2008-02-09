@@ -122,6 +122,14 @@ binaryChoice p0 p1 =
     b <- randomRIO (False,True)
     return (if b then p0 else p1)
 
+chance :: Rational -> IO Bool
+chance r =
+  do
+    let n = numerator r
+        d = denominator r
+    k <- randomRIO (1,d)
+    return (k <= n)
+
 instance Binary HV where
   put Horiz = put True
   put Vert  = put False

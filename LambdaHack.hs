@@ -231,8 +231,8 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
       sSml    = ssensory state == Smell
       sVis    = ssensory state == Vision
       sOmn    = sdisplay state == Omniscient
-      sTer    = sdisplay state == Terrain
-      lAt     = if sOmn || sTer then at else rememberAt
+      sTer    = case sdisplay state of Terrain n -> n; _ -> 0
+      lAt     = if sOmn || sTer > 0 then at else rememberAt
       lVision = if sVis
                   then \ vis rea ->
                        if      vis then setBG blue
@@ -246,7 +246,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                              vis  = S.member loc visible
                              rea  = S.member loc reachable
                              (rv,ra) = case L.find (\ m -> loc == mloc m) (player:ms) of
-                                         _ | sTer              -> viewTerrain (tterrain tile)
+                                         _ | sTer > 0          -> viewTerrain sTer (tterrain tile)
                                          Just m | sOmn || vis  -> viewMonster (mtype m) 
                                          _ | sSml && sml >= 0  -> viewSmell sml
                                            | otherwise         -> viewTile tile
@@ -391,7 +391,7 @@ lookAt :: LMap -> Loc -> String
 lookAt lvl loc = unwords $ L.map objectItem $ titems (lvl `at` loc)
 
 viewTile :: Tile -> (Char, Attr -> Attr)
-viewTile (Tile t [])    = viewTerrain t
+viewTile (Tile t [])    = viewTerrain 0 t
 viewTile (Tile t (i:_)) = viewItem i
 
 viewItem :: Item -> (Char, Attr -> Attr)
@@ -401,19 +401,40 @@ viewItem Potion = ('!', id)
 viewItem Wand   = ('/', id)
 viewItem _      = ('~', id)
 
-viewTerrain :: Terrain -> (Char, Attr -> Attr)
-viewTerrain Rock              = (' ', id)
-viewTerrain (Opening _)       = ('.', id)
-viewTerrain Floor             = ('.', id)
-viewTerrain Unknown           = (' ', id)
-viewTerrain Corridor          = ('#', id)
-viewTerrain (Wall Horiz)      = ('-', id)
-viewTerrain (Wall Vert)       = ('|', id)
-viewTerrain (Stairs Up _)     = ('<', id)
-viewTerrain (Stairs Down _)   = ('>', id)
-viewTerrain (Door _ False)    = ('+', setFG yellow)
-viewTerrain (Door Horiz True) = ('|', setFG yellow)
-viewTerrain (Door Vert True)  = ('-', setFG yellow)
+-- | The parameter "n" is the level of evolution:
+--
+-- 0: final
+-- 1: stairs added
+-- 2: doors added
+-- 3: corridors and openings added
+-- 4: only rooms
+viewTerrain :: Int -> Terrain -> (Char, Attr -> Attr)
+viewTerrain n Rock              = (' ', id)
+viewTerrain n (Opening d)
+  | n <= 3                      = ('.', id)
+  | otherwise                   = viewTerrain 0 (Wall d)
+viewTerrain n Floor             = ('.', id)
+viewTerrain n Unknown           = (' ', id)
+viewTerrain n Corridor
+  | n <= 3                      = ('#', id)
+  | otherwise                   = viewTerrain 0 Rock
+viewTerrain n (Wall Horiz)      = ('-', id)
+viewTerrain n (Wall Vert)       = ('|', id)
+viewTerrain n (Stairs Up _)
+  | n <= 1                      = ('<', id)
+  | otherwise                   = viewTerrain 0 Floor
+viewTerrain n (Stairs Down _)
+  | n <= 1                      = ('>', id)
+  | otherwise                   = viewTerrain 0 Floor
+viewTerrain n (Door d False)
+  | n <= 2                      = ('+', setFG yellow)
+  | otherwise                   = viewTerrain n (Opening d)
+viewTerrain n (Door Horiz True)
+  | n <= 2                      = ('|', setFG yellow)
+  | otherwise                   = viewTerrain n (Opening Horiz)
+viewTerrain n (Door Vert True)
+  | n <= 2                      = ('-', setFG yellow)
+  | otherwise                   = viewTerrain n (Opening Vert)
 
 viewMonster :: MonsterType -> (Char, Attr -> Attr)
 viewMonster Player = ('@', setBG white . setFG black)
