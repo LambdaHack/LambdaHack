@@ -83,7 +83,7 @@ defaultLevelConfig =
     levelGrid         = (3,3), -- (2,5)
     minRoomSize       = (2,2),
     border            = 2,
-    levelSize         = (23,79),
+    levelSize         = (22,79),
     extraConnects     = 3,     -- 6
     minStairsDistance = 676
   }
