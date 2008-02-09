@@ -7,6 +7,7 @@ import Data.Binary
 import Data.Map as M
 import Data.Set as S
 import Data.List as L
+import Data.Ratio
 
 import Geometry
 import Monster

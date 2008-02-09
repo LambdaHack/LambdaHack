@@ -5,6 +5,7 @@ import Control.Monad
 
 import Data.Map as M
 import Data.List as L
+import Data.Ratio
 
 import State
 import Geometry
@@ -74,7 +75,9 @@ data LevelConfig =
     border            :: Int,      -- must be at least 2!
     levelSize         :: (Y,X),    -- lower right point
     extraConnects     :: Int,
-    minStairsDistance :: Int       -- must not be too large
+    minStairsDistance :: Int,      -- must not be too large
+    doorChance        :: Rational,
+    doorOpenChance    :: Rational
   }
     
 defaultLevelConfig :: LevelConfig
@@ -85,7 +88,9 @@ defaultLevelConfig =
     border            = 2,
     levelSize         = (22,79),
     extraConnects     = 3,     -- 6
-    minStairsDistance = 676
+    minStairsDistance = 676,
+    doorChance        = 0%2,
+    doorOpenChance    = 1%2
   }
 
 level :: LevelConfig ->
@@ -117,10 +122,10 @@ level cfg nm =
                   case t of
                     Tile (Opening hv) _ ->
                       do
-                        -- 50% chance for doors
-                        rb <- randomRIO (False,True) -- TODO: make configurable
-                        -- 50% chance for a door to be open
-                        ro <- randomRIO (False,True)
+                        -- chance for doors
+                        rb <- chance (doorChance cfg)
+                        -- chance for a door to be open
+                        ro <- chance (doorOpenChance cfg)
                         if rb
                           then return ((y,x),newTile (Door hv ro))
                           else return o
