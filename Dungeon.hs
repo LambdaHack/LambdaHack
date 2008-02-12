@@ -89,7 +89,7 @@ defaultLevelConfig =
     levelSize         = (22,79),
     extraConnects     = 3,     -- 6
     minStairsDistance = 676,
-    doorChance        = 0%2,
+    doorChance        = 1%2,
     doorOpenChance    = 1%2
   }
 
