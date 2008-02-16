@@ -6,6 +6,21 @@ import Control.Monad
 
 import Geometry
 
+-- | Hit points of the player. TODO: Should not be hardcoded.
+playerHP :: Int
+playerHP = 20
+
+-- | Time the player can be traced by monsters. TODO: Make configurable.
+smellTimeout :: Time
+smellTimeout = 100
+
+-- | Initial player.
+defaultPlayer :: Loc -> Player
+defaultPlayer ploc =
+  Monster Player playerHP Nothing ploc
+
+type Player = Monster
+
 data Monster = Monster
                 { mtype :: MonsterType,
                   mhp   :: Int,

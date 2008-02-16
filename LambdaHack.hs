@@ -108,7 +108,7 @@ loop session (lvl@(Level nm sz ms smap lmap lmeta))
              oldmsg =
   do
     -- player HP regeneration, TODO: remove hardcoded max
-    let nphp = if time `mod` 150 == 0 then (php + 1) `min` 20 else php
+    let nphp = if time `mod` 150 == 0 then (php + 1) `min` playerHP else php
     -- update smap
     let nsmap = M.insert ploc (time + smellTimeout) smap
     -- generate new monsters

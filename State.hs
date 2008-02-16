@@ -4,8 +4,7 @@ import Control.Monad
 import Data.Binary
 
 import Monster
-
-type Time = Int
+import Geometry
 
 data State = State
                { splayer  :: Monster,
@@ -17,13 +16,9 @@ data State = State
 
 defaultState ploc =
   State
-    (Monster Player maxHP Nothing ploc)
+    (defaultPlayer ploc)
     Implicit Normal
     0
-
-smellTimeout :: Time
-smellTimeout = 100 -- TODO: make configurable
-maxHP = 20
 
 updatePlayer :: State -> (Monster -> Monster) -> State
 updatePlayer s f = s { splayer = f (splayer s) }

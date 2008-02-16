@@ -1,5 +1,8 @@
 module Geometry where
 
+-- | Game time in turns. (Placement in module Geometry is not ideal.)
+type Time = Int
+
 type X = Int
 type Y = Int
 
