@@ -225,23 +225,14 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
 
  where
 
-  displayCurrent = displayLevel session nlvl (reachable,visible) state
+  fields@(reachable,visible) = visibility ploc lmap
 
+  displayCurrent = displayLevel session nlvl fields state
 
-  -- determine visible fields
-  reachable  = fullscan ploc lmap
-  actVisible = S.filter (\ loc -> light (lmap `at` loc)) reachable
-  pasVisible = S.filter (\ loc -> let (x,p) = passive (lmap `at` loc)
-                                  in  any (\ d -> S.member (shift loc d) actVisible) p ||
-                                      (not x && adjacent loc ploc))
-                                  -- the above "not x" prevents walls from
-                                  -- being visible from the outside when
-                                  -- adjacent
-                        reachable
-  visible = S.union pasVisible actVisible
   -- update player memory
   nlmap = foldr (\ x m -> M.update (\ (t,_) -> Just (t,flat t)) x m) lmap (S.toList visible)
   nlvl = updateLMap lvl (const nlmap)
+
   -- open and close doors
   openclose o abort =
     do
@@ -423,3 +414,18 @@ displayLevel session (lvl@(Level nm sz ms smap nlmap lmeta))
               (take 40 (nm ++ repeat ' ') ++ take 10 ("HP: " ++ show php ++ repeat ' ') ++
                take 10 ("T: " ++ show time ++ repeat ' '))
 
+visibility :: Loc -> LMap -> (Set Loc, Set Loc)
+visibility ploc lmap =
+  let
+    reachable  = fullscan ploc lmap
+    actVisible = S.filter (\ loc -> light (lmap `at` loc)) reachable
+    pasVisible = S.filter (\ loc -> let (x,p) = passive (lmap `at` loc)
+                                    in  any (\ d -> S.member (shift loc d) actVisible) p ||
+                                        (not x && adjacent loc ploc))
+                                    -- the above "not x" prevents walls from
+                                    -- being visible from the outside when
+                                    -- adjacent
+                          reachable
+    visible = S.union pasVisible actVisible
+  in
+    (reachable, visible)
