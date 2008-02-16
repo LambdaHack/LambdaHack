@@ -26,6 +26,7 @@ import Monster
 import Item
 import FOV
 import Display
+import Random
 
 savefile = "LambdaHack.save"
 
@@ -92,7 +93,7 @@ getConfirm session =
 generate session msg =
   do
     -- generate dungeon with 10 levels
-    levels <- mapM (\n -> level defaultLevelConfig $ "The Lambda Cave " ++ show n) [1..10]
+    levels <- rndToIO $ mapM (\n -> level defaultLevelConfig $ "The Lambda Cave " ++ show n) [1..10]
     let state = defaultState ((\ (_,x,_) -> x) (head levels))
     let connect [(x,_,_)] = [x Nothing Nothing]
         connect ((x,_,_):ys@((_,u,_):_)) =
@@ -112,18 +113,7 @@ loop session (lvl@(Level nm sz ms smap lmap lmeta))
     -- update smap
     let nsmap = M.insert ploc (time + smellTimeout) smap
     -- generate new monsters
-    rc <- randomRIO (1,if L.null ms then 5 else 70)
-    gms <- if rc == (1 :: Int)
-           then do
-                  -- TODO: new monsters shouldn't be visible by the player
-                  sm <- findLoc lvl (\ l t -> tterrain t == Floor && 
-                                              not (l `L.elem` L.map mloc (player : ms)) &&
-                                              distance (ploc, l) > 400)
-                  rh <- fmap (+1) (randomRIO (1,2))
-                  rt <- fmap (\ x -> if x == (1 :: Int) then Nose else Eye) (randomRIO (1,4))
-                  let m = Monster rt rh Nothing sm
-                  return (m : ms)
-           else return ms
+    gms <- rndToIO (addMonster lvl player)
     -- perform monster moves
     let monsterMoves ams cplayer cmsg []      = return (ams, cplayer, cmsg)
         monsterMoves ams cplayer cmsg (m:oms) =

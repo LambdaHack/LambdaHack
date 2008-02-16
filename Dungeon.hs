@@ -1,6 +1,5 @@
 module Dungeon where
 
-import System.Random
 import Control.Monad
 
 import Data.Map as M
@@ -12,6 +11,7 @@ import Geometry
 import Level
 import Monster
 import Item
+import Random
 
 type Corridor = [(Y,X)]
 type Room = Area
@@ -19,14 +19,14 @@ type Room = Area
 mkRoom :: Int ->      {- border columns -}
           (Y,X) ->    {- minimum size -}
           Area ->     {- this is an area, not the room itself -}
-          IO Room     {- this is the upper-left and lower-right corner of the room -}
+          Rnd Room    {- this is the upper-left and lower-right corner of the room -}
 mkRoom bd (ym,xm)((y0,x0),(y1,x1)) =
   do
     (ry0,rx0) <- locInArea ((y0+bd,x0+bd),(y1-bd-ym+1,x1-bd-xm+1))
     (ry1,rx1) <- locInArea ((ry0+ym-1,rx0+xm-1),(y1-bd,x1-bd))
     return ((ry0,rx0),(ry1,rx1))
 
-mkCorridor :: HV -> (Loc,Loc) -> Area -> IO [(Y,X)] {- straight sections of the corridor -}
+mkCorridor :: HV -> (Loc,Loc) -> Area -> Rnd [(Y,X)] {- straight sections of the corridor -}
 mkCorridor hv ((y0,x0),(y1,x1)) b =
   do
     (ry,rx) <- findLocInArea b (const True)
@@ -39,7 +39,7 @@ mkCorridor hv ((y0,x0),(y1,x1)) b =
 -- the condition passed to mkCorridor is tricky; there might not always
 -- exist a suitable intermediate point is the rooms are allowed to be close
 -- together ...
-connectRooms :: Area -> Area -> IO [Loc]
+connectRooms :: Area -> Area -> Rnd [Loc]
 connectRooms sa@((sy0,sx0),(sy1,sx1)) ta@((ty0,tx0),(ty1,tx1)) =
   do
     (sy,sx) <- locInArea sa
@@ -94,7 +94,7 @@ defaultLevelConfig =
   }
 
 level :: LevelConfig ->
-         String -> IO (Maybe (Level, Loc) -> Maybe (Level, Loc) -> Level, Loc, Loc)
+         String -> Rnd (Maybe (Level, Loc) -> Maybe (Level, Loc) -> Level, Loc, Loc)
 level cfg nm =
   do
     let gs = M.toList (grid (levelGrid cfg) ((0,0),levelSize cfg))
@@ -153,4 +153,20 @@ digRoom ((y0,x0),(y1,x1)) l =
                      ++ [ ((y,x),newTile (Wall Horiz)) | x <- [x0-1..x1+1], y <- [y0-1,y1+1] ]
                      ++ [ ((y,x),newTile (Wall Vert)) | x <- [x0-1,x1+1], y <- [y0..y1] ]
   in M.unionWith const rm l
+
+addMonster :: Level -> Player -> Rnd [Monster]
+addMonster lvl@(Level _ _ ms _ lmap _) player@(Monster _ _ _ ploc) =
+  do
+    rc <- chance (1 % if L.null ms then 5 else 70)
+    if rc
+     then do
+            -- TODO: new monsters shouldn't be visible by the player
+            sm <- findLoc lvl (\ l t -> tterrain t == Floor && 
+                                        not (l `L.elem` L.map mloc (player : ms)) &&
+                                        distance (ploc, l) > 400)
+            rh <- randomR (2,3)
+            rt <- fmap (\ x -> if x then Nose else Eye) (chance (1%4))
+            let m = Monster rt rh Nothing sm
+            return (m : ms)
+     else return ms
 

@@ -14,7 +14,7 @@ executable LambdaHack
   main-is:       LambdaHack.hs
   build-depends: base >= 3, containers >= 0.1, binary >= 0.4,
                  random >= 1, zlib >= 0.4, bytestring >= 0.9,
-                 directory >= 1
+                 directory >= 1, mtl >= 1.1
   extensions:    CPP
   if flag(gtk)
     build-depends: gtk >= 0.9.12

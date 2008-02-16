@@ -1,6 +1,6 @@
 module Level where
 
-import System.Random
+import qualified System.Random as R
 import Control.Monad
 
 import Data.Binary
@@ -13,6 +13,7 @@ import Geometry
 import Monster
 import Item
 import State
+import Random
 
 data Level = Level
               { lname     :: String,
@@ -111,24 +112,10 @@ fromHV Vert  = False
 toHV True  = Horiz
 toHV False = Vert
 
-instance Random HV where
-  randomR (a,b) g = case randomR (fromHV a,fromHV b) g of
+instance R.Random HV where
+  randomR (a,b) g = case R.randomR (fromHV a,fromHV b) g of
                       (b,g') -> (toHV b,g')
-  random g = randomR (minBound, maxBound) g
-
-binaryChoice :: a -> a -> IO a
-binaryChoice p0 p1 =
-  do
-    b <- randomRIO (False,True)
-    return (if b then p0 else p1)
-
-chance :: Rational -> IO Bool
-chance r =
-  do
-    let n = numerator r
-        d = denominator r
-    k <- randomRIO (1,d)
-    return (k <= n)
+  random g = R.randomR (minBound, maxBound) g
 
 instance Binary HV where
   put Horiz = put True
@@ -210,18 +197,18 @@ accessible lvl source target =
 horiz = [(0,-1),(0,1)]
 vert  = [(-1,0),(1,0)]
 
-findLocInArea :: Area -> (Loc -> Bool) -> IO Loc
+findLocInArea :: Area -> (Loc -> Bool) -> Rnd Loc
 findLocInArea a@((y0,x0),(y1,x1)) p =
   do
-    rx <- randomRIO (x0,x1)
-    ry <- randomRIO (y0,y1)
+    rx <- randomR (x0,x1)
+    ry <- randomR (y0,y1)
     let loc = (ry,rx)
     if p loc then return loc else findLocInArea a p
 
-locInArea :: Area -> IO Loc
+locInArea :: Area -> Rnd Loc
 locInArea a = findLocInArea a (const True)
 
-findLoc :: Level -> (Loc -> Tile -> Bool) -> IO Loc
+findLoc :: Level -> (Loc -> Tile -> Bool) -> Rnd Loc
 findLoc l@(Level { lsize = sz, lmap = lm }) p =
   do
     loc <- locInArea ((0,0),sz)
@@ -237,28 +224,28 @@ grid (ny,nx) ((y0,x0),(y1,x1)) =
                 | x <- [0..nx-1], y <- [0..ny-1] ]
 
 
-connectGrid :: (Y,X) -> IO [((Y,X),(Y,X))]
+connectGrid :: (Y,X) -> Rnd [((Y,X),(Y,X))]
 connectGrid (ny,nx) =
   do
     let unconnected = S.fromList [ (y,x) | x <- [0..nx-1], y <- [0..ny-1] ]
     -- candidates are neighbors that are still unconnected; we start with
     -- a random choice
-    rx <- randomRIO (0,nx-1)
-    ry <- randomRIO (0,ny-1)
+    rx <- randomR (0,nx-1)
+    ry <- randomR (0,ny-1)
     let candidates  = S.fromList [ (ry,rx) ]
     connectGrid' (ny,nx) unconnected candidates []
 
-randomConnection :: (Y,X) -> IO ((Y,X),(Y,X))
+randomConnection :: (Y,X) -> Rnd ((Y,X),(Y,X))
 randomConnection (ny,nx) =
   do
-    rb  <- randomRIO (False,True)
+    rb  <- randomR (False,True)
     if rb then do
-                 rx  <- randomRIO (0,nx-2)
-                 ry  <- randomRIO (0,ny-1)
+                 rx  <- randomR (0,nx-2)
+                 ry  <- randomR (0,ny-1)
                  return (normalize ((ry,rx),(ry,rx+1)))
           else do
-                 ry  <- randomRIO (0,ny-2)
-                 rx  <- randomRIO (0,nx-1)
+                 ry  <- randomR (0,ny-2)
+                 rx  <- randomR (0,nx-1)
                  return (normalize ((ry,rx),(ry+1,rx)))
 
 normalize :: ((Y,X),(Y,X)) -> ((Y,X),(Y,X))
@@ -268,11 +255,11 @@ normalize (a,b) | a <= b    = (a,b)
 normalizeArea :: Area -> Area
 normalizeArea a@((y0,x0),(y1,x1)) = ((min y0 y1, min x0 x1), (max y0 y1, max x0 x1))
 
-connectGrid' :: (Y,X) -> Set (Y,X) -> Set (Y,X) -> [((Y,X),(Y,X))] -> IO [((Y,X),(Y,X))]
+connectGrid' :: (Y,X) -> Set (Y,X) -> Set (Y,X) -> [((Y,X),(Y,X))] -> Rnd [((Y,X),(Y,X))]
 connectGrid' (ny,nx) unconnected candidates acc
   | S.null candidates = return (L.map normalize acc)
   | otherwise = do
-                  r <- randomRIO (0,S.size candidates - 1)
+                  r <- randomR (0,S.size candidates - 1)
                   let c = S.toList candidates !! r
                   let ns = neighbors ((0,0),(ny-1,nx-1)) c -- potential new candidates
                   let nu = S.delete c unconnected -- new unconnected
@@ -280,7 +267,7 @@ connectGrid' (ny,nx) unconnected candidates acc
                                   -- (new candidates, potential connections)
                   new <- if S.null ds then return id
                                       else do
-                                             s <- randomRIO (0,S.size ds - 1)
+                                             s <- randomR (0,S.size ds - 1)
                                              let d = S.toList ds !! s
                                              return ((c,d) :)
                   connectGrid' (ny,nx) nu
