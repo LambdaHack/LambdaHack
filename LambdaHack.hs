@@ -188,7 +188,8 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
     -- check for player death
     if php <= 0
       then do
-             displayCurrent (addMsg oldmsg "You die ...")
+             displayCurrent (addMsg oldmsg ("You die ..." ++ more))
+             getConfirm session
              shutdown session
       else do
              displayCurrent oldmsg
