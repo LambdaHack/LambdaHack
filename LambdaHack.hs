@@ -225,37 +225,8 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
 
  where
 
-  displayCurrent msg =
-    let
-      sSml    = ssensory state == Smell
-      sVis    = ssensory state == Vision
-      sOmn    = sdisplay state == Omniscient
-      sTer    = case sdisplay state of Terrain n -> n; _ -> 0
-      lAt     = if sOmn || sTer > 0 then at else rememberAt
-      lVision = if sVis
-                  then \ vis rea ->
-                       if      vis then setBG blue
-                       else if rea then setBG magenta
-                                   else id
-                  else \ vis rea -> id
-    in
-      display ((0,0),sz) session 
-               (\ loc -> let tile = nlmap `lAt` loc
-                             sml  = ((smap ! loc) - time) `div` 10
-                             vis  = S.member loc visible
-                             rea  = S.member loc reachable
-                             (rv,ra) = case L.find (\ m -> loc == mloc m) (player:ms) of
-                                         _ | sTer > 0          -> viewTerrain sTer (tterrain tile)
-                                         Just m | sOmn || vis  -> viewMonster (mtype m) 
-                                         _ | sSml && sml >= 0  -> viewSmell sml
-                                           | otherwise         -> viewTile tile
-                             vision = lVision vis rea
-                         in
-                           (ra . vision $
-                            attr, rv))
-              msg
-              (take 40 (nm ++ repeat ' ') ++ take 10 ("HP: " ++ show php ++ repeat ' ') ++
-               take 10 ("T: " ++ show time ++ repeat ' '))
+  displayCurrent = displayLevel session nlvl (reachable,visible) state
+
 
   -- determine visible fields
   reachable  = fullscan ploc lmap
@@ -416,4 +387,39 @@ moveOrAttack allowAttacks
           nploc  = shift ploc dir
           target = nlmap `at` nploc
           (attacked, others) = L.partition (\ m -> mloc m == nploc) (lmonsters nlvl)
+
+displayLevel session (lvl@(Level nm sz ms smap nlmap lmeta))
+                     (reachable, visible)
+                     (state@(State { splayer = player@(Monster _ php pdir ploc), stime = time }))
+                     msg =
+    let
+      sSml    = ssensory state == Smell
+      sVis    = ssensory state == Vision
+      sOmn    = sdisplay state == Omniscient
+      sTer    = case sdisplay state of Terrain n -> n; _ -> 0
+      lAt     = if sOmn || sTer > 0 then at else rememberAt
+      lVision = if sVis
+                  then \ vis rea ->
+                       if      vis then setBG blue
+                       else if rea then setBG magenta
+                                   else id
+                  else \ vis rea -> id
+    in
+      display ((0,0),sz) session 
+               (\ loc -> let tile = nlmap `lAt` loc
+                             sml  = ((smap ! loc) - time) `div` 10
+                             vis  = S.member loc visible
+                             rea  = S.member loc reachable
+                             (rv,ra) = case L.find (\ m -> loc == mloc m) (player:ms) of
+                                         _ | sTer > 0          -> viewTerrain sTer (tterrain tile)
+                                         Just m | sOmn || vis  -> viewMonster (mtype m) 
+                                         _ | sSml && sml >= 0  -> viewSmell sml
+                                           | otherwise         -> viewTile tile
+                             vision = lVision vis rea
+                         in
+                           (ra . vision $
+                            attr, rv))
+              msg
+              (take 40 (nm ++ repeat ' ') ++ take 10 ("HP: " ++ show php ++ repeat ' ') ++
+               take 10 ("T: " ++ show time ++ repeat ' '))
 
