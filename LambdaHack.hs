@@ -316,12 +316,37 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
            let txt = if vdir == Up then "up" else "down" in
            displayCurrent ("no stairs " ++ txt) >> abort
   -- run into a direction
-  run dir = handle session nlvl (updatePlayer state (const $ player { mdir = Just dir })) ""
+  run dir =
+    do
+      let nplayer = player { mdir = Just dir }
+          abort   = handle session nlvl state ""
+      moveOrAttack False
+                   (\ l m -> loop session l (updatePlayer state (const m)))
+                   nlvl abort nplayer dir
   continueRun dir =
     let abort = handle session nlvl (updatePlayer state (const $ player { mdir = Nothing })) oldmsg
-    in  moveOrAttack False
-                     (\ l m -> loop session l (updatePlayer state (const m)))
-                     nlvl abort player dir
+        dloc  = shift ploc dir
+    in  case (oldmsg, nlmap `at` ploc) of
+          (_:_, _)                 -> abort
+          (_, Tile (Opening _) _)  -> abort
+          (_, Tile (Door _ _) _)   -> abort
+          (_, Tile (Stairs _ _) _) -> abort
+          _
+            | accessible nlmap ploc dloc ->
+                moveOrAttack False
+                  (\ l m -> loop session l (updatePlayer state (const m)))
+                  nlvl abort player dir
+          (_, Tile Corridor _)  -- direction change restricted to corridors
+            | otherwise ->
+                let ns  = L.filter (\ x -> distance (neg dir,x) > 1
+                                        && accessible nlmap ploc (ploc `shift` x)) moves
+                    sns = L.filter (\ x -> distance (dir,x) <= 1) ns
+                in  case ns of
+                      [newdir] -> run newdir
+                      _        -> case sns of
+                                    [newdir] -> run newdir
+                                    _        -> abort
+          _ -> abort
   -- perform a player move
   move abort dir = moveOrAttack True
                                 (\ l m -> loop session l (updatePlayer state (const m)))
