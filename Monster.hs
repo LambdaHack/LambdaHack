@@ -5,6 +5,7 @@ import Data.Binary
 import Control.Monad
 
 import Geometry
+import Display
 
 -- | Hit points of the player. TODO: Should not be hardcoded.
 playerHP :: Int
@@ -66,3 +67,8 @@ subjectMonster x = let (s:r) = objectMonster x in toUpper s : r
 verbMonster :: MonsterType -> String -> String
 verbMonster Player v = v
 verbMonster _      v = v ++ "s"
+
+viewMonster :: MonsterType -> (Char, Attr -> Attr)
+viewMonster Player = ('@', setBG white . setFG black)
+viewMonster Eye    = ('e', setFG red)
+viewMonster Nose   = ('n', setFG green)

@@ -14,6 +14,7 @@ import Monster
 import Item
 import State
 import Random
+import Display
 
 data Level = Level
               { lname     :: String,
@@ -294,4 +295,63 @@ fromTo1 x0 x1
   | x0 <= x1  = [x0..x1]
   | otherwise = [x0,x0-1..x1]
 
+viewTile :: Tile -> (Char, Attr -> Attr)
+viewTile (Tile t [])    = viewTerrain 0 t
+viewTile (Tile t (i:_)) = viewItem i
+
+viewItem :: Item -> (Char, Attr -> Attr)
+viewItem Ring   = ('=', id)
+viewItem Scroll = ('?', id)
+viewItem Potion = ('!', id)
+viewItem Wand   = ('/', id)
+viewItem _      = ('~', id)
+
+-- | Produces a textual description of the items at a location. It's
+-- probably correct to use 'at' rather than 'rememberAt' at this point,
+-- although we could argue that 'rememberAt' reflects what the player can
+-- perceive more correctly ...
+lookAt :: LMap -> Loc -> String
+lookAt lvl loc = unwords $ L.map objectItem $ titems (lvl `at` loc)
+
+
+-- | The parameter "n" is the level of evolution:
+--
+-- 0: final
+-- 1: stairs added
+-- 2: doors added
+-- 3: corridors and openings added
+-- 4: only rooms
+viewTerrain :: Int -> Terrain -> (Char, Attr -> Attr)
+viewTerrain n Rock              = (' ', id)
+viewTerrain n (Opening d)
+  | n <= 3                      = ('.', id)
+  | otherwise                   = viewTerrain 0 (Wall d)
+viewTerrain n Floor             = ('.', id)
+viewTerrain n Unknown           = (' ', id)
+viewTerrain n Corridor
+  | n <= 3                      = ('#', id)
+  | otherwise                   = viewTerrain 0 Rock
+viewTerrain n (Wall Horiz)      = ('-', id)
+viewTerrain n (Wall Vert)       = ('|', id)
+viewTerrain n (Stairs Up _)
+  | n <= 1                      = ('<', id)
+  | otherwise                   = viewTerrain 0 Floor
+viewTerrain n (Stairs Down _)
+  | n <= 1                      = ('>', id)
+  | otherwise                   = viewTerrain 0 Floor
+viewTerrain n (Door d False)
+  | n <= 2                      = ('+', setFG yellow)
+  | otherwise                   = viewTerrain n (Opening d)
+viewTerrain n (Door Horiz True)
+  | n <= 2                      = ('|', setFG yellow)
+  | otherwise                   = viewTerrain n (Opening Horiz)
+viewTerrain n (Door Vert True)
+  | n <= 2                      = ('-', setFG yellow)
+  | otherwise                   = viewTerrain n (Opening Vert)
+
+viewSmell :: Int -> (Char, Attr -> Attr)
+viewSmell n = let k | n > 9    = '*'
+                    | n < 0    = '-'
+                    | otherwise = head . show $ n
+              in  (k, setFG black . setBG green)
 
