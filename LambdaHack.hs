@@ -153,7 +153,8 @@ loop session (lvl@(Level nm sz ms smap lmap lmeta))
                                      liftM2 (,) (randomRIO (-1,1)) (randomRIO (-1,1))
                            -- TODO: now the hack that allows the player move
                            -- function to be used for monsters
-                           moveOrAttack 
+                           moveOrAttack
+                             True
                              (\ nlvl@(Level { lmonsters = nms }) nm msg ->
                                do
                                  let (p,r) = L.partition (\ m -> mtype m == Player) nms
@@ -181,7 +182,7 @@ addMsg xs x  = xs ++ " " ++ x
 -- display and handle the player
 handle :: Session -> Level -> State -> String -> IO ()
 handle session (lvl@(Level nm sz ms smap lmap lmeta))
-               (state@(State { splayer = player@(Monster _ php _ ploc), stime = time }))
+               (state@(State { splayer = player@(Monster _ php pdir ploc), stime = time }))
                oldmsg =
   do
     -- check for player death
@@ -193,14 +194,17 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
              displayCurrent oldmsg
              let h = do
                        e <- nextEvent session
-                       handleDirection e (move h) $ handleModifier e h $
+                       handleDirection e (move h) $ 
+                         handleDirection (L.map toLower e) run $
+                         handleModifier e h $
                          case e of
-                           "o" -> openclose True h
-                           "c" -> openclose False h
+                           "o"       -> openclose True h
+                           "c"       -> openclose False h
 
                            "less"    -> lvlchange Up h
                            "greater" -> lvlchange Down h
 
+                           -- saving or ending the game
                            "S"       -> encodeCompressedFile savefile (lvl,state,False) >>
                                         shutdown session
                            "Q"       -> shutdown session
@@ -214,7 +218,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                            "colon"   -> displayCurrent (lookAt nlmap ploc) >> h
 
                            "V"       -> handle session nlvl (toggleVision state) oldmsg
-                           "N"       -> handle session nlvl (toggleSmell state) oldmsg
+                           "R"       -> handle session nlvl (toggleSmell state) oldmsg
                            "O"       -> handle session nlvl (toggleOmniscient state) oldmsg
                            "T"       -> handle session nlvl (toggleTerrain state) oldmsg
 
@@ -222,7 +226,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                            "v"       -> displayCurrent version >> h
 
                            s   -> displayCurrent ("unknown command (" ++ s ++ ")") >> h
-             h
+             maybe h continueRun pdir
 
  where
 
@@ -310,8 +314,16 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
       _ -> -- no stairs
            let txt = if vdir == Up then "up" else "down" in
            displayCurrent ("no stairs " ++ txt) >> abort
+  -- run into a direction
+  run dir = handle session nlvl (updatePlayer state (const $ player { mdir = Just dir })) ""
+  continueRun dir =
+    let abort = handle session nlvl (updatePlayer state (const $ player { mdir = Nothing })) oldmsg
+    in  moveOrAttack False
+                     (\ l m -> loop session l (updatePlayer state (const m)))
+                     nlvl abort player dir
   -- perform a player move
-  move abort dir = moveOrAttack (\ l m -> loop session l (updatePlayer state (const m)))
+  move abort dir = moveOrAttack True
+                                (\ l m -> loop session l (updatePlayer state (const m)))
                                 nlvl abort player dir
 
 handleDirection :: String -> ((Y,X) -> IO ()) -> IO () -> IO ()
@@ -347,11 +359,13 @@ handleModifier e h k =
 version :: String
 version = showVersion Self.version ++ " (" ++ displayId ++ " frontend)"
 
-moveOrAttack :: (Level -> Monster -> String -> IO a) ->     -- success continuation
+moveOrAttack :: Bool ->                                     -- allow attacks?
+                (Level -> Monster -> String -> IO a) ->     -- success continuation
                 Level ->
                 IO a ->                                     -- failure continuation
-                Monster -> Loc -> IO a
-moveOrAttack continue nlvl@(Level { lmap = nlmap }) abort player@(Monster { mloc = ploc}) dir
+                Monster -> Dir -> IO a
+moveOrAttack allowAttacks
+             continue nlvl@(Level { lmap = nlmap }) abort player@(Monster { mloc = ploc }) dir
       -- to prevent monsters from hitting themselves
     | dir == (0,0) = abort
       -- at the moment, we check whether there is a monster before checking open-ness
@@ -366,7 +380,7 @@ moveOrAttack continue nlvl@(Level { lmap = nlmap }) abort player@(Monster { mloc
           verb | L.null survivor = "kill"
                | otherwise       = "hit"
         in
-          if (mtype victim == Player) || (mtype player == Player) then
+          if (mtype victim == Player) || (mtype player == Player) && allowAttacks then
             continue (nlvl { lmonsters = survivor ++ saveds }) player
                      (subjectMonster (mtype player) ++ " " ++
                       verbMonster (mtype player) verb ++ " " ++

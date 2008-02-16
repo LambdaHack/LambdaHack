@@ -9,7 +9,7 @@ import Geometry
 data Monster = Monster
                 { mtype :: MonsterType,
                   mhp   :: Int,
-                  mdir  :: Maybe Dir,
+                  mdir  :: Maybe Dir, -- indicates a "running" player, too
                   mloc  :: Loc }
   deriving Show
 
