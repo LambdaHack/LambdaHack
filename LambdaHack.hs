@@ -27,7 +27,7 @@ import Item
 import FOV
 import Display
 
-savefile = "HHack2.save"
+savefile = "LambdaHack.save"
 
 main :: IO ()
 main = startup start
