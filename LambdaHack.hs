@@ -48,6 +48,7 @@ encodeCompressedFile :: Binary a => FilePath -> a -> IO ()
 encodeCompressedFile f x = LBS.writeFile f (Z.compress (encode x))
   -- note that LBS.writeFile opens the file in binary mode
 
+start :: Session -> IO ()
 start session =
     do
       -- check if we have a savegame
@@ -69,6 +70,7 @@ start session =
         Right msg        -> generate session msg
         Left (lvl,state) -> handle session lvl state "Welcome back to LambdaHack."
 
+more :: String
 more = " --more--"
 
 -- | Displays a message on a blank screen. Waits for confirmation.
@@ -90,6 +92,7 @@ getConfirm session =
         "Return" -> return ()
         _        -> getConfirm session 
 
+generate :: Session -> String -> IO ()
 generate session msg =
   do
     -- generate dungeon with 10 levels
@@ -165,6 +168,7 @@ loop session (lvl@(Level nm sz ms smap lmap lmeta))
     handle session (lvl { lmonsters = fms, lsmell = nsmap })
            (state { splayer = fplayer, stime = time + 1 }) fmsg
 
+addMsg :: String -> String -> String
 addMsg [] x  = x
 addMsg xs [] = xs
 addMsg xs x  = xs ++ " " ++ x
