@@ -299,13 +299,6 @@ viewTile :: Tile -> (Char, Attr -> Attr)
 viewTile (Tile t [])    = viewTerrain 0 t
 viewTile (Tile t (i:_)) = viewItem i
 
-viewItem :: Item -> (Char, Attr -> Attr)
-viewItem Ring   = ('=', id)
-viewItem Scroll = ('?', id)
-viewItem Potion = ('!', id)
-viewItem Wand   = ('/', id)
-viewItem _      = ('~', id)
-
 -- | Produces a textual description of the items at a location. It's
 -- probably correct to use 'at' rather than 'rememberAt' at this point,
 -- although we could argue that 'rememberAt' reflects what the player can

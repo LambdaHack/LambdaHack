@@ -140,7 +140,7 @@ level cfg nm =
     return $ (\ lu ld ->
       let flmap = M.insert su (newTile (Stairs Up lu)) $
                   M.insert sd (newTile (Stairs Down ld)) $
-                  M.update (\ (t,r) -> Just (t { titems = [Ring] }, r)) si $
+                  M.update (\ (t,r) -> Just (t { titems = [Gold] }, r)) si $
                   dlmap
       in  Level nm (levelSize cfg) [] smap flmap meta, su, sd)
 

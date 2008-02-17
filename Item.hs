@@ -9,6 +9,7 @@ data Item =
  | Wand
  | Amulet
  | Gem
+ | Gold
  deriving Show
 
 instance Binary Item where
@@ -18,6 +19,7 @@ instance Binary Item where
   put Wand   = putWord8 3
   put Amulet = putWord8 4
   put Gem    = putWord8 5
+  put Gold   = putWord8 6
   get = do
           tag <- getWord8
           case tag of
@@ -27,6 +29,16 @@ instance Binary Item where
             3 -> return Wand
             4 -> return Amulet
             5 -> return Gem
+            6 -> return Gold
+
+viewItem :: Item -> (Char, Attr -> Attr)
+viewItem Ring   = ('=', id)
+viewItem Scroll = ('?', id)
+viewItem Potion = ('!', id)
+viewItem Wand   = ('/', id)
+viewItem Gold   = ('$', setFG yellow)
+viewItem Gem    = ('*', setFG red)
+viewItem _      = ('~', id)
 
 objectItem :: Item -> String
 objectItem Ring   = "a ring"
@@ -35,4 +47,4 @@ objectItem Potion = "a potion"
 objectItem Wand   = "a wand"
 objectItem Amulet = "an amulet"
 objectItem Gem    = "a gem"
-
+objectItem Gold   = "some gold"
