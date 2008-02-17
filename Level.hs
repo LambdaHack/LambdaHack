@@ -260,16 +260,14 @@ connectGrid' :: (Y,X) -> Set (Y,X) -> Set (Y,X) -> [((Y,X),(Y,X))] -> Rnd [((Y,X
 connectGrid' (ny,nx) unconnected candidates acc
   | S.null candidates = return (L.map normalize acc)
   | otherwise = do
-                  r <- randomR (0,S.size candidates - 1)
-                  let c = S.toList candidates !! r
+                  c <- oneOf (S.toList candidates)
                   let ns = neighbors ((0,0),(ny-1,nx-1)) c -- potential new candidates
                   let nu = S.delete c unconnected -- new unconnected
                   let (nc,ds) = S.partition (`S.member` nu) ns
                                   -- (new candidates, potential connections)
                   new <- if S.null ds then return id
                                       else do
-                                             s <- randomR (0,S.size ds - 1)
-                                             let d = S.toList ds !! s
+                                             d <- oneOf (S.toList ds)
                                              return ((c,d) :)
                   connectGrid' (ny,nx) nu
                                        (S.delete c (candidates `S.union` nc)) (new acc)

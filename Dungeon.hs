@@ -166,7 +166,7 @@ addMonster lvl@(Level { lmonsters = ms, lmap = lmap })
                                         not (l `L.elem` L.map mloc (player : ms)) &&
                                         distance (ploc, l) > 400)
             rh <- randomR (2,3)
-            rt <- fmap (\ x -> if x then Nose else Eye) (chance (1%4))
+            rt <- frequency [(1, Nose), (3, Eye)]
             let m = Monster rt rh Nothing sm []
             return (m : ms)
      else return ms

@@ -1,6 +1,7 @@
 module Item where
 
 import Data.Binary
+import Display
 
 data Item =
    Ring

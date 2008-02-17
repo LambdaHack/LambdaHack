@@ -1,4 +1,4 @@
-module Random (Rnd, randomR, rndToIO, binaryChoice, chance) where
+module Random where
 
 import Data.Ratio
 
@@ -23,6 +23,24 @@ chance r =
         d = denominator r
     k <- randomR (1,d)
     return (k <= n)
+
+oneOf :: [a] -> Rnd a
+oneOf xs =
+  do
+    r <- randomR (0, length xs - 1)
+    return (xs !! r)
+
+frequency :: [(Int, a)] -> Rnd a
+frequency xs =
+  do
+    r <- randomR (1, sum (map fst xs))
+    return (frequency' r xs)
+ where
+  frequency' :: Int -> [(Int, a)] -> a
+  frequency' _ [(_, x)] = x
+  frequency' m ((n, x) : xs)
+    | m <= n            = x
+    | otherwise         = frequency' (m - n) xs
 
 rndToIO :: Rnd a -> IO a
 rndToIO r =
