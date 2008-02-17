@@ -155,7 +155,8 @@ digRoom ((y0,x0),(y1,x1)) l =
   in M.unionWith const rm l
 
 addMonster :: Level -> Player -> Rnd [Monster]
-addMonster lvl@(Level _ _ ms _ lmap _) player@(Monster _ _ _ ploc) =
+addMonster lvl@(Level { lmonsters = ms, lmap = lmap })
+           player@(Monster { mloc = ploc }) =
   do
     rc <- chance (1 % if L.null ms then 5 else 70)
     if rc
@@ -166,7 +167,7 @@ addMonster lvl@(Level _ _ ms _ lmap _) player@(Monster _ _ _ ploc) =
                                         distance (ploc, l) > 400)
             rh <- randomR (2,3)
             rt <- fmap (\ x -> if x then Nose else Eye) (chance (1%4))
-            let m = Monster rt rh Nothing sm
+            let m = Monster rt rh Nothing sm []
             return (m : ms)
      else return ms
 

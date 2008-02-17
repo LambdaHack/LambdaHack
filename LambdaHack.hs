@@ -108,7 +108,7 @@ generate session msg =
 -- perform a complete move (i.e., monster moves etc.)
 loop :: Session -> Level -> State -> String -> IO ()
 loop session (lvl@(Level nm sz ms smap lmap lmeta))
-             (state@(State { splayer = player@(Monster _ php _ ploc), stime = time }))
+             (state@(State { splayer = player@(Monster _ php _ ploc _), stime = time }))
              oldmsg =
   do
     -- player HP regeneration, TODO: remove hardcoded max
@@ -176,7 +176,7 @@ addMsg xs x  = xs ++ " " ++ x
 -- display and handle the player
 handle :: Session -> Level -> State -> String -> IO ()
 handle session (lvl@(Level nm sz ms smap lmap lmeta))
-               (state@(State { splayer = player@(Monster _ php pdir ploc), stime = time }))
+               (state@(State { splayer = player@(Monster _ php pdir ploc pinv), stime = time }))
                oldmsg =
   do
     -- check for player death
@@ -198,6 +198,8 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
 
                            "less"    -> lvlchange Up h
                            "greater" -> lvlchange Down h
+
+                           ","       -> pickup h
 
                            -- saving or ending the game
                            "S"       -> encodeCompressedFile savefile (lvl,state,False) >>
@@ -232,6 +234,22 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
   -- update player memory
   nlmap = foldr (\ x m -> M.update (\ (t,_) -> Just (t,flat t)) x m) lmap (S.toList visible)
   nlvl = updateLMap lvl (const nlmap)
+
+  -- picking up items
+  pickup abort =
+    do
+      -- check if something is here to pick up
+      let t = nlmap `at` ploc
+      case titems t of
+        []      ->  displayCurrent "nothing here" >> abort
+        (i:rs)  ->  let msg = subjectMonster (mtype player) ++ " " ++
+                              compoundVerbMonster (mtype player) "pick" "up" ++ " " ++
+                              objectItem i ++ "."
+                        nt = t { titems = rs }
+                        plmap = M.insert ploc (nt, flat nt) nlmap
+                        nplayer = player { mitems = i : mitems player }
+                    in  loop session (updateLMap lvl (const plmap))
+                                     (updatePlayer state (const nplayer)) msg
 
   -- open and close doors
   openclose o abort =
@@ -381,7 +399,7 @@ moveOrAttack allowAttacks
 
 displayLevel session (lvl@(Level nm sz ms smap nlmap lmeta))
                      (reachable, visible)
-                     (state@(State { splayer = player@(Monster _ php pdir ploc), stime = time }))
+                     (state@(State { splayer = player@(Monster _ php pdir ploc _), stime = time }))
                      msg =
     let
       sSml    = ssensory state == Smell
