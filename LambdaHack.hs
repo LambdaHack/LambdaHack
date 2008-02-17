@@ -48,6 +48,7 @@ encodeCompressedFile :: Binary a => FilePath -> a -> IO ()
 encodeCompressedFile f x = LBS.writeFile f (Z.compress (encode x))
   -- note that LBS.writeFile opens the file in binary mode
 
+-- | Either restore a saved game, or setup a new game.
 start :: Session -> IO ()
 start session =
     do
@@ -92,6 +93,7 @@ getConfirm session =
         "Return" -> return ()
         _        -> getConfirm session 
 
+-- | Generate the dungeon for a new game, and start the game loop.
 generate :: Session -> String -> IO ()
 generate session msg =
   do
@@ -105,7 +107,7 @@ generate session msg =
     let lvl = head (connect levels)
     handle session lvl state msg
 
--- perform a complete move (i.e., monster moves etc.)
+-- | Perform a complete move (i.e., monster moves etc.)
 loop :: Session -> Level -> State -> String -> IO ()
 loop session (lvl@(Level nm sz ms smap lmap lmeta))
              (state@(State { splayer = player@(Monster _ php _ ploc _ _), stime = time }))
@@ -181,7 +183,7 @@ addMsg [] x  = x
 addMsg xs [] = xs
 addMsg xs x  = xs ++ " " ++ x
 
--- display and handle the player
+-- | Display current status and handle the turn of the player.
 handle :: Session -> Level -> State -> String -> IO ()
 handle session (lvl@(Level nm sz ms smap lmap lmeta))
                (state@(State { splayer = player@(Monster _ php pdir ploc pinv ptime), stime = time }))
@@ -334,6 +336,9 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                                 (\ l m -> loop session l (updatePlayer state (const m)))
                                 nlvl abort player dir
 
+-- | Configurable event handler for the direction keys. Is used to
+--   handle player moves, but can also be used for directed commands
+--   such as open/close.
 handleDirection :: String -> ((Y,X) -> IO ()) -> IO () -> IO ()
 handleDirection e h k =
   case e of
@@ -347,6 +352,8 @@ handleDirection e h k =
     "n" -> h (1,1)
     _   -> k
 
+-- | Handler that ignores modifier events as they are
+--   currently produced by the Gtk frontend.
 handleModifier :: String -> IO () -> IO () -> IO ()
 handleModifier e h k =
   case e of
