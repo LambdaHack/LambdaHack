@@ -70,10 +70,18 @@ instance Binary MonsterType where
             2 -> return Nose
             _ -> fail "no parse (MonsterType)" 
 
+monsterFrequency :: Frequency MonsterType
+monsterFrequency =
+  [ 
+    (1, Nose),
+    (3, Eye)
+  ]
+
 -- | Generate monster.
-newMonster :: Loc -> MonsterType -> Rnd Monster
-newMonster loc tp =
+newMonster :: Loc -> Frequency MonsterType -> Rnd Monster
+newMonster loc ftp =
     do
+      tp <- frequency ftp
       hp <- hps tp
       return (template tp hp loc)
   where

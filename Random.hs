@@ -30,7 +30,9 @@ oneOf xs =
     r <- randomR (0, length xs - 1)
     return (xs !! r)
 
-frequency :: [(Int, a)] -> Rnd a
+type Frequency a = [(Int, a)]
+
+frequency :: Frequency a -> Rnd a
 frequency xs =
   do
     r <- randomR (1, sum (map fst xs))
