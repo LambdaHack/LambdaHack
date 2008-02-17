@@ -165,9 +165,8 @@ addMonster lvl@(Level { lmonsters = ms, lmap = lmap })
             sm <- findLoc lvl (\ l t -> tterrain t == Floor && 
                                         not (l `L.elem` L.map mloc (player : ms)) &&
                                         distance (ploc, l) > 400)
-            rh <- randomR (2,3)
             rt <- frequency [(1, Nose), (3, Eye)]
-            let m = Monster rt rh Nothing sm []
+            m <- newMonster sm rt
             return (m : ms)
      else return ms
 

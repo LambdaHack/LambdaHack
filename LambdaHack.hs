@@ -108,7 +108,7 @@ generate session msg =
 -- perform a complete move (i.e., monster moves etc.)
 loop :: Session -> Level -> State -> String -> IO ()
 loop session (lvl@(Level nm sz ms smap lmap lmeta))
-             (state@(State { splayer = player@(Monster _ php _ ploc _), stime = time }))
+             (state@(State { splayer = player@(Monster _ php _ ploc _ _), stime = time }))
              oldmsg =
   do
     -- player HP regeneration, TODO: remove hardcoded max
@@ -176,7 +176,7 @@ addMsg xs x  = xs ++ " " ++ x
 -- display and handle the player
 handle :: Session -> Level -> State -> String -> IO ()
 handle session (lvl@(Level nm sz ms smap lmap lmeta))
-               (state@(State { splayer = player@(Monster _ php pdir ploc pinv), stime = time }))
+               (state@(State { splayer = player@(Monster _ php pdir ploc pinv ptime), stime = time }))
                oldmsg =
   do
     -- check for player death
@@ -399,7 +399,7 @@ moveOrAttack allowAttacks
 
 displayLevel session (lvl@(Level nm sz ms smap nlmap lmeta))
                      (reachable, visible)
-                     (state@(State { splayer = player@(Monster _ php pdir ploc _), stime = time }))
+                     (state@(State { splayer = player@(Monster _ php pdir ploc _ _), stime = time }))
                      msg =
     let
       sSml    = ssensory state == Smell
