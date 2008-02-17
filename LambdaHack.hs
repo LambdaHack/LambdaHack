@@ -116,8 +116,15 @@ loop session (lvl@(Level nm sz ms smap lmap lmeta))
     -- update smap
     let nsmap = M.insert ploc (time + smellTimeout) smap
     -- generate new monsters
-    gms <- rndToIO (addMonster lvl player)
+    nlvl <- rndToIO (addMonster lvl player)
     -- perform monster moves
+    handleMonsters session (nlvl { lsmell = smap }) state oldmsg
+
+handleMonsters :: Session -> Level -> State -> String -> IO ()
+handleMonsters session (lvl@(Level nm sz ms nsmap lmap lmeta))
+               (state@(State { splayer = player@(Monster _ nphp _ ploc _ _), stime = time }))
+               oldmsg =
+  do
     let monsterMoves ams cplayer cmsg []      = return (ams, cplayer, cmsg)
         monsterMoves ams cplayer cmsg (m:oms) =
                          do
@@ -164,9 +171,10 @@ loop session (lvl@(Level nm sz ms smap lmap lmeta))
                                            cmsg -- (addMsg cmsg (show (nl,fns)))
                                            oms) -- abort 
                              m nl
-    (fms, fplayer, fmsg) <- monsterMoves [] (player { mhp = nphp }) oldmsg gms
+    (fms, fplayer, fmsg) <- monsterMoves [] (player { mhp = nphp }) oldmsg ms
     handle session (lvl { lmonsters = fms, lsmell = nsmap })
            (state { splayer = fplayer, stime = time + 1 }) fmsg
+
 
 addMsg :: String -> String -> String
 addMsg [] x  = x

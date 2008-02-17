@@ -154,7 +154,7 @@ digRoom ((y0,x0),(y1,x1)) l =
                      ++ [ ((y,x),newTile (Wall Vert)) | x <- [x0-1,x1+1], y <- [y0..y1] ]
   in M.unionWith const rm l
 
-addMonster :: Level -> Player -> Rnd [Monster]
+addMonster :: Level -> Player -> Rnd Level
 addMonster lvl@(Level { lmonsters = ms, lmap = lmap })
            player@(Monster { mloc = ploc }) =
   do
@@ -166,6 +166,6 @@ addMonster lvl@(Level { lmonsters = ms, lmap = lmap })
                                         not (l `L.elem` L.map mloc (player : ms)) &&
                                         distance (ploc, l) > 400)
             m <- newMonster sm monsterFrequency
-            return (m : ms)
-     else return ms
+            return (updateMonsters lvl (const (m : ms)))
+     else return lvl
 

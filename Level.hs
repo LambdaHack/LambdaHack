@@ -28,6 +28,9 @@ data Level = Level
 updateLMap :: Level -> (LMap -> LMap) -> Level
 updateLMap lvl f = lvl { lmap = f (lmap lvl) }
 
+updateMonsters :: Level -> ([Monster] -> [Monster]) -> Level
+updateMonsters lvl f = lvl { lmonsters = f (lmonsters lvl) }
+
 instance Binary Level where
   put (Level nm sz@(sy,sx) ms lsmell lmap lmeta) = 
         do
