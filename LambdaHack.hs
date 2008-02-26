@@ -146,6 +146,11 @@ handleMonsters session (lvl@(Level nm sz ms nsmap lmap lmeta))
                -- candidate directions: noses usually move randomly, whereas
                -- eyes favour to keep their old direction
                let ns | mtype m == Nose = moves
+                      | mtype m == Eye && mloc m `S.member` pvisible per =
+                          let t = towards (mloc m,ploc)
+                          in maybe id
+                                   (\ d -> L.filter (\ x -> distance (t,x) <= 1))
+                                   (mdir m) moves
                       | otherwise       =
                           maybe id
                                 (\ d -> L.filter (\ x -> distance (neg d,x) > 1)) 
