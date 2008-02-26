@@ -68,6 +68,21 @@ digCorridor _ l = l
 newTile :: Terrain -> (Tile, Tile)
 newTile t = (Tile t [], Tile Unknown [])
 
+bigroom :: (Y,X) -> String -> Rnd (Maybe (Level, Loc) -> Maybe (Level, Loc) -> Level, Loc, Loc)
+bigroom (sy,sx) nm =
+  do
+    let lmap = digRoom ((1,1),(sy-1,sx-1)) (emptyLMap (sy,sx))
+    let smap = M.fromList [ ((y,x),-100) | y <- [0..sy], x <- [0..sx] ]
+    let lvl = Level nm (sy,sx) [] smap lmap ""
+    -- locations of the stairs
+    su <- findLoc lvl (const ((==Floor) . tterrain))
+    sd <- findLoc lvl (\ l t -> tterrain t == Floor && distance (su,l) > 676)
+    return $ (\ lu ld ->
+      let flmap = M.insert su (newTile (Stairs Up lu)) $
+                  M.insert sd (newTile (Stairs Down ld)) $
+                  lmap
+      in  Level nm (sy,sx) [] smap flmap "bigroom", su, sd)
+
 data LevelConfig =
   LevelConfig {
     levelGrid         :: (Y,X),

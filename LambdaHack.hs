@@ -99,7 +99,7 @@ generate :: Session -> String -> IO ()
 generate session msg =
   do
     -- generate dungeon with 10 levels
-    levels <- rndToIO $ mapM (\n -> level defaultLevelConfig $ "The Lambda Cave " ++ show n) [1..10]
+    levels <- rndToIO $ mapM (\n -> (if n == 3 then bigroom (22,79) else level defaultLevelConfig) $ "The Lambda Cave " ++ show n) [1..10]
     let state = defaultState ((\ (_,x,_) -> x) (head levels))
     let connect [(x,_,_)] = [x Nothing Nothing]
         connect ((x,_,_):ys@((_,u,_):_)) =
