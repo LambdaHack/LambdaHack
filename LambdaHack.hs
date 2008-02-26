@@ -126,6 +126,8 @@ handleMonsters :: Session -> Level -> State -> String -> IO ()
 handleMonsters session (lvl@(Level nm sz ms nsmap lmap lmeta))
                (state@(State { splayer = player@(Monster _ nphp _ ploc _ _), stime = time }))
                oldmsg =
+    handle session lvl state oldmsg
+{-
   do
     let monsterMoves ams cplayer cmsg []      = return (ams, cplayer, cmsg)
         monsterMoves ams cplayer cmsg (m:oms) =
@@ -176,7 +178,7 @@ handleMonsters session (lvl@(Level nm sz ms nsmap lmap lmeta))
     (fms, fplayer, fmsg) <- monsterMoves [] (player { mhp = nphp }) oldmsg ms
     handle session (lvl { lmonsters = fms, lsmell = nsmap })
            (state { splayer = fplayer, stime = time + 1 }) fmsg
-
+-}
 
 addMsg :: String -> String -> String
 addMsg [] x  = x
@@ -304,9 +306,11 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
     do
       let nplayer = player { mdir = Just dir }
           abort   = handle session nlvl state ""
-      moveOrAttack False
-                   (\ l m -> loop session l (updatePlayer state (const m)))
-                   nlvl abort nplayer dir
+      moveOrAttack
+        False   -- attacks are disallowed while running
+        (\ l p -> loop session l (updatePlayer state (const p)))
+        abort
+        nlvl nplayer APlayer dir
   continueRun dir =
     let abort = handle session nlvl (updatePlayer state (const $ player { mdir = Nothing })) oldmsg
         dloc  = shift ploc dir
@@ -317,9 +321,11 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
           (_, Tile (Stairs _ _) _) -> abort
           _
             | accessible nlmap ploc dloc ->
-                moveOrAttack False
-                  (\ l m -> loop session l (updatePlayer state (const m)))
-                  nlvl abort player dir
+                moveOrAttack
+                  False    -- attacks are disallowed while running
+                  (\ l p -> loop session l (updatePlayer state (const p)))
+                  abort
+                  nlvl player APlayer dir
           (_, Tile Corridor _)  -- direction change restricted to corridors
             | otherwise ->
                 let ns  = L.filter (\ x -> distance (neg dir,x) > 1
@@ -332,9 +338,11 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                                     _        -> abort
           _ -> abort
   -- perform a player move
-  move abort dir = moveOrAttack True
-                                (\ l m -> loop session l (updatePlayer state (const m)))
-                                nlvl abort player dir
+  move abort dir = moveOrAttack
+                     True   -- attacks are allowed
+                     (\ l p -> loop session l (updatePlayer state (const p)))
+                     abort
+                     nlvl player APlayer dir
 
 -- | Configurable event handler for the direction keys. Is used to
 --   handle player moves, but can also be used for directed commands
@@ -374,43 +382,88 @@ handleModifier e h k =
 version :: String
 version = showVersion Self.version ++ " (" ++ displayId ++ " frontend)"
 
+data Actor = AMonster Int  -- offset in monster list
+           | APlayer
+  deriving (Show, Eq)
+
+getActor :: Level -> Player -> Actor -> Monster
+getActor lvl p (AMonster n) = lmonsters lvl !! n
+getActor lvl p APlayer      = p
+
+updateActor :: (Monster -> Monster) ->                  -- the update
+               (Monster -> Level -> Player -> IO a) ->  -- continuation
+               Actor ->                                 -- who to update
+               Level -> Player -> IO a                  -- transformed continuation
+updateActor f k (AMonster n) lvl p = 
+  let (m,ms) = updateMonster f n (lmonsters lvl)
+  in  k m (updateMonsters lvl (const ms)) p
+updateActor f k APlayer      lvl p = k p lvl (f p)
+
+updateMonster :: (Monster -> Monster) -> Int -> [Monster] -> (Monster, [Monster])
+updateMonster f n ms =
+  case splitAt n ms of
+    (pre, x : post) -> let m = f x in (m, pre ++ [m] ++ post)
+    xs              -> error "updateMonster"
+
+
 moveOrAttack :: Bool ->                                     -- allow attacks?
-                (Level -> Monster -> String -> IO a) ->     -- success continuation
-                Level ->
+                (Level -> Player -> String -> IO a) ->      -- success continuation
                 IO a ->                                     -- failure continuation
-                Monster -> Dir -> IO a
+                Level ->                                    -- the level
+                Player ->                                   -- the player
+                Actor ->                                    -- who's moving?
+                Dir -> IO a
 moveOrAttack allowAttacks
-             continue nlvl@(Level { lmap = nlmap }) abort player@(Monster { mloc = ploc }) dir
+             continue abort
+             nlvl@(Level { lmap = nlmap }) player
+             actor dir
       -- to prevent monsters from hitting themselves
     | dir == (0,0) = abort
-      -- at the moment, we check whether there is a monster before checking open-ness
-      -- i.e., we could attack a monster on a blocked location
+      -- At the moment, we check whether there is a monster before checking accessibility
+      -- i.e., we can attack a monster on a blocked location. For instance,
+      -- a monster on an open door can be attacked diagonally, and a
+      -- monster capable of moving through walls can be attacked from an
+      -- adjacent position.
     | not (L.null attacked) =
-        let
-          victim   = head attacked
-          saveds   = tail attacked ++ others
-          survivor = case mhp victim of
-                       1  ->  []
-                       h  ->  [victim { mhp = h - 1 }]
-          verb | L.null survivor = "kill"
-               | otherwise       = "hit"
-        in
-          if (mtype victim == Player) || (mtype player == Player) && allowAttacks then
-            continue (nlvl { lmonsters = survivor ++ saveds }) player
-                     (subjectMonster (mtype player) ++ " " ++
-                      verbMonster (mtype player) verb ++ " " ++
-                      objectMonster (mtype victim) ++ ".")
-          else
-            abort  -- currently, we prevent monster from attacking each other
-
-    | accessible nlmap ploc nploc = continue nlvl (player { mloc = nploc }) 
-                                             (if mtype player == Player
-                                              then lookAt nlmap nploc else "") 
+        if allowAttacks then
+          do
+            let damage m = case mhp m of
+                             1  ->  m { mhp = 0, mtime = 0 }  -- grant an immediate move to die
+                             h  ->  m { mhp = h - 1 }
+            let combatVerb m
+                  | mhp m > 0 = "hit"
+                  | otherwise = "kill"
+            let combatMsg m  = subjectMonster (mtype am) ++ " " ++
+                               verbMonster (mtype am) (combatVerb m) ++ " " ++
+                               objectMonster (mtype m) ++ "."
+            let sortmtime = sortBy (\ x y -> compare (mtime x) (mtime y))
+            let updateVictims l p msg (a:r) =
+                  updateActor damage (\ m l p -> updateVictims l p
+                                                   (addMsg msg (combatMsg m)) r)
+                              a l p
+                updateVictims l p msg [] = continue (updateMonsters l sortmtime) p msg
+            updateVictims nlvl player "" attacked
+        else
+          abort
+      -- Perform a move.
+    | accessible nlmap aloc naloc = 
+        updateActor (\ m -> m { mloc = naloc })
+                    (\ _ l p -> continue l p (if actor == APlayer
+                                              then lookAt nlmap naloc else ""))
+                    actor nlvl player
     | otherwise = abort
-    where source = nlmap `at` ploc
-          nploc  = shift ploc dir
-          target = nlmap `at` nploc
-          (attacked, others) = L.partition (\ m -> mloc m == nploc) (lmonsters nlvl)
+    where am :: Monster
+          am     = getActor nlvl player actor
+          aloc :: Loc
+          aloc   = mloc am
+          source = nlmap `at` aloc
+          naloc  = shift aloc dir
+          target = nlmap `at` naloc
+          attackedPlayer   = if mloc player == naloc then [APlayer] else []
+          attackedMonsters = L.map AMonster $
+                             findIndices (\ m -> mloc m == naloc) (lmonsters nlvl)
+          attacked :: [Actor]
+          attacked         = attackedPlayer ++ attackedMonsters
 
 displayLevel session (lvl@(Level nm sz ms smap nlmap lmeta))
                      (reachable, visible)
