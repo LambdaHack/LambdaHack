@@ -69,7 +69,8 @@ start session =
                       return $ Right "Welcome to LambdaHack!"  -- new game
       case restored of
         Right msg        -> generate session msg
-        Left (lvl,state) -> handle session lvl state "Welcome back to LambdaHack."
+        Left (lvl,state) -> handle session lvl state (perception_ state lvl)
+                                   "Welcome back to LambdaHack."
 
 more :: String
 more = " --more--"
@@ -105,7 +106,7 @@ generate session msg =
                             let (z:zs) = connect ys
                             in  x Nothing (Just (z,u)) : z : zs
     let lvl = head (connect levels)
-    handle session lvl state msg
+    handle session lvl state (perception_ state lvl) msg
 
 -- | Perform a complete move (i.e., monster moves etc.)
 loop :: Session -> Level -> State -> String -> IO ()
@@ -119,24 +120,27 @@ loop session (lvl@(Level nm sz ms smap lmap lmeta))
     let nsmap = M.insert ploc (time + smellTimeout) smap
     -- generate new monsters
     nlvl <- rndToIO (addMonster lvl player)
+    -- determine player perception
+    let per = perception ploc lmap
     -- perform monster moves
-    handleMonsters session (nlvl { lsmell = smap }) state oldmsg
+    handleMonsters session (nlvl { lsmell = smap }) state per oldmsg
 
 -- | Handle monster moves. The idea is that we perform moves
 --   as long as there are monsters that have a move time which is
 --   less than or equal to the current time.
-handleMonsters :: Session -> Level -> State -> String -> IO ()
+handleMonsters :: Session -> Level -> State -> Perception -> String -> IO ()
 handleMonsters session (lvl@(Level nm sz ms nsmap lmap lmeta))
                (state@(State { splayer = player@(Monster { mloc = ploc }), stime = time }))
-               oldmsg =
+               per oldmsg =
     case ms of
       [] -> -- there are no monsters, just continue
-            handle session lvl nstate oldmsg
+            handle session lvl nstate per oldmsg
       (m@(Monster { mtime = mt }) : ms)
          | mt > time  -> -- all the monsters are not yet ready for another move
-                            handle session lvl nstate oldmsg
+                            handle session lvl nstate per oldmsg
          | mhp m <= 0 -> -- the monster dies
-                            handleMonsters session (updateMonsters lvl (const ms)) state oldmsg
+                            handleMonsters session (updateMonsters lvl (const ms))
+                                           state per oldmsg
          | otherwise  -> -- monster m should move
              do
                -- candidate directions: noses usually move randomly, whereas
@@ -171,10 +175,10 @@ handleMonsters session (lvl@(Level nm sz ms nsmap lmap lmeta))
                moveOrAttack
                  True
                  (\ nlvl np msg ->
-                    handleMonsters session nlvl (updatePlayer state (const np))
+                    handleMonsters session nlvl (updatePlayer state (const np)) per
                                    (addMsg oldmsg msg))
-                 (handleMonsters session nlvl state oldmsg)
-                 nlvl player
+                 (handleMonsters session nlvl state per oldmsg)
+                 nlvl player per
                  (AMonster act)
                  nl
   where
@@ -195,10 +199,10 @@ addMsg xs [] = xs
 addMsg xs x  = xs ++ " " ++ x
 
 -- | Display current status and handle the turn of the player.
-handle :: Session -> Level -> State -> String -> IO ()
+handle :: Session -> Level -> State -> Perception -> String -> IO ()
 handle session (lvl@(Level nm sz ms smap lmap lmeta))
                (state@(State { splayer = player@(Monster _ php pdir ploc pinv ptime), stime = time }))
-               oldmsg =
+               per oldmsg =
   do
     -- check for player death
     if php <= 0
@@ -235,10 +239,10 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                            -- look
                            "colon"   -> displayCurrent (lookAt nlmap ploc) >> h
 
-                           "V"       -> handle session nlvl (toggleVision state) oldmsg
-                           "R"       -> handle session nlvl (toggleSmell state) oldmsg
-                           "O"       -> handle session nlvl (toggleOmniscient state) oldmsg
-                           "T"       -> handle session nlvl (toggleTerrain state) oldmsg
+                           "V"       -> handle session nlvl (toggleVision state) per oldmsg
+                           "R"       -> handle session nlvl (toggleSmell state) per oldmsg
+                           "O"       -> handle session nlvl (toggleOmniscient state) per oldmsg
+                           "T"       -> handle session nlvl (toggleTerrain state) per oldmsg
 
                            "M"       -> displayCurrent lmeta >> h
                            "v"       -> displayCurrent version >> h
@@ -248,9 +252,10 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
 
  where
 
-  fields@(reachable,visible) = visibility ploc lmap
+  reachable = preachable per
+  visible   = pvisible per
 
-  displayCurrent = displayLevel session nlvl fields state
+  displayCurrent = displayLevel session nlvl per state
 
   -- update player memory
   nlmap = foldr (\ x m -> M.update (\ (t,_) -> Just (t,flat t)) x m) lmap (S.toList visible)
@@ -314,14 +319,14 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
   run dir =
     do
       let nplayer = player { mdir = Just dir }
-          abort   = handle session nlvl state ""
+          abort   = handle session nlvl state per ""
       moveOrAttack
         False   -- attacks are disallowed while running
         (\ l p -> loop session l (updatePlayer state (const p)))
         abort
-        nlvl nplayer APlayer dir
+        nlvl nplayer per APlayer dir
   continueRun dir =
-    let abort = handle session nlvl (updatePlayer state (const $ player { mdir = Nothing })) oldmsg
+    let abort = handle session nlvl (updatePlayer state (const $ player { mdir = Nothing })) per oldmsg
         dloc  = shift ploc dir
     in  case (oldmsg, nlmap `at` ploc) of
           (_:_, _)                 -> abort
@@ -334,7 +339,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                   False    -- attacks are disallowed while running
                   (\ l p -> loop session l (updatePlayer state (const p)))
                   abort
-                  nlvl player APlayer dir
+                  nlvl player per APlayer dir
           (_, Tile Corridor _)  -- direction change restricted to corridors
             | otherwise ->
                 let ns  = L.filter (\ x -> distance (neg dir,x) > 1
@@ -351,7 +356,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                      True   -- attacks are allowed
                      (\ l p -> loop session l (updatePlayer state (const p)))
                      abort
-                     nlvl player APlayer dir
+                     nlvl player per APlayer dir
 
 -- | Configurable event handler for the direction keys. Is used to
 --   handle player moves, but can also be used for directed commands
@@ -420,11 +425,12 @@ moveOrAttack :: Bool ->                                     -- allow attacks?
                 IO a ->                                     -- failure continuation
                 Level ->                                    -- the level
                 Player ->                                   -- the player
+                Perception ->                               -- perception of the player
                 Actor ->                                    -- who's moving?
                 Dir -> IO a
 moveOrAttack allowAttacks
              continue abort
-             nlvl@(Level { lmap = nlmap }) player
+             nlvl@(Level { lmap = nlmap }) player per
              actor dir
       -- to prevent monsters from hitting themselves
     | dir == (0,0) = continue nlvl player ""
@@ -445,10 +451,13 @@ moveOrAttack allowAttacks
             let combatMsg m  = subjectMonster (mtype am) ++ " " ++
                                verbMonster (mtype am) (combatVerb m) ++ " " ++
                                objectMonster (mtype m) ++ "."
+            let perceivedMsg m
+                  | mloc m `S.member` pvisible per = combatMsg m
+                  | otherwise                      = "You hear some noises."
             let sortmtime = sortBy (\ x y -> compare (mtime x) (mtime y))
             let updateVictims l p msg (a:r) =
                   updateActor damage (\ m l p -> updateVictims l p
-                                                   (addMsg msg (combatMsg m)) r)
+                                                   (addMsg msg (perceivedMsg m)) r)
                               a l p
                 updateVictims l p msg [] = continue l {- (updateMonsters l sortmtime) -} p msg
             updateVictims nlvl player "" attacked
@@ -475,10 +484,12 @@ moveOrAttack allowAttacks
           attacked         = attackedPlayer ++ attackedMonsters
 
 displayLevel session (lvl@(Level nm sz ms smap nlmap lmeta))
-                     (reachable, visible)
+                     per
                      (state@(State { splayer = player@(Monster _ php pdir ploc _ _), stime = time }))
                      msg =
     let
+      reachable = preachable per
+      visible   = pvisible per
       sSml    = ssensory state == Smell
       sVis    = ssensory state == Vision
       sOmn    = sdisplay state == Omniscient
@@ -509,8 +520,15 @@ displayLevel session (lvl@(Level nm sz ms smap nlmap lmeta))
               (take 40 (nm ++ repeat ' ') ++ take 10 ("HP: " ++ show php ++ repeat ' ') ++
                take 10 ("T: " ++ show time ++ repeat ' '))
 
-visibility :: Loc -> LMap -> (Set Loc, Set Loc)
-visibility ploc lmap =
+data Perception =
+  Perception { preachable :: Set Loc, pvisible :: Set Loc }
+
+perception_ :: State -> Level -> Perception
+perception_ (State { splayer = Monster { mloc = ploc } }) (Level { lmap = lmap }) =
+  perception ploc lmap
+
+perception :: Loc -> LMap -> Perception
+perception ploc lmap =
   let
     reachable  = fullscan ploc lmap
     actVisible = S.filter (\ loc -> light (lmap `at` loc)) reachable
@@ -523,4 +541,4 @@ visibility ploc lmap =
                           reachable
     visible = S.union pasVisible actVisible
   in
-    (reachable, visible)
+    Perception reachable visible
