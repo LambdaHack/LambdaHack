@@ -72,9 +72,6 @@ start session =
         Left (lvl,state) -> handle session lvl state (perception_ state lvl)
                                    "Welcome back to LambdaHack."
 
-more :: String
-more = " --more--"
-
 -- | Displays a message on a blank screen. Waits for confirmation.
 displayBlankConfirm :: Session -> String -> IO ()
 displayBlankConfirm session txt =
@@ -199,10 +196,26 @@ insertMonster = insertMonster' 0
       | otherwise              = let (n', ms') = insertMonster' (n + 1) m ms
                                  in  (n', m' : ms')
 
+more :: String
+more = " --more--"
+
 addMsg :: String -> String -> String
 addMsg [] x  = x
 addMsg xs [] = xs
 addMsg xs x  = xs ++ " " ++ x
+
+splitMsg :: Int -> String -> [String]
+splitMsg w xs
+  | w <= m = [xs]   -- border case, we cannot make progress
+  | l <= w = [xs]   -- no problem, everything fits
+  | otherwise = let (pre, post) = splitAt (w - m) xs
+                    (ppre, ppost) = break (`L.elem` " .,:!;") $ reverse pre
+                    rpost = dropWhile isSpace ppost
+                in  if L.null rpost then pre : splitMsg w post
+                                    else reverse rpost : splitMsg w (reverse ppre ++ post)
+  where
+    m = length more
+    l = length xs   
 
 -- | Display current status and handle the turn of the player.
 handle :: Session -> Level -> State -> Perception -> String -> IO ()
@@ -516,24 +529,29 @@ displayLevel session (lvl@(Level nm sz ms smap nlmap lmeta))
                        else if rea then setBG magenta
                                    else id
                   else \ vis rea -> id
-    in
-      display ((0,0),sz) session 
-               (\ loc -> let tile = nlmap `lAt` loc
-                             sml  = ((smap ! loc) - time) `div` 10
-                             vis  = S.member loc visible
-                             rea  = S.member loc reachable
-                             (rv,ra) = case L.find (\ m -> loc == mloc m) (player:ms) of
-                                         _ | sTer > 0          -> viewTerrain sTer (tterrain tile)
-                                         Just m | sOmn || vis  -> viewMonster (mtype m) 
-                                         _ | sSml && sml >= 0  -> viewSmell sml
-                                           | otherwise         -> viewTile tile
-                             vision = lVision vis rea
-                         in
-                           (ra . vision $
-                            attr, rv))
-              msg
-              (take 40 (nm ++ repeat ' ') ++ take 10 ("HP: " ++ show php ++ repeat ' ') ++
-               take 10 ("T: " ++ show time ++ repeat ' '))
+      disp msg = 
+        display ((0,0),sz) session 
+                 (\ loc -> let tile = nlmap `lAt` loc
+                               sml  = ((smap ! loc) - time) `div` 10
+                               vis  = S.member loc visible
+                               rea  = S.member loc reachable
+                               (rv,ra) = case L.find (\ m -> loc == mloc m) (player:ms) of
+                                           _ | sTer > 0          -> viewTerrain sTer (tterrain tile)
+                                           Just m | sOmn || vis  -> viewMonster (mtype m) 
+                                           _ | sSml && sml >= 0  -> viewSmell sml
+                                             | otherwise         -> viewTile tile
+                               vision = lVision vis rea
+                           in
+                             (ra . vision $
+                              attr, rv))
+                msg
+                (take 40 (nm ++ repeat ' ') ++ take 10 ("HP: " ++ show php ++ repeat ' ') ++
+                 take 10 ("T: " ++ show time ++ repeat ' '))
+      msgs = splitMsg (snd sz) msg
+      perf []     = disp ""
+      perf [xs]   = disp xs
+      perf (x:xs) = disp (x ++ more) >> getConfirm session >> perf xs
+    in perf msgs
 
 data Perception =
   Perception { preachable :: Set Loc, pvisible :: Set Loc }
