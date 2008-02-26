@@ -123,7 +123,7 @@ loop session (lvl@(Level nm sz ms smap lmap lmeta))
     -- determine player perception
     let per = perception ploc lmap
     -- perform monster moves
-    handleMonsters session (nlvl { lsmell = smap }) state per oldmsg
+    handleMonsters session (nlvl { lsmell = nsmap }) state per oldmsg
 
 -- | Handle monster moves. The idea is that we perform moves
 --   as long as there are monsters that have a move time which is
