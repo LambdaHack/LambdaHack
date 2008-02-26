@@ -226,6 +226,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                          case e of
                            "o"       -> openclose True h
                            "c"       -> openclose False h
+                           "s"       -> search h
 
                            "less"    -> lvlchange Up h
                            "greater" -> lvlchange Down h
@@ -294,15 +295,23 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
         dloc = shift ploc dir
     in
       case nlmap `at` dloc of
-        Tile (Door hv o') is
-                   | o /= not o' -> displayCurrent ("already " ++ txt) >> abort
+        Tile d@(Door hv o') is
+                   | secret o'   -> displayCurrent "never mind" >> abort
+                   | toOpen (not o) /= o'
+                                 -> displayCurrent ("already " ++ txt) >> abort
                    | not (unoccupied ms nlmap dloc)
                                  -> displayCurrent "blocked" >> abort
                    | otherwise   -> -- ok, we can open/close the door      
-                                    let nt = Tile (Door hv o) is
+                                    let nt = Tile (Door hv (toOpen o)) is
                                         clmap = M.insert (shift ploc dir) (nt, flat nt) nlmap
                                     in loop session (updateLMap lvl (const clmap)) state ""
         _ -> displayCurrent "never mind" >> abort
+  -- search for secret doors
+  search abort =
+    let searchTile (Tile (Door hv (Just n)) x,t') = Just $ (Tile (Door hv (Just (max (n - 1) 0))) x, t')
+        searchTile t                              = Just t
+        slmap = foldl (\ l m -> update searchTile (shift ploc m) l) nlmap moves
+    in  loop session (updateLMap lvl (const slmap)) state ""
   -- perform a level change
   lvlchange vdir abort =
     case nlmap `at` ploc of

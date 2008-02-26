@@ -92,7 +92,9 @@ data LevelConfig =
     extraConnects     :: Int,
     minStairsDistance :: Int,      -- must not be too large
     doorChance        :: Rational,
-    doorOpenChance    :: Rational
+    doorOpenChance    :: Rational,
+    doorSecretChance  :: Rational,
+    doorSecretMax     :: Int
   }
     
 defaultLevelConfig :: LevelConfig
@@ -105,7 +107,9 @@ defaultLevelConfig =
     extraConnects     = 3,     -- 6
     minStairsDistance = 676,
     doorChance        = 1%2,
-    doorOpenChance    = 1%2
+    doorOpenChance    = 1%2,
+    doorSecretChance  = 1%3,
+    doorSecretMax     = 15
   }
 
 level :: LevelConfig ->
@@ -141,8 +145,14 @@ level cfg nm =
                         rb <- chance (doorChance cfg)
                         -- chance for a door to be open
                         ro <- chance (doorOpenChance cfg)
+                        rs <- if ro then return Nothing
+                                    else do -- chance for a door to be secret
+                                            rsc <- chance (doorSecretChance cfg)
+                                            fmap Just
+                                                 (if rsc then randomR (1, doorSecretMax cfg)
+                                                         else return 0)
                         if rb
-                          then return ((y,x),newTile (Door hv ro))
+                          then return ((y,x),newTile (Door hv rs))
                           else return o
                     _ -> return o) .
                 M.toList $ lmap

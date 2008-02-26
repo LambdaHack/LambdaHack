@@ -8,6 +8,7 @@ import Data.Map as M
 import Data.Set as S
 import Data.List as L
 import Data.Ratio
+import Data.Maybe
 
 import Geometry
 import Monster
@@ -76,7 +77,7 @@ data Terrain = Rock
              | Corridor
              | Wall HV
              | Stairs VDir (Maybe (Level, Loc))
-             | Door HV Bool
+             | Door HV (Maybe Int) -- Nothing: open, Just 0: closed, otherwise secret
   deriving Show
 
 -- forget stuff you cannot see anyway
@@ -149,31 +150,41 @@ instance Eq Terrain where
 closed :: Tile -> Bool
 closed = not . open
 
+secret :: Maybe Int -> Bool
+secret (Just n) | n /= 0 = True
+secret _ = False
+
+toOpen :: Bool -> Maybe Int
+toOpen True = Nothing
+toOpen False = Just 0
+
 -- | allows moves and vision
 open :: Tile -> Bool
 open (Tile Floor _) = True
 open (Tile (Opening _) _)  = True
-open (Tile (Door _ o) _)   = o
+open (Tile (Door _ o) _)   = isNothing o
 open (Tile Corridor _)     = True
 open (Tile (Stairs _ _) _) = True
 open _                     = False
 
 -- | is lighted on its own
 light :: Tile -> Bool
-light (Tile Floor _)         = True
-light (Tile (Opening _) _)   = True
-light (Tile (Door _ True) _) = True -- open doors are all visible currently
-light (Tile (Stairs _ _) _)  = True
-light (Tile (Wall _) _)      = False
-light _                      = False
+light (Tile Floor _)            = True
+light (Tile (Opening _) _)      = True
+light (Tile (Door _ Nothing) _) = True -- open doors are all visible currently
+light (Tile (Stairs _ _) _)     = True
+light (Tile (Wall _) _)         = False
+light _                         = False
 
 -- | reflects light from adjacent positions;
 -- exclusively passive: cannot be seen from an adjacent position in darkness
 passive :: Tile -> (Bool,[(Y,X)])  -- exclusively passive?
 passive (Tile (Wall Horiz) _) = (True, vert ++ [(-1,1),(1,1),(-1,-1),(1,-1)]) -- for corners
 passive (Tile (Wall Vert) _)  = (True, horiz)
-passive (Tile (Door Horiz False) _) = (False, vert)
-passive (Tile (Door Vert False) _)  = (False, horiz)
+passive (Tile (Door Horiz (Just 0)) _) = (False, vert)
+passive (Tile (Door Vert (Just 0)) _)  = (False, horiz)
+passive (Tile (Door Horiz (Just n)) _) = (True, vert)
+passive (Tile (Door Vert (Just n)) _)  = (True, horiz)
 passive _                     = (False, [])
 
 -- checks for the presence of monsters (and items); it does *not* check
@@ -333,13 +344,16 @@ viewTerrain n (Stairs Up _)
 viewTerrain n (Stairs Down _)
   | n <= 1                      = ('>', id)
   | otherwise                   = viewTerrain 0 Floor
-viewTerrain n (Door d False)
+viewTerrain n (Door d (Just 0))
   | n <= 2                      = ('+', setFG yellow)
   | otherwise                   = viewTerrain n (Opening d)
-viewTerrain n (Door Horiz True)
+viewTerrain n (Door d (Just _))
+  | n <= 2                      = viewTerrain n (Wall d) -- secret door
+  | otherwise                   = viewTerrain n (Opening d)
+viewTerrain n (Door Horiz Nothing)
   | n <= 2                      = ('|', setFG yellow)
   | otherwise                   = viewTerrain n (Opening Horiz)
-viewTerrain n (Door Vert True)
+viewTerrain n (Door Vert Nothing)
   | n <= 2                      = ('-', setFG yellow)
   | otherwise                   = viewTerrain n (Opening Vert)
 
