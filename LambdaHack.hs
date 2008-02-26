@@ -168,8 +168,8 @@ handleMonsters session (lvl@(Level nm sz ms nsmap lmap lmeta))
                        rndToIO (oneOf fns)
                      else -- fallback: wait
                           return (0,0)
-               -- increase the monster move time
-               let nm = m { mtime = time + 1 }
+               -- increase the monster move time and set direction
+               let nm = m { mtime = time + 1, mdir = if nl == (0,0) then Nothing else Just nl }
                let (act, nms) = insertMonster nm ms
                let nlvl = updateMonsters lvl (const nms)
                moveOrAttack
