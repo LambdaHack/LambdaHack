@@ -122,63 +122,72 @@ loop session (lvl@(Level nm sz ms smap lmap lmeta))
     -- perform monster moves
     handleMonsters session (nlvl { lsmell = smap }) state oldmsg
 
+-- | Handle monster moves. The idea is that we perform moves
+--   as long as there are monsters that have a move time which is
+--   less than or equal to the current time.
 handleMonsters :: Session -> Level -> State -> String -> IO ()
 handleMonsters session (lvl@(Level nm sz ms nsmap lmap lmeta))
-               (state@(State { splayer = player@(Monster _ nphp _ ploc _ _), stime = time }))
+               (state@(State { splayer = player@(Monster { mloc = ploc }), stime = time }))
                oldmsg =
-    handle session lvl state oldmsg
-{-
-  do
-    let monsterMoves ams cplayer cmsg []      = return (ams, cplayer, cmsg)
-        monsterMoves ams cplayer cmsg (m:oms) =
-                         do
-                           let ns | mtype m == Nose = moves
-                                  | otherwise       =
-                                      maybe id
-                                            (\ d -> L.filter (\ x -> distance (neg d,x) > 1)) 
-                                            (mdir m) moves
-                           let fns = L.filter (\ x -> accessible lmap (mloc m) (mloc m `shift` x)) ns
-                           let smells = zip fns
-                                            (L.map (\ x -> (nsmap ! (mloc m `shift` x) - time) `max` 0) fns)
-                           let msmell = maximumBy
-                                          (\ (_,s1) (_,s2) -> compare s1 s2) smells
-                           nl <- if adjacent ploc (mloc m) then
-                                   -- attack player
-                                   return (ploc `shift` neg (mloc m))
-                                 else if mtype m == Eye && not (L.null fns) then
-                                   do
-                                     i <- randomRIO (0, L.length fns - 1)
-                                     return (fns !! i)
-                                 else if mtype m == Nose && not (L.null smells) && 
-                                         snd msmell > 0 then
-                                   do
-                                     return (fst msmell)
-                                 else
-                                     liftM2 (,) (randomRIO (-1,1)) (randomRIO (-1,1))
-                           -- TODO: now the hack that allows the player move
-                           -- function to be used for monsters
-                           moveOrAttack
-                             True
-                             (\ nlvl@(Level { lmonsters = nms }) nm msg ->
-                               do
-                                 let (p,r) = L.partition (\ m -> mtype m == Player) nms
-                                 let h = case p of
-                                           [ Monster { mhp = h } ] -> h
-                                           _ -> 0  -- player killed
-                                 -- TODO: we forget monster damage
-                                 monsterMoves (nm { mdir = Just nl } : ams)
-                                              (cplayer { mhp = h })
-                                              (addMsg cmsg msg) oms
-                             ) -- success
-                             (lvl { lmonsters = cplayer : (ams ++ oms) })
-                             (monsterMoves (m { mdir = Nothing } : ams) cplayer 
-                                           cmsg -- (addMsg cmsg (show (nl,fns)))
-                                           oms) -- abort 
-                             m nl
-    (fms, fplayer, fmsg) <- monsterMoves [] (player { mhp = nphp }) oldmsg ms
-    handle session (lvl { lmonsters = fms, lsmell = nsmap })
-           (state { splayer = fplayer, stime = time + 1 }) fmsg
--}
+    case ms of
+      [] -> -- there are no monsters, just continue
+            handle session lvl nstate oldmsg
+      (m@(Monster { mtime = mt }) : ms)
+         | mt > time  -> -- all the monsters are not yet ready for another move
+                            handle session lvl nstate oldmsg
+         | mhp m <= 0 -> -- the monster dies
+                            handleMonsters session (updateMonsters lvl (const ms)) state oldmsg
+         | otherwise  -> -- monster m should move
+             do
+               -- candidate directions: noses usually move randomly, whereas
+               -- eyes favour to keep their old direction
+               let ns | mtype m == Nose = moves
+                      | otherwise       =
+                          maybe id
+                                (\ d -> L.filter (\ x -> distance (neg d,x) > 1)) 
+                                (mdir m) moves
+               -- those candidate directions that lead to accessible fields
+               let fns = L.filter (\ x -> accessible lmap (mloc m) (mloc m `shift` x)) ns
+               -- smells of the accessible fields
+               let smells = zip fns
+                                (L.map (\ x -> (nsmap ! (mloc m `shift` x) - time) `max` 0) fns)
+               -- direction and value of maximum smell
+               let msmell = maximumBy (\ (_,s1) (_,s2) -> compare s1 s2) smells
+               nl <- if adjacent ploc (mloc m) then
+                       -- attack player
+                       return (ploc `shift` neg (mloc m))
+                     else if mtype m == Eye && not (L.null fns) then
+                       rndToIO (oneOf fns)
+                     else if mtype m == Nose && not (L.null smells) && snd msmell > 0 then
+                       return (fst msmell)
+                     else if not (L.null fns) then
+                       rndToIO (oneOf fns)
+                     else -- fallback: wait
+                          return (0,0)
+               -- increase the monster move time
+               let nm = m { mtime = time + 1 }
+               let (act, nms) = insertMonster nm ms
+               let nlvl = updateMonsters lvl (const nms)
+               moveOrAttack
+                 True
+                 (\ nlvl np msg ->
+                    handleMonsters session nlvl (updatePlayer state (const np))
+                                   (addMsg oldmsg msg))
+                 (handleMonsters session nlvl state oldmsg)
+                 nlvl player
+                 (AMonster act)
+                 nl
+  where
+    nstate = state { stime = time + 1 }
+
+insertMonster :: Monster -> [Monster] -> (Int, [Monster])
+insertMonster = insertMonster' 0
+  where
+    insertMonster' n m []      = (n, [m])
+    insertMonster' n m (m':ms)
+      | mtime m <= mtime m'    = (n, m : m' : ms)
+      | otherwise              = let (n', ms') = insertMonster' (n + 1) m ms
+                                 in  (n', m' : ms')
 
 addMsg :: String -> String -> String
 addMsg [] x  = x
@@ -418,7 +427,7 @@ moveOrAttack allowAttacks
              nlvl@(Level { lmap = nlmap }) player
              actor dir
       -- to prevent monsters from hitting themselves
-    | dir == (0,0) = abort
+    | dir == (0,0) = continue nlvl player ""
       -- At the moment, we check whether there is a monster before checking accessibility
       -- i.e., we can attack a monster on a blocked location. For instance,
       -- a monster on an open door can be attacked diagonally, and a
@@ -441,7 +450,7 @@ moveOrAttack allowAttacks
                   updateActor damage (\ m l p -> updateVictims l p
                                                    (addMsg msg (combatMsg m)) r)
                               a l p
-                updateVictims l p msg [] = continue (updateMonsters l sortmtime) p msg
+                updateVictims l p msg [] = continue l {- (updateMonsters l sortmtime) -} p msg
             updateVictims nlvl player "" attacked
         else
           abort
