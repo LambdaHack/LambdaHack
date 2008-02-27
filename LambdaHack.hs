@@ -154,7 +154,10 @@ handleMonsters session (lvl@(Level nm sz ms nsmap lmap lmeta))
                                 (\ d -> L.filter (\ x -> distance (neg d,x) > 1)) 
                                 (mdir m) moves
                -- those candidate directions that lead to accessible fields
-               let fns = L.filter (\ x -> accessible lmap (mloc m) (mloc m `shift` x)) ns
+               let fns = (if mtype m == Eye
+                            then L.filter (\ x -> unoccupied ms lmap (mloc m `shift` x))
+                            else id) $
+                         L.filter (\ x -> accessible lmap (mloc m) (mloc m `shift` x)) ns
                -- smells of the accessible fields
                let smells = zip fns
                                 (L.map (\ x -> (nsmap ! (mloc m `shift` x) - time) `max` 0) fns)
