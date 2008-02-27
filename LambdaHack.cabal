@@ -1,6 +1,6 @@
 cabal-version: >= 1.2
 name:          LambdaHack
-version:       0.1.20080226
+version:       0.1.20080227
 license:       GPL
 author:        Andres Loeh <mail@andres-loeh.de>
 maintainer:    Andres Loeh <mail@andres-loeh.de>
