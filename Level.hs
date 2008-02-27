@@ -315,9 +315,25 @@ viewTile (Tile t (i:_)) = viewItem i
 -- probably correct to use 'at' rather than 'rememberAt' at this point,
 -- although we could argue that 'rememberAt' reflects what the player can
 -- perceive more correctly ...
-lookAt :: LMap -> Loc -> String
-lookAt lvl loc = unwords $ L.map objectItem $ titems (lvl `at` loc)
+lookAt :: Bool -> LMap -> Loc -> String
+lookAt detailed lvl loc
+  | L.null is && detailed = lookTerrain (tterrain (lvl `at` loc))
+  | otherwise             = isd
+  where
+    is  = titems (lvl `at` loc)
+    isd = unwords $ L.map objectItem $ is
 
+
+-- | Produces a textual description for terrain, used if no objects
+-- are present.
+lookTerrain :: Terrain -> String
+lookTerrain Floor            = "empty floor"
+lookTerrain Corridor         = "empty corridor"
+lookTerrain (Opening _)      = "an opening"
+lookTerrain (Stairs Up _)    = "staircase up"
+lookTerrain (Stairs Down _)  = "staircase down"
+lookTerrain (Door _ Nothing) = "an open door"
+lookTerrain _                = ""
 
 -- | The parameter "n" is the level of evolution:
 --

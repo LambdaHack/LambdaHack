@@ -257,7 +257,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                            "period"  -> loop session nlvl state ""
 
                            -- look
-                           "colon"   -> displayCurrent (lookAt nlmap ploc) >> h
+                           "colon"   -> displayCurrent (lookAt True nlmap ploc) >> h
 
                            "V"       -> handle session nlvl (toggleVision state) per oldmsg
                            "R"       -> handle session nlvl (toggleSmell state) per oldmsg
@@ -495,7 +495,7 @@ moveOrAttack allowAttacks
     | accessible nlmap aloc naloc = 
         updateActor (\ m -> m { mloc = naloc })
                     (\ _ l p -> continue l p (if actor == APlayer
-                                              then lookAt nlmap naloc else ""))
+                                              then lookAt False nlmap naloc else ""))
                     actor nlvl player
     | otherwise = abort
     where am :: Monster
