@@ -244,7 +244,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                            "less"    -> lvlchange Up h
                            "greater" -> lvlchange Down h
 
-                           ","       -> pickup h
+                           "comma"   -> pickup h
 
                            -- saving or ending the game
                            "S"       -> encodeCompressedFile savefile (lvl,state,False) >>
