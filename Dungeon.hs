@@ -68,8 +68,9 @@ digCorridor _ l = l
 newTile :: Terrain -> (Tile, Tile)
 newTile t = (Tile t [], Tile Unknown [])
 
-bigroom :: (Y,X) -> String -> Rnd (Maybe (Level, Loc) -> Maybe (Level, Loc) -> Level, Loc, Loc)
-bigroom (sy,sx) nm =
+bigroom :: LevelConfig -> 
+           String -> Rnd (Maybe (Level, Loc) -> Maybe (Level, Loc) -> Level, Loc, Loc)
+bigroom (LevelConfig { levelSize = (sy,sx) }) nm =
   do
     let lmap = digRoom ((1,1),(sy-1,sx-1)) (emptyLMap (sy,sx))
     let smap = M.fromList [ ((y,x),-100) | y <- [0..sy], x <- [0..sx] ]
@@ -100,10 +101,10 @@ data LevelConfig =
 defaultLevelConfig :: LevelConfig
 defaultLevelConfig =
   LevelConfig {
-    levelGrid         = (3,3), -- (2,5)
+    levelGrid         = (3,3), -- (7,10), -- (3,3), -- (2,5)
     minRoomSize       = (2,2),
     border            = 2,
-    levelSize         = (22,79),
+    levelSize         = (22,79), -- (77,231),  -- (22,79),
     extraConnects     = 3,     -- 6
     minStairsDistance = 676,
     doorChance        = 1%2,
