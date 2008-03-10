@@ -350,7 +350,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
   run dir =
     do
       let nplayer = player { mdir = Just dir }
-          abort   = handle session nlvl state per ""
+          abort   = handle session nlvl (updatePlayer state (const $ player { mdir = Nothing })) per ""
       moveOrAttack
         False   -- attacks are disallowed while running
         (\ l p -> loop session l (updatePlayer state (const p)))
