@@ -69,7 +69,7 @@ newTile :: Terrain -> (Tile, Tile)
 newTile t = (Tile t [], Tile Unknown [])
 
 bigroom :: LevelConfig -> 
-           String -> Rnd (Maybe (Level, Loc) -> Maybe (Level, Loc) -> Level, Loc, Loc)
+           LevelName -> Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) -> Level, Loc, Loc)
 bigroom (LevelConfig { levelSize = (sy,sx) }) nm =
   do
     let lmap = digRoom ((1,1),(sy-1,sx-1)) (emptyLMap (sy,sx))
@@ -79,8 +79,8 @@ bigroom (LevelConfig { levelSize = (sy,sx) }) nm =
     su <- findLoc lvl (const ((==Floor) . tterrain))
     sd <- findLoc lvl (\ l t -> tterrain t == Floor && distance (su,l) > 676)
     return $ (\ lu ld ->
-      let flmap = M.insert su (newTile (Stairs Up lu)) $
-                  M.insert sd (newTile (Stairs Down ld)) $
+      let flmap = maybe id (\ l -> M.insert su (newTile (Stairs Up   l))) lu $
+                  maybe id (\ l -> M.insert sd (newTile (Stairs Down l))) ld $
                   lmap
       in  Level nm (sy,sx) [] smap flmap "bigroom", su, sd)
 
@@ -122,7 +122,7 @@ largeLevelConfig =
   }
 
 level :: LevelConfig ->
-         String -> Rnd (Maybe (Level, Loc) -> Maybe (Level, Loc) -> Level, Loc, Loc)
+         LevelName -> Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) -> Level, Loc, Loc)
 level cfg nm =
   do
     let gs = M.toList (grid (levelGrid cfg) ((0,0),levelSize cfg))
@@ -143,7 +143,7 @@ level cfg nm =
                                            y <- [0..sy], x <- [0..sx] ]
     let lmap :: LMap
         lmap = foldr digCorridor (foldr digRoom (emptyLMap (levelSize cfg)) rooms) cs
-    let lvl = Level nm (levelSize cfg) [] smap lmap ""
+    let lvl = Level nm (levelSize cfg) [] smap lmap "" 
     -- convert openings into doors
     dlmap <- fmap M.fromList . mapM
                 (\ o@((y,x),(t,r)) -> 
@@ -172,8 +172,8 @@ level cfg nm =
     sd <- findLoc lvl (\ l t -> tterrain t == Floor && distance (su,l) > minStairsDistance cfg)
     let meta = show allConnects
     return $ (\ lu ld ->
-      let flmap = M.insert su (newTile (Stairs Up lu)) $
-                  M.insert sd (newTile (Stairs Down ld)) $
+      let flmap = maybe id (\ l -> M.insert su (newTile (Stairs Up   l))) lu $
+                  maybe id (\ l -> M.insert sd (newTile (Stairs Down l))) ld $
                   M.update (\ (t,r) -> Just (t { titems = [Gold] }, r)) si $
                   dlmap
       in  Level nm (levelSize cfg) [] smap flmap meta, su, sd)

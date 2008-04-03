@@ -13,12 +13,49 @@ import Data.Maybe
 import Geometry
 import Monster
 import Item
-import State
 import Random
 import Display
 
+-- | Names of the dungeon levels are represented using a
+-- custom data structure.
+data LevelName = LambdaCave Int | Exit
+  deriving (Show, Eq, Ord)
+
+instance Binary LevelName where
+  put (LambdaCave n) = put n
+  get = liftM LambdaCave get
+
+-- | Provide a textual description of a level name.
+levelName :: LevelName -> String
+levelName (LambdaCave n) = "The Lambda Cave " ++ show n
+
+-- | The complete dungeon is a map from level names to levels.
+-- We usually store all but the current level in this data structure.
+data Dungeon = Dungeon (M.Map LevelName Level)
+  deriving Show
+
+-- | Create a dungeon from a list of levels.
+dungeon :: [Level] -> Dungeon
+dungeon = Dungeon . M.fromList . L.map (\ l -> (lname l, l))
+
+-- | Extract a level from a dungeon.
+getDungeonLevel :: LevelName -> Dungeon -> (Level, Dungeon)
+getDungeonLevel ln (Dungeon dng) = (fromJust (M.lookup ln dng), Dungeon (M.delete ln dng))
+
+-- | Put a level into a dungeon.
+putDungeonLevel :: Level -> Dungeon -> Dungeon
+putDungeonLevel lvl (Dungeon dng) = Dungeon (M.insert (lname lvl) lvl dng)
+
+instance Binary Dungeon where
+  put (Dungeon dng) = put (M.elems dng)
+  get = liftM dungeon get
+
+-- | A dungeon location is a level together with a location on
+-- that level.
+type DungeonLoc = (LevelName, Loc)
+
 data Level = Level
-              { lname     :: String,
+              { lname     :: LevelName,
                 lsize     :: (Y,X),
                 lmonsters :: [Monster],
                 lsmell    :: SMap,
@@ -76,15 +113,9 @@ data Terrain = Rock
              | Unknown
              | Corridor
              | Wall HV
-             | Stairs VDir (Maybe (Level, Loc))
+             | Stairs VDir (Maybe DungeonLoc)
              | Door HV (Maybe Int) -- Nothing: open, Just 0: closed, otherwise secret
   deriving Show
-
--- forget stuff you cannot see anyway
--- mainly for space efficiency in save files
-flat :: Tile -> Tile
-flat (Tile (Stairs d _) is) = Tile (Stairs d Nothing) is
-flat x                      = x
 
 instance Binary Terrain where
   put Rock         = putWord8 0

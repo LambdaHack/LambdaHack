@@ -96,13 +96,18 @@ generate :: Session -> String -> IO ()
 generate session msg =
   do
     -- generate dungeon with 10 levels
-    levels <- rndToIO $ mapM (\n -> (if n == 3 then bigroom else level) defaultLevelConfig $ "The Lambda Cave " ++ show n) [1..10]
-    let state = defaultState ((\ (_,x,_) -> x) (head levels))
-    let connect [(x,_,_)] = [x Nothing Nothing]
-        connect ((x,_,_):ys@((_,u,_):_)) =
-                            let (z:zs) = connect ys
-                            in  x Nothing (Just (z,u)) : z : zs
-    let lvl = head (connect levels)
+    levels <- rndToIO $ mapM (\n -> (if n == 3 then bigroom else level) defaultLevelConfig $ LambdaCave n) [1..10]
+    let connect :: Maybe (Maybe DungeonLoc) ->
+                   [(Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) -> Level, Loc, Loc)] ->
+                   [Level]
+        connect au [(x,_,_)] = [x au Nothing]
+        connect au ((x,_,d):ys@((_,u,_):_)) =
+                            let (z:zs) = connect (Just (Just (lname x',d))) ys
+                                x'     = x au (Just (Just (lname z,u)))
+                            in  x' : z : zs
+    let lvls = connect (Just Nothing) levels
+    let (lvl,dng) = (head lvls, dungeon (tail lvls))
+    let state = defaultState ((\ (_,x,_) -> x) (head levels)) dng
     handle session lvl state (perception_ state lvl) msg
 
 -- | Perform a complete move (i.e., monster moves etc.)
@@ -281,7 +286,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
   displayCurrent = displayLevel session nlvl per state
 
   -- update player memory
-  nlmap = foldr (\ x m -> M.update (\ (t,_) -> Just (t,flat t)) x m) lmap (S.toList visible)
+  nlmap = foldr (\ x m -> M.update (\ (t,_) -> Just (t,t)) x m) lmap (S.toList visible)
   nlvl = updateLMap lvl (const nlmap)
 
   -- picking up items
@@ -295,7 +300,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                               compoundVerbMonster (mtype player) "pick" "up" ++ " " ++
                               objectItem i ++ "."
                         nt = t { titems = rs }
-                        plmap = M.insert ploc (nt, flat nt) nlmap
+                        plmap = M.insert ploc (nt, nt) nlmap
                         nplayer = player { mitems = i : mitems player }
                     in  loop session (updateLMap lvl (const plmap))
                                      (updatePlayer state (const nplayer)) msg
@@ -319,7 +324,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                                  -> displayCurrent "blocked" >> abort
                    | otherwise   -> -- ok, we can open/close the door      
                                     let nt = Tile (Door hv (toOpen o)) is
-                                        clmap = M.insert (shift ploc dir) (nt, flat nt) nlmap
+                                        clmap = M.insert (shift ploc dir) (nt, nt) nlmap
                                     in loop session (updateLMap lvl (const clmap)) state ""
         _ -> displayCurrent "never mind" >> abort
   -- search for secret doors
@@ -334,15 +339,18 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
       Tile (Stairs vdir' next) is
        | vdir == vdir' -> -- ok
           case next of
-            Nothing -> -- exit dungeon
-                       shutdown session
-            Just (nlvl, nloc) ->
+            Nothing      -> -- exit dungeon
+                            shutdown session
+            Just (nln, nloc) ->
               -- perform level change
               do
-                let next' = Just (updateLMap lvl (const $ M.update (\ (_,r) -> Just (Tile (Stairs vdir Nothing) is,r)) ploc nlmap), ploc)
-                let new = updateLMap nlvl (M.update (\ (Tile (Stairs d _) is,r) -> Just (Tile (Stairs d next') is,r)) nloc)
-                loop session new (updatePlayer state (const (player { mloc = nloc }))) ""
-                
+                -- put back current level
+                -- (first put back, then get, in case we change to the same level!)
+                let full = putDungeonLevel lvl (sdungeon state)
+                -- get new level
+                    (new, ndng) = getDungeonLevel nln full
+                    nstate = state { sdungeon = ndng }
+                loop session new (updatePlayer nstate (const (player { mloc = nloc }))) ""
       _ -> -- no stairs
            let txt = if vdir == Up then "up" else "down" in
            displayCurrent ("no stairs " ++ txt) >> abort
@@ -548,7 +556,7 @@ displayLevel session (lvl@(Level nm sz ms smap nlmap lmeta))
                              (ra . vision $
                               attr, rv))
                 msg
-                (take 40 (nm ++ repeat ' ') ++ take 10 ("HP: " ++ show php ++ repeat ' ') ++
+                (take 40 (levelName nm ++ repeat ' ') ++ take 10 ("HP: " ++ show php ++ repeat ' ') ++
                  take 10 ("T: " ++ show time ++ repeat ' '))
       msgs = splitMsg (snd sz) msg
       perf []     = disp ""
