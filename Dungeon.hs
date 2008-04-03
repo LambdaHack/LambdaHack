@@ -113,6 +113,14 @@ defaultLevelConfig =
     doorSecretMax     = 15
   }
 
+largeLevelConfig :: LevelConfig
+largeLevelConfig =
+  defaultLevelConfig {
+    levelGrid         = (7,10),
+    levelSize         = (77,231),
+    extraConnects     = 10
+  }
+
 level :: LevelConfig ->
          String -> Rnd (Maybe (Level, Loc) -> Maybe (Level, Loc) -> Level, Loc, Loc)
 level cfg nm =
