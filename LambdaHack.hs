@@ -13,7 +13,6 @@ import qualified Data.ByteString.Lazy as LBS
 import System.Random
 import Control.Monad
 import Control.Exception as E hiding (handle)
-import Codec.Compression.Zlib as Z
 
 -- Cabal
 import qualified Paths_LambdaHack as Self (version)
@@ -23,30 +22,17 @@ import Geometry
 import Level
 import Dungeon
 import Monster
+import Actor
+import Perception
 import Item
-import FOV
 import Display
 import Random
+import File
 
 savefile = "LambdaHack.save"
 
 main :: IO ()
 main = startup start
-
-strictReadCompressedFile :: FilePath -> IO LBS.ByteString
-strictReadCompressedFile f =
-    do
-      h <- openBinaryFile f ReadMode
-      c <- LBS.hGetContents h
-      let d = Z.decompress c
-      LBS.length d `seq` return d
-
-strictDecodeCompressedFile :: Binary a => FilePath -> IO a
-strictDecodeCompressedFile f = fmap decode (strictReadCompressedFile f)
-
-encodeCompressedFile :: Binary a => FilePath -> a -> IO ()
-encodeCompressedFile f x = LBS.writeFile f (Z.compress (encode x))
-  -- note that LBS.writeFile opens the file in binary mode
 
 -- | Either restore a saved game, or setup a new game.
 start :: Session -> IO ()
@@ -435,29 +421,6 @@ handleModifier e h k =
 version :: String
 version = showVersion Self.version ++ " (" ++ displayId ++ " frontend)"
 
-data Actor = AMonster Int  -- offset in monster list
-           | APlayer
-  deriving (Show, Eq)
-
-getActor :: Level -> Player -> Actor -> Monster
-getActor lvl p (AMonster n) = lmonsters lvl !! n
-getActor lvl p APlayer      = p
-
-updateActor :: (Monster -> Monster) ->                  -- the update
-               (Monster -> Level -> Player -> IO a) ->  -- continuation
-               Actor ->                                 -- who to update
-               Level -> Player -> IO a                  -- transformed continuation
-updateActor f k (AMonster n) lvl p = 
-  let (m,ms) = updateMonster f n (lmonsters lvl)
-  in  k m (updateMonsters lvl (const ms)) p
-updateActor f k APlayer      lvl p = k p lvl (f p)
-
-updateMonster :: (Monster -> Monster) -> Int -> [Monster] -> (Monster, [Monster])
-updateMonster f n ms =
-  case splitAt n ms of
-    (pre, x : post) -> let m = f x in (m, pre ++ [m] ++ post)
-    xs              -> error "updateMonster"
-
 
 moveOrAttack :: Bool ->                                     -- allow attacks?
                 (Level -> Player -> String -> IO a) ->      -- success continuation
@@ -564,25 +527,3 @@ displayLevel session (lvl@(Level nm sz ms smap nlmap lmeta))
       perf (x:xs) = disp (x ++ more) >> getConfirm session >> perf xs
     in perf msgs
 
-data Perception =
-  Perception { preachable :: Set Loc, pvisible :: Set Loc }
-
-perception_ :: State -> Level -> Perception
-perception_ (State { splayer = Monster { mloc = ploc } }) (Level { lmap = lmap }) =
-  perception ploc lmap
-
-perception :: Loc -> LMap -> Perception
-perception ploc lmap =
-  let
-    reachable  = fullscan ploc lmap
-    actVisible = S.filter (\ loc -> light (lmap `at` loc)) reachable
-    pasVisible = S.filter (\ loc -> let (x,p) = passive (lmap `at` loc)
-                                    in  any (\ d -> S.member (shift loc d) actVisible) p ||
-                                        (not x && adjacent loc ploc))
-                                    -- the above "not x" prevents walls from
-                                    -- being visible from the outside when
-                                    -- adjacent
-                          reachable
-    visible = S.union pasVisible actVisible
-  in
-    Perception reachable visible
