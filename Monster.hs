@@ -15,12 +15,12 @@ playerHP = 20
 
 -- | Time the player can be traced by monsters. TODO: Make configurable.
 smellTimeout :: Time
-smellTimeout = 100
+smellTimeout = 1000
 
 -- | Initial player.
 defaultPlayer :: Loc -> Player
 defaultPlayer ploc =
-  Monster Player playerHP Nothing ploc [] 0
+  Monster Player playerHP Nothing ploc [] 10 0
 
 type Player = Monster
 
@@ -31,17 +31,19 @@ data Monster = Monster
                                         -- for the player: the dir the player is running
                   mloc    :: Loc,
                   mitems  :: [Item],    -- inventory
+                  mspeed  :: Time,      -- speed (i.e., delay before next action)
                   mtime   :: Time }     -- time of next action
   deriving Show
 
 instance Binary Monster where
-  put (Monster mt mhp md ml minv mtime) =
+  put (Monster mt mhp md ml minv mspeed mtime) =
     do
       put mt
       put mhp
       put md
       put ml
       put minv
+      put mspeed
       put mtime
   get = do
           mt     <- get
@@ -49,32 +51,37 @@ instance Binary Monster where
           md     <- get
           ml     <- get
           minv   <- get
+          mspeed <- get
           mtime  <- get
-          return (Monster mt mhp md ml minv mtime)
+          return (Monster mt mhp md ml minv mspeed mtime)
 
 data MonsterType =
     Player
   | Eye
+  | FastEye
   | Nose
   deriving (Show, Eq)
 
 instance Binary MonsterType where
-  put Player = putWord8 0 
-  put Eye    = putWord8 1
-  put Nose   = putWord8 2
+  put Player  = putWord8 0 
+  put Eye     = putWord8 1
+  put FastEye = putWord8 2
+  put Nose    = putWord8 3
   get = do
           tag <- getWord8
           case tag of
             0 -> return Player 
             1 -> return Eye
-            2 -> return Nose
+            2 -> return FastEye
+            3 -> return Nose
             _ -> fail "no parse (MonsterType)" 
 
 monsterFrequency :: Frequency MonsterType
 monsterFrequency =
   [ 
-    (1, Nose),
-    (3, Eye)
+    (2, Nose),
+    (6, Eye),
+    (1, FastEye)
   ]
 
 -- | Generate monster.
@@ -83,16 +90,22 @@ newMonster loc ftp =
     do
       tp <- frequency ftp
       hp <- hps tp
-      return (template tp hp loc)
+      let s = speed tp
+      return (template tp hp loc s)
   where
     -- setting the time of new monsters to 0 makes them able to
     -- move immediately after generation; this does not seem like
     -- a bad idea, but it would certainly be "more correct" to set
     -- the time to the creation time instead
-    template tp hp loc = Monster tp hp Nothing loc [] 0
+    template tp hp loc s = Monster tp hp Nothing loc [] s 0
     
-    hps Eye  = randomR (1,3)
-    hps Nose = randomR (2,3)
+    hps Eye      = randomR (1,3)
+    hps FastEye  = randomR (1,3)
+    hps Nose     = randomR (2,3)
+
+    speed Eye      = 10
+    speed FastEye  = 3
+    speed Nose     = 11
 
 -- | Insert a monster in an mtime-sorted list of monsters.
 -- Returns the position of the inserted monster and the new list.
@@ -107,9 +120,10 @@ insertMonster = insertMonster' 0
 
 
 objectMonster :: MonsterType -> String
-objectMonster Player = "you"
-objectMonster Eye    = "the reducible eye"
-objectMonster Nose   = "the point-free nose"
+objectMonster Player  = "you"
+objectMonster Eye     = "the reducible eye"
+objectMonster FastEye = "the super-fast eye"
+objectMonster Nose    = "the point-free nose"
 
 subjectMonster :: MonsterType -> String
 subjectMonster x = let (s:r) = objectMonster x in toUpper s : r
@@ -123,6 +137,7 @@ compoundVerbMonster Player v p = v ++ " " ++ p
 compoundVerbMonster _      v p = v ++ "s " ++ p
 
 viewMonster :: MonsterType -> (Char, Attr -> Attr)
-viewMonster Player = ('@', setBG white . setFG black)
-viewMonster Eye    = ('e', setFG red)
-viewMonster Nose   = ('n', setFG green)
+viewMonster Player  = ('@', setBG white . setFG black)
+viewMonster Eye     = ('e', setFG red)
+viewMonster FastEye = ('e', setFG blue)
+viewMonster Nose    = ('n', setFG green)

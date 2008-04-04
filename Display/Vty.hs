@@ -1,7 +1,7 @@
 module Display.Vty
-  (displayId, startup, shutdown, setHalfBright,
+  (displayId, startup, shutdown,
    display, nextEvent, setBG, setFG, Session,
-   green, white, black, red, blue, magenta, yellow, attr, Attr) where
+   white, black, yellow, blue, magenta, red, green, attr, Attr) where
 
 import Graphics.Vty as V
 import Data.List as L

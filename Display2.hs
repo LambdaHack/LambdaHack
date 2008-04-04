@@ -49,7 +49,7 @@ handleModifier e h k =
 displayLevel :: Session -> Level -> Perception -> State -> Message -> IO ()
 displayLevel session (lvl@(Level nm sz ms smap nlmap lmeta))
                      per
-                     (state@(State { splayer = player@(Monster _ php pdir ploc _ _), stime = time }))
+                     (state@(State { splayer = player@(Monster { mhp = php, mdir = pdir, mloc = ploc }), stime = time }))
                      msg =
     let
       reachable = preachable per
@@ -68,7 +68,7 @@ displayLevel session (lvl@(Level nm sz ms smap nlmap lmeta))
       disp msg = 
         display ((0,0),sz) session 
                  (\ loc -> let tile = nlmap `lAt` loc
-                               sml  = ((smap ! loc) - time) `div` 10
+                               sml  = ((smap ! loc) - time) `div` 100
                                vis  = S.member loc visible
                                rea  = S.member loc reachable
                                (rv,ra) = case L.find (\ m -> loc == mloc m) (player:ms) of
@@ -82,7 +82,7 @@ displayLevel session (lvl@(Level nm sz ms smap nlmap lmeta))
                               attr, rv))
                 msg
                 (take 40 (levelName nm ++ repeat ' ') ++ take 10 ("HP: " ++ show php ++ repeat ' ') ++
-                 take 10 ("T: " ++ show time ++ repeat ' '))
+                 take 10 ("T: " ++ show (time `div` 10) ++ repeat ' '))
       msgs = splitMsg (snd sz) msg
       perf []     = disp ""
       perf [xs]   = disp xs

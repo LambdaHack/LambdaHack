@@ -192,10 +192,12 @@ addMonster :: Level -> Player -> Rnd Level
 addMonster lvl@(Level { lmonsters = ms, lmap = lmap })
            player@(Monster { mloc = ploc }) =
   do
-    rc <- chance (1 % if L.null ms then 5 else 70)
+    -- TODO: remove the hardcoded chance
+    rc <- chance (1 % if L.null ms then 50 else 700)
     if rc
      then do
-            -- TODO: new monsters shouldn't be visible by the player
+            -- TODO: new monsters always be generated in a place that isn't
+            -- visible by the player (if possible -- not possible for bigrooms)
             sm <- findLoc lvl (\ l t -> tterrain t == Floor && 
                                         not (l `L.elem` L.map mloc (player : ms)) &&
                                         distance (ploc, l) > 400)

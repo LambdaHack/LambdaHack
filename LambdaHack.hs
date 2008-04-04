@@ -73,11 +73,11 @@ generate session msg =
 -- | Perform a complete move (i.e., monster moves etc.)
 loop :: Session -> Level -> State -> String -> IO ()
 loop session (lvl@(Level nm sz ms smap lmap lmeta))
-             (state@(State { splayer = player@(Monster _ php _ ploc _ _), stime = time }))
+             (state@(State { splayer = player@(Monster { mhp = php, mloc = ploc }), stime = time }))
              oldmsg =
   do
     -- player HP regeneration, TODO: remove hardcoded max
-    let nphp = if time `mod` 150 == 0 then (php + 1) `min` playerHP else php
+    let nphp = if time `mod` 1500 == 0 then (php + 1) `min` playerHP else php
     -- update smap
     let nsmap = M.insert ploc (time + smellTimeout) smap
     -- generate new monsters
@@ -99,7 +99,8 @@ handleMonsters session (lvl@(Level nm sz ms nsmap lmap lmeta))
       [] -> -- there are no monsters, just continue
             handle session lvl nstate per oldmsg
       (m@(Monster { mtime = mt }) : ms)
-         | mt > time  -> -- all the monsters are not yet ready for another move
+         | mt > time  -> -- all the monsters are not yet ready for another move,
+                         -- so check the player
                             handle session lvl nstate per oldmsg
          | mhp m <= 0 -> -- the monster dies
                             handleMonsters session (updateMonsters lvl (const ms))
@@ -109,7 +110,7 @@ handleMonsters session (lvl@(Level nm sz ms nsmap lmap lmeta))
                -- candidate directions: noses usually move randomly, whereas
                -- eyes favour to keep their old direction
                let ns | mtype m == Nose = moves
-                      | mtype m == Eye && mloc m `S.member` pvisible per =
+                      | (mtype m == Eye || mtype m == FastEye) && mloc m `S.member` pvisible per =
                           let t = towards (mloc m,ploc)
                           in maybe id
                                    (\ d -> L.filter (\ x -> distance (t,x) <= 1))
@@ -119,7 +120,7 @@ handleMonsters session (lvl@(Level nm sz ms nsmap lmap lmeta))
                                 (\ d -> L.filter (\ x -> distance (neg d,x) > 1)) 
                                 (mdir m) moves
                -- those candidate directions that lead to accessible fields
-               let fns = (if mtype m == Eye
+               let fns = (if mtype m == Eye || mtype m == FastEye
                             then L.filter (\ x -> unoccupied ms lmap (mloc m `shift` x))
                             else id) $
                          L.filter (\ x -> accessible lmap (mloc m) (mloc m `shift` x)) ns
@@ -131,7 +132,7 @@ handleMonsters session (lvl@(Level nm sz ms nsmap lmap lmeta))
                nl <- if adjacent ploc (mloc m) then
                        -- attack player
                        return (ploc `shift` neg (mloc m))
-                     else if mtype m == Eye && not (L.null fns) then
+                     else if (mtype m == Eye || mtype m == FastEye) && not (L.null fns) then
                        rndToIO (oneOf fns)
                      else if mtype m == Nose && not (L.null smells) && snd msmell > 0 then
                        return (fst msmell)
@@ -140,7 +141,7 @@ handleMonsters session (lvl@(Level nm sz ms nsmap lmap lmeta))
                      else -- fallback: wait
                           return (0,0)
                -- increase the monster move time and set direction
-               let nm = m { mtime = time + 1, mdir = if nl == (0,0) then Nothing else Just nl }
+               let nm = m { mtime = time + mspeed m, mdir = if nl == (0,0) then Nothing else Just nl }
                let (act, nms) = insertMonster nm ms
                let nlvl = updateMonsters lvl (const nms)
                moveOrAttack
@@ -159,7 +160,7 @@ handleMonsters session (lvl@(Level nm sz ms nsmap lmap lmeta))
 -- | Display current status and handle the turn of the player.
 handle :: Session -> Level -> State -> Perception -> String -> IO ()
 handle session (lvl@(Level nm sz ms smap lmap lmeta))
-               (state@(State { splayer = player@(Monster _ php pdir ploc pinv ptime), stime = time }))
+               (state@(State { splayer = player@(Monster { mhp = php, mdir = pdir, mloc = ploc, mitems = pinv, mtime = ptime }), stime = time }))
                per oldmsg =
   do
     -- check for player death
@@ -168,6 +169,8 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
              displayCurrent (addMsg oldmsg ("You die ..." ++ more))
              getConfirm session
              shutdown session
+      else -- check if the player can make another move yet
+           if ptime > time then loop session nlvl state oldmsg 
       else do
              displayCurrent oldmsg
              let h = do
@@ -191,8 +194,8 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                            "Escape"  -> shutdown session
 
                            -- wait
-                           "space"   -> loop session nlvl state ""
-                           "period"  -> loop session nlvl state ""
+                           "space"   -> loop session nlvl nstate ""
+                           "period"  -> loop session nlvl nstate ""
 
                            -- look
                            "colon"   -> displayCurrent (lookAt True nlmap ploc) >> h
@@ -219,6 +222,10 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
   nlmap = foldr (\ x m -> M.update (\ (t,_) -> Just (t,t)) x m) lmap (S.toList visible)
   nlvl = updateLMap lvl (const nlmap)
 
+  -- update player action time
+  nplayer = player { mtime = time + mspeed player }
+  nstate  = updatePlayer state (const nplayer)
+
   -- picking up items
   pickup abort =
     do
@@ -231,9 +238,9 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                               objectItem i ++ "."
                         nt = t { titems = rs }
                         plmap = M.insert ploc (nt, nt) nlmap
-                        nplayer = player { mitems = i : mitems player }
+                        iplayer = nplayer { mitems = i : mitems nplayer }
                     in  loop session (updateLMap lvl (const plmap))
-                                     (updatePlayer state (const nplayer)) msg
+                                     (updatePlayer nstate (const iplayer)) msg
 
   -- open and close doors
   openclose o abort =
@@ -255,14 +262,14 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                    | otherwise   -> -- ok, we can open/close the door      
                                     let nt = Tile (Door hv (toOpen o)) is
                                         clmap = M.insert (shift ploc dir) (nt, nt) nlmap
-                                    in loop session (updateLMap lvl (const clmap)) state ""
+                                    in loop session (updateLMap lvl (const clmap)) nstate ""
         _ -> displayCurrent "never mind" >> abort
   -- search for secret doors
   search abort =
     let searchTile (Tile (Door hv (Just n)) x,t') = Just $ (Tile (Door hv (Just (max (n - 1) 0))) x, t')
         searchTile t                              = Just t
         slmap = foldl (\ l m -> update searchTile (shift ploc m) l) nlmap moves
-    in  loop session (updateLMap lvl (const slmap)) state ""
+    in  loop session (updateLMap lvl (const slmap)) nstate ""
   -- perform a level change
   lvlchange vdir abort =
     case nlmap `at` ploc of
@@ -276,24 +283,24 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
               do
                 -- put back current level
                 -- (first put back, then get, in case we change to the same level!)
-                let full = putDungeonLevel lvl (sdungeon state)
+                let full = putDungeonLevel lvl (sdungeon nstate)
                 -- get new level
                     (new, ndng) = getDungeonLevel nln full
-                    nstate = state { sdungeon = ndng }
-                loop session new (updatePlayer nstate (const (player { mloc = nloc }))) ""
+                    lstate = nstate { sdungeon = ndng }
+                loop session new (updatePlayer lstate (const (player { mloc = nloc }))) ""
       _ -> -- no stairs
            let txt = if vdir == Up then "up" else "down" in
            displayCurrent ("no stairs " ++ txt) >> abort
   -- run into a direction
   run dir =
     do
-      let nplayer = player { mdir = Just dir }
+      let mplayer = nplayer { mdir = Just dir }
           abort   = handle session nlvl (updatePlayer state (const $ player { mdir = Nothing })) per ""
       moveOrAttack
         False   -- attacks are disallowed while running
-        (\ l p -> loop session l (updatePlayer state (const p)))
+        (\ l p -> loop session l (updatePlayer nstate (const p)))
         abort
-        nlvl nplayer per APlayer dir
+        nlvl mplayer per APlayer dir
   continueRun dir =
     let abort = handle session nlvl (updatePlayer state (const $ player { mdir = Nothing })) per oldmsg
         dloc  = shift ploc dir
@@ -306,9 +313,9 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
             | accessible nlmap ploc dloc ->
                 moveOrAttack
                   False    -- attacks are disallowed while running
-                  (\ l p -> loop session l (updatePlayer state (const p)))
+                  (\ l p -> loop session l (updatePlayer nstate (const p)))
                   abort
-                  nlvl player per APlayer dir
+                  nlvl nplayer per APlayer dir
           (_, Tile Corridor _)  -- direction change restricted to corridors
             | otherwise ->
                 let ns  = L.filter (\ x -> distance (neg dir,x) > 1
@@ -323,9 +330,9 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
   -- perform a player move
   move abort dir = moveOrAttack
                      True   -- attacks are allowed
-                     (\ l p -> loop session l (updatePlayer state (const p)))
+                     (\ l p -> loop session l (updatePlayer nstate (const p)))
                      abort
-                     nlvl player per APlayer dir
+                     nlvl nplayer per APlayer dir
 
 -- | Configurable event handler for the direction keys. Is used to
 --   handle player moves, but can also be used for directed commands
