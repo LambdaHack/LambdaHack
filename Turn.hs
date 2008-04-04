@@ -70,17 +70,6 @@ handleMonster m session lvl@(Level { lmonsters = ms, lsmell = nsmap, lmap = lmap
               (state@(State { splayer = player@(Monster { mloc = ploc }), stime = time }))
               per oldmsg =
   do
-    -- Eye strategy:
-    --    if adjacent to the player, then attack the player
-    --    if you can see the player, then move towards the player
-    --    never move to an inaccessible field, or a field occupied
-    --      by another monster
-    --
-    -- Nose strategy:
-    --    if adjacent to the player, then attack the player
-    --    if you can smell the player, the move to the field with highest smell
-    --    otherwise, move randomly to an accessible field
-
     nl <- rndToIO (frequency (strategy m lvl state per .| wait))
 
     -- increase the monster move time and set direction
