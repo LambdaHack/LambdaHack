@@ -1,5 +1,7 @@
 module Display (module D, module Display) where
 
+import Message
+
 -- wrapper for selected Display frontend
 
 #ifdef GTK
@@ -9,9 +11,6 @@ import Display.Vty as D
 #endif
 
 -- a few common high-level functions
-
-more :: String
-more = " --more--"
 
 -- | Displays a message on a blank screen. Waits for confirmation.
 displayBlankConfirm :: Session -> String -> IO ()

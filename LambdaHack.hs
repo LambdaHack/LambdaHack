@@ -28,6 +28,7 @@ import Display
 import Random
 import File
 import Save
+import Message
 
 main :: IO ()
 main = startup start
@@ -163,23 +164,6 @@ insertMonster = insertMonster' 0
       | otherwise              = let (n', ms') = insertMonster' (n + 1) m ms
                                  in  (n', m' : ms')
 
-addMsg :: String -> String -> String
-addMsg [] x  = x
-addMsg xs [] = xs
-addMsg xs x  = xs ++ " " ++ x
-
-splitMsg :: Int -> String -> [String]
-splitMsg w xs
-  | w <= m = [xs]   -- border case, we cannot make progress
-  | l <= w = [xs]   -- no problem, everything fits
-  | otherwise = let (pre, post) = splitAt (w - m) xs
-                    (ppre, ppost) = break (`L.elem` " .,:!;") $ reverse pre
-                    rpost = dropWhile isSpace ppost
-                in  if L.null rpost then pre : splitMsg w post
-                                    else reverse rpost : splitMsg w (reverse ppre ++ post)
-  where
-    m = length more
-    l = length xs   
 
 -- | Display current status and handle the turn of the player.
 handle :: Session -> Level -> State -> Perception -> String -> IO ()
