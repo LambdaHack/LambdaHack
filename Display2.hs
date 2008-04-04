@@ -11,8 +11,6 @@ import Level
 import Perception
 import Monster
 
--- a few common high-level functions
-
 -- | Displays a message on a blank screen. Waits for confirmation.
 displayBlankConfirm :: Session -> String -> IO ()
 displayBlankConfirm session txt =
