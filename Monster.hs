@@ -94,6 +94,18 @@ newMonster loc ftp =
     hps Eye  = randomR (1,3)
     hps Nose = randomR (2,3)
 
+-- | Insert a monster in an mtime-sorted list of monsters.
+-- Returns the position of the inserted monster and the new list.
+insertMonster :: Monster -> [Monster] -> (Int, [Monster])
+insertMonster = insertMonster' 0
+  where
+    insertMonster' n m []      = (n, [m])
+    insertMonster' n m (m':ms)
+      | mtime m <= mtime m'    = (n, m : m' : ms)
+      | otherwise              = let (n', ms') = insertMonster' (n + 1) m ms
+                                 in  (n', m' : ms')
+
+
 objectMonster :: MonsterType -> String
 objectMonster Player = "you"
 objectMonster Eye    = "the reducible eye"

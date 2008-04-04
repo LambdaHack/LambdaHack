@@ -155,15 +155,6 @@ handleMonsters session (lvl@(Level nm sz ms nsmap lmap lmeta))
   where
     nstate = state { stime = time + 1 }
 
-insertMonster :: Monster -> [Monster] -> (Int, [Monster])
-insertMonster = insertMonster' 0
-  where
-    insertMonster' n m []      = (n, [m])
-    insertMonster' n m (m':ms)
-      | mtime m <= mtime m'    = (n, m : m' : ms)
-      | otherwise              = let (n', ms') = insertMonster' (n + 1) m ms
-                                 in  (n', m' : ms')
-
 
 -- | Display current status and handle the turn of the player.
 handle :: Session -> Level -> State -> Perception -> String -> IO ()
