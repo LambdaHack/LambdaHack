@@ -41,8 +41,8 @@ loop session (lvl@(Level nm sz ms smap lmap lmeta))
 --   as long as there are monsters that have a move time which is
 --   less than or equal to the current time.
 handleMonsters :: Session -> Level -> State -> Perception -> String -> IO ()
-handleMonsters session (lvl@(Level nm sz ms nsmap lmap lmeta))
-               (state@(State { splayer = player@(Monster { mloc = ploc }), stime = time }))
+handleMonsters session lvl@(Level { lmonsters = ms })
+               (state@(State { stime = time }))
                per oldmsg =
     case ms of
       [] -> -- there are no monsters, just continue
@@ -55,55 +55,61 @@ handleMonsters session (lvl@(Level nm sz ms nsmap lmap lmeta))
                             handleMonsters session (updateMonsters lvl (const ms))
                                            state per oldmsg
          | otherwise  -> -- monster m should move
-             do
-               -- candidate directions: noses usually move randomly, whereas
-               -- eyes favour to keep their old direction
-               let ns | mtype m == Nose = moves
-                      | (mtype m == Eye || mtype m == FastEye) && mloc m `S.member` pvisible per =
-                          let t = towards (mloc m,ploc)
-                          in maybe id
-                                   (\ d -> L.filter (\ x -> distance (t,x) <= 1))
-                                   (mdir m) moves
-                      | otherwise       =
-                          maybe id
-                                (\ d -> L.filter (\ x -> distance (neg d,x) > 1)) 
-                                (mdir m) moves
-               -- those candidate directions that lead to accessible fields
-               let fns = (if mtype m == Eye || mtype m == FastEye
-                            then L.filter (\ x -> unoccupied ms lmap (mloc m `shift` x))
-                            else id) $
-                         L.filter (\ x -> accessible lmap (mloc m) (mloc m `shift` x)) ns
-               -- smells of the accessible fields
-               let smells = zip fns
-                                (L.map (\ x -> (nsmap ! (mloc m `shift` x) - time) `max` 0) fns)
-               -- direction and value of maximum smell
-               let msmell = maximumBy (\ (_,s1) (_,s2) -> compare s1 s2) smells
-               nl <- if adjacent ploc (mloc m) then
-                       -- attack player
-                       return (ploc `shift` neg (mloc m))
-                     else if (mtype m == Eye || mtype m == FastEye) && not (L.null fns) then
-                       rndToIO (oneOf fns)
-                     else if mtype m == Nose && not (L.null smells) && snd msmell > 0 then
-                       return (fst msmell)
-                     else if not (L.null fns) then
-                       rndToIO (oneOf fns)
-                     else -- fallback: wait
-                          return (0,0)
-               -- increase the monster move time and set direction
-               let nm = m { mtime = time + mspeed m, mdir = if nl == (0,0) then Nothing else Just nl }
-               let (act, nms) = insertMonster nm ms
-               let nlvl = updateMonsters lvl (const nms)
-               moveOrAttack
-                 True
-                 (\ nlvl np msg ->
-                    handleMonsters session nlvl (updatePlayer state (const np)) per
-                                   (addMsg oldmsg msg))
-                 (handleMonsters session nlvl state per oldmsg)
-                 nlvl player per
-                 (AMonster act)
-                 nl
+                            handleMonster m session lvl state per oldmsg
   where
     nstate = state { stime = time + 1 }
+
+-- | Handle the move of a single monster.
+handleMonster m session lvl@(Level { lmonsters = ms, lsmell = nsmap, lmap = lmap })
+              (state@(State { splayer = player@(Monster { mloc = ploc }), stime = time }))
+              per oldmsg =
+  do
+    -- candidate directions: noses usually move randomly, whereas
+    -- eyes favour to keep their old direction
+    let ns | mtype m == Nose = moves
+           | (mtype m == Eye || mtype m == FastEye) && mloc m `S.member` pvisible per =
+               let t = towards (mloc m,ploc)
+               in maybe id
+                        (\ d -> L.filter (\ x -> distance (t,x) <= 1))
+                        (mdir m) moves
+           | otherwise       =
+               maybe id
+                     (\ d -> L.filter (\ x -> distance (neg d,x) > 1)) 
+                     (mdir m) moves
+    -- those candidate directions that lead to accessible fields
+    let fns = (if mtype m == Eye || mtype m == FastEye
+                 then L.filter (\ x -> unoccupied ms lmap (mloc m `shift` x))
+                 else id) $
+              L.filter (\ x -> accessible lmap (mloc m) (mloc m `shift` x)) ns
+    -- smells of the accessible fields
+    let smells = zip fns
+                     (L.map (\ x -> (nsmap ! (mloc m `shift` x) - time) `max` 0) fns)
+    -- direction and value of maximum smell
+    let msmell = maximumBy (\ (_,s1) (_,s2) -> compare s1 s2) smells
+    nl <- if adjacent ploc (mloc m) then
+            -- attack player
+            return (ploc `shift` neg (mloc m))
+          else if (mtype m == Eye || mtype m == FastEye) && not (L.null fns) then
+            rndToIO (oneOf fns)
+          else if mtype m == Nose && not (L.null smells) && snd msmell > 0 then
+            return (fst msmell)
+          else if not (L.null fns) then
+            rndToIO (oneOf fns)
+          else -- fallback: wait
+               return (0,0)
+    -- increase the monster move time and set direction
+    let nm = m { mtime = time + mspeed m, mdir = if nl == (0,0) then Nothing else Just nl }
+    let (act, nms) = insertMonster nm ms
+    let nlvl = updateMonsters lvl (const nms)
+    moveOrAttack
+      True
+      (\ nlvl np msg ->
+         handleMonsters session nlvl (updatePlayer state (const np)) per
+                        (addMsg oldmsg msg))
+      (handleMonsters session nlvl state per oldmsg)
+      nlvl player per
+      (AMonster act)
+      nl
 
 
 -- | Display current status and handle the turn of the player.
