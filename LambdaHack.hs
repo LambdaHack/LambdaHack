@@ -36,7 +36,9 @@ generate :: Session -> String -> IO ()
 generate session msg =
   do
     -- generate dungeon with 10 levels
-    levels <- rndToIO $ mapM (\n -> (if n == 3 then bigroom else level) defaultLevelConfig $ LambdaCave n) [1..10]
+    levels <- rndToIO $
+              mapM (\n -> (if n == 3 then bigroom else level) defaultLevelConfig $
+              LambdaCave n) [1..10]
     let connect :: Maybe (Maybe DungeonLoc) ->
                    [(Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) -> Level, Loc, Loc)] ->
                    [Level]
