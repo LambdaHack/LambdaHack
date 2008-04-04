@@ -25,7 +25,7 @@ loop session (lvl@(Level nm sz ms smap lmap lmeta))
              (state@(State { splayer = player@(Monster { mhp = php, mloc = ploc }), stime = time }))
              oldmsg =
   do
-    -- player HP regeneration, TODO: remove hardcoded max
+    -- player HP regeneration, TODO: remove hardcoded max and time interval
     let nphp = if time `mod` 1500 == 0 then (php + 1) `min` playerHP else php
     -- update smap
     let nsmap = M.insert ploc (time + smellTimeout) smap
