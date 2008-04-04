@@ -12,7 +12,6 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LBS
 import System.Random
 import Control.Monad
-import Control.Exception as E hiding (handle)
 
 -- Cabal
 import qualified Paths_LambdaHack as Self (version)
@@ -28,8 +27,7 @@ import Item
 import Display
 import Random
 import File
-
-savefile = "LambdaHack.save"
+import Save
 
 main :: IO ()
 main = startup start
@@ -42,40 +40,15 @@ start session =
       x <- doesFileExist savefile
       restored <- if x
                     then
-                      E.catch (do
-                                 displayBlankConfirm session "Restoring save game"
-                                 r <- strictDecodeCompressedFile savefile
-                                 removeFile savefile
-                                 case r of
-                                   (x,y,z) -> (z :: Bool) `seq` return $ Left (x,y))
-                              (\ e -> case e of
-                                        _ -> return (Right $ "Restore failed: " ++
-                                                     (unwords . lines) (show e)))
+                      do
+                        displayBlankConfirm session "Restoring save game"
+                        restoreGame
                     else
                       return $ Right "Welcome to LambdaHack!"  -- new game
       case restored of
         Right msg        -> generate session msg
         Left (lvl,state) -> handle session lvl state (perception_ state lvl)
                                    "Welcome back to LambdaHack."
-
--- | Displays a message on a blank screen. Waits for confirmation.
-displayBlankConfirm :: Session -> String -> IO ()
-displayBlankConfirm session txt =
-  let x = txt ++ more
-  in  do
-        display ((0,0),(0,length x - 1)) session (const (attr, ' ')) x ""
-        getConfirm session
-
--- | Waits for a space or return.
-getConfirm :: Session -> IO ()
-getConfirm session =
-  do
-    e <- nextEvent session
-    handleModifier e (getConfirm session) $
-      case e of
-        "space"  -> return ()
-        "Return" -> return ()
-        _        -> getConfirm session 
 
 -- | Generate the dungeon for a new game, and start the game loop.
 generate :: Session -> String -> IO ()
@@ -190,9 +163,6 @@ insertMonster = insertMonster' 0
       | otherwise              = let (n', ms') = insertMonster' (n + 1) m ms
                                  in  (n', m' : ms')
 
-more :: String
-more = " --more--"
-
 addMsg :: String -> String -> String
 addMsg [] x  = x
 addMsg xs [] = xs
@@ -241,8 +211,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                            "comma"   -> pickup h
 
                            -- saving or ending the game
-                           "S"       -> encodeCompressedFile savefile (lvl,state,False) >>
-                                        shutdown session
+                           "S"       -> saveGame lvl state >> shutdown session
                            "Q"       -> shutdown session
                            "Escape"  -> shutdown session
 
@@ -398,23 +367,6 @@ handleDirection e h k =
     "b" -> h (1,-1)
     "n" -> h (1,1)
     _   -> k
-
--- | Handler that ignores modifier events as they are
---   currently produced by the Gtk frontend.
-handleModifier :: String -> IO () -> IO () -> IO ()
-handleModifier e h k =
-  case e of
-    "Shift_R"   -> h
-    "Shift_L"   -> h
-    "Control_L" -> h
-    "Control_R" -> h
-    "Super_L"   -> h
-    "Super_R"   -> h
-    "Menu"      -> h
-    "Alt_L"     -> h
-    "Alt_R"     -> h
-    _           -> k
-
 
 
 
