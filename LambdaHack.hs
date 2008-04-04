@@ -39,13 +39,10 @@ start session =
     do
       -- check if we have a savegame
       x <- doesFileExist savefile
-      restored <- if x
-                    then
-                      do
-                        displayBlankConfirm session "Restoring save game"
-                        restoreGame
-                    else
-                      return $ Right "Welcome to LambdaHack!"  -- new game
+      restored <- if x then do
+                              displayBlankConfirm session "Restoring save game"
+                              restoreGame
+                       else return $ Right "Welcome to LambdaHack!"  -- new game
       case restored of
         Right msg        -> generate session msg
         Left (lvl,state) -> handle session lvl state (perception_ state lvl)
