@@ -44,6 +44,8 @@ handleMonsters :: Session -> Level -> State -> Perception -> String -> IO ()
 handleMonsters session lvl@(Level { lmonsters = ms })
                (state@(State { stime = time }))
                per oldmsg =
+    -- for debugging: causes redraw of the current state for every monster move; slow!
+    -- displayLevel session lvl per state oldmsg >>
     case ms of
       [] -> -- there are no monsters, just continue
             handle session lvl nstate per oldmsg
@@ -55,7 +57,8 @@ handleMonsters session lvl@(Level { lmonsters = ms })
                             handleMonsters session (updateMonsters lvl (const ms))
                                            state per oldmsg
          | otherwise  -> -- monster m should move
-                            handleMonster m session lvl state per oldmsg
+                            handleMonster m session (updateMonsters lvl (const ms))
+                                          state per oldmsg
   where
     nstate = state { stime = time + 1 }
 
