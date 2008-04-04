@@ -1,9 +1,10 @@
-module Random where
+module Random (module Frequency, module Random) where
 
 import Data.Ratio
-
 import qualified System.Random as R
 import Control.Monad.State
+
+import Frequency
 
 type Rnd a = State R.StdGen a
 
@@ -30,10 +31,8 @@ oneOf xs =
     r <- randomR (0, length xs - 1)
     return (xs !! r)
 
-type Frequency a = [(Int, a)]
-
 frequency :: Frequency a -> Rnd a
-frequency xs =
+frequency (Frequency xs) =
   do
     r <- randomR (1, sum (map fst xs))
     return (frequency' r xs)

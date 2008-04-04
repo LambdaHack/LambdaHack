@@ -78,6 +78,7 @@ instance Binary MonsterType where
 
 monsterFrequency :: Frequency MonsterType
 monsterFrequency =
+  Frequency
   [ 
     (2, Nose),
     (6, Eye),

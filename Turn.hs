@@ -18,6 +18,7 @@ import Random
 import Save
 import Message
 import Version
+import Strategy
 
 -- | Perform a complete turn (i.e., monster moves etc.)
 loop :: Session -> Level -> State -> String -> IO ()
@@ -63,43 +64,25 @@ handleMonsters session lvl@(Level { lmonsters = ms })
     nstate = state { stime = time + 1 }
 
 -- | Handle the move of a single monster.
+handleMonster :: Monster -> Session -> Level -> State -> Perception -> String ->
+                 IO ()
 handleMonster m session lvl@(Level { lmonsters = ms, lsmell = nsmap, lmap = lmap })
               (state@(State { splayer = player@(Monster { mloc = ploc }), stime = time }))
               per oldmsg =
   do
-    -- candidate directions: noses usually move randomly, whereas
-    -- eyes favour to keep their old direction
-    let ns | mtype m == Nose = moves
-           | (mtype m == Eye || mtype m == FastEye) && mloc m `S.member` pvisible per =
-               let t = towards (mloc m,ploc)
-               in maybe id
-                        (\ d -> L.filter (\ x -> distance (t,x) <= 1))
-                        (mdir m) moves
-           | otherwise       =
-               maybe id
-                     (\ d -> L.filter (\ x -> distance (neg d,x) > 1)) 
-                     (mdir m) moves
-    -- those candidate directions that lead to accessible fields
-    let fns = (if mtype m == Eye || mtype m == FastEye
-                 then L.filter (\ x -> unoccupied ms lmap (mloc m `shift` x))
-                 else id) $
-              L.filter (\ x -> accessible lmap (mloc m) (mloc m `shift` x)) ns
-    -- smells of the accessible fields
-    let smells = zip fns
-                     (L.map (\ x -> (nsmap ! (mloc m `shift` x) - time) `max` 0) fns)
-    -- direction and value of maximum smell
-    let msmell = maximumBy (\ (_,s1) (_,s2) -> compare s1 s2) smells
-    nl <- if adjacent ploc (mloc m) then
-            -- attack player
-            return (ploc `shift` neg (mloc m))
-          else if (mtype m == Eye || mtype m == FastEye) && not (L.null fns) then
-            rndToIO (oneOf fns)
-          else if mtype m == Nose && not (L.null smells) && snd msmell > 0 then
-            return (fst msmell)
-          else if not (L.null fns) then
-            rndToIO (oneOf fns)
-          else -- fallback: wait
-               return (0,0)
+    -- Eye strategy:
+    --    if adjacent to the player, then attack the player
+    --    if you can see the player, then move towards the player
+    --    never move to an inaccessible field, or a field occupied
+    --      by another monster
+    --
+    -- Nose strategy:
+    --    if adjacent to the player, then attack the player
+    --    if you can smell the player, the move to the field with highest smell
+    --    otherwise, move randomly to an accessible field
+
+    nl <- rndToIO (frequency (strategy m lvl state per .| wait))
+
     -- increase the monster move time and set direction
     let nm = m { mtime = time + mspeed m, mdir = if nl == (0,0) then Nothing else Just nl }
     let (act, nms) = insertMonster nm ms
@@ -114,6 +97,48 @@ handleMonster m session lvl@(Level { lmonsters = ms, lsmell = nsmap, lmap = lmap
       (AMonster act)
       nl
 
+strategy :: Monster -> Level -> State -> Perception -> Strategy Loc
+strategy m@(Monster { mtype = mt, mloc = me, mdir = mdir })
+         lvl@(Level { lmonsters = ms, lsmell = nsmap, lmap = lmap })
+         (state@(State { splayer = player@(Monster { mloc = ploc }), stime = time }))
+         per =
+    case mt of
+      Eye     -> eye
+      FastEye -> eye
+      Nose    -> nose 
+      _       -> onlyAccessible moveRandomly
+  where
+    -- we check if the monster is visible by the player rather than if the
+    -- player is visible by the monster -- this is more efficient, but
+    -- won't be correct in the general situation
+    playerVisible      =  me `S.member` pvisible per
+    playerAdjacent     =  adjacent me ploc
+    towardsPlayer      =  towards (me, ploc)
+    onlyTowardsPlayer  =  only (\ x -> distance (towardsPlayer, x) <= 1)
+    onlyPreservesDir   =  only (\ x -> maybe True (\ d -> distance (neg d, x) > 1) mdir) 
+    onlyUnoccupied     =  onlyMoves (unoccupied ms lmap) me
+    onlyAccessible     =  onlyMoves (accessible lmap me) me
+    maxSmell           =  maximumBy (\ (_,s1) (_,s2) -> compare s1 s2)
+                          $ L.map (\ x -> (x, nsmap ! (me `shift` x) - time `max` 0)) moves
+
+    eye                =  onlyUnoccupied $ onlyAccessible $
+                               playerAdjacent .=> return towardsPlayer
+                            .| playerVisible  .=> onlyTowardsPlayer moveRandomly
+                            .| onlyPreservesDir moveRandomly
+
+    nose               =  onlyAccessible $
+                               playerAdjacent   .=> return towardsPlayer
+                            .| snd maxSmell > 0 .=> return (fst maxSmell)
+                            .| moveRandomly
+
+onlyMoves :: (Dir -> Bool) -> Loc -> Strategy Dir -> Strategy Dir
+onlyMoves p l = only (\ x -> p (l `shift` x))
+
+moveRandomly :: Strategy Dir
+moveRandomly = uniform moves
+
+wait :: Strategy Dir
+wait = return (0,0)
 
 -- | Display current status and handle the turn of the player.
 handle :: Session -> Level -> State -> Perception -> String -> IO ()
