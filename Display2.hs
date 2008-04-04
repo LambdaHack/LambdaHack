@@ -7,6 +7,7 @@ import Data.Map as M
 import Message
 import Display
 import State
+import Geometry
 import Level
 import Perception
 import Monster
@@ -45,6 +46,23 @@ handleModifier e h k =
     "Alt_L"     -> h
     "Alt_R"     -> h
     _           -> k
+
+-- | Configurable event handler for the direction keys. Is used to
+--   handle player moves, but can also be used for directed commands
+--   such as open/close.
+handleDirection :: String -> ((Y,X) -> IO ()) -> IO () -> IO ()
+handleDirection e h k =
+  case e of
+    "k" -> h (-1,0)
+    "j" -> h (1,0)
+    "h" -> h (0,-1)
+    "l" -> h (0,1)
+    "y" -> h (-1,-1)
+    "u" -> h (-1,1)
+    "b" -> h (1,-1)
+    "n" -> h (1,1)
+    _   -> k
+
 
 displayLevel :: Session -> Level -> Perception -> State -> Message -> IO ()
 displayLevel session (lvl@(Level nm sz ms smap nlmap lmeta))
