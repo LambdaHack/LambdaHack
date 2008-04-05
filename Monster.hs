@@ -25,15 +25,15 @@ defaultPlayer ploc =
 type Player = Monster
 
 data Monster = Monster
-                { mtype   :: MonsterType,
-                  mhp     :: Int,
-                  mdir    :: Maybe Dir, -- for monsters: the dir the monster last moved;
-                                        -- for the player: the dir the player is running
-                  mloc    :: Loc,
-                  mitems  :: [Item],    -- inventory
-                  mletter :: Char,      -- next inventory letter
-                  mspeed  :: Time,      -- speed (i.e., delay before next action)
-                  mtime   :: Time }     -- time of next action
+                { mtype   :: !MonsterType,
+                  mhp     :: !Int,
+                  mdir    :: Maybe Dir,  -- for monsters: the dir the monster last moved;
+                                         -- for the player: the dir the player is running
+                  mloc    :: !Loc,
+                  mitems  :: [Item],     -- inventory
+                  mletter :: !Char,      -- next inventory letter
+                  mspeed  :: !Time,      -- speed (i.e., delay before next action)
+                  mtime   :: !Time }     -- time of next action
   deriving Show
 
 instance Binary Monster where

@@ -26,17 +26,12 @@ loop session (lvl@(Level nm sz ms smap lmap lmeta))
              (state@(State { splayer = player@(Monster { mhp = php, mloc = ploc }), stime = time }))
              oldmsg =
   do
-    -- player HP regeneration, TODO: remove hardcoded max and time interval
-    let nphp = if time `mod` 1500 == 0 then (php + 1) `min` playerHP else php
     -- update smap
     let nsmap = M.insert ploc (time + smellTimeout) smap
-    -- generate new monsters
-    nlvl <- rndToIO (addMonster lvl player)
     -- determine player perception
     let per = perception ploc lmap
     -- perform monster moves
-    handleMonsters session (nlvl { lsmell = nsmap })
-                           (updatePlayer state (\ p -> p { mhp = nphp })) per oldmsg
+    handleMonsters session (lvl { lsmell = nsmap }) state per oldmsg
 
 -- | Handle monster moves. The idea is that we perform moves
 --   as long as there are monsters that have a move time which is
@@ -49,11 +44,11 @@ handleMonsters session lvl@(Level { lmonsters = ms })
     -- displayLevel session lvl per state oldmsg >>
     case ms of
       [] -> -- there are no monsters, just continue
-            handle session lvl nstate per oldmsg
+            handlePlayer
       (m@(Monster { mtime = mt }) : ms)
          | mt > time  -> -- all the monsters are not yet ready for another move,
-                         -- so check the player
-                            handle session lvl nstate per oldmsg
+                         -- so continue
+                            handlePlayer
          | mhp m <= 0 -> -- the monster dies
                             handleMonsters session (updateMonsters lvl (const ms))
                                            state per oldmsg
@@ -62,6 +57,14 @@ handleMonsters session lvl@(Level { lmonsters = ms })
                                           state per oldmsg
   where
     nstate = state { stime = time + 1 }
+
+    -- good place to do everything that has to be done for every *time*
+    -- unit; currently, that's monster generation
+    handlePlayer =
+      do
+        nlvl <- rndToIO (addMonster lvl (splayer nstate))
+        handle session nlvl nstate per oldmsg
+        
 
 -- | Handle the move of a single monster.
 handleMonster :: Monster -> Session -> Level -> State -> Perception -> String ->
@@ -142,7 +145,10 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
              getConfirm session
              shutdown session
       else -- check if the player can make another move yet
-           if ptime > time then loop session nlvl state oldmsg 
+           if ptime > time then handleMonsters session lvl state per oldmsg 
+           -- NOTE: It's important to call handleMonsters here, not loop,
+           -- because loop does all sorts of calculations that are only
+           -- really necessary after the player has moved.
       else do
              displayCurrent oldmsg
              let h = do
@@ -196,8 +202,10 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
   nlmap = foldr (\ x m -> M.update (\ (t,_) -> Just (t,t)) x m) lmap (S.toList visible)
   nlvl = updateLMap lvl (const nlmap)
 
-  -- update player action time
-  nplayer = player { mtime = time + mspeed player }
+  -- update player action time, and regenerate hitpoints
+  -- player HP regeneration, TODO: remove hardcoded max and time interval
+  nplayer = player { mtime = time + mspeed player,
+                     mhp   = if time `mod` 1500 == 0 then (php + 1) `min` playerHP else php }
   nstate  = updatePlayer state (const nplayer)
 
   -- picking up items
