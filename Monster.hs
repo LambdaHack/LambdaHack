@@ -20,7 +20,7 @@ smellTimeout = 1000
 -- | Initial player.
 defaultPlayer :: Loc -> Player
 defaultPlayer ploc =
-  Monster Player playerHP Nothing ploc [] 10 0
+  Monster Player playerHP Nothing ploc [] 'a' 10 0
 
 type Player = Monster
 
@@ -31,29 +31,32 @@ data Monster = Monster
                                         -- for the player: the dir the player is running
                   mloc    :: Loc,
                   mitems  :: [Item],    -- inventory
+                  mletter :: Char,      -- next inventory letter
                   mspeed  :: Time,      -- speed (i.e., delay before next action)
                   mtime   :: Time }     -- time of next action
   deriving Show
 
 instance Binary Monster where
-  put (Monster mt mhp md ml minv mspeed mtime) =
+  put (Monster mt mhp md ml minv mletter mspeed mtime) =
     do
       put mt
       put mhp
       put md
       put ml
       put minv
+      put mletter
       put mspeed
       put mtime
   get = do
-          mt     <- get
-          mhp    <- get
-          md     <- get
-          ml     <- get
-          minv   <- get
-          mspeed <- get
-          mtime  <- get
-          return (Monster mt mhp md ml minv mspeed mtime)
+          mt      <- get
+          mhp     <- get
+          md      <- get
+          ml      <- get
+          minv    <- get
+          mletter <- get
+          mspeed  <- get
+          mtime   <- get
+          return (Monster mt mhp md ml minv mletter mspeed mtime)
 
 data MonsterType =
     Player
@@ -98,7 +101,7 @@ newMonster loc ftp =
     -- move immediately after generation; this does not seem like
     -- a bad idea, but it would certainly be "more correct" to set
     -- the time to the creation time instead
-    template tp hp loc s = Monster tp hp Nothing loc [] s 0
+    template tp hp loc s = Monster tp hp Nothing loc [] 'a' s 0
     
     hps Eye      = randomR (1,3)
     hps FastEye  = randomR (1,3)

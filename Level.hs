@@ -340,7 +340,7 @@ fromTo1 x0 x1
 
 viewTile :: Tile -> (Char, Attr -> Attr)
 viewTile (Tile t [])    = viewTerrain 0 t
-viewTile (Tile t (i:_)) = viewItem i
+viewTile (Tile t (i:_)) = viewItem (itype i)
 
 -- | Produces a textual description of the items at a location. It's
 -- probably correct to use 'at' rather than 'rememberAt' at this point,
@@ -352,7 +352,7 @@ lookAt detailed lvl loc
   | otherwise             = isd
   where
     is  = titems (lvl `at` loc)
-    isd = unwords $ L.map objectItem $ is
+    isd = unwords $ L.map (objectItem . itype) $ is
 
 
 -- | Produces a textual description for terrain, used if no objects

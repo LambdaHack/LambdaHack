@@ -95,7 +95,8 @@ data LevelConfig =
     doorChance        :: Rational,
     doorOpenChance    :: Rational,
     doorSecretChance  :: Rational,
-    doorSecretMax     :: Int
+    doorSecretMax     :: Int,
+    nrItems           :: (Int,Int)
   }
     
 defaultLevelConfig :: LevelConfig
@@ -110,7 +111,8 @@ defaultLevelConfig =
     doorChance        = 1%2,
     doorOpenChance    = 1%2,
     doorSecretChance  = 1%3,
-    doorSecretMax     = 15
+    doorSecretMax     = 15,
+    nrItems           = (3,7)  -- range
   }
 
 largeLevelConfig :: LevelConfig
@@ -165,8 +167,13 @@ level cfg nm =
                           else return o
                     _ -> return o) .
                 M.toList $ lmap
-    -- generate a single item
-    si <- findLoc lvl (const ((==Floor) . tterrain))
+    -- determine number of items, items and locations for the items
+    nri <- randomR (nrItems cfg)
+    is  <- replicateM nri $
+           do
+             l <- findLoc lvl (const ((==Floor) . tterrain))
+             t <- newItem itemFrequency 
+             return (l,t)
     -- locations of the stairs
     su <- findLoc lvl (const ((==Floor) . tterrain))
     sd <- findLoc lvl (\ l t -> tterrain t == Floor && distance (su,l) > minStairsDistance cfg)
@@ -174,7 +181,7 @@ level cfg nm =
     return $ (\ lu ld ->
       let flmap = maybe id (\ l -> M.insert su (newTile (Stairs Up   l))) lu $
                   maybe id (\ l -> M.insert sd (newTile (Stairs Down l))) ld $
-                  M.update (\ (t,r) -> Just (t { titems = [Gold] }, r)) si $
+                  foldr (\ (l,it) f -> M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l . f) id is $
                   dlmap
       in  Level nm (levelSize cfg) [] smap flmap meta, su, sd)
 
