@@ -6,6 +6,10 @@ author:        Andres Loeh <mail@andres-loeh.de>
 maintainer:    Andres Loeh <mail@andres-loeh.de>
 description:   a small roguelike game
 
+flag curses
+  description:   enable curses support
+  default:       False
+
 flag gtk
   description:   enable gtk support
   default:       True
@@ -16,8 +20,13 @@ executable LambdaHack
                  random >= 1, zlib >= 0.4, bytestring >= 0.9,
                  directory >= 1, mtl >= 1.1
   extensions:    CPP
-  if flag(gtk)
+  if flag(curses) {
+    build-depends: hscurses >= 1.3
+    ghc-options:   -DCURSES
+    extra-libraries: curses
+  } else { if flag(gtk) {
     build-depends: gtk >= 0.9.12
     ghc-options:   -DGTK
-  else
+  } else {
     build-depends: vty >= 3
+  } }

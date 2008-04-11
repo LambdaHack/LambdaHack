@@ -10,6 +10,9 @@ vty :
 gtk :
 	runghc Setup configure --user
 
+curses :
+	runghc Setup configure -fcurses --user
+
 clean :
 	runghc Setup clean
 
