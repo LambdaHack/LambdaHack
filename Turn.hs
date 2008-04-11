@@ -73,7 +73,7 @@ handleMonster m session lvl@(Level { lmonsters = ms, lsmell = nsmap, lmap = lmap
               (state@(State { splayer = player@(Monster { mloc = ploc }), stime = time }))
               per oldmsg =
   do
-    nl <- rndToIO (frequency (strategy m lvl state per .| wait))
+    nl <- rndToIO (frequency (head (runStrategy (strategy m lvl state per .| wait))))
 
     -- increase the monster move time and set direction
     let nm = m { mtime = time + mspeed m, mdir = if nl == (0,0) then Nothing else Just nl }
@@ -110,24 +110,26 @@ strategy m@(Monster { mtype = mt, mloc = me, mdir = mdir })
     onlyPreservesDir   =  only (\ x -> maybe True (\ d -> distance (neg d, x) > 1) mdir) 
     onlyUnoccupied     =  onlyMoves (unoccupied ms lmap) me
     onlyAccessible     =  onlyMoves (accessible lmap me) me
-    maxSmell           =  maximumBy (\ (_,s1) (_,s2) -> compare s1 s2)
-                          $ L.map (\ x -> (x, nsmap ! (me `shift` x) - time `max` 0)) moves
+    smells             =  L.map fst $
+                          L.sortBy (\ (_,s1) (_,s2) -> compare s2 s1) $
+                          L.filter (\ (_,s) -> s > 0) $ 
+                          L.map (\ x -> (x, nsmap ! (me `shift` x) - time `max` 0)) moves
 
-    eye                =  onlyUnoccupied $ onlyAccessible $
-                               playerAdjacent .=> return towardsPlayer
-                            .| playerVisible  .=> onlyTowardsPlayer moveRandomly
-                            .| onlyPreservesDir moveRandomly
+    eye                =  playerAdjacent .=> return towardsPlayer
+                          .| (onlyUnoccupied $ onlyAccessible $
+                                 playerVisible  .=> onlyTowardsPlayer moveRandomly
+                              .| onlyPreservesDir moveRandomly)
 
-    nose               =  onlyAccessible $
-                               playerAdjacent   .=> return towardsPlayer
-                            .| snd maxSmell > 0 .=> return (fst maxSmell)
-                            .| moveRandomly
+    nose               =  playerAdjacent .=> return towardsPlayer
+                          .| (onlyAccessible $
+                                 foldr (.|) reject (L.map return smells)
+                              .| moveRandomly)
 
 onlyMoves :: (Dir -> Bool) -> Loc -> Strategy Dir -> Strategy Dir
 onlyMoves p l = only (\ x -> p (l `shift` x))
 
 moveRandomly :: Strategy Dir
-moveRandomly = uniform moves
+moveRandomly = liftFrequency $ uniform moves
 
 wait :: Strategy Dir
 wait = return (0,0)

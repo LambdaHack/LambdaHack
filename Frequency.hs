@@ -3,6 +3,7 @@ module Frequency where
 import Control.Monad
 
 newtype Frequency a = Frequency { runFrequency :: [(Int, a)] }
+  deriving Show
 
 instance Monad Frequency where
   return x  =  Frequency [(1, x)]
