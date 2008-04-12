@@ -1,10 +1,11 @@
 cabal-version: >= 1.2
 name:          LambdaHack
-version:       0.1.20080404
+version:       0.1.20080412
 license:       GPL
 author:        Andres Loeh <mail@andres-loeh.de>
 maintainer:    Andres Loeh <mail@andres-loeh.de>
 description:   a small roguelike game
+build-type:    Simple
 
 flag curses
   description:   enable curses support
@@ -22,11 +23,11 @@ executable LambdaHack
   extensions:    CPP
   if flag(curses) {
     build-depends: hscurses >= 1.3
-    ghc-options:   -DCURSES
+    cpp-options:   -DCURSES
     extra-libraries: curses
   } else { if flag(gtk) {
     build-depends: gtk >= 0.9.12
-    ghc-options:   -DGTK
+    cpp-options:   -DGTK
   } else {
     build-depends: vty >= 3
   } }
