@@ -64,9 +64,11 @@ nextEvent session =
     case e of
       C.KeyChar '<' -> return "less"
       C.KeyChar '>' -> return "greater"
-      C.KeyChar '.' -> return "colon"
+      C.KeyChar '.' -> return "period"
+      C.KeyChar ':' -> return "colon"
       C.KeyChar ',' -> return "comma"
       C.KeyChar ' ' -> return "space"
+      C.KeyChar '\ESC' -> return "Escape"
       C.KeyChar c   -> return [c]
       C.KeyExit     -> return "Escape"
       _             -> nextEvent session
