@@ -1,6 +1,12 @@
 
 Installation via Cabal.
 
-There are two displays to choose from. One based on vty,
-one based on gtk2hs. The gtk2hs variant is the default.
-To get the other, pass -f-gtk to Setup configure.
+There are three displays to choose from, depending on
+the flags passed to Setup configure:
+
+  * gtk2hs  (the default)
+  * vty     (Setup configure -f-gtk)
+  * curses  (Setup configure -fcurses)
+
+The curses display is the newest and least tested,
+the other two should be stable.
