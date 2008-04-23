@@ -63,12 +63,21 @@ handleDirection e h k =
     "n" -> h (1,1)
     _   -> k
 
+stringByLocation :: String -> Loc -> Maybe Char
+stringByLocation xs =
+  let
+    m = M.fromList (zip [0..] (L.map (M.fromList . zip [0..]) (lines xs)))
+  in
+    \ (y,x) -> M.lookup y m >>= \ n -> M.lookup x n
 
 displayLevel :: Session -> Level -> Perception -> State -> Message -> IO ()
-displayLevel session (lvl@(Level nm sz ms smap nlmap lmeta))
+displayLevel session lvl per state msg = displayOverlay session lvl per state msg ""
+
+displayOverlay :: Session -> Level -> Perception -> State -> Message -> String -> IO ()
+displayOverlay session (lvl@(Level nm sz ms smap nlmap lmeta))
                      per
                      (state@(State { splayer = player@(Monster { mhp = php, mdir = pdir, mloc = ploc }), stime = time }))
-                     msg =
+                     msg overlay =
     let
       reachable = preachable per
       visible   = pvisible per
@@ -83,6 +92,7 @@ displayLevel session (lvl@(Level nm sz ms smap nlmap lmeta))
                        else if rea then setBG magenta
                                    else id
                   else \ vis rea -> id
+      over    = stringByLocation overlay
       disp msg = 
         display ((0,0),sz) session 
                  (\ loc -> let tile = nlmap `lAt` loc
@@ -96,8 +106,9 @@ displayLevel session (lvl@(Level nm sz ms smap nlmap lmeta))
                                              | otherwise         -> viewTile tile
                                vision = lVision vis rea
                            in
-                             (ra . vision $
-                              attr, rv))
+                             case over loc of
+                               Just c  ->  (attr, c)
+                               _       ->  (ra . vision $ attr, rv))
                 msg
                 (take 40 (levelName nm ++ repeat ' ') ++ take 10 ("HP: " ++ show php ++ repeat ' ') ++
                  take 10 ("T: " ++ show (time `div` 10) ++ repeat ' '))
