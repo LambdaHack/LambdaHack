@@ -223,7 +223,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
       case titems t of
         []      ->  displayCurrent "nothing here" >> abort
         (i:rs)  ->  
-          case assignLetter (mletter nplayer) (mitems nplayer) of
+          case assignLetter (iletter i) (mletter nplayer) (mitems nplayer) of
             Just l  ->
               let msg = -- (complete sentence, more adequate for monsters)
                         {-
@@ -235,7 +235,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                   nt = t { titems = rs }
                   plmap = M.insert ploc (nt, nt) nlmap
                   iplayer = nplayer { mitems  = i { iletter = Just l } : mitems nplayer,
-                                      mletter = l }
+                                      mletter = maxLetter l (mletter nplayer) }
               in  loop session (updateLMap lvl (const plmap))
                                      (updatePlayer nstate (const iplayer)) msg
             Nothing -> displayCurrent "cannot carry anymore" >> abort

@@ -4,6 +4,7 @@ import Data.Binary
 import Data.Set as S
 import Data.List as L
 import Data.Maybe
+import Data.Char
 import Control.Monad
 
 import Display
@@ -69,15 +70,30 @@ newItem ftp =
     return (Item tp Nothing)
 
 -- | Assigns a letter to an item, for inclusion
--- in the inventory of the player. Takes a starting
--- letter.
-assignLetter :: Char -> [Item] -> Maybe Char
-assignLetter c is =
-    listToMaybe (L.filter (\x -> not (x `member` current)) candidates)
+-- in the inventory of the player. Takes a remembered
+-- letter and a starting letter.
+assignLetter :: Maybe Char -> Char -> [Item] -> Maybe Char
+assignLetter r c is =
+    case r of
+      Just l | l `L.elem` free -> Just l
+      _ -> listToMaybe free
+             
   where
     current    = S.fromList (concatMap (maybeToList . iletter) is)
     allLetters = ['a'..'z'] ++ ['A'..'Z']
     candidates = take (length allLetters) (drop (fromJust (findIndex (==c) allLetters)) (cycle allLetters))
+    free       = L.filter (\x -> not (x `member` current)) candidates
+
+
+cmpLetter :: Char -> Char -> Ordering
+cmpLetter x y = compare (isUpper x, toLower x) (isUpper y, toLower y)
+
+maxBy :: (a -> a -> Ordering) -> a -> a -> a
+maxBy cmp x y = case cmp x y of
+                  LT  ->  y
+                  _   ->  x
+
+maxLetter = maxBy cmpLetter
 
 viewItem :: ItemType -> (Char, Attr -> Attr)
 viewItem Ring   = ('=', id)
