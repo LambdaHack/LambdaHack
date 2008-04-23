@@ -271,7 +271,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                 L.map (\ (Item { iletter = l, itype = t }) -> 
                          let l' = maybe '?' id l
                          in  l' : " - " ++ objectItem t ++ " ")
-                      (sortBy (compare `on` iletter) (mitems player))
+                      (sortBy (cmpLetter `on` maybe '?' id . iletter) (mitems player))
       let ovl = inv ++ more
       displayCurrent' msg ovl
       getConfirm session
