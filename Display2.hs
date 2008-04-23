@@ -63,18 +63,32 @@ handleDirection e h k =
     "n" -> h (1,1)
     _   -> k
 
-stringByLocation :: String -> Loc -> Maybe Char
-stringByLocation xs =
+splitOverlay :: Int -> String -> [[String]]
+splitOverlay s xs = splitOverlay' (lines xs)
+  where
+    splitOverlay' ls
+      | length ls <= s = [ls]  -- everything fits on one screen
+      | otherwise      = let (pre,post) = splitAt (s - 1) ls
+                         in  (pre ++ [more]) : splitOverlay' post
+
+-- | Returns a function that looks up the characters in the
+-- string by location. Takes the height of the display plus
+-- the string. Returns also the number of screens required
+-- to display all of the string.
+stringByLocation :: Y -> String -> (Int, Loc -> Maybe Char)
+stringByLocation sy xs =
   let
-    m = M.fromList (zip [0..] (L.map (M.fromList . zip [0..]) (lines xs)))
+    ls   = splitOverlay sy xs
+    m    = M.fromList (zip [0..] (L.map (M.fromList . zip [0..]) (concat ls)))
+    k    = length ls
   in
-    \ (y,x) -> M.lookup y m >>= \ n -> M.lookup x n
+    (k, \ (y,x) -> M.lookup y m >>= \ n -> M.lookup x n)
 
 displayLevel :: Session -> Level -> Perception -> State -> Message -> IO ()
 displayLevel session lvl per state msg = displayOverlay session lvl per state msg ""
 
 displayOverlay :: Session -> Level -> Perception -> State -> Message -> String -> IO ()
-displayOverlay session (lvl@(Level nm sz ms smap nlmap lmeta))
+displayOverlay session (lvl@(Level nm sz@(sy,sx) ms smap nlmap lmeta))
                      per
                      (state@(State { splayer = player@(Monster { mhp = php, mdir = pdir, mloc = ploc }), stime = time }))
                      msg overlay =
@@ -92,8 +106,8 @@ displayOverlay session (lvl@(Level nm sz ms smap nlmap lmeta))
                        else if rea then setBG magenta
                                    else id
                   else \ vis rea -> id
-      over    = stringByLocation overlay
-      disp msg = 
+      (n,over) = stringByLocation (sy+1) overlay -- n is the number of overlay screens
+      disp n msg = 
         display ((0,0),sz) session 
                  (\ loc -> let tile = nlmap `lAt` loc
                                sml  = ((smap ! loc) - time) `div` 100
@@ -106,16 +120,19 @@ displayOverlay session (lvl@(Level nm sz ms smap nlmap lmeta))
                                              | otherwise         -> viewTile tile
                                vision = lVision vis rea
                            in
-                             case over loc of
+                             case over (loc `shift` ((sy+1) * n, 0)) of
                                Just c  ->  (attr, c)
                                _       ->  (ra . vision $ attr, rv))
                 msg
                 (take 40 (levelName nm ++ repeat ' ') ++ take 10 ("HP: " ++ show php ++ repeat ' ') ++
                  take 10 ("T: " ++ show (time `div` 10) ++ repeat ' '))
-      msgs = splitMsg (snd sz) msg
-      perf []     = disp ""
-      perf [xs]   = disp xs
-      perf (x:xs) = disp (x ++ more) >> getConfirm session >> perf xs
-    in perf msgs
+      msgs = splitMsg sx msg
+      perf k []     = perfo k ""
+      perf k [xs]   = perfo k xs
+      perf k (x:xs) = disp n (x ++ more) >> getConfirm session >> perf k xs
+      perfo k xs
+        | k < n - 1 = disp k xs >> getConfirm session >> perfo (k+1) xs
+        | otherwise = disp k xs
+    in perf 0 msgs
 
 
