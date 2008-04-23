@@ -242,7 +242,23 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
 
   -- dropping items
   drop abort =
-    abort
+    do
+      i <- getItem "What to drop?" (mitems nplayer)
+      case i of
+        Just i' -> let iplayer = nplayer { mitems = deleteBy ((==) `on` iletter) i' (mitems nplayer) }
+                       t = nlmap `at` ploc
+                       nt = t { titems = i' : titems t }
+                       plmap = M.insert ploc (nt, nt) nlmap
+                       msg = subjectMonster (mtype player) ++ " " ++
+                             verbMonster (mtype player) "drop" ++ " " ++
+                             objectItem (itype i') ++ "."
+                   in  loop session (updateLMap lvl (const plmap))
+                                    (updatePlayer nstate (const iplayer)) msg
+        Nothing -> displayCurrent "never mind" >> abort
+
+  -- preliminary version without choice
+  getItem _ []    = return Nothing
+  getItem _ (i:_) = return $ Just i
 
   -- display inventory
   inventory abort 
