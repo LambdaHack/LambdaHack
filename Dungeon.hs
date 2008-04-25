@@ -1,5 +1,6 @@
 module Dungeon where
 
+import Prelude hiding (floor)
 import Control.Monad
 
 import Data.Map as M
@@ -61,7 +62,7 @@ digCorridor (p1:p2:ps) l =
   where
     corridorUpdate _ (Tile (Wall hv) is,u)    = (Tile (Opening hv) is,u)
     corridorUpdate _ (Tile (Opening hv) is,u) = (Tile (Opening hv) is,u)
-    corridorUpdate _ (Tile Floor is,u)        = (Tile Floor is,u)
+    corridorUpdate _ (Tile (Floor l) is,u)    = (Tile (Floor l) is,u)
     corridorUpdate (x,u) _                    = (x,u)
 digCorridor _ l = l
   
@@ -72,12 +73,12 @@ bigroom :: LevelConfig ->
            LevelName -> Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) -> Level, Loc, Loc)
 bigroom (LevelConfig { levelSize = (sy,sx) }) nm =
   do
-    let lmap = digRoom ((1,1),(sy-1,sx-1)) (emptyLMap (sy,sx))
+    let lmap = digRoom Light ((1,1),(sy-1,sx-1)) (emptyLMap (sy,sx))
     let smap = M.fromList [ ((y,x),-100) | y <- [0..sy], x <- [0..sx] ]
     let lvl = Level nm (sy,sx) [] smap lmap ""
     -- locations of the stairs
-    su <- findLoc lvl (const ((==Floor) . tterrain))
-    sd <- findLoc lvl (\ l t -> tterrain t == Floor && distance (su,l) > 676)
+    su <- findLoc lvl (const floor)
+    sd <- findLoc lvl (\ l t -> floor t && distance (su,l) > 676)
     return $ (\ lu ld ->
       let flmap = maybe id (\ l -> M.insert su (newTile (Stairs Up   l))) lu $
                   maybe id (\ l -> M.insert sd (newTile (Stairs Down l))) ld $
@@ -88,6 +89,7 @@ data LevelConfig =
   LevelConfig {
     levelGrid         :: (Y,X),
     minRoomSize       :: (Y,X),
+    darkRoomChance    :: Rational,
     border            :: Int,      -- must be at least 2!
     levelSize         :: (Y,X),    -- lower right point
     extraConnects     :: Int,
@@ -104,6 +106,7 @@ defaultLevelConfig =
   LevelConfig {
     levelGrid         = (3,3), -- (7,10), -- (3,3), -- (2,5)
     minRoomSize       = (2,2),
+    darkRoomChance    = 1%8,
     border            = 2,
     levelSize         = (22,79), -- (77,231),  -- (22,79),
     extraConnects     = 3,     -- 6
@@ -132,6 +135,7 @@ level cfg nm =
                               r' <- mkRoom (border cfg) (minRoomSize cfg) r
                               return (i,r')) gs
     let rooms = L.map snd rs0
+    dlrooms <- mapM (\ r -> chance (darkRoomChance cfg) >>= \ c -> return (r, toDL (not c))) rooms
     let rs = M.fromList rs0
     connects <- connectGrid (levelGrid cfg)
     addedConnects <- replicateM (extraConnects cfg) (randomConnection (levelGrid cfg))
@@ -144,7 +148,8 @@ level cfg nm =
     let smap = M.fromList [ ((y,x),-100) | let (sy,sx) = levelSize cfg,
                                            y <- [0..sy], x <- [0..sx] ]
     let lmap :: LMap
-        lmap = foldr digCorridor (foldr digRoom (emptyLMap (levelSize cfg)) rooms) cs
+        lmap = foldr digCorridor (foldr (\ (r, dl) m -> digRoom dl r m) 
+                                        (emptyLMap (levelSize cfg)) dlrooms) cs
     let lvl = Level nm (levelSize cfg) [] smap lmap "" 
     -- convert openings into doors
     dlmap <- fmap M.fromList . mapM
@@ -171,12 +176,12 @@ level cfg nm =
     nri <- randomR (nrItems cfg)
     is  <- replicateM nri $
            do
-             l <- findLoc lvl (const ((==Floor) . tterrain))
+             l <- findLoc lvl (const floor)
              t <- newItem itemFrequency 
              return (l,t)
     -- locations of the stairs
-    su <- findLoc lvl (const ((==Floor) . tterrain))
-    sd <- findLoc lvl (\ l t -> tterrain t == Floor && distance (su,l) > minStairsDistance cfg)
+    su <- findLoc lvl (const floor)
+    sd <- findLoc lvl (\ l t -> floor t && distance (su,l) > minStairsDistance cfg)
     let meta = show allConnects
     return $ (\ lu ld ->
       let flmap = maybe id (\ l -> M.insert su (newTile (Stairs Up   l))) lu $
@@ -188,11 +193,12 @@ level cfg nm =
 emptyLMap :: (Y,X) -> LMap
 emptyLMap (my,mx) = M.fromList [ ((y,x),newTile Rock) | x <- [0..mx], y <- [0..my] ]
 
-digRoom :: Room -> LMap -> LMap
-digRoom ((y0,x0),(y1,x1)) l =
-  let rm = M.fromList $ [ ((y,x),newTile Floor) | x <- [x0..x1], y <- [y0..y1] ]
-                     ++ [ ((y,x),newTile (Wall Horiz)) | x <- [x0-1..x1+1], y <- [y0-1,y1+1] ]
-                     ++ [ ((y,x),newTile (Wall Vert)) | x <- [x0-1,x1+1], y <- [y0..y1] ]
+digRoom :: DL -> Room -> LMap -> LMap
+digRoom dl ((y0,x0),(y1,x1)) l =
+  let rm = M.fromList $ [ ((y,x),newTile (Floor dl))   | x <- [x0..x1],     y <- [y0..y1]    ]
+                     ++ [ ((y,x),newTile (Wall p)) | (x,y,p) <- [(x0-1,y0-1,UL),(x1+1,y0-1,UR),(x0-1,y1+1,DL),(x1+1,y1+1,DR)] ]
+                     ++ [ ((y,x),newTile (Wall p)) | x <- [x0..x1], (y,p) <- [(y0-1,U),(y1+1,D)] ]
+                     ++ [ ((y,x),newTile (Wall p)) | (x,p) <- [(x0-1,L),(x1+1,R)],  y <- [y0..y1]    ]
   in M.unionWith const rm l
 
 addMonster :: Level -> Player -> Rnd Level
@@ -205,7 +211,7 @@ addMonster lvl@(Level { lmonsters = ms, lmap = lmap })
      then do
             -- TODO: new monsters always be generated in a place that isn't
             -- visible by the player (if possible -- not possible for bigrooms)
-            sm <- findLoc lvl (\ l t -> tterrain t == Floor && 
+            sm <- findLoc lvl (\ l t -> floor t && 
                                         not (l `L.elem` L.map mloc (player : ms)) &&
                                         distance (ploc, l) > 400)
             m <- newMonster sm monsterFrequency

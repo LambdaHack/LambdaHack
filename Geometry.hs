@@ -29,6 +29,9 @@ distance ((y0,x0),(y1,x1)) = (y1 - y0)^2 + (x1 - x0)^2
 adjacent :: Loc -> Loc -> Bool
 adjacent s t = distance (s,t) <= 2
 
+surroundings :: Loc -> [Loc]
+surroundings l = map (l `shift`) moves
+
 diagonal :: Loc -> Bool
 diagonal (y,x) = y*x /= 0
 
@@ -40,3 +43,18 @@ neg (y,x) = (-y,-x)
 
 moves :: [Dir]
 moves = [ (x,y) | x <- [-1..1], y <- [-1..1], x /= 0 || y /= 0 ]
+
+up, down, left, right :: Dir
+upleft, upright, downleft, downright :: Dir
+upleft    = up `shift` left
+upright   = up `shift` right
+downleft  = down `shift` left
+downright = down `shift` right
+up        = (-1,0)
+down      = (1,0)
+left      = (0,-1)
+right     = (0,1)
+
+horiz, vert :: [Dir]
+horiz = [left, right]
+vert  = [up, down]

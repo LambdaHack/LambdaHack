@@ -19,15 +19,14 @@ perception :: Loc -> LMap -> Perception
 perception ploc lmap =
   let
     reachable  = fullscan ploc lmap
-    actVisible = S.filter (\ loc -> light (lmap `at` loc)) reachable
-    pasVisible = S.filter (\ loc -> let (x,p) = passive (lmap `at` loc)
-                                    in  any (\ d -> S.member (shift loc d) actVisible) p ||
-                                        (not x && adjacent loc ploc))
-                                    -- the above "not x" prevents walls from
-                                    -- being visible from the outside when
-                                    -- adjacent
+    actVisible = S.filter (\ loc -> light (lmap `at` loc)) reachable `S.union` S.singleton ploc
+    pasVisible = S.filter (\ loc -> let p = passive (lmap `at` loc)
+                                    in  any (\ d -> S.member (shift loc d) actVisible) p)
                           reachable
-    visible = S.union pasVisible actVisible
+    dirVisible = S.filter (\ loc -> let p = perceptible (lmap `at` loc) :: [Dir]
+                                    in  any (\ d -> shift loc d == ploc) p)
+                          (S.fromList $ surroundings ploc)
+    visible = S.unions [pasVisible, actVisible, dirVisible]
   in
     Perception reachable visible
 
