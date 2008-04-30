@@ -27,6 +27,14 @@ mkRoom bd (ym,xm)((y0,x0),(y1,x1)) =
     (ry1,rx1) <- locInArea ((ry0+ym-1,rx0+xm-1),(y1-bd,x1-bd))
     return ((ry0,rx0),(ry1,rx1))
 
+mkNoRoom :: Int ->      {- border columns -}
+            Area ->     {- this is an area, not the room itself -}
+            Rnd Room    {- this is the upper-left and lower-right corner of the room -}
+mkNoRoom bd ((y0,x0),(y1,x1)) =
+  do
+    (ry,rx) <- locInArea ((y0+bd,x0+bd),(y1-bd,x1-bd))
+    return ((ry,rx),(ry,rx))
+
 mkCorridor :: HV -> (Loc,Loc) -> Area -> Rnd [(Y,X)] {- straight sections of the corridor -}
 mkCorridor hv ((y0,x0),(y1,x1)) b =
   do
@@ -90,32 +98,34 @@ data LevelConfig =
     levelGrid         :: (Y,X),
     minRoomSize       :: (Y,X),
     darkRoomChance    :: Rational,
-    border            :: Int,      -- must be at least 2!
-    levelSize         :: (Y,X),    -- lower right point
-    extraConnects     :: Int,
-    minStairsDistance :: Int,      -- must not be too large
+    border            :: Int,       -- must be at least 2!
+    levelSize         :: (Y,X),     -- lower right point
+    extraConnects     :: Int,       -- in fact a range, because of duplicate connects
+    noRooms           :: (Int,Int), -- range
+    minStairsDistance :: Int,       -- must not be too large
     doorChance        :: Rational,
     doorOpenChance    :: Rational,
     doorSecretChance  :: Rational,
     doorSecretMax     :: Int,
-    nrItems           :: (Int,Int)
+    nrItems           :: (Int,Int)  -- range
   }
     
 defaultLevelConfig :: LevelConfig
 defaultLevelConfig =
   LevelConfig {
-    levelGrid         = (3,3), -- (7,10), -- (3,3), -- (2,5)
+    levelGrid         = (3,3),
     minRoomSize       = (2,2),
     darkRoomChance    = 1%8,
     border            = 2,
-    levelSize         = (22,79), -- (77,231),  -- (22,79),
-    extraConnects     = 3,     -- 6
+    levelSize         = (22,79),
+    extraConnects     = 3,   
+    noRooms           = (0,3),
     minStairsDistance = 676,
     doorChance        = 1%2,
     doorOpenChance    = 1%2,
     doorSecretChance  = 1%3,
     doorSecretMax     = 15,
-    nrItems           = (3,7)  -- range
+    nrItems           = (3,7) 
   }
 
 largeLevelConfig :: LevelConfig
@@ -131,11 +141,21 @@ level :: LevelConfig ->
 level cfg nm =
   do
     let gs = M.toList (grid (levelGrid cfg) ((0,0),levelSize cfg))
+    -- grid locations of "no-rooms"
+    nrnr <- randomR (noRooms cfg)
+    nr   <- replicateM nrnr (do
+                               let (y,x) = levelGrid cfg
+                               yg <- randomR (0,y-1)
+                               xg <- randomR (0,x-1)
+                               return (yg,xg))
     rs0 <- mapM (\ (i,r) -> do
-                              r' <- mkRoom (border cfg) (minRoomSize cfg) r
+                              r' <- if i `elem` nr
+                                      then mkNoRoom (border cfg) r
+                                      else mkRoom (border cfg) (minRoomSize cfg) r
                               return (i,r')) gs
-    let rooms = L.map snd rs0
-    dlrooms <- mapM (\ r -> chance (darkRoomChance cfg) >>= \ c -> return (r, toDL (not c))) rooms
+    let rooms :: [(Loc, Loc)]
+        rooms = L.map snd rs0
+    dlrooms <- (mapM (\ r -> chance (darkRoomChance cfg) >>= \ c -> return (r, toDL (not c))) rooms) :: Rnd [((Loc, Loc), DL)]
     let rs = M.fromList rs0
     connects <- connectGrid (levelGrid cfg)
     addedConnects <- replicateM (extraConnects cfg) (randomConnection (levelGrid cfg))
@@ -193,8 +213,13 @@ level cfg nm =
 emptyLMap :: (Y,X) -> LMap
 emptyLMap (my,mx) = M.fromList [ ((y,x),newTile Rock) | x <- [0..mx], y <- [0..my] ]
 
+-- | If the room has size 1, it is assumed to be a no-room, and a single
+-- corridor field will be digged instead of a room.
 digRoom :: DL -> Room -> LMap -> LMap
-digRoom dl ((y0,x0),(y1,x1)) l =
+digRoom dl ((y0,x0),(y1,x1)) l
+  | y0 == y1 && x0 == x1 =
+  M.insert (y0,x0) (newTile Corridor) l
+  | otherwise =
   let rm = M.fromList $ [ ((y,x),newTile (Floor dl))   | x <- [x0..x1],     y <- [y0..y1]    ]
                      ++ [ ((y,x),newTile (Wall p)) | (x,y,p) <- [(x0-1,y0-1,UL),(x1+1,y0-1,UR),(x0-1,y1+1,DL),(x1+1,y1+1,DR)] ]
                      ++ [ ((y,x),newTile (Wall p)) | x <- [x0..x1], (y,p) <- [(y0-1,U),(y1+1,D)] ]
