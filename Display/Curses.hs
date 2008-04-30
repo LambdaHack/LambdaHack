@@ -68,6 +68,7 @@ nextEvent session =
       C.KeyChar ':' -> return "colon"
       C.KeyChar ',' -> return "comma"
       C.KeyChar ' ' -> return "space"
+      C.KeyChar '?' -> return "question"
       C.KeyChar '\ESC' -> return "Escape"
       C.KeyChar c   -> return [c]
       C.KeyExit     -> return "Escape"

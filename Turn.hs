@@ -4,6 +4,7 @@ import Data.List as L
 import Data.Map as M
 import Data.Set as S
 import Data.Char
+import Data.Maybe
 import Data.Function
 
 import State
@@ -241,7 +242,10 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
             Nothing -> displayCurrent "cannot carry anymore" >> abort
 
   -- dropping items
-  drop abort =
+  drop abort
+    | L.null (mitems nplayer) =
+      displayCurrent "You are not carrying anything." >> abort
+    | otherwise =
     do
       i <- getItem "What to drop?" (mitems nplayer)
       case i of
@@ -257,16 +261,23 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
         Nothing -> displayCurrent "never mind" >> abort
 
   -- preliminary version without choice
-  getItem _ []    = return Nothing
-  getItem _ (i:_) = return $ Just i
-
-  -- display inventory
-  inventory abort 
-    | L.null (mitems player) =
-      displayCurrent "You are not carrying anything." >> abort
-    | otherwise =
+  getItem prompt is =
     do
-      let msg = "This is what you are carrying:"
+      displayCurrent (prompt ++ " [" ++ letterRange (concatMap (maybeToList . iletter) is) ++ " or ?]")
+      let h = nextEvent session >>= h'
+          h' e =
+            do
+              handleModifier e h $
+                case e of
+                  "question" -> do
+                                  displayItems "Objects in your inventory:" is
+                                  getOptionalConfirm session (getItem prompt is) h'
+                  [l]        -> return (find (\ i -> maybe False (== l) (iletter i)) is)
+                  _          -> return Nothing
+      h
+
+  displayItems msg is =
+    do
       let inv = unlines $
                 L.map (\ (Item { iletter = l, itype = t }) -> 
                          let l' = maybe '?' id l
@@ -274,6 +285,14 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                       (sortBy (cmpLetter `on` maybe '?' id . iletter) (mitems player))
       let ovl = inv ++ more
       displayCurrent' msg ovl
+      
+  -- display inventory
+  inventory abort 
+    | L.null (mitems player) =
+      displayCurrent "You are not carrying anything." >> abort
+    | otherwise =
+    do
+      displayItems "This is what you are carrying:" (mitems player)
       getConfirm session
       displayCurrent ""
       abort  -- looking at inventory doesn't take any time

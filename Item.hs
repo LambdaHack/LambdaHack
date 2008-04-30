@@ -95,6 +95,24 @@ maxBy cmp x y = case cmp x y of
 
 maxLetter = maxBy cmpLetter
 
+
+letterRange :: [Char] -> String
+letterRange xs = sectionBy (sortBy cmpLetter xs) Nothing
+  where
+    succLetter c d = ord d - ord c == 1
+
+    sectionBy []     Nothing                  = ""
+    sectionBy []     (Just (c,d))             = finish (c,d)
+    sectionBy (x:xs) Nothing                  = sectionBy xs (Just (x,x))
+    sectionBy (x:xs) (Just (c,d)) | succLetter d x
+                                              = sectionBy xs (Just (c,x))
+                                  | otherwise
+                                              = finish (c,d) ++ sectionBy xs (Just (x,x))
+
+    finish (c,d) | c == d         = [c]
+                 | succLetter c d = [c,d]
+                 | otherwise      = [c,'-',d]
+
 viewItem :: ItemType -> (Char, Attr -> Attr)
 viewItem Ring   = ('=', id)
 viewItem Scroll = ('?', id)

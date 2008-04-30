@@ -45,6 +45,7 @@ nextEvent session =
       V.EvKey (KASCII ':') [] -> return "colon"
       V.EvKey (KASCII ',') [] -> return "comma"
       V.EvKey (KASCII ' ') [] -> return "space"
+      V.EvKey (KASCII '?') [] -> return "question"
       V.EvKey (KASCII c) []   -> return [c]
       V.EvKey KEsc []         -> return "Escape"
       V.EvKey KEnter []       -> return "Return"

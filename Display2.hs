@@ -23,17 +23,21 @@ displayBlankConfirm session txt =
 -- | Waits for a space or return.
 getConfirm :: Session -> IO ()
 getConfirm session =
+  getOptionalConfirm session (return ()) (const $ getConfirm session)
+
+getOptionalConfirm :: Session -> IO a -> (String -> IO a) -> IO a
+getOptionalConfirm session h k =
   do
     e <- nextEvent session
-    handleModifier e (getConfirm session) $
+    handleModifier e (getOptionalConfirm session h k) $
       case e of
-        "space"  -> return ()
-        "Return" -> return ()
-        _        -> getConfirm session 
+        "space"  -> h
+        "Return" -> h
+        _        -> k e
 
 -- | Handler that ignores modifier events as they are
 --   currently produced by the Gtk frontend.
-handleModifier :: String -> IO () -> IO () -> IO ()
+handleModifier :: String -> IO a -> IO a -> IO a
 handleModifier e h k =
   case e of
     "Shift_R"   -> h
