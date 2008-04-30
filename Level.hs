@@ -420,9 +420,9 @@ fromTo1 x0 x1
   | x0 <= x1  = [x0..x1]
   | otherwise = [x0,x0-1..x1]
 
-viewTile :: Tile -> (Char, Attr -> Attr)
-viewTile (Tile t [])    = viewTerrain 0 t
-viewTile (Tile t (i:_)) = viewItem (itype i)
+viewTile :: Bool -> Tile -> (Char, Attr -> Attr)
+viewTile b (Tile t [])    = viewTerrain 0 b t 
+viewTile b (Tile t (i:_)) = viewItem (itype i)
 
 -- | Produces a textual description of the items at a location. It's
 -- probably correct to use 'at' rather than 'rememberAt' at this point,
@@ -462,34 +462,37 @@ lookTerrain _                  = ""
 -- 2: doors added
 -- 3: corridors and openings added
 -- 4: only rooms
-viewTerrain :: Int -> Terrain -> (Char, Attr -> Attr)
-viewTerrain n Rock              = (' ', id)
-viewTerrain n (Opening d)
-  | n <= 3                      = ('.', id)
-  | otherwise                   = viewTerrain 0 (Wall d)
-viewTerrain n (Floor _)         = ('.', id)
-viewTerrain n Unknown           = (' ', id)
-viewTerrain n Corridor
-  | n <= 3                      = ('#', id)
-  | otherwise                   = viewTerrain 0 Rock
-viewTerrain n (Wall p)
-  | p `elem` [L, R]             = ('|', id)
-  | otherwise                   = ('-', id)
-viewTerrain n (Stairs _ Up _)
-  | n <= 1                      = ('<', id)
-  | otherwise                   = viewTerrain 0 (Floor Dark)
-viewTerrain n (Stairs _ Down _)
-  | n <= 1                      = ('>', id)
-  | otherwise                   = viewTerrain 0 (Floor Dark)
-viewTerrain n (Door d (Just 0))
-  | n <= 2                      = ('+', setFG yellow)
-  | otherwise                   = viewTerrain n (Opening d)
-viewTerrain n (Door d (Just _))
-  | n <= 2                      = viewTerrain n (Wall d) -- secret door
-  | otherwise                   = viewTerrain n (Opening d)
-viewTerrain n (Door p Nothing)
-  | n <= 2                      = (if p `elem` [L, R] then '-' else '|', setFG yellow)
-  | otherwise                   = viewTerrain n (Opening p)
+--
+-- The Bool indicates whether the loc is currently visible.
+viewTerrain :: Int -> Bool -> Terrain -> (Char, Attr -> Attr)
+viewTerrain n b Rock              = (' ', id)
+viewTerrain n b (Opening d)
+  | n <= 3                        = ('.', id)
+  | otherwise                     = viewTerrain 0 b (Wall d)
+viewTerrain n b (Floor Light)     = ('.', id)
+viewTerrain n b (Floor Dark)      = if b then ('.', id) else (' ', id)
+viewTerrain n b Unknown           = (' ', id)
+viewTerrain n b Corridor
+  | n <= 3                        = ('#', id)
+  | otherwise                     = viewTerrain 0 b Rock
+viewTerrain n b (Wall p)
+  | p `elem` [L, R]               = ('|', id)
+  | otherwise                     = ('-', id)
+viewTerrain n b (Stairs _ Up _)
+  | n <= 1                        = ('<', id)
+  | otherwise                     = viewTerrain 0 b (Floor Dark)
+viewTerrain n b (Stairs _ Down _)
+  | n <= 1                        = ('>', id)
+  | otherwise                     = viewTerrain 0 b (Floor Dark)
+viewTerrain n b (Door d (Just 0))
+  | n <= 2                        = ('+', setFG yellow)
+  | otherwise                     = viewTerrain n b (Opening d)
+viewTerrain n b (Door d (Just _))
+  | n <= 2                        = viewTerrain n b (Wall d) -- secret door
+  | otherwise                     = viewTerrain n b (Opening d)
+viewTerrain n b (Door p Nothing)
+  | n <= 2                        = (if p `elem` [L, R] then '-' else '|', setFG yellow)
+  | otherwise                     = viewTerrain n b (Opening p)
 
 viewSmell :: Int -> (Char, Attr -> Attr)
 viewSmell n = let k | n > 9    = '*'

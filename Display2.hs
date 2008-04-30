@@ -118,10 +118,10 @@ displayOverlay session (lvl@(Level nm sz@(sy,sx) ms smap nlmap lmeta))
                                vis  = S.member loc visible
                                rea  = S.member loc reachable
                                (rv,ra) = case L.find (\ m -> loc == mloc m) (player:ms) of
-                                           _ | sTer > 0          -> viewTerrain sTer (tterrain tile)
+                                           _ | sTer > 0          -> viewTerrain sTer False (tterrain tile)
                                            Just m | sOmn || vis  -> viewMonster (mtype m) 
                                            _ | sSml && sml >= 0  -> viewSmell sml
-                                             | otherwise         -> viewTile tile
+                                             | otherwise         -> viewTile vis tile
                                vision = lVision vis rea
                            in
                              case over (loc `shift` ((sy+1) * n, 0)) of
