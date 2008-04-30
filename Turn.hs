@@ -183,7 +183,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                            "period"  -> loop session nlvl nstate ""
 
                            -- look
-                           "colon"   -> displayCurrent (lookAt True nlmap ploc) >> h
+                           "colon"   -> lookAround h
 
                            -- display modes
                            "V"       -> handle session nlvl (toggleVision state) per oldmsg
@@ -270,19 +270,19 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
               handleModifier e h $
                 case e of
                   "question" -> do
-                                  displayItems "Objects in your inventory:" is
+                                  displayItems "Objects in your inventory:" True is
                                   getOptionalConfirm session (getItem prompt is) h'
                   [l]        -> return (find (\ i -> maybe False (== l) (iletter i)) is)
                   _          -> return Nothing
       h
 
-  displayItems msg is =
+  displayItems msg sorted is =
     do
       let inv = unlines $
                 L.map (\ (Item { iletter = l, itype = t }) -> 
-                         let l' = maybe '?' id l
-                         in  l' : " - " ++ objectItem t ++ " ")
-                      (sortBy (cmpLetter `on` maybe '?' id . iletter) (mitems player))
+                         let l' = maybe "    " (: " - ") l
+                         in  l' ++ objectItem t ++ " ")
+                      ((if sorted then sortBy (cmpLetter' `on` iletter) else id) is)
       let ovl = inv ++ more
       displayCurrent' msg ovl
       
@@ -292,11 +292,24 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
       displayCurrent "You are not carrying anything." >> abort
     | otherwise =
     do
-      displayItems "This is what you are carrying:" (mitems player)
+      displayItems "This is what you are carrying:" True (mitems player)
       getConfirm session
       displayCurrent ""
       abort  -- looking at inventory doesn't take any time
       
+  -- look around at current location
+  lookAround abort =
+    do
+      -- check if something is here to pick up
+      let t = nlmap `at` ploc
+      if length (titems t) <= 2
+        then displayCurrent (lookAt True nlmap ploc) >> abort
+        else
+          do
+             displayItems (lookAt True nlmap ploc) False (titems t)
+             getConfirm session
+             displayCurrent ""
+             abort  -- looking around doesn't take any time
 
   -- open and close doors
   openclose o abort =
@@ -329,7 +342,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
   -- perform a level change
   lvlchange vdir abort =
     case nlmap `at` ploc of
-      Tile (Stairs vdir' next) is
+      Tile (Stairs _ vdir' next) is
        | vdir == vdir' -> -- ok
           case next of
             Nothing      -> -- exit dungeon
@@ -361,10 +374,10 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
     let abort = handle session nlvl (updatePlayer state (const $ player { mdir = Nothing })) per oldmsg
         dloc  = shift ploc dir
     in  case (oldmsg, nlmap `at` ploc) of
-          (_:_, _)                 -> abort
-          (_, Tile (Opening _) _)  -> abort
-          (_, Tile (Door _ _) _)   -> abort
-          (_, Tile (Stairs _ _) _) -> abort
+          (_:_, _)                   -> abort
+          (_, Tile (Opening _) _)    -> abort
+          (_, Tile (Door _ _) _)     -> abort
+          (_, Tile (Stairs _ _ _) _) -> abort
           _
             | accessible nlmap ploc dloc ->
                 moveOrAttack

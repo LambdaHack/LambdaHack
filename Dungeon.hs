@@ -80,8 +80,8 @@ bigroom (LevelConfig { levelSize = (sy,sx) }) nm =
     su <- findLoc lvl (const floor)
     sd <- findLoc lvl (\ l t -> floor t && distance (su,l) > 676)
     return $ (\ lu ld ->
-      let flmap = maybe id (\ l -> M.insert su (newTile (Stairs Up   l))) lu $
-                  maybe id (\ l -> M.insert sd (newTile (Stairs Down l))) ld $
+      let flmap = maybe id (\ l -> M.insert su (newTile (Stairs Light Up   l))) lu $
+                  maybe id (\ l -> M.insert sd (newTile (Stairs Light Down l))) ld $
                   lmap
       in  Level nm (sy,sx) [] smap flmap "bigroom", su, sd)
 
@@ -184,8 +184,8 @@ level cfg nm =
     sd <- findLoc lvl (\ l t -> floor t && distance (su,l) > minStairsDistance cfg)
     let meta = show allConnects
     return $ (\ lu ld ->
-      let flmap = maybe id (\ l -> M.insert su (newTile (Stairs Up   l))) lu $
-                  maybe id (\ l -> M.insert sd (newTile (Stairs Down l))) ld $
+      let flmap = maybe id (\ l -> M.update (\ (t,r) -> Just $ newTile (Stairs (toDL $ light t) Up   l)) su) lu $
+                  maybe id (\ l -> M.update (\ (t,r) -> Just $ newTile (Stairs (toDL $ light t) Down l)) sd) ld $
                   foldr (\ (l,it) f -> M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l . f) id is $
                   dlmap
       in  Level nm (levelSize cfg) [] smap flmap meta, su, sd)

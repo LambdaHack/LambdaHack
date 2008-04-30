@@ -84,9 +84,14 @@ assignLetter r c is =
     candidates = take (length allLetters) (drop (fromJust (findIndex (==c) allLetters)) (cycle allLetters))
     free       = L.filter (\x -> not (x `member` current)) candidates
 
-
 cmpLetter :: Char -> Char -> Ordering
 cmpLetter x y = compare (isUpper x, toLower x) (isUpper y, toLower y)
+
+cmpLetter' :: Maybe Char -> Maybe Char -> Ordering
+cmpLetter' Nothing  Nothing   = EQ
+cmpLetter' Nothing  (Just _)  = GT
+cmpLetter' (Just _) Nothing   = LT
+cmpLetter' (Just l) (Just l') = cmpLetter l l'
 
 maxBy :: (a -> a -> Ordering) -> a -> a -> a
 maxBy cmp x y = case cmp x y of

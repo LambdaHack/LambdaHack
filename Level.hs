@@ -113,19 +113,19 @@ data Terrain = Rock
              | Unknown
              | Corridor
              | Wall Pos
-             | Stairs VDir (Maybe DungeonLoc)
+             | Stairs DL VDir (Maybe DungeonLoc)
              | Door Pos (Maybe Int) -- Nothing: open, Just 0: closed, otherwise secret
   deriving Show
 
 instance Binary Terrain where
-  put Rock         = putWord8 0
-  put (Opening p)  = putWord8 1 >> put p
-  put (Floor dl)   = putWord8 2 >> put dl
-  put Unknown      = putWord8 3
-  put Corridor     = putWord8 4
-  put (Wall p)     = putWord8 5 >> put p
-  put (Stairs d n) = putWord8 6 >> put d >> put n
-  put (Door p o)   = putWord8 7 >> put p >> put o
+  put Rock            = putWord8 0
+  put (Opening p)     = putWord8 1 >> put p
+  put (Floor dl)      = putWord8 2 >> put dl
+  put Unknown         = putWord8 3
+  put Corridor        = putWord8 4
+  put (Wall p)        = putWord8 5 >> put p
+  put (Stairs dl d n) = putWord8 6 >> put dl >> put d >> put n
+  put (Door p o)      = putWord8 7 >> put p >> put o
   get = do
           tag <- getWord8
           case tag of
@@ -135,7 +135,7 @@ instance Binary Terrain where
             3 -> return Unknown
             4 -> return Corridor
             5 -> liftM Wall get
-            6 -> liftM2 Stairs get get
+            6 -> liftM3 Stairs get get get
             7 -> liftM2 Door get get
             _ -> fail "no parse (Tile)"
 
@@ -226,7 +226,7 @@ instance Eq Terrain where
   Unknown == Unknown = True
   Corridor == Corridor = True
   Wall p == Wall p' = p == p'
-  Stairs d _ == Stairs d' _ = d == d'
+  Stairs dl d t == Stairs dl' d' t' = dl == dl' && d == d' && t == t'
   Door p o == Door p' o' = p == p' && o == o'
   _ == _ = False
 
@@ -256,20 +256,17 @@ toDL True  = Light
 
 -- | allows moves and vision
 open :: Tile -> Bool
-open (Tile (Floor _) _)    = True
-open (Tile (Opening _) _)  = True
-open (Tile (Door _ o) _)   = isNothing o
-open (Tile Corridor _)     = True
-open (Tile (Stairs _ _) _) = True
-open _                     = False
+open (Tile (Floor _) _)      = True
+open (Tile (Opening _) _)    = True
+open (Tile (Door _ o) _)     = isNothing o
+open (Tile Corridor _)       = True
+open (Tile (Stairs _ _ _) _) = True
+open _                       = False
 
 -- | is lighted on its own
 light :: Tile -> Bool
 light (Tile (Floor l) _)        = fromDL l
-light (Tile (Opening _) _)      = True
-light (Tile (Door _ Nothing) _) = True -- open doors are all visible currently
-light (Tile (Stairs _ _) _)     = True
-light (Tile (Wall _) _)         = False
+light (Tile (Stairs l _ _) _)   = fromDL l
 light _                         = False
 
 -- | Passive tiles reflect light from some other (usually adjacent)
@@ -278,16 +275,19 @@ light _                         = False
 -- Walls, for instance, cannot usually be seen from the outside.
 passive :: Tile -> [Dir]  
 passive (Tile (Wall p) _)          = posToDir p
+passive (Tile (Opening _) _)       = moves
+passive (Tile (Door p Nothing) _)  = moves
 passive (Tile (Door p (Just 0)) _) = moves
                                      -- doors can be seen from all sides
 passive (Tile (Door p (Just n)) _) = posToDir p
                                      -- secret doors are like walls
-passive (Tile (Stairs _ _) _)      = moves
+passive (Tile (Stairs _ _ _) _)    = moves
 passive _                          = []
 
 -- | Perceptible is similar to passive, but describes which tiles can
 -- be seen from which adjacent fields in the dark.
 perceptible :: Tile -> [Dir]
+perceptible (Tile Rock _) = []
 perceptible p = case passive p of
                  [] -> moves
                  ds -> ds
@@ -428,25 +428,32 @@ viewTile (Tile t (i:_)) = viewItem (itype i)
 -- probably correct to use 'at' rather than 'rememberAt' at this point,
 -- although we could argue that 'rememberAt' reflects what the player can
 -- perceive more correctly ...
+--
+-- The "detailed" variant is for use with an explicit look command.
 lookAt :: Bool -> LMap -> Loc -> String
 lookAt detailed lvl loc
-  | L.null is && detailed = lookTerrain (tterrain (lvl `at` loc))
-  | otherwise             = isd
+  | detailed  = lookTerrain (tterrain (lvl `at` loc)) ++ " " ++ isd
+  | otherwise = isd
   where
     is  = titems (lvl `at` loc)
-    isd = unwords $ L.map (objectItem . itype) $ is
-
+    isd = case is of
+            []    -> ""
+            [i]   -> "You see " ++ objectItem (itype i) ++ "."
+            [i,j] -> "You see " ++ objectItem (itype i) ++ " and "
+                                ++ objectItem (itype j) ++ "."
+            _     -> "There are several objects here" ++
+                     if detailed then ":" else "."
 
 -- | Produces a textual description for terrain, used if no objects
 -- are present.
 lookTerrain :: Terrain -> String
-lookTerrain (Floor _)        = "empty floor"
-lookTerrain Corridor         = "empty corridor"
-lookTerrain (Opening _)      = "an opening"
-lookTerrain (Stairs Up _)    = "staircase up"
-lookTerrain (Stairs Down _)  = "staircase down"
-lookTerrain (Door _ Nothing) = "an open door"
-lookTerrain _                = ""
+lookTerrain (Floor _)          = "Floor."
+lookTerrain Corridor           = "Corridor."
+lookTerrain (Opening _)        = "An opening."
+lookTerrain (Stairs _ Up _)    = "A staircase up."
+lookTerrain (Stairs _ Down _)  = "A staircase down."
+lookTerrain (Door _ Nothing)   = "An open door."
+lookTerrain _                  = ""
 
 -- | The parameter "n" is the level of evolution:
 --
@@ -468,10 +475,10 @@ viewTerrain n Corridor
 viewTerrain n (Wall p)
   | p `elem` [L, R]             = ('|', id)
   | otherwise                   = ('-', id)
-viewTerrain n (Stairs Up _)
+viewTerrain n (Stairs _ Up _)
   | n <= 1                      = ('<', id)
   | otherwise                   = viewTerrain 0 (Floor Dark)
-viewTerrain n (Stairs Down _)
+viewTerrain n (Stairs _ Down _)
   | n <= 1                      = ('>', id)
   | otherwise                   = viewTerrain 0 (Floor Dark)
 viewTerrain n (Door d (Just 0))
