@@ -1,9 +1,9 @@
 module Display.Curses
   (displayId, startup, shutdown,
-   display, nextEvent, setBG, setFG, Session,
+   display, nextEvent, setBG, setFG, setBold, Session,
    white, black, yellow, blue, magenta, red, green, attr, Display.Curses.Attr) where
 
-import UI.HSCurses.Curses as C
+import UI.HSCurses.Curses as C hiding (setBold)
 import qualified UI.HSCurses.CursesHelper as C
 import Data.List as L
 import Data.Map as M
@@ -109,5 +109,6 @@ magenta = Magenta
 red     = Red
 green   = Green
 
+setBold (f, b) = (f, b)
 setFG c (_, b) = (Just c, b)
-setBG c (f, b) = (f, Just c)
+setBG c (f, _) = (f, Just c)

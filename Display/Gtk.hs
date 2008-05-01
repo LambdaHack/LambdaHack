@@ -1,6 +1,6 @@
 module Display.Gtk
   (displayId, startup, shutdown, 
-   display, nextEvent, setBG, setFG, Session,
+   display, nextEvent, setBG, setFG, setBold, Session,
    white, black, yellow, blue, magenta, red, green, attr, Attr) where
 
 import Control.Monad
@@ -127,16 +127,17 @@ setTo tb tts (ly,lx) a =
 nextEvent :: Session -> IO String
 nextEvent session = readChan (schan session)
 
-setBG c = (BG c :)
-setFG c = (FG c :)
-blue    = Blue
-magenta = Magenta
-red     = Red
-yellow  = Yellow
-green   = Green
-white   = White
-black   = Black
-attr    = []
+setBold   = id  -- not supported yet
+setBG c   = (BG c :)
+setFG c   = (FG c :)
+blue      = Blue
+magenta   = Magenta
+red       = Red
+yellow    = Yellow
+green     = Green
+white     = White
+black     = Black
+attr      = []
 
 type Attr = [AttrKey]
 

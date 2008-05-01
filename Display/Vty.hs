@@ -1,6 +1,6 @@
 module Display.Vty
   (displayId, startup, shutdown,
-   display, nextEvent, setBG, setFG, Session,
+   display, nextEvent, setBold, setBG, setFG, Session,
    white, black, yellow, blue, magenta, red, green, attr, Attr) where
 
 import Graphics.Vty as V

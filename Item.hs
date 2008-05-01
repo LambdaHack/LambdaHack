@@ -123,7 +123,7 @@ viewItem Ring   = ('=', id)
 viewItem Scroll = ('?', id)
 viewItem Potion = ('!', id)
 viewItem Wand   = ('/', id)
-viewItem Gold   = ('$', setFG yellow)
+viewItem Gold   = ('$', setBold . setFG yellow)
 viewItem Gem    = ('*', setFG red)
 viewItem _      = ('~', id)
 
