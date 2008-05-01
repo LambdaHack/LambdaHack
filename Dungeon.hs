@@ -97,17 +97,17 @@ data LevelConfig =
   LevelConfig {
     levelGrid         :: (Y,X),
     minRoomSize       :: (Y,X),
-    darkRoomChance    :: Rational,
+    darkRoomChance    :: Rnd Bool,
     border            :: Int,       -- must be at least 2!
     levelSize         :: (Y,X),     -- lower right point
     extraConnects     :: Int,       -- in fact a range, because of duplicate connects
-    noRooms           :: (Int,Int), -- range
+    noRooms           :: Rnd Int,   -- range
     minStairsDistance :: Int,       -- must not be too large
-    doorChance        :: Rational,
-    doorOpenChance    :: Rational,
-    doorSecretChance  :: Rational,
+    doorChance        :: Rnd Bool,
+    doorOpenChance    :: Rnd Bool,
+    doorSecretChance  :: Rnd Bool,
     doorSecretMax     :: Int,
-    nrItems           :: (Int,Int)  -- range
+    nrItems           :: Rnd Int    -- range
   }
     
 defaultLevelConfig :: LevelConfig
@@ -115,17 +115,17 @@ defaultLevelConfig =
   LevelConfig {
     levelGrid         = (3,3),
     minRoomSize       = (2,2),
-    darkRoomChance    = 1%8,
+    darkRoomChance    = chance $ 1%8,
     border            = 2,
     levelSize         = (22,79),
     extraConnects     = 3,   
-    noRooms           = (0,3),
+    noRooms           = randomR (0,3),
     minStairsDistance = 676,
-    doorChance        = 1%2,
-    doorOpenChance    = 1%2,
-    doorSecretChance  = 1%3,
+    doorChance        = chance $ 1%2,
+    doorOpenChance    = chance $ 1%2,
+    doorSecretChance  = chance $ 1%3,
     doorSecretMax     = 15,
-    nrItems           = (3,7) 
+    nrItems           = randomR (3,7) 
   }
 
 largeLevelConfig :: LevelConfig
@@ -142,7 +142,7 @@ level cfg nm =
   do
     let gs = M.toList (grid (levelGrid cfg) ((0,0),levelSize cfg))
     -- grid locations of "no-rooms"
-    nrnr <- randomR (noRooms cfg)
+    nrnr <- noRooms cfg
     nr   <- replicateM nrnr (do
                                let (y,x) = levelGrid cfg
                                yg <- randomR (0,y-1)
@@ -155,7 +155,7 @@ level cfg nm =
                               return (i,r')) gs
     let rooms :: [(Loc, Loc)]
         rooms = L.map snd rs0
-    dlrooms <- (mapM (\ r -> chance (darkRoomChance cfg) >>= \ c -> return (r, toDL (not c))) rooms) :: Rnd [((Loc, Loc), DL)]
+    dlrooms <- (mapM (\ r -> darkRoomChance cfg >>= \ c -> return (r, toDL (not c))) rooms) :: Rnd [((Loc, Loc), DL)]
     let rs = M.fromList rs0
     connects <- connectGrid (levelGrid cfg)
     addedConnects <- replicateM (extraConnects cfg) (randomConnection (levelGrid cfg))
@@ -178,12 +178,12 @@ level cfg nm =
                     Tile (Opening hv) _ ->
                       do
                         -- chance for doors
-                        rb <- chance (doorChance cfg)
+                        rb <- doorChance cfg
                         -- chance for a door to be open
-                        ro <- chance (doorOpenChance cfg)
+                        ro <- doorOpenChance cfg
                         rs <- if ro then return Nothing
                                     else do -- chance for a door to be secret
-                                            rsc <- chance (doorSecretChance cfg)
+                                            rsc <- doorSecretChance cfg
                                             fmap Just
                                                  (if rsc then randomR (1, doorSecretMax cfg)
                                                          else return 0)
@@ -193,7 +193,7 @@ level cfg nm =
                     _ -> return o) .
                 M.toList $ lmap
     -- determine number of items, items and locations for the items
-    nri <- randomR (nrItems cfg)
+    nri <- nrItems cfg
     is  <- replicateM nri $
            do
              l <- findLoc lvl (const floor)
