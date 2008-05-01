@@ -230,8 +230,7 @@ addMonster :: Level -> Player -> Rnd Level
 addMonster lvl@(Level { lmonsters = ms, lmap = lmap })
            player@(Monster { mloc = ploc }) =
   do
-    -- TODO: remove the hardcoded chance
-    rc <- chance (1 % if L.null ms then 50 else 700)
+    rc <- monsterGenChance (lname lvl) ms
     if rc
      then do
             -- TODO: new monsters should always be generated in a place that isn't

@@ -21,6 +21,16 @@ import Display
 data LevelName = LambdaCave Int | Exit
   deriving (Show, Eq, Ord)
 
+-- | Chance that a new monster is generated. Currently depends on the
+-- number of monsters already present, and on the level. In the future,
+-- the strength of the character and the strength of the monsters present
+-- could further influence the chance, and the chance could also affect
+-- which monster is generated.
+monsterGenChance :: LevelName -> [Monster] -> Rnd Bool
+monsterGenChance (LambdaCave n) [] = chance $ 1%50
+monsterGenChance (LambdaCave n) _  = chance $ 1%((1000 - (fromIntegral n * 50)) `max` 300)
+monsterGenChance _              _  = return False
+
 instance Binary LevelName where
   put (LambdaCave n) = put n
   get = liftM LambdaCave get
