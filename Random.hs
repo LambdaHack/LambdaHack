@@ -25,6 +25,10 @@ chance r =
     k <- randomR (1,d)
     return (k <= n)
 
+-- | d for die/dice
+d :: Int -> Rnd Int
+d x = randomR (1,x)
+
 oneOf :: [a] -> Rnd a
 oneOf xs =
   do
@@ -50,3 +54,14 @@ rndToIO r =
     let (x,g') = runState r g
     R.setStdGen g'
     return x
+
+-- ** Arithmetic operations on Rnd.
+
+infixl 7 *~
+infixl 6 ~+~
+
+(~+~) :: Num a => Rnd a -> Rnd a -> Rnd a
+(~+~) = liftM2 (+)
+
+(*~) :: Num a => Int -> Rnd a -> Rnd a
+x *~ r = replicateM x r >>= return . sum
