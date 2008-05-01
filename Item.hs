@@ -128,11 +128,18 @@ viewItem Gold   = ('$', setBold . setFG yellow)
 viewItem Gem    = ('*', setFG red)
 viewItem _      = ('~', id)
 
-objectItem :: ItemType -> String
-objectItem Ring   = "a ring"
-objectItem Scroll = "a scroll"
-objectItem Potion = "a potion"
-objectItem Wand   = "a wand"
-objectItem Amulet = "an amulet"
-objectItem Gem    = "a gem"
-objectItem Gold   = "some gold"
+objectItem :: Int -> ItemType -> String
+objectItem 1 Ring   = "a ring"
+objectItem n Ring   = show n ++ " rings"
+objectItem 1 Scroll = "a scroll"
+objectItem n Scroll = show n ++ " scrolls"
+objectItem 1 Potion = "a potion"
+objectItem n Potion = show n ++ " potions"
+objectItem 1 Wand   = "a wand"
+objectItem n Wand   = show n ++ " wands"
+objectItem 1 Amulet = "an amulet"
+objectItem n Amulet = show n ++ " amulets"
+objectItem 1 Gem    = "a gem"
+objectItem n Gem    = show n ++ " gems"
+objectItem 1 Gold   = "a gold piece"
+objectItem n Gold   = show n ++ " gold pieces"

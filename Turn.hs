@@ -230,9 +230,9 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                         {-
                         subjectMonster (mtype player) ++ " " ++
                         compoundVerbMonster (mtype player) "pick" "up" ++ " " ++
-                        objectItem (itype i) ++ "."
+                        objectItem (icount i) (itype i) ++ "."
                         -}
-                        [l] ++ " - " ++ objectItem (itype i)
+                        [l] ++ " - " ++ objectItem (icount i) (itype i)
                   nt = t { titems = rs }
                   plmap = M.insert ploc (nt, nt) nlmap
                   iplayer = nplayer { mitems  = i { iletter = Just l } : mitems nplayer,
@@ -255,7 +255,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                        plmap = M.insert ploc (nt, nt) nlmap
                        msg = subjectMonster (mtype player) ++ " " ++
                              verbMonster (mtype player) "drop" ++ " " ++
-                             objectItem (itype i') ++ "."
+                             objectItem (icount i') (itype i') ++ "."
                    in  loop session (updateLMap lvl (const plmap))
                                     (updatePlayer nstate (const iplayer)) msg
         Nothing -> displayCurrent "never mind" >> abort
@@ -279,9 +279,9 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
   displayItems msg sorted is =
     do
       let inv = unlines $
-                L.map (\ (Item { iletter = l, itype = t }) -> 
+                L.map (\ (Item { icount = c, iletter = l, itype = t }) -> 
                          let l' = maybe "    " (: " - ") l
-                         in  l' ++ objectItem t ++ " ")
+                         in  l' ++ objectItem c t ++ " ")
                       ((if sorted then sortBy (cmpLetter' `on` iletter) else id) is)
       let ovl = inv ++ more
       displayCurrent' msg ovl

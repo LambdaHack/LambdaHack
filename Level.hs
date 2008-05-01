@@ -448,9 +448,9 @@ lookAt detailed lvl loc
     is  = titems (lvl `at` loc)
     isd = case is of
             []    -> ""
-            [i]   -> "You see " ++ objectItem (itype i) ++ "."
-            [i,j] -> "You see " ++ objectItem (itype i) ++ " and "
-                                ++ objectItem (itype j) ++ "."
+            [i]   -> "You see " ++ objectItem (icount i) (itype i) ++ "."
+            [i,j] -> "You see " ++ objectItem (icount i) (itype i) ++ " and "
+                                ++ objectItem (icount j) (itype j) ++ "."
             _     -> "There are several objects here" ++
                      if detailed then ":" else "."
 
