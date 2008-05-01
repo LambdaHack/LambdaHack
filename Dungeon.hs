@@ -95,13 +95,16 @@ bigroom (LevelConfig { levelSize = (sy,sx) }) nm =
 
 data LevelConfig =
   LevelConfig {
-    levelGrid         :: (Y,X),
-    minRoomSize       :: (Y,X),
+    levelGrid         :: Rnd (Y,X),
+    minRoomSize       :: Rnd (Y,X),
     darkRoomChance    :: Rnd Bool,
     border            :: Int,       -- must be at least 2!
     levelSize         :: (Y,X),     -- lower right point
-    extraConnects     :: Int,       -- in fact a range, because of duplicate connects
-    noRooms           :: Rnd Int,   -- range
+    extraConnects     :: (Y,X) -> Int, 
+                                    -- relative to grid
+                                    -- (in fact a range, because of duplicate connects)
+    noRooms           :: (Y,X) -> Rnd Int,
+                                    -- range, relative to grid
     minStairsDistance :: Int,       -- must not be too large
     doorChance        :: Rnd Bool,
     doorOpenChance    :: Rnd Bool,
@@ -110,16 +113,19 @@ data LevelConfig =
     nrItems           :: Rnd Int    -- range
   }
     
-defaultLevelConfig :: LevelConfig
-defaultLevelConfig =
+defaultLevelConfig :: Int -> LevelConfig
+defaultLevelConfig d =
   LevelConfig {
-    levelGrid         = (3,3),
-    minRoomSize       = (2,2),
-    darkRoomChance    = chance $ 1%8,
+    levelGrid         = do
+                          y <- randomR (2,4)
+                          x <- randomR (3,5)
+                          return (y,x),
+    minRoomSize       = return (2,2),
+    darkRoomChance    = chance $ 1%((22 - (2 * fromIntegral d)) `max` 2),
     border            = 2,
     levelSize         = (22,79),
-    extraConnects     = 3,   
-    noRooms           = randomR (0,3),
+    extraConnects     = \ (y,x) -> (y*x) `div` 3,   
+    noRooms           = \ (y,x) -> randomR (0,(y*x) `div` 3),
     minStairsDistance = 676,
     doorChance        = chance $ 1%2,
     doorOpenChance    = chance $ 1%2,
@@ -128,37 +134,39 @@ defaultLevelConfig =
     nrItems           = randomR (3,7) 
   }
 
-largeLevelConfig :: LevelConfig
-largeLevelConfig =
-  defaultLevelConfig {
-    levelGrid         = (7,10),
+largeLevelConfig :: Int -> LevelConfig
+largeLevelConfig d =
+  (defaultLevelConfig d) {
+    levelGrid         = return (7,10),
     levelSize         = (77,231),
-    extraConnects     = 10
+    extraConnects     = const 10
   }
 
 level :: LevelConfig ->
          LevelName -> Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) -> Level, Loc, Loc)
 level cfg nm =
   do
-    let gs = M.toList (grid (levelGrid cfg) ((0,0),levelSize cfg))
+    lgrid    <- levelGrid cfg
+    lminroom <- minRoomSize cfg
+    let gs = M.toList (grid lgrid ((0,0),levelSize cfg))
     -- grid locations of "no-rooms"
-    nrnr <- noRooms cfg
+    nrnr <- noRooms cfg lgrid
     nr   <- replicateM nrnr (do
-                               let (y,x) = levelGrid cfg
+                               let (y,x) = lgrid
                                yg <- randomR (0,y-1)
                                xg <- randomR (0,x-1)
                                return (yg,xg))
     rs0 <- mapM (\ (i,r) -> do
                               r' <- if i `elem` nr
                                       then mkNoRoom (border cfg) r
-                                      else mkRoom (border cfg) (minRoomSize cfg) r
+                                      else mkRoom (border cfg) lminroom r
                               return (i,r')) gs
     let rooms :: [(Loc, Loc)]
         rooms = L.map snd rs0
     dlrooms <- (mapM (\ r -> darkRoomChance cfg >>= \ c -> return (r, toDL (not c))) rooms) :: Rnd [((Loc, Loc), DL)]
     let rs = M.fromList rs0
-    connects <- connectGrid (levelGrid cfg)
-    addedConnects <- replicateM (extraConnects cfg) (randomConnection (levelGrid cfg))
+    connects <- connectGrid lgrid
+    addedConnects <- replicateM (extraConnects cfg lgrid) (randomConnection lgrid)
     let allConnects = L.nub (addedConnects ++ connects)
     cs <- mapM
            (\ (p0,p1) -> do
