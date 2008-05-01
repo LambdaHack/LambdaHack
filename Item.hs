@@ -12,7 +12,8 @@ import Geometry
 import Random
 
 data Item = Item
-             { itype   :: ItemType,   
+             { icount  :: Int,
+               itype   :: ItemType,   
                iletter :: Maybe Char }  -- inventory identifier
   deriving Show
 
@@ -24,11 +25,11 @@ data ItemType =
  | Amulet
  | Gem
  | Gold
- deriving Show
+ deriving (Eq, Show)
 
 instance Binary Item where
-  put (Item itype iletter) = put itype >> put iletter
-  get = liftM2 Item get get
+  put (Item icount itype iletter) = put icount >> put itype >> put iletter
+  get = liftM3 Item get get get
 
 instance Binary ItemType where
   put Ring   = putWord8 0
@@ -67,7 +68,7 @@ newItem :: Frequency ItemType -> Rnd Item
 newItem ftp =
   do
     tp <- frequency ftp
-    return (Item tp Nothing)
+    return (Item 1 tp Nothing)
 
 -- | Assigns a letter to an item, for inclusion
 -- in the inventory of the player. Takes a remembered
