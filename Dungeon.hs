@@ -234,7 +234,7 @@ addMonster lvl@(Level { lmonsters = ms, lmap = lmap })
     rc <- chance (1 % if L.null ms then 50 else 700)
     if rc
      then do
-            -- TODO: new monsters always be generated in a place that isn't
+            -- TODO: new monsters should always be generated in a place that isn't
             -- visible by the player (if possible -- not possible for bigrooms)
             sm <- findLoc lvl (\ l t -> floor t && 
                                         not (l `L.elem` L.map mloc (player : ms)) &&
