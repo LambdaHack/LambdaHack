@@ -128,6 +128,23 @@ viewItem Gold   = ('$', setBold . setFG yellow)
 viewItem Gem    = ('*', setFG red)
 viewItem _      = ('~', id)
 
+-- | Adds an item to a list of items, joining equal items.
+-- Also returns the joined item.
+joinItem :: Item -> [Item] -> (Item,[Item])
+joinItem i is = case findItem (\ j -> itype i == itype j) is of
+                  Nothing     -> (i, i : is)
+                  Just (j,js) -> let n = i { icount = icount i + icount j }
+                                 in (n, n : js)
+
+-- | Finds an item in a list of items.
+findItem :: (Item -> Bool) -> [Item] -> Maybe (Item, [Item])
+findItem p is = findItem' [] is
+  where
+    findItem' acc []     = Nothing
+    findItem' acc (i:is)
+      | p i              = Just (i, reverse acc ++ is)
+      | otherwise        = findItem' (i:acc) is
+
 objectItem :: Int -> ItemType -> String
 objectItem 1 Ring   = "a ring"
 objectItem n Ring   = show n ++ " rings"

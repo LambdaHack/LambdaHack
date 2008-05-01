@@ -232,10 +232,11 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                         compoundVerbMonster (mtype player) "pick" "up" ++ " " ++
                         objectItem (icount i) (itype i) ++ "."
                         -}
-                        [l] ++ " - " ++ objectItem (icount i) (itype i)
+                        [l] ++ " - " ++ objectItem (icount ni) (itype ni)
                   nt = t { titems = rs }
                   plmap = M.insert ploc (nt, nt) nlmap
-                  iplayer = nplayer { mitems  = i { iletter = Just l } : mitems nplayer,
+                  (ni,nitems) = joinItem (i { iletter = Just l }) (mitems nplayer)
+                  iplayer = nplayer { mitems  = nitems,
                                       mletter = maxLetter l (mletter nplayer) }
               in  loop session (updateLMap lvl (const plmap))
                                      (updatePlayer nstate (const iplayer)) msg
@@ -251,7 +252,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
       case i of
         Just i' -> let iplayer = nplayer { mitems = deleteBy ((==) `on` iletter) i' (mitems nplayer) }
                        t = nlmap `at` ploc
-                       nt = t { titems = i' : titems t }
+                       nt = t { titems = snd (joinItem i' (titems t)) }
                        plmap = M.insert ploc (nt, nt) nlmap
                        msg = subjectMonster (mtype player) ++ " " ++
                              verbMonster (mtype player) "drop" ++ " " ++
