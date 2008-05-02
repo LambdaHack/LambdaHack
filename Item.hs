@@ -101,6 +101,8 @@ maxBy cmp x y = case cmp x y of
 
 maxLetter = maxBy cmpLetter
 
+mergeLetter :: Maybe Char -> Maybe Char -> Maybe Char
+mergeLetter = mplus
 
 letterRange :: [Char] -> String
 letterRange xs = sectionBy (sortBy cmpLetter xs) Nothing
@@ -119,6 +121,10 @@ letterRange xs = sectionBy (sortBy cmpLetter xs) Nothing
                  | succLetter c d = [c,d]
                  | otherwise      = [c,'-',d]
 
+letterLabel :: Maybe Char -> String
+letterLabel Nothing  = "    "
+letterLabel (Just c) = c : " - "
+
 viewItem :: ItemType -> (Char, Attr -> Attr)
 viewItem Ring   = ('=', id)
 viewItem Scroll = ('?', id)
@@ -133,7 +139,8 @@ viewItem _      = ('~', id)
 joinItem :: Item -> [Item] -> (Item,[Item])
 joinItem i is = case findItem (\ j -> itype i == itype j) is of
                   Nothing     -> (i, i : is)
-                  Just (j,js) -> let n = i { icount = icount i + icount j }
+                  Just (j,js) -> let n = i { icount = icount i + icount j,
+                                             iletter = mergeLetter (iletter j) (iletter i) }
                                  in (n, n : js)
 
 -- | Finds an item in a list of items.

@@ -232,7 +232,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                         compoundVerbMonster (mtype player) "pick" "up" ++ " " ++
                         objectItem (icount i) (itype i) ++ "."
                         -}
-                        [l] ++ " - " ++ objectItem (icount ni) (itype ni)
+                        letterLabel (iletter ni) ++ objectItem (icount ni) (itype ni)
                   nt = t { titems = rs }
                   plmap = M.insert ploc (nt, nt) nlmap
                   (ni,nitems) = joinItem (i { iletter = Just l }) (mitems nplayer)
@@ -281,8 +281,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
     do
       let inv = unlines $
                 L.map (\ (Item { icount = c, iletter = l, itype = t }) -> 
-                         let l' = maybe "    " (: " - ") l
-                         in  l' ++ objectItem c t ++ " ")
+                         letterLabel l ++ objectItem c t ++ " ")
                       ((if sorted then sortBy (cmpLetter' `on` iletter) else id) is)
       let ovl = inv ++ more
       displayCurrent' msg ovl
