@@ -63,12 +63,17 @@ itemFrequency =
     (4, Potion)
   ]
 
+itemQuantity :: Int -> ItemType -> Rnd Int
+itemQuantity n Gold = (2 * n) *~ d 8
+itemQuantity _ _    = return 1
+
 -- | Generate an item.
-newItem :: Frequency ItemType -> Rnd Item
-newItem ftp =
+newItem :: Int -> Frequency ItemType -> Rnd Item
+newItem n ftp =
   do
     tp <- frequency ftp
-    return (Item 1 tp Nothing)
+    nr <- itemQuantity n tp
+    return (Item nr tp Nothing)
 
 -- | Assigns a letter to an item, for inclusion
 -- in the inventory of the player. Takes a remembered

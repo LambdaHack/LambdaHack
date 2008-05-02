@@ -110,7 +110,8 @@ data LevelConfig =
     doorOpenChance    :: Rnd Bool,
     doorSecretChance  :: Rnd Bool,
     doorSecretMax     :: Int,
-    nrItems           :: Rnd Int    -- range
+    nrItems           :: Rnd Int,   -- range
+    depth             :: Int        -- general indicator of difficulty
   }
     
 defaultLevelConfig :: Int -> LevelConfig
@@ -131,7 +132,8 @@ defaultLevelConfig d =
     doorOpenChance    = chance $ 1%2,
     doorSecretChance  = chance $ 1%3,
     doorSecretMax     = 15,
-    nrItems           = randomR (3,7) 
+    nrItems           = randomR (3,7),
+    depth             = d
   }
 
 largeLevelConfig :: Int -> LevelConfig
@@ -205,7 +207,7 @@ level cfg nm =
     is  <- replicateM nri $
            do
              l <- findLoc lvl (const floor)
-             t <- newItem itemFrequency 
+             t <- newItem (depth cfg) itemFrequency 
              return (l,t)
     -- locations of the stairs
     su <- findLoc lvl (const floor)
