@@ -203,7 +203,10 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
   reachable = preachable per
   visible   = pvisible per
 
+  displayCurrent :: String -> IO ()
   displayCurrent  = displayLevel session nlvl per state
+
+  displayCurrent' :: String -> String -> IO ()
   displayCurrent' = displayOverlay session nlvl per state
 
   -- update player memory
