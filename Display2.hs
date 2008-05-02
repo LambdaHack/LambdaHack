@@ -14,7 +14,7 @@ import Monster
 import Item
 
 -- | Displays a message on a blank screen. Waits for confirmation.
-displayBlankConfirm :: Session -> String -> IO ()
+displayBlankConfirm :: Session -> String -> IO Bool
 displayBlankConfirm session txt =
   let x = txt ++ more
   in  do
@@ -22,18 +22,19 @@ displayBlankConfirm session txt =
         getConfirm session
 
 -- | Waits for a space or return.
-getConfirm :: Session -> IO ()
+getConfirm :: Session -> IO Bool
 getConfirm session =
-  getOptionalConfirm session (return ()) (const $ getConfirm session)
+  getOptionalConfirm session return (const $ getConfirm session)
 
-getOptionalConfirm :: Session -> IO a -> (String -> IO a) -> IO a
+getOptionalConfirm :: Session -> (Bool -> IO a) -> (String -> IO a) -> IO a
 getOptionalConfirm session h k =
   do
     e <- nextEvent session
     handleModifier e (getOptionalConfirm session h k) $
       case e of
-        "space"  -> h
-        "Return" -> h
+        "space"  -> h True
+        "Return" -> h True
+        "Escape" -> h False
         _        -> k e
 
 -- | Handler that ignores modifier events as they are
@@ -90,9 +91,9 @@ stringByLocation sy xs =
     (k, \ (y,x) -> M.lookup y m >>= \ n -> M.lookup x n)
 
 displayLevel :: Session -> Level -> Perception -> State -> Message -> IO ()
-displayLevel session lvl per state msg = displayOverlay session lvl per state msg ""
+displayLevel session lvl per state msg = displayOverlay session lvl per state msg "" >> return ()
 
-displayOverlay :: Session -> Level -> Perception -> State -> Message -> String -> IO ()
+displayOverlay :: Session -> Level -> Perception -> State -> Message -> String -> IO Bool
 displayOverlay session (lvl@(Level nm sz@(sy,sx) ms smap nlmap lmeta))
                      per
                      (state@(State { splayer = player@(Monster { mhp = php, mdir = pdir, mloc = ploc }), stime = time }))
@@ -137,10 +138,12 @@ displayOverlay session (lvl@(Level nm sz@(sy,sx) ms smap nlmap lmeta))
       msgs = splitMsg sx msg
       perf k []     = perfo k ""
       perf k [xs]   = perfo k xs
-      perf k (x:xs) = disp n (x ++ more) >> getConfirm session >> perf k xs
+      perf k (x:xs) = disp n (x ++ more) >> getConfirm session >>= \ b ->
+                      if b then perf k xs else return False
       perfo k xs
-        | k < n - 1 = disp k xs >> getConfirm session >> perfo (k+1) xs
-        | otherwise = disp k xs
+        | k < n - 1 = disp k xs >> getConfirm session >>= \ b ->
+                      if b then perfo (k+1) xs else return False
+        | otherwise = disp k xs >> return True
     in perf 0 msgs
 
 

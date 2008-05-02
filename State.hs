@@ -10,6 +10,7 @@ import Level
 
 data State = State
                { splayer  :: Monster,
+                 shistory :: [String],
                  ssensory :: SensoryMode,
                  sdisplay :: DisplayMode,
                  stime    :: Time,
@@ -20,12 +21,16 @@ data State = State
 defaultState ploc dng =
   State
     (defaultPlayer ploc)
+    []
     Implicit Normal
     0
     dng
 
 updatePlayer :: State -> (Monster -> Monster) -> State
 updatePlayer s f = s { splayer = f (splayer s) }
+
+updateHistory :: State -> ([String] -> [String]) -> State
+updateHistory s f = s { shistory = f (shistory s) }
 
 toggleVision :: State -> State
 toggleVision s = s { ssensory = if ssensory s == Vision then Implicit else Vision }
@@ -40,14 +45,23 @@ toggleTerrain :: State -> State
 toggleTerrain s = s { sdisplay = case sdisplay s of Terrain 1 -> Normal; Terrain n -> Terrain (n-1); _ -> Terrain 4 }
 
 instance Binary State where
-  put (State player sense disp time dng) =
+  put (State player hst sense disp time dng) =
     do
       put player
+      put hst
       put sense
       put disp
       put time
       put dng
-  get = liftM5 State get get get get get
+  get =
+    do
+      player <- get
+      hst    <- get
+      sense  <- get
+      disp   <- get
+      time   <- get
+      dng    <- get
+      return (State player hst sense disp time dng)
 
 data SensoryMode =
     Implicit

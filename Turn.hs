@@ -157,6 +157,9 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
              displayCurrent oldmsg
              let h = do
                        e <- nextEvent session
+                       h' e
+                 h' e =
+                     do
                        handleDirection e (move h) $ 
                          handleDirection (L.map toLower e) run $
                          handleModifier e h $
@@ -174,9 +177,9 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                            "i"       -> inventory h
 
                            -- saving or ending the game
-                           "S"       -> saveGame lvl state >> shutdown session
+                           "S"       -> saveGame lvl mstate >> shutdown session
                            "Q"       -> shutdown session
-                           "Escape"  -> shutdown session
+                           "Escape"  -> displayCurrent ("Press Q to quit.") >> h
 
                            -- wait
                            "space"   -> loop session nlvl nstate ""
@@ -192,7 +195,11 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                            "T"       -> handle session nlvl (toggleTerrain state) per oldmsg
 
                            -- meta information
-                           "M"       -> displayCurrent lmeta >> h
+                           "M"       -> displayCurrent' "" (unlines (shistory mstate) ++ more) >>= \ b ->
+                                        if b then getOptionalConfirm session
+                                                    (const (displayCurrent "" >> h)) h'
+                                             else displayCurrent "" >> h
+                           "I"       -> displayCurrent lmeta >> h
                            "v"       -> displayCurrent version >> h
 
                            s   -> displayCurrent ("unknown command (" ++ s ++ ")") >> h
@@ -200,13 +207,17 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
 
  where
 
+  -- we record the oldmsg in the history
+  mstate = if L.null oldmsg then state else (updateHistory state (take 500 . ((oldmsg ++ " "):)))
+    -- TODO: make history max configurable
+
   reachable = preachable per
   visible   = pvisible per
 
   displayCurrent :: String -> IO ()
   displayCurrent  = displayLevel session nlvl per state
 
-  displayCurrent' :: String -> String -> IO ()
+  displayCurrent' :: String -> String -> IO Bool
   displayCurrent' = displayOverlay session nlvl per state
 
   -- update player memory
@@ -217,7 +228,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
   -- player HP regeneration, TODO: remove hardcoded max and time interval
   nplayer = player { mtime = time + mspeed player,
                      mhp   = if time `mod` 1500 == 0 then (php + 1) `min` playerHP else php }
-  nstate  = updatePlayer state (const nplayer)
+  nstate  = updatePlayer mstate (const nplayer)
 
   -- picking up items
   pickup abort = pickupItem
@@ -356,7 +367,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
 -- | Dropping items.
 dropItem ::   Session ->                                    -- session
               (String -> IO ()) ->                          -- how to display
-              (String -> String -> IO ()) ->                -- overlay display
+              (String -> String -> IO Bool) ->              -- overlay display
               (Level -> Player -> String -> IO a) ->        -- success continuation
               IO a ->                                       -- failure continuation
               Level ->                                      -- the level
@@ -419,7 +430,7 @@ pickupItem displayCurrent continue abort
 
 getAnyItem :: Session ->
               (String -> IO ()) ->
-              (String -> String -> IO ()) ->
+              (String -> String -> IO Bool) ->
               String ->
               [Item] ->
               IO (Maybe Item)
@@ -429,7 +440,7 @@ getAnyItem session displayCurrent displayCurrent' prompt is =
 
 getItem :: Session ->
            (String -> IO ()) ->
-           (String -> String -> IO ()) ->
+           (String -> String -> IO Bool) ->
            String ->
            (Item -> Bool) ->
            String ->
@@ -444,11 +455,13 @@ getItem session displayCurrent displayCurrent' prompt p ptext is =
                     handleModifier e h $
                       case e of
                         "question" -> do
-                                        displayItems displayCurrent' ptext True is
-                                        getOptionalConfirm session r h'
+                                        b <- displayItems displayCurrent' ptext True is
+                                        if b then getOptionalConfirm session (const r) h'
+                                             else r 
                         "asterisk" -> do
-                                        displayItems displayCurrent' "Objects in your inventory:" True is
-                                        getOptionalConfirm session r h'
+                                        b <- displayItems displayCurrent' "Objects in your inventory:" True is
+                                        if b then getOptionalConfirm session (const r) h'
+                                             else r
                         [l]        -> return (find (\ i -> maybe False (== l) (iletter i)) is)
                         _          -> return Nothing
             h
