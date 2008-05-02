@@ -11,6 +11,7 @@ import Geometry
 import Level
 import Perception
 import Monster
+import Item
 
 -- | Displays a message on a blank screen. Waits for confirmation.
 displayBlankConfirm :: Session -> String -> IO ()
@@ -111,6 +112,7 @@ displayOverlay session (lvl@(Level nm sz@(sy,sx) ms smap nlmap lmeta))
                                    else id
                   else \ vis rea -> id
       (n,over) = stringByLocation (sy+1) overlay -- n is the number of overlay screens
+      gold    = maybe 0 (icount . fst) $ findItem (\ i -> iletter i == Just '$') (mitems player)
       disp n msg = 
         display ((0,0),sz) session 
                  (\ loc -> let tile = nlmap `lAt` loc
@@ -128,7 +130,9 @@ displayOverlay session (lvl@(Level nm sz@(sy,sx) ms smap nlmap lmeta))
                                Just c  ->  (attr, c)
                                _       ->  (ra . vision $ attr, rv))
                 msg
-                (take 40 (levelName nm ++ repeat ' ') ++ take 10 ("HP: " ++ show php ++ repeat ' ') ++
+                (take 40 (levelName nm ++ repeat ' ') ++
+                 take 10 ("$: " ++ show gold ++ repeat ' ') ++
+                 take 10 ("HP: " ++ show php ++ repeat ' ') ++
                  take 10 ("T: " ++ show (time `div` 10) ++ repeat ' '))
       msgs = splitMsg sx msg
       perf k []     = perfo k ""
