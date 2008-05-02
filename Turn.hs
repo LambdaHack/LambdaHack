@@ -248,7 +248,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
       displayCurrent "You are not carrying anything." >> abort
     | otherwise =
     do
-      i <- getItem "What to drop?" (mitems nplayer)
+      i <- getAnyItem "What to drop?" (mitems nplayer)
       case i of
         Just i' -> let iplayer = nplayer { mitems = deleteBy ((==) `on` iletter) i' (mitems nplayer) }
                        t = nlmap `at` ploc
@@ -261,18 +261,21 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                                     (updatePlayer nstate (const iplayer)) msg
         Nothing -> displayCurrent "never mind" >> abort
 
-  -- preliminary version without choice
-  getItem prompt is =
+  getAnyItem prompt is = getItem prompt (const True) "Objects in your inventory:" is
+  getItem prompt p ptext is =
     do
-      displayCurrent (prompt ++ " [" ++ letterRange (concatMap (maybeToList . iletter) is) ++ " or ?]")
+      displayCurrent (prompt ++ " [" ++ letterRange (concatMap (maybeToList . iletter) is) ++ " or ?*]")
       let h = nextEvent session >>= h'
           h' e =
             do
               handleModifier e h $
                 case e of
                   "question" -> do
+                                  displayItems ptext True is
+                                  getOptionalConfirm session (getItem prompt p ptext is) h'
+                  "asterisk" -> do
                                   displayItems "Objects in your inventory:" True is
-                                  getOptionalConfirm session (getItem prompt is) h'
+                                  getOptionalConfirm session (getItem prompt p ptext is) h'
                   [l]        -> return (find (\ i -> maybe False (== l) (iletter i)) is)
                   _          -> return Nothing
       h
