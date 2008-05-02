@@ -67,13 +67,17 @@ itemQuantity :: Int -> ItemType -> Rnd Int
 itemQuantity n Gold = (2 * n) *~ d 8
 itemQuantity _ _    = return 1
 
+itemLetter :: ItemType -> Maybe Char
+itemLetter Gold = Just '$'
+itemLetter _    = Nothing
+
 -- | Generate an item.
 newItem :: Int -> Frequency ItemType -> Rnd Item
 newItem n ftp =
   do
     tp <- frequency ftp
     nr <- itemQuantity n tp
-    return (Item nr tp Nothing)
+    return (Item nr tp (itemLetter tp))
 
 -- | Assigns a letter to an item, for inclusion
 -- in the inventory of the player. Takes a remembered
@@ -88,7 +92,7 @@ assignLetter r c is =
     current    = S.fromList (concatMap (maybeToList . iletter) is)
     allLetters = ['a'..'z'] ++ ['A'..'Z']
     candidates = take (length allLetters) (drop (fromJust (findIndex (==c) allLetters)) (cycle allLetters))
-    free       = L.filter (\x -> not (x `member` current)) candidates
+    free       = L.filter (\x -> not (x `member` current)) ('$' : candidates)
 
 cmpLetter :: Char -> Char -> Ordering
 cmpLetter x y = compare (isUpper x, toLower x) (isUpper y, toLower y)
