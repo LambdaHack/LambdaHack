@@ -85,14 +85,15 @@ newItem n ftp =
 assignLetter :: Maybe Char -> Char -> [Item] -> Maybe Char
 assignLetter r c is =
     case r of
-      Just l | l `L.elem` free -> Just l
+      Just l | l `L.elem` allowed -> Just l
       _ -> listToMaybe free
              
   where
     current    = S.fromList (concatMap (maybeToList . iletter) is)
     allLetters = ['a'..'z'] ++ ['A'..'Z']
     candidates = take (length allLetters) (drop (fromJust (findIndex (==c) allLetters)) (cycle allLetters))
-    free       = L.filter (\x -> not (x `member` current)) ('$' : candidates)
+    free       = L.filter (\x -> not (x `member` current)) candidates
+    allowed    = '$' : free
 
 cmpLetter :: Char -> Char -> Ordering
 cmpLetter x y = compare (isUpper x, toLower x) (isUpper y, toLower y)
