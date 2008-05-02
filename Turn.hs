@@ -220,77 +220,20 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
   nstate  = updatePlayer state (const nplayer)
 
   -- picking up items
-  pickup abort =
-    do
-      -- check if something is here to pick up
-      let t = nlmap `at` ploc
-      case titems t of
-        []      ->  displayCurrent "nothing here" >> abort
-        (i:rs)  ->  
-          case assignLetter (iletter i) (mletter nplayer) (mitems nplayer) of
-            Just l  ->
-              let msg = -- (complete sentence, more adequate for monsters)
-                        {-
-                        subjectMonster (mtype player) ++ " " ++
-                        compoundVerbMonster (mtype player) "pick" "up" ++ " " ++
-                        objectItem (icount i) (itype i) ++ "."
-                        -}
-                        letterLabel (iletter ni) ++ objectItem (icount ni) (itype ni)
-                  nt = t { titems = rs }
-                  plmap = M.insert ploc (nt, nt) nlmap
-                  (ni,nitems) = joinItem (i { iletter = Just l }) (mitems nplayer)
-                  iplayer = nplayer { mitems  = nitems,
-                                      mletter = maxLetter l (mletter nplayer) }
-              in  loop session (updateLMap lvl (const plmap))
-                                     (updatePlayer nstate (const iplayer)) msg
-            Nothing -> displayCurrent "cannot carry anymore" >> abort
+  pickup abort = pickupItem
+                   displayCurrent
+                   (\ l p -> loop session l (updatePlayer nstate (const p)))
+                   abort
+                   nlvl nplayer
 
   -- dropping items
-  drop abort
-    | L.null (mitems nplayer) =
-      displayCurrent "You are not carrying anything." >> abort
-    | otherwise =
-    do
-      i <- getAnyItem "What to drop?" (mitems nplayer)
-      case i of
-        Just i' -> let iplayer = nplayer { mitems = deleteBy ((==) `on` iletter) i' (mitems nplayer) }
-                       t = nlmap `at` ploc
-                       nt = t { titems = snd (joinItem i' (titems t)) }
-                       plmap = M.insert ploc (nt, nt) nlmap
-                       msg = subjectMonster (mtype player) ++ " " ++
-                             verbMonster (mtype player) "drop" ++ " " ++
-                             objectItem (icount i') (itype i') ++ "."
-                   in  loop session (updateLMap lvl (const plmap))
-                                    (updatePlayer nstate (const iplayer)) msg
-        Nothing -> displayCurrent "never mind" >> abort
-
-  getAnyItem prompt is = getItem prompt (const True) "Objects in your inventory:" is
-  getItem prompt p ptext is =
-    do
-      displayCurrent (prompt ++ " [" ++ letterRange (concatMap (maybeToList . iletter) is) ++ " or ?*]")
-      let h = nextEvent session >>= h'
-          h' e =
-            do
-              handleModifier e h $
-                case e of
-                  "question" -> do
-                                  displayItems ptext True is
-                                  getOptionalConfirm session (getItem prompt p ptext is) h'
-                  "asterisk" -> do
-                                  displayItems "Objects in your inventory:" True is
-                                  getOptionalConfirm session (getItem prompt p ptext is) h'
-                  [l]        -> return (find (\ i -> maybe False (== l) (iletter i)) is)
-                  _          -> return Nothing
-      h
-
-  displayItems msg sorted is =
-    do
-      let inv = unlines $
-                L.map (\ (Item { icount = c, iletter = l, itype = t }) -> 
-                         letterLabel l ++ objectItem c t ++ " ")
-                      ((if sorted then sortBy (cmpLetter' `on` iletter) else id) is)
-      let ovl = inv ++ more
-      displayCurrent' msg ovl
+  drop abort = dropItem
+                 session
+                 displayCurrent
+                 displayCurrent'
+                 (\ l p -> loop session l (updatePlayer nstate (const p)))
+                 abort
+                 nlvl nplayer
       
   -- display inventory
   inventory abort 
@@ -298,7 +241,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
       displayCurrent "You are not carrying anything." >> abort
     | otherwise =
     do
-      displayItems "This is what you are carrying:" True (mitems player)
+      displayItems displayCurrent' "This is what you are carrying:" True (mitems player)
       getConfirm session
       displayCurrent ""
       abort  -- looking at inventory doesn't take any time
@@ -312,7 +255,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
         then displayCurrent (lookAt True nlmap ploc) >> abort
         else
           do
-             displayItems (lookAt True nlmap ploc) False (titems t)
+             displayItems displayCurrent' (lookAt True nlmap ploc) False (titems t)
              getConfirm session
              displayCurrent ""
              abort  -- looking around doesn't take any time
@@ -408,6 +351,118 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                      (\ l p -> loop session l (updatePlayer nstate (const p)))
                      abort
                      nlvl nplayer per APlayer dir
+
+
+-- | Dropping items.
+dropItem ::   Session ->                                    -- session
+              (String -> IO ()) ->                          -- how to display
+              (String -> String -> IO ()) ->                -- overlay display
+              (Level -> Player -> String -> IO a) ->        -- success continuation
+              IO a ->                                       -- failure continuation
+              Level ->                                      -- the level
+              Player ->                                     -- the player
+              IO a
+dropItem session displayCurrent displayCurrent' continue abort
+         nlvl@(Level { lmap = nlmap }) nplayer@(Monster { mloc = ploc })
+    | L.null (mitems nplayer) =
+      displayCurrent "You are not carrying anything." >> abort
+    | otherwise =
+    do
+      i <- getAnyItem session displayCurrent displayCurrent' "What to drop?" (mitems nplayer)
+      case i of
+        Just i' -> let iplayer = nplayer { mitems = deleteBy ((==) `on` iletter) i' (mitems nplayer) }
+                       t = nlmap `at` ploc
+                       nt = t { titems = snd (joinItem i' (titems t)) }
+                       plmap = M.insert ploc (nt, nt) nlmap
+                       msg = subjectMonster (mtype nplayer) ++ " " ++
+                             verbMonster (mtype nplayer) "drop" ++ " " ++
+                             objectItem (icount i') (itype i') ++ "."
+                   in  continue (updateLMap nlvl (const plmap))
+                                iplayer msg
+        Nothing -> displayCurrent "never mind" >> abort
+
+
+
+
+-- | Picking up items.
+pickupItem :: (String -> IO ()) ->                          -- how to display
+              (Level -> Player -> String -> IO a) ->        -- success continuation
+              IO a ->                                       -- failure continuation
+              Level ->                                      -- the level
+              Player ->                                     -- the player
+              IO a
+pickupItem displayCurrent continue abort
+           nlvl@(Level { lmap = nlmap }) nplayer@(Monster { mloc = ploc }) =
+    do
+      -- check if something is here to pick up
+      let t = nlmap `at` ploc
+      case titems t of
+        []      ->  displayCurrent "nothing here" >> abort
+        (i:rs)  ->  
+          case assignLetter (iletter i) (mletter nplayer) (mitems nplayer) of
+            Just l  ->
+              let msg = -- (complete sentence, more adequate for monsters)
+                        {-
+                        subjectMonster (mtype player) ++ " " ++
+                        compoundVerbMonster (mtype player) "pick" "up" ++ " " ++
+                        objectItem (icount i) (itype i) ++ "."
+                        -}
+                        letterLabel (iletter ni) ++ objectItem (icount ni) (itype ni)
+                  nt = t { titems = rs }
+                  plmap = M.insert ploc (nt, nt) nlmap
+                  (ni,nitems) = joinItem (i { iletter = Just l }) (mitems nplayer)
+                  iplayer = nplayer { mitems  = nitems,
+                                      mletter = maxLetter l (mletter nplayer) }
+              in  continue (updateLMap nlvl (const plmap))
+                           iplayer msg
+            Nothing -> displayCurrent "cannot carry anymore" >> abort
+
+getAnyItem :: Session ->
+              (String -> IO ()) ->
+              (String -> String -> IO ()) ->
+              String ->
+              [Item] ->
+              IO (Maybe Item)
+getAnyItem session displayCurrent displayCurrent' prompt is =
+  getItem session displayCurrent displayCurrent'
+          prompt (const True) "Objects in your inventory:" is
+
+getItem :: Session ->
+           (String -> IO ()) ->
+           (String -> String -> IO ()) ->
+           String ->
+           (Item -> Bool) ->
+           String ->
+           [Item] ->
+           IO (Maybe Item) 
+getItem session displayCurrent displayCurrent' prompt p ptext is =
+  let r = do
+            displayCurrent (prompt ++ " [" ++ letterRange (concatMap (maybeToList . iletter) is) ++ " or ?*]")
+            let h = nextEvent session >>= h'
+                h' e =
+                  do
+                    handleModifier e h $
+                      case e of
+                        "question" -> do
+                                        displayItems displayCurrent' ptext True is
+                                        getOptionalConfirm session r h'
+                        "asterisk" -> do
+                                        displayItems displayCurrent' "Objects in your inventory:" True is
+                                        getOptionalConfirm session r h'
+                        [l]        -> return (find (\ i -> maybe False (== l) (iletter i)) is)
+                        _          -> return Nothing
+            h
+  in r
+
+displayItems displayCurrent' msg sorted is =
+    do
+      let inv = unlines $
+                L.map (\ (Item { icount = c, iletter = l, itype = t }) -> 
+                         letterLabel l ++ objectItem c t ++ " ")
+                      ((if sorted then sortBy (cmpLetter' `on` iletter) else id) is)
+      let ovl = inv ++ more
+      displayCurrent' msg ovl
+
 
 moveOrAttack :: Bool ->                                     -- allow attacks?
                 (Level -> Player -> String -> IO a) ->      -- success continuation
