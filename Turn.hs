@@ -149,7 +149,11 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
              getConfirm session
              shutdown session
       else -- check if the player can make another move yet
-           if ptime > time then handleMonsters session lvl state per oldmsg 
+           if ptime > time then
+             do
+               -- do not make intermediate redraws while running
+               maybe (displayLevel session lvl per state "") (const $ return ()) pdir
+               handleMonsters session lvl state per oldmsg 
            -- NOTE: It's important to call handleMonsters here, not loop,
            -- because loop does all sorts of calculations that are only
            -- really necessary after the player has moved.
