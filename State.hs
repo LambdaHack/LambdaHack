@@ -1,20 +1,24 @@
 module State where
 
 import qualified Data.Map as M
+import qualified Data.Set as S
 import Control.Monad
 import Data.Binary
 
 import Monster
 import Geometry
 import Level
+import Item
 
 data State = State
-               { splayer  :: Monster,
-                 shistory :: [String],
-                 ssensory :: SensoryMode,
-                 sdisplay :: DisplayMode,
-                 stime    :: Time,
-                 sdungeon :: Dungeon
+               { splayer      :: Monster,
+                 shistory     :: [String],
+                 ssensory     :: SensoryMode,
+                 sdisplay     :: DisplayMode,
+                 stime        :: Time,
+                 sassocs      :: Assocs,
+                 sdiscoveries :: Discoveries,
+                 sdungeon     :: Dungeon
                }
   deriving Show
 
@@ -24,6 +28,8 @@ defaultState ploc dng =
     []
     Implicit Normal
     0
+    M.empty
+    S.empty
     dng
 
 updatePlayer :: State -> (Monster -> Monster) -> State
@@ -45,13 +51,15 @@ toggleTerrain :: State -> State
 toggleTerrain s = s { sdisplay = case sdisplay s of Terrain 1 -> Normal; Terrain n -> Terrain (n-1); _ -> Terrain 4 }
 
 instance Binary State where
-  put (State player hst sense disp time dng) =
+  put (State player hst sense disp time assocs discs dng) =
     do
       put player
       put hst
       put sense
       put disp
       put time
+      put assocs
+      put discs
       put dng
   get =
     do
@@ -60,8 +68,10 @@ instance Binary State where
       sense  <- get
       disp   <- get
       time   <- get
+      assocs <- get
+      discs  <- get
       dng    <- get
-      return (State player hst sense disp time dng)
+      return (State player hst sense disp time assocs discs dng)
 
 data SensoryMode =
     Implicit

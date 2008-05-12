@@ -87,7 +87,7 @@ handleMonster m session lvl@(Level { lmonsters = ms, lsmell = nsmap, lmap = lmap
          handleMonsters session nlvl (updatePlayer state (const np)) per
                         (addMsg oldmsg msg))
       (handleMonsters session nlvl state per oldmsg)
-      nlvl player per
+      nlvl player (sassocs state) (sdiscoveries state) per
       (AMonster act)
       nl
 
@@ -139,7 +139,7 @@ wait = return (0,0)
 -- | Display current status and handle the turn of the player.
 handle :: Session -> Level -> State -> Perception -> String -> IO ()
 handle session (lvl@(Level nm sz ms smap lmap lmeta))
-               (state@(State { splayer = player@(Monster { mhp = php, mdir = pdir, mloc = ploc, mitems = pinv, mtime = ptime }), stime = time }))
+               (state@(State { splayer = player@(Monster { mhp = php, mdir = pdir, mloc = ploc, mitems = pinv, mtime = ptime }), stime = time, sassocs = assocs, sdiscoveries = discs }))
                per oldmsg =
   do
     -- check for player death
@@ -239,7 +239,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                    displayCurrent
                    (\ l p -> loop session l (updatePlayer nstate (const p)))
                    abort
-                   nlvl nplayer
+                   nlvl nplayer assocs discs
 
   -- dropping items
   drop abort = dropItem
@@ -248,7 +248,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                  displayCurrent'
                  (\ l p -> loop session l (updatePlayer nstate (const p)))
                  abort
-                 nlvl nplayer
+                 nlvl nplayer assocs discs
       
   -- display inventory
   inventory abort 
@@ -256,7 +256,8 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
       displayCurrent "You are not carrying anything." >> abort
     | otherwise =
     do
-      displayItems displayCurrent' "This is what you are carrying:" True (mitems player)
+      displayItems displayCurrent' assocs discs 
+                   "This is what you are carrying:" True (mitems player)
       getConfirm session
       displayCurrent ""
       abort  -- looking at inventory doesn't take any time
@@ -267,10 +268,11 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
       -- check if something is here to pick up
       let t = nlmap `at` ploc
       if length (titems t) <= 2
-        then displayCurrent (lookAt True nlmap ploc) >> abort
+        then displayCurrent (lookAt True assocs discs nlmap ploc) >> abort
         else
           do
-             displayItems displayCurrent' (lookAt True nlmap ploc) False (titems t)
+             displayItems displayCurrent' assocs discs
+                          (lookAt True assocs discs nlmap ploc) False (titems t)
              getConfirm session
              displayCurrent ""
              abort  -- looking around doesn't take any time
@@ -333,7 +335,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
         False   -- attacks are disallowed while running
         (\ l p -> loop session l (updatePlayer nstate (const p)))
         abort
-        nlvl mplayer per APlayer dir
+        nlvl mplayer assocs discs per APlayer dir
   continueRun dir =
     let abort = handle session nlvl (updatePlayer state (const $ player { mdir = Nothing })) per oldmsg
         dloc  = shift ploc dir
@@ -348,7 +350,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                   False    -- attacks are disallowed while running
                   (\ l p -> loop session l (updatePlayer nstate (const p)))
                   abort
-                  nlvl nplayer per APlayer dir
+                  nlvl nplayer assocs discs per APlayer dir
           (_, Tile Corridor _)  -- direction change restricted to corridors
             | otherwise ->
                 let ns  = L.filter (\ x -> distance (neg dir,x) > 1
@@ -365,7 +367,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                      True   -- attacks are allowed
                      (\ l p -> loop session l (updatePlayer nstate (const p)))
                      abort
-                     nlvl nplayer per APlayer dir
+                     nlvl nplayer assocs discs per APlayer dir
 
 
 -- | Dropping items.
@@ -376,14 +378,17 @@ dropItem ::   Session ->                                    -- session
               IO a ->                                       -- failure continuation
               Level ->                                      -- the level
               Player ->                                     -- the player
+              Assocs ->
+              Discoveries ->
               IO a
 dropItem session displayCurrent displayCurrent' continue abort
-         nlvl@(Level { lmap = nlmap }) nplayer@(Monster { mloc = ploc })
+         nlvl@(Level { lmap = nlmap }) nplayer@(Monster { mloc = ploc }) assocs discs
     | L.null (mitems nplayer) =
       displayCurrent "You are not carrying anything." >> abort
     | otherwise =
     do
-      i <- getAnyItem session displayCurrent displayCurrent' "What to drop?" (mitems nplayer)
+      i <- getAnyItem session displayCurrent displayCurrent' assocs discs
+                      "What to drop?" (mitems nplayer)
       case i of
         Just i' -> let iplayer = nplayer { mitems = deleteBy ((==) `on` iletter) i' (mitems nplayer) }
                        t = nlmap `at` ploc
@@ -391,7 +396,7 @@ dropItem session displayCurrent displayCurrent' continue abort
                        plmap = M.insert ploc (nt, nt) nlmap
                        msg = subjectMonster (mtype nplayer) ++ " " ++
                              verbMonster (mtype nplayer) "drop" ++ " " ++
-                             objectItem (icount i') (itype i') ++ "."
+                             objectItem assocs discs (icount i') (itype i') ++ "."
                    in  continue (updateLMap nlvl (const plmap))
                                 iplayer msg
         Nothing -> displayCurrent "never mind" >> abort
@@ -405,9 +410,11 @@ pickupItem :: (String -> IO ()) ->                          -- how to display
               IO a ->                                       -- failure continuation
               Level ->                                      -- the level
               Player ->                                     -- the player
+              Assocs ->
+              Discoveries ->
               IO a
 pickupItem displayCurrent continue abort
-           nlvl@(Level { lmap = nlmap }) nplayer@(Monster { mloc = ploc }) =
+           nlvl@(Level { lmap = nlmap }) nplayer@(Monster { mloc = ploc }) assocs discs =
     do
       -- check if something is here to pick up
       let t = nlmap `at` ploc
@@ -422,7 +429,7 @@ pickupItem displayCurrent continue abort
                         compoundVerbMonster (mtype player) "pick" "up" ++ " " ++
                         objectItem (icount i) (itype i) ++ "."
                         -}
-                        letterLabel (iletter ni) ++ objectItem (icount ni) (itype ni)
+                        letterLabel (iletter ni) ++ objectItem assocs discs (icount ni) (itype ni)
                   nt = t { titems = rs }
                   plmap = M.insert ploc (nt, nt) nlmap
                   (ni,nitems) = joinItem (i { iletter = Just l }) (mitems nplayer)
@@ -435,22 +442,26 @@ pickupItem displayCurrent continue abort
 getAnyItem :: Session ->
               (String -> IO ()) ->
               (String -> String -> IO Bool) ->
+              Assocs ->
+              Discoveries ->
               String ->
               [Item] ->
               IO (Maybe Item)
-getAnyItem session displayCurrent displayCurrent' prompt is =
-  getItem session displayCurrent displayCurrent'
+getAnyItem session displayCurrent displayCurrent' assocs discs prompt is =
+  getItem session displayCurrent displayCurrent' assocs discs
           prompt (const True) "Objects in your inventory:" is
 
 getItem :: Session ->
            (String -> IO ()) ->
            (String -> String -> IO Bool) ->
+           Assocs ->
+           Discoveries ->
            String ->
            (Item -> Bool) ->
            String ->
            [Item] ->
            IO (Maybe Item) 
-getItem session displayCurrent displayCurrent' prompt p ptext is =
+getItem session displayCurrent displayCurrent' assocs discs prompt p ptext is =
   let r = do
             displayCurrent (prompt ++ " [" ++ letterRange (concatMap (maybeToList . iletter) is) ++ " or ?*]")
             let h = nextEvent session >>= h'
@@ -459,11 +470,13 @@ getItem session displayCurrent displayCurrent' prompt p ptext is =
                     handleModifier e h $
                       case e of
                         "question" -> do
-                                        b <- displayItems displayCurrent' ptext True is
+                                        b <- displayItems displayCurrent' assocs discs
+                                                          ptext True is
                                         if b then getOptionalConfirm session (const r) h'
                                              else r 
                         "asterisk" -> do
-                                        b <- displayItems displayCurrent' "Objects in your inventory:" True is
+                                        b <- displayItems displayCurrent' assocs discs
+                                                          "Objects in your inventory:" True is
                                         if b then getOptionalConfirm session (const r) h'
                                              else r
                         [l]        -> return (find (\ i -> maybe False (== l) (iletter i)) is)
@@ -471,11 +484,11 @@ getItem session displayCurrent displayCurrent' prompt p ptext is =
             h
   in r
 
-displayItems displayCurrent' msg sorted is =
+displayItems displayCurrent' assocs discs msg sorted is =
     do
       let inv = unlines $
                 L.map (\ (Item { icount = c, iletter = l, itype = t }) -> 
-                         letterLabel l ++ objectItem c t ++ " ")
+                         letterLabel l ++ objectItem assocs discs c t ++ " ")
                       ((if sorted then sortBy (cmpLetter' `on` iletter) else id) is)
       let ovl = inv ++ more
       displayCurrent' msg ovl
@@ -486,12 +499,14 @@ moveOrAttack :: Bool ->                                     -- allow attacks?
                 IO a ->                                     -- failure continuation
                 Level ->                                    -- the level
                 Player ->                                   -- the player
+                Assocs ->
+                Discoveries ->
                 Perception ->                               -- perception of the player
                 Actor ->                                    -- who's moving?
                 Dir -> IO a
 moveOrAttack allowAttacks
              continue abort
-             nlvl@(Level { lmap = nlmap }) player per
+             nlvl@(Level { lmap = nlmap }) player assocs discs per
              actor dir
       -- to prevent monsters from hitting themselves
     | dir == (0,0) = continue nlvl player ""
@@ -528,7 +543,7 @@ moveOrAttack allowAttacks
     | accessible nlmap aloc naloc = 
         updateActor (\ m -> m { mloc = naloc })
                     (\ _ l p -> continue l p (if actor == APlayer
-                                              then lookAt False nlmap naloc else ""))
+                                              then lookAt False assocs discs nlmap naloc else ""))
                     actor nlvl player
     | otherwise = abort
     where am :: Monster

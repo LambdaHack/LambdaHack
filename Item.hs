@@ -1,6 +1,7 @@
 module Item where
 
 import Data.Binary
+import Data.Map as M
 import Data.Set as S
 import Data.List as L
 import Data.Maybe
@@ -20,47 +21,87 @@ data Item = Item
 data ItemType =
    Ring
  | Scroll
- | Potion
+ | Potion PotionType
  | Wand
  | Amulet
  | Gem
  | Gold
+ deriving (Eq, Ord, Show)
+
+data PotionType =
+   PotionWater
+ | PotionHealing
+ deriving (Eq, Ord, Show)
+
+data Appearance =
+   Clear
+ | White
  deriving (Eq, Show)
+
+type Assocs = M.Map ItemType Appearance
+type Discoveries = S.Set ItemType
+
+potionType :: PotionType -> String -> String
+potionType PotionWater   s = s ++ " of water"
+potionType PotionHealing s = s ++ " of healing"
+
+appearance :: Appearance -> String -> String
+appearance Clear s = "clear " ++ s
+appearance White s = "white " ++ s
 
 instance Binary Item where
   put (Item icount itype iletter) = put icount >> put itype >> put iletter
   get = liftM3 Item get get get
 
 instance Binary ItemType where
-  put Ring   = putWord8 0
-  put Scroll = putWord8 1
-  put Potion = putWord8 2
-  put Wand   = putWord8 3
-  put Amulet = putWord8 4
-  put Gem    = putWord8 5
-  put Gold   = putWord8 6
+  put Ring       = putWord8 0
+  put Scroll     = putWord8 1
+  put (Potion t) = putWord8 2 >> put t
+  put Wand       = putWord8 3
+  put Amulet     = putWord8 4
+  put Gem        = putWord8 5
+  put Gold       = putWord8 6
   get = do
           tag <- getWord8
           case tag of
             0 -> return Ring
             1 -> return Scroll
-            2 -> return Potion
+            2 -> liftM Potion get
             3 -> return Wand
             4 -> return Amulet
             5 -> return Gem
             6 -> return Gold
 
+instance Binary PotionType where
+  put PotionWater   = putWord8 0
+  put PotionHealing = putWord8 1
+  get = do
+          tag <- getWord8
+          case tag of
+            0 -> return PotionWater
+            1 -> return PotionHealing
+
+instance Binary Appearance where
+  put Clear = putWord8 0
+  put White = putWord8 1
+  get = do
+          tag <- getWord8
+          case tag of
+            0 -> return Clear
+            1 -> return White
+
 itemFrequency :: Frequency ItemType
 itemFrequency =
   Frequency
   [
-    (10, Gold),
-    (3, Gem),
-    (2, Ring),
-    (4, Scroll),
-    (2, Wand),
-    (1, Amulet),
-    (4, Potion)
+    (100, Gold),
+    (30,  Gem),
+    (20,  Ring),
+    (40,  Scroll),
+    (20,  Wand),
+    (10,  Amulet),
+    (30,  Potion PotionWater),
+    (10,  Potion PotionHealing)
   ]
 
 itemQuantity :: Int -> ItemType -> Rnd Int
@@ -91,8 +132,8 @@ assignLetter r c is =
   where
     current    = S.fromList (concatMap (maybeToList . iletter) is)
     allLetters = ['a'..'z'] ++ ['A'..'Z']
-    candidates = take (length allLetters) (drop (fromJust (findIndex (==c) allLetters)) (cycle allLetters))
-    free       = L.filter (\x -> not (x `member` current)) candidates
+    candidates = take (length allLetters) (drop (fromJust (L.findIndex (==c) allLetters)) (cycle allLetters))
+    free       = L.filter (\x -> not (x `S.member` current)) candidates
     allowed    = '$' : free
 
 cmpLetter :: Char -> Char -> Ordering
@@ -136,13 +177,14 @@ letterLabel Nothing  = "    "
 letterLabel (Just c) = c : " - "
 
 viewItem :: ItemType -> (Char, Attr -> Attr)
-viewItem Ring   = ('=', id)
-viewItem Scroll = ('?', id)
-viewItem Potion = ('!', id)
-viewItem Wand   = ('/', id)
-viewItem Gold   = ('$', setBold . setFG yellow)
-viewItem Gem    = ('*', setFG red)
-viewItem _      = ('~', id)
+viewItem Ring                   = ('=', id)
+viewItem Scroll                 = ('?', id)
+viewItem (Potion PotionWater)   = ('!', setBold . setFG blue)
+viewItem (Potion PotionHealing) = ('!', setBold . setFG white)
+viewItem Wand                   = ('/', id)
+viewItem Gold                   = ('$', setBold . setFG yellow)
+viewItem Gem                    = ('*', setFG red)
+viewItem _                      = ('~', id)
 
 -- | Adds an item to a list of items, joining equal items.
 -- Also returns the joined item.
@@ -162,18 +204,27 @@ findItem p is = findItem' [] is
       | p i              = Just (i, reverse acc ++ is)
       | otherwise        = findItem' (i:acc) is
 
-objectItem :: Int -> ItemType -> String
-objectItem 1 Ring   = "a ring"
-objectItem n Ring   = show n ++ " rings"
-objectItem 1 Scroll = "a scroll"
-objectItem n Scroll = show n ++ " scrolls"
-objectItem 1 Potion = "a potion"
-objectItem n Potion = show n ++ " potions"
-objectItem 1 Wand   = "a wand"
-objectItem n Wand   = show n ++ " wands"
-objectItem 1 Amulet = "an amulet"
-objectItem n Amulet = show n ++ " amulets"
-objectItem 1 Gem    = "a gem"
-objectItem n Gem    = show n ++ " gems"
-objectItem 1 Gold   = "a gold piece"
-objectItem n Gold   = show n ++ " gold pieces"
+makeObject :: Int -> (String -> String) -> String -> String
+makeObject 1 adj obj = let b = adj obj
+                       in  case b of
+                             (c:_) | c `elem` "aeio" -> "an " ++ b
+                             _                       -> "a " ++ b
+makeObject n adj obj = show n ++ " " ++ adj (obj ++ "s")
+
+objectItem :: Assocs -> Discoveries -> Int -> ItemType -> String
+objectItem _ _ n Ring       = makeObject n id "ring"
+objectItem _ _ n Scroll     = makeObject n id "scroll"
+objectItem a d n (Potion t) = makeObject n (identified a d (Potion t)) "potion"
+objectItem _ _ n Wand       = makeObject n id "wand"
+objectItem _ _ n Amulet     = makeObject n id "amulet"
+objectItem _ _ n Gem        = makeObject n id "gem"
+objectItem _ _ n Gold       = makeObject n id "gold piece"
+
+identified :: Assocs -> Discoveries -> ItemType -> String -> String
+identified a d i
+  | i `S.member` d = case i of
+                       Potion t -> potionType t
+                       _        -> ("really strange " ++)
+  | otherwise      = case M.lookup i a of
+                       Just ap  -> appearance ap
+                       _        -> ("really strange " ++)

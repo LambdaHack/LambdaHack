@@ -440,17 +440,17 @@ viewTile b (Tile t (i:_)) = viewItem (itype i)
 -- perceive more correctly ...
 --
 -- The "detailed" variant is for use with an explicit look command.
-lookAt :: Bool -> LMap -> Loc -> String
-lookAt detailed lvl loc
+lookAt :: Bool -> Assocs -> Discoveries -> LMap -> Loc -> String
+lookAt detailed a d lvl loc
   | detailed  = lookTerrain (tterrain (lvl `at` loc)) ++ " " ++ isd
   | otherwise = isd
   where
     is  = titems (lvl `at` loc)
     isd = case is of
             []    -> ""
-            [i]   -> "You see " ++ objectItem (icount i) (itype i) ++ "."
-            [i,j] -> "You see " ++ objectItem (icount i) (itype i) ++ " and "
-                                ++ objectItem (icount j) (itype j) ++ "."
+            [i]   -> "You see " ++ objectItem a d (icount i) (itype i) ++ "."
+            [i,j] -> "You see " ++ objectItem a d (icount i) (itype i) ++ " and "
+                                ++ objectItem a d (icount j) (itype j) ++ "."
             _     -> "There are several objects here" ++
                      if detailed then ":" else "."
 
