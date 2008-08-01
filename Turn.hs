@@ -256,7 +256,8 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                   session
                   displayCurrent
                   displayCurrent'
-                  (\ l p -> loop session l (updatePlayer nstate (const p)))
+                  (\ l p d -> loop session l
+                                (updateDiscoveries (updatePlayer nstate (const p)) (S.union d)))
                   abort
                   nlvl nplayer assocs discs
       
@@ -383,7 +384,8 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
 drinkPotion ::   Session ->                                    -- session
                  (String -> IO ()) ->                          -- how to display
                  (String -> String -> IO Bool) ->              -- overlay display
-                 (Level -> Player -> String -> IO a) ->        -- success continuation
+                 (Level -> Player -> Discoveries -> String -> IO a) ->     
+                                                               -- success continuation
                  IO a ->                                       -- failure continuation
                  Level ->                                      -- the level
                  Player ->                                     -- the player
@@ -399,14 +401,19 @@ drinkPotion session displayCurrent displayCurrent' continue abort
       i <- getPotions session displayCurrent displayCurrent' assocs discs
                       "What to drink?" (mitems nplayer)
       case i of
-        Just i'@(Item { itype = Potion {} }) ->
+        Just i'@(Item { itype = Potion ptype }) ->
                    let iplayer = nplayer { mitems = deleteBy ((==) `on` iletter) i' (mitems nplayer) }
                        t = nlmap `at` ploc
                        msg = subjectMonster (mtype nplayer) ++ " " ++
                              verbMonster (mtype nplayer) "drink" ++ " " ++
-                             objectItem assocs discs (icount i') (itype i') ++ "."
+                             objectItem assocs discs (icount i') (itype i') ++ ". " ++
+                             pmsg ptype
+                       pmsg PotionWater   = "Tastes like water."
+                       pmsg PotionHealing = "You feel better."
+                       fplayer PotionWater   = iplayer
+                       fplayer PotionHealing = iplayer { mhp = 20 }
                    in  continue nlvl
-                                iplayer msg
+                                (fplayer ptype) (S.singleton (itype i')) msg
         Just _  -> displayCurrent "you cannot drink that" >> abort
         Nothing -> displayCurrent "never mind" >> abort
 

@@ -40,6 +40,9 @@ updatePlayer s f = s { splayer = f (splayer s) }
 updateHistory :: State -> ([String] -> [String]) -> State
 updateHistory s f = s { shistory = f (shistory s) }
 
+updateDiscoveries :: State -> (Discoveries -> Discoveries) -> State
+updateDiscoveries s f = s { sdiscoveries = f (sdiscoveries s) }
+
 toggleVision :: State -> State
 toggleVision s = s { ssensory = if ssensory s == Vision then Implicit else Vision }
 
