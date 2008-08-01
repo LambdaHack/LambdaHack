@@ -10,6 +10,8 @@ import Geometry
 import Level
 import Item
 
+-- | The 'State' contains all the game state except the current dungeon
+-- level which we usually keep separate.
 data State = State
                { splayer      :: Monster,
                  shistory     :: [String],
@@ -18,7 +20,7 @@ data State = State
                  stime        :: Time,
                  sassocs      :: Assocs,
                  sdiscoveries :: Discoveries,
-                 sdungeon     :: Dungeon
+                 sdungeon     :: Dungeon       -- ^ all but current dungeon level
                }
   deriving Show
 
