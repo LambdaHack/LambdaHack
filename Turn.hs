@@ -179,6 +179,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                            "comma"   -> pickup h
                            "d"       -> drop h
                            "i"       -> inventory h
+                           "q"       -> drink h
 
                            -- saving or ending the game
                            "S"       -> saveGame lvl mstate >> shutdown session
@@ -249,6 +250,15 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                  (\ l p -> loop session l (updatePlayer nstate (const p)))
                  abort
                  nlvl nplayer assocs discs
+
+  -- drinking potions
+  drink abort = drinkPotion
+                  session
+                  displayCurrent
+                  displayCurrent'
+                  (\ l p -> loop session l (updatePlayer nstate (const p)))
+                  abort
+                  nlvl nplayer assocs discs
       
   -- display inventory
   inventory abort 
@@ -369,6 +379,37 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                      abort
                      nlvl nplayer assocs discs per APlayer dir
 
+-- | Drinking potions.
+drinkPotion ::   Session ->                                    -- session
+                 (String -> IO ()) ->                          -- how to display
+                 (String -> String -> IO Bool) ->              -- overlay display
+                 (Level -> Player -> String -> IO a) ->        -- success continuation
+                 IO a ->                                       -- failure continuation
+                 Level ->                                      -- the level
+                 Player ->                                     -- the player
+                 Assocs ->
+                 Discoveries ->
+                 IO a
+drinkPotion session displayCurrent displayCurrent' continue abort
+            nlvl@(Level { lmap = nlmap }) nplayer@(Monster { mloc = ploc }) assocs discs
+    | L.null (mitems nplayer) =
+      displayCurrent "You are not carrying anything." >> abort
+    | otherwise =
+    do
+      i <- getPotions session displayCurrent displayCurrent' assocs discs
+                      "What to drink?" (mitems nplayer)
+      case i of
+        Just i'@(Item { itype = Potion {} }) ->
+                   let iplayer = nplayer { mitems = deleteBy ((==) `on` iletter) i' (mitems nplayer) }
+                       t = nlmap `at` ploc
+                       msg = subjectMonster (mtype nplayer) ++ " " ++
+                             verbMonster (mtype nplayer) "drink" ++ " " ++
+                             objectItem assocs discs (icount i') (itype i') ++ "."
+                   in  continue nlvl
+                                iplayer msg
+        Just _  -> displayCurrent "you cannot drink that" >> abort
+        Nothing -> displayCurrent "never mind" >> abort
+
 
 -- | Dropping items.
 dropItem ::   Session ->                                    -- session
@@ -439,6 +480,19 @@ pickupItem displayCurrent continue abort
                            iplayer msg
             Nothing -> displayCurrent "cannot carry anymore" >> abort
 
+getPotions :: Session ->
+              (String -> IO ()) ->
+              (String -> String -> IO Bool) ->
+              Assocs ->
+              Discoveries ->
+              String ->
+              [Item] ->
+              IO (Maybe Item)
+getPotions session displayCurrent displayCurrent' assocs discs prompt is =
+  getItem session displayCurrent displayCurrent' assocs discs
+          prompt (\ i -> case itype i of Potion {} -> True; _ -> False)
+          "Potions in your inventory:" is
+
 getAnyItem :: Session ->
               (String -> IO ()) ->
               (String -> String -> IO Bool) ->
@@ -461,9 +515,12 @@ getItem :: Session ->
            String ->
            [Item] ->
            IO (Maybe Item) 
-getItem session displayCurrent displayCurrent' assocs discs prompt p ptext is =
-  let r = do
-            displayCurrent (prompt ++ " [" ++ letterRange (concatMap (maybeToList . iletter) is) ++ " or ?*]")
+getItem session displayCurrent displayCurrent' assocs discs prompt p ptext is0 =
+  let is = L.filter p is0
+      choice | L.null is = "[*]"
+             | otherwise = "[" ++ letterRange (concatMap (maybeToList . iletter) is) ++ " or ?*]"
+      r = do
+            displayCurrent (prompt ++ " " ++ choice)
             let h = nextEvent session >>= h'
                 h' e =
                   do
@@ -476,10 +533,10 @@ getItem session displayCurrent displayCurrent' assocs discs prompt p ptext is =
                                              else r 
                         "asterisk" -> do
                                         b <- displayItems displayCurrent' assocs discs
-                                                          "Objects in your inventory:" True is
+                                                          "Objects in your inventory:" True is0
                                         if b then getOptionalConfirm session (const r) h'
                                              else r
-                        [l]        -> return (find (\ i -> maybe False (== l) (iletter i)) is)
+                        [l]        -> return (find (\ i -> maybe False (== l) (iletter i)) is0)
                         _          -> return Nothing
             h
   in r

@@ -18,8 +18,8 @@ data State = State
                  ssensory     :: SensoryMode,
                  sdisplay     :: DisplayMode,
                  stime        :: Time,
-                 sassocs      :: Assocs,
-                 sdiscoveries :: Discoveries,
+                 sassocs      :: Assocs,       -- ^ how does every item appear
+                 sdiscoveries :: Discoveries,  -- ^ items (types) have been discovered
                  sdungeon     :: Dungeon       -- ^ all but current dungeon level
                }
   deriving Show
