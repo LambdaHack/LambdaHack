@@ -266,11 +266,11 @@ toDL True  = Light
 
 -- | allows moves and vision
 open :: Tile -> Bool
-open (Tile (Floor _) _)      = True
-open (Tile (Opening _) _)    = True
+open (Tile (Floor {}) _)     = True
+open (Tile (Opening {}) _)   = True
 open (Tile (Door _ o) _)     = isNothing o
 open (Tile Corridor _)       = True
-open (Tile (Stairs _ _ _) _) = True
+open (Tile (Stairs {}) _)    = True
 open _                       = False
 
 -- | is lighted on its own
@@ -331,8 +331,8 @@ accessible lvl source target =
   in  open tgt &&
       (not (diagonal dir) || 
        case (tterrain src, tterrain tgt) of
-         (Door _ _, _) -> False
-         (_, Door _ _) -> False
+         (Door {}, _)  -> False
+         (_, Door {})  -> False
          _             -> True)
 
 findLocInArea :: Area -> (Loc -> Bool) -> Rnd Loc

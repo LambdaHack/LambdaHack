@@ -341,9 +341,9 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
         dloc  = shift ploc dir
     in  case (oldmsg, nlmap `at` ploc) of
           (_:_, _)                   -> abort
-          (_, Tile (Opening _) _)    -> abort
-          (_, Tile (Door _ _) _)     -> abort
-          (_, Tile (Stairs _ _ _) _) -> abort
+          (_, Tile (Opening {}) _)   -> abort
+          (_, Tile (Door {}) _)      -> abort
+          (_, Tile (Stairs {}) _)    -> abort
           _
             | accessible nlmap ploc dloc ->
                 moveOrAttack
