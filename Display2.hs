@@ -96,7 +96,7 @@ displayLevel session lvl per state msg = displayOverlay session lvl per state ms
 displayOverlay :: Session -> Level -> Perception -> State -> Message -> String -> IO Bool
 displayOverlay session (lvl@(Level nm sz@(sy,sx) ms smap nlmap lmeta))
                      per
-                     (state@(State { splayer = player@(Monster { mhp = php, mdir = pdir, mloc = ploc }), stime = time }))
+                     (state@(State { splayer = player@(Monster { mhp = php, mdir = pdir, mloc = ploc }), stime = time, sassocs = assocs }))
                      msg overlay =
     let
       reachable = preachable per
@@ -124,7 +124,7 @@ displayOverlay session (lvl@(Level nm sz@(sy,sx) ms smap nlmap lmeta))
                                            _ | sTer > 0          -> viewTerrain sTer False (tterrain tile)
                                            Just m | sOmn || vis  -> viewMonster (mtype m) 
                                            _ | sSml && sml >= 0  -> viewSmell sml
-                                             | otherwise         -> viewTile vis tile
+                                             | otherwise         -> viewTile vis tile assocs
                                vision = lVision vis rea
                            in
                              case over (loc `shift` ((sy+1) * n, 0)) of

@@ -430,9 +430,9 @@ fromTo1 x0 x1
   | x0 <= x1  = [x0..x1]
   | otherwise = [x0,x0-1..x1]
 
-viewTile :: Bool -> Tile -> (Char, Attr -> Attr)
-viewTile b (Tile t [])    = viewTerrain 0 b t 
-viewTile b (Tile t (i:_)) = viewItem (itype i)
+viewTile :: Bool -> Tile -> Assocs -> (Char, Attr -> Attr)
+viewTile b (Tile t [])    a = viewTerrain 0 b t 
+viewTile b (Tile t (i:_)) a = viewItem (itype i) a
 
 -- | Produces a textual description of the items at a location. It's
 -- probably correct to use 'at' rather than 'rememberAt' at this point,

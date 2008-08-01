@@ -176,15 +176,19 @@ letterLabel :: Maybe Char -> String
 letterLabel Nothing  = "    "
 letterLabel (Just c) = c : " - "
 
-viewItem :: ItemType -> (Char, Attr -> Attr)
-viewItem Ring                   = ('=', id)
-viewItem Scroll                 = ('?', id)
-viewItem (Potion PotionWater)   = ('!', setBold . setFG blue)
-viewItem (Potion PotionHealing) = ('!', setBold . setFG white)
-viewItem Wand                   = ('/', id)
-viewItem Gold                   = ('$', setBold . setFG yellow)
-viewItem Gem                    = ('*', setFG red)
-viewItem _                      = ('~', id)
+viewItem :: ItemType -> Assocs -> (Char, Attr -> Attr)
+viewItem i a = viewItem' i (M.lookup i a)
+  where
+    viewItem' Ring        _            = ('=', id)
+    viewItem' Scroll      _            = ('?', id)
+    viewItem' (Potion {}) (Just Clear) = ('!', setBold . setFG blue)
+    viewItem' (Potion {}) (Just White) = ('!', setBold . setFG white)
+    viewItem' (Potion {}) _            = ('!', id)
+    viewItem' Wand        _            = ('/', id)
+    viewItem' Gold        _            = ('$', setBold . setFG yellow)
+    viewItem' Gem         _            = ('*', setFG red)
+    viewItem' Amulet      _            = ('"', id)
+    viewItem' _           _            = ('~', id)
 
 -- | Adds an item to a list of items, joining equal items.
 -- Also returns the joined item.

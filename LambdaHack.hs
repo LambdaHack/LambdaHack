@@ -2,6 +2,7 @@ module Main where
 
 import System.Directory
 import Control.Monad
+import Data.Map as M
 
 import State
 import Geometry
@@ -12,6 +13,7 @@ import Display2
 import Random
 import Save
 import Turn
+import Item
 
 main :: IO ()
 main = startup start
@@ -49,6 +51,11 @@ generate session msg =
                             in  x' : z : zs
     let lvls = connect (Just Nothing) levels
     let (lvl,dng) = (head lvls, dungeon (tail lvls))
-    let state = defaultState ((\ (_,x,_) -> x) (head levels)) dng
+    -- generate item associations
+    let assocs = M.fromList $
+                   [ (Potion PotionWater,   Clear),
+                     (Potion PotionHealing, White) ]
+    let state = (defaultState ((\ (_,x,_) -> x) (head levels)) dng)
+                  { sassocs = assocs }
     handle session lvl state (perception_ state lvl) msg
 
