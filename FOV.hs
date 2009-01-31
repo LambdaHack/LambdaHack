@@ -20,7 +20,7 @@ scan :: ((Distance,Progress) -> Loc) -> LMap -> Distance -> Interval -> Set Loc
 scan tr l d (s,e) = 
     let ps = downBias (s * fromIntegral d)   -- minimal progress to check
         pe = upBias (e * fromIntegral d)     -- maximal progress to check
-        st = if open (l `at` tr (d,ps)) then (Just s) -- start in light
+        st = if open (l `at` tr (d,ps)) then Just s   -- start in light
                                         else Nothing  -- start in shadow
     in 
         -- trace (show (d,s,e,ps,pe)) $
@@ -47,14 +47,14 @@ scan tr l d (s,e) =
       | otherwise = scan' Nothing (ps+1) pe
                                       -- continue in shadow
 
-tr0 (oy,ox) (d,p) = (oy+d,ox+p)
-tr1 (oy,ox) (d,p) = (oy+d,ox-p)
-tr2 (oy,ox) (d,p) = (oy-d,ox+p)
-tr3 (oy,ox) (d,p) = (oy-d,ox-p)
-tr4 (oy,ox) (d,p) = (oy+p,ox+d)
-tr5 (oy,ox) (d,p) = (oy+p,ox-d)
-tr6 (oy,ox) (d,p) = (oy-p,ox+d)
-tr7 (oy,ox) (d,p) = (oy-p,ox-d)
+tr0 (oy,ox) (d,p) = (oy + d,ox + p)
+tr1 (oy,ox) (d,p) = (oy + d,ox - p)
+tr2 (oy,ox) (d,p) = (oy - d,ox + p)
+tr3 (oy,ox) (d,p) = (oy - d,ox - p)
+tr4 (oy,ox) (d,p) = (oy + p,ox + d)
+tr5 (oy,ox) (d,p) = (oy + p,ox - d)
+tr6 (oy,ox) (d,p) = (oy - p,ox + d)
+tr7 (oy,ox) (d,p) = (oy - p,ox - d)
 
 fullscan loc lvl = 
   S.unions $

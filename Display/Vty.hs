@@ -15,10 +15,7 @@ displayId = "vty"
 type Session = V.Vty
 
 startup :: (Session -> IO ()) -> IO ()
-startup k =
-  do
-    session <- V.mkVty
-    k session
+startup k = V.mkVty >>= k
 
 display :: Area -> Session -> (Loc -> (Attr, Char)) -> String -> String -> IO ()
 display ((y0,x0),(y1,x1)) vty f msg status =
@@ -27,9 +24,9 @@ display ((y0,x0),(y1,x1)) vty f msg status =
                       L.map (\ (x,y) -> let (a,c) = f (y,x) in renderChar a c)))
               [ [ (x,y) | x <- [x0..x1] ] | y <- [y0..y1] ]
     in  V.update vty (Pic NoCursor 
-         ((renderBS attr (BS.pack (L.map (fromIntegral . ord) (toWidth (x1-x0+1) msg)))) <->
+         (renderBS attr (BS.pack (L.map (fromIntegral . ord) (toWidth (x1 - x0 + 1) msg))) <->
           img <-> 
-          (renderBS attr (BS.pack (L.map (fromIntegral . ord) (toWidth (x1-x0+1) status))))))
+          renderBS attr (BS.pack (L.map (fromIntegral . ord) (toWidth (x1 - x0 + 1) status)))))
 
 toWidth :: Int -> String -> String
 toWidth n x = take n (x ++ repeat ' ')

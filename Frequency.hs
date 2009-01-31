@@ -28,4 +28,4 @@ scale :: Int -> Frequency a -> Frequency a
 scale n (Frequency xs) = Frequency (map (\ (p, x) -> (n * p, x)) xs)
 
 uniform :: [a] -> Frequency a
-uniform xs = Frequency (map (\ x -> (1, x)) xs)
+uniform = Frequency . map (\ x -> (1, x))

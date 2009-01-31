@@ -141,7 +141,6 @@ handle :: Session -> Level -> State -> Perception -> String -> IO ()
 handle session (lvl@(Level nm sz ms smap lmap lmeta))
                (state@(State { splayer = player@(Monster { mhp = php, mdir = pdir, mloc = ploc, mitems = pinv, mtime = ptime }), stime = time, sassocs = assocs, sdiscoveries = discs }))
                per oldmsg =
-  do
     -- check for player death
     if php <= 0
       then do
@@ -159,11 +158,8 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
            -- really necessary after the player has moved.
       else do
              displayCurrent oldmsg
-             let h = do
-                       e <- nextEvent session
-                       h' e
+             let h = nextEvent session >>= h'
                  h' e =
-                     do
                        handleDirection e (move h) $ 
                          handleDirection (L.map toLower e) run $
                          handleModifier e h $
@@ -184,7 +180,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                            -- saving or ending the game
                            "S"       -> saveGame lvl mstate >> shutdown session
                            "Q"       -> shutdown session
-                           "Escape"  -> displayCurrent ("Press Q to quit.") >> h
+                           "Escape"  -> displayCurrent "Press Q to quit." >> h
 
                            -- wait
                            "space"   -> loop session nlvl nstate ""
@@ -213,7 +209,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
  where
 
   -- we record the oldmsg in the history
-  mstate = if L.null oldmsg then state else (updateHistory state (take 500 . ((oldmsg ++ " "):)))
+  mstate = if L.null oldmsg then state else updateHistory state (take 500 . ((oldmsg ++ " "):))
     -- TODO: make history max configurable
 
   reachable = preachable per
@@ -312,7 +308,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
         _ -> displayCurrent "never mind" >> abort
   -- search for secret doors
   search abort =
-    let searchTile (Tile (Door hv (Just n)) x,t') = Just $ (Tile (Door hv (Just (max (n - 1) 0))) x, t')
+    let searchTile (Tile (Door hv (Just n)) x,t') = Just (Tile (Door hv (Just (max (n - 1) 0))) x, t')
         searchTile t                              = Just t
         slmap = foldl (\ l m -> update searchTile (shift ploc m) l) nlmap moves
     in  loop session (updateLMap lvl (const slmap)) nstate ""
@@ -530,7 +526,6 @@ getItem session displayCurrent displayCurrent' assocs discs prompt p ptext is0 =
             displayCurrent (prompt ++ " " ++ choice)
             let h = nextEvent session >>= h'
                 h' e =
-                  do
                     handleModifier e h $
                       case e of
                         "question" -> do
@@ -617,7 +612,7 @@ moveOrAttack allowAttacks
           source = nlmap `at` aloc
           naloc  = shift aloc dir
           target = nlmap `at` naloc
-          attackedPlayer   = if mloc player == naloc then [APlayer] else []
+          attackedPlayer   = [ APlayer | mloc player == naloc ]
           attackedMonsters = L.map AMonster $
                              findIndices (\ m -> mloc m == naloc) (lmonsters nlvl)
           attacked :: [Actor]

@@ -14,7 +14,7 @@ newtype Strategy a = Strategy { runStrategy :: [Frequency a] }
 instance Monad Strategy where
   return x = Strategy $ return (Frequency [(1, x)])
   m >>= f  = Strategy $
-               filter (\ (Frequency xs) -> not (null xs)) $
+               filter (\ (Frequency xs) -> not (null xs))
                [ Frequency [ (p * q, b) 
                            | (p, a) <- runFrequency x,
                              y <- runStrategy (f a),

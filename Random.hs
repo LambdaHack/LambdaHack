@@ -9,7 +9,7 @@ import Frequency
 type Rnd a = State R.StdGen a
 
 randomR :: (R.Random a) => (a, a) -> Rnd a
-randomR r = State (R.randomR r)
+randomR = State . R.randomR
 
 binaryChoice :: a -> a -> Rnd a
 binaryChoice p0 p1 =
@@ -64,4 +64,4 @@ infixl 6 ~+~
 (~+~) = liftM2 (+)
 
 (*~) :: Num a => Int -> Rnd a -> Rnd a
-x *~ r = replicateM x r >>= return . sum
+x *~ r = liftM sum (replicateM x r)

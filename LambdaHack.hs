@@ -52,7 +52,7 @@ generate session msg =
     let lvls = connect (Just Nothing) levels
     let (lvl,dng) = (head lvls, dungeon (tail lvls))
     -- generate item associations
-    let assocs = M.fromList $
+    let assocs = M.fromList
                    [ (Potion PotionWater,   Clear),
                      (Potion PotionHealing, White) ]
     let state = (defaultState ((\ (_,x,_) -> x) (head levels)) dng)

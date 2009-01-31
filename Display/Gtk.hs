@@ -125,7 +125,7 @@ setTo tb tts (ly,lx) a =
     mapM_ (\ c -> textBufferApplyTag tb (tts ! c) ib ie) a
 
 nextEvent :: Session -> IO String
-nextEvent session = readChan (schan session)
+nextEvent = readChan . schan
 
 setBold   = id  -- not supported yet
 setBG c   = (BG c :)

@@ -14,9 +14,9 @@ strictReadCompressedFile f =
       LBS.length d `seq` return d
 
 strictDecodeCompressedFile :: Binary a => FilePath -> IO a
-strictDecodeCompressedFile f = fmap decode (strictReadCompressedFile f)
+strictDecodeCompressedFile = fmap decode . strictReadCompressedFile
 
 encodeCompressedFile :: Binary a => FilePath -> a -> IO ()
-encodeCompressedFile f x = LBS.writeFile f (Z.compress (encode x))
+encodeCompressedFile f = LBS.writeFile f . Z.compress . encode
   -- note that LBS.writeFile opens the file in binary mode
 

@@ -23,8 +23,8 @@ mkRoom :: Int ->      {- border columns -}
           Rnd Room    {- this is the upper-left and lower-right corner of the room -}
 mkRoom bd (ym,xm)((y0,x0),(y1,x1)) =
   do
-    (ry0,rx0) <- locInArea ((y0+bd,x0+bd),(y1-bd-ym+1,x1-bd-xm+1))
-    (ry1,rx1) <- locInArea ((ry0+ym-1,rx0+xm-1),(y1-bd,x1-bd))
+    (ry0,rx0) <- locInArea ((y0 + bd,x0 + bd),(y1 - bd - ym + 1,x1 - bd - xm + 1))
+    (ry1,rx1) <- locInArea ((ry0 + ym - 1,rx0 + xm - 1),(y1 - bd,x1 - bd))
     return ((ry0,rx0),(ry1,rx1))
 
 mkNoRoom :: Int ->      {- border columns -}
@@ -32,7 +32,7 @@ mkNoRoom :: Int ->      {- border columns -}
             Rnd Room    {- this is the upper-left and lower-right corner of the room -}
 mkNoRoom bd ((y0,x0),(y1,x1)) =
   do
-    (ry,rx) <- locInArea ((y0+bd,x0+bd),(y1-bd,x1-bd))
+    (ry,rx) <- locInArea ((y0 + bd,x0 + bd),(y1 - bd,x1 - bd))
     return ((ry,rx),(ry,rx))
 
 mkCorridor :: HV -> (Loc,Loc) -> Area -> Rnd [(Y,X)] {- straight sections of the corridor -}
@@ -87,9 +87,9 @@ bigroom (LevelConfig { levelSize = (sy,sx) }) nm =
     -- locations of the stairs
     su <- findLoc lvl (const floor)
     sd <- findLoc lvl (\ l t -> floor t && distance (su,l) > 676)
-    return $ (\ lu ld ->
+    return (\ lu ld ->
       let flmap = maybe id (\ l -> M.insert su (newTile (Stairs Light Up   l))) lu $
-                  maybe id (\ l -> M.insert sd (newTile (Stairs Light Down l))) ld $
+                  maybe id (\ l -> M.insert sd (newTile (Stairs Light Down l))) ld
                   lmap
       in  Level nm (sy,sx) [] smap flmap "bigroom", su, sd)
 
@@ -213,10 +213,10 @@ level cfg nm =
     su <- findLoc lvl (const floor)
     sd <- findLoc lvl (\ l t -> floor t && distance (su,l) > minStairsDistance cfg)
     let meta = show allConnects
-    return $ (\ lu ld ->
+    return (\ lu ld ->
       let flmap = maybe id (\ l -> M.update (\ (t,r) -> Just $ newTile (Stairs (toDL $ light t) Up   l)) su) lu $
                   maybe id (\ l -> M.update (\ (t,r) -> Just $ newTile (Stairs (toDL $ light t) Down l)) sd) ld $
-                  foldr (\ (l,it) f -> M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l . f) id is $
+                  foldr (\ (l,it) f -> M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l . f) id is
                   dlmap
       in  Level nm (levelSize cfg) [] smap flmap meta, su, sd)
 
