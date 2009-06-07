@@ -17,24 +17,28 @@ import Random
 type Corridor = [(Y,X)]
 type Room = Area
 
-mkRoom :: Int ->      {- border columns -}
-          (Y,X) ->    {- minimum size -}
-          Area ->     {- this is an area, not the room itself -}
-          Rnd Room    {- this is the upper-left and lower-right corner of the room -}
+-- | Create a random room according to given parameters.
+mkRoom :: Int ->      -- ^ border columns
+          (Y,X) ->    -- ^ minimum size
+          Area ->     -- ^ this is an area, not the room itself
+          Rnd Room    -- ^ this is the upper-left and lower-right corner of the room
 mkRoom bd (ym,xm)((y0,x0),(y1,x1)) =
   do
     (ry0,rx0) <- locInArea ((y0 + bd,x0 + bd),(y1 - bd - ym + 1,x1 - bd - xm + 1))
     (ry1,rx1) <- locInArea ((ry0 + ym - 1,rx0 + xm - 1),(y1 - bd,x1 - bd))
     return ((ry0,rx0),(ry1,rx1))
 
-mkNoRoom :: Int ->      {- border columns -}
-            Area ->     {- this is an area, not the room itself -}
-            Rnd Room    {- this is the upper-left and lower-right corner of the room -}
+-- | Create a no-room, i.e., a single corridor field. 
+mkNoRoom :: Int ->      -- ^ border columns
+            Area ->     -- ^ this is an area, not the room itself
+            Rnd Room    -- ^ this is the upper-left and lower-right corner of the room
 mkNoRoom bd ((y0,x0),(y1,x1)) =
   do
     (ry,rx) <- locInArea ((y0 + bd,x0 + bd),(y1 - bd,x1 - bd))
     return ((ry,rx),(ry,rx))
 
+-- | Create a corridor, either horizontal or vertical, with
+-- a possible intermediate part that is in the opposite direction.
 mkCorridor :: HV -> (Loc,Loc) -> Area -> Rnd [(Y,X)] {- straight sections of the corridor -}
 mkCorridor hv ((y0,x0),(y1,x1)) b =
   do
@@ -45,8 +49,9 @@ mkCorridor hv ((y0,x0),(y1,x1)) b =
       Horiz -> return [(y0,x0),(y0,rx),(y1,rx),(y1,x1)]
       Vert  -> return [(y0,x0),(ry,x0),(ry,x1),(y1,x1)]
 
--- the condition passed to mkCorridor is tricky; there might not always
--- exist a suitable intermediate point is the rooms are allowed to be close
+-- | Try to connect two rooms with a corridor.
+-- The condition passed to mkCorridor is tricky; there might not always
+-- exist a suitable intermediate point if the rooms are allowed to be close
 -- together ...
 connectRooms :: Area -> Area -> Rnd [Loc]
 connectRooms sa@((sy0,sx0),(sy1,sx1)) ta@((ty0,tx0),(ty1,tx1)) =
@@ -63,6 +68,7 @@ connectRooms sa@((sy0,sx0),(sy1,sx1)) ta@((ty0,tx0),(ty1,tx1)) =
                                else return (Vert,yarea)
     mkCorridor hv ((sy,sx),(ty,tx)) area
 
+-- | Actually dig a corridor.
 digCorridor :: Corridor -> LMap -> LMap
 digCorridor (p1:p2:ps) l =
   digCorridor (p2:ps) 
@@ -74,9 +80,11 @@ digCorridor (p1:p2:ps) l =
     corridorUpdate (x,u) _                    = (x,u)
 digCorridor _ l = l
   
+-- | Create a new tile.
 newTile :: Terrain -> (Tile, Tile)
 newTile t = (Tile t [], Tile Unknown [])
 
+-- | For a bigroom level: Create a level consisting of only one room.
 bigroom :: LevelConfig -> 
            LevelName -> Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) -> Level, Loc, Loc)
 bigroom (LevelConfig { levelSize = (sy,sx) }) nm =
@@ -144,8 +152,12 @@ largeLevelConfig d =
     extraConnects     = const 10
   }
 
+-- | Create a "normal" dungeon level. Takes a configuration in order
+-- to tweak all sorts of data.
 level :: LevelConfig ->
-         LevelName -> Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) -> Level, Loc, Loc)
+         LevelName ->
+         Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) ->
+              Level, Loc, Loc)
 level cfg nm =
   do
     lgrid    <- levelGrid cfg
@@ -187,13 +199,14 @@ level cfg nm =
                   case t of
                     Tile (Opening hv) _ ->
                       do
-                        -- chance for doors
+                        -- openings have a certain chance to be doors;
+                        -- doors have a certain chance to be open; and
+                        -- closed doors have a certain chance to be
+                        -- secret
                         rb <- doorChance cfg
-                        -- chance for a door to be open
                         ro <- doorOpenChance cfg
                         rs <- if ro then return Nothing
-                                    else do -- chance for a door to be secret
-                                            rsc <- doorSecretChance cfg
+                                    else do rsc <- doorSecretChance cfg
                                             fmap Just
                                                  (if rsc then randomR (1, doorSecretMax cfg)
                                                          else return 0)
@@ -224,18 +237,19 @@ emptyLMap :: (Y,X) -> LMap
 emptyLMap (my,mx) = M.fromList [ ((y,x),newTile Rock) | x <- [0..mx], y <- [0..my] ]
 
 -- | If the room has size 1, it is assumed to be a no-room, and a single
--- corridor field will be digged instead of a room.
+-- corridor field will be dug instead of a room.
 digRoom :: DL -> Room -> LMap -> LMap
 digRoom dl ((y0,x0),(y1,x1)) l
   | y0 == y1 && x0 == x1 =
   M.insert (y0,x0) (newTile Corridor) l
   | otherwise =
   let rm = M.fromList $ [ ((y,x),newTile (Floor dl))   | x <- [x0..x1],     y <- [y0..y1]    ]
-                     ++ [ ((y,x),newTile (Wall p)) | (x,y,p) <- [(x0-1,y0-1,UL),(x1+1,y0-1,UR),(x0-1,y1+1,DL),(x1+1,y1+1,DR)] ]
-                     ++ [ ((y,x),newTile (Wall p)) | x <- [x0..x1], (y,p) <- [(y0-1,U),(y1+1,D)] ]
-                     ++ [ ((y,x),newTile (Wall p)) | (x,p) <- [(x0-1,L),(x1+1,R)],  y <- [y0..y1]    ]
+                     ++ [ ((y,x),newTile (Wall p))     | (x,y,p) <- [(x0-1,y0-1,UL),(x1+1,y0-1,UR),(x0-1,y1+1,DL),(x1+1,y1+1,DR)] ]
+                     ++ [ ((y,x),newTile (Wall p))     | x <- [x0..x1], (y,p) <- [(y0-1,U),(y1+1,D)] ]
+                     ++ [ ((y,x),newTile (Wall p))     | (x,p) <- [(x0-1,L),(x1+1,R)],  y <- [y0..y1]    ]
   in M.unionWith const rm l
 
+-- | Create a new monster in the level, at a random position.
 addMonster :: Level -> Player -> Rnd Level
 addMonster lvl@(Level { lmonsters = ms, lmap = lmap })
            player@(Monster { mloc = ploc }) =

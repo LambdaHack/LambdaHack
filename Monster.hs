@@ -79,6 +79,8 @@ instance Binary MonsterType where
             3 -> return Nose
             _ -> fail "no parse (MonsterType)" 
 
+-- | Monster frequencies (TODO: should of course vary much more
+-- on local circumstances).
 monsterFrequency :: Frequency MonsterType
 monsterFrequency =
   Frequency
@@ -122,13 +124,16 @@ insertMonster = insertMonster' 0
       | otherwise              = let (n', ms') = insertMonster' (n + 1) m ms
                                  in  (n', m' : ms')
 
+-- * Grammar
 
+-- | How to refer to a monster in object position of a sentence.
 objectMonster :: MonsterType -> String
 objectMonster Player  = "you"
 objectMonster Eye     = "the reducible eye"
 objectMonster FastEye = "the super-fast eye"
 objectMonster Nose    = "the point-free nose"
 
+-- | How to refer to a monster in subject position of a sentence.
 subjectMonster :: MonsterType -> String
 subjectMonster x = let (s:r) = objectMonster x in toUpper s : r
 

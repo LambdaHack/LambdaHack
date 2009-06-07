@@ -13,7 +13,7 @@ type Interval = (Rational, Rational)
 type Distance = Int
 type Progress = Int
 
--- The current state of a scan is kept in a variable of Maybe Rational.
+-- | The current state of a scan is kept in a variable of Maybe Rational.
 -- If Just something, we're in a visible interval. If Nothing, we're in
 -- a shadowed interval.
 scan :: ((Distance,Progress) -> Loc) -> LMap -> Distance -> Interval -> Set Loc
@@ -56,6 +56,9 @@ tr5 (oy,ox) (d,p) = (oy + p,ox - d)
 tr6 (oy,ox) (d,p) = (oy - p,ox + d)
 tr7 (oy,ox) (d,p) = (oy - p,ox - d)
 
+-- | Perform a full scan for a given location. Returns the locations
+-- that are currently visible.
+fullscan :: Loc -> LMap -> Set Loc
 fullscan loc lvl = 
   S.unions $
   L.map (\ tr -> scan (tr loc) lvl 0 (0,1)) [tr0,tr1,tr2,tr3,tr4,tr5,tr6,tr7]

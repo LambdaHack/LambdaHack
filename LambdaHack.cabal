@@ -1,6 +1,6 @@
 cabal-version: >= 1.2
 name:          LambdaHack
-version:       0.1.20080501
+version:       0.1.20090606
 license:       GPL
 license-file:  COPYING
 data-files:    README
@@ -41,5 +41,5 @@ executable LambdaHack
     cpp-options:   -DGTK
   } else {
     other-modules: Display.Vty
-    build-depends: vty >= 3
+    build-depends: vty >= 3 && < 4
   } }
