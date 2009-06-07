@@ -23,7 +23,7 @@ import Version
 import Strategy
 
 -- | Perform a complete turn (i.e., monster moves etc.)
-loop :: Session -> Level -> State -> String -> IO ()
+loop :: Session -> Level -> State -> Message -> IO ()
 loop session (lvl@(Level nm sz ms smap lmap lmeta))
              (state@(State { splayer = player@(Monster { mhp = php, mloc = ploc }), stime = time }))
              oldmsg =
@@ -38,7 +38,7 @@ loop session (lvl@(Level nm sz ms smap lmap lmeta))
 -- | Handle monster moves. The idea is that we perform moves
 --   as long as there are monsters that have a move time which is
 --   less than or equal to the current time.
-handleMonsters :: Session -> Level -> State -> Perception -> String -> IO ()
+handleMonsters :: Session -> Level -> State -> Perception -> Message -> IO ()
 handleMonsters session lvl@(Level { lmonsters = ms })
                (state@(State { stime = time }))
                per oldmsg =
@@ -69,7 +69,7 @@ handleMonsters session lvl@(Level { lmonsters = ms })
         
 
 -- | Handle the move of a single monster.
-handleMonster :: Monster -> Session -> Level -> State -> Perception -> String ->
+handleMonster :: Monster -> Session -> Level -> State -> Perception -> Message ->
                  IO ()
 handleMonster m session lvl@(Level { lmonsters = ms, lsmell = nsmap, lmap = lmap })
               (state@(State { splayer = player@(Monster { mloc = ploc }), stime = time }))
@@ -137,7 +137,7 @@ wait :: Strategy Dir
 wait = return (0,0)
 
 -- | Display current status and handle the turn of the player.
-handle :: Session -> Level -> State -> Perception -> String -> IO ()
+handle :: Session -> Level -> State -> Perception -> Message -> IO ()
 handle session (lvl@(Level nm sz ms smap lmap lmeta))
                (state@(State { splayer = player@(Monster { mhp = php, mdir = pdir, mloc = ploc, mitems = pinv, mtime = ptime }), stime = time, sassocs = assocs, sdiscoveries = discs }))
                per oldmsg =
@@ -215,10 +215,10 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
   reachable = preachable per
   visible   = pvisible per
 
-  displayCurrent :: String -> IO ()
+  displayCurrent :: Message -> IO ()
   displayCurrent  = displayLevel session nlvl per state
 
-  displayCurrent' :: String -> String -> IO Bool
+  displayCurrent' :: Message -> String -> IO Bool
   displayCurrent' = displayOverlay session nlvl per state
 
   -- update player memory
@@ -378,9 +378,9 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
 
 -- | Drinking potions.
 drinkPotion ::   Session ->                                    -- session
-                 (String -> IO ()) ->                          -- how to display
-                 (String -> String -> IO Bool) ->              -- overlay display
-                 (Level -> Player -> Discoveries -> String -> IO a) ->     
+                 (Message -> IO ()) ->                         -- how to display
+                 (Message -> String -> IO Bool) ->             -- overlay display
+                 (Level -> Player -> Discoveries -> Message -> IO a) ->     
                                                                -- success continuation
                  IO a ->                                       -- failure continuation
                  Level ->                                      -- the level
@@ -416,9 +416,9 @@ drinkPotion session displayCurrent displayCurrent' continue abort
 
 -- | Dropping items.
 dropItem ::   Session ->                                    -- session
-              (String -> IO ()) ->                          -- how to display
-              (String -> String -> IO Bool) ->              -- overlay display
-              (Level -> Player -> String -> IO a) ->        -- success continuation
+              (Message -> IO ()) ->                         -- how to display
+              (Message -> String -> IO Bool) ->             -- overlay display
+              (Level -> Player -> Message -> IO a) ->       -- success continuation
               IO a ->                                       -- failure continuation
               Level ->                                      -- the level
               Player ->                                     -- the player
@@ -449,8 +449,8 @@ dropItem session displayCurrent displayCurrent' continue abort
 
 
 -- | Picking up items.
-pickupItem :: (String -> IO ()) ->                          -- how to display
-              (Level -> Player -> String -> IO a) ->        -- success continuation
+pickupItem :: (Message -> IO ()) ->                         -- how to display
+              (Level -> Player -> Message -> IO a) ->       -- success continuation
               IO a ->                                       -- failure continuation
               Level ->                                      -- the level
               Player ->                                     -- the player
@@ -484,8 +484,8 @@ pickupItem displayCurrent continue abort
             Nothing -> displayCurrent "cannot carry anymore" >> abort
 
 getPotions :: Session ->
-              (String -> IO ()) ->
-              (String -> String -> IO Bool) ->
+              (Message -> IO ()) ->
+              (Message -> String -> IO Bool) ->
               Assocs ->
               Discoveries ->
               String ->
@@ -497,8 +497,8 @@ getPotions session displayCurrent displayCurrent' assocs discs prompt is =
           "Potions in your inventory:" is
 
 getAnyItem :: Session ->
-              (String -> IO ()) ->
-              (String -> String -> IO Bool) ->
+              (Message -> IO ()) ->
+              (Message -> String -> IO Bool) ->
               Assocs ->
               Discoveries ->
               String ->
@@ -509,8 +509,8 @@ getAnyItem session displayCurrent displayCurrent' assocs discs prompt is =
           prompt (const True) "Objects in your inventory:" is
 
 getItem :: Session ->
-           (String -> IO ()) ->
-           (String -> String -> IO Bool) ->
+           (Message -> IO ()) ->
+           (Message -> String -> IO Bool) ->
            Assocs ->
            Discoveries ->
            String ->
@@ -554,7 +554,7 @@ displayItems displayCurrent' assocs discs msg sorted is =
 
 
 moveOrAttack :: Bool ->                                     -- allow attacks?
-                (Level -> Player -> String -> IO a) ->      -- success continuation
+                (Level -> Player -> Message -> IO a) ->     -- success continuation
                 IO a ->                                     -- failure continuation
                 Level ->                                    -- the level
                 Player ->                                   -- the player

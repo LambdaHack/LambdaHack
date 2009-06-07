@@ -10,11 +10,13 @@ import Geometry
 import Level
 import Item
 
+type Message = String
+
 -- | The 'State' contains all the game state except the current dungeon
 -- level which we usually keep separate.
 data State = State
                { splayer      :: Monster,
-                 shistory     :: [String],
+                 shistory     :: [Message],
                  ssensory     :: SensoryMode,
                  sdisplay     :: DisplayMode,
                  stime        :: Time,
