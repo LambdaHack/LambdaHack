@@ -133,7 +133,7 @@ displayOverlay session (lvl@(Level nm sz@(sy,sx) ms smap nlmap lmeta))
                 msg
                 (take 40 (levelName nm ++ repeat ' ') ++
                  take 10 ("$: " ++ show gold ++ repeat ' ') ++
-                 take 10 ("HP: " ++ show php ++ repeat ' ') ++
+                 take 15 ("HP: " ++ show php ++ " (" ++ show playerHP ++ ")" ++ repeat ' ') ++
                  take 10 ("T: " ++ show (time `div` 10) ++ repeat ' '))
       msgs = splitMsg sx msg
       perf k []     = perfo k ""
