@@ -9,8 +9,7 @@ import Monster
 import Geometry
 import Level
 import Item
-
-type Message = String
+import Message
 
 -- | The 'State' contains all the game state except the current dungeon
 -- level which we usually keep separate.
