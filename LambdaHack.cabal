@@ -17,14 +17,15 @@ flag curses
 
 flag gtk
   description:   enable gtk support
-  default:       True
+  default:       False
 
 executable LambdaHack
   main-is:       LambdaHack.hs
+  hs-source-dirs:src
   other-modules: Actor, Display, Display2, Dungeon, File,
                  FOV, Frequency, Geometry, Item, LambdaHack,
                  Level, Message, Monster, Perception, Random,
-                 Save, Setup, State, Strategy, Style, Turn,
+                 Save, State, Strategy, Style, Turn,
                  Version
   build-depends: base >= 3 && < 4, containers >= 0.1 && < 1, binary >= 0.4 && < 1,
                  random >= 1 && < 2, zlib >= 0.4 && < 1, bytestring >= 0.9 && < 1,
