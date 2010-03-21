@@ -22,7 +22,7 @@ mkRoom :: Int ->      -- ^ border columns
           (Y,X) ->    -- ^ minimum size
           Area ->     -- ^ this is an area, not the room itself
           Rnd Room    -- ^ this is the upper-left and lower-right corner of the room
-mkRoom bd (ym,xm)((y0,x0),(y1,x1)) =
+mkRoom bd (ym,xm) ((y0,x0),(y1,x1)) =
   do
     (ry0,rx0) <- locInArea ((y0 + bd,x0 + bd),(y1 - bd - ym + 1,x1 - bd - xm + 1))
     (ry1,rx1) <- locInArea ((ry0 + ym - 1,rx0 + xm - 1),(y1 - bd,x1 - bd))
