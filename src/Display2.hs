@@ -30,28 +30,11 @@ getOptionalConfirm :: Session -> (Bool -> IO a) -> (String -> IO a) -> IO a
 getOptionalConfirm session h k =
   do
     e <- nextEvent session
-    handleModifier e (getOptionalConfirm session h k) $
-      case e of
-        "space"  -> h True
-        "Return" -> h True
-        "Escape" -> h False
-        _        -> k e
-
--- | Handler that ignores modifier events as they are
---   currently produced by the Gtk frontend.
-handleModifier :: String -> IO a -> IO a -> IO a
-handleModifier e h k =
-  case e of
-    "Shift_R"   -> h
-    "Shift_L"   -> h
-    "Control_L" -> h
-    "Control_R" -> h
-    "Super_L"   -> h
-    "Super_R"   -> h
-    "Menu"      -> h
-    "Alt_L"     -> h
-    "Alt_R"     -> h
-    _           -> k
+    case e of
+      "space"  -> h True
+      "Return" -> h True
+      "Escape" -> h False
+      _        -> k e
 
 -- | Configurable event handler for the direction keys. Is used to
 --   handle player moves, but can also be used for directed commands

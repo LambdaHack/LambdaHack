@@ -162,7 +162,6 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                  h' e =
                        handleDirection e (move h) $ 
                          handleDirection (L.map toLower e) run $
-                         handleModifier e h $
                          case e of
                            "o"       -> openclose True h
                            "c"       -> openclose False h
@@ -526,7 +525,6 @@ getItem session displayCurrent displayCurrent' assocs discs prompt p ptext is0 =
             displayCurrent (prompt ++ " " ++ choice)
             let h = nextEvent session >>= h'
                 h' e =
-                    handleModifier e h $
                       case e of
                         "question" -> do
                                         b <- displayItems displayCurrent' assocs discs

@@ -125,8 +125,34 @@ setTo tb tts (ly,lx) a =
     textIterForwardChar ie
     mapM_ (\ c -> textBufferApplyTag tb (tts ! c) ib ie) a
 
+-- | reads until a non-dead key encountered
+readUndeadChan :: Chan String -> IO String
+readUndeadChan ch =
+  do
+    x <- readChan ch
+    if dead x then readUndeadChan ch else return x
+      where
+        dead x =
+          case x of
+            "Shift_R"          -> True
+            "Shift_L"          -> True
+            "Control_L"        -> True
+            "Control_R"        -> True
+            "Super_L"          -> True
+            "Super_R"          -> True
+            "Menu"             -> True
+            "Alt_L"            -> True
+            "Alt_R"            -> True
+            "ISO_Level2_Shift" -> True
+            "ISO_Level3_Shift" -> True
+            "ISO_Level2_Latch" -> True
+            "ISO_Level3_Latch" -> True
+            "Num_Lock"         -> True
+            "Caps_Lock"        -> True
+            _                  -> False
+
 nextEvent :: Session -> IO String
-nextEvent = readChan . schan
+nextEvent = readUndeadChan . schan
 
 setBold   = id  -- not supported yet
 setBG c   = (BG c :)
