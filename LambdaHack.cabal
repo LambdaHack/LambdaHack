@@ -27,9 +27,10 @@ executable LambdaHack
                  Level, Message, Monster, Perception, Random,
                  Save, State, Strategy, Style, Turn,
                  Version
-  build-depends: base >= 3 && < 4, containers >= 0.1 && < 1, binary >= 0.4 && < 1,
-                 random >= 1 && < 2, zlib >= 0.4 && < 1, bytestring >= 0.9 && < 1,
-                 directory >= 1 && < 2, mtl >= 1.1 && < 2
+  build-depends: base >= 4, containers >= 0.1 && < 1, binary >= 0.4 && < 1,
+                 random >= 1 && < 2, zlib >= 0.4 && < 1,
+                 bytestring >= 0.9 && < 1, directory >= 1 && < 2,
+                 mtl >= 1.1 && < 2
   extensions:    CPP
   if flag(curses) {
     other-modules: Display.Curses

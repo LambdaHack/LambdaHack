@@ -28,7 +28,6 @@ restoreGame =
              removeFile savefile
              case r of
                (x,y,z) -> (z :: Bool) `seq` return $ Left (x,y))
-          (\ e -> case e of
+          (\ e -> case e :: IOException of
                     _ -> return (Right $ "Restore failed: " ++
                                  (unwords . lines) (show e)))
-
