@@ -2,10 +2,10 @@ default : dist/setup-config
 	runghc Setup build
 
 dist/setup-config : LambdaHack.cabal
-	runghc Setup configure -f-gtk --user
+	runghc Setup configure -fvty --user
 
 vty :
-	runghc Setup configure -f-gtk --user
+	runghc Setup configure -fvty --user
 
 gtk :
 	runghc Setup configure --user
