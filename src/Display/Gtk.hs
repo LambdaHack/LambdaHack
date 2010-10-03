@@ -5,6 +5,7 @@ module Display.Gtk
 
 import Control.Monad
 import Control.Concurrent
+import Graphics.UI.Gtk.Gdk.Events  -- TODO: replace, deprecated
 import Graphics.UI.Gtk hiding (Attr)
 import Data.List as L
 import Data.IORef
@@ -65,7 +66,7 @@ startup k =
     widgetModifyFont tv (Just f)
     currentfont <- newIORef f
     onButtonPress tv (\ e -> case e of
-                               Button { eventButton = RightButton } ->
+                               Button { Graphics.UI.Gtk.Gdk.Events.eventButton = RightButton } ->
                                  do
                                    fsd <- fontSelectionDialogNew "Choose font"
                                    cf <- readIORef currentfont
@@ -94,7 +95,7 @@ startup k =
     ec <- newChan 
     forkIO $ k (Session ec tts tv)
     
-    onKeyPress tv (\ e -> writeChan ec (eventKeyName e) >> yield >> return True)
+    onKeyPress tv (\ e -> writeChan ec (Graphics.UI.Gtk.Gdk.Events.eventKeyName e) >> yield >> return True)
 
     idleAdd (yield >> return True) priorityDefaultIdle
     onDestroy w mainQuit -- set quit handler
