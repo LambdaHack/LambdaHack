@@ -31,23 +31,40 @@ display ((y0,x0),(y1,x1)) vty f msg status =
 toWidth :: Int -> String -> String
 toWidth n x = take n (x ++ repeat ' ')
 
+-- | translates the vty key code to the standard GTK key code
+keyTranslate :: V.Event -> String
+keyTranslate e =
+  case e of
+    V.EvKey (KASCII '<') [] -> "less"
+    V.EvKey (KASCII '>') [] -> "greater"
+    V.EvKey (KASCII '.') [] -> "period"
+    V.EvKey (KASCII ':') [] -> "colon"
+    V.EvKey (KASCII ',') [] -> "comma"
+    V.EvKey (KASCII ' ') [] -> "space"
+    V.EvKey (KASCII '?') [] -> "question"
+    V.EvKey (KASCII '*') [] -> "asterisk"
+    V.EvKey KEsc []         -> "Escape"
+    V.EvKey KEnter []       -> "Return"
+    V.EvKey KUp []          -> "KP_Up"
+    V.EvKey KDown []        -> "KP_Down"
+    V.EvKey KLeft []        -> "KP_Left"
+    V.EvKey KRight []       -> "KP_Right"
+    V.EvKey KHome []        -> "KP_Home"
+    V.EvKey KPageUp []      -> "KP_Page_Up"
+    V.EvKey KEnd []         -> "KP_End"
+    V.EvKey KPageDown []    -> "KP_Page_Down"
+    V.EvKey KBegin []       -> "KP_Begin"
+    V.EvKey (KASCII c) []   -> [c]
+    _ -> []
+
 nextEvent :: Session -> IO String
 nextEvent session =
   do
     e <- V.next_event session
-    case e of
-      V.EvKey (KASCII '<') [] -> return "less"
-      V.EvKey (KASCII '>') [] -> return "greater"
-      V.EvKey (KASCII '.') [] -> return "period"
-      V.EvKey (KASCII ':') [] -> return "colon"
-      V.EvKey (KASCII ',') [] -> return "comma"
-      V.EvKey (KASCII ' ') [] -> return "space"
-      V.EvKey (KASCII '?') [] -> return "question"
-      V.EvKey (KASCII '*') [] -> return "asterisk"
-      V.EvKey (KASCII c) []   -> return [c]
-      V.EvKey KEsc []         -> return "Escape"
-      V.EvKey KEnter []       -> return "Return"
-      _                       -> nextEvent session
+    let s = keyTranslate e in
+      if L.null s
+      then nextEvent session
+      else return s
 
 attr = def_attr
 

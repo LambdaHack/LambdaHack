@@ -57,23 +57,44 @@ toWidth :: Int -> String -> String
 toWidth n x = take n (x ++ repeat ' ')
 -}
 
+-- | translates the hcurses key code to the standard GTK key code
+keyTranslate :: C.Key -> String
+keyTranslate e =
+  case e of
+    C.KeyChar '<' -> "less"
+    C.KeyChar '>' -> "greater"
+    C.KeyChar '.' -> "period"
+    C.KeyChar ':' -> "colon"
+    C.KeyChar ',' -> "comma"
+    C.KeyChar ' ' -> "space"
+    C.KeyChar '?' -> "question"
+    C.KeyChar '*' -> "asterisk"
+    C.KeyChar '\ESC' -> "Escape"
+    C.KeyExit        -> "Escape"
+    C.KeyChar '\n'   -> "Return"
+    C.KeyChar '\r'   -> "Return"
+    C.KeyEnter       -> "Return"
+    C.KeyUp    -> "KP_Up"
+    C.KeyDown  -> "KP_Down"
+    C.KeyLeft  -> "KP_Left"
+    C.KeyRight -> "KP_Right"
+    C.KeyHome  -> "KP_Home"
+    C.KeyPPage -> "KP_Page_Up"
+    C.KeyEnd   -> "KP_End"
+    C.KeyNPage -> "KP_Page_Down"
+    C.KeyBeg   -> "KP_Begin"
+    C.KeyB2    -> "KP_Begin"
+    C.KeyChar c   -> [c]
+    _ -> []
+
 nextEvent :: Session -> IO String
 nextEvent session =
   do
     e <- C.getKey refresh
-    case e of
-      C.KeyChar '<' -> return "less"
-      C.KeyChar '>' -> return "greater"
-      C.KeyChar '.' -> return "period"
-      C.KeyChar ':' -> return "colon"
-      C.KeyChar ',' -> return "comma"
-      C.KeyChar ' ' -> return "space"
-      C.KeyChar '?' -> return "question"
-      C.KeyChar '*' -> return "asterisk"
-      C.KeyChar '\ESC' -> return "Escape"
-      C.KeyChar c   -> return [c]
-      C.KeyExit     -> return "Escape"
-      _             -> nextEvent session
+    let s = keyTranslate e in
+      if L.null s
+      then nextEvent session
+      else return s
 
 type Attr = (Maybe AttrColor, Maybe AttrColor)
 
