@@ -158,7 +158,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
            -- really necessary after the player has moved.
       else do
              displayCurrent oldmsg
-             let h = nextEvent session >>= h'
+             let h = nextCommand session >>= h'
                  h' e =
                        handleDirection e (move h) $ 
                          handleDirection (L.map toLower e) run $
@@ -287,7 +287,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
   openclose o abort =
     do
       displayCurrent "direction?"
-      e <- nextEvent session
+      e <- nextCommand session
       handleDirection e (openclose' o abort) (displayCurrent "never mind" >> abort)
   openclose' o abort dir =
     let txt  = if o then "open" else "closed"
@@ -523,7 +523,7 @@ getItem session displayCurrent displayCurrent' assocs discs prompt p ptext is0 =
              | otherwise = "[" ++ letterRange (concatMap (maybeToList . iletter) is) ++ " or ?*]"
       r = do
             displayCurrent (prompt ++ " " ++ choice)
-            let h = nextEvent session >>= h'
+            let h = nextCommand session >>= h'
                 h' e =
                       case e of
                         "question" -> do
