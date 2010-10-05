@@ -9,6 +9,7 @@ import Display
 import State
 import Geometry
 import Level
+import Dungeon
 import Perception
 import Monster
 import Item
@@ -58,9 +59,11 @@ canonicalKey e =
 displayBlankConfirm :: Session -> String -> IO Bool
 displayBlankConfirm session txt =
   let x = txt ++ more
-  in  do
-        display ((0,0),(0,length x - 1)) session (const (attr, ' ')) x ""
-        getConfirm session
+  in do
+    display ((0, 0), normalSize) session (const (attr, ' ')) x ""
+    getConfirm session
+    where
+      normalSize = levelSize $ defaultLevelConfig 1
 
 -- | Waits for a space or return.
 getConfirm :: Session -> IO Bool
