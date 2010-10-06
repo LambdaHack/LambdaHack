@@ -344,11 +344,15 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
   continueRun dir =
     let abort = handle session nlvl (updatePlayer state (const $ player { mdir = Nothing })) per oldmsg
         dloc  = shift ploc dir
+        mslocs = S.fromList $ L.map mloc ms
     in  case (oldmsg, nlmap `at` ploc) of
           (_:_, _)                   -> abort
           (_, Tile (Opening {}) _)   -> abort
           (_, Tile (Door {}) _)      -> abort
           (_, Tile (Stairs {}) _)    -> abort
+          _
+            | not $ S.null $ mslocs `S.intersection` pvisible per
+                                     -> abort  -- mosters visible
           _
             | accessible nlmap ploc dloc ->
                 moveOrAttack
