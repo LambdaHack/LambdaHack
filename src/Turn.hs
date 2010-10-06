@@ -66,7 +66,6 @@ handleMonsters session lvl@(Level { lmonsters = ms })
       do
         nlvl <- rndToIO (addMonster lvl (splayer nstate))
         handle session nlvl nstate per oldmsg
-        
 
 -- | Handle the move of a single monster.
 handleMonster :: Monster -> Session -> Level -> State -> Perception -> Message ->
@@ -99,7 +98,7 @@ strategy m@(Monster { mtype = mt, mloc = me, mdir = mdir })
     case mt of
       Eye     -> eye
       FastEye -> eye
-      Nose    -> nose 
+      Nose    -> nose
       _       -> onlyAccessible moveRandomly
   where
     -- we check if the monster is visible by the player rather than if the
@@ -109,12 +108,12 @@ strategy m@(Monster { mtype = mt, mloc = me, mdir = mdir })
     playerAdjacent     =  adjacent me ploc
     towardsPlayer      =  towards (me, ploc)
     onlyTowardsPlayer  =  only (\ x -> distance (towardsPlayer, x) <= 1)
-    onlyPreservesDir   =  only (\ x -> maybe True (\ d -> distance (neg d, x) > 1) mdir) 
+    onlyPreservesDir   =  only (\ x -> maybe True (\ d -> distance (neg d, x) > 1) mdir)
     onlyUnoccupied     =  onlyMoves (unoccupied ms lmap) me
     onlyAccessible     =  onlyMoves (accessible lmap me) me
     smells             =  L.map fst $
                           L.sortBy (\ (_,s1) (_,s2) -> compare s2 s1) $
-                          L.filter (\ (_,s) -> s > 0) $ 
+                          L.filter (\ (_,s) -> s > 0) $
                           L.map (\ x -> (x, nsmap ! (me `shift` x) - time `max` 0)) moves
 
     eye                =  playerAdjacent .=> return towardsPlayer
@@ -152,7 +151,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
              do
                -- do not make intermediate redraws while running
                maybe (displayLevel session lvl per state "") (const $ return ()) pdir
-               handleMonsters session lvl state per oldmsg 
+               handleMonsters session lvl state per oldmsg
            -- NOTE: It's important to call handleMonsters here, not loop,
            -- because loop does all sorts of calculations that are only
            -- really necessary after the player has moved.
@@ -160,7 +159,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
              displayCurrent oldmsg
              let h = nextCommand session >>= h'
                  h' e =
-                       handleDirection e (move h) $ 
+                       handleDirection e (move h) $
                          handleDirection (L.map toLower e) run $
                          case e of
                            "o"       -> openclose True h
@@ -255,19 +254,19 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                                 (updateDiscoveries (updatePlayer nstate (const p)) (S.union d)))
                   abort
                   nlvl nplayer assocs discs
-      
+
   -- display inventory
-  inventory abort 
+  inventory abort
     | L.null (mitems player) =
       displayCurrent "You are not carrying anything." >> abort
     | otherwise =
     do
-      displayItems displayCurrent' assocs discs 
+      displayItems displayCurrent' assocs discs
                    "This is what you are carrying:" True (mitems player)
       getConfirm session
       displayCurrent ""
       abort  -- looking at inventory doesn't take any time
-      
+
   -- look around at current location
   lookAround abort =
     do
@@ -300,7 +299,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                                  -> displayCurrent ("already " ++ txt) >> abort
                    | not (unoccupied ms nlmap dloc)
                                  -> displayCurrent "blocked" >> abort
-                   | otherwise   -> -- ok, we can open/close the door      
+                   | otherwise   -> -- ok, we can open/close the door
                                     let nt = Tile (Door hv (toOpen o)) is
                                         clmap = M.insert (shift ploc dir) (nt, nt) nlmap
                                     in loop session (updateLMap lvl (const clmap)) nstate ""
@@ -379,7 +378,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
 drinkPotion ::   Session ->                                    -- session
                  (Message -> IO ()) ->                         -- how to display
                  (Message -> String -> IO Bool) ->             -- overlay display
-                 (Level -> Player -> Discoveries -> Message -> IO a) ->     
+                 (Level -> Player -> Discoveries -> Message -> IO a) ->
                                                                -- success continuation
                  IO a ->                                       -- failure continuation
                  Level ->                                      -- the level
@@ -463,7 +462,7 @@ pickupItem displayCurrent continue abort
       let t = nlmap `at` ploc
       case titems t of
         []      ->  displayCurrent "nothing here" >> abort
-        (i:rs)  ->  
+        (i:rs)  ->
           case assignLetter (iletter i) (mletter nplayer) (mitems nplayer) of
             Just l  ->
               let msg = -- (complete sentence, more adequate for monsters)
@@ -516,7 +515,7 @@ getItem :: Session ->
            (Item -> Bool) ->
            String ->
            [Item] ->
-           IO (Maybe Item) 
+           IO (Maybe Item)
 getItem session displayCurrent displayCurrent' assocs discs prompt p ptext is0 =
   let is = L.filter p is0
       choice | L.null is = "[*]"
@@ -530,7 +529,7 @@ getItem session displayCurrent displayCurrent' assocs discs prompt p ptext is0 =
                                         b <- displayItems displayCurrent' assocs discs
                                                           ptext True is
                                         if b then getOptionalConfirm session (const r) h'
-                                             else r 
+                                             else r
                         "asterisk" -> do
                                         b <- displayItems displayCurrent' assocs discs
                                                           "Objects in your inventory:" True is0
@@ -544,7 +543,7 @@ getItem session displayCurrent displayCurrent' assocs discs prompt p ptext is0 =
 displayItems displayCurrent' assocs discs msg sorted is =
     do
       let inv = unlines $
-                L.map (\ (Item { icount = c, iletter = l, itype = t }) -> 
+                L.map (\ (Item { icount = c, iletter = l, itype = t }) ->
                          letterLabel l ++ objectItem assocs discs c t ++ " ")
                       ((if sorted then sortBy (cmpLetter' `on` iletter) else id) is)
       let ovl = inv ++ more
@@ -597,7 +596,7 @@ moveOrAttack allowAttacks
         else
           abort
       -- Perform a move.
-    | accessible nlmap aloc naloc = 
+    | accessible nlmap aloc naloc =
         updateActor (\ m -> m { mloc = naloc })
                     (\ _ l p -> continue l p (if actor == APlayer
                                               then lookAt False assocs discs nlmap naloc else ""))
