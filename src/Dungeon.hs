@@ -108,7 +108,7 @@ data LevelConfig =
     darkRoomChance    :: Rnd Bool,
     border            :: Int,       -- must be at least 2!
     levelSize         :: (Y,X),     -- lower right point
-    extraConnects     :: (Y,X) -> Int, 
+    extraConnects     :: (Y,X) -> Int,
                                     -- relative to grid
                                     -- (in fact a range, because of duplicate connects)
     noRooms           :: (Y,X) -> Rnd Int,
@@ -121,7 +121,10 @@ data LevelConfig =
     nrItems           :: Rnd Int,   -- range
     depth             :: Int        -- general indicator of difficulty
   }
-    
+
+normalLevelSize :: (Y,X)
+normalLevelSize = (22,79)
+
 defaultLevelConfig :: Int -> LevelConfig
 defaultLevelConfig d =
   LevelConfig {
@@ -132,8 +135,8 @@ defaultLevelConfig d =
     minRoomSize       = return (2,2),
     darkRoomChance    = chance $ 1%((22 - (2 * fromIntegral d)) `max` 2),
     border            = 2,
-    levelSize         = (22,79),
-    extraConnects     = \ (y,x) -> (y*x) `div` 3,   
+    levelSize         = normalLevelSize,
+    extraConnects     = \ (y,x) -> (y*x) `div` 3,
     noRooms           = \ (y,x) -> randomR (0,(y*x) `div` 3),
     minStairsDistance = 676,
     doorChance        = chance $ 1%2,

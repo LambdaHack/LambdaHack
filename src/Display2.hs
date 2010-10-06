@@ -59,11 +59,9 @@ canonicalKey e =
 displayBlankConfirm :: Session -> String -> IO Bool
 displayBlankConfirm session txt =
   let x = txt ++ more
-  in do
-    display ((0, 0), normalSize) session (const (attr, ' ')) x ""
-    getConfirm session
-    where
-      normalSize = levelSize $ defaultLevelConfig 1
+  in  do
+        display ((0, 0), normalLevelSize) session (const (attr, ' ')) x ""
+        getConfirm session
 
 -- | Waits for a space or return.
 getConfirm :: Session -> IO Bool
