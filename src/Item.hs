@@ -14,7 +14,7 @@ import Random
 
 data Item = Item
              { icount  :: Int,
-               itype   :: ItemType,   
+               itype   :: ItemType,
                iletter :: Maybe Char }  -- inventory identifier
   deriving Show
 
@@ -128,7 +128,6 @@ assignLetter r c is =
     case r of
       Just l | l `L.elem` allowed -> Just l
       _ -> listToMaybe free
-             
   where
     current    = S.fromList (concatMap (maybeToList . iletter) is)
     allLetters = ['a'..'z'] ++ ['A'..'Z']
