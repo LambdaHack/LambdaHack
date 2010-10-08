@@ -6,6 +6,9 @@ into things (doors, monsters, treasure). Once the few basic command keys
 and on-screen symbols are learned, mastery and enjoyment of the game
 is the matter of tactical skill and literary imagination.
 
+To be honest, right now you need a lot of imagination, since the game
+is very basic, though playable and winnable. Contributions welcome.
+
 
 Dungeon
 -------
