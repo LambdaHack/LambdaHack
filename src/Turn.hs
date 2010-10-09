@@ -143,7 +143,11 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
     -- check for player death
     if php <= 0
       then do
-             displayCurrent (addMsg oldmsg ("You die ..." ++ more))
+             displayCurrent (addMsg oldmsg more)
+             getConfirm session
+             displayCurrent ("You stumble..." ++ more)
+             getConfirm session
+             displayCurrent ("You die." ++ more)
              getConfirm session
              shutdown session
       else -- check if the player can make another move yet
@@ -310,14 +314,35 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
         searchTile t                              = Just t
         slmap = foldl (\ l m -> update searchTile (shift ploc m) l) nlmap moves
     in  loop session (updateLMap lvl (const slmap)) nstate ""
+  -- flee the dungeon
+  fleeDungeon =
+    let items   = mitems player
+        price i = if iletter i == Just '$' then icount i else 10 * icount i
+        total   = L.sum $ L.map price $ items
+        msg     = "Congratulations, you won! Your loot, worth "
+                  ++ show total ++ " gold, is:"
+    in
+     if total == 0
+         then do
+                displayCurrent ( "Chicken!" ++ more)
+                getConfirm session
+                displayCurrent
+                  ("Next time try to grab some loot before you flee!" ++ more)
+                getConfirm session
+                shutdown session
+         else do
+                displayItems displayCurrent' assocs discs msg True items
+                getConfirm session
+                shutdown session
   -- perform a level change
   lvlchange vdir abort =
     case nlmap `at` ploc of
       Tile (Stairs _ vdir' next) is
        | vdir == vdir' -> -- ok
           case next of
-            Nothing      -> -- exit dungeon
-                            shutdown session
+            Nothing ->
+              -- we are at the top (or bottom or lift)
+              fleeDungeon
             Just (nln, nloc) ->
               -- perform level change
               do
@@ -618,5 +643,3 @@ moveOrAttack allowAttacks
                              findIndices (\ m -> mloc m == naloc) (lmonsters nlvl)
           attacked :: [Actor]
           attacked         = attackedPlayer ++ attackedMonsters
-
-
