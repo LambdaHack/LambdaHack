@@ -29,9 +29,9 @@ start session =
                               restoreGame
                        else return $ Right "Welcome to LambdaHack!"  -- new game
       case restored of
-        Right msg        -> generate session msg
-        Left (lvl,state) -> handle session lvl state (perception_ state lvl)
-                                   "Welcome back to LambdaHack."
+        Right msg  -> generate session msg
+        Left state -> handle session state (perception_ state)
+                             "Welcome back to LambdaHack."
 
 -- | Generate the dungeon for a new game, and start the game loop.
 generate :: Session -> String -> IO ()
@@ -55,7 +55,7 @@ generate session msg =
     let assocs = M.fromList
                    [ (Potion PotionWater,   Clear),
                      (Potion PotionHealing, White) ]
-    let state = (defaultState ((\ (_,x,_) -> x) (head levels)) dng)
+    let state = (defaultState ((\ (_,x,_) -> x) (head levels)) dng lvl)
                   { sassocs = assocs }
-    handle session lvl state (perception_ state lvl) msg
+    handle session state (perception_ state) msg
 

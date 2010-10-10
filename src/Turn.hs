@@ -23,9 +23,10 @@ import Version
 import Strategy
 
 -- | Perform a complete turn (i.e., monster moves etc.)
-loop :: Session -> Level -> State -> Message -> IO ()
-loop session (lvl@(Level nm sz ms smap lmap lmeta))
-             (state@(State { splayer = player@(Monster { mhp = php, mloc = ploc }), stime = time }))
+loop :: Session -> State -> Message -> IO ()
+loop session (state@(State { splayer = player@(Monster { mhp = php, mloc = ploc }),
+                             stime   = time,
+                             slevel  = lvl@(Level nm sz ms smap lmap lmeta) }))
              oldmsg =
   do
     -- update smap
@@ -65,7 +66,7 @@ handleMonsters session lvl@(Level { lmonsters = ms })
     handlePlayer =
       do
         nlvl <- rndToIO (addMonster lvl (splayer nstate))
-        handle session nlvl nstate per oldmsg
+        handle session (updateLevel nstate (const nlvl)) per oldmsg
 
 -- | Handle the move of a single monster.
 handleMonster :: Monster -> Session -> Level -> State -> Perception -> Message ->
@@ -136,9 +137,12 @@ wait :: Strategy Dir
 wait = return (0,0)
 
 -- | Display current status and handle the turn of the player.
-handle :: Session -> Level -> State -> Perception -> Message -> IO ()
-handle session (lvl@(Level nm sz ms smap lmap lmeta))
-               (state@(State { splayer = player@(Monster { mhp = php, mdir = pdir, mloc = ploc, mitems = pinv, mtime = ptime }), stime = time, sassocs = assocs, sdiscoveries = discs }))
+handle :: Session -> State -> Perception -> Message -> IO ()
+handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdir, mloc = ploc, mitems = pinv, mtime = ptime }),
+                               stime   = time,
+                               sassocs = assocs,
+                               sdiscoveries = discs,
+                               slevel  = lvl@(Level nm sz ms smap lmap lmeta) }))
                per oldmsg =
     -- check for player death
     if php <= 0
@@ -178,22 +182,22 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                            "q"       -> drink h
 
                            -- saving or ending the game
-                           "S"       -> saveGame lvl mstate >> shutdown session
+                           "S"       -> saveGame mstate >> shutdown session
                            "Q"       -> shutdown session
                            "Escape"  -> displayCurrent "Press Q to quit." >> h
 
                            -- wait
-                           "space"   -> loop session nlvl nstate ""
-                           "period"  -> loop session nlvl nstate ""
+                           "space"   -> loop session nstate ""
+                           "period"  -> loop session nstate ""
 
                            -- look
                            "colon"   -> lookAround h
 
                            -- display modes
-                           "V"       -> handle session nlvl (toggleVision state) per oldmsg
-                           "R"       -> handle session nlvl (toggleSmell state) per oldmsg
-                           "O"       -> handle session nlvl (toggleOmniscient state) per oldmsg
-                           "T"       -> handle session nlvl (toggleTerrain state) per oldmsg
+                           "V"       -> handle session (updateLevel (toggleVision     state) (const nlvl)) per oldmsg
+                           "R"       -> handle session (updateLevel (toggleSmell      state) (const nlvl)) per oldmsg
+                           "O"       -> handle session (updateLevel (toggleOmniscient state) (const nlvl)) per oldmsg
+                           "T"       -> handle session (updateLevel (toggleTerrain    state) (const nlvl)) per oldmsg
 
                            -- meta information
                            "M"       -> displayCurrent' "" (unlines (shistory mstate) ++ more) >>= \ b ->
@@ -229,12 +233,12 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
   -- player HP regeneration, TODO: remove hardcoded max and time interval
   nplayer = player { mtime = time + mspeed player,
                      mhp   = if time `mod` 1500 == 0 then (php + 1) `min` playerHP else php }
-  nstate  = updatePlayer mstate (const nplayer)
+  nstate  = updateLevel (updatePlayer mstate (const nplayer)) (const nlvl)
 
   -- picking up items
   pickup abort = pickupItem
                    displayCurrent
-                   (\ l p -> loop session l (updatePlayer nstate (const p)))
+                   (\ l p -> loop session (updateLevel (updatePlayer nstate (const p)) (const l)))
                    abort
                    nlvl nplayer assocs discs
 
@@ -243,7 +247,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                  session
                  displayCurrent
                  displayCurrent'
-                 (\ l p -> loop session l (updatePlayer nstate (const p)))
+                 (\ l p -> loop session (updateLevel (updatePlayer nstate (const p)) (const l)))
                  abort
                  nlvl nplayer assocs discs
 
@@ -252,8 +256,8 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                   session
                   displayCurrent
                   displayCurrent'
-                  (\ l p d -> loop session l
-                                (updateDiscoveries (updatePlayer nstate (const p)) (S.union d)))
+                  (\ l p d -> loop session 
+                                (updateLevel (updateDiscoveries (updatePlayer nstate (const p)) (S.union d)) (const l)))
                   abort
                   nlvl nplayer assocs discs
 
@@ -304,14 +308,14 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                    | otherwise   -> -- ok, we can open/close the door
                                     let nt = Tile (Door hv (toOpen o)) is
                                         clmap = M.insert (shift ploc dir) (nt, nt) nlmap
-                                    in loop session (updateLMap lvl (const clmap)) nstate ""
+                                    in loop session (updateLevel nstate (const (updateLMap lvl (const clmap)))) ""
         _ -> displayCurrent "never mind" >> abort
   -- search for secret doors
   search abort =
     let searchTile (Tile (Door hv (Just n)) x,t') = Just (Tile (Door hv (Just (max (n - 1) 0))) x, t')
         searchTile t                              = Just t
         slmap = foldl (\ l m -> update searchTile (shift ploc m) l) nlmap moves
-    in  loop session (updateLMap lvl (const slmap)) nstate ""
+    in  loop session (updateLevel nstate (const (updateLMap lvl (const slmap)))) ""
   -- flee the dungeon
   fleeDungeon =
     let items   = mitems player
@@ -349,8 +353,8 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
                 let full = putDungeonLevel lvl (sdungeon nstate)
                 -- get new level
                     (new, ndng) = getDungeonLevel nln full
-                    lstate = nstate { sdungeon = ndng }
-                loop session new (updatePlayer lstate (const (player { mloc = nloc }))) ""
+                    lstate = nstate { sdungeon = ndng, slevel = new }
+                loop session (updatePlayer lstate (const (player { mloc = nloc }))) ""
       _ -> -- no stairs
            let txt = if vdir == Up then "up" else "down" in
            displayCurrent ("no stairs " ++ txt) >> abort
@@ -358,14 +362,14 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
   run dir =
     do
       let mplayer = nplayer { mdir = Just dir }
-          abort   = handle session nlvl (updatePlayer state (const $ player { mdir = Nothing })) per ""
+          abort   = handle session (updateLevel (updatePlayer state (const $ player { mdir = Nothing })) (const nlvl)) per ""
       moveOrAttack
         False   -- attacks are disallowed while running
-        (\ l p -> loop session l (updatePlayer nstate (const p)))
+        (\ l p -> loop session (updateLevel (updatePlayer nstate (const p)) (const l)))
         abort
         nlvl mplayer assocs discs per APlayer dir
   continueRun dir =
-    let abort = handle session nlvl (updatePlayer state (const $ player { mdir = Nothing })) per oldmsg
+    let abort = handle session (updateLevel (updatePlayer state (const $ player { mdir = Nothing })) (const nlvl)) per oldmsg
         dloc  = shift ploc dir
         mslocs = S.fromList $ L.map mloc ms
     in  case (oldmsg, nlmap `at` ploc) of
@@ -380,7 +384,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
             | accessible nlmap ploc dloc ->
                 moveOrAttack
                   False    -- attacks are disallowed while running
-                  (\ l p -> loop session l (updatePlayer nstate (const p)))
+                  (\ l p -> loop session (updateLevel (updatePlayer nstate (const p)) (const l)))
                   abort
                   nlvl nplayer assocs discs per APlayer dir
           (_, Tile Corridor _)  -- direction change restricted to corridors
@@ -397,7 +401,7 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
   -- perform a player move
   move abort dir = moveOrAttack
                      True   -- attacks are allowed
-                     (\ l p -> loop session l (updatePlayer nstate (const p)))
+                     (\ l p -> loop session (updateLevel (updatePlayer nstate (const p)) (const l)))
                      abort
                      nlvl nplayer assocs discs per APlayer dir
 

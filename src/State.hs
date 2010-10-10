@@ -11,8 +11,7 @@ import Level
 import Item
 import Message
 
--- | The 'State' contains all the game state except the current dungeon
--- level which we usually keep separate.
+-- | The 'State' contains all the game state.
 data State = State
                { splayer      :: Monster,
                  shistory     :: [Message],
@@ -21,11 +20,13 @@ data State = State
                  stime        :: Time,
                  sassocs      :: Assocs,       -- ^ how does every item appear
                  sdiscoveries :: Discoveries,  -- ^ items (types) have been discovered
-                 sdungeon     :: Dungeon       -- ^ all but current dungeon level
+                 sdungeon     :: Dungeon,      -- ^ all but current dungeon level
+                 slevel       :: Level
                }
   deriving Show
 
-defaultState ploc dng =
+defaultState :: Loc -> Dungeon -> Level -> State
+defaultState ploc dng lvl =
   State
     (defaultPlayer ploc)
     []
@@ -34,6 +35,7 @@ defaultState ploc dng =
     M.empty
     S.empty
     dng
+    lvl
 
 updatePlayer :: State -> (Monster -> Monster) -> State
 updatePlayer s f = s { splayer = f (splayer s) }
@@ -43,6 +45,9 @@ updateHistory s f = s { shistory = f (shistory s) }
 
 updateDiscoveries :: State -> (Discoveries -> Discoveries) -> State
 updateDiscoveries s f = s { sdiscoveries = f (sdiscoveries s) }
+
+updateLevel :: State -> (Level -> Level) -> State
+updateLevel s f = s { slevel = f (slevel s) }
 
 toggleVision :: State -> State
 toggleVision s = s { ssensory = if ssensory s == Vision then Implicit else Vision }
@@ -57,7 +62,7 @@ toggleTerrain :: State -> State
 toggleTerrain s = s { sdisplay = case sdisplay s of Terrain 1 -> Normal; Terrain n -> Terrain (n-1); _ -> Terrain 4 }
 
 instance Binary State where
-  put (State player hst sense disp time assocs discs dng) =
+  put (State player hst sense disp time assocs discs dng lvl) =
     do
       put player
       put hst
@@ -67,6 +72,7 @@ instance Binary State where
       put assocs
       put discs
       put dng
+      put lvl
   get =
     do
       player <- get
@@ -77,7 +83,8 @@ instance Binary State where
       assocs <- get
       discs  <- get
       dng    <- get
-      return (State player hst sense disp time assocs discs dng)
+      lvl    <- get
+      return (State player hst sense disp time assocs discs dng lvl)
 
 data SensoryMode =
     Implicit

@@ -15,19 +15,19 @@ savefile = "LambdaHack.save"
 
 -- | We save a simple serialized version of the current level and
 -- the current state. The 'False' is used only as an EOF marker.
-saveGame :: Level -> State -> IO ()
-saveGame lvl state = encodeCompressedFile savefile (lvl,state,False)
+saveGame :: State -> IO ()
+saveGame state = encodeCompressedFile savefile (state,False)
 
 -- | Restore a saved game. Returns either the current level and
 -- game state, or a string containing an error message if restoring
 -- the game fails.
-restoreGame :: IO (Either (Level, State) String)
+restoreGame :: IO (Either State String)
 restoreGame =
   E.catch (do
              r <- strictDecodeCompressedFile savefile
              removeFile savefile
              case r of
-               (x,y,z) -> (z :: Bool) `seq` return $ Left (x,y))
+               (x,z) -> (z :: Bool) `seq` return $ Left x)
           (\ e -> case e :: IOException of
                     _ -> return (Right $ "Restore failed: " ++
                                  (unwords . lines) (show e)))

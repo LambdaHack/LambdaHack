@@ -11,8 +11,8 @@ import FOV
 data Perception =
   Perception { preachable :: Set Loc, pvisible :: Set Loc }
 
-perception_ :: State -> Level -> Perception
-perception_ (State { splayer = Monster { mloc = ploc } }) (Level { lmap = lmap }) =
+perception_ :: State -> Perception
+perception_ (State { splayer = Monster { mloc = ploc }, slevel = Level { lmap = lmap } }) =
   perception ploc lmap
 
 perception :: Loc -> LMap -> Perception
