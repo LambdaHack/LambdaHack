@@ -115,14 +115,16 @@ stringByLocation sy xs =
   in
     (k, \ (y,x) -> M.lookup y m >>= \ n -> M.lookup x n)
 
-displayLevel :: Session -> Level -> Perception -> State -> Message -> IO ()
-displayLevel session lvl per state msg = displayOverlay session lvl per state msg "" >> return ()
+displayLevel :: Session -> Perception -> State -> Message -> IO ()
+displayLevel session per state msg = displayOverlay session per state msg "" >> return ()
 
-displayOverlay :: Session -> Level -> Perception -> State -> Message -> String -> IO Bool
-displayOverlay session (lvl@(Level nm sz@(sy,sx) ms smap nlmap lmeta))
-                     per
-                     (state@(State { splayer = player@(Monster { mhp = php, mdir = pdir, mloc = ploc }), stime = time, sassocs = assocs }))
-                     msg overlay =
+displayOverlay :: Session -> Perception -> State -> Message -> String -> IO Bool
+displayOverlay session per
+               (state@(State { splayer = player@(Monster { mhp = php, mdir = pdir, mloc = ploc }),
+                               stime   = time,
+                               sassocs = assocs,
+                               slevel  = lvl@(Level nm sz@(sy,sx) ms smap nlmap lmeta) }))
+               msg overlay =
     let
       reachable = preachable per
       visible   = pvisible per

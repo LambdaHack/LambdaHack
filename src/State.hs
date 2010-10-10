@@ -11,7 +11,9 @@ import Level
 import Item
 import Message
 
--- | The 'State' contains all the game state.
+-- | The 'State' contains all the game state that has to be saved.
+-- In practice, we maintain extra state, but that state is state
+-- accumulated during a turn or relevant only to the current session.
 data State = State
                { splayer      :: Monster,
                  shistory     :: [Message],

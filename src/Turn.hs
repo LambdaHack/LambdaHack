@@ -156,7 +156,7 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
            if ptime > time then
              do
                -- do not make intermediate redraws while running
-               maybe (displayLevel session lvl per state "") (const $ return ()) pdir
+               maybe (displayLevel session per state "") (const $ return ()) pdir
                handleMonsters session lvl state per oldmsg
            -- NOTE: It's important to call handleMonsters here, not loop,
            -- because loop does all sorts of calculations that are only
@@ -194,10 +194,10 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
                            "colon"   -> lookAround h
 
                            -- display modes
-                           "V"       -> handle session (updateLevel (toggleVision     state) (const nlvl)) per oldmsg
-                           "R"       -> handle session (updateLevel (toggleSmell      state) (const nlvl)) per oldmsg
-                           "O"       -> handle session (updateLevel (toggleOmniscient state) (const nlvl)) per oldmsg
-                           "T"       -> handle session (updateLevel (toggleTerrain    state) (const nlvl)) per oldmsg
+                           "V"       -> handle session (toggleVision     ustate) per oldmsg
+                           "R"       -> handle session (toggleSmell      ustate) per oldmsg
+                           "O"       -> handle session (toggleOmniscient ustate) per oldmsg
+                           "T"       -> handle session (toggleTerrain    ustate) per oldmsg
 
                            -- meta information
                            "M"       -> displayCurrent' "" (unlines (shistory mstate) ++ more) >>= \ b ->
@@ -220,14 +220,17 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
   visible   = pvisible per
 
   displayCurrent :: Message -> IO ()
-  displayCurrent  = displayLevel session nlvl per state
+  displayCurrent  = displayLevel session per ustate
 
   displayCurrent' :: Message -> String -> IO Bool
-  displayCurrent' = displayOverlay session nlvl per state
+  displayCurrent' = displayOverlay session per ustate
 
   -- update player memory
   nlmap = foldr (\ x m -> M.update (\ (t,_) -> Just (t,t)) x m) lmap (S.toList visible)
   nlvl = updateLMap lvl (const nlmap)
+
+  -- state with updated player memory, but without any passed time
+  ustate  = updateLevel state (const nlvl)
 
   -- update player action time, and regenerate hitpoints
   -- player HP regeneration, TODO: remove hardcoded max and time interval
@@ -362,14 +365,14 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
   run dir =
     do
       let mplayer = nplayer { mdir = Just dir }
-          abort   = handle session (updateLevel (updatePlayer state (const $ player { mdir = Nothing })) (const nlvl)) per ""
+          abort   = handle session (updatePlayer ustate (const $ player { mdir = Nothing })) per ""
       moveOrAttack
         False   -- attacks are disallowed while running
         (\ l p -> loop session (updateLevel (updatePlayer nstate (const p)) (const l)))
         abort
         nlvl mplayer assocs discs per APlayer dir
   continueRun dir =
-    let abort = handle session (updateLevel (updatePlayer state (const $ player { mdir = Nothing })) (const nlvl)) per oldmsg
+    let abort = handle session (updatePlayer ustate (const $ player { mdir = Nothing })) per oldmsg
         dloc  = shift ploc dir
         mslocs = S.fromList $ L.map mloc ms
     in  case (oldmsg, nlmap `at` ploc) of
