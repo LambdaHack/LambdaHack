@@ -80,7 +80,7 @@ handleMonster m session
                               slevel  = lvl@(Level { lmonsters = ms, lsmell = nsmap, lmap = lmap }) }))
               per oldmsg =
   do
-    nl <- rndToIO (frequency (head (runStrategy (strategy m lvl state per .| wait))))
+    nl <- rndToIO (frequency (head (runStrategy (strategy m state per .| wait))))
 
     -- increase the monster move time and set direction
     let nm = m { mtime = time + mspeed m, mdir = if nl == (0,0) then Nothing else Just nl }
@@ -88,18 +88,16 @@ handleMonster m session
     let nlvl = updateMonsters (const nms) lvl
     moveOrAttack
       True
-      (\ nlvl np msg ->
-         handleMonsters session (updateLevel (const nlvl) (updatePlayer (const np) state)) per
-                        (addMsg oldmsg msg))
+      (\ s msg -> handleMonsters session s per (addMsg oldmsg msg))
       (handleMonsters session (updateLevel (const nlvl) state) per oldmsg)
-      nlvl player (sassocs state) (sdiscoveries state) per
-      (AMonster act)
-      nl
+      (updateLevel (const nlvl) state)
+      per (AMonster act) nl
 
-strategy :: Monster -> Level -> State -> Perception -> Strategy Loc
+strategy :: Monster -> State -> Perception -> Strategy Loc
 strategy m@(Monster { mtype = mt, mloc = me, mdir = mdir })
-         lvl@(Level { lmonsters = ms, lsmell = nsmap, lmap = lmap })
-         (state@(State { splayer = player@(Monster { mloc = ploc }), stime = time }))
+         (state@(State { splayer = player@(Monster { mloc = ploc }),
+                         stime   = time,
+                         slevel  = lvl@(Level { lmonsters = ms, lsmell = nsmap, lmap = lmap }) }))
          per =
     case mt of
       Eye     -> eye
@@ -246,7 +244,7 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
   -- picking up items
   pickup abort = pickupItem
                    displayCurrent
-                   (\ l p -> loop session (updateLevel (const l) (updatePlayer (const p) nstate)))
+                   (loop session)
                    abort
                    nstate
 
@@ -372,9 +370,9 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
           abort   = handle session (updatePlayer (const $ player { mdir = Nothing }) ustate) per ""
       moveOrAttack
         False   -- attacks are disallowed while running
-        (\ l p -> loop session (updateLevel (const l) (updatePlayer (const p) nstate)))
+        (loop session)
         abort
-        nlvl mplayer assocs discs per APlayer dir
+        (updatePlayer (const mplayer) nstate) per APlayer dir
   continueRun dir =
     let abort = handle session (updatePlayer (const $ player { mdir = Nothing }) ustate) per oldmsg
         dloc  = shift ploc dir
@@ -391,9 +389,9 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
             | accessible nlmap ploc dloc ->
                 moveOrAttack
                   False    -- attacks are disallowed while running
-                  (\ l p -> loop session (updateLevel (const l) (updatePlayer (const p) nstate)))
+                  (loop session)
                   abort
-                  nlvl nplayer assocs discs per APlayer dir
+                  nstate per APlayer dir
           (_, Tile Corridor _)  -- direction change restricted to corridors
             | otherwise ->
                 let ns  = L.filter (\ x -> distance (neg dir,x) > 1
@@ -408,9 +406,9 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
   -- perform a player move
   move abort dir = moveOrAttack
                      True   -- attacks are allowed
-                     (\ l p -> loop session (updateLevel (const l) (updatePlayer (const p) nstate)))
+                     (loop session)
                      abort
-                     nlvl nplayer assocs discs per APlayer dir
+                     nstate per APlayer dir
 
 -- | Drinking potions.
 drinkPotion ::   Session ->                                    -- session
@@ -486,14 +484,14 @@ dropItem session displayCurrent displayCurrent' continue abort
 
 -- | Picking up items.
 pickupItem :: (Message -> IO ()) ->                         -- how to display
-              (Level -> Player -> Message -> IO a) ->       -- success continuation
+              (State -> Message -> IO a) ->                 -- success continuation
               IO a ->                                       -- failure continuation
               State -> IO a
 pickupItem displayCurrent continue abort
-           (State { slevel  = nlvl@(Level { lmap = nlmap }),
-                    splayer = nplayer@(Monster { mloc = ploc }),
-                    sassocs = assocs,
-                    sdiscoveries = discs }) =
+           state@(State { slevel  = nlvl@(Level { lmap = nlmap }),
+                          splayer = nplayer@(Monster { mloc = ploc }),
+                          sassocs = assocs,
+                          sdiscoveries = discs }) =
     do
       -- check if something is here to pick up
       let t = nlmap `at` ploc
@@ -514,8 +512,9 @@ pickupItem displayCurrent continue abort
                   (ni,nitems) = joinItem (i { iletter = Just l }) (mitems nplayer)
                   iplayer = nplayer { mitems  = nitems,
                                       mletter = maxLetter l (mletter nplayer) }
-              in  continue (updateLMap (const plmap) nlvl)
-                           iplayer msg
+              in  continue (updateLevel  (const (updateLMap (const plmap) nlvl)) $
+                            updatePlayer (const iplayer) $
+                            state) msg
             Nothing -> displayCurrent "cannot carry anymore" >> abort
 
 getPotions :: Session ->
@@ -577,6 +576,13 @@ getItem session displayCurrent displayCurrent' assocs discs prompt p ptext is0 =
             h
   in r
 
+displayItems :: (Message -> String -> IO Bool) ->
+                Assocs ->
+                Discoveries ->
+                Message ->
+                Bool ->
+                [Item] ->
+                IO Bool
 displayItems displayCurrent' assocs discs msg sorted is =
     do
       let inv = unlines $
@@ -588,21 +594,21 @@ displayItems displayCurrent' assocs discs msg sorted is =
 
 
 moveOrAttack :: Bool ->                                     -- allow attacks?
-                (Level -> Player -> Message -> IO a) ->     -- success continuation
+                (State -> Message -> IO a) ->               -- success continuation
                 IO a ->                                     -- failure continuation
-                Level ->                                    -- the level
-                Player ->                                   -- the player
-                Assocs ->
-                Discoveries ->
+                State ->
                 Perception ->                               -- perception of the player
                 Actor ->                                    -- who's moving?
                 Dir -> IO a
 moveOrAttack allowAttacks
              continue abort
-             nlvl@(Level { lmap = nlmap }) player assocs discs per
-             actor dir
+             state@(State { slevel  = nlvl@(Level { lmap = nlmap }),
+                            splayer = player,
+                            sassocs = assocs,
+                            sdiscoveries = discs })
+             per actor dir
       -- to prevent monsters from hitting themselves
-    | dir == (0,0) = continue nlvl player ""
+    | dir == (0,0) = continue state ""
       -- At the moment, we check whether there is a monster before checking accessibility
       -- i.e., we can attack a monster on a blocked location. For instance,
       -- a monster on an open door can be attacked diagonally, and a
@@ -624,23 +630,23 @@ moveOrAttack allowAttacks
                   | mloc m `S.member` pvisible per = combatMsg m
                   | otherwise                      = "You hear some noises."
             let sortmtime = sortBy (\ x y -> compare (mtime x) (mtime y))
-            let updateVictims l p msg (a:r) =
-                  updateActor damage (\ m l p -> updateVictims l p
+            let updateVictims s msg (a:r) =
+                  updateActor damage (\ m s -> updateVictims s
                                                    (addMsg msg (perceivedMsg m)) r)
-                              a l p
-                updateVictims l p msg [] = continue l {- (updateMonsters sortmtime l) -} p msg
-            updateVictims nlvl player "" attacked
+                              a s
+                updateVictims s msg [] = continue s {- (updateMonsters sortmtime l) -} msg
+            updateVictims state "" attacked
         else
           abort
       -- Perform a move.
     | accessible nlmap aloc naloc =
         updateActor (\ m -> m { mloc = naloc })
-                    (\ _ l p -> continue l p (if actor == APlayer
-                                              then lookAt False assocs discs nlmap naloc else ""))
-                    actor nlvl player
+                    (\ _ s -> continue s (if actor == APlayer
+                                          then lookAt False assocs discs nlmap naloc else ""))
+                    actor state
     | otherwise = abort
     where am :: Monster
-          am     = getActor nlvl player actor
+          am     = getActor state actor
           aloc :: Loc
           aloc   = mloc am
           source = nlmap `at` aloc

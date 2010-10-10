@@ -2,23 +2,27 @@ module Actor where
 
 import Level
 import Monster
+import State
 
 data Actor = AMonster Int  -- offset in monster list
            | APlayer
   deriving (Show, Eq)
 
-getActor :: Level -> Player -> Actor -> Monster
-getActor lvl p (AMonster n) = lmonsters lvl !! n
-getActor lvl p APlayer      = p
+getActor :: State -> Actor -> Monster
+getActor (State { slevel = lvl, splayer = p }) a =
+  case a of
+    AMonster n -> lmonsters lvl !! n
+    APlayer    -> p
 
 updateActor :: (Monster -> Monster) ->                  -- the update
-               (Monster -> Level -> Player -> IO a) ->  -- continuation
+               (Monster -> State -> IO a) ->            -- continuation
                Actor ->                                 -- who to update
-               Level -> Player -> IO a                  -- transformed continuation
-updateActor f k (AMonster n) lvl p = 
+               State -> IO a                            -- transformed continuation
+updateActor f k (AMonster n) state@(State { slevel = lvl, splayer = p }) =
   let (m,ms) = updateMonster f n (lmonsters lvl)
-  in  k m (updateMonsters (const ms) lvl) p
-updateActor f k APlayer      lvl p = k p lvl (f p)
+  in  k m (updateLevel (updateMonsters (const ms)) state)
+updateActor f k APlayer      state@(State { slevel = lvl, splayer = p }) =
+  k p (updatePlayer f state)
 
 updateMonster :: (Monster -> Monster) -> Int -> [Monster] -> (Monster, [Monster])
 updateMonster f n ms =
