@@ -117,6 +117,7 @@ display ((y0,x0),(y1,x1)) session f msg status =
     sequence_ [ setTo tb (stags session) (y,x) a | 
                 y <- [y0..y1], x <- [x0..x1], let loc = (y,x), let (a,c) = f (y,x) ]
     textViewSetBuffer (sview session) tb
+    yield  -- redisplay ASAP whatever has changed
 
 setTo :: TextBuffer -> Map AttrKey TextTag -> Loc -> Attr -> IO ()
 setTo tb tts (ly,lx) a =

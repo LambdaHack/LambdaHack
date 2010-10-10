@@ -3,7 +3,8 @@ name:          LambdaHack
 version:       0.1.20090606
 license:       GPL
 license-file:  COPYING
-data-files:    README
+data-files:    AUTHORS, COPYING, DESIGN.markdown, PLAYING.markdown,
+               README.markdown
 author:        Andres Loeh <mail@andres-loeh.de>
 maintainer:    Andres Loeh <mail@andres-loeh.de>
 description:   a small roguelike game
