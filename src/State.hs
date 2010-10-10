@@ -39,17 +39,17 @@ defaultState ploc dng lvl =
     dng
     lvl
 
-updatePlayer :: State -> (Monster -> Monster) -> State
-updatePlayer s f = s { splayer = f (splayer s) }
+updatePlayer :: (Monster -> Monster) -> State -> State
+updatePlayer f s = s { splayer = f (splayer s) }
 
-updateHistory :: State -> ([String] -> [String]) -> State
-updateHistory s f = s { shistory = f (shistory s) }
+updateHistory :: ([String] -> [String]) -> State -> State
+updateHistory f s = s { shistory = f (shistory s) }
 
-updateDiscoveries :: State -> (Discoveries -> Discoveries) -> State
-updateDiscoveries s f = s { sdiscoveries = f (sdiscoveries s) }
+updateDiscoveries :: (Discoveries -> Discoveries) -> State -> State
+updateDiscoveries f s = s { sdiscoveries = f (sdiscoveries s) }
 
-updateLevel :: State -> (Level -> Level) -> State
-updateLevel s f = s { slevel = f (slevel s) }
+updateLevel :: (Level -> Level) -> State -> State
+updateLevel f s = s { slevel = f (slevel s) }
 
 toggleVision :: State -> State
 toggleVision s = s { ssensory = if ssensory s == Vision then Implicit else Vision }
