@@ -17,7 +17,7 @@ updateActor :: (Monster -> Monster) ->                  -- the update
                Level -> Player -> IO a                  -- transformed continuation
 updateActor f k (AMonster n) lvl p = 
   let (m,ms) = updateMonster f n (lmonsters lvl)
-  in  k m (updateMonsters lvl (const ms)) p
+  in  k m (updateMonsters (const ms) lvl) p
 updateActor f k APlayer      lvl p = k p lvl (f p)
 
 updateMonster :: (Monster -> Monster) -> Int -> [Monster] -> (Monster, [Monster])

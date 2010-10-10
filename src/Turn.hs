@@ -53,10 +53,10 @@ handleMonsters session lvl@(Level { lmonsters = ms })
                          -- so continue
                             handlePlayer
          | mhp m <= 0 -> -- the monster dies
-                            handleMonsters session (updateMonsters lvl (const ms))
+                            handleMonsters session (updateMonsters (const ms) lvl)
                                            state per oldmsg
          | otherwise  -> -- monster m should move
-                            handleMonster m session (updateMonsters lvl (const ms))
+                            handleMonster m session (updateMonsters (const ms) lvl)
                                           state per oldmsg
   where
     nstate = state { stime = time + 1 }
@@ -80,7 +80,7 @@ handleMonster m session lvl@(Level { lmonsters = ms, lsmell = nsmap, lmap = lmap
     -- increase the monster move time and set direction
     let nm = m { mtime = time + mspeed m, mdir = if nl == (0,0) then Nothing else Just nl }
     let (act, nms) = insertMonster nm ms
-    let nlvl = updateMonsters lvl (const nms)
+    let nlvl = updateMonsters (const nms) lvl
     moveOrAttack
       True
       (\ nlvl np msg ->
@@ -227,7 +227,7 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
 
   -- update player memory
   nlmap = foldr (\ x m -> M.update (\ (t,_) -> Just (t,t)) x m) lmap (S.toList visible)
-  nlvl = updateLMap lvl (const nlmap)
+  nlvl = updateLMap (const nlmap) lvl
 
   -- state with updated player memory, but without any passed time
   ustate  = updateLevel (const nlvl) state
@@ -311,14 +311,14 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
                    | otherwise   -> -- ok, we can open/close the door
                                     let nt = Tile (Door hv (toOpen o)) is
                                         clmap = M.insert (shift ploc dir) (nt, nt) nlmap
-                                    in loop session (updateLevel (const (updateLMap lvl (const clmap))) nstate) ""
+                                    in loop session (updateLevel (const (updateLMap (const clmap) lvl)) nstate) ""
         _ -> displayCurrent "never mind" >> abort
   -- search for secret doors
   search abort =
     let searchTile (Tile (Door hv (Just n)) x,t') = Just (Tile (Door hv (Just (max (n - 1) 0))) x, t')
         searchTile t                              = Just t
         slmap = foldl (\ l m -> update searchTile (shift ploc m) l) nlmap moves
-    in  loop session (updateLevel (const (updateLMap lvl (const slmap))) nstate) ""
+    in  loop session (updateLevel (const (updateLMap (const slmap) lvl)) nstate) ""
   -- flee the dungeon
   fleeDungeon =
     let items   = mitems player
@@ -473,7 +473,7 @@ dropItem session displayCurrent displayCurrent' continue abort
                        msg = subjectMonster (mtype nplayer) ++ " " ++
                              verbMonster (mtype nplayer) "drop" ++ " " ++
                              objectItem assocs discs (icount i') (itype i') ++ "."
-                   in  continue (updateLMap nlvl (const plmap))
+                   in  continue (updateLMap (const plmap) nlvl)
                                 iplayer msg
         Nothing -> displayCurrent "never mind" >> abort
 
@@ -511,7 +511,7 @@ pickupItem displayCurrent continue abort
                   (ni,nitems) = joinItem (i { iletter = Just l }) (mitems nplayer)
                   iplayer = nplayer { mitems  = nitems,
                                       mletter = maxLetter l (mletter nplayer) }
-              in  continue (updateLMap nlvl (const plmap))
+              in  continue (updateLMap (const plmap) nlvl)
                            iplayer msg
             Nothing -> displayCurrent "cannot carry anymore" >> abort
 
@@ -625,7 +625,7 @@ moveOrAttack allowAttacks
                   updateActor damage (\ m l p -> updateVictims l p
                                                    (addMsg msg (perceivedMsg m)) r)
                               a l p
-                updateVictims l p msg [] = continue l {- (updateMonsters l sortmtime) -} p msg
+                updateVictims l p msg [] = continue l {- (updateMonsters sortmtime l) -} p msg
             updateVictims nlvl player "" attacked
         else
           abort

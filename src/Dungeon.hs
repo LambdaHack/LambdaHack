@@ -266,6 +266,6 @@ addMonster lvl@(Level { lmonsters = ms, lmap = lmap })
                                         not (l `L.elem` L.map mloc (player : ms)) &&
                                         distance (ploc, l) > 400)
             m <- newMonster sm monsterFrequency
-            return (updateMonsters lvl (const (m : ms)))
+            return (updateMonsters (const (m : ms)) lvl)
      else return lvl
 

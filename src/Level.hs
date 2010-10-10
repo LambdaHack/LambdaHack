@@ -73,11 +73,11 @@ data Level = Level
                 lmeta     :: String }
   deriving Show
 
-updateLMap :: Level -> (LMap -> LMap) -> Level
-updateLMap lvl f = lvl { lmap = f (lmap lvl) }
+updateLMap :: (LMap -> LMap) -> Level -> Level
+updateLMap f lvl = lvl { lmap = f (lmap lvl) }
 
-updateMonsters :: Level -> ([Monster] -> [Monster]) -> Level
-updateMonsters lvl f = lvl { lmonsters = f (lmonsters lvl) }
+updateMonsters :: ([Monster] -> [Monster]) -> Level -> Level
+updateMonsters f lvl = lvl { lmonsters = f (lmonsters lvl) }
 
 instance Binary Level where
   put (Level nm sz@(sy,sx) ms lsmell lmap lmeta) = 
