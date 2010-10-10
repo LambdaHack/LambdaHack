@@ -15,7 +15,7 @@ import Message
 -- In practice, we maintain extra state, but that state is state
 -- accumulated during a turn or relevant only to the current session.
 data State = State
-               { splayer      :: Monster,
+               { splayer      :: Player,
                  shistory     :: [Message],
                  ssensory     :: SensoryMode,
                  sdisplay     :: DisplayMode,
