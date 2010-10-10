@@ -250,7 +250,7 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
                  session
                  displayCurrent
                  displayCurrent'
-                 (\ l p -> loop session (updateLevel (const l) (updatePlayer (const p) nstate)))
+                 (loop session)
                  abort
                  nstate
 
@@ -259,8 +259,7 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
                   session
                   displayCurrent
                   displayCurrent'
-                  (\ l p d -> loop session 
-                                (updateLevel (const l) (updateDiscoveries (S.union d) (updatePlayer (const p) nstate))))
+                  (loop session)
                   abort
                   nstate
 
@@ -412,15 +411,14 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
 drinkPotion ::   Session ->                                    -- session
                  (Message -> IO ()) ->                         -- how to display
                  (Message -> String -> IO Bool) ->             -- overlay display
-                 (Level -> Player -> Discoveries -> Message -> IO a) ->
-                                                               -- success continuation
+                 (State -> Message -> IO a) ->                 -- success continuation
                  IO a ->                                       -- failure continuation
                  State -> IO a
 drinkPotion session displayCurrent displayCurrent' continue abort
-            (State { slevel  = nlvl@(Level { lmap = nlmap }),
-                     splayer = nplayer@(Monster { mloc = ploc }),
-                     sassocs = assocs,
-                     sdiscoveries = discs })
+            state@(State { slevel  = nlvl@(Level { lmap = nlmap }),
+                           splayer = nplayer@(Monster { mloc = ploc }),
+                           sassocs = assocs,
+                           sdiscoveries = discs })
     | L.null (mitems nplayer) =
       displayCurrent "You are not carrying anything." >> abort
     | otherwise =
@@ -439,8 +437,10 @@ drinkPotion session displayCurrent displayCurrent' continue abort
                        pmsg PotionHealing = "You feel better."
                        fplayer PotionWater   = iplayer
                        fplayer PotionHealing = iplayer { mhp = 20 }
-                   in  continue nlvl
-                                (fplayer ptype) (S.singleton (itype i')) msg
+                   in  continue (updateLevel       (const nlvl) $
+                                 updatePlayer      (const (fplayer ptype)) $
+                                 updateDiscoveries (S.insert (itype i')) $
+                                 state) msg
         Just _  -> displayCurrent "you cannot drink that" >> abort
         Nothing -> displayCurrent "never mind" >> abort
 
@@ -449,14 +449,14 @@ drinkPotion session displayCurrent displayCurrent' continue abort
 dropItem ::   Session ->                                    -- session
               (Message -> IO ()) ->                         -- how to display
               (Message -> String -> IO Bool) ->             -- overlay display
-              (Level -> Player -> Message -> IO a) ->       -- success continuation
+              (State -> Message -> IO a) ->                 -- success continuation
               IO a ->                                       -- failure continuation
               State -> IO a
 dropItem session displayCurrent displayCurrent' continue abort
-         (State { slevel  = nlvl@(Level { lmap = nlmap }),
-                  splayer = nplayer@(Monster { mloc = ploc }),
-                  sassocs = assocs,
-                  sdiscoveries = discs })
+         state@(State { slevel  = nlvl@(Level { lmap = nlmap }),
+                        splayer = nplayer@(Monster { mloc = ploc }),
+                        sassocs = assocs,
+                        sdiscoveries = discs })
     | L.null (mitems nplayer) =
       displayCurrent "You are not carrying anything." >> abort
     | otherwise =
@@ -471,8 +471,9 @@ dropItem session displayCurrent displayCurrent' continue abort
                        msg = subjectMonster (mtype nplayer) ++ " " ++
                              verbMonster (mtype nplayer) "drop" ++ " " ++
                              objectItem assocs discs (icount i') (itype i') ++ "."
-                   in  continue (updateLMap (const plmap) nlvl)
-                                iplayer msg
+                   in  continue (updateLevel  (const (updateLMap (const plmap) nlvl)) $
+                                 updatePlayer (const iplayer) $
+                                 state) msg
         Nothing -> displayCurrent "never mind" >> abort
 
 
