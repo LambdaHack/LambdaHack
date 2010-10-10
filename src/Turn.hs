@@ -243,7 +243,7 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
                    displayCurrent
                    (\ l p -> loop session (updateLevel (const l) (updatePlayer (const p) nstate)))
                    abort
-                   nlvl nplayer assocs discs
+                   nstate
 
   -- dropping items
   drop abort = dropItem
@@ -252,7 +252,7 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
                  displayCurrent'
                  (\ l p -> loop session (updateLevel (const l) (updatePlayer (const p) nstate)))
                  abort
-                 nlvl nplayer assocs discs
+                 nstate
 
   -- drinking potions
   drink abort = drinkPotion
@@ -262,7 +262,7 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
                   (\ l p d -> loop session 
                                 (updateLevel (const l) (updateDiscoveries (S.union d) (updatePlayer (const p) nstate))))
                   abort
-                  nlvl nplayer assocs discs
+                  nstate
 
   -- display inventory
   inventory abort
@@ -415,13 +415,12 @@ drinkPotion ::   Session ->                                    -- session
                  (Level -> Player -> Discoveries -> Message -> IO a) ->
                                                                -- success continuation
                  IO a ->                                       -- failure continuation
-                 Level ->                                      -- the level
-                 Player ->                                     -- the player
-                 Assocs ->
-                 Discoveries ->
-                 IO a
+                 State -> IO a
 drinkPotion session displayCurrent displayCurrent' continue abort
-            nlvl@(Level { lmap = nlmap }) nplayer@(Monster { mloc = ploc }) assocs discs
+            (State { slevel  = nlvl@(Level { lmap = nlmap }),
+                     splayer = nplayer@(Monster { mloc = ploc }),
+                     sassocs = assocs,
+                     sdiscoveries = discs })
     | L.null (mitems nplayer) =
       displayCurrent "You are not carrying anything." >> abort
     | otherwise =
@@ -452,13 +451,12 @@ dropItem ::   Session ->                                    -- session
               (Message -> String -> IO Bool) ->             -- overlay display
               (Level -> Player -> Message -> IO a) ->       -- success continuation
               IO a ->                                       -- failure continuation
-              Level ->                                      -- the level
-              Player ->                                     -- the player
-              Assocs ->
-              Discoveries ->
-              IO a
+              State -> IO a
 dropItem session displayCurrent displayCurrent' continue abort
-         nlvl@(Level { lmap = nlmap }) nplayer@(Monster { mloc = ploc }) assocs discs
+         (State { slevel  = nlvl@(Level { lmap = nlmap }),
+                  splayer = nplayer@(Monster { mloc = ploc }),
+                  sassocs = assocs,
+                  sdiscoveries = discs })
     | L.null (mitems nplayer) =
       displayCurrent "You are not carrying anything." >> abort
     | otherwise =
@@ -484,13 +482,12 @@ dropItem session displayCurrent displayCurrent' continue abort
 pickupItem :: (Message -> IO ()) ->                         -- how to display
               (Level -> Player -> Message -> IO a) ->       -- success continuation
               IO a ->                                       -- failure continuation
-              Level ->                                      -- the level
-              Player ->                                     -- the player
-              Assocs ->
-              Discoveries ->
-              IO a
+              State -> IO a
 pickupItem displayCurrent continue abort
-           nlvl@(Level { lmap = nlmap }) nplayer@(Monster { mloc = ploc }) assocs discs =
+           (State { slevel  = nlvl@(Level { lmap = nlmap }),
+                    splayer = nplayer@(Monster { mloc = ploc }),
+                    sassocs = assocs,
+                    sdiscoveries = discs }) =
     do
       -- check if something is here to pick up
       let t = nlmap `at` ploc
