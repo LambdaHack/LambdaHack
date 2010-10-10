@@ -554,6 +554,19 @@ moveOrAttack allowAttacks
                     (\ _ s -> continue s (if actor == APlayer
                                           then lookAt False state nlmap naloc else ""))
                     actor state
+      -- Bump into a door/wall, that is try to open it/examine it
+    | allowAttacks =
+      case nlmap `at` naloc of
+        Tile d@(Door hv o') is
+          | secret o' -> abort  -- nothing interesting spotted on the wall
+          | toOpen False == o' ->  -- closed door
+            let nt = Tile (Door hv (toOpen True)) is
+                clmap = M.insert naloc (nt, nt) nlmap
+                clvl  = updateLMap (const clmap) nlvl
+            in
+             continue (updateLevel (const clvl) state) ""
+          | otherwise -> abort  -- already open (bumping diagonally)
+        _ -> abort  -- nothing interesting spotted on the wall
     | otherwise = abort
     where am :: Monster
           am     = getActor state actor
@@ -566,4 +579,4 @@ moveOrAttack allowAttacks
           attackedMonsters = L.map AMonster $
                              findIndices (\ m -> mloc m == naloc) (lmonsters nlvl)
           attacked :: [Actor]
-          attacked         = attackedPlayer ++ attackedMonsters
+          attacked = attackedPlayer ++ attackedMonsters
