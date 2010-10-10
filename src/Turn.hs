@@ -145,8 +145,6 @@ handle session (lvl@(Level nm sz ms smap lmap lmeta))
       then do
              displayCurrent (addMsg oldmsg more)
              getConfirm session
-             displayCurrent ("You stumble..." ++ more)
-             getConfirm session
              displayCurrent ("You die." ++ more)
              getConfirm session
              shutdown session
