@@ -34,14 +34,15 @@ loop session (state@(State { splayer = player@(Monster { mhp = php, mloc = ploc 
     -- determine player perception
     let per = perception ploc lmap
     -- perform monster moves
-    handleMonsters session (lvl { lsmell = nsmap }) state per oldmsg
+    handleMonsters session (updateLevel (const (lvl { lsmell = nsmap })) state) per oldmsg
 
 -- | Handle monster moves. The idea is that we perform moves
 --   as long as there are monsters that have a move time which is
 --   less than or equal to the current time.
-handleMonsters :: Session -> Level -> State -> Perception -> Message -> IO ()
-handleMonsters session lvl@(Level { lmonsters = ms })
-               (state@(State { stime = time }))
+handleMonsters :: Session -> State -> Perception -> Message -> IO ()
+handleMonsters session
+               (state@(State { stime  = time,
+                               slevel = lvl@(Level { lmonsters = ms }) }))
                per oldmsg =
     -- for debugging: causes redraw of the current state for every monster move; slow!
     -- displayLevel session lvl per state oldmsg >>
@@ -53,11 +54,13 @@ handleMonsters session lvl@(Level { lmonsters = ms })
                          -- so continue
                             handlePlayer
          | mhp m <= 0 -> -- the monster dies
-                            handleMonsters session (updateMonsters (const ms) lvl)
-                                           state per oldmsg
+                            handleMonsters session
+                                           (updateLevel (updateMonsters (const ms)) state)
+                                           per oldmsg
          | otherwise  -> -- monster m should move
-                            handleMonster m session (updateMonsters (const ms) lvl)
-                                          state per oldmsg
+                            handleMonster m session
+                                          (updateLevel (updateMonsters (const ms)) state)
+                                          per oldmsg
   where
     nstate = state { stime = time + 1 }
 
@@ -69,10 +72,12 @@ handleMonsters session lvl@(Level { lmonsters = ms })
         handle session (updateLevel (const nlvl) nstate) per oldmsg
 
 -- | Handle the move of a single monster.
-handleMonster :: Monster -> Session -> Level -> State -> Perception -> Message ->
+handleMonster :: Monster -> Session -> State -> Perception -> Message ->
                  IO ()
-handleMonster m session lvl@(Level { lmonsters = ms, lsmell = nsmap, lmap = lmap })
-              (state@(State { splayer = player@(Monster { mloc = ploc }), stime = time }))
+handleMonster m session
+              (state@(State { splayer = player@(Monster { mloc = ploc }),
+                              stime   = time,
+                              slevel  = lvl@(Level { lmonsters = ms, lsmell = nsmap, lmap = lmap }) }))
               per oldmsg =
   do
     nl <- rndToIO (frequency (head (runStrategy (strategy m lvl state per .| wait))))
@@ -84,9 +89,9 @@ handleMonster m session lvl@(Level { lmonsters = ms, lsmell = nsmap, lmap = lmap
     moveOrAttack
       True
       (\ nlvl np msg ->
-         handleMonsters session nlvl (updatePlayer (const np) state) per
+         handleMonsters session (updateLevel (const nlvl) (updatePlayer (const np) state)) per
                         (addMsg oldmsg msg))
-      (handleMonsters session nlvl state per oldmsg)
+      (handleMonsters session (updateLevel (const nlvl) state) per oldmsg)
       nlvl player (sassocs state) (sdiscoveries state) per
       (AMonster act)
       nl
@@ -157,7 +162,7 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
              do
                -- do not make intermediate redraws while running
                maybe (displayLevel session per state "") (const $ return ()) pdir
-               handleMonsters session lvl state per oldmsg
+               handleMonsters session state per oldmsg
            -- NOTE: It's important to call handleMonsters here, not loop,
            -- because loop does all sorts of calculations that are only
            -- really necessary after the player has moved.
