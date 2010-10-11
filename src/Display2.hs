@@ -82,7 +82,7 @@ getOptionalConfirm session h k =
 -- | Configurable event handler for the direction keys. Is used to
 --   handle player moves, but can also be used for directed commands
 --   such as open/close.
-handleDirection :: String -> ((Y,X) -> IO ()) -> IO () -> IO ()
+handleDirection :: String -> ((Y,X) -> IO a) -> IO a -> IO a
 handleDirection e h k =
   case e of
     "k" -> h (-1,0)

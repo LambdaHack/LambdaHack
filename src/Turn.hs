@@ -23,6 +23,7 @@ import Save
 import Message
 import Version
 import Strategy
+import StrategyState
 
 -- | Perform a complete turn (i.e., monster moves etc.)
 loop :: Session -> State -> Message -> IO ()
@@ -95,51 +96,6 @@ handleMonster m session
       (updateLevel (const nlvl) state)
       per (AMonster act) nl
 
-strategy :: Monster -> State -> Perception -> Strategy Loc
-strategy m@(Monster { mtype = mt, mloc = me, mdir = mdir })
-         (state@(State { splayer = player@(Monster { mloc = ploc }),
-                         stime   = time,
-                         slevel  = lvl@(Level { lmonsters = ms, lsmell = nsmap, lmap = lmap }) }))
-         per =
-    case mt of
-      Eye     -> eye
-      FastEye -> eye
-      Nose    -> nose
-      _       -> onlyAccessible moveRandomly
-  where
-    -- we check if the monster is visible by the player rather than if the
-    -- player is visible by the monster -- this is more efficient, but
-    -- won't be correct in the general situation
-    playerVisible      =  me `S.member` pvisible per
-    playerAdjacent     =  adjacent me ploc
-    towardsPlayer      =  towards (me, ploc)
-    onlyTowardsPlayer  =  only (\ x -> distance (towardsPlayer, x) <= 1)
-    onlyPreservesDir   =  only (\ x -> maybe True (\ d -> distance (neg d, x) > 1) mdir)
-    onlyUnoccupied     =  onlyMoves (unoccupied ms lmap) me
-    onlyAccessible     =  onlyMoves (accessible lmap me) me
-    smells             =  L.map fst $
-                          L.sortBy (\ (_,s1) (_,s2) -> compare s2 s1) $
-                          L.filter (\ (_,s) -> s > 0) $
-                          L.map (\ x -> (x, nsmap ! (me `shift` x) - time `max` 0)) moves
-
-    eye                =  playerAdjacent .=> return towardsPlayer
-                          .| (onlyUnoccupied $ onlyAccessible $
-                                 playerVisible  .=> onlyTowardsPlayer moveRandomly
-                              .| onlyPreservesDir moveRandomly)
-
-    nose               =  playerAdjacent .=> return towardsPlayer
-                          .| (onlyAccessible $
-                                 foldr (.|) reject (L.map return smells)
-                              .| moveRandomly)
-
-onlyMoves :: (Dir -> Bool) -> Loc -> Strategy Dir -> Strategy Dir
-onlyMoves p l = only (\ x -> p (l `shift` x))
-
-moveRandomly :: Strategy Dir
-moveRandomly = liftFrequency $ uniform moves
-
-wait :: Strategy Dir
-wait = return (0,0)
 
 -- | Display current status and handle the turn of the player.
 handle :: Session -> State -> Perception -> Message -> IO ()
@@ -171,18 +127,18 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
                        handleDirection e (move h) $
                          handleDirection (L.map toLower e) run $
                          case e of
-                           "o"       -> openclose True h
-                           "c"       -> openclose False h
+                           "o"       -> wrapHandler (openclose True)  h
+                           "c"       -> wrapHandler (openclose False) h
                            "s"       -> search h
 
                            "less"    -> lvlchange Up h
                            "greater" -> lvlchange Down h
 
                            -- items
-                           "comma"   -> pickup h
-                           "d"       -> drop h
+                           "comma"   -> wrapHandler pickupItem  h
+                           "d"       -> wrapHandler dropItem    h
                            "i"       -> inventory h
-                           "q"       -> drink h
+                           "q"       -> wrapHandler drinkPotion h
 
                            -- saving or ending the game
                            "S"       -> saveGame mstate >> shutdown session
@@ -238,28 +194,8 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
                      mhp   = if time `mod` 1500 == 0 then (php + 1) `min` playerHP else php }
   nstate  = updateLevel (const nlvl) (updatePlayer (const nplayer) mstate)
 
-  -- picking up items
-  pickup abort = pickupItem
-                   displayCurrent
-                   (loop session)
-                   abort
-                   nstate
-
-  -- dropping items
-  drop abort = dropItem
-                 session
-                 displayCurrent
-                 (loop session)
-                 abort
-                 nstate
-
-  -- drinking potions
-  drink abort = drinkPotion
-                  session
-                  displayCurrent
-                  (loop session)
-                  abort
-                  nstate
+  -- uniform wrapper function for action handlers
+  wrapHandler h abort = h session displayCurrent (loop session) abort nstate
 
   -- display inventory
   inventory abort
@@ -288,28 +224,6 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
              displayCurrent "" Nothing
              abort  -- looking around doesn't take any time
 
-  -- open and close doors
-  openclose o abort =
-    do
-      displayCurrent "direction?" Nothing
-      e <- nextCommand session
-      handleDirection e (openclose' o abort) (displayCurrent "never mind" Nothing >> abort)
-  openclose' o abort dir =
-    let txt  = if o then "open" else "closed"
-        dloc = shift ploc dir
-    in
-      case nlmap `at` dloc of
-        Tile d@(Door hv o') is
-                   | secret o'   -> displayCurrent "never mind" Nothing >> abort
-                   | toOpen (not o) /= o'
-                                 -> displayCurrent ("already " ++ txt) Nothing >> abort
-                   | not (unoccupied ms nlmap dloc)
-                                 -> displayCurrent "blocked" Nothing >> abort
-                   | otherwise   -> -- ok, we can open/close the door
-                                    let nt = Tile (Door hv (toOpen o)) is
-                                        clmap = M.insert (shift ploc dir) (nt, nt) nlmap
-                                    in loop session (updateLevel (const (updateLMap (const clmap) lvl)) nstate) ""
-        _ -> displayCurrent "never mind" Nothing >> abort
   -- search for secret doors
   search abort =
     let searchTile (Tile (Door hv (Just n)) x,t') = Just (Tile (Door hv (Just (max (n - 1) 0))) x, t')
@@ -406,12 +320,42 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
                      abort
                      nstate per APlayer dir
 
--- | Drinking potions.
-drinkPotion ::   Session ->                                    -- session
-                 (Message -> Maybe String -> IO Bool) ->       -- display
-                 (State -> Message -> IO a) ->                 -- success continuation
-                 IO a ->                                       -- failure continuation
-                 State -> IO a
+type Handler a =  Session ->                                    -- session
+                  (Message -> Maybe String -> IO Bool) ->       -- display
+                  (State -> Message -> IO a) ->                 -- success continuation
+                  IO a ->                                       -- failure continuation
+                  State -> IO a
+
+
+-- | Open and close doors.
+openclose :: Bool -> Handler a
+openclose o session displayCurrent continue abort
+          nstate@(State { slevel  = nlvl@(Level { lmonsters = ms, lmap = nlmap }),
+                          splayer = Monster { mloc = ploc } }) =
+  do
+    displayCurrent "direction?" Nothing
+    e <- nextCommand session
+    handleDirection e openclose'
+                      (displayCurrent "never mind" Nothing >> abort)
+  where
+    openclose' dir =
+      let txt  = if o then "open" else "closed"
+          dloc = shift ploc dir
+      in
+        case nlmap `at` dloc of
+          Tile d@(Door hv o') is
+                   | secret o'   -> displayCurrent "never mind" Nothing >> abort
+                   | toOpen (not o) /= o'
+                                 -> displayCurrent ("already " ++ txt) Nothing >> abort
+                   | not (unoccupied ms nlmap dloc)
+                                 -> displayCurrent "blocked" Nothing >> abort
+                   | otherwise   -> -- ok, we can open/close the door
+                                    let nt = Tile (Door hv (toOpen o)) is
+                                        clmap = M.insert (shift ploc dir) (nt, nt) nlmap
+                                    in continue (updateLevel (const (updateLMap (const clmap) nlvl)) nstate) ""
+          _ -> displayCurrent "never mind" Nothing >> abort
+
+drinkPotion :: Handler a
 drinkPotion session displayCurrent continue abort
             state@(State { slevel  = nlvl@(Level { lmap = nlmap }),
                            splayer = nplayer@(Monster { mloc = ploc }) })
@@ -440,13 +384,7 @@ drinkPotion session displayCurrent continue abort
         Just _  -> displayCurrent "you cannot drink that" Nothing >> abort
         Nothing -> displayCurrent "never mind" Nothing >> abort
 
-
--- | Dropping items.
-dropItem ::   Session ->                                    -- session
-              (Message -> Maybe String -> IO Bool) ->       -- display
-              (State -> Message -> IO a) ->                 -- success continuation
-              IO a ->                                       -- failure continuation
-              State -> IO a
+dropItem :: Handler a
 dropItem session displayCurrent continue abort
          state@(State { slevel  = nlvl@(Level { lmap = nlmap }),
                         splayer = nplayer@(Monster { mloc = ploc }) })
@@ -469,15 +407,8 @@ dropItem session displayCurrent continue abort
                                  state) msg
         Nothing -> displayCurrent "never mind" Nothing >> abort
 
-
-
-
--- | Picking up items.
-pickupItem :: (Message -> Maybe String -> IO Bool) ->       -- display
-              (State -> Message -> IO a) ->                 -- success continuation
-              IO a ->                                       -- failure continuation
-              State -> IO a
-pickupItem displayCurrent continue abort
+pickupItem :: Handler a
+pickupItem _ displayCurrent continue abort
            state@(State { slevel  = nlvl@(Level { lmap = nlmap }),
                           splayer = nplayer@(Monster { mloc = ploc }) }) =
     do
