@@ -150,22 +150,22 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
     -- check for player death
     if php <= 0
       then do
-             displayCurrent (addMsg oldmsg more)
+             displayCurrent (addMsg oldmsg more) Nothing
              getConfirm session
-             displayCurrent ("You die." ++ more)
+             displayCurrent ("You die." ++ more) Nothing
              getConfirm session
              shutdown session
       else -- check if the player can make another move yet
            if ptime > time then
              do
                -- do not make intermediate redraws while running
-               maybe (displayLevel session per state "") (const $ return ()) pdir
+               maybe (displayLevel session per state "" Nothing) (const $ return True) pdir
                handleMonsters session state per oldmsg
            -- NOTE: It's important to call handleMonsters here, not loop,
            -- because loop does all sorts of calculations that are only
            -- really necessary after the player has moved.
       else do
-             displayCurrent oldmsg
+             displayCurrent oldmsg Nothing
              let h = nextCommand session >>= h'
                  h' e =
                        handleDirection e (move h) $
@@ -187,7 +187,7 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
                            -- saving or ending the game
                            "S"       -> saveGame mstate >> shutdown session
                            "Q"       -> shutdown session
-                           "Escape"  -> displayCurrent "Press Q to quit." >> h
+                           "Escape"  -> displayCurrent "Press Q to quit." Nothing >> h
 
                            -- wait
                            "space"   -> loop session nstate ""
@@ -203,14 +203,14 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
                            "T"       -> handle session (toggleTerrain    ustate) per oldmsg
 
                            -- meta information
-                           "M"       -> displayCurrent' "" (unlines (shistory mstate) ++ more) >>= \ b ->
+                           "M"       -> displayCurrent "" (Just $ unlines (shistory mstate) ++ more) >>= \ b ->
                                         if b then getOptionalConfirm session
-                                                    (const (displayCurrent "" >> h)) h'
-                                             else displayCurrent "" >> h
-                           "I"       -> displayCurrent lmeta >> h
-                           "v"       -> displayCurrent version >> h
+                                                    (const (displayCurrent "" Nothing >> h)) h'
+                                             else displayCurrent "" Nothing >> h
+                           "I"       -> displayCurrent lmeta   Nothing >> h
+                           "v"       -> displayCurrent version Nothing >> h
 
-                           s   -> displayCurrent ("unknown command (" ++ s ++ ")") >> h
+                           s         -> displayCurrent ("unknown command (" ++ s ++ ")") Nothing >> h
              maybe h continueRun pdir
 
  where
@@ -222,11 +222,8 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
   reachable = preachable per
   visible   = pvisible per
 
-  displayCurrent :: Message -> IO ()
+  displayCurrent :: Message -> Maybe String -> IO Bool
   displayCurrent  = displayLevel session per ustate
-
-  displayCurrent' :: Message -> String -> IO Bool
-  displayCurrent' = displayOverlay session per ustate
 
   -- update player memory
   nlmap = foldr (\ x m -> M.update (\ (t,_) -> Just (t,t)) x m) lmap (S.toList visible)
@@ -252,7 +249,6 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
   drop abort = dropItem
                  session
                  displayCurrent
-                 displayCurrent'
                  (loop session)
                  abort
                  nstate
@@ -261,7 +257,6 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
   drink abort = drinkPotion
                   session
                   displayCurrent
-                  displayCurrent'
                   (loop session)
                   abort
                   nstate
@@ -269,13 +264,13 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
   -- display inventory
   inventory abort
     | L.null (mitems player) =
-      displayCurrent "You are not carrying anything." >> abort
+      displayCurrent "You are not carrying anything." Nothing >> abort
     | otherwise =
     do
-      displayItems displayCurrent' assocs discs
+      displayItems displayCurrent assocs discs
                    "This is what you are carrying:" True (mitems player)
       getConfirm session
-      displayCurrent ""
+      displayCurrent "" Nothing
       abort  -- looking at inventory doesn't take any time
 
   -- look around at current location
@@ -284,37 +279,37 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
       -- check if something is here to pick up
       let t = nlmap `at` ploc
       if length (titems t) <= 2
-        then displayCurrent (lookAt True assocs discs nlmap ploc) >> abort
+        then displayCurrent (lookAt True assocs discs nlmap ploc) Nothing >> abort
         else
           do
-             displayItems displayCurrent' assocs discs
+             displayItems displayCurrent assocs discs
                           (lookAt True assocs discs nlmap ploc) False (titems t)
              getConfirm session
-             displayCurrent ""
+             displayCurrent "" Nothing
              abort  -- looking around doesn't take any time
 
   -- open and close doors
   openclose o abort =
     do
-      displayCurrent "direction?"
+      displayCurrent "direction?" Nothing
       e <- nextCommand session
-      handleDirection e (openclose' o abort) (displayCurrent "never mind" >> abort)
+      handleDirection e (openclose' o abort) (displayCurrent "never mind" Nothing >> abort)
   openclose' o abort dir =
     let txt  = if o then "open" else "closed"
         dloc = shift ploc dir
     in
       case nlmap `at` dloc of
         Tile d@(Door hv o') is
-                   | secret o'   -> displayCurrent "never mind" >> abort
+                   | secret o'   -> displayCurrent "never mind" Nothing >> abort
                    | toOpen (not o) /= o'
-                                 -> displayCurrent ("already " ++ txt) >> abort
+                                 -> displayCurrent ("already " ++ txt) Nothing >> abort
                    | not (unoccupied ms nlmap dloc)
-                                 -> displayCurrent "blocked" >> abort
+                                 -> displayCurrent "blocked" Nothing >> abort
                    | otherwise   -> -- ok, we can open/close the door
                                     let nt = Tile (Door hv (toOpen o)) is
                                         clmap = M.insert (shift ploc dir) (nt, nt) nlmap
                                     in loop session (updateLevel (const (updateLMap (const clmap) lvl)) nstate) ""
-        _ -> displayCurrent "never mind" >> abort
+        _ -> displayCurrent "never mind" Nothing >> abort
   -- search for secret doors
   search abort =
     let searchTile (Tile (Door hv (Just n)) x,t') = Just (Tile (Door hv (Just (max (n - 1) 0))) x, t')
@@ -331,14 +326,15 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
     in
      if total == 0
          then do
-                displayCurrent ( "Chicken!" ++ more)
+                displayCurrent ("Chicken!" ++ more) Nothing
                 getConfirm session
                 displayCurrent
                   ("Next time try to grab some loot before you flee!" ++ more)
+                  Nothing
                 getConfirm session
                 shutdown session
          else do
-                displayItems displayCurrent' assocs discs msg True items
+                displayItems displayCurrent assocs discs msg True items
                 getConfirm session
                 shutdown session
   -- perform a level change
@@ -362,7 +358,7 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
                 loop session (updatePlayer (const (player { mloc = nloc })) lstate) ""
       _ -> -- no stairs
            let txt = if vdir == Up then "up" else "down" in
-           displayCurrent ("no stairs " ++ txt) >> abort
+           displayCurrent ("no stairs " ++ txt) Nothing >> abort
   -- run into a direction
   run dir =
     do
@@ -412,21 +408,20 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
 
 -- | Drinking potions.
 drinkPotion ::   Session ->                                    -- session
-                 (Message -> IO ()) ->                         -- how to display
-                 (Message -> String -> IO Bool) ->             -- overlay display
+                 (Message -> Maybe String -> IO Bool) ->       -- display
                  (State -> Message -> IO a) ->                 -- success continuation
                  IO a ->                                       -- failure continuation
                  State -> IO a
-drinkPotion session displayCurrent displayCurrent' continue abort
+drinkPotion session displayCurrent continue abort
             state@(State { slevel  = nlvl@(Level { lmap = nlmap }),
                            splayer = nplayer@(Monster { mloc = ploc }),
                            sassocs = assocs,
                            sdiscoveries = discs })
     | L.null (mitems nplayer) =
-      displayCurrent "You are not carrying anything." >> abort
+      displayCurrent "You are not carrying anything." Nothing >> abort
     | otherwise =
     do
-      i <- getPotions session displayCurrent displayCurrent' assocs discs
+      i <- getPotions session displayCurrent assocs discs
                       "What to drink?" (mitems nplayer)
       case i of
         Just i'@(Item { itype = Potion ptype }) ->
@@ -444,27 +439,26 @@ drinkPotion session displayCurrent displayCurrent' continue abort
                                  updatePlayer      (const (fplayer ptype)) $
                                  updateDiscoveries (S.insert (itype i')) $
                                  state) msg
-        Just _  -> displayCurrent "you cannot drink that" >> abort
-        Nothing -> displayCurrent "never mind" >> abort
+        Just _  -> displayCurrent "you cannot drink that" Nothing >> abort
+        Nothing -> displayCurrent "never mind" Nothing >> abort
 
 
 -- | Dropping items.
 dropItem ::   Session ->                                    -- session
-              (Message -> IO ()) ->                         -- how to display
-              (Message -> String -> IO Bool) ->             -- overlay display
+              (Message -> Maybe String -> IO Bool) ->       -- display
               (State -> Message -> IO a) ->                 -- success continuation
               IO a ->                                       -- failure continuation
               State -> IO a
-dropItem session displayCurrent displayCurrent' continue abort
+dropItem session displayCurrent continue abort
          state@(State { slevel  = nlvl@(Level { lmap = nlmap }),
                         splayer = nplayer@(Monster { mloc = ploc }),
                         sassocs = assocs,
                         sdiscoveries = discs })
     | L.null (mitems nplayer) =
-      displayCurrent "You are not carrying anything." >> abort
+      displayCurrent "You are not carrying anything." Nothing >> abort
     | otherwise =
     do
-      i <- getAnyItem session displayCurrent displayCurrent' assocs discs
+      i <- getAnyItem session displayCurrent assocs discs
                       "What to drop?" (mitems nplayer)
       case i of
         Just i' -> let iplayer = nplayer { mitems = deleteBy ((==) `on` iletter) i' (mitems nplayer) }
@@ -477,13 +471,13 @@ dropItem session displayCurrent displayCurrent' continue abort
                    in  continue (updateLevel  (const (updateLMap (const plmap) nlvl)) $
                                  updatePlayer (const iplayer) $
                                  state) msg
-        Nothing -> displayCurrent "never mind" >> abort
+        Nothing -> displayCurrent "never mind" Nothing >> abort
 
 
 
 
 -- | Picking up items.
-pickupItem :: (Message -> IO ()) ->                         -- how to display
+pickupItem :: (Message -> Maybe String -> IO Bool) ->       -- display
               (State -> Message -> IO a) ->                 -- success continuation
               IO a ->                                       -- failure continuation
               State -> IO a
@@ -496,7 +490,7 @@ pickupItem displayCurrent continue abort
       -- check if something is here to pick up
       let t = nlmap `at` ploc
       case titems t of
-        []      ->  displayCurrent "nothing here" >> abort
+        []      ->  displayCurrent "nothing here" Nothing >> abort
         (i:rs)  ->
           case assignLetter (iletter i) (mletter nplayer) (mitems nplayer) of
             Just l  ->
@@ -515,36 +509,33 @@ pickupItem displayCurrent continue abort
               in  continue (updateLevel  (const (updateLMap (const plmap) nlvl)) $
                             updatePlayer (const iplayer) $
                             state) msg
-            Nothing -> displayCurrent "cannot carry anymore" >> abort
+            Nothing -> displayCurrent "cannot carry anymore" Nothing >> abort
 
 getPotions :: Session ->
-              (Message -> IO ()) ->
-              (Message -> String -> IO Bool) ->
+              (Message -> Maybe String -> IO Bool) ->
               Assocs ->
               Discoveries ->
               String ->
               [Item] ->
               IO (Maybe Item)
-getPotions session displayCurrent displayCurrent' assocs discs prompt is =
-  getItem session displayCurrent displayCurrent' assocs discs
+getPotions session displayCurrent assocs discs prompt is =
+  getItem session displayCurrent  assocs discs
           prompt (\ i -> case itype i of Potion {} -> True; _ -> False)
           "Potions in your inventory:" is
 
 getAnyItem :: Session ->
-              (Message -> IO ()) ->
-              (Message -> String -> IO Bool) ->
+              (Message -> Maybe String -> IO Bool) ->
               Assocs ->
               Discoveries ->
               String ->
               [Item] ->
               IO (Maybe Item)
-getAnyItem session displayCurrent displayCurrent' assocs discs prompt is =
-  getItem session displayCurrent displayCurrent' assocs discs
+getAnyItem session displayCurrent assocs discs prompt is =
+  getItem session displayCurrent assocs discs
           prompt (const True) "Objects in your inventory:" is
 
 getItem :: Session ->
-           (Message -> IO ()) ->
-           (Message -> String -> IO Bool) ->
+           (Message -> Maybe String -> IO Bool) ->
            Assocs ->
            Discoveries ->
            String ->
@@ -552,22 +543,22 @@ getItem :: Session ->
            String ->
            [Item] ->
            IO (Maybe Item)
-getItem session displayCurrent displayCurrent' assocs discs prompt p ptext is0 =
+getItem session displayCurrent assocs discs prompt p ptext is0 =
   let is = L.filter p is0
       choice | L.null is = "[*]"
              | otherwise = "[" ++ letterRange (concatMap (maybeToList . iletter) is) ++ " or ?*]"
       r = do
-            displayCurrent (prompt ++ " " ++ choice)
+            displayCurrent (prompt ++ " " ++ choice) Nothing
             let h = nextCommand session >>= h'
                 h' e =
                       case e of
                         "question" -> do
-                                        b <- displayItems displayCurrent' assocs discs
+                                        b <- displayItems displayCurrent assocs discs
                                                           ptext True is
                                         if b then getOptionalConfirm session (const r) h'
                                              else r
                         "asterisk" -> do
-                                        b <- displayItems displayCurrent' assocs discs
+                                        b <- displayItems displayCurrent assocs discs
                                                           "Objects in your inventory:" True is0
                                         if b then getOptionalConfirm session (const r) h'
                                              else r
@@ -576,21 +567,21 @@ getItem session displayCurrent displayCurrent' assocs discs prompt p ptext is0 =
             h
   in r
 
-displayItems :: (Message -> String -> IO Bool) ->
+displayItems :: (Message -> Maybe String -> IO Bool) ->
                 Assocs ->
                 Discoveries ->
                 Message ->
                 Bool ->
                 [Item] ->
                 IO Bool
-displayItems displayCurrent' assocs discs msg sorted is =
+displayItems displayCurrent assocs discs msg sorted is =
     do
       let inv = unlines $
                 L.map (\ (Item { icount = c, iletter = l, itype = t }) ->
                          letterLabel l ++ objectItem assocs discs c t ++ " ")
                       ((if sorted then sortBy (cmpLetter' `on` iletter) else id) is)
       let ovl = inv ++ more
-      displayCurrent' msg ovl
+      displayCurrent msg (Just ovl)
 
 
 moveOrAttack :: Bool ->                                     -- allow attacks?
