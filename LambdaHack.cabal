@@ -45,4 +45,5 @@ executable LambdaHack
     other-modules: Display.Gtk
     build-depends: gtk >= 0.11 && < 0.12
     cpp-options:   -DGTK
+    ghc-options:   -threaded
   } }

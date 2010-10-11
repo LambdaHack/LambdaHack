@@ -37,7 +37,8 @@ doAttr tt _            = return ()
 startup :: (Session -> IO ()) -> IO ()
 startup k =
   do
-    initGUI
+    -- initGUI
+    unsafeInitGUIForThreadedRTS
     w <- windowNew
 
     ttt <- textTagTableNew
@@ -96,9 +97,9 @@ startup k =
     ec <- newChan 
     forkIO $ k (Session ec tts tv)
     
-    onKeyPress tv (\ e -> writeChan ec (Graphics.UI.Gtk.Gdk.Events.eventKeyName e) >> yield >> return True)
+    onKeyPress tv (\ e -> postGUIAsync (writeChan ec (Graphics.UI.Gtk.Gdk.Events.eventKeyName e) {- >> yield -}) >> return True)
 
-    idleAdd (yield >> return True) priorityDefaultIdle
+    -- idleAdd (yield >> return True) priorityDefaultIdle
     onDestroy w mainQuit -- set quit handler
     widgetShowAll w
     yield
@@ -108,6 +109,7 @@ shutdown _ = mainQuit
 
 display :: Area -> Session -> (Loc -> (Attr, Char)) -> String -> String -> IO ()
 display ((y0,x0),(y1,x1)) session f msg status =
+  postGUIAsync $
   do
     sbuf <- textViewGetBuffer (sview session)
     ttt <- textBufferGetTagTable sbuf
@@ -117,7 +119,7 @@ display ((y0,x0),(y1,x1)) session f msg status =
     sequence_ [ setTo tb (stags session) (y,x) a | 
                 y <- [y0..y1], x <- [x0..x1], let loc = (y,x), let (a,c) = f (y,x) ]
     textViewSetBuffer (sview session) tb
-    yield  -- redisplay ASAP whatever has changed
+    -- yield  -- redisplay ASAP whatever has changed
 
 setTo :: TextBuffer -> Map AttrKey TextTag -> Loc -> Attr -> IO ()
 setTo tb tts (ly,lx) a =
