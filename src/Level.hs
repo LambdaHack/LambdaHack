@@ -430,30 +430,6 @@ fromTo1 x0 x1
   | x0 <= x1  = [x0..x1]
   | otherwise = [x0,x0-1..x1]
 
-viewTile :: Bool -> Tile -> Assocs -> (Char, Attr -> Attr)
-viewTile b (Tile t [])    a = viewTerrain 0 b t 
-viewTile b (Tile t (i:_)) a = viewItem (itype i) a
-
--- | Produces a textual description of the items at a location. It's
--- probably correct to use 'at' rather than 'rememberAt' at this point,
--- although we could argue that 'rememberAt' reflects what the player can
--- perceive more correctly ...
---
--- The "detailed" variant is for use with an explicit look command.
-lookAt :: Bool -> Assocs -> Discoveries -> LMap -> Loc -> String
-lookAt detailed a d lvl loc
-  | detailed  = lookTerrain (tterrain (lvl `at` loc)) ++ " " ++ isd
-  | otherwise = isd
-  where
-    is  = titems (lvl `at` loc)
-    isd = case is of
-            []    -> ""
-            [i]   -> "You see " ++ objectItem a d (icount i) (itype i) ++ "."
-            [i,j] -> "You see " ++ objectItem a d (icount i) (itype i) ++ " and "
-                                ++ objectItem a d (icount j) (itype j) ++ "."
-            _     -> "There are several objects here" ++
-                     if detailed then ":" else "."
-
 -- | Produces a textual description for terrain, used if no objects
 -- are present.
 lookTerrain :: Terrain -> String

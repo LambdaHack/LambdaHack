@@ -9,6 +9,7 @@ import Display
 import State
 import Geometry
 import Level
+import LevelState
 import Dungeon
 import Perception
 import Monster

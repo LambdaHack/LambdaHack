@@ -214,20 +214,3 @@ makeObject 1 adj obj = let b = adj obj
                              _                       -> "a " ++ b
 makeObject n adj obj = show n ++ " " ++ adj (obj ++ "s")
 
-objectItem :: Assocs -> Discoveries -> Int -> ItemType -> String
-objectItem _ _ n Ring       = makeObject n id "ring"
-objectItem _ _ n Scroll     = makeObject n id "scroll"
-objectItem a d n (Potion t) = makeObject n (identified a d (Potion t)) "potion"
-objectItem _ _ n Wand       = makeObject n id "wand"
-objectItem _ _ n Amulet     = makeObject n id "amulet"
-objectItem _ _ n Gem        = makeObject n id "gem"
-objectItem _ _ n Gold       = makeObject n id "gold piece"
-
-identified :: Assocs -> Discoveries -> ItemType -> String -> String
-identified a d i
-  | i `S.member` d = case i of
-                       Potion t -> potionType t
-                       _        -> ("really strange " ++)
-  | otherwise      = case M.lookup i a of
-                       Just ap  -> appearance ap
-                       _        -> ("really strange " ++)
