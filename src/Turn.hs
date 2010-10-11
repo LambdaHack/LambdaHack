@@ -127,8 +127,7 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
                        handleDirection e (move h) $
                          handleDirection (L.map toLower e) run $
                          case e of
-                           "o"       -> wrapHandler (openclose True)  h
-                           "c"       -> wrapHandler (openclose False) h
+                           "c"       -> close h
                            "s"       -> search h
 
                            "less"    -> lvlchange Up h
@@ -223,6 +222,34 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
              getConfirm session
              displayCurrent "" Nothing
              abort  -- looking around doesn't take any time
+
+  -- close doors
+  close abort =
+    do
+      displayCurrent "direction?" Nothing
+      e <- nextCommand session
+      handleDirection e h_continue h_abort
+        where
+          h_continue = close' abort
+          h_abort = displayCurrent "never mind" Nothing >> abort
+
+  close' abort dir =
+    let dloc = shift ploc dir
+        msg_no_door = displayCurrent "never mind" Nothing >> abort
+    in
+     case nlmap `at` dloc of
+       Tile d@(Door hv o') is
+         | secret o' -> msg_no_door
+         | toOpen True /= o' ->
+           displayCurrent "already closed" Nothing >> abort
+         | not (unoccupied ms nlmap dloc) ->
+           displayCurrent "blocked" Nothing >> abort
+         | otherwise ->  -- ok, we can close the door
+           let nt = Tile (Door hv (toOpen False)) is
+               clmap = M.insert (shift ploc dir) (nt, nt) nlmap
+               clvl  = updateLMap (const clmap) lvl
+           in loop session (updateLevel (const clvl) nstate) ""
+       _ -> msg_no_door
 
   -- search for secret doors
   search abort =
@@ -325,35 +352,6 @@ type Handler a =  Session ->                                    -- session
                   (State -> Message -> IO a) ->                 -- success continuation
                   IO a ->                                       -- failure continuation
                   State -> IO a
-
-
--- | Open and close doors.
-openclose :: Bool -> Handler a
-openclose o session displayCurrent continue abort
-          nstate@(State { slevel  = nlvl@(Level { lmonsters = ms, lmap = nlmap }),
-                          splayer = Monster { mloc = ploc } }) =
-  do
-    displayCurrent "direction?" Nothing
-    e <- nextCommand session
-    handleDirection e openclose'
-                      (displayCurrent "never mind" Nothing >> abort)
-  where
-    openclose' dir =
-      let txt  = if o then "open" else "closed"
-          dloc = shift ploc dir
-      in
-        case nlmap `at` dloc of
-          Tile d@(Door hv o') is
-                   | secret o'   -> displayCurrent "never mind" Nothing >> abort
-                   | toOpen (not o) /= o'
-                                 -> displayCurrent ("already " ++ txt) Nothing >> abort
-                   | not (unoccupied ms nlmap dloc)
-                                 -> displayCurrent "blocked" Nothing >> abort
-                   | otherwise   -> -- ok, we can open/close the door
-                                    let nt = Tile (Door hv (toOpen o)) is
-                                        clmap = M.insert (shift ploc dir) (nt, nt) nlmap
-                                    in continue (updateLevel (const (updateLMap (const clmap) nlvl)) nstate) ""
-          _ -> displayCurrent "never mind" Nothing >> abort
 
 drinkPotion :: Handler a
 drinkPotion session displayCurrent continue abort
