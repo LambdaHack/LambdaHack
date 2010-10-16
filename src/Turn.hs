@@ -24,6 +24,7 @@ import Message
 import Version
 import Strategy
 import StrategyState
+import HighScores
 
 -- | Perform a complete turn (i.e., monster moves etc.)
 loop :: Session -> State -> Message -> IO ()
@@ -257,12 +258,13 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
         searchTile t                              = Just t
         slmap = foldl (\ l m -> update searchTile (shift ploc m) l) nlmap moves
     in  loop session (updateLevel (const (updateLMap (const slmap) lvl)) nstate) ""
+
   -- flee the dungeon
   fleeDungeon =
     let items   = mitems player
         price i = if iletter i == Just '$' then icount i else 10 * icount i
         total   = L.sum $ L.map price $ items
-        msg     = "Congratulations, you won! Your loot, worth "
+        winMsg  = "Congratulations, you won! Your loot, worth "
                   ++ show total ++ " gold, is:"
     in
      if total == 0
@@ -275,9 +277,13 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
                 getConfirm session
                 shutdown session
          else do
-                displayItems displayCurrent nstate msg True items
+                displayItems displayCurrent nstate winMsg True items
+                getConfirm session
+                placeMsg <- HighScores.register total
+                displayCurrent (placeMsg ++ more) Nothing
                 getConfirm session
                 shutdown session
+
   -- perform a level change
   lvlchange vdir abort =
     case nlmap `at` ploc of
@@ -300,6 +306,7 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
       _ -> -- no stairs
            let txt = if vdir == Up then "up" else "down" in
            displayCurrent ("no stairs " ++ txt) Nothing >> abort
+
   -- run into a direction
   run dir =
     do
@@ -340,6 +347,7 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
                                     [newdir] -> run newdir
                                     _        -> abort
           _ -> abort
+
   -- perform a player move
   move abort dir = moveOrAttack
                      True   -- attacks are allowed
