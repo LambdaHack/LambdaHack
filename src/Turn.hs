@@ -112,8 +112,8 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
              displayCurrent (addMsg oldmsg more) Nothing
              getConfirm session
              displayCurrent ("You die." ++ more) Nothing
-             getConfirm session
-             handleScores True True False
+             go <- getConfirm session
+             handleScores go True True False
              shutdown session
       else -- check if the player can make another move yet
            if ptime > time then
@@ -144,8 +144,8 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
                            "q"       -> wrapHandler drinkPotion h
 
                            -- saving or ending the game
-                           "S"       -> saveGame mstate >> handleScores False False False >> shutdown session
-                           "Q"       -> shutdown session
+                           "S"       -> userSavesGame
+                           "Q"       -> userQuits h
                            "Escape"  -> displayCurrent "Press Q to quit." Nothing >> h
 
                            -- wait
@@ -262,6 +262,24 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
         slmap = foldl (\ l m -> update searchTile (shift ploc m) l) nlmap moves
     in  loop session (updateLevel (const (updateLMap (const slmap) lvl)) nstate) ""
 
+  -- quitting the game
+  userQuits h =
+    do
+      let msg   = "Press Space or Return to permanently abandon the game."
+          abort = displayCurrent "Game resumed." Nothing >> h
+      displayCurrent (msg ++ more) Nothing
+      getOptionalConfirm
+        session (\ b -> if b then shutdown session else abort) (\ _ -> abort)
+
+  -- saving the game
+  userSavesGame =
+    do
+      displayCurrent ("Saving game." ++ more) Nothing
+      go <- getConfirm session
+      saveGame mstate
+      handleScores go False False False
+      shutdown session
+
   -- flee the dungeon
   fleeDungeon =
     let items   = mitems player
@@ -279,8 +297,8 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
                 shutdown session
          else do
                 displayItems displayCurrent nstate winMsg True items
-                getConfirm session
-                handleScores True False True
+                go <- getConfirm session
+                handleScores go True False True
                 shutdown session
 
   -- calculate loot's worth
@@ -290,12 +308,12 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
       items   = mitems player
 
   -- handle current score and display it with the high scores
-  handleScores write killed victor =
+  handleScores go write killed victor =
     let moreM msg s =
           displayCurrent msg (Just (s ++ more)) >> getConfirm session
         points = if killed then (total + 1) `div` 2 else total
     in
-     if total == 0
+     if not go || total == 0
      then return ()
      else do
        curDate <- getClockTime
