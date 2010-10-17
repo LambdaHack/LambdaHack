@@ -264,12 +264,8 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
   -- flee the dungeon
   fleeDungeon =
     let items   = mitems player
-        price i = if iletter i == Just '$' then icount i else 10 * icount i
-        total   = L.sum $ L.map price $ items
         winMsg  = "Congratulations, you won! Your loot, worth "
                   ++ show total ++ " gold, is:"
-        moreM msg s =
-          displayCurrent msg (Just (s ++ more)) >> getConfirm session
     in
      if total == 0
          then do
@@ -283,11 +279,28 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
          else do
                 displayItems displayCurrent nstate winMsg True items
                 getConfirm session
-                curDate <- getClockTime
-                let score = HighScores.ScoreRecord total False True curDate time
-                (placeMsg, slideshow) <- HighScores.register score
-                mapM_ (moreM placeMsg) slideshow
+                handleScores True False True
                 shutdown session
+
+  -- calculate loot's worth
+  total = L.sum $ L.map price $ items
+    where
+      price i = if iletter i == Just '$' then icount i else 10 * icount i
+      items   = mitems player
+
+  -- handle current score and display it with the high scores
+  handleScores write killed victor =
+    let moreM msg s =
+          displayCurrent msg (Just (s ++ more)) >> getConfirm session
+        points = if killed then (total + 1) `div` 2 else total
+    in
+     if total == 0
+     then return ()
+     else do
+       curDate <- getClockTime
+       let score = HighScores.ScoreRecord points killed victor curDate time
+       (placeMsg, slideshow) <- HighScores.register write score
+       mapM_ (moreM placeMsg) slideshow
 
   -- perform a level change
   lvlchange vdir abort =
