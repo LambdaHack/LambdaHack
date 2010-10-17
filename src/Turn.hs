@@ -1,5 +1,7 @@
 module Turn where
 
+import System.Time
+
 import Data.List as L
 import Data.Map as M
 import Data.Set as S
@@ -266,6 +268,8 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
         total   = L.sum $ L.map price $ items
         winMsg  = "Congratulations, you won! Your loot, worth "
                   ++ show total ++ " gold, is:"
+        moreM msg s =
+          displayCurrent msg (Just (s ++ more)) >> getConfirm session
     in
      if total == 0
          then do
@@ -279,9 +283,10 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
          else do
                 displayItems displayCurrent nstate winMsg True items
                 getConfirm session
-                placeMsg <- HighScores.register total
-                displayCurrent (placeMsg ++ more) Nothing
-                getConfirm session
+                curDate <- getClockTime
+                let score = HighScores.ScoreRecord total False True curDate time
+                (placeMsg, slideshow) <- HighScores.register score
+                mapM_ (moreM placeMsg) slideshow
                 shutdown session
 
   -- perform a level change
