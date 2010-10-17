@@ -18,6 +18,9 @@ import Dungeon
 -- including build problems and opaque types that make serialization difficult,
 -- and I couldn't use Datetime because it needs old base (and is under GPL).
 -- TODO: When we finally move to Date.Time, let's take timezone into account.
+-- TODO: next time we change the structure, move turn to 2nd place and
+-- make it negative, so that less turns gives better place with the same
+-- points. Also move date 3rd, so that the other fields are irrelevant.
 data ScoreRecord = ScoreRecord
                      { points  :: Int,
                        killed  :: Bool,
@@ -58,7 +61,7 @@ instance Binary ScoreRecord where
 showScore :: (Int, ScoreRecord) -> String
 showScore (pos, score) =
   let won  = if killed score
-             then "was killed"
+             then "was slain"
              else if victor score
                   then "has won"
                   else "took a break"
@@ -120,7 +123,7 @@ slideshow pos h height =
   if pos <= height
   then [showTable h 1 height]
   else [showTable h 1 height,
-        showTable h (max 1 (pos - height `div` 2)) height]
+        showTable h (max (height + 1) (pos - height `div` 2)) height]
 
 -- | Take care of a new score, return a list of messages to display.
 register :: Bool -> ScoreRecord -> IO (String, [String])
@@ -128,8 +131,15 @@ register write s =
   do
     h <- restore
     let (h', pos) = insertPos s h
-        msg = "Your exploits award you place >> "
-              ++ show pos ++ " << on the high scores table."
         (lines, _) = normalLevelSize
+        height = lines `div` 3
+        (msgCurrent, msgUnless) =
+          if killed s
+          then (" short-lived", " (score halved)")
+          else if victor s
+               then (" glorious",
+                     if pos <= height then " among the greatest heroes" else "")
+               else (" current", " (unless you are slain)")
+        msg = printf "Your%s exploits award you place >> %d <<%s." msgCurrent pos msgUnless
     if write then save h' else return ()
-    return (msg, slideshow pos h' (lines `div` 3))
+    return (msg, slideshow pos h' height)
