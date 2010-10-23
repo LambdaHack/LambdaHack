@@ -267,7 +267,7 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
     do
       let msg   = "Press Space or Return to permanently abandon the game."
           abort = displayCurrent "Game resumed." Nothing >> h
-      displayCurrent (msg ++ more) Nothing
+      displayCurrent (msg ++ "--your choice?--") Nothing
       getOptionalConfirm
         session (\ b -> if b then shutdown session else abort) (\ _ -> abort)
 
