@@ -80,7 +80,7 @@ updateMonsters :: ([Monster] -> [Monster]) -> Level -> Level
 updateMonsters f lvl = lvl { lmonsters = f (lmonsters lvl) }
 
 instance Binary Level where
-  put (Level nm sz@(sy,sx) ms lsmell lmap lmeta) = 
+  put (Level nm sz@(sy,sx) ms lsmell lmap lmeta) =
         do
           put nm
           put sz
@@ -124,7 +124,7 @@ data Terrain = Rock
              | Corridor
              | Wall Pos
              | Stairs DL VDir (Maybe DungeonLoc)
-             | Door Pos (Maybe Int) -- Nothing: open, Just 0: closed, otherwise secret
+             | Door Pos (Maybe Int)  -- Nothing: open, Just 0: closed, otherwise secret
   deriving Show
 
 instance Binary Terrain where
@@ -283,7 +283,7 @@ light _                         = False
 -- positions. This function returns the offsets from which light is
 -- reflected. Not all passively lighted tiles reflect from all directions.
 -- Walls, for instance, cannot usually be seen from the outside.
-passive :: Tile -> [Dir]  
+passive :: Tile -> [Dir]
 passive (Tile (Wall p) _)          = posToDir p
 passive (Tile (Opening _) _)       = moves
 passive (Tile (Door p Nothing) _)  = moves
@@ -329,7 +329,7 @@ accessible lvl source target =
       src = lvl `at` source
       tgt = lvl `at` target
   in  open tgt &&
-      (not (diagonal dir) || 
+      (not (diagonal dir) ||
        case (tterrain src, tterrain tgt) of
          (Door {}, _)  -> False
          (_, Door {})  -> False
@@ -398,8 +398,8 @@ connectGrid' (ny,nx) unconnected candidates acc
   | S.null candidates = return (L.map normalize acc)
   | otherwise = do
                   c <- oneOf (S.toList candidates)
-                  let ns = neighbors ((0,0),(ny-1,nx-1)) c -- potential new candidates
-                  let nu = S.delete c unconnected -- new unconnected
+                  let ns = neighbors ((0,0),(ny-1,nx-1)) c  -- potential new candidates
+                  let nu = S.delete c unconnected  -- new unconnected
                   let (nc,ds) = S.partition (`S.member` nu) ns
                                   -- (new candidates, potential connections)
                   new <- if S.null ds then return id
@@ -413,7 +413,7 @@ neighbors :: Area ->        {- size limitation -}
              Loc ->         {- location to find neighbors of -}
              Set Loc
 neighbors area (y,x) =
-  let cs = [ (y + dy, x + dx) | dy <- [-1..1], dx <- [-1..1], (dx + dy) `mod` 2 == 1 ] 
+  let cs = [ (y + dy, x + dx) | dy <- [-1..1], dx <- [-1..1], (dx + dy) `mod` 2 == 1 ]
   in  S.fromList (L.filter (`inside` area) cs)
 
 inside :: Loc -> Area -> Bool
@@ -474,7 +474,7 @@ viewTerrain n b (Door d (Just 0))
   | n <= 2                        = ('+', setFG yellow)
   | otherwise                     = viewTerrain n b (Opening d)
 viewTerrain n b (Door d (Just _))
-  | n <= 2                        = viewTerrain n b (Wall d) -- secret door
+  | n <= 2                        = viewTerrain n b (Wall d)  -- secret door
   | otherwise                     = viewTerrain n b (Opening d)
 viewTerrain n b (Door p Nothing)
   | n <= 2                        = (if p `elem` [L, R] then '-' else '|', setFG yellow)
@@ -485,4 +485,3 @@ viewSmell n = let k | n > 9    = '*'
                     | n < 0    = '-'
                     | otherwise = head . show $ n
               in  (k, setFG black . setBG green)
-
