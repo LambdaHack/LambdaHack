@@ -228,7 +228,9 @@ level cfg nm =
              return (l,t)
     -- locations of the stairs
     su <- findLoc lvl (const floor)
-    sd <- findLoc lvl (\ l t -> floor t && distance (su,l) > minStairsDistance cfg)
+    sd <- findLocTry 1000 lvl
+          (const floor)
+          (\ l t ->  distance (su,l) > minStairsDistance cfg)
     let meta = show allConnects
     return (\ lu ld ->
       let flmap = maybe id (\ l -> M.update (\ (t,r) -> Just $ newTile (Stairs (toDL $ light t) Up   l)) su) lu $
@@ -261,9 +263,13 @@ addMonster lvl@(Level { lmonsters = ms, lmap = lmap })
      then do
             -- TODO: new monsters should always be generated in a place that isn't
             -- visible by the player (if possible -- not possible for bigrooms)
-            sm <- findLoc lvl (\ l t -> floor t &&
-                                        not (l `L.elem` L.map mloc (player : ms)) &&
-                                        distance (ploc, l) > 400)
+            -- levels with few rooms are dangerous, because monsters may spawn
+            -- in adjacent and unexpected places
+            sm <- findLocTry 1000 lvl
+                  (\ l t -> not (l `L.elem` L.map mloc (player : ms))
+                            && open t)
+                  (\ l t -> distance (ploc, l) > 400
+                            && floor t)
             m <- newMonster sm monsterFrequency
             return (updateMonsters (const (m : ms)) lvl)
      else return lvl
