@@ -46,8 +46,8 @@ mkCorridor hv ((y0,x0),(y1,x1)) b =
     -- (ry,rx) is intermediate point the path crosses
     -- hv decides whether we start in horizontal or vertical direction
     case hv of
-      Horiz -> return $ (y0,x0) : L.nub [(y0,x0),(y0,rx),(y1,rx),(y1,x1)]
-      Vert  -> return $ (y0,x0) : L.nub [(y0,x0),(ry,x0),(ry,x1),(y1,x1)]
+      Horiz -> return [(y0,x0),(y0,rx),(y1,rx),(y1,x1)]
+      Vert  -> return [(y0,x0),(ry,x0),(ry,x1),(y1,x1)]
 
 -- | Try to connect two rooms with a corridor.
 -- The condition passed to mkCorridor is tricky; there might not always
@@ -77,7 +77,6 @@ digCorridor (p1:p2:ps) l =
     corridorUpdate _ (Tile (Wall hv) is,u)    = (Tile (Opening hv) is,u)
     corridorUpdate _ (Tile (Opening hv) is,u) = (Tile (Opening hv) is,u)
     corridorUpdate _ (Tile (Floor l) is,u)    = (Tile (Floor l) is,u)
-    corridorUpdate _ (Tile Corridor is,u)     = (Tile (Opening UL) is,u)
     corridorUpdate (x,u) _                    = (x,u)
 digCorridor _ l = l
 
@@ -138,7 +137,7 @@ defaultLevelConfig d =
     border            = 2,
     levelSize         = normalLevelSize,
     extraConnects     = \ (y,x) -> (y*x) `div` 3,
-    noRooms           = \ (y,x) -> randomR (y*x - 1, y*x - 1),  -- temporarily increased for prototyping and debugging
+    noRooms           = \ (y,x) -> randomR (0,(y*x) `div` 3),
     minStairsDistance = 676,
     doorChance        = chance $ 1%2,
     doorOpenChance    = chance $ 1%2,
@@ -242,10 +241,12 @@ level cfg nm =
 emptyLMap :: (Y,X) -> LMap
 emptyLMap (my,mx) = M.fromList [ ((y,x),newTile Rock) | x <- [0..mx], y <- [0..my] ]
 
--- | If the room has size 1, it is at most a start of a corridor.
+-- | If the room has size 1, it is assumed to be a no-room, and a single
+-- corridor field will be dug instead of a room.
 digRoom :: DL -> Room -> LMap -> LMap
 digRoom dl ((y0,x0),(y1,x1)) l
-  | y0 == y1 && x0 == x1 = l
+  | y0 == y1 && x0 == x1 =
+  M.insert (y0,x0) (newTile Corridor) l
   | otherwise =
   let rm = M.fromList $ [ ((y,x),newTile (Floor dl))   | x <- [x0..x1],     y <- [y0..y1]    ]
                      ++ [ ((y,x),newTile (Wall p))     | (x,y,p) <- [(x0-1,y0-1,UL),(x1+1,y0-1,UR),(x0-1,y1+1,DL),(x1+1,y1+1,DR)] ]
