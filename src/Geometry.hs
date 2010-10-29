@@ -40,7 +40,7 @@ adjacent s t = distance (s,t) <= 2
 surroundings :: Loc -> [Loc]
 surroundings l = map (l `shift`) moves
 
-diagonal :: Loc -> Bool
+diagonal :: Dir -> Bool
 diagonal (y,x) = y*x /= 0
 
 -- | Move one square in the given direction.

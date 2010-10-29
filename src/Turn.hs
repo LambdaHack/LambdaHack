@@ -348,13 +348,16 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
   abortState = updatePlayer (const $ player { mdir = Nothing }) ustate
   run dir =
     do
-      let mplayer = nplayer { mdir = Just dir }
-          abort   = handle session abortState per ""
+      let dirState = if Just dir == mdir nplayer
+                     then nstate
+                     else updatePlayer
+                            (const $ nplayer {mdir = Just dir}) nstate
+          abort    = handle session abortState per ""
       moveOrAttack
         False   -- attacks are disallowed while running
         (loop session)
         abort
-        (updatePlayer (const mplayer) nstate) per APlayer dir
+        dirState per APlayer dir
   continueRun dir =
     if S.null (mslocs `S.intersection` pvisible per)  -- no monsters visible
        && L.null oldmsg  -- no news announced
@@ -362,29 +365,28 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
     else abort
       where
         abort  = handle session abortState per oldmsg
-        dloc   = shift ploc dir
         mslocs = S.fromList $ L.map mloc ms
+        dirOK  = accessible nlmap ploc (ploc `shift` dir)
         hop (Tile (Opening {}) _) = abort
         hop (Tile (Door {}) _)    = abort
         hop (Tile (Stairs {}) _)  = abort
-        hop _
-          | accessible nlmap ploc dloc =
-              moveOrAttack
-                False    -- attacks are disallowed while running
-                (loop session)
-                abort
-                nstate per APlayer dir
-        hop (Tile Corridor _) =  -- direction change restricted to corridors
-          let ns  = L.filter (\ x -> distance (neg dir,x) > 1
-                                     && accessible nlmap ploc (ploc `shift` x))
-                             moves
-              sns = L.filter (\ x -> distance (dir,x) <= 1) ns
+        hop (Tile Corridor _)     =
+          -- in corridors, explore all corners and stop at all crossings
+          let ns = L.filter (\ x -> distance (neg dir, x) > 1
+                                    && accessible nlmap ploc (ploc `shift` x))
+                            moves
+              allCloseTo main = L.all (\ d -> distance (main, d) <= 1) ns
           in  case ns of
-                [newdir] -> run newdir
-                _        -> case sns of
-                              [newdir] -> run newdir
-                              _        -> abort
-        hop _ = abort
+                [onlyDir] -> run onlyDir  -- can be diagonal
+                _         ->
+                  -- prefer orthogonal to diagonal dirs, for character safety
+                  case L.filter (\ x -> not $ diagonal x) ns of
+                    [ortoDir]
+                      | allCloseTo ortoDir -> run ortoDir
+                    _ -> abort
+        hop _
+          | dirOK                 = run dir
+        hop _                     = abort
 
   -- perform a player move
   move abort dir = moveOrAttack
