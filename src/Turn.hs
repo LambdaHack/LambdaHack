@@ -267,7 +267,7 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
     do
       let msg   = "Press Space or Return to permanently abandon the game."
           abort = displayCurrent "Game resumed." Nothing >> h
-      displayCurrent (msg ++ "--your choice?--") Nothing
+      displayCurrent (msg ++ " --your choice?--  ") Nothing
       getOptionalConfirm
         session (\ b -> if b then shutdown session else abort) (\ _ -> abort)
 
@@ -480,7 +480,7 @@ pickupItem _ displayCurrent continue abort
               in  continue (updateLevel  (const (updateLMap (const plmap) nlvl)) $
                             updatePlayer (const iplayer) $
                             state) msg
-            Nothing -> displayCurrent "cannot carry anymore" Nothing >> abort
+            Nothing -> displayCurrent "cannot carry any more" Nothing >> abort
 
 getPotions :: Session ->
               (Message -> Maybe String -> IO Bool) ->

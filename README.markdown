@@ -18,7 +18,7 @@ and run Cabal from the main directory
 
     cabal install
 
-or you may try one of the terminal backends with
+or you may try one of the terminal frontend with
 
     cabal install -fvty
 
@@ -35,4 +35,3 @@ for more information.
 [2]: http://www.haskell.org/
 [3]: http://hackage.haskell.org/package/LambdaHack
 [4]: http://github.com/kosmikus/LambdaHack
-
