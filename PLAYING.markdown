@@ -13,7 +13,7 @@ is very basic, though playable and winnable. Contributions welcome.
 Dungeon
 -------
 
-The goal of the player is to explore the dungeon from top to the very bottom
+The goal of the hero is to explore the dungeon from top to the very bottom
 (and grab lots of shiny treasure and gear on the way).
 The dungeon consists of 10 levels and each level consists of 80 by 21 tiles.
 The basic tiles tiles are as follows:
@@ -26,7 +26,7 @@ The basic tiles tiles are as follows:
                closed door                        +
                rock                               blank
 
-The game world is persistent, i.e., every time a player visits a level
+The game world is persistent, i.e., every time the hero visits a level
 during one game, the level should look the same.
 
 
@@ -61,7 +61,7 @@ One of the ways of moving throughout the level is with the vi text editor keys
                n      down-right
 
 Pressing a capital letter corresponding to a direction key will have
-the character run in that direction until something interesting occurs.
+the hero run in that direction until something interesting occurs.
 
 It's also possible to move using the numerical keypad, with Shift for running
 and the middle '5' key for resting. (If you are using the curses frontend,
@@ -82,18 +82,18 @@ Below are also some debug and cheat keys. Use at your peril!
 Monsters
 --------
 
-The player is not alone in the dungeon. Monsters roam the game world, too.
+The hero is not alone in the dungeon. Monsters roam the game world, too.
 Monsters inhabit specific locations on the game map, and can be seen
-if the field they are on can be seen by the player.
-Every monster gets a turn per move of the player. Monster moves
-are restricted in the same way as player moves, i.e., they cannot move
+if the tile they are on can be seen by the hero.
+Every monster gets a turn per move of the hero. Monster moves
+are restricted in the same way as hero moves, i.e., they cannot move
 into obstacles like walls or rock. Some monsters
-ignore the player, others chase him only when they see him
-and the especially dangerous kind is able to smell the player.
+ignore the hero, others chase him only when they see him
+and the especially dangerous kind is able to smell the hero.
 
-When the player moves into a monster or a monster moves into the player,
+When the hero moves into a monster or a monster bumps into the hero,
 combat occurs. Whenever combat occurs, the attacked party may lose some health.
-If the player dies, the game ends.
+If the hero dies, the game ends.
 
 
 On Winning and Dying
