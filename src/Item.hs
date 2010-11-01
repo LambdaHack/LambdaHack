@@ -26,6 +26,7 @@ data ItemType =
  | Amulet
  | Gem
  | Gold
+ | Sword Int
  deriving (Eq, Ord, Show)
 
 data PotionType =
@@ -61,6 +62,7 @@ instance Binary ItemType where
   put Amulet     = putWord8 4
   put Gem        = putWord8 5
   put Gold       = putWord8 6
+  put (Sword i)  = putWord8 7 >> put i
   get = do
           tag <- getWord8
           case tag of
@@ -71,6 +73,7 @@ instance Binary ItemType where
             4 -> return Amulet
             5 -> return Gem
             6 -> return Gold
+            7 -> liftM Sword get
 
 instance Binary PotionType where
   put PotionWater   = putWord8 0
@@ -95,6 +98,7 @@ itemFrequency =
   Frequency
   [
     (100, Gold),
+    (70,  Sword (-1)),
     (30,  Gem),
     (20,  Ring),
     (40,  Scroll),
@@ -108,6 +112,10 @@ itemQuantity :: Int -> ItemType -> Rnd Int
 itemQuantity n Gold = (2 * n) *~ d 8
 itemQuantity _ _    = return 1
 
+itemStrength :: Int -> ItemType -> Rnd ItemType
+itemStrength n (Sword _) = liftM Sword $ liftM (2 +) $ d (n `div` 2 + 1)
+itemStrength _ tp        = return tp
+
 itemLetter :: ItemType -> Maybe Char
 itemLetter Gold = Just '$'
 itemLetter _    = Nothing
@@ -117,8 +125,9 @@ newItem :: Int -> Frequency ItemType -> Rnd Item
 newItem n ftp =
   do
     tp <- frequency ftp
+    item <- itemStrength n tp
     nr <- itemQuantity n tp
-    return (Item nr tp (itemLetter tp))
+    return (Item nr item (itemLetter tp))
 
 -- | Assigns a letter to an item, for inclusion
 -- in the inventory of the player. Takes a remembered
@@ -178,6 +187,7 @@ letterLabel (Just c) = c : " - "
 viewItem :: ItemType -> Assocs -> (Char, Attr -> Attr)
 viewItem i a = viewItem' i (M.lookup i a)
   where
+    viewItem' (Sword {})  _            = (')', id)
     viewItem' Ring        _            = ('=', id)
     viewItem' Scroll      _            = ('?', id)
     viewItem' (Potion {}) (Just Clear) = ('!', setBold . setFG blue)
@@ -213,4 +223,3 @@ makeObject 1 adj obj = let b = adj obj
                              (c:_) | c `elem` "aeio" -> "an " ++ b
                              _                       -> "a " ++ b
 makeObject n adj obj = show n ++ " " ++ adj (obj ++ "s")
-
