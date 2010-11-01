@@ -89,14 +89,15 @@ handleMonster m session
     nl <- rndToIO (frequency (head (runStrategy (strategy m state per .| wait))))
 
     -- increase the monster move time and set direction
-    let nm = m { mtime = time + mspeed m, mdir = if nl == (0,0) then Nothing else Just nl }
-    let (act, nms) = insertMonster nm ms
-    let nlvl = updateMonsters (const nms) lvl
+    let mdir       = if nl == (0,0) then Nothing else Just nl
+        nm         = m { mtime = time + mspeed m, mdir = mdir }
+        (act, nms) = insertMonster nm ms
+        newState   = updateLevel (updateMonsters (const nms)) state
     moveOrAttack
       True
       (\ s msg -> handleMonsters session s per (addMsg oldmsg msg))
-      (handleMonsters session (updateLevel (const nlvl) state) per oldmsg)
-      (updateLevel (const nlvl) state)
+      (handleMonsters session newState per oldmsg)
+      newState
       per (AMonster act) nl
 
 

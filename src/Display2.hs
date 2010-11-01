@@ -82,17 +82,17 @@ getOptionalConfirm session h k =
 -- | Configurable event handler for the direction keys. Is used to
 --   handle player moves, but can also be used for directed commands
 --   such as open/close.
-handleDirection :: String -> ((Y,X) -> IO a) -> IO a -> IO a
+handleDirection :: String -> (Dir -> IO a) -> IO a -> IO a
 handleDirection e h k =
   case e of
-    "k" -> h (-1,0)
-    "j" -> h (1,0)
-    "h" -> h (0,-1)
-    "l" -> h (0,1)
-    "y" -> h (-1,-1)
-    "u" -> h (-1,1)
-    "b" -> h (1,-1)
-    "n" -> h (1,1)
+    "k" -> h up
+    "j" -> h down
+    "h" -> h left
+    "l" -> h right
+    "y" -> h upleft
+    "u" -> h upright
+    "b" -> h downleft
+    "n" -> h downright
     _   -> k
 
 splitOverlay :: Int -> String -> [[String]]
@@ -171,5 +171,3 @@ displayLevel session per
                       if b then perfo (k+1) xs else return False
         | otherwise = disp k xs >> return True
     in perf 0 msgs
-
-

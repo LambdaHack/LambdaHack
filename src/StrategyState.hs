@@ -12,7 +12,7 @@ import Perception
 import Strategy
 import State
 
-strategy :: Monster -> State -> Perception -> Strategy Loc
+strategy :: Monster -> State -> Perception -> Strategy Dir
 strategy m@(Monster { mtype = mt, mloc = me, mdir = mdir })
          (state@(State { splayer = player@(Monster { mloc = ploc }),
                          stime   = time,
@@ -57,4 +57,3 @@ moveRandomly = liftFrequency $ uniform moves
 
 wait :: Strategy Dir
 wait = return (0,0)
-
