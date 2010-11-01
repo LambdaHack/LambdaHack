@@ -50,32 +50,38 @@ handleMonsters session
                (state@(State { stime  = time,
                                slevel = lvl@(Level { lmonsters = ms }) }))
                per oldmsg =
-    -- for debugging: causes redraw of the current state for every monster move; slow!
-    -- displayLevel session lvl per state oldmsg >>
-    case ms of
-      [] -> -- there are no monsters, just continue
-            handlePlayer
-      (m@(Monster { mtime = mt }) : ms)
-         | mt > time  -> -- all the monsters are not yet ready for another move,
-                         -- so continue
-                            handlePlayer
-         | mhp m <= 0 -> -- the monster dies
-                            handleMonsters session
-                                           (updateLevel (updateMonsters (const ms)) state)
-                                           per oldmsg
-         | otherwise  -> -- monster m should move
-                            handleMonster m session
-                                          (updateLevel (updateMonsters (const ms)) state)
-                                          per oldmsg
-  where
-    nstate = state { stime = time + 1 }
+  -- debugging: causes redraw of the current state for every monster move; slow!
+  -- displayLevel session lvl per state oldmsg >>
+  case ms of
+    [] -> -- there are no monsters, just continue
+      handlePlayer
+    (m@(Monster { mtime = mt }) : ms)
+      | mt > time  -> -- all the monsters are not yet ready for another move,
+                      -- so continue
+                      handlePlayer
+      | mhp m <= 0 -> -- the monster dies
+                      killMonster m session
+                        (updateLevel (updateMonsters (const ms)) state)
+                        per oldmsg
+      | otherwise  -> -- monster m should move
+                      handleMonster m session
+                        (updateLevel (updateMonsters (const ms)) state)
+                        per oldmsg
+    where
+      -- good place to do everything that has to be done for every *time*
+      -- unit; currently, that's monster generation
+      handlePlayer =
+        do
+          let nstate = state { stime = time + 1 }
+          nlvl <- rndToIO (addMonster lvl (splayer nstate))
+          handle session (updateLevel (const nlvl) nstate) per oldmsg
 
-    -- good place to do everything that has to be done for every *time*
-    -- unit; currently, that's monster generation
-    handlePlayer =
-      do
-        nlvl <- rndToIO (addMonster lvl (splayer nstate))
-        handle session (updateLevel (const nlvl) nstate) per oldmsg
+-- | Handle death of a single monster: scatter loot, update score, etc.
+killMonster :: Monster -> Session -> State -> Perception -> Message ->
+                 IO ()
+killMonster m session state per oldmsg =
+  let nstate = updateLevel (scatterItems (mitems m) (mloc m)) state
+  in  handleMonsters session nstate per oldmsg
 
 -- | Handle the move of a single monster.
 handleMonster :: Monster -> Session -> State -> Perception -> Message ->
@@ -446,8 +452,7 @@ drinkPotion session displayCurrent continue abort
 
 dropItem :: Handler a
 dropItem session displayCurrent continue abort
-         state@(State { slevel  = nlvl@(Level { lmap = nlmap }),
-                        splayer = nplayer@(Monster { mloc = ploc }) })
+         state@(State { splayer = nplayer@(Monster { mloc = ploc }) })
     | L.null (mitems nplayer) =
       displayCurrent "You are not carrying anything." Nothing >> abort
     | otherwise =
@@ -456,13 +461,10 @@ dropItem session displayCurrent continue abort
                       "What to drop?" (mitems nplayer)
       case i of
         Just i' -> let iplayer = nplayer { mitems = deleteBy ((==) `on` iletter) i' (mitems nplayer) }
-                       t = nlmap `at` ploc
-                       nt = t { titems = snd (joinItem i' (titems t)) }
-                       plmap = M.insert ploc (nt, nt) nlmap
                        msg = subjectMonster (mtype nplayer) ++ " " ++
                              verbMonster (mtype nplayer) "drop" ++ " " ++
                              objectItem state (icount i') (itype i') ++ "."
-                   in  continue (updateLevel  (const (updateLMap (const plmap) nlvl)) $
+                   in  continue (updateLevel (scatterItems [i'] ploc) $
                                  updatePlayer (const iplayer) $
                                  state) msg
         Nothing -> displayCurrent "never mind" Nothing >> abort
