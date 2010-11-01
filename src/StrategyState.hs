@@ -31,6 +31,8 @@ strategy m@(Monster { mtype = mt, mloc = me, mdir = mdir })
     playerAdjacent     =  adjacent me ploc
     towardsPlayer      =  towards (me, ploc)
     onlyTowardsPlayer  =  only (\ x -> distance (towardsPlayer, x) <= 1)
+    lootPresent        =  (\ x -> not $ L.null $ titems $ lmap `at` x)
+    onlyLootPresent    =  onlyMoves lootPresent me
     onlyPreservesDir   =  only (\ x -> maybe True (\ d -> distance (neg d, x) > 1) mdir)
     onlyUnoccupied     =  onlyMoves (unoccupied ms lmap) me
     onlyAccessible     =  onlyMoves (accessible lmap me) me
@@ -41,12 +43,16 @@ strategy m@(Monster { mtype = mt, mloc = me, mdir = mdir })
 
     eye                =  playerAdjacent .=> return towardsPlayer
                           .| (onlyUnoccupied $ onlyAccessible $
-                                 playerVisible  .=> onlyTowardsPlayer moveRandomly
+                              playerVisible .=> onlyTowardsPlayer moveRandomly
+                              .| lootPresent me .=> return (0,0)
+                              .| onlyLootPresent moveRandomly
                               .| onlyPreservesDir moveRandomly)
 
     nose               =  playerAdjacent .=> return towardsPlayer
                           .| (onlyAccessible $
-                                 foldr (.|) reject (L.map return smells)
+                              lootPresent me .=> return (0,0)
+                              .| foldr (.|) reject (L.map return smells)
+                              .| onlyLootPresent moveRandomly
                               .| moveRandomly)
 
 onlyMoves :: (Dir -> Bool) -> Loc -> Strategy Dir -> Strategy Dir

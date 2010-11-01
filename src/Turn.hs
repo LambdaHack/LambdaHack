@@ -87,14 +87,25 @@ handleMonster m session
               per oldmsg =
   do
     nl <- rndToIO (frequency (head (runStrategy (strategy m state per .| wait))))
+    -- choose the action to perform
+    let (action, mdir) =
+          if nl == (0,0)
+          then -- not moving this turn, so let's try to pick up an object
+            let pickup continue abort state _per actor _dir =
+                  let dummyDisplayCurrent _ _ = return True
+                      cont state _msg = continue state ""
+                  in  actorPickupItem actor dummyDisplayCurrent cont abort state
+            in  (pickup, Nothing)
+          else
+            (moveOrAttack True, Just nl)
 
     -- increase the monster move time and set direction
-    let mdir       = if nl == (0,0) then Nothing else Just nl
-        nm         = m { mtime = time + mspeed m, mdir = mdir }
+    let nm         = m { mtime = time + mspeed m, mdir = mdir }
         (act, nms) = insertMonster nm ms
         newState   = updateLevel (updateMonsters (const nms)) state
-    moveOrAttack
-      True
+
+    -- perform action for the current monster and move to the rest
+    action
       (\ s msg -> handleMonsters session s per (addMsg oldmsg msg))
       (handleMonsters session newState per oldmsg)
       newState
