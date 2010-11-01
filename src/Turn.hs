@@ -396,11 +396,13 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
                      abort
                      nstate per APlayer dir
 
-type Handler a =  Session ->                                    -- session
-                  (Message -> Maybe String -> IO Bool) ->       -- display
-                  (State -> Message -> IO a) ->                 -- success continuation
-                  IO a ->                                       -- failure continuation
-                  State -> IO a
+type PassiveHandler a =
+  (Message -> Maybe String -> IO Bool) ->  -- display
+  (State -> Message -> IO a) ->            -- success continuation
+  IO a ->                                  -- failure continuation
+  State -> IO a
+
+type Handler a = Session -> PassiveHandler a
 
 drinkPotion :: Handler a
 drinkPotion session displayCurrent continue abort
@@ -454,17 +456,18 @@ dropItem session displayCurrent continue abort
                                  state) msg
         Nothing -> displayCurrent "never mind" Nothing >> abort
 
-pickupItem :: Handler a
-pickupItem _ displayCurrent continue abort
-           state@(State { slevel  = nlvl@(Level { lmap = nlmap }),
-                          splayer = nplayer@(Monster { mloc = ploc }) }) =
+actorPickupItem :: Actor -> PassiveHandler a
+actorPickupItem actor
+  displayCurrent continue abort
+  state@(State { slevel = lvl@(Level { lmap = lmap }) }) =
     do
       -- check if something is here to pick up
-      let t = nlmap `at` ploc
+      let monster = getActor state actor
+          t = lmap `at` (mloc monster)
       case titems t of
         []      ->  displayCurrent "nothing here" Nothing >> abort
         (i:rs)  ->
-          case assignLetter (iletter i) (mletter nplayer) (mitems nplayer) of
+          case assignLetter (iletter i) (mletter monster) (mitems monster) of
             Just l  ->
               let msg = -- (complete sentence, more adequate for monsters)
                         {-
@@ -472,16 +475,23 @@ pickupItem _ displayCurrent continue abort
                         compoundVerbMonster (mtype player) "pick" "up" ++ " " ++
                         objectItem (icount i) (itype i) ++ "."
                         -}
-                        letterLabel (iletter ni) ++ objectItem state (icount ni) (itype ni)
+                        letterLabel (iletter ni)
+                        ++ objectItem state (icount ni) (itype ni)
                   nt = t { titems = rs }
-                  plmap = M.insert ploc (nt, nt) nlmap
-                  (ni,nitems) = joinItem (i { iletter = Just l }) (mitems nplayer)
-                  iplayer = nplayer { mitems  = nitems,
-                                      mletter = maxLetter l (mletter nplayer) }
-              in  continue (updateLevel  (const (updateLMap (const plmap) nlvl)) $
-                            updatePlayer (const iplayer) $
-                            state) msg
-            Nothing -> displayCurrent "cannot carry any more" Nothing >> abort
+                  nlmap = M.insert (mloc monster) (nt, nt) lmap
+                  (ni,nitems) = joinItem (i { iletter = Just l }) (mitems monster)
+                  updMonster m = m { mitems  = nitems,
+                                     mletter = maxLetter l (mletter monster) }
+                  nlvl = updateLMap (const nlmap) lvl
+                  nstate = updateLevel (const nlvl) state
+              in
+               updateActor updMonster (\ _ st -> continue st msg) actor nstate
+            Nothing ->
+              displayCurrent "cannot carry any more" Nothing >> abort
+
+pickupItem :: Handler a
+pickupItem _session displayCurrent continue abort state =
+  actorPickupItem APlayer displayCurrent continue abort state
 
 getPotions :: Session ->
               (Message -> Maybe String -> IO Bool) ->
