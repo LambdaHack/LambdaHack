@@ -36,11 +36,15 @@ Keys
 Here are a few keys you can use in the game:
 
                key    command
+               c      close a door
+               d      drop an object
+               i      display inventory
+               o      open a door
+               s      search for secret doors
+               q      quaff a potion
+               M      display previous messages
                S      save and quit the game
                Q      quit without saving
-               o      open a door
-               c      close a door
-               s      search for secret doors
                .      wait
                ,      pick up an object
                :      look around
@@ -72,11 +76,11 @@ Below are also some debug and cheat keys. Use at your peril!
 
                key    command
                v      display the version of the game
-               V      toggle field of vision display
                O      toggle "omniscience"
-               M      display level meta-data
+               I      display level meta-data
                R      toggle smell display
                T      toggle level generation sequence
+               V      toggle field of vision display
 
 
 Monsters
