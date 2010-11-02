@@ -217,6 +217,12 @@ findItem p is = findItem' [] is
       | p i              = Just (i, reverse acc ++ is)
       | otherwise        = findItem' (i:acc) is
 
+strongestSword :: [Item] -> Int
+strongestSword l =
+  let aux acc (Item { itype = Sword i }) = max acc i
+      aux acc _ = acc
+  in  foldl aux 0 l
+
 makeObject :: Int -> (String -> String) -> String -> String
 makeObject 1 adj obj = let b = adj obj
                        in  case b of

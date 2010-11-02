@@ -597,15 +597,24 @@ moveOrAttack allowAttacks
     | not (L.null attacked) =
         if allowAttacks then
           do
-            let damage m = case mhp m of
-                             1  ->  m { mhp = 0, mtime = 0 }  -- grant an immediate move to die
-                             h  ->  m { mhp = h - 1 }
+            let sword = strongestSword (mitems am)
+            let damage m =
+                  let newHp = mhp m - max 2 sword
+                  in  if newHp <= 0
+                      then
+                        -- grant an immediate move to die
+                        m { mhp = 0, mtime = 0 }
+                      else
+                        m { mhp = newHp}
             let combatVerb m
                   | mhp m > 0 = "hit"
                   | otherwise = "kill"
+            let swordMsg = if sword == 0
+                           then ""
+                           else " with a (+" ++ show sword ++ ") sword"
             let combatMsg m  = subjectMonster (mtype am) ++ " " ++
                                verbMonster (mtype am) (combatVerb m) ++ " " ++
-                               objectMonster (mtype m) ++ "."
+                               objectMonster (mtype m) ++ swordMsg ++ "."
             let perceivedMsg m
                   | mloc m `S.member` pvisible per = combatMsg m
                   | otherwise                      = "You hear some noises."
