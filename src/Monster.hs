@@ -105,9 +105,9 @@ newMonster loc ftp =
     -- the time to the creation time instead
     template tp hp loc s = Monster tp hp Nothing loc [] 'a' s 0
 
-    hps Eye      = randomR (2,8)
-    hps FastEye  = randomR (1,5)
-    hps Nose     = randomR (5,8)
+    hps Eye      = randomR (1,9)   -- falls in 1--3 unarmed rounds
+    hps FastEye  = randomR (1,5)   -- 1--2
+    hps Nose     = randomR (6,13)  -- 2--4 and in 1 round of the strongest sword
 
     speed Eye      = 10
     speed FastEye  = 4

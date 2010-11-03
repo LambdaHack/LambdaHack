@@ -27,7 +27,7 @@ chance r =
 
 -- | d for die/dice
 d :: Int -> Rnd Int
-d x = randomR (1,x)
+d x = if x <= 0 then return 0 else randomR (1,x)
 
 oneOf :: [a] -> Rnd a
 oneOf xs =
