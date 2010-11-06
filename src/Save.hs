@@ -3,23 +3,14 @@ module Save where
 import System.Directory
 import Control.Exception as E hiding (handle)
 
-import Data.Maybe
-
 import File
 import Level
 import State
 import qualified Config
 
--- | Name of the save game. TODO: It should be possible to play
--- multiple games next to each other (for instance, in a multi-user
--- environment), so the savegames should contain the character name
--- and the user id or something like that.
+-- | Name of the save game.
 file :: IO String
-file =
-  do
-    s <- Config.getString "files" "savegame"
-    return $ fromMaybe "LambdaHack.save" s
-
+file = Config.getFile "LambdaHack.save" "files" "savegame"
 
 -- | We save a simple serialized version of the current level and
 -- the current state. The 'False' is used only as an EOF marker.
