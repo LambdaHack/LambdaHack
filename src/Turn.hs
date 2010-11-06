@@ -486,8 +486,10 @@ drinkPotion session displayCurrent continue abort
                              pmsg ptype
                        pmsg PotionWater   = "Tastes like water."
                        pmsg PotionHealing = "You feel better."
-                       fplayer PotionWater   = iplayer
-                       fplayer PotionHealing = iplayer { mhp = playerHP }
+                       fplayer PotionWater   =
+                         iplayer
+                       fplayer PotionHealing =
+                         iplayer { mhp = mhp iplayer + playerHP `div` 5}
                    in  continue (updateLevel       (const nlvl) $
                                  updatePlayer      (const (fplayer ptype)) $
                                  updateDiscoveries (S.insert (itype i')) $
