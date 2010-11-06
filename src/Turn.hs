@@ -167,7 +167,6 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
                            "Escape"  -> displayCurrent "Press Q to quit." Nothing >> h
 
                            -- wait
-                           "space"   -> loop session nstate ""
                            "period"  -> loop session nstate ""
 
                            -- look
