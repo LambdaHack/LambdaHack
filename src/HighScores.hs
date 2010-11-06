@@ -8,11 +8,12 @@ import System.Time
 import Data.Binary
 import Data.List as L
 
+import qualified Config
 import File
 import Dungeon
 
 -- | A single score.
--- TODO: add characte name, character exp and level, level of death,
+-- TODO: add hero's name, exp and level, level of death,
 -- deepest level visited, cause of death, user number/name.
 -- Note: I tried using Date.Time, but got all kinds of problems,
 -- including build problems and opaque types that make serialization difficult,
@@ -80,7 +81,7 @@ empty :: ScoreTable
 empty = []
 
 -- | Name of the high scores file. TODO: place in ~/.LambdaHack/ (Windows?)
--- and eventually, optionally, in /var/games.
+-- and eventually, optionally, in /var/games. Use getHomeDirectory and Config.
 file = "LambdaHack.scores"
 
 -- | We save a simple serialized version of the high scores table.
