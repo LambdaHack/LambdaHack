@@ -39,6 +39,10 @@ instance Binary LevelName where
 levelName :: LevelName -> String
 levelName (LambdaCave n) = "The Lambda Cave " ++ show n
 
+-- | Gives the numeric representation of the level's depth.
+levelNumber :: LevelName -> Int
+levelNumber (LambdaCave n) = n
+
 -- | The complete dungeon is a map from level names to levels.
 -- We usually store all but the current level in this data structure.
 data Dungeon = Dungeon (M.Map LevelName Level)

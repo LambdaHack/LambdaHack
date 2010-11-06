@@ -358,15 +358,17 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
 
   -- handle current score and display it with the high scores
   handleScores go write killed victor =
-    let moreM msg s =
-          displayCurrent msg (Just (s ++ more)) >> getConfirm session
-        points = if killed then (total + 1) `div` 2 else total
+    let moreM msg s = displayCurrent msg (Just (s ++ more))
+                      >> getConfirm session
+        points      = if killed then (total + 1) `div` 2 else total
+        current     = levelNumber nm
     in
      if not go || total == 0
      then return ()
      else do
        curDate <- getClockTime
-       let score = HighScores.ScoreRecord points killed victor curDate time
+       let score = HighScores.ScoreRecord
+                   points (-time) curDate current killed victor
        (placeMsg, slideshow) <- HighScores.register write score
        mapM_ (moreM placeMsg) slideshow
 

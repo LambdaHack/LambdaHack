@@ -6,27 +6,25 @@ import System.Time
 
 import Data.Binary
 import Data.List as L
+import Data.Maybe
 
 import File
 import Dungeon
 import qualified Config
 
 -- | A single score.
--- TODO: add hero's name, exp and level, level of death,
--- deepest level visited, cause of death, user number/name.
+-- TODO: add hero's name, exp and level, cause of death, user number/name.
 -- Note: I tried using Date.Time, but got all kinds of problems,
 -- including build problems and opaque types that make serialization difficult,
 -- and I couldn't use Datetime because it needs old base (and is under GPL).
 -- TODO: When we finally move to Date.Time, let's take timezone into account.
--- TODO: next time we change the structure, move turn to 2nd place and
--- make it negative, so that less turns gives better place with the same
--- points. Also move date 3rd, so that the other fields are irrelevant.
 data ScoreRecord = ScoreRecord
                      { points  :: Int,
-                       killed  :: Bool,
-                       victor  :: Bool,
+                       negTurn :: Int,
                        date    :: ClockTime,
-                       turn    :: Int }
+                       current :: Int,
+                       killed  :: Bool,
+                       victor  :: Bool}
   deriving (Eq, Ord)
 
 instance Binary ClockTime where
@@ -41,36 +39,39 @@ instance Binary ClockTime where
       return (TOD s p)
 
 instance Binary ScoreRecord where
-  put (ScoreRecord points killed victor date turn) =
+  put (ScoreRecord points negTurn date current killed victor) =
     do
       put points
+      put negTurn
+      put date
+      put current
       put killed
       put victor
-      put date
-      put turn
   get =
     do
       points <- get
+      negTurn <- get
+      date <- get
+      current <- get
       killed <- get
       victor <- get
-      date <- get
-      turn <- get
-      return (ScoreRecord points killed victor date turn)
+      return (ScoreRecord points negTurn date current killed victor)
 
 -- | Show a single high score.
 showScore :: (Int, ScoreRecord) -> String
 showScore (pos, score) =
-  let won  = if killed score
-             then "was slain"
-             else if victor score
-                  then "has won"
-                  else "took a break"
+  let won  = if victor score
+             then "emerged victorious"
+             else "is camping on level " ++ show (current score) ++ ","
+      died = if killed score
+             then "perished on level " ++ show (current score) ++ ","
+             else won
       time = calendarTimeToString . toUTCTime . date $ score
       big  = "                                                 "
       lil  = "              "
   in
-   printf "%s\n%4d. %6d  This hero %s after %d moves  \n%son %s.  \n"
-     big pos (points score) won (turn score) lil time
+   printf "%s\n%4d. %6d  This hero %s after %d steps  \n%son %s.  \n"
+     big pos (points score) died (- (negTurn score)) lil time
 
 -- | The list of scores, in decreasing order.
 type ScoreTable = [ScoreRecord]
