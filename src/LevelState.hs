@@ -8,7 +8,7 @@ import Item
 import ItemState
 
 viewTile :: Bool -> Tile -> Assocs -> (Char, Attr -> Attr)
-viewTile b (Tile t [])    a = viewTerrain 0 b t 
+viewTile b (Tile t [])    a = viewTerrain 0 b t
 viewTile b (Tile t (i:_)) a = viewItem (itype i) a
 
 -- | Produces a textual description of the items at a location. It's
@@ -18,11 +18,11 @@ viewTile b (Tile t (i:_)) a = viewItem (itype i) a
 --
 -- The "detailed" variant is for use with an explicit look command.
 lookAt :: Bool -> State -> LMap -> Loc -> String
-lookAt detailed s lvl loc
-  | detailed  = lookTerrain (tterrain (lvl `at` loc)) ++ " " ++ isd
+lookAt detailed s lmap loc
+  | detailed  = lookTerrain (tterrain (lmap `at` loc)) ++ " " ++ isd
   | otherwise = isd
   where
-    is  = titems (lvl `at` loc)
+    is  = titems (lmap `at` loc)
     isd = case is of
             []    -> ""
             [i]   -> "You see " ++ objectItem s (icount i) (itype i) ++ "."
@@ -30,5 +30,3 @@ lookAt detailed s lvl loc
                                 ++ objectItem s (icount j) (itype j) ++ "."
             _     -> "There are several objects here" ++
                      if detailed then ":" else "."
-
-

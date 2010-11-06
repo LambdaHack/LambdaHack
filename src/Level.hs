@@ -316,7 +316,7 @@ posToDir DR = [upleft]
 -- checks for the presence of monsters (and items); it does *not* check
 -- if the tile is open ...
 unoccupied :: [Monster] -> LMap -> Loc -> Bool
-unoccupied monsters lvl loc =
+unoccupied monsters _lmap loc =
   all (\ m -> mloc m /= loc) monsters
 
 -- check whether one location is accessible from the other
@@ -324,10 +324,10 @@ unoccupied monsters lvl loc =
 -- currently only implements that doors aren't accessible diagonally,
 -- and that the target location has to be open
 accessible :: LMap -> Loc -> Loc -> Bool
-accessible lvl source target =
+accessible lmap source target =
   let dir = shift source (neg target)
-      src = lvl `at` source
-      tgt = lvl `at` target
+      src = lmap `at` source
+      tgt = lmap `at` target
   in  open tgt &&
       (not (diagonal dir) ||
        case (tterrain src, tterrain tgt) of
@@ -337,8 +337,8 @@ accessible lvl source target =
 
 -- check whether the location contains a door of at most secrecy level k
 openable :: Int -> LMap -> Loc -> Bool
-openable k lvl target =
-  let tgt = lvl `at` target
+openable k lmap target =
+  let tgt = lmap `at` target
   in  case tterrain tgt of
         Door _ (Just n) -> n <= k
         _               -> False
