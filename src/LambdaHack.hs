@@ -11,7 +11,7 @@ import Dungeon
 import Perception
 import Display2
 import Random
-import Save
+import qualified Save
 import Turn
 import Item
 
@@ -23,10 +23,11 @@ start :: Session -> IO ()
 start session =
     do
       -- check if we have a savegame
-      x <- doesFileExist savefile
+      f <- Save.file
+      x <- doesFileExist f
       restored <- if x then do
                               displayBlankConfirm session "Restoring save game"
-                              restoreGame
+                              Save.restoreGame
                        else return $ Right "Welcome to LambdaHack!"  -- new game
       case restored of
         Right msg  -> generate session msg
@@ -58,4 +59,3 @@ generate session msg =
     let state = (defaultState ((\ (_,x,_) -> x) (head levels)) dng lvl)
                   { sassocs = assocs }
     handle session state (perception_ state) msg
-
