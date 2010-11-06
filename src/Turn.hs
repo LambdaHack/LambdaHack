@@ -149,11 +149,12 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
                        handleDirection e (move h) $
                          handleDirection (L.map toLower e) run $
                          case e of
+                           -- interaction with the dungeon
                            "c"       -> close h
                            "s"       -> search h
-
                            "less"    -> lvlchange Up h
                            "greater" -> lvlchange Down h
+                           "colon"   -> lookAround h
 
                            -- items
                            "comma"   -> wrapHandler pickupItem  h
@@ -161,35 +162,66 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
                            "i"       -> inventory h
                            "q"       -> wrapHandler drinkPotion h
 
+                           -- wait
+                           "period"  -> loop session nstate ""
+
                            -- saving or ending the game
                            "S"       -> userSavesGame
                            "Q"       -> userQuits h
                            "Escape"  -> displayCurrent "Press Q to quit." Nothing >> h
 
-                           -- wait
-                           "period"  -> loop session nstate ""
-
-                           -- look
-                           "colon"   -> lookAround h
-
-                           -- display modes
+                           -- debug modes
                            "V"       -> handle session (toggleVision     ustate) per oldmsg
                            "R"       -> handle session (toggleSmell      ustate) per oldmsg
                            "O"       -> handle session (toggleOmniscient ustate) per oldmsg
                            "T"       -> handle session (toggleTerrain    ustate) per oldmsg
+                           "I"       -> displayCurrent lmeta   Nothing >> h
 
-                           -- meta information
+                           -- information for the player
                            "M"       -> displayCurrent "" (Just $ unlines (shistory mstate) ++ more) >>= \ b ->
                                         if b then getOptionalConfirm session
                                                     (const (displayCurrent "" Nothing >> h)) h'
                                              else displayCurrent "" Nothing >> h
-                           "I"       -> displayCurrent lmeta   Nothing >> h
                            "v"       -> displayCurrent version Nothing >> h
+                           _
+                             | e == "question" || e == "Return" -> displayHelp h
 
-                           s         -> displayCurrent ("unknown command (" ++ s ++ ")") Nothing >> h
+                           -- wrong key
+                           _         -> displayCurrent ("unknown command (" ++ e ++ ")") Nothing >> h
              maybe h continueRun pdir
 
  where
+
+  -- TODO: automatically find and cut from PLAYING.markdown?
+  helpString =
+    unlines
+    ["                                                    "
+    ,"               key    command                       "
+    ,"               c      close a door                  "
+    ,"               d      drop an object                "
+    ,"               i      display inventory             "
+    ,"               o      open a do                     "
+    ,"               s      search for secret doors       "
+    ,"               q      quaff a potion                "
+    ,"               M      display previous messages     "
+    ,"               S      save and quit the game        "
+    ,"               Q      quit without saving           "
+    ,"               .      wait                          "
+    ,"               ,      pick up an object             "
+    ,"               :      look around                   "
+    ,"               <      ascend a level                "
+    ,"               >      descend a level               "
+    ,"                                                    "
+    ,"               (See file PLAYING.markdown.)         "
+    ,"                                                    "
+    ," --more--                                           "
+    ]
+  displayHelp abort =
+    do
+      displayCurrent "Basic keys:" (Just helpString)
+      getConfirm session
+      displayCurrent "" Nothing
+      abort
 
   -- we record the oldmsg in the history
   mstate = if L.null oldmsg then state else updateHistory (take 500 . ((oldmsg ++ " "):)) state
