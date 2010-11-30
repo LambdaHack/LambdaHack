@@ -37,12 +37,15 @@ as follows:
 Field Of View
 -------------
 
-The algorithm used is a variant of Shadow Casting. We first specify
-fields that are reachable from the hero. As input to the algorithm,
-we require information about fields that block light. As output,
-we get information on the reachability of all fields.
+The algorithm used is a variant of Shadow Casting. We first compute
+fields that are reachable (have unobstructed line of sight) from the hero's
+position. Later, from this information we compute the fields that
+are visible (not hidden in darkness, etc.).
+
+As input to the algorithm, we require information about fields that
+block light. As output, we get information on the reachability of all fields.
 We assume that the hero is located at position (0, 0)
-and we only consider fields (line, row) where line 0 and 0 row line.
+and we only consider fields (line, row) where line >= 0 and 0 <= row <= line.
 This is just about one eighth of the whole hero's surroundings,
 but the other parts can be computed in the same fashion by mirroring
 or rotating the given algorithm accordingly.
@@ -146,9 +149,9 @@ Three different kinds of things can pass through a tile:
   * objects: big, slow, pushy things (monsters passing through tiles
     and throwing objects from inventory across tiles)
 
-  * projectiles and gasses: monsters shooting small, fast and sharp things
+  * projectiles and gases: monsters shooting small, fast and sharp things
     (arrows and bolts from the quiver) and monsters inhaling tiny, slow
-    particles (smells, smoke, fog, poisonous gasses)
+    particles (smells, smoke, fog, poisonous gases)
 
   * light: monsters seeing clearly across a tile (light that just leaks
     through a cloth or produces a distorted image though a waterfall
@@ -156,7 +159,7 @@ Three different kinds of things can pass through a tile:
 
 For simplicity I assume that if big objects can move through,
 small objects can as well (no Kevlar curtains nor automatic doors).
-Also, I merged projectiles and gasses, assuming that if small objects
+Also, I merged projectiles and gases, assuming that if small objects
 can get through, so can tiny objects (no self-sealing rubber walls)
 and the reverse (no vents in walls).
 
