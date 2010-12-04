@@ -51,7 +51,7 @@ handleMonsters session
                                slevel = lvl@(Level { lmonsters = ms }) }))
                per oldmsg =
   -- debugging: causes redraw of the current state for every monster move; slow!
-  -- displayLevel session lvl per state oldmsg >>
+  -- displayLevel session per state oldmsg Nothing >>
   case ms of
     [] -> -- there are no monsters, just continue
       handlePlayer
