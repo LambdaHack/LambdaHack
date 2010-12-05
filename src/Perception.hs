@@ -1,6 +1,7 @@
 module Perception where
 
 import Data.Set as S
+import Data.List as L
 
 import Geometry
 import State
@@ -24,7 +25,8 @@ perception radius ploc lmap =
     -- In "actVisible", we store the locations that have light and are
     -- reachable. Furthermore, the player location itself is always
     -- visible.
-    actVisible = S.filter (\ loc -> light (lmap `at` loc)) reachable `S.union` S.singleton ploc
+    litVisible = S.filter (\ loc -> light (lmap `at` loc)) reachable
+    actVisible = S.insert ploc litVisible
     srnd       = S.fromList $ surroundings ploc
     -- In "dirVisible", we store locations in the surroundings that are
     -- perceptible from the current position.
@@ -43,7 +45,22 @@ perception radius ploc lmap =
                                     in  any (\ d -> S.member (shift loc d) s) p)
                           reachable
     visible = S.unions [pasVisible, actVisible, dirVisible]
+    -- A simpler way to make walls of lit rooms visible, at the cost of making
+    -- them reflect light from all sides, also from corridors.
+    -- Can be hacked around by checking for corridors in the condition below.
+    -- The version in the comment assumes player light has diameter 3, not 1,
+    -- which looks a bit differently in dark rooms, revealing more walls.
+    openSurroundings = S.filter (\ loc -> open (lmap `at` loc)) srnd
+    openVisible = S.union actVisible openSurroundings
+    simpleVisible =
+      S.filter
+        (\ loc -> S.member loc openVisible
+                  || (reflects (lmap `at` loc)
+                      && L.any
+                           (\ l -> S.member l actVisible{-openVisible-})
+                           (surroundings loc))
+        ) (S.insert ploc reachable)
   in
     case radius of
       Nothing -> Perception reachable visible
-      _ -> Perception reachable (S.union actVisible srnd)
+      _ -> Perception reachable simpleVisible
