@@ -27,6 +27,7 @@ import Version
 import Strategy
 import StrategyState
 import HighScores
+import qualified Config
 
 -- | Perform a complete turn (i.e., monster moves etc.)
 loop :: Session -> State -> Message -> IO ()
@@ -38,7 +39,8 @@ loop session (state@(State { splayer = player@(Monster { mhp = php, mloc = ploc 
     -- update smap
     let nsmap = M.insert ploc (time + smellTimeout) smap
     -- determine player perception
-    let per = perception ploc lmap
+    radius <- Config.getOption "engine" "pfov_radius"
+    let per = perception radius ploc lmap
     -- perform monster moves
     handleMonsters session (updateLevel (const (lvl { lsmell = nsmap })) state) per oldmsg
 

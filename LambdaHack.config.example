@@ -11,3 +11,6 @@
 [files]
 savegame:   LambdaHack.save
 highscores: LambdaHack.scores
+
+[engine]
+#pfov_radius: 50

@@ -11,16 +11,16 @@ import FOV
 data Perception =
   Perception { preachable :: Set Loc, pvisible :: Set Loc }
 
-perception_ :: State -> Perception
-perception_ (State { splayer = Monster { mloc = ploc }, slevel = Level { lmap = lmap } }) =
-  perception ploc lmap
+perception_ :: Maybe Int -> State -> Perception
+perception_ radius (State { splayer = Monster { mloc = ploc }, slevel = Level { lmap = lmap } }) =
+  perception radius ploc lmap
 
-perception :: Loc -> LMap -> Perception
-perception ploc lmap =
+perception :: Maybe Int -> Loc -> LMap -> Perception
+perception radius ploc lmap =
   let
     -- This part is simple. "reachable" contains everything that is on an
     -- unblocked path from the player position.
-    reachable  = fullscan Nothing ploc lmap
+    reachable  = fullscan radius ploc lmap
     -- In "actVisible", we store the locations that have light and are
     -- reachable. Furthermore, the player location itself is always
     -- visible.
@@ -30,7 +30,7 @@ perception ploc lmap =
     -- perceptible from the current position.
     dirVisible = S.filter (\ loc -> let p = perceptible (lmap `at` loc) :: [Dir]
                                     in  any (\ d -> shift loc d == ploc) p)
-                          (S.fromList $ surroundings ploc)
+                          srnd
     ownVisible = S.union actVisible dirVisible
     -- Something is "pasVisible" if it is reachable passively visible from an
     -- "actVisible" location, *or* if it is in the surroundings and passively
@@ -44,4 +44,6 @@ perception ploc lmap =
                           reachable
     visible = S.unions [pasVisible, actVisible, dirVisible]
   in
-    Perception reachable visible
+    case radius of
+      Nothing -> Perception reachable visible
+      _ -> Perception reachable (S.union actVisible srnd)

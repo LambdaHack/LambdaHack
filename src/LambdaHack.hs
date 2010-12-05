@@ -14,6 +14,7 @@ import Random
 import qualified Save
 import Turn
 import Item
+import qualified Config
 
 main :: IO ()
 main = startup start
@@ -29,9 +30,10 @@ start session =
                               displayBlankConfirm session "Restoring save game"
                               Save.restoreGame
                        else return $ Right "Welcome to LambdaHack!"  -- new game
+      radius <- Config.getOption "engine" "pfov_radius"
       case restored of
         Right msg  -> generate session msg
-        Left state -> handle session state (perception_ state)
+        Left state -> handle session state (perception_ radius state)
                              "Welcome back to LambdaHack."
 
 -- | Generate the dungeon for a new game, and start the game loop.
@@ -58,4 +60,5 @@ generate session msg =
                      (Potion PotionHealing, White) ]
     let state = (defaultState ((\ (_,x,_) -> x) (head levels)) dng lvl)
                   { sassocs = assocs }
-    handle session state (perception_ state) msg
+    radius <- Config.getOption "engine" "pfov_radius"
+    handle session state (perception_ radius state) msg
