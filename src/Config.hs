@@ -26,14 +26,11 @@ config =
       then readfile emptyCP f
       else return $ return emptyCP
 
--- | A simplified access to a string option in a given section,
+-- | A simplified access to an option in a given section,
 -- with simple error reporting (no error is caught and hidden).
 -- If there is no config file or no such option, gives Nothing.
--- Note: with a type variable in place of String, it fails becausee of
--- overlapping instances. I think that's just a restriction of
--- ad-hoc polymorphism and it can't be worked around.
-getString :: SectionSpec -> OptionSpec -> IO (Maybe String)
-getString s o =
+getOption :: Get_C a => SectionSpec -> OptionSpec -> IO (Maybe a)
+getOption s o =
   do
     cfg <- config
     let cfgForced = forceEither cfg
@@ -52,5 +49,5 @@ getFile dflt s o =
   do
     current <- getCurrentDirectory
     appData <- getAppUserDataDirectory "LambdaHack"
-    s <- getString s o
+    s <- getOption s o
     return $ maybe (combine current dflt) (combine appData) s
