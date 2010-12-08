@@ -106,7 +106,7 @@ pscan n ptr l d (s{-shallow line-}, e{-steep line-}) (sBumps, eBumps) =
                   (q, r) = n `quotRem` k
                   -- Corners are translucent, so they are invisible,
                   -- so if intersection is at a corner, choose the square
-                  -- that creates a smaller view.
+                  -- that creates the smaller view.
               in  if r == 0 then q - 1 else q  -- maximal progress to check
       start = if open (l `at` tr (d, ps))
               then Just (s, sBumps)  -- start in light
@@ -118,7 +118,7 @@ pscan n ptr l d (s{-shallow line-}, e{-steep line-}) (sBumps, eBumps) =
      (if d == n then S.empty else pscan' start ps pe)
      -- the area is diagonal, which is wrong; for Digital FOV it'd be a square
      where
-       dp2bump (d, p)     = B(p, d - p)
+       dp2bump     (d, p) = B(p, d - p)
        topLeft     (d, p) = B(p + 1, d - p)
        bottomRight (d, p) = B(p, d - p + 1)
        tr = ptr . dp2bump
@@ -128,27 +128,22 @@ pscan n ptr l d (s{-shallow line-}, e{-steep line-}) (sBumps, eBumps) =
          | ps > pe =                       -- reached end, scan next
              pscan n ptr l (d+1) (s, e) (sBumps, eBumps)
          | closed (l `at` tr (d, ps)) =    -- entering shadow, steep bump
-             fromMaybe S.empty
-               (do
-                  let steepBump = bottomRight (d, ps)
-                  ne <- borderLine Steep steepBump sBumps
-                  let neBumps = addHull steepBump eBumps
-                  return $
-                    S.union
-                      (pscan n ptr l (d+1) (s, ne) (sBumps, neBumps))
-                      (pscan' Nothing ps pe))
+             let steepBump = bottomRight (d, ps)
+                 ne = borderLine Steep steepBump sBumps
+                 neBumps = addHull steepBump eBumps
+             in  S.union
+                   (pscan n ptr l (d+1) (s, ne) (sBumps, neBumps))
+                   (pscan' Nothing ps pe)
          | otherwise =                     -- continue in light
              pscan' (Just (s, sBumps)) (ps+1) pe
 
        pscan' Nothing ps pe
          | ps > pe = S.empty               -- reached end while in shadow
          | open (l `at` tr (d, ps)) =      -- moving out of shadow, shallow bump
-             fromMaybe S.empty
-               (do
-                  let shallowBump = bottomRight (d, ps)
-                  ns <- borderLine Shallow shallowBump eBumps
-                  let nsBumps = addHull shallowBump sBumps
-                  return $ pscan' (Just (ns, nsBumps)) (ps+1) pe)
+             let shallowBump = bottomRight (d, ps)
+                 ns = borderLine Shallow shallowBump eBumps
+                 nsBumps = addHull shallowBump sBumps
+             in  pscan' (Just (ns, nsBumps)) (ps+1) pe
          | ps+1 > pe = S.empty             -- nothing to do up-left
          | closed (l `at` tr (d, ps+1)) =  -- up-left is in shadow, too
              -- This is a special case. Corners are translucent, so they
@@ -161,17 +156,14 @@ pscan n ptr l d (s{-shallow line-}, e{-steep line-}) (sBumps, eBumps) =
                  (pscan' Nothing (ps+1) pe)
              else
                -- trace (show ("open space visible through its corner",ps,pe)) $
-               fromMaybe S.empty
-                 (do
-                    let bump    = topLeft (d, ps)
-                        nsBumps = addHull bump sBumps
-                        neBumps = addHull bump eBumps
-                    ns <- borderLine Shallow bump neBumps
-                    ne <- borderLine Steep bump nsBumps
-                    return $
-                      S.union
-                        (pscan n ptr l (d+1) (ns, ne) (nsBumps, neBumps))
-                        (pscan' Nothing (ps+1) pe))
+               let bump    = topLeft (d, ps)
+                   nsBumps = addHull bump sBumps
+                   neBumps = addHull bump eBumps
+                   ns = borderLine Shallow bump neBumps
+                   ne = borderLine Steep bump nsBumps
+               in  S.union
+                     (pscan n ptr l (d+1) (ns, ne) (nsBumps, neBumps))
+                     (pscan' Nothing (ps+1) pe)
          | otherwise =                     -- continue in shadow
              pscan' Nothing (ps+1) pe
 
@@ -215,44 +207,42 @@ yt = ((1 + d) (yf - y) + y xf - x yf) / (xf - x + yf - y)
 -}
 
 -- | Constructs steep or shallow line from the far point and the opposite
--- convex hull of bumps. Fails if the bumps force the line
--- out of the initial square. TODO: other special cases? remove these?
-borderLineRaw :: WhichLine -> Bump -> ConvexHull -> Maybe Line
-borderLineRaw which farPoint hull =
-  let crossY (B(y, x)) =  -- fraction as a pair, cheaper than Rational
-        ((y, x), intersectD (B(y, x), farPoint) 0)
-      crossL0 (n, k) = n * k < 0
-      crossG1 (n, k) = n * k > k * k
-      crossLeq (n1, k1) (n2, k2) = n1 * k2 <= k1 * n2
-      (extraBump, crossWrong, crossBetter) =
-        case which of
-          Shallow -> (((1, 0), (1, 1)), crossL0, crossLeq)
-          Steep   -> (((0, 1), (0, 1)), crossG1, \ a b -> crossLeq b a)
-      nkHull = L.map crossY hull
-      iter ((y, x), _) [] = Just (B(y, x), farPoint)
-      iter acc@(_, nkAcc) (new@(_, nkNew):hull)
-        | crossBetter nkAcc nkNew = iter acc hull
-        | crossWrong nkNew = Nothing
-        | otherwise = iter new hull
-  in  iter extraBump nkHull
-
--- | Debug wrapper for borderLineRaw that checks postconditions.
-borderLine :: WhichLine -> Bump -> ConvexHull -> Maybe Line
+-- convex hull of bumps.
+borderLine :: WhichLine -> Bump -> ConvexHull -> Line
 borderLine which farPoint hull =
-  let check result =
-        case result of
-          Just line@(B(y1, x1), B(y2, x2))
-            | y1 == y2 && x1 == x2   ->
-                error $ "borderLine: wrongly defined line " ++ show line
-            | x2 - x1 == - (y2 - y1) ->
-                error $ "borderLine: diagonal line " ++ show line
-          Nothing -> error $ "borderLine: Nothing "
-          _ -> result
-      result =
-        -- trace (show (which, farPoint, hull)) $
-        check $
-        borderLineRaw which farPoint hull
-  in  result
+  let crossLeq (n1, k1) (n2, k2) = n1 * k2 <= k1 * n2
+      (extraBump, strongerBump) =
+        case which of
+          Shallow -> ((B(1, 0), (1, 1)), crossLeq)
+          Steep   -> ((B(0, 1), (0, 1)), \ a b -> crossLeq b a)
+      cross acc@(_, nkAcc) bump =
+        let nkNew = intersectD (bump, farPoint) 0
+        in if strongerBump nkAcc nkNew
+           then acc
+           else (bump, nkNew)
+      (strongestBump, _) = L.foldl' cross extraBump hull
+      line =
+        -- trace (show (which, strongestBump, farPoint, hull)) $
+        checkBorderLine $
+        (strongestBump, farPoint)
+  in  line
+
+-- | Checks postconditions of borderLine.
+checkBorderLine :: Line -> Line
+checkBorderLine line@(B(y1, x1), B(y2, x2))
+  | y1 == y2 && x1 == x2 =
+      error $ "borderLine: wrongly defined line " ++ show line
+  | x2 - x1 == - (y2 - y1) =
+      error $ "borderLine: diagonal line " ++ show line
+  | crossL0 =
+      error $ "borderLine: crosses diagonal below 0 " ++ show line
+  | crossG1 =
+      error $ "borderLine: crosses diagonal above 1 " ++ show line
+  | otherwise = line
+    where
+      (n, k) = intersectD line 0
+      crossL0 = n * k < 0
+      crossG1 = n * k > k * k
 
 -- | Adds a bump to the convex hull of bumps represented as a list.
 -- TODO: Can be optimized by removing some points from the list,
