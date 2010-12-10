@@ -14,10 +14,10 @@ type Interval = (Rational, Rational)
 type Distance = Int
 type Progress = Int
 newtype Bump      = B Loc  deriving (Show)
-type ConvexHull   = [Bump]
-type HullInterval = (ConvexHull, ConvexHull)
 type Line         = (Bump, Bump)
-type LineInterval = (Line, Line)
+type ConvexHull   = [Bump]
+type Edge         = (Line, ConvexHull)
+type EdgeInterval = (Edge, Edge)
 data WhichLine    = Shallow | Steep  deriving (Show, Eq)
 
 -- | Recursive Shadow Casting FOV with infinite visibility range.
@@ -87,68 +87,75 @@ fullscan range loc lmap =
       S.unions $
       L.map (\ tr ->
               pscan n (tr loc) lmap 1
-                ((B(1, 0), B(0, 2*n)), (B(0, 1), B(2*n, 0))) ([], []))
+                (((B(1, 0), B(0, 2*n)), []), ((B(0, 1), B(2*n, 0)), [])))
       [ptr0,ptr1,ptr2,ptr3]
 
+-- | The translationa and rotations functions for the permissive algorithms.
+ptr0, ptr1, ptr2, ptr3 :: Loc -> Bump -> Loc
+ptr0 (oy, ox) (B(y, x)) = (oy - y, ox + x)  -- first quadrant
+ptr1 (oy, ox) (B(y, x)) = (oy - x, ox - y)  -- then rotated clockwise 90 degrees
+ptr2 (oy, ox) (B(y, x)) = (oy + y, ox - x)
+ptr3 (oy, ox) (B(y, x)) = (oy + x, ox + y)
 
--- | Precise Permissive FOV with a given range (TODO).
--- Clean-room reimplemented based on http://roguebasin.roguelikedevelopment.org/index.php?title=Precise_Permissive_Field_of_View
+
+-- | Precise Permissive FOV with a given range.
+-- Clean-room reimplemented based on http://roguebasin.roguelikedevelopment.org/index.php?title=Precise_Permissive_Field_of_View. See https://github.com/Mikolaj/LambdaHack/wiki/Fov-and-los for some more context.
 
 -- | The current state of a scan is kept in Maybe (Line, ConvexHull).
 -- If Just something, we're in a visible interval. If Nothing, we're in
 -- a shadowed interval.
-pscan :: Distance -> (Bump -> Loc) -> LMap ->
-         Distance -> LineInterval -> HullInterval -> Set Loc
-pscan n ptr l d (s{-shallow line-}, e{-steep line-}) (sBumps, eBumps) =
-  let ps    = let (n, k) = intersectD s d
-              in  n `quot` k                   -- minimal progress to check
-      pe    = let (n, k) = intersectD e d
-                  (q, r) = n `quotRem` k
+pscan :: Distance -> (Bump -> Loc) -> LMap -> Distance -> EdgeInterval ->
+         Set Loc
+pscan n ptr l d (s@(sl{-shallow line-}, sBumps), e@(el{-steep line-}, eBumps)) =
+  let ps    = let (n, k) = pintersect sl d  -- minimal progress to check
+              in  n `div` k
+      pe    = let (n, k) = pintersect el d  -- maximal progress to check
                   -- Corners are translucent, so they are invisible,
                   -- so if intersection is at a corner, choose the square
                   -- that creates the smaller view.
-              in  if r == 0 then q - 1 else q  -- maximal progress to check
+              in  -1 - (-n) `div` k
       start = if open (l `at` tr (d, ps))
-              then Just (s, sBumps)  -- start in light
-              else Nothing           -- start in shadow
+              then Just s                  -- start in light
+              else Nothing                 -- start in shadow
   in
    -- trace (show (d,s,e,ps,pe)) $
    S.union
      (S.fromList [tr (d, p) | p <- [ps..pe]])
      (if d == n then S.empty else pscan' start ps pe)
-     -- the area is diagonal, which is wrong; for Digital FOV it'd be a square
+     -- the area is diagonal, which is incorrect, but looks good enough
      where
        dp2bump     (d, p) = B(p, d - p)
        topLeft     (d, p) = B(p + 1, d - p)
        bottomRight (d, p) = B(p, d - p + 1)
        tr = ptr . dp2bump
 
-       pscan' :: Maybe (Line, ConvexHull) -> Progress -> Progress -> Set Loc
-       pscan' (Just (s, sBumps)) ps pe
+       pscan' :: Maybe Edge -> Progress -> Progress -> Set Loc
+       pscan' (Just s@(_, sBumps)) ps pe
          | ps > pe =                       -- reached end, scan next
-             pscan n ptr l (d+1) (s, e) (sBumps, eBumps)
+             pscan n ptr l (d+1) (s, e)
          | closed (l `at` tr (d, ps)) =    -- entering shadow, steep bump
              let steepBump = bottomRight (d, ps)
-                 ne = borderLine Steep steepBump sBumps
-                 neBumps = addHull steepBump eBumps
+                 nel = pborderLine Steep steepBump sBumps
+                 neBumps = steepBump:eBumps
              in  S.union
-                   (pscan n ptr l (d+1) (s, ne) (sBumps, neBumps))
+                   (pscan n ptr l (d+1) (s, (nel, neBumps)))
                    (pscan' Nothing ps pe)
          | otherwise =                     -- continue in light
-             pscan' (Just (s, sBumps)) (ps+1) pe
+             pscan' (Just s) (ps+1) pe
 
        pscan' Nothing ps pe
          | ps > pe = S.empty               -- reached end while in shadow
          | open (l `at` tr (d, ps)) =      -- moving out of shadow, shallow bump
              let shallowBump = bottomRight (d, ps)
-                 ns = borderLine Shallow shallowBump eBumps
-                 nsBumps = addHull shallowBump sBumps
+                 ns = pborderLine Shallow shallowBump eBumps
+                 nsBumps = shallowBump:sBumps
              in  pscan' (Just (ns, nsBumps)) (ps+1) pe
          | ps+1 > pe = S.empty             -- nothing to do up-left
          | closed (l `at` tr (d, ps+1)) =  -- up-left is in shadow, too
              -- This is a special case. Corners are translucent, so they
              -- do not block view, so a square blocked by diagonal walls
              -- is still visible through their common corner.
+             -- TODO: many other special cases are needed for difficult maps :(
              if closed (l `at` tr (d+1, ps+1))
              then
                -- trace (show ("wall visible through its corner",ps,pe)) $
@@ -157,19 +164,19 @@ pscan n ptr l d (s{-shallow line-}, e{-steep line-}) (sBumps, eBumps) =
              else
                -- trace (show ("open space visible through its corner",ps,pe)) $
                let bump    = topLeft (d, ps)
-                   nsBumps = addHull bump sBumps
-                   neBumps = addHull bump eBumps
-                   ns = borderLine Shallow bump neBumps
-                   ne = borderLine Steep bump nsBumps
+                   nsBumps = bump:sBumps
+                   neBumps = bump:eBumps
+                   ns = pborderLine Shallow bump neBumps
+                   ne = pborderLine Steep bump nsBumps
                in  S.union
-                     (pscan n ptr l (d+1) (ns, ne) (nsBumps, neBumps))
+                     (pscan n ptr l (d+1) ((ns, nsBumps), (ne, neBumps)))
                      (pscan' Nothing (ps+1) pe)
          | otherwise =                     -- continue in shadow
              pscan' Nothing (ps+1) pe
 
 {- THE Y COORDINATE COMES FIRST! (Y,X)!
-Bottom-left corner denotes a square. Hero at (0,0). Order of processing
-in the first quadrant is
+A square is denoted by its bottom-left corner. Hero at (0,0).
+Order of processing in the first quadrant is
 9
 58
 247
@@ -180,19 +187,15 @@ of the scan is not the steep line, but the shallow line, the one from which
 we start going from the bottom right.
 
 The Loc coordinates are cartesian, the Bump coordinates are cartesian,
-translated so that the hero is at (0, 0) and always looks at the first quadrant,
-the (Distance, Progress) cordinates are mangled and not used for geometry.
+translated so that the hero is at (0, 0) and rotated so that he always
+looks at the first quadrant, the (Distance, Progress) cordinates
+are mangled and not used for geometry.
 -}
-ptr0, ptr1, ptr2, ptr3 :: Loc -> Bump -> Loc
-ptr0 (oy, ox) (B(y, x)) = (oy - y, ox + x)  -- first quadrant
-ptr1 (oy, ox) (B(y, x)) = (oy - x, ox - y)  -- then rotated clockwise 90 degrees
-ptr2 (oy, ox) (B(y, x)) = (oy + y, ox - x)
-ptr3 (oy, ox) (B(y, x)) = (oy + x, ox + y)
 
 -- | The y coordinate, represented as a fraction, of the intersection of
 -- a given line and the line of diagonals of squares at distance d from (0, 0).
-intersectD :: Line -> Distance -> (Int, Int)
-intersectD (B(y, x), B(yf, xf)) d =
+pintersect :: Line -> Distance -> (Int, Int)
+pintersect (B(y, x), B(yf, xf)) d =
   ((1 + d)*(yf - y) + y*xf - x*yf, (xf - x) + (yf - y))
 {-
 The intersection point (yt, xt) satisfies the following equalities:
@@ -208,44 +211,41 @@ yt = ((1 + d) (yf - y) + y xf - x yf) / (xf - x + yf - y)
 
 -- | Constructs steep or shallow line from the far point and the opposite
 -- convex hull of bumps.
-borderLine :: WhichLine -> Bump -> ConvexHull -> Line
-borderLine which farPoint hull =
+-- TODO: at the same time, the hull can be pruned,
+-- (knowing that (1, 0) or (0, 1) belong to it).
+pborderLine :: WhichLine -> Bump -> ConvexHull -> Line
+pborderLine which farPoint hull =
   let crossLeq (n1, k1) (n2, k2) = n1 * k2 <= k1 * n2
       (extraBump, strongerBump) =
         case which of
           Shallow -> ((B(1, 0), (1, 1)), crossLeq)
           Steep   -> ((B(0, 1), (0, 1)), \ a b -> crossLeq b a)
       cross acc@(_, nkAcc) bump =
-        let nkNew = intersectD (bump, farPoint) 0
+        let nkNew = pintersect (bump, farPoint) 0
         in if strongerBump nkAcc nkNew
            then acc
            else (bump, nkNew)
       (strongestBump, _) = L.foldl' cross extraBump hull
       line =
         -- trace (show (which, strongestBump, farPoint, hull)) $
-        checkBorderLine $
+        pcheckBorderLine $
         (strongestBump, farPoint)
   in  line
 
 -- | Checks postconditions of borderLine.
-checkBorderLine :: Line -> Line
-checkBorderLine line@(B(y1, x1), B(y2, x2))
+pcheckBorderLine :: Line -> Line
+pcheckBorderLine line@(B(y1, x1), B(y2, x2))
   | y1 == y2 && x1 == x2 =
-      error $ "borderLine: wrongly defined line " ++ show line
+      error $ "pborderLine: wrongly defined line " ++ show line
   | x2 - x1 == - (y2 - y1) =
-      error $ "borderLine: diagonal line " ++ show line
+      error $ "pborderLine: diagonal line " ++ show line
   | crossL0 =
-      error $ "borderLine: crosses diagonal below 0 " ++ show line
+      error $ "pborderLine: crosses diagonal below 0 " ++ show line
   | crossG1 =
-      error $ "borderLine: crosses diagonal above 1 " ++ show line
+      error $ "pborderLine: crosses diagonal above 1 " ++ show line
   | otherwise = line
     where
-      (n, k) = intersectD line 0
-      crossL0 = n * k < 0
-      crossG1 = n * k > k * k
-
--- | Adds a bump to the convex hull of bumps represented as a list.
--- TODO: Can be optimized by removing some points from the list,
--- knowing that (1, 0) or (0, 1) belong to the hull, too.
-addHull :: Bump -> ConvexHull -> ConvexHull
-addHull loc l = loc : l
+      (n, k)  = pintersect line 0
+      (q, r)  = if k == 0 then (0, 0) else n `divMod` k
+      crossL0 = q < 0  -- q truncated toward negative infinity
+      crossG1 = q >= 1 && (q > 1 || r /= 0)
