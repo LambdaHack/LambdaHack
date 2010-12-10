@@ -12,5 +12,11 @@
 savegame:   LambdaHack.save
 highscores: LambdaHack.scores
 
-[engine]
+#[engine]
 #pfov_radius: 50
+
+[dungeon]
+depth: 10
+level3: bigroom
+level10: noiseroom
+#level1: noiseroom
