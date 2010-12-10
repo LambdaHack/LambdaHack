@@ -84,10 +84,10 @@ digCorridor _ l = l
 newTile :: Terrain -> (Tile, Tile)
 newTile t = (Tile t [], Tile Unknown [])
 
--- | For a bigroom level: Create a level consisting of only one room.
-bigroom :: LevelConfig ->
+-- | Create a level consisting of only one room. Optionally, insert some walls.
+emptyroom :: (Level -> Rnd (LMap -> LMap)) -> LevelConfig ->
            LevelName -> Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) -> Level, Loc, Loc)
-bigroom cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
+emptyroom addWallsRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
   do
     let lmap = digRoom Light ((1,1),(sy-1,sx-1)) (emptyLMap (sy,sx))
     let smap = M.fromList [ ((y,x),-100) | y <- [0..sy], x <- [0..sx] ]
@@ -95,14 +95,38 @@ bigroom cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
     -- locations of the stairs
     su <- findLoc lvl (const floor)
     sd <- findLoc lvl (\ l t -> floor t
-                                && distance (su,l) >  minStairsDistance cfg)
-    is  <- rollItems cfg lvl su
-    return (\ lu ld ->
-      let flmap = maybe id (\ l -> M.insert su (newTile (Stairs Light Up   l))) lu $
-                  maybe id (\ l -> M.insert sd (newTile (Stairs Light Down l))) ld $
-                  foldr (\ (l,it) f -> M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l . f) id is
-                  lmap
-      in  Level nm (sy,sx) [] smap flmap "bigroom", su, sd)
+                                && distance (su,l) > minStairsDistance cfg)
+    is <- rollItems cfg lvl su
+    addWalls <- addWallsRnd lvl
+    let addItem lmap (l,it) =
+          M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l lmap
+        flmap lu ld =
+          maybe id (\ l -> M.insert su (newTile (Stairs Light Up   l))) lu $
+          maybe id (\ l -> M.insert sd (newTile (Stairs Light Down l))) ld $
+          (\lmap -> foldl' addItem lmap is) $
+          addWalls $
+          lmap
+        level lu ld = Level nm (sy,sx) [] smap (flmap lu ld) "bigroom"
+    return (level, su, sd)
+
+-- | For a bigroom level: Create a level consisting of only one, empty room.
+bigroom :: LevelConfig ->
+           LevelName -> Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) -> Level, Loc, Loc)
+bigroom = emptyroom (\ lvl -> return id)
+
+-- | For a noiseroom level: Create a level consisting of only one room
+-- with randomly distributed pillars.
+noiseroom :: LevelConfig ->
+             LevelName -> Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) -> Level, Loc, Loc)
+noiseroom cfg =
+  let addWalls lvl = do
+        rs <- rollPillars cfg lvl
+        let insertWall lmap l =
+              case lmap `at` l of
+                Tile (Floor _) [] -> M.insert l (newTile (Wall O)) lmap
+                _ -> lmap
+        return $ \ lmap -> foldl' insertWall lmap rs
+  in  emptyroom addWalls cfg
 
 data LevelConfig =
   LevelConfig {
@@ -252,6 +276,15 @@ rollItems cfg lvl ploc =
                    (\ l t -> distance (ploc, l) > 400)
                _ -> findLoc lvl (const floor)
         return (l,t)
+
+rollPillars :: LevelConfig -> Level -> Rnd [Loc]
+rollPillars cfg lvl =
+  do
+    nri <- 100 *~ nrItems cfg
+    replicateM nri $
+      do
+        l <- findLoc lvl (const floor)
+        return l
 
 emptyLMap :: (Y,X) -> LMap
 emptyLMap (my,mx) = M.fromList [ ((y,x),newTile Rock) | x <- [0..mx], y <- [0..my] ]
