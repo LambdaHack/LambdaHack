@@ -98,7 +98,7 @@ fullscan range loc lmap =
       [dtr0,dtr1,dtr2,dtr3]
 -}
 
--- | The translationa and rotations functions for qudrands.
+-- | The translationa and rotations functions for quadrants.
 dtr0, dtr1, dtr2, dtr3 :: Loc -> Bump -> Loc
 dtr0 (oy, ox) (B(y, x)) = (oy - y, ox + x)  -- first quadrant
 dtr1 (oy, ox) (B(y, x)) = (oy - x, ox - y)  -- then rotated clockwise 90 degrees
@@ -118,69 +118,48 @@ pscan n ptr l d (s@(sl{-shallow line-}, sBumps), e@(el{-steep line-}, eBumps)) =
   -- trace (show (d,s,e,ps,pe)) $
   S.union
     (S.fromList [tr (d, p) | p <- [ps..pe]])
-    (if d < n then pscan' start ps else S.empty)
+    (if d < n then start else S.empty)
     -- the area is diagonal, which is incorrect, but looks good enough
     where
-      ps    = let (n, k) = pintersect sl d  -- minimal progress to check
-              in  n `div` k
-      pe    = let (n, k) = pintersect el d  -- maximal progress to check
-                  -- Corners are translucent, so they are invisible,
-                  -- so if intersection is at a corner, choose the square
-                  -- that creates the smaller view.
-              in  -1 - (-n) `div` k
-      start = if open (l `at` tr (d, ps))
-              then Just s                  -- start in light
-              else Nothing                 -- start in shadow
+      (ps, cs) = let (n, k) = pintersect sl d  -- minimal progress to check
+                 in  (n `div` k, - (-n) `div` k)
+      (pe, ce) = let (n, k) = pintersect el d  -- maximal progress to check
+                     -- Corners are translucent, so they are invisible,
+                     -- so if intersection is at a corner, choose the square
+                     -- for pe that creates the smaller view.
+                 in  (-1 - (-n) `div` k, n `div` k)
+      start
+        | open (l `at` tr (d, ps)) = pscan' (Just s) ps  -- start in light
+        | ps < cs = pscan' Nothing (ps+1)                -- start in mid-wall
+        | ps == cs = pscan' (Just s) ps                  -- start in a corner
+        | otherwise = error $ "pscan: wrong start " ++ show (d, (ps, cs))
 
       dp2bump     (d, p) = B(p, d - p)
-      topLeft     (d, p) = B(p + 1, d - p)
       bottomRight (d, p) = B(p, d - p + 1)
       tr = ptr . dp2bump
 
       pscan' :: Maybe Edge -> Progress -> Set Loc
       pscan' (Just s@(_, sBumps)) ps
-        | ps > pe =                       -- reached end, scan next
+        | ps > pe =                            -- reached end, scan next
             pscan n ptr l (d+1) (s, e)
-        | closed (l `at` tr (d, ps)) =    -- entering shadow, steep bump
+        | closed (l `at` tr (d, ps)) =         -- entering shadow, steep bump
             let steepBump = bottomRight (d, ps)
                 nel = pborderLine Steep steepBump sBumps
                 neBumps = steepBump:eBumps
             in  S.union
                   (pscan n ptr l (d+1) (s, (nel, neBumps)))
-                  (pscan' Nothing ps)
-        | otherwise =                     -- continue in light
-            pscan' (Just s) (ps+1)
+                  (pscan' Nothing (ps+1))
+        | otherwise = pscan' (Just s) (ps+1)   -- continue in light
 
       pscan' Nothing ps
-        | ps > pe = S.empty               -- reached end while in shadow
-        | open (l `at` tr (d, ps)) =      -- moving out of shadow, shallow bump
+        | ps > ce = S.empty                    -- reached absolute end
+        | otherwise =                          -- out of shadow, shallow bump
+            -- the light can be just through a corner of diagonal walls
+            -- and the recursive call verifies that at the same ps coordinate
             let shallowBump = bottomRight (d, ps)
                 nsl = pborderLine Shallow shallowBump eBumps
                 nsBumps = shallowBump:sBumps
-            in  pscan' (Just (nsl, nsBumps)) (ps+1)
-        | ps+1 > pe = S.empty             -- nothing to do up-left
-        | closed (l `at` tr (d, ps+1)) =  -- up-left is in shadow, too
-            -- This is a special case. Corners are translucent, so they
-            -- do not block view, so a square blocked by diagonal walls
-            -- is still visible through their common corner.
-            -- TODO: many other special cases are needed for difficult maps :(
-            if closed (l `at` tr (d+1, ps+1))
-            then
-              -- trace (show ("wall visible through its corner",ps,pe)) $
-              S.insert (tr (d+1, ps+1))
-                (pscan' Nothing (ps+1))
-            else
-              -- trace (show ("open space visible through its corner",ps,pe)) $
-              let bump    = topLeft (d, ps)
-                  nsBumps = bump:sBumps
-                  neBumps = bump:eBumps
-                  nsl = pborderLine Shallow bump neBumps
-                  nel = pborderLine Steep bump nsBumps
-              in  S.union
-                    (pscan n ptr l (d+1) ((nsl, nsBumps), (nel, neBumps)))
-                    (pscan' Nothing (ps+1))
-        | otherwise =                     -- continue in shadow
-            pscan' Nothing (ps+1)
+            in  pscan' (Just (nsl, nsBumps)) ps
 
 {- THE Y COORDINATE COMES FIRST! (Y,X)!
 A square is denoted by its bottom-left corner. Hero at (0,0).
@@ -236,13 +215,13 @@ pborderLine which farPoint hull =
       (strongestBump, _) = L.foldl' cross extraBump hull
       line =
         -- trace (show (which, strongestBump, farPoint, hull)) $
-        pcheckBorderLine $
+        pdebugBorderLine $
         (strongestBump, farPoint)
   in  line
 
--- | Checks postconditions of borderLine.
-pcheckBorderLine :: Line -> Line
-pcheckBorderLine line@(B(y1, x1), B(y2, x2))
+-- | Debug: checks postconditions of borderLine.
+pdebugBorderLine :: Line -> Line
+pdebugBorderLine line@(B(y1, x1), B(y2, x2))
   | y1 == y2 && x1 == x2 =
       error $ "pborderLine: wrongly defined line " ++ show line
   | x2 - x1 == - (y2 - y1) =
@@ -271,20 +250,22 @@ dscan n tr l d (s@(sl{-shallow line-}, sBumps), e@(el{-steep line-}, eBumps)) =
   -- trace (show (d,s,e,ps,pe,start)) $
   S.union
     (S.fromList [tr (B(d, p)) | p <- [ps..pe]])
-    (if d < n then dscan' start ps else S.empty)
+    (if d < n then start else S.empty)
     -- the scanned area is a square, which is a sphere in this metric; good
     where
-      ps    = let (n, k) = dintersect sl d    -- minimal progress to check
-              in  n `div` k
-      pe    = let (n, k) = dintersect el d    -- maximal progress to check
-                  -- Corners obstruct view, so the steep line, constructed
-                  -- from corners, is itself not a part of the view,
-                  -- so if its intersection with the line of diagonals is only
-                  -- at a corner, choose the diamond leading to a smaller view.
-              in  -1 - (-n) `div` k
-      start = if open (l `at` tr (B(d, ps)))
-              then Just s                     -- start in light
-              else Nothing                    -- start in shadow
+      ps = let (n, k) = dintersect sl d       -- minimal progress to check
+           in  n `div` k
+      pe = let (n, k) = dintersect el d       -- maximal progress to check
+               -- Corners obstruct view, so the steep line, constructed
+               -- from corners, is itself not a part of the view,
+               -- so if its intersection with the line of diagonals is only
+               -- at a corner, choose the diamond leading to a smaller view.
+           in  -1 - (-n) `div` k
+      start
+        | ps > pe = error $ "dscan: wrong start " ++ show (d, (ps, pe))
+        | open (l `at` tr (B(d, ps))) =
+            dscan' (Just s) (ps+1)            -- start in light, jump ahead
+        | otherwise = dscan' Nothing (ps+1)   -- start in shadow, jump ahead
 
       dscan' :: Maybe Edge -> Progress -> Set Loc
       dscan' (Just s@(_, sBumps)) ps
@@ -358,13 +339,13 @@ dborderLine which farPoint hull =
       (strongestBump, _) = L.foldl' cross extraBump hull
       line =
         -- trace (show (which, strongestBump, farPoint, hull)) $
-        dcheckBorderLine $
+        ddebugBorderLine $
         (strongestBump, farPoint)
   in  line
 
--- | Checks postconditions of borderLine.
-dcheckBorderLine :: Line -> Line
-dcheckBorderLine line@(B(y1, x1), B(y2, x2))
+-- | Debug: checks postconditions of borderLine.
+ddebugBorderLine :: Line -> Line
+ddebugBorderLine line@(B(y1, x1), B(y2, x2))
   | y1 == y2 && x1 == x2 =
       error $ "dborderLine: wrongly defined line " ++ show line
   | y2 - y1 == 0 =
