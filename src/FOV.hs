@@ -88,22 +88,22 @@ fullscan range loc lmap =
       L.map (\ tr ->
               pscan n (tr loc) lmap 1
                 (((B(1, 0), B(0, 2*n)), []), ((B(0, 1), B(2*n, 0)), [])))
-      [ptr0,ptr1,ptr2,ptr3]
+      [dtr0,dtr1,dtr2,dtr3]
 {-
     Just n  ->  -- diagonal with range n
       S.unions $
       L.map (\ tr ->
               dscan n (tr loc) lmap 1
-                (((B(0, 0), B(2*n, 1+2*n)), []), ((B(0, 1), B(2*n, -2*n)), [])))
-      [ptr0,ptr1,ptr2,ptr3]
+                (((B(0, 1), B(2*n, -2*n)), []), ((B(0, 0), B(2*n, 1+2*n)), [])))
+      [dtr0,dtr1,dtr2,dtr3]
 -}
 
--- | The translationa and rotations functions for the permissive algorithms.
-ptr0, ptr1, ptr2, ptr3 :: Loc -> Bump -> Loc
-ptr0 (oy, ox) (B(y, x)) = (oy - y, ox + x)  -- first quadrant
-ptr1 (oy, ox) (B(y, x)) = (oy - x, ox - y)  -- then rotated clockwise 90 degrees
-ptr2 (oy, ox) (B(y, x)) = (oy + y, ox - x)
-ptr3 (oy, ox) (B(y, x)) = (oy + x, ox + y)
+-- | The translationa and rotations functions for qudrands.
+dtr0, dtr1, dtr2, dtr3 :: Loc -> Bump -> Loc
+dtr0 (oy, ox) (B(y, x)) = (oy - y, ox + x)  -- first quadrant
+dtr1 (oy, ox) (B(y, x)) = (oy - x, ox - y)  -- then rotated clockwise 90 degrees
+dtr2 (oy, ox) (B(y, x)) = (oy + y, ox - x)
+dtr3 (oy, ox) (B(y, x)) = (oy + x, ox + y)
 
 
 -- | Precise Permissive FOV with a given range.
@@ -115,7 +115,13 @@ ptr3 (oy, ox) (B(y, x)) = (oy + x, ox + y)
 pscan :: Distance -> (Bump -> Loc) -> LMap -> Distance -> EdgeInterval ->
          Set Loc
 pscan n ptr l d (s@(sl{-shallow line-}, sBumps), e@(el{-steep line-}, eBumps)) =
-  let ps    = let (n, k) = pintersect sl d  -- minimal progress to check
+  -- trace (show (d,s,e,ps,pe)) $
+  S.union
+    (S.fromList [tr (d, p) | p <- [ps..pe]])
+    (if d < n then pscan' start ps else S.empty)
+    -- the area is diagonal, which is incorrect, but looks good enough
+    where
+      ps    = let (n, k) = pintersect sl d  -- minimal progress to check
               in  n `div` k
       pe    = let (n, k) = pintersect el d  -- maximal progress to check
                   -- Corners are translucent, so they are invisible,
@@ -125,62 +131,56 @@ pscan n ptr l d (s@(sl{-shallow line-}, sBumps), e@(el{-steep line-}, eBumps)) =
       start = if open (l `at` tr (d, ps))
               then Just s                  -- start in light
               else Nothing                 -- start in shadow
-  in
-   -- trace (show (d,s,e,ps,pe)) $
-   S.union
-     (S.fromList [tr (d, p) | p <- [ps..pe]])
-     (if d == n then S.empty else pscan' start ps pe)
-     -- the area is diagonal, which is incorrect, but looks good enough
-     where
-       dp2bump     (d, p) = B(p, d - p)
-       topLeft     (d, p) = B(p + 1, d - p)
-       bottomRight (d, p) = B(p, d - p + 1)
-       tr = ptr . dp2bump
 
-       pscan' :: Maybe Edge -> Progress -> Progress -> Set Loc
-       pscan' (Just s@(_, sBumps)) ps pe
-         | ps > pe =                       -- reached end, scan next
-             pscan n ptr l (d+1) (s, e)
-         | closed (l `at` tr (d, ps)) =    -- entering shadow, steep bump
-             let steepBump = bottomRight (d, ps)
-                 nel = pborderLine Steep steepBump sBumps
-                 neBumps = steepBump:eBumps
-             in  S.union
-                   (pscan n ptr l (d+1) (s, (nel, neBumps)))
-                   (pscan' Nothing ps pe)
-         | otherwise =                     -- continue in light
-             pscan' (Just s) (ps+1) pe
+      dp2bump     (d, p) = B(p, d - p)
+      topLeft     (d, p) = B(p + 1, d - p)
+      bottomRight (d, p) = B(p, d - p + 1)
+      tr = ptr . dp2bump
 
-       pscan' Nothing ps pe
-         | ps > pe = S.empty               -- reached end while in shadow
-         | open (l `at` tr (d, ps)) =      -- moving out of shadow, shallow bump
-             let shallowBump = bottomRight (d, ps)
-                 ns = pborderLine Shallow shallowBump eBumps
-                 nsBumps = shallowBump:sBumps
-             in  pscan' (Just (ns, nsBumps)) (ps+1) pe
-         | ps+1 > pe = S.empty             -- nothing to do up-left
-         | closed (l `at` tr (d, ps+1)) =  -- up-left is in shadow, too
-             -- This is a special case. Corners are translucent, so they
-             -- do not block view, so a square blocked by diagonal walls
-             -- is still visible through their common corner.
-             -- TODO: many other special cases are needed for difficult maps :(
-             if closed (l `at` tr (d+1, ps+1))
-             then
-               -- trace (show ("wall visible through its corner",ps,pe)) $
-               S.insert (tr (d+1, ps+1))
-                 (pscan' Nothing (ps+1) pe)
-             else
-               -- trace (show ("open space visible through its corner",ps,pe)) $
-               let bump    = topLeft (d, ps)
-                   nsBumps = bump:sBumps
-                   neBumps = bump:eBumps
-                   ns = pborderLine Shallow bump neBumps
-                   ne = pborderLine Steep bump nsBumps
-               in  S.union
-                     (pscan n ptr l (d+1) ((ns, nsBumps), (ne, neBumps)))
-                     (pscan' Nothing (ps+1) pe)
-         | otherwise =                     -- continue in shadow
-             pscan' Nothing (ps+1) pe
+      pscan' :: Maybe Edge -> Progress -> Set Loc
+      pscan' (Just s@(_, sBumps)) ps
+        | ps > pe =                       -- reached end, scan next
+            pscan n ptr l (d+1) (s, e)
+        | closed (l `at` tr (d, ps)) =    -- entering shadow, steep bump
+            let steepBump = bottomRight (d, ps)
+                nel = pborderLine Steep steepBump sBumps
+                neBumps = steepBump:eBumps
+            in  S.union
+                  (pscan n ptr l (d+1) (s, (nel, neBumps)))
+                  (pscan' Nothing ps)
+        | otherwise =                     -- continue in light
+            pscan' (Just s) (ps+1)
+
+      pscan' Nothing ps
+        | ps > pe = S.empty               -- reached end while in shadow
+        | open (l `at` tr (d, ps)) =      -- moving out of shadow, shallow bump
+            let shallowBump = bottomRight (d, ps)
+                nsl = pborderLine Shallow shallowBump eBumps
+                nsBumps = shallowBump:sBumps
+            in  pscan' (Just (nsl, nsBumps)) (ps+1)
+        | ps+1 > pe = S.empty             -- nothing to do up-left
+        | closed (l `at` tr (d, ps+1)) =  -- up-left is in shadow, too
+            -- This is a special case. Corners are translucent, so they
+            -- do not block view, so a square blocked by diagonal walls
+            -- is still visible through their common corner.
+            -- TODO: many other special cases are needed for difficult maps :(
+            if closed (l `at` tr (d+1, ps+1))
+            then
+              -- trace (show ("wall visible through its corner",ps,pe)) $
+              S.insert (tr (d+1, ps+1))
+                (pscan' Nothing (ps+1))
+            else
+              -- trace (show ("open space visible through its corner",ps,pe)) $
+              let bump    = topLeft (d, ps)
+                  nsBumps = bump:sBumps
+                  neBumps = bump:eBumps
+                  nsl = pborderLine Shallow bump neBumps
+                  nel = pborderLine Steep bump nsBumps
+              in  S.union
+                    (pscan n ptr l (d+1) ((nsl, nsBumps), (nel, neBumps)))
+                    (pscan' Nothing (ps+1))
+        | otherwise =                     -- continue in shadow
+            pscan' Nothing (ps+1)
 
 {- THE Y COORDINATE COMES FIRST! (Y,X)!
 A square is denoted by its bottom-left corner. Hero at (0,0).
@@ -191,8 +191,8 @@ Order of processing in the first quadrant is
 @136
 so the first processed square is at (0, 1). The order is reversed
 wrt the shadow casting algorithm above. The line in the curent state
-of the scan is not the steep line, but the shallow line, the one from which
-we start going from the bottom right.
+of scan' is not the steep line, but the shallow line,
+and we start scanning from the bottom right.
 
 The Loc coordinates are cartesian, the Bump coordinates are cartesian,
 translated so that the hero is at (0, 0) and rotated so that he always
@@ -260,79 +260,67 @@ pcheckBorderLine line@(B(y1, x1), B(y2, x2))
 
 
 -- | Digital FOV with a given range.
--- Specification is at http://roguebasin.roguelikedevelopment.org/index.php?title=Digital_field_of_view_implementation, but AFAIK, this algorithm (fast DFOV done similarly as PFOV) has never been implemented before. The algorithm is based on the pscan algorithm above.
+-- Specification is at http://roguebasin.roguelikedevelopment.org/index.php?title=Digital_field_of_view_implementation, but AFAIK, this algorithm (fast DFOV done similarly as PFOV) has never been implemented before. The algorithm is based on the PFOV algorithm, clean-room reimplemented based on http://roguebasin.roguelikedevelopment.org/index.php?title=Precise_Permissive_Field_of_View. See https://github.com/Mikolaj/LambdaHack/wiki/Fov-and-los for some more context.
 
 -- | The current state of a scan is kept in Maybe (Line, ConvexHull).
 -- If Just something, we're in a visible interval. If Nothing, we're in
 -- a shadowed interval.
 dscan :: Distance -> (Bump -> Loc) -> LMap -> Distance -> EdgeInterval ->
          Set Loc
-dscan n ptr l d (s@(sl{-shallow line-}, sBumps), e@(el{-steep line-}, eBumps)) =
-  let ps    = let (n, k) = dintersect sl d  -- minimal progress to check
-                  -- Corners obstruct view, so the shallow line, constructed
+dscan n tr l d (s@(sl{-shallow line-}, sBumps), e@(el{-steep line-}, eBumps)) =
+  -- trace (show (d,s,e,ps,pe,start)) $
+  S.union
+    (S.fromList [tr (B(d, p)) | p <- [ps..pe]])
+    (if d < n then dscan' start ps else S.empty)
+    -- the scanned area is a square, which is a sphere in this metric; good
+    where
+      ps    = let (n, k) = dintersect sl d    -- minimal progress to check
+              in  n `div` k
+      pe    = let (n, k) = dintersect el d    -- maximal progress to check
+                  -- Corners obstruct view, so the steep line, constructed
                   -- from corners, is itself not a part of the view,
                   -- so if its intersection with the line of diagonals is only
                   -- at a corner, choose the diamond leading to a smaller view.
-              in  extent + 1 + (-n) `div` k
-      pe    = let (n, k) = dintersect el d  -- maximal progress to check
-              in  extent - n `div` k
-      start = if open (l `at` tr (d, ps))
-              then Just s                  -- start in light
-              else Nothing                 -- start in shadow
-  in
-   -- trace (show (d,s,e,ps,pe, start, extent)) $
-   S.union
-     (S.fromList [tr (d, p) | p <- [ps..pe]])
-     (if d == n then S.empty else dscan' start ps pe)
-     -- the scanned area is a square, which is a sphere in this metric; good
-     where
-       extent = 1 + d `div` 2
-       {-# INLINE dp2bump #-}  -- I wonder if it works...
-       dp2bump (d, p) = B(d, extent - p)
-       tr = ptr . dp2bump
+              in  -1 - (-n) `div` k
+      start = if open (l `at` tr (B(d, ps)))
+              then Just s                     -- start in light
+              else Nothing                    -- start in shadow
 
-       dscan' :: Maybe Edge -> Progress -> Progress -> Set Loc
-       dscan' (Just s@(_, sBumps)) ps pe
-         | ps > pe =                       -- reached end, scan next
-             dscan n ptr l (d+1) (s, e)
-         | closed (l `at` tr (d, ps)) =    -- entering shadow, steep bump
-             let steepBump = dp2bump (d, ps-1)
-                 ne = dborderLine Steep steepBump sBumps
-                 neBumps = steepBump:eBumps
-             in  S.union
-                   (dscan n ptr l (d+1) (s, (ne, neBumps)))
-                   (dscan' Nothing (ps+1) pe)
-         | otherwise =                     -- continue in light
-             dscan' (Just s) (ps+1) pe
+      dscan' :: Maybe Edge -> Progress -> Set Loc
+      dscan' (Just s@(_, sBumps)) ps
+        | ps > pe = dscan n tr l (d+1) (s, e) -- reached end, scan next
+        | closed (l `at` tr steepBump) =      -- entering shadow
+            S.union (dscan n tr l (d+1) (s, ne)) (dscan' Nothing (ps+1))
+        | otherwise = dscan' (Just s) (ps+1)  -- continue in light
+        where
+          steepBump = B(d, ps)
+          ne = (dborderLine Steep steepBump sBumps, steepBump:eBumps)
 
-       dscan' Nothing ps pe
-         | ps > pe = S.empty               -- reached end while in shadow
-         | open (l `at` tr (d, ps)) =      -- moving out of shadow, shallow bump
-             let shallowBump = dp2bump (d, ps-1)
-                 nsl = dborderLine Shallow shallowBump eBumps
-                 nsBumps = shallowBump:sBumps
-             in  dscan' (Just (nsl, nsBumps)) (ps+1) pe
-         | otherwise =                     -- continue in shadow
-             dscan' Nothing (ps+1) pe
+      dscan' Nothing ps
+        | ps > pe = S.empty                   -- reached end while in shadow
+        | open (l `at` tr shallowBump) =      -- moving out of shadow
+            dscan' (Just ns) (ps+1)
+        | otherwise = dscan' Nothing (ps+1)   -- continue in shadow
+        where
+          shallowBump = B(d, ps)
+          ns = (dborderLine Shallow shallowBump eBumps, shallowBump:sBumps)
 
 {- THE Y COORDINATE COMES FIRST! (Y,X)!
 A diamond is denoted by its left corner. Hero at (0,0).
 Order of processing in the first quadrant rotated by 45 degrees is
- 87654
-  321
+ 45678
+  123
    @
-so the first processed diamond is at (1, 1). The order is reversed
-wrt the shadow casting algorithm above. The line in the curent state
-of the scan is not the steep line, but the shallow line, the one from which
-we start going from the bottom right.
+so the first processed diamond is at (-1, 1). The order is similar
+as for the shadow casting algorithm above and reversed wrt PFOV.
+The line in the curent state of scan' is called the shallow line,
+but it's the one that delimits the view from the left, while the steep
+line is on the right, opposite to PFOV. We start scanning from the left.
 
 The Loc coordinates are cartesian, the Bump coordinates are cartesian,
 translated so that the hero is at (0, 0) and rotated so that he always
 looks at the first roatated quadrant, the (Distance, Progress) cordinates
-are mangled and not used for geometry.
-
-The ptr functions are as for pscan, because they are just
-the translations and rotations.
+coincide with the Bump coordinates, unlike in PFOV.
 -}
 
 -- | The x coordinate, represented as a fraction, of the intersection of
@@ -357,11 +345,11 @@ xt = ((d - y) (xf - x) + x (yf - y)) / (yf - y)
 -- (knowing that (0, 0) or (0, 1) belong to it).
 dborderLine :: WhichLine -> Bump -> ConvexHull -> Line
 dborderLine which farPoint hull =
-  let crossLeq (n1, k1) (n2, k2) = n1 * k2 >= k1 * n2
+  let crossLeq (n1, k1) (n2, k2) = n1 * k2 <= k1 * n2
       (extraBump, strongerBump) =
         case which of
-          Shallow -> ((B(0, 0), (1, 1)), crossLeq)
-          Steep   -> ((B(0, 1), (0, 1)), \ a b -> crossLeq b a)
+          Shallow -> ((B(0, 1), (0, 1)), crossLeq)
+          Steep   -> ((B(0, 0), (1, 1)), \ a b -> crossLeq b a)
       cross acc@(_, nkAcc) bump =
         let nkNew = dintersect (bump, farPoint) 0
         in if strongerBump nkAcc nkNew
