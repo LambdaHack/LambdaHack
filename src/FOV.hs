@@ -27,7 +27,7 @@ data FovMode = Shadow | Permissive Int | Diagonal Int
 fullscan :: FovMode -> Loc -> LMap -> Set Loc
 fullscan fovMode loc lmap =
   case fovMode of
-    Shadow ->  -- shadow casting with infinite range
+    Shadow ->         -- shadow casting with infinite range
       S.unions $
       L.map (\ tr ->
               scan (tr loc) lmap 1 (0,1))
@@ -201,18 +201,17 @@ yt = ((1 + d) (yf - y) + y xf - x yf) / (xf - x + yf - y)
 -- | Constructs steep or shallow line from the far point and the opposite
 -- convex hull of bumps.
 pborderLine :: WhichLine -> Bump -> ConvexHull -> Line
-pborderLine which farPoint hull =
-  let crossLeq (n1, k1) (n2, k2) = n1 * k2 <= k1 * n2
+pborderLine which farPoint@(B(yf, xf)) hull =
+  let steeper (B(y1, x1)) (B(y2, x2)) =
+        (yf - y1)*(xf - x2) > (yf - y2)*(xf - x1)
       (extraBump, strongerBump) =
         case which of
-          Shallow -> ((B(1, 0), (1, 1)), crossLeq)
-          Steep   -> ((B(0, 1), (0, 1)), \ a b -> crossLeq b a)
-      cross acc@(_, nkAcc) bump =
-        let nkNew = pintersect (bump, farPoint) 0
-        in if strongerBump nkAcc nkNew
-           then acc
-           else (bump, nkNew)
-      (strongestBump, _) = L.foldl' cross extraBump hull
+          Shallow -> (B(1, 0), steeper)
+          Steep   -> (B(0, 1), \ a b -> steeper b a)
+      cross acc bump
+        | strongerBump bump acc = bump
+        | otherwise = acc
+      strongestBump = L.foldl' cross extraBump hull
       line =
         -- trace (show (which, strongestBump, farPoint, hull)) $
         pdebugBorderLine $  -- TODO: disable when it becomes a bottleneck
@@ -323,18 +322,17 @@ xt = ((d - y) (xf - x) + x (yf - y)) / (yf - y)
 -- | Constructs steep or shallow line from the far point and the opposite
 -- convex hull of bumps.
 dborderLine :: WhichLine -> Bump -> ConvexHull -> Line
-dborderLine which farPoint hull =
-  let crossLeq (n1, k1) (n2, k2) = n1 * k2 <= k1 * n2
+dborderLine which farPoint@(B(yf, xf)) hull =
+  let steeper (B(y1, x1)) (B(y2, x2)) =
+        (yf - y1)*(xf - x2) > (yf - y2)*(xf - x1)
       (extraBump, strongerBump) =
         case which of
-          Shallow -> ((B(0, 1), (0, 1)), crossLeq)
-          Steep   -> ((B(0, 0), (1, 1)), \ a b -> crossLeq b a)
-      cross acc@(_, nkAcc) bump =
-        let nkNew = dintersect (bump, farPoint) 0
-        in if strongerBump nkAcc nkNew
-           then acc
-           else (bump, nkNew)
-      (strongestBump, _) = L.foldl' cross extraBump hull
+          Shallow -> (B(0, 1), \ a b -> steeper b a)
+          Steep   -> (B(0, 0), steeper)
+      cross acc bump
+        | strongerBump bump acc = bump
+        | otherwise = acc
+      strongestBump = L.foldl' cross extraBump hull
       line =
         -- trace (show (which, strongestBump, farPoint, hull)) $
         ddebugBorderLine $  -- TODO: disable when it becomes a bottleneck
