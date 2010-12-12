@@ -16,7 +16,6 @@ import qualified Save
 import Turn
 import Item
 import qualified Config
-import qualified Data.ConfigFile
 
 main :: IO ()
 main = startup start
@@ -39,7 +38,7 @@ start session =
                              "Welcome back to LambdaHack."
 
 -- | Generate the dungeon for a new game, and start the game loop.
-generate :: Data.ConfigFile.ConfigParser -> Session -> String -> IO ()
+generate :: Config.CP -> Session -> String -> IO ()
 generate config session msg =
   let matchGenerator n Nothing =
         if n == 3 then bigroom else

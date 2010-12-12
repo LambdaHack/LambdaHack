@@ -11,7 +11,6 @@ import Data.Maybe
 import File
 import Dungeon
 import qualified Config
-import qualified Data.ConfigFile
 
 -- | A single score.
 -- TODO: add hero's name, exp and level, cause of death, user number/name.
@@ -82,12 +81,12 @@ empty :: ScoreTable
 empty = []
 
 -- | Name of the high scores file.
-file :: Data.ConfigFile.ConfigParser -> IO String
+file :: Config.CP -> IO String
 file config = Config.getFile config "LambdaHack.scores" "files" "highscores"
 
 -- | We save a simple serialized version of the high scores table.
 -- The 'False' is used only as an EOF marker.
-save :: Data.ConfigFile.ConfigParser -> ScoreTable -> IO ()
+save :: Config.CP -> ScoreTable -> IO ()
 save config scores =
   do
     f <- file config
@@ -98,7 +97,7 @@ save config scores =
     encodeCompressedFile f (scores, False)
 
 -- | Read the high scores table. Return the empty table if no file.
-restore :: Data.ConfigFile.ConfigParser -> IO ScoreTable
+restore :: Config.CP -> IO ScoreTable
 restore config =
   do
     f <- file config
@@ -133,8 +132,7 @@ slideshow pos h height =
         showTable h (max (height + 1) (pos - height `div` 2)) height]
 
 -- | Take care of a new score, return a list of messages to display.
-register :: Data.ConfigFile.ConfigParser -> Bool -> ScoreRecord ->
-            IO (String, [String])
+register :: Config.CP -> Bool -> ScoreRecord -> IO (String, [String])
 register config write s =
   do
     h <- restore config

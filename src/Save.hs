@@ -7,10 +7,9 @@ import File
 import Level
 import State
 import qualified Config
-import qualified Data.ConfigFile
 
 -- | Name of the save game.
-file :: Data.ConfigFile.ConfigParser -> IO String
+file :: Config.CP -> IO String
 file config = Config.getFile config "LambdaHack.save" "files" "savegame"
 
 -- | We save a simple serialized version of the current level and
@@ -24,7 +23,7 @@ saveGame state =
 -- | Restore a saved game. Returns either the current level and
 -- game state, or a string containing an error message if restoring
 -- the game fails.
-restoreGame :: Data.ConfigFile.ConfigParser -> IO (Either State String)
+restoreGame :: Config.CP -> IO (Either State String)
 restoreGame config =
   E.catch (do
              f <- file config
