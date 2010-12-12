@@ -11,6 +11,7 @@ import Data.Maybe
 import File
 import Dungeon
 import qualified Config
+import qualified Data.ConfigFile
 
 -- | A single score.
 -- TODO: add hero's name, exp and level, cause of death, user number/name.
@@ -81,15 +82,15 @@ empty :: ScoreTable
 empty = []
 
 -- | Name of the high scores file.
-file :: IO String
-file = Config.getFile "LambdaHack.scores" "files" "highscores"
+file :: Data.ConfigFile.ConfigParser -> IO String
+file config = Config.getFile config "LambdaHack.scores" "files" "highscores"
 
 -- | We save a simple serialized version of the high scores table.
 -- The 'False' is used only as an EOF marker.
-save :: ScoreTable -> IO ()
-save scores =
+save :: Data.ConfigFile.ConfigParser -> ScoreTable -> IO ()
+save config scores =
   do
-    f <- file
+    f <- file config
     b <- doesFileExist f
     if b
       then removeFile f
@@ -97,10 +98,10 @@ save scores =
     encodeCompressedFile f (scores, False)
 
 -- | Read the high scores table. Return the empty table if no file.
-restore :: IO ScoreTable
-restore =
+restore :: Data.ConfigFile.ConfigParser -> IO ScoreTable
+restore config =
   do
-    f <- file
+    f <- file config
     b <- doesFileExist f
     if not b
       then return []
@@ -132,10 +133,11 @@ slideshow pos h height =
         showTable h (max (height + 1) (pos - height `div` 2)) height]
 
 -- | Take care of a new score, return a list of messages to display.
-register :: Bool -> ScoreRecord -> IO (String, [String])
-register write s =
+register :: Data.ConfigFile.ConfigParser -> Bool -> ScoreRecord ->
+            IO (String, [String])
+register config write s =
   do
-    h <- restore
+    h <- restore config
     let (h', pos) = insertPos s h
         (lines, _) = normalLevelSize
         height = lines `div` 3
@@ -147,5 +149,5 @@ register write s =
                      if pos <= height then " among the greatest heroes" else "")
                else (" current", " (unless you are slain)")
         msg = printf "Your%s exploits award you place >> %d <<%s." msgCurrent pos msgUnless
-    if write then save h' else return ()
+    if write then save config h' else return ()
     return (msg, slideshow pos h' height)

@@ -18,40 +18,41 @@ file =
 
 -- | The configuration read from the main configuration file.
 -- If no such file, generate empty configuration.
-config :: MonadError CPError m => IO (m ConfigParser)
+config :: IO ConfigParser
 config =
   do
     f <- file
     b <- doesFileExist f
-    if b
-      then readfile emptyCP f
-      else return $ return emptyCP
+    if not b
+      then return emptyCP
+      else do
+        c <- readfile emptyCP f
+        return $ forceEither c
 
 -- | A simplified access to an option in a given section,
 -- with simple error reporting (no error is caught and hidden).
 -- If there is no config file or no such option, gives Nothing.
-getOption :: Get_C a => SectionSpec -> OptionSpec -> IO (Maybe a)
-getOption s o =
+getOption :: Get_C a => ConfigParser -> SectionSpec -> OptionSpec ->
+             Maybe a
+getOption config s o =
   do
-    cfg <- config
-    let cfgForced = forceEither cfg
-    if has_option cfgForced s o
-      then let val = get cfgForced s o
+    if has_option config s o
+      then let val = get config s o
                valForced = forceEither val
-           in  return $ Just valForced
-      else return Nothing
+           in  Just valForced
+      else Nothing
 
 -- | Looks up a file path in the config file, faling back to the default path.
 -- The path from the config file is taken relative to the home directory
 -- and the default is taken relative to the current directory. In any case,
 -- the returned path is absolute.
-getFile :: FilePath -> SectionSpec -> OptionSpec -> IO FilePath
-getFile dflt s o =
+getFile :: ConfigParser -> FilePath -> SectionSpec -> OptionSpec -> IO FilePath
+getFile config dflt s o =
   do
     current <- getCurrentDirectory
     appData <- getAppUserDataDirectory "LambdaHack"
-    s <- getOption s o
-    return $ maybe (combine current dflt) (combine appData) s
+    let path = getOption config s o
+    return $ maybe (combine current dflt) (combine appData) path
 
 
 instance B.Binary ConfigParser where
