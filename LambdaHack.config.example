@@ -13,7 +13,8 @@ savegame:   LambdaHack.save
 highscores: LambdaHack.scores
 
 #[engine]
-#pfov_radius: 50
+#fov_mode: diagonal
+#fov_radius: 50
 
 [dungeon]
 depth: 10
