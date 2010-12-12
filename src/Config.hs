@@ -7,6 +7,7 @@ import Control.Monad.Error
 import Data.ConfigFile
 import Data.Either.Utils
 import Data.Maybe
+import qualified Data.Binary as B
 
 -- | Path to the main configuration file.
 file :: IO String
@@ -17,7 +18,6 @@ file =
 
 -- | The configuration read from the main configuration file.
 -- If no such file, generate empty configuration.
--- TODO: read the file only once (currently it's read again for every option).
 config :: MonadError CPError m => IO (m ConfigParser)
 config =
   do
@@ -52,3 +52,14 @@ getFile dflt s o =
     appData <- getAppUserDataDirectory "LambdaHack"
     s <- getOption s o
     return $ maybe (combine current dflt) (combine appData) s
+
+
+instance B.Binary ConfigParser where
+  put config = B.put $ to_string config
+  get = do
+    string <- B.get
+    let parsed = readstring emptyCP string
+    return $ forceEither $ parsed
+
+instance Show ConfigParser where
+  show config = show $ to_string config

@@ -4,6 +4,7 @@ import System.Directory
 import Control.Monad
 import Data.Map as M
 import Data.Maybe
+import Data.Either.Utils
 
 import State
 import Geometry
@@ -66,6 +67,7 @@ generate session msg =
      depthOption <- Config.getOption "dungeon" "depth"
      let depth = fromMaybe 10 depthOption
      levels <- mapM findGenerator [1..depth]
+     config <- Config.config
      let lvls = connect (Just Nothing) levels
          (lvl,dng) = (head lvls, dungeon (tail lvls))
          -- generate item associations
@@ -73,6 +75,6 @@ generate session msg =
                     [ (Potion PotionWater,   Clear),
                       (Potion PotionHealing, White) ]
          defState = defaultState ((\ (_,x,_) -> x) (head levels)) dng lvl
-         state = defState { sassocs = assocs }
+         state = defState { sassocs = assocs, config = forceEither config }
      radius <- Config.getOption "engine" "pfov_radius"
      handle session state (perception_ radius state) msg
