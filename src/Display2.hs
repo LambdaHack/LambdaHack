@@ -128,7 +128,7 @@ displayLevel session per
       reachable = preachable per
       visible   = pvisible per
       sSml    = ssensory state == Smell
-      sVis    = ssensory state == Vision
+      sVis    = case ssensory state of Vision _ -> True; _ -> False
       sOmn    = sdisplay state == Omniscient
       sTer    = case sdisplay state of Terrain n -> n; _ -> 0
       lAt     = if sOmn || sTer > 0 then at else rememberAt

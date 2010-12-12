@@ -17,14 +17,22 @@ data Perception =
 perception_ :: State -> Perception
 perception_ (State { splayer = Monster { mloc = ploc },
                      slevel  = Level { lmap = lmap},
-                     config  = config }) =
+                     config  = config,
+                     ssensory = ssensory }) =
   let mode   = Config.getOption config "engine" "fov_mode"
       radius = fromMaybe 20 $ Config.getOption config "engine" "fov_radius"
       fovMode =
-        case mode of
-          Just "permissive" -> Permissive radius
-          Just "diagonal"   -> Diagonal radius
-          _                 -> Shadow
+        -- terrible, temporary hack
+        case ssensory of
+          Vision 3 -> Diagonal radius
+          Vision 2 -> Permissive radius
+          Vision 1 -> Shadow
+          _        ->
+            -- this is not a hack
+            case mode of
+              Just "permissive" -> Permissive radius
+              Just "diagonal"   -> Diagonal radius
+              _                 -> Shadow
   in  perception fovMode ploc lmap
 
 perception :: FovMode -> Loc -> LMap -> Perception
