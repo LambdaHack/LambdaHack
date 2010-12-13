@@ -35,13 +35,15 @@ fullscan fovMode loc lmap =
       S.unions $
       L.map (\ tr ->
               pscan n (tr loc) lmap 1
-                (((B(1, 0), B(0, 2*n)), []), ((B(0, 1), B(2*n, 0)), [])))
+                (((B(1, 0), B(0, 2*n)), [B(0, 1)]),
+                 ((B(0, 1), B(2*n, 0)), [B(1, 0)])))
       [qtr0,qtr1,qtr2,qtr3]
     Diagonal n    ->  -- diagonal with range n
       S.unions $
       L.map (\ tr ->
               dscan n (tr loc) lmap 1
-                (((B(0, 1), B(2*n, -2*n)), []), ((B(0, 0), B(2*n, 1+2*n)), [])))
+                (((B(0, 1), B(2*n, -2*n)),  [B(0, 0)]),
+                 ((B(0, 0), B(2*n, 1+2*n)), [B(0, 1)])))
       [qtr0,qtr1,qtr2,qtr3]
 
 
@@ -67,25 +69,28 @@ qtr3 (oy, ox) (B(y, x)) = (oy + x, ox + y)
 -- | Integer division, rounding up.
 divUp n k = - (-n) `div` k
 
--- | Maximal element of a list.
-maximal gt l = L.foldl' (\ acc x -> if gt x acc then x else acc) l
+-- | Maximal element of a non-empty list. Prefers elements from the rear,
+-- which is essential for PFOV, to avoid ill-defined lists.
+maximal :: (a -> a -> Bool) -> [a] -> a
+maximal gte = L.foldl1' (\ acc x -> if gte x acc then x else acc)
 
 -- | Check if the line from the second point to the first is more steep
 -- than the line from the third point to the first. This is related
 -- to the formal notion of gradient (or angle), but hacked wrt signs
--- to work in this particular setup. Returns False for ill-defined lines.
+-- to work in this particular setup. Returns True for ill-defined lines.
 steeper :: Bump ->  Bump -> Bump -> Bool
 steeper (B(yf, xf)) (B(y1, x1)) (B(y2, x2)) =
-  (yf - y1)*(xf - x2) > (yf - y2)*(xf - x1)
+  (yf - y1)*(xf - x2) >= (yf - y2)*(xf - x1)
 
 -- | Adds a bump to the convex hull of bumps represented as a list.
--- TODO: Reintroduce this function, because hulls can't be optimized
--- in borderLine. Can be optimized by removing some points from the list,
--- also taking into account that (1, 0), etc. belong to the hull.
-addHull :: Bump -> ConvexHull -> ConvexHull
-addHull b l =
-  -- trace (show (b, l)) $
-  (b : l)
+addHull :: (Bump -> Bump -> Bool) -> Bump -> ConvexHull -> ConvexHull
+addHull gte b l =
+  case l of
+    x:y:zs ->
+      if gte x y
+      then addHull gte b (y:zs)
+      else b : l
+    _ -> b : l
 
 
 -- | A restrictive variant of Recursive Shadow Casting FOV with infinite range.
@@ -175,8 +180,10 @@ pscan n ptr l d (s@(sl{-shallow line-}, sBumps), e@(el{-steep line-}, eBumps)) =
             pscan n ptr l (d+1) (s, e)
         | closed (l `at` tr (d, ps)) =         -- entering shadow, steep bump
             let steepBump = bottomRight (d, ps)
-                nep = maximal (flip (psteeper steepBump)) (B(0, 1)) sBumps
-                neBumps = addHull steepBump eBumps
+                gte = flip $ psteeper steepBump
+                -- sBumps may contain steepBump, but maximal will ignore it
+                nep = maximal gte sBumps
+                neBumps = addHull gte steepBump eBumps
             in  S.union
                   (pscan n ptr l (d+1) (s, (pline nep steepBump, neBumps)))
                   (pscan' Nothing (ps+1))
@@ -188,8 +195,9 @@ pscan n ptr l d (s@(sl{-shallow line-}, sBumps), e@(el{-steep line-}, eBumps)) =
             -- the light can be just through a corner of diagonal walls
             -- and the recursive call verifies that at the same ps coordinate
             let shallowBump = bottomRight (d, ps)
-                nsp = maximal (psteeper shallowBump) (B(1, 0)) eBumps
-                nsBumps = addHull shallowBump sBumps
+                gte = psteeper shallowBump
+                nsp = maximal gte eBumps
+                nsBumps = addHull gte shallowBump sBumps
             in  pscan' (Just (pline nsp shallowBump, nsBumps)) ps
 
       pline p1 p2 =
@@ -242,7 +250,7 @@ pdebugSteeper :: Bump ->  Bump -> Bump -> Bool -> Bool
 pdebugSteeper f p1 p2 x =
   let (n1, k1) = pintersect (p1, f) 0
       (n2, k2) = pintersect (p2, f) 0
-  in  if x == (n1 * k2 < k1 * n2)
+  in  if x == (n1 * k2 <= k1 * n2)
       then x
       else error $ "psteeper: " ++ show (f, p1, p2, x)
 
@@ -304,8 +312,9 @@ dscan n tr l d (s@(sl{-shallow line-}, sBumps), e@(el{-steep line-}, eBumps)) =
         | otherwise = dscan' (Just s) (ps+1)  -- continue in light
         where
           steepBump = B(d, ps)
-          nep = maximal (dsteeper steepBump) (B(0, 0)) sBumps
-          neBumps = addHull steepBump eBumps
+          gte = dsteeper steepBump
+          nep = maximal gte sBumps
+          neBumps = addHull gte steepBump eBumps
 
       dscan' Nothing ps
         | ps > pe = S.empty                   -- reached end while in shadow
@@ -314,8 +323,9 @@ dscan n tr l d (s@(sl{-shallow line-}, sBumps), e@(el{-steep line-}, eBumps)) =
         | otherwise = dscan' Nothing (ps+1)   -- continue in shadow
         where
           shallowBump = B(d, ps)
-          nsp = maximal (flip (dsteeper shallowBump)) (B(0, 1)) eBumps
-          nsBumps = addHull shallowBump sBumps
+          gte = flip $ dsteeper shallowBump
+          nsp = maximal gte eBumps
+          nsBumps = addHull gte shallowBump sBumps
 
       dline p1 p2 =
         ddebugLine $  -- TODO: disable when it becomes a bottleneck
@@ -366,7 +376,7 @@ ddebugSteeper :: Bump ->  Bump -> Bump -> Bool -> Bool
 ddebugSteeper f p1 p2 x =
   let (n1, k1) = dintersect (p1, f) 0
       (n2, k2) = dintersect (p2, f) 0
-  in  if x == (n1 * k2 > k1 * n2)
+  in  if x == (n1 * k2 >= k1 * n2)
       then x
       else error $ "dsteeper: " ++ show (f, p1, p2, x)
 
