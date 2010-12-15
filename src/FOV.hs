@@ -21,6 +21,10 @@ type EdgeInterval = (Edge, Edge)
 
 data FovMode = Shadow | Permissive Int | Diagonal Int
 
+-- Three Field of View algorithms. Press 'V' to cycle among them in the game.
+
+-- The main FOV function.
+
 -- | Perform a full scan for a given location. Returns the locations
 -- that are currently in the field of view.
 fullscan :: FovMode -> Loc -> LMap -> Set Loc
@@ -31,7 +35,7 @@ fullscan fovMode loc lmap =
       L.map (\ tr ->
               scan (tr loc) lmap 1 (0,1))
       [tr0,tr1,tr2,tr3,tr4,tr5,tr6,tr7]
-    Permissive r  ->  -- precise permissive with range r
+    Permissive r  ->  -- permissive with range r
       S.unions $
       L.map (\ tr ->
               pscan r (tr loc) lmap 1
@@ -46,8 +50,7 @@ fullscan fovMode loc lmap =
                  ((B(0, 0), B(r, r+1)), [B(0, 1)])))
       [qtr0,qtr1,qtr2,qtr3]
 
-
--- |Common functions:
+-- Common functions.
 
 -- | The translation, rotation and symmetry functions for octants.
 tr0 (oy,ox) (d,p) = (oy + d,ox + p)
@@ -92,6 +95,7 @@ addHull gte b l =
       else b : l
     _ -> b : l
 
+-- Recursive Shadow Casting.
 
 -- | A restrictive variant of Recursive Shadow Casting FOV with infinite range.
 -- It's not designed for dungeons with diagonal walls, so they block visibility,
@@ -138,8 +142,13 @@ downBias x = round (x - 1 % (denominator x * 3))
 upBias   x = round (x + 1 % (denominator x * 3))
 
 
--- | Precise Permissive FOV with a given range.
--- Clean-room reimplemented based on the algorithm described in http://roguebasin.roguelikedevelopment.org/index.php?title=Precise_Permissive_Field_of_View, though the general structure is more influenced by recursive shadow casting, as implemented above. In the result, this algorithm is much faster on dense maps, since it does not scan areas blocked by shadows. See https://github.com/Mikolaj/LambdaHack/wiki/Fov-and-los for some more context.
+-- Permissive FOV with a given range.
+
+-- | PFOV, clean-room reimplemented based on the algorithm described in http://roguebasin.roguelikedevelopment.org/index.php?title=Precise_Permissive_Field_of_View,
+-- though the general structure is more influenced by recursive shadow casting,
+-- as implemented above. In the result, this algorithm is much faster
+-- on dense maps, since it does not scan areas blocked by shadows.
+-- See https://github.com/Mikolaj/LambdaHack/wiki/Fov-and-los for some more context.
 
 -- TODO: Scanning squares on horizontal lines in octants, not squares
 -- on diagonals in quadrants, may be much faster and a bit simpler.
@@ -245,9 +254,9 @@ looks at the first quadrant, the (Distance, Progress) cordinates
 are mangled and not used for geometry.
 -}
 
--- | Debug functions for DFOV:
+-- | Debug functions for PFOV:
 
--- | Debug: calculate steeper for DFOV in another way and compare results.
+-- | Debug: calculate steeper for PFOV in another way and compare results.
 pdebugSteeper :: Bump ->  Bump -> Bump -> Bool -> Bool
 pdebugSteeper f p1 p2 x =
   let (n1, k1) = pintersect (p1, f) 0
@@ -275,8 +284,13 @@ pdebugLine line@(B(y1, x1), B(y2, x2))
       crossG1 = q >= 1 && (q > 1 || r /= 0)
 
 
--- | Digital FOV with a given range.
--- Specification is at http://roguebasin.roguelikedevelopment.org/index.php?title=Digital_field_of_view_implementation, but AFAIK, this algorithm (fast DFOV done similarly as PFOV) has never been implemented before. The algorithm is based on the PFOV algorithm, clean-room reimplemented based on http://roguebasin.roguelikedevelopment.org/index.php?title=Precise_Permissive_Field_of_View. See https://github.com/Mikolaj/LambdaHack/wiki/Fov-and-los for some more context.
+-- Digital FOV with a given range.
+
+-- | DFOV, according to specification at http://roguebasin.roguelikedevelopment.org/index.php?title=Digital_field_of_view_implementation,
+-- but AFAIK, this algorithm (fast DFOV done similarly as PFOV) has never been
+-- implemented before. The algorithm is based on the PFOV algorithm,
+-- clean-room reimplemented based on http://roguebasin.roguelikedevelopment.org/index.php?title=Precise_Permissive_Field_of_View.
+-- See https://github.com/Mikolaj/LambdaHack/wiki/Fov-and-los for some more context.
 
 -- | The current state of a scan is kept in Maybe (Line, ConvexHull).
 -- If Just something, we're in a visible interval. If Nothing, we're in

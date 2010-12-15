@@ -55,7 +55,7 @@ updateLevel :: (Level -> Level) -> State -> State
 updateLevel f s = s { slevel = f (slevel s) }
 
 toggleVision :: State -> State
-toggleVision s = s { ssensory = case ssensory s of Vision 1 -> Implicit; Vision n -> Vision (n-1); _ -> Vision 4 }
+toggleVision s = s { ssensory = case ssensory s of Vision 1 -> Implicit; Vision n -> Vision (n-1); _ -> Vision 3 }
 
 toggleSmell :: State -> State
 toggleSmell s = s { ssensory = if ssensory s == Smell then Implicit else Smell }
