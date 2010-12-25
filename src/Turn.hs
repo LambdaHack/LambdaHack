@@ -91,10 +91,12 @@ handleMonster m session
     let nlvl = updateMonsters (const nms) lvl
     moveOrAttack
       True
+      per (AMonster act) nl
+      session
+      (displayLevel session per state)
       (\ s msg -> handleMonsters session s per (addMsg oldmsg msg))
       (handleMonsters session (updateLevel (const nlvl) state) per oldmsg)
       (updateLevel (const nlvl) state)
-      per (AMonster act) nl
 
 
 -- | Display current status and handle the turn of the player.
@@ -129,15 +131,15 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
                          case e of
                            "o"       -> wrapHandler (openclose True)  h
                            "c"       -> wrapHandler (openclose False) h
-                           "s"       -> search h
+                           "s"       -> wrapHandler search            h
 
-                           "less"    -> lvlchange Up h
-                           "greater" -> lvlchange Down h
+                           "less"    -> wrapHandler (lvlchange Up)    h
+                           "greater" -> wrapHandler (lvlchange Down)  h
 
                            -- items
                            "comma"   -> wrapHandler pickupItem  h
                            "d"       -> wrapHandler dropItem    h
-                           "i"       -> inventory h
+                           "i"       -> wrapHandler inventory   h
                            "q"       -> wrapHandler drinkPotion h
 
                            -- saving or ending the game
@@ -150,7 +152,7 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
                            "period"  -> loop session nstate ""
 
                            -- look
-                           "colon"   -> lookAround h
+                           "colon"   -> wrapHandler lookAround h
 
                            -- display modes
                            "V"       -> handle session (toggleVision     ustate) per oldmsg
@@ -195,84 +197,10 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
   nstate  = updateLevel (const nlvl) (updatePlayer (const nplayer) mstate)
 
   -- uniform wrapper function for action handlers
+  wrapHandler :: Handler () -> IO () -> IO ()
   wrapHandler h abort = h session displayCurrent (loop session) abort nstate
 
-  -- display inventory
-  inventory abort
-    | L.null (mitems player) =
-      displayCurrent "You are not carrying anything." Nothing >> abort
-    | otherwise =
-    do
-      displayItems displayCurrent nstate
-                   "This is what you are carrying:" True (mitems player)
-      getConfirm session
-      displayCurrent "" Nothing
-      abort  -- looking at inventory doesn't take any time
 
-  -- look around at current location
-  lookAround abort =
-    do
-      -- check if something is here to pick up
-      let t = nlmap `at` ploc
-      if length (titems t) <= 2
-        then displayCurrent (lookAt True nstate nlmap ploc) Nothing >> abort
-        else
-          do
-             displayItems displayCurrent nstate
-                          (lookAt True nstate nlmap ploc) False (titems t)
-             getConfirm session
-             displayCurrent "" Nothing
-             abort  -- looking around doesn't take any time
-
-  -- search for secret doors
-  search abort =
-    let searchTile (Tile (Door hv (Just n)) x,t') = Just (Tile (Door hv (Just (max (n - 1) 0))) x, t')
-        searchTile t                              = Just t
-        slmap = foldl (\ l m -> update searchTile (shift ploc m) l) nlmap moves
-    in  loop session (updateLevel (const (updateLMap (const slmap) lvl)) nstate) ""
-  -- flee the dungeon
-  fleeDungeon =
-    let items   = mitems player
-        price i = if iletter i == Just '$' then icount i else 10 * icount i
-        total   = L.sum $ L.map price $ items
-        msg     = "Congratulations, you won! Your loot, worth "
-                  ++ show total ++ " gold, is:"
-    in
-     if total == 0
-         then do
-                displayCurrent ("Chicken!" ++ more) Nothing
-                getConfirm session
-                displayCurrent
-                  ("Next time try to grab some loot before you flee!" ++ more)
-                  Nothing
-                getConfirm session
-                shutdown session
-         else do
-                displayItems displayCurrent nstate msg True items
-                getConfirm session
-                shutdown session
-  -- perform a level change
-  lvlchange vdir abort =
-    case nlmap `at` ploc of
-      Tile (Stairs _ vdir' next) is
-       | vdir == vdir' -> -- ok
-          case next of
-            Nothing ->
-              -- we are at the top (or bottom or lift)
-              fleeDungeon
-            Just (nln, nloc) ->
-              -- perform level change
-              do
-                -- put back current level
-                -- (first put back, then get, in case we change to the same level!)
-                let full = putDungeonLevel lvl (sdungeon nstate)
-                -- get new level
-                    (new, ndng) = getDungeonLevel nln full
-                    lstate = nstate { sdungeon = ndng, slevel = new }
-                loop session (updatePlayer (const (player { mloc = nloc })) lstate) ""
-      _ -> -- no stairs
-           let txt = if vdir == Up then "up" else "down" in
-           displayCurrent ("no stairs " ++ txt) Nothing >> abort
   -- run into a direction
   run dir =
     do
@@ -280,9 +208,11 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
           abort   = handle session (updatePlayer (const $ player { mdir = Nothing }) ustate) per ""
       moveOrAttack
         False   -- attacks are disallowed while running
+        per APlayer dir
+        session displayCurrent
         (loop session)
         abort
-        (updatePlayer (const mplayer) nstate) per APlayer dir
+        (updatePlayer (const mplayer) nstate)
   continueRun dir =
     let abort = handle session (updatePlayer (const $ player { mdir = Nothing }) ustate) per oldmsg
         dloc  = shift ploc dir
@@ -299,9 +229,11 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
             | accessible nlmap ploc dloc ->
                 moveOrAttack
                   False    -- attacks are disallowed while running
+                  per APlayer dir
+                  session displayCurrent
                   (loop session)
                   abort
-                  nstate per APlayer dir
+                  nstate
           (_, Tile Corridor _)  -- direction change restricted to corridors
             | otherwise ->
                 let ns  = L.filter (\ x -> distance (neg dir,x) > 1
@@ -316,9 +248,11 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
   -- perform a player move
   move abort dir = moveOrAttack
                      True   -- attacks are allowed
+                     per APlayer dir
+                     session displayCurrent
                      (loop session)
                      abort
-                     nstate per APlayer dir
+                     nstate
 
 type Handler a =  Session ->                                    -- session
                   (Message -> Maybe String -> IO Bool) ->       -- display
@@ -354,6 +288,99 @@ openclose o session displayCurrent continue abort
                                         clmap = M.insert (shift ploc dir) (nt, nt) nlmap
                                     in continue (updateLevel (const (updateLMap (const clmap) nlvl)) nstate) ""
           _ -> displayCurrent "never mind" Nothing >> abort
+
+
+-- | Perform a level change -- will quit the game if the player leaves
+-- the dungeon.
+lvlchange :: VDir -> Handler ()
+lvlchange vdir session displayCurrent continue abort
+          nstate@(State { slevel  = lvl@(Level { lmap = nlmap }),
+                          splayer = player@(Monster { mloc = ploc }) }) =
+  case nlmap `at` ploc of
+    Tile (Stairs _ vdir' next) is
+     | vdir == vdir' -> -- ok
+        case next of
+          Nothing ->
+            -- we are at the top (or bottom or lift)
+            fleeDungeon
+          Just (nln, nloc) ->
+            -- perform level change
+            do
+              -- put back current level
+              -- (first put back, then get, in case we change to the same level!)
+              let full = putDungeonLevel lvl (sdungeon nstate)
+              -- get new level
+                  (new, ndng) = getDungeonLevel nln full
+                  lstate = nstate { sdungeon = ndng, slevel = new }
+              continue (updatePlayer (const (player { mloc = nloc })) lstate) ""
+    _ -> -- no stairs
+         let txt = if vdir == Up then "up" else "down" in
+         displayCurrent ("no stairs " ++ txt) Nothing >> abort
+  where
+    fleeDungeon =
+      let items   = mitems player
+          -- TODO: very preliminary way to calculate the worth of items
+          price i = if iletter i == Just '$' then icount i else 10 * icount i
+          total   = L.sum $ L.map price $ items
+          msg     = "Congratulations, you won! Your loot, worth "
+                    ++ show total ++ " gold, is:"
+      in
+       if total == 0
+           then do
+                  displayCurrent ("Chicken!" ++ more) Nothing
+                  getConfirm session
+                  displayCurrent
+                    ("Next time try to grab some loot before you flee!" ++ more)
+                    Nothing
+                  getConfirm session
+                  shutdown session
+           else do
+                  displayItems displayCurrent nstate msg True items
+                  getConfirm session
+                  shutdown session
+
+
+-- | Search for secret doors
+search :: Handler a
+search session displayCurrent continue abort
+       nstate@(State { slevel  = Level { lmap = nlmap },
+                       splayer = Monster { mloc = ploc } }) =
+  let searchTile (Tile (Door hv (Just n)) x,t') = Just (Tile (Door hv (Just (max (n - 1) 0))) x, t')
+      searchTile t                              = Just t
+      slmap = foldl (\ l m -> update searchTile (shift ploc m) l) nlmap moves
+  in  continue (updateLevel (updateLMap (const slmap)) nstate) ""
+
+-- | Look around at current location
+lookAround :: Handler a
+lookAround session displayCurrent continue abort
+           nstate@(State { slevel  = Level { lmap = nlmap },
+                           splayer = Monster { mloc = ploc } }) =
+  do
+    -- check if something is here to pick up
+    let t = nlmap `at` ploc
+    if length (titems t) <= 2
+      then displayCurrent (lookAt True nstate nlmap ploc) Nothing >> abort
+      else
+        do
+           displayItems displayCurrent nstate
+                        (lookAt True nstate nlmap ploc) False (titems t)
+           getConfirm session
+           displayCurrent "" Nothing
+           abort  -- looking around doesn't take any time
+
+-- | Display inventory
+inventory :: Handler a
+inventory session displayCurrent continue abort
+          nstate@(State { splayer = player })
+  | L.null (mitems player) =
+    displayCurrent "You are not carrying anything." Nothing >> abort
+  | otherwise =
+  do
+    displayItems displayCurrent nstate
+                 "This is what you are carrying:" True (mitems player)
+    getConfirm session
+    displayCurrent "" Nothing
+    abort  -- looking at inventory doesn't take any time
 
 drinkPotion :: Handler a
 drinkPotion session displayCurrent continue abort
@@ -505,18 +532,21 @@ displayItems displayCurrent state msg sorted is =
       displayCurrent msg (Just ovl)
 
 
+-- | This function performs a move (or attack) by any actor, i.e., it can handle
+-- both monsters and the player. It is currently written such that it conforms
+-- (with extensions) to the action handler interface. However, it should not actually
+-- cause any interaction (at least not when we're performing a move of a monster),
+-- so it may make sense to change the type once again.
 moveOrAttack :: Bool ->                                     -- allow attacks?
-                (State -> Message -> IO a) ->               -- success continuation
-                IO a ->                                     -- failure continuation
-                State ->
-                Perception ->                               -- perception of the player
+                Perception ->                               -- ... of the player
                 Actor ->                                    -- who's moving?
-                Dir -> IO a
+                Dir ->
+                Handler a
 moveOrAttack allowAttacks
-             continue abort
+             per actor dir
+             session displayCurrent continue abort
              state@(State { slevel  = nlvl@(Level { lmap = nlmap }),
                             splayer = player })
-             per actor dir
       -- to prevent monsters from hitting themselves
     | dir == (0,0) = continue state ""
       -- At the moment, we check whether there is a monster before checking accessibility
