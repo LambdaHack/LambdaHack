@@ -126,7 +126,7 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
              displayCurrent oldmsg Nothing
              let h = nextCommand session >>= h'
                  h' e =
-                       handleDirection e (move h) $
+                       handleDirection e (\ d -> wrapHandler (move d) h) $
                          handleDirection (L.map toLower e) run $
                          case e of
                            "o"       -> wrapHandler (openclose True)  h
@@ -246,13 +246,9 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
                                     _        -> abort
           _ -> abort
   -- perform a player move
-  move abort dir = moveOrAttack
-                     True True -- attacks and opening doors is allowed
-                     per APlayer dir
-                     session displayCurrent
-                     (loop session)
-                     abort
-                     nstate
+  move dir = moveOrAttack
+               True True -- attacks and opening doors is allowed
+               per APlayer dir
 
 type Handler a =  Session ->                                    -- session
                   (Message -> Maybe String -> IO Bool) ->       -- display
