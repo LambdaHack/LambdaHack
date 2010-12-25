@@ -90,7 +90,7 @@ handleMonster m session
     let (act, nms) = insertMonster nm ms
     let nlvl = updateMonsters (const nms) lvl
     moveOrAttack
-      True
+      True True -- attacks allowed, auto-open
       per (AMonster act) nl
       session
       (displayLevel session per state)
@@ -207,7 +207,7 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
       let mplayer = nplayer { mdir = Just dir }
           abort   = handle session (updatePlayer (const $ player { mdir = Nothing }) ustate) per ""
       moveOrAttack
-        False   -- attacks are disallowed while running
+        False False -- attacks and opening doors disallowed while running
         per APlayer dir
         session displayCurrent
         (loop session)
@@ -228,7 +228,7 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
           _
             | accessible nlmap ploc dloc ->
                 moveOrAttack
-                  False    -- attacks are disallowed while running
+                  False False -- attacks and opening doors disallowed while running
                   per APlayer dir
                   session displayCurrent
                   (loop session)
@@ -247,7 +247,7 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
           _ -> abort
   -- perform a player move
   move abort dir = moveOrAttack
-                     True   -- attacks are allowed
+                     True True -- attacks and opening doors is allowed
                      per APlayer dir
                      session displayCurrent
                      (loop session)
@@ -538,11 +538,12 @@ displayItems displayCurrent state msg sorted is =
 -- cause any interaction (at least not when we're performing a move of a monster),
 -- so it may make sense to change the type once again.
 moveOrAttack :: Bool ->                                     -- allow attacks?
+                Bool ->                                     -- auto-open doors on move
                 Perception ->                               -- ... of the player
                 Actor ->                                    -- who's moving?
                 Dir ->
                 Handler a
-moveOrAttack allowAttacks
+moveOrAttack allowAttacks autoOpen
              per actor dir
              session displayCurrent continue abort
              state@(State { slevel  = nlvl@(Level { lmap = nlmap }),
@@ -585,7 +586,7 @@ moveOrAttack allowAttacks
                                           then lookAt False state nlmap naloc else ""))
                     actor state
       -- Bump into a door/wall, that is try to open it/examine it
-    | allowAttacks =
+    | autoOpen =
       case nlmap `at` naloc of
         Tile d@(Door hv o') is
           | secret o' -> abort  -- nothing interesting spotted on the wall
