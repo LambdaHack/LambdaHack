@@ -224,7 +224,7 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
           (_, Tile (Stairs {}) _)    -> abort
           _
             | not $ S.null $ mslocs `S.intersection` pvisible per
-                                     -> abort  -- mosters visible
+                                     -> abort  -- monsters visible
           _
             | accessible nlmap ploc dloc ->
                 moveOrAttack
