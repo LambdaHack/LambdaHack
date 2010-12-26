@@ -6,7 +6,7 @@ import Data.Char
 type Message = String
 
 more :: Message
-more = " --more--"
+more = " --more--  "
 
 addMsg :: Message -> Message -> Message
 addMsg [] x  = x
@@ -24,5 +24,4 @@ splitMsg w xs
                                     else reverse rpost : splitMsg w (reverse ppre ++ post)
   where
     m = length more
-    l = length xs   
-
+    l = length xs

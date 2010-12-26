@@ -1,5 +1,7 @@
 module Turn where
 
+import System.Time
+
 import Data.List as L
 import Data.Map as M
 import Data.Set as S
@@ -291,6 +293,7 @@ openclose o session displayCurrent continue abort
 lvlchange :: VDir -> Handler ()
 lvlchange vdir session displayCurrent continue abort
           nstate@(State { slevel  = lvl@(Level { lmap = nlmap }),
+                          stime   = time,
                           splayer = player@(Monster { mloc = ploc }) }) =
   case nlmap `at` ploc of
     Tile (Stairs _ vdir' next) is
@@ -320,6 +323,9 @@ lvlchange vdir session displayCurrent continue abort
           total   = L.sum $ L.map price $ items
           winMsg  = "Congratulations, you won! Your loot, worth "
                     ++ show total ++ " gold, is:"
+          -- TODO: this should be refactored into a dedicated function
+          moreM msg s =
+            displayCurrent msg (Just (s ++ more)) >> getConfirm session
       in
        if total == 0
            then do
@@ -333,9 +339,10 @@ lvlchange vdir session displayCurrent continue abort
            else do
                   displayItems displayCurrent nstate winMsg True items
                   getConfirm session
-                  placeMsg <- HighScores.register total
-                  displayCurrent (placeMsg ++ more) Nothing
-                  getConfirm session
+                  curDate <- getClockTime
+                  let score = HighScores.ScoreRecord total False True curDate time
+                  (placeMsg, slideshow) <- HighScores.register score
+                  mapM_ (moreM placeMsg) slideshow
                   shutdown session
 
 
