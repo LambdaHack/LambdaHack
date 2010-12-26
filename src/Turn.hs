@@ -24,6 +24,7 @@ import Message
 import Version
 import Strategy
 import StrategyState
+import HighScores
 
 -- | Perform a complete turn (i.e., monster moves etc.)
 loop :: Session -> State -> Message -> IO ()
@@ -244,6 +245,7 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
                                     [newdir] -> run newdir
                                     _        -> abort
           _ -> abort
+
   -- perform a player move
   move dir = moveOrAttack
                True True -- attacks and opening doors is allowed
@@ -316,7 +318,7 @@ lvlchange vdir session displayCurrent continue abort
           -- TODO: very preliminary way to calculate the worth of items
           price i = if iletter i == Just '$' then icount i else 10 * icount i
           total   = L.sum $ L.map price $ items
-          msg     = "Congratulations, you won! Your loot, worth "
+          winMsg  = "Congratulations, you won! Your loot, worth "
                     ++ show total ++ " gold, is:"
       in
        if total == 0
@@ -329,7 +331,10 @@ lvlchange vdir session displayCurrent continue abort
                   getConfirm session
                   shutdown session
            else do
-                  displayItems displayCurrent nstate msg True items
+                  displayItems displayCurrent nstate winMsg True items
+                  getConfirm session
+                  placeMsg <- HighScores.register total
+                  displayCurrent (placeMsg ++ more) Nothing
                   getConfirm session
                   shutdown session
 
