@@ -200,7 +200,6 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
   wrapHandler :: Handler () -> IO () -> IO ()
   wrapHandler h abort = h session displayCurrent (loop session) abort nstate
 
-
   -- run into a direction
   run dir =
     do
@@ -255,7 +254,6 @@ type Handler a =  Session ->                                    -- session
                   (State -> Message -> IO a) ->                 -- success continuation
                   IO a ->                                       -- failure continuation
                   State -> IO a
-
 
 -- | Open and close doors.
 openclose :: Bool -> Handler a
