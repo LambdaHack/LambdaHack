@@ -1,7 +1,7 @@
 module Turn where
 
 import System.Time
-
+import Control.Monad
 import Data.List as L
 import Data.Map as M
 import Data.Set as S
@@ -293,7 +293,6 @@ openclose o session displayCurrent continue abort
 lvlchange :: VDir -> Handler ()
 lvlchange vdir session displayCurrent continue abort
           nstate@(State { slevel  = lvl@(Level { lmap = nlmap }),
-                          stime   = time,
                           splayer = player@(Monster { mloc = ploc }) }) =
   case nlmap `at` ploc of
     Tile (Stairs _ vdir' next) is
@@ -318,14 +317,9 @@ lvlchange vdir session displayCurrent continue abort
   where
     fleeDungeon =
       let items   = mitems player
-          -- TODO: very preliminary way to calculate the worth of items
-          price i = if iletter i == Just '$' then icount i else 10 * icount i
-          total   = L.sum $ L.map price $ items
+          total   = calculateTotal player
           winMsg  = "Congratulations, you won! Your loot, worth "
                     ++ show total ++ " gold, is:"
-          -- TODO: this should be refactored into a dedicated function
-          moreM msg s =
-            displayCurrent msg (Just (s ++ more)) >> getConfirm session
       in
        if total == 0
            then do
@@ -339,12 +333,29 @@ lvlchange vdir session displayCurrent continue abort
            else do
                   displayItems displayCurrent nstate winMsg True items
                   getConfirm session
-                  curDate <- getClockTime
-                  let score = HighScores.ScoreRecord total False True curDate time
-                  (placeMsg, slideshow) <- HighScores.register score
-                  mapM_ (moreM placeMsg) slideshow
-                  shutdown session
+                  handleScores True False True total session displayCurrent (\ _ _ -> shutdown session) abort nstate
 
+-- | Calculate loot's worth.
+calculateTotal :: Player -> Int
+calculateTotal player = L.sum $ L.map price $ mitems player
+  where
+    price i = if iletter i == Just '$' then icount i else 10 * icount i
+
+-- | Handle current score and display it with the high scores.
+handleScores :: Bool -> Bool -> Bool -> Int -> Handler () 
+handleScores write killed victor total session displayCurrent continue abort
+             nstate@(State { stime = time }) =
+  let -- TODO: this should be refactored into a dedicated function
+      moreM msg s =
+        displayCurrent msg (Just (s ++ more)) >> getConfirm session
+      points = if killed then (total + 1) `div` 2 else total
+  in  do
+        unless (total == 0) $ do
+          curDate <- getClockTime
+          let score = HighScores.ScoreRecord points killed victor curDate time
+          (placeMsg, slideshow) <- HighScores.register write score
+          mapM_ (moreM placeMsg) slideshow
+        continue nstate ""
 
 -- | Search for secret doors
 search :: Handler a

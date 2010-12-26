@@ -82,8 +82,12 @@ file = "LambdaHack.scores"
 
 -- | We save a simple serialized version of the high scores table.
 -- The 'False' is used only as an EOF marker.
+-- TODO: fail if the ioe_type of exception is different than NoSuchThing
 save :: ScoreTable -> IO ()
-save scores = encodeCompressedFile file (scores, False)
+save scores =
+  do
+    E.catch (removeFile file) (\ e -> case e :: IOException of _ -> return ())
+    encodeCompressedFile file (scores, False)
 
 -- | Read the high scores table. Return the empty table if no file.
 -- TODO: fail if the ioe_type of exception is different than NoSuchThing
@@ -91,8 +95,7 @@ restore :: IO ScoreTable
 restore =
   E.catch (do
              (x, z) <- strictDecodeCompressedFile file
-             (z :: Bool) `seq` removeFile file
-             return x)
+             (z :: Bool) `seq` return x)
           (\ e -> case e :: IOException of
                     _ -> return [])
 
@@ -120,13 +123,13 @@ slideshow pos h height =
         showTable h (max 1 (pos - height `div` 2)) height]
 
 -- | Take care of a new score, return a list of messages to display.
-register :: ScoreRecord -> IO (String, [String])
-register s =
+register :: Bool -> ScoreRecord -> IO (String, [String])
+register write s =
   do
     h <- restore
     let (h', pos) = insertPos s h
         msg = "Your exploits award you place >> "
               ++ show pos ++ " << on the high scores table."
         (lines, _) = normalLevelSize
-    save h'
+    if write then save h' else return ()
     return (msg, slideshow pos h' (lines `div` 3))
