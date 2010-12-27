@@ -115,8 +115,8 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
              getConfirm session
              displayCurrent ("You die." ++ more) Nothing
              getConfirm session
-             handleScores True True False
-             shutdown session
+             let total = calculateTotal player
+             handleScores True True False total session displayCurrent (\ _ _ -> shutdown session) (shutdown session) nstate
       else -- check if the player can make another move yet
            if ptime > time then
              do
@@ -147,7 +147,9 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
                            "q"       -> wrapHandler drinkPotion h
 
                            -- saving or ending the game
-                           "S"       -> saveGame mstate >> handleScores False False False >> shutdown session
+                           "S"       -> saveGame mstate >>
+                                        let total = calculateTotal player
+                                        in  handleScores False False False total session displayCurrent (\ _ _ -> shutdown session) h nstate
                            "Q"       -> shutdown session
                            "Escape"  -> displayCurrent "Press Q to quit." Nothing >> h
 
