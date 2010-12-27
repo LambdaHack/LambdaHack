@@ -350,8 +350,25 @@ findLoc :: Level -> (Loc -> Tile -> Bool) -> Rnd Loc
 findLoc l@(Level { lsize = sz, lmap = lm }) p =
   do
     loc <- locInArea ((0,0),sz)
-    if p loc (lm `at` loc) then return loc
-                           else findLoc l p
+    let tile = lm `at` loc
+    if p loc tile
+      then return loc
+      else findLoc l p
+
+findLocTry :: Int ->  -- try k times
+              Level ->
+              (Loc -> Tile -> Bool) ->  -- loop until satisfied
+              (Loc -> Tile -> Bool) ->  -- only try to satisfy k times
+              Rnd Loc
+findLocTry k l@(Level { lsize = sz, lmap = lm }) p pTry =
+  do
+    loc <- locInArea ((0,0),sz)
+    let tile = lm `at` loc
+    if p loc tile && pTry loc tile
+      then return loc
+      else if k > 1
+             then findLocTry (k - 1) l p pTry
+             else findLoc l p
 
 grid :: (Y,X) -> Area -> Map (Y,X) Area
 grid (ny,nx) ((y0,x0),(y1,x1)) =
