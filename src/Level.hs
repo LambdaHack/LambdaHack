@@ -427,8 +427,9 @@ fromTo (y0,x0) (y1,x1)
 
 fromTo1 :: X -> X -> [X]
 fromTo1 x0 x1
-  | x0 <= x1  = [x0..x1]
-  | otherwise = [x0,x0-1..x1]
+  | x0 == x1  = [x1]  -- always include the end point x1
+  | x0 < x1   = [x0+1..x1]
+  | otherwise = [x1..x0-1]
 
 -- | Produces a textual description for terrain, used if no objects
 -- are present.
