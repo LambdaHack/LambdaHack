@@ -114,9 +114,9 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
              displayCurrent (addMsg oldmsg more) Nothing
              getConfirm session
              displayCurrent ("You die." ++ more) Nothing
-             getConfirm session
+             go <- getConfirm session
              let total = calculateTotal player
-             handleScores True True False total session displayCurrent (\ _ _ -> shutdown session) (shutdown session) nstate
+             handleScores go True True False total session displayCurrent (\ _ _ -> shutdown session) (shutdown session) nstate
       else -- check if the player can make another move yet
            if ptime > time then
              do
@@ -147,10 +147,8 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
                            "q"       -> wrapHandler drinkPotion h
 
                            -- saving or ending the game
-                           "S"       -> saveGame mstate >>
-                                        let total = calculateTotal player
-                                        in  handleScores False False False total session displayCurrent (\ _ _ -> shutdown session) h nstate
-                           "Q"       -> shutdown session
+                           "S"       -> userSavesGame h
+                           "Q"       -> userQuits h
                            "Escape"  -> displayCurrent "Press Q to quit." Nothing >> h
 
                            -- wait
@@ -205,6 +203,24 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
   -- uniform wrapper function for action handlers
   wrapHandler :: Handler () -> IO () -> IO ()
   wrapHandler h abort = h session displayCurrent (loop session) abort nstate
+
+  -- quitting the game
+  userQuits h =
+    do
+      let msg   = "Press Space or Return to permanently abandon the game."
+          abort = displayCurrent "Game resumed." Nothing >> h
+      displayCurrent (msg ++ more) Nothing
+      getOptionalConfirm
+        session (\ b -> if b then shutdown session else abort) (\ _ -> abort)
+
+  -- saving the game
+  userSavesGame h =
+    do
+      displayCurrent ("Saving game." ++ more) Nothing
+      go <- getConfirm session
+      saveGame mstate
+      let total = calculateTotal player
+      handleScores go False False False total session displayCurrent (\ _ _ -> shutdown session) h nstate
 
   -- run into a direction
   run dir =
@@ -335,8 +351,8 @@ lvlchange vdir session displayCurrent continue abort
                   shutdown session
            else do
                   displayItems displayCurrent nstate winMsg True items
-                  getConfirm session
-                  handleScores True False True total session displayCurrent (\ _ _ -> shutdown session) abort nstate
+                  go <- getConfirm session
+                  handleScores go True False True total session displayCurrent (\ _ _ -> shutdown session) abort nstate
 
 -- | Calculate loot's worth.
 calculateTotal :: Player -> Int
@@ -345,15 +361,15 @@ calculateTotal player = L.sum $ L.map price $ mitems player
     price i = if iletter i == Just '$' then icount i else 10 * icount i
 
 -- | Handle current score and display it with the high scores.
-handleScores :: Bool -> Bool -> Bool -> Int -> Handler () 
-handleScores write killed victor total session displayCurrent continue abort
+handleScores :: Bool -> Bool -> Bool -> Bool -> Int -> Handler () 
+handleScores go write killed victor total session displayCurrent continue abort
              nstate@(State { stime = time }) =
   let -- TODO: this should be refactored into a dedicated function
       moreM msg s =
         displayCurrent msg (Just (s ++ more)) >> getConfirm session
       points = if killed then (total + 1) `div` 2 else total
   in  do
-        unless (total == 0) $ do
+        unless (not go || total == 0) $ do
           curDate <- getClockTime
           let score = HighScores.ScoreRecord points killed victor curDate time
           (placeMsg, slideshow) <- HighScores.register write score
