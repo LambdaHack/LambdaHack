@@ -207,11 +207,11 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
   -- quitting the game
   userQuits h =
     do
-      let msg   = "Press Space or Return to permanently abandon the game."
+      let msg   = "Really quit?" ++ yesno
           abort = displayCurrent "Game resumed." Nothing >> h
-      displayCurrent (msg ++ "--your choice?--") Nothing
-      getOptionalConfirm
-        session (\ b -> if b then shutdown session else abort) (\ _ -> abort)
+      displayCurrent msg Nothing
+      b <- getYesNo session
+      if b then shutdown session else abort
 
   -- saving the game
   userSavesGame h =

@@ -79,6 +79,17 @@ getOptionalConfirm session h k =
       "Escape" -> h False
       _        -> k e
 
+-- | A yes-no confirmation.
+getYesNo :: Session -> IO Bool
+getYesNo session =
+  do
+    e <- nextCommand session
+    case e of
+      "y"      -> return True
+      "n"      -> return False
+      "Escape" -> return False
+      _        -> getYesNo session
+
 -- | Configurable event handler for the direction keys. Is used to
 --   handle player moves, but can also be used for directed commands
 --   such as open/close.

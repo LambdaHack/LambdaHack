@@ -8,6 +8,9 @@ type Message = String
 more :: Message
 more = " --more--  "
 
+yesno :: Message
+yesno = " [yn]"
+
 addMsg :: Message -> Message -> Message
 addMsg [] x  = x
 addMsg xs [] = xs
