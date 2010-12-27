@@ -222,11 +222,17 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
       let total = calculateTotal player
       handleScores go False False False total session displayCurrent (\ _ _ -> shutdown session) h nstate
 
+  -- TODO: Turn running into a standalone handler. Make it clearer and
+  -- more configurable how running behaves, and when it stops. This is
+  -- nothing the game should force on a player, but that a player should
+  -- rather be able to configure.
+
   -- run into a direction
+  abortState = updatePlayer (const $ player { mdir = Nothing }) ustate
   run dir =
     do
       let mplayer = nplayer { mdir = Just dir }
-          abort   = handle session (updatePlayer (const $ player { mdir = Nothing }) ustate) per ""
+          abort   = handle session abortState per ""
       moveOrAttack
         False False -- attacks and opening doors disallowed while running
         per APlayer dir
@@ -235,37 +241,38 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
         abort
         (updatePlayer (const mplayer) nstate)
   continueRun dir =
-    let abort = handle session (updatePlayer (const $ player { mdir = Nothing }) ustate) per oldmsg
-        dloc  = shift ploc dir
+    if S.null (mslocs `S.intersection` pvisible per)  -- no monsters visible
+       && L.null oldmsg  -- no news announced
+    then hop (nlmap `at` ploc)
+    else abort
+      where
+        abort  = handle session abortState per oldmsg
+        dloc   = shift ploc dir
         mslocs = S.fromList $ L.map mloc ms
-    in  case (oldmsg, nlmap `at` ploc) of
-          (_:_, _)                   -> abort
-          (_, Tile (Opening {}) _)   -> abort
-          (_, Tile (Door {}) _)      -> abort
-          (_, Tile (Stairs {}) _)    -> abort
-          _
-            | not $ S.null $ mslocs `S.intersection` pvisible per
-                                     -> abort  -- monsters visible
-          _
-            | accessible nlmap ploc dloc ->
-                moveOrAttack
-                  False False -- attacks and opening doors disallowed while running
-                  per APlayer dir
-                  session displayCurrent
-                  (loop session)
-                  abort
-                  nstate
-          (_, Tile Corridor _)  -- direction change restricted to corridors
-            | otherwise ->
-                let ns  = L.filter (\ x -> distance (neg dir,x) > 1
-                                        && accessible nlmap ploc (ploc `shift` x)) moves
-                    sns = L.filter (\ x -> distance (dir,x) <= 1) ns
-                in  case ns of
-                      [newdir] -> run newdir
-                      _        -> case sns of
-                                    [newdir] -> run newdir
-                                    _        -> abort
-          _ -> abort
+
+        hop (Tile (Opening {}) _) = abort
+        hop (Tile (Door {}) _)    = abort
+        hop (Tile (Stairs {}) _)  = abort
+        hop _
+          | accessible nlmap ploc dloc =
+              moveOrAttack
+                False False -- attacks and opening doors disallowed while running
+                per APlayer dir
+                session displayCurrent
+                (loop session)
+                abort
+                nstate
+        hop (Tile Corridor _) =  -- direction change restricted to corridors
+          let ns  = L.filter (\ x -> distance (neg dir,x) > 1
+                                     && accessible nlmap ploc (ploc `shift` x))
+                             moves
+              sns = L.filter (\ x -> distance (dir,x) <= 1) ns
+          in  case ns of
+                [newdir] -> run newdir
+                _        -> case sns of
+                              [newdir] -> run newdir
+                              _        -> abort
+        hop _ = abort
 
   -- perform a player move
   move dir = moveOrAttack
