@@ -28,7 +28,7 @@ mkRoom bd (ym,xm) ((y0,x0),(y1,x1)) =
     (ry1,rx1) <- locInArea ((ry0 + ym - 1,rx0 + xm - 1),(y1 - bd,x1 - bd))
     return ((ry0,rx0),(ry1,rx1))
 
--- | Create a no-room, i.e., a single corridor field. 
+-- | Create a no-room, i.e., a single corridor field.
 mkNoRoom :: Int ->      -- ^ border columns
             Area ->     -- ^ this is an area, not the room itself
             Rnd Room    -- ^ this is the upper-left and lower-right corner of the room
@@ -43,7 +43,7 @@ mkCorridor :: HV -> (Loc,Loc) -> Area -> Rnd [(Y,X)] {- straight sections of the
 mkCorridor hv ((y0,x0),(y1,x1)) b =
   do
     (ry,rx) <- findLocInArea b (const True)
-      -- (ry,rx) is intermediate point the path crosses
+    -- (ry,rx) is intermediate point the path crosses
     -- hv decides whether we start in horizontal or vertical direction
     case hv of
       Horiz -> return [(y0,x0),(y0,rx),(y1,rx),(y1,x1)]
@@ -71,7 +71,7 @@ connectRooms sa@((sy0,sx0),(sy1,sx1)) ta@((ty0,tx0),(ty1,tx1)) =
 -- | Actually dig a corridor.
 digCorridor :: Corridor -> LMap -> LMap
 digCorridor (p1:p2:ps) l =
-  digCorridor (p2:ps) 
+  digCorridor (p2:ps)
     (M.unionWith corridorUpdate (M.fromList [ (ps,newTile Corridor) | ps <- fromTo p1 p2 ]) l)
   where
     corridorUpdate _ (Tile (Wall hv) is,u)    = (Tile (Opening hv) is,u)
@@ -79,13 +79,13 @@ digCorridor (p1:p2:ps) l =
     corridorUpdate _ (Tile (Floor l) is,u)    = (Tile (Floor l) is,u)
     corridorUpdate (x,u) _                    = (x,u)
 digCorridor _ l = l
-  
+
 -- | Create a new tile.
 newTile :: Terrain -> (Tile, Tile)
 newTile t = (Tile t [], Tile Unknown [])
 
 -- | For a bigroom level: Create a level consisting of only one room.
-bigroom :: LevelConfig -> 
+bigroom :: LevelConfig ->
            LevelName -> Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) -> Level, Loc, Loc)
 bigroom (LevelConfig { levelSize = (sy,sx) }) nm =
   do
@@ -193,12 +193,12 @@ level cfg nm =
     let smap = M.fromList [ ((y,x),-100) | let (sy,sx) = levelSize cfg,
                                            y <- [0..sy], x <- [0..sx] ]
     let lmap :: LMap
-        lmap = foldr digCorridor (foldr (\ (r, dl) m -> digRoom dl r m) 
+        lmap = foldr digCorridor (foldr (\ (r, dl) m -> digRoom dl r m)
                                         (emptyLMap (levelSize cfg)) dlrooms) cs
-    let lvl = Level nm (levelSize cfg) [] smap lmap "" 
+    let lvl = Level nm (levelSize cfg) [] smap lmap ""
     -- convert openings into doors
     dlmap <- fmap M.fromList . mapM
-                (\ o@((y,x),(t,r)) -> 
+                (\ o@((y,x),(t,r)) ->
                   case t of
                     Tile (Opening hv) _ ->
                       do
@@ -223,7 +223,7 @@ level cfg nm =
     is  <- replicateM nri $
            do
              l <- findLoc lvl (const floor)
-             t <- newItem (depth cfg) itemFrequency 
+             t <- newItem (depth cfg) itemFrequency
              return (l,t)
     -- locations of the stairs
     su <- findLoc lvl (const floor)
@@ -262,10 +262,9 @@ addMonster lvl@(Level { lmonsters = ms, lmap = lmap })
      then do
             -- TODO: new monsters should always be generated in a place that isn't
             -- visible by the player (if possible -- not possible for bigrooms)
-            sm <- findLoc lvl (\ l t -> floor t && 
+            sm <- findLoc lvl (\ l t -> floor t &&
                                         not (l `L.elem` L.map mloc (player : ms)) &&
                                         distance (ploc, l) > 400)
             m <- newMonster sm monsterFrequency
             return (updateMonsters (const (m : ms)) lvl)
      else return lvl
-
