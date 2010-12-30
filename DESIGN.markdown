@@ -116,3 +116,82 @@ neighboring field where the player has most recently visited.
 The player makes noise. If the distance between the player
 and the monster is small enough, the monster can hear the player
 and moves into the approximate direction of the player.
+
+
+Dungeon tiles
+-------------
+
+Abstract musings for now; not implemented.
+
+Characters and monsters (later, in short, 'monsters') can transform a tile,
+which can be represented by a graph, with edges labeled by prerequisites
+and cost of transformation. Monsters can also melee across a tile border,
+and it's always permitted (e.g. fighting a ghost embedded in a wall)
+and the kind of the tiles involved is irrelevant.
+
+For tile design, I disregard sound and the monster's sense of hearing,
+because sound is best conveyed to the player through sound effects,
+not by painting tiles, and this requires lots of work.
+Acoustics is quite complex, too. Right now, sound ignores tiles
+and sound cues are given as text messages, e.g., when a monster attacks
+or is hit or when distant (but not too distant?) monsters fight or when
+a level is eerie silent, when the character enters.
+
+Monsters can interact directly and non-destructively with dungeon tiles
+in the following ways: they can move trough, see through, shoot through
+and smell (or inhale) across.
+
+Three different kinds of things can pass through a tile:
+
+  * objects: big, slow, pushy things (monsters passing through tiles
+    and throwing objects from inventory across tiles)
+
+  * projectiles and gasses: monsters shooting small, fast and sharp things
+    (arrows and bolts from the quiver) and monsters inhaling tiny, slow
+    particles (smells, smoke, fog, poisonous gasses)
+
+  * light: monsters seeing clearly across a tile (light that just leaks
+    through a cloth or produces a distorted image though a waterfall
+    does not count)
+
+For simplicity I assume that if big objects can move through,
+small objects can as well (no Kevlar curtains nor automatic doors).
+Also, I merged projectiles and gasses, assuming that if small objects
+can get through, so can tiny objects (no self-sealing rubber walls)
+and the reverse (no vents in walls).
+
+I can find no such simplifications for light. I only assume that the light
+that carries the picture is in itself too weak to illuminate any tile
+(so you can stand in a pitch dark corridor and observe a nearby sunny room).
+Consequently, room lighting and monster field of view calculations
+are very loosely coupled.
+
+Below are tables with examples of different tile kinds.
+
+The case of tiles that can be shot through and smelled through:
+
+                   can see through    cannot see through
+
+    can pass       floor, open door   curtain, waterfall
+
+    cannot pass    fence, grate       grate with waterfall
+
+The case of tiles that cannot be shot through and that block smell:
+
+                   can see through    cannot see through
+
+    can pass       none               none
+
+    cannot pass    crystal, glass     rock, closed door
+
+Note that acid pools and pits do not count as "cannot pass" tiles.
+First, axes and rocks can be thrown across (or into) them.
+Second, character and monsters can be pushed into them (and perish).
+The player cannot steer the character into the acid pool not by physical
+impossibility, but by the self preservation instinct of the character.
+So, an acid pool is in the same category as empty floor and it's up to the
+monster AI routines to check if the monster has wings (and a brain of any size)
+before entering. Such tiles should probably be marked as "damage this large
+unless flying". Similarly with water and swimming, lava pool and fire
+resistance, poison cloud and poison resistance, etc. No action is forbidden
+there, but each action has consequences.
