@@ -71,9 +71,9 @@ connectRooms sa@((sy0,sx0),(sy1,sx1)) ta@((ty0,tx0),(ty1,tx1)) =
 -- | Actually dig a corridor.
 digCorridor :: Corridor -> LMap -> LMap
 digCorridor (p1:p2:ps) l =
-  digCorridor (p2:ps)
-    (M.unionWith corridorUpdate (M.fromList [ (ps,newTile Corridor) | ps <- fromTo p1 p2 ]) l)
+  digCorridor (p2:ps) (M.unionWith corridorUpdate newPos l)
   where
+    newPos = M.fromList [ (ps,newTile Corridor) | ps <- fromTo p1 p2 ]
     corridorUpdate _ (Tile (Wall hv) is,u)    = (Tile (Opening hv) is,u)
     corridorUpdate _ (Tile (Opening hv) is,u) = (Tile (Opening hv) is,u)
     corridorUpdate _ (Tile (Floor l) is,u)    = (Tile (Floor l) is,u)
