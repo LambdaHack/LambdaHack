@@ -38,12 +38,12 @@ Field Of View
 -------------
 
 The algorithm used is a variant of Shadow Casting. We first specify
-fields that are reachable from the player. As input to the algorithm,
+fields that are reachable from the hero. As input to the algorithm,
 we require information about fields that block light. As output,
 we get information on the reachability of all fields.
-We assume that the player is located at position (0, 0)
+We assume that the hero is located at position (0, 0)
 and we only consider fields (line, row) where line 0 and 0 row line.
-This is just about one eighth of the whole player surroundings,
+This is just about one eighth of the whole hero's surroundings,
 but the other parts can be computed in the same fashion by mirroring
 or rotating the given algorithm accordingly.
 
@@ -81,7 +81,7 @@ This is what interval and angle do. If a field is blocking, the interval
 for the square is added to the shadow set.
 
 Once we compute the reachable fields using FOV, it is possible
-to compute what the player can actually see. Fields adjacent to the player
+to compute what the hero can actually see. Fields adjacent to the hero
 (also diagonally) can always be seen (except for walls).
 Fields that have light and are reachable can also be seen.
 We treat floor of rooms as having light, whereas corridors and rock are dark.
@@ -94,28 +94,28 @@ a corridor on the outside of a room, but can be seen from the inside of a room.
 Monster movement
 ----------------
 
-Not all monsters use the same algorithm to find the player.
+Not all monsters use the same algorithm to find the hero.
 Some implemented and unimplemented methods are listed below:
 
 * Random
 The simplest way to have a monster move is at random.
 
 * Sight
-If a monster can see the player (as an approximation,
-we assume it is the case when the player can see the monster),
-the monster should move toward the player.
+If a monster can see the hero (as an approximation,
+we assume it is the case when the hero can see the monster),
+the monster should move toward the hero.
 
 * Smell
-The player leaves a trail when moving toward the dungeon.
+The hero leaves a trail when moving toward the dungeon.
 For a certain timespan (100--200 moves), it is possible
-for certain monsters to detect that a player has been at a certain field.
+for certain monsters to detect that a hero has been at a certain field.
 Once a monster is following a trail, it should move to the
-neighboring field where the player has most recently visited.
+neighboring field where the hero has most recently visited.
 
 * Noise
-The player makes noise. If the distance between the player
-and the monster is small enough, the monster can hear the player
-and moves into the approximate direction of the player.
+The hero makes noise. If the distance between the hero
+and the monster is small enough, the monster can hear the hero
+and moves into the approximate direction of the hero.
 
 
 Dungeon tiles
@@ -123,7 +123,7 @@ Dungeon tiles
 
 Abstract musings for now; not implemented.
 
-Characters and monsters (later, in short, 'monsters') can transform a tile,
+The hero and the monsters (later, in short, 'monsters') can transform a tile,
 which can be represented by a graph, with edges labeled by prerequisites
 and cost of transformation. Monsters can also melee across a tile border,
 and it's always permitted (e.g. fighting a ghost embedded in a wall)
@@ -135,7 +135,7 @@ not by painting tiles, and this requires lots of work.
 Acoustics is quite complex, too. Right now, sound ignores tiles
 and sound cues are given as text messages, e.g., when a monster attacks
 or is hit or when distant (but not too distant?) monsters fight or when
-a level is eerie silent, when the character enters.
+a level is eerie silent, when the hero enters.
 
 Monsters can interact directly and non-destructively with dungeon tiles
 in the following ways: they can move trough, see through, shoot through
@@ -186,9 +186,9 @@ The case of tiles that cannot be shot through and that block smell:
 
 Note that acid pools and pits do not count as "cannot pass" tiles.
 First, axes and rocks can be thrown across (or into) them.
-Second, character and monsters can be pushed into them (and perish).
-The player cannot steer the character into the acid pool not by physical
-impossibility, but by the self preservation instinct of the character.
+Second, the hero and monsters can be pushed into them (and perish).
+The player cannot steer the hero into the acid pool not by physical
+impossibility, but by the self preservation instinct of the hero.
 So, an acid pool is in the same category as empty floor and it's up to the
 monster AI routines to check if the monster has wings (and a brain of any size)
 before entering. Such tiles should probably be marked as "damage this large
