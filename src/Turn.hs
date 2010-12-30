@@ -87,21 +87,33 @@ handleMonster m session
               per oldmsg =
   do
     nl <- rndToIO (frequency (head (runStrategy (strategy m state per .| wait))))
+    -- choose the action to perform
+    let (action, mdir) =
+          if nl == (0,0)
+          then -- not moving this turn, so let's try to pick up an object
+            let pickup _per actor _dir session _display continue =
+                  let dummyDisplayCurrent _ _ = return True
+                      cont state _msg = continue state ""
+                  in  actorPickupItem actor dummyDisplayCurrent cont
+            in  (pickup, Nothing)
+          else
+            (moveOrAttack True True, Just nl)
 
     -- increase the monster move time and set direction
-    let mdir       = if nl == (0,0) then Nothing else Just nl
-        nm         = m { mtime = time + mspeed m, mdir = mdir }
+    let nm         = m { mtime = time + mspeed m, mdir = mdir }
         (act, nms) = insertMonster nm ms
         newState   = updateLevel (updateMonsters (const nms)) state
-    moveOrAttack
-      True True -- attacks allowed, auto-open
+    -- perform action for the current monster and move to the rest
+    action
       per (AMonster act) nl
       session
-      (displayLevel session per state)
+      (displayLevel session per newState)
       (\ s msg -> handleMonsters session s per (addMsg oldmsg msg))
       (handleMonsters session newState per oldmsg)
       newState
 
+-- TODO: The above situation cries for a better abstraction for actor-specific
+-- handlers ...
 
 -- | Display current status and handle the turn of the player.
 handle :: Session -> State -> Perception -> Message -> IO ()
