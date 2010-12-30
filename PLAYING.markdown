@@ -64,7 +64,7 @@ Pressing a capital letter corresponding to a direction key will have
 the character run in that direction until something interesting occurs.
 
 It's also possible to move using the numerical keypad, with Shift for running
-and the middle '5' key for resting. (If you are using the curses backend,
+and the middle '5' key for resting. (If you are using the curses frontend,
 numerical keypad may not work correctly for terminals with broken terminfo,
 e.g., gnome terminal tends to have problems, while xterm works fine.)
 

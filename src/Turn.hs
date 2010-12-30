@@ -502,7 +502,7 @@ pickupItem _ displayCurrent continue abort
               in  continue (updateLevel  (const (updateLMap (const plmap) nlvl)) $
                             updatePlayer (const iplayer) $
                             state) msg
-            Nothing -> displayCurrent "cannot carry anymore" Nothing >> abort
+            Nothing -> displayCurrent "cannot carry any more" Nothing >> abort
 
 getPotions :: Session ->
               (Message -> Maybe String -> IO Bool) ->
