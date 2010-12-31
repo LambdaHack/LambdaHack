@@ -11,7 +11,7 @@ import Random
 
 -- | Hit points of the player. TODO: Should not be hardcoded.
 playerHP :: Int
-playerHP = 20
+playerHP = 50
 
 -- | Time the player can be traced by monsters. TODO: Make configurable.
 smellTimeout :: Time
@@ -66,25 +66,25 @@ data MonsterType =
   deriving (Show, Eq)
 
 instance Binary MonsterType where
-  put Player  = putWord8 0 
+  put Player  = putWord8 0
   put Eye     = putWord8 1
   put FastEye = putWord8 2
   put Nose    = putWord8 3
   get = do
           tag <- getWord8
           case tag of
-            0 -> return Player 
+            0 -> return Player
             1 -> return Eye
             2 -> return FastEye
             3 -> return Nose
-            _ -> fail "no parse (MonsterType)" 
+            _ -> fail "no parse (MonsterType)"
 
 -- | Monster frequencies (TODO: should of course vary much more
 -- on local circumstances).
 monsterFrequency :: Frequency MonsterType
 monsterFrequency =
   Frequency
-  [ 
+  [
     (2, Nose),
     (6, Eye),
     (1, FastEye)
@@ -104,13 +104,13 @@ newMonster loc ftp =
     -- a bad idea, but it would certainly be "more correct" to set
     -- the time to the creation time instead
     template tp hp loc s = Monster tp hp Nothing loc [] 'a' s 0
-    
-    hps Eye      = randomR (1,3)
-    hps FastEye  = randomR (1,3)
-    hps Nose     = randomR (2,3)
+
+    hps Eye      = randomR (2,8)
+    hps FastEye  = randomR (1,5)
+    hps Nose     = randomR (5,8)
 
     speed Eye      = 10
-    speed FastEye  = 3
+    speed FastEye  = 4
     speed Nose     = 11
 
 -- | Insert a monster in an mtime-sorted list of monsters.

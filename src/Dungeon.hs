@@ -218,18 +218,25 @@ level cfg nm =
                           else return o
                     _ -> return o) .
                 M.toList $ lmap
-    -- determine number of items, items and locations for the items
-    nri <- nrItems cfg
-    is  <- replicateM nri $
-           do
-             l <- findLoc lvl (const floor)
-             t <- newItem (depth cfg) itemFrequency
-             return (l,t)
     -- locations of the stairs
     su <- findLoc lvl (const floor)
     sd <- findLocTry 1000 lvl
           (const floor)
-          (\ l t ->  distance (su,l) > minStairsDistance cfg)
+          (\ l t -> distance (su,l) > minStairsDistance cfg)
+    -- determine number of items, items and locations for the items
+    nri <- nrItems cfg
+    is  <- replicateM nri $
+           do
+             t <- newItem (depth cfg) itemFrequency
+             l <- case itype t of
+                    Sword _ ->
+                      -- swords generated close to monsters; MUAHAHAHA
+                      findLocTry 200 lvl
+                                 (const floor)
+                                 (\ l t -> distance (su,l) > 400)
+                    _ -> findLoc lvl (const floor)
+             return (l,t)
+    -- generate map and level from the data
     let meta = show allConnects
     return (\ lu ld ->
       let flmap = maybe id (\ l -> M.update (\ (t,r) -> Just $ newTile (Stairs (toDL $ light t) Up   l)) su) lu $
