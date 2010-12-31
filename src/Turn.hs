@@ -263,17 +263,21 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
   continueRun dir =
     if S.null (mslocs `S.intersection` pvisible per)  -- no monsters visible
        && L.null oldmsg  -- no news announced
-    then hop (nlmap `at` ploc)
+    then hop (tterrain $ nlmap `at` ploc)
     else abort
       where
         abort  = handle session abortState per oldmsg
         mslocs = S.fromList $ L.map mloc ms
         dirOK  = accessible nlmap ploc (ploc `shift` dir)
 
-        hop (Tile (Opening {}) _) = abort
-        hop (Tile (Door {}) _)    = abort
-        hop (Tile (Stairs {}) _)  = abort
-        hop (Tile Corridor _)     =
+        exit (Stairs {})  = True
+        exit (Opening {}) = True
+        exit (Door {})    = True
+        exit _            = False
+
+        hop t
+          | exit t    = abort
+        hop Corridor  =
           -- in corridors, explore all corners and stop at all crossings
           let ns = L.filter (\ x -> distance (neg dir, x) > 1
                                     && accessible nlmap ploc (ploc `shift` x))
@@ -282,14 +286,20 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
           in  case ns of
                 [onlyDir] -> run onlyDir  -- can be diagonal
                 _         ->
-                  -- prefer orthogonal to diagonal dirs, for character safety
+                  -- prefer orthogonal to diagonal dirs, for hero's safety
                   case L.filter (\ x -> not $ diagonal x) ns of
                     [ortoDir]
                       | allCloseTo ortoDir -> run ortoDir
                     _ -> abort
-        hop _
-          | dirOK                 = run dir
-        hop _                     = abort
+        hop _  -- outside corridors, never change direction
+          | not dirOK = abort
+        hop _         =
+          let ns = L.filter (\ x -> x /= dir && distance (neg dir, x) > 1) moves
+              ls = L.map (ploc `shift`) ns
+              as = L.filter (\ x -> accessible nlmap ploc x
+                                    || openable 0 nlmap x) ls
+              ts = L.map (tterrain . (nlmap `at`)) as
+          in  if L.any exit ts then abort else run dir
 
   -- perform a player move
   move dir = moveOrAttack
