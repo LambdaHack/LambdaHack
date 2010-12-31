@@ -214,7 +214,7 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
   ustate  = updateLevel (const nlvl) state
 
   -- update player action time, and regenerate hitpoints
-  -- player HP regeneration, TODO: remove hardcoded max and time interval
+  -- player HP regeneration, TODO: remove hardcoded time interval
   nplayer = player { mtime = time + mspeed player,
                      mhp   = if time `mod` 1500 == 0 then (php + 1) `min` playerHP else php }
   nstate  = updateLevel (const nlvl) (updatePlayer (const nplayer) mstate)
@@ -465,7 +465,7 @@ drinkPotion session displayCurrent continue abort
                        pmsg PotionWater   = "Tastes like water."
                        pmsg PotionHealing = "You feel better."
                        fplayer PotionWater   = iplayer
-                       fplayer PotionHealing = iplayer { mhp = 20 }
+                       fplayer PotionHealing = iplayer { mhp = playerHP }
                    in  continue (updateLevel       (const nlvl) $
                                  updatePlayer      (const (fplayer ptype)) $
                                  updateDiscoveries (S.insert (itype i')) $
