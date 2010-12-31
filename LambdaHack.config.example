@@ -1,0 +1,13 @@
+# LambdaHack looks for this file in ~/.LambdaHack/LambdaHack.config
+
+# If you contribute to LambdaHack, please create directory ~/.LambdaHack/
+# and move this example config file to ~/.LambdaHack/LambdaHack.config.
+# Optionally, also copy LambdaHack.scores to ~/.LambdaConfig/.
+# In this way, you won't accidentally commit your private high scores
+# (nor your save files) to LambdaHack git repository.
+
+# paths to various game files; relative to ~/.LambdaHack/
+# (or analogous prefixes for other OSes, see getAppUserDataDirectory)
+[files]
+savegame:   LambdaHack.save
+highscores: LambdaHack.scores

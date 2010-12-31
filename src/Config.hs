@@ -9,17 +9,21 @@ import Data.Either.Utils
 import Data.Maybe
 
 -- | Path to the main configuration file.
-file :: String
-file = "LambdaHack.config"
+file :: IO String
+file =
+  do
+    appData <- getAppUserDataDirectory "LambdaHack"
+    return $ combine appData "LambdaHack.config"
 
 -- | The configuration read from the main configuration file.
 -- If no such file, generate empty configuration.
 config :: MonadError CPError m => IO (m ConfigParser)
 config =
   do
-    b <- doesFileExist file
+    f <- file
+    b <- doesFileExist f
     if b
-      then readfile emptyCP file
+      then readfile emptyCP f
       else return $ return emptyCP
 
 -- | A simplified access to a string option in a given section,
@@ -36,7 +40,7 @@ getString s o =
     if has_option cfgForced s o
       then let val = get cfgForced s o
                valForced = forceEither val
-           in  return (Just valForced)
+           in  return $ Just valForced
       else return Nothing
 
 -- | Looks up a file path in the config file, faling back to the default path.
@@ -49,4 +53,4 @@ getFile dflt s o =
     current <- getCurrentDirectory
     appData <- getAppUserDataDirectory "LambdaHack"
     s <- getString s o
-    return (maybe (combine current dflt) (combine appData) s)
+    return $ maybe (combine current dflt) (combine appData) s
