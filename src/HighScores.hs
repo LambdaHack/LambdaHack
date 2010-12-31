@@ -7,10 +7,11 @@ import System.Time
 
 import Data.Binary
 import Data.List as L
+import Data.Maybe
 
-import qualified Config
 import File
 import Dungeon
+import qualified Config
 
 -- | A single score.
 -- TODO: add hero's name, exp and level, level of death,
@@ -82,7 +83,11 @@ empty = []
 
 -- | Name of the high scores file. TODO: place in ~/.LambdaHack/ (Windows?)
 -- and eventually, optionally, in /var/games. Use getHomeDirectory and Config.
-file = "LambdaHack.scores"
+file :: IO String
+file =
+  do
+    s <- Config.getString "files" "highscores"
+    return $ fromMaybe "LambdaHack.scores" s
 
 -- | We save a simple serialized version of the high scores table.
 -- The 'False' is used only as an EOF marker.
@@ -90,15 +95,17 @@ file = "LambdaHack.scores"
 save :: ScoreTable -> IO ()
 save scores =
   do
-    E.catch (removeFile file) (\ e -> case e :: IOException of _ -> return ())
-    encodeCompressedFile file (scores, False)
+    f <- file
+    E.catch (removeFile f) (\ e -> case e :: IOException of _ -> return ())
+    encodeCompressedFile f (scores, False)
 
 -- | Read the high scores table. Return the empty table if no file.
 -- TODO: fail if the ioe_type of exception is different than NoSuchThing
 restore :: IO ScoreTable
 restore =
   E.catch (do
-             (x, z) <- strictDecodeCompressedFile file
+             f <- file
+             (x, z) <- strictDecodeCompressedFile f
              (z :: Bool) `seq` return x)
           (\ e -> case e :: IOException of
                     _ -> return [])
