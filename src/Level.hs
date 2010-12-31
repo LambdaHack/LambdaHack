@@ -4,6 +4,8 @@ import qualified System.Random as R
 import Control.Monad
 
 import Data.Binary
+import Data.Binary.Put
+import Data.Binary.Get
 import Data.Map as M
 import Data.Set as S
 import Data.List as L
@@ -174,23 +176,26 @@ data DL = Dark | Light
 --
 --     * 'DR': lower right
 --
+--     * 'O': lower right
+--
 -- I am tempted to add even more (T-pieces and crossings),
 -- but currently, we don't need them.
-data Pos = UL | U | UR | L | R | DL | D | DR
+data Pos = UL | U | UR | L | R | DL | D | DR | O
   deriving (Eq, Show, Bounded)
 
 instance Binary Pos where
-  put UL = putWord8 0
-  put U  = putWord8 1
-  put UR = putWord8 2
-  put L  = putWord8 3
-  put R  = putWord8 4
-  put DL = putWord8 5
-  put D  = putWord8 6
-  put DR = putWord8 7
+  put UL = putWord16le 0
+  put U  = putWord16le 1
+  put UR = putWord16le 2
+  put L  = putWord16le 3
+  put R  = putWord16le 4
+  put DL = putWord16le 5
+  put D  = putWord16le 6
+  put DR = putWord16le 7
+  put O  = putWord16le 8
 
   get = do
-          tag <- getWord8
+          tag <- getWord16le
           case tag of
             0 -> return UL
             1 -> return U
@@ -200,6 +205,7 @@ instance Binary Pos where
             5 -> return DL
             6 -> return D
             7 -> return DR
+            8 -> return O
 
 data HV = Horiz | Vert
   deriving (Eq, Show, Bounded)
@@ -285,11 +291,10 @@ light _                         = False
 
 -- | can be lighted by sourrounding tiles
 reflects :: Tile -> Bool
-reflects (Tile Rock _)         = True
 reflects (Tile (Opening _) _) = True
 reflects (Tile (Wall _) _)    = True
 reflects (Tile (Door _ _) _)  = True
-reflects _                     = False
+reflects _                    = False
 
 -- | Passive tiles reflect light from some other (usually adjacent)
 -- positions. This function returns the offsets from which light is
@@ -324,6 +329,7 @@ posToDir R  = [left]
 posToDir DL = [upright]
 posToDir D  = [up]
 posToDir DR = [upleft]
+posToDir O  = moves
 
 -- checks for the presence of monsters (and items); it does *not* check
 -- if the tile is open ...
@@ -499,6 +505,7 @@ viewTerrain n b Corridor
   | n <= 3                        = ('#', id)
   | otherwise                     = viewTerrain 0 b Rock
 viewTerrain n b (Wall p)
+  | p == O                        = ('O', id)
   | p `elem` [L, R]               = ('|', id)
   | otherwise                     = ('-', id)
 viewTerrain n b (Stairs _ Up _)
