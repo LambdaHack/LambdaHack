@@ -511,4 +511,5 @@ scatterItems items loc lvl@(Level { lmap = lmap }) =
   let joinItems items = foldl (\ acc i -> snd (joinItem i acc)) items
       t = lmap `at` loc
       nt = t { titems = joinItems items (titems t) }
-  in  updateLMap (M.insert loc (nt, nt)) lvl
+      ntRemember = lmap `rememberAt` loc
+  in  updateLMap (M.insert loc (nt, ntRemember)) lvl

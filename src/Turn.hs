@@ -499,7 +499,8 @@ actorPickupItem actor
     do
       -- check if something is here to pick up
       let monster = getActor state actor
-          t = lmap `at` (mloc monster)
+          loc     = mloc monster
+          t       = lmap `at` loc
       case titems t of
         []      ->  displayCurrent "nothing here" Nothing >> abort
         (i:rs)  ->
@@ -514,7 +515,8 @@ actorPickupItem actor
                         letterLabel (iletter ni)
                         ++ objectItem state (icount ni) (itype ni)
                   nt = t { titems = rs }
-                  nlmap = M.insert (mloc monster) (nt, nt) lmap
+                  ntRemember = lmap `rememberAt` loc
+                  nlmap = M.insert loc (nt, ntRemember) lmap
                   (ni,nitems) = joinItem (i { iletter = Just l }) (mitems monster)
                   updMonster m = m { mitems  = nitems,
                                      mletter = maxLetter l (mletter monster) }
