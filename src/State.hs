@@ -55,7 +55,7 @@ updateLevel :: (Level -> Level) -> State -> State
 updateLevel f s = s { slevel = f (slevel s) }
 
 toggleVision :: State -> State
-toggleVision s = s { ssensory = if ssensory s == Vision then Implicit else Vision }
+toggleVision s = s { ssensory = case ssensory s of Vision 1 -> Implicit; Vision n -> Vision (n-1); _ -> Vision 4 }
 
 toggleSmell :: State -> State
 toggleSmell s = s { ssensory = if ssensory s == Smell then Implicit else Smell }
@@ -95,19 +95,19 @@ instance Binary State where
 
 data SensoryMode =
     Implicit
-  | Vision
+  | Vision Int
   | Smell
   deriving (Show, Eq)
 
 instance Binary SensoryMode where
-  put Implicit = putWord8 0
-  put Vision   = putWord8 1
-  put Smell    = putWord8 2
+  put Implicit   = putWord8 0
+  put (Vision n) = putWord8 1 >> put n
+  put Smell      = putWord8 2
   get = do
           tag <- getWord8
           case tag of
             0 -> return Implicit
-            1 -> return Vision
+            1 -> liftM Vision get
             2 -> return Smell
             _ -> fail "no parse (SensoryMode)"
 
