@@ -14,6 +14,7 @@ objectItem _ n Wand       = makeObject n id "wand"
 objectItem _ n Amulet     = makeObject n id "amulet"
 objectItem _ n Gem        = makeObject n id "gem"
 objectItem _ n Gold       = makeObject n id "gold piece"
+objectItem _ n (Sword i)  = makeObject n id ("(+" ++ show i ++ ") sword")
 
 identified :: Assocs -> Discoveries -> ItemType -> String -> String
 identified a d i
@@ -23,4 +24,3 @@ identified a d i
   | otherwise      = case M.lookup i a of
                        Just ap  -> appearance ap
                        _        -> ("really strange " ++)
-
