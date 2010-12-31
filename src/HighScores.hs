@@ -58,7 +58,7 @@ instance Binary ScoreRecord where
       turn <- get
       return (ScoreRecord points killed victor date turn)
 
--- | Show a sinngle high score.
+-- | Show a single high score.
 showScore :: (Int, ScoreRecord) -> String
 showScore (pos, score) =
   let won  = if killed score
