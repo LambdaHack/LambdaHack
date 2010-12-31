@@ -4,6 +4,8 @@ import qualified Data.Map as M
 import qualified Data.Set as S
 import Control.Monad
 import Data.Binary
+import qualified Data.ConfigFile
+import qualified Config
 
 import Monster
 import Geometry
@@ -23,7 +25,8 @@ data State = State
                  sassocs      :: Assocs,       -- ^ how does every item appear
                  sdiscoveries :: Discoveries,  -- ^ items (types) have been discovered
                  sdungeon     :: Dungeon,      -- ^ all but current dungeon level
-                 slevel       :: Level
+                 slevel       :: Level,
+                 config       :: Data.ConfigFile.ConfigParser
                }
   deriving Show
 
@@ -38,6 +41,7 @@ defaultState ploc dng lvl =
     S.empty
     dng
     lvl
+    Data.ConfigFile.emptyCP
 
 updatePlayer :: (Monster -> Monster) -> State -> State
 updatePlayer f s = s { splayer = f (splayer s) }
@@ -64,7 +68,7 @@ toggleTerrain :: State -> State
 toggleTerrain s = s { sdisplay = case sdisplay s of Terrain 1 -> Normal; Terrain n -> Terrain (n-1); _ -> Terrain 4 }
 
 instance Binary State where
-  put (State player hst sense disp time assocs discs dng lvl) =
+  put (State player hst sense disp time assocs discs dng lvl config) =
     do
       put player
       put hst
@@ -75,6 +79,7 @@ instance Binary State where
       put discs
       put dng
       put lvl
+      put config
   get =
     do
       player <- get
@@ -86,7 +91,8 @@ instance Binary State where
       discs  <- get
       dng    <- get
       lvl    <- get
-      return (State player hst sense disp time assocs discs dng lvl)
+      config <- get
+      return (State player hst sense disp time assocs discs dng lvl config)
 
 data SensoryMode =
     Implicit
@@ -123,4 +129,3 @@ instance Binary DisplayMode where
             1 -> return Omniscient
             2 -> liftM Terrain get
             _ -> fail "no parse (DisplayMode)"
-
