@@ -178,7 +178,9 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
                            "Escape"  -> displayCurrent "Press Q to quit." Nothing >> h
 
                            -- debug modes
-                           "V"       -> handle session (toggleVision     ustate) per oldmsg
+                           "V"       -> let st = toggleVision ustate
+                                            per = perception_ st
+                                        in  handle session st per oldmsg
                            "R"       -> handle session (toggleSmell      ustate) per oldmsg
                            "O"       -> handle session (toggleOmniscient ustate) per oldmsg
                            "T"       -> handle session (toggleTerrain    ustate) per oldmsg

@@ -20,7 +20,7 @@ perception_ (State { splayer = Monster { mloc = ploc },
                      config  = config,
                      ssensory = ssensory }) =
   let mode   = Config.getOption config "engine" "fov_mode"
-      radius = fromMaybe 20 $ Config.getOption config "engine" "fov_radius"
+      radius = fromMaybe 40 $ Config.getOption config "engine" "fov_radius"
       fovMode =
         -- terrible, temporary hack
         case ssensory of
