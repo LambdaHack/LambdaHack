@@ -628,7 +628,7 @@ moveOrAttack allowAttacks autoOpen
           do
             let sword = strongestSword (mitems am)
             let damage m =
-                  let newHp = mhp m - max 2 sword
+                  let newHp = mhp m - 3 - sword
                   in  if newHp <= 0
                       then
                         -- grant an immediate move to die

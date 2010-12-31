@@ -101,11 +101,11 @@ itemFrequency =
     (70,  Sword (-1)),
     (30,  Gem),
     (20,  Ring),
-    (40,  Scroll),
-    (20,  Wand),
+    (30,  Scroll),
+    (10,  Wand),
     (10,  Amulet),
     (30,  Potion PotionWater),
-    (10,  Potion PotionHealing)
+    (20,  Potion PotionHealing)
   ]
 
 itemQuantity :: Int -> ItemType -> Rnd Int
@@ -113,7 +113,10 @@ itemQuantity n Gold = (2 * n) *~ d 8
 itemQuantity _ _    = return 1
 
 itemStrength :: Int -> ItemType -> Rnd ItemType
-itemStrength n (Sword _) = liftM Sword $ liftM (2 +) $ d (n `div` 2 + 1)
+itemStrength n (Sword _) =
+  do
+    r <- d (2 + n `div` 2)
+    return $ Sword $ (n + 1) `div` 3 + r
 itemStrength _ tp        = return tp
 
 itemLetter :: ItemType -> Maybe Char
