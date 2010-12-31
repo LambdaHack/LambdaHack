@@ -8,13 +8,17 @@ import State
 import Level
 import Monster
 import FOV
+import qualified Config
 
 data Perception =
   Perception { preachable :: Set Loc, pvisible :: Set Loc }
 
-perception_ :: Maybe Int -> State -> Perception
-perception_ radius (State { splayer = Monster { mloc = ploc }, slevel = Level { lmap = lmap } }) =
-  perception radius ploc lmap
+perception_ :: State -> Perception
+perception_ (State { splayer = Monster { mloc = ploc },
+                     slevel  = Level { lmap = lmap},
+                     config  = config }) =
+  let radius = Config.getOption config "engine" "pfov_radius"
+  in  perception radius ploc lmap
 
 perception :: Maybe Int -> Loc -> LMap -> Perception
 perception radius ploc lmap =

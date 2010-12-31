@@ -7,26 +7,27 @@ import File
 import Level
 import State
 import qualified Config
+import qualified Data.ConfigFile
 
 -- | Name of the save game.
-file :: IO String
-file = Config.getFile "LambdaHack.save" "files" "savegame"
+file :: Data.ConfigFile.ConfigParser -> IO String
+file config = Config.getFile config "LambdaHack.save" "files" "savegame"
 
 -- | We save a simple serialized version of the current level and
 -- the current state. The 'False' is used only as an EOF marker.
 saveGame :: State -> IO ()
 saveGame state =
   do
-    f <- file
+    f <- file (config state)
     encodeCompressedFile f (state,False)
 
 -- | Restore a saved game. Returns either the current level and
 -- game state, or a string containing an error message if restoring
 -- the game fails.
-restoreGame :: IO (Either State String)
-restoreGame =
+restoreGame :: Data.ConfigFile.ConfigParser -> IO (Either State String)
+restoreGame config =
   E.catch (do
-             f <- file
+             f <- file config
              r <- strictDecodeCompressedFile f
              removeFile f
              case r of
