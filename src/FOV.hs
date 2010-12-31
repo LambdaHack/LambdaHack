@@ -89,6 +89,14 @@ fullscan range loc lmap =
               pscan n (tr loc) lmap 1
                 (((B(1, 0), B(0, 2*n)), []), ((B(0, 1), B(2*n, 0)), [])))
       [ptr0,ptr1,ptr2,ptr3]
+{-
+    Just n  ->  -- diagonal with range n
+      S.unions $
+      L.map (\ tr ->
+              dscan n (tr loc) lmap 1
+                (((B(0, 0), B(2*n, 1+2*n)), []), ((B(0, 1), B(2*n, -2*n)), [])))
+      [ptr0,ptr1,ptr2,ptr3]
+-}
 
 -- | The translationa and rotations functions for the permissive algorithms.
 ptr0, ptr1, ptr2, ptr3 :: Loc -> Bump -> Loc
@@ -246,6 +254,140 @@ pcheckBorderLine line@(B(y1, x1), B(y2, x2))
   | otherwise = line
     where
       (n, k)  = pintersect line 0
+      (q, r)  = if k == 0 then (0, 0) else n `divMod` k
+      crossL0 = q < 0  -- q truncated toward negative infinity
+      crossG1 = q >= 1 && (q > 1 || r /= 0)
+
+
+-- | Digital FOV with a given range.
+-- Specification is at http://roguebasin.roguelikedevelopment.org/index.php?title=Digital_field_of_view_implementation, but AFAIK, this algorithm (fast DFOV done similarly as PFOV) has never been implemented before. The algorithm is based on the pscan algorithm above.
+
+-- | The current state of a scan is kept in Maybe (Line, ConvexHull).
+-- If Just something, we're in a visible interval. If Nothing, we're in
+-- a shadowed interval.
+dscan :: Distance -> (Bump -> Loc) -> LMap -> Distance -> EdgeInterval ->
+         Set Loc
+dscan n ptr l d (s@(sl{-shallow line-}, sBumps), e@(el{-steep line-}, eBumps)) =
+  let ps    = let (n, k) = dintersect sl d  -- minimal progress to check
+                  -- Corners obstruct view, so the shallow line, constructed
+                  -- from corners, is itself not a part of the view,
+                  -- so if its intersection with the line of diagonals is only
+                  -- at a corner, choose the diamond leading to a smaller view.
+              in  extent + 1 + (-n) `div` k
+      pe    = let (n, k) = dintersect el d  -- maximal progress to check
+              in  extent - n `div` k
+      start = if open (l `at` tr (d, ps))
+              then Just s                  -- start in light
+              else Nothing                 -- start in shadow
+  in
+   -- trace (show (d,s,e,ps,pe, start, extent)) $
+   S.union
+     (S.fromList [tr (d, p) | p <- [ps..pe]])
+     (if d == n then S.empty else dscan' start ps pe)
+     -- the scanned area is a square, which is a sphere in this metric; good
+     where
+       extent = 1 + d `div` 2
+       {-# INLINE dp2bump #-}  -- I wonder if it works...
+       dp2bump (d, p) = B(d, extent - p)
+       tr = ptr . dp2bump
+
+       dscan' :: Maybe Edge -> Progress -> Progress -> Set Loc
+       dscan' (Just s@(_, sBumps)) ps pe
+         | ps > pe =                       -- reached end, scan next
+             dscan n ptr l (d+1) (s, e)
+         | closed (l `at` tr (d, ps)) =    -- entering shadow, steep bump
+             let steepBump = dp2bump (d, ps-1)
+                 ne = dborderLine Steep steepBump sBumps
+                 neBumps = steepBump:eBumps
+             in  S.union
+                   (dscan n ptr l (d+1) (s, (ne, neBumps)))
+                   (dscan' Nothing (ps+1) pe)
+         | otherwise =                     -- continue in light
+             dscan' (Just s) (ps+1) pe
+
+       dscan' Nothing ps pe
+         | ps > pe = S.empty               -- reached end while in shadow
+         | open (l `at` tr (d, ps)) =      -- moving out of shadow, shallow bump
+             let shallowBump = dp2bump (d, ps-1)
+                 nsl = dborderLine Shallow shallowBump eBumps
+                 nsBumps = shallowBump:sBumps
+             in  dscan' (Just (nsl, nsBumps)) (ps+1) pe
+         | otherwise =                     -- continue in shadow
+             dscan' Nothing (ps+1) pe
+
+{- THE Y COORDINATE COMES FIRST! (Y,X)!
+A diamond is denoted by its left corner. Hero at (0,0).
+Order of processing in the first quadrant rotated by 45 degrees is
+ 87654
+  321
+   @
+so the first processed diamond is at (1, 1). The order is reversed
+wrt the shadow casting algorithm above. The line in the curent state
+of the scan is not the steep line, but the shallow line, the one from which
+we start going from the bottom right.
+
+The Loc coordinates are cartesian, the Bump coordinates are cartesian,
+translated so that the hero is at (0, 0) and rotated so that he always
+looks at the first roatated quadrant, the (Distance, Progress) cordinates
+are mangled and not used for geometry.
+
+The ptr functions are as for pscan, because they are just
+the translations and rotations.
+-}
+
+-- | The x coordinate, represented as a fraction, of the intersection of
+-- a given line and the line of diagonals of diamonds at distance d from (0, 0).
+dintersect :: Line -> Distance -> (Int, Int)
+dintersect (B(y, x), B(yf, xf)) d =
+  ((d - y)*(xf - x) + x*(yf - y), yf - y)
+{-
+The intersection point (yt, xt) satisfies the following equalities:
+yt = d
+(yt - y) (xf - x) = (xt - x) (yf - y)
+hence
+(yt - y) (xf - x) = (xt - x) (yf - y)
+(d - y) (xf - x) = (xt - x) (yf - y)
+(d - y) (xf - x) + x (yf - y) = xt (yf - y)
+xt = ((d - y) (xf - x) + x (yf - y)) / (yf - y)
+-}
+
+-- | Constructs steep or shallow line from the far point and the opposite
+-- convex hull of bumps.
+-- TODO: at the same time, the hull can be pruned,
+-- (knowing that (0, 0) or (0, 1) belong to it).
+dborderLine :: WhichLine -> Bump -> ConvexHull -> Line
+dborderLine which farPoint hull =
+  let crossLeq (n1, k1) (n2, k2) = n1 * k2 >= k1 * n2
+      (extraBump, strongerBump) =
+        case which of
+          Shallow -> ((B(0, 0), (1, 1)), crossLeq)
+          Steep   -> ((B(0, 1), (0, 1)), \ a b -> crossLeq b a)
+      cross acc@(_, nkAcc) bump =
+        let nkNew = dintersect (bump, farPoint) 0
+        in if strongerBump nkAcc nkNew
+           then acc
+           else (bump, nkNew)
+      (strongestBump, _) = L.foldl' cross extraBump hull
+      line =
+        -- trace (show (which, strongestBump, farPoint, hull)) $
+        dcheckBorderLine $
+        (strongestBump, farPoint)
+  in  line
+
+-- | Checks postconditions of borderLine.
+dcheckBorderLine :: Line -> Line
+dcheckBorderLine line@(B(y1, x1), B(y2, x2))
+  | y1 == y2 && x1 == x2 =
+      error $ "dborderLine: wrongly defined line " ++ show line
+  | y2 - y1 == 0 =
+      error $ "dborderLine: horizontal line " ++ show line
+  | crossL0 =
+      error $ "dborderLine: crosses diagonal below 0 " ++ show line
+  | crossG1 =
+      error $ "dborderLine: crosses diagonal above 1 " ++ show line
+  | otherwise = line
+    where
+      (n, k)  = dintersect line 0
       (q, r)  = if k == 0 then (0, 0) else n `divMod` k
       crossL0 = q < 0  -- q truncated toward negative infinity
       crossG1 = q >= 1 && (q > 1 || r /= 0)
