@@ -455,12 +455,15 @@ drinkPotion session displayCurrent continue abort
       i <- getPotions session displayCurrent state
                       "What to drink?" (mitems nplayer)
       case i of
-        Just i'@(Item { itype = Potion ptype }) ->
-                   let iplayer = nplayer { mitems = deleteBy ((==) `on` iletter) i' (mitems nplayer) }
+        Just i'@(Item { itype = Potion ptype, icount = ic }) ->
+                   let remaining = if ic == 1
+                                   then []
+                                   else [i' {icount = ic - 1}]
+                       iplayer = nplayer { mitems = remaining ++ deleteBy ((==) `on` iletter) i' (mitems nplayer) }
                        t = nlmap `at` ploc
                        msg = subjectMonster (mtype nplayer) ++ " " ++
                              verbMonster (mtype nplayer) "drink" ++ " " ++
-                             objectItem state (icount i') (itype i') ++ ". " ++
+                             objectItem state 1 (itype i') ++ ". " ++
                              pmsg ptype
                        pmsg PotionWater   = "Tastes like water."
                        pmsg PotionHealing = "You feel better."
