@@ -1,6 +1,7 @@
 module HighScores where
 
 import System.Directory
+import Control.Exception as E hiding (handle)
 import Text.Printf
 import System.Time
 
@@ -57,7 +58,7 @@ instance Binary ScoreRecord where
       turn <- get
       return (ScoreRecord points killed victor date turn)
 
--- | Show a single high score.
+-- | Show a sinngle high score.
 showScore :: (Int, ScoreRecord) -> String
 showScore (pos, score) =
   let won  = if killed score
@@ -85,27 +86,24 @@ file = Config.getFile "LambdaHack.scores" "files" "highscores"
 
 -- | We save a simple serialized version of the high scores table.
 -- The 'False' is used only as an EOF marker.
+-- TODO: fail if the ioe_type of exception is different than NoSuchThing
 save :: ScoreTable -> IO ()
 save scores =
   do
     f <- file
-    b <- doesFileExist f
-    if b
-      then removeFile f
-      else return ()
+    E.catch (removeFile f) (\ e -> case e :: IOException of _ -> return ())
     encodeCompressedFile f (scores, False)
 
 -- | Read the high scores table. Return the empty table if no file.
+-- TODO: fail if the ioe_type of exception is different than NoSuchThing
 restore :: IO ScoreTable
 restore =
-  do
-    f <- file
-    b <- doesFileExist f
-    if not b
-      then return []
-      else do
+  E.catch (do
+             f <- file
              (x, z) <- strictDecodeCompressedFile f
-             (z :: Bool) `seq` return x
+             (z :: Bool) `seq` return x)
+          (\ e -> case e :: IOException of
+                    _ -> return [])
 
 -- | Insert a new score into the table, Return new table and the position.
 insertPos :: ScoreRecord -> ScoreTable -> (ScoreTable, Int)
