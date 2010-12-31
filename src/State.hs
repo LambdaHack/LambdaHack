@@ -4,7 +4,6 @@ import qualified Data.Map as M
 import qualified Data.Set as S
 import Control.Monad
 import Data.Binary
-import qualified Data.ConfigFile
 import qualified Config
 
 import Monster
@@ -26,7 +25,7 @@ data State = State
                  sdiscoveries :: Discoveries,  -- ^ items (types) have been discovered
                  sdungeon     :: Dungeon,      -- ^ all but current dungeon level
                  slevel       :: Level,
-                 config       :: Data.ConfigFile.ConfigParser
+                 config       :: Config.CP
                }
   deriving Show
 
@@ -41,7 +40,7 @@ defaultState ploc dng lvl =
     S.empty
     dng
     lvl
-    Data.ConfigFile.emptyCP
+    Config.empty_CP
 
 updatePlayer :: (Monster -> Monster) -> State -> State
 updatePlayer f s = s { splayer = f (splayer s) }
