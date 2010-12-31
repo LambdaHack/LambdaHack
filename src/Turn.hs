@@ -440,15 +440,17 @@ calculateTotal player = L.sum $ L.map price $ mitems player
 -- | Handle current score and display it with the high scores.
 handleScores :: Bool -> Bool -> Bool -> Bool -> Int -> Handler () 
 handleScores go write killed victor total session displayCurrent continue abort
-             nstate@(State { stime = time }) =
+             nstate@(State { stime = time, slevel = Level { lname = nm } }) =
   let -- TODO: this should be refactored into a dedicated function
-      moreM msg s =
-        displayCurrent msg (Just (s ++ more)) >> getConfirm session
-      points = if killed then (total + 1) `div` 2 else total
+      moreM msg s = displayCurrent msg (Just (s ++ more)) >>
+                    getConfirm session
+      points      = if killed then (total + 1) `div` 2 else total
+      current     = levelNumber nm
   in  do
         unless (not go || total == 0) $ do
           curDate <- getClockTime
-          let score = HighScores.ScoreRecord points killed victor curDate time
+          let score = HighScores.ScoreRecord
+                        points (-time) curDate current killed victor
           (placeMsg, slideshow) <- HighScores.register write score
           mapM_ (moreM placeMsg) slideshow
         continue nstate ""
