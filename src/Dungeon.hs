@@ -101,10 +101,10 @@ emptyroom addWallsRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
     let addItem lmap (l,it) =
           M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l lmap
         flmap lu ld =
+          addWalls $
           maybe id (\ l -> M.insert su (newTile (Stairs Light Up   l))) lu $
           maybe id (\ l -> M.insert sd (newTile (Stairs Light Down l))) ld $
           (\lmap -> foldl' addItem lmap is) $
-          addWalls $
           lmap
         level lu ld = Level nm (sy,sx) [] smap (flmap lu ld) "bigroom"
     return (level, su, sd)
