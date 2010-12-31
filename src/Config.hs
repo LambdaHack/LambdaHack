@@ -1,9 +1,12 @@
 module Config where
 
 import System.Directory
+import System.FilePath
+import Control.Monad.Error
+
 import Data.ConfigFile
 import Data.Either.Utils
-import Control.Monad.Error
+import Data.Maybe
 
 -- | Path to the main configuration file.
 file :: String
@@ -35,3 +38,15 @@ getString s o =
                valForced = forceEither val
            in  return (Just valForced)
       else return Nothing
+
+-- | Looks up a file path in the config file, faling back to the default path.
+-- The path from the config file is taken relative to the home directory
+-- and the default is taken relative to the current directory. In any case,
+-- the returned path is absolute.
+getFile :: FilePath -> SectionSpec -> OptionSpec -> IO FilePath
+getFile dflt s o =
+  do
+    current <- getCurrentDirectory
+    appData <- getAppUserDataDirectory "LambdaHack"
+    s <- getString s o
+    return (maybe (combine current dflt) (combine appData) s)

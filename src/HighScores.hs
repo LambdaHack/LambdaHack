@@ -7,7 +7,6 @@ import System.Time
 
 import Data.Binary
 import Data.List as L
-import Data.Maybe
 
 import File
 import Dungeon
@@ -81,13 +80,9 @@ type ScoreTable = [ScoreRecord]
 empty :: ScoreTable
 empty = []
 
--- | Name of the high scores file. TODO: place in ~/.LambdaHack/ (Windows?)
--- and eventually, optionally, in /var/games. Use getHomeDirectory and Config.
+-- | Name of the high scores file.
 file :: IO String
-file =
-  do
-    s <- Config.getString "files" "highscores"
-    return $ fromMaybe "LambdaHack.scores" s
+file = Config.getFile "LambdaHack.scores" "files" "highscores"
 
 -- | We save a simple serialized version of the high scores table.
 -- The 'False' is used only as an EOF marker.
