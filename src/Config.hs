@@ -17,6 +17,7 @@ file =
 
 -- | The configuration read from the main configuration file.
 -- If no such file, generate empty configuration.
+-- TODO: read the file only once (currently it's read again for every option).
 config :: MonadError CPError m => IO (m ConfigParser)
 config =
   do
