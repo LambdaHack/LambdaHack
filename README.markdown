@@ -18,7 +18,7 @@ and run Cabal from the main directory
 
     cabal install
 
-or you may try one of the terminal frontend with
+or you may try one of the terminal frontends with
 
     cabal install -fvty
 
