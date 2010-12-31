@@ -283,6 +283,14 @@ light (Tile (Floor l) _)        = fromDL l
 light (Tile (Stairs l _ _) _)   = fromDL l
 light _                         = False
 
+-- | can be lighted by sourrounding tiles
+reflects :: Tile -> Bool
+reflects (Tile Rock _)         = True
+reflects (Tile (Opening _) _) = True
+reflects (Tile (Wall _) _)    = True
+reflects (Tile (Door _ _) _)  = True
+reflects _                     = False
+
 -- | Passive tiles reflect light from some other (usually adjacent)
 -- positions. This function returns the offsets from which light is
 -- reflected. Not all passively lighted tiles reflect from all directions.
