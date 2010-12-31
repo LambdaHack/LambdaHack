@@ -104,8 +104,9 @@ pscan n ptr l d (s{-shallow line-}, e{-steep line-}) (sBumps, eBumps) =
               in  n `quot` k                   -- minimal progress to check
       pe    = let (n, k) = intersectD e d
                   (q, r) = n `quotRem` k
-                  -- Corners are translucent, so if intersection is at a corner,
-                  -- choose the square that creates a smaller view.
+                  -- Corners are translucent, so they are invisible,
+                  -- so if intersection is at a corner, choose the square
+                  -- that creates a smaller view.
               in  if r == 0 then q - 1 else q  -- maximal progress to check
       start = if open (l `at` tr (d, ps))
               then Just (s, sBumps)  -- start in light
@@ -121,9 +122,8 @@ pscan n ptr l d (s{-shallow line-}, e{-steep line-}) (sBumps, eBumps) =
        topLeft     (d, p) = B(p + 1, d - p)
        bottomRight (d, p) = B(p, d - p + 1)
        tr = ptr . dp2bump
+
        pscan' :: Maybe (Line, ConvexHull) -> Progress -> Progress -> Set Loc
-       -- pscan' start ps pe
-       --   | trace (show (start,ps,pe)) False = undefined
        pscan' (Just (s, sBumps)) ps pe
          | ps > pe =                       -- reached end, scan next
              pscan n ptr l (d+1) (s, e) (sBumps, eBumps)
@@ -131,12 +131,12 @@ pscan n ptr l d (s{-shallow line-}, e{-steep line-}) (sBumps, eBumps) =
              fromMaybe S.empty
                (do
                   let steepBump = bottomRight (d, ps)
-                  ne <- borderLine Steep steepBump sBumps -- can fail?
+                  ne <- borderLine Steep steepBump sBumps
                   let neBumps = addHull steepBump eBumps
                   return $
                     S.union
                       (pscan n ptr l (d+1) (s, ne) (sBumps, neBumps))
-                      (pscan' Nothing (ps+1) pe))
+                      (pscan' Nothing ps pe))
          | otherwise =                     -- continue in light
              pscan' (Just (s, sBumps)) (ps+1) pe
 
@@ -146,34 +146,42 @@ pscan n ptr l d (s{-shallow line-}, e{-steep line-}) (sBumps, eBumps) =
              fromMaybe S.empty
                (do
                   let shallowBump = bottomRight (d, ps)
-                  ns <- borderLine Shallow shallowBump eBumps  -- can fail
+                  ns <- borderLine Shallow shallowBump eBumps
                   let nsBumps = addHull shallowBump sBumps
                   return $ pscan' (Just (ns, nsBumps)) (ps+1) pe)
-{-TODO
-         | closed (l `at` tr (d, ps+1)) && -- up-left is in shadow, too
-           open (l `at` tr (d+1, ps+1)) =  -- the square up between is open TODO:if closed, just add the square
-             fromMaybe S.empty             -- diagonal view through a corner
-               (do
-                  let bump    = topLeft (d, ps)
-                      nsBumps = [bump]           -- optimized
-                      neBumps = nsBumps
-                  ns <- borderLine Shallow shallowBump neBumps  -- can fail?
-                  ne <- borderLine Steep steepBump nsBumps      -- can fail?
-                  return $
-                    S.union
-                      (pscan n ptr l (d+1) (ns, ne) (nsBumps, neBumps))
-                      (pscan' Nothing (ps+1) pe))-}
+         | ps+1 > pe = S.empty             -- nothing to do up-left
+         | closed (l `at` tr (d, ps+1)) =  -- up-left is in shadow, too
+             -- This is a special case. Corners are translucent, so they
+             -- do not block view, so a square blocked by diagonal walls
+             -- is still visible through their common corner.
+             if closed (l `at` tr (d+1, ps+1))
+             then
+               -- trace (show ("wall visible through its corner",ps,pe)) $
+               S.insert (tr (d+1, ps+1))
+                 (pscan' Nothing (ps+1) pe)
+             else
+               -- trace (show ("open space visible through its corner",ps,pe)) $
+               fromMaybe S.empty
+                 (do
+                    let bump    = topLeft (d, ps)
+                        nsBumps = addHull bump sBumps
+                        neBumps = addHull bump eBumps
+                    ns <- borderLine Shallow bump neBumps
+                    ne <- borderLine Steep bump nsBumps
+                    return $
+                      S.union
+                        (pscan n ptr l (d+1) (ns, ne) (nsBumps, neBumps))
+                        (pscan' Nothing (ps+1) pe))
          | otherwise =                     -- continue in shadow
              pscan' Nothing (ps+1) pe
 
 {- THE Y COORDINATE COMES FIRST! (Y,X)!
 Bottom-left corner denotes a square. Hero at (0,0). Order of processing
 in the first quadrant is
- 9
- 58
- 247
-1@136
- 2
+9
+58
+247
+@136
 so the first processed square is at (0, 1). The order is reversed
 wrt the shadow casting algorithm above. The line in the curent state
 of the scan is not the steep line, but the shallow line, the one from which
@@ -184,10 +192,10 @@ translated so that the hero is at (0, 0) and always looks at the first quadrant,
 the (Distance, Progress) cordinates are mangled and not used for geometry.
 -}
 ptr0, ptr1, ptr2, ptr3 :: Loc -> Bump -> Loc
-ptr0 (oy, ox) (B(y, x)) = (oy + y, ox + x)  -- first quadrant
-ptr1 (oy, ox) (B(y, x)) = (oy - y, ox + x)  -- then clockwise
-ptr2 (oy, ox) (B(y, x)) = (oy - y, ox - x)
-ptr3 (oy, ox) (B(y, x)) = (oy + y, ox - x)
+ptr0 (oy, ox) (B(y, x)) = (oy - y, ox + x)  -- first quadrant
+ptr1 (oy, ox) (B(y, x)) = (oy - x, ox - y)  -- then rotated clockwise 90 degrees
+ptr2 (oy, ox) (B(y, x)) = (oy + y, ox - x)
+ptr3 (oy, ox) (B(y, x)) = (oy + x, ox + y)
 
 -- | The y coordinate, represented as a fraction, of the intersection of
 -- a given line and the line of diagonals of squares at distance d from (0, 0).
@@ -210,8 +218,6 @@ yt = ((1 + d) (yf - y) + y xf - x yf) / (xf - x + yf - y)
 -- convex hull of bumps. Fails if the bumps force the line
 -- out of the initial square. TODO: other special cases? remove these?
 borderLineRaw :: WhichLine -> Bump -> ConvexHull -> Maybe Line
---borderLineRaw which (B(0, 1)) [B(1, 0)] = Just (B(1, 1), B(1, 2))
---borderLineRaw which (B(1, 0)) [B(0, 1)] = Just (B(1, 1), B(2, 1))
 borderLineRaw which farPoint hull =
   let crossY (B(y, x)) =  -- fraction as a pair, cheaper than Rational
         ((y, x), intersectD (B(y, x), farPoint) 0)
