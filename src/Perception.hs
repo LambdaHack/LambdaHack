@@ -2,6 +2,7 @@ module Perception where
 
 import Data.Set as S
 import Data.List as L
+import Data.Maybe
 
 import Geometry
 import State
@@ -17,15 +18,21 @@ perception_ :: State -> Perception
 perception_ (State { splayer = Monster { mloc = ploc },
                      slevel  = Level { lmap = lmap},
                      config  = config }) =
-  let radius = Config.getOption config "engine" "pfov_radius"
-  in  perception radius ploc lmap
+  let mode   = Config.getOption config "engine" "fov_mode"
+      radius = fromMaybe 20 $ Config.getOption config "engine" "fov_radius"
+      fovMode =
+        case mode of
+          Just "permissive" -> Permissive radius
+          Just "diagonal"   -> Diagonal radius
+          _                 -> Shadow
+  in  perception fovMode ploc lmap
 
-perception :: Maybe Int -> Loc -> LMap -> Perception
-perception radius ploc lmap =
+perception :: FovMode -> Loc -> LMap -> Perception
+perception fovMode ploc lmap =
   let
     -- This part is simple. "reachable" contains everything that is on an
     -- unblocked path from the player position.
-    reachable  = fullscan radius ploc lmap
+    reachable  = fullscan fovMode ploc lmap
     -- In "actVisible", we store the locations that have light and are
     -- reachable. Furthermore, the player location itself is always
     -- visible.
@@ -65,6 +72,6 @@ perception radius ploc lmap =
                            (surroundings loc))
         ) (S.insert ploc reachable)
   in
-    case radius of
-      Nothing -> Perception reachable visible
-      _ -> Perception reachable simpleVisible
+    case fovMode of
+      Shadow -> Perception reachable visible
+      _      -> Perception reachable simpleVisible

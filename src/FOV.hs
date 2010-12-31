@@ -20,10 +20,54 @@ type Edge         = (Line, ConvexHull)
 type EdgeInterval = (Edge, Edge)
 data WhichLine    = Shallow | Steep  deriving (Show, Eq)
 
--- | Recursive Shadow Casting FOV with infinite visibility range.
--- It's not tuned enough for special cases, such as visibility through
--- a diagonal line of walls (this appears in LambdaHack only
--- when two corridors touch diagonally by accident).
+data FovMode = Shadow | Permissive Int | Diagonal Int
+
+-- | Perform a full scan for a given location. Returns the locations
+-- that are currently visible.
+fullscan :: FovMode -> Loc -> LMap -> Set Loc
+fullscan fovMode loc lmap =
+  case fovMode of
+    Shadow ->  -- shadow casting with infinite range
+      S.unions $
+      L.map (\ tr ->
+              scan (tr loc) lmap 1 (0,1)) -- was: scan (tr loc) lmap 0 (0,1); TODO: figure out what difference this makes
+      [tr0,tr1,tr2,tr3,tr4,tr5,tr6,tr7]
+    Permissive n  ->  -- precise permissive with range n
+      S.unions $
+      L.map (\ tr ->
+              pscan n (tr loc) lmap 1
+                (((B(1, 0), B(0, 2*n)), []), ((B(0, 1), B(2*n, 0)), [])))
+      [qtr0,qtr1,qtr2,qtr3]
+    Diagonal n    ->  -- diagonal with range n
+      S.unions $
+      L.map (\ tr ->
+              dscan n (tr loc) lmap 1
+                (((B(0, 1), B(2*n, -2*n)), []), ((B(0, 0), B(2*n, 1+2*n)), [])))
+      [qtr0,qtr1,qtr2,qtr3]
+
+-- | The translation, rotation and symmetry functions for octants.
+tr0 (oy,ox) (d,p) = (oy + d,ox + p)
+tr1 (oy,ox) (d,p) = (oy + d,ox - p)
+tr2 (oy,ox) (d,p) = (oy - d,ox + p)
+tr3 (oy,ox) (d,p) = (oy - d,ox - p)
+tr4 (oy,ox) (d,p) = (oy + p,ox + d)
+tr5 (oy,ox) (d,p) = (oy + p,ox - d)
+tr6 (oy,ox) (d,p) = (oy - p,ox + d)
+tr7 (oy,ox) (d,p) = (oy - p,ox - d)
+
+-- | The translation and rotation functions for quadrants.
+qtr0, qtr1, qtr2, qtr3 :: Loc -> Bump -> Loc
+qtr0 (oy, ox) (B(y, x)) = (oy - y, ox + x)  -- first quadrant
+qtr1 (oy, ox) (B(y, x)) = (oy - x, ox - y)  -- then rotated clockwise 90 degrees
+qtr2 (oy, ox) (B(y, x)) = (oy + y, ox - x)
+qtr3 (oy, ox) (B(y, x)) = (oy + x, ox + y)
+
+
+-- | A restrictive variant of Recursive Shadow Casting FOV with infinite range.
+-- It's not designed for dungeons with diagonal walls, so they block visibility,
+-- though they don't block movement. Such cases appear in LambdaHack only
+-- when two corridors touch diagonally by accident and on the random pillars
+-- levels.
 
 -- | The current state of a scan is kept in a variable of Maybe Rational.
 -- If Just something, we're in a visible interval. If Nothing, we're in
@@ -59,55 +103,13 @@ scan tr l d (s,e) =
       | otherwise = scan' Nothing (ps+1) pe
                                       -- continue in shadow
 
-tr0 (oy,ox) (d,p) = (oy + d,ox + p)
-tr1 (oy,ox) (d,p) = (oy + d,ox - p)
-tr2 (oy,ox) (d,p) = (oy - d,ox + p)
-tr3 (oy,ox) (d,p) = (oy - d,ox - p)
-tr4 (oy,ox) (d,p) = (oy + p,ox + d)
-tr5 (oy,ox) (d,p) = (oy + p,ox - d)
-tr6 (oy,ox) (d,p) = (oy - p,ox + d)
-tr7 (oy,ox) (d,p) = (oy - p,ox - d)
-
 downBias, upBias :: (Integral a, Integral b) => Ratio a -> b
 downBias x = round (x - 1 % (denominator x * 3))
 upBias   x = round (x + 1 % (denominator x * 3))
 
 
--- | Perform a full scan for a given location. Returns the locations
--- that are currently visible.
-fullscan :: Maybe Int -> Loc -> LMap -> Set Loc
-fullscan range loc lmap =
-  case range of
-    Nothing ->  -- shadow casting with infinite range
-      S.unions $
-      L.map (\ tr ->
-              scan (tr loc) lmap 1 (0,1)) -- was: scan (tr loc) lmap 0 (0,1); TODO: figure out what difference this makes
-      [tr0,tr1,tr2,tr3,tr4,tr5,tr6,tr7]
-    Just n  ->  -- precise permissive with range n
-      S.unions $
-      L.map (\ tr ->
-              pscan n (tr loc) lmap 1
-                (((B(1, 0), B(0, 2*n)), []), ((B(0, 1), B(2*n, 0)), [])))
-      [dtr0,dtr1,dtr2,dtr3]
-{-
-    Just n  ->  -- diagonal with range n
-      S.unions $
-      L.map (\ tr ->
-              dscan n (tr loc) lmap 1
-                (((B(0, 1), B(2*n, -2*n)), []), ((B(0, 0), B(2*n, 1+2*n)), [])))
-      [dtr0,dtr1,dtr2,dtr3]
--}
-
--- | The translationa and rotations functions for quadrants.
-dtr0, dtr1, dtr2, dtr3 :: Loc -> Bump -> Loc
-dtr0 (oy, ox) (B(y, x)) = (oy - y, ox + x)  -- first quadrant
-dtr1 (oy, ox) (B(y, x)) = (oy - x, ox - y)  -- then rotated clockwise 90 degrees
-dtr2 (oy, ox) (B(y, x)) = (oy + y, ox - x)
-dtr3 (oy, ox) (B(y, x)) = (oy + x, ox + y)
-
-
 -- | Precise Permissive FOV with a given range.
--- Clean-room reimplemented based on http://roguebasin.roguelikedevelopment.org/index.php?title=Precise_Permissive_Field_of_View. See https://github.com/Mikolaj/LambdaHack/wiki/Fov-and-los for some more context.
+-- Clean-room reimplemented based on http://roguebasin.roguelikedevelopment.org/index.php?title=Precise_Permissive_Field_of_View. See https://github.com/Mikolaj/LambdaHack/wiki/Fov-and-los for some more context. TODO: Scanning squares on horizontal lines in octants, not squares on diagonals in quadrants, may be much faster and a bit simpler.
 
 -- | The current state of a scan is kept in Maybe (Line, ConvexHull).
 -- If Just something, we're in a visible interval. If Nothing, we're in
@@ -198,8 +200,6 @@ yt = ((1 + d) (yf - y) + y xf - x yf) / (xf - x + yf - y)
 
 -- | Constructs steep or shallow line from the far point and the opposite
 -- convex hull of bumps.
--- TODO: at the same time, the hull can be pruned,
--- (knowing that (1, 0) or (0, 1) belong to it).
 pborderLine :: WhichLine -> Bump -> ConvexHull -> Line
 pborderLine which farPoint hull =
   let crossLeq (n1, k1) (n2, k2) = n1 * k2 <= k1 * n2
@@ -215,7 +215,7 @@ pborderLine which farPoint hull =
       (strongestBump, _) = L.foldl' cross extraBump hull
       line =
         -- trace (show (which, strongestBump, farPoint, hull)) $
-        pdebugBorderLine $
+        pdebugBorderLine $  -- TODO: disable when it becomes a bottleneck
         (strongestBump, farPoint)
   in  line
 
@@ -322,8 +322,6 @@ xt = ((d - y) (xf - x) + x (yf - y)) / (yf - y)
 
 -- | Constructs steep or shallow line from the far point and the opposite
 -- convex hull of bumps.
--- TODO: at the same time, the hull can be pruned,
--- (knowing that (0, 0) or (0, 1) belong to it).
 dborderLine :: WhichLine -> Bump -> ConvexHull -> Line
 dborderLine which farPoint hull =
   let crossLeq (n1, k1) (n2, k2) = n1 * k2 <= k1 * n2
@@ -339,7 +337,7 @@ dborderLine which farPoint hull =
       (strongestBump, _) = L.foldl' cross extraBump hull
       line =
         -- trace (show (which, strongestBump, farPoint, hull)) $
-        ddebugBorderLine $
+        ddebugBorderLine $  -- TODO: disable when it becomes a bottleneck
         (strongestBump, farPoint)
   in  line
 
@@ -360,3 +358,10 @@ ddebugBorderLine line@(B(y1, x1), B(y2, x2))
       (q, r)  = if k == 0 then (0, 0) else n `divMod` k
       crossL0 = q < 0  -- q truncated toward negative infinity
       crossG1 = q >= 1 && (q > 1 || r /= 0)
+
+-- | Adds a bump to the convex hull of bumps represented as a list.
+-- TODO: Reintroduce this function, because hulls can't be optimized
+-- in borderLine. Can be optimized by removing some points from the list,
+-- also taking into account that (1, 0), etc. belong to the hull.
+addHull :: Bump -> ConvexHull -> ConvexHull
+addHull loc l = loc : l
