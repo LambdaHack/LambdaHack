@@ -20,7 +20,7 @@ perception ploc lmap =
   let
     -- This part is simple. "reachable" contains everything that is on an
     -- unblocked path from the player position.
-    reachable  = fullscan ploc lmap
+    reachable  = fullscan Nothing ploc lmap
     -- In "actVisible", we store the locations that have light and are
     -- reachable. Furthermore, the player location itself is always
     -- visible.
@@ -45,4 +45,3 @@ perception ploc lmap =
     visible = S.unions [pasVisible, actVisible, dirVisible]
   in
     Perception reachable visible
-
