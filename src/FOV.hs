@@ -31,19 +31,19 @@ fullscan fovMode loc lmap =
       L.map (\ tr ->
               scan (tr loc) lmap 1 (0,1)) -- was: scan (tr loc) lmap 0 (0,1); TODO: figure out what difference this makes
       [tr0,tr1,tr2,tr3,tr4,tr5,tr6,tr7]
-    Permissive n  ->  -- precise permissive with range n
+    Permissive r  ->  -- precise permissive with range r
       S.unions $
       L.map (\ tr ->
-              pscan n (tr loc) lmap 1
-                (((B(1, 0), B(0, 2*n)), [B(0, 1)]),
-                 ((B(0, 1), B(2*n, 0)), [B(1, 0)])))
+              pscan r (tr loc) lmap 1
+                (((B(1, 0), B(0, r+1)), [B(0, 1)]),
+                 ((B(0, 1), B(r+1, 0)), [B(1, 0)])))
       [qtr0,qtr1,qtr2,qtr3]
-    Diagonal n    ->  -- diagonal with range n
+    Diagonal r    ->  -- diagonal with range r
       S.unions $
       L.map (\ tr ->
-              dscan n (tr loc) lmap 1
-                (((B(0, 1), B(2*n, -2*n)),  [B(0, 0)]),
-                 ((B(0, 0), B(2*n, 1+2*n)), [B(0, 1)])))
+              dscan r (tr loc) lmap 1
+                (((B(0, 1), B(r, -r)),  [B(0, 0)]),
+                 ((B(0, 0), B(r, r+1)), [B(0, 1)])))
       [qtr0,qtr1,qtr2,qtr3]
 
 
@@ -70,7 +70,7 @@ qtr3 (oy, ox) (B(y, x)) = (oy + x, ox + y)
 divUp n k = - (-n) `div` k
 
 -- | Maximal element of a non-empty list. Prefers elements from the rear,
--- which is essential for PFOV, to avoid ill-defined lists.
+-- which is essential for PFOV, to avoid ill-defined lines.
 maximal :: (a -> a -> Bool) -> [a] -> a
 maximal gte = L.foldl1' (\ acc x -> if gte x acc then x else acc)
 
@@ -139,7 +139,7 @@ upBias   x = round (x + 1 % (denominator x * 3))
 
 
 -- | Precise Permissive FOV with a given range.
--- Clean-room reimplemented based on http://roguebasin.roguelikedevelopment.org/index.php?title=Precise_Permissive_Field_of_View. See https://github.com/Mikolaj/LambdaHack/wiki/Fov-and-los for some more context.
+-- Clean-room reimplemented based on the algorithm described in http://roguebasin.roguelikedevelopment.org/index.php?title=Precise_Permissive_Field_of_View, though the general structure is more influenced by recursive shadow casting, as implemented above. In the result, this algorithm is much faster on dense maps, since it does not scan areas blocked by shadows. See https://github.com/Mikolaj/LambdaHack/wiki/Fov-and-los for some more context.
 
 -- TODO: Scanning squares on horizontal lines in octants, not squares
 -- on diagonals in quadrants, may be much faster and a bit simpler.
@@ -151,23 +151,25 @@ upBias   x = round (x + 1 % (denominator x * 3))
 -- a shadowed interval.
 pscan :: Distance -> (Bump -> Loc) -> LMap -> Distance -> EdgeInterval ->
          Set Loc
-pscan n ptr l d (s@(sl{-shallow line-}, sBumps), e@(el{-steep line-}, eBumps)) =
+pscan r ptr l d (s@(sl{-shallow line-}, sBumps), e@(el{-steep line-}, eBumps)) =
   -- trace (show (d,s,e,ps,pe)) $
-  S.union
-    (S.fromList [tr (d, p) | p <- [ps..pe]])
-    (if d < n then start else S.empty)
+  if illegal
+  then S.empty
+  else S.union outside (S.fromList [tr (d, p) | p <- [ps..pe]])
     -- the area is diagonal, which is incorrect, but looks good enough
     where
-      (ps, cs) = let (n, k) = pintersect sl d  -- minimal progress to check
-                 in  (n `div` k, n `divUp` k)
-      (pe, ce) = let (n, k) = pintersect el d  -- maximal progress to check
-                     -- Corners are translucent, so they are invisible,
-                     -- so if intersection is at a corner, choose the square
-                     -- for pe that creates the smaller view.
-                 in  (-1 + n `divUp` k, n `div` k)
-      start
+      (ns, ks) = pintersect sl d
+      (ne, ke) = pintersect el d
+      -- Corners are translucent, so they are invisible, so if intersection
+      -- is at a corner, choose pe that creates the smaller view.
+      (ps, pe) = (ns `div` ks, ne `divUp` ke - 1)  -- progress interval to check
+      -- Single ray from an extremity, produces non-permissive digital lines.
+      illegal  = let (n, k) = pintersect sl 0
+                 in  ns*ke == ne*ks && (n == 0 || n == k)
+      outside
+        | d >= r = S.empty
         | open (l `at` tr (d, ps)) = pscan' (Just s) ps  -- start in light
-        | ps == cs = pscan' (Just s) ps                  -- start in a corner
+        | ps == ns `divUp` ks = pscan' (Just s) ps       -- start in a corner
         | otherwise = pscan' Nothing (ps+1)              -- start in mid-wall
 
       dp2bump     (d, p) = B(p, d - p)
@@ -177,7 +179,7 @@ pscan n ptr l d (s@(sl{-shallow line-}, sBumps), e@(el{-steep line-}, eBumps)) =
       pscan' :: Maybe Edge -> Progress -> Set Loc
       pscan' (Just s@(_, sBumps)) ps
         | ps > pe =                            -- reached end, scan next
-            pscan n ptr l (d+1) (s, e)
+            pscan r ptr l (d+1) (s, e)
         | closed (l `at` tr (d, ps)) =         -- entering shadow, steep bump
             let steepBump = bottomRight (d, ps)
                 gte = flip $ psteeper steepBump
@@ -185,12 +187,12 @@ pscan n ptr l d (s@(sl{-shallow line-}, sBumps), e@(el{-steep line-}, eBumps)) =
                 nep = maximal gte sBumps
                 neBumps = addHull gte steepBump eBumps
             in  S.union
-                  (pscan n ptr l (d+1) (s, (pline nep steepBump, neBumps)))
+                  (pscan r ptr l (d+1) (s, (pline nep steepBump, neBumps)))
                   (pscan' Nothing (ps+1))
         | otherwise = pscan' (Just s) (ps+1)   -- continue in light
 
       pscan' Nothing ps
-        | ps > ce = S.empty                    -- reached absolute end
+        | ps > ne `div` ke = S.empty           -- reached absolute end
         | otherwise =                          -- out of shadow, shallow bump
             -- the light can be just through a corner of diagonal walls
             -- and the recursive call verifies that at the same ps coordinate
@@ -281,11 +283,9 @@ pdebugLine line@(B(y1, x1), B(y2, x2))
 -- a shadowed interval.
 dscan :: Distance -> (Bump -> Loc) -> LMap -> Distance -> EdgeInterval ->
          Set Loc
-dscan n tr l d (s@(sl{-shallow line-}, sBumps), e@(el{-steep line-}, eBumps)) =
+dscan r tr l d (s@(sl{-shallow line-}, sBumps), e@(el{-steep line-}, eBumps)) =
   -- trace (show (d,s,e,ps,pe)) $
-  S.union
-    (S.fromList [tr (B(d, p)) | p <- [ps..pe]])
-    (if d < n then start else S.empty)
+  S.union outside (S.fromList [tr (B(d, p)) | p <- [ps..pe]])
     -- the scanned area is a square, which is a sphere in this metric; good
     where
       ps = let (n, k) = dintersect sl d       -- minimal progress to check
@@ -296,7 +296,8 @@ dscan n tr l d (s@(sl{-shallow line-}, sBumps), e@(el{-steep line-}, eBumps)) =
                -- so if its intersection with the line of diagonals is only
                -- at a corner, choose the diamond leading to a smaller view.
            in  -1 + n `divUp` k
-      start
+      outside
+        | d >= r = S.empty
         | ps > pe = error $ "dscan: wrong start " ++ show (d, (ps, pe))
         | open (l `at` tr (B(d, ps))) =
             dscan' (Just s) (ps+1)            -- start in light, jump ahead
@@ -304,10 +305,10 @@ dscan n tr l d (s@(sl{-shallow line-}, sBumps), e@(el{-steep line-}, eBumps)) =
 
       dscan' :: Maybe Edge -> Progress -> Set Loc
       dscan' (Just s@(_, sBumps)) ps
-        | ps > pe = dscan n tr l (d+1) (s, e) -- reached end, scan next
+        | ps > pe = dscan r tr l (d+1) (s, e) -- reached end, scan next
         | closed (l `at` tr steepBump) =      -- entering shadow
             S.union
-              (dscan n tr l (d+1) (s, (dline nep steepBump, neBumps)))
+              (dscan r tr l (d+1) (s, (dline nep steepBump, neBumps)))
               (dscan' Nothing (ps+1))
         | otherwise = dscan' (Just s) (ps+1)  -- continue in light
         where
