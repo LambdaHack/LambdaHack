@@ -19,8 +19,8 @@ strategy m@(Monster { mtype = mt, mloc = me, mdir = mdir })
                          slevel  = lvl@(Level { lmonsters = ms, lsmell = nsmap, lmap = lmap }) }))
          per =
     case mt of
-      Eye     -> eye
-      FastEye -> eye
+      Eye     -> slowEye
+      FastEye -> fastEye
       Nose    -> nose
       _       -> onlyAccessible moveRandomly
   where
@@ -36,17 +36,24 @@ strategy m@(Monster { mtype = mt, mloc = me, mdir = mdir })
     onlyPreservesDir   =  only (\ x -> maybe True (\ d -> distance (neg d, x) > 1) mdir)
     onlyUnoccupied     =  onlyMoves (unoccupied ms lmap) me
     onlyAccessible     =  onlyMoves (accessible lmap me) me
+    onlyOpenable       =  onlyMoves (openable 10 lmap) me
     smells             =  L.map fst $
                           L.sortBy (\ (_,s1) (_,s2) -> compare s2 s1) $
                           L.filter (\ (_,s) -> s > 0) $
                           L.map (\ x -> (x, nsmap ! (me `shift` x) - time `max` 0)) moves
 
-    eye                =  playerAdjacent .=> return towardsPlayer
-                          .| (onlyUnoccupied $ onlyAccessible $
-                              playerVisible .=> onlyTowardsPlayer moveRandomly
-                              .| lootPresent me .=> return (0,0)
-                              .| onlyLootPresent moveRandomly
-                              .| onlyPreservesDir moveRandomly)
+    eye                =  onlyUnoccupied $
+                            playerVisible .=> onlyTowardsPlayer moveRandomly
+                            .| lootPresent me .=> return (0,0)
+                            .| onlyLootPresent moveRandomly
+                            .| onlyPreservesDir moveRandomly
+
+    slowEye            =  playerAdjacent .=> return towardsPlayer
+                          .| not playerVisible .=> onlyOpenable eye
+                          .| onlyAccessible eye
+
+    fastEye            =  playerAdjacent .=> return towardsPlayer
+                          .| onlyAccessible eye
 
     nose               =  playerAdjacent .=> return towardsPlayer
                           .| (onlyAccessible $

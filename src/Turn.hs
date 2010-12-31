@@ -668,16 +668,19 @@ moveOrAttack allowAttacks autoOpen
       -- Bump into a door/wall, that is try to open it/examine it
     | autoOpen =
       case nlmap `at` naloc of
-        Tile d@(Door hv o') is
-          | secret o' -> abort  -- nothing interesting spotted on the wall
-          | toOpen False == o' ->  -- closed door
-            let nt = Tile (Door hv (toOpen True)) is
-                clmap = M.insert naloc (nt, nt) nlmap
-                clvl  = updateLMap (const clmap) nlvl
-            in
-             continue (updateLevel (const clvl) state) ""
-          | otherwise -> abort  -- already open (bumping diagonally)
-        _ -> abort  -- nothing interesting spotted on the wall
+        Tile (Door hv (Just n)) is
+          | n > 0 && actor == APlayer ->  -- secret door
+            abort  -- nothing interesting spotted on the wall
+        Tile (Door hv (Just n)) is ->  -- not secret or not the hero
+          let nt = Tile (Door hv Nothing) is
+              ntRemember = nlmap `rememberAt` naloc
+              clmap = M.insert naloc (nt, ntRemember) nlmap
+              clvl  = updateLMap (const clmap) nlvl
+          in  continue (updateLevel (const clvl) state) ""
+        Tile (Door hv Nothing) is ->  -- open door
+          abort  -- already open, so the hero must be bumping diagonally
+        _ ->
+          abort  -- nothing interesting spotted on the wall
     | otherwise = abort
     where am :: Monster
           am     = getActor state actor

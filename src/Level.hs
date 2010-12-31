@@ -335,6 +335,14 @@ accessible lvl source target =
          (_, Door {})  -> False
          _             -> True)
 
+-- check whether the location contains a door of at most secrecy level k
+openable :: Int -> LMap -> Loc -> Bool
+openable k lvl target =
+  let tgt = lvl `at` target
+  in  case tterrain tgt of
+        Door _ (Just n) -> n <= k
+        _               -> False
+
 findLocInArea :: Area -> (Loc -> Bool) -> Rnd Loc
 findLocInArea a@((y0,x0),(y1,x1)) p =
   do
