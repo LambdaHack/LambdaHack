@@ -87,17 +87,20 @@ newTile t = (Tile t [], Tile Unknown [])
 -- | For a bigroom level: Create a level consisting of only one room.
 bigroom :: LevelConfig ->
            LevelName -> Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) -> Level, Loc, Loc)
-bigroom (LevelConfig { levelSize = (sy,sx) }) nm =
+bigroom cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
   do
     let lmap = digRoom Light ((1,1),(sy-1,sx-1)) (emptyLMap (sy,sx))
     let smap = M.fromList [ ((y,x),-100) | y <- [0..sy], x <- [0..sx] ]
     let lvl = Level nm (sy,sx) [] smap lmap ""
     -- locations of the stairs
     su <- findLoc lvl (const floor)
-    sd <- findLoc lvl (\ l t -> floor t && distance (su,l) > 676)
+    sd <- findLoc lvl (\ l t -> floor t
+                                && distance (su,l) >  minStairsDistance cfg)
+    is  <- rollItems cfg lvl su
     return (\ lu ld ->
       let flmap = maybe id (\ l -> M.insert su (newTile (Stairs Light Up   l))) lu $
-                  maybe id (\ l -> M.insert sd (newTile (Stairs Light Down l))) ld
+                  maybe id (\ l -> M.insert sd (newTile (Stairs Light Down l))) ld $
+                  foldr (\ (l,it) f -> M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l . f) id is
                   lmap
       in  Level nm (sy,sx) [] smap flmap "bigroom", su, sd)
 
@@ -143,7 +146,7 @@ defaultLevelConfig d =
     doorOpenChance    = chance $ 1%2,
     doorSecretChance  = chance $ 1%3,
     doorSecretMax     = 15,
-    nrItems           = randomR (3,7),
+    nrItems           = randomR (5,10),
     depth             = d
   }
 
@@ -221,21 +224,10 @@ level cfg nm =
     -- locations of the stairs
     su <- findLoc lvl (const floor)
     sd <- findLocTry 1000 lvl
-          (const floor)
-          (\ l t -> distance (su,l) > minStairsDistance cfg)
+            (const floor)
+            (\ l t -> distance (su,l) > minStairsDistance cfg)
     -- determine number of items, items and locations for the items
-    nri <- nrItems cfg
-    is  <- replicateM nri $
-           do
-             t <- newItem (depth cfg) itemFrequency
-             l <- case itype t of
-                    Sword _ ->
-                      -- swords generated close to monsters; MUAHAHAHA
-                      findLocTry 200 lvl
-                                 (const floor)
-                                 (\ l t -> distance (su,l) > 400)
-                    _ -> findLoc lvl (const floor)
-             return (l,t)
+    is <- rollItems cfg lvl su
     -- generate map and level from the data
     let meta = show allConnects
     return (\ lu ld ->
@@ -244,6 +236,22 @@ level cfg nm =
                   foldr (\ (l,it) f -> M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l . f) id is
                   dlmap
       in  Level nm (levelSize cfg) [] smap flmap meta, su, sd)
+
+rollItems :: LevelConfig -> Level -> Loc -> Rnd [(Loc, Item)]
+rollItems cfg lvl ploc =
+  do
+    nri <- nrItems cfg
+    replicateM nri $
+      do
+        t <- newItem (depth cfg) itemFrequency
+        l <- case itype t of
+               Sword _ ->
+                 -- swords generated close to monsters; MUAHAHAHA
+                 findLocTry 200 lvl
+                   (const floor)
+                   (\ l t -> distance (ploc, l) > 400)
+               _ -> findLoc lvl (const floor)
+        return (l,t)
 
 emptyLMap :: (Y,X) -> LMap
 emptyLMap (my,mx) = M.fromList [ ((y,x),newTile Rock) | x <- [0..mx], y <- [0..my] ]
@@ -274,10 +282,10 @@ addMonster lvl@(Level { lmonsters = ms, lmap = lmap })
             -- levels with few rooms are dangerous, because monsters may spawn
             -- in adjacent and unexpected places
             sm <- findLocTry 1000 lvl
-                  (\ l t -> not (l `L.elem` L.map mloc (player : ms))
-                            && open t)
-                  (\ l t -> distance (ploc, l) > 400
-                            && floor t)
+                    (\ l t -> not (l `L.elem` L.map mloc (player : ms))
+                              && open t)
+                    (\ l t -> distance (ploc, l) > 400
+                              && floor t)
             m <- newMonster sm monsterFrequency
             return (updateMonsters (const (m : ms)) lvl)
      else return lvl
