@@ -81,7 +81,7 @@ fullscan range loc lmap =
     Nothing ->  -- shadow casting with infinite range
       S.unions $
       L.map (\ tr ->
-              scan (tr loc) lmap 1 (0,1))
+              scan (tr loc) lmap 1 (0,1)) -- was: scan (tr loc) lmap 0 (0,1); TODO: figure out what difference this makes
       [tr0,tr1,tr2,tr3,tr4,tr5,tr6,tr7]
     Just n  ->  -- precise permissive with range n
       S.unions $
