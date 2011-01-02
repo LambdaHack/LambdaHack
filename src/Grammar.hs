@@ -36,3 +36,21 @@ objectItem _ n Gem        = makeObject n id "gem"
 objectItem _ n Gold       = makeObject n id "gold piece"
 objectItem _ n (Sword i)  = makeObject n id ("(+" ++ show i ++ ") sword")
 
+subjectVerbIObject :: State -> Monster -> String -> Item -> String -> String
+subjectVerbIObject state m v o add =
+  subjectMonster (mtype m) ++ " " ++
+  verbMonster (mtype m) v ++ " " ++
+  objectItem state (icount o) (itype o) ++ add ++ "."
+
+subjectVerbMObject :: State -> Monster -> String -> Monster -> String -> String
+subjectVerbMObject state m v o add =
+  subjectMonster (mtype m) ++ " " ++
+  verbMonster (mtype m) v ++ " " ++
+  objectMonster (mtype o) ++ add ++ "."
+
+subjectCompoundVerbIObject :: State -> Monster -> String -> String ->
+                             Item -> String -> String
+subjectCompoundVerbIObject state m v p o add =
+  subjectMonster (mtype m) ++ " " ++
+  compoundVerbMonster (mtype m) v p ++ " " ++
+  objectItem state (icount o) (itype o) ++ add ++ "."

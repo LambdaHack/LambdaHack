@@ -517,9 +517,8 @@ drinkPotion session displayCurrent continue abort
                                    else [i' {icount = ic - 1}]
                        iplayer = nplayer { mitems = remaining ++ deleteBy ((==) `on` iletter) i' (mitems nplayer) }
                        t = nlmap `at` ploc
-                       msg = subjectMonster (mtype nplayer) ++ " " ++
-                             verbMonster (mtype nplayer) "drink" ++ " " ++
-                             objectItem state 1 (itype i') ++ ". " ++
+                       msg = subjectVerbIObject state
+                               nplayer "drink" (i' { icount = 1 }) "" ++ " " ++
                              pmsg ptype
                        pmsg PotionWater   = "Tastes like water."
                        pmsg PotionHealing = "You feel better."
@@ -545,9 +544,7 @@ dropItem session displayCurrent continue abort
                       "What to drop?" (mitems nplayer)
       case i of
         Just i' -> let iplayer = nplayer { mitems = deleteBy ((==) `on` iletter) i' (mitems nplayer) }
-                       msg = subjectMonster (mtype nplayer) ++ " " ++
-                             verbMonster (mtype nplayer) "drop" ++ " " ++
-                             objectItem state (icount i') (itype i') ++ "."
+                       msg = subjectVerbIObject state nplayer "drop" i' ""
                    in  continue (updateLevel (scatterItems [i'] ploc) $
                                  updatePlayer (const iplayer) $
                                  state) msg
@@ -569,9 +566,7 @@ actorPickupItem actor
             Just l  ->
               let msg = -- (complete sentence, more adequate for monsters)
                         {-
-                        subjectMonster (mtype player) ++ " " ++
-                        compoundVerbMonster (mtype player) "pick" "up" ++ " " ++
-                        objectItem (icount i) (itype i) ++ "."
+                        subjectCompoundVerbIObject state actor "pick" "up" i
                         -}
                         letterLabel (iletter ni)
                         ++ objectItem state (icount ni) (itype ni)
@@ -702,9 +697,7 @@ moveOrAttack allowAttacks autoOpen
             let swordMsg = if sword == 0
                            then ""
                            else " with a (+" ++ show sword ++ ") sword"
-            let combatMsg m  = subjectMonster (mtype am) ++ " " ++
-                               verbMonster (mtype am) (combatVerb m) ++ " " ++
-                               objectMonster (mtype m) ++ swordMsg ++ "."
+            let combatMsg m = subjectVerbMObject state am (combatVerb m) m swordMsg
             let perceivedMsg m
                   | mloc m `S.member` pvisible per = combatMsg m
                   | otherwise                      = "You hear some noises."
