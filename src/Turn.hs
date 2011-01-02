@@ -100,7 +100,7 @@ handleMonster m session
             let pickup _per actor _dir session _display continue =
                   let dummyDisplayCurrent _ _ = return True
                       cont state _msg = continue state ""
-                  in  actorPickupItem actor dummyDisplayCurrent cont
+                  in  actorPickupItem actor session dummyDisplayCurrent cont
             in  (pickup, Nothing)
           else
             (moveOrAttack True True, Just nl)
@@ -349,13 +349,12 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
                True True -- attacks and opening doors is allowed
                per APlayer dir
 
-type PassiveHandler a =
+type Handler a =
+  Session ->
   (Message -> Maybe String -> IO Bool) ->  -- display
   (State -> Message -> IO a) ->            -- success continuation
   IO a ->                                  -- failure continuation
   State -> IO a
-
-type Handler a = Session -> PassiveHandler a
 
 -- | Open and close doors.
 openclose :: Bool -> Handler a
@@ -552,9 +551,9 @@ dropItem session displayCurrent continue abort
                                  state) msg
         Nothing -> displayCurrent "never mind" Nothing >> abort
 
-actorPickupItem :: Actor -> PassiveHandler a
+actorPickupItem :: Actor -> Handler a
 actorPickupItem actor
-  displayCurrent continue abort
+  session displayCurrent continue abort
   state@(State { slevel = lvl@(Level { lmap = lmap }) }) =
     do
       -- check if something is here to pick up
@@ -588,8 +587,7 @@ actorPickupItem actor
               displayCurrent "cannot carry any more" Nothing >> abort
 
 pickupItem :: Handler a
-pickupItem _session displayCurrent continue abort state =
-  actorPickupItem APlayer displayCurrent continue abort state
+pickupItem = actorPickupItem APlayer
 
 getPotions :: Session ->
               (Message -> Maybe String -> IO Bool) ->
