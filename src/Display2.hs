@@ -132,7 +132,7 @@ stringByLocation sy xs =
 
 displayLevel :: Session -> Perception -> State -> Message -> Maybe String -> IO Bool
 displayLevel session per
-             (state@(State { splayer = player@(Monster { mhp = php, mdir = pdir, mloc = ploc }),
+             (state@(State { splayer = player@(Monster { mhpmax = phpmax, mhp = php, mdir = pdir, mloc = ploc }),
                              stime   = time,
                              sassocs = assocs,
                              slevel  = lvl@(Level nm sz@(sy,sx) ms smap nlmap lmeta) }))
@@ -173,7 +173,7 @@ displayLevel session per
                 msg
                 (take 40 (levelName nm ++ repeat ' ') ++
                  take 10 ("$: " ++ show gold ++ repeat ' ') ++
-                 take 15 ("HP: " ++ show php ++ " (" ++ show playerHP ++ ")" ++ repeat ' ') ++
+                 take 15 ("HP: " ++ show php ++ " (" ++ show phpmax ++ ")" ++ repeat ' ') ++
                  take 10 ("T: " ++ show (time `div` 10) ++ repeat ' '))
       msgs = splitMsg sx msg
       perf k []     = perfo k ""
