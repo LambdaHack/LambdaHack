@@ -189,8 +189,8 @@ handle session (state@(State { splayer = player@(Monster { mhp = php, mdir = pdi
 
                            -- information for the player
                            "M"       -> displayCurrent "" (Just $ unlines (shistory mstate) ++ more) >>= \ b ->
-                                        if b then getOptionalConfirm session
-                                                    (const (displayCurrent "" Nothing >> h)) h'
+                                        if b then getOptionalConfirm
+                                                    (const (displayCurrent "" Nothing >> h)) h' session
                                              else displayCurrent "" Nothing >> h
                            "v"       -> displayCurrent version Nothing >> h
                            _
@@ -626,12 +626,12 @@ getItem session displayCurrent state prompt p ptext is0 =
                         "question" -> do
                                         b <- displayItems displayCurrent state
                                                           ptext True is
-                                        if b then getOptionalConfirm session (const r) h'
+                                        if b then getOptionalConfirm (const r) h' session
                                              else r
                         "asterisk" -> do
                                         b <- displayItems displayCurrent state
                                                           "Objects in your inventory:" True is0
-                                        if b then getOptionalConfirm session (const r) h'
+                                        if b then getOptionalConfirm (const r) h' session
                                              else r
                         [l]        -> return (find (\ i -> maybe False (== l) (iletter i)) is0)
                         _          -> return Nothing

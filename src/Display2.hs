@@ -5,6 +5,7 @@ module Display2 (module Display, module Display2) where
 import Data.Set as S
 import Data.List as L
 import Data.Map as M
+import Control.Monad.State hiding (State) -- for MonadIO, seems to be portable between mtl-1 and 2
 
 import Message
 import Display
@@ -18,10 +19,10 @@ import Monster
 import Item
 
 -- | Next event translated to a canonical form
-nextCommand :: Session -> IO String
+nextCommand :: MonadIO m => Session -> m String
 nextCommand session =
   do
-    e <- nextEvent session
+    e <- liftIO $ nextEvent session
     return (canonicalKey e)
 
 -- | maps a key to the canonical key for the command it denotes
@@ -67,14 +68,14 @@ displayBlankConfirm session txt =
         getConfirm session
 
 -- | Waits for a space or return.
-getConfirm :: Session -> IO Bool
+getConfirm :: MonadIO m => Session -> m Bool
 getConfirm session =
-  getOptionalConfirm session return (const $ getConfirm session)
+  getOptionalConfirm return (const $ getConfirm session) session
 
-getOptionalConfirm :: Session -> (Bool -> IO a) -> (String -> IO a) -> IO a
-getOptionalConfirm session h k =
+getOptionalConfirm :: MonadIO m => (Bool -> m a) -> (String -> m a) -> Session -> m a
+getOptionalConfirm h k session =
   do
-    e <- nextCommand session
+    e <- liftIO $ nextCommand session
     case e of
       "space"  -> h True
       "Return" -> h True
