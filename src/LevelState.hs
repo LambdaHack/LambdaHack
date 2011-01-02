@@ -6,6 +6,7 @@ import Level
 import State
 import Item
 import ItemState
+import Grammar
 
 viewTile :: Bool -> Tile -> Assocs -> (Char, Attr -> Attr)
 viewTile b (Tile t [])    a = viewTerrain 0 b t

@@ -27,7 +27,7 @@ executable LambdaHack
                  FOV, Frequency, Geometry, Item, ItemState, LambdaHack,
                  Level, LevelState, Message, Monster, Perception, Random,
                  Save, State, Strategy, StrategyState, Style, Turn,
-                 Version, HighScores, Config
+                 Version, HighScores, Config, Grammar
   build-depends: base >= 4, containers >= 0.1 && < 1, binary >= 0.4 && < 1,
                  random >= 1 && < 2, zlib >= 0.4 && < 1,
                  bytestring >= 0.9 && < 1, directory >= 1 && < 2,
