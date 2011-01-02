@@ -1,5 +1,7 @@
 module Display2 (module Display, module Display2) where
 
+-- Display routines that are independent of the selected display frontend.
+
 import Data.Set as S
 import Data.List as L
 import Data.Map as M
@@ -93,7 +95,7 @@ getYesNo session =
 -- | Configurable event handler for the direction keys. Is used to
 --   handle player moves, but can also be used for directed commands
 --   such as open/close.
-handleDirection :: String -> (Dir -> IO a) -> IO a -> IO a
+handleDirection :: String -> (Dir -> a) -> a -> a
 handleDirection e h k =
   case e of
     "k" -> h up
