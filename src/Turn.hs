@@ -27,6 +27,7 @@ import Version
 import Strategy
 import StrategyState
 import qualified HighScores
+import Grammar
 
 -- | Perform a complete turn (i.e., monster moves etc.)
 loop :: Session -> State -> Message -> IO ()
