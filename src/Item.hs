@@ -6,6 +6,7 @@ import Data.Set as S
 import Data.List as L
 import Data.Maybe
 import Data.Char
+import Data.Function
 import Control.Monad
 
 import Display
@@ -41,6 +42,12 @@ data Appearance =
 
 type Assocs = M.Map ItemType Appearance
 type Discoveries = S.Set ItemType
+
+equalItemType :: Item -> Item -> Bool
+equalItemType = (==) `on` itype
+
+equalItemLetter :: Item -> Item -> Bool
+equalItemLetter = (==) `on` iletter
 
 potionType :: PotionType -> String -> String
 potionType PotionWater   s = s ++ " of water"
@@ -205,11 +212,25 @@ viewItem i a = viewItem' i (M.lookup i a)
 -- | Adds an item to a list of items, joining equal items.
 -- Also returns the joined item.
 joinItem :: Item -> [Item] -> (Item,[Item])
-joinItem i is = case findItem (\ j -> itype i == itype j) is of
+joinItem i is = case findItem (equalItemType i) is of
                   Nothing     -> (i, i : is)
                   Just (j,js) -> let n = i { icount = icount i + icount j,
                                              iletter = mergeLetter (iletter j) (iletter i) }
                                  in (n, n : js)
+
+-- | Removes an item from a list of items. Takes an equality function (i.e., by letter or
+-- by type) as an argument.
+removeItemBy :: (Item -> Item -> Bool) -> Item -> [Item] -> [Item]
+removeItemBy eq i = concatMap $ \ x ->
+                    if eq i x
+                      then let remaining = icount x - icount i
+                           in  if remaining > 0
+                                 then [x { icount = remaining }]
+                                 else []
+                      else [x]
+
+removeItemByLetter = removeItemBy equalItemLetter
+removeItemByType   = removeItemBy equalItemType
 
 -- | Finds an item in a list of items.
 findItem :: (Item -> Bool) -> [Item] -> Maybe (Item, [Item])
