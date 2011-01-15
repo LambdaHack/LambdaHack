@@ -1,6 +1,6 @@
 cabal-version: >= 1.2
 name:          LambdaHack
-version:       0.1.20101231
+version:       0.1.20110115
 license:       GPL
 license-file:  COPYING
 data-files:    AUTHORS, COPYING, DESIGN.markdown, PLAYING.markdown,
@@ -23,7 +23,7 @@ flag vty
 executable LambdaHack
   main-is:       LambdaHack.hs
   hs-source-dirs:src
-  other-modules: Actor, Display, Display2, Dungeon, File,
+  other-modules: Actor, Action, Display, Display2, Dungeon, File,
                  FOV, Frequency, Geometry, Item, ItemState, LambdaHack,
                  Level, LevelState, Message, Monster, Perception, Random,
                  Save, State, Strategy, StrategyState, Style, Turn,

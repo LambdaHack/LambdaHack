@@ -5,6 +5,7 @@ import Control.Monad
 import Data.Map as M
 import Data.Maybe
 
+import Action
 import State
 import Geometry
 import Level
@@ -34,8 +35,8 @@ start session =
                        else return $ Right "Welcome to LambdaHack!"  -- new game
       case restored of
         Right msg  -> generate config session msg
-        Left state -> handle session state (perception_ state)
-                             "Welcome back to LambdaHack."
+        Left state -> handlerToIO session state "Welcome back to LambdaHack."
+                        handle
 
 -- | Generate the dungeon for a new game, and start the game loop.
 generate :: Config.CP -> Session -> String -> IO ()
@@ -75,4 +76,4 @@ generate config session msg =
                       (Potion PotionHealing, White) ]
          defState = defaultState ((\ (_,x,_) -> x) (head levels)) dng lvl
          state = defState { sassocs = assocs, config = config }
-     handle session state (perception_ state) msg
+     handlerToIO session state msg handle
