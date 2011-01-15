@@ -83,10 +83,10 @@ getOptionalConfirm h k session =
       _        -> k e
 
 -- | A yes-no confirmation.
-getYesNo :: Session -> IO Bool
+getYesNo :: MonadIO m => Session -> m Bool
 getYesNo session =
   do
-    e <- nextCommand session
+    e <- liftIO $ nextCommand session
     case e of
       "y"      -> return True
       "n"      -> return False
