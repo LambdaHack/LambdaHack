@@ -3,34 +3,12 @@ module Action where
 
 import Control.Monad
 import Control.Monad.State hiding (State)
-import Data.Map as M
-import Data.Set as S
-import Data.List as L
-import Data.Function
-import Data.Maybe
-import Data.Char
-import System.Time
 -- import System.IO (hPutStrLn, stderr) -- just for debugging
 
 import Perception
-import Actor hiding (updateActor)
 import Display2 hiding (display)
 import Message
 import State
-import Level
-import LevelState
-import Monster
-import Geometry
-import Item
-import ItemState
-import Grammar
-import qualified HighScores as H
-import qualified Save as S
-import Version
-import Random
-import Dungeon
-import Strategy
-import StrategyState
 
 newtype Action a = Action
   { runAction ::
