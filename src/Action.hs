@@ -33,22 +33,22 @@ instance Monad Action where
 
 -- | Invokes the continuation.
 returnAction :: a -> Action a
-returnAction x = Action (\ s e d k a st m -> k st m x)
+returnAction x = Action (\ s e p k a st m -> k st m x)
 
 -- | Distributes the session and shutdown continuation,
 -- threads the state and message.
 bindAction :: Action a -> (a -> Action b) -> Action b
-bindAction m f = Action (\ s e d k a st ms ->
+bindAction m f = Action (\ s e p k a st ms ->
                            let next nst nm x =
-                                 runAction (f x) s e d k a nst nm
-                           in  runAction m s e d next a st ms)
+                                 runAction (f x) s e p k a nst nm
+                           in  runAction m s e p next a st ms)
 
 instance MonadIO Action where
-  liftIO x = Action (\ s e d k a st ms -> x >>= k st ms)
+  liftIO x = Action (\ s e p k a st ms -> x >>= k st ms)
 
 instance MonadState State Action where
-  get     = Action (\ s e d k a st ms -> k  st ms st)
-  put nst = Action (\ s e d k a st ms -> k nst ms ())
+  get     = Action (\ s e p k a st ms -> k  st ms st)
+  put nst = Action (\ s e p k a st ms -> k nst ms ())
 
 -- | Exported function to run the monad.
 handlerToIO :: Session -> State -> Message -> Action () -> IO ()
@@ -64,11 +64,11 @@ handlerToIO session state msg h =
 
 -- | Invoking a session command.
 session :: (Session -> Action a) -> Action a
-session f = Action (\ s e d k a st ms -> runAction (f s) s e d k a st ms)
+session f = Action (\ s e p k a st ms -> runAction (f s) s e p k a st ms)
 
 -- | Invoking a session command.
 sessionIO :: (Session -> IO a) -> Action a
-sessionIO f = Action (\ s e d k a st ms -> f s >>= k st ms)
+sessionIO f = Action (\ s e p k a st ms -> f s >>= k st ms)
 
 -- | Display the current level, with the current message.
 display :: Action Bool
@@ -80,23 +80,23 @@ overlay txt = Action (\ s e p k a st ms -> displayLevel s p st ms (Just txt) >>=
 
 -- | Set the current message.
 message :: Message -> Action ()
-message nm = Action (\ s e d k a st ms -> k st nm ())
+message nm = Action (\ s e p k a st ms -> k st nm ())
 
 -- | Add to the current message.
 messageAdd :: Message -> Action ()
-messageAdd nm = Action (\ s e d k a st ms -> k st (addMsg ms nm) ())
+messageAdd nm = Action (\ s e p k a st ms -> k st (addMsg ms nm) ())
 
 -- | Clear the current message.
 resetMessage :: Action Message
-resetMessage = Action (\ s e d k a st ms -> k st "" ms)
+resetMessage = Action (\ s e p k a st ms -> k st "" ms)
 
 -- | Get the current message.
 currentMessage :: Action Message
-currentMessage = Action (\ s e d k a st ms -> k st ms ms)
+currentMessage = Action (\ s e p k a st ms -> k st ms ms)
 
 -- | End the game, i.e., invoke the shutdown continuation.
 end :: Action ()
-end = Action (\ s e d k a st ms -> e)
+end = Action (\ s e p k a st ms -> e)
 
 -- | Reset the state and resume from the last backup point, i.e., invoke
 -- the failure continuation.
@@ -106,7 +106,7 @@ abort = Action (\ s e p k a st ms -> a)
 -- | Set the current exception handler. First argument is the handler,
 -- second is the computation the handler scopes over.
 tryWith :: Action () -> Action () -> Action ()
-tryWith exc h = Action (\ s e d k a st ms -> runAction h s e d k (runAction exc s e d k a st ms) st ms)
+tryWith exc h = Action (\ s e p k a st ms -> runAction h s e p k (runAction exc s e p k a st ms) st ms)
 
 -- | Takes a handler and a computation. If the computation fails, the
 -- handler is invoked and then the computation is retried.
