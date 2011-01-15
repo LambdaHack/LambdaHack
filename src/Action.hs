@@ -1,0 +1,197 @@
+{-# LANGUAGE MultiParamTypeClasses, RankNTypes #-}
+module Action where
+
+import Control.Monad
+import Control.Monad.State hiding (State)
+import Data.Map as M
+import Data.Set as S
+import Data.List as L
+import Data.Function
+import Data.Maybe
+import Data.Char
+import System.Time
+-- import System.IO (hPutStrLn, stderr) -- just for debugging
+
+import Perception
+import Actor hiding (updateActor)
+import Display2 hiding (display)
+import Message
+import State
+import Level
+import LevelState
+import Monster
+import Geometry
+import Item
+import ItemState
+import Grammar
+import qualified HighScores as H
+import qualified Save as S
+import Version
+import Random
+import Dungeon
+import Strategy
+import StrategyState
+
+newtype Action a = Action
+  { runAction ::
+      forall r .
+      Session ->
+      IO r ->                                          -- shutdown cont
+      Perception ->                                    -- cached perception
+      (State -> Message -> a -> IO r) ->               -- continuation
+      IO r ->                                          -- failure/reset cont
+      State ->                                         -- current state
+      Message ->                                       -- current message
+      IO r
+  }
+
+-- TODO: The only reason we store the display routine is because we
+-- do not store the perception. I think it's better to store the
+-- perception. Then we have to pass it explicitly less often.
+
+instance Monad Action where
+  return = returnAction
+  (>>=)  = bindAction
+
+-- | Invokes the continuation.
+returnAction :: a -> Action a
+returnAction x = Action (\ s e d k a st m -> k st m x)
+
+-- | Distributes the session and shutdown continuation,
+-- threads the state and message.
+bindAction :: Action a -> (a -> Action b) -> Action b
+bindAction m f = Action (\ s e d k a st ms ->
+                           let next nst nm x =
+                                 runAction (f x) s e d k a nst nm
+                           in  runAction m s e d next a st ms)
+
+instance MonadIO Action where
+  liftIO x = Action (\ s e d k a st ms -> x >>= k st ms)
+
+instance MonadState State Action where
+  get     = Action (\ s e d k a st ms -> k  st ms st)
+  put nst = Action (\ s e d k a st ms -> k nst ms ())
+
+-- | Exported function to run the monad.
+handlerToIO :: Session -> State -> Message -> Action () -> IO ()
+handlerToIO session state msg h =
+  runAction h
+    session
+    (shutdown session)         -- get out of the game
+    (perception_ state)        -- cached perception
+    (\ _ _ x -> return x)      -- final continuation returns result
+    (ioError $ userError "unhandled abort")
+    state
+    msg
+
+-- | Invoking a session command.
+session :: (Session -> Action a) -> Action a
+session f = Action (\ s e d k a st ms -> runAction (f s) s e d k a st ms)
+
+-- | Invoking a session command.
+sessionIO :: (Session -> IO a) -> Action a
+sessionIO f = Action (\ s e d k a st ms -> f s >>= k st ms)
+
+-- | Display the current level, with the current message.
+display :: Action Bool
+display = Action (\ s e p k a st ms -> displayLevel s p st ms Nothing >>= k st ms)
+
+-- | Display an overlay on top of the current screen.
+overlay :: String -> Action Bool
+overlay txt = Action (\ s e p k a st ms -> displayLevel s p st ms (Just txt) >>= k st ms)
+
+-- | Set the current message.
+message :: Message -> Action ()
+message nm = Action (\ s e d k a st ms -> k st nm ())
+
+-- | Add to the current message.
+messageAdd :: Message -> Action ()
+messageAdd nm = Action (\ s e d k a st ms -> k st (addMsg ms nm) ())
+
+-- | Clear the current message.
+resetMessage :: Action Message
+resetMessage = Action (\ s e d k a st ms -> k st "" ms)
+
+-- | Get the current message.
+currentMessage :: Action Message
+currentMessage = Action (\ s e d k a st ms -> k st ms ms)
+
+-- | End the game, i.e., invoke the shutdown continuation.
+end :: Action ()
+end = Action (\ s e d k a st ms -> e)
+
+-- | Reset the state and resume from the last backup point, i.e., invoke
+-- the failure continuation.
+abort :: Action a
+abort = Action (\ s e p k a st ms -> a)
+
+-- | Set the current exception handler. First argument is the handler,
+-- second is the computation the handler scopes over.
+tryWith :: Action () -> Action () -> Action ()
+tryWith exc h = Action (\ s e d k a st ms -> runAction h s e d k (runAction exc s e d k a st ms) st ms)
+
+-- | Takes a handler and a computation. If the computation fails, the
+-- handler is invoked and then the computation is retried.
+tryRepeatedlyWith :: Action () -> Action () -> Action ()
+tryRepeatedlyWith exc h = tryWith (exc >> tryRepeatedlyWith exc h) h
+
+-- | Try the given computation and silently catch failure.
+try :: Action () -> Action ()
+try = tryWith (return ())
+
+-- | Try the given computation until it succeeds without failure.
+tryRepeatedly :: Action () -> Action ()
+tryRepeatedly = tryRepeatedlyWith (return ())
+
+-- | Print a debug message or ignore.
+debug :: String -> Action ()
+debug x = return () -- liftIO $ hPutStrLn stderr x
+
+-- | Print the given message, then abort.
+abortWith :: Message -> Action a
+abortWith msg =
+  do
+    message msg
+    display
+    abort
+
+-- | Abort, and print the given message if the condition is true.
+abortIfWith :: Bool -> Message -> Action a
+abortIfWith True  = abortWith
+abortIfWith False = const abort
+
+-- | Print message, await confirmation. Return value indicates if the
+-- player tried to abort/escape.
+messageMoreConfirm :: Message -> Action Bool
+messageMoreConfirm msg =
+  do
+    message (msg ++ more)
+    display
+    session getConfirm
+
+-- | Print a yes/no question and return the player's answer.
+messageYesNo :: Message -> Action Bool
+messageYesNo msg =
+  do
+    message (msg ++ yesno)
+    display
+    session getYesNo
+
+-- | Print a message and an overlay, await confirmation. Return value
+-- indicates if the player tried to abort/escape.
+messageOverlayConfirm :: Message -> String -> Action Bool
+messageOverlayConfirm msg txt =
+  do
+    message msg
+    overlay (txt ++ more)
+    session getConfirm  -- TODO: turn into getOptionalConfirm?
+
+-- | Update the cached perception for the given computation.
+withPerception :: Action () -> Action ()
+withPerception h = Action (\ s e _ k a st ms ->
+                            runAction h s e (perception_ st) k a st ms)
+
+-- | Get the current perception.
+currentPerception :: Action Perception
+currentPerception = Action (\ s e p k a st ms -> k st ms p)
+
