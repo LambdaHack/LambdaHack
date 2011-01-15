@@ -28,5 +28,8 @@ updateMonster :: (Monster -> Monster) -> Int -> [Monster] ->
                  (Monster, [Monster])
 updateMonster f n ms =
   case splitAt n ms of
-    (pre, x : post) -> let m = f x in (m, pre ++ [m] ++ post)
+    (pre, x : post) -> let m = f x
+                           mtimeChanged = mtime x /= mtime m
+                       in (m, if mtimeChanged then snd (insertMonster m (pre ++ post))
+                                              else pre ++ [m] ++ post)
     xs              -> error "updateMonster"
