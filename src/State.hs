@@ -54,6 +54,9 @@ updateDiscoveries f s = s { sdiscoveries = f (sdiscoveries s) }
 updateLevel :: (Level -> Level) -> State -> State
 updateLevel f s = s { slevel = f (slevel s) }
 
+updateTime :: (Time -> Time) -> State -> State
+updateTime f s = s { stime = f (stime s) }
+
 toggleVision :: State -> State
 toggleVision s = s { ssensory = case ssensory s of Vision 1 -> Implicit; Vision n -> Vision (n-1); _ -> Vision 3 }
 
