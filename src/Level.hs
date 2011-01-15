@@ -82,6 +82,9 @@ data Level = Level
 updateLMap :: (LMap -> LMap) -> Level -> Level
 updateLMap f lvl = lvl { lmap = f (lmap lvl) }
 
+updateSMap :: (SMap -> SMap) -> Level -> Level
+updateSMap f lvl = lvl { lsmell = f (lsmell lvl) }
+
 updateMonsters :: ([Monster] -> [Monster]) -> Level -> Level
 updateMonsters f lvl = lvl { lmonsters = f (lmonsters lvl) }
 
