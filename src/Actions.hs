@@ -155,8 +155,8 @@ checkHeroDeath =
         handleScores True True False total
       end
 
-neverMind :: Action a
-neverMind = abortWith "never mind"
+neverMind :: Bool -> Action a
+neverMind b = abortIfWith b "never mind"
 
 -- | Open and close doors
 openclose :: Bool -> Action ()
@@ -165,31 +165,39 @@ openclose o =
     message "direction?"
     display
     e <- session nextCommand
-    handleDirection e openclose' neverMind
-  where
-    txt = if o then "open" else "closed"
-    openclose' dir =
-      do
-        lvl@Level { lmonsters = ms, lmap = lmap } <- gets slevel
-        Monster { mloc = ploc }                   <- gets splayer
-        let dloc = shift ploc dir  -- location we act upon
-          in case lmap `at` dloc of
-               Tile d@(Door hv o') []
-                 | secret o'            -> -- door is secret, cannot open or close
-                                           neverMind
-                 | toOpen (not o) /= o' -> -- door is in unsuitable state
-                                           abortWith ("already " ++ txt)
-                 | not (unoccupied ms lmap dloc) ->
-                                           -- door is blocked by a monster
-                                           abortWith "blocked"
-                 | otherwise            -> -- door can be opened / closed
-                                           let nt    = Tile (Door hv (toOpen o)) []
-                                               clmap = M.insert dloc (nt, nt) lmap
-                                           in  modify (updateLevel (const (updateLMap (const clmap) lvl)))
-               Tile d@(Door hv o') _    -> -- door is jammed by items
-                                           abortWith "jammed"
-               _                        -> -- there is no door here
-                                           neverMind
+    handleDirection e (actorOpenClose APlayer True o) (neverMind True)
+
+actorOpenClose :: Actor ->
+                  Bool ->    -- ^ verbose?
+                  Bool ->    -- ^ open?
+                  Dir -> Action ()
+actorOpenClose actor v o dir =
+  do
+    let txt = if o then "open" else "closed"
+    state <- get
+    let lvl@Level { lmonsters = ms, lmap = lmap } = slevel state
+    let loc                                       = mloc (getActor state actor)
+    let isPlayer  = actor == APlayer
+    let isVerbose = v && isPlayer
+    let dloc = shift loc dir  -- location we act upon
+      in case lmap `at` dloc of
+           Tile d@(Door hv o') []
+             | secret o' && isPlayer-> -- door is secret, cannot be opened or closed by hero
+                                       neverMind isVerbose
+             | toOpen (not o) /= o' -> -- door is in unsuitable state
+                                       abortIfWith isVerbose ("already " ++ txt)
+             | not (unoccupied ms lmap dloc) ->
+                                       -- door is blocked by a monster
+                                       abortIfWith isVerbose "blocked"
+             | otherwise            -> -- door can be opened / closed
+                                       -- TODO: print message if action performed by monster and perceived
+                                       let nt    = Tile (Door hv (toOpen o)) []
+                                           clmap = M.adjust (\ (_, mt) -> (nt, mt)) dloc lmap
+                                       in  modify (updateLevel (const (updateLMap (const clmap) lvl)))
+           Tile d@(Door hv o') _    -> -- door is jammed by items
+                                       abortIfWith isVerbose "jammed"
+           _                        -> -- there is no door here
+                                       neverMind isVerbose
 
 -- | Perform a level change -- will quit the game if the player leaves
 -- the dungeon.
@@ -334,7 +342,7 @@ drinkPotion =
                                         messageAdd "You feel better."
                                         modify (updatePlayer (\ p -> p { mhp = min (mhpmax p) (mhp p + playerHP `div` 4) }))
                Just _  -> abortWith "you cannot drink that"
-               Nothing -> neverMind
+               Nothing -> neverMind True
 
 dropItem :: Action ()
 dropItem =
@@ -351,7 +359,7 @@ dropItem =
                    removeFromInventory i'
                    message (subjectVerbIObject state player "drop" i' "")
                    dropItemsAt [i'] ploc
-               Nothing -> neverMind
+               Nothing -> neverMind True
 
 dropItemsAt :: [Item] -> Loc -> Action ()
 dropItemsAt is loc = modify (updateLevel (scatterItems is loc))
@@ -523,8 +531,7 @@ moveOrAttack allowAttacks autoOpen actor dir
             -- TODO: seems somewhat dubious to do this here, but perhaps it's ok
         else if autoOpen then
           -- try to check if there's a door we can open
-          -- TODO: this should actually reuse some code from openclose
-          abort -- undefined
+          actorOpenClose actor False True dir
         else abort -- nothing useful we can do
 
 actorAttackActor :: Actor -> Actor -> Action ()
