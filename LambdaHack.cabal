@@ -1,9 +1,9 @@
 cabal-version: >= 1.2
 name:          LambdaHack
 version:       0.1.20101231
-license:       GPL
-license-file:  COPYING
-data-files:    AUTHORS, COPYING, DESIGN.markdown, PLAYING.markdown,
+license:       BSD3
+license-file:  LICENSE
+data-files:    LICENSE, CREDITS, DESIGN.markdown, PLAYING.markdown,
                README.markdown
 author:        Andres Loeh <mail@andres-loeh.de>
 maintainer:    Andres Loeh <mail@andres-loeh.de>
