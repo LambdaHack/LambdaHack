@@ -157,8 +157,10 @@ messageOverlayConfirm :: Message -> String -> Action Bool
 messageOverlayConfirm msg txt =
   do
     message msg
-    overlay (txt ++ more)
-    session getConfirm  -- TODO: turn into getOptionalConfirm?
+    b <- overlay (txt ++ more)
+    when b $ session getConfirm >> return ()
+    resetMessage
+    display
 
 -- | Update the cached perception for the given computation.
 withPerception :: Action () -> Action ()
