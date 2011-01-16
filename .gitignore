@@ -1,2 +1,5 @@
 LambdaHack.save
 dist/
+*~
+*.swp
+*.swo
