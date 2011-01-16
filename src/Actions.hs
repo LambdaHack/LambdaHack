@@ -80,6 +80,7 @@ continueRun dir =
     msg <- currentMessage
     let monstersVisible = not (S.null (mslocs `S.intersection` pvisible per))
     let newsReported    = not (L.null msg)
+    let itemsHere       = not (L.null (titems t))
     let dirOK           = accessible lmap loc (loc `shift` dir)
     -- What happens next is mostly depending on the terrain we're currently on.
     let exit (Stairs  {}) = True
@@ -87,7 +88,7 @@ continueRun dir =
         exit (Door    {}) = True
         exit _            = False
     let hop t
-          | monstersVisible || newsReported || exit t = abort
+          | monstersVisible || newsReported || itemsHere || exit t = abort
         hop Corridor =
           -- in corridors, explore all corners and stop at all crossings
           let ns = L.filter (\ x -> distance (neg dir, x) > 1
