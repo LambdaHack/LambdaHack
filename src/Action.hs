@@ -23,10 +23,6 @@ newtype Action a = Action
       IO r
   }
 
--- TODO: The only reason we store the display routine is because we
--- do not store the perception. I think it's better to store the
--- perception. Then we have to pass it explicitly less often.
-
 instance Monad Action where
   return = returnAction
   (>>=)  = bindAction
