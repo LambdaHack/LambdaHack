@@ -553,7 +553,7 @@ actorAttackActor source target =
         else m { mhp = newHp }
     -- determine how the hero perceives the event; TODO: we have to be more
     -- precise and treat cases where two monsters fight, but only one is visible
-    let combatVerb = if killed then "kill" else "hit"
+    let combatVerb = if killed && target /= APlayer then "kill" else "hit"
     let swordMsg   = if sword == 0 then "" else
                        " with a (+" ++ show sword ++ ") sword" -- TODO: generate proper message
     let combatMsg  = subjectVerbMObject state sm combatVerb tm swordMsg
