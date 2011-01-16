@@ -26,7 +26,7 @@ or you may try one of the terminal frontends with
 Further information
 -------------------
 
-See files PLAYING.markdown, DESIGN.markdown, AUTHORS and COPYING
+See files PLAYING.markdown, DESIGN.markdown, CREDITS and LICENSE
 for more information.
 
 
