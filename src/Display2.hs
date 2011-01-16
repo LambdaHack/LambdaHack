@@ -17,47 +17,38 @@ import Dungeon
 import Perception
 import Monster
 import Item
+import Keys as K
 
 -- | Next event translated to a canonical form
-nextCommand :: MonadIO m => Session -> m String
+nextCommand :: MonadIO m => Session -> m Key
 nextCommand session =
   do
     e <- liftIO $ nextEvent session
     return (canonicalKey e)
 
 -- | maps a key to the canonical key for the command it denotes
-canonicalKey :: String -> String
+canonicalKey :: Key -> Key
 canonicalKey e =
   case e of
-    ['8'] -> ['K']
-    ['2'] -> ['J']
-    ['4'] -> ['H']
-    ['6'] -> ['L']
-    ['7'] -> ['Y']
-    ['9'] -> ['U']
-    ['1'] -> ['B']
-    ['3'] -> ['N']
-    ['5'] -> "period"
-    "KP_8" -> ['K']
-    "KP_2" -> ['J']
-    "KP_4" -> ['H']
-    "KP_6" -> ['L']
-    "KP_7" -> ['Y']
-    "KP_9" -> ['U']
-    "KP_1" -> ['B']
-    "KP_3" -> ['N']
-    "KP_5" -> "period"
-    "KP_Up"        -> ['k']
-    "KP_Down"      -> ['j']
-    "KP_Left"      -> ['h']
-    "KP_Right"     -> ['l']
-    "KP_Home"      -> ['y']
-    "KP_Page_Up"   -> ['u']
-    "KP_End"       -> ['b']
-    "KP_Page_Down" -> ['n']
-    "KP_Begin"     -> "period"
-    "KP_Enter"     -> "Return"
-    k -> k
+    K.Char '8' -> K.Char 'K'
+    K.Char '2' -> K.Char 'J'
+    K.Char '4' -> K.Char 'H'
+    K.Char '6' -> K.Char 'L'
+    K.Char '7' -> K.Char 'Y'
+    K.Char '9' -> K.Char 'U'
+    K.Char '1' -> K.Char 'B'
+    K.Char '3' -> K.Char 'N'
+    K.Char '5' -> K.Char '.'
+    K.Up       -> K.Char 'k'
+    K.Down     -> K.Char 'j'
+    K.Left     -> K.Char 'h'
+    K.Right    -> K.Char 'l'
+    K.Home     -> K.Char 'y'
+    K.PgUp     -> K.Char 'u'
+    K.End      -> K.Char 'b'
+    K.PgDn     -> K.Char 'n'
+    K.Begin    -> K.Char '.'
+    k          -> k
 
 -- | Displays a message on a blank screen. Waits for confirmation.
 displayBlankConfirm :: Session -> String -> IO Bool
@@ -72,15 +63,15 @@ getConfirm :: MonadIO m => Session -> m Bool
 getConfirm session =
   getOptionalConfirm return (const $ getConfirm session) session
 
-getOptionalConfirm :: MonadIO m => (Bool -> m a) -> (String -> m a) -> Session -> m a
+getOptionalConfirm :: MonadIO m => (Bool -> m a) -> (Key -> m a) -> Session -> m a
 getOptionalConfirm h k session =
   do
     e <- liftIO $ nextCommand session
     case e of
-      "space"  -> h True
-      "Return" -> h True
-      "Escape" -> h False
-      _        -> k e
+      K.Char ' ' -> h True
+      K.Return   -> h True
+      K.Esc      -> h False
+      _          -> k e
 
 -- | A yes-no confirmation.
 getYesNo :: MonadIO m => Session -> m Bool
@@ -88,26 +79,42 @@ getYesNo session =
   do
     e <- liftIO $ nextCommand session
     case e of
-      "y"      -> return True
-      "n"      -> return False
-      "Escape" -> return False
-      _        -> getYesNo session
+      K.Char 'y' -> return True
+      K.Char 'n' -> return False
+      K.Esc      -> return False
+      _          -> getYesNo session
 
 -- | Configurable event handler for the direction keys. Is used to
 --   handle player moves, but can also be used for directed commands
 --   such as open/close.
-handleDirection :: String -> (Dir -> a) -> a -> a
+handleDirection :: Key -> (Dir -> a) -> a -> a
 handleDirection e h k =
   case e of
-    "k" -> h up
-    "j" -> h down
-    "h" -> h left
-    "l" -> h right
-    "y" -> h upleft
-    "u" -> h upright
-    "b" -> h downleft
-    "n" -> h downright
-    _   -> k
+    K.Char 'k' -> h up
+    K.Char 'j' -> h down
+    K.Char 'h' -> h left
+    K.Char 'l' -> h right
+    K.Char 'y' -> h upleft
+    K.Char 'u' -> h upright
+    K.Char 'b' -> h downleft
+    K.Char 'n' -> h downright
+    _          -> k
+
+-- | Configurable event handler for the upper direction keys. Is used to
+--   handle player moves, but can also be used for directed commands
+--   such as open/close.
+handleUDirection :: Key -> (Dir -> a) -> a -> a
+handleUDirection e h k =
+  case e of
+    K.Char 'K' -> h up
+    K.Char 'J' -> h down
+    K.Char 'H' -> h left
+    K.Char 'L' -> h right
+    K.Char 'Y' -> h upleft
+    K.Char 'U' -> h upright
+    K.Char 'B' -> h downleft
+    K.Char 'N' -> h downright
+    _          -> k
 
 splitOverlay :: Int -> String -> [[String]]
 splitOverlay s xs = splitOverlay' (lines xs)

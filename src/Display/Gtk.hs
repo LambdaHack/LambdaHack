@@ -12,6 +12,7 @@ import Data.IORef
 import Data.Map as M
 
 import Geometry
+import Keys as K
 
 displayId = "gtk"
 
@@ -150,8 +151,36 @@ readUndeadChan ch =
             "Caps_Lock"        -> True
             _                  -> False
 
-nextEvent :: Session -> IO String
-nextEvent = readUndeadChan . schan
+keyTranslate :: String -> Maybe K.Key
+keyTranslate "less"          = Just (K.Char '<')
+keyTranslate "greater"       = Just (K.Char '>')
+keyTranslate "period"        = Just (K.Char '.')
+keyTranslate "colon"         = Just (K.Char ':')
+keyTranslate "comma"         = Just (K.Char ',')
+keyTranslate "space"         = Just (K.Char ' ')
+keyTranslate "question"      = Just (K.Char '?')
+keyTranslate "asterisk"      = Just (K.Char '*')
+keyTranslate "Escape"        = Just K.Esc
+keyTranslate "Return"        = Just K.Return
+keyTranslate "KP_Up"         = Just K.Up
+keyTranslate "KP_Down"       = Just K.Down
+keyTranslate "KP_Left"       = Just K.Left
+keyTranslate "KP_Right"      = Just K.Right
+keyTranslate "KP_Home"       = Just K.Home
+keyTranslate "KP_End"        = Just K.End
+keyTranslate "KP_Page_Up"    = Just K.PgUp
+keyTranslate "KP_Page_Down"  = Just K.PgDn
+keyTranslate "KP_Begin"      = Just K.Begin
+keyTranslate "KP_Enter"      = Just K.Return
+keyTranslate ['K','P','_',c] = Just (K.Char c)  -- for numbers
+keyTranslate [c]             = Just (K.Char c)
+keyTranslate _               = Nothing
+
+nextEvent :: Session -> IO K.Key
+nextEvent session =
+  do
+    e <- readUndeadChan (schan session)
+    maybe (nextEvent session) return (keyTranslate e)
 
 setBold   = id  -- not supported yet
 setBG c   = (BG c :)

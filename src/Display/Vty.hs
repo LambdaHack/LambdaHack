@@ -9,6 +9,7 @@ import Data.Char
 import qualified Data.ByteString as BS
 
 import Geometry
+import Keys as K
 
 displayId = "vty"
 
@@ -31,40 +32,28 @@ display ((y0,x0),(y1,x1)) vty f msg status =
 toWidth :: Int -> String -> String
 toWidth n x = take n (x ++ repeat ' ')
 
--- | translates the vty key code to the standard GTK key code
-keyTranslate :: V.Event -> String
+keyTranslate :: V.Event -> Maybe K.Key
 keyTranslate e =
   case e of
-    V.EvKey (KASCII '<') [] -> "less"
-    V.EvKey (KASCII '>') [] -> "greater"
-    V.EvKey (KASCII '.') [] -> "period"
-    V.EvKey (KASCII ':') [] -> "colon"
-    V.EvKey (KASCII ',') [] -> "comma"
-    V.EvKey (KASCII ' ') [] -> "space"
-    V.EvKey (KASCII '?') [] -> "question"
-    V.EvKey (KASCII '*') [] -> "asterisk"
-    V.EvKey KEsc []         -> "Escape"
-    V.EvKey KEnter []       -> "Return"
-    V.EvKey KUp []          -> "KP_Up"
-    V.EvKey KDown []        -> "KP_Down"
-    V.EvKey KLeft []        -> "KP_Left"
-    V.EvKey KRight []       -> "KP_Right"
-    V.EvKey KHome []        -> "KP_Home"
-    V.EvKey KPageUp []      -> "KP_Page_Up"
-    V.EvKey KEnd []         -> "KP_End"
-    V.EvKey KPageDown []    -> "KP_Page_Down"
-    V.EvKey KBegin []       -> "KP_Begin"
-    V.EvKey (KASCII c) []   -> [c]
-    _ -> []
+    V.EvKey KEsc []         -> Just K.Esc
+    V.EvKey KEnter []       -> Just K.Return
+    V.EvKey KUp []          -> Just K.Up
+    V.EvKey KDown []        -> Just K.Down
+    V.EvKey KLeft []        -> Just K.Left
+    V.EvKey KRight []       -> Just K.Right
+    V.EvKey KHome []        -> Just K.Home
+    V.EvKey KPageUp []      -> Just K.PgUp
+    V.EvKey KEnd []         -> Just K.End
+    V.EvKey KPageDown []    -> Just K.PgDn
+    V.EvKey KBegin []       -> Just K.Begin
+    V.EvKey (KASCII c) []   -> Just (K.Char c)
+    _                       -> Nothing
 
-nextEvent :: Session -> IO String
+nextEvent :: Session -> IO K.Key
 nextEvent session =
   do
     e <- V.next_event session
-    let s = keyTranslate e in
-      if L.null s
-      then nextEvent session
-      else return s
+    maybe (nextEvent session) return (keyTranslate e)
 
 attr = def_attr
 

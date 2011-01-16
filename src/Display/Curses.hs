@@ -11,6 +11,7 @@ import Data.Char
 import qualified Data.ByteString as BS
 
 import Geometry
+import Keys as K
 
 displayId = "curses"
 
@@ -57,44 +58,32 @@ toWidth :: Int -> String -> String
 toWidth n x = take n (x ++ repeat ' ')
 -}
 
--- | translates the hcurses key code to the standard GTK key code
-keyTranslate :: C.Key -> String
+keyTranslate :: C.Key -> Maybe K.Key
 keyTranslate e =
   case e of
-    C.KeyChar '<' -> "less"
-    C.KeyChar '>' -> "greater"
-    C.KeyChar '.' -> "period"
-    C.KeyChar ':' -> "colon"
-    C.KeyChar ',' -> "comma"
-    C.KeyChar ' ' -> "space"
-    C.KeyChar '?' -> "question"
-    C.KeyChar '*' -> "asterisk"
-    C.KeyChar '\ESC' -> "Escape"
-    C.KeyExit        -> "Escape"
-    C.KeyChar '\n'   -> "Return"
-    C.KeyChar '\r'   -> "Return"
-    C.KeyEnter       -> "Return"
-    C.KeyUp    -> "KP_Up"
-    C.KeyDown  -> "KP_Down"
-    C.KeyLeft  -> "KP_Left"
-    C.KeyRight -> "KP_Right"
-    C.KeyHome  -> "KP_Home"
-    C.KeyPPage -> "KP_Page_Up"
-    C.KeyEnd   -> "KP_End"
-    C.KeyNPage -> "KP_Page_Down"
-    C.KeyBeg   -> "KP_Begin"
-    C.KeyB2    -> "KP_Begin"
-    C.KeyChar c   -> [c]
-    _ -> []
+    C.KeyChar '\ESC' -> Just K.Esc
+    C.KeyExit        -> Just K.Esc
+    C.KeyChar '\n'   -> Just K.Return
+    C.KeyChar '\r'   -> Just K.Return
+    C.KeyEnter       -> Just K.Return
+    C.KeyUp          -> Just K.Up
+    C.KeyDown        -> Just K.Down
+    C.KeyLeft        -> Just K.Left
+    C.KeyRight       -> Just K.Right
+    C.KeyHome        -> Just K.Home
+    C.KeyPPage       -> Just K.PgUp
+    C.KeyEnd         -> Just K.End
+    C.KeyNPage       -> Just K.PgDn
+    C.KeyBeg         -> Just K.Begin
+    C.KeyB2          -> Just K.Begin
+    C.KeyChar c      -> Just (K.Char c)
+    _                -> Nothing
 
-nextEvent :: Session -> IO String
+nextEvent :: Session -> IO K.Key
 nextEvent session =
   do
     e <- C.getKey refresh
-    let s = keyTranslate e in
-      if L.null s
-      then nextEvent session
-      else return s
+    maybe (nextEvent session) return (keyTranslate e)
 
 type Attr = (Maybe AttrColor, Maybe AttrColor)
 

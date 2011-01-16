@@ -30,6 +30,7 @@ import Strategy
 import StrategyState
 import qualified HighScores as H
 import Grammar
+import qualified Keys as K
 
 -- One turn proceeds through the following functions:
 --
@@ -181,49 +182,8 @@ playerCommand =
     history -- update the message history and reset current message
     tryRepeatedlyWith stopRunning $ do -- on abort, just ask for a new command
       ifRunning continueRun $ do
-        e <- session nextCommand
-        handleDirection e move $
-          handleDirection (L.map toLower e) run $
-            case e of
-              -- interaction with the dungeon
-              "o"       -> openclose True
-              "c"       -> openclose False
-              "s"       -> search
-
-              "less"    -> lvlchange Up
-              "greater" -> lvlchange Down
-
-              "colon"   -> lookAround
-
-              -- items
-              "comma"   -> pickupItem
-              "d"       -> dropItem
-              "i"       -> inventory
-              "q"       -> drinkPotion
-
-              -- wait
-              -- "space"   -> return ()
-              "period"  -> return ()
-
-              -- saving or ending the game
-              "S"       -> saveGame
-              "Q"       -> quitGame
-              "Escape"  -> abortWith "Press Q to quit."
-
-              -- debug modes
-              "V"       -> modify toggleVision     >> withPerception playerCommand
-              "R"       -> modify toggleSmell      >> playerCommand
-              "O"       -> modify toggleOmniscient >> playerCommand
-              "T"       -> modify toggleTerrain    >> playerCommand
-              "I"       -> gets (lmeta . slevel) >>= abortWith
-
-              -- information for the player
-              "v"       -> abortWith version
-              "question"-> displayHelp
-              "Return"  -> displayHelp
-
-              -- wrong key
-              _         -> abortWith $ "unknown command (" ++ e ++ ")"
+        k <- session nextCommand
+        handleKey stdKeybindings k
 
               -- Design thoughts (in order to get rid or partially rid of the somewhat
               -- convoluted design we have): We have three kinds of commands.
@@ -287,31 +247,17 @@ regenerate actor =
 displayHelp :: Action ()
 displayHelp = messageOverlayConfirm "Basic keys:" helpString >> abort
   where
-  helpString =
-    unlines
-    ["                                                    "
-    ,"               key    command                       "
-    ,"               c      close a door                  "
-    ,"               d      drop an object                "
-    ,"               i      display inventory             "
-    ,"               o      open a door                   "
-    ,"               s      search for secret doors       "
-    ,"               q      quaff a potion                "
-    ,"               M      display previous messages     "
-    ,"               S      save and quit the game        "
-    ,"               Q      quit without saving           "
-    ,"               .      wait                          "
-    ,"               ,      pick up an object             "
-    ,"               :      look around                   "
-    ,"               <      ascend a level                "
-    ,"               >      descend a level               "
-    ,"                                                    "
-    ,"               (See file PLAYING.markdown.)         "
-    ,"                                                    "
-    ]
+  helpString = keyHelp stdKeybindings
+
+displayHistory :: Action ()
+displayHistory =
+  do
+    hst <- gets shistory
+    messageOverlayConfirm "" (unlines hst)
+    abort
 
 data Described a = Described { chelp :: String, caction :: a }
-                 | Undescribed a
+                 | Undescribed { caction :: a }
 
 type Command    = Described (Action ())
 type DirCommand = Described (Dir -> Action ())
@@ -330,16 +276,39 @@ waitCommand      = Described "wait"              (return ())
 saveCommand      = Described "save and quit the game" saveGame
 quitCommand      = Described "quit without saving" quitGame
 helpCommand      = Described "display help"      displayHelp
+historyCommand   = Described "display previous messages" displayHistory
+
+moveDirCommand   = Described "move in direction" move
+runDirCommand    = Described "run in direction"  run
 
 -- | Keybindings.
 data Keybindings = Keybindings
   { kdir   :: DirCommand,
     kudir  :: DirCommand,
-    kother :: M.Map String Command
+    kother :: M.Map K.Key Command
   }
 
-moveDirCommand   = Described "move in direction" move
-runDirCommand    = Described "run in direction"  run
+handleKey :: Keybindings -> K.Key -> Action ()
+handleKey kb k =
+  do
+    handleDirection k (caction $ kdir kb) $
+      handleUDirection k (caction $ kudir kb) $
+        case M.lookup k (kother kb) of
+          Just c  -> caction c
+          Nothing -> abortWith $ "unknown command (" ++ K.showKey k ++ ")"
+
+keyHelp :: Keybindings -> String
+keyHelp kb =
+  let
+    fmt k h = replicate 15 ' ' ++ k ++ replicate ((13 - length k) `max` 1) ' ' ++
+                                  h ++ replicate ((30 - length h) `max` 1) ' '
+    fmts s  = replicate 15 ' ' ++ s ++ replicate ((43 - length s) `max` 1) ' '
+    blank   = fmt "" ""
+    title   = fmt "key" "command"
+    footer  = fmts "(See file PLAYING.markdown.)"
+    rest    = [ fmt (K.showKey k) h | (k, Described h _) <- M.toAscList (kother kb) ]
+  in
+    unlines ([blank, title] ++ rest ++ [blank, footer, blank])
 
 stdKeybindings :: Keybindings
 stdKeybindings = Keybindings
@@ -347,41 +316,42 @@ stdKeybindings = Keybindings
     kudir  = runDirCommand,
     kother = M.fromList $
              [ -- interaction with the dungeon
-               ("o"       ,  openCommand),
-               ("c"       ,  closeCommand),
-               ("s"       ,  searchCommand),
+               (K.Char 'o',  openCommand),
+               (K.Char 'c',  closeCommand),
+               (K.Char 's',  searchCommand),
 
-               ("less"    ,  ascendCommand),
-               ("greater" ,  descendCommand),
+               (K.Char '<',  ascendCommand),
+               (K.Char '>',  descendCommand),
 
-               ("colon"   ,  lookCommand),
+               (K.Char ':',  lookCommand),
 
                -- items
-               ("comma"   ,  pickupCommand),
-               ("d"       ,  dropCommand),
-               ("i"       ,  inventoryCommand),
-               ("q"       ,  drinkCommand),
+               (K.Char ',',  pickupCommand),
+               (K.Char 'd',  dropCommand),
+               (K.Char 'i',  inventoryCommand),
+               (K.Char 'q',  drinkCommand),
 
                -- wait
-               -- ("space"   ,  waitCommand),
-               ("period"  ,  waitCommand),
+               -- (K.Char ' ',  waitCommand),
+               (K.Char '.',  waitCommand),
 
                -- saving or ending the game
-               ("S"       ,  saveCommand),
-               ("Q"       ,  quitCommand),
-               ("Escape"  ,  Undescribed $ abortWith "Press Q to quit."),
+               (K.Char 'S',  saveCommand),
+               (K.Char 'Q',  quitCommand),
+               (K.Esc     ,  Undescribed $ abortWith "Press Q to quit."),
 
                -- debug modes
-               ("V"       ,  Undescribed $ modify toggleVision     >> withPerception playerCommand),
-               ("R"       ,  Undescribed $ modify toggleSmell      >> playerCommand),
-               ("O"       ,  Undescribed $ modify toggleOmniscient >> playerCommand),
-               ("T"       ,  Undescribed $ modify toggleTerrain    >> playerCommand),
-               ("I"       ,  Undescribed $ gets (lmeta . slevel) >>= abortWith),
+               (K.Char 'V',  Undescribed $ modify toggleVision     >> withPerception playerCommand),
+               (K.Char 'R',  Undescribed $ modify toggleSmell      >> playerCommand),
+               (K.Char 'O',  Undescribed $ modify toggleOmniscient >> playerCommand),
+               (K.Char 'T',  Undescribed $ modify toggleTerrain    >> playerCommand),
+               (K.Char 'I',  Undescribed $ gets (lmeta . slevel) >>= abortWith),
 
                -- information for the player
-               ("v"       ,  Undescribed $ abortWith version),
-               ("question",  helpCommand),
-               ("Return"  ,  helpCommand)
+               (K.Char 'v',  Undescribed $ abortWith version),
+               (K.Char 'M',  historyCommand),
+               (K.Char '?',  helpCommand),
+               (K.Return  ,  helpCommand)
              ]
   }
 
@@ -804,17 +774,17 @@ getItem prompt p ptext is0 isn =
             display
             let h = session nextCommand >>= h'
                 h' e = case e of
-                         "question" -> do
+                         K.Char '?' -> do
                                          -- filter for supposedly suitable objects
                                          b <- displayItems (ptext ++ " " ++ isn) True is
                                          if b then session (getOptionalConfirm (const r) h')
                                               else r
-                         "asterisk" -> do
+                         K.Char '*' -> do
                                          -- show all objects
                                          b <- displayItems ("Objects " ++ isn) True is0
                                          if b then session (getOptionalConfirm (const r) h')
                                               else r
-                         [l]        -> return (find (\ i -> maybe False (== l) (iletter i)) is0)
+                         K.Char l   -> return (find (\ i -> maybe False (== l) (iletter i)) is0)
                          _          -> return Nothing
             h
   in r
