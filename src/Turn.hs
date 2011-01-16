@@ -310,6 +310,81 @@ displayHelp = messageOverlayConfirm "Basic keys:" helpString >> abort
     ,"                                                    "
     ]
 
+data Described a = Described { chelp :: String, caction :: a }
+                 | Undescribed a
+
+type Command    = Described (Action ())
+type DirCommand = Described (Dir -> Action ())
+
+closeCommand     = Described "close a door"      (openclose False)
+openCommand      = Described "open a door"       (openclose True)
+pickupCommand    = Described "pick up an object" pickupItem
+dropCommand      = Described "drop an object"    dropItem
+inventoryCommand = Described "display inventory" inventory
+searchCommand    = Described "search for secret doors" search
+ascendCommand    = Described "ascend a level"    (lvlchange Up)
+descendCommand   = Described "descend a level"   (lvlchange Down)
+lookCommand      = Described "look around"       lookAround
+drinkCommand     = Described "quaff a potion"    drinkPotion
+waitCommand      = Described "wait"              (return ())
+saveCommand      = Described "save and quit the game" saveGame
+quitCommand      = Described "quit without saving" quitGame
+helpCommand      = Described "display help"      displayHelp
+
+-- | Keybindings.
+data Keybindings = Keybindings
+  { kdir   :: DirCommand,
+    kudir  :: DirCommand,
+    kother :: M.Map String Command
+  }
+
+moveDirCommand   = Described "move in direction" move
+runDirCommand    = Described "run in direction"  run
+
+stdKeybindings :: Keybindings
+stdKeybindings = Keybindings
+  { kdir   = moveDirCommand,
+    kudir  = runDirCommand,
+    kother = M.fromList $
+             [ -- interaction with the dungeon
+               ("o"       ,  openCommand),
+               ("c"       ,  closeCommand),
+               ("s"       ,  searchCommand),
+
+               ("less"    ,  ascendCommand),
+               ("greater" ,  descendCommand),
+
+               ("colon"   ,  lookCommand),
+
+               -- items
+               ("comma"   ,  pickupCommand),
+               ("d"       ,  dropCommand),
+               ("i"       ,  inventoryCommand),
+               ("q"       ,  drinkCommand),
+
+               -- wait
+               -- ("space"   ,  waitCommand),
+               ("period"  ,  waitCommand),
+
+               -- saving or ending the game
+               ("S"       ,  saveCommand),
+               ("Q"       ,  quitCommand),
+               ("Escape"  ,  Undescribed $ abortWith "Press Q to quit."),
+
+               -- debug modes
+               ("V"       ,  Undescribed $ modify toggleVision     >> withPerception playerCommand),
+               ("R"       ,  Undescribed $ modify toggleSmell      >> playerCommand),
+               ("O"       ,  Undescribed $ modify toggleOmniscient >> playerCommand),
+               ("T"       ,  Undescribed $ modify toggleTerrain    >> playerCommand),
+               ("I"       ,  Undescribed $ gets (lmeta . slevel) >>= abortWith),
+
+               -- information for the player
+               ("v"       ,  Undescribed $ abortWith version),
+               ("question",  helpCommand),
+               ("Return"  ,  helpCommand)
+             ]
+  }
+
 saveGame :: Action ()
 saveGame =
   do
