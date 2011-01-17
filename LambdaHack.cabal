@@ -1,10 +1,10 @@
 cabal-version: >= 1.2
 name:          LambdaHack
-version:       0.1.20110116
+version:       0.1.20110117
 license:       BSD3
 license-file:  LICENSE
 data-files:    LICENSE, CREDITS, DESIGN.markdown, PLAYING.markdown,
-               README.markdown
+               README.markdown, LambdaHack.config.example
 author:        Andres Loeh <mail@andres-loeh.de>
 maintainer:    Andres Loeh <mail@andres-loeh.de>
 description:   a small roguelike game
