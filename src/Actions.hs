@@ -270,7 +270,8 @@ handleScores write killed victor total =
     let score   = H.ScoreRecord
                     points (-time) curDate current killed victor
     (placeMsg, slideshow) <- liftIO $ H.register cfg write score
-    mapM_ (messageOverlayConfirm placeMsg) slideshow  -- TODO: check this
+    messageOverlaysConfirm placeMsg slideshow
+    return ()
 
 -- | Search for secret doors
 search :: Action ()

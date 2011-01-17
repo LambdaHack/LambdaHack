@@ -154,13 +154,34 @@ messageYesNo msg =
 -- | Print a message and an overlay, await confirmation. Return value
 -- indicates if the player tried to abort/escape.
 messageOverlayConfirm :: Message -> String -> Action Bool
-messageOverlayConfirm msg txt =
+messageOverlayConfirm msg txt = messageOverlaysConfirm msg [txt]
+
+-- | Prints several overlays, one per page, and awaits confirmation.
+-- Return value indicates if the player tried to abort/escape.
+messageOverlaysConfirm :: Message -> [String] -> Action Bool
+messageOverlaysConfirm msg [] =
   do
-    message msg
-    b <- overlay (txt ++ more)
-    when b $ session getConfirm >> return ()
     resetMessage
     display
+    return True
+messageOverlaysConfirm msg (x:xs) =
+  do
+    message msg
+    b <- overlay (x ++ more)
+    if b
+      then do
+        b <- session getConfirm
+        if b
+          then do
+            messageOverlaysConfirm msg xs
+          else stop
+      else stop
+  where
+    stop =
+      do
+        resetMessage
+        display
+        return False
 
 -- | Update the cached perception for the given computation.
 withPerception :: Action () -> Action ()
