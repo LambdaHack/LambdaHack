@@ -24,14 +24,14 @@ perception_ (State { splayer  = Monster { mloc = ploc },
       fovMode =
         -- terrible, temporary hack
         case sensory of
-          Vision 3 -> Diagonal radius
+          Vision 3 -> Digital radius
           Vision 2 -> Permissive radius
           Vision 1 -> Shadow
           _        ->
             -- this is not a hack
             case mode of
               Just "permissive" -> Permissive radius
-              Just "diagonal"   -> Diagonal radius
+              Just "digital"    -> Digital radius
               _                 -> Shadow
   in  perception fovMode ploc lmap
 

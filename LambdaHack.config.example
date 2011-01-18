@@ -14,7 +14,7 @@ highscores: LambdaHack.scores
 
 [engine]
 fov_mode: shadow
-#fov_mode: diagonal
+#fov_mode: digital
 #fov_mode: permissive
 fov_radius: 40
 
