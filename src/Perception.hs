@@ -15,9 +15,9 @@ data Perception =
   Perception { preachable :: Set Loc, pvisible :: Set Loc }
 
 perception_ :: State -> Perception
-perception_ (State { splayer = Monster { mloc = ploc },
-                     slevel  = Level { lmap = lmap},
-                     config  = config,
+perception_ (State { splayer  = Monster { mloc = ploc },
+                     slevel   = Level { lmap = lmap},
+                     sconfig  = config,
                      ssensory = ssensory }) =
   let mode   = Config.getOption config "engine" "fov_mode"
       radius = fromMaybe 40 $ Config.getOption config "engine" "fov_radius"

@@ -17,7 +17,7 @@ file config = Config.getFile config "LambdaHack.save" "files" "savegame"
 saveGame :: State -> IO ()
 saveGame state =
   do
-    f <- file (config state)
+    f <- file (sconfig state)
     encodeCompressedFile f (state,False)
 
 -- | Restore a saved game. Returns either the current level and

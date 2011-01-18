@@ -25,7 +25,7 @@ data State = State
                  sdiscoveries :: Discoveries,  -- ^ items (types) have been discovered
                  sdungeon     :: Dungeon,      -- ^ all but current dungeon level
                  slevel       :: Level,
-                 config       :: Config.CP
+                 sconfig      :: Config.CP
                }
   deriving Show
 

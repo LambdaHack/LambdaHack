@@ -75,5 +75,5 @@ generate config session msg =
                     [ (Potion PotionWater,   Clear),
                       (Potion PotionHealing, White) ]
          defState = defaultState ((\ (_,x,_) -> x) (head levels)) dng lvl
-         state = defState { sassocs = assocs, config = config }
+         state = defState { sassocs = assocs, sconfig = config }
      handlerToIO session state msg handle

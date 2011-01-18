@@ -262,7 +262,7 @@ handleScores :: Bool -> Bool -> Bool -> Int -> Action ()
 handleScores write killed victor total =
   unless (total == 0) $ do
     nm   <- gets (lname . slevel)
-    cfg  <- gets config
+    cfg  <- gets sconfig
     time <- gets stime
     let points  = if killed then (total + 1) `div` 2 else total
     let current = levelNumber nm   -- TODO: rather use name of level
