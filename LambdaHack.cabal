@@ -9,6 +9,7 @@ author:        Andres Loeh <mail@andres-loeh.de>
 maintainer:    Andres Loeh <mail@andres-loeh.de>
 description:   a small roguelike game
 synopsis:      a small roguelike game
+homepage:      http://github.com/kosmikus/LambdaHack
 category:      Game
 build-type:    Simple
 
@@ -50,3 +51,7 @@ executable LambdaHack
     cpp-options:   -DGTK
     ghc-options:   -threaded
   } }
+
+Source-repository head
+  type:              git
+  location:          git://github.com/kosmikus/LambdaHack.git
