@@ -18,12 +18,12 @@ perception_ :: State -> Perception
 perception_ (State { splayer  = Monster { mloc = ploc },
                      slevel   = Level { lmap = lmap},
                      sconfig  = config,
-                     ssensory = ssensory }) =
+                     ssensory = sensory }) =
   let mode   = Config.getOption config "engine" "fov_mode"
       radius = fromMaybe 40 $ Config.getOption config "engine" "fov_radius"
       fovMode =
         -- terrible, temporary hack
-        case ssensory of
+        case sensory of
           Vision 3 -> Diagonal radius
           Vision 2 -> Permissive radius
           Vision 1 -> Shadow
