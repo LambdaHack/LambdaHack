@@ -9,22 +9,22 @@ import ItemState
 
 -- | How to refer to a monster in object position of a sentence.
 objectMonster :: MonsterType -> String
-objectMonster Player  = "you"
-objectMonster Eye     = "the reducible eye"
-objectMonster FastEye = "the super-fast eye"
-objectMonster Nose    = "the point-free nose"
+objectMonster (Player _)  = "you"
+objectMonster Eye         = "the reducible eye"
+objectMonster FastEye     = "the super-fast eye"
+objectMonster Nose        = "the point-free nose"
 
 -- | How to refer to a monster in subject position of a sentence.
 subjectMonster :: MonsterType -> String
 subjectMonster x = let (s:r) = objectMonster x in toUpper s : r
 
 verbMonster :: MonsterType -> String -> String
-verbMonster Player v = v
-verbMonster _      v = v ++ "s"
+verbMonster (Player _) v = v
+verbMonster _          v = v ++ "s"
 
 compoundVerbMonster :: MonsterType -> String -> String -> String
-compoundVerbMonster Player v p = v ++ " " ++ p
-compoundVerbMonster _      v p = v ++ "s " ++ p
+compoundVerbMonster (Player _) v p = v ++ " " ++ p
+compoundVerbMonster _          v p = v ++ "s " ++ p
 
 objectItem :: State -> Int -> ItemType -> String
 objectItem _ n Ring       = makeObject n id "ring"

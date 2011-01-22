@@ -20,7 +20,7 @@ smellTimeout = 1000
 -- | Initial player.
 defaultPlayer :: Loc -> Player
 defaultPlayer ploc =
-  Monster Player playerHP playerHP Nothing ploc [] 'a' 10 0
+  Monster (Player 0) playerHP playerHP Nothing ploc [] 'a' 10 0  -- TODO: other players
 
 type Player = Monster
 
@@ -62,21 +62,21 @@ instance Binary Monster where
           return (Monster mt mhpm mhp md ml minv mletter mspeed mtime)
 
 data MonsterType =
-    Player
+    Player Int
   | Eye
   | FastEye
   | Nose
   deriving (Show, Eq)
 
 instance Binary MonsterType where
-  put Player  = putWord8 0
-  put Eye     = putWord8 1
-  put FastEye = putWord8 2
-  put Nose    = putWord8 3
+  put (Player n) = putWord8 0 >> put n
+  put Eye        = putWord8 1
+  put FastEye    = putWord8 2
+  put Nose       = putWord8 3
   get = do
           tag <- getWord8
           case tag of
-            0 -> return Player
+            0 -> liftM Player get
             1 -> return Eye
             2 -> return FastEye
             3 -> return Nose
@@ -128,7 +128,8 @@ insertMonster = insertMonster' 0
                                  in  (n', m' : ms')
 
 viewMonster :: MonsterType -> (Char, Attr -> Attr)
-viewMonster Player  = ('@', setBG white . setFG black)
-viewMonster Eye     = ('e', setFG red)
-viewMonster FastEye = ('e', setFG blue)
-viewMonster Nose    = ('n', setFG green)
+viewMonster (Player n) = (if n < 1 || n > 9 then '@' else head (show n),
+                          setBG white . setFG black)
+viewMonster Eye        = ('e', setFG red)
+viewMonster FastEye    = ('e', setFG blue)
+viewMonster Nose       = ('n', setFG green)
