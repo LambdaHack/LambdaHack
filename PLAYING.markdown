@@ -16,7 +16,7 @@ Dungeon
 The goal of the hero is to explore the dungeon from top to the very bottom
 (and grab lots of shiny treasure and gear on the way).
 The dungeon consists of 10 levels and each level consists of 80 by 21 tiles.
-The basic tiles tiles are as follows:
+The basic tiles tiles are as follows.
 
                dungeon terrain type               on-screen symbol
                floor                              .
@@ -33,7 +33,7 @@ during one game, the level should look the same.
 Keys
 ----
 
-Here are a few keys you can use in the game:
+Below are the default key bindings in the game.
 
                key    command
                c      close a door
@@ -47,12 +47,14 @@ Here are a few keys you can use in the game:
                Q      quit without saving
                .      wait
                ,      pick up an object
-               :      look around
+               :      toggle the look mode
                <      ascend a level
                >      descend a level
+               TAB    cycle among heroes on the level
+               0--9   select a hero anywhere in the dungeon
 
 One of the ways of moving throughout the level is with the vi text editor keys
-(also known as "Rogue-like keys"):
+(also known as "Rogue-like keys").
 
                key    command
                k      up
@@ -72,7 +74,7 @@ and the middle '5' key for resting. (If you are using the curses frontend,
 numerical keypad may not work correctly for terminals with broken terminfo,
 e.g., gnome terminal tends to have problems, while xterm works fine.)
 
-Below are also some debug and cheat keys. Use at your peril!
+There are also some debug and cheat keys. Use at your peril!
 
                key    command
                v      display the version of the game
