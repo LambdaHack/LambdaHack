@@ -56,7 +56,7 @@ dungeon = Dungeon . M.fromList . L.map (\ l -> (lname l, l))
 
 -- | Extract a level from a dungeon.
 getDungeonLevel :: LevelName -> Dungeon -> (Level, Dungeon)
-getDungeonLevel ln (Dungeon dng) = (fromJust (M.lookup ln dng), Dungeon (M.delete ln dng))
+getDungeonLevel ln (Dungeon dng) = (dng ! ln, Dungeon (M.delete ln dng))
 
 -- | Put a level into a dungeon.
 putDungeonLevel :: Level -> Dungeon -> Dungeon
@@ -72,6 +72,7 @@ type DungeonLoc = (LevelName, Loc)
 
 data Level = Level
               { lname     :: LevelName,
+                lplayers  :: M.Map Int Player,
                 lsize     :: (Y,X),
                 lmonsters :: [Monster],
                 lsmell    :: SMap,
@@ -88,12 +89,16 @@ updateSMap f lvl = lvl { lsmell = f (lsmell lvl) }
 updateMonsters :: ([Monster] -> [Monster]) -> Level -> Level
 updateMonsters f lvl = lvl { lmonsters = f (lmonsters lvl) }
 
+updatePlayers :: (M.Map Int Player -> M.Map Int Player) -> Level -> Level
+updatePlayers f lvl = lvl { lplayers = f (lplayers lvl) }
+
 instance Binary Level where
-  put (Level nm sz@(sy,sx) ms lsmell lmap lmeta) =
+  put (Level nm pls sz@(sy,sx) ms lsmell lmap lmeta) =
         do
           put nm
           put sz
           put ms
+          put pls
           put [ lsmell ! (y,x) | y <- [0..sy], x <- [0..sx] ]
           put [ lmap ! (y,x) | y <- [0..sy], x <- [0..sx] ]
           put lmeta
@@ -101,12 +106,13 @@ instance Binary Level where
           nm <- get
           sz@(sy,sx) <- get
           ms <- get
+          pls <- get
           xs <- get
           let lsmell = M.fromList (zip [ (y,x) | y <- [0..sy], x <- [0..sx] ] xs)
           xs <- get
           let lmap   = M.fromList (zip [ (y,x) | y <- [0..sy], x <- [0..sx] ] xs)
           lmeta <- get
-          return (Level nm sz ms lsmell lmap lmeta)
+          return (Level nm pls sz ms lsmell lmap lmeta)
 
 type LMap = Map (Y,X) (Tile,Tile)
 type SMap = Map (Y,X) Time

@@ -142,7 +142,7 @@ displayLevel session per
              (state@(State { splayer = player@(Monster { mhpmax = phpmax, mhp = php, mdir = pdir, mloc = ploc }),
                              stime   = time,
                              sassocs = assocs,
-                             slevel  = lvl@(Level nm sz@(sy,sx) ms smap nlmap lmeta) }))
+                             slevel  = lvl@(Level nm pls sz@(sy,sx) ms smap nlmap lmeta) }))
              msg moverlay =
     let
       overlay = maybe "" id moverlay
