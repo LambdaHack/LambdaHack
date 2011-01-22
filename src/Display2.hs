@@ -30,25 +30,25 @@ nextCommand session =
 canonicalKey :: Key -> Key
 canonicalKey e =
   case e of
-    K.Char '8' -> K.Char 'K'
-    K.Char '2' -> K.Char 'J'
-    K.Char '4' -> K.Char 'H'
-    K.Char '6' -> K.Char 'L'
-    K.Char '7' -> K.Char 'Y'
-    K.Char '9' -> K.Char 'U'
-    K.Char '1' -> K.Char 'B'
-    K.Char '3' -> K.Char 'N'
-    K.Char '5' -> K.Char '.'
-    K.Up       -> K.Char 'k'
-    K.Down     -> K.Char 'j'
-    K.Left     -> K.Char 'h'
-    K.Right    -> K.Char 'l'
-    K.Home     -> K.Char 'y'
-    K.PgUp     -> K.Char 'u'
-    K.End      -> K.Char 'b'
-    K.PgDn     -> K.Char 'n'
-    K.Begin    -> K.Char '.'
-    k          -> k
+    K.KP '8' -> K.Char 'K'
+    K.KP '2' -> K.Char 'J'
+    K.KP '4' -> K.Char 'H'
+    K.KP '6' -> K.Char 'L'
+    K.KP '7' -> K.Char 'Y'
+    K.KP '9' -> K.Char 'U'
+    K.KP '1' -> K.Char 'B'
+    K.KP '3' -> K.Char 'N'
+    K.KP '5' -> K.Char '.'
+    K.Up     -> K.Char 'k'
+    K.Down   -> K.Char 'j'
+    K.Left   -> K.Char 'h'
+    K.Right  -> K.Char 'l'
+    K.Home   -> K.Char 'y'
+    K.PgUp   -> K.Char 'u'
+    K.End    -> K.Char 'b'
+    K.PgDn   -> K.Char 'n'
+    K.Begin  -> K.Char '.'
+    k        -> k
 
 -- | Displays a message on a blank screen. Waits for confirmation.
 displayBlankConfirm :: Session -> String -> IO Bool

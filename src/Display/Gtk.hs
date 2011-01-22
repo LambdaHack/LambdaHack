@@ -1,5 +1,5 @@
 module Display.Gtk
-  (displayId, startup, shutdown, 
+  (displayId, startup, shutdown,
    display, nextEvent, setBG, setFG, setBold, Session,
    white, black, yellow, blue, magenta, red, green, attr, Attr) where
 
@@ -95,9 +95,9 @@ startup k =
     widgetModifyBase tv StateNormal black
     widgetModifyText tv StateNormal white
 
-    ec <- newChan 
+    ec <- newChan
     forkIO $ k (Session ec tts tv)
-    
+
     onKeyPress tv (\ e -> postGUIAsync (writeChan ec (Graphics.UI.Gtk.Gdk.Events.eventKeyName e)) >> return True)
 
     onDestroy w mainQuit -- set quit handler
@@ -114,7 +114,7 @@ display ((y0,x0),(y1,x1)) session f msg status =
     tb <- textViewGetBuffer (sview session)
     let text = unlines [ [ snd (f (y,x)) | x <- [x0..x1] ] | y <- [y0..y1] ]
     textBufferSetText tb (msg ++ "\n" ++ text ++ status)
-    sequence_ [ setTo tb (stags session) (y,x) a | 
+    sequence_ [ setTo tb (stags session) (y,x) a |
                 y <- [y0..y1], x <- [x0..x1], let loc = (y,x), let (a,c) = f (y,x) ]
 
 setTo :: TextBuffer -> Map AttrKey TextTag -> Loc -> Attr -> IO ()
@@ -162,6 +162,7 @@ keyTranslate "question"      = Just (K.Char '?')
 keyTranslate "asterisk"      = Just (K.Char '*')
 keyTranslate "Escape"        = Just K.Esc
 keyTranslate "Return"        = Just K.Return
+keyTranslate "Tab"           = Just K.Tab
 keyTranslate "KP_Up"         = Just K.Up
 keyTranslate "KP_Down"       = Just K.Down
 keyTranslate "KP_Left"       = Just K.Left
@@ -172,7 +173,7 @@ keyTranslate "KP_Page_Up"    = Just K.PgUp
 keyTranslate "KP_Page_Down"  = Just K.PgDn
 keyTranslate "KP_Begin"      = Just K.Begin
 keyTranslate "KP_Enter"      = Just K.Return
-keyTranslate ['K','P','_',c] = Just (K.Char c)  -- for numbers
+keyTranslate ['K','P','_',c] = Just (K.KP c)
 keyTranslate [c]             = Just (K.Char c)
 keyTranslate _               = Nothing
 

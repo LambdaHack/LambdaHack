@@ -47,9 +47,9 @@ display ((y0,x0),(y1,x1)) (Session { win = w, styles = s }) f msg status =
     mvWAddStr w (y1+2) 0 status
     refresh
 {-
-    in  V.update vty (Pic NoCursor 
+    in  V.update vty (Pic NoCursor
          ((renderBS attr (BS.pack (L.map (fromIntegral . ord) (toWidth (x1-x0+1) msg)))) <->
-          img <-> 
+          img <->
           (renderBS attr (BS.pack (L.map (fromIntegral . ord) (toWidth (x1-x0+1) status))))))
 -}
 
@@ -66,6 +66,7 @@ keyTranslate e =
     C.KeyChar '\n'   -> Just K.Return
     C.KeyChar '\r'   -> Just K.Return
     C.KeyEnter       -> Just K.Return
+    C.KeyChar '\t'   -> Just K.Tab
     C.KeyUp          -> Just K.Up
     C.KeyDown        -> Just K.Down
     C.KeyLeft        -> Just K.Left
@@ -76,7 +77,11 @@ keyTranslate e =
     C.KeyNPage       -> Just K.PgDn
     C.KeyBeg         -> Just K.Begin
     C.KeyB2          -> Just K.Begin
-    C.KeyChar c      -> Just (K.Char c)
+    -- No KP_ keys in hscurses and they do not seem actively maintained.
+    -- For now, movement keys are more important than hero selection:
+    C.KeyChar c
+      | c `elem` "123456789" -> Just (K.KP c)
+      | otherwise            -> Just (K.Char c)
     _                -> Nothing
 
 nextEvent :: Session -> IO K.Key
@@ -89,7 +94,7 @@ type Attr = (Maybe AttrColor, Maybe AttrColor)
 
 attr = (Nothing, Nothing)
 
-data AttrColor = White | Black | Yellow | Blue | Magenta | Red | Green 
+data AttrColor = White | Black | Yellow | Blue | Magenta | Red | Green
   deriving (Show, Eq, Ord, Enum, Bounded)
 
 toFColor :: Maybe AttrColor -> C.ForegroundColor

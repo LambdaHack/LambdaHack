@@ -6,6 +6,7 @@ import Prelude hiding (Left, Right)
 data Key =
     Esc
   | Return
+  | Tab
   | PgUp
   | PgDn
   | Left
@@ -15,13 +16,15 @@ data Key =
   | End
   | Begin
   | Home
-  | Char Char    -- ^ a single printable character
+  | KP Char    -- ^ a keypad key for a character (digits and operators)
+  | Char Char  -- ^ a single printable character
   deriving (Ord, Eq)
 
 showKey :: Key -> String
 showKey (Char c) = [c]
 showKey Esc      = "<escape>"
 showKey Return   = "<return>"
+showKey Tab      = "<tab>"
 showKey PgUp     = "<page-up>"
 showKey PgDn     = "<page-down>"
 showKey Left     = "<left>"
@@ -30,3 +33,4 @@ showKey Up       = "<up>"
 showKey Down     = "<down>"
 showKey End      = "<end>"
 showKey Home     = "<home>"
+showKey (KP c)   = "<KeyPad " ++ [c] ++ ">"
