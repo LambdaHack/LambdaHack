@@ -70,7 +70,7 @@ handle =
              -- monsters can be traced on the map; we disable this functionality if the
              -- player is currently running, as it would slow down the running process
              -- unnecessarily
-             ifRunning (const $ return True) display
+             ifRunning (const $ return True) displayWithoutMessage
              handleMonsters
       else do
              handlePlayer -- it's the hero's turn!
@@ -150,7 +150,9 @@ handlePlayer =
   do
     debug "handlePlayer"
     remember      -- the hero perceives his (potentially new) surroundings
-    playerCommand -- get and process a player command
+    -- determine perception before running player command, in case monsters
+    -- have opened doors ...
+    withPerception playerCommand -- get and process a player command
     -- at this point, the command was successful
     advanceTime APlayer     -- TODO: the command handlers should advance the move time
     state <- get
