@@ -150,7 +150,9 @@ handlePlayer =
   do
     debug "handlePlayer"
     remember      -- the hero perceives his (potentially new) surroundings
-    playerCommand -- get and process a player command
+    -- determine perception before running player command, in case monsters
+    -- have opened doors ...
+    withPerception playerCommand -- get and process a player command
     -- at this point, the command was successful
     advanceTime APlayer     -- TODO: the command handlers should advance the move time
     state <- get
