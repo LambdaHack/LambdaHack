@@ -66,6 +66,10 @@ session f = Action (\ s e p k a st ms -> runAction (f s) s e p k a st ms)
 sessionIO :: (Session -> IO a) -> Action a
 sessionIO f = Action (\ s e p k a st ms -> f s >>= k st ms)
 
+-- | Display the current level, without any message.
+displayWithoutMessage :: Action Bool
+displayWithoutMessage = Action (\ s e p k a st ms -> displayLevel s p st "" Nothing >>= k st ms)
+
 -- | Display the current level, with the current message.
 display :: Action Bool
 display = Action (\ s e p k a st ms -> displayLevel s p st ms Nothing >>= k st ms)
