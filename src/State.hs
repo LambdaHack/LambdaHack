@@ -16,7 +16,8 @@ import Message
 -- In practice, we maintain extra state, but that state is state
 -- accumulated during a turn or relevant only to the current session.
 data State = State
-               { splayer      :: Player,
+               { scounter     :: Integer,
+                 splayer      :: Player,
                  shistory     :: [Message],
                  ssensory     :: SensoryMode,
                  sdisplay     :: DisplayMode,
@@ -32,6 +33,7 @@ data State = State
 defaultState :: Loc -> Dungeon -> Level -> State
 defaultState ploc dng lvl =
   State
+    0
     (defaultPlayer ploc)
     []
     Implicit Normal
@@ -41,6 +43,9 @@ defaultState ploc dng lvl =
     dng
     lvl
     Config.empty_CP
+
+updateCounter :: (Integer -> Integer) -> State -> State
+updateCounter f s = s { scounter = f (scounter s) }
 
 updatePlayer :: (Monster -> Monster) -> State -> State
 updatePlayer f s = s { splayer = f (splayer s) }
@@ -70,8 +75,9 @@ toggleTerrain :: State -> State
 toggleTerrain s = s { sdisplay = case sdisplay s of Terrain 1 -> Normal; Terrain n -> Terrain (n-1); _ -> Terrain 4 }
 
 instance Binary State where
-  put (State player hst sense disp time assocs discs dng lvl config) =
+  put (State counter player hst sense disp time assocs discs dng lvl config) =
     do
+      put counter
       put player
       put hst
       put sense
@@ -84,17 +90,18 @@ instance Binary State where
       put config
   get =
     do
-      player <- get
-      hst    <- get
-      sense  <- get
-      disp   <- get
-      time   <- get
-      assocs <- get
-      discs  <- get
-      dng    <- get
-      lvl    <- get
-      config <- get
-      return (State player hst sense disp time assocs discs dng lvl config)
+      counter <- get
+      player  <- get
+      hst     <- get
+      sense   <- get
+      disp    <- get
+      time    <- get
+      assocs  <- get
+      discs   <- get
+      dng     <- get
+      lvl     <- get
+      config  <- get
+      return (State counter player hst sense disp time assocs discs dng lvl config)
 
 data SensoryMode =
     Implicit
