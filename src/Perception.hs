@@ -2,7 +2,6 @@ module Perception where
 
 import Data.Set as S
 import Data.List as L
-import Data.Map as M
 import Data.Maybe
 
 import Geometry
@@ -16,10 +15,9 @@ data Perception =
   Perception { preachable :: Set Loc, pvisible :: Set Loc }
 
 perception_ :: State -> Perception
-perception_ (State { splayer  = player,
-                     slevel   = Level { lmap = lmap, lplayers = pls },
-                     sconfig  = config,
-                     ssensory = sensory }) =
+perception_ state@(State { slevel   = Level { lmap = lmap },
+                           sconfig  = config,
+                           ssensory = sensory }) =
   let mode   = Config.getOption config "engine" "fov_mode"
       radius = fromMaybe 40 $ Config.getOption config "engine" "fov_radius"
       fovMode =
@@ -34,7 +32,7 @@ perception_ (State { splayer  = player,
               Just "permissive" -> Permissive radius
               Just "digital"    -> Digital radius
               _                 -> Shadow
-      ps = player : M.elems pls
+      ps = levelPlayerList state
       pers = L.map (\ pl -> perception fovMode (mloc pl) lmap) ps
       reachable = S.unions (L.map preachable pers)
       visible = S.unions (L.map pvisible pers)

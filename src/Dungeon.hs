@@ -91,7 +91,7 @@ emptyroom addWallsRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
   do
     let lmap = digRoom Light ((1,1),(sy-1,sx-1)) (emptyLMap (sy,sx))
     let smap = M.fromList [ ((y,x),-100) | y <- [0..sy], x <- [0..sx] ]
-    let lvl = Level nm M.empty (sy,sx) [] smap lmap ""
+    let lvl = Level nm lmEmpty (sy,sx) [] smap lmap ""
     -- locations of the stairs
     su <- findLoc lvl (const floor)
     sd <- findLoc lvl (\ l t -> floor t
@@ -106,7 +106,7 @@ emptyroom addWallsRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
           maybe id (\ l -> M.insert sd (newTile (Stairs Light Down l))) ld $
           (\lmap -> foldl' addItem lmap is) $
           lmap
-        level lu ld = Level nm M.empty (sy,sx) [] smap (flmap lu ld) "bigroom"
+        level lu ld = Level nm lmEmpty (sy,sx) [] smap (flmap lu ld) "bigroom"
     return (level, su, sd)
 
 -- | For a bigroom level: Create a level consisting of only one, empty room.
@@ -222,7 +222,7 @@ level cfg nm =
     let lmap :: LMap
         lmap = foldr digCorridor (foldr (\ (r, dl) m -> digRoom dl r m)
                                         (emptyLMap (levelSize cfg)) dlrooms) cs
-    let lvl = Level nm M.empty (levelSize cfg) [] smap lmap ""
+    let lvl = Level nm lmEmpty (levelSize cfg) [] smap lmap ""
     -- convert openings into doors
     dlmap <- fmap M.fromList . mapM
                 (\ o@((y,x),(t,r)) ->
@@ -259,7 +259,7 @@ level cfg nm =
                   maybe id (\ l -> M.update (\ (t,r) -> Just $ newTile (Stairs (toDL $ light t) Down l)) sd) ld $
                   foldr (\ (l,it) f -> M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l . f) id is
                   dlmap
-      in  Level nm M.empty (levelSize cfg) [] smap flmap meta, su, sd)
+      in  Level nm lmEmpty (levelSize cfg) [] smap flmap meta, su, sd)
 
 rollItems :: LevelConfig -> Level -> Loc -> Rnd [(Loc, Item)]
 rollItems cfg lvl ploc =
@@ -303,14 +303,15 @@ digRoom dl ((y0,x0),(y1,x1)) l
   in M.unionWith const rm l
 
 -- | Create a new monster in the level, at a random position.
-addMonster :: Level -> Player -> Rnd Level
-addMonster lvl@(Level { lplayers = pls, lmonsters = ms, lmap = lmap }) player =
+addMonster :: State -> Rnd Level
+addMonster state@(State { slevel = lvl@(Level { lmonsters = ms,
+                                                lmap = lmap }) }) =
   do
     rc <- monsterGenChance (lname lvl) ms
     if rc
       then
         do
-          let ps = player : M.elems pls
+          let ps = levelPlayerList state
           -- TODO: new monsters should always be generated in a place that isn't
           -- visible by the player (if possible -- not possible for bigrooms)
           -- levels with few rooms are dangerous, because monsters may spawn

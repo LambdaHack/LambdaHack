@@ -7,6 +7,7 @@ import Data.Binary
 import Data.Binary.Put
 import Data.Binary.Get
 import Data.Map as M
+import qualified Data.IntMap as IM
 import Data.Set as S
 import Data.List as L
 import Data.Ratio
@@ -70,14 +71,16 @@ instance Binary Dungeon where
 -- that level.
 type DungeonLoc = (LevelName, Loc)
 
+type LMonsters = IM.IntMap Monster
+
 data Level = Level
-              { lname     :: LevelName,
-                lplayers  :: M.Map Int Player,
-                lsize     :: (Y,X),
-                lmonsters :: [Monster],
-                lsmell    :: SMap,
-                lmap      :: LMap,
-                lmeta     :: String }
+  { lname     :: LevelName,
+    lplayers  :: LMonsters,  -- ^ all but the current heroes on the level
+    lsize     :: (Y,X),
+    lmonsters :: [Monster],
+    lsmell    :: SMap,
+    lmap      :: LMap,
+    lmeta     :: String }
   deriving Show
 
 updateLMap :: (LMap -> LMap) -> Level -> Level
@@ -89,8 +92,11 @@ updateSMap f lvl = lvl { lsmell = f (lsmell lvl) }
 updateMonsters :: ([Monster] -> [Monster]) -> Level -> Level
 updateMonsters f lvl = lvl { lmonsters = f (lmonsters lvl) }
 
-updatePlayers :: (M.Map Int Player -> M.Map Int Player) -> Level -> Level
+updatePlayers :: (LMonsters -> LMonsters) -> Level -> Level
 updatePlayers f lvl = lvl { lplayers = f (lplayers lvl) }
+
+lmEmpty :: LMonsters
+lmEmpty = IM.empty
 
 instance Binary Level where
   put (Level nm pls sz@(sy,sx) ms lsmell lmap lmeta) =

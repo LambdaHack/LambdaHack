@@ -1,6 +1,7 @@
 module State where
 
 import qualified Data.Map as M
+import qualified Data.IntMap as IM
 import qualified Data.Set as S
 import Control.Monad
 import Data.Binary
@@ -16,18 +17,19 @@ import Message
 -- In practice, we maintain extra state, but that state is state
 -- accumulated during a turn or relevant only to the current session.
 data State = State
-               { splayer      :: Player,
-                 slook        :: Maybe (Loc, Target, LevelName), -- ^ cursor, new target, return level, if in look mode
-                 shistory     :: [Message],
-                 ssensory     :: SensoryMode,
-                 sdisplay     :: DisplayMode,
-                 stime        :: Time,
-                 sassocs      :: Assocs,       -- ^ how does every item appear
-                 sdiscoveries :: Discoveries,  -- ^ items (types) have been discovered
-                 sdungeon     :: Dungeon,      -- ^ all but current dungeon level
-                 slevel       :: Level,
-                 sconfig      :: Config.CP
-               }
+  { splayer      :: Player,       -- ^ the selected hero
+    slook        :: Maybe (Loc, Target, LevelName),
+                                  -- ^ cursor, new target, initial level
+    shistory     :: [Message],
+    ssensory     :: SensoryMode,
+    sdisplay     :: DisplayMode,
+    stime        :: Time,
+    sassocs      :: Assocs,       -- ^ how every item appears
+    sdiscoveries :: Discoveries,  -- ^ items (types) that have been discovered
+    sdungeon     :: Dungeon,      -- ^ all but the current dungeon level
+    slevel       :: Level,
+    sconfig      :: Config.CP
+  }
   deriving Show
 
 defaultState :: Loc -> Dungeon -> Level -> State
@@ -46,6 +48,11 @@ defaultState ploc dng lvl =
 
 updatePlayer :: (Monster -> Monster) -> State -> State
 updatePlayer f s = s { splayer = f (splayer s) }
+
+levelPlayerList :: State -> [Player]
+levelPlayerList (State { splayer  = player,
+                         slevel   = Level { lplayers = pls } }) =
+  player : IM.elems pls
 
 updateHistory :: ([String] -> [String]) -> State -> State
 updateHistory f s = s { shistory = f (shistory s) }

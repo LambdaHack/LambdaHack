@@ -570,9 +570,8 @@ actorAttackActor source target =
 generateMonster :: Action ()
 generateMonster =
   do
-    lvl    <- gets slevel
-    player <- gets splayer
-    nlvl   <- liftIO $ rndToIO $ addMonster lvl player
+    state <- get
+    nlvl  <- liftIO $ rndToIO $ addMonster state
     modify (updateLevel (const nlvl))
 
 -- | Advance the move time for the given actor.
@@ -590,4 +589,3 @@ regenerate actor =
     -- TODO: remove hardcoded time interval, regeneration should be an attribute of the monster
     when (time `mod` 1500 == 0) $
       updateActor actor (\ m -> m { mhp = min (mhpmax m) (mhp m + 1) })
-
