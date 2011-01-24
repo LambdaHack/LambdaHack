@@ -24,11 +24,11 @@ flag vty
 executable LambdaHack
   main-is:       LambdaHack.hs
   hs-source-dirs:src
-  other-modules: Actor, Action, Actions, Command, Display, Display2, Dungeon,
+  other-modules: Action, Actions, Command, Display, Display2, Dungeon,
                  File, FOV, FOV.Common, FOV.Digital, FOV.Permissive, FOV.Shadow,
                  Frequency, Geometry, Item, ItemState,
                  Keys, Keybindings, LambdaHack, Level, LevelState, Message,
-                 Monster, Perception, Random, Save, State, Strategy,
+                 Monster, MonsterState, Perception, Random, Save, State, Strategy,
                  StrategyState, Turn, Version, HighScores, Config,
                  Grammar
   build-depends: base >= 4 && <5, containers >= 0.1 && < 1,

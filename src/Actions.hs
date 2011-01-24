@@ -10,7 +10,6 @@ import Data.Set as S
 import System.Time
 
 import Action
-import Actor hiding (updateActor)
 import Display2 hiding (display)
 import Dungeon
 import Geometry
@@ -22,6 +21,7 @@ import Level
 import LevelState
 import Message
 import Monster
+import MonsterState hiding (updateActor)
 import Perception
 import Random
 import qualified Save as S

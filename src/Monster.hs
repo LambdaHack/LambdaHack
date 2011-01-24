@@ -9,6 +9,10 @@ import Display
 import Item
 import Random
 
+data Actor = AMonster Int -- ^ offset in monster list
+           | APlayer
+  deriving (Show, Eq, Ord)
+
 -- | Hit points of the player. TODO: Should not be hardcoded.
 playerHP :: Int
 playerHP = 50

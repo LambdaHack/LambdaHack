@@ -6,13 +6,13 @@ import Data.Map as M
 
 import Action
 import Actions
-import Actor
 import Command
 import Display2 hiding (display)
 import Keybindings
 import qualified Keys as K
 import Level
 import Monster
+import MonsterState
 import Random
 import State
 import Strategy

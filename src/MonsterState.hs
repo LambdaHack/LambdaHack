@@ -1,12 +1,8 @@
-module Actor where
+module MonsterState where
 
 import Level
 import Monster
 import State
-
-data Actor = AMonster Int  -- offset in monster list
-           | APlayer
-  deriving (Show, Eq)
 
 getActor :: State -> Actor -> Monster
 getActor (State { slevel = lvl, splayer = p }) a =
