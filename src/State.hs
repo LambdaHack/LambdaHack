@@ -54,6 +54,11 @@ levelPlayerList (State { splayer  = player,
                          slevel   = Level { lplayers = pls } }) =
   player : IM.elems pls
 
+updateLook ::
+  (Maybe (Loc, Target, LevelName) -> Maybe (Loc, Target, LevelName)) ->
+  State -> State
+updateLook f s = s { slook = f (slook s) }
+
 updateHistory :: ([String] -> [String]) -> State -> State
 updateHistory f s = s { shistory = f (shistory s) }
 

@@ -200,15 +200,46 @@ actorOpenClose actor v o dir =
            _                        -> -- there is no door here
                                        neverMind isVerbose
 
--- | Perform a level change -- will quit the game if the player leaves
--- the dungeon.
+-- | Perform a level switch to a given level and location.
+lvlswitch :: DungeonLoc -> Action ()
+lvlswitch (nln, nloc) =
+  do
+    state <- get
+    -- put back current level
+    -- (first put back, then get, in case we change to the same level!)
+    let full = putDungeonLevel (slevel state) (sdungeon state)
+    -- get new level
+    let (new, ndng) = getDungeonLevel nln full
+    modify (\ s -> s { sdungeon = ndng, slevel = new })
+    case slook state of
+      Nothing -> modify (updatePlayer (\ p -> p { mloc = nloc }))
+      Just (loc, tgt, ln) -> modify (updateLook (const $ Just (nloc, tgt, ln)))
+
+ -- | Attempt a level switch to k levels deeper.
+lvldescend :: Loc -> Int -> Action ()
+lvldescend loc k =
+  do
+    state <- get
+    case lname (slevel state) of
+      LambdaCave n ->
+        let nln = n + k
+        -- TODO: 10 hardcoded; perhaps change getDungeonLevel?
+        in  if nln >= 1 && nln <= 10
+            then lvlswitch (LambdaCave nln, loc)
+            else abortWith "no more levels in this direction"
+      _ -> error "lvlchange"
+
+-- | Attempt a level change via up level and down level keys.
+-- Will quit the game if the player leaves the dungeon.
 lvlchange :: VDir -> Action ()
 lvlchange vdir =
   do
     state <- get
-    let lvl   @(Level   { lmap = lmap }) = slevel  state
-    let player@(Monster { mloc = ploc }) = splayer state
-    case lmap `at` ploc of
+    let map = lmap (slevel state)
+        loc = case slook state of
+                Nothing -> mloc (splayer state)
+                Just (loc, _tgt, _ln) -> loc
+    case map `at` loc of
       Tile (Stairs _ vdir' next) is
         | vdir == vdir' -> -- stairs are in the right direction
           case next of
@@ -216,19 +247,14 @@ lvlchange vdir =
               -- we are at the "end" of the dungeon
               fleeDungeon
             Just (nln, nloc) ->
-              -- perform level change
-              do
-                -- put back current level
-                -- (first put back, then get, in case we change to the same level!)
-                let full = putDungeonLevel lvl (sdungeon state)
-                -- get new level
-                let (new, ndng) = getDungeonLevel nln full
-                modify (\ s -> s { sdungeon = ndng, slevel = new })
-                modify (updatePlayer (\ p -> p { mloc = nloc }))
+              lvlswitch (nln, nloc)
       _ -> -- no stairs
-        do
+        if isNothing (slook state)
+        then
           let txt = if vdir == Up then "up" else "down"
-          abortWith ("no stairs " ++ txt)
+          in  abortWith ("no stairs " ++ txt)
+        else
+          lvldescend loc (if vdir == Up then -1 else 1)
 
 -- | Hero has left the dungeon.
 fleeDungeon :: Action ()
