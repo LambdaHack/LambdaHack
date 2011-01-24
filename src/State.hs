@@ -17,6 +17,7 @@ import Message
 -- accumulated during a turn or relevant only to the current session.
 data State = State
                { splayer      :: Player,
+                 slook        :: Maybe (Loc, Target, LevelName), -- ^ cursor, new target, return level, if in look mode
                  shistory     :: [Message],
                  ssensory     :: SensoryMode,
                  sdisplay     :: DisplayMode,
@@ -33,6 +34,7 @@ defaultState :: Loc -> Dungeon -> Level -> State
 defaultState ploc dng lvl =
   State
     (defaultPlayer ploc)
+    Nothing
     []
     Implicit Normal
     0
@@ -70,9 +72,10 @@ toggleTerrain :: State -> State
 toggleTerrain s = s { sdisplay = case sdisplay s of Terrain 1 -> Normal; Terrain n -> Terrain (n-1); _ -> Terrain 4 }
 
 instance Binary State where
-  put (State player hst sense disp time assocs discs dng lvl config) =
+  put (State player look hst sense disp time assocs discs dng lvl config) =
     do
       put player
+      put look
       put hst
       put sense
       put disp
@@ -85,6 +88,7 @@ instance Binary State where
   get =
     do
       player <- get
+      look   <- get
       hst    <- get
       sense  <- get
       disp   <- get
@@ -94,7 +98,7 @@ instance Binary State where
       dng    <- get
       lvl    <- get
       config <- get
-      return (State player hst sense disp time assocs discs dng lvl config)
+      return (State player look hst sense disp time assocs discs dng lvl config)
 
 data SensoryMode =
     Implicit

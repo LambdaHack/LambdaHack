@@ -20,7 +20,7 @@ smellTimeout = 1000
 -- | Initial player.
 defaultPlayer :: Loc -> Player
 defaultPlayer ploc =
-  Monster (Player 0) playerHP playerHP Nothing ploc [] 'a' 10 0  -- TODO: other players
+  Monster (Player 0) playerHP playerHP Nothing TNone ploc [] 'a' 10 0  -- TODO: other players
 
 type Player = Monster
 
@@ -30,6 +30,7 @@ data Monster = Monster
                   mhp     :: !Int,
                   mdir    :: Maybe Dir,  -- for monsters: the dir the monster last moved;
                                          -- for the player: the dir the player is running
+                  mtarget :: Target,
                   mloc    :: !Loc,
                   mitems  :: [Item],     -- inventory
                   mletter :: !Char,      -- next inventory letter
@@ -38,12 +39,13 @@ data Monster = Monster
   deriving Show
 
 instance Binary Monster where
-  put (Monster mt mhpm mhp md ml minv mletter mspeed mtime) =
+  put (Monster mt mhpm mhp md tgt ml minv mletter mspeed mtime) =
     do
       put mt
       put mhpm
       put mhp
       put md
+      put tgt
       put ml
       put minv
       put mletter
@@ -54,12 +56,13 @@ instance Binary Monster where
           mhpm    <- get
           mhp     <- get
           md      <- get
+          tgt     <- get
           ml      <- get
           minv    <- get
           mletter <- get
           mspeed  <- get
           mtime   <- get
-          return (Monster mt mhpm mhp md ml minv mletter mspeed mtime)
+          return (Monster mt mhpm mhp md tgt ml minv mletter mspeed mtime)
 
 data MonsterType =
     Player Int
@@ -81,6 +84,33 @@ instance Binary MonsterType where
             2 -> return FastEye
             3 -> return Nose
             _ -> fail "no parse (MonsterType)"
+
+data Target =
+    TEnemy Int  -- ^ fire at a monster (or a hero) with the given number
+                -- TODO: what is the monster's number?
+                -- (can't be position of monster on lmonsters.
+                -- because monster death invalidates that)
+  | TLoc Loc    -- ^ fire at a location, if in LOS
+  | TClosest    -- ^ fire at the closest enemy in LOS
+  | TShare      -- ^ fire at the closest friend's target in LOS
+  | TNone       -- ^ request manual targeting
+  deriving (Show, Eq)
+
+instance Binary Target where
+  put (TEnemy n) = putWord8 0 >> put n
+  put (TLoc loc) = putWord8 1 >> put loc
+  put TClosest   = putWord8 2
+  put TShare     = putWord8 3
+  put TNone      = putWord8 4
+  get = do
+          tag <- getWord8
+          case tag of
+            0 -> liftM TEnemy get
+            1 -> liftM TLoc get
+            2 -> return TClosest
+            3 -> return TShare
+            3 -> return TNone
+            _ -> fail "no parse (Target)"
 
 -- | Monster frequencies (TODO: should of course vary much more
 -- on local circumstances).
@@ -106,7 +136,7 @@ newMonster loc ftp =
     -- move immediately after generation; this does not seem like
     -- a bad idea, but it would certainly be "more correct" to set
     -- the time to the creation time instead
-    template tp hp loc s = Monster tp hp hp Nothing loc [] 'a' s 0
+    template tp hp loc s = Monster tp hp hp Nothing TNone loc [] 'a' s 0
 
     hps Eye      = randomR (1,12)  -- falls in 1--4 unarmed rounds
     hps FastEye  = randomR (1,6)   -- 1--2
