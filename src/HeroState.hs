@@ -8,12 +8,13 @@ import Data.Maybe
 import Geometry
 import qualified Config
 import Movable
+import MovableState
+import Monster
 import Level
 import State
 
--- | Initial hero.
-defaultHero :: Char -> String -> Loc -> Int -> Movable
-defaultHero symbol name ploc hp =
+templateHero :: Char -> String -> Loc -> Int -> Movable
+templateHero symbol name ploc hp =
   Movable (Hero symbol name) hp hp Nothing TCursor ploc [] 'a' 10 0
 
 -- | Create a new hero on the current level, close to the given location.
@@ -25,7 +26,7 @@ addHero ploc hp name state@(State { slevel = Level { lmap = map } }) n =
       good l = open (map `at` l) && not (l `L.elem` L.map mloc (hs ++ ms))
       place = fromMaybe (error "no place for a hero") $ L.find good places
       symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
-      hero = defaultHero symbol name place hp
+      hero = templateHero symbol name place hp
   in  updateLevel (updateHeroes (IM.insert n hero)) state
 
 -- | Create a set of new heroes on the current level, at location ploc.

@@ -11,18 +11,20 @@ import Data.Set as S
 import System.Time
 
 import Action
-import Actor
 import Display2 hiding (display)
 import Dungeon
 import Geometry
 import Grammar
 import qualified HighScores as H
 import Item
+import ItemState
 import qualified Keys as K
 import Level
 import LevelState
 import Message
 import Movable
+import MovableState
+import MonsterState
 import Perception
 import Random
 import State
@@ -474,13 +476,6 @@ selectPlayer actor =
             messageAdd $ subjectMovable (mtype pbody) ++ " selected."
             return True
 
--- | Calculate loot's worth. TODO: move to another module, and refine significantly.
-calculateTotal :: State -> Int
-calculateTotal s =
-  L.sum $ L.map price $ L.concatMap mitems (levelHeroList s)
-    where
-      price i = if iletter i == Just '$' then icount i else 10 * icount i
-
 -- | Handle current score and display it with the high scores. Scores
 -- should not be shown during the game, because ultimately the worth of items might give
 -- information about the nature of the items.
@@ -547,23 +542,6 @@ targetMonster = do
               (ni, _) : _ -> TEnemy (AMonster ni)  -- pick the next monster
   updatePlayerBody (\ p -> p { mtarget = tgt })
   setCursor tgt
-
--- | Calculate the location of player's target.
--- TODO: no idea in which file to put this function.
-targetToLoc :: State -> Perception -> Maybe Loc
-targetToLoc state per =
-  case mtarget (getPlayerBody state) of
-    TLoc loc -> Just loc
-    TCursor  ->
-      if lname (slevel state) == clocLn (scursor state)
-      then Just $ clocation (scursor state)
-      else Nothing  -- cursor invalid: set at a different level
-    TEnemy a -> do
-      (ln, m) <- findActorAnyLevel a state  -- is target alive?
-      guard $ ln == lname (slevel state)    -- is target on current level?
-      let loc = mloc m
-      guard $ S.member loc (pvisible per)   -- is target visible?
-      return loc
 
 -- | Set, activate and display cursor information.
 setCursor :: Target -> Action ()
@@ -660,16 +638,6 @@ drinkPotion =
                Just _  -> abortWith "you cannot drink that"
                Nothing -> neverMind True
     playerAdvanceTime
-
--- | Finds an actor at a location. Perception irrelevant.
-locToActor :: State -> Loc -> Maybe Actor
-locToActor state loc =
-  getIndex (lmonsters, AMonster) `mplus` getIndex (lheroes, AHero)
-    where
-      getIndex (projection, injection) =
-        let l  = IM.assocs $ projection $ slevel state
-            im = L.find (\ (_i, m) -> mloc m == loc) l
-        in  fmap (injection . fst) im
 
 fireItem :: Action ()
 fireItem = do

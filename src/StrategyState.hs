@@ -8,11 +8,12 @@ import qualified Data.IntMap as IM
 import Geometry
 import Level
 import Movable
+import MovableState
+import Monster
 import Random
 import Perception
 import Strategy
 import State
-import Actor
 
 strategy :: Actor -> State -> Perception -> Strategy Dir
 strategy actor

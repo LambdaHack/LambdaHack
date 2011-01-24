@@ -3,6 +3,7 @@ module Grammar where
 import Data.Char
 
 import Item
+import Monster
 import Movable
 import State
 import ItemState

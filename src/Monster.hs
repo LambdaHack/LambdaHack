@@ -1,10 +1,20 @@
 module Monster where
 
+import Data.Binary
+import Control.Monad
+
 import Geometry
 import Random
-import Movable
+import Display
 
--- TODO: move more monster data here from Movable.hs, Grammar.hs, etc.
+-- TODO: move _all_ monster data here from Grammar.hs, etc.
+
+data MovableType =
+    Hero Char String
+  | Eye
+  | FastEye
+  | Nose
+  deriving (Show, Eq)
 
 -- | Monster frequencies (TODO: should of course vary much more
 -- on local circumstances).
@@ -18,20 +28,15 @@ monsterFrequency =
   ]
 
 -- | Generate monster.
-newMonster :: Loc -> Frequency MovableType -> Rnd Movable
-newMonster loc ftp =
+newMonster :: (MovableType -> Int -> Loc -> Int -> a) ->
+              Loc -> Frequency MovableType -> Rnd a
+newMonster template loc ftp =
     do
       tp <- frequency ftp
       hp <- hps tp
       let s = speed tp
       return (template tp hp loc s)
   where
-    -- setting the time of new monsters to 0 makes them able to
-    -- move immediately after generation; this does not seem like
-    -- a bad idea, but it would certainly be "more correct" to set
-    -- the time to the creation time instead
-    template tp hp loc s = Movable tp hp hp Nothing TCursor loc [] 'a' s 0
-
     hps Eye      = randomR (1,12)  -- falls in 1--4 unarmed rounds
     hps FastEye  = randomR (1,6)   -- 1--2
     hps Nose     = randomR (6,13)  -- 2--5 and in 1 round of the strongest sword
@@ -39,3 +44,24 @@ newMonster loc ftp =
     speed Eye      = 10
     speed FastEye  = 4
     speed Nose     = 11
+
+-- Heroes are white, monsters are colorful.
+viewMovable :: MovableType -> (Char, AttrColor)
+viewMovable (Hero sym _) = (sym, white)
+viewMovable Eye          = ('e', red)
+viewMovable FastEye      = ('e', blue)
+viewMovable Nose         = ('n', green)
+
+instance Binary MovableType where
+  put (Hero symbol name) = putWord8 0 >> put symbol >> put name
+  put Eye                = putWord8 1
+  put FastEye            = putWord8 2
+  put Nose               = putWord8 3
+  get = do
+          tag <- getWord8
+          case tag of
+            0 -> liftM2 Hero get get
+            1 -> return Eye
+            2 -> return FastEye
+            3 -> return Nose
+            _ -> fail "no parse (MovableType)"

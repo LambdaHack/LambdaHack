@@ -1,7 +1,8 @@
 module Perception where
 
-import Data.Set as S
+import qualified Data.Set as S
 import Data.List as L
+import qualified Data.IntMap as IM
 
 import Geometry
 import State
@@ -11,10 +12,10 @@ import FOV
 import qualified Config
 
 data Perception =
-  Perception { preachable :: Set Loc, pvisible :: Set Loc }
+  Perception { preachable :: S.Set Loc, pvisible :: S.Set Loc }
 
 perception_ :: State -> Perception
-perception_ state@(State { slevel   = Level { lmap = lmap },
+perception_ state@(State { slevel   = Level { lmap = lmap, lheroes = hs },
                            sconfig  = config,
                            ssensory = sensory }) =
   let mode   = Config.get config "engine" "fovMode"
@@ -34,8 +35,8 @@ perception_ state@(State { slevel   = Level { lmap = lmap },
               _            -> error $ "perception_: unknown mode: " ++ show mode
 
 
-      hs = levelHeroList state
-      pers = L.map (\ pl -> perception fovMode (mloc pl) lmap) hs
+      lhs = IM.elems hs
+      pers = L.map (\ pl -> perception fovMode (mloc pl) lmap) lhs
       reachable = S.unions (L.map preachable pers)
       visible = S.unions (L.map pvisible pers)
       -- TODO: update individual hero perceptions here; see https://github.com/Mikolaj/LambdaHack/issues/issue/31

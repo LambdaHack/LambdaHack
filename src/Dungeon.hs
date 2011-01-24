@@ -4,16 +4,12 @@ import Prelude hiding (floor)
 import Control.Monad
 
 import Data.Map as M
-import qualified Data.IntMap as IM
 import Data.List as L
 import Data.Ratio
 import Data.Maybe
 
-import State
 import Geometry
 import Level
-import Movable
-import Monster
 import Item
 import Random
 
@@ -304,32 +300,3 @@ digRoom dl ((y0,x0),(y1,x1)) l
                      ++ [ ((y,x),newTile (Wall p))     | x <- [x0..x1], (y,p) <- [(y0-1,U),(y1+1,D)] ]
                      ++ [ ((y,x),newTile (Wall p))     | (x,p) <- [(x0-1,L),(x1+1,R)],  y <- [y0..y1]    ]
   in M.unionWith const rm l
-
--- TODO: do the functions below belong in this module?
--- | Create a new monster in the level, at a random position.
-addMonster :: State -> Rnd Level
-addMonster state@(State { slevel = lvl@(Level { lmap = lmap }),
-                          sdungeon = Dungeon m }) =
-  do
-    let hs = levelHeroList state
-        ms = levelMonsterList state
-    rc <- monsterGenChance (lname lvl) ms
-    if rc
-      then
-        do
-          let f lvl = let mms = lmonsters lvl
-                      in  if IM.null mms then -1 else fst (IM.findMax mms)
-              maxes = L.map f (lvl : M.elems m)
-              ni = 1 + L.maximum maxes
-          -- TODO: new monsters should always be generated in a place that isn't
-          -- visible by the player (if possible -- not possible for bigrooms)
-          -- levels with few rooms are dangerous, because monsters may spawn
-          -- in adjacent and unexpected places
-          sm <- findLocTry 1000 lvl
-                (\ l t -> open t
-                          && not (l `L.elem` L.map mloc (hs ++ ms)))
-                (\ l t -> floor t
-                          && L.all (\pl -> distance (mloc pl, l) > 400) hs)
-          m <- newMonster sm monsterFrequency
-          return (updateMonsters (IM.insert ni m) lvl)
-      else return lvl

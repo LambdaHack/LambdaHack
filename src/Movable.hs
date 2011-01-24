@@ -3,10 +3,9 @@ module Movable where
 import Data.Binary
 import Control.Monad
 
-import Actor
 import Geometry
-import Display
 import Item
+import Monster
 
 data Movable = Movable
                 { mtype   :: !MovableType,
@@ -49,26 +48,19 @@ instance Binary Movable where
           mtime   <- get
           return (Movable mt mhpm mhp md tgt ml minv mletter mspeed mtime)
 
-data MovableType =
-    Hero Char String
-  | Eye
-  | FastEye
-  | Nose
+data Actor = AHero Int     -- ^ hero index (on the lheroes intmap)
+           | AMonster Int  -- ^ monster index (on the lmonsters intmap)
   deriving (Show, Eq)
 
-instance Binary MovableType where
-  put (Hero symbol name) = putWord8 0 >> put symbol >> put name
-  put Eye                = putWord8 1
-  put FastEye            = putWord8 2
-  put Nose               = putWord8 3
+instance Binary Actor where
+  put (AHero n)    = putWord8 0 >> put n
+  put (AMonster n) = putWord8 1 >> put n
   get = do
           tag <- getWord8
           case tag of
-            0 -> liftM2 Hero get get
-            1 -> return Eye
-            2 -> return FastEye
-            3 -> return Nose
-            _ -> fail "no parse (MovableType)"
+            0 -> liftM AHero get
+            1 -> liftM AMonster get
+            _ -> fail "no parse (Actor)"
 
 data Target =
     TEnemy Actor  -- ^ fire at the actor (a monster or a hero)
@@ -87,10 +79,3 @@ instance Binary Target where
             1 -> liftM TLoc get
             2 -> return TCursor
             _ -> fail "no parse (Target)"
-
--- Heroes are white, monsters are colorful.
-viewMovable :: MovableType -> (Char, AttrColor)
-viewMovable (Hero sym _) = (sym, white)
-viewMovable Eye          = ('e', red)
-viewMovable FastEye      = ('e', blue)
-viewMovable Nose         = ('n', green)

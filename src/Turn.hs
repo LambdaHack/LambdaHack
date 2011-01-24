@@ -10,7 +10,6 @@ import qualified Data.Char as Char
 
 import Action
 import Actions
-import Actor
 import Command
 import qualified Config
 import Display2 hiding (display)
@@ -18,6 +17,7 @@ import Keybindings
 import qualified Keys as K
 import Level
 import Movable
+import MovableState
 import Random
 import State
 import Strategy

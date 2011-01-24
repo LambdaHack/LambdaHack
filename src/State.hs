@@ -1,15 +1,11 @@
 module State where
 
-import qualified Data.List as L
 import qualified Data.Map as M
-import qualified Data.IntMap as IM
 import qualified Data.Set as S
 import Control.Monad
 import Data.Binary
-import Data.Maybe
 import qualified Config
 
-import Actor
 import Movable
 import Geometry
 import Level
@@ -57,75 +53,6 @@ defaultState dng lvl =
     dng
     lvl
     (Config.defaultCP)
-
--- The operations with "Any", and those that use them, consider all the dungeon.
--- All the other actor and level operations only consider the current level.
-
--- | Finds an actor body on any level. Error if not found.
-findActorAnyLevel :: Actor -> State -> Maybe (LevelName, Movable)
-findActorAnyLevel actor state@(State { slevel   = lvl,
-                                       sdungeon = Dungeon m }) =
-  let chk lvl =
-        fmap (\ m -> (lname lvl, m)) $
-        case actor of
-          AHero n    -> IM.lookup n (lheroes lvl)
-          AMonster n -> IM.lookup n (lmonsters lvl)
-  in  listToMaybe $ mapMaybe chk (lvl : M.elems m)
-
-getPlayerBody :: State -> Movable
-getPlayerBody state = snd $ fromMaybe (error "getPlayerBody") $
-                      findActorAnyLevel (splayer state) state
-
--- | The list of actors and levels for all heroes in the dungeon.
--- Heroes from the current level go first.
-allHeroesAnyLevel :: State -> [(Actor, LevelName)]
-allHeroesAnyLevel state =
-  let Dungeon m = sdungeon state
-      one (Level { lname = ln, lheroes = hs }) =
-        L.map (\ (i, _) -> (AHero i, ln)) (IM.assocs hs)
-  in  L.concatMap one (slevel state : M.elems m)
-
-updateAnyActorBody :: Actor -> (Movable -> Movable) ->  State -> State
-updateAnyActorBody actor f state =
-  case findActorAnyLevel actor state of
-    Just (ln, _) ->
-      case actor of
-        AHero n    -> updateAnyLevel (updateHeroes   $ IM.adjust f n) ln state
-        AMonster n -> updateAnyLevel (updateMonsters $ IM.adjust f n) ln state
-    Nothing -> error "updateAnyActorBody"
-
-updateAnyLevel :: (Level -> Level) -> LevelName -> State -> State
-updateAnyLevel f ln state@(State { slevel = level,
-                                   sdungeon = Dungeon dng })
-  | ln == lname level = updateLevel f state
-  | otherwise = updateDungeon (const $ Dungeon $ M.adjust f ln dng) state
-
--- | Gets actor body from the current level. Error if not found.
-getActor :: State -> Actor -> Movable
-getActor (State { slevel = lvl }) a =
-  case a of
-    AHero n    -> lheroes   lvl IM.! n
-    AMonster n -> lmonsters lvl IM.! n
-
--- | Removes the actor, if present, from the current level.
-deleteActor :: Actor -> State -> State
-deleteActor a =
-  case a of
-    AHero n    -> updateLevel (updateHeroes   (IM.delete n))
-    AMonster n -> updateLevel (updateMonsters (IM.delete n))
-
--- | Add actor to the current level.
-insertActor :: Actor -> Movable -> State -> State
-insertActor a m =
-  case a of
-    AHero n    -> updateLevel (updateHeroes   (IM.insert n m))
-    AMonster n -> updateLevel (updateMonsters (IM.insert n m))
-
-levelHeroList :: State -> [Movable]
-levelHeroList (State { slevel = Level { lheroes = hs } }) = IM.elems hs
-
-levelMonsterList :: State -> [Movable]
-levelMonsterList (State { slevel = Level { lmonsters = ms } }) = IM.elems ms
 
 updateCursor :: (Cursor -> Cursor) -> State -> State
 updateCursor f s = s { scursor = f (scursor s) }
