@@ -17,4 +17,4 @@ clean :
 	runghc Setup clean
 
 ghci :
-	ghci -XCPP -idist/build/autogen
+	ghci -XCPP -idist/build/autogen:src
