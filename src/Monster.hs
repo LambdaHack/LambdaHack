@@ -109,7 +109,7 @@ instance Binary Target where
             1 -> liftM TLoc get
             2 -> return TClosest
             3 -> return TShare
-            3 -> return TNone
+            4 -> return TNone
             _ -> fail "no parse (Target)"
 
 -- | Monster frequencies (TODO: should of course vary much more

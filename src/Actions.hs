@@ -257,6 +257,7 @@ lvlchange vdir =
               -- we are at the "end" of the dungeon
               fleeDungeon
             Just (nln, nloc) ->
+              -- TODO: in loook mode, check if the target stairs are known and  if not, land in the same location as in the current level so as not to reveal stairs location
               lvlswitch (nln, nloc)
       _ -> -- no stairs
         if isNothing (slook state)
