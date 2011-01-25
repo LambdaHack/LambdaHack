@@ -244,7 +244,7 @@ stdKeybindings = Keybindings
                -- saving or ending the game
                (K.Char 'S',  saveCommand),
                (K.Char 'Q',  quitCommand),
-               (K.Esc     ,  Undescribed $ abortWith "Press Q to quit."),
+               (K.Esc     ,  cancelCommand),
 
                -- debug modes
                (K.Char 'V',  Undescribed $ modify toggleVision     >> withPerception playerCommand),
@@ -260,4 +260,3 @@ stdKeybindings = Keybindings
                (K.Return  ,  helpCommand)
              ]
   }
-

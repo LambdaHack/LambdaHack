@@ -18,8 +18,7 @@ import Message
 -- accumulated during a turn or relevant only to the current session.
 data State = State
   { splayer      :: Player,       -- ^ the selected hero
-    slook        :: Maybe (Loc, Target, LevelName),
-                                  -- ^ cursor, new target, initial level
+    slook        :: Maybe Look,   -- ^ cursor, new target, initial level
     shistory     :: [Message],
     ssensory     :: SensoryMode,
     sdisplay     :: DisplayMode,
@@ -31,6 +30,8 @@ data State = State
     sconfig      :: Config.CP
   }
   deriving Show
+
+type Look = (Loc, Target, LevelName)
 
 defaultState :: Loc -> Dungeon -> Level -> State
 defaultState ploc dng lvl =

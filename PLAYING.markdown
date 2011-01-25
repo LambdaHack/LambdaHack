@@ -47,7 +47,7 @@ Below are the default key bindings in the game.
                Q      quit without saving
                .      wait
                ,      pick up an object
-               :      toggle the look mode
+               :      toggle look mode
                <      ascend a level
                >      descend a level
                TAB    cycle among heroes on the level

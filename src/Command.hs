@@ -20,13 +20,13 @@ inventoryCommand = Described "display inventory" inventory
 searchCommand    = Described "search for secret doors" search
 ascendCommand    = Described "ascend a level"    (lvlchange Up)
 descendCommand   = Described "descend a level"   (lvlchange Down)
-lookCommand      = Described "look around"       lookAround
+lookCommand      = Described "toggle look mode"  lookAround
 drinkCommand     = Described "quaff a potion"    drinkPotion
 waitCommand      = Described "wait"              (return () :: Action ())
 saveCommand      = Described "save and quit the game" saveGame
 quitCommand      = Described "quit without saving" quitGame
+cancelCommand    = Described "cancel current action" cancelCurrent
 historyCommand   = Described "display previous messages" displayHistory
 
 moveDirCommand   = Described "move in direction" move
 runDirCommand    = Described "run in direction"  run
-

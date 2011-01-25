@@ -56,6 +56,16 @@ quitGame =
       then end -- TODO: why no highscore?
       else abortWith "Game resumed."
 
+cancelCurrent :: Action ()
+cancelCurrent =
+  do
+    state <- get
+    case slook state of
+      Just lk -> do
+                   cancelLook lk
+      Nothing -> do
+                   abortWith "Press Q to quit."
+
 move :: Dir -> Action ()
 move = moveOrAttack True True APlayer
 
@@ -310,24 +320,55 @@ search =
         slmap = foldl (\ l m -> update searchTile (shift ploc m) l) lmap moves
     modify (updateLevel (updateLMap (const slmap)))
 
--- | Look around at current location
-lookAround :: Action a
+-- | Toggle look mode.
+lookAround :: Action ()
 lookAround =
   do
     state <- get
-    let lvl@(Level   { lmap = lmap }) = slevel  state
-    let      Monster { mloc = ploc }  = splayer state
+    case slook state of
+      Just lk -> do
+                   cancelLook lk
+      Nothing -> do
+                   lk <- setLook
+                   doLook lk
+
+-- | Set look mode.
+setLook :: Action Look
+setLook =
+  do
+    state <- get
+    let loc = mloc (splayer state)
+        tgt = TNone
+        ln  = lname (slevel state)
+    modify (updateLook (const $ Just (loc, tgt, ln)))
+    return (loc, tgt, ln)
+
+-- | Cancel look mode.
+cancelLook :: Look -> Action ()
+cancelLook (loc, tgt, ln) =
+  do
+    lvlswitch (ln, loc)
+    modify (updatePlayer (\ p -> p { mtarget = tgt }))
+    modify (updateLook (const Nothing))
+
+-- | Perform look around in the current location of the cursor.
+-- TODO: depending on tgt or an extra flag, show tile, monster or both
+doLook :: Look -> Action ()
+doLook (loc, _tgt, _ln) =
+  do
+    state <- get
+    let map = lmap (slevel state)
     -- general info about current loc
-    let lookMsg = lookAt True state lmap ploc
+        lookMsg = lookAt True state map loc
     -- check if there's something lying around at current loc
-    let t = lmap `at` ploc
+        t = map `at` loc
     if length (titems t) <= 2
       then do
-             abortWith lookMsg
+             messageAdd lookMsg
       else do
              displayItems lookMsg False (titems t)
              session getConfirm
-             abortWith ""
+             messageAdd ""
 
 -- | Display inventory
 inventory :: Action a
