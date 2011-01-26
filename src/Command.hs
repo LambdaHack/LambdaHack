@@ -27,6 +27,7 @@ saveCommand      = Described "save and quit the game" saveGame
 quitCommand      = Described "quit without saving" quitGame
 cancelCommand    = Described "cancel current action" cancelCurrent
 historyCommand   = Described "display previous messages" displayHistory
+heroCommand      = Described "cycle among heroes on level" cycleHero
 
 moveDirCommand   = Described "move in direction" move
 runDirCommand    = Described "run in direction"  run

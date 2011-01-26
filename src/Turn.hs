@@ -230,6 +230,7 @@ stdKeybindings = Keybindings
                (K.Char '>',  descendCommand),
 
                (K.Char ':',  lookCommand),
+               (K.Tab     ,  heroCommand),
 
                -- items
                (K.Char ',',  pickupCommand),

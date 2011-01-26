@@ -22,6 +22,13 @@ defaultPlayer :: Loc -> Player
 defaultPlayer ploc =
   Monster (Player 0) playerHP playerHP Nothing TNone ploc [] 'a' 10 0  -- TODO: other players
 
+-- | The serial number of the plaer. At this number he appears
+-- in level player maps. TODO: strengthen the type to avoid the error?
+playerNumber :: Player -> Int
+playerNumber pl = case mtype pl of
+                    Player k -> k
+                    _ -> error "playerNumber"
+
 type Player = Monster
 
 data Monster = Monster

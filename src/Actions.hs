@@ -5,6 +5,7 @@ import Control.Monad.State hiding (State)
 import Data.Function
 import Data.List as L
 import Data.Map as M
+import qualified Data.IntMap as IM
 import Data.Maybe
 import Data.Set as S
 import System.Time
@@ -285,6 +286,27 @@ fleeDungeon =
              go <- session getConfirm
              when go $ handleScores True False True total
              end
+
+-- | Switches current hero to the next hero on the level, if any, wrapping.
+-- TODO: extend to look mode, which is tricky when visiting other levels.
+-- TODO: extend to number keys switching to heroes on any levels.
+cycleHero =
+  do
+    state <- get
+    let player = splayer state
+        i = playerNumber player
+    case slook state of
+      Just (_loc, _tgt, _ln) -> abortWith "not implemented in look mode"
+      Nothing ->
+        let (lt, gt) = IM.split i (lplayers (slevel state))
+        in  case IM.assocs gt ++ IM.assocs lt of
+              []     -> abortWith "Only one hero on this level."
+              (ni, np) : _ ->
+                do
+                  let upd pls = IM.insert i player $ IM.delete ni pls
+                  modify (updateLevel (updatePlayers upd))
+                  modify (updatePlayer (const np))
+                  messageAdd "Next hero selected."
 
 -- | Calculate loot's worth. TODO: move to another module, and refine significantly.
 calculateTotal :: Player -> Int
