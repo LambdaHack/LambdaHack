@@ -18,6 +18,10 @@ fov_mode: shadow
 #fov_mode: permissive
 fov_radius: 40
 
+[heroes]
+base_hp: 50
+#extra_heroes: 4
+
 [dungeon]
 depth: 10
 level3: bigroom

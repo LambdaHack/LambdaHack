@@ -3,7 +3,6 @@ module Main where
 import System.Directory
 import Control.Monad
 import Data.Map as M
-import Data.Maybe
 
 import Action
 import State
@@ -17,6 +16,7 @@ import qualified Save
 import Turn
 import Item
 import qualified Config
+import Monster
 
 main :: IO ()
 main = startup start
@@ -67,7 +67,7 @@ generate config session msg =
         in  x' : z : zs
   in
    do
-     let depth = fromMaybe 10 $ Config.getOption config "dungeon" "depth"
+     let depth = Config.getDefault 10 config "dungeon" "depth"
      levels <- mapM findGenerator [1..depth]
      let lvls = connect (Just Nothing) levels
          (lvl,dng) = (head lvls, dungeon (tail lvls))
@@ -75,6 +75,11 @@ generate config session msg =
          assocs = M.fromList
                     [ (Potion PotionWater,   Clear),
                       (Potion PotionHealing, White) ]
-         defState = defaultState ((\ (_,x,_) -> x) (head levels)) dng lvl
+         ploc = ((\ (_,x,_) -> x) (head levels))
+         hp = playerHP config
+         player = defaultPlayer 0 ploc hp
+         defState = defaultState player dng lvl
          state = defState { sassocs = assocs, sconfig = config }
-     handlerToIO session state msg handle
+         k = Config.getDefault 1 config "heroes" "extra_heroes"
+     hstate <- rndToIO $ foldM (addHero hp) state [1..k]
+     handlerToIO session hstate msg handle

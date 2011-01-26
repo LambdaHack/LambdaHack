@@ -2,7 +2,6 @@ module Perception where
 
 import Data.Set as S
 import Data.List as L
-import Data.Maybe
 
 import Geometry
 import State
@@ -18,8 +17,8 @@ perception_ :: State -> Perception
 perception_ state@(State { slevel   = Level { lmap = lmap },
                            sconfig  = config,
                            ssensory = sensory }) =
-  let mode   = Config.getOption config "engine" "fov_mode"
-      radius = fromMaybe 40 $ Config.getOption config "engine" "fov_radius"
+  let mode   = Config.getDefault "shadow" config "engine" "fov_mode"
+      radius = Config.getDefault 40 config "engine" "fov_radius"
       fovMode =
         -- terrible, temporary hack
         case sensory of
@@ -29,9 +28,12 @@ perception_ state@(State { slevel   = Level { lmap = lmap },
           _        ->
             -- this is not a hack
             case mode of
-              Just "permissive" -> Permissive radius
-              Just "digital"    -> Digital radius
-              _                 -> Shadow
+              "permissive" -> Permissive radius
+              "digital"    -> Digital radius
+              "shadow"     -> Shadow
+              _            -> error $ "perception_: unknown mode: " ++ show mode
+
+
       ps = levelPlayerList state
       pers = L.map (\ pl -> perception fovMode (mloc pl) lmap) ps
       reachable = S.unions (L.map preachable pers)

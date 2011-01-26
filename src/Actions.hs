@@ -153,7 +153,7 @@ remember =
     modify (updateLevel (updateLMap (\ lmap -> foldr rememberLoc lmap vis)))
 
 checkHeroDeath :: Action ()
-checkHeroDeath =
+checkHeroDeath =  -- TODO: for now, quit only when the last hero dies.
   do
     player <- gets splayer
     let php = mhp player
@@ -305,7 +305,7 @@ cycleHero =
                   modify (updatePlayer (const np))
                   messageAdd "Next hero selected."
 
--- | Calculate loot's worth. TODO: move to another module, and refine significantly.
+-- | Calculate loot's worth. TODO: move to another module, and refine significantly. TODO: calculate for all players on the current level.
 calculateTotal :: Player -> Int
 calculateTotal player = L.sum $ L.map price $ mitems player
   where
@@ -429,7 +429,7 @@ drinkPotion =
                      PotionWater   -> messageAdd "Tastes like water."
                      PotionHealing -> do
                                         messageAdd "You feel better."
-                                        modify (updatePlayer (\ p -> p { mhp = min (mhpmax p) (mhp p + playerHP `div` 4) }))
+                                        modify (updatePlayer (\ p -> p { mhp = min (mhpmax p) (mhp p + defaultBaseHP `div` 4) }))
                Just _  -> abortWith "you cannot drink that"
                Nothing -> neverMind True
 

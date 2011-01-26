@@ -48,15 +48,18 @@ config =
 -- | A simplified access to an option in a given section,
 -- with simple error reporting (no error is caught and hidden).
 -- If there is no config file or no such option, gives Nothing.
-getOption :: Get_C a => CP -> SectionSpec -> OptionSpec ->
-             Maybe a
+getOption :: Get_C a => CP -> SectionSpec -> OptionSpec -> Maybe a
 getOption (CP config) s o =
-  do
-    if has_option config s o
-      then let val = get config s o
-               valForced = forceEither val
-           in  Just valForced
-      else Nothing
+  if has_option config s o
+    then Just $ forceEither $ get config s o
+    else Nothing
+
+-- | A simplified access to an option in a given section, with a default.
+getDefault :: Get_C a => a -> CP -> SectionSpec -> OptionSpec -> a
+getDefault dflt (CP config) s o =
+  if has_option config s o
+    then forceEither $ get config s o
+    else dflt
 
 -- | Looks up a file path in the config file, faling back to the default path.
 -- The path from the config file is taken relative to the home directory

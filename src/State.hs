@@ -33,10 +33,10 @@ data State = State
 
 type Look = (Loc, Target, LevelName)
 
-defaultState :: Loc -> Dungeon -> Level -> State
-defaultState ploc dng lvl =
+defaultState :: Player -> Dungeon -> Level -> State
+defaultState player dng lvl =
   State
-    (defaultPlayer ploc)
+    player
     Nothing
     []
     Implicit Normal

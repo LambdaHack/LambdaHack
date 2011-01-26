@@ -8,19 +8,27 @@ import Geometry
 import Display
 import Item
 import Random
+import qualified Config
 
--- | Hit points of the player. TODO: Should not be hardcoded.
-playerHP :: Int
-playerHP = 50
+-- | Hit point amount balanced for 1 hero against all armed monsters.
+defaultBaseHP :: Int
+defaultBaseHP = 50
+
+-- | Hit points of the player. Experimentally balanced for multiple heroes.
+playerHP :: Config.CP -> Int
+playerHP config =
+  let b = Config.getDefault defaultBaseHP config "heroes" "base_HP"
+      k = Config.getDefault 1 config "heroes" "extra_heroes"
+  in  b `div` k
 
 -- | Time the player can be traced by monsters. TODO: Make configurable.
 smellTimeout :: Time
 smellTimeout = 1000
 
 -- | Initial player.
-defaultPlayer :: Loc -> Player
-defaultPlayer ploc =
-  Monster (Player 0) playerHP playerHP Nothing TNone ploc [] 'a' 10 0  -- TODO: other players
+defaultPlayer :: Int -> Loc -> Int -> Player
+defaultPlayer n ploc hp =
+  Monster (Player n) hp hp Nothing TNone ploc [] 'a' 10 0
 
 -- | The serial number of the plaer. At this number he appears
 -- in level player maps. TODO: strengthen the type to avoid the error?

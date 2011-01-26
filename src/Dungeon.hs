@@ -4,6 +4,7 @@ import Prelude hiding (floor)
 import Control.Monad
 
 import Data.Map as M
+import qualified Data.IntMap as IM
 import Data.List as L
 import Data.Ratio
 
@@ -302,6 +303,7 @@ digRoom dl ((y0,x0),(y1,x1)) l
                      ++ [ ((y,x),newTile (Wall p))     | (x,p) <- [(x0-1,L),(x1+1,R)],  y <- [y0..y1]    ]
   in M.unionWith const rm l
 
+-- TODO: do the functions below belong in this module?
 -- | Create a new monster in the level, at a random position.
 addMonster :: State -> Rnd Level
 addMonster state@(State { slevel = lvl@(Level { lmonsters = ms,
@@ -324,3 +326,17 @@ addMonster state@(State { slevel = lvl@(Level { lmonsters = ms,
           m <- newMonster sm monsterFrequency
           return (updateMonsters (const (m : ms)) lvl)
       else return lvl
+
+-- | Create a new hero in the level, close to the current player.
+addHero :: Int -> State -> Int -> Rnd State
+addHero hp state@(State { splayer = player,
+                         slevel = lvl@(Level { lmonsters = ms }) }) n =
+  do
+    let ps = levelPlayerList state
+    ploc <- findLocTry 10000 lvl  -- TODO: bad for large levels
+              (\ l t -> open t
+                        && not (l `L.elem` L.map mloc (ps ++ ms)))
+              (\ l t -> floor t
+                        && distance (mloc player, l) < 5 + L.length ps `div` 3)
+    let hero = defaultPlayer n ploc hp
+    return (updateLevel (updatePlayers (IM.insert n hero)) state)
