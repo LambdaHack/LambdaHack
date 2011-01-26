@@ -44,9 +44,10 @@ generate config session msg =
   let matchGenerator n Nothing =
         if n == 3 then bigroom else
           if n == 10 then noiseroom else  -- access to stairs may be blocked
-            level
+            rogueroom
       matchGenerator n (Just "bigroom")   = bigroom
       matchGenerator n (Just "noiseroom") = noiseroom
+      matchGenerator n (Just "rogueroom") = rogueroom
       matchGenerator n (Just s) =
         error $ "findGenerator: unknown: " ++ show n ++ ", " ++ s
 

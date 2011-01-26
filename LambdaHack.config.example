@@ -22,4 +22,5 @@ fov_radius: 40
 depth: 10
 level3: bigroom
 level10: noiseroom
+level2: rogueroom # the default for most levels
 #level1: noiseroom

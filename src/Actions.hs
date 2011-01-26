@@ -54,7 +54,7 @@ quitGame =
   do
     b <- messageYesNo "Really quit?"
     if b
-      then end -- TODO: why no highscore?
+      then end -- TODO: why no highscore? because the user may be in a hurry, since he quits the game instead of getting himself killed properly?
       else abortWith "Game resumed."
 
 cancelCurrent :: Action ()
@@ -231,14 +231,11 @@ lvldescend :: Loc -> Int -> Action ()
 lvldescend loc k =
   do
     state <- get
-    case lname (slevel state) of
-      LambdaCave n ->
-        let nln = n + k
-        -- TODO: 10 hardcoded; perhaps change getDungeonLevel?
-        in  if nln >= 1 && nln <= 10
-            then lvlswitch (LambdaCave nln, loc)
-            else abortWith "no more levels in this direction"
-      _ -> error "lvlchange"
+    let n = levelNumber (lname (slevel state))
+        nln = n + k
+    if nln >= 1 && nln <= sizeDungeon (sdungeon state)
+      then lvlswitch (LambdaCave nln, loc)
+      else abortWith "no more levels in this direction"
 
 -- | Attempt a level change via up level and down level keys.
 -- Will quit the game if the player leaves the dungeon.
@@ -258,7 +255,7 @@ lvlchange vdir =
               -- we are at the "end" of the dungeon
               fleeDungeon
             Just (nln, nloc) ->
-              -- TODO: in loook mode, check if the target stairs are known and  if not, land in the same location as in the current level so as not to reveal stairs location
+              -- TODO: in look mode, check if the target stairs are known and  if not, land in the same location as in the current level so as not to reveal stairs location
               lvlswitch (nln, nloc)
       _ -> -- no stairs
         if isNothing (slook state)
@@ -324,7 +321,7 @@ handleScores write killed victor total =
     cfg  <- gets sconfig
     time <- gets stime
     let points  = if killed then (total + 1) `div` 2 else total
-    let current = levelNumber nm   -- TODO: rather use name of level
+    let current = levelNumber nm   -- TODO: rather use name of level; but the number too, since it tells about relative difficulty
     curDate <- liftIO getClockTime
     let score   = H.ScoreRecord
                     points (-time) curDate current killed victor

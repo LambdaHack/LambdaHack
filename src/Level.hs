@@ -63,6 +63,9 @@ getDungeonLevel ln (Dungeon dng) = (dng ! ln, Dungeon (M.delete ln dng))
 putDungeonLevel :: Level -> Dungeon -> Dungeon
 putDungeonLevel lvl (Dungeon dng) = Dungeon (M.insert (lname lvl) lvl dng)
 
+sizeDungeon :: Dungeon -> Int
+sizeDungeon (Dungeon dng) = M.size dng
+
 instance Binary Dungeon where
   put (Dungeon dng) = put (M.elems dng)
   get = liftM dungeon get

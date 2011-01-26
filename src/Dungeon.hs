@@ -184,11 +184,11 @@ largeLevelConfig d =
 
 -- | Create a "normal" dungeon level. Takes a configuration in order
 -- to tweak all sorts of data.
-level :: LevelConfig ->
+rogueroom :: LevelConfig ->
          LevelName ->
          Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) ->
               Level, Loc, Loc)
-level cfg nm =
+rogueroom cfg nm =
   do
     lgrid    <- levelGrid cfg
     lminroom <- minRoomSize cfg
