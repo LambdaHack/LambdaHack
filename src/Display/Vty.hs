@@ -48,7 +48,8 @@ keyTranslate e =
     V.EvKey KPageDown []     -> Just K.PgDn
     V.EvKey KBegin []        -> Just K.Begin
     -- No KP_ keys in vty; maintainer contacted, we'll see.
-    -- For now, movement keys are more important than hero selection:
+    -- Update: maintainer is willing to accept a patch. Will do.
+    -- For now, though, movement keys are more important than hero selection:
     V.EvKey (KASCII c) []
       | c `elem` "123456789" -> Just (K.KP c)
       | otherwise            -> Just (K.Char c)
