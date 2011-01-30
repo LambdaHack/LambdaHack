@@ -69,6 +69,9 @@ updateDiscoveries f s = s { sdiscoveries = f (sdiscoveries s) }
 updateLevel :: (Level -> Level) -> State -> State
 updateLevel f s = s { slevel = f (slevel s) }
 
+updateDungeon :: (Dungeon -> Dungeon) -> State -> State
+updateDungeon f s = s {sdungeon = f (sdungeon s)}
+
 updateTime :: (Time -> Time) -> State -> State
 updateTime f s = s { stime = f (stime s) }
 

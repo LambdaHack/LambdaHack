@@ -285,17 +285,31 @@ fleeDungeon =
              end
 
 -- | Switches current hero to the next hero on the level, if any, wrapping.
--- TODO: extend to look mode, which is tricky when visiting other levels.
 -- TODO: extend to number keys switching to heroes on any levels.
 cycleHero =
   do
     state <- get
     let player = splayer state
         i = playerNumber player
+        pls = lplayers (slevel state)
     case slook state of
-      Just (_loc, _tgt, _ln) -> abortWith "not implemented in look mode"
-      Nothing ->
-        let (lt, gt) = IM.split i (lplayers (slevel state))
+      Just (_loc, _tgt, ln)
+        | ln /= lname (slevel state) ->
+          case IM.assocs pls of
+            []     -> abortWith "No heroes on this level."
+            (ni, np) : _ ->
+              do
+                let ins = IM.insert i player
+                    pli = updatePlayers ins
+                    del = IM.delete ni
+                    nln = lname (slevel state)
+                modify (updateDungeon (updateDungeonLevel pli ln))
+                modify (updateLevel (updatePlayers del))
+                modify (updatePlayer (const np))
+                modify (updateLook (const $ Just (_loc, _tgt, nln)))
+                messageAdd "A hero selected."
+      _ ->
+        let (lt, gt) = IM.split i pls
         in  case IM.assocs gt ++ IM.assocs lt of
               []     -> abortWith "Only one hero on this level."
               (ni, np) : _ ->
