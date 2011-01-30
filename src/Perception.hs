@@ -17,8 +17,8 @@ perception_ :: State -> Perception
 perception_ state@(State { slevel   = Level { lmap = lmap },
                            sconfig  = config,
                            ssensory = sensory }) =
-  let mode   = Config.getDefault "shadow" config "engine" "fov_mode"
-      radius = Config.getDefault 40 config "engine" "fov_radius"
+  let mode   = Config.getDefault "shadow" config "engine" "fovMode"
+      radius = Config.getDefault 40 config "engine" "fovRadius"
       fovMode =
         -- terrible, temporary hack
         case sensory of

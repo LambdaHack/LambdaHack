@@ -10,7 +10,7 @@ import qualified Config
 
 -- | Name of the save game.
 file :: Config.CP -> IO String
-file config = Config.getFile config "LambdaHack.save" "files" "savegame"
+file config = Config.getFile config "LambdaHack.save" "files" "saveGame"
 
 -- | We save a simple serialized version of the current level and
 -- the current state. The 'False' is used only as an EOF marker.

@@ -21,9 +21,10 @@ instance B.Binary CP where
 instance Show CP where
   show (CP config) = show $ to_string config
 
--- | Underscore in the name to avoid name clash.
-empty_CP :: CP
-empty_CP = CP emptyCP
+-- | Our version of basic parser. Underscore in the name to avoid a name clash.
+-- All names turned case sensitive (insensitive is the default in ConfigFile).
+empty_CP :: ConfigParser
+empty_CP = emptyCP {optionxform = id}
 
 -- | Path to the main configuration file.
 file :: IO String
@@ -40,9 +41,9 @@ config =
     f <- file
     b <- doesFileExist f
     if not b
-      then return $ empty_CP
+      then return $ CP empty_CP
       else do
-        c <- readfile emptyCP f
+        c <- readfile empty_CP f
         return $ CP (forceEither c)
 
 -- | A simplified access to an option in a given section,

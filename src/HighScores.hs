@@ -83,7 +83,7 @@ empty = []
 
 -- | Name of the high scores file.
 file :: Config.CP -> IO String
-file config = Config.getFile config "LambdaHack.scores" "files" "highscores"
+file config = Config.getFile config "LambdaHack.scores" "files" "highScores"
 
 -- | We save a simple serialized version of the high scores table.
 -- The 'False' is used only as an EOF marker.

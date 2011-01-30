@@ -9,22 +9,23 @@
 # paths to various game files; relative to ~/.LambdaHack/
 # (or analogous prefixes for other OSes, see getAppUserDataDirectory)
 [files]
-savegame:   LambdaHack.save
-highscores: LambdaHack.scores
+saveGame:   LambdaHack.save
+highScores: LambdaHack.scores
 
+# configuration of gameplay, more or less unbalancing
 [engine]
-fov_mode: shadow
-#fov_mode: digital
-#fov_mode: permissive
-fov_radius: 40
+fovMode: shadow
+#fovMode: digital
+#fovMode: permissive
+fovRadius: 40
 
 [heroes]
-base_hp: 50
-#extra_heroes: 4
+baseHp: 50
+#extraHeroes: 4
 
 [dungeon]
 depth: 10
-level3: bigroom
-level10: noiseroom
-level2: rogueroom # the default for most levels
-#level1: noiseroom
+level3: bigRoom
+level10: noiseRoom
+level2: rogueRoom # the default for most levels
+#level1: noiseRoom

@@ -17,8 +17,8 @@ defaultBaseHP = 50
 -- | Hit points of the player. Experimentally balanced for multiple heroes.
 playerHP :: Config.CP -> Int
 playerHP config =
-  let b = Config.getDefault defaultBaseHP config "heroes" "base_hp"
-      k = Config.getDefault 0 config "heroes" "extra_heroes"
+  let b = Config.getDefault defaultBaseHP config "heroes" "baseHp"
+      k = Config.getDefault 0 config "heroes" "extraHeroes"
   in  b `div` (k + 1)
 
 -- | Time the player can be traced by monsters. TODO: Make configurable.

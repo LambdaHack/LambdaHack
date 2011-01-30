@@ -86,9 +86,9 @@ newTile :: Terrain -> (Tile, Tile)
 newTile t = (Tile t [], Tile Unknown [])
 
 -- | Create a level consisting of only one room. Optionally, insert some walls.
-emptyroom :: (Level -> Rnd (LMap -> LMap)) -> LevelConfig ->
+emptyRoom :: (Level -> Rnd (LMap -> LMap)) -> LevelConfig ->
            LevelName -> Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) -> Level, Loc, Loc)
-emptyroom addWallsRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
+emptyRoom addWallsRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
   do
     let lmap = digRoom Light ((1,1),(sy-1,sx-1)) (emptyLMap (sy,sx))
     let smap = M.fromList [ ((y,x),-100) | y <- [0..sy], x <- [0..sx] ]
@@ -111,15 +111,15 @@ emptyroom addWallsRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
     return (level, su, sd)
 
 -- | For a bigroom level: Create a level consisting of only one, empty room.
-bigroom :: LevelConfig ->
+bigRoom :: LevelConfig ->
            LevelName -> Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) -> Level, Loc, Loc)
-bigroom = emptyroom (\ lvl -> return id)
+bigRoom = emptyRoom (\ lvl -> return id)
 
 -- | For a noiseroom level: Create a level consisting of only one room
 -- with randomly distributed pillars.
-noiseroom :: LevelConfig ->
+noiseRoom :: LevelConfig ->
              LevelName -> Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) -> Level, Loc, Loc)
-noiseroom cfg =
+noiseRoom cfg =
   let addWalls lvl = do
         rs <- rollPillars cfg lvl
         let insertWall lmap l =
@@ -127,7 +127,7 @@ noiseroom cfg =
                 Tile (Floor _) [] -> M.insert l (newTile (Wall O)) lmap
                 _ -> lmap
         return $ \ lmap -> foldl' insertWall lmap rs
-  in  emptyroom addWalls cfg
+  in  emptyRoom addWalls cfg
 
 data LevelConfig =
   LevelConfig {
@@ -185,11 +185,11 @@ largeLevelConfig d =
 
 -- | Create a "normal" dungeon level. Takes a configuration in order
 -- to tweak all sorts of data.
-rogueroom :: LevelConfig ->
+rogueRoom :: LevelConfig ->
          LevelName ->
          Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) ->
               Level, Loc, Loc)
-rogueroom cfg nm =
+rogueRoom cfg nm =
   do
     lgrid    <- levelGrid cfg
     lminroom <- minRoomSize cfg

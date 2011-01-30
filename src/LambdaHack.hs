@@ -42,12 +42,12 @@ start session =
 generate :: Config.CP -> Session -> String -> IO ()
 generate config session msg =
   let matchGenerator n Nothing =
-        if n == 3 then bigroom else
-          if n == 10 then noiseroom else  -- access to stairs may be blocked
-            rogueroom
-      matchGenerator n (Just "bigroom")   = bigroom
-      matchGenerator n (Just "noiseroom") = noiseroom
-      matchGenerator n (Just "rogueroom") = rogueroom
+        if n == 3 then bigRoom else
+          if n == 10 then noiseRoom else  -- access to stairs may be blocked
+            rogueRoom
+      matchGenerator n (Just "bigRoom")   = bigRoom
+      matchGenerator n (Just "noiseRoom") = noiseRoom
+      matchGenerator n (Just "rogueRoom") = rogueRoom
       matchGenerator n (Just s) =
         error $ "findGenerator: unknown: " ++ show n ++ ", " ++ s
 
@@ -80,6 +80,6 @@ generate config session msg =
          player = defaultPlayer 0 ploc hp
          defState = defaultState player dng lvl
          state = defState { sassocs = assocs, sconfig = config }
-         k = Config.getDefault 1 config "heroes" "extra_heroes"
+         k = Config.getDefault 1 config "heroes" "extraHeroes"
      hstate <- rndToIO $ foldM (addHero hp) state [1..k]
      handlerToIO session hstate msg handle
