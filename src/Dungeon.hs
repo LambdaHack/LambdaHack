@@ -313,16 +313,16 @@ addMonster state@(State { slevel = lvl@(Level { lmonsters = ms,
     if rc
       then
         do
-          let ps = levelPlayerList state
+          let hs = levelHeroList state
           -- TODO: new monsters should always be generated in a place that isn't
           -- visible by the player (if possible -- not possible for bigrooms)
           -- levels with few rooms are dangerous, because monsters may spawn
           -- in adjacent and unexpected places
           sm <- findLocTry 1000 lvl
                 (\ l t -> open t
-                          && not (l `L.elem` L.map mloc (ps ++ ms)))
+                          && not (l `L.elem` L.map mloc (hs ++ ms)))
                 (\ l t -> floor t
-                          && L.all (\pl -> distance (mloc pl, l) > 400) ps)
+                          && L.all (\pl -> distance (mloc pl, l) > 400) hs)
           m <- newMonster sm monsterFrequency
           return (updateMonsters (const (m : ms)) lvl)
       else return lvl
@@ -332,11 +332,11 @@ addHero :: Int -> State -> Int -> Rnd State
 addHero hp state@(State { splayer = player,
                          slevel = lvl@(Level { lmonsters = ms }) }) n =
   do
-    let ps = levelPlayerList state
+    let hs = levelHeroList state
     ploc <- findLocTry 10000 lvl  -- TODO: bad for large levels
               (\ l t -> open t
-                        && not (l `L.elem` L.map mloc (ps ++ ms)))
+                        && not (l `L.elem` L.map mloc (hs ++ ms)))
               (\ l t -> floor t
-                        && distance (mloc player, l) < 5 + L.length ps `div` 3)
+                        && distance (mloc player, l) < 5 + L.length hs `div` 3)
     let hero = defaultPlayer n ploc hp
     return (updateLevel (updatePlayers (IM.insert n hero)) state)

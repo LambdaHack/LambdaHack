@@ -50,10 +50,15 @@ defaultState player dng lvl =
 updatePlayer :: (Monster -> Monster) -> State -> State
 updatePlayer f s = s { splayer = f (splayer s) }
 
-levelPlayerList :: State -> [Player]
-levelPlayerList (State { splayer  = player,
+levelHeroList :: State -> [Player]
+levelHeroList (State { splayer  = player,
                          slevel   = Level { lplayers = pls } }) =
   player : IM.elems pls
+
+levelHeroAssocs :: State -> [(Int, Player)]
+levelHeroAssocs (State { splayer  = player,
+                         slevel   = Level { lplayers = pls } }) =
+  (playerNumber player, player) : IM.assocs pls
 
 updateLook ::
   (Maybe (Loc, Target, LevelName) -> Maybe (Loc, Target, LevelName)) ->

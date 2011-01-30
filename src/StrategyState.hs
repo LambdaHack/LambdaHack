@@ -27,7 +27,7 @@ strategy m@(Monster { mtype = mt, mloc = me, mdir = mdir })
     -- player is visible by the monster -- this is more efficient, but
     -- is not correct with the Shadow FOV (the other FOVs are symmetrical)
     -- TODO: set monster targets and then prefer targets to other heroes
-    plocs              =  L.map mloc (levelPlayerList state)
+    plocs              =  L.map mloc (levelHeroList state)
     plds               =  L.map (\ l -> (distance (me, l), l)) plocs
     -- we have to sort the list to avoid bias towards the currently selected
     -- hero; instead monsters will prefer heroes with smaller locations

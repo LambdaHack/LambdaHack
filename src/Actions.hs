@@ -288,36 +288,45 @@ fleeDungeon =
 -- TODO: extend to number keys switching to heroes on any levels.
 cycleHero =
   do
-    state <- get
-    let player = splayer state
-        i = playerNumber player
-        pls = lplayers (slevel state)
-    case slook state of
+    pls <- gets (lplayers . slevel)
+    nln <- gets (lname . slevel)
+    player <- gets splayer
+    look <- gets slook
+    case look of
       Just (_loc, _tgt, ln)
-        | ln /= lname (slevel state) ->
+        | ln /= nln ->
           case IM.assocs pls of
-            []     -> abortWith "No heroes on this level."
+            [] -> abortWith "No heroes on this level."
             (ni, np) : _ ->
               do
-                let ins = IM.insert i player
+                let i   = playerNumber player
+                    ins = IM.insert i player
                     pli = updatePlayers ins
                     del = IM.delete ni
-                    nln = lname (slevel state)
                 modify (updateDungeon (updateDungeonLevel pli ln))
                 modify (updateLevel (updatePlayers del))
                 modify (updatePlayer (const np))
                 modify (updateLook (const $ Just (_loc, _tgt, nln)))
                 messageAdd "A hero selected."
       _ ->
-        let (lt, gt) = IM.split i pls
+        let i = playerNumber player
+            (lt, gt) = IM.split i pls
         in  case IM.assocs gt ++ IM.assocs lt of
-              []     -> abortWith "Only one hero on this level."
+              [] -> abortWith "Only one hero on this level."
               (ni, np) : _ ->
                 do
-                  let upd pls = IM.insert i player $ IM.delete ni pls
-                  modify (updateLevel (updatePlayers upd))
-                  modify (updatePlayer (const np))
+                  swapCurrentHero (ni, np)
                   messageAdd "Next hero selected."
+
+swapCurrentHero :: (Int, Player) -> Action ()
+swapCurrentHero (ni, np) =
+  do
+    player <- gets splayer
+    let i = playerNumber player
+        upd pls = IM.insert i player $ IM.delete ni pls
+    when (ni == i) abort
+    modify (updateLevel (updatePlayers upd))
+    modify (updatePlayer (const np))
 
 -- | Calculate loot's worth. TODO: move to another module, and refine significantly. TODO: calculate for all players on the current level.
 calculateTotal :: Player -> Int
@@ -606,18 +615,23 @@ moveOrAttack allowAttacks autoOpen actor dir
     do
       -- We start by looking at the target position.
       state <- get
-      let lvl@(Level { lmap = lmap }) = slevel  state
-      let player                      = splayer state
+      monsters <- gets (lmonsters . slevel)
+      lmap <- gets (lmap . slevel)
       let monster = getActor state actor
-      let loc     = mloc monster     -- current location
-      let s       = lmap `at` loc    -- tile at current location
-      let nloc    = loc `shift` dir  -- target location
-      let t       = lmap `at` nloc   -- tile at target location
-      let attackedPlayer   = [ APlayer | mloc player == nloc ]
-      let attackedMonsters = L.map AMonster $
-                             findIndices (\ m -> mloc m == nloc) (lmonsters lvl)
-      let attacked :: [Actor]
+          loc     = mloc monster     -- current location
+          s       = lmap `at` loc    -- tile at current location
+          nloc    = loc `shift` dir  -- target location
+          t       = lmap `at` nloc   -- tile at target location
+          ps      = levelHeroAssocs state
+          attPlayer        = find (\ (_, m) -> mloc m == nloc) ps
+          attackedPlayer   = if isJust attPlayer then [APlayer] else []
+          attMonsters      = findIndices (\ m -> mloc m == nloc) monsters
+          attackedMonsters = L.map AMonster $ attMonsters
+          attacked :: [Actor]
           attacked = attackedPlayer ++ attackedMonsters
+      -- Focus on the attacked hero, if any.
+      -- TODO: This requires a special case if a hero bumps into another.
+      maybe (return ()) swapCurrentHero attPlayer
       -- At the moment, we check whether there is a monster before checking accessibility
       -- i.e., we can attack a monster on a blocked location. For instance,
       -- a monster on an open door can be attacked diagonally, and a

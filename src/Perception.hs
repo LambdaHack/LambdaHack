@@ -34,8 +34,8 @@ perception_ state@(State { slevel   = Level { lmap = lmap },
               _            -> error $ "perception_: unknown mode: " ++ show mode
 
 
-      ps = levelPlayerList state
-      pers = L.map (\ pl -> perception fovMode (mloc pl) lmap) ps
+      hs = levelHeroList state
+      pers = L.map (\ pl -> perception fovMode (mloc pl) lmap) hs
       reachable = S.unions (L.map preachable pers)
       visible = S.unions (L.map pvisible pers)
   in  Perception reachable visible
