@@ -14,9 +14,8 @@ import State
 
 strategy :: Monster -> State -> Perception -> Strategy Dir
 strategy m@(Monster { mtype = mt, mloc = me, mdir = mdir })
-         (state@(State { splayer = player@(Monster { mloc = ploc }),
-                         stime   = time,
-                         slevel  = lvl@(Level { lmonsters = ms, lsmell = nsmap, lmap = lmap }) }))
+         (state@(State { stime   = time,
+                         slevel  = Level { lmonsters = ms, lsmell = nsmap, lmap = lmap } }))
          per =
     case mt of
       Eye     -> slowEye
@@ -24,10 +23,19 @@ strategy m@(Monster { mtype = mt, mloc = me, mdir = mdir })
       Nose    -> nose
       _       -> onlyAccessible moveRandomly
   where
-    -- we check if the monster is visible by the player rather than if the
+    -- TODO: we check if the monster is visible by the player rather than if the
     -- player is visible by the monster -- this is more efficient, but
-    -- won't be correct in the general situation
-    playerVisible      =  me `S.member` pvisible per
+    -- is not correct with the Shadow FOV (the other FOVs are symmetrical)
+    -- TODO: set monster targets and then prefer targets to other heroes
+    plocs              =  L.map mloc (levelPlayerList state)
+    plds               =  L.map (\ l -> (distance (me, l), l)) plocs
+    -- we have to sort the list to avoid bias towards the currently selected
+    -- hero; instead monsters will prefer heroes with smaller locations
+    (pdist, ploc)      =  L.head (L.sort plds)
+    -- TODO: currently even invisible heroes are targeted if _any_ hero
+    -- is visible; each hero should carry his own perception to check
+    -- if he's visible by a given monster
+    playerVisible      =  me `S.member` pvisible per  -- monster sees any hero
     playerAdjacent     =  adjacent me ploc
     towardsPlayer      =  towards (me, ploc)
     onlyTowardsPlayer  =  only (\ x -> distance (towardsPlayer, x) <= 1)
@@ -44,7 +52,7 @@ strategy m@(Monster { mtype = mt, mloc = me, mdir = mdir })
 
     eye                =  onlyUnoccupied $
                             playerVisible .=> onlyTowardsPlayer moveRandomly
-                            .| lootPresent me .=> return (0,0)
+                            .| lootPresent me .=> wait
                             .| onlyLootPresent moveRandomly
                             .| onlyPreservesDir moveRandomly
 
@@ -57,7 +65,7 @@ strategy m@(Monster { mtype = mt, mloc = me, mdir = mdir })
 
     nose               =  playerAdjacent .=> return towardsPlayer
                           .| (onlyAccessible $
-                              lootPresent me .=> return (0,0)
+                              lootPresent me .=> wait
                               .| foldr (.|) reject (L.map return smells)
                               .| onlyLootPresent moveRandomly
                               .| moveRandomly)
