@@ -224,7 +224,7 @@ lvlswitch (nln, nloc) =
     modify (\ s -> s { sdungeon = ndng, slevel = new })
     case slook state of
       Nothing -> modify (updatePlayer (\ p -> p { mloc = nloc }))
-      Just (loc, tgt, ln) -> modify (updateLook (const $ Just (nloc, tgt, ln)))
+      Just lk -> modify (updateLook (const $ Just (lk { cursorLoc = nloc })))
 
  -- | Attempt a level switch to k levels deeper.
 lvldescend :: Loc -> Int -> Action ()
@@ -246,7 +246,7 @@ lvlchange vdir =
     let map = lmap (slevel state)
         loc = case slook state of
                 Nothing -> mloc (splayer state)
-                Just (loc, _tgt, _ln) -> loc
+                Just (Look { cursorLoc = loc }) -> loc
     case map `at` loc of
       Tile (Stairs _ vdir' next) is
         | vdir == vdir' -> -- stairs are in the right direction
@@ -293,7 +293,7 @@ cycleHero =
     player <- gets splayer
     look <- gets slook
     case look of
-      Just (_loc, _tgt, ln)
+      Just look@(Look { returnLn = ln })
         | ln /= nln ->
           case IM.assocs pls of
             [] -> abortWith "No heroes on this level."
@@ -306,7 +306,7 @@ cycleHero =
                 modify (updateDungeon (updateDungeonLevel pli ln))
                 modify (updateLevel (updatePlayers del))
                 modify (updatePlayer (const np))
-                modify (updateLook (const $ Just (_loc, _tgt, nln)))
+                modify (updateLook (const (Just $ look { returnLn = nln })))
                 messageAdd "A hero selected."
       _ ->
         let i = playerNumber player
@@ -383,21 +383,22 @@ setLook =
     let loc = mloc (splayer state)
         tgt = TNone
         ln  = lname (slevel state)
-    modify (updateLook (const $ Just (loc, tgt, ln)))
-    return (loc, tgt, ln)
+    modify (updateLook (const $ Just $ Look loc tgt ln))
+    return $ Look loc tgt ln
 
 -- | Cancel look mode.
 cancelLook :: Look -> Action ()
-cancelLook (loc, tgt, ln) =
+cancelLook (Look loc tgt ln) =
   do
     lvlswitch (ln, loc)
     modify (updatePlayer (\ p -> p { mtarget = tgt }))
     modify (updateLook (const Nothing))
+    messageAdd "Look mode canceled."
 
 -- | Perform look around in the current location of the cursor.
 -- TODO: depending on tgt or an extra flag, show tile, monster or both
 doLook :: Look -> Action ()
-doLook (loc, _tgt, _ln) =
+doLook (Look { cursorLoc = loc }) =
   do
     state <- get
     let map = lmap (slevel state)

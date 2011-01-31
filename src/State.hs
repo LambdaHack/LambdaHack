@@ -31,7 +31,12 @@ data State = State
   }
   deriving Show
 
-type Look = (Loc, Target, LevelName)
+data Look = Look
+  { cursorLoc :: Loc,
+    newTarget :: Target,
+    returnLn  :: LevelName
+  }
+  deriving Show
 
 defaultState :: Player -> Dungeon -> Level -> State
 defaultState player dng lvl =
@@ -60,9 +65,7 @@ levelHeroAssocs (State { splayer  = player,
                          slevel   = Level { lplayers = pls } }) =
   (playerNumber player, player) : IM.assocs pls
 
-updateLook ::
-  (Maybe (Loc, Target, LevelName) -> Maybe (Loc, Target, LevelName)) ->
-  State -> State
+updateLook :: (Maybe Look -> Maybe Look) -> State -> State
 updateLook f s = s { slook = f (slook s) }
 
 updateHistory :: ([String] -> [String]) -> State -> State
@@ -120,6 +123,19 @@ instance Binary State where
       lvl    <- get
       config <- get
       return (State player look hst sense disp time assocs discs dng lvl config)
+
+instance Binary Look where
+  put (Look loc tgt ln) =
+    do
+      put loc
+      put tgt
+      put ln
+  get =
+    do
+      loc <- get
+      tgt <- get
+      ln  <- get
+      return (Look loc tgt ln)
 
 data SensoryMode =
     Implicit
