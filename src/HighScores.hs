@@ -61,18 +61,20 @@ instance Binary ScoreRecord where
 -- | Show a single high score.
 showScore :: (Int, ScoreRecord) -> String
 showScore (pos, score) =
-  let won  = if victor score
-             then "emerged victorious"
-             else "is camping on level " ++ show (current score) ++ ","
-      died = if killed score
-             then "perished on level " ++ show (current score) ++ ","
-             else won
-      time = calendarTimeToString . toUTCTime . date $ score
-      big  = "                                                 "
-      lil  = "              "
+  let won   = if victor score
+              then "emerged victorious"
+              else "is camping on level " ++ show (current score) ++ ","
+      died  = if killed score
+              then "perished on level " ++ show (current score) ++ ","
+              else won
+      time  = calendarTimeToString . toUTCTime . date $ score
+      big   = "                                                 "
+      lil   = "              "
+      -- TODO: later: https://github.com/kosmikus/LambdaHack/issues#issue/9
+      steps = negTurn score `div` (-10)
   in
    printf "%s\n%4d. %6d  This hero %s after %d steps  \n%son %s.  \n"
-     big pos (points score) died (- (negTurn score)) lil time
+     big pos (points score) died steps lil time
 
 -- | The list of scores, in decreasing order.
 type ScoreTable = [ScoreRecord]
