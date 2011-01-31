@@ -14,37 +14,37 @@ import qualified Config
 defaultBaseHP :: Int
 defaultBaseHP = 50
 
--- | Hit points of the player. Experimentally balanced for multiple heroes.
-playerHP :: Config.CP -> Int
-playerHP config =
+-- | Hit points of the hero. Experimentally balanced for multiple heroes.
+heroHP :: Config.CP -> Int
+heroHP config =
   let b = Config.getDefault defaultBaseHP config "heroes" "baseHp"
       k = Config.getDefault 0 config "heroes" "extraHeroes"
   in  b `div` (k + 1)
 
--- | Time the player can be traced by monsters. TODO: Make configurable.
+-- | Time a hero can be traced by monsters. TODO: Make configurable.
 smellTimeout :: Time
 smellTimeout = 1000
 
--- | Initial player.
-defaultPlayer :: Int -> Loc -> Int -> Player
-defaultPlayer n ploc hp =
-  Monster (Player n) hp hp Nothing TNone ploc [] 'a' 10 0
+-- | Initial hero.
+defaultHero :: Int -> Loc -> Int -> Hero
+defaultHero n ploc hp =
+  Monster (Hero n) hp hp Nothing TNone ploc [] 'a' 10 0
 
--- | The serial number of the plaer. At this number he appears
--- in level player maps. TODO: strengthen the type to avoid the error?
-playerNumber :: Player -> Int
-playerNumber pl = case mtype pl of
-                    Player k -> k
-                    _ -> error "playerNumber"
+-- | The serial number of the hero. At this number he appears
+-- in level hero intmaps. TODO: strengthen the type to avoid the error?
+heroNumber :: Hero -> Int
+heroNumber pl = case mtype pl of
+                    Hero k -> k
+                    _ -> error "heroNumber"
 
-type Player = Monster
+type Hero = Monster
 
 data Monster = Monster
                 { mtype   :: !MonsterType,
                   mhpmax  :: !Int,
                   mhp     :: !Int,
                   mdir    :: Maybe Dir,  -- for monsters: the dir the monster last moved;
-                                         -- for the player: the dir the player is running
+                                         -- for heroes: the dir the hero is running
                   mtarget :: Target,
                   mloc    :: !Loc,
                   mitems  :: [Item],     -- inventory
@@ -80,21 +80,21 @@ instance Binary Monster where
           return (Monster mt mhpm mhp md tgt ml minv mletter mspeed mtime)
 
 data MonsterType =
-    Player Int
+    Hero Int
   | Eye
   | FastEye
   | Nose
   deriving (Show, Eq)
 
 instance Binary MonsterType where
-  put (Player n) = putWord8 0 >> put n
+  put (Hero n) = putWord8 0 >> put n
   put Eye        = putWord8 1
   put FastEye    = putWord8 2
   put Nose       = putWord8 3
   get = do
           tag <- getWord8
           case tag of
-            0 -> liftM Player get
+            0 -> liftM Hero get
             1 -> return Eye
             2 -> return FastEye
             3 -> return Nose
@@ -173,7 +173,7 @@ insertMonster = insertMonster' 0
                                  in  (n', m' : ms')
 
 viewMonster :: MonsterType -> (Char, Attr -> Attr)
-viewMonster (Player n) = (if n < 1 || n > 9 then '@' else head (show n),
+viewMonster (Hero n) = (if n < 1 || n > 9 then '@' else head (show n),
                           setBG white . setFG black)
 viewMonster Eye        = ('e', setFG red)
 viewMonster FastEye    = ('e', setFG blue)

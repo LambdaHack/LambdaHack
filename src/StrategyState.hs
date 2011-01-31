@@ -29,8 +29,10 @@ strategy m@(Monster { mtype = mt, mloc = me, mdir = mdir })
     -- TODO: set monster targets and then prefer targets to other heroes
     plocs              =  L.map mloc (levelHeroList state)
     plds               =  L.map (\ l -> (distance (me, l), l)) plocs
-    -- we have to sort the list to avoid bias towards the currently selected
-    -- hero; instead monsters will prefer heroes with smaller locations
+    -- Here "player" is the hero chased by the monster. As soon as the monster
+    -- hits, this hero will really become the currently selected hero.
+    -- We have to sort the list to avoid bias towards the currently selected
+    -- hero; instead monsters will prefer heroes with smaller locations.
     (pdist, ploc)      =  L.head (L.sort plds)
     -- TODO: currently even invisible heroes are targeted if _any_ hero
     -- is visible; each hero should carry his own perception to check

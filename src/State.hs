@@ -17,7 +17,7 @@ import Message
 -- In practice, we maintain extra state, but that state is state
 -- accumulated during a turn or relevant only to the current session.
 data State = State
-  { splayer      :: Player,       -- ^ the selected hero
+  { splayer      :: Hero,         -- ^ the selected hero
     slook        :: Maybe Look,   -- ^ cursor, new target, initial level
     shistory     :: [Message],
     ssensory     :: SensoryMode,
@@ -38,7 +38,7 @@ data Look = Look
   }
   deriving Show
 
-defaultState :: Player -> Dungeon -> Level -> State
+defaultState :: Hero -> Dungeon -> Level -> State
 defaultState player dng lvl =
   State
     player
@@ -52,18 +52,18 @@ defaultState player dng lvl =
     lvl
     (Config.CP Config.empty_CP)
 
-updatePlayer :: (Monster -> Monster) -> State -> State
+updatePlayer :: (Hero -> Hero) -> State -> State
 updatePlayer f s = s { splayer = f (splayer s) }
 
-levelHeroList :: State -> [Player]
+levelHeroList :: State -> [Hero]
 levelHeroList (State { splayer  = player,
-                         slevel   = Level { lplayers = pls } }) =
-  player : IM.elems pls
+                       slevel   = Level { lheroes = hs } }) =
+  player : IM.elems hs
 
-levelHeroAssocs :: State -> [(Int, Player)]
+levelHeroAssocs :: State -> [(Int, Hero)]
 levelHeroAssocs (State { splayer  = player,
-                         slevel   = Level { lplayers = pls } }) =
-  (playerNumber player, player) : IM.assocs pls
+                         slevel   = Level { lheroes = hs } }) =
+  (heroNumber player, player) : IM.assocs hs
 
 updateLook :: (Maybe Look -> Maybe Look) -> State -> State
 updateLook f s = s { slook = f (slook s) }

@@ -81,7 +81,7 @@ type LMonsters = IM.IntMap Monster
 
 data Level = Level
   { lname     :: LevelName,
-    lplayers  :: LMonsters,  -- ^ all but the current heroes on the level
+    lheroes   :: LMonsters,  -- ^ all but the current selected hero on the level
     lsize     :: (Y,X),
     lmonsters :: [Monster],
     lsmell    :: SMap,
@@ -98,19 +98,19 @@ updateSMap f lvl = lvl { lsmell = f (lsmell lvl) }
 updateMonsters :: ([Monster] -> [Monster]) -> Level -> Level
 updateMonsters f lvl = lvl { lmonsters = f (lmonsters lvl) }
 
-updatePlayers :: (LMonsters -> LMonsters) -> Level -> Level
-updatePlayers f lvl = lvl { lplayers = f (lplayers lvl) }
+updateHeroes :: (LMonsters -> LMonsters) -> Level -> Level
+updateHeroes f lvl = lvl { lheroes = f (lheroes lvl) }
 
 lmEmpty :: LMonsters
 lmEmpty = IM.empty
 
 instance Binary Level where
-  put (Level nm pls sz@(sy,sx) ms lsmell lmap lmeta) =
+  put (Level nm hs sz@(sy,sx) ms lsmell lmap lmeta) =
         do
           put nm
           put sz
           put ms
-          put pls
+          put hs
           put [ lsmell ! (y,x) | y <- [0..sy], x <- [0..sx] ]
           put [ lmap ! (y,x) | y <- [0..sy], x <- [0..sx] ]
           put lmeta
@@ -118,13 +118,13 @@ instance Binary Level where
           nm <- get
           sz@(sy,sx) <- get
           ms <- get
-          pls <- get
+          hs <- get
           xs <- get
           let lsmell = M.fromList (zip [ (y,x) | y <- [0..sy], x <- [0..sx] ] xs)
           xs <- get
           let lmap   = M.fromList (zip [ (y,x) | y <- [0..sy], x <- [0..sx] ] xs)
           lmeta <- get
-          return (Level nm pls sz ms lsmell lmap lmeta)
+          return (Level nm hs sz ms lsmell lmap lmeta)
 
 type LMap = Map (Y,X) (Tile,Tile)
 type SMap = Map (Y,X) Time

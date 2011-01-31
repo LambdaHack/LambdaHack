@@ -327,10 +327,10 @@ addMonster state@(State { slevel = lvl@(Level { lmonsters = ms,
           return (updateMonsters (const (m : ms)) lvl)
       else return lvl
 
--- | Create a new hero in the level, close to the current player.
+-- | Create a new hero in the level, close to the player.
 addHero :: Int -> State -> Int -> Rnd State
 addHero hp state@(State { splayer = player,
-                         slevel = lvl@(Level { lmonsters = ms }) }) n =
+                          slevel = lvl@(Level { lmonsters = ms }) }) n =
   do
     let hs = levelHeroList state
     ploc <- findLocTry 10000 lvl  -- TODO: bad for large levels
@@ -338,5 +338,5 @@ addHero hp state@(State { splayer = player,
                         && not (l `L.elem` L.map mloc (hs ++ ms)))
               (\ l t -> floor t
                         && distance (mloc player, l) < 5 + L.length hs `div` 3)
-    let hero = defaultPlayer n ploc hp
-    return (updateLevel (updatePlayers (IM.insert n hero)) state)
+    let hero = defaultHero n ploc hp
+    return (updateLevel (updateHeroes (IM.insert n hero)) state)

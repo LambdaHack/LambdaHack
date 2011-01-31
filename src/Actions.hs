@@ -153,7 +153,7 @@ remember =
     modify (updateLevel (updateLMap (\ lmap -> foldr rememberLoc lmap vis)))
 
 checkHeroDeath :: Action ()
-checkHeroDeath =  -- TODO: for now, quit only when the last hero dies.
+checkHeroDeath =  -- TODO: for now, quit only when the last hero dies. TODO: check if it should have Hero or Player in the name (is it about the current hero?)
   do
     player <- gets splayer
     let php = mhp player
@@ -288,29 +288,29 @@ fleeDungeon =
 -- TODO: extend to number keys switching to heroes on any levels.
 cycleHero =
   do
-    pls <- gets (lplayers . slevel)
+    hs  <- gets (lheroes . slevel)
     nln <- gets (lname . slevel)
     player <- gets splayer
     look <- gets slook
     case look of
       Just look@(Look { returnLn = ln })
         | ln /= nln ->
-          case IM.assocs pls of
+          case IM.assocs hs of
             [] -> abortWith "No heroes on this level."
             (ni, np) : _ ->
               do
-                let i   = playerNumber player
+                let i   = heroNumber player
                     ins = IM.insert i player
-                    pli = updatePlayers ins
+                    pli = updateHeroes ins
                     del = IM.delete ni
                 modify (updateDungeon (updateDungeonLevel pli ln))
-                modify (updateLevel (updatePlayers del))
+                modify (updateLevel (updateHeroes del))
                 modify (updatePlayer (const np))
                 modify (updateLook (const (Just $ look { returnLn = nln })))
                 messageAdd "A hero selected."
       _ ->
-        let i = playerNumber player
-            (lt, gt) = IM.split i pls
+        let i = heroNumber player
+            (lt, gt) = IM.split i hs
         in  case IM.assocs gt ++ IM.assocs lt of
               [] -> abortWith "Only one hero on this level."
               (ni, np) : _ ->
@@ -318,19 +318,19 @@ cycleHero =
                   swapCurrentHero (ni, np)
                   messageAdd "Next hero selected."
 
-swapCurrentHero :: (Int, Player) -> Action ()
+swapCurrentHero :: (Int, Hero) -> Action ()
 swapCurrentHero (ni, np) =
   do
     player <- gets splayer
-    let i = playerNumber player
-        upd pls = IM.insert i player $ IM.delete ni pls
+    let i = heroNumber player
+        upd hs = IM.insert i player $ IM.delete ni hs
     when (ni == i) abort
-    modify (updateLevel (updatePlayers upd))
+    modify (updateLevel (updateHeroes upd))
     modify (updatePlayer (const np))
 
--- | Calculate loot's worth. TODO: move to another module, and refine significantly. TODO: calculate for all players on the current level.
-calculateTotal :: Player -> Int
-calculateTotal player = L.sum $ L.map price $ mitems player
+-- | Calculate loot's worth. TODO: move to another module, and refine significantly. TODO: calculate for all heroes on the current level.
+calculateTotal :: Hero -> Int
+calculateTotal hero = L.sum $ L.map price $ mitems hero
   where
     price i = if iletter i == Just '$' then icount i else 10 * icount i
 
@@ -601,7 +601,7 @@ displayItems msg sorted is =
       overlay ovl
 
 -- | This function performs a move (or attack) by any actor, i.e., it can handle
--- both monsters and the player.
+-- both monsters and the player (the currently selected hero).
 moveOrAttack :: Bool ->        -- allow attacks?
                 Bool ->        -- auto-open doors on move
                 Actor ->       -- who's moving?
@@ -623,16 +623,16 @@ moveOrAttack allowAttacks autoOpen actor dir
           s       = lmap `at` loc    -- tile at current location
           nloc    = loc `shift` dir  -- target location
           t       = lmap `at` nloc   -- tile at target location
-          ps      = levelHeroAssocs state
-          attPlayer        = find (\ (_, m) -> mloc m == nloc) ps
-          attackedPlayer   = if isJust attPlayer then [APlayer] else []
+          hs      = levelHeroAssocs state
+          attHero          = find (\ (_, m) -> mloc m == nloc) hs
+          attackedHero     = if isJust attHero then [APlayer] else []
           attMonsters      = findIndices (\ m -> mloc m == nloc) monsters
           attackedMonsters = L.map AMonster $ attMonsters
           attacked :: [Actor]
-          attacked = attackedPlayer ++ attackedMonsters
+          attacked = attackedHero ++ attackedMonsters
       -- Focus on the attacked hero, if any.
       -- TODO: This requires a special case if a hero bumps into another.
-      maybe (return ()) swapCurrentHero attPlayer
+      maybe (return ()) swapCurrentHero attHero
       -- At the moment, we check whether there is a monster before checking accessibility
       -- i.e., we can attack a monster on a blocked location. For instance,
       -- a monster on an open door can be attacked diagonally, and a

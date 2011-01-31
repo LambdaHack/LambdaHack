@@ -76,8 +76,8 @@ generate config session msg =
                     [ (Potion PotionWater,   Clear),
                       (Potion PotionHealing, White) ]
          ploc = ((\ (_,x,_) -> x) (head levels))
-         hp = playerHP config
-         player = defaultPlayer 0 ploc hp
+         hp = heroHP config
+         player = defaultHero 0 ploc hp
          defState = defaultState player dng lvl
          state = defState { sassocs = assocs, sconfig = config }
          k = Config.getDefault 1 config "heroes" "extraHeroes"
