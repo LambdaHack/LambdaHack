@@ -161,15 +161,16 @@ displayLevel session per
                   else \ vis rea -> id
       (n,over) = stringByLocation (sy+1) overlay -- n is the number of overlay screens
       gold    = maybe 0 (icount . fst) $ findItem (\ i -> iletter i == Just '$') (mitems player)
+      hs      = levelHeroList state
       disp n msg =
         display ((0,0),sz) session
                  (\ loc -> let tile = nlmap `lAt` loc
                                sml  = ((smap ! loc) - time) `div` 100
                                vis  = S.member loc visible
                                rea  = S.member loc reachable
-                               (rv,ra) = case L.find (\ m -> loc == mloc m) (player:ms) of
+                               (rv,ra) = case L.find (\ m -> loc == mloc m) (hs ++ ms) of
                                            _ | sTer > 0          -> viewTerrain sTer False (tterrain tile)
-                                           Just m | sOmn || vis  -> viewMonster (mtype m)
+                                           Just m | sOmn || vis  -> viewMonster (mtype m) (mtype m == mtype player)
                                            _ | sSml && sml >= 0  -> viewSmell sml
                                              | otherwise         -> viewTile vis tile assocs
                                vision = lVision vis rea

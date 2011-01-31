@@ -172,9 +172,11 @@ insertMonster = insertMonster' 0
       | otherwise              = let (n', ms') = insertMonster' (n + 1) m ms
                                  in  (n', m' : ms')
 
-viewMonster :: MonsterType -> (Char, Attr -> Attr)
-viewMonster (Hero n) = (if n < 1 || n > 9 then '@' else head (show n),
-                          setBG white . setFG black)
-viewMonster Eye        = ('e', setFG red)
-viewMonster FastEye    = ('e', setFG blue)
-viewMonster Nose       = ('n', setFG green)
+viewMonster :: MonsterType -> Bool -> (Char, Attr -> Attr)
+viewMonster (Hero n) r = (if n < 1 || n > 9 then '@' else head (show n),
+                          if r
+                            then setBG white . setFG black
+                            else setBG black . setFG white)
+viewMonster Eye      _ = ('e', setFG red)
+viewMonster FastEye  _ = ('e', setFG blue)
+viewMonster Nose     _ = ('n', setFG green)
