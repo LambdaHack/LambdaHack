@@ -328,9 +328,9 @@ swapCurrentHero (ni, np) =
     player <- gets splayer
     let i = heroNumber player
         upd hs = IM.insert i player $ IM.delete ni hs
-    when (ni == i) abort
-    modify (updateLevel (updateHeroes upd))
-    modify (updatePlayer (const np))
+    when (ni /= i) (do
+                      modify (updateLevel (updateHeroes upd))
+                      modify (updatePlayer (const np)))
 
 -- | Calculate loot's worth. TODO: move to another module, and refine significantly. TODO: calculate for all heroes on the current level.
 calculateTotal :: Hero -> Int
