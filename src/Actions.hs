@@ -44,8 +44,10 @@ saveGame =
         -- Save the game state
         st <- get
         liftIO $ S.saveGame st
+        ln <- gets (lname . slevel)
         let total = calculateTotal (splayer st)
-        handleScores False False False total
+            status = H.Camping ln
+        handleScores False status total
         end
       else abortWith "Game resumed."
 
@@ -54,7 +56,7 @@ quitGame =
   do
     b <- messageYesNo "Really quit?"
     if b
-      then end -- TODO: why no highscore? because the user may be in a hurry, since he quits the game instead of getting himself killed properly?
+      then end -- TODO: why no highscore? no display, because the user may be in a hurry, since he quits the game instead of getting himself killed properly? no score recording, not to polute the scores list with games that the player didn't even want to end honourably?
       else abortWith "Game resumed."
 
 cancelCurrent :: Action ()
@@ -163,8 +165,10 @@ checkHeroDeath =  -- TODO: for now, quit only when the last hero dies. TODO: che
       session getConfirm
       go <- messageMoreConfirm "You die."
       when go $ do
+        ln <- gets (lname . slevel)
         let total = calculateTotal player
-        handleScores True True False total
+            status = H.Killed ln
+        handleScores True status total
       end
 
 neverMind :: Bool -> Action a
@@ -281,7 +285,7 @@ fleeDungeon =
                           show total ++ " gold, is:"
              displayItems winMsg True items
              go <- session getConfirm
-             when go $ handleScores True False True total
+             when go $ handleScores True H.Victor total
              end
 
 -- | Switches current hero to the next hero on the level, if any, wrapping.
@@ -337,17 +341,16 @@ calculateTotal hero = L.sum $ L.map price $ mitems hero
 -- | Handle current score and display it with the high scores. TODO: simplify. Scores
 -- should not be shown during the game, because ultimately the worth of items might give
 -- information about the nature of the items.
-handleScores :: Bool -> Bool -> Bool -> Int -> Action ()
-handleScores write killed victor total =
+handleScores :: Bool -> H.Status -> Int -> Action ()
+handleScores write status total =
   unless (total == 0) $ do
-    nm   <- gets (lname . slevel)
-    cfg  <- gets sconfig
-    time <- gets stime
-    let points  = if killed then (total + 1) `div` 2 else total
-    let current = levelNumber nm   -- TODO: rather use name of level; but the number too, since it tells about relative difficulty
+    cfg     <- gets sconfig
+    time    <- gets stime
     curDate <- liftIO getClockTime
-    let score   = H.ScoreRecord
-                    points (-time) curDate current killed victor
+    let points = case status of
+                   H.Killed _ -> (total + 1) `div` 2
+                   _ -> total
+    let score = H.ScoreRecord points (-time) curDate status
     (placeMsg, slideshow) <- liftIO $ H.register cfg write score
     messageOverlaysConfirm placeMsg slideshow
     return ()
