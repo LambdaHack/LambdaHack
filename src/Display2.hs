@@ -58,7 +58,8 @@ displayBlankConfirm session txt =
         display ((0, 0), normalLevelSize) session (const (attr, ' ')) x ""
         getConfirm session
 
--- | Waits for a space or return.
+-- | Waits for a space or return or '?' or '*'. The last two to let keys that
+-- request (more) information toggle display of the obtained information off.
 getConfirm :: MonadIO m => Session -> m Bool
 getConfirm session =
   getOptionalConfirm return (const $ getConfirm session) session
@@ -69,6 +70,8 @@ getOptionalConfirm h k session =
     e <- liftIO $ nextCommand session
     case e of
       K.Char ' ' -> h True
+      K.Char '?' -> h True
+      K.Char '*' -> h True
       K.Return   -> h True
       K.Esc      -> h False
       _          -> k e
