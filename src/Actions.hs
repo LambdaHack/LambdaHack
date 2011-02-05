@@ -45,7 +45,7 @@ saveGame =
         st <- get
         liftIO $ S.saveGame st
         ln <- gets (lname . slevel)
-        let total = calculateTotal (splayer st)
+        let total = calculateTotal st
             status = H.Camping ln
         handleScores False status total
         end
@@ -161,6 +161,7 @@ remember =
 checkPartyDeath :: Bool -> Action ()
 checkPartyDeath _survivorsCarryOn =
   do
+    state  <- get
     player <- gets splayer
     let php = mhp player
     when (php <= 0) $ do
@@ -170,7 +171,7 @@ checkPartyDeath _survivorsCarryOn =
       go <- messageMoreConfirm "You die."
       when go $ do
         ln <- gets (lname . slevel)
-        let total = calculateTotal player
+        let total = calculateTotal state
             status = H.Killed ln
         handleScores True status total
       end
@@ -277,12 +278,14 @@ lvlchange vdir =
 fleeDungeon :: Action ()
 fleeDungeon =
   do
-    player@(Monster { mitems = items }) <- gets splayer
-    let total = calculateTotal player
+    state <- get
+    let total = calculateTotal state
+        hs    = levelHeroList state
+        items = L.concatMap mitems hs
     if total == 0
       then do
              messageMoreConfirm "Coward!"
-             messageMoreConfirm "Next time try to grab some loot before you flee!"
+             messageMoreConfirm "Next time try to grab some loot before escape!"
              end
       else do
              let winMsg = "Congratulations, you won! Your loot, worth " ++
@@ -336,11 +339,13 @@ swapCurrentHero (ni, np) =
                       modify (updateLevel (updateHeroes upd))
                       modify (updatePlayer (const np)))
 
--- | Calculate loot's worth. TODO: move to another module, and refine significantly. TODO: calculate for all heroes on the current level.
-calculateTotal :: Hero -> Int
-calculateTotal hero = L.sum $ L.map price $ mitems hero
-  where
-    price i = if iletter i == Just '$' then icount i else 10 * icount i
+-- | Calculate loot's worth. TODO: move to another module, and refine significantly.
+calculateTotal :: State -> Int
+calculateTotal s =
+  L.sum $ L.map price $ L.concatMap mitems hs
+    where
+      hs = levelHeroList s
+      price i = if iletter i == Just '$' then icount i else 10 * icount i
 
 -- | Handle current score and display it with the high scores. TODO: simplify. Scores
 -- should not be shown during the game, because ultimately the worth of items might give
