@@ -9,6 +9,8 @@ import ItemState
 
 -- | How to refer to a monster in object position of a sentence.
 objectMonster :: MonsterType -> String
+-- Hard to make it compatible with 1-hero mode and sounds strange, anyway.
+-- objectMonster (Hero n) = "hero " ++ show n
 objectMonster (Hero _) = "you"
 objectMonster Eye      = "the reducible eye"
 objectMonster FastEye  = "the super-fast eye"

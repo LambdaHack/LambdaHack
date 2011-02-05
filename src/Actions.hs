@@ -318,7 +318,7 @@ cycleHero =
                 modify (updateLevel (updateHeroes del))
                 modify (updatePlayer (const np))
                 modify (updateLook (const (Just $ look { returnLn = nln })))
-                messageAdd "A hero selected."
+                messageAdd $ "Hero number " ++ show ni ++ " selected."
       _ ->
         let i = heroNumber player
             (lt, gt) = IM.split i hs
@@ -327,7 +327,7 @@ cycleHero =
               (ni, np) : _ ->
                 do
                   swapCurrentHero (ni, np)
-                  messageAdd "Next hero selected."
+                  messageAdd $ "Hero number " ++ show ni ++ " selected."
 
 swapCurrentHero :: (Int, Hero) -> Action ()
 swapCurrentHero (ni, np) =
