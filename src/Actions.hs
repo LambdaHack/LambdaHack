@@ -154,8 +154,12 @@ remember =
     let rememberLoc = M.update (\ (t,_) -> Just (t,t))
     modify (updateLevel (updateLMap (\ lmap -> foldr rememberLoc lmap vis)))
 
-checkHeroDeath :: Action ()
-checkHeroDeath =  -- TODO: for now, quit only when the last hero dies. TODO: check if it should have Hero or Player in the name (is it about the current hero?)
+-- | Remove dead heroes, check if game over.
+-- For now we only check the selected hero, but if poison, etc. is implemented,
+-- we'd need to check all heroes on level.
+-- TODO: implement survivorsCarryOn==True mode (game over when last hero dies).
+checkPartyDeath :: Bool -> Action ()
+checkPartyDeath _survivorsCarryOn =
   do
     player <- gets splayer
     let php = mhp player
@@ -706,5 +710,9 @@ regenerate actor =
   do
     time <- gets stime
     -- TODO: remove hardcoded time interval, regeneration should be an attribute of the monster
-    when (time `mod` 1500 == 0) $
-      updateActor actor (\ m -> m { mhp = min (mhpmax m) (mhp m + 1) })
+    let upd m = m { mhp = min (mhpmax m) (mhp m + 1) }
+    when (time `mod` 1500 == 0) $ do
+      updateActor actor upd
+    -- ugly, but we really want hero selection to be a purely UI distinction
+      when (actor == APlayer) $
+        modify (updateLevel (updateHeroes (IM.map upd)))
