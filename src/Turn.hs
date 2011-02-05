@@ -230,7 +230,7 @@ stdKeybindings = Keybindings
                (K.Char '>',  descendCommand),
 
                (K.Char ':',  lookCommand),
-               (K.Tab     ,  heroCommand),
+               (K.Tab     ,  Described "cycle among heroes on level" $ cycleHero >> playerCommand),
 
                -- items
                (K.Char ',',  pickupCommand),
