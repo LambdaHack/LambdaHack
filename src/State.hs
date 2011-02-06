@@ -50,7 +50,7 @@ defaultState player dng lvl =
     S.empty
     dng
     lvl
-    (Config.CP Config.empty_CP)
+    (Config.defaultCP)
 
 updatePlayer :: (Hero -> Hero) -> State -> State
 updatePlayer f s = s { splayer = f (splayer s) }

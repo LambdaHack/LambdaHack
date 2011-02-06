@@ -1,30 +1,37 @@
-module Config where
+module Config
+ (CP, defaultCP, config, getOption, getDefault, getFile) where
 
 import System.Directory
 import System.FilePath
 import Control.Monad.Error
 
-import Data.ConfigFile
+import qualified Data.ConfigFile as CF
 import Data.Either.Utils
 import Data.Maybe
 import qualified Data.Binary as B
 
-newtype CP = CP ConfigParser
+newtype CP = CP CF.ConfigParser
 
 instance B.Binary CP where
-  put (CP config) = B.put $ to_string config
+  put (CP config) = B.put $ CF.to_string config
   get = do
     string <- B.get
-    let parsed = readstring emptyCP string
-    return $ CP $ forceEither $ parsed
+    let parsed = CF.readstring emptyCP string
+    return $ toCP $ forceEither $ parsed
 
 instance Show CP where
-  show (CP config) = show $ to_string config
+  show (CP config) = show $ CF.to_string config
 
--- | Our version of basic parser. Underscore in the name to avoid a name clash.
+-- | Our version of basic parser.
 -- All names turned case sensitive (insensitive is the default in ConfigFile).
-empty_CP :: ConfigParser
-empty_CP = emptyCP {optionxform = id}
+emptyCP :: CF.ConfigParser
+emptyCP = CF.emptyCP {CF.optionxform = id}
+
+toCP :: CF.ConfigParser -> CP
+toCP cp = CP $ cp {CF.optionxform = id}
+
+defaultCP :: CP
+defaultCP = toCP CF.emptyCP
 
 -- | Path to the main configuration file.
 file :: IO String
@@ -41,32 +48,32 @@ config =
     f <- file
     b <- doesFileExist f
     if not b
-      then return $ CP empty_CP
+      then return defaultCP
       else do
-        c <- readfile empty_CP f
-        return $ CP (forceEither c)
+        c <- CF.readfile emptyCP f
+        return $ toCP $ forceEither c
 
 -- | A simplified access to an option in a given section,
 -- with simple error reporting (no error is caught and hidden).
 -- If there is no config file or no such option, gives Nothing.
-getOption :: Get_C a => CP -> SectionSpec -> OptionSpec -> Maybe a
+getOption :: CF.Get_C a => CP -> CF.SectionSpec -> CF.OptionSpec -> Maybe a
 getOption (CP config) s o =
-  if has_option config s o
-    then Just $ forceEither $ get config s o
+  if CF.has_option config s o
+    then Just $ forceEither $ CF.get config s o
     else Nothing
 
 -- | A simplified access to an option in a given section, with a default.
-getDefault :: Get_C a => a -> CP -> SectionSpec -> OptionSpec -> a
+getDefault :: CF.Get_C a => a -> CP -> CF.SectionSpec -> CF.OptionSpec -> a
 getDefault dflt (CP config) s o =
-  if has_option config s o
-    then forceEither $ get config s o
+  if CF.has_option config s o
+    then forceEither $ CF.get config s o
     else dflt
 
 -- | Looks up a file path in the config file, faling back to the default path.
 -- The path from the config file is taken relative to the home directory
 -- and the default is taken relative to the current directory. In any case,
 -- the returned path is absolute.
-getFile :: CP -> FilePath -> SectionSpec -> OptionSpec -> IO FilePath
+getFile :: CP -> FilePath -> CF.SectionSpec -> CF.OptionSpec -> IO FilePath
 getFile config dflt s o =
   do
     current <- getCurrentDirectory
