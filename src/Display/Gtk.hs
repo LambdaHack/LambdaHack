@@ -160,6 +160,7 @@ keyTranslate "comma"         = Just (K.Char ',')
 keyTranslate "space"         = Just (K.Char ' ')
 keyTranslate "question"      = Just (K.Char '?')
 keyTranslate "asterisk"      = Just (K.Char '*')
+keyTranslate "dollar"        = Just (K.Char '$')
 keyTranslate "Escape"        = Just K.Esc
 keyTranslate "Return"        = Just K.Return
 keyTranslate "Tab"           = Just K.Tab

@@ -195,4 +195,3 @@ withPerception h = Action (\ s e _ k a st ms ->
 -- | Get the current perception.
 currentPerception :: Action Perception
 currentPerception = Action (\ s e p k a st ms -> k st ms p)
-
