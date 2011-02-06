@@ -324,10 +324,7 @@ cycleHero =
             (lt, gt) = IM.split i hs
         in  case IM.assocs gt ++ IM.assocs lt of
               [] -> abortWith "Only one hero on this level."
-              (ni, np) : _ ->
-                do
-                  swapCurrentHero (ni, np)
-                  messageAdd $ "Hero number " ++ show ni ++ " selected."
+              (ni, np) : _ -> swapCurrentHero (ni, np)
 
 swapCurrentHero :: (Int, Hero) -> Action ()
 swapCurrentHero (ni, np) =
@@ -337,7 +334,8 @@ swapCurrentHero (ni, np) =
         upd hs = IM.insert i player $ IM.delete ni hs
     when (ni /= i) (do
                       modify (updateLevel (updateHeroes upd))
-                      modify (updatePlayer (const np)))
+                      modify (updatePlayer (const np))
+                      messageAdd $ "Hero number " ++ show ni ++ " selected.")
 
 -- | Calculate loot's worth. TODO: move to another module, and refine significantly.
 calculateTotal :: State -> Int
@@ -642,13 +640,14 @@ moveOrAttack allowAttacks autoOpen actor dir
           attackedMonsters = L.map AMonster $ attMonsters
           attacked :: [Actor]
           attacked = attackedHero ++ attackedMonsters
-      -- Focus on the attacked hero, if any.
-      -- TODO: This requires a special case if a hero bumps into another.
+      -- Focus on the attacked hero, if any. This is also handy for
+      -- selecting adjacent hero by bumping into him (without running).
+      -- TODO: let running switch position of hero and another hero/monster.
       maybe (return ()) swapCurrentHero attHero
-      -- At the moment, we check whether there is a monster before checking accessibility
-      -- i.e., we can attack a monster on a blocked location. For instance,
-      -- a monster on an open door can be attacked diagonally, and a
-      -- monster capable of moving through walls can be attacked from an
+      -- At the moment, we check whether there is a monster before checking
+      -- accessibility, i.e., we can attack a monster on a blocked location.
+      -- For instance, a monster on an open door can be attacked diagonally,
+      -- and a monster capable of moving through walls can be attacked from an
       -- adjacent position.
       if not (L.null attacked)
         then if not allowAttacks then abort else do
@@ -665,6 +664,7 @@ moveOrAttack allowAttacks autoOpen actor dir
         else abort -- nothing useful we can do
 
 actorAttackActor :: Actor -> Actor -> Action ()
+actorAttackActor APlayer APlayer = return ()  -- no PvP  -- TODO: do not take a turn!!!
 actorAttackActor source target =
   do
     debug "actorAttackActor"
