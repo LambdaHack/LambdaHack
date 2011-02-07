@@ -1,5 +1,6 @@
 module State where
 
+import qualified Data.List as L
 import qualified Data.Map as M
 import qualified Data.IntMap as IM
 import qualified Data.Set as S
@@ -55,15 +56,19 @@ defaultState player dng lvl =
 updatePlayer :: (Hero -> Hero) -> State -> State
 updatePlayer f s = s { splayer = f (splayer s) }
 
-levelHeroList :: State -> [Hero]
-levelHeroList (State { splayer  = player,
-                       slevel   = Level { lheroes = hs } }) =
-  player : IM.elems hs
-
 levelHeroAssocs :: State -> [(Int, Hero)]
 levelHeroAssocs (State { splayer  = player,
-                         slevel   = Level { lheroes = hs } }) =
-  (heroNumber player, player) : IM.assocs hs
+                         slook    = look,
+                         slevel   = level@Level { lheroes = hs } }) =
+  case look of
+    Just (Look { returnLn = ln })
+      | ln /= lname level ->
+        -- player not on the currently selected level
+        IM.assocs hs
+    _ -> (heroNumber player, player) : IM.assocs hs
+
+levelHeroList :: State -> [Hero]
+levelHeroList s = snd $ L.unzip $ levelHeroAssocs s
 
 updateLook :: (Maybe Look -> Maybe Look) -> State -> State
 updateLook f s = s { slook = f (slook s) }

@@ -27,25 +27,35 @@ strategy m@(Monster { mtype = mt, mloc = me, mdir = mdir })
     -- player is visible by the monster -- this is more efficient, but
     -- is not correct with the Shadow FOV (the other FOVs are symmetrical)
     -- TODO: set monster targets and then prefer targets to other heroes
-    plocs              =  L.map mloc (levelHeroList state)
-    plds               =  L.map (\ l -> (distance (me, l), l)) plocs
-    -- Here "player" is the hero chased by the monster. As soon as the monster
-    -- hits, this hero will really become the currently selected hero.
+    hs    = levelHeroList state
+    -- If no heroes on the level, monsters go at each other. TODO: let them
+    -- earn XP by killing each other to make this dangerous to the player.
+    hms   = if L.null hs then ms else hs
+    plocs = L.map mloc hms
+    plds  = L.sort $ L.map (\ l -> (distance (me, l), l)) plocs
+    -- Below, "player" is the hero (or a monster, if no heroes on this level)
+    -- chased by the monster ("ploc" is his location, etc.).
+    -- As soon as the monster hits, this hero becomes really the currently
+    -- selected hero.
     -- We have to sort the list to avoid bias towards the currently selected
     -- hero; instead monsters will prefer heroes with smaller locations.
-    (pdist, ploc)      =  L.head (L.sort plds)
+    ploc  = case plds of
+              [] -> Nothing
+              (_, ploc) : _ -> Just ploc
     -- TODO: currently even invisible heroes are targeted if _any_ hero
     -- is visible; each hero should carry his own perception to check
     -- if he's visible by a given monster
     playerVisible      =  me `S.member` pvisible per  -- monster sees any hero
-    playerAdjacent     =  adjacent me ploc
-    towardsPlayer      =  towards (me, ploc)
+    playerAdjacent     =  maybe False (adjacent me) ploc
+    towardsPlayer      =  maybe (0, 0) (\ ploc -> towards (me, ploc)) ploc
     onlyTowardsPlayer  =  only (\ x -> distance (towardsPlayer, x) <= 1)
     lootPresent        =  (\ x -> not $ L.null $ titems $ lmap `at` x)
     onlyLootPresent    =  onlyMoves lootPresent me
     onlyPreservesDir   =  only (\ x -> maybe True (\ d -> distance (neg d, x) > 1) mdir)
     onlyUnoccupied     =  onlyMoves (unoccupied ms lmap) me
     onlyAccessible     =  onlyMoves (accessible lmap me) me
+    -- TODO: restriction to 10 should be enforced elsewhere so that
+    -- monsters can't cheat. Strategy is not the place for enforcing rules.
     onlyOpenable       =  onlyMoves (openable 10 lmap) me
     smells             =  L.map fst $
                           L.sortBy (\ (_,s1) (_,s2) -> compare s2 s1) $
