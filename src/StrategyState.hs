@@ -54,8 +54,9 @@ strategy m@(Monster { mtype = mt, mloc = me, mdir = mdir })
     onlyPreservesDir   =  only (\ x -> maybe True (\ d -> distance (neg d, x) > 1) mdir)
     onlyUnoccupied     =  onlyMoves (unoccupied ms lmap) me
     onlyAccessible     =  onlyMoves (accessible lmap me) me
-    -- TODO: restriction to 10 should be enforced elsewhere so that
-    -- monsters can't cheat. Strategy is not the place for enforcing rules.
+    -- Monsters don't see doors more secret than that. Enforced when actually
+    -- opening doors, too, so that monsters don't cheat.
+    -- TODO: vary the parameter per monster intelligence level.
     onlyOpenable       =  onlyMoves (openable 10 lmap) me
     smells             =  L.map fst $
                           L.sortBy (\ (_,s1) (_,s2) -> compare s2 s1) $

@@ -205,7 +205,8 @@ actorOpenClose actor v o dir =
            Tile d@(Door hv o') []
              | secret o' && isPlayer-> -- door is secret, cannot be opened or closed by hero
                                        neverMind isVerbose
-             | toOpen (not o) /= o' -> -- door is in unsuitable state
+             | maybe o ((|| not o) . (> 10)) o' ->
+                                       -- door is in unsuitable state
                                        abortIfWith isVerbose ("already " ++ txt)
              | not (unoccupied ms lmap dloc) ->
                                        -- door is blocked by a monster
