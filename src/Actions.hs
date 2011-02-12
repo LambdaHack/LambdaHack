@@ -302,71 +302,47 @@ fleeDungeon =
 -- | Switches current hero to the next hero on the level, if any, wrapping.
 cycleHero =
   do
-    hs  <- gets (lheroes . slevel)
-    nln <- gets (lname . slevel)
+    hs <- gets (lheroes . slevel)
     player <- gets splayer
-    look <- gets slook
-    case look of
-      Just look@(Look { returnLn = ln })
-        | ln /= nln ->
-          case IM.assocs hs of
-            [] -> abortWith "No heroes on this level."
-            (ni, np) : _ ->
-              do
-                let i   = heroNumber player
-                    ins = IM.insert i player
-                    pli = updateHeroes ins
-                    del = IM.delete ni
-                modify (updateAnyLevel pli ln)
-                modify (updateLevel (updateHeroes del))
-                modify (updatePlayer (const np))
-                modify (updateLook (const (Just $ look { returnLn = nln })))
-                messageAdd $ "Hero number " ++ show ni ++ " selected."
-      _ ->
-        let i = heroNumber player
-            (lt, gt) = IM.split i hs
-        in  case IM.assocs gt ++ IM.assocs lt of
-              [] -> abortWith "Only one hero on this level."
-              (ni, np) : _ -> swapCurrentHero (ni, np)
+    let i = heroNumber player
+        (lt, gt) = IM.split i hs
+    case IM.keys gt ++ IM.keys lt of
+      [] -> abortWith "Cannot select another hero on this level."
+      ni : _ -> selectHero ni
 
 -- | Selects a hero based on the number. Focuses on the hero if level changed.
--- Even selecting the already selected hero makes sense when in look mode
--- it focuses on the level and location of the hero.
 selectHero :: Int -> Action ()
 selectHero ni =
   do
     state  <- get
     player <- gets splayer
-    look   <- gets slook
-    case findHeroLevel ni state of
-      Nothing -> abortWith $ "No hero number " ++ show ni ++ " in the party."
-      Just (nln, np) -> do
-        let i = heroNumber player
-            ins = IM.insert i player
-            pli = updateHeroes ins
-            del = IM.delete ni
-        -- put the old player back into his original level (look mode!)
-        modify (updateAnyLevel pli (playerLevel state))
-        -- if in look mode, record the original level of the new hero
-        modify (updateLook (fmap (\ lk -> lk { returnLn = nln })))
-        -- switch to the level with the new hero
-        lvlswitch (nln, mloc np)
-        -- make the new hero the player controlled hero
-        modify (updateLevel (updateHeroes del))
-        modify (updatePlayer (const np))
-        -- announce
-        messageAdd $ "Hero number " ++ show ni ++ " selected."
+    let i = heroNumber player
+    unless (ni == i) $  -- already selected
+      case findHeroLevel ni state of
+        Nothing -> abortWith $ "No hero number " ++ show ni ++ " in the party."
+        Just (nln, np) -> do
+          -- put the old player back into his original level
+          stashPlayer
+          -- switch to the level with the new hero
+          lvlswitch (nln, mloc np)
+          -- make the new hero the player controlled hero
+          modify (updateLevel (updateHeroes $ IM.delete ni))
+          modify (updatePlayer (const np))
+          -- if in look mode, record the original level of the new hero
+          modify (updateLook (fmap (\ lk -> lk { returnLn = nln })))
+          -- announce
+          messageAdd $ "Hero number " ++ show ni ++ " selected."
 
-swapCurrentHero :: (Int, Hero) -> Action ()
-swapCurrentHero (ni, np) =
+-- | Copies player to an ordinary hero slot on his level.
+stashPlayer :: Action ()
+stashPlayer =
   do
+    state  <- get
     player <- gets splayer
     let i = heroNumber player
-        upd hs = IM.insert i player $ IM.delete ni hs
-    when (ni /= i) (do
-                      modify (updateLevel (updateHeroes upd))
-                      modify (updatePlayer (const np))
-                      messageAdd $ "Hero number " ++ show ni ++ " selected.")
+        ins = updateHeroes $ IM.insert i player
+        ln = playerLevel state
+    modify (updateAnyLevel ins ln)
 
 -- | Calculate loot's worth. TODO: move to another module, and refine significantly.
 calculateTotal :: State -> Int
@@ -674,7 +650,7 @@ moveOrAttack allowAttacks autoOpen actor dir
       -- Focus on the attacked hero, if any. This is also handy for
       -- selecting adjacent hero by bumping into him (without running).
       -- TODO: let running switch position of hero and another hero/monster.
-      maybe (return ()) swapCurrentHero attHero
+      maybe (return ()) (selectHero . fst) attHero
       -- At the moment, we check whether there is a monster before checking
       -- accessibility, i.e., we can attack a monster on a blocked location.
       -- For instance, a monster on an open door can be attacked diagonally,
