@@ -3,6 +3,7 @@ module Turn where
 import Control.Monad
 import Control.Monad.State hiding (State)
 import Data.Map as M
+import qualified Data.Char as Char
 
 import Action
 import Actions
@@ -216,11 +217,19 @@ displayHelp = messageOverlayConfirm "Basic keys:" helpString >> abort
   where
   helpString = keyHelp stdKeybindings
 
+heroSelection :: [(K.Key, Command)]
+heroSelection =
+  let heroSelect k = (K.Char (Char.intToDigit k),
+                      Undescribed $
+                      selectHero k >> withPerception playerCommand)
+  in  fmap heroSelect [0..9]
+
 stdKeybindings :: Keybindings
 stdKeybindings = Keybindings
   { kdir   = moveDirCommand,
     kudir  = runDirCommand,
     kother = M.fromList $
+             heroSelection ++
              [ -- interaction with the dungeon
                (K.Char 'o',  openCommand),
                (K.Char 'c',  closeCommand),

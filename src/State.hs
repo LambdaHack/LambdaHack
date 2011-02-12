@@ -56,10 +56,16 @@ defaultState player dng lvl =
 updatePlayer :: (Hero -> Hero) -> State -> State
 updatePlayer f s = s { splayer = f (splayer s) }
 
+-- | The level on which the current player resides.
+playerLevel :: State -> LevelName
+playerLevel (State { slevel = level,
+                     slook  = look }) =
+  maybe (lname level) returnLn look
+
 levelHeroAssocs :: State -> [(Int, Hero)]
-levelHeroAssocs (State { splayer  = player,
-                         slook    = look,
-                         slevel   = level@Level { lheroes = hs } }) =
+levelHeroAssocs (State { splayer = player,
+                         slook   = look,
+                         slevel  = level@Level { lheroes = hs } }) =
   case look of
     Just (Look { returnLn = ln })
       | ln /= lname level ->
@@ -69,6 +75,34 @@ levelHeroAssocs (State { splayer  = player,
 
 levelHeroList :: State -> [Hero]
 levelHeroList s = snd $ L.unzip $ levelHeroAssocs s
+
+findHeroLevel :: Int -> State -> Maybe (LevelName, Hero)
+findHeroLevel ni state@(State { splayer  = player,
+                                slevel   = level,
+                                sdungeon = dungeon }) =
+  if ni == heroNumber player
+  then Just (playerLevel state, player)
+  else
+    let Dungeon m = putDungeonLevel level dungeon
+        chk ln lvl = fmap (\ p -> (ln, p)) (IM.lookup ni (lheroes lvl))
+        filtered   = M.mapMaybeWithKey chk m
+    in  fmap fst $ M.minView $ filtered
+
+updateAnyHero :: (Hero -> Hero) -> Int -> State -> State
+updateAnyHero f ni state
+  | ni == heroNumber (splayer state) = updatePlayer f state
+  | otherwise =
+      case findHeroLevel ni state of
+        Just (ln, _hero) ->
+          let upd = IM.adjust f ni
+          in  updateAnyLevel (updateHeroes upd) ln state
+        Nothing -> error $ "updateAnyHero: hero " ++ show ni ++ " not found"
+
+updateAnyLevel :: (Level -> Level) -> LevelName -> State -> State
+updateAnyLevel f ln state@(State { slevel = level,
+                                   sdungeon = Dungeon dng })
+  | ln == lname level = updateLevel f state
+  | otherwise = updateDungeon (const $ Dungeon $ M.adjust f ln dng) state
 
 updateLook :: (Maybe Look -> Maybe Look) -> State -> State
 updateLook f s = s { slook = f (slook s) }

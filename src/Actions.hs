@@ -221,11 +221,14 @@ actorOpenClose actor v o dir =
            _                        -> -- there is no door here
                                        neverMind isVerbose
 
--- | Perform a level switch to a given level and location.
+-- | Perform a level switch to a given level and location. If the level
+-- the same as the current, do nothing (disregard location, too).
+-- TODO: in look mode do not take time, otherwise take as much as 1 step.
 lvlswitch :: DungeonLoc -> Action ()
 lvlswitch (nln, nloc) =
   do
     state <- get
+    when (nln == lname (slevel state)) $ return ()
     -- put back current level
     -- (first put back, then get, in case we change to the same level!)
     let full = putDungeonLevel (slevel state) (sdungeon state)
@@ -297,7 +300,6 @@ fleeDungeon =
              end
 
 -- | Switches current hero to the next hero on the level, if any, wrapping.
--- TODO: extend to number keys switching to heroes on any levels.
 cycleHero =
   do
     hs  <- gets (lheroes . slevel)
@@ -315,7 +317,7 @@ cycleHero =
                     ins = IM.insert i player
                     pli = updateHeroes ins
                     del = IM.delete ni
-                modify (updateDungeon (updateDungeonLevel pli ln))
+                modify (updateAnyLevel pli ln)
                 modify (updateLevel (updateHeroes del))
                 modify (updatePlayer (const np))
                 modify (updateLook (const (Just $ look { returnLn = nln })))
@@ -326,6 +328,34 @@ cycleHero =
         in  case IM.assocs gt ++ IM.assocs lt of
               [] -> abortWith "Only one hero on this level."
               (ni, np) : _ -> swapCurrentHero (ni, np)
+
+-- | Selects a hero based on the number. Focuses on the hero if level changed.
+-- Even selecting the already selected hero makes sense when in look mode
+-- it focuses on the level and location of the hero.
+selectHero :: Int -> Action ()
+selectHero ni =
+  do
+    state  <- get
+    player <- gets splayer
+    look   <- gets slook
+    case findHeroLevel ni state of
+      Nothing -> abortWith $ "No hero number " ++ show ni ++ " in the party."
+      Just (nln, np) -> do
+        let i = heroNumber player
+            ins = IM.insert i player
+            pli = updateHeroes ins
+            del = IM.delete ni
+        -- put the old player back into his original level (look mode!)
+        modify (updateAnyLevel pli (playerLevel state))
+        -- if in look mode, record the original level of the new hero
+        modify (updateLook (fmap (\ lk -> lk { returnLn = nln })))
+        -- switch to the level with the new hero
+        lvlswitch (nln, mloc np)
+        -- make the new hero the player controlled hero
+        modify (updateLevel (updateHeroes del))
+        modify (updatePlayer (const np))
+        -- announce
+        messageAdd $ "Hero number " ++ show ni ++ " selected."
 
 swapCurrentHero :: (Int, Hero) -> Action ()
 swapCurrentHero (ni, np) =

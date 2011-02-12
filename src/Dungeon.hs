@@ -337,6 +337,6 @@ addHero hp state@(State { splayer = player,
               (\ l t -> open t
                         && not (l `L.elem` L.map mloc (hs ++ ms)))
               (\ l t -> floor t
-                        && distance (mloc player, l) < 5 + L.length hs `div` 3)
+                        && distance (mloc player, l) < 6 + L.length hs `div` 3)
     let hero = defaultHero n ploc hp
     return (updateLevel (updateHeroes (IM.insert n hero)) state)
