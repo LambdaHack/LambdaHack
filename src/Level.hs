@@ -504,6 +504,9 @@ lookTerrain (Opening _)        = "An opening."
 lookTerrain (Stairs _ Up _)    = "A staircase up."
 lookTerrain (Stairs _ Down _)  = "A staircase down."
 lookTerrain (Door _ Nothing)   = "An open door."
+lookTerrain (Door _ (Just 0))  = "A closed door."
+lookTerrain (Door _ (Just _))  = "A wall."  -- secret
+lookTerrain (Wall _ )          = "A wall."
 lookTerrain _                  = ""
 
 -- | The parameter "n" is the level of evolution:

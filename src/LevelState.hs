@@ -12,18 +12,15 @@ viewTile :: Bool -> Tile -> Assocs -> (Char, Attr -> Attr)
 viewTile b (Tile t [])    a = viewTerrain 0 b t
 viewTile b (Tile t (i:_)) a = viewItem (itype i) a
 
--- | Produces a textual description of the items at a location. It's
--- probably correct to use 'at' rather than 'rememberAt' at this point,
--- although we could argue that 'rememberAt' reflects what the player can
--- perceive more correctly ...
---
--- The "detailed" variant is for use with an explicit look command.
+-- | Produces a textual description of the terrain and items at an already
+-- explored location. Mute for unknown locations.
+-- The "detailed" variant is for use in the look mode.
 lookAt :: Bool -> State -> LMap -> Loc -> String
 lookAt detailed s lmap loc
-  | detailed  = lookTerrain (tterrain (lmap `at` loc)) ++ " " ++ isd
+  | detailed  = lookTerrain (tterrain (lmap `rememberAt` loc)) ++ " " ++ isd
   | otherwise = isd
   where
-    is  = titems (lmap `at` loc)
+    is  = titems (lmap `rememberAt` loc)
     isd = case is of
             []    -> ""
             [i]   -> "You see " ++ objectItem s (icount i) (itype i) ++ "."
