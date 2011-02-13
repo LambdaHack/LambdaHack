@@ -280,6 +280,10 @@ secret :: Maybe Int -> Bool
 secret (Just n) | n /= 0 = True
 secret _ = False
 
+isUnknown :: Tile -> Bool
+isUnknown (Tile Unknown []) = True
+isUnknown _                 = False
+
 toOpen :: Bool -> Maybe Int
 toOpen True = Nothing
 toOpen False = Just 0

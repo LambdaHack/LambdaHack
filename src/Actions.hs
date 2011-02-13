@@ -221,33 +221,28 @@ actorOpenClose actor v o dir =
            _                        -> -- there is no door here
                                        neverMind isVerbose
 
--- | Perform a level switch to a given level and location. If the level
--- the same as the current, do nothing (disregard location, too).
+-- | Perform a level switch to a given level.
 -- TODO: in look mode do not take time, otherwise take as much as 1 step.
-lvlswitch :: DungeonLoc -> Action ()
-lvlswitch (nln, nloc) =
+lvlswitch :: LevelName -> Action ()
+lvlswitch nln =
   do
     state <- get
-    when (nln == lname (slevel state)) $ return ()
     -- put back current level
     -- (first put back, then get, in case we change to the same level!)
     let full = putDungeonLevel (slevel state) (sdungeon state)
     -- get new level
     let (new, ndng) = getDungeonLevel nln full
     modify (\ s -> s { sdungeon = ndng, slevel = new })
-    case slook state of
-      Nothing -> modify (updatePlayer (\ p -> p { mloc = nloc }))
-      Just lk -> modify (updateLook (const $ Just (lk { cursorLoc = nloc })))
 
  -- | Attempt a level switch to k levels deeper.
-lvldescend :: Loc -> Int -> Action ()
-lvldescend loc k =
+lvldescend :: Int -> Action ()
+lvldescend k =
   do
     state <- get
     let n = levelNumber (lname (slevel state))
         nln = n + k
     if nln >= 1 && nln <= sizeDungeon (sdungeon state)
-      then lvlswitch (LambdaCave nln, loc)
+      then lvlswitch (LambdaCave nln)
       else abortWith "no more levels in this direction"
 
 -- | Attempt a level change via up level and down level keys.
@@ -267,16 +262,23 @@ lvlchange vdir =
             Nothing ->
               -- we are at the "end" of the dungeon
               fleeDungeon
-            Just (nln, nloc) ->
-              -- TODO: in look mode, check if the target stairs are known and  if not, land in the same location as in the current level so as not to reveal stairs location
-              lvlswitch (nln, nloc)
+            Just (nln, nloc) -> do
+              lvlswitch nln
+              case slook state of
+                Nothing ->
+                  -- land the player at the other end of the stairs
+                  modify (updatePlayer (\ p -> p { mloc = nloc }))
+                Just lk -> do
+                  unless (isUnknown (rememberAt map nloc)) $
+                    -- do not freely reveal the other end of the stairs
+                    modify (updateLook (const $ Just (lk { cursorLoc = nloc })))
       _ -> -- no stairs
         if isNothing (slook state)
         then
           let txt = if vdir == Up then "up" else "down"
           in  abortWith ("no stairs " ++ txt)
         else
-          lvldescend loc (if vdir == Up then -1 else 1)
+          lvldescend (if vdir == Up then -1 else 1)
 
 -- | Hero has left the dungeon.
 fleeDungeon :: Action ()
@@ -324,12 +326,14 @@ selectHero ni =
           -- put the old player back into his original level
           stashPlayer
           -- switch to the level with the new hero
-          lvlswitch (nln, mloc np)
+          lvlswitch nln
           -- make the new hero the player controlled hero
           modify (updateLevel (updateHeroes $ IM.delete ni))
           modify (updatePlayer (const np))
           -- if in look mode, record the original level of the new hero
-          modify (updateLook (fmap (\ lk -> lk { returnLn = nln })))
+          -- and focus on him
+          let upd lk = lk { returnLn = nln, cursorLoc = mloc np }
+          modify (updateLook (fmap upd))
           -- announce
           messageAdd $ "Hero number " ++ show ni ++ " selected."
 
@@ -405,9 +409,9 @@ setLook =
 
 -- | Cancel look mode.
 cancelLook :: Look -> Action ()
-cancelLook (Look loc tgt ln) =
+cancelLook (Look _ tgt ln) =
   do
-    lvlswitch (ln, loc)
+    lvlswitch ln
     modify (updatePlayer (\ p -> p { mtarget = tgt }))
     modify (updateLook (const Nothing))
     messageAdd "Look mode canceled."
