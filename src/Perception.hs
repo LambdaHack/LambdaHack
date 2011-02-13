@@ -38,6 +38,7 @@ perception_ state@(State { slevel   = Level { lmap = lmap },
       pers = L.map (\ pl -> perception fovMode (mloc pl) lmap) hs
       reachable = S.unions (L.map preachable pers)
       visible = S.unions (L.map pvisible pers)
+      -- TODO: update individual hero perceptions here; see https://github.com/Mikolaj/LambdaHack/issues/issue/31
   in  Perception reachable visible
 
 perception :: FovMode -> Loc -> LMap -> Perception

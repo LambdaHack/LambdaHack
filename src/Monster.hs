@@ -46,6 +46,7 @@ data Monster = Monster
                   mdir    :: Maybe Dir,  -- for monsters: the dir the monster last moved;
                                          -- for heroes: the dir the hero is running
                   mtarget :: Target,
+-- TODO:          mper    :: Maybe Perception  -- see https://github.com/Mikolaj/LambdaHack/issues/issue/31
                   mloc    :: !Loc,
                   mitems  :: [Item],     -- inventory
                   mletter :: !Char,      -- next inventory letter
