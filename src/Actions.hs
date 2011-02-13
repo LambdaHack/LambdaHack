@@ -64,19 +64,40 @@ cancelCurrent =
   do
     state <- get
     case slook state of
-      Just lk -> do
-                   cancelLook lk
-      Nothing -> do
-                   abortWith "Press Q to quit."
+      Just lk -> cancelLook lk
+      Nothing -> abortWith "Press Q to quit."
+
+moveCursor :: Look -> Dir -> Int -> Action ()  -- TODO: do not take time!!!
+moveCursor lk@(Look { cursorLoc = loc }) dir n =
+  do
+    (sy, sx) <- gets (lsize . slevel)
+    let iter :: Int -> (a -> a) -> a -> a  -- not in base libs???
+        iter 0 _ x = x
+        iter k f x = f (iter (k-1) f x)
+        (ny, nx) = iter n (`shift` dir) loc
+        nloc = (max 1 $ min ny (sy-1), max 1 $ min nx (sx-1))
+        nlk  = lk { cursorLoc = nloc }
+    modify (updateLook (const $ Just nlk))
+    doLook nlk
 
 move :: Dir -> Action ()
-move = moveOrAttack True True APlayer
+move dir =
+  do
+    state <- get
+    case slook state of
+      Just lk -> moveCursor lk dir 1
+      Nothing -> moveOrAttack True True APlayer dir
 
 run :: Dir -> Action ()
 run dir =
   do
-    modify (updatePlayer (\ p -> p { mdir = Just dir }))
-    moveOrAttack False False APlayer dir -- attacks and opening doors disallowed while running
+    state <- get
+    case slook state of
+      Just lk -> moveCursor lk dir 10
+      Nothing -> do
+        modify (updatePlayer (\ p -> p { mdir = Just dir }))
+        -- attacks and opening doors disallowed while running
+        moveOrAttack False False APlayer dir
 
 -- | This function implements the actual "logic" of running. It checks if we
 -- have to stop running because something interested happened, and it checks
@@ -264,21 +285,27 @@ lvlchange vdir =
               fleeDungeon
             Just (nln, nloc) -> do
               lvlswitch nln
-              case slook state of
+              case slook state of  -- lvlswitch does not modify look
                 Nothing ->
                   -- land the player at the other end of the stairs
                   modify (updatePlayer (\ p -> p { mloc = nloc }))
                 Just lk -> do
-                  unless (isUnknown (rememberAt map nloc)) $
-                    -- do not freely reveal the other end of the stairs
-                    modify (updateLook (const $ Just (lk { cursorLoc = nloc })))
+                  -- do not freely reveal the other end of the stairs
+                  map <- gets (lmap . slevel)  -- lvlswitch modifies map
+                  let destinationLoc = if isUnknown (rememberAt map nloc)
+                                       then loc
+                                       else nloc
+                      nlk = lk { cursorLoc = destinationLoc }
+                  modify (updateLook (const $ Just nlk))
+                  doLook nlk
       _ -> -- no stairs
-        if isNothing (slook state)
-        then
-          let txt = if vdir == Up then "up" else "down"
-          in  abortWith ("no stairs " ++ txt)
-        else
-          lvldescend (if vdir == Up then -1 else 1)
+        case slook state of
+          Just lk -> do
+            lvldescend (if vdir == Up then -1 else 1)
+            doLook lk  -- lvldescend does not change lk
+          Nothing -> do
+            let txt = if vdir == Up then "up" else "down"
+            abortWith ("no stairs " ++ txt)
 
 -- | Hero has left the dungeon.
 fleeDungeon :: Action ()
@@ -390,8 +417,7 @@ lookAround =
   do
     state <- get
     case slook state of
-      Just lk -> do
-                   cancelLook lk
+      Just lk -> cancelLook lk
       Nothing -> do
                    lk <- setLook
                    doLook lk
