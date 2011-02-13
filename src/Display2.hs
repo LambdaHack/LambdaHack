@@ -176,7 +176,11 @@ displayLevel session per
                                            Just m | sOmn || vis  -> viewMonster (mtype m) (mtype m == mtype player)
                                            _ | sSml && sml >= 0  -> viewSmell sml
                                              | otherwise         -> viewTile vis tile assocs
-                               vision = lVision vis rea
+                               vision =
+                                 case slook state of
+                                   Just (Look { cursorLoc = cloc })
+                                     | loc == cloc -> setBG white
+                                   _ -> lVision vis rea
                            in
                              case over (loc `shift` ((sy+1) * n, 0)) of
                                Just c  ->  (attr, c)
