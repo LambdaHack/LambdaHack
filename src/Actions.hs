@@ -182,7 +182,6 @@ remember =
 checkPartyDeath :: Bool -> Action ()
 checkPartyDeath _survivorsCarryOn =
   do
-    state  <- get
     player <- gets splayer
     let php = mhp player
     when (php <= 0) $ do
@@ -191,6 +190,7 @@ checkPartyDeath _survivorsCarryOn =
       session getConfirm
       go <- messageMoreConfirm "You die."
       when go $ do
+        state  <- get
         ln <- gets (lname . slevel)
         let total = calculateTotal state
             status = H.Killed ln
@@ -242,18 +242,24 @@ actorOpenClose actor v o dir =
            _                        -> -- there is no door here
                                        neverMind isVerbose
 
--- | Perform a level switch to a given level.
+-- | Perform a level switch to a given level. False, if nothing to do.
 -- TODO: in look mode do not take time, otherwise take as much as 1 step.
-lvlswitch :: LevelName -> Action ()
+lvlswitch :: LevelName -> Action Bool
 lvlswitch nln =
   do
-    state <- get
-    -- put back current level
-    -- (first put back, then get, in case we change to the same level!)
-    let full = putDungeonLevel (slevel state) (sdungeon state)
-    -- get new level
-    let (new, ndng) = getDungeonLevel nln full
-    modify (\ s -> s { sdungeon = ndng, slevel = new })
+    ln <- gets (lname . slevel)
+    if (nln == ln)
+      then return False
+      else do
+        level <- gets slevel
+        dungeon <- gets sdungeon
+        -- put back current level
+        -- (first put back, then get, in case we change to the same level!)
+        let full = putDungeonLevel level dungeon
+        -- get new level
+        let (new, ndng) = getDungeonLevel nln full
+        modify (\ s -> s { sdungeon = ndng, slevel = new })
+        return True
 
  -- | Attempt a level switch to k levels deeper.
 lvldescend :: Int -> Action ()
@@ -262,9 +268,9 @@ lvldescend k =
     state <- get
     let n = levelNumber (lname (slevel state))
         nln = n + k
-    if nln >= 1 && nln <= sizeDungeon (sdungeon state)
-      then lvlswitch (LambdaCave nln)
-      else abortWith "no more levels in this direction"
+    when (nln < 1 || nln > sizeDungeon (sdungeon state)) $
+      abortWith "no more levels in this direction"
+    assertTrue $ lvlswitch (LambdaCave nln)
 
 -- | Attempt a level change via up level and down level keys.
 -- Will quit the game if the player leaves the dungeon.
@@ -284,7 +290,7 @@ lvlchange vdir =
               -- we are at the "end" of the dungeon
               fleeDungeon
             Just (nln, nloc) -> do
-              lvlswitch nln
+              assertTrue $  lvlswitch nln  -- no stairs back to the same level
               case slook state of  -- lvlswitch does not modify look
                 Nothing ->
                   -- land the player at the other end of the stairs
@@ -329,6 +335,7 @@ fleeDungeon =
              end
 
 -- | Switches current hero to the next hero on the level, if any, wrapping.
+cycleHero :: Action ()
 cycleHero =
   do
     hs <- gets (lheroes . slevel)
@@ -337,32 +344,38 @@ cycleHero =
         (lt, gt) = IM.split i hs
     case IM.keys gt ++ IM.keys lt of
       [] -> abortWith "Cannot select another hero on this level."
-      ni : _ -> selectHero ni
+      ni : _ -> assertTrue $ selectHero ni
 
 -- | Selects a hero based on the number. Focuses on the hero if level changed.
-selectHero :: Int -> Action ()
+-- False, if nothing to do.
+selectHero :: Int -> Action Bool
 selectHero ni =
   do
-    state  <- get
     player <- gets splayer
     let i = heroNumber player
-    unless (ni == i) $  -- already selected
-      case findHeroLevel ni state of
-        Nothing -> abortWith $ "No hero number " ++ show ni ++ " in the party."
-        Just (nln, np) -> do
-          -- put the old player back into his original level
-          stashPlayer
-          -- switch to the level with the new hero
-          lvlswitch nln
-          -- make the new hero the player controlled hero
-          modify (updateLevel (updateHeroes $ IM.delete ni))
-          modify (updatePlayer (const np))
-          -- if in look mode, record the original level of the new hero
-          -- and focus on him
-          let upd lk = lk { returnLn = nln, cursorLoc = mloc np }
-          modify (updateLook (fmap upd))
-          -- announce
-          messageAdd $ "Hero number " ++ show ni ++ " selected."
+    if (ni == i)
+      then return False -- already selected
+      else do
+        state  <- get
+        case findHeroLevel ni state of
+          Nothing ->
+            abortWith $ "No hero number " ++ show ni ++ " in the party."
+          Just (nln, np) -> do
+            -- put the old player back into his original level
+            stashPlayer
+            -- switch to the level with the new hero
+            lvlChanged <- lvlswitch nln
+            -- make the new hero the player controlled hero
+            modify (updateLevel (updateHeroes $ IM.delete ni))
+            modify (updatePlayer (const np))
+            -- if in look mode, record the original level of the new hero
+            -- and focus on him, if level changed
+            let upd lk = let loc = if lvlChanged then mloc np else cursorLoc lk
+                         in  lk { returnLn = nln, cursorLoc = loc }
+            modify (updateLook (fmap upd))
+            -- announce
+            messageAdd $ "Hero number " ++ show ni ++ " selected."
+            return True
 
 -- | Copies player to an ordinary hero slot on his level.
 stashPlayer :: Action ()
@@ -430,8 +443,9 @@ setLook =
     let loc = mloc (splayer state)
         tgt = TNone
         ln  = lname (slevel state)
-    modify (updateLook (const $ Just $ Look loc tgt ln))
-    return $ Look loc tgt ln
+        lk  = Look loc tgt ln
+    modify (updateLook (const $ Just lk))
+    return lk
 
 -- | Cancel look mode.
 cancelLook :: Look -> Action ()
@@ -680,7 +694,7 @@ moveOrAttack allowAttacks autoOpen actor dir
       -- Focus on the attacked hero, if any. This is also handy for
       -- selecting adjacent hero by bumping into him (without running).
       -- TODO: let running switch position of hero and another hero/monster.
-      maybe (return ()) (selectHero . fst) attHero
+      maybe (return False) (selectHero . fst) attHero
       -- At the moment, we check whether there is a monster before checking
       -- accessibility, i.e., we can attack a monster on a blocked location.
       -- For instance, a monster on an open door can be attacked diagonally,

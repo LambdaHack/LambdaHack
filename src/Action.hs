@@ -103,6 +103,18 @@ end = Action (\ s e p k a st ms -> e)
 abort :: Action a
 abort = Action (\ s e p k a st ms -> a)
 
+-- | Perform an action and signal an error if the result is False.
+assertTrue :: Action Bool -> Action ()
+assertTrue h = do
+  b <- h
+  when (not b) $ error "assertTrue: failure"
+
+-- | Perform an action and signal an error if the result is True.
+assertFalse :: Action Bool -> Action ()
+assertFalse h = do
+  b <- h
+  when b $ error "assertFalse: failure"
+
 -- | Set the current exception handler. First argument is the handler,
 -- second is the computation the handler scopes over.
 tryWith :: Action () -> Action () -> Action ()
