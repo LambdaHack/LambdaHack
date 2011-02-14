@@ -159,6 +159,10 @@ messageMoreConfirm msg =
     display
     session getConfirm
 
+-- | Print message, await confirmation, ignore confirmation.
+messageMore :: Message -> Action ()
+messageMore msg = messageMoreConfirm msg >> return ()
+
 -- | Print a yes/no question and return the player's answer.
 messageYesNo :: Message -> Action Bool
 messageYesNo msg =

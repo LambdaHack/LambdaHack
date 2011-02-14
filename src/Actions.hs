@@ -47,7 +47,8 @@ saveGame =
         ln <- gets (lname . slevel)
         let total = calculateTotal st
             status = H.Camping ln
-        handleScores False status total
+        go <- handleScores False status total
+        when go $ messageMore "See you soon, stronger and braver!"
         end
       else abortWith "Game resumed."
 
@@ -194,7 +195,8 @@ checkPartyDeath _survivorsCarryOn =
         ln <- gets (lname . slevel)
         let total = calculateTotal state
             status = H.Killed ln
-        handleScores True status total
+        go <- handleScores True status total
+        when go $ messageMore "Let's hope another party can save the day!"
       end
 
 neverMind :: Bool -> Action a
@@ -323,15 +325,17 @@ fleeDungeon =
         items = L.concatMap mitems hs
     if total == 0
       then do
-             messageMoreConfirm "Coward!"
-             messageMoreConfirm "Next time try to grab some loot before escape!"
+             messageMore "Coward!"
+             messageMore "Next time try to grab some loot before escape!"
              end
       else do
              let winMsg = "Congratulations, you won! Your loot, worth " ++
                           show total ++ " gold, is:"
              displayItems winMsg True items
              go <- session getConfirm
-             when go $ handleScores True H.Victor total
+             when go $ do
+               go <- handleScores True H.Victor total
+               when go $ messageMore "Can it be done better, though?"
              end
 
 -- | Switches current hero to the next hero on the level, if any, wrapping.
@@ -399,9 +403,12 @@ calculateTotal s =
 -- | Handle current score and display it with the high scores. TODO: simplify. Scores
 -- should not be shown during the game, because ultimately the worth of items might give
 -- information about the nature of the items.
-handleScores :: Bool -> H.Status -> Int -> Action ()
+-- False if display of the scores was void or interrupted by the user
+handleScores :: Bool -> H.Status -> Int -> Action Bool
 handleScores write status total =
-  unless (total == 0) $ do
+  if (total == 0)
+  then return False
+  else do
     cfg     <- gets sconfig
     time    <- gets stime
     curDate <- liftIO getClockTime
@@ -411,7 +418,6 @@ handleScores write status total =
     let score = H.ScoreRecord points (-time) curDate status
     (placeMsg, slideshow) <- liftIO $ H.register cfg write score
     messageOverlaysConfirm placeMsg slideshow
-    return ()
 
 -- | Search for secret doors
 search :: Action ()
