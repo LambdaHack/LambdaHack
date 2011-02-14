@@ -23,23 +23,23 @@ strategy m@(Monster { mtype = mt, mloc = me, mdir = mdir })
       Nose    -> nose
       _       -> onlyAccessible moveRandomly
   where
-    -- TODO: we check if the monster is visible by the player rather than if the
-    -- player is visible by the monster -- this is more efficient, but
+    -- TODO: we check if the monster is visible by the hero rather than
+    -- if the hero is visible by the monster -- this is more efficient, but
     -- is not correct with the Shadow FOV (the other FOVs are symmetrical)
     -- TODO: set monster targets and then prefer targets to other heroes
     hs    = levelHeroList state
     -- If no heroes on the level, monsters go at each other. TODO: let them
     -- earn XP by killing each other to make this dangerous to the player.
     hms   = if L.null hs then ms else hs
-    plocs = L.map mloc hms
-    plds  = L.sort $ L.map (\ l -> (distance (me, l), l)) plocs
+    hlocs = L.map mloc hms
+    hds   = L.sort $ L.map (\ l -> (distance (me, l), l)) hlocs
     -- Below, "player" is the hero (or a monster, if no heroes on this level)
     -- chased by the monster ("ploc" is his location, etc.).
     -- As soon as the monster hits, this hero becomes really the currently
     -- selected hero.
     -- We have to sort the list to avoid bias towards the currently selected
     -- hero; instead monsters will prefer heroes with smaller locations.
-    ploc  = case plds of
+    ploc  = case hds of
               [] -> Nothing
               (_, ploc) : _ -> Just ploc
     -- TODO: currently even invisible heroes are targeted if _any_ hero

@@ -140,7 +140,7 @@ newItem n ftp =
     return (Item nr item (itemLetter tp))
 
 -- | Assigns a letter to an item, for inclusion
--- in the inventory of the player. Takes a remembered
+-- in the inventory of a hero. Takes a remembered
 -- letter and a starting letter.
 assignLetter :: Maybe Char -> Char -> [Item] -> Maybe Char
 assignLetter r c is =

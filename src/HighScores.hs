@@ -82,7 +82,8 @@ showScore (pos, score) =
       -- TODO: later: https://github.com/kosmikus/LambdaHack/issues#issue/9
       steps = negTurn score `div` (-10)
   in
-   printf "%s\n%4d. %6d  This party %s after %d steps  \n%son %s.  \n"
+   printf
+     "%s\n%4d. %6d  This adventuring party %s after %d steps  \n%son %s.  \n"
      big pos (points score) died steps lil time
 
 -- | The list of scores, in decreasing order.

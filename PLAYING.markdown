@@ -98,7 +98,7 @@ ignore the hero, others chase him only when they see him
 and the especially dangerous kind is able to smell the hero.
 
 When the hero moves into a monster or a monster bumps into the hero,
-combat occurs. Whenever combat occurs, the attacked party may lose some health.
+combat occurs. Whenever combat occurs, the attacked actor may lose some health.
 If the hero dies, the game ends.
 
 

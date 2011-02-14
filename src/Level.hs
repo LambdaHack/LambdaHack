@@ -555,9 +555,8 @@ viewSmell n = let k | n > 9    = '*'
                     | otherwise = head . show $ n
               in  (k, setFG black . setBG green)
 
--- TODO: Really scatter around, if more than one or location occupied.
+-- TODO: Really scatter around, if more than one or location occupied?
 --       Scatter randomly or not?
---       Perhaps starting in the direction opposite to the player?
 scatterItems :: [Item] -> Loc -> Level -> Level
 scatterItems items loc lvl@(Level { lmap = lmap }) =
   let joinItems items = foldl (\ acc i -> snd (joinItem i acc)) items
