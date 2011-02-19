@@ -48,12 +48,18 @@ keyTranslate e =
     V.EvKey KPageDown []     -> Just K.PgDn
     V.EvKey KBegin []        -> Just K.Begin
     -- No KP_ keys in vty; maintainer contacted, we'll see.
-    -- Update: maintainer is willing to accept a patch. Will do.
-    -- For now, though, movement keys are more important than hero selection:
+    -- Update: maintainer is willing to accept a patch.
+    -- Update: The patch would probably require reading from the raw keyboard
+    -- device (as gtk does), instead of from stdin. Sounds beyond vty scope.
+    -- On xterm, there would be some hope, but gnome terminal with its
+    -- broken terminfo just does not produce any events for some keypad keys
+    -- with num lock off. It's even less standardized that KBegin/KClear.
+    -- For now, movement keys are more important than hero selection:
     V.EvKey (KASCII c) []
       | c `elem` "123456789" -> Just (K.KP c)
       | otherwise            -> Just (K.Char c)
     _                        -> Nothing
+--  _                        -> Just (K.Dbg $ show e)
 
 nextEvent :: Session -> IO K.Key
 nextEvent session =

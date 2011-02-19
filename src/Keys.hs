@@ -18,6 +18,7 @@ data Key =
   | Home
   | KP Char    -- ^ a keypad key for a character (digits and operators)
   | Char Char  -- ^ a single printable character
+  | Dbg String -- ^ an unknown key, collected for debugging
   deriving (Ord, Eq)
 
 showKey :: Key -> String
@@ -32,5 +33,7 @@ showKey Right    = "<right>"
 showKey Up       = "<up>"
 showKey Down     = "<down>"
 showKey End      = "<end>"
+showKey Begin    = "<begin>"
 showKey Home     = "<home>"
 showKey (KP c)   = "<KeyPad " ++ [c] ++ ">"
+showKey (Dbg s)  = s

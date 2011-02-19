@@ -77,12 +77,14 @@ keyTranslate e =
     C.KeyNPage       -> Just K.PgDn
     C.KeyBeg         -> Just K.Begin
     C.KeyB2          -> Just K.Begin
+    C.KeyClear       -> Just K.Begin
     -- No KP_ keys in hscurses and they do not seem actively maintained.
     -- For now, movement keys are more important than hero selection:
     C.KeyChar c
       | c `elem` "123456789" -> Just (K.KP c)
       | otherwise            -> Just (K.Char c)
     _                -> Nothing
+--  _                -> Just (K.Dbg $ show e)
 
 nextEvent :: Session -> IO K.Key
 nextEvent session =
