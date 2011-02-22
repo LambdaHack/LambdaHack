@@ -93,8 +93,6 @@ handleMonsters =
         | mhp m <= 0 -> -- the monster dies
                         do
                           modify (updateLevel (updateMonsters (const ms)))
-                          -- place the monster's possessions on the map
-                          modify (updateLevel (scatterItems (mitems m) (mloc m)))
                           handleMonsters
         | otherwise  -> -- monster m should move; we temporarily remove m from the level
                         -- TODO: removal isn't nice. Actor numbers currently change during

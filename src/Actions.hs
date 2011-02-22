@@ -409,14 +409,14 @@ handleScores write status total =
   if (total == 0)
   then return False
   else do
-    cfg     <- gets sconfig
+    config  <- gets sconfig
     time    <- gets stime
     curDate <- liftIO getClockTime
     let points = case status of
                    H.Killed _ -> (total + 1) `div` 2
                    _ -> total
     let score = H.ScoreRecord points (-time) curDate status
-    (placeMsg, slideshow) <- liftIO $ H.register cfg write score
+    (placeMsg, slideshow) <- liftIO $ H.register config write score
     messageOverlaysConfirm placeMsg slideshow
 
 -- | Search for secret doors
@@ -727,23 +727,28 @@ actorAttackActor source target =
     debug "actorAttackActor"
     state <- get
     let sm = getActor state source
-    let tm = getActor state target
-    -- determine the weapon used for the attack
-    let sword = strongestSword (mitems sm)
-    -- damage the target
-    let newHp  = mhp tm - 3 - sword
-    let killed = newHp <= 0
-    updateActor target $ \ m ->
-      if killed
-        then m { mhp = 0, mtime = 0 } -- grant an immediate move to die
-        -- TODO: is there a good reason not to let the monster die just here?
-        else m { mhp = newHp }
+        tm = getActor state target
+        -- determine the weapon used for the attack
+        sword = strongestSword (mitems sm)
+        -- damage the target
+        newHp  = mhp tm - 3 - sword
+        killed = newHp <= 0
+    if killed
+      then do
+        -- grant an immediate move to die; TODO: instead kill the actor
+        -- right here, but carefully, because monsters and heroes have different
+        -- ways of disappearing and for heroes it may end the game
+        updateActor target $ \ m -> m { mhp = 0, mtime = 0 }
+        -- place the actor's possessions on the map
+        dropItemsAt (mitems tm) (mloc tm)
+      else
+        updateActor target $ \ m -> m { mhp = newHp }
     -- determine how the hero perceives the event; TODO: we have to be more
     -- precise and treat cases where two monsters fight, but only one is visible
     let combatVerb = if killed && target /= APlayer then "kill" else "hit"
-    let swordMsg   = if sword == 0 then "" else
+        swordMsg   = if sword == 0 then "" else
                        " with a (+" ++ show sword ++ ") sword" -- TODO: generate proper message
-    let combatMsg  = subjectVerbMObject state sm combatVerb tm swordMsg
+        combatMsg  = subjectVerbMObject state sm combatVerb tm swordMsg
     per <- currentPerception
     let perceived  = mloc sm `S.member` pvisible per
     messageAdd $
