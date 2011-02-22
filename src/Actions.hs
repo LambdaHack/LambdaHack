@@ -27,6 +27,7 @@ import Perception
 import Random
 import qualified Save as S
 import State
+import qualified Config
 
 displayHistory :: Action ()
 displayHistory =
@@ -177,27 +178,39 @@ remember =
     modify (updateLevel (updateLMap (\ lmap -> foldr rememberLoc lmap vis)))
 
 -- | Remove dead heroes, check if game over.
--- For now we only check the selected hero, but if poison, etc. is implemented,
--- we'd need to check all heroes on level.
--- TODO: implement survivorsCarryOn==True mode (game over when last hero dies).
-checkPartyDeath :: Bool -> Action ()
-checkPartyDeath _survivorsCarryOn =
+-- For now we only check the selected hero, but if poison, etc.
+-- is implemented, we'd need to check all heroes on the level.
+checkPartyDeath :: Action ()
+checkPartyDeath =
   do
+    state  <- get
     player <- gets splayer
-    let php = mhp player
-    when (php <= 0) $ do
-      messageAdd more
-      display
-      session getConfirm
+    config <- gets sconfig
+    let firstDeathEnds =
+          Config.getDefault False config "heroes" "firstDeathEnds"
+    when (mhp player <= 0) $ do
+      messageAddMore
       go <- messageMoreConfirm "You die."
-      when go $ do
-        state  <- get
-        ln <- gets (lname . slevel)
-        let total = calculateTotal state
-            status = H.Killed ln
-        go <- handleScores True status total
-        when go $ messageMore "Let's hope another party can save the day!"
-      end
+      if firstDeathEnds
+        then gameOver go
+        else case allLevelHeroes state of
+               [] -> gameOver go
+               (ni, nln, np) : _ -> do
+                 promotePlayer ni (nln, np)
+                 message "The survivors carry on."
+
+-- | End game, showing the ending screens, if requsted.
+gameOver :: Bool -> Action ()
+gameOver showEndingScreens =
+  do
+    when showEndingScreens $ do
+      state <- get
+      ln <- gets (lname . slevel)
+      let total = calculateTotal state
+          status = H.Killed ln
+      handleScores True status total
+      messageMore "Let's hope another party can save the day!"
+    end
 
 neverMind :: Bool -> Action a
 neverMind b = abortIfWith b "never mind"
@@ -367,16 +380,8 @@ selectHero ni =
           Just (nln, np) -> do
             -- put the old player back into his original level
             stashPlayer
-            -- switch to the level with the new hero
-            lvlChanged <- lvlswitch nln
-            -- make the new hero the player controlled hero
-            modify (updateLevel (updateHeroes $ IM.delete ni))
-            modify (updatePlayer (const np))
-            -- if in look mode, record the original level of the new hero
-            -- and focus on him, if level changed
-            let upd lk = let loc = if lvlChanged then mloc np else cursorLoc lk
-                         in  lk { returnLn = nln, cursorLoc = loc }
-            modify (updateLook (fmap upd))
+            -- move over the new hero
+            promotePlayer ni (nln, np)
             -- announce
             messageAdd $ "Hero number " ++ show ni ++ " selected."
             return True
@@ -391,6 +396,21 @@ stashPlayer =
         ins = updateHeroes $ IM.insert i player
         ln = playerLevel state
     modify (updateAnyLevel ins ln)
+
+-- | Moves a hero to the player-controlled position.
+promotePlayer :: Int -> (LevelName, Hero) -> Action ()
+promotePlayer ni (nln, np) =
+  do
+    -- switch to the level with the new hero
+    lvlChanged <- lvlswitch nln
+    -- make the new hero the player controlled hero
+    modify (updateLevel (updateHeroes $ IM.delete ni))
+    modify (updatePlayer (const np))
+    -- if in look mode, record the original level of the new hero
+    -- and focus on him, if level changed
+    let upd lk = let loc = if lvlChanged then mloc np else cursorLoc lk
+                 in  lk { returnLn = nln, cursorLoc = loc }
+    modify (updateLook (fmap upd))
 
 -- | Calculate loot's worth. TODO: move to another module, and refine significantly.
 calculateTotal :: State -> Int

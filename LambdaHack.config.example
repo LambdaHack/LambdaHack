@@ -22,6 +22,7 @@ fovRadius: 40
 [heroes]
 baseHp: 50
 #extraHeroes: 4
+#firstDeathEnds: False
 
 [dungeon]
 depth: 10

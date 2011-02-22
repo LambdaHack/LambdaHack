@@ -61,8 +61,8 @@ handle =
     state <- get
     let ptime = mtime (splayer state)  -- time of hero's next move
     let time  = stime state            -- current game time
-    checkPartyDeath True -- any hero can die even if it's not the player's turn
-    regenerate APlayer   -- heroes regenerate even if outside the player's turn
+    checkPartyDeath     -- any hero can die even if it's not the player's turn
+    regenerate APlayer  -- heroes regenerate even if outside the player's turn
     debug $ "handle: time check. ptime = " ++ show ptime ++ ", time = " ++ show time
     if ptime > time
       then do

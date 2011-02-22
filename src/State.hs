@@ -88,6 +88,14 @@ findHeroLevel ni state@(State { splayer  = player,
         filtered   = M.mapMaybeWithKey chk m
     in  fmap fst $ M.minView $ filtered
 
+-- | The list of all heroes except the player.
+-- Heroes from the current level go first.
+allLevelHeroes :: State -> [(Int, LevelName, Hero)]
+allLevelHeroes state =
+  let Dungeon m = sdungeon state
+      one lvl = L.map (\ (i, p) -> (i, lname lvl, p)) (IM.assocs (lheroes lvl))
+  in  L.concatMap one (slevel state : M.elems m)
+
 updateAnyHero :: (Hero -> Hero) -> Int -> State -> State
 updateAnyHero f ni state
   | ni == heroNumber (splayer state) = updatePlayer f state
