@@ -700,7 +700,12 @@ moveOrAttack allowAttacks autoOpen actor dir
       -- Focus on the attacked hero, if any. This is also handy for
       -- selecting adjacent hero by bumping into him (without running).
       -- TODO: let running switch position of hero and another hero/monster.
-      maybe (return False) (selectHero . fst) attHero
+      case attHero of
+        Nothing     -> return ()
+        Just (i, _) -> do
+          b <- selectHero i
+          -- extra prompt, especially for when many heroes attacked in one turn
+          when (b && actor /= APlayer) $ messageAddMore >> return ()
       -- At the moment, we check whether there is a monster before checking
       -- accessibility, i.e., we can attack a monster on a blocked location.
       -- For instance, a monster on an open door can be attacked diagonally,

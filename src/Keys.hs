@@ -22,6 +22,7 @@ data Key =
   deriving (Ord, Eq)
 
 showKey :: Key -> String
+showKey (Char ' ') = "<space>"  -- warnings about "command ( )" look wrong
 showKey (Char c) = [c]
 showKey Esc      = "<escape>"
 showKey Return   = "<return>"

@@ -97,6 +97,11 @@ handleMonsters =
         | otherwise  -> -- monster m should move; we temporarily remove m from the level
                         -- TODO: removal isn't nice. Actor numbers currently change during
                         -- a move. This could be cleaned up.
+                        -- Note: however this has a nice side-effect: monsters
+                        -- move in reversed order wrt the previous turn,
+                        -- so there is 2 times less changes of focus
+                        -- (in particular hero selection) in case of two
+                        -- simultaneous battles.
                         do
                           modify (updateLevel (updateMonsters (const ms)))
                           handleMonster m

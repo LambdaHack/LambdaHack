@@ -3,6 +3,7 @@ module Action where
 
 import Control.Monad
 import Control.Monad.State hiding (State)
+import Data.List as L
 -- import System.IO (hPutStrLn, stderr) -- just for debugging
 
 import Perception
@@ -162,6 +163,15 @@ messageMoreConfirm msg =
 -- | Print message, await confirmation, ignore confirmation.
 messageMore :: Message -> Action ()
 messageMore msg = messageMoreConfirm msg >> return ()
+
+-- | Add "-more-" to the current message, await confirmation, clear messages.
+messageAddMore :: Action Bool
+messageAddMore = do
+  messageAdd (L.tail more)  -- delete the space at the start
+  display
+  b <- session getConfirm
+  resetMessage
+  return b
 
 -- | Print a yes/no question and return the player's answer.
 messageYesNo :: Message -> Action Bool
