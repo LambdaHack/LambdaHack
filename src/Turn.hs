@@ -61,7 +61,6 @@ handle =
     state <- get
     let ptime = mtime (splayer state)  -- time of hero's next move
     let time  = stime state            -- current game time
-    checkPartyDeath     -- any hero can die even if it's not the player's turn
     regenerate APlayer  -- heroes regenerate even if outside the player's turn
     debug $ "handle: time check. ptime = " ++ show ptime ++ ", time = " ++ show time
     if ptime > time
@@ -90,10 +89,6 @@ handleMonsters =
       (m@(Monster { mtime = mt }) : ms)
         | mt > time  -> -- no monster is ready for another move
                         nextMove
-        | mhp m <= 0 -> -- the monster dies
-                        do
-                          modify (updateLevel (updateMonsters (const ms)))
-                          handleMonsters
         | otherwise  -> -- monster m should move; we temporarily remove m from the level
                         -- TODO: removal isn't nice. Actor numbers currently change during
                         -- a move. This could be cleaned up.

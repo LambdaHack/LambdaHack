@@ -758,28 +758,31 @@ actorAttackActor source target =
         -- damage the target
         newHp  = mhp tm - 3 - sword
         killed = newHp <= 0
-    if killed
-      then do
-        -- grant an immediate move to die; TODO: instead kill the actor
-        -- right here, but carefully, because monsters and heroes have different
-        -- ways of disappearing and for heroes it may end the game
-        updateActor target $ \ m -> m { mhp = 0, mtime = 0 }
-        -- place the actor's possessions on the map
-        dropItemsAt (mitems tm) (mloc tm)
-      else
-        updateActor target $ \ m -> m { mhp = newHp }
-    -- determine how the hero perceives the event; TODO: we have to be more
-    -- precise and treat cases where two monsters fight, but only one is visible
-    let combatVerb = if killed && target /= APlayer then "kill" else "hit"
+        -- determine how the hero perceives the event; TODO: we have to be more
+        -- precise and treat cases where two monsters fight,
+        -- but only one is visible; TODO: if 2 heroes hit a monster,
+        -- still only one of them should kill it
+        combatVerb = if killed && target /= APlayer then "kill" else "hit"
         swordMsg   = if sword == 0 then "" else
                        " with a (+" ++ show sword ++ ") sword" -- TODO: generate proper message
         combatMsg  = subjectVerbMObject state sm combatVerb tm swordMsg
+    updateActor target $ \ m -> m { mhp = newHp }
     per <- currentPerception
     let perceived  = mloc sm `S.member` pvisible per
     messageAdd $
       if perceived
         then combatMsg
         else "You hear some noises."
+    when killed $ do
+      -- place the actor's possessions on the map
+      dropItemsAt (mitems tm) (mloc tm)
+      -- clean bodies up
+      case target of
+        APlayer    ->
+          checkPartyDeath  -- kills heroes and checks game over
+        AMonster n ->
+          let upd l = L.take n l ++ L.drop (n + 1) l
+          in  modify (updateLevel (updateMonsters upd))
 
 -- | Generate a monster, possibly.
 generateMonster :: Action ()
