@@ -18,26 +18,29 @@ instance B.Binary CP where
   put (CP config) = B.put $ CF.to_string config
   get = do
     string <- B.get
-    let parsed = CF.readstring emptyCP string
-    return $ toCP $ forceEither $ parsed
+    -- use config in case savegame is from older version and lacks some options
+    let c = CF.readstring defCF string
+    return $ toCP $ forceEither c
 
 instance Show CP where
   show (CP config) = show $ CF.to_string config
 
--- | Our version of basic parser.
--- All names turned case sensitive (insensitive is the default in ConfigFile).
-emptyCP :: CF.ConfigParser
-emptyCP = CF.emptyCP {CF.optionxform = id}
-
-toCP :: CF.ConfigParser -> CP
-toCP cp = CP $ cp {CF.optionxform = id}
+-- | Switches all names to case sensitive (unlike by default in ConfigFile).
+toSensitive :: CF.ConfigParser -> CF.ConfigParser
+toSensitive cp = cp {CF.optionxform = id}
 
 -- | The default configuration taken from the default configuration file
 -- included via CPP in ConfigDefault.hs.
+defCF :: CF.ConfigParser
+defCF  =
+  let c = CF.readstring CF.emptyCP ConfigDefault.configDefault
+  in  toSensitive $ forceEither c
+
+toCP :: CF.ConfigParser -> CP
+toCP cp = CP $ toSensitive cp
+
 defaultCP :: CP
-defaultCP =
-  let c = CF.readstring emptyCP ConfigDefault.configDefault
-  in  toCP $ forceEither c
+defaultCP = toCP defCF
 
 -- | Path to the main configuration file.
 file :: IO String
@@ -50,15 +53,15 @@ file =
 -- If no such file, use the default configuration.
 config :: IO CP
 config =
-  -- Next line only for debugging. Uncomment when config grows and it's slow.
-  defaultCP `seq`
+  -- evaluate, to catch config errors ASAP
+  defCF `seq`
   do
     f <- file
     b <- doesFileExist f
     if not b
-      then return defaultCP
+      then return $ toCP $ defCF
       else do
-        c <- CF.readfile emptyCP f
+        c <- CF.readfile defCF f
         return $ toCP $ forceEither c
 
 -- | A simplified access to an option in a given section,
@@ -70,7 +73,7 @@ getOption (CP config) s o =
     then Just $ forceEither $ CF.get config s o
     else Nothing
 
--- | A simplified access to an option in a given section, with a default.
+-- | A simplified access to an option in a given section.
 getDefault :: CF.Get_C a => a -> CP -> CF.SectionSpec -> CF.OptionSpec -> a
 getDefault dflt (CP config) s o =
   if CF.has_option config s o
