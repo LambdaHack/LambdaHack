@@ -283,7 +283,7 @@ lvldescend k =
     state <- get
     let n = levelNumber (lname (slevel state))
         nln = n + k
-    when (nln < 1 || nln > sizeDungeon (sdungeon state)) $
+    when (nln < 1 || nln > sizeDungeon (sdungeon state) + 1) $
       abortWith "no more levels in this direction"
     assertTrue $ lvlswitch (LambdaCave nln)
 
@@ -293,8 +293,9 @@ lvlchange :: VDir -> Action ()
 lvlchange vdir =
   do
     state <- get
+    look  <- gets slook
     let map = lmap (slevel state)
-        loc = case slook state of
+        loc = case look of
                 Nothing -> mloc (splayer state)
                 Just (Look { cursorLoc = loc }) -> loc
     case map `at` loc of
@@ -303,10 +304,17 @@ lvlchange vdir =
           case next of
             Nothing ->
               -- we are at the "end" of the dungeon
-              fleeDungeon
+              case look of  -- lvlswitch does not modify look
+                Nothing -> do
+                  b <- messageYesNo "Really escape the dungeon?"
+                  if b
+                    then fleeDungeon
+                    else abortWith "Game resumed."
+                Just _ ->
+                  abortWith "cannot escape dungeon in look mode"
             Just (nln, nloc) -> do
-              assertTrue $  lvlswitch nln  -- no stairs back to the same level
-              case slook state of  -- lvlswitch does not modify look
+              assertTrue $ lvlswitch nln  -- no stairs go back to the same level
+              case look of
                 Nothing ->
                   -- land the player at the other end of the stairs
                   modify (updatePlayer (\ p -> p { mloc = nloc }))
@@ -320,7 +328,7 @@ lvlchange vdir =
                   modify (updateLook (const $ Just nlk))
                   doLook nlk
       _ -> -- no stairs
-        case slook state of
+        case look of
           Just lk -> do
             lvldescend (if vdir == Up then -1 else 1)
             doLook lk  -- lvldescend does not change lk
@@ -338,8 +346,9 @@ fleeDungeon =
         items = L.concatMap mitems hs
     if total == 0
       then do
-             messageMore "Coward!"
-             messageMore "Next time try to grab some loot before escape!"
+             go <- messageMoreConfirm "Coward!"
+             when go $
+               messageMore "Next time try to grab some loot before escape!"
              end
       else do
              let winMsg = "Congratulations, you won! Your loot, worth " ++
