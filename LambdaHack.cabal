@@ -4,7 +4,7 @@ version:       0.1.20110117
 license:       BSD3
 license-file:  LICENSE
 data-files:    LICENSE, CREDITS, DESIGN.markdown, PLAYING.markdown,
-               README.markdown, LambdaHack.config.example
+               README.markdown, src/LambdaHack.config.default
 author:        Andres Loeh <mail@andres-loeh.de>
 maintainer:    Andres Loeh <mail@andres-loeh.de>
 description:   a small roguelike game
@@ -28,16 +28,17 @@ executable LambdaHack
                  File, FOV, FOV.Common, FOV.Digital, FOV.Permissive, FOV.Shadow,
                  Frequency, Geometry, Item, ItemState,
                  Keys, Keybindings, LambdaHack, Level, LevelState, Message,
-                 Monster, Perception, Random, Save, State, Strategy,
+                 Monster, Multiline, Perception, Random, Save, State, Strategy,
                  StrategyState, Turn, Version, HighScores, Config,
-                 Grammar
+                 ConfigDefault, Grammar
   build-depends: base >= 4 && <5, containers >= 0.1 && < 1,
                  binary >= 0.4 && < 1,
                  random >= 1 && < 2, zlib >= 0.4 && < 1,
                  bytestring >= 0.9 && < 1, directory >= 1 && < 2,
                  mtl >= 1.1 && < 3, old-time, ConfigFile >= 1.0.6 && < 2,
-                 MissingH >= 1.1.0.3 && < 1.2, filepath >= 1.1.0.3 && < 1.2
-  extensions:    CPP, FlexibleContexts
+                 MissingH >= 1.1.0.3 && < 1.2, filepath >= 1.1.0.3 && < 1.2,
+                 template-haskell >= 2.5
+  extensions:    CPP, FlexibleContexts, QuasiQuotes
   if flag(curses) {
     other-modules: Display.Curses
     build-depends: hscurses >= 1.3 && < 2

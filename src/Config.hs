@@ -10,6 +10,8 @@ import Data.Either.Utils
 import Data.Maybe
 import qualified Data.Binary as B
 
+import qualified ConfigDefault
+
 newtype CP = CP CF.ConfigParser
 
 instance B.Binary CP where
@@ -30,8 +32,12 @@ emptyCP = CF.emptyCP {CF.optionxform = id}
 toCP :: CF.ConfigParser -> CP
 toCP cp = CP $ cp {CF.optionxform = id}
 
+-- | The default configuration taken from the default configuration file
+-- included via CPP in ConfigDefault.hs.
 defaultCP :: CP
-defaultCP = toCP CF.emptyCP
+defaultCP =
+  let c = CF.readstring emptyCP ConfigDefault.configDefault
+  in  toCP $ forceEither c
 
 -- | Path to the main configuration file.
 file :: IO String
@@ -41,9 +47,11 @@ file =
     return $ combine appData "LambdaHack.config"
 
 -- | The configuration read from the main configuration file.
--- If no such file, generate empty configuration.
+-- If no such file, use the default configuration.
 config :: IO CP
 config =
+  -- Next line only for debugging. Uncomment when config grows and it's slow.
+  defaultCP `seq`
   do
     f <- file
     b <- doesFileExist f
