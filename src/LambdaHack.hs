@@ -41,10 +41,7 @@ start session =
 -- | Generate the dungeon for a new game, and start the game loop.
 generate :: Config.CP -> Session -> String -> IO ()
 generate config session msg =
-  let matchGenerator n Nothing =
-        if n == 3 then bigRoom else
-          if n == 10 then noiseRoom else  -- access to stairs may be blocked
-            rogueRoom
+  let matchGenerator n Nothing = rogueRoom  -- the default
       matchGenerator n (Just "bigRoom")   = bigRoom
       matchGenerator n (Just "noiseRoom") = noiseRoom
       matchGenerator n (Just "rogueRoom") = rogueRoom
@@ -52,7 +49,8 @@ generate config session msg =
         error $ "findGenerator: unknown: " ++ show n ++ ", " ++ s
 
       findGenerator n =
-        let genName = Config.getOption config "dungeon" ("level" ++ show n)
+        let genName =
+              Config.getOption config "dungeon" ("LambdaCave_" ++ show n)
             generator = matchGenerator n genName
         in  rndToIO $ generator (defaultLevelConfig n) (LambdaCave n)
 

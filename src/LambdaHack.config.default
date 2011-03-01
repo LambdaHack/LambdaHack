@@ -15,7 +15,6 @@
 saveGame:   LambdaHack.save
 highScores: LambdaHack.scores
 
-; configuration of gameplay, more or less unbalancing
 [engine]
 fovMode: shadow
 ;fovMode: digital
@@ -24,12 +23,13 @@ fovRadius: 40
 
 [heroes]
 baseHp: 50
-;extraHeroes: 4
-;firstDeathEnds: False
+extraHeroes: 0
+firstDeathEnds: False
 
 [dungeon]
 depth: 10
-level3: bigRoom
-level10: noiseRoom
-level2: rogueRoom ; the default for most levels
-;level1: noiseRoom
+LambdaCave_3: bigRoom
+; access to stairs may be blocked, so only suitable for the last level:
+LambdaCave_10: noiseRoom
+; the hardcoded default for levels with no specified layout:
+LambdaCave_1: rogueRoom
