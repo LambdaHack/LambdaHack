@@ -186,8 +186,7 @@ checkPartyDeath =
     state  <- get
     player <- gets splayer
     config <- gets sconfig
-    let firstDeathEnds =
-          Config.getDefault False config "heroes" "firstDeathEnds"
+    let firstDeathEnds = Config.get config "heroes" "firstDeathEnds"
     when (mhp player <= 0) $ do
       messageAddMore
       go <- messageMoreConfirm "You die."
@@ -541,6 +540,7 @@ drinkPotion =
                  do
                    -- only one potion is consumed even if several are joined in the inventory
                    let consumed = i' { icount = 1 }
+                       baseHp = Config.get (sconfig state) "heroes" "baseHp"
                    removeFromInventory consumed
                    message (subjectVerbIObject state player "drink" consumed "")
                    -- the potion is identified after drinking
@@ -549,7 +549,7 @@ drinkPotion =
                      PotionWater   -> messageAdd "Tastes like water."
                      PotionHealing -> do
                                         messageAdd "You feel better."
-                                        modify (updatePlayer (\ p -> p { mhp = min (mhpmax p) (mhp p + defaultBaseHP `div` 4) }))
+                                        modify (updatePlayer (\ p -> p { mhp = min (mhpmax p) (mhp p + baseHp `div` 4) }))
                Just _  -> abortWith "you cannot drink that"
                Nothing -> neverMind True
 

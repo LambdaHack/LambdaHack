@@ -65,7 +65,7 @@ generate config session msg =
         in  x' : z : zs
   in
    do
-     let depth = Config.getDefault 10 config "dungeon" "depth"
+     let depth = Config.get config "dungeon" "depth"
      levels <- mapM findGenerator [1..depth]
      let lvls = connect (Just Nothing) levels
          (lvl,dng) = (head lvls, dungeon (tail lvls))
@@ -78,6 +78,6 @@ generate config session msg =
          player = defaultHero 0 ploc hp
          defState = defaultState player dng lvl
          state = defState { sassocs = assocs, sconfig = config }
-         k = Config.getDefault 1 config "heroes" "extraHeroes"
+         k = Config.get config "heroes" "extraHeroes"
      hstate <- rndToIO $ foldM (addHero hp) state [1..k]
      handlerToIO session hstate msg handle

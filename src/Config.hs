@@ -1,5 +1,5 @@
 module Config
- (CP, defaultCP, config, getOption, getDefault, getFile) where
+ (CP, defaultCP, config, getOption, get, getFile) where
 
 import System.Directory
 import System.FilePath
@@ -42,15 +42,16 @@ toCP cp = CP $ toSensitive cp
 defaultCP :: CP
 defaultCP = toCP defCF
 
--- | Path to the main configuration file.
+-- | Path to the user configuration file.
 file :: IO String
 file =
   do
     appData <- getAppUserDataDirectory "LambdaHack"
     return $ combine appData "LambdaHack.config"
 
--- | The configuration read from the main configuration file.
--- If no such file, use the default configuration.
+-- | The configuration read from the user configuration file.
+-- The default configuration file provides underlying defaults
+-- in case some options, or the whole file, are missing.
 config :: IO CP
 config =
   -- evaluate, to catch config errors ASAP
@@ -74,11 +75,11 @@ getOption (CP config) s o =
     else Nothing
 
 -- | A simplified access to an option in a given section.
-getDefault :: CF.Get_C a => a -> CP -> CF.SectionSpec -> CF.OptionSpec -> a
-getDefault dflt (CP config) s o =
+get :: CF.Get_C a => CP -> CF.SectionSpec -> CF.OptionSpec -> a
+get (CP config) s o =
   if CF.has_option config s o
     then forceEither $ CF.get config s o
-    else dflt
+    else error $ "unknown config option: " ++ s ++ "." ++ o
 
 -- | Looks up a file path in the config file, faling back to the default path.
 -- The path from the config file is taken relative to the home directory

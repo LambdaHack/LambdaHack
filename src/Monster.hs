@@ -10,15 +10,11 @@ import Item
 import Random
 import qualified Config
 
--- | Hit point amount balanced for 1 hero against all armed monsters.
-defaultBaseHP :: Int
-defaultBaseHP = 50
-
 -- | Hit points of the hero. Experimentally balanced for multiple heroes.
 heroHP :: Config.CP -> Int
 heroHP config =
-  let b = Config.getDefault defaultBaseHP config "heroes" "baseHp"
-      k = Config.getDefault 0 config "heroes" "extraHeroes"
+  let b = Config.get config "heroes" "baseHp"
+      k = Config.get config "heroes" "extraHeroes"
   in  b `div` (k + 1)
 
 -- | Time a hero can be traced by monsters. TODO: Make configurable.
