@@ -116,8 +116,8 @@ continueRun :: Dir -> Action ()
 continueRun dir =
   do
     state <- get
-    let lvl   @(Level   { lmonsters = ms, lmap = lmap }) = slevel  state
-    let player@(Monster { mloc = loc })                  = splayer state
+    let lvl@(Level { lmonsters = ms, lmap = lmap, lheroes = hs }) = slevel state
+    let player@(Monster { mloc = loc }) = splayer state
     let mslocs = S.fromList (L.map mloc ms)
     let t      = lmap `at` loc  -- tile at current location
     per <- currentPerception
@@ -125,6 +125,7 @@ continueRun dir =
     let monstersVisible = not (S.null (mslocs `S.intersection` pvisible per))
     let newsReported    = not (L.null msg)
     let itemsHere       = not (L.null (titems t))
+    let heroThere       = L.elem (loc `shift` dir) (L.map mloc (IM.elems hs))
     let dirOK           = accessible lmap loc (loc `shift` dir)
     -- What happens next is mostly depending on the terrain we're currently on.
     let exit (Stairs  {}) = True
@@ -132,7 +133,8 @@ continueRun dir =
         exit (Door    {}) = True
         exit _            = False
     let hop t
-          | monstersVisible || newsReported || itemsHere || exit t = abort
+          | monstersVisible || heroThere
+            || newsReported || itemsHere || exit t = abort
         hop Corridor =
           -- in corridors, explore all corners and stop at all crossings
           let ns = L.filter (\ x -> distance (neg dir, x) > 1
@@ -390,7 +392,7 @@ selectHero ni =
     if (ni == i)
       then return False -- already selected
       else do
-        state  <- get
+        state <- get
         case findHeroLevel ni state of
           Nothing ->
             abortWith $ "No hero number " ++ show ni ++ " in the party."
@@ -437,7 +439,7 @@ calculateTotal s =
       hs = levelHeroList s
       price i = if iletter i == Just '$' then icount i else 10 * icount i
 
--- | Handle current score and display it with the high scores. TODO: simplify. Scores
+-- | Handle current score and display it with the high scores. Scores
 -- should not be shown during the game, because ultimately the worth of items might give
 -- information about the nature of the items.
 -- False if display of the scores was void or interrupted by the user
@@ -707,6 +709,9 @@ displayItems msg sorted is =
 
 -- | This function performs a move (or attack) by any actor, i.e., it can handle
 -- both monsters and the player (the currently selected hero).
+-- TODO: this got rather messy, perhaps it's time to assume that at most
+-- one monster can live in any given tile and simplify the code.
+-- Also, factor out the whole 2 actors case.
 moveOrAttack :: Bool ->        -- allow attacks?
                 Bool ->        -- auto-open doors on move
                 Actor ->       -- who's moving?
@@ -735,24 +740,52 @@ moveOrAttack allowAttacks autoOpen actor dir
           attackedMonsters = L.map AMonster $ attMonsters
           attacked :: [Actor]
           attacked = attackedHero ++ attackedMonsters
-      -- Focus on the attacked hero, if any. This is also handy for
-      -- selecting adjacent hero by bumping into him (without running).
-      -- TODO: let running switch position of hero and another hero/monster.
       case attHero of
-        Nothing     -> return ()
-        Just (i, _) -> do
-          b <- selectHero i
-          -- extra prompt, especially for when many heroes attacked in one turn
-          when (b && actor /= APlayer) $ messageAddMore >> return ()
+        Just (i, np)
+          | allowAttacks -> do
+              -- Focus on the attacked hero, if any. This is also handy for
+              -- selecting adjacent hero by bumping into him (without running).
+              b <- selectHero i
+              -- Extra prompt, useful when many heroes attacked in one turn.
+              when (b && actor /= APlayer) $
+                messageAddMore >> return ()
+          | otherwise -> do
+            -- Running into a hero switches positions.
+              when (not $ accessible lmap loc nloc) abort
+              case actor of
+                APlayer -> do
+                  player <- gets splayer
+                  modify (updatePlayer (const np))
+                  updateActor APlayer (\ m -> m { mloc = loc })
+                  stashPlayer
+                  modify (updatePlayer (const player))
+                  stopRunning
+                AMonster _ -> do
+                  b <- selectHero i
+                  updateActor APlayer (\ m -> m { mloc = loc })
+                  -- Extra prompt, useful when many heroes attacked in one turn.
+                  when b $
+                    messageAddMore >> return ()
+        Nothing -> return ()
       -- At the moment, we check whether there is a monster before checking
       -- accessibility, i.e., we can attack a monster on a blocked location.
       -- For instance, a monster on an open door can be attacked diagonally,
       -- and a monster capable of moving through walls can be attacked from an
       -- adjacent position.
       if not (L.null attacked)
-        then if not allowAttacks then abort else do
-          -- perform the attack
-          mapM_ (actorAttackActor actor) attacked
+        then if not allowAttacks then do
+               -- Running into a monster/hero switches positions.
+               when (not $ accessible lmap loc nloc) abort
+               -- setting location of target monsters
+               -- (location of the target hero is set above; this may wrongly
+               -- overwrite mloc of the player actor, but it's fixed below)
+               let upd tgt = updateActor tgt (\ m -> m { mloc = loc })
+               mapM_ upd attacked
+               -- setting location of the actor
+               updateActor actor (\ m -> m { mloc = nloc })
+             else do
+               -- perform the attack
+               mapM_ (actorAttackActor actor) attacked
         else if accessible lmap loc nloc then do
           -- perform the move
           updateActor actor (\ m -> m { mloc = nloc })
