@@ -9,6 +9,7 @@ import Action
 import Actions
 import Actor
 import Command
+import qualified Config
 import Display2 hiding (display)
 import Keybindings
 import qualified Keys as K
@@ -156,7 +157,8 @@ handlePlayer =
     advanceTime APlayer     -- TODO: the command handlers should advance the move time
     state <- get
     let time = stime state
-    let loc  = mloc (splayer state)
+        loc  = mloc (splayer state)
+        smellTimeout = Config.get (sconfig state) "monsters" "smellTimeout"
     -- update smell
     modify (updateLevel (updateSMap (M.insert loc (time + smellTimeout))))
     -- determine player perception and continue with monster moves

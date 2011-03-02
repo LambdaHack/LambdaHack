@@ -17,10 +17,6 @@ heroHP config =
       k = Config.get config "heroes" "extraHeroes"
   in  b `div` (k + 1)
 
--- | Time a hero can be traced by monsters. TODO: Make configurable.
-smellTimeout :: Time
-smellTimeout = 1000
-
 -- | Initial hero.
 defaultHero :: Int -> Loc -> Int -> Hero
 defaultHero n ploc hp =

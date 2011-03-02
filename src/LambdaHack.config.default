@@ -33,3 +33,9 @@ saveGame: LambdaHack.save
 baseHp: 50
 extraHeroes: 0
 firstDeathEnds: False
+
+[monsters]
+smellTimeout: 1000
+
+[ui]
+historyMax: 500

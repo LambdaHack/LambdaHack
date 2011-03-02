@@ -172,9 +172,10 @@ history :: Action ()
 history =
   do
     msg <- resetMessage
+    config <- gets sconfig
+    let historyMax = Config.get config "ui" "historyMax"
     unless (L.null msg) $
-      modify (updateHistory (take 500 . ((msg ++ " "):)))
-    -- TODO: make history max configurable
+      modify (updateHistory (take historyMax . ((msg ++ " "):)))
 
 -- | Update player memory.
 remember :: Action ()
