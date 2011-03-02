@@ -82,17 +82,20 @@ get (CP config) s o =
     then forceEither $ CF.get config s o
     else error $ "unknown config option: " ++ s ++ "." ++ o
 
--- | Looks up a file path in the config file, faling back to the default path.
--- The path from the config file is taken relative to the home directory
--- and the default is taken relative to the current directory. In any case,
--- the returned path is absolute.
-getFile :: CP -> FilePath -> CF.SectionSpec -> CF.OptionSpec -> IO FilePath
-getFile config dflt s o =
+-- | Looks up a file path in the config file and makes it absolute.
+-- If the LambdaHack configuration directory exists,
+-- the path is appended to it; otherwise, it's appended
+-- to the current directory.
+getFile :: CP -> CF.SectionSpec -> CF.OptionSpec -> IO FilePath
+getFile config s o =
   do
     current <- getCurrentDirectory
     appData <- getAppUserDataDirectory "LambdaHack"
-    let path = getOption config s o
-    return $ maybe (combine current dflt) (combine appData) path
+    let path    = get config s o
+        appPath = combine appData path
+        curPath = combine current path
+    b <- doesDirectoryExist appData
+    return $ if b then appPath else curPath
 
 dump :: FilePath -> CP -> IO ()
 dump fn (CP config) =
