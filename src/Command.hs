@@ -27,6 +27,7 @@ saveCommand      = Described "save and quit the game" saveGame
 quitCommand      = Described "quit without saving" quitGame
 cancelCommand    = Described "cancel current action" cancelCurrent
 historyCommand   = Described "display previous messages" displayHistory
+dumpCommand      = Described "dump current configuration" dumpConfig
 heroCommand      = Described "cycle among heroes on level" cycleHero  -- TODO: should take 0 turns! When it does, use in Turn.hs.
 
 moveDirCommand   = Described "move in direction" move

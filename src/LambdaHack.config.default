@@ -9,11 +9,13 @@
 ; In this way, you won't accidentally commit your private high scores
 ; (nor your save files) to LambdaHack git repository.
 
-; paths to various game files; relative to ~/.LambdaHack/
-; (or analogous prefixes for other OSes, see getAppUserDataDirectory)
-[files]
-saveGame:   LambdaHack.save
-highScores: LambdaHack.scores
+[dungeon]
+; the hardcoded default for levels with no specified layout:
+LambdaCave_1: rogueRoom
+; access to stairs may be blocked, so only suitable for the last level:
+LambdaCave_10: noiseRoom
+LambdaCave_3: bigRoom
+depth: 10
 
 [engine]
 fovMode: shadow
@@ -21,15 +23,13 @@ fovMode: shadow
 ;fovMode: permissive
 fovRadius: 40
 
+; paths to various game files; relative to ~/.LambdaHack/
+; (or analogous prefixes for other OSes, see getAppUserDataDirectory)
+[files]
+highScores: LambdaHack.scores
+saveGame: LambdaHack.save
+
 [heroes]
 baseHp: 50
 extraHeroes: 0
 firstDeathEnds: False
-
-[dungeon]
-depth: 10
-LambdaCave_3: bigRoom
-; access to stairs may be blocked, so only suitable for the last level:
-LambdaCave_10: noiseRoom
-; the hardcoded default for levels with no specified layout:
-LambdaCave_1: rogueRoom

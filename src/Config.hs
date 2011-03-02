@@ -1,8 +1,9 @@
 module Config
- (CP, defaultCP, config, getOption, get, getFile) where
+ (CP, defaultCP, config, getOption, get, getFile, dump) where
 
 import System.Directory
 import System.FilePath
+import System.IO
 import Control.Monad.Error
 
 import qualified Data.ConfigFile as CF
@@ -92,3 +93,11 @@ getFile config dflt s o =
     appData <- getAppUserDataDirectory "LambdaHack"
     let path = getOption config s o
     return $ maybe (combine current dflt) (combine appData) path
+
+dump :: FilePath -> CP -> IO ()
+dump fn (CP config) =
+  do
+    current <- getCurrentDirectory
+    let path = combine current fn
+        dump = CF.to_string config
+    writeFile path dump

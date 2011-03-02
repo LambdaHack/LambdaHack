@@ -264,6 +264,7 @@ stdKeybindings = Keybindings
                -- information for the player
                (K.Char 'v',  Undescribed $ abortWith version),
                (K.Char 'M',  historyCommand),
+               (K.Char 'D',  dumpCommand),
                (K.Char '?',  helpCommand),
                (K.Return  ,  helpCommand)
              ]

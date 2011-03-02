@@ -36,6 +36,14 @@ displayHistory =
     messageOverlayConfirm "" (unlines hst)
     abort
 
+dumpConfig :: Action ()
+dumpConfig =
+  do
+    config <- gets sconfig
+    let fn = "LambdaHack.config.dump"
+    liftIO $ Config.dump fn config
+    abortWith $ "Current configuration dumped to file " ++ fn ++ "."
+
 saveGame :: Action ()
 saveGame =
   do
