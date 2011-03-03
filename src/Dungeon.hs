@@ -7,6 +7,7 @@ import Data.Map as M
 import qualified Data.IntMap as IM
 import Data.List as L
 import Data.Ratio
+import Data.Maybe
 
 import State
 import Geometry
@@ -328,15 +329,14 @@ addMonster state@(State { slevel = lvl@(Level { lmonsters = ms,
       else return lvl
 
 -- | Create a new hero in the level, close to the player.
-addHero :: Int -> State -> Int -> Rnd State
+addHero :: Int -> State -> Int -> State
 addHero hp state@(State { splayer = player,
-                          slevel = lvl@(Level { lmonsters = ms }) }) n =
-  do
-    let hs = levelHeroList state
-    ploc <- findLocTry 10000 lvl  -- TODO: bad for large levels
-              (\ l t -> open t
-                        && not (l `L.elem` L.map mloc (hs ++ ms)))
-              (\ l t -> floor t
-                        && distance (mloc player, l) < 6 + L.length hs `div` 3)
-    let hero = defaultHero n ploc hp
-    return (updateLevel (updateHeroes (IM.insert n hero)) state)
+                          slevel = lvl@(Level { lmap = map }) }) n =
+  let hs = levelHeroList state
+      ms = lmonsters lvl
+      ploc = mloc player
+      places = ploc : L.nub (concatMap surroundings places)
+      good l = open (map `at` l) && not (l `L.elem` L.map mloc (hs ++ ms))
+      place = fromMaybe (error "no place for a hero") $ L.find good places
+      hero = defaultHero n place hp
+  in  updateLevel (updateHeroes (IM.insert n hero)) state

@@ -51,9 +51,9 @@ shift (y0,x0) (y1,x1) = (y0+y1,x0+x1)
 neg :: Dir -> Dir
 neg (y,x) = (-y,-x)
 
--- | Get the vectors of all the moves.
+-- | Get the vectors of all the moves, clockwise, starting north-west.
 moves :: [Dir]
-moves = [ (x,y) | x <- [-1..1], y <- [-1..1], x /= 0 || y /= 0 ]
+moves = [(-1,-1), (-1,0), (-1,1), (0,1), (1,1), (1,0), (1,-1), (0,-1)]
 
 up, down, left, right :: Dir
 upleft, upright, downleft, downright :: Dir
