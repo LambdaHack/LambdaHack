@@ -15,7 +15,7 @@ heroHP :: Config.CP -> Int
 heroHP config =
   let b = Config.get config "heroes" "baseHp"
       k = Config.get config "heroes" "extraHeroes"
-  in  b `div` (k + 1)
+  in  k + b `div` (k + 1)
 
 -- | Initial hero.
 defaultHero :: Int -> Loc -> Int -> Hero
