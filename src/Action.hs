@@ -10,6 +10,7 @@ import Perception
 import Display2 hiding (display)
 import Message
 import State
+import Level
 
 newtype Action a = Action
   { runAction ::
@@ -221,3 +222,16 @@ withPerception h = Action (\ s e _ k a st ms ->
 -- | Get the current perception.
 currentPerception :: Action Perception
 currentPerception = Action (\ s e p k a st ms -> k st ms p)
+
+-- | If in look mode, check if the current level is the same as player level
+-- and refuse performing the action otherwise.
+checkLook :: Action () -> Action ()
+checkLook h = do
+  look  <- gets slook
+  level <- gets slevel
+  case look of
+    Just lk ->
+      if returnLn lk == lname level
+      then h
+      else abortWith "this command does not work on remote levels"
+    Nothing -> h

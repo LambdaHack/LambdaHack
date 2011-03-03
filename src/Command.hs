@@ -12,12 +12,12 @@ data Described a = Described { chelp :: String, caction :: a }
 type Command    = Described (Action ())
 type DirCommand = Described (Dir -> Action ())
 
-closeCommand     = Described "close a door"      (openclose False)
-openCommand      = Described "open a door"       (openclose True)
-pickupCommand    = Described "pick up an object" pickupItem
-dropCommand      = Described "drop an object"    dropItem
+closeCommand     = Described "close a door"      (checkLook (openclose False))
+openCommand      = Described "open a door"       (checkLook (openclose True))
+pickupCommand    = Described "pick up an object" (checkLook pickupItem)
+dropCommand      = Described "drop an object"    (checkLook dropItem)
 inventoryCommand = Described "display inventory" inventory
-searchCommand    = Described "search for secret doors" search
+searchCommand    = Described "search for secret doors" (checkLook search)
 ascendCommand    = Described "ascend a level"    (lvlchange Up)
 descendCommand   = Described "descend a level"   (lvlchange Down)
 lookCommand      = Described "toggle look mode"  lookAround  -- TODO: should not take time
