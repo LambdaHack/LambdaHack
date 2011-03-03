@@ -503,15 +503,24 @@ cancelLook (Look _ tgt ln) =
 
 -- | Perform look around in the current location of the cursor.
 -- TODO: depending on tgt or an extra flag, show tile, monster or both
+-- TODO: do not take time
 doLook :: Look -> Action ()
 doLook (Look { cursorLoc = loc }) =
   do
     state <- get
-    let map = lmap (slevel state)
-    -- general info about current loc
-        lookMsg = lookAt True state map loc
-    -- check if there's something lying around at current loc
-        t = map `at` loc
+    lmap  <- gets (lmap . slevel)
+    ms    <- gets (lmonsters . slevel)
+    per   <- currentPerception
+    let monsterMsg =
+          if S.member loc (pvisible per)
+          then case L.find (\ m -> mloc m == loc) ms of
+                 Just m  -> subjectMonster (mtype m) ++ " is there. "
+                 Nothing -> ""
+          else ""
+        -- general info about current loc
+        lookMsg = lookAt True state lmap loc monsterMsg
+        -- check if there's something lying around at current loc
+        t = lmap `at` loc
     if length (titems t) <= 2
       then do
              messageAdd lookMsg
@@ -743,13 +752,13 @@ moveOrAttack allowAttacks autoOpen source dir
           else if accessible lmap sloc tloc then do
             -- Switching positions requires full access.
             actorRunActor source sm target tm
-            when (source == APlayer) $ message $ lookAt False state lmap tloc
+            when (source == APlayer) $ message $ lookAt False state lmap tloc ""
           else abort
         Nothing ->
           if accessible lmap sloc tloc then do
             -- perform the move
             updateActor source (\ m -> m { mloc = tloc })
-            when (source == APlayer) $ message $ lookAt False state lmap tloc
+            when (source == APlayer) $ message $ lookAt False state lmap tloc ""
           else if autoOpen then
             -- try to open a door
             actorOpenClose source False True dir
