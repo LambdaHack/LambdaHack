@@ -709,7 +709,6 @@ displayItems msg sorted is =
 
 -- | This function performs a move (or attack) by any actor,
 -- i.e., it can handle monsters, heroes and both.
--- TODO: factor out the whole 2 actors case.
 moveOrAttack :: Bool ->        -- allow attacks?
                 Bool ->        -- auto-open doors on move
                 Actor ->       -- who's moving?
@@ -726,72 +725,64 @@ moveOrAttack allowAttacks autoOpen source dir
       state <- get
       ms    <- gets (lmonsters . slevel)
       lmap  <- gets (lmap . slevel)
-      let sloc = mloc (getActor state source)  -- source location
-          tloc = sloc `shift` dir              -- target location
-          hs   = levelHeroAssocs state
-          tgt  = case find (\ (_, m) -> mloc m == tloc) hs of
-                   Just (i, _) -> Just (APlayer, i)
+      let sm   = getActor state source
+          sloc = mloc sm           -- source location
+          tloc = sloc `shift` dir  -- target location
+          hs   = levelHeroList state
+          tgt  = case L.find (\ m -> mloc m == tloc) hs of
+                   Just m -> Just (APlayer, m)
                    Nothing ->
                      case L.findIndex (\ m -> mloc m == tloc) ms of
-                       Just mi -> Just (AMonster mi, mi)
+                       Just i -> Just (AMonster i, ms !! i)
                        Nothing -> Nothing
       case tgt of
-        Just (target, i) ->
-          if allowAttacks
-            -- At the moment, we can attack a monster on a blocked location.
-            -- For instance, a monster on an open door can be attacked diagonally,
-            -- and a monster capable of moving through walls can be attacked from an
-            -- adjacent position.
-            then case target of
-              APlayer -> do
-                -- Focus on the attacked hero. This is also handy for
-                -- selecting adjacent hero by bumping into him.
-                b <- selectHero i
-                -- Extra prompt, for when many heroes attacked in one turn.
-                when (b && source /= APlayer) $
-                  messageAddMore >> return ()
-                actorAttackActor source target
-              AMonster _ ->
-                actorAttackActor source target
-            else if not (accessible lmap sloc tloc)
-              -- Switch positions only if the target location is accessible.
-              then abort
-              else do
-                -- Running into a monster/hero switches positions.
-                updateActor source (\ m -> m { mloc = tloc })
-                case target of
-                  APlayer -> do
-                    modify (updateAnyHero (\ m -> m { mloc = sloc }) i)
-                    case source of
-                      APlayer -> do
-                        stopRunning
-                      AMonster _ -> do
-                        b <- selectHero i
-                        -- Prompt for when many heroes affected in one turn.
-                        when b $
-                          messageAddMore >> return ()
-                  AMonster _ ->
-                    updateActor target (\ m -> m { mloc = sloc })
+        Just (target, tm) ->
+          if allowAttacks then
+            -- Attacking does not require full access, adjacency is enough.
+            actorAttackActor source sm target tm
+          else if accessible lmap sloc tloc then do
+            -- Switching positions requires full access.
+            actorRunActor source sm target tm
+            when (source == APlayer) $ message $ lookAt False state lmap tloc
+          else abort
         Nothing ->
           if accessible lmap sloc tloc then do
             -- perform the move
             updateActor source (\ m -> m { mloc = tloc })
             when (source == APlayer) $ message $ lookAt False state lmap tloc
-            -- TODO: seems somewhat dubious to do this here, but perhaps it's ok
           else if autoOpen then
-            -- try to check if there's a door we can open
+            -- try to open a door
             actorOpenClose source False True dir
-          else abort -- nothing useful we can do
+          else abort
 
-actorAttackActor :: Actor -> Actor -> Action ()
-actorAttackActor APlayer APlayer = return ()  -- no PvP  -- TODO: do not take a turn!!!
-actorAttackActor source target =
+-- | Resolves the result of an actor moving into another. Usually this
+-- involves melee attack, but with two heroes it just changes focus.
+-- Monsters on blocked locations can be attacked without any restrictions.
+-- For instance, a monster on an open door can be attacked diagonally,
+-- and a monster capable of moving through walls can be attacked from an
+-- adjacent position.
+-- TODO: perhaps do not use actors, but the mtype field of monsters instead?
+-- I use actors here via a hack, anyway, because if the target actor is
+-- APlayer, then his monster body may be not equal to (getActor state target),
+-- until the hero is selected (and in actorRunActor the target may be not
+-- selected at all, whenever source is a hero). If monsters are kept in a map,
+-- not on a list, they will have permanent numbers, so mtype will be usable.
+actorAttackActor :: Actor -> Monster -> Actor -> Monster -> Action ()
+actorAttackActor APlayer _ APlayer tm = do -- TODO: do not take a turn!!!
+  -- Select adjacent hero by bumping into him.
+  let i = heroNumber tm
+  assertTrue $ selectHero i
+actorAttackActor source sm target tm =
   do
     debug "actorAttackActor"
+    when (target == APlayer) $ do
+      -- Focus on the attacked hero.
+      let i = heroNumber tm
+      b <- selectHero i
+      -- Extra prompt, in case many heroes attacked in one turn.
+      when b $ messageAddMore >> return ()
     state <- get
-    let sm = getActor state source
-        tm = getActor state target
-        -- determine the weapon used for the attack
+    let -- determine the weapon used for the attack
         sword = strongestSword (mitems sm)
         -- damage the target
         newHp  = mhp tm - 3 - sword
@@ -821,6 +812,27 @@ actorAttackActor source target =
         AMonster n ->
           let upd l = L.take n l ++ L.drop (n + 1) l
           in  modify (updateLevel (updateMonsters upd))
+
+-- | Resolves the result of an actor running into another.
+-- This involves switching positions of the two actors. Always takes time.
+actorRunActor :: Actor -> Monster -> Actor -> Monster -> Action ()
+actorRunActor source sm target tm = do
+  let sloc = mloc sm  -- source location
+      tloc = mloc tm  -- target location
+  updateActor source (\ m -> m { mloc = tloc })
+  case target of
+    APlayer -> do
+      let i = heroNumber tm
+      modify (updateAnyHero (\ m -> m { mloc = sloc }) i)
+      case source of
+        APlayer ->
+          stopRunning
+        AMonster _ -> do
+          b <- selectHero i
+          -- Extra prompt, in case many heroes disturbed in one turn.
+          when b $ messageAddMore >> return ()
+    AMonster _ ->
+      updateActor target (\ m -> m { mloc = sloc })
 
 -- | Generate a monster, possibly.
 generateMonster :: Action ()
