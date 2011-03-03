@@ -707,94 +707,81 @@ displayItems msg sorted is =
       message msg
       overlay ovl
 
--- | This function performs a move (or attack) by any actor, i.e., it can handle
--- both monsters and the player (the currently selected hero).
--- TODO: this got rather messy, perhaps it's time to assume that at most
--- one monster can live in any given tile and simplify the code.
--- Also, factor out the whole 2 actors case.
+-- | This function performs a move (or attack) by any actor,
+-- i.e., it can handle monsters, heroes and both.
+-- TODO: factor out the whole 2 actors case.
 moveOrAttack :: Bool ->        -- allow attacks?
                 Bool ->        -- auto-open doors on move
                 Actor ->       -- who's moving?
                 Dir ->
                 Action ()
-moveOrAttack allowAttacks autoOpen actor dir
+moveOrAttack allowAttacks autoOpen source dir
   | dir == (0,0) =
-      -- Moving with no direction is a noop. We include it currently to prevent that
+      -- Moving with no direction is a noop.
+      -- We include it currently to prevent that
       -- monsters attack themselves by accident.
       return ()
-  | otherwise =
-    do
+  | otherwise = do
       -- We start by looking at the target position.
       state <- get
-      monsters <- gets (lmonsters . slevel)
-      lmap <- gets (lmap . slevel)
-      let monster = getActor state actor
-          loc     = mloc monster     -- current location
-          s       = lmap `at` loc    -- tile at current location
-          nloc    = loc `shift` dir  -- target location
-          t       = lmap `at` nloc   -- tile at target location
-          hs      = levelHeroAssocs state
-          attHero          = find (\ (_, m) -> mloc m == nloc) hs
-          attackedHero     = if isJust attHero then [APlayer] else []
-          attMonsters      = findIndices (\ m -> mloc m == nloc) monsters
-          attackedMonsters = L.map AMonster $ attMonsters
-          attacked :: [Actor]
-          attacked = attackedHero ++ attackedMonsters
-      case attHero of
-        Just (i, np)
-          | allowAttacks -> do
-              -- Focus on the attacked hero, if any. This is also handy for
-              -- selecting adjacent hero by bumping into him (without running).
-              b <- selectHero i
-              -- Extra prompt, useful when many heroes attacked in one turn.
-              when (b && actor /= APlayer) $
-                messageAddMore >> return ()
-          | otherwise -> do
-            -- Running into a hero switches positions.
-              when (not $ accessible lmap loc nloc) abort
-              case actor of
-                APlayer -> do
-                  player <- gets splayer
-                  modify (updatePlayer (const np))
-                  updateActor APlayer (\ m -> m { mloc = loc })
-                  stashPlayer
-                  modify (updatePlayer (const player))
-                  stopRunning
-                AMonster _ -> do
-                  b <- selectHero i
-                  updateActor APlayer (\ m -> m { mloc = loc })
-                  -- Extra prompt, useful when many heroes attacked in one turn.
-                  when b $
-                    messageAddMore >> return ()
-        Nothing -> return ()
-      -- At the moment, we check whether there is a monster before checking
-      -- accessibility, i.e., we can attack a monster on a blocked location.
-      -- For instance, a monster on an open door can be attacked diagonally,
-      -- and a monster capable of moving through walls can be attacked from an
-      -- adjacent position.
-      if not (L.null attacked)
-        then if not allowAttacks then do
-               -- Running into a monster/hero switches positions.
-               when (not $ accessible lmap loc nloc) abort
-               -- setting location of target monsters
-               -- (location of the target hero is set above; this may wrongly
-               -- overwrite mloc of the player actor, but it's fixed below)
-               let upd tgt = updateActor tgt (\ m -> m { mloc = loc })
-               mapM_ upd attacked
-               -- setting location of the actor
-               updateActor actor (\ m -> m { mloc = nloc })
-             else do
-               -- perform the attack
-               mapM_ (actorAttackActor actor) attacked
-        else if accessible lmap loc nloc then do
-          -- perform the move
-          updateActor actor (\ m -> m { mloc = nloc })
-          when (actor == APlayer) $ message $ lookAt False state lmap nloc
+      ms    <- gets (lmonsters . slevel)
+      lmap  <- gets (lmap . slevel)
+      let sloc = mloc (getActor state source)  -- source location
+          tloc = sloc `shift` dir              -- target location
+          hs   = levelHeroAssocs state
+          tgt  = case find (\ (_, m) -> mloc m == tloc) hs of
+                   Just (i, _) -> Just (APlayer, i)
+                   Nothing ->
+                     case L.findIndex (\ m -> mloc m == tloc) ms of
+                       Just mi -> Just (AMonster mi, mi)
+                       Nothing -> Nothing
+      case tgt of
+        Just (target, i) ->
+          if allowAttacks
+            -- At the moment, we can attack a monster on a blocked location.
+            -- For instance, a monster on an open door can be attacked diagonally,
+            -- and a monster capable of moving through walls can be attacked from an
+            -- adjacent position.
+            then case target of
+              APlayer -> do
+                -- Focus on the attacked hero. This is also handy for
+                -- selecting adjacent hero by bumping into him.
+                b <- selectHero i
+                -- Extra prompt, for when many heroes attacked in one turn.
+                when (b && source /= APlayer) $
+                  messageAddMore >> return ()
+                actorAttackActor source target
+              AMonster _ ->
+                actorAttackActor source target
+            else if not (accessible lmap sloc tloc)
+              -- Switch positions only if the target location is accessible.
+              then abort
+              else do
+                -- Running into a monster/hero switches positions.
+                updateActor source (\ m -> m { mloc = tloc })
+                case target of
+                  APlayer -> do
+                    modify (updateAnyHero (\ m -> m { mloc = sloc }) i)
+                    case source of
+                      APlayer -> do
+                        stopRunning
+                      AMonster _ -> do
+                        b <- selectHero i
+                        -- Prompt for when many heroes affected in one turn.
+                        when b $
+                          messageAddMore >> return ()
+                  AMonster _ ->
+                    updateActor target (\ m -> m { mloc = sloc })
+        Nothing ->
+          if accessible lmap sloc tloc then do
+            -- perform the move
+            updateActor source (\ m -> m { mloc = tloc })
+            when (source == APlayer) $ message $ lookAt False state lmap tloc
             -- TODO: seems somewhat dubious to do this here, but perhaps it's ok
-        else if autoOpen then
-          -- try to check if there's a door we can open
-          actorOpenClose actor False True dir
-        else abort -- nothing useful we can do
+          else if autoOpen then
+            -- try to check if there's a door we can open
+            actorOpenClose source False True dir
+          else abort -- nothing useful we can do
 
 actorAttackActor :: Actor -> Actor -> Action ()
 actorAttackActor APlayer APlayer = return ()  -- no PvP  -- TODO: do not take a turn!!!
