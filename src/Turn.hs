@@ -238,7 +238,9 @@ stdKeybindings = Keybindings
                (K.Char '<',  ascendCommand),
                (K.Char '>',  descendCommand),
 
-               (K.Char ':',  lookCommand),
+               (K.Char '*',  monsterCommand),
+               (K.Char '/',  floorCommand),
+               (K.Char ':',  floorCommand),  -- synonym for backward compat.
                (K.Tab     ,  Described "cycle among heroes on level" $ cycleHero >> playerCommand),
 
                -- items
@@ -268,6 +270,6 @@ stdKeybindings = Keybindings
                (K.Char 'M',  historyCommand),
                (K.Char 'D',  dumpCommand),
                (K.Char '?',  helpCommand),
-               (K.Return  ,  helpCommand)
+               (K.Return  ,  acceptCommand displayHelp)
              ]
   }

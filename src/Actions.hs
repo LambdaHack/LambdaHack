@@ -70,12 +70,22 @@ quitGame =
       else abortWith "Game resumed."
 
 cancelCurrent :: Action ()
-cancelCurrent =
-  do
-    state <- get
-    case slook state of
-      Just lk -> cancelLook lk
-      Nothing -> abortWith "Press Q to quit."
+cancelCurrent = do
+  state <- get
+  case slook state of
+    Just lk -> do
+      cancelLook lk
+      messageAdd "Targeting mode canceled."
+    Nothing -> abortWith "Press Q to quit."
+
+acceptCurrent :: Action () -> Action ()
+acceptCurrent h = do
+  state <- get
+  case slook state of
+    Just lk -> do
+      acceptLook lk
+      messageAdd "Floor target selected."  -- TODO
+    Nothing -> h  -- nothing to accept; perform the default action
 
 moveCursor :: Look -> Dir -> Int -> Action ()  -- TODO: do not take time!!!
 moveCursor lk@(Look { cursorLoc = loc }) dir n =
@@ -321,7 +331,7 @@ lvlchange vdir =
                     then fleeDungeon
                     else abortWith "Game resumed."
                 Just _ ->
-                  abortWith "cannot escape dungeon in look mode"
+                  abortWith "cannot escape dungeon in targeting mode"
             Just (nln, nloc) -> do
               assertTrue $ lvlswitch nln  -- no stairs go back to the same level
               case look of
@@ -469,16 +479,19 @@ search =
         slmap = foldl (\ l m -> update searchTile (shift ploc m) l) lmap moves
     modify (updateLevel (updateLMap (const slmap)))
 
--- | Toggle look mode.
-lookAround :: Action ()
-lookAround =
-  do
-    state <- get
-    case slook state of
-      Just lk -> cancelLook lk
-      Nothing -> do
-                   lk <- setLook
-                   doLook lk
+-- | Start the floor targetting mode.
+targetFloor :: Action ()
+targetFloor = do
+  state <- get
+  case slook state of
+    Just lk -> return ()  -- TODO: switch target mode to floor
+    Nothing -> do
+      lk <- setLook
+      doLook lk
+
+-- | Start the monster targetting mode.
+targetMonster :: Action ()
+targetMonster = targetFloor  -- TODO
 
 -- | Set look mode.
 setLook :: Action Look
@@ -494,12 +507,15 @@ setLook =
 
 -- | Cancel look mode.
 cancelLook :: Look -> Action ()
-cancelLook (Look _ tgt ln) =
-  do
-    lvlswitch ln
-    modify (updatePlayer (\ p -> p { mtarget = tgt }))
-    modify (updateLook (const Nothing))
-    messageAdd "Look mode canceled."
+cancelLook (Look _ _ ln) = do
+  lvlswitch ln
+  modify (updateLook (const Nothing))
+
+-- | Accept target and cancel look mode.
+acceptLook :: Look -> Action ()
+acceptLook lk@(Look _ tgt _) = do
+  modify (updatePlayer (\ p -> p { mtarget = tgt }))
+  cancelLook lk
 
 -- | Perform look around in the current location of the cursor.
 -- TODO: depending on tgt or an extra flag, show tile, monster or both

@@ -159,8 +159,11 @@ keyTranslate "colon"         = Just (K.Char ':')
 keyTranslate "comma"         = Just (K.Char ',')
 keyTranslate "space"         = Just (K.Char ' ')
 keyTranslate "question"      = Just (K.Char '?')
-keyTranslate "asterisk"      = Just (K.Char '*')
 keyTranslate "dollar"        = Just (K.Char '$')
+keyTranslate "asterisk"      = Just (K.Char '*')
+keyTranslate "KP_Multiply"   = Just (K.Char '*')
+keyTranslate "slash"         = Just (K.Char '/')
+keyTranslate "KP_Divide"     = Just (K.Char '/')
 keyTranslate "Escape"        = Just K.Esc
 keyTranslate "Return"        = Just K.Return
 keyTranslate "Tab"           = Just K.Tab
@@ -177,6 +180,7 @@ keyTranslate "KP_Enter"      = Just K.Return
 keyTranslate ['K','P','_',c] = Just (K.KP c)
 keyTranslate [c]             = Just (K.Char c)
 keyTranslate _               = Nothing
+-- keyTranslate e               = Just (K.Dbg $ show e)
 
 nextEvent :: Session -> IO K.Key
 nextEvent session =
