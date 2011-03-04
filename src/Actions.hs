@@ -69,6 +69,7 @@ quitGame =
       then end -- TODO: why no highscore? no display, because the user may be in a hurry, since he quits the game instead of getting himself killed properly? no score recording, not to polute the scores list with games that the player didn't even want to end honourably?
       else abortWith "Game resumed."
 
+-- | Cancel targetting mode.
 cancelCurrent :: Action ()
 cancelCurrent = do
   state <- get
@@ -78,13 +79,16 @@ cancelCurrent = do
       messageAdd "Targeting mode canceled."
     Nothing -> abortWith "Press Q to quit."
 
+-- | Accept target and cancel targetting mode, or perform a default action.
 acceptCurrent :: Action () -> Action ()
 acceptCurrent h = do
   state <- get
   case slook state of
-    Just lk -> do
-      acceptLook lk
-      messageAdd "Floor target selected."  -- TODO
+    Just lk@(Look _ tgt _) -> do
+      modify (updatePlayer (\ p -> p { mtarget = tgt }))
+      cancelLook lk
+      let kind = if isFloorTarget tgt then "Floor" else "Monster"
+      messageAdd $ kind ++ " target selected."
     Nothing -> h  -- nothing to accept; perform the default action
 
 moveCursor :: Look -> Dir -> Int -> Action ()  -- TODO: do not take time!!!
@@ -484,22 +488,62 @@ targetFloor :: Action ()
 targetFloor = do
   state <- get
   case slook state of
-    Just lk -> return ()  -- TODO: switch target mode to floor
+    Just lk@(Look _ tgt _) ->
+      case tgt of
+        TEnemy i -> do
+          let ms = lmonsters (slevel state)
+              t = if i >= L.length ms
+                  then TCurFloor  -- the targeted monster is dead
+                  else TLoc $ mloc $ ms !! i
+          lk <- setLook t
+          doLook lk
+        _ ->
+          doLook lk  -- stick to the previous floor target
     Nothing -> do
-      lk <- setLook
+      lk <- setLook TCurFloor
       doLook lk
 
--- | Start the monster targetting mode.
+-- | Start the monster targetting mode. Cycle between monster targets.
+-- TODO: also target a monster by moving the cursor, if in target monster mode.
+-- TODO: generally streamline and extend when the commands do not take time,
+-- when firing at targets is implemented. when monsters use targets.
 targetMonster :: Action ()
-targetMonster = targetFloor  -- TODO
+targetMonster = do
+  state <- get
+  per   <- currentPerception
+  let (i1, tgt) = case slook state of
+                    Just (Look _ tgt@(TEnemy i) _) -> (i + 1, tgt)
+                    Just (Look _ tgt _) -> (0, tgt)
+                    _ -> (0, TCurFloor)
+      ms = L.zip (lmonsters (slevel state)) [0..]
+      (lt, gt) = L.splitAt i1 ms
+      lf = L.filter (\ (m, _) -> S.member (mloc m) (pvisible per)) (gt ++ lt)
+      t = case lf of
+            [] -> tgt  -- no monsters in sight, stick to the previous target
+            (_, ni) : _ -> TEnemy ni  -- pick the next (or first) monster
+  lk <- setLook t
+  doLook lk
+
+-- | Calculate the location of player's target.
+-- TODO: no idea in which file to put this function.
+targetToLoc :: Target -> State -> Perception -> Loc
+targetToLoc (TEnemy i) s per =
+  let loc = mloc $ lmonsters (slevel s) !! i
+  in  if S.member loc (pvisible per)
+      then loc
+      else mloc (splayer s)
+targetToLoc (TLoc loc) s _ = loc
+targetToLoc TClosest   s _ = undefined  -- TODO
+targetToLoc TShare     s _ = undefined  -- TODO
+targetToLoc TCurFloor  s _ = mloc (splayer s)
 
 -- | Set look mode.
-setLook :: Action Look
-setLook =
+setLook :: Target -> Action Look
+setLook tgt =
   do
     state <- get
-    let loc = mloc (splayer state)
-        tgt = TNone
+    per   <- currentPerception
+    let loc = targetToLoc tgt state per
         ln  = lname (slevel state)
         lk  = Look loc tgt ln
     modify (updateLook (const $ Just lk))
@@ -510,12 +554,6 @@ cancelLook :: Look -> Action ()
 cancelLook (Look _ _ ln) = do
   lvlswitch ln
   modify (updateLook (const Nothing))
-
--- | Accept target and cancel look mode.
-acceptLook :: Look -> Action ()
-acceptLook lk@(Look _ tgt _) = do
-  modify (updatePlayer (\ p -> p { mtarget = tgt }))
-  cancelLook lk
 
 -- | Perform look around in the current location of the cursor.
 -- TODO: depending on tgt or an extra flag, show tile, monster or both

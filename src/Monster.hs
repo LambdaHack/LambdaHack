@@ -20,7 +20,7 @@ heroHP config =
 -- | Initial hero.
 defaultHero :: Int -> Loc -> Int -> Hero
 defaultHero n ploc hp =
-  Monster (Hero n) hp hp Nothing TNone ploc [] 'a' 10 0
+  Monster (Hero n) hp hp Nothing TCurFloor ploc [] 'a' 10 0
 
 -- | The serial number of the hero. At this number he appears
 -- in level hero intmaps. TODO: strengthen the type to avoid the error?
@@ -98,10 +98,10 @@ data Target =
                 -- TODO: what is the monster's number?
                 -- (can't be position of monster on lmonsters.
                 -- because monster death invalidates that)
-  | TLoc Loc    -- ^ fire at a location, if in LOS
-  | TClosest    -- ^ fire at the closest enemy in LOS
-  | TShare      -- ^ fire at the closest friend's target in LOS
-  | TNone       -- ^ request manual targeting
+  | TLoc Loc    -- ^ fire at a location
+  | TClosest    -- ^ fire at the floor of the closest enemy
+  | TShare      -- ^ fire at the floor of the friends' closest nontrivial target
+  | TCurFloor   -- ^ fire at the current floor (under the actor), the default
   deriving (Show, Eq)
 
 instance Binary Target where
@@ -109,7 +109,7 @@ instance Binary Target where
   put (TLoc loc) = putWord8 1 >> put loc
   put TClosest   = putWord8 2
   put TShare     = putWord8 3
-  put TNone      = putWord8 4
+  put TCurFloor  = putWord8 4
   get = do
           tag <- getWord8
           case tag of
@@ -117,8 +117,12 @@ instance Binary Target where
             1 -> liftM TLoc get
             2 -> return TClosest
             3 -> return TShare
-            4 -> return TNone
+            4 -> return TCurFloor
             _ -> fail "no parse (Target)"
+
+isFloorTarget :: Target -> Bool
+isFloorTarget (TEnemy _) = False
+isFloorTarget _          = True
 
 -- | Monster frequencies (TODO: should of course vary much more
 -- on local circumstances).
@@ -144,7 +148,7 @@ newMonster loc ftp =
     -- move immediately after generation; this does not seem like
     -- a bad idea, but it would certainly be "more correct" to set
     -- the time to the creation time instead
-    template tp hp loc s = Monster tp hp hp Nothing TNone loc [] 'a' s 0
+    template tp hp loc s = Monster tp hp hp Nothing TCurFloor loc [] 'a' s 0
 
     hps Eye      = randomR (1,12)  -- falls in 1--4 unarmed rounds
     hps FastEye  = randomR (1,6)   -- 1--2
