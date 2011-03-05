@@ -777,7 +777,7 @@ moveOrAttack :: Bool ->        -- allow attacks?
                 Actor ->       -- who's moving?
                 Dir ->
                 Action ()
-moveOrAttack allowAttacks autoOpen source dir
+moveOrAttack allowAttacks autoOpen actor dir
   | dir == (0,0) =
       -- Moving with no direction is a noop.
       -- We include it currently to prevent that
@@ -788,7 +788,7 @@ moveOrAttack allowAttacks autoOpen source dir
       state <- get
       ms    <- gets (lmonsters . slevel)
       lmap  <- gets (lmap . slevel)
-      let sm   = getActor state source
+      let sm   = getActor state actor
           sloc = mloc sm           -- source location
           tloc = sloc `shift` dir  -- target location
           hs   = levelHeroList state
@@ -802,40 +802,50 @@ moveOrAttack allowAttacks autoOpen source dir
         Just (target, tm) ->
           if allowAttacks then
             -- Attacking does not require full access, adjacency is enough.
-            actorAttackActor source sm target tm
+            actorAttackActor actor (target, tm)
           else if accessible lmap sloc tloc then do
             -- Switching positions requires full access.
-            actorRunActor source sm target tm
-            when (source == APlayer) $ message $ lookAt False state lmap tloc ""
+            actorRunActor actor (target, tm)
+            when (actor == APlayer) $ message $ lookAt False state lmap tloc ""
           else abort
         Nothing ->
           if accessible lmap sloc tloc then do
             -- perform the move
-            updateActor source (\ m -> m { mloc = tloc })
-            when (source == APlayer) $ message $ lookAt False state lmap tloc ""
+            updateActor actor (\ m -> m { mloc = tloc })
+            when (actor == APlayer) $ message $ lookAt False state lmap tloc ""
           else if autoOpen then
             -- try to open a door
-            actorOpenClose source False True dir
+            actorOpenClose actor False True dir
           else abort
 
--- | Resolves the result of an actor moving into another. Usually this
+-- | Resolves the result of an actor moving into a passive target. Usually this
 -- involves melee attack, but with two heroes it just changes focus.
 -- Monsters on blocked locations can be attacked without any restrictions.
 -- For instance, a monster on an open door can be attacked diagonally,
 -- and a monster capable of moving through walls can be attacked from an
 -- adjacent position.
--- TODO: perhaps do not use actors, but the mtype field of monsters instead?
--- I use actors here via a hack, anyway, because if the target actor is
--- APlayer, then his monster body may be not equal to (getActor state target),
--- until the hero is selected (and in actorRunActor the target may be not
--- selected at all, whenever source is a hero). If monsters are kept in a map,
--- not on a list, they will have permanent numbers, so mtype will be usable.
-actorAttackActor :: Actor -> Monster -> Actor -> Monster -> Action ()
-actorAttackActor APlayer _ APlayer tm = do -- TODO: do not take a turn!!!
+-- TODO: When monsters have permanent number (right now their actor number
+-- is just the temporary position on the monsters list), do not pass
+-- the monster "actor" value together with monster body as the argument
+-- representing the passive target of the attack. The monster body will
+-- then be enough.
+-- TODO: This function and the next show the shortcomings of the actor
+-- mechanism, since here we need to query and modify not only actors.
+-- but also monsters/heroes that are passive targets of the actions.
+-- To fix this, we should either consider everybody an actor all the time
+-- (add permanent monster number and add (AHero n) actors)
+-- or forgo actors alltogether and just pass around and modify
+-- values of the Monster type and, when done, overwrite with them
+-- their old copy stored on a level (as we currently do with target heroes,
+-- without the need for their actor representation).
+actorAttackActor :: Actor ->             -- the attacker, the actual actor
+                    (Actor, Monster) ->  -- the passive target
+                    Action ()
+actorAttackActor APlayer (APlayer, tm) = do -- TODO: do not take a turn!!!
   -- Select adjacent hero by bumping into him.
   let i = heroNumber tm
   assertTrue $ selectHero i
-actorAttackActor source sm target tm =
+actorAttackActor actor (target, tm) =
   do
     debug "actorAttackActor"
     when (target == APlayer) $ do
@@ -845,7 +855,8 @@ actorAttackActor source sm target tm =
       -- Extra prompt, in case many heroes attacked in one turn.
       when b $ messageAddMore >> return ()
     state <- get
-    let -- determine the weapon used for the attack
+    let sm    = getActor state actor
+        -- determine the weapon used for the attack
         sword = strongestSword (mitems sm)
         -- damage the target
         newHp  = mhp tm - 3 - sword
@@ -876,18 +887,21 @@ actorAttackActor source sm target tm =
           let upd l = L.take n l ++ L.drop (n + 1) l
           in  modify (updateLevel (updateMonsters upd))
 
--- | Resolves the result of an actor running into another.
--- This involves switching positions of the two actors. Always takes time.
-actorRunActor :: Actor -> Monster -> Actor -> Monster -> Action ()
-actorRunActor source sm target tm = do
-  let sloc = mloc sm  -- source location
+-- | Resolves the result of an actor running into a passive target.
+-- This involves switching positions of the two monsters/heroes.
+-- Always takes time.
+actorRunActor :: Actor -> (Actor, Monster) -> Action ()
+actorRunActor actor (target, tm) = do
+  state <- get
+  let sm   = getActor state actor
+      sloc = mloc sm  -- source location
       tloc = mloc tm  -- target location
-  updateActor source (\ m -> m { mloc = tloc })
+  updateActor actor (\ m -> m { mloc = tloc })
   case target of
     APlayer -> do
       let i = heroNumber tm
       modify (updateAnyHero (\ m -> m { mloc = sloc }) i)
-      case source of
+      case actor of
         APlayer ->
           stopRunning
         AMonster _ -> do
