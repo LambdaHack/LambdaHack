@@ -33,9 +33,9 @@ data State = State
   deriving Show
 
 data Cursor = Cursor
-  { cactive    :: Bool,
-    clocation  :: Loc,
-    creturn    :: LevelName
+  { ctargeting :: Bool,      -- ^ are we in targeting mode?
+    clocation   :: Loc,       -- ^ cursor coordinates
+    creturnLn   :: LevelName  -- ^ the level current player resides on
   }
   deriving Show
 
@@ -58,13 +58,13 @@ updatePlayer f s = s { splayer = f (splayer s) }
 
 -- | The level on which the current player resides.
 playerLevel :: State -> LevelName
-playerLevel state = creturn $ scursor state
+playerLevel state = creturnLn $ scursor state
 
 levelHeroAssocs :: State -> [(Int, Hero)]
 levelHeroAssocs (State { splayer = player,
                          scursor = cursor,
                          slevel  = level@Level { lheroes = hs } }) =
-  if creturn cursor /= lname level
+  if creturnLn cursor /= lname level
   then IM.assocs hs -- player not on the currently selected level
   else (heroNumber player, player) : IM.assocs hs
 

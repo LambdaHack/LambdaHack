@@ -69,11 +69,11 @@ quitGame =
       then end -- TODO: why no highscore? no display, because the user may be in a hurry, since he quits the game instead of getting himself killed properly? no score recording, not to polute the scores list with games that the player didn't even want to end honourably?
       else abortWith "Game resumed."
 
--- | Cancel something, e.g., targetting mode. Chosen target is not invalidated.
+-- | Cancel something, e.g., targeting mode. Chosen target is not invalidated.
 cancelCurrent :: Action ()
 cancelCurrent = do
-  active <- gets (cactive . scursor)
-  if active
+  targeting <- gets (ctargeting . scursor)
+  if targeting
     then do
       player <- gets splayer
       cancelCursor
@@ -100,13 +100,13 @@ moveCursor dir n = do
 
 move :: Dir -> Action ()
 move dir = do
-  active <- gets (cactive . scursor)
-  if active then moveCursor dir 1 else moveOrAttack True True APlayer dir
+  targeting <- gets (ctargeting . scursor)
+  if targeting then moveCursor dir 1 else moveOrAttack True True APlayer dir
 
 run :: Dir -> Action ()
 run dir = do
-  active <- gets (cactive . scursor)
-  if active
+  targeting <- gets (ctargeting . scursor)
+  if targeting
     then moveCursor dir 10
     else do
       modify (updatePlayer (\ p -> p { mdir = Just dir }))
@@ -308,16 +308,16 @@ lvlchange vdir =
   do
     state  <- get
     cursor <- gets scursor
-    active <- gets (cactive . scursor)
+    targeting <- gets (ctargeting . scursor)
     let map = lmap (slevel state)
-        loc = if active then clocation cursor else mloc (splayer state)
+        loc = if targeting then clocation cursor else mloc (splayer state)
     case map `at` loc of
       Tile (Stairs _ vdir' next) is
         | vdir == vdir' -> -- stairs are in the right direction
           case next of
             Nothing ->
               -- we are at the "end" of the dungeon
-              if active
+              if targeting
               then abortWith "cannot escape dungeon in targeting mode"
               else do
                 b <- messageYesNo "Really escape the dungeon?"
@@ -326,7 +326,7 @@ lvlchange vdir =
                   else abortWith "Game resumed."
             Just (nln, nloc) -> do
               assertTrue $ lvlswitch nln  -- no stairs go back to the same level
-              if active
+              if targeting
                 then do
                   -- do not freely reveal the other end of the stairs
                   map <- gets (lmap . slevel)  -- lvlswitch modifies map
@@ -341,9 +341,9 @@ lvlchange vdir =
                   -- land the player at the other end of the stairs
                   modify (updatePlayer (\ p -> p { mloc = nloc }))
                   -- change the level of the player recorded in cursor
-                  modify (updateCursor (\ cur -> cur { creturn = nln }))
+                  modify (updateCursor (\ cur -> cur { creturnLn = nln }))
       _ -> -- no stairs
-        if active
+        if targeting
         then do
           lvldescend (if vdir == Up then -1 else 1)
           doLook
@@ -433,7 +433,7 @@ promotePlayer ni (nln, np) =
     -- if in targeting mode, record the original level of the new hero
     -- and focus on him, if level changed
     let upd cursor = let loc = if lvlChanged then mloc np else clocation cursor
-                     in  cursor { creturn = nln, clocation = loc }
+                     in  cursor { creturnLn = nln, clocation = loc }
     modify (updateCursor upd)
 
 -- | Calculate loot's worth. TODO: move to another module, and refine significantly.
@@ -474,7 +474,7 @@ search =
         slmap = foldl (\ l m -> update searchTile (shift ploc m) l) lmap moves
     modify (updateLevel (updateLMap (const slmap)))
 
--- | Start the floor targetting mode.
+-- | Start the floor targeting mode.
 targetFloor :: Action ()
 targetFloor = do
   player <- gets splayer
@@ -491,7 +491,7 @@ targetFloor = do
       setTarget tgt
       doLook
 
--- | Start the monster targetting mode. Cycle between monster targets.
+-- | Start the monster targeting mode. Cycle between monster targets.
 -- TODO: also target a monster by moving the cursor, if in target monster mode.
 -- TODO: generally streamline and extend when the commands do not take time,
 -- when firing at targets is implemented. when monsters use targets.
@@ -534,16 +534,16 @@ setTarget tgt =
     per   <- currentPerception
     let upd cursor =
           let loc = targetToLoc tgt state per
-          in  cursor { cactive = True, clocation = loc }
+          in  cursor { ctargeting = True, clocation = loc }
     modify (updateCursor upd)
     modify (updatePlayer (\ p -> p { mtarget = tgt }))
 
 -- | Cancel targeting mode.
 cancelCursor :: Action ()
 cancelCursor = do
-  ln <- gets (creturn . scursor)
+  ln <- gets (creturnLn . scursor)
   lvlswitch ln
-  modify (updateCursor (\ cur -> cur { cactive = False }))
+  modify (updateCursor (\ cur -> cur { ctargeting = False }))
 
 -- | Perform look around in the current location of the cursor.
 -- TODO: depending on tgt or an extra flag, show tile, monster or both
