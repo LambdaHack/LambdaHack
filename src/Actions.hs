@@ -72,45 +72,43 @@ quitGame =
 -- | Cancel something, e.g., targetting mode. Chosen target is not invalidated.
 cancelCurrent :: Action ()
 cancelCurrent = do
-  cursor <- gets scursor
-  player <- gets splayer
-  case cactive cursor of
-    True  -> do
-      cancelCursor cursor
+  active <- gets (cactive . scursor)
+  if active
+    then do
+      player <- gets splayer
+      cancelCursor
       let kind = if isFloorTarget (mtarget player) then "Floor" else "Monster"
       messageAdd $ kind ++ " targeting finished."
-    False -> abortWith "Press Q to quit."
+    else abortWith "Press Q to quit."
 
 -- | Accept something, or perform a default action.
 acceptCurrent :: Action () -> Action ()
 acceptCurrent h = h  -- nothing to accept right now; perform the default action
 
-moveCursor :: Cursor -> Dir -> Int -> Action ()  -- TODO: do not take time!!!
-moveCursor cur@(Cursor { clocation = loc }) dir n =
-  do
-    (sy, sx) <- gets (lsize . slevel)
-    let iter :: Int -> (a -> a) -> a -> a  -- not in base libs???
-        iter 0 _ x = x
-        iter k f x = f (iter (k-1) f x)
-        (ny, nx) = iter n (`shift` dir) loc
-        nloc = (max 1 $ min ny (sy-1), max 1 $ min nx (sx-1))
-        ncur = cur { clocation = nloc }
-    modify (updateCursor (const ncur))
-    doLook ncur
+moveCursor :: Dir -> Int -> Action ()  -- TODO: do not take time!!!
+moveCursor dir n = do
+  (sy, sx) <- gets (lsize . slevel)
+  let iter :: Int -> (a -> a) -> a -> a  -- not in base libs???
+      iter 0 _ x = x
+      iter k f x = f (iter (k-1) f x)
+      upd cursor =
+        let (ny, nx) = iter n (`shift` dir) (clocation cursor)
+            nloc = (max 1 $ min ny (sy-1), max 1 $ min nx (sx-1))
+        in  cursor { clocation = nloc }
+  modify (updateCursor upd)
+  doLook
 
 move :: Dir -> Action ()
 move dir = do
-  cursor <- gets scursor
-  case cactive cursor of
-    True  -> moveCursor cursor dir 1
-    False -> moveOrAttack True True APlayer dir
+  active <- gets (cactive . scursor)
+  if active then moveCursor dir 1 else moveOrAttack True True APlayer dir
 
 run :: Dir -> Action ()
 run dir = do
-  cursor <- gets scursor
-  case cactive cursor of
-    True  -> moveCursor cursor dir 10
-    False -> do
+  active <- gets (cactive . scursor)
+  if active
+    then moveCursor dir 10
+    else do
       modify (updatePlayer (\ p -> p { mdir = Just dir }))
       -- attacks and opening doors disallowed while running
       moveOrAttack False False APlayer dir
@@ -310,48 +308,48 @@ lvlchange vdir =
   do
     state  <- get
     cursor <- gets scursor
+    active <- gets (cactive . scursor)
     let map = lmap (slevel state)
-        loc = case cactive cursor of
-                False -> mloc (splayer state)
-                True  -> clocation cursor
+        loc = if active then clocation cursor else mloc (splayer state)
     case map `at` loc of
       Tile (Stairs _ vdir' next) is
         | vdir == vdir' -> -- stairs are in the right direction
           case next of
             Nothing ->
               -- we are at the "end" of the dungeon
-              case cactive cursor of
-                False -> do
-                  b <- messageYesNo "Really escape the dungeon?"
-                  if b
-                    then fleeDungeon
-                    else abortWith "Game resumed."
-                True  ->
-                  abortWith "cannot escape dungeon in targeting mode"
+              if active
+              then abortWith "cannot escape dungeon in targeting mode"
+              else do
+                b <- messageYesNo "Really escape the dungeon?"
+                if b
+                  then fleeDungeon
+                  else abortWith "Game resumed."
             Just (nln, nloc) -> do
               assertTrue $ lvlswitch nln  -- no stairs go back to the same level
-              case cactive cursor of
-                False -> do
-                  -- land the player at the other end of the stairs
-                  modify (updatePlayer (\ p -> p { mloc = nloc }))
-                  modify (updateCursor (\ cur -> cur { creturn = nln }))
-                True  -> do
+              if active
+                then do
                   -- do not freely reveal the other end of the stairs
                   map <- gets (lmap . slevel)  -- lvlswitch modifies map
-                  let destinationLoc = if isUnknown (rememberAt map nloc)
-                                       then loc
-                                       else nloc
-                      ncur = cursor { clocation = destinationLoc }
-                  modify (updateCursor (const ncur))
-                  doLook ncur
+                  let upd cursor =
+                        let destinationLoc = if isUnknown (rememberAt map nloc)
+                                             then loc
+                                             else nloc
+                        in  cursor { clocation = destinationLoc }
+                  modify (updateCursor upd)
+                  doLook
+                else do
+                  -- land the player at the other end of the stairs
+                  modify (updatePlayer (\ p -> p { mloc = nloc }))
+                  -- change the level of the player recorded in cursor
+                  modify (updateCursor (\ cur -> cur { creturn = nln }))
       _ -> -- no stairs
-        case cactive cursor of
-          True  -> do
-            lvldescend (if vdir == Up then -1 else 1)
-            doLook cursor  -- lvldescend does not change cursor
-          False -> do
-            let txt = if vdir == Up then "up" else "down"
-            abortWith ("no stairs " ++ txt)
+        if active
+        then do
+          lvldescend (if vdir == Up then -1 else 1)
+          doLook
+        else
+          let txt = if vdir == Up then "up" else "down"
+          in  abortWith ("no stairs " ++ txt)
 
 -- | Hero has left the dungeon.
 fleeDungeon :: Action ()
@@ -434,8 +432,8 @@ promotePlayer ni (nln, np) =
     modify (updatePlayer (const np))
     -- if in targeting mode, record the original level of the new hero
     -- and focus on him, if level changed
-    let upd cur = let loc = if lvlChanged then mloc np else clocation cur
-                  in  cur { creturn = nln, clocation = loc }
+    let upd cursor = let loc = if lvlChanged then mloc np else clocation cursor
+                     in  cursor { creturn = nln, clocation = loc }
     modify (updateCursor upd)
 
 -- | Calculate loot's worth. TODO: move to another module, and refine significantly.
@@ -485,13 +483,13 @@ targetFloor = do
     TEnemy i -> do
       let ms = lmonsters level
           t = if i >= L.length ms
-              then TCursor  -- the targeted monster is dead; TODO: or other monsters are dead and the list is too short --- fix!
+              then TCursor  -- the targeted monster is dead; TODO: or on another level or other monsters are dead and the list is too short --- fix!
               else TLoc $ mloc $ ms !! i
-      cur <- setTarget t
-      doLook cur
+      setTarget t
+      doLook
     tgt -> do
-      cur <- setTarget tgt
-      doLook cur
+      setTarget tgt
+      doLook
 
 -- | Start the monster targetting mode. Cycle between monster targets.
 -- TODO: also target a monster by moving the cursor, if in target monster mode.
@@ -512,10 +510,10 @@ targetMonster = do
       (lt, gt) = L.splitAt i1 ms
       lf = L.filter (\ (m, _) -> S.member (mloc m) (pvisible per)) (gt ++ lt)
       t = case lf of
-            [] -> mtarget player      -- no monsters in sight, stick to last
+            [] -> mtarget player  -- no monsters in sight, stick to last target
             (_, ni) : _ -> TEnemy ni  -- pick the next (or first) monster
-  cur <- setTarget t
-  doLook cur
+  setTarget t
+  doLook
 
 -- | Calculate the location of player's target.
 -- TODO: no idea in which file to put this function.
@@ -529,30 +527,31 @@ targetToLoc (TLoc loc) s _ = loc
 targetToLoc TCursor    s _ = clocation (scursor s)
 
 -- | Set and activate cursor and set player's target.
-setTarget :: Target -> Action Cursor
+setTarget :: Target -> Action ()
 setTarget tgt =
   do
     state <- get
     per   <- currentPerception
-    let loc = targetToLoc tgt state per
-        ln  = lname (slevel state)
-        cur = Cursor True loc ln
-    modify (updateCursor (const cur))
+    let upd cursor =
+          let loc = targetToLoc tgt state per
+          in  cursor { cactive = True, clocation = loc }
+    modify (updateCursor upd)
     modify (updatePlayer (\ p -> p { mtarget = tgt }))
-    return cur
 
 -- | Cancel targeting mode.
-cancelCursor :: Cursor -> Action ()
-cancelCursor (Cursor _ _ ln) = do
+cancelCursor :: Action ()
+cancelCursor = do
+  ln <- gets (creturn . scursor)
   lvlswitch ln
   modify (updateCursor (\ cur -> cur { cactive = False }))
 
 -- | Perform look around in the current location of the cursor.
 -- TODO: depending on tgt or an extra flag, show tile, monster or both
 -- TODO: do not take time
-doLook :: Cursor -> Action ()
-doLook (Cursor { clocation = loc }) =
+doLook :: Action ()
+doLook =
   do
+    loc   <- gets (clocation . scursor)
     state <- get
     lmap  <- gets (lmap . slevel)
     ms    <- gets (lmonsters . slevel)
