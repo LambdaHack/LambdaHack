@@ -493,14 +493,14 @@ targetFloor = do
         TEnemy i -> do
           let ms = lmonsters (slevel state)
               t = if i >= L.length ms
-                  then TCurFloor  -- the targeted monster is dead
+                  then TCursor  -- the targeted monster is dead
                   else TLoc $ mloc $ ms !! i
           lk <- setLook t
           doLook lk
         _ ->
           doLook lk  -- stick to the previous floor target
     Nothing -> do
-      lk <- setLook TCurFloor
+      lk <- setLook TCursor
       doLook lk
 
 -- | Start the monster targetting mode. Cycle between monster targets.
@@ -514,7 +514,7 @@ targetMonster = do
   let (i1, tgt) = case slook state of
                     Just (Look _ tgt@(TEnemy i) _) -> (i + 1, tgt)
                     Just (Look _ tgt _) -> (0, tgt)
-                    _ -> (0, TCurFloor)
+                    _ -> (0, TCursor)
       ms = L.zip (lmonsters (slevel state)) [0..]
       (lt, gt) = L.splitAt i1 ms
       lf = L.filter (\ (m, _) -> S.member (mloc m) (pvisible per)) (gt ++ lt)
@@ -533,9 +533,7 @@ targetToLoc (TEnemy i) s per =
       then loc
       else mloc (splayer s)
 targetToLoc (TLoc loc) s _ = loc
-targetToLoc TClosest   s _ = undefined  -- TODO
-targetToLoc TShare     s _ = undefined  -- TODO
-targetToLoc TCurFloor  s _ = mloc (splayer s)
+targetToLoc TCursor    s _ = mloc (splayer s)  -- TODO: when targeting cursor is permanently stored, use it instead
 
 -- | Set look mode.
 setLook :: Target -> Action Look
