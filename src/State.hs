@@ -19,7 +19,7 @@ import Message
 -- accumulated during a turn or relevant only to the current session.
 data State = State
   { splayer      :: Hero,         -- ^ the selected hero
-    scursor      :: Maybe Cursor, -- ^ cursor location and level to return to
+    scursor      :: Cursor,       -- ^ cursor location and level to return to
     shistory     :: [Message],
     ssensory     :: SensoryMode,
     sdisplay     :: DisplayMode,
@@ -43,7 +43,7 @@ defaultState :: Hero -> Dungeon -> Level -> State
 defaultState player dng lvl =
   State
     player
-    Nothing
+    (Cursor False (mloc player) (lname lvl))
     []
     Implicit Normal
     0
@@ -58,20 +58,15 @@ updatePlayer f s = s { splayer = f (splayer s) }
 
 -- | The level on which the current player resides.
 playerLevel :: State -> LevelName
-playerLevel (State { slevel  = level,
-                     scursor = cursor }) =
-  maybe (lname level) creturn cursor
+playerLevel state = creturn $ scursor state
 
 levelHeroAssocs :: State -> [(Int, Hero)]
 levelHeroAssocs (State { splayer = player,
                          scursor = cursor,
                          slevel  = level@Level { lheroes = hs } }) =
-  case cursor of
-    Just (Cursor { creturn = ln })
-      | ln /= lname level ->
-        -- player not on the currently selected level
-        IM.assocs hs
-    _ -> (heroNumber player, player) : IM.assocs hs
+  if creturn cursor /= lname level
+  then IM.assocs hs -- player not on the currently selected level
+  else (heroNumber player, player) : IM.assocs hs
 
 levelHeroList :: State -> [Hero]
 levelHeroList s = snd $ L.unzip $ levelHeroAssocs s
@@ -112,7 +107,7 @@ updateAnyLevel f ln state@(State { slevel = level,
   | ln == lname level = updateLevel f state
   | otherwise = updateDungeon (const $ Dungeon $ M.adjust f ln dng) state
 
-updateCursor :: (Maybe Cursor -> Maybe Cursor) -> State -> State
+updateCursor :: (Cursor -> Cursor) -> State -> State
 updateCursor f s = s { scursor = f (scursor s) }
 
 updateHistory :: ([String] -> [String]) -> State -> State

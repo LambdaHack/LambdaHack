@@ -177,9 +177,10 @@ displayLevel session per
                                            _ | sSml && sml >= 0  -> viewSmell sml
                                              | otherwise         -> viewTile vis tile assocs
                                vision =
-                                 case scursor state of
-                                   Just (Cursor { clocation = cloc })
-                                     | loc == cloc -> setBG white
+                                 case cactive (scursor state) of
+                                   True
+                                     | loc == (clocation (scursor state)) ->
+                                         setBG white
                                    _ -> lVision vis rea
                            in
                              case over (loc `shift` ((sy+1) * n, 0)) of

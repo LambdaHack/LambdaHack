@@ -229,9 +229,6 @@ checkCursor :: Action () -> Action ()
 checkCursor h = do
   cursor <- gets scursor
   level  <- gets slevel
-  case cursor of
-    Just cur ->
-      if creturn cur == lname level
-      then h
-      else abortWith "this command does not work on remote levels"
-    Nothing -> h
+  if creturn cursor == lname level
+    then h
+    else abortWith "this command does not work on remote levels"
