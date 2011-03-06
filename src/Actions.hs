@@ -69,27 +69,43 @@ quitGame =
       then end -- TODO: why no highscore? no display, because the user may be in a hurry, since he quits the game instead of getting himself killed properly? no score recording, not to polute the scores list with games that the player didn't even want to end honourably?
       else abortWith "Game resumed."
 
--- | Cancel something, e.g., targeting mode. Chosen target is not invalidated.
+-- | End targeting mode, accepting the current cursor position or not.
+endTargeting :: Bool -> Action ()
+endTargeting accept = do
+  player   <- gets splayer
+  monsters <- gets (lmonsters . slevel)
+  target   <- gets (mtarget . splayer)
+  returnLn <- gets (creturnLn . scursor)
+  lvlswitch returnLn  -- return to the original level of the player
+  modify (updateCursor (\ c -> c { ctargeting = False }))
+  when (not accept) $ do
+    ploc <- gets (mloc . splayer)
+    modify (updateCursor (\ c -> c { clocation = ploc }))
+  let heroMsg = "Hero number " ++ show (heroNumber player)
+      targetMsg = case target of
+                    TEnemy i -> objectMonster (mtype (monsters !! i))
+                    TLoc loc -> "location " ++ show loc
+                    TCursor  -> "current cursor position continuously"
+      end = if accept then "." else "!"
+  messageAdd $ heroMsg ++ " targets " ++ targetMsg ++ end
+
+-- | Cancel something, e.g., targeting mode, returning the cursor
+-- to the position of the player. Chosen target is not invalidated.
 cancelCurrent :: Action ()
 cancelCurrent = do
   targeting <- gets (ctargeting . scursor)
-  player    <- gets splayer
-  monsters  <- gets (lmonsters . slevel)
   if targeting
-    then do
-      target <- gets (mtarget . splayer)
-      cancelCursor
-      let heroMsg = "Hero number " ++ show (heroNumber player)
-          targetMsg = case target of
-                        TEnemy i -> objectMonster (mtype (monsters !! i))
-                        TLoc loc -> "location " ++ show loc
-                        TCursor  -> "current cursor position"
-      messageAdd $ heroMsg ++ " tagets " ++ targetMsg ++ "."
+    then endTargeting False
     else abortWith "Press Q to quit."
 
--- | Accept something, or perform a default action.
+-- | Accept something, e.g., targeting mode, keeping cursor where it was.
+-- Or perform the default action, if nothing needs accepting.
 acceptCurrent :: Action () -> Action ()
-acceptCurrent h = h  -- nothing to accept right now; perform the default action
+acceptCurrent h = do
+  targeting <- gets (ctargeting . scursor)
+  if targeting
+    then endTargeting True
+    else h  -- nothing to accept right now
 
 moveCursor :: Dir -> Int -> Action ()  -- TODO: do not take time!!!
 moveCursor dir n = do
@@ -312,11 +328,12 @@ lvldescend k =
 lvlchange :: VDir -> Action ()
 lvlchange vdir =
   do
-    state  <- get
-    cursor <- gets scursor
+    state     <- get
+    cursor    <- gets scursor
     targeting <- gets (ctargeting . scursor)
+    cloc      <- gets (clocation . scursor)
     let map = lmap (slevel state)
-        loc = if targeting then clocation cursor else mloc (splayer state)
+        loc = if targeting then cloc else mloc (splayer state)
     case map `at` loc of
       Tile (Stairs _ vdir' next) is
         | vdir == vdir' -> -- stairs are in the right direction
@@ -347,7 +364,7 @@ lvlchange vdir =
                   -- land the player at the other end of the stairs
                   modify (updatePlayer (\ p -> p { mloc = nloc }))
                   -- change the level of the player recorded in cursor
-                  modify (updateCursor (\ cursor -> cursor { creturnLn = nln }))
+                  modify (updateCursor (\ c -> c { creturnLn = nln }))
       _ -> -- no stairs
         if targeting
         then do
@@ -432,15 +449,12 @@ promotePlayer :: Int -> (LevelName, Hero) -> Action ()
 promotePlayer ni (nln, np) =
   do
     -- switch to the level with the new hero
-    lvlChanged <- lvlswitch nln
+    lvlswitch nln
     -- make the new hero the player controlled hero
     modify (updateLevel (updateHeroes $ IM.delete ni))
     modify (updatePlayer (const np))
-    -- if in targeting mode, record the original level of the new hero
-    -- and focus on him, if level changed
-    let upd cursor = let cloc = if lvlChanged then mloc np else clocation cursor
-                     in  cursor { creturnLn = nln, clocation = cloc }
-    modify (updateCursor upd)
+    -- record the original level of the new hero
+    modify (updateCursor (\ c -> c { creturnLn = nln }))
 
 -- | Calculate loot's worth. TODO: move to another module, and refine significantly.
 calculateTotal :: State -> Int
@@ -480,22 +494,18 @@ search =
         slmap = foldl (\ l m -> update searchTile (shift ploc m) l) lmap moves
     modify (updateLevel (updateLMap (const slmap)))
 
--- | Start the floor targeting mode.
+-- | Start the floor targeting mode or toggle between the two floor modes.
 targetFloor :: Action ()
 targetFloor = do
-  target <- gets (mtarget . splayer)
-  level  <- gets slevel
-  case target of
-    TEnemy i -> do
-      let ms = lmonsters level
-          t = if i >= L.length ms
-              then TCursor  -- the targeted monster is dead; TODO: or on another level or other monsters are dead and the list is too short --- fix!
-              else TLoc $ mloc $ ms !! i
-      setTarget t
-      doLook
-    tgt -> do
-      setTarget tgt
-      doLook
+  target    <- gets (mtarget . splayer)
+  cloc      <- gets (clocation . scursor)
+  targeting <- gets (ctargeting . scursor)
+  let tgt = case target of
+              TEnemy i -> TCursor
+              TLoc _   -> if targeting     then TCursor else TLoc cloc
+              TCursor  -> if not targeting then TCursor else TLoc cloc
+  modify (updatePlayer (\ p -> p { mtarget = tgt }))
+  setCursor tgt
 
 -- | Start the monster targeting mode. Cycle between monster targets.
 -- TODO: also target a monster by moving the cursor, if in target monster mode.
@@ -515,45 +525,40 @@ targetMonster = do
       ms = L.zip (lmonsters level) [0..]
       (lt, gt) = L.splitAt i1 ms
       lf = L.filter (\ (m, _) -> S.member (mloc m) (pvisible per)) (gt ++ lt)
-      t = case lf of
-            [] -> target  -- no monsters in sight, stick to last target
-            (_, ni) : _ -> TEnemy ni  -- pick the next (or first) monster
-  setTarget t
-  doLook
+      tgt = case lf of
+              [] -> target  -- no monsters in sight, stick to last target
+              (_, ni) : _ -> TEnemy ni  -- pick the next (or first) monster
+  modify (updatePlayer (\ p -> p { mtarget = tgt }))
+  setCursor tgt
 
 -- | Calculate the location of player's target.
 -- TODO: no idea in which file to put this function.
--- TODO: if monster out of sight, don't change the cursor.
-targetToLoc :: Target -> State -> Perception -> Loc
-targetToLoc (TEnemy i) s per =
-  let loc = mloc $ lmonsters (slevel s) !! i
-  in  if S.member loc (pvisible per)
-      then loc
-      else mloc (splayer s)
-targetToLoc (TLoc loc) s _ = loc
-targetToLoc TCursor    s _ = clocation (scursor s)
+targetToLoc :: State -> Perception -> Loc
+targetToLoc state per =
+  let target = mtarget (splayer state)
+      cloc   = clocation (scursor state)
+  in  case target of
+        TLoc loc -> loc
+        TCursor  -> cloc
+        TEnemy i ->
+          let loc = mloc $ lmonsters (slevel state) !! i
+          in  if S.member loc (pvisible per)
+              then loc
+              else cloc  -- monster invisible, keep the cursor position
 
--- | Set and activate cursor and set player's target.
-setTarget :: Target -> Action ()
-setTarget tgt =
-  do
-    state <- get
-    per   <- currentPerception
-    let upd cursor =
-          let cloc = targetToLoc tgt state per
-          in  cursor { ctargeting = True, clocation = cloc }
-    modify (updateCursor upd)
-    modify (updatePlayer (\ p -> p { mtarget = tgt }))
-
--- | Cancel targeting mode.
-cancelCursor :: Action ()
-cancelCursor = do
-  returnLn <- gets (creturnLn . scursor)
-  lvlswitch returnLn  -- return to the original level of the player
-  modify (updateCursor (\ cursor -> cursor { ctargeting = False }))
+-- | Set, activate and display cursor information.
+setCursor :: Target -> Action ()
+setCursor tgt = do
+  state <- get
+  per   <- currentPerception
+  let upd cursor =
+        let cloc = targetToLoc state per
+        in  cursor { ctargeting = True, clocation = cloc }
+  modify (updateCursor upd)
+  doLook
 
 -- | Perform look around in the current location of the cursor.
--- TODO: depending on tgt or an extra flag, show tile, monster or both
+-- TODO: depending on tgt, show extra info about tile or monster or both
 -- TODO: do not take time
 doLook :: Action ()
 doLook =
@@ -567,13 +572,13 @@ doLook =
     let monsterMsg =
           if S.member loc (pvisible per)
           then case L.find (\ m -> mloc m == loc) ms of
-                 Just m  -> subjectMonster (mtype m) ++ " is there. "
+                 Just m  -> subjectMonster (mtype m) ++ " is here. "
                  Nothing -> ""
           else ""
         mode = case target of
                  TEnemy _ -> "[targeting monster] "
-                 TLoc _   -> "[targeting floor] "
-                 TCursor  -> "[targeting cursor] "
+                 TLoc _   -> "[targeting location] "
+                 TCursor  -> "[targeting current] "
         -- general info about current loc
         lookMsg = mode ++ lookAt True state lmap loc monsterMsg
         -- check if there's something lying around at current loc
