@@ -73,12 +73,18 @@ quitGame =
 cancelCurrent :: Action ()
 cancelCurrent = do
   targeting <- gets (ctargeting . scursor)
+  player    <- gets splayer
+  monsters  <- gets (lmonsters . slevel)
   if targeting
     then do
-      player <- gets splayer
+      target <- gets (mtarget . splayer)
       cancelCursor
-      let kind = if isFloorTarget (mtarget player) then "Floor" else "Monster"
-      messageAdd $ kind ++ " targeting finished."
+      let heroMsg = "Hero number " ++ show (heroNumber player)
+          targetMsg = case target of
+                        TEnemy i -> objectMonster (mtype (monsters !! i))
+                        TLoc loc -> "location " ++ show loc
+                        TCursor  -> "current cursor position"
+      messageAdd $ heroMsg ++ " tagets " ++ targetMsg ++ "."
     else abortWith "Press Q to quit."
 
 -- | Accept something, or perform a default action.
@@ -93,8 +99,8 @@ moveCursor dir n = do
       iter k f x = f (iter (k-1) f x)
       upd cursor =
         let (ny, nx) = iter n (`shift` dir) (clocation cursor)
-            nloc = (max 1 $ min ny (sy-1), max 1 $ min nx (sx-1))
-        in  cursor { clocation = nloc }
+            cloc = (max 1 $ min ny (sy-1), max 1 $ min nx (sx-1))
+        in  cursor { clocation = cloc }
   modify (updateCursor upd)
   doLook
 
@@ -331,17 +337,17 @@ lvlchange vdir =
                   -- do not freely reveal the other end of the stairs
                   map <- gets (lmap . slevel)  -- lvlswitch modifies map
                   let upd cursor =
-                        let destinationLoc = if isUnknown (rememberAt map nloc)
-                                             then loc
-                                             else nloc
-                        in  cursor { clocation = destinationLoc }
+                        let cloc = if isUnknown (rememberAt map nloc)
+                                   then loc
+                                   else nloc
+                        in  cursor { clocation = cloc }
                   modify (updateCursor upd)
                   doLook
                 else do
                   -- land the player at the other end of the stairs
                   modify (updatePlayer (\ p -> p { mloc = nloc }))
                   -- change the level of the player recorded in cursor
-                  modify (updateCursor (\ cur -> cur { creturnLn = nln }))
+                  modify (updateCursor (\ cursor -> cursor { creturnLn = nln }))
       _ -> -- no stairs
         if targeting
         then do
@@ -432,8 +438,8 @@ promotePlayer ni (nln, np) =
     modify (updatePlayer (const np))
     -- if in targeting mode, record the original level of the new hero
     -- and focus on him, if level changed
-    let upd cursor = let loc = if lvlChanged then mloc np else clocation cursor
-                     in  cursor { creturnLn = nln, clocation = loc }
+    let upd cursor = let cloc = if lvlChanged then mloc np else clocation cursor
+                     in  cursor { creturnLn = nln, clocation = cloc }
     modify (updateCursor upd)
 
 -- | Calculate loot's worth. TODO: move to another module, and refine significantly.
@@ -477,9 +483,9 @@ search =
 -- | Start the floor targeting mode.
 targetFloor :: Action ()
 targetFloor = do
-  player <- gets splayer
+  target <- gets (mtarget . splayer)
   level  <- gets slevel
-  case mtarget player of
+  case target of
     TEnemy i -> do
       let ms = lmonsters level
           t = if i >= L.length ms
@@ -501,22 +507,23 @@ targetFloor = do
 targetMonster :: Action ()
 targetMonster = do
   per    <- currentPerception
-  player <- gets splayer
+  target <- gets (mtarget . splayer)
   level  <- gets slevel
-  let i1 = case mtarget player of
+  let i1 = case target of
              TEnemy i -> i + 1
              _ -> 0
       ms = L.zip (lmonsters level) [0..]
       (lt, gt) = L.splitAt i1 ms
       lf = L.filter (\ (m, _) -> S.member (mloc m) (pvisible per)) (gt ++ lt)
       t = case lf of
-            [] -> mtarget player  -- no monsters in sight, stick to last target
+            [] -> target  -- no monsters in sight, stick to last target
             (_, ni) : _ -> TEnemy ni  -- pick the next (or first) monster
   setTarget t
   doLook
 
 -- | Calculate the location of player's target.
 -- TODO: no idea in which file to put this function.
+-- TODO: if monster out of sight, don't change the cursor.
 targetToLoc :: Target -> State -> Perception -> Loc
 targetToLoc (TEnemy i) s per =
   let loc = mloc $ lmonsters (slevel s) !! i
@@ -533,17 +540,17 @@ setTarget tgt =
     state <- get
     per   <- currentPerception
     let upd cursor =
-          let loc = targetToLoc tgt state per
-          in  cursor { ctargeting = True, clocation = loc }
+          let cloc = targetToLoc tgt state per
+          in  cursor { ctargeting = True, clocation = cloc }
     modify (updateCursor upd)
     modify (updatePlayer (\ p -> p { mtarget = tgt }))
 
 -- | Cancel targeting mode.
 cancelCursor :: Action ()
 cancelCursor = do
-  ln <- gets (creturnLn . scursor)
-  lvlswitch ln
-  modify (updateCursor (\ cur -> cur { ctargeting = False }))
+  returnLn <- gets (creturnLn . scursor)
+  lvlswitch returnLn  -- return to the original level of the player
+  modify (updateCursor (\ cursor -> cursor { ctargeting = False }))
 
 -- | Perform look around in the current location of the cursor.
 -- TODO: depending on tgt or an extra flag, show tile, monster or both
@@ -551,19 +558,24 @@ cancelCursor = do
 doLook :: Action ()
 doLook =
   do
-    loc   <- gets (clocation . scursor)
-    state <- get
-    lmap  <- gets (lmap . slevel)
-    ms    <- gets (lmonsters . slevel)
-    per   <- currentPerception
+    loc    <- gets (clocation . scursor)
+    state  <- get
+    lmap   <- gets (lmap . slevel)
+    ms     <- gets (lmonsters . slevel)
+    per    <- currentPerception
+    target <- gets (mtarget . splayer)
     let monsterMsg =
           if S.member loc (pvisible per)
           then case L.find (\ m -> mloc m == loc) ms of
                  Just m  -> subjectMonster (mtype m) ++ " is there. "
                  Nothing -> ""
           else ""
+        mode = case target of
+                 TEnemy _ -> "[targeting monster] "
+                 TLoc _   -> "[targeting floor] "
+                 TCursor  -> "[targeting cursor] "
         -- general info about current loc
-        lookMsg = lookAt True state lmap loc monsterMsg
+        lookMsg = mode ++ lookAt True state lmap loc monsterMsg
         -- check if there's something lying around at current loc
         t = lmap `at` loc
     if length (titems t) <= 2

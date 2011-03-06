@@ -98,8 +98,8 @@ data Target =
                 -- TODO: what is the monster's number?
                 -- (can't be position of monster on lmonsters.
                 -- because monster death invalidates that)
-  | TLoc Loc    -- ^ fire at a location
-  | TCursor     -- ^ fire at the floor under the last position of cursor
+  | TLoc Loc    -- ^ fire at a given location
+  | TCursor     -- ^ fire at the current position of the cursor; the default
   deriving (Show, Eq)
 
 instance Binary Target where
@@ -113,10 +113,6 @@ instance Binary Target where
             1 -> liftM TLoc get
             2 -> return TCursor
             _ -> fail "no parse (Target)"
-
-isFloorTarget :: Target -> Bool
-isFloorTarget (TEnemy _) = False
-isFloorTarget _          = True
 
 -- | Monster frequencies (TODO: should of course vary much more
 -- on local circumstances).
