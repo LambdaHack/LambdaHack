@@ -177,8 +177,8 @@ displayLevel session per
                                            _ | sSml && sml >= 0  -> viewSmell sml
                                              | otherwise         -> viewTile vis tile assocs
                                vision =
-                                 case slook state of
-                                   Just (Look { cursorLoc = cloc })
+                                 case scursor state of
+                                   Just (Cursor { clocation = cloc })
                                      | loc == cloc -> setBG white
                                    _ -> lVision vis rea
                            in

@@ -223,15 +223,15 @@ withPerception h = Action (\ s e _ k a st ms ->
 currentPerception :: Action Perception
 currentPerception = Action (\ s e p k a st ms -> k st ms p)
 
--- | If in look mode, check if the current level is the same as player level
--- and refuse performing the action otherwise.
-checkLook :: Action () -> Action ()
-checkLook h = do
-  look  <- gets slook
-  level <- gets slevel
-  case look of
-    Just lk ->
-      if returnLn lk == lname level
+-- | If in targeting mode, check if the current level is the same
+-- as player level and refuse performing the action otherwise.
+checkCursor :: Action () -> Action ()
+checkCursor h = do
+  cursor <- gets scursor
+  level  <- gets slevel
+  case cursor of
+    Just cur ->
+      if creturn cur == lname level
       then h
       else abortWith "this command does not work on remote levels"
     Nothing -> h

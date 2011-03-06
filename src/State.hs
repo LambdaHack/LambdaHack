@@ -19,7 +19,7 @@ import Message
 -- accumulated during a turn or relevant only to the current session.
 data State = State
   { splayer      :: Hero,         -- ^ the selected hero
-    slook        :: Maybe Look,   -- ^ cursor, new target, initial level
+    scursor      :: Maybe Cursor, -- ^ cursor location and level to return to
     shistory     :: [Message],
     ssensory     :: SensoryMode,
     sdisplay     :: DisplayMode,
@@ -32,10 +32,10 @@ data State = State
   }
   deriving Show
 
-data Look = Look
-  { cursorLoc :: Loc,
-    newTarget :: Target,
-    returnLn  :: LevelName
+data Cursor = Cursor
+  { cactive    :: Bool,
+    clocation  :: Loc,
+    creturn    :: LevelName
   }
   deriving Show
 
@@ -58,16 +58,16 @@ updatePlayer f s = s { splayer = f (splayer s) }
 
 -- | The level on which the current player resides.
 playerLevel :: State -> LevelName
-playerLevel (State { slevel = level,
-                     slook  = look }) =
-  maybe (lname level) returnLn look
+playerLevel (State { slevel  = level,
+                     scursor = cursor }) =
+  maybe (lname level) creturn cursor
 
 levelHeroAssocs :: State -> [(Int, Hero)]
 levelHeroAssocs (State { splayer = player,
-                         slook   = look,
+                         scursor = cursor,
                          slevel  = level@Level { lheroes = hs } }) =
-  case look of
-    Just (Look { returnLn = ln })
+  case cursor of
+    Just (Cursor { creturn = ln })
       | ln /= lname level ->
         -- player not on the currently selected level
         IM.assocs hs
@@ -112,8 +112,8 @@ updateAnyLevel f ln state@(State { slevel = level,
   | ln == lname level = updateLevel f state
   | otherwise = updateDungeon (const $ Dungeon $ M.adjust f ln dng) state
 
-updateLook :: (Maybe Look -> Maybe Look) -> State -> State
-updateLook f s = s { slook = f (slook s) }
+updateCursor :: (Maybe Cursor -> Maybe Cursor) -> State -> State
+updateCursor f s = s { scursor = f (scursor s) }
 
 updateHistory :: ([String] -> [String]) -> State -> State
 updateHistory f s = s { shistory = f (shistory s) }
@@ -143,10 +143,10 @@ toggleTerrain :: State -> State
 toggleTerrain s = s { sdisplay = case sdisplay s of Terrain 1 -> Normal; Terrain n -> Terrain (n-1); _ -> Terrain 4 }
 
 instance Binary State where
-  put (State player look hst sense disp time assocs discs dng lvl config) =
+  put (State player cursor hst sense disp time assocs discs dng lvl config) =
     do
       put player
-      put look
+      put cursor
       put hst
       put sense
       put disp
@@ -159,7 +159,7 @@ instance Binary State where
   get =
     do
       player <- get
-      look   <- get
+      cursor <- get
       hst    <- get
       sense  <- get
       disp   <- get
@@ -169,20 +169,21 @@ instance Binary State where
       dng    <- get
       lvl    <- get
       config <- get
-      return (State player look hst sense disp time assocs discs dng lvl config)
+      return
+        (State player cursor hst sense disp time assocs discs dng lvl config)
 
-instance Binary Look where
-  put (Look loc tgt ln) =
+instance Binary Cursor where
+  put (Cursor act loc ln) =
     do
+      put act
       put loc
-      put tgt
       put ln
   get =
     do
+      act <- get
       loc <- get
-      tgt <- get
       ln  <- get
-      return (Look loc tgt ln)
+      return (Cursor act loc ln)
 
 data SensoryMode =
     Implicit

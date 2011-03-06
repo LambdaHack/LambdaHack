@@ -14,7 +14,7 @@ viewTile b (Tile t (i:_)) a = viewItem (itype i) a
 
 -- | Produces a textual description of the terrain and items at an already
 -- explored location. Mute for unknown locations.
--- The "detailed" variant is for use in the look mode.
+-- The "detailed" variant is for use in the targeting mode.
 lookAt :: Bool -> State -> LMap -> Loc -> String -> String
 lookAt detailed s lmap loc msg
   | detailed  =
