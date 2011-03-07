@@ -74,11 +74,11 @@ instance Binary Dungeon where
 -- that level.
 type DungeonLoc = (LevelName, Loc)
 
-type LMonsters = IM.IntMap Monster
+type LMovables = IM.IntMap Movable
 
 data Level = Level
   { lname     :: LevelName,
-    lheroes   :: LMonsters,  -- ^ all but the current selected hero on the level
+    lheroes   :: LMovables,  -- ^ all but the current selected hero on the level
     lsize     :: (Y,X),
     lmonsters :: [Monster],
     lsmell    :: SMap,
@@ -95,10 +95,10 @@ updateSMap f lvl = lvl { lsmell = f (lsmell lvl) }
 updateMonsters :: ([Monster] -> [Monster]) -> Level -> Level
 updateMonsters f lvl = lvl { lmonsters = f (lmonsters lvl) }
 
-updateHeroes :: (LMonsters -> LMonsters) -> Level -> Level
+updateHeroes :: (LMovables -> LMovables) -> Level -> Level
 updateHeroes f lvl = lvl { lheroes = f (lheroes lvl) }
 
-lmEmpty :: LMonsters
+lmEmpty :: LMovables
 lmEmpty = IM.empty
 
 instance Binary Level where
@@ -355,9 +355,9 @@ posToDir O  = moves
 
 -- checks for the presence of monsters (and items); it does *not* check
 -- if the tile is open ...
-unoccupied :: [Monster] -> LMap -> Loc -> Bool
-unoccupied monsters _lmap loc =
-  all (\ m -> mloc m /= loc) monsters
+unoccupied :: [Movable] -> LMap -> Loc -> Bool
+unoccupied movables _lmap loc =
+  all (\ m -> mloc m /= loc) movables
 
 -- check whether one location is accessible from the other
 -- precondition: the two locations are next to each other

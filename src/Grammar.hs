@@ -7,26 +7,26 @@ import Monster
 import State
 import ItemState
 
--- | How to refer to a monster in object position of a sentence.
-objectMonster :: MonsterType -> String
+-- | How to refer to a movable in object position of a sentence.
+objectMovable :: MovableType -> String
 -- Hard to make it compatible with 1-hero mode and sounds strange, anyway.
--- objectMonster (Hero n) = "hero " ++ show n
-objectMonster (Hero _) = "you"
-objectMonster Eye      = "the reducible eye"
-objectMonster FastEye  = "the super-fast eye"
-objectMonster Nose     = "the point-free nose"
+-- objectMovable (Hero n) = "hero " ++ show n
+objectMovable (Hero _) = "you"
+objectMovable Eye      = "the reducible eye"
+objectMovable FastEye  = "the super-fast eye"
+objectMovable Nose     = "the point-free nose"
 
--- | How to refer to a monster in subject position of a sentence.
-subjectMonster :: MonsterType -> String
-subjectMonster x = let (s:r) = objectMonster x in toUpper s : r
+-- | How to refer to a movable in subject position of a sentence.
+subjectMovable :: MovableType -> String
+subjectMovable x = let (s:r) = objectMovable x in toUpper s : r
 
-verbMonster :: MonsterType -> String -> String
-verbMonster (Hero _) v = v
-verbMonster _        v = v ++ "s"
+verbMovable :: MovableType -> String -> String
+verbMovable (Hero _) v = v
+verbMovable _        v = v ++ "s"
 
-compoundVerbMonster :: MonsterType -> String -> String -> String
-compoundVerbMonster (Hero _) v p = v ++ " " ++ p
-compoundVerbMonster _        v p = v ++ "s " ++ p
+compoundVerbMovable :: MovableType -> String -> String -> String
+compoundVerbMovable (Hero _) v p = v ++ " " ++ p
+compoundVerbMovable _        v p = v ++ "s " ++ p
 
 objectItem :: State -> Int -> ItemType -> String
 objectItem _ n Ring       = makeObject n id "ring"
@@ -38,21 +38,21 @@ objectItem _ n Gem        = makeObject n id "gem"
 objectItem _ n Gold       = makeObject n id "gold piece"
 objectItem _ n (Sword i)  = makeObject n id ("(+" ++ show i ++ ") sword")
 
-subjectVerbIObject :: State -> Monster -> String -> Item -> String -> String
+subjectVerbIObject :: State -> Movable -> String -> Item -> String -> String
 subjectVerbIObject state m v o add =
-  subjectMonster (mtype m) ++ " " ++
-  verbMonster (mtype m) v ++ " " ++
+  subjectMovable (mtype m) ++ " " ++
+  verbMovable (mtype m) v ++ " " ++
   objectItem state (icount o) (itype o) ++ add ++ "."
 
-subjectVerbMObject :: State -> Monster -> String -> Monster -> String -> String
+subjectVerbMObject :: State -> Movable -> String -> Movable -> String -> String
 subjectVerbMObject state m v o add =
-  subjectMonster (mtype m) ++ " " ++
-  verbMonster (mtype m) v ++ " " ++
-  objectMonster (mtype o) ++ add ++ "."
+  subjectMovable (mtype m) ++ " " ++
+  verbMovable (mtype m) v ++ " " ++
+  objectMovable (mtype o) ++ add ++ "."
 
-subjectCompoundVerbIObject :: State -> Monster -> String -> String ->
+subjectCompoundVerbIObject :: State -> Movable -> String -> String ->
                              Item -> String -> String
 subjectCompoundVerbIObject state m v p o add =
-  subjectMonster (mtype m) ++ " " ++
-  compoundVerbMonster (mtype m) v p ++ " " ++
+  subjectMovable (mtype m) ++ " " ++
+  compoundVerbMovable (mtype m) v p ++ " " ++
   objectItem state (icount o) (itype o) ++ add ++ "."

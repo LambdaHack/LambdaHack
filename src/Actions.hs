@@ -83,7 +83,7 @@ endTargeting accept = do
     modify (updateCursor (\ c -> c { clocation = ploc }))
   let heroMsg = "Hero number " ++ show (heroNumber player)
       targetMsg = case target of
-                    TEnemy i -> objectMonster (mtype (monsters !! i))
+                    TEnemy i -> objectMovable (mtype (monsters !! i))
                     TLoc loc -> "location " ++ show loc
                     TCursor  -> "current cursor position continuously"
       end = if accept then "." else "!"
@@ -143,7 +143,7 @@ continueRun dir =
   do
     state <- get
     let lvl@(Level { lmonsters = ms, lmap = lmap, lheroes = hs }) = slevel state
-    let player@(Monster { mloc = loc }) = splayer state
+    let player@(Movable { mloc = loc }) = splayer state
     let mslocs = S.fromList (L.map mloc ms)
     let t      = lmap `at` loc  -- tile at current location
     per <- currentPerception
@@ -281,7 +281,7 @@ actorOpenClose actor v o dir =
                                        -- door is in unsuitable state
                                        abortIfWith isVerbose ("already " ++ txt)
              | not (unoccupied ms lmap dloc) ->
-                                       -- door is blocked by a monster
+                                       -- door is blocked by a monster; TODO: consider heroes, too
                                        abortIfWith isVerbose "blocked"
              | otherwise            -> -- door can be opened / closed
                                        -- TODO: print message if action performed by monster and perceived
@@ -488,7 +488,7 @@ search :: Action ()
 search =
   do
     Level   { lmap = lmap } <- gets slevel
-    Monster { mloc = ploc } <- gets splayer
+    Movable { mloc = ploc } <- gets splayer
     let searchTile (Tile (Door hv (Just n)) x,t') = Just (Tile (Door hv (Just (max (n - 1) 0))) x, t')
         searchTile t                              = Just t
         slmap = foldl (\ l m -> update searchTile (shift ploc m) l) lmap moves
@@ -572,7 +572,7 @@ doLook =
     let monsterMsg =
           if S.member loc (pvisible per)
           then case L.find (\ m -> mloc m == loc) ms of
-                 Just m  -> subjectMonster (mtype m) ++ " is here. "
+                 Just m  -> subjectMovable (mtype m) ++ " is here. "
                  Nothing -> ""
           else ""
         mode = case target of
@@ -612,7 +612,7 @@ drinkPotion =
   do
     state <- get
     let lvl   @(Level   { lmap = lmap }) = slevel  state
-    let player@(Monster { mloc = ploc }) = splayer state
+    let player@(Movable { mloc = ploc }) = splayer state
     if L.null (mitems player)
       then abortWith "You are not carrying anything."
       else do
@@ -639,7 +639,7 @@ dropItem :: Action ()
 dropItem =
   do
     state <- get
-    let player@(Monster { mloc = ploc }) = splayer state
+    let player@(Movable { mloc = ploc }) = splayer state
     if L.null (mitems player)
       then abortWith "You are not carrying anything."
       else do
@@ -682,8 +682,8 @@ actorPickupItem actor =
     state <- get
     per   <- currentPerception
     let lvl@(Level { lmap = lmap }) = slevel state
-    let monster   = getActor state actor
-    let loc       = mloc monster
+    let movable   = getActor state actor
+    let loc       = mloc movable
     let t         = lmap `at` loc -- the map tile in question
     let perceived = loc `S.member` pvisible per
     let isPlayer  = actor == APlayer
@@ -691,24 +691,24 @@ actorPickupItem actor =
     case titems t of
       []     -> abortIfWith isPlayer "nothing here"
       (i:rs) -> -- pick up first item; TODO: let player select item; not for monsters
-        case assignLetter (iletter i) (mletter monster) (mitems monster) of
+        case assignLetter (iletter i) (mletter movable) (mitems movable) of
           Just l ->
             do
-              let (ni, nitems) = joinItem (i { iletter = Just l }) (mitems monster)
+              let (ni, nitems) = joinItem (i { iletter = Just l }) (mitems movable)
               -- message is dependent on who picks up and if the hero can perceive it
               if isPlayer
                 then message (letterLabel (iletter ni) ++ objectItem state (icount ni) (itype ni))
                 else when perceived $
-                       message $ subjectCompoundVerbIObject state monster "pick" "up" i ""
+                       message $ subjectCompoundVerbIObject state movable "pick" "up" i ""
               removeFromLoc i loc
               -- add item to actor's inventory:
               updateActor actor $ \ m ->
-                m { mitems = nitems, mletter = maxLetter l (mletter monster) }
+                m { mitems = nitems, mletter = maxLetter l (mletter movable) }
           Nothing -> abortIfWith isPlayer "you cannot carry any more"
 
 -- | Replaces the version in Actor module
 updateActor :: Actor ->                 -- ^ who to update
-               (Monster -> Monster) ->  -- ^ the update
+               (Movable -> Movable) ->  -- ^ the update
                Action ()
 updateActor (AMonster n) f =
   do
@@ -828,9 +828,9 @@ moveOrAttack allowAttacks autoOpen actor dir
 
 -- | Resolves the result of an actor moving into a passive target. Usually this
 -- involves melee attack, but with two heroes it just changes focus.
--- Monsters on blocked locations can be attacked without any restrictions.
--- For instance, a monster on an open door can be attacked diagonally,
--- and a monster capable of moving through walls can be attacked from an
+-- Movables on blocked locations can be attacked without any restrictions.
+-- For instance, a movable on an open door can be attacked diagonally,
+-- and a movable capable of moving through walls can be attacked from an
 -- adjacent position.
 -- TODO: When monsters have permanent number (right now their actor number
 -- is just the temporary position on the monsters list), do not pass
@@ -839,15 +839,15 @@ moveOrAttack allowAttacks autoOpen actor dir
 -- then be enough.
 -- TODO: This function and the next show the shortcomings of the actor
 -- mechanism, since here we need to query and modify not only actors.
--- but also monsters/heroes that are passive targets of the actions.
+-- but also movables that are passive targets of the actions.
 -- To fix this, we should either consider everybody an actor all the time
 -- (add permanent monster number and add (AHero n) actors)
 -- or forgo actors alltogether and just pass around and modify
--- values of the Monster type and, when done, overwrite with them
+-- values of the Movable type and, when done, overwrite with them
 -- their old copy stored on a level (as we currently do with target heroes,
 -- without the need for their actor representation).
 actorAttackActor :: Actor ->             -- the attacker, the actual actor
-                    (Actor, Monster) ->  -- the passive target
+                    (Actor, Movable) ->  -- the passive target
                     Action ()
 actorAttackActor APlayer (APlayer, tm) = do -- TODO: do not take a turn!!!
   -- Select adjacent hero by bumping into him.
@@ -896,9 +896,9 @@ actorAttackActor actor (target, tm) =
           in  modify (updateLevel (updateMonsters upd))
 
 -- | Resolves the result of an actor running into a passive target.
--- This involves switching positions of the two monsters/heroes.
+-- This involves switching positions of the two movables.
 -- Always takes time.
-actorRunActor :: Actor -> (Actor, Monster) -> Action ()
+actorRunActor :: Actor -> (Actor, Movable) -> Action ()
 actorRunActor actor (target, tm) = do
   state <- get
   let sm   = getActor state actor
@@ -939,7 +939,7 @@ regenerate :: Actor -> Action ()
 regenerate actor =
   do
     time <- gets stime
-    -- TODO: remove hardcoded time interval, regeneration should be an attribute of the monster
+    -- TODO: remove hardcoded time interval, regeneration should be an attribute of the movable
     let upd m = m { mhp = min (mhpmax m) (mhp m + 1) }
     when (time `mod` 1500 == 0) $ do
       updateActor actor upd

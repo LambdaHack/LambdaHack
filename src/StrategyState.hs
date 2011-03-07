@@ -13,7 +13,7 @@ import Strategy
 import State
 
 strategy :: Monster -> State -> Perception -> Strategy Dir
-strategy m@(Monster { mtype = mt, mloc = me, mdir = mdir })
+strategy m@(Movable { mtype = mt, mloc = me, mdir = mdir })
          (state@(State { stime   = time,
                          slevel  = Level { lmonsters = ms, lsmell = nsmap, lmap = lmap } }))
          per =

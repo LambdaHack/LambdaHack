@@ -142,7 +142,7 @@ stringByLocation sy xs =
 
 displayLevel :: Session -> Perception -> State -> Message -> Maybe String -> IO Bool
 displayLevel session per
-             (state@(State { splayer = player@(Monster { mhpmax = phpmax, mhp = php, mdir = pdir, mloc = ploc }),
+             (state@(State { splayer = player@(Movable { mhpmax = phpmax, mhp = php, mdir = pdir, mloc = ploc }),
                              stime   = time,
                              sassocs = assocs,
                              slevel  = lvl@(Level nm hs sz@(sy,sx) ms smap nlmap lmeta) }))
@@ -173,7 +173,7 @@ displayLevel session per
                                rea  = S.member loc reachable
                                (rv,ra) = case L.find (\ m -> loc == mloc m) (hs ++ ms) of
                                            _ | sTer > 0          -> viewTerrain sTer False (tterrain tile)
-                                           Just m | sOmn || vis  -> viewMonster (mtype m) (mtype m == mtype player)
+                                           Just m | sOmn || vis  -> viewMovable (mtype m) (mtype m == mtype player)
                                            _ | sSml && sml >= 0  -> viewSmell sml
                                              | otherwise         -> viewTile vis tile assocs
                                vision =

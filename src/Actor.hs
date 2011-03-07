@@ -8,14 +8,14 @@ data Actor = AMonster Int  -- offset in monster list
            | APlayer
   deriving (Show, Eq)
 
-getActor :: State -> Actor -> Monster
+getActor :: State -> Actor -> Movable
 getActor (State { slevel = lvl, splayer = p }) a =
   case a of
     AMonster n -> lmonsters lvl !! n
     APlayer    -> p
 
-updateActor :: (Monster -> Monster) ->        -- the update
-               (Monster -> State -> IO a) ->  -- continuation
+updateActor :: (Movable -> Movable) ->        -- the update
+               (Movable -> State -> IO a) ->  -- continuation
                Actor ->                       -- who to update
                State -> IO a                  -- transformed continuation
 updateActor f k (AMonster n) state@(State { slevel = lvl, splayer = p }) =

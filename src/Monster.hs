@@ -20,7 +20,7 @@ heroHP config =
 -- | Initial hero.
 defaultHero :: Int -> Loc -> Int -> Hero
 defaultHero n ploc hp =
-  Monster (Hero n) hp hp Nothing TCursor ploc [] 'a' 10 0
+  Movable (Hero n) hp hp Nothing TCursor ploc [] 'a' 10 0
 
 -- | The serial number of the hero. At this number he appears
 -- in level hero intmaps. TODO: strengthen the type to avoid the error?
@@ -29,10 +29,12 @@ heroNumber pl = case mtype pl of
                     Hero k -> k
                     _ -> error "heroNumber"
 
-type Hero = Monster
+type Hero = Movable
 
-data Monster = Monster
-                { mtype   :: !MonsterType,
+type Monster = Movable
+
+data Movable = Movable
+                { mtype   :: !MovableType,
                   mhpmax  :: !Int,
                   mhp     :: !Int,
                   mdir    :: Maybe Dir,  -- for monsters: the dir the monster last moved; TODO: use target for this, instead and use mdir to signal the monster wants to switch position with a hero (if the monster is smart/big enough)
@@ -46,8 +48,8 @@ data Monster = Monster
                   mtime   :: !Time }     -- time of next action
   deriving Show
 
-instance Binary Monster where
-  put (Monster mt mhpm mhp md tgt ml minv mletter mspeed mtime) =
+instance Binary Movable where
+  put (Movable mt mhpm mhp md tgt ml minv mletter mspeed mtime) =
     do
       put mt
       put mhpm
@@ -70,16 +72,16 @@ instance Binary Monster where
           mletter <- get
           mspeed  <- get
           mtime   <- get
-          return (Monster mt mhpm mhp md tgt ml minv mletter mspeed mtime)
+          return (Movable mt mhpm mhp md tgt ml minv mletter mspeed mtime)
 
-data MonsterType =
+data MovableType =
     Hero Int
   | Eye
   | FastEye
   | Nose
   deriving (Show, Eq)
 
-instance Binary MonsterType where
+instance Binary MovableType where
   put (Hero n) = putWord8 0 >> put n
   put Eye        = putWord8 1
   put FastEye    = putWord8 2
@@ -91,7 +93,7 @@ instance Binary MonsterType where
             1 -> return Eye
             2 -> return FastEye
             3 -> return Nose
-            _ -> fail "no parse (MonsterType)"
+            _ -> fail "no parse (MovableType)"
 
 data Target =
     TEnemy Int  -- ^ fire at a monster (or a hero) with the given number
@@ -116,7 +118,7 @@ instance Binary Target where
 
 -- | Monster frequencies (TODO: should of course vary much more
 -- on local circumstances).
-monsterFrequency :: Frequency MonsterType
+monsterFrequency :: Frequency MovableType
 monsterFrequency =
   Frequency
   [
@@ -126,7 +128,7 @@ monsterFrequency =
   ]
 
 -- | Generate monster.
-newMonster :: Loc -> Frequency MonsterType -> Rnd Monster
+newMonster :: Loc -> Frequency MovableType -> Rnd Monster
 newMonster loc ftp =
     do
       tp <- frequency ftp
@@ -138,7 +140,7 @@ newMonster loc ftp =
     -- move immediately after generation; this does not seem like
     -- a bad idea, but it would certainly be "more correct" to set
     -- the time to the creation time instead
-    template tp hp loc s = Monster tp hp hp Nothing TCursor loc [] 'a' s 0
+    template tp hp loc s = Movable tp hp hp Nothing TCursor loc [] 'a' s 0
 
     hps Eye      = randomR (1,12)  -- falls in 1--4 unarmed rounds
     hps FastEye  = randomR (1,6)   -- 1--2
@@ -159,11 +161,11 @@ insertMonster = insertMonster' 0
       | otherwise              = let (n', ms') = insertMonster' (n + 1) m ms
                                  in  (n', m' : ms')
 
-viewMonster :: MonsterType -> Bool -> (Char, Attr -> Attr)
-viewMonster (Hero n) r = (if n < 1 || n > 9 then '@' else head (show n),
+viewMovable :: MovableType -> Bool -> (Char, Attr -> Attr)
+viewMovable (Hero n) r = (if n < 1 || n > 9 then '@' else head (show n),
                           if r
                             then setBG white . setFG black
                             else setBG black . setFG white)
-viewMonster Eye      _ = ('e', setFG red)
-viewMonster FastEye  _ = ('e', setFG blue)
-viewMonster Nose     _ = ('n', setFG green)
+viewMovable Eye      _ = ('e', setFG red)
+viewMovable FastEye  _ = ('e', setFG blue)
+viewMovable Nose     _ = ('n', setFG green)

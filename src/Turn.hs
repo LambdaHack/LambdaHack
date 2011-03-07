@@ -87,7 +87,7 @@ handleMonsters =
     time <- gets stime
     case ms of
       [] -> nextMove
-      (m@(Monster { mtime = mt }) : ms)
+      (m@(Movable { mtime = mt }) : ms)
         | mt > time  -> -- no monster is ready for another move
                         nextMove
         | otherwise  -> -- monster m should move; we temporarily remove m from the level
