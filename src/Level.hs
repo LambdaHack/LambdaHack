@@ -30,9 +30,9 @@ data LevelName = LambdaCave Int | Exit
 -- could further influence the chance, and the chance could also affect
 -- which monster is generated.
 monsterGenChance :: LevelName -> [Monster] -> Rnd Bool
-monsterGenChance (LambdaCave n) [] = chance $ 1%25
-monsterGenChance (LambdaCave n) l  = chance $ 1%((400 + (fromIntegral (L.length l) * 100) - (fromIntegral n * 50)) `max` 50)
-monsterGenChance _              _  = return False
+monsterGenChance (LambdaCave n) ms =
+  chance $ 1%(fromIntegral (250 + 200 * (L.length ms - n)) `max` 50)
+monsterGenChance _ _ = return False
 
 instance Binary LevelName where
   put (LambdaCave n) = put n
