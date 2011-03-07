@@ -269,7 +269,8 @@ actorOpenClose actor v o dir =
     let txt = if o then "open" else "closed"
     state <- get
     let lvl@Level { lmonsters = ms, lmap = lmap } = slevel state
-    let loc                                       = mloc (getActor state actor)
+        hms = levelHeroList state ++ ms
+    let loc = mloc (getActor state actor)
     let isPlayer  = actor == APlayer  -- TODO: assert no other heroes?
     let isVerbose = v && isPlayer
     let dloc = shift loc dir  -- location we act upon
@@ -280,8 +281,8 @@ actorOpenClose actor v o dir =
              | maybe o ((|| not o) . (> 10)) o' ->
                                        -- door is in unsuitable state
                                        abortIfWith isVerbose ("already " ++ txt)
-             | not (unoccupied ms lmap dloc) ->
-                                       -- door is blocked by a monster; TODO: consider heroes, too
+             | not (unoccupied hms lmap dloc) ->
+                                       -- door is blocked by a movable
                                        abortIfWith isVerbose "blocked"
              | otherwise            -> -- door can be opened / closed
                                        -- TODO: print message if action performed by monster and perceived
