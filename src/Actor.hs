@@ -1,16 +1,20 @@
 module Actor where
 
+import qualified Data.IntMap as IM
+
 import Level
 import Monster
 import State
 
-data Actor = AMonster Int  -- offset in monster list
-           | APlayer
+data Actor = AHero Int     -- ^ hero serial number
+           | AMonster Int  -- ^ offset in monster list
+           | APlayer       -- ^ currently player-controlled hero
   deriving (Show, Eq)
 
 getActor :: State -> Actor -> Movable
 getActor (State { slevel = lvl, splayer = p }) a =
   case a of
+    AHero n    -> lheroes lvl IM.! n
     AMonster n -> lmonsters lvl !! n
     APlayer    -> p
 
@@ -18,6 +22,11 @@ updateActor :: (Movable -> Movable) ->        -- the update
                (Movable -> State -> IO a) ->  -- continuation
                Actor ->                       -- who to update
                State -> IO a                  -- transformed continuation
+updateActor f k (AHero n) state =
+  let s = updateAnyHero f n state
+  in case findHeroLevel n state of
+       Just (_, h) -> k h s
+       Nothing     -> error "updateActor(Hero)"
 updateActor f k (AMonster n) state@(State { slevel = lvl, splayer = p }) =
   let (m,ms) = updateMonster f n (lmonsters lvl)
   in  k m (updateLevel (updateMonsters (const ms)) state)

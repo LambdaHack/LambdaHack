@@ -270,7 +270,7 @@ actorOpenClose actor v o dir =
     state <- get
     let lvl@Level { lmonsters = ms, lmap = lmap } = slevel state
     let loc                                       = mloc (getActor state actor)
-    let isPlayer  = actor == APlayer
+    let isPlayer  = actor == APlayer  -- TODO: assert no other heroes?
     let isVerbose = v && isPlayer
     let dloc = shift loc dir  -- location we act upon
       in case lmap `at` dloc of
@@ -686,7 +686,7 @@ actorPickupItem actor =
     let loc       = mloc movable
     let t         = lmap `at` loc -- the map tile in question
     let perceived = loc `S.member` pvisible per
-    let isPlayer  = actor == APlayer
+    let isPlayer  = actor == APlayer  -- TODO: assert no other heroes?
     -- check if something is here to pick up
     case titems t of
       []     -> abortIfWith isPlayer "nothing here"
@@ -706,17 +706,17 @@ actorPickupItem actor =
                 m { mitems = nitems, mletter = maxLetter l (mletter movable) }
           Nothing -> abortIfWith isPlayer "you cannot carry any more"
 
--- | Replaces the version in Actor module
+-- | Replaces the version in Actor module.
 updateActor :: Actor ->                 -- ^ who to update
                (Movable -> Movable) ->  -- ^ the update
                Action ()
+updateActor (AHero n) f = modify (updateAnyHero f n)
 updateActor (AMonster n) f =
   do
     monsters <- gets (lmonsters . slevel)
-    let (m, ms) = updateMonster f n monsters
+    let (_, ms) = updateMonster f n monsters
     modify (updateLevel (updateMonsters (const ms)))
-updateActor APlayer f =
-  modify (updatePlayer f)
+updateActor APlayer f = modify (updatePlayer f)
 
 pickupItem :: Action ()
 pickupItem = actorPickupItem APlayer
@@ -801,7 +801,7 @@ moveOrAttack allowAttacks autoOpen actor dir
           tloc = sloc `shift` dir  -- target location
           hs   = levelHeroList state
           tgt  = case L.find (\ m -> mloc m == tloc) hs of
-                   Just m -> Just (APlayer, m)
+                   Just m -> Just (APlayer, m)  -- TODO: use AHero
                    Nothing ->
                      case L.findIndex (\ m -> mloc m == tloc) ms of
                        Just i -> Just (AMonster i, ms !! i)
@@ -846,6 +846,7 @@ moveOrAttack allowAttacks autoOpen actor dir
 -- values of the Movable type and, when done, overwrite with them
 -- their old copy stored on a level (as we currently do with target heroes,
 -- without the need for their actor representation).
+-- TODO: handle AHero.
 actorAttackActor :: Actor ->             -- the attacker, the actual actor
                     (Actor, Movable) ->  -- the passive target
                     Action ()
@@ -898,6 +899,7 @@ actorAttackActor actor (target, tm) =
 -- | Resolves the result of an actor running into a passive target.
 -- This involves switching positions of the two movables.
 -- Always takes time.
+-- TODO: handle AHero.
 actorRunActor :: Actor -> (Actor, Movable) -> Action ()
 actorRunActor actor (target, tm) = do
   state <- get
@@ -943,6 +945,7 @@ regenerate actor =
     let upd m = m { mhp = min (mhpmax m) (mhp m + 1) }
     when (time `mod` 1500 == 0) $ do
       updateActor actor upd
-    -- ugly, but we really want hero selection to be a purely UI distinction
+      -- ugly, but we really want hero selection to be a purely UI distinction
+      -- anyway, only the currently player-controlled hero regenerates
       when (actor == APlayer) $
         modify (updateLevel (updateHeroes (IM.map upd)))
