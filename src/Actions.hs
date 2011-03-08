@@ -800,21 +800,21 @@ moveOrAttack allowAttacks autoOpen actor dir
       let sm   = getActor state actor
           sloc = mloc sm           -- source location
           tloc = sloc `shift` dir  -- target location
-          hs   = levelHeroList state
-          tgt  = case L.find (\ m -> mloc m == tloc) hs of
-                   Just m -> Just (APlayer, m)  -- TODO: use AHero
+          hs   = levelHeroAssocs state
+          tgt  = case L.find (\ (_, m) -> mloc m == tloc) hs of
+                   Just (i, _) -> Just (AHero i)
                    Nothing ->
                      case L.findIndex (\ m -> mloc m == tloc) ms of
-                       Just i -> Just (AMonster i, ms !! i)
+                       Just i -> Just (AMonster i)
                        Nothing -> Nothing
       case tgt of
-        Just (target, tm) ->
+        Just target ->
           if allowAttacks then
             -- Attacking does not require full access, adjacency is enough.
-            actorAttackActor actor (target, tm)
+            actorAttackActor actor target
           else if accessible lmap sloc tloc then do
             -- Switching positions requires full access.
-            actorRunActor actor (target, tm)
+            actorRunActor actor target
             when (actor == APlayer) $ message $ lookAt False state lmap tloc ""
           else abort
         Nothing ->
@@ -827,55 +827,47 @@ moveOrAttack allowAttacks autoOpen actor dir
             actorOpenClose actor False True dir
           else abort
 
--- | Resolves the result of an actor moving into a passive target. Usually this
+-- | Resolves the result of an actor moving into another. Usually this
 -- involves melee attack, but with two heroes it just changes focus.
 -- Movables on blocked locations can be attacked without any restrictions.
 -- For instance, a movable on an open door can be attacked diagonally,
 -- and a movable capable of moving through walls can be attacked from an
 -- adjacent position.
--- TODO: When monsters have permanent number (right now their actor number
--- is just the temporary position on the monsters list), do not pass
--- the monster "actor" value together with monster body as the argument
--- representing the passive target of the attack. The monster body will
--- then be enough.
--- TODO: This function and the next show the shortcomings of the actor
--- mechanism, since here we need to query and modify not only actors.
--- but also movables that are passive targets of the actions.
--- To fix this, we should either consider everybody an actor all the time
--- (add permanent monster number and add (AHero n) actors)
--- or forgo actors alltogether and just pass around and modify
--- values of the Movable type and, when done, overwrite with them
--- their old copy stored on a level (as we currently do with target heroes,
--- without the need for their actor representation).
--- TODO: handle AHero.
-actorAttackActor :: Actor ->             -- the attacker, the actual actor
-                    (Actor, Movable) ->  -- the passive target
-                    Action ()
-actorAttackActor APlayer (APlayer, tm) = do -- TODO: do not take a turn!!!
+actorAttackActor :: Actor -> Actor -> Action ()
+actorAttackActor source APlayer = do
+  player <- gets splayer
+  let i = heroNumber player
+  actorAttackActor source (AHero i)
+actorAttackActor APlayer (AHero i) =  -- TODO: do not take a turn!!!
   -- Select adjacent hero by bumping into him.
-  let i = heroNumber tm
   assertTrue $ selectHero i
-actorAttackActor actor (target, tm) =
+actorAttackActor source target =
   do
     debug "actorAttackActor"
-    when (target == APlayer) $ do
-      -- Focus on the attacked hero.
-      let i = heroNumber tm
-      b <- selectHero i
-      -- Extra prompt, in case many heroes attacked in one turn.
-      when b $ messageAddMore >> return ()
+    case target of
+      APlayer    -> error "actorAttackActor: impossible case: APlayer"
+      AMonster _ -> return ()
+      AHero i    -> do
+        -- Focus on the attacked hero.
+        b <- selectHero i
+        -- Extra prompt, in case many heroes attacked in one turn.
+        when b $ messageAddMore >> return ()
     state <- get
-    let sm    = getActor state actor
-        -- determine the weapon used for the attack
-        sword = strongestSword (mitems sm)
-        -- damage the target
+    let sm     = getActor state source
+        tm     = getActor state target
+        -- Determine the weapon used for the attack.
+        sword  = strongestSword (mitems sm)
+        -- Damage the target.
         newHp  = mhp tm - 3 - sword
         killed = newHp <= 0
-        -- determine how the hero perceives the event; TODO: we have to be more
+        -- Determine how the hero perceives the event. TODO: we have to be more
         -- precise and treat cases where two monsters fight,
         -- but only one is visible; TODO: if 2 heroes hit a monster,
         -- still only one of them should kill it
-        combatVerb = if killed && target /= APlayer then "kill" else "hit"
+        tgtMonster = case target of
+          AMonster _ -> True
+          _ -> False
+        combatVerb = if killed && tgtMonster then "kill" else "hit"
         swordMsg   = if sword == 0 then "" else
                        " with a (+" ++ show sword ++ ") sword" -- TODO: generate proper message
         combatMsg  = subjectVerbMObject state sm combatVerb tm swordMsg
@@ -887,40 +879,41 @@ actorAttackActor actor (target, tm) =
         then combatMsg
         else "You hear some noises."
     when killed $ do
-      -- place the actor's possessions on the map
+      -- Place the actor's possessions on the map.
       dropItemsAt (mitems tm) (mloc tm)
-      -- clean bodies up
+      -- Clean bodies up.
       case target of
-        APlayer    ->
-          checkPartyDeath  -- kills heroes and checks game over
         AMonster n ->
           let upd l = L.take n l ++ L.drop (n + 1) l
           in  modify (updateLevel (updateMonsters upd))
+        _ -> checkPartyDeath  -- kills heroes and checks game over
 
--- | Resolves the result of an actor running into a passive target.
+-- | Resolves the result of an actor running into another.
 -- This involves switching positions of the two movables.
 -- Always takes time.
--- TODO: handle AHero.
-actorRunActor :: Actor -> (Actor, Movable) -> Action ()
-actorRunActor actor (target, tm) = do
+actorRunActor :: Actor -> Actor -> Action ()
+actorRunActor source APlayer = do
+  player <- gets splayer
+  let i = heroNumber player
+  actorRunActor source (AHero i)
+actorRunActor source target = do
   state <- get
-  let sm   = getActor state actor
-      sloc = mloc sm  -- source location
-      tloc = mloc tm  -- target location
-  updateActor actor (\ m -> m { mloc = tloc })
+  let sloc = mloc $ getActor state source  -- source location
+      tloc = mloc $ getActor state target  -- target location
+  updateActor source (\ m -> m { mloc = tloc })
+  updateActor target (\ m -> m { mloc = sloc })
   case target of
-    APlayer -> do
-      let i = heroNumber tm
-      modify (updateAnyHero (\ m -> m { mloc = sloc }) i)
-      case actor of
-        APlayer ->
-          stopRunning
+    AHero i    -> do
+      case source of
         AMonster _ -> do
+          -- A hero is run over by a monster: focus on him.
           b <- selectHero i
           -- Extra prompt, in case many heroes disturbed in one turn.
           when b $ messageAddMore >> return ()
-    AMonster _ ->
-      updateActor target (\ m -> m { mloc = sloc })
+        _ ->
+          stopRunning  -- do not switch position with many heroes at once
+    APlayer    -> error "actorRunActor: impossible case: APlayer"
+    AMonster _ -> return ()
 
 -- | Generate a monster, possibly.
 generateMonster :: Action ()

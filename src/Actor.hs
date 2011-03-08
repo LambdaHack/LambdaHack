@@ -14,7 +14,7 @@ data Actor = AHero Int     -- ^ hero serial number
 getActor :: State -> Actor -> Movable
 getActor (State { slevel = lvl, splayer = p }) a =
   case a of
-    AHero n    -> lheroes lvl IM.! n
+    AHero n    -> if n == heroNumber p then p else lheroes lvl IM.! n
     AMonster n -> lmonsters lvl !! n
     APlayer    -> p
 
