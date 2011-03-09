@@ -92,6 +92,16 @@ updateLMap f lvl = lvl { lmap = f (lmap lvl) }
 updateSMap :: (SMap -> SMap) -> Level -> Level
 updateSMap f lvl = lvl { lsmell = f (lsmell lvl) }
 
+updateMonster :: (Monster -> Monster) -> Int -> [Monster] ->
+                 (Monster, [Monster])
+updateMonster f n ms =
+  case splitAt n ms of
+    (pre, x : post) -> let m = f x
+                           mtimeChanged = mtime x /= mtime m
+                       in (m, if mtimeChanged then snd (insertMonster m (pre ++ post))
+                                              else pre ++ [m] ++ post)
+    xs              -> error "updateMonster"
+
 updateMonsters :: ([Monster] -> [Monster]) -> Level -> Level
 updateMonsters f lvl = lvl { lmonsters = f (lmonsters lvl) }
 

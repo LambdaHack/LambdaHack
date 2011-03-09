@@ -8,6 +8,7 @@ import Control.Monad
 import Data.Binary
 import qualified Config
 
+import Actor
 import Monster
 import Geometry
 import Level
@@ -52,6 +53,13 @@ defaultState player dng lvl =
     dng
     lvl
     (Config.defaultCP)
+
+getActor :: State -> Actor -> Movable
+getActor (State { slevel = lvl, splayer = p }) a =
+  case a of
+    AHero n    -> if n == heroNumber p then p else lheroes lvl IM.! n
+    AMonster n -> lmonsters lvl !! n
+    APlayer    -> p
 
 updatePlayer :: (Hero -> Hero) -> State -> State
 updatePlayer f s = s { splayer = f (splayer s) }

@@ -11,7 +11,7 @@ import Data.Set as S
 import System.Time
 
 import Action
-import Actor hiding (updateActor)
+import Actor
 import Display2 hiding (display)
 import Dungeon
 import Geometry
