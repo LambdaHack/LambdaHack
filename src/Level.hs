@@ -559,7 +559,7 @@ viewSmell n = let k | n > 9    = '*'
 --       Scatter randomly or not?
 scatterItems :: [Item] -> Loc -> Level -> Level
 scatterItems items loc lvl@(Level { lmap = lmap }) =
-  let joinItems items = foldl (\ acc i -> snd (joinItem i acc)) items
+  let joinItems items = foldl' (\ acc i -> snd (joinItem i acc)) items
       t = lmap `at` loc
       nt = t { titems = joinItems items (titems t) }
       ntRemember = lmap `rememberAt` loc

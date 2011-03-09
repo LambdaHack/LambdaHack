@@ -2,6 +2,7 @@ module Main where
 
 import System.Directory
 import Control.Monad
+import Data.List as L
 import Data.Map as M
 
 import Action
@@ -79,5 +80,5 @@ generate config session msg =
          defState = defaultState player dng lvl
          state = defState { sassocs = assocs, sconfig = config }
          k = Config.get config "heroes" "extraHeroes"
-         hstate = foldl (addHero hp) state [1..k]
+         hstate = foldl' (addHero hp) state [1..k]
      handlerToIO session hstate msg handle

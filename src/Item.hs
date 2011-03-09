@@ -245,7 +245,7 @@ strongestSword :: [Item] -> Int
 strongestSword l =
   let aux acc (Item { itype = Sword i }) = max acc i
       aux acc _ = acc
-  in  foldl aux 0 l
+  in  foldl' aux 0 l
 
 makeObject :: Int -> (String -> String) -> String -> String
 makeObject 1 adj obj = let b = adj obj

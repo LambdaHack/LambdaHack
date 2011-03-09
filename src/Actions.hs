@@ -490,9 +490,11 @@ search =
   do
     Level   { lmap = lmap } <- gets slevel
     Movable { mloc = ploc } <- gets splayer
-    let searchTile (Tile (Door hv (Just n)) x,t') = Just (Tile (Door hv (Just (max (n - 1) 0))) x, t')
-        searchTile t                              = Just t
-        slmap = foldl (\ l m -> update searchTile (shift ploc m) l) lmap moves
+    let searchTile (Tile (Door hv (Just n)) x, t') =
+          (Tile (Door hv (Just (max (n - 1) 0))) x, t')
+        searchTile t = t
+        f l m = M.adjust searchTile (shift ploc m) l
+        slmap = foldl' f lmap moves
     modify (updateLevel (updateLMap (const slmap)))
 
 -- | Start the floor targeting mode or toggle between the two floor modes.
