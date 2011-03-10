@@ -6,6 +6,7 @@ import Data.List as L
 import Data.Map as M
 
 import Action
+import Actor
 import State
 import Geometry
 import Level
@@ -76,9 +77,8 @@ generate config session msg =
                       (Potion PotionHealing, White) ]
          ploc = ((\ (_,x,_) -> x) (head levels))
          hp = heroHP config
-         player = defaultHero 0 ploc hp
-         defState = defaultState player dng lvl
+         defState = defaultState (AHero 0) ploc dng lvl
          state = defState { sassocs = assocs, sconfig = config }
          k = Config.get config "heroes" "extraHeroes"
-         hstate = foldl' (addHero hp) state [1..k]
+         hstate = foldl' (addHero ploc hp) state [0..k]
      handlerToIO session hstate msg handle

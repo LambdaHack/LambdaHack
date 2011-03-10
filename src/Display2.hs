@@ -142,12 +142,14 @@ stringByLocation sy xs =
 
 displayLevel :: Session -> Perception -> State -> Message -> Maybe String -> IO Bool
 displayLevel session per
-             (state@(State { splayer = player@(Movable { mhpmax = phpmax, mhp = php, mdir = pdir, mloc = ploc }),
+             (state@(State { splayer = pl,
                              stime   = time,
                              sassocs = assocs,
                              slevel  = lvl@(Level nm hs sz@(sy,sx) ms smap nlmap lmeta) }))
              msg moverlay =
-    let
+  let Movable { mhpmax = phpmax, mhp = php, mdir = pdir,
+                mloc = ploc, mitems = pitems, mtype = ptype } =
+        getPlayerBody state
       overlay = maybe "" id moverlay
       reachable = preachable per
       visible   = pvisible per
@@ -163,7 +165,7 @@ displayLevel session per
                                    else id
                   else \ vis rea -> id
       (n,over) = stringByLocation (sy+1) overlay -- n is the number of overlay screens
-      gold    = maybe 0 (icount . fst) $ findItem (\ i -> iletter i == Just '$') (mitems player)
+      gold    = maybe 0 (icount . fst) $ findItem (\ i -> iletter i == Just '$') pitems
       hs      = levelHeroList state
       disp n msg =
         display ((0,0),sz) session
@@ -173,7 +175,7 @@ displayLevel session per
                                rea  = S.member loc reachable
                                (rv,ra) = case L.find (\ m -> loc == mloc m) (hs ++ ms) of
                                            _ | sTer > 0          -> viewTerrain sTer False (tterrain tile)
-                                           Just m | sOmn || vis  -> viewMovable (mtype m) (mtype m == mtype player)
+                                           Just m | sOmn || vis  -> viewMovable (mtype m) (mtype m == ptype)
                                            _ | sSml && sml >= 0  -> viewSmell sml
                                              | otherwise         -> viewTile vis tile assocs
                                vision =

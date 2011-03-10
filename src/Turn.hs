@@ -60,9 +60,10 @@ handle =
   do
     debug "handle"
     state <- get
-    let ptime = mtime (splayer state)  -- time of hero's next move
+    pl <- gets splayer
+    let ptime = mtime (getPlayerBody state)  -- time of hero's next move
     let time  = stime state            -- current game time
-    regenerate APlayer  -- heroes regenerate even if outside the player's turn
+    regenerate pl  -- heroes regenerate even if outside the player's turn
     debug $ "handle: time check. ptime = " ++ show ptime ++ ", time = " ++ show time
     if ptime > time
       then do
@@ -154,10 +155,11 @@ handlePlayer =
     -- have opened doors ...
     withPerception playerCommand -- get and process a player command
     -- at this point, the command was successful
-    advanceTime APlayer     -- TODO: the command handlers should advance the move time
+    pl <- gets splayer
+    advanceTime pl  -- TODO: the command handlers should advance the move time
     state <- get
     let time = stime state
-        loc  = mloc (splayer state)
+        loc  = mloc (getPlayerBody state)
         smellTimeout = Config.get (sconfig state) "monsters" "smellTimeout"
     -- update smell
     modify (updateLevel (updateSMap (M.insert loc (time + smellTimeout))))

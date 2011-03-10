@@ -329,12 +329,10 @@ addMonster state@(State { slevel = lvl@(Level { lmonsters = ms,
       else return lvl
 
 -- | Create a new hero in the level, close to the player.
-addHero :: Int -> State -> Int -> State
-addHero hp state@(State { splayer = player,
-                          slevel = lvl@(Level { lmap = map }) }) n =
+addHero :: Loc -> Int -> State -> Int -> State
+addHero ploc hp state@(State { slevel = lvl@(Level { lmap = map }) }) n =
   let hs = levelHeroList state
       ms = lmonsters lvl
-      ploc = mloc player
       places = ploc : L.nub (concatMap surroundings places)
       good l = open (map `at` l) && not (l `L.elem` L.map mloc (hs ++ ms))
       place = fromMaybe (error "no place for a hero") $ L.find good places
