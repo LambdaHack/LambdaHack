@@ -9,24 +9,26 @@ import ItemState
 
 -- | How to refer to a movable in object position of a sentence.
 objectMovable :: MovableType -> String
--- Hard to make it compatible with 1-hero mode and sounds strange, anyway.
--- objectMovable (Hero n) = "hero " ++ show n
-objectMovable (Hero _) = "you"
-objectMovable Eye      = "the reducible eye"
-objectMovable FastEye  = "the super-fast eye"
-objectMovable Nose     = "the point-free nose"
+objectMovable (Hero _ s) = s
+objectMovable Eye        = "the reducible eye"
+objectMovable FastEye    = "the super-fast eye"
+objectMovable Nose       = "the point-free nose"
 
 -- | How to refer to a movable in subject position of a sentence.
 subjectMovable :: MovableType -> String
 subjectMovable x = let (s:r) = objectMovable x in toUpper s : r
 
 verbMovable :: MovableType -> String -> String
-verbMovable (Hero _) v = v
-verbMovable _        v = v ++ "s"
+verbMovable (Hero _ "you") v = v
+verbMovable (Hero _ s)     v = v ++ "s"
+verbMovable _              v = v ++ "s"
+
+-- | Sentences such like "The dog barks".
+subjectMovableVerb :: MovableType -> String -> String
+subjectMovableVerb x v = subjectMovable x ++ " " ++ verbMovable x v
 
 compoundVerbMovable :: MovableType -> String -> String -> String
-compoundVerbMovable (Hero _) v p = v ++ " " ++ p
-compoundVerbMovable _        v p = v ++ "s " ++ p
+compoundVerbMovable m v p = verbMovable m v ++ " " ++ p
 
 objectItem :: State -> Int -> ItemType -> String
 objectItem _ n Ring       = makeObject n id "ring"

@@ -18,16 +18,9 @@ heroHP config =
   in  k + b `div` (k + 1)
 
 -- | Initial hero.
-defaultHero :: Int -> Loc -> Int -> Hero
-defaultHero n ploc hp =
-  Movable (Hero n) hp hp Nothing TCursor ploc [] 'a' 10 0
-
--- | The serial number of the hero. At this number he appears
--- in level hero intmaps. TODO: strengthen the type to avoid the error?
-heroNumber :: Hero -> Int
-heroNumber pl = case mtype pl of
-                    Hero k -> k
-                    _ -> error "heroNumber"
+defaultHero :: Char -> String -> Loc -> Int -> Hero
+defaultHero symbol name ploc hp =
+  Movable (Hero symbol name) hp hp Nothing TCursor ploc [] 'a' 10 0
 
 type Hero = Movable
 
@@ -75,21 +68,21 @@ instance Binary Movable where
           return (Movable mt mhpm mhp md tgt ml minv mletter mspeed mtime)
 
 data MovableType =
-    Hero Int
+    Hero Char String
   | Eye
   | FastEye
   | Nose
   deriving (Show, Eq)
 
 instance Binary MovableType where
-  put (Hero n) = putWord8 0 >> put n
-  put Eye        = putWord8 1
-  put FastEye    = putWord8 2
-  put Nose       = putWord8 3
+  put (Hero symbol name) = putWord8 0 >> put symbol >> put name
+  put Eye                = putWord8 1
+  put FastEye            = putWord8 2
+  put Nose               = putWord8 3
   get = do
           tag <- getWord8
           case tag of
-            0 -> liftM Hero get
+            0 -> liftM2 Hero get get
             1 -> return Eye
             2 -> return FastEye
             3 -> return Nose
@@ -162,10 +155,10 @@ insertMonster = insertMonster' 0
                                  in  (n', m' : ms')
 
 viewMovable :: MovableType -> Bool -> (Char, Attr -> Attr)
-viewMovable (Hero n) r = (if n < 1 || n > 9 then '@' else head (show n),
-                          if r
-                            then setBG white . setFG black
-                            else setBG black . setFG white)
-viewMovable Eye      _ = ('e', setFG red)
-viewMovable FastEye  _ = ('e', setFG blue)
-viewMovable Nose     _ = ('n', setFG green)
+viewMovable (Hero symbol name) r = (symbol,
+                                    if r
+                                    then setBG white . setFG black
+                                    else setBG black . setFG white)
+viewMovable Eye     _ = ('e', setFG red)
+viewMovable FastEye _ = ('e', setFG blue)
+viewMovable Nose    _ = ('n', setFG green)

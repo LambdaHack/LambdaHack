@@ -336,5 +336,9 @@ addHero ploc hp state@(State { slevel = lvl@(Level { lmap = map }) }) n =
       places = ploc : L.nub (concatMap surroundings places)
       good l = open (map `at` l) && not (l `L.elem` L.map mloc (hs ++ ms))
       place = fromMaybe (error "no place for a hero") $ L.find good places
-      hero = defaultHero n place hp
+      name = if n == 0
+             then "you"  -- for compatibility with 1-hero mode
+             else "hero number " ++ show n
+      symbol = if n < 1 || n > 9 then '@' else head (show n)
+      hero = defaultHero symbol name place hp
   in  updateLevel (updateHeroes (IM.insert n hero)) state

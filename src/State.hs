@@ -61,19 +61,33 @@ getActor (State { slevel = lvl }) a =
     AHero n    -> lheroes lvl IM.! n
     AMonster n -> lmonsters lvl !! n
 
+deleteActor :: Actor -> State -> State
+deleteActor a =
+  case a of
+    AHero n    -> updateLevel (updateHeroes (IM.delete n))
+    AMonster n -> let del l = L.take n l ++ L.drop (n + 1) l
+                  in  updateLevel (updateMonsters del)
+
+insertActor :: Actor -> Movable -> State -> State
+insertActor a m =
+  case a of
+    AHero n    -> updateLevel (updateHeroes (IM.insert n m))
+    AMonster n -> let ins l = L.take n l ++ m : L.drop n l
+                  in  updateLevel (updateMonsters ins)
+
 -- | Finds an actor body on any level.
 -- Possible optimization: check current level first.
 findAnyActor :: State -> Actor -> Movable
 findAnyActor state@(State { slevel   = level,
-                             sdungeon = dungeon }) a =
-    let Dungeon m = putDungeonLevel level dungeon
-        chk lvl =
-          case a of
-            AHero n    -> IM.lookup n (lheroes lvl)
-            AMonster n -> let l = lmonsters lvl
-                          in  if L.length l <= n then Nothing else Just $ l !! n
-        filtered  = M.mapMaybe chk m
-    in  fst $ fromMaybe (error "findAnyActor") $ M.minView $ filtered
+                            sdungeon = dungeon }) a =
+  let Dungeon m = putDungeonLevel level dungeon
+      chk lvl =
+        case a of
+          AHero n    -> IM.lookup n (lheroes lvl)
+          AMonster n -> let l = lmonsters lvl
+                        in  if L.length l <= n then Nothing else Just $ l !! n
+      filtered  = M.mapMaybe chk m
+  in  fst $ fromMaybe (error "findAnyActor") $ M.minView $ filtered
 
 getPlayerBody :: State -> Movable
 getPlayerBody state = findAnyActor state (splayer state)
