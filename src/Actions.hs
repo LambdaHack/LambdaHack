@@ -144,17 +144,17 @@ continueRun :: Dir -> Action ()
 continueRun dir =
   do
     state <- get
+    loc   <- gets (mloc . getPlayerBody)
+    per   <- currentPerception
+    msg   <- currentMessage
     let lvl@(Level { lmonsters = ms, lmap = lmap, lheroes = hs }) = slevel state
-    let player@(Movable { mloc = loc }) = getPlayerBody state
-    let mslocs = S.fromList (L.map mloc ms)
-    let t      = lmap `at` loc  -- tile at current location
-    per <- currentPerception
-    msg <- currentMessage
-    let monstersVisible = not (S.null (mslocs `S.intersection` pvisible per))
-    let newsReported    = not (L.null msg)
-    let itemsHere       = not (L.null (titems t))
-    let heroThere       = L.elem (loc `shift` dir) (L.map mloc (IM.elems hs))
-    let dirOK           = accessible lmap loc (loc `shift` dir)
+        mslocs = S.fromList (L.map mloc ms)
+        t      = lmap `at` loc  -- tile at current location
+        monstersVisible = not (S.null (mslocs `S.intersection` pvisible per))
+        newsReported    = not (L.null msg)
+        itemsHere       = not (L.null (titems t))
+        heroThere       = L.elem (loc `shift` dir) (L.map mloc (IM.elems hs))
+        dirOK           = accessible lmap loc (loc `shift` dir)
     -- What happens next is mostly depending on the terrain we're currently on.
     let exit (Stairs  {}) = True
         exit (Opening {}) = True
@@ -222,7 +222,7 @@ remember =
 checkPartyDeath :: Action ()
 checkPartyDeath =
   do
-    state  <- get
+    ahs    <- gets allHeroes
     pl     <- gets splayer
     player <- gets getPlayerBody
     config <- gets sconfig
@@ -232,16 +232,21 @@ checkPartyDeath =
       go <- messageMoreConfirm "You die."
       if firstDeathEnds
         then gameOver go
-        else case L.filter (\ (i,_,_)-> AHero i /= pl) (allLevelHeroes state) of
+        else case L.filter (\ (actor, _) -> actor /= pl) ahs of
                [] -> gameOver go
-               (ni, nln, _) : _ -> do
-                 -- We assume we are at the dead player's level.
-                 -- TODO: this is generally messy. Important invariant: player has to exist at all time. Never remove old before promoting new.
-                 promotePlayer ni nln
+               (actor, nln) : _ -> do
+                 -- Important invariant: player always has to exist somewhere.
+                 -- Make the new actor the player-controlled actor.
+                 modify (\ s -> s { splayer = actor })
+                 -- Record the original level of the new player.
+                 modify (updateCursor (\ c -> c { creturnLn = nln }))
+                 -- Now the old player can be safely removed.
                  modify (deleteActor pl)
+                 -- Now we can switch to the level of the new player.
+                 lvlswitch nln
                  message "The survivors carry on."
 
--- | End game, showing the ending screens, if requsted.
+-- | End game, showing the ending screens, if requested.
 gameOver :: Bool -> Action ()
 gameOver showEndingScreens =
   do
@@ -273,18 +278,17 @@ actorOpenClose :: Actor ->
                   Dir -> Action ()
 actorOpenClose actor v o dir =
   do
-    let txt = if o then "open" else "closed"
     state <- get
-    pl    <- gets splayer
+    let txt = if o then "open" else "closed"
     let lvl@Level { lmonsters = ms, lmap = lmap } = slevel state
         hms = levelHeroList state ++ ms
     let loc = mloc (getActor state actor)
-    let isPlayer  = actor == pl  -- TODO: assert no other heroes?
-    let isVerbose = v && isPlayer
+    let isHero = case actor of AHero _ -> True ; _ -> False
+    let isVerbose = v && isHero
     let dloc = shift loc dir  -- location we act upon
       in case lmap `at` dloc of
            Tile d@(Door hv o') []
-             | secret o' && isPlayer-> -- door is secret, cannot be opened or closed by hero
+             | secret o' && isHero  -> -- door is secret, cannot be opened or closed by hero
                                        neverMind isVerbose
              | maybe o ((|| not o) . (> 10)) o' ->
                                        -- door is in unsuitable state
@@ -311,7 +315,7 @@ lvlswitch nln =
     if (nln == ln)
       then return False
       else do
-        level <- gets slevel
+        level   <- gets slevel
         dungeon <- gets sdungeon
         -- put back current level
         -- (first put back, then get, in case we change to the same level!)
@@ -322,6 +326,8 @@ lvlswitch nln =
         return True
 
  -- | Attempt a level switch to k levels deeper.
+-- TODO: perhaps set up some level name arithmetics in Level.hs
+-- and hide there the fact levels are now essentially Ints.
 lvldescend :: Int -> Action ()
 lvldescend k =
   do
@@ -330,21 +336,19 @@ lvldescend k =
         nln = n + k
     when (nln < 1 || nln > sizeDungeon (sdungeon state) + 1) $
       abortWith "no more levels in this direction"
-    assertTrue $ lvlswitch (LambdaCave nln)
+    assertTrue $ liftM (k == 0 ||)  (lvlswitch (LambdaCave nln))
 
 -- | Attempt a level change via up level and down level keys.
 -- Will quit the game if the player leaves the dungeon.
 lvlchange :: VDir -> Action ()
 lvlchange vdir =
   do
-    state     <- get
     cursor    <- gets scursor
     targeting <- gets (ctargeting . scursor)
-    cloc      <- gets (clocation . scursor)
     player    <- gets getPlayerBody
     pl        <- gets splayer
-    let map = lmap (slevel state)
-        loc = if targeting then cloc else mloc player
+    map       <- gets (lmap . slevel)
+    let loc = if targeting then clocation cursor else mloc player
     case map `at` loc of
       Tile (Stairs _ vdir' next) is
         | vdir == vdir' -> -- stairs are in the right direction
@@ -361,7 +365,7 @@ lvlchange vdir =
             Just (nln, nloc) -> do
               if targeting
                 then do
-                  -- the assertion says that no stairs go back to the same level
+                  -- this assertion says no stairs go back to the same level
                   assertTrue $ lvlswitch nln
                   -- do not freely reveal the other end of the stairs
                   map <- gets (lmap . slevel)  -- lvlswitch modifies map
@@ -373,17 +377,16 @@ lvlchange vdir =
                   modify (updateCursor upd)
                   doLook
                 else do
-                  -- We are at the old player's level yet (no lvlswitch).
-                  -- remove the player from the old level
+                  -- Remove the player from the old level.
                   modify (deleteActor pl)
-                  -- TODO: at this point player does not exist! invariant does not hold!
-                  -- change to the new level
+                  -- At this place the invariant that player exists fails.
+                  -- Change to the new level (invariant not essential).
                   assertTrue $ lvlswitch nln
-                  -- add player to the new level
+                  -- Restore the invariant: add player to the new level.
                   modify (insertActor pl player)
-                  -- land the player at the other end of the stairs
+                  -- Land the player at the other end of the stairs.
                   updatePlayer (\ p -> p { mloc = nloc })
-                  -- change the level of the player recorded in cursor
+                  -- Change the level of the player recorded in cursor.
                   modify (updateCursor (\ c -> c { creturnLn = nln }))
       _ -> -- no stairs
         if targeting
@@ -424,45 +427,35 @@ cycleHero =
   do
     hs <- gets (lheroes . slevel)
     pl <- gets splayer
-    let i = case pl of
-              AHero n -> n
-              _ -> 0
+    let i        = case pl of AHero n -> n ; _ -> 0
         (lt, gt) = IM.split i hs
     case IM.keys gt ++ IM.keys lt of
       [] -> abortWith "Cannot select another hero on this level."
-      ni : _ -> assertTrue $ selectHero ni
+      ni : _ -> assertTrue $ selectHero (AHero ni)
 
--- | Selects a hero based on the number. Focuses on the hero if level changed.
--- False, if nothing to do.
-selectHero :: Int -> Action Bool
-selectHero ni =
+-- | Selects a hero based on the number (actor, actually).
+-- Focuses on the hero if level changed. False, if nothing to do.
+selectHero :: Actor -> Action Bool
+selectHero actor =
   do
     pl <- gets splayer
-    if (AHero ni == pl)
+    if (actor == pl)
       then return False -- already selected
       else do
         state <- get
-        case findHeroLevel ni state of
-          Nothing ->
-            abortWith $
-              "No hero at position " ++ show ni ++ " in the party."
-          Just (nln, np) -> do
-            promotePlayer ni nln
-            -- announce
+        case findActorLevel actor state of
+          Nothing -> abortWith $ "No such member of the party."
+          Just nln -> do
+            -- Make the new actor the player-controlled actor.
+            modify (\ s -> s { splayer = actor })
+            -- Record the original level of the new player.
+            modify (updateCursor (\ c -> c { creturnLn = nln }))
+            -- Switch to the level.
+            lvlswitch nln
+            -- Announce.
             ptype <- gets (mtype . getPlayerBody)
             messageAdd $ subjectMovable ptype ++ " selected."
             return True
-
--- | Moves a hero to the player-controlled position.
-promotePlayer :: Int -> LevelName -> Action ()
-promotePlayer ni nln =
-  do
-    -- switch to the level with the new hero
-    lvlswitch nln
-    -- make the new hero the player controlled hero
-    modify (\ s -> s { splayer = AHero ni })
-    -- record the original level of the new hero
-    modify (updateCursor (\ c -> c { creturnLn = nln }))
 
 -- | Calculate loot's worth. TODO: move to another module, and refine significantly.
 calculateTotal :: State -> Int
@@ -683,7 +676,7 @@ getPotion :: String ->  -- prompt
              [Item] ->  -- all objects in question
              String ->  -- how to refer to the collection of objects, e.g. "in your inventory"
              Action (Maybe Item)
-getPotion prompt is isn = getItem prompt (\ i -> case itype i of Potion {} -> True; _ -> False)
+getPotion prompt is isn = getItem prompt (\ i -> case itype i of Potion {} -> True ; _ -> False)
                                   "Potions" is isn
 
 actorPickupItem :: Actor -> Action ()
@@ -813,11 +806,11 @@ moveOrAttack allowAttacks autoOpen actor dir
       pl    <- gets splayer
       ms    <- gets (lmonsters . slevel)
       lmap  <- gets (lmap . slevel)
+      khs   <- gets (IM.assocs . lheroes . slevel)
       let sm   = getActor state actor
           sloc = mloc sm           -- source location
           tloc = sloc `shift` dir  -- target location
-          hs   = levelHeroAssocs state
-          tgt  = case L.find (\ (_, m) -> mloc m == tloc) hs of
+          tgt  = case L.find (\ (_, m) -> mloc m == tloc) khs of
                    Just (i, _) -> Just (AHero i)
                    Nothing ->
                      case L.findIndex (\ m -> mloc m == tloc) ms of
@@ -850,17 +843,17 @@ moveOrAttack allowAttacks autoOpen actor dir
 -- and a movable capable of moving through walls can be attacked from an
 -- adjacent position.
 actorAttackActor :: Actor -> Actor -> Action ()
-actorAttackActor (AHero _) (AHero i) =  -- TODO: do not take a turn!!!
+actorAttackActor (AHero _) target@(AHero _) =  -- TODO: do not take a turn!!!
   -- Select adjacent hero by bumping into him.
-  assertTrue $ selectHero i
+  assertTrue $ selectHero target
 actorAttackActor source target =
   do
     debug "actorAttackActor"
     case target of
       AMonster _ -> return ()
-      AHero i    -> do
+      AHero _    -> do
         -- Focus on the attacked hero.
-        b <- selectHero i
+        b <- selectHero target
         -- Extra prompt, in case many heroes attacked in one turn.
         when b $ messageAddMore >> return ()
     state <- get
@@ -908,11 +901,11 @@ actorRunActor source target = do
   updateActor source (\ m -> m { mloc = tloc })
   updateActor target (\ m -> m { mloc = sloc })
   case target of
-    AHero i    -> do
+    AHero _    -> do
       case source of
         AMonster _ -> do
           -- A hero is run over by a monster: focus on him.
-          b <- selectHero i
+          b <- selectHero target
           -- Extra prompt, in case many heroes disturbed in one turn.
           when b $ messageAddMore >> return ()
         _ ->

@@ -61,6 +61,7 @@ getActor (State { slevel = lvl }) a =
     AHero n    -> lheroes lvl IM.! n
     AMonster n -> lmonsters lvl !! n
 
+-- | Removes the actor, if present, from the current level.
 deleteActor :: Actor -> State -> State
 deleteActor a =
   case a of
@@ -68,6 +69,7 @@ deleteActor a =
     AMonster n -> let del l = L.take n l ++ L.drop (n + 1) l
                   in  updateLevel (updateMonsters del)
 
+-- | Add actor to the current level.
 insertActor :: Actor -> Movable -> State -> State
 insertActor a m =
   case a of
@@ -96,32 +98,30 @@ getPlayerBody state = findAnyActor state (splayer state)
 playerLevel :: State -> LevelName
 playerLevel state = creturnLn $ scursor state
 
-levelHeroAssocs :: State -> [(Int, Hero)]
-levelHeroAssocs (State { slevel = Level { lheroes = hs } }) = IM.assocs hs
-
 levelHeroList :: State -> [Hero]
-levelHeroList s = snd $ L.unzip $ levelHeroAssocs s
+levelHeroList (State { slevel = Level { lheroes = hs } }) = IM.elems hs
 
-findHeroLevel :: Int -> State -> Maybe (LevelName, Hero)
-findHeroLevel ni state@(State { slevel   = level,
-                                sdungeon = dungeon }) =
+findActorLevel :: Actor -> State -> Maybe LevelName
+findActorLevel (AHero ni) state@(State { slevel   = level,
+                                         sdungeon = dungeon }) =
     let Dungeon m = putDungeonLevel level dungeon
-        chk ln lvl = fmap (\ p -> (ln, p)) (IM.lookup ni (lheroes lvl))
+        chk ln lvl = fmap (const ln) (IM.lookup ni (lheroes lvl))
         filtered   = M.mapMaybeWithKey chk m
     in  fmap fst $ M.minView $ filtered
 
--- | The list of all heroes except the player.
+-- | The list of actors and levels for all heroes in the dungeon.
 -- Heroes from the current level go first.
-allLevelHeroes :: State -> [(Int, LevelName, Hero)]
-allLevelHeroes state =
+allHeroes :: State -> [(Actor, LevelName)]
+allHeroes state =
   let Dungeon m = sdungeon state
-      one lvl = L.map (\ (i, p) -> (i, lname lvl, p)) (IM.assocs (lheroes lvl))
+      one (Level { lname = ln, lheroes = hs }) =
+        L.map (\ (i, _) -> (AHero i, ln)) (IM.assocs hs)
   in  L.concatMap one (slevel state : M.elems m)
 
 updateAnyHero :: (Hero -> Hero) -> Int -> State -> State
 updateAnyHero f ni state =
-      case findHeroLevel ni state of
-        Just (ln, _hero) ->
+      case findActorLevel (AHero ni) state of
+        Just ln ->
           let upd = IM.adjust f ni
           in  updateAnyLevel (updateHeroes upd) ln state
         Nothing -> error $ "updateAnyHero: hero " ++ show ni ++ " not found"

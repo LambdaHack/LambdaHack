@@ -223,7 +223,7 @@ heroSelection :: [(K.Key, Command)]
 heroSelection =
   let heroSelect k = (K.Char (Char.intToDigit k),
                       Undescribed $
-                      selectHero k >> withPerception playerCommand)
+                      selectHero (AHero k) >> withPerception playerCommand)
   in  fmap heroSelect [0..9]
 
 stdKeybindings :: Keybindings

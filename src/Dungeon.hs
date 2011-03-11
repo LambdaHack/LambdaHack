@@ -8,6 +8,7 @@ import qualified Data.IntMap as IM
 import Data.List as L
 import Data.Ratio
 import Data.Maybe
+import qualified Data.Char as Char
 
 import State
 import Geometry
@@ -339,6 +340,6 @@ addHero ploc hp state@(State { slevel = lvl@(Level { lmap = map }) }) n =
       name = if n == 0
              then "you"  -- for compatibility with 1-hero mode
              else "hero number " ++ show n
-      symbol = if n < 1 || n > 9 then '@' else head (show n)
+      symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
       hero = defaultHero symbol name place hp
   in  updateLevel (updateHeroes (IM.insert n hero)) state
