@@ -181,7 +181,7 @@ displayLevel session per
                                vision =
                                  if ctargeting (scursor state)
                                     && loc == clocation (scursor state)
-                                 then setBG white
+                                 then setBG white . setFG black
                                  else lVision vis rea
                            in
                              case over (loc `shift` ((sy+1) * n, 0)) of
