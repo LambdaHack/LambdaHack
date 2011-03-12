@@ -133,7 +133,7 @@ run dir = do
   if targeting
     then moveCursor dir 10
     else do
-      updatePlayer (\ p -> p { mdir = Just dir })
+      updatePlayerBody (\ p -> p { mdir = Just dir })
       -- attacks and opening doors disallowed while running
       moveOrAttack False False pl dir
 
@@ -189,7 +189,7 @@ continueRun dir =
     hop (tterrain t)
 
 stopRunning :: Action ()
-stopRunning = updatePlayer (\ p -> p { mdir = Nothing })
+stopRunning = updatePlayerBody (\ p -> p { mdir = Nothing })
 
 ifRunning :: (Dir -> Action a) -> Action a -> Action a
 ifRunning t e =
@@ -224,12 +224,12 @@ checkPartyDeath =
   do
     ahs    <- gets allHeroes
     pl     <- gets splayer
-    player <- gets getPlayerBody
+    pbody  <- gets getPlayerBody
     config <- gets sconfig
     let firstDeathEnds = Config.get config "heroes" "firstDeathEnds"
-    when (mhp player <= 0) $ do
+    when (mhp pbody <= 0) $ do
       messageAddMore
-      go <- messageMoreConfirm "You die."
+      go <- messageMoreConfirm $ subjectMovableVerb (mtype pbody) "die" ++ "."
       if firstDeathEnds
         then gameOver go
         else case L.filter (\ (actor, _) -> actor /= pl) ahs of
@@ -280,7 +280,7 @@ actorOpenClose actor v o dir =
   do
     state <- get
     let txt = if o then "open" else "closed"
-    let lvl@Level { lmonsters = ms, lmap = lmap } = slevel state
+    let Level { lmonsters = ms, lmap = lmap } = slevel state
         hms = levelHeroList state ++ ms
     let loc = mloc (getActor state actor)
     let isHero = case actor of AHero _ -> True ; _ -> False
@@ -298,9 +298,9 @@ actorOpenClose actor v o dir =
                                        abortIfWith isVerbose "blocked"
              | otherwise            -> -- door can be opened / closed
                                        -- TODO: print message if action performed by monster and perceived
-                                       let nt    = Tile (Door hv (toOpen o)) []
-                                           clmap = M.adjust (\ (_, mt) -> (nt, mt)) dloc lmap
-                                       in  modify (updateLevel (const (updateLMap (const clmap) lvl)))
+                                       let nt  = Tile (Door hv (toOpen o)) []
+                                           adj = M.adjust (\ (_, mt) -> (nt, mt)) dloc
+                                       in  modify (updateLevel (updateLMap adj))
            Tile d@(Door hv o') _    -> -- door is jammed by items
                                        abortIfWith isVerbose "jammed"
            _                        -> -- there is no door here
@@ -345,10 +345,10 @@ lvlchange vdir =
   do
     cursor    <- gets scursor
     targeting <- gets (ctargeting . scursor)
-    player    <- gets getPlayerBody
+    pbody     <- gets getPlayerBody
     pl        <- gets splayer
     map       <- gets (lmap . slevel)
-    let loc = if targeting then clocation cursor else mloc player
+    let loc = if targeting then clocation cursor else mloc pbody
     case map `at` loc of
       Tile (Stairs _ vdir' next) is
         | vdir == vdir' -> -- stairs are in the right direction
@@ -383,9 +383,9 @@ lvlchange vdir =
                   -- Change to the new level (invariant not essential).
                   assertTrue $ lvlswitch nln
                   -- Restore the invariant: add player to the new level.
-                  modify (insertActor pl player)
+                  modify (insertActor pl pbody)
                   -- Land the player at the other end of the stairs.
-                  updatePlayer (\ p -> p { mloc = nloc })
+                  updatePlayerBody (\ p -> p { mloc = nloc })
                   -- Change the level of the player recorded in cursor.
                   modify (updateCursor (\ c -> c { creturnLn = nln }))
       _ -> -- no stairs
@@ -488,8 +488,8 @@ handleScores write status total =
 search :: Action ()
 search =
   do
-    Level   { lmap = lmap } <- gets slevel
-    Movable { mloc = ploc } <- gets getPlayerBody
+    lmap <- gets (lmap . slevel)
+    ploc <- gets (mloc . getPlayerBody)
     let searchTile (Tile (Door hv (Just n)) x, t') =
           (Tile (Door hv (Just (max (n - 1) 0))) x, t')
         searchTile t = t
@@ -504,16 +504,16 @@ targetFloor = do
   cloc      <- gets (clocation . scursor)
   targeting <- gets (ctargeting . scursor)
   let tgt = case target of
-              TEnemy i -> TCursor
-              TLoc _   -> if targeting     then TCursor else TLoc cloc
-              TCursor  -> if not targeting then TCursor else TLoc cloc
-  updatePlayer (\ p -> p { mtarget = tgt })
+              TLoc _  | not targeting -> TLoc cloc
+              TCursor |     targeting -> TLoc cloc
+              _ -> TCursor
+  updatePlayerBody (\ p -> p { mtarget = tgt })
   setCursor tgt
 
 -- | Start the monster targeting mode. Cycle between monster targets.
 -- TODO: also target a monster by moving the cursor, if in target monster mode.
 -- TODO: generally streamline and extend when the commands do not take time,
--- when firing at targets is implemented. when monsters use targets.
+-- when firing at targets is implemented, when monsters use targets.
 -- TODO: sort monsters by distance to the player.
 -- TODO: when each hero has his own perception, only target monsters
 -- visible by the current player.
@@ -531,7 +531,7 @@ targetMonster = do
       tgt = case lf of
               [] -> target  -- no monsters in sight, stick to last target
               (_, ni) : _ -> TEnemy ni  -- pick the next (or first) monster
-  updatePlayer (\ p -> p { mtarget = tgt })
+  updatePlayerBody (\ p -> p { mtarget = tgt })
   setCursor tgt
 
 -- | Calculate the location of player's target.
@@ -598,11 +598,11 @@ doLook =
 inventory :: Action a
 inventory =
   do
-    player <- gets getPlayerBody
-    if L.null (mitems player)
+    items <- gets (mitems . getPlayerBody)
+    if L.null items
       then abortWith "You are not carrying anything"
       else do
-             displayItems "This is what you are carrying:" True (mitems player)
+             displayItems "This is what you are carrying:" True items
              session getConfirm
              abortWith ""
 
@@ -614,27 +614,31 @@ drinkPotion :: Action ()
 drinkPotion =
   do
     state <- get
-    let lvl   @(Level   { lmap = lmap }) = slevel  state
-    let player@(Movable { mloc = ploc }) = getPlayerBody state
-    if L.null (mitems player)
+    lmap <- gets (lmap . slevel)
+    pbody  <- gets getPlayerBody
+    ploc <- gets (mloc . getPlayerBody)
+    items <- gets (mitems . getPlayerBody)
+    if L.null items
       then abortWith "You are not carrying anything."
       else do
-             i <- getPotion "What to drink?" (mitems player) "inventory"
+             i <- getPotion "What to drink?" items "inventory"
              case i of
                Just i'@(Item { itype = Potion ptype }) ->
                  do
-                   -- only one potion is consumed even if several are joined in the inventory
+                   -- only one potion is consumed even if several
+                   -- are joined in the inventory
                    let consumed = i' { icount = 1 }
                        baseHp = Config.get (sconfig state) "heroes" "baseHp"
                    removeFromInventory consumed
-                   message (subjectVerbIObject state player "drink" consumed "")
+                   message (subjectVerbIObject state pbody "drink" consumed "")
                    -- the potion is identified after drinking
                    discover i'
                    case ptype of
                      PotionWater   -> messageAdd "Tastes like water."
                      PotionHealing -> do
-                                        messageAdd "You feel better."
-                                        updatePlayer (\ p -> p { mhp = min (mhpmax p) (mhp p + baseHp `div` 4) })
+                       messageAdd "You feel better."
+                       let php p = min (mhpmax p) (mhp p + baseHp `div` 4)
+                       updatePlayerBody (\ p -> p { mhp = php p })
                Just _  -> abortWith "you cannot drink that"
                Nothing -> neverMind True
 
@@ -642,16 +646,18 @@ dropItem :: Action ()
 dropItem =
   do
     state <- get
-    let player@(Movable { mloc = ploc }) = getPlayerBody state
-    if L.null (mitems player)
+    pbody  <- gets getPlayerBody
+    ploc <- gets (mloc . getPlayerBody)
+    items <- gets (mitems . getPlayerBody)
+    if L.null items
       then abortWith "You are not carrying anything."
       else do
-             i <- getAnyItem "What to drop?" (mitems player) "inventory"
+             i <- getAnyItem "What to drop?" items "inventory"
              case i of
                Just i' ->
                  do
                    removeFromInventory i'
-                   message (subjectVerbIObject state player "drop" i' "")
+                   message (subjectVerbIObject state pbody "drop" i' "")
                    dropItemsAt [i'] ploc
                Nothing -> neverMind True
 
@@ -661,23 +667,26 @@ dropItemsAt is loc = modify (updateLevel (scatterItems is loc))
 -- | Remove given item from the hero's inventory.
 removeFromInventory :: Item -> Action ()
 removeFromInventory i =
-  updatePlayer (\ p -> p { mitems = removeItemByLetter i (mitems p) })
+  updatePlayerBody (\ p -> p { mitems = removeItemByLetter i (mitems p) })
 
 -- | Remove given item from the given location.
 removeFromLoc :: Item -> Loc -> Action ()
 removeFromLoc i loc =
-  modify (updateLevel (\ l -> l { lmap = M.adjust (\ (t, rt) -> (update t, rt)) loc (lmap l) }))
+  modify (updateLevel (updateLMap adj))
   where
-    update t = t { titems = removeItemByType i (titems t) }
+    adj = M.adjust (\ (t, rt) -> (remove t, rt)) loc
+    remove t = t { titems = removeItemByType i (titems t) }
 
 -- | Let the player choose any potion. Note that this does not guarantee a potion to be chosen,
 -- as the player can override the choice.
 getPotion :: String ->  -- prompt
              [Item] ->  -- all objects in question
-             String ->  -- how to refer to the collection of objects, e.g. "in your inventory"
+             String ->  -- how to refer to the collection of objects,
+                        -- e.g., "in your inventory"
              Action (Maybe Item)
-getPotion prompt is isn = getItem prompt (\ i -> case itype i of Potion {} -> True ; _ -> False)
-                                  "Potions" is isn
+getPotion prompt is isn =
+  let choice i = case itype i of Potion {} -> True ; _ -> False
+  in  getItem prompt choice "Potions" is isn
 
 actorPickupItem :: Actor -> Action ()
 actorPickupItem actor =
@@ -685,12 +694,12 @@ actorPickupItem actor =
     state <- get
     pl    <- gets splayer
     per   <- currentPerception
-    let lvl@(Level { lmap = lmap }) = slevel state
+    lmap  <- gets (lmap . slevel)
     let movable   = getActor state actor
     let loc       = mloc movable
     let t         = lmap `at` loc -- the map tile in question
     let perceived = loc `S.member` pvisible per
-    let isPlayer  = actor == pl  -- TODO: assert no other heroes?
+    let isPlayer  = actor == pl
     -- check if something is here to pick up
     case titems t of
       []     -> abortIfWith isPlayer "nothing here"
@@ -706,24 +715,25 @@ actorPickupItem actor =
                        message $ subjectCompoundVerbIObject state movable "pick" "up" i ""
               removeFromLoc i loc
               -- add item to actor's inventory:
-              updateActor actor $ \ m ->
+              updateAnyActor actor $ \ m ->
                 m { mitems = nitems, mletter = maxLetter l (mletter movable) }
           Nothing -> abortIfWith isPlayer "you cannot carry any more"
 
-updateActor :: Actor ->                 -- ^ who to update
+-- TODO: when monsters have unique ids, update monsters on other levels, too
+updateAnyActor :: Actor ->                 -- ^ who to update
                (Movable -> Movable) ->  -- ^ the update
                Action ()
-updateActor (AHero n) f = modify (updateAnyHero f n)
-updateActor (AMonster n) f =
+updateAnyActor (AHero n) f = modify (updateAnyHero f n)
+updateAnyActor (AMonster n) f =
   do
     monsters <- gets (lmonsters . slevel)
     let (_, ms) = updateMonster f n monsters
     modify (updateLevel (updateMonsters (const ms)))
 
-updatePlayer :: (Hero -> Hero) -> Action ()
-updatePlayer f = do
+updatePlayerBody :: (Hero -> Hero) -> Action ()
+updatePlayerBody f = do
   pl <- gets splayer
-  updateActor pl f
+  updateAnyActor pl f
 
 pickupItem :: Action ()
 pickupItem = do
@@ -776,16 +786,15 @@ getItem prompt p ptext is0 isn =
   in r
 
 displayItems :: Message -> Bool -> [Item] -> Action Bool
-displayItems msg sorted is =
-    do
-      state <- get
-      let inv = unlines $
-                L.map (\ (Item { icount = c, iletter = l, itype = t }) ->
-                         letterLabel l ++ objectItem state c t ++ " ")
-                      ((if sorted then sortBy (cmpLetter' `on` iletter) else id) is)
-      let ovl = inv ++ more
-      message msg
-      overlay ovl
+displayItems msg sorted is = do
+  state <- get
+  let inv = unlines $
+            L.map (\ (Item { icount = c, iletter = l, itype = t }) ->
+                    letterLabel l ++ objectItem state c t ++ " ")
+            ((if sorted then sortBy (cmpLetter' `on` iletter) else id) is)
+  let ovl = inv ++ more
+  message msg
+  overlay ovl
 
 -- | This function performs a move (or attack) by any actor,
 -- i.e., it can handle monsters, heroes and both.
@@ -829,7 +838,7 @@ moveOrAttack allowAttacks autoOpen actor dir
         Nothing ->
           if accessible lmap sloc tloc then do
             -- perform the move
-            updateActor actor (\ m -> m { mloc = tloc })
+            updateAnyActor actor (\ m -> m { mloc = tloc })
             when (actor == pl) $ message $ lookAt False state lmap tloc ""
           else if autoOpen then
             -- try to open a door
@@ -845,7 +854,7 @@ moveOrAttack allowAttacks autoOpen actor dir
 actorAttackActor :: Actor -> Actor -> Action ()
 actorAttackActor (AHero _) target@(AHero _) =  -- TODO: do not take a turn!!!
   -- Select adjacent hero by bumping into him.
-  assertTrue $ selectHero target
+  selectHero target >> return ()
 actorAttackActor source target =
   do
     debug "actorAttackActor"
@@ -875,7 +884,7 @@ actorAttackActor source target =
         swordMsg   = if sword == 0 then "" else
                        " with a (+" ++ show sword ++ ") sword" -- TODO: generate proper message
         combatMsg  = subjectVerbMObject state sm combatVerb tm swordMsg
-    updateActor target $ \ m -> m { mhp = newHp }
+    updateAnyActor target $ \ m -> m { mhp = newHp }
     per <- currentPerception
     let perceived  = mloc sm `S.member` pvisible per
     messageAdd $
@@ -898,8 +907,8 @@ actorRunActor source target = do
   state <- get
   let sloc = mloc $ getActor state source  -- source location
       tloc = mloc $ getActor state target  -- target location
-  updateActor source (\ m -> m { mloc = tloc })
-  updateActor target (\ m -> m { mloc = sloc })
+  updateAnyActor source (\ m -> m { mloc = tloc })
+  updateAnyActor target (\ m -> m { mloc = sloc })
   case target of
     AHero _    -> do
       case source of
@@ -925,7 +934,7 @@ advanceTime :: Actor -> Action ()
 advanceTime actor =
   do
     time <- gets stime
-    updateActor actor (\ m -> m { mtime = time + mspeed m })
+    updateAnyActor actor (\ m -> m { mtime = time + mspeed m })
 
 -- | Possibly regenerate HP for the given actor.
 regenerate :: Actor -> Action ()
@@ -936,8 +945,10 @@ regenerate actor =
     -- TODO: remove hardcoded time interval, regeneration should be an attribute of the movable
     let upd m = m { mhp = min (mhpmax m) (mhp m + 1) }
     when (time `mod` 1500 == 0) $ do
-      updateActor actor upd
-      -- ugly, but we really want hero selection to be a purely UI distinction
-      -- anyway, only the currently player-controlled hero regenerates
-      when (actor == pl) $
-        modify (updateLevel (updateHeroes (IM.map upd)))
+      -- We really want hero selection to be a purely UI distinction,
+      -- so all heroes need to regenerate, not just the player.
+      -- TODO: currently only the heroes on the current level regenerate.
+      -- TODO: do this for all heroes or all monsters, never for 1 actor.
+      if (actor == pl)
+        then modify (updateLevel (updateHeroes (IM.map upd)))
+        else updateAnyActor actor upd
