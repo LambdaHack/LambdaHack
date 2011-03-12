@@ -222,7 +222,7 @@ remember =
 checkPartyDeath :: Action ()
 checkPartyDeath =
   do
-    ahs    <- gets allHeroes
+    ahs    <- gets allHeroesAnyLevel
     pl     <- gets splayer
     pbody  <- gets getPlayerBody
     config <- gets sconfig

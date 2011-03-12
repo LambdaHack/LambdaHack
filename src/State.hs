@@ -20,7 +20,7 @@ import Message
 -- In practice, we maintain extra state, but that state is state
 -- accumulated during a turn or relevant only to the current session.
 data State = State
-  { splayer      :: Actor,        -- ^ represents the selected movable
+  { splayer      :: Actor,        -- ^ represents the player-controlled movable
     scursor      :: Cursor,       -- ^ cursor location and level to return to
     shistory     :: [Message],
     ssensory     :: SensoryMode,
@@ -36,8 +36,8 @@ data State = State
 
 data Cursor = Cursor
   { ctargeting :: Bool,      -- ^ are we in targeting mode?
-    clocation   :: Loc,       -- ^ cursor coordinates
-    creturnLn   :: LevelName  -- ^ the level current player resides on
+    clocation  :: Loc,       -- ^ cursor coordinates
+    creturnLn  :: LevelName  -- ^ the level current player resides on
   }
   deriving Show
 
@@ -55,6 +55,50 @@ defaultState pl ploc dng lvl =
     lvl
     (Config.defaultCP)
 
+-- The operations with "Any", and those that use them, consider all the dungeon.
+-- All the other actor and level operations only consider the current level.
+
+-- | Finds an actor body on any level. Error if not found.
+
+findActorAnyLevel :: Actor -> State -> Maybe (LevelName, Movable)
+findActorAnyLevel actor state@(State { slevel   = lvl,
+                                       sdungeon = Dungeon m }) =
+  let chk lvl =
+        fmap (\ m -> (lname lvl, m)) $
+        case actor of
+          AHero n    -> IM.lookup n (lheroes lvl)
+          AMonster n -> let l = lmonsters lvl
+                        in  if L.length l <= n then Nothing else Just $ l !! n
+  in  listToMaybe $ mapMaybe chk (lvl : M.elems m)
+
+getPlayerBody :: State -> Movable
+getPlayerBody state = snd $ fromMaybe (error "getPlayerBody") $
+                      findActorAnyLevel (splayer state) state
+
+-- | The list of actors and levels for all heroes in the dungeon.
+-- Heroes from the current level go first.
+allHeroesAnyLevel :: State -> [(Actor, LevelName)]
+allHeroesAnyLevel state =
+  let Dungeon m = sdungeon state
+      one (Level { lname = ln, lheroes = hs }) =
+        L.map (\ (i, _) -> (AHero i, ln)) (IM.assocs hs)
+  in  L.concatMap one (slevel state : M.elems m)
+
+updateAnyHero :: (Hero -> Hero) -> Int -> State -> State
+updateAnyHero f ni state =
+  case findActorAnyLevel (AHero ni) state of
+    Just (ln, _) ->
+      let upd = IM.adjust f ni
+      in  updateAnyLevel (updateHeroes upd) ln state
+    Nothing -> error $ "updateAnyHero: hero " ++ show ni ++ " not found"
+
+updateAnyLevel :: (Level -> Level) -> LevelName -> State -> State
+updateAnyLevel f ln state@(State { slevel = level,
+                                   sdungeon = Dungeon dng })
+  | ln == lname level = updateLevel f state
+  | otherwise = updateDungeon (const $ Dungeon $ M.adjust f ln dng) state
+
+-- | Gets actor body from the current level. Error if not found.
 getActor :: State -> Actor -> Movable
 getActor (State { slevel = lvl }) a =
   case a of
@@ -77,66 +121,17 @@ insertActor a m =
     AMonster n -> let ins l = L.take n l ++ m : L.drop n l
                   in  updateLevel (updateMonsters ins)
 
--- | Finds an actor body on any level.
--- Possible optimization: check current level first.
-findAnyActor :: State -> Actor -> Movable
-findAnyActor state@(State { slevel   = level,
-                            sdungeon = dungeon }) a =
-  let Dungeon m = putDungeonLevel level dungeon
-      chk lvl =
-        case a of
-          AHero n    -> IM.lookup n (lheroes lvl)
-          AMonster n -> let l = lmonsters lvl
-                        in  if L.length l <= n then Nothing else Just $ l !! n
-      filtered  = M.mapMaybe chk m
-  in  fst $ fromMaybe (error "findAnyActor") $ M.minView $ filtered
-
-getPlayerBody :: State -> Movable
-getPlayerBody state = findAnyActor state (splayer state)
-
--- | The level on which the current player resides.
-playerLevel :: State -> LevelName
-playerLevel state = creturnLn $ scursor state
-
 levelHeroList :: State -> [Hero]
 levelHeroList (State { slevel = Level { lheroes = hs } }) = IM.elems hs
-
-findActorLevel :: Actor -> State -> Maybe LevelName
-findActorLevel (AHero ni) state@(State { slevel   = level,
-                                         sdungeon = dungeon }) =
-    let Dungeon m = putDungeonLevel level dungeon
-        chk ln lvl = fmap (const ln) (IM.lookup ni (lheroes lvl))
-        filtered   = M.mapMaybeWithKey chk m
-    in  fmap fst $ M.minView $ filtered
-
--- | The list of actors and levels for all heroes in the dungeon.
--- Heroes from the current level go first.
-allHeroes :: State -> [(Actor, LevelName)]
-allHeroes state =
-  let Dungeon m = sdungeon state
-      one (Level { lname = ln, lheroes = hs }) =
-        L.map (\ (i, _) -> (AHero i, ln)) (IM.assocs hs)
-  in  L.concatMap one (slevel state : M.elems m)
-
-updateAnyHero :: (Hero -> Hero) -> Int -> State -> State
-updateAnyHero f ni state =
-      case findActorLevel (AHero ni) state of
-        Just ln ->
-          let upd = IM.adjust f ni
-          in  updateAnyLevel (updateHeroes upd) ln state
-        Nothing -> error $ "updateAnyHero: hero " ++ show ni ++ " not found"
-
-updateAnyLevel :: (Level -> Level) -> LevelName -> State -> State
-updateAnyLevel f ln state@(State { slevel = level,
-                                   sdungeon = Dungeon dng })
-  | ln == lname level = updateLevel f state
-  | otherwise = updateDungeon (const $ Dungeon $ M.adjust f ln dng) state
 
 updateCursor :: (Cursor -> Cursor) -> State -> State
 updateCursor f s = s { scursor = f (scursor s) }
 
 updateHistory :: ([String] -> [String]) -> State -> State
 updateHistory f s = s { shistory = f (shistory s) }
+
+updateTime :: (Time -> Time) -> State -> State
+updateTime f s = s { stime = f (stime s) }
 
 updateDiscoveries :: (Discoveries -> Discoveries) -> State -> State
 updateDiscoveries f s = s { sdiscoveries = f (sdiscoveries s) }
@@ -147,20 +142,23 @@ updateLevel f s = s { slevel = f (slevel s) }
 updateDungeon :: (Dungeon -> Dungeon) -> State -> State
 updateDungeon f s = s {sdungeon = f (sdungeon s)}
 
-updateTime :: (Time -> Time) -> State -> State
-updateTime f s = s { stime = f (stime s) }
-
 toggleVision :: State -> State
-toggleVision s = s { ssensory = case ssensory s of Vision 1 -> Implicit; Vision n -> Vision (n-1); _ -> Vision 3 }
+toggleVision s = s { ssensory = case ssensory s of Vision 1 -> Implicit
+                                                   Vision n -> Vision (n-1)
+                                                   _        -> Vision 3 }
 
 toggleSmell :: State -> State
 toggleSmell s = s { ssensory = if ssensory s == Smell then Implicit else Smell }
 
 toggleOmniscient :: State -> State
-toggleOmniscient s = s { sdisplay = if sdisplay s == Omniscient then Normal else Omniscient }
+toggleOmniscient s = s { sdisplay = if sdisplay s == Omniscient
+                                    then Normal
+                                    else Omniscient }
 
 toggleTerrain :: State -> State
-toggleTerrain s = s { sdisplay = case sdisplay s of Terrain 1 -> Normal; Terrain n -> Terrain (n-1); _ -> Terrain 4 }
+toggleTerrain s = s { sdisplay = case sdisplay s of Terrain 1 -> Normal
+                                                    Terrain n -> Terrain (n-1)
+                                                    _         -> Terrain 4 }
 
 instance Binary State where
   put (State player cursor hst sense disp time assocs discs dng lvl config) =

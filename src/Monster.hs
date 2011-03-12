@@ -22,8 +22,9 @@ defaultHero :: Char -> String -> Loc -> Int -> Hero
 defaultHero symbol name ploc hp =
   Movable (Hero symbol name) hp hp Nothing TCursor ploc [] 'a' 10 0
 
+-- The types should be equal, becase monsters can be sometimes
+-- player-controlled and heroes can be alien-controlled or panicked, etc.
 type Hero = Movable
-
 type Monster = Movable
 
 data Movable = Movable

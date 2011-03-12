@@ -88,7 +88,7 @@ handleMonsters =
     time <- gets stime
     case ms of
       [] -> nextMove
-      (m@(Movable { mtime = mt }) : ms)
+      (m@(Movable { mtime = mt }) : rest)
         | mt > time  -> -- no monster is ready for another move
                         nextMove
         | otherwise  -> -- monster m should move; we temporarily remove m from the level
@@ -100,7 +100,7 @@ handleMonsters =
                         -- (in particular hero selection) in case of two
                         -- simultaneous battles.
                         do
-                          modify (updateLevel (updateMonsters (const ms)))
+                          modify (updateLevel (updateMonsters (const rest)))
                           handleMonster m
 
 -- | Handle the move of a single monster.
