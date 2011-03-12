@@ -443,9 +443,9 @@ selectHero actor =
       then return False -- already selected
       else do
         state <- get
-        case findActorLevel actor state of
+        case findActorAnyLevel actor state of
           Nothing -> abortWith $ "No such member of the party."
-          Just nln -> do
+          Just (nln, pbody) -> do
             -- Make the new actor the player-controlled actor.
             modify (\ s -> s { splayer = actor })
             -- Record the original level of the new player.
@@ -453,8 +453,7 @@ selectHero actor =
             -- Switch to the level.
             lvlswitch nln
             -- Announce.
-            ptype <- gets (mtype . getPlayerBody)
-            messageAdd $ subjectMovable ptype ++ " selected."
+            messageAdd $ subjectMovable (mtype pbody) ++ " selected."
             return True
 
 -- | Calculate loot's worth. TODO: move to another module, and refine significantly.

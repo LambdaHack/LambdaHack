@@ -19,6 +19,8 @@ import Message
 -- | The 'State' contains all the game state that has to be saved.
 -- In practice, we maintain extra state, but that state is state
 -- accumulated during a turn or relevant only to the current session.
+-- TODO: consider changing slevel to LevelName, removing the lname field
+-- and not removing the current level from the dungeon.
 data State = State
   { splayer      :: Actor,        -- ^ represents the player-controlled movable
     scursor      :: Cursor,       -- ^ cursor location and level to return to
