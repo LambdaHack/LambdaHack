@@ -4,6 +4,7 @@ import System.Directory
 import Control.Monad
 import Data.List as L
 import Data.Map as M
+import Data.Maybe
 
 import Action
 import Actor
@@ -48,13 +49,17 @@ generate config session msg =
       matchGenerator n (Just "noiseRoom") = noiseRoom
       matchGenerator n (Just "rogueRoom") = rogueRoom
       matchGenerator n (Just s) =
-        error $ "findGenerator: unknown: " ++ show n ++ ", " ++ s
+        error $ "matchGenerator: unknown: " ++ show n ++ ", " ++ s
 
       findGenerator n =
         let genName =
               Config.getOption config "dungeon" ("LambdaCave_" ++ show n)
             generator = matchGenerator n genName
         in  rndToIO $ generator (defaultLevelConfig n) (LambdaCave n)
+
+      findHeroName n =
+        let heroName = Config.getOption config "heroes" ("HeroName_" ++ show n)
+        in  fromMaybe ("hero number " ++ show n) heroName
 
       connect :: Maybe (Maybe DungeonLoc) ->
                  [(Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) ->
@@ -80,5 +85,6 @@ generate config session msg =
          defState = defaultState (AHero 0) ploc dng lvl
          state = defState { sassocs = assocs, sconfig = config }
          k = Config.get config "heroes" "extraHeroes"
-         hstate = foldl' (addHero ploc hp) state [0..k]
+         addNamedHero state n = addHero ploc hp (findHeroName n) state n
+         hstate = foldl' addNamedHero state [0..k]
      handlerToIO session hstate msg handle

@@ -33,6 +33,12 @@ saveGame: LambdaHack.save
 baseHp: 50
 extraHeroes: 0
 firstDeathEnds: False
+HeroName_0: you
+HeroName_1: Haskell Alvin
+HeroName_2: Alonzo Barkley
+HeroName_3: Ernst Abraham
+HeroName_4: Samuel Saunders
+HeroName_5: Roger Robin
 
 [monsters]
 smellTimeout: 1000
