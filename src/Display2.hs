@@ -5,6 +5,7 @@ module Display2 (module Display, module Display2) where
 import Data.Set as S
 import Data.List as L
 import Data.Map as M
+import qualified Data.IntMap as IM
 import Control.Monad.State hiding (State) -- for MonadIO, seems to be portable between mtl-1 and 2
 
 import Message
@@ -167,6 +168,7 @@ displayLevel session per
       (n,over) = stringByLocation (sy+1) overlay -- n is the number of overlay screens
       gold    = maybe 0 (icount . fst) $ findItem (\ i -> iletter i == Just '$') pitems
       hs      = levelHeroList state
+      ms      = levelMonsterList state
       disp n msg =
         display ((0,0),sz) session
                  (\ loc -> let tile = nlmap `lAt` loc

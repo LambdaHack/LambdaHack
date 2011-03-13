@@ -70,8 +70,7 @@ instance Binary Dungeon where
   put (Dungeon dng) = put (M.elems dng)
   get = liftM dungeon get
 
--- | A dungeon location is a level together with a location on
--- that level.
+-- | A dungeon location is a level together with a location on that level.
 type DungeonLoc = (LevelName, Loc)
 
 type LMovables = IM.IntMap Movable
@@ -80,7 +79,7 @@ data Level = Level
   { lname     :: LevelName,
     lheroes   :: LMovables,  -- ^ all but the current selected hero on the level
     lsize     :: (Y,X),
-    lmonsters :: [Monster],
+    lmonsters :: LMovables,  -- ^ all monsters on the level
     lsmell    :: SMap,
     lmap      :: LMap,
     lmeta     :: String }
@@ -92,17 +91,7 @@ updateLMap f lvl = lvl { lmap = f (lmap lvl) }
 updateSMap :: (SMap -> SMap) -> Level -> Level
 updateSMap f lvl = lvl { lsmell = f (lsmell lvl) }
 
-updateMonster :: (Monster -> Monster) -> Int -> [Monster] ->
-                 (Monster, [Monster])
-updateMonster f n ms =
-  case splitAt n ms of
-    (pre, x : post) -> let m = f x
-                           mtimeChanged = mtime x /= mtime m
-                       in (m, if mtimeChanged then snd (insertMonster m (pre ++ post))
-                                              else pre ++ [m] ++ post)
-    xs              -> error "updateMonster"
-
-updateMonsters :: ([Monster] -> [Monster]) -> Level -> Level
+updateMonsters :: (LMovables -> LMovables) -> Level -> Level
 updateMonsters f lvl = lvl { lmonsters = f (lmonsters lvl) }
 
 updateHeroes :: (LMovables -> LMovables) -> Level -> Level
@@ -115,17 +104,17 @@ instance Binary Level where
   put (Level nm hs sz@(sy,sx) ms lsmell lmap lmeta) =
         do
           put nm
+          put hs
           put sz
           put ms
-          put hs
           put [ lsmell ! (y,x) | y <- [0..sy], x <- [0..sx] ]
           put [ lmap ! (y,x) | y <- [0..sy], x <- [0..sx] ]
           put lmeta
   get = do
           nm <- get
+          hs <- get
           sz@(sy,sx) <- get
           ms <- get
-          hs <- get
           xs <- get
           let lsmell = M.fromList (zip [ (y,x) | y <- [0..sy], x <- [0..sx] ] xs)
           xs <- get
@@ -363,10 +352,9 @@ posToDir D  = [up]
 posToDir DR = [upleft]
 posToDir O  = moves
 
--- checks for the presence of monsters (and items); it does *not* check
--- if the tile is open ...
-unoccupied :: [Movable] -> LMap -> Loc -> Bool
-unoccupied movables _lmap loc =
+-- Checks for the presence of movables. Does *not* check if the tile is open.
+unoccupied :: [Movable] -> Loc -> Bool
+unoccupied movables loc =
   all (\ m -> mloc m /= loc) movables
 
 -- check whether one location is accessible from the other
@@ -435,7 +423,6 @@ grid (ny,nx) ((y0,x0),(y1,x1)) =
   in M.fromList [ ((y,x), ((y0 + (yd * y `div` ny), x0 + (xd * x `div` nx)),
                            (y0 + (yd * (y + 1) `div` ny - 1), x0 + (xd * (x + 1) `div` nx - 1))))
                 | x <- [0..nx-1], y <- [0..ny-1] ]
-
 
 connectGrid :: (Y,X) -> Rnd [((Y,X),(Y,X))]
 connectGrid (ny,nx) =

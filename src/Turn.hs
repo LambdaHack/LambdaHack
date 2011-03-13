@@ -2,7 +2,10 @@ module Turn where
 
 import Control.Monad
 import Control.Monad.State hiding (State)
+import Data.List as L
 import Data.Map as M
+import qualified Data.Ord as Ord
+import qualified Data.IntMap as IM
 import qualified Data.Char as Char
 
 import Action
@@ -84,45 +87,33 @@ handleMonsters :: Action ()
 handleMonsters =
   do
     debug "handleMonsters"
-    ms   <- gets (lmonsters . slevel)
     time <- gets stime
-    case ms of
-      [] -> nextMove
-      (m@(Movable { mtime = mt }) : rest)
-        | mt > time  -> -- no monster is ready for another move
-                        nextMove
-        | otherwise  -> -- monster m should move; we temporarily remove m from the level
-                        -- TODO: removal isn't nice. Actor numbers currently change during
-                        -- a move. This could be cleaned up.
-                        -- Note: however this has a nice side-effect: monsters
-                        -- move in reversed order wrt the previous turn,
-                        -- so there is 2 times less changes of focus
-                        -- (in particular hero selection) in case of two
-                        -- simultaneous battles.
-                        do
-                          modify (updateLevel (updateMonsters (const rest)))
-                          handleMonster m
+    ms   <- gets (lmonsters . slevel)
+    if IM.null ms
+      then nextMove
+      else let order  = Ord.comparing (mtime . snd)
+               (i, m) = L.minimumBy order (IM.assocs ms)
+           in  if mtime m > time
+               then nextMove  -- no monster is ready for another move
+               else handleMonster (AMonster i)
 
 -- | Handle the move of a single monster.
--- Precondition: monster must not currently be in the monster list of the level.
-handleMonster :: Monster -> Action ()
-handleMonster m =
+handleMonster :: Actor -> Action ()
+handleMonster actor =
   do
     debug "handleMonster"
     state <- get
-    let time = stime state
-    let ms   = lmonsters (slevel state)
+    time <- gets stime
     per <- currentPerception
-    -- run the AI; it currently returns a direction; TODO: it should return an action
-    dir <- liftIO $ rndToIO $ frequency (head (runStrategy (strategy m state per .| wait)))
-    let waiting    = dir == (0,0)
-    let nmdir      = if waiting then Nothing else Just dir
-    -- advance time and reinsert monster
-    let nm         = m { mtime = time + mspeed m, mdir = nmdir }
-    let (act, nms) = insertMonster nm ms
-    modify (updateLevel (updateMonsters (const nms)))
-    let actor      = AMonster act
-    try $ -- if the following action aborts, we just continue
+    -- run the AI; it currently returns a direction
+    -- TODO: it should return an action
+    dir <- liftIO $ rndToIO $
+           frequency (head (runStrategy (strategy actor state per .| wait)))
+    let waiting = dir == (0,0)
+    let nmdir   = if waiting then Nothing else Just dir
+    -- advance time and update monster
+    updateAnyActor actor $ \ m -> m { mtime = time + mspeed m, mdir = nmdir }
+    try $  -- if the following action aborts, we just continue
       if waiting
         then
           -- monster is not moving, let's try to pick up an object

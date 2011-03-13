@@ -73,7 +73,6 @@ quitGame =
 endTargeting :: Bool -> Action ()
 endTargeting accept = do
   ptype    <- gets (mtype . getPlayerBody)
-  monsters <- gets (lmonsters . slevel)
   target   <- gets (mtarget . getPlayerBody)
   returnLn <- gets (creturnLn . scursor)
   lvlswitch returnLn  -- return to the original level of the player
@@ -151,8 +150,8 @@ continueRun dir =
     loc   <- gets (mloc . getPlayerBody)
     per   <- currentPerception
     msg   <- currentMessage
-    let lvl@(Level { lmonsters = ms, lmap = lmap, lheroes = hs }) = slevel state
-        mslocs = S.fromList (L.map mloc ms)
+    let lvl@(Level { lmap = lmap, lheroes = hs }) = slevel state
+        mslocs = S.fromList (L.map mloc (levelMonsterList state))
         t      = lmap `at` loc  -- tile at current location
         monstersVisible = not (S.null (mslocs `S.intersection` pvisible per))
         newsReported    = not (L.null msg)
@@ -283,21 +282,22 @@ actorOpenClose :: Actor ->
 actorOpenClose actor v o dir =
   do
     state <- get
+    lmap  <- gets (lmap . slevel)
+    pl    <- gets splayer
     let txt = if o then "open" else "closed"
-    let Level { lmonsters = ms, lmap = lmap } = slevel state
-        hms = levelHeroList state ++ ms
+    let hms = levelHeroList state ++ levelMonsterList state
     let loc = mloc (getActor state actor)
-    let isHero = case actor of AHero _ -> True ; _ -> False
-    let isVerbose = v && isHero
+    let isPlayer  = actor == pl
+    let isVerbose = v && isPlayer
     let dloc = shift loc dir  -- location we act upon
       in case lmap `at` dloc of
            Tile d@(Door hv o') []
-             | secret o' && isHero  -> -- door is secret, cannot be opened or closed by hero
+             | secret o' && isPlayer -> -- door is secret, cannot be opened or closed by the player
                                        neverMind isVerbose
              | maybe o ((|| not o) . (> 10)) o' ->
                                        -- door is in unsuitable state
                                        abortIfWith isVerbose ("already " ++ txt)
-             | not (unoccupied hms lmap dloc) ->
+             | not (unoccupied hms dloc) ->
                                        -- door is blocked by a movable
                                        abortIfWith isVerbose "blocked"
              | otherwise            -> -- door can be opened / closed
@@ -429,13 +429,13 @@ fleeDungeon =
 cycleHero :: Action ()
 cycleHero =
   do
-    hs <- gets (lheroes . slevel)
     pl <- gets splayer
+    hs <- gets (lheroes . slevel)
     let i        = case pl of AHero n -> n ; _ -> 0
-        (lt, gt) = IM.split i hs
-    case IM.keys gt ++ IM.keys lt of
+        (lt, gt) = L.splitAt i (IM.assocs hs)
+    case gt ++ lt of
       [] -> abortWith "Cannot select another hero on this level."
-      ni : _ -> assertTrue $ selectHero (AHero ni)
+      (ni, _) : _ -> assertTrue $ selectHero (AHero ni)
 
 -- | Selects a hero based on the number (actor, actually).
 -- Focuses on the hero if level changed. False, if nothing to do.
@@ -524,16 +524,15 @@ targetMonster :: Action ()
 targetMonster = do
   per    <- currentPerception
   target <- gets (mtarget . getPlayerBody)
-  level  <- gets slevel
-  let i1 = case target of
-             TEnemy (AMonster i) -> i + 1
+  ms     <- gets (lmonsters . slevel)
+  let i = case target of
+             TEnemy (AMonster n) -> n + 1
              _ -> 0
-      ms = L.zip (lmonsters level) [0..]
-      (lt, gt) = L.splitAt i1 ms
-      lf = L.filter (\ (m, _) -> S.member (mloc m) (pvisible per)) (gt ++ lt)
+      (lt, gt) = L.splitAt i (IM.assocs ms)
+      lf = L.filter (\ (_, m) -> S.member (mloc m) (pvisible per)) (gt ++ lt)
       tgt = case lf of
               [] -> target  -- no monsters in sight, stick to last target
-              (_, ni) : _ -> TEnemy (AMonster ni)  -- pick the next monster
+              (ni, _) : _ -> TEnemy (AMonster ni)  -- pick the next monster
   updatePlayerBody (\ p -> p { mtarget = tgt })
   setCursor tgt
 
@@ -576,12 +575,11 @@ doLook =
     loc    <- gets (clocation . scursor)
     state  <- get
     lmap   <- gets (lmap . slevel)
-    ms     <- gets (lmonsters . slevel)
     per    <- currentPerception
     target <- gets (mtarget . getPlayerBody)
     let monsterMsg =
           if S.member loc (pvisible per)
-          then case L.find (\ m -> mloc m == loc) ms of
+          then case L.find (\ m -> mloc m == loc) (levelMonsterList state) of
                  Just m  -> subjectMovable (mtype m) ++ " is here. "
                  Nothing -> ""
           else ""
@@ -726,16 +724,8 @@ actorPickupItem actor =
                 m { mitems = nitems, mletter = maxLetter l (mletter movable) }
           Nothing -> abortIfWith isPlayer "you cannot carry any more"
 
--- TODO: when monsters have unique ids, update monsters on other levels, too
-updateAnyActor :: Actor ->                 -- ^ who to update
-               (Movable -> Movable) ->  -- ^ the update
-               Action ()
-updateAnyActor (AHero n) f = modify (updateAnyHero f n)
-updateAnyActor (AMonster n) f =
-  do
-    monsters <- gets (lmonsters . slevel)
-    let (_, ms) = updateMonster f n monsters
-    modify (updateLevel (updateMonsters (const ms)))
+updateAnyActor :: Actor -> (Movable -> Movable) -> Action ()
+updateAnyActor actor f = modify (updateAnyActorBody actor f)
 
 updatePlayerBody :: (Hero -> Hero) -> Action ()
 updatePlayerBody f = do
@@ -820,17 +810,17 @@ moveOrAttack allowAttacks autoOpen actor dir
       -- We start by looking at the target position.
       state <- get
       pl    <- gets splayer
-      ms    <- gets (lmonsters . slevel)
       lmap  <- gets (lmap . slevel)
-      khs   <- gets (IM.assocs . lheroes . slevel)
+      khs   <- gets (IM.assocs . lheroes   . slevel)
+      kms   <- gets (IM.assocs . lmonsters . slevel)
       let sm   = getActor state actor
           sloc = mloc sm           -- source location
           tloc = sloc `shift` dir  -- target location
           tgt  = case L.find (\ (_, m) -> mloc m == tloc) khs of
                    Just (i, _) -> Just (AHero i)
                    Nothing ->
-                     case L.findIndex (\ m -> mloc m == tloc) ms of
-                       Just i -> Just (AMonster i)
+                     case L.find (\ (_, m) -> mloc m == tloc) kms of
+                       Just (i, _) -> Just (AMonster i)
                        Nothing -> Nothing
       case tgt of
         Just target ->
@@ -845,7 +835,7 @@ moveOrAttack allowAttacks autoOpen actor dir
         Nothing ->
           if accessible lmap sloc tloc then do
             -- perform the move
-            updateAnyActor actor (\ m -> m { mloc = tloc })
+            updateAnyActor actor $ \ m -> m { mloc = tloc }
             when (actor == pl) $ message $ lookAt False state lmap tloc ""
           else if autoOpen then
             -- try to open a door
@@ -914,8 +904,8 @@ actorRunActor source target = do
   state <- get
   let sloc = mloc $ getActor state source  -- source location
       tloc = mloc $ getActor state target  -- target location
-  updateAnyActor source (\ m -> m { mloc = tloc })
-  updateAnyActor target (\ m -> m { mloc = sloc })
+  updateAnyActor source $ \ m -> m { mloc = tloc }
+  updateAnyActor target $ \ m -> m { mloc = sloc }
   case target of
     AHero _    -> do
       case source of
@@ -941,7 +931,7 @@ advanceTime :: Actor -> Action ()
 advanceTime actor =
   do
     time <- gets stime
-    updateAnyActor actor (\ m -> m { mtime = time + mspeed m })
+    updateAnyActor actor $ \ m -> m { mtime = time + mspeed m }
 
 -- | Possibly regenerate HP for the given actor.
 regenerate :: Actor -> Action ()

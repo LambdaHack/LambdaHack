@@ -3,6 +3,7 @@ module StrategyState where
 import Data.List as L
 import Data.Map as M
 import Data.Set as S
+import qualified Data.IntMap as IM
 
 import Geometry
 import Level
@@ -11,11 +12,13 @@ import Random
 import Perception
 import Strategy
 import State
+import Actor
 
-strategy :: Monster -> State -> Perception -> Strategy Dir
-strategy m@(Movable { mtype = mt, mloc = me, mdir = mdir })
-         (state@(State { stime   = time,
-                         slevel  = Level { lmonsters = ms, lsmell = nsmap, lmap = lmap } }))
+strategy :: Actor -> State -> Perception -> Strategy Dir
+strategy actor
+         state@(State { stime   = time,
+                        slevel  = Level { lsmell = nsmap,
+                                          lmap = lmap } })
          per =
     case mt of
       Eye     -> slowEye
@@ -27,19 +30,21 @@ strategy m@(Movable { mtype = mt, mloc = me, mdir = mdir })
     -- if the hero is visible by the monster -- this is more efficient, but
     -- is not correct with the Shadow FOV (the other FOVs are symmetrical)
     -- TODO: set monster targets and then prefer targets to other heroes
-    hs    = levelHeroList state
+    Movable { mtype = mt, mloc = me, mdir = mdir } = getActor state actor
+    delState = deleteActor actor state
+    hs = levelHeroList delState
+    ms = levelMonsterList delState
     -- If no heroes on the level, monsters go at each other. TODO: let them
     -- earn XP by killing each other to make this dangerous to the player.
-    hms   = if L.null hs then ms else hs
-    hlocs = L.map mloc hms
-    hds   = L.sort $ L.map (\ l -> (distance (me, l), l)) hlocs
+    enemyLocs = L.map mloc $ if L.null hs then ms else hs
+    enemyDist = L.sort $ L.map (\ l -> (distance (me, l), l)) enemyLocs
     -- Below, "player" is the hero (or a monster, if no heroes on this level)
     -- chased by the monster ("ploc" is his location, etc.).
     -- As soon as the monster hits, this hero becomes really the currently
     -- selected hero.
     -- We have to sort the list to avoid bias towards the currently selected
     -- hero; instead monsters will prefer heroes with smaller locations.
-    ploc  = case hds of
+    ploc  = case enemyDist of
               [] -> Nothing
               (_, ploc) : _ -> Just ploc
     -- TODO: currently even invisible heroes are targeted if _any_ hero
@@ -52,7 +57,7 @@ strategy m@(Movable { mtype = mt, mloc = me, mdir = mdir })
     lootPresent        =  (\ x -> not $ L.null $ titems $ lmap `at` x)
     onlyLootPresent    =  onlyMoves lootPresent me
     onlyPreservesDir   =  only (\ x -> maybe True (\ d -> distance (neg d, x) > 1) mdir)
-    onlyUnoccupied     =  onlyMoves (unoccupied ms lmap) me
+    onlyUnoccupied     =  onlyMoves (unoccupied ms) me
     onlyAccessible     =  onlyMoves (accessible lmap me) me
     -- Monsters don't see doors more secret than that. Enforced when actually
     -- opening doors, too, so that monsters don't cheat.

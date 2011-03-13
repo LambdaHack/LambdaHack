@@ -3,8 +3,8 @@ module Actor where
 import Control.Monad
 import Data.Binary
 
-data Actor = AHero Int     -- ^ hero serial number
-           | AMonster Int  -- ^ offset in monster list
+data Actor = AHero Int     -- ^ hero index (on the lheroes intmap)
+           | AMonster Int  -- ^ monster index (on the lmonsters intmap)
   deriving (Show, Eq)
 
 instance Binary Actor where

@@ -61,7 +61,6 @@ defaultState pl ploc dng lvl =
 -- All the other actor and level operations only consider the current level.
 
 -- | Finds an actor body on any level. Error if not found.
-
 findActorAnyLevel :: Actor -> State -> Maybe (LevelName, Movable)
 findActorAnyLevel actor state@(State { slevel   = lvl,
                                        sdungeon = Dungeon m }) =
@@ -69,8 +68,7 @@ findActorAnyLevel actor state@(State { slevel   = lvl,
         fmap (\ m -> (lname lvl, m)) $
         case actor of
           AHero n    -> IM.lookup n (lheroes lvl)
-          AMonster n -> let l = lmonsters lvl
-                        in  if L.length l <= n then Nothing else Just $ l !! n
+          AMonster n -> IM.lookup n (lmonsters lvl)
   in  listToMaybe $ mapMaybe chk (lvl : M.elems m)
 
 getPlayerBody :: State -> Movable
@@ -86,13 +84,14 @@ allHeroesAnyLevel state =
         L.map (\ (i, _) -> (AHero i, ln)) (IM.assocs hs)
   in  L.concatMap one (slevel state : M.elems m)
 
-updateAnyHero :: (Hero -> Hero) -> Int -> State -> State
-updateAnyHero f ni state =
-  case findActorAnyLevel (AHero ni) state of
+updateAnyActorBody :: Actor -> (Movable -> Movable) ->  State -> State
+updateAnyActorBody actor f state =
+  case findActorAnyLevel actor state of
     Just (ln, _) ->
-      let upd = IM.adjust f ni
-      in  updateAnyLevel (updateHeroes upd) ln state
-    Nothing -> error $ "updateAnyHero: hero " ++ show ni ++ " not found"
+      case actor of
+        AHero n    -> updateAnyLevel (updateHeroes   $ IM.adjust f n) ln state
+        AMonster n -> updateAnyLevel (updateMonsters $ IM.adjust f n) ln state
+    Nothing -> error "updateAnyActorBody"
 
 updateAnyLevel :: (Level -> Level) -> LevelName -> State -> State
 updateAnyLevel f ln state@(State { slevel = level,
@@ -104,27 +103,28 @@ updateAnyLevel f ln state@(State { slevel = level,
 getActor :: State -> Actor -> Movable
 getActor (State { slevel = lvl }) a =
   case a of
-    AHero n    -> lheroes lvl IM.! n
-    AMonster n -> lmonsters lvl !! n
+    AHero n    -> lheroes   lvl IM.! n
+    AMonster n -> lmonsters lvl IM.! n
 
 -- | Removes the actor, if present, from the current level.
 deleteActor :: Actor -> State -> State
 deleteActor a =
   case a of
-    AHero n    -> updateLevel (updateHeroes (IM.delete n))
-    AMonster n -> let del l = L.take n l ++ L.drop (n + 1) l
-                  in  updateLevel (updateMonsters del)
+    AHero n    -> updateLevel (updateHeroes   (IM.delete n))
+    AMonster n -> updateLevel (updateMonsters (IM.delete n))
 
 -- | Add actor to the current level.
 insertActor :: Actor -> Movable -> State -> State
 insertActor a m =
   case a of
-    AHero n    -> updateLevel (updateHeroes (IM.insert n m))
-    AMonster n -> let ins l = L.take n l ++ m : L.drop n l
-                  in  updateLevel (updateMonsters ins)
+    AHero n    -> updateLevel (updateHeroes   (IM.insert n m))
+    AMonster n -> updateLevel (updateMonsters (IM.insert n m))
 
 levelHeroList :: State -> [Hero]
 levelHeroList (State { slevel = Level { lheroes = hs } }) = IM.elems hs
+
+levelMonsterList :: State -> [Hero]
+levelMonsterList (State { slevel = Level { lmonsters = ms } }) = IM.elems ms
 
 updateCursor :: (Cursor -> Cursor) -> State -> State
 updateCursor f s = s { scursor = f (scursor s) }
