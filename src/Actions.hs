@@ -81,9 +81,13 @@ endTargeting accept = do
   when (not accept) $ do
     ploc <- gets (mloc . getPlayerBody)
     modify (updateCursor (\ c -> c { clocation = ploc }))
+  state <- get
   let verb = "target"
       targetMsg = case target of
-                    TEnemy i -> objectMovable (mtype (monsters !! i))
+                    TEnemy a ->
+                      case findActorAnyLevel a state of
+                        Just (_, m) -> objectMovable (mtype m)
+                        Nothing     -> "a long gone adversary"
                     TLoc loc -> "location " ++ show loc
                     TCursor  -> "current cursor position continuously"
       end = if accept then "." else "!"
@@ -522,14 +526,14 @@ targetMonster = do
   target <- gets (mtarget . getPlayerBody)
   level  <- gets slevel
   let i1 = case target of
-             TEnemy i -> i + 1
+             TEnemy (AMonster i) -> i + 1
              _ -> 0
       ms = L.zip (lmonsters level) [0..]
       (lt, gt) = L.splitAt i1 ms
       lf = L.filter (\ (m, _) -> S.member (mloc m) (pvisible per)) (gt ++ lt)
       tgt = case lf of
               [] -> target  -- no monsters in sight, stick to last target
-              (_, ni) : _ -> TEnemy ni  -- pick the next (or first) monster
+              (_, ni) : _ -> TEnemy (AMonster ni)  -- pick the next monster
   updatePlayerBody (\ p -> p { mtarget = tgt })
   setCursor tgt
 
@@ -542,11 +546,15 @@ targetToLoc state per =
   in  case target of
         TLoc loc -> loc
         TCursor  -> cloc
-        TEnemy i ->
-          let loc = mloc $ lmonsters (slevel state) !! i
-          in  if S.member loc (pvisible per)
-              then loc
-              else cloc  -- monster invisible, keep the cursor position
+        TEnemy a ->
+          case findActorAnyLevel a state of
+            Just (_, m) ->
+              let loc = mloc m
+              in  if S.member loc (pvisible per)
+                  then loc
+                  else cloc  -- target invisible, keep the cursor position
+            Nothing     ->
+              cloc  -- target dead, keep the cursor position
 
 -- | Set, activate and display cursor information.
 setCursor :: Target -> Action ()

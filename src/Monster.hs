@@ -4,6 +4,7 @@ import Data.Char
 import Data.Binary
 import Control.Monad
 
+import Actor
 import Geometry
 import Display
 import Item
@@ -90,16 +91,13 @@ instance Binary MovableType where
             _ -> fail "no parse (MovableType)"
 
 data Target =
-    TEnemy Int  -- ^ fire at a monster (or a hero) with the given number
-                -- TODO: what is the monster's number?
-                -- (can't be position of monster on lmonsters.
-                -- because monster death invalidates that)
-  | TLoc Loc    -- ^ fire at a given location
-  | TCursor     -- ^ fire at the current position of the cursor; the default
+    TEnemy Actor  -- ^ fire at the actor (a monster or a hero)
+  | TLoc Loc      -- ^ fire at a given location
+  | TCursor       -- ^ fire at the current position of the cursor; the default
   deriving (Show, Eq)
 
 instance Binary Target where
-  put (TEnemy n) = putWord8 0 >> put n
+  put (TEnemy a) = putWord8 0 >> put a
   put (TLoc loc) = putWord8 1 >> put loc
   put TCursor    = putWord8 2
   get = do
