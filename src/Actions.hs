@@ -431,11 +431,11 @@ cycleHero =
   do
     pl <- gets splayer
     hs <- gets (lheroes . slevel)
-    let i        = case pl of AHero n -> n ; _ -> 0
+    let i        = case pl of AHero n -> n + 1 ; _ -> 0
         (lt, gt) = L.splitAt i (IM.assocs hs)
     case gt ++ lt of
-      [] -> abortWith "Cannot select another hero on this level."
-      (ni, _) : _ -> assertTrue $ selectHero (AHero ni)
+      (ni, _) : _ : _ -> assertTrue $ selectHero (AHero ni)
+      _ -> abortWith "Cannot select another hero on this level."
 
 -- | Selects a hero based on the number (actor, actually).
 -- Focuses on the hero if level changed. False, if nothing to do.
