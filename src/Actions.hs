@@ -647,6 +647,35 @@ drinkPotion =
                Just _  -> abortWith "you cannot drink that"
                Nothing -> neverMind True
 
+-- | Finds an actor at a location. Perception irrelevant.
+locToActor :: State -> Loc -> Maybe Actor
+locToActor state loc =
+  let ms  = levelMonsterList state
+      hs  = levelHeroList state
+  in  case L.findIndex (\ m -> mloc m == loc) ms of
+        Just i  -> Just $ AMonster i
+        Nothing -> case L.findIndex (\ m -> mloc m == loc) hs of
+                     Just i  -> Just $ AHero i
+                     Nothing -> Nothing
+
+fireItem :: Action ()
+fireItem = do
+  state  <- get
+  per    <- currentPerception
+  pitems <- gets (mitems . getPlayerBody)
+  pl    <- gets splayer
+  case findItem (\ i -> itype i == Dart) pitems of
+    Just (dart, _) -> do
+      let fired = dart { icount = 1 }
+      removeFromInventory fired
+      let loc = targetToLoc state per
+      case locToActor state loc of
+        Just target ->
+          let weaponMsg = " with a dart"
+          in  actorDamageActor pl target 1 weaponMsg
+        Nothing     -> modify (updateLevel (scatterItems [fired] loc))
+    Nothing -> abortWith "nothing to fire"
+
 dropItem :: Action ()
 dropItem =
   do
@@ -852,9 +881,20 @@ actorAttackActor :: Actor -> Actor -> Action ()
 actorAttackActor (AHero _) target@(AHero _) =  -- TODO: do not take a turn!!!
   -- Select adjacent hero by bumping into him.
   selectHero target >> return ()
-actorAttackActor source target =
+actorAttackActor source target = do
+  state <- get
+  let sm     = getActor state source
+      -- Determine the weapon used for the attack.
+      sword  = strongestSword (mitems sm)
+      damage = 3 + sword
+      weaponMsg = if sword == 0
+                  then ""
+                  else " with a (+" ++ show sword ++ ") sword" -- TODO: generate proper message
+  actorDamageActor source target damage weaponMsg
+
+actorDamageActor :: Actor -> Actor -> Int -> String -> Action ()
+actorDamageActor source target damage weaponMsg =
   do
-    debug "actorAttackActor"
     case target of
       AMonster _ -> return ()
       AHero _    -> do
@@ -865,10 +905,8 @@ actorAttackActor source target =
     state <- get
     let sm     = getActor state source
         tm     = getActor state target
-        -- Determine the weapon used for the attack.
-        sword  = strongestSword (mitems sm)
         -- Damage the target.
-        newHp  = mhp tm - 3 - sword
+        newHp  = mhp tm - damage
         killed = newHp <= 0
         -- Determine how the hero perceives the event. TODO: we have to be more
         -- precise and treat cases where two monsters fight,
@@ -878,9 +916,7 @@ actorAttackActor source target =
           AMonster _ -> True
           _ -> False
         combatVerb = if killed && tgtMonster then "kill" else "hit"
-        swordMsg   = if sword == 0 then "" else
-                       " with a (+" ++ show sword ++ ") sword" -- TODO: generate proper message
-        combatMsg  = subjectVerbMObject state sm combatVerb tm swordMsg
+        combatMsg  = subjectVerbMObject state sm combatVerb tm weaponMsg
     updateAnyActor target $ \ m -> m { mhp = newHp }
     per <- currentPerception
     let perceived  = mloc sm `S.member` pvisible per

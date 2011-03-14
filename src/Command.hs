@@ -23,6 +23,7 @@ descendCommand   = Described "descend a level"   (lvlchange Down)
 floorCommand     = Described "target location"   targetFloor  -- TODO: should not take time
 monsterCommand   = Described "target monster"    targetMonster
 drinkCommand     = Described "quaff a potion"    drinkPotion
+fireCommand      = Described "fire an item"      fireItem
 waitCommand      = Described "wait"              (return () :: Action ())
 saveCommand      = Described "save and quit the game" saveGame
 quitCommand      = Described "quit without saving" quitGame
