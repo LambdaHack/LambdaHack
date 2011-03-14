@@ -39,6 +39,7 @@ objectItem _ n Amulet     = makeObject n id "amulet"
 objectItem _ n Gem        = makeObject n id "gem"
 objectItem _ n Gold       = makeObject n id "gold piece"
 objectItem _ n (Sword i)  = makeObject n id ("(+" ++ show i ++ ") sword")
+objectItem _ n Dart       = makeObject n id "dart"
 
 subjectVerbIObject :: State -> Movable -> String -> Item -> String -> String
 subjectVerbIObject state m v o add =

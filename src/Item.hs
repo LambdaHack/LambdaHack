@@ -1,6 +1,7 @@
 module Item where
 
 import Data.Binary
+import Data.Binary.Put
 import Data.Map as M
 import Data.Set as S
 import Data.List as L
@@ -28,6 +29,7 @@ data ItemType =
  | Gem
  | Gold
  | Sword Int
+ | Dart
  deriving (Eq, Ord, Show)
 
 data PotionType =
@@ -62,14 +64,15 @@ instance Binary Item where
   get = liftM3 Item get get get
 
 instance Binary ItemType where
-  put Ring       = putWord8 0
-  put Scroll     = putWord8 1
-  put (Potion t) = putWord8 2 >> put t
-  put Wand       = putWord8 3
-  put Amulet     = putWord8 4
-  put Gem        = putWord8 5
-  put Gold       = putWord8 6
-  put (Sword i)  = putWord8 7 >> put i
+  put Ring       = putWord16le 0
+  put Scroll     = putWord16le 1
+  put (Potion t) = putWord16le 2 >> put t
+  put Wand       = putWord16le 3
+  put Amulet     = putWord16le 4
+  put Gem        = putWord16le 5
+  put Gold       = putWord16le 6
+  put (Sword i)  = putWord16le 7 >> put i
+  put Dart       = putWord16le 8
   get = do
           tag <- getWord8
           case tag of
@@ -81,6 +84,7 @@ instance Binary ItemType where
             5 -> return Gem
             6 -> return Gold
             7 -> liftM Sword get
+            8 -> return Dart
 
 instance Binary PotionType where
   put PotionWater   = putWord8 0
@@ -106,6 +110,7 @@ itemFrequency =
   [
     (100, Gold),
     (70,  Sword (-1)),
+    (40,  Dart),
     (30,  Gem),
     (20,  Ring),
     (30,  Scroll),
@@ -117,6 +122,7 @@ itemFrequency =
 
 itemQuantity :: Int -> ItemType -> Rnd Int
 itemQuantity n Gold = (2 * n) *~ d 8
+itemQuantity _ Dart = d 10
 itemQuantity _ _    = return 1
 
 itemStrength :: Int -> ItemType -> Rnd ItemType
@@ -198,6 +204,7 @@ viewItem :: ItemType -> Assocs -> (Char, Attr -> Attr)
 viewItem i a = viewItem' i (M.lookup i a)
   where
     viewItem' (Sword {})  _            = (')', id)
+    viewItem' Dart        _            = (')', id)
     viewItem' Ring        _            = ('=', id)
     viewItem' Scroll      _            = ('?', id)
     viewItem' (Potion {}) (Just Clear) = ('!', setBold . setFG blue)
