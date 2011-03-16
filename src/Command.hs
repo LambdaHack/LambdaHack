@@ -24,6 +24,7 @@ floorCommand     = Described "target location"   targetFloor  -- TODO: should no
 monsterCommand   = Described "target monster"    targetMonster
 drinkCommand     = Described "quaff a potion"    drinkPotion
 fireCommand      = Described "fire an item"      fireItem
+applyCommand     = Described "aim a wand  "      applyItem  -- TODO: change descriptions as soon as the command generalized and requires specifying an item
 waitCommand      = Described "wait"              (return () :: Action ())
 saveCommand      = Described "save and quit the game" saveGame
 quitCommand      = Described "quit without saving" quitGame

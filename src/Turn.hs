@@ -242,6 +242,7 @@ stdKeybindings = Keybindings
                (K.Char 'i',  inventoryCommand),
                (K.Char 'q',  drinkCommand),
                (K.Char 'f',  fireCommand),
+               (K.Char 'a',  applyCommand),
 
                -- wait
                -- (K.Char ' ',  waitCommand),

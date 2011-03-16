@@ -663,7 +663,7 @@ fireItem = do
   state  <- get
   per    <- currentPerception
   pitems <- gets (mitems . getPlayerBody)
-  pl    <- gets splayer
+  pl     <- gets splayer
   case findItem (\ i -> itype i == Dart) pitems of
     Just (dart, _) -> do
       let fired = dart { icount = 1 }
@@ -674,6 +674,23 @@ fireItem = do
           let weaponMsg = " with a dart"
           in  actorDamageActor pl target 1 weaponMsg
         Nothing     -> modify (updateLevel (scatterItems [fired] loc))
+    Nothing -> abortWith "nothing to fire"
+
+applyItem :: Action ()
+applyItem = do
+  state  <- get
+  per    <- currentPerception
+  pitems <- gets (mitems . getPlayerBody)
+  pl     <- gets splayer
+  case findItem (\ i -> itype i == Wand) pitems of
+    Just (wand, _) -> do
+      let applied = wand { icount = 1 }
+      let loc = targetToLoc state per
+      case locToActor state loc of
+        Just target -> do
+          removeFromInventory applied
+          selectHero target >> return ()
+        Nothing     -> abortWith "no living target to affect"
     Nothing -> abortWith "nothing to fire"
 
 dropItem :: Action ()

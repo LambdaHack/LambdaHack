@@ -109,13 +109,13 @@ itemFrequency :: Frequency ItemType
 itemFrequency =
   Frequency
   [
-    (100, Gold),
+    (80, Gold),
     (70,  Sword (-1)),
     (40,  Dart),
-    (30,  Gem),
-    (20,  Ring),
-    (30,  Scroll),
-    (10,  Wand),
+    (20,  Gem),
+    (10,  Ring),
+    (10,  Scroll),
+    (30,  Wand),
     (10,  Amulet),
     (30,  Potion PotionWater),
     (20,  Potion PotionHealing)
@@ -123,7 +123,7 @@ itemFrequency =
 
 itemQuantity :: Int -> ItemType -> Rnd Int
 itemQuantity n Gold = (2 * n) *~ d 8
-itemQuantity _ Dart = d 10
+itemQuantity _ Dart = 3 *~ d 3
 itemQuantity _ _    = return 1
 
 itemStrength :: Int -> ItemType -> Rnd ItemType
