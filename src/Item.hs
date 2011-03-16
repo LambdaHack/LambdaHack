@@ -2,6 +2,7 @@ module Item where
 
 import Data.Binary
 import Data.Binary.Put
+import Data.Binary.Get
 import Data.Map as M
 import Data.Set as S
 import Data.List as L
@@ -74,7 +75,7 @@ instance Binary ItemType where
   put (Sword i)  = putWord16le 7 >> put i
   put Dart       = putWord16le 8
   get = do
-          tag <- getWord8
+          tag <- getWord16le
           case tag of
             0 -> return Ring
             1 -> return Scroll
