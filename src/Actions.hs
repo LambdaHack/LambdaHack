@@ -408,8 +408,7 @@ fleeDungeon =
   do
     state <- get
     let total = calculateTotal state
-        hs    = levelHeroList state
-        items = L.concatMap mitems hs
+        items = L.concatMap mitems (levelHeroList state)
     if total == 0
       then do
              go <- messageMoreConfirm "Coward!"
@@ -464,9 +463,8 @@ selectHero actor =
 -- | Calculate loot's worth. TODO: move to another module, and refine significantly.
 calculateTotal :: State -> Int
 calculateTotal s =
-  L.sum $ L.map price $ L.concatMap mitems hs
+  L.sum $ L.map price $ L.concatMap mitems (levelHeroList s)
     where
-      hs = levelHeroList s
       price i = if iletter i == Just '$' then icount i else 10 * icount i
 
 -- | Handle current score and display it with the high scores. Scores
@@ -652,13 +650,12 @@ drinkPotion =
 -- | Finds an actor at a location. Perception irrelevant.
 locToActor :: State -> Loc -> Maybe Actor
 locToActor state loc =
-  let ms  = levelMonsterList state
-      hs  = levelHeroList state
-  in  case L.findIndex (\ m -> mloc m == loc) ms of
-        Just i  -> Just $ AMonster i
-        Nothing -> case L.findIndex (\ m -> mloc m == loc) hs of
-                     Just i  -> Just $ AHero i
-                     Nothing -> Nothing
+  getIndex (lmonsters, AMonster) `mplus` getIndex (lheroes, AHero)
+    where
+      getIndex (projection, injection) =
+        let l  = IM.assocs $ projection $ slevel state
+            im = L.find (\ (_i, m) -> mloc m == loc) l
+        in  fmap (injection . fst) im
 
 fireItem :: Action ()
 fireItem = do
