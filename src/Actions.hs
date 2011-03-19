@@ -431,11 +431,11 @@ cycleHero =
   do
     pl <- gets splayer
     hs <- gets (lheroes . slevel)
-    let i        = case pl of AHero n -> n + 1 ; _ -> 0
+    let i        = case pl of AHero n -> n ; _ -> -1
         (lt, gt) = IM.split i hs
     case IM.keys gt ++ IM.keys lt of
-      ni : _ : _ -> assertTrue $ selectHero (AHero ni)
-      _ -> abortWith "Cannot select another hero on this level."
+      [] -> abortWith "Cannot select another hero on this level."
+      ni : _ -> assertTrue $ selectHero (AHero ni)
 
 -- | Selects a hero based on the number (actor, actually).
 -- Focuses on the hero if level changed. False, if nothing to do.
@@ -524,9 +524,7 @@ targetMonster = do
   per    <- currentPerception
   target <- gets (mtarget . getPlayerBody)
   ms     <- gets (lmonsters . slevel)
-  let i = case target of
-             TEnemy (AMonster n) -> n + 1
-             _ -> 0
+  let i = case target of TEnemy (AMonster n) -> n ; _ -> -1
       (lt, gt) = IM.split i ms
       gtlt     = IM.assocs gt ++ IM.assocs lt
       lf = L.filter (\ (_, m) -> S.member (mloc m) (pvisible per)) gtlt
