@@ -168,6 +168,7 @@ continueRun dir =
             || newsReported || itemsHere || exit t = abort
         hop Corridor =
           -- in corridors, explore all corners and stop at all crossings
+          -- TODO: even in corridors, stop if you run past an exit (rare)
           let ns = L.filter (\ x -> distance (neg dir, x) > 1
                                     && accessible lmap loc (loc `shift` x))
                             moves
@@ -432,9 +433,9 @@ cycleHero =
     pl <- gets splayer
     hs <- gets (lheroes . slevel)
     let i        = case pl of AHero n -> n + 1 ; _ -> 0
-        (lt, gt) = L.splitAt i (IM.assocs hs)
-    case gt ++ lt of
-      (ni, _) : _ : _ -> assertTrue $ selectHero (AHero ni)
+        (lt, gt) = IM.split i hs
+    case IM.keys gt ++ IM.keys lt of
+      ni : _ : _ -> assertTrue $ selectHero (AHero ni)
       _ -> abortWith "Cannot select another hero on this level."
 
 -- | Selects a hero based on the number (actor, actually).
@@ -528,8 +529,9 @@ targetMonster = do
   let i = case target of
              TEnemy (AMonster n) -> n + 1
              _ -> 0
-      (lt, gt) = L.splitAt i (IM.assocs ms)
-      lf = L.filter (\ (_, m) -> S.member (mloc m) (pvisible per)) (gt ++ lt)
+      (lt, gt) = IM.split i ms
+      gtlt     = IM.assocs gt ++ IM.assocs lt
+      lf = L.filter (\ (_, m) -> S.member (mloc m) (pvisible per)) gtlt
       tgt = case lf of
               [] -> target  -- no monsters in sight, stick to last target
               (ni, _) : _ -> TEnemy (AMonster ni)  -- pick the next monster
@@ -673,7 +675,7 @@ fireItem = do
         Just target ->
           let weaponMsg = " with a dart"
           in  actorDamageActor pl target 1 weaponMsg
-        Nothing     -> modify (updateLevel (scatterItems [fired] loc))
+        Nothing -> modify (updateLevel (scatterItems [fired] loc))  -- TODO: only when actor not TEnemy
     Nothing -> abortWith "nothing to fire"
 
 applyItem :: Action ()
@@ -690,8 +692,8 @@ applyItem = do
         Just target -> do
           removeFromInventory applied
           selectHero target >> return ()
-        Nothing     -> abortWith "no living target to affect"
-    Nothing -> abortWith "nothing to fire"
+        Nothing -> abortWith "no living target to affect"
+    Nothing -> abortWith "nothing to apply"
 
 dropItem :: Action ()
 dropItem =
