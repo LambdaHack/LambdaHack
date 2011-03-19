@@ -663,16 +663,20 @@ fireItem = do
   per    <- currentPerception
   pitems <- gets (mitems . getPlayerBody)
   pl     <- gets splayer
+  target <- gets (mtarget . getPlayerBody)
   case findItem (\ i -> itype i == Dart) pitems of
     Just (dart, _) -> do
       let fired = dart { icount = 1 }
       removeFromInventory fired
       let loc = targetToLoc state per
       case locToActor state loc of
-        Just target ->
+        Just targetActor ->
           let weaponMsg = " with a dart"
-          in  actorDamageActor pl target 1 weaponMsg
-        Nothing -> modify (updateLevel (scatterItems [fired] loc))  -- TODO: only when actor not TEnemy
+          in  actorDamageActor pl targetActor 1 weaponMsg
+        Nothing ->
+          case target of
+            TEnemy _ -> abortWith "target monster not visible"
+            _ -> modify (updateLevel (scatterItems [fired] loc))
     Nothing -> abortWith "nothing to fire"
 
 applyItem :: Action ()
@@ -686,9 +690,9 @@ applyItem = do
       let applied = wand { icount = 1 }
       let loc = targetToLoc state per
       case locToActor state loc of
-        Just target -> do
+        Just targetActor -> do
           removeFromInventory applied
-          selectHero target >> return ()
+          selectHero targetActor >> return ()
         Nothing -> abortWith "no living target to affect"
     Nothing -> abortWith "nothing to apply"
 
