@@ -69,18 +69,26 @@ quitGame =
       then end -- TODO: why no highscore? no display, because the user may be in a hurry, since he quits the game instead of getting himself killed properly? no score recording, not to polute the scores list with games that the player didn't even want to end honourably?
       else abortWith "Game resumed."
 
--- | End targeting mode, accepting the current cursor position or not.
+-- | End targeting mode, accepting the current location or not.
 endTargeting :: Bool -> Action ()
 endTargeting accept = do
-  ptype    <- gets (mtype . getPlayerBody)
-  target   <- gets (mtarget . getPlayerBody)
   returnLn <- gets (creturnLn . scursor)
+  target   <- gets (mtarget . getPlayerBody)
+  cloc     <- gets (clocation . scursor)
   lvlswitch returnLn  -- return to the original level of the player
   modify (updateCursor (\ c -> c { ctargeting = False }))
-  when (not accept) $ do
-    ploc <- gets (mloc . getPlayerBody)
-    modify (updateCursor (\ c -> c { clocation = ploc }))
-  state <- get
+  let isEnemy = case target of TEnemy _ -> True ; _ -> False
+  when (not isEnemy) $
+    if accept
+       then updatePlayerBody (\ p -> p { mtarget = TLoc cloc })
+       else updatePlayerBody (\ p -> p { mtarget = TCursor })
+  endTargetingMsg
+
+endTargetingMsg :: Action ()
+endTargetingMsg = do
+  ptype    <- gets (mtype . getPlayerBody)
+  target <- gets (mtarget . getPlayerBody)
+  state  <- get
   let verb = "target"
       targetMsg = case target of
                     TEnemy a ->
@@ -89,8 +97,7 @@ endTargeting accept = do
                         Nothing     -> "a long gone adversary"
                     TLoc loc -> "location " ++ show loc
                     TCursor  -> "current cursor position continuously"
-      end = if accept then "." else "!"
-  messageAdd $ subjectMovableVerb ptype verb ++ " " ++ targetMsg ++ end
+  messageAdd $ subjectMovableVerb ptype verb ++ " " ++ targetMsg ++ "."
 
 -- | Cancel something, e.g., targeting mode, resetting the cursor
 -- to the position of the player. Chosen target is not invalidated.
@@ -502,12 +509,11 @@ search =
 -- | Start the floor targeting mode or toggle between the two floor modes.
 targetFloor :: Action ()
 targetFloor = do
-  target    <- gets (mtarget . getPlayerBody)
   cloc      <- gets (clocation . scursor)
+  target    <- gets (mtarget . getPlayerBody)
   targeting <- gets (ctargeting . scursor)
   let tgt = case target of
-              TLoc _  | not targeting -> TLoc cloc
-              TCursor |     targeting -> TLoc cloc
+              TLoc l -> TLoc l  -- don't forget the old location target too fast
               _ -> TCursor
   updatePlayerBody (\ p -> p { mtarget = tgt })
   setCursor tgt
@@ -521,10 +527,14 @@ targetFloor = do
 -- visible by the current player.
 targetMonster :: Action ()
 targetMonster = do
-  per    <- currentPerception
-  target <- gets (mtarget . getPlayerBody)
-  ms     <- gets (lmonsters . slevel)
-  let i = case target of TEnemy (AMonster n) -> n ; _ -> -1
+  ms        <- gets (lmonsters . slevel)
+  per       <- currentPerception
+  target    <- gets (mtarget . getPlayerBody)
+  targeting <- gets (ctargeting . scursor)
+  let i = case target of
+            TEnemy (AMonster n) | targeting -> n  -- try next monster
+            TEnemy (AMonster n) -> n - 1  -- try to retarget old monster
+            _ -> -1  -- try to target first monster (e.g., number 0)
       (lt, gt) = IM.split i ms
       gtlt     = IM.assocs gt ++ IM.assocs lt
       lf = L.filter (\ (_, m) -> S.member (mloc m) (pvisible per)) gtlt
