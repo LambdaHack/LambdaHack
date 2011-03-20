@@ -385,7 +385,7 @@ lvlchange vdir =
                         let cloc = if isUnknown (rememberAt map nloc)
                                    then loc
                                    else nloc
-                        in  cursor { clocation = cloc }
+                        in  cursor { clocation = cloc, clocLn = nln }
                   modify (updateCursor upd)
                   doLook
                 else do
@@ -404,6 +404,9 @@ lvlchange vdir =
         if targeting
         then do
           lvldescend (if vdir == Up then -1 else 1)
+          ln <- gets (lname . slevel)
+          let upd cursor = cursor { clocLn = ln }
+          modify (updateCursor upd)
           doLook
         else
           let txt = if vdir == Up then "up" else "down"
@@ -509,9 +512,7 @@ search =
 -- | Start the floor targeting mode or toggle between the two floor modes.
 targetFloor :: Action ()
 targetFloor = do
-  cloc      <- gets (clocation . scursor)
-  target    <- gets (mtarget . getPlayerBody)
-  targeting <- gets (ctargeting . scursor)
+  target <- gets (mtarget . getPlayerBody)
   let tgt = case target of
               TLoc l -> TLoc l  -- don't forget the old location target too fast
               _ -> TCursor
@@ -546,31 +547,32 @@ targetMonster = do
 
 -- | Calculate the location of player's target.
 -- TODO: no idea in which file to put this function.
-targetToLoc :: State -> Perception -> Loc
+targetToLoc :: State -> Perception -> Maybe Loc
 targetToLoc state per =
-  let target = mtarget (getPlayerBody state)
-      cloc   = clocation (scursor state)
-  in  case target of
-        TLoc loc -> loc
-        TCursor  -> cloc
-        TEnemy a ->
-          case findActorAnyLevel a state of
-            Just (_, m) ->
-              let loc = mloc m
-              in  if S.member loc (pvisible per)
-                  then loc
-                  else cloc  -- target invisible, keep the cursor position
-            Nothing     ->
-              cloc  -- target dead, keep the cursor position
+  case mtarget (getPlayerBody state) of
+    TLoc loc -> Just loc
+    TCursor  ->
+      if lname (slevel state) == clocLn (scursor state)
+      then Just $ clocation (scursor state)
+      else Nothing  -- cursor invalid: set at a different level
+    TEnemy a -> do
+      (_, m) <- findActorAnyLevel a state  -- is target alive?
+      let loc = mloc m
+      guard $ S.member loc (pvisible per)  -- is target visible?
+      return loc
 
 -- | Set, activate and display cursor information.
 setCursor :: Target -> Action ()
 setCursor tgt = do
   state <- get
   per   <- currentPerception
+  ploc  <- gets (mloc . getPlayerBody)
+  ln    <- gets (lname . slevel)
   let upd cursor =
-        let cloc = targetToLoc state per
-        in  cursor { ctargeting = True, clocation = cloc }
+        let cloc = case targetToLoc state per of
+                     Nothing -> ploc
+                     Just l  -> l
+        in  cursor { ctargeting = True, clocation = cloc, clocLn = ln }
   modify (updateCursor upd)
   doLook
 
@@ -628,7 +630,7 @@ drinkPotion =
   do
     state <- get
     lmap <- gets (lmap . slevel)
-    pbody  <- gets getPlayerBody
+    pbody <- gets getPlayerBody
     ploc <- gets (mloc . getPlayerBody)
     items <- gets (mitems . getPlayerBody)
     if L.null items
@@ -676,15 +678,12 @@ fireItem = do
     Just (dart, _) -> do
       let fired = dart { icount = 1 }
       removeFromInventory fired
-      let loc = targetToLoc state per
-      case locToActor state loc of
-        Just targetActor ->
-          let weaponMsg = " with a dart"
-          in  actorDamageActor pl targetActor 1 weaponMsg
-        Nothing ->
-          case target of
-            TEnemy _ -> abortWith "target monster not visible"
-            _ -> modify (updateLevel (scatterItems [fired] loc))
+      case targetToLoc state per of
+        Nothing  -> abortWith "target invalid"
+        Just loc ->
+          case locToActor state loc of
+            Just a  -> actorDamageActor pl a 1 " with a dart"
+            Nothing -> modify (updateLevel (scatterItems [fired] loc))
     Nothing -> abortWith "nothing to fire"
 
 applyItem :: Action ()
@@ -696,12 +695,14 @@ applyItem = do
   case findItem (\ i -> itype i == Wand) pitems of
     Just (wand, _) -> do
       let applied = wand { icount = 1 }
-      let loc = targetToLoc state per
-      case locToActor state loc of
-        Just targetActor -> do
-          removeFromInventory applied
-          selectHero targetActor >> return ()
-        Nothing -> abortWith "no living target to affect"
+      case targetToLoc state per of
+        Nothing  -> abortWith "target invalid"
+        Just loc ->
+          case locToActor state loc of
+            Just targetActor -> do
+              removeFromInventory applied
+              selectHero targetActor >> return ()
+            Nothing -> abortWith "no living target to affect"
     Nothing -> abortWith "nothing to apply"
 
 dropItem :: Action ()
