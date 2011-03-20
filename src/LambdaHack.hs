@@ -82,7 +82,7 @@ generate config session msg =
                       (Potion PotionHealing, White) ]
          ploc = ((\ (_,x,_) -> x) (head levels))
          hp = heroHP config
-         defState = defaultState (AHero 0) ploc dng lvl
+         defState = defaultState (AHero 0) dng lvl
          state = defState { sassocs = assocs, sconfig = config }
          k = Config.get config "heroes" "extraHeroes"
          addNamedHero state n = addHero ploc hp (findHeroName n) state n

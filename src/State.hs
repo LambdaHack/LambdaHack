@@ -37,17 +37,18 @@ data State = State
   deriving Show
 
 data Cursor = Cursor
-  { ctargeting :: Bool,      -- ^ are we in targeting mode?
-    clocation  :: Loc,       -- ^ cursor coordinates
-    creturnLn  :: LevelName  -- ^ the level current player resides on
+  { ctargeting :: Bool,       -- ^ are we in targeting mode?
+    clocLn     :: LevelName,  -- ^ cursor level
+    clocation  :: Loc,        -- ^ cursor coordinates
+    creturnLn  :: LevelName   -- ^ the level current player resides on
   }
   deriving Show
 
-defaultState :: Actor -> Loc -> Dungeon -> Level -> State
-defaultState pl ploc dng lvl =
+defaultState :: Actor -> Dungeon -> Level -> State
+defaultState pl dng lvl =
   State
     pl
-    (Cursor False ploc (lname lvl))
+    (Cursor False (LambdaCave (-1)) (-1, -1) (lname lvl))
     []
     Implicit Normal
     0
@@ -193,17 +194,19 @@ instance Binary State where
         (State player cursor hst sense disp time assocs discs dng lvl config)
 
 instance Binary Cursor where
-  put (Cursor act loc ln) =
+  put (Cursor act cln loc rln) =
     do
       put act
+      put cln
       put loc
-      put ln
+      put rln
   get =
     do
       act <- get
+      cln <- get
       loc <- get
-      ln  <- get
-      return (Cursor act loc ln)
+      rln <- get
+      return (Cursor act cln loc rln)
 
 data SensoryMode =
     Implicit
