@@ -29,7 +29,7 @@ data LevelName = LambdaCave Int | Exit
 -- the strength of the character and the strength of the monsters present
 -- could further influence the chance, and the chance could also affect
 -- which monster is generated.
-monsterGenChance :: LevelName -> [Monster] -> Rnd Bool
+monsterGenChance :: LevelName -> [Movable] -> Rnd Bool
 monsterGenChance (LambdaCave n) ms =
   chance $ 1%(fromIntegral (250 + 200 * (L.length ms - n)) `max` 50)
 monsterGenChance _ _ = return False

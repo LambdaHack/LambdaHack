@@ -19,14 +19,9 @@ heroHP config =
   in  k + b `div` (k + 1)
 
 -- | Initial hero.
-defaultHero :: Char -> String -> Loc -> Int -> Hero
+defaultHero :: Char -> String -> Loc -> Int -> Movable
 defaultHero symbol name ploc hp =
   Movable (Hero symbol name) hp hp Nothing TCursor ploc [] 'a' 10 0
-
--- The types should be equal, becase monsters can be sometimes
--- player-controlled and heroes can be alien-controlled or panicked, etc.
-type Hero = Movable
-type Monster = Movable
 
 data Movable = Movable
                 { mtype   :: !MovableType,
@@ -120,7 +115,7 @@ monsterFrequency =
   ]
 
 -- | Generate monster.
-newMonster :: Loc -> Frequency MovableType -> Rnd Monster
+newMonster :: Loc -> Frequency MovableType -> Rnd Movable
 newMonster loc ftp =
     do
       tp <- frequency ftp
