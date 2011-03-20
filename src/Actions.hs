@@ -25,9 +25,9 @@ import Message
 import Monster
 import Perception
 import Random
-import qualified Save as S
 import State
 import qualified Config
+import qualified Save
 
 displayHistory :: Action ()
 displayHistory =
@@ -52,7 +52,7 @@ saveGame =
       then do
         -- Save the game state
         st <- get
-        liftIO $ S.saveGame st
+        liftIO $ Save.saveGame st
         ln <- gets (lname . slevel)
         let total = calculateTotal st
             status = H.Camping ln
@@ -400,6 +400,9 @@ lvlchange vdir =
                   updatePlayerBody (\ p -> p { mloc = nloc })
                   -- Change the level of the player recorded in cursor.
                   modify (updateCursor (\ c -> c { creturnLn = nln }))
+                  -- Create a backup of the savegame.
+                  state <- get
+                  liftIO $ Save.saveGame state >> Save.mvBkp (sconfig state)
       _ -> -- no stairs
         if targeting
         then do

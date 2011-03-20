@@ -11,6 +11,7 @@ import Display2 hiding (display)
 import Message
 import State
 import Level
+import qualified Save
 
 newtype Action a = Action
   { runAction ::
@@ -53,7 +54,7 @@ handlerToIO :: Session -> State -> Message -> Action () -> IO ()
 handlerToIO session state msg h =
   runAction h
     session
-    (shutdown session)         -- get out of the game
+    (Save.rmBkp (sconfig state) >> shutdown session)  -- get out of the game
     (perception_ state)        -- cached perception
     (\ _ _ x -> return x)      -- final continuation returns result
     (ioError $ userError "unhandled abort")

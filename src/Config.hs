@@ -44,7 +44,7 @@ defaultCP :: CP
 defaultCP = toCP defCF
 
 -- | Path to the user configuration file.
-file :: IO String
+file :: IO FilePath
 file =
   do
     appData <- getAppUserDataDirectory "LambdaHack"
