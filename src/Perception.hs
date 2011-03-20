@@ -39,6 +39,7 @@ perception_ state@(State { slevel   = Level { lmap = lmap },
       reachable = S.unions (L.map preachable pers)
       visible = S.unions (L.map pvisible pers)
       -- TODO: update individual hero perceptions here; see https://github.com/Mikolaj/LambdaHack/issues/issue/31
+      -- TODO: do perception also for a monster under player control
   in  Perception reachable visible
 
 perception :: FovMode -> Loc -> LMap -> Perception

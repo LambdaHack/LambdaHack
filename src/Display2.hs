@@ -149,7 +149,7 @@ displayLevel session per
                              slevel  = lvl@(Level nm hs sz@(sy,sx) ms smap nlmap lmeta) }))
              msg moverlay =
   let Movable { mhpmax = phpmax, mhp = php, mdir = pdir,
-                mloc = ploc, mitems = pitems, mtype = ptype } =
+                mloc = ploc, mitems = pitems } =
         getPlayerBody state
       overlay = maybe "" id moverlay
       reachable = preachable per
@@ -169,6 +169,10 @@ displayLevel session per
       gold    = maybe 0 (icount . fst) $ findItem (\ i -> iletter i == Just '$') pitems
       hs      = levelHeroList state
       ms      = levelMonsterList state
+      setFg  color = setFG color
+      setInv color = if color == white
+                     then setBG white . setFG black
+                     else setBG white . setFG color
       disp n msg =
         display ((0,0),sz) session
                  (\ loc -> let tile = nlmap `lAt` loc
@@ -177,7 +181,7 @@ displayLevel session per
                                rea  = S.member loc reachable
                                (rv,ra) = case L.find (\ m -> loc == mloc m) (hs ++ ms) of
                                            _ | sTer > 0          -> viewTerrain sTer False (tterrain tile)
-                                           Just m | sOmn || vis  -> viewMovable (mtype m) (mtype m == ptype)
+                                           Just m | sOmn || vis  -> let (sym, color) = viewMovable (mtype m) in (sym, (if mloc m == ploc then setInv else setFg)  color)
                                            _ | sSml && sml >= 0  -> viewSmell sml
                                              | otherwise         -> viewTile vis tile assocs
                                vision =

@@ -1,7 +1,8 @@
 module Display.Curses
   (displayId, startup, shutdown,
    display, nextEvent, setBG, setFG, setBold, Session,
-   white, black, yellow, blue, magenta, red, green, attr, Display.Curses.Attr) where
+   white, black, yellow, blue, magenta, red, green, attr,
+   Display.Curses.Attr, AttrColor) where
 
 import UI.HSCurses.Curses as C hiding (setBold)
 import qualified UI.HSCurses.CursesHelper as C

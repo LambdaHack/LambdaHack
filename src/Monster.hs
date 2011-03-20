@@ -142,11 +142,9 @@ newMonster loc ftp =
     speed FastEye  = 4
     speed Nose     = 11
 
-viewMovable :: MovableType -> Bool -> (Char, Attr -> Attr)
-viewMovable (Hero symbol name) r = (symbol,
-                                    if r
-                                    then setBG white . setFG black
-                                    else setBG black . setFG white)
-viewMovable Eye     _ = ('e', setFG red)
-viewMovable FastEye _ = ('e', setFG blue)
-viewMovable Nose    _ = ('n', setFG green)
+-- Heroes are white, monsters are colorful.
+viewMovable :: MovableType -> (Char, AttrColor)
+viewMovable (Hero sym _) = (sym, white)
+viewMovable Eye          = ('e', red)
+viewMovable FastEye      = ('e', blue)
+viewMovable Nose         = ('n', green)

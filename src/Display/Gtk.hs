@@ -1,7 +1,7 @@
 module Display.Gtk
   (displayId, startup, shutdown,
    display, nextEvent, setBG, setFG, setBold, Session,
-   white, black, yellow, blue, magenta, red, green, attr, Attr) where
+   white, black, yellow, blue, magenta, red, green, attr, Attr, AttrColor) where
 
 import Control.Monad
 import Control.Concurrent
