@@ -17,12 +17,12 @@ newtype Action a = Action
   { runAction ::
       forall r .
       Session ->
-      IO r ->                                          -- shutdown cont
-      Perception ->                                    -- cached perception
-      (State -> Message -> a -> IO r) ->               -- continuation
-      IO r ->                                          -- failure/reset cont
-      State ->                                         -- current state
-      Message ->                                       -- current message
+      IO r ->                             -- shutdown cont
+      Perception ->                       -- cached perception
+      (State -> Message -> a -> IO r) ->  -- continuation
+      IO r ->                             -- failure/reset cont
+      State ->                            -- current state
+      Message ->                          -- current message
       IO r
   }
 

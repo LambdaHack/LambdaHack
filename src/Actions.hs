@@ -237,10 +237,10 @@ checkPartyDeath =
     pl     <- gets splayer
     pbody  <- gets getPlayerBody
     config <- gets sconfig
-    let firstDeathEnds = Config.get config "heroes" "firstDeathEnds"
-    when (mhp pbody <= 0) $ do
+    when (mhp pbody <= 0) $ do  -- TODO: change to guard? define mzero? Why are the writes to to files performed when I call abort later? That probably breaks the laws of MonadPlus.
       messageAddMore
       go <- messageMoreConfirm $ subjectMovableVerb (mtype pbody) "die" ++ "."
+      let firstDeathEnds = Config.get config "heroes" "firstDeathEnds"
       if firstDeathEnds
         then gameOver go
         else case L.filter (\ (actor, _) -> actor /= pl) ahs of
@@ -448,12 +448,12 @@ cycleHero =
         (lt, gt) = IM.split i hs
     case IM.keys gt ++ IM.keys lt of
       [] -> abortWith "Cannot select another hero on this level."
-      ni : _ -> assertTrue $ selectHero (AHero ni)
+      ni : _ -> assertTrue $ selectPlayer (AHero ni)
 
--- | Selects a hero based on the number (actor, actually).
+-- | Selects a movable for the player, based on the actor.
 -- Focuses on the hero if level changed. False, if nothing to do.
-selectHero :: Actor -> Action Bool
-selectHero actor =
+selectPlayer :: Actor -> Action Bool
+selectPlayer actor =
   do
     pl <- gets splayer
     if (actor == pl)
@@ -559,9 +559,10 @@ targetToLoc state per =
       then Just $ clocation (scursor state)
       else Nothing  -- cursor invalid: set at a different level
     TEnemy a -> do
-      (_, m) <- findActorAnyLevel a state  -- is target alive?
+      (ln, m) <- findActorAnyLevel a state  -- is target alive?
+      guard $ ln == lname (slevel state)    -- is target on current level?
       let loc = mloc m
-      guard $ S.member loc (pvisible per)  -- is target visible?
+      guard $ S.member loc (pvisible per)   -- is target visible?
       return loc
 
 -- | Set, activate and display cursor information.
@@ -704,7 +705,7 @@ applyItem = do
           case locToActor state loc of
             Just targetActor -> do
               removeFromInventory applied
-              selectHero targetActor >> return ()
+              selectPlayer targetActor >> return ()
             Nothing -> abortWith "no living target to affect"
     Nothing -> abortWith "nothing to apply"
 
@@ -788,7 +789,7 @@ actorPickupItem actor =
 updateAnyActor :: Actor -> (Movable -> Movable) -> Action ()
 updateAnyActor actor f = modify (updateAnyActorBody actor f)
 
-updatePlayerBody :: (Hero -> Hero) -> Action ()
+updatePlayerBody :: (Movable -> Movable) -> Action ()
 updatePlayerBody f = do
   pl <- gets splayer
   updateAnyActor pl f
@@ -872,17 +873,10 @@ moveOrAttack allowAttacks autoOpen actor dir
       state <- get
       pl    <- gets splayer
       lmap  <- gets (lmap . slevel)
-      khs   <- gets (IM.assocs . lheroes   . slevel)
-      kms   <- gets (IM.assocs . lmonsters . slevel)
       let sm   = getActor state actor
           sloc = mloc sm           -- source location
           tloc = sloc `shift` dir  -- target location
-          tgt  = case L.find (\ (_, m) -> mloc m == tloc) khs of
-                   Just (i, _) -> Just (AHero i)
-                   Nothing ->
-                     case L.find (\ (_, m) -> mloc m == tloc) kms of
-                       Just (i, _) -> Just (AMonster i)
-                       Nothing -> Nothing
+          tgt  = locToActor state tloc
       case tgt of
         Just target ->
           if allowAttacks then
@@ -912,7 +906,7 @@ moveOrAttack allowAttacks autoOpen actor dir
 actorAttackActor :: Actor -> Actor -> Action ()
 actorAttackActor (AHero _) target@(AHero _) =  -- TODO: do not take a turn!!!
   -- Select adjacent hero by bumping into him.
-  selectHero target >> return ()
+  selectPlayer target >> return ()
 actorAttackActor source target = do
   state <- get
   let sm     = getActor state source
@@ -927,27 +921,22 @@ actorAttackActor source target = do
 actorDamageActor :: Actor -> Actor -> Int -> String -> Action ()
 actorDamageActor source target damage weaponMsg =
   do
-    case target of
-      AMonster _ -> return ()
-      AHero _    -> do
-        -- Focus on the attacked hero.
-        b <- selectHero target
-        -- Extra prompt, in case many heroes attacked in one turn.
-        when b $ messageAddMore >> return ()
+    let isTgtHero = case target of AHero _ -> True ; _ -> False
+    when isTgtHero $ do
+      -- Focus on the attacked hero.
+      b <- selectPlayer target
+      -- Extra prompt, in case many heroes attacked in one turn.
+      when b $ messageAddMore >> return ()
     state <- get
     let sm     = getActor state source
         tm     = getActor state target
         -- Damage the target.
         newHp  = mhp tm - damage
         killed = newHp <= 0
-        -- Determine how the hero perceives the event. TODO: we have to be more
-        -- precise and treat cases where two monsters fight,
-        -- but only one is visible; TODO: if 2 heroes hit a monster,
-        -- still only one of them should kill it
-        tgtMonster = case target of
-          AMonster _ -> True
-          _ -> False
-        combatVerb = if killed && tgtMonster then "kill" else "hit"
+        -- Determine how the hero perceives the event.
+        -- TODO: we have to be more precise and treat cases
+        -- where two monsters fight, but only one is visible.
+        combatVerb = if killed then "kill" else "hit"
         combatMsg  = subjectVerbMObject state sm combatVerb tm weaponMsg
     updateAnyActor target $ \ m -> m { mhp = newHp }
     per <- currentPerception
@@ -960,9 +949,9 @@ actorDamageActor source target damage weaponMsg =
       -- Place the actor's possessions on the map.
       dropItemsAt (mitems tm) (mloc tm)
       -- Clean bodies up.
-      case target of
-        AMonster n -> modify (deleteActor target)
-        _ -> checkPartyDeath  -- kills heroes and checks game over
+      if target == (splayer state)
+        then checkPartyDeath  -- kills the player and checks game over
+        else modify (deleteActor target)  -- kills the enemy
 
 -- | Resolves the result of an actor running into another.
 -- This involves switching positions of the two movables.
@@ -970,21 +959,20 @@ actorDamageActor source target damage weaponMsg =
 actorRunActor :: Actor -> Actor -> Action ()
 actorRunActor source target = do
   state <- get
+  pl    <- gets splayer
   let sloc = mloc $ getActor state source  -- source location
       tloc = mloc $ getActor state target  -- target location
   updateAnyActor source $ \ m -> m { mloc = tloc }
   updateAnyActor target $ \ m -> m { mloc = sloc }
-  case target of
-    AHero _    -> do
-      case source of
-        AMonster _ -> do
-          -- A hero is run over by a monster: focus on him.
-          b <- selectHero target
-          -- Extra prompt, in case many heroes disturbed in one turn.
-          when b $ messageAddMore >> return ()
-        _ ->
-          stopRunning  -- do not switch position with many heroes at once
-    AMonster _ -> return ()
+  if source == pl
+    then stopRunning  -- do not switch positions repeatedly
+    else case (source, target) of
+           (AMonster _, AHero _) -> do
+             -- A hero is run over by an enemy monster; focus on the hero.
+             b <- selectPlayer target
+             -- Extra prompt, in case many heroes disturbed in one turn.
+             when b $ messageAddMore >> return ()
+           _ -> return ()
 
 -- | Generate a monster, possibly.
 generateMonster :: Action ()

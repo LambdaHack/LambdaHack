@@ -124,7 +124,7 @@ insertActor a m =
 levelHeroList :: State -> [Hero]
 levelHeroList (State { slevel = Level { lheroes = hs } }) = IM.elems hs
 
-levelMonsterList :: State -> [Hero]
+levelMonsterList :: State -> [Monster]
 levelMonsterList (State { slevel = Level { lmonsters = ms } }) = IM.elems ms
 
 updateCursor :: (Cursor -> Cursor) -> State -> State
