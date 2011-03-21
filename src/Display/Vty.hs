@@ -61,6 +61,8 @@ nextEvent session =
     e <- V.next_event session
     maybe (nextEvent session) return (keyTranslate e)
 
+type AttrColor = Color
+
 attr = def_attr
 
 setBold a = with_style a bold

@@ -194,7 +194,7 @@ displayLevel session per
                            in
                              case over (loc `shift` ((sy+1) * n, 0)) of
                                Just c  ->  (attr, c)
-                               _       ->  (ra . vision $ attr, rv))
+                               _       ->  (vision . ra $ attr, rv))
                 msg
                 (take 40 (levelName nm ++ repeat ' ') ++
                  take 10 ("$: " ++ show gold ++ repeat ' ') ++
