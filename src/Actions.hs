@@ -162,7 +162,7 @@ continueRun dir =
     let lvl@(Level { lmap = lmap, lheroes = hs }) = slevel state
         mslocs = S.fromList (L.map mloc (levelMonsterList state))
         t      = lmap `at` loc  -- tile at current location
-        monstersVisible = not (S.null (mslocs `S.intersection` pvisible per))
+        monstersVisible = not (S.null (mslocs `S.intersection` ptvisible per))
         newsReported    = not (L.null msg)
         itemsHere       = not (L.null (titems t))
         heroThere       = L.elem (loc `shift` dir) (L.map mloc (IM.elems hs))
@@ -225,7 +225,7 @@ remember :: Action ()
 remember =
   do
     per <- currentPerception
-    let vis         = S.toList (pvisible per)
+    let vis         = S.toList (ptvisible per)
     let rememberLoc = M.update (\ (t,_) -> Just (t,t))
     modify (updateLevel (updateLMap (\ lmap -> foldr rememberLoc lmap vis)))
 
@@ -536,7 +536,7 @@ targetMonster = do
             _ -> -1  -- try to target first monster (e.g., number 0)
       (lt, gt) = IM.split i ms
       gtlt     = IM.assocs gt ++ IM.assocs lt
-      lf = L.filter (\ (_, m) -> S.member (mloc m) (pvisible per)) gtlt
+      lf = L.filter (\ (_, m) -> S.member (mloc m) (ptvisible per)) gtlt
       tgt = case lf of
               [] -> target  -- no monsters in sight, stick to last target
               (ni, _) : _ -> TEnemy (AMonster ni)  -- pick the next monster
@@ -551,7 +551,7 @@ setCursor tgt = do
   ploc  <- gets (mloc . getPlayerBody)
   ln    <- gets (lname . slevel)
   let upd cursor =
-        let cloc = case targetToLoc state per of
+        let cloc = case targetToLoc state (ptvisible per) of
                      Nothing -> ploc
                      Just l  -> l
         in  cursor { ctargeting = True, clocation = cloc, clocLn = ln }
@@ -569,7 +569,7 @@ doLook =
     per    <- currentPerception
     target <- gets (mtarget . getPlayerBody)
     let monsterMsg =
-          if S.member loc (pvisible per)
+          if S.member loc (ptvisible per)
           then case L.find (\ m -> mloc m == loc) (levelMonsterList state) of
                  Just m  -> subjectMovable (mtype m) ++ " is here. "
                  Nothing -> ""
@@ -650,7 +650,7 @@ fireItem = do
     Just (dart, _) -> do
       let fired = dart { icount = 1 }
       removeFromInventory fired
-      case targetToLoc state per of
+      case targetToLoc state (ptvisible per) of
         Nothing  -> abortWith "target invalid"
         Just loc ->
           case locToActor state loc of
@@ -667,7 +667,7 @@ applyItem = do
   case findItem (\ i -> itype i == Wand) pitems of
     Just (wand, _) -> do
       let applied = wand { icount = 1 }
-      case targetToLoc state per of
+      case targetToLoc state (ptvisible per) of
         Nothing  -> abortWith "target invalid"
         Just loc ->
           case locToActor state loc of
@@ -735,7 +735,7 @@ actorPickupItem actor =
     let movable   = getActor state actor
     let loc       = mloc movable
     let t         = lmap `at` loc -- the map tile in question
-    let perceived = loc `S.member` pvisible per
+    let perceived = loc `S.member` ptvisible per
     let isPlayer  = actor == pl
     -- check if something is here to pick up
     case titems t of
@@ -913,7 +913,7 @@ actorDamageActor source target damage weaponMsg =
         combatMsg  = subjectVerbMObject state sm combatVerb tm weaponMsg
     updateAnyActor target $ \ m -> m { mhp = newHp }
     per <- currentPerception
-    let perceived  = mloc sm `S.member` pvisible per
+    let perceived  = mloc sm `S.member` ptvisible per
     messageAdd $
       if perceived
         then combatMsg

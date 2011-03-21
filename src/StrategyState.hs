@@ -15,7 +15,7 @@ import Perception
 import Strategy
 import State
 
-strategy :: Actor -> State -> Perception -> Strategy Dir
+strategy :: Actor -> State -> Perceptions -> Strategy Dir
 strategy actor
          state@(State { stime   = time,
                         slevel  = Level { lsmell = nsmap,
@@ -51,7 +51,7 @@ strategy actor
     -- TODO: currently even invisible heroes are targeted if _any_ hero
     -- is visible; each hero should carry his own perception to check
     -- if he's visible by a given monster
-    playerVisible      =  me `S.member` pvisible per  -- monster sees any hero
+    playerVisible      =  me `S.member` ptvisible per  -- monster sees any hero
     playerAdjacent     =  maybe False (adjacent me) ploc
     towardsPlayer      =  maybe (0, 0) (\ ploc -> towards (me, ploc)) ploc
     onlyTowardsPlayer  =  only (\ x -> distance (towardsPlayer, x) <= 1)

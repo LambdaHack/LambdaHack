@@ -14,7 +14,21 @@ import qualified Config
 data Perception =
   Perception { preachable :: S.Set Loc, pvisible :: S.Set Loc }
 
-perception_ :: State -> Perception
+-- The pplayer field is void if player not on the current level,
+-- or if the player controls a blind monster (TODO. But perhaps only non-blind
+-- monsters should be controllable?).
+data Perceptions =
+  Perceptions { pplayer :: Maybe Perception,
+                pheroes :: IM.IntMap Perception,
+                ptotal  :: Perception }
+
+ptreachable :: Perceptions -> S.Set Loc
+ptreachable = preachable . ptotal
+
+ptvisible :: Perceptions -> S.Set Loc
+ptvisible = pvisible . ptotal
+
+perception_ :: State -> Perceptions
 perception_ state@(State { slevel   = Level { lmap = lmap, lheroes = hs },
                            sconfig  = config,
                            ssensory = sensory }) =
@@ -34,14 +48,14 @@ perception_ state@(State { slevel   = Level { lmap = lmap, lheroes = hs },
               "shadow"     -> Shadow
               _            -> error $ "perception_: unknown mode: " ++ show mode
 
-
-      lhs = IM.elems hs
-      pers = L.map (\ pl -> perception fovMode (mloc pl) lmap) lhs
-      reachable = S.unions (L.map preachable pers)
-      visible = S.unions (L.map pvisible pers)
-      -- TODO: update individual hero perceptions here; see https://github.com/Mikolaj/LambdaHack/issues/issue/31
-      -- TODO: do perception also for a monster under player control
-  in  Perception reachable visible
+      pers = IM.map (\ pl -> perception fovMode (mloc pl) lmap) hs
+      lpers = IM.elems pers
+      pper = Nothing  -- TODO, and add it to ptotal, in case it's monster
+      reachable = S.unions (L.map preachable lpers)
+      visible = S.unions (L.map pvisible lpers)
+  in  Perceptions { pplayer = pper,
+                    pheroes = pers,
+                    ptotal = Perception reachable visible }
 
 perception :: FovMode -> Loc -> LMap -> Perception
 perception fovMode ploc lmap =

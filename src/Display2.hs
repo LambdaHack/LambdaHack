@@ -143,7 +143,7 @@ stringByLocation sy xs =
   in
     (k, \ (y,x) -> M.lookup y m >>= \ n -> M.lookup x n)
 
-displayLevel :: Session -> Perception -> State -> Message -> Maybe String -> IO Bool
+displayLevel :: Session -> Perceptions -> State -> Message -> Maybe String -> IO Bool
 displayLevel session per
              (state@(State { splayer = pl,
                              stime   = time,
@@ -154,8 +154,8 @@ displayLevel session per
                 mloc = ploc, mitems = pitems } =
         getPlayerBody state
       overlay = maybe "" id moverlay
-      reachable = preachable per
-      visible   = pvisible per
+      reachable = ptreachable per
+      visible   = ptvisible per
       sSml    = ssensory state == Smell
       sVis    = case ssensory state of Vision _ -> True; _ -> False
       sOmn    = sdisplay state == Omniscient

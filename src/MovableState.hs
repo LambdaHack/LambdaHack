@@ -11,7 +11,6 @@ import Geometry
 import Movable
 import Level
 import State
-import Perception
 
 -- The operations with "Any", and those that use them, consider all the dungeon.
 -- All the other actor and level operations only consider the current level.
@@ -56,8 +55,8 @@ updateAnyLevel f ln state@(State { slevel = level,
   | otherwise = updateDungeon (const $ Dungeon $ M.adjust f ln dng) state
 
 -- | Calculate the location of player's target.
-targetToLoc :: State -> Perception -> Maybe Loc
-targetToLoc state per =
+targetToLoc :: State -> S.Set Loc -> Maybe Loc
+targetToLoc state visible =
   case mtarget (getPlayerBody state) of
     TLoc loc -> Just loc
     TCursor  ->
@@ -68,7 +67,7 @@ targetToLoc state per =
       (ln, m) <- findActorAnyLevel a state  -- is target alive?
       guard $ ln == lname (slevel state)    -- is target on current level?
       let loc = mloc m
-      guard $ S.member loc (pvisible per)   -- is target visible?
+      guard $ S.member loc visible          -- is target visible?
       return loc
 
 -- The operations below disregard levels other than the current.

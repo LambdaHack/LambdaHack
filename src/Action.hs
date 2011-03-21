@@ -18,7 +18,7 @@ newtype Action a = Action
       forall r .
       Session ->
       IO r ->                             -- shutdown cont
-      Perception ->                       -- cached perception
+      Perceptions ->                      -- cached perception
       (State -> Message -> a -> IO r) ->  -- continuation
       IO r ->                             -- failure/reset cont
       State ->                            -- current state
@@ -221,7 +221,7 @@ withPerception h = Action (\ s e _ k a st ms ->
                             runAction h s e (perception_ st) k a st ms)
 
 -- | Get the current perception.
-currentPerception :: Action Perception
+currentPerception :: Action Perceptions
 currentPerception = Action (\ s e p k a st ms -> k st ms p)
 
 -- | If in targeting mode, check if the current level is the same
