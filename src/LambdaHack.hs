@@ -19,7 +19,7 @@ import qualified Save
 import Turn
 import Item
 import qualified Config
-import Monster
+import Hero
 
 main :: IO ()
 main = startup start

@@ -14,7 +14,7 @@ import Data.Ratio
 import Data.Maybe
 
 import Geometry
-import Monster
+import Movable
 import Item
 import Random
 import Display

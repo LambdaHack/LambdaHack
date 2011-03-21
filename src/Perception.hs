@@ -6,7 +6,7 @@ import Data.List as L
 import Geometry
 import State
 import Level
-import Monster
+import Movable
 import FOV
 import qualified Config
 

@@ -10,7 +10,7 @@ import Data.Maybe
 import qualified Config
 
 import Actor
-import Monster
+import Movable
 import Geometry
 import Level
 import Item

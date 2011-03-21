@@ -22,7 +22,7 @@ import qualified Keys as K
 import Level
 import LevelState
 import Message
-import Monster
+import Movable
 import Perception
 import Random
 import State

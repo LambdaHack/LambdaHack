@@ -16,7 +16,7 @@ import Level
 import LevelState
 import Dungeon
 import Perception
-import Monster
+import Movable
 import Item
 import Keys as K
 

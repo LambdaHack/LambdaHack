@@ -17,7 +17,7 @@ import Display2 hiding (display)
 import Keybindings
 import qualified Keys as K
 import Level
-import Monster
+import Movable
 import Random
 import State
 import Strategy

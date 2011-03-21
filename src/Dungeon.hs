@@ -13,7 +13,9 @@ import qualified Data.Char as Char
 import State
 import Geometry
 import Level
+import Movable
 import Monster
+import Hero
 import Item
 import Random
 

@@ -7,7 +7,7 @@ import qualified Data.IntMap as IM
 
 import Geometry
 import Level
-import Monster
+import Movable
 import Random
 import Perception
 import Strategy
