@@ -8,14 +8,12 @@ import qualified Data.IntMap as IM
 import Data.List as L
 import Data.Ratio
 import Data.Maybe
-import qualified Data.Char as Char
 
 import State
 import Geometry
 import Level
 import Movable
 import Monster
-import Hero
 import Item
 import Random
 
@@ -335,15 +333,3 @@ addMonster state@(State { slevel = lvl@(Level { lmap = lmap }),
           m <- newMonster sm monsterFrequency
           return (updateMonsters (IM.insert ni m) lvl)
       else return lvl
-
--- | Create a new hero in the level, close to the player.
-addHero :: Loc -> Int -> String -> State -> Int -> State
-addHero ploc hp name state@(State { slevel = Level { lmap = map } }) n =
-  let hs = levelHeroList state
-      ms = levelMonsterList state
-      places = ploc : L.nub (concatMap surroundings places)
-      good l = open (map `at` l) && not (l `L.elem` L.map mloc (hs ++ ms))
-      place = fromMaybe (error "no place for a hero") $ L.find good places
-      symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
-      hero = defaultHero symbol name place hp
-  in  updateLevel (updateHeroes (IM.insert n hero)) state

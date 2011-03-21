@@ -44,10 +44,10 @@ data Cursor = Cursor
   }
   deriving Show
 
-defaultState :: Actor -> Dungeon -> Level -> State
-defaultState pl dng lvl =
+defaultState :: Dungeon -> Level -> State
+defaultState dng lvl =
   State
-    pl
+    (AHero 0)
     (Cursor False (LambdaCave (-1)) (-1, -1) (lname lvl))
     []
     Implicit Normal

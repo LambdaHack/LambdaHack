@@ -1,25 +1,20 @@
 module Main where
 
 import System.Directory
-import Control.Monad
-import Data.List as L
 import Data.Map as M
-import Data.Maybe
 
 import Action
-import Actor
 import State
 import Geometry
 import Level
 import Dungeon
-import Perception
 import Display2
 import Random
 import qualified Save
 import Turn
 import Item
 import qualified Config
-import Hero
+import HeroState
 
 main :: IO ()
 main = startup start
@@ -57,10 +52,6 @@ generate config session msg =
             generator = matchGenerator n genName
         in  rndToIO $ generator (defaultLevelConfig n) (LambdaCave n)
 
-      findHeroName n =
-        let heroName = Config.getOption config "heroes" ("HeroName_" ++ show n)
-        in  fromMaybe ("hero number " ++ show n) heroName
-
       connect :: Maybe (Maybe DungeonLoc) ->
                  [(Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) ->
                    Level, Loc, Loc)] ->
@@ -81,10 +72,7 @@ generate config session msg =
                     [ (Potion PotionWater,   Clear),
                       (Potion PotionHealing, White) ]
          ploc = ((\ (_,x,_) -> x) (head levels))
-         hp = heroHP config
-         defState = defaultState (AHero 0) dng lvl
+         defState = defaultState dng lvl
          state = defState { sassocs = assocs, sconfig = config }
-         k = Config.get config "heroes" "extraHeroes"
-         addNamedHero state n = addHero ploc hp (findHeroName n) state n
-         hstate = foldl' addNamedHero state [0..k]
+         hstate = addHeroes ploc state
      handlerToIO session hstate msg handle
