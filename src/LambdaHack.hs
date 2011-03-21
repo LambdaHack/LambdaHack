@@ -5,16 +5,14 @@ import Data.Map as M
 
 import Action
 import State
-import Geometry
-import Level
-import Dungeon
+import DungeonState
 import Display2
 import Random
 import qualified Save
 import Turn
-import Item
 import qualified Config
 import HeroState
+import Item
 
 main :: IO ()
 main = startup start
@@ -32,47 +30,15 @@ start session =
                               Save.restoreGame config
                        else return $ Right "Welcome to LambdaHack!"  -- new game
       case restored of
-        Right msg  -> generate config session msg
-        Left state -> handlerToIO session state "Welcome back to LambdaHack."
-                        handle
-
--- | Generate the dungeon for a new game, and start the game loop.
-generate :: Config.CP -> Session -> String -> IO ()
-generate config session msg =
-  let matchGenerator n Nothing = rogueRoom  -- the default
-      matchGenerator n (Just "bigRoom")   = bigRoom
-      matchGenerator n (Just "noiseRoom") = noiseRoom
-      matchGenerator n (Just "rogueRoom") = rogueRoom
-      matchGenerator n (Just s) =
-        error $ "matchGenerator: unknown: " ++ show n ++ ", " ++ s
-
-      findGenerator n =
-        let genName =
-              Config.getOption config "dungeon" ("LambdaCave_" ++ show n)
-            generator = matchGenerator n genName
-        in  rndToIO $ generator (defaultLevelConfig n) (LambdaCave n)
-
-      connect :: Maybe (Maybe DungeonLoc) ->
-                 [(Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) ->
-                   Level, Loc, Loc)] ->
-                 [Level]
-      connect au [(x,_,_)] = [x au Nothing]
-      connect au ((x,_,d):ys@((_,u,_):_)) =
-        let (z:zs) = connect (Just (Just (lname x',d))) ys
-            x'     = x au (Just (Just (lname z,u)))
-        in  x' : z : zs
-  in
-   do
-     let depth = Config.get config "dungeon" "depth"
-     levels <- mapM findGenerator [1..depth]
-     let lvls = connect (Just Nothing) levels
-         (lvl,dng) = (head lvls, dungeon (tail lvls))
-         -- generate item associations
-         assocs = M.fromList
-                    [ (Potion PotionWater,   Clear),
-                      (Potion PotionHealing, White) ]
-         ploc = ((\ (_,x,_) -> x) (head levels))
-         defState = defaultState dng lvl
-         state = defState { sassocs = assocs, sconfig = config }
-         hstate = addHeroes ploc state
-     handlerToIO session hstate msg handle
+        Right msg  -> do
+          (ploc, lvl, dng) <- rndToIO $ generate config
+          let -- generate item associations
+              assocs = M.fromList
+                         [ (Potion PotionWater,   Clear),
+                           (Potion PotionHealing, White) ]
+              defState = defaultState dng lvl
+              state = defState { sassocs = assocs, sconfig = config }
+              hstate = addHeroes ploc state
+          handlerToIO session hstate msg handle
+        Left state ->
+          handlerToIO session state "Welcome back to LambdaHack." handle
