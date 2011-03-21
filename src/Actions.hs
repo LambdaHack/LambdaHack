@@ -117,7 +117,7 @@ acceptCurrent h = do
     then endTargeting True
     else h  -- nothing to accept right now
 
-moveCursor :: Dir -> Int -> Action ()  -- TODO: do not take time!!!
+moveCursor :: Dir -> Int -> Action ()
 moveCursor dir n = do
   (sy, sx) <- gets (lsize . slevel)
   let iter :: Int -> (a -> a) -> a -> a  -- not in base libs???
@@ -317,9 +317,9 @@ actorOpenClose actor v o dir =
                                        abortIfWith isVerbose "jammed"
            _                        -> -- there is no door here
                                        neverMind isVerbose
+    advanceTime actor
 
 -- | Perform a level switch to a given level. False, if nothing to do.
--- TODO: in targeting mode do not take time, otherwise take as much as 1 step.
 lvlswitch :: LevelName -> Action Bool
 lvlswitch nln =
   do
@@ -403,6 +403,7 @@ lvlchange vdir =
                   -- Create a backup of the savegame.
                   state <- get
                   liftIO $ Save.saveGame state >> Save.mvBkp (sconfig state)
+                  playerAdvanceTime
       _ -> -- no stairs
         if targeting
         then do
@@ -511,6 +512,7 @@ search =
         f l m = M.adjust searchTile (shift ploc m) l
         slmap = foldl' f lmap moves
     modify (updateLevel (updateLMap (const slmap)))
+    playerAdvanceTime
 
 -- | Start the floor targeting mode or toggle between the two floor modes.
 targetFloor :: Action ()
@@ -524,8 +526,6 @@ targetFloor = do
 
 -- | Start the monster targeting mode. Cycle between monster targets.
 -- TODO: also target a monster by moving the cursor, if in target monster mode.
--- TODO: generally streamline and extend when the commands do not take time,
--- when firing at targets is implemented, when monsters use targets.
 -- TODO: sort monsters by distance to the player.
 -- TODO: when each hero has his own perception, only target monsters
 -- visible by the current player.
@@ -582,7 +582,6 @@ setCursor tgt = do
 
 -- | Perform look around in the current location of the cursor.
 -- TODO: depending on tgt, show extra info about tile or monster or both
--- TODO: do not take time
 doLook :: Action ()
 doLook =
   do
@@ -660,6 +659,7 @@ drinkPotion =
                        updatePlayerBody (\ p -> p { mhp = php p })
                Just _  -> abortWith "you cannot drink that"
                Nothing -> neverMind True
+    playerAdvanceTime
 
 -- | Finds an actor at a location. Perception irrelevant.
 locToActor :: State -> Loc -> Maybe Actor
@@ -689,13 +689,13 @@ fireItem = do
             Just a  -> actorDamageActor pl a 1 " with a dart"
             Nothing -> modify (updateLevel (scatterItems [fired] loc))
     Nothing -> abortWith "nothing to fire"
+  playerAdvanceTime
 
 applyItem :: Action ()
 applyItem = do
   state  <- get
   per    <- currentPerception
   pitems <- gets (mitems . getPlayerBody)
-  pl     <- gets splayer
   case findItem (\ i -> itype i == Wand) pitems of
     Just (wand, _) -> do
       let applied = wand { icount = 1 }
@@ -708,6 +708,7 @@ applyItem = do
               selectPlayer targetActor >> return ()
             Nothing -> abortWith "no living target to affect"
     Nothing -> abortWith "nothing to apply"
+  playerAdvanceTime
 
 dropItem :: Action ()
 dropItem =
@@ -727,6 +728,7 @@ dropItem =
                    message (subjectVerbIObject state pbody "drop" i' "")
                    dropItemsAt [i'] ploc
                Nothing -> neverMind True
+    playerAdvanceTime
 
 dropItemsAt :: [Item] -> Loc -> Action ()
 dropItemsAt is loc = modify (updateLevel (scatterItems is loc))
@@ -785,6 +787,7 @@ actorPickupItem actor =
               updateAnyActor actor $ \ m ->
                 m { mitems = nitems, mletter = maxLetter l (mletter movable) }
           Nothing -> abortIfWith isPlayer "you cannot carry any more"
+    advanceTime actor
 
 updateAnyActor :: Actor -> (Movable -> Movable) -> Action ()
 updateAnyActor actor f = modify (updateAnyActorBody actor f)
@@ -867,7 +870,7 @@ moveOrAttack allowAttacks autoOpen actor dir
       -- Moving with no direction is a noop.
       -- We include it currently to prevent that
       -- monsters attack themselves by accident.
-      return ()
+      advanceTime actor
   | otherwise = do
       -- We start by looking at the target position.
       state <- get
@@ -889,9 +892,10 @@ moveOrAttack allowAttacks autoOpen actor dir
           else abort
         Nothing ->
           if accessible lmap sloc tloc then do
-            -- perform the move
+            -- perform the move; TODO: make this a separate function
             updateAnyActor actor $ \ m -> m { mloc = tloc }
             when (actor == pl) $ message $ lookAt False state lmap tloc ""
+            advanceTime actor
           else if autoOpen then
             -- try to open a door
             actorOpenClose actor False True dir
@@ -904,8 +908,8 @@ moveOrAttack allowAttacks autoOpen actor dir
 -- and a movable capable of moving through walls can be attacked from an
 -- adjacent position.
 actorAttackActor :: Actor -> Actor -> Action ()
-actorAttackActor (AHero _) target@(AHero _) =  -- TODO: do not take a turn!!!
-  -- Select adjacent hero by bumping into him.
+actorAttackActor (AHero _) target@(AHero _) =
+  -- Select adjacent hero by bumping into him. Takes no time.
   selectPlayer target >> return ()
 actorAttackActor source target = do
   state <- get
@@ -917,6 +921,7 @@ actorAttackActor source target = do
                   then ""
                   else " with a (+" ++ show sword ++ ") sword" -- TODO: generate proper message
   actorDamageActor source target damage weaponMsg
+  advanceTime source
 
 actorDamageActor :: Actor -> Actor -> Int -> String -> Action ()
 actorDamageActor source target damage weaponMsg =
@@ -955,7 +960,6 @@ actorDamageActor source target damage weaponMsg =
 
 -- | Resolves the result of an actor running into another.
 -- This involves switching positions of the two movables.
--- Always takes time.
 actorRunActor :: Actor -> Actor -> Action ()
 actorRunActor source target = do
   state <- get
@@ -973,6 +977,7 @@ actorRunActor source target = do
              -- Extra prompt, in case many heroes disturbed in one turn.
              when b $ messageAddMore >> return ()
            _ -> return ()
+  advanceTime source
 
 -- | Generate a monster, possibly.
 generateMonster :: Action ()
@@ -988,6 +993,11 @@ advanceTime actor =
   do
     time <- gets stime
     updateAnyActor actor $ \ m -> m { mtime = time + mspeed m }
+
+playerAdvanceTime :: Action ()
+playerAdvanceTime = do
+  pl   <- gets splayer
+  advanceTime pl
 
 -- | Possibly regenerate HP for the given actor.
 regenerate :: Actor -> Action ()

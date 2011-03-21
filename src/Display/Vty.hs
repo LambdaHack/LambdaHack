@@ -50,7 +50,7 @@ keyTranslate e =
     -- No KP_ keys in vty; see https://github.com/coreyoconnor/vty/issues/8
     -- For now, movement keys are more important than hero selection:
     V.EvKey (KASCII c) []
-      | c `elem` "123456789" -> Just (K.KP c)
+      | c `elem` ['1'..'9']  -> Just (K.KP c)
       | otherwise            -> Just (K.Char c)
     _                        -> Nothing
 --  _                        -> Just (K.Dbg $ show e)

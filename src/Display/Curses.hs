@@ -82,8 +82,8 @@ keyTranslate e =
     -- No KP_ keys in hscurses and they do not seem actively maintained.
     -- For now, movement keys are more important than hero selection:
     C.KeyChar c
-      | c `elem` "123456789" -> Just (K.KP c)
-      | otherwise            -> Just (K.Char c)
+      | c `elem` ['1'..'9'] -> Just (K.KP c)
+      | otherwise           -> Just (K.Char c)
     _                -> Nothing
 --  _                -> Just (K.Dbg $ show e)
 

@@ -41,13 +41,13 @@ import Version
 --
 -- What's happening where:
 --
--- handle: check for hero's death, HP regeneration, determine who moves next,
+-- handle: HP regeneration, determine who moves next,
 --   dispatch to handleMonsters or handlePlayer
 --
 -- handlePlayer: remember, display, get and process commmand(s),
---   advance player time, update smell map, update perception
+--   update smell map, update perception
 --
--- handleMonsters: find monsters that can move or die
+-- handleMonsters: find monsters that can move
 --
 -- handleMonster: determine and process monster action, advance monster time
 --
@@ -56,8 +56,8 @@ import Version
 -- This is rather convoluted, and the functions aren't named very aptly, so we
 -- should clean this up later. TODO.
 
--- | Decide if the hero is ready for another move. Dispatch to either 'handleMonsters'
--- or 'handlePlayer'.
+-- | Decide if the hero is ready for another move.
+-- Dispatch to either 'handleMonsters' or 'handlePlayer'.
 handle :: Action ()
 handle =
   do
@@ -112,8 +112,9 @@ handleMonster actor =
     let waiting = dir == (0,0)
     let nmdir   = if waiting then Nothing else Just dir
     -- advance time and update monster
-    updateAnyActor actor $ \ m -> m { mtime = time + mspeed m, mdir = nmdir }
-    try $  -- if the following action aborts, we just continue
+    updateAnyActor actor $ \ m -> m { mdir = nmdir }
+    tryWith (advanceTime actor) $
+      -- if the following action aborts, we just advance the time and continue
       if waiting
         then
           -- monster is not moving, let's try to pick up an object
@@ -141,21 +142,24 @@ handlePlayer :: Action ()
 handlePlayer =
   do
     debug "handlePlayer"
-    remember      -- the hero perceives his (potentially new) surroundings
+    remember  -- the hero perceives his (potentially new) surroundings
     -- determine perception before running player command, in case monsters
     -- have opened doors ...
+    oldPlayerTime <- gets (mtime . getPlayerBody)
     withPerception playerCommand -- get and process a player command
-    -- at this point, the command was successful
-    pl <- gets splayer
-    advanceTime pl  -- TODO: the command handlers should advance the move time
-    state <- get
-    let time = stime state
-        loc  = mloc (getPlayerBody state)
-        smellTimeout = Config.get (sconfig state) "monsters" "smellTimeout"
-    -- update smell
-    modify (updateLevel (updateSMap (M.insert loc (time + smellTimeout))))
-    -- determine player perception and continue with monster moves
-    withPerception handleMonsters
+    -- at this point, the command was successful and possibly took some time
+    newPlayerTime <- gets (mtime . getPlayerBody)
+    if newPlayerTime == oldPlayerTime
+      then withPerception handlePlayer  -- no time taken, repeat
+      else do
+        state <- get
+        let time = stime state
+            ploc = mloc (getPlayerBody state)
+            smellTimeout = Config.get (sconfig state) "monsters" "smellTimeout"
+        -- update smell
+        modify (updateLevel (updateSMap (M.insert ploc (time + smellTimeout))))
+        -- determine player perception and continue with monster moves
+        withPerception handleMonsters
 
 -- | Determine and process the next player command.
 playerCommand :: Action ()
@@ -234,7 +238,7 @@ stdKeybindings = Keybindings
                (K.Char '*',  monsterCommand),
                (K.Char '/',  floorCommand),
                (K.Char ':',  floorCommand),  -- synonym for backward compat.
-               (K.Tab     ,  Described "cycle among heroes on level" $ cycleHero >> playerCommand),
+               (K.Tab     ,  heroCommand),
 
                -- items
                (K.Char ',',  pickupCommand),
@@ -251,7 +255,6 @@ stdKeybindings = Keybindings
                -- saving or ending the game
                (K.Char 'S',  saveCommand),
                (K.Char 'Q',  quitCommand),
-               (K.Esc     ,  cancelCommand),
 
                -- debug modes
                (K.Char 'V',  Undescribed $ modify toggleVision     >> withPerception playerCommand),
@@ -265,6 +268,7 @@ stdKeybindings = Keybindings
                (K.Char 'M',  historyCommand),
                (K.Char 'D',  dumpCommand),
                (K.Char '?',  helpCommand),
-               (K.Return  ,  acceptCommand displayHelp)
+               (K.Return  ,  acceptCommand displayHelp),
+               (K.Esc     ,  cancelCommand)
              ]
   }
