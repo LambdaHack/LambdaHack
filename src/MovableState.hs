@@ -64,13 +64,19 @@ targetToLoc state visible =
       then Just $ clocation (scursor state)
       else Nothing  -- cursor invalid: set at a different level
     TEnemy a -> do
-      (ln, m) <- findActorAnyLevel a state  -- is target alive?
-      guard $ ln == lname (slevel state)    -- is target on current level?
-      let loc = mloc m
-      guard $ S.member loc visible          -- is target visible?
+      guard $ memActor state a           -- alive and on the current level?
+      let loc = mloc (getActor state a)
+      guard $ S.member loc visible       -- visible?
       return loc
 
 -- The operations below disregard levels other than the current.
+
+-- | Checks if the actor is present on the current level.
+memActor :: State -> Actor -> Bool
+memActor (State { slevel = lvl }) a =
+  case a of
+    AHero n    -> IM.member n (lheroes lvl)
+    AMonster n -> IM.member n (lmonsters lvl)
 
 -- | Gets actor body from the current level. Error if not found.
 getActor :: State -> Actor -> Movable

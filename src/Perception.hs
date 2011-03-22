@@ -10,6 +10,7 @@ import Geometry
 import State
 import Level
 import Movable
+import MovableState
 import FOV
 import qualified Config
 
@@ -18,7 +19,8 @@ data Perception =
 
 -- The pplayer field is void if player not on the current level,
 -- or if the player controls a blind monster (TODO. But perhaps only non-blind
--- monsters should be controllable?).
+-- monsters should be controllable?). Right now, the field is used only
+-- for player-controlled monsters on the current level.
 data Perceptions =
   Perceptions { pplayer :: Maybe Perception,
                 pheroes :: IM.IntMap Perception,
@@ -58,7 +60,8 @@ actorSeesActor actor1 actor2 loc1 loc2 per pl =
   actorSeesLoc actor2 loc1 per pl
 
 perception_ :: State -> Perceptions
-perception_ state@(State { slevel   = Level { lmap = lmap, lheroes = hs },
+perception_ state@(State { splayer = pl,
+                           slevel   = Level { lmap = lmap, lheroes = hs },
                            sconfig  = config,
                            ssensory = sensory }) =
   let mode   = Config.get config "engine" "fovMode"
@@ -77,9 +80,12 @@ perception_ state@(State { slevel   = Level { lmap = lmap, lheroes = hs },
               "shadow"     -> Shadow
               _            -> error $ "perception_: unknown mode: " ++ show mode
 
+      -- Perception for a player-controlled monster on the current level.
+      pper = if isAMonster pl && memActor state pl
+             then Just $ perception fovMode (mloc (getPlayerBody state)) lmap
+             else Nothing
       pers = IM.map (\ h -> perception fovMode (mloc h) lmap) hs
-      lpers = IM.elems pers
-      pper = Nothing  -- TODO, and add it to ptotal, in case it's monster
+      lpers = maybeToList pper ++ IM.elems pers
       reachable = S.unions (L.map preachable lpers)
       visible = S.unions (L.map pvisible lpers)
   in  Perceptions { pplayer = pper,
