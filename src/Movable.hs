@@ -52,6 +52,13 @@ data Actor = AHero Int     -- ^ hero index (on the lheroes intmap)
            | AMonster Int  -- ^ monster index (on the lmonsters intmap)
   deriving (Show, Eq)
 
+isAHero :: Actor -> Bool
+isAHero (AHero _) = True
+isAHero (AMonster _) = False
+
+isAMonster :: Actor -> Bool
+isAMonster = not . isAHero
+
 instance Binary Actor where
   put (AHero n)    = putWord8 0 >> put n
   put (AMonster n) = putWord8 1 >> put n

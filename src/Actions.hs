@@ -894,8 +894,7 @@ actorAttackActor source target = do
 actorDamageActor :: Actor -> Actor -> Int -> String -> Action ()
 actorDamageActor source target damage weaponMsg =
   do
-    let isTgtHero = case target of AHero _ -> True ; _ -> False
-    when isTgtHero $ do
+    when (isAHero target) $ do
       -- Focus on the attacked hero.
       b <- selectPlayer target
       -- Extra prompt, in case many heroes attacked in one turn.
@@ -938,13 +937,13 @@ actorRunActor source target = do
   updateAnyActor target $ \ m -> m { mloc = sloc }
   if source == pl
     then stopRunning  -- do not switch positions repeatedly
-    else case (source, target) of
-           (AMonster _, AHero _) -> do
-             -- A hero is run over by an enemy monster; focus on the hero.
-             b <- selectPlayer target
-             -- Extra prompt, in case many heroes disturbed in one turn.
-             when b $ messageAddMore >> return ()
-           _ -> return ()
+    else if isAMonster source && isAHero target
+         then do
+                -- A hero is run over by an enemy monster; focus on the hero.
+                b <- selectPlayer target
+                -- Extra prompt, in case many heroes disturbed in one turn.
+                when b $ messageAddMore >> return ()
+         else return ()
   advanceTime source
 
 -- | Generate a monster, possibly.
