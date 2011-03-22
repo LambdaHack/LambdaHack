@@ -1,6 +1,6 @@
 module Display.Gtk
   (displayId, startup, shutdown,
-   display, nextEvent, setBG, setFG, setBold, attr, Session,
+   display, nextEvent, setBG, setFG, attr, Session,
    black, red, green, yellow, blue, magenta, cyan, white,
    bright_black, bright_red, bright_green, bright_yellow,
    bright_blue, bright_magenta, bright_cyan, bright_white,
@@ -185,7 +185,6 @@ data AttrKey =
   | BG AttrColor
   deriving (Eq, Ord)
 
-setBold   = id  -- not supported yet
 setBG c   = (BG c :)
 setFG c   = (FG c :)
 attr      = []

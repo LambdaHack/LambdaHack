@@ -1,6 +1,6 @@
 module Display.Curses
   (displayId, startup, shutdown,
-   display, nextEvent, setBG, setFG, setBold, attr, Session,
+   display, nextEvent, setBG, setFG, attr, Session,
    black, red, green, yellow, blue, magenta, cyan, white,
    bright_black, bright_red, bright_green, bright_yellow,
    bright_blue, bright_magenta, bright_cyan, bright_white,
@@ -97,7 +97,6 @@ nextEvent session =
 
 type Attr = (Maybe AttrColor, Maybe AttrColor)
 
-setBold (f, b) = (f, b)
 setFG c (_, b) = (Just c, b)
 setBG c (f, _) = (f, Just c)
 attr = (Nothing, Nothing)

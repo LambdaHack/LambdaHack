@@ -1,6 +1,6 @@
 module Display.Vty
   (displayId, startup, shutdown,
-   display, nextEvent, setBold, setBG, setFG, attr, Session,
+   display, nextEvent, setBG, setFG, attr, Session,
    black, red, green, yellow, blue, magenta, cyan, white,
    bright_black, bright_red, bright_green, bright_yellow,
    bright_blue, bright_magenta, bright_cyan, bright_white,
@@ -64,7 +64,6 @@ nextEvent session =
     e <- V.next_event session
     maybe (nextEvent session) return (keyTranslate e)
 
-setBold a = with_style a bold
 setFG c a = with_fore_color a c
 setBG c a = with_back_color a c
 attr = def_attr
