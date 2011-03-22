@@ -26,11 +26,9 @@ data Perceptions =
                 pheroes :: IM.IntMap Perception,
                 ptotal  :: Perception }
 
-ptreachable :: Perceptions -> S.Set Loc
+ptreachable, ptvisible :: Perceptions -> S.Set Loc
 ptreachable = preachable . ptotal
-
-ptvisible :: Perceptions -> S.Set Loc
-ptvisible = pvisible . ptotal
+ptvisible   = pvisible . ptotal
 
 actorPrLoc :: (Perception -> S.Set Loc) ->
               Actor -> Loc -> Perceptions -> Actor -> Bool
@@ -47,10 +45,8 @@ actorPrLoc projection actor loc per pl =
       tryAny  = tryHero `mplus` tryPl
   in  fromMaybe False tryAny  -- assume not visible, if no perception found
 
-actorSeesLoc :: Actor -> Loc -> Perceptions -> Actor -> Bool
-actorSeesLoc = actorPrLoc pvisible
-
-actorReachesLoc :: Actor -> Loc -> Perceptions -> Actor -> Bool
+actorSeesLoc, actorReachesLoc :: Actor -> Loc -> Perceptions -> Actor -> Bool
+actorSeesLoc    = actorPrLoc pvisible
 actorReachesLoc = actorPrLoc preachable
 
 -- Not quite correct if FOV not symmetric (Shadow).

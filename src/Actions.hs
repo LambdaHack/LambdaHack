@@ -159,8 +159,14 @@ continueRun dir =
     loc   <- gets (mloc . getPlayerBody)
     per   <- currentPerception
     msg   <- currentMessage
-    let lvl@(Level { lmap = lmap, lheroes = hs }) = slevel state
-        mslocs = S.fromList (L.map mloc (levelMonsterList state))
+    ms    <- gets (lmonsters . slevel)
+    hs    <- gets (lheroes . slevel)
+    lmap  <- gets (lmap . slevel)
+    pl    <- gets splayer
+    let dms = case pl of
+                AMonster n -> IM.delete n ms  -- don't be afraid of yourself
+                AHero _ -> ms
+        mslocs = S.fromList (L.map mloc (IM.elems dms))
         monstersVisible = not (S.null (mslocs `S.intersection` ptvisible per))
         newsReported    = not (L.null msg)
         t         = lmap `at` loc  -- tile at current location
@@ -533,7 +539,10 @@ targetMonster = do
             TEnemy (AMonster n) | targeting -> n  -- try next monster
             TEnemy (AMonster n) -> n - 1  -- try to retarget old monster
             _ -> -1  -- try to target first monster (e.g., number 0)
-      (lt, gt) = IM.split i ms
+      dms = case pl of
+              AMonster n -> IM.delete n ms  -- don't target yourself
+              AHero _ -> ms
+      (lt, gt) = IM.split i dms
       gtlt     = IM.assocs gt ++ IM.assocs lt
       lf = L.filter (\ (_, m) -> actorSeesLoc pl (mloc m) per pl) gtlt
       tgt = case lf of

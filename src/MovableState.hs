@@ -99,10 +99,8 @@ insertActor a m =
     AHero n    -> updateLevel (updateHeroes   (IM.insert n m))
     AMonster n -> updateLevel (updateMonsters (IM.insert n m))
 
-levelHeroList :: State -> [Movable]
-levelHeroList (State { slevel = Level { lheroes = hs } }) = IM.elems hs
-
-levelMonsterList :: State -> [Movable]
+levelHeroList, levelMonsterList :: State -> [Movable]
+levelHeroList    (State { slevel = Level { lheroes   = hs } }) = IM.elems hs
 levelMonsterList (State { slevel = Level { lmonsters = ms } }) = IM.elems ms
 
 -- | Finds an actor at a location on the current level. Perception irrelevant.
