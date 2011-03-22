@@ -30,19 +30,26 @@ ptreachable = preachable . ptotal
 ptvisible :: Perceptions -> S.Set Loc
 ptvisible = pvisible . ptotal
 
-actorSeesLoc :: Actor -> Loc -> Perceptions -> Actor -> Bool
-actorSeesLoc actor loc per pl =
+actorPrLoc :: (Perception -> S.Set Loc) ->
+              Actor -> Loc -> Perceptions -> Actor -> Bool
+actorPrLoc projection actor loc per pl =
   let tryHero = case actor of
                   AMonster _ -> Nothing
                   AHero i -> do
                     hper <- IM.lookup i (pheroes per)
-                    return $ loc `S.member` (pvisible hper)
+                    return $ loc `S.member` (projection hper)
       tryPl   = do  -- the case for a monster under player control
                   guard $ actor == pl
                   pper <- pplayer per
-                  return $ loc `S.member` pvisible pper
+                  return $ loc `S.member` projection pper
       tryAny  = tryHero `mplus` tryPl
   in  fromMaybe False tryAny  -- assume not visible, if no perception found
+
+actorSeesLoc :: Actor -> Loc -> Perceptions -> Actor -> Bool
+actorSeesLoc = actorPrLoc pvisible
+
+actorReachesLoc :: Actor -> Loc -> Perceptions -> Actor -> Bool
+actorReachesLoc = actorPrLoc preachable
 
 -- Not quite correct if FOV not symmetric (Shadow).
 actorSeesActor :: Actor -> Actor -> Loc -> Loc -> Perceptions -> Actor -> Bool
@@ -70,7 +77,7 @@ perception_ state@(State { slevel   = Level { lmap = lmap, lheroes = hs },
               "shadow"     -> Shadow
               _            -> error $ "perception_: unknown mode: " ++ show mode
 
-      pers = IM.map (\ pl -> perception fovMode (mloc pl) lmap) hs
+      pers = IM.map (\ h -> perception fovMode (mloc h) lmap) hs
       lpers = IM.elems pers
       pper = Nothing  -- TODO, and add it to ptotal, in case it's monster
       reachable = S.unions (L.map preachable lpers)

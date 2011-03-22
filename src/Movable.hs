@@ -14,7 +14,6 @@ data Movable = Movable
                   mdir    :: Maybe Dir,  -- for monsters: the dir the monster last moved; TODO: use target for this, instead and use mdir to signal the monster wants to switch position with a hero (if the monster is smart/big enough)
                                          -- for heroes: the dir the hero is running
                   mtarget :: Target,
--- TODO:          mper    :: Maybe Perception  -- see https://github.com/Mikolaj/LambdaHack/issues/issue/31
                   mloc    :: !Loc,
                   mitems  :: [Item],     -- inventory
                   mletter :: !Char,      -- next inventory letter

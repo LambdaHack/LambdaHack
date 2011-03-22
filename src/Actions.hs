@@ -161,12 +161,12 @@ continueRun dir =
     msg   <- currentMessage
     let lvl@(Level { lmap = lmap, lheroes = hs }) = slevel state
         mslocs = S.fromList (L.map mloc (levelMonsterList state))
-        t      = lmap `at` loc  -- tile at current location
         monstersVisible = not (S.null (mslocs `S.intersection` ptvisible per))
         newsReported    = not (L.null msg)
-        itemsHere       = not (L.null (titems t))
-        heroThere       = L.elem (loc `shift` dir) (L.map mloc (IM.elems hs))
-        dirOK           = accessible lmap loc (loc `shift` dir)
+        t         = lmap `at` loc  -- tile at current location
+        itemsHere = not (L.null (titems t))
+        heroThere = L.elem (loc `shift` dir) (L.map mloc (IM.elems hs))
+        dirOK     = accessible lmap loc (loc `shift` dir)
     -- What happens next is mostly depending on the terrain we're currently on.
     let exit (Stairs  {}) = True
         exit (Opening {}) = True
@@ -522,10 +522,9 @@ targetFloor = do
 -- | Start the monster targeting mode. Cycle between monster targets.
 -- TODO: also target a monster by moving the cursor, if in target monster mode.
 -- TODO: sort monsters by distance to the player.
--- TODO: when each hero has his own perception, only target monsters
--- visible by the current player.
 targetMonster :: Action ()
 targetMonster = do
+  pl        <- gets splayer
   ms        <- gets (lmonsters . slevel)
   per       <- currentPerception
   target    <- gets (mtarget . getPlayerBody)
@@ -536,7 +535,7 @@ targetMonster = do
             _ -> -1  -- try to target first monster (e.g., number 0)
       (lt, gt) = IM.split i ms
       gtlt     = IM.assocs gt ++ IM.assocs lt
-      lf = L.filter (\ (_, m) -> S.member (mloc m) (ptvisible per)) gtlt
+      lf = L.filter (\ (_, m) -> actorSeesLoc pl (mloc m) per pl) gtlt
       tgt = case lf of
               [] -> target  -- no monsters in sight, stick to last target
               (ni, _) : _ -> TEnemy (AMonster ni)  -- pick the next monster
@@ -653,28 +652,32 @@ fireItem = do
       case targetToLoc state (ptvisible per) of
         Nothing  -> abortWith "target invalid"
         Just loc ->
-          case locToActor state loc of
-            Just a  -> actorDamageActor pl a 1 " with a dart"
-            Nothing -> modify (updateLevel (scatterItems [fired] loc))
+          if actorReachesLoc pl loc per pl
+            then case locToActor state loc of
+                   Just ta -> actorDamageActor pl ta 1 " with a dart"
+                   Nothing -> modify (updateLevel (scatterItems [fired] loc))
+            else abortWith "target not reachable"
     Nothing -> abortWith "nothing to fire"
   playerAdvanceTime
 
 applyItem :: Action ()
 applyItem = do
+  pl     <- gets splayer
   state  <- get
   per    <- currentPerception
   pitems <- gets (mitems . getPlayerBody)
   case findItem (\ i -> itype i == Wand) pitems of
     Just (wand, _) -> do
       let applied = wand { icount = 1 }
+      removeFromInventory applied
       case targetToLoc state (ptvisible per) of
         Nothing  -> abortWith "target invalid"
         Just loc ->
-          case locToActor state loc of
-            Just targetActor -> do
-              removeFromInventory applied
-              selectPlayer targetActor >> return ()
-            Nothing -> abortWith "no living target to affect"
+          if actorReachesLoc pl loc per pl
+            then case locToActor state loc of
+                   Just ta -> selectPlayer ta >> return ()
+                   Nothing -> abortWith "no living target to affect"
+            else abortWith "target not reachable"
     Nothing -> abortWith "nothing to apply"
   playerAdvanceTime
 

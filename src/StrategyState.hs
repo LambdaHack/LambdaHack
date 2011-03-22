@@ -48,9 +48,6 @@ strategy actor
     ploc = case lmhVisible of
              [] -> Nothing
              _  -> Just $ snd $ L.minimum lmhDist
-    -- TODO: currently even invisible heroes are targeted if _any_ hero
-    -- is visible; each hero should carry his own perception to check
-    -- if he's visible by a given monster
     playerVisible      =  isJust ploc  -- monster sees any hero
     playerAdjacent     =  maybe False (adjacent me) ploc
     towardsPlayer      =  maybe (0, 0) (\ ploc -> towards (me, ploc)) ploc
