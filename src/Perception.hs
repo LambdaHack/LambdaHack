@@ -3,6 +3,8 @@ module Perception where
 import qualified Data.Set as S
 import Data.List as L
 import qualified Data.IntMap as IM
+import Data.Maybe
+import Control.Monad
 
 import Geometry
 import State
@@ -27,6 +29,26 @@ ptreachable = preachable . ptotal
 
 ptvisible :: Perceptions -> S.Set Loc
 ptvisible = pvisible . ptotal
+
+actorSeesLoc :: Actor -> Loc -> Perceptions -> Actor -> Bool
+actorSeesLoc actor loc per pl =
+  let tryHero = case actor of
+                  AMonster _ -> Nothing
+                  AHero i -> do
+                    hper <- IM.lookup i (pheroes per)
+                    return $ loc `S.member` (pvisible hper)
+      tryPl   = do  -- the case for a monster under player control
+                  guard $ actor == pl
+                  pper <- pplayer per
+                  return $ loc `S.member` pvisible pper
+      tryAny  = tryHero `mplus` tryPl
+  in  fromMaybe False tryAny  -- assume not visible, if no perception found
+
+-- Not quite correct if FOV not symmetric (Shadow).
+actorSeesActor :: Actor -> Actor -> Loc -> Loc -> Perceptions -> Actor -> Bool
+actorSeesActor actor1 actor2 loc1 loc2 per pl =
+  actorSeesLoc actor1 loc2 per pl ||
+  actorSeesLoc actor2 loc1 per pl
 
 perception_ :: State -> Perceptions
 perception_ state@(State { slevel   = Level { lmap = lmap, lheroes = hs },
