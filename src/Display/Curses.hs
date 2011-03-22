@@ -1,7 +1,9 @@
 module Display.Curses
   (displayId, startup, shutdown,
-   display, nextEvent, setBG, setFG, setBold, Session,
-   white, black, yellow, blue, magenta, red, green, attr,
+   display, nextEvent, setBG, setFG, setBold, attr, Session,
+   black, red, green, yellow, blue, magenta, cyan, white,
+   bright_black, bright_red, bright_green, bright_yellow,
+   bright_blue, bright_magenta, bright_cyan, bright_white,
    Display.Curses.Attr, AttrColor) where
 
 import UI.HSCurses.Curses as C hiding (setBold)
@@ -95,39 +97,75 @@ nextEvent session =
 
 type Attr = (Maybe AttrColor, Maybe AttrColor)
 
-attr = (Nothing, Nothing)
-
-data AttrColor = White | Black | Yellow | Blue | Magenta | Red | Green
-  deriving (Show, Eq, Ord, Enum, Bounded)
-
-toFColor :: Maybe AttrColor -> C.ForegroundColor
-toFColor (Just White)    = C.WhiteF
-toFColor (Just Black)    = C.BlackF
-toFColor (Just Yellow)   = C.BrownF
-toFColor (Just Blue)     = C.DarkBlueF
-toFColor (Just Magenta)  = C.PurpleF
-toFColor (Just Red)      = C.DarkRedF
-toFColor (Just Green)    = C.DarkGreenF
-toFColor Nothing         = C.DefaultF
-
-toBColor :: Maybe AttrColor -> C.BackgroundColor
-toBColor (Just White)    = C.WhiteB
-toBColor (Just Black)    = C.BlackB
-toBColor (Just Yellow)   = C.BrownB
-toBColor (Just Blue)     = C.DarkBlueB
-toBColor (Just Magenta)  = C.PurpleB
-toBColor (Just Red)      = C.DarkRedB
-toBColor (Just Green)    = C.DarkGreenB
-toBColor Nothing         = C.DefaultB
-
-white   = White
-black   = Black
-yellow  = Yellow
-blue    = Blue
-magenta = Magenta
-red     = Red
-green   = Green
-
 setBold (f, b) = (f, b)
 setFG c (_, b) = (Just c, b)
 setBG c (f, _) = (f, Just c)
+attr = (Nothing, Nothing)
+
+data AttrColor =
+    Black
+  | Red
+  | Green
+  | Yellow
+  | Blue
+  | Magenta
+  | Cyan
+  | White
+  | BrBlack
+  | BrRed
+  | BrGreen
+  | BrYellow
+  | BrBlue
+  | BrMagenta
+  | BrCyan
+  | BrWhite
+  deriving (Show, Eq, Ord, Enum, Bounded)
+
+toFColor :: Maybe AttrColor -> C.ForegroundColor
+toFColor (Just Black)     = C.BlackF
+toFColor (Just Red)       = C.DarkRedF
+toFColor (Just Green)     = C.DarkGreenF
+toFColor (Just Yellow)    = C.BrownF
+toFColor (Just Blue)      = C.DarkBlueF
+toFColor (Just Magenta)   = C.PurpleF
+toFColor (Just Cyan)      = C.DarkCyanF
+toFColor (Just White)     = C.WhiteF
+toFColor (Just BrBlack)   = C.GreyF
+toFColor (Just BrRed)     = C.RedF
+toFColor (Just BrGreen)   = C.GreenF
+toFColor (Just BrYellow)  = C.YellowF
+toFColor (Just BrBlue)    = C.BlueF
+toFColor (Just BrMagenta) = C.MagentaF
+toFColor (Just BrCyan)    = C.CyanF
+toFColor (Just BrWhite)   = C.BrightWhiteF
+toFColor Nothing          = C.DefaultF
+
+toBColor :: Maybe AttrColor -> C.BackgroundColor
+toBColor (Just Black)     = C.BlackB
+toBColor (Just Red)       = C.DarkRedB
+toBColor (Just Green)     = C.DarkGreenB
+toBColor (Just Yellow)    = C.BrownB
+toBColor (Just Blue)      = C.DarkBlueB
+toBColor (Just Magenta)   = C.PurpleB
+toBColor (Just Cyan)      = C.DarkCyanB
+toBColor (Just White)     = C.WhiteB
+toBColor (Just _)         = C.DefaultB  -- a limitation of curses
+toBColor Nothing          = C.DefaultB
+
+black   = Black
+red     = Red
+green   = Green
+yellow  = Yellow
+blue    = Blue
+magenta = Magenta
+cyan    = Cyan
+white   = White
+
+bright_black   = BrBlack
+bright_red     = BrRed
+bright_green   = BrGreen
+bright_yellow  = BrYellow
+bright_blue    = BrBlue
+bright_magenta = BrMagenta
+bright_cyan    = BrCyan
+bright_white   = BrWhite

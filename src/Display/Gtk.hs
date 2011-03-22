@@ -1,7 +1,10 @@
 module Display.Gtk
   (displayId, startup, shutdown,
-   display, nextEvent, setBG, setFG, setBold, Session,
-   white, black, yellow, blue, magenta, red, green, attr, Attr, AttrColor) where
+   display, nextEvent, setBG, setFG, setBold, attr, Session,
+   black, red, green, yellow, blue, magenta, cyan, white,
+   bright_black, bright_red, bright_green, bright_yellow,
+   bright_blue, bright_magenta, bright_cyan, bright_white,
+   Attr, AttrColor) where
 
 import Control.Monad
 import Control.Concurrent
@@ -21,19 +24,6 @@ data Session =
     schan :: Chan String,
     stags :: Map AttrKey TextTag,
     sview :: TextView }
-
-doAttr :: TextTag -> AttrKey -> IO ()
-doAttr tt (BG Blue)    = set tt [ textTagBackground := "#0000CC" ]
-doAttr tt (BG Magenta) = set tt [ textTagBackground := "#CC00CC" ]
-doAttr tt (BG Green)   = set tt [ textTagBackground := "#00CC00" ]
-doAttr tt (BG Red)     = set tt [ textTagBackground := "#CC0000" ]
-doAttr tt (BG White)   = set tt [ textTagBackground := "#FFFFFF" ]
-doAttr tt (FG Green)   = set tt [ textTagForeground := "#00FF00" ]
-doAttr tt (FG Red)     = set tt [ textTagForeground := "#FF0000" ]
-doAttr tt (FG Blue)    = set tt [ textTagForeground := "#0000FF" ]
-doAttr tt (FG Yellow)  = set tt [ textTagForeground := "#CCCC00" ]
-doAttr tt (FG Black)   = set tt [ textTagForeground := "#000000" ]
-doAttr tt _            = return ()
 
 startup :: (Session -> IO ()) -> IO ()
 startup k =
@@ -188,18 +178,6 @@ nextEvent session =
     e <- readUndeadChan (schan session)
     maybe (nextEvent session) return (keyTranslate e)
 
-setBold   = id  -- not supported yet
-setBG c   = (BG c :)
-setFG c   = (FG c :)
-blue      = Blue
-magenta   = Magenta
-red       = Red
-yellow    = Yellow
-green     = Green
-white     = White
-black     = Black
-attr      = []
-
 type Attr = [AttrKey]
 
 data AttrKey =
@@ -207,14 +185,67 @@ data AttrKey =
   | BG AttrColor
   deriving (Eq, Ord)
 
-type Color = AttrColor
+setBold   = id  -- not supported yet
+setBG c   = (BG c :)
+setFG c   = (FG c :)
+attr      = []
+
+doAttr :: TextTag -> AttrKey -> IO ()
+doAttr tt (FG color) = set tt [ textTagForeground := colorToRGB color ]
+doAttr tt (BG color) = set tt [ textTagBackground := colorToRGB color ]
 
 data AttrColor =
-    Blue
-  | Magenta
+    Black
   | Red
   | Green
   | Yellow
+  | Blue
+  | Magenta
+  | Cyan
   | White
-  | Black
-  deriving (Eq, Ord, Enum, Bounded)
+  | BrBlack
+  | BrRed
+  | BrGreen
+  | BrYellow
+  | BrBlue
+  | BrMagenta
+  | BrCyan
+  | BrWhite
+  deriving (Show, Eq, Ord, Enum, Bounded)
+
+-- Mimics the Linux console; good old retro feel and more useful than xterm.
+colorToRGB :: AttrColor -> String
+colorToRGB Black     = "#000000"
+colorToRGB Red       = "#AA0000"
+colorToRGB Green     = "#00AA00"
+colorToRGB Yellow    = "#AA5500"
+colorToRGB Blue      = "#0000AA"
+colorToRGB Magenta   = "#AA00AA"
+colorToRGB Cyan      = "#00AAAA"
+colorToRGB White     = "#AAAAAA"
+colorToRGB BrBlack   = "#555555"
+colorToRGB BrRed     = "#FF5555"
+colorToRGB BrGreen   = "#55FF55"
+colorToRGB BrYellow  = "#FFFF55"
+colorToRGB BrBlue    = "#5555FF"
+colorToRGB BrMagenta = "#FF55FF"
+colorToRGB BrCyan    = "#55FFFF"
+colorToRGB BrWhite   = "#FFFFFF"
+
+black   = Black
+red     = Red
+green   = Green
+yellow  = Yellow
+blue    = Blue
+magenta = Magenta
+cyan    = Cyan
+white   = White
+
+bright_black   = BrBlack
+bright_red     = BrRed
+bright_green   = BrGreen
+bright_yellow  = BrYellow
+bright_blue    = BrBlue
+bright_magenta = BrMagenta
+bright_cyan    = BrCyan
+bright_white   = BrWhite
