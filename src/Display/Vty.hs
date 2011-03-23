@@ -64,8 +64,16 @@ nextEvent session =
     e <- V.next_event session
     maybe (nextEvent session) return (keyTranslate e)
 
-setFG c a = with_fore_color a c
-setBG c a = with_back_color a c
-attr = def_attr
+-- A hack to get bright colors via the bold attribute. Depending on terminal
+-- settings this is needed or not and the characters really get bold or not.
+-- HCurses does this by default, but vty refuses to get crazy.
+isBright c = c `elem` [bright_black, bright_red, bright_green, bright_yellow,
+                       bright_blue, bright_magenta, bright_cyan, bright_white]
+hack c a = if isBright c then with_style a bold else a
+setFG c a = hack c $ with_fore_color a c
+setBG c a = hack c $ with_back_color a c
+
+attr = def_attr { attr_fore_color = SetTo white,
+                  attr_back_color = SetTo black }
 
 type AttrColor = Color
