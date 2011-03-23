@@ -24,6 +24,7 @@ import LevelState
 import Message
 import Movable
 import MovableState
+import Monster
 import MonsterState
 import Perception
 import Random
@@ -302,7 +303,8 @@ actorOpenClose actor v o dir =
     pl    <- gets splayer
     let txt = if o then "open" else "closed"
     let hms = levelHeroList state ++ levelMonsterList state
-    let loc = mloc (getActor state actor)
+    let body = getActor state actor  -- TODO: swap args of getActor, for gets
+    let loc = mloc body
     let isPlayer  = actor == pl
     let isVerbose = v && isPlayer
     let dloc = shift loc dir  -- location we act upon
@@ -310,7 +312,7 @@ actorOpenClose actor v o dir =
            Tile d@(Door hv o') []
              | secret o' && isPlayer -> -- door is secret, cannot be opened or closed by the player
                                        neverMind isVerbose
-             | maybe o ((|| not o) . (> 10)) o' ->
+             | maybe o ((|| not o) . (> (niq (mtype body)))) o' ->
                                        -- door is in unsuitable state
                                        abortIfWith isVerbose ("already " ++ txt)
              | not (unoccupied hms dloc) ->
@@ -641,7 +643,8 @@ drinkPotion =
                      PotionWater   -> messageAdd "Tastes like water."
                      PotionHealing -> do
                        messageAdd "You feel better."
-                       let php p = min (mhpmax p) (mhp p + baseHp `div` 4)
+                       let php p =
+                             min (nhpMax (mtype p)) (mhp p + baseHp `div` 4)
                        updatePlayerBody (\ p -> p { mhp = php p })
                Just _  -> abortWith "you cannot drink that"
                Nothing -> neverMind True
@@ -694,7 +697,7 @@ dropItem :: Action ()
 dropItem =
   do
     state <- get
-    pbody  <- gets getPlayerBody
+    pbody <- gets getPlayerBody
     ploc <- gets (mloc . getPlayerBody)
     items <- gets (mitems . getPlayerBody)
     if L.null items
@@ -971,7 +974,7 @@ advanceTime :: Actor -> Action ()
 advanceTime actor =
   do
     time <- gets stime
-    updateAnyActor actor $ \ m -> m { mtime = time + mspeed m }
+    updateAnyActor actor $ \ m -> m { mtime = time + (nspeed (mtype m)) }
 
 playerAdvanceTime :: Action ()
 playerAdvanceTime = do
@@ -982,11 +985,11 @@ playerAdvanceTime = do
 regenerate :: Actor -> Action ()
 regenerate actor =
   do
-    pl   <- gets splayer
-    time <- gets stime
-    -- TODO: remove hardcoded time interval, regeneration should be an attribute of the movable
-    let upd m = m { mhp = min (mhpmax m) (mhp m + 1) }
-    when (time `mod` 1500 == 0) $ do
+    pl    <- gets splayer
+    pbody <- gets getPlayerBody
+    time  <- gets stime
+    let upd m = m { mhp = min (nhpMax (mtype m)) (mhp m + 1) }
+    when (time `mod` (nregen (mtype pbody)) == 0) $ do
       -- We really want hero selection to be a purely UI distinction,
       -- so all heroes need to regenerate, not just the player.
       -- TODO: currently only the heroes on the current level regenerate.

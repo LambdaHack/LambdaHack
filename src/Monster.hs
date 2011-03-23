@@ -7,61 +7,104 @@ import Geometry
 import Random
 import qualified Display
 
--- TODO: move _all_ monster data here from Grammar.hs, etc.
-
-data MovableType =
-    Hero Char String
-  | Eye
-  | FastEye
-  | Nose
+data MovableType = MovableType
+  { nhpMin   :: !Int,                -- ^ minimal initial hp
+    nhpMax   :: !Int,                -- ^ maximal possible and initial hp
+    nspeed   :: !Time,               -- ^ natural speed
+    nsymbol  :: !Char,               -- ^ map symbol
+    ncolor   :: !Display.AttrColor,  -- ^ map color
+    nname    :: String,              -- ^ name
+    nsight   :: !Bool,               -- ^ can it see?
+    nsmell   :: !Bool,               -- ^ can it smell?
+    niq      :: !Int,                -- ^ intelligence
+    nregen   :: !Int,                -- ^ regeneration interval
+    nfreq    :: !Int                 -- ^ dungeon frequency
+  }
   deriving (Show, Eq)
 
--- | Monster frequencies (TODO: should of course vary much more
--- on local circumstances).
-monsterFrequency :: Frequency MovableType
-monsterFrequency =
-  Frequency
-  [
-    (2, Nose),
-    (6, Eye),
-    (1, FastEye)
-  ]
+hero, eye, fastEye, nose :: MovableType
+hero = MovableType
+  { nhpMin  = 50,
+    nhpMax  = 50,
+    nspeed  = 10,
+    nsymbol = '@',
+    nname   = "you",
+    ncolor  = Display.bright_white,  -- Heroes white, monsters colorful.
+    nsight  = True,
+    nsmell  = False,
+    niq     = 13,  -- Can see that secret doors under alien control.
+    nregen  = 1500,
+    nfreq   = 0
+  }
 
--- | Generate monster.
-newMonster :: (MovableType -> Int -> Loc -> Int -> a) ->
-              Loc -> Frequency MovableType -> Rnd a
-newMonster template loc ftp =
-    do
-      tp <- frequency ftp
-      hp <- hps tp
-      let s = speed tp
-      return (template tp hp loc s)
-  where
-    hps Eye      = randomR (1,12)  -- falls in 1--4 unarmed rounds
-    hps FastEye  = randomR (1,6)   -- 1--2
-    hps Nose     = randomR (6,13)  -- 2--5 and in 1 round of the strongest sword
+eye = MovableType
+  { nhpMin  = 1,  -- falls in 1--4 unarmed rounds
+    nhpMax  = 12,
+    nspeed  = 10,
+    nsymbol = 'e',
+    ncolor  = Display.bright_red,
+    nname   = "the reducible eye",
+    nsight  = True,
+    nsmell  = False,
+    niq     = 10,
+    nregen  = 1500,
+    nfreq   = 6
+  }
+fastEye = MovableType
+  { nhpMin  = 1,  -- falls in 1--2 unarmed rounds
+    nhpMax  = 6,
+    nspeed  = 4,
+    nsymbol = 'e',
+    ncolor  = Display.bright_blue,
+    nname   = "the super-fast eye",
+    nsight  = True,
+    nsmell  = False,
+    niq     = 3,
+    nregen  = 1500,
+    nfreq   = 1
+  }
+nose = MovableType
+  { nhpMin  = 6,  -- 2--5 and in 1 round of the strongest sword
+    nhpMax  = 13,
+    nspeed  = 11,
+    nsymbol = 'n',
+    ncolor  = Display.green,
+    nname   = "the point-free nose",
+    nsight  = False,
+    nsmell  = True,
+    niq     = 0,
+    nregen  = 1500,
+    nfreq   = 6
+  }
 
-    speed Eye      = 10
-    speed FastEye  = 4
-    speed Nose     = 11
-
--- Heroes are white, monsters are colorful.
-viewMovable :: MovableType -> (Char, Display.AttrColor)
-viewMovable (Hero sym _) = (sym, Display.bright_white)
-viewMovable Eye          = ('e', Display.bright_red)
-viewMovable FastEye      = ('e', Display.bright_blue)
-viewMovable Nose         = ('n', Display.green)
+-- | The list of types of monster that appear randomly throughout the dungeon.
+roamingMts :: [MovableType]
+roamingMts = [eye, fastEye, nose]
 
 instance Binary MovableType where
-  put (Hero symbol name) = putWord8 0 >> put symbol >> put name
-  put Eye                = putWord8 1
-  put FastEye            = putWord8 2
-  put Nose               = putWord8 3
+  put (MovableType nhpMin nhpMax nsp nsym ncol nnm nsi nsm niq nreg nfreq) =
+    do
+      put nhpMin
+      put nhpMax
+      put nsp
+      put nsym
+      put ncol
+      put nnm
+      put nsi
+      put nsm
+      put niq
+      put nreg
+      put nfreq
   get = do
-          tag <- getWord8
-          case tag of
-            0 -> liftM2 Hero get get
-            1 -> return Eye
-            2 -> return FastEye
-            3 -> return Nose
-            _ -> fail "no parse (MovableType)"
+    nhpMin <- get
+    nhpMax <- get
+    nsp    <- get
+    nsym   <- get
+    ncol   <- get
+    nnm    <- get
+    nsi    <- get
+    nsm    <- get
+    niq    <- get
+    nreg   <- get
+    nfreq  <- get
+    return (MovableType nhpMin nhpMax nsp nsym ncol nnm nsi nsm niq nreg nfreq)

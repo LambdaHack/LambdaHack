@@ -6,6 +6,7 @@ module Display.Gtk
    bright_blue, bright_magenta, bright_cyan, bright_white,
    Attr, AttrColor) where
 
+import qualified Data.Binary
 import Control.Monad
 import Control.Concurrent
 import Graphics.UI.Gtk.Gdk.Events  -- TODO: replace, deprecated
@@ -193,7 +194,7 @@ doAttr :: TextTag -> AttrKey -> IO ()
 doAttr tt (FG color) = set tt [ textTagForeground := colorToRGB color ]
 doAttr tt (BG color) = set tt [ textTagBackground := colorToRGB color ]
 
-data AttrColor =
+data AttrColor =  -- TODO: move and use in vty, too
     Black
   | Red
   | Green
@@ -211,6 +212,12 @@ data AttrColor =
   | BrCyan
   | BrWhite
   deriving (Show, Eq, Ord, Enum, Bounded)
+
+instance Data.Binary.Binary AttrColor where
+  put c = Data.Binary.putWord8 $ toEnum $ fromEnum c
+  get = do
+    c <- Data.Binary.getWord8
+    return $ toEnum $ fromEnum c
 
 -- Mimics the Linux console; good old retro feel and more useful than xterm.
 colorToRGB :: AttrColor -> String

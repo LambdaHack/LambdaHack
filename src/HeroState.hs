@@ -15,7 +15,8 @@ import State
 
 templateHero :: Char -> String -> Loc -> Int -> Movable
 templateHero symbol name ploc hp =
-  Movable (Hero symbol name) hp hp Nothing TCursor ploc [] 'a' 10 0
+  let mt = hero {nhpMin = hp, nhpMax = hp, nsymbol = symbol, nname = name }
+  in  Movable mt hp Nothing TCursor ploc [] 'a' 0
 
 -- | Create a new hero on the current level, close to the given location.
 addHero :: Loc -> Int -> String -> State -> Int -> State

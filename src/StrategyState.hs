@@ -23,11 +23,7 @@ strategy actor
                         slevel  = Level { lsmell = nsmap,
                                           lmap = lmap } })
          per =
-    case mt of
-      Eye     -> slowEye
-      FastEye -> fastEye
-      Nose    -> nose
-      _       -> onlyAccessible moveRandomly
+    if nsmell mt then nose else openEye  -- TODO: unify the 2 kinds using nsight
   where
     -- TODO: set monster targets and then prefer targets to other heroes
     Movable { mtype = mt, mloc = me, mdir = mdir } = getActor state actor
@@ -60,7 +56,7 @@ strategy actor
     -- Monsters don't see doors more secret than that. Enforced when actually
     -- opening doors, too, so that monsters don't cheat.
     -- TODO: vary the parameter per monster intelligence level.
-    onlyOpenable       =  onlyMoves (openable 10 lmap) me
+    onlyOpenable       =  onlyMoves (openable (niq mt) lmap) me
     smells             =  L.map fst $
                           L.sortBy (\ (_,s1) (_,s2) -> compare s2 s1) $
                           L.filter (\ (_,s) -> s > 0) $
@@ -72,11 +68,8 @@ strategy actor
                             .| onlyLootPresent moveRandomly
                             .| onlyPreservesDir moveRandomly
 
-    slowEye            =  playerAdjacent .=> return towardsPlayer
+    openEye            =  playerAdjacent .=> return towardsPlayer
                           .| not playerVisible .=> onlyOpenable eye
-                          .| onlyAccessible eye
-
-    fastEye            =  playerAdjacent .=> return towardsPlayer
                           .| onlyAccessible eye
 
     nose               =  playerAdjacent .=> return towardsPlayer

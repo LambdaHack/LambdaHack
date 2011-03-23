@@ -150,7 +150,7 @@ displayLevel session per
                              sassocs = assocs,
                              slevel  = lvl@(Level nm hs sz@(sy,sx) ms smap nlmap lmeta) }))
              msg moverlay =
-  let Movable { mhpmax = phpmax, mhp = php, mdir = pdir,
+  let Movable { mtype = mt, mhp = php, mdir = pdir,
                 mloc = ploc, mitems = pitems } =
         getPlayerBody state
       overlay = maybe "" id moverlay
@@ -179,7 +179,7 @@ displayLevel session per
                                rea  = S.member loc reachable
                                (rv,ra) = case L.find (\ m -> loc == mloc m) (hs ++ ms) of
                                            _ | sTer > 0          -> viewTerrain sTer False (tterrain tile)
-                                           Just m | sOmn || vis  -> let (sym, color) = viewMovable (mtype m) in (sym, if mloc m == ploc then black else color)
+                                           Just m | sOmn || vis  -> (nsymbol (mtype m), if mloc m == ploc then black else (ncolor (mtype m)))
                                            _ | sSml && sml >= 0  -> viewSmell sml
                                              | otherwise         -> viewTile vis tile assocs
                                (vision, ra2) =
@@ -197,7 +197,7 @@ displayLevel session per
                 msg
                 (take 40 (levelName nm ++ repeat ' ') ++
                  take 10 ("$: " ++ show gold ++ repeat ' ') ++
-                 take 15 ("HP: " ++ show php ++ " (" ++ show phpmax ++ ")" ++ repeat ' ') ++
+                 take 15 ("HP: " ++ show php ++ " (" ++ show (nhpMax mt) ++ ")" ++ repeat ' ') ++
                  take 15 ("T: " ++ show (time `div` 10) ++ repeat ' '))
       msgs = splitMsg sx msg
       perf k []     = perfo k ""

@@ -18,9 +18,10 @@ import Random
 -- move immediately after generation; this does not seem like
 -- a bad idea, but it would certainly be "more correct" to set
 -- the time to the creation time instead
-templateMonster :: MovableType -> Int -> Loc -> Int -> Movable
-templateMonster tp hp loc s =
-  Movable tp hp hp Nothing TCursor loc [] 'a' s 0
+templateMonster :: MovableType -> Loc -> Rnd Movable
+templateMonster mt loc = do
+  hp <- randomR (nhpMin mt, nhpMax mt)
+  return $ Movable mt hp Nothing TCursor loc [] 'a' 0
 
 newMonsterIndex :: State -> Int
 newMonsterIndex (State { slevel = lvl, sdungeon = Dungeon m }) =
@@ -43,11 +44,13 @@ addMonster state@(State { slevel = lvl }) = do
         -- visible by the player (if possible -- not possible for bigrooms)
         -- levels with few rooms are dangerous, because monsters may spawn
         -- in adjacent and unexpected places
-        sm <- findLocTry 1000 lvl
-              (\ l t -> open t
-                        && not (l `L.elem` L.map mloc (hs ++ ms)))
-              (\ l t -> floor t
-                        && L.all (\pl -> distance (mloc pl, l) > 400) hs)
-        m <- newMonster templateMonster sm monsterFrequency
+        loc <- findLocTry 1000 lvl
+               (\ l t -> open t
+                         && not (l `L.elem` L.map mloc (hs ++ ms)))
+               (\ l t -> floor t
+                         && L.all (\ pl -> distance (mloc pl, l) > 400) hs)
+        let fmt = Frequency $ L.zip (L.map nfreq roamingMts) roamingMts
+        mt <- frequency fmt
+        m  <- templateMonster mt loc
         return (updateMonsters (IM.insert ni m) lvl)
     else return lvl

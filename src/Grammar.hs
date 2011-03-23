@@ -10,19 +10,14 @@ import ItemState
 
 -- | How to refer to a movable in object position of a sentence.
 objectMovable :: MovableType -> String
-objectMovable (Hero _ s) = s
-objectMovable Eye        = "the reducible eye"
-objectMovable FastEye    = "the super-fast eye"
-objectMovable Nose       = "the point-free nose"
+objectMovable mt = nname mt
 
 -- | How to refer to a movable in subject position of a sentence.
 subjectMovable :: MovableType -> String
 subjectMovable x = let (s:r) = objectMovable x in toUpper s : r
 
 verbMovable :: MovableType -> String -> String
-verbMovable (Hero _ "you") v = v
-verbMovable (Hero _ s)     v = v ++ "s"
-verbMovable _              v = v ++ "s"
+verbMovable mt v = if nname mt == "you" then v else v ++ "s"
 
 -- | Sentences such like "The dog barks".
 subjectMovableVerb :: MovableType -> String -> String

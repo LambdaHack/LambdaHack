@@ -9,7 +9,6 @@ import Monster
 
 data Movable = Movable
                 { mtype   :: !MovableType,
-                  mhpmax  :: !Int,
                   mhp     :: !Int,
                   mdir    :: Maybe Dir,  -- for monsters: the dir the monster last moved; TODO: use target for this, instead and use mdir to signal the monster wants to switch position with a hero (if the monster is smart/big enough)
                                          -- for heroes: the dir the hero is running
@@ -17,35 +16,30 @@ data Movable = Movable
                   mloc    :: !Loc,
                   mitems  :: [Item],     -- inventory
                   mletter :: !Char,      -- next inventory letter
-                  mspeed  :: !Time,      -- speed (i.e., delay before next action)
                   mtime   :: !Time }     -- time of next action
   deriving Show
 
 instance Binary Movable where
-  put (Movable mt mhpm mhp md tgt ml minv mletter mspeed mtime) =
+  put (Movable mt mhp md tgt ml minv mletter mtime) =
     do
       put mt
-      put mhpm
       put mhp
       put md
       put tgt
       put ml
       put minv
       put mletter
-      put mspeed
       put mtime
   get = do
           mt      <- get
-          mhpm    <- get
           mhp     <- get
           md      <- get
           tgt     <- get
           ml      <- get
           minv    <- get
           mletter <- get
-          mspeed  <- get
           mtime   <- get
-          return (Movable mt mhpm mhp md tgt ml minv mletter mspeed mtime)
+          return (Movable mt mhp md tgt ml minv mletter mtime)
 
 data Actor = AHero Int     -- ^ hero index (on the lheroes intmap)
            | AMonster Int  -- ^ monster index (on the lmonsters intmap)
