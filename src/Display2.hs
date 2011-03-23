@@ -171,10 +171,6 @@ displayLevel session per
       gold    = maybe 0 (icount . fst) $ findItem (\ i -> iletter i == Just '$') pitems
       hs      = levelHeroList state
       ms      = levelMonsterList state
-      setFg  color = setFG color
-      setInv color = if color == white
-                     then setBG white . setFG black
-                     else setBG white . setFG color
       disp n msg =
         display ((0,0),sz) session
                  (\ loc -> let tile = nlmap `lAt` loc
@@ -183,23 +179,26 @@ displayLevel session per
                                rea  = S.member loc reachable
                                (rv,ra) = case L.find (\ m -> loc == mloc m) (hs ++ ms) of
                                            _ | sTer > 0          -> viewTerrain sTer False (tterrain tile)
-                                           Just m | sOmn || vis  -> let (sym, color) = viewMovable (mtype m) in (sym, (if mloc m == ploc then setInv else setFg)  color)
+                                           Just m | sOmn || vis  -> let (sym, color) = viewMovable (mtype m) in (sym, if mloc m == ploc then black else color)
                                            _ | sSml && sml >= 0  -> viewSmell sml
                                              | otherwise         -> viewTile vis tile assocs
-                               vision =
+                               (vision, ra2) =
                                  if ctargeting (scursor state)
                                     && loc == clocation (scursor state)
-                                 then setBG white . setFG black
-                                 else lVision vis rea
+                                 then (setBG white,
+                                       if ra == white then black else ra)
+                                 else if ra == black
+                                      then (setBG white, ra)
+                                      else (lVision vis rea, ra)
                            in
                              case over (loc `shift` ((sy+1) * n, 0)) of
                                Just c  ->  (attr, c)
-                               _       ->  (vision . ra $ attr, rv))
+                               _       ->  (vision . setFG ra2 $ attr, rv))
                 msg
                 (take 40 (levelName nm ++ repeat ' ') ++
                  take 10 ("$: " ++ show gold ++ repeat ' ') ++
                  take 15 ("HP: " ++ show php ++ " (" ++ show phpmax ++ ")" ++ repeat ' ') ++
-                 take 10 ("T: " ++ show (time `div` 10) ++ repeat ' '))
+                 take 15 ("T: " ++ show (time `div` 10) ++ repeat ' '))
       msgs = splitMsg sx msg
       perf k []     = perfo k ""
       perf k [xs]   = perfo k xs

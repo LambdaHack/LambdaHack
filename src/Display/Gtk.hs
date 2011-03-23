@@ -81,7 +81,7 @@ startup k =
                                _ -> return False)
 
     let black = Color minBound minBound minBound
-    let white = Color maxBound maxBound maxBound
+        white = Color 0xAAAA 0xAAAA 0xAAAA  -- White, see below
     widgetModifyBase tv StateNormal black
     widgetModifyText tv StateNormal white
 

@@ -17,7 +17,7 @@ import Geometry
 import Movable
 import Item
 import Random
-import Display
+import qualified Display
 
 -- | Names of the dungeon levels are represented using a
 -- custom data structure.
@@ -506,6 +506,7 @@ lookTerrain (Door _ (Just _))  = "A wall."  -- secret
 lookTerrain (Wall _ )          = "A wall."
 lookTerrain _                  = ""
 
+wh = Display.white
 -- | The parameter "n" is the level of evolution:
 --
 -- 0: final
@@ -515,42 +516,42 @@ lookTerrain _                  = ""
 -- 4: only rooms
 --
 -- The Bool indicates whether the loc is currently visible.
-viewTerrain :: Int -> Bool -> Terrain -> (Char, Attr -> Attr)
-viewTerrain n b Rock              = (' ', id)
+viewTerrain :: Int -> Bool -> Terrain -> (Char, Display.AttrColor)
+viewTerrain n b Rock              = (' ', wh)
 viewTerrain n b (Opening d)
-  | n <= 3                        = ('.', id)
+  | n <= 3                        = ('.', wh)
   | otherwise                     = viewTerrain 0 b (Wall d)
-viewTerrain n b (Floor Light)     = ('.', id)
-viewTerrain n b (Floor Dark)      = if b then ('.', id) else (' ', id)
-viewTerrain n b Unknown           = (' ', id)
+viewTerrain n b (Floor Light)     = ('.', wh)
+viewTerrain n b (Floor Dark)      = if b then ('.', wh) else (' ', wh)
+viewTerrain n b Unknown           = (' ', wh)
 viewTerrain n b Corridor
-  | n <= 3                        = ('#', id)
+  | n <= 3                        = ('#', wh)
   | otherwise                     = viewTerrain 0 b Rock
 viewTerrain n b (Wall p)
-  | p == O                        = ('O', id)
-  | p `elem` [L, R]               = ('|', id)
-  | otherwise                     = ('-', id)
+  | p == O                        = ('O', wh)
+  | p `elem` [L, R]               = ('|', wh)
+  | otherwise                     = ('-', wh)
 viewTerrain n b (Stairs _ Up _)
-  | n <= 1                        = ('<', id)
+  | n <= 1                        = ('<', wh)
   | otherwise                     = viewTerrain 0 b (Floor Dark)
 viewTerrain n b (Stairs _ Down _)
-  | n <= 1                        = ('>', id)
+  | n <= 1                        = ('>', wh)
   | otherwise                     = viewTerrain 0 b (Floor Dark)
 viewTerrain n b (Door d (Just 0))
-  | n <= 2                        = ('+', setFG yellow)
+  | n <= 2                        = ('+', Display.yellow)
   | otherwise                     = viewTerrain n b (Opening d)
 viewTerrain n b (Door d (Just _))
   | n <= 2                        = viewTerrain n b (Wall d)  -- secret door
   | otherwise                     = viewTerrain n b (Opening d)
 viewTerrain n b (Door p Nothing)
-  | n <= 2                        = (if p `elem` [L, R] then '-' else '|', setFG yellow)
+  | n <= 2                        = (if p `elem` [L, R] then '-' else '|', Display.yellow)
   | otherwise                     = viewTerrain n b (Opening p)
 
-viewSmell :: Int -> (Char, Attr -> Attr)
+viewSmell :: Int -> (Char, Display.AttrColor)
 viewSmell n = let k | n > 9    = '*'
                     | n < 0    = '-'
                     | otherwise = head . show $ n
-              in  (k, setFG black . setBG green)
+              in  (k, Display.green)
 
 -- TODO: Really scatter around, if more than one or location occupied?
 --       Scatter randomly or not?

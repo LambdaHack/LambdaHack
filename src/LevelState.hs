@@ -1,6 +1,6 @@
 module LevelState where
 
-import Display
+import qualified Display
 import Geometry
 import Level
 import State
@@ -8,7 +8,7 @@ import Item
 import ItemState
 import Grammar
 
-viewTile :: Bool -> Tile -> Assocs -> (Char, Attr -> Attr)
+viewTile :: Bool -> Tile -> Assocs -> (Char, Display.AttrColor)
 viewTile b (Tile t [])    a = viewTerrain 0 b t
 viewTile b (Tile t (i:_)) a = viewItem (itype i) a
 

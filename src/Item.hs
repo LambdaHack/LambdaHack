@@ -11,7 +11,7 @@ import Data.Char
 import Data.Function
 import Control.Monad
 
-import Display
+import qualified Display
 import Geometry
 import Random
 
@@ -201,21 +201,22 @@ letterLabel :: Maybe Char -> String
 letterLabel Nothing  = "    "
 letterLabel (Just c) = c : " - "
 
-viewItem :: ItemType -> Assocs -> (Char, Attr -> Attr)
+viewItem :: ItemType -> Assocs -> (Char, Display.AttrColor)
 viewItem i a = viewItem' i (M.lookup i a)
   where
-    viewItem' (Sword {})  _            = (')', id)
-    viewItem' Dart        _            = (')', id)
-    viewItem' Ring        _            = ('=', id)
-    viewItem' Scroll      _            = ('?', id)
-    viewItem' (Potion {}) (Just Clear) = ('!', setFG bright_blue)
-    viewItem' (Potion {}) (Just White) = ('!', setFG bright_white)
-    viewItem' (Potion {}) _            = ('!', id)
-    viewItem' Wand        _            = ('/', id)
-    viewItem' Gold        _            = ('$', setFG bright_yellow)
-    viewItem' Gem         _            = ('*', setFG bright_magenta)
-    viewItem' Amulet      _            = ('"', id)
-    viewItem' _           _            = ('~', id)
+    wh = Display.white
+    viewItem' (Sword {})  _            = (')', wh)
+    viewItem' Dart        _            = (')', wh)
+    viewItem' Ring        _            = ('=', wh)
+    viewItem' Scroll      _            = ('?', wh)
+    viewItem' (Potion {}) (Just Clear) = ('!', Display.bright_blue)
+    viewItem' (Potion {}) (Just White) = ('!', Display.bright_cyan)
+    viewItem' (Potion {}) _            = ('!', wh)
+    viewItem' Wand        _            = ('/', wh)
+    viewItem' Gold        _            = ('$', Display.bright_yellow)
+    viewItem' Gem         _            = ('*', Display.bright_magenta)
+    viewItem' Amulet      _            = ('"', wh)
+    viewItem' _           _            = ('~', wh)
 
 -- | Adds an item to a list of items, joining equal items.
 -- Also returns the joined item.

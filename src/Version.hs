@@ -5,8 +5,7 @@ import Data.Version
 -- Cabal
 import qualified Paths_LambdaHack as Self (version)
 
-import Display
+import qualified Display
 
 version :: String
-version = showVersion Self.version ++ " (" ++ displayId ++ " frontend)"
-
+version = showVersion Self.version ++ " (" ++ Display.displayId ++ " frontend)"

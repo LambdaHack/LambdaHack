@@ -5,7 +5,7 @@ import Control.Monad
 
 import Geometry
 import Random
-import Display
+import qualified Display
 
 -- TODO: move _all_ monster data here from Grammar.hs, etc.
 
@@ -46,11 +46,11 @@ newMonster template loc ftp =
     speed Nose     = 11
 
 -- Heroes are white, monsters are colorful.
-viewMovable :: MovableType -> (Char, AttrColor)
-viewMovable (Hero sym _) = (sym, white)
-viewMovable Eye          = ('e', red)
-viewMovable FastEye      = ('e', blue)
-viewMovable Nose         = ('n', green)
+viewMovable :: MovableType -> (Char, Display.AttrColor)
+viewMovable (Hero sym _) = (sym, Display.bright_white)
+viewMovable Eye          = ('e', Display.bright_red)
+viewMovable FastEye      = ('e', Display.bright_blue)
+viewMovable Nose         = ('n', Display.green)
 
 instance Binary MovableType where
   put (Hero symbol name) = putWord8 0 >> put symbol >> put name
