@@ -26,9 +26,9 @@ saveGame state =
 restoreGame :: Config.CP -> IO (Either State String)
 restoreGame config =
   E.catch (do
-             f <- file config
-             (x, z) <- strictDecodeCompressedFile f
              mvBkp config
+             f <- file config
+             (x, z) <- strictDecodeCompressedFile (f ++ ".bkp")
              (z :: Bool) `seq` return $ Left x)
           (\ e -> case e :: IOException of
                     _ -> return (Right $
