@@ -193,7 +193,7 @@ displayLevel session per
                            in
                              case over (loc `shift` ((sy+1) * n, 0)) of
                                Just c  ->  (attr, c)
-                               _       ->  (vision . setFG ra2 $ attr, rv))
+                               _       ->  (vision . (if ra2 == white then id else setFG ra2) $ attr, rv))
                 msg
                 (take 40 (levelName nm ++ repeat ' ') ++
                  take 10 ("$: " ++ show gold ++ repeat ' ') ++
