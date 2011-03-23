@@ -12,6 +12,8 @@ import Data.List as L
 import Data.Map as M
 import Data.Char
 import qualified Data.ByteString as BS
+import Control.Monad
+import Data.Maybe
 
 import Geometry
 import Keys as K
@@ -21,21 +23,24 @@ displayId = "curses"
 data Session =
   Session
     { win :: Window,
-      styles :: Map (Maybe AttrColor, Maybe AttrColor) C.CursesStyle }
+      styles :: Map (AttrColor, AttrColor) C.CursesStyle }
 
 startup :: (Session -> IO ()) -> IO ()
 startup k =
   do
     C.start
-    C.startColor
     cursSet CursorInvisible
-    nr <- colorPairs
     let s = [ ((f,b), C.Style (toFColor f) (toBColor b))
-            | f <- Nothing : L.map Just [minBound..maxBound],
-              b <- Nothing : L.map Just [minBound..maxBound] ]
-    let (ks, vs) = unzip (tail s)  -- drop the Nothing/Nothing combo
-    ws <- C.convertStyles (take (nr - 1) vs)
-    k (Session C.stdScr (M.fromList (zip ks ws)))
+            | f <- [minBound..maxBound],
+              b <- [Black, White, Blue, Magenta ] ]  -- no more possible (4*16)
+    nr <- colorPairs
+    when (nr < L.length s) $
+      C.end >>
+      error ("Terminal has too few color pairs (" ++ show nr ++ "). Giving up.")
+    let (ks, vs) = unzip s
+    ws <- C.convertStyles vs
+    let styleMap = M.fromList (zip ks ws)
+    k (Session C.stdScr styleMap)
 
 shutdown :: Session -> IO ()
 shutdown w = C.end
@@ -43,9 +48,13 @@ shutdown w = C.end
 display :: Area -> Session -> (Loc -> (Display.Curses.Attr, Char)) -> String -> String -> IO ()
 display ((y0,x0),(y1,x1)) (Session { win = w, styles = s }) f msg status =
   do
-    erase
+    -- let defaultStyle = C.defaultCursesStyle
+    -- Terminals with white background require this and more:
+    let defaultStyle = s ! (White, Black)
+        canonical (c, d) = (fromMaybe White c, fromMaybe Black d)
+    C.erase
     mvWAddStr w 0 0 msg
-    sequence_ [ let (a,c) = f (y,x) in C.setStyle (findWithDefault C.defaultCursesStyle a s) >> mvWAddStr w (y+1) x [c]
+    sequence_ [ let (a,c) = f (y,x) in C.setStyle (findWithDefault defaultStyle (canonical a) s) >> mvWAddStr w (y+1) x [c]
               | x <- [x0..x1], y <- [y0..y1] ]
     mvWAddStr w (y1+2) 0 status
     refresh
@@ -120,36 +129,34 @@ data AttrColor =
   | BrWhite
   deriving (Show, Eq, Ord, Enum, Bounded)
 
-toFColor :: Maybe AttrColor -> C.ForegroundColor
-toFColor (Just Black)     = C.BlackF
-toFColor (Just Red)       = C.DarkRedF
-toFColor (Just Green)     = C.DarkGreenF
-toFColor (Just Yellow)    = C.BrownF
-toFColor (Just Blue)      = C.DarkBlueF
-toFColor (Just Magenta)   = C.PurpleF
-toFColor (Just Cyan)      = C.DarkCyanF
-toFColor (Just White)     = C.WhiteF
-toFColor (Just BrBlack)   = C.GreyF
-toFColor (Just BrRed)     = C.RedF
-toFColor (Just BrGreen)   = C.GreenF
-toFColor (Just BrYellow)  = C.YellowF
-toFColor (Just BrBlue)    = C.BlueF
-toFColor (Just BrMagenta) = C.MagentaF
-toFColor (Just BrCyan)    = C.CyanF
-toFColor (Just BrWhite)   = C.BrightWhiteF
-toFColor Nothing          = C.DefaultF
+toFColor :: AttrColor -> C.ForegroundColor
+toFColor Black     = C.BlackF
+toFColor Red       = C.DarkRedF
+toFColor Green     = C.DarkGreenF
+toFColor Yellow    = C.BrownF
+toFColor Blue      = C.DarkBlueF
+toFColor Magenta   = C.PurpleF
+toFColor Cyan      = C.DarkCyanF
+toFColor White     = C.WhiteF
+toFColor BrBlack   = C.GreyF
+toFColor BrRed     = C.RedF
+toFColor BrGreen   = C.GreenF
+toFColor BrYellow  = C.YellowF
+toFColor BrBlue    = C.BlueF
+toFColor BrMagenta = C.MagentaF
+toFColor BrCyan    = C.CyanF
+toFColor BrWhite   = C.BrightWhiteF
 
-toBColor :: Maybe AttrColor -> C.BackgroundColor
-toBColor (Just Black)     = C.BlackB
-toBColor (Just Red)       = C.DarkRedB
-toBColor (Just Green)     = C.DarkGreenB
-toBColor (Just Yellow)    = C.BrownB
-toBColor (Just Blue)      = C.DarkBlueB
-toBColor (Just Magenta)   = C.PurpleB
-toBColor (Just Cyan)      = C.DarkCyanB
-toBColor (Just White)     = C.WhiteB
-toBColor (Just _)         = C.DefaultB  -- a limitation of curses
-toBColor Nothing          = C.DefaultB
+toBColor :: AttrColor -> C.BackgroundColor
+toBColor Black     = C.BlackB
+toBColor Red       = C.DarkRedB
+toBColor Green     = C.DarkGreenB
+toBColor Yellow    = C.BrownB
+toBColor Blue      = C.DarkBlueB
+toBColor Magenta   = C.PurpleB
+toBColor Cyan      = C.DarkCyanB
+toBColor White     = C.WhiteB
+toBColor _         = C.BlackB  -- a limitation of curses
 
 black   = Black
 red     = Red
