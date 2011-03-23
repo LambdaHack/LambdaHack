@@ -39,7 +39,7 @@ allHeroesAnyLevel state =
         L.map (\ (i, _) -> (AHero i, ln)) (IM.assocs hs)
   in  L.concatMap one (slevel state : M.elems m)
 
-updateAnyActorBody :: Actor -> (Movable -> Movable) ->  State -> State
+updateAnyActorBody :: Actor -> (Movable -> Movable) -> State -> State
 updateAnyActorBody actor f state =
   case findActorAnyLevel actor state of
     Just (ln, _) ->
@@ -55,8 +55,8 @@ updateAnyLevel f ln state@(State { slevel = level,
   | otherwise = updateDungeon (const $ Dungeon $ M.adjust f ln dng) state
 
 -- | Calculate the location of player's target.
-targetToLoc :: State -> S.Set Loc -> Maybe Loc
-targetToLoc state visible =
+targetToLoc :: S.Set Loc -> State -> Maybe Loc
+targetToLoc visible state =
   case mtarget (getPlayerBody state) of
     TLoc loc -> Just loc
     TCursor  ->
@@ -64,23 +64,23 @@ targetToLoc state visible =
       then Just $ clocation (scursor state)
       else Nothing  -- cursor invalid: set at a different level
     TEnemy a -> do
-      guard $ memActor state a           -- alive and on the current level?
-      let loc = mloc (getActor state a)
+      guard $ memActor a state           -- alive and on the current level?
+      let loc = mloc (getActor a state)
       guard $ S.member loc visible       -- visible?
       return loc
 
 -- The operations below disregard levels other than the current.
 
 -- | Checks if the actor is present on the current level.
-memActor :: State -> Actor -> Bool
-memActor (State { slevel = lvl }) a =
+memActor :: Actor -> State -> Bool
+memActor a (State { slevel = lvl }) =
   case a of
     AHero n    -> IM.member n (lheroes lvl)
     AMonster n -> IM.member n (lmonsters lvl)
 
 -- | Gets actor body from the current level. Error if not found.
-getActor :: State -> Actor -> Movable
-getActor (State { slevel = lvl }) a =
+getActor :: Actor -> State -> Movable
+getActor a (State { slevel = lvl }) =
   case a of
     AHero n    -> lheroes   lvl IM.! n
     AMonster n -> lmonsters lvl IM.! n
@@ -104,8 +104,8 @@ levelHeroList    (State { slevel = Level { lheroes   = hs } }) = IM.elems hs
 levelMonsterList (State { slevel = Level { lmonsters = ms } }) = IM.elems ms
 
 -- | Finds an actor at a location on the current level. Perception irrelevant.
-locToActor :: State -> Loc -> Maybe Actor
-locToActor state loc =
+locToActor :: Loc -> State -> Maybe Actor
+locToActor loc state =
   getIndex (lmonsters, AMonster) `mplus` getIndex (lheroes, AHero)
     where
       getIndex (projection, injection) =

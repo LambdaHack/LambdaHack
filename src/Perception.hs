@@ -77,7 +77,7 @@ perception_ state@(State { splayer = pl,
               _            -> error $ "perception_: unknown mode: " ++ show mode
 
       -- Perception for a player-controlled monster on the current level.
-      pper = if isAMonster pl && memActor state pl
+      pper = if isAMonster pl && memActor pl state
              then Just $ perception fovMode (mloc (getPlayerBody state)) lmap
              else Nothing
       pers = IM.map (\ h -> perception fovMode (mloc h) lmap) hs

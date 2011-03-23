@@ -26,7 +26,7 @@ strategy actor
     if nsmell mt then nose else openEye  -- TODO: unify the 2 kinds using nsight
   where
     -- TODO: set monster targets and then prefer targets to other heroes
-    Movable { mtype = mt, mloc = me, mdir = mdir } = getActor state actor
+    Movable { mtype = mt, mloc = me, mdir = mdir } = getActor actor state
     delState = deleteActor actor state
     hs = L.map (\ (i, m) -> (AHero i, mloc m)) $
          IM.assocs $ lheroes $ slevel delState

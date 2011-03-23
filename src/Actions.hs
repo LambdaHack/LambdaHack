@@ -301,9 +301,9 @@ actorOpenClose actor v o dir =
     state <- get
     lmap  <- gets (lmap . slevel)
     pl    <- gets splayer
+    body  <- gets (getActor actor)
     let txt = if o then "open" else "closed"
     let hms = levelHeroList state ++ levelMonsterList state
-    let body = getActor state actor  -- TODO: swap args of getActor, for gets
     let loc = mloc body
     let isPlayer  = actor == pl
     let isVerbose = v && isPlayer
@@ -561,7 +561,7 @@ setCursor tgt = do
   ploc  <- gets (mloc . getPlayerBody)
   ln    <- gets (lname . slevel)
   let upd cursor =
-        let cloc = case targetToLoc state (ptvisible per) of
+        let cloc = case targetToLoc (ptvisible per) state of
                      Nothing -> ploc
                      Just l  -> l
         in  cursor { ctargeting = True, clocation = cloc, clocLn = ln }
@@ -661,11 +661,11 @@ fireItem = do
     Just (dart, _) -> do
       let fired = dart { icount = 1 }
       removeFromInventory fired
-      case targetToLoc state (ptvisible per) of
+      case targetToLoc (ptvisible per) state of
         Nothing  -> abortWith "target invalid"
         Just loc ->
           if actorReachesLoc pl loc per pl
-            then case locToActor state loc of
+            then case locToActor loc state of
                    Just ta -> actorDamageActor pl ta 1 " with a dart"
                    Nothing -> modify (updateLevel (scatterItems [fired] loc))
             else abortWith "target not reachable"
@@ -682,11 +682,11 @@ applyItem = do
     Just (wand, _) -> do
       let applied = wand { icount = 1 }
       removeFromInventory applied
-      case targetToLoc state (ptvisible per) of
+      case targetToLoc (ptvisible per) state of
         Nothing  -> abortWith "target invalid"
         Just loc ->
           if actorReachesLoc pl loc per pl
-            then case locToActor state loc of
+            then case locToActor loc state of
                    Just ta -> selectPlayer ta >> return ()
                    Nothing -> abortWith "no living target to affect"
             else abortWith "target not reachable"
@@ -747,7 +747,7 @@ actorPickupItem actor =
     pl    <- gets splayer
     per   <- currentPerception
     lmap  <- gets (lmap . slevel)
-    let movable   = getActor state actor
+    movable <- gets (getActor actor)
     let loc       = mloc movable
     let t         = lmap `at` loc -- the map tile in question
     let perceived = loc `S.member` ptvisible per
@@ -859,10 +859,10 @@ moveOrAttack allowAttacks autoOpen actor dir
       state <- get
       pl    <- gets splayer
       lmap  <- gets (lmap . slevel)
-      let sm   = getActor state actor
-          sloc = mloc sm           -- source location
+      sm    <- gets (getActor actor)
+      let sloc = mloc sm           -- source location
           tloc = sloc `shift` dir  -- target location
-          tgt  = locToActor state tloc
+      tgt <- gets (locToActor tloc)
       case tgt of
         Just target ->
           if allowAttacks then
@@ -895,9 +895,8 @@ actorAttackActor (AHero _) target@(AHero _) =
   -- Select adjacent hero by bumping into him. Takes no time.
   selectPlayer target >> return ()
 actorAttackActor source target = do
-  state <- get
-  let sm     = getActor state source
-      -- Determine the weapon used for the attack.
+  sm    <- gets (getActor source)
+  let -- Determine the weapon used for the attack.
       sword  = strongestSword (mitems sm)
       damage = 3 + sword
       weaponMsg = if sword == 0
@@ -915,9 +914,9 @@ actorDamageActor source target damage weaponMsg =
       -- Extra prompt, in case many heroes attacked in one turn.
       when b $ messageAddMore >> return ()
     state <- get
-    let sm     = getActor state source
-        tm     = getActor state target
-        -- Damage the target.
+    sm <- gets (getActor source)
+    tm <- gets (getActor target)
+    let -- Damage the target.
         newHp  = mhp tm - damage
         killed = newHp <= 0
         -- Determine how the hero perceives the event.
@@ -944,10 +943,9 @@ actorDamageActor source target damage weaponMsg =
 -- This involves switching positions of the two movables.
 actorRunActor :: Actor -> Actor -> Action ()
 actorRunActor source target = do
-  state <- get
   pl    <- gets splayer
-  let sloc = mloc $ getActor state source  -- source location
-      tloc = mloc $ getActor state target  -- target location
+  sloc  <- gets (mloc . getActor source)  -- source location
+  tloc  <- gets (mloc . getActor target)  -- target location
   updateAnyActor source $ \ m -> m { mloc = tloc }
   updateAnyActor target $ \ m -> m { mloc = sloc }
   if source == pl
