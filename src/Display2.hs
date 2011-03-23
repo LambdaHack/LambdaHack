@@ -10,6 +10,7 @@ import Control.Monad.State hiding (State) -- for MonadIO, seems to be portable b
 
 import Message
 import Display
+import qualified Attr
 import State
 import Geometry
 import Level
@@ -163,8 +164,8 @@ displayLevel session per
       lAt     = if sOmn || sTer > 0 then at else rememberAt
       lVision = if sVis
                   then \ vis rea ->
-                       if      vis then setBG blue
-                       else if rea then setBG magenta
+                       if      vis then setBG Attr.Blue
+                       else if rea then setBG Attr.Magenta
                                    else id
                   else \ vis rea -> id
       (n,over) = stringByLocation (sy+1) overlay -- n is the number of overlay screens
@@ -179,21 +180,21 @@ displayLevel session per
                                rea  = S.member loc reachable
                                (rv,ra) = case L.find (\ m -> loc == mloc m) (hs ++ ms) of
                                            _ | sTer > 0          -> viewTerrain sTer False (tterrain tile)
-                                           Just m | sOmn || vis  -> (nsymbol (mtype m), if mloc m == ploc then black else (ncolor (mtype m)))
+                                           Just m | sOmn || vis  -> (nsymbol (mtype m), if mloc m == ploc then Attr.defBG else (ncolor (mtype m)))
                                            _ | sSml && sml >= 0  -> viewSmell sml
                                              | otherwise         -> viewTile vis tile assocs
                                (vision, ra2) =
                                  if ctargeting (scursor state)
                                     && loc == clocation (scursor state)
-                                 then (setBG white,
-                                       if ra == white then black else ra)
-                                 else if ra == black
-                                      then (setBG white, ra)
+                                 then (setBG Attr.defFG,
+                                       if ra == Attr.defFG then Attr.defBG else ra)
+                                 else if ra == Attr.defBG
+                                      then (setBG Attr.defFG, ra)
                                       else (lVision vis rea, ra)
                            in
                              case over (loc `shift` ((sy+1) * n, 0)) of
                                Just c  ->  (attr, c)
-                               _       ->  (vision . (if ra2 == white then id else setFG ra2) $ attr, rv))
+                               _       ->  (vision . (if ra2 == Attr.defFG then id else setFG ra2) $ attr, rv))
                 msg
                 (take 40 (levelName nm ++ repeat ' ') ++
                  take 10 ("$: " ++ show gold ++ repeat ' ') ++

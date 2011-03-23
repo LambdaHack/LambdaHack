@@ -1,10 +1,6 @@
 module Display.Vty
   (displayId, startup, shutdown,
-   display, nextEvent, setBG, setFG, attr, Session,
-   black, red, green, yellow, blue, magenta, cyan, white,
-   bright_black, bright_red, bright_green, bright_yellow,
-   bright_blue, bright_magenta, bright_cyan, bright_white,
-   Attr, AttrColor) where
+   display, nextEvent, setBG, setFG, attr, Session) where
 
 import Graphics.Vty as V
 import Data.List as L
@@ -13,6 +9,7 @@ import qualified Data.ByteString as BS
 
 import Geometry
 import Keys as K
+import qualified Attr
 
 displayId = "vty"
 
@@ -67,13 +64,27 @@ nextEvent session =
 -- A hack to get bright colors via the bold attribute. Depending on terminal
 -- settings this is needed or not and the characters really get bold or not.
 -- HCurses does this by default, but vty refuses to get crazy.
-isBright c = c `elem` [bright_black, bright_red, bright_green, bright_yellow,
-                       bright_blue, bright_magenta, bright_cyan, bright_white]
-hack c a = if isBright c then with_style a bold else a
-setFG c a = hack c $ with_fore_color a c
-setBG c a = hack c $ with_back_color a c
+hack c a  = if Attr.isBright c then with_style a bold else a
+setFG c a = hack c $ with_fore_color a (aToc c)
+setBG c a = hack c $ with_back_color a (aToc c)
 
-attr = def_attr { attr_fore_color = SetTo white,
-                  attr_back_color = SetTo black }
+attr = def_attr { attr_fore_color = SetTo (aToc Attr.defFG),
+                  attr_back_color = SetTo (aToc Attr.defBG) }
 
-type AttrColor = Color
+aToc :: Attr.Color -> Color
+aToc Attr.Black     = black
+aToc Attr.Red       = red
+aToc Attr.Green     = green
+aToc Attr.Yellow    = yellow
+aToc Attr.Blue      = blue
+aToc Attr.Magenta   = magenta
+aToc Attr.Cyan      = cyan
+aToc Attr.White     = white
+aToc Attr.BrBlack   = bright_black
+aToc Attr.BrRed     = bright_red
+aToc Attr.BrGreen   = bright_green
+aToc Attr.BrYellow  = bright_yellow
+aToc Attr.BrBlue    = bright_blue
+aToc Attr.BrMagenta = bright_magenta
+aToc Attr.BrCyan    = bright_cyan
+aToc Attr.BrWhite   = bright_white

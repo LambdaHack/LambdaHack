@@ -5,20 +5,20 @@ import Control.Monad
 
 import Geometry
 import Random
-import qualified Display
+import qualified Attr
 
 data MovableType = MovableType
-  { nhpMin   :: !Int,                -- ^ minimal initial hp
-    nhpMax   :: !Int,                -- ^ maximal possible and initial hp
-    nspeed   :: !Time,               -- ^ natural speed
-    nsymbol  :: !Char,               -- ^ map symbol
-    ncolor   :: !Display.AttrColor,  -- ^ map color
-    nname    :: String,              -- ^ name
-    nsight   :: !Bool,               -- ^ can it see?
-    nsmell   :: !Bool,               -- ^ can it smell?
-    niq      :: !Int,                -- ^ intelligence
-    nregen   :: !Int,                -- ^ regeneration interval
-    nfreq    :: !Int                 -- ^ dungeon frequency
+  { nhpMin   :: !Int,         -- ^ minimal initial hp
+    nhpMax   :: !Int,         -- ^ maximal possible and initial hp
+    nspeed   :: !Time,        -- ^ natural speed
+    nsymbol  :: !Char,        -- ^ map symbol
+    ncolor   :: !Attr.Color,  -- ^ map color
+    nname    :: String,       -- ^ name
+    nsight   :: !Bool,        -- ^ can it see?
+    nsmell   :: !Bool,        -- ^ can it smell?
+    niq      :: !Int,         -- ^ intelligence
+    nregen   :: !Int,         -- ^ regeneration interval
+    nfreq    :: !Int          -- ^ dungeon frequency
   }
   deriving (Show, Eq)
 
@@ -29,7 +29,7 @@ hero = MovableType
     nspeed  = 10,
     nsymbol = '@',
     nname   = "you",
-    ncolor  = Display.bright_white,  -- Heroes white, monsters colorful.
+    ncolor  = Attr.BrWhite,  -- Heroes white, monsters colorful.
     nsight  = True,
     nsmell  = False,
     niq     = 13,  -- Can see that secret doors under alien control.
@@ -42,7 +42,7 @@ eye = MovableType
     nhpMax  = 12,
     nspeed  = 10,
     nsymbol = 'e',
-    ncolor  = Display.bright_red,
+    ncolor  = Attr.BrRed,
     nname   = "the reducible eye",
     nsight  = True,
     nsmell  = False,
@@ -55,7 +55,7 @@ fastEye = MovableType
     nhpMax  = 6,
     nspeed  = 4,
     nsymbol = 'e',
-    ncolor  = Display.bright_blue,
+    ncolor  = Attr.BrBlue,
     nname   = "the super-fast eye",
     nsight  = True,
     nsmell  = False,
@@ -68,7 +68,7 @@ nose = MovableType
     nhpMax  = 13,
     nspeed  = 11,
     nsymbol = 'n',
-    ncolor  = Display.green,
+    ncolor  = Attr.Green,
     nname   = "the point-free nose",
     nsight  = False,
     nsmell  = True,

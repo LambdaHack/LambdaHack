@@ -1,10 +1,6 @@
 module Display.Gtk
   (displayId, startup, shutdown,
-   display, nextEvent, setBG, setFG, attr, Session,
-   black, red, green, yellow, blue, magenta, cyan, white,
-   bright_black, bright_red, bright_green, bright_yellow,
-   bright_blue, bright_magenta, bright_cyan, bright_white,
-   Attr, AttrColor) where
+   display, nextEvent, setBG, setFG, attr, Session) where
 
 import qualified Data.Binary
 import Control.Monad
@@ -17,6 +13,7 @@ import Data.Map as M
 
 import Geometry
 import Keys as K
+import qualified Attr
 
 displayId = "gtk"
 
@@ -40,7 +37,7 @@ startup k =
                           tt <- textTagNew Nothing
                           textTagTableAdd ttt tt
                           doAttr tt c
-                          return (c,tt))
+                          return (c, tt))
                 [ x | c <- [minBound .. maxBound], x <- [FG c, BG c]]
 
     -- text buffer
@@ -81,8 +78,8 @@ startup k =
                                    return True
                                _ -> return False)
 
-    let black = Color minBound minBound minBound
-        white = Color 0xAAAA 0xAAAA 0xAAAA  -- White, see below
+    let black = Color minBound minBound minBound  -- Attr.defBG == Attr.Black
+        white = Color 0xAAAA 0xAAAA 0xAAAA        -- Attr.defFG == Attr.White
     widgetModifyBase tv StateNormal black
     widgetModifyText tv StateNormal white
 
@@ -182,8 +179,8 @@ nextEvent session =
 type Attr = [AttrKey]
 
 data AttrKey =
-    FG AttrColor
-  | BG AttrColor
+    FG Attr.Color
+  | BG Attr.Color
   deriving (Eq, Ord)
 
 setBG c   = (BG c :)
@@ -191,67 +188,5 @@ setFG c   = (FG c :)
 attr      = []
 
 doAttr :: TextTag -> AttrKey -> IO ()
-doAttr tt (FG color) = set tt [ textTagForeground := colorToRGB color ]
-doAttr tt (BG color) = set tt [ textTagBackground := colorToRGB color ]
-
-data AttrColor =  -- TODO: move and use in vty, too
-    Black
-  | Red
-  | Green
-  | Yellow
-  | Blue
-  | Magenta
-  | Cyan
-  | White
-  | BrBlack
-  | BrRed
-  | BrGreen
-  | BrYellow
-  | BrBlue
-  | BrMagenta
-  | BrCyan
-  | BrWhite
-  deriving (Show, Eq, Ord, Enum, Bounded)
-
-instance Data.Binary.Binary AttrColor where
-  put c = Data.Binary.putWord8 $ toEnum $ fromEnum c
-  get = do
-    c <- Data.Binary.getWord8
-    return $ toEnum $ fromEnum c
-
--- Mimics the Linux console; good old retro feel and more useful than xterm.
-colorToRGB :: AttrColor -> String
-colorToRGB Black     = "#000000"
-colorToRGB Red       = "#AA0000"
-colorToRGB Green     = "#00AA00"
-colorToRGB Yellow    = "#AA5500"
-colorToRGB Blue      = "#0000AA"
-colorToRGB Magenta   = "#AA00AA"
-colorToRGB Cyan      = "#00AAAA"
-colorToRGB White     = "#AAAAAA"
-colorToRGB BrBlack   = "#555555"
-colorToRGB BrRed     = "#FF5555"
-colorToRGB BrGreen   = "#55FF55"
-colorToRGB BrYellow  = "#FFFF55"
-colorToRGB BrBlue    = "#5555FF"
-colorToRGB BrMagenta = "#FF55FF"
-colorToRGB BrCyan    = "#55FFFF"
-colorToRGB BrWhite   = "#FFFFFF"
-
-black   = Black
-red     = Red
-green   = Green
-yellow  = Yellow
-blue    = Blue
-magenta = Magenta
-cyan    = Cyan
-white   = White
-
-bright_black   = BrBlack
-bright_red     = BrRed
-bright_green   = BrGreen
-bright_yellow  = BrYellow
-bright_blue    = BrBlue
-bright_magenta = BrMagenta
-bright_cyan    = BrCyan
-bright_white   = BrWhite
+doAttr tt (FG color) = set tt [ textTagForeground := Attr.colorToRGB color ]
+doAttr tt (BG color) = set tt [ textTagBackground := Attr.colorToRGB color ]

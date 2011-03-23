@@ -55,7 +55,6 @@ strategy actor
     onlyAccessible     =  onlyMoves (accessible lmap me) me
     -- Monsters don't see doors more secret than that. Enforced when actually
     -- opening doors, too, so that monsters don't cheat.
-    -- TODO: vary the parameter per monster intelligence level.
     onlyOpenable       =  onlyMoves (openable (niq mt) lmap) me
     smells             =  L.map fst $
                           L.sortBy (\ (_,s1) (_,s2) -> compare s2 s1) $

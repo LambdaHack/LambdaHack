@@ -1,10 +1,6 @@
 module Display.Curses
   (displayId, startup, shutdown,
-   display, nextEvent, setBG, setFG, attr, Session,
-   black, red, green, yellow, blue, magenta, cyan, white,
-   bright_black, bright_red, bright_green, bright_yellow,
-   bright_blue, bright_magenta, bright_cyan, bright_white,
-   Display.Curses.Attr, AttrColor) where
+   display, nextEvent, setBG, setFG, attr, Session) where
 
 import UI.HSCurses.Curses as C hiding (setBold)
 import qualified UI.HSCurses.CursesHelper as C
@@ -17,13 +13,14 @@ import Data.Maybe
 
 import Geometry
 import Keys as K
+import qualified Attr
 
 displayId = "curses"
 
 data Session =
   Session
     { win :: Window,
-      styles :: Map (AttrColor, AttrColor) C.CursesStyle }
+      styles :: Map (Attr.Color, Attr.Color) C.CursesStyle }
 
 startup :: (Session -> IO ()) -> IO ()
 startup k =
@@ -32,7 +29,8 @@ startup k =
     cursSet CursorInvisible
     let s = [ ((f,b), C.Style (toFColor f) (toBColor b))
             | f <- [minBound..maxBound],
-              b <- [Black, White, Blue, Magenta ] ]  -- no more possible (4*16)
+              -- No more color combinations possible: 16*4, 64 is max.
+              b <- [Attr.Black, Attr.White, Attr.Blue, Attr.Magenta ] ]
     nr <- colorPairs
     when (nr < L.length s) $
       C.end >>
@@ -50,8 +48,8 @@ display ((y0,x0),(y1,x1)) (Session { win = w, styles = s }) f msg status =
   do
     -- let defaultStyle = C.defaultCursesStyle
     -- Terminals with white background require this and more:
-    let defaultStyle = s ! (White, Black)
-        canonical (c, d) = (fromMaybe White c, fromMaybe Black d)
+    let defaultStyle = s ! (Attr.defFG, Attr.defBG)
+        canonical (c, d) = (fromMaybe Attr.defFG c, fromMaybe Attr.defBG d)
     C.erase
     mvWAddStr w 0 0 msg
     sequence_ [ let (a,c) = f (y,x) in C.setStyle (findWithDefault defaultStyle (canonical a) s) >> mvWAddStr w (y+1) x [c]
@@ -104,74 +102,37 @@ nextEvent session =
     e <- C.getKey refresh
     maybe (nextEvent session) return (keyTranslate e)
 
-type Attr = (Maybe AttrColor, Maybe AttrColor)
+type Attr = (Maybe Attr.Color, Maybe Attr.Color)
 
 setFG c (_, b) = (Just c, b)
 setBG c (f, _) = (f, Just c)
 attr = (Nothing, Nothing)
 
-data AttrColor =
-    Black
-  | Red
-  | Green
-  | Yellow
-  | Blue
-  | Magenta
-  | Cyan
-  | White
-  | BrBlack
-  | BrRed
-  | BrGreen
-  | BrYellow
-  | BrBlue
-  | BrMagenta
-  | BrCyan
-  | BrWhite
-  deriving (Show, Eq, Ord, Enum, Bounded)
+toFColor :: Attr.Color -> C.ForegroundColor
+toFColor Attr.Black     = C.BlackF
+toFColor Attr.Red       = C.DarkRedF
+toFColor Attr.Green     = C.DarkGreenF
+toFColor Attr.Yellow    = C.BrownF
+toFColor Attr.Blue      = C.DarkBlueF
+toFColor Attr.Magenta   = C.PurpleF
+toFColor Attr.Cyan      = C.DarkCyanF
+toFColor Attr.White     = C.WhiteF
+toFColor Attr.BrBlack   = C.GreyF
+toFColor Attr.BrRed     = C.RedF
+toFColor Attr.BrGreen   = C.GreenF
+toFColor Attr.BrYellow  = C.YellowF
+toFColor Attr.BrBlue    = C.BlueF
+toFColor Attr.BrMagenta = C.MagentaF
+toFColor Attr.BrCyan    = C.CyanF
+toFColor Attr.BrWhite   = C.BrightWhiteF
 
-toFColor :: AttrColor -> C.ForegroundColor
-toFColor Black     = C.BlackF
-toFColor Red       = C.DarkRedF
-toFColor Green     = C.DarkGreenF
-toFColor Yellow    = C.BrownF
-toFColor Blue      = C.DarkBlueF
-toFColor Magenta   = C.PurpleF
-toFColor Cyan      = C.DarkCyanF
-toFColor White     = C.WhiteF
-toFColor BrBlack   = C.GreyF
-toFColor BrRed     = C.RedF
-toFColor BrGreen   = C.GreenF
-toFColor BrYellow  = C.YellowF
-toFColor BrBlue    = C.BlueF
-toFColor BrMagenta = C.MagentaF
-toFColor BrCyan    = C.CyanF
-toFColor BrWhite   = C.BrightWhiteF
-
-toBColor :: AttrColor -> C.BackgroundColor
-toBColor Black     = C.BlackB
-toBColor Red       = C.DarkRedB
-toBColor Green     = C.DarkGreenB
-toBColor Yellow    = C.BrownB
-toBColor Blue      = C.DarkBlueB
-toBColor Magenta   = C.PurpleB
-toBColor Cyan      = C.DarkCyanB
-toBColor White     = C.WhiteB
-toBColor _         = C.BlackB  -- a limitation of curses
-
-black   = Black
-red     = Red
-green   = Green
-yellow  = Yellow
-blue    = Blue
-magenta = Magenta
-cyan    = Cyan
-white   = White
-
-bright_black   = BrBlack
-bright_red     = BrRed
-bright_green   = BrGreen
-bright_yellow  = BrYellow
-bright_blue    = BrBlue
-bright_magenta = BrMagenta
-bright_cyan    = BrCyan
-bright_white   = BrWhite
+toBColor :: Attr.Color -> C.BackgroundColor
+toBColor Attr.Black     = C.BlackB
+toBColor Attr.Red       = C.DarkRedB
+toBColor Attr.Green     = C.DarkGreenB
+toBColor Attr.Yellow    = C.BrownB
+toBColor Attr.Blue      = C.DarkBlueB
+toBColor Attr.Magenta   = C.PurpleB
+toBColor Attr.Cyan      = C.DarkCyanB
+toBColor Attr.White     = C.WhiteB
+toBColor _              = C.BlackB  -- a limitation of curses
