@@ -1,5 +1,6 @@
 module Attr where
 
+import Control.Monad
 import qualified Data.Binary as Binary
 
 data Color =
@@ -22,10 +23,8 @@ data Color =
   deriving (Show, Eq, Ord, Enum, Bounded)
 
 instance Binary.Binary Color where
-  put c = Binary.putWord8 $ toEnum $ fromEnum c
-  get = do
-    c <- Binary.getWord8
-    return $ toEnum $ fromEnum c
+  put = Binary.putWord8 . fromIntegral . fromEnum
+  get = liftM (toEnum . fromIntegral) Binary.getWord8
 
 defBG, defFG :: Color
 defBG = Black

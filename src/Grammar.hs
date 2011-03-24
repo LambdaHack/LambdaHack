@@ -26,6 +26,8 @@ subjectMovableVerb x v = subjectMovable x ++ " " ++ verbMovable x v
 compoundVerbMovable :: MovableType -> String -> String -> String
 compoundVerbMovable m v p = verbMovable m v ++ " " ++ p
 
+-- TODO: move the item names to Item.hs and make the code below
+-- independent on what item types are defined
 objectItem :: State -> Int -> ItemType -> String
 objectItem _ n Ring       = makeObject n id "ring"
 objectItem _ n Scroll     = makeObject n id "scroll"

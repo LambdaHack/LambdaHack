@@ -12,7 +12,7 @@ import Data.IORef
 import Data.Map as M
 
 import Geometry
-import Keys as K
+import qualified Keys as K (Key(..))
 import qualified Attr
 
 displayId = "gtk"

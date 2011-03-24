@@ -3,8 +3,8 @@ module Terrain where
 import Control.Monad
 
 import Data.Binary
-import Data.Binary.Put
-import Data.Binary.Get
+import qualified Data.Binary.Put as Put
+import qualified Data.Binary.Get as Get
 import Data.Maybe
 
 import qualified Attr
@@ -28,9 +28,8 @@ data Terrain a =
   deriving Show
 
 instance Binary VDir where
-  put Up   = put True
-  put Down = put False
-  get = get >>= \ b -> if b then return Up else return Down
+  put = putWord8 . fromIntegral . fromEnum
+  get = liftM (toEnum . fromIntegral) getWord8
 
 instance Binary a => Binary (Terrain a) where
   put Rock            = putWord8 0
@@ -66,12 +65,11 @@ instance Eq a => Eq (Terrain a) where
   _ == _ = False
 
 data DL = Dark | Light
-  deriving (Eq, Show, Bounded)
+  deriving (Eq, Show, Enum, Bounded)
 
 instance Binary DL where
-  put Dark  = put False
-  put Light = put True
-  get = get >>= \ b -> if b then return Light else return Dark
+  put = putWord8 . fromIntegral . fromEnum
+  get = liftM (toEnum . fromIntegral) getWord8
 
 -- | All the wall types that are possible:
 --
@@ -96,13 +94,11 @@ instance Binary DL where
 -- I am tempted to add even more (T-pieces and crossings),
 -- but currently, we don't need them.
 data Pos = UL | U | UR | L | R | DL | D | DR | O
-  deriving (Eq, Show, Bounded, Enum)
+  deriving (Eq, Show, Enum, Bounded)
 
 instance Binary Pos where
-  put p = putWord16le $ toEnum $ fromEnum p
-  get = do
-    p <- getWord16le
-    return $ toEnum $ fromEnum p
+  put = Put.putWord16le . fromIntegral . fromEnum
+  get = liftM (toEnum . fromIntegral) Get.getWord16le
 
 isFloor :: Terrain a -> Bool
 isFloor (Floor _) = True

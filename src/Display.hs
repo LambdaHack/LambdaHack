@@ -34,7 +34,7 @@ import Movable
 import MovableState
 import Monster
 import Item
-import Keys as K
+import qualified Keys as K
 import qualified Terrain
 
 -- Re-exported from the display frontend.
@@ -45,35 +45,11 @@ shutdown = D.shutdown
 displayId = D.displayId
 
 -- | Next event translated to a canonical form
-nextCommand :: MonadIO m => Session -> m Key
+nextCommand :: MonadIO m => Session -> m K.Key
 nextCommand session =
   do
     e <- liftIO $ D.nextEvent session
-    return (canonicalKey e)
-
--- | maps a key to the canonical key for the command it denotes
-canonicalKey :: Key -> Key
-canonicalKey e =
-  case e of
-    K.KP '8' -> K.Char 'K'
-    K.KP '2' -> K.Char 'J'
-    K.KP '4' -> K.Char 'H'
-    K.KP '6' -> K.Char 'L'
-    K.KP '7' -> K.Char 'Y'
-    K.KP '9' -> K.Char 'U'
-    K.KP '1' -> K.Char 'B'
-    K.KP '3' -> K.Char 'N'
-    K.KP '5' -> K.Char '.'
-    K.Up     -> K.Char 'k'
-    K.Down   -> K.Char 'j'
-    K.Left   -> K.Char 'h'
-    K.Right  -> K.Char 'l'
-    K.Home   -> K.Char 'y'
-    K.PgUp   -> K.Char 'u'
-    K.End    -> K.Char 'b'
-    K.PgDn   -> K.Char 'n'
-    K.Begin  -> K.Char '.'
-    k        -> k
+    return (K.canonicalKey e)
 
 -- | Displays a message on a blank screen. Waits for confirmation.
 displayBlankConfirm :: Session -> String -> IO Bool
@@ -91,7 +67,7 @@ getConfirm session =
   getOptionalConfirm return (const $ getConfirm session) session
 
 getOptionalConfirm :: MonadIO m =>
-                      (Bool -> m a) -> (Key -> m a) -> Session -> m a
+                      (Bool -> m a) -> (K.Key -> m a) -> Session -> m a
 getOptionalConfirm h k session =
   do
     e <- liftIO $ nextCommand session
@@ -113,38 +89,6 @@ getYesNo session =
       K.Char 'n' -> return False
       K.Esc      -> return False
       _          -> getYesNo session
-
--- | Configurable event handler for the direction keys. Is used to
---   handle player moves, but can also be used for directed commands
---   such as open/close.
-handleDirection :: Key -> (Dir -> a) -> a -> a
-handleDirection e h k =
-  case e of
-    K.Char 'k' -> h up
-    K.Char 'j' -> h down
-    K.Char 'h' -> h left
-    K.Char 'l' -> h right
-    K.Char 'y' -> h upleft
-    K.Char 'u' -> h upright
-    K.Char 'b' -> h downleft
-    K.Char 'n' -> h downright
-    _          -> k
-
--- | Configurable event handler for the upper direction keys. Is used to
---   handle player moves, but can also be used for directed commands
---   such as open/close.
-handleUDirection :: Key -> (Dir -> a) -> a -> a
-handleUDirection e h k =
-  case e of
-    K.Char 'K' -> h up
-    K.Char 'J' -> h down
-    K.Char 'H' -> h left
-    K.Char 'L' -> h right
-    K.Char 'Y' -> h upleft
-    K.Char 'U' -> h upright
-    K.Char 'B' -> h downleft
-    K.Char 'N' -> h downright
-    _          -> k
 
 splitOverlay :: Int -> String -> [[String]]
 splitOverlay s xs = splitOverlay' (lines xs)

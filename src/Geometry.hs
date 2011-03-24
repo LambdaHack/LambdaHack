@@ -7,7 +7,7 @@ type Time = Int
 
 -- | Vertical directions.
 data VDir = Up | Down
-  deriving (Eq, Show)
+  deriving (Eq, Show, Enum, Bounded)
 
 type X = Int
 type Y = Int

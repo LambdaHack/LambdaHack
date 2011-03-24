@@ -19,8 +19,12 @@ import Terrain
 
 -- | The complete dungeon is a map from level names to levels.
 -- We usually store all but the current level in this data structure.
-data Dungeon = Dungeon (M.Map LevelName Level)
+newtype Dungeon = Dungeon (M.Map LevelName Level)
   deriving Show
+
+instance Binary Dungeon where
+  put (Dungeon dng) = put (M.elems dng)
+  get = liftM dungeon get
 
 -- | Create a dungeon from a list of levels.
 dungeon :: [Level] -> Dungeon
@@ -36,10 +40,6 @@ putDungeonLevel lvl (Dungeon dng) = Dungeon (M.insert (lname lvl) lvl dng)
 
 sizeDungeon :: Dungeon -> Int
 sizeDungeon (Dungeon dng) = M.size dng
-
-instance Binary Dungeon where
-  put (Dungeon dng) = put (M.elems dng)
-  get = liftM dungeon get
 
 type Corridor = [(Y,X)]
 type Room = Area
@@ -177,10 +177,8 @@ data LevelConfig =
     border            :: Int,       -- must be at least 2!
     levelSize         :: (Y,X),     -- lower right point
     extraConnects     :: (Y,X) -> Int,
-                                    -- relative to grid
-                                    -- (in fact a range, because of duplicate connects)
-    noRooms           :: (Y,X) -> Rnd Int,
-                                    -- range, relative to grid
+      -- relative to grid (in fact a range, because of duplicate connects)
+    noRooms           :: (Y,X) -> Rnd Int,  -- range, relative to grid
     minStairsDistance :: Int,       -- must not be too large
     doorChance        :: Rnd Bool,
     doorOpenChance    :: Rnd Bool,

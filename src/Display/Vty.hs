@@ -8,7 +8,7 @@ import Data.Char
 import qualified Data.ByteString as BS
 
 import Geometry
-import Keys as K
+import qualified Keys as K (Key(..))
 import qualified Attr
 
 displayId = "vty"

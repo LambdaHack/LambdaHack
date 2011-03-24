@@ -291,7 +291,7 @@ openclose o =
     display
     e  <- session nextCommand
     pl <- gets splayer
-    handleDirection e (actorOpenClose pl True o) (neverMind True)
+    K.handleDirection e (actorOpenClose pl True o) (neverMind True)
 
 actorOpenClose :: Actor ->
                   Bool ->    -- ^ verbose?

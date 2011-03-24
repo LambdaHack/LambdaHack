@@ -12,7 +12,7 @@ import Control.Monad
 import Data.Maybe
 
 import Geometry
-import Keys as K
+import qualified Keys as K (Key(..))
 import qualified Attr
 
 displayId = "curses"

@@ -1,8 +1,8 @@
 module Item where
 
 import Data.Binary
-import Data.Binary.Put
-import Data.Binary.Get
+import qualified Data.Binary.Put as Put
+import qualified Data.Binary.Get as Get
 import Data.Map as M
 import Data.Set as S
 import Data.List as L
@@ -34,14 +34,14 @@ data ItemType =
  deriving (Eq, Ord, Show)
 
 data PotionType =
-   PotionWater
- | PotionHealing
- deriving (Eq, Ord, Show)
+    PotionWater
+  | PotionHealing
+  deriving (Show, Eq, Ord, Enum, Bounded)
 
 data Appearance =
-   Clear
- | White
- deriving (Eq, Show)
+    Clear
+  | White
+  deriving (Show, Eq, Ord, Enum, Bounded)
 
 type Assocs = M.Map ItemType Appearance
 type Discoveries = S.Set ItemType
@@ -65,17 +65,17 @@ instance Binary Item where
   get = liftM3 Item get get get
 
 instance Binary ItemType where
-  put Ring       = putWord16le 0
-  put Scroll     = putWord16le 1
-  put (Potion t) = putWord16le 2 >> put t
-  put Wand       = putWord16le 3
-  put Amulet     = putWord16le 4
-  put Gem        = putWord16le 5
-  put Gold       = putWord16le 6
-  put (Sword i)  = putWord16le 7 >> put i
-  put Dart       = putWord16le 8
+  put Ring       = Put.putWord16le 0
+  put Scroll     = Put.putWord16le 1
+  put (Potion t) = Put.putWord16le 2 >> put t
+  put Wand       = Put.putWord16le 3
+  put Amulet     = Put.putWord16le 4
+  put Gem        = Put.putWord16le 5
+  put Gold       = Put.putWord16le 6
+  put (Sword i)  = Put.putWord16le 7 >> put i
+  put Dart       = Put.putWord16le 8
   get = do
-          tag <- getWord16le
+          tag <- Get.getWord16le
           case tag of
             0 -> return Ring
             1 -> return Scroll
@@ -88,22 +88,12 @@ instance Binary ItemType where
             8 -> return Dart
 
 instance Binary PotionType where
-  put PotionWater   = putWord8 0
-  put PotionHealing = putWord8 1
-  get = do
-          tag <- getWord8
-          case tag of
-            0 -> return PotionWater
-            1 -> return PotionHealing
+  put = putWord8 . fromIntegral . fromEnum
+  get = liftM (toEnum . fromIntegral) getWord8
 
 instance Binary Appearance where
-  put Clear = putWord8 0
-  put White = putWord8 1
-  get = do
-          tag <- getWord8
-          case tag of
-            0 -> return Clear
-            1 -> return White
+  put = putWord8 . fromIntegral . fromEnum
+  get = liftM (toEnum . fromIntegral) getWord8
 
 itemFrequency :: Frequency ItemType
 itemFrequency =

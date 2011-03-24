@@ -3,7 +3,6 @@ module Command where
 import Action
 import Actions
 import Geometry
-import qualified Keys as K
 import Level
 
 data Described a = Described { chelp :: String, caction :: a }
