@@ -7,6 +7,7 @@ import Data.List as L
 import Data.Map as M
 import qualified Data.IntMap as IM
 import Control.Monad.State hiding (State) -- for MonadIO, seems to be portable between mtl-1 and 2
+import Data.Maybe
 
 import Message
 import Display
@@ -68,7 +69,8 @@ getConfirm :: MonadIO m => Session -> m Bool
 getConfirm session =
   getOptionalConfirm return (const $ getConfirm session) session
 
-getOptionalConfirm :: MonadIO m => (Bool -> m a) -> (Key -> m a) -> Session -> m a
+getOptionalConfirm :: MonadIO m =>
+                      (Bool -> m a) -> (Key -> m a) -> Session -> m a
 getOptionalConfirm h k session =
   do
     e <- liftIO $ nextCommand session
@@ -144,62 +146,76 @@ stringByLocation sy xs =
   in
     (k, \ (y,x) -> M.lookup y m >>= \ n -> M.lookup x n)
 
-displayLevel :: Session -> Perceptions -> State -> Message -> Maybe String -> IO Bool
-displayLevel session per
-             (state@(State { splayer = pl,
-                             stime   = time,
-                             sassocs = assocs,
-                             slevel  = lvl@(Level nm hs sz@(sy,sx) ms smap nlmap lmeta) }))
-             msg moverlay =
-  let Movable { mtype = mt, mhp = php, mdir = pdir,
-                mloc = ploc, mitems = pitems } =
-        getPlayerBody state
-      overlay = maybe "" id moverlay
+displayLevel ::
+  Session -> Perceptions -> State -> Message -> Maybe String -> IO Bool
+displayLevel
+  session per
+  (state@(State { scursor = cursor,
+                  stime   = time,
+                  sassocs = assocs,
+                  slevel  = Level ln _ (sy, sx) _ smap lmap _ }))
+  msg moverlay =
+  let Movable { mtype = MovableType { nhpMax = xhp },
+                mhp = php, mloc = ploc, mitems = pitems } = getPlayerBody state
       reachable = ptreachable per
       visible   = ptvisible per
-      sSml    = ssensory state == Smell
-      sVis    = case ssensory state of Vision _ -> True; _ -> False
-      sOmn    = sdisplay state == Omniscient
-      sTer    = case sdisplay state of Terrain n -> n; _ -> 0
-      lAt     = if sOmn || sTer > 0 then at else rememberAt
-      lVision = if sVis
-                  then \ vis rea ->
-                       if      vis then setBG Attr.Blue
-                       else if rea then setBG Attr.Magenta
-                                   else id
-                  else \ vis rea -> id
-      (n,over) = stringByLocation (sy+1) overlay -- n is the number of overlay screens
-      gold    = maybe 0 (icount . fst) $ findItem (\ i -> iletter i == Just '$') pitems
+      overlay   = fromMaybe "" moverlay
+      (n, over) = stringByLocation (sy+1) overlay -- n overlay screens needed
+      sSml   = ssensory state == Smell
+      sVis   = case ssensory state of Vision _ -> True; _ -> False
+      sOmn   = sdisplay state == Omniscient
+      sTer   = case sdisplay state of Terrain n -> n; _ -> 0
+      lAt    = if sOmn || sTer > 0 then at else rememberAt
+      sVisBG = if sVis
+               then \ vis rea -> if vis
+                                 then Attr.Blue
+                                 else if rea
+                                      then Attr.Magenta
+                                      else Attr.defBG
+                else \ vis rea -> Attr.defBG
+      gItem   = findItem (\ i -> iletter i == Just '$') pitems
+      gold    = maybe 0 (icount . fst) gItem
       hs      = levelHeroList state
       ms      = levelMonsterList state
-      disp n msg =
-        display ((0,0),sz) session
-                 (\ loc -> let tile = nlmap `lAt` loc
-                               sml  = ((smap ! loc) - time) `div` 100
-                               vis  = S.member loc visible
-                               rea  = S.member loc reachable
-                               (rv,ra) = case L.find (\ m -> loc == mloc m) (hs ++ ms) of
-                                           _ | sTer > 0          -> viewTerrain sTer False (tterrain tile)
-                                           Just m | sOmn || vis  -> (nsymbol (mtype m), if mloc m == ploc then Attr.defBG else (ncolor (mtype m)))
-                                           _ | sSml && sml >= 0  -> viewSmell sml
-                                             | otherwise         -> viewTile vis tile assocs
-                               (vision, ra2) =
-                                 if ctargeting (scursor state)
-                                    && loc == clocation (scursor state)
-                                 then (setBG Attr.defFG,
-                                       if ra == Attr.defFG then Attr.defBG else ra)
-                                 else if ra == Attr.defBG
-                                      then (setBG Attr.defFG, ra)
-                                      else (lVision vis rea, ra)
-                           in
-                             case over (loc `shift` ((sy+1) * n, 0)) of
-                               Just c  ->  (attr, c)
-                               _       ->  (vision . (if ra2 == Attr.defFG then id else setFG ra2) $ attr, rv))
-                msg
-                (take 40 (levelName nm ++ repeat ' ') ++
-                 take 10 ("$: " ++ show gold ++ repeat ' ') ++
-                 take 15 ("HP: " ++ show php ++ " (" ++ show (nhpMax mt) ++ ")" ++ repeat ' ') ++
-                 take 15 ("T: " ++ show (time `div` 10) ++ repeat ' '))
+      dis n loc =
+        let tile = lmap `lAt` loc
+            sml  = ((smap ! loc) - time) `div` 100
+            viewMovable loc (Movable { mtype = mt })
+              | loc == ploc && ln == creturnLn cursor =
+                  (nsymbol mt, Attr.defBG)  -- highlight player
+              | otherwise = (nsymbol mt, ncolor mt)
+            (char, fg) =
+              case L.find (\ m -> loc == mloc m) (hs ++ ms) of
+                _ | sTer > 0         -> viewTerrain sTer False (tterrain tile)
+                Just m | sOmn || vis -> viewMovable loc m
+                _ | sSml && sml >= 0 -> viewSmell sml
+                  | otherwise        -> viewTile vis tile assocs
+            vis = S.member loc visible
+            rea = S.member loc reachable
+            bg = if ctargeting cursor && loc == clocation cursor
+                 then Attr.defFG      -- highlight targeting cursor
+                 else sVisBG vis rea  -- FOV debug
+            reverseVideo = (Attr.defBG, Attr.defFG)
+            optVisually (fg, bg) =
+              if fg == Attr.defBG
+              then reverseVideo
+              else if bg == Attr.defFG && fg == Attr.defFG
+                   then reverseVideo
+                   else (fg, bg)
+            optComputationally (fg, bg) =
+              let fgSet = if fg == Attr.defFG then id else setFG fg
+                  bgSet = if bg == Attr.defBG then id else setBG bg
+              in  fgSet . bgSet
+            set = optComputationally . optVisually $ (fg, bg)
+        in case over (loc `shift` ((sy+1) * n, 0)) of
+             Just c -> (attr, c)
+             _      -> (set attr, char)
+      bottomLine =
+        take 40 (levelName ln ++ repeat ' ') ++
+        take 10 ("$: " ++ show gold ++ repeat ' ') ++
+        take 15 ("HP: " ++ show php ++ " (" ++ show xhp ++ ")" ++ repeat ' ') ++
+        take 15 ("T: " ++ show (time `div` 10) ++ repeat ' ')
+      disp n msg = display ((0, 0), (sy, sx)) session (dis n) msg bottomLine
       msgs = splitMsg sx msg
       perf k []     = perfo k ""
       perf k [xs]   = perfo k xs
@@ -209,4 +225,4 @@ displayLevel session per
         | k < n - 1 = disp k xs >> getConfirm session >>= \ b ->
                       if b then perfo (k+1) xs else return False
         | otherwise = disp k xs >> return True
-    in perf 0 msgs
+  in  perf 0 msgs
