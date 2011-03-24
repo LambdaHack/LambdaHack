@@ -506,7 +506,6 @@ lookTerrain (Door _ (Just _))  = "A wall."  -- secret
 lookTerrain (Wall _ )          = "A wall."
 lookTerrain _                  = ""
 
-def = Attr.defFG
 -- | The parameter "n" is the level of evolution:
 --
 -- 0: final
@@ -517,35 +516,37 @@ def = Attr.defFG
 --
 -- The Bool indicates whether the loc is currently visible.
 viewTerrain :: Int -> Bool -> Terrain -> (Char, Attr.Color)
-viewTerrain n b Rock              = (' ', def)
-viewTerrain n b (Opening d)
-  | n <= 3                        = ('.', def)
-  | otherwise                     = viewTerrain 0 b (Wall d)
-viewTerrain n b (Floor Light)     = ('.', def)
-viewTerrain n b (Floor Dark)      = if b then ('.', def) else (' ', def)
-viewTerrain n b Unknown           = (' ', def)
-viewTerrain n b Corridor
-  | n <= 3                        = ('#', def)
-  | otherwise                     = viewTerrain 0 b Rock
-viewTerrain n b (Wall p)
-  | p == O                        = ('O', def)
-  | p `elem` [L, R]               = ('|', def)
-  | otherwise                     = ('-', def)
-viewTerrain n b (Stairs _ Up _)
-  | n <= 1                        = ('<', def)
-  | otherwise                     = viewTerrain 0 b (Floor Dark)
-viewTerrain n b (Stairs _ Down _)
-  | n <= 1                        = ('>', def)
-  | otherwise                     = viewTerrain 0 b (Floor Dark)
-viewTerrain n b (Door d (Just 0))
-  | n <= 2                        = ('+', Attr.Yellow)
-  | otherwise                     = viewTerrain n b (Opening d)
-viewTerrain n b (Door d (Just _))
-  | n <= 2                        = viewTerrain n b (Wall d)  -- secret door
-  | otherwise                     = viewTerrain n b (Opening d)
-viewTerrain n b (Door p Nothing)
-  | n <= 2                        = (if p `elem` [L, R] then '-' else '|', Attr.Yellow)
-  | otherwise                     = viewTerrain n b (Opening p)
+viewTerrain n b t =
+  let def =     if b then Attr.BrWhite else Attr.defFG
+      defDark = if b then Attr.BrYellow else Attr.BrBlack
+      defDoor = if b then Attr.Yellow else Attr.BrBlack
+  in case t of
+       Rock                -> (' ', def)
+       (Opening d)
+         | n <= 3          -> ('.', def)
+         | otherwise       -> viewTerrain 0 b (Wall d)
+       (Floor d)           -> ('.', if d == Light then def else defDark)
+       Unknown             -> (' ', def)
+       Corridor
+         | n <= 3          -> ('#', if b then Attr.BrWhite else Attr.defFG)
+         | otherwise       -> viewTerrain 0 b Rock
+       (Wall p)
+         | p == O          -> ('O', def)
+         | p `elem` [L, R] -> ('|', def)
+         | otherwise       -> ('-', def)
+       (Stairs d p _)
+         | n <= 1          -> (if p == Up then '<' else '>',
+                               if d == Light then def else defDark)
+         | otherwise       -> viewTerrain 0 b (Floor Dark)
+       (Door p (Just 0))
+         | n <= 2          -> ('+', defDoor)
+         | otherwise       -> viewTerrain n b (Opening p)
+       (Door p (Just _))
+         | n <= 2          -> viewTerrain n b (Wall p)  -- secret door
+         | otherwise       -> viewTerrain n b (Opening p)
+       (Door p Nothing)
+         | n <= 2          -> (if p `elem` [L, R] then '-' else '|', defDoor)
+         | otherwise       -> viewTerrain n b (Opening p)
 
 viewSmell :: Int -> (Char, Attr.Color)
 viewSmell n = let k | n > 9    = '*'
