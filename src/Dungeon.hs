@@ -3,6 +3,7 @@ module Dungeon where
 import Prelude hiding (floor)
 import Control.Monad
 
+import Data.Binary
 import Data.Map as M
 import Data.List as L
 import Data.Ratio
@@ -12,6 +13,30 @@ import Geometry
 import Level
 import Item
 import Random
+
+-- | The complete dungeon is a map from level names to levels.
+-- We usually store all but the current level in this data structure.
+data Dungeon = Dungeon (M.Map LevelName Level)
+  deriving Show
+
+-- | Create a dungeon from a list of levels.
+dungeon :: [Level] -> Dungeon
+dungeon = Dungeon . M.fromList . L.map (\ l -> (lname l, l))
+
+-- | Extract a level from a dungeon.
+getDungeonLevel :: LevelName -> Dungeon -> (Level, Dungeon)
+getDungeonLevel ln (Dungeon dng) = (dng ! ln, Dungeon (M.delete ln dng))
+
+-- | Put a level into a dungeon.
+putDungeonLevel :: Level -> Dungeon -> Dungeon
+putDungeonLevel lvl (Dungeon dng) = Dungeon (M.insert (lname lvl) lvl dng)
+
+sizeDungeon :: Dungeon -> Int
+sizeDungeon (Dungeon dng) = M.size dng
+
+instance Binary Dungeon where
+  put (Dungeon dng) = put (M.elems dng)
+  get = liftM dungeon get
 
 type Corridor = [(Y,X)]
 type Room = Area

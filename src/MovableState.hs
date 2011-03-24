@@ -10,6 +10,7 @@ import Data.Maybe
 import Geometry
 import Movable
 import Level
+import Dungeon
 import State
 
 -- The operations with "Any", and those that use them, consider all the dungeon.

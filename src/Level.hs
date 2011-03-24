@@ -46,30 +46,6 @@ levelName (LambdaCave n) = "The Lambda Cave " ++ show n
 levelNumber :: LevelName -> Int
 levelNumber (LambdaCave n) = n
 
--- | The complete dungeon is a map from level names to levels.
--- We usually store all but the current level in this data structure.
-data Dungeon = Dungeon (M.Map LevelName Level)
-  deriving Show
-
--- | Create a dungeon from a list of levels.
-dungeon :: [Level] -> Dungeon
-dungeon = Dungeon . M.fromList . L.map (\ l -> (lname l, l))
-
--- | Extract a level from a dungeon.
-getDungeonLevel :: LevelName -> Dungeon -> (Level, Dungeon)
-getDungeonLevel ln (Dungeon dng) = (dng ! ln, Dungeon (M.delete ln dng))
-
--- | Put a level into a dungeon.
-putDungeonLevel :: Level -> Dungeon -> Dungeon
-putDungeonLevel lvl (Dungeon dng) = Dungeon (M.insert (lname lvl) lvl dng)
-
-sizeDungeon :: Dungeon -> Int
-sizeDungeon (Dungeon dng) = M.size dng
-
-instance Binary Dungeon where
-  put (Dungeon dng) = put (M.elems dng)
-  get = liftM dungeon get
-
 -- | A dungeon location is a level together with a location on that level.
 type DungeonLoc = (LevelName, Loc)
 

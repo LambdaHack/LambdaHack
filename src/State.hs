@@ -9,6 +9,7 @@ import qualified Config
 import Movable
 import Geometry
 import Level
+import Dungeon
 import Item
 import Message
 
