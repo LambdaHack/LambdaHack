@@ -2,6 +2,7 @@ module Display2 (module Display, module Display2) where
 
 -- Display routines that are independent of the selected display frontend.
 
+import qualified Data.Char as Char
 import Data.Set as S
 import Data.List as L
 import Data.Map as M
@@ -184,11 +185,16 @@ displayLevel
               | loc == ploc && ln == creturnLn cursor =
                   (nsymbol mt, Attr.defBG)  -- highlight player
               | otherwise = (nsymbol mt, ncolor mt)
+            viewSmell :: Int -> Char
+            viewSmell n
+              | n > 9     = '*'
+              | n < 0     = '-'
+              | otherwise = Char.intToDigit n
             (char, fg) =
               case L.find (\ m -> loc == mloc m) (hs ++ ms) of
                 _ | sTer > 0         -> viewTerrain sTer False (tterrain tile)
                 Just m | sOmn || vis -> viewMovable loc m
-                _ | sSml && sml >= 0 -> viewSmell sml
+                _ | sSml && sml >= 0 -> (viewSmell sml, Attr.Green)
                   | otherwise        -> viewTile vis tile assocs
             vis = S.member loc visible
             rea = S.member loc reachable

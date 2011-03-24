@@ -10,29 +10,18 @@ import Data.Map as M
 import qualified Data.IntMap as IM
 import Data.Set as S
 import Data.List as L
-import Data.Ratio
 import Data.Maybe
 
 import Geometry
 import Movable
 import Item
-import Random
 import qualified Attr
+import Random
 
 -- | Names of the dungeon levels are represented using a
 -- custom data structure.
 data LevelName = LambdaCave Int | Exit
   deriving (Show, Eq, Ord)
-
--- | Chance that a new monster is generated. Currently depends on the
--- number of monsters already present, and on the level. In the future,
--- the strength of the character and the strength of the monsters present
--- could further influence the chance, and the chance could also affect
--- which monster is generated.
-monsterGenChance :: LevelName -> [Movable] -> Rnd Bool
-monsterGenChance (LambdaCave n) ms =
-  chance $ 1%(fromIntegral (250 + 200 * (L.length ms - n)) `max` 50)
-monsterGenChance _ _ = return False
 
 instance Binary LevelName where
   put (LambdaCave n) = put n
@@ -210,8 +199,8 @@ toHV True  = Horiz
 toHV False = Vert
 
 instance R.Random HV where
-  randomR (a,b) g = case R.randomR (fromHV a,fromHV b) g of
-                      (b,g') -> (toHV b,g')
+  randomR (a,b) g = case R.randomR (fromHV a, fromHV b) g of
+                      (b, g') -> (toHV b, g')
   random g = R.randomR (minBound, maxBound) g
 
 instance Binary HV where
@@ -392,14 +381,6 @@ findLocTry k l@(Level { lsize = sz, lmap = lm }) p pTry =
              then findLocTry (k - 1) l p pTry
              else findLoc l p
 
-grid :: (Y,X) -> Area -> Map (Y,X) Area
-grid (ny,nx) ((y0,x0),(y1,x1)) =
-  let yd = y1 - y0
-      xd = x1 - x0
-  in M.fromList [ ((y,x), ((y0 + (yd * y `div` ny), x0 + (xd * x `div` nx)),
-                           (y0 + (yd * (y + 1) `div` ny - 1), x0 + (xd * (x + 1) `div` nx - 1))))
-                | x <- [0..nx-1], y <- [0..ny-1] ]
-
 connectGrid :: (Y,X) -> Rnd [((Y,X),(Y,X))]
 connectGrid (ny,nx) =
   do
@@ -424,19 +405,13 @@ randomConnection (ny,nx) =
                  rx  <- randomR (0,nx-1)
                  return (normalize ((ry,rx),(ry+1,rx)))
 
-normalize :: ((Y,X),(Y,X)) -> ((Y,X),(Y,X))
-normalize (a,b) | a <= b    = (a,b)
-                | otherwise = (b,a)
-
-normalizeArea :: Area -> Area
-normalizeArea a@((y0,x0),(y1,x1)) = ((min y0 y1, min x0 x1), (max y0 y1, max x0 x1))
-
 connectGrid' :: (Y,X) -> Set (Y,X) -> Set (Y,X) -> [((Y,X),(Y,X))] -> Rnd [((Y,X),(Y,X))]
 connectGrid' (ny,nx) unconnected candidates acc
   | S.null candidates = return (L.map normalize acc)
   | otherwise = do
                   c <- oneOf (S.toList candidates)
-                  let ns = neighbors ((0,0),(ny-1,nx-1)) c  -- potential new candidates
+                  -- potential new candidates:
+                  let ns = S.fromList $ neighbors ((0,0),(ny-1,nx-1)) c
                   let nu = S.delete c unconnected  -- new unconnected
                   let (nc,ds) = S.partition (`S.member` nu) ns
                                   -- (new candidates, potential connections)
@@ -447,26 +422,6 @@ connectGrid' (ny,nx) unconnected candidates acc
                   connectGrid' (ny,nx) nu
                                        (S.delete c (candidates `S.union` nc)) (new acc)
 
-neighbors :: Area ->        {- size limitation -}
-             Loc ->         {- location to find neighbors of -}
-             Set Loc
-neighbors area (y,x) =
-  let cs = [ (y + dy, x + dx) | dy <- [-1..1], dx <- [-1..1], (dx + dy) `mod` 2 == 1 ]
-  in  S.fromList (L.filter (`inside` area) cs)
-
-inside :: Loc -> Area -> Bool
-inside (y,x) ((y0,x0),(y1,x1)) = x1 >= x && x >= x0 && y1 >= y && y >= y0
-
-
-fromTo :: Loc -> Loc -> [Loc]
-fromTo (y0,x0) (y1,x1)
-  | y0 == y1 = L.map (\ x -> (y0,x)) (fromTo1 x0 x1)
-  | x0 == x1 = L.map (\ y -> (y,x0)) (fromTo1 y0 y1)
-
-fromTo1 :: X -> X -> [X]
-fromTo1 x0 x1
-  | x0 <= x1  = [x0..x1]
-  | otherwise = [x0,x0-1..x1]
 
 -- | Produces a textual description for terrain, used if no objects
 -- are present.
@@ -524,14 +479,7 @@ viewTerrain n b t =
          | n <= 2          -> (if p `elem` [L, R] then '-' else '|', defDoor)
          | otherwise       -> viewTerrain n b (Opening p)
 
-viewSmell :: Int -> (Char, Attr.Color)
-viewSmell n = let k | n > 9    = '*'
-                    | n < 0    = '-'
-                    | otherwise = head . show $ n
-              in  (k, Attr.Green)
-
--- TODO: Really scatter around, if more than one or location occupied?
---       Scatter randomly or not?
+-- Actually, do not scatter the items around, it's too much work for the player.
 scatterItems :: [Item] -> Loc -> Level -> Level
 scatterItems items loc lvl@(Level { lmap = lmap }) =
   let joinItems items = foldl' (\ acc i -> snd (joinItem i acc)) items

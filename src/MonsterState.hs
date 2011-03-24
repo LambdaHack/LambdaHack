@@ -4,6 +4,7 @@ import Prelude hiding (floor)
 import qualified Data.IntMap as IM
 import Data.List as L
 import Data.Map as M
+import Data.Ratio
 
 import Geometry
 import State
@@ -29,6 +30,16 @@ newMonsterIndex (State { slevel = lvl, sdungeon = Dungeon m }) =
               in  if IM.null mms then -1 else fst (IM.findMax mms)
       maxes = L.map f (lvl : M.elems m)
   in  1 + L.maximum maxes
+
+-- | Chance that a new monster is generated. Currently depends on the
+-- number of monsters already present, and on the level. In the future,
+-- the strength of the character and the strength of the monsters present
+-- could further influence the chance, and the chance could also affect
+-- which monster is generated.
+monsterGenChance :: LevelName -> [Movable] -> Rnd Bool
+monsterGenChance (LambdaCave n) ms =
+  chance $ 1%(fromIntegral (250 + 200 * (L.length ms - n)) `max` 50)
+monsterGenChance _ _ = return False
 
 -- | Create a new monster in the level, at a random position.
 addMonster :: State -> Rnd Level

@@ -216,7 +216,7 @@ rogueRoom cfg nm =
   do
     lgrid    <- levelGrid cfg
     lminroom <- minRoomSize cfg
-    let gs = M.toList (grid lgrid ((0,0),levelSize cfg))
+    let gs = grid lgrid ((0, 0), levelSize cfg)
     -- grid locations of "no-rooms"
     nrnr <- noRooms cfg lgrid
     nr   <- replicateM nrnr (do
