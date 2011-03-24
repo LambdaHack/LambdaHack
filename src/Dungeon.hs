@@ -10,6 +10,7 @@ import Data.Ratio
 import Data.Maybe
 
 import Geometry
+import GeometryRnd
 import Level
 import Item
 import Random
