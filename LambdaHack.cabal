@@ -33,7 +33,7 @@ executable LambdaHack
                  Message, Monster, MonsterState, Movable, MovableState,
                  Multiline, Perception, Random,
                  Save, State, Strategy, StrategyState,
-                 Turn, Version
+                 Turn, Terrain, Version
   build-depends: base >= 4 && <5, containers >= 0.1 && < 1,
                  binary >= 0.4 && < 1,
                  random >= 1 && < 2, zlib >= 0.4 && < 1,

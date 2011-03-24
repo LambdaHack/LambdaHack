@@ -2,6 +2,7 @@ module Dungeon where
 
 import Prelude hiding (floor)
 import Control.Monad
+import qualified System.Random as R
 
 import Data.Binary
 import Data.Map as M
@@ -14,6 +15,7 @@ import GeometryRnd
 import Level
 import Item
 import Random
+import Terrain
 
 -- | The complete dungeon is a map from level names to levels.
 -- We usually store all but the current level in this data structure.
@@ -62,6 +64,20 @@ mkNoRoom bd ((y0,x0),(y1,x1)) =
     (ry,rx) <- locInArea ((y0 + bd,x0 + bd),(y1 - bd,x1 - bd))
     return ((ry,rx),(ry,rx))
 
+data HV = Horiz | Vert
+  deriving (Eq, Show, Bounded)
+
+fromHV Horiz = True
+fromHV Vert  = False
+
+toHV True  = Horiz
+toHV False = Vert
+
+instance R.Random HV where
+  randomR (a,b) g = case R.randomR (fromHV a, fromHV b) g of
+                      (b, g') -> (toHV b, g')
+  random g = R.randomR (minBound, maxBound) g
+
 -- | Create a corridor, either horizontal or vertical, with
 -- a possible intermediate part that is in the opposite direction.
 mkCorridor :: HV -> (Loc,Loc) -> Area -> Rnd [(Y,X)] {- straight sections of the corridor -}
@@ -106,7 +122,7 @@ digCorridor (p1:p2:ps) l =
 digCorridor _ l = l
 
 -- | Create a new tile.
-newTile :: Terrain -> (Tile, Tile)
+newTile :: Terrain DungeonLoc -> (Tile, Tile)
 newTile t = (Tile t [], Tile Unknown [])
 
 -- | Create a level consisting of only one room. Optionally, insert some walls.

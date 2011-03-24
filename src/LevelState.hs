@@ -7,9 +7,10 @@ import State
 import Item
 import ItemState
 import Grammar
+import qualified Terrain
 
 viewTile :: Bool -> Tile -> Assocs -> (Char, Attr.Color)
-viewTile b (Tile t [])    a = viewTerrain 0 b t
+viewTile b (Tile t [])    a = Terrain.viewTerrain 0 b t
 viewTile b (Tile t (i:_)) a = viewItem (itype i) a
 
 -- | Produces a textual description of the terrain and items at an already
@@ -18,7 +19,7 @@ viewTile b (Tile t (i:_)) a = viewItem (itype i) a
 lookAt :: Bool -> State -> LMap -> Loc -> String -> String
 lookAt detailed s lmap loc msg
   | detailed  =
-    lookTerrain (tterrain (lmap `rememberAt` loc)) ++ " " ++ msg ++ isd
+    Terrain.lookTerrain (tterrain (lmap `rememberAt` loc)) ++ " " ++ msg ++ isd
   | otherwise = msg ++ isd
   where
     is  = titems (lmap `rememberAt` loc)

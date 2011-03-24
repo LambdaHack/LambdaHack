@@ -5,6 +5,10 @@ import Data.List as L
 -- | Game time in turns. (Placement in module Geometry is not ideal.)
 type Time = Int
 
+-- | Vertical directions.
+data VDir = Up | Down
+  deriving (Eq, Show)
+
 type X = Int
 type Y = Int
 

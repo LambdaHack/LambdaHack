@@ -31,6 +31,7 @@ import Random
 import State
 import qualified Config
 import qualified Save
+import Terrain
 
 displayHistory :: Action ()
 displayHistory =
@@ -392,7 +393,7 @@ lvlchange vdir =
                   -- do not freely reveal the other end of the stairs
                   map <- gets (lmap . slevel)  -- lvlswitch modifies map
                   let upd cursor =
-                        let cloc = if isUnknown (rememberAt map nloc)
+                        let cloc = if Level.isUnknown (rememberAt map nloc)
                                    then loc
                                    else nloc
                         in  cursor { clocation = cloc, clocLn = nln }
