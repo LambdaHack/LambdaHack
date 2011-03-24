@@ -1,6 +1,6 @@
 module Attr where
 
-import qualified Data.Binary
+import qualified Data.Binary as Binary
 
 data Color =
     Black
@@ -21,10 +21,10 @@ data Color =
   | BrWhite
   deriving (Show, Eq, Ord, Enum, Bounded)
 
-instance Data.Binary.Binary Color where
-  put c = Data.Binary.putWord8 $ toEnum $ fromEnum c
+instance Binary.Binary Color where
+  put c = Binary.putWord8 $ toEnum $ fromEnum c
   get = do
-    c <- Data.Binary.getWord8
+    c <- Binary.getWord8
     return $ toEnum $ fromEnum c
 
 defBG, defFG :: Color

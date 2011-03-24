@@ -1,6 +1,6 @@
 module Display.Gtk
   (displayId, startup, shutdown,
-   display, nextEvent, setBG, setFG, attr, Session) where
+   display, nextEvent, setBG, setFG, defaultAttr, Session) where
 
 import qualified Data.Binary
 import Control.Monad
@@ -183,9 +183,9 @@ data AttrKey =
   | BG Attr.Color
   deriving (Eq, Ord)
 
-setBG c   = (BG c :)
-setFG c   = (FG c :)
-attr      = []
+setBG c = (BG c :)
+setFG c = (FG c :)
+defaultAttr = []
 
 doAttr :: TextTag -> AttrKey -> IO ()
 doAttr tt (FG color) = set tt [ textTagForeground := Attr.colorToRGB color ]

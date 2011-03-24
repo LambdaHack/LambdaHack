@@ -1,6 +1,6 @@
 module Display.Curses
   (displayId, startup, shutdown,
-   display, nextEvent, setBG, setFG, attr, Session) where
+   display, nextEvent, setBG, setFG, defaultAttr, Session) where
 
 import UI.HSCurses.Curses as C hiding (setBold)
 import qualified UI.HSCurses.CursesHelper as C
@@ -106,7 +106,7 @@ type Attr = (Maybe Attr.Color, Maybe Attr.Color)
 
 setFG c (_, b) = (Just c, b)
 setBG c (f, _) = (f, Just c)
-attr = (Nothing, Nothing)
+defaultAttr = (Nothing, Nothing)
 
 toFColor :: Attr.Color -> C.ForegroundColor
 toFColor Attr.Black     = C.BlackF

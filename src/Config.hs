@@ -9,16 +9,16 @@ import Control.Monad.Error
 import qualified Data.ConfigFile as CF
 import Data.Either.Utils
 import Data.Maybe
-import qualified Data.Binary as B
+import qualified Data.Binary as Binary
 
 import qualified ConfigDefault
 
 newtype CP = CP CF.ConfigParser
 
-instance B.Binary CP where
-  put (CP config) = B.put $ CF.to_string config
+instance Binary.Binary CP where
+  put (CP config) = Binary.put $ CF.to_string config
   get = do
-    string <- B.get
+    string <- Binary.get
     -- use config in case savegame is from older version and lacks some options
     let c = CF.readstring defCF string
     return $ toCP $ forceEither c

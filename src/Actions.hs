@@ -11,7 +11,7 @@ import Data.Set as S
 import System.Time
 
 import Action
-import Display2 hiding (display)
+import Display hiding (display)
 import Dungeon
 import Geometry
 import Grammar

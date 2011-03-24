@@ -12,7 +12,7 @@ import Action
 import Actions
 import Command
 import qualified Config
-import Display2 hiding (display)
+import Display hiding (display)
 import Keybindings
 import qualified Keys as K
 import Level

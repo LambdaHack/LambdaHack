@@ -7,7 +7,7 @@ import Data.List as L
 -- import System.IO (hPutStrLn, stderr) -- just for debugging
 
 import Perception
-import Display2 hiding (display)
+import Display hiding (display)
 import Message
 import State
 import Level

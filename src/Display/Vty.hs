@@ -1,6 +1,6 @@
 module Display.Vty
   (displayId, startup, shutdown,
-   display, nextEvent, setBG, setFG, attr, Session) where
+   display, nextEvent, setBG, setFG, defaultAttr, Session) where
 
 import Graphics.Vty as V
 import Data.List as L
@@ -20,14 +20,16 @@ startup k = V.mkVty >>= k
 
 display :: Area -> Session -> (Loc -> (Attr, Char)) -> String -> String -> IO ()
 display ((y0,x0),(y1,x1)) vty f msg status =
-    let img = (foldr (<->) V.empty_image .
-               L.map (foldr (<|>) V.empty_image .
-                      L.map (\ (x,y) -> let (a,c) = f (y,x) in char a c)))
-              [ [ (x,y) | x <- [x0..x1] ] | y <- [y0..y1] ]
-    in  V.update vty (pic_for_image
-         (utf8_bytestring attr (BS.pack (L.map (fromIntegral . ord) (toWidth (x1 - x0 + 1) msg))) <->
-          img <->
-          utf8_bytestring attr (BS.pack (L.map (fromIntegral . ord) (toWidth (x1 - x0 + 1) status)))))
+  let img = (foldr (<->) V.empty_image .
+             L.map (foldr (<|>) V.empty_image .
+                    L.map (\ (x,y) -> let (a,c) = f (y,x) in char a c)))
+            [ [ (x,y) | x <- [x0..x1] ] | y <- [y0..y1] ]
+  in  V.update vty (pic_for_image
+       (utf8_bytestring defaultAttr
+        (BS.pack (L.map (fromIntegral . ord) (toWidth (x1 - x0 + 1) msg))) <->
+        img <->
+        utf8_bytestring defaultAttr
+        (BS.pack (L.map (fromIntegral . ord) (toWidth (x1 - x0 + 1) status)))))
 
 toWidth :: Int -> String -> String
 toWidth n x = take n (x ++ repeat ' ')
@@ -68,8 +70,8 @@ hack c a  = if Attr.isBright c then with_style a bold else a
 setFG c a = hack c $ with_fore_color a (aToc c)
 setBG c a = hack c $ with_back_color a (aToc c)
 
-attr = def_attr { attr_fore_color = SetTo (aToc Attr.defFG),
-                  attr_back_color = SetTo (aToc Attr.defBG) }
+defaultAttr = def_attr { attr_fore_color = SetTo (aToc Attr.defFG),
+                         attr_back_color = SetTo (aToc Attr.defBG) }
 
 aToc :: Attr.Color -> Color
 aToc Attr.Black     = black

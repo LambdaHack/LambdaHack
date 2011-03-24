@@ -6,7 +6,7 @@ import Data.Map as M
 
 import Action
 import Command
-import Display2
+import qualified Display
 import Keys as K
 
 -- | Keybindings.
@@ -19,8 +19,8 @@ data Keybindings = Keybindings
 handleKey :: Keybindings -> K.Key -> Action ()
 handleKey kb k =
   do
-    handleDirection k (caction $ kdir kb) $
-      handleUDirection k (caction $ kudir kb) $
+    Display.handleDirection k (caction $ kdir kb) $
+      Display.handleUDirection k (caction $ kudir kb) $
         case M.lookup k (kother kb) of
           Just c  -> caction c
           Nothing -> abortWith $ "unknown command (" ++ K.showKey k ++ ")"
@@ -37,4 +37,3 @@ keyHelp kb =
     rest    = [ fmt (K.showKey k) h | (k, Described h _) <- M.toAscList (kother kb) ]
   in
     unlines ([blank, title] ++ rest ++ [blank, footer, blank])
-
