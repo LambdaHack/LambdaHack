@@ -17,6 +17,7 @@ import Geometry
 import Grammar
 import qualified HighScores as H
 import Item
+import ItemKind
 import ItemState
 import qualified Keys as K
 import Level

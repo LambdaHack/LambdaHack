@@ -5,6 +5,7 @@ import Geometry
 import Level
 import State
 import Item
+import ItemKind
 import ItemState
 import Grammar
 import qualified Terrain

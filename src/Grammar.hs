@@ -7,6 +7,8 @@ import Movable
 import MovableKind
 import State
 import ItemState
+import ItemKind
+--import qualified ItemKind
 
 -- | How to refer to a movable in object position of a sentence.
 objectMovable :: MovableKind -> String
@@ -26,19 +28,6 @@ subjectMovableVerb x v = subjectMovable x ++ " " ++ verbMovable x v
 compoundVerbMovable :: MovableKind -> String -> String -> String
 compoundVerbMovable m v p = verbMovable m v ++ " " ++ p
 
--- TODO: move the item names to Item.hs and make the code below
--- independent on what item kinds are defined
-objectItem :: State -> Int -> ItemKind -> String
-objectItem _ n Ring       = makeObject n id "ring"
-objectItem _ n Scroll     = makeObject n id "scroll"
-objectItem s n (Potion t) = makeObject n (identified (sassocs s) (sdiscoveries s) (Potion t)) "potion"
-objectItem _ n Wand       = makeObject n id "wand"
-objectItem _ n Amulet     = makeObject n id "amulet"
-objectItem _ n Gem        = makeObject n id "gem"
-objectItem _ n Gold       = makeObject n id "gold piece"
-objectItem _ n (Sword i)  = makeObject n id ("(+" ++ show i ++ ") sword")
-objectItem _ n Dart       = makeObject n id "dart"
-
 subjectVerbIObject :: State -> Movable -> String -> Item -> String -> String
 subjectVerbIObject state m v o add =
   subjectMovable (mkind m) ++ " " ++
@@ -57,3 +46,25 @@ subjectCompoundVerbIObject state m v p o add =
   subjectMovable (mkind m) ++ " " ++
   compoundVerbMovable (mkind m) v p ++ " " ++
   objectItem state (icount o) (ikind o) ++ add ++ "."
+
+makeObject :: Int -> (String -> String) -> String -> String
+makeObject 1 adj obj = let b = adj obj
+                       in  case b of
+                             (c:_) | c `elem` "aeio" -> "an " ++ b
+                             _                       -> "a " ++ b
+makeObject n adj obj = show n ++ " " ++ adj (obj ++ "s")
+
+
+
+
+-- MOVE
+objectItem :: State -> Int -> ItemKind -> String
+objectItem _ n Ring       = makeObject n id "ring"
+objectItem _ n Scroll     = makeObject n id "scroll"
+objectItem s n (Potion t) = makeObject n (identified (sassocs s) (sdiscoveries s) (Potion t)) "potion"
+objectItem _ n Wand       = makeObject n id "wand"
+objectItem _ n Amulet     = makeObject n id "amulet"
+objectItem _ n Gem        = makeObject n id "gem"
+objectItem _ n Gold       = makeObject n id "gold piece"
+objectItem _ n (Sword i)  = makeObject n id ("(+" ++ show i ++ ") sword")
+objectItem _ n Dart       = makeObject n id "dart"

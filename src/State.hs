@@ -12,6 +12,7 @@ import Level
 import Dungeon
 import Item
 import Message
+import qualified ItemKind
 
 -- | The 'State' contains all the game state that has to be saved.
 -- In practice, we maintain extra state, but that state is state
@@ -25,7 +26,7 @@ data State = State
     ssensory     :: SensoryMode,
     sdisplay     :: DisplayMode,
     stime        :: Time,
-    sassocs      :: Assocs,       -- ^ how every item appears
+    sassocs      :: ItemKind.Assocs,       -- ^ how every item appears
     sdiscoveries :: Discoveries,  -- ^ items (kinds) that have been discovered
     sdungeon     :: Dungeon,      -- ^ all but the current dungeon level
     slevel       :: Level,

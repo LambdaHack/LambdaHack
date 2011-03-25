@@ -5,6 +5,7 @@ import Data.Map as M
 import Data.List as L
 
 import Item
+import ItemKind
 import State
 import Movable
 import MovableState

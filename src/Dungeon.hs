@@ -16,6 +16,7 @@ import Level
 import Item
 import Random
 import Terrain
+import qualified ItemKind
 
 -- | The complete dungeon is a map from level names to levels.
 -- We usually store all but the current level in this data structure.
@@ -306,9 +307,9 @@ rollItems cfg lvl ploc =
     nri <- nrItems cfg
     replicateM nri $
       do
-        t <- newItem (depth cfg) itemFrequency
+        t <- newItem (depth cfg) ItemKind.itemFrequency
         l <- case ikind t of
-               Sword _ ->
+               ItemKind.Sword _ ->
                  -- swords generated close to monsters; MUAHAHAHA
                  findLocTry 200 lvl
                    (const floor)

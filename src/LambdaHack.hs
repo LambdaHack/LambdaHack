@@ -13,6 +13,7 @@ import Turn
 import qualified Config
 import MovableAdd
 import Item
+import ItemKind
 
 main :: IO ()
 main = Display.startup start
