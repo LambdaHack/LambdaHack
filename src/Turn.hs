@@ -41,7 +41,7 @@ import Version
 --
 -- What's happening where:
 --
--- handle: HP regeneration, determine who moves next,
+-- handle: determine who moves next,
 --   dispatch to handleMonsters or handlePlayer
 --
 -- handlePlayer: remember, display, get and process commmand(s),
@@ -51,7 +51,7 @@ import Version
 --
 -- handleMonster: determine and process monster action, advance monster time
 --
--- nextMove: advance global game time, monster generation
+-- nextMove: advance global game time, HP regeneration, monster generation
 --
 -- This is rather convoluted, and the functions aren't named very aptly, so we
 -- should clean this up later. TODO.
@@ -66,7 +66,6 @@ handle =
     pl <- gets splayer
     let ptime = mtime (getPlayerBody state)  -- time of hero's next move
     let time  = stime state            -- current game time
-    regenerate pl  -- heroes regenerate even if outside the player's turn
     debug $ "handle: time check. ptime = " ++ show ptime ++ ", time = " ++ show time
     if ptime > time
       then do
@@ -134,6 +133,7 @@ nextMove =
   do
     debug "nextMove"
     modify (updateTime (+1))
+    regenerateLevelHP
     generateMonster
     handle
 

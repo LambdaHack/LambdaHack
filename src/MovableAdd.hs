@@ -53,14 +53,14 @@ findHeroName config n =
 addHero :: Loc -> State -> State
 addHero ploc state =
   let config = sconfig state
+      bHP = Config.get config "heroes" "baseHP"
       n = newMovableIndex lheroes state
-      bHp = Config.get config "heroes" "baseHp"
       symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
       name = findHeroName config n
-      mk = hero {nhpMin = bHp, nhpMax = bHp, nsymbol = symbol, nname = name }
+      mk = hero {nhpMin = bHP, nhpMax = bHP, nsymbol = symbol, nname = name }
       loc = nearbyFreeLoc ploc state
-      startHp = bHp `div` (min 10 (n + 1))
-      m = template mk startHp loc
+      startHP = bHP `div` (min 10 (n + 1))
+      m = template mk startHP loc
   in  updateLevel (updateHeroes (IM.insert n m)) state
 
 -- | Create a set of initial heroes on the current level, at location ploc.

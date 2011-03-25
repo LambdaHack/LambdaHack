@@ -30,7 +30,7 @@ highScores: LambdaHack.scores
 saveGame: LambdaHack.save
 
 [heroes]
-baseHp: 50
+baseHP: 50
 extraHeroes: 0
 firstDeathEnds: False
 HeroName_0: you

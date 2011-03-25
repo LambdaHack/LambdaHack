@@ -632,7 +632,7 @@ drinkPotion =
                    -- only one potion is consumed even if several
                    -- are joined in the inventory
                    let consumed = i' { icount = 1 }
-                       baseHp = Config.get (sconfig state) "heroes" "baseHp"
+                       baseHP = Config.get (sconfig state) "heroes" "baseHP"
                    removeFromInventory consumed
                    message (subjectVerbIObject state pbody "drink" consumed "")
                    -- the potion is identified after drinking
@@ -642,7 +642,7 @@ drinkPotion =
                      PotionHealing -> do
                        messageAdd "You feel better."
                        let php p =
-                             min (nhpMax (mkind p)) (mhp p + baseHp `div` 4)
+                             min (nhpMax (mkind p)) (mhp p + baseHP `div` 4)
                        updatePlayerBody (\ p -> p { mhp = php p })
                Just _  -> abortWith "you cannot drink that"
                Nothing -> neverMind True
@@ -915,14 +915,14 @@ actorDamageActor source target damage weaponMsg =
     sm <- gets (getActor source)
     tm <- gets (getActor target)
     let -- Damage the target.
-        newHp  = mhp tm - damage
-        killed = newHp <= 0
+        newHP  = mhp tm - damage
+        killed = newHP <= 0
         -- Determine how the hero perceives the event.
         -- TODO: we have to be more precise and treat cases
         -- where two monsters fight, but only one is visible.
         combatVerb = if killed then "kill" else "hit"
         combatMsg  = subjectVerbMObject state sm combatVerb tm weaponMsg
-    updateAnyActor target $ \ m -> m { mhp = newHp }
+    updateAnyActor target $ \ m -> m { mhp = newHP }
     per <- currentPerception
     let perceived  = mloc sm `S.member` ptvisible per
     messageAdd $
@@ -977,19 +977,18 @@ playerAdvanceTime = do
   pl   <- gets splayer
   advanceTime pl
 
--- | Possibly regenerate HP for the given actor.
-regenerate :: Actor -> Action ()
-regenerate actor =
+-- | Possibly regenerate HP for all movables on the current level.
+regenerateLevelHP :: Action ()
+regenerateLevelHP =
   do
-    pl    <- gets splayer
-    pbody <- gets getPlayerBody
     time  <- gets stime
-    let upd m = m { mhp = min (nhpMax (mkind m)) (mhp m + 1) }
-    when (time `mod` (nregen (mkind pbody)) == 0) $ do
-      -- We really want hero selection to be a purely UI distinction,
-      -- so all heroes need to regenerate, not just the player.
-      -- TODO: currently only the heroes on the current level regenerate.
-      -- TODO: do this for all heroes or all monsters, never for 1 actor.
-      if (actor == pl)
-        then modify (updateLevel (updateHeroes (IM.map upd)))
-        else updateAnyActor actor upd
+    let upd m = if time `mod` (nregen (mkind m)) /= 0
+                then m
+                else m { mhp = min (nhpMax (mkind m)) (mhp m + 1) }
+    -- We really want hero selection to be a purely UI distinction,
+    -- so all heroes need to regenerate, not just the player.
+    -- Only the heroes on the current level regenerate (others are frozen
+    -- in time together with their level). This prevents cheating
+    -- via sending one hero to a safe level and waiting there.
+    modify (updateLevel (updateHeroes   (IM.map upd)))
+    modify (updateLevel (updateMonsters (IM.map upd)))
