@@ -9,14 +9,14 @@ import Geometry
 import qualified Config
 import Movable
 import MovableState
-import Monster
+import MovableKind
 import Level
 import State
 
 templateHero :: Char -> String -> Loc -> Int -> Movable
 templateHero symbol name ploc hp =
-  let mt = hero {nhpMin = hp, nhpMax = hp, nsymbol = symbol, nname = name }
-  in  Movable mt hp Nothing TCursor ploc [] 'a' 0
+  let mk = hero {nhpMin = hp, nhpMax = hp, nsymbol = symbol, nname = name }
+  in  Movable mk hp Nothing TCursor ploc [] 'a' 0
 
 -- | Create a new hero on the current level, close to the given location.
 addHero :: Loc -> Int -> String -> State -> Int -> State

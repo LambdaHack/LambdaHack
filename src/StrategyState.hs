@@ -10,7 +10,7 @@ import Geometry
 import Level
 import Movable
 import MovableState
-import Monster
+import MovableKind
 import Random
 import Perception
 import Strategy
@@ -23,10 +23,10 @@ strategy actor
                         slevel  = Level { lsmell = nsmap,
                                           lmap = lmap } })
          per =
-    if nsmell mt then nose else openEye  -- TODO: unify the 2 kinds using nsight
+    if nsmell mk then nose else openEye  -- TODO: unify the 2 kinds using nsight
   where
     -- TODO: set monster targets and then prefer targets to other heroes
-    Movable { mtype = mt, mloc = me, mdir = mdir } = getActor actor state
+    Movable { mkind = mk, mloc = me, mdir = mdir } = getActor actor state
     delState = deleteActor actor state
     hs = L.map (\ (i, m) -> (AHero i, mloc m)) $
          IM.assocs $ lheroes $ slevel delState
@@ -55,7 +55,7 @@ strategy actor
     onlyAccessible     =  onlyMoves (accessible lmap me) me
     -- Monsters don't see doors more secret than that. Enforced when actually
     -- opening doors, too, so that monsters don't cheat.
-    onlyOpenable       =  onlyMoves (openable (niq mt) lmap) me
+    onlyOpenable       =  onlyMoves (openable (niq mk) lmap) me
     smells             =  L.map fst $
                           L.sortBy (\ (_,s1) (_,s2) -> compare s2 s1) $
                           L.filter (\ (_,s) -> s > 0) $

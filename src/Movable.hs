@@ -5,10 +5,10 @@ import Control.Monad
 
 import Geometry
 import Item
-import Monster
+import MovableKind
 
 data Movable = Movable
-                { mtype   :: !MovableType,
+                { mkind   :: !MovableKind,
                   mhp     :: !Int,
                   mdir    :: Maybe Dir,  -- for monsters: the dir the monster last moved; TODO: use target for this, instead and use mdir to signal the monster wants to switch position with a hero (if the monster is smart/big enough)
                                          -- for heroes: the dir the hero is running
@@ -20,9 +20,9 @@ data Movable = Movable
   deriving Show
 
 instance Binary Movable where
-  put (Movable mt mhp md tgt ml minv mletter mtime) =
+  put (Movable mk mhp md tgt ml minv mletter mtime) =
     do
-      put mt
+      put mk
       put mhp
       put md
       put tgt
@@ -31,7 +31,7 @@ instance Binary Movable where
       put mletter
       put mtime
   get = do
-          mt      <- get
+          mk      <- get
           mhp     <- get
           md      <- get
           tgt     <- get
@@ -39,7 +39,7 @@ instance Binary Movable where
           minv    <- get
           mletter <- get
           mtime   <- get
-          return (Movable mt mhp md tgt ml minv mletter mtime)
+          return (Movable mk mhp md tgt ml minv mletter mtime)
 
 data Actor = AHero Int     -- ^ hero index (on the lheroes intmap)
            | AMonster Int  -- ^ monster index (on the lmonsters intmap)

@@ -12,17 +12,17 @@ import Level
 import Dungeon
 import Movable
 import MovableState
-import Monster
+import MovableKind
 import Random
 
 -- setting the time of new monsters to 0 makes them able to
 -- move immediately after generation; this does not seem like
 -- a bad idea, but it would certainly be "more correct" to set
 -- the time to the creation time instead
-templateMonster :: MovableType -> Loc -> Rnd Movable
-templateMonster mt loc = do
-  hp <- randomR (nhpMin mt, nhpMax mt)
-  return $ Movable mt hp Nothing TCursor loc [] 'a' 0
+templateMonster :: MovableKind -> Loc -> Rnd Movable
+templateMonster mk loc = do
+  hp <- randomR (nhpMin mk, nhpMax mk)
+  return $ Movable mk hp Nothing TCursor loc [] 'a' 0
 
 newMonsterIndex :: State -> Int
 newMonsterIndex (State { slevel = lvl, sdungeon = Dungeon m }) =
@@ -60,8 +60,8 @@ addMonster state@(State { slevel = lvl }) = do
                          && not (l `L.elem` L.map mloc (hs ++ ms)))
                (\ l t -> floor t
                          && L.all (\ pl -> distance (mloc pl, l) > 400) hs)
-        let fmt = Frequency $ L.zip (L.map nfreq roamingMts) roamingMts
-        mt <- frequency fmt
-        m  <- templateMonster mt loc
+        let fmk = Frequency $ L.zip (L.map nfreq roamingMts) roamingMts
+        mk <- frequency fmk
+        m  <- templateMonster mk loc
         return (updateMonsters (IM.insert ni m) lvl)
     else return lvl

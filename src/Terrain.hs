@@ -10,7 +10,7 @@ import Data.Maybe
 import qualified Attr
 import Geometry
 
--- TODO: let terrain types be defined in a config file. Group them
+-- TODO: let terrain kinds be defined in a config file. Group them
 -- and assign frequency so that they can be used for dungeon building.
 -- Goal: Have 2 tileset configs, one small, Rouge/Nethack style,
 -- the other big, Angband/UFO style. The problem is that the Rogue walls
@@ -71,7 +71,7 @@ instance Binary DL where
   put = putWord8 . fromIntegral . fromEnum
   get = liftM (toEnum . fromIntegral) getWord8
 
--- | All the wall types that are possible:
+-- | All the wall kinds that are possible:
 --
 --     * 'UL': upper left
 --
@@ -138,7 +138,7 @@ reflects (Wall _)    = True
 reflects (Door _ _)  = True
 reflects _           = False
 
--- | Maps wall types to lists of expected floor positions.
+-- | Maps wall kinds to lists of expected floor positions.
 posToDir :: Pos -> [Dir]
 posToDir UL = [downright]
 posToDir U  = [down]

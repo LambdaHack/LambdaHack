@@ -307,7 +307,7 @@ rollItems cfg lvl ploc =
     replicateM nri $
       do
         t <- newItem (depth cfg) itemFrequency
-        l <- case itype t of
+        l <- case ikind t of
                Sword _ ->
                  -- swords generated close to monsters; MUAHAHAHA
                  findLocTry 200 lvl

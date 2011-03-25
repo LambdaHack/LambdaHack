@@ -32,7 +32,7 @@ import Dungeon
 import Perception
 import Movable
 import MovableState
-import Monster
+import MovableKind
 import Item
 import qualified Keys as K
 import qualified Terrain
@@ -120,7 +120,7 @@ displayLevel
                   sassocs = assocs,
                   slevel  = Level ln _ (sy, sx) _ smap lmap _ }))
   msg moverlay =
-  let Movable { mtype = MovableType { nhpMax = xhp },
+  let Movable { mkind = MovableKind { nhpMax = xhp },
                 mhp = php, mloc = ploc, mitems = pitems } = getPlayerBody state
       reachable = ptreachable per
       visible   = ptvisible per
@@ -145,10 +145,10 @@ displayLevel
       dis n loc =
         let tile = lmap `lAt` loc
             sml  = ((smap ! loc) - time) `div` 100
-            viewMovable loc (Movable { mtype = mt })
+            viewMovable loc (Movable { mkind = mk })
               | loc == ploc && ln == creturnLn cursor =
-                  (nsymbol mt, Attr.defBG)  -- highlight player
-              | otherwise = (nsymbol mt, ncolor mt)
+                  (nsymbol mk, Attr.defBG)  -- highlight player
+              | otherwise = (nsymbol mk, ncolor mk)
             viewSmell :: Int -> Char
             viewSmell n
               | n > 9     = '*'

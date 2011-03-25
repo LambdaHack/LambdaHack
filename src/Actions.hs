@@ -24,7 +24,7 @@ import LevelState
 import Message
 import Movable
 import MovableState
-import Monster
+import MovableKind
 import MonsterState
 import Perception
 import Random
@@ -90,18 +90,18 @@ endTargeting accept = do
 
 endTargetingMsg :: Action ()
 endTargetingMsg = do
-  ptype    <- gets (mtype . getPlayerBody)
+  pkind    <- gets (mkind . getPlayerBody)
   target <- gets (mtarget . getPlayerBody)
   state  <- get
   let verb = "target"
       targetMsg = case target of
                     TEnemy a ->
                       case findActorAnyLevel a state of
-                        Just (_, m) -> objectMovable (mtype m)
+                        Just (_, m) -> objectMovable (mkind m)
                         Nothing     -> "a long gone adversary"
                     TLoc loc -> "location " ++ show loc
                     TCursor  -> "current cursor position continuously"
-  messageAdd $ subjectMovableVerb ptype verb ++ " " ++ targetMsg ++ "."
+  messageAdd $ subjectMovableVerb pkind verb ++ " " ++ targetMsg ++ "."
 
 -- | Cancel something, e.g., targeting mode, resetting the cursor
 -- to the position of the player. Chosen target is not invalidated.
@@ -249,7 +249,7 @@ checkPartyDeath =
     config <- gets sconfig
     when (mhp pbody <= 0) $ do  -- TODO: change to guard? define mzero? Why are the writes to to files performed when I call abort later? That probably breaks the laws of MonadPlus.
       messageAddMore
-      go <- messageMoreConfirm $ subjectMovableVerb (mtype pbody) "die" ++ "."
+      go <- messageMoreConfirm $ subjectMovableVerb (mkind pbody) "die" ++ "."
       let firstDeathEnds = Config.get config "heroes" "firstDeathEnds"
       if firstDeathEnds
         then gameOver go
@@ -313,7 +313,7 @@ actorOpenClose actor v o dir =
            Tile d@(Door hv o') []
              | secret o' && isPlayer -> -- door is secret, cannot be opened or closed by the player
                                        neverMind isVerbose
-             | maybe o ((|| not o) . (> (niq (mtype body)))) o' ->
+             | maybe o ((|| not o) . (> (niq (mkind body)))) o' ->
                                        -- door is in unsuitable state
                                        abortIfWith isVerbose ("already " ++ txt)
              | not (unoccupied hms dloc) ->
@@ -482,7 +482,7 @@ selectPlayer actor =
             -- Switch to the level.
             lvlswitch nln
             -- Announce.
-            messageAdd $ subjectMovable (mtype pbody) ++ " selected."
+            messageAdd $ subjectMovable (mkind pbody) ++ " selected."
             return True
 
 -- | Handle current score and display it with the high scores. Scores
@@ -582,7 +582,7 @@ doLook =
     let monsterMsg =
           if S.member loc (ptvisible per)
           then case L.find (\ m -> mloc m == loc) (levelMonsterList state) of
-                 Just m  -> subjectMovable (mtype m) ++ " is here. "
+                 Just m  -> subjectMovable (mkind m) ++ " is here. "
                  Nothing -> ""
           else ""
         mode = case target of
@@ -615,7 +615,7 @@ inventory =
 
 -- | Given item is now known to the player.
 discover :: Item -> Action ()
-discover i = modify (updateDiscoveries (S.insert (itype i)))
+discover i = modify (updateDiscoveries (S.insert (ikind i)))
 
 drinkPotion :: Action ()
 drinkPotion =
@@ -630,7 +630,7 @@ drinkPotion =
       else do
              i <- getPotion "What to drink?" items "inventory"
              case i of
-               Just i'@(Item { itype = Potion ptype }) ->
+               Just i'@(Item { ikind = Potion pkind }) ->
                  do
                    -- only one potion is consumed even if several
                    -- are joined in the inventory
@@ -640,12 +640,12 @@ drinkPotion =
                    message (subjectVerbIObject state pbody "drink" consumed "")
                    -- the potion is identified after drinking
                    discover i'
-                   case ptype of
+                   case pkind of
                      PotionWater   -> messageAdd "Tastes like water."
                      PotionHealing -> do
                        messageAdd "You feel better."
                        let php p =
-                             min (nhpMax (mtype p)) (mhp p + baseHp `div` 4)
+                             min (nhpMax (mkind p)) (mhp p + baseHp `div` 4)
                        updatePlayerBody (\ p -> p { mhp = php p })
                Just _  -> abortWith "you cannot drink that"
                Nothing -> neverMind True
@@ -658,7 +658,7 @@ fireItem = do
   pitems <- gets (mitems . getPlayerBody)
   pl     <- gets splayer
   target <- gets (mtarget . getPlayerBody)
-  case findItem (\ i -> itype i == Dart) pitems of
+  case findItem (\ i -> ikind i == Dart) pitems of
     Just (dart, _) -> do
       let fired = dart { icount = 1 }
       removeFromInventory fired
@@ -679,7 +679,7 @@ applyItem = do
   state  <- get
   per    <- currentPerception
   pitems <- gets (mitems . getPlayerBody)
-  case findItem (\ i -> itype i == Wand) pitems of
+  case findItem (\ i -> ikind i == Wand) pitems of
     Just (wand, _) -> do
       let applied = wand { icount = 1 }
       removeFromInventory applied
@@ -728,7 +728,7 @@ removeFromLoc i loc =
   modify (updateLevel (updateLMap adj))
   where
     adj = M.adjust (\ (t, rt) -> (remove t, rt)) loc
-    remove t = t { titems = removeItemByType i (titems t) }
+    remove t = t { titems = removeItemByKind i (titems t) }
 
 -- | Let the player choose any potion. Note that this does not guarantee a potion to be chosen,
 -- as the player can override the choice.
@@ -738,7 +738,7 @@ getPotion :: String ->  -- prompt
                         -- e.g., "in your inventory"
              Action (Maybe Item)
 getPotion prompt is isn =
-  let choice i = case itype i of Potion {} -> True ; _ -> False
+  let choice i = case ikind i of Potion {} -> True ; _ -> False
   in  getItem prompt choice "Potions" is isn
 
 actorPickupItem :: Actor -> Action ()
@@ -763,7 +763,7 @@ actorPickupItem actor =
               let (ni, nitems) = joinItem (i { iletter = Just l }) (mitems movable)
               -- message is dependent on who picks up and if the hero can perceive it
               if isPlayer
-                then message (letterLabel (iletter ni) ++ objectItem state (icount ni) (itype ni))
+                then message (letterLabel (iletter ni) ++ objectItem state (icount ni) (ikind ni))
                 else when perceived $
                        message $ subjectCompoundVerbIObject state movable "pick" "up" i ""
               removeFromLoc i loc
@@ -835,7 +835,7 @@ displayItems :: Message -> Bool -> [Item] -> Action Bool
 displayItems msg sorted is = do
   state <- get
   let inv = unlines $
-            L.map (\ (Item { icount = c, iletter = l, itype = t }) ->
+            L.map (\ (Item { icount = c, iletter = l, ikind = t }) ->
                     letterLabel l ++ objectItem state c t ++ " ")
             ((if sorted then sortBy (cmpLetter' `on` iletter) else id) is)
   let ovl = inv ++ more
@@ -973,7 +973,7 @@ advanceTime :: Actor -> Action ()
 advanceTime actor =
   do
     time <- gets stime
-    updateAnyActor actor $ \ m -> m { mtime = time + (nspeed (mtype m)) }
+    updateAnyActor actor $ \ m -> m { mtime = time + (nspeed (mkind m)) }
 
 playerAdvanceTime :: Action ()
 playerAdvanceTime = do
@@ -987,8 +987,8 @@ regenerate actor =
     pl    <- gets splayer
     pbody <- gets getPlayerBody
     time  <- gets stime
-    let upd m = m { mhp = min (nhpMax (mtype m)) (mhp m + 1) }
-    when (time `mod` (nregen (mtype pbody)) == 0) $ do
+    let upd m = m { mhp = min (nhpMax (mkind m)) (mhp m + 1) }
+    when (time `mod` (nregen (mkind pbody)) == 0) $ do
       -- We really want hero selection to be a purely UI distinction,
       -- so all heroes need to regenerate, not just the player.
       -- TODO: currently only the heroes on the current level regenerate.

@@ -30,7 +30,7 @@ executable LambdaHack
                  Frequency, Geometry, GeometryRnd, Grammar,
                  HeroState, HighScores, Item, ItemState,
                  Keys, Keybindings, LambdaHack, Level, LevelState,
-                 Message, Monster, MonsterState, Movable, MovableState,
+                 Message, MonsterState, MovableKind, Movable, MovableState,
                  Multiline, Perception, Random,
                  Save, State, Strategy, StrategyState,
                  Turn, Terrain, Version

@@ -26,7 +26,7 @@ data State = State
     sdisplay     :: DisplayMode,
     stime        :: Time,
     sassocs      :: Assocs,       -- ^ how every item appears
-    sdiscoveries :: Discoveries,  -- ^ items (types) that have been discovered
+    sdiscoveries :: Discoveries,  -- ^ items (kinds) that have been discovered
     sdungeon     :: Dungeon,      -- ^ all but the current dungeon level
     slevel       :: Level,
     sconfig      :: Config.CP

@@ -1,4 +1,4 @@
-module Monster where
+module MovableKind where
 
 import Data.Binary
 import Control.Monad
@@ -7,7 +7,7 @@ import Geometry
 import Random
 import qualified Attr
 
-data MovableType = MovableType
+data MovableKind = MovableKind
   { nhpMin   :: !Int,         -- ^ minimal initial hp
     nhpMax   :: !Int,         -- ^ maximal possible and initial hp
     nspeed   :: !Time,        -- ^ natural speed
@@ -22,67 +22,8 @@ data MovableType = MovableType
   }
   deriving (Show, Eq)
 
-hero, eye, fastEye, nose :: MovableType
-hero = MovableType
-  { nhpMin  = 50,
-    nhpMax  = 50,
-    nspeed  = 10,
-    nsymbol = '@',
-    nname   = "you",
-    ncolor  = Attr.BrWhite,  -- Heroes white, monsters colorful.
-    nsight  = True,
-    nsmell  = False,
-    niq     = 13,  -- Can see that secret doors under alien control.
-    nregen  = 1500,
-    nfreq   = 0
-  }
-
-eye = MovableType
-  { nhpMin  = 1,  -- falls in 1--4 unarmed rounds
-    nhpMax  = 12,
-    nspeed  = 10,
-    nsymbol = 'e',
-    ncolor  = Attr.BrRed,
-    nname   = "the reducible eye",
-    nsight  = True,
-    nsmell  = False,
-    niq     = 10,
-    nregen  = 1500,
-    nfreq   = 6
-  }
-fastEye = MovableType
-  { nhpMin  = 1,  -- falls in 1--2 unarmed rounds
-    nhpMax  = 6,
-    nspeed  = 4,
-    nsymbol = 'e',
-    ncolor  = Attr.BrBlue,
-    nname   = "the super-fast eye",
-    nsight  = True,
-    nsmell  = False,
-    niq     = 3,
-    nregen  = 1500,
-    nfreq   = 1
-  }
-nose = MovableType
-  { nhpMin  = 6,  -- 2--5 and in 1 round of the strongest sword
-    nhpMax  = 13,
-    nspeed  = 11,
-    nsymbol = 'n',
-    ncolor  = Attr.Green,
-    nname   = "the point-free nose",
-    nsight  = False,
-    nsmell  = True,
-    niq     = 0,
-    nregen  = 1500,
-    nfreq   = 6
-  }
-
--- | The list of types of monster that appear randomly throughout the dungeon.
-roamingMts :: [MovableType]
-roamingMts = [eye, fastEye, nose]
-
-instance Binary MovableType where
-  put (MovableType nhpMin nhpMax nsp nsym ncol nnm nsi nsm niq nreg nfreq) =
+instance Binary MovableKind where
+  put (MovableKind nhpMin nhpMax nsp nsym ncol nnm nsi nsm niq nreg nfreq) =
     do
       put nhpMin
       put nhpMax
@@ -107,4 +48,63 @@ instance Binary MovableType where
     niq    <- get
     nreg   <- get
     nfreq  <- get
-    return (MovableType nhpMin nhpMax nsp nsym ncol nnm nsi nsm niq nreg nfreq)
+    return (MovableKind nhpMin nhpMax nsp nsym ncol nnm nsi nsm niq nreg nfreq)
+
+-- | The list of kinds of monster that appear randomly throughout the dungeon.
+roamingMts :: [MovableKind]
+roamingMts = [eye, fastEye, nose]
+
+hero, eye, fastEye, nose :: MovableKind
+hero = MovableKind
+  { nhpMin  = 50,
+    nhpMax  = 50,
+    nspeed  = 10,
+    nsymbol = '@',
+    nname   = "you",
+    ncolor  = Attr.BrWhite,  -- Heroes white, monsters colorful.
+    nsight  = True,
+    nsmell  = False,
+    niq     = 13,  -- Can see that secret doors under alien control.
+    nregen  = 1500,
+    nfreq   = 0
+  }
+
+eye = MovableKind
+  { nhpMin  = 1,  -- falls in 1--4 unarmed rounds
+    nhpMax  = 12,
+    nspeed  = 10,
+    nsymbol = 'e',
+    ncolor  = Attr.BrRed,
+    nname   = "the reducible eye",
+    nsight  = True,
+    nsmell  = False,
+    niq     = 10,
+    nregen  = 1500,
+    nfreq   = 6
+  }
+fastEye = MovableKind
+  { nhpMin  = 1,  -- falls in 1--2 unarmed rounds
+    nhpMax  = 6,
+    nspeed  = 4,
+    nsymbol = 'e',
+    ncolor  = Attr.BrBlue,
+    nname   = "the super-fast eye",
+    nsight  = True,
+    nsmell  = False,
+    niq     = 3,
+    nregen  = 1500,
+    nfreq   = 1
+  }
+nose = MovableKind
+  { nhpMin  = 6,  -- 2--5 and in 1 round of the strongest sword
+    nhpMax  = 13,
+    nspeed  = 11,
+    nsymbol = 'n',
+    ncolor  = Attr.Green,
+    nname   = "the point-free nose",
+    nsight  = False,
+    nsmell  = True,
+    niq     = 0,
+    nregen  = 1500,
+    nfreq   = 6
+  }

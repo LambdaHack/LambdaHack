@@ -9,10 +9,10 @@ import State
 import Movable
 import MovableState
 
-identified :: Assocs -> Discoveries -> ItemType -> String -> String
+identified :: Assocs -> Discoveries -> ItemKind -> String -> String
 identified a d i
   | i `S.member` d = case i of
-                       Potion t -> potionType t
+                       Potion t -> potionKind t
                        _        -> ("really strange " ++)
   | otherwise      = case M.lookup i a of
                        Just ap  -> appearance ap

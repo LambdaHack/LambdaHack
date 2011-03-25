@@ -17,14 +17,14 @@ import Random
 
 data Item = Item
              { icount  :: Int,
-               itype   :: ItemType,
+               ikind   :: ItemKind,
                iletter :: Maybe Char }  -- inventory identifier
   deriving Show
 
-data ItemType =
+data ItemKind =
    Ring
  | Scroll
- | Potion PotionType
+ | Potion PotionKind
  | Wand
  | Amulet
  | Gem
@@ -33,7 +33,7 @@ data ItemType =
  | Dart
  deriving (Eq, Ord, Show)
 
-data PotionType =
+data PotionKind =
     PotionWater
   | PotionHealing
   deriving (Show, Eq, Ord, Enum, Bounded)
@@ -43,28 +43,28 @@ data Appearance =
   | White
   deriving (Show, Eq, Ord, Enum, Bounded)
 
-type Assocs = M.Map ItemType Appearance
-type Discoveries = S.Set ItemType
+type Assocs = M.Map ItemKind Appearance
+type Discoveries = S.Set ItemKind
 
-equalItemType :: Item -> Item -> Bool
-equalItemType = (==) `on` itype
+equalItemKind :: Item -> Item -> Bool
+equalItemKind = (==) `on` ikind
 
 equalItemLetter :: Item -> Item -> Bool
 equalItemLetter = (==) `on` iletter
 
-potionType :: PotionType -> String -> String
-potionType PotionWater   s = s ++ " of water"
-potionType PotionHealing s = s ++ " of healing"
+potionKind :: PotionKind -> String -> String
+potionKind PotionWater   s = s ++ " of water"
+potionKind PotionHealing s = s ++ " of healing"
 
 appearance :: Appearance -> String -> String
 appearance Clear s = "clear " ++ s
 appearance White s = "white " ++ s
 
 instance Binary Item where
-  put (Item icount itype iletter) = put icount >> put itype >> put iletter
+  put (Item icount ikind iletter) = put icount >> put ikind >> put iletter
   get = liftM3 Item get get get
 
-instance Binary ItemType where
+instance Binary ItemKind where
   put Ring       = Put.putWord16le 0
   put Scroll     = Put.putWord16le 1
   put (Potion t) = Put.putWord16le 2 >> put t
@@ -87,7 +87,7 @@ instance Binary ItemType where
             7 -> liftM Sword get
             8 -> return Dart
 
-instance Binary PotionType where
+instance Binary PotionKind where
   put = putWord8 . fromIntegral . fromEnum
   get = liftM (toEnum . fromIntegral) getWord8
 
@@ -95,7 +95,7 @@ instance Binary Appearance where
   put = putWord8 . fromIntegral . fromEnum
   get = liftM (toEnum . fromIntegral) getWord8
 
-itemFrequency :: Frequency ItemType
+itemFrequency :: Frequency ItemKind
 itemFrequency =
   Frequency
   [
@@ -111,24 +111,24 @@ itemFrequency =
     (20,  Potion PotionHealing)
   ]
 
-itemQuantity :: Int -> ItemType -> Rnd Int
+itemQuantity :: Int -> ItemKind -> Rnd Int
 itemQuantity n Gold = (2 * n) *~ d 8
 itemQuantity _ Dart = 3 *~ d 3
 itemQuantity _ _    = return 1
 
-itemStrength :: Int -> ItemType -> Rnd ItemType
+itemStrength :: Int -> ItemKind -> Rnd ItemKind
 itemStrength n (Sword _) =
   do
     r <- d (2 + n `div` 2)
     return $ Sword $ (n + 1) `div` 3 + r
 itemStrength _ tp        = return tp
 
-itemLetter :: ItemType -> Maybe Char
+itemLetter :: ItemKind -> Maybe Char
 itemLetter Gold = Just '$'
 itemLetter _    = Nothing
 
 -- | Generate an item.
-newItem :: Int -> Frequency ItemType -> Rnd Item
+newItem :: Int -> Frequency ItemKind -> Rnd Item
 newItem n ftp =
   do
     tp <- frequency ftp
@@ -191,7 +191,7 @@ letterLabel :: Maybe Char -> String
 letterLabel Nothing  = "    "
 letterLabel (Just c) = c : " - "
 
-viewItem :: ItemType -> Assocs -> (Char, Attr.Color)
+viewItem :: ItemKind -> Assocs -> (Char, Attr.Color)
 viewItem i a = viewItem' i (M.lookup i a)
   where
     def = Attr.defFG
@@ -211,14 +211,14 @@ viewItem i a = viewItem' i (M.lookup i a)
 -- | Adds an item to a list of items, joining equal items.
 -- Also returns the joined item.
 joinItem :: Item -> [Item] -> (Item,[Item])
-joinItem i is = case findItem (equalItemType i) is of
+joinItem i is = case findItem (equalItemKind i) is of
                   Nothing     -> (i, i : is)
                   Just (j,js) -> let n = i { icount = icount i + icount j,
                                              iletter = mergeLetter (iletter j) (iletter i) }
                                  in (n, n : js)
 
 -- | Removes an item from a list of items. Takes an equality function (i.e., by letter or
--- by type) as an argument.
+-- ny kind) as an argument.
 removeItemBy :: (Item -> Item -> Bool) -> Item -> [Item] -> [Item]
 removeItemBy eq i = concatMap $ \ x ->
                     if eq i x
@@ -229,7 +229,7 @@ removeItemBy eq i = concatMap $ \ x ->
                       else [x]
 
 removeItemByLetter = removeItemBy equalItemLetter
-removeItemByType   = removeItemBy equalItemType
+removeItemByKind   = removeItemBy equalItemKind
 
 -- | Finds an item in a list of items.
 findItem :: (Item -> Bool) -> [Item] -> Maybe (Item, [Item])
@@ -242,7 +242,7 @@ findItem p is = findItem' [] is
 
 strongestSword :: [Item] -> Int
 strongestSword l =
-  let aux acc (Item { itype = Sword i }) = max acc i
+  let aux acc (Item { ikind = Sword i }) = max acc i
       aux acc _ = acc
   in  foldl' aux 0 l
 
