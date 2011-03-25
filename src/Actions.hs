@@ -124,11 +124,8 @@ acceptCurrent h = do
 moveCursor :: Dir -> Int -> Action ()
 moveCursor dir n = do
   (sy, sx) <- gets (lsize . slevel)
-  let iter :: Int -> (a -> a) -> a -> a  -- not in base libs???
-      iter 0 _ x = x
-      iter k f x = f (iter (k-1) f x)
-      upd cursor =
-        let (ny, nx) = iter n (`shift` dir) (clocation cursor)
+  let upd cursor =
+        let (ny, nx) = iterate (`shift` dir) (clocation cursor) !! n
             cloc = (max 1 $ min ny (sy-1), max 1 $ min nx (sx-1))
         in  cursor { clocation = cloc }
   modify (updateCursor upd)

@@ -34,13 +34,13 @@ levelNumber (LambdaCave n) = n
 -- | A dungeon location is a level together with a location on that level.
 type DungeonLoc = (LevelName, Loc)
 
-type LMovables = IM.IntMap Movable
+type Party = IM.IntMap Movable
 
 data Level = Level
   { lname     :: LevelName,
-    lheroes   :: LMovables,  -- ^ all but the current selected hero on the level
+    lheroes   :: Party,      -- ^ all heroes on the level
     lsize     :: (Y,X),
-    lmonsters :: LMovables,  -- ^ all monsters on the level
+    lmonsters :: Party,      -- ^ all monsters on the level
     lsmell    :: SMap,
     lmap      :: LMap,
     lmeta     :: String }
@@ -52,14 +52,14 @@ updateLMap f lvl = lvl { lmap = f (lmap lvl) }
 updateSMap :: (SMap -> SMap) -> Level -> Level
 updateSMap f lvl = lvl { lsmell = f (lsmell lvl) }
 
-updateMonsters :: (LMovables -> LMovables) -> Level -> Level
+updateMonsters :: (Party -> Party) -> Level -> Level
 updateMonsters f lvl = lvl { lmonsters = f (lmonsters lvl) }
 
-updateHeroes :: (LMovables -> LMovables) -> Level -> Level
+updateHeroes :: (Party -> Party) -> Level -> Level
 updateHeroes f lvl = lvl { lheroes = f (lheroes lvl) }
 
-lmEmpty :: LMovables
-lmEmpty = IM.empty
+emptyParty :: Party
+emptyParty = IM.empty
 
 instance Binary Level where
   put (Level nm hs sz@(sy,sx) ms lsmell lmap lmeta) =

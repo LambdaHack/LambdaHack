@@ -38,7 +38,7 @@ start session = do
                        (Potion PotionHealing, White) ]
           defState = defaultState dng lvl
           state = defState { sassocs = assocs, sconfig = config }
-          hstate = addHeroes ploc state
+          hstate = initialHeroes ploc state
       handlerToIO session hstate msg handle
     Left state ->
       handlerToIO session state "Welcome back to LambdaHack." handle

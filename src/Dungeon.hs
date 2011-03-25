@@ -132,7 +132,7 @@ emptyRoom addWallsRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
   do
     let lmap = digRoom Light ((1,1),(sy-1,sx-1)) (emptyLMap (sy,sx))
     let smap = M.fromList [ ((y,x),-100) | y <- [0..sy], x <- [0..sx] ]
-    let lvl = Level nm lmEmpty (sy,sx) lmEmpty smap lmap ""
+    let lvl = Level nm emptyParty (sy,sx) emptyParty smap lmap ""
     -- locations of the stairs
     su <- findLoc lvl (const floor)
     sd <- findLoc lvl (\ l t -> floor t
@@ -147,7 +147,7 @@ emptyRoom addWallsRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
           maybe id (\ l -> M.insert sd (newTile (Stairs Light Down l))) ld $
           (\lmap -> foldl' addItem lmap is) $
           lmap
-        level lu ld = Level nm lmEmpty (sy,sx) lmEmpty smap (flmap lu ld) "bigroom"
+        level lu ld = Level nm emptyParty (sy,sx) emptyParty smap (flmap lu ld) "bigroom"
     return (level, su, sd)
 
 -- | For a bigroom level: Create a level consisting of only one, empty room.
@@ -261,7 +261,7 @@ rogueRoom cfg nm =
     let lmap :: LMap
         lmap = foldr digCorridor (foldr (\ (r, dl) m -> digRoom dl r m)
                                         (emptyLMap (levelSize cfg)) dlrooms) cs
-    let lvl = Level nm lmEmpty (levelSize cfg) lmEmpty smap lmap ""
+    let lvl = Level nm emptyParty (levelSize cfg) emptyParty smap lmap ""
     -- convert openings into doors
     dlmap <- fmap M.fromList . mapM
                 (\ o@((y,x),(t,r)) ->
@@ -298,7 +298,7 @@ rogueRoom cfg nm =
                   maybe id (\ l -> M.update (\ (t,r) -> Just $ newTile (Stairs (toDL $ light t) Down l)) sd) ld $
                   foldr (\ (l,it) f -> M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l . f) id is
                   dlmap
-      in  Level nm lmEmpty (levelSize cfg) lmEmpty smap flmap meta, su, sd)
+      in  Level nm emptyParty (levelSize cfg) emptyParty smap flmap meta, su, sd)
 
 rollItems :: LevelConfig -> Level -> Loc -> Rnd [(Loc, Item)]
 rollItems cfg lvl ploc =
