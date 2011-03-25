@@ -28,9 +28,9 @@ executable LambdaHack
                  Display, Dungeon, DungeonState, File,
                  FOV, FOV.Common, FOV.Digital, FOV.Permissive, FOV.Shadow,
                  Frequency, Geometry, GeometryRnd, Grammar,
-                 HeroState, HighScores, Item, ItemState,
+                 HighScores, Item, ItemState,
                  Keys, Keybindings, LambdaHack, Level, LevelState,
-                 Message, MonsterState, MovableKind, Movable, MovableState,
+                 Message, MovableAdd, MovableKind, Movable, MovableState,
                  Multiline, Perception, Random,
                  Save, State, Strategy, StrategyState,
                  Turn, Terrain, Version

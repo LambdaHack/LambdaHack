@@ -1,10 +1,12 @@
-module MonsterState where
+module MovableAdd where
 
 import Prelude hiding (floor)
 import qualified Data.IntMap as IM
 import Data.List as L
 import Data.Map as M
 import Data.Ratio
+import Data.Maybe
+import qualified Data.Char as Char
 
 import Geometry
 import State
@@ -14,15 +16,40 @@ import Movable
 import MovableState
 import MovableKind
 import Random
+import qualified Config
 
 -- setting the time of new monsters to 0 makes them able to
 -- move immediately after generation; this does not seem like
 -- a bad idea, but it would certainly be "more correct" to set
 -- the time to the creation time instead
-templateMonster :: MovableKind -> Loc -> Rnd Movable
-templateMonster mk loc = do
-  hp <- randomR (nhpMin mk, nhpMax mk)
-  return $ Movable mk hp Nothing TCursor loc [] 'a' 0
+template :: MovableKind -> Int -> Loc -> Movable
+template mk hp loc = Movable mk hp Nothing TCursor loc [] 'a' 0
+
+-- | Create a new hero on the current level, close to the given location.
+addHero :: Loc -> Int -> String -> State -> Int -> State
+addHero ploc hp name state@(State { slevel = Level { lmap = map } }) n =
+  let hs = levelHeroList state
+      ms = levelMonsterList state
+      places = ploc : L.nub (concatMap surroundings places)
+      good l = open (map `at` l) && not (l `L.elem` L.map mloc (hs ++ ms))
+      loc = fromMaybe (error "no place for a hero") $ L.find good places
+      symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
+      mk = hero {nhpMin = hp, nhpMax = hp, nsymbol = symbol, nname = name }
+      m = template mk hp loc
+  in  updateLevel (updateHeroes (IM.insert n m)) state
+
+-- | Create a set of new heroes on the current level, at location ploc.
+addHeroes :: Loc -> State -> State
+addHeroes ploc state =
+  let config = sconfig state
+      findHeroName n =
+        let heroName = Config.getOption config "heroes" ("HeroName_" ++ show n)
+        in  fromMaybe ("hero number " ++ show n) heroName
+      k = Config.get config "heroes" "extraHeroes"
+      b = Config.get config "heroes" "baseHp"
+      hp = k + b `div` (k + 1)
+      addNamedHero state n = addHero ploc hp (findHeroName n) state n
+  in  foldl' addNamedHero state [0..k]
 
 newMonsterIndex :: State -> Int
 newMonsterIndex (State { slevel = lvl, sdungeon = Dungeon m }) =
@@ -62,6 +89,7 @@ addMonster state@(State { slevel = lvl }) = do
                          && L.all (\ pl -> distance (mloc pl, l) > 400) hs)
         let fmk = Frequency $ L.zip (L.map nfreq roamingMts) roamingMts
         mk <- frequency fmk
-        m  <- templateMonster mk loc
+        hp <- randomR (nhpMin mk, nhpMax mk)
+        let m = template mk hp loc
         return (updateMonsters (IM.insert ni m) lvl)
     else return lvl

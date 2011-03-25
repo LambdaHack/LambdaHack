@@ -11,7 +11,7 @@ import Random
 import qualified Save
 import Turn
 import qualified Config
-import HeroState
+import MovableAdd
 import Item
 
 main :: IO ()
