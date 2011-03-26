@@ -31,43 +31,81 @@ defBG = Black
 defFG = White
 
 isBright :: Color -> Bool
-isBright c = fromEnum c > 7
+isBright c = fromEnum c > 7  -- for terminals that display bright via bold
 
--- Mimics the Linux console; good old retro feel and more useful than xterm.
+-- Heavily modified Linux console colors.
 colorToRGB :: Color -> String
 colorToRGB Black     = "#000000"
-colorToRGB Red       = "#AA0000"
+colorToRGB Red       = "#D50000"
 colorToRGB Green     = "#00AA00"
-colorToRGB Yellow    = "#AA5500"
-colorToRGB Blue      = "#0000AA"
+colorToRGB Yellow    = "#AA5500"  -- brown
+colorToRGB Blue      = "#203AF0"
 colorToRGB Magenta   = "#AA00AA"
 colorToRGB Cyan      = "#00AAAA"
-colorToRGB White     = "#AAAAAA"
-colorToRGB BrBlack   = "#555555"
+colorToRGB White     = "#BEBABA"
+colorToRGB BrBlack   = "#6A6565"
 colorToRGB BrRed     = "#FF5555"
-colorToRGB BrGreen   = "#55FF55"
-colorToRGB BrYellow  = "#FFFF55"
-colorToRGB BrBlue    = "#5555FF"
-colorToRGB BrMagenta = "#FF55FF"
-colorToRGB BrCyan    = "#55FFFF"
+colorToRGB BrGreen   = "#75FF45"
+colorToRGB BrYellow  = "#FFE855"
+colorToRGB BrBlue    = "#4090FF"
+colorToRGB BrMagenta = "#FF77FF"
+colorToRGB BrCyan    = "#60FFF0"
 colorToRGB BrWhite   = "#FFFFFF"
 
--- Human-readable names, for item descriptions. L
--- Lots of licentia poetica, since the colors are artificial and rarely seen.
+-- For reference, the original Linux console colors.
+-- Good old retro feel and more useful than xterm (e.g. brown).
+colorToRGB' :: Color -> String
+colorToRGB' Black     = "#000000"
+colorToRGB' Red       = "#AA0000"
+colorToRGB' Green     = "#00AA00"
+colorToRGB' Yellow    = "#AA5500"  -- brown
+colorToRGB' Blue      = "#0000AA"
+colorToRGB' Magenta   = "#AA00AA"
+colorToRGB' Cyan      = "#00AAAA"
+colorToRGB' White     = "#AAAAAA"
+colorToRGB' BrBlack   = "#555555"
+colorToRGB' BrRed     = "#FF5555"
+colorToRGB' BrGreen   = "#55FF55"
+colorToRGB' BrYellow  = "#FFFF55"
+colorToRGB' BrBlue    = "#5555FF"
+colorToRGB' BrMagenta = "#FF55FF"
+colorToRGB' BrCyan    = "#55FFFF"
+colorToRGB' BrWhite   = "#FFFFFF"
+
+-- Human-readable names, for item descriptions. The simple set.
 colorToName :: Color -> String
 colorToName Black     = "black"
-colorToName Red       = "apple red"
-colorToName Green     = "forest green"
+colorToName Red       = "red"
+colorToName Green     = "green"
 colorToName Yellow    = "brown"
-colorToName Blue      = "ultramarine"
+colorToName Blue      = "blue"
 colorToName Magenta   = "purple"
 colorToName Cyan      = "cyan"
-colorToName White     = "silver gray"
-colorToName BrBlack   = "charcoal"
-colorToName BrRed     = "coral red"
-colorToName BrGreen   = "emerald green"
+colorToName White     = "ivory"
+colorToName BrBlack   = "gray"
+colorToName BrRed     = "coral"
+colorToName BrGreen   = "lime"
 colorToName BrYellow  = "yellow"
-colorToName BrBlue    = "royal blue"
-colorToName BrMagenta = "magenta"
+colorToName BrBlue    = "azure"
+colorToName BrMagenta = "pink"
 colorToName BrCyan    = "aquamarine"
 colorToName BrWhite   = "white"
+
+-- The fancy set.
+colorToName' :: Color -> String
+colorToName' Black     = "smoky black"
+colorToName' Red       = "apple red"
+colorToName' Green     = "forest green"
+colorToName' Yellow    = "mahogany"
+colorToName' Blue      = "royal blue"
+colorToName' Magenta   = "indigo"
+colorToName' Cyan      = "teal"
+colorToName' White     = "silver gray"
+colorToName' BrBlack   = "charcoal"
+colorToName' BrRed     = "salmon"
+colorToName' BrGreen   = "emerald"
+colorToName' BrYellow  = "amber"
+colorToName' BrBlue    = "sky blue"
+colorToName' BrMagenta = "magenta"
+colorToName' BrCyan    = "turquoise"
+colorToName' BrWhite   = "ghost white"
