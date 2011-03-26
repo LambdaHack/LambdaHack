@@ -5,14 +5,12 @@ import Geometry
 import Level
 import State
 import Item
-import ItemKind
-import ItemState
 import Grammar
 import qualified Terrain
 
 viewTile :: Bool -> Tile -> Assocs -> (Char, Attr.Color)
 viewTile b (Tile t [])    a = Terrain.viewTerrain 0 b t
-viewTile b (Tile t (i:_)) a = viewItem (ikind i) a
+viewTile b (Tile t (i:_)) a = Item.viewItem (ikind i) a
 
 -- | Produces a textual description of the terrain and items at an already
 -- explored location. Mute for unknown locations.
@@ -26,8 +24,8 @@ lookAt detailed s lmap loc msg
     is  = titems (lmap `rememberAt` loc)
     isd = case is of
             []    -> ""
-            [i]   -> "You see " ++ objectItem s (icount i) (ikind i) ++ "."
-            [i,j] -> "You see " ++ objectItem s (icount i) (ikind i) ++ " and "
-                                ++ objectItem s (icount j) (ikind j) ++ "."
+            [i]   -> "You see " ++ objectItem s i ++ "."
+            [i,j] -> "You see " ++ objectItem s i ++ " and "
+                                ++ objectItem s j ++ "."
             _     -> "There are several objects here" ++
                      if detailed then ":" else "."

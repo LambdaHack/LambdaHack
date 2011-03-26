@@ -100,7 +100,7 @@ addMonster state@(State { slevel = lvl }) = do
                        && not (l `L.elem` L.map mloc (hs ++ ms)))
              (\ l t -> floor t
                        && L.all (\ pl -> distance (mloc pl, l) > 400) hs)
-      let fmk = Frequency $ L.zip (L.map nfreq roamingMts) roamingMts
+      let fmk = Frequency $ L.zip (L.map nfreq dungeonMonsters) dungeonMonsters
       mk <- frequency fmk
       hp <- randomR (nhpMin mk, nhpMax mk)
       let m = template mk hp loc

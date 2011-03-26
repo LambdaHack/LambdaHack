@@ -1,122 +1,160 @@
 module ItemKind where
 
 import Data.Binary
-import qualified Data.Binary.Put as Put
-import qualified Data.Binary.Get as Get
-import Data.Map as M
-import Control.Monad
+import qualified Data.List as L
+import qualified Data.IntMap as IM
 
-import qualified Attr
-import Random
+import Attr
 
-data ItemKind =
-   Ring
- | Scroll
- | Potion PotionKind
- | Wand
- | Amulet
- | Gem
- | Gold
- | Sword Int
- | Dart
- deriving (Eq, Ord, Show)
+data ItemKind = ItemKind
+  { jsymbol  :: !Char
+  , jflavour :: [Flavour]
+  , jname    :: String
+  , jsecret  :: String
+  , jeffect  :: Effect
+  , jquant   :: Roll
+  , jfreq    :: !Int
+  }
+  deriving (Show, Eq, Ord)
 
-data PotionKind =
-    PotionWater
-  | PotionHealing
-  deriving (Show, Eq, Ord, Enum, Bounded)
+-- a + b * lvl + roll(c + d * lvl)
+type Roll = (Word8, Word8, Word8, Word8)
 
-data Appearance =
-    Clear
-  | White
-  deriving (Show, Eq, Ord, Enum, Bounded)
+type Flavour = Attr.Color  -- the simplest possible; add "speckled", etc. later
 
-type Assocs = M.Map ItemKind Appearance
+data Effect =
+    NoEffect
+  | AffectHP Int  -- base damage, to-dam bonus in Item
+  | Dominate
+  | SummonFriend
+  | SummonEnemy
+  deriving (Show, Eq, Ord)
 
-instance Binary ItemKind where
-  put Ring       = Put.putWord16le 0
-  put Scroll     = Put.putWord16le 1
-  put (Potion t) = Put.putWord16le 2 >> put t
-  put Wand       = Put.putWord16le 3
-  put Amulet     = Put.putWord16le 4
-  put Gem        = Put.putWord16le 5
-  put Gold       = Put.putWord16le 6
-  put (Sword i)  = Put.putWord16le 7 >> put i
-  put Dart       = Put.putWord16le 8
-  get = do
-          tag <- Get.getWord16le
-          case tag of
-            0 -> return Ring
-            1 -> return Scroll
-            2 -> liftM Potion get
-            3 -> return Wand
-            4 -> return Amulet
-            5 -> return Gem
-            6 -> return Gold
-            7 -> liftM Sword get
-            8 -> return Dart
+rollOne = (1, 0, 0, 0)
 
-instance Binary PotionKind where
-  put = putWord8 . fromIntegral . fromEnum
-  get = liftM (toEnum . fromIntegral) getWord8
+darkFlav   = [Red .. Cyan]
+brightFlav = [BrRed .. BrCyan]  -- BrBlack is not really that bright
+stdFlav    = darkFlav ++ brightFlav
 
-instance Binary Appearance where
-  put = putWord8 . fromIntegral . fromEnum
-  get = liftM (toEnum . fromIntegral) getWord8
+flavourToName :: Flavour -> String
+flavourToName = colorToName
 
-potionKind :: PotionKind -> String -> String
-potionKind PotionWater   s = s ++ " of water"
-potionKind PotionHealing s = s ++ " of healing"
+effectToName :: Effect -> String
+effectToName NoEffect = ""
+effectToName (AffectHP n)
+  | n > 0 = "of healing (" ++ show n ++ ")"
+  | n < 0 = "" -- "(base dmg " ++ show (-n) ++ ")"
+  | otherwise = "of life"
+effectToName Dominate = "of domination"
+effectToName SummonFriend = "of aid calling"
+effectToName SummonEnemy = "of summoning"
 
-appearance :: Appearance -> String -> String
-appearance Clear s = "clear " ++ s
-appearance White s = "white " ++ s
+dungeonLoot :: IM.IntMap ItemKind
+dungeonLoot = IM.fromDistinctAscList (L.zip [0..] loot)
 
-itemFrequency :: Frequency ItemKind
-itemFrequency =
-  Frequency
-  [
-    (80, Gold),
-    (70,  Sword (-1)),
-    (40,  Dart),
-    (20,  Gem),
-    (10,  Ring),
-    (10,  Scroll),
-    (30,  Wand),
-    (10,  Amulet),
-    (30,  Potion PotionWater),
-    (20,  Potion PotionHealing)
-  ]
+getIK ik = dungeonLoot IM.! ik
 
-itemQuantity :: Int -> ItemKind -> Rnd Int
-itemQuantity n Gold = (2 * n) *~ d 8
-itemQuantity _ Dart = 3 *~ d 3
-itemQuantity _ _    = return 1
+loot :: [ItemKind]
+loot =
+  [amulet, dart, gem, gem1, gem2, gem3, gold,
+   potion_water, potion_healing,
+   ring, scroll, sword,
+   wand_domination]
 
-itemStrength :: Int -> ItemKind -> Rnd ItemKind
-itemStrength n (Sword _) =
-  do
-    r <- d (2 + n `div` 2)
-    return $ Sword $ (n + 1) `div` 3 + r
-itemStrength _ tp        = return tp
-
-itemLetter :: ItemKind -> Maybe Char
-itemLetter Gold = Just '$'
-itemLetter _    = Nothing
-
-viewItem :: ItemKind -> Assocs -> (Char, Attr.Color)
-viewItem i a = viewItem' i (M.lookup i a)
-  where
-    def = Attr.defFG
-    viewItem' (Sword {})  _            = (')', def)
-    viewItem' Dart        _            = (')', def)
-    viewItem' Ring        _            = ('=', def)
-    viewItem' Scroll      _            = ('?', def)
-    viewItem' (Potion {}) (Just Clear) = ('!', Attr.BrBlue)
-    viewItem' (Potion {}) (Just White) = ('!', Attr.BrCyan)
-    viewItem' (Potion {}) _            = ('!', def)
-    viewItem' Wand        _            = ('/', def)
-    viewItem' Gold        _            = ('$', Attr.BrYellow)
-    viewItem' Gem         _            = ('*', Attr.BrMagenta)
-    viewItem' Amulet      _            = ('"', def)
-    viewItem' _           _            = ('~', def)
+amulet, dart, gem, gem1, gem2, gem3, gold :: ItemKind
+potion, potion_water, potion_healing :: ItemKind
+ring, scroll, sword :: ItemKind
+wand, wand_domination :: ItemKind
+amulet = ItemKind
+  { jsymbol  = '"'
+  , jflavour = [BrWhite]
+  , jname    = "amulet"
+  , jsecret  = ""
+  , jeffect  = NoEffect
+  , jquant   = rollOne
+  , jfreq    = 10
+  }
+dart = ItemKind
+  { jsymbol  = ')'
+  , jflavour = [Yellow]
+  , jname    = "dart"
+  , jsecret  = ""
+  , jeffect  = AffectHP (-1)
+  , jquant   = (3, 0, 6, 0)
+  , jfreq    = 40
+  }
+gem = ItemKind
+  { jsymbol  = '*'
+  , jflavour = brightFlav
+  , jname    = "gem"
+  , jsecret  = ""
+  , jeffect  = NoEffect
+  , jquant   = rollOne
+  , jfreq    = 5  -- x4, below
+  }
+gem1 = gem
+gem2 = gem
+gem3 = gem
+gold = ItemKind
+  { jsymbol  = '$'
+  , jflavour = [BrYellow]
+  , jname    = "gold piece"
+  , jsecret  = ""
+  , jeffect  = NoEffect
+  , jquant   = (0, 3, 0, 10)
+  , jfreq    = 80
+  }
+potion = ItemKind
+  { jsymbol  = '!'
+  , jflavour = stdFlav
+  , jname    = "potion"
+  , jsecret  = ""
+  , jeffect  = NoEffect
+  , jquant   = rollOne
+  , jfreq    = 20
+  }
+potion_water = potion
+  { jsecret  = "of water"
+  }
+potion_healing = potion
+  { jeffect  = AffectHP 20
+  }
+ring = ItemKind
+  { jsymbol  = '='
+  , jflavour = [BrWhite]
+  , jname    = "ring"
+  , jsecret  = ""
+  , jeffect  = NoEffect
+  , jquant   = rollOne
+  , jfreq    = 10
+  }
+scroll = ItemKind
+  { jsymbol  = '?'
+  , jflavour = darkFlav
+  , jname    = "scroll"
+  , jsecret  = ""
+  , jeffect  = NoEffect
+  , jquant   = rollOne
+  , jfreq    = 10
+  }
+sword = ItemKind
+  { jsymbol  = ')'
+  , jflavour = [BrCyan]
+  , jname    = "sword"
+  , jsecret  = ""
+  , jeffect  = AffectHP (-3)
+  , jquant   = rollOne
+  , jfreq    = 70
+  }
+wand = ItemKind
+  { jsymbol  = '/'
+  , jflavour = [BrRed]
+  , jname    = "wand"
+  , jeffect  = NoEffect
+  , jsecret  = ""
+  , jquant   = rollOne
+  , jfreq    = 30
+  }
+wand_domination = wand
+  { jeffect  = Dominate
+  }

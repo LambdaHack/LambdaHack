@@ -17,7 +17,7 @@ import Geometry
 import Grammar
 import qualified HighScores as H
 import Item
-import ItemKind
+import qualified ItemKind
 import ItemState
 import qualified Keys as K
 import Level
@@ -628,23 +628,22 @@ drinkPotion =
       else do
              i <- getPotion "What to drink?" items "inventory"
              case i of
-               Just i'@(Item { ikind = Potion pkind }) ->
+               Just i'@(Item { ikind = ik })
+                | ItemKind.jname (ItemKind.getIK ik) == "potion" ->
                  do
                    -- only one potion is consumed even if several
                    -- are joined in the inventory
                    let consumed = i' { icount = 1 }
-                       baseHP = Config.get (sconfig state) "heroes" "baseHP"
                    removeFromInventory consumed
                    message (subjectVerbIObject state pbody "drink" consumed "")
                    -- the potion is identified after drinking
                    discover i'
-                   case pkind of
-                     PotionWater   -> messageAdd "Tastes like water."
-                     PotionHealing -> do
+                   case ItemKind.jeffect (ItemKind.getIK (ikind i')) of  -- TODO: redo
+                     (ItemKind.AffectHP n) -> do
                        messageAdd "You feel better."
-                       let php p =
-                             min (nhpMax (mkind p)) (mhp p + baseHP `div` 4)
+                       let php p = min (nhpMax (mkind p)) (mhp p + n)
                        updatePlayerBody (\ p -> p { mhp = php p })
+                     _ -> messageAdd "Tastes like water."
                Just _  -> abortWith "you cannot drink that"
                Nothing -> neverMind True
     playerAdvanceTime
@@ -656,7 +655,7 @@ fireItem = do
   pitems <- gets (mitems . getPlayerBody)
   pl     <- gets splayer
   target <- gets (mtarget . getPlayerBody)
-  case findItem (\ i -> ikind i == Dart) pitems of
+  case findItem (\ i -> ItemKind.jname (ItemKind.getIK (ikind i)) == "dart") pitems of
     Just (dart, _) -> do
       let fired = dart { icount = 1 }
       removeFromInventory fired
@@ -677,7 +676,7 @@ applyItem = do
   state  <- get
   per    <- currentPerception
   pitems <- gets (mitems . getPlayerBody)
-  case findItem (\ i -> ikind i == Wand) pitems of
+  case findItem (\ i -> ItemKind.jname (ItemKind.getIK (ikind i)) == "wand") pitems of
     Just (wand, _) -> do
       let applied = wand { icount = 1 }
       removeFromInventory applied
@@ -736,7 +735,7 @@ getPotion :: String ->  -- prompt
                         -- e.g., "in your inventory"
              Action (Maybe Item)
 getPotion prompt is isn =
-  let choice i = case ikind i of Potion {} -> True ; _ -> False
+  let choice i = ItemKind.jname (ItemKind.getIK (ikind i)) == "potion"
   in  getItem prompt choice "Potions" is isn
 
 actorPickupItem :: Actor -> Action ()
@@ -761,7 +760,7 @@ actorPickupItem actor =
               let (ni, nitems) = joinItem (i { iletter = Just l }) (mitems movable)
               -- message is dependent on who picks up and if the hero can perceive it
               if isPlayer
-                then message (letterLabel (iletter ni) ++ objectItem state (icount ni) (ikind ni))
+                then message (letterLabel (iletter ni) ++ objectItem state ni)
                 else when perceived $
                        message $ subjectCompoundVerbIObject state movable "pick" "up" i ""
               removeFromLoc i loc
@@ -833,8 +832,8 @@ displayItems :: Message -> Bool -> [Item] -> Action Bool
 displayItems msg sorted is = do
   state <- get
   let inv = unlines $
-            L.map (\ (Item { icount = c, iletter = l, ikind = t }) ->
-                    letterLabel l ++ objectItem state c t ++ " ")
+            L.map (\ i ->
+                    letterLabel (iletter i) ++ objectItem state i ++ " ")
             ((if sorted then sortBy (cmpLetter' `on` iletter) else id) is)
   let ovl = inv ++ more
   message msg
@@ -896,11 +895,12 @@ actorAttackActor (AHero _) target@(AHero _) =
 actorAttackActor source target = do
   sm    <- gets (getActor source)
   let -- Determine the weapon used for the attack.
-      sword  = strongestSword (mitems sm)
-      damage = 3 + sword
-      weaponMsg = if sword == 0
+      weapon = strongestWeapon (mitems sm)
+      -- TODO: redo
+      damage = case weapon of Just (Item { ikind = ik, ipower = k }) -> (case ItemKind.jeffect (ItemKind.getIK ik) of ItemKind.AffectHP n -> - n + k; _ -> 3) ; _ -> 3
+      weaponMsg = if damage == 3
                   then ""
-                  else " with a (+" ++ show sword ++ ") sword" -- TODO: generate proper message
+                  else " with a (+" ++ show (damage - 3) ++ ") sword" -- TODO: generate proper message
   actorDamageActor source target damage weaponMsg
   advanceTime source
 

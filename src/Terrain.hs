@@ -3,8 +3,6 @@ module Terrain where
 import Control.Monad
 
 import Data.Binary
-import qualified Data.Binary.Put as Put
-import qualified Data.Binary.Get as Get
 import Data.Maybe
 
 import qualified Attr
@@ -51,7 +49,7 @@ instance Binary a => Binary (Terrain a) where
             5 -> liftM Wall get
             6 -> liftM3 Stairs get get get
             7 -> liftM2 Door get get
-            _ -> fail "no parse (Tile)"
+            _ -> fail "no parse (Terrain)"
 
 instance Eq a => Eq (Terrain a) where
   Rock == Rock = True
@@ -97,8 +95,8 @@ data Pos = UL | U | UR | L | R | DL | D | DR | O
   deriving (Eq, Show, Enum, Bounded)
 
 instance Binary Pos where
-  put = Put.putWord16le . fromIntegral . fromEnum
-  get = liftM (toEnum . fromIntegral) Get.getWord16le
+  put = putWord8 . fromIntegral . fromEnum
+  get = liftM (toEnum . fromIntegral) getWord8
 
 isFloor :: Terrain a -> Bool
 isFloor (Floor _) = True

@@ -2,6 +2,7 @@ module State where
 
 import qualified Data.Map as M
 import qualified Data.Set as S
+import qualified Data.IntMap as IM
 import Control.Monad
 import Data.Binary
 import qualified Config
@@ -26,7 +27,7 @@ data State = State
     ssensory     :: SensoryMode,
     sdisplay     :: DisplayMode,
     stime        :: Time,
-    sassocs      :: ItemKind.Assocs,       -- ^ how every item appears
+    sassocs      :: Assocs,       -- ^ how every item appears
     sdiscoveries :: Discoveries,  -- ^ items (kinds) that have been discovered
     sdungeon     :: Dungeon,      -- ^ all but the current dungeon level
     slevel       :: Level,
@@ -50,7 +51,7 @@ defaultState dng lvl =
     []
     Implicit Normal
     0
-    M.empty
+    IM.empty
     S.empty
     dng
     lvl

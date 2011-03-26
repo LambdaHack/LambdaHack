@@ -307,9 +307,9 @@ rollItems cfg lvl ploc =
     nri <- nrItems cfg
     replicateM nri $
       do
-        t <- newItem (depth cfg) ItemKind.itemFrequency
-        l <- case ikind t of
-               ItemKind.Sword _ ->
+        t <- newItem (depth cfg)
+        l <- case ItemKind.jname (ItemKind.getIK (ikind t)) of
+               "sword" ->
                  -- swords generated close to monsters; MUAHAHAHA
                  findLocTry 200 lvl
                    (const floor)

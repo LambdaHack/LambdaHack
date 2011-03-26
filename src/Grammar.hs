@@ -1,6 +1,9 @@
 module Grammar where
 
 import Data.Char
+import Data.Set as S
+import Data.List as L
+import qualified Data.IntMap as IM
 
 import Item
 import Movable
@@ -8,7 +11,6 @@ import MovableKind
 import State
 import ItemState
 import ItemKind
---import qualified ItemKind
 
 -- | How to refer to a movable in object position of a sentence.
 objectMovable :: MovableKind -> String
@@ -32,7 +34,7 @@ subjectVerbIObject :: State -> Movable -> String -> Item -> String -> String
 subjectVerbIObject state m v o add =
   subjectMovable (mkind m) ++ " " ++
   verbMovable (mkind m) v ++ " " ++
-  objectItem state (icount o) (ikind o) ++ add ++ "."
+  objectItem state o ++ add ++ "."
 
 subjectVerbMObject :: State -> Movable -> String -> Movable -> String -> String
 subjectVerbMObject state m v o add =
@@ -45,7 +47,7 @@ subjectCompoundVerbIObject :: State -> Movable -> String -> String ->
 subjectCompoundVerbIObject state m v p o add =
   subjectMovable (mkind m) ++ " " ++
   compoundVerbMovable (mkind m) v p ++ " " ++
-  objectItem state (icount o) (ikind o) ++ add ++ "."
+  objectItem state o ++ add ++ "."
 
 makeObject :: Int -> (String -> String) -> String -> String
 makeObject 1 adj obj = let b = adj obj
@@ -54,17 +56,18 @@ makeObject 1 adj obj = let b = adj obj
                              _                       -> "a " ++ b
 makeObject n adj obj = show n ++ " " ++ adj (obj ++ "s")
 
-
-
-
--- MOVE
-objectItem :: State -> Int -> ItemKind -> String
-objectItem _ n Ring       = makeObject n id "ring"
-objectItem _ n Scroll     = makeObject n id "scroll"
-objectItem s n (Potion t) = makeObject n (identified (sassocs s) (sdiscoveries s) (Potion t)) "potion"
-objectItem _ n Wand       = makeObject n id "wand"
-objectItem _ n Amulet     = makeObject n id "amulet"
-objectItem _ n Gem        = makeObject n id "gem"
-objectItem _ n Gold       = makeObject n id "gold piece"
-objectItem _ n (Sword i)  = makeObject n id ("(+" ++ show i ++ ") sword")
-objectItem _ n Dart       = makeObject n id "dart"
+objectItem :: State -> Item -> String
+objectItem state o =
+  let ik = ikind o
+      kind = ItemKind.getIK ik
+      identified = L.length (jflavour kind) == 1 ||
+                   ik `S.member` sdiscoveries state
+      eff = effectToName (jeffect kind)
+      pwr = if ipower o == 0 then "" else " (+" ++ show (ipower o) ++ ")"
+      adj name = if identified
+                 then name ++ if jsecret kind == ""
+                              then if eff == "" then pwr else " " ++ eff ++ pwr
+                              else " " ++ jsecret kind ++ pwr
+                 else let flavour = getFlavour (sassocs state) ik
+                      in  flavourToName flavour ++ " " ++ name
+  in  makeObject (icount o) adj (jname kind)

@@ -13,7 +13,6 @@ import Turn
 import qualified Config
 import MovableAdd
 import Item
-import ItemKind
 
 main :: IO ()
 main = Display.startup start
@@ -33,12 +32,9 @@ start session = do
   case restored of
     Right msg  -> do
       (ploc, lvl, dng) <- rndToIO $ generate config
-      let -- generate item associations
-          assocs = M.fromList
-                     [ (Potion PotionWater,   Clear),
-                       (Potion PotionHealing, White) ]
-          defState = defaultState dng lvl
-          state = defState { sassocs = assocs, sconfig = config }
+      assocs <- rndToIO $ dungeonAssocs
+      let defState = defaultState dng lvl
+          state = defState { sconfig = config, sassocs = assocs }
           hstate = initialHeroes ploc state
       handlerToIO session hstate msg handle
     Left state ->
