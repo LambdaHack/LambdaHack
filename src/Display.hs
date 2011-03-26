@@ -23,7 +23,7 @@ import Control.Monad.State hiding (State) -- for MonadIO, seems to be portable b
 import Data.Maybe
 
 import Message
-import qualified Attr
+import qualified Color
 import State
 import Geometry
 import Level
@@ -133,11 +133,11 @@ displayLevel
       lAt    = if sOmn || sTer > 0 then at else rememberAt
       sVisBG = if sVis
                then \ vis rea -> if vis
-                                 then Attr.Blue
+                                 then Color.Blue
                                  else if rea
-                                      then Attr.Magenta
-                                      else Attr.defBG
-                else \ vis rea -> Attr.defBG
+                                      then Color.Magenta
+                                      else Color.defBG
+                else \ vis rea -> Color.defBG
       gItem   = findItem (\ i -> iletter i == Just '$') pitems
       gold    = maybe 0 (icount . fst) gItem
       hs      = levelHeroList state
@@ -147,34 +147,35 @@ displayLevel
             sml  = ((smap ! loc) - time) `div` 100
             viewMovable loc (Movable { mkind = mk })
               | loc == ploc && ln == creturnLn cursor =
-                  (nsymbol mk, Attr.defBG)  -- highlight player
+                  (nsymbol mk, Color.defBG)  -- highlight player
               | otherwise = (nsymbol mk, ncolor mk)
             viewSmell :: Int -> Char
             viewSmell n
               | n > 9     = '*'
               | n < 0     = '-'
               | otherwise = Char.intToDigit n
+            rainbow loc = toEnum (1 + snd loc `mod` 14)
             (char, fg) =
               case L.find (\ m -> loc == mloc m) (hs ++ ms) of
                 _ | sTer > 0 -> Terrain.viewTerrain sTer False (tterrain tile)
                 Just m | sOmn || vis -> viewMovable loc m
-                _ | sSml && sml >= 0 -> (viewSmell sml, Attr.Green)
+                _ | sSml && sml >= 0 -> (viewSmell sml, rainbow loc)
                   | otherwise        -> viewTile vis tile assocs
             vis = S.member loc visible
             rea = S.member loc reachable
             bg = if ctargeting cursor && loc == clocation cursor
-                 then Attr.defFG      -- highlight targeting cursor
+                 then Color.defFG      -- highlight targeting cursor
                  else sVisBG vis rea  -- FOV debug
-            reverseVideo = (Attr.defBG, Attr.defFG)
+            reverseVideo = (Color.defBG, Color.defFG)
             optVisually (fg, bg) =
-              if fg == Attr.defBG
+              if fg == Color.defBG
               then reverseVideo
-              else if bg == Attr.defFG && fg == Attr.defFG
+              else if bg == Color.defFG && fg == Color.defFG
                    then reverseVideo
                    else (fg, bg)
             optComputationally (fg, bg) =
-              let fgSet = if fg == Attr.defFG then id else D.setFG fg
-                  bgSet = if bg == Attr.defBG then id else D.setBG bg
+              let fgSet = if fg == Color.defFG then id else D.setFG fg
+                  bgSet = if bg == Color.defBG then id else D.setBG bg
               in  fgSet . bgSet
             set = optComputationally . optVisually $ (fg, bg)
         in case over (loc `shift` ((sy+1) * n, 0)) of

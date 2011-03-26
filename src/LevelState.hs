@@ -1,6 +1,6 @@
 module LevelState where
 
-import qualified Attr
+import qualified Color
 import Geometry
 import Level
 import State
@@ -8,7 +8,7 @@ import Item
 import Grammar
 import qualified Terrain
 
-viewTile :: Bool -> Tile -> Assocs -> (Char, Attr.Color)
+viewTile :: Bool -> Tile -> Assocs -> (Char, Color.Color)
 viewTile b (Tile t [])    a = Terrain.viewTerrain 0 b t
 viewTile b (Tile t (i:_)) a = Item.viewItem (ikind i) a
 

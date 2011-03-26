@@ -1,4 +1,4 @@
-module Attr where
+module Color where
 
 import Control.Monad
 import qualified Data.Binary as Binary

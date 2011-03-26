@@ -4,7 +4,7 @@ import Data.Binary
 import qualified Data.List as L
 import qualified Data.IntMap as IM
 
-import Attr
+import Color
 
 data ItemKind = ItemKind
   { jsymbol  :: !Char
@@ -20,7 +20,7 @@ data ItemKind = ItemKind
 -- a + b * lvl + roll(c + d * lvl)
 type Roll = (Word8, Word8, Word8, Word8)
 
-type Flavour = Attr.Color  -- the simplest possible; add "speckled", etc. later
+type Flavour = Color  -- the simplest possible; add "speckled", etc. later
 
 data Effect =
     NoEffect

@@ -13,14 +13,14 @@ import Data.Maybe
 
 import Geometry
 import qualified Keys as K (Key(..))
-import qualified Attr
+import qualified Color
 
 displayId = "curses"
 
 data Session =
   Session
     { win :: Window,
-      styles :: Map (Attr.Color, Attr.Color) C.CursesStyle }
+      styles :: Map (Color.Color, Color.Color) C.CursesStyle }
 
 startup :: (Session -> IO ()) -> IO ()
 startup k =
@@ -30,7 +30,7 @@ startup k =
     let s = [ ((f,b), C.Style (toFColor f) (toBColor b))
             | f <- [minBound..maxBound],
               -- No more color combinations possible: 16*4, 64 is max.
-              b <- [Attr.Black, Attr.White, Attr.Blue, Attr.Magenta ] ]
+              b <- [Color.Black, Color.White, Color.Blue, Color.Magenta ] ]
     nr <- colorPairs
     when (nr < L.length s) $
       C.end >>
@@ -48,8 +48,8 @@ display ((y0,x0),(y1,x1)) (Session { win = w, styles = s }) f msg status =
   do
     -- let defaultStyle = C.defaultCursesStyle
     -- Terminals with white background require this and more:
-    let defaultStyle = s ! (Attr.defFG, Attr.defBG)
-        canonical (c, d) = (fromMaybe Attr.defFG c, fromMaybe Attr.defBG d)
+    let defaultStyle = s ! (Color.defFG, Color.defBG)
+        canonical (c, d) = (fromMaybe Color.defFG c, fromMaybe Color.defBG d)
     C.erase
     mvWAddStr w 0 0 msg
     sequence_ [ let (a,c) = f (y,x) in C.setStyle (findWithDefault defaultStyle (canonical a) s) >> mvWAddStr w (y+1) x [c]
@@ -102,37 +102,37 @@ nextEvent session =
     e <- C.getKey refresh
     maybe (nextEvent session) return (keyTranslate e)
 
-type Attr = (Maybe Attr.Color, Maybe Attr.Color)
+type Attr = (Maybe Color.Color, Maybe Color.Color)
 
 setFG c (_, b) = (Just c, b)
 setBG c (f, _) = (f, Just c)
 defaultAttr = (Nothing, Nothing)
 
-toFColor :: Attr.Color -> C.ForegroundColor
-toFColor Attr.Black     = C.BlackF
-toFColor Attr.Red       = C.DarkRedF
-toFColor Attr.Green     = C.DarkGreenF
-toFColor Attr.Yellow    = C.BrownF
-toFColor Attr.Blue      = C.DarkBlueF
-toFColor Attr.Magenta   = C.PurpleF
-toFColor Attr.Cyan      = C.DarkCyanF
-toFColor Attr.White     = C.WhiteF
-toFColor Attr.BrBlack   = C.GreyF
-toFColor Attr.BrRed     = C.RedF
-toFColor Attr.BrGreen   = C.GreenF
-toFColor Attr.BrYellow  = C.YellowF
-toFColor Attr.BrBlue    = C.BlueF
-toFColor Attr.BrMagenta = C.MagentaF
-toFColor Attr.BrCyan    = C.CyanF
-toFColor Attr.BrWhite   = C.BrightWhiteF
+toFColor :: Color.Color -> C.ForegroundColor
+toFColor Color.Black     = C.BlackF
+toFColor Color.Red       = C.DarkRedF
+toFColor Color.Green     = C.DarkGreenF
+toFColor Color.Yellow    = C.BrownF
+toFColor Color.Blue      = C.DarkBlueF
+toFColor Color.Magenta   = C.PurpleF
+toFColor Color.Cyan      = C.DarkCyanF
+toFColor Color.White     = C.WhiteF
+toFColor Color.BrBlack   = C.GreyF
+toFColor Color.BrRed     = C.RedF
+toFColor Color.BrGreen   = C.GreenF
+toFColor Color.BrYellow  = C.YellowF
+toFColor Color.BrBlue    = C.BlueF
+toFColor Color.BrMagenta = C.MagentaF
+toFColor Color.BrCyan    = C.CyanF
+toFColor Color.BrWhite   = C.BrightWhiteF
 
-toBColor :: Attr.Color -> C.BackgroundColor
-toBColor Attr.Black     = C.BlackB
-toBColor Attr.Red       = C.DarkRedB
-toBColor Attr.Green     = C.DarkGreenB
-toBColor Attr.Yellow    = C.BrownB
-toBColor Attr.Blue      = C.DarkBlueB
-toBColor Attr.Magenta   = C.PurpleB
-toBColor Attr.Cyan      = C.DarkCyanB
-toBColor Attr.White     = C.WhiteB
+toBColor :: Color.Color -> C.BackgroundColor
+toBColor Color.Black     = C.BlackB
+toBColor Color.Red       = C.DarkRedB
+toBColor Color.Green     = C.DarkGreenB
+toBColor Color.Yellow    = C.BrownB
+toBColor Color.Blue      = C.DarkBlueB
+toBColor Color.Magenta   = C.PurpleB
+toBColor Color.Cyan      = C.DarkCyanB
+toBColor Color.White     = C.WhiteB
 toBColor _              = C.BlackB  -- a limitation of curses

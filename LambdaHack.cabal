@@ -24,7 +24,7 @@ flag vty
 executable LambdaHack
   main-is:       LambdaHack.hs
   hs-source-dirs:src
-  other-modules: Attr, Action, Actions, Command, Config, ConfigDefault,
+  other-modules: Action, Actions, Color, Command, Config, ConfigDefault,
                  Display, Dungeon, DungeonState, File,
                  FOV, FOV.Common, FOV.Digital, FOV.Permissive, FOV.Shadow,
                  Frequency, Geometry, GeometryRnd, Grammar,

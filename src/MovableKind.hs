@@ -5,7 +5,7 @@ import Control.Monad
 
 import Geometry
 import Random
-import qualified Attr
+import qualified Color
 
 -- | Monster properties that are changing rarely and permanently.
 data MovableKind = MovableKind
@@ -13,7 +13,7 @@ data MovableKind = MovableKind
     nhpMax  :: !Int,         -- ^ maximal possible and initial hp
     nspeed  :: !Time,        -- ^ natural speed
     nsymbol :: !Char,        -- ^ map symbol
-    ncolor  :: !Attr.Color,  -- ^ map color
+    ncolor  :: !Color.Color,  -- ^ map color
     nname   :: String,       -- ^ name
     nsight  :: !Bool,        -- ^ can it see?
     nsmell  :: !Bool,        -- ^ can it smell?
@@ -62,7 +62,7 @@ hero = MovableKind
     nspeed  = 10,
     nsymbol = '@',
     nname   = "you",
-    ncolor  = Attr.BrWhite,  -- Heroes white, monsters colorful.
+    ncolor  = Color.BrWhite,  -- Heroes white, monsters colorful.
     nsight  = True,
     nsmell  = False,
     niq     = 13,  -- Can see that secret doors under alien control.
@@ -75,7 +75,7 @@ eye = MovableKind
     nhpMax  = 12,
     nspeed  = 10,
     nsymbol = 'e',
-    ncolor  = Attr.BrRed,
+    ncolor  = Color.BrRed,
     nname   = "the reducible eye",
     nsight  = True,
     nsmell  = False,
@@ -88,7 +88,7 @@ fastEye = MovableKind
     nhpMax  = 6,
     nspeed  = 4,
     nsymbol = 'e',
-    ncolor  = Attr.BrBlue,
+    ncolor  = Color.BrBlue,
     nname   = "the super-fast eye",
     nsight  = True,
     nsmell  = False,
@@ -101,7 +101,7 @@ nose = MovableKind
     nhpMax  = 13,
     nspeed  = 11,
     nsymbol = 'n',
-    ncolor  = Attr.Green,
+    ncolor  = Color.Green,
     nname   = "the point-free nose",
     nsight  = False,
     nsmell  = True,

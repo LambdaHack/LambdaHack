@@ -11,7 +11,7 @@ import Control.Monad
 
 import Random
 import ItemKind
-import Attr
+import qualified Color
 
 data Item = Item
   { ikind    :: !Int,
@@ -56,7 +56,7 @@ getFlavour assocs ik =
       then head (jflavour kind)
       else assocs IM.! ik
 
-viewItem :: Int -> Assocs -> (Char, Attr.Color)
+viewItem :: Int -> Assocs -> (Char, Color.Color)
 viewItem ik assocs = (jsymbol (getIK ik), getFlavour assocs ik)
 
 -- Not really satisfactory. Should be configurable, not hardcoded.

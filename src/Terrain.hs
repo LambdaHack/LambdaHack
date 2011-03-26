@@ -5,7 +5,7 @@ import Control.Monad
 import Data.Binary
 import Data.Maybe
 
-import qualified Attr
+import qualified Color
 import Geometry
 
 -- TODO: let terrain kinds be defined in a config file. Group them
@@ -192,11 +192,11 @@ lookTerrain _                  = ""
 -- 4: only rooms
 --
 -- The Bool indicates whether the loc is currently visible.
-viewTerrain :: Int -> Bool -> Terrain a -> (Char, Attr.Color)
+viewTerrain :: Int -> Bool -> Terrain a -> (Char, Color.Color)
 viewTerrain n b t =
-  let def =     if b then Attr.BrWhite else Attr.defFG
-      defDark = if b then Attr.BrYellow else Attr.BrBlack
-      defDoor = if b then Attr.Yellow else Attr.BrBlack
+  let def =     if b then Color.BrWhite else Color.defFG
+      defDark = if b then Color.BrYellow else Color.BrBlack
+      defDoor = if b then Color.Yellow else Color.BrBlack
   in case t of
        Rock                -> (' ', def)
        (Opening d)
@@ -205,7 +205,7 @@ viewTerrain n b t =
        (Floor d)           -> ('.', if d == Light then def else defDark)
        Unknown             -> (' ', def)
        Corridor
-         | n <= 3          -> ('#', if b then Attr.BrWhite else Attr.defFG)
+         | n <= 3          -> ('#', if b then Color.BrWhite else Color.defFG)
          | otherwise       -> viewTerrain 0 b Rock
        (Wall p)
          | p == O          -> ('O', def)

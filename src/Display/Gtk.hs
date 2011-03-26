@@ -13,7 +13,7 @@ import Data.Map as M
 
 import Geometry
 import qualified Keys as K (Key(..))
-import qualified Attr
+import qualified Color
 
 displayId = "gtk"
 
@@ -78,8 +78,8 @@ startup k =
                                    return True
                                _ -> return False)
 
-    let black = Color minBound minBound minBound  -- Attr.defBG == Attr.Black
-        white = Color 0xAAAA 0xAAAA 0xAAAA        -- Attr.defFG == Attr.White
+    let black = Color minBound minBound minBound  -- Color.defBG == Color.Black
+        white = Color 0xAAAA 0xAAAA 0xAAAA        -- Color.defFG == Color.White
     widgetModifyBase tv StateNormal black
     widgetModifyText tv StateNormal white
 
@@ -179,8 +179,8 @@ nextEvent session =
 type Attr = [AttrKey]
 
 data AttrKey =
-    FG Attr.Color
-  | BG Attr.Color
+    FG Color.Color
+  | BG Color.Color
   deriving (Eq, Ord)
 
 setBG c = (BG c :)
@@ -188,5 +188,5 @@ setFG c = (FG c :)
 defaultAttr = []
 
 doAttr :: TextTag -> AttrKey -> IO ()
-doAttr tt (FG color) = set tt [ textTagForeground := Attr.colorToRGB color ]
-doAttr tt (BG color) = set tt [ textTagBackground := Attr.colorToRGB color ]
+doAttr tt (FG color) = set tt [ textTagForeground := Color.colorToRGB color ]
+doAttr tt (BG color) = set tt [ textTagBackground := Color.colorToRGB color ]

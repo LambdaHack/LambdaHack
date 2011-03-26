@@ -9,7 +9,7 @@ import qualified Data.ByteString as BS
 
 import Geometry
 import qualified Keys as K (Key(..))
-import qualified Attr
+import qualified Color
 
 displayId = "vty"
 
@@ -66,27 +66,27 @@ nextEvent session =
 -- A hack to get bright colors via the bold attribute. Depending on terminal
 -- settings this is needed or not and the characters really get bold or not.
 -- HCurses does this by default, but vty refuses to get crazy.
-hack c a  = if Attr.isBright c then with_style a bold else a
+hack c a  = if Color.isBright c then with_style a bold else a
 setFG c a = hack c $ with_fore_color a (aToc c)
 setBG c a = hack c $ with_back_color a (aToc c)
 
-defaultAttr = def_attr { attr_fore_color = SetTo (aToc Attr.defFG),
-                         attr_back_color = SetTo (aToc Attr.defBG) }
+defaultAttr = def_attr { attr_fore_color = SetTo (aToc Color.defFG),
+                         attr_back_color = SetTo (aToc Color.defBG) }
 
-aToc :: Attr.Color -> Color
-aToc Attr.Black     = black
-aToc Attr.Red       = red
-aToc Attr.Green     = green
-aToc Attr.Yellow    = yellow
-aToc Attr.Blue      = blue
-aToc Attr.Magenta   = magenta
-aToc Attr.Cyan      = cyan
-aToc Attr.White     = white
-aToc Attr.BrBlack   = bright_black
-aToc Attr.BrRed     = bright_red
-aToc Attr.BrGreen   = bright_green
-aToc Attr.BrYellow  = bright_yellow
-aToc Attr.BrBlue    = bright_blue
-aToc Attr.BrMagenta = bright_magenta
-aToc Attr.BrCyan    = bright_cyan
-aToc Attr.BrWhite   = bright_white
+aToc :: Color.Color -> Color
+aToc Color.Black     = black
+aToc Color.Red       = red
+aToc Color.Green     = green
+aToc Color.Yellow    = yellow
+aToc Color.Blue      = blue
+aToc Color.Magenta   = magenta
+aToc Color.Cyan      = cyan
+aToc Color.White     = white
+aToc Color.BrBlack   = bright_black
+aToc Color.BrRed     = bright_red
+aToc Color.BrGreen   = bright_green
+aToc Color.BrYellow  = bright_yellow
+aToc Color.BrBlue    = bright_blue
+aToc Color.BrMagenta = bright_magenta
+aToc Color.BrCyan    = bright_cyan
+aToc Color.BrWhite   = bright_white
