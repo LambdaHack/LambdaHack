@@ -20,7 +20,7 @@ data ItemKind = ItemKind
 -- a + b * lvl + roll(c + d * lvl)
 type Roll = (Word8, Word8, Word8, Word8)
 
-type Flavour = Color  -- the simplest possible; add "speckled", etc. later
+type Flavour = (Color, Bool)  -- the flag tells to use fancy color names
 
 data Effect =
     NoEffect
@@ -32,12 +32,19 @@ data Effect =
 
 rollOne = (1, 0, 0, 0)
 
-darkFlav   = [Red .. Cyan]
-brightFlav = [BrRed .. BrCyan]  -- BrBlack is not really that bright
-stdFlav    = darkFlav ++ brightFlav
+zipPlain cs = L.zip cs (repeat False)
+zipFancy cs = L.zip cs (repeat True)
+darkCol    = [Red .. Cyan]
+brightCol  = [BrRed .. BrCyan]  -- BrBlack is not really that bright
+stdCol     = darkCol ++ brightCol
+stdFlav    = zipPlain stdCol ++ zipFancy stdCol
 
 flavourToName :: Flavour -> String
-flavourToName = colorToName
+flavourToName (c, False) = colorToName c
+flavourToName (c, True) = colorToName' c
+
+flavourToColor :: Flavour -> Color
+flavourToColor (c, _) = c
 
 effectToName :: Effect -> String
 effectToName NoEffect = ""
@@ -67,7 +74,7 @@ ring, scroll, sword :: ItemKind
 wand, wand_domination :: ItemKind
 amulet = ItemKind
   { jsymbol  = '"'
-  , jflavour = [BrWhite]
+  , jflavour = [(BrWhite, True)]
   , jname    = "amulet"
   , jsecret  = ""
   , jeffect  = NoEffect
@@ -76,7 +83,7 @@ amulet = ItemKind
   }
 dart = ItemKind
   { jsymbol  = ')'
-  , jflavour = [Yellow]
+  , jflavour = [(Yellow, False)]
   , jname    = "dart"
   , jsecret  = ""
   , jeffect  = AffectHP (-1)
@@ -85,7 +92,7 @@ dart = ItemKind
   }
 gem = ItemKind
   { jsymbol  = '*'
-  , jflavour = brightFlav
+  , jflavour = zipPlain brightCol  -- natural, so not fancy
   , jname    = "gem"
   , jsecret  = ""
   , jeffect  = NoEffect
@@ -97,7 +104,7 @@ gem2 = gem
 gem3 = gem
 gold = ItemKind
   { jsymbol  = '$'
-  , jflavour = [BrYellow]
+  , jflavour = [(BrYellow, False)]
   , jname    = "gold piece"
   , jsecret  = ""
   , jeffect  = NoEffect
@@ -106,7 +113,7 @@ gold = ItemKind
   }
 potion = ItemKind
   { jsymbol  = '!'
-  , jflavour = stdFlav
+  , jflavour = zipFancy stdCol
   , jname    = "potion"
   , jsecret  = ""
   , jeffect  = NoEffect
@@ -121,7 +128,7 @@ potion_healing = potion
   }
 ring = ItemKind
   { jsymbol  = '='
-  , jflavour = [BrWhite]
+  , jflavour = [(BrWhite, False)]
   , jname    = "ring"
   , jsecret  = ""
   , jeffect  = NoEffect
@@ -130,7 +137,7 @@ ring = ItemKind
   }
 scroll = ItemKind
   { jsymbol  = '?'
-  , jflavour = darkFlav
+  , jflavour = zipFancy darkCol  -- arcane and old
   , jname    = "scroll"
   , jsecret  = ""
   , jeffect  = NoEffect
@@ -139,7 +146,7 @@ scroll = ItemKind
   }
 sword = ItemKind
   { jsymbol  = ')'
-  , jflavour = [BrCyan]
+  , jflavour = [(BrCyan, False)]
   , jname    = "sword"
   , jsecret  = ""
   , jeffect  = AffectHP (-3)
@@ -148,7 +155,7 @@ sword = ItemKind
   }
 wand = ItemKind
   { jsymbol  = '/'
-  , jflavour = [BrRed]
+  , jflavour = [(BrRed, True)]
   , jname    = "wand"
   , jeffect  = NoEffect
   , jsecret  = ""

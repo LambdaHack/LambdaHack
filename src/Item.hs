@@ -57,7 +57,7 @@ getFlavour assocs ik =
       else assocs IM.! ik
 
 viewItem :: Int -> Assocs -> (Char, Color.Color)
-viewItem ik assocs = (jsymbol (getIK ik), getFlavour assocs ik)
+viewItem ik assocs = (jsymbol (getIK ik), flavourToColor $ getFlavour assocs ik)
 
 -- Not really satisfactory. Should be configurable, not hardcoded.
 itemStrength :: Int -> ItemKind -> Rnd Int
