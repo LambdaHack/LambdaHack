@@ -682,7 +682,7 @@ applyItem = do
         Just loc ->
           if actorReachesLoc pl loc per pl
             then case locToActor loc state of
-                   Just ta -> selectPlayer ta >> return ()
+                   Just ta -> itemEffectAction wand pl ta
                    Nothing -> abortWith "no living target to affect"
             else abortWith "target not reachable"
     Nothing -> abortWith "nothing to apply"
@@ -919,7 +919,7 @@ generateMonster :: Action ()
 generateMonster =
   do  -- TODO: simplify
     state  <- get
-    nstate <- liftIO $ rndToIO $ addMonster state
+    nstate <- liftIO $ rndToIO $ rollMonster state
     modify (const nstate)
 
 -- | Advance the move time for the given actor.
@@ -977,7 +977,7 @@ effectToAction (Effect.Heal n) source target power msg = do
       updateAnyActor target upd
       pl <- gets splayer
       when (target == pl) $ messageAdd "You feel better."  -- TODO: msg, if perceived, etc.
-      return True  -- TODO: not always
+      return True
 effectToAction (Effect.Wound n) source target power msg = do
   when (n <= 0) $ error "effectToAction (Effect.Wound n)"
   focusIfAHero target
@@ -1010,9 +1010,22 @@ effectToAction (Effect.Wound n) source target power msg = do
       then checkPartyDeath  -- kills the player and checks game over
       else modify (deleteActor target)  -- kills the enemy
   return True
-effectToAction Effect.Dominate source target power msg = return False  -- TODO
-effectToAction Effect.SummonFriend source target power msg = return False
-effectToAction Effect.SummonEnemy source target power msg = return False
+effectToAction Effect.Dominate source target power msg =
+  if isAHero source  -- Monsters are not strong-willed enough.
+  then selectPlayer target
+  else return False
+effectToAction Effect.SummonFriend source target power msg = do
+  tm <- gets (getActor target)
+  if isAHero source
+    then summonHeroes (1 + power) (mloc tm)
+    else summonMonsters (1 + power) (mloc tm)
+  return True
+effectToAction Effect.SummonEnemy source target power msg = do
+  tm <- gets (getActor target)
+  if not $ isAHero source
+    then summonHeroes (1 + power) (mloc tm)
+    else summonMonsters (1 + power) (mloc tm)
+  return True
 effectToAction Effect.ApplyWater _ target _ _ =
   if isAHero target  -- Monsters ignore water splashed on them.
   then do
@@ -1027,7 +1040,16 @@ itemEffectAction :: Item -> Actor -> Actor -> Action ()
 itemEffectAction item source target = do
   state <- get
   let effect = ItemKind.jeffect $ ItemKind.getIK $ ikind item
-      msg = " with " ++ objectItem state item -- TODO: generate proper message
+      msg = " with " ++ objectItem state item
   b <- effectToAction effect source target (ipower item) msg
   -- If something happens, the item gets identified.
   when (b && (isAHero source || isAHero target)) $ discover item
+
+summonHeroes :: Int -> Loc -> Action ()
+summonHeroes n loc = modify (\ state -> iterate (addHero loc) state !! n)
+
+summonMonsters :: Int -> Loc -> Action ()
+summonMonsters n loc = do
+  let fmk = Frequency $ L.zip (L.map nfreq dungeonMonsters) dungeonMonsters
+  mk <- liftIO $ rndToIO $ frequency fmk
+  modify (\ state -> iterate (addMonster mk (nhpMax mk) loc) state !! n)

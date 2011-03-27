@@ -76,8 +76,17 @@ monsterGenChance (LambdaCave depth) numMonsters =
 monsterGenChance _ _ = return False
 
 -- | Create a new monster in the level, at a random position.
-addMonster :: State -> Rnd State
-addMonster state@(State { slevel = lvl }) = do
+addMonster :: MovableKind -> Int -> Loc -> State -> State
+addMonster mk hp ploc state = do
+  let loc = nearbyFreeLoc ploc state
+      n = snd (scounter state)
+      m = template mk hp loc
+      state' = state { scounter = (fst (scounter state), n + 1) }
+  updateLevel (updateMonsters (IM.insert n m)) state'
+
+-- | Create a new monster in the level, at a random position.
+rollMonster :: State -> Rnd State
+rollMonster state@(State { slevel = lvl }) = do
   let hs = levelHeroList state
       ms = levelMonsterList state
   rc <- monsterGenChance (lname lvl) (L.length ms)
@@ -96,7 +105,4 @@ addMonster state@(State { slevel = lvl }) = do
       let fmk = Frequency $ L.zip (L.map nfreq dungeonMonsters) dungeonMonsters
       mk <- frequency fmk
       hp <- randomR (nhpMin mk, nhpMax mk)
-      let n = snd (scounter state)
-          m = template mk hp loc
-          state' = state { scounter = (fst (scounter state), n + 1) }
-      return $ updateLevel (updateMonsters (IM.insert n m)) state'
+      return $ addMonster mk hp loc state
