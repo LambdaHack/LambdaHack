@@ -578,8 +578,9 @@ doLook =
     lmap   <- gets (lmap . slevel)
     per    <- currentPerception
     target <- gets (mtarget . getPlayerBody)
-    let monsterMsg =
-          if S.member loc (ptvisible per)
+    let canSee = S.member loc (ptvisible per)
+        monsterMsg =
+          if canSee
           then case L.find (\ m -> mloc m == loc) (levelMonsterList state) of
                  Just m  -> subjectMovable (mkind m) ++ " is here. "
                  Nothing -> ""
@@ -589,7 +590,7 @@ doLook =
                  TLoc _   -> "[targeting location] "
                  TCursor  -> "[targeting current] "
         -- general info about current loc
-        lookMsg = mode ++ lookAt True state lmap loc monsterMsg
+        lookMsg = mode ++ lookAt True canSee state lmap loc monsterMsg
         -- check if there's something lying around at current loc
         t = lmap `at` loc
     if length (titems t) <= 2
@@ -865,13 +866,13 @@ moveOrAttack allowAttacks autoOpen actor dir
           else if accessible lmap sloc tloc then do
             -- Switching positions requires full access.
             actorRunActor actor target
-            when (actor == pl) $ message $ lookAt False state lmap tloc ""
+            when (actor == pl) $ message $ lookAt False True state lmap tloc ""
           else abort
         Nothing ->
           if accessible lmap sloc tloc then do
             -- perform the move; TODO: make this a separate function
             updateAnyActor actor $ \ m -> m { mloc = tloc }
-            when (actor == pl) $ message $ lookAt False state lmap tloc ""
+            when (actor == pl) $ message $ lookAt False True state lmap tloc ""
             advanceTime actor
           else if autoOpen then
             -- try to open a door
