@@ -34,6 +34,9 @@ import qualified Config
 import qualified Save
 import Terrain
 import qualified Effect
+import EffectAction
+
+-- All the rest of the Action stuff.
 
 displayHistory :: Action ()
 displayHistory =
@@ -81,7 +84,7 @@ endTargeting accept = do
   returnLn <- gets (creturnLn . scursor)
   target   <- gets (mtarget . getPlayerBody)
   cloc     <- gets (clocation . scursor)
-  lvlswitch returnLn  -- return to the original level of the player
+  lvlSwitch returnLn  -- return to the original level of the player
   modify (updateCursor (\ c -> c { ctargeting = False }))
   let isEnemy = case target of TEnemy _ -> True ; _ -> False
   when (not isEnemy) $
@@ -236,49 +239,6 @@ remember =
     let rememberLoc = M.update (\ (t,_) -> Just (t,t))
     modify (updateLevel (updateLMap (\ lmap -> foldr rememberLoc lmap vis)))
 
--- | Remove dead heroes, check if game over.
--- For now we only check the selected hero, but if poison, etc.
--- is implemented, we'd need to check all heroes on the level.
-checkPartyDeath :: Action ()
-checkPartyDeath =
-  do
-    ahs    <- gets allHeroesAnyLevel
-    pl     <- gets splayer
-    pbody  <- gets getPlayerBody
-    config <- gets sconfig
-    when (mhp pbody <= 0) $ do  -- TODO: change to guard? define mzero? Why are the writes to to files performed when I call abort later? That probably breaks the laws of MonadPlus.
-      messageAddMore
-      go <- messageMoreConfirm $ subjectMovableVerb (mkind pbody) "die" ++ "."
-      let firstDeathEnds = Config.get config "heroes" "firstDeathEnds"
-      if firstDeathEnds
-        then gameOver go
-        else case L.filter (\ (actor, _) -> actor /= pl) ahs of
-               [] -> gameOver go
-               (actor, nln) : _ -> do
-                 -- Important invariant: player always has to exist somewhere.
-                 -- Make the new actor the player-controlled actor.
-                 modify (\ s -> s { splayer = actor })
-                 -- Record the original level of the new player.
-                 modify (updateCursor (\ c -> c { creturnLn = nln }))
-                 -- Now the old player can be safely removed.
-                 modify (deleteActor pl)
-                 -- Now we can switch to the level of the new player.
-                 lvlswitch nln
-                 message "The survivors carry on."
-
--- | End game, showing the ending screens, if requested.
-gameOver :: Bool -> Action ()
-gameOver showEndingScreens =
-  do
-    when showEndingScreens $ do
-      state <- get
-      ln <- gets (lname . slevel)
-      let total = calculateTotal state
-          status = H.Killed ln
-      handleScores True status total
-      messageMore "Let's hope another party can save the day!"
-    end
-
 neverMind :: Bool -> Action a
 neverMind b = abortIfWith b "never mind"
 
@@ -329,41 +289,23 @@ actorOpenClose actor v o dir =
                                        neverMind isVerbose
     advanceTime actor
 
--- | Perform a level switch to a given level. False, if nothing to do.
-lvlswitch :: LevelName -> Action Bool
-lvlswitch nln =
-  do
-    ln <- gets (lname . slevel)
-    if (nln == ln)
-      then return False
-      else do
-        level   <- gets slevel
-        dungeon <- gets sdungeon
-        -- put back current level
-        -- (first put back, then get, in case we change to the same level!)
-        let full = putDungeonLevel level dungeon
-        -- get new level
-        let (new, ndng) = getDungeonLevel nln full
-        modify (\ s -> s { sdungeon = ndng, slevel = new })
-        return True
-
  -- | Attempt a level switch to k levels deeper.
 -- TODO: perhaps set up some level name arithmetics in Level.hs
 -- and hide there the fact levels are now essentially Ints.
-lvldescend :: Int -> Action ()
-lvldescend k =
+lvlDescend :: Int -> Action ()
+lvlDescend k =
   do
     state <- get
     let n = levelNumber (lname (slevel state))
         nln = n + k
     when (nln < 1 || nln > sizeDungeon (sdungeon state) + 1) $
       abortWith "no more levels in this direction"
-    assertTrue $ liftM (k == 0 ||)  (lvlswitch (LambdaCave nln))
+    assertTrue $ liftM (k == 0 ||)  (lvlSwitch (LambdaCave nln))
 
 -- | Attempt a level change via up level and down level keys.
 -- Will quit the game if the player leaves the dungeon.
-lvlchange :: VDir -> Action ()
-lvlchange vdir =
+lvlChange :: VDir -> Action ()
+lvlChange vdir =
   do
     cursor    <- gets scursor
     targeting <- gets (ctargeting . scursor)
@@ -388,9 +330,9 @@ lvlchange vdir =
               if targeting
                 then do
                   -- this assertion says no stairs go back to the same level
-                  assertTrue $ lvlswitch nln
+                  assertTrue $ lvlSwitch nln
                   -- do not freely reveal the other end of the stairs
-                  map <- gets (lmap . slevel)  -- lvlswitch modifies map
+                  map <- gets (lmap . slevel)  -- lvlSwitch modifies map
                   let upd cursor =
                         let cloc = if Level.isUnknown (rememberAt map nloc)
                                    then loc
@@ -403,7 +345,7 @@ lvlchange vdir =
                   modify (deleteActor pl)
                   -- At this place the invariant that player exists fails.
                   -- Change to the new level (invariant not essential).
-                  assertTrue $ lvlswitch nln
+                  assertTrue $ lvlSwitch nln
                   -- Restore the invariant: add player to the new level.
                   modify (insertActor pl pbody)
                   -- Land the player at the other end of the stairs.
@@ -417,7 +359,7 @@ lvlchange vdir =
       _ -> -- no stairs
         if targeting
         then do
-          lvldescend (if vdir == Up then -1 else 1)
+          lvlDescend (if vdir == Up then -1 else 1)
           ln <- gets (lname . slevel)
           let upd cursor = cursor { clocLn = ln }
           modify (updateCursor upd)
@@ -460,48 +402,6 @@ cycleHero =
     case IM.keys gt ++ IM.keys lt of
       [] -> abortWith "Cannot select another hero on this level."
       ni : _ -> assertTrue $ selectPlayer (AHero ni)
-
--- | Selects a movable for the player, based on the actor.
--- Focuses on the hero if level changed. False, if nothing to do.
-selectPlayer :: Actor -> Action Bool
-selectPlayer actor =
-  do
-    pl <- gets splayer
-    if (actor == pl)
-      then return False -- already selected
-      else do
-        state <- get
-        case findActorAnyLevel actor state of
-          Nothing -> abortWith $ "No such member of the party."
-          Just (nln, pbody) -> do
-            -- Make the new actor the player-controlled actor.
-            modify (\ s -> s { splayer = actor })
-            -- Record the original level of the new player.
-            modify (updateCursor (\ c -> c { creturnLn = nln }))
-            -- Switch to the level.
-            lvlswitch nln
-            -- Announce.
-            messageAdd $ subjectMovable (mkind pbody) ++ " selected."
-            return True
-
--- | Handle current score and display it with the high scores. Scores
--- should not be shown during the game, because ultimately the worth of items might give
--- information about the nature of the items.
--- False if display of the scores was void or interrupted by the user
-handleScores :: Bool -> H.Status -> Int -> Action Bool
-handleScores write status total =
-  if (total == 0)
-  then return False
-  else do
-    config  <- gets sconfig
-    time    <- gets stime
-    curDate <- liftIO getClockTime
-    let points = case status of
-                   H.Killed _ -> (total + 1) `div` 2
-                   _ -> total
-    let score = H.ScoreRecord points (-time) curDate status
-    (placeMsg, slideshow) <- liftIO $ H.register config write score
-    messageOverlaysConfirm placeMsg slideshow
 
 -- | Search for secret doors
 search :: Action ()
@@ -612,10 +512,6 @@ inventory =
              displayItems "This is what you are carrying:" True items
              session getConfirm
              abortWith ""
-
--- | Given item is now known to the player.
-discover :: Item -> Action ()
-discover i = modify (updateDiscoveries (S.insert (ikind i)))
 
 drinkPotion :: Action ()
 drinkPotion =
@@ -730,9 +626,6 @@ dropItem =
                Nothing -> neverMind True
     playerAdvanceTime
 
-dropItemsAt :: [Item] -> Loc -> Action ()
-dropItemsAt is loc = modify (updateLevel (scatterItems is loc))
-
 -- | Remove given item from the hero's inventory.
 removeFromInventory :: Item -> Action ()
 removeFromInventory i =
@@ -798,14 +691,6 @@ actorPickupItem actor =
                 m { mitems = nitems, mletter = maxLetter l (mletter movable) }
           Nothing -> abortIfWith isPlayer "you cannot carry any more"
     advanceTime actor
-
-updateAnyActor :: Actor -> (Movable -> Movable) -> Action ()
-updateAnyActor actor f = modify (updateAnyActorBody actor f)
-
-updatePlayerBody :: (Movable -> Movable) -> Action ()
-updatePlayerBody f = do
-  pl <- gets splayer
-  updateAnyActor pl f
 
 pickupItem :: Action ()
 pickupItem = do
@@ -981,107 +866,3 @@ regenerateLevelHP =
     -- via sending one hero to a safe level and waiting there.
     modify (updateLevel (updateHeroes   (IM.map upd)))
     modify (updateLevel (updateMonsters (IM.map upd)))
-
-focusIfAHero :: Actor -> Action ()
-focusIfAHero target =
-  if isAHero target
-  then do
-    -- Focus on the hero being wounded.
-    b <- selectPlayer target
-    -- Extra prompt, in case many heroes wounded in one turn.
-    when b $ messageAddMore >> return ()
-  else return ()
-
--- | The source actor affects the target actor, with a given effect and power.
--- Both actors are on the current level and can be the same actor.
--- The bool result indicates if the actors identify the effect.
-effectToAction :: Effect.Effect -> Actor -> Actor -> Int -> String ->
-                  Action Bool
-effectToAction Effect.NoEffect source target power msg = return False
-effectToAction (Effect.Heal n) source target power msg = do
-  when (n <= 0) $ error "effectToAction (Effect.Heal n)"
-  m <- gets (getActor target)
-  if mhp m >= nhpMax (mkind m)
-    then return False
-    else do
-      focusIfAHero target
-      let upd m = m { mhp = min (nhpMax (mkind m)) (mhp m + n + power) }
-      updateAnyActor target upd
-      pl <- gets splayer
-      when (target == pl) $ messageAdd "You feel better."  -- TODO: msg, if perceived, etc.
-      return True
-effectToAction (Effect.Wound n) source target power msg = do
-  when (n <= 0) $ error "effectToAction (Effect.Wound n)"
-  focusIfAHero target
-  sm <- gets (getActor source)
-  tm <- gets (getActor target)
-  let -- Damage the target.
-      newHP  = mhp tm - n - power
-      killed = newHP <= 0
-
-      -- TODO: potion of wounding
-      -- Determine how the hero perceives the event.
-      -- TODO: we have to be more precise and treat cases
-      -- where two monsters fight, but only one is visible.
-      combatVerb = if killed then "kill" else "hit"
-      combatMsg  = subjectVerbMObject sm combatVerb tm msg
-
-  updateAnyActor target $ \ m -> m { mhp = newHP }
-  per <- currentPerception
-  let perceived = mloc sm `S.member` ptvisible per
-  messageAdd $
-    if perceived
-      then combatMsg
-      else "You hear some noises."
-  when killed $ do
-    -- Place the actor's possessions on the map.
-    dropItemsAt (mitems tm) (mloc tm)
-    -- Clean bodies up.
-    pl <- gets splayer
-    if target == pl
-      then checkPartyDeath  -- kills the player and checks game over
-      else modify (deleteActor target)  -- kills the enemy
-  return True
-effectToAction Effect.Dominate source target power msg =
-  if isAHero source  -- Monsters are not strong-willed enough.
-  then selectPlayer target
-  else return False
-effectToAction Effect.SummonFriend source target power msg = do
-  tm <- gets (getActor target)
-  if isAHero source
-    then summonHeroes (1 + power) (mloc tm)
-    else summonMonsters (1 + power) (mloc tm)
-  return True
-effectToAction Effect.SummonEnemy source target power msg = do
-  tm <- gets (getActor target)
-  if not $ isAHero source
-    then summonHeroes (1 + power) (mloc tm)
-    else summonMonsters (1 + power) (mloc tm)
-  return True
-effectToAction Effect.ApplyWater _ target _ _ =
-  if isAHero target  -- Monsters ignore water splashed on them.
-  then do
-    focusIfAHero target
-    messageAdd "Tastes like water."
-    return True
-  else return False
-
--- | The source actor affects the target actor, with a given item.
--- If either actor is a hero, the item may get identified (domination ignored).
-itemEffectAction :: Item -> Actor -> Actor -> Action ()
-itemEffectAction item source target = do
-  state <- get
-  let effect = ItemKind.jeffect $ ItemKind.getIK $ ikind item
-      msg = " with " ++ objectItem state item
-  b <- effectToAction effect source target (ipower item) msg
-  -- If something happens, the item gets identified.
-  when (b && (isAHero source || isAHero target)) $ discover item
-
-summonHeroes :: Int -> Loc -> Action ()
-summonHeroes n loc = modify (\ state -> iterate (addHero loc) state !! n)
-
-summonMonsters :: Int -> Loc -> Action ()
-summonMonsters n loc = do
-  let fmk = Frequency $ L.zip (L.map nfreq dungeonMonsters) dungeonMonsters
-  mk <- liftIO $ rndToIO $ frequency fmk
-  modify (\ state -> iterate (addMonster mk (nhpMax mk) loc) state !! n)

@@ -25,7 +25,7 @@ executable LambdaHack
   main-is:       LambdaHack.hs
   hs-source-dirs:src
   other-modules: Action, Actions, Color, Command, Config, ConfigDefault,
-                 Display, Dungeon, DungeonState, Effect, File,
+                 Display, Dungeon, DungeonState, Effect, EffectAction, File,
                  FOV, FOV.Common, FOV.Digital, FOV.Permissive, FOV.Shadow,
                  Frequency, Geometry, GeometryRnd, Grammar,
                  HighScores, Item, ItemKind, ItemState,

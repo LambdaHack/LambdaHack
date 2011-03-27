@@ -10,9 +10,11 @@ import qualified Data.Char as Char
 
 import Action
 import Actions
+import EffectAction
 import Command
 import qualified Config
 import Display hiding (display)
+import EffectAction
 import Keybindings
 import qualified Keys as K
 import Level
