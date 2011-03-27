@@ -624,6 +624,7 @@ drinkPotion =
     pbody <- gets getPlayerBody
     ploc <- gets (mloc . getPlayerBody)
     items <- gets (mitems . getPlayerBody)
+    pl <- gets splayer
     if L.null items
       then abortWith "You are not carrying anything."
       else do
@@ -638,13 +639,7 @@ drinkPotion =
                    removeFromInventory consumed
                    message (subjectVerbIObject state pbody "drink" consumed "")
                    -- the potion is identified after drinking
-                   discover i'
-                   case ItemKind.jeffect (ItemKind.getIK (ikind i')) of  -- TODO: redo
-                     (Effect.AffectHP n) -> do
-                       messageAdd "You feel better."
-                       let php p = min (nhpMax (mkind p)) (mhp p + n)
-                       updatePlayerBody (\ p -> p { mhp = php p })
-                     _ -> messageAdd "Tastes like water."
+                   itemEffectAction i' pl pl
                Just _  -> abortWith "you cannot drink that"
                Nothing -> neverMind True
     playerAdvanceTime
@@ -994,3 +989,38 @@ regenerateLevelHP =
     -- via sending one hero to a safe level and waiting there.
     modify (updateLevel (updateHeroes   (IM.map upd)))
     modify (updateLevel (updateMonsters (IM.map upd)))
+
+-- | The source actor affects the target actor, with a given effect and power.
+-- Both actors are on the current level and can be the same actor.
+-- The bool result indicates if the actors identify the effect.
+effectToAction :: Effect.Effect -> Actor -> Actor -> Int -> Action Bool
+effectToAction Effect.NoEffect source target power = return False
+effectToAction (Effect.AffectHP n) source target power
+  | n > 0 = do
+      m <- gets (getActor target)
+      if mhp m >= nhpMax (mkind m)
+        then return False
+        else do
+          let upd m = m { mhp = min (nhpMax (mkind m)) (mhp m + n + power) }
+          modify (updateAnyActorBody target upd)
+          pl <- gets splayer
+          when (target == pl) $ messageAdd "You feel better."  -- TODO: msg, if perceived, etc.
+          return True
+  | n < 0 = return False  -- TODO
+  | otherwise = return False  -- TODO
+effectToAction Effect.Dominate source target power = return False  -- TODO
+effectToAction Effect.SummonFriend source target power = return False  -- TODO
+effectToAction Effect.SummonEnemy source target power = return False  -- TODO
+effectToAction Effect.ApplyWater _ target _ =
+  if isAHero target  -- Monsters ignore water splashed on them.
+  then messageAdd "Tastes like water." >> return True
+  else return False
+
+-- | The source actor affects the target actor, with a given item.
+-- If either actor is a hero, the item may get identified (domination ignored).
+itemEffectAction :: Item -> Actor -> Actor -> Action ()
+itemEffectAction item source target = do
+  let effect = ItemKind.jeffect $ ItemKind.getIK $ ikind item
+  b <- effectToAction effect source target (ipower item)
+  -- If something happens, the item gets identified.
+  when (b && (isAHero source || isAHero target)) $ discover item

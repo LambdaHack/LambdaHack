@@ -11,7 +11,6 @@ data ItemKind = ItemKind
   { jsymbol  :: !Char
   , jflavour :: [Flavour]
   , jname    :: String
-  , jsecret  :: String
   , jeffect  :: Effect
   , jquant   :: Roll
   , jfreq    :: !Int
@@ -59,7 +58,6 @@ amulet = ItemKind
   { jsymbol  = '"'
   , jflavour = [(BrWhite, True)]
   , jname    = "amulet"
-  , jsecret  = ""
   , jeffect  = NoEffect
   , jquant   = rollOne
   , jfreq    = 10
@@ -68,7 +66,6 @@ dart = ItemKind
   { jsymbol  = ')'
   , jflavour = [(Yellow, False)]
   , jname    = "dart"
-  , jsecret  = ""
   , jeffect  = AffectHP (-1)
   , jquant   = (3, 0, 6, 0)
   , jfreq    = 40
@@ -77,7 +74,6 @@ gem = ItemKind
   { jsymbol  = '*'
   , jflavour = zipPlain brightCol  -- natural, so not fancy
   , jname    = "gem"
-  , jsecret  = ""
   , jeffect  = NoEffect
   , jquant   = rollOne
   , jfreq    = 5  -- x4, below
@@ -89,7 +85,6 @@ gold = ItemKind
   { jsymbol  = '$'
   , jflavour = [(BrYellow, False)]
   , jname    = "gold piece"
-  , jsecret  = ""
   , jeffect  = NoEffect
   , jquant   = (0, 3, 0, 10)
   , jfreq    = 80
@@ -98,13 +93,12 @@ potion = ItemKind
   { jsymbol  = '!'
   , jflavour = zipFancy stdCol
   , jname    = "potion"
-  , jsecret  = ""
   , jeffect  = NoEffect
   , jquant   = rollOne
   , jfreq    = 20
   }
 potion_water = potion
-  { jsecret  = "of water"
+  { jeffect  = ApplyWater
   }
 potion_healing = potion
   { jeffect  = AffectHP 20
@@ -113,7 +107,6 @@ ring = ItemKind
   { jsymbol  = '='
   , jflavour = [(BrWhite, False)]
   , jname    = "ring"
-  , jsecret  = ""
   , jeffect  = NoEffect
   , jquant   = rollOne
   , jfreq    = 10
@@ -122,7 +115,6 @@ scroll = ItemKind
   { jsymbol  = '?'
   , jflavour = zipFancy darkCol  -- arcane and old
   , jname    = "scroll"
-  , jsecret  = ""
   , jeffect  = NoEffect
   , jquant   = rollOne
   , jfreq    = 10
@@ -131,7 +123,6 @@ sword = ItemKind
   { jsymbol  = ')'
   , jflavour = [(BrCyan, False)]
   , jname    = "sword"
-  , jsecret  = ""
   , jeffect  = AffectHP (-3)
   , jquant   = rollOne
   , jfreq    = 70
@@ -141,7 +132,6 @@ wand = ItemKind
   , jflavour = [(BrRed, True)]
   , jname    = "wand"
   , jeffect  = NoEffect
-  , jsecret  = ""
   , jquant   = rollOne
   , jfreq    = 30
   }

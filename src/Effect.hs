@@ -6,6 +6,7 @@ data Effect =
   | Dominate
   | SummonFriend
   | SummonEnemy
+  | ApplyWater
   deriving (Show, Eq, Ord)
 
 effectToName :: Effect -> String
@@ -17,3 +18,4 @@ effectToName (AffectHP n)
 effectToName Dominate = "of domination"
 effectToName SummonFriend = "of aid calling"
 effectToName SummonEnemy = "of summoning"
+effectToName ApplyWater = "of water"
