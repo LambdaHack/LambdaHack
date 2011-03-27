@@ -621,9 +621,7 @@ drinkPotion :: Action ()
 drinkPotion =
   do
     state <- get
-    lmap <- gets (lmap . slevel)
     pbody <- gets getPlayerBody
-    ploc <- gets (mloc . getPlayerBody)
     items <- gets (mitems . getPlayerBody)
     pl <- gets splayer
     if L.null items
@@ -639,9 +637,33 @@ drinkPotion =
                    let consumed = i' { icount = 1 }
                    removeFromInventory consumed
                    message (subjectVerbIObject state pbody "drink" consumed "")
-                   -- the potion is identified after drinking
                    itemEffectAction i' pl pl
                Just _  -> abortWith "you cannot drink that"
+               Nothing -> neverMind True
+    playerAdvanceTime
+
+readScroll :: Action ()
+readScroll =
+  do
+    state <- get
+    pbody <- gets getPlayerBody
+    items <- gets (mitems . getPlayerBody)
+    pl <- gets splayer
+    if L.null items
+      then abortWith "You are not carrying anything."
+      else do
+             i <- getScroll "What to read?" items "inventory"
+             case i of
+               Just i'@(Item { ikind = ik })
+                | ItemKind.jname (ItemKind.getIK ik) == "scroll" ->
+                 do
+                   -- only one scroll is consumed even if several
+                   -- are joined in the inventory
+                   let consumed = i' { icount = 1 }
+                   removeFromInventory consumed
+                   message (subjectVerbIObject state pbody "read" consumed "")
+                   itemEffectAction i' pl pl
+               Just _  -> abortWith "you cannot read that"
                Nothing -> neverMind True
     playerAdvanceTime
 
@@ -667,16 +689,16 @@ fireItem = do
     Nothing -> abortWith "nothing to fire"
   playerAdvanceTime
 
-applyItem :: Action ()
-applyItem = do
+zapItem :: Action ()
+zapItem = do
   pl     <- gets splayer
   state  <- get
   per    <- currentPerception
   pitems <- gets (mitems . getPlayerBody)
   case findItem (\ i -> ItemKind.jname (ItemKind.getIK (ikind i)) == "wand") pitems of
     Just (wand, _) -> do
-      let applied = wand { icount = 1 }
-      removeFromInventory applied
+      let zapped = wand { icount = 1 }
+      removeFromInventory zapped
       case targetToLoc (ptvisible per) state of
         Nothing  -> abortWith "target invalid"
         Just loc ->
@@ -685,7 +707,7 @@ applyItem = do
                    Just ta -> itemEffectAction wand pl ta
                    Nothing -> abortWith "no living target to affect"
             else abortWith "target not reachable"
-    Nothing -> abortWith "nothing to apply"
+    Nothing -> abortWith "nothing to zap"
   playerAdvanceTime
 
 dropItem :: Action ()
@@ -724,7 +746,8 @@ removeFromLoc i loc =
     adj = M.adjust (\ (t, rt) -> (remove t, rt)) loc
     remove t = t { titems = removeItemByKind i (titems t) }
 
--- | Let the player choose any potion. Note that this does not guarantee a potion to be chosen,
+-- | Let the player choose any potion.
+-- Note that this does not guarantee a potion to be chosen,
 -- as the player can override the choice.
 getPotion :: String ->  -- prompt
              [Item] ->  -- all objects in question
@@ -734,6 +757,15 @@ getPotion :: String ->  -- prompt
 getPotion prompt is isn =
   let choice i = ItemKind.jname (ItemKind.getIK (ikind i)) == "potion"
   in  getItem prompt choice "Potions" is isn
+
+getScroll :: String ->  -- prompt
+             [Item] ->  -- all objects in question
+             String ->  -- how to refer to the collection of objects,
+                        -- e.g., "in your inventory"
+             Action (Maybe Item)
+getScroll prompt is isn =
+  let choice i = ItemKind.jname (ItemKind.getIK (ikind i)) == "scroll"
+  in  getItem prompt choice "Scrolls" is isn
 
 actorPickupItem :: Actor -> Action ()
 actorPickupItem actor =

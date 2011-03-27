@@ -162,12 +162,15 @@ removeItemBy eq i = concatMap $ \ x ->
                       else [x]
 
 equalItemKindAndPower :: Item -> Item -> Bool
-equalItemKindAndPower i1 i2 = equalItemKind i1 i2 && ipower i1 == ipower i2
+equalItemKindAndPower i1 i2 = equalItemKind i1 i2 && equalItemPower i1 i2
+
+equalItemPower :: Item -> Item -> Bool
+equalItemPower = (==) `on` ipower
 
 equalItemKind :: Item -> Item -> Bool
-equalItemKind = (==) `on` (jname . getIK . ikind)
+equalItemKind = (==) `on` ikind
 
-removeItemByKind   = removeItemBy equalItemKind
+removeItemByKind = removeItemBy equalItemKind
 
 equalItemLetter :: Item -> Item -> Bool
 equalItemLetter = (==) `on` iletter

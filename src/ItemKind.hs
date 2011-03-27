@@ -45,14 +45,19 @@ getIK ik = dungeonLoot IM.! ik
 
 loot :: [ItemKind]
 loot =
-  [amulet, dart, gem, gem1, gem2, gem3, gold,
+  [amulet,
+   dart,
+   gem, gem1, gem2, gem3,
+   gold,
    potion_water, potion_healing,
-   ring, scroll, sword,
+   ring,
+   scroll1, scroll2,
+   sword,
    wand_domination]
 
 amulet, dart, gem, gem1, gem2, gem3, gold :: ItemKind
 potion, potion_water, potion_healing :: ItemKind
-ring, scroll, sword :: ItemKind
+ring, scroll, scroll1, scroll2, sword :: ItemKind
 wand, wand_domination :: ItemKind
 amulet = ItemKind
   { jsymbol  = '"'
@@ -68,7 +73,7 @@ dart = ItemKind
   , jname    = "dart"
   , jeffect  = Wound 1
   , jquant   = (3, 0, 6, 0)
-  , jfreq    = 40
+  , jfreq    = 30
   }
 gem = ItemKind
   { jsymbol  = '*'
@@ -95,7 +100,7 @@ potion = ItemKind
   , jname    = "potion"
   , jeffect  = NoEffect
   , jquant   = rollOne
-  , jfreq    = 20
+  , jfreq    = 20  -- x2
   }
 potion_water = potion
   { jeffect  = ApplyWater
@@ -117,7 +122,13 @@ scroll = ItemKind
   , jname    = "scroll"
   , jeffect  = NoEffect
   , jquant   = rollOne
-  , jfreq    = 10
+  , jfreq    = 10  -- x2
+  }
+scroll1 = scroll
+  { jeffect  = SummonFriend
+  }
+scroll2 = scroll
+  { jeffect  = SummonEnemy
   }
 sword = ItemKind
   { jsymbol  = ')'
@@ -125,7 +136,7 @@ sword = ItemKind
   , jname    = "sword"
   , jeffect  = Wound 3
   , jquant   = rollOne
-  , jfreq    = 70
+  , jfreq    = 60
   }
 wand = ItemKind
   { jsymbol  = '/'

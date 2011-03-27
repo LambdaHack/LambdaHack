@@ -245,8 +245,9 @@ stdKeybindings = Keybindings
                (K.Char 'd',  dropCommand),
                (K.Char 'i',  inventoryCommand),
                (K.Char 'q',  drinkCommand),
+               (K.Char 'r',  readCommand),
                (K.Char 'f',  fireCommand),
-               (K.Char 'a',  applyCommand),
+               (K.Char 'z',  zapCommand),
 
                -- wait
                -- (K.Char ' ',  waitCommand),
