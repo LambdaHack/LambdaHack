@@ -35,13 +35,6 @@ nearbyFreeLoc origin state@(State { slevel = Level { lmap = map } }) =
       good loc = open (map `at` loc) && not (loc `L.elem` L.map mloc (hs ++ ms))
   in  fromMaybe (error "no nearby free location found") $ L.find good places
 
-newMovableIndex :: (Level -> Party) -> State -> Int
-newMovableIndex projection (State { slevel = lvl, sdungeon = Dungeon m }) =
-  let f lvl = let mms = projection lvl
-              in  if IM.null mms then -1 else fst (IM.findMax mms)
-      maxes = L.map f (lvl : M.elems m)
-  in  1 + L.maximum maxes
-
 -- Adding heroes
 
 findHeroName :: Config.CP -> Int -> String
@@ -54,14 +47,15 @@ addHero :: Loc -> State -> State
 addHero ploc state =
   let config = sconfig state
       bHP = Config.get config "heroes" "baseHP"
-      n = newMovableIndex lheroes state
-      symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
-      name = findHeroName config n
       mk = hero {nhpMin = bHP, nhpMax = bHP, nsymbol = symbol, nname = name }
       loc = nearbyFreeLoc ploc state
+      n = fst (scounter state)
+      symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
+      name = findHeroName config n
       startHP = bHP `div` (min 10 (n + 1))
       m = template mk startHP loc
-  in  updateLevel (updateHeroes (IM.insert n m)) state
+      state' = state { scounter = (n + 1, snd (scounter state)) }
+  in  updateLevel (updateHeroes (IM.insert n m)) state'
 
 -- | Create a set of initial heroes on the current level, at location ploc.
 initialHeroes :: Loc -> State -> State
@@ -82,15 +76,14 @@ monsterGenChance (LambdaCave depth) numMonsters =
 monsterGenChance _ _ = return False
 
 -- | Create a new monster in the level, at a random position.
-addMonster :: State -> Rnd Level
+addMonster :: State -> Rnd State
 addMonster state@(State { slevel = lvl }) = do
   let hs = levelHeroList state
       ms = levelMonsterList state
   rc <- monsterGenChance (lname lvl) (L.length ms)
   if not rc
-    then return lvl
+    then return state
     else do
-      let ni = newMovableIndex lmonsters state
       -- TODO: new monsters should always be generated in a place that isn't
       -- visible by the player (if possible -- not possible for bigrooms)
       -- levels with few rooms are dangerous, because monsters may spawn
@@ -103,5 +96,7 @@ addMonster state@(State { slevel = lvl }) = do
       let fmk = Frequency $ L.zip (L.map nfreq dungeonMonsters) dungeonMonsters
       mk <- frequency fmk
       hp <- randomR (nhpMin mk, nhpMax mk)
-      let m = template mk hp loc
-      return (updateMonsters (IM.insert ni m) lvl)
+      let n = snd (scounter state)
+          m = template mk hp loc
+          state' = state { scounter = (fst (scounter state), n + 1) }
+      return $ updateLevel (updateMonsters (IM.insert n m)) state'

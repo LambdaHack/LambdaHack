@@ -958,10 +958,10 @@ actorRunActor source target = do
 -- | Generate a monster, possibly.
 generateMonster :: Action ()
 generateMonster =
-  do
-    state <- get
-    nlvl  <- liftIO $ rndToIO $ addMonster state
-    modify (updateLevel (const nlvl))
+  do  -- TODO: simplify
+    state  <- get
+    nstate <- liftIO $ rndToIO $ addMonster state
+    modify (const nstate)
 
 -- | Advance the move time for the given actor.
 advanceTime :: Actor -> Action ()

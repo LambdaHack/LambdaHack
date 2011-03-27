@@ -31,6 +31,7 @@ data State = State
     sdiscoveries :: Discoveries,  -- ^ items (kinds) that have been discovered
     sdungeon     :: Dungeon,      -- ^ all but the current dungeon level
     slevel       :: Level,
+    scounter     :: (Int, Int),   -- ^ stores next hero index and monster index
     sconfig      :: Config.CP
   }
   deriving Show
@@ -55,6 +56,7 @@ defaultState dng lvl =
     S.empty
     dng
     lvl
+    (0, 0)
     (Config.defaultCP)
 
 updateCursor :: (Cursor -> Cursor) -> State -> State
@@ -94,7 +96,7 @@ toggleTerrain s = s { sdisplay = case sdisplay s of Terrain 1 -> Normal
                                                     _         -> Terrain 4 }
 
 instance Binary State where
-  put (State player cursor hst sense disp time assocs discs dng lvl config) =
+  put (State player cursor hst sense disp time assocs discs dng lvl ct config) =
     do
       put player
       put cursor
@@ -106,6 +108,7 @@ instance Binary State where
       put discs
       put dng
       put lvl
+      put ct
       put config
   get =
     do
@@ -119,9 +122,10 @@ instance Binary State where
       discs  <- get
       dng    <- get
       lvl    <- get
+      ct     <- get
       config <- get
       return
-        (State player cursor hst sense disp time assocs discs dng lvl config)
+        (State player cursor hst sense disp time assocs discs dng lvl ct config)
 
 instance Binary Cursor where
   put (Cursor act cln loc rln) =
