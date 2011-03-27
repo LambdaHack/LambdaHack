@@ -37,8 +37,8 @@ subjectVerbIObject state m v o add =
   verbMovable (mkind m) v ++ " " ++
   objectItem state o ++ add ++ "."
 
-subjectVerbMObject :: State -> Movable -> String -> Movable -> String -> String
-subjectVerbMObject state m v o add =
+subjectVerbMObject :: Movable -> String -> Movable -> String -> String
+subjectVerbMObject m v o add =
   subjectMovable (mkind m) ++ " " ++
   verbMovable (mkind m) v ++ " " ++
   objectMovable (mkind o) ++ add ++ "."

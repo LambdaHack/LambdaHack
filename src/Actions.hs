@@ -661,7 +661,7 @@ fireItem = do
         Just loc ->
           if actorReachesLoc pl loc per pl
             then case locToActor loc state of
-                   Just ta -> actorDamageActor pl ta 1 " with a dart"
+                   Just ta -> itemEffectAction dart pl ta
                    Nothing -> modify (updateLevel (scatterItems [fired] loc))
             else abortWith "target not reachable"
     Nothing -> abortWith "nothing to fire"
@@ -891,49 +891,12 @@ actorAttackActor (AHero _) target@(AHero _) =
   selectPlayer target >> return ()
 actorAttackActor source target = do
   sm    <- gets (getActor source)
-  let -- Determine the weapon used for the attack.
-      weapon = strongestWeapon (mitems sm)
-      -- TODO: redo
-      damage = case weapon of Just (Item { ikind = ik, ipower = k }) -> (case ItemKind.jeffect (ItemKind.getIK ik) of Effect.AffectHP n -> - n + k; _ -> 3) ; _ -> 3
-      weaponMsg = if damage == 3
-                  then ""
-                  else " with a (+" ++ show (damage - 3) ++ ") sword" -- TODO: generate proper message
-  actorDamageActor source target damage weaponMsg
+  case strongestWeapon (mitems sm) of
+    Just weapon ->
+      itemEffectAction weapon source target
+    Nothing ->
+      effectToAction (Effect.Wound 3) source target 0 "" >> return ()
   advanceTime source
-
-actorDamageActor :: Actor -> Actor -> Int -> String -> Action ()
-actorDamageActor source target damage weaponMsg =
-  do
-    when (isAHero target) $ do
-      -- Focus on the attacked hero.
-      b <- selectPlayer target
-      -- Extra prompt, in case many heroes attacked in one turn.
-      when b $ messageAddMore >> return ()
-    state <- get
-    sm <- gets (getActor source)
-    tm <- gets (getActor target)
-    let -- Damage the target.
-        newHP  = mhp tm - damage
-        killed = newHP <= 0
-        -- Determine how the hero perceives the event.
-        -- TODO: we have to be more precise and treat cases
-        -- where two monsters fight, but only one is visible.
-        combatVerb = if killed then "kill" else "hit"
-        combatMsg  = subjectVerbMObject state sm combatVerb tm weaponMsg
-    updateAnyActor target $ \ m -> m { mhp = newHP }
-    per <- currentPerception
-    let perceived  = mloc sm `S.member` ptvisible per
-    messageAdd $
-      if perceived
-        then combatMsg
-        else "You hear some noises."
-    when killed $ do
-      -- Place the actor's possessions on the map.
-      dropItemsAt (mitems tm) (mloc tm)
-      -- Clean bodies up.
-      if target == (splayer state)
-        then checkPartyDeath  -- kills the player and checks game over
-        else modify (deleteActor target)  -- kills the enemy
 
 -- | Resolves the result of an actor running into another.
 -- This involves switching positions of the two movables.
@@ -946,12 +909,8 @@ actorRunActor source target = do
   updateAnyActor target $ \ m -> m { mloc = sloc }
   if source == pl
     then stopRunning  -- do not switch positions repeatedly
-    else if isAMonster source && isAHero target
-         then do
-                -- A hero is run over by an enemy monster; focus on the hero.
-                b <- selectPlayer target
-                -- Extra prompt, in case many heroes disturbed in one turn.
-                when b $ messageAddMore >> return ()
+    else if isAMonster source
+         then focusIfAHero target
          else return ()
   advanceTime source
 
@@ -991,37 +950,84 @@ regenerateLevelHP =
     modify (updateLevel (updateHeroes   (IM.map upd)))
     modify (updateLevel (updateMonsters (IM.map upd)))
 
+focusIfAHero :: Actor -> Action ()
+focusIfAHero target =
+  if isAHero target
+  then do
+    -- Focus on the hero being wounded.
+    b <- selectPlayer target
+    -- Extra prompt, in case many heroes wounded in one turn.
+    when b $ messageAddMore >> return ()
+  else return ()
+
 -- | The source actor affects the target actor, with a given effect and power.
 -- Both actors are on the current level and can be the same actor.
 -- The bool result indicates if the actors identify the effect.
-effectToAction :: Effect.Effect -> Actor -> Actor -> Int -> Action Bool
-effectToAction Effect.NoEffect source target power = return False
-effectToAction (Effect.AffectHP n) source target power
-  | n > 0 = do
-      m <- gets (getActor target)
-      if mhp m >= nhpMax (mkind m)
-        then return False
-        else do
-          let upd m = m { mhp = min (nhpMax (mkind m)) (mhp m + n + power) }
-          modify (updateAnyActorBody target upd)
-          pl <- gets splayer
-          when (target == pl) $ messageAdd "You feel better."  -- TODO: msg, if perceived, etc.
-          return True
-  | n < 0 = return False  -- TODO
-  | otherwise = return False  -- TODO
-effectToAction Effect.Dominate source target power = return False  -- TODO
-effectToAction Effect.SummonFriend source target power = return False  -- TODO
-effectToAction Effect.SummonEnemy source target power = return False  -- TODO
-effectToAction Effect.ApplyWater _ target _ =
+effectToAction :: Effect.Effect -> Actor -> Actor -> Int -> String ->
+                  Action Bool
+effectToAction Effect.NoEffect source target power msg = return False
+effectToAction (Effect.Heal n) source target power msg = do
+  when (n <= 0) $ error "effectToAction (Effect.Heal n)"
+  m <- gets (getActor target)
+  if mhp m >= nhpMax (mkind m)
+    then return False
+    else do
+      focusIfAHero target
+      let upd m = m { mhp = min (nhpMax (mkind m)) (mhp m + n + power) }
+      updateAnyActor target upd
+      pl <- gets splayer
+      when (target == pl) $ messageAdd "You feel better."  -- TODO: msg, if perceived, etc.
+      return True  -- TODO: not always
+effectToAction (Effect.Wound n) source target power msg = do
+  when (n <= 0) $ error "effectToAction (Effect.Wound n)"
+  focusIfAHero target
+  sm <- gets (getActor source)
+  tm <- gets (getActor target)
+  let -- Damage the target.
+      newHP  = mhp tm - n - power
+      killed = newHP <= 0
+
+      -- TODO: potion of wounding
+      -- Determine how the hero perceives the event.
+      -- TODO: we have to be more precise and treat cases
+      -- where two monsters fight, but only one is visible.
+      combatVerb = if killed then "kill" else "hit"
+      combatMsg  = subjectVerbMObject sm combatVerb tm msg
+
+  updateAnyActor target $ \ m -> m { mhp = newHP }
+  per <- currentPerception
+  let perceived = mloc sm `S.member` ptvisible per
+  messageAdd $
+    if perceived
+      then combatMsg
+      else "You hear some noises."
+  when killed $ do
+    -- Place the actor's possessions on the map.
+    dropItemsAt (mitems tm) (mloc tm)
+    -- Clean bodies up.
+    pl <- gets splayer
+    if target == pl
+      then checkPartyDeath  -- kills the player and checks game over
+      else modify (deleteActor target)  -- kills the enemy
+  return True
+effectToAction Effect.Dominate source target power msg = return False  -- TODO
+effectToAction Effect.SummonFriend source target power msg = return False
+effectToAction Effect.SummonEnemy source target power msg = return False
+effectToAction Effect.ApplyWater _ target _ _ =
   if isAHero target  -- Monsters ignore water splashed on them.
-  then messageAdd "Tastes like water." >> return True
+  then do
+    focusIfAHero target
+    messageAdd "Tastes like water."
+    return True
   else return False
 
 -- | The source actor affects the target actor, with a given item.
 -- If either actor is a hero, the item may get identified (domination ignored).
 itemEffectAction :: Item -> Actor -> Actor -> Action ()
 itemEffectAction item source target = do
+  state <- get
   let effect = ItemKind.jeffect $ ItemKind.getIK $ ikind item
-  b <- effectToAction effect source target (ipower item)
+      msg = " with " ++ objectItem state item -- TODO: generate proper message
+  b <- effectToAction effect source target (ipower item) msg
   -- If something happens, the item gets identified.
   when (b && (isAHero source || isAHero target)) $ discover item

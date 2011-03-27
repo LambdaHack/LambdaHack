@@ -66,7 +66,7 @@ dart = ItemKind
   { jsymbol  = ')'
   , jflavour = [(Yellow, False)]
   , jname    = "dart"
-  , jeffect  = AffectHP (-1)
+  , jeffect  = Wound 1
   , jquant   = (3, 0, 6, 0)
   , jfreq    = 40
   }
@@ -101,7 +101,7 @@ potion_water = potion
   { jeffect  = ApplyWater
   }
 potion_healing = potion
-  { jeffect  = AffectHP 20
+  { jeffect  = Heal 20
   }
 ring = ItemKind
   { jsymbol  = '='
@@ -123,7 +123,7 @@ sword = ItemKind
   { jsymbol  = ')'
   , jflavour = [(BrCyan, False)]
   , jname    = "sword"
-  , jeffect  = AffectHP (-3)
+  , jeffect  = Wound 3
   , jquant   = rollOne
   , jfreq    = 70
   }
