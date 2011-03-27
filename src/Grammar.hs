@@ -11,6 +11,7 @@ import MovableKind
 import State
 import ItemState
 import ItemKind
+import Effect
 
 -- | How to refer to a movable in object position of a sentence.
 objectMovable :: MovableKind -> String

@@ -33,6 +33,7 @@ import State
 import qualified Config
 import qualified Save
 import Terrain
+import qualified Effect
 
 displayHistory :: Action ()
 displayHistory =
@@ -639,7 +640,7 @@ drinkPotion =
                    -- the potion is identified after drinking
                    discover i'
                    case ItemKind.jeffect (ItemKind.getIK (ikind i')) of  -- TODO: redo
-                     (ItemKind.AffectHP n) -> do
+                     (Effect.AffectHP n) -> do
                        messageAdd "You feel better."
                        let php p = min (nhpMax (mkind p)) (mhp p + n)
                        updatePlayerBody (\ p -> p { mhp = php p })
@@ -897,7 +898,7 @@ actorAttackActor source target = do
   let -- Determine the weapon used for the attack.
       weapon = strongestWeapon (mitems sm)
       -- TODO: redo
-      damage = case weapon of Just (Item { ikind = ik, ipower = k }) -> (case ItemKind.jeffect (ItemKind.getIK ik) of ItemKind.AffectHP n -> - n + k; _ -> 3) ; _ -> 3
+      damage = case weapon of Just (Item { ikind = ik, ipower = k }) -> (case ItemKind.jeffect (ItemKind.getIK ik) of Effect.AffectHP n -> - n + k; _ -> 3) ; _ -> 3
       weaponMsg = if damage == 3
                   then ""
                   else " with a (+" ++ show (damage - 3) ++ ") sword" -- TODO: generate proper message

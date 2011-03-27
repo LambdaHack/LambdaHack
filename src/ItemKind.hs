@@ -5,6 +5,7 @@ import qualified Data.List as L
 import qualified Data.IntMap as IM
 
 import Color
+import Effect
 
 data ItemKind = ItemKind
   { jsymbol  :: !Char
@@ -22,14 +23,6 @@ type Roll = (Word8, Word8, Word8, Word8)
 
 type Flavour = (Color, Bool)  -- the flag tells to use fancy color names
 
-data Effect =
-    NoEffect
-  | AffectHP Int  -- base damage, to-dam bonus in Item
-  | Dominate
-  | SummonFriend
-  | SummonEnemy
-  deriving (Show, Eq, Ord)
-
 rollOne = (1, 0, 0, 0)
 
 zipPlain cs = L.zip cs (repeat False)
@@ -45,16 +38,6 @@ flavourToName (c, True) = colorToName' c
 
 flavourToColor :: Flavour -> Color
 flavourToColor (c, _) = c
-
-effectToName :: Effect -> String
-effectToName NoEffect = ""
-effectToName (AffectHP n)
-  | n > 0 = "of healing (" ++ show n ++ ")"
-  | n < 0 = "" -- "(base dmg " ++ show (-n) ++ ")"
-  | otherwise = "of life"
-effectToName Dominate = "of domination"
-effectToName SummonFriend = "of aid calling"
-effectToName SummonEnemy = "of summoning"
 
 dungeonLoot :: IM.IntMap ItemKind
 dungeonLoot = IM.fromDistinctAscList (L.zip [0..] loot)
