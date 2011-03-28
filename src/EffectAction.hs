@@ -44,49 +44,51 @@ effectToAction :: Effect.Effect -> Actor -> Actor -> Int -> String ->
                   Action Bool
 effectToAction Effect.NoEffect source target power msg = return False
 effectToAction (Effect.Heal n) source target power msg = do
-  when (n <= 0) $ error "effectToAction (Effect.Heal n)"
   m <- gets (getActor target)
-  if mhp m >= nhpMax (mkind m)
+  if mhp m >= nhpMax (mkind m) || n + power <= 0
     then return False
     else do
       focusIfAHero target
       let upd m = m { mhp = min (nhpMax (mkind m)) (mhp m + n + power) }
       updateAnyActor target upd
       pl <- gets splayer
-      when (target == pl) $ messageAdd "You feel better."  -- TODO: msg, if perceived, etc.
+      when (target == pl) $ messageAdd "You feel better."  -- TODO: use msg, if perceived, etc.
       return True
-effectToAction (Effect.Wound n) source target power msg = do
-  when (n <= 0) $ error "effectToAction (Effect.Wound n)"
-  focusIfAHero target
-  sm <- gets (getActor source)
-  tm <- gets (getActor target)
-  let -- Damage the target.
-      newHP  = mhp tm - n - power
-      killed = newHP <= 0
-
-      -- TODO: potion of wounding
-      -- Determine how the hero perceives the event.
-      -- TODO: we have to be more precise and treat cases
-      -- where two monsters fight, but only one is visible.
-      combatVerb = if killed then "kill" else "hit"
-      combatMsg  = subjectVerbMObject sm combatVerb tm msg
-
-  updateAnyActor target $ \ m -> m { mhp = newHP }
-  per <- currentPerception
-  let perceived = mloc sm `S.member` ptvisible per
-  messageAdd $
-    if perceived
-      then combatMsg
-      else "You hear some noises."
-  when killed $ do
-    -- Place the actor's possessions on the map.
-    dropItemsAt (mitems tm) (mloc tm)
-    -- Clean bodies up.
+effectToAction (Effect.Wound n) source target power msg =
+  if n + power <= 0
+  then return False
+  else do
+    focusIfAHero target
     pl <- gets splayer
-    if target == pl
-      then checkPartyDeath  -- kills the player and checks game over
-      else modify (deleteActor target)  -- kills the enemy
-  return True
+    sm <- gets (getActor source)
+    tm <- gets (getActor target)
+    per <- currentPerception
+    let newHP  = mhp tm - n - power
+        killed = newHP <= 0
+        svis = mloc sm `S.member` ptvisible per
+        tvis = mloc tm `S.member` ptvisible per
+    -- Determine how the player perceives the event.
+    if source == target && not tvis
+       then return ()  -- Unseen monster quaffs a potion of wounding.
+       else messageAdd $
+         if source == target && target == pl
+         then "You feel wounded."
+         else if not tvis
+              then "You hear some noises."
+              else if source == target || not svis
+                   then subjectMovableVerb (mkind tm) "yell" ++ " in pain."  -- TODO: use msg
+                   else let combatVerb = if killed then "kill" else "hit"
+                        in  subjectVerbMObject sm combatVerb tm msg
+    updateAnyActor target $ \ m -> m { mhp = newHP }  -- Damage the target.
+    when killed $ do
+      -- Place the actor's possessions on the map.
+      dropItemsAt (mitems tm) (mloc tm)
+      -- Clean bodies up.
+      pl <- gets splayer
+      if target == pl
+        then checkPartyDeath  -- kills the player and checks game over
+        else modify (deleteActor target)  -- kills the enemy
+    return True
 effectToAction Effect.Dominate source target power msg =
   if isAHero source  -- Monsters are not strong-willed enough.
   then selectPlayer target

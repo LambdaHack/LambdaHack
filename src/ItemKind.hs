@@ -8,12 +8,12 @@ import Color
 import Effect
 
 data ItemKind = ItemKind
-  { jsymbol  :: !Char
-  , jflavour :: [Flavour]
-  , jname    :: String
-  , jeffect  :: Effect
-  , jquant   :: Roll
-  , jfreq    :: !Int
+  { jsymbol  :: !Char      -- ^ map symbol
+  , jflavour :: [Flavour]  -- ^ possible flavours
+  , jname    :: String     -- ^ item group name
+  , jeffect  :: Effect     -- ^ the effect when activated
+  , jquant   :: Roll       -- ^ created in that quantify
+  , jfreq    :: !Int       -- ^ creates that often
   }
   deriving (Show, Eq, Ord)
 
@@ -49,14 +49,14 @@ loot =
    dart,
    gem, gem1, gem2, gem3,
    gold,
-   potion_water, potion_healing,
+   potion_water, potion_healing, potion_wounding,
    ring,
    scroll1, scroll2,
    sword,
    wand_domination]
 
 amulet, dart, gem, gem1, gem2, gem3, gold :: ItemKind
-potion, potion_water, potion_healing :: ItemKind
+potion, potion_water, potion_healing, potion_wounding :: ItemKind
 ring, scroll, scroll1, scroll2, sword :: ItemKind
 wand, wand_domination :: ItemKind
 amulet = ItemKind
@@ -65,7 +65,7 @@ amulet = ItemKind
   , jname    = "amulet"
   , jeffect  = NoEffect
   , jquant   = rollOne
-  , jfreq    = 10
+  , jfreq    = 20
   }
 dart = ItemKind
   { jsymbol  = ')'
@@ -100,13 +100,16 @@ potion = ItemKind
   , jname    = "potion"
   , jeffect  = NoEffect
   , jquant   = rollOne
-  , jfreq    = 20  -- x2
+  , jfreq    = 10  -- x3
   }
 potion_water = potion
   { jeffect  = ApplyWater
   }
 potion_healing = potion
-  { jeffect  = Heal 20
+  { jeffect  = Heal 10
+  }
+potion_wounding = potion
+  { jeffect  = Wound 10
   }
 ring = ItemKind
   { jsymbol  = '='
@@ -114,7 +117,7 @@ ring = ItemKind
   , jname    = "ring"
   , jeffect  = NoEffect
   , jquant   = rollOne
-  , jfreq    = 10
+  , jfreq    = 20
   }
 scroll = ItemKind
   { jsymbol  = '?'
@@ -122,7 +125,7 @@ scroll = ItemKind
   , jname    = "scroll"
   , jeffect  = NoEffect
   , jquant   = rollOne
-  , jfreq    = 10  -- x2
+  , jfreq    = 15  -- x2
   }
 scroll1 = scroll
   { jeffect  = SummonFriend
@@ -144,7 +147,7 @@ wand = ItemKind
   , jname    = "wand"
   , jeffect  = NoEffect
   , jquant   = rollOne
-  , jfreq    = 30
+  , jfreq    = 20
   }
 wand_domination = wand
   { jeffect  = Dominate
