@@ -35,6 +35,7 @@ import qualified Save
 import Terrain
 import qualified Effect
 import EffectAction
+import Keys hiding (Up, Down)
 
 -- All the rest of the Action stuff.
 
@@ -513,6 +514,20 @@ inventory =
              session getConfirm
              abortWith ""
 
+-- | Let the player choose any item with a given group name.
+-- Note that this does not guarantee an item from the group to be chosen,
+-- as the player can override the choice.
+getGroupItem :: String ->  -- name of the group
+                String ->  -- prompt
+                [Item] ->  -- all objects in question
+                String ->  -- how to refer to the collection of objects,
+                           -- e.g., "in your inventory"
+                Action (Maybe Item)
+getGroupItem groupName prompt is packName =
+  let choice i = ItemKind.jname (ItemKind.getIK (ikind i)) == groupName
+      header = capitalize $ suffixS groupName
+  in  getItem prompt choice header is packName
+
 drinkPotion :: Action ()
 drinkPotion =
   do
@@ -523,7 +538,7 @@ drinkPotion =
     if L.null items
       then abortWith "You are not carrying anything."
       else do
-             i <- getPotion "What to drink?" items "inventory"
+             i <- getGroupItem "potion" "What to drink?" items "in your inventory"
              case i of
                Just i'@(Item { ikind = ik })
                 | ItemKind.jname (ItemKind.getIK ik) == "potion" ->
@@ -548,7 +563,7 @@ readScroll =
     if L.null items
       then abortWith "You are not carrying anything."
       else do
-             i <- getScroll "What to read?" items "inventory"
+             i <- getGroupItem "scroll" "What to read?" items "in your inventory"
              case i of
                Just i'@(Item { ikind = ik })
                 | ItemKind.jname (ItemKind.getIK ik) == "scroll" ->
@@ -639,27 +654,6 @@ removeFromLoc i loc =
     adj = M.adjust (\ (t, rt) -> (remove t, rt)) loc
     remove t = t { titems = removeItemByKind i (titems t) }
 
--- | Let the player choose any potion.
--- Note that this does not guarantee a potion to be chosen,
--- as the player can override the choice.
-getPotion :: String ->  -- prompt
-             [Item] ->  -- all objects in question
-             String ->  -- how to refer to the collection of objects,
-                        -- e.g., "in your inventory"
-             Action (Maybe Item)
-getPotion prompt is isn =
-  let choice i = ItemKind.jname (ItemKind.getIK (ikind i)) == "potion"
-  in  getItem prompt choice "Potions" is isn
-
-getScroll :: String ->  -- prompt
-             [Item] ->  -- all objects in question
-             String ->  -- how to refer to the collection of objects,
-                        -- e.g., "in your inventory"
-             Action (Maybe Item)
-getScroll prompt is isn =
-  let choice i = ItemKind.jname (ItemKind.getIK (ikind i)) == "scroll"
-  in  getItem prompt choice "Scrolls" is isn
-
 actorPickupItem :: Actor -> Action ()
 actorPickupItem actor =
   do
@@ -721,7 +715,7 @@ getItem :: String ->              -- prompt message
 getItem prompt p ptext is0 isn =
   let is = L.filter p is0
       choice | L.null is = "[*]"
-             | otherwise = "[" ++ letterRange (concatMap (maybeToList . iletter) is) ++ " or ?*]"
+             | otherwise = "[" ++ letterRange (concatMap (maybeToList . iletter) is) ++ " or ?* or " ++ showKey Keys.Return ++ "]"
       r = do
             message (prompt ++ " " ++ choice)
             display
@@ -738,6 +732,7 @@ getItem prompt p ptext is0 isn =
                                          if b then session (getOptionalConfirm (const r) h')
                                               else r
                          K.Char l   -> return (find (\ i -> maybe False (== l) (iletter i)) is0)
+                         K.Return   -> return (case is of [] -> Nothing ; i : _ -> Just i)
                          _          -> return Nothing
             h
   in r

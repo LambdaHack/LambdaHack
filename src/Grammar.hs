@@ -13,16 +13,24 @@ import ItemState
 import ItemKind
 import Effect
 
+
+suffixS :: String -> String
+suffixS word = word ++ "s"
+
+capitalize :: String -> String
+capitalize [] = []
+capitalize (c : cs) = toUpper c : cs
+
 -- | How to refer to a movable in object position of a sentence.
 objectMovable :: MovableKind -> String
 objectMovable mk = nname mk
 
 -- | How to refer to a movable in subject position of a sentence.
 subjectMovable :: MovableKind -> String
-subjectMovable x = let (s:r) = objectMovable x in toUpper s : r
+subjectMovable x = capitalize $ objectMovable x
 
 verbMovable :: MovableKind -> String -> String
-verbMovable mk v = if nname mk == "you" then v else v ++ "s"
+verbMovable mk v = if nname mk == "you" then v else suffixS v
 
 -- | Sentences such like "The dog barks".
 subjectMovableVerb :: MovableKind -> String -> String
@@ -55,7 +63,7 @@ makeObject 1 adj obj = let b = adj obj
                        in  case b of
                              (c:_) | c `elem` "aeio" -> "an " ++ b
                              _                       -> "a " ++ b
-makeObject n adj obj = show n ++ " " ++ adj (obj ++ "s")
+makeObject n adj obj = show n ++ " " ++ adj (suffixS obj)
 
 objectItem :: State -> Item -> String
 objectItem state o =
