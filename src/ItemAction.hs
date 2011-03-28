@@ -54,109 +54,87 @@ inventory =
 -- | Let the player choose any item with a given group name.
 -- Note that this does not guarantee an item from the group to be chosen,
 -- as the player can override the choice.
-getGroupItem :: String ->  -- name of the group
+getGroupItem :: [Item] ->  -- all objects in question
+                String ->  -- name of the group
                 String ->  -- prompt
-                [Item] ->  -- all objects in question
-                String ->  -- how to refer to the collection of objects,
-                           -- e.g., "in your inventory"
+                String ->  -- how to refer to the collection of objects
                 Action (Maybe Item)
-getGroupItem groupName prompt is packName =
+getGroupItem is groupName prompt packName =
   let choice i = ItemKind.jname (ItemKind.getIK (ikind i)) == groupName
       header = capitalize $ suffixS groupName
   in  getItem prompt choice header is packName
 
+applyGroupItem :: String ->  -- name of the group
+                  String ->  -- how the "applying" is called
+                  Action ()
+applyGroupItem groupName verb = do
+  state <- get
+  pbody <- gets getPlayerBody
+  is    <- gets (mitems . getPlayerBody)
+  if L.null is
+    then abortWith "You are not carrying anything."
+    else do
+      iOpt <- getGroupItem is groupName
+              ("What to " ++ verb ++ "?") "in your inventory"
+      case iOpt of
+        Just item@(Item { ikind = ik })
+          | ItemKind.jname (ItemKind.getIK ik) == groupName ->
+            do
+              -- only one item consumed, even if several in inventory
+              let consumed = item { icount = 1 }
+              removeFromInventory consumed
+              message (subjectVerbIObject state pbody verb consumed "")
+              pl <- gets splayer
+              itemEffectAction consumed pl pl
+        Just _  -> abortWith $ "you cannot " ++ verb ++ " that"
+        Nothing -> neverMind True
+  playerAdvanceTime
+
+fireGroupItem :: String ->  -- name of the group
+                  String ->  -- how the "applying" is called
+                  Action ()
+fireGroupItem groupName verb = do
+  state  <- get
+  per    <- currentPerception
+  pbody  <- gets getPlayerBody
+  is     <- gets (mitems . getPlayerBody)
+  target <- gets (mtarget . getPlayerBody)
+  pl     <- gets splayer
+  if L.null is
+    then abortWith "You are not carrying anything."
+    else do
+      iOpt <- getGroupItem is groupName
+              ("What to " ++ verb ++ "?") "in your inventory"
+      case iOpt of
+        Just item -> do
+          -- only one item consumed, even if several in inventory
+          let consumed = item { icount = 1 }
+          removeFromInventory consumed
+          case targetToLoc (ptvisible per) state of
+            Nothing  -> abortWith "target invalid"
+            Just loc ->
+              -- TODO: draw digital line and see if obstacles prevent firing
+              if actorReachesLoc pl loc per pl
+              then case locToActor loc state of
+                     Just ta -> itemEffectAction consumed pl ta
+                     Nothing -> do
+                       message (subjectVerbIObject state pbody verb consumed "")
+                       modify (updateLevel (scatterItems [consumed] loc))
+              else abortWith "target not reachable"
+        Nothing -> neverMind True
+  playerAdvanceTime
+
 drinkPotion :: Action ()
-drinkPotion =
-  do
-    state <- get
-    pbody <- gets getPlayerBody
-    items <- gets (mitems . getPlayerBody)
-    pl <- gets splayer
-    if L.null items
-      then abortWith "You are not carrying anything."
-      else do
-             i <- getGroupItem "potion" "What to drink?" items "in your inventory"
-             case i of
-               Just i'@(Item { ikind = ik })
-                | ItemKind.jname (ItemKind.getIK ik) == "potion" ->
-                 do
-                   -- only one potion is consumed even if several
-                   -- are joined in the inventory
-                   let consumed = i' { icount = 1 }
-                   removeFromInventory consumed
-                   message (subjectVerbIObject state pbody "drink" consumed "")
-                   itemEffectAction i' pl pl
-               Just _  -> abortWith "you cannot drink that"
-               Nothing -> neverMind True
-    playerAdvanceTime
+drinkPotion = applyGroupItem "potion" "drink"
 
 readScroll :: Action ()
-readScroll =
-  do
-    state <- get
-    pbody <- gets getPlayerBody
-    items <- gets (mitems . getPlayerBody)
-    pl <- gets splayer
-    if L.null items
-      then abortWith "You are not carrying anything."
-      else do
-             i <- getGroupItem "scroll" "What to read?" items "in your inventory"
-             case i of
-               Just i'@(Item { ikind = ik })
-                | ItemKind.jname (ItemKind.getIK ik) == "scroll" ->
-                 do
-                   -- only one scroll is consumed even if several
-                   -- are joined in the inventory
-                   let consumed = i' { icount = 1 }
-                   removeFromInventory consumed
-                   message (subjectVerbIObject state pbody "read" consumed "")
-                   itemEffectAction i' pl pl
-               Just _  -> abortWith "you cannot read that"
-               Nothing -> neverMind True
-    playerAdvanceTime
+readScroll  = applyGroupItem "scroll" "read"
 
 fireItem :: Action ()
-fireItem = do
-  state  <- get
-  per    <- currentPerception
-  pitems <- gets (mitems . getPlayerBody)
-  pl     <- gets splayer
-  target <- gets (mtarget . getPlayerBody)
-  case findItem (\ i -> ItemKind.jname (ItemKind.getIK (ikind i)) == "dart") pitems of
-    Just (dart, _) -> do
-      let fired = dart { icount = 1 }
-      removeFromInventory fired
-      case targetToLoc (ptvisible per) state of
-        Nothing  -> abortWith "target invalid"
-        Just loc ->
-          if actorReachesLoc pl loc per pl
-            then case locToActor loc state of
-                   Just ta -> itemEffectAction dart pl ta
-                   Nothing -> modify (updateLevel (scatterItems [fired] loc))
-            else abortWith "target not reachable"
-    Nothing -> abortWith "nothing to fire"
-  playerAdvanceTime
+fireItem = fireGroupItem "dart" "fire"
 
 zapItem :: Action ()
-zapItem = do
-  pl     <- gets splayer
-  state  <- get
-  per    <- currentPerception
-  pitems <- gets (mitems . getPlayerBody)
-  case findItem (\ i -> ItemKind.jname (ItemKind.getIK (ikind i)) == "wand") pitems of
-    Just (wand, _) -> do
-      let zapped = wand { icount = 1 }
-      removeFromInventory zapped
-      case targetToLoc (ptvisible per) state of
-        Nothing  -> abortWith "target invalid"
-        Just loc ->
-          if actorReachesLoc pl loc per pl
-            then case locToActor loc state of
-                   Just ta -> itemEffectAction wand pl ta
-                   Nothing -> abortWith "no living target to affect"
-            else abortWith "target not reachable"
-    Nothing -> abortWith "nothing to zap"
-  playerAdvanceTime
+zapItem = fireGroupItem "wand" "zap"
 
 dropItem :: Action ()
 dropItem =
