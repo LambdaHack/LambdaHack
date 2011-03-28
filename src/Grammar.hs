@@ -9,7 +9,6 @@ import Item
 import Movable
 import MovableKind
 import State
-import ItemState
 import ItemKind
 import Effect
 

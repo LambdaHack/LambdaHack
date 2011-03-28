@@ -18,7 +18,6 @@ import Grammar
 import qualified HighScores as H
 import Item
 import qualified ItemKind
-import ItemState
 import qualified Keys as K
 import Level
 import LevelState
@@ -36,6 +35,7 @@ import Terrain
 import qualified Effect
 
 -- The effectToAction function and all it depends on.
+-- This file should not depend on Action.hs nor ItemAction.hs.
 
 -- | The source actor affects the target actor, with a given effect and power.
 -- Both actors are on the current level and can be the same actor.
@@ -123,14 +123,6 @@ itemEffectAction item source target = do
   b <- effectToAction effect source target (ipower item) msg
   -- If something happens, the item gets identified.
   when (b && (isAHero source || isAHero target)) $ discover item
-
-updateAnyActor :: Actor -> (Movable -> Movable) -> Action ()
-updateAnyActor actor f = modify (updateAnyActorBody actor f)
-
-updatePlayerBody :: (Movable -> Movable) -> Action ()
-updatePlayerBody f = do
-  pl <- gets splayer
-  updateAnyActor pl f
 
 -- | Given item is now known to the player.
 discover :: Item -> Action ()
@@ -221,6 +213,11 @@ gameOver showEndingScreens =
       messageMore "Let's hope another party can save the day!"
     end
 
+-- | Calculate loot's worth. TODO: refine significantly.
+calculateTotal :: State -> Int
+calculateTotal s =
+  L.sum $ L.map itemPrice $ L.concatMap mitems (levelHeroList s)
+
 dropItemsAt :: [Item] -> Loc -> Action ()
 dropItemsAt is loc = modify (updateLevel (scatterItems is loc))
 
@@ -260,3 +257,16 @@ lvlSwitch nln =
         let (new, ndng) = getDungeonLevel nln full
         modify (\ s -> s { sdungeon = ndng, slevel = new })
         return True
+
+-- effectToAction does not depend on this function right now, but it might,
+-- and there is no better place to put it.
+displayItems :: Message -> Bool -> [Item] -> Action Bool
+displayItems msg sorted is = do
+  state <- get
+  let inv = unlines $
+            L.map (\ i ->
+                    letterLabel (iletter i) ++ objectItem state i ++ " ")
+            ((if sorted then sortBy (cmpLetter' `on` iletter) else id) is)
+  let ovl = inv ++ more
+  message msg
+  overlay ovl

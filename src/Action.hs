@@ -11,6 +11,9 @@ import Display hiding (display)
 import Message
 import State
 import Level
+import Movable
+import MovableState
+import MovableKind
 import qualified Save
 
 newtype Action a = Action
@@ -148,6 +151,9 @@ abortWith msg =
     display
     abort
 
+neverMind :: Bool -> Action a
+neverMind b = abortIfWith b "never mind"
+
 -- | Abort, and print the given message if the condition is true.
 abortIfWith :: Bool -> Message -> Action a
 abortIfWith True  = abortWith
@@ -233,3 +239,23 @@ checkCursor h = do
   if creturnLn cursor == lname level
     then h
     else abortWith "this command does not work on remote levels"
+
+updateAnyActor :: Actor -> (Movable -> Movable) -> Action ()
+updateAnyActor actor f = modify (updateAnyActorBody actor f)
+
+updatePlayerBody :: (Movable -> Movable) -> Action ()
+updatePlayerBody f = do
+  pl <- gets splayer
+  updateAnyActor pl f
+
+-- | Advance the move time for the given actor.
+advanceTime :: Actor -> Action ()
+advanceTime actor =
+  do
+    time <- gets stime
+    updateAnyActor actor $ \ m -> m { mtime = time + (nspeed (mkind m)) }
+
+playerAdvanceTime :: Action ()
+playerAdvanceTime = do
+  pl <- gets splayer
+  advanceTime pl

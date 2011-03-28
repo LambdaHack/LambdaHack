@@ -195,3 +195,7 @@ strongestWeapon l =
         | strength item > strength max = Just item
       aux acc _ = acc
   in  foldl' aux Nothing l
+
+-- TODO: refine significantly, unless we drop this way of score calculation.
+itemPrice :: Item -> Int
+itemPrice i = if iletter i == Just '$' then icount i else 10 * icount i

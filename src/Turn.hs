@@ -11,6 +11,7 @@ import qualified Data.Char as Char
 import Action
 import Actions
 import EffectAction
+import ItemAction
 import Command
 import qualified Config
 import Display hiding (display)
