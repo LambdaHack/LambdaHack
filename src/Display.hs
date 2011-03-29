@@ -138,8 +138,10 @@ displayLevel
                                       then Color.Magenta
                                       else Color.defBG
                 else \ vis rea -> Color.defBG
-      gItem   = findItem (\ i -> iletter i == Just '$') pitems
-      gold    = maybe 0 (icount . fst) gItem
+      wealth  = L.sum $ L.map itemPrice pitems
+      damage  = case strongestItem pitems "sword" of
+                  Just sw -> 3 + ipower sw
+                  Nothing -> 3
       hs      = levelHeroList state
       ms      = levelMonsterList state
       dis n loc =
@@ -182,10 +184,11 @@ displayLevel
              Just c -> (D.defaultAttr, c)
              _      -> (set D.defaultAttr, char)
       bottomLine =
-        take 40 (levelName ln ++ repeat ' ') ++
-        take 10 ("$: " ++ show gold ++ repeat ' ') ++
-        take 15 ("HP: " ++ show php ++ " (" ++ show xhp ++ ")" ++ repeat ' ') ++
-        take 15 ("T: " ++ show (time `div` 10) ++ repeat ' ')
+        take 30 (levelName ln ++ repeat ' ') ++
+        take 10 ("T: " ++ show (time `div` 10) ++ repeat ' ') ++
+        take 10 ("$: " ++ show wealth ++ repeat ' ') ++
+        take 10 ("Dmg: " ++ show damage ++ repeat ' ') ++
+        take 20 ("HP: " ++ show php ++ " (" ++ show xhp ++ ")" ++ repeat ' ')
       disp n msg = display ((0, 0), (sy, sx)) session (dis n) msg bottomLine
       msgs = splitMsg sx msg
       perf k []     = perfo k ""

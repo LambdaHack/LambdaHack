@@ -70,9 +70,12 @@ newItem lvl = do
       fik = Frequency $ L.zip (L.map (jfreq . snd) dLoot) (L.map fst dLoot)
   ikChosen <- frequency fik
   let kind = getIK ikChosen
-  power <- rollQuad lvl (jpower kind)
   count <- rollQuad lvl (jcount kind)
-  return $ Item ikChosen power (itemLetter kind) count
+  if count == 0
+    then newItem lvl  -- Rare item; beware of inifite loops.
+    else do
+      power <- rollQuad lvl (jpower kind)
+      return $ Item ikChosen power (itemLetter kind) count
 
 -- | Assigns a letter to an item, for inclusion
 -- in the inventory of a hero. Takes a remembered
@@ -174,18 +177,17 @@ findItem p is = findItem' [] is
       | p i              = Just (i, reverse acc ++ is)
       | otherwise        = findItem' (i:acc) is
 
-strongestWeapon :: [Item] -> Maybe Item
-strongestWeapon l =
-  let strength (Item { ipower = n, ikind = ik })
-        | jname (getIK ik) == "sword" = n
-      strength _ = 0
-      aux Nothing item
-        | strength item > 0 = Just item
-      aux (Just max) item
-        | strength item > strength max = Just item
-      aux acc _ = acc
-  in  foldl' aux Nothing l
+strongestItem :: [Item] -> String -> Maybe Item
+strongestItem is groupName =
+  let cmp = compare `on` ipower
+      igs = L.filter (\ i -> jname (getIK (ikind i)) == groupName) is
+  in  case igs of
+        [] -> Nothing
+        _  -> Just $ L.maximumBy cmp igs
 
--- TODO: refine significantly, unless we drop this way of score calculation.
 itemPrice :: Item -> Int
-itemPrice i = if iletter i == Just '$' then icount i else 10 * icount i
+itemPrice i =
+  case jname (getIK (ikind i)) of
+    "gold piece" -> icount i
+    "gem" -> 100
+    _ -> 0

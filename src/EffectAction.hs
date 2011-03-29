@@ -226,7 +226,7 @@ gameOver showEndingScreens =
       messageMore "Let's hope another party can save the day!"
     end
 
--- | Calculate loot's worth. TODO: refine significantly.
+-- | Calculate loot's worth for heroes on the current level.
 calculateTotal :: State -> Int
 calculateTotal s =
   L.sum $ L.map itemPrice $ L.concatMap mitems (levelHeroList s)
@@ -272,7 +272,7 @@ lvlSwitch nln =
         return True
 
 -- effectToAction does not depend on this function right now, but it might,
--- and there is no better place to put it.
+-- and I know no better place to put it.
 displayItems :: Message -> Bool -> [Item] -> Action Bool
 displayItems msg sorted is = do
   state <- get

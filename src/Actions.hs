@@ -551,9 +551,9 @@ actorAttackActor (AHero _) target@(AHero _) =
   selectPlayer target >> return ()
 actorAttackActor source target = do
   sm <- gets (getActor source)
-  case strongestWeapon (mitems sm) of
-    Just weapon ->
-      let single = weapon { icount = 1 }
+  case strongestItem (mitems sm) "sword" of
+    Just sw ->
+      let single = sw { icount = 1 }
       in  itemEffectAction single source target
     Nothing ->
       effectToAction (Effect.Wound (1, 3)) source target 0 ""

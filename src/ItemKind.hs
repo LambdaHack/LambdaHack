@@ -47,7 +47,7 @@ loot :: [ItemKind]
 loot =
   [amulet,
    dart,
-   gem, gem1, gem2, gem3,
+   gem1, gem2, gem3, gem4,
    gold,
    potion_water, potion_healing, potion_wounding,
    ring,
@@ -82,19 +82,28 @@ gem = ItemKind
   , jflavour = zipPlain brightCol  -- natural, so not fancy
   , jname    = "gem"
   , jeffect  = NoEffect
-  , jcount   = rollOne
-  , jfreq    = 5  -- x4, below
+  , jcount   = rollZero
+  , jfreq    = 30  -- x3, but rare on shallow levels
   , jpower   = rollZero
   }
 gem1 = gem
+  { jcount   = (0, 5, 0, 0)  -- appears on lvl 2
+  }
 gem2 = gem
+  { jcount   = (0, 2, 0, 0)  -- appears on lvl 5
+  }
 gem3 = gem
+  { jcount   = (0, 1, 0, 0)  -- appears on lvl 10
+  }
+gem4 = gem
+  { jcount   = (0, 1, 0, 0)  -- appears on lvl 10
+  }
 gold = ItemKind
   { jsymbol  = '$'
   , jflavour = [(BrYellow, False)]
   , jname    = "gold piece"
   , jeffect  = NoEffect
-  , jcount   = (0, 30, 0, 100)
+  , jcount   = (0, 31, 0, 101)
   , jfreq    = 80
   , jpower   = rollZero
   }
