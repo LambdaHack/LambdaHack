@@ -9,17 +9,17 @@ import qualified Color
 
 -- | Monster properties that are changing rarely and permanently.
 data MovableKind = MovableKind
-  { nhpMin  :: !Int,         -- ^ minimal initial hp
-    nhpMax  :: !Int,         -- ^ maximal possible and initial hp
-    nspeed  :: !Time,        -- ^ natural speed
-    nsymbol :: !Char,        -- ^ map symbol
+  { nhpMin  :: !Int,          -- ^ minimal initial hp
+    nhpMax  :: !Int,          -- ^ maximal possible and initial hp
+    nspeed  :: !Time,         -- ^ natural speed
+    nsymbol :: !Char,         -- ^ map symbol
     ncolor  :: !Color.Color,  -- ^ map color
-    nname   :: String,       -- ^ name
-    nsight  :: !Bool,        -- ^ can it see?
-    nsmell  :: !Bool,        -- ^ can it smell?
-    niq     :: !Int,         -- ^ intelligence
-    nregen  :: !Int,         -- ^ regeneration interval
-    nfreq   :: !Int          -- ^ dungeon frequency
+    nname   :: String,        -- ^ name
+    nsight  :: !Bool,         -- ^ can it see?
+    nsmell  :: !Bool,         -- ^ can it smell?
+    niq     :: !Int,          -- ^ intelligence
+    nregen  :: !Int,          -- ^ regeneration interval
+    nfreq   :: !Int           -- ^ dungeon frequency
   }
   deriving (Show, Eq)
 

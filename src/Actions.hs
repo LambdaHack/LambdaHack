@@ -532,7 +532,7 @@ moveOrAttack allowAttacks autoOpen actor dir
           else abort
         Nothing ->
           if accessible lmap sloc tloc then do
-            -- perform the move; TODO: make this a separate function
+            -- perform the move
             updateAnyActor actor $ \ m -> m { mloc = tloc }
             when (actor == pl) $ message $ lookAt False True state lmap tloc ""
             advanceTime actor
@@ -552,7 +552,7 @@ actorAttackActor (AHero _) target@(AHero _) =
   -- Select adjacent hero by bumping into him. Takes no time.
   selectPlayer target >> return ()
 actorAttackActor source target = do
-  sm    <- gets (getActor source)
+  sm <- gets (getActor source)
   case strongestWeapon (mitems sm) of
     Just weapon ->
       itemEffectAction weapon source target

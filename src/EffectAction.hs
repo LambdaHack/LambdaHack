@@ -112,13 +112,16 @@ effectToAction Effect.SummonEnemy source target power msg = do
     then summonHeroes (1 + power) (mloc tm)
     else summonMonsters (1 + power) (mloc tm)
   return True
-effectToAction Effect.ApplyWater _ target _ _ =
-  if isAHero target  -- Monsters ignore water splashed on them.
-  then do
-    focusIfAHero target
-    messageAdd "Tastes like water."
-    return True
-  else return False
+effectToAction Effect.ApplyPerfume source target _ _ = do
+  pl <- gets splayer
+  if source == pl && target == pl
+    then messageAdd "Tastes like water. No good." >>
+         return False
+    else do
+      let upd lvl = lvl { lsmell = M.map (const (-100)) (lsmell lvl) }
+      modify (updateLevel upd)
+      messageAdd "The fragrance quells all scents."
+      return True
 
 -- | The source actor affects the target actor, with a given item.
 -- If either actor is a hero, the item may get identified.

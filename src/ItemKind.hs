@@ -103,7 +103,7 @@ potion = ItemKind
   , jfreq    = 10  -- x3
   }
 potion_water = potion
-  { jeffect  = ApplyWater
+  { jeffect  = ApplyPerfume
   }
 potion_healing = potion
   { jeffect  = Heal

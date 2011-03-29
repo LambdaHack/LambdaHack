@@ -191,7 +191,9 @@ findItem p is = findItem' [] is
 
 strongestWeapon :: [Item] -> Maybe Item
 strongestWeapon l =
-  let strength (Item { ipower = n }) = n
+  let strength (Item { ipower = n, ikind = ik })
+        | jname (getIK ik) == "sword" = n
+      strength _ = 0
       aux Nothing item
         | strength item > 0 = Just item
       aux (Just max) item
