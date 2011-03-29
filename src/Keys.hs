@@ -26,9 +26,9 @@ data Key =
 showKey :: Key -> String
 showKey (Char ' ') = "<space>"  -- warnings about "command ( )" look wrong
 showKey (Char c) = [c]
-showKey Esc      = "<escape>"
-showKey Return   = "<return>"
-showKey Tab      = "<tab>"
+showKey Esc      = "ESC"  -- these three are common and terse abbreviations
+showKey Return   = "RET"
+showKey Tab      = "TAB"
 showKey PgUp     = "<page-up>"
 showKey PgDn     = "<page-down>"
 showKey Left     = "<left>"

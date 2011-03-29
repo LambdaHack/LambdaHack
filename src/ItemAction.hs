@@ -60,7 +60,7 @@ getGroupItem :: [Item] ->  -- all objects in question
                 String ->  -- how to refer to the collection of objects
                 Action (Maybe Item)
 getGroupItem is groupName prompt packName =
-  let choice i = ItemKind.jname (ItemKind.getIK (ikind i)) == groupName
+  let choice i = packName == ItemKind.jname (ItemKind.getIK (ikind i))
       header = capitalize $ suffixS groupName
   in  getItem prompt choice header is packName
 
@@ -77,23 +77,23 @@ applyGroupItem groupName verb = do
       iOpt <- getGroupItem is groupName
               ("What to " ++ verb ++ "?") "in your inventory"
       case iOpt of
-        Just item@(Item { ikind = ik })
-          | ItemKind.jname (ItemKind.getIK ik) == groupName ->
-            do
-              -- only one item consumed, even if several in inventory
-              let consumed = item { icount = 1 }
-              removeFromInventory consumed
-              message (subjectVerbIObject state pbody verb consumed "")
-              pl <- gets splayer
-              itemEffectAction consumed pl pl
-        Just _  -> abortWith $ "you cannot " ++ verb ++ " that"
+        Just item@(Item { ikind = ik }) -> do
+          -- only one item consumed, even if several in inventory
+          let v = if ItemKind.jname (ItemKind.getIK ik) == groupName
+                  then verb
+                  else "somehow apply"
+              consumed = item { icount = 1 }
+          message (subjectVerbIObject state pbody v consumed "")
+          pl <- gets splayer
+          b <- itemEffectAction consumed pl pl
+          when b $ removeFromInventory consumed
         Nothing -> neverMind True
   playerAdvanceTime
 
-fireGroupItem :: String ->  -- name of the group
-                  String ->  -- how the "applying" is called
-                  Action ()
-fireGroupItem groupName verb = do
+zapGroupItem :: String ->  -- name of the group
+                String ->  -- how the "applying" is called
+                Action ()
+zapGroupItem groupName verb = do
   state  <- get
   per    <- currentPerception
   pbody  <- gets getPlayerBody
@@ -106,9 +106,12 @@ fireGroupItem groupName verb = do
       iOpt <- getGroupItem is groupName
               ("What to " ++ verb ++ "?") "in your inventory"
       case iOpt of
-        Just item -> do
+        Just item@(Item { ikind = ik }) -> do
           -- only one item consumed, even if several in inventory
-          let consumed = item { icount = 1 }
+          let v = if ItemKind.jname (ItemKind.getIK ik) == groupName
+                  then verb
+                  else "somehow zap"
+              consumed = item { icount = 1 }
           removeFromInventory consumed
           case targetToLoc (ptvisible per) state of
             Nothing  -> abortWith "target invalid"
@@ -116,7 +119,10 @@ fireGroupItem groupName verb = do
               -- TODO: draw digital line and see if obstacles prevent firing
               if actorReachesLoc pl loc per pl
               then case locToActor loc state of
-                     Just ta -> itemEffectAction consumed pl ta
+                     Just ta -> do
+                       b <- itemEffectAction consumed pl ta
+                       when (not b) $
+                         modify (updateLevel (scatterItems [consumed] loc))
                      Nothing -> do
                        message (subjectVerbIObject state pbody verb consumed "")
                        modify (updateLevel (scatterItems [consumed] loc))
@@ -124,17 +130,17 @@ fireGroupItem groupName verb = do
         Nothing -> neverMind True
   playerAdvanceTime
 
-drinkPotion :: Action ()
-drinkPotion = applyGroupItem "potion" "drink"
+quaffPotion :: Action ()
+quaffPotion = applyGroupItem "potion" "quaff"
 
 readScroll :: Action ()
 readScroll  = applyGroupItem "scroll" "read"
 
-fireItem :: Action ()
-fireItem = fireGroupItem "dart" "fire"
+aimItem :: Action ()
+aimItem = zapGroupItem "wand" "aim"
 
-zapItem :: Action ()
-zapItem = fireGroupItem "wand" "zap"
+throwItem :: Action ()
+throwItem = zapGroupItem "dart" "throw"
 
 dropItem :: Action ()
 dropItem =
@@ -229,8 +235,8 @@ getItem :: String ->              -- prompt message
            Action (Maybe Item)
 getItem prompt p ptext is0 isn =
   let is = L.filter p is0
-      choice | L.null is = "[*]"
-             | otherwise = "[" ++ letterRange (concatMap (maybeToList . iletter) is) ++ " or ?* or " ++ K.showKey K.Return ++ "]"
+      choice | L.null is = "[*, ESC]"
+             | otherwise = "[" ++ letterRange (concatMap (maybeToList . iletter) is) ++ ", ?, *, RET, ESC]"
       r = do
             message (prompt ++ " " ++ choice)
             display

@@ -42,7 +42,10 @@ import qualified Effect
 -- The bool result indicates if the actors identify the effect.
 effectToAction :: Effect.Effect -> Actor -> Actor -> Int -> String ->
                   Action Bool
-effectToAction Effect.NoEffect source target power msg = return False
+effectToAction Effect.NoEffect source target power msg = do
+  pl <- gets splayer
+  when (source == pl) $ messageAdd "Nothing happens."
+  return False
 effectToAction (Effect.Heal n) source target power msg = do
   m <- gets (getActor target)
   if mhp m >= nhpMax (mkind m) || n + power <= 0
@@ -91,7 +94,11 @@ effectToAction (Effect.Wound n) source target power msg =
     return True
 effectToAction Effect.Dominate source target power msg =
   if isAHero source  -- Monsters are not strong-willed enough.
-  then selectPlayer target
+  then do
+         b <- selectPlayer target
+         -- Prevent AI from getting a few free moves until new player ready.
+         updatePlayerBody (\ m -> m { mtime = 0})
+         return b
   else return False
 effectToAction Effect.SummonFriend source target power msg = do
   tm <- gets (getActor target)
@@ -114,8 +121,8 @@ effectToAction Effect.ApplyWater _ target _ _ =
   else return False
 
 -- | The source actor affects the target actor, with a given item.
--- If either actor is a hero, the item may get identified (domination ignored).
-itemEffectAction :: Item -> Actor -> Actor -> Action ()
+-- If either actor is a hero, the item may get identified.
+itemEffectAction :: Item -> Actor -> Actor -> Action Bool
 itemEffectAction item source target = do
   state <- get
   let effect = ItemKind.jeffect $ ItemKind.getIK $ ikind item
@@ -123,6 +130,7 @@ itemEffectAction item source target = do
   b <- effectToAction effect source target (ipower item) msg
   -- If something happens, the item gets identified.
   when (b && (isAHero source || isAHero target)) $ discover item
+  return b
 
 -- | Given item is now known to the player.
 discover :: Item -> Action ()

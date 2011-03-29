@@ -213,9 +213,10 @@ helpCommand      = Described "display help"      displayHelp
 
 -- | Display command help. TODO: Should be defined in Actions module.
 displayHelp :: Action ()
-displayHelp = messageOverlayConfirm "Basic keys:" helpString >> abort
-  where
-  helpString = keyHelp stdKeybindings
+displayHelp =
+  messageOverlayConfirm "Basic keys:" helpString >> abort
+    where
+      helpString = keyHelp stdKeybindings
 
 heroSelection :: [(K.Key, Command)]
 heroSelection =
@@ -244,13 +245,14 @@ stdKeybindings = Keybindings
                (K.Tab     ,  heroCommand),
 
                -- items
-               (K.Char ',',  pickupCommand),
+               (K.Char 'g',  pickupCommand),
+               (K.Char ',',  pickupCommand),  -- synonym for backward compat.
                (K.Char 'd',  dropCommand),
                (K.Char 'i',  inventoryCommand),
-               (K.Char 'q',  drinkCommand),
+               (K.Char 'q',  quaffCommand),
                (K.Char 'r',  readCommand),
-               (K.Char 'f',  fireCommand),
-               (K.Char 'z',  zapCommand),
+               (K.Char 't',  throwCommand),
+               (K.Char 'a',  aimCommand),
 
                -- wait
                -- (K.Char ' ',  waitCommand),

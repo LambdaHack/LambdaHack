@@ -557,7 +557,7 @@ actorAttackActor source target = do
     Just weapon ->
       itemEffectAction weapon source target
     Nothing ->
-      effectToAction (Effect.Wound 3) source target 0 "" >> return ()
+      effectToAction (Effect.Wound 3) source target 0 ""
   advanceTime source
 
 -- | Resolves the result of an actor running into another.
