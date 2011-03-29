@@ -211,9 +211,6 @@ continueRun dir =
           in  if L.any exit ts then abort else run dir
     hop (tterrain t)
 
-stopRunning :: Action ()
-stopRunning = updatePlayerBody (\ p -> p { mdir = Nothing })
-
 ifRunning :: (Dir -> Action a) -> Action a -> Action a
 ifRunning t e =
   do

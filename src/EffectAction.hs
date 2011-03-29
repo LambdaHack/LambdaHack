@@ -93,11 +93,12 @@ effectToAction (Effect.Wound n) source target power msg =
         else modify (deleteActor target)  -- kills the enemy
     return True
 effectToAction Effect.Dominate source target power msg =
-  if isAHero source  -- Monsters are not strong-willed enough.
+  if isAMonster target  -- Monsters have weaker will than heroes.
   then do
          b <- selectPlayer target
          -- Prevent AI from getting a few free moves until new player ready.
          updatePlayerBody (\ m -> m { mtime = 0})
+         stopRunning
          return b
   else return False
 effectToAction Effect.SummonFriend source target power msg = do
@@ -281,3 +282,6 @@ displayItems msg sorted is = do
   let ovl = inv ++ more
   message msg
   overlay ovl
+
+stopRunning :: Action ()
+stopRunning = updatePlayerBody (\ p -> p { mdir = Nothing })

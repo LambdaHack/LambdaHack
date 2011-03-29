@@ -67,8 +67,8 @@ handle =
     debug "handle"
     state <- get
     pl <- gets splayer
-    let ptime = mtime (getPlayerBody state)  -- time of hero's next move
-    let time  = stime state            -- current game time
+    let ptime = mtime (getPlayerBody state)  -- time of player's next move
+    let time  = stime state                  -- current game time
     debug $ "handle: time check. ptime = " ++ show ptime ++ ", time = " ++ show time
     if ptime > time
       then do
@@ -91,13 +91,15 @@ handleMonsters =
     debug "handleMonsters"
     time <- gets stime
     ms   <- gets (lmonsters . slevel)
+    pl   <- gets splayer
     if IM.null ms
       then nextMove
       else let order  = Ord.comparing (mtime . snd)
                (i, m) = L.minimumBy order (IM.assocs ms)
-           in  if mtime m > time
+               actor = AMonster i
+           in  if mtime m > time || actor == pl
                then nextMove  -- no monster is ready for another move
-               else handleMonster (AMonster i)
+               else handleMonster actor
 
 -- | Handle the move of a single monster.
 handleMonster :: Actor -> Action ()
