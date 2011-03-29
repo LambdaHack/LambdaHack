@@ -34,49 +34,55 @@ strategy actor
          IM.assocs $ lmonsters $ slevel delState
     -- If no heroes on the level, monsters go at each other. TODO: let them
     -- earn XP by killing each other to make this dangerous to the player.
-    lmh = if L.null hs then ms else hs
-    lmhVisible = L.filter (\ (a, l) -> actorSeesActor a actor l me per pl) lmh
-    lmhDist = L.map (\ (_, l) -> (distance (me, l), l)) lmhVisible
-    -- Below, "player" is the hero (or a monster, if no heroes on this level)
-    -- chased by the monster ("ploc" is his location, etc.).
-    -- As soon as the monster hits, the hero becomes really the currently
-    -- player-controlled hero.
-    ploc = case lmhVisible of
+    foe = if L.null hs then ms else hs
+    foeVisible = L.filter (\ (a, l) -> actorSeesActor a actor l me per pl) foe
+    foeDist = L.map (\ (_, l) -> (distance (me, l), l)) foeVisible
+    -- If the player is a monster, monsters spot and attack him when adjacent.
+    ploc = mloc (getPlayerBody state)
+    traitorAdjacent = isAMonster pl && adjacent me ploc
+    towardsPlayer = towards (me, ploc)
+    -- Below, "foe" is the hero (or a monster) attacked by the actor.
+    floc = case foeVisible of
              [] -> Nothing
-             _  -> Just $ snd $ L.minimum lmhDist
-    playerVisible      =  isJust ploc  -- monster sees any hero
-    playerAdjacent     =  maybe False (adjacent me) ploc
-    towardsPlayer      =  maybe (0, 0) (\ ploc -> towards (me, ploc)) ploc
-    onlyTowardsPlayer  =  only (\ x -> distance (towardsPlayer, x) <= 1)
-    lootPresent        =  (\ x -> not $ L.null $ titems $ lmap `at` x)
-    onlyLootPresent    =  onlyMoves lootPresent me
-    onlyPreservesDir   =  only (\ x -> maybe True (\ d -> distance (neg d, x) > 1) mdir)
-    onlyUnoccupied     =  onlyMoves (unoccupied (levelMonsterList delState)) me
-    onlyAccessible     =  onlyMoves (accessible lmap me) me
+             _  -> Just $ snd $ L.minimum foeDist
+    anyFoeVisible  = isJust floc
+    foeAdjacent    = maybe False (adjacent me) floc
+    towardsFoe     = maybe (0, 0) (\ floc -> towards (me, floc)) floc
+    onlyTowardsFoe = only (\ x -> distance (towardsFoe, x) <= 1)
+    lootPresent    = (\ x -> not $ L.null $ titems $ lmap `at` x)
+    onlyLootHere   = onlyMoves lootPresent me
+    onlyKeepsDir   =
+      only (\ x -> maybe True (\ d -> distance (neg d, x) > 1) mdir)
+    onlyUnoccupied = onlyMoves (unoccupied (levelMonsterList delState)) me
+    onlyAccessible = onlyMoves (accessible lmap me) me
     -- Monsters don't see doors more secret than that. Enforced when actually
     -- opening doors, too, so that monsters don't cheat.
-    onlyOpenable       =  onlyMoves (openable (niq mk) lmap) me
-    smells             =  L.map fst $
-                          L.sortBy (\ (_,s1) (_,s2) -> compare s2 s1) $
-                          L.filter (\ (_,s) -> s > 0) $
-                          L.map (\ x -> (x, nsmap ! (me `shift` x) - time `max` 0)) moves
+    onlyOpenable   = onlyMoves (openable (niq mk) lmap) me
+    smells         = L.map fst $
+                       L.sortBy (\ (_,s1) (_,s2) -> compare s2 s1) $
+                       L.filter (\ (_,s) -> s > 0) $
+                       L.map (\ x -> (x, nsmap ! (me `shift` x)
+                                         - time `max` 0)) moves
 
-    eye                =  onlyUnoccupied $
-                            playerVisible .=> onlyTowardsPlayer moveRandomly
-                            .| lootPresent me .=> wait
-                            .| onlyLootPresent moveRandomly
-                            .| onlyPreservesDir moveRandomly
+    eye     = onlyUnoccupied $
+                traitorAdjacent .=> return towardsPlayer
+                .| anyFoeVisible .=> onlyTowardsFoe moveRandomly
+                .| lootPresent me .=> wait
+                .| onlyLootHere moveRandomly
+                .| onlyKeepsDir moveRandomly
 
-    openEye            =  playerAdjacent .=> return towardsPlayer
-                          .| not playerVisible .=> onlyOpenable eye
-                          .| onlyAccessible eye
+    openEye = traitorAdjacent .=> return towardsPlayer
+              .| foeAdjacent .=> return towardsFoe
+              .| not anyFoeVisible .=> onlyOpenable eye
+              .| onlyAccessible eye
 
-    nose               =  playerAdjacent .=> return towardsPlayer
-                          .| (onlyAccessible $
-                              lootPresent me .=> wait
-                              .| foldr (.|) reject (L.map return smells)
-                              .| onlyLootPresent moveRandomly
-                              .| moveRandomly)
+    nose    = traitorAdjacent .=> return towardsPlayer
+              .| foeAdjacent .=> return towardsFoe
+              .| (onlyAccessible $
+                  lootPresent me .=> wait
+                  .| foldr (.|) reject (L.map return smells)
+                  .| onlyLootHere moveRandomly
+                  .| moveRandomly)
 
 onlyMoves :: (Dir -> Bool) -> Loc -> Strategy Dir -> Strategy Dir
 onlyMoves p l = only (\ x -> p (l `shift` x))
