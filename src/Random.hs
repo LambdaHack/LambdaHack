@@ -1,6 +1,8 @@
 module Random (module Frequency, module Random) where
 
+import qualified Data.Binary as Binary
 import Data.Ratio
+import Data.List as L
 import qualified System.Random as R
 import Control.Monad.State
 
@@ -72,3 +74,21 @@ infixl 6 ~+~
 
 (*~) :: Num a => Int -> Rnd a -> Rnd a
 x *~ r = liftM sum (replicateM x r)
+
+-- RollDice: 1d7, 3d3, etc. (a, b) represent (a *~ d b).
+type RollDice = (Binary.Word8, Binary.Word8)
+
+rollDice :: RollDice -> Rnd Int
+rollDice (a', b') = do
+  let (a, b) = (fromEnum a', fromEnum b')
+  list <- replicateM a $ d b
+  return $ L.sum list
+
+-- rollQuad (a, b, x, y) = a + (b * lvl)/10 + d(x + (y * lvl)/10)
+type RollQuad = (Binary.Word8, Binary.Word8, Binary.Word8, Binary.Word8)
+
+rollQuad :: Int -> RollQuad -> Rnd Int
+rollQuad lvl (a', b', x', y') = do
+  let (a, b, x, y) = (fromEnum a', fromEnum b', fromEnum x', fromEnum y')
+  roll <- d (x + (y * lvl) `div` 10)
+  return $ a + (b * lvl) `div` 10 + roll

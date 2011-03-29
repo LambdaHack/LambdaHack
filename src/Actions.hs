@@ -552,9 +552,10 @@ actorAttackActor source target = do
   sm <- gets (getActor source)
   case strongestWeapon (mitems sm) of
     Just weapon ->
-      itemEffectAction weapon source target
+      let single = weapon { icount = 1 }
+      in  itemEffectAction single source target
     Nothing ->
-      effectToAction (Effect.Wound 3) source target 0 ""
+      effectToAction (Effect.Wound (1, 3)) source target 0 ""
   advanceTime source
 
 -- | Resolves the result of an actor running into another.

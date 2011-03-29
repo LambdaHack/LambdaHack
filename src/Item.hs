@@ -60,17 +60,6 @@ getFlavour assocs ik =
 viewItem :: Int -> Assocs -> (Char, Color.Color)
 viewItem ik assocs = (jsymbol (getIK ik), flavourToColor $ getFlavour assocs ik)
 
--- Not really satisfactory. Should be configurable, not hardcoded.
-itemStrength :: Int -> ItemKind -> Rnd Int
-itemStrength n ik =
-  case jname ik of
-    "sword" -> do
-      r <- d (2 + n `div` 2)
-      return $ (n + 1) `div` 3 + r
-    "potion" | jeffect ik == Effect.Heal ->
-      return 10
-    _ -> return 0
-
 itemLetter :: ItemKind -> Maybe Char
 itemLetter ik = if jsymbol ik == '$' then Just '$' else Nothing
 
@@ -81,13 +70,9 @@ newItem lvl = do
       fik = Frequency $ L.zip (L.map (jfreq . snd) dLoot) (L.map fst dLoot)
   ikChosen <- frequency fik
   let kind = getIK ikChosen
-  power <- itemStrength lvl kind
-  let (a', b', c', d') = jquant kind
-      (a, b, c, d) = (fromEnum a', fromEnum b', fromEnum c', fromEnum d')
-  -- a + b * lvl + roll(c + d * lvl)
-  roll <- randomR (0, c + d * lvl)
-  let quant = a + b * lvl + roll
-  return (Item ikChosen power (itemLetter kind) quant)
+  power <- rollQuad lvl (jpower kind)
+  count <- rollQuad lvl (jcount kind)
+  return $ Item ikChosen power (itemLetter kind) count
 
 -- | Assigns a letter to an item, for inclusion
 -- in the inventory of a hero. Takes a remembered

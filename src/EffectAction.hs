@@ -57,10 +57,9 @@ effectToAction Effect.Heal source target power msg = do
       pl <- gets splayer
       when (target == pl) $ messageAdd "You feel better."  -- TODO: use msg, if perceived, etc.
       return True
-effectToAction (Effect.Wound n) source target power msg =
-  if n + power <= 0
-  then return False
-  else do
+effectToAction (Effect.Wound nDm) source target power msg = do
+  n <- liftIO $ rndToIO $ rollDice nDm
+  if (n + power <= 0) then return False else do
     focusIfAHero target
     pl <- gets splayer
     sm <- gets (getActor source)
