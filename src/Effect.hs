@@ -2,7 +2,7 @@ module Effect where
 
 data Effect =
     NoEffect
-  | Heal Int
+  | Heal       -- healing strength in ipower
   | Wound Int  -- base damage, to-dam bonus in ipower
   | Dominate
   | SummonFriend
@@ -12,7 +12,7 @@ data Effect =
 
 effectToName :: Effect -> String
 effectToName NoEffect = ""
-effectToName (Heal n) = "of healing (" ++ show n ++ ")"
+effectToName Heal = "of healing"
 effectToName (Wound n) = "(" ++ show n ++ "d1)"
 effectToName Dominate = "of domination"
 effectToName SummonFriend = "of aid calling"

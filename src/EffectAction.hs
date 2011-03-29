@@ -46,13 +46,13 @@ effectToAction Effect.NoEffect source target power msg = do
   pl <- gets splayer
   when (source == pl) $ messageAdd "Nothing happens."
   return False
-effectToAction (Effect.Heal n) source target power msg = do
+effectToAction Effect.Heal source target power msg = do
   m <- gets (getActor target)
-  if mhp m >= nhpMax (mkind m) || n + power <= 0
+  if mhp m >= nhpMax (mkind m) || power <= 0
     then return False
     else do
       focusIfAHero target
-      let upd m = m { mhp = min (nhpMax (mkind m)) (mhp m + n + power) }
+      let upd m = m { mhp = min (nhpMax (mkind m)) (mhp m + power) }
       updateAnyActor target upd
       pl <- gets splayer
       when (target == pl) $ messageAdd "You feel better."  -- TODO: use msg, if perceived, etc.

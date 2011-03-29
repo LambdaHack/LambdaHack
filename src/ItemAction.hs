@@ -60,7 +60,7 @@ getGroupItem :: [Item] ->  -- all objects in question
                 String ->  -- how to refer to the collection of objects
                 Action (Maybe Item)
 getGroupItem is groupName prompt packName =
-  let choice i = packName == ItemKind.jname (ItemKind.getIK (ikind i))
+  let choice i = groupName == ItemKind.jname (ItemKind.getIK (ikind i))
       header = capitalize $ suffixS groupName
   in  getItem prompt choice header is packName
 
@@ -81,7 +81,7 @@ applyGroupItem groupName verb = do
           -- only one item consumed, even if several in inventory
           let v = if ItemKind.jname (ItemKind.getIK ik) == groupName
                   then verb
-                  else "somehow apply"
+                  else "creatively apply"
               consumed = item { icount = 1 }
           message (subjectVerbIObject state pbody v consumed "")
           pl <- gets splayer
@@ -110,7 +110,7 @@ zapGroupItem groupName verb = do
           -- only one item consumed, even if several in inventory
           let v = if ItemKind.jname (ItemKind.getIK ik) == groupName
                   then verb
-                  else "somehow zap"
+                  else "furiously zap"
               consumed = item { icount = 1 }
           removeFromInventory consumed
           case targetToLoc (ptvisible per) state of

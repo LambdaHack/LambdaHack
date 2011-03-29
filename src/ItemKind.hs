@@ -106,7 +106,7 @@ potion_water = potion
   { jeffect  = ApplyWater
   }
 potion_healing = potion
-  { jeffect  = Heal 10
+  { jeffect  = Heal
   }
 potion_wounding = potion
   { jeffect  = Wound 10

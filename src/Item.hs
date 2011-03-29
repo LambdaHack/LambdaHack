@@ -12,6 +12,7 @@ import Control.Monad
 import Random
 import ItemKind
 import qualified Color
+import qualified Effect  -- TODO: get rid of ASAP
 
 data Item = Item
   { ikind    :: !Int,
@@ -62,11 +63,13 @@ viewItem ik assocs = (jsymbol (getIK ik), flavourToColor $ getFlavour assocs ik)
 -- Not really satisfactory. Should be configurable, not hardcoded.
 itemStrength :: Int -> ItemKind -> Rnd Int
 itemStrength n ik =
-  if jname ik /= "sword"
-  then return 0
-  else do
-    r <- d (2 + n `div` 2)
-    return $ (n + 1) `div` 3 + r
+  case jname ik of
+    "sword" -> do
+      r <- d (2 + n `div` 2)
+      return $ (n + 1) `div` 3 + r
+    "potion" | jeffect ik == Effect.Heal ->
+      return 10
+    _ -> return 0
 
 itemLetter :: ItemKind -> Maybe Char
 itemLetter ik = if jsymbol ik == '$' then Just '$' else Nothing
