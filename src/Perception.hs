@@ -11,6 +11,7 @@ import State
 import Level
 import Movable
 import MovableState
+import qualified MovableKind
 import FOV
 import qualified Config
 
@@ -62,7 +63,7 @@ perception_ state@(State { splayer = pl,
                            ssensory = sensory }) =
   let mode   = Config.get config "engine" "fovMode"
       radius = Config.get config "engine" "fovRadius"
-      fovMode =
+      fovMode m = if not $ MovableKind.nsight (mkind m) then Blind else
         -- terrible, temporary hack
         case sensory of
           Vision 3 -> Digital radius
@@ -78,9 +79,10 @@ perception_ state@(State { splayer = pl,
 
       -- Perception for a player-controlled monster on the current level.
       pper = if isAMonster pl && memActor pl state
-             then Just $ perception fovMode (mloc (getPlayerBody state)) lmap
+             then let m = getPlayerBody state
+                  in Just $ perception (fovMode m) (mloc m) lmap
              else Nothing
-      pers = IM.map (\ h -> perception fovMode (mloc h) lmap) hs
+      pers = IM.map (\ h -> perception (fovMode h) (mloc h) lmap) hs
       lpers = maybeToList pper ++ IM.elems pers
       reachable = S.unions (L.map preachable lpers)
       visible = S.unions (L.map pvisible lpers)
@@ -134,4 +136,5 @@ perception fovMode ploc lmap =
   in
     case fovMode of
       Shadow -> Perception reachable visible
+      Blind  -> Perception reachable visible
       _      -> Perception reachable simpleVisible

@@ -154,7 +154,7 @@ displayLevel
               | n > 9     = '*'
               | n < 0     = '-'
               | otherwise = Char.intToDigit n
-            rainbow loc = toEnum (1 + snd loc `mod` 14)
+            rainbow loc = toEnum ((fst loc + snd loc) `mod` 14 + 1)
             (char, fg) =
               case L.find (\ m -> loc == mloc m) (hs ++ ms) of
                 _ | sTer > 0 -> Terrain.viewTerrain sTer False (tterrain tile)

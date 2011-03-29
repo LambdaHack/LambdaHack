@@ -158,11 +158,13 @@ handlePlayer =
       then withPerception handlePlayer  -- no time taken, repeat
       else do
         state <- get
+        pl    <- gets splayer
         let time = stime state
             ploc = mloc (getPlayerBody state)
-            smellTimeout = Config.get (sconfig state) "monsters" "smellTimeout"
+            sTimeout = Config.get (sconfig state) "monsters" "smellTimeout"
         -- update smell
-        modify (updateLevel (updateSMap (M.insert ploc (time + smellTimeout))))
+        when (isAHero pl) $  -- only humans leave strong scent
+          modify (updateLevel (updateSMap (M.insert ploc (time + sTimeout))))
         -- determine player perception and continue with monster moves
         withPerception handleMonsters
 

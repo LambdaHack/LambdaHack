@@ -337,11 +337,12 @@ lvlChange vdir =
                 else do
                   -- Remove the player from the old level.
                   modify (deleteActor pl)
-                  -- At this place the invariant that player exists fails.
-                  -- Change to the new level (invariant not essential).
+                  -- At this place the invariant that the player exists fails.
+                  -- Change to the new level (invariant not needed).
                   assertTrue $ lvlSwitch nln
-                  -- Restore the invariant: add player to the new level.
+                  -- Add the player to the new level.
                   modify (insertActor pl pbody)
+                  -- At this place the invariant is restored again.
                   -- Land the player at the other end of the stairs.
                   updatePlayerBody (\ p -> p { mloc = nloc })
                   -- Change the level of the player recorded in cursor.

@@ -158,6 +158,11 @@ selectPlayer actor =
             modify (updateCursor (\ c -> c { creturnLn = nln }))
             -- Switch to the level.
             lvlSwitch nln
+            -- Set smell display, depending on player capabilities.
+            -- This also reset FOV mode.
+            modify (\ s -> s { ssensory = if MovableKind.nsmell (mkind pbody)
+                                          then Smell
+                                          else Implicit })
             -- Announce.
             messageAdd $ subjectMovable (mkind pbody) ++ " selected."
             return True
@@ -199,17 +204,14 @@ checkPartyDeath =
         then gameOver go
         else case L.filter (\ (actor, _) -> actor /= pl) ahs of
                [] -> gameOver go
-               (actor, nln) : _ -> do
-                 -- Important invariant: player always has to exist somewhere.
-                 -- Make the new actor the player-controlled actor.
-                 modify (\ s -> s { splayer = actor })
-                 -- Record the original level of the new player.
-                 modify (updateCursor (\ c -> c { creturnLn = nln }))
-                 -- Now the old player can be safely removed.
-                 modify (deleteActor pl)
-                 -- Now we can switch to the level of the new player.
-                 lvlSwitch nln
+               (actor, _nln) : _ -> do
                  message "The survivors carry on."
+                 -- Remove the dead player.
+                 modify (deleteActor pl)
+                 -- At this place the invariant that the player exists fails.
+                 -- Focus on the new hero (invariant not needed).
+                 assertTrue $ selectPlayer actor
+                 -- At this place the invariant is restored again.
 
 -- | End game, showing the ending screens, if requested.
 gameOver :: Bool -> Action ()
