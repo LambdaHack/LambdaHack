@@ -173,7 +173,7 @@ removeFromLoc i loc =
   modify (updateLevel (updateLMap adj))
   where
     adj = M.adjust (\ (t, rt) -> (remove t, rt)) loc
-    remove t = t { titems = removeItemByKind i (titems t) }
+    remove t = t { titems = removeItemByIdentity i (titems t) }
 
 actorPickupItem :: Actor -> Action ()
 actorPickupItem actor =

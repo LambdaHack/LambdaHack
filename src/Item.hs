@@ -12,7 +12,6 @@ import Control.Monad
 import Random
 import ItemKind
 import qualified Color
-import qualified Effect  -- TODO: get rid of ASAP
 
 data Item = Item
   { ikind    :: !Int,
@@ -53,9 +52,10 @@ dungeonAssocs =
 getFlavour :: Assocs -> Int -> Flavour
 getFlavour assocs ik =
   let kind = ItemKind.getIK ik
-  in  if L.length (jflavour kind) == 1
-      then head (jflavour kind)
-      else assocs IM.! ik
+  in  case jflavour kind of
+        []  -> error "getFlavour"
+        [f] -> f
+        _:_ -> assocs IM.! ik
 
 viewItem :: Int -> Assocs -> (Char, Color.Color)
 viewItem ik assocs = (jsymbol (getIK ik), flavourToColor $ getFlavour assocs ik)
@@ -88,7 +88,9 @@ assignLetter r c is =
   where
     current    = S.fromList (concatMap (maybeToList . iletter) is)
     allLetters = ['a'..'z'] ++ ['A'..'Z']
-    candidates = take (length allLetters) (drop (fromJust (L.findIndex (==c) allLetters)) (cycle allLetters))
+    candidates = take (length allLetters) $
+                   drop (fromJust (L.findIndex (==c) allLetters)) $
+                     cycle allLetters
     free       = L.filter (\x -> not (x `S.member` current)) candidates
     allowed    = '$' : free
 
@@ -135,7 +137,7 @@ letterLabel (Just c) = c : " - "
 -- Also returns the joined item.
 joinItem :: Item -> [Item] -> (Item, [Item])
 joinItem i is =
-  case findItem (equalItemKindAndPower i) is of
+  case findItem (equalItemIdentity i) is of
     Nothing     -> (i, i : is)
     Just (j,js) -> let n = i { icount = icount i + icount j,
                                iletter = mergeLetter (iletter j) (iletter i) }
@@ -152,16 +154,10 @@ removeItemBy eq i = concatMap $ \ x ->
                                  else []
                       else [x]
 
-equalItemKindAndPower :: Item -> Item -> Bool
-equalItemKindAndPower i1 i2 = equalItemKind i1 i2 && equalItemPower i1 i2
+equalItemIdentity :: Item -> Item -> Bool
+equalItemIdentity i1 i2 = ipower i1 == ipower i2 && ikind i1 == ikind i2
 
-equalItemPower :: Item -> Item -> Bool
-equalItemPower = (==) `on` ipower
-
-equalItemKind :: Item -> Item -> Bool
-equalItemKind = (==) `on` ikind
-
-removeItemByKind = removeItemBy equalItemKind
+removeItemByIdentity = removeItemBy equalItemIdentity
 
 equalItemLetter :: Item -> Item -> Bool
 equalItemLetter = (==) `on` iletter
