@@ -20,10 +20,6 @@ data ItemKind = ItemKind
 
 type Flavour = (Color, Bool)  -- the flag tells to use fancy color names
 
--- rollQuad (a, b, x, y) = a + (b * lvl)/10 + d(x + (y * lvl)/10)
-rollZero = (0, 0, 0, 0)
-rollOne  = (1, 0, 0, 0)
-
 zipPlain cs = L.zip cs (repeat False)
 zipFancy cs = L.zip cs (repeat True)
 darkCol    = [Red .. Cyan]
@@ -55,6 +51,8 @@ loot =
    sword,
    wand_domination]
 
+-- rollQuad (a, b, x, y) = a * d b + (lvl * x * d y) / 10
+
 amulet, dart, gem, gem1, gem2, gem3, gold :: ItemKind
 potion, potion_water, potion_healing, potion_wounding :: ItemKind
 ring, scroll, scroll1, scroll2, sword :: ItemKind
@@ -64,86 +62,86 @@ amulet = ItemKind
   , jflavour = [(BrWhite, True)]
   , jname    = "amulet"
   , jeffect  = NoEffect
-  , jcount   = rollOne
+  , jcount   = intToQuad 1
   , jfreq    = 20
-  , jpower   = rollZero
+  , jpower   = intToQuad 0
   }
 dart = ItemKind
   { jsymbol  = ')'
   , jflavour = [(Yellow, False)]
   , jname    = "dart"
   , jeffect  = Wound (1, 1)
-  , jcount   = (3, 0, 6, 0)
+  , jcount   = (3, 3, 0, 0)
   , jfreq    = 30
-  , jpower   = rollZero
+  , jpower   = intToQuad 0
   }
 gem = ItemKind
   { jsymbol  = '*'
   , jflavour = zipPlain brightCol  -- natural, so not fancy
   , jname    = "gem"
   , jeffect  = NoEffect
-  , jcount   = rollZero
+  , jcount   = intToQuad 0
   , jfreq    = 30  -- x3, but rare on shallow levels
-  , jpower   = rollZero
+  , jpower   = intToQuad 0
   }
 gem1 = gem
-  { jcount   = (0, 5, 0, 0)  -- appears on lvl 2
+  { jcount   = (0, 0, 5, 1)  -- appears on lvl 2
   }
 gem2 = gem
-  { jcount   = (0, 2, 0, 0)  -- appears on lvl 5
+  { jcount   = (0, 0, 2, 1)  -- appears on lvl 5
   }
 gem3 = gem
-  { jcount   = (0, 1, 0, 0)  -- appears on lvl 10
+  { jcount   = (0, 0, 1, 1)  -- appears on lvl 10
   }
 gem4 = gem
-  { jcount   = (0, 1, 0, 0)  -- appears on lvl 10
+  { jcount   = (0, 0, 1, 1)  -- appears on lvl 10
   }
 gold = ItemKind
   { jsymbol  = '$'
   , jflavour = [(BrYellow, False)]
   , jname    = "gold piece"
   , jeffect  = NoEffect
-  , jcount   = (0, 31, 0, 101)
+  , jcount   = (0, 0, 10, 10)
   , jfreq    = 80
-  , jpower   = rollZero
+  , jpower   = intToQuad 0
   }
 potion = ItemKind
   { jsymbol  = '!'
   , jflavour = zipFancy stdCol
   , jname    = "potion"
   , jeffect  = NoEffect
-  , jcount   = rollOne
+  , jcount   = intToQuad 1
   , jfreq    = 10  -- x3
-  , jpower   = rollZero
+  , jpower   = intToQuad 0
   }
 potion_water = potion
   { jeffect  = ApplyPerfume
   }
 potion_healing = potion
   { jeffect  = Heal
-  , jpower   = (10, 0, 0, 0)
+  , jpower   = (10, 1, 0, 0)
   }
 potion_wounding = potion
   { jeffect  = Wound (0, 0)
-  , jpower   = (10, 0, 0, 0)
+  , jpower   = (10, 1, 0, 0)
   }
 ring = ItemKind
   { jsymbol  = '='
   , jflavour = [(BrWhite, False)]
   , jname    = "ring"
   , jeffect  = NoEffect
-  , jcount   = rollOne
+  , jcount   = intToQuad 1
   , jfreq    = 20
-  , jpower   = rollZero
+  , jpower   = intToQuad 0
   }
 scroll = ItemKind
   { jsymbol  = '?'
   , jflavour = zipFancy darkCol  -- arcane and old
   , jname    = "scroll"
   , jeffect  = NoEffect
-  , jcount   = rollOne
+  , jcount   = intToQuad 1
   , jfreq    = 15  -- x2
-  , jpower   = rollZero
+  , jpower   = intToQuad 0
   }
 scroll1 = scroll
   { jeffect  = SummonFriend
@@ -155,19 +153,19 @@ sword = ItemKind
   { jsymbol  = ')'
   , jflavour = [(BrCyan, False)]
   , jname    = "sword"
-  , jeffect  = Wound (1, 3)
-  , jcount   = rollOne
+  , jeffect  = Wound (3, 1)
+  , jcount   = intToQuad 1
   , jfreq    = 60
-  , jpower   = (0, 3, 2, 5)
+  , jpower   = (1, 2, 4, 2)
   }
 wand = ItemKind
   { jsymbol  = '/'
   , jflavour = [(BrRed, True)]
   , jname    = "wand"
   , jeffect  = NoEffect
-  , jcount   = rollOne
+  , jcount   = intToQuad 1
   , jfreq    = 20
-  , jpower   = rollZero
+  , jpower   = intToQuad 0
   }
 wand_domination = wand
   { jeffect  = Dominate

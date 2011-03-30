@@ -79,16 +79,22 @@ x *~ r = liftM sum (replicateM x r)
 type RollDice = (Binary.Word8, Binary.Word8)
 
 rollDice :: RollDice -> Rnd Int
-rollDice (a', b') = do
+rollDice (a', b') =
   let (a, b) = (fromEnum a', fromEnum b')
-  list <- replicateM a $ d b
-  return $ L.sum list
+  in  a *~ d b
 
--- rollQuad (a, b, x, y) = a + (b * lvl)/10 + d(x + (y * lvl)/10)
+-- rollQuad (a, b, x, y) = a *~ d b + (lvl * (x *~ d y)) / 10
 type RollQuad = (Binary.Word8, Binary.Word8, Binary.Word8, Binary.Word8)
 
 rollQuad :: Int -> RollQuad -> Rnd Int
-rollQuad lvl (a', b', x', y') = do
-  let (a, b, x, y) = (fromEnum a', fromEnum b', fromEnum x', fromEnum y')
-  roll <- d (x + (y * lvl) `div` 10)
-  return $ a + (b * lvl) `div` 10 + roll
+rollQuad lvl (a, b, x, y) = do
+  aDb <- rollDice (a, b)
+  xDy <- rollDice (x, y)
+  return $ aDb + (lvl * xDy) `div` 10
+
+intToQuad :: Int -> RollQuad
+intToQuad 0 = (0, 0, 0, 0)
+intToQuad n = let n' = fromIntegral n
+              in  if n' > maxBound || n' < minBound
+                  then error "intToQuad"
+                  else (n', 1, 0, 0)
