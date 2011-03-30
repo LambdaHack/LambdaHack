@@ -278,7 +278,7 @@ rogueRoom cfg nm =
                         rs <- if ro then return Nothing
                                     else do rsc <- doorSecretChance cfg
                                             fmap Just
-                                                 (if rsc then randomR (1, doorSecretMax cfg)
+                                                 (if rsc then randomR (doorSecretMax cfg `div` 2, doorSecretMax cfg)
                                                          else return 0)
                         if rb
                           then return ((y,x),newTile (Door hv rs))

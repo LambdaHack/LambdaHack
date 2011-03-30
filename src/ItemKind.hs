@@ -45,26 +45,25 @@ loot =
    dart,
    gem1, gem2, gem3, gem4,
    gold,
-   potion_water, potion_healing, potion_wounding,
+   potion1, potion2, potion3,
    ring,
    scroll1, scroll2,
    sword,
-   wand_domination]
+   wand]
 
 -- rollQuad (a, b, x, y) = a * d b + (lvl * x * d y) / 10
 
-amulet, dart, gem, gem1, gem2, gem3, gold :: ItemKind
-potion, potion_water, potion_healing, potion_wounding :: ItemKind
-ring, scroll, scroll1, scroll2, sword :: ItemKind
-wand, wand_domination :: ItemKind
+amulet, dart, gem, gem1, gem2, gem3, gem4, gold :: ItemKind
+potion, potion1, potion2, potion3 :: ItemKind
+ring, scroll, scroll1, scroll2, sword, wand :: ItemKind
 amulet = ItemKind
   { jsymbol  = '"'
-  , jflavour = [(BrWhite, True)]
+  , jflavour = [(BrGreen, True)]
   , jname    = "amulet"
-  , jeffect  = NoEffect
+  , jeffect  = Regneration
   , jcount   = intToQuad 1
-  , jfreq    = 20
-  , jpower   = intToQuad 0
+  , jfreq    = 10
+  , jpower   = (2, 1, 2, 2)
   }
 dart = ItemKind
   { jsymbol  = ')'
@@ -85,10 +84,10 @@ gem = ItemKind
   , jpower   = intToQuad 0
   }
 gem1 = gem
-  { jcount   = (0, 0, 5, 1)  -- appears on lvl 2
+  { jcount   = (1, 1, 0, 0)  -- appears on lvl 1
   }
 gem2 = gem
-  { jcount   = (0, 0, 2, 1)  -- appears on lvl 5
+  { jcount   = (0, 0, 2, 1)  -- appears on lvl 5, doubled on lvl 10
   }
 gem3 = gem
   { jcount   = (0, 0, 1, 1)  -- appears on lvl 10
@@ -114,25 +113,25 @@ potion = ItemKind
   , jfreq    = 10  -- x3
   , jpower   = intToQuad 0
   }
-potion_water = potion
+potion1 = potion
   { jeffect  = ApplyPerfume
   }
-potion_healing = potion
+potion2 = potion
   { jeffect  = Heal
   , jpower   = (10, 1, 0, 0)
   }
-potion_wounding = potion
+potion3 = potion
   { jeffect  = Wound (0, 0)
   , jpower   = (10, 1, 0, 0)
   }
 ring = ItemKind
   { jsymbol  = '='
-  , jflavour = [(BrWhite, False)]
+  , jflavour = [(White, False)]
   , jname    = "ring"
-  , jeffect  = NoEffect
+  , jeffect  = Searching
   , jcount   = intToQuad 1
-  , jfreq    = 20
-  , jpower   = intToQuad 0
+  , jfreq    = 10
+  , jpower   = (1, 1, 2, 2)
   }
 scroll = ItemKind
   { jsymbol  = '?'
@@ -162,11 +161,8 @@ wand = ItemKind
   { jsymbol  = '/'
   , jflavour = [(BrRed, True)]
   , jname    = "wand"
-  , jeffect  = NoEffect
+  , jeffect  = Dominate
   , jcount   = intToQuad 1
   , jfreq    = 20
   , jpower   = intToQuad 0
-  }
-wand_domination = wand
-  { jeffect  = Dominate
   }

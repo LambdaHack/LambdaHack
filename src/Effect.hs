@@ -10,6 +10,8 @@ data Effect =
   | SummonFriend
   | SummonEnemy
   | ApplyPerfume
+  | Regneration
+  | Searching
   deriving (Show, Eq, Ord)
 
 effectToName :: Effect -> String
@@ -22,3 +24,5 @@ effectToName Dominate = "of domination"
 effectToName SummonFriend = "of aid calling"
 effectToName SummonEnemy = "of summoning"
 effectToName ApplyPerfume = "of rose water"
+effectToName Regneration = "of regeneration"
+effectToName Searching = "of searching"

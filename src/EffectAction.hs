@@ -55,7 +55,7 @@ effectToAction Effect.Heal source target power msg = do
       let upd m = m { mhp = min (nhpMax (mkind m)) (mhp m + power) }
       updateAnyActor target upd
       pl <- gets splayer
-      when (target == pl) $ messageAdd "You feel better."  -- TODO: use msg, if perceived, etc.
+      when (target == pl) $ messageAdd "You feel better."  -- TODO: use msg, if perceived, etc. Eliminate "you" in singular, but keep it in plural.
       return True
 effectToAction (Effect.Wound nDm) source target power msg = do
   n <- liftIO $ rndToIO $ rollDice nDm
@@ -122,6 +122,12 @@ effectToAction Effect.ApplyPerfume source target _ _ = do
       modify (updateLevel upd)
       messageAdd "The fragrance quells all scents."
       return True
+effectToAction Effect.Regneration source target power msg =
+  effectToAction Effect.Heal source target power msg
+effectToAction Effect.Searching source target power msg = do
+  pl <- gets splayer
+  when (source == pl) $ messageAdd "It gets lost and you search in vain."
+  return True
 
 -- | The source actor affects the target actor, with a given item.
 -- If either actor is a hero, the item may get identified.

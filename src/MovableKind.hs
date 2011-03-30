@@ -79,7 +79,7 @@ eye = MovableKind
     nname   = "the reducible eye",
     nsight  = True,
     nsmell  = False,
-    niq     = 10,
+    niq     = 12,
     nregen  = 1500,
     nfreq   = 6
   }
@@ -92,7 +92,7 @@ fastEye = MovableKind
     nname   = "the super-fast eye",
     nsight  = True,
     nsmell  = False,
-    niq     = 3,
+    niq     = 8,
     nregen  = 1500,
     nfreq   = 1
   }

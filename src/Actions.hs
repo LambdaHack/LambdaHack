@@ -402,10 +402,14 @@ cycleHero =
 search :: Action ()
 search =
   do
-    lmap <- gets (lmap . slevel)
-    ploc <- gets (mloc . getPlayerBody)
-    let searchTile (Tile (Door hv (Just n)) x, t') =
-          (Tile (Door hv (Just (max (n - 1) 0))) x, t')
+    lmap   <- gets (lmap . slevel)
+    ploc   <- gets (mloc . getPlayerBody)
+    pitems <- gets (mitems . getPlayerBody)
+    let delta = case strongestItem pitems "ring" of
+                  Just i  -> 1 + ipower i
+                  Nothing -> 1
+        searchTile (Tile (Door hv (Just n)) x, t') =
+          (Tile (Door hv (Just (max (n - delta) 0))) x, t')
         searchTile t = t
         f l m = M.adjust searchTile (shift ploc m) l
         slmap = foldl' f lmap moves
@@ -588,9 +592,14 @@ regenerateLevelHP :: Action ()
 regenerateLevelHP =
   do
     time  <- gets stime
-    let upd m = if time `mod` (nregen (mkind m)) /= 0
-                then m
-                else m { mhp = min (nhpMax (mkind m)) (mhp m + 1) }
+    let upd m =
+          let regen = nregen (mkind m) `div`
+                      case strongestItem (mitems m) "amulet" of
+                        Just i  -> ipower i
+                        Nothing -> 1
+          in if time `mod` regen /= 0
+             then m
+             else m { mhp = min (nhpMax (mkind m)) (mhp m + 1) }
     -- We really want hero selection to be a purely UI distinction,
     -- so all heroes need to regenerate, not just the player.
     -- Only the heroes on the current level regenerate (others are frozen
