@@ -245,7 +245,7 @@ stdKeybindings = Keybindings
 
                (K.Char '*',  monsterCommand),
                (K.Char '/',  floorCommand),
-               (K.Char ':',  floorCommand),  -- synonym for backward compat.
+               (K.Char ':',  floorCommand),   -- synonym for backward compat.
                (K.Tab     ,  heroCommand),
 
                -- items
@@ -256,6 +256,7 @@ stdKeybindings = Keybindings
                (K.Char 'q',  quaffCommand),
                (K.Char 'r',  readCommand),
                (K.Char 't',  throwCommand),
+               (K.Char 'v',  throwCommand),   -- synonym for Angband comapt.
                (K.Char 'a',  aimCommand),
 
                -- wait
@@ -267,14 +268,13 @@ stdKeybindings = Keybindings
                (K.Char 'Q',  quitCommand),
 
                -- debug modes
-               (K.Char 'V',  Undescribed $ modify toggleVision     >> withPerception playerCommand),
-               (K.Char 'R',  Undescribed $ modify toggleSmell      >> playerCommand),
+               (K.Char 'R',  Undescribed $ modify toggleVision     >> withPerception playerCommand),
                (K.Char 'O',  Undescribed $ modify toggleOmniscient >> playerCommand),
                (K.Char 'T',  Undescribed $ modify toggleTerrain    >> playerCommand),
                (K.Char 'I',  Undescribed $ gets (lmeta . slevel) >>= abortWith),
 
                -- information for the player
-               (K.Char 'v',  Undescribed $ abortWith version),
+               (K.Char 'V',  Undescribed $ abortWith version),
                (K.Char 'M',  historyCommand),
                (K.Char 'D',  dumpCommand),
                (K.Char '?',  helpCommand),

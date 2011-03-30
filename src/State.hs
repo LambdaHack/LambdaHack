@@ -78,12 +78,10 @@ updateDungeon :: (Dungeon -> Dungeon) -> State -> State
 updateDungeon f s = s {sdungeon = f (sdungeon s)}
 
 toggleVision :: State -> State
-toggleVision s = s { ssensory = case ssensory s of Vision 1 -> Implicit
+toggleVision s = s { ssensory = case ssensory s of Vision 1 -> Smell
                                                    Vision n -> Vision (n-1)
-                                                   _        -> Vision 3 }
-
-toggleSmell :: State -> State
-toggleSmell s = s { ssensory = if ssensory s == Smell then Implicit else Smell }
+                                                   Smell    -> Implicit
+                                                   Implicit -> Vision 3 }
 
 toggleOmniscient :: State -> State
 toggleOmniscient s = s { sdisplay = if sdisplay s == Omniscient
