@@ -52,9 +52,9 @@ subjectVerbMObject m v o add =
   verbMovable (mkind m) v ++ " " ++
   objectMovable (mkind o) ++ add ++ "."
 
-subjectCompoundVerbIObject :: State -> Movable -> String -> String ->
+subjCompoundVerbIObj :: State -> Movable -> String -> String ->
                              Item -> String -> String
-subjectCompoundVerbIObject state m v p o add =
+subjCompoundVerbIObj state m v p o add =
   subjectMovable (mkind m) ++ " " ++
   compoundVerbMovable (mkind m) v p ++ " " ++
   objectItem state o ++ add ++ "."

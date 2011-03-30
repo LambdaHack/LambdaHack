@@ -196,9 +196,9 @@ findLocTry k l@(Level { lsize = sz, lmap = lm }) p pTry =
              then findLocTry (k - 1) l p pTry
              else findLoc l p
 
--- Actually, do not scatter the items around, it's too much work for the player.
-scatterItems :: [Item] -> Loc -> Level -> Level
-scatterItems items loc lvl@(Level { lmap = lmap }) =
+-- Actually, do not scatter items around, it's too much work for the player.
+dropItemsAt :: [Item] -> Loc -> Level -> Level
+dropItemsAt items loc lvl@(Level { lmap = lmap }) =
   let joinItems items = L.foldl' (\ acc i -> snd (joinItem i acc)) items
       t = lmap `at` loc
       nt = t { titems = joinItems items (titems t) }

@@ -135,6 +135,8 @@ letterLabel (Just c) = c : " - "
 
 -- | Adds an item to a list of items, joining equal items.
 -- Also returns the joined item.
+-- TODO: the resulting list can contain items with the same letter.
+-- TODO: name [Item] Inventory and have some invariants, e.g. no equal letters.
 joinItem :: Item -> [Item] -> (Item, [Item])
 joinItem i is =
   case findItem (equalItemIdentity i) is of

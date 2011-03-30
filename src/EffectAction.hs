@@ -84,7 +84,7 @@ effectToAction (Effect.Wound nDm) source target power msg = do
     updateAnyActor target $ \ m -> m { mhp = newHP }  -- Damage the target.
     when killed $ do
       -- Place the actor's possessions on the map.
-      dropItemsAt (mitems tm) (mloc tm)
+      modify (updateLevel (dropItemsAt (mitems tm) (mloc tm)))
       -- Clean bodies up.
       pl <- gets splayer
       if target == pl
@@ -236,9 +236,6 @@ gameOver showEndingScreens =
 calculateTotal :: State -> Int
 calculateTotal s =
   L.sum $ L.map itemPrice $ L.concatMap mitems (levelHeroList s)
-
-dropItemsAt :: [Item] -> Loc -> Action ()
-dropItemsAt is loc = modify (updateLevel (scatterItems is loc))
 
 -- | Handle current score and display it with the high scores. Scores
 -- should not be shown during the game, because ultimately the worth of items might give

@@ -41,15 +41,14 @@ import EffectAction
 
 -- | Display inventory
 inventory :: Action a
-inventory =
-  do
-    items <- gets (mitems . getPlayerBody)
-    if L.null items
-      then abortWith "You are not carrying anything"
-      else do
-             displayItems "This is what you are carrying:" True items
-             session getConfirm
-             abortWith ""
+inventory = do
+  items <- gets (mitems . getPlayerBody)
+  if L.null items
+    then abortWith "You are not carrying anything"
+    else do
+           displayItems "This is what you are carrying:" True items
+           session getConfirm
+           abortWith ""
 
 -- | Let the player choose any item with a given group name.
 -- Note that this does not guarantee an item from the group to be chosen,
@@ -75,7 +74,7 @@ applyGroupItem groupName verb = do
     then abortWith "You are not carrying anything."
     else do
       iOpt <- getGroupItem is groupName
-              ("What to " ++ verb ++ "?") "in your inventory"
+                ("What to " ++ verb ++ "?") "in your inventory"
       case iOpt of
         Just item@(Item { ikind = ik }) -> do
           -- only one item consumed, even if several in inventory
@@ -85,7 +84,7 @@ applyGroupItem groupName verb = do
               consumed = item { icount = 1 }
           message (subjectVerbIObject state pbody v consumed "")
           pl <- gets splayer
-          b <- itemEffectAction consumed pl pl
+          b  <- itemEffectAction consumed pl pl
           when b $ removeFromInventory consumed
         Nothing -> neverMind True
   playerAdvanceTime
@@ -104,7 +103,7 @@ zapGroupItem groupName verb = do
     then abortWith "You are not carrying anything."
     else do
       iOpt <- getGroupItem is groupName
-              ("What to " ++ verb ++ "?") "in your inventory"
+                ("What to " ++ verb ++ "?") "in your inventory"
       case iOpt of
         Just item@(Item { ikind = ik }) -> do
           -- only one item consumed, even if several in inventory
@@ -122,10 +121,10 @@ zapGroupItem groupName verb = do
                      Just ta -> do
                        b <- itemEffectAction consumed pl ta
                        when (not b) $
-                         modify (updateLevel (scatterItems [consumed] loc))
+                         modify (updateLevel (dropItemsAt [consumed] loc))
                      Nothing -> do
                        message (subjectVerbIObject state pbody verb consumed "")
-                       modify (updateLevel (scatterItems [consumed] loc))
+                       modify (updateLevel (dropItemsAt [consumed] loc))
               else abortWith "target not reachable"
         Nothing -> neverMind True
   playerAdvanceTime
@@ -143,24 +142,22 @@ throwItem :: Action ()
 throwItem = zapGroupItem "dart" "throw"
 
 dropItem :: Action ()
-dropItem =
-  do
-    state <- get
-    pbody <- gets getPlayerBody
-    ploc <- gets (mloc . getPlayerBody)
-    items <- gets (mitems . getPlayerBody)
-    if L.null items
-      then abortWith "You are not carrying anything."
-      else do
-             i <- getAnyItem "What to drop?" items "inventory"
-             case i of
-               Just i' ->
-                 do
-                   removeFromInventory i'
-                   message (subjectVerbIObject state pbody "drop" i' "")
-                   dropItemsAt [i'] ploc
-               Nothing -> neverMind True
-    playerAdvanceTime
+dropItem = do
+  state <- get
+  pbody <- gets getPlayerBody
+  ploc  <- gets (mloc . getPlayerBody)
+  items <- gets (mitems . getPlayerBody)
+  if L.null items
+    then abortWith "You are not carrying anything."
+    else do
+           iOpt <- getAnyItem "What to drop?" items "inventory"
+           case iOpt of
+             Just i -> do
+               removeFromInventory i
+               message (subjectVerbIObject state pbody "drop" i "")
+               modify (updateLevel (dropItemsAt [i] ploc))
+             Nothing -> neverMind True
+  playerAdvanceTime
 
 -- | Remove given item from the hero's inventory.
 removeFromInventory :: Item -> Action ()
@@ -171,58 +168,63 @@ removeFromInventory i =
 removeFromLoc :: Item -> Loc -> Action ()
 removeFromLoc i loc =
   modify (updateLevel (updateLMap adj))
-  where
-    adj = M.adjust (\ (t, rt) -> (remove t, rt)) loc
-    remove t = t { titems = removeItemByIdentity i (titems t) }
+    where
+      adj = M.adjust (\ (t, rt) -> (remove t, rt)) loc
+      remove t = t { titems = removeItemByIdentity i (titems t) }
 
 actorPickupItem :: Actor -> Action ()
-actorPickupItem actor =
-  do
-    state <- get
-    pl    <- gets splayer
-    per   <- currentPerception
-    lmap  <- gets (lmap . slevel)
-    movable <- gets (getActor actor)
-    let loc       = mloc movable
-    let t         = lmap `at` loc -- the map tile in question
-    let perceived = loc `S.member` ptvisible per
-    let isPlayer  = actor == pl
-    -- check if something is here to pick up
-    case titems t of
-      []     -> abortIfWith isPlayer "nothing here"
-      (i:rs) -> -- pick up first item; TODO: let player select item; not for monsters
-        case assignLetter (iletter i) (mletter movable) (mitems movable) of
-          Just l ->
-            do
-              let (ni, nitems) = joinItem (i { iletter = Just l }) (mitems movable)
-              -- message is dependent on who picks up and if the hero can perceive it
-              if isPlayer
-                then message (letterLabel (iletter ni) ++ objectItem state ni)
-                else when perceived $
-                       message $ subjectCompoundVerbIObject state movable "pick" "up" i ""
-              removeFromLoc i loc
-              -- add item to actor's inventory:
-              updateAnyActor actor $ \ m ->
-                m { mitems = nitems, mletter = maxLetter l (mletter movable) }
-          Nothing -> abortIfWith isPlayer "you cannot carry any more"
-    advanceTime actor
+actorPickupItem actor = do
+  state <- get
+  pl    <- gets splayer
+  per   <- currentPerception
+  lmap  <- gets (lmap . slevel)
+  body  <- gets (getActor actor)
+  let loc       = mloc body
+      t         = lmap `at` loc -- the map tile in question
+      perceived = loc `S.member` ptvisible per
+      isPlayer  = actor == pl
+  -- check if something is here to pick up
+  case titems t of
+    []   -> abortIfWith isPlayer "nothing here"
+    i:rs -> -- pick up first item; TODO: let player select item;not for monsters
+      case assignLetter (iletter i) (mletter body) (mitems body) of
+        Just l -> do
+          let (ni, nitems) = joinItem (i { iletter = Just l }) (mitems body)
+          -- message depends on who picks up and if a hero can perceive it
+          if isPlayer
+            then message (letterLabel (iletter ni) ++ objectItem state ni)
+            else when perceived $
+                   message $ subjCompoundVerbIObj state body "pick" "up" i ""
+          removeFromLoc i loc
+          -- add item to actor's inventory:
+          updateAnyActor actor $ \ m ->
+            m { mitems = nitems, mletter = maxLetter l (mletter body) }
+        Nothing -> abortIfWith isPlayer "you cannot carry any more"
+  advanceTime actor
 
 pickupItem :: Action ()
 pickupItem = do
   pl <- gets splayer
   actorPickupItem pl
 
--- TODO: I think that player handlers should be wrappers around more general actor handlers, but
--- the actor handlers should be performing specific actions, i.e., already specify the item to be
--- picked up. It doesn't make sense to invoke dialogues for arbitrary actors, and most likely the
--- decision for a monster is based on perceiving a particular item to be present, so it's already
--- known. In actor handlers we should make sure that messages are printed to the player only if the
+-- TODO: I think that player handlers should be wrappers
+-- around more general actor handlers, but
+-- the actor handlers should be performing
+-- specific actions, i.e., already specify the item to be
+-- picked up. It doesn't make sense to invoke dialogues
+-- for arbitrary actors, and most likely the
+-- decision for a monster is based on perceiving
+-- a particular item to be present, so it's already
+-- known. In actor handlers we should make sure
+-- that messages are printed to the player only if the
 -- hero can perceive the action.
+-- Perhaps this means half of this code should be split and moved
+-- to ItemState, to be independent of any IO code from Action/Display.
 
 -- | Let the player choose any item from a list of items.
 getAnyItem :: String ->  -- prompt
               [Item] ->  -- all objects in question
-              String ->  -- how to refer to the collection of objects, e.g. "in your inventory"
+              String ->  -- how to refer to the collection of objects
               Action (Maybe Item)
 getAnyItem prompt is isn = getItem prompt (const True) "Objects" is isn
 
@@ -231,29 +233,33 @@ getItem :: String ->              -- prompt message
            (Item -> Bool) ->      -- which items to consider suitable
            String ->              -- how to describe suitable objects
            [Item] ->              -- all objects in question
-           String ->              -- how to refer to the collection of objects, e.g. "in your inventory"
+           String ->              -- how to refer to the collection of objects
            Action (Maybe Item)
 getItem prompt p ptext is0 isn =
   let is = L.filter p is0
-      choice | L.null is = "[*, ESC]"
-             | otherwise = "[" ++ letterRange (concatMap (maybeToList . iletter) is) ++ ", ?, *, RET, ESC]"
-      r = do
-            message (prompt ++ " " ++ choice)
-            display
-            let h = session nextCommand >>= h'
-                h' e = case e of
-                         K.Char '?' -> do
-                                         -- filter for supposedly suitable objects
-                                         b <- displayItems (ptext ++ " " ++ isn) True is
-                                         if b then session (getOptionalConfirm (const r) h')
-                                              else r
-                         K.Char '*' -> do
-                                         -- show all objects
-                                         b <- displayItems ("Objects " ++ isn) True is0
-                                         if b then session (getOptionalConfirm (const r) h')
-                                              else r
-                         K.Char l   -> return (find (\ i -> maybe False (== l) (iletter i)) is0)
-                         K.Return   -> return (case is of [] -> Nothing ; i : _ -> Just i)
-                         _          -> return Nothing
-            h
-  in r
+      choice = if L.null is
+               then "[*, ESC]"
+               else let r = letterRange (concatMap (maybeToList . iletter) is)
+                    in  "[" ++ r ++ ", ?, *, RET, ESC]"
+      interact = do
+        message (prompt ++ " " ++ choice)
+        display
+        session nextCommand >>= perform
+      perform command =
+        case command of
+          K.Char '?' -> do
+            -- filter for supposedly suitable objects
+            b <- displayItems (ptext ++ " " ++ isn) True is
+            if b then session (getOptionalConfirm (const interact) perform)
+                 else interact
+          K.Char '*' -> do
+            -- show all objects
+            b <- displayItems ("Objects " ++ isn) True is0
+            if b then session (getOptionalConfirm (const interact) perform)
+                 else interact
+          K.Char l   ->
+            return (find (\ i -> maybe False (== l) (iletter i)) is0)
+          K.Return   ->  -- TODO: i should be the first displayed (except $)
+            return (case is of [] -> Nothing ; i : _ -> Just i)
+          _          -> return Nothing
+  in interact
