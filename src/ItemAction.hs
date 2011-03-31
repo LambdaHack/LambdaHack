@@ -44,7 +44,7 @@ inventory :: Action a
 inventory = do
   items <- gets (mitems . getPlayerBody)
   if L.null items
-    then abortWith "You are not carrying anything"
+    then abortWith "You are not carrying anything."
     else do
            displayItems "This is what you are carrying:" True items
            session getConfirm
@@ -70,23 +70,20 @@ applyGroupItem groupName verb = do
   state <- get
   pbody <- gets getPlayerBody
   is    <- gets (mitems . getPlayerBody)
-  if L.null is
-    then abortWith "You are not carrying anything."
-    else do
-      iOpt <- getGroupItem is groupName
-                ("What to " ++ verb ++ "?") "in your inventory"
-      case iOpt of
-        Just item@(Item { ikind = ik }) -> do
-          -- only one item consumed, even if several in inventory
-          let v = if ItemKind.jname (ItemKind.getIK ik) == groupName
-                  then verb
-                  else "creatively apply"
-              consumed = item { icount = 1 }
-          message (subjectVerbIObject state pbody v consumed "")
-          pl <- gets splayer
-          b  <- itemEffectAction consumed pl pl
-          when b $ removeFromInventory consumed
-        Nothing -> neverMind True
+  iOpt  <- getGroupItem is groupName
+             ("What to " ++ verb ++ "?") "in your inventory"
+  case iOpt of
+    Just item@(Item { ikind = ik }) -> do
+      -- only one item consumed, even if several in inventory
+      let v = if ItemKind.jname (ItemKind.getIK ik) == groupName
+              then verb
+              else "creatively apply"
+          consumed = item { icount = 1 }
+      message (subjectVerbIObject state pbody v consumed "")
+      pl <- gets splayer
+      b  <- itemEffectAction consumed pl pl
+      when b $ removeFromInventory consumed
+    Nothing -> neverMind True
   playerAdvanceTime
 
 zapGroupItem :: String ->  -- name of the group
@@ -99,34 +96,31 @@ zapGroupItem groupName verb = do
   is     <- gets (mitems . getPlayerBody)
   target <- gets (mtarget . getPlayerBody)
   pl     <- gets splayer
-  if L.null is
-    then abortWith "You are not carrying anything."
-    else do
-      iOpt <- getGroupItem is groupName
-                ("What to " ++ verb ++ "?") "in your inventory"
-      case iOpt of
-        Just item@(Item { ikind = ik }) -> do
-          -- only one item consumed, even if several in inventory
-          let v = if ItemKind.jname (ItemKind.getIK ik) == groupName
-                  then verb
-                  else "furiously zap"
-              consumed = item { icount = 1 }
-          removeFromInventory consumed
-          case targetToLoc (ptvisible per) state of
-            Nothing  -> abortWith "target invalid"
-            Just loc ->
-              -- TODO: draw digital line and see if obstacles prevent firing
-              if actorReachesLoc pl loc per pl
-              then case locToActor loc state of
-                     Just ta -> do
-                       b <- itemEffectAction consumed pl ta
-                       when (not b) $
-                         modify (updateLevel (dropItemsAt [consumed] loc))
-                     Nothing -> do
-                       message (subjectVerbIObject state pbody verb consumed "")
-                       modify (updateLevel (dropItemsAt [consumed] loc))
-              else abortWith "target not reachable"
-        Nothing -> neverMind True
+  iOpt   <- getGroupItem is groupName
+              ("What to " ++ verb ++ "?") "in your inventory"
+  case iOpt of
+    Just item@(Item { ikind = ik }) -> do
+      -- only one item consumed, even if several in inventory
+      let v = if ItemKind.jname (ItemKind.getIK ik) == groupName
+              then verb
+              else "furiously zap"
+          consumed = item { icount = 1 }
+      removeFromInventory consumed
+      case targetToLoc (ptvisible per) state of
+        Nothing  -> abortWith "target invalid"
+        Just loc ->
+          -- TODO: draw digital line and see if obstacles prevent firing
+          if actorReachesLoc pl loc per pl
+          then case locToActor loc state of
+                 Just ta -> do
+                   b <- itemEffectAction consumed pl ta
+                   when (not b) $
+                     modify (updateLevel (dropItemsAt [consumed] loc))
+                 Nothing -> do
+                   message (subjectVerbIObject state pbody verb consumed "")
+                   modify (updateLevel (dropItemsAt [consumed] loc))
+          else abortWith "target not reachable"
+    Nothing -> neverMind True
   playerAdvanceTime
 
 quaffPotion :: Action ()
@@ -147,30 +141,37 @@ dropItem = do
   pbody <- gets getPlayerBody
   ploc  <- gets (mloc . getPlayerBody)
   items <- gets (mitems . getPlayerBody)
-  if L.null items
-    then abortWith "You are not carrying anything."
-    else do
-           iOpt <- getAnyItem "What to drop?" items "inventory"
-           case iOpt of
-             Just i -> do
-               removeFromInventory i
-               message (subjectVerbIObject state pbody "drop" i "")
-               modify (updateLevel (dropItemsAt [i] ploc))
-             Nothing -> neverMind True
+  iOpt  <- getAnyItem "What to drop?" items "inventory"
+  case iOpt of
+    Just i -> do
+      removeFromInventory i
+      message (subjectVerbIObject state pbody "drop" i "")
+      modify (updateLevel (dropItemsAt [i] ploc))
+    Nothing -> neverMind True
   playerAdvanceTime
 
--- | Remove given item from the hero's inventory.
+-- | Remove given item from the hero's inventory or floor.
+-- TODO: this is subtly wrong: if identical items are on the floor and in
+-- inventory, the floor one will be chosen, regardless of player intention..
 removeFromInventory :: Item -> Action ()
-removeFromInventory i =
-  updatePlayerBody (\ p -> p { mitems = removeItemByLetter i (mitems p) })
+removeFromInventory i = do
+  ploc <- gets (mloc . getPlayerBody)
+  b <- removeFromLoc i ploc
+  when (not b) $
+    updatePlayerBody (\ p -> p { mitems = removeItemByLetter i (mitems p) })
 
--- | Remove given item from the given location.
-removeFromLoc :: Item -> Loc -> Action ()
-removeFromLoc i loc =
-  modify (updateLevel (updateLMap adj))
-    where
-      adj = M.adjust (\ (t, rt) -> (remove t, rt)) loc
-      remove t = t { titems = removeItemByIdentity i (titems t) }
+-- | Remove given item from the given location. Tell if successful.
+removeFromLoc :: Item -> Loc -> Action Bool
+removeFromLoc i loc = do
+  lmap  <- gets (lmap . slevel)
+  if not $ L.any (equalItemIdentity i) (titems (lmap `at` loc))
+    then return False
+    else
+      modify (updateLevel (updateLMap adj)) >>
+      return True
+        where
+          adj = M.adjust (\ (t, rt) -> (remove t, rt)) loc
+          remove t = t { titems = removeItemByIdentity i (titems t) }
 
 actorPickupItem :: Actor -> Action ()
 actorPickupItem actor = do
@@ -195,7 +196,7 @@ actorPickupItem actor = do
             then message (letterLabel (iletter ni) ++ objectItem state ni)
             else when perceived $
                    message $ subjCompoundVerbIObj state body "pick" "up" i ""
-          removeFromLoc i loc
+          assertTrue $ removeFromLoc i loc
           -- add item to actor's inventory:
           updateAnyActor actor $ \ m ->
             m { mitems = nitems, mletter = maxLetter l (mletter body) }
@@ -222,6 +223,8 @@ pickupItem = do
 -- to ItemState, to be independent of any IO code from Action/Display.
 
 -- | Let the player choose any item from a list of items.
+-- TODO: you can drop an item on the floor, which works correctly,
+-- but is weird and useless.
 getAnyItem :: String ->  -- prompt
               [Item] ->  -- all objects in question
               String ->  -- how to refer to the collection of objects
@@ -235,13 +238,21 @@ getItem :: String ->              -- prompt message
            [Item] ->              -- all objects in question
            String ->              -- how to refer to the collection of objects
            Action (Maybe Item)
-getItem prompt p ptext is0 isn =
-  let is = L.filter p is0
+getItem prompt p ptext is0 isn = do
+  lmap  <- gets (lmap . slevel)
+  body  <- gets getPlayerBody
+  let loc       = mloc body
+      t         = lmap `at` loc -- the map tile in question
+      tis       = titems t
+      floorMsg  = if L.null tis then "" else " _,"
+      is = L.filter p is0
       choice = if L.null is
-               then "[*, ESC]"
+               then "[*," ++ floorMsg ++ " ESC]"
                else let r = letterRange (concatMap (maybeToList . iletter) is)
-                    in  "[" ++ r ++ ", ?, *, RET, ESC]"
+                    in  "[" ++ r ++ ", ?, *," ++ floorMsg ++ " RET, ESC]"
       interact = do
+        when (L.null is0 && L.null tis) $
+          abortWith "You are not carrying anything."
         message (prompt ++ " " ++ choice)
         display
         session nextCommand >>= perform
@@ -257,9 +268,14 @@ getItem prompt p ptext is0 isn =
             b <- displayItems ("Objects " ++ isn) True is0
             if b then session (getOptionalConfirm (const interact) perform)
                  else interact
+          K.Char '_' ->
+            case tis of
+              []   -> return Nothing
+              i:rs -> -- use first item; TODO: let player select item
+                      return $ Just i
           K.Char l   ->
             return (find (\ i -> maybe False (== l) (iletter i)) is0)
           K.Return   ->  -- TODO: i should be the first displayed (except $)
             return (case is of [] -> Nothing ; i : _ -> Just i)
           _          -> return Nothing
-  in interact
+  interact

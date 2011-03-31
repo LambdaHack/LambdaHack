@@ -152,6 +152,7 @@ keyTranslate "asterisk"      = Just (K.Char '*')
 keyTranslate "KP_Multiply"   = Just (K.Char '*')
 keyTranslate "slash"         = Just (K.Char '/')
 keyTranslate "KP_Divide"     = Just (K.Char '/')
+keyTranslate "underscore"    = Just (K.Char '_')
 keyTranslate "Escape"        = Just K.Esc
 keyTranslate "Return"        = Just K.Return
 keyTranslate "Tab"           = Just K.Tab
