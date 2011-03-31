@@ -44,9 +44,9 @@ inventory :: Action a
 inventory = do
   items <- gets (mitems . getPlayerBody)
   if L.null items
-    then abortWith "You are not carrying anything."
+    then abortWith "Not carrying anything."
     else do
-           displayItems "This is what you are carrying:" True items
+           displayItems "Carrying:" True items
            session getConfirm
            abortWith ""
 
@@ -71,7 +71,7 @@ applyGroupItem groupName verb = do
   pbody <- gets getPlayerBody
   is    <- gets (mitems . getPlayerBody)
   iOpt  <- getGroupItem is groupName
-             ("What to " ++ verb ++ "?") "in your inventory"
+             ("What to " ++ verb ++ "?") "in inventory"
   case iOpt of
     Just item@(Item { ikind = ik }) -> do
       -- only one item consumed, even if several in inventory
@@ -82,7 +82,7 @@ applyGroupItem groupName verb = do
       message (subjectVerbIObject state pbody v consumed "")
       pl <- gets splayer
       b  <- itemEffectAction consumed pl pl
-      when b $ removeFromInventory consumed
+      when b $ removeFromInventory consumed (mloc pbody)
     Nothing -> neverMind True
   playerAdvanceTime
 
@@ -97,7 +97,7 @@ zapGroupItem groupName verb = do
   target <- gets (mtarget . getPlayerBody)
   pl     <- gets splayer
   iOpt   <- getGroupItem is groupName
-              ("What to " ++ verb ++ "?") "in your inventory"
+              ("What to " ++ verb ++ "?") "in inventory"
   case iOpt of
     Just item@(Item { ikind = ik }) -> do
       -- only one item consumed, even if several in inventory
@@ -105,7 +105,7 @@ zapGroupItem groupName verb = do
               then verb
               else "furiously zap"
           consumed = item { icount = 1 }
-      removeFromInventory consumed
+      removeFromInventory consumed (mloc pbody)
       case targetToLoc (ptvisible per) state of
         Nothing  -> abortWith "target invalid"
         Just loc ->
@@ -144,7 +144,7 @@ dropItem = do
   iOpt  <- getAnyItem "What to drop?" items "inventory"
   case iOpt of
     Just i -> do
-      removeFromInventory i
+      removeFromInventory i (mloc pbody)
       message (subjectVerbIObject state pbody "drop" i "")
       modify (updateLevel (dropItemsAt [i] ploc))
     Nothing -> neverMind True
@@ -152,10 +152,13 @@ dropItem = do
 
 -- | Remove given item from the hero's inventory or floor.
 -- TODO: this is subtly wrong: if identical items are on the floor and in
--- inventory, the floor one will be chosen, regardless of player intention..
-removeFromInventory :: Item -> Action ()
-removeFromInventory i = do
-  ploc <- gets (mloc . getPlayerBody)
+-- inventory, the floor one will be chosen, regardless of player intention.
+-- TODO: right now it ugly hacks (with the ploc) around removing items
+-- of dead heros/monsters. The subtle incorrectness helps here a lot,
+-- because itmes of dead heroes land on the floor, so we used them up
+-- in inventory, but remove them after use from the floor.
+removeFromInventory :: Item -> Loc -> Action ()
+removeFromInventory i ploc = do
   b <- removeFromLoc i ploc
   when (not b) $
     updatePlayerBody (\ p -> p { mitems = removeItemByLetter i (mitems p) })
@@ -200,7 +203,7 @@ actorPickupItem actor = do
           -- add item to actor's inventory:
           updateAnyActor actor $ \ m ->
             m { mitems = nitems, mletter = maxLetter l (mletter body) }
-        Nothing -> abortIfWith isPlayer "you cannot carry any more"
+        Nothing -> abortIfWith isPlayer "cannot carry any more"
   advanceTime actor
 
 pickupItem :: Action ()
@@ -252,7 +255,7 @@ getItem prompt p ptext is0 isn = do
                     in  "[" ++ r ++ ", ?, *," ++ floorMsg ++ " RET, ESC]"
       interact = do
         when (L.null is0 && L.null tis) $
-          abortWith "You are not carrying anything."
+          abortWith "Not carrying anything."
         message (prompt ++ " " ++ choice)
         display
         session nextCommand >>= perform

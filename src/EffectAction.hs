@@ -40,6 +40,9 @@ import qualified Effect
 -- | The source actor affects the target actor, with a given effect and power.
 -- Both actors are on the current level and can be the same actor.
 -- The bool result indicates if the actors identify the effect.
+-- TODO: separately define messages for the case when source == target
+-- and for the other case; then use the messages outside of effectToAction,
+-- depending on the returned bool, perception and identity of the actors.
 effectToAction :: Effect.Effect -> Actor -> Actor -> Int -> String ->
                   Action Bool
 effectToAction Effect.NoEffect source target power msg = do
@@ -55,7 +58,8 @@ effectToAction Effect.Heal source target power msg = do
       let upd m = m { mhp = min (nhpMax (mkind m)) (mhp m + power) }
       updateAnyActor target upd
       pl <- gets splayer
-      when (target == pl) $ messageAdd "You feel better."  -- TODO: use msg, if perceived, etc. Eliminate "you" in singular, but keep it in plural.
+      when (target == pl) $
+        messageAdd $ subjectMovableVerb (mkind m) "feel" ++ " better."
       return True
 effectToAction (Effect.Wound nDm) source target power msg = do
   n <- liftIO $ rndToIO $ rollDice nDm
@@ -74,7 +78,7 @@ effectToAction (Effect.Wound nDm) source target power msg = do
        then return ()  -- Unseen monster quaffs a potion of wounding.
        else messageAdd $
          if source == target && target == pl
-         then "You feel wounded."
+         then subjectMovableVerb (mkind tm) "feel" ++ " wounded."
          else if not tvis
               then "You hear some noises."
               else if source == target || not svis
