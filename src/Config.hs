@@ -1,5 +1,5 @@
 module Config
- (CP, defaultCP, config, getOption, get, getFile, dump) where
+ (CP, defaultCP, config, getOption, getItems, get, getFile, dump) where
 
 import System.Directory
 import System.FilePath
@@ -72,15 +72,22 @@ config =
 getOption :: CF.Get_C a => CP -> CF.SectionSpec -> CF.OptionSpec -> Maybe a
 getOption (CP config) s o =
   if CF.has_option config s o
-    then Just $ forceEither $ CF.get config s o
-    else Nothing
+  then Just $ forceEither $ CF.get config s o
+  else Nothing
 
 -- | A simplified access to an option in a given section.
 get :: CF.Get_C a => CP -> CF.SectionSpec -> CF.OptionSpec -> a
 get (CP config) s o =
   if CF.has_option config s o
-    then forceEither $ CF.get config s o
-    else error $ "unknown config option: " ++ s ++ "." ++ o
+  then forceEither $ CF.get config s o
+  else error $ "unknown config option: " ++ s ++ "." ++ o
+
+-- | An association list corresponding to a section.
+getItems :: CP -> CF.SectionSpec -> [(String, String)]
+getItems (CP config) s =
+  if CF.has_section config s
+  then forceEither $ CF.items config s
+  else error $ "unknown config section: " ++ s
 
 -- | Looks up a file path in the config file and makes it absolute.
 -- If the LambdaHack configuration directory exists,

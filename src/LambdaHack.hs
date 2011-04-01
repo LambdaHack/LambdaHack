@@ -13,18 +13,22 @@ import Turn
 import qualified Config
 import MovableAdd
 import Item
+import qualified Keys as K
 
 main :: IO ()
 main = Display.startup start
 
 -- | Either restore a saved game, or setup a new game.
-start :: Display.Session -> IO ()
-start session = do
+start :: Display.InternalSession -> IO ()
+start internalSession = do
   -- check if we have a savegame
   config <- Config.config
+  let section = Config.getItems config "macros"
+      canonicalKey = K.macroKey section
+      session = (internalSession, canonicalKey)
   f <- Save.file config
-  x <- doesFileExist f
-  restored <- if x
+  b <- doesFileExist f
+  restored <- if b
               then do
                      Display.displayBlankConfirm session "Restoring save game"
                      Save.restoreGame config

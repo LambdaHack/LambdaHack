@@ -3,6 +3,9 @@ module Keys where
 import Prelude hiding (Left, Right)
 
 import Geometry hiding (Up, Down)
+import Data.Maybe
+import Data.List as L
+import Data.Map as M
 
 -- | Library-independent datatype to represent keys.
 data Key =
@@ -41,9 +44,10 @@ showKey Home     = "<home>"
 showKey (KP c)   = "<KeyPad " ++ [c] ++ ">"
 showKey (Dbg s)  = s
 
--- | Maps a movement key to the canonical form.
-canonicalKey :: Key -> Key
-canonicalKey e =
+-- | Maps a keypad movement key to the canonical form.
+-- Hard-coded not to bloat config files.
+canonMoveKey :: Key -> Key
+canonMoveKey e =
   case e of
     KP '8' -> Char 'K'
     KP '2' -> Char 'J'
@@ -130,3 +134,15 @@ keyTranslate ['K','P','_',c] = Just (KP c)
 keyTranslate [c]             = Just (Char c)
 keyTranslate _               = Nothing
 -- keyTranslate e               = Just (Dbg $ show e)
+
+-- | Maps a key to the canonical key for the command it denotes.
+-- Takes into account the keypad and any macros from a config file.
+-- Macros cannot depend on each other, but they can on canonMoveKey.
+macroKey :: [(String, String)] -> Key -> Key
+macroKey section =
+  let trans k = fromMaybe (error $ "unknown macro key " ++ k) (keyTranslate k)
+      trMacro (from, to) = (trans from, canonMoveKey $ trans to)
+      macros  = M.fromList $ L.map trMacro section
+  in  \ e -> case M.lookup e macros of
+               Just key -> key
+               Nothing  -> canonMoveKey e

@@ -245,22 +245,19 @@ stdKeybindings = Keybindings
 
                (K.Char '*',  monsterCommand),
                (K.Char '/',  floorCommand),
-               (K.Char ':',  floorCommand),   -- synonym for backward compat.
                (K.Tab     ,  heroCommand),
 
                -- items
                (K.Char 'g',  pickupCommand),
-               (K.Char ',',  pickupCommand),  -- synonym for backward compat.
                (K.Char 'd',  dropCommand),
                (K.Char 'i',  inventoryCommand),
                (K.Char 'q',  quaffCommand),
                (K.Char 'r',  readCommand),
                (K.Char 't',  throwCommand),
-               (K.Char 'v',  throwCommand),   -- synonym for Angband comapt.
                (K.Char 'a',  aimCommand),
 
                -- wait
-               -- (K.Char ' ',  waitCommand),
+               -- (K.Char ' ',  waitCommand),  -- dangerous, space is -more- key
                (K.Char '.',  waitCommand),
 
                -- saving or ending the game

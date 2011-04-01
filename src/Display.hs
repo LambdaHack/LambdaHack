@@ -37,19 +37,21 @@ import Item
 import qualified Keys as K
 import qualified Terrain
 
--- Re-exported from the display frontend.
-type Session = D.Session
-display = D.display
+-- Re-exported from the display frontend, with an extra slot for function
+-- for translating keys to a canonical form.
+type InternalSession = D.Session
+type Session = (InternalSession, K.Key -> K.Key)
+display area = D.display area . fst
 startup = D.startup
-shutdown = D.shutdown
+shutdown = D.shutdown . fst
 displayId = D.displayId
 
--- | Next event translated to a canonical form
+-- | Next event translated to a canonical form.
 nextCommand :: MonadIO m => Session -> m K.Key
 nextCommand session =
   do
-    e <- liftIO $ D.nextEvent session
-    return (K.canonicalKey e)
+    e <- liftIO $ D.nextEvent (fst session)
+    return (snd session e)
 
 -- | Displays a message on a blank screen. Waits for confirmation.
 displayBlankConfirm :: Session -> String -> IO Bool
@@ -183,13 +185,13 @@ displayLevel
         in case over (loc `shift` ((sy+1) * n, 0)) of
              Just c -> (D.defaultAttr, c)
              _      -> (set D.defaultAttr, char)
-      bottomLine =
+      status =
         take 30 (levelName ln ++ repeat ' ') ++
         take 10 ("T: " ++ show (time `div` 10) ++ repeat ' ') ++
         take 10 ("$: " ++ show wealth ++ repeat ' ') ++
         take 10 ("Dmg: " ++ show damage ++ repeat ' ') ++
         take 20 ("HP: " ++ show php ++ " (" ++ show xhp ++ ")" ++ repeat ' ')
-      disp n msg = display ((0, 0), (sy, sx)) session (dis n) msg bottomLine
+      disp n msg = display ((0, 0), (sy, sx)) session (dis n) msg status
       msgs = splitMsg sx msg
       perf k []     = perfo k ""
       perf k [xs]   = perfo k xs

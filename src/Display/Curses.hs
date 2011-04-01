@@ -12,7 +12,7 @@ import Control.Monad
 import Data.Maybe
 
 import Geometry
-import qualified Keys as K (Key(..), keyTranslate)
+import qualified Keys as K (K.Key(..))
 import qualified Color
 
 displayId = "curses"

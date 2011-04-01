@@ -12,7 +12,7 @@ import Data.IORef
 import Data.Map as M
 
 import Geometry
-import qualified Keys as K (Key(..), keyTranslate)
+import qualified Keys as K (K.Key(..), K.keyTranslate)
 import qualified Color
 
 displayId = "gtk"

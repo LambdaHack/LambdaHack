@@ -45,3 +45,8 @@ smellTimeout: 1000
 
 [ui]
 historyMax: 500
+
+[macros]
+colon: slash
+comma: g
+v: t
