@@ -41,7 +41,7 @@ showKey Home     = "<home>"
 showKey (KP c)   = "<KeyPad " ++ [c] ++ ">"
 showKey (Dbg s)  = s
 
--- | maps a key to the canonical key for the command it denotes
+-- | Maps a movement key to the canonical form.
 canonicalKey :: Key -> Key
 canonicalKey e =
   case e of
@@ -63,7 +63,7 @@ canonicalKey e =
     End    -> Char 'b'
     PgDn   -> Char 'n'
     Begin  -> Char '.'
-    k        -> k
+    k      -> k
 
 -- | Configurable event handler for the direction keys. Is used to
 --   handle player moves, but can also be used for directed commands
@@ -96,3 +96,37 @@ handleUDirection e h k =
     Char 'B' -> h downleft
     Char 'N' -> h downright
     _          -> k
+
+-- | Translate key from a GTK string description to our internal key type.
+-- To be used, in particular, for the macros in the config file.
+keyTranslate :: String -> Maybe Key
+keyTranslate "less"          = Just (Char '<')
+keyTranslate "greater"       = Just (Char '>')
+keyTranslate "period"        = Just (Char '.')
+keyTranslate "colon"         = Just (Char ':')
+keyTranslate "comma"         = Just (Char ',')
+keyTranslate "space"         = Just (Char ' ')
+keyTranslate "question"      = Just (Char '?')
+keyTranslate "dollar"        = Just (Char '$')
+keyTranslate "asterisk"      = Just (Char '*')
+keyTranslate "KP_Multiply"   = Just (Char '*')
+keyTranslate "slash"         = Just (Char '/')
+keyTranslate "KP_Divide"     = Just (Char '/')
+keyTranslate "underscore"    = Just (Char '_')
+keyTranslate "Escape"        = Just Esc
+keyTranslate "Return"        = Just Return
+keyTranslate "Tab"           = Just Tab
+keyTranslate "KP_Up"         = Just Up
+keyTranslate "KP_Down"       = Just Down
+keyTranslate "KP_Left"       = Just Left
+keyTranslate "KP_Right"      = Just Right
+keyTranslate "KP_Home"       = Just Home
+keyTranslate "KP_End"        = Just End
+keyTranslate "KP_Page_Up"    = Just PgUp
+keyTranslate "KP_Page_Down"  = Just PgDn
+keyTranslate "KP_Begin"      = Just Begin
+keyTranslate "KP_Enter"      = Just Return
+keyTranslate ['K','P','_',c] = Just (KP c)
+keyTranslate [c]             = Just (Char c)
+keyTranslate _               = Nothing
+-- keyTranslate e               = Just (Dbg $ show e)

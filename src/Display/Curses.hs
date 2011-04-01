@@ -2,7 +2,7 @@ module Display.Curses
   (displayId, startup, shutdown,
    display, nextEvent, setBG, setFG, defaultAttr, Session) where
 
-import UI.HSCurses.Curses as C hiding (setBold)
+import UI.HSCurses.Curses as C hiding (setBold, Attr)
 import qualified UI.HSCurses.CursesHelper as C
 import Data.List as L
 import Data.Map as M
@@ -12,7 +12,7 @@ import Control.Monad
 import Data.Maybe
 
 import Geometry
-import qualified Keys as K (Key(..))
+import qualified Keys as K (Key(..), keyTranslate)
 import qualified Color
 
 displayId = "curses"
@@ -27,10 +27,10 @@ startup k =
   do
     C.start
     cursSet CursorInvisible
-    let s = [ ((f,b), C.Style (toFColor f) (toBColor b))
+    let s = [ ((f, b), C.Style (toFColor f) (toBColor b))
             | f <- [minBound..maxBound],
               -- No more color combinations possible: 16*4, 64 is max.
-              b <- [Color.Black, Color.White, Color.Blue, Color.Magenta ] ]
+              b <- Color.legalBG ]
     nr <- colorPairs
     when (nr < L.length s) $
       C.end >>
@@ -43,30 +43,24 @@ startup k =
 shutdown :: Session -> IO ()
 shutdown w = C.end
 
-display :: Area -> Session -> (Loc -> (Display.Curses.Attr, Char)) -> String -> String -> IO ()
+display :: Area -> Session -> (Loc -> (Attr, Char)) -> String -> String -> IO ()
 display ((y0,x0),(y1,x1)) (Session { win = w, styles = s }) f msg status =
   do
     -- let defaultStyle = C.defaultCursesStyle
-    -- Terminals with white background require this and more:
+    -- Terminals with white background require this:
     let defaultStyle = s ! (Color.defFG, Color.defBG)
         canonical (c, d) = (fromMaybe Color.defFG c, fromMaybe Color.defBG d)
     C.erase
-    mvWAddStr w 0 0 msg
-    sequence_ [ let (a,c) = f (y,x) in C.setStyle (findWithDefault defaultStyle (canonical a) s) >> mvWAddStr w (y+1) x [c]
-              | x <- [x0..x1], y <- [y0..y1] ]
-    mvWAddStr w (y1+2) 0 status
+    C.setStyle defaultStyle
+    mvWAddStr w 0 0 (toWidth (x1 - x0 + 1) msg)  -- TODO: bytestring as in vty?
+    mvWAddStr w (y1+2) 0 (toWidth (x1 - x0 + 1) status)
+    sequence_ [ C.setStyle (findWithDefault defaultStyle (canonical a) s)
+                >> mvWAddStr w (y+1) x [c]
+              | x <- [x0..x1], y <- [y0..y1], let (a,c) = f (y,x) ]
     refresh
-{-
-    in  V.update vty (Pic NoCursor
-         ((renderBS attr (BS.pack (L.map (fromIntegral . ord) (toWidth (x1-x0+1) msg)))) <->
-          img <->
-          (renderBS attr (BS.pack (L.map (fromIntegral . ord) (toWidth (x1-x0+1) status))))))
--}
 
-{-
 toWidth :: Int -> String -> String
 toWidth n x = take n (x ++ repeat ' ')
--}
 
 keyTranslate :: C.Key -> Maybe K.Key
 keyTranslate e =
@@ -135,4 +129,4 @@ toBColor Color.Blue      = C.DarkBlueB
 toBColor Color.Magenta   = C.PurpleB
 toBColor Color.Cyan      = C.DarkCyanB
 toBColor Color.White     = C.WhiteB
-toBColor _              = C.BlackB  -- a limitation of curses
+toBColor _               = C.BlackB  -- a limitation of curses

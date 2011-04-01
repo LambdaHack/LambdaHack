@@ -12,7 +12,7 @@ import Data.IORef
 import Data.Map as M
 
 import Geometry
-import qualified Keys as K (Key(..))
+import qualified Keys as K (Key(..), keyTranslate)
 import qualified Color
 
 displayId = "gtk"
@@ -20,7 +20,7 @@ displayId = "gtk"
 data Session =
   Session {
     schan :: Chan String,
-    stags :: Map AttrKey TextTag,
+    stags :: Map Attr TextTag,
     sview :: TextView }
 
 startup :: (Session -> IO ()) -> IO ()
@@ -33,12 +33,14 @@ startup k =
     ttt <- textTagTableNew
     -- text attributes
     tts <- fmap M.fromList $
-           mapM (\ c -> do
-                          tt <- textTagNew Nothing
-                          textTagTableAdd ttt tt
-                          doAttr tt c
-                          return (c, tt))
-                [ x | c <- [minBound .. maxBound], x <- [FG c, BG c]]
+           mapM (\ ak -> do
+                           tt <- textTagNew Nothing
+                           textTagTableAdd ttt tt
+                           doAttr tt ak
+                           return (ak, tt))
+                [ (f, b) |
+                  f <- Nothing : L.map Just [minBound..maxBound],
+                  b <- Nothing : L.map Just Color.legalBG ]
 
     -- text buffer
     tb <- textBufferNew (Just ttt)
@@ -96,22 +98,23 @@ startup k =
 shutdown _ = mainQuit
 
 display :: Area -> Session -> (Loc -> (Attr, Char)) -> String -> String -> IO ()
-display ((y0,x0),(y1,x1)) session f msg status =
+display ((y0,x0), (y1,x1)) session f msg status =
   postGUIAsync $
   do
     tb <- textViewGetBuffer (sview session)
-    let text = unlines [ [ snd (f (y,x)) | x <- [x0..x1] ] | y <- [y0..y1] ]
+    let text = unlines [ [ snd (f (y, x)) | x <- [x0..x1] ] | y <- [y0..y1] ]
     textBufferSetText tb (msg ++ "\n" ++ text ++ status)
-    sequence_ [ setTo tb (stags session) (y,x) a |
-                y <- [y0..y1], x <- [x0..x1], let loc = (y,x), let (a,c) = f (y,x) ]
+    sequence_ [ setTo tb (stags session) (y, x) (fst (f (y, x))) |
+                y <- [y0..y1], x <- [x0..x1]]
 
-setTo :: TextBuffer -> Map AttrKey TextTag -> Loc -> Attr -> IO ()
-setTo tb tts (ly,lx) a =
+setTo :: TextBuffer -> Map Attr TextTag -> Loc -> Attr -> IO ()
+setTo _ _ _ (Nothing, Nothing) = return ()
+setTo tb tts (ly, lx) a =
   do
-    ib <- textBufferGetIterAtLineOffset tb (ly+1) lx
+    ib <- textBufferGetIterAtLineOffset tb (ly + 1) lx
     ie <- textIterCopy ib
     textIterForwardChar ie
-    mapM_ (\ c -> textBufferApplyTag tb (tts ! c) ib ie) a
+    textBufferApplyTag tb (tts ! a) ib ie
 
 -- | reads until a non-dead key encountered
 readUndeadChan :: Chan String -> IO String
@@ -139,55 +142,21 @@ readUndeadChan ch =
             "Caps_Lock"        -> True
             _                  -> False
 
-keyTranslate :: String -> Maybe K.Key
-keyTranslate "less"          = Just (K.Char '<')
-keyTranslate "greater"       = Just (K.Char '>')
-keyTranslate "period"        = Just (K.Char '.')
-keyTranslate "colon"         = Just (K.Char ':')
-keyTranslate "comma"         = Just (K.Char ',')
-keyTranslate "space"         = Just (K.Char ' ')
-keyTranslate "question"      = Just (K.Char '?')
-keyTranslate "dollar"        = Just (K.Char '$')
-keyTranslate "asterisk"      = Just (K.Char '*')
-keyTranslate "KP_Multiply"   = Just (K.Char '*')
-keyTranslate "slash"         = Just (K.Char '/')
-keyTranslate "KP_Divide"     = Just (K.Char '/')
-keyTranslate "underscore"    = Just (K.Char '_')
-keyTranslate "Escape"        = Just K.Esc
-keyTranslate "Return"        = Just K.Return
-keyTranslate "Tab"           = Just K.Tab
-keyTranslate "KP_Up"         = Just K.Up
-keyTranslate "KP_Down"       = Just K.Down
-keyTranslate "KP_Left"       = Just K.Left
-keyTranslate "KP_Right"      = Just K.Right
-keyTranslate "KP_Home"       = Just K.Home
-keyTranslate "KP_End"        = Just K.End
-keyTranslate "KP_Page_Up"    = Just K.PgUp
-keyTranslate "KP_Page_Down"  = Just K.PgDn
-keyTranslate "KP_Begin"      = Just K.Begin
-keyTranslate "KP_Enter"      = Just K.Return
-keyTranslate ['K','P','_',c] = Just (K.KP c)
-keyTranslate [c]             = Just (K.Char c)
-keyTranslate _               = Nothing
--- keyTranslate e               = Just (K.Dbg $ show e)
-
 nextEvent :: Session -> IO K.Key
 nextEvent session =
   do
     e <- readUndeadChan (schan session)
-    maybe (nextEvent session) return (keyTranslate e)
+    maybe (nextEvent session) return (K.keyTranslate e)
 
-type Attr = [AttrKey]
+type Attr = (Maybe Color.Color, Maybe Color.Color)
 
-data AttrKey =
-    FG Color.Color
-  | BG Color.Color
-  deriving (Eq, Ord)
+setFG c (_, b) = (Just c, b)
+setBG c (f, _) = (f, Just c)
+defaultAttr = (Nothing, Nothing)
 
-setBG c = (BG c :)
-setFG c = (FG c :)
-defaultAttr = []
-
-doAttr :: TextTag -> AttrKey -> IO ()
-doAttr tt (FG color) = set tt [ textTagForeground := Color.colorToRGB color ]
-doAttr tt (BG color) = set tt [ textTagBackground := Color.colorToRGB color ]
+doAttr :: TextTag -> Attr -> IO ()
+doAttr tt (Nothing, Nothing) = return ()
+doAttr tt (Just fg, Nothing) = set tt [textTagForeground := Color.colorToRGB fg]
+doAttr tt (Nothing, Just bg) = set tt [textTagBackground := Color.colorToRGB bg]
+doAttr tt (Just fg, Just bg) = set tt [textTagForeground := Color.colorToRGB fg,
+                                       textTagBackground := Color.colorToRGB bg]

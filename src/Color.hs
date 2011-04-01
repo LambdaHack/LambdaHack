@@ -33,6 +33,10 @@ defFG = White
 isBright :: Color -> Bool
 isBright c = fromEnum c > 7  -- for terminals that display bright via bold
 
+-- | Due to limitation of curses, only these are legal backgrounds.
+legalBG :: [Color]
+legalBG = [Black, White, Blue, Magenta]
+
 -- Heavily modified Linux console colors.
 colorToRGB :: Color -> String
 colorToRGB Black     = "#000000"
