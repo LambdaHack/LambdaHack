@@ -21,11 +21,11 @@ main = Display.startup start
 -- | Either restore a saved game, or setup a new game.
 start :: Display.InternalSession -> IO ()
 start internalSession = do
-  -- check if we have a savegame
   config <- Config.config
   let section = Config.getItems config "macros"
-      canonicalKey = K.macroKey section
+      !canonicalKey = K.macroKey section
       session = (internalSession, canonicalKey)
+  -- check if we have a savegame
   f <- Save.file config
   b <- doesFileExist f
   restored <- if b

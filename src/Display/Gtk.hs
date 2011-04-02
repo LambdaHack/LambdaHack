@@ -146,7 +146,7 @@ nextEvent :: Session -> IO K.Key
 nextEvent session =
   do
     e <- readUndeadChan (schan session)
-    maybe (nextEvent session) return (K.keyTranslate e)
+    return (K.keyTranslate e)
 
 type Attr = (Maybe Color.Color, Maybe Color.Color)
 

@@ -21,9 +21,9 @@ data Key =
   | End
   | Begin
   | Home
-  | KP Char    -- ^ a keypad key for a character (digits and operators)
-  | Char Char  -- ^ a single printable character
-  | Dbg String -- ^ an unknown key, collected for debugging
+  | KP Char        -- ^ a keypad key for a character (digits and operators)
+  | Char Char      -- ^ a single printable character
+  | Unknown String -- ^ an unknown key, collected to warn the user later
   deriving (Ord, Eq)
 
 showKey :: Key -> String
@@ -42,7 +42,7 @@ showKey End      = "<end>"
 showKey Begin    = "<begin>"
 showKey Home     = "<home>"
 showKey (KP c)   = "<KeyPad " ++ [c] ++ ">"
-showKey (Dbg s)  = s
+showKey (Unknown s) = s
 
 -- | Maps a keypad movement key to the canonical form.
 -- Hard-coded not to bloat config files.
@@ -103,46 +103,49 @@ handleUDirection e h k =
 
 -- | Translate key from a GTK string description to our internal key type.
 -- To be used, in particular, for the macros in the config file.
-keyTranslate :: String -> Maybe Key
-keyTranslate "less"          = Just (Char '<')
-keyTranslate "greater"       = Just (Char '>')
-keyTranslate "period"        = Just (Char '.')
-keyTranslate "colon"         = Just (Char ':')
-keyTranslate "comma"         = Just (Char ',')
-keyTranslate "space"         = Just (Char ' ')
-keyTranslate "question"      = Just (Char '?')
-keyTranslate "dollar"        = Just (Char '$')
-keyTranslate "asterisk"      = Just (Char '*')
-keyTranslate "KP_Multiply"   = Just (Char '*')
-keyTranslate "slash"         = Just (Char '/')
-keyTranslate "KP_Divide"     = Just (Char '/')
-keyTranslate "underscore"    = Just (Char '_')
-keyTranslate "Escape"        = Just Esc
-keyTranslate "Return"        = Just Return
-keyTranslate "Tab"           = Just Tab
-keyTranslate "KP_Up"         = Just Up
-keyTranslate "KP_Down"       = Just Down
-keyTranslate "KP_Left"       = Just Left
-keyTranslate "KP_Right"      = Just Right
-keyTranslate "KP_Home"       = Just Home
-keyTranslate "KP_End"        = Just End
-keyTranslate "KP_Page_Up"    = Just PgUp
-keyTranslate "KP_Page_Down"  = Just PgDn
-keyTranslate "KP_Begin"      = Just Begin
-keyTranslate "KP_Enter"      = Just Return
-keyTranslate ['K','P','_',c] = Just (KP c)
-keyTranslate [c]             = Just (Char c)
-keyTranslate _               = Nothing
--- keyTranslate e               = Just (Dbg $ show e)
+keyTranslate :: String -> Key
+keyTranslate "less"          = Char '<'
+keyTranslate "greater"       = Char '>'
+keyTranslate "period"        = Char '.'
+keyTranslate "colon"         = Char ':'
+keyTranslate "comma"         = Char ','
+keyTranslate "space"         = Char ' '
+keyTranslate "question"      = Char '?'
+keyTranslate "dollar"        = Char '$'
+keyTranslate "asterisk"      = Char '*'
+keyTranslate "KP_Multiply"   = Char '*'
+keyTranslate "slash"         = Char '/'
+keyTranslate "KP_Divide"     = Char '/'
+keyTranslate "underscore"    = Char '_'
+keyTranslate "Escape"        = Esc
+keyTranslate "Return"        = Return
+keyTranslate "Tab"           = Tab
+keyTranslate "KP_Up"         = Up
+keyTranslate "KP_Down"       = Down
+keyTranslate "KP_Left"       = Left
+keyTranslate "KP_Right"      = Right
+keyTranslate "KP_Home"       = Home
+keyTranslate "KP_End"        = End
+keyTranslate "KP_Page_Up"    = PgUp
+keyTranslate "KP_Page_Down"  = PgDn
+keyTranslate "KP_Begin"      = Begin
+keyTranslate "KP_Enter"      = Return
+keyTranslate ['K','P','_',c] = KP c
+keyTranslate [c]             = Char c
+keyTranslate s               = Unknown s
 
 -- | Maps a key to the canonical key for the command it denotes.
 -- Takes into account the keypad and any macros from a config file.
 -- Macros cannot depend on each other, but they can on canonMoveKey.
+-- This has to be fully evaluated to catch errors in macro definitions early.
 macroKey :: [(String, String)] -> Key -> Key
 macroKey section =
-  let trans k = fromMaybe (error $ "unknown macro key " ++ k) (keyTranslate k)
-      trMacro (from, to) = (trans from, canonMoveKey $ trans to)
-      macros  = M.fromList $ L.map trMacro section
+  let trans k = case keyTranslate k of
+                  Unknown s -> error $ "unknown macro key " ++ s
+                  kt -> kt
+      trMacro (from, to) = let !toTr = canonMoveKey $ trans to
+                           in  (trans from, toTr)
+      !macros = M.fromList $ L.map trMacro section
   in  \ e -> case M.lookup e macros of
                Just key -> key
                Nothing  -> canonMoveKey e

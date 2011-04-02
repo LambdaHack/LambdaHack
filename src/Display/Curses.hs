@@ -62,39 +62,41 @@ display ((y0,x0),(y1,x1)) (Session { win = w, styles = s }) f msg status =
 toWidth :: Int -> String -> String
 toWidth n x = take n (x ++ repeat ' ')
 
-keyTranslate :: C.Key -> Maybe K.Key
+keyTranslate :: C.Key -> K.Key
 keyTranslate e =
   case e of
-    C.KeyChar '\ESC' -> Just K.Esc
-    C.KeyExit        -> Just K.Esc
-    C.KeyChar '\n'   -> Just K.Return
-    C.KeyChar '\r'   -> Just K.Return
-    C.KeyEnter       -> Just K.Return
-    C.KeyChar '\t'   -> Just K.Tab
-    C.KeyUp          -> Just K.Up
-    C.KeyDown        -> Just K.Down
-    C.KeyLeft        -> Just K.Left
-    C.KeyRight       -> Just K.Right
-    C.KeyHome        -> Just K.Home
-    C.KeyPPage       -> Just K.PgUp
-    C.KeyEnd         -> Just K.End
-    C.KeyNPage       -> Just K.PgDn
-    C.KeyBeg         -> Just K.Begin
-    C.KeyB2          -> Just K.Begin
-    C.KeyClear       -> Just K.Begin
+    C.KeyChar '\ESC' -> K.Esc
+    C.KeyExit        -> K.Esc
+    C.KeyChar '\n'   -> K.Return
+    C.KeyChar '\r'   -> K.Return
+    C.KeyEnter       -> K.Return
+    C.KeyChar '\t'   -> K.Tab
+    C.KeyUp          -> K.Up
+    C.KeyDown        -> K.Down
+    C.KeyLeft        -> K.Left
+    C.KeyRight       -> K.Right
+    C.KeyHome        -> K.Home
+    C.KeyPPage       -> K.PgUp
+    C.KeyEnd         -> K.End
+    C.KeyNPage       -> K.PgDn
+    C.KeyBeg         -> K.Begin
+    C.KeyB2          -> K.Begin
+    C.KeyClear       -> K.Begin
     -- No KP_ keys in hscurses and they do not seem actively maintained.
     -- For now, movement keys are more important than hero selection:
     C.KeyChar c
-      | c `elem` ['1'..'9'] -> Just (K.KP c)
-      | otherwise           -> Just (K.Char c)
-    _                -> Nothing
---  _                -> Just (K.Dbg $ show e)
+      | c `elem` ['1'..'9'] -> K.KP c
+      | otherwise           -> K.Char c
+    _                       -> K.Unknown (show e)
 
 nextEvent :: Session -> IO K.Key
 nextEvent session =
   do
     e <- C.getKey refresh
-    maybe (nextEvent session) return (keyTranslate e)
+    return (keyTranslate e)
+--    case keyTranslate e of
+--      Unknown _ -> nextEvent session
+--      k -> return k
 
 type Attr = (Maybe Color.Color, Maybe Color.Color)
 

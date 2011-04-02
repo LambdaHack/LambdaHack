@@ -34,34 +34,33 @@ display ((y0,x0),(y1,x1)) vty f msg status =
 toWidth :: Int -> String -> String
 toWidth n x = take n (x ++ repeat ' ')
 
-keyTranslate :: V.Event -> Maybe K.Key
+keyTranslate :: V.Event -> K.Key
 keyTranslate e =
   case e of
-    V.EvKey KEsc []          -> Just K.Esc
-    V.EvKey KEnter []        -> Just K.Return
-    V.EvKey (KASCII '\t') [] -> Just K.Tab
-    V.EvKey KUp []           -> Just K.Up
-    V.EvKey KDown []         -> Just K.Down
-    V.EvKey KLeft []         -> Just K.Left
-    V.EvKey KRight []        -> Just K.Right
-    V.EvKey KHome []         -> Just K.Home
-    V.EvKey KPageUp []       -> Just K.PgUp
-    V.EvKey KEnd []          -> Just K.End
-    V.EvKey KPageDown []     -> Just K.PgDn
-    V.EvKey KBegin []        -> Just K.Begin
+    V.EvKey KEsc []          -> K.Esc
+    V.EvKey KEnter []        -> K.Return
+    V.EvKey (KASCII '\t') [] -> K.Tab
+    V.EvKey KUp []           -> K.Up
+    V.EvKey KDown []         -> K.Down
+    V.EvKey KLeft []         -> K.Left
+    V.EvKey KRight []        -> K.Right
+    V.EvKey KHome []         -> K.Home
+    V.EvKey KPageUp []       -> K.PgUp
+    V.EvKey KEnd []          -> K.End
+    V.EvKey KPageDown []     -> K.PgDn
+    V.EvKey KBegin []        -> K.Begin
     -- No KP_ keys in vty; see https://github.com/coreyoconnor/vty/issues/8
     -- For now, movement keys are more important than hero selection:
     V.EvKey (KASCII c) []
-      | c `elem` ['1'..'9']  -> Just (K.KP c)
-      | otherwise            -> Just (K.Char c)
-    _                        -> Nothing
---  _                        -> Just (K.Dbg $ show e)
+      | c `elem` ['1'..'9']  -> K.KP c
+      | otherwise            -> K.Char c
+    _                        -> K.Unknown (show e)
 
 nextEvent :: Session -> IO K.Key
 nextEvent session =
   do
     e <- V.next_event session
-    maybe (nextEvent session) return (keyTranslate e)
+    return (keyTranslate e)
 
 -- A hack to get bright colors via the bold attribute. Depending on terminal
 -- settings this is needed or not and the characters really get bold or not.
