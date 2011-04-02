@@ -74,15 +74,19 @@ sessionIO f = Action (\ s e p k a st ms -> f s >>= k st ms)
 
 -- | Display the current level, without any message.
 displayWithoutMessage :: Action Bool
-displayWithoutMessage = Action (\ s e p k a st ms -> displayLevel s p st "" Nothing >>= k st ms)
+displayWithoutMessage = Action (\ s e p k a st ms -> displayLevel False s p st "" Nothing >>= k st ms)
 
 -- | Display the current level, with the current message.
 display :: Action Bool
-display = Action (\ s e p k a st ms -> displayLevel s p st ms Nothing >>= k st ms)
+display = Action (\ s e p k a st ms -> displayLevel False s p st ms Nothing >>= k st ms)
+-- | Display the current level, with the current message.
+
+displayBW :: Action Bool
+displayBW = Action (\ s e p k a st ms -> displayLevel True s p st ms Nothing >>= k st ms)
 
 -- | Display an overlay on top of the current screen.
 overlay :: String -> Action Bool
-overlay txt = Action (\ s e p k a st ms -> displayLevel s p st ms (Just txt) >>= k st ms)
+overlay txt = Action (\ s e p k a st ms -> displayLevel False s p st ms (Just txt) >>= k st ms)
 
 -- | Set the current message.
 message :: Message -> Action ()
@@ -186,7 +190,7 @@ messageYesNo :: Message -> Action Bool
 messageYesNo msg =
   do
     message (msg ++ yesno)
-    display
+    displayBW  -- turn player's attention to the choice
     session getYesNo
 
 -- | Print a message and an overlay, await confirmation. Return value

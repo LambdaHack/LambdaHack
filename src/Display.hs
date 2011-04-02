@@ -114,9 +114,9 @@ stringByLocation sy xs =
     (k, \ (y,x) -> M.lookup y m >>= \ n -> M.lookup x n)
 
 displayLevel ::
-  Session -> Perceptions -> State -> Message -> Maybe String -> IO Bool
+  Bool -> Session -> Perceptions -> State -> Message -> Maybe String -> IO Bool
 displayLevel
-  session per
+  blackAndWhite session per
   (state@(State { scursor = cursor,
                   stime   = time,
                   sassocs = assocs,
@@ -181,7 +181,9 @@ displayLevel
               let fgSet = if fg == Color.defFG then id else D.setFG fg
                   bgSet = if bg == Color.defBG then id else D.setBG bg
               in  fgSet . bgSet
-            set = optComputationally . optVisually $ (fg, bg)
+            set = if blackAndWhite
+                  then const D.defaultAttr
+                  else optComputationally . optVisually $ (fg, bg)
         in case over (loc `shift` ((sy+1) * n, 0)) of
              Just c -> (D.defaultAttr, c)
              _      -> (set D.defaultAttr, char)
