@@ -1,12 +1,11 @@
 module Display.Gtk
-  (displayId, startup, shutdown,
-   display, nextEvent, setBG, setFG, defaultAttr, Session) where
+  (displayId, startup, shutdown, display, nextEvent, Session) where
 
 import qualified Data.Binary
 import Control.Monad
 import Control.Concurrent
 import Graphics.UI.Gtk.Gdk.Events  -- TODO: replace, deprecated
-import Graphics.UI.Gtk hiding (Attr)
+import Graphics.UI.Gtk
 import Data.List as L
 import Data.IORef
 import Data.Map as M
@@ -20,7 +19,7 @@ displayId = "gtk"
 data Session =
   Session {
     schan :: Chan String,
-    stags :: Map Attr TextTag,
+    stags :: Map Color.Attr TextTag,
     sview :: TextView }
 
 startup :: (Session -> IO ()) -> IO ()
@@ -38,9 +37,7 @@ startup k =
                            textTagTableAdd ttt tt
                            doAttr tt ak
                            return (ak, tt))
-                [ (f, b) |
-                  f <- Nothing : L.map Just [minBound..maxBound],
-                  b <- Nothing : L.map Just Color.legalBG ]
+                [ (f, b) | f <- [minBound..maxBound], b <- Color.legalBG ]
 
     -- text buffer
     tb <- textBufferNew (Just ttt)
@@ -97,7 +94,8 @@ startup k =
 
 shutdown _ = mainQuit
 
-display :: Area -> Session -> (Loc -> (Attr, Char)) -> String -> String -> IO ()
+display :: Area -> Session -> (Loc -> (Color.Attr, Char)) -> String -> String
+           -> IO ()
 display ((y0,x0), (y1,x1)) session f msg status =
   postGUIAsync $
   do
@@ -107,14 +105,14 @@ display ((y0,x0), (y1,x1)) session f msg status =
     sequence_ [ setTo tb (stags session) (y, x) (fst (f (y, x))) |
                 y <- [y0..y1], x <- [x0..x1]]
 
-setTo :: TextBuffer -> Map Attr TextTag -> Loc -> Attr -> IO ()
-setTo _ _ _ (Nothing, Nothing) = return ()
-setTo tb tts (ly, lx) a =
-  do
-    ib <- textBufferGetIterAtLineOffset tb (ly + 1) lx
-    ie <- textIterCopy ib
-    textIterForwardChar ie
-    textBufferApplyTag tb (tts ! a) ib ie
+setTo :: TextBuffer -> Map Color.Attr TextTag -> Loc -> Color.Attr -> IO ()
+setTo tb tts (ly, lx) a
+  | a == Color.defaultAttr = return ()
+  | otherwise = do
+      ib <- textBufferGetIterAtLineOffset tb (ly + 1) lx
+      ie <- textIterCopy ib
+      textIterForwardChar ie
+      textBufferApplyTag tb (tts ! a) ib ie
 
 -- | reads until a non-dead key encountered
 readUndeadChan :: Chan String -> IO String
@@ -148,15 +146,10 @@ nextEvent session =
     e <- readUndeadChan (schan session)
     return (K.keyTranslate e)
 
-type Attr = (Maybe Color.Color, Maybe Color.Color)
-
-setFG c (_, b) = (Just c, b)
-setBG c (f, _) = (f, Just c)
-defaultAttr = (Nothing, Nothing)
-
-doAttr :: TextTag -> Attr -> IO ()
-doAttr tt (Nothing, Nothing) = return ()
-doAttr tt (Just fg, Nothing) = set tt [textTagForeground := Color.colorToRGB fg]
-doAttr tt (Nothing, Just bg) = set tt [textTagBackground := Color.colorToRGB bg]
-doAttr tt (Just fg, Just bg) = set tt [textTagForeground := Color.colorToRGB fg,
-                                       textTagBackground := Color.colorToRGB bg]
+doAttr :: TextTag -> Color.Attr -> IO ()
+doAttr tt (fg, bg)
+  | (fg, bg) == Color.defaultAttr = return ()
+  | fg == Color.defFG = set tt [textTagBackground := Color.colorToRGB bg]
+  | bg == Color.defBG = set tt [textTagForeground := Color.colorToRGB fg]
+  | otherwise         = set tt [textTagForeground := Color.colorToRGB fg,
+                                textTagBackground := Color.colorToRGB bg]

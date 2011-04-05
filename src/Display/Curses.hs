@@ -1,15 +1,13 @@
 module Display.Curses
-  (displayId, startup, shutdown,
-   display, nextEvent, setBG, setFG, defaultAttr, Session) where
+  (displayId, startup, shutdown, display, nextEvent, Session) where
 
-import UI.HSCurses.Curses as C hiding (setBold, Attr)
+import UI.HSCurses.Curses as C
 import qualified UI.HSCurses.CursesHelper as C
 import Data.List as L
 import Data.Map as M
 import Data.Char
 import qualified Data.ByteString as BS
 import Control.Monad
-import Data.Maybe
 
 import Geometry
 import qualified Keys as K (K.Key(..))
@@ -43,20 +41,20 @@ startup k =
 shutdown :: Session -> IO ()
 shutdown w = C.end
 
-display :: Area -> Session -> (Loc -> (Attr, Char)) -> String -> String -> IO ()
+display :: Area -> Session -> (Loc -> (Color.Attr, Char)) -> String -> String
+           -> IO ()
 display ((y0,x0),(y1,x1)) (Session { win = w, styles = s }) f msg status =
   do
     -- let defaultStyle = C.defaultCursesStyle
     -- Terminals with white background require this:
-    let defaultStyle = s ! (Color.defFG, Color.defBG)
-        canonical (c, d) = (fromMaybe Color.defFG c, fromMaybe Color.defBG d)
+    let defaultStyle = s ! Color.defaultAttr
     C.erase
     C.setStyle defaultStyle
     mvWAddStr w 0 0 (toWidth (x1 - x0 + 1) msg)  -- TODO: bytestring as in vty?
     mvWAddStr w (y1+2) 0 (toWidth (x1 - x0 + 1) status)
-    sequence_ [ C.setStyle (findWithDefault defaultStyle (canonical a) s)
+    sequence_ [ C.setStyle (findWithDefault defaultStyle a s)
                 >> mvWAddStr w (y+1) x [c]
-              | x <- [x0..x1], y <- [y0..y1], let (a,c) = f (y,x) ]
+              | x <- [x0..x1], y <- [y0..y1], let (a, c) = f (y, x) ]
     refresh
 
 toWidth :: Int -> String -> String
@@ -97,12 +95,6 @@ nextEvent session =
 --    case keyTranslate e of
 --      Unknown _ -> nextEvent session
 --      k -> return k
-
-type Attr = (Maybe Color.Color, Maybe Color.Color)
-
-setFG c (_, b) = (Just c, b)
-setBG c (f, _) = (f, Just c)
-defaultAttr = (Nothing, Nothing)
 
 toFColor :: Color.Color -> C.ForegroundColor
 toFColor Color.Black     = C.BlackF

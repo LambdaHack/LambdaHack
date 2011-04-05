@@ -1,6 +1,5 @@
 module Display.Vty
-  (displayId, startup, shutdown,
-   display, nextEvent, setBG, setFG, defaultAttr, Session) where
+  (displayId, startup, shutdown, display, nextEvent, Session) where
 
 import Graphics.Vty as V
 import Data.List as L
@@ -18,17 +17,19 @@ type Session = V.Vty
 startup :: (Session -> IO ()) -> IO ()
 startup k = V.mkVty >>= k
 
-display :: Area -> Session -> (Loc -> (Attr, Char)) -> String -> String -> IO ()
+display :: Area -> Session -> (Loc -> (Color.Attr, Char)) -> String -> String
+           -> IO ()
 display ((y0,x0),(y1,x1)) vty f msg status =
   let img = (foldr (<->) V.empty_image .
              L.map (foldr (<|>) V.empty_image .
-                    L.map (\ (x,y) -> let (a,c) = f (y,x) in char a c)))
+                    L.map (\ (x,y) -> let (a, c) = f (y, x)
+                                      in  char (setAttr a) c)))
             [ [ (x,y) | x <- [x0..x1] ] | y <- [y0..y1] ]
   in  V.update vty (pic_for_image
-       (utf8_bytestring defaultAttr
+       (utf8_bytestring (setAttr Color.defaultAttr)
         (BS.pack (L.map (fromIntegral . ord) (toWidth (x1 - x0 + 1) msg))) <->
         img <->
-        utf8_bytestring defaultAttr
+        utf8_bytestring (setAttr Color.defaultAttr)
         (BS.pack (L.map (fromIntegral . ord) (toWidth (x1 - x0 + 1) status)))))
 
 toWidth :: Int -> String -> String
@@ -65,12 +66,16 @@ nextEvent session =
 -- A hack to get bright colors via the bold attribute. Depending on terminal
 -- settings this is needed or not and the characters really get bold or not.
 -- HCurses does this by default, but vty refuses to get crazy.
-hack c a  = if Color.isBright c then with_style a bold else a
-setFG c a = hack c $ with_fore_color a (aToc c)
-setBG c a = hack c $ with_back_color a (aToc c)
+hack c a = if Color.isBright c then with_style a bold else a
 
-defaultAttr = def_attr { attr_fore_color = SetTo (aToc Color.defFG),
-                         attr_back_color = SetTo (aToc Color.defBG) }
+setAttr (fg, bg) =
+-- This optimization breaks display for white background terminals:
+--  if (fg, bg) == Color.defaultAttr
+--  then def_attr
+--  else
+    hack fg $ hack bg $
+      def_attr { attr_fore_color = SetTo (aToc fg),
+                 attr_back_color = SetTo (aToc bg) }
 
 aToc :: Color.Color -> Color
 aToc Color.Black     = black

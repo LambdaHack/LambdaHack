@@ -60,7 +60,7 @@ nextCommand session =
 displayBlankConfirm :: Session -> String -> IO Bool
 displayBlankConfirm session txt =
   let x = txt ++ more
-      doBlank = const (D.defaultAttr, ' ')
+      doBlank = const (Color.defaultAttr, ' ')
   in do
        display ((0, 0), normalLevelSize) session doBlank x ""
        getConfirm session
@@ -173,23 +173,19 @@ displayLevel
             bg = if ctargeting cursor && loc == clocation cursor
                  then Color.defFG      -- highlight targeting cursor
                  else sVisBG vis rea  -- FOV debug
-            reverseVideo = (Color.defBG, Color.defFG)
+            reverseVideo = (snd Color.defaultAttr, fst Color.defaultAttr)
             optVisually (fg, bg) =
               if fg == Color.defBG
               then reverseVideo
               else if bg == Color.defFG && fg == Color.defFG
                    then reverseVideo
                    else (fg, bg)
-            optComputationally (fg, bg) =
-              let fgSet = if fg == Color.defFG then id else D.setFG fg
-                  bgSet = if bg == Color.defBG then id else D.setBG bg
-              in  fgSet . bgSet
-            set = if blackAndWhite
-                  then const D.defaultAttr
-                  else optComputationally . optVisually $ (fg, bg)
+            a = if blackAndWhite
+                then Color.defaultAttr
+                else optVisually (fg, bg)
         in case over (loc `shift` ((sy+1) * n, 0)) of
-             Just c -> (D.defaultAttr, c)
-             _      -> (set D.defaultAttr, char)
+             Just c -> (Color.defaultAttr, c)
+             _      -> (a, char)
       status =
         take 30 (levelName ln ++ repeat ' ') ++
         take 10 ("T: " ++ show (time `div` 10) ++ repeat ' ') ++
