@@ -100,22 +100,34 @@ display ((y0,x0), (y1,x1)) session f msg status =
   postGUIAsync $
   do
     tb <- textViewGetBuffer (sview session)
-    let memo  = [ unzip [ f (y, x) | x <- [x0..x1] ] | y <- [y0..y1] ]
-        chars = L.map snd memo
+    let memo  = [ let (as, cs) = unzip [ f (y, x) | x <- [x0..x1] ]
+                  in  ((y, as), cs)
+                | y <- [y0..y1] ]
         attrs = L.map fst memo
-        atrrAt (y, x) = attrs L.!! (y - y0) L.!! (x - x0)
-    textBufferSetText tb (msg ++ "\n" ++ unlines chars ++ status)
-    sequence_ [ setTo tb (stags session) (y, x) (atrrAt (y, x))
-              | y <- [y0..y1], x <- [x0..x1]]
+        chars = L.map snd memo
+    textBufferSetText tb (msg ++ "\n" ++ unlines chars ++ status)  -- TODO: BS
+    mapM_ (setTo tb (stags session) x0) attrs
 
-setTo :: TextBuffer -> Map Color.Attr TextTag -> Loc -> Color.Attr -> IO ()
-setTo tb tts (ly, lx) a
-  | a == Color.defaultAttr = return ()
-  | otherwise = do
-      ib <- textBufferGetIterAtLineOffset tb (ly + 1) lx
-      ie <- textIterCopy ib
-      textIterForwardChar ie
-      textBufferApplyTag tb (tts ! a) ib ie
+setTo :: TextBuffer -> Map Color.Attr TextTag -> X -> (Y, [Color.Attr]) -> IO ()
+setTo tb tts lx (ly, []) = return ()
+setTo tb tts lx (ly, a:as) = do
+  ib <- textBufferGetIterAtLineOffset tb (ly + 1) lx
+  ie <- textIterCopy ib
+  let setIter :: Color.Attr -> Int -> [Color.Attr] -> IO ()
+      setIter previous repetitions [] = do
+        textIterForwardChars ie repetitions
+        when (previous /= Color.defaultAttr) $
+          textBufferApplyTag tb (tts ! previous) ib ie
+      setIter previous repetitions (a:as)
+        | a == previous =
+            setIter a (repetitions + 1) as
+        | otherwise = do
+            textIterForwardChars ie repetitions
+            when (previous /= Color.defaultAttr) $
+              textBufferApplyTag tb (tts ! previous) ib ie
+            textIterForwardChars ib repetitions
+            setIter a 1 as
+  setIter a 1 as
 
 -- | reads until a non-dead key encountered
 readUndeadChan :: Chan String -> IO String
