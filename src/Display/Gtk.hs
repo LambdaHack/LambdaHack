@@ -100,10 +100,13 @@ display ((y0,x0), (y1,x1)) session f msg status =
   postGUIAsync $
   do
     tb <- textViewGetBuffer (sview session)
-    let text = unlines [ [ snd (f (y, x)) | x <- [x0..x1] ] | y <- [y0..y1] ]
-    textBufferSetText tb (msg ++ "\n" ++ text ++ status)
-    sequence_ [ setTo tb (stags session) (y, x) (fst (f (y, x))) |
-                y <- [y0..y1], x <- [x0..x1]]
+    let memo  = [ unzip [ f (y, x) | x <- [x0..x1] ] | y <- [y0..y1] ]
+        chars = L.map snd memo
+        attrs = L.map fst memo
+        atrrAt (y, x) = attrs L.!! (y - y0) L.!! (x - x0)
+    textBufferSetText tb (msg ++ "\n" ++ unlines chars ++ status)
+    sequence_ [ setTo tb (stags session) (y, x) (atrrAt (y, x))
+              | y <- [y0..y1], x <- [x0..x1]]
 
 setTo :: TextBuffer -> Map Color.Attr TextTag -> Loc -> Color.Attr -> IO ()
 setTo tb tts (ly, lx) a
