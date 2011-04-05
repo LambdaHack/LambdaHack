@@ -47,6 +47,13 @@ smellTimeout: 1000
 historyMax: 500
 
 [macros]
+; throw a dart at the closest monster
+; t: asterisk Return t Return
+; TODO: the above does not work yet; in gtk can be done via unGetChan,
+; unless we prefer an explicit command queue, with flushing, etc.
+;
+; Angband compatibility
+v: t
+; backward compatibility
 colon: slash
 comma: g
-v: t
