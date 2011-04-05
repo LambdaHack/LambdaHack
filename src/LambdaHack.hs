@@ -23,8 +23,8 @@ start :: Display.InternalSession -> IO ()
 start internalSession = do
   config <- Config.config
   let section = Config.getItems config "macros"
-      !canonicalKey = K.macroKey section
-      session = (internalSession, canonicalKey)
+      !macros = K.macroKey section
+      session = (internalSession, macros)
   -- check if we have a savegame
   f <- Save.file config
   b <- doesFileExist f

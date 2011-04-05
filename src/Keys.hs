@@ -44,6 +44,9 @@ showKey Home     = "<home>"
 showKey (KP c)   = "<KeyPad " ++ [c] ++ ">"
 showKey (Unknown s) = s
 
+instance Show Key where
+  show = showKey
+
 -- | Maps a keypad movement key to the canonical form.
 -- Hard-coded not to bloat config files.
 canonMoveKey :: Key -> Key
@@ -138,14 +141,14 @@ keyTranslate s               = Unknown s
 -- Takes into account the keypad and any macros from a config file.
 -- Macros cannot depend on each other, but they can on canonMoveKey.
 -- This has to be fully evaluated to catch errors in macro definitions early.
-macroKey :: [(String, String)] -> Key -> Key
+macroKey :: [(String, String)] -> M.Map Key Key
 macroKey section =
   let trans k = case keyTranslate k of
                   Unknown s -> error $ "unknown macro key " ++ s
                   kt -> kt
-      trMacro (from, to) = let !toTr = canonMoveKey $ trans to
-                           in  (trans from, toTr)
-      !macros = M.fromList $ L.map trMacro section
-  in  \ e -> case M.lookup e macros of
-               Just key -> key
-               Nothing  -> canonMoveKey e
+      trMacro (from, to) = let fromTr = trans from
+                               !toTr  = canonMoveKey $ trans to
+                           in  if fromTr == toTr
+                               then error $ "degenerate alias for " ++ show toTr
+                               else (fromTr, toTr)
+  in  M.fromList $ L.map trMacro section

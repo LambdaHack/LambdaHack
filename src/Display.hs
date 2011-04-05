@@ -40,7 +40,7 @@ import qualified Terrain
 -- Re-exported from the display frontend, with an extra slot for function
 -- for translating keys to a canonical form.
 type InternalSession = D.Session
-type Session = (InternalSession, K.Key -> K.Key)
+type Session = (InternalSession, M.Map K.Key K.Key)
 display area = D.display area . fst
 startup = D.startup
 shutdown = D.shutdown . fst
@@ -51,7 +51,10 @@ nextCommand :: MonadIO m => Session -> m K.Key
 nextCommand session =
   do
     e <- liftIO $ D.nextEvent (fst session)
-    return (snd session e)
+    return $
+      case M.lookup e (snd session) of
+        Just key -> key
+        Nothing  -> K.canonMoveKey e
 
 -- | Displays a message on a blank screen. Waits for confirmation.
 displayBlankConfirm :: Session -> String -> IO Bool
