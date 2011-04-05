@@ -9,6 +9,7 @@ import Graphics.UI.Gtk
 import Data.List as L
 import Data.IORef
 import Data.Map as M
+import qualified Data.ByteString.Char8 as BS
 
 import Geometry
 import qualified Keys as K (K.Key(..), K.keyTranslate)
@@ -100,12 +101,13 @@ display ((y0,x0), (y1,x1)) session f msg status =
   postGUIAsync $
   do
     tb <- textViewGetBuffer (sview session)
-    let memo  = [ let (as, cs) = unzip [ f (y, x) | x <- [x0..x1] ]
-                  in  ((y, as), cs)
-                | y <- [y0..y1] ]
+    let fLine y = let (as, cs) = unzip [ f (y, x) | x <- [x0..x1] ]
+                  in  ((y, as), BS.pack cs)
+        memo  = L.map fLine [y0..y1]
         attrs = L.map fst memo
         chars = L.map snd memo
-    textBufferSetText tb (msg ++ "\n" ++ unlines chars ++ status)  -- TODO: BS
+        bs    = [BS.pack msg, BS.pack "\n", BS.unlines chars, BS.pack status]
+    textBufferSetByteString tb (BS.concat bs)
     mapM_ (setTo tb (stags session) x0) attrs
 
 setTo :: TextBuffer -> Map Color.Attr TextTag -> X -> (Y, [Color.Attr]) -> IO ()

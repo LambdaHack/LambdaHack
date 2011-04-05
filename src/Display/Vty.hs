@@ -4,7 +4,7 @@ module Display.Vty
 import Graphics.Vty as V
 import Data.List as L
 import Data.Char
-import qualified Data.ByteString as BS
+import qualified Data.ByteString.Char8 as BS
 
 import Geometry
 import qualified Keys as K (K.Key(..))
@@ -27,10 +27,10 @@ display ((y0,x0),(y1,x1)) vty f msg status =
             [ [ (x,y) | x <- [x0..x1] ] | y <- [y0..y1] ]
   in  V.update vty (pic_for_image
        (utf8_bytestring (setAttr Color.defaultAttr)
-        (BS.pack (L.map (fromIntegral . ord) (toWidth (x1 - x0 + 1) msg))) <->
+        (BS.pack (toWidth (x1 - x0 + 1) msg)) <->
         img <->
         utf8_bytestring (setAttr Color.defaultAttr)
-        (BS.pack (L.map (fromIntegral . ord) (toWidth (x1 - x0 + 1) status)))))
+        (BS.pack (toWidth (x1 - x0 + 1) status))))
 
 toWidth :: Int -> String -> String
 toWidth n x = take n (x ++ repeat ' ')

@@ -6,7 +6,7 @@ import qualified UI.HSCurses.CursesHelper as C
 import Data.List as L
 import Data.Map as M
 import Data.Char
-import qualified Data.ByteString as BS
+import qualified Data.ByteString.Char8 as BS
 import Control.Monad
 
 import Geometry
@@ -50,7 +50,7 @@ display ((y0,x0),(y1,x1)) (Session { win = w, styles = s }) f msg status =
     let defaultStyle = s ! Color.defaultAttr
     C.erase
     C.setStyle defaultStyle
-    mvWAddStr w 0 0 (toWidth (x1 - x0 + 1) msg)  -- TODO: bytestring as in vty?
+    mvWAddStr w 0 0 (toWidth (x1 - x0 + 1) msg)  -- TODO: BS as in vty
     mvWAddStr w (y1+2) 0 (toWidth (x1 - x0 + 1) status)
     sequence_ [ C.setStyle (findWithDefault defaultStyle a s)
                 >> mvWAddStr w (y+1) x [c]
