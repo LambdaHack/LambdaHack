@@ -22,7 +22,7 @@ instance Monad Strategy where
                | x <- runStrategy m ]
 
 liftFrequency :: Frequency a -> Strategy a
-liftFrequency f = Strategy [f]
+liftFrequency f = Strategy $ return f
 
 instance MonadPlus Strategy where
   mzero = Strategy []
