@@ -51,10 +51,11 @@ actorSeesLoc    = actorPrLoc pvisible
 actorReachesLoc = actorPrLoc preachable
 
 -- Not quite correct if FOV not symmetric (Shadow).
-actorSeesActor :: Actor -> Actor -> Loc -> Loc -> Perceptions -> Actor -> Bool
-actorSeesActor actor1 actor2 loc1 loc2 per pl =
-  actorSeesLoc actor1 loc2 per pl ||
-  actorSeesLoc actor2 loc1 per pl
+actorReachesActor :: Actor -> Actor -> Loc -> Loc -> Perceptions -> Actor
+                     -> Bool
+actorReachesActor actor1 actor2 loc1 loc2 per pl =
+  actorReachesLoc actor1 loc2 per pl ||
+  actorReachesLoc actor2 loc1 per pl
 
 perception_ :: State -> Perceptions
 perception_ state@(State { splayer = pl,

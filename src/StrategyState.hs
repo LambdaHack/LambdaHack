@@ -35,7 +35,9 @@ strategy actor
     -- If no heroes on the level, monsters go at each other. TODO: let them
     -- earn XP by killing each other to make this dangerous to the player.
     foe = if L.null hs then ms else hs
-    foeVisible = L.filter (\ (a, l) -> actorSeesActor a actor l me per pl) foe
+    -- We assume monster sight is actually infravision, so light has no effect.
+    foeVisible = L.filter (\ (a, l) ->
+                            actorReachesActor a actor l me per pl) foe
     foeDist = L.map (\ (_, l) -> (distance (me, l), l)) foeVisible
     -- If the player is a monster, monsters spot and attack him when adjacent.
     ploc = mloc (getPlayerBody state)
