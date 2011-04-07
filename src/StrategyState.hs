@@ -6,6 +6,7 @@ import Data.Set as S
 import qualified Data.IntMap as IM
 import Data.Maybe
 import Control.Monad
+import Control.Exception (assert)
 
 import Geometry
 import Level
@@ -29,7 +30,7 @@ strategy actor
                                              lsmell = nsmap,
                                              lmap = lmap } })
          per =
-    dirToAction actor `liftM` strategy
+    strategy
   where
     -- TODO: set monster targets and then prefer targets to other heroes
     Movable { mkind = mk, mloc = me, mdir = mdir } = getActor actor oldState
@@ -77,18 +78,24 @@ strategy actor
       L.sortBy (\ (_, s1) (_, s2) -> compare s2 s1) $
       L.filter (\ (_, s) -> s > 0) $
       L.map (\ x -> (x, nsmap ! (me `shift` x) - time `max` 0)) moves
+    fromDir d = dirToAction actor `liftM` onlySensible d
 
     strategy =
-      onlySensible $
-        onlyTraitor moveFreely
-        .| onlyFoe moveFreely
-        .| (greedyMonster && lootHere me) .=> return (0,0)
-        .| moveTowards
+      fromDir moveAttack
+      .| (greedyMonster && lootHere me) .=> actionPickup
+      .| fromDir moveTowards
+      .| lootHere me .=> actionPickup
+      .| fromDir moveAround
+    actionPickup = return $ actorPickupItem actor
+    moveAttack =
+      onlyTraitor moveFreely
+      .| onlyFoe moveFreely
     moveTowards =
       (if pushyMonster then id else onlyUnoccupied) $
         nsight mk .=> towardsFoe moveFreely
-        .| lootHere me .=> return (0,0)
-        .| nsmell mk .=> foldr (.|) reject (L.map return smells)
+    moveAround =
+      (if pushyMonster then id else onlyUnoccupied) $
+        nsmell mk .=> foldr (.|) reject (L.map return smells)
         .| onlyOpenable moveFreely
         .| moveFreely
     moveFreely = onlyLoot moveRandomly
@@ -98,19 +105,14 @@ strategy actor
                  .| moveRandomly
 
 dirToAction :: Actor -> Dir -> Action ()
-dirToAction actor dir = do
-  let waiting = dir == (0,0)
-  let nmdir   = if waiting then Nothing else Just dir
-  -- advance time and update monster
-  updateAnyActor actor $ \ m -> m { mdir = nmdir }
+dirToAction actor dir =
+  assert (dir /= (0,0)) $ do
+  -- set new direction
+  updateAnyActor actor $ \ m -> m { mdir = Just dir }
+  -- perform action
   tryWith (advanceTime actor) $
     -- if the following action aborts, we just advance the time and continue
-    if waiting
-    then
-      -- monster is not moving, let's try to pick up an object
-      actorPickupItem actor
-    else
-      moveOrAttack True True actor dir
+    moveOrAttack True True actor dir
 
 onlyMoves :: (Dir -> Bool) -> Loc -> Strategy Dir -> Strategy Dir
 onlyMoves p l = only (\ x -> p (l `shift` x))
