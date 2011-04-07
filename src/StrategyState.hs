@@ -59,7 +59,7 @@ strategy actor
                          in  only (\ x -> distance (foeDir, x) <= 1)
     lootHere       = (\ x -> not $ L.null $ titems $ lmap `at` x)
     onlyLoot       = onlyMoves lootHere me
-    onlyKeepsDir   = only (\ x -> maybe True (\ d -> distance (d, x) <= 2) mdir)
+    onlyKeepsDir k = only (\ x -> maybe True (\ d -> distance (d, x) <= k) mdir)
     onlyUnoccupied = onlyMoves (unoccupied (levelMonsterList delState)) me
     -- Monsters don't see doors more secret than that. Enforced when actually
     -- opening doors, too, so that monsters don't cheat.
@@ -68,7 +68,6 @@ strategy actor
     accessibleHere = accessible lmap me
     onlySensible   = onlyMoves (\ l -> accessibleHere l || openableHere l) me
     greedyMonster  = niq mk < 5
-    steadyMonster  = niq mk >= 5
     pushyMonster   = not $ nsight mk
     smells         =
       L.map fst $
@@ -90,7 +89,9 @@ strategy actor
         .| onlyOpenable moveFreely
         .| moveFreely
     moveFreely = onlyLoot moveRandomly
-                 .| steadyMonster .=> onlyKeepsDir moveRandomly
+                 .| niq mk > 15 .=> onlyKeepsDir 0 moveRandomly
+                 .| niq mk > 10 .=> onlyKeepsDir 1 moveRandomly
+                 .| niq mk > 5  .=> onlyKeepsDir 2 moveRandomly
                  .| moveRandomly
 
 onlyMoves :: (Dir -> Bool) -> Loc -> Strategy Dir -> Strategy Dir
