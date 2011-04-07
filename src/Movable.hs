@@ -11,15 +11,14 @@ import MovableKind
 -- of properties form MovableKind, the intention is they may be modified
 -- temporarily, but will return to the original value over time. E.g., HP.
 data Movable = Movable
-  { mkind   :: !MovableKind,
-    mhp     :: !Int,
-    mdir    :: Maybe Dir,  -- for monsters: the dir the monster last moved; TODO: use target for this, instead and use mdir to signal the monster wants to switch position with a hero (if the monster is smart/big enough)
-                           -- for heroes: the dir the hero is running
-    mtarget :: Target,
-    mloc    :: !Loc,
-    mitems  :: [Item],     -- inventory
-    mletter :: !Char,      -- next inventory letter
-    mtime   :: !Time }     -- time of next action
+  { mkind   :: !MovableKind,  -- ^ kind of the movable; TODO: make this Int
+    mhp     :: !Int,       -- ^ current hit pints
+    mdir    :: Maybe Dir,  -- ^ the direction of running
+    mtarget :: Target,     -- ^ the target for distance attacks and AI
+    mloc    :: !Loc,       -- ^ current location
+    mitems  :: [Item],     -- ^ inventory
+    mletter :: !Char,      -- ^ next inventory letter
+    mtime   :: !Time }     -- ^ time of next action
   deriving Show
 
 instance Binary Movable where
@@ -46,7 +45,7 @@ instance Binary Movable where
 
 data Actor = AHero Int     -- ^ hero index (on the lheroes intmap)
            | AMonster Int  -- ^ monster index (on the lmonsters intmap)
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 isAHero :: Actor -> Bool
 isAHero (AHero _) = True

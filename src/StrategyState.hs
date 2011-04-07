@@ -6,6 +6,7 @@ import Data.Set as S
 import qualified Data.IntMap as IM
 import Data.Maybe
 import Control.Monad
+import Control.Monad.State hiding (State)
 import Control.Exception (assert)
 
 import Geometry
@@ -33,7 +34,8 @@ strategy actor
     strategy
   where
     -- TODO: set monster targets and then prefer targets to other heroes
-    Movable { mkind = mk, mloc = me, mdir = mdir } = getActor actor oldState
+    Movable { mkind = mk, mloc = me, mdir = mdir, mtarget = tgt } =
+      getActor actor oldState
     delState = deleteActor actor oldState
     -- If the player is a monster, monsters spot and attack him when adjacent.
     ploc = if isAHero pl || creturnLn cursor /= ln
@@ -46,15 +48,30 @@ strategy actor
          IM.assocs $ lheroes $ slevel delState
     ms = L.map (\ (i, m) -> (AMonster i, mloc m)) $
          IM.assocs $ lmonsters $ slevel delState
-    foes = if L.null hs then ms else hs
-    -- We assume monster sight is actually infravision, so light has no effect.
-    foeVisible = L.filter (\ (a, l) ->
-                            actorReachesActor a actor l me per pl) foes
-    foeDist = L.map (\ (_, l) -> (distance (me, l), l)) foeVisible
     -- Below, "foe" is the hero (or a monster) at floc, attacked by the actor.
-    floc = case foeVisible of
-             [] -> Nothing
-             _  -> Just $ snd $ L.minimum foeDist
+    (newTgt, floc) =
+      case tgt of
+        TEnemy a | focusedMonster ->
+          case findActorAnyLevel a delState of
+            Just (_, m) ->
+              let l = mloc m
+              in  if actorReachesActor a actor l me per pl
+                  then (tgt, Just l)
+                  else closest  -- TODO: got to the last know location
+            Nothing -> closest  -- enemy dead
+        TLoc loc -> (tgt, Just loc)  -- ignore everything and go to loc
+        _  -> closest
+    closest =
+      let foes = if L.null hs then ms else hs
+      -- We assume monster sight is infravision, so light has no effect.
+          foeVisible =
+            L.filter (\ (a, l) -> actorReachesActor a actor l me per pl) foes
+          foeDist = L.map (\ (a, l) -> (distance (me, l), l, a)) foeVisible
+      -- Below, "foe" is the hero (or a monster) at floc, attacked by the actor.
+      in  case foeDist of
+            [] -> (tgt, Nothing)
+            _  -> let (_, l, a) = L.minimum foeDist
+                  in  (TEnemy a, Just $ l)
     onlyFoe        = onlyMoves (maybe (const False) (==) floc) me
     towardsFoe     = case floc of
                        Nothing -> const mzero
@@ -72,6 +89,7 @@ strategy actor
     accessibleHere = accessible lmap me
     onlySensible   = onlyMoves (\ l -> accessibleHere l || openableHere l) me
     greedyMonster  = niq mk < 5
+    focusedMonster = niq mk > 10
     pushyMonster   = not $ nsight mk
     smells         =
       L.map fst $
@@ -79,17 +97,16 @@ strategy actor
       L.filter (\ (_, s) -> s > 0) $
       L.map (\ x -> (x, nsmap ! (me `shift` x) - time `max` 0)) moves
     fromDir d = dirToAction actor `liftM` onlySensible d
+    fromFoe d = setTarget actor newTgt `liftM` fromDir d
 
     strategy =
-      fromDir moveAttack
+      fromDir (onlyTraitor moveFreely)  -- traitor disguised; hard to target
+      .| fromFoe (onlyFoe moveFreely)
       .| (greedyMonster && lootHere me) .=> actionPickup
-      .| fromDir moveTowards
+      .| fromFoe moveTowards
       .| lootHere me .=> actionPickup
       .| fromDir moveAround
     actionPickup = return $ actorPickupItem actor
-    moveAttack =
-      onlyTraitor moveFreely
-      .| onlyFoe moveFreely
     moveTowards =
       (if pushyMonster then id else onlyUnoccupied) $
         nsight mk .=> towardsFoe moveFreely
@@ -113,6 +130,11 @@ dirToAction actor dir =
   tryWith (advanceTime actor) $
     -- if the following action aborts, we just advance the time and continue
     moveOrAttack True True actor dir
+
+setTarget :: Actor -> Target -> Action () -> Action ()
+setTarget actor tgt action = do
+  modify (updateAnyActorBody actor (\ m -> m { mtarget = tgt }))
+  action
 
 onlyMoves :: (Dir -> Bool) -> Loc -> Strategy Dir -> Strategy Dir
 onlyMoves p l = only (\ x -> p (l `shift` x))
