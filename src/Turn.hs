@@ -11,8 +11,6 @@ import qualified Data.Char as Char
 
 import Action
 import Actions
-import EffectAction
-import ItemAction
 import Command
 import qualified Config
 import Display hiding (display)
@@ -108,24 +106,12 @@ handleMonster actor =
   do
     debug "handleMonster"
     state <- get
-    time <- gets stime
     per <- currentPerception
-    -- run the AI; it currently returns a direction
-    -- TODO: it should return an action
-    dir <- liftIO $ rndToIO $
-           frequency (head (runStrategy (strategy actor state per .| wait)))
-    let waiting = dir == (0,0)
-    let nmdir   = if waiting then Nothing else Just dir
-    -- advance time and update monster
-    updateAnyActor actor $ \ m -> m { mdir = nmdir }
-    tryWith (advanceTime actor) $
-      -- if the following action aborts, we just advance the time and continue
-      if waiting
-        then
-          -- monster is not moving, let's try to pick up an object
-          actorPickupItem actor
-        else
-          moveOrAttack True True actor dir
+    -- Run the AI: choses an action from those given by the AI strategy.
+    action <-
+      liftIO $ rndToIO $
+        frequency (head (runStrategy (strategy actor state per .| wait)))
+    action
     handleMonsters
 
 -- | After everything has been handled for the current game time, we can

@@ -16,8 +16,11 @@ import Random
 import Perception
 import Strategy
 import State
+import Action
+import Actions
+import ItemAction
 
-strategy :: Actor -> State -> Perceptions -> Strategy Dir
+strategy :: Actor -> State -> Perceptions -> Strategy (Action ())
 strategy actor
          oldState@(State { scursor = cursor,
                            splayer = pl,
@@ -26,7 +29,7 @@ strategy actor
                                              lsmell = nsmap,
                                              lmap = lmap } })
          per =
-    strategy
+    dirToAction actor `liftM` strategy
   where
     -- TODO: set monster targets and then prefer targets to other heroes
     Movable { mkind = mk, mloc = me, mdir = mdir } = getActor actor oldState
@@ -79,12 +82,12 @@ strategy actor
       onlySensible $
         onlyTraitor moveFreely
         .| onlyFoe moveFreely
-        .| (greedyMonster && lootHere me) .=> wait
+        .| (greedyMonster && lootHere me) .=> return (0,0)
         .| moveTowards
     moveTowards =
       (if pushyMonster then id else onlyUnoccupied) $
         nsight mk .=> towardsFoe moveFreely
-        .| lootHere me .=> wait
+        .| lootHere me .=> return (0,0)
         .| nsmell mk .=> foldr (.|) reject (L.map return smells)
         .| onlyOpenable moveFreely
         .| moveFreely
@@ -94,11 +97,26 @@ strategy actor
                  .| niq mk > 5  .=> onlyKeepsDir 2 moveRandomly
                  .| moveRandomly
 
+dirToAction :: Actor -> Dir -> Action ()
+dirToAction actor dir = do
+  let waiting = dir == (0,0)
+  let nmdir   = if waiting then Nothing else Just dir
+  -- advance time and update monster
+  updateAnyActor actor $ \ m -> m { mdir = nmdir }
+  tryWith (advanceTime actor) $
+    -- if the following action aborts, we just advance the time and continue
+    if waiting
+    then
+      -- monster is not moving, let's try to pick up an object
+      actorPickupItem actor
+    else
+      moveOrAttack True True actor dir
+
 onlyMoves :: (Dir -> Bool) -> Loc -> Strategy Dir -> Strategy Dir
 onlyMoves p l = only (\ x -> p (l `shift` x))
 
 moveRandomly :: Strategy Dir
 moveRandomly = liftFrequency $ uniform moves
 
-wait :: Strategy Dir
-wait = return (0,0)
+wait :: Strategy (Action ())
+wait = return $ return ()
