@@ -5,6 +5,7 @@ import Data.Map as M
 import Data.Set as S
 import qualified Data.IntMap as IM
 import Data.Maybe
+import Control.Monad
 
 import Geometry
 import Level
@@ -18,74 +19,78 @@ import State
 
 strategy :: Actor -> State -> Perceptions -> Strategy Dir
 strategy actor
-         state@(State { splayer = pl,
-                        stime   = time,
-                        slevel  = Level { lsmell = nsmap,
-                                          lmap = lmap } })
+         oldState@(State { scursor = cursor,
+                           splayer = pl,
+                           stime   = time,
+                           slevel  = Level { lname = ln,
+                                             lsmell = nsmap,
+                                             lmap = lmap } })
          per =
-    monsterStrategy
+    strategy
   where
     -- TODO: set monster targets and then prefer targets to other heroes
-    Movable { mkind = mk, mloc = me, mdir = mdir } = getActor actor state
-    delState = deleteActor actor state
+    Movable { mkind = mk, mloc = me, mdir = mdir } = getActor actor oldState
+    delState = deleteActor actor oldState
+    -- If the player is a monster, monsters spot and attack him when adjacent.
+    ploc = if isAHero pl || creturnLn cursor /= ln
+           then Nothing
+           else Just $ mloc $ getPlayerBody delState
+    onlyTraitor = onlyMoves (maybe (const False) (==) ploc) me
+    -- If no heroes on the level, monsters go at each other. TODO: let them
+    -- earn XP by killing each other to make this dangerous to the player.
     hs = L.map (\ (i, m) -> (AHero i, mloc m)) $
          IM.assocs $ lheroes $ slevel delState
     ms = L.map (\ (i, m) -> (AMonster i, mloc m)) $
          IM.assocs $ lmonsters $ slevel delState
-    -- If no heroes on the level, monsters go at each other. TODO: let them
-    -- earn XP by killing each other to make this dangerous to the player.
-    foe = if L.null hs then ms else hs
+    foes = if L.null hs then ms else hs
     -- We assume monster sight is actually infravision, so light has no effect.
     foeVisible = L.filter (\ (a, l) ->
-                            actorReachesActor a actor l me per pl) foe
+                            actorReachesActor a actor l me per pl) foes
     foeDist = L.map (\ (_, l) -> (distance (me, l), l)) foeVisible
-    -- If the player is a monster, monsters spot and attack him when adjacent.
-    ploc = mloc (getPlayerBody state)
-    traitorAdjacent = isAMonster pl && adjacent me ploc
-    towardsPlayer = towards (me, ploc)
-    -- Below, "foe" is the hero (or a monster) attacked by the actor.
+    -- Below, "foe" is the hero (or a monster) at floc, attacked by the actor.
     floc = case foeVisible of
              [] -> Nothing
              _  -> Just $ snd $ L.minimum foeDist
-    anyFoeVisible  = isJust floc
-    foeAdjacent    = maybe False (adjacent me) floc
-    towardsFoe     = maybe (0, 0) (\ floc -> towards (me, floc)) floc
-    onlyTowardsFoe m =
-      anyFoeVisible .=> only (\ x -> distance (towardsFoe, x) <= 1) m
-    greedyMonster  = niq mk < 5
-    directedMonster = niq mk >= 5
-    lootPresent    = (\ x -> not $ L.null $ titems $ lmap `at` x)
-    onlyLootHere   = onlyMoves lootPresent me
-    onlyKeepsDir   =
-      only (\ x -> maybe True (\ d -> distance (neg d, x) > 1) mdir)
+    onlyFoe        = onlyMoves (maybe (const False) (==) floc) me
+    towardsFoe     = case floc of
+                       Nothing -> const mzero
+                       Just loc ->
+                         let foeDir = towards (me, loc)
+                         in  only (\ x -> distance (foeDir, x) <= 1)
+    lootHere       = (\ x -> not $ L.null $ titems $ lmap `at` x)
+    onlyLoot       = onlyMoves lootHere me
+    onlyKeepsDir   = only (\ x -> maybe True (\ d -> distance (d, x) <= 2) mdir)
     onlyUnoccupied = onlyMoves (unoccupied (levelMonsterList delState)) me
-    onlyAccessible = onlyMoves accessibleHere me
-    accessibleHere = accessible lmap me
-    onlySensible   = onlyMoves (\ l -> accessibleHere l || openableHere l) me
     -- Monsters don't see doors more secret than that. Enforced when actually
     -- opening doors, too, so that monsters don't cheat.
-    openableHere   = (openable (niq mk) lmap)
+    openableHere   = openable (niq mk) lmap
     onlyOpenable   = onlyMoves openableHere me
-    smells         = L.map fst $
-                       L.sortBy (\ (_,s1) (_,s2) -> compare s2 s1) $
-                       L.filter (\ (_,s) -> s > 0) $
-                       L.map (\ x -> (x, nsmap ! (me `shift` x)
-                                         - time `max` 0)) moves
-    monsterStrategy =
+    accessibleHere = accessible lmap me
+    onlySensible   = onlyMoves (\ l -> accessibleHere l || openableHere l) me
+    greedyMonster  = niq mk < 5
+    steadyMonster  = niq mk >= 5
+    pushyMonster   = not $ nsight mk
+    smells         =
+      L.map fst $
+      L.sortBy (\ (_, s1) (_, s2) -> compare s2 s1) $
+      L.filter (\ (_, s) -> s > 0) $
+      L.map (\ x -> (x, nsmap ! (me `shift` x) - time `max` 0)) moves
+
+    strategy =
       onlySensible $
-        traitorAdjacent .=> return towardsPlayer
-        .| foeAdjacent .=> return towardsFoe
-        .| (greedyMonster && lootPresent me) .=> wait
+        onlyTraitor moveFreely
+        .| onlyFoe moveFreely
+        .| (greedyMonster && lootHere me) .=> wait
         .| moveTowards
     moveTowards =
-      onlyUnoccupied $
-        nsight mk .=> onlyTowardsFoe moveFreely
-        .| lootPresent me .=> wait
+      (if pushyMonster then id else onlyUnoccupied) $
+        nsight mk .=> towardsFoe moveFreely
+        .| lootHere me .=> wait
         .| nsmell mk .=> foldr (.|) reject (L.map return smells)
         .| onlyOpenable moveFreely
         .| moveFreely
-    moveFreely = onlyLootHere moveRandomly
-                 .| directedMonster .=> onlyKeepsDir moveRandomly
+    moveFreely = onlyLoot moveRandomly
+                 .| steadyMonster .=> onlyKeepsDir moveRandomly
                  .| moveRandomly
 
 onlyMoves :: (Dir -> Bool) -> Loc -> Strategy Dir -> Strategy Dir

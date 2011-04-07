@@ -164,12 +164,12 @@ accessible lmap source target =
          (_, Terrain.Door {})  -> False
          _             -> True)
 
--- check whether the location contains a door of at most secrecy level k
+-- check whether the location contains a door of secrecy level lower than k
 openable :: Int -> LMap -> Loc -> Bool
 openable k lmap target =
   let tgt = lmap `at` target
   in  case tterrain tgt of
-        Terrain.Door _ (Just n) -> n <= k
+        Terrain.Door _ (Just n) -> n < k
         _               -> False
 
 findLoc :: Level -> (Loc -> Tile -> Bool) -> Rnd Loc

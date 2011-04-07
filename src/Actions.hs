@@ -206,7 +206,7 @@ continueRun dir =
           let ns = L.filter (\ x -> x /= dir && distance (neg dir, x) > 1) moves
               ls = L.map (loc `shift`) ns
               as = L.filter (\ x -> accessible lmap loc x
-                                    || openable 0 lmap x) ls
+                                    || openable 1 lmap x) ls
               ts = L.map (tterrain . (lmap `at`)) as
           in  if L.any exit ts then abort else run dir
     hop (tterrain t)
@@ -266,7 +266,7 @@ actorOpenClose actor v o dir =
            Tile d@(Door hv o') []
              | secret o' && isPlayer -> -- door is secret, cannot be opened or closed by the player
                                        neverMind isVerbose
-             | maybe o ((|| not o) . (> (niq (mkind body)))) o' ->
+             | maybe o ((|| not o) . (>= (niq (mkind body)))) o' ->
                                        -- door is in unsuitable state
                                        abortIfWith isVerbose ("already " ++ txt)
              | not (unoccupied hms dloc) ->
