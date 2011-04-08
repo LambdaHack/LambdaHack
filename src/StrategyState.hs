@@ -95,44 +95,45 @@ strategy actor
     onlySensible   = onlyMoves (\ l -> accessibleHere l || openableHere l) me
     greedyMonster  = niq mk < 5
     focusedMonster = niq mk > 10
-    pushyMonster   = not $ nsight mk
     smells         =
       L.map fst $
       L.sortBy (\ (_, s1) (_, s2) -> compare s2 s1) $
       L.filter (\ (_, s) -> s > 0) $
       L.map (\ x -> (x, nsmap ! (me `shift` x) - time `max` 0)) moves
-    fromDir d = dirToAction actor newTgt `liftM` d
+    fromDir allowAttacks d = dirToAction actor newTgt allowAttacks `liftM` d
 
     strategy =
-      fromDir (onlyFoe moveFreely)
+      fromDir True (onlyFoe moveFreely)
       .| (greedyMonster && lootHere me) .=> actionPickup
-      .| fromDir (onlySensible moveTowards)
+      .| nsight mk .=> fromDir False moveTowards
       .| lootHere me .=> actionPickup
-      .| fromDir (onlySensible moveAround)
+      .| fromDir True moveAround
     actionPickup = return $ actorPickupItem actor
     moveTowards =
-      (if pushyMonster then id else onlyUnoccupied) $
-        nsight mk .=> towardsFoe moveFreely
+      onlySensible $
+        onlyUnoccupied (towardsFoe moveFreely)
+        .| towardsFoe moveFreely
     moveAround =
-      (if pushyMonster then id else onlyUnoccupied) $
-        nsmell mk .=> foldr (.|) reject (L.map return smells)
-        .| onlyOpenable moveFreely
-        .| moveFreely
+      onlySensible $
+        (if nsight mk then onlyUnoccupied else id) $
+          nsmell mk .=> foldr (.|) reject (L.map return smells)
+          .| onlyOpenable moveFreely
+          .| moveFreely
     moveFreely = onlyLoot moveRandomly
                  .| niq mk > 15 .=> onlyKeepsDir 0 moveRandomly
                  .| niq mk > 10 .=> onlyKeepsDir 1 moveRandomly
                  .| niq mk > 5  .=> onlyKeepsDir 2 moveRandomly
                  .| moveRandomly
 
-dirToAction :: Actor -> Target -> Dir -> Action ()
-dirToAction actor tgt dir =
+dirToAction :: Actor -> Target -> Bool -> Dir -> Action ()
+dirToAction actor tgt allowAttacks dir =
   assert (dir /= (0,0)) $ do
   -- set new direction
   updateAnyActor actor $ \ m -> m { mdir = Just dir, mtarget = tgt }
   -- perform action
   tryWith (advanceTime actor) $
     -- if the following action aborts, we just advance the time and continue
-    moveOrAttack True True actor dir
+    moveOrAttack allowAttacks True actor dir
 
 onlyMoves :: (Dir -> Bool) -> Loc -> Strategy Dir -> Strategy Dir
 onlyMoves p l = only (\ x -> p (l `shift` x))
