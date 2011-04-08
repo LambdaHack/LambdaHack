@@ -107,5 +107,5 @@ nose = MovableKind
     nsmell  = True,
     niq     = 0,
     nregen  = 1500,
-    nfreq   = 6
+    nfreq   = 2
   }
