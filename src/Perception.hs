@@ -32,7 +32,7 @@ ptreachable = preachable . ptotal
 ptvisible   = pvisible . ptotal
 
 actorPrLoc :: (Perception -> S.Set Loc) ->
-              Actor -> Loc -> Perceptions -> Actor -> Bool
+              Actor -> Loc -> Perceptions -> Maybe Actor -> Bool
 actorPrLoc projection actor loc per pl =
   let tryHero = case actor of
                   AMonster _ -> Nothing
@@ -40,18 +40,20 @@ actorPrLoc projection actor loc per pl =
                     hper <- IM.lookup i (pheroes per)
                     return $ loc `S.member` (projection hper)
       tryPl   = do  -- the case for a monster under player control
-                  guard $ actor == pl
+                  guard $ Just actor == pl
                   pper <- pplayer per
                   return $ loc `S.member` projection pper
       tryAny  = tryHero `mplus` tryPl
   in  fromMaybe False tryAny  -- assume not visible, if no perception found
 
-actorSeesLoc, actorReachesLoc :: Actor -> Loc -> Perceptions -> Actor -> Bool
+actorSeesLoc    :: Actor -> Loc -> Perceptions -> Maybe Actor -> Bool
 actorSeesLoc    = actorPrLoc pvisible
+
+actorReachesLoc :: Actor -> Loc -> Perceptions -> Maybe Actor -> Bool
 actorReachesLoc = actorPrLoc preachable
 
 -- Not quite correct if FOV not symmetric (Shadow).
-actorReachesActor :: Actor -> Actor -> Loc -> Loc -> Perceptions -> Actor
+actorReachesActor :: Actor -> Actor -> Loc -> Loc -> Perceptions -> Maybe Actor
                      -> Bool
 actorReachesActor actor1 actor2 loc1 loc2 per pl =
   actorReachesLoc actor1 loc2 per pl ||

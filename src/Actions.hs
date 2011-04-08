@@ -445,7 +445,7 @@ targetMonster = do
               AHero _ -> ms
       (lt, gt) = IM.split i dms
       gtlt     = IM.assocs gt ++ IM.assocs lt
-      lf = L.filter (\ (_, m) -> actorSeesLoc pl (mloc m) per pl) gtlt
+      lf = L.filter (\ (_, m) -> actorSeesLoc pl (mloc m) per (Just pl)) gtlt
       tgt = case lf of
               [] -> target  -- no monsters in sight, stick to last target
               (ni, nm) : _ -> TEnemy (AMonster ni) (mloc nm)  -- pick the next

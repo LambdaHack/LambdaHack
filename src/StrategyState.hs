@@ -33,46 +33,46 @@ strategy actor
          per =
     strategy
   where
-    -- TODO: set monster targets and then prefer targets to other heroes
     Movable { mkind = mk, mloc = me, mdir = mdir, mtarget = tgt } =
       getActor actor oldState
     delState = deleteActor actor oldState
-    -- If the player is a monster, monsters spot and attack him when adjacent.
-    ploc = if isAHero pl || creturnLn cursor /= ln
-           then Nothing
-           else Just $ mloc $ getPlayerBody delState
-    onlyTraitor = onlyMoves (maybe (const False) (==) ploc) me
+    enemyVisible a l =
+      -- We assume monster sight is infravision, so light has no significance.
+      actorReachesActor a actor l me per Nothing ||
+      -- Any enemy is visible if adjacent (e. g., a monster player).
+      memActor a delState && adjacent me l
     -- If no heroes on the level, monsters go at each other. TODO: let them
     -- earn XP by killing each other to make this dangerous to the player.
     hs = L.map (\ (i, m) -> (AHero i, mloc m)) $
          IM.assocs $ lheroes $ slevel delState
     ms = L.map (\ (i, m) -> (AMonster i, mloc m)) $
          IM.assocs $ lmonsters $ slevel delState
-    -- Below, "foe" is the hero (or a monster, or loc), followed by the actor.
+    -- Below, "foe" is the hero (or a monster, or loc) chased by the actor.
     (newTgt, floc) =
       case tgt of
         TEnemy a ll | focusedMonster ->
           case findActorAnyLevel a delState of
             Just (_, m) ->
               let l = mloc m
-              in  -- We assume monster sight is infravision.
-                  if actorReachesActor a actor l me per pl
+              in  if enemyVisible a l
                   then (TEnemy a l, Just l)
                   else if isJust (snd closest) || me == ll
-                       then closest         -- prefer visible enemies
+                       then closest         -- prefer visible foes
                        else (tgt, Just ll)  -- last known location of enemy
-            Nothing -> closest  -- enemy dead
+            Nothing -> closest  -- enemy dead, monsters can feel it
         TLoc loc -> if me == loc
                     then closest
                     else (tgt, Just loc)  -- ignore everything and go to loc
         _  -> closest
     closest =
-      let foes = if L.null hs then ms else hs
+      let hsAndTraitor = if isAMonster pl
+                         then (pl, mloc $ getPlayerBody delState) : hs
+                         else hs
+          foes = if L.null hsAndTraitor then ms else hsAndTraitor
           -- We assume monster sight is infravision, so light has no effect.
           foeVisible =
-            L.filter (\ (a, l) -> actorReachesActor a actor l me per pl) foes
+            L.filter (\ (a, l) -> enemyVisible a l) foes
           foeDist = L.map (\ (a, l) -> (distance (me, l), l, a)) foeVisible
-      -- Below, "foe" is the hero (or a monster) at floc, attacked by the actor.
       in  case foeDist of
             [] -> (TCursor, Nothing)
             _  -> let (_, l, a) = L.minimum foeDist
@@ -101,15 +101,14 @@ strategy actor
       L.sortBy (\ (_, s1) (_, s2) -> compare s2 s1) $
       L.filter (\ (_, s) -> s > 0) $
       L.map (\ x -> (x, nsmap ! (me `shift` x) - time `max` 0)) moves
-    fromDir d = dirToAction actor newTgt `liftM` onlySensible d
+    fromDir d = dirToAction actor newTgt `liftM` d
 
     strategy =
-      fromDir (onlyTraitor moveFreely)  -- traitor has priority
-      .| fromDir (onlyFoe moveFreely)
+      fromDir (onlyFoe moveFreely)
       .| (greedyMonster && lootHere me) .=> actionPickup
-      .| fromDir moveTowards
+      .| fromDir (onlySensible moveTowards)
       .| lootHere me .=> actionPickup
-      .| fromDir moveAround
+      .| fromDir (onlySensible moveAround)
     actionPickup = return $ actorPickupItem actor
     moveTowards =
       (if pushyMonster then id else onlyUnoccupied) $

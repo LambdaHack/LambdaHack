@@ -110,7 +110,7 @@ zapGroupItem groupName verb = do
         Nothing  -> abortWith "target invalid"
         Just loc ->
           -- TODO: draw digital line and see if obstacles prevent firing
-          if actorReachesLoc pl loc per pl
+          if actorReachesLoc pl loc per (Just pl)
           then case locToActor loc state of
                  Just ta -> do
                    b <- itemEffectAction consumed pl ta
