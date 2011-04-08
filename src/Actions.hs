@@ -86,7 +86,7 @@ endTargeting accept = do
   cloc     <- gets (clocation . scursor)
   lvlSwitch returnLn  -- return to the original level of the player
   modify (updateCursor (\ c -> c { ctargeting = False }))
-  let isEnemy = case target of TEnemy _ -> True ; _ -> False
+  let isEnemy = case target of TEnemy _ _ -> True ; _ -> False
   when (not isEnemy) $
     if accept
        then updatePlayerBody (\ p -> p { mtarget = TLoc cloc })
@@ -100,7 +100,7 @@ endTargetingMsg = do
   state  <- get
   let verb = "target"
       targetMsg = case target of
-                    TEnemy a ->
+                    TEnemy a _ll ->
                       case findActorAnyLevel a state of
                         Just (_, m) -> objectMovable (mkind m)
                         Nothing     -> "a long gone adversary"
@@ -437,8 +437,8 @@ targetMonster = do
   target    <- gets (mtarget . getPlayerBody)
   targeting <- gets (ctargeting . scursor)
   let i = case target of
-            TEnemy (AMonster n) | targeting -> n  -- try next monster
-            TEnemy (AMonster n) -> n - 1  -- try to retarget old monster
+            TEnemy (AMonster n) _ | targeting -> n  -- try next monster
+            TEnemy (AMonster n) _ -> n - 1  -- try to retarget old monster
             _ -> -1  -- try to target first monster (e.g., number 0)
       dms = case pl of
               AMonster n -> IM.delete n ms  -- don't target yourself
@@ -448,7 +448,7 @@ targetMonster = do
       lf = L.filter (\ (_, m) -> actorSeesLoc pl (mloc m) per pl) gtlt
       tgt = case lf of
               [] -> target  -- no monsters in sight, stick to last target
-              (ni, _) : _ -> TEnemy (AMonster ni)  -- pick the next monster
+              (ni, nm) : _ -> TEnemy (AMonster ni) (mloc nm)  -- pick the next
   updatePlayerBody (\ p -> p { mtarget = tgt })
   setCursor tgt
 
@@ -485,7 +485,7 @@ doLook =
                  Nothing -> ""
           else ""
         mode = case target of
-                 TEnemy _ -> "[targeting monster] "
+                 TEnemy _ _ -> "[targeting monster] "
                  TLoc _   -> "[targeting location] "
                  TCursor  -> "[targeting current] "
         -- general info about current loc

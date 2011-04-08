@@ -65,19 +65,19 @@ instance Binary Actor where
             _ -> fail "no parse (Actor)"
 
 data Target =
-    TEnemy Actor  -- ^ fire at the actor (a monster or a hero)
-  | TLoc Loc      -- ^ fire at a given location
-  | TCursor       -- ^ fire at the current position of the cursor; the default
+    TEnemy Actor Loc -- ^ fire at the actor; last seen location
+  | TLoc Loc         -- ^ fire at a given location
+  | TCursor          -- ^ fire at the current position of the cursor; default
   deriving (Show, Eq)
 
 instance Binary Target where
-  put (TEnemy a) = putWord8 0 >> put a
+  put (TEnemy a ll) = putWord8 0 >> put a >> put ll
   put (TLoc loc) = putWord8 1 >> put loc
   put TCursor    = putWord8 2
   get = do
           tag <- getWord8
           case tag of
-            0 -> liftM TEnemy get
+            0 -> liftM2 TEnemy get get
             1 -> liftM TLoc get
             2 -> return TCursor
             _ -> fail "no parse (Target)"

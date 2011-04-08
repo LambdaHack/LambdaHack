@@ -64,7 +64,7 @@ targetToLoc visible state =
       if lname (slevel state) == clocLn (scursor state)
       then Just $ clocation (scursor state)
       else Nothing  -- cursor invalid: set at a different level
-    TEnemy a -> do
+    TEnemy a _ll -> do
       guard $ memActor a state           -- alive and on the current level?
       let loc = mloc (getActor a state)
       guard $ S.member loc visible       -- visible?

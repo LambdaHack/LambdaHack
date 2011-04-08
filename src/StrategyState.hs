@@ -48,30 +48,35 @@ strategy actor
          IM.assocs $ lheroes $ slevel delState
     ms = L.map (\ (i, m) -> (AMonster i, mloc m)) $
          IM.assocs $ lmonsters $ slevel delState
-    -- Below, "foe" is the hero (or a monster) at floc, attacked by the actor.
+    -- Below, "foe" is the hero (or a monster, or loc), followed by the actor.
     (newTgt, floc) =
       case tgt of
-        TEnemy a | focusedMonster ->
+        TEnemy a ll | focusedMonster ->
           case findActorAnyLevel a delState of
             Just (_, m) ->
               let l = mloc m
-              in  if actorReachesActor a actor l me per pl
-                  then (tgt, Just l)
-                  else closest  -- TODO: got to the last know location
+              in  -- We assume monster sight is infravision.
+                  if actorReachesActor a actor l me per pl
+                  then (TEnemy a l, Just l)
+                  else if isJust (snd closest) || me == ll
+                       then closest         -- prefer visible enemies
+                       else (tgt, Just ll)  -- last known location of enemy
             Nothing -> closest  -- enemy dead
-        TLoc loc -> (tgt, Just loc)  -- ignore everything and go to loc
+        TLoc loc -> if me == loc
+                    then closest
+                    else (tgt, Just loc)  -- ignore everything and go to loc
         _  -> closest
     closest =
       let foes = if L.null hs then ms else hs
-      -- We assume monster sight is infravision, so light has no effect.
+          -- We assume monster sight is infravision, so light has no effect.
           foeVisible =
             L.filter (\ (a, l) -> actorReachesActor a actor l me per pl) foes
           foeDist = L.map (\ (a, l) -> (distance (me, l), l, a)) foeVisible
       -- Below, "foe" is the hero (or a monster) at floc, attacked by the actor.
       in  case foeDist of
-            [] -> (tgt, Nothing)
+            [] -> (TCursor, Nothing)
             _  -> let (_, l, a) = L.minimum foeDist
-                  in  (TEnemy a, Just $ l)
+                  in  (TEnemy a l, Just l)
     onlyFoe        = onlyMoves (maybe (const False) (==) floc) me
     towardsFoe     = case floc of
                        Nothing -> const mzero
@@ -96,14 +101,13 @@ strategy actor
       L.sortBy (\ (_, s1) (_, s2) -> compare s2 s1) $
       L.filter (\ (_, s) -> s > 0) $
       L.map (\ x -> (x, nsmap ! (me `shift` x) - time `max` 0)) moves
-    fromDir d = dirToAction actor `liftM` onlySensible d
-    fromFoe d = setTarget actor newTgt `liftM` fromDir d
+    fromDir d = dirToAction actor newTgt `liftM` onlySensible d
 
     strategy =
-      fromDir (onlyTraitor moveFreely)  -- traitor disguised; hard to target
-      .| fromFoe (onlyFoe moveFreely)
+      fromDir (onlyTraitor moveFreely)  -- traitor has priority
+      .| fromDir (onlyFoe moveFreely)
       .| (greedyMonster && lootHere me) .=> actionPickup
-      .| fromFoe moveTowards
+      .| fromDir moveTowards
       .| lootHere me .=> actionPickup
       .| fromDir moveAround
     actionPickup = return $ actorPickupItem actor
@@ -121,20 +125,15 @@ strategy actor
                  .| niq mk > 5  .=> onlyKeepsDir 2 moveRandomly
                  .| moveRandomly
 
-dirToAction :: Actor -> Dir -> Action ()
-dirToAction actor dir =
+dirToAction :: Actor -> Target -> Dir -> Action ()
+dirToAction actor tgt dir =
   assert (dir /= (0,0)) $ do
   -- set new direction
-  updateAnyActor actor $ \ m -> m { mdir = Just dir }
+  updateAnyActor actor $ \ m -> m { mdir = Just dir, mtarget = tgt }
   -- perform action
   tryWith (advanceTime actor) $
     -- if the following action aborts, we just advance the time and continue
     moveOrAttack True True actor dir
-
-setTarget :: Actor -> Target -> Action () -> Action ()
-setTarget actor tgt action = do
-  modify (updateAnyActorBody actor (\ m -> m { mtarget = tgt }))
-  action
 
 onlyMoves :: (Dir -> Bool) -> Loc -> Strategy Dir -> Strategy Dir
 onlyMoves p l = only (\ x -> p (l `shift` x))
