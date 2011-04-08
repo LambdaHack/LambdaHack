@@ -416,13 +416,16 @@ search =
     modify (updateLevel (updateLMap (const slmap)))
     playerAdvanceTime
 
--- | Start the floor targeting mode or toggle between the two floor modes.
+-- | Start the floor targeting mode or reset the cursor location to the player.
 targetFloor :: Action ()
 targetFloor = do
-  target <- gets (mtarget . getPlayerBody)
+  ploc      <- gets (mloc . getPlayerBody)
+  target    <- gets (mtarget . getPlayerBody)
+  targeting <- gets (ctargeting . scursor)
   let tgt = case target of
-              TLoc l -> TLoc l  -- don't forget the old location target too fast
-              _ -> TCursor
+              _ | targeting -> TLoc ploc  -- double key press: reset cursor
+              TEnemy _ _ -> TCursor  -- forget enemy target, keep the cursor
+              t -> t  -- keep the target from previous targeting session
   updatePlayerBody (\ p -> p { mtarget = tgt })
   setCursor tgt
 
