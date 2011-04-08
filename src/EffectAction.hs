@@ -9,6 +9,7 @@ import qualified Data.IntMap as IM
 import Data.Maybe
 import Data.Set as S
 import System.Time
+import Control.Exception (assert)
 
 import Action
 import Display hiding (display)
@@ -82,7 +83,8 @@ effectToAction (Effect.Wound nDm) source target power msg = do
          else if not tvis
               then "You hear some noises."
               else if source == target || not svis
-                   then subjectMovableVerb (mkind tm) "yell" ++ " in pain."  -- TODO: use msg
+                   then subjectMovableVerb (mkind tm) "yell"
+                        ++ if killed then " one last time." else " in pain."  -- TODO: use msg
                    else let combatVerb = if killed then "kill" else "hit"
                         in  subjectVerbMObject sm combatVerb tm msg
     updateAnyActor target $ \ m -> m { mhp = newHP }  -- Damage the target.
@@ -188,7 +190,12 @@ focusIfAHero target =
   else return ()
 
 summonHeroes :: Int -> Loc -> Action ()
-summonHeroes n loc = modify (\ state -> iterate (addHero loc) state !! n)
+summonHeroes n loc =
+  assert (n > 0) $ do
+  newHeroIndex <- gets (fst . scounter)
+  modify (\ state -> iterate (addHero loc) state !! n)
+  b <- selectPlayer (AHero newHeroIndex)
+  when b $ messageAddMore >> return ()
 
 summonMonsters :: Int -> Loc -> Action ()
 summonMonsters n loc = do
