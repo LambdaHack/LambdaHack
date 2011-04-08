@@ -5,6 +5,7 @@ import Actions
 import ItemAction
 import Geometry
 import Level
+import Version
 
 data Described a = Described { chelp :: String, caction :: a }
                  | Undescribed { caction :: a }
@@ -34,6 +35,7 @@ acceptCommand h  = Described "accept choice"     (acceptCurrent h)
 historyCommand   = Described "display previous messages" displayHistory
 dumpCommand      = Described "dump current configuration" dumpConfig
 heroCommand      = Described "cycle among heroes on level" cycleHero
+versionCommand   = Described "display game version" (abortWith version)
 
 moveDirCommand   = Described "move in direction" move
 runDirCommand    = Described "run in direction"  run

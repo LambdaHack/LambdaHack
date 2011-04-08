@@ -24,7 +24,6 @@ import Random
 import State
 import Strategy
 import StrategyState
-import Version
 
 -- One turn proceeds through the following functions:
 --
@@ -258,13 +257,13 @@ stdKeybindings = Keybindings
                (K.Char 'Q',  quitCommand),
 
                -- debug modes
-               (K.Char 'R',  Undescribed $ modify toggleVision     >> withPerception playerCommand),
-               (K.Char 'O',  Undescribed $ modify toggleOmniscient >> playerCommand),
-               (K.Char 'T',  Undescribed $ modify toggleTerrain    >> playerCommand),
+               (K.Char 'R',  Undescribed $ modify toggleVision),
+               (K.Char 'O',  Undescribed $ modify toggleOmniscient),
+               (K.Char 'T',  Undescribed $ modify toggleTerrain),
                (K.Char 'I',  Undescribed $ gets (lmeta . slevel) >>= abortWith),
 
                -- information for the player
-               (K.Char 'V',  Undescribed $ abortWith version),
+               (K.Char 'V',  versionCommand),
                (K.Char 'M',  historyCommand),
                (K.Char 'D',  dumpCommand),
                (K.Char '?',  helpCommand),
