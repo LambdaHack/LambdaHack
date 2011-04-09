@@ -21,6 +21,9 @@ import State
 import Action
 import Actions
 import ItemAction
+import qualified ItemKind
+import Item
+import qualified Effect
 
 strategy :: Actor -> State -> Perceptions -> Strategy (Action ())
 strategy actor
@@ -33,7 +36,8 @@ strategy actor
          per =
     strategy
   where
-    Movable { mkind = mk, mloc = me, mdir = mdir, mtarget = tgt } =
+    Movable { mkind = mk, mloc = me, mdir = mdir,
+              mtarget = tgt, mitems = items } =
       getActor actor oldState
     delState = deleteActor actor oldState
     enemyVisible a l =
@@ -93,7 +97,6 @@ strategy actor
     onlyOpenable   = onlyMoves openableHere me
     accessibleHere = accessible lmap me
     onlySensible   = onlyMoves (\ l -> accessibleHere l || openableHere l) me
-    greedyMonster  = niq mk < 5
     focusedMonster = niq mk > 10
     smells         =
       L.map fst $
@@ -104,11 +107,39 @@ strategy actor
 
     strategy =
       fromDir True (onlyFoe moveFreely)
-      .| (greedyMonster && lootHere me) .=> actionPickup
-      .| nsight mk .=> fromDir False moveTowards
+      .| isJust floc .=> liftFrequency (msum freqs)
       .| lootHere me .=> actionPickup
       .| fromDir True moveAround
     actionPickup = return $ actorPickupItem actor
+    tis = titems $ lmap `at` me
+    freqs = [applyFreq items 1, applyFreq tis 2,
+             throwFreq items 2, throwFreq tis 5, towardsFreq]
+    applyFreq is multi = Frequency
+      [ (benefit * multi, actionApply (ItemKind.jname ik) i)
+      | i <- is,
+        let ik = ItemKind.getIK (ikind i),
+        let benefit =
+              (1 + ipower i) * Effect.effectToBenefit (ItemKind.jeffect ik),
+        benefit > 0,
+        nsight mk || not (ItemKind.jname ik == "scroll")]
+    actionApply groupName item =
+      applyGroupItem actor (applyToVerb groupName) item
+    throwFreq is multi = if not $ nsight mk then mzero else Frequency
+      [ (benefit * multi, actionThrow (ItemKind.jname ik) i)
+      | i <- is,
+        let ik = ItemKind.getIK (ikind i),
+        let benefit =
+              - (1 + ipower i) * Effect.effectToBenefit (ItemKind.jeffect ik),
+        benefit > 0,
+        -- Wasting swords would be too cruel to the player.
+        not (ItemKind.jname ik == "sword")]
+    actionThrow groupName item =
+      zapGroupItem actor (fromJust floc) (zapToVerb groupName) item
+    towardsFreq =
+      let freqs = runStrategy $ fromDir False moveTowards
+      in  if nsight mk && not (L.null freqs)
+          then scale 30 $ head freqs
+          else mzero
     moveTowards =
       onlySensible $
         onlyUnoccupied (towardsFoe moveFreely)

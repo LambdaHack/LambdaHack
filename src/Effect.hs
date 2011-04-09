@@ -26,3 +26,16 @@ effectToName SummonEnemy = "of summoning"
 effectToName ApplyPerfume = "of rose water"
 effectToName Regneration = "of regeneration"
 effectToName Searching = "of searching"
+
+-- | How much AI benefits from applying the effect. Multipllied by item power.
+-- Negative means harm to the enemy when thrown. Zero won't ever be used.
+effectToBenefit :: Effect -> Int
+effectToBenefit NoEffect = 0
+effectToBenefit Heal = 10           -- TODO: depends on (maxhp - hp)
+effectToBenefit (Wound _) = -10     -- TODO: dice ignored for now
+effectToBenefit Dominate = 0        -- AI can't use this
+effectToBenefit SummonFriend = 100
+effectToBenefit SummonEnemy = 0
+effectToBenefit ApplyPerfume = 0
+effectToBenefit Regneration = 0     -- much more benefit from carrying around
+effectToBenefit Searching = 0       -- AI does not need to search

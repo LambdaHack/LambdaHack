@@ -78,6 +78,7 @@ applyGroupItem actor verb item = do
   when (loc `S.member` ptvisible per) $ message msg
   b <- itemEffectAction consumed actor actor
   when b $ removeFromInventory actor consumed loc
+  advanceTime actor
 
 playerApplyGroupItem :: String -> Action ()
 playerApplyGroupItem groupName = do
@@ -90,7 +91,6 @@ playerApplyGroupItem groupName = do
       let verb = applyToVerb (ItemKind.jname (ItemKind.getIK (ikind i)))
       in  applyGroupItem pl verb i
     Nothing -> neverMind True
-  playerAdvanceTime
 
 applyToVerb :: String -> String
 applyToVerb "potion" = "quaff"
@@ -124,6 +124,7 @@ zapGroupItem source loc verb item = do
       let msg = subjectVerbIObject state sm verb consumed ""
       when (sloc `S.member` ptvisible per) $ message msg
       modify (updateLevel (dropItemsAt [consumed] loc))
+  advanceTime source
 
 playerZapGroupItem :: String -> Action ()
 playerZapGroupItem groupName = do
@@ -144,7 +145,6 @@ playerZapGroupItem groupName = do
                in  zapGroupItem pl loc verb i
           else abortWith "target not reachable"
     Nothing -> neverMind True
-  playerAdvanceTime
 
 zapToVerb :: String -> String
 zapToVerb "wand" = "aim"

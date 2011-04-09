@@ -22,7 +22,8 @@ instance Monad Strategy where
                | x <- runStrategy m ]
 
 liftFrequency :: Frequency a -> Strategy a
-liftFrequency f = Strategy $ return f
+liftFrequency f  =
+  Strategy $ filter (\ (Frequency xs) -> not (null xs)) $ return f
 
 instance MonadPlus Strategy where
   mzero = Strategy []
