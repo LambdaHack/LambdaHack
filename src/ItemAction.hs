@@ -76,8 +76,8 @@ applyGroupItem actor verb item = do
       msg = subjectVerbIObject state body verb consumed ""
       loc = mloc body
   when (loc `S.member` ptvisible per) $ messageAdd msg
-  b <- itemEffectAction consumed actor actor
-  when b $ removeFromInventory actor consumed loc
+  itemEffectAction consumed actor actor
+  removeFromInventory actor consumed loc
   advanceTime actor
 
 playerApplyGroupItem :: String -> Action ()
@@ -95,7 +95,7 @@ playerApplyGroupItem groupName = do
 applyToVerb :: String -> String
 applyToVerb "potion" = "quaff"
 applyToVerb "scroll" = "read"
-applyToVerb _ = "creatively apply"
+applyToVerb _ = "destructively apply"
 
 quaffPotion :: Action ()
 quaffPotion = playerApplyGroupItem "potion"

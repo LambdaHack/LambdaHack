@@ -46,10 +46,7 @@ import qualified Effect
 -- depending on the returned bool, perception and identity of the actors.
 effectToAction :: Effect.Effect -> Actor -> Actor -> Int -> String ->
                   Action Bool
-effectToAction Effect.NoEffect source target power msg = do
-  pl <- gets splayer
-  when (source == pl) $ messageAdd "Nothing happens."
-  return False
+effectToAction Effect.NoEffect source target power msg = return False
 effectToAction Effect.Heal source target power msg = do
   m <- gets (getActor target)
   if mhp m >= nhpMax (mkind m) || power <= 0
@@ -115,7 +112,7 @@ effectToAction Effect.SummonFriend source target power msg = do
   return True
 effectToAction Effect.SummonEnemy source target power msg = do
   tm <- gets (getActor target)
-  if not $ isAHero source
+  if not $ isAHero source  -- a trick: monster player will summon a hero
     then summonHeroes (1 + power) (mloc tm)
     else summonMonsters (1 + power) (mloc tm)
   return True
@@ -141,9 +138,11 @@ effectToAction Effect.Searching source target power msg = do
 itemEffectAction :: Item -> Actor -> Actor -> Action Bool
 itemEffectAction item source target = do
   state <- get
+  pl <- gets splayer
   let effect = ItemKind.jeffect $ ItemKind.getIK $ ikind item
       msg = " with " ++ objectItem state item
   b <- effectToAction effect source target (ipower item) msg
+  when (not b && source == pl ) $ messageAdd "Nothing happens."
   -- If something happens, the item gets identified.
   when (b && (isAHero source || isAHero target)) $ discover item
   return b
