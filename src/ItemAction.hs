@@ -75,7 +75,7 @@ applyGroupItem actor verb item = do
   let consumed = item { icount = 1 }
       msg = subjectVerbIObject state body verb consumed ""
       loc = mloc body
-  when (loc `S.member` ptvisible per) $ message msg
+  when (loc `S.member` ptvisible per) $ messageAdd msg
   b <- itemEffectAction consumed actor actor
   when b $ removeFromInventory actor consumed loc
   advanceTime actor
@@ -122,7 +122,7 @@ zapGroupItem source loc verb item = do
         modify (updateLevel (dropItemsAt [consumed] loc))
     Nothing -> do
       let msg = subjectVerbIObject state sm verb consumed ""
-      when (sloc `S.member` ptvisible per) $ message msg
+      when (sloc `S.member` ptvisible per) $ messageAdd msg
       modify (updateLevel (dropItemsAt [consumed] loc))
   advanceTime source
 
@@ -168,7 +168,7 @@ dropItem = do
   case iOpt of
     Just i -> do
       removeFromInventory pl i (mloc pbody)
-      message (subjectVerbIObject state pbody "drop" i "")
+      messageAdd (subjectVerbIObject state pbody "drop" i "")
       modify (updateLevel (dropItemsAt [i] ploc))
     Nothing -> neverMind True
   playerAdvanceTime
@@ -219,9 +219,9 @@ actorPickupItem actor = do
           let (ni, nitems) = joinItem (i { iletter = Just l }) (mitems body)
           -- message depends on who picks up and if a hero can perceive it
           if isPlayer
-            then message (letterLabel (iletter ni) ++ objectItem state ni)
+            then messageAdd (letterLabel (iletter ni) ++ objectItem state ni)
             else when perceived $
-                   message $ subjCompoundVerbIObj state body "pick" "up" i ""
+                   messageAdd $ subjCompoundVerbIObj state body "pick" "up" i ""
           assertTrue $ removeFromLoc i loc
           -- add item to actor's inventory:
           updateAnyActor actor $ \ m ->
@@ -246,7 +246,7 @@ pickupItem = do
 -- that messages are printed to the player only if the
 -- hero can perceive the action.
 -- Perhaps this means half of this code should be split and moved
--- to ItemState, to be independent of any IO code from Action/Display. Actually, not, since the message dissplay depends on Display. Unless we return a string to be displayed.
+-- to ItemState, to be independent of any IO code from Action/Display. Actually, not, since the message display depends on Display. Unless we return a string to be displayed.
 
 -- | Let the player choose any item from a list of items.
 -- TODO: you can drop an item on the floor, which works correctly,
@@ -279,7 +279,7 @@ getItem prompt p ptext is0 isn = do
       interact = do
         when (L.null is0 && L.null tis) $
           abortWith "Not carrying anything."
-        message (prompt ++ " " ++ choice)
+        messageWipeAndSet (prompt ++ " " ++ choice)
         display
         session nextCommand >>= perform
       perform command = do

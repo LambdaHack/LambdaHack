@@ -89,8 +89,8 @@ overlay :: String -> Action Bool
 overlay txt = Action (\ s e p k a st ms -> displayLevel False s p st ms (Just txt) >>= k st ms)
 
 -- | Set the current message.
-message :: Message -> Action ()
-message nm = Action (\ s e p k a st ms -> k st nm ())
+messageWipeAndSet :: Message -> Action ()
+messageWipeAndSet nm = Action (\ s e p k a st ms -> k st nm ())
 
 -- | Add to the current message.
 messageAdd :: Message -> Action ()
@@ -151,7 +151,7 @@ debug x = return () -- liftIO $ hPutStrLn stderr x
 abortWith :: Message -> Action a
 abortWith msg =
   do
-    message msg
+    messageWipeAndSet msg
     display
     abort
 
@@ -163,33 +163,23 @@ abortIfWith :: Bool -> Message -> Action a
 abortIfWith True  = abortWith
 abortIfWith False = const abort
 
--- | Print message, await confirmation. Return value indicates if the
--- player tried to abort/escape.
-messageMoreConfirm :: Message -> Action Bool
-messageMoreConfirm msg =
-  do
-    message (msg ++ more)
-    display
-    session getConfirm
+-- | Print message, await confirmation. Return value indicates
+-- if the player tried to abort/escape.
+messageMoreConfirm :: Bool -> Message -> Action Bool
+messageMoreConfirm blackAndWhite msg = do
+  messageAdd (msg ++ more)
+  if blackAndWhite then displayBW else display
+  session getConfirm
 
 -- | Print message, await confirmation, ignore confirmation.
 messageMore :: Message -> Action ()
-messageMore msg = messageMoreConfirm msg >> return ()
-
--- | Add "-more-" to the current message, await confirmation, clear messages.
-messageAddMore :: Action Bool
-messageAddMore = do
-  messageAdd (L.tail more)  -- delete the space at the start
-  display
-  b <- session getConfirm
-  resetMessage
-  return b
+messageMore msg = resetMessage >> messageMoreConfirm False msg >> return ()
 
 -- | Print a yes/no question and return the player's answer.
 messageYesNo :: Message -> Action Bool
 messageYesNo msg =
   do
-    message (msg ++ yesno)
+    messageWipeAndSet (msg ++ yesno)
     displayBW  -- turn player's attention to the choice
     session getYesNo
 
@@ -208,7 +198,7 @@ messageOverlaysConfirm msg [] =
     return True
 messageOverlaysConfirm msg (x:xs) =
   do
-    message msg
+    messageWipeAndSet msg
     b <- overlay (x ++ more)
     if b
       then do
@@ -219,11 +209,10 @@ messageOverlaysConfirm msg (x:xs) =
           else stop
       else stop
   where
-    stop =
-      do
-        resetMessage
-        display
-        return False
+    stop = do
+      resetMessage
+      display
+      return False
 
 -- | Update the cached perception for the given computation.
 withPerception :: Action () -> Action ()

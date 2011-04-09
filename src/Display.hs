@@ -65,8 +65,8 @@ displayBlankConfirm session txt =
        display ((0, 0), normalLevelSize) session doBlank x ""
        getConfirm session
 
--- | Waits for a space or return or '?' or '*'. The last two to let keys that
--- request (more) information toggle display of the obtained information off.
+-- | Waits for a space or return or '?' or '*'. The last two act this way,
+-- to let keys that request information toggle display the information off.
 getConfirm :: MonadIO m => Session -> m Bool
 getConfirm session =
   getOptionalConfirm return (const $ getConfirm session) session

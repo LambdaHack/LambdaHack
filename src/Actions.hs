@@ -217,16 +217,6 @@ ifRunning t e =
     mdir <- gets (mdir . getPlayerBody)
     maybe e t mdir
 
--- | Store current message in the history and reset current message.
-history :: Action ()
-history =
-  do
-    msg <- resetMessage
-    config <- gets sconfig
-    let historyMax = Config.get config "ui" "historyMax"
-    unless (L.null msg) $
-      modify (updateHistory (take historyMax . ((msg ++ " "):)))
-
 -- | Update player memory.
 remember :: Action ()
 remember =
@@ -240,7 +230,7 @@ remember =
 openclose :: Bool -> Action ()
 openclose o =
   do
-    message "direction?"
+    messageWipeAndSet "direction?"
     display
     e  <- session nextCommand
     pl <- gets splayer
@@ -372,7 +362,7 @@ fleeDungeon =
         items = L.concatMap mitems (levelHeroList state)
     if total == 0
       then do
-             go <- messageMoreConfirm "Coward!"
+             go <- resetMessage >> messageMoreConfirm False "Coward!"
              when go $
                messageMore "Next time try to grab some loot before escape!"
              end
@@ -533,13 +523,15 @@ moveOrAttack allowAttacks autoOpen actor dir
           else if accessible lmap sloc tloc then do
             -- Switching positions requires full access.
             actorRunActor actor target
-            when (actor == pl) $ message $ lookAt False True state lmap tloc ""
+            when (actor == pl) $
+              messageAdd $ lookAt False True state lmap tloc ""
           else abort
         Nothing ->
           if accessible lmap sloc tloc then do
             -- perform the move
             updateAnyActor actor $ \ m -> m { mloc = tloc }
-            when (actor == pl) $ message $ lookAt False True state lmap tloc ""
+            when (actor == pl) $
+              messageAdd $ lookAt False True state lmap tloc ""
             advanceTime actor
           else if autoOpen then
             -- try to open a door
@@ -555,7 +547,7 @@ moveOrAttack allowAttacks autoOpen actor dir
 actorAttackActor :: Actor -> Actor -> Action ()
 actorAttackActor (AHero _) target@(AHero _) =
   -- Select adjacent hero by bumping into him. Takes no time.
-  selectPlayer target >> return ()
+  assertTrue $ selectPlayer target
 actorAttackActor source target = do
   sm <- gets (getActor source)
   case strongestItem (mitems sm) "sword" of

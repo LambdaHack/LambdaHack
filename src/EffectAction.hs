@@ -100,11 +100,12 @@ effectToAction (Effect.Wound nDm) source target power msg = do
 effectToAction Effect.Dominate source target power msg =
   if isAMonster target  -- Monsters have weaker will than heroes.
   then do
-         b <- selectPlayer target
+         assertTrue $ selectPlayer target
          -- Prevent AI from getting a few free moves until new player ready.
          updatePlayerBody (\ m -> m { mtime = 0})
          stopRunning
-         return b
+         display
+         return True
   else return False
 effectToAction Effect.SummonFriend source target power msg = do
   tm <- gets (getActor target)
@@ -121,7 +122,7 @@ effectToAction Effect.SummonEnemy source target power msg = do
 effectToAction Effect.ApplyPerfume source target _ _ = do
   pl <- gets splayer
   if source == pl && target == pl
-    then messageAdd "Tastes like water. No good." >>
+    then messageAdd "Tastes like water. No good to drink." >>
          return False
     else do
       let upd lvl = lvl { lsmell = M.map (const (-100)) (lsmell lvl) }
@@ -185,8 +186,8 @@ focusIfAHero target =
   then do
     -- Focus on the hero being wounded.
     b <- selectPlayer target
-    -- Extra prompt, in case many heroes wounded in one turn.
-    when b $ messageAddMore >> return ()
+    -- Display status line for the new hero.
+    when b $ display >> return ()
   else return ()
 
 summonHeroes :: Int -> Loc -> Action ()
@@ -194,8 +195,9 @@ summonHeroes n loc =
   assert (n > 0) $ do
   newHeroIndex <- gets (fst . scounter)
   modify (\ state -> iterate (addHero loc) state !! n)
-  b <- selectPlayer (AHero newHeroIndex)
-  when b $ messageAddMore >> return ()
+  assertTrue $ selectPlayer (AHero newHeroIndex)
+  -- Display status line for the new hero.
+  display >> return ()
 
 summonMonsters :: Int -> Loc -> Action ()
 summonMonsters n loc = do
@@ -214,15 +216,16 @@ checkPartyDeath =
     pbody  <- gets getPlayerBody
     config <- gets sconfig
     when (mhp pbody <= 0) $ do  -- TODO: change to guard? define mzero? Why are the writes to to files performed when I call abort later? That probably breaks the laws of MonadPlus.
-      messageAddMore
-      go <- messageMoreConfirm $ subjectMovableVerb (mkind pbody) "die" ++ "."
+      go <- messageMoreConfirm True $
+              subjectMovableVerb (mkind pbody) "die" ++ "."
+      history  -- Prevent the messages from being repeated.
       let firstDeathEnds = Config.get config "heroes" "firstDeathEnds"
       if firstDeathEnds
         then gameOver go
         else case L.filter (\ (actor, _) -> actor /= pl) ahs of
                [] -> gameOver go
                (actor, _nln) : _ -> do
-                 message "The survivors carry on."
+                 messageAdd "The survivors carry on."
                  -- Remove the dead player.
                  modify (deleteActor pl)
                  -- At this place the invariant that the player exists fails.
@@ -291,12 +294,21 @@ displayItems :: Message -> Bool -> [Item] -> Action Bool
 displayItems msg sorted is = do
   state <- get
   let inv = unlines $
-            L.map (\ i ->
-                    letterLabel (iletter i) ++ objectItem state i ++ " ")
-            ((if sorted then sortBy (cmpLetter' `on` iletter) else id) is)
+            L.map (\ i -> letterLabel (iletter i) ++ objectItem state i ++ " ")
+              ((if sorted then sortBy (cmpLetter' `on` iletter) else id) is)
   let ovl = inv ++ more
-  message msg
+  messageWipeAndSet msg
   overlay ovl
 
 stopRunning :: Action ()
 stopRunning = updatePlayerBody (\ p -> p { mdir = Nothing })
+
+-- | Store current message in the history and reset current message.
+history :: Action ()
+history =
+  do
+    msg <- resetMessage
+    config <- gets sconfig
+    let historyMax = Config.get config "ui" "historyMax"
+    unless (L.null msg) $
+      modify (updateHistory (take historyMax . ((msg ++ " "):)))
