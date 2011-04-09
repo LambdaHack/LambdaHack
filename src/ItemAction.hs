@@ -63,80 +63,103 @@ getGroupItem is groupName prompt packName =
       header = capitalize $ suffixS groupName
   in  getItem prompt choice header is packName
 
-applyGroupItem :: String ->  -- name of the group
+applyGroupItem :: Actor ->   -- actor applying the item; on current level
                   String ->  -- how the "applying" is called
+                  Item ->
                   Action ()
-applyGroupItem groupName verb = do
+applyGroupItem actor verb item = do
   state <- get
-  pbody <- gets getPlayerBody
-  is    <- gets (mitems . getPlayerBody)
-  iOpt  <- getGroupItem is groupName
-             ("What to " ++ verb ++ "?") "in inventory"
+  body  <- gets (getActor actor)
+  per   <- currentPerception
+  -- only one item consumed, even if several in inventory
+  let consumed = item { icount = 1 }
+      msg = subjectVerbIObject state body verb consumed ""
+      loc = mloc body
+  when (loc `S.member` ptvisible per) $ message msg
+  b <- itemEffectAction consumed actor actor
+  when b $ removeFromInventory actor consumed loc
+
+playerApplyGroupItem :: String -> Action ()
+playerApplyGroupItem groupName = do
+  is   <- gets (mitems . getPlayerBody)
+  iOpt <- getGroupItem is groupName
+            ("What to " ++ applyToVerb groupName ++ "?") "in inventory"
+  pl   <- gets splayer
   case iOpt of
-    Just item@(Item { ikind = ik }) -> do
-      -- only one item consumed, even if several in inventory
-      let v = if ItemKind.jname (ItemKind.getIK ik) == groupName
-              then verb
-              else "creatively apply"
-          consumed = item { icount = 1 }
-      message (subjectVerbIObject state pbody v consumed "")
-      pl <- gets splayer
-      b  <- itemEffectAction consumed pl pl
-      when b $ removeFromInventory consumed (mloc pbody)
+    Just i  ->
+      let verb = applyToVerb (ItemKind.jname (ItemKind.getIK (ikind i)))
+      in  applyGroupItem pl verb i
     Nothing -> neverMind True
   playerAdvanceTime
 
-zapGroupItem :: String ->  -- name of the group
-                String ->  -- how the "applying" is called
+applyToVerb :: String -> String
+applyToVerb "potion" = "quaff"
+applyToVerb "scroll" = "read"
+applyToVerb _ = "creatively apply"
+
+quaffPotion :: Action ()
+quaffPotion = playerApplyGroupItem "potion"
+
+readScroll :: Action ()
+readScroll = playerApplyGroupItem "scroll"
+
+zapGroupItem :: Actor ->
+                Loc ->
+                String ->  -- how the "zapping" is called
+                Item ->
                 Action ()
-zapGroupItem groupName verb = do
-  state  <- get
-  per    <- currentPerception
-  pbody  <- gets getPlayerBody
-  is     <- gets (mitems . getPlayerBody)
-  target <- gets (mtarget . getPlayerBody)
-  pl     <- gets splayer
-  iOpt   <- getGroupItem is groupName
-              ("What to " ++ verb ++ "?") "in inventory"
+zapGroupItem source loc verb item = do
+  state <- get
+  sm    <- gets (getActor source)
+  per   <- currentPerception
+  let consumed = item { icount = 1 }
+      sloc = mloc sm
+  removeFromInventory source consumed sloc
+  case locToActor loc state of
+    Just ta -> do
+      b <- itemEffectAction consumed source ta
+      when (not b) $
+        modify (updateLevel (dropItemsAt [consumed] loc))
+    Nothing -> do
+      let msg = subjectVerbIObject state sm verb consumed ""
+      when (sloc `S.member` ptvisible per) $ message msg
+      modify (updateLevel (dropItemsAt [consumed] loc))
+
+playerZapGroupItem :: String -> Action ()
+playerZapGroupItem groupName = do
+  state <- get
+  is    <- gets (mitems . getPlayerBody)
+  iOpt  <- getGroupItem is groupName
+             ("What to " ++ zapToVerb groupName ++ "?") "in inventory"
+  pl    <- gets splayer
+  per   <- currentPerception
   case iOpt of
-    Just item@(Item { ikind = ik }) -> do
-      -- only one item consumed, even if several in inventory
-      let v = if ItemKind.jname (ItemKind.getIK ik) == groupName
-              then verb
-              else "furiously zap"
-          consumed = item { icount = 1 }
-      removeFromInventory consumed (mloc pbody)
+    Just i  ->
       case targetToLoc (ptvisible per) state of
         Nothing  -> abortWith "target invalid"
         Just loc ->
           -- TODO: draw digital line and see if obstacles prevent firing
           if actorReachesLoc pl loc per (Just pl)
-          then case locToActor loc state of
-                 Just ta -> do
-                   b <- itemEffectAction consumed pl ta
-                   when (not b) $
-                     modify (updateLevel (dropItemsAt [consumed] loc))
-                 Nothing -> do
-                   message (subjectVerbIObject state pbody verb consumed "")
-                   modify (updateLevel (dropItemsAt [consumed] loc))
+          then let verb = zapToVerb (ItemKind.jname (ItemKind.getIK (ikind i)))
+               in  zapGroupItem pl loc verb i
           else abortWith "target not reachable"
     Nothing -> neverMind True
   playerAdvanceTime
 
-quaffPotion :: Action ()
-quaffPotion = applyGroupItem "potion" "quaff"
-
-readScroll :: Action ()
-readScroll  = applyGroupItem "scroll" "read"
+zapToVerb :: String -> String
+zapToVerb "wand" = "aim"
+zapToVerb "dart" = "throw"
+zapToVerb _ = "furiously zap"
 
 aimItem :: Action ()
-aimItem = zapGroupItem "wand" "aim"
+aimItem = playerZapGroupItem "wand"
 
 throwItem :: Action ()
-throwItem = zapGroupItem "dart" "throw"
+throwItem = playerZapGroupItem "dart"
 
 dropItem :: Action ()
 dropItem = do
+  pl    <- gets splayer
   state <- get
   pbody <- gets getPlayerBody
   ploc  <- gets (mloc . getPlayerBody)
@@ -144,24 +167,24 @@ dropItem = do
   iOpt  <- getAnyItem "What to drop?" items "inventory"
   case iOpt of
     Just i -> do
-      removeFromInventory i (mloc pbody)
+      removeFromInventory pl i (mloc pbody)
       message (subjectVerbIObject state pbody "drop" i "")
       modify (updateLevel (dropItemsAt [i] ploc))
     Nothing -> neverMind True
   playerAdvanceTime
 
--- | Remove given item from the hero's inventory or floor.
+-- | Remove given item from an actor's inventory or floor.
 -- TODO: this is subtly wrong: if identical items are on the floor and in
 -- inventory, the floor one will be chosen, regardless of player intention.
 -- TODO: right now it ugly hacks (with the ploc) around removing items
 -- of dead heros/monsters. The subtle incorrectness helps here a lot,
--- because itmes of dead heroes land on the floor, so we used them up
+-- because items of dead heroes land on the floor, so we use them up
 -- in inventory, but remove them after use from the floor.
-removeFromInventory :: Item -> Loc -> Action ()
-removeFromInventory i ploc = do
-  b <- removeFromLoc i ploc
+removeFromInventory :: Actor -> Item -> Loc -> Action ()
+removeFromInventory actor i loc = do
+  b <- removeFromLoc i loc
   when (not b) $
-    updatePlayerBody (\ p -> p { mitems = removeItemByLetter i (mitems p) })
+    updateAnyActor actor (\ m -> m { mitems = removeItemByLetter i (mitems m) })
 
 -- | Remove given item from the given location. Tell if successful.
 removeFromLoc :: Item -> Loc -> Action Bool
@@ -223,7 +246,7 @@ pickupItem = do
 -- that messages are printed to the player only if the
 -- hero can perceive the action.
 -- Perhaps this means half of this code should be split and moved
--- to ItemState, to be independent of any IO code from Action/Display.
+-- to ItemState, to be independent of any IO code from Action/Display. Actually, not, since the message dissplay depends on Display. Unless we return a string to be displayed.
 
 -- | Let the player choose any item from a list of items.
 -- TODO: you can drop an item on the floor, which works correctly,
@@ -259,7 +282,8 @@ getItem prompt p ptext is0 isn = do
         message (prompt ++ " " ++ choice)
         display
         session nextCommand >>= perform
-      perform command =
+      perform command = do
+        resetMessage
         case command of
           K.Char '?' -> do
             -- filter for supposedly suitable objects

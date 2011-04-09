@@ -79,8 +79,8 @@ displayWithoutMessage = Action (\ s e p k a st ms -> displayLevel False s p st "
 -- | Display the current level, with the current message.
 display :: Action Bool
 display = Action (\ s e p k a st ms -> displayLevel False s p st ms Nothing >>= k st ms)
--- | Display the current level, with the current message.
 
+-- | Display the current level in black and white, and the current message,
 displayBW :: Action Bool
 displayBW = Action (\ s e p k a st ms -> displayLevel True s p st ms Nothing >>= k st ms)
 
