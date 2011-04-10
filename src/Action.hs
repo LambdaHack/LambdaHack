@@ -4,6 +4,7 @@ module Action where
 import Control.Monad
 import Control.Monad.State hiding (State)
 import Data.List as L
+import qualified Data.IntMap as IM
 -- import System.IO (hPutStrLn, stderr) -- just for debugging
 
 import Perception
@@ -243,10 +244,16 @@ updatePlayerBody f = do
 
 -- | Advance the move time for the given actor.
 advanceTime :: Actor -> Action ()
-advanceTime actor =
-  do
-    time <- gets stime
-    updateAnyActor actor $ \ m -> m { mtime = time + (nspeed (mkind m)) }
+advanceTime actor = do
+  time <- gets stime
+  let upd m = m { mtime = time + (nspeed (mkind m)) }
+  -- A hack to synchronize the whole party:
+  pl <- gets splayer
+  if (actor == pl || isAHero actor)
+    then do
+           modify (updateLevel (updateHeroes (IM.map upd)))
+           when (not $ isAHero pl) $ updatePlayerBody upd
+    else updateAnyActor actor upd
 
 playerAdvanceTime :: Action ()
 playerAdvanceTime = do
