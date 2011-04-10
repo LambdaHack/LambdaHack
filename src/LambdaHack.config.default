@@ -30,21 +30,15 @@ highScores: LambdaHack.scores
 saveGame: LambdaHack.save
 
 [heroes]
-baseHP: 50
-extraHeroes: 0
-firstDeathEnds: False
 HeroName_0: you
 HeroName_1: Haskell Alvin
 HeroName_2: Alonzo Barkley
 HeroName_3: Ernst Abraham
 HeroName_4: Samuel Saunders
 HeroName_5: Roger Robin
-
-[monsters]
-smellTimeout: 1000
-
-[ui]
-historyMax: 500
+baseHP: 50
+extraHeroes: 0
+firstDeathEnds: False
 
 [macros]
 ; throw a dart at the closest monster
@@ -52,8 +46,14 @@ historyMax: 500
 ; TODO: the above does not work yet; in gtk can be done via unGetChan,
 ; unless we prefer an explicit command queue, with flushing, etc.
 ;
-; Angband compatibility
-v: t
 ; backward compatibility
 colon: slash
 comma: g
+; Angband compatibility
+v: t
+
+[monsters]
+smellTimeout: 1000
+
+[ui]
+historyMax: 500
