@@ -544,19 +544,41 @@ moveOrAttack allowAttacks autoOpen actor dir
 -- For instance, a movable on an open door can be attacked diagonally,
 -- and a movable capable of moving through walls can be attacked from an
 -- adjacent position.
+-- This function is analogous to zapGroupItem, but for melee
+-- and not using up the weapon.
 actorAttackActor :: Actor -> Actor -> Action ()
 actorAttackActor (AHero _) target@(AHero _) =
   -- Select adjacent hero by bumping into him. Takes no time.
   assertTrue $ selectPlayer target
 actorAttackActor source target = do
-  sm <- gets (getActor source)
-  case strongestItem (mitems sm) "sword" of
-    Just sw ->
-      let single = sw { icount = 1 }
-      in  itemEffectAction single source target
-    Nothing ->
-      effectToAction (Effect.Wound (3, 1)) source target 0 ""
+  state <- get
+  sm    <- gets (getActor source)
+  tm    <- gets (getActor target)
+  per   <- currentPerception
+  let groupName = "sword"
+      verb = attackToVerb groupName
+      sloc = mloc sm
+      swordKindIndex = fromJust $ L.elemIndex ItemKind.sword ItemKind.loot
+      -- The hand-to-hand "weapon", equivalent to +0 sword.
+      h2h = Item swordKindIndex 0 Nothing 1
+      str = strongestItem (mitems sm) groupName
+      stack  = fromMaybe h2h str
+      single = stack { icount = 1 }
+      -- The message describes the source part of the action.
+      -- TODO: right now it also describes the victim and weapon;
+      -- perhaps, when a weapon is equipped, just say "you hit" or "you miss"
+      -- and then "nose dies" or "nose yells in pain".
+      msg = subjectVerbMObject sm verb tm $
+              if isJust str then " with " ++ objectItem state single else ""
+  when (sloc `S.member` ptvisible per) $ messageAdd msg
+  -- Messages inside itemEffectAction describe the target part.
+  itemEffectAction source target single
   advanceTime source
+
+attackToVerb :: String -> String
+attackToVerb "sword" = "hit"  -- TODO: "slash"? "pierce"? "swing"?
+attackToVerb "mace" = "bludgeon"
+attackToVerb _ = "hit"
 
 -- | Resolves the result of an actor running into another.
 -- This involves switching positions of the two movables.

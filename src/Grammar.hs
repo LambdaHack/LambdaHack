@@ -14,9 +14,11 @@ import Effect
 
 
 suffixS :: String -> String
-suffixS word = if last word == 'y'
-               then init word ++ "ies"
-               else word ++ "s"
+suffixS word = case last word of
+                'y' -> init word ++ "ies"
+                's' -> word ++ "es"
+                'x' -> word ++ "es"
+                _   -> word ++ "s"
 
 capitalize :: String -> String
 capitalize [] = []

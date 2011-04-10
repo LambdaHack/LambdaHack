@@ -44,46 +44,37 @@ import qualified Effect
 -- TODO: separately define messages for the case when source == target
 -- and for the other case; then use the messages outside of effectToAction,
 -- depending on the returned bool, perception and identity of the actors.
-effectToAction :: Effect.Effect -> Actor -> Actor -> Int -> String ->
-                  Action Bool
-effectToAction Effect.NoEffect source target power msg = return False
-effectToAction Effect.Heal source target power msg = do
-  m <- gets (getActor target)
-  if mhp m >= nhpMax (mkind m) || power <= 0
-    then return False
+effectToAction :: Effect.Effect -> Actor -> Actor -> Int ->
+                  Action (Bool, String)
+effectToAction Effect.NoEffect source target power = nullEffect
+effectToAction Effect.Heal _source target power = do
+  tm <- gets (getActor target)
+  if mhp tm >= nhpMax (mkind tm) || power <= 0
+    then nullEffect
     else do
       focusIfAHero target
       let upd m = m { mhp = min (nhpMax (mkind m)) (mhp m + power) }
       updateAnyActor target upd
-      pl <- gets splayer
-      when (target == pl) $
-        messageAdd $ subjectMovableVerb (mkind m) "feel" ++ " better."
-      return True
-effectToAction (Effect.Wound nDm) source target power msg = do
+      return (True, subjectMovableVerb (mkind tm) "feel" ++ " better.")
+effectToAction (Effect.Wound nDm) source target power = do
   n <- liftIO $ rndToIO $ rollDice nDm
-  if (n + power <= 0) then return False else do
+  if (n + power <= 0) then nullEffect else do
     focusIfAHero target
-    pl <- gets splayer
-    sm <- gets (getActor source)
     tm <- gets (getActor target)
-    per <- currentPerception
     let newHP  = mhp tm - n - power
         killed = newHP <= 0
-        svis = mloc sm `S.member` ptvisible per
-        tvis = mloc tm `S.member` ptvisible per
-    -- Determine how the player perceives the event.
-    if source == target && not tvis
-       then return ()  -- Unseen monster quaffs a potion of wounding.
-       else messageAdd $
-         if source == target && target == pl
-         then subjectMovableVerb (mkind tm) "feel" ++ " wounded."
-         else if not tvis
-              then "You hear some noises."
-              else if source == target || not svis
-                   then subjectMovableVerb (mkind tm) "yell"
-                        ++ if killed then " one last time." else " in pain."  -- TODO: use msg
-                   else let combatVerb = if killed then "kill" else "hit"
-                        in  subjectVerbMObject sm combatVerb tm msg
+        msg = if source == target  -- a potion of wounding, etc.
+              then subjectMovableVerb (mkind tm) "feel"
+                   ++ if killed then " mortally" else ""
+                   ++ " wounded."
+              else if killed
+                   then if isAHero target
+                        then ""
+                        else subjectMovableVerb (mkind tm) "die" ++ "."
+                   else if isAHero target
+                        then subjectMovableVerb (mkind tm) "lose"
+                             ++ " " ++ show (n + power) ++ "HP."
+                        else subjectMovableVerb (mkind tm) "hiss" ++ " in pain."
     updateAnyActor target $ \ m -> m { mhp = newHP }  -- Damage the target.
     when killed $ do
       -- Place the actor's possessions on the map.
@@ -93,8 +84,8 @@ effectToAction (Effect.Wound nDm) source target power msg = do
       if target == pl
         then checkPartyDeath  -- kills the player and checks game over
         else modify (deleteActor target)  -- kills the enemy
-    return True
-effectToAction Effect.Dominate source target power msg =
+    return (True, msg)
+effectToAction Effect.Dominate source target power =
   if isAMonster target  -- Monsters have weaker will than heroes.
   then do
          assertTrue $ selectPlayer target
@@ -102,54 +93,71 @@ effectToAction Effect.Dominate source target power msg =
          updatePlayerBody (\ m -> m { mtime = 0})
          stopRunning
          display
-         return True
-  else return False
-effectToAction Effect.SummonFriend source target power msg = do
+         return (True, "")
+  else nullEffect
+effectToAction Effect.SummonFriend source target power = do
   tm <- gets (getActor target)
   if isAHero source
     then summonHeroes (1 + power) (mloc tm)
     else summonMonsters (1 + power) (mloc tm)
-  return True
-effectToAction Effect.SummonEnemy source target power msg = do
+  return (True, "")
+effectToAction Effect.SummonEnemy source target power = do
   tm <- gets (getActor target)
   if not $ isAHero source  -- a trick: monster player will summon a hero
     then summonHeroes (1 + power) (mloc tm)
     else summonMonsters (1 + power) (mloc tm)
-  return True
-effectToAction Effect.ApplyPerfume source target _ _ = do
-  pl <- gets splayer
-  if source == pl && target == pl
-    then messageAdd "Tastes like water. No good to drink." >>
-         return False
-    else do
-      let upd lvl = lvl { lsmell = M.map (const (-100)) (lsmell lvl) }
-      modify (updateLevel upd)
-      messageAdd "The fragrance quells all scents."
-      return True
-effectToAction Effect.Regneration source target power msg =
-  effectToAction Effect.Heal source target power msg
-effectToAction Effect.Searching source target power msg = do
-  pl <- gets splayer
-  when (source == pl) $ messageAdd "It gets lost and you search in vain."
-  return True
+  return (True, "")
+effectToAction Effect.ApplyPerfume source target _ =
+  if source == target
+  then return (False, "Tastes like water. No good to drink.")
+  else do
+    let upd lvl = lvl { lsmell = M.map (const (-100)) (lsmell lvl) }
+    modify (updateLevel upd)
+    return (True, "The fragrance quells all scents.")
+effectToAction Effect.Regneration source target power =
+  effectToAction Effect.Heal source target power
+effectToAction Effect.Searching source target power =
+  return (True, "It gets lost and you search in vain.")
+
+nullEffect :: Action (Bool, String)
+nullEffect = return (False, "Nothing happens.")
 
 -- | The source actor affects the target actor, with a given item.
 -- If either actor is a hero, the item may get identified.
-itemEffectAction :: Item -> Actor -> Actor -> Action Bool
-itemEffectAction item source target = do
+itemEffectAction :: Actor -> Actor -> Item -> Action Bool
+itemEffectAction source target item = do
   state <- get
-  pl <- gets splayer
+  pl    <- gets splayer
+  tm    <- gets (getActor target)
+  per   <- currentPerception
   let effect = ItemKind.jeffect $ ItemKind.getIK $ ikind item
-      msg = " with " ++ objectItem state item
-  b <- effectToAction effect source target (ipower item) msg
-  when (not b && source == pl ) $ messageAdd "Nothing happens."
+  -- The message describes the target part of the action.
+  (b, msg) <- effectToAction effect source target (ipower item)
+  -- Determine how the player perceives the event.
+  if mloc tm `S.member` ptvisible per
+     then messageAdd msg
+     else if not b
+          then return ()  -- Victim is not seen, nothing interestng happens.
+          else messageAdd "You hear some noises."
   -- If something happens, the item gets identified.
   when (b && (isAHero source || isAHero target)) $ discover item
   return b
 
 -- | Given item is now known to the player.
 discover :: Item -> Action ()
-discover i = modify (updateDiscoveries (S.insert (ikind i)))
+discover i = do
+  state <- get
+  let ik = ikind i
+      msg = "The" ++ L.tail (objectItem state i) ++ " turns out to be "
+      kind = ItemKind.getIK ik
+      alreadyIdentified = L.length (ItemKind.jflavour kind) == 1 ||
+                          ik `S.member` sdiscoveries state
+  if alreadyIdentified
+    then return ()
+    else do
+           modify (updateDiscoveries (S.insert ik))
+           state <- get
+           messageAdd $ msg ++ objectItem state i ++ "."
 
 -- | Selects a movable for the player, based on the actor.
 -- Focuses on the hero if level changed. False, if nothing to do.
@@ -306,8 +314,11 @@ stopRunning = updatePlayerBody (\ p -> p { mdir = Nothing })
 history :: Action ()
 history =
   do
-    msg <- resetMessage
-    config <- gets sconfig
+    (_, sx) <- gets (lsize . slevel)
+    msg     <- resetMessage
+    config  <- gets sconfig
     let historyMax = Config.get config "ui" "historyMax"
+        -- TODO: not ideal, continuations of sentences are atop beginnings.
+        split = splitMsg sx (msg ++ " ")
     unless (L.null msg) $
-      modify (updateHistory (take historyMax . ((msg ++ " "):)))
+      modify (updateHistory (take historyMax . (L.reverse split ++)))

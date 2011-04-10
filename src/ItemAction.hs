@@ -65,7 +65,7 @@ getGroupItem is groupName prompt packName =
 
 applyGroupItem :: Actor ->   -- actor applying the item; on current level
                   String ->  -- how the "applying" is called
-                  Item ->
+                  Item ->    -- the item to be applied
                   Action ()
 applyGroupItem actor verb item = do
   state <- get
@@ -75,9 +75,9 @@ applyGroupItem actor verb item = do
   let consumed = item { icount = 1 }
       msg = subjectVerbIObject state body verb consumed ""
       loc = mloc body
-  when (loc `S.member` ptvisible per) $ messageAdd msg
-  itemEffectAction consumed actor actor
   removeFromInventory actor consumed loc
+  when (loc `S.member` ptvisible per) $ messageAdd msg
+  itemEffectAction actor actor consumed
   advanceTime actor
 
 playerApplyGroupItem :: String -> Action ()
@@ -103,26 +103,28 @@ quaffPotion = playerApplyGroupItem "potion"
 readScroll :: Action ()
 readScroll = playerApplyGroupItem "scroll"
 
-zapGroupItem :: Actor ->
-                Loc ->
+zapGroupItem :: Actor ->   -- actor zapping the item; on current level
+                Loc ->     -- target location for the zapping
                 String ->  -- how the "zapping" is called
-                Item ->
+                Item ->    -- the item to be zapped
                 Action ()
 zapGroupItem source loc verb item = do
   state <- get
   sm    <- gets (getActor source)
   per   <- currentPerception
   let consumed = item { icount = 1 }
+      msg = subjectVerbIObject state sm verb consumed ""
       sloc = mloc sm
   removeFromInventory source consumed sloc
+  -- The message describes the source part of the action.
+  when (sloc `S.member` ptvisible per) $ messageAdd msg
   case locToActor loc state of
     Just ta -> do
-      b <- itemEffectAction consumed source ta
+      -- Messages inside itemEffectAction describe the target part.
+      b <- itemEffectAction source ta consumed
       when (not b) $
         modify (updateLevel (dropItemsAt [consumed] loc))
-    Nothing -> do
-      let msg = subjectVerbIObject state sm verb consumed ""
-      when (sloc `S.member` ptvisible per) $ messageAdd msg
+    Nothing ->
       modify (updateLevel (dropItemsAt [consumed] loc))
   advanceTime source
 
