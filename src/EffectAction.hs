@@ -134,6 +134,8 @@ itemEffectAction source target item = do
   -- The message describes the target part of the action.
   (b, msg) <- effectToAction effect source target (ipower item)
   -- Determine how the player perceives the event.
+  -- TODO: factor it out as a function messageActor
+  -- and messageActorVerb (incorporating subjectActorVerb).
   if mloc tm `S.member` ptvisible per
      then messageAdd msg
      else if not b
