@@ -108,6 +108,9 @@ closed = not . open
 floor :: Tile -> Bool
 floor = Terrain.isFloor . tterrain
 
+wall :: Tile -> Bool
+wall = Terrain.isWall . tterrain
+
 secret :: Maybe Int -> Bool
 secret (Just n) | n /= 0 = True
 secret _ = False
