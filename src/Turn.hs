@@ -253,7 +253,7 @@ stdKeybindings = Keybindings
                (K.Char '.',  waitCommand),
 
                -- saving or ending the game
-               (K.Char 'S',  saveCommand),
+               (K.Char 'X',  saveCommand),
                (K.Char 'Q',  quitCommand),
 
                -- debug modes

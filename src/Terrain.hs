@@ -87,7 +87,7 @@ instance Binary DL where
 --
 --     * 'DR': lower right
 --
---     * 'O': lower right
+--     * 'O': a pillar
 --
 -- I am tempted to add even more (T-pieces and crossings),
 -- but currently, we don't need them.

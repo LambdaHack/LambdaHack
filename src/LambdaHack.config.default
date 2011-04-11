@@ -47,6 +47,7 @@ firstDeathEnds: False
 ; unless we prefer an explicit command queue, with flushing, etc.
 ;
 ; backward compatibility
+S: X
 colon: slash
 comma: g
 ; Angband compatibility

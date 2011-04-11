@@ -29,8 +29,8 @@ keyHelp :: (K.Key -> [K.Key]) -> Keybindings -> String
 keyHelp aliases kb =
   let
     fmt k h = replicate 15 ' ' ++ k ++ replicate ((13 - length k) `max` 1) ' '
-                               ++ h ++ replicate ((30 - length h) `max` 1) ' '
-    fmts s  = replicate 15 ' ' ++ s ++ replicate ((43 - length s) `max` 1) ' '
+                               ++ h ++ replicate ((35 - length h) `max` 1) ' '
+    fmts s  = replicate 15 ' ' ++ s ++ replicate ((48 - length s) `max` 1) ' '
     blank   = fmt "" ""
     title   = fmt "keys" "command"
     footer  = fmts "(See file PLAYING.markdown.)"
