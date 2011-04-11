@@ -272,7 +272,7 @@ getItem prompt p ptext is0 isn = do
   let loc       = mloc body
       t         = lmap `at` loc -- the map tile in question
       tis       = titems t
-      floorMsg  = if L.null tis then "" else " _,"
+      floorMsg  = if L.null tis then "" else " -,"
       is = L.filter p is0
       choice = if L.null is
                then "[*," ++ floorMsg ++ " ESC]"
@@ -297,7 +297,7 @@ getItem prompt p ptext is0 isn = do
             b <- displayItems ("Objects " ++ isn) True is0
             if b then session (getOptionalConfirm (const interact) perform)
                  else interact
-          K.Char '_' ->
+          K.Char '-' ->
             case tis of
               []   -> return Nothing
               i:rs -> -- use first item; TODO: let player select item
