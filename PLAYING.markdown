@@ -32,14 +32,14 @@ The basic tiles are as follows.
                open door                          | and -
                rock                               blank
 
-The game world is persistent, i.e., every time a hero visits a level
+The game world is persistent, i. e., every time a hero visits a level
 during a single game, the level layout looks the same.
 
 
 Keys
 ----
 
-Below are the most basic default keys.
+Below are the basic default keys.
 
                key    command
                .      wait
@@ -52,10 +52,10 @@ Below are the most basic default keys.
                d      drop an object
                g      get an object
                i      display inventory
-               o      open a door (or bump into a door)
+               o      open a door (alternatively, you can bump into a door)
                q      quaff a potion
                r      read a scroll
-               s      search for secret doors (or bump into a wall)
+               s      search for secret doors (or you can bump into a wall)
 
 One of the ways of moving throughout the level is with the vi text editor keys
 (also known as "Rogue-like keys").
@@ -76,7 +76,7 @@ the hero run in that direction until something interesting occurs.
 It is also possible to move using the numerical keypad, with Shift for running
 and the middle '5' key for waiting. (If you are using the curses frontend,
 numerical keypad may not work correctly for terminals with broken terminfo,
-e.g., gnome terminal tends to have problems, while xterm works fine.)
+e.g., gnome terminal has problems, while xterm works fine.)
 
 To make a distance attack, you need to set your target first.
 The targeting commands are listed below, together with all the other
@@ -111,10 +111,10 @@ The hero is not alone in the dungeon. Monsters roam the dark caves
 and crawl from damp holes all the time. While heroes pay attention
 to all other party members and take moves sequentially, one after another,
 monsters don't care where the other monsters are going and all move at once,
-sometimes hitting each other by chance.
+sometimes colliding and hitting each other by chance.
 
 When the hero bumps into a monster or a monster attacks the hero,
-melee combat occurs. Throwing objects or aiming magical devices may wound
+melee combat occurs. Throwing objects and aiming magical devices may wound
 the affected targets, too. Whenever a monster or a hero hit points
 reach zero, the combatant dies. When the last hero dies, the game ends.
 
@@ -129,5 +129,5 @@ Only the loot in possession of the party members on level 1 counts
 
 If all heroes die, your score is halved and only the treasure carried
 by the last standing hero counts. You are free to start again
-from the first level of the dungeon, but all your treasure and items
-are gone and the dungeon and it's items look differently.
+from the first level of the dungeon, but all your wealth and items
+are gone and the dungeon and it's treasure look differently.
