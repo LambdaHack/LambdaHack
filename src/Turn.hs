@@ -264,7 +264,7 @@ stdKeybindings = Keybindings
 
                -- information for the player
                (K.Char 'V',  versionCommand),
-               (K.Char 'M',  historyCommand),
+               (K.Char 'P',  historyCommand),
                (K.Char 'D',  dumpCommand),
                (K.Char '?',  helpCommand),
                (K.Return  ,  acceptCommand displayHelp),

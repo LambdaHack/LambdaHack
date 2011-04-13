@@ -86,11 +86,11 @@ less common player commands.
                ESC    cancel action
                RET    accept choice
                TAB    cycle among heroes on level
-               0--9   select a hero anywhere in the dungeon
+               0--9   select a hero anywhere in the dungeon (GTK only)
                *      target monster
                /      target location
                D      dump current configuration
-               M      display previous messages
+               P      display previous messages
                V      display game version
                a      aim a wand
                t      throw a weapon
@@ -99,9 +99,9 @@ There are also some debug and cheat keys. Use at your peril!
 
                key    command
                O      toggle "omniscience"
-               I      display level meta-data
-               R      cycle among display modes
-               T      cycle among level generation stages
+               I      inform about level meta-data
+               R      rotate display modes
+               T      cycle among level terrain generation stages
 
 
 Monsters

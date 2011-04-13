@@ -46,7 +46,7 @@ firstDeathEnds: False
 ; TODO: the above does not work yet; in gtk can be done via unGetChan,
 ; unless we prefer an explicit command queue, with flushing, etc.
 ;
-; backward compatibility
+; NetHack compatibility
 S: X
 colon: slash
 comma: g
