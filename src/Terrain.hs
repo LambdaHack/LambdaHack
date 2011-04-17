@@ -106,6 +106,10 @@ isWall :: Terrain a -> Bool
 isWall (Wall _) = True
 isWall _        = False
 
+isRock :: Terrain a -> Bool
+isRock Rock = True
+isRock _    = False
+
 isUnknown :: Terrain a -> Bool
 isUnknown Unknown = True
 isUnknown _       = False

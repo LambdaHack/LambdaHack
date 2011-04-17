@@ -533,7 +533,8 @@ moveOrAttack allowAttacks autoOpen actor dir
             when (actor == pl) $
               messageAdd $ lookAt False True state lmap tloc ""
             advanceTime actor
-          else if allowAttacks && actor == pl && wall (lmap `at` tloc) then do
+          else if allowAttacks && actor == pl
+                  && canBeDoor (lmap `rememberAt` tloc) then do
             messageAdd "You search your surroundings."  -- TODO: proper msg
             search
           else if autoOpen then
