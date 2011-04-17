@@ -159,6 +159,8 @@ aimItem = playerZapGroupItem "wand"
 throwItem :: Action ()
 throwItem = playerZapGroupItem "dart"
 
+-- | Drop a single item.
+-- TODO: allow dropping a given number of identical items.
 dropItem :: Action ()
 dropItem = do
   pl    <- gets splayer
@@ -168,12 +170,19 @@ dropItem = do
   items <- gets (mitems . getPlayerBody)
   iOpt  <- getAnyItem "What to drop?" items "inventory"
   case iOpt of
-    Just i -> do
-      removeFromInventory pl i (mloc pbody)
+    Just stack -> do
+      let i = stack { icount = 1 }
+      removeOnlyFromInventory pl i (mloc pbody)
       messageAdd (subjectVerbIObject state pbody "drop" i "")
       modify (updateLevel (dropItemsAt [i] ploc))
     Nothing -> neverMind True
   playerAdvanceTime
+
+-- TODO: this is a hack for dropItem, because removeFromInventory
+-- makes it impossible to drop items if the floor not empty.
+removeOnlyFromInventory :: Actor -> Item -> Loc -> Action ()
+removeOnlyFromInventory actor i loc = do
+  updateAnyActor actor (\ m -> m { mitems = removeItemByLetter i (mitems m) })
 
 -- | Remove given item from an actor's inventory or floor.
 -- TODO: this is subtly wrong: if identical items are on the floor and in
