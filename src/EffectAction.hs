@@ -109,11 +109,11 @@ effectToAction Effect.SummonEnemy source target power = do
   return (True, "")
 effectToAction Effect.ApplyPerfume source target _ =
   if source == target
-  then return (False, "Tastes like water. No good to drink.")
+  then return (True, "Tastes like water, but with a strong rose scent.")
   else do
     let upd lvl = lvl { lsmell = M.map (const (-100)) (lsmell lvl) }
     modify (updateLevel upd)
-    return (True, "The fragrance quells all scents.")
+    return (True, "The fragrance quells all scents in the vicinity.")
 effectToAction Effect.Regneration source target power =
   effectToAction Effect.Heal source target power
 effectToAction Effect.Searching source target power =
