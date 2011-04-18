@@ -150,19 +150,18 @@ debug x = return () -- liftIO $ hPutStrLn stderr x
 
 -- | Print the given message, then abort.
 abortWith :: Message -> Action a
-abortWith msg =
-  do
-    messageWipeAndSet msg
-    display
-    abort
+abortWith msg = do
+  messageWipeAndSet msg
+  display
+  abort
 
 neverMind :: Bool -> Action a
 neverMind b = abortIfWith b "never mind"
 
 -- | Abort, and print the given message if the condition is true.
 abortIfWith :: Bool -> Message -> Action a
-abortIfWith True  = abortWith
-abortIfWith False = const abort
+abortIfWith True msg = abortWith msg
+abortIfWith False _  = abortWith ""
 
 -- | Print message, await confirmation. Return value indicates
 -- if the player tried to abort/escape.
@@ -178,11 +177,10 @@ messageMore msg = resetMessage >> messageMoreConfirm False msg >> return ()
 
 -- | Print a yes/no question and return the player's answer.
 messageYesNo :: Message -> Action Bool
-messageYesNo msg =
-  do
-    messageWipeAndSet (msg ++ yesno)
-    displayBW  -- turn player's attention to the choice
-    session getYesNo
+messageYesNo msg = do
+  messageWipeAndSet (msg ++ yesno)
+  displayBW  -- turn player's attention to the choice
+  session getYesNo
 
 -- | Print a message and an overlay, await confirmation. Return value
 -- indicates if the player tried to abort/escape.

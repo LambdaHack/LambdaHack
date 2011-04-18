@@ -184,7 +184,7 @@ continueRun dir =
         exit _            = False
     let hop t
           | monstersVisible || heroThere
-            || newsReported || itemsHere || exit t = abort
+            || newsReported || itemsHere || exit t = abortWith msg
         hop Corridor =
           -- in corridors, explore all corners and stop at all crossings
           -- TODO: even in corridors, stop if you run past an exit (rare)
@@ -199,16 +199,16 @@ continueRun dir =
                   case L.filter (\ x -> not $ diagonal x) ns of
                     [ortoDir]
                       | allCloseTo ortoDir -> run ortoDir
-                    _ -> abort
+                    _ -> abortWith msg
         hop _  -- outside corridors, never change direction
-          | not dirOK = abort
+          | not dirOK = abortWith msg
         hop _         =
           let ns = L.filter (\ x -> x /= dir && distance (neg dir, x) > 1) moves
               ls = L.map (loc `shift`) ns
               as = L.filter (\ x -> accessible lmap loc x
                                     || openable 1 lmap x) ls
               ts = L.map (tterrain . (lmap `at`)) as
-          in  if L.any exit ts then abort else run dir
+          in  if L.any exit ts then abortWith msg else run dir
     hop (tterrain t)
 
 ifRunning :: (Dir -> Action a) -> Action a -> Action a
@@ -525,7 +525,7 @@ moveOrAttack allowAttacks autoOpen actor dir
             actorRunActor actor target
             when (actor == pl) $
               messageAdd $ lookAt False True state lmap tloc ""
-          else abort
+          else abortWith ""
         Nothing ->
           if accessible lmap sloc tloc then do
             -- perform the move
@@ -540,7 +540,7 @@ moveOrAttack allowAttacks autoOpen actor dir
           else if autoOpen then
             -- try to open a door
             actorOpenClose actor False True dir
-          else abort
+          else abortWith ""
 
 -- | Resolves the result of an actor moving into another. Usually this
 -- involves melee attack, but with two heroes it just changes focus.
