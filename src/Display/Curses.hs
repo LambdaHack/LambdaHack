@@ -10,7 +10,7 @@ import qualified Data.ByteString.Char8 as BS
 import Control.Monad
 
 import Geometry
-import qualified Keys as K (K.Key(..))
+import qualified Keys as K (Key(..))
 import qualified Color
 
 displayId = "curses"

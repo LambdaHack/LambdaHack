@@ -11,9 +11,8 @@ import Multiline
 -- included from file src/LambdaHack.config.default.
 -- Warning: cabal does not detect that the default config is changed,
 -- so touching this file is needed to reinclude config and recompile.
--- TODO: remove the '$' when we switch to GHC 7 (when Haskell Platform is out?)
 configDefault :: String
-configDefault = [$multiline|
+configDefault = [multiline|
 
 #include "LambdaHack.config.default"
 

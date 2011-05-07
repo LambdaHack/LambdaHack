@@ -7,7 +7,7 @@ import Data.Char
 import qualified Data.ByteString.Char8 as BS
 
 import Geometry
-import qualified Keys as K (K.Key(..))
+import qualified Keys as K (Key(..))
 import qualified Color
 
 displayId = "vty"
