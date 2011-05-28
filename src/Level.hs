@@ -109,9 +109,13 @@ floor :: Tile -> Bool
 floor = Terrain.isFloor . tterrain
 
 canBeDoor :: Tile -> Bool
-canBeDoor t = Terrain.isWall (tterrain t) ||
-              Terrain.isRock (tterrain t) ||
-              Terrain.isUnknown (tterrain t)
+canBeDoor t =
+  case t of
+    Tile d@(Terrain.Door hv o) _ | secret o -> True
+    _ ->
+      Terrain.isWall (tterrain t) ||
+      Terrain.isRock (tterrain t) ||
+      Terrain.isUnknown (tterrain t)
 
 secret :: Maybe Int -> Bool
 secret (Just n) | n /= 0 = True
