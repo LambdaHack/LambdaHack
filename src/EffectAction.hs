@@ -150,7 +150,8 @@ discover :: Item -> Action ()
 discover i = do
   state <- get
   let ik = ikind i
-      msg = "The" ++ L.tail (objectItem state i) ++ " turns out to be "
+      obj = unwords $ tail $ words $ objectItem state i
+      msg = "The " ++ obj ++ " turns out to be "
       kind = ItemKind.getIK ik
       alreadyIdentified = L.length (ItemKind.jflavour kind) == 1 ||
                           ik `S.member` sdiscoveries state
