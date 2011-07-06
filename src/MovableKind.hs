@@ -65,7 +65,7 @@ hero = MovableKind
     ncolor  = Color.BrWhite,  -- Heroes white, monsters colorful.
     nsight  = True,
     nsmell  = False,
-    niq     = 13,  -- Can see that secret doors under alien control.
+    niq     = 13,  -- Can see secret doors under alien control.
     nregen  = 1500,
     nfreq   = 0
   }
@@ -79,7 +79,7 @@ eye = MovableKind
     nname   = "the reducible eye",
     nsight  = True,
     nsmell  = False,
-    niq     = 12,
+    niq     = 8,
     nregen  = 1500,
     nfreq   = 6
   }
@@ -92,7 +92,7 @@ fastEye = MovableKind
     nname   = "the super-fast eye",
     nsight  = True,
     nsmell  = False,
-    niq     = 8,
+    niq     = 12,
     nregen  = 1500,
     nfreq   = 1
   }

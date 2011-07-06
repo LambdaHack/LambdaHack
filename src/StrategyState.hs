@@ -74,8 +74,7 @@ strategy actor
                          else hs
           foes = if L.null hsAndTraitor then ms else hsAndTraitor
           -- We assume monster sight is infravision, so light has no effect.
-          foeVisible =
-            L.filter (\ (a, l) -> enemyVisible a l) foes
+          foeVisible = L.filter (\ (a, l) -> enemyVisible a l) foes
           foeDist = L.map (\ (a, l) -> (distance (me, l), l, a)) foeVisible
       in  case foeDist of
             [] -> (TCursor, Nothing)
