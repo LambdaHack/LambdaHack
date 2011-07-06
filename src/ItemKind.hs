@@ -80,7 +80,7 @@ gem = ItemKind
   , jname    = "gem"
   , jeffect  = NoEffect
   , jcount   = intToQuad 0
-  , jfreq    = 30  -- x3, but rare on shallow levels
+  , jfreq    = 20  -- x4, but rare on shallow levels
   , jpower   = intToQuad 0
   }
 gem1 = gem
@@ -110,7 +110,7 @@ potion = ItemKind
   , jname    = "potion"
   , jeffect  = NoEffect
   , jcount   = intToQuad 1
-  , jfreq    = 10  -- x3
+  , jfreq    = 10
   , jpower   = intToQuad 0
   }
 potion1 = potion
@@ -139,7 +139,7 @@ scroll = ItemKind
   , jname    = "scroll"
   , jeffect  = NoEffect
   , jcount   = intToQuad 1
-  , jfreq    = 15  -- x2
+  , jfreq    = 10
   , jpower   = intToQuad 0
   }
 scroll1 = scroll
@@ -163,6 +163,6 @@ wand = ItemKind
   , jname    = "wand"
   , jeffect  = Dominate
   , jcount   = intToQuad 1
-  , jfreq    = 20
+  , jfreq    = 10
   , jpower   = intToQuad 0
   }
