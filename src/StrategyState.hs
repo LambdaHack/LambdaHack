@@ -42,7 +42,7 @@ strategy actor
     delState = deleteActor actor oldState
     enemyVisible a l =
       -- We assume monster sight is infravision, so light has no significance.
-      actorReachesActor a actor l me per Nothing ||
+      nsight mk && actorReachesActor a actor l me per Nothing ||
       -- Any enemy is visible if adjacent (e. g., a monster player).
       memActor a delState && adjacent me l
     -- If no heroes on the level, monsters go at each other. TODO: let them
