@@ -109,7 +109,7 @@ handleMonster actor =
     -- Run the AI: choses an action from those given by the AI strategy.
     action <-
       liftIO $ rndToIO $
-        frequency (head (runStrategy (strategy actor state per .| wait)))
+        frequency (head (runStrategy (strategy actor state per .| wait actor)))
     action
     handleMonsters
 

@@ -25,6 +25,8 @@ import qualified ItemKind
 import Item
 import qualified Effect
 
+-- import Debug.Trace
+
 strategy :: Actor -> State -> Perceptions -> Strategy (Action ())
 strategy actor
          oldState@(State { scursor = cursor,
@@ -34,6 +36,7 @@ strategy actor
                                              lsmell = nsmap,
                                              lmap = lmap } })
          per =
+--  trace (show time ++ ": " ++ show actor) $
     strategy
   where
     Movable { mkind = mk, mloc = me, mdir = mdir,
@@ -168,6 +171,7 @@ dirToAction actor tgt allowAttacks dir =
   -- perform action
   tryWith (advanceTime actor) $
     -- if the following action aborts, we just advance the time and continue
+    -- TODO: ensure time is taken for other aborted actions in this file
     moveOrAttack allowAttacks True actor dir
 
 onlyMoves :: (Dir -> Bool) -> Loc -> Strategy Dir -> Strategy Dir
@@ -176,5 +180,5 @@ onlyMoves p l = only (\ x -> p (l `shift` x))
 moveRandomly :: Strategy Dir
 moveRandomly = liftFrequency $ uniform moves
 
-wait :: Strategy (Action ())
-wait = return $ return ()
+wait :: Actor -> Strategy (Action ())
+wait actor = return $ advanceTime actor
