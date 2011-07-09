@@ -144,6 +144,7 @@ scroll = ItemKind
   }
 scroll1 = scroll
   { jeffect  = SummonFriend
+  , jfreq    = 20
   }
 scroll2 = scroll
   { jeffect  = SummonEnemy
