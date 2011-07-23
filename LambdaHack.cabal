@@ -36,7 +36,7 @@ executable LambdaHack
                  random >= 1 && < 2, zlib >= 0.4 && < 1,
                  bytestring >= 0.9 && < 1, directory >= 1 && < 2,
                  mtl >= 1.1 && < 3, old-time, ConfigFile >= 1.0.6 && < 2,
-                 MissingH >= 1.1.0.3 && < 1.2, filepath >= 1.1.0.3 && < 1.2
+                 MissingH >= 1.1.0.3 && < 1.2, filepath >= 1.1.0.3 && < 2
   extensions:    CPP, FlexibleContexts
   if flag(curses) {
     other-modules: Display.Curses

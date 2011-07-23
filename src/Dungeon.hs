@@ -6,6 +6,7 @@ import Control.Monad
 import Data.Map as M
 import Data.List as L
 import Data.Ratio
+import Data.Set as S
 
 import State
 import Geometry
@@ -91,7 +92,7 @@ emptyroom addWallsRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
   do
     let lmap = digRoom Light ((1,1),(sy-1,sx-1)) (emptyLMap (sy,sx))
     let smap = M.fromList [ ((y,x),-100) | y <- [0..sy], x <- [0..sx] ]
-    let lvl = Level nm (sy,sx) [] smap lmap ""
+    let lvl = Level nm (sy,sx) S.empty M.empty smap lmap ""
     -- locations of the stairs
     su <- findLoc lvl (const floor)
     sd <- findLoc lvl (\ l t -> floor t
@@ -106,7 +107,7 @@ emptyroom addWallsRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
           maybe id (\ l -> M.insert sd (newTile (Stairs Light Down l))) ld $
           (\lmap -> foldl' addItem lmap is) $
           lmap
-        level lu ld = Level nm (sy,sx) [] smap (flmap lu ld) "bigroom"
+        level lu ld = Level nm (sy,sx) S.empty M.empty smap (flmap lu ld) "bigroom"
     return (level, su, sd)
 
 -- | For a bigroom level: Create a level consisting of only one, empty room.
@@ -222,7 +223,7 @@ level cfg nm =
     let lmap :: LMap
         lmap = foldr digCorridor (foldr (\ (r, dl) m -> digRoom dl r m)
                                         (emptyLMap (levelSize cfg)) dlrooms) cs
-    let lvl = Level nm (levelSize cfg) [] smap lmap ""
+    let lvl = Level nm (levelSize cfg) S.empty M.empty smap lmap ""
     -- convert openings into doors
     dlmap <- fmap M.fromList . mapM
                 (\ o@((y,x),(t,r)) ->
@@ -259,7 +260,7 @@ level cfg nm =
                   maybe id (\ l -> M.update (\ (t,r) -> Just $ newTile (Stairs (toDL $ light t) Down l)) sd) ld $
                   foldr (\ (l,it) f -> M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l . f) id is
                   dlmap
-      in  Level nm (levelSize cfg) [] smap flmap meta, su, sd)
+      in  Level nm (levelSize cfg) S.empty M.empty smap flmap meta, su, sd)
 
 rollItems :: LevelConfig -> Level -> Loc -> Rnd [(Loc, Item)]
 rollItems cfg lvl ploc =

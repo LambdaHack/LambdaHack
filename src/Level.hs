@@ -12,6 +12,7 @@ import Data.List as L
 import Data.Ratio
 import Data.Maybe
 
+import Event
 import Geometry
 import Monster
 import Item
@@ -73,7 +74,8 @@ type DungeonLoc = (LevelName, Loc)
 data Level = Level
               { lname     :: LevelName,
                 lsize     :: (Y,X),
-                lmonsters :: [Monster],
+                levents   :: Set Event,
+                lmonsters :: MMap,
                 lsmell    :: SMap,
                 lmap      :: LMap,
                 lmeta     :: String }
@@ -85,14 +87,15 @@ updateLMap f lvl = lvl { lmap = f (lmap lvl) }
 updateSMap :: (SMap -> SMap) -> Level -> Level
 updateSMap f lvl = lvl { lsmell = f (lsmell lvl) }
 
-updateMonsters :: ([Monster] -> [Monster]) -> Level -> Level
+updateMonsters :: (MMap -> MMap) -> Level -> Level
 updateMonsters f lvl = lvl { lmonsters = f (lmonsters lvl) }
 
 instance Binary Level where
-  put (Level nm sz@(sy,sx) ms lsmell lmap lmeta) =
+  put (Level nm sz@(sy,sx) evts ms lsmell lmap lmeta) =
         do
           put nm
           put sz
+          put evts
           put ms
           put [ lsmell ! (y,x) | y <- [0..sy], x <- [0..sx] ]
           put [ lmap ! (y,x) | y <- [0..sy], x <- [0..sx] ]
@@ -100,16 +103,18 @@ instance Binary Level where
   get = do
           nm <- get
           sz@(sy,sx) <- get
+          evts <- get
           ms <- get
           xs <- get
           let lsmell = M.fromList (zip [ (y,x) | y <- [0..sy], x <- [0..sx] ] xs)
           xs <- get
           let lmap   = M.fromList (zip [ (y,x) | y <- [0..sy], x <- [0..sx] ] xs)
           lmeta <- get
-          return (Level nm sz ms lsmell lmap lmeta)
+          return (Level nm sz evts ms lsmell lmap lmeta)
 
 type LMap = Map (Y,X) (Tile,Tile)
 type SMap = Map (Y,X) Time
+type MMap = Map Actor Monster
 
 data Tile = Tile
               { tterrain :: Terrain,

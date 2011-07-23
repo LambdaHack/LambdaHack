@@ -9,9 +9,19 @@ import Display
 import Item
 import Random
 
-data Actor = AMonster Int -- ^ offset in monster list
+data Actor = AMonster Integer -- ^ unique identifier
            | APlayer
   deriving (Show, Eq, Ord)
+
+instance Binary Actor where
+  put (AMonster n) = putWord8 0 >> put n
+  put APlayer      = putWord8 1
+  get =
+    do
+      tag <- getWord8
+      case tag of
+        0 -> liftM AMonster get
+        1 -> return APlayer
 
 -- | Hit points of the player. TODO: Should not be hardcoded.
 playerHP :: Int
