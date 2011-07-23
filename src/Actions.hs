@@ -252,11 +252,14 @@ actorOpenClose actor v o dir =
     let isPlayer  = actor == pl
     let isVerbose = v && isPlayer
     let dloc = shift loc dir  -- location we act upon
+    let openPower = case strongestItem (mitems body) "ring" of
+                      Just i  -> niq (mkind body) + ipower i
+                      Nothing -> niq (mkind body)
       in case lmap `at` dloc of
            Tile d@(Door hv o') []
              | secret o' && isPlayer -> -- door is secret, cannot be opened or closed by the player
                                        neverMind isVerbose
-             | maybe o ((|| not o) . (>= (niq (mkind body)))) o' ->
+             | maybe o ((|| not o) . (>= openPower)) o' ->
                                        -- door is in unsuitable state
                                        abortIfWith isVerbose ("already " ++ txt)
              | not (unoccupied hms dloc) ->

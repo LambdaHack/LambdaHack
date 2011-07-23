@@ -97,8 +97,12 @@ strategy actor
     onlyKeepsDir_9 = only (\ x -> maybe True (\ d -> neg x /= d) mdir)
     onlyUnoccupied = onlyMoves (unoccupied (levelMonsterList delState)) me
     -- Monsters don't see doors more secret than that. Enforced when actually
-    -- opening doors, too, so that monsters don't cheat.
-    openableHere   = openable (niq mk) lmap
+    -- opening doors, too, so that monsters don't cheat. TODO: remove the code
+    -- duplication, though.
+    openPower      = case strongestItem items "ring" of
+                       Just i  -> niq mk + ipower i
+                       Nothing -> niq mk
+    openableHere   = openable openPower lmap
     onlyOpenable   = onlyMoves openableHere me
     accessibleHere = accessible lmap me
     onlySensible   = onlyMoves (\ l -> accessibleHere l || openableHere l) me
