@@ -33,7 +33,13 @@ The basic tiles are as follows.
                rock                               blank
 
 The game world is persistent, i. e., every time a hero visits a level
-during a single game, the level layout looks the same.
+during a single game, the level layout looks the same. Some items
+aid in dungeon exploration, e.g., a ring of searching improves the speed
+of finding hidden doors by heroes and monsters. The higher the magical
+bonus displayed for this and other dungeon items, the more effective it is.
+Only the best item carried in a hero's or monster's inventory counts.
+You can throw the rest away, but beware that others may pick it up
+and use it against you.
 
 
 Keys
@@ -111,12 +117,25 @@ The hero is not alone in the dungeon. Monsters roam the dark caves
 and crawl from damp holes all the time. While heroes pay attention
 to all other party members and take moves sequentially, one after another,
 monsters don't care where the other monsters are going and all move at once,
-sometimes colliding and hitting each other by chance.
+sometimes colliding and hitting each other by mistake.
 
 When the hero bumps into a monster or a monster attacks the hero,
-melee combat occurs. Throwing objects and aiming magical devices may wound
-the affected targets, too. Whenever a monster or a hero hit points
-reach zero, the combatant dies. When the last hero dies, the game ends.
+melee combat occurs. The best weapon carried by each party
+is taken into account for calculating bonus damage. The total damage
+that the current hero can inflict is constantly displayed at the bottom
+of the screen. The total damage inflicted by a given monster may change
+as it finds and picks up new weapons. Heroes and monsters running
+into another (with the Shift key) do not inflict damage, but change places.
+This gives the opponent a free blow, but improves tactical situation
+or aids escape.
+
+Throwing weapons wounds the affected targets, too, though you have
+to target a monster first (with the '*' key from the top row or numpad).
+You can throw any object in your possession
+(press '*' for a non-standard choice) or on the floor (press '-'),
+though only objects of a few kinds inflict more than one hit point of damage.
+Whenever a monster or a hero hit points reach zero, the combatant dies.
+When the last hero dies, the game ends.
 
 
 On Winning and Dying
