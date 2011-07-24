@@ -6,6 +6,7 @@ import qualified Data.Map as M
 import qualified Data.IntMap as IM
 import Control.Monad
 import Data.Maybe
+import Control.Exception (assert)
 
 import Geometry
 import Movable
@@ -107,9 +108,15 @@ levelMonsterList (State { slevel = Level { lmonsters = ms } }) = IM.elems ms
 -- | Finds an actor at a location on the current level. Perception irrelevant.
 locToActor :: Loc -> State -> Maybe Actor
 locToActor loc state =
-  getIndex (lmonsters, AMonster) `mplus` getIndex (lheroes, AHero)
+  let l = locToActors loc state
+  in assert (L.length l <= 1) $
+       listToMaybe l
+
+locToActors :: Loc -> State -> [Actor]
+locToActors loc state =
+  getIndex (lmonsters, AMonster) ++ getIndex (lheroes, AHero)
     where
       getIndex (projection, injection) =
         let l  = IM.assocs $ projection $ slevel state
-            im = L.find (\ (_i, m) -> mloc m == loc) l
+            im = L.filter (\ (_i, m) -> mloc m == loc) l
         in  fmap (injection . fst) im

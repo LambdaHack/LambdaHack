@@ -327,7 +327,7 @@ lvlChange vdir =
                         in  cursor { clocation = cloc, clocLn = nln }
                   modify (updateCursor upd)
                   doLook
-                else do
+                else tryWith (abortWith "somebody blocks the staircase") $ do
                   -- Remove the player from the old level.
                   modify (deleteActor pl)
                   -- At this place the invariant that the player exists fails.
@@ -340,6 +340,10 @@ lvlChange vdir =
                   updatePlayerBody (\ p -> p { mloc = nloc })
                   -- Change the level of the player recorded in cursor.
                   modify (updateCursor (\ c -> c { creturnLn = nln }))
+                  -- Bail out if anybody blocks the staircase.
+                  inhabitants <- gets (locToActors nloc)
+                  when (length inhabitants > 1) abort
+                  -- The invariant "at most one movable on a tile" restored.
                   -- Create a backup of the savegame.
                   state <- get
                   liftIO $ Save.saveGame state >> Save.mvBkp (sconfig state)
