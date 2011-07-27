@@ -1,16 +1,19 @@
 cabal-version: >= 1.2
-name:          LambdaHack
-version:       0.1.20110117
+name:          Allure
+version:       0.4.0
 license:       BSD3
 license-file:  LICENSE
 tested-with:   GHC==7.0.3
 data-files:    LICENSE, CREDITS, DESIGN.markdown, PLAYING.markdown,
                README.markdown, src/config.default, scores
-author:        Andres Loeh <mail@andres-loeh.de>
-maintainer:    Andres Loeh <mail@andres-loeh.de>
-description:   a small roguelike game
-synopsis:      a small roguelike game
-homepage:      http://github.com/kosmikus/LambdaHack
+author:        Andres Loeh, Mikolaj Konarski and others
+maintainer:    Mikolaj Konarski <mikolaj.konarski@funktory.com>
+description:   Allure of the Stars is a roguelike game that employs procedural
+               content generation evolving in response to player behaviour,
+               with the goal of ensuring high replayability.
+               The game is based on the versatile LambdaHack engine,
+synopsis:      Near-future SF roguelike game in early development
+homepage:      http://github.com/Mikolaj/Allure
 category:      Game
 build-type:    Simple
 
@@ -22,7 +25,7 @@ flag vty
   description:   enable vty support
   default:       False
 
-executable LambdaHack
+executable Allure
   main-is:       Main.hs
   hs-source-dirs:src
   other-modules: Action, Actions, Color, Command, Config, ConfigDefault,
@@ -61,4 +64,4 @@ executable LambdaHack
 
 Source-repository head
   type:              git
-  location:          git://github.com/kosmikus/LambdaHack.git
+  location:          git://github.com/Mikolaj/Allure.git

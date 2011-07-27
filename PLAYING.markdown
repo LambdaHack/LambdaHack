@@ -1,11 +1,12 @@
-Playing LambdaHack
-==================
+Playing Allure of the Stars
+===========================
 
-Playing LambdaHack involves walking around the dungeon, alone or in a party
-of fearless adventurers, jumping between levels, bumping into monsters,
-doors and walls, gathering magical treasure and making creative use of it.
-Horrible opponents do the same, intelligence allowing, while tirelessly
-chasing the noble heroes by smell and night-sight.
+Playing Allure of the Stars involves walking around the dungeon,
+alone or in a party of fearless adventurers, jumping between levels,
+bumping into monsters, doors and walls, gathering magical treasure
+and making creative use of it. Horrible opponents do the same,
+intelligence allowing, while tirelessly chasing the noble heroes
+by smell and night-sight.
 
 Once the few basic command keys and on-screen symbols are learned,
 mastery and enjoyment of the game is the matter of tactical skill

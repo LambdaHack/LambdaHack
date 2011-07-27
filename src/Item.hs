@@ -15,7 +15,7 @@ import qualified Color
 
 data Item = Item
   { ikind    :: !Int,
-    ipower   :: !Int,  -- https://github.com/Mikolaj/LambdaHack/issues#issue/11
+    ipower   :: !Int,  -- https://github.com/Mikolaj/Allure/issues#issue/11
     iletter  :: Maybe Char,  -- ^ inventory identifier
     icount   :: !Int }
   deriving Show

@@ -32,7 +32,7 @@ start internalSession = do
               then do
                      Display.displayBlankConfirm session "Restoring save game"
                      Save.restoreGame config
-              else return $ Right "Welcome to LambdaHack!"  -- new game
+              else return $ Right "Welcome to Allure of the Stars!"  -- new game
   case restored of
     Right msg  -> do
       (ploc, lvl, dng) <- rndToIO $ generate config
@@ -42,4 +42,4 @@ start internalSession = do
           hstate = initialHeroes ploc state
       handlerToIO session hstate msg handle
     Left state ->
-      handlerToIO session state "Welcome back to LambdaHack." handle
+      handlerToIO session state "Welcome back to Allure of the Stars." handle
