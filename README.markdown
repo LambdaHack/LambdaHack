@@ -32,7 +32,7 @@ Savegame directory
 
 If you don't want LambdaHack to write to the current directory,
 create a personal savegame directory (on Linux it's ~/.LambdaHack/).
-and also copy the LambdaHack.scores file there. You may also want to
+and copy the LambdaHack.scores file there. You may also want to
 copy the configuration file src/LambdaHack.config.default to
 ~/.LambdaHack/LambdaHack.config and modify it, but be careful changing
 gameplay options --- they can easily unbalance or break the game.
