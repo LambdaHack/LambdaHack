@@ -17,9 +17,9 @@ LambdaCave_3: bigRoom
 depth: 10
 
 [engine]
-fovMode: shadow
-;fovMode: digital
+fovMode: digital
 ;fovMode: permissive
+;fovMode: shadow
 fovRadius: 40
 
 ; paths to various game files; relative to ~/.Allure/
@@ -46,10 +46,6 @@ firstDeathEnds: False
 ; TODO: in gtk it could be implemented via unGetChan,
 ; unless we prefer an explicit command queue, with flushing, etc.
 ;
-; NetHack compatibility
-S: X
-colon: slash
-comma: g
 ; Angband compatibility
 v: t
 
