@@ -5,7 +5,7 @@ license:       BSD3
 license-file:  LICENSE
 tested-with:   GHC==7.0.3
 data-files:    LICENSE, CREDITS, DESIGN.markdown, PLAYING.markdown,
-               README.markdown, src/LambdaHack.config.default, LambdaHack.scores
+               README.markdown, src/LambdaHack.config.default, scores
 author:        Andres Loeh <mail@andres-loeh.de>
 maintainer:    Andres Loeh <mail@andres-loeh.de>
 description:   a small roguelike game

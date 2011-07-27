@@ -90,7 +90,7 @@ getItems (CP config) s =
   else error $ "unknown config section: " ++ s
 
 -- | Looks up a file path in the config file and makes it absolute.
--- If the LambdaHack configuration directory exists,
+-- If the game's configuration directory exists,
 -- the path is appended to it; otherwise, it's appended
 -- to the current directory.
 getFile :: CP -> CF.SectionSpec -> CF.OptionSpec -> IO FilePath

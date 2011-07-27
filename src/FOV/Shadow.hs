@@ -11,7 +11,7 @@ import Level
 
 -- | A restrictive variant of Recursive Shadow Casting FOV with infinite range.
 -- It's not designed for dungeons with diagonal walls, so they block visibility,
--- though they don't block movement. Such cases appear in LambdaHack only
+-- though they don't block movement. Such cases appear in the game only
 -- when two corridors touch diagonally by accident and on the random pillars
 -- levels.
 

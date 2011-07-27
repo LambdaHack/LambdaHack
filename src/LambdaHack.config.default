@@ -1,11 +1,11 @@
-; This is the default LambdaHack config file, included in the binary itself.
-; LambdaHack looks for the user config file in ~/.LambdaHack/LambdaHack.config.
-; LambdaHack restricts the config file format by insisting that
+; This is the default config file, included in the binary itself.
+; The game looks for the user config file in ~/.LambdaHack/LambdaHack.config.
+; We restricts the config file format by insisting that
 ; options are case-sensitive and permitting only ';' comments.
 
-; If you contribute to LambdaHack, please create directory ~/.LambdaHack/
+; If you contribute to the game, please create directory ~/.LambdaHack/
 ; as described in README.markdown. In this way, you will not accidentally
-; commit your private high scores (nor your save files) to LambdaHack
+; commit your private high scores (nor your save files) to the game
 ; git repository.
 
 [dungeon]
@@ -25,8 +25,8 @@ fovRadius: 40
 ; paths to various game files; relative to ~/.LambdaHack/
 ; (or analogous prefixes for other OSes, see getAppUserDataDirectory)
 [files]
-highScores: LambdaHack.scores
-saveGame: LambdaHack.save
+highScores: scores
+saveGame: save
 
 [heroes]
 HeroName_0: you
