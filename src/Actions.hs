@@ -49,7 +49,7 @@ dumpConfig :: Action ()
 dumpConfig =
   do
     config <- gets sconfig
-    let fn = "LambdaHack.config.dump"
+    let fn = "config.dump"
     liftIO $ Config.dump fn config
     abortWith $ "Current configuration dumped to file " ++ fn ++ "."
 

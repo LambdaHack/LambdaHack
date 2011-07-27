@@ -1,5 +1,5 @@
 ; This is the default config file, included in the binary itself.
-; The game looks for the user config file in ~/.LambdaHack/LambdaHack.config.
+; The game looks for the user config file in ~/.LambdaHack/config.
 ; We restricts the config file format by insisting that
 ; options are case-sensitive and permitting only ';' comments.
 

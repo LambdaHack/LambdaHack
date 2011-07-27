@@ -48,7 +48,7 @@ file :: IO FilePath
 file =
   do
     appData <- getAppUserDataDirectory "LambdaHack"
-    return $ combine appData "LambdaHack.config"
+    return $ combine appData "config"
 
 -- | The configuration read from the user configuration file.
 -- The default configuration file provides underlying defaults
