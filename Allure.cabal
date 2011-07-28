@@ -1,4 +1,4 @@
-cabal-version: >= 1.2
+cabal-version: >= 1.6
 name:          Allure
 version:       0.4.0
 license:       BSD3
@@ -8,11 +8,12 @@ data-files:    LICENSE, CREDITS, DESIGN.markdown, PLAYING.markdown,
                README.markdown, src/config.default, scores
 author:        Andres Loeh, Mikolaj Konarski and others
 maintainer:    Mikolaj Konarski <mikolaj.konarski@funktory.com>
-description:   Allure of the Stars is a roguelike game that employs procedural
-               content generation evolving in response to player behaviour,
-               with the goal of ensuring high replayability.
-               The game is based on the versatile LambdaHack engine,
-synopsis:      Near-future SF roguelike game in early development
+description:   Allure of the Stars is a Sci-Fi roguelike and tactical squad game
+               in early development. It aims to achive high replayability
+               and auto-balancing via procedural content generation
+               evolving in response to player behaviour. The game is based
+               on the LambdaHack roguelike game engine,
+synopsis:      Near-future Sci-Fi roguelike game in early development
 homepage:      http://github.com/Mikolaj/Allure
 category:      Game
 build-type:    Simple
