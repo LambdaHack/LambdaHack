@@ -140,18 +140,6 @@ light = Terrain.isAlight . tterrain
 isExit :: Tile -> Bool
 isExit = Terrain.isExit . tterrain
 
--- | Passive tiles reflect light from some other (usually adjacent)
--- positions. This function returns the offsets from which light is
--- reflected. Not all passively lighted tiles reflect from all directions.
--- Walls, for instance, cannot usually be seen from the outside.
-passive :: Tile -> [Dir]
-passive = Terrain.passive . tterrain
-
--- | Perceptible is similar to passive, but describes which tiles can
--- be seen from which adjacent fields in the dark.
-perceptible :: Tile -> [Dir]
-perceptible = Terrain.perceptible . tterrain
-
 -- Checks for the presence of movables. Does *not* check if the tile is open.
 unoccupied :: [Movable] -> Loc -> Bool
 unoccupied movables loc =

@@ -155,27 +155,6 @@ posToDir D  = [up]
 posToDir DR = [upleft]
 posToDir O  = moves
 
--- | Passive tiles reflect light from some other (usually adjacent)
--- positions. This function returns the offsets from which light is
--- reflected. Not all passively lighted tiles reflect from all directions.
--- Walls, for instance, cannot usually be seen from the outside.
-passive :: Terrain a -> [Dir]
-passive (Wall p)          = posToDir p
-passive (Opening _)       = moves
-passive (Door p Nothing)  = moves
-passive (Door p (Just 0)) = moves      -- doors can be seen from all sides
-passive (Door p (Just n)) = posToDir p -- secret doors are like walls
-passive (Stairs _ _ _)    = moves
-passive _                 = []
-
--- | Perceptible is similar to passive, but describes which tiles can
--- be seen from which adjacent fields in the dark.
-perceptible :: Terrain a -> [Dir]
-perceptible Rock = []
-perceptible p = case passive p of
-                 [] -> moves
-                 ds -> ds
-
 -- | Produces a textual description for terrain, used if no objects
 -- are present.
 lookTerrain :: Terrain a -> String
