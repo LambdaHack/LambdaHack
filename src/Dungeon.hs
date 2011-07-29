@@ -119,8 +119,8 @@ digCorridor (p1:p2:ps) l =
     corPos = M.fromList $ L.zip corLoc (repeat $ newTile Corridor)
     surLoc = L.concatMap surroundings corLoc
     surPos = M.fromList $ L.zip surLoc (repeat $ newTile Rock)
-    corridorUpdate _ (Tile (Wall hv) is, u)    = (Tile (Opening hv) is, u)
-    corridorUpdate _ (Tile (Opening hv) is, u) = (Tile (Opening hv) is, u)
+    corridorUpdate _ (Tile Wall is, u)    = (Tile Opening is, u)
+    corridorUpdate _ (Tile Opening is, u) = (Tile Opening is, u)
     corridorUpdate _ (Tile (Floor l) is, u)    = (Tile (Floor l) is, u)
     corridorUpdate (x, u) _                    = (x, u)
 digCorridor _ l = l
@@ -168,7 +168,7 @@ noiseRoom cfg =
         rs <- rollPillars cfg lvl
         let insertWall lmap l =
               case lmap `at` l of
-                Tile (Floor _) [] -> M.insert l (newTile (Wall O)) lmap
+                Tile (Floor _) [] -> M.insert l (newTile Wall) lmap
                 _ -> lmap
         return $ \ lmap -> foldl' insertWall lmap rs
   in  emptyRoom addWalls cfg
@@ -270,7 +270,7 @@ rogueRoom cfg nm =
     dlmap <- fmap M.fromList . mapM
                 (\ o@((y,x),(t,r)) ->
                   case t of
-                    Tile (Opening hv) _ ->
+                    Tile Opening _ ->
                       do
                         -- openings have a certain chance to be doors;
                         -- doors have a certain chance to be open; and
@@ -284,7 +284,7 @@ rogueRoom cfg nm =
                                                  (if rsc then randomR (doorSecretMax cfg `div` 2, doorSecretMax cfg)
                                                          else return 0)
                         if rb
-                          then return ((y,x),newTile (Door hv rs))
+                          then return ((y,x),newTile (Door rs))
                           else return o
                     _ -> return o) .
                 M.toList $ lmap
@@ -340,7 +340,7 @@ digRoom dl ((y0,x0),(y1,x1)) l
   M.insert (y0,x0) (newTile Corridor) l
   | otherwise =
   let rm = M.fromList $ [ ((y,x),newTile (Floor dl))   | x <- [x0..x1],     y <- [y0..y1]    ]
-                     ++ [ ((y,x),newTile (Wall p))     | (x,y,p) <- [(x0-1,y0-1,UL),(x1+1,y0-1,UR),(x0-1,y1+1,DL),(x1+1,y1+1,DR)] ]
-                     ++ [ ((y,x),newTile (Wall p))     | x <- [x0..x1], (y,p) <- [(y0-1,U),(y1+1,D)] ]
-                     ++ [ ((y,x),newTile (Wall p))     | (x,p) <- [(x0-1,L),(x1+1,R)],  y <- [y0..y1]    ]
+                     ++ [ ((y,x),newTile Wall)     | (x,y,p) <- [(x0-1,y0-1,UL),(x1+1,y0-1,UR),(x0-1,y1+1,DL),(x1+1,y1+1,DR)] ]
+                     ++ [ ((y,x),newTile Wall)     | x <- [x0..x1], (y,p) <- [(y0-1,U),(y1+1,D)] ]
+                     ++ [ ((y,x),newTile Wall)     | (x,p) <- [(x0-1,L),(x1+1,R)],  y <- [y0..y1]    ]
   in M.unionWith const rm l

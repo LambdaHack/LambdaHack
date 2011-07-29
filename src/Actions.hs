@@ -256,7 +256,7 @@ actorOpenClose actor v o dir =
                       Just i  -> niq (mkind body) + ipower i
                       Nothing -> niq (mkind body)
       in case lmap `at` dloc of
-           Tile d@(Door hv o') []
+           Tile d@(Door o') []
              | secret o' && isPlayer -> -- door is secret, cannot be opened or closed by the player
                                        neverMind isVerbose
              | maybe o ((|| not o) . (>= openPower)) o' ->
@@ -267,10 +267,10 @@ actorOpenClose actor v o dir =
                                        abortIfWith isVerbose "blocked"
              | otherwise            -> -- door can be opened / closed
                                        -- TODO: print message if action performed by monster and perceived
-                                       let nt  = Tile (Door hv (toOpen o)) []
+                                       let nt  = Tile (Door (toOpen o)) []
                                            adj = M.adjust (\ (_, mt) -> (nt, mt)) dloc
                                        in  modify (updateLevel (updateLMap adj))
-           Tile d@(Door hv o') _    -> -- door is jammed by items
+           Tile d@(Door o') _    -> -- door is jammed by items
                                        abortIfWith isVerbose "jammed"
            _                        -> -- there is no door here
                                        neverMind isVerbose
@@ -405,8 +405,8 @@ search =
     let delta = case strongestItem pitems "ring" of
                   Just i  -> 1 + ipower i
                   Nothing -> 1
-        searchTile (Tile (Door hv (Just n)) x, t') =
-          (Tile (Door hv (Just (max (n - delta) 0))) x, t')
+        searchTile (Tile (Door (Just n)) x, t') =
+          (Tile (Door (Just (max (n - delta) 0))) x, t')
         searchTile t = t
         f l m = M.adjust searchTile (shift ploc m) l
         slmap = foldl' f lmap moves

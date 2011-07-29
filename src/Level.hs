@@ -111,7 +111,7 @@ floor = Terrain.isFloor . tterrain
 canBeDoor :: Tile -> Bool
 canBeDoor t =
   case t of
-    Tile d@(Terrain.Door hv o) _ | secret o -> True
+    Tile d@(Terrain.Door o) _ | secret o -> True
     _ ->
       Terrain.isWall (tterrain t) ||
       Terrain.isRock (tterrain t) ||
@@ -166,8 +166,8 @@ openable :: Int -> LMap -> Loc -> Bool
 openable k lmap target =
   let tgt = lmap `at` target
   in  case tterrain tgt of
-        Terrain.Door _ (Just n) -> n < k
-        _               -> False
+        Terrain.Door (Just n) -> n < k
+        _                     -> False
 
 findLoc :: Level -> (Loc -> Tile -> Bool) -> Rnd Loc
 findLoc l@(Level { lsize = sz, lmap = lm }) p =

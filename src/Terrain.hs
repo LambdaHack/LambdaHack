@@ -16,13 +16,13 @@ import Geometry
 
 data Terrain a =
     Rock
-  | Opening Pos
+  | Opening
   | Floor DL
   | Unknown
   | Corridor
-  | Wall Pos
+  | Wall
   | Stairs DL VDir (Maybe a)
-  | Door Pos (Maybe Int)  -- Nothing: open, Just 0: closed, otherwise secret
+  | Door (Maybe Int)  -- Nothing: open, Just 0: closed, otherwise secret
   deriving Show
 
 instance Binary VDir where
@@ -31,35 +31,35 @@ instance Binary VDir where
 
 instance Binary a => Binary (Terrain a) where
   put Rock            = putWord8 0
-  put (Opening p)     = putWord8 1 >> put p
+  put Opening         = putWord8 1
   put (Floor dl)      = putWord8 2 >> put dl
   put Unknown         = putWord8 3
   put Corridor        = putWord8 4
-  put (Wall p)        = putWord8 5 >> put p
+  put Wall            = putWord8 5
   put (Stairs dl d n) = putWord8 6 >> put dl >> put d >> put n
-  put (Door p o)      = putWord8 7 >> put p >> put o
+  put (Door o)      = putWord8 7 >> put o
   get = do
           tag <- getWord8
           case tag of
             0 -> return Rock
-            1 -> liftM Opening get
+            1 -> return Opening
             2 -> liftM Floor get
             3 -> return Unknown
             4 -> return Corridor
-            5 -> liftM Wall get
+            5 -> return Wall
             6 -> liftM3 Stairs get get get
-            7 -> liftM2 Door get get
+            7 -> liftM Door get
             _ -> fail "no parse (Terrain)"
 
 instance Eq a => Eq (Terrain a) where
   Rock == Rock = True
-  Opening d == Opening d' = d == d'
+  Opening == Opening = True
   Floor l == Floor l' = l == l'
   Unknown == Unknown = True
   Corridor == Corridor = True
-  Wall p == Wall p' = p == p'
+  Wall == Wall = True
   Stairs dl d t == Stairs dl' d' t' = dl == dl' && d == d' && t == t'
-  Door p o == Door p' o' = p == p' && o == o'
+  Door o == Door o' = o == o'
   _ == _ = False
 
 data DL = Dark | Light
@@ -103,8 +103,8 @@ isFloor (Floor _) = True
 isFloor _         = False
 
 isWall :: Terrain a -> Bool
-isWall (Wall _) = True
-isWall _        = False
+isWall Wall = True
+isWall _    = False
 
 isRock :: Terrain a -> Bool
 isRock Rock = True
@@ -116,18 +116,18 @@ isUnknown _       = False
 
 -- | allows moves and vision
 isOpen :: Terrain a -> Bool
-isOpen (Floor {})    = True
-isOpen (Opening {}) = True
-isOpen (Door _ o)   = isNothing o
+isOpen (Floor {})   = True
+isOpen Opening      = True
+isOpen (Door o)     = isNothing o
 isOpen Corridor     = True
 isOpen (Stairs {})  = True
 isOpen _            = False
 
 -- | marks an exit from a room
 isExit :: Terrain a -> Bool
-isExit (Opening _) = True
-isExit (Door _ _)  = True
-isExit _           = False
+isExit Opening   = True
+isExit (Door _)  = True
+isExit _         = False
 
 fromDL :: DL -> Bool
 fromDL Dark = False
@@ -158,16 +158,16 @@ posToDir O  = moves
 -- | Produces a textual description for terrain, used if no objects
 -- are present.
 lookTerrain :: Terrain a -> String
-lookTerrain (Floor _)          = "Floor."
-lookTerrain Corridor           = "Corridor."
-lookTerrain (Opening _)        = "An opening."
-lookTerrain (Stairs _ Up _)    = "A staircase up."
-lookTerrain (Stairs _ Down _)  = "A staircase down."
-lookTerrain (Door _ Nothing)   = "An open door."
-lookTerrain (Door _ (Just 0))  = "A closed door."
-lookTerrain (Door _ (Just _))  = "A wall."  -- secret
-lookTerrain (Wall _ )          = "A wall."
-lookTerrain _                  = ""
+lookTerrain (Floor _)         = "Floor."
+lookTerrain Corridor          = "Corridor."
+lookTerrain Opening           = "An opening."
+lookTerrain (Stairs _ Up _)   = "A staircase up."
+lookTerrain (Stairs _ Down _) = "A staircase down."
+lookTerrain (Door Nothing)    = "An open door."
+lookTerrain (Door (Just 0))   = "A closed door."
+lookTerrain (Door (Just _))   = "A wall."  -- secret
+lookTerrain Wall              = "A wall."
+lookTerrain _                 = ""
 
 -- | The parameter "n" is the level of evolution:
 --
@@ -185,28 +185,25 @@ viewTerrain n b t =
       defDoor = if b then Color.Yellow else Color.BrBlack
   in case t of
        Rock                -> ('#', def)
-       (Opening d)
+       Opening
          | n <= 3          -> ('.', def)
-         | otherwise       -> viewTerrain 0 b (Wall d)
+         | otherwise       -> viewTerrain 0 b Wall
        (Floor d)           -> ('.', if d == Light then def else defDark)
        Unknown             -> (' ', def)
        Corridor
          | n <= 3          -> ('.', if b then Color.BrWhite else Color.defFG)
          | otherwise       -> viewTerrain 0 b Rock
-       (Wall p)
-         | p == O          -> ('#', def)
-         | p `elem` [L, R] -> ('#', def)
-         | otherwise       -> ('#', def)
+       Wall                -> ('#', def)
        (Stairs d p _)
          | n <= 1          -> (if p == Up then '<' else '>',
                                if d == Light then def else defDark)
          | otherwise       -> viewTerrain 0 b (Floor Dark)
-       (Door p (Just 0))
+       (Door (Just 0))
          | n <= 2          -> ('+', defDoor)
-         | otherwise       -> viewTerrain n b (Opening p)
-       (Door p (Just _))
-         | n <= 2          -> viewTerrain n b (Wall p)  -- secret door
-         | otherwise       -> viewTerrain n b (Opening p)
-       (Door p Nothing)
+         | otherwise       -> viewTerrain n b Opening
+       (Door (Just _))
+         | n <= 2          -> viewTerrain n b Wall  -- secret door
+         | otherwise       -> viewTerrain n b Opening
+       (Door Nothing)
          | n <= 2          -> ('\'', defDoor)
-         | otherwise       -> viewTerrain n b (Opening p)
+         | otherwise       -> viewTerrain n b Opening
