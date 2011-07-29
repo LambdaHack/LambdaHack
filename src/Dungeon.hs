@@ -113,13 +113,16 @@ connectRooms sa@((sy0,sx0),(sy1,sx1)) ta@((ty0,tx0),(ty1,tx1)) =
 -- | Actually dig a corridor.
 digCorridor :: Corridor -> LMap -> LMap
 digCorridor (p1:p2:ps) l =
-  digCorridor (p2:ps) (M.unionWith corridorUpdate newPos l)
+  digCorridor (p2:ps) $ M.union (M.unionWith corridorUpdate corPos l) surPos
   where
-    newPos = M.fromList [ (ps,newTile Corridor) | ps <- fromTo p1 p2 ]
-    corridorUpdate _ (Tile (Wall hv) is,u)    = (Tile (Opening hv) is,u)
-    corridorUpdate _ (Tile (Opening hv) is,u) = (Tile (Opening hv) is,u)
-    corridorUpdate _ (Tile (Floor l) is,u)    = (Tile (Floor l) is,u)
-    corridorUpdate (x,u) _                    = (x,u)
+    corLoc = fromTo p1 p2
+    corPos = M.fromList $ L.zip corLoc (repeat $ newTile Corridor)
+    surLoc = L.concatMap surroundings corLoc
+    surPos = M.fromList $ L.zip surLoc (repeat $ newTile Rock)
+    corridorUpdate _ (Tile (Wall hv) is, u)    = (Tile (Opening hv) is, u)
+    corridorUpdate _ (Tile (Opening hv) is, u) = (Tile (Opening hv) is, u)
+    corridorUpdate _ (Tile (Floor l) is, u)    = (Tile (Floor l) is, u)
+    corridorUpdate (x, u) _                    = (x, u)
 digCorridor _ l = l
 
 -- | Create a new tile.

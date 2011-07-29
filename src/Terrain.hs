@@ -142,6 +142,7 @@ reflects :: Terrain a -> Bool
 reflects (Opening _) = True
 reflects (Wall _)    = True
 reflects (Door _ _)  = True
+reflects Rock        = True
 reflects _           = False
 
 -- | Maps wall kinds to lists of expected floor positions.
@@ -206,19 +207,19 @@ viewTerrain n b t =
       defDark = if b then Color.BrYellow else Color.BrBlack
       defDoor = if b then Color.Yellow else Color.BrBlack
   in case t of
-       Rock                -> (' ', def)
+       Rock                -> ('#', def)
        (Opening d)
          | n <= 3          -> ('.', def)
          | otherwise       -> viewTerrain 0 b (Wall d)
        (Floor d)           -> ('.', if d == Light then def else defDark)
        Unknown             -> (' ', def)
        Corridor
-         | n <= 3          -> ('#', if b then Color.BrWhite else Color.defFG)
+         | n <= 3          -> ('.', if b then Color.BrWhite else Color.defFG)
          | otherwise       -> viewTerrain 0 b Rock
        (Wall p)
-         | p == O          -> ('O', def)
-         | p `elem` [L, R] -> ('|', def)
-         | otherwise       -> ('-', def)
+         | p == O          -> ('#', def)
+         | p `elem` [L, R] -> ('#', def)
+         | otherwise       -> ('#', def)
        (Stairs d p _)
          | n <= 1          -> (if p == Up then '<' else '>',
                                if d == Light then def else defDark)
@@ -230,5 +231,5 @@ viewTerrain n b t =
          | n <= 2          -> viewTerrain n b (Wall p)  -- secret door
          | otherwise       -> viewTerrain n b (Opening p)
        (Door p Nothing)
-         | n <= 2          -> (if p `elem` [L, R] then '-' else '|', defDoor)
+         | n <= 2          -> ('\'', defDoor)
          | otherwise       -> viewTerrain n b (Opening p)
