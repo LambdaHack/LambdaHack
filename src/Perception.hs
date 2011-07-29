@@ -104,30 +104,10 @@ perception fovMode ploc lmap =
     litVisible = S.filter (\ loc -> light (lmap `at` loc)) reachable
     actVisible = S.insert ploc litVisible
     srnd       = S.fromList $ surroundings ploc
-    -- In "dirVisible", we store locations in the surroundings that are
-    -- perceptible from the current position.
-    dirVisible = S.filter (\ loc -> let p = perceptible (lmap `at` loc) :: [Dir]
-                                    in  any (\ d -> shift loc d == ploc) p)
-                          srnd
-    ownVisible = S.union actVisible dirVisible
-    -- Something is "pasVisible" if it is reachable passively visible from an
-    -- "actVisible" location, *or* if it is in the surroundings and passively
-    -- visible from a "dirVisible" location. (This is complicated, and I'd
-    -- like to simplify it, but for now, it seems to at least do what I
-    -- want.)
-    pasVisible = S.filter (\ loc -> let p = passive (lmap `at` loc)
-                                        dp = S.member loc srnd
-                                        s = if dp then ownVisible else actVisible
-                                    in  any (\ d -> S.member (shift loc d) s) p)
-                          reachable
-    visible = S.unions [pasVisible, actVisible, dirVisible]
-    -- A simpler way to make walls of lit rooms visible, at the cost of making
-    -- them reflect light from all sides, also from corridors.
-    -- Can be hacked around by checking for corridors in the condition below.
-    -- The version in the comment assumes hero light has diameter 3, not 1,
-    -- which looks a bit differently in dark rooms, revealing more walls.
     openSurroundings = S.filter (\ loc -> open (lmap `at` loc)) srnd
     openVisible = S.union actVisible openSurroundings
+    -- The version in the comment assumes hero light has diameter 3, not 1,
+    -- which looks a bit differently in dark rooms, revealing more walls.
     simpleVisible =
       S.filter
         (\ loc -> S.member loc openVisible
@@ -135,8 +115,4 @@ perception fovMode ploc lmap =
                        (\ l -> S.member l actVisible{-openVisible-})
                        (surroundings loc)
         ) (S.insert ploc reachable)
-  in
-    case fovMode of
-      Shadow -> Perception reachable visible
-      Blind  -> Perception reachable visible
-      _      -> Perception reachable simpleVisible
+  in Perception reachable simpleVisible
