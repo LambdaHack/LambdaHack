@@ -136,9 +136,9 @@ open = Terrain.isOpen . tterrain
 light :: Tile -> Bool
 light = Terrain.isAlight . tterrain
 
--- | can be lighted by sourrounding tiles
-reflects :: Tile -> Bool
-reflects = Terrain.reflects . tterrain
+-- | marks an exit from a room
+isExit :: Tile -> Bool
+isExit = Terrain.isExit . tterrain
 
 -- | Passive tiles reflect light from some other (usually adjacent)
 -- positions. This function returns the offsets from which light is

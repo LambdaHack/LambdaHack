@@ -131,10 +131,9 @@ perception fovMode ploc lmap =
     simpleVisible =
       S.filter
         (\ loc -> S.member loc openVisible
-                  || (reflects (lmap `at` loc)
-                      && L.any
-                           (\ l -> S.member l actVisible{-openVisible-})
-                           (surroundings loc))
+                  || L.any
+                       (\ l -> S.member l actVisible{-openVisible-})
+                       (surroundings loc)
         ) (S.insert ploc reachable)
   in
     case fovMode of

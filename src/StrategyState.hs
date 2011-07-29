@@ -91,7 +91,7 @@ strategy actor
                          in  only (\ x -> distance (foeDir, x) <= 1)
     lootHere       = (\ x -> not $ L.null $ titems $ lmap `at` x)
     onlyLoot       = onlyMoves lootHere me
-    exitHere       = (\ x -> let t = lmap `at` x in open t && reflects t)
+    exitHere       = (\ x -> let t = lmap `at` x in open t && isExit t)
     onlyExit       = onlyMoves exitHere me
     onlyKeepsDir k = only (\ x -> maybe True (\ d -> distance (d, x) <= k) mdir)
     onlyKeepsDir_9 = only (\ x -> maybe True (\ d -> neg x /= d) mdir)

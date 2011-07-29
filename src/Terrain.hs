@@ -123,6 +123,12 @@ isOpen Corridor     = True
 isOpen (Stairs {})  = True
 isOpen _            = False
 
+-- | marks an exit from a room
+isExit :: Terrain a -> Bool
+isExit (Opening _) = True
+isExit (Door _ _)  = True
+isExit _           = False
+
 fromDL :: DL -> Bool
 fromDL Dark = False
 fromDL Light = True
@@ -136,14 +142,6 @@ isAlight :: Terrain a -> Bool
 isAlight (Floor l)      = fromDL l
 isAlight (Stairs l _ _) = fromDL l
 isAlight _              = False
-
--- | can be lighted by sourrounding tiles
-reflects :: Terrain a -> Bool
-reflects (Opening _) = True
-reflects (Wall _)    = True
-reflects (Door _ _)  = True
-reflects Rock        = True
-reflects _           = False
 
 -- | Maps wall kinds to lists of expected floor positions.
 posToDir :: Pos -> [Dir]
