@@ -7,6 +7,7 @@ import Data.Maybe
 
 import qualified Color
 import Geometry
+import WorldLoc
 
 -- TODO: let terrain kinds be defined in a config file. Group them
 -- and assign frequency so that they can be used for dungeon building.
@@ -14,14 +15,14 @@ import Geometry
 -- the other big, Angband/UFO style. The problem is that the Rogue walls
 -- are very complex, while Angband style is much simpler, and I love KISS. Hmmm.
 
-data Terrain a =
+data Terrain =
     Rock
   | Opening
   | Floor DL
   | Unknown
   | Corridor
   | Wall
-  | Stairs DL VDir (Maybe a)
+  | Stairs DL VDir (Maybe WorldLoc)
   | Door (Maybe Int)  -- Nothing: open, Just 0: closed, otherwise secret
   deriving Show
 
@@ -29,7 +30,7 @@ instance Binary VDir where
   put = putWord8 . fromIntegral . fromEnum
   get = liftM (toEnum . fromIntegral) getWord8
 
-instance Binary a => Binary (Terrain a) where
+instance Binary Terrain where
   put Rock            = putWord8 0
   put Opening         = putWord8 1
   put (Floor dl)      = putWord8 2 >> put dl
@@ -51,7 +52,7 @@ instance Binary a => Binary (Terrain a) where
             7 -> liftM Door get
             _ -> fail "no parse (Terrain)"
 
-instance Eq a => Eq (Terrain a) where
+instance Eq Terrain where
   Rock == Rock = True
   Opening == Opening = True
   Floor l == Floor l' = l == l'
@@ -98,24 +99,24 @@ instance Binary Pos where
   put = putWord8 . fromIntegral . fromEnum
   get = liftM (toEnum . fromIntegral) getWord8
 
-isFloor :: Terrain a -> Bool
+isFloor :: Terrain -> Bool
 isFloor (Floor _) = True
 isFloor _         = False
 
-isWall :: Terrain a -> Bool
+isWall :: Terrain -> Bool
 isWall Wall = True
 isWall _    = False
 
-isRock :: Terrain a -> Bool
+isRock :: Terrain -> Bool
 isRock Rock = True
 isRock _    = False
 
-isUnknown :: Terrain a -> Bool
+isUnknown :: Terrain -> Bool
 isUnknown Unknown = True
 isUnknown _       = False
 
 -- | allows moves and vision
-isOpen :: Terrain a -> Bool
+isOpen :: Terrain -> Bool
 isOpen (Floor {})   = True
 isOpen Opening      = True
 isOpen (Door o)     = isNothing o
@@ -124,7 +125,7 @@ isOpen (Stairs {})  = True
 isOpen _            = False
 
 -- | marks an exit from a room
-isExit :: Terrain a -> Bool
+isExit :: Terrain -> Bool
 isExit Opening   = True
 isExit (Door _)  = True
 isExit _         = False
@@ -138,7 +139,7 @@ toDL False = Dark
 toDL True  = Light
 
 -- | is lighted on its own
-isAlight :: Terrain a -> Bool
+isAlight :: Terrain -> Bool
 isAlight (Floor l)      = fromDL l
 isAlight (Stairs l _ _) = fromDL l
 isAlight _              = False
@@ -157,7 +158,7 @@ posToDir O  = moves
 
 -- | Produces a textual description for terrain, used if no objects
 -- are present.
-lookTerrain :: Terrain a -> String
+lookTerrain :: Terrain -> String
 lookTerrain (Floor _)         = "Floor."
 lookTerrain Corridor          = "Corridor."
 lookTerrain Opening           = "An opening."
@@ -178,7 +179,7 @@ lookTerrain _                 = ""
 -- 4: only rooms
 --
 -- The Bool indicates whether the loc is currently visible.
-viewTerrain :: Int -> Bool -> Terrain a -> (Char, Color.Color)
+viewTerrain :: Int -> Bool -> Terrain -> (Char, Color.Color)
 viewTerrain n b t =
   let def =     if b then Color.BrWhite else Color.defFG
       defDark = if b then Color.BrYellow else Color.BrBlack

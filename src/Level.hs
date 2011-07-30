@@ -68,7 +68,7 @@ type LMap = Map (Y,X) (Tile,Tile)
 type SMap = Map (Y,X) Time
 
 data Tile = Tile
-              { tterrain :: Terrain.Terrain WorldLoc,
+              { tterrain :: Terrain.Terrain,
                 titems   :: [Item] }
   deriving Show
 

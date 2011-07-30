@@ -127,7 +127,7 @@ digCorridor (p1:p2:ps) l =
 digCorridor _ l = l
 
 -- | Create a new tile.
-newTile :: Terrain WorldLoc -> (Tile, Tile)
+newTile :: Terrain -> (Tile, Tile)
 newTile t = (Tile t [], Tile Unknown [])
 
 -- | Create a level consisting of only one room. Optionally, insert some walls.
