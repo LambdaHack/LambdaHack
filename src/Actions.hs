@@ -34,6 +34,7 @@ import qualified Save
 import Terrain
 import qualified Effect
 import EffectAction
+import WorldLoc
 
 -- The Action stuff that is independent from ItemAction.hs.
 -- (Both depend on EffectAction.hs).

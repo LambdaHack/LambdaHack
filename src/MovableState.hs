@@ -13,6 +13,7 @@ import Movable
 import Level
 import Dungeon
 import State
+import WorldLoc
 
 -- The operations with "Any", and those that use them, consider all the dungeon.
 -- All the other actor and level operations only consider the current level.

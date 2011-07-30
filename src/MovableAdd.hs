@@ -17,6 +17,7 @@ import MovableState
 import MovableKind
 import Random
 import qualified Config
+import WorldLoc
 
 -- Generic functions
 

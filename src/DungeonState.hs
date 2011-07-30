@@ -7,10 +7,11 @@ import Level
 import Dungeon
 import Random
 import qualified Config
+import WorldLoc
 
 connect ::
-  Maybe (Maybe DungeonLoc) ->
-  [(Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) -> Level, Loc, Loc)] ->
+  Maybe (Maybe WorldLoc) ->
+  [(Maybe (Maybe WorldLoc) -> Maybe (Maybe WorldLoc) -> Level, Loc, Loc)] ->
   [Level]
 connect au [(x,_,_)] = [x au Nothing]
 connect au ((x,_,d):ys@((_,u,_):_)) =

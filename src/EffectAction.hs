@@ -34,6 +34,7 @@ import qualified Config
 import qualified Save
 import Terrain
 import qualified Effect
+import WorldLoc
 
 -- The effectToAction function and all it depends on.
 -- This file should not depend on Action.hs nor ItemAction.hs.

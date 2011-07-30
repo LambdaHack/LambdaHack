@@ -14,6 +14,7 @@ import Dungeon
 import Item
 import Message
 import qualified ItemKind
+import WorldLoc
 
 -- | The 'State' contains all the game state that has to be saved.
 -- In practice, we maintain extra state, but that state is state

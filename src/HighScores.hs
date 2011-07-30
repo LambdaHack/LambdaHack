@@ -12,8 +12,8 @@ import Data.Maybe
 
 import File
 import Dungeon
-import Level
 import qualified Config
+import WorldLoc
 
 -- | A single score.
 -- TODO: add heroes' names, exp and level, cause of death, user number/name.

@@ -13,25 +13,7 @@ import Movable
 import Item
 import Random
 import qualified Terrain
-
--- | Level ids are just integers.
-newtype LevelId = LambdaCave Int
-  deriving (Show, Eq, Ord)
-
-instance Binary LevelId where
-  put (LambdaCave n) = put n
-  get = liftM LambdaCave get
-
--- | Name of a level.
-levelName :: LevelId -> String
-levelName (LambdaCave n) = "The Lambda Cave " ++ show n
-
--- | Depth of a level.
-levelNumber :: LevelId -> Int
-levelNumber (LambdaCave n) = n
-
--- | A dungeon location is a level together with a location on that level.
-type DungeonLoc = (LevelId, Loc)
+import WorldLoc
 
 type Party = IM.IntMap Movable
 
@@ -86,7 +68,7 @@ type LMap = Map (Y,X) (Tile,Tile)
 type SMap = Map (Y,X) Time
 
 data Tile = Tile
-              { tterrain :: Terrain.Terrain DungeonLoc,
+              { tterrain :: Terrain.Terrain WorldLoc,
                 titems   :: [Item] }
   deriving Show
 

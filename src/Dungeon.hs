@@ -17,6 +17,7 @@ import Item
 import Random
 import Terrain
 import qualified ItemKind
+import WorldLoc
 
 -- | The complete dungeon is a map from level names to levels.
 -- We usually store all but the current level in this data structure.
@@ -126,12 +127,12 @@ digCorridor (p1:p2:ps) l =
 digCorridor _ l = l
 
 -- | Create a new tile.
-newTile :: Terrain DungeonLoc -> (Tile, Tile)
+newTile :: Terrain WorldLoc -> (Tile, Tile)
 newTile t = (Tile t [], Tile Unknown [])
 
 -- | Create a level consisting of only one room. Optionally, insert some walls.
 emptyRoom :: (Level -> Rnd (LMap -> LMap)) -> LevelConfig ->
-           LevelId -> Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) -> Level, Loc, Loc)
+           LevelId -> Rnd (Maybe (Maybe WorldLoc) -> Maybe (Maybe WorldLoc) -> Level, Loc, Loc)
 emptyRoom addWallsRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
   do
     let lmap = digRoom Light ((1,1),(sy-1,sx-1)) (emptyLMap (sy,sx))
@@ -156,13 +157,13 @@ emptyRoom addWallsRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
 
 -- | For a bigroom level: Create a level consisting of only one, empty room.
 bigRoom :: LevelConfig ->
-           LevelId -> Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) -> Level, Loc, Loc)
+           LevelId -> Rnd (Maybe (Maybe WorldLoc) -> Maybe (Maybe WorldLoc) -> Level, Loc, Loc)
 bigRoom = emptyRoom (\ lvl -> return id)
 
 -- | For a noiseroom level: Create a level consisting of only one room
 -- with randomly distributed pillars.
 noiseRoom :: LevelConfig ->
-             LevelId -> Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) -> Level, Loc, Loc)
+             LevelId -> Rnd (Maybe (Maybe WorldLoc) -> Maybe (Maybe WorldLoc) -> Level, Loc, Loc)
 noiseRoom cfg =
   let addWalls lvl = do
         rs <- rollPillars cfg lvl
@@ -229,7 +230,7 @@ largeLevelConfig d =
 -- to tweak all sorts of data.
 rogueRoom :: LevelConfig ->
          LevelId ->
-         Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) ->
+         Rnd (Maybe (Maybe WorldLoc) -> Maybe (Maybe WorldLoc) ->
               Level, Loc, Loc)
 rogueRoom cfg nm =
   do

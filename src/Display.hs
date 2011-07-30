@@ -36,6 +36,7 @@ import MovableKind
 import Item
 import qualified Keys as K
 import qualified Terrain
+import WorldLoc
 
 -- Re-exported from the display frontend, with an extra slot for function
 -- for translating keys to a canonical form.
