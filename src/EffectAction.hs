@@ -281,7 +281,7 @@ handleScores write status total =
     messageOverlaysConfirm placeMsg slideshow
 
 -- | Perform a level switch to a given level. False, if nothing to do.
-lvlSwitch :: LevelName -> Action Bool
+lvlSwitch :: LevelId -> Action Bool
 lvlSwitch nln =
   do
     ln <- gets (lname . slevel)

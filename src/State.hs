@@ -18,7 +18,7 @@ import qualified ItemKind
 -- | The 'State' contains all the game state that has to be saved.
 -- In practice, we maintain extra state, but that state is state
 -- accumulated during a turn or relevant only to the current session.
--- TODO: consider changing slevel to LevelName, removing the lname field
+-- TODO: consider changing slevel to LevelId, removing the lname field
 -- and not removing the current level from the dungeon.
 data State = State
   { splayer      :: Actor,        -- ^ represents the player-controlled movable
@@ -38,9 +38,9 @@ data State = State
 
 data Cursor = Cursor
   { ctargeting :: Bool,       -- ^ are we in targeting mode?
-    clocLn     :: LevelName,  -- ^ cursor level
+    clocLn     :: LevelId,  -- ^ cursor level
     clocation  :: Loc,        -- ^ cursor coordinates
-    creturnLn  :: LevelName   -- ^ the level current player resides on
+    creturnLn  :: LevelId   -- ^ the level current player resides on
   }
   deriving Show
 

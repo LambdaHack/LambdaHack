@@ -28,7 +28,7 @@ data ScoreRecord = ScoreRecord
                        status  :: Status}
   deriving (Eq, Ord)
 
-data Status = Killed LevelName | Camping LevelName | Victor
+data Status = Killed LevelId | Camping LevelId | Victor
   deriving (Eq, Ord)
 
 instance Binary ClockTime where

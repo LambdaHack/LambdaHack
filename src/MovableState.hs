@@ -18,7 +18,7 @@ import State
 -- All the other actor and level operations only consider the current level.
 
 -- | Finds an actor body on any level. Error if not found.
-findActorAnyLevel :: Actor -> State -> Maybe (LevelName, Movable)
+findActorAnyLevel :: Actor -> State -> Maybe (LevelId, Movable)
 findActorAnyLevel actor state@(State { slevel   = lvl,
                                        sdungeon = Dungeon m }) =
   let chk lvl =
@@ -34,7 +34,7 @@ getPlayerBody state = snd $ fromMaybe (error "getPlayerBody") $
 
 -- | The list of actors and levels for all heroes in the dungeon.
 -- Heroes from the current level go first.
-allHeroesAnyLevel :: State -> [(Actor, LevelName)]
+allHeroesAnyLevel :: State -> [(Actor, LevelId)]
 allHeroesAnyLevel state =
   let Dungeon m = sdungeon state
       one (Level { lname = ln, lheroes = hs }) =
@@ -50,7 +50,7 @@ updateAnyActorBody actor f state =
         AMonster n -> updateAnyLevel (updateMonsters $ IM.adjust f n) ln state
     Nothing -> error "updateAnyActorBody"
 
-updateAnyLevel :: (Level -> Level) -> LevelName -> State -> State
+updateAnyLevel :: (Level -> Level) -> LevelId -> State -> State
 updateAnyLevel f ln state@(State { slevel = level,
                                    sdungeon = Dungeon dng })
   | ln == lname level = updateLevel f state

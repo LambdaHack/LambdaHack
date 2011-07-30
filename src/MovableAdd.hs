@@ -70,7 +70,7 @@ initialHeroes ploc state =
 -- the strength of the character and the strength of the monsters present
 -- could further influence the chance, and the chance could also affect
 -- which monster is generated.
-monsterGenChance :: LevelName -> Int -> Rnd Bool
+monsterGenChance :: LevelId -> Int -> Rnd Bool
 monsterGenChance (LambdaCave depth) numMonsters =
   chance $ 1%(fromIntegral (250 + 200 * (numMonsters - depth)) `max` 50)
 monsterGenChance _ _ = return False

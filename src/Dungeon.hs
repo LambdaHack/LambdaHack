@@ -20,7 +20,7 @@ import qualified ItemKind
 
 -- | The complete dungeon is a map from level names to levels.
 -- We usually store all but the current level in this data structure.
-newtype Dungeon = Dungeon (M.Map LevelName Level)
+newtype Dungeon = Dungeon (M.Map LevelId Level)
   deriving Show
 
 instance Binary Dungeon where
@@ -32,7 +32,7 @@ dungeon :: [Level] -> Dungeon
 dungeon = Dungeon . M.fromList . L.map (\ l -> (lname l, l))
 
 -- | Extract a level from a dungeon.
-getDungeonLevel :: LevelName -> Dungeon -> (Level, Dungeon)
+getDungeonLevel :: LevelId -> Dungeon -> (Level, Dungeon)
 getDungeonLevel ln (Dungeon dng) = (dng ! ln, Dungeon (M.delete ln dng))
 
 -- | Put a level into a dungeon.
@@ -131,7 +131,7 @@ newTile t = (Tile t [], Tile Unknown [])
 
 -- | Create a level consisting of only one room. Optionally, insert some walls.
 emptyRoom :: (Level -> Rnd (LMap -> LMap)) -> LevelConfig ->
-           LevelName -> Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) -> Level, Loc, Loc)
+           LevelId -> Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) -> Level, Loc, Loc)
 emptyRoom addWallsRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
   do
     let lmap = digRoom Light ((1,1),(sy-1,sx-1)) (emptyLMap (sy,sx))
@@ -156,13 +156,13 @@ emptyRoom addWallsRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
 
 -- | For a bigroom level: Create a level consisting of only one, empty room.
 bigRoom :: LevelConfig ->
-           LevelName -> Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) -> Level, Loc, Loc)
+           LevelId -> Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) -> Level, Loc, Loc)
 bigRoom = emptyRoom (\ lvl -> return id)
 
 -- | For a noiseroom level: Create a level consisting of only one room
 -- with randomly distributed pillars.
 noiseRoom :: LevelConfig ->
-             LevelName -> Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) -> Level, Loc, Loc)
+             LevelId -> Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) -> Level, Loc, Loc)
 noiseRoom cfg =
   let addWalls lvl = do
         rs <- rollPillars cfg lvl
@@ -228,7 +228,7 @@ largeLevelConfig d =
 -- | Create a "normal" dungeon level. Takes a configuration in order
 -- to tweak all sorts of data.
 rogueRoom :: LevelConfig ->
-         LevelName ->
+         LevelId ->
          Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) ->
               Level, Loc, Loc)
 rogueRoom cfg nm =

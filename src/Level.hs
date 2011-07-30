@@ -14,30 +14,29 @@ import Item
 import Random
 import qualified Terrain
 
--- | Names of the dungeon levels are represented using a
--- custom data structure.
-data LevelName = LambdaCave Int | Exit
+-- | Level ids are just integers.
+newtype LevelId = LambdaCave Int
   deriving (Show, Eq, Ord)
 
-instance Binary LevelName where
+instance Binary LevelId where
   put (LambdaCave n) = put n
   get = liftM LambdaCave get
 
--- | Provide a textual description of a level name.
-levelName :: LevelName -> String
+-- | Name of a level.
+levelName :: LevelId -> String
 levelName (LambdaCave n) = "The Lambda Cave " ++ show n
 
--- | Gives the numeric representation of the level's depth.
-levelNumber :: LevelName -> Int
+-- | Depth of a level.
+levelNumber :: LevelId -> Int
 levelNumber (LambdaCave n) = n
 
 -- | A dungeon location is a level together with a location on that level.
-type DungeonLoc = (LevelName, Loc)
+type DungeonLoc = (LevelId, Loc)
 
 type Party = IM.IntMap Movable
 
 data Level = Level
-  { lname     :: LevelName,
+  { lname     :: LevelId,    -- TODO: remove
     lheroes   :: Party,      -- ^ all heroes on the level
     lsize     :: (Y,X),
     lmonsters :: Party,      -- ^ all monsters on the level
