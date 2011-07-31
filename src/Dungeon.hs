@@ -336,12 +336,12 @@ emptyLMap (my,mx) = M.fromList [ ((y,x),newTile Rock) | x <- [0..mx], y <- [0..m
 -- | If the room has size 1, it is assumed to be a no-room, and a single
 -- corridor field will be dug instead of a room.
 digRoom :: DL -> Room -> LMap -> LMap
-digRoom dl ((y0,x0),(y1,x1)) l
+digRoom dl ((y0, x0), (y1, x1)) l
   | y0 == y1 && x0 == x1 =
-  M.insert (y0,x0) (newTile Corridor) l
+  M.insert (y0, x0) (newTile Corridor) l
   | otherwise =
-  let rm = M.fromList $ [ ((y,x),newTile (Floor dl))   | x <- [x0..x1],     y <- [y0..y1]    ]
-                     ++ [ ((y,x),newTile Wall)     | (x,y,p) <- [(x0-1,y0-1,UL),(x1+1,y0-1,UR),(x0-1,y1+1,DL),(x1+1,y1+1,DR)] ]
-                     ++ [ ((y,x),newTile Wall)     | x <- [x0..x1], (y,p) <- [(y0-1,U),(y1+1,D)] ]
-                     ++ [ ((y,x),newTile Wall)     | (x,p) <- [(x0-1,L),(x1+1,R)],  y <- [y0..y1]    ]
-  in M.unionWith const rm l
+  let rm =
+        [ ((y, x), newTile (Floor dl)) | x <- [x0..x1], y <- [y0..y1] ]
+        ++ [ ((y, x), newTile Wall)    | x <- [x0-1, x1+1], y <- [y0..y1] ]
+        ++ [ ((y, x), newTile Wall)    | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
+  in M.unionWith const (M.fromList rm) l

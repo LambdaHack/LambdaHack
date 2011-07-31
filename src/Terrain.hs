@@ -70,35 +70,6 @@ instance Binary DL where
   put = putWord8 . fromIntegral . fromEnum
   get = liftM (toEnum . fromIntegral) getWord8
 
--- | All the wall kinds that are possible:
---
---     * 'UL': upper left
---
---     * 'U': upper
---
---     * 'UR': upper right
---
---     * 'L': left
---
---     * 'R': right
---
---     * 'DL': lower left
---
---     * 'D': lower
---
---     * 'DR': lower right
---
---     * 'O': a pillar
---
--- I am tempted to add even more (T-pieces and crossings),
--- but currently, we don't need them.
-data Pos = UL | U | UR | L | R | DL | D | DR | O
-  deriving (Eq, Show, Enum, Bounded)
-
-instance Binary Pos where
-  put = putWord8 . fromIntegral . fromEnum
-  get = liftM (toEnum . fromIntegral) getWord8
-
 isFloor :: Terrain -> Bool
 isFloor (Floor _) = True
 isFloor _         = False
@@ -143,18 +114,6 @@ isAlight :: Terrain -> Bool
 isAlight (Floor l)      = fromDL l
 isAlight (Stairs l _ _) = fromDL l
 isAlight _              = False
-
--- | Maps wall kinds to lists of expected floor positions.
-posToDir :: Pos -> [Dir]
-posToDir UL = [downright]
-posToDir U  = [down]
-posToDir UR = [downleft]
-posToDir L  = [right]
-posToDir R  = [left]
-posToDir DL = [upright]
-posToDir D  = [up]
-posToDir DR = [upleft]
-posToDir O  = moves
 
 -- | Produces a textual description for terrain, used if no objects
 -- are present.
