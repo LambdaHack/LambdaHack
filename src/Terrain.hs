@@ -124,28 +124,18 @@ lookTerrain Unknown           = ""
 -- 4: only rooms
 --
 -- The Bool indicates whether the loc is currently visible.
-viewTerrain :: Int -> Bool -> Terrain -> (Char, Color.Color)
-viewTerrain n b t =
+viewTerrain ::  Bool -> Terrain -> (Char, Color.Color)
+viewTerrain b t =
   let def =     if b then Color.BrWhite else Color.defFG
       defDark = if b then Color.BrYellow else Color.BrBlack
       defDoor = if b then Color.Yellow else Color.BrBlack
   in case t of
-       Rock                -> ('#', def)
-       Opening
-         | n <= 3          -> ('.', def)
-         | otherwise       -> viewTerrain 0 b Rock
-       (Floor d)           -> ('.', if d == Light then def else defDark)
-       Unknown             -> (' ', def)
-       (Stairs d p _)
-         | n <= 1          -> (if p == Up then '<' else '>',
-                               if d == Light then def else defDark)
-         | otherwise       -> viewTerrain 0 b (Floor Dark)
-       (Door (Just 0))
-         | n <= 2          -> ('+', defDoor)
-         | otherwise       -> viewTerrain n b Opening
-       (Door (Just _))
-         | n <= 2          -> viewTerrain n b Rock  -- secret door
-         | otherwise       -> viewTerrain n b Opening
-       (Door Nothing)
-         | n <= 2          -> ('\'', defDoor)
-         | otherwise       -> viewTerrain n b Opening
+       Rock            -> ('#', def)
+       Opening         -> ('.', def)
+       (Floor d)       -> ('.', if d == Light then def else defDark)
+       Unknown         -> (' ', def)
+       (Stairs d p _)  -> (if p == Up then '<' else '>',
+                           if d == Light then def else defDark)
+       (Door (Just 0)) -> ('+', defDoor)
+       (Door (Just _)) -> viewTerrain b Rock  -- secret door
+       (Door Nothing)  -> ('\'', defDoor)

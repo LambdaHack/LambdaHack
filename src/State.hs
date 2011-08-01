@@ -162,7 +162,7 @@ instance Binary SensoryMode where
 data DisplayMode =
     Normal
   | Omniscient
-  | Terrain Int
+  | Terrain Int  -- TODO: unused right now
   deriving (Show, Eq)
 
 instance Binary DisplayMode where

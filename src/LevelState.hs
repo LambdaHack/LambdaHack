@@ -9,7 +9,7 @@ import Grammar
 import qualified Terrain
 
 viewTile :: Bool -> Tile -> Assocs -> (Char, Color.Color)
-viewTile b (Tile t [])    a = Terrain.viewTerrain 0 b t
+viewTile b (Tile t [])    a = Terrain.viewTerrain b t
 viewTile b (Tile t (i:_)) a = Item.viewItem (ikind i) a
 
 -- | Produces a textual description of the terrain and items at an already

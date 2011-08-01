@@ -135,8 +135,7 @@ displayLevel
       sSml   = ssensory state == Smell
       sVis   = case ssensory state of Vision _ -> True; _ -> False
       sOmn   = sdisplay state == Omniscient
-      sTer   = case sdisplay state of Terrain n -> n; _ -> 0
-      lAt    = if sOmn || sTer > 0 then at else rememberAt
+      lAt    = if sOmn then at else rememberAt
       sVisBG = if sVis
                then \ vis rea -> if vis
                                  then Color.Blue
@@ -165,7 +164,6 @@ displayLevel
             rainbow loc = toEnum ((fst loc + snd loc) `mod` 14 + 1)
             (char, fg) =
               case L.find (\ m -> loc == mloc m) (hs ++ ms) of
-                _ | sTer > 0 -> Terrain.viewTerrain sTer False (tterrain tile)
                 Just m | sOmn || vis -> viewMovable loc m
                 _ | sSml && sml >= 0 -> (viewSmell sml, rainbow loc)
                   | otherwise        -> viewTile vis tile assocs
