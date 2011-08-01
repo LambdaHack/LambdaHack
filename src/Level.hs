@@ -14,6 +14,7 @@ import Item
 import Random
 import qualified Terrain
 import WorldLoc
+import Data.Maybe
 
 type Party = IM.IntMap Movable
 
@@ -80,7 +81,7 @@ at         l p = fst (findWithDefault (unknown, unknown) p l)
 rememberAt l p = snd (findWithDefault (unknown, unknown) p l)
 
 unknown :: Tile
-unknown = Tile Terrain.Unknown []
+unknown = Tile Terrain.unknown []
 
 -- | blocks moves and vision
 closed :: Tile -> Bool
@@ -91,8 +92,8 @@ floor = Terrain.isFloor . tterrain
 
 canBeDoor :: Tile -> Bool
 canBeDoor t =
-  case t of
-    Tile d@(Terrain.Door o) _ | secret o -> True
+  case Terrain.deDoor $ tterrain t of
+    Just o | secret o -> True
     _ ->
       Terrain.isRock (tterrain t) ||
       Terrain.isUnknown (tterrain t)
@@ -137,17 +138,17 @@ accessible lmap source target =
   in  open tgt &&
       (not (diagonal dir) ||
        case (tterrain src, tterrain tgt) of
-         (Terrain.Door {}, _)  -> False
-         (_, Terrain.Door {})  -> False
+         (t1, t2) | isJust (Terrain.deDoor t1) ||
+                    isJust (Terrain.deDoor t2) -> False
          _             -> True)
 
 -- check whether the location contains a door of secrecy level lower than k
 openable :: Int -> LMap -> Loc -> Bool
 openable k lmap target =
   let tgt = lmap `at` target
-  in  case tterrain tgt of
-        Terrain.Door (Just n) -> n < k
-        _                     -> False
+  in  case Terrain.deDoor $ tterrain tgt of
+        Just (Just n)  -> n < k
+        _ -> False
 
 findLoc :: Level -> (Loc -> Tile -> Bool) -> Rnd Loc
 findLoc l@(Level { lsize = sz, lmap = lm }) p =

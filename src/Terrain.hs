@@ -1,4 +1,5 @@
-module Terrain where
+module Terrain
+  (Terrain(Door), DL(Light, Dark), rock, opening, floorDark, floorLight, unknown, stairs, door, deDoor, isFloor, isFloorDark, isRock, isOpening, isUnknown, isOpen, isExit, deStairs, fromDL, toDL, isAlight, lookTerrain, viewTerrain) where
 
 import Control.Monad
 
@@ -8,12 +9,6 @@ import Data.Maybe
 import qualified Color
 import Geometry
 import WorldLoc
-
--- TODO: let terrain kinds be defined in a config file. Group them
--- and assign frequency so that they can be used for dungeon building.
--- Goal: Have 2 tileset configs, one small, Rouge/Nethack style,
--- the other big, Angband/UFO style. The problem is that the Rogue walls
--- are very complex, while Angband style is much simpler, and I love KISS. Hmmm.
 
 data Terrain =
     Rock
@@ -62,13 +57,42 @@ instance Binary DL where
   put = putWord8 . fromIntegral . fromEnum
   get = liftM (toEnum . fromIntegral) getWord8
 
+rock, opening, floorDark, floorLight, unknown :: Terrain
+rock = Rock
+opening = Opening
+floorDark = Floor Dark
+floorLight = Floor Light
+unknown = Unknown
+
+stairs :: DL -> VDir -> Maybe WorldLoc -> Terrain
+stairs = Stairs
+
+deStairs :: Terrain -> Maybe (VDir, Maybe WorldLoc)
+deStairs (Stairs _ vdir next) = Just (vdir, next)
+deStairs _                    = Nothing
+
+deDoor :: Terrain -> Maybe (Maybe Int)
+deDoor (Door n) = Just n
+deDoor _        = Nothing
+
+door :: Maybe Int -> Terrain
+door = Door
+
 isFloor :: Terrain -> Bool
 isFloor (Floor _) = True
 isFloor _         = False
 
+isFloorDark :: Terrain -> Bool
+isFloorDark (Floor Dark) = True
+isFloorDark _            = False
+
 isRock :: Terrain -> Bool
 isRock Rock = True
 isRock _    = False
+
+isOpening :: Terrain -> Bool
+isOpening Opening = True
+isOpening _       = False
 
 isUnknown :: Terrain -> Bool
 isUnknown Unknown = True
@@ -84,9 +108,10 @@ isOpen _            = False
 
 -- | marks an exit from a room
 isExit :: Terrain -> Bool
-isExit Opening   = True
-isExit (Door _)  = True
-isExit _         = False
+isExit (Stairs  {}) = True
+isExit (Opening {}) = True
+isExit (Door    {}) = True
+isExit _            = False
 
 fromDL :: DL -> Bool
 fromDL Dark = False

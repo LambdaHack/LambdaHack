@@ -31,7 +31,7 @@ import Random
 import State
 import qualified Config
 import qualified Save
-import Terrain
+import qualified Terrain
 import qualified Effect
 import EffectAction
 import WorldLoc
@@ -179,14 +179,10 @@ continueRun dir =
         heroThere = L.elem (loc `shift` dir) (L.map mloc (IM.elems hs))
         dirOK     = accessible lmap loc (loc `shift` dir)
     -- What happens next is mostly depending on the terrain we're currently on.
-    let exit (Stairs  {}) = True
-        exit (Opening {}) = True
-        exit (Door    {}) = True
-        exit _            = False
     let hop t
           | monstersVisible || heroThere
-            || newsReported || itemsHere || exit t = abortWith msg
-        hop (Floor Dark) =
+            || newsReported || itemsHere || Terrain.isExit t = abortWith msg
+        hop t | Terrain.isFloorDark t =
           -- in corridors, explore all corners and stop at all crossings
           -- TODO: even in corridors, stop if you run past an exit (rare)
           let ns = L.filter (\ x -> distance (neg dir, x) > 1
@@ -209,7 +205,7 @@ continueRun dir =
               as = L.filter (\ x -> accessible lmap loc x
                                     || openable 1 lmap x) ls
               ts = L.map (tterrain . (lmap `at`)) as
-          in  if L.any exit ts then abortWith msg else run dir
+          in  if L.any Terrain.isExit ts then abortWith msg else run dir
     hop (tterrain t)
 
 ifRunning :: (Dir -> Action a) -> Action a -> Action a
@@ -257,7 +253,7 @@ actorOpenClose actor v o dir =
                       Just i  -> niq (mkind body) + ipower i
                       Nothing -> niq (mkind body)
       in case lmap `at` dloc of
-           Tile d@(Door o') []
+           Tile (Terrain.Door o') []
              | secret o' && isPlayer -> -- door is secret, cannot be opened or closed by the player
                                        neverMind isVerbose
              | maybe o ((|| not o) . (>= openPower)) o' ->
@@ -268,10 +264,10 @@ actorOpenClose actor v o dir =
                                        abortIfWith isVerbose "blocked"
              | otherwise            -> -- door can be opened / closed
                                        -- TODO: print message if action performed by monster and perceived
-                                       let nt  = Tile (Door (toOpen o)) []
+                                       let nt  = Tile (Terrain.door (toOpen o)) []
                                            adj = M.adjust (\ (_, mt) -> (nt, mt)) dloc
                                        in  modify (updateLevel (updateLMap adj))
-           Tile d@(Door o') _    -> -- door is jammed by items
+           Tile (Terrain.Door o') _    -> -- door is jammed by items
                                        abortIfWith isVerbose "jammed"
            _                        -> -- there is no door here
                                        neverMind isVerbose
@@ -301,8 +297,8 @@ lvlChange vdir =
     pl        <- gets splayer
     map       <- gets (lmap . slevel)
     let loc = if targeting then clocation cursor else mloc pbody
-    case map `at` loc of
-      Tile (Stairs _ vdir' next) is
+    case Terrain.deStairs $ tterrain $ map `at` loc of
+      Just (vdir', next)
         | vdir == vdir' -> -- stairs are in the right direction
           case next of
             Nothing ->
@@ -349,7 +345,7 @@ lvlChange vdir =
                   state <- get
                   liftIO $ Save.saveGame state >> Save.mvBkp (sconfig state)
                   playerAdvanceTime
-      _ -> -- no stairs
+      _ -> -- no stairs in the right direction
         if targeting
         then do
           lvlDescend (if vdir == Up then -1 else 1)
@@ -406,8 +402,8 @@ search =
     let delta = case strongestItem pitems "ring" of
                   Just i  -> 1 + ipower i
                   Nothing -> 1
-        searchTile (Tile (Door (Just n)) x, t') =
-          (Tile (Door (Just (max (n - delta) 0))) x, t')
+        searchTile (Tile (Terrain.Door (Just n)) x, t') =
+          (Tile (Terrain.door (Just (max (n - delta) 0))) x, t')
         searchTile t = t
         f l m = M.adjust searchTile (shift ploc m) l
         slmap = foldl' f lmap moves

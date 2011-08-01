@@ -32,7 +32,6 @@ import Random
 import State
 import qualified Config
 import qualified Save
-import Terrain
 import qualified Effect
 import WorldLoc
 

@@ -15,7 +15,7 @@ import GeometryRnd
 import Level
 import Item
 import Random
-import Terrain
+import qualified Terrain
 import qualified ItemKind
 import WorldLoc
 
@@ -116,25 +116,25 @@ digCorridors (p1:p2:ps) =
   M.union corPos (digCorridors (p2:ps))
   where
     corLoc = fromTo p1 p2
-    corPos = M.fromList $ L.zip corLoc (repeat $ newTile (Floor Dark))
+    corPos = M.fromList $ L.zip corLoc (repeat $ newTile Terrain.floorDark)
 digCorridors _ = M.empty
 
 mergeCorridor :: (Tile, Tile) -> (Tile, Tile) -> (Tile, Tile)
-mergeCorridor _ (Tile Rock is, u)      = (Tile Opening is, u)
-mergeCorridor _ (Tile Opening is, u )  = (Tile Opening is, u)
-mergeCorridor _ (Tile (Floor l) is, u) = (Tile (Floor l) is, u)
+mergeCorridor _ (Tile t is, u) | Terrain.isRock t    = (Tile Terrain.opening is, u)
+mergeCorridor _ (Tile t is, u) | Terrain.isOpening t = (Tile Terrain.opening is, u)
+mergeCorridor _ (Tile t is, u) | Terrain.isFloor t   = (Tile t is, u)
 mergeCorridor (x, u) _                 = (x, u)
 
 -- | Create a new tile.
-newTile :: Terrain -> (Tile, Tile)
-newTile t = (Tile t [], Tile Unknown [])
+newTile :: Terrain.Terrain -> (Tile, Tile)
+newTile t = (Tile t [], Tile Terrain.unknown [])
 
 -- | Create a level consisting of only one room. Optionally, insert some walls.
 emptyRoom :: (Level -> Rnd (LMap -> LMap)) -> LevelConfig ->
            LevelId -> Rnd (Maybe (Maybe WorldLoc) -> Maybe (Maybe WorldLoc) -> Level, Loc, Loc)
 emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
   do
-    let lmap = digRoom Light ((1,1),(sy-1,sx-1)) (emptyLMap (sy,sx))
+    let lmap = digRoom Terrain.Light ((1,1),(sy-1,sx-1)) (emptyLMap (sy,sx))
     let smap = M.fromList [ ((y,x),-100) | y <- [0..sy], x <- [0..sx] ]
     let lvl = Level nm emptyParty (sy,sx) emptyParty smap lmap ""
     -- locations of the stairs
@@ -147,8 +147,8 @@ emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
           M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l lmap
         flmap lu ld =
           addRocks $
-          maybe id (\ l -> M.insert su (newTile (Stairs Light Up   l))) lu $
-          maybe id (\ l -> M.insert sd (newTile (Stairs Light Down l))) ld $
+          maybe id (\ l -> M.insert su (newTile (Terrain.stairs Terrain.Light Up   l))) lu $
+          maybe id (\ l -> M.insert sd (newTile (Terrain.stairs Terrain.Light Down l))) ld $
           (\lmap -> foldl' addItem lmap is) $
           lmap
         level lu ld = Level nm emptyParty (sy,sx) emptyParty smap (flmap lu ld) "bigroom"
@@ -168,7 +168,7 @@ noiseRoom cfg =
         rs <- rollPillars cfg lvl
         let insertRock lmap l =
               case lmap `at` l of
-                Tile (Floor _) [] -> M.insert l (newTile Rock) lmap
+                Tile t [] | Terrain.isFloor t -> M.insert l (newTile Terrain.rock) lmap
                 _ -> lmap
         return $ \ lmap -> foldl' insertRock lmap rs
   in  emptyRoom addRocks cfg
@@ -250,7 +250,7 @@ rogueRoom cfg nm =
                               return (i,r')) gs
     let rooms :: [(Loc, Loc)]
         rooms = L.map snd rs0
-    dlrooms <- (mapM (\ r -> darkRoomChance cfg >>= \ c -> return (r, toDL (not c))) rooms) :: Rnd [((Loc, Loc), DL)]
+    dlrooms <- (mapM (\ r -> darkRoomChance cfg >>= \ c -> return (r, Terrain.toDL (not c))) rooms) :: Rnd [((Loc, Loc), Terrain.DL)]
     let rs = M.fromList rs0
     connects <- connectGrid lgrid
     addedConnects <- replicateM (extraConnects cfg lgrid) (randomConnection lgrid)
@@ -271,7 +271,7 @@ rogueRoom cfg nm =
     dlmap <- fmap M.fromList . mapM
                 (\ o@((y,x),(t,r)) ->
                   case t of
-                    Tile Opening _ ->
+                    Tile t _ | Terrain.isOpening t ->
                       do
                         -- openings have a certain chance to be doors;
                         -- doors have a certain chance to be open; and
@@ -285,7 +285,7 @@ rogueRoom cfg nm =
                                                  (if rsc then randomR (doorSecretMax cfg `div` 2, doorSecretMax cfg)
                                                          else return 0)
                         if rb
-                          then return ((y,x),newTile (Door rs))
+                          then return ((y,x),newTile (Terrain.door rs))
                           else return o
                     _ -> return o) .
                 M.toList $ lmap
@@ -299,8 +299,8 @@ rogueRoom cfg nm =
     -- generate map and level from the data
     let meta = show allConnects
     return (\ lu ld ->
-      let flmap = maybe id (\ l -> M.update (\ (t,r) -> Just $ newTile (Stairs (toDL $ light t) Up   l)) su) lu $
-                  maybe id (\ l -> M.update (\ (t,r) -> Just $ newTile (Stairs (toDL $ light t) Down l)) sd) ld $
+      let flmap = maybe id (\ l -> M.update (\ (t,r) -> Just $ newTile (Terrain.stairs (Terrain.toDL $ light t) Up   l)) su) lu $
+                  maybe id (\ l -> M.update (\ (t,r) -> Just $ newTile (Terrain.stairs (Terrain.toDL $ light t) Down l)) sd) ld $
                   foldr (\ (l,it) f -> M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l . f) id is
                   dlmap
       in  Level nm emptyParty (levelSize cfg) emptyParty smap flmap meta, su, sd)
@@ -332,17 +332,20 @@ rollPillars cfg lvl =
 
 emptyLMap :: (Y, X) -> LMap
 emptyLMap (my, mx) =
-  M.fromList [ ((y, x), newTile Rock) | x <- [0..mx], y <- [0..my] ]
+  M.fromList [ ((y, x), newTile Terrain.rock) | x <- [0..mx], y <- [0..my] ]
 
 -- | If the room has size 1, it is assumed to be a no-room, and a single
 -- corridor field will be dug instead of a room.
-digRoom :: DL -> Room -> LMap -> LMap
+digRoom :: Terrain.DL -> Room -> LMap -> LMap
 digRoom dl ((y0, x0), (y1, x1)) l
   | y0 == y1 && x0 == x1 =
-  M.insert (y0, x0) (newTile (Floor Dark)) l
+  M.insert (y0, x0) (newTile Terrain.floorDark) l
   | otherwise =
-  let rm =
-        [ ((y, x), newTile (Floor dl)) | x <- [x0..x1], y <- [y0..y1] ]
-        ++ [ ((y, x), newTile Rock)    | x <- [x0-1, x1+1], y <- [y0..y1] ]
-        ++ [ ((y, x), newTile Rock)    | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
+  let floorDL = if dl == Terrain.Light then Terrain.floorLight else Terrain.floorDark
+      rm =
+        [ ((y, x), newTile floorDL) | x <- [x0..x1], y <- [y0..y1] ]
+        ++ [ ((y, x), newTile Terrain.rock)
+           | x <- [x0-1, x1+1], y <- [y0..y1] ]
+        ++ [ ((y, x), newTile Terrain.rock)
+           | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
   in M.unionWith const (M.fromList rm) l

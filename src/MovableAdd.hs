@@ -74,7 +74,6 @@ initialHeroes ploc state =
 monsterGenChance :: LevelId -> Int -> Rnd Bool
 monsterGenChance (LambdaCave depth) numMonsters =
   chance $ 1%(fromIntegral (250 + 200 * (numMonsters - depth)) `max` 50)
-monsterGenChance _ _ = return False
 
 -- | Create a new monster in the level, at a random position.
 addMonster :: MovableKind -> Int -> Loc -> State -> State
