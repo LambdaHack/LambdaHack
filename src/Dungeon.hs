@@ -116,7 +116,7 @@ digCorridors (p1:p2:ps) =
   M.union corPos (digCorridors (p2:ps))
   where
     corLoc = fromTo p1 p2
-    corPos = M.fromList $ L.zip corLoc (repeat $ newTile Corridor)
+    corPos = M.fromList $ L.zip corLoc (repeat $ newTile (Floor Dark))
 digCorridors _ = M.empty
 
 mergeCorridor :: (Tile, Tile) -> (Tile, Tile) -> (Tile, Tile)
@@ -339,7 +339,7 @@ emptyLMap (my, mx) =
 digRoom :: DL -> Room -> LMap -> LMap
 digRoom dl ((y0, x0), (y1, x1)) l
   | y0 == y1 && x0 == x1 =
-  M.insert (y0, x0) (newTile Corridor) l
+  M.insert (y0, x0) (newTile (Floor Dark)) l
   | otherwise =
   let rm =
         [ ((y, x), newTile (Floor dl)) | x <- [x0..x1], y <- [y0..y1] ]

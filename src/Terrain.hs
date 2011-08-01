@@ -20,7 +20,6 @@ data Terrain =
   | Opening
   | Floor DL
   | Unknown
-  | Corridor
   | Stairs DL VDir (Maybe WorldLoc)
   | Door (Maybe Int)  -- Nothing: open, Just 0: closed, otherwise secret
   deriving Show
@@ -34,7 +33,6 @@ instance Binary Terrain where
   put Opening         = putWord8 1
   put (Floor dl)      = putWord8 2 >> put dl
   put Unknown         = putWord8 3
-  put Corridor        = putWord8 4
   put (Stairs dl d n) = putWord8 5 >> put dl >> put d >> put n
   put (Door o)        = putWord8 6 >> put o
   get = do
@@ -44,7 +42,6 @@ instance Binary Terrain where
             1 -> return Opening
             2 -> liftM Floor get
             3 -> return Unknown
-            4 -> return Corridor
             5 -> liftM3 Stairs get get get
             6 -> liftM Door get
             _ -> fail "no parse (Terrain)"
@@ -54,7 +51,6 @@ instance Eq Terrain where
   Opening == Opening = True
   Floor l == Floor l' = l == l'
   Unknown == Unknown = True
-  Corridor == Corridor = True
   Stairs dl d t == Stairs dl' d' t' = dl == dl' && d == d' && t == t'
   Door o == Door o' = o == o'
   _ == _ = False
@@ -83,7 +79,6 @@ isOpen :: Terrain -> Bool
 isOpen (Floor {})   = True
 isOpen Opening      = True
 isOpen (Door o)     = isNothing o
-isOpen Corridor     = True
 isOpen (Stairs {})  = True
 isOpen _            = False
 
@@ -111,7 +106,6 @@ isAlight _              = False
 -- are present.
 lookTerrain :: Terrain -> String
 lookTerrain (Floor _)         = "Floor."
-lookTerrain Corridor          = "Corridor."
 lookTerrain Opening           = "An opening."
 lookTerrain (Stairs _ Up _)   = "A staircase up."
 lookTerrain (Stairs _ Down _) = "A staircase down."
@@ -142,9 +136,6 @@ viewTerrain n b t =
          | otherwise       -> viewTerrain 0 b Rock
        (Floor d)           -> ('.', if d == Light then def else defDark)
        Unknown             -> (' ', def)
-       Corridor
-         | n <= 3          -> ('.', if b then Color.BrWhite else Color.defFG)
-         | otherwise       -> viewTerrain 0 b Rock
        (Stairs d p _)
          | n <= 1          -> (if p == Up then '<' else '>',
                                if d == Light then def else defDark)

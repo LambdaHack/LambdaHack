@@ -186,7 +186,7 @@ continueRun dir =
     let hop t
           | monstersVisible || heroThere
             || newsReported || itemsHere || exit t = abortWith msg
-        hop Corridor =
+        hop (Floor Dark) =
           -- in corridors, explore all corners and stop at all crossings
           -- TODO: even in corridors, stop if you run past an exit (rare)
           let ns = L.filter (\ x -> distance (neg dir, x) > 1
