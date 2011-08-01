@@ -21,7 +21,6 @@ data Terrain =
   | Floor DL
   | Unknown
   | Corridor
-  | Wall
   | Stairs DL VDir (Maybe WorldLoc)
   | Door (Maybe Int)  -- Nothing: open, Just 0: closed, otherwise secret
   deriving Show
@@ -36,9 +35,8 @@ instance Binary Terrain where
   put (Floor dl)      = putWord8 2 >> put dl
   put Unknown         = putWord8 3
   put Corridor        = putWord8 4
-  put Wall            = putWord8 5
-  put (Stairs dl d n) = putWord8 6 >> put dl >> put d >> put n
-  put (Door o)      = putWord8 7 >> put o
+  put (Stairs dl d n) = putWord8 5 >> put dl >> put d >> put n
+  put (Door o)        = putWord8 6 >> put o
   get = do
           tag <- getWord8
           case tag of
@@ -47,9 +45,8 @@ instance Binary Terrain where
             2 -> liftM Floor get
             3 -> return Unknown
             4 -> return Corridor
-            5 -> return Wall
-            6 -> liftM3 Stairs get get get
-            7 -> liftM Door get
+            5 -> liftM3 Stairs get get get
+            6 -> liftM Door get
             _ -> fail "no parse (Terrain)"
 
 instance Eq Terrain where
@@ -58,7 +55,6 @@ instance Eq Terrain where
   Floor l == Floor l' = l == l'
   Unknown == Unknown = True
   Corridor == Corridor = True
-  Wall == Wall = True
   Stairs dl d t == Stairs dl' d' t' = dl == dl' && d == d' && t == t'
   Door o == Door o' = o == o'
   _ == _ = False
@@ -73,10 +69,6 @@ instance Binary DL where
 isFloor :: Terrain -> Bool
 isFloor (Floor _) = True
 isFloor _         = False
-
-isWall :: Terrain -> Bool
-isWall Wall = True
-isWall _    = False
 
 isRock :: Terrain -> Bool
 isRock Rock = True
@@ -126,8 +118,8 @@ lookTerrain (Stairs _ Down _) = "A staircase down."
 lookTerrain (Door Nothing)    = "An open door."
 lookTerrain (Door (Just 0))   = "A closed door."
 lookTerrain (Door (Just _))   = "A wall."  -- secret
-lookTerrain Wall              = "A wall."
-lookTerrain _                 = ""
+lookTerrain Rock              = "Rock."
+lookTerrain Unknown           = ""
 
 -- | The parameter "n" is the level of evolution:
 --
@@ -147,13 +139,12 @@ viewTerrain n b t =
        Rock                -> ('#', def)
        Opening
          | n <= 3          -> ('.', def)
-         | otherwise       -> viewTerrain 0 b Wall
+         | otherwise       -> viewTerrain 0 b Rock
        (Floor d)           -> ('.', if d == Light then def else defDark)
        Unknown             -> (' ', def)
        Corridor
          | n <= 3          -> ('.', if b then Color.BrWhite else Color.defFG)
          | otherwise       -> viewTerrain 0 b Rock
-       Wall                -> ('#', def)
        (Stairs d p _)
          | n <= 1          -> (if p == Up then '<' else '>',
                                if d == Light then def else defDark)
@@ -162,7 +153,7 @@ viewTerrain n b t =
          | n <= 2          -> ('+', defDoor)
          | otherwise       -> viewTerrain n b Opening
        (Door (Just _))
-         | n <= 2          -> viewTerrain n b Wall  -- secret door
+         | n <= 2          -> viewTerrain n b Rock  -- secret door
          | otherwise       -> viewTerrain n b Opening
        (Door Nothing)
          | n <= 2          -> ('\'', defDoor)

@@ -94,7 +94,6 @@ canBeDoor t =
   case t of
     Tile d@(Terrain.Door o) _ | secret o -> True
     _ ->
-      Terrain.isWall (tterrain t) ||
       Terrain.isRock (tterrain t) ||
       Terrain.isUnknown (tterrain t)
 

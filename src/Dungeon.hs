@@ -111,20 +111,19 @@ connectRooms sa@((sy0,sx0),(sy1,sx1)) ta@((ty0,tx0),(ty1,tx1)) =
                                else return (Vert,yarea)
     mkCorridor hv ((sy,sx),(ty,tx)) area
 
--- | Actually dig a corridor.
-digCorridor :: Corridor -> LMap -> LMap
-digCorridor (p1:p2:ps) l =
-  digCorridor (p2:ps) $ M.union (M.unionWith corridorUpdate corPos l) surPos
+digCorridors :: Corridor -> LMap
+digCorridors (p1:p2:ps) =
+  M.union corPos (digCorridors (p2:ps))
   where
     corLoc = fromTo p1 p2
     corPos = M.fromList $ L.zip corLoc (repeat $ newTile Corridor)
-    surLoc = L.concatMap surroundings corLoc
-    surPos = M.fromList $ L.zip surLoc (repeat $ newTile Rock)
-    corridorUpdate _ (Tile Wall is, u)    = (Tile Opening is, u)
-    corridorUpdate _ (Tile Opening is, u) = (Tile Opening is, u)
-    corridorUpdate _ (Tile (Floor l) is, u)    = (Tile (Floor l) is, u)
-    corridorUpdate (x, u) _                    = (x, u)
-digCorridor _ l = l
+digCorridors _ = M.empty
+
+mergeCorridor :: (Tile, Tile) -> (Tile, Tile) -> (Tile, Tile)
+mergeCorridor _ (Tile Rock is, u)      = (Tile Opening is, u)
+mergeCorridor _ (Tile Opening is, u )  = (Tile Opening is, u)
+mergeCorridor _ (Tile (Floor l) is, u) = (Tile (Floor l) is, u)
+mergeCorridor (x, u) _                 = (x, u)
 
 -- | Create a new tile.
 newTile :: Terrain -> (Tile, Tile)
@@ -133,7 +132,7 @@ newTile t = (Tile t [], Tile Unknown [])
 -- | Create a level consisting of only one room. Optionally, insert some walls.
 emptyRoom :: (Level -> Rnd (LMap -> LMap)) -> LevelConfig ->
            LevelId -> Rnd (Maybe (Maybe WorldLoc) -> Maybe (Maybe WorldLoc) -> Level, Loc, Loc)
-emptyRoom addWallsRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
+emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
   do
     let lmap = digRoom Light ((1,1),(sy-1,sx-1)) (emptyLMap (sy,sx))
     let smap = M.fromList [ ((y,x),-100) | y <- [0..sy], x <- [0..sx] ]
@@ -143,11 +142,11 @@ emptyRoom addWallsRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
     sd <- findLoc lvl (\ l t -> floor t
                                 && distance (su,l) > minStairsDistance cfg)
     is <- rollItems cfg lvl su
-    addWalls <- addWallsRnd lvl
+    addRocks <- addRocksRnd lvl
     let addItem lmap (l,it) =
           M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l lmap
         flmap lu ld =
-          addWalls $
+          addRocks $
           maybe id (\ l -> M.insert su (newTile (Stairs Light Up   l))) lu $
           maybe id (\ l -> M.insert sd (newTile (Stairs Light Down l))) ld $
           (\lmap -> foldl' addItem lmap is) $
@@ -165,14 +164,14 @@ bigRoom = emptyRoom (\ lvl -> return id)
 noiseRoom :: LevelConfig ->
              LevelId -> Rnd (Maybe (Maybe WorldLoc) -> Maybe (Maybe WorldLoc) -> Level, Loc, Loc)
 noiseRoom cfg =
-  let addWalls lvl = do
+  let addRocks lvl = do
         rs <- rollPillars cfg lvl
-        let insertWall lmap l =
+        let insertRock lmap l =
               case lmap `at` l of
-                Tile (Floor _) [] -> M.insert l (newTile Wall) lmap
+                Tile (Floor _) [] -> M.insert l (newTile Rock) lmap
                 _ -> lmap
-        return $ \ lmap -> foldl' insertWall lmap rs
-  in  emptyRoom addWalls cfg
+        return $ \ lmap -> foldl' insertRock lmap rs
+  in  emptyRoom addRocks cfg
 
 data LevelConfig =
   LevelConfig {
@@ -263,9 +262,10 @@ rogueRoom cfg nm =
                            connectRooms r0 r1) allConnects
     let smap = M.fromList [ ((y,x),-100) | let (sy,sx) = levelSize cfg,
                                            y <- [0..sy], x <- [0..sx] ]
-    let lmap :: LMap
-        lmap = foldr digCorridor (foldr (\ (r, dl) m -> digRoom dl r m)
-                                        (emptyLMap (levelSize cfg)) dlrooms) cs
+    let lrooms = foldr (\ (r, dl) m -> digRoom dl r m) M.empty dlrooms
+        lcorridors = M.unions (L.map digCorridors cs)
+        lrocks = emptyLMap (levelSize cfg)
+        lmap = M.union (M.unionWith mergeCorridor lcorridors lrooms) lrocks
     let lvl = Level nm emptyParty (levelSize cfg) emptyParty smap lmap ""
     -- convert openings into doors
     dlmap <- fmap M.fromList . mapM
@@ -330,8 +330,9 @@ rollPillars cfg lvl =
         l <- findLoc lvl (const floor)
         return l
 
-emptyLMap :: (Y,X) -> LMap
-emptyLMap (my,mx) = M.fromList [ ((y,x),newTile Rock) | x <- [0..mx], y <- [0..my] ]
+emptyLMap :: (Y, X) -> LMap
+emptyLMap (my, mx) =
+  M.fromList [ ((y, x), newTile Rock) | x <- [0..mx], y <- [0..my] ]
 
 -- | If the room has size 1, it is assumed to be a no-room, and a single
 -- corridor field will be dug instead of a room.
@@ -342,6 +343,6 @@ digRoom dl ((y0, x0), (y1, x1)) l
   | otherwise =
   let rm =
         [ ((y, x), newTile (Floor dl)) | x <- [x0..x1], y <- [y0..y1] ]
-        ++ [ ((y, x), newTile Wall)    | x <- [x0-1, x1+1], y <- [y0..y1] ]
-        ++ [ ((y, x), newTile Wall)    | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
+        ++ [ ((y, x), newTile Rock)    | x <- [x0-1, x1+1], y <- [y0..y1] ]
+        ++ [ ((y, x), newTile Rock)    | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
   in M.unionWith const (M.fromList rm) l
