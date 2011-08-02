@@ -10,6 +10,67 @@ import qualified Color
 import Geometry
 import WorldLoc
 
+import Color
+import Effect
+import Random
+
+data TileKind = TileKind
+  { usymbol  :: !Char         -- ^ map symbol
+  , uname    :: String        -- ^ name
+  , ucolor   :: !Color.Color  -- ^ map color
+  , ucolor2  :: !Color.Color  -- ^ map color when not in FOV
+  , ufreq    :: !Int          -- ^ created that often (within a group?)
+  , ufeature :: [Feature]     -- ^ properties
+  }
+  deriving (Show, Eq, Ord)
+
+data Feature =
+    Walkable         -- ^ actors can walk through
+  | Clear            -- ^ actors can see through
+  | Exit             -- ^ is an exit from a room
+  | Lit Int          -- ^ emits light; radius 0 means just the tile is lit
+  | Aura Effect      -- ^ sustains the effect continuously
+  | Cause Effect     -- ^ causes the effect when triggered
+  | Change TileKind  -- ^ transitions when triggered
+  | Climbable VDir   -- ^ triggered by climbing
+  | Openable         -- ^ triggered by opening
+  | Closable         -- ^ triggered by closable
+  | Secret RollDice  -- ^ triggered by searching a number of times
+  deriving (Show, Eq, Ord)
+
+rockkk, doorOpen, doorClosed, doorSecret :: TileKind  -- TODO: , rock, opening, floorDark, floorLight, unknown
+
+rockkk = TileKind
+  { usymbol  = '#'
+  , uname    = "A wall."
+  , ucolor   = Color.BrWhite
+  , ucolor2  = Color.defFG
+  , ufreq    = 100
+  , ufeature = []
+  }
+
+doorOpen = TileKind
+  { usymbol  = '\''
+  , uname    = "An open door."
+  , ucolor   = Color.Yellow
+  , ucolor2  = Color.BrBlack
+  , ufreq    = 100
+  , ufeature = [Walkable, Clear, Exit, Lit 0, Change doorClosed, Openable]
+  }
+
+doorClosed = TileKind
+  { usymbol  = '+'
+  , uname    = "A closed door."
+  , ucolor   = Color.Yellow
+  , ucolor2  = Color.BrBlack
+  , ufreq    = 100
+  , ufeature = [Exit, Change doorClosed, Closable]
+  }
+
+doorSecret = rockkk
+  { ufeature = [Change doorClosed, Secret (7, 2)]
+  }
+
 data Terrain =
     Rock
   | Opening

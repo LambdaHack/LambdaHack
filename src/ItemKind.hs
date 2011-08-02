@@ -10,7 +10,7 @@ import Random
 data ItemKind = ItemKind
   { jsymbol  :: !Char      -- ^ map symbol
   , jflavour :: [Flavour]  -- ^ possible flavours
-  , jname    :: String     -- ^ item group name
+  , jname    :: String     -- ^ group name
   , jeffect  :: Effect     -- ^ the effect when activated
   , jcount   :: RollQuad   -- ^ created in that quantify
   , jfreq    :: !Int       -- ^ created that often
@@ -18,12 +18,12 @@ data ItemKind = ItemKind
   }
   deriving (Show, Eq, Ord)
 
-type Flavour = (Color, Bool)  -- the flag tells to use fancy color names
+type Flavour = (Color, Bool)  -- the flag says to use fancy color names
 
 zipPlain cs = L.zip cs (repeat False)
 zipFancy cs = L.zip cs (repeat True)
 darkCol    = [Red .. Cyan]
-brightCol  = [BrRed .. BrCyan]  -- BrBlack is not really that bright
+brightCol  = [BrRed .. BrCyan]  -- BrBlack excluded (not really that bright)
 stdCol     = darkCol ++ brightCol
 stdFlav    = zipPlain stdCol ++ zipFancy stdCol
 

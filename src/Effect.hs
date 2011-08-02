@@ -1,6 +1,7 @@
 module Effect where
 
 import Random
+import WorldLoc
 
 data Effect =
     NoEffect
@@ -12,6 +13,7 @@ data Effect =
   | ApplyPerfume
   | Regneration
   | Searching
+  | Teleport WorldLoc
   deriving (Show, Eq, Ord)
 
 effectToName :: Effect -> String
@@ -26,6 +28,7 @@ effectToName SummonEnemy = "of summoning"
 effectToName ApplyPerfume = "of rose water"
 effectToName Regneration = "of regeneration"
 effectToName Searching = "of searching"
+effectToName (Teleport _) = "of teleport"
 
 -- | How much AI benefits from applying the effect. Multipllied by item power.
 -- Negative means harm to the enemy when thrown. Zero won't ever be used.
@@ -39,3 +42,4 @@ effectToBenefit SummonEnemy = 0
 effectToBenefit ApplyPerfume = 0
 effectToBenefit Regneration = 0     -- much more benefit from carrying around
 effectToBenefit Searching = 0       -- AI does not need to search
+effectToBenefit (Teleport _) = 0    -- AI does not know when to teleport
