@@ -35,6 +35,7 @@ import qualified Terrain
 import qualified Effect
 import EffectAction
 import WorldLoc
+import Tile  -- TODO: qualified
 
 -- The Action stuff that is independent from ItemAction.hs.
 -- (Both depend on EffectAction.hs).
@@ -318,7 +319,7 @@ lvlChange vdir =
                   -- do not freely reveal the other end of the stairs
                   map <- gets (lmap . slevel)  -- lvlSwitch modifies map
                   let upd cursor =
-                        let cloc = if Level.isUnknown (rememberAt map nloc)
+                        let cloc = if isUnknown (rememberAt map nloc)
                                    then loc
                                    else nloc
                         in  cursor { clocation = cloc, clocLn = nln }

@@ -5,6 +5,7 @@ import Data.Set as S
 import FOV.Common
 import Geometry
 import Level
+import qualified Tile
 
 -- Permissive FOV with a given range.
 
@@ -43,7 +44,7 @@ pscan r ptr l d (s@(sl{-shallow line-}, sBumps), e@(el{-steep line-}, eBumps)) =
                  in  ns*ke == ne*ks && (n == 0 || n == k)
       outside
         | d >= r = S.empty
-        | open (l `at` tr (d, ps)) = pscan' (Just s) ps  -- start in light
+        | Tile.open (l `at` tr (d, ps)) = pscan' (Just s) ps  -- start in light
         | ps == ns `divUp` ks = pscan' (Just s) ps       -- start in a corner
         | otherwise = pscan' Nothing (ps+1)              -- start in mid-wall
 
@@ -55,7 +56,7 @@ pscan r ptr l d (s@(sl{-shallow line-}, sBumps), e@(el{-steep line-}, eBumps)) =
       pscan' (Just s@(_, sBumps)) ps
         | ps > pe =                            -- reached end, scan next
             pscan r ptr l (d+1) (s, e)
-        | closed (l `at` tr (d, ps)) =         -- entering shadow, steep bump
+        | Tile.closed (l `at` tr (d, ps)) =    -- entering shadow, steep bump
             let steepBump = bottomRight (d, ps)
                 gte = flip $ psteeper steepBump
                 -- sBumps may contain steepBump, but maximal will ignore it

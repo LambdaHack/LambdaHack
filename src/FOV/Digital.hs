@@ -5,6 +5,7 @@ import Data.Set as S
 import FOV.Common
 import Geometry
 import Level
+import qualified Tile
 
 -- Digital FOV with a given range.
 
@@ -36,14 +37,14 @@ dscan r tr l d (s@(sl{-shallow line-}, sBumps), e@(el{-steep line-}, eBumps)) =
       outside
         | d >= r = S.empty
         | ps > pe = error $ "dscan: wrong start " ++ show (d, (ps, pe))
-        | open (l `at` tr (B(d, ps))) =
+        | Tile.open (l `at` tr (B(d, ps))) =
             dscan' (Just s) (ps+1)            -- start in light, jump ahead
         | otherwise = dscan' Nothing (ps+1)   -- start in shadow, jump ahead
 
       dscan' :: Maybe Edge -> Progress -> Set Loc
       dscan' (Just s@(_, sBumps)) ps
         | ps > pe = dscan r tr l (d+1) (s, e) -- reached end, scan next
-        | closed (l `at` tr steepBump) =      -- entering shadow
+        | Tile.closed (l `at` tr steepBump) = -- entering shadow
             S.union
               (dscan r tr l (d+1) (s, (dline nep steepBump, neBumps)))
               (dscan' Nothing (ps+1))
@@ -56,7 +57,7 @@ dscan r tr l d (s@(sl{-shallow line-}, sBumps), e@(el{-steep line-}, eBumps)) =
 
       dscan' Nothing ps
         | ps > pe = S.empty                   -- reached end while in shadow
-        | open (l `at` tr shallowBump) =      -- moving out of shadow
+        | Tile.open (l `at` tr shallowBump) = -- moving out of shadow
             dscan' (Just (dline nsp shallowBump, nsBumps)) (ps+1)
         | otherwise = dscan' Nothing (ps+1)   -- continue in shadow
         where

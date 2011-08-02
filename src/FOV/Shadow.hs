@@ -6,6 +6,7 @@ import Data.Set as S
 import FOV.Common
 import Geometry
 import Level
+import qualified Tile
 
 -- Recursive Shadow Casting.
 
@@ -22,8 +23,8 @@ scan :: ((Distance, Progress) -> Loc) -> LMap -> Distance -> Interval -> Set Loc
 scan tr l d (s,e) =
     let ps = downBias (s * fromIntegral d)   -- minimal progress to check
         pe = upBias (e * fromIntegral d)     -- maximal progress to check
-        st = if open (l `at` tr (d,ps)) then Just s   -- start in light
-                                        else Nothing  -- start in shadow
+        st = if Tile.open (l `at` tr (d,ps)) then Just s   -- start in light
+                                             else Nothing  -- start in shadow
     in
         -- trace (show (d,s,e,ps,pe)) $
         S.union (S.fromList [tr (d,p) | p <- [ps..pe]]) (scan' st ps pe)
@@ -34,7 +35,7 @@ scan tr l d (s,e) =
     scan' (Just s) ps pe
       | s  >= e  = S.empty               -- empty interval
       | ps > pe  = scan tr l (d+1) (s,e) -- reached end, scan next
-      | closed (l `at` tr (d,ps)) =
+      | Tile.closed (l `at` tr (d,ps)) =
                    let ne = (fromIntegral ps - (1%2)) / (fromIntegral d + (1%2))
                    in  scan tr l (d+1) (s,ne) `S.union` scan' Nothing (ps+1) pe
                                       -- entering shadow
@@ -42,7 +43,7 @@ scan tr l d (s,e) =
                                       -- continue in light
     scan' Nothing ps pe
       | ps > pe  = S.empty            -- reached end while in shadow
-      | open (l `at` tr (d,ps)) =
+      | Tile.open (l `at` tr (d,ps)) =
                    let ns = (fromIntegral ps - (1%2)) / (fromIntegral d - (1%2))
                    in  scan' (Just ns) (ps+1) pe
                                       -- moving out of shadow

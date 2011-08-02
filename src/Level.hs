@@ -15,6 +15,7 @@ import Random
 import qualified Terrain
 import WorldLoc
 import Data.Maybe
+import qualified Tile
 
 type Party = IM.IntMap Movable
 
@@ -65,61 +66,11 @@ instance Binary Level where
           lmeta <- get
           return (Level nm hs sz ms lsmell lmap lmeta)
 
-type LMap = Map (Y,X) (Tile,Tile)
+type LMap = Map (Y,X) (Tile.Tile, Tile.Tile)
 type SMap = Map (Y,X) Time
 
-data Tile = Tile
-              { tterrain :: Terrain.Terrain,
-                titems   :: [Item] }
-  deriving Show
-
-instance Binary Tile where
-  put (Tile t is) = put t >> put is
-  get = liftM2 Tile get get
-
-at         l p = fst (findWithDefault (unknown, unknown) p l)
-rememberAt l p = snd (findWithDefault (unknown, unknown) p l)
-
-unknown :: Tile
-unknown = Tile Terrain.unknown []
-
--- | blocks moves and vision
-closed :: Tile -> Bool
-closed = not . open
-
-floor :: Tile -> Bool
-floor = Terrain.isFloor . tterrain
-
-canBeDoor :: Tile -> Bool
-canBeDoor t =
-  case Terrain.deDoor $ tterrain t of
-    Just o | secret o -> True
-    _ ->
-      Terrain.isRock (tterrain t) ||
-      Terrain.isUnknown (tterrain t)
-
-secret :: Maybe Int -> Bool
-secret (Just n) | n /= 0 = True
-secret _ = False
-
-isUnknown :: Tile -> Bool
-isUnknown = Terrain.isUnknown . tterrain
-
-toOpen :: Bool -> Maybe Int
-toOpen True = Nothing
-toOpen False = Just 0
-
--- | allows moves and vision
-open :: Tile -> Bool
-open = Terrain.isOpen . tterrain
-
--- | is lighted on its own
-light :: Tile -> Bool
-light = Terrain.isAlight . tterrain
-
--- | marks an exit from a room
-isExit :: Tile -> Bool
-isExit = Terrain.isExit . tterrain
+at         l p = fst (findWithDefault (Tile.unknownTile, Tile.unknownTile) p l)
+rememberAt l p = snd (findWithDefault (Tile.unknownTile, Tile.unknownTile) p l)
 
 -- Checks for the presence of movables. Does *not* check if the tile is open.
 unoccupied :: [Movable] -> Loc -> Bool
@@ -135,9 +86,9 @@ accessible lmap source target =
   let dir = shift source (neg target)
       src = lmap `at` source
       tgt = lmap `at` target
-  in  open tgt &&
+  in  Tile.open tgt &&
       (not (diagonal dir) ||
-       case (tterrain src, tterrain tgt) of
+       case (Tile.tterrain src, Tile.tterrain tgt) of
          (t1, t2) | isJust (Terrain.deDoor t1) ||
                     isJust (Terrain.deDoor t2) -> False
          _             -> True)
@@ -146,11 +97,11 @@ accessible lmap source target =
 openable :: Int -> LMap -> Loc -> Bool
 openable k lmap target =
   let tgt = lmap `at` target
-  in  case Terrain.deDoor $ tterrain tgt of
+  in  case Terrain.deDoor $ Tile.tterrain tgt of
         Just (Just n)  -> n < k
         _ -> False
 
-findLoc :: Level -> (Loc -> Tile -> Bool) -> Rnd Loc
+findLoc :: Level -> (Loc -> Tile.Tile -> Bool) -> Rnd Loc
 findLoc l@(Level { lsize = sz, lmap = lm }) p =
   do
     loc <- locInArea ((0,0),sz)
@@ -161,8 +112,8 @@ findLoc l@(Level { lsize = sz, lmap = lm }) p =
 
 findLocTry :: Int ->  -- try k times
               Level ->
-              (Loc -> Tile -> Bool) ->  -- loop until satisfied
-              (Loc -> Tile -> Bool) ->  -- only try to satisfy k times
+              (Loc -> Tile.Tile -> Bool) ->  -- loop until satisfied
+              (Loc -> Tile.Tile -> Bool) ->  -- only try to satisfy k times
               Rnd Loc
 findLocTry k l@(Level { lsize = sz, lmap = lm }) p pTry =
   do
@@ -179,6 +130,6 @@ dropItemsAt :: [Item] -> Loc -> Level -> Level
 dropItemsAt items loc lvl@(Level { lmap = lmap }) =
   let joinItems items = L.foldl' (\ acc i -> snd (joinItem i acc)) items
       t = lmap `at` loc
-      nt = t { titems = joinItems items (titems t) }
+      nt = t { Tile.titems = joinItems items (Tile.titems t) }
       ntRemember = lmap `rememberAt` loc
   in  updateLMap (M.insert loc (nt, ntRemember)) lvl

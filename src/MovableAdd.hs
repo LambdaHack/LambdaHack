@@ -18,6 +18,7 @@ import MovableKind
 import Random
 import qualified Config
 import WorldLoc
+import qualified Tile
 
 -- Generic functions
 
@@ -33,7 +34,7 @@ nearbyFreeLoc origin state@(State { slevel = Level { lmap = map } }) =
   let hs = levelHeroList state
       ms = levelMonsterList state
       places = origin : L.nub (concatMap surroundings places)
-      good loc = open (map `at` loc) && not (loc `L.elem` L.map mloc (hs ++ ms))
+      good loc = Tile.open (map `at` loc) && not (loc `L.elem` L.map mloc (hs ++ ms))
   in  fromMaybe (error "no nearby free location found") $ L.find good places
 
 -- Adding heroes
@@ -98,9 +99,9 @@ rollMonster state@(State { slevel = lvl }) = do
       -- levels with few rooms are dangerous, because monsters may spawn
       -- in adjacent and unexpected places
       loc <- findLocTry 1000 lvl
-             (\ l t -> open t
+             (\ l t -> Tile.open t
                        && not (l `L.elem` L.map mloc (hs ++ ms)))
-             (\ l t -> floor t
+             (\ l t -> Tile.floor t
                        && L.all (\ pl -> distance (mloc pl, l) > 400) hs)
       let fmk = Frequency $ L.zip (L.map nfreq dungeonMonsters) dungeonMonsters
       mk <- frequency fmk

@@ -33,6 +33,7 @@ import qualified Config
 import qualified Save
 import qualified Effect
 import EffectAction
+import qualified Tile
 
 -- Item UI code with the Action type and everything it depends on
 -- that is not already in Action.hs and EffectAction.hs.
@@ -200,14 +201,14 @@ removeFromInventory actor i loc = do
 removeFromLoc :: Item -> Loc -> Action Bool
 removeFromLoc i loc = do
   lmap  <- gets (lmap . slevel)
-  if not $ L.any (equalItemIdentity i) (titems (lmap `at` loc))
+  if not $ L.any (equalItemIdentity i) (Tile.titems (lmap `at` loc))
     then return False
     else
       modify (updateLevel (updateLMap adj)) >>
       return True
         where
           adj = M.adjust (\ (t, rt) -> (remove t, rt)) loc
-          remove t = t { titems = removeItemByIdentity i (titems t) }
+          remove t = t { Tile.titems = removeItemByIdentity i (Tile.titems t) }
 
 actorPickupItem :: Actor -> Action ()
 actorPickupItem actor = do
@@ -221,7 +222,7 @@ actorPickupItem actor = do
       perceived = loc `S.member` ptvisible per
       isPlayer  = actor == pl
   -- check if something is here to pick up
-  case titems t of
+  case Tile.titems t of
     []   -> abortIfWith isPlayer "nothing here"
     i:rs -> -- pick up first item; TODO: let player select item;not for monsters
       case assignLetter (iletter i) (mletter body) (mitems body) of
@@ -279,7 +280,7 @@ getItem prompt p ptext is0 isn = do
   body  <- gets getPlayerBody
   let loc       = mloc body
       t         = lmap `at` loc -- the map tile in question
-      tis       = titems t
+      tis       = Tile.titems t
       floorMsg  = if L.null tis then "" else " -,"
       is = L.filter p is0
       choice = if L.null is

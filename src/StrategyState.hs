@@ -24,6 +24,7 @@ import ItemAction
 import qualified ItemKind
 import Item
 import qualified Effect
+import qualified Tile
 
 -- import Debug.Trace
 
@@ -89,9 +90,9 @@ strategy actor
                        Just loc ->
                          let foeDir = towards (me, loc)
                          in  only (\ x -> distance (foeDir, x) <= 1)
-    lootHere       = (\ x -> not $ L.null $ titems $ lmap `at` x)
+    lootHere       = (\ x -> not $ L.null $ Tile.titems $ lmap `at` x)
     onlyLoot       = onlyMoves lootHere me
-    exitHere       = (\ x -> let t = lmap `at` x in open t && isExit t)
+    exitHere       = (\ x -> let t = lmap `at` x in Tile.open t && Tile.isExit t)
     onlyExit       = onlyMoves exitHere me
     onlyKeepsDir k = only (\ x -> maybe True (\ d -> distance (d, x) <= k) mdir)
     onlyKeepsDir_9 = only (\ x -> maybe True (\ d -> neg x /= d) mdir)
@@ -120,7 +121,7 @@ strategy actor
       .| lootHere me .=> actionPickup
       .| fromDir True moveAround
     actionPickup = return $ actorPickupItem actor
-    tis = titems $ lmap `at` me
+    tis = Tile.titems $ lmap `at` me
     freqs = [applyFreq items 1, applyFreq tis 2,
              throwFreq items 2, throwFreq tis 5, towardsFreq]
     applyFreq is multi = Frequency

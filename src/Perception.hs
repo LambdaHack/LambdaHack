@@ -14,6 +14,7 @@ import MovableState
 import qualified MovableKind
 import FOV
 import qualified Config
+import qualified Tile
 
 data Perception =
   Perception { preachable :: S.Set Loc, pvisible :: S.Set Loc }
@@ -101,10 +102,10 @@ perception fovMode ploc lmap =
     reachable  = fullscan fovMode ploc lmap
     -- In "actVisible", we store the locations that have light and are
     -- reachable. Furthermore, the hero location itself is always visible.
-    litVisible = S.filter (\ loc -> light (lmap `at` loc)) reachable
+    litVisible = S.filter (\ loc -> Tile.light (lmap `at` loc)) reachable
     actVisible = S.insert ploc litVisible
     srnd       = S.fromList $ surroundings ploc
-    openSurroundings = S.filter (\ loc -> open (lmap `at` loc)) srnd
+    openSurroundings = S.filter (\ loc -> Tile.open (lmap `at` loc)) srnd
     openVisible = S.union actVisible openSurroundings
     -- The version in the comment assumes hero light has diameter 3, not 1,
     -- which looks a bit differently in dark rooms, revealing more walls.

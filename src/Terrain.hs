@@ -149,7 +149,7 @@ lookTerrain Unknown           = ""
 -- 4: only rooms
 --
 -- The Bool indicates whether the loc is currently visible.
-viewTerrain ::  Bool -> Terrain -> (Char, Color.Color)
+viewTerrain :: Bool -> Terrain -> (Char, Color.Color)
 viewTerrain b t =
   let def =     if b then Color.BrWhite else Color.defFG
       defDark = if b then Color.BrYellow else Color.BrBlack

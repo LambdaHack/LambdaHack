@@ -18,6 +18,7 @@ import Random
 import qualified Terrain
 import qualified ItemKind
 import WorldLoc
+import Tile  -- TODO: qualified
 
 -- | The complete dungeon is a map from level names to levels.
 -- We usually store all but the current level in this data structure.
