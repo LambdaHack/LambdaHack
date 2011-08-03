@@ -94,6 +94,11 @@ perception_ state@(State { splayer = pl,
                     pheroes = pers,
                     ptotal = Perception reachable visible }
 
+-- TODO: improve this documentation:
+-- Once we compute the reachable fields using FOV, it is possible
+-- to compute what the hero can actually see. Fields adjacent to the hero
+-- (also diagonally) can always be seen (except for walls).
+-- Fields that have light and are reachable can also be seen.
 perception :: FovMode -> Loc -> LMap -> Perception
 perception fovMode ploc lmap =
   let

@@ -4,7 +4,7 @@ version:       0.4.0
 license:       BSD3
 license-file:  LICENSE
 tested-with:   GHC==7.0.3
-data-files:    LICENSE, CREDITS, DESIGN.markdown, PLAYING.markdown,
+data-files:    LICENSE, CREDITS, PLAYING.markdown,
                README.markdown, src/config.default, scores
 author:        Andres Loeh, Mikolaj Konarski and others
 maintainer:    Mikolaj Konarski <mikolaj.konarski@funktory.com>

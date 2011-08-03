@@ -28,6 +28,34 @@ import qualified Tile
 
 -- import Debug.Trace
 
+{-
+Monster movement
+----------------
+
+Not all monsters use the same algorithm to find the hero.
+Some implemented and unimplemented methods are listed below:
+
+* Random
+The simplest way to have a monster move is at random.
+
+* Sight
+If a monster can see the hero (as an approximation,
+we assume it is the case when the hero can see the monster),
+the monster should move toward the hero.
+
+* Smell
+The hero leaves a trail when moving toward the dungeon.
+For a certain timespan (100--200 moves), it is possible
+for certain monsters to detect that a hero has been at a certain field.
+Once a monster is following a trail, it should move to the
+neighboring field where the hero has most recently visited.
+
+* Noise
+The hero makes noise. If the distance between the hero
+and the monster is small enough, the monster can hear the hero
+and moves into the approximate direction of the hero.
+-}
+
 strategy :: Actor -> State -> Perceptions -> Strategy (Action ())
 strategy actor
          oldState@(State { scursor = cursor,

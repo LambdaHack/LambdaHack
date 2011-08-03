@@ -41,8 +41,8 @@ gameplay options --- they can easily unbalance or break the game.
 Further information
 -------------------
 
-See files PLAYING.markdown, DESIGN.markdown, CREDITS and LICENSE
-for more information.
+Visit the wiki at https://github.com/Mikolaj/Allure/wiki and see files
+PLAYING.markdown, CREDITS and LICENSE for more information.
 
 
 

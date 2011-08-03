@@ -16,6 +16,57 @@ import qualified Tile
 -- when two corridors touch diagonally by accident and on the random pillars
 -- levels.
 
+{-
+Field Of View
+-------------
+
+The algorithm used is a variant of Shadow Casting. We first compute
+fields that are reachable (have unobstructed line of sight) from the hero's
+position. Later, in Perception.hs,  from this information we compute
+the fields that are visible (not hidden in darkness, etc.).
+
+As input to the algorithm, we require information about fields that
+block light. As output, we get information on the reachability of all fields.
+We assume that the hero is located at position (0, 0)
+and we only consider fields (line, row) where line >= 0 and 0 <= row <= line.
+This is just about one eighth of the whole hero's surroundings,
+but the other parts can be computed in the same fashion by mirroring
+or rotating the given algorithm accordingly.
+
+      fov (blocks, maxline) =
+         shadow := \empty_set
+         reachable (0, 0) := True
+         for l \in [ 1 .. maxline ] do
+            for r \in [ 0 .. l ] do
+              reachable (l, r) := ( \exists a. a \in interval (l, r) \and
+                                    a \not_in shadow)
+              if blocks (l, r) then
+                 shadow := shadow \union interval (l, r)
+              end if
+            end for
+         end for
+         return reachable
+
+      interval (l, r) = return [ angle (l + 0.5, r - 0.5),
+                                 angle (l - 0.5, r + 0.5) ]
+      angle (l, r) = return atan (r / l)
+
+The algorithm traverses the fields line by line, row by row.
+At every moment, we keep in shadow the intervals which are in shadow,
+measured by their angle. A square is reachable when any point
+in it is not in shadow --- the algorithm is permissive in this respect.
+We could also require that a certain fraction of the field is reachable,
+or a specific point. Our choice has certain consequences. For instance,
+a single blocking field throws a shadow, but the fields immediately behind
+the blocking field are still visible.
+
+We can compute the interval of angles corresponding to one square field
+by computing the angle of the line passing the upper left corner
+and the angle of the line passing the lower right corner.
+This is what interval and angle do. If a field is blocking, the interval
+for the square is added to the shadow set.
+-}
+
 -- | The current state of a scan is kept in a variable of Maybe Rational.
 -- If Just something, we're in a visible interval. If Nothing, we're in
 -- a shadowed interval.
