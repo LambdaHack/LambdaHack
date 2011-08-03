@@ -550,9 +550,8 @@ moveOrAttack allowAttacks autoOpen actor dir
 -- | Resolves the result of an actor moving into another. Usually this
 -- involves melee attack, but with two heroes it just changes focus.
 -- Movables on blocked locations can be attacked without any restrictions.
--- For instance, a movable on an open door can be attacked diagonally,
--- and a movable capable of moving through walls can be attacked from an
--- adjacent position.
+-- For instance, a movable capable of moving through walls
+-- can be attacked from an adjacent position.
 -- This function is analogous to zapGroupItem, but for melee
 -- and not using up the weapon.
 actorAttackActor :: Actor -> Actor -> Action ()

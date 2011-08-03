@@ -77,21 +77,14 @@ unoccupied :: [Movable] -> Loc -> Bool
 unoccupied movables loc =
   all (\ m -> mloc m /= loc) movables
 
--- check whether one location is accessible from the other
--- precondition: the two locations are next to each other
--- currently only implements that doors aren't accessible diagonally,
--- and that the target location has to be open
+-- Check whether one location is accessible from the other.
+-- Precondition: the two locations are next to each other.
+-- Currently only implements that the target location has to be open.
+-- TODO: in the future check flying for chasms, swimming for water, etc.
 accessible :: LMap -> Loc -> Loc -> Bool
 accessible lmap source target =
-  let dir = shift source (neg target)
-      src = lmap `at` source
-      tgt = lmap `at` target
-  in  Tile.open tgt &&
-      (not (diagonal dir) ||
-       case (Tile.tterrain src, Tile.tterrain tgt) of
-         (t1, t2) | isJust (Terrain.deDoor t1) ||
-                    isJust (Terrain.deDoor t2) -> False
-         _             -> True)
+  let tgt = lmap `at` target
+  in  Tile.open tgt
 
 -- check whether the location contains a door of secrecy level lower than k
 openable :: Int -> LMap -> Loc -> Bool
