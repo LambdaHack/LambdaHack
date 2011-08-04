@@ -1,11 +1,13 @@
 Allure of the Stars
 ===================
 
-Allure of the Stars is a [roguelike] [1] computer game in early development
-that employs procedural content generation evolving in response
-to player behaviour, with the goal of ensuring high replayability.
+This is an alpha prerelease of Allure of the Stars,
+a near-future Sci-Fi [roguelike] [1] and tactical squad game.
+Long term goals are high replayability and auto-balancing
+through procedural content generation and persistent content
+modification based on player behaviour.
 The game is written in [Haskell] [2] and based
-on the versatile [LambdaHack engine] [3],
+on the [LambdaHack roguelike engine] [3],
 
 
 Compilation and installation
@@ -22,7 +24,8 @@ and run Cabal from the main directory
 
     cabal install
 
-or you may try one of the terminal frontends with
+The best frontend (keyboard support and colours) is gtk,
+but if needed, you may try one of the terminal frontends with, e.g,
 
     cabal install -fvty
 
@@ -41,8 +44,10 @@ gameplay options --- they can easily unbalance or break the game.
 Further information
 -------------------
 
-Visit the wiki at https://github.com/Mikolaj/Allure/wiki and see files
-PLAYING.markdown, CREDITS and LICENSE for more information.
+For more information, visit the wiki at https://github.com/Mikolaj/Allure/wiki
+and see the files PLAYING.markdown, CREDITS and LICENSE.
+
+Have fun!
 
 
 

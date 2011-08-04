@@ -38,9 +38,9 @@ data Feature =
   | Secret RollDice  -- ^ triggered by searching a number of times
   deriving (Show, Eq, Ord)
 
-rockkk, doorOpen, doorClosed, doorSecret :: TileKind  -- TODO: , rock, opening, floorDark, floorLight, unknown
+wall, doorOpen, doorClosed, doorSecret :: TileKind  -- TODO: , opening, floorDark, floorLight, unknown
 
-rockkk = TileKind
+wall = TileKind
   { usymbol  = '#'
   , uname    = "A wall."
   , ucolor   = Color.BrWhite
@@ -67,7 +67,7 @@ doorClosed = TileKind
   , ufeature = [Exit, Change doorClosed, Closable]
   }
 
-doorSecret = rockkk
+doorSecret = wall
   { ufeature = [Change doorClosed, Secret (7, 2)]
   }
 

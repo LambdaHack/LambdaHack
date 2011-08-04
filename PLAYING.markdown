@@ -1,7 +1,9 @@
 Playing Allure of the Stars
 ===========================
 
-Playing Allure of the Stars involves walking around the dungeon,
+Playing Allure of the Stars involves walking around the dungeon
+(err, a Solar System space-ship that incidentally closely resembles
+a fantasy dungeon, in this prerelease version of the game),
 alone or in a party of fearless adventurers, jumping between levels,
 bumping into monsters, doors and walls, gathering magical treasure
 and making creative use of it. The bloodthirsty monsters do the same,
@@ -25,13 +27,11 @@ The basic tiles are as follows.
 
                dungeon terrain type               on-screen symbol
                floor                              .
-               wall (horizontal and vertical)     - and |
-               pillar wall                        O
-               corridor                           #
-               stairs (up and down)               < and >
+               wall                               #
+               stairs up                          <
+               stairs down                        >
                closed door                        +
-               open door                          | and -
-               rock                               blank
+               open door                          '
 
 The game world is persistent, i. e., every time a hero visits a level
 during a single game, the level layout looks the same. Some items
@@ -108,7 +108,6 @@ There are also some debug and cheat keys. Use at your peril!
                O      toggle "omniscience"
                I      inform about level meta-data
                R      rotate display modes
-               T      cycle among level terrain generation stages
 
 
 Monsters
