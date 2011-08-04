@@ -30,8 +30,8 @@ The basic tiles are as follows.
                wall                               #
                stairs up                          <
                stairs down                        >
-               closed door                        +
                open door                          '
+               closed door                        +
 
 The game world is persistent, i. e., every time a hero visits a level
 during a single game, the level layout looks the same. Some items

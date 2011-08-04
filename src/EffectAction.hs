@@ -262,7 +262,8 @@ calculateTotal s =
   L.sum $ L.map itemPrice $ L.concatMap mitems (levelHeroList s)
 
 -- | Handle current score and display it with the high scores. Scores
--- should not be shown during the game, because ultimately the worth of items might give
+-- should not be shown during the game,
+-- because ultimately the worth of items might give
 -- information about the nature of the items.
 -- False if display of the scores was void or interrupted by the user
 handleScores :: Bool -> H.Status -> Int -> Action Bool

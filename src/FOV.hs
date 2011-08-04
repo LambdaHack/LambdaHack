@@ -5,7 +5,6 @@ import Data.Set as S
 import Data.List as L
 import Data.Ratio
 import Data.Maybe
-import Debug.Trace
 
 import FOV.Common
 import FOV.Digital
@@ -13,6 +12,8 @@ import FOV.Permissive
 import FOV.Shadow
 import Geometry
 import Level
+
+-- import Debug.Trace
 
 data FovMode = Shadow | Permissive Int | Digital Int | Blind
 

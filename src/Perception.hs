@@ -20,8 +20,7 @@ data Perception =
   Perception { preachable :: S.Set Loc, pvisible :: S.Set Loc }
 
 -- The pplayer field is void if player not on the current level,
--- or if the player controls a blind monster (TODO. But perhaps only non-blind
--- monsters should be controllable?). Right now, the field is used only
+-- or if the player controls a blind monster. Right now, the field is used only
 -- for player-controlled monsters on the current level.
 data Perceptions =
   Perceptions { pplayer :: Maybe Perception,
@@ -94,31 +93,22 @@ perception_ state@(State { splayer = pl,
                     pheroes = pers,
                     ptotal = Perception reachable visible }
 
--- TODO: improve this documentation:
--- Once we compute the reachable fields using FOV, it is possible
--- to compute what the hero can actually see. Fields adjacent to the hero
--- (also diagonally) can always be seen (except for walls).
--- Fields that have light and are reachable can also be seen.
+-- | Once we compute the reachable fields using FOV, it is possible
+-- to compute what the hero can actually see.
 perception :: FovMode -> Loc -> LMap -> Perception
 perception fovMode ploc lmap =
   let
-    -- This part is simple. "reachable" contains everything that is on an
-    -- unblocked path from the hero position.
+    -- Reachable are all fields on an unblocked path from the hero position.
     reachable  = fullscan fovMode ploc lmap
-    -- In "actVisible", we store the locations that have light and are
-    -- reachable. Furthermore, the hero location itself is always visible.
-    litVisible = S.filter (\ loc -> Tile.light (lmap `at` loc)) reachable
-    actVisible = S.insert ploc litVisible
-    srnd       = S.fromList $ surroundings ploc
-    openSurroundings = S.filter (\ loc -> Tile.open (lmap `at` loc)) srnd
-    openVisible = S.union actVisible openSurroundings
-    -- The version in the comment assumes hero light has diameter 3, not 1,
-    -- which looks a bit differently in dark rooms, revealing more walls.
-    simpleVisible =
+    -- Everybody can see locations that have light and are reachable.
+    uniVisible = S.filter (\ loc -> Tile.light (lmap `at` loc)) reachable
+    -- The hero is assumed to carry a light source, too.
+    litVisible = S.insert ploc uniVisible
+    -- Reachable fields adjacent to lit fields are visible, too.
+    adjVisible =
       S.filter
-        (\ loc -> S.member loc openVisible
-                  || L.any
-                       (\ l -> S.member l actVisible{-openVisible-})
-                       (surroundings loc)
-        ) (S.insert ploc reachable)
-  in Perception reachable simpleVisible
+        (\ loc -> L.any (\ l -> S.member l litVisible) (surroundings loc))
+        reachable
+    -- Visible fields are either lit or adjacent to lit.
+    visible = S.union litVisible adjVisible
+  in Perception reachable visible

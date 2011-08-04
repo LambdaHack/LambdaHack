@@ -77,7 +77,7 @@ quitGame =
   do
     b <- messageYesNo "Really quit?"
     if b
-      then end -- TODO: why no highscore? no display, because the user may be in a hurry, since he quits the game instead of getting himself killed properly? no score recording, not to polute the scores list with games that the player didn't even want to end honourably?
+      then end -- no highscore display for quitters
       else abortWith "Game resumed."
 
 -- | End targeting mode, accepting the current location or not.
@@ -274,7 +274,7 @@ actorOpenClose actor v o dir =
                                        neverMind isVerbose
     advanceTime actor
 
- -- | Attempt a level switch to k levels deeper.
+-- | Attempt a level switch to k levels deeper.
 -- TODO: perhaps set up some level name arithmetics in Level.hs
 -- and hide there the fact levels are now essentially Ints.
 lvlDescend :: Int -> Action ()
