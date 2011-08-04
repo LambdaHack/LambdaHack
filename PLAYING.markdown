@@ -1,11 +1,12 @@
 Playing LambdaHack
 ==================
 
-Playing LambdaHack involves walking around the dungeon, alone or in a party
-of fearless adventurers, jumping between levels, bumping into monsters,
-doors and walls, gathering magical treasure and making creative use of it.
-Horrible opponents do the same, intelligence allowing, while tirelessly
-chasing the noble heroes by smell and night-sight.
+Playing LambdaHack involves walking around the dungeon,
+alone or in a party of fearless adventurers, jumping between levels,
+bumping into monsters, doors and walls, gathering magical treasure
+and making creative use of it. The bloodthirsty monsters do the same,
+intelligence allowing, while tirelessly chasing the noble heroes
+by smell and night-sight.
 
 Once the few basic command keys and on-screen symbols are learned,
 mastery and enjoyment of the game is the matter of tactical skill
@@ -38,7 +39,7 @@ aid in dungeon exploration, e.g., a ring of searching improves the speed
 of finding hidden doors by heroes and monsters. The higher the magical
 bonus displayed for this and other dungeon items, the more effective it is.
 Only the best item carried in a hero's or monster's inventory counts.
-You can throw the rest away, but beware that others may pick it up
+You can throw the rest away, but beware that your adversaries may pick it up
 and use it against you.
 
 
@@ -92,7 +93,7 @@ less common player commands.
                ESC    cancel action
                RET    accept choice
                TAB    cycle among heroes on level
-               0--9   select a hero anywhere in the dungeon (GTK only)
+               0--9   select a hero anywhere in the dungeon (gtk only)
                *      target monster
                /      target location
                D      dump current configuration
@@ -114,26 +115,26 @@ Monsters
 --------
 
 The hero is not alone in the dungeon. Monsters roam the dark caves
-and crawl from damp holes all the time. While heroes pay attention
+and crawl from damp holes day and night. While heroes pay attention
 to all other party members and take moves sequentially, one after another,
-monsters don't care where the other monsters are going and all move at once,
-sometimes colliding and hitting each other by mistake.
+monsters don't care about each other and all move at once,
+sometimes brutally colliding by mistake.
 
 When the hero bumps into a monster or a monster attacks the hero,
-melee combat occurs. The best weapon carried by each party
+melee combat occurs. The best weapon carried by each opponent
 is taken into account for calculating bonus damage. The total damage
-that the current hero can inflict is constantly displayed at the bottom
-of the screen. The total damage inflicted by a given monster may change
+the current hero can potentially inflict is displayed at the bottom
+of the screen. The total damage potential of a monster may change
 as it finds and picks up new weapons. Heroes and monsters running
 into another (with the Shift key) do not inflict damage, but change places.
-This gives the opponent a free blow, but improves tactical situation
-or aids escape.
+This gives the opponent a free blow, but can improve the tactical situation
+or aid escape.
 
-Throwing weapons wounds the affected targets, too, though you have
-to target a monster first (with the '*' key from the top row or numpad).
-You can throw any object in your possession
+Throwing weapons at targets wounds them, consuming the weapon in the process.
+You can target a monster with the '*' key from the top row or numpad.
+You may throw any object in your possession
 (press '*' for a non-standard choice) or on the floor (press '-'),
-though only objects of a few kinds inflict more than one hit point of damage.
+though only objects of a few kinds inflict any damage.
 Whenever a monster or a hero hit points reach zero, the combatant dies.
 When the last hero dies, the game ends.
 
