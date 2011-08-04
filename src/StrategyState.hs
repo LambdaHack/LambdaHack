@@ -156,7 +156,7 @@ strategy actor
     moveAround =
       onlySensible $
         (if nsight mk then onlyUnoccupied else id) $
-          nsmell mk .=> foldr (.|) reject (L.map return smells)
+          nsmell mk .=> L.foldr (.|) reject (L.map return smells)
           .| onlyOpenable moveFreely
           .| moveFreely
     moveFreely = onlyLoot moveRandomly
