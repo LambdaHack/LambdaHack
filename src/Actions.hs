@@ -222,7 +222,7 @@ remember =
     per <- currentPerception
     let vis         = S.toList (ptvisible per)
     let rememberLoc = M.update (\ (t,_) -> Just (t,t))
-    modify (updateLevel (updateLMap (\ lmap -> foldr rememberLoc lmap vis)))
+    modify (updateLevel (updateLMap (\ lmap -> L.foldr rememberLoc lmap vis)))
 
 -- | Open and close doors
 openclose :: Bool -> Action ()
@@ -407,7 +407,7 @@ search =
           (Tile (Terrain.door (Just (max (n - delta) 0))) x, t')
         searchTile t = t
         f l m = M.adjust searchTile (shift ploc m) l
-        slmap = foldl' f lmap moves
+        slmap = L.foldl' f lmap moves
     modify (updateLevel (updateLMap (const slmap)))
     playerAdvanceTime
 

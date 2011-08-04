@@ -48,7 +48,7 @@ executable Allure
                  MissingH >= 1.1.0.3 && < 1.2, filepath >= 1.1.0.3 && < 2,
                  template-haskell >= 2.5
   extensions:    CPP, FlexibleContexts, QuasiQuotes, MultiParamTypeClasses,
-                 RankNTypes
+                 RankNTypes, BangPatterns
   if flag(curses) {
     other-modules: Display.Curses
     build-depends: hscurses >= 1.3 && < 2

@@ -150,7 +150,7 @@ emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
           addRocks $
           maybe id (\ l -> M.insert su (newTile (Terrain.stairs Terrain.Light Up   l))) lu $
           maybe id (\ l -> M.insert sd (newTile (Terrain.stairs Terrain.Light Down l))) ld $
-          (\lmap -> foldl' addItem lmap is) $
+          (\lmap -> L.foldl' addItem lmap is) $
           lmap
         level lu ld = Level nm emptyParty (sy,sx) emptyParty smap (flmap lu ld) "bigroom"
     return (level, su, sd)
@@ -171,7 +171,7 @@ noiseRoom cfg =
               case lmap `at` l of
                 Tile t [] | Terrain.isFloor t -> M.insert l (newTile Terrain.rock) lmap
                 _ -> lmap
-        return $ \ lmap -> foldl' insertRock lmap rs
+        return $ \ lmap -> L.foldl' insertRock lmap rs
   in  emptyRoom addRocks cfg
 
 data LevelConfig =
@@ -290,7 +290,7 @@ rogueRoom cfg nm =
                            connectRooms r0 r1) allConnects
     let smap = M.fromList [ ((y,x),-100) | let (sy,sx) = levelSize cfg,
                                            y <- [0..sy], x <- [0..sx] ]
-    let lrooms = foldr (\ (r, dl) m -> digRoom dl r m) M.empty dlrooms
+    let lrooms = L.foldr (\ (r, dl) m -> digRoom dl r m) M.empty dlrooms
         lcorridors = M.unions (L.map digCorridors cs)
         lrocks = emptyLMap (levelSize cfg)
         lmap = M.union (M.unionWith mergeCorridor lcorridors lrooms) lrocks
@@ -329,7 +329,7 @@ rogueRoom cfg nm =
     return (\ lu ld ->
       let flmap = maybe id (\ l -> M.update (\ (t,r) -> Just $ newTile (Terrain.stairs (Terrain.toDL $ light t) Up   l)) su) lu $
                   maybe id (\ l -> M.update (\ (t,r) -> Just $ newTile (Terrain.stairs (Terrain.toDL $ light t) Down l)) sd) ld $
-                  foldr (\ (l,it) f -> M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l . f) id is
+                  L.foldr (\ (l,it) f -> M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l . f) id is
                   dlmap
       in  Level nm emptyParty (levelSize cfg) emptyParty smap flmap meta, su, sd)
 
