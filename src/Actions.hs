@@ -184,7 +184,7 @@ continueRun dir =
         exit _            = False
     let hop t
           | monstersVisible || heroThere
-            || newsReported || itemsHere || exit t = abortWith msg
+            || newsReported || itemsHere || exit t = abort
         hop Corridor =
           -- in corridors, explore all corners and stop at all crossings
           -- TODO: even in corridors, stop if you run past an exit (rare)
@@ -199,16 +199,16 @@ continueRun dir =
                   case L.filter (\ x -> not $ diagonal x) ns of
                     [ortoDir]
                       | allCloseTo ortoDir -> run ortoDir
-                    _ -> abortWith msg
+                    _ -> abort
         hop _  -- outside corridors, never change direction
-          | not dirOK = abortWith msg
+          | not dirOK = abort
         hop _         =
           let ns = L.filter (\ x -> x /= dir && distance (neg dir, x) > 1) moves
               ls = L.map (loc `shift`) ns
               as = L.filter (\ x -> accessible lmap loc x
                                     || openable 1 lmap x) ls
               ts = L.map (tterrain . (lmap `at`)) as
-          in  if L.any exit ts then abortWith msg else run dir
+          in  if L.any exit ts then abort else run dir
     hop (tterrain t)
 
 ifRunning :: (Dir -> Action a) -> Action a -> Action a
