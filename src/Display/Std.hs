@@ -43,7 +43,16 @@ keyTranslate e =
     -- TODO: make configurable
     'Q'    -> K.Esc
     'X'    -> K.Esc
-    'D'    -> K.Esc
+    -- a tweak for bots: disable purely UI commands; make descending easier
+    -- TODO: make configurable
+    'R'    -> K.Char '>'
+    'O'    -> K.Char '>'
+    'T'    -> K.Char '>'
+    'I'    -> K.Char '>'
+    'V'    -> K.Char '>'
+    'P'    -> K.Char '>'
+    'D'    -> K.Char '>'
+    '?'    -> K.Char '>'
     -- a tweak for bots: don't let them move to shallower levels (or win)
     -- TODO: make configurable
     '<'    -> K.Esc
