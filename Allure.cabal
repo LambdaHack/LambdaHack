@@ -27,6 +27,10 @@ flag vty
   description:   enable vty support
   default:       False
 
+flag std
+  description:   enable stdin/stdout support
+  default:       False
+
 executable Allure
   main-is:       Main.hs
   hs-source-dirs:src
@@ -57,12 +61,14 @@ executable Allure
   } else { if flag(vty) {
     other-modules: Display.Vty
     build-depends: vty >= 4.4
+    cpp-options:   -DVTY
+  } else { if flag(std) {
+    cpp-options:   -DSTD
   } else {
     other-modules: Display.Gtk
     build-depends: gtk >= 0.11 && < 0.13
-    cpp-options:   -DGTK
     ghc-options:   -threaded
-  } }
+  } } }
 
 Source-repository head
   type:              git

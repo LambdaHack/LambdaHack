@@ -6,10 +6,12 @@ module Display where
 
 #ifdef CURSES
 import qualified Display.Curses as D
-#elif GTK
-import qualified Display.Gtk as D
-#else
+#elif VTY
 import qualified Display.Vty as D
+#elif STD
+import qualified Display.Std as D
+#else
+import qualified Display.Gtk as D
 #endif
 
 -- Display routines that are independent of the selected display frontend.
