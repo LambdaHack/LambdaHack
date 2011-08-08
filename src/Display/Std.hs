@@ -44,6 +44,9 @@ keyTranslate e =
     'Q'    -> K.Esc
     'X'    -> K.Esc
     'D'    -> K.Esc
+    -- a tweak for bots: don't let them move to shallower levels (or win)
+    -- TODO: make configurable
+    '<'    -> K.Esc
     -- No KP_ keys in std, but the bot can use the vi keys,
     -- so number keys are interpreted as hero selection:
     c      -> K.Char c
