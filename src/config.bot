@@ -21,7 +21,7 @@ fovMode: digital
 ;fovMode: permissive
 ;fovMode: shadow
 fovRadius: 40
-;randomSeed: 6
+randomSeed: 6
 
 ; paths to various game files; relative to ~/.Allure/
 ; (or analogous prefixes for other OSes, see getAppUserDataDirectory)
@@ -36,7 +36,7 @@ HeroName_2: Alonzo Barkley
 HeroName_3: Ernst Abraham
 HeroName_4: Samuel Saunders
 HeroName_5: Roger Robin
-baseHP: 50
+baseHP: 1000000
 extraHeroes: 0
 firstDeathEnds: False
 

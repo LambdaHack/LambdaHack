@@ -14,6 +14,14 @@ import Multiline
 configDefault :: String
 configDefault = [$multiline|
 
+#ifdef STD
+
+#include "config.bot"
+
+#else
+
 #include "config.default"
+
+#endif
 
 |]
