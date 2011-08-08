@@ -39,6 +39,11 @@ keyTranslate e =
     '\n'   -> K.Return
     '\r'   -> K.Return
     '\t'   -> K.Tab
+    -- a tweak for bots: don't let them give up the fight (nor write files)
+    -- TODO: make configurable
+    'Q'    -> K.Esc
+    'X'    -> K.Esc
+    'D'    -> K.Esc
     -- No KP_ keys in std, but the bot can use the vi keys,
     -- so number keys are interpreted as hero selection:
     c      -> K.Char c
