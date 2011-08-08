@@ -40,7 +40,7 @@ executable Allure
                  Frequency, Geometry, GeometryRnd, Grammar,
                  HighScores, Item, ItemKind, ItemAction,
                  Keys, Keybindings, Level, LevelState,
-                 Main, Message, MovableAdd, MovableKind, Movable, MovableState,
+                 Message, MovableAdd, MovableKind, Movable, MovableState,
                  Multiline, Perception, Random,
                  Save, State, Strategy, StrategyState,
                  Tile, Turn, Terrain, Version, WorldLoc
@@ -69,6 +69,10 @@ executable Allure
     build-depends: gtk >= 0.11 && < 0.13
     ghc-options:   -threaded
   } } }
+
+executable Bot
+  main-is:       Bot.hs
+  hs-source-dirs:src
 
 Source-repository head
   type:              git
