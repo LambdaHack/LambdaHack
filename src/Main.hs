@@ -2,6 +2,7 @@ module Main where
 
 import System.Directory
 import Data.Map as M
+import qualified System.Random as R
 
 import Action
 import State
@@ -35,6 +36,10 @@ start internalSession = do
               else return $ Right "Welcome to Allure of the Stars!"  -- new game
   case restored of
     Right msg  -> do
+      -- TODO: move somewhere sane
+      case Config.getOption config "engine" "randomSeed" of
+        Just seed -> R.setStdGen (R.mkStdGen seed)
+        Nothing -> return ()
       (ploc, lvl, dng) <- rndToIO $ generate config
       assocs <- rndToIO $ dungeonAssocs
       let defState = defaultState dng lvl
@@ -42,4 +47,5 @@ start internalSession = do
           hstate = initialHeroes ploc state
       handlerToIO session hstate msg handle
     Left state ->
+      -- TODO: save and restore random seed
       handlerToIO session state "Welcome back to Allure of the Stars." handle

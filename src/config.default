@@ -21,6 +21,7 @@ fovMode: digital
 ;fovMode: permissive
 ;fovMode: shadow
 fovRadius: 40
+;randomSeed: 0
 
 ; paths to various game files; relative to ~/.Allure/
 ; (or analogous prefixes for other OSes, see getAppUserDataDirectory)
