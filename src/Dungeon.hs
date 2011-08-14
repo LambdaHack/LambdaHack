@@ -2,17 +2,45 @@ module Dungeon where
 
 import Prelude hiding (floor)
 import Control.Monad
+import qualified System.Random as R
 
+import Data.Binary
 import Data.Map as M
 import Data.List as L
 import Data.Ratio
+import Data.Maybe
 
-import State
 import Geometry
+import GeometryRnd
 import Level
-import Monster
 import Item
 import Random
+import Terrain
+import qualified ItemKind
+
+-- | The complete dungeon is a map from level names to levels.
+-- We usually store all but the current level in this data structure.
+newtype Dungeon = Dungeon (M.Map LevelName Level)
+  deriving Show
+
+instance Binary Dungeon where
+  put (Dungeon dng) = put (M.elems dng)
+  get = liftM dungeon get
+
+-- | Create a dungeon from a list of levels.
+dungeon :: [Level] -> Dungeon
+dungeon = Dungeon . M.fromList . L.map (\ l -> (lname l, l))
+
+-- | Extract a level from a dungeon.
+getDungeonLevel :: LevelName -> Dungeon -> (Level, Dungeon)
+getDungeonLevel ln (Dungeon dng) = (dng ! ln, Dungeon (M.delete ln dng))
+
+-- | Put a level into a dungeon.
+putDungeonLevel :: Level -> Dungeon -> Dungeon
+putDungeonLevel lvl (Dungeon dng) = Dungeon (M.insert (lname lvl) lvl dng)
+
+sizeDungeon :: Dungeon -> Int
+sizeDungeon (Dungeon dng) = M.size dng
 
 type Corridor = [(Y,X)]
 type Room = Area
@@ -36,6 +64,20 @@ mkNoRoom bd ((y0,x0),(y1,x1)) =
   do
     (ry,rx) <- locInArea ((y0 + bd,x0 + bd),(y1 - bd,x1 - bd))
     return ((ry,rx),(ry,rx))
+
+data HV = Horiz | Vert
+  deriving (Eq, Show, Bounded)
+
+fromHV Horiz = True
+fromHV Vert  = False
+
+toHV True  = Horiz
+toHV False = Vert
+
+instance R.Random HV where
+  randomR (a,b) g = case R.randomR (fromHV a, fromHV b) g of
+                      (b, g') -> (toHV b, g')
+  random g = R.randomR (minBound, maxBound) g
 
 -- | Create a corridor, either horizontal or vertical, with
 -- a possible intermediate part that is in the opposite direction.
@@ -81,17 +123,17 @@ digCorridor (p1:p2:ps) l =
 digCorridor _ l = l
 
 -- | Create a new tile.
-newTile :: Terrain -> (Tile, Tile)
+newTile :: Terrain DungeonLoc -> (Tile, Tile)
 newTile t = (Tile t [], Tile Unknown [])
 
 -- | Create a level consisting of only one room. Optionally, insert some walls.
-emptyroom :: (Level -> Rnd (LMap -> LMap)) -> LevelConfig ->
+emptyRoom :: (Level -> Rnd (LMap -> LMap)) -> LevelConfig ->
            LevelName -> Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) -> Level, Loc, Loc)
-emptyroom addWallsRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
+emptyRoom addWallsRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
   do
     let lmap = digRoom Light ((1,1),(sy-1,sx-1)) (emptyLMap (sy,sx))
     let smap = M.fromList [ ((y,x),-100) | y <- [0..sy], x <- [0..sx] ]
-    let lvl = Level nm (sy,sx) [] smap lmap ""
+    let lvl = Level nm emptyParty (sy,sx) emptyParty smap lmap ""
     -- locations of the stairs
     su <- findLoc lvl (const floor)
     sd <- findLoc lvl (\ l t -> floor t
@@ -104,29 +146,29 @@ emptyroom addWallsRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
           addWalls $
           maybe id (\ l -> M.insert su (newTile (Stairs Light Up   l))) lu $
           maybe id (\ l -> M.insert sd (newTile (Stairs Light Down l))) ld $
-          (\lmap -> foldl' addItem lmap is) $
+          (\lmap -> L.foldl' addItem lmap is) $
           lmap
-        level lu ld = Level nm (sy,sx) [] smap (flmap lu ld) "bigroom"
+        level lu ld = Level nm emptyParty (sy,sx) emptyParty smap (flmap lu ld) "bigroom"
     return (level, su, sd)
 
 -- | For a bigroom level: Create a level consisting of only one, empty room.
-bigroom :: LevelConfig ->
+bigRoom :: LevelConfig ->
            LevelName -> Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) -> Level, Loc, Loc)
-bigroom = emptyroom (\ lvl -> return id)
+bigRoom = emptyRoom (\ lvl -> return id)
 
 -- | For a noiseroom level: Create a level consisting of only one room
 -- with randomly distributed pillars.
-noiseroom :: LevelConfig ->
+noiseRoom :: LevelConfig ->
              LevelName -> Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) -> Level, Loc, Loc)
-noiseroom cfg =
+noiseRoom cfg =
   let addWalls lvl = do
         rs <- rollPillars cfg lvl
         let insertWall lmap l =
               case lmap `at` l of
                 Tile (Floor _) [] -> M.insert l (newTile (Wall O)) lmap
                 _ -> lmap
-        return $ \ lmap -> foldl' insertWall lmap rs
-  in  emptyroom addWalls cfg
+        return $ \ lmap -> L.foldl' insertWall lmap rs
+  in  emptyRoom addWalls cfg
 
 data LevelConfig =
   LevelConfig {
@@ -136,10 +178,8 @@ data LevelConfig =
     border            :: Int,       -- must be at least 2!
     levelSize         :: (Y,X),     -- lower right point
     extraConnects     :: (Y,X) -> Int,
-                                    -- relative to grid
-                                    -- (in fact a range, because of duplicate connects)
-    noRooms           :: (Y,X) -> Rnd Int,
-                                    -- range, relative to grid
+      -- relative to grid (in fact a range, because of duplicate connects)
+    noRooms           :: (Y,X) -> Rnd Int,  -- range, relative to grid
     minStairsDistance :: Int,       -- must not be too large
     doorChance        :: Rnd Bool,
     doorOpenChance    :: Rnd Bool,
@@ -184,15 +224,15 @@ largeLevelConfig d =
 
 -- | Create a "normal" dungeon level. Takes a configuration in order
 -- to tweak all sorts of data.
-level :: LevelConfig ->
+rogueRoom :: LevelConfig ->
          LevelName ->
          Rnd (Maybe (Maybe DungeonLoc) -> Maybe (Maybe DungeonLoc) ->
               Level, Loc, Loc)
-level cfg nm =
+rogueRoom cfg nm =
   do
     lgrid    <- levelGrid cfg
     lminroom <- minRoomSize cfg
-    let gs = M.toList (grid lgrid ((0,0),levelSize cfg))
+    let gs = grid lgrid ((0, 0), levelSize cfg)
     -- grid locations of "no-rooms"
     nrnr <- noRooms cfg lgrid
     nr   <- replicateM nrnr (do
@@ -220,9 +260,9 @@ level cfg nm =
     let smap = M.fromList [ ((y,x),-100) | let (sy,sx) = levelSize cfg,
                                            y <- [0..sy], x <- [0..sx] ]
     let lmap :: LMap
-        lmap = foldr digCorridor (foldr (\ (r, dl) m -> digRoom dl r m)
+        lmap = L.foldr digCorridor (L.foldr (\ (r, dl) m -> digRoom dl r m)
                                         (emptyLMap (levelSize cfg)) dlrooms) cs
-    let lvl = Level nm (levelSize cfg) [] smap lmap ""
+    let lvl = Level nm emptyParty (levelSize cfg) emptyParty smap lmap ""
     -- convert openings into doors
     dlmap <- fmap M.fromList . mapM
                 (\ o@((y,x),(t,r)) ->
@@ -238,7 +278,7 @@ level cfg nm =
                         rs <- if ro then return Nothing
                                     else do rsc <- doorSecretChance cfg
                                             fmap Just
-                                                 (if rsc then randomR (1, doorSecretMax cfg)
+                                                 (if rsc then randomR (doorSecretMax cfg `div` 2, doorSecretMax cfg)
                                                          else return 0)
                         if rb
                           then return ((y,x),newTile (Door hv rs))
@@ -257,9 +297,9 @@ level cfg nm =
     return (\ lu ld ->
       let flmap = maybe id (\ l -> M.update (\ (t,r) -> Just $ newTile (Stairs (toDL $ light t) Up   l)) su) lu $
                   maybe id (\ l -> M.update (\ (t,r) -> Just $ newTile (Stairs (toDL $ light t) Down l)) sd) ld $
-                  foldr (\ (l,it) f -> M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l . f) id is
+                  L.foldr (\ (l,it) f -> M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l . f) id is
                   dlmap
-      in  Level nm (levelSize cfg) [] smap flmap meta, su, sd)
+      in  Level nm emptyParty (levelSize cfg) emptyParty smap flmap meta, su, sd)
 
 rollItems :: LevelConfig -> Level -> Loc -> Rnd [(Loc, Item)]
 rollItems cfg lvl ploc =
@@ -267,9 +307,9 @@ rollItems cfg lvl ploc =
     nri <- nrItems cfg
     replicateM nri $
       do
-        t <- newItem (depth cfg) itemFrequency
-        l <- case itype t of
-               Sword _ ->
+        t <- newItem (depth cfg)
+        l <- case ItemKind.jname (ItemKind.getIK (ikind t)) of
+               "sword" ->
                  -- swords generated close to monsters; MUAHAHAHA
                  findLocTry 200 lvl
                    (const floor)
@@ -301,24 +341,3 @@ digRoom dl ((y0,x0),(y1,x1)) l
                      ++ [ ((y,x),newTile (Wall p))     | x <- [x0..x1], (y,p) <- [(y0-1,U),(y1+1,D)] ]
                      ++ [ ((y,x),newTile (Wall p))     | (x,p) <- [(x0-1,L),(x1+1,R)],  y <- [y0..y1]    ]
   in M.unionWith const rm l
-
--- | Create a new monster in the level, at a random position.
-addMonster :: Level -> Player -> Rnd Level
-addMonster lvl@(Level { lmonsters = ms, lmap = lmap })
-           player@(Monster { mloc = ploc }) =
-  do
-    rc <- monsterGenChance (lname lvl) ms
-    if rc
-     then do
-            -- TODO: new monsters should always be generated in a place that isn't
-            -- visible by the player (if possible -- not possible for bigrooms)
-            -- levels with few rooms are dangerous, because monsters may spawn
-            -- in adjacent and unexpected places
-            sm <- findLocTry 1000 lvl
-                    (\ l t -> not (l `L.elem` L.map mloc (player : ms))
-                              && open t)
-                    (\ l t -> distance (ploc, l) > 400
-                              && floor t)
-            m <- newMonster sm monsterFrequency
-            return (updateMonsters (const (m : ms)) lvl)
-     else return lvl

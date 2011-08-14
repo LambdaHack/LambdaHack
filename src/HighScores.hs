@@ -2,6 +2,7 @@ module HighScores where
 
 import System.Directory
 import Control.Exception as E hiding (handle)
+import Control.Monad
 import Text.Printf
 import System.Time
 
@@ -11,10 +12,11 @@ import Data.Maybe
 
 import File
 import Dungeon
+import Level
 import qualified Config
 
 -- | A single score.
--- TODO: add hero's name, exp and level, cause of death, user number/name.
+-- TODO: add heroes' names, exp and level, cause of death, user number/name.
 -- Note: I tried using Date.Time, but got all kinds of problems,
 -- including build problems and opaque types that make serialization difficult,
 -- and I couldn't use Datetime because it needs old base (and is under GPL).
@@ -23,9 +25,10 @@ data ScoreRecord = ScoreRecord
                      { points  :: Int,
                        negTurn :: Int,
                        date    :: ClockTime,
-                       current :: Int,
-                       killed  :: Bool,
-                       victor  :: Bool}
+                       status  :: Status}
+  deriving (Eq, Ord)
+
+data Status = Killed LevelName | Camping LevelName | Victor
   deriving (Eq, Ord)
 
 instance Binary ClockTime where
@@ -39,40 +42,49 @@ instance Binary ClockTime where
       p <- get
       return (TOD s p)
 
+instance Binary Status where
+  put (Killed ln)  = putWord8 0 >> put ln
+  put (Camping ln) = putWord8 1 >> put ln
+  put Victor       = putWord8 2
+  get = do
+          tag <- getWord8
+          case tag of
+            0 -> liftM Killed  get
+            1 -> liftM Camping get
+            2 -> return Victor
+
 instance Binary ScoreRecord where
-  put (ScoreRecord points negTurn date current killed victor) =
+  put (ScoreRecord points negTurn date status) =
     do
       put points
       put negTurn
       put date
-      put current
-      put killed
-      put victor
+      put status
   get =
     do
       points <- get
       negTurn <- get
       date <- get
-      current <- get
-      killed <- get
-      victor <- get
-      return (ScoreRecord points negTurn date current killed victor)
+      status <- get
+      return (ScoreRecord points negTurn date status)
 
 -- | Show a single high score.
 showScore :: (Int, ScoreRecord) -> String
 showScore (pos, score) =
-  let won  = if victor score
-             then "emerged victorious"
-             else "is camping on level " ++ show (current score) ++ ","
-      died = if killed score
-             then "perished on level " ++ show (current score) ++ ","
-             else won
-      time = calendarTimeToString . toUTCTime . date $ score
-      big  = "                                                 "
-      lil  = "              "
+  let died  =
+        case status score of
+          Killed (LambdaCave n)  -> "perished on level " ++ show n ++ ","
+          Camping (LambdaCave n) -> "is camping on level " ++ show n ++ ","
+          Victor     -> "emerged victorious"
+      time  = calendarTimeToString . toUTCTime . date $ score
+      big   = "                                                 "
+      lil   = "              "
+      -- TODO: later: https://github.com/kosmikus/LambdaHack/issues#issue/9
+      steps = negTurn score `div` (-10)
   in
-   printf "%s\n%4d. %6d  This hero %s after %d steps  \n%son %s.  \n"
-     big pos (points score) died (- (negTurn score)) lil time
+   printf
+     "%s\n%4d. %6d  This adventuring party %s after %d steps  \n%son %s.  \n"
+     big pos (points score) died steps lil time
 
 -- | The list of scores, in decreasing order.
 type ScoreTable = [ScoreRecord]
@@ -83,7 +95,7 @@ empty = []
 
 -- | Name of the high scores file.
 file :: Config.CP -> IO String
-file config = Config.getFile config "LambdaHack.scores" "files" "highscores"
+file config = Config.getFile config "files" "highScores"
 
 -- | We save a simple serialized version of the high scores table.
 -- The 'False' is used only as an EOF marker.
@@ -136,12 +148,14 @@ register config write s =
         (lines, _) = normalLevelSize
         height = lines `div` 3
         (msgCurrent, msgUnless) =
-          if killed s
-          then (" short-lived", " (score halved)")
-          else if victor s
-               then (" glorious",
-                     if pos <= height then " among the greatest heroes" else "")
-               else (" current", " (unless you are slain)")
-        msg = printf "Your%s exploits award you place >> %d <<%s." msgCurrent pos msgUnless
+          case status s of
+            Killed _  -> (" short-lived", " (score halved)")
+            Camping _ -> (" current", " (unless you are slain)")
+            Victor    -> (" glorious",
+                          if pos <= height
+                          then " among the greatest heroes"
+                          else "")
+        msg = printf "Your%s exploits award you place >> %d <<%s."
+                msgCurrent pos msgUnless
     if write then save config h' else return ()
     return (msg, slideshow pos h' height)

@@ -10,9 +10,11 @@ import Level
 
 -- | PFOV, clean-room reimplemented based on the algorithm described in http://roguebasin.roguelikedevelopment.org/index.php?title=Precise_Permissive_Field_of_View,
 -- though the general structure is more influenced by recursive shadow casting,
--- as implemented above. In the result, this algorithm is much faster
--- on dense maps, since it does not scan areas blocked by shadows.
--- See https://github.com/Mikolaj/LambdaHack/wiki/Fov-and-los for some more context.
+-- as implemented in Shadow.hs. In the result, this algorithm is much faster
+-- than the original algorithm on dense maps, since it does not scan
+-- areas blocked by shadows.
+-- See https://github.com/Mikolaj/LambdaHack/wiki/Fov-and-los
+-- for some more context.
 
 -- TODO: Scanning squares on horizontal lines in octants, not squares
 -- on diagonals in quadrants, may be much faster and a bit simpler.

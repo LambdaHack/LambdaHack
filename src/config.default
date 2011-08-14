@@ -1,0 +1,60 @@
+; This is the default config file, included in the binary itself.
+; The game looks for the user config file in ~/.LambdaHack/config.
+; We restricts the config file format by insisting that
+; options are case-sensitive and permitting only ';' comments.
+
+; If you contribute to the game, please create directory ~/.LambdaHack/
+; as described in README.markdown. In this way, you will not accidentally
+; commit your private high scores (nor your save files) to the game
+; git repository.
+
+[dungeon]
+; the hardcoded default for levels with no specified layout:
+LambdaCave_1: rogueRoom
+; access to stairs may be blocked, so only suitable for the last level:
+LambdaCave_10: noiseRoom
+LambdaCave_3: bigRoom
+depth: 10
+
+[engine]
+fovMode: shadow
+;fovMode: digital
+;fovMode: permissive
+fovRadius: 40
+
+; paths to various game files; relative to ~/.LambdaHack/
+; (or analogous prefixes for other OSes, see getAppUserDataDirectory)
+[files]
+highScores: scores
+saveGame: save
+
+[heroes]
+HeroName_0: you
+HeroName_1: Haskell Alvin
+HeroName_2: Alonzo Barkley
+HeroName_3: Ernst Abraham
+HeroName_4: Samuel Saunders
+HeroName_5: Roger Robin
+baseHP: 50
+extraHeroes: 0
+firstDeathEnds: False
+
+[macros]
+; TODO: the following does not work yet:
+; ; throw a dart at the closest monster
+; t: asterisk Return t Return
+; TODO: in gtk it could be implemented via unGetChan,
+; unless we prefer an explicit command queue, with flushing, etc.
+;
+; NetHack compatibility
+S: X
+colon: slash
+comma: g
+; Angband compatibility
+v: t
+
+[monsters]
+smellTimeout: 1000
+
+[ui]
+historyMax: 500

@@ -3,23 +3,30 @@ module Action where
 
 import Control.Monad
 import Control.Monad.State hiding (State)
+import Data.List as L
+import qualified Data.IntMap as IM
 -- import System.IO (hPutStrLn, stderr) -- just for debugging
 
 import Perception
-import Display2 hiding (display)
+import Display hiding (display)
 import Message
 import State
+import Level
+import Movable
+import MovableState
+import MovableKind
+import qualified Save
 
 newtype Action a = Action
   { runAction ::
       forall r .
       Session ->
-      IO r ->                                          -- shutdown cont
-      Perception ->                                    -- cached perception
-      (State -> Message -> a -> IO r) ->               -- continuation
-      IO r ->                                          -- failure/reset cont
-      State ->                                         -- current state
-      Message ->                                       -- current message
+      IO r ->                             -- shutdown cont
+      Perceptions ->                      -- cached perception
+      (State -> Message -> a -> IO r) ->  -- continuation
+      IO r ->                             -- failure/reset cont
+      State ->                            -- current state
+      Message ->                          -- current message
       IO r
   }
 
@@ -51,7 +58,7 @@ handlerToIO :: Session -> State -> Message -> Action () -> IO ()
 handlerToIO session state msg h =
   runAction h
     session
-    (shutdown session)         -- get out of the game
+    (Save.rmBkp (sconfig state) >> shutdown session)  -- get out of the game
     (perception_ state)        -- cached perception
     (\ _ _ x -> return x)      -- final continuation returns result
     (ioError $ userError "unhandled abort")
@@ -68,19 +75,23 @@ sessionIO f = Action (\ s e p k a st ms -> f s >>= k st ms)
 
 -- | Display the current level, without any message.
 displayWithoutMessage :: Action Bool
-displayWithoutMessage = Action (\ s e p k a st ms -> displayLevel s p st "" Nothing >>= k st ms)
+displayWithoutMessage = Action (\ s e p k a st ms -> displayLevel False s p st "" Nothing >>= k st ms)
 
 -- | Display the current level, with the current message.
 display :: Action Bool
-display = Action (\ s e p k a st ms -> displayLevel s p st ms Nothing >>= k st ms)
+display = Action (\ s e p k a st ms -> displayLevel False s p st ms Nothing >>= k st ms)
+
+-- | Display the current level in black and white, and the current message,
+displayBW :: Action Bool
+displayBW = Action (\ s e p k a st ms -> displayLevel True s p st ms Nothing >>= k st ms)
 
 -- | Display an overlay on top of the current screen.
 overlay :: String -> Action Bool
-overlay txt = Action (\ s e p k a st ms -> displayLevel s p st ms (Just txt) >>= k st ms)
+overlay txt = Action (\ s e p k a st ms -> displayLevel False s p st ms (Just txt) >>= k st ms)
 
 -- | Set the current message.
-message :: Message -> Action ()
-message nm = Action (\ s e p k a st ms -> k st nm ())
+messageWipeAndSet :: Message -> Action ()
+messageWipeAndSet nm = Action (\ s e p k a st ms -> k st nm ())
 
 -- | Add to the current message.
 messageAdd :: Message -> Action ()
@@ -102,6 +113,18 @@ end = Action (\ s e p k a st ms -> e)
 -- the failure continuation.
 abort :: Action a
 abort = Action (\ s e p k a st ms -> a)
+
+-- | Perform an action and signal an error if the result is False.
+assertTrue :: Action Bool -> Action ()
+assertTrue h = do
+  b <- h
+  when (not b) $ error "assertTrue: failure"
+
+-- | Perform an action and signal an error if the result is True.
+assertFalse :: Action Bool -> Action ()
+assertFalse h = do
+  b <- h
+  when b $ error "assertFalse: failure"
 
 -- | Set the current exception handler. First argument is the handler,
 -- second is the computation the handler scopes over.
@@ -127,33 +150,37 @@ debug x = return () -- liftIO $ hPutStrLn stderr x
 
 -- | Print the given message, then abort.
 abortWith :: Message -> Action a
-abortWith msg =
-  do
-    message msg
-    display
-    abort
+abortWith msg = do
+  messageWipeAndSet msg
+  display
+  abort
+
+neverMind :: Bool -> Action a
+neverMind b = abortIfWith b "never mind"
 
 -- | Abort, and print the given message if the condition is true.
 abortIfWith :: Bool -> Message -> Action a
-abortIfWith True  = abortWith
-abortIfWith False = const abort
+abortIfWith True msg = abortWith msg
+abortIfWith False _  = abortWith ""
 
--- | Print message, await confirmation. Return value indicates if the
--- player tried to abort/escape.
-messageMoreConfirm :: Message -> Action Bool
-messageMoreConfirm msg =
-  do
-    message (msg ++ more)
-    display
-    session getConfirm
+-- | Print message, await confirmation. Return value indicates
+-- if the player tried to abort/escape.
+messageMoreConfirm :: Bool -> Message -> Action Bool
+messageMoreConfirm blackAndWhite msg = do
+  messageAdd (msg ++ more)
+  if blackAndWhite then displayBW else display
+  session getConfirm
+
+-- | Print message, await confirmation, ignore confirmation.
+messageMore :: Message -> Action ()
+messageMore msg = resetMessage >> messageMoreConfirm False msg >> return ()
 
 -- | Print a yes/no question and return the player's answer.
 messageYesNo :: Message -> Action Bool
-messageYesNo msg =
-  do
-    message (msg ++ yesno)
-    display
-    session getYesNo
+messageYesNo msg = do
+  messageWipeAndSet (msg ++ yesno)
+  displayBW  -- turn player's attention to the choice
+  session getYesNo
 
 -- | Print a message and an overlay, await confirmation. Return value
 -- indicates if the player tried to abort/escape.
@@ -170,7 +197,7 @@ messageOverlaysConfirm msg [] =
     return True
 messageOverlaysConfirm msg (x:xs) =
   do
-    message msg
+    messageWipeAndSet msg
     b <- overlay (x ++ more)
     if b
       then do
@@ -181,11 +208,10 @@ messageOverlaysConfirm msg (x:xs) =
           else stop
       else stop
   where
-    stop =
-      do
-        resetMessage
-        display
-        return False
+    stop = do
+      resetMessage
+      display
+      return False
 
 -- | Update the cached perception for the given computation.
 withPerception :: Action () -> Action ()
@@ -193,6 +219,41 @@ withPerception h = Action (\ s e _ k a st ms ->
                             runAction h s e (perception_ st) k a st ms)
 
 -- | Get the current perception.
-currentPerception :: Action Perception
+currentPerception :: Action Perceptions
 currentPerception = Action (\ s e p k a st ms -> k st ms p)
 
+-- | If in targeting mode, check if the current level is the same
+-- as player level and refuse performing the action otherwise.
+checkCursor :: Action () -> Action ()
+checkCursor h = do
+  cursor <- gets scursor
+  level  <- gets slevel
+  if creturnLn cursor == lname level
+    then h
+    else abortWith "this command does not work on remote levels"
+
+updateAnyActor :: Actor -> (Movable -> Movable) -> Action ()
+updateAnyActor actor f = modify (updateAnyActorBody actor f)
+
+updatePlayerBody :: (Movable -> Movable) -> Action ()
+updatePlayerBody f = do
+  pl <- gets splayer
+  updateAnyActor pl f
+
+-- | Advance the move time for the given actor.
+advanceTime :: Actor -> Action ()
+advanceTime actor = do
+  time <- gets stime
+  let upd m = m { mtime = time + (nspeed (mkind m)) }
+  -- A hack to synchronize the whole party:
+  pl <- gets splayer
+  if (actor == pl || isAHero actor)
+    then do
+           modify (updateLevel (updateHeroes (IM.map upd)))
+           when (not $ isAHero pl) $ updatePlayerBody upd
+    else updateAnyActor actor upd
+
+playerAdvanceTime :: Action ()
+playerAdvanceTime = do
+  pl <- gets splayer
+  advanceTime pl

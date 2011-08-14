@@ -2,22 +2,28 @@ module Turn where
 
 import Control.Monad
 import Control.Monad.State hiding (State)
+import Data.List as L
 import Data.Map as M
+import Data.Set as S
+import qualified Data.Ord as Ord
+import qualified Data.IntMap as IM
+import qualified Data.Char as Char
 
 import Action
 import Actions
-import Actor
 import Command
-import Display2 hiding (display)
+import qualified Config
+import Display hiding (display)
+import EffectAction
 import Keybindings
 import qualified Keys as K
 import Level
-import Monster
+import Movable
+import MovableState
 import Random
 import State
 import Strategy
 import StrategyState
-import Version
 
 -- One turn proceeds through the following functions:
 --
@@ -36,32 +42,31 @@ import Version
 --
 -- What's happening where:
 --
--- handle: check for hero's death, HP regeneration, determine who moves next,
+-- handle: determine who moves next,
 --   dispatch to handleMonsters or handlePlayer
 --
 -- handlePlayer: remember, display, get and process commmand(s),
---   advance player time, update smell map, update perception
+--   update smell map, update perception
 --
--- handleMonsters: find monsters that can move or die
+-- handleMonsters: find monsters that can move
 --
 -- handleMonster: determine and process monster action, advance monster time
 --
--- nextMove: advance global game time, monster generation
+-- nextMove: advance global game time, HP regeneration, monster generation
 --
 -- This is rather convoluted, and the functions aren't named very aptly, so we
 -- should clean this up later. TODO.
 
--- | Decide if the hero is ready for another move. Dispatch to either 'handleMonsters'
--- or 'handlePlayer'.
+-- | Decide if the hero is ready for another move.
+-- Dispatch to either 'handleMonsters' or 'handlePlayer'.
 handle :: Action ()
 handle =
   do
     debug "handle"
     state <- get
-    let ptime = mtime (splayer state)  -- time of hero's next move
-    let time  = stime state            -- current game time
-    checkHeroDeath     -- hero can die even if it's not the hero's turn
-    regenerate APlayer -- hero can regenerate even if it's not the hero's turn
+    pl <- gets splayer
+    let ptime = mtime (getPlayerBody state)  -- time of player's next move
+    let time  = stime state                  -- current game time
     debug $ "handle: time check. ptime = " ++ show ptime ++ ", time = " ++ show time
     if ptime > time
       then do
@@ -82,52 +87,30 @@ handleMonsters :: Action ()
 handleMonsters =
   do
     debug "handleMonsters"
-    ms   <- gets (lmonsters . slevel)
     time <- gets stime
-    case ms of
-      [] -> nextMove
-      (m@(Monster { mtime = mt }) : ms)
-        | mt > time  -> -- no monster is ready for another move
-                        nextMove
-        | mhp m <= 0 -> -- the monster dies
-                        do
-                          modify (updateLevel (updateMonsters (const ms)))
-                          -- place the monster's possessions on the map
-                          modify (updateLevel (scatterItems (mitems m) (mloc m)))
-                          handleMonsters
-        | otherwise  -> -- monster m should move; we temporarily remove m from the level
-                        -- TODO: removal isn't nice. Actor numbers currently change during
-                        -- a move. This could be cleaned up.
-                        do
-                          modify (updateLevel (updateMonsters (const ms)))
-                          handleMonster m
+    ms   <- gets (lmonsters . slevel)
+    pl   <- gets splayer
+    if IM.null ms
+      then nextMove
+      else let order  = Ord.comparing (mtime . snd)
+               (i, m) = L.minimumBy order (IM.assocs ms)
+               actor = AMonster i
+           in  if mtime m > time || actor == pl
+               then nextMove  -- no monster is ready for another move
+               else handleMonster actor
 
 -- | Handle the move of a single monster.
--- Precondition: monster must not currently be in the monster list of the level.
-handleMonster :: Monster -> Action ()
-handleMonster m =
+handleMonster :: Actor -> Action ()
+handleMonster actor =
   do
     debug "handleMonster"
     state <- get
-    let time = stime state
-    let ms   = lmonsters (slevel state)
     per <- currentPerception
-    -- run the AI; it currently returns a direction; TODO: it should return an action
-    dir <- liftIO $ rndToIO $ frequency (head (runStrategy (strategy m state per .| wait)))
-    let waiting    = dir == (0,0)
-    let nmdir      = if waiting then Nothing else Just dir
-    -- advance time and reinsert monster
-    let nm         = m { mtime = time + mspeed m, mdir = nmdir }
-    let (act, nms) = insertMonster nm ms
-    modify (updateLevel (updateMonsters (const nms)))
-    let actor      = AMonster act
-    try $ -- if the following action aborts, we just continue
-      if waiting
-        then
-          -- monster is not moving, let's try to pick up an object
-          actorPickupItem actor
-        else
-          moveOrAttack True True actor dir
+    -- Run the AI: choses an action from those given by the AI strategy.
+    action <-
+      liftIO $ rndToIO $
+        frequency (head (runStrategy (strategy actor state per .| wait actor)))
+    action
     handleMonsters
 
 -- | After everything has been handled for the current game time, we can
@@ -141,6 +124,7 @@ nextMove =
   do
     debug "nextMove"
     modify (updateTime (+1))
+    regenerateLevelHP
     generateMonster
     handle
 
@@ -149,19 +133,26 @@ handlePlayer :: Action ()
 handlePlayer =
   do
     debug "handlePlayer"
-    remember      -- the hero perceives his (potentially new) surroundings
+    remember  -- the hero perceives his (potentially new) surroundings
     -- determine perception before running player command, in case monsters
     -- have opened doors ...
+    oldPlayerTime <- gets (mtime . getPlayerBody)
     withPerception playerCommand -- get and process a player command
-    -- at this point, the command was successful
-    advanceTime APlayer     -- TODO: the command handlers should advance the move time
-    state <- get
-    let time = stime state
-    let loc  = mloc (splayer state)
-    -- update smell
-    modify (updateLevel (updateSMap (M.insert loc (time + smellTimeout))))
-    -- determine player perception and continue with monster moves
-    withPerception handleMonsters
+    -- at this point, the command was successful and possibly took some time
+    newPlayerTime <- gets (mtime . getPlayerBody)
+    if newPlayerTime == oldPlayerTime
+      then withPerception handlePlayer  -- no time taken, repeat
+      else do
+        state <- get
+        pl    <- gets splayer
+        let time = stime state
+            ploc = mloc (getPlayerBody state)
+            sTimeout = Config.get (sconfig state) "monsters" "smellTimeout"
+        -- update smell
+        when (isAHero pl) $  -- only humans leave strong scent
+          modify (updateLevel (updateSMap (M.insert ploc (time + sTimeout))))
+        -- determine player perception and continue with monster moves
+        withPerception handleMonsters
 
 -- | Determine and process the next player command.
 playerCommand :: Action ()
@@ -212,15 +203,30 @@ helpCommand      = Described "display help"      displayHelp
 
 -- | Display command help. TODO: Should be defined in Actions module.
 displayHelp :: Action ()
-displayHelp = messageOverlayConfirm "Basic keys:" helpString >> abort
-  where
-  helpString = keyHelp stdKeybindings
+displayHelp = do
+  let coImage session k =
+        let macros = snd session
+            domain = M.keysSet macros
+        in  if k `S.member` domain then [] else [k]
+            ++ [ from | (from, to) <- M.assocs macros, to == k ]
+  aliases <- session (return . coImage)
+  let helpString = keyHelp aliases stdKeybindings
+  messageOverlayConfirm "Basic keys:" helpString
+  abort
+
+heroSelection :: [(K.Key, Command)]
+heroSelection =
+  let heroSelect k = (K.Char (Char.intToDigit k),
+                      Undescribed $
+                      selectPlayer (AHero k) >> withPerception playerCommand)
+  in  fmap heroSelect [0..9]
 
 stdKeybindings :: Keybindings
 stdKeybindings = Keybindings
   { kdir   = moveDirCommand,
     kudir  = runDirCommand,
     kother = M.fromList $
+             heroSelection ++
              [ -- interaction with the dungeon
                (K.Char 'o',  openCommand),
                (K.Char 'c',  closeCommand),
@@ -229,35 +235,39 @@ stdKeybindings = Keybindings
                (K.Char '<',  ascendCommand),
                (K.Char '>',  descendCommand),
 
-               (K.Char ':',  lookCommand),
+               (K.Char '*',  monsterCommand),
+               (K.Char '/',  floorCommand),
+               (K.Tab     ,  heroCommand),
 
                -- items
-               (K.Char ',',  pickupCommand),
+               (K.Char 'g',  pickupCommand),
                (K.Char 'd',  dropCommand),
                (K.Char 'i',  inventoryCommand),
-               (K.Char 'q',  drinkCommand),
+               (K.Char 'q',  quaffCommand),
+               (K.Char 'r',  readCommand),
+               (K.Char 't',  throwCommand),
+               (K.Char 'a',  aimCommand),
 
                -- wait
-               -- (K.Char ' ',  waitCommand),
+               -- (K.Char ' ',  waitCommand),  -- dangerous, space is -more- key
                (K.Char '.',  waitCommand),
 
                -- saving or ending the game
-               (K.Char 'S',  saveCommand),
+               (K.Char 'X',  saveCommand),
                (K.Char 'Q',  quitCommand),
-               (K.Esc     ,  Undescribed $ abortWith "Press Q to quit."),
 
                -- debug modes
-               (K.Char 'V',  Undescribed $ modify toggleVision     >> withPerception playerCommand),
-               (K.Char 'R',  Undescribed $ modify toggleSmell      >> playerCommand),
-               (K.Char 'O',  Undescribed $ modify toggleOmniscient >> playerCommand),
-               (K.Char 'T',  Undescribed $ modify toggleTerrain    >> playerCommand),
+               (K.Char 'R',  Undescribed $ modify toggleVision),
+               (K.Char 'O',  Undescribed $ modify toggleOmniscient),
+               (K.Char 'T',  Undescribed $ modify toggleTerrain),
                (K.Char 'I',  Undescribed $ gets (lmeta . slevel) >>= abortWith),
 
                -- information for the player
-               (K.Char 'v',  Undescribed $ abortWith version),
-               (K.Char 'M',  historyCommand),
+               (K.Char 'V',  versionCommand),
+               (K.Char 'P',  historyCommand),
+               (K.Char 'D',  dumpCommand),
                (K.Char '?',  helpCommand),
-               (K.Return  ,  helpCommand)
+               (K.Return  ,  acceptCommand displayHelp),
+               (K.Esc     ,  cancelCommand)
              ]
   }
-

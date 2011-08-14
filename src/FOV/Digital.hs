@@ -12,7 +12,8 @@ import Level
 -- but AFAIK, this algorithm (fast DFOV done similarly as PFOV) has never been
 -- implemented before. The algorithm is based on the PFOV algorithm,
 -- clean-room reimplemented based on http://roguebasin.roguelikedevelopment.org/index.php?title=Precise_Permissive_Field_of_View.
--- See https://github.com/Mikolaj/LambdaHack/wiki/Fov-and-los for some more context.
+-- See https://github.com/Mikolaj/LambdaHack/wiki/Fov-and-los
+-- for some more context.
 
 -- | The current state of a scan is kept in Maybe (Line, ConvexHull).
 -- If Just something, we're in a visible interval. If Nothing, we're in
@@ -134,4 +135,3 @@ ddebugLine line@(B(y1, x1), B(y2, x2))
       (q, r)  = if k == 0 then (0, 0) else n `divMod` k
       crossL0 = q < 0  -- q truncated toward negative infinity
       crossG1 = q >= 1 && (q > 1 || r /= 0)
-

@@ -15,14 +15,15 @@ instance Monad Strategy where
   return x = Strategy $ return (Frequency [(1, x)])
   m >>= f  = Strategy $
                filter (\ (Frequency xs) -> not (null xs))
-               [ Frequency [ (p * q, b) 
+               [ Frequency [ (p * q, b)
                            | (p, a) <- runFrequency x,
                              y <- runStrategy (f a),
-                             (q, b) <- runFrequency y ] 
+                             (q, b) <- runFrequency y ]
                | x <- runStrategy m ]
 
 liftFrequency :: Frequency a -> Strategy a
-liftFrequency f = Strategy [f]
+liftFrequency f  =
+  Strategy $ filter (\ (Frequency xs) -> not (null xs)) $ return f
 
 instance MonadPlus Strategy where
   mzero = Strategy []

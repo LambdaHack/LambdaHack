@@ -14,7 +14,7 @@ import FOV.Shadow
 import Geometry
 import Level
 
-data FovMode = Shadow | Permissive Int | Digital Int
+data FovMode = Shadow | Permissive Int | Digital Int | Blind
 
 -- Three Field of View algorithms. Press 'V' to cycle among them in the game.
 
@@ -37,10 +37,12 @@ fullscan fovMode loc lmap =
                 (((B(1, 0), B(0, r+1)), [B(0, 1)]),
                  ((B(0, 1), B(r+1, 0)), [B(1, 0)])))
       [qtr0,qtr1,qtr2,qtr3]
-    Digital r    ->  -- diagonal with range r
+    Digital r    ->  -- digital with range r
       S.unions $
       L.map (\ tr ->
               dscan r (tr loc) lmap 1
                 (((B(0, 1), B(r, -r)),  [B(0, 0)]),
                  ((B(0, 0), B(r, r+1)), [B(0, 1)])))
       [qtr0,qtr1,qtr2,qtr3]
+    Blind        ->  -- only feeling out adjacent tiles by touch
+      S.empty

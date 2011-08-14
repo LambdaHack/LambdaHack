@@ -1,56 +1,84 @@
 module Grammar where
 
 import Data.Char
+import Data.Set as S
+import Data.List as L
+import qualified Data.IntMap as IM
 
 import Item
-import Monster
+import Movable
+import MovableKind
 import State
-import ItemState
+import ItemKind
+import Effect
 
--- | How to refer to a monster in object position of a sentence.
-objectMonster :: MonsterType -> String
-objectMonster Player  = "you"
-objectMonster Eye     = "the reducible eye"
-objectMonster FastEye = "the super-fast eye"
-objectMonster Nose    = "the point-free nose"
 
--- | How to refer to a monster in subject position of a sentence.
-subjectMonster :: MonsterType -> String
-subjectMonster x = let (s:r) = objectMonster x in toUpper s : r
+suffixS :: String -> String
+suffixS word = case last word of
+                'y' -> init word ++ "ies"
+                's' -> word ++ "es"
+                'x' -> word ++ "es"
+                _   -> word ++ "s"
 
-verbMonster :: MonsterType -> String -> String
-verbMonster Player v = v
-verbMonster _      v = v ++ "s"
+capitalize :: String -> String
+capitalize [] = []
+capitalize (c : cs) = toUpper c : cs
 
-compoundVerbMonster :: MonsterType -> String -> String -> String
-compoundVerbMonster Player v p = v ++ " " ++ p
-compoundVerbMonster _      v p = v ++ "s " ++ p
+-- | How to refer to a movable in object position of a sentence.
+objectMovable :: MovableKind -> String
+objectMovable mk = nname mk
 
-objectItem :: State -> Int -> ItemType -> String
-objectItem _ n Ring       = makeObject n id "ring"
-objectItem _ n Scroll     = makeObject n id "scroll"
-objectItem s n (Potion t) = makeObject n (identified (sassocs s) (sdiscoveries s) (Potion t)) "potion"
-objectItem _ n Wand       = makeObject n id "wand"
-objectItem _ n Amulet     = makeObject n id "amulet"
-objectItem _ n Gem        = makeObject n id "gem"
-objectItem _ n Gold       = makeObject n id "gold piece"
-objectItem _ n (Sword i)  = makeObject n id ("(+" ++ show i ++ ") sword")
+-- | How to refer to a movable in subject position of a sentence.
+subjectMovable :: MovableKind -> String
+subjectMovable x = capitalize $ objectMovable x
 
-subjectVerbIObject :: State -> Monster -> String -> Item -> String -> String
+verbMovable :: MovableKind -> String -> String
+verbMovable mk v = if nname mk == "you" then v else suffixS v
+
+-- | Sentences such like "The dog barks".
+subjectMovableVerb :: MovableKind -> String -> String
+subjectMovableVerb x v = subjectMovable x ++ " " ++ verbMovable x v
+
+compoundVerbMovable :: MovableKind -> String -> String -> String
+compoundVerbMovable m v p = verbMovable m v ++ " " ++ p
+
+subjectVerbIObject :: State -> Movable -> String -> Item -> String -> String
 subjectVerbIObject state m v o add =
-  subjectMonster (mtype m) ++ " " ++
-  verbMonster (mtype m) v ++ " " ++
-  objectItem state (icount o) (itype o) ++ add ++ "."
+  subjectMovable (mkind m) ++ " " ++
+  verbMovable (mkind m) v ++ " " ++
+  objectItem state o ++ add ++ "."
 
-subjectVerbMObject :: State -> Monster -> String -> Monster -> String -> String
-subjectVerbMObject state m v o add =
-  subjectMonster (mtype m) ++ " " ++
-  verbMonster (mtype m) v ++ " " ++
-  objectMonster (mtype o) ++ add ++ "."
+subjectVerbMObject :: Movable -> String -> Movable -> String -> String
+subjectVerbMObject m v o add =
+  subjectMovable (mkind m) ++ " " ++
+  verbMovable (mkind m) v ++ " " ++
+  objectMovable (mkind o) ++ add ++ "."
 
-subjectCompoundVerbIObject :: State -> Monster -> String -> String ->
-                             Item -> String -> String
-subjectCompoundVerbIObject state m v p o add =
-  subjectMonster (mtype m) ++ " " ++
-  compoundVerbMonster (mtype m) v p ++ " " ++
-  objectItem state (icount o) (itype o) ++ add ++ "."
+subjCompoundVerbIObj :: State -> Movable -> String -> String ->
+                        Item -> String -> String
+subjCompoundVerbIObj state m v p o add =
+  subjectMovable (mkind m) ++ " " ++
+  compoundVerbMovable (mkind m) v p ++ " " ++
+  objectItem state o ++ add ++ "."
+
+makeObject :: Int -> (String -> String) -> String -> String
+makeObject 1 adj obj = let b = adj obj
+                       in  case b of
+                             (c:_) | c `elem` "aeio" -> "an " ++ b
+                             _                       -> "a " ++ b
+makeObject n adj obj = show n ++ " " ++ adj (suffixS obj)
+
+objectItem :: State -> Item -> String
+objectItem state o =
+  let ik = ikind o
+      kind = ItemKind.getIK ik
+      identified = L.length (jflavour kind) == 1 ||
+                   ik `S.member` sdiscoveries state
+      addSpace s = if s == "" then "" else " " ++ s
+      eff = effectToName (jeffect kind)
+      pwr = if ipower o == 0 then "" else "(+" ++ show (ipower o) ++ ")"
+      adj name = if identified
+                 then name ++ addSpace eff ++ addSpace pwr
+                 else let flavour = getFlavour (sassocs state) ik
+                      in  flavourToName flavour ++ " " ++ name
+  in  makeObject (icount o) adj (jname kind)

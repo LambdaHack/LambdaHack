@@ -1,6 +1,8 @@
 module Random (module Frequency, module Random) where
 
+import qualified Data.Binary as Binary
 import Data.Ratio
+import Data.List as L
 import qualified System.Random as R
 import Control.Monad.State
 
@@ -72,3 +74,27 @@ infixl 6 ~+~
 
 (*~) :: Num a => Int -> Rnd a -> Rnd a
 x *~ r = liftM sum (replicateM x r)
+
+-- RollDice: 1d7, 3d3, etc. (a, b) represent (a *~ d b).
+type RollDice = (Binary.Word8, Binary.Word8)
+
+rollDice :: RollDice -> Rnd Int
+rollDice (a', b') =
+  let (a, b) = (fromEnum a', fromEnum b')
+  in  a *~ d b
+
+-- rollQuad (a, b, x, y) = a *~ d b + (lvl * (x *~ d y)) / 10
+type RollQuad = (Binary.Word8, Binary.Word8, Binary.Word8, Binary.Word8)
+
+rollQuad :: Int -> RollQuad -> Rnd Int
+rollQuad lvl (a, b, x, y) = do
+  aDb <- rollDice (a, b)
+  xDy <- rollDice (x, y)
+  return $ aDb + (lvl * xDy) `div` 10
+
+intToQuad :: Int -> RollQuad
+intToQuad 0 = (0, 0, 0, 0)
+intToQuad n = let n' = fromIntegral n
+              in  if n' > maxBound || n' < minBound
+                  then error "intToQuad"
+                  else (n', 1, 0, 0)

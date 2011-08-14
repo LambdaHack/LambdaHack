@@ -1,39 +1,27 @@
 module Display.Gtk
-  (displayId, startup, shutdown, 
-   display, nextEvent, setBG, setFG, setBold, Session,
-   white, black, yellow, blue, magenta, red, green, attr, Attr) where
+  (displayId, startup, shutdown, display, nextEvent, Session) where
 
+import qualified Data.Binary
 import Control.Monad
 import Control.Concurrent
 import Graphics.UI.Gtk.Gdk.Events  -- TODO: replace, deprecated
-import Graphics.UI.Gtk hiding (Attr)
+import Graphics.UI.Gtk
 import Data.List as L
 import Data.IORef
 import Data.Map as M
+import qualified Data.ByteString.Char8 as BS
 
 import Geometry
-import Keys as K
+import qualified Keys as K (Key(..), keyTranslate)
+import qualified Color
 
 displayId = "gtk"
 
 data Session =
   Session {
     schan :: Chan String,
-    stags :: Map AttrKey TextTag,
+    stags :: Map Color.Attr TextTag,
     sview :: TextView }
-
-doAttr :: TextTag -> AttrKey -> IO ()
-doAttr tt (BG Blue)    = set tt [ textTagBackground := "#0000CC" ]
-doAttr tt (BG Magenta) = set tt [ textTagBackground := "#CC00CC" ]
-doAttr tt (BG Green)   = set tt [ textTagBackground := "#00CC00" ]
-doAttr tt (BG Red)     = set tt [ textTagBackground := "#CC0000" ]
-doAttr tt (BG White)   = set tt [ textTagBackground := "#FFFFFF" ]
-doAttr tt (FG Green)   = set tt [ textTagForeground := "#00FF00" ]
-doAttr tt (FG Red)     = set tt [ textTagForeground := "#FF0000" ]
-doAttr tt (FG Blue)    = set tt [ textTagForeground := "#0000FF" ]
-doAttr tt (FG Yellow)  = set tt [ textTagForeground := "#CCCC00" ]
-doAttr tt (FG Black)   = set tt [ textTagForeground := "#000000" ]
-doAttr tt _            = return ()
 
 startup :: (Session -> IO ()) -> IO ()
 startup k =
@@ -45,12 +33,12 @@ startup k =
     ttt <- textTagTableNew
     -- text attributes
     tts <- fmap M.fromList $
-           mapM (\ c -> do
-                          tt <- textTagNew Nothing
-                          textTagTableAdd ttt tt
-                          doAttr tt c
-                          return (c,tt))
-                [ x | c <- [minBound .. maxBound], x <- [FG c, BG c]]
+           mapM (\ ak -> do
+                           tt <- textTagNew Nothing
+                           textTagTableAdd ttt tt
+                           doAttr tt ak
+                           return (ak, tt))
+                [ (f, b) | f <- [minBound..maxBound], b <- Color.legalBG ]
 
     -- text buffer
     tb <- textBufferNew (Just ttt)
@@ -90,14 +78,14 @@ startup k =
                                    return True
                                _ -> return False)
 
-    let black = Color minBound minBound minBound
-    let white = Color maxBound maxBound maxBound
+    let black = Color minBound minBound minBound  -- Color.defBG == Color.Black
+        white = Color 0xAAAA 0xAAAA 0xAAAA        -- Color.defFG == Color.White
     widgetModifyBase tv StateNormal black
     widgetModifyText tv StateNormal white
 
-    ec <- newChan 
+    ec <- newChan
     forkIO $ k (Session ec tts tv)
-    
+
     onKeyPress tv (\ e -> postGUIAsync (writeChan ec (Graphics.UI.Gtk.Gdk.Events.eventKeyName e)) >> return True)
 
     onDestroy w mainQuit -- set quit handler
@@ -107,23 +95,41 @@ startup k =
 
 shutdown _ = mainQuit
 
-display :: Area -> Session -> (Loc -> (Attr, Char)) -> String -> String -> IO ()
-display ((y0,x0),(y1,x1)) session f msg status =
+display :: Area -> Session -> (Loc -> (Color.Attr, Char)) -> String -> String
+           -> IO ()
+display ((y0,x0), (y1,x1)) session f msg status =
   postGUIAsync $
   do
     tb <- textViewGetBuffer (sview session)
-    let text = unlines [ [ snd (f (y,x)) | x <- [x0..x1] ] | y <- [y0..y1] ]
-    textBufferSetText tb (msg ++ "\n" ++ text ++ status)
-    sequence_ [ setTo tb (stags session) (y,x) a | 
-                y <- [y0..y1], x <- [x0..x1], let loc = (y,x), let (a,c) = f (y,x) ]
+    let fLine y = let (as, cs) = unzip [ f (y, x) | x <- [x0..x1] ]
+                  in  ((y, as), BS.pack cs)
+        memo  = L.map fLine [y0..y1]
+        attrs = L.map fst memo
+        chars = L.map snd memo
+        bs    = [BS.pack msg, BS.pack "\n", BS.unlines chars, BS.pack status]
+    textBufferSetByteString tb (BS.concat bs)
+    mapM_ (setTo tb (stags session) x0) attrs
 
-setTo :: TextBuffer -> Map AttrKey TextTag -> Loc -> Attr -> IO ()
-setTo tb tts (ly,lx) a =
-  do
-    ib <- textBufferGetIterAtLineOffset tb (ly+1) lx
-    ie <- textIterCopy ib
-    textIterForwardChar ie
-    mapM_ (\ c -> textBufferApplyTag tb (tts ! c) ib ie) a
+setTo :: TextBuffer -> Map Color.Attr TextTag -> X -> (Y, [Color.Attr]) -> IO ()
+setTo tb tts lx (ly, []) = return ()
+setTo tb tts lx (ly, a:as) = do
+  ib <- textBufferGetIterAtLineOffset tb (ly + 1) lx
+  ie <- textIterCopy ib
+  let setIter :: Color.Attr -> Int -> [Color.Attr] -> IO ()
+      setIter previous repetitions [] = do
+        textIterForwardChars ie repetitions
+        when (previous /= Color.defaultAttr) $
+          textBufferApplyTag tb (tts ! previous) ib ie
+      setIter previous repetitions (a:as)
+        | a == previous =
+            setIter a (repetitions + 1) as
+        | otherwise = do
+            textIterForwardChars ie repetitions
+            when (previous /= Color.defaultAttr) $
+              textBufferApplyTag tb (tts ! previous) ib ie
+            textIterForwardChars ib repetitions
+            setIter a 1 as
+  setIter a 1 as
 
 -- | reads until a non-dead key encountered
 readUndeadChan :: Chan String -> IO String
@@ -151,64 +157,16 @@ readUndeadChan ch =
             "Caps_Lock"        -> True
             _                  -> False
 
-keyTranslate :: String -> Maybe K.Key
-keyTranslate "less"          = Just (K.Char '<')
-keyTranslate "greater"       = Just (K.Char '>')
-keyTranslate "period"        = Just (K.Char '.')
-keyTranslate "colon"         = Just (K.Char ':')
-keyTranslate "comma"         = Just (K.Char ',')
-keyTranslate "space"         = Just (K.Char ' ')
-keyTranslate "question"      = Just (K.Char '?')
-keyTranslate "asterisk"      = Just (K.Char '*')
-keyTranslate "Escape"        = Just K.Esc
-keyTranslate "Return"        = Just K.Return
-keyTranslate "KP_Up"         = Just K.Up
-keyTranslate "KP_Down"       = Just K.Down
-keyTranslate "KP_Left"       = Just K.Left
-keyTranslate "KP_Right"      = Just K.Right
-keyTranslate "KP_Home"       = Just K.Home
-keyTranslate "KP_End"        = Just K.End
-keyTranslate "KP_Page_Up"    = Just K.PgUp
-keyTranslate "KP_Page_Down"  = Just K.PgDn
-keyTranslate "KP_Begin"      = Just K.Begin
-keyTranslate "KP_Enter"      = Just K.Return
-keyTranslate ['K','P','_',c] = Just (K.Char c)  -- for numbers
-keyTranslate [c]             = Just (K.Char c)
-keyTranslate _               = Nothing
-
 nextEvent :: Session -> IO K.Key
 nextEvent session =
   do
     e <- readUndeadChan (schan session)
-    maybe (nextEvent session) return (keyTranslate e)
+    return (K.keyTranslate e)
 
-setBold   = id  -- not supported yet
-setBG c   = (BG c :)
-setFG c   = (FG c :)
-blue      = Blue
-magenta   = Magenta
-red       = Red
-yellow    = Yellow
-green     = Green
-white     = White
-black     = Black
-attr      = []
-
-type Attr = [AttrKey]
-
-data AttrKey =
-    FG AttrColor
-  | BG AttrColor
-  deriving (Eq, Ord)
-
-type Color = AttrColor
-
-data AttrColor =
-    Blue
-  | Magenta
-  | Red
-  | Green
-  | Yellow
-  | White
-  | Black
-  deriving (Eq, Ord, Enum, Bounded)
+doAttr :: TextTag -> Color.Attr -> IO ()
+doAttr tt (fg, bg)
+  | (fg, bg) == Color.defaultAttr = return ()
+  | fg == Color.defFG = set tt [textTagBackground := Color.colorToRGB bg]
+  | bg == Color.defBG = set tt [textTagForeground := Color.colorToRGB fg]
+  | otherwise         = set tt [textTagForeground := Color.colorToRGB fg,
+                                textTagBackground := Color.colorToRGB bg]

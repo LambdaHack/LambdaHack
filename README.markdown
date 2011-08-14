@@ -2,6 +2,10 @@ LambdaHack
 ==========
 
 LambdaHack is a small [roguelike] [1] game written in [Haskell] [2].
+It is getting more and more configurable and aims to become a flexible
+rouguelike engine, suitable for large and small dungeon crawling games
+of arbitrary themes. In particular, we try to keep AI independent
+of monster, item and terrain definitions.
 
 
 Compilation and installation
@@ -21,6 +25,17 @@ and run Cabal from the main directory
 or you may try one of the terminal frontends with
 
     cabal install -fvty
+
+
+Savegame directory
+------------------
+
+If you don't want LambdaHack to write to the current directory,
+create a personal savegame directory (on Linux it's ~/.LambdaHack/).
+and copy the scores file there. You may also want to
+copy the configuration file src/config.default to
+~/.LambdaHack/config and modify it, but be careful changing
+gameplay options --- they can easily unbalance or break the game.
 
 
 Further information
