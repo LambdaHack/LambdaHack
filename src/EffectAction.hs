@@ -23,10 +23,10 @@ import qualified Keys as K
 import Level
 import LevelState
 import Message
-import Movable
-import MovableState
-import MovableKind
-import MovableAdd
+import Actor
+import ActorState
+import ActorKind
+import ActorAdd
 import Perception
 import Random
 import State
@@ -49,36 +49,36 @@ effectToAction :: Effect.Effect -> ActorId -> ActorId -> Int ->
 effectToAction Effect.NoEffect source target power = nullEffect
 effectToAction Effect.Heal _source target power = do
   tm <- gets (getActor target)
-  if mhp tm >= nhpMax (mkind tm) || power <= 0
+  if ahp tm >= bhpMax (akind tm) || power <= 0
     then nullEffect
     else do
       focusIfAHero target
-      let upd m = m { mhp = min (nhpMax (mkind m)) (mhp m + power) }
+      let upd m = m { ahp = min (bhpMax (akind m)) (ahp m + power) }
       updateAnyActor target upd
-      return (True, subjectMovableVerb (mkind tm) "feel" ++ " better.")
+      return (True, subjectActorVerb (akind tm) "feel" ++ " better.")
 effectToAction (Effect.Wound nDm) source target power = do
   n <- liftIO $ rndToIO $ rollDice nDm
   if (n + power <= 0) then nullEffect else do
     focusIfAHero target
     tm <- gets (getActor target)
-    let newHP  = mhp tm - n - power
+    let newHP  = ahp tm - n - power
         killed = newHP <= 0
         msg = if source == target  -- a potion of wounding, etc.
-              then subjectMovableVerb (mkind tm) "feel"
+              then subjectActorVerb (akind tm) "feel"
                    ++ if killed then " mortally" else ""
                    ++ " wounded."
               else if killed
                    then if isAHero target
                         then ""
-                        else subjectMovableVerb (mkind tm) "die" ++ "."
+                        else subjectActorVerb (akind tm) "die" ++ "."
                    else if isAHero target
-                        then subjectMovableVerb (mkind tm) "lose"
+                        then subjectActorVerb (akind tm) "lose"
                              ++ " " ++ show (n + power) ++ "HP."
-                        else subjectMovableVerb (mkind tm) "hiss" ++ " in pain."
-    updateAnyActor target $ \ m -> m { mhp = newHP }  -- Damage the target.
+                        else subjectActorVerb (akind tm) "hiss" ++ " in pain."
+    updateAnyActor target $ \ m -> m { ahp = newHP }  -- Damage the target.
     when killed $ do
       -- Place the actor's possessions on the map.
-      modify (updateLevel (dropItemsAt (mitems tm) (mloc tm)))
+      modify (updateLevel (dropItemsAt (aitems tm) (aloc tm)))
       -- Clean bodies up.
       pl <- gets splayer
       if target == pl
@@ -90,21 +90,21 @@ effectToAction Effect.Dominate source target power =
   then do
          assertTrue $ selectPlayer target
          -- Prevent AI from getting a few free moves until new player ready.
-         updatePlayerBody (\ m -> m { mtime = 0})
+         updatePlayerBody (\ m -> m { atime = 0})
          display
          return (True, "")
   else nullEffect
 effectToAction Effect.SummonFriend source target power = do
   tm <- gets (getActor target)
   if isAHero source
-    then summonHeroes (1 + power) (mloc tm)
-    else summonMonsters (1 + power) (mloc tm)
+    then summonHeroes (1 + power) (aloc tm)
+    else summonMonsters (1 + power) (aloc tm)
   return (True, "")
 effectToAction Effect.SummonEnemy source target power = do
   tm <- gets (getActor target)
   if not $ isAHero source  -- a trick: monster player will summon a hero
-    then summonHeroes (1 + power) (mloc tm)
-    else summonMonsters (1 + power) (mloc tm)
+    then summonHeroes (1 + power) (aloc tm)
+    else summonMonsters (1 + power) (aloc tm)
   return (True, "")
 effectToAction Effect.ApplyPerfume source target _ =
   if source == target
@@ -135,7 +135,7 @@ itemEffectAction source target item = do
   -- Determine how the player perceives the event.
   -- TODO: factor it out as a function messageActor
   -- and messageActorVerb (incorporating subjectActorVerb).
-  if mloc tm `S.member` ptvisible per
+  if aloc tm `S.member` ptvisible per
      then messageAdd msg
      else if not b
           then return ()  -- Victim is not seen, nothing interestng happens.
@@ -184,11 +184,11 @@ selectPlayer actor =
             lvlSwitch nln
             -- Set smell display, depending on player capabilities.
             -- This also resets FOV mode.
-            modify (\ s -> s { ssensory = if MovableKind.nsmell (mkind pbody)
+            modify (\ s -> s { ssensory = if ActorKind.bsmell (akind pbody)
                                           then Smell
                                           else Implicit })
             -- Announce.
-            messageAdd $ subjectMovable (mkind pbody) ++ " selected."
+            messageAdd $ subjectActor (akind pbody) ++ " selected."
             return True
 
 focusIfAHero :: ActorId -> Action ()
@@ -212,9 +212,9 @@ summonHeroes n loc =
 
 summonMonsters :: Int -> Loc -> Action ()
 summonMonsters n loc = do
-  let fmk = Frequency $ L.zip (L.map nfreq dungeonMonsters) dungeonMonsters
+  let fmk = Frequency $ L.zip (L.map bfreq dungeonMonsters) dungeonMonsters
   mk <- liftIO $ rndToIO $ frequency fmk
-  modify (\ state -> iterate (addMonster mk (nhpMax mk) loc) state !! n)
+  modify (\ state -> iterate (addMonster mk (bhpMax mk) loc) state !! n)
 
 -- | Remove dead heroes, check if game over.
 -- For now we only check the selected hero, but if poison, etc.
@@ -226,9 +226,9 @@ checkPartyDeath =
     pl     <- gets splayer
     pbody  <- gets getPlayerBody
     config <- gets sconfig
-    when (mhp pbody <= 0) $ do  -- TODO: change to guard? define mzero? Why are the writes to to files performed when I call abort later? That probably breaks the laws of MonadPlus.
+    when (ahp pbody <= 0) $ do  -- TODO: change to guard? define mzero? Why are the writes to to files performed when I call abort later? That probably breaks the laws of MonadPlus.
       go <- messageMoreConfirm ColorBW $
-              subjectMovableVerb (mkind pbody) "die" ++ "."
+              subjectActorVerb (akind pbody) "die" ++ "."
       history  -- Prevent the messages from being repeated.
       let firstDeathEnds = Config.get config "heroes" "firstDeathEnds"
       if firstDeathEnds
@@ -260,7 +260,7 @@ gameOver showEndingScreens =
 -- | Calculate loot's worth for heroes on the current level.
 calculateTotal :: State -> Int
 calculateTotal s =
-  L.sum $ L.map itemPrice $ L.concatMap mitems (levelHeroList s)
+  L.sum $ L.map itemPrice $ L.concatMap aitems (levelHeroList s)
 
 -- | Handle current score and display it with the high scores. Scores
 -- should not be shown during the game, because ultimately the worth of items might give
@@ -312,7 +312,7 @@ displayItems msg sorted is = do
   overlay ovl
 
 stopRunning :: Action ()
-stopRunning = updatePlayerBody (\ p -> p { mdir = Nothing })
+stopRunning = updatePlayerBody (\ p -> p { adir = Nothing })
 
 -- | Store current message in the history and reset current message.
 history :: Action ()

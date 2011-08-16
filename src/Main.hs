@@ -11,7 +11,7 @@ import Random
 import qualified Save
 import Turn
 import qualified Config
-import MovableAdd
+import ActorAdd
 import Item
 import qualified Keys as K
 
