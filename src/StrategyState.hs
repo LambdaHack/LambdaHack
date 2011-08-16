@@ -95,7 +95,7 @@ strategy actor
     onlyExit       = onlyMoves exitHere me
     onlyKeepsDir k = only (\ x -> maybe True (\ d -> distance (d, x) <= k) mdir)
     onlyKeepsDir_9 = only (\ x -> maybe True (\ d -> neg x /= d) mdir)
-    onlyUnoccupied = onlyMoves (unoccupied (levelMonsterList delState)) me
+    onlyNoMs       = onlyMoves (unoccupied (levelMonsterList delState)) me
     -- Monsters don't see doors more secret than that. Enforced when actually
     -- opening doors, too, so that monsters don't cheat. TODO: remove the code
     -- duplication, though.
@@ -149,13 +149,10 @@ strategy actor
       in  if nsight mk && not (L.null freqs)
           then scale 30 $ head freqs
           else mzero
-    moveTowards =
-      onlySensible $
-        onlyUnoccupied (towardsFoe moveFreely)
-        .| towardsFoe moveFreely
+    moveTowards = onlySensible $ onlyNoMs (towardsFoe moveFreely)
     moveAround =
       onlySensible $
-        (if nsight mk then onlyUnoccupied else id) $
+        (if nsight mk then onlyNoMs else id) $
           nsmell mk .=> L.foldr (.|) reject (L.map return smells)
           .| onlyOpenable moveFreely
           .| moveFreely
