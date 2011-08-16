@@ -227,7 +227,7 @@ checkPartyDeath =
     pbody  <- gets getPlayerBody
     config <- gets sconfig
     when (mhp pbody <= 0) $ do  -- TODO: change to guard? define mzero? Why are the writes to to files performed when I call abort later? That probably breaks the laws of MonadPlus.
-      go <- messageMoreConfirm True $
+      go <- messageMoreConfirm ColorBW $
               subjectMovableVerb (mkind pbody) "die" ++ "."
       history  -- Prevent the messages from being repeated.
       let firstDeathEnds = Config.get config "heroes" "firstDeathEnds"

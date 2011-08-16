@@ -118,10 +118,13 @@ stringByLocation sy xs =
   in
     (k, \ (y,x) -> M.lookup y m >>= \ n -> M.lookup x n)
 
+data ColorMode = ColorFull | ColorBW
+
 displayLevel ::
-  Bool -> Session -> Perceptions -> State -> Message -> Maybe String -> IO Bool
+  ColorMode -> Session -> Perceptions -> State -> Message -> Maybe String
+  -> IO Bool
 displayLevel
-  blackAndWhite session per
+  dm session per
   (state@(State { scursor = cursor,
                   stime   = time,
                   sassocs = assocs,
@@ -180,9 +183,9 @@ displayLevel
               else if bg == Color.defFG && fg == Color.defFG
                    then reverseVideo
                    else (fg, bg)
-            a = if blackAndWhite
-                then Color.defaultAttr
-                else optVisually (fg, bg)
+            a = case dm of
+                  ColorBW   -> Color.defaultAttr
+                  ColorFull -> optVisually (fg, bg)
         in case over (loc `shift` ((sy+1) * n, 0)) of
              Just c -> (Color.defaultAttr, c)
              _      -> (a, char)
