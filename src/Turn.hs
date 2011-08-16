@@ -85,6 +85,7 @@ handle =
 -- | Handle monster moves. Perform moves for individual monsters as long as
 -- there are monsters that have a move time which is less than or equal to
 -- the current time.
+-- TODO: We should replace thi structure using a priority search queue/tree.
 handleMonsters :: Action ()
 handleMonsters =
   do
