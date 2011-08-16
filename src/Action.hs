@@ -12,9 +12,9 @@ import Display hiding (display)
 import Message
 import State
 import Level
-import Movable
-import MovableState
-import MovableKind
+import Actor
+import ActorState
+import ActorKind
 import qualified Save
 
 newtype Action a = Action
@@ -73,33 +73,29 @@ session f = Action (\ s e p k a st ms -> runAction (f s) s e p k a st ms)
 sessionIO :: (Session -> IO a) -> Action a
 sessionIO f = Action (\ s e p k a st ms -> f s >>= k st ms)
 
--- | Display the current level, without any message.
-displayWithoutMessage :: Action Bool
-displayWithoutMessage = Action (\ s e p k a st ms -> displayLevel False s p st "" Nothing >>= k st ms)
+-- | Display the current level with modified current message.
+displayGeneric :: ColorMode -> (String -> String) -> Action Bool
+displayGeneric dm f = Action (\ s e p k a st ms -> displayLevel dm s p st (f ms) Nothing >>= k st ms)
 
--- | Display the current level, with the current message.
+-- | Display the current level, with the current message and color. Most common.
 display :: Action Bool
-display = Action (\ s e p k a st ms -> displayLevel False s p st ms Nothing >>= k st ms)
-
--- | Display the current level in black and white, and the current message,
-displayBW :: Action Bool
-displayBW = Action (\ s e p k a st ms -> displayLevel True s p st ms Nothing >>= k st ms)
+display = displayGeneric ColorFull id
 
 -- | Display an overlay on top of the current screen.
 overlay :: String -> Action Bool
-overlay txt = Action (\ s e p k a st ms -> displayLevel False s p st ms (Just txt) >>= k st ms)
+overlay txt = Action (\ s e p k a st ms -> displayLevel ColorFull s p st ms (Just txt) >>= k st ms)
 
--- | Set the current message.
-messageWipeAndSet :: Message -> Action ()
-messageWipeAndSet nm = Action (\ s e p k a st ms -> k st nm ())
+-- | Wipe out and set a new value for the current message.
+messageReset :: Message -> Action ()
+messageReset nm = Action (\ s e p k a st ms -> k st nm ())
 
 -- | Add to the current message.
 messageAdd :: Message -> Action ()
 messageAdd nm = Action (\ s e p k a st ms -> k st (addMsg ms nm) ())
 
 -- | Clear the current message.
-resetMessage :: Action Message
-resetMessage = Action (\ s e p k a st ms -> k st "" ms)
+messageClear :: Action ()
+messageClear = Action (\ s e p k a st ms -> k st "" ())
 
 -- | Get the current message.
 currentMessage :: Action Message
@@ -151,7 +147,7 @@ debug x = return () -- liftIO $ hPutStrLn stderr x
 -- | Print the given message, then abort.
 abortWith :: Message -> Action a
 abortWith msg = do
-  messageWipeAndSet msg
+  messageReset msg
   display
   abort
 
@@ -165,21 +161,21 @@ abortIfWith False _  = abortWith ""
 
 -- | Print message, await confirmation. Return value indicates
 -- if the player tried to abort/escape.
-messageMoreConfirm :: Bool -> Message -> Action Bool
-messageMoreConfirm blackAndWhite msg = do
+messageMoreConfirm :: ColorMode -> Message -> Action Bool
+messageMoreConfirm dm msg = do
   messageAdd (msg ++ more)
-  if blackAndWhite then displayBW else display
+  displayGeneric dm id
   session getConfirm
 
 -- | Print message, await confirmation, ignore confirmation.
 messageMore :: Message -> Action ()
-messageMore msg = resetMessage >> messageMoreConfirm False msg >> return ()
+messageMore msg = messageClear >> messageMoreConfirm ColorFull msg >> return ()
 
 -- | Print a yes/no question and return the player's answer.
 messageYesNo :: Message -> Action Bool
 messageYesNo msg = do
-  messageWipeAndSet (msg ++ yesno)
-  displayBW  -- turn player's attention to the choice
+  messageReset (msg ++ yesno)
+  displayGeneric ColorBW id  -- turn player's attention to the choice
   session getYesNo
 
 -- | Print a message and an overlay, await confirmation. Return value
@@ -192,12 +188,12 @@ messageOverlayConfirm msg txt = messageOverlaysConfirm msg [txt]
 messageOverlaysConfirm :: Message -> [String] -> Action Bool
 messageOverlaysConfirm msg [] =
   do
-    resetMessage
+    messageClear
     display
     return True
 messageOverlaysConfirm msg (x:xs) =
   do
-    messageWipeAndSet msg
+    messageReset msg
     b <- overlay (x ++ more)
     if b
       then do
@@ -209,7 +205,7 @@ messageOverlaysConfirm msg (x:xs) =
       else stop
   where
     stop = do
-      resetMessage
+      messageClear
       display
       return False
 
@@ -232,19 +228,19 @@ checkCursor h = do
     then h
     else abortWith "this command does not work on remote levels"
 
-updateAnyActor :: Actor -> (Movable -> Movable) -> Action ()
+updateAnyActor :: ActorId -> (Actor -> Actor) -> Action ()
 updateAnyActor actor f = modify (updateAnyActorBody actor f)
 
-updatePlayerBody :: (Movable -> Movable) -> Action ()
+updatePlayerBody :: (Actor -> Actor) -> Action ()
 updatePlayerBody f = do
   pl <- gets splayer
   updateAnyActor pl f
 
 -- | Advance the move time for the given actor.
-advanceTime :: Actor -> Action ()
+advanceTime :: ActorId -> Action ()
 advanceTime actor = do
   time <- gets stime
-  let upd m = m { mtime = time + (nspeed (mkind m)) }
+  let upd m = m { atime = time + (bspeed (akind m)) }
   -- A hack to synchronize the whole party:
   pl <- gets splayer
   if (actor == pl || isAHero actor)

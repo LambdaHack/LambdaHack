@@ -30,9 +30,9 @@ import Level
 import LevelState
 import Dungeon
 import Perception
-import Movable
-import MovableState
-import MovableKind
+import Actor
+import ActorState
+import ActorKind
 import Item
 import qualified Keys as K
 import qualified Terrain
@@ -116,17 +116,20 @@ stringByLocation sy xs =
   in
     (k, \ (y,x) -> M.lookup y m >>= \ n -> M.lookup x n)
 
+data ColorMode = ColorFull | ColorBW
+
 displayLevel ::
-  Bool -> Session -> Perceptions -> State -> Message -> Maybe String -> IO Bool
+  ColorMode -> Session -> Perceptions -> State -> Message -> Maybe String
+  -> IO Bool
 displayLevel
-  blackAndWhite session per
+  dm session per
   (state@(State { scursor = cursor,
                   stime   = time,
                   sassocs = assocs,
                   slevel  = Level ln _ (sy, sx) _ smap lmap _ }))
   msg moverlay =
-  let Movable { mkind = MovableKind { nhpMax = xhp },
-                mhp = php, mloc = ploc, mitems = pitems } = getPlayerBody state
+  let Actor { akind = ActorKind { bhpMax = xhp },
+              ahp = php, aloc = ploc, aitems = pitems } = getPlayerBody state
       reachable = ptreachable per
       visible   = ptvisible per
       overlay   = fromMaybe "" moverlay
@@ -152,10 +155,10 @@ displayLevel
       dis n loc =
         let tile = lmap `lAt` loc
             sml  = ((smap ! loc) - time) `div` 100
-            viewMovable loc (Movable { mkind = mk })
+            viewActor loc (Actor { akind = mk })
               | loc == ploc && ln == creturnLn cursor =
-                  (nsymbol mk, Color.defBG)  -- highlight player
-              | otherwise = (nsymbol mk, ncolor mk)
+                  (bsymbol mk, Color.defBG)  -- highlight player
+              | otherwise = (bsymbol mk, bcolor mk)
             viewSmell :: Int -> Char
             viewSmell n
               | n > 9     = '*'
@@ -163,9 +166,9 @@ displayLevel
               | otherwise = Char.intToDigit n
             rainbow loc = toEnum ((fst loc + snd loc) `mod` 14 + 1)
             (char, fg) =
-              case L.find (\ m -> loc == mloc m) (hs ++ ms) of
+              case L.find (\ m -> loc == aloc m) (hs ++ ms) of
                 _ | sTer > 0 -> Terrain.viewTerrain sTer False (tterrain tile)
-                Just m | sOmn || vis -> viewMovable loc m
+                Just m | sOmn || vis -> viewActor loc m
                 _ | sSml && sml >= 0 -> (viewSmell sml, rainbow loc)
                   | otherwise        -> viewTile vis tile assocs
             vis = S.member loc visible
@@ -180,9 +183,9 @@ displayLevel
               else if bg == Color.defFG && fg == Color.defFG
                    then reverseVideo
                    else (fg, bg)
-            a = if blackAndWhite
-                then Color.defaultAttr
-                else optVisually (fg, bg)
+            a = case dm of
+                  ColorBW   -> Color.defaultAttr
+                  ColorFull -> optVisually (fg, bg)
         in case over (loc `shift` ((sy+1) * n, 0)) of
              Just c -> (Color.defaultAttr, c)
              _      -> (a, char)

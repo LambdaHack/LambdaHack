@@ -18,8 +18,8 @@ import EffectAction
 import Keybindings
 import qualified Keys as K
 import Level
-import Movable
-import MovableState
+import Actor
+import ActorState
 import Random
 import State
 import Strategy
@@ -65,7 +65,7 @@ handle =
     debug "handle"
     state <- get
     pl <- gets splayer
-    let ptime = mtime (getPlayerBody state)  -- time of player's next move
+    let ptime = atime (getPlayerBody state)  -- time of player's next move
     let time  = stime state                  -- current game time
     debug $ "handle: time check. ptime = " ++ show ptime ++ ", time = " ++ show time
     if ptime > time
@@ -75,7 +75,9 @@ handle =
              -- monsters can be traced on the map; we disable this functionality if the
              -- player is currently running, as it would slow down the running process
              -- unnecessarily
-             ifRunning (const $ return True) displayWithoutMessage
+             ifRunning
+               (const $ return True)
+               (displayGeneric ColorFull (const ""))
              handleMonsters
       else do
              handlePlayer -- it's the hero's turn!
@@ -83,6 +85,7 @@ handle =
 -- | Handle monster moves. Perform moves for individual monsters as long as
 -- there are monsters that have a move time which is less than or equal to
 -- the current time.
+-- TODO: We should replace thi structure using a priority search queue/tree.
 handleMonsters :: Action ()
 handleMonsters =
   do
@@ -92,15 +95,15 @@ handleMonsters =
     pl   <- gets splayer
     if IM.null ms
       then nextMove
-      else let order  = Ord.comparing (mtime . snd)
+      else let order  = Ord.comparing (atime . snd)
                (i, m) = L.minimumBy order (IM.assocs ms)
                actor = AMonster i
-           in  if mtime m > time || actor == pl
+           in  if atime m > time || actor == pl
                then nextMove  -- no monster is ready for another move
                else handleMonster actor
 
 -- | Handle the move of a single monster.
-handleMonster :: Actor -> Action ()
+handleMonster :: ActorId -> Action ()
 handleMonster actor =
   do
     debug "handleMonster"
@@ -136,17 +139,17 @@ handlePlayer =
     remember  -- the hero perceives his (potentially new) surroundings
     -- determine perception before running player command, in case monsters
     -- have opened doors ...
-    oldPlayerTime <- gets (mtime . getPlayerBody)
+    oldPlayerTime <- gets (atime . getPlayerBody)
     withPerception playerCommand -- get and process a player command
     -- at this point, the command was successful and possibly took some time
-    newPlayerTime <- gets (mtime . getPlayerBody)
+    newPlayerTime <- gets (atime . getPlayerBody)
     if newPlayerTime == oldPlayerTime
       then withPerception handlePlayer  -- no time taken, repeat
       else do
         state <- get
         pl    <- gets splayer
         let time = stime state
-            ploc = mloc (getPlayerBody state)
+            ploc = aloc (getPlayerBody state)
             sTimeout = Config.get (sconfig state) "monsters" "smellTimeout"
         -- update smell
         when (isAHero pl) $  -- only humans leave strong scent
