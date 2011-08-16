@@ -309,7 +309,7 @@ displayItems msg sorted is = do
             L.map (\ i -> letterLabel (iletter i) ++ objectItem state i ++ " ")
               ((if sorted then sortBy (cmpLetter' `on` iletter) else id) is)
   let ovl = inv ++ more
-  messageWipeAndSet msg
+  messageReset msg
   overlay ovl
 
 stopRunning :: Action ()
@@ -320,7 +320,8 @@ history :: Action ()
 history =
   do
     (_, sx) <- gets (lsize . slevel)
-    msg     <- resetMessage
+    msg     <- currentMessage
+    messageClear
     config  <- gets sconfig
     let historyMax = Config.get config "ui" "historyMax"
         -- TODO: not ideal, continuations of sentences are atop beginnings.
