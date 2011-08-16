@@ -39,15 +39,17 @@ import WorldLoc
 -- This file should not depend on Action.hs nor ItemAction.hs.
 
 -- | The source actor affects the target actor, with a given effect and power.
+-- The second argument is verbosity of the resulting message.
+-- TODO: instead of verbosity return msg components and tailor them outside?
 -- Both actors are on the current level and can be the same actor.
 -- The bool result indicates if the actors identify the effect.
 -- TODO: separately define messages for the case when source == target
 -- and for the other case; then use the messages outside of effectToAction,
 -- depending on the returned bool, perception and identity of the actors.
-effectToAction :: Effect.Effect -> ActorId -> ActorId -> Int ->
+effectToAction :: Effect.Effect -> Int -> ActorId -> ActorId -> Int ->
                   Action (Bool, String)
-effectToAction Effect.NoEffect source target power = nullEffect
-effectToAction Effect.Heal _source target power = do
+effectToAction Effect.NoEffect _ source target power = nullEffect
+effectToAction Effect.Heal _ _source target power = do
   tm <- gets (getActor target)
   if ahp tm >= bhpMax (akind tm) || power <= 0
     then nullEffect
@@ -56,7 +58,7 @@ effectToAction Effect.Heal _source target power = do
       let upd m = m { ahp = min (bhpMax (akind m)) (ahp m + power) }
       updateAnyActor target upd
       return (True, subjectActorVerb (akind tm) "feel" ++ " better.")
-effectToAction (Effect.Wound nDm) source target power = do
+effectToAction (Effect.Wound nDm) verbosity source target power = do
   n <- liftIO $ rndToIO $ rollDice nDm
   if (n + power <= 0) then nullEffect else do
     focusIfAHero target
@@ -71,10 +73,13 @@ effectToAction (Effect.Wound nDm) source target power = do
                    then if isAHero target
                         then ""
                         else subjectActorVerb (akind tm) "die" ++ "."
-                   else if isAHero target
-                        then subjectActorVerb (akind tm) "lose"
-                             ++ " " ++ show (n + power) ++ "HP."
-                        else subjectActorVerb (akind tm) "hiss" ++ " in pain."
+                   else if verbosity <= 0
+                        then ""
+                        else if isAHero target
+                             then subjectActorVerb (akind tm) "lose"
+                                  ++ " " ++ show (n + power) ++ "HP."
+                             else subjectActorVerb (akind tm) "hiss"
+                                  ++ " in pain."
     updateAnyActor target $ \ m -> m { ahp = newHP }  -- Damage the target.
     when killed $ do
       -- Place the actor's possessions on the map.
@@ -85,7 +90,7 @@ effectToAction (Effect.Wound nDm) source target power = do
         then checkPartyDeath  -- kills the player and checks game over
         else modify (deleteActor target)  -- kills the enemy
     return (True, msg)
-effectToAction Effect.Dominate source target power =
+effectToAction Effect.Dominate _ source target power =
   if isAMonster target  -- Monsters have weaker will than heroes.
   then do
          assertTrue $ selectPlayer target
@@ -94,28 +99,28 @@ effectToAction Effect.Dominate source target power =
          display
          return (True, "")
   else nullEffect
-effectToAction Effect.SummonFriend source target power = do
+effectToAction Effect.SummonFriend _ source target power = do
   tm <- gets (getActor target)
   if isAHero source
     then summonHeroes (1 + power) (aloc tm)
     else summonMonsters (1 + power) (aloc tm)
   return (True, "")
-effectToAction Effect.SummonEnemy source target power = do
+effectToAction Effect.SummonEnemy _ source target power = do
   tm <- gets (getActor target)
   if not $ isAHero source  -- a trick: monster player will summon a hero
     then summonHeroes (1 + power) (aloc tm)
     else summonMonsters (1 + power) (aloc tm)
   return (True, "")
-effectToAction Effect.ApplyPerfume source target _ =
+effectToAction Effect.ApplyPerfume _ source target _ =
   if source == target
   then return (True, "Tastes like water, but with a strong rose scent.")
   else do
     let upd lvl = lvl { lsmell = M.map (const (-100)) (lsmell lvl) }
     modify (updateLevel upd)
     return (True, "The fragrance quells all scents in the vicinity.")
-effectToAction Effect.Regneration source target power =
-  effectToAction Effect.Heal source target power
-effectToAction Effect.Searching source target power =
+effectToAction Effect.Regneration verbosity source target power =
+  effectToAction Effect.Heal verbosity source target power
+effectToAction Effect.Searching _ source target power =
   return (True, "It gets lost and you search in vain.")
 
 nullEffect :: Action (Bool, String)
@@ -123,15 +128,15 @@ nullEffect = return (False, "Nothing happens.")
 
 -- | The source actor affects the target actor, with a given item.
 -- If either actor is a hero, the item may get identified.
-itemEffectAction :: ActorId -> ActorId -> Item -> Action Bool
-itemEffectAction source target item = do
+itemEffectAction :: Int -> ActorId -> ActorId -> Item -> Action Bool
+itemEffectAction verbosity source target item = do
   state <- get
   pl    <- gets splayer
   tm    <- gets (getActor target)
   per   <- currentPerception
   let effect = ItemKind.jeffect $ ItemKind.getIK $ ikind item
   -- The message describes the target part of the action.
-  (b, msg) <- effectToAction effect source target (ipower item)
+  (b, msg) <- effectToAction effect verbosity source target (ipower item)
   -- Determine how the player perceives the event.
   -- TODO: factor it out as a function messageActor
   -- and messageActorVerb (incorporating subjectActorVerb).

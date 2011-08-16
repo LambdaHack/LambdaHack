@@ -583,7 +583,7 @@ actorAttackActor source target = do
               if isJust str then " with " ++ objectItem state single else ""
   when (sloc `S.member` ptvisible per) $ messageAdd msg
   -- Messages inside itemEffectAction describe the target part.
-  itemEffectAction source target single
+  itemEffectAction 0 source target single
   advanceTime source
 
 attackToVerb :: String -> String

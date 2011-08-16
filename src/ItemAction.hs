@@ -80,7 +80,7 @@ applyGroupItem actor verb item = do
       loc = aloc body
   removeFromInventory actor consumed loc
   when (loc `S.member` ptvisible per) $ messageAdd msg
-  itemEffectAction actor actor consumed
+  itemEffectAction 5 actor actor consumed
   advanceTime actor
 
 playerApplyGroupItem :: String -> Action ()
@@ -124,7 +124,7 @@ zapGroupItem source loc verb item = do
   case locToActor loc state of
     Just ta -> do
       -- Messages inside itemEffectAction describe the target part.
-      b <- itemEffectAction source ta consumed
+      b <- itemEffectAction 10 source ta consumed
       when (not b) $
         modify (updateLevel (dropItemsAt [consumed] loc))
     Nothing ->
