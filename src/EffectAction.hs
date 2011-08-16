@@ -44,7 +44,7 @@ import WorldLoc
 -- TODO: separately define messages for the case when source == target
 -- and for the other case; then use the messages outside of effectToAction,
 -- depending on the returned bool, perception and identity of the actors.
-effectToAction :: Effect.Effect -> Actor -> Actor -> Int ->
+effectToAction :: Effect.Effect -> ActorId -> ActorId -> Int ->
                   Action (Bool, String)
 effectToAction Effect.NoEffect source target power = nullEffect
 effectToAction Effect.Heal _source target power = do
@@ -123,7 +123,7 @@ nullEffect = return (False, "Nothing happens.")
 
 -- | The source actor affects the target actor, with a given item.
 -- If either actor is a hero, the item may get identified.
-itemEffectAction :: Actor -> Actor -> Item -> Action Bool
+itemEffectAction :: ActorId -> ActorId -> Item -> Action Bool
 itemEffectAction source target item = do
   state <- get
   pl    <- gets splayer
@@ -163,7 +163,7 @@ discover i = do
 
 -- | Make the actor controlled by the player.
 -- Focus on the actor if level changes. False, if nothing to do.
-selectPlayer :: Actor -> Action Bool
+selectPlayer :: ActorId -> Action Bool
 selectPlayer actor =
   do
     pl <- gets splayer
@@ -191,7 +191,7 @@ selectPlayer actor =
             messageAdd $ subjectMovable (mkind pbody) ++ " selected."
             return True
 
-focusIfAHero :: Actor -> Action ()
+focusIfAHero :: ActorId -> Action ()
 focusIfAHero target =
   if isAHero target
   then do

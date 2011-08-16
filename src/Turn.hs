@@ -102,7 +102,7 @@ handleMonsters =
                else handleMonster actor
 
 -- | Handle the move of a single monster.
-handleMonster :: Actor -> Action ()
+handleMonster :: ActorId -> Action ()
 handleMonster actor =
   do
     debug "handleMonster"

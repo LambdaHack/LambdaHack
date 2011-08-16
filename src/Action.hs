@@ -228,7 +228,7 @@ checkCursor h = do
     then h
     else abortWith "this command does not work on remote levels"
 
-updateAnyActor :: Actor -> (Movable -> Movable) -> Action ()
+updateAnyActor :: ActorId -> (Movable -> Movable) -> Action ()
 updateAnyActor actor f = modify (updateAnyActorBody actor f)
 
 updatePlayerBody :: (Movable -> Movable) -> Action ()
@@ -237,7 +237,7 @@ updatePlayerBody f = do
   updateAnyActor pl f
 
 -- | Advance the move time for the given actor.
-advanceTime :: Actor -> Action ()
+advanceTime :: ActorId -> Action ()
 advanceTime actor = do
   time <- gets stime
   let upd m = m { mtime = time + (nspeed (mkind m)) }

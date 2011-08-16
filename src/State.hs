@@ -22,7 +22,7 @@ import WorldLoc
 -- TODO: consider changing slevel to LevelId, removing the lname field
 -- and not removing the current level from the dungeon.
 data State = State
-  { splayer      :: Actor,        -- ^ represents the player-controlled movable
+  { splayer      :: ActorId,      -- ^ represents the player-controlled movable
     scursor      :: Cursor,       -- ^ cursor location and level to return to
     shistory     :: [Message],
     ssensory     :: SensoryMode,

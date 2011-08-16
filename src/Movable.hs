@@ -43,18 +43,18 @@ instance Binary Movable where
           mtime   <- get
           return (Movable mk mhp md tgt ml minv mletter mtime)
 
-data Actor = AHero Int     -- ^ hero index (on the lheroes intmap)
-           | AMonster Int  -- ^ monster index (on the lmonsters intmap)
+data ActorId = AHero Int     -- ^ hero index (on the lheroes intmap)
+             | AMonster Int  -- ^ monster index (on the lmonsters intmap)
   deriving (Show, Eq, Ord)
 
-isAHero :: Actor -> Bool
+isAHero :: ActorId -> Bool
 isAHero (AHero _) = True
 isAHero (AMonster _) = False
 
-isAMonster :: Actor -> Bool
+isAMonster :: ActorId -> Bool
 isAMonster = not . isAHero
 
-instance Binary Actor where
+instance Binary ActorId where
   put (AHero n)    = putWord8 0 >> put n
   put (AMonster n) = putWord8 1 >> put n
   get = do
@@ -62,12 +62,12 @@ instance Binary Actor where
           case tag of
             0 -> liftM AHero get
             1 -> liftM AMonster get
-            _ -> fail "no parse (Actor)"
+            _ -> fail "no parse (ActorId)"
 
 data Target =
-    TEnemy Actor Loc -- ^ fire at the actor; last seen location
-  | TLoc Loc         -- ^ fire at a given location
-  | TCursor          -- ^ fire at the current position of the cursor; default
+    TEnemy ActorId Loc  -- ^ fire at the actor; last seen location
+  | TLoc Loc            -- ^ fire at a given location
+  | TCursor             -- ^ fire at the current position of the cursor; default
   deriving (Show, Eq)
 
 instance Binary Target where

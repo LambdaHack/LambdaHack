@@ -234,7 +234,7 @@ openclose o =
     pl <- gets splayer
     K.handleDirection e (actorOpenClose pl True o) (neverMind True)
 
-actorOpenClose :: Actor ->
+actorOpenClose :: ActorId ->
                   Bool ->    -- ^ verbose?
                   Bool ->    -- ^ open?
                   Dir -> Action ()
@@ -502,7 +502,7 @@ doLook =
 -- i.e., it can handle monsters, heroes and both.
 moveOrAttack :: Bool ->        -- allow attacks?
                 Bool ->        -- auto-open doors on move
-                Actor ->       -- who's moving?
+                ActorId ->     -- who's moving?
                 Dir ->
                 Action ()
 moveOrAttack allowAttacks autoOpen actor dir
@@ -554,7 +554,7 @@ moveOrAttack allowAttacks autoOpen actor dir
 -- can be attacked from an adjacent position.
 -- This function is analogous to zapGroupItem, but for melee
 -- and not using up the weapon.
-actorAttackActor :: Actor -> Actor -> Action ()
+actorAttackActor :: ActorId -> ActorId -> Action ()
 actorAttackActor (AHero _) target@(AHero _) =
   -- Select adjacent hero by bumping into him. Takes no time.
   assertTrue $ selectPlayer target
@@ -590,7 +590,7 @@ attackToVerb _ = "hit"
 
 -- | Resolves the result of an actor running into another.
 -- This involves switching positions of the two movables.
-actorRunActor :: Actor -> Actor -> Action ()
+actorRunActor :: ActorId -> ActorId -> Action ()
 actorRunActor source target = do
   pl    <- gets splayer
   sloc  <- gets (mloc . getActor source)  -- source location

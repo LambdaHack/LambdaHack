@@ -56,7 +56,7 @@ and the monster is small enough, the monster can hear the hero
 and moves into the approximate direction of the hero.
 -}
 
-strategy :: Actor -> State -> Perceptions -> Strategy (Action ())
+strategy :: ActorId -> State -> Perceptions -> Strategy (Action ())
 strategy actor
          oldState@(State { scursor = cursor,
                            splayer = pl,
@@ -193,7 +193,7 @@ strategy actor
                  .| onlyKeepsDir_9 moveRandomly
                  .| moveRandomly
 
-dirToAction :: Actor -> Target -> Bool -> Dir -> Action ()
+dirToAction :: ActorId -> Target -> Bool -> Dir -> Action ()
 dirToAction actor tgt allowAttacks dir =
   assert (dir /= (0,0)) $ do
   -- set new direction
@@ -210,5 +210,5 @@ onlyMoves p l = only (\ x -> p (l `shift` x))
 moveRandomly :: Strategy Dir
 moveRandomly = liftFrequency $ uniform moves
 
-wait :: Actor -> Strategy (Action ())
+wait :: ActorId -> Strategy (Action ())
 wait actor = return $ advanceTime actor
