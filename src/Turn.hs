@@ -75,7 +75,9 @@ handle =
              -- monsters can be traced on the map; we disable this functionality if the
              -- player is currently running, as it would slow down the running process
              -- unnecessarily
-             ifRunning (const $ return True) displayWithoutMessage
+             ifRunning
+               (const $ return True)
+               (displayGeneric ColorFull (const ""))
              handleMonsters
       else do
              handlePlayer -- it's the hero's turn!

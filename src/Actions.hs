@@ -369,7 +369,7 @@ fleeDungeon =
         items = L.concatMap mitems (levelHeroList state)
     if total == 0
       then do
-             go <- resetMessage >> messageMoreConfirm False "Coward!"
+             go <- resetMessage >> messageMoreConfirm ColorFull "Coward!"
              when go $
                messageMore "Next time try to grab some loot before escape!"
              end

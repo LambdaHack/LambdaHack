@@ -73,21 +73,17 @@ session f = Action (\ s e p k a st ms -> runAction (f s) s e p k a st ms)
 sessionIO :: (Session -> IO a) -> Action a
 sessionIO f = Action (\ s e p k a st ms -> f s >>= k st ms)
 
--- | Display the current level, without any message.
-displayWithoutMessage :: Action Bool
-displayWithoutMessage = Action (\ s e p k a st ms -> displayLevel False s p st "" Nothing >>= k st ms)
+-- | Display the current level with modified current message.
+displayGeneric :: ColorMode -> (String -> String) -> Action Bool
+displayGeneric dm f = Action (\ s e p k a st ms -> displayLevel dm s p st (f ms) Nothing >>= k st ms)
 
--- | Display the current level, with the current message.
+-- | Display the current level, with the current message and color. Most common.
 display :: Action Bool
-display = Action (\ s e p k a st ms -> displayLevel False s p st ms Nothing >>= k st ms)
-
--- | Display the current level in black and white, and the current message,
-displayBW :: Action Bool
-displayBW = Action (\ s e p k a st ms -> displayLevel True s p st ms Nothing >>= k st ms)
+display = displayGeneric ColorFull id
 
 -- | Display an overlay on top of the current screen.
 overlay :: String -> Action Bool
-overlay txt = Action (\ s e p k a st ms -> displayLevel False s p st ms (Just txt) >>= k st ms)
+overlay txt = Action (\ s e p k a st ms -> displayLevel ColorFull s p st ms (Just txt) >>= k st ms)
 
 -- | Set the current message.
 messageWipeAndSet :: Message -> Action ()
@@ -165,21 +161,21 @@ abortIfWith False _  = abortWith ""
 
 -- | Print message, await confirmation. Return value indicates
 -- if the player tried to abort/escape.
-messageMoreConfirm :: Bool -> Message -> Action Bool
-messageMoreConfirm blackAndWhite msg = do
+messageMoreConfirm :: ColorMode -> Message -> Action Bool
+messageMoreConfirm dm msg = do
   messageAdd (msg ++ more)
-  if blackAndWhite then displayBW else display
+  displayGeneric dm id
   session getConfirm
 
 -- | Print message, await confirmation, ignore confirmation.
 messageMore :: Message -> Action ()
-messageMore msg = resetMessage >> messageMoreConfirm False msg >> return ()
+messageMore msg = resetMessage >> messageMoreConfirm ColorFull msg >> return ()
 
 -- | Print a yes/no question and return the player's answer.
 messageYesNo :: Message -> Action Bool
 messageYesNo msg = do
   messageWipeAndSet (msg ++ yesno)
-  displayBW  -- turn player's attention to the choice
+  displayGeneric ColorBW id  -- turn player's attention to the choice
   session getYesNo
 
 -- | Print a message and an overlay, await confirmation. Return value
