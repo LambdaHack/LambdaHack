@@ -117,14 +117,15 @@ digCorridors (p1:p2:ps) =
   M.union corPos (digCorridors (p2:ps))
   where
     corLoc = fromTo p1 p2
-    corPos = M.fromList $ L.zip corLoc (repeat $ newTile Terrain.floorDark)
+    dummy  = undefined
+    corPos = M.fromList $ L.zip corLoc (repeat dummy)
 digCorridors _ = M.empty
 
 mergeCorridor :: (Tile, Tile) -> (Tile, Tile) -> (Tile, Tile)
 mergeCorridor _ (Tile t is, u) | Terrain.isRock t    = (Tile Terrain.opening is, u)
 mergeCorridor _ (Tile t is, u) | Terrain.isOpening t = (Tile Terrain.opening is, u)
 mergeCorridor _ (Tile t is, u) | Terrain.isFloor t   = (Tile t is, u)
-mergeCorridor (x, u) _                 = (x, u)
+mergeCorridor _ (Tile _ is, u)                       = (Tile Terrain.floorDark is, u)
 
 -- | Create a new tile.
 newTile :: Terrain.Terrain -> (Tile, Tile)
@@ -362,12 +363,10 @@ emptyLMap :: (Y, X) -> LMap
 emptyLMap (my, mx) =
   M.fromList [ ((y, x), newTile Terrain.rock) | x <- [0..mx], y <- [0..my] ]
 
--- | If the room has size 1, it is assumed to be a no-room, and a single
--- corridor field will be dug instead of a room.
+-- | If the room has size 1, it is at most a start of a corridor.
 digRoom :: Terrain.DL -> Room -> LMap -> LMap
 digRoom dl ((y0, x0), (y1, x1)) l
-  | y0 == y1 && x0 == x1 =
-  M.insert (y0, x0) (newTile Terrain.floorDark) l
+  | y0 == y1 && x0 == x1 = l
   | otherwise =
   let floorDL = if dl == Terrain.Light then Terrain.floorLight else Terrain.floorDark
       rm =
