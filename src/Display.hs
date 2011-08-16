@@ -32,9 +32,9 @@ import Level
 import LevelState
 import Dungeon
 import Perception
-import Movable
-import MovableState
-import MovableKind
+import Actor
+import ActorState
+import ActorKind
 import Item
 import qualified Keys as K
 import WorldLoc
@@ -130,8 +130,8 @@ displayLevel
                   sassocs = assocs,
                   slevel  = Level ln _ (sy, sx) _ smap lmap _ }))
   msg moverlay =
-  let Movable { mkind = MovableKind { nhpMax = xhp },
-                mhp = php, mloc = ploc, mitems = pitems } = getPlayerBody state
+  let Actor { akind = ActorKind { bhpMax = xhp },
+              ahp = php, aloc = ploc, aitems = pitems } = getPlayerBody state
       reachable = ptreachable per
       visible   = ptvisible per
       overlay   = fromMaybe "" moverlay
@@ -156,10 +156,10 @@ displayLevel
       dis n loc =
         let tile = lmap `lAt` loc
             sml  = ((smap ! loc) - time) `div` 100
-            viewMovable loc (Movable { mkind = mk })
+            viewActor loc (Actor { akind = mk })
               | loc == ploc && ln == creturnLn cursor =
-                  (nsymbol mk, Color.defBG)  -- highlight player
-              | otherwise = (nsymbol mk, ncolor mk)
+                  (bsymbol mk, Color.defBG)  -- highlight player
+              | otherwise = (bsymbol mk, bcolor mk)
             viewSmell :: Int -> Char
             viewSmell n
               | n > 9     = '*'
@@ -167,8 +167,8 @@ displayLevel
               | otherwise = Char.intToDigit n
             rainbow loc = toEnum ((fst loc + snd loc) `mod` 14 + 1)
             (char, fg) =
-              case L.find (\ m -> loc == mloc m) (hs ++ ms) of
-                Just m | sOmn || vis -> viewMovable loc m
+              case L.find (\ m -> loc == aloc m) (hs ++ ms) of
+                Just m | sOmn || vis -> viewActor loc m
                 _ | sSml && sml >= 0 -> (viewSmell sml, rainbow loc)
                   | otherwise        -> viewTile vis tile assocs
             vis = S.member loc visible

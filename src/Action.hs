@@ -12,9 +12,9 @@ import Display hiding (display)
 import Message
 import State
 import Level
-import Movable
-import MovableState
-import MovableKind
+import Actor
+import ActorState
+import ActorKind
 import qualified Save
 
 newtype Action a = Action
@@ -228,10 +228,10 @@ checkCursor h = do
     then h
     else abortWith "this command does not work on remote levels"
 
-updateAnyActor :: ActorId -> (Movable -> Movable) -> Action ()
+updateAnyActor :: ActorId -> (Actor -> Actor) -> Action ()
 updateAnyActor actor f = modify (updateAnyActorBody actor f)
 
-updatePlayerBody :: (Movable -> Movable) -> Action ()
+updatePlayerBody :: (Actor -> Actor) -> Action ()
 updatePlayerBody f = do
   pl <- gets splayer
   updateAnyActor pl f
@@ -240,7 +240,7 @@ updatePlayerBody f = do
 advanceTime :: ActorId -> Action ()
 advanceTime actor = do
   time <- gets stime
-  let upd m = m { mtime = time + (nspeed (mkind m)) }
+  let upd m = m { atime = time + (bspeed (akind m)) }
   -- A hack to synchronize the whole party:
   pl <- gets splayer
   if (actor == pl || isAHero actor)

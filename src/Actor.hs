@@ -1,47 +1,47 @@
-module Movable where
+module Actor where
 
 import Data.Binary
 import Control.Monad
 
 import Geometry
 import Item
-import MovableKind
+import ActorKind
 
 -- | Monster properties that are changing a lot. If they are dublets
--- of properties form MovableKind, the intention is they may be modified
+-- of properties form ActorKind, the intention is they may be modified
 -- temporarily, but will return to the original value over time. E.g., HP.
-data Movable = Movable
-  { mkind   :: !MovableKind,  -- ^ kind of the movable; TODO: make this Int
-    mhp     :: !Int,       -- ^ current hit pints
-    mdir    :: Maybe Dir,  -- ^ the direction of running
-    mtarget :: Target,     -- ^ the target for distance attacks and AI
-    mloc    :: !Loc,       -- ^ current location
-    mitems  :: [Item],     -- ^ inventory
-    mletter :: !Char,      -- ^ next inventory letter
-    mtime   :: !Time }     -- ^ time of next action
+data Actor = Actor
+  { akind   :: !ActorKind, -- ^ kind of the actor; TODO: make this Int
+    ahp     :: !Int,       -- ^ current hit pints
+    adir    :: Maybe Dir,  -- ^ the direction of running
+    atarget :: Target,     -- ^ the target for distance attacks and AI
+    aloc    :: !Loc,       -- ^ current location
+    aitems  :: [Item],     -- ^ inventory
+    aletter :: !Char,      -- ^ next inventory letter
+    atime   :: !Time }     -- ^ time of next action
   deriving Show
 
-instance Binary Movable where
-  put (Movable mk mhp md tgt ml minv mletter mtime) =
+instance Binary Actor where
+  put (Actor akind ahp adir atarget aloc aitems aletter atime) =
     do
-      put mk
-      put mhp
-      put md
-      put tgt
-      put ml
-      put minv
-      put mletter
-      put mtime
+      put akind
+      put ahp
+      put adir
+      put atarget
+      put aloc
+      put aitems
+      put aletter
+      put atime
   get = do
-          mk      <- get
-          mhp     <- get
-          md      <- get
-          tgt     <- get
-          ml      <- get
-          minv    <- get
-          mletter <- get
-          mtime   <- get
-          return (Movable mk mhp md tgt ml minv mletter mtime)
+          akind   <- get
+          ahp     <- get
+          adir    <- get
+          atarget <- get
+          aloc    <- get
+          aitems  <- get
+          aletter <- get
+          atime   <- get
+          return (Actor akind ahp adir atarget aloc aitems aletter atime)
 
 data ActorId = AHero Int     -- ^ hero index (on the lheroes intmap)
              | AMonster Int  -- ^ monster index (on the lmonsters intmap)

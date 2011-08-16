@@ -18,8 +18,8 @@ import EffectAction
 import Keybindings
 import qualified Keys as K
 import Level
-import Movable
-import MovableState
+import Actor
+import ActorState
 import Random
 import State
 import Strategy
@@ -65,7 +65,7 @@ handle =
     debug "handle"
     state <- get
     pl <- gets splayer
-    let ptime = mtime (getPlayerBody state)  -- time of player's next move
+    let ptime = atime (getPlayerBody state)  -- time of player's next move
     let time  = stime state                  -- current game time
     debug $ "handle: time check. ptime = " ++ show ptime ++ ", time = " ++ show time
     if ptime > time
@@ -94,10 +94,10 @@ handleMonsters =
     pl   <- gets splayer
     if IM.null ms
       then nextMove
-      else let order  = Ord.comparing (mtime . snd)
+      else let order  = Ord.comparing (atime . snd)
                (i, m) = L.minimumBy order (IM.assocs ms)
                actor = AMonster i
-           in  if mtime m > time || actor == pl
+           in  if atime m > time || actor == pl
                then nextMove  -- no monster is ready for another move
                else handleMonster actor
 
@@ -138,17 +138,17 @@ handlePlayer =
     remember  -- the hero perceives his (potentially new) surroundings
     -- determine perception before running player command, in case monsters
     -- have opened doors ...
-    oldPlayerTime <- gets (mtime . getPlayerBody)
+    oldPlayerTime <- gets (atime . getPlayerBody)
     withPerception playerCommand -- get and process a player command
     -- at this point, the command was successful and possibly took some time
-    newPlayerTime <- gets (mtime . getPlayerBody)
+    newPlayerTime <- gets (atime . getPlayerBody)
     if newPlayerTime == oldPlayerTime
       then withPerception handlePlayer  -- no time taken, repeat
       else do
         state <- get
         pl    <- gets splayer
         let time = stime state
-            ploc = mloc (getPlayerBody state)
+            ploc = aloc (getPlayerBody state)
             sTimeout = Config.get (sconfig state) "monsters" "smellTimeout"
         -- update smell
         when (isAHero pl) $  -- only humans leave strong scent

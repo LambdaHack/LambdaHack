@@ -1,4 +1,4 @@
-module MovableState where
+module ActorState where
 
 import qualified Data.List as L
 import qualified Data.Set as S
@@ -9,7 +9,7 @@ import Data.Maybe
 import Control.Exception (assert)
 
 import Geometry
-import Movable
+import Actor
 import Level
 import Dungeon
 import State
@@ -19,7 +19,7 @@ import WorldLoc
 -- All the other actor and level operations only consider the current level.
 
 -- | Finds an actor body on any level. Error if not found.
-findActorAnyLevel :: ActorId -> State -> Maybe (LevelId, Movable)
+findActorAnyLevel :: ActorId -> State -> Maybe (LevelId, Actor)
 findActorAnyLevel actor state@(State { slevel   = lvl,
                                        sdungeon = Dungeon m }) =
   let chk lvl =
@@ -29,7 +29,7 @@ findActorAnyLevel actor state@(State { slevel   = lvl,
           AMonster n -> IM.lookup n (lmonsters lvl)
   in  listToMaybe $ mapMaybe chk (lvl : M.elems m)
 
-getPlayerBody :: State -> Movable
+getPlayerBody :: State -> Actor
 getPlayerBody state = snd $ fromMaybe (error "getPlayerBody") $
                       findActorAnyLevel (splayer state) state
 
@@ -42,7 +42,7 @@ allHeroesAnyLevel state =
         L.map (\ (i, _) -> (AHero i, ln)) (IM.assocs hs)
   in  L.concatMap one (slevel state : M.elems m)
 
-updateAnyActorBody :: ActorId -> (Movable -> Movable) -> State -> State
+updateAnyActorBody :: ActorId -> (Actor -> Actor) -> State -> State
 updateAnyActorBody actor f state =
   case findActorAnyLevel actor state of
     Just (ln, _) ->
@@ -60,7 +60,7 @@ updateAnyLevel f ln state@(State { slevel = level,
 -- | Calculate the location of player's target.
 targetToLoc :: S.Set Loc -> State -> Maybe Loc
 targetToLoc visible state =
-  case mtarget (getPlayerBody state) of
+  case atarget (getPlayerBody state) of
     TLoc loc -> Just loc
     TCursor  ->
       if lname (slevel state) == clocLn (scursor state)
@@ -68,7 +68,7 @@ targetToLoc visible state =
       else Nothing  -- cursor invalid: set at a different level
     TEnemy a _ll -> do
       guard $ memActor a state           -- alive and on the current level?
-      let loc = mloc (getActor a state)
+      let loc = aloc (getActor a state)
       guard $ S.member loc visible       -- visible?
       return loc
 
@@ -82,7 +82,7 @@ memActor a (State { slevel = lvl }) =
     AMonster n -> IM.member n (lmonsters lvl)
 
 -- | Gets actor body from the current level. Error if not found.
-getActor :: ActorId -> State -> Movable
+getActor :: ActorId -> State -> Actor
 getActor a (State { slevel = lvl }) =
   case a of
     AHero n    -> lheroes   lvl IM.! n
@@ -96,13 +96,13 @@ deleteActor a =
     AMonster n -> updateLevel (updateMonsters (IM.delete n))
 
 -- | Add actor to the current level.
-insertActor :: ActorId -> Movable -> State -> State
+insertActor :: ActorId -> Actor -> State -> State
 insertActor a m =
   case a of
     AHero n    -> updateLevel (updateHeroes   (IM.insert n m))
     AMonster n -> updateLevel (updateMonsters (IM.insert n m))
 
-levelHeroList, levelMonsterList :: State -> [Movable]
+levelHeroList, levelMonsterList :: State -> [Actor]
 levelHeroList    (State { slevel = Level { lheroes   = hs } }) = IM.elems hs
 levelMonsterList (State { slevel = Level { lmonsters = ms } }) = IM.elems ms
 
@@ -119,5 +119,5 @@ locToActors loc state =
     where
       getIndex (projection, injection) =
         let l  = IM.assocs $ projection $ slevel state
-            im = L.filter (\ (_i, m) -> mloc m == loc) l
+            im = L.filter (\ (_i, m) -> aloc m == loc) l
         in  fmap (injection . fst) im

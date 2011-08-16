@@ -1,4 +1,4 @@
-module MovableAdd where
+module ActorAdd where
 
 import Prelude hiding (floor)
 import qualified Data.IntMap as IM
@@ -12,9 +12,9 @@ import Geometry
 import State
 import Level
 import Dungeon
-import Movable
-import MovableState
-import MovableKind
+import Actor
+import ActorState
+import ActorKind
 import Random
 import qualified Config
 import WorldLoc
@@ -26,15 +26,15 @@ import qualified Tile
 -- move immediately after generation; this does not seem like
 -- a bad idea, but it would certainly be "more correct" to set
 -- the time to the creation time instead
-template :: MovableKind -> Int -> Loc -> Movable
-template mk hp loc = Movable mk hp Nothing TCursor loc [] 'a' 0
+template :: ActorKind -> Int -> Loc -> Actor
+template mk hp loc = Actor mk hp Nothing TCursor loc [] 'a' 0
 
 nearbyFreeLoc :: Loc -> State -> Loc
 nearbyFreeLoc origin state@(State { slevel = Level { lmap = map } }) =
   let hs = levelHeroList state
       ms = levelMonsterList state
       places = origin : L.nub (concatMap surroundings places)
-      good loc = Tile.open (map `at` loc) && not (loc `L.elem` L.map mloc (hs ++ ms))
+      good loc = Tile.open (map `at` loc) && not (loc `L.elem` L.map aloc (hs ++ ms))
   in  fromMaybe (error "no nearby free location found") $ L.find good places
 
 -- Adding heroes
@@ -49,7 +49,7 @@ addHero :: Loc -> State -> State
 addHero ploc state =
   let config = sconfig state
       bHP = Config.get config "heroes" "baseHP"
-      mk = hero {nhpMin = bHP, nhpMax = bHP, nsymbol = symbol, nname = name }
+      mk = hero {bhpMin = bHP, bhpMax = bHP, bsymbol = symbol, bname = name }
       loc = nearbyFreeLoc ploc state
       n = fst (scounter state)
       symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
@@ -77,7 +77,7 @@ monsterGenChance (LambdaCave depth) numMonsters =
   chance $ 1%(fromIntegral (250 + 200 * (numMonsters - depth)) `max` 50)
 
 -- | Create a new monster in the level, at a random position.
-addMonster :: MovableKind -> Int -> Loc -> State -> State
+addMonster :: ActorKind -> Int -> Loc -> State -> State
 addMonster mk hp ploc state = do
   let loc = nearbyFreeLoc ploc state
       n = snd (scounter state)
@@ -100,10 +100,10 @@ rollMonster state@(State { slevel = lvl }) = do
       -- in adjacent and unexpected places
       loc <- findLocTry 1000 lvl
              (\ l t -> Tile.open t
-                       && not (l `L.elem` L.map mloc (hs ++ ms)))
+                       && not (l `L.elem` L.map aloc (hs ++ ms)))
              (\ l t -> Tile.floor t
-                       && L.all (\ pl -> distance (mloc pl, l) > 400) hs)
-      let fmk = Frequency $ L.zip (L.map nfreq dungeonMonsters) dungeonMonsters
+                       && L.all (\ pl -> distance (aloc pl, l) > 400) hs)
+      let fmk = Frequency $ L.zip (L.map bfreq dungeonMonsters) dungeonMonsters
       mk <- frequency fmk
-      hp <- randomR (nhpMin mk, nhpMax mk)
+      hp <- randomR (bhpMin mk, bhpMax mk)
       return $ addMonster mk hp loc state

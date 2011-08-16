@@ -9,7 +9,7 @@ import qualified Data.IntMap as IM
 
 import Geometry
 import GeometryRnd
-import Movable
+import Actor
 import Item
 import Random
 import qualified Terrain
@@ -17,7 +17,7 @@ import WorldLoc
 import Data.Maybe
 import qualified Tile
 
-type Party = IM.IntMap Movable
+type Party = IM.IntMap Actor
 
 data Level = Level
   { lname     :: LevelId,    -- TODO: remove
@@ -72,10 +72,10 @@ type SMap = Map (Y,X) Time
 at         l p = fst (findWithDefault (Tile.unknownTile, Tile.unknownTile) p l)
 rememberAt l p = snd (findWithDefault (Tile.unknownTile, Tile.unknownTile) p l)
 
--- Checks for the presence of movables. Does *not* check if the tile is open.
-unoccupied :: [Movable] -> Loc -> Bool
-unoccupied movables loc =
-  all (\ m -> mloc m /= loc) movables
+-- Checks for the presence of actors. Does *not* check if the tile is open.
+unoccupied :: [Actor] -> Loc -> Bool
+unoccupied actors loc =
+  all (\ body -> aloc body /= loc) actors
 
 -- Check whether one location is accessible from the other.
 -- Precondition: the two locations are next to each other.
