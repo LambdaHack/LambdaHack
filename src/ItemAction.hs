@@ -53,6 +53,9 @@ inventory = do
 -- | Let the player choose any item with a given group name.
 -- Note that this does not guarantee an item from the group to be chosen,
 -- as the player can override the choice.
+-- TODO: There should be a datatype for item groups instead of strings
+-- or perhaps the functionality should be implemented differently,
+-- e.g., based on equipment slot, as soon as it's specified for item kinds.
 getGroupItem :: [Item] ->  -- all objects in question
                 String ->  -- name of the group
                 String ->  -- prompt

@@ -138,6 +138,9 @@ moveCursor dir n = do
   modify (updateCursor upd)
   doLook
 
+-- TODO: Think about doing the mode dispatch elsewhere, especially if over
+-- time more and more commands need to do the dispatch inside their code
+-- (currently only a couple do).
 move :: Dir -> Action ()
 move dir = do
   pl <- gets splayer

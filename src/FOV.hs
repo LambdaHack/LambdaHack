@@ -15,6 +15,8 @@ import Level
 
 -- import Debug.Trace
 
+-- TODO: should Blind really be a FovMode, or a modifier? Let's decide
+-- when other similar modifiers are added.
 data FovMode = Shadow | Permissive Int | Digital Int | Blind
 
 -- Three Field of View algorithms. Press 'V' to cycle among them in the game.

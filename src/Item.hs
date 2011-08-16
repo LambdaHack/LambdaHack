@@ -14,7 +14,7 @@ import ItemKind
 import qualified Color
 
 data Item = Item
-  { ikind    :: !Int,
+  { ikind    :: !Int,  -- TODO: perhaps make a newtype instead of the Int
     ipower   :: !Int,  -- https://github.com/Mikolaj/Allure/issues#issue/11
     iletter  :: Maybe Char,  -- ^ inventory identifier
     icount   :: !Int }
