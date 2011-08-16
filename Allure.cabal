@@ -70,7 +70,7 @@ executable Allure
     ghc-options:   -threaded
   } } }
 
-executable Bot
+executable BotAllure
   main-is:       Bot.hs
   hs-source-dirs:src
 
