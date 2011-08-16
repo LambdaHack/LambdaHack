@@ -85,17 +85,17 @@ display = displayGeneric ColorFull id
 overlay :: String -> Action Bool
 overlay txt = Action (\ s e p k a st ms -> displayLevel ColorFull s p st ms (Just txt) >>= k st ms)
 
--- | Set the current message.
-messageWipeAndSet :: Message -> Action ()
-messageWipeAndSet nm = Action (\ s e p k a st ms -> k st nm ())
+-- | Wipe out and set a new value for the current message.
+messageReset :: Message -> Action ()
+messageReset nm = Action (\ s e p k a st ms -> k st nm ())
 
 -- | Add to the current message.
 messageAdd :: Message -> Action ()
 messageAdd nm = Action (\ s e p k a st ms -> k st (addMsg ms nm) ())
 
 -- | Clear the current message.
-resetMessage :: Action Message
-resetMessage = Action (\ s e p k a st ms -> k st "" ms)
+messageClear :: Action ()
+messageClear = Action (\ s e p k a st ms -> k st "" ())
 
 -- | Get the current message.
 currentMessage :: Action Message
@@ -147,7 +147,7 @@ debug x = return () -- liftIO $ hPutStrLn stderr x
 -- | Print the given message, then abort.
 abortWith :: Message -> Action a
 abortWith msg = do
-  messageWipeAndSet msg
+  messageReset msg
   display
   abort
 
@@ -169,12 +169,12 @@ messageMoreConfirm dm msg = do
 
 -- | Print message, await confirmation, ignore confirmation.
 messageMore :: Message -> Action ()
-messageMore msg = resetMessage >> messageMoreConfirm ColorFull msg >> return ()
+messageMore msg = messageClear >> messageMoreConfirm ColorFull msg >> return ()
 
 -- | Print a yes/no question and return the player's answer.
 messageYesNo :: Message -> Action Bool
 messageYesNo msg = do
-  messageWipeAndSet (msg ++ yesno)
+  messageReset (msg ++ yesno)
   displayGeneric ColorBW id  -- turn player's attention to the choice
   session getYesNo
 
@@ -188,12 +188,12 @@ messageOverlayConfirm msg txt = messageOverlaysConfirm msg [txt]
 messageOverlaysConfirm :: Message -> [String] -> Action Bool
 messageOverlaysConfirm msg [] =
   do
-    resetMessage
+    messageClear
     display
     return True
 messageOverlaysConfirm msg (x:xs) =
   do
-    messageWipeAndSet msg
+    messageReset msg
     b <- overlay (x ++ more)
     if b
       then do
@@ -205,7 +205,7 @@ messageOverlaysConfirm msg (x:xs) =
       else stop
   where
     stop = do
-      resetMessage
+      messageClear
       display
       return False
 

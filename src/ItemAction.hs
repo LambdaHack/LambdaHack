@@ -290,11 +290,11 @@ getItem prompt p ptext is0 isn = do
       interact = do
         when (L.null is0 && L.null tis) $
           abortWith "Not carrying anything."
-        messageWipeAndSet (prompt ++ " " ++ choice)
+        messageReset (prompt ++ " " ++ choice)
         display
         session nextCommand >>= perform
       perform command = do
-        resetMessage
+        messageClear
         case command of
           K.Char '?' -> do
             -- filter for supposedly suitable objects
