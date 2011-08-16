@@ -43,7 +43,10 @@ mvBkp config =
     renameFile f (f ++ ".bkp")
 
 -- | Remove the backup of the savegame. Should be called before any
--- non-error exit from the game.
+-- non-error exit from the game. Sometimes it does not exist and it's OK.
+-- We don't bother reporting any other exceptions, either, because the file
+-- is relatively unimportant and because most probably the exception
+-- would be reported for the main savefile, where it should not me missed.
 rmBkp :: Config.CP -> IO ()
 rmBkp config =
   do

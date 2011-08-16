@@ -1,7 +1,6 @@
 module HighScores where
 
 import System.Directory
-import Control.Exception as E hiding (handle)
 import Control.Monad
 import Text.Printf
 import System.Time
@@ -102,18 +101,22 @@ save :: Config.CP -> ScoreTable -> IO ()
 save config scores =
   do
     f <- file config
-    E.catch (removeFile f) (\ e -> case e :: IOException of _ -> return ())
+    b <- doesFileExist f
+    if b
+      then removeFile f
+      else return ()
     encodeCompressedFile f (scores, False)
 
 -- | Read the high scores table. Return the empty table if no file.
 restore :: Config.CP -> IO ScoreTable
-restore config =
-  E.catch (do
-             f <- file config
-             (x, z) <- strictDecodeCompressedFile f
-             (z :: Bool) `seq` return x)
-          (\ e -> case e :: IOException of
-                    _ -> return [])
+restore config = do
+  f <- file config
+  b <- doesFileExist f
+  if not b
+    then return []
+    else do
+      (x, z) <- strictDecodeCompressedFile f
+      (z :: Bool) `seq` return x
 
 -- | Insert a new score into the table, Return new table and the position.
 insertPos :: ScoreRecord -> ScoreTable -> (ScoreTable, Int)
