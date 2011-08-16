@@ -32,7 +32,7 @@ ptreachable = preachable . ptotal
 ptvisible   = pvisible . ptotal
 
 actorPrLoc :: (Perception -> S.Set Loc) ->
-              Actor -> Loc -> Perceptions -> Maybe Actor -> Bool
+              ActorId -> Loc -> Perceptions -> Maybe ActorId -> Bool
 actorPrLoc projection actor loc per pl =
   let tryHero = case actor of
                   AMonster _ -> Nothing
@@ -46,14 +46,15 @@ actorPrLoc projection actor loc per pl =
       tryAny  = tryHero `mplus` tryPl
   in  fromMaybe False tryAny  -- assume not visible, if no perception found
 
-actorSeesLoc    :: Actor -> Loc -> Perceptions -> Maybe Actor -> Bool
+actorSeesLoc    :: ActorId -> Loc -> Perceptions -> Maybe ActorId -> Bool
 actorSeesLoc    = actorPrLoc pvisible
 
-actorReachesLoc :: Actor -> Loc -> Perceptions -> Maybe Actor -> Bool
+actorReachesLoc :: ActorId -> Loc -> Perceptions -> Maybe ActorId -> Bool
 actorReachesLoc = actorPrLoc preachable
 
 -- Not quite correct if FOV not symmetric (Shadow).
-actorReachesActor :: Actor -> Actor -> Loc -> Loc -> Perceptions -> Maybe Actor
+actorReachesActor :: ActorId -> ActorId -> Loc -> Loc
+                     -> Perceptions -> Maybe ActorId
                      -> Bool
 actorReachesActor actor1 actor2 loc1 loc2 per pl =
   actorReachesLoc actor1 loc2 per pl ||

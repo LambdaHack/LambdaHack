@@ -18,7 +18,7 @@ import State
 -- All the other actor and level operations only consider the current level.
 
 -- | Finds an actor body on any level. Error if not found.
-findActorAnyLevel :: Actor -> State -> Maybe (LevelName, Movable)
+findActorAnyLevel :: ActorId -> State -> Maybe (LevelName, Movable)
 findActorAnyLevel actor state@(State { slevel   = lvl,
                                        sdungeon = Dungeon m }) =
   let chk lvl =
@@ -34,14 +34,14 @@ getPlayerBody state = snd $ fromMaybe (error "getPlayerBody") $
 
 -- | The list of actors and levels for all heroes in the dungeon.
 -- Heroes from the current level go first.
-allHeroesAnyLevel :: State -> [(Actor, LevelName)]
+allHeroesAnyLevel :: State -> [(ActorId, LevelName)]
 allHeroesAnyLevel state =
   let Dungeon m = sdungeon state
       one (Level { lname = ln, lheroes = hs }) =
         L.map (\ (i, _) -> (AHero i, ln)) (IM.assocs hs)
   in  L.concatMap one (slevel state : M.elems m)
 
-updateAnyActorBody :: Actor -> (Movable -> Movable) -> State -> State
+updateAnyActorBody :: ActorId -> (Movable -> Movable) -> State -> State
 updateAnyActorBody actor f state =
   case findActorAnyLevel actor state of
     Just (ln, _) ->
@@ -74,28 +74,28 @@ targetToLoc visible state =
 -- The operations below disregard levels other than the current.
 
 -- | Checks if the actor is present on the current level.
-memActor :: Actor -> State -> Bool
+memActor :: ActorId -> State -> Bool
 memActor a (State { slevel = lvl }) =
   case a of
     AHero n    -> IM.member n (lheroes lvl)
     AMonster n -> IM.member n (lmonsters lvl)
 
 -- | Gets actor body from the current level. Error if not found.
-getActor :: Actor -> State -> Movable
+getActor :: ActorId -> State -> Movable
 getActor a (State { slevel = lvl }) =
   case a of
     AHero n    -> lheroes   lvl IM.! n
     AMonster n -> lmonsters lvl IM.! n
 
 -- | Removes the actor, if present, from the current level.
-deleteActor :: Actor -> State -> State
+deleteActor :: ActorId -> State -> State
 deleteActor a =
   case a of
     AHero n    -> updateLevel (updateHeroes   (IM.delete n))
     AMonster n -> updateLevel (updateMonsters (IM.delete n))
 
 -- | Add actor to the current level.
-insertActor :: Actor -> Movable -> State -> State
+insertActor :: ActorId -> Movable -> State -> State
 insertActor a m =
   case a of
     AHero n    -> updateLevel (updateHeroes   (IM.insert n m))
@@ -106,13 +106,13 @@ levelHeroList    (State { slevel = Level { lheroes   = hs } }) = IM.elems hs
 levelMonsterList (State { slevel = Level { lmonsters = ms } }) = IM.elems ms
 
 -- | Finds an actor at a location on the current level. Perception irrelevant.
-locToActor :: Loc -> State -> Maybe Actor
+locToActor :: Loc -> State -> Maybe ActorId
 locToActor loc state =
   let l = locToActors loc state
   in assert (L.length l <= 1) $
        listToMaybe l
 
-locToActors :: Loc -> State -> [Actor]
+locToActors :: Loc -> State -> [ActorId]
 locToActors loc state =
   getIndex (lmonsters, AMonster) ++ getIndex (lheroes, AHero)
     where

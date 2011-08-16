@@ -63,9 +63,9 @@ getGroupItem is groupName prompt packName =
       header = capitalize $ suffixS groupName
   in  getItem prompt choice header is packName
 
-applyGroupItem :: Actor ->   -- actor applying the item; on current level
-                  String ->  -- how the "applying" is called
-                  Item ->    -- the item to be applied
+applyGroupItem :: ActorId ->  -- actor applying the item; on current level
+                  String ->   -- how the "applying" is called
+                  Item ->     -- the item to be applied
                   Action ()
 applyGroupItem actor verb item = do
   state <- get
@@ -103,10 +103,10 @@ quaffPotion = playerApplyGroupItem "potion"
 readScroll :: Action ()
 readScroll = playerApplyGroupItem "scroll"
 
-zapGroupItem :: Actor ->   -- actor zapping the item; on current level
-                Loc ->     -- target location for the zapping
-                String ->  -- how the "zapping" is called
-                Item ->    -- the item to be zapped
+zapGroupItem :: ActorId ->  -- actor zapping the item; on current level
+                Loc ->      -- target location for the zapping
+                String ->   -- how the "zapping" is called
+                Item ->     -- the item to be zapped
                 Action ()
 zapGroupItem source loc verb item = do
   state <- get
@@ -180,7 +180,7 @@ dropItem = do
 
 -- TODO: this is a hack for dropItem, because removeFromInventory
 -- makes it impossible to drop items if the floor not empty.
-removeOnlyFromInventory :: Actor -> Item -> Loc -> Action ()
+removeOnlyFromInventory :: ActorId -> Item -> Loc -> Action ()
 removeOnlyFromInventory actor i loc = do
   updateAnyActor actor (\ m -> m { mitems = removeItemByLetter i (mitems m) })
 
@@ -191,7 +191,7 @@ removeOnlyFromInventory actor i loc = do
 -- of dead heros/monsters. The subtle incorrectness helps here a lot,
 -- because items of dead heroes land on the floor, so we use them up
 -- in inventory, but remove them after use from the floor.
-removeFromInventory :: Actor -> Item -> Loc -> Action ()
+removeFromInventory :: ActorId -> Item -> Loc -> Action ()
 removeFromInventory actor i loc = do
   b <- removeFromLoc i loc
   when (not b) $
@@ -210,7 +210,7 @@ removeFromLoc i loc = do
           adj = M.adjust (\ (t, rt) -> (remove t, rt)) loc
           remove t = t { titems = removeItemByIdentity i (titems t) }
 
-actorPickupItem :: Actor -> Action ()
+actorPickupItem :: ActorId -> Action ()
 actorPickupItem actor = do
   state <- get
   pl    <- gets splayer
