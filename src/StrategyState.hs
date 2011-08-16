@@ -11,9 +11,9 @@ import Control.Exception (assert)
 
 import Geometry
 import Level
-import Movable
-import MovableState
-import MovableKind
+import Actor
+import ActorState
+import ActorKind
 import Random
 import Perception
 import Strategy
@@ -27,7 +27,7 @@ import qualified Effect
 
 -- import Debug.Trace
 
-strategy :: Actor -> State -> Perceptions -> Strategy (Action ())
+strategy :: ActorId -> State -> Perceptions -> Strategy (Action ())
 strategy actor
          oldState@(State { scursor = cursor,
                            splayer = pl,
@@ -39,20 +39,20 @@ strategy actor
 --  trace (show time ++ ": " ++ show actor) $
     strategy
   where
-    Movable { mkind = mk, mloc = me, mdir = mdir,
-              mtarget = tgt, mitems = items } =
+    Actor { akind = mk, aloc = me, adir = adir,
+            atarget = tgt, aitems = items } =
       getActor actor oldState
     delState = deleteActor actor oldState
     enemyVisible a l =
       -- We assume monster sight is infravision, so light has no significance.
-      nsight mk && actorReachesActor a actor l me per Nothing ||
+      bsight mk && actorReachesActor a actor l me per Nothing ||
       -- Any enemy is visible if adjacent (e. g., a monster player).
       memActor a delState && adjacent me l
     -- If no heroes on the level, monsters go at each other. TODO: let them
     -- earn XP by killing each other to make this dangerous to the player.
-    hs = L.map (\ (i, m) -> (AHero i, mloc m)) $
+    hs = L.map (\ (i, m) -> (AHero i, aloc m)) $
          IM.assocs $ lheroes $ slevel delState
-    ms = L.map (\ (i, m) -> (AMonster i, mloc m)) $
+    ms = L.map (\ (i, m) -> (AMonster i, aloc m)) $
          IM.assocs $ lmonsters $ slevel delState
     -- Below, "foe" is the hero (or a monster, or loc) chased by the actor.
     (newTgt, floc) =
@@ -60,7 +60,7 @@ strategy actor
         TEnemy a ll | focusedMonster ->
           case findActorAnyLevel a delState of
             Just (_, m) ->
-              let l = mloc m
+              let l = aloc m
               in  if enemyVisible a l
                   then (TEnemy a l, Just l)
                   else if isJust (snd closest) || me == ll
@@ -73,7 +73,7 @@ strategy actor
         _  -> closest
     closest =
       let hsAndTraitor = if isAMonster pl
-                         then (pl, mloc $ getPlayerBody delState) : hs
+                         then (pl, aloc $ getPlayerBody delState) : hs
                          else hs
           foes = if L.null hsAndTraitor then ms else hsAndTraitor
           -- We assume monster sight is infravision, so light has no effect.
@@ -93,20 +93,20 @@ strategy actor
     onlyLoot       = onlyMoves lootHere me
     exitHere       = (\ x -> let t = lmap `at` x in open t && reflects t)
     onlyExit       = onlyMoves exitHere me
-    onlyKeepsDir k = only (\ x -> maybe True (\ d -> distance (d, x) <= k) mdir)
-    onlyKeepsDir_9 = only (\ x -> maybe True (\ d -> neg x /= d) mdir)
-    onlyUnoccupied = onlyMoves (unoccupied (levelMonsterList delState)) me
+    onlyKeepsDir k = only (\ x -> maybe True (\ d -> distance (d, x) <= k) adir)
+    onlyKeepsDir_9 = only (\ x -> maybe True (\ d -> neg x /= d) adir)
+    onlyNoMs       = onlyMoves (unoccupied (levelMonsterList delState)) me
     -- Monsters don't see doors more secret than that. Enforced when actually
     -- opening doors, too, so that monsters don't cheat. TODO: remove the code
     -- duplication, though.
     openPower      = case strongestItem items "ring" of
-                       Just i  -> niq mk + ipower i
-                       Nothing -> niq mk
+                       Just i  -> biq mk + ipower i
+                       Nothing -> biq mk
     openableHere   = openable openPower lmap
     onlyOpenable   = onlyMoves openableHere me
     accessibleHere = accessible lmap me
     onlySensible   = onlyMoves (\ l -> accessibleHere l || openableHere l) me
-    focusedMonster = niq mk > 10
+    focusedMonster = biq mk > 10
     smells         =
       L.map fst $
       L.sortBy (\ (_, s1) (_, s2) -> compare s2 s1) $
@@ -130,10 +130,10 @@ strategy actor
         let benefit =
               (1 + ipower i) * Effect.effectToBenefit (ItemKind.jeffect ik),
         benefit > 0,
-        nsight mk || not (ItemKind.jname ik == "scroll")]
+        bsight mk || not (ItemKind.jname ik == "scroll")]
     actionApply groupName item =
       applyGroupItem actor (applyToVerb groupName) item
-    throwFreq is multi = if not $ nsight mk then mzero else Frequency
+    throwFreq is multi = if not $ bsight mk then mzero else Frequency
       [ (benefit * multi, actionThrow (ItemKind.jname ik) i)
       | i <- is,
         let ik = ItemKind.getIK (ikind i),
@@ -146,32 +146,29 @@ strategy actor
       zapGroupItem actor (fromJust floc) (zapToVerb groupName) item
     towardsFreq =
       let freqs = runStrategy $ fromDir False moveTowards
-      in  if nsight mk && not (L.null freqs)
+      in  if bsight mk && not (L.null freqs)
           then scale 30 $ head freqs
           else mzero
-    moveTowards =
-      onlySensible $
-        onlyUnoccupied (towardsFoe moveFreely)
-        .| towardsFoe moveFreely
+    moveTowards = onlySensible $ onlyNoMs (towardsFoe moveFreely)
     moveAround =
       onlySensible $
-        (if nsight mk then onlyUnoccupied else id) $
-          nsmell mk .=> L.foldr (.|) reject (L.map return smells)
+        (if bsight mk then onlyNoMs else id) $
+          bsmell mk .=> L.foldr (.|) reject (L.map return smells)
           .| onlyOpenable moveFreely
           .| moveFreely
     moveFreely = onlyLoot moveRandomly
                  .| onlyExit (onlyKeepsDir 2 moveRandomly)
-                 .| niq mk > 15 .=> onlyKeepsDir 0 moveRandomly
-                 .| niq mk > 10 .=> onlyKeepsDir 1 moveRandomly
-                 .| niq mk > 5  .=> onlyKeepsDir 2 moveRandomly
+                 .| biq mk > 15 .=> onlyKeepsDir 0 moveRandomly
+                 .| biq mk > 10 .=> onlyKeepsDir 1 moveRandomly
+                 .| biq mk > 5  .=> onlyKeepsDir 2 moveRandomly
                  .| onlyKeepsDir_9 moveRandomly
                  .| moveRandomly
 
-dirToAction :: Actor -> Target -> Bool -> Dir -> Action ()
+dirToAction :: ActorId -> Target -> Bool -> Dir -> Action ()
 dirToAction actor tgt allowAttacks dir =
   assert (dir /= (0,0)) $ do
   -- set new direction
-  updateAnyActor actor $ \ m -> m { mdir = Just dir, mtarget = tgt }
+  updateAnyActor actor $ \ m -> m { adir = Just dir, atarget = tgt }
   -- perform action
   tryWith (advanceTime actor) $
     -- if the following action aborts, we just advance the time and continue
@@ -184,5 +181,5 @@ onlyMoves p l = only (\ x -> p (l `shift` x))
 moveRandomly :: Strategy Dir
 moveRandomly = liftFrequency $ uniform moves
 
-wait :: Actor -> Strategy (Action ())
+wait :: ActorId -> Strategy (Action ())
 wait actor = return $ advanceTime actor

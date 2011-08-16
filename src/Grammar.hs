@@ -6,8 +6,8 @@ import Data.List as L
 import qualified Data.IntMap as IM
 
 import Item
-import Movable
-import MovableKind
+import Actor
+import ActorKind
 import State
 import ItemKind
 import Effect
@@ -24,41 +24,41 @@ capitalize :: String -> String
 capitalize [] = []
 capitalize (c : cs) = toUpper c : cs
 
--- | How to refer to a movable in object position of a sentence.
-objectMovable :: MovableKind -> String
-objectMovable mk = nname mk
+-- | How to refer to an actor in object position of a sentence.
+objectActor :: ActorKind -> String
+objectActor mk = bname mk
 
--- | How to refer to a movable in subject position of a sentence.
-subjectMovable :: MovableKind -> String
-subjectMovable x = capitalize $ objectMovable x
+-- | How to refer to an actor in subject position of a sentence.
+subjectActor :: ActorKind -> String
+subjectActor x = capitalize $ objectActor x
 
-verbMovable :: MovableKind -> String -> String
-verbMovable mk v = if nname mk == "you" then v else suffixS v
+verbActor :: ActorKind -> String -> String
+verbActor mk v = if bname mk == "you" then v else suffixS v
 
 -- | Sentences such like "The dog barks".
-subjectMovableVerb :: MovableKind -> String -> String
-subjectMovableVerb x v = subjectMovable x ++ " " ++ verbMovable x v
+subjectActorVerb :: ActorKind -> String -> String
+subjectActorVerb x v = subjectActor x ++ " " ++ verbActor x v
 
-compoundVerbMovable :: MovableKind -> String -> String -> String
-compoundVerbMovable m v p = verbMovable m v ++ " " ++ p
+compoundVerbActor :: ActorKind -> String -> String -> String
+compoundVerbActor m v p = verbActor m v ++ " " ++ p
 
-subjectVerbIObject :: State -> Movable -> String -> Item -> String -> String
+subjectVerbIObject :: State -> Actor -> String -> Item -> String -> String
 subjectVerbIObject state m v o add =
-  subjectMovable (mkind m) ++ " " ++
-  verbMovable (mkind m) v ++ " " ++
+  subjectActor (akind m) ++ " " ++
+  verbActor (akind m) v ++ " " ++
   objectItem state o ++ add ++ "."
 
-subjectVerbMObject :: Movable -> String -> Movable -> String -> String
+subjectVerbMObject :: Actor -> String -> Actor -> String -> String
 subjectVerbMObject m v o add =
-  subjectMovable (mkind m) ++ " " ++
-  verbMovable (mkind m) v ++ " " ++
-  objectMovable (mkind o) ++ add ++ "."
+  subjectActor (akind m) ++ " " ++
+  verbActor (akind m) v ++ " " ++
+  objectActor (akind o) ++ add ++ "."
 
-subjCompoundVerbIObj :: State -> Movable -> String -> String ->
+subjCompoundVerbIObj :: State -> Actor -> String -> String ->
                         Item -> String -> String
 subjCompoundVerbIObj state m v p o add =
-  subjectMovable (mkind m) ++ " " ++
-  compoundVerbMovable (mkind m) v p ++ " " ++
+  subjectActor (akind m) ++ " " ++
+  compoundVerbActor (akind m) v p ++ " " ++
   objectItem state o ++ add ++ "."
 
 makeObject :: Int -> (String -> String) -> String -> String
