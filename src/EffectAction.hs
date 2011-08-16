@@ -143,7 +143,7 @@ itemEffectAction verbosity source target item = do
   if aloc tm `S.member` ptvisible per
      then messageAdd msg
      else if not b
-          then return ()  -- Victim is not seen, nothing interestng happens.
+          then return ()  -- victim is not seen and nothing interestng happens
           else messageAdd "You hear some noises."
   -- If something happens, the item gets identified.
   when (b && (isAHero source || isAHero target)) $ discover item

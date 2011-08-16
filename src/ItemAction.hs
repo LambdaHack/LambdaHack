@@ -116,18 +116,22 @@ zapGroupItem source loc verb item = do
   sm    <- gets (getActor source)
   per   <- currentPerception
   let consumed = item { icount = 1 }
-      msg = subjectVerbIObject state sm verb consumed ""
       sloc = aloc sm
+      subject = if sloc `S.member` ptvisible per
+                then sm
+                else template (hero {bname = "somebody"}) 99 sloc
+      msg = subjectVerbIObject state subject verb consumed ""
   removeFromInventory source consumed sloc
-  -- The message describes the source part of the action.
-  when (sloc `S.member` ptvisible per) $ messageAdd msg
   case locToActor loc state of
     Just ta -> do
+      -- The message describes the source part of the action.
+      when (sloc `S.member` ptvisible per || isAHero ta) $ messageAdd msg
       -- Messages inside itemEffectAction describe the target part.
       b <- itemEffectAction 10 source ta consumed
       when (not b) $
         modify (updateLevel (dropItemsAt [consumed] loc))
-    Nothing ->
+    Nothing -> do
+      when (sloc `S.member` ptvisible per) $ messageAdd msg
       modify (updateLevel (dropItemsAt [consumed] loc))
   advanceTime source
 
