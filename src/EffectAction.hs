@@ -91,7 +91,6 @@ effectToAction Effect.Dominate source target power =
          assertTrue $ selectPlayer target
          -- Prevent AI from getting a few free moves until new player ready.
          updatePlayerBody (\ m -> m { mtime = 0})
-         stopRunning
          display
          return (True, "")
   else nullEffect
@@ -162,8 +161,8 @@ discover i = do
            state <- get
            messageAdd $ msg ++ objectItem state i ++ "."
 
--- | Selects a movable for the player, based on the actor.
--- Focuses on the hero if level changed. False, if nothing to do.
+-- | Make the actor controlled by the player.
+-- Focus on the actor if level changes. False, if nothing to do.
 selectPlayer :: Actor -> Action Bool
 selectPlayer actor =
   do
@@ -179,10 +178,12 @@ selectPlayer actor =
             modify (\ s -> s { splayer = actor })
             -- Record the original level of the new player.
             modify (updateCursor (\ c -> c { creturnLn = nln }))
+            -- Don't continue an old run, if any.
+            stopRunning
             -- Switch to the level.
             lvlSwitch nln
             -- Set smell display, depending on player capabilities.
-            -- This also reset FOV mode.
+            -- This also resets FOV mode.
             modify (\ s -> s { ssensory = if MovableKind.nsmell (mkind pbody)
                                           then Smell
                                           else Implicit })
@@ -194,7 +195,7 @@ focusIfAHero :: Actor -> Action ()
 focusIfAHero target =
   if isAHero target
   then do
-    -- Focus on the hero being wounded.
+    -- Focus on the hero being wounded/displaced/etc.
     b <- selectPlayer target
     -- Display status line for the new hero.
     when b $ display >> return ()
