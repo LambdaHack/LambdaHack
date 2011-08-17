@@ -65,7 +65,7 @@ nextEvent session =
 
 -- A hack to get bright colors via the bold attribute. Depending on terminal
 -- settings this is needed or not and the characters really get bold or not.
--- HCurses does this by default, but vty refuses to get crazy.
+-- HSCurses does this by default, but in Vty you have to request the hack.
 hack c a = if Color.isBright c then with_style a bold else a
 
 setAttr (fg, bg) =
