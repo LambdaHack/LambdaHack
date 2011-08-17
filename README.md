@@ -45,7 +45,7 @@ Further information
 -------------------
 
 For more information, visit the wiki at https://github.com/Mikolaj/Allure/wiki
-and see the files PLAYING.markdown, CREDITS and LICENSE.
+and see the files PLAYING.md, CREDITS and LICENSE.
 
 Have fun!
 

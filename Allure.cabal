@@ -4,8 +4,8 @@ version:       0.4.1
 license:       BSD3
 license-file:  LICENSE
 tested-with:   GHC==7.0.3
-data-files:    LICENSE, CREDITS, PLAYING.markdown,
-               README.markdown, src/config.default, src/config.bot, scores
+data-files:    LICENSE, CREDITS, PLAYING.md,
+               README.md, src/config.default, src/config.bot, scores
 author:        Andres Loeh, Mikolaj Konarski and others
 maintainer:    Mikolaj Konarski <mikolaj.konarski@funktory.com>
 description:   This is an alpha prerelease of Allure of the Stars,
