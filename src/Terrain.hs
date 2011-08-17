@@ -1,5 +1,5 @@
 module Terrain
-  (Terrain, DL(Light, Dark), rock, opening, floorDark, floorLight, unknown, stairs, door, deDoor, isFloor, isFloorDark, isRock, isOpening, isUnknown, isOpen, isExit, deStairs, fromDL, toDL, isAlight, lookTerrain, viewTerrain) where
+  (Terrain, rock, opening, floorDark, floorLight, unknown, stairs, door, deDoor, isFloor, isFloorDark, isRock, isOpening, isUnknown, isOpen, isExit, deStairs, isAlight, lookTerrain, viewTerrain) where
 
 import Control.Monad
 
@@ -74,9 +74,9 @@ doorSecret = wall
 data Terrain =
     Rock
   | Opening
-  | Floor DL
+  | Floor Bool
   | Unknown
-  | Stairs DL VDir (Maybe WorldLoc)
+  | Stairs Bool VDir (Maybe WorldLoc)
   | Door (Maybe Int)  -- Nothing: open, Just 0: closed, otherwise secret
   deriving Show
 
@@ -111,21 +111,14 @@ instance Eq Terrain where
   Door o == Door o' = o == o'
   _ == _ = False
 
-data DL = Dark | Light
-  deriving (Eq, Show, Enum, Bounded)
-
-instance Binary DL where
-  put = putWord8 . fromIntegral . fromEnum
-  get = liftM (toEnum . fromIntegral) getWord8
-
 rock, opening, floorDark, floorLight, unknown :: Terrain
 rock = Rock
 opening = Opening
-floorDark = Floor Dark
-floorLight = Floor Light
+floorDark = Floor False
+floorLight = Floor True
 unknown = Unknown
 
-stairs :: DL -> VDir -> Maybe WorldLoc -> Terrain
+stairs :: Bool -> VDir -> Maybe WorldLoc -> Terrain
 stairs = Stairs
 
 deStairs :: Terrain -> Maybe (VDir, Maybe WorldLoc)
@@ -144,7 +137,7 @@ isFloor (Floor _) = True
 isFloor _         = False
 
 isFloorDark :: Terrain -> Bool
-isFloorDark (Floor Dark) = True
+isFloorDark (Floor False) = True
 isFloorDark _            = False
 
 isRock :: Terrain -> Bool
@@ -174,18 +167,10 @@ isExit (Opening {}) = True
 isExit (Door    {}) = True
 isExit _            = False
 
-fromDL :: DL -> Bool
-fromDL Dark = False
-fromDL Light = True
-
-toDL :: Bool -> DL
-toDL False = Dark
-toDL True  = Light
-
 -- | is lighted on its own
 isAlight :: Terrain -> Bool
-isAlight (Floor l)      = fromDL l
-isAlight (Stairs l _ _) = fromDL l
+isAlight (Floor l)      = l
+isAlight (Stairs l _ _) = l
 isAlight _              = False
 
 -- | Produces a textual description for terrain, used if no objects
@@ -218,10 +203,10 @@ viewTerrain b t =
   in case t of
        Rock            -> ('#', def)
        Opening         -> ('.', def)
-       (Floor d)       -> ('.', if d == Light then def else defDark)
+       (Floor d)       -> ('.', if d then def else defDark)
        Unknown         -> (' ', def)
        (Stairs d p _)  -> (if p == Up then '<' else '>',
-                           if d == Light then def else defDark)
+                           if d then def else defDark)
        (Door (Just 0)) -> ('+', defDoor)
        (Door (Just _)) -> viewTerrain b Rock  -- secret door
        (Door Nothing)  -> ('\'', defDoor)

@@ -135,7 +135,7 @@ emptyRoom :: (Level -> Rnd (LMap -> LMap)) -> LevelConfig ->
            LevelId -> Rnd (Maybe (Maybe WorldLoc) -> Maybe (Maybe WorldLoc) -> Level, Loc, Loc)
 emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
   do
-    let lmap = digRoom Terrain.Light ((1,1),(sy-1,sx-1)) (emptyLMap (sy,sx))
+    let lmap = digRoom True ((1,1),(sy-1,sx-1)) (emptyLMap (sy,sx))
     let smap = M.fromList [ ((y,x),-100) | y <- [0..sy], x <- [0..sx] ]
     let lvl = Level nm emptyParty (sy,sx) emptyParty smap lmap ""
     -- locations of the stairs
@@ -148,8 +148,8 @@ emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
           M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l lmap
         flmap lu ld =
           addRocks $
-          maybe id (\ l -> M.insert su (newTile (Terrain.stairs Terrain.Light Up   l))) lu $
-          maybe id (\ l -> M.insert sd (newTile (Terrain.stairs Terrain.Light Down l))) ld $
+          maybe id (\ l -> M.insert su (newTile (Terrain.stairs True Up   l))) lu $
+          maybe id (\ l -> M.insert sd (newTile (Terrain.stairs True Down l))) ld $
           (\lmap -> L.foldl' addItem lmap is) $
           lmap
         level lu ld = Level nm emptyParty (sy,sx) emptyParty smap (flmap lu ld) "bigroom"
@@ -278,7 +278,7 @@ rogueRoom cfg nm =
                               return (i,r')) gs
     let rooms :: [(Loc, Loc)]
         rooms = L.map snd rs0
-    dlrooms <- (mapM (\ r -> darkRoomChance cfg >>= \ c -> return (r, Terrain.toDL (not c))) rooms) :: Rnd [((Loc, Loc), Terrain.DL)]
+    dlrooms <- (mapM (\ r -> darkRoomChance cfg >>= \ c -> return (r, not c)) rooms) :: Rnd [((Loc, Loc), Bool)]
     let rs = M.fromList rs0
     connects <- connectGrid lgrid
     addedConnects <- replicateM (extraConnects cfg lgrid) (randomConnection lgrid)
@@ -327,8 +327,8 @@ rogueRoom cfg nm =
     -- generate map and level from the data
     let meta = show allConnects
     return (\ lu ld ->
-      let flmap = maybe id (\ l -> M.update (\ (t,r) -> Just $ newTile (Terrain.stairs (Terrain.toDL $ light t) Up   l)) su) lu $
-                  maybe id (\ l -> M.update (\ (t,r) -> Just $ newTile (Terrain.stairs (Terrain.toDL $ light t) Down l)) sd) ld $
+      let flmap = maybe id (\ l -> M.update (\ (t,r) -> Just $ newTile (Terrain.stairs (light t) Up   l)) su) lu $
+                  maybe id (\ l -> M.update (\ (t,r) -> Just $ newTile (Terrain.stairs (light t) Down l)) sd) ld $
                   L.foldr (\ (l,it) f -> M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l . f) id is
                   dlmap
       in  Level nm emptyParty (levelSize cfg) emptyParty smap flmap meta, su, sd)
@@ -363,11 +363,11 @@ emptyLMap (my, mx) =
   M.fromList [ ((y, x), newTile Terrain.rock) | x <- [0..mx], y <- [0..my] ]
 
 -- | If the room has size 1, it is at most a start of a corridor.
-digRoom :: Terrain.DL -> Room -> LMap -> LMap
+digRoom :: Bool -> Room -> LMap -> LMap
 digRoom dl ((y0, x0), (y1, x1)) l
   | y0 == y1 && x0 == x1 = l
   | otherwise =
-  let floorDL = if dl == Terrain.Light then Terrain.floorLight else Terrain.floorDark
+  let floorDL = if dl then Terrain.floorLight else Terrain.floorDark
       rm =
         [ ((y, x), newTile floorDL) | x <- [x0..x1], y <- [y0..y1] ]
         ++ [ ((y, x), newTile Terrain.rock)
