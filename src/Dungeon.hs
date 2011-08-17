@@ -117,8 +117,7 @@ digCorridors (p1:p2:ps) =
   M.union corPos (digCorridors (p2:ps))
   where
     corLoc = fromTo p1 p2
-    dummy  = undefined
-    corPos = M.fromList $ L.zip corLoc (repeat dummy)
+    corPos = M.fromList $ L.zip corLoc (repeat $ newTile Terrain.floorDark)
 digCorridors _ = M.empty
 
 mergeCorridor :: (Tile, Tile) -> (Tile, Tile) -> (Tile, Tile)

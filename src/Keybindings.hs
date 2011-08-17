@@ -33,7 +33,7 @@ keyHelp aliases kb =
     fmts s  = replicate 15 ' ' ++ s ++ replicate ((48 - length s) `max` 1) ' '
     blank   = fmt "" ""
     title   = fmt "keys" "command"
-    footer  = fmts "(See file PLAYING.markdown.)"
+    footer  = fmts "(To search or open, bump into walls or doors. See PLAYING.markdown.)"
     disp k  = L.concatMap show $ aliases k
     rest    = [ fmt (disp k) h
               | (k, Described h _) <- M.toAscList (kother kb) ]

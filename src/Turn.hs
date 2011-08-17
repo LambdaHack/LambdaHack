@@ -231,9 +231,7 @@ stdKeybindings = Keybindings
     kother = M.fromList $
              heroSelection ++
              [ -- interaction with the dungeon
-               (K.Char 'o',  openCommand),
                (K.Char 'c',  closeCommand),
-               (K.Char 's',  searchCommand),
 
                (K.Char '<',  ascendCommand),
                (K.Char '>',  descendCommand),

@@ -14,11 +14,9 @@ type Command    = Described (Action ())
 type DirCommand = Described (Dir -> Action ())
 
 closeCommand     = Described "close a door"      (checkCursor (openclose False))
-openCommand      = Described "open a door (or bump into a door)"       (checkCursor (openclose True))
 pickupCommand    = Described "get an object"     (checkCursor pickupItem)
 dropCommand      = Described "drop an object"    (checkCursor dropItem)
 inventoryCommand = Described "display inventory" inventory
-searchCommand    = Described "search for secret doors (or bump)" (checkCursor search)
 ascendCommand    = Described "ascend a level"    (lvlChange Up)
 descendCommand   = Described "descend a level"   (lvlChange Down)
 floorCommand     = Described "target location"   targetFloor

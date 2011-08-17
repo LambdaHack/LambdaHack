@@ -59,11 +59,11 @@ Below are the basic default keys.
                d      drop an object
                g      get an object
                i      display inventory
-               o      open a door (alternatively, you can bump into a door)
                q      quaff a potion
                r      read a scroll
-               s      search for secret doors (or you can bump into a wall)
 
+Searching for secret doors and opening closed doors have no keys assigned.
+Instead, bump into a wall to search and bump into a door to open.
 One of the ways of moving throughout the level is with the vi text editor keys
 (also known as "Rogue-like keys").
 
