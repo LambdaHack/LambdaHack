@@ -227,55 +227,61 @@ remember =
     let rememberLoc = M.update (\ (t,_) -> Just (t,t))
     modify (updateLevel (updateLMap (\ lmap -> L.foldr rememberLoc lmap vis)))
 
--- | Open and close doors
-openclose :: Bool -> Action ()
-openclose o =
-  do
-    messageReset "direction?"
-    display
-    e  <- session nextCommand
-    pl <- gets splayer
-    K.handleDirection e (actorOpenClose pl True o) (neverMind True)
+-- | Ask for a direction and close the door, if any
+closeDoor :: Action ()
+closeDoor = do
+  messageReset "direction?"
+  display
+  e  <- session nextCommand
+  pl <- gets splayer
+  K.handleDirection e playerCloseDoor (neverMind True)
 
-actorOpenClose :: ActorId ->
-                  Bool ->    -- ^ verbose?
-                  Bool ->    -- ^ open?
-                  Dir -> Action ()
-actorOpenClose actor v o dir =
-  do
-    state <- get
-    lmap  <- gets (lmap . slevel)
-    pl    <- gets splayer
-    body  <- gets (getActor actor)
-    let txt = if o then "open" else "closed"
-    let hms = levelHeroList state ++ levelMonsterList state
-    let loc = aloc body
-    let isPlayer  = actor == pl
-    let isVerbose = v && isPlayer
-    let dloc = shift loc dir  -- location we act upon
-    let openPower = case strongestItem (aitems body) "ring" of
-                      Just i  -> biq (akind body) + ipower i
-                      Nothing -> biq (akind body)
-      in case lmap `at` dloc of
-           Tile (Terrain.Door o') []
-             | secret o' && isPlayer -> -- door is secret, cannot be opened or closed by the player
-                                       neverMind isVerbose
-             | maybe o ((|| not o) . (>= openPower)) o' ->
-                                       -- door is in unsuitable state
-                                       abortIfWith isVerbose ("already " ++ txt)
-             | not (unoccupied hms dloc) ->
-                                       -- door is blocked by an actor
-                                       abortIfWith isVerbose "blocked"
-             | otherwise            -> -- door can be opened / closed
-                                       -- TODO: print message if action performed by monster and perceived
-                                       let nt  = Tile (Terrain.door (toOpen o)) []
-                                           adj = M.adjust (\ (_, mt) -> (nt, mt)) dloc
-                                       in  modify (updateLevel (updateLMap adj))
-           Tile (Terrain.Door o') _    -> -- door is jammed by items
-                                       abortIfWith isVerbose "jammed"
-           _                        -> -- there is no door here
-                                       neverMind isVerbose
-    advanceTime actor
+-- | Player closes a door. AI never does.
+playerCloseDoor :: Dir -> Action ()
+playerCloseDoor dir = do
+  state <- get
+  lmap  <- gets (lmap . slevel)
+  pl    <- gets splayer
+  body  <- gets (getActor pl)
+  let hms = levelHeroList state ++ levelMonsterList state
+      dloc = shift (aloc body) dir  -- the location we act upon
+  case lmap `at` dloc of
+    Tile (Terrain.Door Nothing) [] ->
+      if unoccupied hms dloc
+      then let nt  = Tile (Terrain.door (Just 0)) []
+               adj = M.adjust (\ (_, mt) -> (nt, mt)) dloc
+           in modify (updateLevel (updateLMap adj))
+      else abortWith "blocked"  -- by monsters or heroes
+    Tile (Terrain.Door Nothing) _ -> abortWith "jammed"  -- by items
+    Tile (Terrain.Door (Just 0)) _ -> abortWith "already closed"
+    _ -> neverMind True  -- no visible doors (can be secret)
+  advanceTime pl
+
+-- | An actor closes a door. Player (hero or monster) or enemy.
+actorOpenDoor :: ActorId -> Dir -> Action ()
+actorOpenDoor actor dir = do
+  lmap  <- gets (lmap . slevel)
+  pl    <- gets splayer
+  body  <- gets (getActor actor)
+  let dloc = shift (aloc body) dir  -- the location we act upon
+      isPlayer = actor == pl
+      isVerbose = isPlayer  -- don't report enemy failures, if it's not player
+      openPower =
+        if isPlayer
+        then 1  -- player can't open secret doors
+        else case strongestItem (aitems body) "ring" of  -- TODO: hack
+               Just i  -> biq (akind body) + ipower i
+               Nothing -> biq (akind body)
+  when (not $ openable openPower lmap dloc) $ neverMind isVerbose
+  case lmap `at` dloc of
+    Tile (Terrain.Door (Just _)) is ->
+      -- TODO: print message if action performed by monster and perceived
+      let nt  = Tile (Terrain.door Nothing) is
+          adj = M.adjust (\ (_, mt) -> (nt, mt)) dloc
+      in  modify (updateLevel (updateLMap adj))
+    Tile (Terrain.Door Nothing) _ -> abortIfWith isVerbose "already open"
+    _ -> neverMind isVerbose  -- not doors at all
+  advanceTime actor
 
 -- | Attempt a level switch to k levels deeper.
 -- TODO: perhaps set up some level name arithmetics in Level.hs
@@ -547,7 +553,7 @@ moveOrAttack allowAttacks autoOpen actor dir
             search
           else if autoOpen then
             -- try to open a door
-            actorOpenClose actor False True dir
+            actorOpenDoor actor dir
           else abortWith ""
 
 -- | Resolves the result of an actor moving into another. Usually this

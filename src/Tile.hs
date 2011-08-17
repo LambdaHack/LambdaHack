@@ -27,24 +27,18 @@ closed = not . open
 floor :: Tile -> Bool
 floor = Terrain.isFloor . tterrain
 
+-- | The tile can be a door, but the player can't tell.
+-- TODO: perhaps just compare the letter and colour.
 canBeDoor :: Tile -> Bool
 canBeDoor t =
   case Terrain.deDoor $ tterrain t of
-    Just o | secret o -> True
+    Just (Just n) | n > 0 -> True
     _ ->
       Terrain.isRock (tterrain t) ||
       Terrain.isUnknown (tterrain t)
 
-secret :: Maybe Int -> Bool
-secret (Just n) | n /= 0 = True
-secret _ = False
-
 isUnknown :: Tile -> Bool
 isUnknown = Terrain.isUnknown . tterrain
-
-toOpen :: Bool -> Maybe Int
-toOpen True = Nothing
-toOpen False = Just 0
 
 -- | allows moves and vision
 open :: Tile -> Bool
