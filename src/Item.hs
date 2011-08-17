@@ -15,7 +15,7 @@ import qualified Color
 
 data Item = Item
   { ikind    :: !Int,  -- TODO: perhaps make a newtype instead of the Int
-    ipower   :: !Int,  -- https://github.com/Mikolaj/Allure/issues#issue/11
+    ipower   :: !Int,  -- TODO: see the TODO about jpower
     iletter  :: Maybe Char,  -- ^ inventory identifier
     icount   :: !Int }
   deriving Show
