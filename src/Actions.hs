@@ -245,15 +245,18 @@ playerCloseDoor dir = do
   body  <- gets (getActor pl)
   let hms = levelHeroList state ++ levelMonsterList state
       dloc = shift (aloc body) dir  -- the location we act upon
-  case lmap `at` dloc of
-    Tile (Terrain.Door Nothing) [] ->
-      if unoccupied hms dloc
-      then let nt  = Tile (Terrain.door (Just 0)) []
-               adj = M.adjust (\ (_, mt) -> (nt, mt)) dloc
-           in modify (updateLevel (updateLMap adj))
-      else abortWith "blocked"  -- by monsters or heroes
-    Tile (Terrain.Door Nothing) _ -> abortWith "jammed"  -- by items
-    Tile (Terrain.Door (Just 0)) _ -> abortWith "already closed"
+      t = lmap `at` dloc
+  case Terrain.deDoor (Tile.tterrain t) of
+    Just Nothing ->
+      case Tile.titems t of
+        [] ->
+          if unoccupied hms dloc
+          then let nt  = Tile (Terrain.door (Just 0)) []
+                   adj = M.adjust (\ (_, mt) -> (nt, mt)) dloc
+               in modify (updateLevel (updateLMap adj))
+          else abortWith "blocked"  -- by monsters or heroes
+        _:_ -> abortWith "jammed"  -- by items
+    Just (Just 0) -> abortWith "already closed"
     _ -> neverMind True  -- no visible doors (can be secret)
   advanceTime pl
 
@@ -264,6 +267,7 @@ actorOpenDoor actor dir = do
   pl    <- gets splayer
   body  <- gets (getActor actor)
   let dloc = shift (aloc body) dir  -- the location we act upon
+      t = lmap `at` dloc
       isPlayer = actor == pl
       isVerbose = isPlayer  -- don't report enemy failures, if it's not player
       openPower =
@@ -273,13 +277,13 @@ actorOpenDoor actor dir = do
                Just i  -> biq (akind body) + ipower i
                Nothing -> biq (akind body)
   when (not $ openable openPower lmap dloc) $ neverMind isVerbose
-  case lmap `at` dloc of
-    Tile (Terrain.Door (Just _)) is ->
+  case Terrain.deDoor (Tile.tterrain t) of
+    Just (Just _) ->
       -- TODO: print message if action performed by monster and perceived
-      let nt  = Tile (Terrain.door Nothing) is
+      let nt  = Tile (Terrain.door Nothing) (Tile.titems t)
           adj = M.adjust (\ (_, mt) -> (nt, mt)) dloc
       in  modify (updateLevel (updateLMap adj))
-    Tile (Terrain.Door Nothing) _ -> abortIfWith isVerbose "already open"
+    Just Nothing -> abortIfWith isVerbose "already open"
     _ -> neverMind isVerbose  -- not doors at all
   advanceTime actor
 
@@ -412,9 +416,11 @@ search =
     let delta = case strongestItem pitems "ring" of
                   Just i  -> 1 + ipower i
                   Nothing -> 1
-        searchTile (Tile (Terrain.Door (Just n)) x, t') =
-          (Tile (Terrain.door (Just (max (n - delta) 0))) x, t')
-        searchTile t = t
+        searchTile t@(Tile d x, t') =
+          case Terrain.deDoor d of
+            Just (Just n) ->
+              (Tile (Terrain.door (Just (max (n - delta) 0))) x, t')
+            _ -> t
         f l m = M.adjust searchTile (shift ploc m) l
         slmap = L.foldl' f lmap moves
     modify (updateLevel (updateLMap (const slmap)))

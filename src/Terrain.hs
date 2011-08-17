@@ -1,5 +1,5 @@
 module Terrain
-  (Terrain(Door), DL(Light, Dark), rock, opening, floorDark, floorLight, unknown, stairs, door, deDoor, isFloor, isFloorDark, isRock, isOpening, isUnknown, isOpen, isExit, deStairs, fromDL, toDL, isAlight, lookTerrain, viewTerrain) where
+  (Terrain, DL(Light, Dark), rock, opening, floorDark, floorLight, unknown, stairs, door, deDoor, isFloor, isFloorDark, isRock, isOpening, isUnknown, isOpen, isExit, deStairs, fromDL, toDL, isAlight, lookTerrain, viewTerrain) where
 
 import Control.Monad
 
