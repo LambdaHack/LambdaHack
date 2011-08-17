@@ -28,7 +28,7 @@ data Feature =
     Walkable         -- ^ actors can walk through
   | Clear            -- ^ actors can see through
   | Exit             -- ^ is an exit from a room
-  | Lit Int          -- ^ emits light; radius 0 means just the tile is lit
+  | Lit Int          -- ^ emits light; radius 0 means just the tile is lit; TODO: (partially) replace ucolor by this feature?
   | Aura Effect      -- ^ sustains the effect continuously
   | Cause Effect     -- ^ causes the effect when triggered
   | Change TileKind  -- ^ transitions when triggered
@@ -38,7 +38,7 @@ data Feature =
   | Secret RollDice  -- ^ triggered by searching a number of times
   deriving (Show, Eq, Ord)
 
-wall, doorOpen, doorClosed, doorSecret :: TileKind  -- TODO: , opening, floorDark, floorLight, unknown
+wall, doorOpen, doorClosed, doorSecret, opening', floorLight', floorDark', {-stairsLight, stairsDark,-} unknown' :: TileKind
 
 wall = TileKind
   { usymbol  = '#'
@@ -70,6 +70,64 @@ doorClosed = TileKind
 doorSecret = wall
   { ufeature = [Change doorClosed, Secret (7, 2)]
   }
+
+opening' = TileKind
+  { usymbol  = '.'
+  , uname    = "An opening."
+  , ucolor   = Color.BrWhite
+  , ucolor2  = Color.defFG
+  , ufreq    = 100
+  , ufeature = [Walkable, Clear, Exit, Lit 0]
+  }
+
+floorLight' = TileKind
+  { usymbol  = '.'
+  , uname    = "Floor."
+  , ucolor   = Color.BrWhite
+  , ucolor2  = Color.defFG
+  , ufreq    = 100
+  , ufeature = [Walkable, Clear, Lit 0]
+  }
+
+floorDark' = TileKind
+  { usymbol  = '.'
+  , uname    = "Floor."
+  , ucolor   = Color.BrYellow
+  , ucolor2  = Color.BrBlack
+  , ufreq    = 100
+  , ufeature = [Walkable, Clear]
+  }
+
+-- TODO: probably should not be parameterized
+stairsLight vdir next = TileKind
+  { usymbol  = if vdir == Up then '<' else '>'
+  , uname    = if vdir == Up then "A staircase up." else "A staircase down."
+  , ucolor   = Color.BrWhite
+  , ucolor2  = Color.defFG
+  , ufreq    = 100
+  , ufeature = [Walkable, Clear, Exit, Lit 0,
+                Climbable vdir, Cause $ Teleport next]
+  }
+
+stairsDark vdir next = TileKind
+  { usymbol  = if vdir == Up then '<' else '>'
+  , uname    = if vdir == Up then "A staircase up." else "A staircase down."
+  , ucolor   = Color.BrYellow
+  , ucolor2  = Color.BrBlack
+  , ufreq    = 100
+  , ufeature = [Walkable, Clear, Exit,
+                Climbable vdir, Cause $ Teleport next]
+  }
+
+unknown' = TileKind
+  { usymbol  = ' '
+  , uname    = ""
+  , ucolor   = Color.BrWhite
+  , ucolor2  = Color.defFG
+  , ufreq    = 100
+  , ufeature = []
+  }
+
 
 data Terrain =
     Rock
