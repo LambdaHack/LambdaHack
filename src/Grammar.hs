@@ -11,7 +11,7 @@ import ActorKind
 import State
 import ItemKind
 import Effect
-
+import Flavour
 
 suffixS :: String -> String
 suffixS word = case last word of

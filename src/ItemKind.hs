@@ -6,6 +6,7 @@ import qualified Data.IntMap as IM
 import Color
 import Effect
 import Random
+import Flavour
 
 -- TODO: jpower is out of place here. It doesn't make sense for all items,
 -- and will mean different things for different items. Perhaps it should
@@ -25,22 +26,6 @@ data ItemKind = ItemKind
   , jpower   :: RollQuad   -- ^ created with that power
   }
   deriving (Show, Eq, Ord)
-
-type Flavour = (Color, Bool)  -- the flag tells to use fancy color names
-
-zipPlain cs = L.zip cs (repeat False)
-zipFancy cs = L.zip cs (repeat True)
-darkCol    = [Red .. Cyan]
-brightCol  = [BrRed .. BrCyan]  -- BrBlack is not really that bright
-stdCol     = darkCol ++ brightCol
-stdFlav    = zipPlain stdCol ++ zipFancy stdCol
-
-flavourToName :: Flavour -> String
-flavourToName (c, False) = colorToName c
-flavourToName (c, True) = colorToName' c
-
-flavourToColor :: Flavour -> Color
-flavourToColor (c, _) = c
 
 dungeonLoot :: IM.IntMap ItemKind
 dungeonLoot = IM.fromDistinctAscList (L.zip [0..] loot)
