@@ -1,7 +1,13 @@
-module ItemKind where
+module ItemKind
+  (ItemKind(..), ItemId, getIK, itemFrequency, itemFlavours, swordKindId)
+  where
 
+import Data.Binary
 import qualified Data.List as L
+import qualified Data.Map as M
 import qualified Data.IntMap as IM
+import Control.Monad
+import Data.Maybe
 
 import Color
 import Effect
@@ -27,10 +33,31 @@ data ItemKind = ItemKind
   }
   deriving (Show, Eq, Ord)
 
-dungeonLoot :: IM.IntMap ItemKind
-dungeonLoot = IM.fromDistinctAscList (L.zip [0..] loot)
+newtype ItemId = ItemId Int
+  deriving (Show, Eq, Ord)
 
-getIK ik = dungeonLoot IM.! ik
+instance Binary ItemId where
+  put (ItemId i) = put i
+  get = liftM ItemId get
+
+itemAssocs :: [(Int, ItemKind)]
+itemAssocs = L.zip [0..] loot
+
+itemContent :: IM.IntMap ItemKind
+itemContent = IM.fromDistinctAscList itemAssocs
+
+getIK :: ItemId -> ItemKind
+getIK (ItemId i) = itemContent IM.! i
+
+itemFrequency :: Frequency ItemId
+itemFrequency = Frequency [(jfreq ik, ItemId i) | (i, ik) <- itemAssocs]
+
+itemFlavours :: M.Map ItemId [Flavour]
+itemFlavours =
+  M.fromDistinctAscList [(ItemId i, jflavour ik) | (i, ik) <- itemAssocs]
+
+swordKindId :: ItemId
+swordKindId = ItemId $ fromJust $ L.elemIndex sword loot
 
 loot :: [ItemKind]
 loot =

@@ -52,7 +52,7 @@ defaultState dng lvl =
     []
     Implicit Normal
     0
-    IM.empty
+    M.empty
     S.empty
     dng
     lvl
