@@ -36,7 +36,8 @@ executable Allure
   hs-source-dirs:src
   other-modules: Action, Actions, ActorAdd, ActorKind, Actor, ActorState,
                  Color, Command, Config, ConfigDefault,
-                 Display, Dungeon, DungeonState, Effect, EffectAction, File,
+                 Display, Dungeon, DungeonState,
+                 Effect, EffectAction, File, Flavour,
                  FOV, FOV.Common, FOV.Digital, FOV.Permissive, FOV.Shadow,
                  Frequency, Geometry, GeometryRnd, Grammar,
                  HighScores, Item, ItemKind, ItemAction,

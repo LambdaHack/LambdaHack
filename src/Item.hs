@@ -12,6 +12,7 @@ import Control.Monad
 import Random
 import ItemKind
 import qualified Color
+import Flavour
 
 data Item = Item
   { ikind    :: !Int,  -- TODO: perhaps make a newtype instead of the Int
