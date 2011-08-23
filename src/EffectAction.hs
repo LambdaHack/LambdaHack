@@ -209,9 +209,9 @@ focusIfAHero target =
 summonHeroes :: Int -> Loc -> Action ()
 summonHeroes n loc =
   assert (n > 0) $ do
-  newHeroIndex <- gets (fst . scounter)
+  newHeroId <- gets (fst . scounter)
   modify (\ state -> iterate (addHero loc) state !! n)
-  assertTrue $ selectPlayer (AHero newHeroIndex)
+  assertTrue $ selectPlayer (AHero newHeroId)
   -- Display status line for the new hero.
   display >> return ()
 
