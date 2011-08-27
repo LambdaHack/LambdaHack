@@ -37,7 +37,7 @@ data Feature =
   | Descendable      -- ^ triggered by descending into
   | Openable         -- ^ triggered by opening
   | Closable         -- ^ triggered by closable
-  | Secret RollDice  -- ^ triggered by searching a number of times
+  | Secret RollDice  -- ^ triggered when the tile's tsecret becomes (Just 0)
   deriving (Show, Eq, Ord)
 
 wall, doorOpen, doorClosed, opening, floorLight, floorDark, unknown :: TileKind
@@ -70,8 +70,8 @@ doorClosed = TileKind
   }
 
 -- TODO: probably should not be parameterized
-doorSecret n = wall
-  { ufeature = [Change doorClosed, Secret (fromIntegral n, -1) {-(7, 2)-}]
+doorSecret = wall
+  { ufeature = [Change doorClosed, Secret (7, 2)]
   }
 
 opening = TileKind
@@ -195,22 +195,18 @@ deStairs t =
        [Descendable] -> Just Down
        _ -> Nothing
 
-deDoor :: Terrain -> Maybe (Maybe Int)
+deDoor :: Terrain -> Maybe (Maybe Bool)
 deDoor t
   | L.elem Closable (ufeature t) = Just Nothing
-  | L.elem Openable (ufeature t) = Just (Just 0)
+  | L.elem Openable (ufeature t) = Just (Just False)
   | let isSecret f = case f of Secret _ -> True; _ -> False
-    in L.any isSecret (ufeature t) =
-      let isSecret f = case f of Secret _ -> True; _ -> False
-      in case L.filter isSecret (ufeature t) of
-          [Secret (n, _)] -> Just (Just (fromIntegral n))
-          _ -> error "deDoor"
+    in L.any isSecret (ufeature t) = Just (Just True) -- TODO
   | otherwise = Nothing
 
 door :: Maybe Int -> Terrain
 door Nothing  = doorOpen
 door (Just 0) = doorClosed
-door (Just n) = doorSecret n
+door (Just n) = doorSecret
 
 isFloor :: Terrain -> Bool
 isFloor t = uname t == "Floor."  -- TODO: hack

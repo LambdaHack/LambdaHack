@@ -121,18 +121,25 @@ digCorridors (p1:p2:ps) =
 digCorridors _ = M.empty
 
 mergeCorridor :: (Tile, Tile) -> (Tile, Tile) -> (Tile, Tile)
-mergeCorridor _ (Tile t l is, u) | Terrain.isRock t    = (Tile Terrain.opening l is, u)
-mergeCorridor _ (Tile t l is, u) | Terrain.isOpening t = (Tile Terrain.opening l is, u)
-mergeCorridor _ (Tile t l is, u) | Terrain.isFloor t   = (Tile t l is, u)
-mergeCorridor _ (Tile _ l is, u)                       = (Tile Terrain.floorDark l is, u)
+mergeCorridor _ (Tile t l s is, u) | Terrain.isRock t    = (Tile Terrain.opening l s is, u)
+mergeCorridor _ (Tile t l s is, u) | Terrain.isOpening t = (Tile Terrain.opening l s is, u)
+mergeCorridor _ (Tile t l s is, u) | Terrain.isFloor t   = (Tile t l s is, u)
+mergeCorridor _ (Tile _ l s is, u)                       = (Tile Terrain.floorDark l s is, u)
 
 -- | Create a new tile.
 newTile :: Terrain.Terrain -> (Tile, Tile)
-newTile t = (Tile t Nothing [], Tile Terrain.unknown Nothing [])
+newTile t = (Tile t Nothing Nothing [],
+             Tile Terrain.unknown Nothing Nothing [])
 
 -- | Create a new stairs tile.
 newStairsTile :: Terrain.Terrain -> Maybe WorldLoc -> (Tile, Tile)
-newStairsTile t l = (Tile t l [], Tile Terrain.unknown Nothing [])
+newStairsTile t l = (Tile t l Nothing [],
+                     Tile Terrain.unknown Nothing Nothing [])
+
+-- | Create a new door tile.
+newDoorTile :: Terrain.Terrain -> Maybe Int -> (Tile, Tile)
+newDoorTile t s = (Tile t Nothing s [],
+                   Tile Terrain.unknown Nothing Nothing [])
 
 -- | Create a level consisting of only one room. Optionally, insert some walls.
 emptyRoom :: (Level -> Rnd (LMap -> LMap)) -> LevelConfig -> LevelId
@@ -174,7 +181,7 @@ noiseRoom cfg =
         rs <- rollPillars cfg lvl
         let insertRock lmap l =
               case lmap `at` l of
-                Tile t _ [] | Terrain.isFloor t -> M.insert l (newTile Terrain.rock) lmap
+                Tile t _ _ [] | Terrain.isFloor t -> M.insert l (newTile Terrain.rock) lmap
                 _ -> lmap
         return $ \ lmap -> L.foldl' insertRock lmap rs
   in  emptyRoom addRocks cfg
@@ -304,7 +311,7 @@ rogueRoom cfg nm =
     dlmap <- fmap M.fromList . mapM
                 (\ o@((y,x),(t,r)) ->
                   case t of
-                    Tile t _ _ | Terrain.isOpening t ->
+                    Tile t _ _ _ | Terrain.isOpening t ->
                       do
                         -- openings have a certain chance to be doors;
                         -- doors have a certain chance to be open; and
@@ -318,7 +325,7 @@ rogueRoom cfg nm =
                                                  (if rsc then randomR (doorSecretMax cfg `div` 2, doorSecretMax cfg)
                                                          else return 0)
                         if rb
-                          then return ((y,x),newTile (Terrain.door rs))
+                          then return ((y,x), newDoorTile (Terrain.door rs) rs)
                           else return o
                     _ -> return o) .
                 M.toList $ lmap

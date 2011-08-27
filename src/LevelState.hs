@@ -10,8 +10,8 @@ import qualified Terrain
 import qualified Tile
 
 viewTile :: Bool -> Tile.Tile -> Assocs -> (Char, Color.Color)
-viewTile b (Tile.Tile t _ [])    a = Terrain.viewTerrain b t
-viewTile b (Tile.Tile t _ (i:_)) a = Item.viewItem (ikind i) a
+viewTile b (Tile.Tile t _ _ [])    a = Terrain.viewTerrain b t
+viewTile b (Tile.Tile t _ _ (i:_)) a = Item.viewItem (ikind i) a
 
 -- | Produces a textual description of the terrain and items at an already
 -- explored location. Mute for unknown locations.

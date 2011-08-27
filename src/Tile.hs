@@ -10,17 +10,18 @@ import qualified Terrain
 import WorldLoc
 
 data Tile = Tile
-              { tterrain :: Terrain.Terrain
+              { tterrain  :: Terrain.Terrain
               , tteleport :: Maybe WorldLoc  -- TODO
-              , titems   :: [Item] }
+              , tsecret   :: Maybe Int  -- TODO
+              , titems    :: [Item] }
   deriving Show
 
 instance Binary Tile where
-  put (Tile t l is) = put t >> put l >> put is
-  get = liftM3 Tile get get get
+  put (Tile t l s is) = put t >> put l >> put s >> put is
+  get = liftM4 Tile get get get get
 
 unknownTile :: Tile
-unknownTile = Tile Terrain.unknown Nothing []
+unknownTile = Tile Terrain.unknown Nothing Nothing []
 
 -- | blocks moves and vision
 closed :: Tile -> Bool
@@ -34,7 +35,7 @@ floor = Terrain.isFloor . tterrain
 canBeDoor :: Tile -> Bool
 canBeDoor t =
   case Terrain.deDoor $ tterrain t of
-    Just (Just n) | n > 0 -> True
+    Just (Just True) -> True
     _ ->
       Terrain.isRock (tterrain t) ||
       Terrain.isUnknown (tterrain t)

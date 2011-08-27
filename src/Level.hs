@@ -91,7 +91,8 @@ openable :: Int -> LMap -> Loc -> Bool
 openable k lmap target =
   let tgt = lmap `at` target
   in  case Terrain.deDoor $ Tile.tterrain tgt of
-        Just (Just n)  -> n < k
+        Just (Just True) -> fromJust (Tile.tsecret tgt) < k
+        Just (Just False) -> True
         _ -> False
 
 findLoc :: Level -> (Loc -> Tile.Tile -> Bool) -> Rnd Loc
