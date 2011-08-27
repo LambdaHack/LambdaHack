@@ -251,7 +251,7 @@ playerCloseDoor dir = do
       case Tile.titems t of
         [] ->
           if unoccupied hms dloc
-          then let nt  = Tile (Terrain.door (Just 0)) []
+          then let nt  = Tile (Terrain.door (Just 0)) Nothing []
                    adj = M.adjust (\ (_, mt) -> (nt, mt)) dloc
                in modify (updateLevel (updateLMap adj))
           else abortWith "blocked"  -- by monsters or heroes
@@ -280,7 +280,7 @@ actorOpenDoor actor dir = do
   case Terrain.deDoor (Tile.tterrain t) of
     Just (Just _) ->
       -- TODO: print message if action performed by monster and perceived
-      let nt  = Tile (Terrain.door Nothing) (Tile.titems t)
+      let nt  = Tile (Terrain.door Nothing) Nothing (Tile.titems t)
           adj = M.adjust (\ (_, mt) -> (nt, mt)) dloc
       in  modify (updateLevel (updateLMap adj))
     Just Nothing -> abortIfWith isVerbose "already open"
@@ -311,10 +311,11 @@ lvlChange vdir =
     pl        <- gets splayer
     map       <- gets (lmap . slevel)
     let loc = if targeting then clocation cursor else aloc pbody
-    case Terrain.deStairs $ tterrain $ map `at` loc of
-      Just (vdir', next)
+        tile = map `at` loc
+    case Terrain.deStairs $ tterrain tile of
+      Just vdir'
         | vdir == vdir' -> -- stairs are in the right direction
-          case next of
+          case tteleport tile of
             Nothing ->
               -- we are at the "end" of the dungeon
               if targeting
@@ -416,10 +417,10 @@ search =
     let delta = case strongestItem pitems "ring" of
                   Just i  -> 1 + ipower i
                   Nothing -> 1
-        searchTile t@(Tile d x, t') =
+        searchTile t@(Tile d l x, t') =
           case Terrain.deDoor d of
             Just (Just n) ->
-              (Tile (Terrain.door (Just (max (n - delta) 0))) x, t')
+              (Tile (Terrain.door (Just (max (n - delta) 0))) l x, t')
             _ -> t
         f l m = M.adjust searchTile (shift ploc m) l
         slmap = L.foldl' f lmap moves

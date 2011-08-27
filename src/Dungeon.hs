@@ -121,18 +121,23 @@ digCorridors (p1:p2:ps) =
 digCorridors _ = M.empty
 
 mergeCorridor :: (Tile, Tile) -> (Tile, Tile) -> (Tile, Tile)
-mergeCorridor _ (Tile t is, u) | Terrain.isRock t    = (Tile Terrain.opening is, u)
-mergeCorridor _ (Tile t is, u) | Terrain.isOpening t = (Tile Terrain.opening is, u)
-mergeCorridor _ (Tile t is, u) | Terrain.isFloor t   = (Tile t is, u)
-mergeCorridor _ (Tile _ is, u)                       = (Tile Terrain.floorDark is, u)
+mergeCorridor _ (Tile t l is, u) | Terrain.isRock t    = (Tile Terrain.opening l is, u)
+mergeCorridor _ (Tile t l is, u) | Terrain.isOpening t = (Tile Terrain.opening l is, u)
+mergeCorridor _ (Tile t l is, u) | Terrain.isFloor t   = (Tile t l is, u)
+mergeCorridor _ (Tile _ l is, u)                       = (Tile Terrain.floorDark l is, u)
 
 -- | Create a new tile.
 newTile :: Terrain.Terrain -> (Tile, Tile)
-newTile t = (Tile t [], Tile Terrain.unknown [])
+newTile t = (Tile t Nothing [], Tile Terrain.unknown Nothing [])
+
+-- | Create a new stairs tile.
+newStairsTile :: Terrain.Terrain -> Maybe WorldLoc -> (Tile, Tile)
+newStairsTile t l = (Tile t l [], Tile Terrain.unknown Nothing [])
 
 -- | Create a level consisting of only one room. Optionally, insert some walls.
-emptyRoom :: (Level -> Rnd (LMap -> LMap)) -> LevelConfig ->
-           LevelId -> Rnd (Maybe (Maybe WorldLoc) -> Maybe (Maybe WorldLoc) -> Level, Loc, Loc)
+emptyRoom :: (Level -> Rnd (LMap -> LMap)) -> LevelConfig -> LevelId
+             -> Rnd (Maybe (Maybe WorldLoc) -> Maybe (Maybe WorldLoc) -> Level,
+                     Loc, Loc)
 emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
   do
     let lmap = digRoom True ((1,1),(sy-1,sx-1)) (emptyLMap (sy,sx))
@@ -148,8 +153,8 @@ emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
           M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l lmap
         flmap lu ld =
           addRocks $
-          maybe id (\ l -> M.insert su (newTile (Terrain.stairs True Up   l))) lu $
-          maybe id (\ l -> M.insert sd (newTile (Terrain.stairs True Down l))) ld $
+          maybe id (\ l -> M.insert su (newStairsTile (Terrain.stairs True Up) l)) lu $
+          maybe id (\ l -> M.insert sd (newStairsTile (Terrain.stairs True Down) l)) ld $
           (\lmap -> L.foldl' addItem lmap is) $
           lmap
         level lu ld = Level nm emptyParty (sy,sx) emptyParty smap (flmap lu ld) "bigroom"
@@ -169,7 +174,7 @@ noiseRoom cfg =
         rs <- rollPillars cfg lvl
         let insertRock lmap l =
               case lmap `at` l of
-                Tile t [] | Terrain.isFloor t -> M.insert l (newTile Terrain.rock) lmap
+                Tile t _ [] | Terrain.isFloor t -> M.insert l (newTile Terrain.rock) lmap
                 _ -> lmap
         return $ \ lmap -> L.foldl' insertRock lmap rs
   in  emptyRoom addRocks cfg
@@ -299,7 +304,7 @@ rogueRoom cfg nm =
     dlmap <- fmap M.fromList . mapM
                 (\ o@((y,x),(t,r)) ->
                   case t of
-                    Tile t _ | Terrain.isOpening t ->
+                    Tile t _ _ | Terrain.isOpening t ->
                       do
                         -- openings have a certain chance to be doors;
                         -- doors have a certain chance to be open; and
@@ -327,8 +332,8 @@ rogueRoom cfg nm =
     -- generate map and level from the data
     let meta = show allConnects
     return (\ lu ld ->
-      let flmap = maybe id (\ l -> M.update (\ (t,r) -> Just $ newTile (Terrain.stairs (light t) Up   l)) su) lu $
-                  maybe id (\ l -> M.update (\ (t,r) -> Just $ newTile (Terrain.stairs (light t) Down l)) sd) ld $
+      let flmap = maybe id (\ l -> M.update (\ (t,r) -> Just $ newStairsTile (Terrain.stairs (light t) Up) l) su) lu $
+                  maybe id (\ l -> M.update (\ (t,r) -> Just $ newStairsTile (Terrain.stairs (light t) Down) l) sd) ld $
                   L.foldr (\ (l,it) f -> M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l . f) id is
                   dlmap
       in  Level nm emptyParty (levelSize cfg) emptyParty smap flmap meta, su, sd)

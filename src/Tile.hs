@@ -7,18 +7,20 @@ import Data.List as L
 
 import Item
 import qualified Terrain
+import WorldLoc
 
 data Tile = Tile
-              { tterrain :: Terrain.Terrain,
-                titems   :: [Item] }
+              { tterrain :: Terrain.Terrain
+              , tteleport :: Maybe WorldLoc  -- TODO
+              , titems   :: [Item] }
   deriving Show
 
 instance Binary Tile where
-  put (Tile t is) = put t >> put is
-  get = liftM2 Tile get get
+  put (Tile t l is) = put t >> put l >> put is
+  get = liftM3 Tile get get get
 
 unknownTile :: Tile
-unknownTile = Tile Terrain.unknown []
+unknownTile = Tile Terrain.unknown Nothing []
 
 -- | blocks moves and vision
 closed :: Tile -> Bool

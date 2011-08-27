@@ -101,24 +101,24 @@ floorDark = TileKind
   }
 
 -- TODO: probably should not be parameterized
-stairsLight vdir next = TileKind
+stairsLight vdir = TileKind
   { usymbol  = if vdir == Up then '<' else '>'
   , uname    = if vdir == Up then "A staircase up." else "A staircase down."
   , ucolor   = Color.BrWhite
   , ucolor2  = Color.defFG
   , ufreq    = 100
   , ufeature = [Walkable, Clear, Exit, Lit 0,
-                Climbable vdir, Cause (Teleport next)]
+                Climbable vdir, Cause Teleport]
   }
 
-stairsDark vdir next = TileKind
+stairsDark vdir = TileKind
   { usymbol  = if vdir == Up then '<' else '>'
   , uname    = if vdir == Up then "A staircase up." else "A staircase down."
   , ucolor   = Color.BrYellow
   , ucolor2  = Color.BrBlack
   , ufreq    = 100
   , ufeature = [Walkable, Clear, Exit,
-                Climbable vdir, Cause (Teleport next)]
+                Climbable vdir, Cause Teleport]
   }
 
 unknown = TileKind
@@ -160,16 +160,15 @@ instance Binary TileKind where
 
 rock = wall
 
-stairs :: Bool -> VDir -> Maybe WorldLoc -> Terrain
+stairs :: Bool -> VDir -> Terrain
 stairs b = if b then stairsLight else stairsDark
 
-deStairs :: Terrain -> Maybe (VDir, Maybe WorldLoc)
+deStairs :: Terrain -> Maybe VDir
 deStairs t =
   let isClimbable f = case f of Climbable _ -> True; _ -> False
-      isCause f = case f of Cause _ -> True; _ -> False
       f = ufeature t
-  in case (L.filter isClimbable f, L.filter isCause f) of
-       ([Climbable vdir], [Cause (Teleport next)]) -> Just (vdir, next)
+  in case L.filter isClimbable f of
+       [Climbable vdir] -> Just vdir
        _ -> Nothing
 
 deDoor :: Terrain -> Maybe (Maybe Int)
