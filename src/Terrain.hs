@@ -33,7 +33,8 @@ data Feature =
   | Aura Effect      -- ^ sustains the effect continuously
   | Cause Effect     -- ^ causes the effect when triggered
   | Change TileKind  -- ^ transitions when triggered
-  | Climbable VDir   -- ^ triggered by climbing
+  | Climbable        -- ^ triggered by climbing
+  | Descendable      -- ^ triggered by descending into
   | Openable         -- ^ triggered by opening
   | Closable         -- ^ triggered by closable
   | Secret RollDice  -- ^ triggered by searching a number of times
@@ -100,25 +101,44 @@ floorDark = TileKind
   , ufeature = [Walkable, Clear]
   }
 
--- TODO: probably should not be parameterized
-stairsLight vdir = TileKind
-  { usymbol  = if vdir == Up then '<' else '>'
-  , uname    = if vdir == Up then "A staircase up." else "A staircase down."
+stairsLightUp = TileKind
+  { usymbol  = '<'
+  , uname    = "A staircase up."
   , ucolor   = Color.BrWhite
   , ucolor2  = Color.defFG
   , ufreq    = 100
   , ufeature = [Walkable, Clear, Exit, Lit 0,
-                Climbable vdir, Cause Teleport]
+                Climbable, Cause Teleport]
   }
 
-stairsDark vdir = TileKind
-  { usymbol  = if vdir == Up then '<' else '>'
-  , uname    = if vdir == Up then "A staircase up." else "A staircase down."
+stairsLightDown = TileKind
+  { usymbol  = '>'
+  , uname    = "A staircase down."
+  , ucolor   = Color.BrWhite
+  , ucolor2  = Color.defFG
+  , ufreq    = 100
+  , ufeature = [Walkable, Clear, Exit, Lit 0,
+                Descendable, Cause Teleport]
+  }
+
+stairsDarkUp = TileKind
+  { usymbol  = '<'
+  , uname    = "A staircase up."
   , ucolor   = Color.BrYellow
   , ucolor2  = Color.BrBlack
   , ufreq    = 100
   , ufeature = [Walkable, Clear, Exit,
-                Climbable vdir, Cause Teleport]
+                Climbable, Cause Teleport]
+  }
+
+stairsDarkDown = TileKind
+  { usymbol  = '>'
+  , uname    = "A staircase down."
+  , ucolor   = Color.BrYellow
+  , ucolor2  = Color.BrBlack
+  , ufreq    = 100
+  , ufeature = [Walkable, Clear, Exit,
+                Descendable, Cause Teleport]
   }
 
 unknown = TileKind
@@ -161,14 +181,18 @@ instance Binary TileKind where
 rock = wall
 
 stairs :: Bool -> VDir -> Terrain
-stairs b = if b then stairsLight else stairsDark
+stairs True Up    = stairsLightUp
+stairs True Down  = stairsLightDown
+stairs False Up   = stairsDarkUp
+stairs False Down = stairsDarkDown
 
 deStairs :: Terrain -> Maybe VDir
 deStairs t =
-  let isClimbable f = case f of Climbable _ -> True; _ -> False
+  let isCD f = case f of Climbable -> True; Descendable -> True; _ -> False
       f = ufeature t
-  in case L.filter isClimbable f of
-       [Climbable vdir] -> Just vdir
+  in case L.filter isCD f of
+       [Climbable] -> Just Up
+       [Descendable] -> Just Down
        _ -> Nothing
 
 deDoor :: Terrain -> Maybe (Maybe Int)
