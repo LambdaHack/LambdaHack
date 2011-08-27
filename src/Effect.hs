@@ -13,7 +13,7 @@ data Effect =
   | ApplyPerfume
   | Regneration
   | Searching
-  | Teleport WorldLoc
+  | Teleport (Maybe WorldLoc)  -- TODO: drop Maybe
   deriving (Show, Eq, Ord)
 
 effectToName :: Effect -> String

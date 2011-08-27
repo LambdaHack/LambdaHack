@@ -3,6 +3,7 @@ module Terrain
 
 import Control.Monad
 
+import Data.List as L
 import Data.Binary
 import Data.Maybe
 
@@ -38,7 +39,7 @@ data Feature =
   | Secret RollDice  -- ^ triggered by searching a number of times
   deriving (Show, Eq, Ord)
 
-wall, doorOpen, doorClosed, doorSecret, opening', floorLight', floorDark', {-stairsLight, stairsDark,-} unknown' :: TileKind
+wall, doorOpen, doorClosed, opening, floorLight, floorDark, unknown :: TileKind
 
 wall = TileKind
   { usymbol  = '#'
@@ -55,7 +56,7 @@ doorOpen = TileKind
   , ucolor   = Color.Yellow
   , ucolor2  = Color.BrBlack
   , ufreq    = 100
-  , ufeature = [Walkable, Clear, Exit, Lit 0, Change doorClosed, Openable]
+  , ufeature = [Walkable, Clear, Exit, Lit 0, Change doorClosed, Closable]
   }
 
 doorClosed = TileKind
@@ -64,14 +65,15 @@ doorClosed = TileKind
   , ucolor   = Color.Yellow
   , ucolor2  = Color.BrBlack
   , ufreq    = 100
-  , ufeature = [Exit, Change doorClosed, Closable]
+  , ufeature = [Exit, Change doorOpen, Openable]
   }
 
-doorSecret = wall
-  { ufeature = [Change doorClosed, Secret (7, 2)]
+-- TODO: probably should not be parameterized
+doorSecret n = wall
+  { ufeature = [Change doorClosed, Secret (fromIntegral n, -1) {-(7, 2)-}]
   }
 
-opening' = TileKind
+opening = TileKind
   { usymbol  = '.'
   , uname    = "An opening."
   , ucolor   = Color.BrWhite
@@ -80,7 +82,7 @@ opening' = TileKind
   , ufeature = [Walkable, Clear, Exit, Lit 0]
   }
 
-floorLight' = TileKind
+floorLight = TileKind
   { usymbol  = '.'
   , uname    = "Floor."
   , ucolor   = Color.BrWhite
@@ -89,7 +91,7 @@ floorLight' = TileKind
   , ufeature = [Walkable, Clear, Lit 0]
   }
 
-floorDark' = TileKind
+floorDark = TileKind
   { usymbol  = '.'
   , uname    = "Floor."
   , ucolor   = Color.BrYellow
@@ -106,7 +108,7 @@ stairsLight vdir next = TileKind
   , ucolor2  = Color.defFG
   , ufreq    = 100
   , ufeature = [Walkable, Clear, Exit, Lit 0,
-                Climbable vdir, Cause $ Teleport next]
+                Climbable vdir, Cause (Teleport next)]
   }
 
 stairsDark vdir next = TileKind
@@ -116,10 +118,10 @@ stairsDark vdir next = TileKind
   , ucolor2  = Color.BrBlack
   , ufreq    = 100
   , ufeature = [Walkable, Clear, Exit,
-                Climbable vdir, Cause $ Teleport next]
+                Climbable vdir, Cause (Teleport next)]
   }
 
-unknown' = TileKind
+unknown = TileKind
   { usymbol  = ' '
   , uname    = ""
   , ucolor   = Color.BrWhite
@@ -128,143 +130,100 @@ unknown' = TileKind
   , ufeature = []
   }
 
-
-data Terrain =
-    Rock
-  | Opening
-  | Floor Bool
-  | Unknown
-  | Stairs Bool VDir (Maybe WorldLoc)
-  | Door (Maybe Int)  -- Nothing: open, Just 0: closed, otherwise secret
-  deriving Show
+type Terrain = TileKind
 
 instance Binary VDir where
   put = putWord8 . fromIntegral . fromEnum
   get = liftM (toEnum . fromIntegral) getWord8
 
-instance Binary Terrain where
-  put Rock            = putWord8 0
+instance Binary TileKind where
+  put _            = putWord8 0
+  {-
   put Opening         = putWord8 1
   put (Floor dl)      = putWord8 2 >> put dl
   put Unknown         = putWord8 3
   put (Stairs dl d n) = putWord8 5 >> put dl >> put d >> put n
   put (Door o)        = putWord8 6 >> put o
+-}
   get = do
           tag <- getWord8
           case tag of
-            0 -> return Rock
+            0 -> return wall
+{-
             1 -> return Opening
             2 -> liftM Floor get
             3 -> return Unknown
             5 -> liftM3 Stairs get get get
             6 -> liftM Door get
+-}
             _ -> fail "no parse (Terrain)"
 
-instance Eq Terrain where
-  Rock == Rock = True
-  Opening == Opening = True
-  Floor l == Floor l' = l == l'
-  Unknown == Unknown = True
-  Stairs dl d t == Stairs dl' d' t' = dl == dl' && d == d' && t == t'
-  Door o == Door o' = o == o'
-  _ == _ = False
-
-rock, opening, floorDark, floorLight, unknown :: Terrain
-rock = Rock
-opening = Opening
-floorDark = Floor False
-floorLight = Floor True
-unknown = Unknown
+rock = wall
 
 stairs :: Bool -> VDir -> Maybe WorldLoc -> Terrain
-stairs = Stairs
+stairs b = if b then stairsLight else stairsDark
 
 deStairs :: Terrain -> Maybe (VDir, Maybe WorldLoc)
-deStairs (Stairs _ vdir next) = Just (vdir, next)
-deStairs _                    = Nothing
+deStairs t =
+  let isClimbable f = case f of Climbable _ -> True; _ -> False
+      isCause f = case f of Cause _ -> True; _ -> False
+      f = ufeature t
+  in case (L.filter isClimbable f, L.filter isCause f) of
+       ([Climbable vdir], [Cause (Teleport next)]) -> Just (vdir, next)
+       _ -> Nothing
 
 deDoor :: Terrain -> Maybe (Maybe Int)
-deDoor (Door n) = Just n
-deDoor _        = Nothing
+deDoor t
+  | L.elem Closable (ufeature t) = Just Nothing
+  | L.elem Openable (ufeature t) = Just (Just 0)
+  | let isSecret f = case f of Secret _ -> True; _ -> False
+    in L.any isSecret (ufeature t) =
+      let isSecret f = case f of Secret _ -> True; _ -> False
+      in case L.filter isSecret (ufeature t) of
+          [Secret (n, _)] -> Just (Just (fromIntegral n))
+          _ -> error "deDoor"
+  | otherwise = Nothing
 
 door :: Maybe Int -> Terrain
-door = Door
+door Nothing  = doorOpen
+door (Just 0) = doorClosed
+door (Just n) = doorSecret n
 
 isFloor :: Terrain -> Bool
-isFloor (Floor _) = True
-isFloor _         = False
+isFloor t = uname t == "Floor."  -- TODO: hack
 
 isFloorDark :: Terrain -> Bool
-isFloorDark (Floor False) = True
-isFloorDark _            = False
+isFloorDark t = isFloor t && ucolor t == Color.BrYellow  -- TODO: hack
 
 isRock :: Terrain -> Bool
-isRock Rock = True
-isRock _    = False
+isRock t = uname t == "A wall."  -- TODO: hack
 
 isOpening :: Terrain -> Bool
-isOpening Opening = True
-isOpening _       = False
+isOpening t = uname t == "An opening."  -- TODO: hack
 
 isUnknown :: Terrain -> Bool
-isUnknown Unknown = True
-isUnknown _       = False
+isUnknown t = uname t == ""  -- TODO: hack
 
--- | allows moves and vision
+-- | allows moves and vision; TODO: separate
 isOpen :: Terrain -> Bool
-isOpen (Floor {})   = True
-isOpen Opening      = True
-isOpen (Door o)     = isNothing o
-isOpen (Stairs {})  = True
-isOpen _            = False
+isOpen t = L.elem Clear (ufeature t)
 
 -- | marks an exit from a room
 isExit :: Terrain -> Bool
-isExit (Stairs  {}) = True
-isExit (Opening {}) = True
-isExit (Door    {}) = True
-isExit _            = False
+isExit t = L.elem Exit (ufeature t)
 
 -- | is lighted on its own
 isAlight :: Terrain -> Bool
-isAlight (Floor l)      = l
-isAlight (Stairs l _ _) = l
-isAlight _              = False
+isAlight t =
+  let isLit f = case f of Lit _ -> True; _ -> False
+  in L.any isLit (ufeature t)
 
 -- | Produces a textual description for terrain, used if no objects
 -- are present.
 lookTerrain :: Terrain -> String
-lookTerrain (Floor _)         = "Floor."
-lookTerrain Opening           = "An opening."
-lookTerrain (Stairs _ Up _)   = "A staircase up."
-lookTerrain (Stairs _ Down _) = "A staircase down."
-lookTerrain (Door Nothing)    = "An open door."
-lookTerrain (Door (Just 0))   = "A closed door."
-lookTerrain (Door (Just _))   = "A wall."  -- secret
-lookTerrain Rock              = "Rock."
-lookTerrain Unknown           = ""
+lookTerrain = uname
 
--- | The parameter "n" is the level of evolution:
---
--- 0: final
--- 1: stairs added
--- 2: doors added
--- 3: corridors and openings added
--- 4: only rooms
---
 -- The Bool indicates whether the loc is currently visible.
 viewTerrain :: Bool -> Terrain -> (Char, Color.Color)
 viewTerrain b t =
-  let def =     if b then Color.BrWhite else Color.defFG
-      defDark = if b then Color.BrYellow else Color.BrBlack
-      defDoor = if b then Color.Yellow else Color.BrBlack
-  in case t of
-       Rock            -> ('#', def)
-       Opening         -> ('.', def)
-       (Floor d)       -> ('.', if d then def else defDark)
-       Unknown         -> (' ', def)
-       (Stairs d p _)  -> (if p == Up then '<' else '>',
-                           if d then def else defDark)
-       (Door (Just 0)) -> ('+', defDoor)
-       (Door (Just _)) -> viewTerrain b Rock  -- secret door
-       (Door Nothing)  -> ('\'', defDoor)
+  (usymbol t, if b then ucolor t else ucolor2 t)
