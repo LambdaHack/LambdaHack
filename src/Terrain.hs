@@ -78,7 +78,7 @@ doorOpen = TileKind
   , ucolor   = Color.Yellow
   , ucolor2  = Color.BrBlack
   , ufreq    = 100
-  , ufeature = [Walkable, Clear, Exit, Lit 0, Change {-TODO: doorClosedId-} wallId, Closable]
+  , ufeature = [Walkable, Clear, Exit{-TODO:, Lit 0-}, Change {-TODO: doorClosedId-} wallId, Closable]
   }
 
 doorClosed = TileKind
@@ -100,7 +100,7 @@ opening = TileKind
   , ucolor   = Color.BrWhite
   , ucolor2  = Color.defFG
   , ufreq    = 100
-  , ufeature = [Walkable, Clear, Exit, Lit 0]
+  , ufeature = [Walkable, Clear, Exit{-TODO: , Lit 0-}]
   }
 
 floorLight = TileKind
