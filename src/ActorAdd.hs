@@ -34,7 +34,8 @@ nearbyFreeLoc origin state@(State { slevel = Level { lmap = map } }) =
   let hs = levelHeroList state
       ms = levelMonsterList state
       places = origin : L.nub (concatMap surroundings places)
-      good loc = Tile.open (map `at` loc) && not (loc `L.elem` L.map aloc (hs ++ ms))
+      good loc = Tile.isWalkable (map `at` loc)
+                 && not (loc `L.elem` L.map aloc (hs ++ ms))
   in  fromMaybe (error "no nearby free location found") $ L.find good places
 
 -- Adding heroes
@@ -99,9 +100,9 @@ rollMonster state@(State { slevel = lvl }) = do
       -- levels with few rooms are dangerous, because monsters may spawn
       -- in adjacent and unexpected places
       loc <- findLocTry 1000 lvl
-             (\ l t -> Tile.open t
+             (\ l t -> Tile.isWalkable t
                        && not (l `L.elem` L.map aloc (hs ++ ms)))
-             (\ l t -> Tile.floor t
+             (\ l t -> not (Tile.isLit t)  -- try a dark, distant place first
                        && L.all (\ pl -> distance (aloc pl, l) > 400) hs)
       let fmk = Frequency $ L.zip (L.map bfreq dungeonMonsters) dungeonMonsters
       mk <- frequency fmk

@@ -84,13 +84,13 @@ unoccupied actors loc =
 accessible :: LMap -> Loc -> Loc -> Bool
 accessible lmap source target =
   let tgt = lmap `at` target
-  in  Tile.open tgt
+  in  Tile.isWalkable tgt
 
 -- check whether the location contains a door of secrecy level lower than k
 openable :: Int -> LMap -> Loc -> Bool
 openable k lmap target =
   let tgt = lmap `at` target
-  in  case TileKind.deDoor $ Tile.tterrain tgt of
+  in  case TileKind.deDoor $ Tile.tkind tgt of
         Just (Just True) -> fromJust (Tile.tsecret tgt) < k
         Just (Just False) -> True
         _ -> False

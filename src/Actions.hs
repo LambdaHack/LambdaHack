@@ -182,10 +182,12 @@ continueRun dir =
         itemsHere = not (L.null (titems t))
         heroThere = L.elem (loc `shift` dir) (L.map aloc (IM.elems hs))
         dirOK     = accessible lmap loc (loc `shift` dir)
+        isExit t  =
+          L.elem TileKind.Exit (TileKind.ufeature . TileKind.getKind $ t)
     -- What happens next is mostly depending on the terrain we're currently on.
     let hop t
           | monstersVisible || heroThere
-            || newsReported || itemsHere || TileKind.isExit t = abort
+            || newsReported || itemsHere || isExit t = abort
         hop t | TileKind.isFloorDark t =
           -- in corridors, explore all corners and stop at all crossings
           -- TODO: even in corridors, stop if you run past an exit (rare)
@@ -208,9 +210,9 @@ continueRun dir =
               ls = L.map (loc `shift`) ns
               as = L.filter (\ x -> accessible lmap loc x
                                     || openable 1 lmap x) ls
-              ts = L.map (tterrain . (lmap `at`)) as
-          in  if L.any TileKind.isExit ts then abort else run dir
-    hop (tterrain t)
+              ts = L.map (tkind . (lmap `at`)) as
+          in  if L.any isExit ts then abort else run dir
+    hop (tkind t)
 
 ifRunning :: (Dir -> Action a) -> Action a -> Action a
 ifRunning t e =
@@ -246,7 +248,7 @@ playerCloseDoor dir = do
   let hms = levelHeroList state ++ levelMonsterList state
       dloc = shift (aloc body) dir  -- the location we act upon
       t = lmap `at` dloc
-  case TileKind.deDoor (Tile.tterrain t) of
+  case TileKind.deDoor (Tile.tkind t) of
     Just Nothing ->
       case Tile.titems t of
         [] ->
@@ -277,7 +279,7 @@ actorOpenDoor actor dir = do
                Just i  -> biq (akind body) + ipower i
                Nothing -> biq (akind body)
   when (not $ openable openPower lmap dloc) $ neverMind isVerbose
-  case TileKind.deDoor (Tile.tterrain t) of
+  case TileKind.deDoor (Tile.tkind t) of
     Just (Just _) ->
       -- TODO: print message if action performed by monster and perceived
       let nt  = Tile (TileKind.door Nothing) Nothing Nothing (Tile.titems t)
@@ -312,7 +314,7 @@ lvlChange vdir =
     map       <- gets (lmap . slevel)
     let loc = if targeting then clocation cursor else aloc pbody
         tile = map `at` loc
-    case TileKind.deStairs $ tterrain tile of
+    case TileKind.deStairs $ tkind tile of
       Just vdir'
         | vdir == vdir' -> -- stairs are in the right direction
           case tteleport tile of

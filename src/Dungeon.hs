@@ -339,8 +339,8 @@ rogueRoom cfg nm =
     -- generate map and level from the data
     let meta = show allConnects
     return (\ lu ld ->
-      let flmap = maybe id (\ l -> M.update (\ (t,r) -> Just $ newStairsTile (TileKind.stairs (light t) Up) l) su) lu $
-                  maybe id (\ l -> M.update (\ (t,r) -> Just $ newStairsTile (TileKind.stairs (light t) Down) l) sd) ld $
+      let flmap = maybe id (\ l -> M.update (\ (t,r) -> Just $ newStairsTile (TileKind.stairs (isLit t) Up) l) su) lu $
+                  maybe id (\ l -> M.update (\ (t,r) -> Just $ newStairsTile (TileKind.stairs (isLit t) Down) l) sd) ld $
                   L.foldr (\ (l,it) f -> M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l . f) id is
                   dlmap
       in  Level nm emptyParty (levelSize cfg) emptyParty smap flmap meta, su, sd)

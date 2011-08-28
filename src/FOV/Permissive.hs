@@ -44,9 +44,10 @@ pscan r ptr l d (s@(sl{-shallow line-}, sBumps), e@(el{-steep line-}, eBumps)) =
                  in  ns*ke == ne*ks && (n == 0 || n == k)
       outside
         | d >= r = S.empty
-        | Tile.open (l `at` tr (d, ps)) = pscan' (Just s) ps  -- start in light
-        | ps == ns `divUp` ks = pscan' (Just s) ps       -- start in a corner
-        | otherwise = pscan' Nothing (ps+1)              -- start in mid-wall
+        | Tile.isClear (l `at` tr (d, ps)) =         -- start in light
+            pscan' (Just s) ps
+        | ps == ns `divUp` ks = pscan' (Just s) ps   -- start in a corner
+        | otherwise = pscan' Nothing (ps+1)          -- start in mid-wall
 
       dp2bump     (d, p) = B(p, d - p)
       bottomRight (d, p) = B(p, d - p + 1)
@@ -54,9 +55,9 @@ pscan r ptr l d (s@(sl{-shallow line-}, sBumps), e@(el{-steep line-}, eBumps)) =
 
       pscan' :: Maybe Edge -> Progress -> Set Loc
       pscan' (Just s@(_, sBumps)) ps
-        | ps > pe =                            -- reached end, scan next
+        | ps > pe =                                  -- reached end, scan next
             pscan r ptr l (d+1) (s, e)
-        | Tile.closed (l `at` tr (d, ps)) =    -- entering shadow, steep bump
+        | not $ Tile.isClear (l `at` tr (d, ps)) =   -- enter shadow, steep bump
             let steepBump = bottomRight (d, ps)
                 gte = flip $ psteeper steepBump
                 -- sBumps may contain steepBump, but maximal will ignore it

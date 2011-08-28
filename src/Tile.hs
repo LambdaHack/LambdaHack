@@ -20,39 +20,40 @@ instance Binary Tile where
   put (Tile t l s is) = put t >> put l >> put s >> put is
   get = liftM4 Tile get get get get
 
-tterrain = tkind
-
 unknownTile :: Tile
 unknownTile = Tile TileKind.unknownId Nothing Nothing []
 
--- | blocks moves and vision
-closed :: Tile -> Bool
-closed = not . open
-
 floor :: Tile -> Bool
-floor = TileKind.isFloor . tterrain
+floor = TileKind.isFloor . tkind
 
 -- | The tile can be a door, but the player can't tell.
 -- TODO: perhaps just compare the letter and colour.
 canBeDoor :: Tile -> Bool
 canBeDoor t =
-  case TileKind.deDoor $ tterrain t of
+  case TileKind.deDoor $ tkind t of
     Just (Just True) -> True
     _ ->
-      TileKind.isRock (tterrain t) ||
-      TileKind.isUnknown (tterrain t)
+      TileKind.isRock (tkind t) ||
+      TileKind.isUnknown (tkind t)
 
 isUnknown :: Tile -> Bool
-isUnknown = TileKind.isUnknown . tterrain
+isUnknown = TileKind.isUnknown . tkind
 
--- | allows moves and vision
-open :: Tile -> Bool
-open = TileKind.isOpen . tterrain
+hasFeature :: TileKind.Feature -> Tile -> Bool
+hasFeature f t = L.elem f (TileKind.ufeature . TileKind.getKind . tkind $ t)
 
--- | is lighted on its own
-light :: Tile -> Bool
-light = TileKind.isAlight . tterrain
+-- | Does not block vision
+isClear :: Tile -> Bool
+isClear = hasFeature TileKind.Clear
 
--- | marks an exit from a room
+-- | Does not block land movement
+isWalkable :: Tile -> Bool
+isWalkable = hasFeature TileKind.Walkable
+
+-- | Is lit on its own.
+isLit :: Tile -> Bool
+isLit = hasFeature TileKind.Lit
+
+-- | Provides an exit from a room.
 isExit :: Tile -> Bool
-isExit = TileKind.isExit . tterrain
+isExit = hasFeature TileKind.Exit

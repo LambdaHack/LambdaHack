@@ -1,5 +1,5 @@
 module TileKind
-  (TileKind(..), TileKindId, getKind, wallId, openingId, floorDarkId, floorLightId, unknownId, stairs, door, deDoor, isFloor, isFloorDark, isRock, isOpening, isUnknown, isOpen, isExit, deStairs, isAlight) where
+  (TileKind(..), Feature(..), TileKindId, getKind, wallId, openingId, floorDarkId, floorLightId, unknownId, stairs, door, deDoor, isFloor, isFloorDark, isRock, isOpening, isUnknown, deStairs) where
 
 import Control.Monad
 
@@ -30,7 +30,7 @@ data Feature =
     Walkable           -- ^ actors can walk through
   | Clear              -- ^ actors can see through
   | Exit               -- ^ is an exit from a room
-  | Lit Int            -- ^ emits light; radius 0 means just the tile is lit; TODO: (partially) replace ucolor by this feature?
+  | Lit                -- ^ is lit; TODO: (partially) replace ucolor by this feature?
   | Aura Effect        -- ^ sustains the effect continuously
   | Cause Effect       -- ^ causes the effect when triggered
   | Change TileKindId  -- ^ transitions when triggered
@@ -78,7 +78,7 @@ doorOpen = TileKind
   , ucolor   = Color.Yellow
   , ucolor2  = Color.BrBlack
   , ufreq    = 100
-  , ufeature = [Walkable, Clear, Exit{-TODO:, Lit 0-}, Change {-TODO: doorClosedId-} wallId, Closable]
+  , ufeature = [Walkable, Clear, Exit{-TODO:, Lit-}, Change {-TODO: doorClosedId-} wallId, Closable]
   }
 
 doorClosed = TileKind
@@ -100,7 +100,7 @@ opening = TileKind
   , ucolor   = Color.BrWhite
   , ucolor2  = Color.defFG
   , ufreq    = 100
-  , ufeature = [Walkable, Clear, Exit{-TODO: , Lit 0-}]
+  , ufeature = [Walkable, Clear, Exit{-TODO: , Lit-}]
   }
 
 floorLight = TileKind
@@ -109,7 +109,7 @@ floorLight = TileKind
   , ucolor   = Color.BrWhite
   , ucolor2  = Color.defFG
   , ufreq    = 100
-  , ufeature = [Walkable, Clear, Lit 0]
+  , ufeature = [Walkable, Clear, Lit]
   }
 
 floorDark = TileKind
@@ -127,7 +127,7 @@ stairsLightUp = TileKind
   , ucolor   = Color.BrWhite
   , ucolor2  = Color.defFG
   , ufreq    = 100
-  , ufeature = [Walkable, Clear, Exit, Lit 0,
+  , ufeature = [Walkable, Clear, Exit, Lit,
                 Climbable, Cause Teleport]
   }
 
@@ -137,7 +137,7 @@ stairsLightDown = TileKind
   , ucolor   = Color.BrWhite
   , ucolor2  = Color.defFG
   , ufreq    = 100
-  , ufeature = [Walkable, Clear, Exit, Lit 0,
+  , ufeature = [Walkable, Clear, Exit, Lit,
                 Descendable, Cause Teleport]
   }
 
@@ -221,17 +221,3 @@ isOpening t = uname (getKind t) == "An opening."  -- TODO: hack
 
 isUnknown :: TileKindId -> Bool
 isUnknown t = uname (getKind t) == ""  -- TODO: hack
-
--- | allows moves and vision; TODO: separate
-isOpen :: TileKindId -> Bool
-isOpen t = L.elem Clear (ufeature (getKind t))
-
--- | marks an exit from a room
-isExit :: TileKindId -> Bool
-isExit t = L.elem Exit (ufeature (getKind t))
-
--- | is lighted on its own
-isAlight :: TileKindId -> Bool
-isAlight t =
-  let isLit f = case f of Lit _ -> True; _ -> False
-  in L.any isLit (ufeature (getKind t))

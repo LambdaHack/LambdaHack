@@ -101,8 +101,8 @@ perception fovMode ploc lmap =
   let
     -- Reachable are all fields on an unblocked path from the hero position.
     reachable  = fullscan fovMode ploc lmap
-    -- Everybody can see locations that have light and are reachable.
-    uniVisible = S.filter (\ loc -> Tile.light (lmap `at` loc)) reachable
+    -- Everybody can see locations that are lit and are reachable.
+    uniVisible = S.filter (\ loc -> Tile.isLit (lmap `at` loc)) reachable
     -- The hero is assumed to carry a light source, too.
     litVisible = S.insert ploc uniVisible
     -- Reachable fields adjacent to lit fields are visible, too.
