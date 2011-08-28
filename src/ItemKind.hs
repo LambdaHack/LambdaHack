@@ -1,5 +1,5 @@
 module ItemKind
-  (ItemKind(..), ItemId, getKind, itemFrequency, itemFlavours, swordKindId)
+  (ItemKind(..), ItemKindId, getKind, itemFrequency, itemFlavours, swordKindId)
   where
 
 import Data.Binary
@@ -16,15 +16,15 @@ import Flavour
 
 -- Some extra functions that need access to the internal representation:
 
-itemFrequency :: Frequency ItemId
-itemFrequency = Frequency [(jfreq ik, ItemId i) | (i, ik) <- kindAssocs]
+itemFrequency :: Frequency ItemKindId
+itemFrequency = Frequency [(jfreq ik, ItemKindId i) | (i, ik) <- kindAssocs]
 
-itemFlavours :: M.Map ItemId [Flavour]
+itemFlavours :: M.Map ItemKindId [Flavour]
 itemFlavours =
-  M.fromDistinctAscList [(ItemId i, jflavour ik) | (i, ik) <- kindAssocs]
+  M.fromDistinctAscList [(ItemKindId i, jflavour ik) | (i, ik) <- kindAssocs]
 
-swordKindId :: ItemId
-swordKindId = ItemId $ fromJust $ L.elemIndex sword content
+swordKindId :: ItemKindId
+swordKindId = ItemKindId $ fromJust $ L.elemIndex sword content
 
 -- TODO: jpower is out of place here. It doesn't make sense for all items,
 -- and will mean different things for different items. Perhaps it should
@@ -45,12 +45,12 @@ data ItemKind = ItemKind
   }
   deriving (Show, Eq, Ord)
 
-newtype ItemId = ItemId Int
+newtype ItemKindId = ItemKindId Int
   deriving (Show, Eq, Ord)
 
-instance Binary ItemId where
-  put (ItemId i) = put i
-  get = liftM ItemId get
+instance Binary ItemKindId where
+  put (ItemKindId i) = put i
+  get = liftM ItemKindId get
 
 kindAssocs :: [(Int, ItemKind)]
 kindAssocs = L.zip [0..] content
@@ -58,8 +58,8 @@ kindAssocs = L.zip [0..] content
 kindMap :: IM.IntMap ItemKind
 kindMap = IM.fromDistinctAscList kindAssocs
 
-getKind :: ItemId -> ItemKind
-getKind (ItemId i) = kindMap IM.! i
+getKind :: ItemKindId -> ItemKind
+getKind (ItemKindId i) = kindMap IM.! i
 
 content :: [ItemKind]
 content =

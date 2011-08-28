@@ -16,7 +16,7 @@ import qualified Color
 import Flavour
 
 data Item = Item
-  { ikind    :: !ItemId,
+  { ikind    :: !ItemKindId,
     ipower   :: !Int,  -- TODO: see the TODO about jpower
     iletter  :: Maybe Char,  -- ^ inventory identifier
     icount   :: !Int }
@@ -27,13 +27,13 @@ instance Binary Item where
     put ikind >> put ipower >> put iletter >> put icount
   get = liftM4 Item get get get get
 
-type Assocs = M.Map ItemId Flavour  -- TODO: rewrite and move elsewhere
+type Assocs = M.Map ItemKindId Flavour  -- TODO: rewrite and move elsewhere
 
-type Discoveries = S.Set ItemId
+type Discoveries = S.Set ItemKindId
 
 -- | Assinges flavours to item kinds. Assures no flavor is repeated,
 -- except for items with only one permitted flavour.
-rollAssocs :: ItemId -> [Flavour] ->
+rollAssocs :: ItemKindId -> [Flavour] ->
               Rnd (Assocs, S.Set Flavour) ->
               Rnd (Assocs, S.Set Flavour)
 rollAssocs key flavours rnd =
@@ -51,7 +51,7 @@ dungeonAssocs =
   liftM fst $
   M.foldWithKey rollAssocs (return (M.empty, S.fromList stdFlav)) itemFlavours
 
-getFlavour :: Assocs -> ItemId -> Flavour
+getFlavour :: Assocs -> ItemKindId -> Flavour
 getFlavour assocs ik =
   let kind = ItemKind.getKind ik
   in  case jflavour kind of
@@ -59,7 +59,7 @@ getFlavour assocs ik =
         [f] -> f
         _:_ -> assocs M.! ik
 
-viewItem :: ItemId -> Assocs -> (Char, Color.Color)
+viewItem :: ItemKindId -> Assocs -> (Char, Color.Color)
 viewItem ik assocs = (jsymbol (getKind ik), flavourToColor $ getFlavour assocs ik)
 
 itemLetter :: ItemKind -> Maybe Char
