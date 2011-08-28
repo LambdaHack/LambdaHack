@@ -120,24 +120,21 @@ digCorridors (p1:p2:ps) =
 digCorridors _ = M.empty
 
 mergeCorridor :: (Tile, Tile) -> (Tile, Tile) -> (Tile, Tile)
-mergeCorridor _ (Tile t l s is, u) | TileKind.isRock t = (Tile TileKind.openingId l s is, u)
-mergeCorridor _ (t, u)             | Tile.isWalkable t = (t, u)
-mergeCorridor _ (Tile _ l s is, u)                     = (Tile TileKind.floorDarkId l s is, u)
+mergeCorridor _ (t, u)                 | Tile.isWalkable t = (t, u)
+mergeCorridor _ (t@(Tile _ l s is), u) | Tile.isUnknown t  = (Tile TileKind.floorDarkId l s is, u)
+mergeCorridor _ (Tile t l s is, u)                         = (Tile TileKind.openingId l s is, u)
 
 -- | Create a new tile.
 newTile :: TileKind.TileKindId -> (Tile, Tile)
-newTile t = (Tile t Nothing Nothing [],
-             Tile TileKind.unknownId Nothing Nothing [])
+newTile t = (Tile t Nothing Nothing [], Tile.unknownTile)
 
 -- | Create a new stairs tile.
 newStairsTile :: TileKind.TileKindId -> Maybe WorldLoc -> (Tile, Tile)
-newStairsTile t l = (Tile t l Nothing [],
-                     Tile TileKind.unknownId Nothing Nothing [])
+newStairsTile t l = (Tile t l Nothing [], Tile.unknownTile)
 
 -- | Create a new door tile.
 newDoorTile :: TileKind.TileKindId -> Maybe Int -> (Tile, Tile)
-newDoorTile t s = (Tile t Nothing s [],
-                   Tile TileKind.unknownId Nothing Nothing [])
+newDoorTile t s = (Tile t Nothing s [], Tile.unknownTile)
 
 -- | Create a level consisting of only one room. Optionally, insert some walls.
 emptyRoom :: (Level -> Rnd (LMap -> LMap)) -> LevelConfig -> LevelId
@@ -308,7 +305,7 @@ rogueRoom cfg nm =
     dlmap <- fmap M.fromList . mapM
                 (\ o@((y,x),(t,r)) ->
                   case t of
-                    Tile t _ _ _ | TileKind.isOpening t ->
+                    Tile _ _ _ _ | Tile.isOpening t ->
                       do
                         -- openings have a certain chance to be doors;
                         -- doors have a certain chance to be open; and

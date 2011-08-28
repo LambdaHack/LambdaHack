@@ -23,18 +23,21 @@ instance Binary Tile where
 unknownTile :: Tile
 unknownTile = Tile TileKind.unknownId Nothing Nothing []
 
--- | The tile can be a door, but the player can't tell.
--- TODO: perhaps just compare the letter and colour.
-canBeDoor :: Tile -> Bool
-canBeDoor t =
-  case TileKind.deDoor $ tkind t of
-    Just (Just True) -> True
-    _ ->
-      TileKind.isRock (tkind t) ||
-      TileKind.isUnknown (tkind t)
+-- | The player can't tell if the tile is a secret door or not.
+canBeSecretDoor :: Tile -> Bool
+canBeSecretDoor t =
+  let u = TileKind.getKind (tkind t)
+      s = TileKind.getKind TileKind.doorSecretId
+  in TileKind.usymbol u == TileKind.usymbol s &&
+     TileKind.uname u == TileKind.uname s &&
+     TileKind.ucolor u == TileKind.ucolor s &&
+     TileKind.ucolor2 u == TileKind.ucolor2 s
 
 isUnknown :: Tile -> Bool
-isUnknown = TileKind.isUnknown . tkind
+isUnknown t = tkind t == TileKind.unknownId
+
+isOpening :: Tile -> Bool
+isOpening t = tkind t == TileKind.openingId
 
 hasFeature :: TileKind.Feature -> Tile -> Bool
 hasFeature f t = L.elem f (TileKind.ufeature . TileKind.getKind . tkind $ t)

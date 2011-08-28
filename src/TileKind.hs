@@ -1,5 +1,5 @@
 module TileKind
-  (TileKind(..), Feature(..), TileKindId, getKind, wallId, openingId, floorDarkId, floorLightId, unknownId, stairs, door, deDoor, isRock, isOpening, isUnknown, deStairs) where
+  (TileKind(..), Feature(..), TileKindId, getKind, wallId, doorSecretId, openingId, floorDarkId, floorLightId, unknownId, stairs, door, deDoor, deStairs) where
 
 import Control.Monad
 
@@ -206,12 +206,3 @@ deDoor t
   | let isSecret f = case f of Secret _ -> True; _ -> False
     in L.any isSecret (ufeature (getKind t)) = Just (Just True) -- TODO
   | otherwise = Nothing
-
-isRock :: TileKindId -> Bool
-isRock t = uname (getKind t) == "A wall."  -- TODO: hack
-
-isOpening :: TileKindId -> Bool
-isOpening t = uname (getKind t) == "An opening."  -- TODO: hack
-
-isUnknown :: TileKindId -> Bool
-isUnknown t = uname (getKind t) == ""  -- TODO: hack
