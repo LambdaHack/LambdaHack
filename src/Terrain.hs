@@ -1,5 +1,5 @@
 module Terrain
-  (Terrain, TileKind, TileId, wallId, openingId, floorDarkId, floorLightId, unknownId, stairs, door, deDoor, isFloor, isFloorDark, isRock, isOpening, isUnknown, isOpen, isExit, deStairs, isAlight, lookTerrain, viewTerrain, getKind) where
+  (TileKind, TileKindId, wallId, openingId, floorDarkId, floorLightId, unknownId, stairs, door, deDoor, isFloor, isFloorDark, isRock, isOpening, isUnknown, isOpen, isExit, deStairs, isAlight, lookTerrain, viewTerrain, getKind) where
 
 import Control.Monad
 
@@ -33,7 +33,7 @@ data Feature =
   | Lit Int          -- ^ emits light; radius 0 means just the tile is lit; TODO: (partially) replace ucolor by this feature?
   | Aura Effect      -- ^ sustains the effect continuously
   | Cause Effect     -- ^ causes the effect when triggered
-  | Change TileId    -- ^ transitions when triggered
+  | Change TileKindId    -- ^ transitions when triggered
   | Climbable        -- ^ triggered by climbing
   | Descendable      -- ^ triggered by descending into
   | Openable         -- ^ triggered by opening
@@ -41,12 +41,12 @@ data Feature =
   | Secret RollDice  -- ^ triggered when the tile's tsecret becomes (Just 0)
   deriving (Show, Eq, Ord)
 
-newtype TileId = TileId Int
+newtype TileKindId = TileKindId Int
   deriving (Show, Eq, Ord)
 
-instance Binary TileId where
-  put (TileId i) = put i
-  get = liftM TileId get
+instance Binary TileKindId where
+  put (TileKindId i) = put i
+  get = liftM TileKindId get
 
 kindAssocs :: [(Int, TileKind)]
 kindAssocs = L.zip [0..] content
@@ -54,8 +54,8 @@ kindAssocs = L.zip [0..] content
 kindMap :: IM.IntMap TileKind
 kindMap = IM.fromDistinctAscList kindAssocs
 
-getKind :: TileId -> TileKind
-getKind (TileId i) = kindMap IM.! i
+getKind :: TileKindId -> TileKind
+getKind (TileKindId i) = kindMap IM.! i
 
 content :: [TileKind]
 content =
@@ -170,27 +170,27 @@ unknown = TileKind
   , ufeature = []
   }
 
-wallId = TileId $ fromJust $ L.elemIndex wall content
-openingId = TileId $ fromJust $ L.elemIndex opening content
-floorDarkId = TileId $ fromJust $ L.elemIndex floorDark content
-floorLightId = TileId $ fromJust $ L.elemIndex floorLight content
-unknownId = TileId $ fromJust $ L.elemIndex unknown content
-doorOpenId = TileId $ fromJust $ L.elemIndex doorOpen content
-doorClosedId = TileId $ fromJust $ L.elemIndex doorClosed content
-doorSecretId = TileId $ fromJust $ L.elemIndex doorSecret content
+wallId = TileKindId $ fromJust $ L.elemIndex wall content
+openingId = TileKindId $ fromJust $ L.elemIndex opening content
+floorDarkId = TileKindId $ fromJust $ L.elemIndex floorDark content
+floorLightId = TileKindId $ fromJust $ L.elemIndex floorLight content
+unknownId = TileKindId $ fromJust $ L.elemIndex unknown content
+doorOpenId = TileKindId $ fromJust $ L.elemIndex doorOpen content
+doorClosedId = TileKindId $ fromJust $ L.elemIndex doorClosed content
+doorSecretId = TileKindId $ fromJust $ L.elemIndex doorSecret content
 
-stairs :: Bool -> VDir -> TileId
-stairs True Up    = TileId $ fromJust $ L.elemIndex stairsLightUp content
-stairs True Down  = TileId $ fromJust $ L.elemIndex stairsLightDown content
-stairs False Up   = TileId $ fromJust $ L.elemIndex stairsDarkUp content
-stairs False Down = TileId $ fromJust $ L.elemIndex stairsDarkDown content
+stairs :: Bool -> VDir -> TileKindId
+stairs True Up    = TileKindId $ fromJust $ L.elemIndex stairsLightUp content
+stairs True Down  = TileKindId $ fromJust $ L.elemIndex stairsLightDown content
+stairs False Up   = TileKindId $ fromJust $ L.elemIndex stairsDarkUp content
+stairs False Down = TileKindId $ fromJust $ L.elemIndex stairsDarkDown content
 
-door :: Maybe Int -> TileId
+door :: Maybe Int -> TileKindId
 door Nothing  = doorOpenId
 door (Just 0) = doorClosedId
 door (Just n) = doorSecretId
 
-deStairs :: Terrain -> Maybe VDir
+deStairs :: TileKindId -> Maybe VDir
 deStairs t =
   let isCD f = case f of Climbable -> True; Descendable -> True; _ -> False
       f = ufeature (getKind t)
@@ -199,7 +199,7 @@ deStairs t =
        [Descendable] -> Just Down
        _ -> Nothing
 
-deDoor :: Terrain -> Maybe (Maybe Bool)
+deDoor :: TileKindId -> Maybe (Maybe Bool)
 deDoor t
   | L.elem Closable (ufeature (getKind t)) = Just Nothing
   | L.elem Openable (ufeature (getKind t)) = Just (Just False)
@@ -207,43 +207,41 @@ deDoor t
     in L.any isSecret (ufeature (getKind t)) = Just (Just True) -- TODO
   | otherwise = Nothing
 
-isFloor :: Terrain -> Bool
+isFloor :: TileKindId -> Bool
 isFloor t = uname (getKind t) == "Floor."  -- TODO: hack
 
-isFloorDark :: Terrain -> Bool
+isFloorDark :: TileKindId -> Bool
 isFloorDark t = isFloor t && ucolor (getKind t) == Color.BrYellow  -- TODO: hack
 
-isRock :: Terrain -> Bool
+isRock :: TileKindId -> Bool
 isRock t = uname (getKind t) == "A wall."  -- TODO: hack
 
-isOpening :: Terrain -> Bool
+isOpening :: TileKindId -> Bool
 isOpening t = uname (getKind t) == "An opening."  -- TODO: hack
 
-isUnknown :: Terrain -> Bool
+isUnknown :: TileKindId -> Bool
 isUnknown t = uname (getKind t) == ""  -- TODO: hack
 
 -- | allows moves and vision; TODO: separate
-isOpen :: Terrain -> Bool
+isOpen :: TileKindId -> Bool
 isOpen t = L.elem Clear (ufeature (getKind t))
 
 -- | marks an exit from a room
-isExit :: Terrain -> Bool
+isExit :: TileKindId -> Bool
 isExit t = L.elem Exit (ufeature (getKind t))
 
 -- | is lighted on its own
-isAlight :: Terrain -> Bool
+isAlight :: TileKindId -> Bool
 isAlight t =
   let isLit f = case f of Lit _ -> True; _ -> False
   in L.any isLit (ufeature (getKind t))
 
 -- | Produces a textual description for terrain, used if no objects
 -- are present.
-lookTerrain :: Terrain -> String
+lookTerrain :: TileKindId -> String
 lookTerrain = uname . getKind
 
 -- The Bool indicates whether the loc is currently visible.
-viewTerrain :: Bool -> Terrain -> (Char, Color.Color)
+viewTerrain :: Bool -> TileKindId -> (Char, Color.Color)
 viewTerrain b t =
   (usymbol (getKind t), if b then ucolor (getKind t) else ucolor2 (getKind t))
-
-type Terrain = TileId

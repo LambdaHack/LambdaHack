@@ -127,17 +127,17 @@ mergeCorridor _ (Tile t l s is, u) | Terrain.isFloor t   = (Tile t l s is, u)
 mergeCorridor _ (Tile _ l s is, u)                       = (Tile Terrain.floorDarkId l s is, u)
 
 -- | Create a new tile.
-newTile :: Terrain.Terrain -> (Tile, Tile)
+newTile :: Terrain.TileKindId -> (Tile, Tile)
 newTile t = (Tile t Nothing Nothing [],
              Tile Terrain.unknownId Nothing Nothing [])
 
 -- | Create a new stairs tile.
-newStairsTile :: Terrain.Terrain -> Maybe WorldLoc -> (Tile, Tile)
+newStairsTile :: Terrain.TileKindId -> Maybe WorldLoc -> (Tile, Tile)
 newStairsTile t l = (Tile t l Nothing [],
                      Tile Terrain.unknownId Nothing Nothing [])
 
 -- | Create a new door tile.
-newDoorTile :: Terrain.Terrain -> Maybe Int -> (Tile, Tile)
+newDoorTile :: Terrain.TileKindId -> Maybe Int -> (Tile, Tile)
 newDoorTile t s = (Tile t Nothing s [],
                    Tile Terrain.unknownId Nothing Nothing [])
 

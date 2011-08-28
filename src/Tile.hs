@@ -10,7 +10,7 @@ import qualified Terrain
 import WorldLoc
 
 data Tile = Tile
-              { tkind     :: !Terrain.TileId
+              { tkind     :: !Terrain.TileKindId
               , tteleport :: Maybe WorldLoc  -- TODO
               , tsecret   :: Maybe Int  -- TODO
               , titems    :: [Item] }
