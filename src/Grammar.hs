@@ -71,7 +71,7 @@ makeObject n adj obj = show n ++ " " ++ adj (suffixS obj)
 objectItem :: State -> Item -> String
 objectItem state o =
   let ik = ikind o
-      kind = ItemKind.getIK ik
+      kind = ItemKind.getKind ik
       identified = L.length (jflavour kind) == 1 ||
                    ik `S.member` sdiscoveries state
       addSpace s = if s == "" then "" else " " ++ s

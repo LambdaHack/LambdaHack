@@ -155,7 +155,7 @@ strategy actor
     applyFreq is multi = Frequency
       [ (benefit * multi, actionApply (ItemKind.jname ik) i)
       | i <- is,
-        let ik = ItemKind.getIK (ikind i),
+        let ik = ItemKind.getKind (ikind i),
         let benefit =
               (1 + ipower i) * Effect.effectToBenefit (ItemKind.jeffect ik),
         benefit > 0,
@@ -165,7 +165,7 @@ strategy actor
     throwFreq is multi = if not $ bsight mk then mzero else Frequency
       [ (benefit * multi, actionThrow (ItemKind.jname ik) i)
       | i <- is,
-        let ik = ItemKind.getIK (ikind i),
+        let ik = ItemKind.getKind (ikind i),
         let benefit =
               - (1 + ipower i) * Effect.effectToBenefit (ItemKind.jeffect ik),
         benefit > 0,

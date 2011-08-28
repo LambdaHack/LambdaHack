@@ -134,7 +134,7 @@ itemEffectAction verbosity source target item = do
   pl    <- gets splayer
   tm    <- gets (getActor target)
   per   <- currentPerception
-  let effect = ItemKind.jeffect $ ItemKind.getIK $ ikind item
+  let effect = ItemKind.jeffect $ ItemKind.getKind $ ikind item
   -- The message describes the target part of the action.
   (b, msg) <- effectToAction effect verbosity source target (ipower item)
   -- Determine how the player perceives the event.
@@ -156,7 +156,7 @@ discover i = do
   let ik = ikind i
       obj = unwords $ tail $ words $ objectItem state i
       msg = "The " ++ obj ++ " turns out to be "
-      kind = ItemKind.getIK ik
+      kind = ItemKind.getKind ik
       alreadyIdentified = L.length (ItemKind.jflavour kind) == 1 ||
                           ik `S.member` sdiscoveries state
   if alreadyIdentified

@@ -53,14 +53,14 @@ dungeonAssocs =
 
 getFlavour :: Assocs -> ItemId -> Flavour
 getFlavour assocs ik =
-  let kind = ItemKind.getIK ik
+  let kind = ItemKind.getKind ik
   in  case jflavour kind of
         []  -> error "getFlavour"
         [f] -> f
         _:_ -> assocs M.! ik
 
 viewItem :: ItemId -> Assocs -> (Char, Color.Color)
-viewItem ik assocs = (jsymbol (getIK ik), flavourToColor $ getFlavour assocs ik)
+viewItem ik assocs = (jsymbol (getKind ik), flavourToColor $ getFlavour assocs ik)
 
 itemLetter :: ItemKind -> Maybe Char
 itemLetter ik = if jsymbol ik == '$' then Just '$' else Nothing
@@ -69,7 +69,7 @@ itemLetter ik = if jsymbol ik == '$' then Just '$' else Nothing
 newItem :: Int -> Rnd Item
 newItem lvl = do
   ikChosen <- frequency itemFrequency
-  let kind = getIK ikChosen
+  let kind = getKind ikChosen
   count <- rollQuad lvl (jcount kind)
   if count == 0
     then newItem lvl  -- Rare item; beware of inifite loops.
@@ -178,14 +178,14 @@ findItem p is = findItem' [] is
 strongestItem :: [Item] -> String -> Maybe Item
 strongestItem is groupName =
   let cmp = compare `on` ipower
-      igs = L.filter (\ i -> jname (getIK (ikind i)) == groupName) is
+      igs = L.filter (\ i -> jname (getKind (ikind i)) == groupName) is
   in  case igs of
         [] -> Nothing
         _  -> Just $ L.maximumBy cmp igs
 
 itemPrice :: Item -> Int
 itemPrice i =
-  case jname (getIK (ikind i)) of
+  case jname (getKind (ikind i)) of
     "gold piece" -> icount i
     "gem" -> 100
     _ -> 0

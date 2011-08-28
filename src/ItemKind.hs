@@ -1,5 +1,5 @@
 module ItemKind
-  (ItemKind(..), ItemId, getIK, itemFrequency, itemFlavours, swordKindId)
+  (ItemKind(..), ItemId, getKind, itemFrequency, itemFlavours, swordKindId)
   where
 
 import Data.Binary
@@ -13,6 +13,18 @@ import Color
 import Effect
 import Random
 import Flavour
+
+-- Some extra functions that need access to the internal representation:
+
+itemFrequency :: Frequency ItemId
+itemFrequency = Frequency [(jfreq ik, ItemId i) | (i, ik) <- kindAssocs]
+
+itemFlavours :: M.Map ItemId [Flavour]
+itemFlavours =
+  M.fromDistinctAscList [(ItemId i, jflavour ik) | (i, ik) <- kindAssocs]
+
+swordKindId :: ItemId
+swordKindId = ItemId $ fromJust $ L.elemIndex sword content
 
 -- TODO: jpower is out of place here. It doesn't make sense for all items,
 -- and will mean different things for different items. Perhaps it should
@@ -40,42 +52,25 @@ instance Binary ItemId where
   put (ItemId i) = put i
   get = liftM ItemId get
 
-itemAssocs :: [(Int, ItemKind)]
-itemAssocs = L.zip [0..] loot
+kindAssocs :: [(Int, ItemKind)]
+kindAssocs = L.zip [0..] content
 
-itemContent :: IM.IntMap ItemKind
-itemContent = IM.fromDistinctAscList itemAssocs
+kindMap :: IM.IntMap ItemKind
+kindMap = IM.fromDistinctAscList kindAssocs
 
-getIK :: ItemId -> ItemKind
-getIK (ItemId i) = itemContent IM.! i
+getKind :: ItemId -> ItemKind
+getKind (ItemId i) = kindMap IM.! i
 
-itemFrequency :: Frequency ItemId
-itemFrequency = Frequency [(jfreq ik, ItemId i) | (i, ik) <- itemAssocs]
+content :: [ItemKind]
+content =
+  [amulet, dart, gem1, gem2, gem3, gem4, gold, potion1, potion2, potion3, ring, scroll1, scroll2, sword, wand]
 
-itemFlavours :: M.Map ItemId [Flavour]
-itemFlavours =
-  M.fromDistinctAscList [(ItemId i, jflavour ik) | (i, ik) <- itemAssocs]
+amulet,    dart, gem1, gem2, gem3, gem4, gold, potion1, potion2, potion3, ring, scroll1, scroll2, sword, wand :: ItemKind
 
-swordKindId :: ItemId
-swordKindId = ItemId $ fromJust $ L.elemIndex sword loot
-
-loot :: [ItemKind]
-loot =
-  [amulet,
-   dart,
-   gem1, gem2, gem3, gem4,
-   gold,
-   potion1, potion2, potion3,
-   ring,
-   scroll1, scroll2,
-   sword,
-   wand]
+gem, potion, scroll :: ItemKind  -- generic templates
 
 -- rollQuad (a, b, x, y) = a * d b + (lvl * x * d y) / 10
 
-amulet, dart, gem, gem1, gem2, gem3, gem4, gold :: ItemKind
-potion, potion1, potion2, potion3 :: ItemKind
-ring, scroll, scroll1, scroll2, sword, wand :: ItemKind
 amulet = ItemKind
   { jsymbol  = '"'
   , jflavour = [(BrGreen, True)]
