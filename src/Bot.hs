@@ -13,6 +13,7 @@ move g k = do
 main :: IO ()
 main = do
   args <- getArgs
-  let seed  = read (head args)
-      count = read (head (tail args))
-  move (R.mkStdGen seed) count
+  when (length args /= 2) $
+    error "Two integer arguments required: random seed and iteration count."
+  let [seed, count] = args
+  move (R.mkStdGen (read seed)) (read count)
