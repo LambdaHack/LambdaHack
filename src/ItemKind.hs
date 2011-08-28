@@ -1,5 +1,5 @@
 module ItemKind
-  (ItemKind(..), ItemId, getIK, itemFrequency, itemFlavours, swordKindId)
+  (ItemKind(..), ItemKindId, getIK, itemFrequency, itemFlavours, swordKindId)
   where
 
 import Data.Binary
@@ -33,12 +33,12 @@ data ItemKind = ItemKind
   }
   deriving (Show, Eq, Ord)
 
-newtype ItemId = ItemId Int
+newtype ItemKindId = ItemKindId Int
   deriving (Show, Eq, Ord)
 
-instance Binary ItemId where
-  put (ItemId i) = put i
-  get = liftM ItemId get
+instance Binary ItemKindId where
+  put (ItemKindId i) = put i
+  get = liftM ItemKindId get
 
 itemAssocs :: [(Int, ItemKind)]
 itemAssocs = L.zip [0..] loot
@@ -46,18 +46,18 @@ itemAssocs = L.zip [0..] loot
 itemContent :: IM.IntMap ItemKind
 itemContent = IM.fromDistinctAscList itemAssocs
 
-getIK :: ItemId -> ItemKind
-getIK (ItemId i) = itemContent IM.! i
+getIK :: ItemKindId -> ItemKind
+getIK (ItemKindId i) = itemContent IM.! i
 
-itemFrequency :: Frequency ItemId
-itemFrequency = Frequency [(jfreq ik, ItemId i) | (i, ik) <- itemAssocs]
+itemFrequency :: Frequency ItemKindId
+itemFrequency = Frequency [(jfreq ik, ItemKindId i) | (i, ik) <- itemAssocs]
 
-itemFlavours :: M.Map ItemId [Flavour]
+itemFlavours :: M.Map ItemKindId [Flavour]
 itemFlavours =
-  M.fromDistinctAscList [(ItemId i, jflavour ik) | (i, ik) <- itemAssocs]
+  M.fromDistinctAscList [(ItemKindId i, jflavour ik) | (i, ik) <- itemAssocs]
 
-swordKindId :: ItemId
-swordKindId = ItemId $ fromJust $ L.elemIndex sword loot
+swordKindId :: ItemKindId
+swordKindId = ItemKindId $ fromJust $ L.elemIndex sword loot
 
 loot :: [ItemKind]
 loot =
