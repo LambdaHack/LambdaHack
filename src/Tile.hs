@@ -10,7 +10,7 @@ import qualified Terrain
 import WorldLoc
 
 data Tile = Tile
-              { tterrain  :: Terrain.Terrain
+              { tkind     :: !Terrain.TileId
               , tteleport :: Maybe WorldLoc  -- TODO
               , tsecret   :: Maybe Int  -- TODO
               , titems    :: [Item] }
@@ -20,8 +20,10 @@ instance Binary Tile where
   put (Tile t l s is) = put t >> put l >> put s >> put is
   get = liftM4 Tile get get get get
 
+tterrain = tkind
+
 unknownTile :: Tile
-unknownTile = Tile Terrain.unknown Nothing Nothing []
+unknownTile = Tile Terrain.unknownId Nothing Nothing []
 
 -- | blocks moves and vision
 closed :: Tile -> Bool
