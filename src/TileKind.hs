@@ -1,5 +1,5 @@
-module Terrain
-  (TileKind, TileKindId, wallId, openingId, floorDarkId, floorLightId, unknownId, stairs, door, deDoor, isFloor, isFloorDark, isRock, isOpening, isUnknown, isOpen, isExit, deStairs, isAlight, lookTerrain, viewTerrain, getKind) where
+module TileKind
+  (TileKind, TileKindId, wallId, openingId, floorDarkId, floorLightId, unknownId, stairs, door, deDoor, isFloor, isFloorDark, isRock, isOpening, isUnknown, isOpen, isExit, deStairs, isAlight, lookTileKind, viewTileKind, getKind) where
 
 import Control.Monad
 
@@ -27,18 +27,18 @@ data TileKind = TileKind
   deriving (Show, Eq, Ord)
 
 data Feature =
-    Walkable         -- ^ actors can walk through
-  | Clear            -- ^ actors can see through
-  | Exit             -- ^ is an exit from a room
-  | Lit Int          -- ^ emits light; radius 0 means just the tile is lit; TODO: (partially) replace ucolor by this feature?
-  | Aura Effect      -- ^ sustains the effect continuously
-  | Cause Effect     -- ^ causes the effect when triggered
-  | Change TileKindId    -- ^ transitions when triggered
-  | Climbable        -- ^ triggered by climbing
-  | Descendable      -- ^ triggered by descending into
-  | Openable         -- ^ triggered by opening
-  | Closable         -- ^ triggered by closable
-  | Secret RollDice  -- ^ triggered when the tile's tsecret becomes (Just 0)
+    Walkable           -- ^ actors can walk through
+  | Clear              -- ^ actors can see through
+  | Exit               -- ^ is an exit from a room
+  | Lit Int            -- ^ emits light; radius 0 means just the tile is lit; TODO: (partially) replace ucolor by this feature?
+  | Aura Effect        -- ^ sustains the effect continuously
+  | Cause Effect       -- ^ causes the effect when triggered
+  | Change TileKindId  -- ^ transitions when triggered
+  | Climbable          -- ^ triggered by climbing
+  | Descendable        -- ^ triggered by descending into
+  | Openable           -- ^ triggered by opening
+  | Closable           -- ^ triggered by closable
+  | Secret RollDice    -- ^ triggered when the tile's tsecret becomes (Just 0)
   deriving (Show, Eq, Ord)
 
 newtype TileKindId = TileKindId Int
@@ -238,10 +238,10 @@ isAlight t =
 
 -- | Produces a textual description for terrain, used if no objects
 -- are present.
-lookTerrain :: TileKindId -> String
-lookTerrain = uname . getKind
+lookTileKind :: TileKindId -> String
+lookTileKind = uname . getKind
 
 -- The Bool indicates whether the loc is currently visible.
-viewTerrain :: Bool -> TileKindId -> (Char, Color.Color)
-viewTerrain b t =
+viewTileKind :: Bool -> TileKindId -> (Char, Color.Color)
+viewTileKind b t =
   (usymbol (getKind t), if b then ucolor (getKind t) else ucolor2 (getKind t))

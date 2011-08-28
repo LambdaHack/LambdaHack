@@ -15,7 +15,7 @@ import GeometryRnd
 import Level
 import Item
 import Random
-import qualified Terrain
+import qualified TileKind
 import qualified ItemKind
 import WorldLoc
 import Tile  -- TODO: qualified
@@ -117,29 +117,29 @@ digCorridors (p1:p2:ps) =
   M.union corPos (digCorridors (p2:ps))
   where
     corLoc = fromTo p1 p2
-    corPos = M.fromList $ L.zip corLoc (repeat $ newTile Terrain.floorDarkId)
+    corPos = M.fromList $ L.zip corLoc (repeat $ newTile TileKind.floorDarkId)
 digCorridors _ = M.empty
 
 mergeCorridor :: (Tile, Tile) -> (Tile, Tile) -> (Tile, Tile)
-mergeCorridor _ (Tile t l s is, u) | Terrain.isRock t    = (Tile Terrain.openingId l s is, u)
-mergeCorridor _ (Tile t l s is, u) | Terrain.isOpening t = (Tile Terrain.openingId l s is, u)
-mergeCorridor _ (Tile t l s is, u) | Terrain.isFloor t   = (Tile t l s is, u)
-mergeCorridor _ (Tile _ l s is, u)                       = (Tile Terrain.floorDarkId l s is, u)
+mergeCorridor _ (Tile t l s is, u) | TileKind.isRock t    = (Tile TileKind.openingId l s is, u)
+mergeCorridor _ (Tile t l s is, u) | TileKind.isOpening t = (Tile TileKind.openingId l s is, u)
+mergeCorridor _ (Tile t l s is, u) | TileKind.isFloor t   = (Tile t l s is, u)
+mergeCorridor _ (Tile _ l s is, u)                       = (Tile TileKind.floorDarkId l s is, u)
 
 -- | Create a new tile.
-newTile :: Terrain.TileKindId -> (Tile, Tile)
+newTile :: TileKind.TileKindId -> (Tile, Tile)
 newTile t = (Tile t Nothing Nothing [],
-             Tile Terrain.unknownId Nothing Nothing [])
+             Tile TileKind.unknownId Nothing Nothing [])
 
 -- | Create a new stairs tile.
-newStairsTile :: Terrain.TileKindId -> Maybe WorldLoc -> (Tile, Tile)
+newStairsTile :: TileKind.TileKindId -> Maybe WorldLoc -> (Tile, Tile)
 newStairsTile t l = (Tile t l Nothing [],
-                     Tile Terrain.unknownId Nothing Nothing [])
+                     Tile TileKind.unknownId Nothing Nothing [])
 
 -- | Create a new door tile.
-newDoorTile :: Terrain.TileKindId -> Maybe Int -> (Tile, Tile)
+newDoorTile :: TileKind.TileKindId -> Maybe Int -> (Tile, Tile)
 newDoorTile t s = (Tile t Nothing s [],
-                   Tile Terrain.unknownId Nothing Nothing [])
+                   Tile TileKind.unknownId Nothing Nothing [])
 
 -- | Create a level consisting of only one room. Optionally, insert some walls.
 emptyRoom :: (Level -> Rnd (LMap -> LMap)) -> LevelConfig -> LevelId
@@ -160,8 +160,8 @@ emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
           M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l lmap
         flmap lu ld =
           addRocks $
-          maybe id (\ l -> M.insert su (newStairsTile (Terrain.stairs True Up) l)) lu $
-          maybe id (\ l -> M.insert sd (newStairsTile (Terrain.stairs True Down) l)) ld $
+          maybe id (\ l -> M.insert su (newStairsTile (TileKind.stairs True Up) l)) lu $
+          maybe id (\ l -> M.insert sd (newStairsTile (TileKind.stairs True Down) l)) ld $
           (\lmap -> L.foldl' addItem lmap is) $
           lmap
         level lu ld = Level nm emptyParty (sy,sx) emptyParty smap (flmap lu ld) "bigroom"
@@ -181,7 +181,7 @@ noiseRoom cfg =
         rs <- rollPillars cfg lvl
         let insertRock lmap l =
               case lmap `at` l of
-                Tile t _ _ [] | Terrain.isFloor t -> M.insert l (newTile Terrain.wallId) lmap
+                Tile t _ _ [] | TileKind.isFloor t -> M.insert l (newTile TileKind.wallId) lmap
                 _ -> lmap
         return $ \ lmap -> L.foldl' insertRock lmap rs
   in  emptyRoom addRocks cfg
@@ -311,7 +311,7 @@ rogueRoom cfg nm =
     dlmap <- fmap M.fromList . mapM
                 (\ o@((y,x),(t,r)) ->
                   case t of
-                    Tile t _ _ _ | Terrain.isOpening t ->
+                    Tile t _ _ _ | TileKind.isOpening t ->
                       do
                         -- openings have a certain chance to be doors;
                         -- doors have a certain chance to be open; and
@@ -325,7 +325,7 @@ rogueRoom cfg nm =
                                                  (if rsc then randomR (doorSecretMax cfg `div` 2, doorSecretMax cfg)
                                                          else return 0)
                         if rb
-                          then return ((y,x), newDoorTile (Terrain.door rs) rs)
+                          then return ((y,x), newDoorTile (TileKind.door rs) rs)
                           else return o
                     _ -> return o) .
                 M.toList $ lmap
@@ -339,8 +339,8 @@ rogueRoom cfg nm =
     -- generate map and level from the data
     let meta = show allConnects
     return (\ lu ld ->
-      let flmap = maybe id (\ l -> M.update (\ (t,r) -> Just $ newStairsTile (Terrain.stairs (light t) Up) l) su) lu $
-                  maybe id (\ l -> M.update (\ (t,r) -> Just $ newStairsTile (Terrain.stairs (light t) Down) l) sd) ld $
+      let flmap = maybe id (\ l -> M.update (\ (t,r) -> Just $ newStairsTile (TileKind.stairs (light t) Up) l) su) lu $
+                  maybe id (\ l -> M.update (\ (t,r) -> Just $ newStairsTile (TileKind.stairs (light t) Down) l) sd) ld $
                   L.foldr (\ (l,it) f -> M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l . f) id is
                   dlmap
       in  Level nm emptyParty (levelSize cfg) emptyParty smap flmap meta, su, sd)
@@ -372,18 +372,18 @@ rollPillars cfg lvl =
 
 emptyLMap :: (Y, X) -> LMap
 emptyLMap (my, mx) =
-  M.fromList [ ((y, x), newTile Terrain.wallId) | x <- [0..mx], y <- [0..my] ]
+  M.fromList [ ((y, x), newTile TileKind.wallId) | x <- [0..mx], y <- [0..my] ]
 
 -- | If the room has size 1, it is at most a start of a corridor.
 digRoom :: Bool -> Room -> LMap -> LMap
 digRoom dl ((y0, x0), (y1, x1)) l
   | y0 == y1 && x0 == x1 = l
   | otherwise =
-  let floorDL = if dl then Terrain.floorLightId else Terrain.floorDarkId
+  let floorDL = if dl then TileKind.floorLightId else TileKind.floorDarkId
       rm =
         [ ((y, x), newTile floorDL) | x <- [x0..x1], y <- [y0..y1] ]
-        ++ [ ((y, x), newTile Terrain.wallId)
+        ++ [ ((y, x), newTile TileKind.wallId)
            | x <- [x0-1, x1+1], y <- [y0..y1] ]
-        ++ [ ((y, x), newTile Terrain.wallId)
+        ++ [ ((y, x), newTile TileKind.wallId)
            | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
   in M.unionWith const (M.fromList rm) l

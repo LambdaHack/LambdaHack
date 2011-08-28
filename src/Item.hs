@@ -16,10 +16,10 @@ import qualified Color
 import Flavour
 
 data Item = Item
-  { ikind    :: !ItemKindId,
-    ipower   :: !Int,  -- TODO: see the TODO about jpower
-    iletter  :: Maybe Char,  -- ^ inventory identifier
-    icount   :: !Int }
+  { ikind   :: !ItemKindId,
+    ipower  :: !Int,  -- TODO: see the TODO about jpower
+    iletter :: Maybe Char,  -- ^ inventory identifier
+    icount  :: !Int }
   deriving Show
 
 instance Binary Item where
@@ -31,7 +31,7 @@ type Assocs = M.Map ItemKindId Flavour  -- TODO: rewrite and move elsewhere
 
 type Discoveries = S.Set ItemKindId
 
--- | Assinges flavours to item kinds. Assures no flavor is repeated,
+-- | Assigns flavours to item kinds. Assures no flavor is repeated,
 -- except for items with only one permitted flavour.
 rollAssocs :: ItemKindId -> [Flavour] ->
               Rnd (Assocs, S.Set Flavour) ->

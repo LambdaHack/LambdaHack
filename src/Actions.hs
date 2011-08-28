@@ -31,7 +31,7 @@ import Random
 import State
 import qualified Config
 import qualified Save
-import qualified Terrain
+import qualified TileKind
 import qualified Effect
 import EffectAction
 import WorldLoc
@@ -185,8 +185,8 @@ continueRun dir =
     -- What happens next is mostly depending on the terrain we're currently on.
     let hop t
           | monstersVisible || heroThere
-            || newsReported || itemsHere || Terrain.isExit t = abort
-        hop t | Terrain.isFloorDark t =
+            || newsReported || itemsHere || TileKind.isExit t = abort
+        hop t | TileKind.isFloorDark t =
           -- in corridors, explore all corners and stop at all crossings
           -- TODO: even in corridors, stop if you run past an exit (rare)
           let ns = L.filter (\ x -> distance (neg dir, x) > 1
@@ -209,7 +209,7 @@ continueRun dir =
               as = L.filter (\ x -> accessible lmap loc x
                                     || openable 1 lmap x) ls
               ts = L.map (tterrain . (lmap `at`)) as
-          in  if L.any Terrain.isExit ts then abort else run dir
+          in  if L.any TileKind.isExit ts then abort else run dir
     hop (tterrain t)
 
 ifRunning :: (Dir -> Action a) -> Action a -> Action a
@@ -246,12 +246,12 @@ playerCloseDoor dir = do
   let hms = levelHeroList state ++ levelMonsterList state
       dloc = shift (aloc body) dir  -- the location we act upon
       t = lmap `at` dloc
-  case Terrain.deDoor (Tile.tterrain t) of
+  case TileKind.deDoor (Tile.tterrain t) of
     Just Nothing ->
       case Tile.titems t of
         [] ->
           if unoccupied hms dloc
-          then let nt  = Tile (Terrain.door (Just 0)) Nothing Nothing []
+          then let nt  = Tile (TileKind.door (Just 0)) Nothing Nothing []
                    adj = M.adjust (\ (_, mt) -> (nt, mt)) dloc
                in modify (updateLevel (updateLMap adj))
           else abortWith "blocked"  -- by monsters or heroes
@@ -277,10 +277,10 @@ actorOpenDoor actor dir = do
                Just i  -> biq (akind body) + ipower i
                Nothing -> biq (akind body)
   when (not $ openable openPower lmap dloc) $ neverMind isVerbose
-  case Terrain.deDoor (Tile.tterrain t) of
+  case TileKind.deDoor (Tile.tterrain t) of
     Just (Just _) ->
       -- TODO: print message if action performed by monster and perceived
-      let nt  = Tile (Terrain.door Nothing) Nothing Nothing (Tile.titems t)
+      let nt  = Tile (TileKind.door Nothing) Nothing Nothing (Tile.titems t)
           adj = M.adjust (\ (_, mt) -> (nt, mt)) dloc
       in  modify (updateLevel (updateLMap adj))
     Just Nothing -> abortIfWith isVerbose "already open"
@@ -312,7 +312,7 @@ lvlChange vdir =
     map       <- gets (lmap . slevel)
     let loc = if targeting then clocation cursor else aloc pbody
         tile = map `at` loc
-    case Terrain.deStairs $ tterrain tile of
+    case TileKind.deStairs $ tterrain tile of
       Just vdir'
         | vdir == vdir' -> -- stairs are in the right direction
           case tteleport tile of
@@ -418,10 +418,10 @@ search =
                   Just i  -> 1 + ipower i
                   Nothing -> 1
         searchTile t@(Tile d l s x, t') =
-          case Terrain.deDoor d of
+          case TileKind.deDoor d of
             Just (Just True) ->
               let k = max (fromJust s - delta) 0 in
-              (Tile (Terrain.door (Just k)) l (Just k) x, t')
+              (Tile (TileKind.door (Just k)) l (Just k) x, t')
             _ -> t
         f l m = M.adjust searchTile (shift ploc m) l
         slmap = L.foldl' f lmap moves

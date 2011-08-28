@@ -12,7 +12,7 @@ import GeometryRnd
 import Actor
 import Item
 import Random
-import qualified Terrain
+import qualified TileKind
 import WorldLoc
 import Data.Maybe
 import qualified Tile
@@ -90,7 +90,7 @@ accessible lmap source target =
 openable :: Int -> LMap -> Loc -> Bool
 openable k lmap target =
   let tgt = lmap `at` target
-  in  case Terrain.deDoor $ Tile.tterrain tgt of
+  in  case TileKind.deDoor $ Tile.tterrain tgt of
         Just (Just True) -> fromJust (Tile.tsecret tgt) < k
         Just (Just False) -> True
         _ -> False

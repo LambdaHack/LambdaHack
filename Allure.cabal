@@ -44,7 +44,7 @@ executable Allure
                  Keys, Keybindings, Level, LevelState,
                  Message, Multiline, Perception, Random,
                  Save, State, Strategy, StrategyState,
-                 Tile, Turn, Terrain, Version, WorldLoc
+                 Tile, TileKind, Turn, Version, WorldLoc
   build-depends: base >= 4 && < 5, containers >= 0.1 && < 1,
                  binary >= 0.4 && < 1,
                  random >= 1 && < 2, zlib >= 0.4 && < 1,

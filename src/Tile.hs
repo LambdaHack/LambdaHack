@@ -6,11 +6,11 @@ import Data.Binary
 import Data.List as L
 
 import Item
-import qualified Terrain
+import qualified TileKind
 import WorldLoc
 
 data Tile = Tile
-              { tkind     :: !Terrain.TileKindId
+              { tkind     :: !TileKind.TileKindId
               , tteleport :: Maybe WorldLoc  -- TODO
               , tsecret   :: Maybe Int  -- TODO
               , titems    :: [Item] }
@@ -23,36 +23,36 @@ instance Binary Tile where
 tterrain = tkind
 
 unknownTile :: Tile
-unknownTile = Tile Terrain.unknownId Nothing Nothing []
+unknownTile = Tile TileKind.unknownId Nothing Nothing []
 
 -- | blocks moves and vision
 closed :: Tile -> Bool
 closed = not . open
 
 floor :: Tile -> Bool
-floor = Terrain.isFloor . tterrain
+floor = TileKind.isFloor . tterrain
 
 -- | The tile can be a door, but the player can't tell.
 -- TODO: perhaps just compare the letter and colour.
 canBeDoor :: Tile -> Bool
 canBeDoor t =
-  case Terrain.deDoor $ tterrain t of
+  case TileKind.deDoor $ tterrain t of
     Just (Just True) -> True
     _ ->
-      Terrain.isRock (tterrain t) ||
-      Terrain.isUnknown (tterrain t)
+      TileKind.isRock (tterrain t) ||
+      TileKind.isUnknown (tterrain t)
 
 isUnknown :: Tile -> Bool
-isUnknown = Terrain.isUnknown . tterrain
+isUnknown = TileKind.isUnknown . tterrain
 
 -- | allows moves and vision
 open :: Tile -> Bool
-open = Terrain.isOpen . tterrain
+open = TileKind.isOpen . tterrain
 
 -- | is lighted on its own
 light :: Tile -> Bool
-light = Terrain.isAlight . tterrain
+light = TileKind.isAlight . tterrain
 
 -- | marks an exit from a room
 isExit :: Tile -> Bool
-isExit = Terrain.isExit . tterrain
+isExit = TileKind.isExit . tterrain
