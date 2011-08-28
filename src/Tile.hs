@@ -23,9 +23,6 @@ instance Binary Tile where
 unknownTile :: Tile
 unknownTile = Tile TileKind.unknownId Nothing Nothing []
 
-floor :: Tile -> Bool
-floor = TileKind.isFloor . tkind
-
 -- | The tile can be a door, but the player can't tell.
 -- TODO: perhaps just compare the letter and colour.
 canBeDoor :: Tile -> Bool
@@ -57,3 +54,11 @@ isLit = hasFeature TileKind.Lit
 -- | Provides an exit from a room.
 isExit :: Tile -> Bool
 isExit = hasFeature TileKind.Exit
+
+-- | Is a good candidate to deposit items, replace by other tiles, etc.
+isBoring :: Tile -> Bool
+isBoring t =
+  let fs = TileKind.ufeature (TileKind.getKind (tkind t))
+      optional = [TileKind.Exit, TileKind.Lit]
+      mandatory = [TileKind.Walkable, TileKind.Clear]
+  in fs \\ optional `L.elem` L.permutations mandatory

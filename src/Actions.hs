@@ -184,11 +184,14 @@ continueRun dir =
         dirOK     = accessible lmap loc (loc `shift` dir)
         isExit t  =
           L.elem TileKind.Exit (TileKind.ufeature . TileKind.getKind $ t)
+        isFloorDark t =
+          L.elem TileKind.Walkable (TileKind.ufeature . TileKind.getKind $ t) &&
+          not (L.elem TileKind.Lit (TileKind.ufeature . TileKind.getKind $ t))
     -- What happens next is mostly depending on the terrain we're currently on.
     let hop t
           | monstersVisible || heroThere
             || newsReported || itemsHere || isExit t = abort
-        hop t | TileKind.isFloorDark t =
+        hop t | isFloorDark t =
           -- in corridors, explore all corners and stop at all crossings
           -- TODO: even in corridors, stop if you run past an exit (rare)
           let ns = L.filter (\ x -> distance (neg dir, x) > 1

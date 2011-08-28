@@ -1,6 +1,5 @@
 module Dungeon where
 
-import Prelude hiding (floor)
 import Control.Monad
 import qualified System.Random as R
 
@@ -121,10 +120,9 @@ digCorridors (p1:p2:ps) =
 digCorridors _ = M.empty
 
 mergeCorridor :: (Tile, Tile) -> (Tile, Tile) -> (Tile, Tile)
-mergeCorridor _ (Tile t l s is, u) | TileKind.isRock t    = (Tile TileKind.openingId l s is, u)
-mergeCorridor _ (Tile t l s is, u) | TileKind.isOpening t = (Tile TileKind.openingId l s is, u)
-mergeCorridor _ (Tile t l s is, u) | TileKind.isFloor t   = (Tile t l s is, u)
-mergeCorridor _ (Tile _ l s is, u)                       = (Tile TileKind.floorDarkId l s is, u)
+mergeCorridor _ (Tile t l s is, u) | TileKind.isRock t = (Tile TileKind.openingId l s is, u)
+mergeCorridor _ (t, u)             | Tile.isWalkable t = (t, u)
+mergeCorridor _ (Tile _ l s is, u)                     = (Tile TileKind.floorDarkId l s is, u)
 
 -- | Create a new tile.
 newTile :: TileKind.TileKindId -> (Tile, Tile)
@@ -151,8 +149,8 @@ emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
     let smap = M.fromList [ ((y,x),-100) | y <- [0..sy], x <- [0..sx] ]
     let lvl = Level nm emptyParty (sy,sx) emptyParty smap lmap ""
     -- locations of the stairs
-    su <- findLoc lvl (const floor)
-    sd <- findLoc lvl (\ l t -> floor t
+    su <- findLoc lvl (const Tile.isBoring)
+    sd <- findLoc lvl (\ l t -> Tile.isBoring t
                                 && distance (su,l) > minStairsDistance cfg)
     is <- rollItems cfg lvl su
     addRocks <- addRocksRnd lvl
@@ -181,7 +179,7 @@ noiseRoom cfg =
         rs <- rollPillars cfg lvl
         let insertRock lmap l =
               case lmap `at` l of
-                Tile t _ _ [] | TileKind.isFloor t -> M.insert l (newTile TileKind.wallId) lmap
+                t@(Tile _ _ _ []) | Tile.isBoring t -> M.insert l (newTile TileKind.wallId) lmap
                 _ -> lmap
         return $ \ lmap -> L.foldl' insertRock lmap rs
   in  emptyRoom addRocks cfg
@@ -306,7 +304,6 @@ rogueRoom cfg nm =
         lcorridors = M.unions (L.map digCorridors cs)
         lrocks = emptyLMap (levelSize cfg)
         lmap = M.union (M.unionWith mergeCorridor lcorridors lrooms) lrocks
-    let lvl = Level nm emptyParty (levelSize cfg) emptyParty smap lmap ""
     -- convert openings into doors
     dlmap <- fmap M.fromList . mapM
                 (\ o@((y,x),(t,r)) ->
@@ -329,10 +326,11 @@ rogueRoom cfg nm =
                           else return o
                     _ -> return o) .
                 M.toList $ lmap
+    let lvl = Level nm emptyParty (levelSize cfg) emptyParty smap dlmap ""
     -- locations of the stairs
-    su <- findLoc lvl (const floor)
+    su <- findLoc lvl (const Tile.isBoring)
     sd <- findLocTry 1000 lvl
-            (const floor)
+            (const Tile.isBoring)
             (\ l t -> distance (su,l) > minStairsDistance cfg)
     -- determine number of items, items and locations for the items
     is <- rollItems cfg lvl su
@@ -356,9 +354,9 @@ rollItems cfg lvl ploc =
                "sword" ->
                  -- swords generated close to monsters; MUAHAHAHA
                  findLocTry 200 lvl
-                   (const floor)
+                   (const Tile.isBoring)
                    (\ l t -> distance (ploc, l) > 400)
-               _ -> findLoc lvl (const floor)
+               _ -> findLoc lvl (const Tile.isBoring)
         return (l,t)
 
 rollPillars :: LevelConfig -> Level -> Rnd [Loc]
@@ -367,7 +365,7 @@ rollPillars cfg lvl =
     nri <- 100 *~ nrItems cfg
     replicateM nri $
       do
-        l <- findLoc lvl (const floor)
+        l <- findLoc lvl (const Tile.isBoring)
         return l
 
 emptyLMap :: (Y, X) -> LMap

@@ -1,6 +1,5 @@
 module ActorAdd where
 
-import Prelude hiding (floor)
 import qualified Data.IntMap as IM
 import Data.List as L
 import Data.Map as M
