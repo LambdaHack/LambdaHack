@@ -10,7 +10,9 @@ import qualified TileKind
 import qualified Tile
 
 viewTile :: Bool -> Tile.Tile -> Assocs -> (Char, Color.Color)
-viewTile b (Tile.Tile t _ _ [])    a = TileKind.viewTileKind b t
+viewTile b (Tile.Tile t _ _ [])    a =
+  let u = TileKind.getKind t
+  in (TileKind.usymbol u, if b then TileKind.ucolor u else TileKind.ucolor2 u)
 viewTile b (Tile.Tile t _ _ (i:_)) a = Item.viewItem (ikind i) a
 
 -- | Produces a textual description of the terrain and items at an already
@@ -19,7 +21,9 @@ viewTile b (Tile.Tile t _ _ (i:_)) a = Item.viewItem (ikind i) a
 lookAt :: Bool -> Bool -> State -> LMap -> Loc -> String -> String
 lookAt detailed canSee s lmap loc msg
   | detailed  =
-    TileKind.lookTileKind (Tile.tterrain (lmap `rememberAt` loc)) ++ " " ++ msg ++ isd
+    let tile = lmap `rememberAt` loc
+        name = TileKind.uname . TileKind.getKind . Tile.tkind $ tile
+    in name ++ " " ++ msg ++ isd
   | otherwise = msg ++ isd
   where
     is  = Tile.titems (lmap `rememberAt` loc)

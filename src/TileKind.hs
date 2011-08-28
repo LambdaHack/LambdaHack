@@ -1,5 +1,5 @@
 module TileKind
-  (TileKind, TileKindId, wallId, openingId, floorDarkId, floorLightId, unknownId, stairs, door, deDoor, isFloor, isFloorDark, isRock, isOpening, isUnknown, isOpen, isExit, deStairs, isAlight, lookTileKind, viewTileKind, getKind) where
+  (TileKind(..), TileKindId, getKind, wallId, openingId, floorDarkId, floorLightId, unknownId, stairs, door, deDoor, isFloor, isFloorDark, isRock, isOpening, isUnknown, isOpen, isExit, deStairs, isAlight) where
 
 import Control.Monad
 
@@ -235,13 +235,3 @@ isAlight :: TileKindId -> Bool
 isAlight t =
   let isLit f = case f of Lit _ -> True; _ -> False
   in L.any isLit (ufeature (getKind t))
-
--- | Produces a textual description for terrain, used if no objects
--- are present.
-lookTileKind :: TileKindId -> String
-lookTileKind = uname . getKind
-
--- The Bool indicates whether the loc is currently visible.
-viewTileKind :: Bool -> TileKindId -> (Char, Color.Color)
-viewTileKind b t =
-  (usymbol (getKind t), if b then ucolor (getKind t) else ucolor2 (getKind t))
