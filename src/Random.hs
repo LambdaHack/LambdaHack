@@ -34,9 +34,9 @@ chance r =
     k <- randomR (1,d)
     return (k <= n)
 
--- | d for die/dice
-d :: Int -> Rnd Int
-d x = if x <= 0 then return 0 else randomR (1,x)
+-- | roll a single die
+roll :: Int -> Rnd Int
+roll x = if x <= 0 then return 0 else randomR (1,x)
 
 oneOf :: [a] -> Rnd a
 oneOf xs =
@@ -75,15 +75,15 @@ infixl 6 ~+~
 (*~) :: Num a => Int -> Rnd a -> Rnd a
 x *~ r = liftM sum (replicateM x r)
 
--- RollDice: 1d7, 3d3, etc. (a, b) represent (a *~ d b).
+-- RollDice: 1d7, 3d3, etc. (a, b) represent (a *~ roll b).
 type RollDice = (Binary.Word8, Binary.Word8)
 
 rollDice :: RollDice -> Rnd Int
 rollDice (a', b') =
   let (a, b) = (fromEnum a', fromEnum b')
-  in  a *~ d b
+  in  a *~ roll b
 
--- rollQuad (a, b, x, y) = a *~ d b + (lvl * (x *~ d y)) / 10
+-- rollQuad (a, b, x, y) = a *~ roll b + (lvl * (x *~ roll y)) / 10
 type RollQuad = (Binary.Word8, Binary.Word8, Binary.Word8, Binary.Word8)
 
 rollQuad :: Int -> RollQuad -> Rnd Int

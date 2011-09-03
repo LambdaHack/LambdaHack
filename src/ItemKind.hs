@@ -69,7 +69,7 @@ amulet,    dart, gem1, gem2, gem3, gem4, gold, potion1, potion2, potion3, ring, 
 
 gem, potion, scroll :: ItemKind  -- generic templates
 
--- rollQuad (a, b, x, y) = a * d b + (lvl * x * d y) / 10
+-- rollQuad (a, b, x, y) = a * roll b + (lvl * x * roll y) / 10
 
 amulet = ItemKind
   { jsymbol  = '"'
