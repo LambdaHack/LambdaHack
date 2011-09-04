@@ -86,7 +86,10 @@ startup k =
     ec <- newChan
     forkIO $ k (Session ec tts tv)
 
-    onKeyPress tv (\ e -> postGUIAsync (writeChan ec (Graphics.UI.Gtk.Gdk.Events.eventKeyName e)) >> return True)
+    onKeyPress tv
+      (\ e -> do
+          writeChan ec (Graphics.UI.Gtk.Gdk.Events.eventKeyName e)
+          return True)
 
     onDestroy w mainQuit -- set quit handler
     widgetShowAll w
