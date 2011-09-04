@@ -210,7 +210,7 @@ actorPickupItem actor = do
   state <- get
   pl    <- gets splayer
   per   <- currentPerception
-  lm  <- gets (lmap . slevel)
+  lm    <- gets (lmap . slevel)
   body  <- gets (getActor actor)
   let loc       = aloc body
       t         = lm `at` loc -- the map tile in question
@@ -271,8 +271,8 @@ getItem :: String ->              -- prompt message
            String ->              -- how to refer to the collection of objects
            Action (Maybe Item)
 getItem prompt p ptext is0 isn = do
-  lm  <- gets (lmap . slevel)
-  body  <- gets getPlayerBody
+  lm   <- gets (lmap . slevel)
+  body <- gets getPlayerBody
   let loc       = aloc body
       t         = lm `at` loc -- the map tile in question
       tis       = Tile.titems t

@@ -123,8 +123,8 @@ nullEffect = return (False, "Nothing happens.")
 -- If either actor is a hero, the item may get identified.
 itemEffectAction :: Int -> ActorId -> ActorId -> Item -> Action Bool
 itemEffectAction verbosity source target item = do
-  tm    <- gets (getActor target)
-  per   <- currentPerception
+  tm  <- gets (getActor target)
+  per <- currentPerception
   let effect = ItemKind.jeffect $ ItemKind.getKind $ ikind item
   -- The message describes the target part of the action.
   (b, msg) <- effectToAction effect verbosity source target (ipower item)

@@ -160,13 +160,13 @@ run dir = do
 continueRun :: Dir -> Action ()
 continueRun dir =
   do
-    loc   <- gets (aloc . getPlayerBody)
-    per   <- currentPerception
-    msg   <- currentMessage
-    ms    <- gets (lmonsters . slevel)
-    hs    <- gets (lheroes . slevel)
+    loc <- gets (aloc . getPlayerBody)
+    per <- currentPerception
+    msg <- currentMessage
+    ms  <- gets (lmonsters . slevel)
+    hs  <- gets (lheroes . slevel)
     lm  <- gets (lmap . slevel)
-    pl    <- gets splayer
+    pl  <- gets splayer
     let dms = case pl of
                 AMonster n -> IM.delete n ms  -- don't be afraid of yourself
                 AHero _ -> ms
@@ -239,7 +239,7 @@ closeDoor = do
 playerCloseDoor :: Dir -> Action ()
 playerCloseDoor dir = do
   state <- get
-  lm  <- gets (lmap . slevel)
+  lm    <- gets (lmap . slevel)
   pl    <- gets splayer
   body  <- gets (getActor pl)
   let hms = levelHeroList state ++ levelMonsterList state
@@ -262,9 +262,9 @@ playerCloseDoor dir = do
 -- | An actor closes a door. Player (hero or monster) or enemy.
 actorOpenDoor :: ActorId -> Dir -> Action ()
 actorOpenDoor actor dir = do
-  lm  <- gets (lmap . slevel)
-  pl    <- gets splayer
-  body  <- gets (getActor actor)
+  lm   <- gets (lmap . slevel)
+  pl   <- gets splayer
+  body <- gets (getActor actor)
   let dloc = shift (aloc body) dir  -- the location we act upon
       t = lm `at` dloc
       isPlayer = actor == pl
@@ -308,7 +308,7 @@ lvlChange vdir =
     targeting <- gets (ctargeting . scursor)
     pbody     <- gets getPlayerBody
     pl        <- gets splayer
-    lm       <- gets (lmap . slevel)
+    lm        <- gets (lmap . slevel)
     let loc = if targeting then clocation cursor else aloc pbody
         tile = lm `at` loc
     case TileKind.deStairs $ tkind tile of
@@ -410,7 +410,7 @@ cycleHero =
 search :: Action ()
 search =
   do
-    lm   <- gets (lmap . slevel)
+    lm     <- gets (lmap . slevel)
     ploc   <- gets (aloc . getPlayerBody)
     pitems <- gets (aitems . getPlayerBody)
     let delta = case strongestItem pitems "ring" of
@@ -438,7 +438,7 @@ targetFloor = do
               TEnemy _ _ -> TCursor  -- forget enemy target, keep the cursor
               t -> t  -- keep the target from previous targeting session
   updatePlayerBody (\ p -> p { atarget = tgt })
-  setCursor tgt
+  setCursor
 
 -- | Start the monster targeting mode. Cycle between monster targets.
 -- TODO: also target a monster by moving the cursor, if in target monster mode.
@@ -464,11 +464,11 @@ targetMonster = do
               [] -> target  -- no monsters in sight, stick to last target
               (na, nm) : _ -> TEnemy (AMonster na) (aloc nm)  -- pick the next
   updatePlayerBody (\ p -> p { atarget = tgt })
-  setCursor tgt
+  setCursor
 
 -- | Set, activate and display cursor information.
-setCursor :: Target -> Action ()
-setCursor _tgt = do  -- TODO: why _tgt unused?
+setCursor :: Action ()
+setCursor = do
   state <- get
   per   <- currentPerception
   ploc  <- gets (aloc . getPlayerBody)
@@ -486,7 +486,7 @@ doLook =
   do
     loc    <- gets (clocation . scursor)
     state  <- get
-    lm   <- gets (lmap . slevel)
+    lm     <- gets (lmap . slevel)
     per    <- currentPerception
     target <- gets (atarget . getPlayerBody)
     let canSee = S.member loc (ptvisible per)
@@ -498,8 +498,8 @@ doLook =
           else ""
         mode = case target of
                  TEnemy _ _ -> "[targeting monster] "
-                 TLoc _   -> "[targeting location] "
-                 TCursor  -> "[targeting current] "
+                 TLoc _     -> "[targeting location] "
+                 TCursor    -> "[targeting current] "
         -- general info about current loc
         lookMsg = mode ++ lookAt True canSee state lm loc monsterMsg
         -- check if there's something lying around at current loc
@@ -529,7 +529,7 @@ moveOrAttack allowAttacks autoOpen actor dir
       -- We start by looking at the target position.
       state <- get
       pl    <- gets splayer
-      lm  <- gets (lmap . slevel)
+      lm    <- gets (lmap . slevel)
       sm    <- gets (getActor actor)
       let sloc = aloc sm           -- source location
           tloc = sloc `shift` dir  -- target location
@@ -604,9 +604,9 @@ attackToVerb _ = "hit"
 -- This involves switching positions of the two actors.
 actorRunActor :: ActorId -> ActorId -> Action ()
 actorRunActor source target = do
-  pl    <- gets splayer
-  sloc  <- gets (aloc . getActor source)  -- source location
-  tloc  <- gets (aloc . getActor target)  -- target location
+  pl   <- gets splayer
+  sloc <- gets (aloc . getActor source)  -- source location
+  tloc <- gets (aloc . getActor target)  -- target location
   updateAnyActor source $ \ m -> m { aloc = tloc }
   updateAnyActor target $ \ m -> m { aloc = sloc }
   if source == pl
@@ -626,7 +626,7 @@ generateMonster =
 regenerateLevelHP :: Action ()
 regenerateLevelHP =
   do
-    time  <- gets stime
+    time <- gets stime
     let upd m =
           let regen = bregen (akind m) `div`
                       case strongestItem (aitems m) "amulet" of
