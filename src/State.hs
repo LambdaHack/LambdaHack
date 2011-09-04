@@ -2,7 +2,6 @@ module State where
 
 import qualified Data.Map as M
 import qualified Data.Set as S
-import qualified Data.IntMap as IM
 import Control.Monad
 import Data.Binary
 import qualified Config
@@ -13,7 +12,6 @@ import Level
 import Dungeon
 import Item
 import Message
-import qualified ItemKind
 import WorldLoc
 
 -- | The 'State' contains all the game state that has to be saved.

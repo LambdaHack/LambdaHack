@@ -4,7 +4,6 @@ import System.Directory
 import Control.Exception as E hiding (handle)
 
 import File
-import Level
 import State
 import qualified Config
 

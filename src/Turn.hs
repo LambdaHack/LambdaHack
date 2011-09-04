@@ -1,7 +1,7 @@
 module Turn where
 
 import Control.Monad
-import Control.Monad.State hiding (State)
+import Control.Monad.State hiding (State, state)
 import Data.List as L
 import Data.Map as M
 import Data.Set as S
@@ -64,7 +64,6 @@ handle =
   do
     debug "handle"
     state <- get
-    pl <- gets splayer
     let ptime = atime (getPlayerBody state)  -- time of player's next move
     let time  = stime state                  -- current game time
     debug $ "handle: time check. ptime = " ++ show ptime ++ ", time = " ++ show time
@@ -202,13 +201,14 @@ playerCommand =
 -- functions.
 
 -- TODO: Should be defined in Command module.
-helpCommand      = Described "display help"      displayHelp
+helpCommand :: Described (Action ())
+helpCommand = Described "display help"      displayHelp
 
 -- | Display command help. TODO: Should be defined in Actions module.
 displayHelp :: Action ()
 displayHelp = do
-  let coImage session k =
-        let macros = snd session
+  let coImage sess k =
+        let macros = snd sess
             domain = M.keysSet macros
         in  if k `S.member` domain then [] else [k]
             ++ [ from | (from, to) <- M.assocs macros, to == k ]

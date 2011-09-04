@@ -1,7 +1,5 @@
 module Level where
 
-import Control.Monad
-
 import Data.Binary
 import Data.Map as M
 import Data.List as L
@@ -45,30 +43,31 @@ emptyParty :: Party
 emptyParty = IM.empty
 
 instance Binary Level where
-  put (Level nm hs sz@(sy,sx) ms lsmell lmap lmeta) =
+  put (Level nm hs sz@(sy,sx) ms ls lm lme) =
         do
           put nm
           put hs
           put sz
           put ms
-          put [ lsmell ! (y,x) | y <- [0..sy], x <- [0..sx] ]
-          put [ lmap ! (y,x) | y <- [0..sy], x <- [0..sx] ]
-          put lmeta
+          put [ ls ! (y,x) | y <- [0..sy], x <- [0..sx] ]
+          put [ lm ! (y,x) | y <- [0..sy], x <- [0..sx] ]
+          put lme
   get = do
           nm <- get
           hs <- get
           sz@(sy,sx) <- get
           ms <- get
           xs <- get
-          let lsmell = M.fromList (zip [ (y,x) | y <- [0..sy], x <- [0..sx] ] xs)
-          xs <- get
-          let lmap   = M.fromList (zip [ (y,x) | y <- [0..sy], x <- [0..sx] ] xs)
-          lmeta <- get
-          return (Level nm hs sz ms lsmell lmap lmeta)
+          let ls = M.fromList (zip [ (y,x) | y <- [0..sy], x <- [0..sx] ] xs)
+          ys <- get
+          let lm = M.fromList (zip [ (y,x) | y <- [0..sy], x <- [0..sx] ] ys)
+          lme <- get
+          return (Level nm hs sz ms ls lm lme)
 
 type LMap = Map (Y,X) (Tile.Tile, Tile.Tile)
 type SMap = Map (Y,X) Time
 
+at, rememberAt :: LMap -> Loc -> Tile.Tile
 at         l p = fst (findWithDefault (Tile.unknownTile, Tile.unknownTile) p l)
 rememberAt l p = snd (findWithDefault (Tile.unknownTile, Tile.unknownTile) p l)
 
@@ -82,14 +81,14 @@ unoccupied actors loc =
 -- Currently only implements that the target location has to be open.
 -- TODO: in the future check flying for chasms, swimming for water, etc.
 accessible :: LMap -> Loc -> Loc -> Bool
-accessible lmap source target =
-  let tgt = lmap `at` target
+accessible lm _source target =
+  let tgt = lm `at` target
   in  Tile.isWalkable tgt
 
 -- check whether the location contains a door of secrecy level lower than k
 openable :: Int -> LMap -> Loc -> Bool
-openable k lmap target =
-  let tgt = lmap `at` target
+openable k lm target =
+  let tgt = lm `at` target
   in  case TileKind.deDoor $ Tile.tkind tgt of
         Just (Just True) -> fromJust (Tile.tsecret tgt) < k
         Just (Just False) -> True
@@ -121,9 +120,9 @@ findLocTry k l@(Level { lsize = sz, lmap = lm }) p pTry =
 
 -- Actually, do not scatter items around, it's too much work for the player.
 dropItemsAt :: [Item] -> Loc -> Level -> Level
-dropItemsAt items loc lvl@(Level { lmap = lmap }) =
-  let joinItems items = L.foldl' (\ acc i -> snd (joinItem i acc)) items
-      t = lmap `at` loc
+dropItemsAt items loc lvl@(Level { lmap = lm }) =
+  let joinItems = L.foldl' (\ acc i -> snd (joinItem i acc))
+      t = lm `at` loc
       nt = t { Tile.titems = joinItems items (Tile.titems t) }
-      ntRemember = lmap `rememberAt` loc
+      ntRemember = lm `rememberAt` loc
   in  updateLMap (M.insert loc (nt, ntRemember)) lvl

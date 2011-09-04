@@ -3,7 +3,6 @@ module Grammar where
 import Data.Char
 import Data.Set as S
 import Data.List as L
-import qualified Data.IntMap as IM
 
 import Item
 import Actor

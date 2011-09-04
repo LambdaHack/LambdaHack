@@ -1,7 +1,5 @@
 module DungeonState where
 
-import Data.Map as M
-
 import Geometry
 import Level
 import Dungeon
@@ -12,20 +10,29 @@ import WorldLoc
 connect ::
   Maybe (Maybe WorldLoc) ->
   [(Maybe (Maybe WorldLoc) -> Maybe (Maybe WorldLoc) -> Level, Loc, Loc)] ->
-  [Level]
-connect au [(x,_,_)] = [x au Nothing]
+  (Level, [Level])
+connect au [(x,_,_)] = (x au Nothing, [])
 connect au ((x,_,d):ys@((_,u,_):_)) =
-  let (z:zs) = connect (Just (Just (lname x',d))) ys
-      x'     = x au (Just (Just (lname z,u)))
-  in  x' : z : zs
+  let (z, zs) = connect (Just (Just (lname x',d))) ys
+      x'      = x au (Just (Just (lname z,u)))
+  in  (x', z : zs)
+connect _ _ = error "connect"
 
-matchGenerator n Nothing = rogueRoom  -- the default
-matchGenerator n (Just "bigRoom")   = bigRoom
-matchGenerator n (Just "noiseRoom") = noiseRoom
-matchGenerator n (Just "rogueRoom") = rogueRoom
+matchGenerator :: Int -> Maybe String -> LevelConfig -> LevelId
+                  -> Rnd (Maybe (Maybe WorldLoc) ->
+                            Maybe (Maybe WorldLoc) -> Level,
+                          Loc, Loc)
+matchGenerator _ Nothing = rogueRoom  -- the default
+matchGenerator _ (Just "bigRoom")   = bigRoom
+matchGenerator _ (Just "noiseRoom") = noiseRoom
+matchGenerator _ (Just "rogueRoom") = rogueRoom
 matchGenerator n (Just s) =
   error $ "matchGenerator: unknown: " ++ show n ++ ", " ++ s
 
+findGenerator :: Config.CP -> Int
+                 -> Rnd (Maybe (Maybe WorldLoc) ->
+                           Maybe (Maybe WorldLoc) -> Level,
+                         Loc, Loc)
 findGenerator config n =
   let ln = "LambdaCave_" ++ show n
       genName = Config.getOption config "dungeon" ln
@@ -34,8 +41,8 @@ findGenerator config n =
 -- | Generate the dungeon for a new game.
 generate :: Config.CP -> Rnd (Loc, Level, Dungeon)
 generate config = do
-  let depth = Config.get config "dungeon" "depth"
-  levels <- mapM (findGenerator config) [1..depth]
-  let lvls = connect (Just Nothing) levels
+  let d = Config.get config "dungeon" "depth"
+  levels <- mapM (findGenerator config) [1..d]
+  let (lvl, lvls) = connect (Just Nothing) levels
       ploc = ((\ (_,x,_) -> x) (head levels))
-  return $ (ploc, head lvls, dungeon (tail lvls))
+  return $ (ploc, lvl, dungeon lvls)

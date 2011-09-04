@@ -3,7 +3,6 @@ module Item where
 import Data.Binary
 import Data.Set as S
 import Data.List as L
-import qualified Data.IntMap as IM
 import qualified Data.Map as M
 import Data.Maybe
 import Data.Char
@@ -23,8 +22,8 @@ data Item = Item
   deriving Show
 
 instance Binary Item where
-  put (Item ikind ipower iletter icount ) =
-    put ikind >> put ipower >> put iletter >> put icount
+  put (Item ik ip il ic ) =
+    put ik >> put ip >> put il >> put ic
   get = liftM4 Item get get get get
 
 type Assocs = M.Map ItemKindId Flavour  -- TODO: rewrite and move elsewhere
@@ -108,13 +107,14 @@ maxBy cmp x y = case cmp x y of
                   LT  ->  y
                   _   ->  x
 
+maxLetter :: Char -> Char -> Char
 maxLetter = maxBy cmpLetter
 
 mergeLetter :: Maybe Char -> Maybe Char -> Maybe Char
 mergeLetter = mplus
 
 letterRange :: [Char] -> String
-letterRange xs = sectionBy (sortBy cmpLetter xs) Nothing
+letterRange ls = sectionBy (sortBy cmpLetter ls) Nothing
   where
     succLetter c d = ord d - ord c == 1
 
@@ -159,18 +159,20 @@ removeItemBy eq i = concatMap $ \ x ->
 equalItemIdentity :: Item -> Item -> Bool
 equalItemIdentity i1 i2 = ipower i1 == ipower i2 && ikind i1 == ikind i2
 
+removeItemByIdentity :: Item -> [Item] -> [Item]
 removeItemByIdentity = removeItemBy equalItemIdentity
 
 equalItemLetter :: Item -> Item -> Bool
 equalItemLetter = (==) `on` iletter
 
+removeItemByLetter :: Item -> [Item] -> [Item]
 removeItemByLetter = removeItemBy equalItemLetter
 
 -- | Finds an item in a list of items.
 findItem :: (Item -> Bool) -> [Item] -> Maybe (Item, [Item])
-findItem p is = findItem' [] is
+findItem p = findItem' []
   where
-    findItem' acc []     = Nothing
+    findItem' _   []     = Nothing
     findItem' acc (i:is)
       | p i              = Just (i, reverse acc ++ is)
       | otherwise        = findItem' (i:acc) is

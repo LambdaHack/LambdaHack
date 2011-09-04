@@ -1,7 +1,5 @@
 module Keybindings where
 
-import Control.Monad
-import Control.Monad.State hiding (State)
 import Data.Map as M
 import Data.List as L
 

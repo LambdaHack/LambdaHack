@@ -3,7 +3,6 @@ module Keys where
 import Prelude hiding (Left, Right)
 
 import Geometry hiding (Up, Down)
-import Data.Maybe
 import Data.List as L
 import Data.Map as M
 

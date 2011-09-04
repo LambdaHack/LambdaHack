@@ -27,30 +27,30 @@ import qualified Tile
 -- a shadowed interval.
 pscan :: Distance -> (Bump -> Loc) -> LMap -> Distance -> EdgeInterval ->
          Set Loc
-pscan r ptr l d (s@(sl{-shallow line-}, sBumps), e@(el{-steep line-}, eBumps)) =
+pscan r ptr l d (s0@(sl{-shallow line-}, sBumps0),e@(el{-steep line-}, eBumps))=
   -- trace (show (d,s,e,ps,pe)) $
   if illegal
   then S.empty
-  else S.union outside (S.fromList [tr (d, p) | p <- [ps..pe]])
+  else S.union outside (S.fromList [tr (d, p) | p <- [ps0..pe]])
     -- the area is diagonal, which is incorrect, but looks good enough
     where
       (ns, ks) = pintersect sl d
       (ne, ke) = pintersect el d
       -- Corners are translucent, so they are invisible, so if intersection
       -- is at a corner, choose pe that creates the smaller view.
-      (ps, pe) = (ns `div` ks, ne `divUp` ke - 1)  -- progress interval to check
+      (ps0, pe) = (ns `div` ks, ne `divUp` ke - 1) -- progress interval to check
       -- Single ray from an extremity, produces non-permissive digital lines.
       illegal  = let (n, k) = pintersect sl 0
                  in  ns*ke == ne*ks && (n == 0 || n == k)
       outside
         | d >= r = S.empty
-        | Tile.isClear (l `at` tr (d, ps)) =         -- start in light
-            pscan' (Just s) ps
-        | ps == ns `divUp` ks = pscan' (Just s) ps   -- start in a corner
-        | otherwise = pscan' Nothing (ps+1)          -- start in mid-wall
+        | Tile.isClear (l `at` tr (d, ps0)) =          -- start in light
+            pscan' (Just s0) ps0
+        | ps0 == ns `divUp` ks = pscan' (Just s0) ps0  -- start in a corner
+        | otherwise = pscan' Nothing (ps0+1)           -- start in mid-wall
 
-      dp2bump     (d, p) = B(p, d - p)
-      bottomRight (d, p) = B(p, d - p + 1)
+      dp2bump     (di, p) = B(p, di - p)
+      bottomRight (di, p) = B(p, di - p + 1)
       tr = ptr . dp2bump
 
       pscan' :: Maybe Edge -> Progress -> Set Loc
@@ -76,7 +76,7 @@ pscan r ptr l d (s@(sl{-shallow line-}, sBumps), e@(el{-steep line-}, eBumps)) =
             let shallowBump = bottomRight (d, ps)
                 gte = psteeper shallowBump
                 nsp = maximal gte eBumps
-                nsBumps = addHull gte shallowBump sBumps
+                nsBumps = addHull gte shallowBump sBumps0
             in  pscan' (Just (pline nsp shallowBump, nsBumps)) ps
 
       pline p1 p2 =

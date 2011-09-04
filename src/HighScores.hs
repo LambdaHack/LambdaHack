@@ -7,7 +7,6 @@ import System.Time
 
 import Data.Binary
 import Data.List as L
-import Data.Maybe
 
 import File
 import Dungeon
@@ -30,17 +29,6 @@ data ScoreRecord = ScoreRecord
 data Status = Killed LevelId | Camping LevelId | Victor
   deriving (Eq, Ord)
 
-instance Binary ClockTime where
-  put (TOD s p) =
-    do
-      put s
-      put p
-  get =
-    do
-      s <- get
-      p <- get
-      return (TOD s p)
-
 instance Binary Status where
   put (Killed ln)  = putWord8 0 >> put ln
   put (Camping ln) = putWord8 1 >> put ln
@@ -51,21 +39,24 @@ instance Binary Status where
             0 -> liftM Killed  get
             1 -> liftM Camping get
             2 -> return Victor
+            _ -> fail "no parse (Status)"
 
 instance Binary ScoreRecord where
-  put (ScoreRecord points negTurn date status) =
+  put (ScoreRecord p n (TOD cs cp) s) =
     do
-      put points
-      put negTurn
-      put date
-      put status
+      put p
+      put n
+      put cs
+      put cp
+      put s
   get =
     do
-      points <- get
-      negTurn <- get
-      date <- get
-      status <- get
-      return (ScoreRecord points negTurn date status)
+      p <- get
+      n <- get
+      cs <- get
+      cp <- get
+      s <- get
+      return (ScoreRecord p n (TOD cs cp) s)
 
 -- | Show a single high score.
 showScore :: (Int, ScoreRecord) -> String
@@ -147,8 +138,8 @@ register config write s =
   do
     h <- restore config
     let (h', pos) = insertPos s h
-        (lines, _) = normalLevelSize
-        height = lines `div` 3
+        (nlines, _) = normalLevelSize
+        height = nlines `div` 3
         (msgCurrent, msgUnless) =
           case status s of
             Killed _  -> (" short-lived", " (score halved)")

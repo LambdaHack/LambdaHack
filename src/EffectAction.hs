@@ -1,12 +1,10 @@
 module EffectAction where
 
 import Control.Monad
-import Control.Monad.State hiding (State)
+import Control.Monad.State hiding (State, state)
 import Data.Function
 import Data.List as L
 import Data.Map as M
-import qualified Data.IntMap as IM
-import Data.Maybe
 import Data.Set as S
 import System.Time
 import Control.Exception (assert)
@@ -19,9 +17,7 @@ import Grammar
 import qualified HighScores as H
 import Item
 import qualified ItemKind
-import qualified Keys as K
 import Level
-import LevelState
 import Message
 import Actor
 import ActorState
@@ -31,7 +27,6 @@ import Perception
 import Random
 import State
 import qualified Config
-import qualified Save
 import qualified Effect
 import WorldLoc
 
@@ -48,7 +43,7 @@ import WorldLoc
 -- depending on the returned bool, perception and identity of the actors.
 effectToAction :: Effect.Effect -> Int -> ActorId -> ActorId -> Int ->
                   Action (Bool, String)
-effectToAction Effect.NoEffect _ source target power = nullEffect
+effectToAction Effect.NoEffect _ _ _ _ = nullEffect
 effectToAction Effect.Heal _ _source target power = do
   tm <- gets (getActor target)
   if ahp tm >= bhpMax (akind tm) || power <= 0
@@ -90,7 +85,7 @@ effectToAction (Effect.Wound nDm) verbosity source target power = do
         then checkPartyDeath  -- kills the player and checks game over
         else modify (deleteActor target)  -- kills the enemy
     return (True, msg)
-effectToAction Effect.Dominate _ source target power =
+effectToAction Effect.Dominate _ _source target _power =
   if isAMonster target  -- Monsters have weaker will than heroes.
   then do
          assertTrue $ selectPlayer target
@@ -120,8 +115,9 @@ effectToAction Effect.ApplyPerfume _ source target _ =
     return (True, "The fragrance quells all scents in the vicinity.")
 effectToAction Effect.Regneration verbosity source target power =
   effectToAction Effect.Heal verbosity source target power
-effectToAction Effect.Searching _ source target power =
+effectToAction Effect.Searching _ _source _target _power =
   return (True, "It gets lost and you search in vain.")
+effectToAction Effect.Teleport _ _ _ _ = nullEffect  -- TODO
 
 nullEffect :: Action (Bool, String)
 nullEffect = return (False, "Nothing happens.")
@@ -130,8 +126,6 @@ nullEffect = return (False, "Nothing happens.")
 -- If either actor is a hero, the item may get identified.
 itemEffectAction :: Int -> ActorId -> ActorId -> Item -> Action Bool
 itemEffectAction verbosity source target item = do
-  state <- get
-  pl    <- gets splayer
   tm    <- gets (getActor target)
   per   <- currentPerception
   let effect = ItemKind.jeffect $ ItemKind.getKind $ ikind item
@@ -163,8 +157,8 @@ discover i = do
     then return ()
     else do
            modify (updateDiscoveries (S.insert ik))
-           state <- get
-           messageAdd $ msg ++ objectItem state i ++ "."
+           state2 <- get
+           messageAdd $ msg ++ objectItem state2 i ++ "."
 
 -- | Make the actor controlled by the player.
 -- Focus on the actor if level changes. False, if nothing to do.
@@ -295,11 +289,11 @@ lvlSwitch nln =
     if (nln == ln)
       then return False
       else do
-        level   <- gets slevel
-        dungeon <- gets sdungeon
+        level <- gets slevel
+        dng   <- gets sdungeon
         -- put back current level
         -- (first put back, then get, in case we change to the same level!)
-        let full = putDungeonLevel level dungeon
+        let full = putDungeonLevel level dng
         -- get new level
         let (new, ndng) = getDungeonLevel nln full
         modify (\ s -> s { sdungeon = ndng, slevel = new })
@@ -330,6 +324,6 @@ history =
     config  <- gets sconfig
     let historyMax = Config.get config "ui" "historyMax"
         -- TODO: not ideal, continuations of sentences are atop beginnings.
-        split = splitMsg sx (msg ++ " ")
+        splitS = splitMsg sx (msg ++ " ")
     unless (L.null msg) $
-      modify (updateHistory (take historyMax . (L.reverse split ++)))
+      modify (updateHistory (take historyMax . (L.reverse splitS ++)))

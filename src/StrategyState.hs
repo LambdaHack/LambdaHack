@@ -2,11 +2,9 @@ module StrategyState where
 
 import Data.List as L
 import Data.Map as M
-import Data.Set as S
 import qualified Data.IntMap as IM
 import Data.Maybe
 import Control.Monad
-import Control.Monad.State hiding (State)
 import Control.Exception (assert)
 
 import Geometry
@@ -58,17 +56,15 @@ and moves into the approximate direction of the hero.
 
 strategy :: ActorId -> State -> Perceptions -> Strategy (Action ())
 strategy actor
-         oldState@(State { scursor = cursor,
-                           splayer = pl,
+         oldState@(State { splayer = pl,
                            stime   = time,
-                           slevel  = Level { lname = ln,
-                                             lsmell = nsmap,
-                                             lmap = lmap } })
+                           slevel  = Level { lsmell = nsmap,
+                                             lmap = lm } })
          per =
 --  trace (show time ++ ": " ++ show actor) $
-    strategy
+    strat
   where
-    Actor { akind = mk, aloc = me, adir = adir,
+    Actor { akind = mk, aloc = me, adir = ad,
             atarget = tgt, aitems = items } =
       getActor actor oldState
     delState = deleteActor actor oldState
@@ -118,12 +114,12 @@ strategy actor
                        Just loc ->
                          let foeDir = towards (me, loc)
                          in  only (\ x -> distance (foeDir, x) <= 1)
-    lootHere       = (\ x -> not $ L.null $ Tile.titems $ lmap `at` x)
+    lootHere       = (\ x -> not $ L.null $ Tile.titems $ lm `at` x)
     onlyLoot       = onlyMoves lootHere me
-    exitHere       = (\ x -> let t = lmap `at` x in Tile.isExit t)
+    exitHere       = (\ x -> let t = lm `at` x in Tile.isExit t)
     onlyExit       = onlyMoves exitHere me
-    onlyKeepsDir k = only (\ x -> maybe True (\ d -> distance (d, x) <= k) adir)
-    onlyKeepsDir_9 = only (\ x -> maybe True (\ d -> neg x /= d) adir)
+    onlyKeepsDir k = only (\ x -> maybe True (\ d -> distance (d, x) <= k) ad)
+    onlyKeepsDir_9 = only (\ x -> maybe True (\ d -> neg x /= d) ad)
     onlyNoMs       = onlyMoves (unoccupied (levelMonsterList delState)) me
     -- Monsters don't see doors more secret than that. Enforced when actually
     -- opening doors, too, so that monsters don't cheat. TODO: remove the code
@@ -131,9 +127,9 @@ strategy actor
     openPower      = case strongestItem items "ring" of
                        Just i  -> biq mk + ipower i
                        Nothing -> biq mk
-    openableHere   = openable openPower lmap
+    openableHere   = openable openPower lm
     onlyOpenable   = onlyMoves openableHere me
-    accessibleHere = accessible lmap me
+    accessibleHere = accessible lm me
     onlySensible   = onlyMoves (\ l -> accessibleHere l || openableHere l) me
     focusedMonster = biq mk > 10
     smells         =
@@ -143,13 +139,13 @@ strategy actor
       L.map (\ x -> (x, nsmap ! (me `shift` x) - time `max` 0)) moves
     fromDir allowAttacks d = dirToAction actor newTgt allowAttacks `liftM` d
 
-    strategy =
+    strat =
       fromDir True (onlyFoe moveFreely)
       .| isJust floc .=> liftFrequency (msum freqs)
       .| lootHere me .=> actionPickup
       .| fromDir True moveAround
     actionPickup = return $ actorPickupItem actor
-    tis = Tile.titems $ lmap `at` me
+    tis = Tile.titems $ lm `at` me
     freqs = [applyFreq items 1, applyFreq tis 2,
              throwFreq items 2, throwFreq tis 5, towardsFreq]
     applyFreq is multi = Frequency
@@ -174,9 +170,9 @@ strategy actor
     actionThrow groupName item =
       zapGroupItem actor (fromJust floc) (zapToVerb groupName) item
     towardsFreq =
-      let freqs = runStrategy $ fromDir False moveTowards
-      in  if bsight mk && not (L.null freqs)
-          then scale 30 $ head freqs
+      let freqs2 = runStrategy $ fromDir False moveTowards
+      in  if bsight mk && not (L.null freqs2)
+          then scale 30 $ head freqs2
           else mzero
     moveTowards = onlySensible $ onlyNoMs (towardsFoe moveFreely)
     moveAround =

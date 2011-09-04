@@ -1,10 +1,8 @@
 module ActorKind where
 
 import Data.Binary
-import Control.Monad
 
 import Geometry
-import Random
 import qualified Color
 
 -- | Monster properties that are changing rarely and permanently.

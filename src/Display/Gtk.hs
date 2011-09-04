@@ -1,7 +1,6 @@
 module Display.Gtk
   (displayId, startup, shutdown, display, nextEvent, Session) where
 
-import qualified Data.Binary
 import Control.Monad
 import Control.Concurrent
 import Graphics.UI.Gtk.Gdk.Events  -- TODO: replace, deprecated
@@ -15,6 +14,7 @@ import Geometry
 import qualified Keys as K (Key(..), keyTranslate)
 import qualified Color
 
+displayId :: String
 displayId = "gtk"
 
 data Session =
@@ -60,12 +60,12 @@ startup k =
                                Button { Graphics.UI.Gtk.Gdk.Events.eventButton = RightButton } ->
                                  do
                                    fsd <- fontSelectionDialogNew "Choose font"
-                                   cf <- readIORef currentfont
-                                   fd <- fontDescriptionToString cf
-                                   fontSelectionDialogSetFontName fsd fd
+                                   cf  <- readIORef currentfont
+                                   fds <- fontDescriptionToString cf
+                                   fontSelectionDialogSetFontName fsd fds
                                    fontSelectionDialogSetPreviewText fsd "+##@##-...|"
-                                   response <- dialogRun fsd
-                                   when (response == ResponseOk) $
+                                   resp <- dialogRun fsd
+                                   when (resp == ResponseOk) $
                                      do
                                        fn <- fontSelectionDialogGetFontName fsd
                                        case fn of
@@ -93,6 +93,7 @@ startup k =
     yield
     mainGUI
 
+shutdown :: Session -> IO ()
 shutdown _ = mainQuit
 
 display :: Area -> Session -> (Loc -> (Color.Attr, Char)) -> String -> String
@@ -111,8 +112,8 @@ display ((y0,x0), (y1,x1)) session f msg status =
     mapM_ (setTo tb (stags session) x0) attrs
 
 setTo :: TextBuffer -> Map Color.Attr TextTag -> X -> (Y, [Color.Attr]) -> IO ()
-setTo tb tts lx (ly, []) = return ()
-setTo tb tts lx (ly, a:as) = do
+setTo _  _   _  (_,  [])         = return ()
+setTo tb tts lx (ly, attr:attrs) = do
   ib <- textBufferGetIterAtLineOffset tb (ly + 1) lx
   ie <- textIterCopy ib
   let setIter :: Color.Attr -> Int -> [Color.Attr] -> IO ()
@@ -129,7 +130,7 @@ setTo tb tts lx (ly, a:as) = do
               textBufferApplyTag tb (tts ! previous) ib ie
             textIterForwardChars ib repetitions
             setIter a 1 as
-  setIter a 1 as
+  setIter attr 1 attrs
 
 -- | reads until a non-dead key encountered
 readUndeadChan :: Chan String -> IO String

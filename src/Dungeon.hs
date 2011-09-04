@@ -7,7 +7,6 @@ import Data.Binary
 import Data.Map as M
 import Data.List as L
 import Data.Ratio
-import Data.Maybe
 
 import Geometry
 import GeometryRnd
@@ -69,14 +68,16 @@ mkNoRoom bd ((y0,x0),(y1,x1)) =
 data HV = Horiz | Vert
   deriving (Eq, Show, Bounded)
 
+fromHV :: HV -> Bool
 fromHV Horiz = True
 fromHV Vert  = False
 
+toHV :: Bool -> HV
 toHV True  = Horiz
 toHV False = Vert
 
 instance R.Random HV where
-  randomR (a,b) g = case R.randomR (fromHV a, fromHV b) g of
+  randomR (a,b0) g = case R.randomR (fromHV a, fromHV b0) g of
                       (b, g') -> (toHV b, g')
   random g = R.randomR (minBound, maxBound) g
 
@@ -97,7 +98,7 @@ mkCorridor hv ((y0,x0),(y1,x1)) b =
 -- exist a suitable intermediate point if the rooms are allowed to be close
 -- together ...
 connectRooms :: Area -> Area -> Rnd [Loc]
-connectRooms sa@((sy0,sx0),(sy1,sx1)) ta@((ty0,tx0),(ty1,tx1)) =
+connectRooms sa@(_,(sy1,sx1)) ta@((ty0,tx0),_) =
   do
     (sy,sx) <- locInArea sa
     (ty,tx) <- locInArea ta
@@ -122,7 +123,7 @@ digCorridors _ = M.empty
 mergeCorridor :: (Tile, Tile) -> (Tile, Tile) -> (Tile, Tile)
 mergeCorridor _ (t, u)                 | Tile.isWalkable t = (t, u)
 mergeCorridor _ (t@(Tile _ l s is), u) | Tile.isUnknown t  = (Tile TileKind.floorDarkId l s is, u)
-mergeCorridor _ (Tile t l s is, u)                         = (Tile TileKind.openingId l s is, u)
+mergeCorridor _ (Tile _ l s is, u)                         = (Tile TileKind.openingId l s is, u)
 
 -- | Create a new tile.
 newTile :: TileKind.TileKindId -> (Tile, Tile)
@@ -142,30 +143,30 @@ emptyRoom :: (Level -> Rnd (LMap -> LMap)) -> LevelConfig -> LevelId
                      Loc, Loc)
 emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
   do
-    let lmap = digRoom True ((1,1),(sy-1,sx-1)) (emptyLMap (sy,sx))
+    let lm0 = digRoom True ((1,1),(sy-1,sx-1)) (emptyLMap (sy,sx))
     let smap = M.fromList [ ((y,x),-100) | y <- [0..sy], x <- [0..sx] ]
-    let lvl = Level nm emptyParty (sy,sx) emptyParty smap lmap ""
+    let lvl = Level nm emptyParty (sy,sx) emptyParty smap lm0 ""
     -- locations of the stairs
     su <- findLoc lvl (const Tile.isBoring)
     sd <- findLoc lvl (\ l t -> Tile.isBoring t
                                 && distance (su,l) > minStairsDistance cfg)
     is <- rollItems cfg lvl su
     addRocks <- addRocksRnd lvl
-    let addItem lmap (l,it) =
-          M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l lmap
+    let addItem lm (l,it) =
+          M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l lm
         flmap lu ld =
           addRocks $
           maybe id (\ l -> M.insert su (newStairsTile (TileKind.stairs True Up) l)) lu $
           maybe id (\ l -> M.insert sd (newStairsTile (TileKind.stairs True Down) l)) ld $
-          (\lmap -> L.foldl' addItem lmap is) $
-          lmap
+          (\lm -> L.foldl' addItem lm is) $
+          lm0
         level lu ld = Level nm emptyParty (sy,sx) emptyParty smap (flmap lu ld) "bigroom"
     return (level, su, sd)
 
 -- | For a bigroom level: Create a level consisting of only one, empty room.
 bigRoom :: LevelConfig ->
            LevelId -> Rnd (Maybe (Maybe WorldLoc) -> Maybe (Maybe WorldLoc) -> Level, Loc, Loc)
-bigRoom = emptyRoom (\ lvl -> return id)
+bigRoom = emptyRoom (\ _lvl -> return id)
 
 -- | For a noiseroom level: Create a level consisting of only one room
 -- with randomly distributed pillars.
@@ -174,11 +175,11 @@ noiseRoom :: LevelConfig ->
 noiseRoom cfg =
   let addRocks lvl = do
         rs <- rollPillars cfg lvl
-        let insertRock lmap l =
-              case lmap `at` l of
-                t@(Tile _ _ _ []) | Tile.isBoring t -> M.insert l (newTile TileKind.wallId) lmap
-                _ -> lmap
-        return $ \ lmap -> L.foldl' insertRock lmap rs
+        let insertRock lm l =
+              case lm `at` l of
+                t@(Tile _ _ _ []) | Tile.isBoring t -> M.insert l (newTile TileKind.wallId) lm
+                _ -> lm
+        return $ \ lm -> L.foldl' insertRock lm rs
   in  emptyRoom addRocks cfg
 
 data LevelConfig =
@@ -300,10 +301,10 @@ rogueRoom cfg nm =
     let lrooms = L.foldr (\ (r, dl) m -> digRoom dl r m) M.empty dlrooms
         lcorridors = M.unions (L.map digCorridors cs)
         lrocks = emptyLMap (levelSize cfg)
-        lmap = M.union (M.unionWith mergeCorridor lcorridors lrooms) lrocks
+        lm = M.union (M.unionWith mergeCorridor lcorridors lrooms) lrocks
     -- convert openings into doors
     dlmap <- fmap M.fromList . mapM
-                (\ o@((y,x),(t,r)) ->
+                (\ o@((y,x),(t,_r)) ->
                   case t of
                     Tile _ _ _ _ | Tile.isOpening t ->
                       do
@@ -313,29 +314,29 @@ rogueRoom cfg nm =
                         -- secret
                         rb <- doorChance cfg
                         ro <- doorOpenChance cfg
-                        rs <- if ro then return Nothing
+                        rs1 <- if ro then return Nothing
                                     else do rsc <- doorSecretChance cfg
                                             fmap Just
                                                  (if rsc then randomR (doorSecretMax cfg `div` 2, doorSecretMax cfg)
                                                          else return 0)
                         if rb
-                          then return ((y,x), newDoorTile (TileKind.door rs) rs)
+                          then return ((y,x), newDoorTile (TileKind.door rs1) rs1)
                           else return o
                     _ -> return o) .
-                M.toList $ lmap
+                M.toList $ lm
     let lvl = Level nm emptyParty (levelSize cfg) emptyParty smap dlmap ""
     -- locations of the stairs
     su <- findLoc lvl (const Tile.isBoring)
     sd <- findLocTry 1000 lvl
             (const Tile.isBoring)
-            (\ l t -> distance (su,l) > minStairsDistance cfg)
+            (\ l _ -> distance (su,l) > minStairsDistance cfg)
     -- determine number of items, items and locations for the items
     is <- rollItems cfg lvl su
     -- generate map and level from the data
     let meta = show allConnects
     return (\ lu ld ->
-      let flmap = maybe id (\ l -> M.update (\ (t,r) -> Just $ newStairsTile (TileKind.stairs (isLit t) Up) l) su) lu $
-                  maybe id (\ l -> M.update (\ (t,r) -> Just $ newStairsTile (TileKind.stairs (isLit t) Down) l) sd) ld $
+      let flmap = maybe id (\ l -> M.update (\ (t, _r) -> Just $ newStairsTile (TileKind.stairs (isLit t) Up) l) su) lu $
+                  maybe id (\ l -> M.update (\ (t, _r) -> Just $ newStairsTile (TileKind.stairs (isLit t) Down) l) sd) ld $
                   L.foldr (\ (l,it) f -> M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l . f) id is
                   dlmap
       in  Level nm emptyParty (levelSize cfg) emptyParty smap flmap meta, su, sd)
@@ -352,7 +353,7 @@ rollItems cfg lvl ploc =
                  -- swords generated close to monsters; MUAHAHAHA
                  findLocTry 200 lvl
                    (const Tile.isBoring)
-                   (\ l t -> distance (ploc, l) > 400)
+                   (\ l _ -> distance (ploc, l) > 400)
                _ -> findLoc lvl (const Tile.isBoring)
         return (l,t)
 

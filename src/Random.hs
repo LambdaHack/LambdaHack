@@ -2,7 +2,6 @@ module Random (module Frequency, module Random) where
 
 import qualified Data.Binary as Binary
 import Data.Ratio
-import Data.List as L
 import qualified System.Random as R
 import Control.Monad.State
 
@@ -31,7 +30,7 @@ chance r =
   do
     let n = numerator r
         d = denominator r
-    k <- randomR (1,d)
+    k <- randomR (1, d)
     return (k <= n)
 
 -- | roll a single die
@@ -45,12 +44,13 @@ oneOf xs =
     return (xs !! r)
 
 frequency :: Frequency a -> Rnd a
-frequency (Frequency xs) =
+frequency (Frequency fs) =
   do
-    r <- randomR (1, sum (map fst xs))
-    return (frequency' r xs)
+    r <- randomR (1, sum (map fst fs))
+    return (frequency' r fs)
  where
   frequency' :: Int -> [(Int, a)] -> a
+  frequency' _ []       = error "frequency'"
   frequency' _ [(_, x)] = x
   frequency' m ((n, x) : xs)
     | m <= n            = x

@@ -2,7 +2,6 @@ module ActorAdd where
 
 import qualified Data.IntMap as IM
 import Data.List as L
-import Data.Map as M
 import Data.Ratio
 import Data.Maybe
 import qualified Data.Char as Char
@@ -10,7 +9,6 @@ import qualified Data.Char as Char
 import Geometry
 import State
 import Level
-import Dungeon
 import Actor
 import ActorState
 import ActorKind
@@ -29,11 +27,11 @@ template :: ActorKind -> Int -> Loc -> Actor
 template mk hp loc = Actor mk hp Nothing TCursor loc [] 'a' 0
 
 nearbyFreeLoc :: Loc -> State -> Loc
-nearbyFreeLoc origin state@(State { slevel = Level { lmap = map } }) =
+nearbyFreeLoc origin state@(State { slevel = Level { lmap = lm } }) =
   let hs = levelHeroList state
       ms = levelMonsterList state
       places = origin : L.nub (concatMap surroundings places)
-      good loc = Tile.isWalkable (map `at` loc)
+      good loc = Tile.isWalkable (lm `at` loc)
                  && not (loc `L.elem` L.map aloc (hs ++ ms))
   in  fromMaybe (error "no nearby free location found") $ L.find good places
 
@@ -73,8 +71,8 @@ initialHeroes ploc state =
 -- could further influence the chance, and the chance could also affect
 -- which monster is generated.
 monsterGenChance :: LevelId -> Int -> Rnd Bool
-monsterGenChance (LambdaCave depth) numMonsters =
-  chance $ 1%(fromIntegral (250 + 200 * (numMonsters - depth)) `max` 50)
+monsterGenChance (LambdaCave d) numMonsters =
+  chance $ 1%(fromIntegral (250 + 200 * (numMonsters - d)) `max` 50)
 
 -- | Create a new monster in the level, at a random position.
 addMonster :: ActorKind -> Int -> Loc -> State -> State

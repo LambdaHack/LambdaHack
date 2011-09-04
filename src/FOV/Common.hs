@@ -14,6 +14,7 @@ type Edge         = (Line, ConvexHull)
 type EdgeInterval = (Edge, Edge)
 
 -- | The translation, rotation and symmetry functions for octants.
+tr0, tr1, tr2, tr3, tr4, tr5, tr6, tr7 :: Loc -> Loc -> Loc
 tr0 (oy,ox) (d,p) = (oy + d,ox + p)
 tr1 (oy,ox) (d,p) = (oy + d,ox - p)
 tr2 (oy,ox) (d,p) = (oy - d,ox + p)
@@ -31,6 +32,7 @@ qtr2 (oy, ox) (B(y, x)) = (oy + y, ox - x)
 qtr3 (oy, ox) (B(y, x)) = (oy + x, ox + y)
 
 -- | Integer division, rounding up.
+divUp :: Int -> Int -> Int
 divUp n k = - (-n) `div` k
 
 -- | Maximal element of a non-empty list. Prefers elements from the rear,
@@ -55,4 +57,3 @@ addHull gte b l =
       then addHull gte b (y:zs)
       else b : l
     _ -> b : l
-

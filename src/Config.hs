@@ -3,12 +3,9 @@ module Config
 
 import System.Directory
 import System.FilePath
-import System.IO
-import Control.Monad.Error
 
 import qualified Data.ConfigFile as CF
 import Data.Either.Utils
-import Data.Maybe
 import qualified Data.Binary as Binary
 
 import qualified ConfigDefault
@@ -16,7 +13,7 @@ import qualified ConfigDefault
 newtype CP = CP CF.ConfigParser
 
 instance Binary.Binary CP where
-  put (CP config) = Binary.put $ CF.to_string config
+  put (CP conf) = Binary.put $ CF.to_string conf
   get = do
     string <- Binary.get
     -- use config in case savegame is from older version and lacks some options
@@ -24,7 +21,7 @@ instance Binary.Binary CP where
     return $ toCP $ forceEither c
 
 instance Show CP where
-  show (CP config) = show $ CF.to_string config
+  show (CP conf) = show $ CF.to_string conf
 
 -- | Switches all names to case sensitive (unlike by default in ConfigFile).
 toSensitive :: CF.ConfigParser -> CF.ConfigParser
@@ -70,23 +67,23 @@ config =
 -- with simple error reporting (no error is caught and hidden).
 -- If there is no config file or no such option, gives Nothing.
 getOption :: CF.Get_C a => CP -> CF.SectionSpec -> CF.OptionSpec -> Maybe a
-getOption (CP config) s o =
-  if CF.has_option config s o
-  then Just $ forceEither $ CF.get config s o
+getOption (CP conf) s o =
+  if CF.has_option conf s o
+  then Just $ forceEither $ CF.get conf s o
   else Nothing
 
 -- | A simplified access to an option in a given section.
 get :: CF.Get_C a => CP -> CF.SectionSpec -> CF.OptionSpec -> a
-get (CP config) s o =
-  if CF.has_option config s o
-  then forceEither $ CF.get config s o
+get (CP conf) s o =
+  if CF.has_option conf s o
+  then forceEither $ CF.get conf s o
   else error $ "unknown config option: " ++ s ++ "." ++ o
 
 -- | An association list corresponding to a section.
 getItems :: CP -> CF.SectionSpec -> [(String, String)]
-getItems (CP config) s =
-  if CF.has_section config s
-  then forceEither $ CF.items config s
+getItems (CP conf) s =
+  if CF.has_section conf s
+  then forceEither $ CF.items conf s
   else error $ "unknown config section: " ++ s
 
 -- | Looks up a file path in the config file and makes it absolute.
@@ -94,20 +91,20 @@ getItems (CP config) s =
 -- the path is appended to it; otherwise, it's appended
 -- to the current directory.
 getFile :: CP -> CF.SectionSpec -> CF.OptionSpec -> IO FilePath
-getFile config s o =
+getFile conf s o =
   do
     current <- getCurrentDirectory
     appData <- getAppUserDataDirectory "Allure"
-    let path    = get config s o
+    let path    = get conf s o
         appPath = combine appData path
         curPath = combine current path
     b <- doesDirectoryExist appData
     return $ if b then appPath else curPath
 
 dump :: FilePath -> CP -> IO ()
-dump fn (CP config) =
+dump fn (CP conf) =
   do
     current <- getCurrentDirectory
-    let path = combine current fn
-        dump = CF.to_string config
-    writeFile path dump
+    let path  = combine current fn
+        sdump = CF.to_string conf
+    writeFile path sdump

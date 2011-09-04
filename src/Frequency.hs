@@ -8,9 +8,9 @@ newtype Frequency a = Frequency { runFrequency :: [(Int, a)] }
 instance Monad Frequency where
   return x  =  Frequency [(1, x)]
   m >>= f   =  Frequency
-               [(p * q, y) | (p, x) <- runFrequency m, 
+               [(p * q, y) | (p, x) <- runFrequency m,
                              (q, y) <- runFrequency (f x) ]
-  fail ""   =  Frequency []
+  fail _    =  Frequency []
 
 instance MonadPlus Frequency where
   mplus (Frequency xs) (Frequency ys) = Frequency (xs ++ ys)
@@ -22,7 +22,7 @@ instance Functor Frequency where
 -- only try the second possibility if the first fails
 melse :: Frequency a -> Frequency a -> Frequency a
 melse (Frequency []) y = y
-melse x              y = x
+melse x             _y = x
 
 scale :: Int -> Frequency a -> Frequency a
 scale n (Frequency xs) = Frequency (map (\ (p, x) -> (n * p, x)) xs)

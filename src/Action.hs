@@ -2,8 +2,7 @@
 module Action where
 
 import Control.Monad
-import Control.Monad.State hiding (State)
-import Data.List as L
+import Control.Monad.State hiding (State, state)
 import qualified Data.IntMap as IM
 -- import System.IO (hPutStrLn, stderr) -- just for debugging
 
@@ -36,7 +35,7 @@ instance Monad Action where
 
 -- | Invokes the continuation.
 returnAction :: a -> Action a
-returnAction x = Action (\ s e p k a st m -> k st m x)
+returnAction x = Action (\ _s _e _p k _a st m -> k st m x)
 
 -- | Distributes the session and shutdown continuation,
 -- threads the state and message.
@@ -47,18 +46,18 @@ bindAction m f = Action (\ s e p k a st ms ->
                            in  runAction m s e p next a st ms)
 
 instance MonadIO Action where
-  liftIO x = Action (\ s e p k a st ms -> x >>= k st ms)
+  liftIO x = Action (\ _s _e _p k _a st ms -> x >>= k st ms)
 
 instance MonadState State Action where
-  get     = Action (\ s e p k a st ms -> k  st ms st)
-  put nst = Action (\ s e p k a st ms -> k nst ms ())
+  get     = Action (\ _s _e _p k _a st ms -> k  st ms st)
+  put nst = Action (\ _s _e _p k _a _st ms -> k nst ms ())
 
 -- | Exported function to run the monad.
 handlerToIO :: Session -> State -> Message -> Action () -> IO ()
-handlerToIO session state msg h =
+handlerToIO sess state msg h =
   runAction h
-    session
-    (Save.rmBkp (sconfig state) >> shutdown session)  -- get out of the game
+    sess
+    (Save.rmBkp (sconfig state) >> shutdown sess)  -- get out of the game
     (perception_ state)        -- cached perception
     (\ _ _ x -> return x)      -- final continuation returns result
     (ioError $ userError "unhandled abort")
@@ -71,11 +70,11 @@ session f = Action (\ s e p k a st ms -> runAction (f s) s e p k a st ms)
 
 -- | Invoking a session command.
 sessionIO :: (Session -> IO a) -> Action a
-sessionIO f = Action (\ s e p k a st ms -> f s >>= k st ms)
+sessionIO f = Action (\ s _e _p k _a st ms -> f s >>= k st ms)
 
 -- | Display the current level with modified current message.
 displayGeneric :: ColorMode -> (String -> String) -> Action Bool
-displayGeneric dm f = Action (\ s e p k a st ms -> displayLevel dm s p st (f ms) Nothing >>= k st ms)
+displayGeneric dm f = Action (\ s _e p k _a st ms -> displayLevel dm s p st (f ms) Nothing >>= k st ms)
 
 -- | Display the current level, with the current message and color. Most common.
 display :: Action Bool
@@ -83,32 +82,32 @@ display = displayGeneric ColorFull id
 
 -- | Display an overlay on top of the current screen.
 overlay :: String -> Action Bool
-overlay txt = Action (\ s e p k a st ms -> displayLevel ColorFull s p st ms (Just txt) >>= k st ms)
+overlay txt = Action (\ s _e p k _a st ms -> displayLevel ColorFull s p st ms (Just txt) >>= k st ms)
 
 -- | Wipe out and set a new value for the current message.
 messageReset :: Message -> Action ()
-messageReset nm = Action (\ s e p k a st ms -> k st nm ())
+messageReset nm = Action (\ _s _e _p k _a st _ms -> k st nm ())
 
 -- | Add to the current message.
 messageAdd :: Message -> Action ()
-messageAdd nm = Action (\ s e p k a st ms -> k st (addMsg ms nm) ())
+messageAdd nm = Action (\ _s _e _p k _a st ms -> k st (addMsg ms nm) ())
 
 -- | Clear the current message.
 messageClear :: Action ()
-messageClear = Action (\ s e p k a st ms -> k st "" ())
+messageClear = Action (\ _s _e _p k _a st _ms -> k st "" ())
 
 -- | Get the current message.
 currentMessage :: Action Message
-currentMessage = Action (\ s e p k a st ms -> k st ms ms)
+currentMessage = Action (\ _s _e _p k _a st ms -> k st ms ms)
 
 -- | End the game, i.e., invoke the shutdown continuation.
 end :: Action ()
-end = Action (\ s e p k a st ms -> e)
+end = Action (\ _s e _p _k _a _st _ms -> e)
 
 -- | Reset the state and resume from the last backup point, i.e., invoke
 -- the failure continuation.
 abort :: Action a
-abort = Action (\ s e p k a st ms -> a)
+abort = Action (\ _s _e _p _k a _st _ms -> a)
 
 -- | Perform an action and signal an error if the result is False.
 assertTrue :: Action Bool -> Action ()
@@ -142,7 +141,7 @@ tryRepeatedly = tryRepeatedlyWith (return ())
 
 -- | Print a debug message or ignore.
 debug :: String -> Action ()
-debug x = return () -- liftIO $ hPutStrLn stderr x
+debug _x = return () -- liftIO $ hPutStrLn stderr _x
 
 -- | Print the given message, then abort.
 abortWith :: Message -> Action a
@@ -186,7 +185,7 @@ messageOverlayConfirm msg txt = messageOverlaysConfirm msg [txt]
 -- | Prints several overlays, one per page, and awaits confirmation.
 -- Return value indicates if the player tried to abort/escape.
 messageOverlaysConfirm :: Message -> [String] -> Action Bool
-messageOverlaysConfirm msg [] =
+messageOverlaysConfirm _msg [] =
   do
     messageClear
     display
@@ -194,8 +193,8 @@ messageOverlaysConfirm msg [] =
 messageOverlaysConfirm msg (x:xs) =
   do
     messageReset msg
-    b <- overlay (x ++ more)
-    if b
+    b0 <- overlay (x ++ more)
+    if b0
       then do
         b <- session getConfirm
         if b
@@ -216,7 +215,7 @@ withPerception h = Action (\ s e _ k a st ms ->
 
 -- | Get the current perception.
 currentPerception :: Action Perceptions
-currentPerception = Action (\ s e p k a st ms -> k st ms p)
+currentPerception = Action (\ _s _e p k _a st ms -> k st ms p)
 
 -- | If in targeting mode, check if the current level is the same
 -- as player level and refuse performing the action otherwise.

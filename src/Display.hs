@@ -20,8 +20,7 @@ import qualified Data.Char as Char
 import Data.Set as S
 import Data.List as L
 import Data.Map as M
-import qualified Data.IntMap as IM
-import Control.Monad.State hiding (State) -- for MonadIO, seems to be portable between mtl-1 and 2
+import Control.Monad.State hiding (State, state) -- for MonadIO, seems to be portable between mtl-1 and 2
 import Data.Maybe
 
 import Message
@@ -43,9 +42,14 @@ import WorldLoc
 -- for translating keys to a canonical form.
 type InternalSession = D.Session
 type Session = (InternalSession, M.Map K.Key K.Key)
+display :: Area -> Session -> (Loc -> (Color.Attr, Char)) -> String -> String
+           -> IO ()
 display area = D.display area . fst
+startup :: (InternalSession -> IO ()) -> IO ()
 startup = D.startup
+shutdown :: Session -> IO ()
 shutdown = D.shutdown . fst
+displayId :: String
 displayId = D.displayId
 
 -- | Next event translated to a canonical form.
@@ -127,15 +131,15 @@ displayLevel
   dm session per
   (state@(State { scursor = cursor,
                   stime   = time,
-                  sassocs = assocs,
-                  slevel  = Level ln _ (sy, sx) _ smap lmap _ }))
+                  sassocs = asso,
+                  slevel  = Level ln _ (sy, sx) _ smap lm _ }))
   msg moverlay =
   let Actor { akind = ActorKind { bhpMax = xhp },
               ahp = php, aloc = ploc, aitems = pitems } = getPlayerBody state
       reachable = ptreachable per
       visible   = ptvisible per
       overlay   = fromMaybe "" moverlay
-      (n, over) = stringByLocation (sy+1) overlay -- n overlay screens needed
+      (ns, over) = stringByLocation (sy+1) overlay -- n overlay screens needed
       sSml   = ssensory state == Smell
       sVis   = case ssensory state of Vision _ -> True; _ -> False
       sOmn   = sdisplay state == Omniscient
@@ -146,36 +150,36 @@ displayLevel
                                  else if rea
                                       then Color.Magenta
                                       else Color.defBG
-                else \ vis rea -> Color.defBG
+                else \ _vis _rea -> Color.defBG
       wealth  = L.sum $ L.map itemPrice pitems
       damage  = case strongestItem pitems "sword" of
                   Just sw -> 3 + ipower sw
                   Nothing -> 3
       hs      = levelHeroList state
       ms      = levelMonsterList state
-      dis n loc =
-        let tile = lmap `lAt` loc
-            sml  = ((smap ! loc) - time) `div` 100
+      dis n loc0 =
+        let tile = lm `lAt` loc0
+            sml  = ((smap ! loc0) - time) `div` 100
             viewActor loc (Actor { akind = mk })
               | loc == ploc && ln == creturnLn cursor =
                   (bsymbol mk, Color.defBG)  -- highlight player
               | otherwise = (bsymbol mk, bcolor mk)
             viewSmell :: Int -> Char
-            viewSmell n
-              | n > 9     = '*'
-              | n < 0     = '-'
-              | otherwise = Char.intToDigit n
+            viewSmell k
+              | k > 9     = '*'
+              | k < 0     = '-'
+              | otherwise = Char.intToDigit k
             rainbow loc = toEnum ((fst loc + snd loc) `mod` 14 + 1)
-            (char, fg) =
-              case L.find (\ m -> loc == aloc m) (hs ++ ms) of
-                Just m | sOmn || vis -> viewActor loc m
-                _ | sSml && sml >= 0 -> (viewSmell sml, rainbow loc)
-                  | otherwise        -> viewTile vis tile assocs
-            vis = S.member loc visible
-            rea = S.member loc reachable
-            bg = if ctargeting cursor && loc == clocation cursor
-                 then Color.defFG      -- highlight targeting cursor
-                 else sVisBG vis rea  -- FOV debug
+            (char, fg0) =
+              case L.find (\ m -> loc0 == aloc m) (hs ++ ms) of
+                Just m | sOmn || vis -> viewActor loc0 m
+                _ | sSml && sml >= 0 -> (viewSmell sml, rainbow loc0)
+                  | otherwise        -> viewTile vis tile asso
+            vis = S.member loc0 visible
+            rea = S.member loc0 reachable
+            bg0 = if ctargeting cursor && loc0 == clocation cursor
+                  then Color.defFG      -- highlight targeting cursor
+                  else sVisBG vis rea  -- FOV debug
             reverseVideo = (snd Color.defaultAttr, fst Color.defaultAttr)
             optVisually (fg, bg) =
               if fg == Color.defBG
@@ -185,8 +189,8 @@ displayLevel
                    else (fg, bg)
             a = case dm of
                   ColorBW   -> Color.defaultAttr
-                  ColorFull -> optVisually (fg, bg)
-        in case over (loc `shift` ((sy+1) * n, 0)) of
+                  ColorFull -> optVisually (fg0, bg0)
+        in case over (loc0 `shift` ((sy+1) * n, 0)) of
              Just c -> (Color.defaultAttr, c)
              _      -> (a, char)
       status =
@@ -195,14 +199,14 @@ displayLevel
         take 10 ("$: " ++ show wealth ++ repeat ' ') ++
         take 10 ("Dmg: " ++ show damage ++ repeat ' ') ++
         take 20 ("HP: " ++ show php ++ " (" ++ show xhp ++ ")" ++ repeat ' ')
-      disp n msg = display ((0, 0), (sy, sx)) session (dis n) msg status
+      disp n mesg = display ((0, 0), (sy, sx)) session (dis n) mesg status
       msgs = splitMsg sx msg
       perf k []     = perfo k ""
       perf k [xs]   = perfo k xs
-      perf k (x:xs) = disp n (x ++ more) >> getConfirm session >>= \ b ->
+      perf k (x:xs) = disp ns (x ++ more) >> getConfirm session >>= \ b ->
                       if b then perf k xs else return False
       perfo k xs
-        | k < n - 1 = disp k xs >> getConfirm session >>= \ b ->
-                      if b then perfo (k+1) xs else return False
+        | k < ns - 1 = disp k xs >> getConfirm session >>= \ b ->
+                       if b then perfo (k+1) xs else return False
         | otherwise = disp k xs >> return True
   in  perf 0 msgs

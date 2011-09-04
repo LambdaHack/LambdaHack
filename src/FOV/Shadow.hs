@@ -71,11 +71,11 @@ for the square is added to the shadow set.
 -- If Just something, we're in a visible interval. If Nothing, we're in
 -- a shadowed interval.
 scan :: ((Distance, Progress) -> Loc) -> LMap -> Distance -> Interval -> Set Loc
-scan tr l d (s,e) =
-    let ps = downBias (s * fromIntegral d)   -- minimal progress to check
+scan tr l d (s0,e) =
+    let ps = downBias (s0 * fromIntegral d)   -- minimal progress to check
         pe = upBias (e * fromIntegral d)     -- maximal progress to check
         st = if Tile.isClear (l `at` tr (d,ps))
-             then Just s   -- start in light
+             then Just s0   -- start in light
              else Nothing  -- start in shadow
     in
         -- trace (show (d,s,e,ps,pe)) $

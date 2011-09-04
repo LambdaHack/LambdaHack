@@ -1,7 +1,6 @@
 module Main where
 
 import System.Directory
-import Data.Map as M
 import qualified System.Random as R
 
 import Action
@@ -25,13 +24,13 @@ start internalSession = do
   config <- Config.config
   let section = Config.getItems config "macros"
       !macros = K.macroKey section
-      session = (internalSession, macros)
+      sess = (internalSession, macros)
   -- check if we have a savegame
   f <- Save.file config
   b <- doesFileExist f
   restored <- if b
               then do
-                     Display.displayBlankConfirm session "Restoring save game"
+                     Display.displayBlankConfirm sess "Restoring save game"
                      Save.restoreGame config
               else return $ Right "Welcome to Allure of the Stars!"  -- new game
   case restored of
@@ -41,11 +40,11 @@ start internalSession = do
         Just seed -> R.setStdGen (R.mkStdGen seed)
         Nothing -> return ()
       (ploc, lvl, dng) <- rndToIO $ generate config
-      assocs <- rndToIO $ dungeonAssocs
+      asso <- rndToIO $ dungeonAssocs
       let defState = defaultState dng lvl
-          state = defState { sconfig = config, sassocs = assocs }
+          state = defState { sconfig = config, sassocs = asso }
           hstate = initialHeroes ploc state
-      handlerToIO session hstate msg handle
+      handlerToIO sess hstate msg handle
     Left state ->
       -- TODO: save and restore random seed
-      handlerToIO session state "Welcome back to Allure of the Stars." handle
+      handlerToIO sess state "Welcome back to Allure of the Stars." handle

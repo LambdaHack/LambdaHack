@@ -10,23 +10,23 @@ import qualified TileKind
 import qualified Tile
 
 viewTile :: Bool -> Tile.Tile -> Assocs -> (Char, Color.Color)
-viewTile b (Tile.Tile t _ _ [])    a =
+viewTile b (Tile.Tile t _ _ [])     _a =
   let u = TileKind.getKind t
   in (TileKind.usymbol u, if b then TileKind.ucolor u else TileKind.ucolor2 u)
-viewTile b (Tile.Tile t _ _ (i:_)) a = Item.viewItem (ikind i) a
+viewTile _b (Tile.Tile _t _ _ (i:_)) a = Item.viewItem (ikind i) a
 
 -- | Produces a textual description of the terrain and items at an already
 -- explored location. Mute for unknown locations.
 -- The "detailed" variant is for use in the targeting mode.
 lookAt :: Bool -> Bool -> State -> LMap -> Loc -> String -> String
-lookAt detailed canSee s lmap loc msg
+lookAt detailed canSee s lm loc msg
   | detailed  =
-    let tile = lmap `rememberAt` loc
+    let tile = lm `rememberAt` loc
         name = TileKind.uname . TileKind.getKind . Tile.tkind $ tile
     in name ++ " " ++ msg ++ isd
   | otherwise = msg ++ isd
   where
-    is  = Tile.titems (lmap `rememberAt` loc)
+    is  = Tile.titems (lm `rememberAt` loc)
     prefixSee = if canSee then "You see " else "You remember "
     prefixThere = if canSee
                   then "There are several objects here"

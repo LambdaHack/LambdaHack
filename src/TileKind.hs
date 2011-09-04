@@ -10,9 +10,7 @@ import Data.Maybe
 
 import qualified Color
 import Geometry
-import WorldLoc
 
-import Color
 import Effect
 import Random
 
@@ -170,6 +168,7 @@ unknown = TileKind
   , ufeature = []
   }
 
+wallId, openingId, floorDarkId, floorLightId, unknownId, doorOpenId, doorClosedId, doorSecretId :: TileKindId
 wallId = TileKindId $ fromJust $ L.elemIndex wall content
 openingId = TileKindId $ fromJust $ L.elemIndex opening content
 floorDarkId = TileKindId $ fromJust $ L.elemIndex floorDark content
@@ -188,13 +187,13 @@ stairs False Down = TileKindId $ fromJust $ L.elemIndex stairsDarkDown content
 door :: Maybe Int -> TileKindId
 door Nothing  = doorOpenId
 door (Just 0) = doorClosedId
-door (Just n) = doorSecretId
+door (Just _) = doorSecretId
 
 deStairs :: TileKindId -> Maybe VDir
 deStairs t =
   let isCD f = case f of Climbable -> True; Descendable -> True; _ -> False
-      f = ufeature (getKind t)
-  in case L.filter isCD f of
+      fk = ufeature (getKind t)
+  in case L.filter isCD fk of
        [Climbable] -> Just Up
        [Descendable] -> Just Down
        _ -> Nothing

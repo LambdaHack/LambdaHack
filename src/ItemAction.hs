@@ -1,37 +1,26 @@
 module ItemAction where
 
 import Control.Monad
-import Control.Monad.State hiding (State)
-import Data.Function
+import Control.Monad.State hiding (State, state)
 import Data.List as L
 import Data.Map as M
-import qualified Data.IntMap as IM
 import Data.Maybe
 import Data.Set as S
-import System.Time
 
 import Action
 import Display hiding (display)
-import Dungeon
 import Geometry
 import Grammar
-import qualified HighScores as H
 import Item
 import qualified ItemKind
 import qualified Keys as K
 import Level
-import LevelState
-import Message
 import Actor
 import ActorState
 import ActorKind
 import ActorAdd
 import Perception
-import Random
 import State
-import qualified Config
-import qualified Save
-import qualified Effect
 import EffectAction
 import qualified Tile
 
@@ -188,7 +177,7 @@ dropItem = do
 -- TODO: this is a hack for dropItem, because removeFromInventory
 -- makes it impossible to drop items if the floor not empty.
 removeOnlyFromInventory :: ActorId -> Item -> Loc -> Action ()
-removeOnlyFromInventory actor i loc = do
+removeOnlyFromInventory actor i _loc = do
   updateAnyActor actor (\ m -> m { aitems = removeItemByLetter i (aitems m) })
 
 -- | Remove given item from an actor's inventory or floor.
@@ -207,8 +196,8 @@ removeFromInventory actor i loc = do
 -- | Remove given item from the given location. Tell if successful.
 removeFromLoc :: Item -> Loc -> Action Bool
 removeFromLoc i loc = do
-  lmap  <- gets (lmap . slevel)
-  if not $ L.any (equalItemIdentity i) (Tile.titems (lmap `at` loc))
+  lm <- gets (lmap . slevel)
+  if not $ L.any (equalItemIdentity i) (Tile.titems (lm `at` loc))
     then return False
     else
       modify (updateLevel (updateLMap adj)) >>
@@ -222,16 +211,16 @@ actorPickupItem actor = do
   state <- get
   pl    <- gets splayer
   per   <- currentPerception
-  lmap  <- gets (lmap . slevel)
+  lm  <- gets (lmap . slevel)
   body  <- gets (getActor actor)
   let loc       = aloc body
-      t         = lmap `at` loc -- the map tile in question
+      t         = lm `at` loc -- the map tile in question
       perceived = loc `S.member` ptvisible per
       isPlayer  = actor == pl
   -- check if something is here to pick up
   case Tile.titems t of
     []   -> abortIfWith isPlayer "nothing here"
-    i:rs -> -- pick up first item; TODO: let player select item;not for monsters
+    i:_rs ->  -- pick up first item; TODO: let player select item; not for monsters
       case assignLetter (iletter i) (aletter body) (aitems body) of
         Just l -> do
           let (ni, nitems) = joinItem (i { iletter = Just l }) (aitems body)
@@ -283,10 +272,10 @@ getItem :: String ->              -- prompt message
            String ->              -- how to refer to the collection of objects
            Action (Maybe Item)
 getItem prompt p ptext is0 isn = do
-  lmap  <- gets (lmap . slevel)
+  lm  <- gets (lmap . slevel)
   body  <- gets getPlayerBody
   let loc       = aloc body
-      t         = lmap `at` loc -- the map tile in question
+      t         = lm `at` loc -- the map tile in question
       tis       = Tile.titems t
       floorMsg  = if L.null tis then "" else " -,"
       is = L.filter p is0
@@ -294,7 +283,7 @@ getItem prompt p ptext is0 isn = do
                then "[*," ++ floorMsg ++ " ESC]"
                else let r = letterRange (concatMap (maybeToList . iletter) is)
                     in  "[" ++ r ++ ", ?, *," ++ floorMsg ++ " RET, ESC]"
-      interact = do
+      ask = do
         when (L.null is0 && L.null tis) $
           abortWith "Not carrying anything."
         messageReset (prompt ++ " " ++ choice)
@@ -306,21 +295,21 @@ getItem prompt p ptext is0 isn = do
           K.Char '?' -> do
             -- filter for supposedly suitable objects
             b <- displayItems (ptext ++ " " ++ isn) True is
-            if b then session (getOptionalConfirm (const interact) perform)
-                 else interact
+            if b then session (getOptionalConfirm (const ask) perform)
+                 else ask
           K.Char '*' -> do
             -- show all objects
             b <- displayItems ("Objects " ++ isn) True is0
-            if b then session (getOptionalConfirm (const interact) perform)
-                 else interact
+            if b then session (getOptionalConfirm (const ask) perform)
+                 else ask
           K.Char '-' ->
             case tis of
               []   -> return Nothing
-              i:rs -> -- use first item; TODO: let player select item
+              i:_rs -> -- use first item; TODO: let player select item
                       return $ Just i
           K.Char l   ->
             return (find (\ i -> maybe False (== l) (iletter i)) is0)
           K.Return   ->  -- TODO: i should be the first displayed (except $)
             return (case is of [] -> Nothing ; i : _ -> Just i)
           _          -> return Nothing
-  interact
+  ask

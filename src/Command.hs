@@ -4,7 +4,6 @@ import Action
 import Actions
 import ItemAction
 import Geometry
-import Level
 import Version
 
 data Described a = Described { chelp :: String, caction :: a }
@@ -13,6 +12,8 @@ data Described a = Described { chelp :: String, caction :: a }
 type Command    = Described (Action ())
 type DirCommand = Described (Dir -> Action ())
 
+
+closeCommand, pickupCommand, dropCommand, inventoryCommand, ascendCommand, descendCommand, floorCommand, monsterCommand, quaffCommand, readCommand, throwCommand, aimCommand, waitCommand, saveCommand, quitCommand, cancelCommand, historyCommand, dumpCommand, heroCommand, versionCommand :: Described (Action ())
 closeCommand     = Described "close a door"      (checkCursor closeDoor)
 pickupCommand    = Described "get an object"     (checkCursor pickupItem)
 dropCommand      = Described "drop an object"    (checkCursor dropItem)
@@ -29,11 +30,14 @@ waitCommand      = Described "wait"              playerAdvanceTime
 saveCommand      = Described "save and exit the game" saveGame
 quitCommand      = Described "quit without saving" quitGame
 cancelCommand    = Described "cancel action"     cancelCurrent
-acceptCommand h  = Described "accept choice"     (acceptCurrent h)
 historyCommand   = Described "display previous messages" displayHistory
 dumpCommand      = Described "dump current configuration" dumpConfig
 heroCommand      = Described "cycle among heroes on level" cycleHero
 versionCommand   = Described "display game version" (abortWith version)
 
+acceptCommand :: Action () -> Described (Action ())
+acceptCommand h  = Described "accept choice"     (acceptCurrent h)
+
+moveDirCommand, runDirCommand :: Described (Dir -> Action ())
 moveDirCommand   = Described "move in direction" move
 runDirCommand    = Described "run in direction"  run

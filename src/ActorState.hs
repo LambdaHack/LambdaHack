@@ -20,14 +20,14 @@ import WorldLoc
 
 -- | Finds an actor body on any level. Error if not found.
 findActorAnyLevel :: ActorId -> State -> Maybe (LevelId, Actor)
-findActorAnyLevel actor state@(State { slevel   = lvl,
-                                       sdungeon = Dungeon m }) =
+findActorAnyLevel actor (State { slevel   = lvl0,
+                                 sdungeon = Dungeon m0 }) =
   let chk lvl =
         fmap (\ m -> (lname lvl, m)) $
         case actor of
           AHero n    -> IM.lookup n (lheroes lvl)
           AMonster n -> IM.lookup n (lmonsters lvl)
-  in  listToMaybe $ mapMaybe chk (lvl : M.elems m)
+  in  listToMaybe $ mapMaybe chk (lvl0 : M.elems m0)
 
 getPlayerBody :: State -> Actor
 getPlayerBody state = snd $ fromMaybe (error "getPlayerBody") $

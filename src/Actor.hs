@@ -22,26 +22,26 @@ data Actor = Actor
   deriving Show
 
 instance Binary Actor where
-  put (Actor akind ahp adir atarget aloc aitems aletter atime) =
+  put (Actor ak ah ad at al ai ale ati) =
     do
-      put akind
-      put ahp
-      put adir
-      put atarget
-      put aloc
-      put aitems
-      put aletter
-      put atime
+      put ak
+      put ah
+      put ad
+      put at
+      put al
+      put ai
+      put ale
+      put ati
   get = do
-          akind   <- get
-          ahp     <- get
-          adir    <- get
-          atarget <- get
-          aloc    <- get
-          aitems  <- get
-          aletter <- get
-          atime   <- get
-          return (Actor akind ahp adir atarget aloc aitems aletter atime)
+          ak  <- get
+          ah  <- get
+          ad  <- get
+          at  <- get
+          al  <- get
+          ai  <- get
+          ale <- get
+          ati <- get
+          return (Actor ak ah ad at al ai ale ati)
 
 data ActorId = AHero Int     -- ^ hero index (on the lheroes intmap)
              | AMonster Int  -- ^ monster index (on the lmonsters intmap)

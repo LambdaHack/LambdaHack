@@ -21,13 +21,13 @@ import qualified Tile
 -- a shadowed interval.
 dscan :: Distance -> (Bump -> Loc) -> LMap -> Distance -> EdgeInterval ->
          Set Loc
-dscan r tr l d (s@(sl{-shallow line-}, sBumps), e@(el{-steep line-}, eBumps)) =
+dscan r tr l d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps))=
   -- trace (show (d,s,e,ps,pe)) $
-  S.union outside (S.fromList [tr (B(d, p)) | p <- [ps..pe]])
+  S.union outside (S.fromList [tr (B(d, p)) | p <- [ps0..pe]])
     -- the scanned area is a square, which is a sphere in this metric; good
     where
-      ps = let (n, k) = dintersect sl d       -- minimal progress to check
-           in  n `div` k
+      ps0 = let (n, k) = dintersect sl d      -- minimal progress to check
+            in  n `div` k
       pe = let (n, k) = dintersect el d       -- maximal progress to check
                -- Corners obstruct view, so the steep line, constructed
                -- from corners, is itself not a part of the view,
@@ -36,10 +36,10 @@ dscan r tr l d (s@(sl{-shallow line-}, sBumps), e@(el{-steep line-}, eBumps)) =
            in  -1 + n `divUp` k
       outside
         | d >= r = S.empty
-        | ps > pe = error $ "dscan: wrong start " ++ show (d, (ps, pe))
-        | Tile.isClear (l `at` tr (B(d, ps))) =
-            dscan' (Just s) (ps+1)            -- start in light, jump ahead
-        | otherwise = dscan' Nothing (ps+1)   -- start in shadow, jump ahead
+        | ps0 > pe = error $ "dscan: wrong start " ++ show (d, (ps0, pe))
+        | Tile.isClear (l `at` tr (B(d, ps0))) =
+            dscan' (Just s0) (ps0+1)          -- start in light, jump ahead
+        | otherwise = dscan' Nothing (ps0+1)  -- start in shadow, jump ahead
 
       dscan' :: Maybe Edge -> Progress -> Set Loc
       dscan' (Just s@(_, sBumps)) ps
@@ -64,7 +64,7 @@ dscan r tr l d (s@(sl{-shallow line-}, sBumps), e@(el{-steep line-}, eBumps)) =
           shallowBump = B(d, ps)
           gte = flip $ dsteeper shallowBump
           nsp = maximal gte eBumps
-          nsBumps = addHull gte shallowBump sBumps
+          nsBumps = addHull gte shallowBump sBumps0
 
       dline p1 p2 =
         ddebugLine $  -- TODO: disable when it becomes a bottleneck
