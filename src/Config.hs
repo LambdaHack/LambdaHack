@@ -58,7 +58,7 @@ config =
     f <- file
     b <- doesFileExist f
     if not b
-      then return $ toCP $ defCF
+      then return $ toCP defCF
       else do
         c <- CF.readfile defCF f
         return $ toCP $ forceEither c

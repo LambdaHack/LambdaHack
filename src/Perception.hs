@@ -38,7 +38,7 @@ actorPrLoc projection actor loc per pl =
                   AMonster _ -> Nothing
                   AHero i -> do
                     hper <- IM.lookup i (pheroes per)
-                    return $ loc `S.member` (projection hper)
+                    return $ loc `S.member` projection hper
       tryPl   = do  -- the case for a monster under player control
                   guard $ Just actor == pl
                   pper <- pplayer per
@@ -107,9 +107,7 @@ perception fovMode ploc lm =
     litVisible = S.insert ploc uniVisible
     -- Reachable fields adjacent to lit fields are visible, too.
     adjVisible =
-      S.filter
-        (\ loc -> L.any (\ l -> S.member l litVisible) (surroundings loc))
-        reachable
+      S.filter (L.any (`S.member` litVisible) . surroundings) reachable
     -- Visible fields are either lit or adjacent to lit.
     visible = S.union litVisible adjVisible
   in Perception reachable visible

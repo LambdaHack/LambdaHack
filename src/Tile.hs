@@ -40,7 +40,7 @@ isOpening :: Tile -> Bool
 isOpening t = tkind t == TileKind.openingId
 
 hasFeature :: TileKind.Feature -> Tile -> Bool
-hasFeature f t = L.elem f (TileKind.ufeature . TileKind.getKind . tkind $ t)
+hasFeature f t = f `elem` (TileKind.ufeature . TileKind.getKind . tkind $ t)
 
 -- | Does not block vision
 isClear :: Tile -> Bool

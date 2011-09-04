@@ -7,6 +7,7 @@ import qualified Data.Map as M
 import Data.Maybe
 import Data.Char
 import Data.Function
+import Data.Ord
 import Control.Monad
 
 import Random
@@ -85,7 +86,7 @@ assignLetter r c is =
       Just l | l `L.elem` allowed -> Just l
       _ -> listToMaybe free
   where
-    current    = S.fromList (concatMap (maybeToList . iletter) is)
+    current    = S.fromList (mapMaybe iletter is)
     allLetters = ['a'..'z'] ++ ['A'..'Z']
     candidates = take (length allLetters) $
                    drop (fromJust (L.findIndex (==c) allLetters)) $
@@ -151,9 +152,9 @@ removeItemBy :: (Item -> Item -> Bool) -> Item -> [Item] -> [Item]
 removeItemBy eq i = concatMap $ \ x ->
                     if eq i x
                       then let remaining = icount x - icount i
-                           in  if remaining > 0
-                                 then [x { icount = remaining }]
-                                 else []
+                           in if remaining > 0
+                              then [x { icount = remaining }]
+                              else []
                       else [x]
 
 equalItemIdentity :: Item -> Item -> Bool
@@ -179,7 +180,7 @@ findItem p = findItem' []
 
 strongestItem :: [Item] -> String -> Maybe Item
 strongestItem is groupName =
-  let cmp = compare `on` ipower
+  let cmp = comparing ipower
       igs = L.filter (\ i -> jname (getKind (ikind i)) == groupName) is
   in  case igs of
         [] -> Nothing

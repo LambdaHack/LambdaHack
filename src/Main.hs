@@ -40,7 +40,7 @@ start internalSession = do
         Just seed -> R.setStdGen (R.mkStdGen seed)
         Nothing -> return ()
       (ploc, lvl, dng) <- rndToIO $ generate config
-      asso <- rndToIO $ dungeonAssocs
+      asso <- rndToIO dungeonAssocs
       let defState = defaultState dng lvl
           state = defState { sconfig = config, sassocs = asso }
           hstate = initialHeroes ploc state

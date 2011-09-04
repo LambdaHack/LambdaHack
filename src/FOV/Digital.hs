@@ -67,7 +67,7 @@ dscan r tr l d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps))=
           nsBumps = addHull gte shallowBump sBumps0
 
       dline p1 p2 =
-        ddebugLine $  -- TODO: disable when it becomes a bottleneck
+        ddebugLine  -- TODO: disable when it becomes a bottleneck
         (p1, p2)
 
       dsteeper f p1 p2 =

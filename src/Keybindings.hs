@@ -16,12 +16,11 @@ data Keybindings = Keybindings
 
 handleKey :: Keybindings -> K.Key -> Action ()
 handleKey kb k =
-  do
-    K.handleDirection k (caction $ kdir kb) $
-      K.handleUDirection k (caction $ kudir kb) $
-        case M.lookup k (kother kb) of
-          Just c  -> caction c
-          Nothing -> abortWith $ "unknown command (" ++ K.showKey k ++ ")"
+  K.handleDirection k (caction $ kdir kb) $
+    K.handleUDirection k (caction $ kudir kb) $
+      case M.lookup k (kother kb) of
+        Just c  -> caction c
+        Nothing -> abortWith $ "unknown command (" ++ K.showKey k ++ ")"
 
 keyHelp :: (K.Key -> [K.Key]) -> Keybindings -> String
 keyHelp aliases kb =

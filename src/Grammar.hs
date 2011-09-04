@@ -25,7 +25,7 @@ capitalize (c : cs) = toUpper c : cs
 
 -- | How to refer to an actor in object position of a sentence.
 objectActor :: ActorKind -> String
-objectActor mk = bname mk
+objectActor = bname
 
 -- | How to refer to an actor in subject position of a sentence.
 subjectActor :: ActorKind -> String

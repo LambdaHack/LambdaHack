@@ -55,26 +55,23 @@ effectToAction Effect.Heal _ _source target power = do
       return (True, subjectActorVerb (akind tm) "feel" ++ " better.")
 effectToAction (Effect.Wound nDm) verbosity source target power = do
   n <- liftIO $ rndToIO $ rollDice nDm
-  if (n + power <= 0) then nullEffect else do
+  if n + power <= 0 then nullEffect else do
     focusIfAHero target
     tm <- gets (getActor target)
     let newHP  = ahp tm - n - power
         killed = newHP <= 0
-        msg = if source == target  -- a potion of wounding, etc.
-              then subjectActorVerb (akind tm) "feel"
-                   ++ if killed then " mortally" else ""
-                   ++ " wounded."
-              else if killed
-                   then if isAHero target
-                        then ""
-                        else subjectActorVerb (akind tm) "die" ++ "."
-                   else if verbosity <= 0
-                        then ""
-                        else if isAHero target
-                             then subjectActorVerb (akind tm) "lose"
-                                  ++ " " ++ show (n + power) ++ "HP."
-                             else subjectActorVerb (akind tm) "hiss"
-                                  ++ " in pain."
+        msg
+          | source == target =  -- a potion of wounding, etc.
+            subjectActorVerb (akind tm) "feel" ++
+              if killed then " mortally" else "" ++ " wounded."
+          | killed =
+            if isAHero target then "" else
+              subjectActorVerb (akind tm) "die" ++ "."
+          | verbosity <= 0 = ""
+          | isAHero target =
+            subjectActorVerb (akind tm) "lose" ++
+              " " ++ show (n + power) ++ "HP."
+          | otherwise = subjectActorVerb (akind tm) "hiss" ++ " in pain."
     updateAnyActor target $ \ m -> m { ahp = newHP }  -- Damage the target.
     when killed $ do
       -- Place the actor's possessions on the map.
@@ -136,9 +133,9 @@ itemEffectAction verbosity source target item = do
   -- and messageActorVerb (incorporating subjectActorVerb).
   if aloc tm `S.member` ptvisible per
      then messageAdd msg
-     else if not b
-          then return ()  -- victim is not seen and nothing interestng happens
-          else messageAdd "You hear some noises."
+     else unless b $
+            -- victim is not seen and but somethig interestng happens
+            messageAdd "You hear some noises."
   -- If something happens, the item gets identified.
   when (b && (isAHero source || isAHero target)) $ discover item
   return b
@@ -153,12 +150,10 @@ discover i = do
       kind = ItemKind.getKind ik
       alreadyIdentified = L.length (ItemKind.jflavour kind) == 1 ||
                           ik `S.member` sdiscoveries state
-  if alreadyIdentified
-    then return ()
-    else do
-           modify (updateDiscoveries (S.insert ik))
-           state2 <- get
-           messageAdd $ msg ++ objectItem state2 i ++ "."
+  unless alreadyIdentified $ do
+    modify (updateDiscoveries (S.insert ik))
+    state2 <- get
+    messageAdd $ msg ++ objectItem state2 i ++ "."
 
 -- | Make the actor controlled by the player.
 -- Focus on the actor if level changes. False, if nothing to do.
@@ -166,12 +161,12 @@ selectPlayer :: ActorId -> Action Bool
 selectPlayer actor =
   do
     pl <- gets splayer
-    if (actor == pl)
+    if actor == pl
       then return False -- already selected
       else do
         state <- get
         case findActorAnyLevel actor state of
-          Nothing -> abortWith $ "No such member of the party."
+          Nothing -> abortWith "No such member of the party."
           Just (nln, pbody) -> do
             -- Make the new actor the player-controlled actor.
             modify (\ s -> s { splayer = actor })
@@ -192,13 +187,11 @@ selectPlayer actor =
 
 focusIfAHero :: ActorId -> Action ()
 focusIfAHero target =
-  if isAHero target
-  then do
+  when (isAHero target) $ do
     -- Focus on the hero being wounded/displaced/etc.
     b <- selectPlayer target
     -- Display status line for the new hero.
     when b $ display >> return ()
-  else return ()
 
 summonHeroes :: Int -> Loc -> Action ()
 summonHeroes n loc =
@@ -268,7 +261,7 @@ calculateTotal s =
 -- False if display of the scores was void or interrupted by the user
 handleScores :: Bool -> H.Status -> Int -> Action Bool
 handleScores write status total =
-  if (total == 0)
+  if total == 0
   then return False
   else do
     config  <- gets sconfig
@@ -286,7 +279,7 @@ lvlSwitch :: LevelId -> Action Bool
 lvlSwitch nln =
   do
     ln <- gets (lname . slevel)
-    if (nln == ln)
+    if nln == ln
       then return False
       else do
         level <- gets slevel

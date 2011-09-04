@@ -93,9 +93,7 @@ save config scores =
   do
     f <- file config
     b <- doesFileExist f
-    if b
-      then removeFile f
-      else return ()
+    when b $ removeFile f
     encodeCompressedFile f (scores, False)
 
 -- | Read the high scores table. Return the empty table if no file.
@@ -112,7 +110,7 @@ restore config = do
 -- | Insert a new score into the table, Return new table and the position.
 insertPos :: ScoreRecord -> ScoreTable -> (ScoreTable, Int)
 insertPos s h =
-  let (prefix, suffix) = L.span (\ x -> x > s) h in
+  let (prefix, suffix) = L.span (> s) h in
   (prefix ++ [s] ++ suffix, L.length prefix + 1)
 
 -- | Show a screenful of the high scores table.
@@ -150,5 +148,5 @@ register config write s =
                           else "")
         msg = printf "Your%s exploits award you place >> %d <<%s."
                 msgCurrent pos msgUnless
-    if write then save config h' else return ()
+    when write $ save config h'
     return (msg, slideshow pos h' height)

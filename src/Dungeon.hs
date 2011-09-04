@@ -79,7 +79,7 @@ toHV False = Vert
 instance R.Random HV where
   randomR (a,b0) g = case R.randomR (fromHV a, fromHV b0) g of
                       (b, g') -> (toHV b, g')
-  random g = R.randomR (minBound, maxBound) g
+  random = R.randomR (minBound, maxBound)
 
 -- | Create a corridor, either horizontal or vertical, with
 -- a possible intermediate part that is in the opposite direction.
@@ -158,8 +158,7 @@ emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
           addRocks $
           maybe id (\ l -> M.insert su (newStairsTile (TileKind.stairs True Up) l)) lu $
           maybe id (\ l -> M.insert sd (newStairsTile (TileKind.stairs True Down) l)) ld $
-          (\lm -> L.foldl' addItem lm is) $
-          lm0
+          (\lm -> L.foldl' addItem lm is) lm0
         level lu ld = Level nm emptyParty (sy,sx) emptyParty smap (flmap lu ld) "bigroom"
     return (level, su, sd)
 
@@ -286,7 +285,7 @@ rogueRoom cfg nm =
                               return (i,r')) gs
     let rooms :: [(Loc, Loc)]
         rooms = L.map snd rs0
-    dlrooms <- (mapM (\ r -> darkRoomChance cfg >>= \ c -> return (r, not c)) rooms) :: Rnd [((Loc, Loc), Bool)]
+    dlrooms <- mapM (\ r -> darkRoomChance cfg >>= \ c -> return (r, not c)) rooms :: Rnd [((Loc, Loc), Bool)]
     let rs = M.fromList rs0
     connects <- connectGrid lgrid
     addedConnects <- replicateM (extraConnects cfg lgrid) (randomConnection lgrid)
@@ -361,10 +360,7 @@ rollPillars :: LevelConfig -> Level -> Rnd [Loc]
 rollPillars cfg lvl =
   do
     nri <- 100 *~ nrItems cfg
-    replicateM nri $
-      do
-        l <- findLoc lvl (const Tile.isBoring)
-        return l
+    replicateM nri $ findLoc lvl (const Tile.isBoring)
 
 emptyLMap :: (Y, X) -> LMap
 emptyLMap (my, mx) =

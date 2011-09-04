@@ -32,7 +32,7 @@ nearbyFreeLoc origin state@(State { slevel = Level { lmap = lm } }) =
       ms = levelMonsterList state
       places = origin : L.nub (concatMap surroundings places)
       good loc = Tile.isWalkable (lm `at` loc)
-                 && not (loc `L.elem` L.map aloc (hs ++ ms))
+                 && loc `L.notElem` L.map aloc (hs ++ ms)
   in  fromMaybe (error "no nearby free location found") $ L.find good places
 
 -- Adding heroes
@@ -52,7 +52,7 @@ addHero ploc state =
       n = fst (scounter state)
       symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
       name = findHeroName config n
-      startHP = bHP `div` (min 10 (n + 1))
+      startHP = bHP `div` min 10 (n + 1)
       m = template mk startHP loc
       state' = state { scounter = (n + 1, snd (scounter state)) }
   in  updateLevel (updateHeroes (IM.insert n m)) state'
@@ -98,7 +98,7 @@ rollMonster state@(State { slevel = lvl }) = do
       -- in adjacent and unexpected places
       loc <- findLocTry 1000 lvl
              (\ l t -> Tile.isWalkable t
-                       && not (l `L.elem` L.map aloc (hs ++ ms)))
+                       && l `L.notElem` L.map aloc (hs ++ ms))
              (\ l t -> not (Tile.isLit t)  -- try a dark, distant place first
                        && L.all (\ pl -> distance (aloc pl, l) > 400) hs)
       let fmk = Frequency $ L.zip (L.map bfreq dungeonMonsters) dungeonMonsters

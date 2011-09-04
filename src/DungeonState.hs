@@ -44,5 +44,5 @@ generate config = do
   let d = Config.get config "dungeon" "depth"
   levels <- mapM (findGenerator config) [1..d]
   let (lvl, lvls) = connect (Just Nothing) levels
-      ploc = ((\ (_,x,_) -> x) (head levels))
-  return $ (ploc, lvl, dungeon lvls)
+      ploc = (\ (_,x,_) -> x) (head levels)
+  return (ploc, lvl, dungeon lvls)

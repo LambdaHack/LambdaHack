@@ -3,7 +3,7 @@ module ItemAction where
 import Control.Monad
 import Control.Monad.State hiding (State, state)
 import Data.List as L
-import Data.Map as M
+import qualified Data.Map as M
 import Data.Maybe
 import Data.Set as S
 
@@ -117,8 +117,7 @@ zapGroupItem source loc verb item = do
       when (sloc `S.member` ptvisible per || isAHero ta) $ messageAdd msg
       -- Messages inside itemEffectAction describe the target part.
       b <- itemEffectAction 10 source ta consumed
-      when (not b) $
-        modify (updateLevel (dropItemsAt [consumed] loc))
+      unless b $ modify (updateLevel (dropItemsAt [consumed] loc))
     Nothing -> do
       when (sloc `S.member` ptvisible per) $ messageAdd msg
       modify (updateLevel (dropItemsAt [consumed] loc))
@@ -177,7 +176,7 @@ dropItem = do
 -- TODO: this is a hack for dropItem, because removeFromInventory
 -- makes it impossible to drop items if the floor not empty.
 removeOnlyFromInventory :: ActorId -> Item -> Loc -> Action ()
-removeOnlyFromInventory actor i _loc = do
+removeOnlyFromInventory actor i _loc =
   updateAnyActor actor (\ m -> m { aitems = removeItemByLetter i (aitems m) })
 
 -- | Remove given item from an actor's inventory or floor.
@@ -190,7 +189,7 @@ removeOnlyFromInventory actor i _loc = do
 removeFromInventory :: ActorId -> Item -> Loc -> Action ()
 removeFromInventory actor i loc = do
   b <- removeFromLoc i loc
-  when (not b) $
+  unless b $
     updateAnyActor actor (\ m -> m { aitems = removeItemByLetter i (aitems m) })
 
 -- | Remove given item from the given location. Tell if successful.
@@ -262,7 +261,7 @@ getAnyItem :: String ->  -- prompt
               [Item] ->  -- all objects in question
               String ->  -- how to refer to the collection of objects
               Action (Maybe Item)
-getAnyItem prompt is isn = getItem prompt (const True) "Objects" is isn
+getAnyItem prompt = getItem prompt (const True) "Objects"
 
 -- | Let the player choose a single item from a list of items.
 getItem :: String ->              -- prompt message
@@ -281,7 +280,7 @@ getItem prompt p ptext is0 isn = do
       is = L.filter p is0
       choice = if L.null is
                then "[*," ++ floorMsg ++ " ESC]"
-               else let r = letterRange (concatMap (maybeToList . iletter) is)
+               else let r = letterRange $ mapMaybe iletter is
                     in  "[" ++ r ++ ", ?, *," ++ floorMsg ++ " RET, ESC]"
       ask = do
         when (L.null is0 && L.null tis) $
@@ -308,7 +307,7 @@ getItem prompt p ptext is0 isn = do
               i:_rs -> -- use first item; TODO: let player select item
                       return $ Just i
           K.Char l   ->
-            return (find (\ i -> maybe False (== l) (iletter i)) is0)
+            return (find (maybe False (== l) . iletter) is0)
           K.Return   ->  -- TODO: i should be the first displayed (except $)
             return (case is of [] -> Nothing ; i : _ -> Just i)
           _          -> return Nothing

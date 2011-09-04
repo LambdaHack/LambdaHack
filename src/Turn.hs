@@ -162,7 +162,7 @@ playerCommand =
   do
     display -- draw the current surroundings
     history -- update the message history and reset current message
-    tryRepeatedlyWith stopRunning $ do -- on abort, just ask for a new command
+    tryRepeatedlyWith stopRunning $  -- on abort, just ask for a new command
       ifRunning continueRun $ do
         k <- session nextCommand
         handleKey stdKeybindings k
@@ -210,8 +210,8 @@ displayHelp = do
   let coImage sess k =
         let macros = snd sess
             domain = M.keysSet macros
-        in  if k `S.member` domain then [] else [k]
-            ++ [ from | (from, to) <- M.assocs macros, to == k ]
+        in  if k `S.member` domain then [] else
+              k : [ from | (from, to) <- M.assocs macros, to == k ]
   aliases <- session (return . coImage)
   let helpString = keyHelp aliases stdKeybindings
   messageOverlayConfirm "Basic keys:" helpString

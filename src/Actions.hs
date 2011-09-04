@@ -85,7 +85,7 @@ endTargeting accept = do
   lvlSwitch returnLn  -- return to the original level of the player
   modify (updateCursor (\ c -> c { ctargeting = False }))
   let isEnemy = case target of TEnemy _ _ -> True ; _ -> False
-  when (not isEnemy) $
+  unless isEnemy $
     if accept
        then updatePlayerBody (\ p -> p { atarget = TLoc cloc })
        else updatePlayerBody (\ p -> p { atarget = TCursor })
@@ -175,13 +175,13 @@ continueRun dir =
         newsReported    = not (L.null msg)
         tile      = lm `at` loc  -- tile at current location
         itemsHere = not (L.null (titems tile))
-        heroThere = L.elem (loc `shift` dir) (L.map aloc (IM.elems hs))
+        heroThere = (loc `shift` dir) `elem` L.map aloc (IM.elems hs)
         dirOK     = accessible lm loc (loc `shift` dir)
         isKExit t  =
           L.elem TileKind.Exit (TileKind.ufeature . TileKind.getKind $ t)
         isFloorDark t =
-          L.elem TileKind.Walkable (TileKind.ufeature . TileKind.getKind $ t) &&
-          not (L.elem TileKind.Lit (TileKind.ufeature . TileKind.getKind $ t))
+          L.elem TileKind.Walkable (TileKind.ufeature . TileKind.getKind $ t)
+          && L.notElem TileKind.Lit (TileKind.ufeature . TileKind.getKind $ t)
     -- What happens next is mostly depending on the terrain we're currently on.
     let hop t
           | monstersVisible || heroThere
@@ -197,7 +197,7 @@ continueRun dir =
                 [onlyDir] -> run onlyDir  -- can be diagonal
                 _         ->
                   -- prefer orthogonal to diagonal dirs, for hero's safety
-                  case L.filter (\ x -> not $ diagonal x) ns of
+                  case L.filter (not . diagonal) ns of
                     [ortoDir]
                       | allCloseTo ortoDir -> run ortoDir
                     _ -> abort
@@ -275,7 +275,7 @@ actorOpenDoor actor dir = do
         else case strongestItem (aitems body) "ring" of  -- TODO: hack
                Just i  -> biq (akind body) + ipower i
                Nothing -> biq (akind body)
-  when (not $ openable openPower lm dloc) $ neverMind isVerbose
+  unless (openable openPower lm dloc) $ neverMind isVerbose
   case TileKind.deDoor (Tile.tkind t) of
     Just (Just _) ->
       -- TODO: print message if action performed by monster and perceived
@@ -324,7 +324,7 @@ lvlChange vdir =
                 if b
                   then fleeDungeon
                   else abortWith "Game resumed."
-            Just (nln, nloc) -> do
+            Just (nln, nloc) ->
               if targeting
                 then do
                   -- this assertion says no stairs go back to the same level
@@ -474,10 +474,8 @@ setCursor _tgt = do  -- TODO: why _tgt unused?
   ploc  <- gets (aloc . getPlayerBody)
   ln    <- gets (lname . slevel)
   let upd cursor =
-        let cloc = case targetToLoc (ptvisible per) state of
-                     Nothing -> ploc
-                     Just l  -> l
-        in  cursor { ctargeting = True, clocation = cloc, clocLn = ln }
+        let cloc = fromMaybe ploc (targetToLoc (ptvisible per) state)
+        in cursor { ctargeting = True, clocation = cloc, clocLn = ln }
   modify (updateCursor upd)
   doLook
 
@@ -537,31 +535,30 @@ moveOrAttack allowAttacks autoOpen actor dir
           tloc = sloc `shift` dir  -- target location
       tgt <- gets (locToActor tloc)
       case tgt of
-        Just target ->
-          if allowAttacks then
-            -- Attacking does not require full access, adjacency is enough.
-            actorAttackActor actor target
-          else if accessible lm sloc tloc then do
-            -- Switching positions requires full access.
-            actorRunActor actor target
-            when (actor == pl) $
-              messageAdd $ lookAt False True state lm tloc ""
-          else abortWith ""
-        Nothing ->
-          if accessible lm sloc tloc then do
-            -- perform the move
-            updateAnyActor actor $ \ body -> body { aloc = tloc }
-            when (actor == pl) $
-              messageAdd $ lookAt False True state lm tloc ""
-            advanceTime actor
-          else if allowAttacks && actor == pl
-                  && canBeSecretDoor (lm `rememberAt` tloc) then do
-            messageAdd "You search your surroundings."  -- TODO: proper msg
-            search
-          else if autoOpen then
-            -- try to open a door
-            actorOpenDoor actor dir
-          else abortWith ""
+        Just target
+          | allowAttacks ->
+              -- Attacking does not require full access, adjacency is enough.
+              actorAttackActor actor target
+          | accessible lm sloc tloc -> do
+              -- Switching positions requires full access.
+              actorRunActor actor target
+              when (actor == pl) $
+                messageAdd $ lookAt False True state lm tloc ""
+          | otherwise -> abortWith ""
+        Nothing
+          | accessible lm sloc tloc -> do
+              -- perform the move
+              updateAnyActor actor $ \ body -> body{aloc = tloc}
+              when (actor == pl) $
+                messageAdd $ lookAt False True state lm tloc ""
+              advanceTime actor
+          | allowAttacks && actor == pl
+            && canBeSecretDoor (lm `rememberAt` tloc)
+            -> do
+              messageAdd "You search your surroundings."  -- TODO: proper msg
+              search
+          | autoOpen -> actorOpenDoor actor dir  -- try to open a door
+          | otherwise -> abortWith ""
 
 -- | Resolves the result of an actor moving into another. Usually this
 -- involves melee attack, but with two heroes it just changes focus.
@@ -614,9 +611,7 @@ actorRunActor source target = do
   updateAnyActor target $ \ m -> m { aloc = sloc }
   if source == pl
     then stopRunning  -- do not switch positions repeatedly
-    else if isAMonster source
-         then focusIfAHero target
-         else return ()
+    else when (isAMonster source) $ focusIfAHero target
   advanceTime source
 
 -- | Generate a monster, possibly.

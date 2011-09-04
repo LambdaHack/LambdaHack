@@ -56,7 +56,7 @@ defaultState dng lvl =
     dng
     lvl
     (0, 0)
-    (Config.defaultCP)
+    Config.defaultCP
 
 updateCursor :: (Cursor -> Cursor) -> State -> State
 updateCursor f s = s { scursor = f (scursor s) }

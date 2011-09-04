@@ -57,10 +57,7 @@ nextCommand :: MonadIO m => Session -> m K.Key
 nextCommand session =
   do
     e <- liftIO $ D.nextEvent (fst session)
-    return $
-      case M.lookup e (snd session) of
-        Just key -> key
-        Nothing  -> K.canonMoveKey e
+    return $ fromMaybe (K.canonMoveKey e) (M.lookup e (snd session))
 
 -- | Displays a message on a blank screen. Waits for confirmation.
 displayBlankConfirm :: Session -> String -> IO Bool
@@ -169,7 +166,7 @@ displayLevel
               | k > 9     = '*'
               | k < 0     = '-'
               | otherwise = Char.intToDigit k
-            rainbow loc = toEnum ((fst loc + snd loc) `mod` 14 + 1)
+            rainbow loc = toEnum $ uncurry (+) loc `mod` 14 + 1
             (char, fg0) =
               case L.find (\ m -> loc0 == aloc m) (hs ++ ms) of
                 Just m | sOmn || vis -> viewActor loc0 m
@@ -182,11 +179,9 @@ displayLevel
                   else sVisBG vis rea  -- FOV debug
             reverseVideo = (snd Color.defaultAttr, fst Color.defaultAttr)
             optVisually (fg, bg) =
-              if fg == Color.defBG
+              if (fg == Color.defBG) || (bg == Color.defFG && fg == Color.defFG)
               then reverseVideo
-              else if bg == Color.defFG && fg == Color.defFG
-                   then reverseVideo
-                   else (fg, bg)
+              else (fg, bg)
             a = case dm of
                   ColorBW   -> Color.defaultAttr
                   ColorFull -> optVisually (fg0, bg0)

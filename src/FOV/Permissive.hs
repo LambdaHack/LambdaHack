@@ -41,7 +41,7 @@ pscan r ptr l d (s0@(sl{-shallow line-}, sBumps0),e@(el{-steep line-}, eBumps))=
       (ps0, pe) = (ns `div` ks, ne `divUp` ke - 1) -- progress interval to check
       -- Single ray from an extremity, produces non-permissive digital lines.
       illegal  = let (n, k) = pintersect sl 0
-                 in  ns*ke == ne*ks && (n == 0 || n == k)
+                 in  ns*ke == ne*ks && (n `elem` [0, k])
       outside
         | d >= r = S.empty
         | Tile.isClear (l `at` tr (d, ps0)) =          -- start in light
@@ -80,7 +80,7 @@ pscan r ptr l d (s0@(sl{-shallow line-}, sBumps0),e@(el{-steep line-}, eBumps))=
             in  pscan' (Just (pline nsp shallowBump, nsBumps)) ps
 
       pline p1 p2 =
-        pdebugLine $  -- TODO: disable when it becomes a bottleneck
+        pdebugLine  -- TODO: disable when it becomes a bottleneck
         (p1, p2)
 
       psteeper f p1 p2 =

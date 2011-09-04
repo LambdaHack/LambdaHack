@@ -200,8 +200,8 @@ deStairs t =
 
 deDoor :: TileKindId -> Maybe (Maybe Bool)
 deDoor t
-  | L.elem Closable (ufeature (getKind t)) = Just Nothing
-  | L.elem Openable (ufeature (getKind t)) = Just (Just False)
+  | Closable `elem` ufeature (getKind t) = Just Nothing
+  | Openable `elem` ufeature (getKind t) = Just (Just False)
   | let isSecret f = case f of Secret _ -> True; _ -> False
     in L.any isSecret (ufeature (getKind t)) = Just (Just True) -- TODO
   | otherwise = Nothing

@@ -113,7 +113,7 @@ abort = Action (\ _s _e _p _k a _st _ms -> a)
 assertTrue :: Action Bool -> Action ()
 assertTrue h = do
   b <- h
-  when (not b) $ error "assertTrue: failure"
+  unless b $ error "assertTrue: failure"
 
 -- | Perform an action and signal an error if the result is True.
 assertFalse :: Action Bool -> Action ()
@@ -198,8 +198,7 @@ messageOverlaysConfirm msg (x:xs) =
       then do
         b <- session getConfirm
         if b
-          then do
-            messageOverlaysConfirm msg xs
+          then messageOverlaysConfirm msg xs
           else stop
       else stop
   where
@@ -239,13 +238,13 @@ updatePlayerBody f = do
 advanceTime :: ActorId -> Action ()
 advanceTime actor = do
   time <- gets stime
-  let upd m = m { atime = time + (bspeed (akind m)) }
+  let upd m = m { atime = time + bspeed (akind m) }
   -- A hack to synchronize the whole party:
   pl <- gets splayer
-  if (actor == pl || isAHero actor)
+  if actor == pl || isAHero actor
     then do
            modify (updateLevel (updateHeroes (IM.map upd)))
-           when (not $ isAHero pl) $ updatePlayerBody upd
+           unless (isAHero pl) $ updatePlayerBody upd
     else updateAnyActor actor upd
 
 playerAdvanceTime :: Action ()

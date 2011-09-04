@@ -6,6 +6,7 @@ import qualified Data.IntMap as IM
 import Data.Maybe
 import Control.Monad
 import Control.Exception (assert)
+import Control.Arrow
 
 import Geometry
 import Level
@@ -75,9 +76,9 @@ strategy actor
       memActor a delState && adjacent me l
     -- If no heroes on the level, monsters go at each other. TODO: let them
     -- earn XP by killing each other to make this dangerous to the player.
-    hs = L.map (\ (i, m) -> (AHero i, aloc m)) $
+    hs = L.map (AHero *** aloc) $
          IM.assocs $ lheroes $ slevel delState
-    ms = L.map (\ (i, m) -> (AMonster i, aloc m)) $
+    ms = L.map (AMonster *** aloc) $
          IM.assocs $ lmonsters $ slevel delState
     -- Below, "foe" is the hero (or a monster, or loc) chased by the actor.
     (newTgt, floc) =
@@ -102,7 +103,7 @@ strategy actor
                          else hs
           foes = if L.null hsAndTraitor then ms else hsAndTraitor
           -- We assume monster sight is infravision, so light has no effect.
-          foeVisible = L.filter (\ (a, l) -> enemyVisible a l) foes
+          foeVisible = L.filter (uncurry enemyVisible) foes
           foeDist = L.map (\ (a, l) -> (distance (me, l), l, a)) foeVisible
       in  case foeDist of
             [] -> (TCursor, Nothing)
@@ -114,9 +115,9 @@ strategy actor
                        Just loc ->
                          let foeDir = towards (me, loc)
                          in  only (\ x -> distance (foeDir, x) <= 1)
-    lootHere       = (\ x -> not $ L.null $ Tile.titems $ lm `at` x)
+    lootHere x     = not $ L.null $ Tile.titems $ lm `at` x
     onlyLoot       = onlyMoves lootHere me
-    exitHere       = (\ x -> let t = lm `at` x in Tile.isExit t)
+    exitHere x     = let t = lm `at` x in Tile.isExit t
     onlyExit       = onlyMoves exitHere me
     onlyKeepsDir k = only (\ x -> maybe True (\ d -> distance (d, x) <= k) ad)
     onlyKeepsDir_9 = only (\ x -> maybe True (\ d -> neg x /= d) ad)
@@ -155,9 +156,8 @@ strategy actor
         let benefit =
               (1 + ipower i) * Effect.effectToBenefit (ItemKind.jeffect ik),
         benefit > 0,
-        bsight mk || not (ItemKind.jname ik == "scroll")]
-    actionApply groupName item =
-      applyGroupItem actor (applyToVerb groupName) item
+        bsight mk || ItemKind.jname ik /= "scroll"]
+    actionApply groupName = applyGroupItem actor (applyToVerb groupName)
     throwFreq is multi = if not $ bsight mk then mzero else Frequency
       [ (benefit * multi, actionThrow (ItemKind.jname ik) i)
       | i <- is,
@@ -166,9 +166,9 @@ strategy actor
               - (1 + ipower i) * Effect.effectToBenefit (ItemKind.jeffect ik),
         benefit > 0,
         -- Wasting swords would be too cruel to the player.
-        not (ItemKind.jname ik == "sword")]
-    actionThrow groupName item =
-      zapGroupItem actor (fromJust floc) (zapToVerb groupName) item
+        ItemKind.jname ik /= "sword"]
+    actionThrow groupName =
+      zapGroupItem actor (fromJust floc) (zapToVerb groupName)
     towardsFreq =
       let freqs2 = runStrategy $ fromDir False moveTowards
       in  if bsight mk && not (L.null freqs2)
@@ -178,7 +178,7 @@ strategy actor
     moveAround =
       onlySensible $
         (if bsight mk then onlyNoMs else id) $
-          bsmell mk .=> L.foldr (.|) reject (L.map return smells)
+          bsmell mk .=> L.foldr ((.|) . return) reject smells
           .| onlyOpenable moveFreely
           .| moveFreely
     moveFreely = onlyLoot moveRandomly
