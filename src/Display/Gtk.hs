@@ -79,7 +79,7 @@ startup k =
                                _ -> return False)
 
     let black = Color minBound minBound minBound  -- Color.defBG == Color.Black
-        white = Color 0xC600 0xC100 0xAE00        -- Color.defFG == Color.White
+        white = Color 0xC500 0xBC00 0xB800        -- Color.defFG == Color.White
     widgetModifyBase tv StateNormal black
     widgetModifyText tv StateNormal white
 
