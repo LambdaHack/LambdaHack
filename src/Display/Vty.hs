@@ -3,13 +3,13 @@ module Display.Vty
 
 import Graphics.Vty as V
 import Data.List as L
-import Data.Char
 import qualified Data.ByteString.Char8 as BS
 
 import Geometry
 import qualified Keys as K (Key(..))
 import qualified Color
 
+displayId :: String
 displayId = "vty"
 
 type Session = V.Vty
@@ -66,8 +66,10 @@ nextEvent session =
 -- A hack to get bright colors via the bold attribute. Depending on terminal
 -- settings this is needed or not and the characters really get bold or not.
 -- HSCurses does this by default, but in Vty you have to request the hack.
+hack :: Color.Color -> Attr -> Attr
 hack c a = if Color.isBright c then with_style a bold else a
 
+setAttr :: (Color.Color, Color.Color) -> Attr
 setAttr (fg, bg) =
 -- This optimization breaks display for white background terminals:
 --  if (fg, bg) == Color.defaultAttr

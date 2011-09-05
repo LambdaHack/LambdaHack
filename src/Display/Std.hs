@@ -1,9 +1,7 @@
 module Display.Std
   (displayId, startup, shutdown, display, nextEvent, Session) where
 
-import Control.Monad
 import Data.List as L
-import Data.Char
 import qualified Data.ByteString.Char8 as BS
 import qualified System.IO as SIO
 
@@ -11,6 +9,7 @@ import Geometry
 import qualified Keys as K (Key(..))
 import qualified Color
 
+displayId :: String
 displayId = "std"
 
 type Session = ()
