@@ -6,7 +6,7 @@ license-file:  LICENSE
 tested-with:   GHC == 6.12.3, GHC == 7.0.4, GHC == 7.2.1
 data-files:    LICENSE, CREDITS, DESIGN.markdown, PLAYING.markdown,
                README.markdown, src/config.default, scores
-author:        Andres Loeh <mail@andres-loeh.de>
+author:        Andres Loeh, Mikolaj Konarski
 maintainer:    Andres Loeh <mail@andres-loeh.de>
 description:   This is an alpha release of LambdaHack, a roguelike game engine
                packaged together with a small example roguelike game
