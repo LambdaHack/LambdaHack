@@ -1,15 +1,22 @@
 cabal-version: >= 1.2
 name:          LambdaHack
-version:       0.1.20110117
+version:       0.1.20110918
 license:       BSD3
 license-file:  LICENSE
-tested-with:   GHC==7.0.3
+tested-with:   GHC == 6.12.3, GHC == 7.0.4, GHC == 7.2.1
 data-files:    LICENSE, CREDITS, DESIGN.markdown, PLAYING.markdown,
                README.markdown, src/config.default, scores
 author:        Andres Loeh <mail@andres-loeh.de>
 maintainer:    Andres Loeh <mail@andres-loeh.de>
-description:   a small roguelike game
-synopsis:      a small roguelike game
+description:   This is an alpha release of LambdaHack, a roguelike game engine
+               packaged together with a small example roguelike game
+               (not yet well separated, this is one of future work directions,
+               others are, e.g., improving the AI monad DSL,
+               so that the rules for synthesising monster behaviour
+               from game content are more readable and easier to debug).
+               Another game using this engine is Allure of the Stars
+               (http://hackage.haskell.org/package/Allure).
+synopsis:      A roguelike game engine in early development
 homepage:      http://github.com/kosmikus/LambdaHack
 category:      Game
 build-type:    Simple
