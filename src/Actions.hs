@@ -190,7 +190,8 @@ continueRun dir =
           -- in corridors, explore all corners and stop at all crossings
           -- TODO: even in corridors, stop if you run past an exit (rare)
           let ns = L.filter (\ x -> distance (neg dir, x) > 1
-                                    && accessible lm loc (loc `shift` x))
+                                    && (accessible lm loc (loc `shift` x))
+                                        || openable 1 lm (loc `shift` x))
                             moves
               allCloseTo main = L.all (\ d -> distance (main, d) <= 1) ns
           in  case ns of
