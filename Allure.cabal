@@ -16,6 +16,7 @@ description:   This is an alpha prerelease of Allure of the Stars,
                The game is based on the LambdaHack roguelike game engine,
 synopsis:      Near-future roguelike game in early development
 homepage:      http://github.com/Mikolaj/Allure
+bug-reports:   http://github.com/Mikolaj/Allure/issues
 category:      Game
 build-type:    Simple
 
@@ -78,6 +79,6 @@ executable BotAllure
   main-is:       Bot.hs
   hs-source-dirs:src
 
-Source-repository head
+source-repository head
   type:              git
   location:          git://github.com/Mikolaj/Allure.git
