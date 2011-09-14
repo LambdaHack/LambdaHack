@@ -1,7 +1,7 @@
 module Keybindings where
 
-import Data.Map as M
-import Data.List as L
+import qualified Data.Map as M
+import qualified Data.List as L
 
 import Action
 import Command

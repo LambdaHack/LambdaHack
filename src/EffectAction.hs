@@ -3,9 +3,9 @@ module EffectAction where
 import Control.Monad
 import Control.Monad.State hiding (State, state)
 import Data.Function
-import Data.List as L
-import Data.Map as M
-import Data.Set as S
+import qualified Data.List as L
+import qualified Data.Map as M
+import qualified Data.Set as S
 import System.Time
 import Control.Exception (assert)
 
@@ -299,7 +299,7 @@ displayItems msg sorted is = do
   state <- get
   let inv = unlines $
             L.map (\ i -> letterLabel (iletter i) ++ objectItem state i ++ " ")
-              ((if sorted then sortBy (cmpLetter' `on` iletter) else id) is)
+              ((if sorted then L.sortBy (cmpLetter' `on` iletter) else id) is)
   let ovl = inv ++ more
   messageReset msg
   overlay ovl

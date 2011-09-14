@@ -1,6 +1,6 @@
 module FOV.Common where
 
-import Data.List as L
+import qualified Data.List as L
 
 import Geometry
 

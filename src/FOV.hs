@@ -1,7 +1,7 @@
 module FOV where
 
-import Data.Set as S
-import Data.List as L
+import qualified Data.Set as S
+import qualified Data.List as L
 
 import FOV.Common
 import FOV.Digital
@@ -22,7 +22,7 @@ data FovMode = Shadow | Permissive Int | Digital Int | Blind
 
 -- | Perform a full scan for a given location. Returns the locations
 -- that are currently in the field of view.
-fullscan :: FovMode -> Loc -> LMap -> Set Loc
+fullscan :: FovMode -> Loc -> LMap -> S.Set Loc
 fullscan fovMode loc lm =
   case fovMode of
     Shadow ->         -- shadow casting with infinite range

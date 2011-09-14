@@ -1,6 +1,6 @@
 module FOV.Permissive where
 
-import Data.Set as S
+import qualified Data.Set as S
 
 import FOV.Common
 import Geometry
@@ -25,8 +25,8 @@ import qualified Tile
 -- | The current state of a scan is kept in Maybe (Line, ConvexHull).
 -- If Just something, we're in a visible interval. If Nothing, we're in
 -- a shadowed interval.
-pscan :: Distance -> (Bump -> Loc) -> LMap -> Distance -> EdgeInterval ->
-         Set Loc
+pscan :: Distance -> (Bump -> Loc) -> LMap -> Distance -> EdgeInterval
+         -> S.Set Loc
 pscan r ptr l d (s0@(sl{-shallow line-}, sBumps0),e@(el{-steep line-}, eBumps))=
   -- trace (show (d,s,e,ps,pe)) $
   if illegal
@@ -53,7 +53,7 @@ pscan r ptr l d (s0@(sl{-shallow line-}, sBumps0),e@(el{-steep line-}, eBumps))=
       bottomRight (di, p) = B(p, di - p + 1)
       tr = ptr . dp2bump
 
-      pscan' :: Maybe Edge -> Progress -> Set Loc
+      pscan' :: Maybe Edge -> Progress -> S.Set Loc
       pscan' (Just s@(_, sBumps)) ps
         | ps > pe =                                  -- reached end, scan next
             pscan r ptr l (d+1) (s, e)

@@ -6,7 +6,7 @@ import Text.Printf
 import System.Time
 
 import Data.Binary
-import Data.List as L
+import qualified Data.List as L
 
 import File
 import Dungeon

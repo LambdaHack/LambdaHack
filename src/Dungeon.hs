@@ -4,8 +4,8 @@ import Control.Monad
 import qualified System.Random as R
 
 import Data.Binary
-import Data.Map as M
-import Data.List as L
+import qualified Data.Map as M
+import qualified Data.List as L
 import Data.Ratio
 
 import Geometry
@@ -33,7 +33,7 @@ dungeon = Dungeon . M.fromList . L.map (\ l -> (lname l, l))
 
 -- | Extract a level from a dungeon.
 getDungeonLevel :: LevelId -> Dungeon -> (Level, Dungeon)
-getDungeonLevel ln (Dungeon dng) = (dng ! ln, Dungeon (M.delete ln dng))
+getDungeonLevel ln (Dungeon dng) = (dng M.! ln, Dungeon (M.delete ln dng))
 
 -- | Put a level into a dungeon.
 putDungeonLevel :: Level -> Dungeon -> Dungeon
@@ -292,8 +292,8 @@ rogueRoom cfg nm =
     let allConnects = L.nub (addedConnects ++ connects)
     cs <- mapM
            (\ (p0,p1) -> do
-                           let r0 = rs ! p0
-                               r1 = rs ! p1
+                           let r0 = rs M.! p0
+                               r1 = rs M.! p1
                            connectRooms r0 r1) allConnects
     let smap = M.fromList [ ((y,x),-100) | let (sy,sx) = levelSize cfg,
                                            y <- [0..sy], x <- [0..sx] ]

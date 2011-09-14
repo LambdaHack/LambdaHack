@@ -1,7 +1,7 @@
 module Display.Std
   (displayId, startup, shutdown, display, nextEvent, Session) where
 
-import Data.List as L
+import qualified Data.List as L
 import qualified Data.ByteString.Char8 as BS
 import qualified System.IO as SIO
 

@@ -17,9 +17,9 @@ import qualified Display.Gtk as D
 -- Display routines that are independent of the selected display frontend.
 
 import qualified Data.Char as Char
-import Data.Set as S
-import Data.List as L
-import Data.Map as M
+import qualified Data.Set as S
+import qualified Data.List as L
+import qualified Data.Map as M
 import Control.Monad.State hiding (State, state) -- for MonadIO, seems to be portable between mtl-1 and 2
 import Data.Maybe
 
@@ -156,7 +156,7 @@ displayLevel
       ms      = levelMonsterList state
       dis n loc0 =
         let tile = lm `lAt` loc0
-            sml  = ((smap ! loc0) - time) `div` 100
+            sml  = ((smap M.! loc0) - time) `div` 100
             viewActor loc (Actor { akind = mk })
               | loc == ploc && ln == creturnLn cursor =
                   (bsymbol mk, Color.defBG)  -- highlight player

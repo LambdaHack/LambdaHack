@@ -2,10 +2,10 @@ module ItemAction where
 
 import Control.Monad
 import Control.Monad.State hiding (State, state)
-import Data.List as L
+import qualified Data.List as L
 import qualified Data.Map as M
 import Data.Maybe
-import Data.Set as S
+import qualified Data.Set as S
 
 import Action
 import Display hiding (display)
@@ -307,7 +307,7 @@ getItem prompt p ptext is0 isn = do
               i:_rs -> -- use first item; TODO: let player select item
                       return $ Just i
           K.Char l   ->
-            return (find (maybe False (== l) . iletter) is0)
+            return (L.find (maybe False (== l) . iletter) is0)
           K.Return   ->  -- TODO: i should be the first displayed (except $)
             return (case is of [] -> Nothing ; i : _ -> Just i)
           _          -> return Nothing

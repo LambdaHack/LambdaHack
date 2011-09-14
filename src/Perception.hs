@@ -1,7 +1,7 @@
 module Perception where
 
 import qualified Data.Set as S
-import Data.List as L
+import qualified Data.List as L
 import qualified Data.IntMap as IM
 import Data.Maybe
 import Control.Monad

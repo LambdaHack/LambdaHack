@@ -1,8 +1,8 @@
 module Item where
 
 import Data.Binary
-import Data.Set as S
-import Data.List as L
+import qualified Data.Set as S
+import qualified Data.List as L
 import qualified Data.Map as M
 import Data.Maybe
 import Data.Char
@@ -115,7 +115,7 @@ mergeLetter :: Maybe Char -> Maybe Char -> Maybe Char
 mergeLetter = mplus
 
 letterRange :: [Char] -> String
-letterRange ls = sectionBy (sortBy cmpLetter ls) Nothing
+letterRange ls = sectionBy (L.sortBy cmpLetter ls) Nothing
   where
     succLetter c d = ord d - ord c == 1
 

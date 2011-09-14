@@ -5,9 +5,9 @@ import Control.Monad
 import Control.Concurrent
 import Graphics.UI.Gtk.Gdk.Events  -- TODO: replace, deprecated
 import Graphics.UI.Gtk
-import Data.List as L
+import qualified Data.List as L
 import Data.IORef
-import Data.Map as M
+import qualified Data.Map as M
 import qualified Data.ByteString.Char8 as BS
 
 import Geometry
@@ -20,7 +20,7 @@ displayId = "gtk"
 data Session =
   Session {
     schan :: Chan String,
-    stags :: Map Color.Attr TextTag,
+    stags :: M.Map Color.Attr TextTag,
     sview :: TextView }
 
 startup :: (Session -> IO ()) -> IO ()
@@ -114,7 +114,8 @@ display ((y0,x0), (y1,x1)) session f msg status =
     textBufferSetByteString tb (BS.concat bs)
     mapM_ (setTo tb (stags session) x0) attrs
 
-setTo :: TextBuffer -> Map Color.Attr TextTag -> X -> (Y, [Color.Attr]) -> IO ()
+setTo :: TextBuffer -> M.Map Color.Attr TextTag -> X -> (Y, [Color.Attr])
+         -> IO ()
 setTo _  _   _  (_,  [])         = return ()
 setTo tb tts lx (ly, attr:attrs) = do
   ib <- textBufferGetIterAtLineOffset tb (ly + 1) lx
@@ -123,14 +124,14 @@ setTo tb tts lx (ly, attr:attrs) = do
       setIter previous repetitions [] = do
         textIterForwardChars ie repetitions
         when (previous /= Color.defaultAttr) $
-          textBufferApplyTag tb (tts ! previous) ib ie
+          textBufferApplyTag tb (tts M.! previous) ib ie
       setIter previous repetitions (a:as)
         | a == previous =
             setIter a (repetitions + 1) as
         | otherwise = do
             textIterForwardChars ie repetitions
             when (previous /= Color.defaultAttr) $
-              textBufferApplyTag tb (tts ! previous) ib ie
+              textBufferApplyTag tb (tts M.! previous) ib ie
             textIterForwardChars ib repetitions
             setIter a 1 as
   setIter attr 1 attrs

@@ -1,35 +1,34 @@
 module Display.Curses
   (displayId, startup, shutdown, display, nextEvent, Session) where
 
-import UI.HSCurses.Curses as C
+import qualified UI.HSCurses.Curses as C
 import qualified UI.HSCurses.CursesHelper as C
-import Data.List as L
-import Data.Map as M
-import Data.Char
-import qualified Data.ByteString.Char8 as BS
+import qualified Data.List as L
+import qualified Data.Map as M
 import Control.Monad
 
 import Geometry
 import qualified Keys as K (Key(..))
 import qualified Color
 
+displayId :: String
 displayId = "curses"
 
 data Session =
   Session
-    { win :: Window,
-      styles :: Map (Color.Color, Color.Color) C.CursesStyle }
+    { win :: C.Window,
+      styles :: M.Map (Color.Color, Color.Color) C.CursesStyle }
 
 startup :: (Session -> IO ()) -> IO ()
 startup k =
   do
     C.start
-    cursSet CursorInvisible
+    C.cursSet C.CursorInvisible
     let s = [ ((f, b), C.Style (toFColor f) (toBColor b))
             | f <- [minBound..maxBound],
               -- No more color combinations possible: 16*4, 64 is max.
               b <- Color.legalBG ]
-    nr <- colorPairs
+    nr <- C.colorPairs
     when (nr < L.length s) $
       C.end >>
       error ("Terminal has too few color pairs (" ++ show nr ++ "). Giving up.")
@@ -39,7 +38,7 @@ startup k =
     k (Session C.stdScr styleMap)
 
 shutdown :: Session -> IO ()
-shutdown w = C.end
+shutdown _ = C.end
 
 display :: Area -> Session -> (Loc -> (Color.Attr, Char)) -> String -> String
            -> IO ()
@@ -47,15 +46,15 @@ display ((y0,x0),(y1,x1)) (Session { win = w, styles = s }) f msg status =
   do
     -- let defaultStyle = C.defaultCursesStyle
     -- Terminals with white background require this:
-    let defaultStyle = s ! Color.defaultAttr
+    let defaultStyle = s M.! Color.defaultAttr
     C.erase
     C.setStyle defaultStyle
-    mvWAddStr w 0 0 (toWidth (x1 - x0 + 1) msg)  -- TODO: BS as in vty
-    mvWAddStr w (y1+2) 0 (toWidth (x1 - x0 + 1) status)
-    sequence_ [ C.setStyle (findWithDefault defaultStyle a s)
-                >> mvWAddStr w (y+1) x [c]
+    C.mvWAddStr w 0 0 (toWidth (x1 - x0 + 1) msg)  -- TODO: BS as in vty
+    C.mvWAddStr w (y1+2) 0 (toWidth (x1 - x0 + 1) status)
+    sequence_ [ C.setStyle (M.findWithDefault defaultStyle a s)
+                >> C.mvWAddStr w (y+1) x [c]
               | x <- [x0..x1], y <- [y0..y1], let (a, c) = f (y, x) ]
-    refresh
+    C.refresh
 
 toWidth :: Int -> String -> String
 toWidth n x = take n (x ++ repeat ' ')
@@ -88,9 +87,9 @@ keyTranslate e =
     _                       -> K.Unknown (show e)
 
 nextEvent :: Session -> IO K.Key
-nextEvent session =
+nextEvent _session =
   do
-    e <- C.getKey refresh
+    e <- C.getKey C.refresh
     return (keyTranslate e)
 --    case keyTranslate e of
 --      Unknown _ -> nextEvent session

@@ -3,7 +3,7 @@ module TileKind
 
 import Control.Monad
 
-import Data.List as L
+import qualified Data.List as L
 import qualified Data.IntMap as IM
 import Data.Binary
 import Data.Maybe

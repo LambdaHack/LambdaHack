@@ -1,8 +1,8 @@
 module Grammar where
 
 import Data.Char
-import Data.Set as S
-import Data.List as L
+import qualified Data.Set as S
+import qualified Data.List as L
 
 import Item
 import Actor

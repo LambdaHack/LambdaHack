@@ -1,6 +1,6 @@
 module Geometry where
 
-import Data.List as L
+import qualified Data.List as L
 
 -- | Game time in turns. (Placement in module Geometry is not ideal.)
 type Time = Int

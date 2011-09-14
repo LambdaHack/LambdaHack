@@ -2,11 +2,11 @@ module Actions where
 
 import Control.Monad
 import Control.Monad.State hiding (State, state)
-import Data.List as L
-import Data.Map as M
+import qualified Data.List as L
+import qualified Data.Map as M
 import qualified Data.IntMap as IM
 import Data.Maybe
-import Data.Set as S
+import qualified Data.Set as S
 
 import Action
 import Display hiding (display)

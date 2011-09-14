@@ -1,8 +1,8 @@
 module Level where
 
 import Data.Binary
-import Data.Map as M
-import Data.List as L
+import qualified Data.Map as M
+import qualified Data.List as L
 import qualified Data.IntMap as IM
 
 import Geometry
@@ -49,8 +49,8 @@ instance Binary Level where
           put hs
           put sz
           put ms
-          put [ ls ! (y,x) | y <- [0..sy], x <- [0..sx] ]
-          put [ lm ! (y,x) | y <- [0..sy], x <- [0..sx] ]
+          put [ ls M.! (y,x) | y <- [0..sy], x <- [0..sx] ]
+          put [ lm M.! (y,x) | y <- [0..sy], x <- [0..sx] ]
           put lme
   get = do
           nm <- get
@@ -64,12 +64,12 @@ instance Binary Level where
           lme <- get
           return (Level nm hs sz ms ls lm lme)
 
-type LMap = Map (Y,X) (Tile.Tile, Tile.Tile)
-type SMap = Map (Y,X) Time
+type LMap = M.Map (Y,X) (Tile.Tile, Tile.Tile)
+type SMap = M.Map (Y,X) Time
 
 at, rememberAt :: LMap -> Loc -> Tile.Tile
-at         l p = fst (findWithDefault (Tile.unknownTile, Tile.unknownTile) p l)
-rememberAt l p = snd (findWithDefault (Tile.unknownTile, Tile.unknownTile) p l)
+at         l p = fst (M.findWithDefault (Tile.unknownTile, Tile.unknownTile) p l)
+rememberAt l p = snd (M.findWithDefault (Tile.unknownTile, Tile.unknownTile) p l)
 
 -- Checks for the presence of actors. Does *not* check if the tile is open.
 unoccupied :: [Actor] -> Loc -> Bool

@@ -1,8 +1,8 @@
 module Display.Vty
   (displayId, startup, shutdown, display, nextEvent, Session) where
 
-import Graphics.Vty as V
-import Data.List as L
+import Graphics.Vty
+import qualified Data.List as L
 import qualified Data.ByteString.Char8 as BS
 
 import Geometry
@@ -12,20 +12,20 @@ import qualified Color
 displayId :: String
 displayId = "vty"
 
-type Session = V.Vty
+type Session = Vty
 
 startup :: (Session -> IO ()) -> IO ()
-startup k = V.mkVty >>= k
+startup k = mkVty >>= k
 
 display :: Area -> Session -> (Loc -> (Color.Attr, Char)) -> String -> String
            -> IO ()
 display ((y0,x0),(y1,x1)) vty f msg status =
-  let img = (foldr (<->) V.empty_image .
-             L.map (foldr (<|>) V.empty_image .
+  let img = (foldr (<->) empty_image .
+             L.map (foldr (<|>) empty_image .
                     L.map (\ (x,y) -> let (a, c) = f (y, x)
                                       in  char (setAttr a) c)))
             [ [ (x,y) | x <- [x0..x1] ] | y <- [y0..y1] ]
-  in  V.update vty (pic_for_image
+  in  update vty (pic_for_image
        (utf8_bytestring (setAttr Color.defaultAttr)
         (BS.pack (toWidth (x1 - x0 + 1) msg)) <->
         img <->
@@ -35,24 +35,24 @@ display ((y0,x0),(y1,x1)) vty f msg status =
 toWidth :: Int -> String -> String
 toWidth n x = take n (x ++ repeat ' ')
 
-keyTranslate :: V.Event -> K.Key
+keyTranslate :: Event -> K.Key
 keyTranslate e =
   case e of
-    V.EvKey KEsc []          -> K.Esc
-    V.EvKey KEnter []        -> K.Return
-    V.EvKey (KASCII '\t') [] -> K.Tab
-    V.EvKey KUp []           -> K.Up
-    V.EvKey KDown []         -> K.Down
-    V.EvKey KLeft []         -> K.Left
-    V.EvKey KRight []        -> K.Right
-    V.EvKey KHome []         -> K.Home
-    V.EvKey KPageUp []       -> K.PgUp
-    V.EvKey KEnd []          -> K.End
-    V.EvKey KPageDown []     -> K.PgDn
-    V.EvKey KBegin []        -> K.Begin
+    EvKey KEsc []          -> K.Esc
+    EvKey KEnter []        -> K.Return
+    EvKey (KASCII '\t') [] -> K.Tab
+    EvKey KUp []           -> K.Up
+    EvKey KDown []         -> K.Down
+    EvKey KLeft []         -> K.Left
+    EvKey KRight []        -> K.Right
+    EvKey KHome []         -> K.Home
+    EvKey KPageUp []       -> K.PgUp
+    EvKey KEnd []          -> K.End
+    EvKey KPageDown []     -> K.PgDn
+    EvKey KBegin []        -> K.Begin
     -- No KP_ keys in vty; see https://github.com/coreyoconnor/vty/issues/8
     -- For now, movement keys are more important than hero selection:
-    V.EvKey (KASCII c) []
+    EvKey (KASCII c) []
       | c `elem` ['1'..'9']  -> K.KP c
       | otherwise            -> K.Char c
     _                        -> K.Unknown (show e)
@@ -60,7 +60,7 @@ keyTranslate e =
 nextEvent :: Session -> IO K.Key
 nextEvent session =
   do
-    e <- V.next_event session
+    e <- next_event session
     return (keyTranslate e)
 
 -- A hack to get bright colors via the bold attribute. Depending on terminal

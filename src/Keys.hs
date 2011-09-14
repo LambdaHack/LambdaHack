@@ -3,8 +3,8 @@ module Keys where
 import Prelude hiding (Left, Right)
 
 import Geometry hiding (Up, Down)
-import Data.List as L
-import Data.Map as M
+import qualified Data.List as L
+import qualified Data.Map as M
 
 -- | Library-independent datatype to represent keys.
 data Key =

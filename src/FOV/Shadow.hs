@@ -1,7 +1,7 @@
 module FOV.Shadow where
 
 import Data.Ratio
-import Data.Set as S
+import qualified Data.Set as S
 
 import FOV.Common
 import Geometry
@@ -70,7 +70,8 @@ for the square is added to the shadow set.
 -- | The current state of a scan is kept in a variable of Maybe Rational.
 -- If Just something, we're in a visible interval. If Nothing, we're in
 -- a shadowed interval.
-scan :: ((Distance, Progress) -> Loc) -> LMap -> Distance -> Interval -> Set Loc
+scan :: ((Distance, Progress) -> Loc) -> LMap -> Distance -> Interval
+        -> S.Set Loc
 scan tr l d (s0,e) =
     let ps = downBias (s0 * fromIntegral d)   -- minimal progress to check
         pe = upBias (e * fromIntegral d)     -- maximal progress to check
@@ -81,7 +82,7 @@ scan tr l d (s0,e) =
         -- trace (show (d,s,e,ps,pe)) $
         S.union (S.fromList [tr (d,p) | p <- [ps..pe]]) (scan' st ps pe)
   where
-    scan' :: Maybe Rational -> Progress -> Progress -> Set Loc
+    scan' :: Maybe Rational -> Progress -> Progress -> S.Set Loc
     -- scan' st ps pe
     --   | trace (show (st,ps,pe)) False = undefined
     scan' (Just s) ps pe

@@ -1,7 +1,7 @@
 module Save where
 
 import System.Directory
-import Control.Exception as E hiding (handle)
+import qualified Control.Exception as E hiding (handle)
 
 import File
 import State
@@ -29,7 +29,7 @@ restoreGame config =
              f <- file config
              (x, z) <- strictDecodeCompressedFile (f ++ ".bkp")
              (z :: Bool) `seq` return $ Left x)
-          (\ e -> case e :: IOException of
+          (\ e -> case e :: E.IOException of
                     _ -> return (Right $
                                    "Restore failed: "
                                    ++ (unwords . lines) (show e)))
@@ -51,4 +51,4 @@ rmBkp config =
   do
     f <- file config
     E.catch (removeFile (f ++ ".bkp"))
-      (\ e -> case e :: IOException of _ -> return ())
+      (\ e -> case e :: E.IOException of _ -> return ())

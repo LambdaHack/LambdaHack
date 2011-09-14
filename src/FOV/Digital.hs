@@ -1,6 +1,6 @@
 module FOV.Digital where
 
-import Data.Set as S
+import qualified Data.Set as S
 
 import FOV.Common
 import Geometry
@@ -19,8 +19,8 @@ import qualified Tile
 -- | The current state of a scan is kept in Maybe (Line, ConvexHull).
 -- If Just something, we're in a visible interval. If Nothing, we're in
 -- a shadowed interval.
-dscan :: Distance -> (Bump -> Loc) -> LMap -> Distance -> EdgeInterval ->
-         Set Loc
+dscan :: Distance -> (Bump -> Loc) -> LMap -> Distance -> EdgeInterval
+         -> S.Set Loc
 dscan r tr l d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps))=
   -- trace (show (d,s,e,ps,pe)) $
   S.union outside (S.fromList [tr (B(d, p)) | p <- [ps0..pe]])
@@ -41,7 +41,7 @@ dscan r tr l d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps))=
             dscan' (Just s0) (ps0+1)          -- start in light, jump ahead
         | otherwise = dscan' Nothing (ps0+1)  -- start in shadow, jump ahead
 
-      dscan' :: Maybe Edge -> Progress -> Set Loc
+      dscan' :: Maybe Edge -> Progress ->  S.Set Loc
       dscan' (Just s@(_, sBumps)) ps
         | ps > pe = dscan r tr l (d+1) (s, e) -- reached end, scan next
         | not $ Tile.isClear (l `at` tr steepBump) = -- entering shadow

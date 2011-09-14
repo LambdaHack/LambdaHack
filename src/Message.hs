@@ -1,6 +1,6 @@
 module Message where
 
-import Data.List as L
+import qualified Data.List as L
 import Data.Char
 
 type Message = String

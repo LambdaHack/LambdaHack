@@ -3,7 +3,7 @@ module Tile where
 import Control.Monad
 
 import Data.Binary
-import Data.List as L
+import qualified Data.List as L
 
 import Item
 import qualified TileKind
@@ -64,4 +64,4 @@ isBoring t =
   let fs = TileKind.ufeature (TileKind.getKind (tkind t))
       optional = [TileKind.Exit, TileKind.Lit]
       mandatory = [TileKind.Walkable, TileKind.Clear]
-  in fs \\ optional `L.elem` L.permutations mandatory
+  in fs L.\\ optional `L.elem` L.permutations mandatory

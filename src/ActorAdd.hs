@@ -1,7 +1,7 @@
 module ActorAdd where
 
 import qualified Data.IntMap as IM
-import Data.List as L
+import qualified Data.List as L
 import Data.Ratio
 import Data.Maybe
 import qualified Data.Char as Char

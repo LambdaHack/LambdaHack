@@ -3,7 +3,7 @@ module File where
 import System.IO
 import Data.Binary
 import qualified Data.ByteString.Lazy as LBS
-import Codec.Compression.Zlib as Z
+import qualified Codec.Compression.Zlib as Z
 
 strictReadCompressedFile :: FilePath -> IO LBS.ByteString
 strictReadCompressedFile f =
@@ -19,4 +19,3 @@ strictDecodeCompressedFile = fmap decode . strictReadCompressedFile
 encodeCompressedFile :: Binary a => FilePath -> a -> IO ()
 encodeCompressedFile f = LBS.writeFile f . Z.compress . encode
   -- note that LBS.writeFile opens the file in binary mode
-

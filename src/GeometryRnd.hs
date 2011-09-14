@@ -1,7 +1,7 @@
 module GeometryRnd where
 
-import Data.List as L
-import Data.Set as S
+import qualified Data.List as L
+import qualified Data.Set as S
 
 import Geometry
 import Random
@@ -16,7 +16,7 @@ findLocInArea a@((y0, x0), (y1, x1)) p = do
 locInArea :: Area -> Rnd Loc
 locInArea a = findLocInArea a (const True)
 
-connectGrid' :: (Y,X) -> Set (Y,X) -> Set (Y,X) -> [((Y,X), (Y,X))] ->
+connectGrid' :: (Y,X) -> S.Set (Y,X) -> S.Set (Y,X) -> [((Y,X), (Y,X))] ->
                 Rnd [((Y,X), (Y,X))]
 connectGrid' (ny, nx) unconnected candidates acc
   | S.null candidates = return (L.map normalize acc)
