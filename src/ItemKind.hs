@@ -1,11 +1,18 @@
-module ItemKind where
+module ItemKind
+  (ItemKind(..), ItemKindId, getIK, itemFrequency, itemFlavours, swordKindId)
+  where
 
+import Data.Binary
 import qualified Data.List as L
+import qualified Data.Map as M
 import qualified Data.IntMap as IM
+import Control.Monad
+import Data.Maybe
 
 import Color
 import Effect
 import Random
+import Flavour
 
 -- TODO: jpower is out of place here. It doesn't make sense for all items,
 -- and will mean different things for different items. Perhaps it should
@@ -26,26 +33,31 @@ data ItemKind = ItemKind
   }
   deriving (Show, Eq, Ord)
 
-type Flavour = (Color, Bool)  -- the flag tells to use fancy color names
+newtype ItemKindId = ItemKindId Int
+  deriving (Show, Eq, Ord)
 
-zipPlain cs = L.zip cs (repeat False)
-zipFancy cs = L.zip cs (repeat True)
-darkCol    = [Red .. Cyan]
-brightCol  = [BrRed .. BrCyan]  -- BrBlack is not really that bright
-stdCol     = darkCol ++ brightCol
-stdFlav    = zipPlain stdCol ++ zipFancy stdCol
+instance Binary ItemKindId where
+  put (ItemKindId i) = put i
+  get = liftM ItemKindId get
 
-flavourToName :: Flavour -> String
-flavourToName (c, False) = colorToName c
-flavourToName (c, True) = colorToName' c
+itemAssocs :: [(Int, ItemKind)]
+itemAssocs = L.zip [0..] loot
 
-flavourToColor :: Flavour -> Color
-flavourToColor (c, _) = c
+itemContent :: IM.IntMap ItemKind
+itemContent = IM.fromDistinctAscList itemAssocs
 
-dungeonLoot :: IM.IntMap ItemKind
-dungeonLoot = IM.fromDistinctAscList (L.zip [0..] loot)
+getIK :: ItemKindId -> ItemKind
+getIK (ItemKindId i) = itemContent IM.! i
 
-getIK ik = dungeonLoot IM.! ik
+itemFrequency :: Frequency ItemKindId
+itemFrequency = Frequency [(jfreq ik, ItemKindId i) | (i, ik) <- itemAssocs]
+
+itemFlavours :: M.Map ItemKindId [Flavour]
+itemFlavours =
+  M.fromDistinctAscList [(ItemKindId i, jflavour ik) | (i, ik) <- itemAssocs]
+
+swordKindId :: ItemKindId
+swordKindId = ItemKindId $ fromJust $ L.elemIndex sword loot
 
 loot :: [ItemKind]
 loot =

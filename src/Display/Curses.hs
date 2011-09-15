@@ -80,7 +80,7 @@ keyTranslate e =
     C.KeyBeg         -> K.Begin
     C.KeyB2          -> K.Begin
     C.KeyClear       -> K.Begin
-    -- No KP_ keys in hscurses and they do not seem actively maintained.
+    -- No KP_ keys; see https://github.com/skogsbaer/hscurses/issues/10
     -- For now, movement keys are more important than hero selection:
     C.KeyChar c
       | c `elem` ['1'..'9'] -> K.KP c

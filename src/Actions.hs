@@ -192,7 +192,8 @@ continueRun dir =
           -- in corridors, explore all corners and stop at all crossings
           -- TODO: even in corridors, stop if you run past an exit (rare)
           let ns = L.filter (\ x -> distance (neg dir, x) > 1
-                                    && accessible lmap loc (loc `shift` x))
+                                    && (accessible lmap loc (loc `shift` x))
+                                        || openable 1 lmap (loc `shift` x))
                             moves
               allCloseTo main = L.all (\ d -> distance (main, d) <= 1) ns
           in  case ns of
@@ -572,9 +573,8 @@ actorAttackActor source target = do
   let groupName = "sword"
       verb = attackToVerb groupName
       sloc = aloc sm
-      swordKindIndex = fromJust $ L.elemIndex ItemKind.sword ItemKind.loot
       -- The hand-to-hand "weapon", equivalent to +0 sword.
-      h2h = Item swordKindIndex 0 Nothing 1
+      h2h = Item ItemKind.swordKindId 0 Nothing 1
       str = strongestItem (aitems sm) groupName
       stack  = fromMaybe h2h str
       single = stack { icount = 1 }
