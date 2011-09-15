@@ -1,16 +1,24 @@
 cabal-version: >= 1.2
 name:          LambdaHack
-version:       0.1.20110117
+version:       0.1.20110918
 license:       BSD3
 license-file:  LICENSE
-tested-with:   GHC==7.0.3
+tested-with:   GHC == 6.12.3, GHC == 7.3.20110911
 data-files:    LICENSE, CREDITS, DESIGN.markdown, PLAYING.markdown,
                README.markdown, src/config.default, scores
-author:        Andres Loeh <mail@andres-loeh.de>
+author:        Andres Loeh, Mikolaj Konarski
 maintainer:    Andres Loeh <mail@andres-loeh.de>
-description:   a small roguelike game
-synopsis:      a small roguelike game
+description:   This is an alpha release of LambdaHack, a roguelike game engine
+               packaged together with a small example roguelike game
+               (not yet well separated, this is one of future work directions,
+               another being the improvement of the AI monad EDSL,
+               so that the rules for synthesising monster behaviour
+               from game content are more readable and easier to debug).
+               A larger game using this engine will be Allure of the Stars
+               (http://hackage.haskell.org/package/Allure).
+synopsis:      A roguelike game engine in early development
 homepage:      http://github.com/kosmikus/LambdaHack
+bug-reports:   http://github.com/kosmikus/LambdaHack/issues
 category:      Game
 build-type:    Simple
 
@@ -27,7 +35,8 @@ executable LambdaHack
   hs-source-dirs:src
   other-modules: Action, Actions, ActorAdd, ActorKind, Actor, ActorState,
                  Color, Command, Config, ConfigDefault,
-                 Display, Dungeon, DungeonState, Effect, EffectAction, File,
+                 Display, Dungeon, DungeonState,
+                 Effect, EffectAction, File, Flavour,
                  FOV, FOV.Common, FOV.Digital, FOV.Permissive, FOV.Shadow,
                  Frequency, Geometry, GeometryRnd, Grammar,
                  HighScores, Item, ItemKind, ItemAction,
@@ -40,10 +49,16 @@ executable LambdaHack
                  random >= 1 && < 2, zlib >= 0.4 && < 1,
                  bytestring >= 0.9 && < 1, directory >= 1 && < 2,
                  mtl >= 1.1 && < 3, old-time, ConfigFile >= 1.0.6 && < 2,
-                 MissingH >= 1.1.0.3 && < 1.2, filepath >= 1.1.0.3 && < 2,
-                 template-haskell >= 2.5
+                 MissingH >= 1.1.0.3 && < 1.2, filepath >= 1.1.0.3 && < 2
   extensions:    CPP, FlexibleContexts, QuasiQuotes, MultiParamTypeClasses,
                  RankNTypes, BangPatterns
+
+  if impl(ghc < 7.0)
+     -- GHC 6.12.3 does not like template-haskell 2.6 and 7.3 does not like 2.5
+      build-depends: template-haskell >= 2.5 && < 2.6
+  else
+      build-depends: template-haskell >= 2.5
+
   if flag(curses) {
     other-modules: Display.Curses
     build-depends: hscurses >= 1.3 && < 2
@@ -59,6 +74,6 @@ executable LambdaHack
     ghc-options:   -threaded
   } }
 
-Source-repository head
+source-repository head
   type:              git
   location:          git://github.com/kosmikus/LambdaHack.git
