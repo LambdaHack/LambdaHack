@@ -12,12 +12,12 @@ data ActorKind = ActorKind
   , bspeed  :: !Time         -- ^ natural speed
   , bsymbol :: !Char         -- ^ map symbol
   , bcolor  :: !Color.Color  -- ^ map color
-  , bname   :: String        -- ^ name
+  , bname   :: !String       -- ^ name
   , bsight  :: !Bool         -- ^ can it see?
   , bsmell  :: !Bool         -- ^ can it smell?
   , biq     :: !Int          -- ^ intelligence
   , bregen  :: !Int          -- ^ regeneration interval
-  , bfreq   :: !Int           -- ^ dungeon frequency
+  , bfreq   :: !Int          -- ^ dungeon frequency
   }
   deriving (Show, Eq)
 

@@ -16,11 +16,11 @@ import Random
 
 data TileKind = TileKind
   { usymbol  :: !Char         -- ^ map symbol
-  , uname    :: String        -- ^ name
+  , uname    :: !String       -- ^ name
   , ucolor   :: !Color.Color  -- ^ map color
   , ucolor2  :: !Color.Color  -- ^ map color when not in FOV
   , ufreq    :: !Int          -- ^ created that often (within a group?)
-  , ufeature :: [Feature]     -- ^ properties
+  , ufeature :: ![Feature]    -- ^ properties
   }
   deriving (Show, Eq, Ord)
 
@@ -29,14 +29,14 @@ data Feature =
   | Clear              -- ^ actors can see through
   | Exit               -- ^ is an exit from a room
   | Lit                -- ^ is lit; TODO: (partially) replace ucolor by this feature?
-  | Aura Effect        -- ^ sustains the effect continuously
-  | Cause Effect       -- ^ causes the effect when triggered
-  | Change TileKindId  -- ^ transitions when triggered
+  | Aura !Effect       -- ^ sustains the effect continuously
+  | Cause !Effect      -- ^ causes the effect when triggered
+  | Change !TileKindId -- ^ transitions when triggered
   | Climbable          -- ^ triggered by climbing
   | Descendable        -- ^ triggered by descending into
   | Openable           -- ^ triggered by opening
   | Closable           -- ^ triggered by closable
-  | Secret RollDice    -- ^ triggered when the tile's tsecret becomes (Just 0)
+  | Secret !RollDice   -- ^ triggered when the tile's tsecret becomes (Just 0)
   deriving (Show, Eq, Ord)
 
 newtype TileKindId = TileKindId Int

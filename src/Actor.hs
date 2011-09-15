@@ -13,7 +13,7 @@ import ActorKind
 data Actor = Actor
   { akind   :: !ActorKind, -- ^ kind of the actor; TODO: make this an index
     ahp     :: !Int,       -- ^ current hit pints
-    adir    :: Maybe Dir,  -- ^ the direction of running
+    adir    :: !(Maybe Dir),  -- ^ the direction of running
     atarget :: Target,     -- ^ the target for distance attacks and AI
     aloc    :: !Loc,       -- ^ current location
     aitems  :: [Item],     -- ^ inventory
@@ -43,8 +43,8 @@ instance Binary Actor where
           ati <- get
           return (Actor ak ah ad at al ai ale ati)
 
-data ActorId = AHero Int     -- ^ hero index (on the lheroes intmap)
-             | AMonster Int  -- ^ monster index (on the lmonsters intmap)
+data ActorId = AHero !Int     -- ^ hero index (on the lheroes intmap)
+             | AMonster !Int  -- ^ monster index (on the lmonsters intmap)
   deriving (Show, Eq, Ord)
 
 isAHero :: ActorId -> Bool

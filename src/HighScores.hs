@@ -20,13 +20,13 @@ import WorldLoc
 -- and I couldn't use Datetime because it needs old base (and is under GPL).
 -- TODO: When we finally move to Date.Time, let's take timezone into account.
 data ScoreRecord = ScoreRecord
-                     { points  :: Int,
-                       negTurn :: Int,
-                       date    :: ClockTime,
-                       status  :: Status}
+                     { points  :: !Int,
+                       negTurn :: !Int,
+                       date    :: !ClockTime,
+                       status  :: !Status}
   deriving (Eq, Ord)
 
-data Status = Killed LevelId | Camping LevelId | Victor
+data Status = Killed !LevelId | Camping !LevelId | Victor
   deriving (Eq, Ord)
 
 instance Binary Status where

@@ -20,9 +20,9 @@ data Key =
   | End
   | Begin
   | Home
-  | KP Char        -- ^ a keypad key for a character (digits and operators)
-  | Char Char      -- ^ a single printable character
-  | Unknown String -- ^ an unknown key, collected to warn the user later
+  | KP !Char        -- ^ a keypad key for a character (digits and operators)
+  | Char !Char      -- ^ a single printable character
+  | Unknown !String -- ^ an unknown key, collected to warn the user later
   deriving (Ord, Eq)
 
 showKey :: Key -> String

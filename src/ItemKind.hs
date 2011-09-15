@@ -35,13 +35,13 @@ swordKindId = ItemKindId $ fromJust $ L.elemIndex sword content
 -- the value of the item for shops, treasure chests, artifact set rebalancing,
 -- etc., so if we make jpower complex, the value computation gets complex too.
 data ItemKind = ItemKind
-  { jsymbol  :: !Char      -- ^ map symbol
-  , jflavour :: [Flavour]  -- ^ possible flavours
-  , jname    :: String     -- ^ group name
-  , jeffect  :: Effect     -- ^ the effect when activated
-  , jcount   :: RollQuad   -- ^ created in that quantify
-  , jfreq    :: !Int       -- ^ created that often
-  , jpower   :: RollQuad   -- ^ created with that power
+  { jsymbol  :: !Char       -- ^ map symbol
+  , jflavour :: ![Flavour]  -- ^ possible flavours
+  , jname    :: !String     -- ^ group name
+  , jeffect  :: !Effect     -- ^ the effect when activated
+  , jcount   :: !RollQuad   -- ^ created in that quantify
+  , jfreq    :: !Int        -- ^ created that often
+  , jpower   :: !RollQuad   -- ^ created with that power
   }
   deriving (Show, Eq, Ord)
 

@@ -5,7 +5,7 @@ import Random
 data Effect =
     NoEffect
   | Heal            -- healing strength in ipower
-  | Wound RollDice  -- base damage, to-dam bonus in ipower
+  | Wound !RollDice  -- base damage, to-dam bonus in ipower
   | Dominate
   | SummonFriend
   | SummonEnemy
