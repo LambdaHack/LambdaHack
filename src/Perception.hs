@@ -16,16 +16,19 @@ import FOV
 import qualified Config
 import qualified Tile
 
-data Perception =
-  Perception { preachable :: S.Set Loc, pvisible :: S.Set Loc }
+data Perception = Perception
+  { preachable :: S.Set Loc
+  , pvisible :: S.Set Loc
+  }
 
 -- The pplayer field is void if player not on the current level,
 -- or if the player controls a blind monster. Right now, the field is used only
 -- for player-controlled monsters on the current level.
-data Perceptions =
-  Perceptions { pplayer :: Maybe Perception,
-                pheroes :: IM.IntMap Perception,
-                ptotal  :: Perception }
+data Perceptions = Perceptions
+  { pplayer :: Maybe Perception
+  , pheroes :: IM.IntMap Perception
+  , ptotal  :: Perception
+  }
 
 ptreachable, ptvisible :: Perceptions -> S.Set Loc
 ptreachable = preachable . ptotal

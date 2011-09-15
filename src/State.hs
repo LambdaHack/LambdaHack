@@ -20,26 +20,26 @@ import WorldLoc
 -- TODO: consider changing slevel to LevelId, removing the lname field
 -- and not removing the current level from the dungeon.
 data State = State
-  { splayer      :: ActorId,      -- ^ represents the player-controlled actor
-    scursor      :: Cursor,       -- ^ cursor location and level to return to
-    shistory     :: [Message],
-    ssensory     :: SensoryMode,
-    sdisplay     :: DisplayMode,
-    stime        :: Time,
-    sassocs      :: Assocs,       -- ^ how every item appears
-    sdiscoveries :: Discoveries,  -- ^ items (kinds) that have been discovered
-    sdungeon     :: Dungeon,      -- ^ all but the current dungeon level
-    slevel       :: Level,
-    scounter     :: (Int, Int),   -- ^ stores next hero index and monster index
-    sconfig      :: Config.CP
+  { splayer      :: ActorId      -- ^ represents the player-controlled actor
+  , scursor      :: Cursor       -- ^ cursor location and level to return to
+  , shistory     :: [Message]
+  , ssensory     :: SensoryMode
+  , sdisplay     :: DisplayMode
+  , stime        :: Time
+  , sassocs      :: Assocs       -- ^ how every item appears
+  , sdiscoveries :: Discoveries  -- ^ items (kinds) that have been discovered
+  , sdungeon     :: Dungeon      -- ^ all but the current dungeon level
+  , slevel       :: Level
+  , scounter     :: (Int, Int)   -- ^ stores next hero index and monster index
+  , sconfig      :: Config.CP
   }
   deriving Show
 
 data Cursor = Cursor
-  { ctargeting :: Bool,       -- ^ are we in targeting mode?
-    clocLn     :: LevelId,  -- ^ cursor level
-    clocation  :: Loc,        -- ^ cursor coordinates
-    creturnLn  :: LevelId   -- ^ the level current player resides on
+  { ctargeting :: Bool       -- ^ are we in targeting mode?
+  , clocLn     :: LevelId    -- ^ cursor level
+  , clocation  :: Loc        -- ^ cursor coordinates
+  , creturnLn  :: LevelId    -- ^ the level current player resides on
   }
   deriving Show
 

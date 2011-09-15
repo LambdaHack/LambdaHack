@@ -10,10 +10,11 @@ import qualified TileKind
 import WorldLoc
 
 data Tile = Tile
-              { tkind     :: !TileKind.TileKindId
-              , tteleport :: Maybe WorldLoc  -- TODO
-              , tsecret   :: Maybe Int  -- TODO
-              , titems    :: [Item] }
+  { tkind     :: !TileKind.TileKindId
+  , tteleport :: Maybe WorldLoc  -- TODO
+  , tsecret   :: Maybe Int  -- TODO
+  , titems    :: [Item]
+  }
   deriving Show
 
 instance Binary Tile where

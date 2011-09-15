@@ -14,10 +14,10 @@ import qualified Color
 displayId :: String
 displayId = "curses"
 
-data Session =
-  Session
-    { win :: C.Window,
-      styles :: M.Map (Color.Color, Color.Color) C.CursesStyle }
+data Session = Session
+  { win :: C.Window
+  , styles :: M.Map (Color.Color, Color.Color) C.CursesStyle
+  }
 
 startup :: (Session -> IO ()) -> IO ()
 startup k =

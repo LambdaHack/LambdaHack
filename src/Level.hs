@@ -18,13 +18,14 @@ import qualified Tile
 type Party = IM.IntMap Actor
 
 data Level = Level
-  { lname     :: LevelId,    -- TODO: remove
-    lheroes   :: Party,      -- ^ all heroes on the level
-    lsize     :: (Y,X),
-    lmonsters :: Party,      -- ^ all monsters on the level
-    lsmell    :: SMap,
-    lmap      :: LMap,
-    lmeta     :: String }
+  { lname     :: LevelId    -- TODO: remove
+  , lheroes   :: Party      -- ^ all heroes on the level
+  , lsize     :: (Y,X)
+  , lmonsters :: Party      -- ^ all monsters on the level
+  , lsmell    :: SMap
+  , lmap      :: LMap
+  , lmeta     :: String
+  }
   deriving Show
 
 updateLMap :: (LMap -> LMap) -> Level -> Level

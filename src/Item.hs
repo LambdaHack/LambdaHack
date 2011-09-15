@@ -16,10 +16,11 @@ import qualified Color
 import Flavour
 
 data Item = Item
-  { ikind   :: !ItemKindId,
-    ipower  :: !Int,  -- TODO: see the TODO about jpower
-    iletter :: Maybe Char,  -- ^ inventory identifier
-    icount  :: !Int }
+  { ikind   :: !ItemKindId
+  , ipower  :: !Int         -- TODO: see the TODO about jpower
+  , iletter :: Maybe Char  -- ^ inventory identifier
+  , icount  :: !Int
+  }
   deriving Show
 
 instance Binary Item where

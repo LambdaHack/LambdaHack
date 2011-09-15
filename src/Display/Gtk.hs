@@ -17,11 +17,11 @@ import qualified Color
 displayId :: String
 displayId = "gtk"
 
-data Session =
-  Session {
-    schan :: Chan String,
-    stags :: M.Map Color.Attr TextTag,
-    sview :: TextView }
+data Session = Session
+  { schan :: Chan String
+  , stags :: M.Map Color.Attr TextTag
+  , sview :: TextView
+  }
 
 startup :: (Session -> IO ()) -> IO ()
 startup k =

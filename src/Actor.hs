@@ -11,14 +11,15 @@ import ActorKind
 -- of properties form ActorKind, the intention is they may be modified
 -- temporarily, but will return to the original value over time. E.g., HP.
 data Actor = Actor
-  { akind   :: !ActorKind, -- ^ kind of the actor; TODO: make this an index
-    ahp     :: !Int,       -- ^ current hit pints
-    adir    :: !(Maybe Dir),  -- ^ the direction of running
-    atarget :: Target,     -- ^ the target for distance attacks and AI
-    aloc    :: !Loc,       -- ^ current location
-    aitems  :: [Item],     -- ^ inventory
-    aletter :: !Char,      -- ^ next inventory letter
-    atime   :: !Time }     -- ^ time of next action
+  { akind   :: !ActorKind    -- ^ kind of the actor; TODO: make this an index
+  , ahp     :: !Int          -- ^ current hit pints
+  , adir    :: !(Maybe Dir)  -- ^ the direction of running
+  , atarget :: Target        -- ^ the target for distance attacks and AI
+  , aloc    :: !Loc          -- ^ current location
+  , aitems  :: [Item]        -- ^ inventory
+  , aletter :: !Char         -- ^ next inventory letter
+  , atime   :: !Time         -- ^ time of next action
+  }
   deriving Show
 
 instance Binary Actor where

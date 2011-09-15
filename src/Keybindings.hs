@@ -9,9 +9,9 @@ import qualified Keys as K
 
 -- | Keybindings.
 data Keybindings = Keybindings
-  { kdir   :: DirCommand,
-    kudir  :: DirCommand,
-    kother :: M.Map K.Key Command
+  { kdir   :: DirCommand
+  , kudir  :: DirCommand
+  , kother :: M.Map K.Key Command
   }
 
 handleKey :: Keybindings -> K.Key -> Action ()

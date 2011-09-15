@@ -181,23 +181,23 @@ noiseRoom cfg =
         return $ \ lm -> L.foldl' insertRock lm rs
   in  emptyRoom addRocks cfg
 
-data LevelConfig =
-  LevelConfig {
-    levelGrid         :: Rnd (Y,X),
-    minRoomSize       :: Rnd (Y,X),
-    darkRoomChance    :: Rnd Bool,
-    border            :: Int,       -- must be at least 2!
-    levelSize         :: (Y,X),     -- lower right point
-    extraConnects     :: (Y,X) -> Int,
+data LevelConfig = LevelConfig
+  { levelGrid         :: Rnd (Y,X)
+  , minRoomSize       :: Rnd (Y,X)
+  , darkRoomChance    :: Rnd Bool
+  , border            :: Int         -- must be at least 2!
+  , levelSize         :: (Y,X)       -- lower right point
+  , extraConnects     :: (Y,X) -> Int
       -- relative to grid (in fact a range, because of duplicate connects)
-    noRooms           :: (Y,X) -> Rnd Int,  -- range, relative to grid
-    minStairsDistance :: Int,       -- must not be too large
-    doorChance        :: Rnd Bool,
-    doorOpenChance    :: Rnd Bool,
-    doorSecretChance  :: Rnd Bool,
-    doorSecretMax     :: Int,
-    nrItems           :: Rnd Int,   -- range
-    depth             :: Int        -- general indicator of difficulty
+  , noRooms           :: (Y,X) -> Rnd Int
+      -- range, relative to grid
+  , minStairsDistance :: Int         -- must not be too large
+  , doorChance        :: Rnd Bool
+  , doorOpenChance    :: Rnd Bool
+  , doorSecretChance  :: Rnd Bool
+  , doorSecretMax     :: Int
+  , nrItems           :: Rnd Int     -- range
+  , depth             :: Int         -- general indicator of difficulty
   }
 
 normalLevelSize :: (Y,X)
