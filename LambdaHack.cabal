@@ -10,12 +10,13 @@ author:        Andres Loeh, Mikolaj Konarski
 maintainer:    Andres Loeh <mail@andres-loeh.de>
 description:   This is an alpha release of LambdaHack, a roguelike game engine
                packaged together with a small example roguelike game
-               (not yet well separated, this is one of future work directions,
-               another being the improvement of the AI monad EDSL,
+               (not yet well separated; this is future work,
+               together with improving the AI monad EDSL,
                so that the rules for synthesising monster behaviour
                from game content are more readable and easier to debug).
-               A larger game using this engine will be Allure of the Stars
-               (http://hackage.haskell.org/package/Allure).
+               .
+               Another game using this engine is Allure of the Stars
+               at <http://hackage.haskell.org/package/Allure>.
 synopsis:      A roguelike game engine in early development
 homepage:      http://github.com/kosmikus/LambdaHack
 bug-reports:   http://github.com/kosmikus/LambdaHack/issues
