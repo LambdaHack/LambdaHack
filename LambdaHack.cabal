@@ -1,4 +1,4 @@
-cabal-version: >= 1.2
+cabal-version: >= 1.6
 name:          LambdaHack
 version:       0.1.20110918
 license:       BSD3
