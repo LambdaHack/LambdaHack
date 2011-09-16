@@ -13,7 +13,10 @@ description:   This is an alpha prerelease of Allure of the Stars,
                Long term goals are high replayability and auto-balancing
                through procedural content generation and persistent content
                modification based on player behaviour.
-               The game is based on the LambdaHack roguelike game engine,
+               .
+               The game is based on (for the time being, as a fork)
+               the LambdaHack roguelike game engine available
+               at <http://hackage.haskell.org/package/Allure>.
 synopsis:      Near-future roguelike game in early development
 homepage:      http://github.com/Mikolaj/Allure
 bug-reports:   http://github.com/Mikolaj/Allure/issues
