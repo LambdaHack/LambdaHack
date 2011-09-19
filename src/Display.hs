@@ -20,7 +20,7 @@ import qualified Data.Char as Char
 import qualified Data.Set as S
 import qualified Data.List as L
 import qualified Data.Map as M
-import Control.Monad.State hiding (State, state) -- for MonadIO, seems to be portable between mtl-1 and 2
+import Control.Monad.IO.Class
 import Data.Maybe
 
 import Message

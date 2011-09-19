@@ -9,8 +9,8 @@ import Frequency
 
 type Rnd a = State R.StdGen a
 
--- Written in a "portable" way because the implementation of
--- State changes between mtl versions 1 and 2.
+-- TODO: rewrite; was written in a "portable" way because the implementation of
+-- State changes between mtl versions 1 and 2. Now we are using only mtl 2.
 randomR :: (R.Random a) => (a, a) -> Rnd a
 randomR rng =
   do

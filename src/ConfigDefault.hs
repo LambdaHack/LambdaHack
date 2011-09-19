@@ -12,7 +12,7 @@ import Multiline
 -- Warning: cabal does not detect that the default config is changed,
 -- so touching this file is needed to reinclude config and recompile.
 configDefault :: String
-configDefault = [$multiline|
+configDefault = [multiline|
 
 #ifdef STD
 
