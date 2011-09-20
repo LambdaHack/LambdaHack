@@ -250,8 +250,7 @@ stdKeybindings = Keybindings
                (K.Char 'a',  aimCommand),
 
                -- wait
-               -- (K.Char ' ',  waitCommand),  -- dangerous, space is -more- key
-               (K.Char '.',  waitCommand),
+               (K.Char '.',  Undescribed playerAdvanceTime),
 
                -- saving or ending the game
                (K.Char 'X',  saveCommand),

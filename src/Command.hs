@@ -13,7 +13,7 @@ type Command    = Described (Action ())
 type DirCommand = Described (Dir -> Action ())
 
 
-closeCommand, pickupCommand, dropCommand, inventoryCommand, ascendCommand, descendCommand, floorCommand, monsterCommand, quaffCommand, readCommand, throwCommand, aimCommand, waitCommand, saveCommand, quitCommand, cancelCommand, historyCommand, dumpCommand, heroCommand, versionCommand :: Described (Action ())
+closeCommand, pickupCommand, dropCommand, inventoryCommand, ascendCommand, descendCommand, floorCommand, monsterCommand, quaffCommand, readCommand, throwCommand, aimCommand, saveCommand, quitCommand, cancelCommand, historyCommand, dumpCommand, heroCommand, versionCommand :: Described (Action ())
 closeCommand     = Described "close a door"      (checkCursor closeDoor)
 pickupCommand    = Described "get an object"     (checkCursor pickupItem)
 dropCommand      = Described "drop an object"    (checkCursor dropItem)
@@ -26,7 +26,6 @@ quaffCommand     = Described "quaff a potion"    (checkCursor quaffPotion)
 readCommand      = Described "read a scroll"     (checkCursor readScroll)
 throwCommand     = Described "throw a weapon"    (checkCursor throwItem)
 aimCommand       = Described "aim a wand"        (checkCursor aimItem)
-waitCommand      = Described "wait"              playerAdvanceTime
 saveCommand      = Described "save and exit the game" saveGame
 quitCommand      = Described "quit without saving" quitGame
 cancelCommand    = Described "cancel action"     cancelCurrent

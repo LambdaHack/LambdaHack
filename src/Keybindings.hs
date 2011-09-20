@@ -29,10 +29,18 @@ keyHelp aliases kb =
                                ++ h ++ replicate ((35 - length h) `max` 1) ' '
     fmts s  = replicate 15 ' ' ++ s ++ replicate ((48 - length s) `max` 1) ' '
     blank   = fmt "" ""
-    title   = fmt "keys" "command"
+    keyM    = fmts "default movement keys"
+    mov     = map fmts [ "7 8 9     y k u"
+                       , " \\|/       \\|/"
+                       , "4-5-6     h-.-l"
+                       , " /|\\       /|\\"
+                       , "1 2 3     b j n"
+                       ]
+    keyC    = fmt "keys" "command"
     footer  = fmts "(To search or open, bump into walls or doors. See PLAYING.md.)"
     disp k  = L.concatMap show $ aliases k
     rest    = [ fmt (disp k) h
               | (k, Described h _) <- M.toAscList (kother kb) ]
   in
-    unlines ([blank, title] ++ rest ++ [blank, footer, blank])
+    unlines ([blank, keyM, blank] ++ mov ++ [blank, keyC] ++ rest ++
+             [blank, footer, blank])

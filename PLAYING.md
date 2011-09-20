@@ -64,21 +64,17 @@ Below are the basic default keys.
 
 Searching for secret doors and opening closed doors have no keys assigned.
 Instead, bump into a wall to search and bump into a door to open.
+
 One of the ways of moving throughout the level is with the vi text editor keys
-(also known as "Rogue-like keys").
+(also known as "Rogue-like keys"). Pressing a capital letter corresponding
+to a direction key will have the hero run in that direction until something i
+nteresting occurs.
 
-               key    command
-               k      up
-               j      down
-               h      left
-               l      right
-               y      up-left
-               u      up-right
-               b      down-left
-               n      down-right
-
-Pressing a capital letter corresponding to a direction key will have
-the hero run in that direction until something interesting occurs.
+               7 8 9     y k u
+                \|/       \|/
+               4-5-6     h-.-l
+                /|\       /|\
+               1 2 3     b j n
 
 It is also possible to move using the numerical keypad, with Shift for running
 and the middle '5' key for waiting. (If you are using the curses frontend,
