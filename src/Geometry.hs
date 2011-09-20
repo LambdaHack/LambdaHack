@@ -14,7 +14,7 @@ type Y = Int
 
 type Loc  = (Y,X)
 type Dir  = (Y,X)
-type Area = ((Y,X),(Y,X))
+type Area = (Loc,Loc)
 
 -- | Given two locations, determine the direction in which one should
 -- move from the first in order to get closer to the second. Does not
@@ -101,7 +101,7 @@ fromTo1 x0 x1
   | x0 <= x1  = [x0..x1]
   | otherwise = [x0,x0-1..x1]
 
-normalize :: ((Y,X),(Y,X)) -> ((Y,X),(Y,X))
+normalize :: (Loc,Loc) -> (Loc,Loc)
 normalize (a,b) | a <= b    = (a,b)
                 | otherwise = (b,a)
 
@@ -109,7 +109,7 @@ normalizeArea :: Area -> Area
 normalizeArea ((y0, x0), (y1, x1)) =
   ((min y0 y1, min x0 x1), (max y0 y1, max x0 x1))
 
-grid :: (Y,X) -> Area -> [((Y,X), Area)]
+grid :: (Y,X) -> Area -> [(Loc, Area)]
 grid (ny,nx) ((y0,x0),(y1,x1)) =
   let yd = y1 - y0
       xd = x1 - x0

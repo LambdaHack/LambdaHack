@@ -65,8 +65,8 @@ instance Binary Level where
           lme <- get
           return (Level nm hs sz ms ls lm lme)
 
-type LMap = M.Map (Y,X) (Tile.Tile, Tile.Tile)
-type SMap = M.Map (Y,X) Time
+type LMap = M.Map Loc (Tile.Tile, Tile.Tile)
+type SMap = M.Map Loc Time
 
 at, rememberAt :: LMap -> Loc -> Tile.Tile
 at         l p = fst (M.findWithDefault (Tile.unknownTile, Tile.unknownTile) p l)

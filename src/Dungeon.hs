@@ -42,7 +42,7 @@ putDungeonLevel lvl (Dungeon dng) = Dungeon (M.insert (lname lvl) lvl dng)
 sizeDungeon :: Dungeon -> Int
 sizeDungeon (Dungeon dng) = M.size dng
 
-type Corridor = [(Y,X)]
+type Corridor = [Loc]
 type Room = Area
 
 -- | Create a random room according to given parameters.
@@ -83,7 +83,7 @@ instance R.Random HV where
 
 -- | Create a corridor, either horizontal or vertical, with
 -- a possible intermediate part that is in the opposite direction.
-mkCorridor :: HV -> (Loc,Loc) -> Area -> Rnd [(Y,X)] {- straight sections of the corridor -}
+mkCorridor :: HV -> (Loc,Loc) -> Area -> Rnd [Loc] {- straight sections of the corridor -}
 mkCorridor hv ((y0,x0),(y1,x1)) b =
   do
     (ry,rx) <- findLocInArea b (const True)

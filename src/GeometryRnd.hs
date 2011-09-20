@@ -16,8 +16,8 @@ findLocInArea a@((y0, x0), (y1, x1)) p = do
 locInArea :: Area -> Rnd Loc
 locInArea a = findLocInArea a (const True)
 
-connectGrid' :: (Y,X) -> S.Set (Y,X) -> S.Set (Y,X) -> [((Y,X), (Y,X))] ->
-                Rnd [((Y,X), (Y,X))]
+connectGrid' :: (Y,X) -> S.Set Loc -> S.Set Loc -> [(Loc, Loc)] ->
+                Rnd [(Loc, Loc)]
 connectGrid' (ny, nx) unconnected candidates acc
   | S.null candidates = return (L.map normalize acc)
   | otherwise = do
@@ -34,7 +34,7 @@ connectGrid' (ny, nx) unconnected candidates acc
                     return ((c,d) :)
       connectGrid' (ny,nx) nu (S.delete c (candidates `S.union` nc)) (new acc)
 
-connectGrid :: (Y,X) -> Rnd [((Y,X), (Y,X))]
+connectGrid :: (Y,X) -> Rnd [(Loc, Loc)]
 connectGrid (ny, nx) = do
   let unconnected = S.fromList [ (y, x) | x <- [0..nx-1], y <- [0..ny-1] ]
   -- candidates are neighbors that are still unconnected; we start with
@@ -44,7 +44,7 @@ connectGrid (ny, nx) = do
   let candidates  = S.fromList [ (ry, rx) ]
   connectGrid' (ny, nx) unconnected candidates []
 
-randomConnection :: (Y,X) -> Rnd ((Y,X), (Y,X))
+randomConnection :: (Y,X) -> Rnd (Loc, Loc)
 randomConnection (ny, nx) = do
   rb  <- randomR (False, True)
   if rb
