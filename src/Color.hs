@@ -3,6 +3,12 @@ module Color where
 import Control.Monad
 import qualified Data.Binary as Binary
 
+-- TODO: since this type may be essential to speed, consider implementing
+-- it as an Int, with color numbered as they are on terminals, see
+-- http://www.haskell.org/haskellwiki/Performance/Data_types#Enumerations
+-- If we ever switch to 256 colours, the Int implementation or similar
+-- will be more natural, anyway.
+
 data Color =
     Black
   | Red

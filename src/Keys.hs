@@ -6,7 +6,7 @@ import Geometry hiding (Up, Down)
 import qualified Data.List as L
 import qualified Data.Map as M
 
--- | Library-independent datatype to represent keys.
+-- | Frontend-independent datatype to represent keys.
 data Key =
     Esc
   | Return
@@ -73,7 +73,7 @@ canonMoveKey e =
 
 -- | Configurable event handler for the direction keys. Is used to
 --   handle player moves, but can also be used for directed commands
---   such as open/close.
+--   such as close door.
 handleDirection :: Key -> (Dir -> a) -> a -> a
 handleDirection e h k =
   case e of
@@ -87,9 +87,7 @@ handleDirection e h k =
     Char 'n' -> h downright
     _          -> k
 
--- | Configurable event handler for the upper direction keys. Is used to
---   handle player moves, but can also be used for directed commands
---   such as open/close.
+-- | Configurable event handler for the upper direction keys.
 handleUDirection :: Key -> (Dir -> a) -> a -> a
 handleUDirection e h k =
   case e of

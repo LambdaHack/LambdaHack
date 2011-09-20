@@ -12,8 +12,18 @@ data VDir = Up | Down
 type X = Int
 type Y = Int
 
+-- TODO: consider defining data Loc = L !Y !X, for safety, strictness
+-- and unboxing. Make sure this does not degrade performance,
+-- e.g., because lots of Locs are created from already fully evaluated
+-- x and y components.
+-- Probably, after dungeon is generated, Locs are used mainly as keys
+-- and not constructed often, so the performance should improve.
 type Loc  = (Y,X)
+
+-- TODO: hide the implementation of Dir, to catch errors and make
+-- optimizations easy.
 type Dir  = (Y,X)
+
 type Area = (Loc,Loc)
 
 -- | Given two locations, determine the direction in which one should
