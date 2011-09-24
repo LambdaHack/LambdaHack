@@ -71,7 +71,9 @@ keyTranslate e =
     C.KeyUp          -> K.Up
     C.KeyDown        -> K.Down
     C.KeyLeft        -> K.Left
+    C.KeySLeft       -> K.Left
     C.KeyRight       -> K.Right
+    C.KeySRight      -> K.Right
     C.KeyHome        -> K.Home
     C.KeyPPage       -> K.PgUp
     C.KeyEnd         -> K.End
@@ -80,7 +82,7 @@ keyTranslate e =
     C.KeyB2          -> K.Begin
     C.KeyClear       -> K.Begin
     -- No KP_ keys; see https://github.com/skogsbaer/hscurses/issues/10
-    -- For now, movement keys are more important than hero selection:
+    -- Movement keys are more important than hero selection, so preferring them:
     C.KeyChar c
       | c `elem` ['1'..'9'] -> K.KP c
       | otherwise           -> K.Char c

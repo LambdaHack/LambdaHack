@@ -77,10 +77,9 @@ nteresting occurs.
                1 2 3     b j n
 
 It is also possible to move using the numerical keypad, with Shift for running
-and the middle '5' key for waiting. (If you are using the curses frontend,
-numerical keypad may not work correctly for terminals with broken terminfo,
-e.g., gnome terminal has problems, while xterm works fine,
-though only under older versions of hscurses.)
+and the middle '5' key for waiting. (If you are using the curses or vty
+frontends, numerical keypad may not work correctly depending on the versions
+of curses, terminfo and terminal emulators. Vi keys should work regardless.)
 
 To make a distance attack, you need to set your target first.
 The targeting commands are listed below, together with all the other
