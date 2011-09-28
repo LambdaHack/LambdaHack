@@ -1,7 +1,7 @@
 Allure of the Stars
 ===================
 
-This is an alpha prerelease of Allure of the Stars,
+This is an alpha pre-release of Allure of the Stars,
 a near-future Sci-Fi [roguelike] [1] and tactical squad game.
 Long term goals are high replayability and auto-balancing
 through procedural content generation and persistent content

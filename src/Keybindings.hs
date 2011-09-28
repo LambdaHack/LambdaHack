@@ -27,20 +27,37 @@ keyHelp aliases kb =
   let
     fmt k h = replicate 15 ' ' ++ k ++ replicate ((13 - length k) `max` 1) ' '
                                ++ h ++ replicate ((35 - length h) `max` 1) ' '
-    fmts s  = replicate 15 ' ' ++ s ++ replicate ((48 - length s) `max` 1) ' '
+    fmts s  = replicate 2  ' ' ++ s ++ replicate ((71 - length s) `max` 1) ' '
     blank   = fmt "" ""
-    keyM    = fmts "default movement keys"
-    mov     = map fmts [ "7 8 9     y k u"
-                       , " \\|/       \\|/"
-                       , "4-5-6     h-.-l"
-                       , " /|\\       /|\\"
-                       , "1 2 3     b j n"
-                       ]
+    movKs   =
+      [ ""
+      , "You move throughout the level using the numerical keypad or"
+      , "the vi text editor keys (also known as \"Rogue-like keys\")."
+      , ""
+      , "               7 8 9     y k u"
+      , "                \\|/       \\|/"
+      , "               4-5-6     h-.-l"
+      , "                /|\\       /|\\"
+      , "               1 2 3     b j n"
+      , ""
+      , "Shift and a movement key make the hero run in the indicated direction,"
+      , "until anything of interest is spotted. '5' and '.' skip a turn."
+      , ""
+      , "To search, open or attack, bump into walls, doors or monsters."
+      , ""
+      , "For more playing instructions see file PLAYING.md."
+      , ""
+      , "Press space to see the next page."
+      , ""
+      , ""
+      ]
+    mov     = map fmts movKs
     keyC    = fmt "keys" "command"
-    footer  = fmts "(To search or open, bump into walls or doors. See PLAYING.md.)"
+--    footer  =
+--      fmts "(To search, open or attack, bump into walls, doors or monsters.)"
     disp k  = L.concatMap show $ aliases k
     rest    = [ fmt (disp k) h
               | (k, Described h _) <- M.toAscList (kother kb) ]
   in
-    unlines ([blank, keyM, blank] ++ mov ++ [blank, keyC] ++ rest ++
-             [blank, footer, blank])
+    unlines ([blank] ++ mov ++ [blank, keyC] ++ rest)
+--             [blank, footer, blank])

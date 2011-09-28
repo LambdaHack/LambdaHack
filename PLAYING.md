@@ -3,7 +3,7 @@ Playing Allure of the Stars
 
 Playing Allure of the Stars involves walking around the dungeon
 (err, a Solar System space-ship that incidentally closely resembles
-a fantasy dungeon, in this prerelease version of the game),
+a fantasy dungeon, in this pre-release version of the game),
 alone or in a party of fearless adventurers, jumping between levels,
 bumping into monsters, doors and walls, gathering magical treasure
 and making creative use of it. The bloodthirsty monsters do the same,
@@ -12,8 +12,8 @@ by smell and night-sight.
 
 Once the few basic command keys and on-screen symbols are learned,
 mastery and enjoyment of the game is the matter of tactical skill
-and literary imagination. To be honest, you need a lot of imagination
-right now, since the game is still quite basic, though playable and winnable.
+and literary imagination. To be honest, a lot of imagination is required
+right now, but the game is already playable and winnable.
 Contributions welcome.
 
 
@@ -33,8 +33,8 @@ The basic tiles are as follows.
                open door                          '
                closed door                        +
 
-The game world is persistent, i. e., every time a hero visits a level
-during a single game, the level layout looks the same. Some items
+The game world is persistent, i.e., every time the player visits a level
+during a single game, the level layout is the same. Some items
 aid in dungeon exploration, e.g., a ring of searching improves the speed
 of finding hidden doors by heroes and monsters. The higher the magical
 bonus displayed for this and other dungeon items, the more effective it is.
@@ -46,10 +46,24 @@ and use it against you.
 Keys
 ----
 
-Below are the basic default keys.
+You move throughout the level using the numerical keypad or
+the vi text editor keys (also known as "Rogue-like keys").
+
+               7 8 9     y k u
+                \|/       \|/
+               4-5-6     h-.-l
+                /|\       /|\
+               1 2 3     b j n
+
+Shift and a movement key make the hero run in the indicated direction,
+until anything of interest is spotted. '5' and '.' skip a turn.
+(Note that If you are using the curses or vty frontends,
+numerical keypad may not work correctly depending on the versions
+of curses, terminfo and terminal emulators. Vi keys should work regardless.)
+
+Below are the basic default keys form common commands.
 
                key    command
-               .      wait
                <      ascend a level
                >      descend a level
                ?      display help
@@ -61,29 +75,15 @@ Below are the basic default keys.
                i      display inventory
                q      quaff a potion
                r      read a scroll
+               a      aim a wand
+               t      throw a weapon
 
 Searching for secret doors and opening closed doors have no keys assigned.
 Instead, bump into a wall to search and bump into a door to open.
 
-One of the ways of moving throughout the level is with the vi text editor keys
-(also known as "Rogue-like keys"). Pressing a capital letter corresponding
-to a direction key will have the hero run in that direction until something i
-nteresting occurs.
-
-               7 8 9     y k u
-                \|/       \|/
-               4-5-6     h-.-l
-                /|\       /|\
-               1 2 3     b j n
-
-It is also possible to move using the numerical keypad, with Shift for running
-and the middle '5' key for waiting. (If you are using the curses or vty
-frontends, numerical keypad may not work correctly depending on the versions
-of curses, terminfo and terminal emulators. Vi keys should work regardless.)
-
 To make a distance attack, you need to set your target first.
 The targeting commands are listed below, together with all the other
-less common player commands.
+less used commands.
 
                key    command
                ESC    cancel action
@@ -95,8 +95,6 @@ less common player commands.
                D      dump current configuration
                P      display previous messages
                V      display game version
-               a      aim a wand
-               t      throw a weapon
 
 There are also some debug and cheat keys. Use at your peril!
 
@@ -126,7 +124,7 @@ This gives the opponent a free blow, but can improve the tactical situation
 or aid escape.
 
 Throwing weapons at targets wounds them, consuming the weapon in the process.
-You can target a monster with the '*' key from the top row or numpad.
+You can target a monster with the '*' key from the top row or kepad.
 You may throw any object in your possession
 (press '*' for a non-standard choice) or on the floor (press '-'),
 though only objects of a few kinds inflict any damage.
