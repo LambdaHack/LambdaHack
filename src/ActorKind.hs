@@ -25,22 +25,21 @@ data ActorKind = ActorKind
 
 type ActorKindId = Kind.Id ActorKind
 
-ops :: Kind.Ops ActorKind
-ops = Kind.buildOps content bfreq
-
-actorFrequency :: Frequency ActorKindId
-actorFrequency = Kind.frequency ops
+actorFrequency :: Frequency (ActorKindId, ActorKind)
+actorFrequency = Kind.frequency
 
 getKind :: ActorKindId -> ActorKind
-getKind = Kind.getKind ops
+getKind = Kind.getKind
 
 heroKindId :: ActorKindId
-heroKindId = Kind.getId ops hero
+heroKindId = Kind.getId hero
 
-content :: [ActorKind]
-content = [hero, eye, fastEye, nose]
+instance Kind.Content ActorKind where
+  getFreq = bfreq
+  content =
+    [hero, eye, fastEye, nose]
 
-hero,            eye, fastEye, nose :: ActorKind
+hero,      eye, fastEye, nose :: ActorKind
 
 hero = ActorKind
   { bhp     = (50, 1)

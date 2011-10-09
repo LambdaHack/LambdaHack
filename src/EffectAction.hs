@@ -207,8 +207,8 @@ summonHeroes n loc =
 
 summonMonsters :: Int -> Loc -> Action ()
 summonMonsters n loc = do
-  mk <- liftIO $ rndToIO $ frequency ActorKind.actorFrequency
-  hp <- liftIO $ rndToIO $ rollDice $ ActorKind.bhp $ ActorKind.getKind mk
+  (mk, k) <- liftIO $ rndToIO $ frequency ActorKind.actorFrequency
+  hp <- liftIO $ rndToIO $ rollDice $ ActorKind.bhp k
   modify (\ state ->
            iterate (addMonster mk hp loc) state !! n)
 

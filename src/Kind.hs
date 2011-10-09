@@ -1,6 +1,6 @@
 module Kind
-  (Id, Ops(getKind, getId, frequency), buildOps)
-  where
+  (Id, Content(getFreq, content), getKind, getId, frequency)
+  where  -- TODO: make content write-only somehow
 
 import Data.Binary
 import qualified Data.List as L
@@ -17,17 +17,19 @@ instance Binary (Id a) where
   put (Id i) = put i
   get = liftM Id get
 
-data Ops a = Ops
-  { getKind   :: Id a -> a
-  , getId     :: a -> Id a
-  , frequency :: Frequency (Id a)
-  }
+class Content a where
+  getFreq :: a -> Int
+  content :: [a]
+  kindAssocs :: [(Int, a)]
+  kindAssocs = L.zip [0..] content
+  kindMap :: IM.IntMap a
+  kindMap = IM.fromDistinctAscList kindAssocs
 
-buildOps :: Eq a => [a] -> (a -> Int) -> Ops a
-buildOps content getFreq =
-  let kindAssocs = L.zip [0..] content
-      kindMap = IM.fromDistinctAscList kindAssocs
-      getKind (Id i) = kindMap IM.! i
-      getId a = Id $ fromJust $ L.elemIndex a content
-      frequency = Frequency [(getFreq k, Id i) | (i, k) <- kindAssocs]
-  in Ops{getKind, getId, frequency}
+getKind :: Content a => Id a -> a
+getKind (Id i) = kindMap IM.! i
+
+getId :: (Content a, Eq a) => a -> Id a
+getId a = Id $ fromJust $ L.elemIndex a content
+
+frequency :: Content a => Frequency (Id a, a)
+frequency = Frequency [(getFreq k, (Id i, k)) | (i, k) <- kindAssocs]
