@@ -33,7 +33,7 @@ import Dungeon
 import Perception
 import Actor
 import ActorState
-import ActorKind
+import qualified ActorKind
 import Item
 import qualified Keys as K
 import WorldLoc
@@ -132,8 +132,8 @@ displayLevel
                   sassocs = asso,
                   slevel  = Level ln _ (sy, sx) _ smap lm _ }))
   msg moverlay =
-  let Actor { akind = ActorKind { bhp },
-              ahp = php, aloc = ploc, aitems = pitems } = getPlayerBody state
+  let Actor{akind, ahp, aloc, aitems} = getPlayerBody state
+      ActorKind.ActorKind{bhp} = ActorKind.getKind akind
       reachable = ptreachable per
       visible   = ptvisible per
       overlay   = fromMaybe "" moverlay
@@ -149,8 +149,8 @@ displayLevel
                                       then Color.Magenta
                                       else Color.defBG
                 else \ _vis _rea -> Color.defBG
-      wealth  = L.sum $ L.map itemPrice pitems
-      damage  = case strongestItem pitems "sword" of
+      wealth  = L.sum $ L.map itemPrice aitems
+      damage  = case strongestItem aitems "sword" of
                   Just sw -> 3 + ipower sw
                   Nothing -> 3
       hs      = levelHeroList state
@@ -158,11 +158,13 @@ displayLevel
       dis n loc0 =
         let tile = lm `lAt` loc0
             sml  = ((smap M.! loc0) - time) `div` 100
-            viewActor loc Actor{akind, asymbol}
-              | loc == ploc && ln == creturnLn cursor =
+            viewActor loc Actor{akind = akind2, asymbol}
+              | loc == aloc && ln == creturnLn cursor =
                   (symbol, Color.defBG)  -- highlight player
-              | otherwise = (symbol, bcolor akind)
-              where symbol = fromMaybe (bsymbol akind) asymbol
+              | otherwise = (symbol, bcolor)
+              where
+                ActorKind.ActorKind{bsymbol, bcolor} = ActorKind.getKind akind2
+                symbol = fromMaybe bsymbol asymbol
             viewSmell :: Int -> Char
             viewSmell k
               | k > 9     = '*'
@@ -170,7 +172,7 @@ displayLevel
               | otherwise = Char.intToDigit k
             rainbow loc = toEnum $ uncurry (+) loc `mod` 14 + 1
             (char, fg0) =
-              case L.find (\ m -> loc0 == aloc m) (hs ++ ms) of
+              case L.find (\ m -> loc0 == Actor.aloc m) (hs ++ ms) of
                 Just m | sOmn || vis -> viewActor loc0 m
                 _ | sSml && sml >= 0 -> (viewSmell sml, rainbow loc0)
                   | otherwise        -> viewTile vis tile asso
@@ -195,7 +197,7 @@ displayLevel
         take 10 ("T: " ++ show (time `div` 10) ++ repeat ' ') ++
         take 10 ("$: " ++ show wealth ++ repeat ' ') ++
         take 10 ("Dmg: " ++ show damage ++ repeat ' ') ++
-        take 20 ("HP: " ++ show php ++
+        take 20 ("HP: " ++ show ahp ++
                  " (" ++ show (maxDice bhp) ++ ")" ++ repeat ' ')
       disp n mesg = display ((0, 0), (sy, sx)) session (dis n) mesg status
       msgs = splitMsg sx msg

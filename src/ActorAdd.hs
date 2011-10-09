@@ -11,7 +11,7 @@ import State
 import Level
 import Actor
 import ActorState
-import ActorKind
+import qualified ActorKind
 import Random
 import qualified Config
 import WorldLoc
@@ -19,11 +19,12 @@ import qualified Tile
 
 -- Generic functions
 
--- setting the time of new monsters to 0 makes them able to
--- move immediately after generation; this does not seem like
+-- Setting the time of new monsters to 0 makes them able to
+-- move immediately after generation. This does not seem like
 -- a bad idea, but it would certainly be "more correct" to set
--- the time to the creation time instead
-template :: ActorKind -> Maybe String -> Maybe Char -> Int -> Loc -> Actor
+-- the time to the creation time instead.
+template :: ActorKind.ActorKindId -> Maybe String -> Maybe Char -> Int -> Loc
+            -> Actor
 template mk ms mc hp loc = Actor mk ms mc hp Nothing TCursor loc [] 'a' 0
 
 nearbyFreeLoc :: Loc -> State -> Loc
@@ -52,7 +53,7 @@ addHero ploc state =
       symbol = if n < 1 || n > 9 then Nothing else Just $ Char.intToDigit n
       name = findHeroName config n
       startHP = bHP `div` min 10 (n + 1)
-      m = template hero (Just name) symbol startHP loc
+      m = template ActorKind.heroKindId (Just name) symbol startHP loc
       state' = state { scounter = (n + 1, snd (scounter state)) }
   in  updateLevel (updateHeroes (IM.insert n m)) state'
 
@@ -74,7 +75,7 @@ monsterGenChance (LambdaCave d) numMonsters =
   chance $ 1%(fromIntegral (250 + 200 * (numMonsters - d)) `max` 50)
 
 -- | Create a new monster in the level, at a random position.
-addMonster :: ActorKind -> Int -> Loc -> State -> State
+addMonster :: ActorKind.ActorKindId -> Int -> Loc -> State -> State
 addMonster mk hp ploc state = do
   let loc = nearbyFreeLoc ploc state
       n = snd (scounter state)
@@ -100,7 +101,6 @@ rollMonster state@(State { slevel = lvl }) = do
                        && l `L.notElem` L.map aloc (hs ++ ms))
              (\ l t -> not (Tile.isLit t)  -- try a dark, distant place first
                        && L.all (\ pl -> distance (aloc pl, l) > 400) hs)
-      let fmk = Frequency $ L.zip (L.map bfreq dungeonMonsters) dungeonMonsters
-      mk <- frequency fmk
-      hp <- rollDice (bhp mk)
+      mk <- frequency ActorKind.actorFrequency
+      hp <- rollDice $ ActorKind.bhp $ ActorKind.getKind mk
       return $ addMonster mk hp loc state

@@ -17,7 +17,7 @@ import qualified Keys as K
 import Level
 import Actor
 import ActorState
-import ActorKind
+import qualified ActorKind
 import ActorAdd
 import Perception
 import State
@@ -106,9 +106,10 @@ zapGroupItem source loc verb item = do
   per   <- currentPerception
   let consumed = item { icount = 1 }
       sloc = aloc sm
-      subject = if sloc `S.member` ptvisible per
-                then sm
-                else template hero (Just "somebody") Nothing 99 sloc
+      subject =
+        if sloc `S.member` ptvisible per
+        then sm
+        else template ActorKind.heroKindId (Just "somebody") Nothing 99 sloc
       msg = subjectVerbIObject state subject verb consumed ""
   removeFromInventory source consumed sloc
   case locToActor loc state of

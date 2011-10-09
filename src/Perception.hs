@@ -70,7 +70,9 @@ perception_ state@(State { splayer = pl,
                            ssensory = sensory }) =
   let mode   = Config.get config "engine" "fovMode"
       radius = Config.get config "engine" "fovRadius"
-      fovMode m = if not $ ActorKind.bsight (akind m) then Blind else
+      fovMode m = if not $ ActorKind.bsight $ActorKind.getKind $ akind m
+                  then Blind
+                  else
         -- terrible, temporary hack
         case sensory of
           Vision 3 -> Digital radius

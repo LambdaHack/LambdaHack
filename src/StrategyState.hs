@@ -65,9 +65,10 @@ strategy actor
 --  trace (show time ++ ": " ++ show actor) $
     strat
   where
-    Actor { akind = mk, aloc = me, adir = ad,
+    Actor { akind = ak, aloc = me, adir = ad,
             atarget = tgt, aitems = items } =
       getActor actor oldState
+    mk = ActorKind.getKind ak
     delState = deleteActor actor oldState
     enemyVisible a l =
       -- We assume monster sight is infravision, so light has no significance.

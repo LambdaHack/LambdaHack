@@ -62,12 +62,10 @@ getKind :: ItemKindId -> ItemKind
 getKind (ItemKindId i) = kindMap IM.! i
 
 content :: [ItemKind]
-content =
-  [amulet, dart, gem1, gem2, gem3, gem4, gold, potion1, potion2, potion3, ring, scroll1, scroll2, sword, wand]
+content = [amulet, dart, gem1, gem2, gem3, gem4, gold, potion1, potion2, potion3, ring, scroll1, scroll2, sword, wand]
 
-amulet,    dart, gem1, gem2, gem3, gem4, gold, potion1, potion2, potion3, ring, scroll1, scroll2, sword, wand :: ItemKind
-
-gem, potion, scroll :: ItemKind  -- generic templates
+gem, potion, scroll,  -- generic templates
+           amulet, dart, gem1, gem2, gem3, gem4, gold, potion1, potion2, potion3, ring, scroll1, scroll2, sword, wand :: ItemKind
 
 -- rollQuad (a, b, x, y) = a * roll b + (lvl * x * roll y) / 10
 

@@ -13,7 +13,7 @@ import State
 import Level
 import Actor
 import ActorState
-import ActorKind
+import qualified ActorKind
 import qualified Save
 
 newtype Action a = Action
@@ -238,7 +238,7 @@ updatePlayerBody f = do
 advanceTime :: ActorId -> Action ()
 advanceTime actor = do
   time <- gets stime
-  let upd m = m { atime = time + bspeed (akind m) }
+  let upd m = m { atime = time + ActorKind.bspeed (ActorKind.getKind (akind m)) }
   -- A hack to synchronize the whole party:
   pl <- gets splayer
   if actor == pl || isAHero actor

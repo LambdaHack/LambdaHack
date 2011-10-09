@@ -1,10 +1,20 @@
-module ActorKind where
+module ActorKind
+  (ActorKind(..), ActorKindId, getKind, actorFrequency, heroKindId)
+  where
 
 import Data.Binary
+import qualified Data.List as L
+import qualified Data.IntMap as IM
+import Control.Monad
 
 import Geometry
 import qualified Color
 import Random
+
+-- Some extra functions that need access to the internal representation:
+
+actorFrequency :: Frequency ActorKindId
+actorFrequency = Frequency [(bfreq ak, ActorKindId i) | (i, ak) <- kindAssocs]
 
 -- | Monster properties that are changing rarely and permanently.
 data ActorKind = ActorKind
@@ -19,38 +29,35 @@ data ActorKind = ActorKind
   , bregen  :: !Int          -- ^ regeneration interval
   , bfreq   :: !Int          -- ^ dungeon frequency
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
-instance Binary ActorKind where
-  put (ActorKind nhp nsp nsym ncol nnm nsi nsm niq nreg nfreq) = do
-    put nhp
-    put nsp
-    put nsym
-    put ncol
-    put nnm
-    put nsi
-    put nsm
-    put niq
-    put nreg
-    put nfreq
-  get = do
-    nhp    <- get
-    nsp    <- get
-    nsym   <- get
-    ncol   <- get
-    nnm    <- get
-    nsi    <- get
-    nsm    <- get
-    niq    <- get
-    nreg   <- get
-    nfreq  <- get
-    return (ActorKind nhp nsp nsym ncol nnm nsi nsm niq nreg nfreq)
+newtype ActorKindId = ActorKindId Int
+  deriving (Show, Eq, Ord)
 
--- | The list of kinds of monsters that appear randomly throughout the dungeon.
-dungeonMonsters :: [ActorKind]
-dungeonMonsters = [eye, fastEye, nose]
+instance Binary ActorKindId where
+  put (ActorKindId i) = put i
+  get = liftM ActorKindId get
 
-hero, eye, fastEye, nose :: ActorKind
+heroKindId :: ActorKindId
+heroKindId = ActorKindId $ -1
+
+kindAssocs :: [(Int, ActorKind)]
+kindAssocs = L.zip [0..] content
+
+kindMap :: IM.IntMap ActorKind
+kindMap = IM.fromDistinctAscList kindAssocs
+
+getKind :: ActorKindId -> ActorKind
+getKind ak@(ActorKindId i)
+  | ak == heroKindId = hero
+  | otherwise        = kindMap IM.! i
+
+-- | Only monsters that appear randomly throughout the dungeon.
+content :: [ActorKind]
+content = [eye, fastEye, nose]
+
+hero,      eye, fastEye, nose :: ActorKind
+
 hero = ActorKind
   { bhp     = (50, 1)
   , bspeed  = 10

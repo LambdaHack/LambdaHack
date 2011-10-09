@@ -11,7 +11,7 @@ import ActorKind
 -- of properties form ActorKind, the intention is they may be modified
 -- temporarily, but will return to the original value over time. E.g., HP.
 data Actor = Actor
-  { akind   :: !ActorKind       -- ^ kind of the actor; TODO: make this an index
+  { akind   :: !ActorKindId     -- ^ the kind of the actor
   , aname   :: !(Maybe String)  -- ^ individual name
   , asymbol :: !(Maybe Char)    -- ^ individual map symbol
   , ahp     :: !Int             -- ^ current hit pints
@@ -25,30 +25,29 @@ data Actor = Actor
   deriving Show
 
 instance Binary Actor where
-  put (Actor ak an as ah ad at al ai ale ati) =
-    do
-      put ak
-      put an
-      put as
-      put ah
-      put ad
-      put at
-      put al
-      put ai
-      put ale
-      put ati
+  put (Actor ak an as ah ad at al ai ale ati) = do
+    put ak
+    put an
+    put as
+    put ah
+    put ad
+    put at
+    put al
+    put ai
+    put ale
+    put ati
   get = do
-          ak  <- get
-          an  <- get
-          as  <- get
-          ah  <- get
-          ad  <- get
-          at  <- get
-          al  <- get
-          ai  <- get
-          ale <- get
-          ati <- get
-          return (Actor ak an as ah ad at al ai ale ati)
+    ak  <- get
+    an  <- get
+    as  <- get
+    ah  <- get
+    ad  <- get
+    at  <- get
+    al  <- get
+    ai  <- get
+    ale <- get
+    ati <- get
+    return (Actor ak an as ah ad at al ai ale ati)
 
 data ActorId = AHero !Int     -- ^ hero index (on the lheroes intmap)
              | AMonster !Int  -- ^ monster index (on the lmonsters intmap)

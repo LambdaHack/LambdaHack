@@ -45,7 +45,7 @@ effectToAction :: Effect.Effect -> Int -> ActorId -> ActorId -> Int ->
                   Action (Bool, String)
 effectToAction Effect.NoEffect _ _ _ _ = nullEffect
 effectToAction Effect.Heal _ _source target power = do
-  let bhpMax m = maxDice (ActorKind.bhp (akind m))
+  let bhpMax m = maxDice (ActorKind.bhp $ ActorKind.getKind $ akind m)
   tm <- gets (getActor target)
   if ahp tm >= bhpMax tm || power <= 0
     then nullEffect
@@ -179,9 +179,11 @@ selectPlayer actor =
             lvlSwitch nln
             -- Set smell display, depending on player capabilities.
             -- This also resets FOV mode.
-            modify (\ s -> s { ssensory = if ActorKind.bsmell (akind pbody)
-                                          then Smell
-                                          else Implicit })
+            modify (\ s -> s { ssensory =
+                                 if ActorKind.bsmell $ ActorKind.getKind $
+                                    akind pbody
+                                 then Smell
+                                 else Implicit })
             -- Announce.
             messageAdd $ subjectActor pbody ++ " selected."
             return True
@@ -205,11 +207,8 @@ summonHeroes n loc =
 
 summonMonsters :: Int -> Loc -> Action ()
 summonMonsters n loc = do
-  let fmk = Frequency $
-            L.zip (L.map ActorKind.bfreq ActorKind.dungeonMonsters) $
-            ActorKind.dungeonMonsters
-  mk <- liftIO $ rndToIO $ frequency fmk
-  hp <- liftIO $ rndToIO $ rollDice $ ActorKind.bhp mk
+  mk <- liftIO $ rndToIO $ frequency ActorKind.actorFrequency
+  hp <- liftIO $ rndToIO $ rollDice $ ActorKind.bhp $ ActorKind.getKind mk
   modify (\ state ->
            iterate (addMonster mk hp loc) state !! n)
 

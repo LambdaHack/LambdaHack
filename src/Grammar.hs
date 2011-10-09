@@ -26,7 +26,7 @@ capitalize (c : cs) = toUpper c : cs
 
 -- | How to refer to an actor in object position of a sentence.
 objectActor :: Actor -> String
-objectActor a = fromMaybe (bname $ akind a) (aname a)
+objectActor a = fromMaybe (bname $ ActorKind.getKind $ akind a) (aname a)
 
 -- | How to refer to an actor in subject position of a sentence.
 subjectActor :: Actor -> String
