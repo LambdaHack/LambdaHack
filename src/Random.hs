@@ -75,13 +75,28 @@ infixl 6 ~+~
 (*~) :: Num a => Int -> Rnd a -> Rnd a
 x *~ r = liftM sum (replicateM x r)
 
--- RollDice: 1d7, 3d3, etc. (a, b) represent (a *~ roll b).
+-- RollDice: 1d7, 3d3, 2d0, etc. (a, b) represent (a *~ roll b).
 type RollDice = (Binary.Word8, Binary.Word8)
 
 rollDice :: RollDice -> Rnd Int
 rollDice (a', b') =
   let (a, b) = (fromEnum a', fromEnum b')
-  in  a *~ roll b
+  in a *~ roll b
+
+maxDice :: RollDice -> Int
+maxDice (a', b') =
+  let (a, b) = (fromEnum a', fromEnum b')
+  in a * b
+
+minDice :: RollDice -> Int
+minDice (a', b') =
+  let (a, b) = (fromEnum a', fromEnum b')
+  in if b == 0 then 0 else a
+
+meanDice :: RollDice -> Rational
+meanDice (a', b') =
+  let (a, b) = (fromIntegral a', fromIntegral b')
+  in if b == 0 then 0 else a * (b + 1) % 2
 
 -- rollQuad (a, b, x, y) = a *~ roll b + (lvl * (x *~ roll y)) / 10
 type RollQuad = (Binary.Word8, Binary.Word8, Binary.Word8, Binary.Word8)

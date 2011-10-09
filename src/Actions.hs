@@ -634,7 +634,7 @@ regenerateLevelHP =
                         Nothing -> 1
           in if time `mod` regen /= 0
              then m
-             else m { ahp = min (bhpMax (akind m)) (ahp m + 1) }
+             else m { ahp = min (maxDice $ bhp $ akind m) (ahp m + 1) }
     -- We really want hero selection to be a purely UI distinction,
     -- so all heroes need to regenerate, not just the player.
     -- Only the heroes on the current level regenerate (others are frozen

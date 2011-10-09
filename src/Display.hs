@@ -37,6 +37,7 @@ import ActorKind
 import Item
 import qualified Keys as K
 import WorldLoc
+import Random
 
 -- Re-exported from the display frontend, with an extra slot for function
 -- for translating keys to a canonical form.
@@ -131,7 +132,7 @@ displayLevel
                   sassocs = asso,
                   slevel  = Level ln _ (sy, sx) _ smap lm _ }))
   msg moverlay =
-  let Actor { akind = ActorKind { bhpMax = xhp },
+  let Actor { akind = ActorKind { bhp },
               ahp = php, aloc = ploc, aitems = pitems } = getPlayerBody state
       reachable = ptreachable per
       visible   = ptvisible per
@@ -194,7 +195,8 @@ displayLevel
         take 10 ("T: " ++ show (time `div` 10) ++ repeat ' ') ++
         take 10 ("$: " ++ show wealth ++ repeat ' ') ++
         take 10 ("Dmg: " ++ show damage ++ repeat ' ') ++
-        take 20 ("HP: " ++ show php ++ " (" ++ show xhp ++ ")" ++ repeat ' ')
+        take 20 ("HP: " ++ show php ++
+                 " (" ++ show (maxDice bhp) ++ ")" ++ repeat ' ')
       disp n mesg = display ((0, 0), (sy, sx)) session (dis n) mesg status
       msgs = splitMsg sx msg
       perf k []     = perfo k ""

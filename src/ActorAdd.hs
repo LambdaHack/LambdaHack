@@ -102,5 +102,5 @@ rollMonster state@(State { slevel = lvl }) = do
                        && L.all (\ pl -> distance (aloc pl, l) > 400) hs)
       let fmk = Frequency $ L.zip (L.map bfreq dungeonMonsters) dungeonMonsters
       mk <- frequency fmk
-      hp <- randomR (bhpMin mk, bhpMax mk)
+      hp <- rollDice (bhp mk)
       return $ addMonster mk hp loc state

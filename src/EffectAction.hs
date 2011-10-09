@@ -45,12 +45,13 @@ effectToAction :: Effect.Effect -> Int -> ActorId -> ActorId -> Int ->
                   Action (Bool, String)
 effectToAction Effect.NoEffect _ _ _ _ = nullEffect
 effectToAction Effect.Heal _ _source target power = do
+  let bhpMax m = maxDice (ActorKind.bhp (akind m))
   tm <- gets (getActor target)
-  if ahp tm >= ActorKind.bhpMax (akind tm) || power <= 0
+  if ahp tm >= bhpMax tm || power <= 0
     then nullEffect
     else do
       focusIfAHero target
-      let upd m = m { ahp = min (ActorKind.bhpMax (akind m)) (ahp m + power) }
+      let upd m = m { ahp = min (bhpMax m) (ahp m + power) }
       updateAnyActor target upd
       return (True, subjectActorVerb tm "feel" ++ " better.")
 effectToAction (Effect.Wound nDm) verbosity source target power = do
@@ -208,8 +209,9 @@ summonMonsters n loc = do
             L.zip (L.map ActorKind.bfreq ActorKind.dungeonMonsters) $
             ActorKind.dungeonMonsters
   mk <- liftIO $ rndToIO $ frequency fmk
+  hp <- liftIO $ rndToIO $ rollDice $ ActorKind.bhp mk
   modify (\ state ->
-           iterate (addMonster mk (ActorKind.bhpMax mk) loc) state !! n)
+           iterate (addMonster mk hp loc) state !! n)
 
 -- | Remove dead heroes, check if game over.
 -- For now we only check the selected hero, but if poison, etc.
