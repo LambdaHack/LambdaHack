@@ -11,21 +11,25 @@ import ActorKind
 -- of properties form ActorKind, the intention is they may be modified
 -- temporarily, but will return to the original value over time. E.g., HP.
 data Actor = Actor
-  { akind   :: !ActorKind    -- ^ kind of the actor; TODO: make this an index
-  , ahp     :: !Int          -- ^ current hit pints
-  , adir    :: !(Maybe Dir)  -- ^ the direction of running
-  , atarget :: Target        -- ^ the target for distance attacks and AI
-  , aloc    :: !Loc          -- ^ current location
-  , aitems  :: [Item]        -- ^ inventory
-  , aletter :: !Char         -- ^ next inventory letter
-  , atime   :: !Time         -- ^ time of next action
+  { akind   :: !ActorKind       -- ^ kind of the actor; TODO: make this an index
+  , aname   :: !(Maybe String)  -- ^ individual name
+  , asymbol :: !(Maybe Char)    -- ^ individual map symbol
+  , ahp     :: !Int             -- ^ current hit pints
+  , adir    :: !(Maybe Dir)     -- ^ the direction of running
+  , atarget :: Target           -- ^ the target for distance attacks and AI
+  , aloc    :: !Loc             -- ^ current location
+  , aitems  :: [Item]           -- ^ inventory
+  , aletter :: !Char            -- ^ next inventory letter
+  , atime   :: !Time            -- ^ time of next action
   }
   deriving Show
 
 instance Binary Actor where
-  put (Actor ak ah ad at al ai ale ati) =
+  put (Actor ak an as ah ad at al ai ale ati) =
     do
       put ak
+      put an
+      put as
       put ah
       put ad
       put at
@@ -35,6 +39,8 @@ instance Binary Actor where
       put ati
   get = do
           ak  <- get
+          an  <- get
+          as  <- get
           ah  <- get
           ad  <- get
           at  <- get
@@ -42,7 +48,7 @@ instance Binary Actor where
           ai  <- get
           ale <- get
           ati <- get
-          return (Actor ak ah ad at al ai ale ati)
+          return (Actor ak an as ah ad at al ai ale ati)
 
 data ActorId = AHero !Int     -- ^ hero index (on the lheroes intmap)
              | AMonster !Int  -- ^ monster index (on the lmonsters intmap)

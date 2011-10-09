@@ -10,6 +10,10 @@ import System.Time
 import Control.Exception (assert)
 
 import Action
+import Actor
+import ActorState
+import qualified ActorKind
+import ActorAdd
 import Display hiding (display)
 import Dungeon
 import Geometry
@@ -19,10 +23,6 @@ import Item
 import qualified ItemKind
 import Level
 import Message
-import Actor
-import ActorState
-import ActorKind
-import ActorAdd
 import Perception
 import Random
 import State
@@ -46,13 +46,13 @@ effectToAction :: Effect.Effect -> Int -> ActorId -> ActorId -> Int ->
 effectToAction Effect.NoEffect _ _ _ _ = nullEffect
 effectToAction Effect.Heal _ _source target power = do
   tm <- gets (getActor target)
-  if ahp tm >= bhpMax (akind tm) || power <= 0
+  if ahp tm >= ActorKind.bhpMax (akind tm) || power <= 0
     then nullEffect
     else do
       focusIfAHero target
-      let upd m = m { ahp = min (bhpMax (akind m)) (ahp m + power) }
+      let upd m = m { ahp = min (ActorKind.bhpMax (akind m)) (ahp m + power) }
       updateAnyActor target upd
-      return (True, subjectActorVerb (akind tm) "feel" ++ " better.")
+      return (True, subjectActorVerb tm "feel" ++ " better.")
 effectToAction (Effect.Wound nDm) verbosity source target power = do
   n <- liftIO $ rndToIO $ rollDice nDm
   if n + power <= 0 then nullEffect else do
@@ -62,16 +62,16 @@ effectToAction (Effect.Wound nDm) verbosity source target power = do
         killed = newHP <= 0
         msg
           | source == target =  -- a potion of wounding, etc.
-            subjectActorVerb (akind tm) "feel" ++
+            subjectActorVerb tm "feel" ++
               if killed then " mortally" else "" ++ " wounded."
           | killed =
             if isAHero target then "" else
-              subjectActorVerb (akind tm) "die" ++ "."
+              subjectActorVerb tm "die" ++ "."
           | verbosity <= 0 = ""
           | isAHero target =
-            subjectActorVerb (akind tm) "lose" ++
+            subjectActorVerb tm "lose" ++
               " " ++ show (n + power) ++ "HP."
-          | otherwise = subjectActorVerb (akind tm) "hiss" ++ " in pain."
+          | otherwise = subjectActorVerb tm "hiss" ++ " in pain."
     updateAnyActor target $ \ m -> m { ahp = newHP }  -- Damage the target.
     when killed $ do
       -- Place the actor's possessions on the map.
@@ -182,7 +182,7 @@ selectPlayer actor =
                                           then Smell
                                           else Implicit })
             -- Announce.
-            messageAdd $ subjectActor (akind pbody) ++ " selected."
+            messageAdd $ subjectActor pbody ++ " selected."
             return True
 
 focusIfAHero :: ActorId -> Action ()
@@ -204,9 +204,12 @@ summonHeroes n loc =
 
 summonMonsters :: Int -> Loc -> Action ()
 summonMonsters n loc = do
-  let fmk = Frequency $ L.zip (L.map bfreq dungeonMonsters) dungeonMonsters
+  let fmk = Frequency $
+            L.zip (L.map ActorKind.bfreq ActorKind.dungeonMonsters) $
+            ActorKind.dungeonMonsters
   mk <- liftIO $ rndToIO $ frequency fmk
-  modify (\ state -> iterate (addMonster mk (bhpMax mk) loc) state !! n)
+  modify (\ state ->
+           iterate (addMonster mk (ActorKind.bhpMax mk) loc) state !! n)
 
 -- | Remove dead heroes, check if game over.
 -- For now we only check the selected hero, but if poison, etc.
@@ -220,7 +223,7 @@ checkPartyDeath =
     config <- gets sconfig
     when (ahp pbody <= 0) $ do  -- TODO: change to guard? define mzero? Why are the writes to to files performed when I call abort later? That probably breaks the laws of MonadPlus.
       go <- messageMoreConfirm ColorBW $
-              subjectActorVerb (akind pbody) "die" ++ "."
+              subjectActorVerb pbody "die" ++ "."
       history  -- Prevent the messages from being repeated.
       let firstDeathEnds = Config.get config "heroes" "firstDeathEnds"
       if firstDeathEnds

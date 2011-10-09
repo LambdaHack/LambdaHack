@@ -108,7 +108,7 @@ zapGroupItem source loc verb item = do
       sloc = aloc sm
       subject = if sloc `S.member` ptvisible per
                 then sm
-                else template (hero {bname = "somebody"}) 99 sloc
+                else template hero (Just "somebody") Nothing 99 sloc
       msg = subjectVerbIObject state subject verb consumed ""
   removeFromInventory source consumed sloc
   case locToActor loc state of

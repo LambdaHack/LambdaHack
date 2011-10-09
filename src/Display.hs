@@ -157,10 +157,11 @@ displayLevel
       dis n loc0 =
         let tile = lm `lAt` loc0
             sml  = ((smap M.! loc0) - time) `div` 100
-            viewActor loc (Actor { akind = mk })
+            viewActor loc Actor{akind, asymbol}
               | loc == ploc && ln == creturnLn cursor =
-                  (bsymbol mk, Color.defBG)  -- highlight player
-              | otherwise = (bsymbol mk, bcolor mk)
+                  (symbol, Color.defBG)  -- highlight player
+              | otherwise = (symbol, bcolor akind)
+              where symbol = fromMaybe (bsymbol akind) asymbol
             viewSmell :: Int -> Char
             viewSmell k
               | k > 9     = '*'

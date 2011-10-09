@@ -23,8 +23,8 @@ import qualified Tile
 -- move immediately after generation; this does not seem like
 -- a bad idea, but it would certainly be "more correct" to set
 -- the time to the creation time instead
-template :: ActorKind -> Int -> Loc -> Actor
-template mk hp loc = Actor mk hp Nothing TCursor loc [] 'a' 0
+template :: ActorKind -> Maybe String -> Maybe Char -> Int -> Loc -> Actor
+template mk ms mc hp loc = Actor mk ms mc hp Nothing TCursor loc [] 'a' 0
 
 nearbyFreeLoc :: Loc -> State -> Loc
 nearbyFreeLoc origin state@(State { slevel = Level { lmap = lm } }) =
@@ -47,13 +47,12 @@ addHero :: Loc -> State -> State
 addHero ploc state =
   let config = sconfig state
       bHP = Config.get config "heroes" "baseHP"
-      mk = hero {bhpMin = bHP, bhpMax = bHP, bsymbol = symbol, bname = name }
       loc = nearbyFreeLoc ploc state
       n = fst (scounter state)
-      symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
+      symbol = if n < 1 || n > 9 then Nothing else Just $ Char.intToDigit n
       name = findHeroName config n
       startHP = bHP `div` min 10 (n + 1)
-      m = template mk startHP loc
+      m = template hero (Just name) symbol startHP loc
       state' = state { scounter = (n + 1, snd (scounter state)) }
   in  updateLevel (updateHeroes (IM.insert n m)) state'
 
@@ -79,7 +78,7 @@ addMonster :: ActorKind -> Int -> Loc -> State -> State
 addMonster mk hp ploc state = do
   let loc = nearbyFreeLoc ploc state
       n = snd (scounter state)
-      m = template mk hp loc
+      m = template mk Nothing Nothing hp loc
       state' = state { scounter = (fst (scounter state), n + 1) }
   updateLevel (updateMonsters (IM.insert n m)) state'
 

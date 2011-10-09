@@ -93,18 +93,17 @@ endTargeting accept = do
 
 endTargetingMsg :: Action ()
 endTargetingMsg = do
-  pkind  <- gets (akind . getPlayerBody)
-  target <- gets (atarget . getPlayerBody)
+  pbody  <- gets getPlayerBody
   state  <- get
   let verb = "target"
-      targetMsg = case target of
+      targetMsg = case atarget pbody of
                     TEnemy a _ll ->
                       case findActorAnyLevel a state of
-                        Just (_, m) -> objectActor (akind m)
+                        Just (_, m) -> objectActor m
                         Nothing     -> "a long gone adversary"
                     TLoc loc -> "location " ++ show loc
                     TCursor  -> "current cursor position continuously"
-  messageAdd $ subjectActorVerb pkind verb ++ " " ++ targetMsg ++ "."
+  messageAdd $ subjectActorVerb pbody verb ++ " " ++ targetMsg ++ "."
 
 -- | Cancel something, e.g., targeting mode, resetting the cursor
 -- to the position of the player. Chosen target is not invalidated.
@@ -494,7 +493,7 @@ doLook =
         monsterMsg =
           if canSee
           then case L.find (\ m -> aloc m == loc) (levelMonsterList state) of
-                 Just m  -> subjectActor (akind m) ++ " is here. "
+                 Just m  -> subjectActor m ++ " is here. "
                  Nothing -> ""
           else ""
         mode = case target of

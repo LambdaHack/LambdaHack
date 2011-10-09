@@ -3,6 +3,7 @@ module Grammar where
 import Data.Char
 import qualified Data.Set as S
 import qualified Data.List as L
+import Data.Maybe
 
 import Item
 import Actor
@@ -24,40 +25,40 @@ capitalize [] = []
 capitalize (c : cs) = toUpper c : cs
 
 -- | How to refer to an actor in object position of a sentence.
-objectActor :: ActorKind -> String
-objectActor = bname
+objectActor :: Actor -> String
+objectActor a = fromMaybe (bname $ akind a) (aname a)
 
 -- | How to refer to an actor in subject position of a sentence.
-subjectActor :: ActorKind -> String
+subjectActor :: Actor -> String
 subjectActor x = capitalize $ objectActor x
 
-verbActor :: ActorKind -> String -> String
-verbActor mk v = if bname mk == "you" then v else suffixS v
+verbActor :: Actor -> String -> String
+verbActor a v = if objectActor a == "you" then v else suffixS v
 
 -- | Sentences such like "The dog barks".
-subjectActorVerb :: ActorKind -> String -> String
+subjectActorVerb :: Actor -> String -> String
 subjectActorVerb x v = subjectActor x ++ " " ++ verbActor x v
 
-compoundVerbActor :: ActorKind -> String -> String -> String
+compoundVerbActor :: Actor -> String -> String -> String
 compoundVerbActor m v p = verbActor m v ++ " " ++ p
 
 subjectVerbIObject :: State -> Actor -> String -> Item -> String -> String
 subjectVerbIObject state m v o add =
-  subjectActor (akind m) ++ " " ++
-  verbActor (akind m) v ++ " " ++
+  subjectActor m ++ " " ++
+  verbActor m v ++ " " ++
   objectItem state o ++ add ++ "."
 
 subjectVerbMObject :: Actor -> String -> Actor -> String -> String
 subjectVerbMObject m v o add =
-  subjectActor (akind m) ++ " " ++
-  verbActor (akind m) v ++ " " ++
-  objectActor (akind o) ++ add ++ "."
+  subjectActor m ++ " " ++
+  verbActor m v ++ " " ++
+  objectActor o ++ add ++ "."
 
 subjCompoundVerbIObj :: State -> Actor -> String -> String ->
                         Item -> String -> String
 subjCompoundVerbIObj state m v p o add =
-  subjectActor (akind m) ++ " " ++
-  compoundVerbActor (akind m) v p ++ " " ++
+  subjectActor m ++ " " ++
+  compoundVerbActor m v p ++ " " ++
   objectItem state o ++ add ++ "."
 
 makeObject :: Int -> (String -> String) -> String -> String
