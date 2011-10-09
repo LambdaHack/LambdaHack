@@ -38,8 +38,8 @@ getPlayerBody state = snd $ fromMaybe (error "getPlayerBody") $
 allHeroesAnyLevel :: State -> [(ActorId, LevelId)]
 allHeroesAnyLevel state =
   let Dungeon m = sdungeon state
-      one (Level { lname = ln, lheroes = hs }) =
-        L.map (\ (i, _) -> (AHero i, ln)) (IM.assocs hs)
+      one (Level{lname, lheroes}) =
+        L.map (\ (i, _) -> (AHero i, lname)) (IM.assocs lheroes)
   in  L.concatMap one (slevel state : M.elems m)
 
 updateAnyActorBody :: ActorId -> (Actor -> Actor) -> State -> State
@@ -76,17 +76,17 @@ targetToLoc visible state =
 
 -- | Checks if the actor is present on the current level.
 memActor :: ActorId -> State -> Bool
-memActor a (State { slevel = lvl }) =
+memActor a (State{slevel}) =
   case a of
-    AHero n    -> IM.member n (lheroes lvl)
-    AMonster n -> IM.member n (lmonsters lvl)
+    AHero n    -> IM.member n (lheroes slevel)
+    AMonster n -> IM.member n (lmonsters slevel)
 
 -- | Gets actor body from the current level. Error if not found.
 getActor :: ActorId -> State -> Actor
-getActor a (State { slevel = lvl }) =
+getActor a (State{slevel}) =
   case a of
-    AHero n    -> lheroes   lvl IM.! n
-    AMonster n -> lmonsters lvl IM.! n
+    AHero n    -> lheroes   slevel IM.! n
+    AMonster n -> lmonsters slevel IM.! n
 
 -- | Removes the actor, if present, from the current level.
 deleteActor :: ActorId -> State -> State
@@ -103,8 +103,8 @@ insertActor a m =
     AMonster n -> updateLevel (updateMonsters (IM.insert n m))
 
 levelHeroList, levelMonsterList :: State -> [Actor]
-levelHeroList    (State { slevel = Level { lheroes   = hs } }) = IM.elems hs
-levelMonsterList (State { slevel = Level { lmonsters = ms } }) = IM.elems ms
+levelHeroList    State{slevel = Level{lheroes  }} = IM.elems lheroes
+levelMonsterList State{slevel = Level{lmonsters}} = IM.elems lmonsters
 
 -- | Finds an actor at a location on the current level. Perception irrelevant.
 locToActor :: Loc -> State -> Maybe ActorId

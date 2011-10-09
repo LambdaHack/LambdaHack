@@ -333,10 +333,10 @@ lvlChange vdir =
                   -- do not freely reveal the other end of the stairs
                   lm2 <- gets (lmap . slevel)  -- lvlSwitch modifies map
                   let upd cur =
-                        let cloc = if isUnknown (rememberAt lm2 nloc)
-                                   then loc
-                                   else nloc
-                        in  cur { clocation = cloc, clocLn = nln }
+                        let clocation = if isUnknown (rememberAt lm2 nloc)
+                                        then loc
+                                        else nloc
+                        in  cur { clocation, clocLn = nln }
                   modify (updateCursor upd)
                   doLook
                 else tryWith (abortWith "somebody blocks the staircase") $ do
@@ -364,8 +364,8 @@ lvlChange vdir =
         if targeting
         then do
           lvlDescend (if vdir == Up then -1 else 1)
-          ln <- gets (lname . slevel)
-          let upd cur = cur { clocLn = ln }
+          clocLn <- gets (lname . slevel)
+          let upd cur = cur {clocLn}
           modify (updateCursor upd)
           doLook
         else
@@ -473,10 +473,10 @@ setCursor = do
   state <- get
   per   <- currentPerception
   ploc  <- gets (aloc . getPlayerBody)
-  ln    <- gets (lname . slevel)
+  clocLn <- gets (lname . slevel)
   let upd cursor =
-        let cloc = fromMaybe ploc (targetToLoc (ptvisible per) state)
-        in cursor { ctargeting = True, clocation = cloc, clocLn = ln }
+        let clocation = fromMaybe ploc (targetToLoc (ptvisible per) state)
+        in cursor { ctargeting = True, clocation, clocLn }
   modify (updateCursor upd)
   doLook
 
@@ -549,7 +549,7 @@ moveOrAttack allowAttacks autoOpen actor dir
         Nothing
           | accessible lm sloc tloc -> do
               -- perform the move
-              updateAnyActor actor $ \ body -> body{aloc = tloc}
+              updateAnyActor actor $ \ body -> body {aloc = tloc}
               when (actor == pl) $
                 messageAdd $ lookAt False True state lm tloc ""
               advanceTime actor

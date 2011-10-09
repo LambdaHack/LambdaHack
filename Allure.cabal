@@ -57,7 +57,7 @@ executable Allure
                  MissingH >= 1.1.0.3 && < 1.2, filepath >= 1.1.0.3 && < 2,
                  template-haskell >= 2.6, transformers >= 0.2
 
-  extensions:    BangPatterns
+  extensions:    BangPatterns, RecordWildCards, NamedFieldPuns
   ghc-options:   -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-monomorphism-restriction -fwarn-unrecognised-pragmas
   ghc-options:   -fno-warn-auto-orphans -fno-warn-implicit-prelude -fno-warn-unused-do-bind
   ghc-options:   -fno-ignore-asserts -O2 -funbox-strict-fields
