@@ -13,7 +13,7 @@ import Level
 import Actor
 import ActorState
 import ActorKind
-import Random
+import Frequency
 import Perception
 import Strategy
 import State

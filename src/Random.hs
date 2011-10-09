@@ -1,4 +1,4 @@
-module Random (module Frequency, module Random) where
+module Random where
 
 import qualified Data.Binary as Binary
 import Data.Ratio

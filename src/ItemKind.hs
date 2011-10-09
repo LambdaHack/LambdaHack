@@ -13,6 +13,7 @@ import Color
 import Effect
 import Random
 import Flavour
+import Frequency
 
 -- Some extra functions that need access to the internal representation:
 
