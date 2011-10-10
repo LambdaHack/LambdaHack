@@ -8,10 +8,11 @@ import Item
 import Grammar
 import qualified TileKind
 import qualified Tile
+import qualified Kind
 
 viewTile :: Bool -> Tile.Tile -> Assocs -> (Char, Color.Color)
 viewTile b (Tile.Tile t _ _ [])     _a =
-  let u = TileKind.getKind t
+  let u = Kind.getKind t
   in (TileKind.usymbol u, if b then TileKind.ucolor u else TileKind.ucolor2 u)
 viewTile _b (Tile.Tile _t _ _ (i:_)) a = Item.viewItem (ikind i) a
 
@@ -22,7 +23,7 @@ lookAt :: Bool -> Bool -> State -> LMap -> Loc -> String -> String
 lookAt detailed canSee s lm loc msg
   | detailed  =
     let tile = lm `rememberAt` loc
-        name = TileKind.uname . TileKind.getKind . Tile.tkind $ tile
+        name = TileKind.uname . Kind.getKind . Tile.tkind $ tile
     in name ++ " " ++ msg ++ isd
   | otherwise = msg ++ isd
   where

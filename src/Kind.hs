@@ -1,5 +1,5 @@
 module Kind
-  (Id, getKind, getId, frequency, foldWithKey)
+  (Id, Kind.getKind, getId, frequency, foldWithKey)
   where
 
 import Data.Binary

@@ -12,6 +12,7 @@ import State
 import ItemKind
 import Effect
 import Flavour
+import qualified Kind
 
 suffixS :: String -> String
 suffixS word = case last word of
@@ -26,7 +27,7 @@ capitalize (c : cs) = toUpper c : cs
 
 -- | How to refer to an actor in object position of a sentence.
 objectActor :: Actor -> String
-objectActor a = fromMaybe (bname $ ActorKind.getKind $ akind a) (aname a)
+objectActor a = fromMaybe (bname $ Kind.getKind $ akind a) (aname a)
 
 -- | How to refer to an actor in subject position of a sentence.
 subjectActor :: Actor -> String
@@ -71,7 +72,7 @@ makeObject n adj obj = show n ++ " " ++ adj (suffixS obj)
 objectItem :: State -> Item -> String
 objectItem state o =
   let ik = ikind o
-      kind = ItemKind.getKind ik
+      kind = Kind.getKind ik
       identified = L.length (jflavour kind) == 1 ||
                    ik `S.member` sdiscoveries state
       addSpace s = if s == "" then "" else " " ++ s

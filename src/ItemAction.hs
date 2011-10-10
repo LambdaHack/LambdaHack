@@ -23,6 +23,7 @@ import Perception
 import State
 import EffectAction
 import qualified Tile
+import qualified Kind
 
 -- Item UI code with the Action type and everything it depends on
 -- that is not already in Action.hs and EffectAction.hs.
@@ -51,7 +52,7 @@ getGroupItem :: [Item] ->  -- all objects in question
                 String ->  -- how to refer to the collection of objects
                 Action (Maybe Item)
 getGroupItem is groupName prompt packName =
-  let choice i = groupName == ItemKind.jname (ItemKind.getKind (ikind i))
+  let choice i = groupName == ItemKind.jname (Kind.getKind (ikind i))
       header = capitalize $ suffixS groupName
   in  getItem prompt choice header is packName
 
@@ -80,7 +81,7 @@ playerApplyGroupItem groupName = do
   pl   <- gets splayer
   case iOpt of
     Just i  ->
-      let verb = applyToVerb (ItemKind.jname (ItemKind.getKind (ikind i)))
+      let verb = applyToVerb (ItemKind.jname (Kind.getKind (ikind i)))
       in  applyGroupItem pl verb i
     Nothing -> neverMind True
 
@@ -139,7 +140,7 @@ playerZapGroupItem groupName = do
         Just loc ->
           -- TODO: draw digital line and see if obstacles prevent firing
           if actorReachesLoc pl loc per (Just pl)
-          then let verb = zapToVerb (ItemKind.jname (ItemKind.getKind (ikind i)))
+          then let verb = zapToVerb (ItemKind.jname (Kind.getKind (ikind i)))
                in  zapGroupItem pl loc verb i
           else abortWith "target not reachable"
     Nothing -> neverMind True

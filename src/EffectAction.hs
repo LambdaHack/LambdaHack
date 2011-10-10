@@ -29,6 +29,7 @@ import State
 import qualified Config
 import qualified Effect
 import WorldLoc
+import qualified Kind
 
 -- The effectToAction function and all it depends on.
 -- This file should not depend on Action.hs nor ItemAction.hs.
@@ -45,7 +46,7 @@ effectToAction :: Effect.Effect -> Int -> ActorId -> ActorId -> Int ->
                   Action (Bool, String)
 effectToAction Effect.NoEffect _ _ _ _ = nullEffect
 effectToAction Effect.Heal _ _source target power = do
-  let bhpMax m = maxDice (ActorKind.bhp $ ActorKind.getKind $ akind m)
+  let bhpMax m = maxDice (ActorKind.bhp $ Kind.getKind $ akind m)
   tm <- gets (getActor target)
   if ahp tm >= bhpMax tm || power <= 0
     then nullEffect
@@ -126,7 +127,7 @@ itemEffectAction :: Int -> ActorId -> ActorId -> Item -> Action Bool
 itemEffectAction verbosity source target item = do
   tm  <- gets (getActor target)
   per <- currentPerception
-  let effect = ItemKind.jeffect $ ItemKind.getKind $ ikind item
+  let effect = ItemKind.jeffect $ Kind.getKind $ ikind item
   -- The message describes the target part of the action.
   (b, msg) <- effectToAction effect verbosity source target (ipower item)
   -- Determine how the player perceives the event.
@@ -148,7 +149,7 @@ discover i = do
   let ik = ikind i
       obj = unwords $ tail $ words $ objectItem state i
       msg = "The " ++ obj ++ " turns out to be "
-      kind = ItemKind.getKind ik
+      kind = Kind.getKind ik
       alreadyIdentified = L.length (ItemKind.jflavour kind) == 1 ||
                           ik `S.member` sdiscoveries state
   unless alreadyIdentified $ do
@@ -180,7 +181,7 @@ selectPlayer actor =
             -- Set smell display, depending on player capabilities.
             -- This also resets FOV mode.
             modify (\ s -> s { ssensory =
-                                 if ActorKind.bsmell $ ActorKind.getKind $
+                                 if ActorKind.bsmell $ Kind.getKind $
                                     akind pbody
                                  then Smell
                                  else Implicit })

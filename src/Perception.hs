@@ -15,6 +15,7 @@ import qualified ActorKind
 import FOV
 import qualified Config
 import qualified Tile
+import qualified Kind
 
 data Perception = Perception
   { preachable :: S.Set Loc
@@ -70,7 +71,7 @@ perception_ state@(State { splayer = pl,
                            ssensory = sensory }) =
   let mode   = Config.get config "engine" "fovMode"
       radius = Config.get config "engine" "fovRadius"
-      fovMode m = if not $ ActorKind.bsight $ActorKind.getKind $ akind m
+      fovMode m = if not $ ActorKind.bsight $ Kind.getKind $ akind m
                   then Blind
                   else
         -- terrible, temporary hack

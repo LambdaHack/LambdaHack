@@ -38,6 +38,7 @@ import Item
 import qualified Keys as K
 import WorldLoc
 import Random
+import qualified Kind
 
 -- Re-exported from the display frontend, with an extra slot for function
 -- for translating keys to a canonical form.
@@ -133,7 +134,7 @@ displayLevel
                   slevel  = Level ln _ (sy, sx) _ smap lm _ }))
   msg moverlay =
   let Actor{akind, ahp, aloc, aitems} = getPlayerBody state
-      ActorKind.ActorKind{bhp} = ActorKind.getKind akind
+      ActorKind.ActorKind{bhp} = Kind.getKind akind
       reachable = ptreachable per
       visible   = ptvisible per
       overlay   = fromMaybe "" moverlay
@@ -163,7 +164,7 @@ displayLevel
                   (symbol, Color.defBG)  -- highlight player
               | otherwise = (symbol, bcolor)
               where
-                ActorKind.ActorKind{bsymbol, bcolor} = ActorKind.getKind akind2
+                ActorKind.ActorKind{bsymbol, bcolor} = Kind.getKind akind2
                 symbol = fromMaybe bsymbol asymbol
             viewSmell :: Int -> Char
             viewSmell k

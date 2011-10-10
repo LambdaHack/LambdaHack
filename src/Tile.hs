@@ -28,8 +28,8 @@ unknownTile = Tile TileKind.unknownId Nothing Nothing []
 -- | The player can't tell if the tile is a secret door or not.
 canBeSecretDoor :: Tile -> Bool
 canBeSecretDoor t =
-  let u = TileKind.getKind (tkind t)
-      s = TileKind.getKind TileKind.doorSecretId
+  let u = Kind.getKind (tkind t)
+      s = Kind.getKind TileKind.doorSecretId
   in TileKind.usymbol u == TileKind.usymbol s &&
      TileKind.uname u == TileKind.uname s &&
      TileKind.ucolor u == TileKind.ucolor s &&
@@ -42,7 +42,7 @@ isOpening :: Tile -> Bool
 isOpening t = tkind t == TileKind.openingId
 
 hasFeature :: TileKind.Feature -> Tile -> Bool
-hasFeature f t = f `elem` (TileKind.ufeature . TileKind.getKind . tkind $ t)
+hasFeature f t = f `elem` (TileKind.ufeature . Kind.getKind . tkind $ t)
 
 -- | Does not block vision
 isClear :: Tile -> Bool
@@ -63,7 +63,7 @@ isExit = hasFeature TileKind.Exit
 -- | Is a good candidate to deposit items, replace by other tiles, etc.
 isBoring :: Tile -> Bool
 isBoring t =
-  let fs = TileKind.ufeature (TileKind.getKind (tkind t))
+  let fs = TileKind.ufeature (Kind.getKind (tkind t))
       optional = [TileKind.Exit, TileKind.Lit]
       mandatory = [TileKind.Walkable, TileKind.Clear]
   in fs L.\\ optional `L.elem` L.permutations mandatory

@@ -32,6 +32,7 @@ import qualified TileKind
 import EffectAction
 import WorldLoc
 import Tile  -- TODO: qualified
+import qualified Kind
 
 -- The Action stuff that is independent from ItemAction.hs.
 -- (Both depend on EffectAction.hs).
@@ -177,10 +178,10 @@ continueRun dir =
         heroThere = (loc `shift` dir) `elem` L.map aloc (IM.elems hs)
         dirOK     = accessible lm loc (loc `shift` dir)
         isKExit t  =
-          L.elem TileKind.Exit (TileKind.ufeature . TileKind.getKind $ t)
+          L.elem TileKind.Exit (TileKind.ufeature . Kind.getKind $ t)
         isFloorDark t =
-          L.elem TileKind.Walkable (TileKind.ufeature . TileKind.getKind $ t)
-          && L.notElem TileKind.Lit (TileKind.ufeature . TileKind.getKind $ t)
+          L.elem TileKind.Walkable (TileKind.ufeature . Kind.getKind $ t)
+          && L.notElem TileKind.Lit (TileKind.ufeature . Kind.getKind $ t)
     -- What happens next is mostly depending on the terrain we're currently on.
     let hop t
           | monstersVisible || heroThere
@@ -269,7 +270,7 @@ actorOpenDoor actor dir = do
       t = lm `at` dloc
       isPlayer = actor == pl
       isVerbose = isPlayer  -- don't report enemy failures, if it's not player
-      iq = ActorKind.biq $ ActorKind.getKind $ akind body
+      iq = ActorKind.biq $ Kind.getKind $ akind body
       openPower =
         if isPlayer
         then 1  -- player can't open secret doors
@@ -629,7 +630,7 @@ regenerateLevelHP =
   do
     time <- gets stime
     let upd m =
-          let ak = ActorKind.getKind $ akind m
+          let ak = Kind.getKind $ akind m
               regen = ActorKind.bregen ak `div`
                       case strongestItem (aitems m) "amulet" of
                         Just i  -> ipower i

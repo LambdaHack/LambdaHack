@@ -1,5 +1,5 @@
 module TileKind
-  (TileKind(..), Feature(..), getKind, wallId, doorSecretId, openingId, floorDarkId, floorLightId, unknownId, stairs, door, deDoor, deStairs) where
+  (TileKind(..), Feature(..), wallId, doorSecretId, openingId, floorDarkId, floorLightId, unknownId, stairs, door, deDoor, deStairs) where
 
 import qualified Data.List as L
 
@@ -34,9 +34,6 @@ data Feature =
   | Closable           -- ^ triggered by closable
   | Secret !RollDice   -- ^ triggered when the tile's tsecret becomes (Just 0)
   deriving (Show, Eq, Ord)
-
-getKind :: Kind.Id TileKind -> TileKind
-getKind = Kind.getKind
 
 instance Content.Content TileKind where
   getFreq = ufreq
@@ -178,7 +175,7 @@ door (Just _) = doorSecretId
 deStairs :: Kind.Id TileKind -> Maybe VDir
 deStairs t =
   let isCD f = case f of Climbable -> True; Descendable -> True; _ -> False
-      fk = ufeature (getKind t)
+      fk = ufeature (Kind.getKind t)
   in case L.filter isCD fk of
        [Climbable] -> Just Up
        [Descendable] -> Just Down
@@ -186,8 +183,8 @@ deStairs t =
 
 deDoor :: Kind.Id TileKind -> Maybe (Maybe Bool)
 deDoor t
-  | Closable `elem` ufeature (getKind t) = Just Nothing
-  | Openable `elem` ufeature (getKind t) = Just (Just False)
+  | Closable `elem` ufeature (Kind.getKind t) = Just Nothing
+  | Openable `elem` ufeature (Kind.getKind t) = Just (Just False)
   | let isSecret f = case f of Secret _ -> True; _ -> False
-    in L.any isSecret (ufeature (getKind t)) = Just (Just True) -- TODO
+    in L.any isSecret (ufeature (Kind.getKind t)) = Just (Just True) -- TODO
   | otherwise = Nothing

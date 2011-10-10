@@ -1,5 +1,5 @@
 module ActorKind
-  (ActorKind(..), getKind, actorFrequency, heroKindId)
+  (ActorKind(..), actorFrequency, heroKindId)
   where
 
 import Geometry
@@ -26,9 +26,6 @@ data ActorKind = ActorKind
 
 actorFrequency :: Frequency (Kind.Id ActorKind, ActorKind)
 actorFrequency = Kind.frequency
-
-getKind :: Kind.Id ActorKind -> ActorKind
-getKind = Kind.getKind
 
 heroKindId :: Kind.Id ActorKind
 heroKindId = Kind.getId hero

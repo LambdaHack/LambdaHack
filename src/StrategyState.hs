@@ -24,6 +24,7 @@ import qualified ItemKind
 import Item
 import qualified Effect
 import qualified Tile
+import qualified Kind
 
 -- import Debug.Trace
 
@@ -68,7 +69,7 @@ strategy actor
     Actor { akind = ak, aloc = me, adir = ad,
             atarget = tgt, aitems = items } =
       getActor actor oldState
-    mk = ActorKind.getKind ak
+    mk = Kind.getKind ak
     delState = deleteActor actor oldState
     enemyVisible a l =
       -- We assume monster sight is infravision, so light has no significance.
@@ -153,7 +154,7 @@ strategy actor
     applyFreq is multi = Frequency
       [ (benefit * multi, actionApply (ItemKind.jname ik) i)
       | i <- is,
-        let ik = ItemKind.getKind (ikind i),
+        let ik = Kind.getKind (ikind i),
         let benefit =
               (1 + ipower i) * Effect.effectToBenefit (ItemKind.jeffect ik),
         benefit > 0,
@@ -162,7 +163,7 @@ strategy actor
     throwFreq is multi = if not $ bsight mk then mzero else Frequency
       [ (benefit * multi, actionThrow (ItemKind.jname ik) i)
       | i <- is,
-        let ik = ItemKind.getKind (ikind i),
+        let ik = Kind.getKind (ikind i),
         let benefit =
               - (1 + ipower i) * Effect.effectToBenefit (ItemKind.jeffect ik),
         benefit > 0,

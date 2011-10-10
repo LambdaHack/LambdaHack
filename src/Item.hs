@@ -56,14 +56,14 @@ dungeonAssocs =
 
 getFlavour :: Assocs -> Kind.Id ItemKind -> Flavour
 getFlavour assocs ik =
-  let kind = ItemKind.getKind ik
+  let kind = Kind.getKind ik
   in  case jflavour kind of
         []  -> error "getFlavour"
         [f] -> f
         _:_ -> assocs M.! ik
 
 viewItem :: Kind.Id ItemKind -> Assocs -> (Char, Color.Color)
-viewItem ik assocs = (jsymbol (getKind ik), flavourToColor $ getFlavour assocs ik)
+viewItem ik assocs = (jsymbol (Kind.getKind ik), flavourToColor $ getFlavour assocs ik)
 
 itemLetter :: ItemKind -> Maybe Char
 itemLetter ik = if jsymbol ik == '$' then Just '$' else Nothing
@@ -183,14 +183,14 @@ findItem p = findItem' []
 strongestItem :: [Item] -> String -> Maybe Item
 strongestItem is groupName =
   let cmp = comparing ipower
-      igs = L.filter (\ i -> jname (getKind (ikind i)) == groupName) is
+      igs = L.filter (\ i -> jname (Kind.getKind (ikind i)) == groupName) is
   in  case igs of
         [] -> Nothing
         _  -> Just $ L.maximumBy cmp igs
 
 itemPrice :: Item -> Int
 itemPrice i =
-  case jname (getKind (ikind i)) of
+  case jname (Kind.getKind (ikind i)) of
     "gold piece" -> icount i
     "gem" -> 100
     _ -> 0
