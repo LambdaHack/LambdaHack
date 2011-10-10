@@ -1,11 +1,8 @@
-module ActorKind
-  (ActorKind(..), heroKindId)
-  where
+module ActorKind (ActorKind(..)) where
 
 import Geometry
 import qualified Color
 import Random
-import qualified Kind
 import qualified Content
 
 -- | Monster properties that are changing rarely and permanently.
@@ -40,7 +37,7 @@ hero = ActorKind
   , bsmell  = False
   , biq     = 13  -- Can see secret doors, when he is under alien control.
   , bregen  = 1500
-  , bfreq   = 0  -- Does not appear randomly throughout the dungeon.
+  , bfreq   = 0  -- Does not appear randomly in the dungeon.
 
   }
 
@@ -80,7 +77,3 @@ nose = ActorKind
   , bregen  = 1500
   , bfreq   = 2
   }
-
-
-heroKindId :: Kind.Id ActorKind
-heroKindId = Kind.getId hero

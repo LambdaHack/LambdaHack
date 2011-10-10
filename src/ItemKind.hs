@@ -1,12 +1,9 @@
-module ItemKind
-  (ItemKind(..), swordKindId)
-  where
+module ItemKind (ItemKind(..)) where
 
 import Color
 import Effect
 import Random
 import Flavour
-import qualified Kind
 import qualified Content
 
 -- TODO: jpower is out of place here. It doesn't make sense for all items,
@@ -31,9 +28,9 @@ data ItemKind = ItemKind
 instance Content.Content ItemKind where
   getFreq = jfreq
   content =
-    [amulet, dart, gem1, gem2, gem3, gem4, gold, potion1, potion2, potion3, ring, scroll1, scroll2, sword, wand]
+    [amulet, dart, gem1, gem2, gem3, gem4, gold, potion1, potion2, potion3, ring, scroll1, scroll2, sword, fist, wand]
 
-amulet,      dart, gem1, gem2, gem3, gem4, gold, potion1, potion2, potion3, ring, scroll1, scroll2, sword, wand :: ItemKind
+amulet,      dart, gem1, gem2, gem3, gem4, gold, potion1, potion2, potion3, ring, scroll1, scroll2, sword, fist, wand :: ItemKind
 
 gem, potion, scroll :: ItemKind  -- generic templates
 
@@ -141,6 +138,10 @@ sword = ItemKind
   , jfreq    = 60
   , jpower   = (1, 2, 4, 2)
   }
+fist = sword
+  { jname    = "fist"
+  , jfreq    = 0  -- Does not appear randomly in the dungeon.
+  }
 wand = ItemKind
   { jsymbol  = '/'
   , jflavour = [(BrRed, True)]
@@ -150,7 +151,3 @@ wand = ItemKind
   , jfreq    = 10
   , jpower   = intToQuad 0
   }
-
-
-swordKindId :: Kind.Id ItemKind
-swordKindId = Kind.getId sword

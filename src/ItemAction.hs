@@ -17,7 +17,6 @@ import qualified Keys as K
 import Level
 import Actor
 import ActorState
-import qualified ActorKind
 import ActorAdd
 import Perception
 import State
@@ -110,7 +109,7 @@ zapGroupItem source loc verb item = do
       subject =
         if sloc `S.member` ptvisible per
         then sm
-        else template ActorKind.heroKindId (Just "somebody") Nothing 99 sloc
+        else template Actor.heroKindId (Just "somebody") Nothing 99 sloc
       msg = subjectVerbIObject state subject verb consumed ""
   removeFromInventory source consumed sloc
   case locToActor loc state of
