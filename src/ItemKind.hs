@@ -1,5 +1,5 @@
 module ItemKind
-  (ItemKind(..), ItemKindId, getKind, itemFrequency, itemFoldWithKey, swordKindId)
+  (ItemKind(..), getKind, itemFrequency, itemFoldWithKey, swordKindId)
   where
 
 import Color
@@ -29,18 +29,16 @@ data ItemKind = ItemKind
   }
   deriving (Show, Eq, Ord)
 
-type ItemKindId = Kind.Id ItemKind
-
-itemFrequency :: Frequency (ItemKindId, ItemKind)
+itemFrequency :: Frequency (Kind.Id ItemKind, ItemKind)
 itemFrequency = Kind.frequency
 
-getKind :: ItemKindId -> ItemKind
+getKind :: Kind.Id ItemKind -> ItemKind
 getKind = Kind.getKind
 
-swordKindId :: ItemKindId
+swordKindId :: Kind.Id ItemKind
 swordKindId = Kind.getId sword
 
-itemFoldWithKey :: (ItemKindId -> ItemKind -> b -> b) -> b -> b
+itemFoldWithKey :: (Kind.Id ItemKind -> ItemKind -> b -> b) -> b -> b
 itemFoldWithKey = Kind.foldWithKey
 
 instance Content.Content ItemKind where

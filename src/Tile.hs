@@ -8,9 +8,10 @@ import qualified Data.List as L
 import Item
 import qualified TileKind
 import WorldLoc
+import qualified Kind
 
 data Tile = Tile
-  { tkind     :: !TileKind.TileKindId
+  { tkind     :: !(Kind.Id TileKind.TileKind)
   , tteleport :: Maybe WorldLoc  -- TODO
   , tsecret   :: Maybe Int  -- TODO
   , titems    :: [Item]

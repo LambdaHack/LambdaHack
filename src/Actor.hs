@@ -6,12 +6,13 @@ import Control.Monad
 import Geometry
 import Item
 import ActorKind
+import qualified Kind
 
 -- | Monster properties that are changing a lot. If they are dublets
 -- of properties form ActorKind, the intention is they may be modified
 -- temporarily, but will return to the original value over time. E.g., HP.
 data Actor = Actor
-  { akind   :: !ActorKindId     -- ^ the kind of the actor
+  { akind   :: !(Kind.Id ActorKind)     -- ^ the kind of the actor
   , aname   :: !(Maybe String)  -- ^ individual name
   , asymbol :: !(Maybe Char)    -- ^ individual map symbol
   , ahp     :: !Int             -- ^ current hit pints

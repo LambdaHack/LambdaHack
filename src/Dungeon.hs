@@ -17,6 +17,7 @@ import qualified TileKind
 import qualified ItemKind
 import WorldLoc
 import Tile  -- TODO: qualified
+import qualified Kind
 
 -- | The complete dungeon is a map from level names to levels.
 -- We usually store all but the current level in this data structure.
@@ -126,15 +127,15 @@ mergeCorridor _ (t@(Tile _ l s is), u) | Tile.isUnknown t  = (Tile TileKind.floo
 mergeCorridor _ (Tile _ l s is, u)                         = (Tile TileKind.openingId l s is, u)
 
 -- | Create a new tile.
-newTile :: TileKind.TileKindId -> (Tile, Tile)
+newTile :: Kind.Id TileKind.TileKind -> (Tile, Tile)
 newTile t = (Tile t Nothing Nothing [], Tile.unknownTile)
 
 -- | Create a new stairs tile.
-newStairsTile :: TileKind.TileKindId -> Maybe WorldLoc -> (Tile, Tile)
+newStairsTile :: Kind.Id TileKind.TileKind -> Maybe WorldLoc -> (Tile, Tile)
 newStairsTile t l = (Tile t l Nothing [], Tile.unknownTile)
 
 -- | Create a new door tile.
-newDoorTile :: TileKind.TileKindId -> Maybe Int -> (Tile, Tile)
+newDoorTile :: Kind.Id TileKind.TileKind -> Maybe Int -> (Tile, Tile)
 newDoorTile t s = (Tile t Nothing s [], Tile.unknownTile)
 
 -- | Create a level consisting of only one room. Optionally, insert some walls.
