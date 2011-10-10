@@ -1,31 +1,14 @@
 module ItemKind
-  (ItemKind(..), ItemKindId, getKind, itemFrequency, itemFlavours, swordKindId)
+  (ItemKind(..), ItemKindId, getKind, itemFrequency, itemFoldWithKey, swordKindId)
   where
-
-import Data.Binary
-import qualified Data.List as L
-import qualified Data.Map as M
-import qualified Data.IntMap as IM
-import Control.Monad
-import Data.Maybe
 
 import Color
 import Effect
 import Random
 import Flavour
 import Frequency
-
--- Some extra functions that need access to the internal representation:
-
-itemFrequency :: Frequency ItemKindId
-itemFrequency = Frequency [(jfreq ik, ItemKindId i) | (i, ik) <- kindAssocs]
-
-itemFlavours :: M.Map ItemKindId [Flavour]
-itemFlavours =
-  M.fromDistinctAscList [(ItemKindId i, jflavour ik) | (i, ik) <- kindAssocs]
-
-swordKindId :: ItemKindId
-swordKindId = ItemKindId $ fromJust $ L.elemIndex sword content
+import qualified Kind
+import qualified Content
 
 -- TODO: jpower is out of place here. It doesn't make sense for all items,
 -- and will mean different things for different items. Perhaps it should
@@ -46,27 +29,28 @@ data ItemKind = ItemKind
   }
   deriving (Show, Eq, Ord)
 
-newtype ItemKindId = ItemKindId Int
-  deriving (Show, Eq, Ord)
+type ItemKindId = Kind.Id ItemKind
 
-instance Binary ItemKindId where
-  put (ItemKindId i) = put i
-  get = liftM ItemKindId get
-
-kindAssocs :: [(Int, ItemKind)]
-kindAssocs = L.zip [0..] content
-
-kindMap :: IM.IntMap ItemKind
-kindMap = IM.fromDistinctAscList kindAssocs
+itemFrequency :: Frequency (ItemKindId, ItemKind)
+itemFrequency = Kind.frequency
 
 getKind :: ItemKindId -> ItemKind
-getKind (ItemKindId i) = kindMap IM.! i
+getKind = Kind.getKind
 
-content :: [ItemKind]
-content = [amulet, dart, gem1, gem2, gem3, gem4, gold, potion1, potion2, potion3, ring, scroll1, scroll2, sword, wand]
+swordKindId :: ItemKindId
+swordKindId = Kind.getId sword
 
-gem, potion, scroll,  -- generic templates
-           amulet, dart, gem1, gem2, gem3, gem4, gold, potion1, potion2, potion3, ring, scroll1, scroll2, sword, wand :: ItemKind
+itemFoldWithKey :: (ItemKindId -> ItemKind -> b -> b) -> b -> b
+itemFoldWithKey = Kind.foldWithKey
+
+instance Content.Content ItemKind where
+  getFreq = jfreq
+  content =
+    [amulet, dart, gem1, gem2, gem3, gem4, gold, potion1, potion2, potion3, ring, scroll1, scroll2, sword, wand]
+
+amulet,      dart, gem1, gem2, gem3, gem4, gold, potion1, potion2, potion3, ring, scroll1, scroll2, sword, wand :: ItemKind
+
+gem, potion, scroll :: ItemKind  -- generic templates
 
 -- rollQuad (a, b, x, y) = a * roll b + (lvl * x * roll y) / 10
 

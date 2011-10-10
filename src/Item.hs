@@ -34,23 +34,24 @@ type Discoveries = S.Set ItemKindId
 
 -- | Assigns flavours to item kinds. Assures no flavor is repeated,
 -- except for items with only one permitted flavour.
-rollAssocs :: ItemKindId -> [Flavour] ->
+rollAssocs :: ItemKindId -> ItemKind ->
               Rnd (Assocs, S.Set Flavour) ->
               Rnd (Assocs, S.Set Flavour)
-rollAssocs key flavours rnd =
-  if L.length flavours == 1
-  then rnd
-  else do
-    (assocs, available) <- rnd
-    let proper = S.fromList flavours `S.intersection` available
-    flavour <- oneOf (S.toList proper)
-    return (M.insert key flavour assocs, S.delete flavour available)
+rollAssocs key ik rnd =
+  let flavours = jflavour ik
+  in if L.length flavours == 1
+     then rnd
+     else do
+       (assocs, available) <- rnd
+       let proper = S.fromList flavours `S.intersection` available
+       flavour <- oneOf (S.toList proper)
+       return (M.insert key flavour assocs, S.delete flavour available)
 
 -- | Randomly chooses flavour for all item kinds for this game.
 dungeonAssocs :: Rnd Assocs
 dungeonAssocs =
   liftM fst $
-  M.foldWithKey rollAssocs (return (M.empty, S.fromList stdFlav)) itemFlavours
+  ItemKind.itemFoldWithKey rollAssocs (return (M.empty, S.fromList stdFlav))
 
 getFlavour :: Assocs -> ItemKindId -> Flavour
 getFlavour assocs ik =
@@ -69,8 +70,7 @@ itemLetter ik = if jsymbol ik == '$' then Just '$' else Nothing
 -- | Generate an item.
 newItem :: Int -> Rnd Item
 newItem lvl = do
-  ikChosen <- frequency itemFrequency
-  let kind = getKind ikChosen
+  (ikChosen, kind) <- frequency itemFrequency
   count <- rollQuad lvl (jcount kind)
   if count == 0
     then newItem lvl  -- Rare item; beware of inifite loops.

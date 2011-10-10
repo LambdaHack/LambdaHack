@@ -1,18 +1,15 @@
 module TileKind
   (TileKind(..), Feature(..), TileKindId, getKind, wallId, doorSecretId, openingId, floorDarkId, floorLightId, unknownId, stairs, door, deDoor, deStairs) where
 
-import Control.Monad
-
 import qualified Data.List as L
-import qualified Data.IntMap as IM
-import Data.Binary
 import Data.Maybe
 
 import qualified Color
 import Geometry
-
 import Effect
 import Random
+import qualified Kind
+import qualified Content
 
 data TileKind = TileKind
   { usymbol  :: !Char         -- ^ map symbol
@@ -39,27 +36,17 @@ data Feature =
   | Secret !RollDice   -- ^ triggered when the tile's tsecret becomes (Just 0)
   deriving (Show, Eq, Ord)
 
-newtype TileKindId = TileKindId Int
-  deriving (Show, Eq, Ord)
-
-instance Binary TileKindId where
-  put (TileKindId i) = put i
-  get = liftM TileKindId get
-
-kindAssocs :: [(Int, TileKind)]
-kindAssocs = L.zip [0..] content
-
-kindMap :: IM.IntMap TileKind
-kindMap = IM.fromDistinctAscList kindAssocs
+type TileKindId = Kind.Id TileKind
 
 getKind :: TileKindId -> TileKind
-getKind (TileKindId i) = kindMap IM.! i
+getKind = Kind.getKind
 
-content :: [TileKind]
-content =
-  [wall, doorOpen, doorClosed, doorSecret, opening, floorLight, floorDark, stairsLightUp, stairsLightDown, stairsDarkUp, stairsDarkDown, unknown]
+instance Content.Content TileKind where
+  getFreq = ufreq
+  content =
+    [wall, doorOpen, doorClosed, doorSecret, opening, floorLight, floorDark, stairsLightUp, stairsLightDown, stairsDarkUp, stairsDarkDown, unknown]
 
-wall,    doorOpen, doorClosed, doorSecret, opening, floorLight, floorDark, stairsLightUp, stairsLightDown, stairsDarkUp, stairsDarkDown, unknown :: TileKind
+wall,      doorOpen, doorClosed, doorSecret, opening, floorLight, floorDark, stairsLightUp, stairsLightDown, stairsDarkUp, stairsDarkDown, unknown :: TileKind
 
 wall = TileKind
   { usymbol  = '#'
@@ -168,21 +155,23 @@ unknown = TileKind
   , ufeature = []
   }
 
+-- TODO: clean these up
+
 wallId, openingId, floorDarkId, floorLightId, unknownId, doorOpenId, doorClosedId, doorSecretId :: TileKindId
-wallId = TileKindId $ fromJust $ L.elemIndex wall content
-openingId = TileKindId $ fromJust $ L.elemIndex opening content
-floorDarkId = TileKindId $ fromJust $ L.elemIndex floorDark content
-floorLightId = TileKindId $ fromJust $ L.elemIndex floorLight content
-unknownId = TileKindId $ fromJust $ L.elemIndex unknown content
-doorOpenId = TileKindId $ fromJust $ L.elemIndex doorOpen content
-doorClosedId = TileKindId $ fromJust $ L.elemIndex doorClosed content
-doorSecretId = TileKindId $ fromJust $ L.elemIndex doorSecret content
+wallId = Kind.getId wall
+openingId = Kind.getId opening
+floorDarkId = Kind.getId floorDark
+floorLightId = Kind.getId floorLight
+unknownId = Kind.getId unknown
+doorOpenId = Kind.getId doorOpen
+doorClosedId = Kind.getId doorClosed
+doorSecretId = Kind.getId doorSecret
 
 stairs :: Bool -> VDir -> TileKindId
-stairs True Up    = TileKindId $ fromJust $ L.elemIndex stairsLightUp content
-stairs True Down  = TileKindId $ fromJust $ L.elemIndex stairsLightDown content
-stairs False Up   = TileKindId $ fromJust $ L.elemIndex stairsDarkUp content
-stairs False Down = TileKindId $ fromJust $ L.elemIndex stairsDarkDown content
+stairs True Up    = Kind.getId stairsLightUp
+stairs True Down  = Kind.getId stairsLightDown
+stairs False Up   = Kind.getId stairsDarkUp
+stairs False Down = Kind.getId stairsDarkDown
 
 door :: Maybe Int -> TileKindId
 door Nothing  = doorOpenId
