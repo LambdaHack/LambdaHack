@@ -1,12 +1,11 @@
 module ItemKind
-  (ItemKind(..), itemFrequency, itemFoldWithKey, swordKindId)
+  (ItemKind(..), swordKindId)
   where
 
 import Color
 import Effect
 import Random
 import Flavour
-import Frequency
 import qualified Kind
 import qualified Content
 
@@ -28,15 +27,6 @@ data ItemKind = ItemKind
   , jpower   :: !RollQuad   -- ^ created with that power
   }
   deriving (Show, Eq, Ord)
-
-itemFrequency :: Frequency (Kind.Id ItemKind, ItemKind)
-itemFrequency = Kind.frequency
-
-swordKindId :: Kind.Id ItemKind
-swordKindId = Kind.getId sword
-
-itemFoldWithKey :: (Kind.Id ItemKind -> ItemKind -> b -> b) -> b -> b
-itemFoldWithKey = Kind.foldWithKey
 
 instance Content.Content ItemKind where
   getFreq = jfreq
@@ -160,3 +150,7 @@ wand = ItemKind
   , jfreq    = 10
   , jpower   = intToQuad 0
   }
+
+
+swordKindId :: Kind.Id ItemKind
+swordKindId = Kind.getId sword

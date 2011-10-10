@@ -102,6 +102,6 @@ rollMonster state@(State { slevel = lvl }) = do
                        && l `L.notElem` L.map aloc (hs ++ ms))
              (\ l t -> not (Tile.isLit t)  -- try a dark, distant place first
                        && L.all (\ pl -> distance (aloc pl, l) > 400) hs)
-      (mk, k) <- frequency ActorKind.actorFrequency
+      (mk, k) <- frequency Kind.frequency
       hp <- rollDice $ ActorKind.bhp k
       return $ addMonster mk hp loc state

@@ -1,11 +1,10 @@
 module ActorKind
-  (ActorKind(..), actorFrequency, heroKindId)
+  (ActorKind(..), heroKindId)
   where
 
 import Geometry
 import qualified Color
 import Random
-import Frequency
 import qualified Kind
 import qualified Content
 
@@ -23,12 +22,6 @@ data ActorKind = ActorKind
   , bfreq   :: !Int          -- ^ dungeon frequency
   }
   deriving (Show, Eq, Ord)
-
-actorFrequency :: Frequency (Kind.Id ActorKind, ActorKind)
-actorFrequency = Kind.frequency
-
-heroKindId :: Kind.Id ActorKind
-heroKindId = Kind.getId hero
 
 instance Content.Content ActorKind where
   getFreq = bfreq
@@ -87,3 +80,7 @@ nose = ActorKind
   , bregen  = 1500
   , bfreq   = 2
   }
+
+
+heroKindId :: Kind.Id ActorKind
+heroKindId = Kind.getId hero

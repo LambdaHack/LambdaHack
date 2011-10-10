@@ -51,8 +51,7 @@ rollAssocs key ik rnd =
 -- | Randomly chooses flavour for all item kinds for this game.
 dungeonAssocs :: Rnd Assocs
 dungeonAssocs =
-  liftM fst $
-  ItemKind.itemFoldWithKey rollAssocs (return (M.empty, S.fromList stdFlav))
+  liftM fst $ Kind.foldWithKey rollAssocs (return (M.empty, S.fromList stdFlav))
 
 getFlavour :: Assocs -> Kind.Id ItemKind -> Flavour
 getFlavour assocs ik =
@@ -71,7 +70,7 @@ itemLetter ik = if jsymbol ik == '$' then Just '$' else Nothing
 -- | Generate an item.
 newItem :: Int -> Rnd Item
 newItem lvl = do
-  (ikChosen, kind) <- frequency itemFrequency
+  (ikChosen, kind) <- frequency Kind.frequency
   count <- rollQuad lvl (jcount kind)
   if count == 0
     then newItem lvl  -- Rare item; beware of inifite loops.
