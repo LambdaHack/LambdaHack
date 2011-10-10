@@ -39,7 +39,7 @@ executable Allure
   main-is:       Main.hs
   hs-source-dirs:src
   other-modules: Action, Actions, ActorAdd, ActorKind, Actor, ActorState,
-                 Color, Command, Config, ConfigDefault,
+                 Color, Command, Config, ConfigDefault, Content,
                  Display, Dungeon, DungeonState,
                  Effect, EffectAction, File, Flavour,
                  FOV, FOV.Common, FOV.Digital, FOV.Permissive, FOV.Shadow,

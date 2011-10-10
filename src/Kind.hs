@@ -1,6 +1,6 @@
 module Kind
-  (Id, Content(getFreq, content), getKind, getId, frequency)
-  where  -- TODO: make content write-only somehow
+  (Id, getKind, getId, frequency)
+  where
 
 import Data.Binary
 import qualified Data.List as L
@@ -8,6 +8,7 @@ import qualified Data.IntMap as IM
 import Control.Monad
 import Data.Maybe
 
+import Content
 import Frequency
 
 newtype Id a = Id Int
@@ -16,14 +17,6 @@ newtype Id a = Id Int
 instance Binary (Id a) where
   put (Id i) = put i
   get = liftM Id get
-
-class Content a where
-  getFreq :: a -> Int
-  content :: [a]
-  kindAssocs :: [(Int, a)]
-  kindAssocs = L.zip [0..] content
-  kindMap :: IM.IntMap a
-  kindMap = IM.fromDistinctAscList kindAssocs
 
 getKind :: Content a => Id a -> a
 getKind (Id i) = kindMap IM.! i

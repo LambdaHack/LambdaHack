@@ -7,6 +7,7 @@ import qualified Color
 import Random
 import Frequency
 import qualified Kind
+import qualified Content
 
 -- | Monster properties that are changing rarely and permanently.
 data ActorKind = ActorKind
@@ -34,7 +35,7 @@ getKind = Kind.getKind
 heroKindId :: ActorKindId
 heroKindId = Kind.getId hero
 
-instance Kind.Content ActorKind where
+instance Content.Content ActorKind where
   getFreq = bfreq
   content =
     [hero, eye, fastEye, nose]
