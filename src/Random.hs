@@ -51,7 +51,6 @@ frequency (Frequency fs) =
  where
   frequency' :: Int -> [(Int, a)] -> a
   frequency' _ []       = error "frequency'"
-  frequency' _ [(_, x)] = x
   frequency' m ((n, x) : xs)
     | m <= n            = x
     | otherwise         = frequency' (m - n) xs
