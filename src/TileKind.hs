@@ -1,13 +1,10 @@
 module TileKind
-  (TileKind(..), Feature(..), wallId, doorSecretId, openingId, floorDarkId, floorLightId, unknownId, stairs, door, deDoor, deStairs) where
-
-import qualified Data.List as L
+  (TileKind(..), Feature(..))
+  where
 
 import qualified Color
-import Geometry
 import Effect
 import Random
-import qualified Kind
 import qualified Content
 
 data TileKind = TileKind
@@ -27,7 +24,7 @@ data Feature =
   | Lit                -- ^ is lit; TODO: (partially) replace ucolor by this feature?
   | Aura !Effect       -- ^ sustains the effect continuously
   | Cause !Effect      -- ^ causes the effect when triggered
-  | Change !(Kind.Id TileKind)  -- ^ transitions when triggered
+  | Change !Char       -- ^ transitions when triggered
   | Climbable          -- ^ triggered by climbing
   | Descendable        -- ^ triggered by descending into
   | Openable           -- ^ triggered by opening
@@ -57,7 +54,7 @@ doorOpen = TileKind
   , ucolor   = Color.Yellow
   , ucolor2  = Color.BrBlack
   , ufreq    = 100
-  , ufeature = [Walkable, Clear, Exit{-TODO:, Lit-}, Change {-TODO: doorClosedId-} wallId, Closable]
+  , ufeature = [Walkable, Clear, Exit{-TODO:, Lit-}, Change '+', Closable]
   }
 
 doorClosed = TileKind
@@ -66,11 +63,11 @@ doorClosed = TileKind
   , ucolor   = Color.Yellow
   , ucolor2  = Color.BrBlack
   , ufreq    = 100
-  , ufeature = [Exit, Change doorOpenId, Openable]
+  , ufeature = [Exit, Change '\'', Openable]
   }
 
 doorSecret = wall
-  { ufeature = [Change doorClosedId, Secret (7, 2)]
+  { ufeature = [Change '+', Secret (7, 2)]
   }
 
 opening = TileKind
@@ -148,43 +145,3 @@ unknown = TileKind
   , ufreq    = 100
   , ufeature = []
   }
-
--- TODO: clean these up
-
-wallId, openingId, floorDarkId, floorLightId, unknownId, doorOpenId, doorClosedId, doorSecretId :: Kind.Id TileKind
-wallId = Kind.getId wall
-openingId = Kind.getId opening
-floorDarkId = Kind.getId floorDark
-floorLightId = Kind.getId floorLight
-unknownId = Kind.getId unknown
-doorOpenId = Kind.getId doorOpen
-doorClosedId = Kind.getId doorClosed
-doorSecretId = Kind.getId doorSecret
-
-stairs :: Bool -> VDir -> Kind.Id TileKind
-stairs True Up    = Kind.getId stairsLightUp
-stairs True Down  = Kind.getId stairsLightDown
-stairs False Up   = Kind.getId stairsDarkUp
-stairs False Down = Kind.getId stairsDarkDown
-
-door :: Maybe Int -> Kind.Id TileKind
-door Nothing  = doorOpenId
-door (Just 0) = doorClosedId
-door (Just _) = doorSecretId
-
-deStairs :: Kind.Id TileKind -> Maybe VDir
-deStairs t =
-  let isCD f = case f of Climbable -> True; Descendable -> True; _ -> False
-      fk = ufeature (Kind.getKind t)
-  in case L.filter isCD fk of
-       [Climbable] -> Just Up
-       [Descendable] -> Just Down
-       _ -> Nothing
-
-deDoor :: Kind.Id TileKind -> Maybe (Maybe Bool)
-deDoor t
-  | Closable `elem` ufeature (Kind.getKind t) = Just Nothing
-  | Openable `elem` ufeature (Kind.getKind t) = Just (Just False)
-  | let isSecret f = case f of Secret _ -> True; _ -> False
-    in L.any isSecret (ufeature (Kind.getKind t)) = Just (Just True) -- TODO
-  | otherwise = Nothing

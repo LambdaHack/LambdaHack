@@ -10,7 +10,6 @@ import GeometryRnd
 import Actor
 import Item
 import Random
-import qualified TileKind
 import WorldLoc
 import Data.Maybe
 import qualified Tile
@@ -90,7 +89,7 @@ accessible lm _source target =
 openable :: Int -> LMap -> Loc -> Bool
 openable k lm target =
   let tgt = lm `at` target
-  in  case TileKind.deDoor $ Tile.tkind tgt of
+  in  case Tile.deDoor $ Tile.tkind tgt of
         Just (Just True) -> fromJust (Tile.tsecret tgt) < k
         Just (Just False) -> True
         _ -> False

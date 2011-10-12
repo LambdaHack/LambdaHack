@@ -118,13 +118,13 @@ digCorridors (p1:p2:ps) =
   M.union corPos (digCorridors (p2:ps))
   where
     corLoc = fromTo p1 p2
-    corPos = M.fromList $ L.zip corLoc (repeat $ newTile TileKind.floorDarkId)
+    corPos = M.fromList $ L.zip corLoc (repeat $ newTile Tile.floorDarkId)
 digCorridors _ = M.empty
 
 mergeCorridor :: (Tile, Tile) -> (Tile, Tile) -> (Tile, Tile)
 mergeCorridor _ (t, u)                 | Tile.isWalkable t = (t, u)
-mergeCorridor _ (t@(Tile _ l s is), u) | Tile.isUnknown t  = (Tile TileKind.floorDarkId l s is, u)
-mergeCorridor _ (Tile _ l s is, u)                         = (Tile TileKind.openingId l s is, u)
+mergeCorridor _ (t@(Tile _ l s is), u) | Tile.isUnknown t  = (Tile Tile.floorDarkId l s is, u)
+mergeCorridor _ (Tile _ l s is, u)                         = (Tile Tile.openingId l s is, u)
 
 -- | Create a new tile.
 newTile :: Kind.Id TileKind.TileKind -> (Tile, Tile)
@@ -157,8 +157,8 @@ emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
           M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l lm
         flmap lu ld =
           addRocks $
-          maybe id (\ l -> M.insert su (newStairsTile (TileKind.stairs True Up) l)) lu $
-          maybe id (\ l -> M.insert sd (newStairsTile (TileKind.stairs True Down) l)) ld $
+          maybe id (\ l -> M.insert su (newStairsTile (Tile.stairs True Up) l)) lu $
+          maybe id (\ l -> M.insert sd (newStairsTile (Tile.stairs True Down) l)) ld $
           (\lm -> L.foldl' addItem lm is) lm0
         level lu ld = Level nm emptyParty (sy,sx) emptyParty smap (flmap lu ld) "bigroom"
     return (level, su, sd)
@@ -177,7 +177,7 @@ noiseRoom cfg =
         rs <- rollPillars cfg lvl
         let insertRock lm l =
               case lm `at` l of
-                t@(Tile _ _ _ []) | Tile.isBoring t -> M.insert l (newTile TileKind.wallId) lm
+                t@(Tile _ _ _ []) | Tile.isBoring t -> M.insert l (newTile Tile.wallId) lm
                 _ -> lm
         return $ \ lm -> L.foldl' insertRock lm rs
   in  emptyRoom addRocks cfg
@@ -320,7 +320,7 @@ rogueRoom cfg nm =
                                                  (if rsc then randomR (doorSecretMax cfg `div` 2, doorSecretMax cfg)
                                                          else return 0)
                         if rb
-                          then return ((y,x), newDoorTile (TileKind.door rs1) rs1)
+                          then return ((y,x), newDoorTile (Tile.door rs1) rs1)
                           else return o
                     _ -> return o) .
                 M.toList $ lm
@@ -335,8 +335,8 @@ rogueRoom cfg nm =
     -- generate map and level from the data
     let meta = show allConnects
     return (\ lu ld ->
-      let flmap = maybe id (\ l -> M.update (\ (t, _r) -> Just $ newStairsTile (TileKind.stairs (isLit t) Up) l) su) lu $
-                  maybe id (\ l -> M.update (\ (t, _r) -> Just $ newStairsTile (TileKind.stairs (isLit t) Down) l) sd) ld $
+      let flmap = maybe id (\ l -> M.update (\ (t, _r) -> Just $ newStairsTile (Tile.stairs (isLit t) Up) l) su) lu $
+                  maybe id (\ l -> M.update (\ (t, _r) -> Just $ newStairsTile (Tile.stairs (isLit t) Down) l) sd) ld $
                   L.foldr (\ (l,it) f -> M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l . f) id is
                   dlmap
       in  Level nm emptyParty (levelSize cfg) emptyParty smap flmap meta, su, sd)
@@ -365,18 +365,18 @@ rollPillars cfg lvl =
 
 emptyLMap :: (Y, X) -> LMap
 emptyLMap (my, mx) =
-  M.fromList [ ((y, x), newTile TileKind.wallId) | x <- [0..mx], y <- [0..my] ]
+  M.fromList [ ((y, x), newTile Tile.wallId) | x <- [0..mx], y <- [0..my] ]
 
 -- | If the room has size 1, it is at most a start of a corridor.
 digRoom :: Bool -> Room -> LMap -> LMap
 digRoom dl ((y0, x0), (y1, x1)) l
   | y0 == y1 && x0 == x1 = l
   | otherwise =
-  let floorDL = if dl then TileKind.floorLightId else TileKind.floorDarkId
+  let floorDL = if dl then Tile.floorLightId else Tile.floorDarkId
       rm =
         [ ((y, x), newTile floorDL) | x <- [x0..x1], y <- [y0..y1] ]
-        ++ [ ((y, x), newTile TileKind.wallId)
+        ++ [ ((y, x), newTile Tile.wallId)
            | x <- [x0-1, x1+1], y <- [y0..y1] ]
-        ++ [ ((y, x), newTile TileKind.wallId)
+        ++ [ ((y, x), newTile Tile.wallId)
            | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
   in M.unionWith const (M.fromList rm) l

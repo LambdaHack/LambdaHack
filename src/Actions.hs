@@ -245,12 +245,12 @@ playerCloseDoor dir = do
   let hms = levelHeroList state ++ levelMonsterList state
       dloc = shift (aloc body) dir  -- the location we act upon
       t = lm `at` dloc
-  case TileKind.deDoor (Tile.tkind t) of
+  case Tile.deDoor (Tile.tkind t) of
     Just Nothing ->
       case Tile.titems t of
         [] ->
           if unoccupied hms dloc
-          then let nt  = Tile (TileKind.door (Just 0)) Nothing Nothing []
+          then let nt  = Tile (Tile.door (Just 0)) Nothing Nothing []
                    adj = M.adjust (\ (_, mt) -> (nt, mt)) dloc
                in modify (updateLevel (updateLMap adj))
           else abortWith "blocked"  -- by monsters or heroes
@@ -277,10 +277,10 @@ actorOpenDoor actor dir = do
                Just i  -> iq + ipower i
                Nothing -> iq
   unless (openable openPower lm dloc) $ neverMind isVerbose
-  case TileKind.deDoor (Tile.tkind t) of
+  case Tile.deDoor (Tile.tkind t) of
     Just (Just _) ->
       -- TODO: print message if action performed by monster and perceived
-      let nt  = Tile (TileKind.door Nothing) Nothing Nothing (Tile.titems t)
+      let nt  = Tile (Tile.door Nothing) Nothing Nothing (Tile.titems t)
           adj = M.adjust (\ (_, mt) -> (nt, mt)) dloc
       in  modify (updateLevel (updateLMap adj))
     Just Nothing -> abortIfWith isVerbose "already open"
@@ -312,7 +312,7 @@ lvlChange vdir =
     lm        <- gets (lmap . slevel)
     let loc = if targeting then clocation cursor else aloc pbody
         tile = lm `at` loc
-    case TileKind.deStairs $ tkind tile of
+    case Tile.deStairs $ tkind tile of
       Just vdir'
         | vdir == vdir' -> -- stairs are in the right direction
           case tteleport tile of
@@ -418,10 +418,10 @@ search =
                   Just i  -> 1 + ipower i
                   Nothing -> 1
         searchTile t@(Tile d l s x, t') =
-          case TileKind.deDoor d of
+          case Tile.deDoor d of
             Just (Just True) ->
               let k = max (fromJust s - delta) 0 in
-              (Tile (TileKind.door (Just k)) l (Just k) x, t')
+              (Tile (Tile.door (Just k)) l (Just k) x, t')
             _ -> t
         f l m = M.adjust searchTile (shift ploc m) l
         slmap = L.foldl' f lm moves

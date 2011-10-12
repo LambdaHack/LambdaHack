@@ -62,9 +62,7 @@ isAMonster :: ActorId -> Bool
 isAMonster = not . isAHero
 
 heroKindId :: Kind.Id ActorKind.ActorKind
-heroKindId = case Kind.getId' ((== "hero") . ActorKind.bname) of
-               [(i, _)] -> i
-               _    -> error "heroKindId"
+heroKindId = Kind.getId ((== "hero") . ActorKind.bname)
 
 instance Binary ActorId where
   put (AHero n)    = putWord8 0 >> put n

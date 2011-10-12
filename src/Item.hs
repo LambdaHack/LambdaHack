@@ -62,9 +62,7 @@ getFlavour assocs ik =
         _:_ -> assocs M.! ik
 
 fistKindId :: Kind.Id ItemKind
-fistKindId = case Kind.getId' ((== "fist") . ItemKind.jname) of
-               [(i, _)] -> i
-               _    -> error "fistKindId"
+fistKindId = Kind.getId ((== "fist") . ItemKind.jname)
 
 viewItem :: Kind.Id ItemKind -> Assocs -> (Char, Color.Color)
 viewItem ik assocs = (jsymbol (Kind.getKind ik), flavourToColor $ getFlavour assocs ik)
