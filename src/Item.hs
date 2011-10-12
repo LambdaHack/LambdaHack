@@ -11,7 +11,7 @@ import Data.Ord
 import Control.Monad
 
 import Random
-import ItemKind
+import Content.ItemKind
 import qualified Color
 import Flavour
 import qualified Kind
@@ -62,7 +62,7 @@ getFlavour assocs ik =
         _:_ -> assocs M.! ik
 
 fistKindId :: Kind.Id ItemKind
-fistKindId = Kind.getId ((== "fist") . ItemKind.jname)
+fistKindId = Kind.getId ((== "fist") . jname)
 
 viewItem :: Kind.Id ItemKind -> Assocs -> (Char, Color.Color)
 viewItem ik assocs = (jsymbol (Kind.getKind ik), flavourToColor $ getFlavour assocs ik)

@@ -12,7 +12,7 @@ import Control.Exception (assert)
 import Action
 import Actor
 import ActorState
-import qualified ActorKind
+import Content.ActorKind
 import ActorAdd
 import Display hiding (display)
 import Dungeon
@@ -20,7 +20,7 @@ import Geometry
 import Grammar
 import qualified HighScores as H
 import Item
-import qualified ItemKind
+import Content.ItemKind
 import Level
 import Message
 import Perception
@@ -46,7 +46,7 @@ effectToAction :: Effect.Effect -> Int -> ActorId -> ActorId -> Int ->
                   Action (Bool, String)
 effectToAction Effect.NoEffect _ _ _ _ = nullEffect
 effectToAction Effect.Heal _ _source target power = do
-  let bhpMax m = maxDice (ActorKind.bhp $ Kind.getKind $ akind m)
+  let bhpMax m = maxDice (bhp $ Kind.getKind $ akind m)
   tm <- gets (getActor target)
   if ahp tm >= bhpMax tm || power <= 0
     then nullEffect
@@ -127,7 +127,7 @@ itemEffectAction :: Int -> ActorId -> ActorId -> Item -> Action Bool
 itemEffectAction verbosity source target item = do
   tm  <- gets (getActor target)
   per <- currentPerception
-  let effect = ItemKind.jeffect $ Kind.getKind $ ikind item
+  let effect = jeffect $ Kind.getKind $ ikind item
   -- The message describes the target part of the action.
   (b, msg) <- effectToAction effect verbosity source target (ipower item)
   -- Determine how the player perceives the event.
@@ -150,7 +150,7 @@ discover i = do
       obj = unwords $ tail $ words $ objectItem state i
       msg = "The " ++ obj ++ " turns out to be "
       kind = Kind.getKind ik
-      alreadyIdentified = L.length (ItemKind.jflavour kind) == 1 ||
+      alreadyIdentified = L.length (jflavour kind) == 1 ||
                           ik `S.member` sdiscoveries state
   unless alreadyIdentified $ do
     modify (updateDiscoveries (S.insert ik))
@@ -181,7 +181,7 @@ selectPlayer actor =
             -- Set smell display, depending on player capabilities.
             -- This also resets FOV mode.
             modify (\ s -> s { ssensory =
-                                 if ActorKind.bsmell $ Kind.getKind $
+                                 if bsmell $ Kind.getKind $
                                     akind pbody
                                  then Smell
                                  else Implicit })
@@ -209,7 +209,7 @@ summonHeroes n loc =
 summonMonsters :: Int -> Loc -> Action ()
 summonMonsters n loc = do
   (mk, k) <- liftIO $ rndToIO $ frequency Kind.frequency
-  hp <- liftIO $ rndToIO $ rollDice $ ActorKind.bhp k
+  hp <- liftIO $ rndToIO $ rollDice $ bhp k
   modify (\ state ->
            iterate (addMonster mk hp loc) state !! n)
 

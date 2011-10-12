@@ -7,9 +7,9 @@ import Data.Maybe
 
 import Item
 import Actor
-import ActorKind
+import Content.ActorKind
 import State
-import ItemKind
+import Content.ItemKind
 import Effect
 import Flavour
 import qualified Kind

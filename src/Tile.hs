@@ -6,7 +6,7 @@ import Data.Binary
 import qualified Data.List as L
 
 import Item
-import TileKind
+import Content.TileKind
 import qualified Feature as F
 import WorldLoc
 import qualified Kind

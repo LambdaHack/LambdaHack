@@ -1,7 +1,7 @@
-module ItemKind (ItemKind(..)) where
+module Content.ItemKind (ItemKind(..)) where
 
 import Color
-import qualified Content
+import qualified Content.Content
 import Effect
 import Flavour
 import Random
@@ -25,7 +25,7 @@ data ItemKind = ItemKind
   }
   deriving (Show, Eq, Ord)
 
-instance Content.Content ItemKind where
+instance Content.Content.Content ItemKind where
   getFreq = jfreq
   content =
     [amulet, dart, gem1, gem2, gem3, gem4, gold, potion1, potion2, potion3, ring, scroll1, scroll2, sword, fist, wand]

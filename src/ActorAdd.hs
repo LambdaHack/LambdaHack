@@ -11,7 +11,7 @@ import State
 import Level
 import Actor
 import ActorState
-import qualified ActorKind
+import Content.ActorKind
 import Random
 import qualified Config
 import WorldLoc
@@ -24,7 +24,7 @@ import qualified Kind
 -- move immediately after generation. This does not seem like
 -- a bad idea, but it would certainly be "more correct" to set
 -- the time to the creation time instead.
-template :: Kind.Id ActorKind.ActorKind -> Maybe String -> Maybe Char -> Int -> Loc
+template :: Kind.Id ActorKind -> Maybe String -> Maybe Char -> Int -> Loc
             -> Actor
 template mk ms mc hp loc = Actor mk ms mc hp Nothing TCursor loc [] 'a' 0
 
@@ -76,7 +76,7 @@ monsterGenChance (LambdaCave d) numMonsters =
   chance $ 1%(fromIntegral (250 + 200 * (numMonsters - d)) `max` 50)
 
 -- | Create a new monster in the level, at a random position.
-addMonster :: Kind.Id ActorKind.ActorKind -> Int -> Loc -> State -> State
+addMonster :: Kind.Id ActorKind -> Int -> Loc -> State -> State
 addMonster mk hp ploc state = do
   let loc = nearbyFreeLoc ploc state
       n = snd (scounter state)
@@ -103,5 +103,5 @@ rollMonster state@(State { slevel = lvl }) = do
              (\ l t -> not (Tile.isLit t)  -- try a dark, distant place first
                        && L.all (\ pl -> distance (aloc pl, l) > 400) hs)
       (mk, k) <- frequency Kind.frequency
-      hp <- rollDice $ ActorKind.bhp k
+      hp <- rollDice $ bhp k
       return $ addMonster mk hp loc state

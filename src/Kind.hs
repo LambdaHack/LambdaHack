@@ -7,7 +7,7 @@ import qualified Data.List as L
 import qualified Data.IntMap as IM
 import Control.Monad
 
-import Content
+import Content.Content
 import Frequency
 
 newtype Id a = Id Int

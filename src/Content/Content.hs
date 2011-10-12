@@ -1,4 +1,4 @@
-module Content (Content(..)) where
+module Content.Content (Content(..)) where
 
 import qualified Data.List as L
 import qualified Data.IntMap as IM

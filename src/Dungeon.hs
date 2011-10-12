@@ -13,8 +13,8 @@ import GeometryRnd
 import Level
 import Item
 import Random
-import qualified TileKind
-import qualified ItemKind
+import Content.TileKind
+import Content.ItemKind
 import WorldLoc
 import Tile  -- TODO: qualified
 import qualified Kind
@@ -127,15 +127,15 @@ mergeCorridor _ (t@(Tile _ l s is), u) | Tile.isUnknown t  = (Tile Tile.floorDar
 mergeCorridor _ (Tile _ l s is, u)                         = (Tile Tile.openingId l s is, u)
 
 -- | Create a new tile.
-newTile :: Kind.Id TileKind.TileKind -> (Tile, Tile)
+newTile :: Kind.Id TileKind -> (Tile, Tile)
 newTile t = (Tile t Nothing Nothing [], Tile.unknownTile)
 
 -- | Create a new stairs tile.
-newStairsTile :: Kind.Id TileKind.TileKind -> Maybe WorldLoc -> (Tile, Tile)
+newStairsTile :: Kind.Id TileKind -> Maybe WorldLoc -> (Tile, Tile)
 newStairsTile t l = (Tile t l Nothing [], Tile.unknownTile)
 
 -- | Create a new door tile.
-newDoorTile :: Kind.Id TileKind.TileKind -> Maybe Int -> (Tile, Tile)
+newDoorTile :: Kind.Id TileKind -> Maybe Int -> (Tile, Tile)
 newDoorTile t s = (Tile t Nothing s [], Tile.unknownTile)
 
 -- | Create a level consisting of only one room. Optionally, insert some walls.
@@ -357,7 +357,7 @@ rollItems cfg lvl ploc =
     replicateM nri $
       do
         t <- newItem (depth cfg)
-        l <- case ItemKind.jname (Kind.getKind (ikind t)) of
+        l <- case jname (Kind.getKind (ikind t)) of
                "sword" ->
                  -- swords generated close to monsters; MUAHAHAHA
                  findLocTry 200 lvl

@@ -20,7 +20,7 @@ import Level
 import LevelState
 import Actor
 import ActorState
-import qualified ActorKind
+import Content.ActorKind
 import ActorAdd
 import Perception
 import Random
@@ -266,7 +266,7 @@ actorOpenDoor actor dir = do
       t = lm `at` dloc
       isPlayer = actor == pl
       isVerbose = isPlayer  -- don't report enemy failures, if it's not player
-      iq = ActorKind.biq $ Kind.getKind $ akind body
+      iq = biq $ Kind.getKind $ akind body
       openPower =
         if isPlayer
         then 1  -- player can't open secret doors
@@ -634,13 +634,13 @@ regenerateLevelHP =
     time <- gets stime
     let upd m =
           let ak = Kind.getKind $ akind m
-              regen = ActorKind.bregen ak `div`
+              regen = bregen ak `div`
                       case strongestItem (aitems m) "amulet" of
                         Just i  -> ipower i
                         Nothing -> 1
           in if time `mod` regen /= 0
              then m
-             else m { ahp = min (maxDice $ ActorKind.bhp ak) (ahp m + 1) }
+             else m { ahp = min (maxDice $ bhp ak) (ahp m + 1) }
     -- We really want hero selection to be a purely UI distinction,
     -- so all heroes need to regenerate, not just the player.
     -- Only the heroes on the current level regenerate (others are frozen

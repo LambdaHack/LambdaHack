@@ -33,7 +33,7 @@ import Dungeon
 import Perception
 import Actor
 import ActorState
-import qualified ActorKind
+import Content.ActorKind
 import Item
 import qualified Keys as K
 import WorldLoc
@@ -134,7 +134,7 @@ displayLevel
                   slevel  = Level ln _ (sy, sx) _ smap lm _ }))
   msg moverlay =
   let Actor{akind, ahp, aloc, aitems} = getPlayerBody state
-      ActorKind.ActorKind{bhp} = Kind.getKind akind
+      ActorKind{bhp} = Kind.getKind akind
       reachable = ptreachable per
       visible   = ptvisible per
       overlay   = fromMaybe "" moverlay
@@ -164,7 +164,7 @@ displayLevel
                   (symbol, Color.defBG)  -- highlight player
               | otherwise = (symbol, bcolor)
               where
-                ActorKind.ActorKind{bsymbol, bcolor} = Kind.getKind akind2
+                ActorKind{bsymbol, bcolor} = Kind.getKind akind2
                 symbol = fromMaybe bsymbol asymbol
             viewSmell :: Int -> Char
             viewSmell k

@@ -1,7 +1,7 @@
-module TileKind (TileKind(..)) where
+module Content.TileKind (TileKind(..)) where
 
 import Color
-import qualified Content
+import qualified Content.Content
 import qualified Effect
 import Feature
 
@@ -15,7 +15,7 @@ data TileKind = TileKind
   }
   deriving (Show, Eq, Ord)
 
-instance Content.Content TileKind where
+instance Content.Content.Content TileKind where
   getFreq = ufreq
   content =
     [wall, doorOpen, doorClosed, doorSecret, opening, floorLight, floorDark, stairsLightUp, stairsLightDown, stairsDarkUp, stairsDarkDown, unknown]

@@ -38,17 +38,18 @@ flag std
 executable Allure
   main-is:       Main.hs
   hs-source-dirs:src
-  other-modules: Action, Actions, ActorAdd, ActorKind, Actor, ActorState,
-                 Color, Command, Config, ConfigDefault, Content,
+  other-modules: Action, Actions, ActorAdd, Actor, ActorState,
+                 Color, Command, Config, ConfigDefault, Content.Content,
+                 Content.ActorKind, Content.ItemKind, Content.TileKind,
                  Display, Dungeon, DungeonState,
                  Effect, EffectAction, Feature, File, Flavour,
                  FOV, FOV.Common, FOV.Digital, FOV.Permissive, FOV.Shadow,
                  Frequency, Geometry, GeometryRnd, Grammar,
-                 HighScores, Item, ItemKind, ItemAction,
+                 HighScores, Item, ItemAction,
                  Keys, Keybindings, Kind, Level, LevelState,
                  Message, Multiline, Perception, Random,
                  Save, State, Strategy, StrategyState,
-                 Tile, TileKind, Turn, Version, WorldLoc
+                 Tile, Turn, Version, WorldLoc
   build-depends: base >= 4 && < 5, containers >= 0.1 && < 1,
                  binary >= 0.4 && < 1,
                  random >= 1 && < 2, zlib >= 0.4 && < 1,

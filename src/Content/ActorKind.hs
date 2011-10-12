@@ -1,7 +1,7 @@
-module ActorKind (ActorKind(..)) where
+module Content.ActorKind (ActorKind(..)) where
 
 import Color
-import qualified Content
+import qualified Content.Content
 import qualified Geometry
 import qualified Random
 
@@ -20,7 +20,7 @@ data ActorKind = ActorKind
   }
   deriving (Show, Eq, Ord)
 
-instance Content.Content ActorKind where
+instance Content.Content.Content ActorKind where
   getFreq = bfreq
   content =
     [hero, eye, fastEye, nose]

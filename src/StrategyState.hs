@@ -12,7 +12,7 @@ import Geometry
 import Level
 import Actor
 import ActorState
-import ActorKind
+import Content.ActorKind
 import Frequency
 import Perception
 import Strategy
@@ -20,7 +20,7 @@ import State
 import Action
 import Actions
 import ItemAction
-import qualified ItemKind
+import Content.ItemKind
 import Item
 import qualified Effect
 import qualified Tile
@@ -152,23 +152,23 @@ strategy actor
     freqs = [applyFreq items 1, applyFreq tis 2,
              throwFreq items 2, throwFreq tis 5, towardsFreq]
     applyFreq is multi = Frequency
-      [ (benefit * multi, actionApply (ItemKind.jname ik) i)
+      [ (benefit * multi, actionApply (jname ik) i)
       | i <- is,
         let ik = Kind.getKind (ikind i),
         let benefit =
-              (1 + ipower i) * Effect.effectToBenefit (ItemKind.jeffect ik),
+              (1 + ipower i) * Effect.effectToBenefit (jeffect ik),
         benefit > 0,
-        bsight mk || ItemKind.jname ik /= "scroll"]
+        bsight mk || jname ik /= "scroll"]
     actionApply groupName = applyGroupItem actor (applyToVerb groupName)
     throwFreq is multi = if not $ bsight mk then mzero else Frequency
-      [ (benefit * multi, actionThrow (ItemKind.jname ik) i)
+      [ (benefit * multi, actionThrow (jname ik) i)
       | i <- is,
         let ik = Kind.getKind (ikind i),
         let benefit =
-              - (1 + ipower i) * Effect.effectToBenefit (ItemKind.jeffect ik),
+              - (1 + ipower i) * Effect.effectToBenefit (jeffect ik),
         benefit > 0,
         -- Wasting swords would be too cruel to the player.
-        ItemKind.jname ik /= "sword"]
+        jname ik /= "sword"]
     actionThrow groupName =
       zapGroupItem actor (fromJust floc) (zapToVerb groupName)
     towardsFreq =

@@ -11,7 +11,7 @@ import State
 import Level
 import Actor
 import ActorState
-import qualified ActorKind
+import Content.ActorKind
 import FOV
 import qualified Config
 import qualified Tile
@@ -71,7 +71,7 @@ perception_ state@(State { splayer = pl,
                            ssensory = sensory }) =
   let mode   = Config.get config "engine" "fovMode"
       radius = Config.get config "engine" "fovRadius"
-      fovMode m = if not $ ActorKind.bsight $ Kind.getKind $ akind m
+      fovMode m = if not $ bsight $ Kind.getKind $ akind m
                   then Blind
                   else
         -- terrible, temporary hack

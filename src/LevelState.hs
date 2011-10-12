@@ -6,14 +6,14 @@ import Level
 import State
 import Item
 import Grammar
-import qualified TileKind
+import Content.TileKind
 import qualified Tile
 import qualified Kind
 
 viewTile :: Bool -> Tile.Tile -> Assocs -> (Char, Color.Color)
 viewTile b (Tile.Tile t _ _ [])     _a =
   let u = Kind.getKind t
-  in (TileKind.usymbol u, if b then TileKind.ucolor u else TileKind.ucolor2 u)
+  in (usymbol u, if b then ucolor u else ucolor2 u)
 viewTile _b (Tile.Tile _t _ _ (i:_)) a = Item.viewItem (ikind i) a
 
 -- | Produces a textual description of the terrain and items at an already
@@ -23,7 +23,7 @@ lookAt :: Bool -> Bool -> State -> LMap -> Loc -> String -> String
 lookAt detailed canSee s lm loc msg
   | detailed  =
     let tile = lm `rememberAt` loc
-        name = TileKind.uname . Kind.getKind . Tile.tkind $ tile
+        name = uname . Kind.getKind . Tile.tkind $ tile
     in name ++ " " ++ msg ++ isd
   | otherwise = msg ++ isd
   where
