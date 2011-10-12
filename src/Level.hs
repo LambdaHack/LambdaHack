@@ -13,6 +13,7 @@ import Random
 import WorldLoc
 import Data.Maybe
 import qualified Tile
+import TileKind
 
 type Party = IM.IntMap Actor
 
@@ -89,10 +90,9 @@ accessible lm _source target =
 openable :: Int -> LMap -> Loc -> Bool
 openable k lm target =
   let tgt = lm `at` target
-  in  case Tile.deDoor $ Tile.tkind tgt of
-        Just (Just True) -> fromJust (Tile.tsecret tgt) < k
-        Just (Just False) -> True
-        _ -> False
+  in Tile.hasFeature TileKind.Openable tgt ||
+     (Tile.hasFeature TileKind.Hidden tgt &&
+      fromJust (Tile.tsecret tgt) < k)
 
 findLoc :: Level -> (Loc -> Tile.Tile -> Bool) -> Rnd Loc
 findLoc l@(Level { lsize = sz, lmap = lm }) p =

@@ -245,8 +245,8 @@ playerCloseDoor dir = do
   let hms = levelHeroList state ++ levelMonsterList state
       dloc = shift (aloc body) dir  -- the location we act upon
       t = lm `at` dloc
-  case Tile.deDoor (Tile.tkind t) of
-    Just Nothing ->
+  if hasFeature TileKind.Closable t
+    then
       case Tile.titems t of
         [] ->
           if unoccupied hms dloc
@@ -255,8 +255,9 @@ playerCloseDoor dir = do
                in modify (updateLevel (updateLMap adj))
           else abortWith "blocked"  -- by monsters or heroes
         _:_ -> abortWith "jammed"  -- by items
-    Just (Just False) -> abortWith "already closed"
-    _ -> neverMind True  -- no visible doors (can be secret)
+    else if hasFeature TileKind.Openable t
+         then abortWith "already closed"
+         else neverMind True  -- no visible doors (can be secret)
   advanceTime pl
 
 -- | An actor closes a door. Player (hero or monster) or enemy.
@@ -277,14 +278,16 @@ actorOpenDoor actor dir = do
                Just i  -> iq + ipower i
                Nothing -> iq
   unless (openable openPower lm dloc) $ neverMind isVerbose
-  case Tile.deDoor (Tile.tkind t) of
-    Just (Just _) ->
-      -- TODO: print message if action performed by monster and perceived
-      let nt  = Tile Tile.doorOpenId Nothing Nothing (Tile.titems t)
-          adj = M.adjust (\ (_, mt) -> (nt, mt)) dloc
-      in  modify (updateLevel (updateLMap adj))
-    Just Nothing -> abortIfWith isVerbose "already open"
-    _ -> neverMind isVerbose  -- not doors at all
+  if hasFeature TileKind.Closable t
+    then abortIfWith isVerbose "already open"
+    else if not (hasFeature TileKind.Closable t ||
+                 hasFeature TileKind.Openable t ||
+                 hasFeature TileKind.Hidden t)
+         then neverMind isVerbose  -- not doors at all
+         else
+           let nt  = Tile Tile.doorOpenId Nothing Nothing (Tile.titems t)
+               adj = M.adjust (\ (_, mt) -> (nt, mt)) dloc
+           in  modify (updateLevel (updateLMap adj))
   advanceTime actor
 
 -- | Attempt a level switch to k levels deeper.
@@ -312,7 +315,10 @@ lvlChange vdir =
     lm        <- gets (lmap . slevel)
     let loc = if targeting then clocation cursor else aloc pbody
         tile = lm `at` loc
-    case Tile.deStairs $ tkind tile of
+        sdir | hasFeature TileKind.Climbable tile = Just Up
+             | hasFeature TileKind.Descendable tile = Just Down
+             | otherwise = Nothing
+    case sdir of
       Just vdir'
         | vdir == vdir' -> -- stairs are in the right direction
           case tteleport tile of
@@ -417,14 +423,14 @@ search =
     let delta = case strongestItem pitems "ring" of
                   Just i  -> 1 + ipower i
                   Nothing -> 1
-        searchTile t@(Tile d l s x, t') =
-          case Tile.deDoor d of
-            Just (Just True) ->
-              let k = fromJust s - delta
-              in if k > 0
-                 then (Tile Tile.doorSecretId l (Just k) x, t')
-                 else (Tile Tile.doorClosedId l Nothing x,  t')
-            _ -> t
+        searchTile (t@(Tile _ l s x), t') =
+          if hasFeature TileKind.Hidden t
+          then
+            let k = fromJust s - delta
+            in if k > 0
+               then (Tile Tile.doorSecretId l (Just k) x, t')
+               else (Tile Tile.doorClosedId l Nothing x,  t')
+          else (t, t')
         f l m = M.adjust searchTile (shift ploc m) l
         slmap = L.foldl' f lm moves
     modify (updateLevel (updateLMap (const slmap)))

@@ -9,7 +9,6 @@ import Item
 import TileKind
 import WorldLoc
 import qualified Kind
-import Geometry
 
 data Tile = Tile
   { tkind     :: !(Kind.Id TileKind)
@@ -31,7 +30,7 @@ floorDarkId = Kind.getId (\ t -> usymbol t == '.' && kindHas [] [Exit, Lit] t)
 unknownId = Kind.getId ((== ' ') . usymbol)
 doorOpenId = Kind.getId (kindHasFeature Closable)
 doorClosedId = Kind.getId (kindHasFeature Openable)
-doorSecretId = Kind.getId (kindHas [Change '+'] [Closable])
+doorSecretId = Kind.getId (kindHasFeature Hidden)
 stairsLightUpId = Kind.getId (kindHas [Lit, Climbable] [])
 stairsLightDownId = Kind.getId (kindHas [Lit, Descendable] [])
 stairsDarkUpId = Kind.getId (kindHas [Climbable] [Lit])
@@ -89,22 +88,3 @@ isBoring t =
       optional = [Exit, Lit]
       mandatory = [Walkable, Clear]
   in fs L.\\ optional `L.elem` L.permutations mandatory
-
--- TODO: clean these up
-
-deStairs :: Kind.Id TileKind -> Maybe VDir
-deStairs t =
-  let isCD f = case f of Climbable -> True; Descendable -> True; _ -> False
-      fk = ufeature (Kind.getKind t)
-  in case L.filter isCD fk of
-       [Climbable] -> Just Up
-       [Descendable] -> Just Down
-       _ -> Nothing
-
-deDoor :: Kind.Id TileKind -> Maybe (Maybe Bool)
-deDoor t
-  | Closable `elem` ufeature (Kind.getKind t) = Just Nothing
-  | Openable `elem` ufeature (Kind.getKind t) = Just (Just False)
-  | let isSecret f = case f of Secret _ -> True; _ -> False
-    in L.any isSecret (ufeature (Kind.getKind t)) = Just (Just True) -- TODO
-  | otherwise = Nothing
