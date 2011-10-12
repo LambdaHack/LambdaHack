@@ -37,17 +37,6 @@ stairsLightDownId = Kind.getId (kindHas [Lit, Descendable] [])
 stairsDarkUpId = Kind.getId (kindHas [Climbable] [Lit])
 stairsDarkDownId = Kind.getId (kindHas [Descendable] [Lit])
 
-stairs :: Bool -> VDir -> Kind.Id TileKind
-stairs True Up    = stairsLightUpId
-stairs True Down  = stairsLightDownId
-stairs False Up   = stairsDarkUpId
-stairs False Down = stairsDarkDownId
-
-door :: Maybe Int -> Kind.Id TileKind
-door Nothing  = doorOpenId
-door (Just 0) = doorClosedId
-door (Just _) = doorSecretId
-
 unknownTile :: Tile
 unknownTile = Tile unknownId Nothing Nothing []
 

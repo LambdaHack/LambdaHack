@@ -250,7 +250,7 @@ playerCloseDoor dir = do
       case Tile.titems t of
         [] ->
           if unoccupied hms dloc
-          then let nt  = Tile (Tile.door (Just 0)) Nothing Nothing []
+          then let nt  = Tile Tile.doorClosedId Nothing Nothing []
                    adj = M.adjust (\ (_, mt) -> (nt, mt)) dloc
                in modify (updateLevel (updateLMap adj))
           else abortWith "blocked"  -- by monsters or heroes
@@ -280,7 +280,7 @@ actorOpenDoor actor dir = do
   case Tile.deDoor (Tile.tkind t) of
     Just (Just _) ->
       -- TODO: print message if action performed by monster and perceived
-      let nt  = Tile (Tile.door Nothing) Nothing Nothing (Tile.titems t)
+      let nt  = Tile Tile.doorOpenId Nothing Nothing (Tile.titems t)
           adj = M.adjust (\ (_, mt) -> (nt, mt)) dloc
       in  modify (updateLevel (updateLMap adj))
     Just Nothing -> abortIfWith isVerbose "already open"
@@ -420,8 +420,10 @@ search =
         searchTile t@(Tile d l s x, t') =
           case Tile.deDoor d of
             Just (Just True) ->
-              let k = max (fromJust s - delta) 0 in
-              (Tile (Tile.door (Just k)) l (Just k) x, t')
+              let k = fromJust s - delta
+              in if k > 0
+                 then (Tile Tile.doorSecretId l (Just k) x, t')
+                 else (Tile Tile.doorClosedId l Nothing x,  t')
             _ -> t
         f l m = M.adjust searchTile (shift ploc m) l
         slmap = L.foldl' f lm moves

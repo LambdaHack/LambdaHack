@@ -157,8 +157,8 @@ emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
           M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l lm
         flmap lu ld =
           addRocks $
-          maybe id (\ l -> M.insert su (newStairsTile (Tile.stairs True Up) l)) lu $
-          maybe id (\ l -> M.insert sd (newStairsTile (Tile.stairs True Down) l)) ld $
+          maybe id (\ l -> M.insert su (newStairsTile Tile.stairsLightUpId l)) lu $
+          maybe id (\ l -> M.insert sd (newStairsTile Tile.stairsLightDownId l)) ld $
           (\lm -> L.foldl' addItem lm is) lm0
         level lu ld = Level nm emptyParty (sy,sx) emptyParty smap (flmap lu ld) "bigroom"
     return (level, su, sd)
@@ -314,14 +314,23 @@ rogueRoom cfg nm =
                         -- secret
                         rb <- doorChance cfg
                         ro <- doorOpenChance cfg
-                        rs1 <- if ro then return Nothing
-                                    else do rsc <- doorSecretChance cfg
-                                            fmap Just
-                                                 (if rsc then randomR (doorSecretMax cfg `div` 2, doorSecretMax cfg)
-                                                         else return 0)
-                        if rb
-                          then return ((y,x), newDoorTile (Tile.door rs1) rs1)
-                          else return o
+                        if not rb
+                          then return o
+                          else if ro
+                               then return ((y,x),
+                                            newDoorTile Tile.doorOpenId Nothing)
+                               else do
+                                 rsc <- doorSecretChance cfg
+                                 if not rsc
+                                   then return ((y,x),
+                                                newDoorTile
+                                                  Tile.doorClosedId Nothing)
+                                   else do
+                                     rs1 <- randomR (doorSecretMax cfg `div` 2,
+                                                     doorSecretMax cfg)
+                                     return ((y,x),
+                                             newDoorTile
+                                               Tile.doorSecretId (Just rs1))
                     _ -> return o) .
                 M.toList $ lm
     let lvl = Level nm emptyParty (levelSize cfg) emptyParty smap dlmap ""
@@ -335,8 +344,8 @@ rogueRoom cfg nm =
     -- generate map and level from the data
     let meta = show allConnects
     return (\ lu ld ->
-      let flmap = maybe id (\ l -> M.update (\ (t, _r) -> Just $ newStairsTile (Tile.stairs (isLit t) Up) l) su) lu $
-                  maybe id (\ l -> M.update (\ (t, _r) -> Just $ newStairsTile (Tile.stairs (isLit t) Down) l) sd) ld $
+      let flmap = maybe id (\ l -> M.update (\ (t, _r) -> Just $ newStairsTile (if isLit t then Tile.stairsLightUpId else Tile.stairsDarkUpId) l) su) lu $
+                  maybe id (\ l -> M.update (\ (t, _r) -> Just $ newStairsTile  (if isLit t then Tile.stairsLightDownId else Tile.stairsDarkDownId) l) sd) ld $
                   L.foldr (\ (l,it) f -> M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l . f) id is
                   dlmap
       in  Level nm emptyParty (levelSize cfg) emptyParty smap flmap meta, su, sd)
