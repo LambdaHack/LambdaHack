@@ -1,10 +1,10 @@
 module ItemKind (ItemKind(..)) where
 
 import Color
-import Effect
-import Random
-import Flavour
 import qualified Content
+import Effect
+import Flavour
+import Random
 
 -- TODO: jpower is out of place here. It doesn't make sense for all items,
 -- and will mean different things for different items. Perhaps it should

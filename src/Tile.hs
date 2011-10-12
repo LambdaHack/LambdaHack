@@ -7,6 +7,7 @@ import qualified Data.List as L
 
 import Item
 import TileKind
+import qualified Feature as F
 import WorldLoc
 import qualified Kind
 
@@ -24,17 +25,19 @@ instance Binary Tile where
 
 wallId, openingId, floorLightId, floorDarkId, unknownId, doorOpenId, doorClosedId, doorSecretId, stairsLightUpId, stairsLightDownId, stairsDarkUpId, stairsDarkDownId :: Kind.Id TileKind
 wallId = Kind.getId (\ t -> usymbol t == '#' && (L.null $ ufeature t))
-openingId = Kind.getId (\ t -> usymbol t == '.' && kindHasFeature Exit t)
-floorLightId = Kind.getId (\ t -> usymbol t == '.' && kindHas [Lit] [Exit] t)
-floorDarkId = Kind.getId (\ t -> usymbol t == '.' && kindHas [] [Exit, Lit] t)
+openingId = Kind.getId (\ t -> usymbol t == '.' && kindHasFeature F.Exit t)
+floorLightId =
+  Kind.getId (\ t -> usymbol t == '.' && kindHas [F.Lit] [F.Exit] t)
+floorDarkId =
+  Kind.getId (\ t -> usymbol t == '.' && kindHas [] [F.Exit, F.Lit] t)
 unknownId = Kind.getId ((== ' ') . usymbol)
-doorOpenId = Kind.getId (kindHasFeature Closable)
-doorClosedId = Kind.getId (kindHasFeature Openable)
-doorSecretId = Kind.getId (kindHasFeature Hidden)
-stairsLightUpId = Kind.getId (kindHas [Lit, Climbable] [])
-stairsLightDownId = Kind.getId (kindHas [Lit, Descendable] [])
-stairsDarkUpId = Kind.getId (kindHas [Climbable] [Lit])
-stairsDarkDownId = Kind.getId (kindHas [Descendable] [Lit])
+doorOpenId = Kind.getId (kindHasFeature F.Closable)
+doorClosedId = Kind.getId (kindHasFeature F.Openable)
+doorSecretId = Kind.getId (kindHasFeature F.Hidden)
+stairsLightUpId = Kind.getId (kindHas [F.Lit, F.Climbable] [])
+stairsLightDownId = Kind.getId (kindHas [F.Lit, F.Descendable] [])
+stairsDarkUpId = Kind.getId (kindHas [F.Climbable] [F.Lit])
+stairsDarkDownId = Kind.getId (kindHas [F.Descendable] [F.Lit])
 
 unknownTile :: Tile
 unknownTile = Tile unknownId Nothing Nothing []
@@ -55,36 +58,36 @@ isUnknown t = tkind t == unknownId
 isOpening :: Tile -> Bool
 isOpening t = tkind t == openingId
 
-kindHasFeature :: Feature -> TileKind -> Bool
+kindHasFeature :: F.Feature -> TileKind -> Bool
 kindHasFeature f t = f `elem` ufeature t
 
-kindHas :: [Feature] -> [Feature] -> TileKind -> Bool
+kindHas :: [F.Feature] -> [F.Feature] -> TileKind -> Bool
 kindHas yes no t = L.all (flip kindHasFeature t) yes &&
                    not (L.any (flip kindHasFeature t) no)
 
-hasFeature :: Feature -> Tile -> Bool
+hasFeature :: F.Feature -> Tile -> Bool
 hasFeature f t = kindHasFeature f (Kind.getKind $ tkind t)
 
 -- | Does not block vision
 isClear :: Tile -> Bool
-isClear = hasFeature Clear
+isClear = hasFeature F.Clear
 
 -- | Does not block land movement
 isWalkable :: Tile -> Bool
-isWalkable = hasFeature Walkable
+isWalkable = hasFeature F.Walkable
 
 -- | Is lit on its own.
 isLit :: Tile -> Bool
-isLit = hasFeature Lit
+isLit = hasFeature F.Lit
 
 -- | Provides an exit from a room.
 isExit :: Tile -> Bool
-isExit = hasFeature Exit
+isExit = hasFeature F.Exit
 
 -- | Is a good candidate to deposit items, replace by other tiles, etc.
 isBoring :: Tile -> Bool
 isBoring t =
   let fs = ufeature (Kind.getKind (tkind t))
-      optional = [Exit, Lit]
-      mandatory = [Walkable, Clear]
+      optional = [F.Exit, F.Lit]
+      mandatory = [F.Walkable, F.Clear]
   in fs L.\\ optional `L.elem` L.permutations mandatory

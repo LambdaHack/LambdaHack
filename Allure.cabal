@@ -41,7 +41,7 @@ executable Allure
   other-modules: Action, Actions, ActorAdd, ActorKind, Actor, ActorState,
                  Color, Command, Config, ConfigDefault, Content,
                  Display, Dungeon, DungeonState,
-                 Effect, EffectAction, File, Flavour,
+                 Effect, EffectAction, Feature, File, Flavour,
                  FOV, FOV.Common, FOV.Digital, FOV.Permissive, FOV.Shadow,
                  Frequency, Geometry, GeometryRnd, Grammar,
                  HighScores, Item, ItemKind, ItemAction,

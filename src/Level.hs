@@ -13,7 +13,7 @@ import Random
 import WorldLoc
 import Data.Maybe
 import qualified Tile
-import TileKind
+import qualified Feature as F
 
 type Party = IM.IntMap Actor
 
@@ -90,8 +90,8 @@ accessible lm _source target =
 openable :: Int -> LMap -> Loc -> Bool
 openable k lm target =
   let tgt = lm `at` target
-  in Tile.hasFeature TileKind.Openable tgt ||
-     (Tile.hasFeature TileKind.Hidden tgt &&
+  in Tile.hasFeature F.Openable tgt ||
+     (Tile.hasFeature F.Hidden tgt &&
       fromJust (Tile.tsecret tgt) < k)
 
 findLoc :: Level -> (Loc -> Tile.Tile -> Bool) -> Rnd Loc

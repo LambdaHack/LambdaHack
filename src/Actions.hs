@@ -27,11 +27,11 @@ import Random
 import State
 import qualified Config
 import qualified Save
-import qualified TileKind
 import EffectAction
 import WorldLoc
 import Tile  -- TODO: qualified
 import qualified Kind
+import qualified Feature as F
 
 -- The Action stuff that is independent from ItemAction.hs.
 -- (Both depend on EffectAction.hs).
@@ -176,16 +176,12 @@ continueRun dir =
         itemsHere = not (L.null (titems tile))
         heroThere = (loc `shift` dir) `elem` L.map aloc (IM.elems hs)
         dirOK     = accessible lm loc (loc `shift` dir)
-        isKExit t  =
-          L.elem TileKind.Exit (TileKind.ufeature . Kind.getKind $ t)
-        isFloorDark t =
-          L.elem TileKind.Walkable (TileKind.ufeature . Kind.getKind $ t)
-          && L.notElem TileKind.Lit (TileKind.ufeature . Kind.getKind $ t)
+        isTExit   = Tile.isExit tile
+        isWalkableDark = Tile.isWalkable tile && not (Tile.isLit tile)
     -- What happens next is mostly depending on the terrain we're currently on.
-    let hop t
-          | monstersVisible || heroThere
-            || newsReported || itemsHere || isKExit t = abort
-        hop t | isFloorDark t =
+    let hop | (monstersVisible || heroThere || newsReported ||
+               itemsHere || isTExit) = abort
+            | isWalkableDark =
           -- in corridors, explore all corners and stop at all crossings
           -- TODO: even in corridors, stop if you run past an exit (rare)
           let ns = L.filter (\ x -> distance (neg dir, x) > 1
@@ -201,16 +197,16 @@ continueRun dir =
                     [ortoDir]
                       | allCloseTo ortoDir -> run ortoDir
                     _ -> abort
-        hop _  -- outside corridors, never change direction
-          | not dirOK = abort
-        hop _         =
+            | not dirOK =
+          abort -- outside corridors never change direction
+            | otherwise =
           let ns = L.filter (\ x -> x /= dir && distance (neg dir, x) > 1) moves
               ls = L.map (loc `shift`) ns
               as = L.filter (\ x -> accessible lm loc x
                                     || openable 1 lm x) ls
-              ts = L.map (tkind . (lm `at`)) as
-          in  if L.any isKExit ts then abort else run dir
-    hop (tkind tile)
+              ts = L.map (lm `at`) as
+          in if L.any Tile.isExit ts then abort else run dir
+    hop
 
 ifRunning :: (Dir -> Action a) -> Action a -> Action a
 ifRunning t e =
@@ -245,7 +241,7 @@ playerCloseDoor dir = do
   let hms = levelHeroList state ++ levelMonsterList state
       dloc = shift (aloc body) dir  -- the location we act upon
       t = lm `at` dloc
-  if hasFeature TileKind.Closable t
+  if hasFeature F.Closable t
     then
       case Tile.titems t of
         [] ->
@@ -255,7 +251,7 @@ playerCloseDoor dir = do
                in modify (updateLevel (updateLMap adj))
           else abortWith "blocked"  -- by monsters or heroes
         _:_ -> abortWith "jammed"  -- by items
-    else if hasFeature TileKind.Openable t
+    else if hasFeature F.Openable t
          then abortWith "already closed"
          else neverMind True  -- no visible doors (can be secret)
   advanceTime pl
@@ -278,11 +274,11 @@ actorOpenDoor actor dir = do
                Just i  -> iq + ipower i
                Nothing -> iq
   unless (openable openPower lm dloc) $ neverMind isVerbose
-  if hasFeature TileKind.Closable t
+  if hasFeature F.Closable t
     then abortIfWith isVerbose "already open"
-    else if not (hasFeature TileKind.Closable t ||
-                 hasFeature TileKind.Openable t ||
-                 hasFeature TileKind.Hidden t)
+    else if not (hasFeature F.Closable t ||
+                 hasFeature F.Openable t ||
+                 hasFeature F.Hidden t)
          then neverMind isVerbose  -- not doors at all
          else
            let nt  = Tile Tile.doorOpenId Nothing Nothing (Tile.titems t)
@@ -315,8 +311,8 @@ lvlChange vdir =
     lm        <- gets (lmap . slevel)
     let loc = if targeting then clocation cursor else aloc pbody
         tile = lm `at` loc
-        sdir | hasFeature TileKind.Climbable tile = Just Up
-             | hasFeature TileKind.Descendable tile = Just Down
+        sdir | hasFeature F.Climbable tile = Just Up
+             | hasFeature F.Descendable tile = Just Down
              | otherwise = Nothing
     case sdir of
       Just vdir'
@@ -424,7 +420,7 @@ search =
                   Just i  -> 1 + ipower i
                   Nothing -> 1
         searchTile (t@(Tile _ l s x), t') =
-          if hasFeature TileKind.Hidden t
+          if hasFeature F.Hidden t
           then
             let k = fromJust s - delta
             in if k > 0
