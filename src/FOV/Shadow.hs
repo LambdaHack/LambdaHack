@@ -2,6 +2,7 @@ module FOV.Shadow where
 
 import Data.Ratio
 import qualified Data.Set as S
+import Assert
 
 import FOV.Common
 import Geometry
@@ -80,6 +81,8 @@ scan tr l d (s0,e) =
              else Nothing  -- start in shadow
     in
         -- trace (show (d,s,e,ps,pe)) $
+        assert ((pe >= ps && ps >= 0 && d >= 0 && e >= 0 && s0 >= 0)
+                `blame` (d,s0,e,ps,pe)) $
         S.union (S.fromList [tr (d,p) | p <- [ps..pe]]) (scan' st ps pe)
   where
     scan' :: Maybe Rational -> Progress -> Progress -> S.Set Loc

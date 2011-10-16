@@ -1,6 +1,7 @@
 module FOV.Digital where
 
 import qualified Data.Set as S
+import Assert
 
 import FOV.Common
 import Geometry
@@ -22,7 +23,7 @@ import qualified Tile
 dscan :: Distance -> (Bump -> Loc) -> LMap -> Distance -> EdgeInterval
          -> S.Set Loc
 dscan r tr l d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps))=
-  -- trace (show (d,s,e,ps,pe)) $
+  assert ((pe >= ps0 && r >= d && d >= 0) `blame` (r,d,s0,e,ps0,pe)) $
   S.union outside (S.fromList [tr (B(d, p)) | p <- [ps0..pe]])
     -- the scanned area is a square, which is a sphere in this metric; good
     where
@@ -36,12 +37,11 @@ dscan r tr l d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps))=
            in  -1 + n `divUp` k
       outside
         | d >= r = S.empty
-        | ps0 > pe = error $ "dscan: wrong start " ++ show (d, (ps0, pe))
         | Tile.isClear (l `at` tr (B(d, ps0))) =
             dscan' (Just s0) (ps0+1)          -- start in light, jump ahead
         | otherwise = dscan' Nothing (ps0+1)  -- start in shadow, jump ahead
 
-      dscan' :: Maybe Edge -> Progress ->  S.Set Loc
+      dscan' :: Maybe Edge -> Progress -> S.Set Loc
       dscan' (Just s@(_, sBumps)) ps
         | ps > pe = dscan r tr l (d+1) (s, e) -- reached end, scan next
         | not $ Tile.isClear (l `at` tr steepBump) = -- entering shadow
@@ -67,17 +67,19 @@ dscan r tr l d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps))=
           nsBumps = addHull gte shallowBump sBumps0
 
       dline p1 p2 =
-        ddebugLine  -- TODO: disable when it becomes a bottleneck
+        assert (uncurry blame $ ddebugLine (p1, p2)) $
         (p1, p2)
 
       dsteeper f p1 p2 =
-        ddebugSteeper f p1 p2 $  -- TODO: disable when it becomes a bottleneck
-        steeper f p1 p2
+        assert (res == ddebugSteeper f p1 p2) $
+        res
+          where res = steeper f p1 p2
 
 -- | The x coordinate, represented as a fraction, of the intersection of
 -- a given line and the line of diagonals of diamonds at distance d from (0, 0).
 dintersect :: Line -> Distance -> (Int, Int)
 dintersect (B(y, x), B(yf, xf)) d =
+  assert (all (>= 0) [y, yf]) $
   ((d - y)*(xf - x) + x*(yf - y), yf - y)
 {-
 Derivation of the formula:
@@ -97,40 +99,41 @@ Order of processing in the first quadrant rotated by 45 degrees is
   123
    @
 so the first processed diamond is at (-1, 1). The order is similar
-as for the shadow casting algorithm above and reversed wrt PFOV.
+as for the restrictive shadow casting algorithm and reversed wrt PFOV.
 The line in the curent state of scan' is called the shallow line,
 but it's the one that delimits the view from the left, while the steep
 line is on the right, opposite to PFOV. We start scanning from the left.
 
-The Loc coordinates are cartesian, the Bump coordinates are cartesian,
+The Loc coordinates are cartesian. The Bump coordinates are cartesian,
 translated so that the hero is at (0, 0) and rotated so that he always
-looks at the first roatated quadrant, the (Distance, Progress) cordinates
-coincide with the Bump coordinates, unlike in PFOV.
+looks at the first (rotated 45 degrees) quadrant. The (Distance, Progress)
+cordinates coincide with the Bump coordinates, unlike in PFOV.
 -}
 
 -- | Debug functions for DFOV:
 
 -- | Debug: calculate steeper for DFOV in another way and compare results.
-ddebugSteeper :: Bump ->  Bump -> Bump -> Bool -> Bool
-ddebugSteeper f p1 p2 x =
+ddebugSteeper :: Bump -> Bump -> Bump -> Bool
+ddebugSteeper f@(B(yf, _xf)) p1@(B(y1, _x1)) p2@(B(y2, _x2)) =
+  assert (all (>= 0) [yf, y1, y2]) $
   let (n1, k1) = dintersect (p1, f) 0
       (n2, k2) = dintersect (p2, f) 0
-  in  if x == (n1 * k2 >= k1 * n2)
-      then x
-      else error $ "dsteeper: " ++ show (f, p1, p2, x)
+  in n1 * k2 >= k1 * n2
 
 -- | Debug: check is a view border line for DFOV is legal.
-ddebugLine :: Line -> Line
+ddebugLine :: Line -> (Bool, String)
 ddebugLine line@(B(y1, x1), B(y2, x2))
+  | not (all (>= 0) [y1, y2]) =
+      (False, "negative coordinates: " ++ show line)
   | y1 == y2 && x1 == x2 =
-      error $ "ddebugLine: wrongly defined line " ++ show line
-  | y2 - y1 == 0 =
-      error $ "ddebugLine: horizontal line " ++ show line
+      (False, "ill-defined line: " ++ show line)
+  | y1 == y2 =
+      (False, "horizontal line: " ++ show line)
   | crossL0 =
-      error $ "ddebugLine: crosses the X axis below 0 " ++ show line
+      (False, "crosses the X axis below 0: " ++ show line)
   | crossG1 =
-      error $ "ddebugLine: crosses the X axis above 1 " ++ show line
-  | otherwise = line
+      (False, "crosses the X axis above 1: " ++ show line)
+  | otherwise = (True, "")
     where
       (n, k)  = dintersect line 0
       (q, r)  = if k == 0 then (0, 0) else n `divMod` k

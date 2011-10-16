@@ -7,7 +7,13 @@ import Geometry
 type Interval = (Rational, Rational)
 type Distance = Int
 type Progress = Int
-newtype Bump      = B Loc  deriving (Show)
+
+-- | Coordinates of points in a single quadrant.
+-- (The first quadrant for Permissive FOV, hence both coordinates positive,
+-- halves of the first and last quadrant for Digital FOV, hence y positive.)
+newtype Bump = B Loc
+  deriving (Show)
+
 type Line         = (Bump, Bump)
 type ConvexHull   = [Bump]
 type Edge         = (Line, ConvexHull)

@@ -1,6 +1,7 @@
 module FOV.Permissive where
 
 import qualified Data.Set as S
+import Assert
 
 import FOV.Common
 import Geometry
@@ -28,7 +29,8 @@ import qualified Tile
 pscan :: Distance -> (Bump -> Loc) -> LMap -> Distance -> EdgeInterval
          -> S.Set Loc
 pscan r ptr l d (s0@(sl{-shallow line-}, sBumps0),e@(el{-steep line-}, eBumps))=
-  -- trace (show (d,s,e,ps,pe)) $
+  assert ((pe + 1 >= ps0 && ps0 >= 0 && r >= d && d >= 0)
+          `blame` (r,d,s0,e,ps0,pe)) $
   if illegal
   then S.empty
   else S.union outside (S.fromList [tr (d, p) | p <- [ps0..pe]])
@@ -80,17 +82,19 @@ pscan r ptr l d (s0@(sl{-shallow line-}, sBumps0),e@(el{-steep line-}, eBumps))=
             in  pscan' (Just (pline nsp shallowBump, nsBumps)) ps
 
       pline p1 p2 =
-        pdebugLine  -- TODO: disable when it becomes a bottleneck
+        assert (uncurry blame $ pdebugLine (p1, p2)) $
         (p1, p2)
 
       psteeper f p1 p2 =
-        pdebugSteeper f p1 p2 $  -- TODO: disable when it becomes a bottleneck
-        steeper f p1 p2
+        assert (res == pdebugSteeper f p1 p2) $
+        res
+          where res = steeper f p1 p2
 
 -- | The y coordinate, represented as a fraction, of the intersection of
 -- a given line and the line of diagonals of squares at distance d from (0, 0).
 pintersect :: Line -> Distance -> (Int, Int)
 pintersect (B(y, x), B(yf, xf)) d =
+  assert (all (>= 0) [y, x, yf, xf]) $
   ((1 + d)*(yf - y) + y*xf - x*yf, (xf - x) + (yf - y))
 {-
 Derivation of the formula:
@@ -112,39 +116,40 @@ Order of processing in the first quadrant is
 247
 @136
 so the first processed square is at (0, 1). The order is reversed
-wrt the shadow casting algorithm above. The line in the curent state
+wrt the restrictive shadow casting algorithm. The line in the curent state
 of scan' is not the steep line, but the shallow line,
 and we start scanning from the bottom right.
 
-The Loc coordinates are cartesian, the Bump coordinates are cartesian,
+The Loc coordinates are cartesian. The Bump coordinates are cartesian,
 translated so that the hero is at (0, 0) and rotated so that he always
-looks at the first quadrant, the (Distance, Progress) cordinates
+looks at the first quadrant. The (Distance, Progress) cordinates
 are mangled and not used for geometry.
 -}
 
 -- | Debug functions for PFOV:
 
 -- | Debug: calculate steeper for PFOV in another way and compare results.
-pdebugSteeper :: Bump ->  Bump -> Bump -> Bool -> Bool
-pdebugSteeper f p1 p2 x =
+pdebugSteeper :: Bump -> Bump -> Bump -> Bool
+pdebugSteeper f@(B(yf, xf)) p1@(B(y1, x1)) p2@(B(y2, x2)) =
+  assert (all (>= 0) [yf, xf, y1, x1, y2, x2]) $
   let (n1, k1) = pintersect (p1, f) 0
       (n2, k2) = pintersect (p2, f) 0
-  in  if x == (n1 * k2 <= k1 * n2)
-      then x
-      else error $ "psteeper: " ++ show (f, p1, p2, x)
+  in n1 * k2 <= k1 * n2
 
 -- | Debug: checks postconditions of borderLine.
-pdebugLine :: Line -> Line
+pdebugLine :: Line -> (Bool, String)
 pdebugLine line@(B(y1, x1), B(y2, x2))
+  | not (all (>= 0) [y1, x1, y2, x2]) =
+      (False, "negative coordinates: " ++ show line)
   | y1 == y2 && x1 == x2 =
-      error $ "pdebugLine: wrongly defined line " ++ show line
+      (False, "ill-defined line: " ++ show line)
   | x2 - x1 == - (y2 - y1) =
-      error $ "pdebugLine: diagonal line " ++ show line
+      (False, "diagonal line: " ++ show line)
   | crossL0 =
-      error $ "pdebugLine: crosses diagonal below 0 " ++ show line
+      (False, "crosses diagonal below 0: " ++ show line)
   | crossG1 =
-      error $ "pdebugLine: crosses diagonal above 1 " ++ show line
-  | otherwise = line
+      (False, "crosses diagonal above 1: " ++ show line)
+  | otherwise = (True, "")
     where
       (n, k)  = pintersect line 0
       (q, r)  = if k == 0 then (0, 0) else n `divMod` k
