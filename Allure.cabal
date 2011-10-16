@@ -38,7 +38,7 @@ flag std
 executable Allure
   main-is:       Main.hs
   hs-source-dirs:src
-  other-modules: Action, Actions, ActorAdd, Actor, ActorState,
+  other-modules: Action, Actions, ActorAdd, Actor, ActorState, Assert,
                  Color, Command, Config, ConfigDefault, Content.Content,
                  Content.ActorKind, Content.ItemKind, Content.TileKind,
                  Display, Dungeon, DungeonState,

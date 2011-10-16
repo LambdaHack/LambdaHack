@@ -6,11 +6,11 @@ newtype Frequency a = Frequency { runFrequency :: [(Int, a)] }
   deriving Show
 
 instance Monad Frequency where
-  return x  =  Frequency [(1, x)]
-  m >>= f   =  Frequency
+  return x = Frequency [(1, x)]
+  m >>= f  = Frequency
                [(p * q, y) | (p, x) <- runFrequency m,
                              (q, y) <- runFrequency (f x) ]
-  fail _    =  Frequency []
+  fail _   = Frequency []
 
 instance MonadPlus Frequency where
   mplus (Frequency xs) (Frequency ys) = Frequency (xs ++ ys)
