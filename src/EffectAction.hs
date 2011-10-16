@@ -52,8 +52,7 @@ effectToAction Effect.Heal _ _source target power = do
     then nullEffect
     else do
       focusIfAHero target
-      let upd m = m { ahp = min (bhpMax m) (ahp m + power) }
-      updateAnyActor target upd
+      updateAnyActor target (addHp power)  -- TODO: duplicates maxDice, etc.
       return (True, subjectActorVerb tm "feel" ++ " better.")
 effectToAction (Effect.Wound nDm) verbosity source target power = do
   n <- liftIO $ rndToIO $ rollDice nDm

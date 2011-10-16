@@ -2,11 +2,14 @@ module Actor where
 
 import Data.Binary
 import Control.Monad
+import Control.Exception (assert)
 
 import Geometry
 import Item
 import Content.ActorKind
 import qualified Kind
+import Random
+
 
 -- | Monster properties that are changing a lot. If they are dublets
 -- of properties form ActorKind, the intention is they may be modified
@@ -60,6 +63,15 @@ isAHero (AMonster _) = False
 
 isAMonster :: ActorId -> Bool
 isAMonster = not . isAHero
+
+addHp :: Int -> Actor -> Actor
+addHp extra m =
+  assert (extra >= 0) $
+  let maxHP = maxDice (bhp $ Kind.getKind $ akind m)
+      currentHP = ahp m
+  in if currentHP > maxHP
+     then m
+     else m{ahp = min maxHP (currentHP + extra)}
 
 heroKindId :: Kind.Id ActorKind
 heroKindId = Kind.getId ((== "hero") . bname)
