@@ -1,4 +1,4 @@
-cabal-version: >= 1.6
+cabal-version: >= 1.10
 name:          Allure
 version:       0.4.1
 license:       BSD3
@@ -37,7 +37,7 @@ flag std
 
 executable Allure
   main-is:       Main.hs
-  hs-source-dirs:src
+  hs-source-dirs: src
   other-modules: Action, Actions, ActorAdd, Actor, ActorState, Assert,
                  Color, Command, Config, ConfigDefault, Content.Content,
                  Content.ActorKind, Content.ItemKind, Content.TileKind,
@@ -58,6 +58,7 @@ executable Allure
                  MissingH >= 1.1.0.3 && < 1.2, filepath >= 1.1.0.3 && < 2,
                  template-haskell >= 2.6, transformers >= 0.2
 
+  default-language: Haskell2010
   default-extensions: BangPatterns, RecordWildCards, NamedFieldPuns
   other-extensions: CPP, QuasiQuotes, MultiParamTypeClasses, RankNTypes
   ghc-options:   -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-monomorphism-restriction -fwarn-unrecognised-pragmas
@@ -83,7 +84,14 @@ executable Allure
 
 executable BotAllure
   main-is:       Bot.hs
-  hs-source-dirs:src
+  hs-source-dirs: src
+  build-depends: base >= 4 && < 5, random >= 1 && < 2
+  default-language: Haskell2010
+  default-extensions: BangPatterns, RecordWildCards, NamedFieldPuns
+  other-extensions: CPP, QuasiQuotes, MultiParamTypeClasses, RankNTypes
+  ghc-options:   -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-monomorphism-restriction -fwarn-unrecognised-pragmas
+  ghc-options:   -fno-warn-auto-orphans -fno-warn-implicit-prelude -fno-warn-unused-do-bind
+  ghc-options:   -O2 -fno-ignore-asserts -funbox-strict-fields
 
 source-repository head
   type:              git
