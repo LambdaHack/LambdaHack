@@ -6,6 +6,7 @@ import Data.Ratio
 import Data.Maybe
 import qualified Data.Char as Char
 
+import Assert
 import Geometry
 import State
 import Level
@@ -35,7 +36,7 @@ nearbyFreeLoc origin state@(State { slevel = Level { lmap = lm } }) =
       places = origin : L.nub (concatMap surroundings places)
       good loc = Tile.isWalkable (lm `at` loc)
                  && loc `L.notElem` L.map aloc (hs ++ ms)
-  in  fromMaybe (error "no nearby free location found") $ L.find good places
+  in  fromMaybe (assert `failure` "too crowded map") $ L.find good places
 
 -- Adding heroes
 
