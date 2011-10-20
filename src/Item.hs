@@ -51,7 +51,7 @@ rollAssocs key ik rnd =
 -- | Randomly chooses flavour for all item kinds for this game.
 dungeonAssocs :: Rnd Assocs
 dungeonAssocs =
-  liftM fst $ Kind.foldWithKey rollAssocs (return (M.empty, S.fromList stdFlav))
+  liftM fst $ Kind.foldrWithKey rollAssocs (return (M.empty, S.fromList stdFlav))
 
 getFlavour :: Assocs -> Kind.Id ItemKind -> Flavour
 getFlavour assocs ik =

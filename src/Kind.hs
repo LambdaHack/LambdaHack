@@ -1,5 +1,5 @@
 module Kind
-  (Id, Kind.getKind, getId, frequency, foldWithKey)
+  (Id, Kind.getKind, getId, frequency, foldrWithKey)
   where
 
 import Data.Binary
@@ -28,5 +28,5 @@ getId f = case [Id i | (i, k) <- kindAssocs, f k] of
 frequency :: Content a => Frequency (Id a, a)
 frequency = Frequency [(getFreq k, (Id i, k)) | (i, k) <- kindAssocs]
 
-foldWithKey :: Content a => (Id a -> a -> b -> b) -> b -> b
-foldWithKey f z = L.foldr (\ (k, a) -> f (Id k) a) z kindAssocs
+foldrWithKey :: Content a => (Id a -> a -> b -> b) -> b -> b
+foldrWithKey f z = L.foldr (\ (k, a) -> f (Id k) a) z kindAssocs
