@@ -7,6 +7,7 @@ import qualified Data.Map as M
 import Data.Maybe
 import qualified Data.Set as S
 
+import Assert
 import Action
 import Display hiding (display)
 import Geometry
@@ -220,7 +221,7 @@ actorPickupItem actor = do
   -- check if something is here to pick up
   case Tile.titems t of
     []   -> abortIfWith isPlayer "nothing here"
-    i:_rs ->  -- pick up first item; TODO: let player select item; not for monsters
+    i:is -> -- pick up first item; TODO: let player select item; not for monsters
       case assignLetter (iletter i) (aletter body) (aitems body) of
         Just l -> do
           let (ni, nitems) = joinItem (i { iletter = Just l }) (aitems body)
@@ -229,7 +230,8 @@ actorPickupItem actor = do
             then messageAdd (letterLabel (iletter ni) ++ objectItem state ni)
             else when perceived $
                    messageAdd $ subjCompoundVerbIObj state body "pick" "up" i ""
-          assertTrue $ removeFromLoc i loc
+          removeFromLoc i loc
+            >>= assert `trueM` (i, is, loc, "item is stuck")
           -- add item to actor's inventory:
           updateAnyActor actor $ \ m ->
             m { aitems = nitems, aletter = maxLetter l (aletter body) }

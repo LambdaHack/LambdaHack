@@ -83,14 +83,15 @@ effectToAction (Effect.Wound nDm) verbosity source target power = do
         then checkPartyDeath  -- kills the player and checks game over
         else modify (deleteActor target)  -- kills the enemy
     return (True, msg)
-effectToAction Effect.Dominate _ _source target _power =
+effectToAction Effect.Dominate _ source target _power =
   if isAMonster target  -- Monsters have weaker will than heroes.
   then do
-         assertTrue $ selectPlayer target
-         -- Prevent AI from getting a few free moves until new player ready.
-         updatePlayerBody (\ m -> m { atime = 0})
-         display
-         return (True, "")
+    selectPlayer target
+      >>= assert `trueM` (source, target, "player dominates himself")
+    -- Prevent AI from getting a few free moves until new player ready.
+    updatePlayerBody (\ m -> m { atime = 0})
+    display
+    return (True, "")
   else nullEffect
 effectToAction Effect.SummonFriend _ source target power = do
   tm <- gets (getActor target)
@@ -201,7 +202,8 @@ summonHeroes n loc =
   assert (n > 0) $ do
   newHeroId <- gets (fst . scounter)
   modify (\ state -> iterate (addHero loc) state !! n)
-  assertTrue $ selectPlayer (AHero newHeroId)
+  selectPlayer (AHero newHeroId)
+    >>= assert `trueM` (newHeroId, "player summons himself")
   -- Display status line for the new hero.
   display >> return ()
 
@@ -237,7 +239,8 @@ checkPartyDeath =
                  modify (deleteActor pl)
                  -- At this place the invariant that the player exists fails.
                  -- Focus on the new hero (invariant not needed).
-                 assertTrue $ selectPlayer actor
+                 selectPlayer actor
+                   >>= assert `trueM` (pl, actor, "player resurrects")
                  -- At this place the invariant is restored again.
 
 -- | End game, showing the ending screens, if requested.

@@ -8,6 +8,7 @@ import qualified Data.IntMap as IM
 import Data.Maybe
 import qualified Data.Set as S
 
+import Assert
 import Action
 import Display hiding (display)
 import Dungeon
@@ -297,7 +298,8 @@ lvlDescend k =
         nln = n + k
     when (nln < 1 || nln > sizeDungeon (sdungeon state) + 1) $
       abortWith "no more levels in this direction"
-    assertTrue $ liftM (k == 0 ||)  (lvlSwitch (LambdaCave nln))
+    lvlSwitch (LambdaCave nln)
+      >>= (assert `checkM` (k == 0 ||)) (nln, "dungeon has a cycle", k)
 
 -- | Attempt a level change via up level and down level keys.
 -- Will quit the game if the player leaves the dungeon.
@@ -330,8 +332,8 @@ lvlChange vdir =
             Just (nln, nloc) ->
               if targeting
                 then do
-                  -- this assertion says no stairs go back to the same level
-                  assertTrue $ lvlSwitch nln
+                  lvlSwitch nln
+                    >>= assert `trueM` (nln, "stairs connect level with itself")
                   -- do not freely reveal the other end of the stairs
                   lm2 <- gets (lmap . slevel)  -- lvlSwitch modifies map
                   let upd cur =
@@ -346,7 +348,8 @@ lvlChange vdir =
                   modify (deleteActor pl)
                   -- At this place the invariant that the player exists fails.
                   -- Change to the new level (invariant not needed).
-                  assertTrue $ lvlSwitch nln
+                  lvlSwitch nln
+                    >>= assert `trueM` (nln, "stairs connect level with itself")
                   -- Add the player to the new level.
                   modify (insertActor pl pbody)
                   -- At this place the invariant is restored again.
@@ -407,7 +410,8 @@ cycleHero =
         (lt, gt) = IM.split i hs
     case IM.keys gt ++ IM.keys lt of
       [] -> abortWith "Cannot select another hero on this level."
-      ni : _ -> assertTrue $ selectPlayer (AHero ni)
+      ni : _ -> selectPlayer (AHero ni)
+                  >>= assert `trueM` (pl, ni, "hero duplicated")
 
 -- | Search for secret doors
 search :: Action ()
@@ -573,9 +577,10 @@ moveOrAttack allowAttacks autoOpen actor dir
 -- This function is analogous to zapGroupItem, but for melee
 -- and not using up the weapon.
 actorAttackActor :: ActorId -> ActorId -> Action ()
-actorAttackActor (AHero _) target@(AHero _) =
+actorAttackActor source@(AHero _) target@(AHero _) =
   -- Select adjacent hero by bumping into him. Takes no time.
-  assertTrue $ selectPlayer target
+  selectPlayer target
+    >>= assert `trueM` (source, target, "player bumps into himself")
 actorAttackActor source target = do
   state <- get
   sm    <- gets (getActor source)
