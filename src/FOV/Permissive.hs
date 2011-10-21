@@ -1,8 +1,8 @@
 module FOV.Permissive where
 
 import qualified Data.Set as S
-import Assert
 
+import Assert
 import FOV.Common
 import Geometry
 import Level
@@ -29,7 +29,7 @@ import qualified Tile
 pscan :: Distance -> (Bump -> Loc) -> LMap -> Distance -> EdgeInterval
          -> S.Set Loc
 pscan r ptr l d (s0@(sl{-shallow line-}, sBumps0),e@(el{-steep line-}, eBumps))=
-  assert ((pe + 1 >= ps0 && ps0 >= 0 && r >= d && d >= 0)
+  assert (pe + 1 >= ps0 && ps0 >= 0 && r >= d && d >= 0
           `blame` (r,d,s0,e,ps0,pe)) $
   if illegal
   then S.empty
@@ -94,7 +94,7 @@ pscan r ptr l d (s0@(sl{-shallow line-}, sBumps0),e@(el{-steep line-}, eBumps))=
 -- a given line and the line of diagonals of squares at distance d from (0, 0).
 pintersect :: Line -> Distance -> (Int, Int)
 pintersect (B(y, x), B(yf, xf)) d =
-  assert (all (>= 0) [y, x, yf, xf]) $
+  assert (allB (>= 0) [y, x, yf, xf]) $
   ((1 + d)*(yf - y) + y*xf - x*yf, (xf - x) + (yf - y))
 {-
 Derivation of the formula:
@@ -131,7 +131,7 @@ are mangled and not used for geometry.
 -- | Debug: calculate steeper for PFOV in another way and compare results.
 pdebugSteeper :: Bump -> Bump -> Bump -> Bool
 pdebugSteeper f@(B(yf, xf)) p1@(B(y1, x1)) p2@(B(y2, x2)) =
-  assert (all (>= 0) [yf, xf, y1, x1, y2, x2]) $
+  assert (allB (>= 0) [yf, xf, y1, x1, y2, x2]) $
   let (n1, k1) = pintersect (p1, f) 0
       (n2, k2) = pintersect (p2, f) 0
   in n1 * k2 <= k1 * n2
@@ -139,7 +139,7 @@ pdebugSteeper f@(B(yf, xf)) p1@(B(y1, x1)) p2@(B(y2, x2)) =
 -- | Debug: checks postconditions of borderLine.
 pdebugLine :: Line -> (Bool, String)
 pdebugLine line@(B(y1, x1), B(y2, x2))
-  | not (all (>= 0) [y1, x1, y2, x2]) =
+  | not (allB (>= 0) [y1, x1, y2, x2]) =
       (False, "negative coordinates: " ++ show line)
   | y1 == y2 && x1 == x2 =
       (False, "ill-defined line: " ++ show line)

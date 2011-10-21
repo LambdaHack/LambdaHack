@@ -1,8 +1,8 @@
 module FOV.Digital where
 
 import qualified Data.Set as S
-import Assert
 
+import Assert
 import FOV.Common
 import Geometry
 import Level
@@ -23,7 +23,7 @@ import qualified Tile
 dscan :: Distance -> (Bump -> Loc) -> LMap -> Distance -> EdgeInterval
          -> S.Set Loc
 dscan r tr l d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps))=
-  assert ((pe >= ps0 && r >= d && d >= 0) `blame` (r,d,s0,e,ps0,pe)) $
+  assert (pe >= ps0 && r >= d && d >= 0 `blame` (r,d,s0,e,ps0,pe)) $
   S.union outside (S.fromList [tr (B(d, p)) | p <- [ps0..pe]])
     -- the scanned area is a square, which is a sphere in this metric; good
     where
@@ -79,7 +79,7 @@ dscan r tr l d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps))=
 -- a given line and the line of diagonals of diamonds at distance d from (0, 0).
 dintersect :: Line -> Distance -> (Int, Int)
 dintersect (B(y, x), B(yf, xf)) d =
-  assert (all (>= 0) [y, yf]) $
+  assert (allB (>= 0) [y, yf]) $
   ((d - y)*(xf - x) + x*(yf - y), yf - y)
 {-
 Derivation of the formula:
@@ -115,7 +115,7 @@ cordinates coincide with the Bump coordinates, unlike in PFOV.
 -- | Debug: calculate steeper for DFOV in another way and compare results.
 ddebugSteeper :: Bump -> Bump -> Bump -> Bool
 ddebugSteeper f@(B(yf, _xf)) p1@(B(y1, _x1)) p2@(B(y2, _x2)) =
-  assert (all (>= 0) [yf, y1, y2]) $
+  assert (allB (>= 0) [yf, y1, y2]) $
   let (n1, k1) = dintersect (p1, f) 0
       (n2, k2) = dintersect (p2, f) 0
   in n1 * k2 >= k1 * n2
@@ -123,7 +123,7 @@ ddebugSteeper f@(B(yf, _xf)) p1@(B(y1, _x1)) p2@(B(y2, _x2)) =
 -- | Debug: check is a view border line for DFOV is legal.
 ddebugLine :: Line -> (Bool, String)
 ddebugLine line@(B(y1, x1), B(y2, x2))
-  | not (all (>= 0) [y1, y2]) =
+  | not (allB (>= 0) [y1, y2]) =
       (False, "negative coordinates: " ++ show line)
   | y1 == y2 && x1 == x2 =
       (False, "ill-defined line: " ++ show line)

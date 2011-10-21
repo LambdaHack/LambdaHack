@@ -2,8 +2,8 @@ module FOV.Shadow where
 
 import Data.Ratio
 import qualified Data.Set as S
-import Assert
 
+import Assert
 import FOV.Common
 import Geometry
 import Level
@@ -80,14 +80,14 @@ scan tr l d (s0,e) =
              then Just s0   -- start in light
              else Nothing  -- start in shadow
     in
-        -- trace (show (d,s,e,ps,pe)) $
-        assert ((pe >= ps && ps >= 0 && d >= 0 && e >= 0 && s0 >= 0)
+        -- traceShow (d,s,e,ps,pe) $
+        assert (pe >= ps && ps >= 0 && d >= 0 && e >= 0 && s0 >= 0
                 `blame` (d,s0,e,ps,pe)) $
         S.union (S.fromList [tr (d,p) | p <- [ps..pe]]) (scan' st ps pe)
   where
     scan' :: Maybe Rational -> Progress -> Progress -> S.Set Loc
     -- scan' st ps pe
-    --   | trace (show (st,ps,pe)) False = undefined
+    --   | traceShow (st,ps,pe) False = undefined
     scan' (Just s) ps pe
       | s  >= e  = S.empty               -- empty interval
       | ps > pe  = scan tr l (d+1) (s,e) -- reached end, scan next
