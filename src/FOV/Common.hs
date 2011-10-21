@@ -10,7 +10,8 @@ type Progress = Int
 
 -- | Coordinates of points in a single quadrant.
 -- (The first quadrant for Permissive FOV, hence both coordinates positive,
--- halves of the first and last quadrant for Digital FOV, hence y positive.)
+-- a adjacent diagonal halves of the first and the second quadrant
+-- for Digital FOV, hence y positive.)
 newtype Bump = B Loc
   deriving (Show)
 
@@ -32,10 +33,10 @@ tr7 (oy,ox) (d,p) = (oy - p,ox - d)
 
 -- | The translation and rotation functions for quadrants.
 qtr0, qtr1, qtr2, qtr3 :: Loc -> Bump -> Loc
-qtr0 (oy, ox) (B(y, x)) = (oy - y, ox + x)  -- first quadrant
-qtr1 (oy, ox) (B(y, x)) = (oy - x, ox - y)  -- then rotated clockwise 90 degrees
-qtr2 (oy, ox) (B(y, x)) = (oy + y, ox - x)
-qtr3 (oy, ox) (B(y, x)) = (oy + x, ox + y)
+qtr0 (oy, ox) (B(y, x)) = (oy - y, ox + x)  -- quadrant I
+qtr1 (oy, ox) (B(y, x)) = (oy + x, ox + y)  -- II (we rotate counter-clockwise)
+qtr2 (oy, ox) (B(y, x)) = (oy + y, ox - x)  -- III
+qtr3 (oy, ox) (B(y, x)) = (oy - x, ox - y)  -- IV
 
 -- | Integer division, rounding up.
 divUp :: Int -> Int -> Int
