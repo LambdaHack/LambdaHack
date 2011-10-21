@@ -5,6 +5,7 @@ import Data.Ratio
 import qualified System.Random as R
 import Control.Monad.State
 
+import Assert
 import Frequency
 
 type Rnd a = State R.StdGen a
@@ -50,7 +51,7 @@ frequency (Frequency fs) =
     return (frequency' r fs)
  where
   frequency' :: Int -> [(Int, a)] -> a
-  frequency' _ []       = error "frequency'"
+  frequency' m []       = assert `failure` (map fst fs, m)
   frequency' m ((n, x) : xs)
     | m <= n            = x
     | otherwise         = frequency' (m - n) xs
@@ -110,5 +111,5 @@ intToQuad :: Int -> RollQuad
 intToQuad 0 = (0, 0, 0, 0)
 intToQuad n = let n' = fromIntegral n
               in  if n' > maxBound || n' < minBound
-                  then error "intToQuad"
+                  then assert `failure` n
                   else (n', 1, 0, 0)

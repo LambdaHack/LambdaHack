@@ -5,9 +5,9 @@ import qualified Data.Map as M
 import qualified Data.IntMap as IM
 import Data.Maybe
 import Control.Monad
-import Control.Exception (assert)
 import Control.Arrow
 
+import Assert
 import Geometry
 import Level
 import Actor
@@ -193,7 +193,7 @@ strategy actor
 
 dirToAction :: ActorId -> Target -> Bool -> Dir -> Action ()
 dirToAction actor tgt allowAttacks dir =
-  assert (dir /= (0,0)) $ do
+  assert (dir /= (0,0) `blame` dir) $ do
   -- set new direction
   updateAnyActor actor $ \ m -> m { adir = Just dir, atarget = tgt }
   -- perform action

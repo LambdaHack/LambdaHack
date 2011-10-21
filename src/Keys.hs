@@ -2,6 +2,7 @@ module Keys where
 
 import Prelude hiding (Left, Right)
 
+import Assert
 import Geometry hiding (Up, Down)
 import qualified Data.List as L
 import qualified Data.Map as M
@@ -143,11 +144,11 @@ keyTranslate s               = Unknown s
 macroKey :: [(String, String)] -> M.Map Key Key
 macroKey section =
   let trans k = case keyTranslate k of
-                  Unknown s -> error $ "unknown macro key " ++ s
+                  Unknown s -> assert `failure` ("unknown macro key " ++ s)
                   kt -> kt
       trMacro (from, to) = let fromTr = trans from
                                !toTr  = canonMoveKey $ trans to
                            in  if fromTr == toTr
-                               then error $ "degenerate alias for " ++ show toTr
+                               then assert `failure` ("degenerate alias", toTr)
                                else (fromTr, toTr)
   in  M.fromList $ L.map trMacro section

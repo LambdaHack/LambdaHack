@@ -6,8 +6,8 @@ import qualified Data.Map as M
 import qualified Data.IntMap as IM
 import Control.Monad
 import Data.Maybe
-import Control.Exception (assert)
 
+import Assert
 import Geometry
 import Actor
 import Level
@@ -30,8 +30,9 @@ findActorAnyLevel actor (State { slevel   = lvl0,
   in  listToMaybe $ mapMaybe chk (lvl0 : M.elems m0)
 
 getPlayerBody :: State -> Actor
-getPlayerBody state = snd $ fromMaybe (error "getPlayerBody") $
-                      findActorAnyLevel (splayer state) state
+getPlayerBody state =
+  let pl = splayer state
+  in snd $ fromMaybe (assert `failure` pl) $ findActorAnyLevel pl state
 
 -- | The list of actors and levels for all heroes in the dungeon.
 -- Heroes from the current level go first.
@@ -49,7 +50,7 @@ updateAnyActorBody actor f state =
       case actor of
         AHero n    -> updateAnyLevel (updateHeroes   $ IM.adjust f n) ln state
         AMonster n -> updateAnyLevel (updateMonsters $ IM.adjust f n) ln state
-    Nothing -> error "updateAnyActorBody"
+    Nothing -> assert `failure` actor
 
 updateAnyLevel :: (Level -> Level) -> LevelId -> State -> State
 updateAnyLevel f ln state@(State { slevel = level,
@@ -110,8 +111,8 @@ levelMonsterList State{slevel = Level{lmonsters}} = IM.elems lmonsters
 locToActor :: Loc -> State -> Maybe ActorId
 locToActor loc state =
   let l = locToActors loc state
-  in assert (L.length l <= 1) $
-       listToMaybe l
+  in assert (L.length l <= 1 `blame` l) $
+     listToMaybe l
 
 locToActors :: Loc -> State -> [ActorId]
 locToActors loc state =

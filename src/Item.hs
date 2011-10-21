@@ -10,6 +10,7 @@ import Data.Function
 import Data.Ord
 import Control.Monad
 
+import Assert
 import Random
 import Content.ItemKind
 import qualified Color
@@ -57,7 +58,7 @@ getFlavour :: Assocs -> Kind.Id ItemKind -> Flavour
 getFlavour assocs ik =
   let kind = Kind.getKind ik
   in  case jflavour kind of
-        []  -> error "getFlavour"
+        []  -> assert `failure` (assocs, ik, kind)
         [f] -> f
         _:_ -> assocs M.! ik
 

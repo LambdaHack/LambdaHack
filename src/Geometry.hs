@@ -2,6 +2,8 @@ module Geometry where
 
 import qualified Data.List as L
 
+import Assert
+
 -- | Game time in turns. (Placement in module Geometry is not ideal.)
 type Time = Int
 
@@ -104,7 +106,7 @@ fromTo :: Loc -> Loc -> [Loc]
 fromTo (y0,x0) (y1,x1)
   | y0 == y1 = L.map (\ x -> (y0,x)) (fromTo1 x0 x1)
   | x0 == x1 = L.map (\ y -> (y,x0)) (fromTo1 y0 y1)
-  | otherwise = error "fromTo"
+  | otherwise = assert `failure` ((y0,x0), (y1,x1))
 
 fromTo1 :: X -> X -> [X]
 fromTo1 x0 x1

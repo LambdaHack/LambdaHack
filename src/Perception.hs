@@ -6,6 +6,7 @@ import qualified Data.IntMap as IM
 import Data.Maybe
 import Control.Monad
 
+import Assert
 import Geometry
 import State
 import Level
@@ -85,7 +86,7 @@ perception_ state@(State { splayer = pl,
               "permissive" -> Permissive radius
               "digital"    -> Digital radius
               "shadow"     -> Shadow
-              _            -> error $ "perception_: unknown mode: " ++ show mode
+              _            -> assert `failure` mode
 
       -- Perception for a player-controlled monster on the current level.
       pper = if isAMonster pl && memActor pl state

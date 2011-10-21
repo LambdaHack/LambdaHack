@@ -7,8 +7,8 @@ import qualified Data.List as L
 import qualified Data.Map as M
 import qualified Data.Set as S
 import System.Time
-import Control.Exception (assert)
 
+import Assert
 import Action
 import Actor
 import ActorState

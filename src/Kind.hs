@@ -7,6 +7,7 @@ import qualified Data.List as L
 import qualified Data.IntMap as IM
 import Control.Monad
 
+import Assert
 import Content.Content
 import Frequency
 
@@ -23,7 +24,7 @@ getKind (Id i) = kindMap IM.! i
 getId :: Content a => (a -> Bool) -> Id a
 getId f = case [Id i | (i, k) <- kindAssocs, f k] of
             [i] -> i
-            _ -> error "getId"
+            l -> assert `failure` l
 
 frequency :: Content a => Frequency (Id a, a)
 frequency = Frequency [(getFreq k, (Id i, k)) | (i, k) <- kindAssocs]

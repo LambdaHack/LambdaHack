@@ -77,14 +77,14 @@ get :: CF.Get_C a => CP -> CF.SectionSpec -> CF.OptionSpec -> a
 get (CP conf) s o =
   if CF.has_option conf s o
   then forceEither $ CF.get conf s o
-  else error $ "unknown config option: " ++ s ++ "." ++ o
+  else error $ "Unknown config option: " ++ s ++ "." ++ o
 
 -- | An association list corresponding to a section.
 getItems :: CP -> CF.SectionSpec -> [(String, String)]
 getItems (CP conf) s =
   if CF.has_section conf s
   then forceEither $ CF.items conf s
-  else error $ "unknown config section: " ++ s
+  else error $ "Unknown config section: " ++ s
 
 -- | Looks up a file path in the config file and makes it absolute.
 -- If the game's configuration directory exists,

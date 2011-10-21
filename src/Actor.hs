@@ -2,8 +2,8 @@ module Actor where
 
 import Data.Binary
 import Control.Monad
-import Control.Exception (assert)
 
+import Assert
 import Geometry
 import Item
 import Content.ActorKind
@@ -66,7 +66,7 @@ isAMonster = not . isAHero
 
 addHp :: Int -> Actor -> Actor
 addHp extra m =
-  assert (extra >= 0) $
+  assert (extra >= 0 `blame` extra) $
   let maxHP = maxDice (bhp $ Kind.getKind $ akind m)
       currentHP = ahp m
   in if currentHP > maxHP
