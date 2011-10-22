@@ -23,13 +23,12 @@ shutdown _session = return ()
 display :: Area -> Session -> (Loc -> (Color.Attr, Char)) -> String -> String
            -> IO ()
 display ((y0,x0), (y1,x1)) _session f msg status =
-  let fLine y = let (as, cs) = unzip [ f (y, x) | x <- [x0..x1] ]
-                in  ((y, as), BS.pack cs)
-      memo  = L.map fLine [y0..y1]
-      chars = L.map snd memo
-      bs    = [BS.pack msg, BS.pack "\n",
-               BS.unlines chars, BS.pack status, BS.pack "\n", BS.pack "\n"]
-  in mapM_ BS.putStr bs
+  let size   = x1 - x0 + 1
+      g y x  = if x > x1 then Nothing else Just (snd (f (y, x)), x + 1)
+      fl y   = fst $ BS.unfoldrN size (g y) x0
+      level  = L.map fl [y0..y1]
+      screen = [BS.pack msg] ++ level ++ [BS.pack status, BS.empty]
+  in mapM_ BS.putStrLn screen
 
 keyTranslate :: Char -> K.Key
 keyTranslate e =
