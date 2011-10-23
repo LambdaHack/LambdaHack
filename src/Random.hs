@@ -56,6 +56,14 @@ frequency (Frequency fs) =
     | m <= n            = x
     | otherwise         = frequency' (m - n) xs
 
+getStdGen :: IO String
+getStdGen = do
+  g <- R.getStdGen
+  return $ show g
+
+setStdGen :: String -> IO ()
+setStdGen g = R.setStdGen (read g)
+
 rndToIO :: Rnd a -> IO a
 rndToIO r =
   do

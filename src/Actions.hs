@@ -7,7 +7,6 @@ import qualified Data.Map as M
 import qualified Data.IntMap as IM
 import Data.Maybe
 import qualified Data.Set as S
-import qualified System.Random as R
 
 import Utils.Assert
 import Action
@@ -62,8 +61,8 @@ saveGame =
         -- Save the game state
         state <- get
         liftIO $ do
-          g <- R.getStdGen
-          Save.saveGame (state, show g)
+          g <- getStdGen
+          Save.saveGame (state, g)
         ln <- gets (lname . slevel)
         let total = calculateTotal state
             status = H.Camping ln
@@ -367,8 +366,8 @@ lvlChange vdir =
                   -- Create a backup of the savegame.
                   state <- get
                   liftIO $ do
-                    g <- R.getStdGen
-                    Save.saveGame (state, show g)
+                    g <- getStdGen
+                    Save.saveGame (state, g)
                     Save.mvBkp (sconfig state)
                   playerAdvanceTime
       _ -> -- no stairs in the right direction

@@ -1,7 +1,6 @@
 module Main where
 
 import System.Directory
-import qualified System.Random as R
 
 import Action
 import State
@@ -39,12 +38,12 @@ start internalSession = do
       configS <-
         case Config.getOption config "engine" "startingRandomGenerator" of
           Just g -> do
-            R.setStdGen (read g)
+            setStdGen g
             return config
           Nothing -> do
             -- Record the randomly chosen starting generator for debugging.
-            g <- R.getStdGen
-            return $ Config.set config "engine" "startingRandomGenerator" (show g)
+            g <- getStdGen
+            return $ Config.set config "engine" "startingRandomGenerator" g
       (ploc, lvl, dng) <- rndToIO $ generate configS
       asso <- rndToIO dungeonAssocs
       let defState = defaultState dng lvl
@@ -52,5 +51,5 @@ start internalSession = do
           hstate = initialHeroes ploc state
       handlerToIO sess hstate msg handle
     Left (state, g) -> do
-      R.setStdGen (read g)
+      setStdGen g
       handlerToIO sess state "Welcome back to Allure of the Stars." handle
