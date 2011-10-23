@@ -3,6 +3,7 @@ module Keybindings where
 import qualified Data.Map as M
 import qualified Data.List as L
 
+import Utils.Assert
 import Action
 import Command
 import qualified Keys as K
@@ -61,3 +62,19 @@ keyHelp aliases kb =
   in
     unlines ([blank] ++ mov ++ [blank, keyC] ++ rest)
 --             [blank, footer, blank])
+
+-- | Maps a key to the canonical key for the command it denotes.
+-- Takes into account the keypad and any macros from a config file.
+-- Macros cannot depend on each other, but they can on canonMoveKey.
+-- This has to be fully evaluated to catch errors in macro definitions early.
+macroKey :: [(String, String)] -> M.Map K.Key K.Key
+macroKey section =
+  let trans k = case K.keyTranslate k of
+                  K.Unknown s -> assert `failure` ("unknown macro key " ++ s)
+                  kt -> kt
+      trMacro (from, to) = let fromTr = trans from
+                               !toTr  = K.canonMoveKey $ trans to
+                           in  if fromTr == toTr
+                               then assert `failure` ("degenerate alias", toTr)
+                               else (fromTr, toTr)
+  in  M.fromList $ L.map trMacro section

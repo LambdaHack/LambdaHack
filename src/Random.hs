@@ -8,6 +8,8 @@ import Control.Monad.State
 import Utils.Assert
 import Frequency
 
+-- TODO: if the file grows much larger, split it and move a part to Utils/
+
 type Rnd a = State R.StdGen a
 
 -- TODO: rewrite; was written in a "portable" way because the implementation of

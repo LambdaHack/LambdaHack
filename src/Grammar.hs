@@ -25,6 +25,15 @@ capitalize :: String -> String
 capitalize [] = []
 capitalize (c : cs) = toUpper c : cs
 
+makeObject :: Int -> (String -> String) -> String -> String
+makeObject 1 adj obj = let b = adj obj
+                       in  case b of
+                             (c:_) | c `elem` "aeio" -> "an " ++ b
+                             _                       -> "a " ++ b
+makeObject n adj obj = show n ++ " " ++ adj (suffixS obj)
+
+-- TODO: when there's more of the above, split and move to Utils/
+
 -- | How to refer to an actor in object position of a sentence.
 objectActor :: Actor -> String
 objectActor a = fromMaybe (bname $ Kind.getKind $ akind a) (aname a)
@@ -61,13 +70,6 @@ subjCompoundVerbIObj state m v p o add =
   subjectActor m ++ " " ++
   compoundVerbActor m v p ++ " " ++
   objectItem state o ++ add ++ "."
-
-makeObject :: Int -> (String -> String) -> String -> String
-makeObject 1 adj obj = let b = adj obj
-                       in  case b of
-                             (c:_) | c `elem` "aeio" -> "an " ++ b
-                             _                       -> "a " ++ b
-makeObject n adj obj = show n ++ " " ++ adj (suffixS obj)
 
 objectItem :: State -> Item -> String
 objectItem state o =

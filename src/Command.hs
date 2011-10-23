@@ -12,7 +12,6 @@ data Described a = Described { chelp :: String, caction :: a }
 type Command    = Described (Action ())
 type DirCommand = Described (Dir -> Action ())
 
-
 closeCommand, pickupCommand, dropCommand, inventoryCommand, ascendCommand, descendCommand, floorCommand, monsterCommand, quaffCommand, readCommand, throwCommand, aimCommand, saveCommand, quitCommand, cancelCommand, historyCommand, dumpCommand, heroCommand, versionCommand :: Described (Action ())
 closeCommand     = Described "close a door"      (checkCursor closeDoor)
 pickupCommand    = Described "get an object"     (checkCursor pickupItem)

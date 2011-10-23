@@ -12,7 +12,7 @@ import Turn
 import qualified Config
 import ActorAdd
 import Item
-import qualified Keys as K
+import qualified Keybindings as KB
 
 main :: IO ()
 main = Display.startup start
@@ -22,7 +22,7 @@ start :: Display.InternalSession -> IO ()
 start internalSession = do
   config <- Config.config
   let section = Config.getItems config "macros"
-      !macros = K.macroKey section
+      !macros = KB.macroKey section
       sess = (internalSession, macros)
   -- check if we have a savegame
   f <- Save.file config

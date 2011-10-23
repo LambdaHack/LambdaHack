@@ -30,7 +30,7 @@ toSensitive cp = cp {CF.optionxform = id}
 -- | The default configuration taken from the default configuration file
 -- included via CPP in ConfigDefault.hs.
 defCF :: CF.ConfigParser
-defCF  =
+defCF =
   let c = CF.readstring CF.emptyCP ConfigDefault.configDefault
   in  toSensitive $ forceEither c
 

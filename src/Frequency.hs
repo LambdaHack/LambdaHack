@@ -2,6 +2,8 @@ module Frequency where
 
 import Control.Monad
 
+-- TODO: perhaps move to Utils/ (generally useful enough? more ops needed?)
+
 newtype Frequency a = Frequency { runFrequency :: [(Int, a)] }
   deriving Show
 
