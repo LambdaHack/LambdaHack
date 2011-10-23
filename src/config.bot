@@ -13,15 +13,20 @@
 LambdaCave_1: rogueRoom
 ; access to stairs may be blocked, so only suitable for the last level:
 LambdaCave_10: noiseRoom
+LambdaCave_20: noiseRoom
+LambdaCave_30: noiseRoom
 LambdaCave_3: bigRoom
-depth: 10
+LambdaCave_13: bigRoom
+LambdaCave_23: bigRoom
+depth: 1000
 
 [engine]
 fovMode: digital
 ;fovMode: permissive
 ;fovMode: shadow
-fovRadius: 40
-lstartingRandomGenerator: 6
+fovRadius: 4
+;startingRandomGenerator: 6
+;BotAllure 4 20000000 | Allure > /tmp/log
 
 ; paths to various game files; relative to ~/.Allure/
 ; (or analogous prefixes for other OSes, see getAppUserDataDirectory)
@@ -37,7 +42,7 @@ HeroName_3: Ernst Abraham
 HeroName_4: Samuel Saunders
 HeroName_5: Roger Robin
 baseHP: 1000000
-extraHeroes: 0
+extraHeroes: 4
 firstDeathEnds: False
 
 [macros]

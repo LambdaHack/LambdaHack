@@ -6,8 +6,7 @@ import Control.Monad
 
 move :: R.StdGen -> Int -> IO ()
 move g k = do
-  -- We don't start from '<', to forbid ascending, to speed up exploration.
-  let (c, ng) = R.randomR ('A', 'z') g
+  let (c, ng) = R.randomR ('0', 'z') g
   putChar c
   when (k > 0) $ move ng (k - 1)
 

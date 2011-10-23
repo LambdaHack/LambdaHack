@@ -38,12 +38,11 @@ keyTranslate e =
     '\n'   -> K.Return
     '\r'   -> K.Return
     '\t'   -> K.Tab
-    --  For human players: normal commands,
-    '<'    -> K.Char '<'
-    '>'    -> K.Char '>'
-    '*'    -> K.Char '*'
-    '/'    -> K.Char '/'
-    -- For bots: (assuming they go from 'A' to 'z').
+    -- For bots: (assuming they go from '0' to 'z').
+    '<'    -> K.Char 'q'  -- ban ascending to speed up descending
+    '>'    -> K.Char 'r'
+    '*'    -> K.Char 'g'  -- targetting is too hard
+    '/'    -> K.Char 'c'  -- targetting is too hard
     'c'    -> K.Char 'c'
     'g'    -> K.Char 'g'
     'd'    -> K.Char 'g'  -- don't let bots drop stuff
@@ -66,6 +65,7 @@ keyTranslate e =
     'D'    -> K.Char 'B'
     '?'    -> K.Char 'N'
     c | c `elem` "kjhlyubnKJHLYUBN" -> K.Char c
+    c | c `elem` ['0'..'9'] -> K.Char c
     _      -> K.Char '>'  -- try hard to descend
 
 nextEvent :: Session -> IO K.Key
