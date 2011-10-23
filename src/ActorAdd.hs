@@ -6,7 +6,7 @@ import Data.Ratio
 import Data.Maybe
 import qualified Data.Char as Char
 
-import Assert
+import Utils.Assert
 import Geometry
 import State
 import Level

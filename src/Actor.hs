@@ -3,7 +3,7 @@ module Actor where
 import Data.Binary
 import Control.Monad
 
-import Assert
+import Utils.Assert
 import Geometry
 import Item
 import Content.ActorKind

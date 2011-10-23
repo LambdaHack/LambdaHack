@@ -1,4 +1,4 @@
-module File where
+module Utils.File where
 
 import System.IO
 import Data.Binary

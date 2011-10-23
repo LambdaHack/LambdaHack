@@ -3,7 +3,7 @@ module FOV.Shadow (scan) where
 import Data.Ratio
 import qualified Data.Set as S
 
-import Assert
+import Utils.Assert
 import FOV.Common
 import Geometry
 import Level

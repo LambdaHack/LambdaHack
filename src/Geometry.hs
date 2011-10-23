@@ -2,7 +2,7 @@ module Geometry where
 
 import qualified Data.List as L
 
-import Assert
+import Utils.Assert
 
 -- | Game time in turns. (Placement in module Geometry is not ideal.)
 type Time = Int

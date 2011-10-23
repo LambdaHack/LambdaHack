@@ -2,7 +2,7 @@
 
 module ConfigDefault (configDefault) where
 
-import Multiline
+import Utils.Multiline
 
 -- Consider code.haskell.org/~dons/code/compiled-constants (dead link, BTW?)
 -- as soon as the config file grows very big.

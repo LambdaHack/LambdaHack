@@ -1,6 +1,6 @@
 module DungeonState where
 
-import Assert
+import Utils.Assert
 import Geometry
 import Level
 import Dungeon

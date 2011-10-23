@@ -10,7 +10,7 @@ import Data.Function
 import Data.Ord
 import Control.Monad
 
-import Assert
+import Utils.Assert
 import Random
 import Content.ItemKind
 import qualified Color

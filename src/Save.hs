@@ -4,7 +4,7 @@ import System.Directory
 import qualified Control.Exception as E hiding (handle)
 import qualified System.Random as R
 
-import File
+import Utils.File
 import State
 import qualified Config
 

@@ -6,7 +6,7 @@ import qualified Data.IntMap as IM
 import Data.Maybe
 import Control.Monad
 
-import Assert
+import Utils.Assert
 import Geometry
 import State
 import Level

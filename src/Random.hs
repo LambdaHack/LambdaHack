@@ -5,7 +5,7 @@ import Data.Ratio
 import qualified System.Random as R
 import Control.Monad.State
 
-import Assert
+import Utils.Assert
 import Frequency
 
 type Rnd a = State R.StdGen a

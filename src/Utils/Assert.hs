@@ -1,4 +1,4 @@
-module Assert (assert, blame, failure, allB, checkM, trueM, falseM) where
+module Utils.Assert (assert, blame, failure, allB, checkM, trueM, falseM) where
 
 import Control.Exception (assert)
 import Debug.Trace (trace)

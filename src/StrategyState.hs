@@ -7,7 +7,7 @@ import Data.Maybe
 import Control.Monad
 import Control.Arrow
 
-import Assert
+import Utils.Assert
 import Geometry
 import Level
 import Actor

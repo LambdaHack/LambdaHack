@@ -7,7 +7,7 @@ import qualified Data.Map as M
 import Data.Maybe
 import qualified Data.Set as S
 
-import Assert
+import Utils.Assert
 import Action
 import Display hiding (display)
 import Geometry

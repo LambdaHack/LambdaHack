@@ -8,7 +8,7 @@ import qualified Data.IntMap as IM
 import Data.Maybe
 import qualified Data.Set as S
 
-import Assert
+import Utils.Assert
 import Action
 import Display hiding (display)
 import Dungeon

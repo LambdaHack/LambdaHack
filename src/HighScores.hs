@@ -8,7 +8,7 @@ import System.Time
 import Data.Binary
 import qualified Data.List as L
 
-import File
+import Utils.File
 import Dungeon
 import qualified Config
 import WorldLoc

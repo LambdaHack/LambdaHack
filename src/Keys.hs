@@ -2,7 +2,7 @@ module Keys where
 
 import Prelude hiding (Left, Right)
 
-import Assert
+import Utils.Assert
 import Geometry hiding (Up, Down)
 import qualified Data.List as L
 import qualified Data.Map as M
