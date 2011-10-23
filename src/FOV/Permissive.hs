@@ -1,4 +1,4 @@
-module FOV.Permissive (pscan) where
+module FOV.Permissive (scan) where
 
 import qualified Data.Set as S
 
@@ -26,9 +26,9 @@ import qualified Tile
 -- | The current state of a scan is kept in Maybe (Line, ConvexHull).
 -- If Just something, we're in a visible interval. If Nothing, we're in
 -- a shadowed interval.
-pscan :: Distance -> (Bump -> Loc) -> LMap -> Distance -> EdgeInterval
+scan :: Distance -> (Bump -> Loc) -> LMap -> Distance -> EdgeInterval
          -> S.Set Loc
-pscan r ptr l d (s0@(sl{-shallow line-}, sBumps0),e@(el{-steep line-}, eBumps))=
+scan r ptr l d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps)) =
   assert (pe + 1 >= ps0 && ps0 >= 0 && r >= d && d >= 0
           `blame` (r,d,s0,e,ps0,pe)) $
   if illegal
@@ -36,64 +36,64 @@ pscan r ptr l d (s0@(sl{-shallow line-}, sBumps0),e@(el{-steep line-}, eBumps))=
   else S.union outside (S.fromList [tr (d, p) | p <- [ps0..pe]])
     -- the area is diagonal, which is incorrect, but looks good enough
     where
-      (ns, ks) = pintersect sl d
-      (ne, ke) = pintersect el d
+      (ns, ks) = intersect sl d
+      (ne, ke) = intersect el d
       -- Corners are translucent, so they are invisible, so if intersection
       -- is at a corner, choose pe that creates the smaller view.
-      (ps0, pe) = (ns `div` ks, ne `divUp` ke - 1) -- progress interval to check
+      (ps0, pe) = (ns `div` ks, ne `divUp` ke - 1)  -- progress interval to check
       -- Single ray from an extremity, produces non-permissive digital lines.
-      illegal  = let (n, k) = pintersect sl 0
+      illegal  = let (n, k) = intersect sl 0
                  in  ns*ke == ne*ks && (n `elem` [0, k])
       outside
         | d >= r = S.empty
-        | Tile.isClear (l `at` tr (d, ps0)) =          -- start in light
-            pscan' (Just s0) ps0
-        | ps0 == ns `divUp` ks = pscan' (Just s0) ps0  -- start in a corner
-        | otherwise = pscan' Nothing (ps0+1)           -- start in mid-wall
+        | Tile.isClear (l `at` tr (d, ps0)) =         -- start in light
+            mscan (Just s0) ps0
+        | ps0 == ns `divUp` ks = mscan (Just s0) ps0  -- start in a corner
+        | otherwise = mscan Nothing (ps0+1)           -- start in mid-wall
 
       dp2bump     (di, p) = B(p, di - p)
       bottomRight (di, p) = B(p, di - p + 1)
       tr = ptr . dp2bump
 
-      pscan' :: Maybe Edge -> Progress -> S.Set Loc
-      pscan' (Just s@(_, sBumps)) ps
-        | ps > pe =                                  -- reached end, scan next
-            pscan r ptr l (d+1) (s, e)
-        | not $ Tile.isClear (l `at` tr (d, ps)) =   -- enter shadow, steep bump
+      mscan :: Maybe Edge -> Progress -> S.Set Loc
+      mscan (Just s@(_, sBumps)) ps
+        | ps > pe =                                   -- reached end, scan next
+            scan r ptr l (d+1) (s, e)
+        | not $ Tile.isClear (l `at` tr (d, ps)) =    -- enter shadow, steep bump
             let steepBump = bottomRight (d, ps)
-                gte = flip $ psteeper steepBump
+                gte = flip $ dsteeper steepBump
                 -- sBumps may contain steepBump, but maximal will ignore it
                 nep = maximal gte sBumps
                 neBumps = addHull gte steepBump eBumps
             in  S.union
-                  (pscan r ptr l (d+1) (s, (pline nep steepBump, neBumps)))
-                  (pscan' Nothing (ps+1))
-        | otherwise = pscan' (Just s) (ps+1)   -- continue in light
+                  (scan r ptr l (d+1) (s, (dline nep steepBump, neBumps)))
+                  (mscan Nothing (ps+1))
+        | otherwise = mscan (Just s) (ps+1)    -- continue in light
 
-      pscan' Nothing ps
+      mscan Nothing ps
         | ps > ne `div` ke = S.empty           -- reached absolute end
         | otherwise =                          -- out of shadow, shallow bump
             -- the light can be just through a corner of diagonal walls
             -- and the recursive call verifies that at the same ps coordinate
             let shallowBump = bottomRight (d, ps)
-                gte = psteeper shallowBump
+                gte = dsteeper shallowBump
                 nsp = maximal gte eBumps
                 nsBumps = addHull gte shallowBump sBumps0
-            in  pscan' (Just (pline nsp shallowBump, nsBumps)) ps
+            in  mscan (Just (dline nsp shallowBump, nsBumps)) ps
 
-      pline p1 p2 =
-        assert (uncurry blame $ pdebugLine (p1, p2)) $
+      dline p1 p2 =
+        assert (uncurry blame $ debugLine (p1, p2)) $
         (p1, p2)
 
-      psteeper f p1 p2 =
-        assert (res == pdebugSteeper f p1 p2) $
+      dsteeper f p1 p2 =
+        assert (res == debugSteeper f p1 p2) $
         res
-          where res = steeper f p1 p2
+       where res = steeper f p1 p2
 
 -- | The y coordinate, represented as a fraction, of the intersection of
 -- a given line and the line of diagonals of squares at distance d from (0, 0).
-pintersect :: Line -> Distance -> (Int, Int)
-pintersect (B(y, x), B(yf, xf)) d =
+intersect :: Line -> Distance -> (Int, Int)
+intersect (B(y, x), B(yf, xf)) d =
   assert (allB (>= 0) [y, x, yf, xf]) $
   ((1 + d)*(yf - y) + y*xf - x*yf, (xf - x) + (yf - y))
 {-
@@ -117,7 +117,7 @@ Order of processing in the first quadrant is
 @136
 so the first processed square is at (0, 1). The order is reversed
 wrt the restrictive shadow casting algorithm. The line in the curent state
-of scan' is not the steep line, but the shallow line,
+of mscan is not the steep line, but the shallow line,
 and we start scanning from the bottom right.
 
 The Loc coordinates are cartesian. The Bump coordinates are cartesian,
@@ -129,16 +129,16 @@ are mangled and not used for geometry.
 -- | Debug functions for PFOV:
 
 -- | Debug: calculate steeper for PFOV in another way and compare results.
-pdebugSteeper :: Bump -> Bump -> Bump -> Bool
-pdebugSteeper f@(B(yf, xf)) p1@(B(y1, x1)) p2@(B(y2, x2)) =
+debugSteeper :: Bump -> Bump -> Bump -> Bool
+debugSteeper f@(B(yf, xf)) p1@(B(y1, x1)) p2@(B(y2, x2)) =
   assert (allB (>= 0) [yf, xf, y1, x1, y2, x2]) $
-  let (n1, k1) = pintersect (p1, f) 0
-      (n2, k2) = pintersect (p2, f) 0
+  let (n1, k1) = intersect (p1, f) 0
+      (n2, k2) = intersect (p2, f) 0
   in n1 * k2 <= k1 * n2
 
 -- | Debug: checks postconditions of borderLine.
-pdebugLine :: Line -> (Bool, String)
-pdebugLine line@(B(y1, x1), B(y2, x2))
+debugLine :: Line -> (Bool, String)
+debugLine line@(B(y1, x1), B(y2, x2))
   | not (allB (>= 0) [y1, x1, y2, x2]) =
       (False, "negative coordinates: " ++ show line)
   | y1 == y2 && x1 == x2 =
@@ -151,7 +151,7 @@ pdebugLine line@(B(y1, x1), B(y2, x2))
       (False, "crosses diagonal above 1: " ++ show line)
   | otherwise = (True, "")
     where
-      (n, k)  = pintersect line 0
+      (n, k)  = intersect line 0
       (q, r)  = if k == 0 then (0, 0) else n `divMod` k
       crossL0 = q < 0  -- q truncated toward negative infinity
       crossG1 = q >= 1 && (q > 1 || r /= 0)

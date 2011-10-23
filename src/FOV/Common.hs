@@ -2,8 +2,6 @@ module FOV.Common
   ( Interval, Distance, Progress
   , Bump(..)
   , Line, ConvexHull, Edge, EdgeInterval
-  , tr0, tr1, tr2, tr3, tr4, tr5, tr6, tr7
-  , qtr0, qtr1, qtr2, qtr3
   , divUp
   , maximal
   , steeper
@@ -29,24 +27,6 @@ type Line         = (Bump, Bump)
 type ConvexHull   = [Bump]
 type Edge         = (Line, ConvexHull)
 type EdgeInterval = (Edge, Edge)
-
--- | The translation, rotation and symmetry functions for octants.
-tr0, tr1, tr2, tr3, tr4, tr5, tr6, tr7 :: Loc -> Loc -> Loc
-tr0 (oy,ox) (d,p) = (oy + d,ox + p)
-tr1 (oy,ox) (d,p) = (oy + d,ox - p)
-tr2 (oy,ox) (d,p) = (oy - d,ox + p)
-tr3 (oy,ox) (d,p) = (oy - d,ox - p)
-tr4 (oy,ox) (d,p) = (oy + p,ox + d)
-tr5 (oy,ox) (d,p) = (oy + p,ox - d)
-tr6 (oy,ox) (d,p) = (oy - p,ox + d)
-tr7 (oy,ox) (d,p) = (oy - p,ox - d)
-
--- | The translation and rotation functions for quadrants.
-qtr0, qtr1, qtr2, qtr3 :: Loc -> Bump -> Loc
-qtr0 (oy, ox) (B(y, x)) = (oy - y, ox + x)  -- quadrant I
-qtr1 (oy, ox) (B(y, x)) = (oy + x, ox + y)  -- II (we rotate counter-clockwise)
-qtr2 (oy, ox) (B(y, x)) = (oy + y, ox - x)  -- III
-qtr3 (oy, ox) (B(y, x)) = (oy - x, ox - y)  -- IV
 
 -- | Integer division, rounding up.
 divUp :: Int -> Int -> Int

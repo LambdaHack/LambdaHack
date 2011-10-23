@@ -73,37 +73,37 @@ for the square is added to the shadow set.
 -- a shadowed interval.
 scan :: ((Distance, Progress) -> Loc) -> LMap -> Distance -> Interval
         -> S.Set Loc
-scan tr l d (s0,e) =
-    let ps = downBias (s0 * fromIntegral d)   -- minimal progress to check
+scan tr l d (s0, e) =
+    let ps = downBias (s0 * fromIntegral d)  -- minimal progress to check
         pe = upBias (e * fromIntegral d)     -- maximal progress to check
-        st = if Tile.isClear (l `at` tr (d,ps))
-             then Just s0   -- start in light
+        st = if Tile.isClear (l `at` tr (d, ps))
+             then Just s0  -- start in light
              else Nothing  -- start in shadow
     in
         -- traceShow (d,s,e,ps,pe) $
         assert (pe >= ps && ps >= 0 && d >= 0 && e >= 0 && s0 >= 0
                 `blame` (d,s0,e,ps,pe)) $
-        S.union (S.fromList [tr (d,p) | p <- [ps..pe]]) (scan' st ps pe)
+        S.union (S.fromList [tr (d, p) | p <- [ps..pe]]) (mscan st ps pe)
   where
-    scan' :: Maybe Rational -> Progress -> Progress -> S.Set Loc
-    -- scan' st ps pe
+    mscan :: Maybe Rational -> Progress -> Progress -> S.Set Loc
+    -- mscan st ps pe
     --   | traceShow (st,ps,pe) False = undefined
-    scan' (Just s) ps pe
-      | s  >= e  = S.empty               -- empty interval
-      | ps > pe  = scan tr l (d+1) (s,e) -- reached end, scan next
-      | not $ Tile.isClear (l `at` tr (d,ps)) =
+    mscan (Just s) ps pe
+      | s  >= e  = S.empty                -- empty interval
+      | ps > pe  = scan tr l (d+1) (s, e) -- reached end, scan next
+      | not $ Tile.isClear (l `at` tr (d, ps)) =
                    let ne = (fromIntegral ps - (1%2)) / (fromIntegral d + (1%2))
-                   in  scan tr l (d+1) (s,ne) `S.union` scan' Nothing (ps+1) pe
+                   in  scan tr l (d+1) (s, ne) `S.union` mscan Nothing (ps+1) pe
                                       -- entering shadow
-      | otherwise = scan' (Just s) (ps+1) pe
+      | otherwise = mscan (Just s) (ps+1) pe
                                       -- continue in light
-    scan' Nothing ps pe
+    mscan Nothing ps pe
       | ps > pe  = S.empty            -- reached end while in shadow
-      | Tile.isClear (l `at` tr (d,ps)) =
+      | Tile.isClear (l `at` tr (d, ps)) =
                    let ns = (fromIntegral ps - (1%2)) / (fromIntegral d - (1%2))
-                   in  scan' (Just ns) (ps+1) pe
+                   in  mscan (Just ns) (ps+1) pe
                                       -- moving out of shadow
-      | otherwise = scan' Nothing (ps+1) pe
+      | otherwise = mscan Nothing (ps+1) pe
                                       -- continue in shadow
 
 downBias, upBias :: (Integral a, Integral b) => Ratio a -> b
