@@ -33,35 +33,45 @@ display ((y0,x0), (y1,x1)) _session f msg status =
 keyTranslate :: Char -> K.Key
 keyTranslate e =
   case e of
+    -- For human players: translate some special keys (use vi keys to move).
     '\ESC' -> K.Esc
     '\n'   -> K.Return
     '\r'   -> K.Return
     '\t'   -> K.Tab
-    -- a tweak for bots: don't let them give up the fight (nor write files)
-    -- TODO: make configurable
-    'Q'    -> K.Esc
-    'X'    -> K.Esc
-    -- a tweak for bots: disable purely UI commands; make descending easier
-    -- TODO: make configurable
-    'R'    -> K.Char '>'
-    'O'    -> K.Char '>'
-    'T'    -> K.Char '>'
-    'I'    -> K.Char '>'
-    'V'    -> K.Char '>'
-    'P'    -> K.Char '>'
-    'D'    -> K.Char '>'
-    '?'    -> K.Char '>'
-    -- a tweak for bots: don't let them move to shallower levels (or win)
-    -- TODO: make configurable
-    '<'    -> K.Esc
-    -- No KP_ keys in std, but the bot can use the vi keys,
-    -- so number keys are interpreted as hero selection:
-    c      -> K.Char c
+    --  For human players: normal commands,
+    '<'    -> K.Char '<'
+    '>'    -> K.Char '>'
+    '*'    -> K.Char '*'
+    '/'    -> K.Char '/'
+    -- For bots: (assuming they go from 'A' to 'z').
+    'c'    -> K.Char 'c'
+    'g'    -> K.Char 'g'
+    'd'    -> K.Char 'g'  -- don't let bots drop stuff
+    'i'    -> K.Char 'i'
+    'q'    -> K.Char 'q'
+    'r'    -> K.Char 'r'
+    't'    -> K.Char 'g'  -- tagetting is too hard, so don't throw
+    'a'    -> K.Char 'g'  -- and don't aim
+    -- For bots: don't let them give up, write files, procrastinate.
+    '.'    -> K.Return
+    'Q'    -> K.Return
+    'X'    -> K.Return
+    --  For bots: disable purely UI commands.
+    'R'    -> K.Char 'K'
+    'O'    -> K.Char 'J'
+    'T'    -> K.Char 'H'
+    'I'    -> K.Char 'L'
+    'V'    -> K.Char 'Y'
+    'P'    -> K.Char 'U'
+    'D'    -> K.Char 'B'
+    '?'    -> K.Char 'N'
+    c | c `elem` "kjhlyubnKJHLYUBN" -> K.Char c
+    _      -> K.Char '>'  -- try hard to descend
 
 nextEvent :: Session -> IO K.Key
 nextEvent _session = do
   e <- BS.hGet SIO.stdin 1
   let c = BS.head e
-  if c == '\n' -- let \n mark the end of input and \r issue the K.Return command
+  if c == '\n'  -- let \n mark the end of input, for human players
     then nextEvent _session
     else return $ keyTranslate c

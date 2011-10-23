@@ -311,7 +311,7 @@ getItem prompt p ptext is0 isn = do
                       return $ Just i
           K.Char l   ->
             return (L.find (maybe False (== l) . iletter) is0)
-          K.Return   ->  -- TODO: i should be the first displayed (except $)
+          K.Return   ->  -- TODO: it should be the first displayed (except $)
             return (case is of [] -> Nothing ; i : _ -> Just i)
           _          -> return Nothing
   ask
