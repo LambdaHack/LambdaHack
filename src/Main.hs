@@ -51,5 +51,6 @@ start internalSession = do
           state = defState { sconfig = configS, sassocs = asso }
           hstate = initialHeroes ploc state
       handlerToIO sess hstate msg handle
-    Left state ->
+    Left (state, g) -> do
+      R.setStdGen (read g)
       handlerToIO sess state "Welcome back to Allure of the Stars." handle

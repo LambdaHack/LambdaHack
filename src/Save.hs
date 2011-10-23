@@ -2,7 +2,6 @@ module Save where
 
 import System.Directory
 import qualified Control.Exception as E hiding (handle)
-import qualified System.Random as R
 
 import Utils.File
 import State
@@ -12,25 +11,22 @@ import qualified Config
 file :: Config.CP -> IO FilePath
 file config = Config.getFile config "files" "saveGame"
 
--- | We save a simple serialized version of the current level and
--- the current state. The 'False' is used only as an EOF marker.
-saveGame :: State -> IO ()
-saveGame state =
-  do
-    f <- file (sconfig state)
-    g <- R.getStdGen
-    encodeCompressedFile f (state, show g, False)
+-- | We save a simple serialized version of the current state
+-- and random generator.
+saveGame :: (State, String) -> IO ()
+saveGame (state, g) = do
+  f <- file (sconfig state)
+  encodeEOF f (state, g)
 
--- | Restore a saved game. Returns either the current level and
--- game state, or a string containing an error message if restoring
--- the game fails.
-restoreGame :: Config.CP -> IO (Either State String)
+-- | Restore a saved game. Returns either the current game state,
+-- or a string containing an error message if restoring the game fails.
+restoreGame :: Config.CP -> IO (Either (State, String) String)
 restoreGame config =
   E.catch (do
              mvBkp config
              f <- file config
-             (x, g, z) <- strictDecodeCompressedFile (f ++ ".bkp")
-             (z :: Bool) `seq` R.setStdGen (read g) >> return (Left x))
+             sg <- strictDecodeEOF (f ++ ".bkp")
+             return (Left sg))
           (\ e -> case e :: E.IOException of
                     _ -> return (Right $
                                    "Restore failed: "
@@ -47,7 +43,7 @@ mvBkp config =
 -- non-error exit from the game. Sometimes it does not exist and it's OK.
 -- We don't bother reporting any other exceptions, either, because the file
 -- is relatively unimportant and because most probably the exception
--- would be reported for the main savefile, where it should not me missed.
+-- would be reported for the main savefile, where it should not be overlooked.
 rmBkp :: Config.CP -> IO ()
 rmBkp config =
   do

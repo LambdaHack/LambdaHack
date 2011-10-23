@@ -90,12 +90,9 @@ file config = Config.getFile config "files" "highScores"
 -- | We save a simple serialized version of the high scores table.
 -- The 'False' is used only as an EOF marker.
 save :: Config.CP -> ScoreTable -> IO ()
-save config scores =
-  do
-    f <- file config
-    b <- doesFileExist f
-    when b $ removeFile f
-    encodeCompressedFile f (scores, False)
+save config scores = do
+  f <- file config
+  encodeEOF f scores
 
 -- | Read the high scores table. Return the empty table if no file.
 restore :: Config.CP -> IO ScoreTable
@@ -105,8 +102,8 @@ restore config = do
   if not b
     then return []
     else do
-      (x, z) <- strictDecodeCompressedFile f
-      (z :: Bool) `seq` return x
+      scores <- strictDecodeEOF f
+      return scores
 
 -- | Insert a new score into the table, Return new table and the position.
 insertPos :: ScoreRecord -> ScoreTable -> (ScoreTable, Int)

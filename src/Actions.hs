@@ -7,6 +7,7 @@ import qualified Data.Map as M
 import qualified Data.IntMap as IM
 import Data.Maybe
 import qualified Data.Set as S
+import qualified System.Random as R
 
 import Utils.Assert
 import Action
@@ -59,10 +60,12 @@ saveGame =
     if b
       then do
         -- Save the game state
-        st <- get
-        liftIO $ Save.saveGame st
+        state <- get
+        liftIO $ do
+          g <- R.getStdGen
+          Save.saveGame (state, show g)
         ln <- gets (lname . slevel)
-        let total = calculateTotal st
+        let total = calculateTotal state
             status = H.Camping ln
         go <- handleScores False status total
         when go $ messageMore "See you soon, stronger and braver!"
@@ -363,7 +366,10 @@ lvlChange vdir =
                   -- The invariant "at most one actor on a tile" restored.
                   -- Create a backup of the savegame.
                   state <- get
-                  liftIO $ Save.saveGame state >> Save.mvBkp (sconfig state)
+                  liftIO $ do
+                    g <- R.getStdGen
+                    Save.saveGame (state, show g)
+                    Save.mvBkp (sconfig state)
                   playerAdvanceTime
       _ -> -- no stairs in the right direction
         if targeting
