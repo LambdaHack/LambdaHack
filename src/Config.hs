@@ -1,5 +1,5 @@
 module Config
- (CP, defaultCP, config, getOption, getItems, get, getFile, dump) where
+ (CP, defaultCP, config, getOption, getItems, get, getFile, set, dump) where
 
 import System.Directory
 import System.FilePath
@@ -72,12 +72,19 @@ getOption (CP conf) s o =
   then Just $ forceEither $ CF.get conf s o
   else Nothing
 
--- | A simplified access to an option in a given section.
+-- | Simplified access to an option in a given section.
 get :: CF.Get_C a => CP -> CF.SectionSpec -> CF.OptionSpec -> a
 get (CP conf) s o =
   if CF.has_option conf s o
   then forceEither $ CF.get conf s o
   else error $ "Unknown config option: " ++ s ++ "." ++ o
+
+-- | Simplified setting of an option in a given section. Overwriting forbidden.
+set :: CP -> CF.SectionSpec -> CF.OptionSpec -> String -> CP
+set (CP conf) s o v =
+  if CF.has_option conf s o
+  then error $ "Overwritten config option: " ++ s ++ "." ++ o
+  else CP $ forceEither $ CF.set conf s o v
 
 -- | An association list corresponding to a section.
 getItems :: CP -> CF.SectionSpec -> [(String, String)]
@@ -102,9 +109,8 @@ getFile conf s o =
     return $ if b then appPath else curPath
 
 dump :: FilePath -> CP -> IO ()
-dump fn (CP conf) =
-  do
-    current <- getCurrentDirectory
-    let path  = combine current fn
-        sdump = CF.to_string conf
-    writeFile path sdump
+dump fn (CP conf) = do
+  current <- getCurrentDirectory
+  let path  = combine current fn
+      sdump = CF.to_string conf
+  writeFile path sdump
