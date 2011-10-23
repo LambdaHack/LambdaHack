@@ -68,18 +68,15 @@ handle =
     let time  = stime state                  -- current game time
     debug $ "handle: time check. ptime = " ++ show ptime ++ ", time = " ++ show time
     if ptime > time
-      then do
-             -- the hero can't make a move yet; monsters first
-             -- we redraw the map even between player moves so that the movements of fast
-             -- monsters can be traced on the map; we disable this functionality if the
-             -- player is currently running, as it would slow down the running process
-             -- unnecessarily
-             ifRunning
-               (const $ return True)
-               (displayGeneric ColorFull (const ""))
-             handleMonsters
-      else do
-             handlePlayer -- it's the hero's turn!
+      then handleMonsters  -- the hero can't make a move yet; monsters first
+      else handlePlayer    -- it's the hero's turn!
+
+    -- TODO: readd this, but only for the turns when anything moved
+    -- and only after a rendering delay is added, so that the move is visible
+    -- on modern computers. Use the same delay for running (not disabled now).
+    -- We redraw the map even between player moves so that the movements of fast
+    -- monsters can be traced on the map.
+    -- displayGeneric ColorFull (const "")
 
 -- | Handle monster moves. Perform moves for individual monsters as long as
 -- there are monsters that have a move time which is less than or equal to
