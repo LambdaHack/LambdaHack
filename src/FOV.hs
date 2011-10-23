@@ -1,4 +1,4 @@
-module FOV where
+module FOV (FovMode(..), fullscan) where
 
 import qualified Data.Set as S
 import qualified Data.List as L

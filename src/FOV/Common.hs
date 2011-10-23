@@ -1,4 +1,14 @@
-module FOV.Common where
+module FOV.Common
+  ( Interval, Distance, Progress
+  , Bump(..)
+  , Line, ConvexHull, Edge, EdgeInterval
+  , tr0, tr1, tr2, tr3, tr4, tr5, tr6, tr7
+  , qtr0, qtr1, qtr2, qtr3
+  , divUp
+  , maximal
+  , steeper
+  , addHull
+  ) where
 
 import qualified Data.List as L
 

@@ -1,4 +1,4 @@
-module FOV.Permissive where
+module FOV.Permissive (pscan) where
 
 import qualified Data.Set as S
 

@@ -1,4 +1,4 @@
-module FOV.Shadow where
+module FOV.Shadow (scan) where
 
 import Data.Ratio
 import qualified Data.Set as S

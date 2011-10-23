@@ -1,4 +1,4 @@
-module FOV.Digital where
+module FOV.Digital (dscan) where
 
 import qualified Data.Set as S
 
