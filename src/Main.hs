@@ -37,14 +37,14 @@ start internalSession = do
     Right msg  -> do
       -- TODO: move somewhere sane
       configS <-
-        case Config.getOption config "engine" "randomSeed" of
-          Just seed -> do
-            R.setStdGen (read seed)
+        case Config.getOption config "engine" "startingRandomGenerator" of
+          Just g -> do
+            R.setStdGen (read g)
             return config
           Nothing -> do
-            -- Record the randomly chosen starting seed for debugging.
+            -- Record the randomly chosen starting generator for debugging.
             g <- R.getStdGen
-            return $ Config.set config "engine" "randomSeed" (show g)
+            return $ Config.set config "engine" "startingRandomGenerator" (show g)
       (ploc, lvl, dng) <- rndToIO $ generate configS
       asso <- rndToIO dungeonAssocs
       let defState = defaultState dng lvl
