@@ -64,6 +64,9 @@ keyTranslate e =
     'P'    -> K.Char 'U'
     'D'    -> K.Char 'B'
     '?'    -> K.Char 'N'
+    -- Hack for bots: dump config at the start.
+    ' '    -> K.Char 'D'
+    -- Movement and hero selection.
     c | c `elem` "kjhlyubnKJHLYUBN" -> K.Char c
     c | c `elem` ['0'..'9'] -> K.Char c
     _      -> K.Char '>'  -- try hard to descend

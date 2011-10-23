@@ -14,7 +14,9 @@ main :: IO ()
 main = do
   args <- getArgs
   case args of
-    [seed, count] ->
+    [seed, count] -> do
+      -- Start by dumping config (hack: ' ', see Std.hs) with the game seed.
+      putChar ' '
       -- Note that the seed is separate from the game seed.
       move (R.mkStdGen (read seed)) (read count)
     _ -> error "Two integer arguments required: random seed and iteration count."
