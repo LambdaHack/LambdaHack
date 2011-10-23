@@ -52,5 +52,4 @@ start internalSession = do
           hstate = initialHeroes ploc state
       handlerToIO sess hstate msg handle
     Left state ->
-      -- TODO: save and restore random seed
       handlerToIO sess state "Welcome back to Allure of the Stars." handle

@@ -2,6 +2,7 @@ module Save where
 
 import System.Directory
 import qualified Control.Exception as E hiding (handle)
+import qualified System.Random as R
 
 import File
 import State
@@ -17,7 +18,8 @@ saveGame :: State -> IO ()
 saveGame state =
   do
     f <- file (sconfig state)
-    encodeCompressedFile f (state, False)
+    g <- R.getStdGen
+    encodeCompressedFile f (state, show g, False)
 
 -- | Restore a saved game. Returns either the current level and
 -- game state, or a string containing an error message if restoring
@@ -27,8 +29,8 @@ restoreGame config =
   E.catch (do
              mvBkp config
              f <- file config
-             (x, z) <- strictDecodeCompressedFile (f ++ ".bkp")
-             (z :: Bool) `seq` return $ Left x)
+             (x, g, z) <- strictDecodeCompressedFile (f ++ ".bkp")
+             (z :: Bool) `seq` R.setStdGen (read g) >> return (Left x))
           (\ e -> case e :: E.IOException of
                     _ -> return (Right $
                                    "Restore failed: "
