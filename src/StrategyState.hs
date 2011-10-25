@@ -86,15 +86,14 @@ strategy actor
     (newTgt, floc) =
       case tgt of
         TEnemy a ll | focusedMonster ->
-          case findActorAnyLevel a delState of
-            Just (_, m) ->
-              let l = aloc m
-              in  if enemyVisible a l
+          if memActor a delState
+          then let l = aloc $ getActor a delState
+               in if enemyVisible a l
                   then (TEnemy a l, Just l)
                   else if isJust (snd closest) || me == ll
                        then closest         -- prefer visible foes
                        else (tgt, Just ll)  -- last known location of enemy
-            Nothing -> closest  -- enemy dead, monsters can feel it
+          else closest  -- enemy not on the level, temporarily chase others
         TLoc loc -> if me == loc
                     then closest
                     else (tgt, Just loc)  -- ignore everything and go to loc

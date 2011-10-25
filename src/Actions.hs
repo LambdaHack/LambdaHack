@@ -101,9 +101,9 @@ endTargetingMsg = do
   let verb = "target"
       targetMsg = case atarget pbody of
                     TEnemy a _ll ->
-                      case findActorAnyLevel a state of
-                        Just (_, m) -> objectActor m
-                        Nothing     -> "a long gone adversary"
+                      if memActor a state
+                      then objectActor $ getActor a state
+                      else "a fear of the past"
                     TLoc loc -> "location " ++ show loc
                     TCursor  -> "current cursor position continuously"
   messageAdd $ subjectActorVerb pbody verb ++ " " ++ targetMsg ++ "."

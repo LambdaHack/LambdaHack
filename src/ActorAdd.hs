@@ -1,6 +1,7 @@
 module ActorAdd where
 
 import qualified Data.IntMap as IM
+import qualified Data.IntSet as IS
 import qualified Data.List as L
 import Data.Ratio
 import Data.Maybe
@@ -56,7 +57,8 @@ addHero ploc state =
       name = findHeroName config n
       startHP = bHP `div` min 10 (n + 1)
       m = template Actor.heroKindId (Just name) symbol startHP loc
-      state' = state { scounter = (n + 1, snd (scounter state)) }
+      state' = state { scounter = (n + 1, snd (scounter state))
+                     , sparty = IS.insert n (sparty state) }
   in  updateLevel (updateHeroes (IM.insert n m)) state'
 
 -- | Create a set of initial heroes on the current level, at location ploc.

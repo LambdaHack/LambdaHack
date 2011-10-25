@@ -167,27 +167,26 @@ selectPlayer actor =
       then return False -- already selected
       else do
         state <- get
-        case findActorAnyLevel actor state of
-          Nothing -> abortWith "No such member of the party."
-          Just (nln, pbody) -> do
-            -- Make the new actor the player-controlled actor.
-            modify (\ s -> s { splayer = actor })
-            -- Record the original level of the new player.
-            modify (updateCursor (\ c -> c { creturnLn = nln }))
-            -- Don't continue an old run, if any.
-            stopRunning
-            -- Switch to the level.
-            lvlSwitch nln
-            -- Set smell display, depending on player capabilities.
-            -- This also resets FOV mode.
-            modify (\ s -> s { ssensory =
-                                 if bsmell $ Kind.getKind $
-                                    akind pbody
-                                 then Smell
-                                 else Implicit })
-            -- Announce.
-            messageAdd $ subjectActor pbody ++ " selected."
-            return True
+        when (absentHero actor state) $ abortWith "No such member of the party."
+        let (nln, pbody) = findActorAnyLevel actor state
+        -- Make the new actor the player-controlled actor.
+        modify (\ s -> s { splayer = actor })
+        -- Record the original level of the new player.
+        modify (updateCursor (\ c -> c { creturnLn = nln }))
+        -- Don't continue an old run, if any.
+        stopRunning
+        -- Switch to the level.
+        lvlSwitch nln
+        -- Set smell display, depending on player capabilities.
+        -- This also resets FOV mode.
+        modify (\ s -> s { ssensory =
+                             if bsmell $ Kind.getKind $
+                                akind pbody
+                             then Smell
+                             else Implicit })
+        -- Announce.
+        messageAdd $ subjectActor pbody ++ " selected."
+        return True
 
 focusIfAHero :: ActorId -> Action ()
 focusIfAHero target =
@@ -214,9 +213,10 @@ summonMonsters n loc = do
   modify (\ state ->
            iterate (addMonster mk hp loc) state !! n)
 
--- | Remove dead heroes, check if game over.
--- For now we only check the selected hero, but if poison, etc.
--- is implemented, we'd need to check all heroes on the level.
+-- | Remove dead heroes (or dominated monsters), check if game over.
+-- For now we only check the selected hero and at current level,
+-- but if poison, etc. is implemented, we'd need to check all heroes
+-- on any level.
 checkPartyDeath :: Action ()
 checkPartyDeath =
   do
@@ -224,7 +224,7 @@ checkPartyDeath =
     pl     <- gets splayer
     pbody  <- gets getPlayerBody
     config <- gets sconfig
-    when (ahp pbody <= 0) $ do  -- TODO: change to guard? define mzero? Why are the writes to to files performed when I call abort later? That probably breaks the laws of MonadPlus.
+    when (ahp pbody <= 0) $ do  -- TODO: change to guard? define mzero? Why are the writes to the files performed when I call abort later? That probably breaks the laws of MonadPlus.
       go <- messageMoreConfirm ColorBW $
               subjectActorVerb pbody "die" ++ "."
       history  -- Prevent the messages from being repeated.
@@ -236,7 +236,7 @@ checkPartyDeath =
                (actor, _nln) : _ -> do
                  messageAdd "The survivors carry on."
                  -- Remove the dead player.
-                 modify (deleteActor pl)
+                 modify deletePlayer
                  -- At this place the invariant that the player exists fails.
                  -- Focus on the new hero (invariant not needed).
                  selectPlayer actor

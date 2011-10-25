@@ -2,6 +2,7 @@ module State where
 
 import qualified Data.Map as M
 import qualified Data.Set as S
+import qualified Data.IntSet as IS
 import Control.Monad
 import Data.Binary
 import qualified Config
@@ -31,6 +32,7 @@ data State = State
   , sdungeon     :: Dungeon      -- ^ all but the current dungeon level
   , slevel       :: Level
   , scounter     :: (Int, Int)   -- ^ stores next hero index and monster index
+  , sparty       :: IS.IntSet    -- ^ heroes in the party
   , sconfig      :: Config.CP
   }
   deriving Show
@@ -46,7 +48,7 @@ data Cursor = Cursor
 defaultState :: Dungeon -> Level -> State
 defaultState dng lvl =
   State
-    (AHero 0)
+    (AHero 0)  -- hack: the hero is not yet alive
     (Cursor False (LambdaCave (-1)) (-1, -1) (lname lvl))
     []
     Implicit Normal
@@ -56,6 +58,7 @@ defaultState dng lvl =
     dng
     lvl
     (0, 0)
+    IS.empty
     Config.defaultCP
 
 updateCursor :: (Cursor -> Cursor) -> State -> State
@@ -93,7 +96,8 @@ toggleTerrain s = s { sdisplay = case sdisplay s of Terrain 1 -> Normal
                                                     _         -> Terrain 4 }
 
 instance Binary State where
-  put (State player cursor hst sense disp time assocs discs dng lvl ct config) =
+  put (State
+       player cursor hst sense disp time assocs discs dng lvl ct party config) =
     do
       put player
       put cursor
@@ -106,6 +110,7 @@ instance Binary State where
       put dng
       put lvl
       put ct
+      put party
       put config
   get =
     do
@@ -120,9 +125,11 @@ instance Binary State where
       dng    <- get
       lvl    <- get
       ct     <- get
+      party  <- get
       config <- get
       return
-        (State player cursor hst sense disp time assocs discs dng lvl ct config)
+        (State
+         player cursor hst sense disp time assocs discs dng lvl ct party config)
 
 instance Binary Cursor where
   put (Cursor act cln loc rln) =
