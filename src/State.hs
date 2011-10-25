@@ -6,6 +6,7 @@ import qualified Data.IntSet as IS
 import Control.Monad
 import Data.Binary
 import qualified Config
+import qualified System.Random as R
 
 import Actor
 import Geometry
@@ -33,6 +34,7 @@ data State = State
   , slevel       :: Level
   , scounter     :: (Int, Int)   -- ^ stores next hero index and monster index
   , sparty       :: IS.IntSet    -- ^ heroes in the party
+  , srandom      :: R.StdGen     -- ^ current random generator
   , sconfig      :: Config.CP
   }
   deriving Show
@@ -45,8 +47,8 @@ data Cursor = Cursor
   }
   deriving Show
 
-defaultState :: Dungeon -> Level -> State
-defaultState dng lvl =
+defaultState :: Dungeon -> Level -> R.StdGen -> State
+defaultState dng lvl g =
   State
     (AHero 0)  -- hack: the hero is not yet alive
     (Cursor False (LambdaCave (-1)) (-1, -1) (lname lvl))
@@ -59,6 +61,7 @@ defaultState dng lvl =
     lvl
     (0, 0)
     IS.empty
+    g
     Config.defaultCP
 
 updateCursor :: (Cursor -> Cursor) -> State -> State
@@ -96,8 +99,8 @@ toggleTerrain s = s { sdisplay = case sdisplay s of Terrain 1 -> Normal
                                                     _         -> Terrain 4 }
 
 instance Binary State where
-  put (State
-       player cursor hst sense disp time assocs discs dng lvl ct party config) =
+  put (State player cursor hst sense disp time assocs discs dng lvl ct
+       party g config) =
     do
       put player
       put cursor
@@ -111,6 +114,7 @@ instance Binary State where
       put lvl
       put ct
       put party
+      put (show g)
       put config
   get =
     do
@@ -126,10 +130,11 @@ instance Binary State where
       lvl    <- get
       ct     <- get
       party  <- get
+      g      <- get
       config <- get
       return
-        (State
-         player cursor hst sense disp time assocs discs dng lvl ct party config)
+        (State player cursor hst sense disp time assocs discs dng lvl ct
+         party (read g) config)
 
 instance Binary Cursor where
   put (Cursor act cln loc rln) =

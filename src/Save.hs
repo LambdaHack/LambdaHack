@@ -11,22 +11,21 @@ import qualified Config
 file :: Config.CP -> IO FilePath
 file config = Config.getFile config "files" "saveGame"
 
--- | We save a simple serialized version of the current state
--- and random generator.
-saveGame :: (State, String) -> IO ()
-saveGame (state, g) = do
+-- | We save a simple serialized version of the current state.
+saveGame :: State -> IO ()
+saveGame state = do
   f <- file (sconfig state)
-  encodeEOF f (state, g)
+  encodeEOF f state
 
 -- | Restore a saved game. Returns either the current game state,
 -- or a string containing an error message if restoring the game fails.
-restoreGame :: Config.CP -> IO (Either (State, String) String)
+restoreGame :: Config.CP -> IO (Either State String)
 restoreGame config =
   E.catch (do
              mvBkp config
              f <- file config
-             sg <- strictDecodeEOF (f ++ ".bkp")
-             return (Left sg))
+             state <- strictDecodeEOF (f ++ ".bkp")
+             return (Left state))
           (\ e -> case e :: E.IOException of
                     _ -> return (Right $
                                    "Restore failed: "
