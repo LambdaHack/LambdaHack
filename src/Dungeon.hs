@@ -45,6 +45,7 @@ sizeDungeon (Dungeon dng) = M.size dng
 
 type Corridor = [Loc]
 type Room = Area
+type StairsLoc = Maybe TeleLoc
 
 -- | Create a random room according to given parameters.
 mkRoom :: Int ->      -- ^ border columns
@@ -131,7 +132,7 @@ newTile :: Kind.Id TileKind -> (Tile, Tile)
 newTile t = (Tile t Nothing Nothing [], Tile.unknownTile)
 
 -- | Create a new stairs tile.
-newStairsTile :: Kind.Id TileKind -> Maybe WorldLoc -> (Tile, Tile)
+newStairsTile :: Kind.Id TileKind -> TeleLoc -> (Tile, Tile)
 newStairsTile t l = (Tile t l Nothing [], Tile.unknownTile)
 
 -- | Create a new door tile.
@@ -140,7 +141,7 @@ newDoorTile t s = (Tile t Nothing s [], Tile.unknownTile)
 
 -- | Create a level consisting of only one room. Optionally, insert some walls.
 emptyRoom :: (Level -> Rnd (LMap -> LMap)) -> LevelConfig -> LevelId
-             -> Rnd (Maybe (Maybe WorldLoc) -> Maybe (Maybe WorldLoc) -> Level,
+             -> Rnd (StairsLoc -> StairsLoc -> Level,
                      Loc, Loc)
 emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
   do
@@ -164,14 +165,16 @@ emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
     return (level, su, sd)
 
 -- | For a bigroom level: Create a level consisting of only one, empty room.
-bigRoom :: LevelConfig ->
-           LevelId -> Rnd (Maybe (Maybe WorldLoc) -> Maybe (Maybe WorldLoc) -> Level, Loc, Loc)
+bigRoom :: LevelConfig -> LevelId
+           -> Rnd (StairsLoc -> StairsLoc -> Level,
+                   Loc, Loc)
 bigRoom = emptyRoom (\ _lvl -> return id)
 
 -- | For a noiseroom level: Create a level consisting of only one room
 -- with randomly distributed pillars.
-noiseRoom :: LevelConfig ->
-             LevelId -> Rnd (Maybe (Maybe WorldLoc) -> Maybe (Maybe WorldLoc) -> Level, Loc, Loc)
+noiseRoom :: LevelConfig -> LevelId
+             -> Rnd (StairsLoc -> StairsLoc -> Level,
+                     Loc, Loc)
 noiseRoom cfg =
   let addRocks lvl = do
         rs <- rollPillars cfg lvl
@@ -263,10 +266,9 @@ as follows:
     randomly chosen rooms.
 -}
 
-rogueRoom :: LevelConfig ->
-         LevelId ->
-         Rnd (Maybe (Maybe WorldLoc) -> Maybe (Maybe WorldLoc) ->
-              Level, Loc, Loc)
+rogueRoom :: LevelConfig -> LevelId
+             -> Rnd (StairsLoc -> StairsLoc -> Level,
+                     Loc, Loc)
 rogueRoom cfg nm =
   do
     lgrid    <- levelGrid cfg

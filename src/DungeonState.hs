@@ -8,10 +8,10 @@ import Random
 import qualified Config
 import WorldLoc
 
-connect ::
-  Maybe (Maybe WorldLoc) ->
-  [(Maybe (Maybe WorldLoc) -> Maybe (Maybe WorldLoc) -> Level, Loc, Loc)] ->
-  (Level, [Level])
+connect :: StairsLoc ->
+           [(StairsLoc -> StairsLoc -> Level,
+             Loc, Loc)]
+           -> (Level, [Level])
 connect au [(x,_,_)] = (x au Nothing, [])
 connect au ((x,_,d):ys@((_,u,_):_)) =
   let (z, zs) = connect (Just (Just (lname x',d))) ys
@@ -20,8 +20,7 @@ connect au ((x,_,d):ys@((_,u,_):_)) =
 connect au _ = assert `failure` au
 
 matchGenerator :: Int -> Maybe String -> LevelConfig -> LevelId
-                  -> Rnd (Maybe (Maybe WorldLoc) ->
-                            Maybe (Maybe WorldLoc) -> Level,
+                  -> Rnd (StairsLoc -> StairsLoc -> Level,
                           Loc, Loc)
 matchGenerator _ Nothing = rogueRoom  -- the default
 matchGenerator _ (Just "bigRoom")   = bigRoom
@@ -31,8 +30,7 @@ matchGenerator n (Just s) =
   error $ "Unknown dungeon generator " ++ s ++ " for level " ++ show n ++ "."
 
 findGenerator :: Config.CP -> Int
-                 -> Rnd (Maybe (Maybe WorldLoc) ->
-                           Maybe (Maybe WorldLoc) -> Level,
+                 -> Rnd (StairsLoc -> StairsLoc -> Level,
                          Loc, Loc)
 findGenerator config n =
   let ln = "LambdaCave_" ++ show n

@@ -13,11 +13,13 @@ import qualified Kind
 
 data Tile = Tile
   { tkind     :: !(Kind.Id TileKind)
-  , tteleport :: Maybe WorldLoc  -- TODO
+  , tteleport :: TeleLoc  -- TODO
   , tsecret   :: Maybe Int  -- TODO
   , titems    :: [Item]
   }
   deriving Show
+
+type TeleLoc = Maybe WorldLoc
 
 instance Binary Tile where
   put (Tile t l s is) = put t >> put l >> put s >> put is
