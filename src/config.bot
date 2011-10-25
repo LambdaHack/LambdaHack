@@ -25,8 +25,9 @@ fovMode: digital
 ;fovMode: permissive
 ;fovMode: shadow
 fovRadius: 4
-;startingRandomGenerator: 6
-;BotAllure 4 20000000 | Allure > /tmp/log
+;startingRandomGenerator: 42
+;dungeonRandomGenerator: 42
+;BotAllure 42 20000000 | Allure > /tmp/log
 
 ; paths to various game files; relative to ~/.Allure/
 ; (or analogous prefixes for other OSes, see getAppUserDataDirectory)
