@@ -30,7 +30,7 @@ type EdgeInterval = (Edge, Edge)
 
 -- | Integer division, rounding up.
 divUp :: Int -> Int -> Int
-divUp n k = - (-n) `div` k
+divUp n k = (n + k - 1) `div` k
 
 -- | Maximal element of a non-empty list. Prefers elements from the rear,
 -- which is essential for PFOV, to avoid ill-defined lines.
