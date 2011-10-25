@@ -16,6 +16,7 @@ import ActorState
 import Content.ActorKind
 import qualified Save
 import qualified Kind
+import Random
 
 newtype Action a = Action
   { runAction ::
@@ -64,6 +65,14 @@ handlerToIO sess state msg h =
     (ioError $ userError "unhandled abort")
     state
     msg
+
+-- | Invoke pseudo-random computation with the generator kept in the state.
+rndToAction :: Rnd a -> Action a
+rndToAction r = do
+  g <- gets srandom
+  let (a, ng) = runState r g
+  modify (\ state -> state {srandom = ng})
+  return a
 
 -- | Invoking a session command.
 session :: (Session -> Action a) -> Action a

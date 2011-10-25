@@ -107,7 +107,7 @@ handleMonster actor =
     per <- currentPerception
     -- Run the AI: choses an action from those given by the AI strategy.
     action <-
-      liftIO $ rndToIO $
+      rndToAction $
         frequency (head (runStrategy (strategy actor state per .| wait actor)))
     action
     handleMonsters

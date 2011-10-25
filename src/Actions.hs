@@ -7,7 +7,6 @@ import qualified Data.Map as M
 import qualified Data.IntMap as IM
 import Data.Maybe
 import qualified Data.Set as S
-import qualified System.Random as R
 
 import Utils.Assert
 import Action
@@ -25,7 +24,6 @@ import ActorState
 import Content.ActorKind
 import ActorAdd
 import Perception
-import Random
 import State
 import qualified Config
 import qualified Save
@@ -61,9 +59,7 @@ saveGame =
       then do
         -- Save the game state
         state <- get
-        liftIO $ do
-          g <- R.getStdGen
-          Save.saveGame state{srandom = g}
+        liftIO $ Save.saveGame state
         ln <- gets (lname . slevel)
         let total = calculateTotal state
             status = H.Camping ln
@@ -367,8 +363,7 @@ lvlChange vdir =
                   -- Create a backup of the savegame.
                   state <- get
                   liftIO $ do
-                    g <- R.getStdGen
-                    Save.saveGame state{srandom = g}
+                    Save.saveGame state
                     Save.mvBkp (sconfig state)
                   playerAdvanceTime
       _ -> -- no stairs in the right direction
@@ -635,7 +630,7 @@ generateMonster :: Action ()
 generateMonster =
   do  -- TODO: simplify
     state  <- get
-    nstate <- liftIO $ rndToIO $ rollMonster state
+    nstate <- rndToAction $ rollMonster state
     modify (const nstate)
 
 -- | Possibly regenerate HP for all actors on the current level.

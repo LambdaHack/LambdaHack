@@ -1,4 +1,4 @@
-module Random where
+module Random (module Random, runState) where
 
 import qualified Data.Binary as Binary
 import Data.Ratio
@@ -57,14 +57,6 @@ frequency (Frequency fs) =
   frequency' m ((n, x) : xs)
     | m <= n            = x
     | otherwise         = frequency' (m - n) xs
-
-rndToIO :: Rnd a -> IO a
-rndToIO r =
-  do
-    g <- R.getStdGen
-    let (x,g') = runState r g
-    R.setStdGen g'
-    return x
 
 -- ** Arithmetic operations on Rnd.
 

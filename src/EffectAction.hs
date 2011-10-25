@@ -55,7 +55,7 @@ effectToAction Effect.Heal _ _source target power = do
       updateAnyActor target (addHp power)  -- TODO: duplicates maxDice, etc.
       return (True, subjectActorVerb tm "feel" ++ " better.")
 effectToAction (Effect.Wound nDm) verbosity source target power = do
-  n <- liftIO $ rndToIO $ rollDice nDm
+  n <- rndToAction $ rollDice nDm
   if n + power <= 0 then nullEffect else do
     focusIfAHero target
     tm <- gets (getActor target)
@@ -208,8 +208,8 @@ summonHeroes n loc =
 
 summonMonsters :: Int -> Loc -> Action ()
 summonMonsters n loc = do
-  (mk, k) <- liftIO $ rndToIO $ frequency Kind.frequency
-  hp <- liftIO $ rndToIO $ rollDice $ bhp k
+  (mk, k) <- rndToAction $ frequency Kind.frequency
+  hp <- rndToAction $ rollDice $ bhp k
   modify (\ state ->
            iterate (addMonster mk hp loc) state !! n)
 
