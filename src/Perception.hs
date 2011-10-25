@@ -6,7 +6,6 @@ import qualified Data.IntMap as IM
 import Data.Maybe
 import Control.Monad
 
-import Utils.Assert
 import Geometry
 import State
 import Level
@@ -71,7 +70,10 @@ perception_ state@(State { splayer = pl,
                            sconfig  = config,
                            ssensory = sensory }) =
   let mode   = Config.get config "engine" "fovMode"
-      radius = Config.get config "engine" "fovRadius"
+      radius = let r = Config.get config "engine" "fovRadius"
+               in if r < 1
+                  then error $ "FOV radius is " ++ show r ++ ", should be >= 1"
+                  else r
       fovMode m = if not $ bsight $ Kind.getKind $ akind m
                   then Blind
                   else
@@ -86,7 +88,7 @@ perception_ state@(State { splayer = pl,
               "permissive" -> Permissive radius
               "digital"    -> Digital radius
               "shadow"     -> Shadow
-              _            -> assert `failure` mode
+              _            -> error $ "Unknown FOV mode: " ++ show mode
 
       -- Perception for a player-controlled monster on the current level.
       pper = if isAMonster pl && memActor pl state

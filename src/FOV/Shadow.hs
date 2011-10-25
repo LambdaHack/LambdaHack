@@ -81,7 +81,7 @@ scan tr l d (s0, e) =
              else Nothing  -- start in shadow
     in
         -- traceShow (d,s,e,ps,pe) $
-        assert (pe >= ps && ps >= 0 && d >= 0 && e >= 0 && s0 >= 0
+        assert (d >= 0 && e >= 0 && s0 >= 0 && pe >= ps && ps >= 0
                 `blame` (d,s0,e,ps,pe)) $
         S.union (S.fromList [tr (d, p) | p <- [ps..pe]]) (mscan st ps pe)
   where

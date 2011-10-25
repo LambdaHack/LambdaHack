@@ -29,7 +29,7 @@ import qualified Tile
 scan :: Distance -> (Bump -> Loc) -> LMap -> Distance -> EdgeInterval
          -> S.Set Loc
 scan r ptr l d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps)) =
-  assert (pe + 1 >= ps0 && ps0 >= 0 && r >= d && d >= 0
+  assert (r >= d && d >= 0 && pe + 1 >= ps0 && ps0 >= 0
           `blame` (r,d,s0,e,ps0,pe)) $
   if illegal
   then S.empty

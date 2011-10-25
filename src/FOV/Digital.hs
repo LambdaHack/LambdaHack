@@ -23,7 +23,7 @@ import qualified Tile
 scan :: Distance -> (Bump -> Loc) -> LMap -> Distance -> EdgeInterval
          -> S.Set Loc
 scan r tr l d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps)) =
-  assert (pe >= ps0 && r >= d && d >= 0 `blame` (r,d,s0,e,ps0,pe)) $
+  assert (r >= d && d >= 0 && pe >= ps0 `blame` (r,d,s0,e,ps0,pe)) $
   S.union outside (S.fromList [tr (B(d, p)) | p <- [ps0..pe]])
     -- the scanned area is a square, which is a sphere in this metric; good
     where
