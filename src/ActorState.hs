@@ -3,7 +3,6 @@ module ActorState where
 import qualified Data.List as L
 import qualified Data.Set as S
 import qualified Data.IntSet as IS
-import qualified Data.Map as M
 import qualified Data.IntMap as IM
 import Control.Monad
 import Data.Maybe
@@ -23,18 +22,18 @@ import WorldLoc
 -- Starts at current level and then from first levels,
 -- to keep the dungeon lazy if the actor found.
 findActorAnyLevel :: ActorId -> State -> (LevelId, Actor)
-findActorAnyLevel actor state@State{slevel = lvl0, sdungeon = Dungeon m0} =
+findActorAnyLevel actor state@State{slevel = lvl0, sdungeon} =
   assert (not (absentHero actor state) `blame` actor) $
   let chk lvl =
         fmap (\ m -> (lname lvl, m)) $
         case actor of
           AHero n    -> IM.lookup n (lheroes lvl)
           AMonster n -> IM.lookup n (lmonsters lvl)
-  in case mapMaybe chk (lvl0 : M.elems m0) of
+  in case mapMaybe chk (lvl0 : toList sdungeon) of
     []    -> assert `failure` actor
     res:_ -> res  -- checking if res is unique would break laziness
 
--- | Checks whether an actor is a hero, but not a part of the party.
+-- | Checks whether an actor is a hero, but not a member of the party.
 absentHero :: ActorId -> State -> Bool
 absentHero a State{sparty} =
   case a of
@@ -49,11 +48,10 @@ getPlayerBody state =
 -- | The list of actors and levels for all heroes in the dungeon.
 -- Heroes from the current level go first. Tries to keep dungeon lazy.
 allHeroesAnyLevel :: State -> [(ActorId, LevelId)]
-allHeroesAnyLevel state =
-  let Dungeon m = sdungeon state
-      one (Level{lname, lheroes}) =
+allHeroesAnyLevel State{slevel, sdungeon} =
+  let one (Level{lname, lheroes}) =
         L.map (\ (i, _) -> (AHero i, lname)) (IM.assocs lheroes)
-  in L.concatMap one (slevel state : M.elems m)
+  in L.concatMap one (slevel : toList sdungeon)
 
 updateAnyActorBody :: ActorId -> (Actor -> Actor) -> State -> State
 updateAnyActorBody actor f state =
@@ -63,10 +61,9 @@ updateAnyActorBody actor f state =
        AMonster n -> updateAnyLevel (updateMonsters $ IM.adjust f n) ln state
 
 updateAnyLevel :: (Level -> Level) -> LevelId -> State -> State
-updateAnyLevel f ln state@(State { slevel = level,
-                                   sdungeon = Dungeon dng })
+updateAnyLevel f ln state@(State { slevel = level, sdungeon })
   | ln == lname level = updateLevel f state
-  | otherwise = updateDungeon (const $ Dungeon $ M.adjust f ln dng) state
+  | otherwise = updateDungeon (const $ adjust f ln sdungeon) state
 
 -- | Calculate the location of player's target.
 targetToLoc :: S.Set Loc -> State -> Maybe Loc

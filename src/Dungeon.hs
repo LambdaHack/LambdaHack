@@ -1,4 +1,10 @@
-module Dungeon where
+module Dungeon
+  (Dungeon, StairsLoc, LevelConfig,
+   defaultLevelConfig, normalLevelSize,
+   rogueRoom, bigRoom, noiseRoom,
+   putDungeonLevel, getDungeonLevel, fromList, toList, adjust
+   )
+  where
 
 import Control.Monad
 import qualified System.Random as R
@@ -25,12 +31,18 @@ newtype Dungeon = Dungeon (M.Map LevelId Level)
   deriving Show
 
 instance Binary Dungeon where
-  put (Dungeon dng) = put (M.elems dng)
-  get = liftM dungeon get
+  put dng = put (toList dng)
+  get = liftM fromList get
 
 -- | Create a dungeon from a list of levels.
-dungeon :: [Level] -> Dungeon
-dungeon = Dungeon . M.fromList . L.map (\ l -> (lname l, l))
+fromList :: [Level] -> Dungeon
+fromList = Dungeon . M.fromList . L.map (\ l -> (lname l, l))
+
+toList :: Dungeon -> [Level]
+toList (Dungeon m) = M.elems m
+
+adjust :: (Level -> Level) -> LevelId -> Dungeon -> Dungeon
+adjust f ln (Dungeon m) = Dungeon (M.adjust f ln m)
 
 -- | Extract a level from a dungeon.
 getDungeonLevel :: LevelId -> Dungeon -> (Level, Dungeon)
@@ -39,9 +51,6 @@ getDungeonLevel ln (Dungeon dng) = (dng M.! ln, Dungeon (M.delete ln dng))
 -- | Put a level into a dungeon.
 putDungeonLevel :: Level -> Dungeon -> Dungeon
 putDungeonLevel lvl (Dungeon dng) = Dungeon (M.insert (lname lvl) lvl dng)
-
-sizeDungeon :: Dungeon -> Int
-sizeDungeon (Dungeon dng) = M.size dng
 
 type Corridor = [Loc]
 type Room = Area
@@ -229,8 +238,8 @@ defaultLevelConfig d =
     depth             = d
   }
 
-largeLevelConfig :: Int -> LevelConfig
-largeLevelConfig d =
+_largeLevelConfig :: Int -> LevelConfig
+_largeLevelConfig d =
   (defaultLevelConfig d) {
     levelGrid         = return (7,10),
     levelSize         = (77,231),

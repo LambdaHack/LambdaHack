@@ -11,7 +11,6 @@ import qualified Data.Set as S
 import Utils.Assert
 import Action
 import Display hiding (display)
-import Dungeon
 import Geometry
 import Grammar
 import qualified HighScores as H
@@ -292,10 +291,12 @@ actorOpenDoor actor dir = do
 lvlDescend :: Int -> Action ()
 lvlDescend k =
   do
-    state <- get
-    let n = levelNumber (lname (slevel state))
+    level  <- gets slevel
+    config <- gets sconfig
+    let n = levelNumber (lname level)
         nln = n + k
-    when (nln < 1 || nln > sizeDungeon (sdungeon state) + 1) $
+        depth = Config.get config "dungeon" "depth"
+    when (nln < 1 || nln > depth) $
       abortWith "no more levels in this direction"
     lvlSwitch (LambdaCave nln)
       >>= (assert `checkM` (k == 0 ||)) (nln, "dungeon has a cycle", k)

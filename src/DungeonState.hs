@@ -44,4 +44,4 @@ generate config = do
   levels <- mapM (findGenerator config) [1..d]
   let (lvl, lvls) = connect (Just Nothing) levels
       ploc = (\ (_,x,_) -> x) (head levels)
-  return (ploc, lvl, dungeon lvls)
+  return (ploc, lvl, fromList lvls)
