@@ -1,5 +1,9 @@
 module DungeonState where
 
+import qualified System.Random as R
+import qualified Data.List as L
+import qualified Control.Monad.State as MState
+
 import Utils.Assert
 import Geometry
 import Level
@@ -39,9 +43,18 @@ findGenerator config n =
 
 -- | Generate the dungeon for a new game.
 generate :: Config.CP -> Rnd (Loc, Level, Dungeon)
-generate config = do
+generate config =
   let d = Config.get config "dungeon" "depth"
-  levels <- mapM (findGenerator config) [1..d]
-  let (lvl, lvls) = connect (Just Nothing) levels
-      ploc = (\ (_,x,_) -> x) (head levels)
-  return (ploc, lvl, fromList lvls)
+      gen :: R.StdGen -> Int -> (R.StdGen, (StairsLoc -> StairsLoc -> Level,
+                                            Loc, Loc))
+      gen g k =
+        let (g1, g2) = R.split g
+            (res, _) = MState.runState (findGenerator config k) g1
+        in (g2, res)
+      con :: R.StdGen -> ((Loc, Level, Dungeon), R.StdGen)
+      con g =
+        let (gd, levels) = L.mapAccumL gen g [1..d]
+            (lvl, lvls) = connect (Just Nothing) levels
+            ploc = (\ (_,x,_) -> x) (head levels)
+        in ((ploc, lvl, fromList lvls), gd)
+  in MState.state con

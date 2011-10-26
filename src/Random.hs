@@ -1,4 +1,9 @@
-module Random (module Random, runState) where
+module Random
+  (Rnd, randomR, binaryChoice, chance,
+   roll, oneOf, frequency, (*~), (~+~),
+   RollDice, rollDice, maxDice, minDice, meanDice,
+   RollQuad, rollQuad, intToQuad)
+  where
 
 import qualified Data.Binary as Binary
 import Data.Ratio

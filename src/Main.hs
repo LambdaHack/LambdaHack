@@ -2,12 +2,12 @@ module Main where
 
 import System.Directory
 import qualified System.Random as R
+import qualified Control.Monad.State as MState
 
 import Action
 import State
 import DungeonState
 import qualified Display
-import Random
 import qualified Save
 import Turn
 import qualified Config
@@ -47,8 +47,8 @@ start internalSession = do
             let gs = show g
                 c = Config.set config "engine" "dungeonRandomGenerator" gs
             return (g, c)
-      let ((ploc, lvl, dng), _) = runState (generate configD) dg
-          (asso, _) = runState dungeonAssocs dg
+      let ((ploc, lvl, dng), ag) = MState.runState (generate configD) dg
+          (asso, _) = MState.runState dungeonAssocs ag
       (sg, configS) <-
         case Config.getOption configD "engine" "startingRandomGenerator" of
           Just sg ->
