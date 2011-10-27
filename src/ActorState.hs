@@ -24,12 +24,12 @@ import WorldLoc
 findActorAnyLevel :: ActorId -> State -> (LevelId, Actor)
 findActorAnyLevel actor state@State{slevel = lvl0, sdungeon} =
   assert (not (absentHero actor state) `blame` actor) $
-  let chk lvl =
-        fmap (\ m -> (lname lvl, m)) $
+  let chk (ln, lvl) =
+        fmap (\ m -> (ln, m)) $
         case actor of
           AHero n    -> IM.lookup n (lheroes lvl)
           AMonster n -> IM.lookup n (lmonsters lvl)
-  in case mapMaybe chk (lvl0 : toList sdungeon) of
+  in case mapMaybe chk ((lname lvl0, lvl0) : toList sdungeon) of
     []    -> assert `failure` actor
     res:_ -> res  -- checking if res is unique would break laziness
 
@@ -49,9 +49,9 @@ getPlayerBody state =
 -- Heroes from the current level go first. Tries to keep dungeon lazy.
 allHeroesAnyLevel :: State -> [(ActorId, LevelId)]
 allHeroesAnyLevel State{slevel, sdungeon} =
-  let one (Level{lname, lheroes}) =
-        L.map (\ (i, _) -> (AHero i, lname)) (IM.assocs lheroes)
-  in L.concatMap one (slevel : toList sdungeon)
+  let one (ln, Level{lheroes}) =
+        L.map (\ (i, _) -> (AHero i, ln)) (IM.assocs lheroes)
+  in L.concatMap one ((lname slevel, slevel) : toList sdungeon)
 
 updateAnyActorBody :: ActorId -> (Actor -> Actor) -> State -> State
 updateAnyActorBody actor f state =

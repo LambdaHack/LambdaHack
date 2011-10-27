@@ -35,11 +35,11 @@ instance Binary Dungeon where
   get = liftM fromList get
 
 -- | Create a dungeon from a list of levels.
-fromList :: [Level] -> Dungeon
-fromList = Dungeon . M.fromList . L.map (\ l -> (lname l, l))
+fromList :: [(LevelId, Level)] -> Dungeon
+fromList = Dungeon . M.fromList
 
-toList :: Dungeon -> [Level]
-toList (Dungeon m) = M.elems m
+toList :: Dungeon -> [(LevelId, Level)]
+toList (Dungeon m) = M.assocs m
 
 adjust :: (Level -> Level) -> LevelId -> Dungeon -> Dungeon
 adjust f ln (Dungeon m) = Dungeon (M.adjust f ln m)

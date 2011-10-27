@@ -35,15 +35,15 @@ findGenerator config n depth =
 generate :: Config.CP -> Rnd (Loc, Level, Dungeon)
 generate config =
   let depth = Config.get config "dungeon" "depth"
-      gen :: R.StdGen -> Int -> (R.StdGen, Level)
+      gen :: R.StdGen -> Int -> (R.StdGen, (LevelId, Level))
       gen g k =
         let (g1, g2) = R.split g
             (res, _) = MState.runState (findGenerator config k depth) g1
-        in (g2, res)
+        in (g2, (LambdaCave k, res))
       con :: R.StdGen -> ((Loc, Level, Dungeon), R.StdGen)
       con g =
         let (gd, levels) = L.mapAccumL gen g [1..depth]
-            (lvl, lvls) = (head levels, tail levels)
+            (lvl, lvls) = (snd (head levels), tail levels)
             ploc = fst (lstairs lvl)
         in ((ploc, lvl, fromList lvls), gd)
   in MState.state con
