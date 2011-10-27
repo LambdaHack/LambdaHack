@@ -25,7 +25,7 @@ data Level = Level
   , lsmell    :: SMap
   , lmap      :: LMap
   , lmeta     :: String
-  , lstairs   :: (Loc, Loc)
+  , lstairs   :: (Loc, Loc) -- ^ here the stairs (down, up) from other levels end
   }
   deriving Show
 

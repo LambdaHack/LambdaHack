@@ -1,5 +1,5 @@
 module Dungeon
-  (Dungeon, StairsLoc, LevelConfig,
+  (Dungeon, LevelConfig,
    defaultLevelConfig, normalLevelSize,
    rogueRoom, bigRoom, noiseRoom,
    putDungeonLevel, getDungeonLevel, fromList, toList, adjust
@@ -54,7 +54,6 @@ putDungeonLevel lvl (Dungeon dng) = Dungeon (M.insert (lname lvl) lvl dng)
 
 type Corridor = [Loc]
 type Room = Area
-type StairsLoc = Maybe TeleLoc
 
 -- | Create a random room according to given parameters.
 mkRoom :: Int ->      -- ^ border columns
@@ -145,41 +144,38 @@ newDoorTile :: Kind.Id TileKind -> Maybe Int -> (Tile, Tile)
 newDoorTile t s = (Tile t s [], Tile.unknownTile)
 
 -- | Create a level consisting of only one room. Optionally, insert some walls.
-emptyRoom :: (Level -> Rnd (LMap -> LMap)) -> LevelConfig -> LevelId
-             -> Rnd (StairsLoc -> StairsLoc -> Level,
-                     Loc, Loc)
-emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
+emptyRoom :: (Level -> Rnd (LMap -> LMap)) -> LevelConfig -> LevelId -> LevelId
+             -> Rnd Level
+emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm lastNm =
   do
     let lm0 = digRoom True ((1,1),(sy-1,sx-1)) (emptyLMap (sy,sx))
-    let smap = M.fromList [ ((y,x),-100) | y <- [0..sy], x <- [0..sx] ]
-    let lvl = Level nm emptyParty (sy,sx) emptyParty smap lm0 "" ((0, 0), (0, 0))
+        smap = M.fromList [ ((y,x),-100) | y <- [0..sy], x <- [0..sx] ]
+        lvl = Level nm emptyParty (sy,sx) emptyParty smap lm0 "" ((0, 0), (0, 0))
     -- locations of the stairs
     su <- findLoc lvl (const Tile.isBoring)
     sd <- findLoc lvl (\ l t -> Tile.isBoring t
                                 && distance (su,l) > minStairsDistance cfg)
     is <- rollItems cfg lvl su
-    addRocks <- addRocksRnd lvl
     let addItem lm (l,it) =
           M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l lm
-        flmap lu ld =
-          addRocks $
-          maybe id (\ l -> M.insert su (newTile Tile.stairsLightUpId)) lu $
-          maybe id (\ l -> M.insert sd (newTile Tile.stairsLightDownId)) ld $
-          (\lm -> L.foldl' addItem lm is) lm0
-        level lu ld = Level nm emptyParty (sy,sx) emptyParty smap (flmap lu ld) "bigroom" (su, sd)
-    return (level, su, sd)
+        lm1 = L.foldl' addItem lm0 is
+        lm2 = if nm == lastNm
+              then lm1
+              else M.insert sd (newTile Tile.stairsLightDownId) lm1
+        lm3 = M.insert su (newTile Tile.stairsLightUpId) lm2
+    addRocks <- addRocksRnd lvl
+    let lm4 = addRocks lm3
+        level = Level
+                  nm emptyParty (sy,sx) emptyParty smap lm4 "bigroom" (su, sd)
+    return level
 
 -- | For a bigroom level: Create a level consisting of only one, empty room.
-bigRoom :: LevelConfig -> LevelId
-           -> Rnd (StairsLoc -> StairsLoc -> Level,
-                   Loc, Loc)
+bigRoom :: LevelConfig -> LevelId -> LevelId -> Rnd Level
 bigRoom = emptyRoom (\ _lvl -> return id)
 
 -- | For a noiseroom level: Create a level consisting of only one room
 -- with randomly distributed pillars.
-noiseRoom :: LevelConfig -> LevelId
-             -> Rnd (StairsLoc -> StairsLoc -> Level,
-                     Loc, Loc)
+noiseRoom :: LevelConfig -> LevelId -> LevelId -> Rnd Level
 noiseRoom cfg =
   let addRocks lvl = do
         rs <- rollPillars cfg lvl
@@ -271,10 +267,8 @@ as follows:
     randomly chosen rooms.
 -}
 
-rogueRoom :: LevelConfig -> LevelId
-             -> Rnd (StairsLoc -> StairsLoc -> Level,
-                     Loc, Loc)
-rogueRoom cfg nm =
+rogueRoom :: LevelConfig -> LevelId -> LevelId -> Rnd Level
+rogueRoom cfg nm lastNm =
   do
     lgrid    <- levelGrid cfg
     lminroom <- minRoomSize cfg
@@ -349,15 +343,23 @@ rogueRoom cfg nm =
             (\ l _ -> distance (su,l) > minStairsDistance cfg)
     -- determine number of items, items and locations for the items
     is <- rollItems cfg lvl su
-    -- generate map and level from the data
-    let meta = show allConnects
-    return (\ lu ld ->
-      let flmap = maybe id (\ l -> M.update (\ (t, _r) -> Just $ newTile (if isLit t then Tile.stairsLightUpId else Tile.stairsDarkUpId)) su) lu $
-                  maybe id (\ l -> M.update (\ (t, _r) -> Just $ newTile  (if isLit t then Tile.stairsLightDownId else Tile.stairsDarkDownId)) sd) ld $
-                  L.foldr (\ (l,it) f -> M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l . f) id is
-                  dlmap
-      in  Level nm emptyParty (levelSize cfg) emptyParty
-            smap flmap meta (su, sd), su, sd)
+    let lm1 = L.foldr (\ (l, it) f -> M.update (\ (t, r) -> Just (t { titems = it : titems t }, r)) l . f) id is dlmap
+        lm2 = if nm == lastNm
+              then lm1
+              else M.update (\ (t, _r) ->
+                              Just $ newTile (if isLit t
+                                              then Tile.stairsLightDownId
+                                              else Tile.stairsDarkDownId))
+                   sd lm1
+        lm3 = M.update (\ (t, _r) ->
+                         Just $ newTile (if isLit t
+                                         then Tile.stairsLightUpId
+                                         else Tile.stairsDarkUpId))
+              su lm2
+        -- generate map and level from the data
+        meta = show allConnects
+    return $
+      Level nm emptyParty (levelSize cfg) emptyParty smap lm3 meta (su, sd)
 
 rollItems :: LevelConfig -> Level -> Loc -> Rnd [(Loc, Item)]
 rollItems cfg lvl ploc =

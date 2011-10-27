@@ -8,7 +8,6 @@ import qualified Data.List as L
 import Item
 import Content.TileKind
 import qualified Feature as F
-import WorldLoc
 import qualified Kind
 
 data Tile = Tile
@@ -17,8 +16,6 @@ data Tile = Tile
   , titems    :: [Item]
   }
   deriving Show
-
-type TeleLoc = Maybe WorldLoc
 
 instance Binary Tile where
   put (Tile t s is) = put t >> put s >> put is
