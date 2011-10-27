@@ -246,7 +246,7 @@ playerCloseDoor dir = do
       case Tile.titems t of
         [] ->
           if unoccupied hms dloc
-          then let nt  = Tile Tile.doorClosedId Nothing Nothing []
+          then let nt  = Tile Tile.doorClosedId Nothing []
                    adj = M.adjust (\ (_, mt) -> (nt, mt)) dloc
                in modify (updateLevel (updateLMap adj))
           else abortWith "blocked"  -- by monsters or heroes
@@ -281,7 +281,7 @@ actorOpenDoor actor dir = do
                  hasFeature F.Hidden t)
          then neverMind isVerbose  -- not doors at all
          else
-           let nt  = Tile Tile.doorOpenId Nothing Nothing (Tile.titems t)
+           let nt  = Tile Tile.doorOpenId Nothing (Tile.titems t)
                adj = M.adjust (\ (_, mt) -> (nt, mt)) dloc
            in  modify (updateLevel (updateLMap adj))
   advanceTime actor
@@ -427,13 +427,13 @@ search =
     let delta = case strongestItem pitems "ring" of
                   Just i  -> 1 + ipower i
                   Nothing -> 1
-        searchTile (t@(Tile _ l s x), t') =
+        searchTile (t@(Tile _ s x), t') =
           if hasFeature F.Hidden t
           then
             let k = fromJust s - delta
             in if k > 0
-               then (Tile Tile.doorSecretId l (Just k) x, t')
-               else (Tile Tile.doorClosedId l Nothing x,  t')
+               then (Tile Tile.doorSecretId (Just k) x, t')
+               else (Tile Tile.doorClosedId Nothing x,  t')
           else (t, t')
         f l m = M.adjust searchTile (shift ploc m) l
         slmap = L.foldl' f lm moves

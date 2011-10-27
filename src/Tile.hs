@@ -13,7 +13,6 @@ import qualified Kind
 
 data Tile = Tile
   { tkind     :: !(Kind.Id TileKind)
-  , tteleport :: TeleLoc  -- TODO
   , tsecret   :: Maybe Int  -- TODO
   , titems    :: [Item]
   }
@@ -22,8 +21,8 @@ data Tile = Tile
 type TeleLoc = Maybe WorldLoc
 
 instance Binary Tile where
-  put (Tile t l s is) = put t >> put l >> put s >> put is
-  get = liftM4 Tile get get get get
+  put (Tile t s is) = put t >> put s >> put is
+  get = liftM3 Tile get get get
 
 wallId, openingId, floorLightId, floorDarkId, unknownId, doorOpenId, doorClosedId, doorSecretId, stairsLightUpId, stairsLightDownId, stairsDarkUpId, stairsDarkDownId :: Kind.Id TileKind
 wallId = Kind.getId (\ t -> usymbol t == '#' && (L.null $ ufeature t))
@@ -42,7 +41,7 @@ stairsDarkUpId = Kind.getId (kindHas [F.Climbable] [F.Lit])
 stairsDarkDownId = Kind.getId (kindHas [F.Descendable] [F.Lit])
 
 unknownTile :: Tile
-unknownTile = Tile unknownId Nothing Nothing []
+unknownTile = Tile unknownId Nothing []
 
 -- | The player can't tell if the tile is a secret door or not.
 canBeSecretDoor :: Tile -> Bool

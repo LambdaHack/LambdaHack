@@ -133,20 +133,16 @@ digCorridors _ = M.empty
 
 mergeCorridor :: (Tile, Tile) -> (Tile, Tile) -> (Tile, Tile)
 mergeCorridor _ (t, u)                 | Tile.isWalkable t = (t, u)
-mergeCorridor _ (t@(Tile _ l s is), u) | Tile.isUnknown t  = (Tile Tile.floorDarkId l s is, u)
-mergeCorridor _ (Tile _ l s is, u)                         = (Tile Tile.openingId l s is, u)
+mergeCorridor _ (t@(Tile _ s is), u) | Tile.isUnknown t  = (Tile Tile.floorDarkId s is, u)
+mergeCorridor _ (Tile _ s is, u)                         = (Tile Tile.openingId s is, u)
 
 -- | Create a new tile.
 newTile :: Kind.Id TileKind -> (Tile, Tile)
-newTile t = (Tile t Nothing Nothing [], Tile.unknownTile)
-
--- | Create a new stairs tile.
-newStairsTile :: Kind.Id TileKind -> TeleLoc -> (Tile, Tile)
-newStairsTile t l = (Tile t l Nothing [], Tile.unknownTile)
+newTile t = (Tile t Nothing [], Tile.unknownTile)
 
 -- | Create a new door tile.
 newDoorTile :: Kind.Id TileKind -> Maybe Int -> (Tile, Tile)
-newDoorTile t s = (Tile t Nothing s [], Tile.unknownTile)
+newDoorTile t s = (Tile t s [], Tile.unknownTile)
 
 -- | Create a level consisting of only one room. Optionally, insert some walls.
 emptyRoom :: (Level -> Rnd (LMap -> LMap)) -> LevelConfig -> LevelId
@@ -167,8 +163,8 @@ emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
           M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l lm
         flmap lu ld =
           addRocks $
-          maybe id (\ l -> M.insert su (newStairsTile Tile.stairsLightUpId l)) lu $
-          maybe id (\ l -> M.insert sd (newStairsTile Tile.stairsLightDownId l)) ld $
+          maybe id (\ l -> M.insert su (newTile Tile.stairsLightUpId)) lu $
+          maybe id (\ l -> M.insert sd (newTile Tile.stairsLightDownId)) ld $
           (\lm -> L.foldl' addItem lm is) lm0
         level lu ld = Level nm emptyParty (sy,sx) emptyParty smap (flmap lu ld) "bigroom" (su, sd)
     return (level, su, sd)
@@ -189,7 +185,7 @@ noiseRoom cfg =
         rs <- rollPillars cfg lvl
         let insertRock lm l =
               case lm `at` l of
-                t@(Tile _ _ _ []) | Tile.isBoring t -> M.insert l (newTile Tile.wallId) lm
+                t@(Tile _ _ []) | Tile.isBoring t -> M.insert l (newTile Tile.wallId) lm
                 _ -> lm
         return $ \ lm -> L.foldl' insertRock lm rs
   in  emptyRoom addRocks cfg
@@ -317,7 +313,7 @@ rogueRoom cfg nm =
     dlmap <- fmap M.fromList . mapM
                 (\ o@((y,x),(t,_r)) ->
                   case t of
-                    Tile _ _ _ _ | Tile.isOpening t ->
+                    Tile _ _ _ | Tile.isOpening t ->
                       do
                         -- openings have a certain chance to be doors;
                         -- doors have a certain chance to be open; and
@@ -356,8 +352,8 @@ rogueRoom cfg nm =
     -- generate map and level from the data
     let meta = show allConnects
     return (\ lu ld ->
-      let flmap = maybe id (\ l -> M.update (\ (t, _r) -> Just $ newStairsTile (if isLit t then Tile.stairsLightUpId else Tile.stairsDarkUpId) l) su) lu $
-                  maybe id (\ l -> M.update (\ (t, _r) -> Just $ newStairsTile  (if isLit t then Tile.stairsLightDownId else Tile.stairsDarkDownId) l) sd) ld $
+      let flmap = maybe id (\ l -> M.update (\ (t, _r) -> Just $ newTile (if isLit t then Tile.stairsLightUpId else Tile.stairsDarkUpId)) su) lu $
+                  maybe id (\ l -> M.update (\ (t, _r) -> Just $ newTile  (if isLit t then Tile.stairsLightDownId else Tile.stairsDarkDownId)) sd) ld $
                   L.foldr (\ (l,it) f -> M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l . f) id is
                   dlmap
       in  Level nm emptyParty (levelSize cfg) emptyParty
