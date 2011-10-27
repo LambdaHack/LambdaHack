@@ -31,6 +31,7 @@ import WorldLoc
 import Tile  -- TODO: qualified
 import qualified Kind
 import qualified Feature as F
+import DungeonState
 
 -- The Action stuff that is independent from ItemAction.hs.
 -- (Both depend on EffectAction.hs).
@@ -311,6 +312,7 @@ lvlChange vdir =
     pbody     <- gets getPlayerBody
     pl        <- gets splayer
     lm        <- gets (lmap . slevel)
+    st        <- get
     let loc = if targeting then clocation cursor else aloc pbody
         tile = lm `at` loc
         sdir | hasFeature F.Climbable tile = Just Up
@@ -319,7 +321,7 @@ lvlChange vdir =
     case sdir of
       Just vdir'
         | vdir == vdir' -> -- stairs are in the right direction
-          case tteleport tile of
+          case whereTo st loc of
             Nothing ->
               -- we are at the "end" of the dungeon
               if targeting

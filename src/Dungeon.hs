@@ -156,7 +156,7 @@ emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
   do
     let lm0 = digRoom True ((1,1),(sy-1,sx-1)) (emptyLMap (sy,sx))
     let smap = M.fromList [ ((y,x),-100) | y <- [0..sy], x <- [0..sx] ]
-    let lvl = Level nm emptyParty (sy,sx) emptyParty smap lm0 ""
+    let lvl = Level nm emptyParty (sy,sx) emptyParty smap lm0 "" ((0, 0), (0, 0))
     -- locations of the stairs
     su <- findLoc lvl (const Tile.isBoring)
     sd <- findLoc lvl (\ l t -> Tile.isBoring t
@@ -170,7 +170,7 @@ emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
           maybe id (\ l -> M.insert su (newStairsTile Tile.stairsLightUpId l)) lu $
           maybe id (\ l -> M.insert sd (newStairsTile Tile.stairsLightDownId l)) ld $
           (\lm -> L.foldl' addItem lm is) lm0
-        level lu ld = Level nm emptyParty (sy,sx) emptyParty smap (flmap lu ld) "bigroom"
+        level lu ld = Level nm emptyParty (sy,sx) emptyParty smap (flmap lu ld) "bigroom" (su, sd)
     return (level, su, sd)
 
 -- | For a bigroom level: Create a level consisting of only one, empty room.
@@ -344,7 +344,8 @@ rogueRoom cfg nm =
                                                Tile.doorSecretId (Just rs1))
                     _ -> return o) .
                 M.toList $ lm
-    let lvl = Level nm emptyParty (levelSize cfg) emptyParty smap dlmap ""
+    let lvl = Level nm emptyParty (levelSize cfg) emptyParty
+                smap dlmap "" ((0, 0), (0, 0))
     -- locations of the stairs
     su <- findLoc lvl (const Tile.isBoring)
     sd <- findLocTry 1000 lvl
@@ -359,7 +360,8 @@ rogueRoom cfg nm =
                   maybe id (\ l -> M.update (\ (t, _r) -> Just $ newStairsTile  (if isLit t then Tile.stairsLightDownId else Tile.stairsDarkDownId) l) sd) ld $
                   L.foldr (\ (l,it) f -> M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l . f) id is
                   dlmap
-      in  Level nm emptyParty (levelSize cfg) emptyParty smap flmap meta, su, sd)
+      in  Level nm emptyParty (levelSize cfg) emptyParty
+            smap flmap meta (su, sd), su, sd)
 
 rollItems :: LevelConfig -> Level -> Loc -> Rnd [(Loc, Item)]
 rollItems cfg lvl ploc =

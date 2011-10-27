@@ -11,6 +11,9 @@ import Dungeon
 import Random
 import qualified Config
 import WorldLoc
+import State
+import qualified Feature as F
+import qualified Tile
 
 connect :: StairsLoc ->
            [(StairsLoc -> StairsLoc -> Level,
@@ -58,3 +61,18 @@ generate config =
             ploc = (\ (_,x,_) -> x) (head levels)
         in ((ploc, lvl, fromList lvls), gd)
   in MState.state con
+
+whereTo :: State -> Loc -> Maybe WorldLoc
+whereTo State{sdungeon, slevel} loc =
+  let lm = lmap slevel
+      tile = lm `at` loc
+      k | Tile.hasFeature F.Climbable tile = -1
+        | Tile.hasFeature F.Descendable tile = 1
+        | otherwise = assert `failure` tile
+      n = levelNumber (lname slevel)
+      nln = n + k
+      ln = LambdaCave nln
+      (lvl, _) = getDungeonLevel ln sdungeon
+  in if (nln < 1)
+     then Nothing
+     else Just (ln, (if k == 1 then fst else snd) (lstairs lvl))

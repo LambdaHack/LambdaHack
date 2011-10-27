@@ -25,6 +25,7 @@ data Level = Level
   , lsmell    :: SMap
   , lmap      :: LMap
   , lmeta     :: String
+  , lstairs   :: (Loc, Loc)
   }
   deriving Show
 
@@ -44,7 +45,7 @@ emptyParty :: Party
 emptyParty = IM.empty
 
 instance Binary Level where
-  put (Level nm hs sz@(sy,sx) ms ls lm lme) =
+  put (Level nm hs sz@(sy,sx) ms ls lm lme lstairs) =
         do
           put nm
           put hs
@@ -53,6 +54,7 @@ instance Binary Level where
           put [ ls M.! (y,x) | y <- [0..sy], x <- [0..sx] ]
           put [ lm M.! (y,x) | y <- [0..sy], x <- [0..sx] ]
           put lme
+          put lstairs
   get = do
           nm <- get
           hs <- get
@@ -63,7 +65,8 @@ instance Binary Level where
           ys <- get
           let lm = M.fromList (zip [ (y,x) | y <- [0..sy], x <- [0..sx] ] ys)
           lme <- get
-          return (Level nm hs sz ms ls lm lme)
+          lstairs <- get
+          return (Level nm hs sz ms ls lm lme lstairs)
 
 type LMap = M.Map Loc (Tile.Tile, Tile.Tile)
 type SMap = M.Map Loc Time
