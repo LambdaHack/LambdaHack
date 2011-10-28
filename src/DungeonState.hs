@@ -38,7 +38,7 @@ generate config =
       gen :: R.StdGen -> Int -> (R.StdGen, (LevelId, Level))
       gen g k =
         let (g1, g2) = R.split g
-            (res, _) = MState.runState (findGenerator config k depth) g1
+            res = MState.evalState (findGenerator config k depth) g1
         in (g2, (LambdaCave k, res))
       con :: R.StdGen -> ((Loc, Level, Dungeon), R.StdGen)
       con g =

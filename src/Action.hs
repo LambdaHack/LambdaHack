@@ -31,6 +31,8 @@ newtype Action a = Action
       IO r
   }
 
+-- TODO: check if it's strict enough, if we don't keep old states for too long,
+-- Perhaps make state type fields strict for that, too?
 instance Monad Action where
   return = returnAction
   (>>=)  = bindAction
@@ -51,7 +53,7 @@ instance MonadIO Action where
   liftIO x = Action (\ _s _e _p k _a st ms -> x >>= k st ms)
 
 instance MonadState State Action where
-  get     = Action (\ _s _e _p k _a st ms -> k  st ms st)
+  get     = Action (\ _s _e _p k _a  st ms -> k st  ms st)
   put nst = Action (\ _s _e _p k _a _st ms -> k nst ms ())
 
 -- | Exported function to run the monad.

@@ -634,7 +634,7 @@ generateMonster =
   do  -- TODO: simplify
     state  <- get
     nstate <- rndToAction $ rollMonster state
-    modify (const nstate)
+    put nstate
 
 -- | Possibly regenerate HP for all actors on the current level.
 regenerateLevelHP :: Action ()

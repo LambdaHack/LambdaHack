@@ -48,7 +48,7 @@ start internalSession = do
                 c = Config.set config "engine" "dungeonRandomGenerator" gs
             return (g, c)
       let ((ploc, lvl, dng), ag) = MState.runState (generate configD) dg
-          (asso, _) = MState.runState dungeonAssocs ag
+          asso = MState.evalState dungeonAssocs ag
       (sg, configS) <-
         case Config.getOption configD "engine" "startingRandomGenerator" of
           Just sg ->
