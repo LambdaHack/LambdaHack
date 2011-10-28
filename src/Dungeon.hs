@@ -149,8 +149,8 @@ emptyRoom :: (Level -> Rnd (LMap -> LMap)) -> LevelConfig -> LevelId -> LevelId
 emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm lastNm =
   do
     let lm0 = digRoom True ((1,1),(sy-1,sx-1)) (emptyLMap (sy,sx))
-        smap = M.fromList [ ((y,x),-100) | y <- [0..sy], x <- [0..sx] ]
-        lvl = Level nm emptyParty (sy,sx) emptyParty smap lm0 "" ((0, 0), (0, 0))
+        lvl = Level
+                nm emptyParty (sy,sx) emptyParty M.empty lm0 "" ((0, 0), (0, 0))
     -- locations of the stairs
     su <- findLoc lvl (const Tile.isBoring)
     sd <- findLoc lvl (\ l t -> Tile.isBoring t
@@ -166,7 +166,7 @@ emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm lastNm =
     addRocks <- addRocksRnd lvl
     let lm4 = addRocks lm3
         level = Level
-                  nm emptyParty (sy,sx) emptyParty smap lm4 "bigroom" (su, sd)
+                  nm emptyParty (sy,sx) emptyParty M.empty lm4 "bigroom" (su, sd)
     return level
 
 -- | For a bigroom level: Create a level consisting of only one, empty room.
@@ -297,8 +297,6 @@ rogueRoom cfg nm lastNm =
                            let r0 = rs M.! p0
                                r1 = rs M.! p1
                            connectRooms r0 r1) allConnects
-    let smap = M.fromList [ ((y,x),-100) | let (sy,sx) = levelSize cfg,
-                                           y <- [0..sy], x <- [0..sx] ]
     let lrooms = L.foldr (\ (r, dl) m -> digRoom dl r m) M.empty dlrooms
         lcorridors = M.unions (L.map digCorridors cs)
         lrocks = emptyLMap (levelSize cfg)
@@ -335,7 +333,7 @@ rogueRoom cfg nm lastNm =
                     _ -> return o) .
                 M.toList $ lm
     let lvl = Level nm emptyParty (levelSize cfg) emptyParty
-                smap dlmap "" ((0, 0), (0, 0))
+                M.empty dlmap "" ((0, 0), (0, 0))
     -- locations of the stairs
     su <- findLoc lvl (const Tile.isBoring)
     sd <- findLocTry 1000 lvl
@@ -359,7 +357,7 @@ rogueRoom cfg nm lastNm =
         -- generate map and level from the data
         meta = show allConnects
     return $
-      Level nm emptyParty (levelSize cfg) emptyParty smap lm3 meta (su, sd)
+      Level nm emptyParty (levelSize cfg) emptyParty M.empty lm3 meta (su, sd)
 
 rollItems :: LevelConfig -> Level -> Loc -> Rnd [(Loc, Item)]
 rollItems cfg lvl ploc =

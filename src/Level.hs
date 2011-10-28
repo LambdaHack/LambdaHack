@@ -16,6 +16,13 @@ import qualified Tile
 import qualified Feature as F
 
 type Party = IM.IntMap Actor
+type LMap = M.Map Loc (Tile.Tile, Tile.Tile)
+
+newtype SmellTime = SmellTime{smelltime :: Time} deriving Show
+instance Binary SmellTime where
+  put = put . smelltime
+  get = fmap SmellTime get
+type SMap = M.Map Loc SmellTime
 
 data Level = Level
   { lname     :: LevelId    -- TODO: remove
@@ -51,7 +58,7 @@ instance Binary Level where
           put hs
           put sz
           put ms
-          put [ ls M.! (y,x) | y <- [0..sy], x <- [0..sx] ]
+          put ls
           put [ lm M.! (y,x) | y <- [0..sy], x <- [0..sx] ]
           put lme
           put lstairs
@@ -60,16 +67,12 @@ instance Binary Level where
           hs <- get
           sz@(sy,sx) <- get
           ms <- get
-          xs <- get
-          let ls = M.fromList (zip [ (y,x) | y <- [0..sy], x <- [0..sx] ] xs)
+          ls <- get
           ys <- get
           let lm = M.fromList (zip [ (y,x) | y <- [0..sy], x <- [0..sx] ] ys)
           lme <- get
           lstairs <- get
           return (Level nm hs sz ms ls lm lme lstairs)
-
-type LMap = M.Map Loc (Tile.Tile, Tile.Tile)
-type SMap = M.Map Loc Time
 
 at, rememberAt :: LMap -> Loc -> Tile.Tile
 at         l p = fst (M.findWithDefault (Tile.unknownTile, Tile.unknownTile) p l)

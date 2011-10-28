@@ -109,7 +109,7 @@ effectToAction Effect.ApplyPerfume _ source target _ =
   if source == target
   then return (True, "Tastes like water, but with a strong rose scent.")
   else do
-    let upd lvl = lvl { lsmell = M.map (const (-100)) (lsmell lvl) }
+    let upd lvl = lvl { lsmell = M.empty }
     modify (updateLevel upd)
     return (True, "The fragrance quells all scents in the vicinity.")
 effectToAction Effect.Regneration verbosity source target power =

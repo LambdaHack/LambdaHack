@@ -2,7 +2,6 @@ module Color
   (Color(..), Attr, defBG, defFG, defaultAttr, isBright, legalBG, colorToRGB)
   where
 
-import Control.Monad
 import qualified Data.Binary as Binary
 
 -- TODO: if the file grows much larger, split into Utils/Color.hs and Attr.hs
@@ -34,7 +33,7 @@ data Color =
 
 instance Binary.Binary Color where
   put = Binary.putWord8 . fromIntegral . fromEnum
-  get = liftM (toEnum . fromIntegral) Binary.getWord8
+  get = fmap (toEnum . fromIntegral) Binary.getWord8
 
 defBG, defFG :: Color
 defBG = Black

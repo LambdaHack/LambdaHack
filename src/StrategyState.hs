@@ -138,7 +138,9 @@ strategy actor
       L.map fst $
       L.sortBy (\ (_, s1) (_, s2) -> compare s2 s1) $
       L.filter (\ (_, s) -> s > 0) $
-      L.map (\ x -> (x, nsmap M.! (me `shift` x) - time `max` 0)) moves
+      L.map (\ x -> let sm = smelltime $ M.findWithDefault
+                                           (SmellTime 0) (me `shift` x) nsmap
+                    in  (x, (sm - time) `max` 0)) moves
     fromDir allowAttacks d = dirToAction actor newTgt allowAttacks `liftM` d
 
     strat =

@@ -149,7 +149,8 @@ handlePlayer =
             sTimeout = Config.get (sconfig state) "monsters" "smellTimeout"
         -- update smell
         when (isAHero pl) $  -- only humans leave strong scent
-          modify (updateLevel (updateSMap (M.insert ploc (time + sTimeout))))
+          modify (updateLevel (updateSMap (M.insert ploc
+                                             (SmellTime (time + sTimeout)))))
         -- determine player perception and continue with monster moves
         withPerception handleMonsters
 

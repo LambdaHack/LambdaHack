@@ -158,7 +158,8 @@ displayLevel
       ms      = levelMonsterList state
       dis n loc0 =
         let tile = lm `lAt` loc0
-            sml  = ((smap M.! loc0) - time) `div` 100
+            sm = smelltime $ M.findWithDefault (SmellTime 0) loc0 smap
+            sml = (sm - time) `div` 100
             viewActor loc Actor{akind = akind2, asymbol}
               | loc == aloc && ln == creturnLn cursor =
                   (symbol, Color.defBG)  -- highlight player

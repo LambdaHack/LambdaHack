@@ -1,6 +1,5 @@
 module WorldLoc where
 
-import Control.Monad
 import Data.Binary
 import Geometry
 
@@ -10,7 +9,7 @@ newtype LevelId = LambdaCave Int
 
 instance Binary LevelId where
   put (LambdaCave n) = put n
-  get = liftM LambdaCave get
+  get = fmap LambdaCave get
 
 -- | Name of a level.
 levelName :: LevelId -> String

@@ -5,7 +5,6 @@ module Kind
 import Data.Binary
 import qualified Data.List as L
 import qualified Data.IntMap as IM
-import Control.Monad
 
 import Utils.Assert
 import Content.Content
@@ -16,7 +15,7 @@ newtype Id a = Id Int
 
 instance Binary (Id a) where
   put (Id i) = put i
-  get = liftM Id get
+  get = fmap Id get
 
 getKind :: Content a => Id a -> a
 getKind (Id i) = kindMap IM.! i

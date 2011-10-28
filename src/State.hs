@@ -3,7 +3,6 @@ module State where
 import qualified Data.Map as M
 import qualified Data.Set as S
 import qualified Data.IntSet as IS
-import Control.Monad
 import Data.Binary
 import qualified Config
 import qualified System.Random as R
@@ -165,7 +164,7 @@ instance Binary SensoryMode where
           tag <- getWord8
           case tag of
             0 -> return Implicit
-            1 -> liftM Vision get
+            1 -> fmap Vision get
             2 -> return Smell
             _ -> fail "no parse (SensoryMode)"
 
@@ -184,5 +183,5 @@ instance Binary DisplayMode where
           case tag of
             0 -> return Normal
             1 -> return Omniscient
-            2 -> liftM Terrain get
+            2 -> fmap Terrain get
             _ -> fail "no parse (DisplayMode)"
