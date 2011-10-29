@@ -14,8 +14,8 @@ newtype Id a = Id Int
   deriving (Show, Eq, Ord)
 
 instance Binary (Id a) where
-  put (Id i) = put i
-  get = fmap Id get
+  put (Id i) = putWord8 $ fromIntegral i
+  get = fmap (Id . fromIntegral) getWord8
 
 getKind :: Content a => Id a -> a
 getKind (Id i) = kindMap IM.! i
