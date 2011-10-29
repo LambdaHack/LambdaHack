@@ -641,11 +641,11 @@ actorRunActor source target = do
 
 -- | Generate a monster, possibly.
 generateMonster :: Action ()
-generateMonster =
-  do  -- TODO: simplify
-    state  <- get
-    nstate <- rndToAction $ rollMonster state
-    put nstate
+generateMonster = do
+  state  <- get
+  nstate <- rndToAction $ rollMonster state
+  srandom <- gets srandom
+  put $ nstate{srandom}
 
 -- | Possibly regenerate HP for all actors on the current level.
 regenerateLevelHP :: Action ()
