@@ -191,7 +191,7 @@ data LevelConfig = LevelConfig
   , minRoomSize       :: Rnd (Y,X)
   , darkRoomChance    :: Rnd Bool
   , border            :: Int         -- must be at least 2!
-  , levelSize         :: (Y,X)       -- lower right point
+  , levelSize         :: (Y,X)       -- lower right point; TODO: change to size
   , extraConnects     :: (Y,X) -> Int
       -- relative to grid (in fact a range, because of duplicate connects)
   , noRooms           :: (Y,X) -> Rnd Int

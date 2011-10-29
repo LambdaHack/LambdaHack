@@ -27,7 +27,7 @@ type SMap = M.Map Loc SmellTime
 data Level = Level
   { lname     :: LevelId    -- TODO: remove
   , lheroes   :: Party      -- ^ all heroes on the level
-  , lsize     :: (Y,X)
+  , lsize     :: (Y,X)  -- TODO: change to size (is lower right point)
   , lmonsters :: Party      -- ^ all monsters on the level
   , lsmell    :: SMap
   , lmap      :: LMap
@@ -59,7 +59,7 @@ instance Binary Level where
           put sz
           put ms
           put ls
-          put [ lm M.! (y,x) | y <- [0..sy], x <- [0..sx] ]
+          put ((sy+1)*(sx+1)) >> mapM_ put (M.elems lm)
           put lme
           put lstairs
   get = do
@@ -69,7 +69,8 @@ instance Binary Level where
           ms <- get
           ls <- get
           ys <- get
-          let lm = M.fromList (zip [ (y,x) | y <- [0..sy], x <- [0..sx] ] ys)
+          let lm = M.fromDistinctAscList
+                     (zip [ (y,x) | y <- [0..sy], x <- [0..sx] ] ys)
           lme <- get
           lstairs <- get
           return (Level nm hs sz ms ls lm lme lstairs)
