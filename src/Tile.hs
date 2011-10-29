@@ -12,14 +12,13 @@ import qualified Kind
 
 data Tile = Tile
   { tkind     :: !(Kind.Id TileKind)
-  , tsecret   :: Maybe Int  -- TODO
   , titems    :: [Item]
   }
   deriving Show
 
 instance Binary Tile where
-  put (Tile t s is) = put t >> put s >> put is
-  get = liftM3 Tile get get get
+  put (Tile t is) = put t >> put is
+  get = liftM2 Tile get get
 
 wallId, openingId, floorLightId, floorDarkId, unknownId, doorOpenId, doorClosedId, doorSecretId, stairsLightUpId, stairsLightDownId, stairsDarkUpId, stairsDarkDownId :: Kind.Id TileKind
 wallId = Kind.getId (\ t -> usymbol t == '#' && (L.null $ ufeature t))
@@ -38,7 +37,7 @@ stairsDarkUpId = Kind.getId (kindHas [F.Climbable] [F.Lit])
 stairsDarkDownId = Kind.getId (kindHas [F.Descendable] [F.Lit])
 
 unknownTile :: Tile
-unknownTile = Tile unknownId Nothing []
+unknownTile = Tile unknownId []
 
 -- | The player can't tell if the tile is a secret door or not.
 canBeSecretDoor :: Tile -> Bool

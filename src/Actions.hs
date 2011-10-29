@@ -165,6 +165,7 @@ continueRun dir =
     ms  <- gets (lmonsters . slevel)
     hs  <- gets (lheroes . slevel)
     lm  <- gets (lmap . slevel)
+    le  <- gets (lsecret . slevel)
     pl  <- gets splayer
     let dms = case pl of
                 AMonster n -> IM.delete n ms  -- don't be afraid of yourself
@@ -186,7 +187,7 @@ continueRun dir =
           -- TODO: even in corridors, stop if you run past an exit (rare)
           let ns = L.filter (\ x -> distance (neg dir, x) > 1
                                     && (accessible lm loc (loc `shift` x))
-                                        || openable 1 lm (loc `shift` x))
+                                        || openable 1 lm le (loc `shift` x))
                             moves
               allCloseTo main = L.all (\ d -> distance (main, d) <= 1) ns
           in  case ns of
@@ -203,7 +204,7 @@ continueRun dir =
           let ns = L.filter (\ x -> x /= dir && distance (neg dir, x) > 1) moves
               ls = L.map (loc `shift`) ns
               as = L.filter (\ x -> accessible lm loc x
-                                    || openable 1 lm x) ls
+                                    || openable 1 lm le x) ls
               ts = L.map (lm `at`) as
           in if L.any Tile.isExit ts then abort else run dir
     hop
@@ -246,7 +247,7 @@ playerCloseDoor dir = do
       case Tile.titems t of
         [] ->
           if unoccupied hms dloc
-          then let nt  = Tile Tile.doorClosedId Nothing []
+          then let nt  = Tile Tile.doorClosedId []
                    adj = M.adjust (\ (_, mt) -> (nt, mt)) dloc
                in modify (updateLevel (updateLMap adj))
           else abortWith "blocked"  -- by monsters or heroes
@@ -260,6 +261,7 @@ playerCloseDoor dir = do
 actorOpenDoor :: ActorId -> Dir -> Action ()
 actorOpenDoor actor dir = do
   lm   <- gets (lmap . slevel)
+  le   <- gets (lsecret . slevel)
   pl   <- gets splayer
   body <- gets (getActor actor)
   let dloc = shift (aloc body) dir  -- the location we act upon
@@ -273,7 +275,7 @@ actorOpenDoor actor dir = do
         else case strongestItem (aitems body) "ring" of  -- TODO: hack
                Just i  -> iq + ipower i
                Nothing -> iq
-  unless (openable openPower lm dloc) $ neverMind isVerbose
+  unless (openable openPower lm le dloc) $ neverMind isVerbose
   if hasFeature F.Closable t
     then abortIfWith isVerbose "already open"
     else if not (hasFeature F.Closable t ||
@@ -281,7 +283,7 @@ actorOpenDoor actor dir = do
                  hasFeature F.Hidden t)
          then neverMind isVerbose  -- not doors at all
          else
-           let nt  = Tile Tile.doorOpenId Nothing (Tile.titems t)
+           let nt  = Tile Tile.doorOpenId (Tile.titems t)
                adj = M.adjust (\ (_, mt) -> (nt, mt)) dloc
            in  modify (updateLevel (updateLMap adj))
   advanceTime actor
@@ -422,22 +424,25 @@ search :: Action ()
 search =
   do
     lm     <- gets (lmap . slevel)
+    le     <- gets (lsecret . slevel)
     ploc   <- gets (aloc . getPlayerBody)
     pitems <- gets (aitems . getPlayerBody)
     let delta = case strongestItem pitems "ring" of
                   Just i  -> 1 + ipower i
                   Nothing -> 1
-        searchTile (t@(Tile _ s x), t') =
-          if hasFeature F.Hidden t
-          then
-            let k = fromJust s - delta
-            in if k > 0
-               then (Tile Tile.doorSecretId (Just k) x, t')
-               else (Tile Tile.doorClosedId Nothing x,  t')
-          else (t, t')
-        f l m = M.adjust searchTile (shift ploc m) l
-        slmap = L.foldl' f lm moves
-    modify (updateLevel (updateLMap (const slmap)))
+        searchTile loc (alm, ale) =
+          let (t@(Tile _ x), t') = alm M.! loc
+              k = ale M.! loc - delta
+          in if hasFeature F.Hidden t
+             then if k > 0
+                  then (M.insert loc (Tile Tile.doorSecretId x, t') lm,
+                        M.insert loc k ale)
+                  else (M.insert loc (Tile Tile.doorClosedId x, t') alm,
+                        M.delete loc ale)
+             else (alm, ale)
+        f (slm, sle) m = searchTile (shift ploc m) (slm, sle)
+        (slmap, lemap) = L.foldl' f (lm, le) moves
+    modify (updateLevel (\ l -> l{lmap = slmap, lsecret = lemap}))
     playerAdvanceTime
 
 -- | Start the floor targeting mode or reset the cursor location to the player.

@@ -11,7 +11,6 @@ import Actor
 import Item
 import Random
 import WorldLoc
-import Data.Maybe
 import qualified Tile
 import qualified Feature as F
 
@@ -30,6 +29,7 @@ data Level = Level
   , lsize     :: (Y,X)  -- TODO: change to size (is lower right point)
   , lmonsters :: Party      -- ^ all monsters on the level
   , lsmell    :: SMap
+  , lsecret   :: M.Map Loc Int
   , lmap      :: LMap
   , lmeta     :: String
   , lstairs   :: (Loc, Loc) -- ^ here the stairs (down, up) from other levels end
@@ -52,13 +52,14 @@ emptyParty :: Party
 emptyParty = IM.empty
 
 instance Binary Level where
-  put (Level nm hs sz@(sy,sx) ms ls lm lme lstairs) =
+  put (Level nm hs sz@(sy,sx) ms ls le lm lme lstairs) =
         do
           put nm
           put hs
           put sz
           put ms
           put ls
+          put le
           put ((sy+1)*(sx+1)) >> mapM_ put (M.elems lm)
           put lme
           put lstairs
@@ -68,12 +69,13 @@ instance Binary Level where
           sz@(sy,sx) <- get
           ms <- get
           ls <- get
+          le <- get
           ys <- get
           let lm = M.fromDistinctAscList
                      (zip [ (y,x) | y <- [0..sy], x <- [0..sx] ] ys)
           lme <- get
           lstairs <- get
-          return (Level nm hs sz ms ls lm lme lstairs)
+          return (Level nm hs sz ms ls le lm lme lstairs)
 
 at, rememberAt :: LMap -> Loc -> Tile.Tile
 at         l p = fst (M.findWithDefault (Tile.unknownTile, Tile.unknownTile) p l)
@@ -94,12 +96,12 @@ accessible lm _source target =
   in  Tile.isWalkable tgt
 
 -- check whether the location contains a door of secrecy level lower than k
-openable :: Int -> LMap -> Loc -> Bool
-openable k lm target =
+openable :: Int -> LMap -> M.Map Loc Int -> Loc -> Bool
+openable k lm le target =
   let tgt = lm `at` target
   in Tile.hasFeature F.Openable tgt ||
      (Tile.hasFeature F.Hidden tgt &&
-      fromJust (Tile.tsecret tgt) < k)
+      le M.! target < k)
 
 findLoc :: Level -> (Loc -> Tile.Tile -> Bool) -> Rnd Loc
 findLoc l@(Level { lsize = sz, lmap = lm }) p =

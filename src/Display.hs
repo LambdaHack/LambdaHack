@@ -131,7 +131,7 @@ displayLevel
   (state@(State { scursor = cursor,
                   stime   = time,
                   sassocs = asso,
-                  slevel  = Level ln _ (sy, sx) _ smap lm _ _ }))
+                  slevel  = Level ln _ (sy, sx) _ smap _ lm _ _ }))
   msg moverlay =
   let Actor{akind, ahp, aloc, aitems} = getPlayerBody state
       ActorKind{bhp} = Kind.getKind akind

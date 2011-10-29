@@ -61,7 +61,8 @@ strategy actor
          oldState@(State { splayer = pl,
                            stime   = time,
                            slevel  = Level { lsmell = nsmap,
-                                             lmap = lm } })
+                                             lmap = lm,
+                                             lsecret = le} })
          per =
 --  trace (show time ++ ": " ++ show actor) $
     strat
@@ -129,7 +130,7 @@ strategy actor
     openPower      = case strongestItem items "ring" of
                        Just i  -> biq mk + ipower i
                        Nothing -> biq mk
-    openableHere   = openable openPower lm
+    openableHere   = openable openPower lm le
     onlyOpenable   = onlyMoves openableHere me
     accessibleHere = accessible lm me
     onlySensible   = onlyMoves (\ l -> accessibleHere l || openableHere l) me

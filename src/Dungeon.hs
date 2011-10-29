@@ -132,16 +132,16 @@ digCorridors _ = M.empty
 
 mergeCorridor :: (Tile, Tile) -> (Tile, Tile) -> (Tile, Tile)
 mergeCorridor _ (t, u)                 | Tile.isWalkable t = (t, u)
-mergeCorridor _ (t@(Tile _ s is), u) | Tile.isUnknown t  = (Tile Tile.floorDarkId s is, u)
-mergeCorridor _ (Tile _ s is, u)                         = (Tile Tile.openingId s is, u)
+mergeCorridor _ (t@(Tile _ is), u) | Tile.isUnknown t  = (Tile Tile.floorDarkId is, u)
+mergeCorridor _ (Tile _ is, u)                         = (Tile Tile.openingId is, u)
 
 -- | Create a new tile.
 newTile :: Kind.Id TileKind -> (Tile, Tile)
-newTile t = (Tile t Nothing [], Tile.unknownTile)
+newTile t = (Tile t [], Tile.unknownTile)
 
 -- | Create a new door tile.
-newDoorTile :: Kind.Id TileKind -> Maybe Int -> (Tile, Tile)
-newDoorTile t s = (Tile t s [], Tile.unknownTile)
+newDoorTile :: Kind.Id TileKind -> (Tile, Tile)
+newDoorTile t = (Tile t [], Tile.unknownTile)
 
 -- | Create a level consisting of only one room. Optionally, insert some walls.
 emptyRoom :: (Level -> Rnd (LMap -> LMap)) -> LevelConfig -> LevelId -> LevelId
@@ -150,7 +150,7 @@ emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm lastNm =
   do
     let lm0 = digRoom True ((1,1),(sy-1,sx-1)) (emptyLMap (sy,sx))
         lvl = Level
-                nm emptyParty (sy,sx) emptyParty M.empty lm0 "" ((0, 0), (0, 0))
+                nm emptyParty (sy,sx) emptyParty M.empty M.empty lm0 "" ((0, 0), (0, 0))
     -- locations of the stairs
     su <- findLoc lvl (const Tile.isBoring)
     sd <- findLoc lvl (\ l t -> Tile.isBoring t
@@ -166,7 +166,7 @@ emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm lastNm =
     addRocks <- addRocksRnd lvl
     let lm4 = addRocks lm3
         level = Level
-                  nm emptyParty (sy,sx) emptyParty M.empty lm4 "bigroom" (su, sd)
+                  nm emptyParty (sy,sx) emptyParty M.empty M.empty lm4 "bigroom" (su, sd)
     return level
 
 -- | For a bigroom level: Create a level consisting of only one, empty room.
@@ -181,7 +181,7 @@ noiseRoom cfg =
         rs <- rollPillars cfg lvl
         let insertRock lm l =
               case lm `at` l of
-                t@(Tile _ _ []) | Tile.isBoring t -> M.insert l (newTile Tile.wallId) lm
+                t@(Tile _ []) | Tile.isBoring t -> M.insert l (newTile Tile.wallId) lm
                 _ -> lm
         return $ \ lm -> L.foldl' insertRock lm rs
   in  emptyRoom addRocks cfg
@@ -302,10 +302,10 @@ rogueRoom cfg nm lastNm =
         lrocks = emptyLMap (levelSize cfg)
         lm = M.union (M.unionWith mergeCorridor lcorridors lrooms) lrocks
     -- convert openings into doors
-    dlmap <- fmap M.fromList . mapM
-                (\ o@((y,x),(t,_r)) ->
+    (dlmap, secretMap) <- do
+      let f (l, le) o@((y,x),(t,_r)) =
                   case t of
-                    Tile _ _ _ | Tile.isOpening t ->
+                    Tile _ _ | Tile.isOpening t ->
                       do
                         -- openings have a certain chance to be doors;
                         -- doors have a certain chance to be open; and
@@ -314,26 +314,22 @@ rogueRoom cfg nm lastNm =
                         rb <- doorChance cfg
                         ro <- doorOpenChance cfg
                         if not rb
-                          then return o
+                          then return (o : l, le)
                           else if ro
-                               then return ((y,x),
-                                            newDoorTile Tile.doorOpenId Nothing)
+                               then return (((y,x), newDoorTile Tile.doorOpenId) : l, le)
                                else do
                                  rsc <- doorSecretChance cfg
                                  if not rsc
-                                   then return ((y,x),
-                                                newDoorTile
-                                                  Tile.doorClosedId Nothing)
+                                   then return (((y,x), newDoorTile Tile.doorClosedId) : l, le)
                                    else do
                                      rs1 <- randomR (doorSecretMax cfg `div` 2,
                                                      doorSecretMax cfg)
-                                     return ((y,x),
-                                             newDoorTile
-                                               Tile.doorSecretId (Just rs1))
-                    _ -> return o) .
-                M.toList $ lm
+                                     return (((y,x), newDoorTile Tile.doorSecretId) : l, M.insert (y, x) rs1 le)
+                    _ -> return (o : l, le)
+      (l, le) <- foldM f ([], M.empty) (M.toList lm)
+      return (M.fromList l, le)
     let lvl = Level nm emptyParty (levelSize cfg) emptyParty
-                M.empty dlmap "" ((0, 0), (0, 0))
+                M.empty secretMap dlmap "" ((0, 0), (0, 0))
     -- locations of the stairs
     su <- findLoc lvl (const Tile.isBoring)
     sd <- findLocTry 1000 lvl
@@ -357,7 +353,7 @@ rogueRoom cfg nm lastNm =
         -- generate map and level from the data
         meta = show allConnects
     return $
-      Level nm emptyParty (levelSize cfg) emptyParty M.empty lm3 meta (su, sd)
+      Level nm emptyParty (levelSize cfg) emptyParty M.empty secretMap lm3 meta (su, sd)
 
 rollItems :: LevelConfig -> Level -> Loc -> Rnd [(Loc, Item)]
 rollItems cfg lvl ploc =
