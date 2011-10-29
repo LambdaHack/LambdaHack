@@ -354,6 +354,11 @@ lvlChange vdir =
                 else tryWith (abortWith "somebody blocks the staircase") $ do
                   -- Remove the player from the old level.
                   modify (deleteActor pl)
+                  hs <- gets levelHeroList
+                  -- Monsters hear that players not on the level. Cancel smell.
+                  -- Reduces memory load and savefile size.
+                  when (L.null hs) $
+                    modify (updateLevel (updateSMap (const M.empty)))
                   -- At this place the invariant that the player exists fails.
                   -- Change to the new level (invariant not needed).
                   lvlSwitch nln
