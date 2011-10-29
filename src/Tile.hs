@@ -1,24 +1,21 @@
 module Tile where
 
-import Control.Monad
-
 import Data.Binary
 import qualified Data.List as L
 
-import Item
 import Content.TileKind
 import qualified Feature as F
 import qualified Kind
 
-data Tile = Tile
-  { tkind     :: !(Kind.Id TileKind)
-  , titems    :: [Item]
-  }
+-- TODO: simplify, perhaps use arrays, not maps (make it abstract),
+-- perhaps have 2 arrays for real and remembered (the same memory with arrays)
+newtype Tile = Tile
+  { tkind :: Kind.Id TileKind }
   deriving Show
 
 instance Binary Tile where
-  put (Tile t is) = put t >> put is
-  get = liftM2 Tile get get
+  put (Tile t) = put t
+  get = fmap Tile get
 
 wallId, openingId, floorLightId, floorDarkId, unknownId, doorOpenId, doorClosedId, doorSecretId, stairsLightUpId, stairsLightDownId, stairsDarkUpId, stairsDarkDownId :: Kind.Id TileKind
 wallId = Kind.getId (\ t -> usymbol t == '#' && (L.null $ ufeature t))
@@ -37,7 +34,7 @@ stairsDarkUpId = Kind.getId (kindHas [F.Climbable] [F.Lit])
 stairsDarkDownId = Kind.getId (kindHas [F.Descendable] [F.Lit])
 
 unknownTile :: Tile
-unknownTile = Tile unknownId []
+unknownTile = Tile unknownId
 
 -- | The player can't tell if the tile is a secret door or not.
 canBeSecretDoor :: Tile -> Bool

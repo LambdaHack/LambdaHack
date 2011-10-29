@@ -22,7 +22,6 @@ import ActorAdd
 import Perception
 import State
 import EffectAction
-import qualified Tile
 import qualified Kind
 
 -- Item UI code with the Action type and everything it depends on
@@ -197,29 +196,27 @@ removeFromInventory actor i loc = do
 -- | Remove given item from the given location. Tell if successful.
 removeFromLoc :: Item -> Loc -> Action Bool
 removeFromLoc i loc = do
-  lm <- gets (lmap . slevel)
-  if not $ L.any (equalItemIdentity i) (Tile.titems (lm `at` loc))
+  li <- gets (litem . slevel)
+  if not $ L.any (equalItemIdentity i) (li `iat` loc)
     then return False
     else
-      modify (updateLevel (updateLMap adj)) >>
+      modify (updateLevel (updateIMap adj)) >>
       return True
         where
-          adj = M.adjust (\ (t, rt) -> (remove t, rt)) loc
-          remove t = t { Tile.titems = removeItemByIdentity i (Tile.titems t) }
+          adj = M.adjust (\ (is, ris) -> (removeItemByIdentity i is, ris)) loc
 
 actorPickupItem :: ActorId -> Action ()
 actorPickupItem actor = do
   state <- get
   pl    <- gets splayer
   per   <- currentPerception
-  lm    <- gets (lmap . slevel)
+  li    <- gets (litem . slevel)
   body  <- gets (getActor actor)
   let loc       = aloc body
-      t         = lm `at` loc -- the map tile in question
       perceived = loc `S.member` ptvisible per
       isPlayer  = actor == pl
   -- check if something is here to pick up
-  case Tile.titems t of
+  case li `iat` loc of
     []   -> abortIfWith isPlayer "nothing here"
     i:is -> -- pick up first item; TODO: let player select item; not for monsters
       case assignLetter (iletter i) (aletter body) (aitems body) of
@@ -274,11 +271,10 @@ getItem :: String ->              -- prompt message
            String ->              -- how to refer to the collection of objects
            Action (Maybe Item)
 getItem prompt p ptext is0 isn = do
-  lm   <- gets (lmap . slevel)
+  li   <- gets (litem . slevel)
   body <- gets getPlayerBody
   let loc       = aloc body
-      t         = lm `at` loc -- the map tile in question
-      tis       = Tile.titems t
+      tis       = li `iat` loc
       floorMsg  = if L.null tis then "" else " -,"
       is = L.filter p is0
       choice = if L.null is

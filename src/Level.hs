@@ -30,6 +30,7 @@ data Level = Level
   , lmonsters :: Party      -- ^ all monsters on the level
   , lsmell    :: SMap
   , lsecret   :: M.Map Loc Int
+  , litem     :: M.Map Loc ([Item], [Item])
   , lmap      :: LMap
   , lmeta     :: String
   , lstairs   :: (Loc, Loc) -- ^ here the stairs (down, up) from other levels end
@@ -38,6 +39,10 @@ data Level = Level
 
 updateLMap :: (LMap -> LMap) -> Level -> Level
 updateLMap f lvl = lvl { lmap = f (lmap lvl) }
+
+updateIMap :: (M.Map Loc ([Item], [Item]) -> M.Map Loc ([Item], [Item])) -> Level
+              -> Level
+updateIMap f lvl = lvl { litem = f (litem lvl) }
 
 updateSMap :: (SMap -> SMap) -> Level -> Level
 updateSMap f lvl = lvl { lsmell = f (lsmell lvl) }
@@ -52,7 +57,7 @@ emptyParty :: Party
 emptyParty = IM.empty
 
 instance Binary Level where
-  put (Level nm hs sz@(sy,sx) ms ls le lm lme lstairs) =
+  put (Level nm hs sz@(sy,sx) ms ls le li lm lme lstairs) =
         do
           put nm
           put hs
@@ -60,6 +65,7 @@ instance Binary Level where
           put ms
           put ls
           put le
+          put (M.filter (\ (is1, is2) -> not (L.null is1 && L.null is2)) li)
           put ((sy+1)*(sx+1)) >> mapM_ put (M.elems lm)
           put lme
           put lstairs
@@ -70,16 +76,21 @@ instance Binary Level where
           ms <- get
           ls <- get
           le <- get
+          li <- get
           ys <- get
           let lm = M.fromDistinctAscList
                      (zip [ (y,x) | y <- [0..sy], x <- [0..sx] ] ys)
           lme <- get
           lstairs <- get
-          return (Level nm hs sz ms ls le lm lme lstairs)
+          return (Level nm hs sz ms ls le li lm lme lstairs)
 
-at, rememberAt :: LMap -> Loc -> Tile.Tile
-at         l p = fst (M.findWithDefault (Tile.unknownTile, Tile.unknownTile) p l)
-rememberAt l p = snd (M.findWithDefault (Tile.unknownTile, Tile.unknownTile) p l)
+at, rememberAt :: M.Map Loc (Tile.Tile, Tile.Tile) -> Loc -> Tile.Tile
+at         l p = fst $ l M.! p
+rememberAt l p = snd $ l M.! p
+
+iat, irememberAt :: M.Map Loc ([Item], [Item]) -> Loc -> [Item]
+iat         l p = fst $ M.findWithDefault ([], []) p l
+irememberAt l p = snd $ M.findWithDefault ([], []) p l
 
 -- Checks for the presence of actors. Does *not* check if the tile is open.
 unoccupied :: [Actor] -> Loc -> Bool
@@ -127,11 +138,10 @@ findLocTry k l@(Level { lsize = sz, lmap = lm }) p pTry =
              then findLocTry (k - 1) l p pTry
              else findLoc l p
 
--- Actually, do not scatter items around, it's too much work for the player.
+-- Do not scatter items around, it's too much work for the player.
 dropItemsAt :: [Item] -> Loc -> Level -> Level
-dropItemsAt items loc lvl@(Level { lmap = lm }) =
+dropItemsAt items loc =
   let joinItems = L.foldl' (\ acc i -> snd (joinItem i acc))
-      t = lm `at` loc
-      nt = t { Tile.titems = joinItems items (Tile.titems t) }
-      ntRemember = lm `rememberAt` loc
-  in  updateLMap (M.insert loc (nt, ntRemember)) lvl
+      adj Nothing = Just (items, [])
+      adj (Just (i, ri)) = Just (joinItems items i, ri)
+  in  updateIMap (M.alter adj loc)

@@ -166,6 +166,7 @@ continueRun dir =
     hs  <- gets (lheroes . slevel)
     lm  <- gets (lmap . slevel)
     le  <- gets (lsecret . slevel)
+    li  <- gets (litem . slevel)
     pl  <- gets splayer
     let dms = case pl of
                 AMonster n -> IM.delete n ms  -- don't be afraid of yourself
@@ -173,8 +174,8 @@ continueRun dir =
         mslocs = S.fromList (L.map aloc (IM.elems dms))
         monstersVisible = not (S.null (mslocs `S.intersection` ptvisible per))
         newsReported    = not (L.null msg)
-        tile      = lm `at` loc  -- tile at current location
-        itemsHere = not (L.null (titems tile))
+        tile      = lm `rememberAt` loc  -- tile at current location
+        itemsHere = not (L.null (li `irememberAt` loc))
         heroThere = (loc `shift` dir) `elem` L.map aloc (IM.elems hs)
         dirOK     = accessible lm loc (loc `shift` dir)
         isTExit   = Tile.isExit tile
@@ -205,7 +206,7 @@ continueRun dir =
               ls = L.map (loc `shift`) ns
               as = L.filter (\ x -> accessible lm loc x
                                     || openable 1 lm le x) ls
-              ts = L.map (lm `at`) as
+              ts = L.map (lm `rememberAt`) as
           in if L.any Tile.isExit ts then abort else run dir
     hop
 
@@ -220,9 +221,11 @@ remember :: Action ()
 remember =
   do
     per <- currentPerception
-    let vis         = S.toList (ptvisible per)
-    let rememberLoc = M.update (\ (t,_) -> Just (t,t))
-    modify (updateLevel (updateLMap (\ lm -> L.foldr rememberLoc lm vis)))
+    let vis          = S.toList (ptvisible per)
+    let rememberTile = M.adjust (\ (t, _) -> (t, t))
+    modify (updateLevel (updateLMap (\ m -> L.foldr rememberTile m vis)))
+    let rememberItem = M.alter (fmap (\ (t, _) -> (t, t)))
+    modify (updateLevel (updateIMap (\ m -> L.foldr rememberItem m vis)))
 
 -- | Ask for a direction and close the door, if any
 closeDoor :: Action ()
@@ -237,6 +240,7 @@ playerCloseDoor :: Dir -> Action ()
 playerCloseDoor dir = do
   state <- get
   lm    <- gets (lmap . slevel)
+  li    <- gets (litem . slevel)
   pl    <- gets splayer
   body  <- gets (getActor pl)
   let hms = levelHeroList state ++ levelMonsterList state
@@ -244,10 +248,10 @@ playerCloseDoor dir = do
       t = lm `at` dloc
   if hasFeature F.Closable t
     then
-      case Tile.titems t of
+      case li `iat` dloc of
         [] ->
           if unoccupied hms dloc
-          then let nt  = Tile Tile.doorClosedId []
+          then let nt  = Tile Tile.doorClosedId
                    adj = M.adjust (\ (_, mt) -> (nt, mt)) dloc
                in modify (updateLevel (updateLMap adj))
           else abortWith "blocked"  -- by monsters or heroes
@@ -283,7 +287,7 @@ actorOpenDoor actor dir = do
                  hasFeature F.Hidden t)
          then neverMind isVerbose  -- not doors at all
          else
-           let nt  = Tile Tile.doorOpenId (Tile.titems t)
+           let nt  = Tile Tile.doorOpenId
                adj = M.adjust (\ (_, mt) -> (nt, mt)) dloc
            in  modify (updateLevel (updateLMap adj))
   advanceTime actor
@@ -431,13 +435,13 @@ search =
                   Just i  -> 1 + ipower i
                   Nothing -> 1
         searchTile loc (alm, ale) =
-          let (t@(Tile _ x), t') = alm M.! loc
+          let (t@(Tile _), t') = alm M.! loc
               k = ale M.! loc - delta
           in if hasFeature F.Hidden t
              then if k > 0
-                  then (M.insert loc (Tile Tile.doorSecretId x, t') lm,
+                  then (M.insert loc (Tile Tile.doorSecretId, t') lm,
                         M.insert loc k ale)
-                  else (M.insert loc (Tile Tile.doorClosedId x, t') alm,
+                  else (M.insert loc (Tile Tile.doorClosedId, t') alm,
                         M.delete loc ale)
              else (alm, ale)
         f (slm, sle) m = searchTile (shift ploc m) (slm, sle)
@@ -504,7 +508,8 @@ doLook =
   do
     loc    <- gets (clocation . scursor)
     state  <- get
-    lm     <- gets (lmap . slevel)
+    lvl    <- gets slevel
+    li     <- gets (litem . slevel)
     per    <- currentPerception
     target <- gets (atarget . getPlayerBody)
     let canSee = S.member loc (ptvisible per)
@@ -519,14 +524,14 @@ doLook =
                  TLoc _     -> "[targeting location] "
                  TCursor    -> "[targeting current] "
         -- general info about current loc
-        lookMsg = mode ++ lookAt True canSee state lm loc monsterMsg
+        lookMsg = mode ++ lookAt True canSee state lvl loc monsterMsg
         -- check if there's something lying around at current loc
-        t = lm `at` loc
-    if length (titems t) <= 2
+        is = li `irememberAt` loc
+    if length is <= 2
       then do
              messageAdd lookMsg
       else do
-             displayItems lookMsg False (titems t)
+             displayItems lookMsg False is
              session getConfirm
              messageAdd ""
 
@@ -547,6 +552,7 @@ moveOrAttack allowAttacks autoOpen actor dir
       -- We start by looking at the target position.
       state <- get
       pl    <- gets splayer
+      lvl   <- gets slevel
       lm    <- gets (lmap . slevel)
       sm    <- gets (getActor actor)
       let sloc = aloc sm           -- source location
@@ -561,14 +567,14 @@ moveOrAttack allowAttacks autoOpen actor dir
               -- Switching positions requires full access.
               actorRunActor actor target
               when (actor == pl) $
-                messageAdd $ lookAt False True state lm tloc ""
+                messageAdd $ lookAt False True state lvl tloc ""
           | otherwise -> abortWith ""
         Nothing
           | accessible lm sloc tloc -> do
               -- perform the move
               updateAnyActor actor $ \ body -> body {aloc = tloc}
               when (actor == pl) $
-                messageAdd $ lookAt False True state lm tloc ""
+                messageAdd $ lookAt False True state lvl tloc ""
               advanceTime actor
           | allowAttacks && actor == pl
             && canBeSecretDoor (lm `rememberAt` tloc)

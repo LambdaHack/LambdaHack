@@ -62,6 +62,7 @@ strategy actor
                            stime   = time,
                            slevel  = Level { lsmell = nsmap,
                                              lmap = lm,
+                                             litem = li,
                                              lsecret = le} })
          per =
 --  trace (show time ++ ": " ++ show actor) $
@@ -117,7 +118,7 @@ strategy actor
                        Just loc ->
                          let foeDir = towards (me, loc)
                          in  only (\ x -> distance (foeDir, x) <= 1)
-    lootHere x     = not $ L.null $ Tile.titems $ lm `at` x
+    lootHere x     = not $ L.null $ li `iat` x
     onlyLoot       = onlyMoves lootHere me
     exitHere x     = let t = lm `at` x in Tile.isExit t
     onlyExit       = onlyMoves exitHere me
@@ -150,7 +151,7 @@ strategy actor
       .| lootHere me .=> actionPickup
       .| fromDir True moveAround
     actionPickup = return $ actorPickupItem actor
-    tis = Tile.titems $ lm `at` me
+    tis = li `iat` me
     freqs = [applyFreq items 1, applyFreq tis 2,
              throwFreq items 2, throwFreq tis 5, towardsFreq]
     applyFreq is multi = Frequency

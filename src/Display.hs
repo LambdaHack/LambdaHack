@@ -131,7 +131,7 @@ displayLevel
   (state@(State { scursor = cursor,
                   stime   = time,
                   sassocs = asso,
-                  slevel  = Level ln _ (sy, sx) _ smap _ lm _ _ }))
+                  slevel  = Level ln _ (sy, sx) _ smap _ li lm _ _ }))
   msg moverlay =
   let Actor{akind, ahp, aloc, aitems} = getPlayerBody state
       ActorKind{bhp} = Kind.getKind akind
@@ -143,6 +143,7 @@ displayLevel
       sVis   = case ssensory state of Vision _ -> True; _ -> False
       sOmn   = sdisplay state == Omniscient
       lAt    = if sOmn then at else rememberAt
+      liAt   = if sOmn then iat else irememberAt
       sVisBG = if sVis
                then \ vis rea -> if vis
                                  then Color.Blue
@@ -158,6 +159,7 @@ displayLevel
       ms      = levelMonsterList state
       dis n loc0 =
         let tile = lm `lAt` loc0
+            items = li `liAt` loc0
             sm = smelltime $ M.findWithDefault (SmellTime 0) loc0 smap
             sml = (sm - time) `div` 100
             viewActor loc Actor{akind = akind2, asymbol}
@@ -177,7 +179,7 @@ displayLevel
               case L.find (\ m -> loc0 == Actor.aloc m) (hs ++ ms) of
                 Just m | sOmn || vis -> viewActor loc0 m
                 _ | sSml && sml >= 0 -> (viewSmell sml, rainbow loc0)
-                  | otherwise        -> viewTile vis tile asso
+                  | otherwise        -> viewTile vis tile items asso
             vis = S.member loc0 visible
             rea = S.member loc0 reachable
             bg0 = if ctargeting cursor && loc0 == clocation cursor
