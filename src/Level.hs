@@ -16,7 +16,7 @@ import qualified Tile
 import qualified Feature as F
 
 type Party = IM.IntMap Actor
-type LMap = M.Map Loc (Tile.Tile, Tile.Tile)
+type LMap = M.Map Loc Tile.Tile
 
 newtype SmellTime = SmellTime{smelltime :: Time} deriving Show
 instance Binary SmellTime where
@@ -33,6 +33,7 @@ data Level = Level
   , lsecret   :: M.Map Loc Int
   , litem     :: M.Map Loc ([Item], [Item])
   , lmap      :: LMap
+  , lrmap     :: LMap
   , lmeta     :: String
   , lstairs   :: (Loc, Loc) -- ^ here the stairs (down, up) from other levels end
   }
@@ -40,6 +41,9 @@ data Level = Level
 
 updateLMap :: (LMap -> LMap) -> Level -> Level
 updateLMap f lvl = lvl { lmap = f (lmap lvl) }
+
+updateLRMap :: (LMap -> LMap) -> Level -> Level
+updateLRMap f lvl = lvl { lrmap = f (lrmap lvl) }
 
 updateIMap :: (M.Map Loc ([Item], [Item]) -> M.Map Loc ([Item], [Item])) -> Level
               -> Level
@@ -58,7 +62,7 @@ emptyParty :: Party
 emptyParty = IM.empty
 
 instance Binary Level where
-  put (Level nm hs sz@(sy,sx) ms ls le li lm lme lstairs) =
+  put (Level nm hs sz@(sy,sx) ms ls le li lm lrm lme lstairs) =
         do
           put nm
           put hs
@@ -70,6 +74,7 @@ instance Binary Level where
                  (M.null (M.filter (\ (is1, is2) -> L.null is1 && L.null is2) li)
                  `blame` li) li)
           put ((sy+1)*(sx+1)) >> mapM_ put (M.elems lm)
+          put ((sy+1)*(sx+1)) >> mapM_ put (M.elems lrm)
           put lme
           put lstairs
   get = do
@@ -83,13 +88,16 @@ instance Binary Level where
           ys <- get
           let lm = M.fromDistinctAscList
                      (zip [ (y,x) | y <- [0..sy], x <- [0..sx] ] ys)
+          xs <- get
+          let lrm = M.fromDistinctAscList
+                      (zip [ (y,x) | y <- [0..sy], x <- [0..sx] ] xs)
           lme <- get
           lstairs <- get
-          return (Level nm hs sz ms ls le li lm lme lstairs)
+          return (Level nm hs sz ms ls le li lm lrm lme lstairs)
 
 at, rememberAt :: Level -> Loc -> Tile.Tile
-at         l p = fst $ (lmap l) M.! p
-rememberAt l p = snd $ (lmap l) M.! p
+at         l p = lmap l M.! p
+rememberAt l p = lrmap l M.! p
 
 -- Note: representations with 2 maps leads to longer code and slower 'remember'.
 iat, irememberAt :: Level -> Loc -> [Item]
