@@ -3,9 +3,7 @@ module Config
 
 import System.Directory
 import System.FilePath
-
 import qualified Data.ConfigFile as CF
-import Data.Either.Utils
 import qualified Data.Binary as Binary
 
 import qualified ConfigDefault
@@ -22,6 +20,10 @@ instance Binary.Binary CP where
 
 instance Show CP where
   show (CP conf) = show $ CF.to_string conf
+
+forceEither :: Show a => Either a b -> b
+forceEither (Left a)  = error (show a)
+forceEither (Right b) = b
 
 -- | Switches all names to case sensitive (unlike by default in ConfigFile).
 toSensitive :: CF.ConfigParser -> CF.ConfigParser
