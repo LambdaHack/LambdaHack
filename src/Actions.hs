@@ -223,7 +223,10 @@ remember =
     let vis          = S.toList (ptvisible per)
     let rememberTile = M.adjust (\ (t, _) -> (t, t))
     modify (updateLevel (updateLMap (\ m -> L.foldr rememberTile m vis)))
-    let rememberItem = M.alter (fmap (\ (t, _) -> (t, t)))
+    let alt Nothing      = Nothing
+        alt (Just ([], _)) = Nothing
+        alt (Just (t, _))  = Just (t, t)
+        rememberItem = M.alter alt
     modify (updateLevel (updateIMap (\ m -> L.foldr rememberItem m vis)))
 
 -- | Ask for a direction and close the door, if any

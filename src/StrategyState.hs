@@ -58,10 +58,10 @@ and moves into the approximate direction of the hero.
 
 strategy :: ActorId -> State -> Perceptions -> Strategy (Action ())
 strategy actor
-         oldState@(State { splayer = pl,
-                           stime   = time,
-                           slevel  = lvl@Level{ lsmell = nsmap,
-                                                lsecret = le} })
+         oldState@(State{ splayer = pl
+                        , stime   = time
+                        , slevel  = lvl@Level{ lsmell = nsmap
+                                             , lsecret = le } })
          per =
 --  trace (show time ++ ": " ++ show actor) $
     strat

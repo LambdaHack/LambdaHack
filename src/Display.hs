@@ -28,17 +28,18 @@ import qualified Color
 import State
 import Geometry
 import Level
-import LevelState
 import Dungeon
 import Perception
 import Actor
 import ActorState
 import Content.ActorKind
+import Content.TileKind
 import Item
 import qualified Keys as K
 import WorldLoc
 import Random
 import qualified Kind
+import qualified Tile
 
 -- Re-exported from the display frontend, with an extra slot for function
 -- for translating keys to a canonical form.
@@ -128,10 +129,12 @@ displayLevel ::
   -> IO Bool
 displayLevel
   dm session per
-  state@(State { scursor = cursor,
-                 stime   = time,
-                 sassocs = asso,
-                 slevel  = lvl@(Level ln _ (sy, sx) _ smap _ _ _ _ _ )})
+  state@State{ scursor = cursor
+             , stime   = time
+             , sassocs = asso
+             , slevel  = lvl@Level{ lname = ln
+                                  , lsize = (sy, sx)
+                                  , lsmell = smap } }
   msg moverlay =
   let Actor{akind, ahp, aloc, aitems} = getPlayerBody state
       ActorKind{bhp} = Kind.getKind akind
@@ -179,7 +182,13 @@ displayLevel
               case L.find (\ m -> loc0 == Actor.aloc m) (hs ++ ms) of
                 Just m | sOmn || vis -> viewActor loc0 m
                 _ | sSml && sml >= 0 -> (viewSmell sml, rainbow loc0)
-                  | otherwise        -> viewTile vis tile items asso
+                  | otherwise ->
+                  case items of
+                    [] ->
+                      let u = Kind.getKind (Tile.tkind tile)
+                      in (usymbol u, if vis then ucolor u else ucolor2 u)
+                    i : _ ->
+                      Item.viewItem (ikind i) asso
             vis = S.member loc0 visible
             rea = S.member loc0 reachable
             bg0 = if ctargeting cursor && loc0 == clocation cursor

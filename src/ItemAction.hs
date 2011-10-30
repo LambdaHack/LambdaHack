@@ -203,7 +203,12 @@ removeFromLoc i loc = do
       modify (updateLevel (updateIMap adj)) >>
       return True
         where
-          adj = M.adjust (\ (is, ris) -> (removeItemByIdentity i is, ris)) loc
+          rib Nothing = assert `failure` (i, loc)
+          rib (Just (is, irs)) =
+            case (removeItemByIdentity i is, irs) of
+              ([], []) -> Nothing
+              iss -> Just iss
+          adj = M.alter rib loc
 
 actorPickupItem :: ActorId -> Action ()
 actorPickupItem actor = do

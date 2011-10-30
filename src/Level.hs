@@ -5,6 +5,7 @@ import qualified Data.Map as M
 import qualified Data.List as L
 import qualified Data.IntMap as IM
 
+import Utils.Assert
 import Geometry
 import GeometryRnd
 import Actor
@@ -65,7 +66,9 @@ instance Binary Level where
           put ms
           put ls
           put le
-          put (M.filter (\ (is1, is2) -> not (L.null is1 && L.null is2)) li)
+          put (assert
+                 (M.null (M.filter (\ (is1, is2) -> L.null is1 && L.null is2) li)
+                 `blame` li) li)
           put ((sy+1)*(sx+1)) >> mapM_ put (M.elems lm)
           put lme
           put lstairs
@@ -88,6 +91,7 @@ at, rememberAt :: Level -> Loc -> Tile.Tile
 at         l p = fst $ (lmap l) M.! p
 rememberAt l p = snd $ (lmap l) M.! p
 
+-- Note: representations with 2 maps leads to longer code and slower 'remember'.
 iat, irememberAt :: Level -> Loc -> [Item]
 iat         l p = fst $ M.findWithDefault ([], []) p (litem l)
 irememberAt l p = snd $ M.findWithDefault ([], []) p (litem l)
@@ -140,6 +144,7 @@ findLocTry k lvl@Level{lsize} p pTry =
 
 -- Do not scatter items around, it's too much work for the player.
 dropItemsAt :: [Item] -> Loc -> Level -> Level
+dropItemsAt [] _loc = id
 dropItemsAt items loc =
   let joinItems = L.foldl' (\ acc i -> snd (joinItem i acc))
       adj Nothing = Just (items, [])
