@@ -20,7 +20,7 @@ import qualified Tile
 -- | The current state of a scan is kept in Maybe (Line, ConvexHull).
 -- If Just something, we're in a visible interval. If Nothing, we're in
 -- a shadowed interval.
-scan :: Distance -> (Bump -> Loc) -> LMap -> Distance -> EdgeInterval
+scan :: Distance -> (Bump -> Loc) -> Level -> Distance -> EdgeInterval
          -> S.Set Loc
 scan r tr l d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps)) =
   assert (r >= d && d >= 0 && pe >= ps0 `blame` (r,d,s0,e,ps0,pe)) $

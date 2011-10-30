@@ -196,8 +196,8 @@ removeFromInventory actor i loc = do
 -- | Remove given item from the given location. Tell if successful.
 removeFromLoc :: Item -> Loc -> Action Bool
 removeFromLoc i loc = do
-  li <- gets (litem . slevel)
-  if not $ L.any (equalItemIdentity i) (li `iat` loc)
+  lvl <- gets slevel
+  if not $ L.any (equalItemIdentity i) (lvl `iat` loc)
     then return False
     else
       modify (updateLevel (updateIMap adj)) >>
@@ -210,13 +210,13 @@ actorPickupItem actor = do
   state <- get
   pl    <- gets splayer
   per   <- currentPerception
-  li    <- gets (litem . slevel)
+  lvl   <- gets slevel
   body  <- gets (getActor actor)
   let loc       = aloc body
       perceived = loc `S.member` ptvisible per
       isPlayer  = actor == pl
   -- check if something is here to pick up
-  case li `iat` loc of
+  case lvl `iat` loc of
     []   -> abortIfWith isPlayer "nothing here"
     i:is -> -- pick up first item; TODO: let player select item; not for monsters
       case assignLetter (iletter i) (aletter body) (aitems body) of
@@ -271,10 +271,10 @@ getItem :: String ->              -- prompt message
            String ->              -- how to refer to the collection of objects
            Action (Maybe Item)
 getItem prompt p ptext is0 isn = do
-  li   <- gets (litem . slevel)
+  lvl  <- gets slevel
   body <- gets getPlayerBody
   let loc       = aloc body
-      tis       = li `iat` loc
+      tis       = lvl `iat` loc
       floorMsg  = if L.null tis then "" else " -,"
       is = L.filter p is0
       choice = if L.null is

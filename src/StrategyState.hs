@@ -60,10 +60,8 @@ strategy :: ActorId -> State -> Perceptions -> Strategy (Action ())
 strategy actor
          oldState@(State { splayer = pl,
                            stime   = time,
-                           slevel  = Level { lsmell = nsmap,
-                                             lmap = lm,
-                                             litem = li,
-                                             lsecret = le} })
+                           slevel  = lvl@Level{ lsmell = nsmap,
+                                                lsecret = le} })
          per =
 --  trace (show time ++ ": " ++ show actor) $
     strat
@@ -118,9 +116,9 @@ strategy actor
                        Just loc ->
                          let foeDir = towards (me, loc)
                          in  only (\ x -> distance (foeDir, x) <= 1)
-    lootHere x     = not $ L.null $ li `iat` x
+    lootHere x     = not $ L.null $ lvl `iat` x
     onlyLoot       = onlyMoves lootHere me
-    exitHere x     = let t = lm `at` x in Tile.isExit t
+    exitHere x     = let t = lvl `at` x in Tile.isExit t
     onlyExit       = onlyMoves exitHere me
     onlyKeepsDir k = only (\ x -> maybe True (\ d -> distance (d, x) <= k) ad)
     onlyKeepsDir_9 = only (\ x -> maybe True (\ d -> neg x /= d) ad)
@@ -131,9 +129,9 @@ strategy actor
     openPower      = case strongestItem items "ring" of
                        Just i  -> biq mk + ipower i
                        Nothing -> biq mk
-    openableHere   = openable openPower lm le
+    openableHere   = openable openPower lvl le
     onlyOpenable   = onlyMoves openableHere me
-    accessibleHere = accessible lm me
+    accessibleHere = accessible lvl me
     onlySensible   = onlyMoves (\ l -> accessibleHere l || openableHere l) me
     focusedMonster = biq mk > 10
     smells         =
@@ -151,7 +149,7 @@ strategy actor
       .| lootHere me .=> actionPickup
       .| fromDir True moveAround
     actionPickup = return $ actorPickupItem actor
-    tis = li `iat` me
+    tis = lvl `iat` me
     freqs = [applyFreq items 1, applyFreq tis 2,
              throwFreq items 2, throwFreq tis 5, towardsFreq]
     applyFreq is multi = Frequency

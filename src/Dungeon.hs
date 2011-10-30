@@ -177,7 +177,7 @@ noiseRoom cfg =
   let addRocks lvl = do
         rs <- rollPillars cfg lvl
         let insertRock lm l =
-              case lm `at` l of
+              case fst $ lm M.! l of
                 t@(Tile _) | Tile.isBoring t -> M.insert l (newTile Tile.wallId) lm
                 _ -> lm
         return $ \ lm -> L.foldl' insertRock lm rs

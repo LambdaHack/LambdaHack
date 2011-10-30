@@ -50,8 +50,7 @@ generate config =
 
 whereTo :: State -> Loc -> Maybe WorldLoc
 whereTo State{sdungeon, slevel} loc =
-  let lm = lmap slevel
-      tile = lm `at` loc
+  let tile = slevel `at` loc
       k | Tile.hasFeature F.Climbable tile = -1
         | Tile.hasFeature F.Descendable tile = 1
         | otherwise = assert `failure` tile

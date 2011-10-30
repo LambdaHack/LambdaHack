@@ -21,14 +21,14 @@ viewTile _b (Tile.Tile _t) (i : _) a =
 -- explored location. Mute for unknown locations.
 -- The "detailed" variant is for use in the targeting mode.
 lookAt :: Bool -> Bool -> State -> Level -> Loc -> String -> String
-lookAt detailed canSee s Level{lmap = lm, litem = li} loc msg
+lookAt detailed canSee s lvl loc msg
   | detailed  =
-    let tile = lm `rememberAt` loc
+    let tile = lvl `rememberAt` loc
         name = uname . Kind.getKind . Tile.tkind $ tile
     in name ++ " " ++ msg ++ isd
   | otherwise = msg ++ isd
   where
-    is  = li `irememberAt` loc
+    is  = lvl `irememberAt` loc
     prefixSee = if canSee then "You see " else "You remember "
     prefixThere = if canSee
                   then "There are several objects here"

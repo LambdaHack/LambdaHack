@@ -84,13 +84,13 @@ instance Binary Level where
           lstairs <- get
           return (Level nm hs sz ms ls le li lm lme lstairs)
 
-at, rememberAt :: M.Map Loc (Tile.Tile, Tile.Tile) -> Loc -> Tile.Tile
-at         l p = fst $ l M.! p
-rememberAt l p = snd $ l M.! p
+at, rememberAt :: Level -> Loc -> Tile.Tile
+at         l p = fst $ (lmap l) M.! p
+rememberAt l p = snd $ (lmap l) M.! p
 
-iat, irememberAt :: M.Map Loc ([Item], [Item]) -> Loc -> [Item]
-iat         l p = fst $ M.findWithDefault ([], []) p l
-irememberAt l p = snd $ M.findWithDefault ([], []) p l
+iat, irememberAt :: Level -> Loc -> [Item]
+iat         l p = fst $ M.findWithDefault ([], []) p (litem l)
+irememberAt l p = snd $ M.findWithDefault ([], []) p (litem l)
 
 -- Checks for the presence of actors. Does *not* check if the tile is open.
 unoccupied :: [Actor] -> Loc -> Bool
@@ -101,42 +101,42 @@ unoccupied actors loc =
 -- Precondition: the two locations are next to each other.
 -- Currently only implements that the target location has to be open.
 -- TODO: in the future check flying for chasms, swimming for water, etc.
-accessible :: LMap -> Loc -> Loc -> Bool
-accessible lm _source target =
-  let tgt = lm `at` target
+accessible :: Level -> Loc -> Loc -> Bool
+accessible lvl _source target =
+  let tgt = lvl `at` target
   in  Tile.isWalkable tgt
 
 -- check whether the location contains a door of secrecy level lower than k
-openable :: Int -> LMap -> M.Map Loc Int -> Loc -> Bool
-openable k lm le target =
-  let tgt = lm `at` target
+openable :: Int -> Level -> M.Map Loc Int -> Loc -> Bool
+openable k lvl le target =
+  let tgt = lvl `at` target
   in Tile.hasFeature F.Openable tgt ||
      (Tile.hasFeature F.Hidden tgt &&
       le M.! target < k)
 
 findLoc :: Level -> (Loc -> Tile.Tile -> Bool) -> Rnd Loc
-findLoc l@(Level { lsize = sz, lmap = lm }) p =
+findLoc lvl@Level{lsize} p =
   do
-    loc <- locInArea ((0,0),sz)
-    let tile = lm `at` loc
+    loc <- locInArea ((0,0), lsize)
+    let tile = lvl `at` loc
     if p loc tile
       then return loc
-      else findLoc l p
+      else findLoc lvl p
 
 findLocTry :: Int ->  -- try k times
               Level ->
               (Loc -> Tile.Tile -> Bool) ->  -- loop until satisfied
               (Loc -> Tile.Tile -> Bool) ->  -- only try to satisfy k times
               Rnd Loc
-findLocTry k l@(Level { lsize = sz, lmap = lm }) p pTry =
+findLocTry k lvl@Level{lsize} p pTry =
   do
-    loc <- locInArea ((0,0),sz)
-    let tile = lm `at` loc
+    loc <- locInArea ((0,0), lsize)
+    let tile = lvl `at` loc
     if p loc tile && pTry loc tile
       then return loc
       else if k > 1
-             then findLocTry (k - 1) l p pTry
-             else findLoc l p
+             then findLocTry (k - 1) lvl p pTry
+             else findLoc lvl p
 
 -- Do not scatter items around, it's too much work for the player.
 dropItemsAt :: [Item] -> Loc -> Level -> Level

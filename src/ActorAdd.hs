@@ -31,11 +31,11 @@ template :: Kind.Id ActorKind -> Maybe String -> Maybe Char -> Int -> Loc
 template mk ms mc hp loc = Actor mk ms mc hp Nothing TCursor loc [] 'a' 0
 
 nearbyFreeLoc :: Loc -> State -> Loc
-nearbyFreeLoc origin state@(State { slevel = Level { lmap = lm } }) =
+nearbyFreeLoc origin state@State{slevel} =
   let hs = levelHeroList state
       ms = levelMonsterList state
       places = origin : L.nub (concatMap surroundings places)
-      good loc = Tile.isWalkable (lm `at` loc)
+      good loc = Tile.isWalkable (slevel `at` loc)
                  && loc `L.notElem` L.map aloc (hs ++ ms)
   in  fromMaybe (assert `failure` "too crowded map") $ L.find good places
 

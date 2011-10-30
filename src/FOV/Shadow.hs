@@ -71,7 +71,7 @@ for the square is added to the shadow set.
 -- | The current state of a scan is kept in a variable of Maybe Rational.
 -- If Just something, we're in a visible interval. If Nothing, we're in
 -- a shadowed interval.
-scan :: ((Distance, Progress) -> Loc) -> LMap -> Distance -> Interval
+scan :: ((Distance, Progress) -> Loc) -> Level -> Distance -> Interval
         -> S.Set Loc
 scan tr l d (s0, e) =
     let ps = downBias (s0 * fromIntegral d)  -- minimal progress to check

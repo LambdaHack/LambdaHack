@@ -66,7 +66,7 @@ actorReachesActor actor1 actor2 loc1 loc2 per pl =
 
 perception_ :: State -> Perceptions
 perception_ state@(State { splayer = pl,
-                           slevel   = Level { lmap = lm, lheroes = hs },
+                           slevel   = lvl@Level{lheroes = hs},
                            sconfig  = config,
                            ssensory = sensory }) =
   let mode   = Config.get config "engine" "fovMode"
@@ -93,9 +93,9 @@ perception_ state@(State { splayer = pl,
       -- Perception for a player-controlled monster on the current level.
       pper = if isAMonster pl && memActor pl state
              then let m = getPlayerBody state
-                  in Just $ perception (fovMode m) (aloc m) lm
+                  in Just $ perception (fovMode m) (aloc m) lvl
              else Nothing
-      pers = IM.map (\ h -> perception (fovMode h) (aloc h) lm) hs
+      pers = IM.map (\ h -> perception (fovMode h) (aloc h) lvl) hs
       lpers = maybeToList pper ++ IM.elems pers
       reachable = S.unions (L.map preachable lpers)
       visible = S.unions (L.map pvisible lpers)
@@ -105,13 +105,13 @@ perception_ state@(State { splayer = pl,
 
 -- | Once we compute the reachable fields using FOV, it is possible
 -- to compute what the hero can actually see.
-perception :: FovMode -> Loc -> LMap -> Perception
-perception fovMode ploc lm =
+perception :: FovMode -> Loc -> Level -> Perception
+perception fovMode ploc lvl =
   let
     -- Reachable are all fields on an unblocked path from the hero position.
-    reachable  = fullscan fovMode ploc lm
+    reachable  = fullscan fovMode ploc lvl
     -- Everybody can see locations that are lit and are reachable.
-    uniVisible = S.filter (\ loc -> Tile.isLit (lm `at` loc)) reachable
+    uniVisible = S.filter (\ loc -> Tile.isLit (lvl `at` loc)) reachable
     -- The hero is assumed to carry a light source, too.
     litVisible = S.insert ploc uniVisible
     -- Reachable fields adjacent to lit fields are visible, too.

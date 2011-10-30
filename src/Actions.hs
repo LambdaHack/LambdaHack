@@ -164,9 +164,8 @@ continueRun dir =
     msg <- currentMessage
     ms  <- gets (lmonsters . slevel)
     hs  <- gets (lheroes . slevel)
-    lm  <- gets (lmap . slevel)
     le  <- gets (lsecret . slevel)
-    li  <- gets (litem . slevel)
+    lvl <- gets slevel
     pl  <- gets splayer
     let dms = case pl of
                 AMonster n -> IM.delete n ms  -- don't be afraid of yourself
@@ -174,10 +173,10 @@ continueRun dir =
         mslocs = S.fromList (L.map aloc (IM.elems dms))
         monstersVisible = not (S.null (mslocs `S.intersection` ptvisible per))
         newsReported    = not (L.null msg)
-        tile      = lm `rememberAt` loc  -- tile at current location
-        itemsHere = not (L.null (li `irememberAt` loc))
+        tile      = lvl `rememberAt` loc  -- tile at current location
+        itemsHere = not (L.null (lvl `irememberAt` loc))
         heroThere = (loc `shift` dir) `elem` L.map aloc (IM.elems hs)
-        dirOK     = accessible lm loc (loc `shift` dir)
+        dirOK     = accessible lvl loc (loc `shift` dir)
         isTExit   = Tile.isExit tile
         isWalkableDark = Tile.isWalkable tile && not (Tile.isLit tile)
     -- What happens next is mostly depending on the terrain we're currently on.
@@ -187,8 +186,8 @@ continueRun dir =
           -- in corridors, explore all corners and stop at all crossings
           -- TODO: even in corridors, stop if you run past an exit (rare)
           let ns = L.filter (\ x -> distance (neg dir, x) > 1
-                                    && (accessible lm loc (loc `shift` x))
-                                        || openable 1 lm le (loc `shift` x))
+                                    && (accessible lvl loc (loc `shift` x))
+                                        || openable 1 lvl le (loc `shift` x))
                             moves
               allCloseTo main = L.all (\ d -> distance (main, d) <= 1) ns
           in  case ns of
@@ -204,9 +203,9 @@ continueRun dir =
             | otherwise =
           let ns = L.filter (\ x -> x /= dir && distance (neg dir, x) > 1) moves
               ls = L.map (loc `shift`) ns
-              as = L.filter (\ x -> accessible lm loc x
-                                    || openable 1 lm le x) ls
-              ts = L.map (lm `rememberAt`) as
+              as = L.filter (\ x -> accessible lvl loc x
+                                    || openable 1 lvl le x) ls
+              ts = L.map (lvl `rememberAt`) as
           in if L.any Tile.isExit ts then abort else run dir
     hop
 
@@ -239,16 +238,15 @@ closeDoor = do
 playerCloseDoor :: Dir -> Action ()
 playerCloseDoor dir = do
   state <- get
-  lm    <- gets (lmap . slevel)
-  li    <- gets (litem . slevel)
+  lvl   <- gets slevel
   pl    <- gets splayer
   body  <- gets (getActor pl)
   let hms = levelHeroList state ++ levelMonsterList state
       dloc = shift (aloc body) dir  -- the location we act upon
-      t = lm `at` dloc
+      t = lvl `at` dloc
   if hasFeature F.Closable t
     then
-      case li `iat` dloc of
+      case lvl `iat` dloc of
         [] ->
           if unoccupied hms dloc
           then let nt  = Tile Tile.doorClosedId
@@ -264,12 +262,12 @@ playerCloseDoor dir = do
 -- | An actor closes a door. Player (hero or monster) or enemy.
 actorOpenDoor :: ActorId -> Dir -> Action ()
 actorOpenDoor actor dir = do
-  lm   <- gets (lmap . slevel)
+  lvl  <- gets slevel
   le   <- gets (lsecret . slevel)
   pl   <- gets splayer
   body <- gets (getActor actor)
   let dloc = shift (aloc body) dir  -- the location we act upon
-      t = lm `at` dloc
+      t = lvl `at` dloc
       isPlayer = actor == pl
       isVerbose = isPlayer  -- don't report enemy failures, if it's not player
       iq = biq $ Kind.getKind $ akind body
@@ -279,7 +277,7 @@ actorOpenDoor actor dir = do
         else case strongestItem (aitems body) "ring" of  -- TODO: hack
                Just i  -> iq + ipower i
                Nothing -> iq
-  unless (openable openPower lm le dloc) $ neverMind isVerbose
+  unless (openable openPower lvl le dloc) $ neverMind isVerbose
   if hasFeature F.Closable t
     then abortIfWith isVerbose "already open"
     else if not (hasFeature F.Closable t ||
@@ -317,10 +315,10 @@ lvlChange vdir =
     targeting <- gets (ctargeting . scursor)
     pbody     <- gets getPlayerBody
     pl        <- gets splayer
-    lm        <- gets (lmap . slevel)
+    lvl        <- gets slevel
     st        <- get
     let loc = if targeting then clocation cursor else aloc pbody
-        tile = lm `at` loc
+        tile = lvl `at` loc
         sdir | hasFeature F.Climbable tile = Just Up
              | hasFeature F.Descendable tile = Just Down
              | otherwise = Nothing
@@ -343,9 +341,9 @@ lvlChange vdir =
                   lvlSwitch nln
                     >>= assert `trueM` (nln, "stairs connect level with itself")
                   -- do not freely reveal the other end of the stairs
-                  lm2 <- gets (lmap . slevel)  -- lvlSwitch modifies map
+                  lvl2 <- gets slevel  -- lvlSwitch modifies map
                   let upd cur =
-                        let clocation = if isUnknown (rememberAt lm2 nloc)
+                        let clocation = if isUnknown (lvl2 `rememberAt` nloc)
                                         then loc
                                         else nloc
                         in  cur { clocation, clocLn = nln }
@@ -514,7 +512,6 @@ doLook =
     loc    <- gets (clocation . scursor)
     state  <- get
     lvl    <- gets slevel
-    li     <- gets (litem . slevel)
     per    <- currentPerception
     target <- gets (atarget . getPlayerBody)
     let canSee = S.member loc (ptvisible per)
@@ -531,7 +528,7 @@ doLook =
         -- general info about current loc
         lookMsg = mode ++ lookAt True canSee state lvl loc monsterMsg
         -- check if there's something lying around at current loc
-        is = li `irememberAt` loc
+        is = lvl `irememberAt` loc
     if length is <= 2
       then do
              messageAdd lookMsg
@@ -558,7 +555,6 @@ moveOrAttack allowAttacks autoOpen actor dir
       state <- get
       pl    <- gets splayer
       lvl   <- gets slevel
-      lm    <- gets (lmap . slevel)
       sm    <- gets (getActor actor)
       let sloc = aloc sm           -- source location
           tloc = sloc `shift` dir  -- target location
@@ -568,21 +564,21 @@ moveOrAttack allowAttacks autoOpen actor dir
           | allowAttacks ->
               -- Attacking does not require full access, adjacency is enough.
               actorAttackActor actor target
-          | accessible lm sloc tloc -> do
+          | accessible lvl sloc tloc -> do
               -- Switching positions requires full access.
               actorRunActor actor target
               when (actor == pl) $
                 messageAdd $ lookAt False True state lvl tloc ""
           | otherwise -> abortWith ""
         Nothing
-          | accessible lm sloc tloc -> do
+          | accessible lvl sloc tloc -> do
               -- perform the move
               updateAnyActor actor $ \ body -> body {aloc = tloc}
               when (actor == pl) $
                 messageAdd $ lookAt False True state lvl tloc ""
               advanceTime actor
           | allowAttacks && actor == pl
-            && canBeSecretDoor (lm `rememberAt` tloc)
+            && canBeSecretDoor (lvl `rememberAt` tloc)
             -> do
               messageAdd "You search your surroundings."  -- TODO: proper msg
               search

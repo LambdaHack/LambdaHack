@@ -128,10 +128,10 @@ displayLevel ::
   -> IO Bool
 displayLevel
   dm session per
-  (state@(State { scursor = cursor,
-                  stime   = time,
-                  sassocs = asso,
-                  slevel  = Level ln _ (sy, sx) _ smap _ li lm _ _ }))
+  state@(State { scursor = cursor,
+                 stime   = time,
+                 sassocs = asso,
+                 slevel  = lvl@(Level ln _ (sy, sx) _ smap _ _ _ _ _ )})
   msg moverlay =
   let Actor{akind, ahp, aloc, aitems} = getPlayerBody state
       ActorKind{bhp} = Kind.getKind akind
@@ -158,8 +158,8 @@ displayLevel
       hs      = levelHeroList state
       ms      = levelMonsterList state
       dis n loc0 =
-        let tile = lm `lAt` loc0
-            items = li `liAt` loc0
+        let tile = lvl `lAt` loc0
+            items = lvl `liAt` loc0
             sm = smelltime $ M.findWithDefault (SmellTime 0) loc0 smap
             sml = (sm - time) `div` 100
             viewActor loc Actor{akind = akind2, asymbol}

@@ -19,24 +19,24 @@ data FovMode = Shadow | Permissive Int | Digital Int | Blind
 -- algorithm to use is set in the config file.
 -- Press a command key in the game to cycle among the algorithms
 -- and see a special visualization of their effects..
-fullscan :: FovMode -> Loc -> LMap -> S.Set Loc
-fullscan fovMode loc lm =
+fullscan :: FovMode -> Loc -> Level -> S.Set Loc
+fullscan fovMode loc lvl =
   case fovMode of
     Shadow ->         -- shadow casting with infinite range
       S.unions $
-      L.map (\ tr -> FOV.Shadow.scan (tr loc) lm 1 (0,1))
+      L.map (\ tr -> FOV.Shadow.scan (tr loc) lvl 1 (0,1))
         [tr0,tr1,tr2,tr3,tr4,tr5,tr6,tr7]
     Permissive r  ->  -- permissive with range r
       S.unions $
       L.map (\ tr ->
-              FOV.Permissive.scan r (tr loc) lm 1
+              FOV.Permissive.scan r (tr loc) lvl 1
                 (((B(1, 0), B(0, r+1)), [B(0, 1)]),
                  ((B(0, 1), B(r+1, 0)), [B(1, 0)])))
       [qtr0,qtr1,qtr2,qtr3]
     Digital r    ->  -- digital with range r
       S.unions $
       L.map (\ tr ->
-              FOV.Digital.scan r (tr loc) lm 1
+              FOV.Digital.scan r (tr loc) lvl 1
                 (((B(0, 1), B(r, -r)),  [B(0, 0)]),
                  ((B(0, 0), B(r, r+1)), [B(0, 1)])))
       [qtr0,qtr1,qtr2,qtr3]
