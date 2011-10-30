@@ -50,7 +50,7 @@ executable Allure
                  Message, Utils.Multiline, Perception, Random,
                  Save, State, Strategy, StrategyState,
                  Tile, Turn, Version, WorldLoc
-  build-depends: base >= 4 && < 5, containers >= 0.1 && < 1,
+  build-depends: array >= 0.3 && < 1, base >= 4 && < 5, containers >= 0.1 && < 1,
                  binary >= 0.4 && < 1,
                  random >= 1 && < 2, zlib >= 0.4 && < 1,
                  bytestring >= 0.9 && < 1, directory >= 1 && < 2,

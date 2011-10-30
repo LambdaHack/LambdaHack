@@ -4,6 +4,7 @@ import Data.Binary
 import qualified Data.Map as M
 import qualified Data.List as L
 import qualified Data.IntMap as IM
+import qualified Data.Array.IArray as A
 
 import Utils.Assert
 import Geometry
@@ -16,7 +17,7 @@ import qualified Tile
 import qualified Feature as F
 
 type Party = IM.IntMap Actor
-type LMap = M.Map Loc Tile.Tile
+type LAMap = A.Array Loc Tile.Tile
 
 newtype SmellTime = SmellTime{smelltime :: Time} deriving Show
 instance Binary SmellTime where
@@ -32,17 +33,17 @@ data Level = Level
   , lsmell    :: SMap
   , lsecret   :: M.Map Loc Int
   , litem     :: M.Map Loc ([Item], [Item])
-  , lmap      :: LMap
-  , lrmap     :: LMap
+  , lmap      :: LAMap
+  , lrmap     :: LAMap
   , lmeta     :: String
   , lstairs   :: (Loc, Loc) -- ^ here the stairs (down, up) from other levels end
   }
   deriving Show
 
-updateLMap :: (LMap -> LMap) -> Level -> Level
+updateLMap :: (LAMap -> LAMap) -> Level -> Level
 updateLMap f lvl = lvl { lmap = f (lmap lvl) }
 
-updateLRMap :: (LMap -> LMap) -> Level -> Level
+updateLRMap :: (LAMap -> LAMap) -> Level -> Level
 updateLRMap f lvl = lvl { lrmap = f (lrmap lvl) }
 
 updateIMap :: (M.Map Loc ([Item], [Item]) -> M.Map Loc ([Item], [Item])) -> Level
@@ -62,7 +63,7 @@ emptyParty :: Party
 emptyParty = IM.empty
 
 instance Binary Level where
-  put (Level nm hs sz@(sy,sx) ms ls le li lm lrm lme lstairs) =
+  put (Level nm hs sz ms ls le li lm lrm lme lstairs) =
         do
           put nm
           put hs
@@ -73,31 +74,27 @@ instance Binary Level where
           put (assert
                  (M.null (M.filter (\ (is1, is2) -> L.null is1 && L.null is2) li)
                  `blame` li) li)
-          put ((sy+1)*(sx+1)) >> mapM_ put (M.elems lm)
-          put ((sy+1)*(sx+1)) >> mapM_ put (M.elems lrm)
+          put lm
+          put lrm
           put lme
           put lstairs
   get = do
           nm <- get
           hs <- get
-          sz@(sy,sx) <- get
+          sz <- get
           ms <- get
           ls <- get
           le <- get
           li <- get
-          ys <- get
-          let lm = M.fromDistinctAscList
-                     (zip [ (y,x) | y <- [0..sy], x <- [0..sx] ] ys)
-          xs <- get
-          let lrm = M.fromDistinctAscList
-                      (zip [ (y,x) | y <- [0..sy], x <- [0..sx] ] xs)
+          lm <- get
+          lrm <- get
           lme <- get
           lstairs <- get
           return (Level nm hs sz ms ls le li lm lrm lme lstairs)
 
 at, rememberAt :: Level -> Loc -> Tile.Tile
-at         l p = lmap l M.! p
-rememberAt l p = lrmap l M.! p
+at         l p = lmap l A.! p
+rememberAt l p = lrmap l A.! p
 
 -- Note: representations with 2 maps leads to longer code and slower 'remember'.
 iat, irememberAt :: Level -> Loc -> [Item]

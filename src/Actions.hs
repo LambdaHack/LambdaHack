@@ -7,6 +7,7 @@ import qualified Data.Map as M
 import qualified Data.IntMap as IM
 import Data.Maybe
 import qualified Data.Set as S
+import qualified Data.Array.IArray as A
 
 import Utils.Assert
 import Action
@@ -221,9 +222,9 @@ remember =
   do
     per <- currentPerception
     lvl <- gets slevel
-    let vis          = S.toList (ptvisible per)
-    let rememberTile loc = M.adjust (const (lvl `at` loc)) loc
-    modify (updateLevel (updateLRMap (\ m -> L.foldr rememberTile m vis)))
+    let vis = S.toList (ptvisible per)
+    let rememberTile = [(loc, lvl `at` loc) | loc <- vis]
+    modify (updateLevel (updateLRMap (A.// rememberTile)))
     let alt Nothing      = Nothing
         alt (Just ([], _)) = Nothing
         alt (Just (t, _))  = Just (t, t)
@@ -253,8 +254,7 @@ playerCloseDoor dir = do
       case lvl `iat` dloc of
         [] ->
           if unoccupied hms dloc
-          then let nt  = Tile Tile.doorClosedId
-                   adj = M.adjust (const nt) dloc
+          then let adj = (A.// [(dloc, Tile Tile.doorClosedId)])
                in modify (updateLevel (updateLMap adj))
           else abortWith "blocked"  -- by monsters or heroes
         _:_ -> abortWith "jammed"  -- by items
@@ -289,8 +289,7 @@ actorOpenDoor actor dir = do
                  hasFeature F.Hidden t)
          then neverMind isVerbose  -- not doors at all
          else
-           let nt  = Tile Tile.doorOpenId
-               adj = M.adjust (const nt) dloc
+           let adj = (A.// [(dloc, Tile Tile.doorOpenId)])
            in  modify (updateLevel (updateLMap adj))
   advanceTime actor
 
@@ -441,19 +440,20 @@ search =
     let delta = case strongestItem pitems "ring" of
                   Just i  -> 1 + ipower i
                   Nothing -> 1
-        searchTile loc (alm, ale) =
-          let t = alm M.! loc
-              k = ale M.! loc - delta
+        searchTile loc (slm, sle) =
+          let t = lm A.! loc
+              k = le M.! loc - delta
           in if hasFeature F.Hidden t
              then if k > 0
-                  then (M.insert loc (Tile Tile.doorSecretId) lm,
-                        M.insert loc k ale)
-                  else (M.insert loc (Tile Tile.doorClosedId) alm,
-                        M.delete loc ale)
-             else (alm, ale)
+                  then (slm,
+                        M.insert loc k sle)
+                  else ((loc, Tile Tile.doorClosedId) : slm,
+                        M.delete loc sle)
+             else (slm, sle)
         f (slm, sle) m = searchTile (shift ploc m) (slm, sle)
-        (slmap, lemap) = L.foldl' f (lm, le) moves
-    modify (updateLevel (\ l -> l{lmap = slmap, lsecret = lemap}))
+        (lmDiff, lemap) = L.foldl' f ([], le) moves
+        lmNew = if L.null lmDiff then lm else lm A.// lmDiff
+    modify (updateLevel (\ l -> l{lmap = lmNew, lsecret = lemap}))
     playerAdvanceTime
 
 -- | Start the floor targeting mode or reset the cursor location to the player.
