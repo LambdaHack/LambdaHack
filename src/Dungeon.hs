@@ -92,7 +92,7 @@ instance R.Random HV where
                       (b, g') -> (toHV b, g')
   random = R.randomR (minBound, maxBound)
 
-type LMap = M.Map Loc Tile.Tile
+type LMap = M.Map Loc (Kind.Id TileKind)
 
 -- | Create a corridor, either horizontal or vertical, with
 -- a possible intermediate part that is in the opposite direction.
@@ -130,17 +130,13 @@ digCorridors (p1:p2:ps) =
   M.union corPos (digCorridors (p2:ps))
   where
     corLoc = fromTo p1 p2
-    corPos = M.fromList $ L.zip corLoc (repeat (Tile Tile.floorDarkId))
+    corPos = M.fromList $ L.zip corLoc (repeat Tile.floorDarkId)
 digCorridors _ = M.empty
 
-mergeCorridor :: Tile -> Tile -> Tile
-mergeCorridor _ t          | Tile.isWalkable t = t
-mergeCorridor _ t@(Tile _) | Tile.isUnknown t  = Tile Tile.floorDarkId
-mergeCorridor _ (Tile _)                       = Tile Tile.openingId
-
--- | Create a new door tile.
-newDoorTile :: Kind.Id TileKind -> Tile
-newDoorTile t = Tile t
+mergeCorridor :: Kind.Id TileKind -> Kind.Id TileKind -> Kind.Id TileKind
+mergeCorridor _ t | Tile.isWalkable t = t
+mergeCorridor _ t | Tile.isUnknown t  = Tile.floorDarkId
+mergeCorridor _ _                     = Tile.openingId
 
 -- | Create a level consisting of only one room. Optionally, insert some walls.
 emptyRoom :: (Level -> Rnd (LMap -> LMap)) -> LevelConfig -> LevelId -> LevelId
@@ -158,8 +154,8 @@ emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm lastNm =
     is <- rollItems cfg lvl su
     let lm2 = if nm == lastNm
               then lm1
-              else M.insert sd (Tile Tile.stairsLightDownId) lm1
-        lm3 = M.insert su (Tile Tile.stairsLightUpId) lm2
+              else M.insert sd Tile.stairsLightDownId lm1
+        lm3 = M.insert su Tile.stairsLightUpId lm2
     addRocks <- addRocksRnd lvl
     let lm4 = addRocks lm3
         level = Level
@@ -178,7 +174,7 @@ noiseRoom cfg =
         rs <- rollPillars cfg lvl
         let insertRock lm l =
               case lm M.! l of
-                t@(Tile _) | Tile.isBoring t -> M.insert l (Tile Tile.wallId) lm
+                t | Tile.isBoring t -> M.insert l Tile.wallId lm
                 _ -> lm
         return $ \ lm -> L.foldl' insertRock lm rs
   in  emptyRoom addRocks cfg
@@ -302,7 +298,7 @@ rogueRoom cfg nm lastNm =
     (dlmap, secretMap) <- do
       let f (l, le) o@((y, x), t) =
                   case t of
-                    Tile _ | Tile.isOpening t ->
+                    _ | Tile.isOpening t ->
                       do
                         -- openings have a certain chance to be doors;
                         -- doors have a certain chance to be open; and
@@ -313,15 +309,15 @@ rogueRoom cfg nm lastNm =
                         if not rb
                           then return (o : l, le)
                           else if ro
-                               then return (((y,x), newDoorTile Tile.doorOpenId) : l, le)
+                               then return (((y,x), Tile.doorOpenId) : l, le)
                                else do
                                  rsc <- doorSecretChance cfg
                                  if not rsc
-                                   then return (((y,x), newDoorTile Tile.doorClosedId) : l, le)
+                                   then return (((y,x), Tile.doorClosedId) : l, le)
                                    else do
                                      rs1 <- randomR (doorSecretMax cfg `div` 2,
                                                      doorSecretMax cfg)
-                                     return (((y,x), newDoorTile Tile.doorSecretId) : l, M.insert (y, x) rs1 le)
+                                     return (((y,x), Tile.doorSecretId) : l, M.insert (y, x) rs1 le)
                     _ -> return (o : l, le)
       (l, le) <- foldM f ([], M.empty) (M.toList lm)
       return (M.fromList l, le)
@@ -339,13 +335,13 @@ rogueRoom cfg nm lastNm =
               then dlmap
               else M.update (\ t ->
                               Just $ if isLit t
-                                     then (Tile Tile.stairsLightDownId)
-                                     else (Tile Tile.stairsDarkDownId))
+                                     then Tile.stairsLightDownId
+                                     else Tile.stairsDarkDownId)
                    sd dlmap
         lm3 = M.update (\ t ->
                          Just $ if isLit t
-                                then (Tile Tile.stairsLightUpId)
-                                else (Tile Tile.stairsDarkUpId))
+                                then Tile.stairsLightUpId
+                                else Tile.stairsDarkUpId)
               su lm2
         -- generate map and level from the data
         meta = show allConnects
@@ -376,22 +372,22 @@ rollPillars cfg lvl =
 
 emptyLMap :: (Y, X) -> LMap
 emptyLMap (my, mx) =
-  M.fromList [ ((y, x), (Tile Tile.wallId)) | x <- [0..mx], y <- [0..my] ]
+  M.fromList [ ((y, x), Tile.wallId) | x <- [0..mx], y <- [0..my] ]
 
 unknownLAMap :: (Y, X) -> LAMap
 unknownLAMap (my, mx) =
-  A.listArray ((0, 0), (my, mx)) (repeat (Tile Tile.unknownId))
+  A.listArray ((0, 0), (my, mx)) (repeat Tile.unknownId)
 
 -- | If the room has size 1, it is at most a start of a corridor.
 digRoom :: Bool -> Room -> LMap -> LMap
 digRoom dl ((y0, x0), (y1, x1)) l
   | y0 == y1 && x0 == x1 = l
   | otherwise =
-  let floorDL = Tile $ if dl then Tile.floorLightId else Tile.floorDarkId
+  let floorDL = if dl then Tile.floorLightId else Tile.floorDarkId
       rm =
         [ ((y, x), floorDL) | x <- [x0..x1], y <- [y0..y1] ]
-        ++ [ ((y, x), Tile Tile.wallId)
+        ++ [ ((y, x), Tile.wallId)
            | x <- [x0-1, x1+1], y <- [y0..y1] ]
-        ++ [ ((y, x), Tile Tile.wallId)
+        ++ [ ((y, x), Tile.wallId)
            | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
   in M.unionWith const (M.fromList rm) l

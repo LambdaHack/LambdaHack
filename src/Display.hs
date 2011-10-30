@@ -39,7 +39,6 @@ import qualified Keys as K
 import WorldLoc
 import Random
 import qualified Kind
-import qualified Tile
 
 -- Re-exported from the display frontend, with an extra slot for function
 -- for translating keys to a canonical form.
@@ -185,7 +184,7 @@ displayLevel
                   | otherwise ->
                   case items of
                     [] ->
-                      let u = Kind.getKind (Tile.tkind tile)
+                      let u = Kind.getKind tile
                       in (usymbol u, if vis then ucolor u else ucolor2 u)
                     i : _ ->
                       Item.viewItem (ikind i) asso

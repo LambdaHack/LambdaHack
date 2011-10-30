@@ -254,7 +254,7 @@ playerCloseDoor dir = do
       case lvl `iat` dloc of
         [] ->
           if unoccupied hms dloc
-          then let adj = (A.// [(dloc, Tile Tile.doorClosedId)])
+          then let adj = (A.// [(dloc, Tile.doorClosedId)])
                in modify (updateLevel (updateLMap adj))
           else abortWith "blocked"  -- by monsters or heroes
         _:_ -> abortWith "jammed"  -- by items
@@ -289,7 +289,7 @@ actorOpenDoor actor dir = do
                  hasFeature F.Hidden t)
          then neverMind isVerbose  -- not doors at all
          else
-           let adj = (A.// [(dloc, Tile Tile.doorOpenId)])
+           let adj = (A.// [(dloc, Tile.doorOpenId)])
            in  modify (updateLevel (updateLMap adj))
   advanceTime actor
 
@@ -447,7 +447,7 @@ search =
              then if k > 0
                   then (slm,
                         M.insert loc k sle)
-                  else ((loc, Tile Tile.doorClosedId) : slm,
+                  else ((loc, Tile.doorClosedId) : slm,
                         M.delete loc sle)
              else (slm, sle)
         f (slm, sle) m = searchTile (shift ploc m) (slm, sle)

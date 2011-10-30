@@ -5,7 +5,6 @@ import Level
 import State
 import Grammar
 import Content.TileKind
-import qualified Tile
 import qualified Kind
 
 -- | Produces a textual description of the terrain and items at an already
@@ -15,7 +14,7 @@ lookAt :: Bool -> Bool -> State -> Level -> Loc -> String -> String
 lookAt detailed canSee s lvl loc msg
   | detailed  =
     let tile = lvl `rememberAt` loc
-        name = uname . Kind.getKind . Tile.tkind $ tile
+        name = uname . Kind.getKind $ tile
     in name ++ " " ++ msg ++ isd
   | otherwise = msg ++ isd
   where

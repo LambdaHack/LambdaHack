@@ -11,13 +11,15 @@ import Geometry
 import GeometryRnd
 import Actor
 import Item
+import Content.TileKind
 import Random
 import WorldLoc
 import qualified Tile
 import qualified Feature as F
+import qualified Kind
 
 type Party = IM.IntMap Actor
-type LAMap = A.Array Loc Tile.Tile
+type LAMap = A.Array Loc (Kind.Id TileKind)
 
 newtype SmellTime = SmellTime{smelltime :: Time} deriving Show
 instance Binary SmellTime where
@@ -92,7 +94,7 @@ instance Binary Level where
           lstairs <- get
           return (Level nm hs sz ms ls le li lm lrm lme lstairs)
 
-at, rememberAt :: Level -> Loc -> Tile.Tile
+at, rememberAt :: Level -> Loc -> (Kind.Id TileKind)
 at         l p = lmap l A.! p
 rememberAt l p = lrmap l A.! p
 
@@ -123,7 +125,7 @@ openable k lvl le target =
      (Tile.hasFeature F.Hidden tgt &&
       le M.! target < k)
 
-findLoc :: Level -> (Loc -> Tile.Tile -> Bool) -> Rnd Loc
+findLoc :: Level -> (Loc -> (Kind.Id TileKind) -> Bool) -> Rnd Loc
 findLoc lvl@Level{lsize} p =
   do
     loc <- locInArea ((0,0), lsize)
@@ -134,8 +136,8 @@ findLoc lvl@Level{lsize} p =
 
 findLocTry :: Int ->  -- try k times
               Level ->
-              (Loc -> Tile.Tile -> Bool) ->  -- loop until satisfied
-              (Loc -> Tile.Tile -> Bool) ->  -- only try to satisfy k times
+              (Loc -> Kind.Id TileKind -> Bool) ->  -- loop until satisfied
+              (Loc -> Kind.Id TileKind -> Bool) ->  -- only try to satisfy k times
               Rnd Loc
 findLocTry k lvl@Level{lsize} p pTry =
   do
