@@ -4,7 +4,6 @@ import Data.Binary
 import qualified Data.Map as M
 import qualified Data.List as L
 import qualified Data.IntMap as IM
-import qualified Data.Array.IArray as A
 
 import Utils.Assert
 import Geometry
@@ -19,7 +18,7 @@ import qualified Feature as F
 import qualified Kind
 
 type Party = IM.IntMap Actor
-type LAMap = A.Array Loc (Kind.Id TileKind)
+type LAMap = Kind.Array Loc TileKind
 
 newtype SmellTime = SmellTime{smelltime :: Time} deriving Show
 instance Binary SmellTime where
@@ -95,8 +94,8 @@ instance Binary Level where
           return (Level nm hs sz ms ls le li lm lrm lme lstairs)
 
 at, rememberAt :: Level -> Loc -> (Kind.Id TileKind)
-at         l p = lmap l A.! p
-rememberAt l p = lrmap l A.! p
+at         l p = lmap l Kind.! p
+rememberAt l p = lrmap l Kind.! p
 
 -- Note: representations with 2 maps leads to longer code and slower 'remember'.
 iat, irememberAt :: Level -> Loc -> [Item]

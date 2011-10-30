@@ -13,7 +13,6 @@ import Data.Binary
 import qualified Data.Map as M
 import qualified Data.List as L
 import Data.Ratio
-import qualified Data.Array.IArray as A
 
 import Geometry
 import GeometryRnd
@@ -146,7 +145,7 @@ emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm lastNm =
     let lm1 = digRoom True ((1,1),(sy-1,sx-1)) (emptyLMap (sy,sx))
         unknown = unknownLAMap (sy,sx)
         lvl = Level
-                nm emptyParty (sy,sx) emptyParty M.empty M.empty M.empty (A.listArray ((0, 0), (sy, sx)) (M.elems lm1)) unknown "" ((0, 0), (0, 0))
+                nm emptyParty (sy,sx) emptyParty M.empty M.empty M.empty (Kind.listArray ((0, 0), (sy, sx)) (M.elems lm1)) unknown "" ((0, 0), (0, 0))
     -- locations of the stairs
     su <- findLoc lvl (const Tile.isBoring)
     sd <- findLoc lvl (\ l t -> Tile.isBoring t
@@ -159,7 +158,7 @@ emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm lastNm =
     addRocks <- addRocksRnd lvl
     let lm4 = addRocks lm3
         level = Level
-                  nm emptyParty (sy,sx) emptyParty M.empty M.empty (M.fromList is) (A.listArray ((0, 0), (sy, sx)) (M.elems lm4)) unknown "bigroom" (su, sd)
+                  nm emptyParty (sy,sx) emptyParty M.empty M.empty (M.fromList is) (Kind.listArray ((0, 0), (sy, sx)) (M.elems lm4)) unknown "bigroom" (su, sd)
     return level
 
 -- | For a bigroom level: Create a level consisting of only one, empty room.
@@ -323,7 +322,7 @@ rogueRoom cfg nm lastNm =
       return (M.fromList l, le)
     let unknown = unknownLAMap (levelSize cfg)
         lvl = Level nm emptyParty (levelSize cfg) emptyParty
-                M.empty secretMap M.empty (A.listArray ((0, 0), levelSize cfg) (M.elems dlmap)) unknown "" ((0, 0), (0, 0))
+                M.empty secretMap M.empty (Kind.listArray ((0, 0), levelSize cfg) (M.elems dlmap)) unknown "" ((0, 0), (0, 0))
     -- locations of the stairs
     su <- findLoc lvl (const Tile.isBoring)
     sd <- findLocTry 1000 lvl
@@ -346,7 +345,7 @@ rogueRoom cfg nm lastNm =
         -- generate map and level from the data
         meta = show allConnects
     return $
-      Level nm emptyParty (levelSize cfg) emptyParty M.empty secretMap (M.fromList is) (A.listArray ((0, 0), levelSize cfg) (M.elems lm3)) unknown meta (su, sd)
+      Level nm emptyParty (levelSize cfg) emptyParty M.empty secretMap (M.fromList is) (Kind.listArray ((0, 0), levelSize cfg) (M.elems lm3)) unknown meta (su, sd)
 
 rollItems :: LevelConfig -> Level -> Loc -> Rnd [(Loc, ([Item], [Item]))]
 rollItems cfg lvl ploc =
@@ -376,7 +375,7 @@ emptyLMap (my, mx) =
 
 unknownLAMap :: (Y, X) -> LAMap
 unknownLAMap (my, mx) =
-  A.listArray ((0, 0), (my, mx)) (repeat Tile.unknownId)
+  Kind.listArray ((0, 0), (my, mx)) (repeat Tile.unknownId)
 
 -- | If the room has size 1, it is at most a start of a corridor.
 digRoom :: Bool -> Room -> LMap -> LMap

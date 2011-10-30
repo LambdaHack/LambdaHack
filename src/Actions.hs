@@ -7,7 +7,6 @@ import qualified Data.Map as M
 import qualified Data.IntMap as IM
 import Data.Maybe
 import qualified Data.Set as S
-import qualified Data.Array.IArray as A
 
 import Utils.Assert
 import Action
@@ -224,7 +223,7 @@ remember =
     lvl <- gets slevel
     let vis = S.toList (ptvisible per)
     let rememberTile = [(loc, lvl `at` loc) | loc <- vis]
-    modify (updateLevel (updateLRMap (A.// rememberTile)))
+    modify (updateLevel (updateLRMap (Kind.// rememberTile)))
     let alt Nothing      = Nothing
         alt (Just ([], _)) = Nothing
         alt (Just (t, _))  = Just (t, t)
@@ -254,7 +253,7 @@ playerCloseDoor dir = do
       case lvl `iat` dloc of
         [] ->
           if unoccupied hms dloc
-          then let adj = (A.// [(dloc, Tile.doorClosedId)])
+          then let adj = (Kind.// [(dloc, Tile.doorClosedId)])
                in modify (updateLevel (updateLMap adj))
           else abortWith "blocked"  -- by monsters or heroes
         _:_ -> abortWith "jammed"  -- by items
@@ -289,7 +288,7 @@ actorOpenDoor actor dir = do
                  hasFeature F.Hidden t)
          then neverMind isVerbose  -- not doors at all
          else
-           let adj = (A.// [(dloc, Tile.doorOpenId)])
+           let adj = (Kind.// [(dloc, Tile.doorOpenId)])
            in  modify (updateLevel (updateLMap adj))
   advanceTime actor
 
@@ -441,7 +440,7 @@ search =
                   Just i  -> 1 + ipower i
                   Nothing -> 1
         searchTile loc (slm, sle) =
-          let t = lm A.! loc
+          let t = lm Kind.! loc
               k = le M.! loc - delta
           in if hasFeature F.Hidden t
              then if k > 0
@@ -452,7 +451,7 @@ search =
              else (slm, sle)
         f (slm, sle) m = searchTile (shift ploc m) (slm, sle)
         (lmDiff, lemap) = L.foldl' f ([], le) moves
-        lmNew = if L.null lmDiff then lm else lm A.// lmDiff
+        lmNew = if L.null lmDiff then lm else lm Kind.// lmDiff
     modify (updateLevel (\ l -> l{lmap = lmNew, lsecret = lemap}))
     playerAdvanceTime
 
