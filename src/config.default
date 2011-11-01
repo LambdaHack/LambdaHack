@@ -48,7 +48,9 @@ firstDeathEnds: False
 ; TODO: in gtk it could be implemented via unGetChan,
 ; unless we prefer an explicit command queue, with flushing, etc.
 ;
-; Angband compatibility
+; Handy with Vi keys:
+comma: g
+; Angband compatibility:
 v: t
 
 [monsters]
