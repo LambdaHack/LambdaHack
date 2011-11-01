@@ -6,7 +6,6 @@ import Utils.Assert
 import FOV.Common
 import Geometry
 import Level
-import qualified Tile
 
 -- Digital FOV with a given range.
 
@@ -21,7 +20,7 @@ import qualified Tile
 -- If Just something, we're in a visible interval. If Nothing, we're in
 -- a shadowed interval.
 scan :: Distance -> (Bump -> Loc) -> Level -> Distance -> EdgeInterval
-         -> S.Set Loc
+        -> S.Set Loc
 scan r tr l d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps)) =
   assert (r >= d && d >= 0 && pe >= ps0 `blame` (r,d,s0,e,ps0,pe)) $
   S.union outside (S.fromList [tr (B(d, p)) | p <- [ps0..pe]])
@@ -37,14 +36,15 @@ scan r tr l d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps)) =
            in  -1 + n `divUp` k
       outside
         | d >= r = S.empty
-        | Tile.isClear (l `at` tr (B(d, ps0))) =
+        | isClear (B(d, ps0)) =
             mscan (Just s0) (ps0+1)          -- start in light, jump ahead
         | otherwise = mscan Nothing (ps0+1)  -- start in shadow, jump ahead
+      isClear = isClearBump l tr
 
       mscan :: Maybe Edge -> Progress -> S.Set Loc
       mscan (Just s@(_, sBumps)) ps
         | ps > pe = scan r tr l (d+1) (s, e) -- reached end, scan next
-        | not $ Tile.isClear (l `at` tr steepBump) = -- entering shadow
+        | not $ isClear steepBump = -- entering shadow
             S.union
               (scan r tr l (d+1) (s, (dline nep steepBump, neBumps)))
               (mscan Nothing (ps+1))
@@ -57,7 +57,7 @@ scan r tr l d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps)) =
 
       mscan Nothing ps
         | ps > pe = S.empty                      -- reached end while in shadow
-        | Tile.isClear (l `at` tr shallowBump) = -- moving out of shadow
+        | isClear shallowBump = -- moving out of shadow
             mscan (Just (dline nsp shallowBump, nsBumps)) (ps+1)
         | otherwise = mscan Nothing (ps+1)       -- continue in shadow
         where

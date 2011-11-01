@@ -2,6 +2,7 @@ module FOV.Common
   ( Interval, Distance, Progress
   , Bump(..)
   , Line, ConvexHull, Edge, EdgeInterval
+  , isClearBump
   , divUp
   , maximal
   , steeper
@@ -11,22 +12,29 @@ module FOV.Common
 import qualified Data.List as L
 
 import Geometry
+import qualified Tile
+import Level
 
 type Interval = (Rational, Rational)
 type Distance = Int
 type Progress = Int
 
--- | Coordinates of points in a single quadrant.
+-- | Coordinates of points in a single quadrant, using the standard
+-- mathematical coordinate setup (the x and y positive quadrant I
+-- is the upper right one). -- TODO: swap X and Y to make this true
 -- (The first quadrant for Permissive FOV, hence both coordinates positive,
 -- a adjacent diagonal halves of the first and the second quadrant
 -- for Digital FOV, hence y positive.)
-newtype Bump = B Loc
+newtype Bump = B (Y, X)
   deriving (Show)
 
 type Line         = (Bump, Bump)
 type ConvexHull   = [Bump]
 type Edge         = (Line, ConvexHull)
 type EdgeInterval = (Edge, Edge)
+
+isClearBump :: Level -> (Bump -> Loc) -> Bump -> Bool
+isClearBump l tr = Tile.isClear . (l `at`) . tr
 
 -- | Integer division, rounding up.
 divUp :: Int -> Int -> Int

@@ -6,7 +6,6 @@ import Utils.Assert
 import FOV.Common
 import Geometry
 import Level
-import qualified Tile
 
 -- Permissive FOV with a given range.
 
@@ -27,13 +26,13 @@ import qualified Tile
 -- If Just something, we're in a visible interval. If Nothing, we're in
 -- a shadowed interval.
 scan :: Distance -> (Bump -> Loc) -> Level -> Distance -> EdgeInterval
-         -> S.Set Loc
-scan r ptr l d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps)) =
+        -> S.Set Loc
+scan r tr l d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps)) =
   assert (r >= d && d >= 0 && pe + 1 >= ps0 && ps0 >= 0
           `blame` (r,d,s0,e,ps0,pe)) $
   if illegal
   then S.empty
-  else S.union outside (S.fromList [tr (d, p) | p <- [ps0..pe]])
+  else S.union outside (S.fromList [tr (dp2bump (d, p)) | p <- [ps0..pe]])
     -- the area is diagonal, which is incorrect, but looks good enough
     where
       (ns, ks) = intersect sl d
@@ -46,27 +45,27 @@ scan r ptr l d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps)) 
                  in  ns*ke == ne*ks && (n `elem` [0, k])
       outside
         | d >= r = S.empty
-        | Tile.isClear (l `at` tr (d, ps0)) =         -- start in light
+        | isClear (dp2bump (d, ps0)) =                -- start in light
             mscan (Just s0) ps0
         | ps0 == ns `divUp` ks = mscan (Just s0) ps0  -- start in a corner
         | otherwise = mscan Nothing (ps0+1)           -- start in mid-wall
 
       dp2bump     (di, p) = B(p, di - p)
       bottomRight (di, p) = B(p, di - p + 1)
-      tr = ptr . dp2bump
+      isClear = isClearBump l tr
 
       mscan :: Maybe Edge -> Progress -> S.Set Loc
       mscan (Just s@(_, sBumps)) ps
         | ps > pe =                                   -- reached end, scan next
-            scan r ptr l (d+1) (s, e)
-        | not $ Tile.isClear (l `at` tr (d, ps)) =    -- enter shadow, steep bump
+            scan r tr l (d+1) (s, e)
+        | not $ isClear (dp2bump (d, ps)) =    -- enter shadow, steep bump
             let steepBump = bottomRight (d, ps)
                 gte = flip $ dsteeper steepBump
                 -- sBumps may contain steepBump, but maximal will ignore it
                 nep = maximal gte sBumps
                 neBumps = addHull gte steepBump eBumps
             in  S.union
-                  (scan r ptr l (d+1) (s, (dline nep steepBump, neBumps)))
+                  (scan r tr l (d+1) (s, (dline nep steepBump, neBumps)))
                   (mscan Nothing (ps+1))
         | otherwise = mscan (Just s) (ps+1)    -- continue in light
 

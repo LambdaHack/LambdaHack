@@ -44,19 +44,19 @@ fullscan fovMode loc lvl =
       S.empty
 
 -- | The translation, rotation and symmetry functions for octants.
-tr0, tr1, tr2, tr3, tr4, tr5, tr6, tr7 :: Loc -> Loc -> Loc
-tr0 (oy,ox) (d,p) = (oy + d,ox + p)
-tr1 (oy,ox) (d,p) = (oy + d,ox - p)
-tr2 (oy,ox) (d,p) = (oy - d,ox + p)
-tr3 (oy,ox) (d,p) = (oy - d,ox - p)
-tr4 (oy,ox) (d,p) = (oy + p,ox + d)
-tr5 (oy,ox) (d,p) = (oy + p,ox - d)
-tr6 (oy,ox) (d,p) = (oy - p,ox + d)
-tr7 (oy,ox) (d,p) = (oy - p,ox - d)
+tr0, tr1, tr2, tr3, tr4, tr5, tr6, tr7 :: Loc -> (Distance, Progress) -> Loc
+tr0 loc (d, p) = trLoc loc (  p,   d)
+tr1 loc (d, p) = trLoc loc (- p,   d)
+tr2 loc (d, p) = trLoc loc (  p, - d)
+tr3 loc (d, p) = trLoc loc (- p, - d)
+tr4 loc (d, p) = trLoc loc (  d,   p)
+tr5 loc (d, p) = trLoc loc (- d,   p)
+tr6 loc (d, p) = trLoc loc (  d, - p)
+tr7 loc (d, p) = trLoc loc (- d, - p)
 
 -- | The translation and rotation functions for quadrants.
 qtr0, qtr1, qtr2, qtr3 :: Loc -> Bump -> Loc
-qtr0 (oy, ox) (B(y, x)) = (oy - y, ox + x)  -- quadrant I
-qtr1 (oy, ox) (B(y, x)) = (oy + x, ox + y)  -- II (we rotate counter-clockwise)
-qtr2 (oy, ox) (B(y, x)) = (oy + y, ox - x)  -- III
-qtr3 (oy, ox) (B(y, x)) = (oy - x, ox - y)  -- IV
+qtr0 loc (B(y, x)) = trLoc loc (  x, - y)  -- quadrant I
+qtr1 loc (B(y, x)) = trLoc loc (  y,   x)  -- II (we rotate counter-clockwise)
+qtr2 loc (B(y, x)) = trLoc loc (- x,   y)  -- III
+qtr3 loc (B(y, x)) = trLoc loc (- y, - x)  -- IV

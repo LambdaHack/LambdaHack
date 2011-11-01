@@ -14,19 +14,30 @@ data VDir = Up | Down
 type X = Int
 type Y = Int
 
--- TODO: consider defining data Loc = L !Y !X, for safety, strictness
--- and unboxing. Make sure this does not degrade performance,
--- e.g., because lots of Locs are created from already fully evaluated
--- x and y components.
--- Probably, after dungeon is generated, Locs are used mainly as keys
--- and not constructed often, so the performance should improve.
-type Loc  = (Y,X)
+-- TODO: define Loc as Int (x + y*sizeX) and check both coordinates > 0,
+-- though it will require the sizeX parameter to toLoc and fromLoc
+-- TODO: do not export the definition of Loc (probably not possible
+-- with Loc as "type" and we don't want newtype to avoid the trouble
+-- with using EnumMap in place of IntMap, etc.
+-- Probably, after dungeon is generated (using (X, Y), not Loc),
+-- Locs are used mainly as keys and not constructed often,
+-- so the performance should improve.
+type Loc  = (Y, X)
 
 -- TODO: hide the implementation of Dir, to catch errors and make
 -- optimizations easy.
-type Dir  = (Y,X)
+type Dir  = (Y, X)
 
-type Area = (Loc,Loc)
+toLoc :: (X, Y) -> Loc
+toLoc (x, y) = (y, x)
+
+fromLoc :: Loc -> (X, Y)
+fromLoc (y, x) = (x, y)
+
+trLoc :: Loc -> (X, Y) -> Loc
+trLoc (y, x) (dx, dy) = (y + dy, x + dx)
+
+type Area = (Loc, Loc)
 
 -- | Given two locations, determine the direction in which one should
 -- move from the first in order to get closer to the second. Does not
