@@ -1,5 +1,5 @@
 module Kind
-  (Id, Kind.getKind, getId, frequency, foldrWithKey,
+  (Id, Kind.getKind, getId, frequency, foldrWithKey, boundsId,
    Array, (!), (//), listArray)
   where
 
@@ -14,7 +14,7 @@ import Utils.Assert
 import Content.Content
 import Frequency
 
-newtype Id a = Id{kindId :: Word8} deriving (Show, Eq, Ord)
+newtype Id a = Id{kindId :: Word8} deriving (Show, Eq, Ord, Ix.Ix)
 
 instance Binary (Id a) where
   put (Id i) = put i
@@ -33,6 +33,14 @@ frequency = Frequency [(getFreq k, (Id i, k)) | (i, k) <- kindAssocs]
 
 foldrWithKey :: Content a => (Id a -> a -> b -> b) -> b -> b
 foldrWithKey f z = L.foldr (\ (i, a) -> f (Id i) a) z kindAssocs
+
+limitsId :: Content a => ((Id a, a), (Id a, a))
+limitsId = let (i1, a1) = IM.findMin kindMap
+               (i2, a2) = IM.findMax kindMap
+           in ((Id (toEnum i1), a1), (Id (toEnum i2), a2))
+
+boundsId :: Content a => (Id a, Id a)
+boundsId = (Id 0, (fst . snd) limitsId)
 
 newtype Array i c = Array{_kindArray :: A.UArray i Word.Word8} deriving Show
 

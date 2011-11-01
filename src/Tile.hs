@@ -1,6 +1,7 @@
 module Tile where
 
 import qualified Data.List as L
+import qualified Data.Array.Unboxed as A
 
 import Content.TileKind
 import qualified Feature as F
@@ -50,17 +51,28 @@ kindHas yes no t = L.all (flip kindHasFeature t) yes &&
 hasFeature :: F.Feature -> Kind.Id TileKind -> Bool
 hasFeature f t = kindHasFeature f (Kind.getKind t)
 
--- | Does not block vision
-isClear :: Kind.Id TileKind -> Bool
-isClear = hasFeature F.Clear
+-- | Does not block vision. Essential for efficiency of FOV, hence tabulated.
+clearTab :: A.UArray (Kind.Id TileKind) Bool
+clearTab = let f _ k acc = kindHasFeature F.Clear k : acc
+               clearAssocs = Kind.foldrWithKey f []
+           in A.listArray Kind.boundsId clearAssocs
 
--- | Does not block land movement
+isClear :: Kind.Id TileKind -> Bool
+isClear i = clearTab A.! i
+
+-- | Is lit on its own. Essential for efficiency of Perception, hence tabulated.
+litTab :: A.UArray (Kind.Id TileKind) Bool
+litTab = let f _ k acc = kindHasFeature F.Lit k : acc
+             litAssocs = Kind.foldrWithKey f []
+         in A.listArray Kind.boundsId litAssocs
+
+isLit :: Kind.Id TileKind -> Bool
+isLit i = litTab A.! i
+
+-- | Does not block land movement.
 isWalkable :: Kind.Id TileKind -> Bool
 isWalkable = hasFeature F.Walkable
 
--- | Is lit on its own.
-isLit :: Kind.Id TileKind -> Bool
-isLit = hasFeature F.Lit
 
 -- | Provides an exit from a room.
 isExit :: Kind.Id TileKind -> Bool
