@@ -32,8 +32,8 @@ data Color =
   deriving (Show, Eq, Ord, Enum, Bounded)
 
 instance Binary.Binary Color where
-  put = Binary.putWord8 . fromIntegral . fromEnum
-  get = fmap (toEnum . fromIntegral) Binary.getWord8
+  put = Binary.putWord8 . toEnum . fromEnum
+  get = fmap (toEnum . fromEnum) Binary.getWord8
 
 defBG, defFG :: Color
 defBG = Black

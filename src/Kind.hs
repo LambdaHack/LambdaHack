@@ -21,7 +21,7 @@ instance Binary (Id a) where
   get = fmap Id get
 
 getKind :: Content a => Id a -> a
-getKind (Id i) = kindMap IM.! (fromIntegral i)
+getKind (Id i) = kindMap IM.! (fromEnum i)
 
 getId :: Content a => (a -> Bool) -> Id a
 getId f = case [Id i | (i, k) <- kindAssocs, f k] of

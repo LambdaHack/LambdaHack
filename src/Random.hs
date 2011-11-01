@@ -95,7 +95,7 @@ minDice (a', b') =
 meanDice :: RollDice -> Rational
 meanDice (a', b') =
   let (a, b) = (fromIntegral a', fromIntegral b')
-  in if b == 0 then 0 else a * (b + 1) % 2
+  in if b' == 0 then 0 else a * (b + 1) % 2
 
 -- rollQuad (a, b, x, y) = a *~ roll b + (lvl * (x *~ roll y)) / 10
 type RollQuad = (Binary.Word8, Binary.Word8, Binary.Word8, Binary.Word8)
@@ -108,7 +108,7 @@ rollQuad lvl (a, b, x, y) = do
 
 intToQuad :: Int -> RollQuad
 intToQuad 0 = (0, 0, 0, 0)
-intToQuad n = let n' = fromIntegral n
+intToQuad n = let n' = toEnum n
               in  if n' > maxBound || n' < minBound
                   then assert `failure` n
                   else (n', 1, 0, 0)
