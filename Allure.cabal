@@ -3,7 +3,7 @@ name:          Allure
 version:       0.4.2
 license:       BSD3
 license-file:  LICENSE
-tested-with:   GHC == 7.2.1, GHC == 7.4
+tested-with:   GHC == 7.2.1, GHC == 7.4.1
 data-files:    LICENSE, CREDITS, PLAYING.md,
                README.md, src/config.default, src/config.bot, scores
 author:        Andres Loeh, Mikolaj Konarski and others
@@ -73,7 +73,7 @@ executable Allure
     extra-libraries: curses
   } else { if flag(vty) {
     other-modules: Display.Vty
-    build-depends: vty >= 4.7.0.4
+    build-depends: vty >= 4.7.0.6
     cpp-options:   -DVTY
   } else { if flag(std) {
     cpp-options:   -DSTD
