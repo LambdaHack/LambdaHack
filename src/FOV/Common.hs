@@ -1,12 +1,8 @@
 module FOV.Common
-  ( Interval, Distance, Progress
+  ( Distance, Progress
   , Bump(..)
   , Line, ConvexHull, Edge, EdgeInterval
-  , isClearBump
-  , divUp
-  , maximal
-  , steeper
-  , addHull
+  , isClear, divUp, maximal, steeper, addHull
   ) where
 
 import qualified Data.List as L
@@ -15,16 +11,16 @@ import Geometry
 import qualified Tile
 import Level
 
-type Interval = (Rational, Rational)
 type Distance = Int
 type Progress = Int
 
--- | Coordinates of points in a single quadrant, using the standard
--- mathematical coordinate setup (the x and y positive quadrant I
--- is the upper right one). -- TODO: swap X and Y to make this true
--- (The first quadrant for Permissive FOV, hence both coordinates positive,
--- a adjacent diagonal halves of the first and the second quadrant
--- for Digital FOV, hence y positive.)
+-- | Rotated and translated coordinates of 2D points, so that the points fit
+-- in a single quadrant area (quadrant I for Permissive FOV, hence both
+-- coordinates positive, and adjacent diagonal halves of quadrant I and II
+-- for Digital FOV, hence y positive).
+-- The coordinates are written using the standard mathematical coordinate setup,
+-- where quadrant I, with x and y positive, is on the upper right.
+-- TODO: swap X and Y to make this true
 newtype Bump = B (Y, X)
   deriving (Show)
 
@@ -33,8 +29,8 @@ type ConvexHull   = [Bump]
 type Edge         = (Line, ConvexHull)
 type EdgeInterval = (Edge, Edge)
 
-isClearBump :: Level -> (Bump -> Loc) -> Bump -> Bool
-isClearBump l tr = Tile.isClear . (l `at`) . tr
+isClear :: Level -> (Bump -> Loc) -> Bump -> Bool
+isClear l tr = Tile.isClear . (l `at`) . tr
 
 -- | Integer division, rounding up.
 divUp :: Int -> Int -> Int
@@ -43,7 +39,7 @@ divUp n k = (n + k - 1) `div` k
 -- | Maximal element of a non-empty list. Prefers elements from the rear,
 -- which is essential for PFOV, to avoid ill-defined lines.
 maximal :: (a -> a -> Bool) -> [a] -> a
-maximal gte = L.foldl1' (\ acc x -> if gte x acc then x else acc)
+maximal gte = L.foldl1' (\ acc e -> if gte e acc then e else acc)
 
 -- | Check if the line from the second point to the first is more steep
 -- than the line from the third point to the first. This is related
@@ -55,10 +51,10 @@ steeper (B(yf, xf)) (B(y1, x1)) (B(y2, x2)) =
 
 -- | Adds a bump to the convex hull of bumps represented as a list.
 addHull :: (Bump -> Bump -> Bool) -> Bump -> ConvexHull -> ConvexHull
-addHull gte b l =
+addHull gte d l =
   case l of
-    x:y:zs ->
-      if gte x y
-      then addHull gte b (y:zs)
-      else b : l
-    _ -> b : l
+    a:b:cs ->
+      if gte a b
+      then addHull gte d (b:cs)
+      else d : l
+    _ -> d : l

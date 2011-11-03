@@ -4,7 +4,7 @@ import qualified Data.Set as S
 
 import Utils.Assert
 import FOV.Common
-import Geometry
+import Geometry hiding (inside)
 import Level
 
 -- Digital FOV with a given range.
@@ -19,61 +19,69 @@ import Level
 -- | The current state of a scan is kept in Maybe (Line, ConvexHull).
 -- If Just something, we're in a visible interval. If Nothing, we're in
 -- a shadowed interval.
-scan :: Distance -> (Bump -> Loc) -> Level -> Distance -> EdgeInterval
-        -> S.Set Loc
-scan r tr l d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps)) =
-  assert (r >= d && d >= 0 && pe >= ps0 `blame` (r,d,s0,e,ps0,pe)) $
-  S.union outside (S.fromList [tr (B(d, p)) | p <- [ps0..pe]])
-    -- the scanned area is a square, which is a sphere in this metric; good
-    where
-      ps0 = let (n, k) = intersect sl d      -- minimal progress to check
-            in  n `div` k
-      pe = let (n, k) = intersect el d       -- maximal progress to check
+scan :: Distance -> (Bump -> Loc) -> Level -> S.Set Loc
+scan r tr l =
+  -- the scanned area is a square, which is a sphere in this metric; good
+  dscan 1 (((B(0, 1), B(r, -r)),  [B(0, 0)]), ((B(0, 0), B(r, r+1)), [B(0, 1)]))
+ where
+  dscan :: Distance -> EdgeInterval -> S.Set Loc
+  dscan d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps)) =
+    let ps0 = let (n, k) = intersect sl d  -- minimal progress to consider
+              in n `div` k
+        pe = let (n, k) = intersect el d   -- maximal progress to consider
                -- Corners obstruct view, so the steep line, constructed
                -- from corners, is itself not a part of the view,
                -- so if its intersection with the line of diagonals is only
                -- at a corner, choose the diamond leading to a smaller view.
-           in  -1 + n `divUp` k
-      outside
-        | d >= r = S.empty
-        | isClear (B(d, ps0)) =
-            mscan (Just s0) (ps0+1)          -- start in light, jump ahead
-        | otherwise = mscan Nothing (ps0+1)  -- start in shadow, jump ahead
-      isClear = isClearBump l tr
+             in -1 + n `divUp` k
 
-      mscan :: Maybe Edge -> Progress -> S.Set Loc
-      mscan (Just s@(_, sBumps)) ps
-        | ps > pe = scan r tr l (d+1) (s, e) -- reached end, scan next
-        | not $ isClear steepBump = -- entering shadow
-            S.union
-              (scan r tr l (d+1) (s, (dline nep steepBump, neBumps)))
-              (mscan Nothing (ps+1))
-        | otherwise = mscan (Just s) (ps+1)  -- continue in light
-        where
-          steepBump = B(d, ps)
-          gte = dsteeper steepBump
-          nep = maximal gte sBumps
-          neBumps = addHull gte steepBump eBumps
+        inside = S.fromList [tr (B(d, p)) | p <- [ps0..pe]]
+        outside
+          | d >= r = S.empty
+          | isClear l tr (B(d, ps0)) =
+              mscan (Just s0) (ps0+1) pe      -- start in light
+          | otherwise =
+              mscan Nothing (ps0+1) pe        -- start in shadow
+    in assert (r >= d && d >= 0 && pe >= ps0 `blame` (r,d,s0,e,ps0,pe)) $
+       S.union inside outside
+   where
+    mscan :: Maybe Edge -> Progress -> Progress -> S.Set Loc
+    mscan (Just s@(_, sBumps)) ps pe
+      | ps > pe = dscan (d+1) (s, e)          -- reached end, scan next
+      | not $ isClear l tr steepBump =        -- entering shadow
+          S.union (dscan (d+1) (s, (dline nep steepBump, neBumps)))
+                  (mscan Nothing (ps+1) pe)
+      | otherwise = mscan (Just s) (ps+1) pe  -- continue in light
+     where
+      steepBump = B(d, ps)
+      gte = dsteeper steepBump
+      nep = maximal gte sBumps
+      neBumps = addHull gte steepBump eBumps
 
-      mscan Nothing ps
-        | ps > pe = S.empty                      -- reached end while in shadow
-        | isClear shallowBump = -- moving out of shadow
-            mscan (Just (dline nsp shallowBump, nsBumps)) (ps+1)
-        | otherwise = mscan Nothing (ps+1)       -- continue in shadow
-        where
-          shallowBump = B(d, ps)
-          gte = flip $ dsteeper shallowBump
-          nsp = maximal gte eBumps
-          nsBumps = addHull gte shallowBump sBumps0
+    mscan Nothing ps pe
+      | ps > pe = S.empty                     -- reached end while in shadow
+      | isClear l tr shallowBump =            -- moving out of shadow
+          mscan (Just (dline nsp shallowBump, nsBumps)) (ps+1) pe
+      | otherwise = mscan Nothing (ps+1) pe   -- continue in shadow
+     where
+      shallowBump = B(d, ps)
+      gte = flip $ dsteeper shallowBump
+      nsp = maximal gte eBumps
+      nsBumps = addHull gte shallowBump sBumps0
 
-      dline p1 p2 =
-        assert (uncurry blame $ debugLine (p1, p2)) $
-        (p1, p2)
+-- | Create a line from two points. Debug: check if well-defined.
+dline :: Bump -> Bump -> Line
+dline p1 p2 =
+  assert (uncurry blame $ debugLine (p1, p2)) $
+  (p1, p2)
 
-      dsteeper f p1 p2 =
-        assert (res == debugSteeper f p1 p2) $
-        res
-       where res = steeper f p1 p2
+-- | Compare steepness of (p1, f) and (p2, f).
+-- Debug: Verify that the results of 2 independent checks are equal.
+dsteeper :: Bump ->  Bump -> Bump -> Bool
+dsteeper f p1 p2 =
+  assert (res == debugSteeper f p1 p2) $
+  res
+   where res = steeper f p1 p2
 
 -- | The x coordinate, represented as a fraction, of the intersection of
 -- a given line and the line of diagonals of diamonds at distance d from (0, 0).
@@ -134,8 +142,8 @@ debugLine line@(B(y1, x1), B(y2, x2))
   | crossG1 =
       (False, "crosses the X axis above 1: " ++ show line)
   | otherwise = (True, "")
-    where
-      (n, k)  = intersect line 0
-      (q, r)  = if k == 0 then (0, 0) else n `divMod` k
-      crossL0 = q < 0  -- q truncated toward negative infinity
-      crossG1 = q >= 1 && (q > 1 || r /= 0)
+ where
+  (n, k)  = intersect line 0
+  (q, r)  = if k == 0 then (0, 0) else n `divMod` k
+  crossL0 = q < 0  -- q truncated toward negative infinity
+  crossG1 = q >= 1 && (q > 1 || r /= 0)

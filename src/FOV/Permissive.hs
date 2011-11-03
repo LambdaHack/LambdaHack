@@ -4,7 +4,7 @@ import qualified Data.Set as S
 
 import Utils.Assert
 import FOV.Common
-import Geometry
+import Geometry hiding (inside)
 import Level
 
 -- Permissive FOV with a given range.
@@ -25,69 +25,72 @@ import Level
 -- | The current state of a scan is kept in Maybe (Line, ConvexHull).
 -- If Just something, we're in a visible interval. If Nothing, we're in
 -- a shadowed interval.
-scan :: Distance -> (Bump -> Loc) -> Level -> Distance -> EdgeInterval
-        -> S.Set Loc
-scan r tr l d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps)) =
-  assert (r >= d && d >= 0 && pe + 1 >= ps0 && ps0 >= 0
-          `blame` (r,d,s0,e,ps0,pe)) $
-  if illegal
-  then S.empty
-  else S.union outside (S.fromList [tr (dp2bump (d, p)) | p <- [ps0..pe]])
-    -- the area is diagonal, which is incorrect, but looks good enough
-    where
-      (ns, ks) = intersect sl d
-      (ne, ke) = intersect el d
-      -- Corners are translucent, so they are invisible, so if intersection
-      -- is at a corner, choose pe that creates the smaller view.
-      (ps0, pe) = (ns `div` ks, ne `divUp` ke - 1)  -- progress interval to check
-      -- Single ray from an extremity, produces non-permissive digital lines.
-      illegal  = let (n, k) = intersect sl 0
-                 in  ns*ke == ne*ks && (n `elem` [0, k])
-      outside
-        | d >= r = S.empty
-        | isClear (dp2bump (d, ps0)) =                -- start in light
-            mscan (Just s0) ps0
-        | ps0 == ns `divUp` ks = mscan (Just s0) ps0  -- start in a corner
-        | otherwise = mscan Nothing (ps0+1)           -- start in mid-wall
+scan :: Distance -> (Bump -> Loc) -> Level -> S.Set Loc
+scan r tr l =
+  -- the area is diagonal, which is incorrect, but looks good enough
+  dscan 1 (((B(1, 0), B(0, r+1)), [B(0, 1)]), ((B(0, 1), B(r+1, 0)), [B(1, 0)]))
+ where
+  dscan :: Distance -> EdgeInterval -> S.Set Loc
+  dscan d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps)) =
+    assert (r >= d && d >= 0 && pe + 1 >= ps0 && ps0 >= 0
+            `blame` (r,d,s0,e,ps0,pe)) $
+    if illegal then S.empty else S.union inside outside
+   where
+    (ns, ks) = intersect sl d
+    (ne, ke) = intersect el d
+    -- Corners are translucent, so they are invisible, so if intersection
+    -- is at a corner, choose pe that creates the smaller view.
+    (ps0, pe) = (ns `div` ks, ne `divUp` ke - 1)  -- progress interval to check
+    -- Single ray from an extremity, produces non-permissive digital lines.
+    illegal  = let (n, k) = intersect sl 0
+               in ns*ke == ne*ks && (n `elem` [0, k])
+    dp2bump     (di, p) = B(p, di - p)
+    bottomRight (di, p) = B(p, di - p + 1)
 
-      dp2bump     (di, p) = B(p, di - p)
-      bottomRight (di, p) = B(p, di - p + 1)
-      isClear = isClearBump l tr
+    inside = S.fromList [tr (dp2bump (d, p)) | p <- [ps0..pe]]
+    outside
+      | d >= r = S.empty
+      | isClear l tr (dp2bump (d, ps0)) = mscan (Just s0) ps0  -- start in light
+      | ps0 == ns `divUp` ks = mscan (Just s0) ps0          -- start in a corner
+      | otherwise = mscan Nothing (ps0+1)                   -- start in mid-wall
 
-      mscan :: Maybe Edge -> Progress -> S.Set Loc
-      mscan (Just s@(_, sBumps)) ps
-        | ps > pe =                                   -- reached end, scan next
-            scan r tr l (d+1) (s, e)
-        | not $ isClear (dp2bump (d, ps)) =    -- enter shadow, steep bump
-            let steepBump = bottomRight (d, ps)
-                gte = flip $ dsteeper steepBump
-                -- sBumps may contain steepBump, but maximal will ignore it
-                nep = maximal gte sBumps
-                neBumps = addHull gte steepBump eBumps
-            in  S.union
-                  (scan r tr l (d+1) (s, (dline nep steepBump, neBumps)))
-                  (mscan Nothing (ps+1))
-        | otherwise = mscan (Just s) (ps+1)    -- continue in light
+    mscan :: Maybe Edge -> Progress -> S.Set Loc
+    mscan (Just s@(_, sBumps)) ps
+      | ps > pe = dscan (d+1) (s, e)            -- reached end, scan next
+      | not $ isClear l tr (dp2bump (d, ps)) =  -- enter shadow, steep bump
+          let steepBump = bottomRight (d, ps)
+              gte = flip $ dsteeper steepBump
+              -- sBumps may contain steepBump, but maximal will ignore it
+              nep = maximal gte sBumps
+              neBumps = addHull gte steepBump eBumps
+          in S.union (dscan (d+1) (s, (dline nep steepBump, neBumps)))
+                     (mscan Nothing (ps+1))
+      | otherwise = mscan (Just s) (ps+1)       -- continue in light
 
-      mscan Nothing ps
-        | ps > ne `div` ke = S.empty           -- reached absolute end
-        | otherwise =                          -- out of shadow, shallow bump
-            -- the light can be just through a corner of diagonal walls
-            -- and the recursive call verifies that at the same ps coordinate
-            let shallowBump = bottomRight (d, ps)
-                gte = dsteeper shallowBump
-                nsp = maximal gte eBumps
-                nsBumps = addHull gte shallowBump sBumps0
-            in  mscan (Just (dline nsp shallowBump, nsBumps)) ps
+    mscan Nothing ps
+      | ps > ne `div` ke = S.empty              -- reached absolute end
+      | otherwise =                             -- out of shadow, shallow bump
+          -- the light can be just through a corner of diagonal walls
+          -- and the recursive call verifies that at the same ps coordinate
+          let shallowBump = bottomRight (d, ps)
+              gte = dsteeper shallowBump
+              nsp = maximal gte eBumps
+              nsBumps = addHull gte shallowBump sBumps0
+          in mscan (Just (dline nsp shallowBump, nsBumps)) ps
 
-      dline p1 p2 =
-        assert (uncurry blame $ debugLine (p1, p2)) $
-        (p1, p2)
+-- | Create a line from two points. Debug: check if well-defined.
+dline :: Bump -> Bump -> Line
+dline p1 p2 =
+  assert (uncurry blame $ debugLine (p1, p2)) $
+  (p1, p2)
 
-      dsteeper f p1 p2 =
-        assert (res == debugSteeper f p1 p2) $
-        res
-       where res = steeper f p1 p2
+-- | Compare steepness of (p1, f) and (p2, f).
+-- Debug: Verify that the results of 2 independent checks are equal.
+dsteeper :: Bump ->  Bump -> Bump -> Bool
+dsteeper f p1 p2 =
+  assert (res == debugSteeper f p1 p2) $
+  res
+   where res = steeper f p1 p2
 
 -- | The y coordinate, represented as a fraction, of the intersection of
 -- a given line and the line of diagonals of squares at distance d from (0, 0).
@@ -149,8 +152,8 @@ debugLine line@(B(y1, x1), B(y2, x2))
   | crossG1 =
       (False, "crosses diagonal above 1: " ++ show line)
   | otherwise = (True, "")
-    where
-      (n, k)  = intersect line 0
-      (q, r)  = if k == 0 then (0, 0) else n `divMod` k
-      crossL0 = q < 0  -- q truncated toward negative infinity
-      crossG1 = q >= 1 && (q > 1 || r /= 0)
+ where
+  (n, k)  = intersect line 0
+  (q, r)  = if k == 0 then (0, 0) else n `divMod` k
+  crossL0 = q < 0  -- q truncated toward negative infinity
+  crossG1 = q >= 1 && (q > 1 || r /= 0)

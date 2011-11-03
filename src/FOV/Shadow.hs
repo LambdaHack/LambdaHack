@@ -68,6 +68,8 @@ This is what interval and angle do. If a field is blocking, the interval
 for the square is added to the shadow set.
 -}
 
+type Interval = (Rational, Rational)
+
 -- | The current state of a scan is kept in a variable of Maybe Rational.
 -- If Just something, we're in a visible interval. If Nothing, we're in
 -- a shadowed interval.
@@ -80,14 +82,11 @@ scan tr l d (s0, e) =
              then Just s0  -- start in light
              else Nothing  -- start in shadow
     in
-        -- traceShow (d,s,e,ps,pe) $
         assert (d >= 0 && e >= 0 && s0 >= 0 && pe >= ps && ps >= 0
                 `blame` (d,s0,e,ps,pe)) $
         S.union (S.fromList [tr (d, p) | p <- [ps..pe]]) (mscan st ps pe)
   where
     mscan :: Maybe Rational -> Progress -> Progress -> S.Set Loc
-    -- mscan st ps pe
-    --   | traceShow (st,ps,pe) False = undefined
     mscan (Just s) ps pe
       | s  >= e  = S.empty                -- empty interval
       | ps > pe  = scan tr l (d+1) (s, e) -- reached end, scan next
