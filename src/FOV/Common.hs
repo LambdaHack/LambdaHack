@@ -20,8 +20,7 @@ type Progress = Int
 -- for Digital FOV, hence y positive).
 -- The coordinates are written using the standard mathematical coordinate setup,
 -- where quadrant I, with x and y positive, is on the upper right.
--- TODO: swap X and Y to make this true
-newtype Bump = B (Y, X)
+newtype Bump = B (X, Y)
   deriving (Show)
 
 type Line         = (Bump, Bump)
@@ -46,7 +45,7 @@ maximal gte = L.foldl1' (\ acc e -> if gte e acc then e else acc)
 -- to the formal notion of gradient (or angle), but hacked wrt signs
 -- to work in this particular setup. Returns True for ill-defined lines.
 steeper :: Bump ->  Bump -> Bump -> Bool
-steeper (B(yf, xf)) (B(y1, x1)) (B(y2, x2)) =
+steeper (B(xf, yf)) (B(x1, y1)) (B(x2, y2)) =
   (yf - y1)*(xf - x2) >= (yf - y2)*(xf - x1)
 
 -- | Adds a bump to the convex hull of bumps represented as a list.

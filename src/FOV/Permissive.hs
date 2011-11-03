@@ -28,7 +28,7 @@ import Level
 scan :: Distance -> (Bump -> Loc) -> Level -> S.Set Loc
 scan r tr l =
   -- the area is diagonal, which is incorrect, but looks good enough
-  dscan 1 (((B(1, 0), B(0, r+1)), [B(0, 1)]), ((B(0, 1), B(r+1, 0)), [B(1, 0)]))
+  dscan 1 (((B(0, 1), B(r+1, 0)), [B(1, 0)]), ((B(1, 0), B(0, r+1)), [B(0, 1)]))
  where
   dscan :: Distance -> EdgeInterval -> S.Set Loc
   dscan d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps)) =
@@ -44,21 +44,21 @@ scan r tr l =
     -- Single ray from an extremity, produces non-permissive digital lines.
     illegal  = let (n, k) = intersect sl 0
                in ns*ke == ne*ks && (n `elem` [0, k])
-    dp2bump     (di, p) = B(p, di - p)
-    bottomRight (di, p) = B(p, di - p + 1)
+    pd2bump     (p, di) = B(di - p    , p)
+    bottomRight (p, di) = B(di - p + 1, p)
 
-    inside = S.fromList [tr (dp2bump (d, p)) | p <- [ps0..pe]]
+    inside = S.fromList [tr (pd2bump (p, d)) | p <- [ps0..pe]]
     outside
       | d >= r = S.empty
-      | isClear l tr (dp2bump (d, ps0)) = mscan (Just s0) ps0  -- start in light
+      | isClear l tr (pd2bump (ps0, d)) = mscan (Just s0) ps0  -- start in light
       | ps0 == ns `divUp` ks = mscan (Just s0) ps0          -- start in a corner
       | otherwise = mscan Nothing (ps0+1)                   -- start in mid-wall
 
     mscan :: Maybe Edge -> Progress -> S.Set Loc
     mscan (Just s@(_, sBumps)) ps
       | ps > pe = dscan (d+1) (s, e)            -- reached end, scan next
-      | not $ isClear l tr (dp2bump (d, ps)) =  -- enter shadow, steep bump
-          let steepBump = bottomRight (d, ps)
+      | not $ isClear l tr (pd2bump (ps, d)) =  -- enter shadow, steep bump
+          let steepBump = bottomRight (ps, d)
               gte = flip $ dsteeper steepBump
               -- sBumps may contain steepBump, but maximal will ignore it
               nep = maximal gte sBumps
@@ -72,7 +72,7 @@ scan r tr l =
       | otherwise =                             -- out of shadow, shallow bump
           -- the light can be just through a corner of diagonal walls
           -- and the recursive call verifies that at the same ps coordinate
-          let shallowBump = bottomRight (d, ps)
+          let shallowBump = bottomRight (ps, d)
               gte = dsteeper shallowBump
               nsp = maximal gte eBumps
               nsBumps = addHull gte shallowBump sBumps0
@@ -95,12 +95,12 @@ dsteeper f p1 p2 =
 -- | The y coordinate, represented as a fraction, of the intersection of
 -- a given line and the line of diagonals of squares at distance d from (0, 0).
 intersect :: Line -> Distance -> (Int, Int)
-intersect (B(y, x), B(yf, xf)) d =
-  assert (allB (>= 0) [y, x, yf, xf]) $
+intersect (B(x, y), B(xf, yf)) d =
+  assert (allB (>= 0) [x, y, xf, yf]) $
   ((1 + d)*(yf - y) + y*xf - x*yf, (xf - x) + (yf - y))
 {-
 Derivation of the formula:
-The intersection point (yt, xt) satisfies the following equalities:
+The intersection point (xt, yt) satisfies the following equalities:
 xt = 1 + d - yt
 (yt - y) (xf - x) = (xt - x) (yf - y)
 hence
@@ -111,7 +111,7 @@ yt (xf - x) + yt (yf - y) = (1 + d) (yf - y) - x yf + y xf
 yt = ((1 + d) (yf - y) + y xf - x yf) / (xf - x + yf - y)
 
 General remarks:
-A square is denoted by its bottom-left corner. Hero at (0,0).
+A square is denoted by its bottom-left corner. Hero at (0, 0).
 Order of processing in the first quadrant is
 9
 58
@@ -124,7 +124,7 @@ and we start scanning from the bottom right.
 
 The Loc coordinates are cartesian. The Bump coordinates are cartesian,
 translated so that the hero is at (0, 0) and rotated so that he always
-looks at the first quadrant. The (Distance, Progress) cordinates
+looks at the first quadrant. The (Progress, Distance) cordinates
 are mangled and not used for geometry.
 -}
 
@@ -132,16 +132,16 @@ are mangled and not used for geometry.
 
 -- | Debug: calculate steeper for PFOV in another way and compare results.
 debugSteeper :: Bump -> Bump -> Bump -> Bool
-debugSteeper f@(B(yf, xf)) p1@(B(y1, x1)) p2@(B(y2, x2)) =
-  assert (allB (>= 0) [yf, xf, y1, x1, y2, x2]) $
+debugSteeper f@(B(xf, yf)) p1@(B(x1, y1)) p2@(B(x2, y2)) =
+  assert (allB (>= 0) [xf, yf, x1, y1, x2, y2]) $
   let (n1, k1) = intersect (p1, f) 0
       (n2, k2) = intersect (p2, f) 0
   in n1 * k2 <= k1 * n2
 
 -- | Debug: checks postconditions of borderLine.
 debugLine :: Line -> (Bool, String)
-debugLine line@(B(y1, x1), B(y2, x2))
-  | not (allB (>= 0) [y1, x1, y2, x2]) =
+debugLine line@(B(x1, y1), B(x2, y2))
+  | not (allB (>= 0) [x1, y1, x2, y2]) =
       (False, "negative coordinates: " ++ show line)
   | y1 == y2 && x1 == x2 =
       (False, "ill-defined line: " ++ show line)

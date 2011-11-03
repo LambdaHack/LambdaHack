@@ -73,24 +73,24 @@ type Interval = (Rational, Rational)
 -- | The current state of a scan is kept in a variable of Maybe Rational.
 -- If Just something, we're in a visible interval. If Nothing, we're in
 -- a shadowed interval.
-scan :: ((Distance, Progress) -> Loc) -> Level -> Distance -> Interval
+scan :: ((Progress, Distance) -> Loc) -> Level -> Distance -> Interval
         -> S.Set Loc
 scan tr l d (s0, e) =
     let ps = downBias (s0 * fromIntegral d)  -- minimal progress to check
         pe = upBias (e * fromIntegral d)     -- maximal progress to check
-        st = if Tile.isClear (l `at` tr (d, ps))
+        st = if Tile.isClear (l `at` tr (ps, d))
              then Just s0  -- start in light
              else Nothing  -- start in shadow
     in
         assert (d >= 0 && e >= 0 && s0 >= 0 && pe >= ps && ps >= 0
                 `blame` (d,s0,e,ps,pe)) $
-        S.union (S.fromList [tr (d, p) | p <- [ps..pe]]) (mscan st ps pe)
+        S.union (S.fromList [tr (p, d) | p <- [ps..pe]]) (mscan st ps pe)
   where
     mscan :: Maybe Rational -> Progress -> Progress -> S.Set Loc
     mscan (Just s) ps pe
       | s  >= e  = S.empty                -- empty interval
       | ps > pe  = scan tr l (d+1) (s, e) -- reached end, scan next
-      | not $ Tile.isClear (l `at` tr (d, ps)) =
+      | not $ Tile.isClear (l `at` tr (ps, d)) =
                    let ne = (fromIntegral ps - (1%2)) / (fromIntegral d + (1%2))
                    in  scan tr l (d+1) (s, ne) `S.union` mscan Nothing (ps+1) pe
                                       -- entering shadow
@@ -98,7 +98,7 @@ scan tr l d (s0, e) =
                                       -- continue in light
     mscan Nothing ps pe
       | ps > pe  = S.empty            -- reached end while in shadow
-      | Tile.isClear (l `at` tr (d, ps)) =
+      | Tile.isClear (l `at` tr (ps, d)) =
                    let ns = (fromIntegral ps - (1%2)) / (fromIntegral d - (1%2))
                    in  mscan (Just ns) (ps+1) pe
                                       -- moving out of shadow

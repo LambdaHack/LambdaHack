@@ -22,7 +22,7 @@ import Level
 scan :: Distance -> (Bump -> Loc) -> Level -> S.Set Loc
 scan r tr l =
   -- the scanned area is a square, which is a sphere in this metric; good
-  dscan 1 (((B(0, 1), B(r, -r)),  [B(0, 0)]), ((B(0, 0), B(r, r+1)), [B(0, 1)]))
+  dscan 1 (((B(1, 0), B(-r, r)),  [B(0, 0)]), ((B(0, 0), B(r+1, r)), [B(1, 0)]))
  where
   dscan :: Distance -> EdgeInterval -> S.Set Loc
   dscan d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps)) =
@@ -35,10 +35,10 @@ scan r tr l =
                -- at a corner, choose the diamond leading to a smaller view.
              in -1 + n `divUp` k
 
-        inside = S.fromList [tr (B(d, p)) | p <- [ps0..pe]]
+        inside = S.fromList [tr (B(p, d)) | p <- [ps0..pe]]
         outside
           | d >= r = S.empty
-          | isClear l tr (B(d, ps0)) =
+          | isClear l tr (B(ps0, d)) =
               mscan (Just s0) (ps0+1) pe      -- start in light
           | otherwise =
               mscan Nothing (ps0+1) pe        -- start in shadow
@@ -53,7 +53,7 @@ scan r tr l =
                   (mscan Nothing (ps+1) pe)
       | otherwise = mscan (Just s) (ps+1) pe  -- continue in light
      where
-      steepBump = B(d, ps)
+      steepBump = B(ps, d)
       gte = dsteeper steepBump
       nep = maximal gte sBumps
       neBumps = addHull gte steepBump eBumps
@@ -64,7 +64,7 @@ scan r tr l =
           mscan (Just (dline nsp shallowBump, nsBumps)) (ps+1) pe
       | otherwise = mscan Nothing (ps+1) pe   -- continue in shadow
      where
-      shallowBump = B(d, ps)
+      shallowBump = B(ps, d)
       gte = flip $ dsteeper shallowBump
       nsp = maximal gte eBumps
       nsBumps = addHull gte shallowBump sBumps0
@@ -86,12 +86,12 @@ dsteeper f p1 p2 =
 -- | The x coordinate, represented as a fraction, of the intersection of
 -- a given line and the line of diagonals of diamonds at distance d from (0, 0).
 intersect :: Line -> Distance -> (Int, Int)
-intersect (B(y, x), B(yf, xf)) d =
+intersect (B(x, y), B(xf, yf)) d =
   assert (allB (>= 0) [y, yf]) $
   ((d - y)*(xf - x) + x*(yf - y), yf - y)
 {-
 Derivation of the formula:
-The intersection point (yt, xt) satisfies the following equalities:
+The intersection point (xt, yt) satisfies the following equalities:
 yt = d
 (yt - y) (xf - x) = (xt - x) (yf - y)
 hence
@@ -101,7 +101,7 @@ hence
 xt = ((d - y) (xf - x) + x (yf - y)) / (yf - y)
 
 General remarks:
-A diamond is denoted by its left corner. Hero at (0,0).
+A diamond is denoted by its left corner. Hero at (0, 0).
 Order of processing in the first quadrant rotated by 45 degrees is
  45678
   123
@@ -114,7 +114,7 @@ line is on the right, opposite to PFOV. We start scanning from the left.
 
 The Loc coordinates are cartesian. The Bump coordinates are cartesian,
 translated so that the hero is at (0, 0) and rotated so that he always
-looks at the first (rotated 45 degrees) quadrant. The (Distance, Progress)
+looks at the first (rotated 45 degrees) quadrant. The (Progress, Distance)
 cordinates coincide with the Bump coordinates, unlike in PFOV.
 -}
 
@@ -122,7 +122,7 @@ cordinates coincide with the Bump coordinates, unlike in PFOV.
 
 -- | Debug: calculate steeper for DFOV in another way and compare results.
 debugSteeper :: Bump -> Bump -> Bump -> Bool
-debugSteeper f@(B(yf, _xf)) p1@(B(y1, _x1)) p2@(B(y2, _x2)) =
+debugSteeper f@(B(_xf, yf)) p1@(B(_x1, y1)) p2@(B(_x2, y2)) =
   assert (allB (>= 0) [yf, y1, y2]) $
   let (n1, k1) = intersect (p1, f) 0
       (n2, k2) = intersect (p2, f) 0
@@ -130,7 +130,7 @@ debugSteeper f@(B(yf, _xf)) p1@(B(y1, _x1)) p2@(B(y2, _x2)) =
 
 -- | Debug: check is a view border line for DFOV is legal.
 debugLine :: Line -> (Bool, String)
-debugLine line@(B(y1, x1), B(y2, x2))
+debugLine line@(B(x1, y1), B(x2, y2))
   | not (allB (>= 0) [y1, y2]) =
       (False, "negative coordinates: " ++ show line)
   | y1 == y2 && x1 == x2 =
