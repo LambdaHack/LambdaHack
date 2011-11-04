@@ -66,8 +66,9 @@ displayBlankConfirm :: Session -> String -> IO Bool
 displayBlankConfirm session txt =
   let x = txt ++ more
       doBlank = const (Color.defaultAttr, ' ')
+      (ly, lx) = normalLevelSize
   in do
-       display ((0, 0), normalLevelSize) session doBlank x ""
+       display (0, 0, lx, ly) session doBlank x ""
        getConfirm session
 
 -- | Waits for a space or return or '?' or '*'. The last two act this way,
@@ -211,7 +212,7 @@ displayLevel
         take 10 ("Dmg: " ++ show damage ++ repeat ' ') ++
         take 20 ("HP: " ++ show ahp ++
                  " (" ++ show (maxDice bhp) ++ ")" ++ repeat ' ')
-      disp n mesg = display ((0, 0), (sy, sx)) session (dis n) mesg status
+      disp n mesg = display (0, 0, sx, sy) session (dis n) mesg status
       msgs = splitMsg sx msg
       perf k []     = perfo k ""
       perf k [xs]   = perfo k xs

@@ -101,11 +101,10 @@ shutdown _ = mainQuit
 
 display :: Area -> Session -> (Loc -> (Color.Attr, Char)) -> String -> String
            -> IO ()
-display ((y0,x0), (y1,x1)) session f msg status =
-  postGUIAsync $
-  do
+display (x0, y0, x1, y1) session f msg status =
+  postGUIAsync $ do
     tb <- textViewGetBuffer (sview session)
-    let fLine y = let (as, cs) = unzip [ f (y, x) | x <- [x0..x1] ]
+    let fLine y = let (as, cs) = unzip [ f (toLoc (y, x)) | x <- [x0..x1] ]
                   in  ((y, as), BS.pack cs)
         memo  = L.map fLine [y0..y1]
         attrs = L.map fst memo

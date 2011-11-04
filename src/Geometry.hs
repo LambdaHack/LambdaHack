@@ -42,13 +42,13 @@ fromLoc (y, x) = (x, y)
 trLoc :: Loc -> (X, Y) -> Loc
 trLoc (y, x) (dx, dy) = (y + dy, x + dx)
 
-type Area = (Loc, Loc)
+type Area = (X, Y, X, Y)
 
 -- | Given two locations, determine the direction in which one should
 -- move from the first in order to get closer to the second. Does not
 -- pay attention to obstacles at all.
-towards :: (Loc,Loc) -> Dir
-towards ((y0,x0),(y1,x1)) =
+towards :: (Loc, Loc) -> Dir
+towards (loc0, loc1) | (x0, y0) <- fromLoc loc0, (x1, y1) <- fromLoc loc1 =
   let dy = y1 - y0
       dx = x1 - x0
       angle :: Double
@@ -62,8 +62,8 @@ towards ((y0,x0),(y1,x1)) =
   in  if dx >= 0 then dir else neg dir
 
 -- | Get the squared distance between two locations.
-distance :: (Loc,Loc) -> Int
-distance ((y0, x0),(y1, x1)) =
+distance :: (Loc, Loc) -> Int
+distance (loc0, loc1) | (x0, y0) <- fromLoc loc0, (x1, y1) <- fromLoc loc1 =
   let square a = a * a
   in square (y1 - y0) + square (x1 - x0)
 
@@ -71,18 +71,18 @@ distance ((y0, x0),(y1, x1)) =
 -- (horizontally, vertically or diagonally). Currrently, a
 -- position is also considered adjacent to itself.
 adjacent :: Loc -> Loc -> Bool
-adjacent s t = distance (s,t) <= 2
+adjacent s t = distance (s, t) <= 2
 
 -- | Return the 8 surrounding locations of a given location.
 surroundings :: Loc -> [Loc]
 surroundings l = map (l `shift`) moves
 
 diagonal :: Dir -> Bool
-diagonal (y,x) = y*x /= 0
+diagonal (y, x) = x * y /= 0
 
 -- | Move one square in the given direction.
 shift :: Loc -> Dir -> Loc
-shift (y0,x0) (y1,x1) = (y0+y1,x0+x1)
+shift loc0 (y1, x1) = trLoc loc0 (x1, y1)
 
 -- | Invert a direction (vector).
 neg :: Dir -> Dir
@@ -92,12 +92,15 @@ neg (y,x) = (-y,-x)
 moves :: [Dir]
 moves = [(-1,-1), (-1,0), (-1,1), (0,1), (1,1), (1,0), (1,-1), (0,-1)]
 
+shiftDir :: Dir -> Dir -> Dir
+shiftDir (y0, x0) (y1, x1) = (y0 + y1, x0 + x1)
+
 up, down, left, right :: Dir
 upleft, upright, downleft, downright :: Dir
-upleft    = up   `shift` left
-upright   = up   `shift` right
-downleft  = down `shift` left
-downright = down `shift` right
+upleft    = up   `shiftDir` left
+upright   = up   `shiftDir` right
+downleft  = down `shiftDir` left
+downright = down `shiftDir` right
 up        = (-1,0)
 down      = (1,0)
 left      = (0,-1)
@@ -106,39 +109,41 @@ right     = (0,1)
 neighbors :: Area ->        {- size limitation -}
              Loc ->         {- location to find neighbors of -}
              [Loc]
-neighbors area (y,x) =
-  let cs = [ (y + dy, x + dx)
+neighbors area loc =
+  let cs = [ loc `shift` (dy, dx)
            | dy <- [-1..1], dx <- [-1..1], (dx + dy) `mod` 2 == 1 ]
   in  L.filter (`inside` area) cs
 
 inside :: Loc -> Area -> Bool
-inside (y, x) ((y0, x0), (y1, x1)) = x1 >= x && x >= x0 && y1 >= y && y >= y0
+inside loc (x0, y0, x1, y1) | (x, y) <- fromLoc loc =
+  x1 >= x && x >= x0 && y1 >= y && y >= y0
 
 fromTo :: Loc -> Loc -> [Loc]
-fromTo (y0,x0) (y1,x1)
-  | y0 == y1 = L.map (\ x -> (y0,x)) (fromTo1 x0 x1)
-  | x0 == x1 = L.map (\ y -> (y,x0)) (fromTo1 y0 y1)
-  | otherwise = assert `failure` ((y0,x0), (y1,x1))
+fromTo loc0 loc1 | (x0, y0) <- fromLoc loc0, (x1, y1) <- fromLoc loc1 =
+ let result
+       | y0 == y1 = L.map (\ x -> toLoc (x, y0)) (fromTo1 x0 x1)
+       | x0 == x1 = L.map (\ y -> toLoc (x0, y)) (fromTo1 y0 y1)
+       | otherwise = assert `failure` (loc0, loc1)
+ in result
 
-fromTo1 :: X -> X -> [X]
+fromTo1 :: Int -> Int -> [Int]
 fromTo1 x0 x1
   | x0 <= x1  = [x0..x1]
   | otherwise = [x0,x0-1..x1]
 
-normalize :: (Loc,Loc) -> (Loc,Loc)
-normalize (a,b) | a <= b    = (a,b)
-                | otherwise = (b,a)
+normalize :: (Loc, Loc) -> (Loc, Loc)
+normalize (a, b) | a <= b    = (a, b)
+                 | otherwise = (b, a)
 
 normalizeArea :: Area -> Area
-normalizeArea ((y0, x0), (y1, x1)) =
-  ((min y0 y1, min x0 x1), (max y0 y1, max x0 x1))
+normalizeArea (x0, y0, x1, y1) = (min x0 x1, min y0 y1, max x0 x1, max y0 y1)
 
-grid :: (Y,X) -> Area -> [(Loc, Area)]
-grid (ny,nx) ((y0,x0),(y1,x1)) =
+grid :: (X, Y) -> Area -> [(Loc, Area)]
+grid (nx, ny) (x0, y0, x1, y1) =
   let yd = y1 - y0
       xd = x1 - x0
-  in [ ((y, x), ((y0 + (yd * y `div` ny),
-                  x0 + (xd * x `div` nx)),
-                 (y0 + (yd * (y + 1) `div` ny - 1),
-                  x0 + (xd * (x + 1) `div` nx - 1))))
+  in [ (toLoc (x, y), (x0 + (xd * x `div` nx),
+                       y0 + (yd * y `div` ny),
+                       x0 + (xd * (x + 1) `div` nx - 1),
+                       y0 + (yd * (y + 1) `div` ny - 1)))
      | x <- [0..nx-1], y <- [0..ny-1] ]
