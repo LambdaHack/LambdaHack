@@ -29,7 +29,8 @@ type SMap = M.Map Loc SmellTime
 data Level = Level
   { lname     :: LevelId    -- TODO: remove
   , lheroes   :: Party      -- ^ all heroes on the level
-  , lsize     :: (Y,X)  -- TODO: change to size (is lower right point)
+  , lxsize    :: X
+  , lysize    :: Y
   , lmonsters :: Party      -- ^ all monsters on the level
   , lsmell    :: SMap
   , lsecret   :: M.Map Loc Int
@@ -64,11 +65,12 @@ emptyParty :: Party
 emptyParty = IM.empty
 
 instance Binary Level where
-  put (Level nm hs sz ms ls le li lm lrm lme lstairs) =
+  put (Level nm hs sx sy ms ls le li lm lrm lme lstairs) =
         do
           put nm
           put hs
-          put sz
+          put sx
+          put sy
           put ms
           put ls
           put le
@@ -82,7 +84,8 @@ instance Binary Level where
   get = do
           nm <- get
           hs <- get
-          sz <- get
+          sx <- get
+          sy <- get
           ms <- get
           ls <- get
           le <- get
@@ -91,7 +94,7 @@ instance Binary Level where
           lrm <- get
           lme <- get
           lstairs <- get
-          return (Level nm hs sz ms ls le li lm lrm lme lstairs)
+          return (Level nm hs sx sy ms ls le li lm lrm lme lstairs)
 
 at, rememberAt :: Level -> Loc -> (Kind.Id TileKind)
 at         l p = lmap l Kind.! p
@@ -125,9 +128,9 @@ openable k lvl le target =
       le M.! target < k)
 
 findLoc :: Level -> (Loc -> (Kind.Id TileKind) -> Bool) -> Rnd Loc
-findLoc lvl@Level{lsize = (y, x)} p =
+findLoc lvl@Level{lxsize, lysize} p =
   do
-    loc <- locInArea (0, 0, x, y)
+    loc <- locInArea (0, 0, lxsize - 1, lysize - 1)
     let tile = lvl `at` loc
     if p loc tile
       then return loc
@@ -138,9 +141,9 @@ findLocTry :: Int ->  -- try k times
               (Loc -> Kind.Id TileKind -> Bool) ->  -- loop until satisfied
               (Loc -> Kind.Id TileKind -> Bool) ->  -- only try to satisfy k times
               Rnd Loc
-findLocTry k lvl@Level{lsize = (y, x)} p pTry =
+findLocTry k lvl@Level{lxsize, lysize} p pTry =
   do
-    loc <- locInArea (0, 0, x, y)
+    loc <- locInArea (0, 0, lxsize - 1, lysize - 1)
     let tile = lvl `at` loc
     if p loc tile && pTry loc tile
       then return loc

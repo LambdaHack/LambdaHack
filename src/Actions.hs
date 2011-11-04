@@ -125,10 +125,11 @@ acceptCurrent h = do
 
 moveCursor :: Dir -> Int -> Action ()
 moveCursor dir n = do
-  (sy, sx) <- gets (lsize . slevel)
+  sx <- gets (lxsize . slevel)
+  sy <- gets (lysize . slevel)
   let upd cursor =
         let (ny, nx) = iterate (`shift` dir) (clocation cursor) !! n
-            cloc = (max 1 $ min ny (sy-1), max 1 $ min nx (sx-1))
+            cloc = (max 1 $ min ny (sy-2), max 1 $ min nx (sx-2))
         in  cursor { clocation = cloc }
   modify (updateCursor upd)
   doLook

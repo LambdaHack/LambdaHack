@@ -133,7 +133,8 @@ displayLevel
              , stime   = time
              , sassocs = asso
              , slevel  = lvl@Level{ lname = ln
-                                  , lsize = (sy, sx)
+                                  , lxsize = sx
+                                  , lysize = sy
                                   , lsmell = smap } }
   msg moverlay =
   let Actor{akind, ahp, aloc, aitems} = getPlayerBody state
@@ -212,7 +213,7 @@ displayLevel
         take 10 ("Dmg: " ++ show damage ++ repeat ' ') ++
         take 20 ("HP: " ++ show ahp ++
                  " (" ++ show (maxDice bhp) ++ ")" ++ repeat ' ')
-      disp n mesg = display (0, 0, sx, sy) session (dis n) mesg status
+      disp n mesg = display (0, 0, sx - 1, sy - 1) session (dis n) mesg status
       msgs = splitMsg sx msg
       perf k []     = perfo k ""
       perf k [xs]   = perfo k xs

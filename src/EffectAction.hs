@@ -318,12 +318,12 @@ stopRunning = updatePlayerBody (\ p -> p { adir = Nothing })
 history :: Action ()
 history =
   do
-    (_, sx) <- gets (lsize . slevel)
-    msg     <- currentMessage
+    sx     <- gets (lxsize . slevel)
+    msg    <- currentMessage
     messageClear
-    config  <- gets sconfig
+    config <- gets sconfig
     let historyMax = Config.get config "ui" "historyMax"
         -- TODO: not ideal, continuations of sentences are atop beginnings.
-        splitS = splitMsg sx (msg ++ " ")
+        splitS = splitMsg (sx + 1) (msg ++ " ")
     unless (L.null msg) $
       modify (updateHistory (take historyMax . (L.reverse splitS ++)))

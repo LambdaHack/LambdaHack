@@ -144,8 +144,7 @@ emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm lastNm =
   do
     let lm1 = digRoom True (1, 1, sx-1, sy-1) (emptyLMap (sy,sx))
         unknown = unknownLAMap (sy,sx)
-        lvl = Level
-                nm emptyParty (sy,sx) emptyParty M.empty M.empty M.empty (Kind.listArray ((0, 0), (sy, sx)) (M.elems lm1)) unknown "" ((0, 0), (0, 0))
+        lvl = Level nm emptyParty (sx + 1) (sy + 1) emptyParty M.empty M.empty M.empty (Kind.listArray ((0, 0), (sy, sx)) (M.elems lm1)) unknown "" ((0, 0), (0, 0))
     -- locations of the stairs
     su <- findLoc lvl (const Tile.isBoring)
     sd <- findLoc lvl (\ l t -> Tile.isBoring t
@@ -157,8 +156,7 @@ emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm lastNm =
         lm3 = M.insert su Tile.stairsLightUpId lm2
     addRocks <- addRocksRnd lvl
     let lm4 = addRocks lm3
-        level = Level
-                  nm emptyParty (sy,sx) emptyParty M.empty M.empty (M.fromList is) (Kind.listArray ((0, 0), (sy, sx)) (M.elems lm4)) unknown "bigroom" (su, sd)
+        level = Level nm emptyParty (sx + 1) (sy + 1) emptyParty M.empty M.empty (M.fromList is) (Kind.listArray ((0, 0), (sy, sx)) (M.elems lm4)) unknown "bigroom" (su, sd)
     return level
 
 -- | For a bigroom level: Create a level consisting of only one, empty room.
@@ -321,8 +319,9 @@ rogueRoom cfg nm lastNm =
                     _ -> return (o : l, le)
       (l, le) <- foldM f ([], M.empty) (M.toList lm)
       return (M.fromList l, le)
-    let unknown = unknownLAMap (levelSize cfg)
-        lvl = Level nm emptyParty (levelSize cfg) emptyParty
+    let (sy, sx) = levelSize cfg
+        unknown = unknownLAMap (sy, sx)
+        lvl = Level nm emptyParty (sx + 1) (sy + 1) emptyParty
                 M.empty secretMap M.empty (Kind.listArray ((0, 0), levelSize cfg) (M.elems dlmap)) unknown "" ((0, 0), (0, 0))
     -- locations of the stairs
     su <- findLoc lvl (const Tile.isBoring)
@@ -346,7 +345,7 @@ rogueRoom cfg nm lastNm =
         -- generate map and level from the data
         meta = show allConnects
     return $
-      Level nm emptyParty (levelSize cfg) emptyParty M.empty secretMap (M.fromList is) (Kind.listArray ((0, 0), levelSize cfg) (M.elems lm3)) unknown meta (su, sd)
+      Level nm emptyParty (sx + 1) (sy + 1) emptyParty M.empty secretMap (M.fromList is) (Kind.listArray ((0, 0), levelSize cfg) (M.elems lm3)) unknown meta (su, sd)
 
 rollItems :: LevelConfig -> Level -> Loc -> Rnd [(Loc, ([Item], [Item]))]
 rollItems cfg lvl ploc =
