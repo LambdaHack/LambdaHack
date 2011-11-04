@@ -1,4 +1,9 @@
-module Geometry where
+module Geometry
+  ( Time, VDir(..), X, Y, Loc, Dir, toLoc, fromLoc, trLoc
+  , Area, towards, distance, adjacent, surroundings, diagonal, shift
+  , neg, moves, up, down, left, right, upleft, upright, downleft, downright
+  , neighbors, fromTo, normalize, normalizeArea, grid
+  ) where
 
 import qualified Data.List as L
 
@@ -97,10 +102,6 @@ up        = (-1,0)
 down      = (1,0)
 left      = (0,-1)
 right     = (0,1)
-
-horiz, vert :: [Dir]
-horiz = [left, right]
-vert  = [up, down]
 
 neighbors :: Area ->        {- size limitation -}
              Loc ->         {- location to find neighbors of -}

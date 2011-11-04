@@ -4,7 +4,7 @@ import qualified Data.Set as S
 
 import Utils.Assert
 import FOV.Common
-import Geometry hiding (inside)
+import Geometry
 import Level
 
 -- Permissive FOV with a given range.
