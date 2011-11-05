@@ -19,12 +19,12 @@ startup k = mkVty >>= k
 
 display :: Area -> Session -> (Loc -> (Color.Attr, Char)) -> String -> String
            -> IO ()
-display ((y0,x0),(y1,x1)) vty f msg status =
+display (x0, y0, x1, y1) vty f msg status =
   let img = (foldr (<->) empty_image .
              L.map (foldr (<|>) empty_image .
-                    L.map (\ (x,y) -> let (a, c) = f (y, x)
-                                      in  char (setAttr a) c)))
-            [ [ (x,y) | x <- [x0..x1] ] | y <- [y0..y1] ]
+                    L.map (\ (x, y) -> let (a, c) = f (toLoc (x, y))
+                                       in  char (setAttr a) c)))
+            [ [ (x, y) | x <- [x0..x1] ] | y <- [y0..y1] ]
   in  update vty (pic_for_image
        (utf8_bytestring (setAttr Color.defaultAttr)
         (BS.pack (toWidth (x1 - x0 + 1) msg)) <->

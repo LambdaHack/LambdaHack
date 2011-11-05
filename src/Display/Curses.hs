@@ -42,7 +42,7 @@ shutdown _ = C.end
 
 display :: Area -> Session -> (Loc -> (Color.Attr, Char)) -> String -> String
            -> IO ()
-display ((y0,x0),(y1,x1)) (Session { win = w, styles = s }) f msg status =
+display (x0, y0, x1, y1) (Session { win = w, styles = s }) f msg status =
   do
     -- let defaultStyle = C.defaultCursesStyle
     -- Terminals with white background require this:
@@ -52,8 +52,8 @@ display ((y0,x0),(y1,x1)) (Session { win = w, styles = s }) f msg status =
     C.mvWAddStr w 0 0 (toWidth (x1 - x0 + 1) msg)  -- TODO: BS as in vty
     C.mvWAddStr w (y1+2) 0 (toWidth (x1 - x0 + 1) status)
     sequence_ [ C.setStyle (M.findWithDefault defaultStyle a s)
-                >> C.mvWAddStr w (y+1) x [c]
-              | x <- [x0..x1], y <- [y0..y1], let (a, c) = f (y, x) ]
+                >> C.mvWAddStr w (y + 1) x [c]
+              | x <- [x0..x1], y <- [y0..y1], let (a, c) = f (toLoc (x, y)) ]
     C.refresh
 
 toWidth :: Int -> String -> String
