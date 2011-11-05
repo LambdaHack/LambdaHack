@@ -1,6 +1,6 @@
 module Dungeon
   (Dungeon, LevelConfig,
-   defaultLevelConfig, normalLevelSize,
+   defaultLevelConfig, normalLevelBound,
    rogueRoom, bigRoom, noiseRoom,
    putDungeonLevel, getDungeonLevel, fromList, toList, adjust
    )
@@ -57,13 +57,13 @@ type Room = Area
 
 -- | Create a random room according to given parameters.
 mkRoom :: Int ->      -- ^ border columns
-          (Y,X) ->    -- ^ minimum size
+          (X, Y) ->    -- ^ minimum size
           Area ->     -- ^ this is an area, not the room itself
           Rnd Room    -- ^ this is the upper-left and lower-right corner of the room
-mkRoom bd (ym,xm) (x0, y0, x1, y1) =
+mkRoom bd (xm, ym) (x0, y0, x1, y1) =
   do
-    (ry0,rx0) <- locInArea (x0 + bd, y0 + bd, x1 - bd - xm + 1, y1 - bd - ym + 1)
-    (ry1,rx1) <- locInArea (rx0 + xm - 1, ry0 + ym - 1, x1 - bd, y1 - bd)
+    (rx0, ry0) <- xyInArea (x0 + bd, y0 + bd, x1 - bd - xm + 1, y1 - bd - ym + 1)
+    (rx1, ry1) <- xyInArea (rx0 + xm - 1, ry0 + ym - 1, x1 - bd, y1 - bd)
     return (rx0, ry0, rx1, ry1)
 
 -- | Create a no-room, i.e., a single corridor field.
@@ -72,7 +72,7 @@ mkNoRoom :: Int ->      -- ^ border columns
             Rnd Room    -- ^ this is the upper-left and lower-right corner of the room
 mkNoRoom bd (x0, y0, x1, y1) =
   do
-    (ry,rx) <- locInArea (x0 + bd, y0 + bd, x1 - bd, y1 - bd)
+    (rx, ry) <- xyInArea (x0 + bd, y0 + bd, x1 - bd, y1 - bd)
     return (rx, ry, rx, ry)
 
 data HV = Horiz | Vert
@@ -87,18 +87,18 @@ toHV True  = Horiz
 toHV False = Vert
 
 instance R.Random HV where
-  randomR (a,b0) g = case R.randomR (fromHV a, fromHV b0) g of
-                      (b, g') -> (toHV b, g')
+  randomR (a, b0) g = case R.randomR (fromHV a, fromHV b0) g of
+                        (b, g') -> (toHV b, g')
   random = R.randomR (minBound, maxBound)
 
 type LMap = M.Map Loc (Kind.Id TileKind)
 
 -- | Create a corridor, either horizontal or vertical, with
 -- a possible intermediate part that is in the opposite direction.
-mkCorridor :: HV -> (Loc,Loc) -> Area -> Rnd [Loc] {- straight sections of the corridor -}
+mkCorridor :: HV -> (Loc, Loc) -> Area -> Rnd [Loc] {- straight sections of the corridor -}
 mkCorridor hv ((y0,x0),(y1,x1)) b =
   do
-    (ry,rx) <- findLocInArea b (const True)
+    (rx, ry) <- xyInArea b
     -- (ry,rx) is intermediate point the path crosses
     -- hv decides whether we start in horizontal or vertical direction
     case hv of
@@ -112,17 +112,17 @@ mkCorridor hv ((y0,x0),(y1,x1)) b =
 connectRooms :: Area -> Area -> Rnd [Loc]
 connectRooms sa@(_, _, sx1, sy1) ta@(tx0, ty0, _, _) =
   do
-    (sy,sx) <- locInArea sa
-    (ty,tx) <- locInArea ta
+    (sx, sy) <- xyInArea sa
+    (tx, ty) <- xyInArea ta
     let xok = sx1 < tx0 - 3
     let xarea = normalizeArea (sx1+2, sy, tx0-2, ty)
     let yok = sy1 < ty0 - 3
     let yarea = normalizeArea (sx, sy1+2, tx, ty0-2)
     let xyarea = normalizeArea (sx1+2, sy1+2, tx0-2, ty0-2)
-    (hv,area) <- if xok && yok then fmap (\ hv -> (hv,xyarea)) (binaryChoice Horiz Vert)
-                 else if xok   then return (Horiz,xarea)
-                               else return (Vert,yarea)
-    mkCorridor hv ((sy,sx),(ty,tx)) area
+    (hv,area) <- if xok && yok then fmap (\ hv -> (hv, xyarea)) (binaryChoice Horiz Vert)
+                 else if xok   then return (Horiz, xarea)
+                               else return (Vert, yarea)
+    mkCorridor hv ((sy,sx), (ty,tx)) area
 
 digCorridors :: Corridor -> LMap
 digCorridors (p1:p2:ps) =
@@ -140,11 +140,12 @@ mergeCorridor _ _                     = Tile.openingId
 -- | Create a level consisting of only one room. Optionally, insert some walls.
 emptyRoom :: (Level -> Rnd (LMap -> LMap)) -> LevelConfig -> LevelId -> LevelId
              -> Rnd Level
-emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm lastNm =
+emptyRoom addRocksRnd cfg@(LevelConfig {levelBound}) nm lastNm =
   do
-    let lm1 = digRoom True (1, 1, sx-1, sy-1) (emptyLMap (sy,sx))
-        unknown = unknownLAMap (sy,sx)
-        lvl = Level nm emptyParty (sx + 1) (sy + 1) emptyParty M.empty M.empty M.empty (Kind.listArray ((0, 0), (sy, sx)) (M.elems lm1)) unknown "" ((0, 0), (0, 0))
+    let lm1 = digRoom True (1, 1, sx-1, sy-1) (emptyLMap (sx, sy))
+        (sx, sy) = levelBound
+        unknown = unknownLAMap levelBound
+        lvl = Level nm emptyParty (sx + 1) (sy + 1) emptyParty M.empty M.empty M.empty (Kind.listArray ((0, 0), levelBound) (M.elems lm1)) unknown "" ((0, 0), (0, 0))
     -- locations of the stairs
     su <- findLoc lvl (const Tile.isBoring)
     sd <- findLoc lvl (\ l t -> Tile.isBoring t
@@ -156,7 +157,7 @@ emptyRoom addRocksRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm lastNm =
         lm3 = M.insert su Tile.stairsLightUpId lm2
     addRocks <- addRocksRnd lvl
     let lm4 = addRocks lm3
-        level = Level nm emptyParty (sx + 1) (sy + 1) emptyParty M.empty M.empty (M.fromList is) (Kind.listArray ((0, 0), (sy, sx)) (M.elems lm4)) unknown "bigroom" (su, sd)
+        level = Level nm emptyParty (sx + 1) (sy + 1) emptyParty M.empty M.empty (M.fromList is) (Kind.listArray ((0, 0), levelBound) (M.elems lm4)) unknown "bigroom" (su, sd)
     return level
 
 -- | For a bigroom level: Create a level consisting of only one, empty room.
@@ -177,14 +178,14 @@ noiseRoom cfg =
   in  emptyRoom addRocks cfg
 
 data LevelConfig = LevelConfig
-  { levelGrid         :: Rnd (Y,X)
-  , minRoomSize       :: Rnd (Y,X)
+  { levelGrid         :: Rnd (X, Y)
+  , minRoomSize       :: Rnd (X ,Y)
   , darkRoomChance    :: Rnd Bool
   , border            :: Int         -- must be at least 2!
-  , levelSize         :: (Y,X)       -- lower right point; TODO: change to size or rename to 'bound'
-  , extraConnects     :: (Y,X) -> Int
+  , levelBound        :: (X, Y)      -- lower right point; TODO: change to size or rename to 'bound'
+  , extraConnects     :: (X, Y) -> Int
       -- relative to grid (in fact a range, because of duplicate connects)
-  , noRooms           :: (Y,X) -> Rnd Int
+  , noRooms           :: (X, Y) -> Rnd Int
       -- range, relative to grid
   , minStairsDistance :: Int         -- must not be too large
   , doorChance        :: Rnd Bool
@@ -195,36 +196,36 @@ data LevelConfig = LevelConfig
   , depth             :: Int         -- general indicator of difficulty
   }
 
-normalLevelSize :: (Y,X)
-normalLevelSize = (22,79)
+normalLevelBound :: (X, Y)
+normalLevelBound = (79, 22)
 
 defaultLevelConfig :: Int -> LevelConfig
 defaultLevelConfig d =
   LevelConfig {
     levelGrid         = do
-                          y <- randomR (2,4)
-                          x <- randomR (3,5)
-                          return (y,x),
-    minRoomSize       = return (2,2),
+                          x <- randomR (3, 5)
+                          y <- randomR (2, 4)
+                          return (x, y),
+    minRoomSize       = return (2, 2),
     darkRoomChance    = chance $ 1%((22 - (2 * fromIntegral d)) `max` 2),
     border            = 2,
-    levelSize         = normalLevelSize,
-    extraConnects     = \ (y,x) -> (y*x) `div` 3,
-    noRooms           = \ (y,x) -> randomR (0,(y*x) `div` 3),
+    levelBound        = normalLevelBound,
+    extraConnects     = \ (x, y) -> (x * y) `div` 3,
+    noRooms           = \ (x, y) -> randomR (0, (x * y) `div` 3),
     minStairsDistance = 676,
     doorChance        = chance $ 2%3,
     doorOpenChance    = chance $ 1%10,
     doorSecretChance  = chance $ 1%4,
     doorSecretMax     = 15,
-    nrItems           = randomR (5,10),
+    nrItems           = randomR (5, 10),
     depth             = d
   }
 
 _largeLevelConfig :: Int -> LevelConfig
 _largeLevelConfig d =
   (defaultLevelConfig d) {
-    levelGrid         = return (7,10),
-    levelSize         = (77,231),
+    levelGrid         = return (10, 7),
+    levelBound        = (231, 77),
     extraConnects     = const 10
   }
 
@@ -258,24 +259,24 @@ as follows:
 -}
 
 rogueRoom :: LevelConfig -> LevelId -> LevelId -> Rnd Level
-rogueRoom cfg nm lastNm =
+rogueRoom cfg@(LevelConfig {levelBound}) nm lastNm =
   do
     lgrid    <- levelGrid cfg
     lminroom <- minRoomSize cfg
-    let (ly, lx) = levelSize cfg
-        gs = grid lgrid (0, 0, lx, ly)
+    let (sx, sy) = levelBound
+        gs = grid lgrid (0, 0, sx, sy)
     -- grid locations of "no-rooms"
     nrnr <- noRooms cfg lgrid
     nr   <- replicateM nrnr (do
-                               let (y,x) = lgrid
-                               yg <- randomR (0,y-1)
-                               xg <- randomR (0,x-1)
-                               return (yg,xg))
+                               let (x, y) = lgrid
+                               xg <- randomR (0, x-1)
+                               yg <- randomR (0, y-1)
+                               return (xg, yg))
     rs0 <- mapM (\ (i,r) -> do
                               r' <- if i `elem` nr
                                       then mkNoRoom (border cfg) r
                                       else mkRoom (border cfg) lminroom r
-                              return (i,r')) gs
+                              return (i, r')) gs
     let rooms :: [Area]
         rooms = L.map snd rs0
     dlrooms <- mapM (\ r -> darkRoomChance cfg >>= \ c -> return (r, not c)) rooms :: Rnd [(Area, Bool)]
@@ -284,13 +285,13 @@ rogueRoom cfg nm lastNm =
     addedConnects <- replicateM (extraConnects cfg lgrid) (randomConnection lgrid)
     let allConnects = L.nub (addedConnects ++ connects)
     cs <- mapM
-           (\ (p0,p1) -> do
+           (\ (p0, p1) -> do
                            let r0 = rs M.! p0
                                r1 = rs M.! p1
                            connectRooms r0 r1) allConnects
     let lrooms = L.foldr (\ (r, dl) m -> digRoom dl r m) M.empty dlrooms
         lcorridors = M.unions (L.map digCorridors cs)
-        lrocks = emptyLMap (levelSize cfg)
+        lrocks = emptyLMap levelBound
         lm = M.union (M.unionWith mergeCorridor lcorridors lrooms) lrocks
     -- convert openings into doors
     (dlmap, secretMap) <- do
@@ -319,10 +320,9 @@ rogueRoom cfg nm lastNm =
                     _ -> return (o : l, le)
       (l, le) <- foldM f ([], M.empty) (M.toList lm)
       return (M.fromList l, le)
-    let (sy, sx) = levelSize cfg
-        unknown = unknownLAMap (sy, sx)
+    let unknown = unknownLAMap levelBound
         lvl = Level nm emptyParty (sx + 1) (sy + 1) emptyParty
-                M.empty secretMap M.empty (Kind.listArray ((0, 0), levelSize cfg) (M.elems dlmap)) unknown "" ((0, 0), (0, 0))
+                M.empty secretMap M.empty (Kind.listArray ((0, 0), levelBound) (M.elems dlmap)) unknown "" ((0, 0), (0, 0))
     -- locations of the stairs
     su <- findLoc lvl (const Tile.isBoring)
     sd <- findLocTry 1000 lvl
@@ -345,7 +345,7 @@ rogueRoom cfg nm lastNm =
         -- generate map and level from the data
         meta = show allConnects
     return $
-      Level nm emptyParty (sx + 1) (sy + 1) emptyParty M.empty secretMap (M.fromList is) (Kind.listArray ((0, 0), levelSize cfg) (M.elems lm3)) unknown meta (su, sd)
+      Level nm emptyParty (sx + 1) (sy + 1) emptyParty M.empty secretMap (M.fromList is) (Kind.listArray ((0, 0), levelBound) (M.elems lm3)) unknown meta (su, sd)
 
 rollItems :: LevelConfig -> Level -> Loc -> Rnd [(Loc, ([Item], [Item]))]
 rollItems cfg lvl ploc =
@@ -369,12 +369,12 @@ rollPillars cfg lvl =
     nri <- 100 *~ nrItems cfg
     replicateM nri $ findLoc lvl (const Tile.isBoring)
 
-emptyLMap :: (Y, X) -> LMap
-emptyLMap (my, mx) =
+emptyLMap :: (X, Y) -> LMap
+emptyLMap (mx, my) =
   M.fromList [ ((y, x), Tile.wallId) | x <- [0..mx], y <- [0..my] ]
 
-unknownLAMap :: (Y, X) -> LAMap
-unknownLAMap (my, mx) =
+unknownLAMap :: (X, Y) -> LAMap
+unknownLAMap (mx, my) =
   Kind.listArray ((0, 0), (my, mx)) (repeat Tile.unknownId)
 
 -- | If the room has size 1, it is at most a start of a corridor.

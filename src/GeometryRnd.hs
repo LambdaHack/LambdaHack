@@ -6,15 +6,11 @@ import qualified Data.Set as S
 import Geometry
 import Random
 
-findLocInArea :: Area -> (Loc -> Bool) -> Rnd Loc
-findLocInArea a@(x0, y0, x1, y1) p = do
+xyInArea :: Area -> Rnd (X, Y)
+xyInArea (x0, y0, x1, y1) = do
   rx <- randomR (x0, x1)
   ry <- randomR (y0, y1)
-  let loc = toLoc (rx, ry)
-  if p loc then return loc else findLocInArea a p
-
-locInArea :: Area -> Rnd Loc
-locInArea a = findLocInArea a (const True)
+  return (rx, ry)
 
 connectGrid' :: (X, Y) -> S.Set Loc -> S.Set Loc -> [(Loc, Loc)] ->
                 Rnd [(Loc, Loc)]

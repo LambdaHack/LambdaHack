@@ -134,7 +134,7 @@ register config write s =
   do
     h <- restore config
     let (h', pos) = insertPos s h
-        (nlines, _) = normalLevelSize
+        (_, nlines) = normalLevelBound
         height = nlines `div` 3
         (msgCurrent, msgUnless) =
           case status s of

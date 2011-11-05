@@ -66,7 +66,7 @@ displayBlankConfirm :: Session -> String -> IO Bool
 displayBlankConfirm session txt =
   let x = txt ++ more
       doBlank = const (Color.defaultAttr, ' ')
-      (ly, lx) = normalLevelSize
+      (lx, ly) = normalLevelBound
   in do
        display (0, 0, lx, ly) session doBlank x ""
        getConfirm session

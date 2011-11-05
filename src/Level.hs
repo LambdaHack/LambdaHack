@@ -130,8 +130,9 @@ openable k lvl le target =
 findLoc :: Level -> (Loc -> (Kind.Id TileKind) -> Bool) -> Rnd Loc
 findLoc lvl@Level{lxsize, lysize} p =
   do
-    loc <- locInArea (0, 0, lxsize - 1, lysize - 1)
-    let tile = lvl `at` loc
+    xy <- xyInArea (0, 0, lxsize - 1, lysize - 1)
+    let loc = toLoc xy
+        tile = lvl `at` loc
     if p loc tile
       then return loc
       else findLoc lvl p
@@ -143,8 +144,9 @@ findLocTry :: Int ->  -- try k times
               Rnd Loc
 findLocTry k lvl@Level{lxsize, lysize} p pTry =
   do
-    loc <- locInArea (0, 0, lxsize - 1, lysize - 1)
-    let tile = lvl `at` loc
+    xy <- xyInArea (0, 0, lxsize - 1, lysize - 1)
+    let loc = toLoc xy
+        tile = lvl `at` loc
     if p loc tile && pTry loc tile
       then return loc
       else if k > 1
