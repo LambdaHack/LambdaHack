@@ -100,13 +100,13 @@ rollMonster state@(State{slevel}) = do
       -- visible by the player (if possible -- not possible for bigrooms)
       -- levels with few rooms are dangerous, because monsters may spawn
       -- in adjacent and unexpected places
-      loc <- findLocTry 1000 slevel
+      loc <- findLocTry 2000 slevel
              (\ l t -> Tile.isWalkable t
                        && l `L.notElem` L.map aloc (hs ++ ms))
              (\ l t -> not (Tile.isLit t)  -- try a dark, distant place first
                        && L.all (\ pl -> distance
                                            (lxsize slevel)
-                                           (aloc pl) l > 400) hs)
+                                           (aloc pl) l > 30) hs)
       (mk, k) <- frequency Kind.frequency
       hp <- rollDice $ bhp k
       return $ addMonster mk hp loc state

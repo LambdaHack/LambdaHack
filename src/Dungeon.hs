@@ -148,8 +148,9 @@ emptyRoom addRocksRnd cfg@(LevelConfig {levelBound}) nm lastNm =
         lvl = Level nm emptyParty (sx + 1) (sy + 1) emptyParty M.empty M.empty M.empty (listArrayCfg cfg lm1) unknown "" (zeroLoc, zeroLoc)
     -- locations of the stairs
     su <- findLoc lvl (const Tile.isBoring)
-    sd <- findLoc lvl (\ l t -> Tile.isBoring t
-                                && distance (sx + 1) su l > minStairsDistance cfg)
+    sd <- findLocTry 2000 lvl
+            (const Tile.isBoring)
+            (\ l _ -> distance (sx + 1) su l > minStairsDistance cfg)
     is <- rollItems cfg lvl su
     let lm2 = if nm == lastNm
               then lm1
@@ -212,7 +213,7 @@ defaultLevelConfig d =
     levelBound        = normalLevelBound,
     extraConnects     = \ (x, y) -> (x * y) `div` 3,
     noRooms           = \ (x, y) -> randomR (0, (x * y) `div` 3),
-    minStairsDistance = 676,
+    minStairsDistance = 30,
     doorChance        = chance $ 2%3,
     doorOpenChance    = chance $ 1%10,
     doorSecretChance  = chance $ 1%4,
@@ -325,7 +326,7 @@ rogueRoom cfg@(LevelConfig {levelBound}) nm lastNm =
                 M.empty secretMap M.empty (listArrayCfg cfg dlmap) unknown "" (zeroLoc, zeroLoc)
     -- locations of the stairs
     su <- findLoc lvl (const Tile.isBoring)
-    sd <- findLocTry 1000 lvl
+    sd <- findLocTry 2000 lvl
             (const Tile.isBoring)
             (\ l _ -> distance (sx + 1) su l > minStairsDistance cfg)
     -- determine number of items, items and locations for the items
@@ -357,9 +358,9 @@ rollItems cfg@LevelConfig{levelBound = (sx, _)} lvl ploc =
         l <- case jname (Kind.getKind (ikind t)) of
                "sword" ->
                  -- swords generated close to monsters; MUAHAHAHA
-                 findLocTry 200 lvl
+                 findLocTry 2000 lvl
                    (const Tile.isBoring)
-                   (\ l _ -> distance (sx + 1) ploc l > 400)
+                   (\ l _ -> distance (sx + 1) ploc l > 30)
                _ -> findLoc lvl (const Tile.isBoring)
         return (l,([t], []))
 

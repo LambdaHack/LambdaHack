@@ -59,18 +59,17 @@ trLoc lxsize loc (dx, dy) =
 zeroLoc :: Loc
 zeroLoc = 0
 
--- | Get the squared distance between two locations.
+-- | The distance between two points in the metric with diagonal moves.
 distance :: X -> Loc -> Loc -> Int
 distance lxsize loc0 loc1
   | (x0, y0) <- fromLoc lxsize loc0, (x1, y1) <- fromLoc lxsize loc1 =
-  let square a = a * a
-  in square (y1 - y0) + square (x1 - x0)
+  max (x1 - x0) (y1 - y0)
 
 -- | Return whether two locations are adjacent on the map
 -- (horizontally, vertically or diagonally). Currrently, a
 -- position is also considered adjacent to itself.
 adjacent :: X -> Loc -> Loc -> Bool
-adjacent lxsize s t = distance lxsize s t <= 2
+adjacent lxsize s t = distance lxsize s t <= 1
 
 -- | Return the 8 surrounding locations of a given location.
 surroundings :: X -> Y -> Loc -> [Loc]
@@ -89,6 +88,7 @@ instance Binary Dir where
   put (Dir xy) = put xy
   get = fmap Dir get
 
+-- | The squared euclidean distance between two directions.
 dirDistSq :: Dir -> Dir -> Int
 dirDistSq (Dir (x0, y0)) (Dir (x1, y1)) =
   let square a = a * a
