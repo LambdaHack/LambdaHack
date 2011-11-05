@@ -144,8 +144,8 @@ emptyRoom addRocksRnd cfg@(LevelConfig {levelBound}) nm lastNm =
   do
     let lm1 = digRoom True (1, 1, sx-1, sy-1) (emptyLMap (sx, sy))
         (sx, sy) = levelBound
-        unknown = unknownLAMap levelBound
-        lvl = Level nm emptyParty (sx + 1) (sy + 1) emptyParty M.empty M.empty M.empty (Kind.listArray (toLoc (0, 0), toLoc levelBound) (M.elems lm1)) unknown "" (toLoc (0, 0), toLoc (0, 0))
+        unknown = unknownLAMap cfg
+        lvl = Level nm emptyParty (sx + 1) (sy + 1) emptyParty M.empty M.empty M.empty (listArrayCfg cfg (M.elems lm1)) unknown "" (zeroLoc, zeroLoc)
     -- locations of the stairs
     su <- findLoc lvl (const Tile.isBoring)
     sd <- findLoc lvl (\ l t -> Tile.isBoring t
@@ -157,7 +157,7 @@ emptyRoom addRocksRnd cfg@(LevelConfig {levelBound}) nm lastNm =
         lm3 = M.insert (fromLoc su) Tile.stairsLightUpId lm2
     addRocks <- addRocksRnd lvl
     let lm4 = addRocks lm3
-        level = Level nm emptyParty (sx + 1) (sy + 1) emptyParty M.empty M.empty (M.fromList is) (Kind.listArray (toLoc (0, 0), toLoc levelBound) (M.elems lm4)) unknown "bigroom" (su, sd)
+        level = Level nm emptyParty (sx + 1) (sy + 1) emptyParty M.empty M.empty (M.fromList is) (listArrayCfg cfg (M.elems lm4)) unknown "bigroom" (su, sd)
     return level
 
 -- | For a bigroom level: Create a level consisting of only one, empty room.
@@ -170,9 +170,9 @@ noiseRoom :: LevelConfig -> LevelId -> LevelId -> Rnd Level
 noiseRoom cfg =
   let addRocks lvl = do
         rs <- rollPillars cfg lvl
-        let insertRock lm l =
-              case lm M.! (fromLoc l) of
-                t | Tile.isBoring t -> M.insert (fromLoc l) Tile.wallId lm
+        let insertRock lm xy =
+              case lm M.! xy of
+                t | Tile.isBoring t -> M.insert xy Tile.wallId lm
                 _ -> lm
         return $ \ lm -> L.foldl' insertRock lm rs
   in emptyRoom addRocks cfg
@@ -320,9 +320,9 @@ rogueRoom cfg@(LevelConfig {levelBound}) nm lastNm =
                     _ -> return (o : l, le)
       (l, le) <- foldM f ([], M.empty) (M.toList lm)
       return (M.fromList l, le)
-    let unknown = unknownLAMap levelBound
+    let unknown = unknownLAMap cfg
         lvl = Level nm emptyParty (sx + 1) (sy + 1) emptyParty
-                M.empty secretMap M.empty (Kind.listArray (toLoc (0, 0), toLoc levelBound) (M.elems dlmap)) unknown "" (toLoc (0, 0), toLoc (0, 0))
+                M.empty secretMap M.empty (listArrayCfg cfg (M.elems dlmap)) unknown "" (zeroLoc, zeroLoc)
     -- locations of the stairs
     su <- findLoc lvl (const Tile.isBoring)
     sd <- findLocTry 1000 lvl
@@ -345,7 +345,7 @@ rogueRoom cfg@(LevelConfig {levelBound}) nm lastNm =
         -- generate map and level from the data
         meta = show allConnects
     return $
-      Level nm emptyParty (sx + 1) (sy + 1) emptyParty M.empty secretMap (M.fromList is) (Kind.listArray (toLoc (0, 0), toLoc levelBound) (M.elems lm3)) unknown meta (su, sd)
+      Level nm emptyParty (sx + 1) (sy + 1) emptyParty M.empty secretMap (M.fromList is) (listArrayCfg cfg (M.elems lm3)) unknown meta (su, sd)
 
 rollItems :: LevelConfig -> Level -> Loc -> Rnd [(Loc, ([Item], [Item]))]
 rollItems cfg lvl ploc =
@@ -363,19 +363,23 @@ rollItems cfg lvl ploc =
                _ -> findLoc lvl (const Tile.isBoring)
         return (l,([t], []))
 
-rollPillars :: LevelConfig -> Level -> Rnd [Loc]
+rollPillars :: LevelConfig -> Level -> Rnd [(X, Y)]
 rollPillars cfg lvl =
   do
     nri <- 100 *~ nrItems cfg
-    replicateM nri $ findLoc lvl (const Tile.isBoring)
+    replicateM nri $ do
+      loc <- findLoc lvl (const Tile.isBoring)
+      return (fromLoc loc)
 
 emptyLMap :: (X, Y) -> LMap
 emptyLMap (mx, my) =
   M.fromList [ ((x, y), Tile.wallId) | x <- [0..mx], y <- [0..my] ]
 
-unknownLAMap :: (X, Y) -> LAMap
-unknownLAMap (mx, my) =
-  Kind.listArray (toLoc (0, 0), toLoc (mx, my)) (repeat Tile.unknownId)
+listArrayCfg :: LevelConfig -> [Kind.Id TileKind] -> LAMap
+listArrayCfg cfg = Kind.listArray (zeroLoc, toLoc (levelBound cfg))
+
+unknownLAMap :: LevelConfig -> LAMap
+unknownLAMap cfg = listArrayCfg cfg (repeat Tile.unknownId)
 
 -- | If the room has size 1, it is at most a start of a corridor.
 digRoom :: Bool -> Room -> LMap -> LMap

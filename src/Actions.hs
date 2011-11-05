@@ -128,9 +128,8 @@ moveCursor dir n = do
   sx <- gets (lxsize . slevel)
   sy <- gets (lysize . slevel)
   let upd cursor =
-        let (nx, ny) = fromLoc $ iterate (`shift` dir) (clocation cursor) !! n
-            cloc = (max 1 $ min nx (sx-2), max 1 $ min ny (sy-2))
-        in  cursor { clocation = toLoc cloc }
+        let cloc = iterate (`shift` dir) (clocation cursor) !! n
+        in cursor { clocation = boundLoc (sx - 1, sy - 1) cloc }
   modify (updateCursor upd)
   doLook
 

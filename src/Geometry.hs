@@ -1,5 +1,5 @@
 module Geometry
-  ( Time, VDir(..), X, Y, Loc, Dir, toLoc, fromLoc, trLoc
+  ( Time, VDir(..), X, Y, Loc, Dir, toLoc, fromLoc, trLoc, zeroLoc, boundLoc
   , Area, towards, distance, distanceDir, adjacent, surroundings, diagonal, shift
   , neg, moves, up, down, left, right, upleft, upright, downleft, downright
   , neighbors, fromTo, normalize, normalizeArea, grid, shiftXY
@@ -46,6 +46,13 @@ fromLoc = id
 
 trLoc :: Loc -> (X, Y) -> Loc
 trLoc (x, y) (dx, dy) = (x + dx, y + dy)
+
+zeroLoc :: Loc
+zeroLoc = (0, 0)
+
+boundLoc :: (X, Y) -> Loc -> Loc
+boundLoc (x0, y0) loc | (x, y) <- fromLoc loc =
+  toLoc (max 1 $ min (x0 - 1) x, max 1 $ min (y0 - 1) y)
 
 type Area = (X, Y, X, Y)
 
