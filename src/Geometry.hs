@@ -118,12 +118,12 @@ inside :: Loc -> Area -> Bool
 inside loc (x0, y0, x1, y1) | (x, y) <- fromLoc loc =
   x1 >= x && x >= x0 && y1 >= y && y >= y0
 
-fromTo :: Loc -> Loc -> [Loc]
-fromTo loc0 loc1 | (x0, y0) <- fromLoc loc0, (x1, y1) <- fromLoc loc1 =
+fromTo :: (X, Y) -> (X, Y) -> [(X, Y)]
+fromTo (x0, y0) (x1, y1) =
  let result
-       | y0 == y1 = L.map (\ x -> toLoc (x, y0)) (fromTo1 x0 x1)
-       | x0 == x1 = L.map (\ y -> toLoc (x0, y)) (fromTo1 y0 y1)
-       | otherwise = assert `failure` (loc0, loc1)
+       | x0 == x1 = L.map (\ y -> (x0, y)) (fromTo1 y0 y1)
+       | y0 == y1 = L.map (\ x -> (x, y0)) (fromTo1 x0 x1)
+       | otherwise = assert `failure` ((x0, y0), (x1, y1))
  in result
 
 fromTo1 :: Int -> Int -> [Int]
