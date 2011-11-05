@@ -149,7 +149,7 @@ emptyRoom addRocksRnd cfg@(LevelConfig {levelBound}) nm lastNm =
     -- locations of the stairs
     su <- findLoc lvl (const Tile.isBoring)
     sd <- findLoc lvl (\ l t -> Tile.isBoring t
-                                && distance (sx + 1) (su,l) > minStairsDistance cfg)
+                                && distance (sx + 1) su l > minStairsDistance cfg)
     is <- rollItems cfg lvl su
     let lm2 = if nm == lastNm
               then lm1
@@ -327,7 +327,7 @@ rogueRoom cfg@(LevelConfig {levelBound}) nm lastNm =
     su <- findLoc lvl (const Tile.isBoring)
     sd <- findLocTry 1000 lvl
             (const Tile.isBoring)
-            (\ l _ -> distance (sx + 1) (su, l) > minStairsDistance cfg)
+            (\ l _ -> distance (sx + 1) su l > minStairsDistance cfg)
     -- determine number of items, items and locations for the items
     is <- rollItems cfg lvl su
     let lm2 = if nm == lastNm
@@ -359,7 +359,7 @@ rollItems cfg@LevelConfig{levelBound = (sx, _)} lvl ploc =
                  -- swords generated close to monsters; MUAHAHAHA
                  findLocTry 200 lvl
                    (const Tile.isBoring)
-                   (\ l _ -> distance (sx + 1) (ploc, l) > 400)
+                   (\ l _ -> distance (sx + 1) ploc l > 400)
                _ -> findLoc lvl (const Tile.isBoring)
         return (l,([t], []))
 

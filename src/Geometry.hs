@@ -1,6 +1,6 @@
 module Geometry
   ( Time, VDir(..), X, Y, Loc, Dir, toLoc, fromLoc, trLoc, zeroLoc
-  , Area, towards, distance, distanceDir, adjacent, surroundings, diagonal, shift
+  , Area, towards, distance, dirDistSq, adjacent, surroundings, diagonal, shift
   , neg, moves, up, down, left, right, upleft, upright, downleft, downright
   , neighbors, fromTo, normalize, normalizeArea, grid, shiftXY
   ) where
@@ -9,6 +9,9 @@ import qualified Data.List as L
 import Data.Binary
 
 import Utils.Assert
+
+
+-- Assorted
 
 -- | Game time in turns. (Placement in module Geometry is not ideal.)
 type Time = Int
@@ -19,6 +22,12 @@ data VDir = Up | Down
 
 type X = Int
 type Y = Int
+
+shiftXY :: (X, Y) -> (X, Y) -> (X, Y)
+shiftXY (x0, y0) (x1, y1) = (x0 + x1, y0 + y1)
+
+
+-- Loc
 
 -- Loc is a positivie integer for speed and to enforce the use of wrappers
 -- (we don't want newtype to avoid the trouble with using EnumMap
@@ -50,41 +59,10 @@ trLoc lxsize loc (dx, dy) =
 zeroLoc :: Loc
 zeroLoc = 0
 
-newtype Dir = Dir (X, Y) deriving (Show, Eq)
-
-instance Binary Dir where
-  put (Dir xy) = put xy
-  get = fmap Dir get
-
-type Area = (X, Y, X, Y)
-
--- | Given two locations, determine the direction in which one should
--- move from the first in order to get closer to the second. Does not
--- pay attention to obstacles at all.
-towards :: X -> (Loc, Loc) -> Dir
-towards lxsize (loc0, loc1)
-  | (x0, y0) <- fromLoc lxsize loc0, (x1, y1) <- fromLoc lxsize loc1 =
-  let dx = x1 - x0
-      dy = y1 - y0
-      angle :: Double
-      angle = atan (fromIntegral dy / fromIntegral dx) / (pi / 2)
-      dir | angle <= -0.75 = (0, -1)
-          | angle <= -0.25 = (1, -1)
-          | angle <= 0.25  = (1, 0)
-          | angle <= 0.75  = (1, 1)
-          | angle <= 1.25  = (0, 1)
-          | otherwise      = (0, 0)
-  in  if dx >= 0 then Dir dir else neg (Dir dir)
-
 -- | Get the squared distance between two locations.
-distance :: X -> (Loc, Loc) -> Int
-distance lxsize (loc0, loc1)
+distance :: X -> Loc -> Loc -> Int
+distance lxsize loc0 loc1
   | (x0, y0) <- fromLoc lxsize loc0, (x1, y1) <- fromLoc lxsize loc1 =
-  let square a = a * a
-  in square (y1 - y0) + square (x1 - x0)
-
-distanceDir :: (Dir, Dir) -> Int
-distanceDir (Dir (x0, y0), Dir (x1, y1)) =
   let square a = a * a
   in square (y1 - y0) + square (x1 - x0)
 
@@ -92,7 +70,7 @@ distanceDir (Dir (x0, y0), Dir (x1, y1)) =
 -- (horizontally, vertically or diagonally). Currrently, a
 -- position is also considered adjacent to itself.
 adjacent :: X -> Loc -> Loc -> Bool
-adjacent lxsize s t = distance lxsize (s, t) <= 2
+adjacent lxsize s t = distance lxsize s t <= 2
 
 -- | Return the 8 surrounding locations of a given location.
 surroundings :: X -> Y -> Loc -> [Loc]
@@ -102,15 +80,22 @@ surroundings lxsize lysize loc | (x, y) <- fromLoc lxsize loc =
     x + dx >= 0 && x + dx < lxsize &&
     y + dy >= 0 && y + dy < lysize ]
 
+
+-- Dir, depends on Loc
+
+newtype Dir = Dir (X, Y) deriving (Show, Eq)
+
+instance Binary Dir where
+  put (Dir xy) = put xy
+  get = fmap Dir get
+
+dirDistSq :: Dir -> Dir -> Int
+dirDistSq (Dir (x0, y0)) (Dir (x1, y1)) =
+  let square a = a * a
+  in square (y1 - y0) + square (x1 - x0)
+
 diagonal :: Dir -> Bool
 diagonal (Dir (x, y)) = x * y /= 0
-
--- | Move one square in the given direction.
-shift :: Loc -> X -> Dir -> Loc
-shift loc lxsize (Dir (dx, dy)) =
-  assert (lxsize > 0 && loc >= 0 && res >= 0 `blame` (lxsize, loc, (dx, dy))) $
-  res
-   where res = loc + dx + dy * lxsize
 
 -- | Invert a direction (vector).
 neg :: Dir -> Dir
@@ -124,9 +109,6 @@ moves =
 shiftDir :: Dir -> Dir -> Dir
 shiftDir (Dir (x0, y0)) (Dir (x1, y1)) = Dir (x0 + x1, y0 + y1)
 
-shiftXY :: (X, Y) -> (X, Y) -> (X, Y)
-shiftXY (x0, y0) (x1, y1) = (x0 + x1, y0 + y1)
-
 up, down, left, right :: Dir
 upleft, upright, downleft, downright :: Dir
 upleft    = up   `shiftDir` left
@@ -137,6 +119,36 @@ up        = Dir (0, -1)
 down      = Dir (0, 1)
 left      = Dir (-1, 0)
 right     = Dir (1, 0)
+
+-- | Move one square in the given direction.
+shift :: Loc -> X -> Dir -> Loc
+shift loc lxsize (Dir (dx, dy)) =
+  assert (lxsize > 0 && loc >= 0 && res >= 0 `blame` (lxsize, loc, (dx, dy))) $
+  res
+   where res = loc + dx + dy * lxsize
+
+-- | Given two locations, determine the direction in which one should
+-- move from the first in order to get closer to the second. Does not
+-- pay attention to obstacles at all.
+towards :: X -> Loc -> Loc -> Dir
+towards lxsize loc0 loc1
+  | (x0, y0) <- fromLoc lxsize loc0, (x1, y1) <- fromLoc lxsize loc1 =
+  let dx = x1 - x0
+      dy = y1 - y0
+      angle :: Double
+      angle = atan (fromIntegral dy / fromIntegral dx) / (pi / 2)
+      dir | angle <= -0.75 = (0, -1)
+          | angle <= -0.25 = (1, -1)
+          | angle <= 0.25  = (1, 0)
+          | angle <= 0.75  = (1, 1)
+          | angle <= 1.25  = (0, 1)
+          | otherwise      = (0, 0)
+  in  if dx >= 0 then Dir dir else neg (Dir dir)
+
+
+-- Area
+
+type Area = (X, Y, X, Y)
 
 neighbors :: Area ->        {- size limitation -}
              (X, Y) ->      {- location to find neighbors of -}

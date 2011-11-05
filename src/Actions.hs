@@ -189,11 +189,11 @@ continueRun dir =
             | isWalkableDark =
           -- in corridors, explore all corners and stop at all crossings
           -- TODO: even in corridors, stop if you run past an exit (rare)
-          let ns = L.filter (\ x -> distanceDir (neg dir, x) > 1
+          let ns = L.filter (\ x -> dirDistSq (neg dir) x > 1
                                     && (accessible lvl loc ((loc `shift` lxsize) x))
                                         || openable 1 lvl le ((loc `shift` lxsize) x))
                             moves
-              allCloseTo main = L.all (\ d -> distanceDir (main, d) <= 1) ns
+              allCloseTo main = L.all (\ d -> dirDistSq main d <= 1) ns
           in  case ns of
                 [onlyDir] -> run onlyDir  -- can be diagonal
                 _         ->
@@ -205,7 +205,7 @@ continueRun dir =
             | not dirOK =
           abort -- outside corridors never change direction
             | otherwise =
-          let ns = L.filter (\ x -> x /= dir && distanceDir (neg dir, x) > 1) moves
+          let ns = L.filter (\ x -> x /= dir && dirDistSq (neg dir) x > 1) moves
               ls = L.map (loc `shift` lxsize) ns
               as = L.filter (\ x -> accessible lvl loc x
                                     || openable 1 lvl le x) ls

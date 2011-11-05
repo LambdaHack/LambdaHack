@@ -106,7 +106,7 @@ rollMonster state@(State{slevel}) = do
              (\ l t -> not (Tile.isLit t)  -- try a dark, distant place first
                        && L.all (\ pl -> distance
                                            (lxsize slevel)
-                                           (aloc pl, l) > 400) hs)
+                                           (aloc pl) l > 400) hs)
       (mk, k) <- frequency Kind.frequency
       hp <- rollDice $ bhp k
       return $ addMonster mk hp loc state

@@ -106,7 +106,7 @@ strategy actor
           foes = if L.null hsAndTraitor then ms else hsAndTraitor
           -- We assume monster sight is infravision, so light has no effect.
           foeVisible = L.filter (uncurry enemyVisible) foes
-          foeDist = L.map (\ (a, l) -> (distance lxsize (me, l), l, a)) foeVisible
+          foeDist = L.map (\ (a, l) -> (distance lxsize me l, l, a)) foeVisible
       in  case foeDist of
             [] -> (TCursor, Nothing)
             _  -> let (_, l, a) = L.minimum foeDist
@@ -115,13 +115,13 @@ strategy actor
     towardsFoe     = case floc of
                        Nothing -> const mzero
                        Just loc ->
-                         let foeDir = towards lxsize (me, loc)
-                         in  only (\ x -> distanceDir (foeDir, x) <= 1)
+                         let foeDir = towards lxsize me loc
+                         in  only (\ x -> dirDistSq foeDir x <= 1)
     lootHere x     = not $ L.null $ lvl `iat` x
     onlyLoot       = onlyMoves lootHere me
     exitHere x     = let t = lvl `at` x in Tile.isExit t
     onlyExit       = onlyMoves exitHere me
-    onlyKeepsDir k = only (\ x -> maybe True (\ d -> distanceDir (d, x) <= k) ad)
+    onlyKeepsDir k = only (\ x -> maybe True (\ d -> dirDistSq d x <= k) ad)
     onlyKeepsDir_9 = only (\ x -> maybe True (\ d -> neg x /= d) ad)
     onlyNoMs       = onlyMoves (unoccupied (levelMonsterList delState)) me
     -- Monsters don't see doors more secret than that. Enforced when actually
