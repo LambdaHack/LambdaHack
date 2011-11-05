@@ -6,6 +6,7 @@ module Geometry
   ) where
 
 import qualified Data.List as L
+import Data.Binary
 
 import Utils.Assert
 
@@ -31,7 +32,11 @@ type Loc  = (X, Y)
 
 -- TODO: hide the implementation of Dir, to catch errors and make
 -- optimizations easy.
-type Dir  = (Y, X)
+newtype Dir = Dir (X, Y) deriving (Show, Eq)
+
+instance Binary Dir where
+  put (Dir xy) = put xy
+  get = fmap Dir get
 
 toLoc :: (X, Y) -> Loc
 toLoc = id
@@ -49,17 +54,17 @@ type Area = (X, Y, X, Y)
 -- pay attention to obstacles at all.
 towards :: (Loc, Loc) -> Dir
 towards (loc0, loc1) | (x0, y0) <- fromLoc loc0, (x1, y1) <- fromLoc loc1 =
-  let dy = y1 - y0
-      dx = x1 - x0
+  let dx = x1 - x0
+      dy = y1 - y0
       angle :: Double
       angle = atan (fromIntegral dy / fromIntegral dx) / (pi / 2)
-      dir | angle <= -0.75 = (-1,0)
-          | angle <= -0.25 = (-1,1)
-          | angle <= 0.25  = (0,1)
-          | angle <= 0.75  = (1,1)
-          | angle <= 1.25  = (1,0)
-          | otherwise      = (0,0)
-  in  if dx >= 0 then dir else neg dir
+      dir | angle <= -0.75 = (0, -1)
+          | angle <= -0.25 = (1, -1)
+          | angle <= 0.25  = (1, 0)
+          | angle <= 0.75  = (1, 1)
+          | angle <= 1.25  = (0, 1)
+          | otherwise      = (0, 0)
+  in  if dx >= 0 then Dir dir else neg (Dir dir)
 
 -- | Get the squared distance between two locations.
 distance :: (Loc, Loc) -> Int
@@ -68,7 +73,7 @@ distance (loc0, loc1) | (x0, y0) <- fromLoc loc0, (x1, y1) <- fromLoc loc1 =
   in square (y1 - y0) + square (x1 - x0)
 
 distanceDir :: (Dir, Dir) -> Int
-distanceDir ((y0, x0), (y1, x1)) =
+distanceDir (Dir (x0, y0), Dir (x1, y1)) =
   let square a = a * a
   in square (y1 - y0) + square (x1 - x0)
 
@@ -83,22 +88,23 @@ surroundings :: Loc -> [Loc]
 surroundings l = map (l `shift`) moves
 
 diagonal :: Dir -> Bool
-diagonal (y, x) = x * y /= 0
+diagonal (Dir (x, y)) = x * y /= 0
 
 -- | Move one square in the given direction.
 shift :: Loc -> Dir -> Loc
-shift loc0 (y1, x1) = trLoc loc0 (x1, y1)
+shift loc0 (Dir (x1, y1)) = trLoc loc0 (x1, y1)
 
 -- | Invert a direction (vector).
 neg :: Dir -> Dir
-neg (y,x) = (-y,-x)
+neg (Dir (x, y)) = Dir (-x, -y)
 
 -- | Get the vectors of all the moves, clockwise, starting north-west.
 moves :: [Dir]
-moves = [(-1,-1), (-1,0), (-1,1), (0,1), (1,1), (1,0), (1,-1), (0,-1)]
+moves =
+  map Dir [(-1,-1), (0, -1), (1, -1), (1, 0), (1,1), (0, 1), (-1,1), (-1, 0)]
 
 shiftDir :: Dir -> Dir -> Dir
-shiftDir (y0, x0) (y1, x1) = (y0 + y1, x0 + x1)
+shiftDir (Dir (x0, y0)) (Dir (x1, y1)) = Dir (x0 + x1, y0 + y1)
 
 shiftXY :: (X, Y) -> (X, Y) -> (X, Y)
 shiftXY (x0, y0) (x1, y1) = (x0 + x1, y0 + y1)
@@ -109,16 +115,16 @@ upleft    = up   `shiftDir` left
 upright   = up   `shiftDir` right
 downleft  = down `shiftDir` left
 downright = down `shiftDir` right
-up        = (-1,0)
-down      = (1,0)
-left      = (0,-1)
-right     = (0,1)
+up        = Dir (0, -1)
+down      = Dir (0, 1)
+left      = Dir (-1, 0)
+right     = Dir (1, 0)
 
 neighbors :: Area ->        {- size limitation -}
              (X, Y) ->      {- location to find neighbors of -}
              [(X, Y)]
 neighbors area xy =
-  let cs = [ xy `shiftDir` (dx, dy)
+  let cs = [ xy `shiftXY` (dx, dy)
            | dy <- [-1..1], dx <- [-1..1], (dx + dy) `mod` 2 == 1 ]
   in  L.filter (`inside` area) cs
 

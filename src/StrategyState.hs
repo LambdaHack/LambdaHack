@@ -194,7 +194,7 @@ strategy actor
 
 dirToAction :: ActorId -> Target -> Bool -> Dir -> Action ()
 dirToAction actor tgt allowAttacks dir =
-  assert (dir /= (0,0) `blame` dir) $ do
+  assert (dir /= neg dir `blame` dir) $ do
   -- set new direction
   updateAnyActor actor $ \ m -> m { adir = Just dir, atarget = tgt }
   -- perform action

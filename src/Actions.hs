@@ -128,7 +128,7 @@ moveCursor dir n = do
   sx <- gets (lxsize . slevel)
   sy <- gets (lysize . slevel)
   let upd cursor =
-        let (ny, nx) = fromLoc $ iterate (`shift` dir) (clocation cursor) !! n
+        let (nx, ny) = fromLoc $ iterate (`shift` dir) (clocation cursor) !! n
             cloc = (max 1 $ min nx (sx-2), max 1 $ min ny (sy-2))
         in  cursor { clocation = toLoc cloc }
   modify (updateCursor upd)
@@ -549,7 +549,7 @@ moveOrAttack :: Bool ->        -- allow attacks?
                 Dir ->
                 Action ()
 moveOrAttack allowAttacks autoOpen actor dir
-  | dir == (0,0) =
+  | dir == neg dir =
       -- Moving with no direction is a noop.
       -- We include it currently to prevent that
       -- monsters attack themselves by accident.
