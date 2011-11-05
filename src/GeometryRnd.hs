@@ -12,8 +12,8 @@ xyInArea (x0, y0, x1, y1) = do
   ry <- randomR (y0, y1)
   return (rx, ry)
 
-connectGrid' :: (X, Y) -> S.Set Loc -> S.Set Loc -> [(Loc, Loc)] ->
-                Rnd [(Loc, Loc)]
+connectGrid' :: (X, Y) -> S.Set (X, Y) -> S.Set (X, Y) -> [((X, Y), (X, Y))] ->
+                Rnd [((X, Y), (X, Y))]
 connectGrid' (nx, ny) unconnected candidates acc
   | S.null candidates = return (L.map normalize acc)
   | otherwise = do
@@ -30,25 +30,25 @@ connectGrid' (nx, ny) unconnected candidates acc
                     return ((c, d) :)
       connectGrid' (nx, ny) nu (S.delete c (candidates `S.union` nc)) (new acc)
 
-connectGrid :: (X, Y) -> Rnd [(Loc, Loc)]
+connectGrid :: (X, Y) -> Rnd [((X, Y), (X, Y))]
 connectGrid (nx, ny) = do
-  let unconnected = S.fromList [ toLoc (x, y) | x <- [0..nx-1], y <- [0..ny-1] ]
+  let unconnected = S.fromList [ (x, y) | x <- [0..nx-1], y <- [0..ny-1] ]
   -- candidates are neighbors that are still unconnected; we start with
   -- a random choice
   rx <- randomR (0, nx-1)
   ry <- randomR (0, ny-1)
-  let candidates  = S.fromList [ toLoc (rx, ry) ]
+  let candidates  = S.fromList [ (rx, ry) ]
   connectGrid' (nx, ny) unconnected candidates []
 
-randomConnection :: (X, Y) -> Rnd (Loc, Loc)
+randomConnection :: (X, Y) -> Rnd ((X, Y), (X, Y))
 randomConnection (nx, ny) = do
   rb  <- randomR (False, True)
   if rb
     then do
            rx  <- randomR (0, nx-2)
            ry  <- randomR (0, ny-1)
-           return (normalize (toLoc (rx, ry), toLoc (rx+1, ry)))
+           return (normalize ((rx, ry), (rx+1, ry)))
     else do
            ry  <- randomR (0, ny-2)
            rx  <- randomR (0, nx-1)
-           return (normalize (toLoc (rx, ry), toLoc (rx, ry+1)))
+           return (normalize ((rx, ry), (rx, ry+1)))

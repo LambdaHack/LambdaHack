@@ -128,9 +128,9 @@ moveCursor dir n = do
   sx <- gets (lxsize . slevel)
   sy <- gets (lysize . slevel)
   let upd cursor =
-        let (ny, nx) = iterate (`shift` dir) (clocation cursor) !! n
-            cloc = (max 1 $ min ny (sy-2), max 1 $ min nx (sx-2))
-        in  cursor { clocation = cloc }
+        let (ny, nx) = fromLoc $ iterate (`shift` dir) (clocation cursor) !! n
+            cloc = (max 1 $ min nx (sx-2), max 1 $ min ny (sy-2))
+        in  cursor { clocation = toLoc cloc }
   modify (updateCursor upd)
   doLook
 
@@ -186,11 +186,11 @@ continueRun dir =
             | isWalkableDark =
           -- in corridors, explore all corners and stop at all crossings
           -- TODO: even in corridors, stop if you run past an exit (rare)
-          let ns = L.filter (\ x -> distance (neg dir, x) > 1
+          let ns = L.filter (\ x -> distanceDir (neg dir, x) > 1
                                     && (accessible lvl loc (loc `shift` x))
                                         || openable 1 lvl le (loc `shift` x))
                             moves
-              allCloseTo main = L.all (\ d -> distance (main, d) <= 1) ns
+              allCloseTo main = L.all (\ d -> distanceDir (main, d) <= 1) ns
           in  case ns of
                 [onlyDir] -> run onlyDir  -- can be diagonal
                 _         ->
@@ -202,7 +202,7 @@ continueRun dir =
             | not dirOK =
           abort -- outside corridors never change direction
             | otherwise =
-          let ns = L.filter (\ x -> x /= dir && distance (neg dir, x) > 1) moves
+          let ns = L.filter (\ x -> x /= dir && distanceDir (neg dir, x) > 1) moves
               ls = L.map (loc `shift`) ns
               as = L.filter (\ x -> accessible lvl loc x
                                     || openable 1 lvl le x) ls

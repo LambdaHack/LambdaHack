@@ -113,14 +113,14 @@ splitOverlay s xs = splitOverlay' (lines xs)
 -- string by location. Takes the height of the display plus
 -- the string. Returns also the number of screens required
 -- to display all of the string.
-stringByLocation :: Y -> String -> (Int, Loc -> Maybe Char)
+stringByLocation :: Y -> String -> (Int, (X, Y) -> Maybe Char)
 stringByLocation sy xs =
   let
     ls   = splitOverlay sy xs
     m    = M.fromList (zip [0..] (L.map (M.fromList . zip [0..]) (concat ls)))
     k    = length ls
   in
-    (k, \ (y,x) -> M.lookup y m >>= \ n -> M.lookup x n)
+    (k, \ (x, y) -> M.lookup y m >>= \ n -> M.lookup x n)
 
 data ColorMode = ColorFull | ColorBW
 
@@ -142,7 +142,7 @@ displayLevel
       reachable = ptreachable per
       visible   = ptvisible per
       overlay   = fromMaybe "" moverlay
-      (ns, over) = stringByLocation (sy+1) overlay -- n overlay screens needed
+      (ns, over) = stringByLocation sy overlay -- n overlay screens needed
       sSml   = ssensory state == Smell
       sVis   = case ssensory state of Vision _ -> True; _ -> False
       sOmn   = sdisplay state == Omniscient
@@ -178,7 +178,7 @@ displayLevel
               | k > 9     = '*'
               | k < 0     = '-'
               | otherwise = Char.intToDigit k
-            rainbow loc = toEnum $ uncurry (+) loc `mod` 14 + 1
+            rainbow loc = toEnum $ uncurry (+) (fromLoc loc) `mod` 14 + 1
             (char, fg0) =
               case L.find (\ m -> loc0 == Actor.aloc m) (hs ++ ms) of
                 Just m | sOmn || vis -> viewActor loc0 m
@@ -203,7 +203,7 @@ displayLevel
             a = case dm of
                   ColorBW   -> Color.defaultAttr
                   ColorFull -> optVisually (fg0, bg0)
-        in case over (loc0 `shift` ((sy+1) * n, 0)) of
+        in case over (fromLoc loc0 `shiftXY` (0, sy * n)) of
              Just c -> (Color.defaultAttr, c)
              _      -> (a, char)
       status =

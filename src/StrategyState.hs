@@ -115,12 +115,12 @@ strategy actor
                        Nothing -> const mzero
                        Just loc ->
                          let foeDir = towards (me, loc)
-                         in  only (\ x -> distance (foeDir, x) <= 1)
+                         in  only (\ x -> distanceDir (foeDir, x) <= 1)
     lootHere x     = not $ L.null $ lvl `iat` x
     onlyLoot       = onlyMoves lootHere me
     exitHere x     = let t = lvl `at` x in Tile.isExit t
     onlyExit       = onlyMoves exitHere me
-    onlyKeepsDir k = only (\ x -> maybe True (\ d -> distance (d, x) <= k) ad)
+    onlyKeepsDir k = only (\ x -> maybe True (\ d -> distanceDir (d, x) <= k) ad)
     onlyKeepsDir_9 = only (\ x -> maybe True (\ d -> neg x /= d) ad)
     onlyNoMs       = onlyMoves (unoccupied (levelMonsterList delState)) me
     -- Monsters don't see doors more secret than that. Enforced when actually
@@ -203,7 +203,7 @@ dirToAction actor tgt allowAttacks dir =
     -- TODO: ensure time is taken for other aborted actions in this file
     moveOrAttack allowAttacks True actor dir
 
-onlyMoves :: (Dir -> Bool) -> Loc -> Strategy Dir -> Strategy Dir
+onlyMoves :: (Loc -> Bool) -> Loc -> Strategy Dir -> Strategy Dir
 onlyMoves p l = only (\ x -> p (l `shift` x))
 
 moveRandomly :: Strategy Dir

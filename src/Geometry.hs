@@ -1,8 +1,8 @@
 module Geometry
   ( Time, VDir(..), X, Y, Loc, Dir, toLoc, fromLoc, trLoc
-  , Area, towards, distance, adjacent, surroundings, diagonal, shift
+  , Area, towards, distance, distanceDir, adjacent, surroundings, diagonal, shift
   , neg, moves, up, down, left, right, upleft, upright, downleft, downright
-  , neighbors, fromTo, normalize, normalizeArea, grid
+  , neighbors, fromTo, normalize, normalizeArea, grid, shiftXY
   ) where
 
 import qualified Data.List as L
@@ -27,20 +27,20 @@ type Y = Int
 -- Probably, after dungeon is generated (using (X, Y), not Loc),
 -- Locs are used mainly as keys and not constructed often,
 -- so the performance should improve.
-type Loc  = (Y, X)
+type Loc  = (X, Y)
 
 -- TODO: hide the implementation of Dir, to catch errors and make
 -- optimizations easy.
 type Dir  = (Y, X)
 
 toLoc :: (X, Y) -> Loc
-toLoc (x, y) = (y, x)
+toLoc = id
 
 fromLoc :: Loc -> (X, Y)
-fromLoc (y, x) = (x, y)
+fromLoc = id
 
 trLoc :: Loc -> (X, Y) -> Loc
-trLoc (y, x) (dx, dy) = (y + dy, x + dx)
+trLoc (x, y) (dx, dy) = (x + dx, y + dy)
 
 type Area = (X, Y, X, Y)
 
@@ -64,6 +64,11 @@ towards (loc0, loc1) | (x0, y0) <- fromLoc loc0, (x1, y1) <- fromLoc loc1 =
 -- | Get the squared distance between two locations.
 distance :: (Loc, Loc) -> Int
 distance (loc0, loc1) | (x0, y0) <- fromLoc loc0, (x1, y1) <- fromLoc loc1 =
+  let square a = a * a
+  in square (y1 - y0) + square (x1 - x0)
+
+distanceDir :: (Dir, Dir) -> Int
+distanceDir ((y0, x0), (y1, x1)) =
   let square a = a * a
   in square (y1 - y0) + square (x1 - x0)
 
@@ -95,6 +100,9 @@ moves = [(-1,-1), (-1,0), (-1,1), (0,1), (1,1), (1,0), (1,-1), (0,-1)]
 shiftDir :: Dir -> Dir -> Dir
 shiftDir (y0, x0) (y1, x1) = (y0 + y1, x0 + x1)
 
+shiftXY :: (X, Y) -> (X, Y) -> (X, Y)
+shiftXY (x0, y0) (x1, y1) = (x0 + x1, y0 + y1)
+
 up, down, left, right :: Dir
 upleft, upright, downleft, downright :: Dir
 upleft    = up   `shiftDir` left
@@ -107,15 +115,15 @@ left      = (0,-1)
 right     = (0,1)
 
 neighbors :: Area ->        {- size limitation -}
-             Loc ->         {- location to find neighbors of -}
-             [Loc]
-neighbors area loc =
-  let cs = [ loc `shift` (dy, dx)
+             (X, Y) ->      {- location to find neighbors of -}
+             [(X, Y)]
+neighbors area xy =
+  let cs = [ xy `shiftDir` (dx, dy)
            | dy <- [-1..1], dx <- [-1..1], (dx + dy) `mod` 2 == 1 ]
   in  L.filter (`inside` area) cs
 
-inside :: Loc -> Area -> Bool
-inside loc (x0, y0, x1, y1) | (x, y) <- fromLoc loc =
+inside :: (X, Y) -> Area -> Bool
+inside (x, y) (x0, y0, x1, y1) =
   x1 >= x && x >= x0 && y1 >= y && y >= y0
 
 fromTo :: (X, Y) -> (X, Y) -> [(X, Y)]
@@ -131,19 +139,19 @@ fromTo1 x0 x1
   | x0 <= x1  = [x0..x1]
   | otherwise = [x0,x0-1..x1]
 
-normalize :: (Loc, Loc) -> (Loc, Loc)
+normalize :: ((X, Y), (X, Y)) -> ((X, Y), (X, Y))
 normalize (a, b) | a <= b    = (a, b)
                  | otherwise = (b, a)
 
 normalizeArea :: Area -> Area
 normalizeArea (x0, y0, x1, y1) = (min x0 x1, min y0 y1, max x0 x1, max y0 y1)
 
-grid :: (X, Y) -> Area -> [(Loc, Area)]
+grid :: (X, Y) -> Area -> [((X, Y), Area)]
 grid (nx, ny) (x0, y0, x1, y1) =
   let yd = y1 - y0
       xd = x1 - x0
-  in [ (toLoc (x, y), (x0 + (xd * x `div` nx),
-                       y0 + (yd * y `div` ny),
-                       x0 + (xd * (x + 1) `div` nx - 1),
-                       y0 + (yd * (y + 1) `div` ny - 1)))
+  in [ ((x, y), (x0 + (xd * x `div` nx),
+                 y0 + (yd * y `div` ny),
+                 x0 + (xd * (x + 1) `div` nx - 1),
+                 y0 + (yd * (y + 1) `div` ny - 1)))
      | x <- [0..nx-1], y <- [0..ny-1] ]

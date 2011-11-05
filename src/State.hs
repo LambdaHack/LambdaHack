@@ -50,7 +50,7 @@ defaultState :: Dungeon -> Level -> R.StdGen -> State
 defaultState dng lvl g =
   State
     (AHero 0)  -- hack: the hero is not yet alive
-    (Cursor False (LambdaCave (-1)) (-1, -1) (lname lvl))
+    (Cursor False (LambdaCave (-1)) (toLoc (-1, -1)) (lname lvl))
     []
     Implicit Normal
     0
