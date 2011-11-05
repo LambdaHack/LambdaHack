@@ -178,7 +178,7 @@ displayLevel
               | k > 9     = '*'
               | k < 0     = '-'
               | otherwise = Char.intToDigit k
-            rainbow loc = toEnum $ uncurry (+) (fromLoc loc) `mod` 14 + 1
+            rainbow loc = toEnum $ loc `rem` 14 + 1
             (char, fg0) =
               case L.find (\ m -> loc0 == Actor.aloc m) (hs ++ ms) of
                 Just m | sOmn || vis -> viewActor loc0 m
@@ -203,7 +203,7 @@ displayLevel
             a = case dm of
                   ColorBW   -> Color.defaultAttr
                   ColorFull -> optVisually (fg0, bg0)
-        in case over (fromLoc loc0 `shiftXY` (0, sy * n)) of
+        in case over (fromLoc sx loc0 `shiftXY` (0, sy * n)) of
              Just c -> (Color.defaultAttr, c)
              _      -> (a, char)
       status =

@@ -106,7 +106,7 @@ perception_ state@(State { splayer = pl,
 -- | Once we compute the reachable fields using FOV, it is possible
 -- to compute what the hero can actually see.
 perception :: FovMode -> Loc -> Level -> Perception
-perception fovMode ploc lvl =
+perception fovMode ploc lvl@Level{lxsize, lysize} =
   let
     -- Reachable are all fields on an unblocked path from the hero position.
     reachable  = fullscan fovMode ploc lvl
@@ -116,7 +116,9 @@ perception fovMode ploc lvl =
     litVisible = S.insert ploc uniVisible
     -- Reachable fields adjacent to lit fields are visible, too.
     adjVisible =
-      S.filter (L.any (`S.member` litVisible) . surroundings) reachable
+      S.filter
+        (L.any (`S.member` litVisible) . surroundings lxsize lysize)
+        reachable
     -- Visible fields are either lit or adjacent to lit.
     visible = S.union litVisible adjVisible
   in Perception reachable visible

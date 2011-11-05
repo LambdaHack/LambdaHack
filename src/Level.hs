@@ -7,7 +7,6 @@ import qualified Data.IntMap as IM
 
 import Utils.Assert
 import Geometry
-import GeometryRnd
 import Actor
 import Item
 import Content.TileKind
@@ -130,9 +129,8 @@ openable k lvl le target =
 findLoc :: Level -> (Loc -> (Kind.Id TileKind) -> Bool) -> Rnd Loc
 findLoc lvl@Level{lxsize, lysize} p =
   do
-    xy <- xyInArea (0, 0, lxsize - 1, lysize - 1)
-    let loc = toLoc xy
-        tile = lvl `at` loc
+    loc <- randomR (0, lxsize * lysize - 1)
+    let tile = lvl `at` loc
     if p loc tile
       then return loc
       else findLoc lvl p
@@ -144,9 +142,8 @@ findLocTry :: Int ->  -- try k times
               Rnd Loc
 findLocTry k lvl@Level{lxsize, lysize} p pTry =
   do
-    xy <- xyInArea (0, 0, lxsize - 1, lysize - 1)
-    let loc = toLoc xy
-        tile = lvl `at` loc
+    loc <- randomR (0, lxsize * lysize - 1)
+    let tile = lvl `at` loc
     if p loc tile && pTry loc tile
       then return loc
       else if k > 1

@@ -20,35 +20,37 @@ data FovMode = Shadow | Permissive Int | Digital Int | Blind
 -- Press a command key in the game to cycle among the algorithms
 -- and see a special visualization of their effects..
 fullscan :: FovMode -> Loc -> Level -> S.Set Loc
-fullscan fovMode loc lvl =
+fullscan fovMode loc lvl@Level{lxsize} =
   case fovMode of
     Shadow ->  -- shadow casting with infinite range
       S.unions $
-      L.map (\ tr -> FOV.Shadow.scan (tr loc) lvl 1 (0,1))
+      L.map (\ tr -> FOV.Shadow.scan tr lvl 1 (0,1))
         [tr0, tr1, tr2, tr3, tr4, tr5, tr6, tr7]
     Permissive r  ->  -- permissive with range r
       S.unions $
-      L.map (\ tr -> FOV.Permissive.scan r (tr loc) lvl) [qtr0, qtr1, qtr2, qtr3]
+      L.map (\ tr -> FOV.Permissive.scan r tr lvl) [qtr0, qtr1, qtr2, qtr3]
     Digital r ->  -- digital with range r
       S.unions $
-      L.map (\ tr -> FOV.Digital.scan r (tr loc) lvl) [qtr0, qtr1, qtr2, qtr3]
+      L.map (\ tr -> FOV.Digital.scan r tr lvl) [qtr0, qtr1, qtr2, qtr3]
     Blind ->  -- only feeling out adjacent tiles by touch
       S.empty
+ where
+  trL = trLoc lxsize
 
--- | The translation, rotation and symmetry functions for octants.
-tr0, tr1, tr2, tr3, tr4, tr5, tr6, tr7 :: Loc -> (Distance, Progress) -> Loc
-tr0 loc (p, d) = trLoc loc (  p,   d)
-tr1 loc (p, d) = trLoc loc (- p,   d)
-tr2 loc (p, d) = trLoc loc (  p, - d)
-tr3 loc (p, d) = trLoc loc (- p, - d)
-tr4 loc (p, d) = trLoc loc (  d,   p)
-tr5 loc (p, d) = trLoc loc (- d,   p)
-tr6 loc (p, d) = trLoc loc (  d, - p)
-tr7 loc (p, d) = trLoc loc (- d, - p)
+  -- | The translation, rotation and symmetry functions for octants.
+  tr0, tr1, tr2, tr3, tr4, tr5, tr6, tr7 :: (Distance, Progress) -> Loc
+  tr0 (p, d) = trL loc (  p,   d)
+  tr1 (p, d) = trL loc (- p,   d)
+  tr2 (p, d) = trL loc (  p, - d)
+  tr3 (p, d) = trL loc (- p, - d)
+  tr4 (p, d) = trL loc (  d,   p)
+  tr5 (p, d) = trL loc (- d,   p)
+  tr6 (p, d) = trL loc (  d, - p)
+  tr7 (p, d) = trL loc (- d, - p)
 
--- | The translation and rotation functions for quadrants.
-qtr0, qtr1, qtr2, qtr3 :: Loc -> Bump -> Loc
-qtr0 loc (B(x, y)) = trLoc loc (  x, - y)  -- quadrant I
-qtr1 loc (B(x, y)) = trLoc loc (  y,   x)  -- II (we rotate counter-clockwise)
-qtr2 loc (B(x, y)) = trLoc loc (- x,   y)  -- III
-qtr3 loc (B(x, y)) = trLoc loc (- y, - x)  -- IV
+  -- | The translation and rotation functions for quadrants.
+  qtr0, qtr1, qtr2, qtr3 :: Bump -> Loc
+  qtr0 (B(x, y)) = trL loc (  x, - y)  -- quadrant I
+  qtr1 (B(x, y)) = trL loc (  y,   x)  -- II (we rotate counter-clockwise)
+  qtr2 (B(x, y)) = trL loc (- x,   y)  -- III
+  qtr3 (B(x, y)) = trL loc (- y, - x)  -- IV

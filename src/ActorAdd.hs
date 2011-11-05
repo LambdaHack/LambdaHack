@@ -31,10 +31,10 @@ template :: Kind.Id ActorKind -> Maybe String -> Maybe Char -> Int -> Loc
 template mk ms mc hp loc = Actor mk ms mc hp Nothing TCursor loc [] 'a' 0
 
 nearbyFreeLoc :: Loc -> State -> Loc
-nearbyFreeLoc origin state@State{slevel} =
+nearbyFreeLoc origin state@State{slevel = slevel@Level{lxsize, lysize}} =
   let hs = levelHeroList state
       ms = levelMonsterList state
-      places = origin : L.nub (concatMap surroundings places)
+      places = origin : L.nub (concatMap (surroundings lxsize lysize) places)
       good loc = Tile.isWalkable (slevel `at` loc)
                  && loc `L.notElem` L.map aloc (hs ++ ms)
   in  fromMaybe (assert `failure` "too crowded map") $ L.find good places
@@ -89,10 +89,10 @@ addMonster mk hp ploc state = do
 
 -- | Create a new monster in the level, at a random position.
 rollMonster :: State -> Rnd State
-rollMonster state@(State { slevel = lvl }) = do
+rollMonster state@(State{slevel}) = do
   let hs = levelHeroList state
       ms = levelMonsterList state
-  rc <- monsterGenChance (lname lvl) (L.length ms)
+  rc <- monsterGenChance (lname slevel) (L.length ms)
   if not rc
     then return state
     else do
@@ -100,11 +100,13 @@ rollMonster state@(State { slevel = lvl }) = do
       -- visible by the player (if possible -- not possible for bigrooms)
       -- levels with few rooms are dangerous, because monsters may spawn
       -- in adjacent and unexpected places
-      loc <- findLocTry 1000 lvl
+      loc <- findLocTry 1000 slevel
              (\ l t -> Tile.isWalkable t
                        && l `L.notElem` L.map aloc (hs ++ ms))
              (\ l t -> not (Tile.isLit t)  -- try a dark, distant place first
-                       && L.all (\ pl -> distance (aloc pl, l) > 400) hs)
+                       && L.all (\ pl -> distance
+                                           (lxsize slevel)
+                                           (aloc pl, l) > 400) hs)
       (mk, k) <- frequency Kind.frequency
       hp <- rollDice $ bhp k
       return $ addMonster mk hp loc state

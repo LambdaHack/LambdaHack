@@ -1,5 +1,5 @@
 module Geometry
-  ( Time, VDir(..), X, Y, Loc, Dir, toLoc, fromLoc, trLoc, zeroLoc, boundLoc
+  ( Time, VDir(..), X, Y, Loc, Dir, toLoc, fromLoc, trLoc, zeroLoc
   , Area, towards, distance, distanceDir, adjacent, surroundings, diagonal, shift
   , neg, moves, up, down, left, right, upleft, upright, downleft, downright
   , neighbors, fromTo, normalize, normalizeArea, grid, shiftXY
@@ -20,47 +20,50 @@ data VDir = Up | Down
 type X = Int
 type Y = Int
 
--- TODO: define Loc as Int (x + y*sizeX) and check both coordinates > 0,
--- though it will require the sizeX parameter to toLoc and fromLoc
--- TODO: do not export the definition of Loc (probably not possible
--- with Loc as "type" and we don't want newtype to avoid the trouble
--- with using EnumMap in place of IntMap, etc.
--- Probably, after dungeon is generated (using (X, Y), not Loc),
--- Locs are used mainly as keys and not constructed often,
--- so the performance should improve.
-type Loc  = (X, Y)
+-- Loc is a positivie integer for speed and to enforce the use of wrappers
+-- (we don't want newtype to avoid the trouble with using EnumMap
+-- in place of IntMap, etc.). We do bounds check for the X size ASAP
+-- and each subsequent array access performs a checlk, effectively for Y size.
+-- After dungeon is generated (using (X, Y), not Loc), Locs are used
+-- mainly as keys and not constructed often, so the performance will improve
+-- due to smaller save files, IntMaps and cheaper array indexing,
+-- including cheaper bounds check.
+type Loc = Int
 
--- TODO: hide the implementation of Dir, to catch errors and make
--- optimizations easy.
+-- | Construct a location.
+toLoc :: X -> (X, Y) -> Loc
+toLoc lxsize (x, y) =
+  assert (lxsize > x && x >= 0 && y >= 0 `blame` (lxsize, x, y)) $
+  x + y * lxsize
+
+fromLoc :: X -> Loc -> (X, Y)
+fromLoc lxsize loc =
+  assert (lxsize > 0 && loc >= 0 `blame` (lxsize, loc)) $
+  (loc `rem` lxsize, loc `quot` lxsize)
+
+trLoc :: X -> Loc -> (X, Y) -> Loc
+trLoc lxsize loc (dx, dy) =
+  assert (lxsize > 0 && loc >= 0 && res >= 0 `blame` (lxsize, loc, (dx, dy))) $
+  res
+   where res = loc + dx + dy * lxsize
+
+zeroLoc :: Loc
+zeroLoc = 0
+
 newtype Dir = Dir (X, Y) deriving (Show, Eq)
 
 instance Binary Dir where
   put (Dir xy) = put xy
   get = fmap Dir get
 
-toLoc :: (X, Y) -> Loc
-toLoc = id
-
-fromLoc :: Loc -> (X, Y)
-fromLoc = id
-
-trLoc :: Loc -> (X, Y) -> Loc
-trLoc (x, y) (dx, dy) = (x + dx, y + dy)
-
-zeroLoc :: Loc
-zeroLoc = (0, 0)
-
-boundLoc :: (X, Y) -> Loc -> Loc
-boundLoc (x0, y0) loc | (x, y) <- fromLoc loc =
-  toLoc (max 1 $ min (x0 - 1) x, max 1 $ min (y0 - 1) y)
-
 type Area = (X, Y, X, Y)
 
 -- | Given two locations, determine the direction in which one should
 -- move from the first in order to get closer to the second. Does not
 -- pay attention to obstacles at all.
-towards :: (Loc, Loc) -> Dir
-towards (loc0, loc1) | (x0, y0) <- fromLoc loc0, (x1, y1) <- fromLoc loc1 =
+towards :: X -> (Loc, Loc) -> Dir
+towards lxsize (loc0, loc1)
+  | (x0, y0) <- fromLoc lxsize loc0, (x1, y1) <- fromLoc lxsize loc1 =
   let dx = x1 - x0
       dy = y1 - y0
       angle :: Double
@@ -74,8 +77,9 @@ towards (loc0, loc1) | (x0, y0) <- fromLoc loc0, (x1, y1) <- fromLoc loc1 =
   in  if dx >= 0 then Dir dir else neg (Dir dir)
 
 -- | Get the squared distance between two locations.
-distance :: (Loc, Loc) -> Int
-distance (loc0, loc1) | (x0, y0) <- fromLoc loc0, (x1, y1) <- fromLoc loc1 =
+distance :: X -> (Loc, Loc) -> Int
+distance lxsize (loc0, loc1)
+  | (x0, y0) <- fromLoc lxsize loc0, (x1, y1) <- fromLoc lxsize loc1 =
   let square a = a * a
   in square (y1 - y0) + square (x1 - x0)
 
@@ -87,19 +91,26 @@ distanceDir (Dir (x0, y0), Dir (x1, y1)) =
 -- | Return whether two locations are adjacent on the map
 -- (horizontally, vertically or diagonally). Currrently, a
 -- position is also considered adjacent to itself.
-adjacent :: Loc -> Loc -> Bool
-adjacent s t = distance (s, t) <= 2
+adjacent :: X -> Loc -> Loc -> Bool
+adjacent lxsize s t = distance lxsize (s, t) <= 2
 
 -- | Return the 8 surrounding locations of a given location.
-surroundings :: Loc -> [Loc]
-surroundings l = map (l `shift`) moves
+surroundings :: X -> Y -> Loc -> [Loc]
+surroundings lxsize lysize loc | (x, y) <- fromLoc lxsize loc =
+  [ toLoc lxsize (x + dx, y + dy)
+  | Dir (dx, dy) <- moves,
+    x + dx >= 0 && x + dx < lxsize &&
+    y + dy >= 0 && y + dy < lysize ]
 
 diagonal :: Dir -> Bool
 diagonal (Dir (x, y)) = x * y /= 0
 
 -- | Move one square in the given direction.
-shift :: Loc -> Dir -> Loc
-shift loc0 (Dir (x1, y1)) = trLoc loc0 (x1, y1)
+shift :: Loc -> X -> Dir -> Loc
+shift loc lxsize (Dir (dx, dy)) =
+  assert (lxsize > 0 && loc >= 0 && res >= 0 `blame` (lxsize, loc, (dx, dy))) $
+  res
+   where res = loc + dx + dy * lxsize
 
 -- | Invert a direction (vector).
 neg :: Dir -> Dir
@@ -108,7 +119,7 @@ neg (Dir (x, y)) = Dir (-x, -y)
 -- | Get the vectors of all the moves, clockwise, starting north-west.
 moves :: [Dir]
 moves =
-  map Dir [(-1,-1), (0, -1), (1, -1), (1, 0), (1,1), (0, 1), (-1,1), (-1, 0)]
+  map Dir [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]
 
 shiftDir :: Dir -> Dir -> Dir
 shiftDir (Dir (x0, y0)) (Dir (x1, y1)) = Dir (x0 + x1, y0 + y1)

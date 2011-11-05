@@ -61,7 +61,8 @@ strategy actor
          oldState@(State{ splayer = pl
                         , stime   = time
                         , slevel  = lvl@Level{ lsmell = nsmap
-                                             , lsecret = le } })
+                                             , lsecret = le
+                                             , lxsize } })
          per =
 --  trace (show time ++ ": " ++ show actor) $
     strat
@@ -75,7 +76,7 @@ strategy actor
       -- We assume monster sight is infravision, so light has no significance.
       bsight mk && actorReachesActor a actor l me per Nothing ||
       -- Any enemy is visible if adjacent (e. g., a monster player).
-      memActor a delState && adjacent me l
+      memActor a delState && adjacent lxsize me l
     -- If no heroes on the level, monsters go at each other. TODO: let them
     -- earn XP by killing each other to make this dangerous to the player.
     hs = L.map (AHero *** aloc) $
@@ -105,7 +106,7 @@ strategy actor
           foes = if L.null hsAndTraitor then ms else hsAndTraitor
           -- We assume monster sight is infravision, so light has no effect.
           foeVisible = L.filter (uncurry enemyVisible) foes
-          foeDist = L.map (\ (a, l) -> (distance (me, l), l, a)) foeVisible
+          foeDist = L.map (\ (a, l) -> (distance lxsize (me, l), l, a)) foeVisible
       in  case foeDist of
             [] -> (TCursor, Nothing)
             _  -> let (_, l, a) = L.minimum foeDist
@@ -114,7 +115,7 @@ strategy actor
     towardsFoe     = case floc of
                        Nothing -> const mzero
                        Just loc ->
-                         let foeDir = towards (me, loc)
+                         let foeDir = towards lxsize (me, loc)
                          in  only (\ x -> distanceDir (foeDir, x) <= 1)
     lootHere x     = not $ L.null $ lvl `iat` x
     onlyLoot       = onlyMoves lootHere me
@@ -139,7 +140,7 @@ strategy actor
       L.sortBy (\ (_, s1) (_, s2) -> compare s2 s1) $
       L.filter (\ (_, s) -> s > 0) $
       L.map (\ x -> let sm = smelltime $ M.findWithDefault
-                                           (SmellTime 0) (me `shift` x) nsmap
+                                           (SmellTime 0) ((me `shift` lxsize) x) nsmap
                     in  (x, (sm - time) `max` 0)) moves
     fromDir allowAttacks d = dirToAction actor newTgt allowAttacks `liftM` d
 
@@ -191,6 +192,8 @@ strategy actor
                  .| biq mk > 5  .=> onlyKeepsDir 2 moveRandomly
                  .| onlyKeepsDir_9 moveRandomly
                  .| moveRandomly
+    onlyMoves :: (Loc -> Bool) -> Loc -> Strategy Dir -> Strategy Dir
+    onlyMoves p l = only (\ x -> p ((l `shift` lxsize) x))
 
 dirToAction :: ActorId -> Target -> Bool -> Dir -> Action ()
 dirToAction actor tgt allowAttacks dir =
@@ -202,9 +205,6 @@ dirToAction actor tgt allowAttacks dir =
     -- if the following action aborts, we just advance the time and continue
     -- TODO: ensure time is taken for other aborted actions in this file
     moveOrAttack allowAttacks True actor dir
-
-onlyMoves :: (Loc -> Bool) -> Loc -> Strategy Dir -> Strategy Dir
-onlyMoves p l = only (\ x -> p (l `shift` x))
 
 moveRandomly :: Strategy Dir
 moveRandomly = liftFrequency $ uniform moves
