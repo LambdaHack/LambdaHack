@@ -7,8 +7,6 @@ module Dungeon
   where
 
 import Control.Monad
-import qualified System.Random as R
-
 import Data.Binary
 import qualified Data.Map as M
 import qualified Data.IntMap as IM
@@ -16,8 +14,8 @@ import qualified Data.List as L
 import Data.Ratio
 
 import Geometry
-import GeometryRnd
 import Area
+import AreaRnd
 import Loc
 import Level
 import Item
@@ -78,54 +76,7 @@ mkNoRoom bd (x0, y0, x1, y1) =
     (rx, ry) <- xyInArea (x0 + bd, y0 + bd, x1 - bd, y1 - bd)
     return (rx, ry, rx, ry)
 
-data HV = Horiz | Vert
-  deriving (Eq, Show, Bounded)
-
-fromHV :: HV -> Bool
-fromHV Horiz = True
-fromHV Vert  = False
-
-toHV :: Bool -> HV
-toHV True  = Horiz
-toHV False = Vert
-
-instance R.Random HV where
-  randomR (a, b0) g = case R.randomR (fromHV a, fromHV b0) g of
-                        (b, g') -> (toHV b, g')
-  random = R.randomR (minBound, maxBound)
-
 type LMap = M.Map (X, Y) (Kind.Id TileKind)
-
--- | Create a corridor, either horizontal or vertical, with
--- a possible intermediate part that is in the opposite direction.
-mkCorridor :: HV -> ((X, Y), (X, Y)) -> Area -> Rnd [(X, Y)] {- straight sections of the corridor -}
-mkCorridor hv ((x0, y0), (x1, y1)) b =
-  do
-    (rx, ry) <- xyInArea b
-    -- (rx, ry) is intermediate point the path crosses
-    -- hv decides whether we start in horizontal or vertical direction
-    case hv of
-      Horiz -> return [(x0, y0), (rx, y0), (rx, y1), (x1, y1)]
-      Vert  -> return [(x0, y0), (x0, ry), (x1, ry), (x1, y1)]
-
--- | Try to connect two rooms with a corridor.
--- The condition passed to mkCorridor is tricky; there might not always
--- exist a suitable intermediate point if the rooms are allowed to be close
--- together ...
-connectRooms :: Area -> Area -> Rnd [(X, Y)]
-connectRooms sa@(_, _, sx1, sy1) ta@(tx0, ty0, _, _) =
-  do
-    (sx, sy) <- xyInArea sa
-    (tx, ty) <- xyInArea ta
-    let xok = sx1 < tx0 - 3
-    let xarea = normalizeArea (sx1+2, sy, tx0-2, ty)
-    let yok = sy1 < ty0 - 3
-    let yarea = normalizeArea (sx, sy1+2, tx, ty0-2)
-    let xyarea = normalizeArea (sx1+2, sy1+2, tx0-2, ty0-2)
-    (hv, area) <- if xok && yok then fmap (\ hv -> (hv, xyarea)) (binaryChoice Horiz Vert)
-                  else if xok   then return (Horiz, xarea)
-                                else return (Vert, yarea)
-    mkCorridor hv ((sx, sy), (tx, ty)) area
 
 digCorridors :: Corridor -> LMap
 digCorridors (p1:p2:ps) =
@@ -139,6 +90,20 @@ mergeCorridor :: Kind.Id TileKind -> Kind.Id TileKind -> Kind.Id TileKind
 mergeCorridor _ t | Tile.isWalkable t = t
 mergeCorridor _ t | Tile.isUnknown t  = Tile.floorDarkId
 mergeCorridor _ _                     = Tile.openingId
+
+-- | If the room has size 1, it is at most a start of a corridor.
+digRoom :: Bool -> Room -> LMap -> LMap
+digRoom dl (x0, y0, x1, y1) l
+  | x0 == x1 && y0 == y1 = l
+  | otherwise =
+  let floorDL = if dl then Tile.floorLightId else Tile.floorDarkId
+      rm =
+        [ ((x, y), floorDL) | x <- [x0..x1], y <- [y0..y1] ]
+        ++ [ ((x, y), Tile.wallId)
+           | x <- [x0-1, x1+1], y <- [y0..y1] ]
+        ++ [ ((x, y), Tile.wallId)
+           | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
+  in M.unionWith const (M.fromList rm) l
 
 -- | Create a level consisting of only one room. Optionally, insert some walls.
 emptyRoom :: (Level -> Rnd (LMap -> LMap)) -> LevelConfig -> LevelId -> LevelId
@@ -372,7 +337,7 @@ rollPillars cfg@LevelConfig{levelBound = (sx, _)} lvl =
   do
     nri <- 100 *~ nrItems cfg
     replicateM nri $ do
-      loc <- findLoc lvl (const Tile.isBoring)
+      loc <- findLoc lvl (const Tile.isBoring)  -- TODO: and no item there
       return (fromLoc (sx + 1) loc)
 
 emptyLMap :: (X, Y) -> LMap
@@ -388,17 +353,3 @@ unknownLAMap :: LevelConfig -> LAMap
 unknownLAMap cfg@LevelConfig{levelBound = (sx, _)} =
   Kind.listArray (zeroLoc, toLoc (sx + 1) (levelBound cfg))
     (repeat Tile.unknownId)
-
--- | If the room has size 1, it is at most a start of a corridor.
-digRoom :: Bool -> Room -> LMap -> LMap
-digRoom dl (x0, y0, x1, y1) l
-  | x0 == x1 && y0 == y1 = l
-  | otherwise =
-  let floorDL = if dl then Tile.floorLightId else Tile.floorDarkId
-      rm =
-        [ ((x, y), floorDL) | x <- [x0..x1], y <- [y0..y1] ]
-        ++ [ ((x, y), Tile.wallId)
-           | x <- [x0-1, x1+1], y <- [y0..y1] ]
-        ++ [ ((x, y), Tile.wallId)
-           | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
-  in M.unionWith const (M.fromList rm) l

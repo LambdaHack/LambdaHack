@@ -7,7 +7,6 @@ import qualified Data.ByteString.Char8 as BS
 
 import Area
 import Loc
-import Geometry
 import qualified Keys as K (Key(..))
 import qualified Color
 

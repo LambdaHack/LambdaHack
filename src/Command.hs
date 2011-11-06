@@ -4,7 +4,6 @@ import Action
 import Actions
 import Dir
 import ItemAction
-import Geometry
 import Version
 
 data Described a = Described { chelp :: String, caction :: a }
@@ -18,8 +17,8 @@ closeCommand     = Described "close a door"      (checkCursor closeDoor)
 pickupCommand    = Described "get an object"     (checkCursor pickupItem)
 dropCommand      = Described "drop an object"    (checkCursor dropItem)
 inventoryCommand = Described "display inventory" inventory
-ascendCommand    = Described "ascend a level"    (lvlChange Up)
-descendCommand   = Described "descend a level"   (lvlChange Down)
+ascendCommand    = Described "ascend a level"    (lvlGoUp True)
+descendCommand   = Described "descend a level"   (lvlGoUp False)
 floorCommand     = Described "target location"   targetFloor
 monsterCommand   = Described "target monster"    (checkCursor targetMonster)
 quaffCommand     = Described "quaff a potion"    (checkCursor quaffPotion)

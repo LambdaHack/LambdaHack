@@ -38,13 +38,14 @@ flag std
 executable Allure
   main-is:       Main.hs
   hs-source-dirs: src
-  other-modules: Action, Actions, ActorAdd, Actor, ActorState, Area,Utils.Assert,
+  other-modules: Action, Actions, ActorAdd, Actor, ActorState,
+                 Area, AreaRnd, Utils.Assert,
                  Color, Command, Config, ConfigDefault, Content.Content,
                  Content.ActorKind, Content.ItemKind, Content.TileKind,
                  Dir, Display, Dungeon, DungeonState,
                  Effect, EffectAction, Feature, Utils.File, Flavour,
                  FOV, FOV.Common, FOV.Digital, FOV.Permissive, FOV.Shadow,
-                 Frequency, Geometry, GeometryRnd, Grammar,
+                 Frequency, Geometry, Grammar,
                  HighScores, Item, ItemAction,
                  Keys, Keybindings, Kind, Level, LevelState, Loc
                  Message, Utils.Multiline, Perception, Random,

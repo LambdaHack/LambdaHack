@@ -27,6 +27,7 @@ fromLoc lxsize loc =
   assert (loc >= 0 `blame` (lxsize, loc)) $
   (loc `rem` lxsize, loc `quot` lxsize)
 
+-- | Translation by a vector, where dx and dy can be negative.
 trLoc :: X -> Loc -> (X, Y) -> Loc
 trLoc lxsize loc (dx, dy) =
   assert (loc >= 0 && res >= 0 `blame` (lxsize, loc, (dx, dy))) $
@@ -40,15 +41,15 @@ zeroLoc = 0
 distance :: X -> Loc -> Loc -> Int
 distance lxsize loc0 loc1
   | (x0, y0) <- fromLoc lxsize loc0, (x1, y1) <- fromLoc lxsize loc1 =
-  max (x1 - x0) (y1 - y0)
+  lenXY (x1 - x0, y1 - y0)
 
 -- | Return whether two locations are adjacent on the map
--- (horizontally, vertically or diagonally). Currrently, a
--- position is also considered adjacent to itself.
+-- (horizontally, vertically or diagonally).
+-- A position is also considered adjacent to itself.
 adjacent :: X -> Loc -> Loc -> Bool
 adjacent lxsize s t = distance lxsize s t <= 1
 
--- | Return the 8 surrounding locations of a given location.
+-- | Return the 8, or less, surrounding locations of a given location.
 surroundings :: X -> Y -> Loc -> [Loc]
 surroundings lxsize lysize loc | (x, y) <- fromLoc lxsize loc =
   [ toLoc lxsize (x + dx, y + dy)

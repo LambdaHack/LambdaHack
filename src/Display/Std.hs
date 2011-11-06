@@ -7,7 +7,6 @@ import qualified System.IO as SIO
 
 import Area
 import Loc
-import Geometry
 import qualified Keys as K (Key(..))
 import qualified Color
 

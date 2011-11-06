@@ -6,7 +6,7 @@ import qualified Data.List as L
 import Data.Char
 import Data.Maybe
 
-import Geometry hiding (Up, Down)
+import Geometry
 import Dir
 
 -- TODO: if the file grows much larger, split it and move a part to Utils/

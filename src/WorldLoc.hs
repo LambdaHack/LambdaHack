@@ -1,9 +1,10 @@
-module WorldLoc where
+module WorldLoc
+  ( LevelId(..), levelName, levelNumber, levelStart, WorldLoc) where
 
 import Data.Binary
 import Loc
 
--- | Level ids are just integers.
+-- | Level ids are integers and (for now) ordered linearly.
 newtype LevelId = LambdaCave Int
   deriving (Show, Eq, Ord)
 
@@ -18,6 +19,9 @@ levelName (LambdaCave n) = "The Lambda Cave " ++ show n
 -- | Depth of a level.
 levelNumber :: LevelId -> Int
 levelNumber (LambdaCave n) = n
+
+levelStart :: LevelId
+levelStart = LambdaCave 1
 
 -- | A world location is a level together with a location on that level.
 type WorldLoc = (LevelId, Loc)

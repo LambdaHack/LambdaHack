@@ -10,7 +10,6 @@ import qualified Data.Set as S
 import Utils.Assert
 import Action
 import Display hiding (display)
-import Geometry
 import Loc
 import Dir
 import Grammar
@@ -298,16 +297,16 @@ actorOpenDoor actor dir = do
            in  modify (updateLevel (updateLMap adj))
   advanceTime actor
 
--- | Attempt a level switch to k levels deeper.
+-- | Attempt a level switch to k levels shallower.
 -- TODO: perhaps set up some level name arithmetics in Level.hs
 -- and hide there the fact levels are now essentially Ints.
-lvlDescend :: Int -> Action ()
-lvlDescend k =
+lvlAscend :: Int -> Action ()
+lvlAscend k =
   do
     level  <- gets slevel
     config <- gets sconfig
     let n = levelNumber (lname level)
-        nln = n + k
+        nln = n - k
         depth = Config.get config "dungeon" "depth"
     when (nln < 1 || nln > depth) $
       abortWith "no more levels in this direction"
@@ -316,19 +315,20 @@ lvlDescend k =
 
 -- | Attempt a level change via up level and down level keys.
 -- Will quit the game if the player leaves the dungeon.
-lvlChange :: VDir -> Action ()
-lvlChange vdir =
+lvlGoUp :: Bool -> Action ()
+lvlGoUp isUp =
   do
     cursor    <- gets scursor
     targeting <- gets (ctargeting . scursor)
     pbody     <- gets getPlayerBody
     pl        <- gets splayer
-    lvl        <- gets slevel
+    lvl       <- gets slevel
     st        <- get
     let loc = if targeting then clocation cursor else aloc pbody
         tile = lvl `at` loc
-        sdir | hasFeature F.Climbable tile = Just Up
-             | hasFeature F.Descendable tile = Just Down
+        vdir = if isUp then 1 else -1
+        sdir | hasFeature F.Climbable tile = Just 1
+             | hasFeature F.Descendable tile = Just (-1)
              | otherwise = Nothing
     case sdir of
       Just vdir'
@@ -389,13 +389,13 @@ lvlChange vdir =
       _ -> -- no stairs in the right direction
         if targeting
         then do
-          lvlDescend (if vdir == Up then -1 else 1)
+          lvlAscend vdir
           clocLn <- gets (lname . slevel)
           let upd cur = cur {clocLn}
           modify (updateCursor upd)
           doLook
         else
-          let txt = if vdir == Up then "up" else "down"
+          let txt = if isUp then "up" else "down"
           in  abortWith ("no stairs " ++ txt)
 
 -- | Hero has left the dungeon.

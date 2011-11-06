@@ -12,10 +12,9 @@ import Content.ActorKind
 import qualified Kind
 import Random
 
-
 -- | Monster properties that are changing a lot. If they are dublets
 -- of properties form ActorKind, the intention is they may be modified
--- temporarily, but will return to the original value over time. E.g., HP.
+-- temporarily, but tend to return to the original value over time. E.g., HP.
 data Actor = Actor
   { akind   :: !(Kind.Id ActorKind)  -- ^ the kind of the actor
   , aname   :: !(Maybe String)  -- ^ individual name
