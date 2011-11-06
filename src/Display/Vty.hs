@@ -22,7 +22,7 @@ display :: Area -> Session -> (Loc -> (Color.Attr, Char)) -> String -> String
 display (x0, y0, x1, y1) vty f msg status =
   let img = (foldr (<->) empty_image .
              L.map (foldr (<|>) empty_image .
-                    L.map (\ (x, y) -> let (a, c) = f (toLoc (x, y))
+                    L.map (\ (x, y) -> let (a, c) = f (toLoc (x1 + 1) (x, y))
                                        in  char (setAttr a) c)))
             [ [ (x, y) | x <- [x0..x1] ] | y <- [y0..y1] ]
   in  update vty (pic_for_image

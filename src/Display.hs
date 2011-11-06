@@ -20,6 +20,7 @@ import qualified Data.Char as Char
 import qualified Data.Set as S
 import qualified Data.List as L
 import qualified Data.Map as M
+import qualified Data.IntMap as IM
 import Control.Monad.IO.Class
 import Data.Maybe
 
@@ -164,7 +165,7 @@ displayLevel
       dis n loc0 =
         let tile = lvl `lAt` loc0
             items = lvl `liAt` loc0
-            sm = smelltime $ M.findWithDefault (SmellTime 0) loc0 smap
+            sm = smelltime $ IM.findWithDefault (SmellTime 0) loc0 smap
             sml = (sm - time) `div` 100
             viewActor loc Actor{akind = akind2, asymbol}
               | loc == aloc && ln == creturnLn cursor =

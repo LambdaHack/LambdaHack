@@ -4,7 +4,7 @@ import Control.Monad
 import Control.Monad.State hiding (State, state)
 import Data.Function
 import qualified Data.List as L
-import qualified Data.Map as M
+import qualified Data.IntMap as IM
 import qualified Data.Set as S
 import System.Time
 
@@ -109,7 +109,7 @@ effectToAction Effect.ApplyPerfume _ source target _ =
   if source == target
   then return (True, "Tastes like water, but with a strong rose scent.")
   else do
-    let upd lvl = lvl { lsmell = M.empty }
+    let upd lvl = lvl { lsmell = IM.empty }
     modify (updateLevel upd)
     return (True, "The fragrance quells all scents in the vicinity.")
 effectToAction Effect.Regneration verbosity source target power =

@@ -53,7 +53,8 @@ display (x0, y0, x1, y1) (Session { win = w, styles = s }) f msg status =
     C.mvWAddStr w (y1+2) 0 (toWidth (x1 - x0 + 1) status)
     sequence_ [ C.setStyle (M.findWithDefault defaultStyle a s)
                 >> C.mvWAddStr w (y + 1) x [c]
-              | x <- [x0..x1], y <- [y0..y1], let (a, c) = f (toLoc (x, y)) ]
+              | x <- [x0..x1], y <- [y0..y1],
+                let (a, c) = f (toLoc (x1 + 1) (x, y)) ]
     C.refresh
 
 toWidth :: Int -> String -> String

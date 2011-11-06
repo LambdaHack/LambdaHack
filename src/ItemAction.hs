@@ -3,7 +3,7 @@ module ItemAction where
 import Control.Monad
 import Control.Monad.State hiding (State, state)
 import qualified Data.List as L
-import qualified Data.Map as M
+import qualified Data.IntMap as IM
 import Data.Maybe
 import qualified Data.Set as S
 
@@ -208,7 +208,7 @@ removeFromLoc i loc = do
             case (removeItemByIdentity i is, irs) of
               ([], []) -> Nothing
               iss -> Just iss
-          adj = M.alter rib loc
+          adj = IM.alter rib loc
 
 actorPickupItem :: ActorId -> Action ()
 actorPickupItem actor = do

@@ -3,7 +3,6 @@ module Actions where
 import Control.Monad
 import Control.Monad.State hiding (State, state)
 import qualified Data.List as L
-import qualified Data.Map as M
 import qualified Data.IntMap as IM
 import Data.Maybe
 import qualified Data.Set as S
@@ -231,7 +230,7 @@ remember =
     let alt Nothing      = Nothing
         alt (Just ([], _)) = Nothing
         alt (Just (t, _))  = Just (t, t)
-        rememberItem = M.alter alt
+        rememberItem = IM.alter alt
     modify (updateLevel (updateIMap (\ m -> L.foldr rememberItem m vis)))
 
 -- | Ask for a direction and close the door, if any
@@ -364,7 +363,7 @@ lvlChange vdir =
                   -- Monsters hear that players not on the level. Cancel smell.
                   -- Reduces memory load and savefile size.
                   when (L.null hs) $
-                    modify (updateLevel (updateSMap (const M.empty)))
+                    modify (updateLevel (updateSMap (const IM.empty)))
                   -- At this place the invariant that the player exists fails.
                   -- Change to the new level (invariant not needed).
                   lvlSwitch nln
@@ -448,13 +447,13 @@ search =
                   Nothing -> 1
         searchTile loc (slm, sle) =
           let t = lm Kind.! loc
-              k = le M.! loc - delta
+              k = le IM.! loc - delta
           in if hasFeature F.Hidden t
              then if k > 0
                   then (slm,
-                        M.insert loc k sle)
+                        IM.insert loc k sle)
                   else ((loc, Tile.doorClosedId) : slm,
-                        M.delete loc sle)
+                        IM.delete loc sle)
              else (slm, sle)
         f (slm, sle) m = searchTile (shift ploc lxsize m) (slm, sle)
         (lmDiff, lemap) = L.foldl' f ([], le) moves

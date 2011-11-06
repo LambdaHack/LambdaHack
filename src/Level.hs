@@ -1,7 +1,6 @@
 module Level where
 
 import Data.Binary
-import qualified Data.Map as M
 import qualified Data.List as L
 import qualified Data.IntMap as IM
 
@@ -23,7 +22,7 @@ newtype SmellTime = SmellTime{smelltime :: Time} deriving Show
 instance Binary SmellTime where
   put = put . smelltime
   get = fmap SmellTime get
-type SMap = M.Map Loc SmellTime
+type SMap = IM.IntMap SmellTime
 
 data Level = Level
   { lname     :: LevelId    -- TODO: remove
@@ -32,8 +31,8 @@ data Level = Level
   , lysize    :: Y
   , lmonsters :: Party      -- ^ all monsters on the level
   , lsmell    :: SMap
-  , lsecret   :: M.Map Loc Int
-  , litem     :: M.Map Loc ([Item], [Item])
+  , lsecret   :: IM.IntMap Int
+  , litem     :: IM.IntMap ([Item], [Item])
   , lmap      :: LAMap
   , lrmap     :: LAMap
   , lmeta     :: String
@@ -47,7 +46,8 @@ updateLMap f lvl = lvl { lmap = f (lmap lvl) }
 updateLRMap :: (LAMap -> LAMap) -> Level -> Level
 updateLRMap f lvl = lvl { lrmap = f (lrmap lvl) }
 
-updateIMap :: (M.Map Loc ([Item], [Item]) -> M.Map Loc ([Item], [Item])) -> Level
+updateIMap :: (IM.IntMap ([Item], [Item]) ->
+               IM.IntMap ([Item], [Item])) -> Level
               -> Level
 updateIMap f lvl = lvl { litem = f (litem lvl) }
 
@@ -74,7 +74,8 @@ instance Binary Level where
           put ls
           put le
           put (assert
-                 (M.null (M.filter (\ (is1, is2) -> L.null is1 && L.null is2) li)
+                 (IM.null (IM.filter (\ (is1, is2) ->
+                                       L.null is1 && L.null is2) li)
                  `blame` li) li)
           put lm
           put lrm
@@ -101,8 +102,8 @@ rememberAt l p = lrmap l Kind.! p
 
 -- Note: representations with 2 maps leads to longer code and slower 'remember'.
 iat, irememberAt :: Level -> Loc -> [Item]
-iat         l p = fst $ M.findWithDefault ([], []) p (litem l)
-irememberAt l p = snd $ M.findWithDefault ([], []) p (litem l)
+iat         l p = fst $ IM.findWithDefault ([], []) p (litem l)
+irememberAt l p = snd $ IM.findWithDefault ([], []) p (litem l)
 
 -- Checks for the presence of actors. Does *not* check if the tile is open.
 unoccupied :: [Actor] -> Loc -> Bool
@@ -119,12 +120,12 @@ accessible lvl _source target =
   in  Tile.isWalkable tgt
 
 -- check whether the location contains a door of secrecy level lower than k
-openable :: Int -> Level -> M.Map Loc Int -> Loc -> Bool
+openable :: Int -> Level -> IM.IntMap Int -> Loc -> Bool
 openable k lvl le target =
   let tgt = lvl `at` target
   in Tile.hasFeature F.Openable tgt ||
      (Tile.hasFeature F.Hidden tgt &&
-      le M.! target < k)
+      le IM.! target < k)
 
 findLoc :: Level -> (Loc -> (Kind.Id TileKind) -> Bool) -> Rnd Loc
 findLoc lvl@Level{lxsize, lysize} p =
@@ -157,4 +158,4 @@ dropItemsAt items loc =
   let joinItems = L.foldl' (\ acc i -> snd (joinItem i acc))
       adj Nothing = Just (items, [])
       adj (Just (i, ri)) = Just (joinItems items i, ri)
-  in  updateIMap (M.alter adj loc)
+  in  updateIMap (IM.alter adj loc)

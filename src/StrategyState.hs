@@ -1,7 +1,6 @@
 module StrategyState where
 
 import qualified Data.List as L
-import qualified Data.Map as M
 import qualified Data.IntMap as IM
 import Data.Maybe
 import Control.Monad
@@ -139,7 +138,7 @@ strategy actor
       L.map fst $
       L.sortBy (\ (_, s1) (_, s2) -> compare s2 s1) $
       L.filter (\ (_, s) -> s > 0) $
-      L.map (\ x -> let sm = smelltime $ M.findWithDefault
+      L.map (\ x -> let sm = smelltime $ IM.findWithDefault
                                            (SmellTime 0) ((me `shift` lxsize) x) nsmap
                     in  (x, (sm - time) `max` 0)) moves
     fromDir allowAttacks d = dirToAction actor newTgt allowAttacks `liftM` d
