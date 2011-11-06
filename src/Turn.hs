@@ -158,12 +158,13 @@ handlePlayer =
 playerCommand :: Action ()
 playerCommand =
   do
+    lxsize <- gets (lxsize . slevel)
     display -- draw the current surroundings
     history -- update the message history and reset current message
     tryRepeatedlyWith stopRunning $  -- on abort, just ask for a new command
       ifRunning continueRun $ do
         k <- session nextCommand
-        handleKey stdKeybindings k
+        handleKey lxsize stdKeybindings k
 
               -- Design thoughts (in order to get rid or partially rid of the somewhat
               -- convoluted design we have): We have three kinds of commands.

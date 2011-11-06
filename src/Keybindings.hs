@@ -6,6 +6,7 @@ import qualified Data.List as L
 import Utils.Assert
 import Action
 import Command
+import Geometry
 import qualified Keys as K
 
 -- | Keybindings.
@@ -15,10 +16,10 @@ data Keybindings = Keybindings
   , kother :: M.Map K.Key Command
   }
 
-handleKey :: Keybindings -> K.Key -> Action ()
-handleKey kb k =
-  K.handleDirection k (caction $ kdir kb) $
-    K.handleUDirection k (caction $ kudir kb) $
+handleKey :: X -> Keybindings -> K.Key -> Action ()
+handleKey lxsize kb k =
+  K.handleDirection lxsize k (caction $ kdir kb) $
+    K.handleUDirection lxsize k (caction $ kudir kb) $
       case M.lookup k (kother kb) of
         Just c  -> caction c
         Nothing -> abortWith $ "unknown command (" ++ K.showKey k ++ ")"

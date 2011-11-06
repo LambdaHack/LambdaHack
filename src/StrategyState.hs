@@ -6,7 +6,6 @@ import Data.Maybe
 import Control.Monad
 import Control.Arrow
 
-import Utils.Assert
 import Geometry
 import Level
 import Actor
@@ -115,12 +114,12 @@ strategy actor
                        Nothing -> const mzero
                        Just loc ->
                          let foeDir = towards lxsize me loc
-                         in  only (\ x -> dirDistSq foeDir x <= 1)
+                         in  only (\ x -> dirDistSq lxsize foeDir x <= 1)
     lootHere x     = not $ L.null $ lvl `iat` x
     onlyLoot       = onlyMoves lootHere me
     exitHere x     = let t = lvl `at` x in Tile.isExit t
     onlyExit       = onlyMoves exitHere me
-    onlyKeepsDir k = only (\ x -> maybe True (\ d -> dirDistSq d x <= k) ad)
+    onlyKeepsDir k = only (\ x -> maybe True (\ d -> dirDistSq lxsize d x <= k) ad)
     onlyKeepsDir_9 = only (\ x -> maybe True (\ d -> neg x /= d) ad)
     onlyNoMs       = onlyMoves (unoccupied (levelMonsterList delState)) me
     -- Monsters don't see doors more secret than that. Enforced when actually
@@ -139,8 +138,8 @@ strategy actor
       L.sortBy (\ (_, s1) (_, s2) -> compare s2 s1) $
       L.filter (\ (_, s) -> s > 0) $
       L.map (\ x -> let sm = smelltime $ IM.findWithDefault
-                                           (SmellTime 0) ((me `shift` lxsize) x) nsmap
-                    in  (x, (sm - time) `max` 0)) moves
+                                           (SmellTime 0) (me `shift` x) nsmap
+                    in  (x, (sm - time) `max` 0)) (moves lxsize)
     fromDir allowAttacks d = dirToAction actor newTgt allowAttacks `liftM` d
 
     strat =
@@ -192,11 +191,12 @@ strategy actor
                  .| onlyKeepsDir_9 moveRandomly
                  .| moveRandomly
     onlyMoves :: (Loc -> Bool) -> Loc -> Strategy Dir -> Strategy Dir
-    onlyMoves p l = only (\ x -> p ((l `shift` lxsize) x))
+    onlyMoves p l = only (\ x -> p (l `shift` x))
+    moveRandomly :: Strategy Dir
+    moveRandomly = liftFrequency $ uniform (moves lxsize)
 
 dirToAction :: ActorId -> Target -> Bool -> Dir -> Action ()
-dirToAction actor tgt allowAttacks dir =
-  assert (dir /= neg dir `blame` dir) $ do
+dirToAction actor tgt allowAttacks dir = do
   -- set new direction
   updateAnyActor actor $ \ m -> m { adir = Just dir, atarget = tgt }
   -- perform action
@@ -204,9 +204,6 @@ dirToAction actor tgt allowAttacks dir =
     -- if the following action aborts, we just advance the time and continue
     -- TODO: ensure time is taken for other aborted actions in this file
     moveOrAttack allowAttacks True actor dir
-
-moveRandomly :: Strategy Dir
-moveRandomly = liftFrequency $ uniform moves
 
 wait :: ActorId -> Strategy (Action ())
 wait actor = return $ advanceTime actor

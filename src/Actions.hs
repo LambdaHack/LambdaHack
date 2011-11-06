@@ -129,7 +129,7 @@ moveCursor dir n = do
   let upd cursor =
         let (nx, ny) =
               fromLoc sx $
-              iterate (\ l -> (l `shift` sx) dir) (clocation cursor) !! n
+              iterate (\ l -> l `shift` dir) (clocation cursor) !! n
             cloc = (max 1 $ min nx (sx-2), max 1 $ min ny (sy-2))
         in  cursor { clocation = toLoc sx cloc }
   modify (updateCursor upd)
@@ -178,8 +178,8 @@ continueRun dir =
         newsReported    = not (L.null msg)
         tile      = lvl `rememberAt` loc  -- tile at current location
         itemsHere = not (L.null (lvl `irememberAt` loc))
-        heroThere = ((loc `shift` lxsize) dir) `elem` L.map aloc (IM.elems hs)
-        dirOK     = accessible lvl loc ((loc `shift` lxsize) dir)
+        heroThere = (loc `shift` dir) `elem` L.map aloc (IM.elems hs)
+        dirOK     = accessible lvl loc (loc `shift` dir)
         isTExit   = Tile.isExit tile
         isWalkableDark = Tile.isWalkable tile && not (Tile.isLit tile)
     -- What happens next is mostly depending on the terrain we're currently on.
@@ -188,24 +188,24 @@ continueRun dir =
             | isWalkableDark =
           -- in corridors, explore all corners and stop at all crossings
           -- TODO: even in corridors, stop if you run past an exit (rare)
-          let ns = L.filter (\ x -> dirDistSq (neg dir) x > 1
-                                    && (accessible lvl loc ((loc `shift` lxsize) x))
-                                        || openable 1 lvl le ((loc `shift` lxsize) x))
-                            moves
-              allCloseTo main = L.all (\ d -> dirDistSq main d <= 1) ns
+          let ns = L.filter (\ x -> dirDistSq lxsize (neg dir) x > 1
+                                    && (accessible lvl loc (loc `shift` x))
+                                        || openable 1 lvl le (loc `shift` x))
+                            (moves lxsize)
+              allCloseTo main = L.all (\ d -> dirDistSq lxsize main d <= 1) ns
           in  case ns of
                 [onlyDir] -> run onlyDir  -- can be diagonal
                 _         ->
                   -- prefer orthogonal to diagonal dirs, for hero's safety
-                  case L.filter (not . diagonal) ns of
+                  case L.filter (not . diagonal lxsize) ns of
                     [ortoDir]
                       | allCloseTo ortoDir -> run ortoDir
                     _ -> abort
             | not dirOK =
           abort -- outside corridors never change direction
             | otherwise =
-          let ns = L.filter (\ x -> x /= dir && dirDistSq (neg dir) x > 1) moves
-              ls = L.map (loc `shift` lxsize) ns
+          let ns = L.filter (\ x -> x /= dir && dirDistSq lxsize (neg dir) x > 1) (moves lxsize)
+              ls = L.map (loc `shift`) ns
               as = L.filter (\ x -> accessible lvl loc x
                                     || openable 1 lvl le x) ls
               ts = L.map (lvl `rememberAt`) as
@@ -238,19 +238,19 @@ closeDoor :: Action ()
 closeDoor = do
   messageReset "direction?"
   display
-  e  <- session nextCommand
-  K.handleDirection e playerCloseDoor (neverMind True)
+  e <- session nextCommand
+  lxsize <- gets (lxsize . slevel)
+  K.handleDirection lxsize e playerCloseDoor (neverMind True)
 
 -- | Player closes a door. AI never does.
 playerCloseDoor :: Dir -> Action ()
 playerCloseDoor dir = do
   state <- get
   lvl   <- gets slevel
-  lxsize <- gets (lxsize . slevel)
   pl    <- gets splayer
   body  <- gets (getActor pl)
   let hms = levelHeroList state ++ levelMonsterList state
-      dloc = shift (aloc body) lxsize dir  -- the location we act upon
+      dloc = shift (aloc body) dir  -- the location we act upon
       t = lvl `at` dloc
   if hasFeature F.Closable t
     then
@@ -271,10 +271,9 @@ actorOpenDoor :: ActorId -> Dir -> Action ()
 actorOpenDoor actor dir = do
   lvl  <- gets slevel
   le   <- gets (lsecret . slevel)
-  lxsize <- gets (lxsize . slevel)
   pl   <- gets splayer
   body <- gets (getActor actor)
-  let dloc = shift (aloc body) lxsize dir  -- the location we act upon
+  let dloc = shift (aloc body) dir  -- the location we act upon
       t = lvl `at` dloc
       isPlayer = actor == pl
       isVerbose = isPlayer  -- don't report enemy failures, if it's not player
@@ -455,8 +454,8 @@ search =
                   else ((loc, Tile.doorClosedId) : slm,
                         IM.delete loc sle)
              else (slm, sle)
-        f (slm, sle) m = searchTile (shift ploc lxsize m) (slm, sle)
-        (lmDiff, lemap) = L.foldl' f ([], le) moves
+        f (slm, sle) m = searchTile (shift ploc m) (slm, sle)
+        (lmDiff, lemap) = L.foldl' f ([], le) (moves lxsize)
         lmNew = if L.null lmDiff then lm else lm Kind.// lmDiff
     modify (updateLevel (\ l -> l{lmap = lmNew, lsecret = lemap}))
     playerAdvanceTime
@@ -553,21 +552,14 @@ moveOrAttack :: Bool ->        -- allow attacks?
                 ActorId ->     -- who's moving?
                 Dir ->
                 Action ()
-moveOrAttack allowAttacks autoOpen actor dir
-  | dir == neg dir =
-      -- Moving with no direction is a noop.
-      -- We include it currently to prevent that
-      -- monsters attack themselves by accident.
-      advanceTime actor
-  | otherwise = do
+moveOrAttack allowAttacks autoOpen actor dir = do
       -- We start by looking at the target position.
       state <- get
       pl    <- gets splayer
       lvl   <- gets slevel
-      lxsize <- gets (lxsize . slevel)
       sm    <- gets (getActor actor)
       let sloc = aloc sm           -- source location
-          tloc = (sloc `shift` lxsize) dir  -- target location
+          tloc = sloc `shift` dir  -- target location
       tgt <- gets (locToActor tloc)
       case tgt of
         Just target

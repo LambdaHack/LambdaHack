@@ -74,8 +74,8 @@ canonMoveKey e =
 -- | Configurable event handler for the direction keys. Is used to
 --   handle player moves, but can also be used for directed commands
 --   such as close door.
-handleDirection :: Key -> (Dir -> a) -> a -> a
-handleDirection e h k =
+handleDirection :: X -> Key -> (Dir -> a) -> a -> a
+handleDirection lxsize e h k =
   case e of
     Char 'k' -> h up
     Char 'j' -> h down
@@ -85,11 +85,14 @@ handleDirection e h k =
     Char 'u' -> h upright
     Char 'b' -> h downleft
     Char 'n' -> h downright
-    _          -> k
+    _        -> k
+ where
+  upleft, up, upright, right, downright, down, downleft, left :: Dir
+  [upleft, up, upright, right, downright, down, downleft, left] = moves lxsize
 
 -- | Configurable event handler for the upper direction keys.
-handleUDirection :: Key -> (Dir -> a) -> a -> a
-handleUDirection e h k =
+handleUDirection :: X -> Key -> (Dir -> a) -> a -> a
+handleUDirection lxsize e h k =
   case e of
     Char 'K' -> h up
     Char 'J' -> h down
@@ -99,7 +102,10 @@ handleUDirection e h k =
     Char 'U' -> h upright
     Char 'B' -> h downleft
     Char 'N' -> h downright
-    _          -> k
+    _        -> k
+ where
+  upleft, up, upright, right, downright, down, downleft, left :: Dir
+  [upleft, up, upright, right, downright, down, downleft, left] = moves lxsize
 
 -- | Translate key from a GTK string description to our internal key type.
 -- To be used, in particular, for the macros in the config file.

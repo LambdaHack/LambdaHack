@@ -1,8 +1,7 @@
 module Geometry
   ( Time, VDir(..), X, Y, Loc, Dir, toLoc, fromLoc, trLoc, zeroLoc
   , Area, towards, distance, dirDistSq, adjacent, surroundings, diagonal, shift
-  , neg, moves, up, down, left, right, upleft, upright, downleft, downright
-  , neighbors, fromTo, normalize, normalizeArea, grid, shiftXY
+  , neg, moves, neighbors, fromTo, normalize, normalizeArea, grid, shiftXY
   ) where
 
 import qualified Data.List as L
@@ -26,6 +25,10 @@ type Y = Int
 shiftXY :: (X, Y) -> (X, Y) -> (X, Y)
 shiftXY (x0, y0) (x1, y1) = (x0 + x1, y0 + y1)
 
+-- | Vectors of all unit moves, clockwise, starting north-west.
+movesXY :: [(X, Y)]
+movesXY = [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]
+
 
 -- Loc
 
@@ -39,7 +42,6 @@ shiftXY (x0, y0) (x1, y1) = (x0 + x1, y0 + y1)
 -- including cheaper bounds check.
 type Loc = Int
 
--- | Construct a location.
 toLoc :: X -> (X, Y) -> Loc
 toLoc lxsize (x, y) =
   assert (lxsize > x && x >= 0 && y >= 0 `blame` (lxsize, x, y)) $
@@ -47,12 +49,12 @@ toLoc lxsize (x, y) =
 
 fromLoc :: X -> Loc -> (X, Y)
 fromLoc lxsize loc =
-  assert (lxsize > 0 && loc >= 0 `blame` (lxsize, loc)) $
+  assert (loc >= 0 `blame` (lxsize, loc)) $
   (loc `rem` lxsize, loc `quot` lxsize)
 
 trLoc :: X -> Loc -> (X, Y) -> Loc
 trLoc lxsize loc (dx, dy) =
-  assert (lxsize > 0 && loc >= 0 && res >= 0 `blame` (lxsize, loc, (dx, dy))) $
+  assert (loc >= 0 && res >= 0 `blame` (lxsize, loc, (dx, dy))) $
   res
    where res = loc + dx + dy * lxsize
 
@@ -75,75 +77,85 @@ adjacent lxsize s t = distance lxsize s t <= 1
 surroundings :: X -> Y -> Loc -> [Loc]
 surroundings lxsize lysize loc | (x, y) <- fromLoc lxsize loc =
   [ toLoc lxsize (x + dx, y + dy)
-  | Dir (dx, dy) <- moves,
+  | (dx, dy) <- movesXY,
     x + dx >= 0 && x + dx < lxsize &&
     y + dy >= 0 && y + dy < lysize ]
 
 
 -- Dir, depends on Loc
 
-newtype Dir = Dir (X, Y) deriving (Show, Eq)
+-- Vectors of length 1 (in our metric), that is, geographical directions.
+-- Implemented as an offset in the linear framebuffer indexed by Loc.
+-- A newtype to prevent mixing up with Loc itself.
+-- Level X size has to be > 1 for the @moves@ vectors to make sense.
+newtype Dir = Dir Int deriving (Show, Eq)
 
 instance Binary Dir where
-  put (Dir xy) = put xy
+  put (Dir dir) = put dir
   get = fmap Dir get
 
+lenDir :: (X, Y) -> Int
+lenDir (x, y) = max (abs x) (abs y)
+
+toDir :: X -> (X, Y) -> Dir
+toDir lxsize (x, y) =
+  assert (lxsize > 1 && lenDir (x, y) == 1 `blame` (lxsize, (x, y))) $
+  Dir $ x + y * lxsize
+
+fromDir :: X -> Dir -> (X, Y)
+fromDir lxsize (Dir dir) =
+  assert (lenDir res == 1 && fst res + snd res * lxsize == dir
+          `blame` (lxsize, dir, res)) $
+  res
+ where
+   (x, y) = (dir `mod` lxsize, dir `div` lxsize)
+   -- Pick the vector's canonical of length 1:
+   res = if x > 1
+         then (x - 80, y + 1)
+         else (x, y)
+
 -- | The squared euclidean distance between two directions.
-dirDistSq :: Dir -> Dir -> Int
-dirDistSq (Dir (x0, y0)) (Dir (x1, y1)) =
+dirDistSq :: X -> Dir -> Dir -> Int
+dirDistSq lxsize dir0 dir1
+  | (x0, y0) <- fromDir lxsize dir0, (x1, y1) <- fromDir lxsize dir1 =
   let square a = a * a
   in square (y1 - y0) + square (x1 - x0)
 
-diagonal :: Dir -> Bool
-diagonal (Dir (x, y)) = x * y /= 0
+diagonal :: X -> Dir -> Bool
+diagonal lxsize dir | (x, y) <- fromDir lxsize dir =
+  x * y /= 0
 
 -- | Invert a direction (vector).
 neg :: Dir -> Dir
-neg (Dir (x, y)) = Dir (-x, -y)
+neg (Dir dir) = Dir (-dir)
 
--- | Get the vectors of all the moves, clockwise, starting north-west.
-moves :: [Dir]
-moves =
-  map Dir [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]
-
-shiftDir :: Dir -> Dir -> Dir
-shiftDir (Dir (x0, y0)) (Dir (x1, y1)) = Dir (x0 + x1, y0 + y1)
-
-up, down, left, right :: Dir
-upleft, upright, downleft, downright :: Dir
-upleft    = up   `shiftDir` left
-upright   = up   `shiftDir` right
-downleft  = down `shiftDir` left
-downright = down `shiftDir` right
-up        = Dir (0, -1)
-down      = Dir (0, 1)
-left      = Dir (-1, 0)
-right     = Dir (1, 0)
+-- | Directions of all unit moves, clockwise, starting north-west.
+moves :: X -> [Dir]
+moves lxsize = map (toDir lxsize) movesXY
 
 -- | Move one square in the given direction.
-shift :: Loc -> X -> Dir -> Loc
-shift loc lxsize (Dir (dx, dy)) =
-  assert (lxsize > 0 && loc >= 0 && res >= 0 `blame` (lxsize, loc, (dx, dy))) $
-  res
-   where res = loc + dx + dy * lxsize
+-- Particularly simple in the linear representation.
+shift :: Loc -> Dir -> Loc
+shift loc (Dir dir) = loc + dir
 
--- | Given two locations, determine the direction in which one should
+-- | Given two distinct locations, determine the direction in which one should
 -- move from the first in order to get closer to the second. Does not
 -- pay attention to obstacles at all.
 towards :: X -> Loc -> Loc -> Dir
 towards lxsize loc0 loc1
   | (x0, y0) <- fromLoc lxsize loc0, (x1, y1) <- fromLoc lxsize loc1 =
+  assert (loc0 /= loc1 `blame` (x0, y0)) $
   let dx = x1 - x0
       dy = y1 - y0
       angle :: Double
       angle = atan (fromIntegral dy / fromIntegral dx) / (pi / 2)
-      dir | angle <= -0.75 = (0, -1)
+      dxy | angle <= -0.75 = (0, -1)
           | angle <= -0.25 = (1, -1)
           | angle <= 0.25  = (1, 0)
           | angle <= 0.75  = (1, 1)
           | angle <= 1.25  = (0, 1)
-          | otherwise      = (0, 0)
-  in  if dx >= 0 then Dir dir else neg (Dir dir)
+          | otherwise      = assert `failure` (lxsize, (x0, y0), (x1, y1))
+  in if dx >= 0 then toDir lxsize dxy else neg (toDir lxsize dxy)
 
 
 -- Area
