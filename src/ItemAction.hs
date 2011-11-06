@@ -10,7 +10,7 @@ import qualified Data.Set as S
 import Utils.Assert
 import Action
 import Display hiding (display)
-import Geometry
+import Loc
 import Grammar
 import Item
 import Content.ItemKind

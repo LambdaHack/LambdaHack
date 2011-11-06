@@ -2,6 +2,7 @@ module Command where
 
 import Action
 import Actions
+import Dir
 import ItemAction
 import Geometry
 import Version

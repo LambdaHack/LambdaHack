@@ -4,6 +4,7 @@ import qualified Data.List as L
 import qualified Data.Set as S
 
 import Geometry
+import Area
 import Random
 
 xyInArea :: Area -> Rnd (X, Y)

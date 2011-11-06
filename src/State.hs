@@ -9,6 +9,7 @@ import qualified System.Random as R
 
 import Actor
 import Geometry
+import Loc
 import Level
 import Dungeon
 import Item

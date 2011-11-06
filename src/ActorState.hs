@@ -8,7 +8,7 @@ import Control.Monad
 import Data.Maybe
 
 import Utils.Assert
-import Geometry
+import Loc
 import Actor
 import Level
 import Dungeon

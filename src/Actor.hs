@@ -5,6 +5,8 @@ import Control.Monad
 
 import Utils.Assert
 import Geometry
+import Dir
+import Loc
 import Item
 import Content.ActorKind
 import qualified Kind

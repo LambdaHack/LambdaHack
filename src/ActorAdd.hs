@@ -8,7 +8,7 @@ import Data.Maybe
 import qualified Data.Char as Char
 
 import Utils.Assert
-import Geometry
+import Loc
 import State
 import Level
 import Actor

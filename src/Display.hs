@@ -28,6 +28,8 @@ import Message
 import qualified Color
 import State
 import Geometry
+import Loc
+import Area
 import Level
 import Dungeon
 import Perception

@@ -6,6 +6,7 @@ import qualified Data.IntMap as IM
 
 import Utils.Assert
 import Geometry
+import Loc
 import Actor
 import Item
 import Content.TileKind

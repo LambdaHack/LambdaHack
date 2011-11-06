@@ -16,8 +16,8 @@ import Content.ActorKind
 import ActorAdd
 import Display hiding (display)
 import Dungeon
-import Geometry
 import Grammar
+import Loc
 import qualified HighScores as H
 import Item
 import Content.ItemKind

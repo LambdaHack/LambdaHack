@@ -10,6 +10,8 @@ import Data.IORef
 import qualified Data.Map as M
 import qualified Data.ByteString.Char8 as BS
 
+import Area
+import Loc
 import Geometry
 import qualified Keys as K (Key(..), keyTranslate)
 import qualified Color

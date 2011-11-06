@@ -4,7 +4,7 @@ import qualified Data.Set as S
 
 import Utils.Assert
 import FOV.Common
-import Geometry
+import Loc
 import Level
 
 -- Digital FOV with a given range.

@@ -8,6 +8,7 @@ module FOV.Common
 import qualified Data.List as L
 
 import Geometry
+import Loc
 import qualified Tile
 import Level
 

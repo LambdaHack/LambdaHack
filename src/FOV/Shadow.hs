@@ -5,7 +5,7 @@ import qualified Data.Set as S
 
 import Utils.Assert
 import FOV.Common
-import Geometry
+import Loc
 import Level
 import qualified Tile
 

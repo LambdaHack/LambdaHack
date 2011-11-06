@@ -1,9 +1,9 @@
 module LevelState where
 
-import Geometry
 import Level
 import State
 import Grammar
+import Loc
 import Content.TileKind
 import qualified Kind
 

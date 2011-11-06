@@ -17,6 +17,8 @@ import Data.Ratio
 
 import Geometry
 import GeometryRnd
+import Area
+import Loc
 import Level
 import Item
 import Random

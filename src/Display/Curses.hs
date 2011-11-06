@@ -7,6 +7,8 @@ import qualified Data.List as L
 import qualified Data.Map as M
 import Control.Monad
 
+import Area
+import Loc
 import Geometry
 import qualified Keys as K (Key(..))
 import qualified Color

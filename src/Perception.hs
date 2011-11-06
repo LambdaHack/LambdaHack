@@ -6,7 +6,7 @@ import qualified Data.IntMap as IM
 import Data.Maybe
 import Control.Monad
 
-import Geometry
+import Loc
 import State
 import Level
 import Actor

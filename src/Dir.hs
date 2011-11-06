@@ -1,0 +1,81 @@
+module Dir
+  ( Dir, dirDistSq, diagonal, neg, moves, shift, towards ) where
+
+import Data.Binary
+
+import Geometry
+import Loc
+import Utils.Assert
+
+-- Vectors of length 1 (in our metric), that is, geographical directions.
+-- Implemented as an offset in the linear framebuffer indexed by Loc.
+-- A newtype to prevent mixing up with Loc itself.
+-- Level X size has to be > 1 for the @moves@ vectors to make sense.
+newtype Dir = Dir Int deriving (Show, Eq)
+
+instance Binary Dir where
+  put (Dir dir) = put dir
+  get = fmap Dir get
+
+lenDir :: (X, Y) -> Int
+lenDir (x, y) = max (abs x) (abs y)
+
+toDir :: X -> (X, Y) -> Dir
+toDir lxsize (x, y) =
+  assert (lxsize > 1 && lenDir (x, y) == 1 `blame` (lxsize, (x, y))) $
+  Dir $ x + y * lxsize
+
+fromDir :: X -> Dir -> (X, Y)
+fromDir lxsize (Dir dir) =
+  assert (lenDir res == 1 && fst res + snd res * lxsize == dir
+          `blame` (lxsize, dir, res)) $
+  res
+ where
+   (x, y) = (dir `mod` lxsize, dir `div` lxsize)
+   -- Pick the vector's canonical of length 1:
+   res = if x > 1
+         then (x - 80, y + 1)
+         else (x, y)
+
+-- | The squared euclidean distance between two directions.
+dirDistSq :: X -> Dir -> Dir -> Int
+dirDistSq lxsize dir0 dir1
+  | (x0, y0) <- fromDir lxsize dir0, (x1, y1) <- fromDir lxsize dir1 =
+  let square a = a * a
+  in square (y1 - y0) + square (x1 - x0)
+
+diagonal :: X -> Dir -> Bool
+diagonal lxsize dir | (x, y) <- fromDir lxsize dir =
+  x * y /= 0
+
+-- | Invert a direction (vector).
+neg :: Dir -> Dir
+neg (Dir dir) = Dir (-dir)
+
+-- | Directions of all unit moves, clockwise, starting north-west.
+moves :: X -> [Dir]
+moves lxsize = map (toDir lxsize) movesXY
+
+-- | Move one square in the given direction.
+-- Particularly simple in the linear representation.
+shift :: Loc -> Dir -> Loc
+shift loc (Dir dir) = loc + dir
+
+-- | Given two distinct locations, determine the direction in which one should
+-- move from the first in order to get closer to the second. Does not
+-- pay attention to obstacles at all.
+towards :: X -> Loc -> Loc -> Dir
+towards lxsize loc0 loc1
+  | (x0, y0) <- fromLoc lxsize loc0, (x1, y1) <- fromLoc lxsize loc1 =
+  assert (loc0 /= loc1 `blame` (x0, y0)) $
+  let dx = x1 - x0
+      dy = y1 - y0
+      angle :: Double
+      angle = atan (fromIntegral dy / fromIntegral dx) / (pi / 2)
+      dxy | angle <= -0.75 = (0, -1)
+          | angle <= -0.25 = (1, -1)
+          | angle <= 0.25  = (1, 0)
+          | angle <= 0.75  = (1, 1)
+          | angle <= 1.25  = (0, 1)
+          | otherwise      = assert `failure` (lxsize, (x0, y0), (x1, y1))
+  in if dx >= 0 then toDir lxsize dxy else neg (toDir lxsize dxy)

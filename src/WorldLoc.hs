@@ -1,7 +1,7 @@
 module WorldLoc where
 
 import Data.Binary
-import Geometry
+import Loc
 
 -- | Level ids are just integers.
 newtype LevelId = LambdaCave Int

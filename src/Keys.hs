@@ -3,6 +3,7 @@ module Keys where
 import Prelude hiding (Left, Right)
 
 import Geometry hiding (Up, Down)
+import Dir
 
 -- TODO: if the file grows much larger, split it and move a part to Utils/
 

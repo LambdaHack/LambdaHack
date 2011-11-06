@@ -5,7 +5,7 @@ import qualified Data.List as L
 import qualified Control.Monad.State as MState
 
 import Utils.Assert
-import Geometry
+import Loc
 import Level
 import Dungeon
 import Random

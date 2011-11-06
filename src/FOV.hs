@@ -7,7 +7,7 @@ import FOV.Common
 import qualified FOV.Digital
 import qualified FOV.Permissive
 import qualified FOV.Shadow
-import Geometry
+import Loc
 import Level
 
 -- TODO: should Blind really be a FovMode, or a modifier? Let's decide

@@ -6,7 +6,8 @@ import Data.Maybe
 import Control.Monad
 import Control.Arrow
 
-import Geometry
+import Loc
+import Dir
 import Level
 import Actor
 import ActorState

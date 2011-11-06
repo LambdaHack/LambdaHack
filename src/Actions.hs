@@ -11,6 +11,8 @@ import Utils.Assert
 import Action
 import Display hiding (display)
 import Geometry
+import Loc
+import Dir
 import Grammar
 import qualified HighScores as H
 import Item
