@@ -1,4 +1,10 @@
-module Level where
+module Level
+  ( Party, SmellTime(..), SmellMap, SecretStrength(..), SecretMap
+  , ItemMap, TileMap, Level(..)
+  , updateHeroes, updateMonsters, updateLMap, updateLRMap, updateIMap
+  , updateSmell , emptyParty, at, rememberAt, iat, irememberAt
+  , accessible, openable, findLoc, findLocTry, dropItemsAt
+  ) where
 
 import Data.Binary
 import qualified Data.List as L
@@ -17,34 +23,44 @@ import qualified Feature as F
 import qualified Kind
 
 type Party = IM.IntMap Actor
-type LAMap = Kind.Array Loc TileKind
 
 newtype SmellTime = SmellTime{smelltime :: Time} deriving Show
 instance Binary SmellTime where
   put = put . smelltime
   get = fmap SmellTime get
-type SMap = IM.IntMap SmellTime
+type SmellMap = IM.IntMap SmellTime
+
+newtype SecretStrength = SecretStrength{secretStrength :: Time}
+  deriving (Show, Eq, Ord)
+instance Binary SecretStrength where
+  put = put . secretStrength
+  get = fmap SecretStrength get
+type SecretMap = IM.IntMap SecretStrength
+
+type ItemMap = IM.IntMap ([Item], [Item])
+
+type TileMap = Kind.Array Loc TileKind
 
 data Level = Level
-  { lname     :: LevelId    -- TODO: remove
+  { lname     :: LevelId    -- TODO: remove?
   , lheroes   :: Party      -- ^ all heroes on the level
   , lxsize    :: X
   , lysize    :: Y
   , lmonsters :: Party      -- ^ all monsters on the level
-  , lsmell    :: SMap
-  , lsecret   :: IM.IntMap Int
-  , litem     :: IM.IntMap ([Item], [Item])
-  , lmap      :: LAMap
-  , lrmap     :: LAMap
+  , lsmell    :: SmellMap
+  , lsecret   :: SecretMap
+  , litem     :: ItemMap
+  , lmap      :: TileMap
+  , lrmap     :: TileMap
   , lmeta     :: String
   , lstairs   :: (Loc, Loc) -- ^ here the stairs (down, up) from other levels end
   }
   deriving Show
 
-updateLMap :: (LAMap -> LAMap) -> Level -> Level
+updateLMap :: (TileMap -> TileMap) -> Level -> Level
 updateLMap f lvl = lvl { lmap = f (lmap lvl) }
 
-updateLRMap :: (LAMap -> LAMap) -> Level -> Level
+updateLRMap :: (TileMap -> TileMap) -> Level -> Level
 updateLRMap f lvl = lvl { lrmap = f (lrmap lvl) }
 
 updateIMap :: (IM.IntMap ([Item], [Item]) ->
@@ -52,8 +68,8 @@ updateIMap :: (IM.IntMap ([Item], [Item]) ->
               -> Level
 updateIMap f lvl = lvl { litem = f (litem lvl) }
 
-updateSMap :: (SMap -> SMap) -> Level -> Level
-updateSMap f lvl = lvl { lsmell = f (lsmell lvl) }
+updateSmell :: (SmellMap -> SmellMap) -> Level -> Level
+updateSmell f lvl = lvl { lsmell = f (lsmell lvl) }
 
 updateMonsters :: (Party -> Party) -> Level -> Level
 updateMonsters f lvl = lvl { lmonsters = f (lmonsters lvl) }
@@ -106,11 +122,6 @@ iat, irememberAt :: Level -> Loc -> [Item]
 iat         l p = fst $ IM.findWithDefault ([], []) p (litem l)
 irememberAt l p = snd $ IM.findWithDefault ([], []) p (litem l)
 
--- Checks for the presence of actors. Does *not* check if the tile is open.
-unoccupied :: [Actor] -> Loc -> Bool
-unoccupied actors loc =
-  all (\ body -> aloc body /= loc) actors
-
 -- Check whether one location is accessible from the other.
 -- Precondition: the two locations are next to each other.
 -- Currently only implements that the target location has to be open.
@@ -121,36 +132,13 @@ accessible lvl _source target =
   in  Tile.isWalkable tgt
 
 -- check whether the location contains a door of secrecy level lower than k
-openable :: Int -> Level -> IM.IntMap Int -> Loc -> Bool
-openable k lvl le target =
-  let tgt = lvl `at` target
+openable :: Level -> SecretStrength -> Loc -> Bool
+openable lvl k target =
+  let le = lsecret lvl
+      tgt = lvl `at` target
   in Tile.hasFeature F.Openable tgt ||
      (Tile.hasFeature F.Hidden tgt &&
       le IM.! target < k)
-
-findLoc :: Level -> (Loc -> (Kind.Id TileKind) -> Bool) -> Rnd Loc
-findLoc lvl@Level{lxsize, lysize} p =
-  do
-    loc <- randomR (0, lxsize * lysize - 1)
-    let tile = lvl `at` loc
-    if p loc tile
-      then return loc
-      else findLoc lvl p
-
-findLocTry :: Int ->  -- try k times
-              Level ->
-              (Loc -> Kind.Id TileKind -> Bool) ->  -- loop until satisfied
-              (Loc -> Kind.Id TileKind -> Bool) ->  -- only try to satisfy k times
-              Rnd Loc
-findLocTry k lvl@Level{lxsize, lysize} p pTry =
-  do
-    loc <- randomR (0, lxsize * lysize - 1)
-    let tile = lvl `at` loc
-    if p loc tile && pTry loc tile
-      then return loc
-      else if k > 1
-             then findLocTry (k - 1) lvl p pTry
-             else findLoc lvl p
 
 -- Do not scatter items around, it's too much work for the player.
 dropItemsAt :: [Item] -> Loc -> Level -> Level
@@ -160,3 +148,34 @@ dropItemsAt items loc =
       adj Nothing = Just (items, [])
       adj (Just (i, ri)) = Just (joinItems items i, ri)
   in  updateIMap (IM.alter adj loc)
+
+findLoc :: TileMap -> (Loc -> (Kind.Id TileKind) -> Bool) -> Rnd Loc
+findLoc lmap p =
+  let (start, end) = Kind.bounds lmap
+      search = do
+        loc <- randomR (0, end)
+        let tile = lmap Kind.! loc
+        if p loc tile
+          then return loc
+          else search
+  in assert (start == 0) $
+     search
+
+findLocTry ::
+  Int ->  -- try to pTry only so many times
+  TileMap ->
+  (Loc -> Kind.Id TileKind -> Bool) ->  -- loop until satisfied
+  (Loc -> Kind.Id TileKind -> Bool) ->  -- only try to satisfy k times
+  Rnd Loc
+findLocTry numTries lmap p pTry =
+  let (start, end) = Kind.bounds lmap
+      search k = do
+        loc <- randomR (0, end)
+        let tile = lmap Kind.! loc
+        if p loc tile && pTry loc tile
+          then return loc
+          else if k > 1
+            then search (k - 1)
+            else findLoc lmap p
+  in assert (numTries > 0 && start == 0) $
+     search numTries

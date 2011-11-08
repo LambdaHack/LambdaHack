@@ -60,7 +60,6 @@ strategy actor
          oldState@(State{ splayer = pl
                         , stime   = time
                         , slevel  = lvl@Level{ lsmell = nsmap
-                                             , lsecret = le
                                              , lxsize } })
          per =
 --  trace (show time ++ ": " ++ show actor) $
@@ -126,10 +125,11 @@ strategy actor
     -- Monsters don't see doors more secret than that. Enforced when actually
     -- opening doors, too, so that monsters don't cheat. TODO: remove the code
     -- duplication, though.
-    openPower      = case strongestItem items "ring" of
+    openPower      = SecretStrength $
+                     case strongestItem items "ring" of
                        Just i  -> biq mk + ipower i
                        Nothing -> biq mk
-    openableHere   = openable openPower lvl le
+    openableHere   = openable lvl openPower
     onlyOpenable   = onlyMoves openableHere me
     accessibleHere = accessible lvl me
     onlySensible   = onlyMoves (\ l -> accessibleHere l || openableHere l) me

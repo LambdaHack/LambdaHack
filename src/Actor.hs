@@ -74,6 +74,11 @@ addHp extra m =
      then m
      else m{ahp = min maxHP (currentHP + extra)}
 
+-- Checks for the presence of actors. Does *not* check if the tile is open.
+unoccupied :: [Actor] -> Loc -> Bool
+unoccupied actors loc =
+  all (\ body -> aloc body /= loc) actors
+
 heroKindId :: Kind.Id ActorKind
 heroKindId = Kind.getId ((== "hero") . bname)
 

@@ -1,7 +1,7 @@
 module Kind
-  (Id, Kind.getKind, getId, frequency, foldrWithKey, boundsId,
-   Array, (!), (//), listArray)
-  where
+  ( Id, Kind.getKind, getId, frequency, foldrWithKey, boundsId
+  , Array, (!), (//), listArray, bounds
+  ) where
 
 import Data.Binary
 import qualified Data.List as L
@@ -58,4 +58,7 @@ instance (Ix.Ix i, Binary i) => Binary (Array i c) where
 (//) (Array a) l = Array $ a A.// [(i, kindId e) | (i, e) <- l]
 
 listArray :: Ix.Ix i => (i, i) -> [Id c] -> Array i c
-listArray bounds l = Array $ A.listArray bounds [(kindId e) | e <- l]
+listArray bds l = Array $ A.listArray bds [(kindId e) | e <- l]
+
+bounds :: Ix.Ix i => Array i c -> (i, i)
+bounds (Array a) = A.bounds a

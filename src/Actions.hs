@@ -167,7 +167,6 @@ continueRun dir =
     msg <- currentMessage
     ms  <- gets (lmonsters . slevel)
     hs  <- gets (lheroes . slevel)
-    le  <- gets (lsecret . slevel)
     lxsize <- gets (lxsize . slevel)
     lvl <- gets slevel
     pl  <- gets splayer
@@ -191,7 +190,7 @@ continueRun dir =
           -- TODO: even in corridors, stop if you run past an exit (rare)
           let ns = L.filter (\ x -> dirDistSq lxsize (neg dir) x > 1
                                     && (accessible lvl loc (loc `shift` x))
-                                        || openable 1 lvl le (loc `shift` x))
+                                        || openable lvl (SecretStrength 1) (loc `shift` x))
                             (moves lxsize)
               allCloseTo main = L.all (\ d -> dirDistSq lxsize main d <= 1) ns
           in  case ns of
@@ -208,7 +207,7 @@ continueRun dir =
           let ns = L.filter (\ x -> x /= dir && dirDistSq lxsize (neg dir) x > 1) (moves lxsize)
               ls = L.map (loc `shift`) ns
               as = L.filter (\ x -> accessible lvl loc x
-                                    || openable 1 lvl le x) ls
+                                    || openable lvl (SecretStrength 1) x) ls
               ts = L.map (lvl `rememberAt`) as
           in if L.any Tile.isExit ts then abort else run dir
     hop
@@ -271,7 +270,6 @@ playerCloseDoor dir = do
 actorOpenDoor :: ActorId -> Dir -> Action ()
 actorOpenDoor actor dir = do
   lvl  <- gets slevel
-  le   <- gets (lsecret . slevel)
   pl   <- gets splayer
   body <- gets (getActor actor)
   let dloc = shift (aloc body) dir  -- the location we act upon
@@ -279,13 +277,13 @@ actorOpenDoor actor dir = do
       isPlayer = actor == pl
       isVerbose = isPlayer  -- don't report enemy failures, if it's not player
       iq = biq $ Kind.getKind $ akind body
-      openPower =
+      openPower = SecretStrength $
         if isPlayer
         then 1  -- player can't open secret doors
         else case strongestItem (aitems body) "ring" of  -- TODO: hack
                Just i  -> iq + ipower i
                Nothing -> iq
-  unless (openable openPower lvl le dloc) $ neverMind isVerbose
+  unless (openable lvl openPower dloc) $ neverMind isVerbose
   if hasFeature F.Closable t
     then abortIfWith isVerbose "already open"
     else if not (hasFeature F.Closable t ||
@@ -364,7 +362,7 @@ lvlGoUp isUp =
                   -- Monsters hear that players not on the level. Cancel smell.
                   -- Reduces memory load and savefile size.
                   when (L.null hs) $
-                    modify (updateLevel (updateSMap (const IM.empty)))
+                    modify (updateLevel (updateSmell (const IM.empty)))
                   -- At this place the invariant that the player exists fails.
                   -- Change to the new level (invariant not needed).
                   lvlSwitch nln
@@ -448,11 +446,11 @@ search =
                   Nothing -> 1
         searchTile loc (slm, sle) =
           let t = lm Kind.! loc
-              k = le IM.! loc - delta
+              k = secretStrength (le IM.! loc) - delta
           in if hasFeature F.Hidden t
              then if k > 0
                   then (slm,
-                        IM.insert loc k sle)
+                        IM.insert loc (SecretStrength k) sle)
                   else ((loc, Tile.doorClosedId) : slm,
                         IM.delete loc sle)
              else (slm, sle)
