@@ -96,13 +96,14 @@ endTargetingMsg :: Action ()
 endTargetingMsg = do
   pbody  <- gets getPlayerBody
   state  <- get
+  lxsize <- gets (lxsize . slevel)
   let verb = "target"
       targetMsg = case atarget pbody of
                     TEnemy a _ll ->
                       if memActor a state
                       then objectActor $ getActor a state
                       else "a fear of the past"
-                    TLoc loc -> "location " ++ show loc
+                    TLoc loc -> "location " ++ show (fromLoc lxsize loc)
                     TCursor  -> "current cursor position continuously"
   messageAdd $ subjectActorVerb pbody verb ++ " " ++ targetMsg ++ "."
 
@@ -126,14 +127,16 @@ acceptCurrent h = do
 
 moveCursor :: Dir -> Int -> Action ()
 moveCursor dir n = do
-  sx <- gets (lxsize . slevel)
-  sy <- gets (lysize . slevel)
+  lxsize <- gets (lxsize . slevel)
+  lysize <- gets (lysize . slevel)
   let upd cursor =
-        let (nx, ny) =
-              fromLoc sx $
-              iterate (\ l -> l `shift` dir) (clocation cursor) !! n
-            cloc = (max 1 $ min nx (sx-2), max 1 $ min ny (sy-2))
-        in  cursor { clocation = toLoc sx cloc }
+        let boundedShift loc =
+              let (sx, sy) = fromLoc lxsize (loc `shift` dir)
+                  (bx, by) = (max 1 $ min sx (lxsize - 2),
+                              max 1 $ min sy (lysize - 2))
+              in toLoc lxsize (bx, by)
+            cloc = iterate boundedShift (clocation cursor) !! n
+        in cursor{ clocation = cloc }
   modify (updateCursor upd)
   doLook
 
