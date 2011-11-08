@@ -82,7 +82,8 @@ endTargeting accept = do
   returnLn <- gets (creturnLn . scursor)
   target   <- gets (atarget . getPlayerBody)
   cloc     <- gets (clocation . scursor)
-  lvlSwitch returnLn  -- return to the original level of the player
+  -- return to the original level of the player
+  modify (\ state -> state{slid = returnLn})
   modify (updateCursor (\ c -> c { ctargeting = False }))
   let isEnemy = case target of TEnemy _ _ -> True ; _ -> False
   unless isEnemy $
@@ -308,8 +309,7 @@ lvlAscend k =
         depth = Config.get config "dungeon" "depth"
     when (nln < 1 || nln > depth) $
       abortWith "no more levels in this direction"
-    lvlSwitch (LambdaCave nln)
-      >>= (assert `checkM` (k == 0 ||)) (nln, "dungeon has a cycle", k)
+    modify (\ state -> state{slid = (LambdaCave nln)})
 
 -- | Attempt a level change via up level and down level keys.
 -- Will quit the game if the player leaves the dungeon.
@@ -320,6 +320,7 @@ lvlGoUp isUp =
     targeting <- gets (ctargeting . scursor)
     pbody     <- gets getPlayerBody
     pl        <- gets splayer
+    slid      <- gets slid
     lvl       <- gets slevel
     st        <- get
     let loc = if targeting then clocation cursor else aloc pbody
@@ -344,10 +345,10 @@ lvlGoUp isUp =
             Just (nln, nloc) ->
               if targeting
                 then do
-                  lvlSwitch nln
-                    >>= assert `trueM` (nln, "stairs connect level with itself")
+                  assert (nln /= slid `blame` (nln, "stairs looped")) $
+                    modify (\ state -> state{slid = nln})
                   -- do not freely reveal the other end of the stairs
-                  lvl2 <- gets slevel  -- lvlSwitch modifies map
+                  lvl2 <- gets slevel
                   let upd cur =
                         let clocation = if isUnknown (lvl2 `rememberAt` nloc)
                                         then loc
@@ -365,8 +366,8 @@ lvlGoUp isUp =
                     modify (updateLevel (updateSmell (const IM.empty)))
                   -- At this place the invariant that the player exists fails.
                   -- Change to the new level (invariant not needed).
-                  lvlSwitch nln
-                    >>= assert `trueM` (nln, "stairs connect level with itself")
+                  assert (nln /= slid `blame` (nln, "stairs looped")) $
+                    modify (\ state -> state{slid = nln})
                   -- Add the player to the new level.
                   modify (insertActor pl pbody)
                   -- At this place the invariant is restored again.
@@ -388,8 +389,7 @@ lvlGoUp isUp =
         if targeting
         then do
           lvlAscend vdir
-          clocLn <- gets slid
-          let upd cur = cur {clocLn}
+          let upd cur = cur {clocLn = slid}
           modify (updateCursor upd)
           doLook
         else

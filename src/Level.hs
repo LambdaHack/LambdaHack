@@ -147,15 +147,13 @@ dropItemsAt items loc =
 
 findLoc :: TileMap -> (Loc -> (Kind.Id TileKind) -> Bool) -> Rnd Loc
 findLoc lmap p =
-  let (start, end) = Kind.bounds lmap
-      search = do
-        loc <- randomR (0, end)
+  let search = do
+        loc <- randomR $ Kind.bounds lmap
         let tile = lmap Kind.! loc
         if p loc tile
           then return loc
           else search
-  in assert (start == 0) $
-     search
+  in search
 
 findLocTry ::
   Int ->  -- try to pTry only so many times
@@ -164,14 +162,13 @@ findLocTry ::
   (Loc -> Kind.Id TileKind -> Bool) ->  -- only try to satisfy k times
   Rnd Loc
 findLocTry numTries lmap p pTry =
-  let (start, end) = Kind.bounds lmap
-      search k = do
-        loc <- randomR (0, end)
+  let search k = do
+        loc <- randomR $ Kind.bounds lmap
         let tile = lmap Kind.! loc
         if p loc tile && pTry loc tile
           then return loc
           else if k > 1
             then search (k - 1)
             else findLoc lmap p
-  in assert (numTries > 0 && start == 0) $
+  in assert (numTries > 0) $
      search numTries

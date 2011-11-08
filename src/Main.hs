@@ -60,7 +60,7 @@ start internalSession = do
             let gs = show g
                 c = Config.set configD "engine" "startingRandomGenerator" gs
             return (g, c)
-      let defState = defaultState dng lid sg
+      let defState = defaultState dng lid ploc sg
           state = defState{sconfig, sflavour}
           hstate = initialHeroes ploc state
       handlerToIO sess hstate msg handle

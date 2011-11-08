@@ -27,7 +27,6 @@ import Random
 import State
 import qualified Config
 import qualified Effect
-import WorldLoc
 import qualified Kind
 
 -- The effectToAction function and all it depends on.
@@ -175,7 +174,7 @@ selectPlayer actor =
         -- Don't continue an old run, if any.
         stopRunning
         -- Switch to the level.
-        lvlSwitch nln
+        modify (\ s -> s{slid = nln})
         -- Set smell display, depending on player capabilities.
         -- This also resets FOV mode.
         modify (\ s -> s { ssensory =
@@ -279,16 +278,6 @@ handleScores write status total =
     let score = H.ScoreRecord points (-time) curDate status
     (placeMsg, slideshow) <- liftIO $ H.register config write score
     messageOverlaysConfirm placeMsg slideshow
-
--- | Perform a level switch to a given level. False, if nothing to do.
-lvlSwitch :: LevelId -> Action Bool
-lvlSwitch nln = do
-  slid <- gets slid
-  if nln == slid
-    then return False
-    else do
-      modify (\ state -> state{slid = nln})
-      return True
 
 -- effectToAction does not depend on this function right now, but it might,
 -- and I know no better place to put it.

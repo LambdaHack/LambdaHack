@@ -48,11 +48,11 @@ data Cursor = Cursor
 slevel :: State -> Level
 slevel State{slid, sdungeon} = sdungeon ! slid
 
-defaultState :: Dungeon -> LevelId -> R.StdGen -> State
-defaultState dng lid g =
+defaultState :: Dungeon -> LevelId -> Loc -> R.StdGen -> State
+defaultState dng lid ploc g =
   State
     (AHero 0)  -- hack: the hero is not yet alive
-    (Cursor False levelStart zeroLoc (LambdaCave 1))
+    (Cursor False lid ploc lid)
     []
     Implicit Normal
     0
