@@ -25,8 +25,6 @@ import qualified Effect
 import qualified Tile
 import qualified Kind
 
--- import Debug.Trace
-
 {-
 Monster movement
 ----------------
@@ -56,15 +54,10 @@ and moves into the approximate direction of the hero.
 -}
 
 strategy :: ActorId -> State -> Perceptions -> Strategy (Action ())
-strategy actor
-         oldState@(State{ splayer = pl
-                        , stime   = time
-                        , slevel  = lvl@Level{ lsmell = nsmap
-                                             , lxsize } })
-         per =
---  trace (show time ++ ": " ++ show actor) $
+strategy actor oldState@State{splayer = pl, stime = time} per =
     strat
   where
+    lvl@Level{lsmell = nsmap, lxsize} = slevel oldState
     Actor { akind = ak, aloc = me, adir = ad,
             atarget = tgt, aitems = items } =
       getActor actor oldState

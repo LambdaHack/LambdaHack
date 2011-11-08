@@ -19,17 +19,15 @@ import WorldLoc
 -- All the other actor and level operations only consider the current level.
 
 -- | Finds an actor body on any level. Fails if not found.
--- Starts at current level and then from first levels,
--- to keep the dungeon lazy if the actor found.
 findActorAnyLevel :: ActorId -> State -> (LevelId, Actor)
-findActorAnyLevel actor state@State{slevel = lvl0, sdungeon} =
+findActorAnyLevel actor state@State{slid, sdungeon} =
   assert (not (absentHero actor state) `blame` actor) $
   let chk (ln, lvl) =
         fmap (\ m -> (ln, m)) $
         case actor of
           AHero n    -> IM.lookup n (lheroes lvl)
           AMonster n -> IM.lookup n (lmonsters lvl)
-  in case mapMaybe chk ((lname lvl0, lvl0) : toList sdungeon) of
+  in case mapMaybe chk (currentFirst slid sdungeon) of
     []    -> assert `failure` actor
     res:_ -> res  -- checking if res is unique would break laziness
 
@@ -46,12 +44,11 @@ getPlayerBody state =
   in snd $ findActorAnyLevel pl state
 
 -- | The list of actors and levels for all heroes in the dungeon.
--- Heroes from the current level go first. Tries to keep dungeon lazy.
 allHeroesAnyLevel :: State -> [(ActorId, LevelId)]
-allHeroesAnyLevel State{slevel, sdungeon} =
+allHeroesAnyLevel State{slid, sdungeon} =
   let one (ln, Level{lheroes}) =
         L.map (\ (i, _) -> (AHero i, ln)) (IM.assocs lheroes)
-  in L.concatMap one ((lname slevel, slevel) : toList sdungeon)
+  in L.concatMap one (currentFirst slid sdungeon)
 
 updateAnyActorBody :: ActorId -> (Actor -> Actor) -> State -> State
 updateAnyActorBody actor f state =
@@ -61,8 +58,8 @@ updateAnyActorBody actor f state =
        AMonster n -> updateAnyLevel (updateMonsters $ IM.adjust f n) ln state
 
 updateAnyLevel :: (Level -> Level) -> LevelId -> State -> State
-updateAnyLevel f ln state@(State { slevel = level, sdungeon })
-  | ln == lname level = updateLevel f state
+updateAnyLevel f ln state@State{slid, sdungeon}
+  | ln == slid = updateLevel f state
   | otherwise = updateDungeon (const $ adjust f ln sdungeon) state
 
 -- | Calculate the location of player's target.
@@ -71,7 +68,7 @@ targetToLoc visible state =
   case atarget (getPlayerBody state) of
     TLoc loc -> Just loc
     TCursor  ->
-      if lname (slevel state) == clocLn (scursor state)
+      if slid state == clocLn (scursor state)
       then Just $ clocation (scursor state)
       else Nothing  -- cursor invalid: set at a different level
     TEnemy a _ll -> do
@@ -84,17 +81,17 @@ targetToLoc visible state =
 
 -- | Checks if the actor is present on the current level.
 memActor :: ActorId -> State -> Bool
-memActor a (State{slevel}) =
+memActor a state =
   case a of
-    AHero n    -> IM.member n (lheroes slevel)
-    AMonster n -> IM.member n (lmonsters slevel)
+    AHero n    -> IM.member n (lheroes (slevel state))
+    AMonster n -> IM.member n (lmonsters (slevel state))
 
 -- | Gets actor body from the current level. Error if not found.
 getActor :: ActorId -> State -> Actor
-getActor a (State{slevel}) =
+getActor a state =
   case a of
-    AHero n    -> lheroes   slevel IM.! n
-    AMonster n -> lmonsters slevel IM.! n
+    AHero n    -> lheroes   (slevel state) IM.! n
+    AMonster n -> lmonsters (slevel state) IM.! n
 
 -- | Removes the actor, if present, from the current level.
 deleteActor :: ActorId -> State -> State
@@ -119,8 +116,8 @@ deletePlayer state@State{splayer, sparty} =
     AMonster _ -> s
 
 levelHeroList, levelMonsterList :: State -> [Actor]
-levelHeroList    State{slevel = Level{lheroes  }} = IM.elems lheroes
-levelMonsterList State{slevel = Level{lmonsters}} = IM.elems lmonsters
+levelHeroList    state = IM.elems $ lheroes   $ slevel state
+levelMonsterList state = IM.elems $ lmonsters $ slevel state
 
 -- | Finds an actor at a location on the current level. Perception irrelevant.
 locToActor :: Loc -> State -> Maybe ActorId

@@ -15,7 +15,7 @@ import State
 import qualified Feature as F
 import qualified Tile
 
-matchGenerator :: Int -> Maybe String -> LevelConfig -> LevelId -> LevelId
+matchGenerator :: Int -> Maybe String -> LevelConfig -> Bool
                   -> Rnd Level
 matchGenerator _ Nothing = rogueRoom  -- the default
 matchGenerator _ (Just "bigRoom")   = bigRoom
@@ -29,10 +29,10 @@ findGenerator config n depth =
   let ln = "LambdaCave_" ++ show n
       genName = Config.getOption config "dungeon" ln
   in matchGenerator
-       n genName (defaultLevelConfig n) (LambdaCave n) (LambdaCave depth)
+       n genName (defaultLevelConfig n) (n == depth)
 
 -- | Generate the dungeon for a new game.
-generate :: Config.CP -> Rnd (Loc, Level, Dungeon)
+generate :: Config.CP -> Rnd (Loc, LevelId, Dungeon)
 generate config =
   let depth = Config.get config "dungeon" "depth"
       gen :: R.StdGen -> Int -> (R.StdGen, (LevelId, Level))
@@ -40,24 +40,24 @@ generate config =
         let (g1, g2) = R.split g
             res = MState.evalState (findGenerator config k depth) g1
         in (g2, (LambdaCave k, res))
-      con :: R.StdGen -> ((Loc, Level, Dungeon), R.StdGen)
+      con :: R.StdGen -> ((Loc, LevelId, Dungeon), R.StdGen)
       con g =
         let (gd, levels) = L.mapAccumL gen g [1..depth]
-            (lvl, lvls) = (snd (head levels), tail levels)
-            ploc = fst (lstairs lvl)
-        in ((ploc, lvl, fromList lvls), gd)
+            ploc = fst (lstairs (snd (head levels)))
+        in ((ploc, LambdaCave 1, fromList levels), gd)
   in MState.state con
 
 whereTo :: State -> Loc -> Maybe WorldLoc
-whereTo State{sdungeon, slevel} loc =
-  let tile = slevel `at` loc
+whereTo state@State{slid, sdungeon} loc =
+  let lvl = slevel state
+      tile = lvl `at` loc
       k | Tile.hasFeature F.Climbable tile = -1
         | Tile.hasFeature F.Descendable tile = 1
         | otherwise = assert `failure` tile
-      n = levelNumber (lname slevel)
+      n = levelNumber slid
       nln = n + k
       ln = LambdaCave nln
-      (lvl, _) = getDungeonLevel ln sdungeon
+      lvlTrg = sdungeon ! ln
   in if (nln < 1)
      then Nothing
-     else Just (ln, (if k == 1 then fst else snd) (lstairs lvl))
+     else Just (ln, (if k == 1 then fst else snd) (lstairs lvlTrg))

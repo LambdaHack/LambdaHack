@@ -221,8 +221,8 @@ currentPerception = Action (\ _s _e p k _a st ms -> k st ms p)
 checkCursor :: Action () -> Action ()
 checkCursor h = do
   cursor <- gets scursor
-  level  <- gets slevel
-  if creturnLn cursor == lname level
+  slid <- gets slid
+  if creturnLn cursor == slid
     then h
     else abortWith "this command does not work on remote levels"
 

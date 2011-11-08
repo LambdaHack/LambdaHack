@@ -17,7 +17,6 @@ import Actor
 import Item
 import Content.TileKind
 import Random
-import WorldLoc
 import qualified Tile
 import qualified Feature as F
 import qualified Kind
@@ -42,8 +41,7 @@ type ItemMap = IM.IntMap ([Item], [Item])
 type TileMap = Kind.Array Loc TileKind
 
 data Level = Level
-  { lname     :: LevelId    -- TODO: remove?
-  , lheroes   :: Party      -- ^ all heroes on the level
+  { lheroes   :: Party      -- ^ all heroes on the level
   , lxsize    :: X
   , lysize    :: Y
   , lmonsters :: Party      -- ^ all monsters on the level
@@ -81,9 +79,8 @@ emptyParty :: Party
 emptyParty = IM.empty
 
 instance Binary Level where
-  put (Level nm hs sx sy ms ls le li lm lrm lme lstairs) =
+  put (Level hs sx sy ms ls le li lm lrm lme lstairs) =
         do
-          put nm
           put hs
           put sx
           put sy
@@ -99,7 +96,6 @@ instance Binary Level where
           put lme
           put lstairs
   get = do
-          nm <- get
           hs <- get
           sx <- get
           sy <- get
@@ -111,7 +107,7 @@ instance Binary Level where
           lrm <- get
           lme <- get
           lstairs <- get
-          return (Level nm hs sx sy ms ls le li lm lrm lme lstairs)
+          return (Level hs sx sy ms ls le li lm lrm lme lstairs)
 
 at, rememberAt :: Level -> Loc -> (Kind.Id TileKind)
 at         l p = lmap l Kind.! p

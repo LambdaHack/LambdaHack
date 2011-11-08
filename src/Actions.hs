@@ -60,7 +60,7 @@ saveGame =
         -- Save the game state
         state <- get
         liftIO $ Save.saveGame state
-        ln <- gets (lname . slevel)
+        ln <- gets slid
         let total = calculateTotal state
             status = H.Camping ln
         go <- handleScores False status total
@@ -301,9 +301,9 @@ actorOpenDoor actor dir = do
 lvlAscend :: Int -> Action ()
 lvlAscend k =
   do
-    level  <- gets slevel
+    slid   <- gets slid
     config <- gets sconfig
-    let n = levelNumber (lname level)
+    let n = levelNumber slid
         nln = n - k
         depth = Config.get config "dungeon" "depth"
     when (nln < 1 || nln > depth) $
@@ -388,7 +388,7 @@ lvlGoUp isUp =
         if targeting
         then do
           lvlAscend vdir
-          clocLn <- gets (lname . slevel)
+          clocLn <- gets slid
           let upd cur = cur {clocLn}
           modify (updateCursor upd)
           doLook
@@ -505,7 +505,7 @@ setCursor = do
   state <- get
   per   <- currentPerception
   ploc  <- gets (aloc . getPlayerBody)
-  clocLn <- gets (lname . slevel)
+  clocLn <- gets slid
   let upd cursor =
         let clocation = fromMaybe ploc (targetToLoc (ptvisible per) state)
         in cursor { ctargeting = True, clocation, clocLn }

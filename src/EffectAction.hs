@@ -15,7 +15,6 @@ import ActorState
 import Content.ActorKind
 import ActorAdd
 import Display hiding (display)
-import Dungeon
 import Grammar
 import Loc
 import qualified HighScores as H
@@ -151,7 +150,7 @@ discover i = do
       msg = "The " ++ obj ++ " turns out to be "
       kind = Kind.getKind ik
       alreadyIdentified = L.length (jflavour kind) == 1 ||
-                          ik `S.member` sdiscoveries state
+                          ik `S.member` sdisco state
   unless alreadyIdentified $ do
     modify (updateDiscoveries (S.insert ik))
     state2 <- get
@@ -249,9 +248,9 @@ gameOver showEndingScreens =
   do
     when showEndingScreens $ do
       state <- get
-      ln <- gets (lname . slevel)
+      slid <- gets slid
       let total = calculateTotal state
-          status = H.Killed ln
+          status = H.Killed slid
       handleScores True status total
       messageMore "Let's hope another party can save the day!"
     end
@@ -283,21 +282,13 @@ handleScores write status total =
 
 -- | Perform a level switch to a given level. False, if nothing to do.
 lvlSwitch :: LevelId -> Action Bool
-lvlSwitch nln =
-  do
-    ln <- gets (lname . slevel)
-    if nln == ln
-      then return False
-      else do
-        level <- gets slevel
-        dng   <- gets sdungeon
-        -- put back current level
-        -- (first put back, then get, in case we change to the same level!)
-        let full = putDungeonLevel level dng
-        -- get new level
-        let (new, ndng) = getDungeonLevel nln full
-        modify (\ s -> s { sdungeon = ndng, slevel = new })
-        return True
+lvlSwitch nln = do
+  slid <- gets slid
+  if nln == slid
+    then return False
+    else do
+      modify (\ state -> state{slid = nln})
+      return True
 
 -- effectToAction does not depend on this function right now, but it might,
 -- and I know no better place to put it.

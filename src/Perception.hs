@@ -66,10 +66,10 @@ actorReachesActor actor1 actor2 loc1 loc2 per pl =
 
 perception_ :: State -> Perceptions
 perception_ state@(State { splayer = pl,
-                           slevel   = lvl@Level{lheroes = hs},
                            sconfig  = config,
                            ssensory = sensory }) =
-  let mode   = Config.get config "engine" "fovMode"
+  let lvl@Level{lheroes = hs} = slevel state
+      mode   = Config.get config "engine" "fovMode"
       radius = let r = Config.get config "engine" "fovRadius"
                in if r < 1
                   then error $ "FOV radius is " ++ show r ++ ", should be >= 1"

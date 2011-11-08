@@ -76,12 +76,12 @@ objectItem state o =
   let ik = ikind o
       kind = Kind.getKind ik
       identified = L.length (jflavour kind) == 1 ||
-                   ik `S.member` sdiscoveries state
+                   ik `S.member` sdisco state
       addSpace s = if s == "" then "" else " " ++ s
       eff = effectToName (jeffect kind)
       pwr = if ipower o == 0 then "" else "(+" ++ show (ipower o) ++ ")"
       adj name = if identified
                  then name ++ addSpace eff ++ addSpace pwr
-                 else let flavour = getFlavour (sassocs state) ik
+                 else let flavour = getFlavour (sflavour state) ik
                       in  flavourToName flavour ++ " " ++ name
   in  makeObject (icount o) adj (jname kind)

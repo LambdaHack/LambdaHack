@@ -30,16 +30,16 @@ instance Binary Item where
     put ik >> put ip >> put il >> put ic
   get = liftM4 Item get get get get
 
-type Assocs = M.Map (Kind.Id ItemKind) Flavour  -- TODO: rewrite and move elsewhere
+type FlavourMap = M.Map (Kind.Id ItemKind) Flavour  -- TODO: rewrite and move elsewhere
 
 type Discoveries = S.Set (Kind.Id ItemKind)
 
 -- | Assigns flavours to item kinds. Assures no flavor is repeated,
 -- except for items with only one permitted flavour.
-rollAssocs :: Kind.Id ItemKind -> ItemKind ->
-              Rnd (Assocs, S.Set Flavour) ->
-              Rnd (Assocs, S.Set Flavour)
-rollAssocs key ik rnd =
+rollFlavourMap :: Kind.Id ItemKind -> ItemKind ->
+              Rnd (FlavourMap, S.Set Flavour) ->
+              Rnd (FlavourMap, S.Set Flavour)
+rollFlavourMap key ik rnd =
   let flavours = jflavour ik
   in if L.length flavours == 1
      then rnd
@@ -50,11 +50,11 @@ rollAssocs key ik rnd =
        return (M.insert key flavour assocs, S.delete flavour available)
 
 -- | Randomly chooses flavour for all item kinds for this game.
-dungeonAssocs :: Rnd Assocs
-dungeonAssocs =
-  liftM fst $ Kind.foldrWithKey rollAssocs (return (M.empty, S.fromList stdFlav))
+dungeonFlavourMap :: Rnd FlavourMap
+dungeonFlavourMap =
+  liftM fst $ Kind.foldrWithKey rollFlavourMap (return (M.empty, S.fromList stdFlav))
 
-getFlavour :: Assocs -> Kind.Id ItemKind -> Flavour
+getFlavour :: FlavourMap -> Kind.Id ItemKind -> Flavour
 getFlavour assocs ik =
   let kind = Kind.getKind ik
   in  case jflavour kind of
@@ -65,7 +65,7 @@ getFlavour assocs ik =
 fistKindId :: Kind.Id ItemKind
 fistKindId = Kind.getId ((== "fist") . jname)
 
-viewItem :: Kind.Id ItemKind -> Assocs -> (Char, Color.Color)
+viewItem :: Kind.Id ItemKind -> FlavourMap -> (Char, Color.Color)
 viewItem ik assocs = (jsymbol (Kind.getKind ik), flavourToColor $ getFlavour assocs ik)
 
 itemLetter :: ItemKind -> Maybe Char

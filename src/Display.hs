@@ -130,17 +130,10 @@ data ColorMode = ColorFull | ColorBW
 displayLevel ::
   ColorMode -> Session -> Perceptions -> State -> Message -> Maybe String
   -> IO Bool
-displayLevel
-  dm session per
-  state@State{ scursor = cursor
-             , stime   = time
-             , sassocs = asso
-             , slevel  = lvl@Level{ lname = ln
-                                  , lxsize = sx
-                                  , lysize = sy
-                                  , lsmell = smap } }
-  msg moverlay =
-  let Actor{akind, ahp, aloc, aitems} = getPlayerBody state
+displayLevel dm session per
+             state@State{scursor, stime, sflavour, slid} msg moverlay =
+  let lvl@Level{lxsize = sx, lysize = sy, lsmell = smap} = slevel state
+      Actor{akind, ahp, aloc, aitems} = getPlayerBody state
       ActorKind{bhp} = Kind.getKind akind
       reachable = ptreachable per
       visible   = ptvisible per
@@ -168,9 +161,9 @@ displayLevel
         let tile = lvl `lAt` loc0
             items = lvl `liAt` loc0
             sm = smelltime $ IM.findWithDefault (SmellTime 0) loc0 smap
-            sml = (sm - time) `div` 100
+            sml = (sm - stime) `div` 100
             viewActor loc Actor{akind = akind2, asymbol}
-              | loc == aloc && ln == creturnLn cursor =
+              | loc == aloc && slid == creturnLn scursor =
                   (symbol, Color.defBG)  -- highlight player
               | otherwise = (symbol, bcolor)
               where
@@ -192,10 +185,10 @@ displayLevel
                       let u = Kind.getKind tile
                       in (usymbol u, if vis then ucolor u else ucolor2 u)
                     i : _ ->
-                      Item.viewItem (ikind i) asso
+                      Item.viewItem (ikind i) sflavour
             vis = S.member loc0 visible
             rea = S.member loc0 reachable
-            bg0 = if ctargeting cursor && loc0 == clocation cursor
+            bg0 = if ctargeting scursor && loc0 == clocation scursor
                   then Color.defFG      -- highlight targeting cursor
                   else sVisBG vis rea  -- FOV debug
             reverseVideo = (snd Color.defaultAttr, fst Color.defaultAttr)
@@ -210,8 +203,8 @@ displayLevel
              Just c -> (Color.defaultAttr, c)
              _      -> (a, char)
       status =
-        take 30 (levelName ln ++ repeat ' ') ++
-        take 10 ("T: " ++ show (time `div` 10) ++ repeat ' ') ++
+        take 30 (levelName slid ++ repeat ' ') ++
+        take 10 ("T: " ++ show (stime `div` 10) ++ repeat ' ') ++
         take 10 ("$: " ++ show wealth ++ repeat ' ') ++
         take 10 ("Dmg: " ++ show damage ++ repeat ' ') ++
         take 20 ("HP: " ++ show ahp ++

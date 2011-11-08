@@ -47,9 +47,9 @@ start internalSession = do
             let gs = show g
                 c = Config.set config "engine" "dungeonRandomGenerator" gs
             return (g, c)
-      let ((ploc, lvl, dng), ag) = MState.runState (generate configD) dg
-          asso = MState.evalState dungeonAssocs ag
-      (sg, configS) <-
+      let ((ploc, lid, dng), ag) = MState.runState (generate configD) dg
+          sflavour = MState.evalState dungeonFlavourMap ag
+      (sg, sconfig) <-
         case Config.getOption configD "engine" "startingRandomGenerator" of
           Just sg ->
             return (read sg, configD)
@@ -60,8 +60,8 @@ start internalSession = do
             let gs = show g
                 c = Config.set configD "engine" "startingRandomGenerator" gs
             return (g, c)
-      let defState = defaultState dng lvl sg
-          state = defState { sconfig = configS, sassocs = asso }
+      let defState = defaultState dng lid sg
+          state = defState{sconfig, sflavour}
           hstate = initialHeroes ploc state
       handlerToIO sess hstate msg handle
     Left state ->

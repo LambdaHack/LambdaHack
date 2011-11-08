@@ -1,10 +1,9 @@
 module Dungeon
-  (Dungeon, LevelConfig,
-   defaultLevelConfig, normalLevelBound,
-   rogueRoom, bigRoom, noiseRoom,
-   putDungeonLevel, getDungeonLevel, fromList, toList, adjust
-   )
-  where
+  ( Dungeon, LevelConfig
+  , defaultLevelConfig, normalLevelBound
+  , rogueRoom, bigRoom, noiseRoom
+  , fromList, currentFirst, adjust, (!)
+  ) where
 
 import Control.Monad
 import Data.Binary
@@ -28,30 +27,30 @@ import qualified Kind
 
 -- | The complete dungeon is a map from level names to levels.
 -- We usually store all but the current level in this data structure.
-newtype Dungeon = Dungeon (M.Map LevelId Level)
+newtype Dungeon = Dungeon{dungeonLevelMap :: M.Map LevelId Level}
   deriving Show
 
 instance Binary Dungeon where
-  put dng = put (toList dng)
+  put dng = put (M.assocs (dungeonLevelMap dng))
   get = liftM fromList get
 
 -- | Create a dungeon from a list of levels.
 fromList :: [(LevelId, Level)] -> Dungeon
 fromList = Dungeon . M.fromList
 
-toList :: Dungeon -> [(LevelId, Level)]
-toList (Dungeon m) = M.assocs m
+-- | Association list corresponding to the dungeon.
+-- Starts at the supplied level id (usually the current level)
+-- to try and keep the dungeon lazy when performing searches.
+currentFirst :: LevelId -> Dungeon -> [(LevelId, Level)]
+currentFirst slevel (Dungeon m) =
+  (slevel, m M.! slevel)
+  : L.filter ((/= slevel) . fst) (M.assocs m)
 
 adjust :: (Level -> Level) -> LevelId -> Dungeon -> Dungeon
 adjust f ln (Dungeon m) = Dungeon (M.adjust f ln m)
 
--- | Extract a level from a dungeon.
-getDungeonLevel :: LevelId -> Dungeon -> (Level, Dungeon)
-getDungeonLevel ln (Dungeon dng) = (dng M.! ln, Dungeon (M.delete ln dng))
-
--- | Put a level into a dungeon.
-putDungeonLevel :: Level -> Dungeon -> Dungeon
-putDungeonLevel lvl (Dungeon dng) = Dungeon (M.insert (lname lvl) lvl dng)
+(!) :: Dungeon -> LevelId -> Level
+(!) (Dungeon m) slid = m M.! slid
 
 type Corridor = [(X, Y)]
 type Room = Area
@@ -106,9 +105,9 @@ digRoom dl (x0, y0, x1, y1) l
   in M.unionWith const (M.fromList rm) l
 
 -- | Create a level consisting of only one room. Optionally, insert some walls.
-emptyRoom :: (TileMap -> Rnd (LMap -> LMap)) -> LevelConfig -> LevelId -> LevelId
+emptyRoom :: (TileMap -> Rnd (LMap -> LMap)) -> LevelConfig -> Bool
              -> Rnd Level
-emptyRoom addRocksRnd cfg@(LevelConfig {levelBound}) nm lastNm =
+emptyRoom addRocksRnd cfg@(LevelConfig {levelBound}) isLast =
   do
     let lm1 = digRoom True (1, 1, sx-1, sy-1) (emptyLMap (sx, sy))
         (sx, sy) = levelBound
@@ -120,23 +119,23 @@ emptyRoom addRocksRnd cfg@(LevelConfig {levelBound}) nm lastNm =
             (const Tile.isBoring)
             (\ l _ -> distance (sx + 1) su l > minStairsDistance cfg)
     is <- rollItems cfg lmap1 su
-    let lm2 = if nm == lastNm
+    let lm2 = if isLast
               then lm1
               else M.insert (fromLoc (sx + 1) sd) Tile.stairsLightDownId lm1
         lm3 = M.insert (fromLoc (sx + 1) su) Tile.stairsLightUpId lm2
     addRocks <- addRocksRnd lmap1
     let lm4 = addRocks lm3
         lmap4 = listArrayCfg cfg lm4
-        level = Level nm emptyParty (sx + 1) (sy + 1) emptyParty IM.empty IM.empty (IM.fromList is) lmap4 unknown "bigroom" (su, sd)
+        level = Level emptyParty (sx + 1) (sy + 1) emptyParty IM.empty IM.empty (IM.fromList is) lmap4 unknown "bigroom" (su, sd)
     return level
 
 -- | For a bigroom level: Create a level consisting of only one, empty room.
-bigRoom :: LevelConfig -> LevelId -> LevelId -> Rnd Level
+bigRoom :: LevelConfig -> Bool -> Rnd Level
 bigRoom = emptyRoom (\ _lvl -> return id)
 
 -- | For a noiseroom level: Create a level consisting of only one room
 -- with randomly distributed pillars.
-noiseRoom :: LevelConfig -> LevelId -> LevelId -> Rnd Level
+noiseRoom :: LevelConfig -> Bool -> Rnd Level
 noiseRoom cfg =
   let addRocks lmap = do
         rs <- rollPillars cfg lmap
@@ -228,8 +227,8 @@ as follows:
     randomly chosen rooms.
 -}
 
-rogueRoom :: LevelConfig -> LevelId -> LevelId -> Rnd Level
-rogueRoom cfg@(LevelConfig {levelBound}) nm lastNm =
+rogueRoom :: LevelConfig -> Bool -> Rnd Level
+rogueRoom cfg@(LevelConfig {levelBound}) isLast =
   do
     lgrid    <- levelGrid cfg
     lminroom <- minRoomSize cfg
@@ -299,7 +298,7 @@ rogueRoom cfg@(LevelConfig {levelBound}) nm lastNm =
             (\ l _ -> distance (sx + 1) su l > minStairsDistance cfg)
     -- determine number of items, items and locations for the items
     is <- rollItems cfg lmapd su
-    let lm2 = if nm == lastNm
+    let lm2 = if isLast
               then dlmap
               else M.update (\ t ->
                               Just $ if isLit t
@@ -315,7 +314,7 @@ rogueRoom cfg@(LevelConfig {levelBound}) nm lastNm =
         meta = show allConnects
         lmap3 = listArrayCfg cfg lm3
     return $
-      Level nm emptyParty (sx + 1) (sy + 1) emptyParty IM.empty secretMap (IM.fromList is) lmap3 unknown meta (su, sd)
+      Level emptyParty (sx + 1) (sy + 1) emptyParty IM.empty secretMap (IM.fromList is) lmap3 unknown meta (su, sd)
 
 rollItems :: LevelConfig -> TileMap -> Loc -> Rnd [(Loc, ([Item], [Item]))]
 rollItems cfg@LevelConfig{levelBound = (sx, _)} lmap ploc =

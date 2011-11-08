@@ -19,8 +19,6 @@ import WorldLoc
 -- | The 'State' contains all the game state that has to be saved.
 -- In practice, we maintain extra state, but that state is state
 -- accumulated during a turn or relevant only to the current session.
--- TODO: consider changing slevel to LevelId, removing the lname field
--- and not removing the current level from the dungeon.
 data State = State
   { splayer      :: ActorId      -- ^ represents the player-controlled actor
   , scursor      :: Cursor       -- ^ cursor location and level to return to
@@ -28,10 +26,10 @@ data State = State
   , ssensory     :: SensoryMode
   , sdisplay     :: DisplayMode
   , stime        :: Time
-  , sassocs      :: Assocs       -- ^ how every item appears
-  , sdiscoveries :: Discoveries  -- ^ items (kinds) that have been discovered
+  , sflavour     :: FlavourMap   -- ^ association of flavour to items
+  , sdisco       :: Discoveries  -- ^ items (kinds) that have been discovered
   , sdungeon     :: Dungeon      -- ^ all but the current dungeon level
-  , slevel       :: Level
+  , slid         :: LevelId
   , scounter     :: (Int, Int)   -- ^ stores next hero index and monster index
   , sparty       :: IS.IntSet    -- ^ heroes in the party
   , srandom      :: R.StdGen     -- ^ current random generator
@@ -47,18 +45,21 @@ data Cursor = Cursor
   }
   deriving Show
 
-defaultState :: Dungeon -> Level -> R.StdGen -> State
-defaultState dng lvl g =
+slevel :: State -> Level
+slevel State{slid, sdungeon} = sdungeon ! slid
+
+defaultState :: Dungeon -> LevelId -> R.StdGen -> State
+defaultState dng lid g =
   State
     (AHero 0)  -- hack: the hero is not yet alive
-    (Cursor False levelStart zeroLoc (lname lvl))
+    (Cursor False levelStart zeroLoc (LambdaCave 1))
     []
     Implicit Normal
     0
     M.empty
     S.empty
     dng
-    lvl
+    lid
     (0, 0)
     IS.empty
     g
@@ -74,10 +75,10 @@ updateTime :: (Time -> Time) -> State -> State
 updateTime f s = s { stime = f (stime s) }
 
 updateDiscoveries :: (Discoveries -> Discoveries) -> State -> State
-updateDiscoveries f s = s { sdiscoveries = f (sdiscoveries s) }
+updateDiscoveries f s = s { sdisco = f (sdisco s) }
 
 updateLevel :: (Level -> Level) -> State -> State
-updateLevel f s = s { slevel = f (slevel s) }
+updateLevel f s = updateDungeon (adjust f (slid s)) s
 
 updateDungeon :: (Dungeon -> Dungeon) -> State -> State
 updateDungeon f s = s {sdungeon = f (sdungeon s)}
@@ -99,7 +100,7 @@ toggleTerrain s = s { sdisplay = case sdisplay s of Terrain 1 -> Normal
                                                     _         -> Terrain 4 }
 
 instance Binary State where
-  put (State player cursor hst sense disp time assocs discs dng lvl ct
+  put (State player cursor hst sense disp time flav disco dng lid ct
        party g config) =
     do
       put player
@@ -108,10 +109,10 @@ instance Binary State where
       put sense
       put disp
       put time
-      put assocs
-      put discs
+      put flav
+      put disco
       put dng
-      put lvl
+      put lid
       put ct
       put party
       put (show g)
@@ -124,16 +125,16 @@ instance Binary State where
       sense  <- get
       disp   <- get
       time   <- get
-      assocs <- get
-      discs  <- get
+      flav   <- get
+      disco  <- get
       dng    <- get
-      lvl    <- get
+      lid    <- get
       ct     <- get
       party  <- get
       g      <- get
       config <- get
       return
-        (State player cursor hst sense disp time assocs discs dng lvl ct
+        (State player cursor hst sense disp time flav disco dng lid ct
          party (read g) config)
 
 instance Binary Cursor where
