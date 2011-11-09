@@ -109,6 +109,7 @@ perception :: FovMode -> Loc -> Level -> Perception
 perception fovMode ploc lvl@Level{lxsize, lysize} =
   let
     -- Reachable are all fields on an unblocked path from the hero position.
+    -- The player position is visible, but not reachable (e.g. for targeting).
     reachable  = fullscan fovMode ploc lvl
     -- Everybody can see locations that are lit and are reachable.
     uniVisible = S.filter (\ loc -> Tile.isLit (lvl `at` loc)) reachable

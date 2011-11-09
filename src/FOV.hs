@@ -33,7 +33,9 @@ fullscan fovMode loc lvl@Level{lxsize} =
       S.unions $
       L.map (\ tr -> FOV.Digital.scan r tr lvl) [qtr0, qtr1, qtr2, qtr3]
     Blind ->  -- only feeling out adjacent tiles by touch
-      S.empty
+      let radius = 1
+      in S.unions $
+         L.map (\ tr -> FOV.Digital.scan radius tr lvl) [qtr0, qtr1, qtr2, qtr3]
  where
   trL = trLoc lxsize
 
