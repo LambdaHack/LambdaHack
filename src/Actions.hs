@@ -80,7 +80,7 @@ quitGame =
 endTargeting :: Bool -> Action ()
 endTargeting accept = do
   returnLn <- gets (creturnLn . scursor)
-  target   <- gets (atarget . getPlayerBody)
+  target   <- gets (btarget . getPlayerBody)
   cloc     <- gets (clocation . scursor)
   -- return to the original level of the player
   modify (\ state -> state{slid = returnLn})
@@ -88,8 +88,8 @@ endTargeting accept = do
   let isEnemy = case target of TEnemy _ _ -> True ; _ -> False
   unless isEnemy $
     if accept
-       then updatePlayerBody (\ p -> p { atarget = TLoc cloc })
-       else updatePlayerBody (\ p -> p { atarget = TCursor })
+       then updatePlayerBody (\ p -> p { btarget = TLoc cloc })
+       else updatePlayerBody (\ p -> p { btarget = TCursor })
   endTargetingMsg
 
 endTargetingMsg :: Action ()
@@ -98,7 +98,7 @@ endTargetingMsg = do
   state  <- get
   lxsize <- gets (lxsize . slevel)
   let verb = "target"
-      targetMsg = case atarget pbody of
+      targetMsg = case btarget pbody of
                     TEnemy a _ll ->
                       if memActor a state
                       then objectActor $ getActor a state
@@ -156,7 +156,7 @@ run dir = do
   if targeting
     then moveCursor dir 10
     else do
-      updatePlayerBody (\ p -> p { adir = Just dir })
+      updatePlayerBody (\ p -> p { bdir = Just dir })
       -- attacks and opening doors disallowed while running
       moveOrAttack False False pl dir
 
@@ -166,7 +166,7 @@ run dir = do
 continueRun :: Dir -> Action ()
 continueRun dir =
   do
-    loc <- gets (aloc . getPlayerBody)
+    loc <- gets (bloc . getPlayerBody)
     per <- currentPerception
     msg <- currentMessage
     ms  <- gets (lmonsters . slevel)
@@ -177,12 +177,12 @@ continueRun dir =
     let dms = case pl of
                 AMonster n -> IM.delete n ms  -- don't be afraid of yourself
                 AHero _ -> ms
-        mslocs = S.fromList (L.map aloc (IM.elems dms))
+        mslocs = S.fromList (L.map bloc (IM.elems dms))
         monstersVisible = not (S.null (mslocs `S.intersection` ptvisible per))
         newsReported    = not (L.null msg)
         tile      = lvl `rememberAt` loc  -- tile at current location
         itemsHere = not (L.null (lvl `irememberAt` loc))
-        heroThere = (loc `shift` dir) `elem` L.map aloc (IM.elems hs)
+        heroThere = (loc `shift` dir) `elem` L.map bloc (IM.elems hs)
         dirOK     = accessible lvl loc (loc `shift` dir)
         isTExit   = Tile.isExit tile
         isWalkableDark = Tile.isWalkable tile && not (Tile.isLit tile)
@@ -219,7 +219,7 @@ continueRun dir =
 ifRunning :: (Dir -> Action a) -> Action a -> Action a
 ifRunning t e =
   do
-    ad <- gets (adir . getPlayerBody)
+    ad <- gets (bdir . getPlayerBody)
     maybe e t ad
 
 -- | Update player memory.
@@ -254,7 +254,7 @@ playerCloseDoor dir = do
   pl    <- gets splayer
   body  <- gets (getActor pl)
   let hms = levelHeroList state ++ levelMonsterList state
-      dloc = shift (aloc body) dir  -- the location we act upon
+      dloc = shift (bloc body) dir  -- the location we act upon
       t = lvl `at` dloc
   if hasFeature F.Closable t
     then
@@ -276,16 +276,16 @@ actorOpenDoor actor dir = do
   lvl  <- gets slevel
   pl   <- gets splayer
   body <- gets (getActor actor)
-  let dloc = shift (aloc body) dir  -- the location we act upon
+  let dloc = shift (bloc body) dir  -- the location we act upon
       t = lvl `at` dloc
       isPlayer = actor == pl
       isVerbose = isPlayer  -- don't report enemy failures, if it's not player
-      iq = biq $ Kind.getKind $ akind body
+      iq = aiq $ Kind.getKind $ bkind body
       openPower = SecretStrength $
         if isPlayer
         then 1  -- player can't open secret doors
-        else case strongestItem (aitems body) "ring" of  -- TODO: hack
-               Just i  -> iq + ipower i
+        else case strongestItem (bitems body) "ring" of  -- TODO: hack
+               Just i  -> iq + jpower i
                Nothing -> iq
   unless (openable lvl openPower dloc) $ neverMind isVerbose
   if hasFeature F.Closable t
@@ -326,7 +326,7 @@ lvlGoUp isUp =
     slid      <- gets slid
     lvl       <- gets slevel
     st        <- get
-    let loc = if targeting then clocation cursor else aloc pbody
+    let loc = if targeting then clocation cursor else bloc pbody
         tile = lvl `at` loc
         vdir = if isUp then 1 else -1
         sdir | hasFeature F.Climbable tile = Just 1
@@ -375,7 +375,7 @@ lvlGoUp isUp =
                   modify (insertActor pl pbody)
                   -- At this place the invariant is restored again.
                   -- Land the player at the other end of the stairs.
-                  updatePlayerBody (\ p -> p { aloc = nloc })
+                  updatePlayerBody (\ p -> p { bloc = nloc })
                   -- Change the level of the player recorded in cursor.
                   modify (updateCursor (\ c -> c { creturnLn = nln }))
                   -- Bail out if anybody blocks the staircase.
@@ -405,7 +405,7 @@ fleeDungeon =
   do
     state <- get
     let total = calculateTotal state
-        items = L.concatMap aitems (levelHeroList state)
+        items = L.concatMap bitems (levelHeroList state)
     if total == 0
       then do
              go <- messageClear >> messageMoreConfirm ColorFull "Coward!"
@@ -442,10 +442,10 @@ search =
     lm     <- gets (lmap . slevel)
     le     <- gets (lsecret . slevel)
     lxsize <- gets (lxsize . slevel)
-    ploc   <- gets (aloc . getPlayerBody)
-    pitems <- gets (aitems . getPlayerBody)
+    ploc   <- gets (bloc . getPlayerBody)
+    pitems <- gets (bitems . getPlayerBody)
     let delta = case strongestItem pitems "ring" of
-                  Just i  -> 1 + ipower i
+                  Just i  -> 1 + jpower i
                   Nothing -> 1
         searchTile loc (slm, sle) =
           let t = lm Kind.! loc
@@ -466,14 +466,14 @@ search =
 -- | Start the floor targeting mode or reset the cursor location to the player.
 targetFloor :: Action ()
 targetFloor = do
-  ploc      <- gets (aloc . getPlayerBody)
-  target    <- gets (atarget . getPlayerBody)
+  ploc      <- gets (bloc . getPlayerBody)
+  target    <- gets (btarget . getPlayerBody)
   targeting <- gets (ctargeting . scursor)
   let tgt = case target of
               _ | targeting -> TLoc ploc  -- double key press: reset cursor
               TEnemy _ _ -> TCursor  -- forget enemy target, keep the cursor
               t -> t  -- keep the target from previous targeting session
-  updatePlayerBody (\ p -> p { atarget = tgt })
+  updatePlayerBody (\ p -> p { btarget = tgt })
   setCursor
 
 -- | Start the monster targeting mode. Cycle between monster targets.
@@ -484,7 +484,7 @@ targetMonster = do
   pl        <- gets splayer
   ms        <- gets (lmonsters . slevel)
   per       <- currentPerception
-  target    <- gets (atarget . getPlayerBody)
+  target    <- gets (btarget . getPlayerBody)
   targeting <- gets (ctargeting . scursor)
   let i = case target of
             TEnemy (AMonster n) _ | targeting -> n  -- try next monster
@@ -495,11 +495,11 @@ targetMonster = do
               AHero _ -> ms
       (lt, gt) = IM.split i dms
       gtlt     = IM.assocs gt ++ IM.assocs lt
-      lf = L.filter (\ (_, m) -> actorSeesLoc pl (aloc m) per (Just pl)) gtlt
+      lf = L.filter (\ (_, m) -> actorSeesLoc pl (bloc m) per (Just pl)) gtlt
       tgt = case lf of
               [] -> target  -- no monsters in sight, stick to last target
-              (na, nm) : _ -> TEnemy (AMonster na) (aloc nm)  -- pick the next
-  updatePlayerBody (\ p -> p { atarget = tgt })
+              (na, nm) : _ -> TEnemy (AMonster na) (bloc nm)  -- pick the next
+  updatePlayerBody (\ p -> p { btarget = tgt })
   setCursor
 
 -- | Set, activate and display cursor information.
@@ -507,7 +507,7 @@ setCursor :: Action ()
 setCursor = do
   state <- get
   per   <- currentPerception
-  ploc  <- gets (aloc . getPlayerBody)
+  ploc  <- gets (bloc . getPlayerBody)
   clocLn <- gets slid
   let upd cursor =
         let clocation = fromMaybe ploc (targetToLoc (ptvisible per) state)
@@ -524,11 +524,11 @@ doLook =
     state  <- get
     lvl    <- gets slevel
     per    <- currentPerception
-    target <- gets (atarget . getPlayerBody)
+    target <- gets (btarget . getPlayerBody)
     let canSee = S.member loc (ptvisible per)
         monsterMsg =
           if canSee
-          then case L.find (\ m -> aloc m == loc) (levelMonsterList state) of
+          then case L.find (\ m -> bloc m == loc) (levelMonsterList state) of
                  Just m  -> subjectActor m ++ " is here. "
                  Nothing -> ""
           else ""
@@ -561,7 +561,7 @@ moveOrAttack allowAttacks autoOpen actor dir = do
       pl    <- gets splayer
       lvl   <- gets slevel
       sm    <- gets (getActor actor)
-      let sloc = aloc sm           -- source location
+      let sloc = bloc sm           -- source location
           tloc = sloc `shift` dir  -- target location
       tgt <- gets (locToActor tloc)
       case tgt of
@@ -578,7 +578,7 @@ moveOrAttack allowAttacks autoOpen actor dir = do
         Nothing
           | accessible lvl sloc tloc -> do
               -- perform the move
-              updateAnyActor actor $ \ body -> body {aloc = tloc}
+              updateAnyActor actor $ \ body -> body {bloc = tloc}
               when (actor == pl) $
                 messageAdd $ lookAt False True state lvl tloc ""
               advanceTime actor
@@ -609,12 +609,12 @@ actorAttackActor source target = do
   per   <- currentPerception
   let groupName = "sword"
       verb = attackToVerb groupName
-      sloc = aloc sm
+      sloc = bloc sm
       -- The hand-to-hand "weapon", equivalent to +0 sword.
       h2h = Item Item.fistKindId 0 Nothing 1
-      str = strongestItem (aitems sm) groupName
+      str = strongestItem (bitems sm) groupName
       stack  = fromMaybe h2h str
-      single = stack { icount = 1 }
+      single = stack { jcount = 1 }
       -- The message describes the source part of the action.
       -- TODO: right now it also describes the victim and weapon;
       -- perhaps, when a weapon is equipped, just say "you hit" or "you miss"
@@ -636,10 +636,10 @@ attackToVerb _ = "hit"
 actorRunActor :: ActorId -> ActorId -> Action ()
 actorRunActor source target = do
   pl   <- gets splayer
-  sloc <- gets (aloc . getActor source)  -- source location
-  tloc <- gets (aloc . getActor target)  -- target location
-  updateAnyActor source $ \ m -> m { aloc = tloc }
-  updateAnyActor target $ \ m -> m { aloc = sloc }
+  sloc <- gets (bloc . getActor source)  -- source location
+  tloc <- gets (bloc . getActor target)  -- target location
+  updateAnyActor source $ \ m -> m { bloc = tloc }
+  updateAnyActor target $ \ m -> m { bloc = sloc }
   if source == pl
     then stopRunning  -- do not switch positions repeatedly
     else when (isAMonster source) $ focusIfAHero target
@@ -659,10 +659,10 @@ regenerateLevelHP =
   do
     time <- gets stime
     let upd m =
-          let ak = Kind.getKind $ akind m
-              regen = bregen ak `div`
-                      case strongestItem (aitems m) "amulet" of
-                        Just i  -> ipower i
+          let ak = Kind.getKind $ bkind m
+              regen = aregen ak `div`
+                      case strongestItem (bitems m) "amulet" of
+                        Just i  -> jpower i
                         Nothing -> 1
           in if time `mod` regen /= 0
              then m

@@ -132,7 +132,7 @@ rollItems cfg@LevelConfig{levelBound = (sx, _)} lmap ploc =
     replicateM nri $
       do
         item <- newItem (depth cfg)
-        l <- case jname (Kind.getKind (ikind item)) of
+        l <- case iname (Kind.getKind (jkind item)) of
                "sword" ->
                  -- swords generated close to monsters; MUAHAHAHA
                  findLocTry 2000 lmap

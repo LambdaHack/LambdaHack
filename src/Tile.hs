@@ -10,13 +10,13 @@ import qualified Kind
 -- TODO: remove this file
 
 wallId, openingId, floorLightId, floorDarkId, unknownId, doorOpenId, doorClosedId, doorSecretId, stairsUpId, stairsDownId :: Kind.Id TileKind
-wallId = Kind.getId (\ t -> usymbol t == '#' && (L.null $ ufeature t))
-openingId = Kind.getId (\ t -> usymbol t == '.' && kindHasFeature F.Exit t)
+wallId = Kind.getId (\ t -> tsymbol t == '#' && (L.null $ tfeature t))
+openingId = Kind.getId (\ t -> tsymbol t == '.' && kindHasFeature F.Exit t)
 floorLightId =
-  Kind.getId (\ t -> usymbol t == '.' && kindHas [F.Lit] [F.Exit] t)
+  Kind.getId (\ t -> tsymbol t == '.' && kindHas [F.Lit] [F.Exit] t)
 floorDarkId =
-  Kind.getId (\ t -> usymbol t == '.' && kindHas [] [F.Exit, F.Lit] t)
-unknownId = Kind.getId ((== ' ') . usymbol)
+  Kind.getId (\ t -> tsymbol t == '.' && kindHas [] [F.Exit, F.Lit] t)
+unknownId = Kind.getId ((== ' ') . tsymbol)
 doorOpenId = Kind.getId (kindHasFeature F.Closable)
 doorClosedId = Kind.getId (kindHasFeature F.Openable)
 doorSecretId = Kind.getId (kindHasFeature F.Hidden)
@@ -28,10 +28,10 @@ canBeSecretDoor :: Kind.Id TileKind -> Bool
 canBeSecretDoor t =
   let u = Kind.getKind t
       s = Kind.getKind doorSecretId
-  in usymbol u == usymbol s &&
-     uname u == uname s &&
-     ucolor u == ucolor s &&
-     ucolor2 u == ucolor2 s
+  in tsymbol u == tsymbol s &&
+     tname u == tname s &&
+     tcolor u == tcolor s &&
+     tcolor2 u == tcolor2 s
 
 isUnknown :: Kind.Id TileKind -> Bool
 isUnknown t = t == unknownId
@@ -40,7 +40,7 @@ isOpening :: Kind.Id TileKind -> Bool
 isOpening t = t == openingId
 
 kindHasFeature :: F.Feature -> TileKind -> Bool
-kindHasFeature f t = f `elem` ufeature t
+kindHasFeature f t = f `elem` tfeature t
 
 kindHas :: [F.Feature] -> [F.Feature] -> TileKind -> Bool
 kindHas yes no t = L.all (flip kindHasFeature t) yes &&
@@ -79,7 +79,7 @@ isExit = hasFeature F.Exit
 -- | Is a good candidate to deposit items, replace by other tiles, etc.
 isBoring :: Kind.Id TileKind -> Bool
 isBoring t =
-  let fs = ufeature (Kind.getKind t)
+  let fs = tfeature (Kind.getKind t)
       optional = [F.Exit, F.Lit]
       mandatory = [F.Walkable, F.Clear]
   in fs L.\\ optional `L.elem` L.permutations mandatory

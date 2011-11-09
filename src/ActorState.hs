@@ -65,7 +65,7 @@ updateAnyLevel f ln state@State{slid, sdungeon}
 -- | Calculate the location of player's target.
 targetToLoc :: S.Set Loc -> State -> Maybe Loc
 targetToLoc visible state =
-  case atarget (getPlayerBody state) of
+  case btarget (getPlayerBody state) of
     TLoc loc -> Just loc
     TCursor  ->
       if slid state == clocLn (scursor state)
@@ -73,7 +73,7 @@ targetToLoc visible state =
       else Nothing  -- cursor invalid: set at a different level
     TEnemy a _ll -> do
       guard $ memActor a state           -- alive and on the current level?
-      let loc = aloc (getActor a state)
+      let loc = bloc (getActor a state)
       guard $ S.member loc visible       -- visible?
       return loc
 
@@ -132,5 +132,5 @@ locToActors loc state =
     where
       getIndex (projection, injection) =
         let l  = IM.assocs $ projection $ slevel state
-            im = L.filter (\ (_i, m) -> aloc m == loc) l
+            im = L.filter (\ (_i, m) -> bloc m == loc) l
         in  fmap (injection . fst) im

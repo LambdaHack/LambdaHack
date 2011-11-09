@@ -133,8 +133,8 @@ displayLevel ::
 displayLevel dm session per
              state@State{scursor, stime, sflavour, slid} msg moverlay =
   let lvl@Level{lxsize = sx, lysize = sy, lsmell = smap} = slevel state
-      Actor{akind, ahp, aloc, aitems} = getPlayerBody state
-      ActorKind{bhp} = Kind.getKind akind
+      Actor{bkind, bhp, bloc, bitems} = getPlayerBody state
+      ActorKind{ahp} = Kind.getKind bkind
       reachable = ptreachable per
       visible   = ptvisible per
       overlay   = fromMaybe "" moverlay
@@ -151,9 +151,9 @@ displayLevel dm session per
                                       then Color.Magenta
                                       else Color.defBG
                 else \ _vis _rea -> Color.defBG
-      wealth  = L.sum $ L.map itemPrice aitems
-      damage  = case strongestItem aitems "sword" of
-                  Just sw -> 3 + ipower sw
+      wealth  = L.sum $ L.map itemPrice bitems
+      damage  = case strongestItem bitems "sword" of
+                  Just sw -> 3 + jpower sw
                   Nothing -> 3
       hs      = levelHeroList state
       ms      = levelMonsterList state
@@ -162,13 +162,13 @@ displayLevel dm session per
             items = lvl `liAt` loc0
             sm = smelltime $ IM.findWithDefault (SmellTime 0) loc0 smap
             sml = (sm - stime) `div` 100
-            viewActor loc Actor{akind = akind2, asymbol}
-              | loc == aloc && slid == creturnLn scursor =
+            viewActor loc Actor{bkind = bkind2, bsymbol}
+              | loc == bloc && slid == creturnLn scursor =
                   (symbol, Color.defBG)  -- highlight player
-              | otherwise = (symbol, bcolor)
+              | otherwise = (symbol, acolor)
               where
-                ActorKind{bsymbol, bcolor} = Kind.getKind akind2
-                symbol = fromMaybe bsymbol asymbol
+                ActorKind{asymbol, acolor} = Kind.getKind bkind2
+                symbol = fromMaybe asymbol bsymbol
             viewSmell :: Int -> Char
             viewSmell k
               | k > 9     = '*'
@@ -176,16 +176,16 @@ displayLevel dm session per
               | otherwise = Char.intToDigit k
             rainbow loc = toEnum $ loc `rem` 14 + 1
             (char, fg0) =
-              case L.find (\ m -> loc0 == Actor.aloc m) (hs ++ ms) of
+              case L.find (\ m -> loc0 == Actor.bloc m) (hs ++ ms) of
                 Just m | sOmn || vis -> viewActor loc0 m
                 _ | sSml && sml >= 0 -> (viewSmell sml, rainbow loc0)
                   | otherwise ->
                   case items of
                     [] ->
                       let u = Kind.getKind tile
-                      in (usymbol u, if vis then ucolor u else ucolor2 u)
+                      in (tsymbol u, if vis then tcolor u else tcolor2 u)
                     i : _ ->
-                      Item.viewItem (ikind i) sflavour
+                      Item.viewItem (jkind i) sflavour
             vis = S.member loc0 visible
             rea = S.member loc0 reachable
             bg0 = if ctargeting scursor && loc0 == clocation scursor
@@ -207,8 +207,8 @@ displayLevel dm session per
         take 10 ("T: " ++ show (stime `div` 10) ++ repeat ' ') ++
         take 10 ("$: " ++ show wealth ++ repeat ' ') ++
         take 10 ("Dmg: " ++ show damage ++ repeat ' ') ++
-        take 20 ("HP: " ++ show ahp ++
-                 " (" ++ show (maxDice bhp) ++ ")" ++ repeat ' ')
+        take 20 ("HP: " ++ show bhp ++
+                 " (" ++ show (maxDice ahp) ++ ")" ++ repeat ' ')
       disp n mesg = display (0, 0, sx - 1, sy - 1) session (dis n) mesg status
       msgs = splitMsg sx msg
       perf k []     = perfo k ""

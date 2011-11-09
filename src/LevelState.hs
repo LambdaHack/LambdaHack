@@ -14,7 +14,7 @@ lookAt :: Bool -> Bool -> State -> Level -> Loc -> String -> String
 lookAt detailed canSee s lvl loc msg
   | detailed  =
     let tile = lvl `rememberAt` loc
-        name = uname . Kind.getKind $ tile
+        name = tname . Kind.getKind $ tile
     in name ++ " " ++ msg ++ isd
   | otherwise = msg ++ isd
   where

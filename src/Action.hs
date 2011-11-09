@@ -238,7 +238,7 @@ updatePlayerBody f = do
 advanceTime :: ActorId -> Action ()
 advanceTime actor = do
   time <- gets stime
-  let upd m = m { atime = time + bspeed (Kind.getKind (akind m)) }
+  let upd m = m { btime = time + aspeed (Kind.getKind (bkind m)) }
   -- A hack to synchronize the whole party:
   pl <- gets splayer
   if actor == pl || isAHero actor

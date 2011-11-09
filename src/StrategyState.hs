@@ -58,28 +58,28 @@ strategy actor oldState@State{splayer = pl, stime = time} per =
     strat
   where
     lvl@Level{lsmell = nsmap, lxsize} = slevel oldState
-    Actor { akind = ak, aloc = me, adir = ad,
-            atarget = tgt, aitems = items } =
+    Actor { bkind = ak, bloc = me, bdir = ad,
+            btarget = tgt, bitems = items } =
       getActor actor oldState
     mk = Kind.getKind ak
     delState = deleteActor actor oldState
     enemyVisible a l =
       -- We assume monster sight is infravision, so light has no significance.
-      bsight mk && actorReachesActor a actor l me per Nothing ||
+      asight mk && actorReachesActor a actor l me per Nothing ||
       -- Any enemy is visible if adjacent (e. g., a monster player).
       memActor a delState && adjacent lxsize me l
     -- If no heroes on the level, monsters go at each other. TODO: let them
     -- earn XP by killing each other to make this dangerous to the player.
-    hs = L.map (AHero *** aloc) $
+    hs = L.map (AHero *** bloc) $
          IM.assocs $ lheroes $ slevel delState
-    ms = L.map (AMonster *** aloc) $
+    ms = L.map (AMonster *** bloc) $
          IM.assocs $ lmonsters $ slevel delState
     -- Below, "foe" is the hero (or a monster, or loc) chased by the actor.
     (newTgt, floc) =
       case tgt of
         TEnemy a ll | focusedMonster ->
           if memActor a delState
-          then let l = aloc $ getActor a delState
+          then let l = bloc $ getActor a delState
                in if enemyVisible a l
                   then (TEnemy a l, Just l)
                   else if isJust (snd closest) || me == ll
@@ -92,7 +92,7 @@ strategy actor oldState@State{splayer = pl, stime = time} per =
         _  -> closest
     closest =
       let hsAndTraitor = if isAMonster pl
-                         then (pl, aloc $ getPlayerBody delState) : hs
+                         then (pl, bloc $ getPlayerBody delState) : hs
                          else hs
           foes = if L.null hsAndTraitor then ms else hsAndTraitor
           -- We assume monster sight is infravision, so light has no effect.
@@ -120,13 +120,13 @@ strategy actor oldState@State{splayer = pl, stime = time} per =
     -- duplication, though.
     openPower      = SecretStrength $
                      case strongestItem items "ring" of
-                       Just i  -> biq mk + ipower i
-                       Nothing -> biq mk
+                       Just i  -> aiq mk + jpower i
+                       Nothing -> aiq mk
     openableHere   = openable lvl openPower
     onlyOpenable   = onlyMoves openableHere me
     accessibleHere = accessible lvl me
     onlySensible   = onlyMoves (\ l -> accessibleHere l || openableHere l) me
-    focusedMonster = biq mk > 10
+    focusedMonster = aiq mk > 10
     smells         =
       L.map fst $
       L.sortBy (\ (_, s1) (_, s2) -> compare s2 s1) $
@@ -146,42 +146,42 @@ strategy actor oldState@State{splayer = pl, stime = time} per =
     freqs = [applyFreq items 1, applyFreq tis 2,
              throwFreq items 2, throwFreq tis 5, towardsFreq]
     applyFreq is multi = Frequency
-      [ (benefit * multi, actionApply (jname ik) i)
+      [ (benefit * multi, actionApply (iname ik) i)
       | i <- is,
-        let ik = Kind.getKind (ikind i),
+        let ik = Kind.getKind (jkind i),
         let benefit =
-              (1 + ipower i) * Effect.effectToBenefit (jeffect ik),
+              (1 + jpower i) * Effect.effectToBenefit (ieffect ik),
         benefit > 0,
-        bsight mk || jname ik /= "scroll"]
+        asight mk || iname ik /= "scroll"]
     actionApply groupName = applyGroupItem actor (applyToVerb groupName)
-    throwFreq is multi = if not $ bsight mk then mzero else Frequency
-      [ (benefit * multi, actionThrow (jname ik) i)
+    throwFreq is multi = if not $ asight mk then mzero else Frequency
+      [ (benefit * multi, actionThrow (iname ik) i)
       | i <- is,
-        let ik = Kind.getKind (ikind i),
+        let ik = Kind.getKind (jkind i),
         let benefit =
-              - (1 + ipower i) * Effect.effectToBenefit (jeffect ik),
+              - (1 + jpower i) * Effect.effectToBenefit (ieffect ik),
         benefit > 0,
         -- Wasting swords would be too cruel to the player.
-        jname ik /= "sword"]
+        iname ik /= "sword"]
     actionThrow groupName =
       zapGroupItem actor (fromJust floc) (zapToVerb groupName)
     towardsFreq =
       let freqs2 = runStrategy $ fromDir False moveTowards
-      in  if bsight mk && not (L.null freqs2)
+      in  if asight mk && not (L.null freqs2)
           then scale 30 $ head freqs2
           else mzero
     moveTowards = onlySensible $ onlyNoMs (towardsFoe moveFreely)
     moveAround =
       onlySensible $
-        (if bsight mk then onlyNoMs else id) $
-          bsmell mk .=> L.foldr ((.|) . return) reject smells
+        (if asight mk then onlyNoMs else id) $
+          asmell mk .=> L.foldr ((.|) . return) reject smells
           .| onlyOpenable moveFreely
           .| moveFreely
     moveFreely = onlyLoot moveRandomly
                  .| onlyExit (onlyKeepsDir 2 moveRandomly)
-                 .| biq mk > 15 .=> onlyKeepsDir 0 moveRandomly
-                 .| biq mk > 10 .=> onlyKeepsDir 1 moveRandomly
-                 .| biq mk > 5  .=> onlyKeepsDir 2 moveRandomly
+                 .| aiq mk > 15 .=> onlyKeepsDir 0 moveRandomly
+                 .| aiq mk > 10 .=> onlyKeepsDir 1 moveRandomly
+                 .| aiq mk > 5  .=> onlyKeepsDir 2 moveRandomly
                  .| onlyKeepsDir_9 moveRandomly
                  .| moveRandomly
     onlyMoves :: (Loc -> Bool) -> Loc -> Strategy Dir -> Strategy Dir
@@ -192,7 +192,7 @@ strategy actor oldState@State{splayer = pl, stime = time} per =
 dirToAction :: ActorId -> Target -> Bool -> Dir -> Action ()
 dirToAction actor tgt allowAttacks dir = do
   -- set new direction
-  updateAnyActor actor $ \ m -> m { adir = Just dir, atarget = tgt }
+  updateAnyActor actor $ \ m -> m { bdir = Just dir, btarget = tgt }
   -- perform action
   tryWith (advanceTime actor) $
     -- if the following action aborts, we just advance the time and continue

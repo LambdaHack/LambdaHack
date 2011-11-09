@@ -74,7 +74,7 @@ perception_ state@(State { splayer = pl,
                in if r < 1
                   then error $ "FOV radius is " ++ show r ++ ", should be >= 1"
                   else r
-      fovMode m = if not $ bsight $ Kind.getKind $ akind m
+      fovMode m = if not $ asight $ Kind.getKind $ bkind m
                   then Blind
                   else
         -- terrible, temporary hack
@@ -93,9 +93,9 @@ perception_ state@(State { splayer = pl,
       -- Perception for a player-controlled monster on the current level.
       pper = if isAMonster pl && memActor pl state
              then let m = getPlayerBody state
-                  in Just $ perception (fovMode m) (aloc m) lvl
+                  in Just $ perception (fovMode m) (bloc m) lvl
              else Nothing
-      pers = IM.map (\ h -> perception (fovMode h) (aloc h) lvl) hs
+      pers = IM.map (\ h -> perception (fovMode h) (bloc h) lvl) hs
       lpers = maybeToList pper ++ IM.elems pers
       reachable = S.unions (L.map preachable lpers)
       visible = S.unions (L.map pvisible lpers)

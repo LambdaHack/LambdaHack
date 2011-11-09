@@ -15,18 +15,18 @@ import Random
 -- the value of the item for shops, treasure chests, artifact set rebalancing,
 -- etc., so if we make jpower complex, the value computation gets complex too.
 data ItemKind = ItemKind
-  { jsymbol  :: !Char       -- ^ map symbol
-  , jflavour :: ![Flavour]  -- ^ possible flavours
-  , jname    :: !String     -- ^ group name
-  , jeffect  :: !Effect     -- ^ the effect when activated
-  , jcount   :: !RollQuad   -- ^ created in that quantify
-  , jfreq    :: !Int        -- ^ created that often
-  , jpower   :: !RollQuad   -- ^ created with that power
+  { isymbol  :: !Char       -- ^ map symbol
+  , iflavour :: ![Flavour]  -- ^ possible flavours
+  , iname    :: !String     -- ^ group name
+  , ieffect  :: !Effect     -- ^ the effect when activated
+  , icount   :: !RollQuad   -- ^ created in that quantify
+  , ifreq    :: !Int        -- ^ created that often
+  , ipower   :: !RollQuad   -- ^ created with that power
   }
   deriving (Show, Eq, Ord)
 
 instance Content.Content.Content ItemKind where
-  getFreq = jfreq
+  getFreq = ifreq
   content =
     [amulet, dart, gem1, gem2, gem3, gem4, gold, potion1, potion2, potion3, ring, scroll1, scroll2, sword, fist, wand]
 
@@ -37,117 +37,117 @@ gem, potion, scroll :: ItemKind  -- generic templates
 -- rollQuad (a, b, x, y) = a * roll b + (lvl * x * roll y) / 10
 
 amulet = ItemKind
-  { jsymbol  = '"'
-  , jflavour = [(BrGreen, True)]
-  , jname    = "amulet"
-  , jeffect  = Regneration
-  , jcount   = intToQuad 1
-  , jfreq    = 10
-  , jpower   = (2, 1, 2, 2)
+  { isymbol  = '"'
+  , iflavour = [(BrGreen, True)]
+  , iname    = "amulet"
+  , ieffect  = Regneration
+  , icount   = intToQuad 1
+  , ifreq    = 10
+  , ipower   = (2, 1, 2, 2)
   }
 dart = ItemKind
-  { jsymbol  = ')'
-  , jflavour = [(Yellow, False)]
-  , jname    = "dart"
-  , jeffect  = Wound (1, 1)
-  , jcount   = (3, 3, 0, 0)
-  , jfreq    = 30
-  , jpower   = intToQuad 0
+  { isymbol  = ')'
+  , iflavour = [(Yellow, False)]
+  , iname    = "dart"
+  , ieffect  = Wound (1, 1)
+  , icount   = (3, 3, 0, 0)
+  , ifreq    = 30
+  , ipower   = intToQuad 0
   }
 gem = ItemKind
-  { jsymbol  = '*'
-  , jflavour = zipPlain brightCol  -- natural, so not fancy
-  , jname    = "gem"
-  , jeffect  = NoEffect
-  , jcount   = intToQuad 0
-  , jfreq    = 20  -- x4, but rare on shallow levels
-  , jpower   = intToQuad 0
+  { isymbol  = '*'
+  , iflavour = zipPlain brightCol  -- natural, so not fancy
+  , iname    = "gem"
+  , ieffect  = NoEffect
+  , icount   = intToQuad 0
+  , ifreq    = 20  -- x4, but rare on shallow levels
+  , ipower   = intToQuad 0
   }
 gem1 = gem
-  { jcount   = (1, 1, 0, 0)  -- appears on lvl 1
+  { icount   = (1, 1, 0, 0)  -- appears on lvl 1
   }
 gem2 = gem
-  { jcount   = (0, 0, 2, 1)  -- appears on lvl 5, doubled on lvl 10
+  { icount   = (0, 0, 2, 1)  -- appears on lvl 5, doubled on lvl 10
   }
 gem3 = gem
-  { jcount   = (0, 0, 1, 1)  -- appears on lvl 10
+  { icount   = (0, 0, 1, 1)  -- appears on lvl 10
   }
 gem4 = gem
-  { jcount   = (0, 0, 1, 1)  -- appears on lvl 10
+  { icount   = (0, 0, 1, 1)  -- appears on lvl 10
   }
 gold = ItemKind
-  { jsymbol  = '$'
-  , jflavour = [(BrYellow, False)]
-  , jname    = "gold piece"
-  , jeffect  = NoEffect
-  , jcount   = (0, 0, 10, 10)
-  , jfreq    = 80
-  , jpower   = intToQuad 0
+  { isymbol  = '$'
+  , iflavour = [(BrYellow, False)]
+  , iname    = "gold piece"
+  , ieffect  = NoEffect
+  , icount   = (0, 0, 10, 10)
+  , ifreq    = 80
+  , ipower   = intToQuad 0
   }
 potion = ItemKind
-  { jsymbol  = '!'
-  , jflavour = zipFancy stdCol
-  , jname    = "potion"
-  , jeffect  = NoEffect
-  , jcount   = intToQuad 1
-  , jfreq    = 10
-  , jpower   = intToQuad 0
+  { isymbol  = '!'
+  , iflavour = zipFancy stdCol
+  , iname    = "potion"
+  , ieffect  = NoEffect
+  , icount   = intToQuad 1
+  , ifreq    = 10
+  , ipower   = intToQuad 0
   }
 potion1 = potion
-  { jeffect  = ApplyPerfume
+  { ieffect  = ApplyPerfume
   }
 potion2 = potion
-  { jeffect  = Heal
-  , jpower   = (10, 1, 0, 0)
+  { ieffect  = Heal
+  , ipower   = (10, 1, 0, 0)
   }
 potion3 = potion
-  { jeffect  = Wound (0, 0)
-  , jpower   = (10, 1, 0, 0)
+  { ieffect  = Wound (0, 0)
+  , ipower   = (10, 1, 0, 0)
   }
 ring = ItemKind
-  { jsymbol  = '='
-  , jflavour = [(White, False)]
-  , jname    = "ring"
-  , jeffect  = Searching
-  , jcount   = intToQuad 1
-  , jfreq    = 10
-  , jpower   = (1, 1, 2, 2)
+  { isymbol  = '='
+  , iflavour = [(White, False)]
+  , iname    = "ring"
+  , ieffect  = Searching
+  , icount   = intToQuad 1
+  , ifreq    = 10
+  , ipower   = (1, 1, 2, 2)
   }
 scroll = ItemKind
-  { jsymbol  = '?'
-  , jflavour = zipFancy darkCol  -- arcane and old
-  , jname    = "scroll"
-  , jeffect  = NoEffect
-  , jcount   = intToQuad 1
-  , jfreq    = 10
-  , jpower   = intToQuad 0
+  { isymbol  = '?'
+  , iflavour = zipFancy darkCol  -- arcane and old
+  , iname    = "scroll"
+  , ieffect  = NoEffect
+  , icount   = intToQuad 1
+  , ifreq    = 10
+  , ipower   = intToQuad 0
   }
 scroll1 = scroll
-  { jeffect  = SummonFriend
-  , jfreq    = 20
+  { ieffect  = SummonFriend
+  , ifreq    = 20
   }
 scroll2 = scroll
-  { jeffect  = SummonEnemy
+  { ieffect  = SummonEnemy
   }
 sword = ItemKind
-  { jsymbol  = ')'
-  , jflavour = [(BrCyan, False)]
-  , jname    = "sword"
-  , jeffect  = Wound (3, 1)
-  , jcount   = intToQuad 1
-  , jfreq    = 60
-  , jpower   = (1, 2, 4, 2)
+  { isymbol  = ')'
+  , iflavour = [(BrCyan, False)]
+  , iname    = "sword"
+  , ieffect  = Wound (3, 1)
+  , icount   = intToQuad 1
+  , ifreq    = 60
+  , ipower   = (1, 2, 4, 2)
   }
 fist = sword
-  { jname    = "fist"
-  , jfreq    = 0  -- Does not appear randomly in the dungeon.
+  { iname    = "fist"
+  , ifreq    = 0  -- Does not appear randomly in the dungeon.
   }
 wand = ItemKind
-  { jsymbol  = '/'
-  , jflavour = [(BrRed, True)]
-  , jname    = "wand"
-  , jeffect  = Dominate
-  , jcount   = intToQuad 1
-  , jfreq    = 10
-  , jpower   = intToQuad 0
+  { isymbol  = '/'
+  , iflavour = [(BrRed, True)]
+  , iname    = "wand"
+  , ieffect  = Dominate
+  , icount   = intToQuad 1
+  , ifreq    = 10
+  , ipower   = intToQuad 0
   }

@@ -36,7 +36,7 @@ makeObject n adj obj = show n ++ " " ++ adj (suffixS obj)
 
 -- | How to refer to an actor in object position of a sentence.
 objectActor :: Actor -> String
-objectActor a = fromMaybe (bname $ Kind.getKind $ akind a) (aname a)
+objectActor a = fromMaybe (aname $ Kind.getKind $ bkind a) (bname a)
 
 -- | How to refer to an actor in subject position of a sentence.
 subjectActor :: Actor -> String
@@ -73,15 +73,15 @@ subjCompoundVerbIObj state m v p o add =
 
 objectItem :: State -> Item -> String
 objectItem state o =
-  let ik = ikind o
+  let ik = jkind o
       kind = Kind.getKind ik
-      identified = L.length (jflavour kind) == 1 ||
+      identified = L.length (iflavour kind) == 1 ||
                    ik `S.member` sdisco state
       addSpace s = if s == "" then "" else " " ++ s
-      eff = effectToName (jeffect kind)
-      pwr = if ipower o == 0 then "" else "(+" ++ show (ipower o) ++ ")"
+      eff = effectToName (ieffect kind)
+      pwr = if jpower o == 0 then "" else "(+" ++ show (jpower o) ++ ")"
       adj name = if identified
                  then name ++ addSpace eff ++ addSpace pwr
                  else let flavour = getFlavour (sflavour state) ik
                       in  flavourToName flavour ++ " " ++ name
-  in  makeObject (icount o) adj (jname kind)
+  in  makeObject (jcount o) adj (iname kind)

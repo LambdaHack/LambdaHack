@@ -37,7 +37,7 @@ nearbyFreeLoc origin state =
       ms = levelMonsterList state
       places = origin : L.nub (concatMap (surroundings lxsize lysize) places)
       good loc = Tile.isWalkable (lvl `at` loc)
-                 && loc `L.notElem` L.map aloc (hs ++ ms)
+                 && loc `L.notElem` L.map bloc (hs ++ ms)
   in  fromMaybe (assert `failure` "too crowded map") $ L.find good places
 
 -- Adding heroes
@@ -104,11 +104,11 @@ rollMonster state = do
       -- in adjacent and unexpected places
       loc <- findLocTry 2000 (lmap lvl)
              (\ l t -> Tile.isWalkable t
-                       && l `L.notElem` L.map aloc (hs ++ ms))
+                       && l `L.notElem` L.map bloc (hs ++ ms))
              (\ l t -> not (Tile.isLit t)  -- try a dark, distant place first
                        && L.all (\ pl -> distance
                                            (lxsize lvl)
-                                           (aloc pl) l > 30) hs)
+                                           (bloc pl) l > 30) hs)
       (mk, k) <- frequency Kind.frequency
-      hp <- rollDice $ bhp k
+      hp <- rollDice $ ahp k
       return $ addMonster mk hp loc state

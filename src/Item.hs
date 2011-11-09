@@ -18,10 +18,10 @@ import Flavour
 import qualified Kind
 
 data Item = Item
-  { ikind   :: !(Kind.Id ItemKind)
-  , ipower  :: !Int         -- TODO: see the TODO about jpower
-  , iletter :: Maybe Char  -- ^ inventory identifier
-  , icount  :: !Int
+  { jkind   :: !(Kind.Id ItemKind)
+  , jpower  :: !Int         -- TODO: see the TODO about jpower
+  , jletter :: Maybe Char  -- ^ inventory identifier
+  , jcount  :: !Int
   }
   deriving Show
 
@@ -40,7 +40,7 @@ rollFlavourMap :: Kind.Id ItemKind -> ItemKind ->
               Rnd (FlavourMap, S.Set Flavour) ->
               Rnd (FlavourMap, S.Set Flavour)
 rollFlavourMap key ik rnd =
-  let flavours = jflavour ik
+  let flavours = iflavour ik
   in if L.length flavours == 1
      then rnd
      else do
@@ -57,29 +57,29 @@ dungeonFlavourMap =
 getFlavour :: FlavourMap -> Kind.Id ItemKind -> Flavour
 getFlavour assocs ik =
   let kind = Kind.getKind ik
-  in  case jflavour kind of
+  in  case iflavour kind of
         []  -> assert `failure` (assocs, ik, kind)
         [f] -> f
         _:_ -> assocs M.! ik
 
 fistKindId :: Kind.Id ItemKind
-fistKindId = Kind.getId ((== "fist") . jname)
+fistKindId = Kind.getId ((== "fist") . iname)
 
 viewItem :: Kind.Id ItemKind -> FlavourMap -> (Char, Color.Color)
-viewItem ik assocs = (jsymbol (Kind.getKind ik), flavourToColor $ getFlavour assocs ik)
+viewItem ik assocs = (isymbol (Kind.getKind ik), flavourToColor $ getFlavour assocs ik)
 
 itemLetter :: ItemKind -> Maybe Char
-itemLetter ik = if jsymbol ik == '$' then Just '$' else Nothing
+itemLetter ik = if isymbol ik == '$' then Just '$' else Nothing
 
 -- | Generate an item.
 newItem :: Int -> Rnd Item
 newItem lvl = do
   (ikChosen, kind) <- frequency Kind.frequency
-  count <- rollQuad lvl (jcount kind)
+  count <- rollQuad lvl (icount kind)
   if count == 0
     then newItem lvl  -- Rare item; beware of inifite loops.
     else do
-      power <- rollQuad lvl (jpower kind)
+      power <- rollQuad lvl (ipower kind)
       return $ Item ikChosen power (itemLetter kind) count
 
 -- | Assigns a letter to an item, for inclusion
@@ -91,7 +91,7 @@ assignLetter r c is =
       Just l | l `L.elem` allowed -> Just l
       _ -> listToMaybe free
   where
-    current    = S.fromList (mapMaybe iletter is)
+    current    = S.fromList (mapMaybe jletter is)
     allLetters = ['a'..'z'] ++ ['A'..'Z']
     candidates = take (length allLetters) $
                    drop (fromJust (L.findIndex (==c) allLetters)) $
@@ -147,8 +147,8 @@ joinItem :: Item -> [Item] -> (Item, [Item])
 joinItem i is =
   case findItem (equalItemIdentity i) is of
     Nothing     -> (i, i : is)
-    Just (j,js) -> let n = i { icount = icount i + icount j,
-                               iletter = mergeLetter (iletter j) (iletter i) }
+    Just (j,js) -> let n = i { jcount = jcount i + jcount j,
+                               jletter = mergeLetter (jletter j) (jletter i) }
                    in (n, n : js)
 
 -- | Removes an item from a list of items.
@@ -156,20 +156,20 @@ joinItem i is =
 removeItemBy :: (Item -> Item -> Bool) -> Item -> [Item] -> [Item]
 removeItemBy eq i = concatMap $ \ x ->
                     if eq i x
-                      then let remaining = icount x - icount i
+                      then let remaining = jcount x - jcount i
                            in if remaining > 0
-                              then [x { icount = remaining }]
+                              then [x { jcount = remaining }]
                               else []
                       else [x]
 
 equalItemIdentity :: Item -> Item -> Bool
-equalItemIdentity i1 i2 = ipower i1 == ipower i2 && ikind i1 == ikind i2
+equalItemIdentity i1 i2 = jpower i1 == jpower i2 && jkind i1 == jkind i2
 
 removeItemByIdentity :: Item -> [Item] -> [Item]
 removeItemByIdentity = removeItemBy equalItemIdentity
 
 equalItemLetter :: Item -> Item -> Bool
-equalItemLetter = (==) `on` iletter
+equalItemLetter = (==) `on` jletter
 
 removeItemByLetter :: Item -> [Item] -> [Item]
 removeItemByLetter = removeItemBy equalItemLetter
@@ -185,15 +185,15 @@ findItem p = findItem' []
 
 strongestItem :: [Item] -> String -> Maybe Item
 strongestItem is groupName =
-  let cmp = comparing ipower
-      igs = L.filter (\ i -> jname (Kind.getKind (ikind i)) == groupName) is
+  let cmp = comparing jpower
+      igs = L.filter (\ i -> iname (Kind.getKind (jkind i)) == groupName) is
   in  case igs of
         [] -> Nothing
         _  -> Just $ L.maximumBy cmp igs
 
 itemPrice :: Item -> Int
 itemPrice i =
-  case jname (Kind.getKind (ikind i)) of
-    "gold piece" -> icount i
+  case iname (Kind.getKind (jkind i)) of
+    "gold piece" -> jcount i
     "gem" -> 100
     _ -> 0

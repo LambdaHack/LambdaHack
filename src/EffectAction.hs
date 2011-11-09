@@ -44,9 +44,9 @@ effectToAction :: Effect.Effect -> Int -> ActorId -> ActorId -> Int ->
                   Action (Bool, String)
 effectToAction Effect.NoEffect _ _ _ _ = nullEffect
 effectToAction Effect.Heal _ _source target power = do
-  let bhpMax m = maxDice (bhp $ Kind.getKind $ akind m)
+  let bhpMax m = maxDice (ahp $ Kind.getKind $ bkind m)
   tm <- gets (getActor target)
-  if ahp tm >= bhpMax tm || power <= 0
+  if bhp tm >= bhpMax tm || power <= 0
     then nullEffect
     else do
       focusIfAHero target
@@ -57,7 +57,7 @@ effectToAction (Effect.Wound nDm) verbosity source target power = do
   if n + power <= 0 then nullEffect else do
     focusIfAHero target
     tm <- gets (getActor target)
-    let newHP  = ahp tm - n - power
+    let newHP  = bhp tm - n - power
         killed = newHP <= 0
         msg
           | source == target =  -- a potion of wounding, etc.
@@ -71,10 +71,10 @@ effectToAction (Effect.Wound nDm) verbosity source target power = do
             subjectActorVerb tm "lose" ++
               " " ++ show (n + power) ++ "HP."
           | otherwise = subjectActorVerb tm "hiss" ++ " in pain."
-    updateAnyActor target $ \ m -> m { ahp = newHP }  -- Damage the target.
+    updateAnyActor target $ \ m -> m { bhp = newHP }  -- Damage the target.
     when killed $ do
       -- Place the actor's possessions on the map.
-      modify (updateLevel (dropItemsAt (aitems tm) (aloc tm)))
+      modify (updateLevel (dropItemsAt (bitems tm) (bloc tm)))
       -- Clean bodies up.
       pl <- gets splayer
       if target == pl
@@ -87,21 +87,21 @@ effectToAction Effect.Dominate _ source target _power =
     selectPlayer target
       >>= assert `trueM` (source, target, "player dominates himself")
     -- Prevent AI from getting a few free moves until new player ready.
-    updatePlayerBody (\ m -> m { atime = 0})
+    updatePlayerBody (\ m -> m { btime = 0})
     display
     return (True, "")
   else nullEffect
 effectToAction Effect.SummonFriend _ source target power = do
   tm <- gets (getActor target)
   if isAHero source
-    then summonHeroes (1 + power) (aloc tm)
-    else summonMonsters (1 + power) (aloc tm)
+    then summonHeroes (1 + power) (bloc tm)
+    else summonMonsters (1 + power) (bloc tm)
   return (True, "")
 effectToAction Effect.SummonEnemy _ source target power = do
   tm <- gets (getActor target)
   if not $ isAHero source  -- a trick: monster player will summon a hero
-    then summonHeroes (1 + power) (aloc tm)
-    else summonMonsters (1 + power) (aloc tm)
+    then summonHeroes (1 + power) (bloc tm)
+    else summonMonsters (1 + power) (bloc tm)
   return (True, "")
 effectToAction Effect.ApplyPerfume _ source target _ =
   if source == target
@@ -125,13 +125,13 @@ itemEffectAction :: Int -> ActorId -> ActorId -> Item -> Action Bool
 itemEffectAction verbosity source target item = do
   tm  <- gets (getActor target)
   per <- currentPerception
-  let effect = jeffect $ Kind.getKind $ ikind item
+  let effect = ieffect $ Kind.getKind $ jkind item
   -- The message describes the target part of the action.
-  (b, msg) <- effectToAction effect verbosity source target (ipower item)
+  (b, msg) <- effectToAction effect verbosity source target (jpower item)
   -- Determine how the player perceives the event.
   -- TODO: factor it out as a function messageActor
   -- and messageActorVerb (incorporating subjectActorVerb).
-  if aloc tm `S.member` ptvisible per
+  if bloc tm `S.member` ptvisible per
      then messageAdd msg
      else unless b $
             -- victim is not seen and but somethig interestng happens
@@ -144,11 +144,11 @@ itemEffectAction verbosity source target item = do
 discover :: Item -> Action ()
 discover i = do
   state <- get
-  let ik = ikind i
+  let ik = jkind i
       obj = unwords $ tail $ words $ objectItem state i
       msg = "The " ++ obj ++ " turns out to be "
       kind = Kind.getKind ik
-      alreadyIdentified = L.length (jflavour kind) == 1 ||
+      alreadyIdentified = L.length (iflavour kind) == 1 ||
                           ik `S.member` sdisco state
   unless alreadyIdentified $ do
     modify (updateDiscoveries (S.insert ik))
@@ -178,8 +178,8 @@ selectPlayer actor =
         -- Set smell display, depending on player capabilities.
         -- This also resets FOV mode.
         modify (\ s -> s { ssensory =
-                             if bsmell $ Kind.getKind $
-                                akind pbody
+                             if asmell $ Kind.getKind $
+                                bkind pbody
                              then Smell
                              else Implicit })
         -- Announce.
@@ -207,7 +207,7 @@ summonHeroes n loc =
 summonMonsters :: Int -> Loc -> Action ()
 summonMonsters n loc = do
   (mk, k) <- rndToAction $ frequency Kind.frequency
-  hp <- rndToAction $ rollDice $ bhp k
+  hp <- rndToAction $ rollDice $ ahp k
   modify (\ state ->
            iterate (addMonster mk hp loc) state !! n)
 
@@ -222,7 +222,7 @@ checkPartyDeath =
     pl     <- gets splayer
     pbody  <- gets getPlayerBody
     config <- gets sconfig
-    when (ahp pbody <= 0) $ do  -- TODO: change to guard? define mzero? Why are the writes to the files performed when I call abort later? That probably breaks the laws of MonadPlus.
+    when (bhp pbody <= 0) $ do  -- TODO: change to guard? define mzero? Why are the writes to the files performed when I call abort later? That probably breaks the laws of MonadPlus.
       go <- messageMoreConfirm ColorBW $
               subjectActorVerb pbody "die" ++ "."
       history  -- Prevent the messages from being repeated.
@@ -257,7 +257,7 @@ gameOver showEndingScreens =
 -- | Calculate loot's worth for heroes on the current level.
 calculateTotal :: State -> Int
 calculateTotal s =
-  L.sum $ L.map itemPrice $ L.concatMap aitems (levelHeroList s)
+  L.sum $ L.map itemPrice $ L.concatMap bitems (levelHeroList s)
 
 -- | Handle current score and display it with the high scores. Scores
 -- should not be shown during the game,
@@ -285,14 +285,14 @@ displayItems :: Message -> Bool -> [Item] -> Action Bool
 displayItems msg sorted is = do
   state <- get
   let inv = unlines $
-            L.map (\ i -> letterLabel (iletter i) ++ objectItem state i ++ " ")
-              ((if sorted then L.sortBy (cmpLetter' `on` iletter) else id) is)
+            L.map (\ i -> letterLabel (jletter i) ++ objectItem state i ++ " ")
+              ((if sorted then L.sortBy (cmpLetter' `on` jletter) else id) is)
   let ovl = inv ++ more
   messageReset msg
   overlay ovl
 
 stopRunning :: Action ()
-stopRunning = updatePlayerBody (\ p -> p { adir = Nothing })
+stopRunning = updatePlayerBody (\ p -> p { bdir = Nothing })
 
 -- | Store current message in the history and reset current message.
 history :: Action ()

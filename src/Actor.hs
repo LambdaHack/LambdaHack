@@ -16,16 +16,16 @@ import Random
 -- of properties form ActorKind, the intention is they may be modified
 -- temporarily, but tend to return to the original value over time. E.g., HP.
 data Actor = Actor
-  { akind   :: !(Kind.Id ActorKind)  -- ^ the kind of the actor
-  , aname   :: !(Maybe String)  -- ^ individual name
-  , asymbol :: !(Maybe Char)    -- ^ individual map symbol
-  , ahp     :: !Int             -- ^ current hit pints
-  , adir    :: !(Maybe Dir)     -- ^ the direction of running
-  , atarget :: Target           -- ^ the target for distance attacks and AI
-  , aloc    :: !Loc             -- ^ current location
-  , aitems  :: [Item]           -- ^ inventory
-  , aletter :: !Char            -- ^ next inventory letter
-  , atime   :: !Time            -- ^ time of next action
+  { bkind   :: !(Kind.Id ActorKind)  -- ^ the kind of the actor
+  , bname   :: !(Maybe String)  -- ^ individual name
+  , bsymbol :: !(Maybe Char)    -- ^ individual map symbol
+  , bhp     :: !Int             -- ^ current hit pints
+  , bdir    :: !(Maybe Dir)     -- ^ the direction of running
+  , btarget :: Target           -- ^ the target for distance attacks and AI
+  , bloc    :: !Loc             -- ^ current location
+  , bitems  :: [Item]           -- ^ inventory
+  , bletter :: !Char            -- ^ next inventory letter
+  , btime   :: !Time            -- ^ time of next action
   }
   deriving Show
 
@@ -68,19 +68,19 @@ isAMonster = not . isAHero
 addHp :: Int -> Actor -> Actor
 addHp extra m =
   assert (extra >= 0 `blame` extra) $
-  let maxHP = maxDice (bhp $ Kind.getKind $ akind m)
-      currentHP = ahp m
+  let maxHP = maxDice (ahp $ Kind.getKind $ bkind m)
+      currentHP = bhp m
   in if currentHP > maxHP
      then m
-     else m{ahp = min maxHP (currentHP + extra)}
+     else m{bhp = min maxHP (currentHP + extra)}
 
 -- Checks for the presence of actors. Does *not* check if the tile is open.
 unoccupied :: [Actor] -> Loc -> Bool
 unoccupied actors loc =
-  all (\ body -> aloc body /= loc) actors
+  all (\ body -> bloc body /= loc) actors
 
 heroKindId :: Kind.Id ActorKind
-heroKindId = Kind.getId ((== "hero") . bname)
+heroKindId = Kind.getId ((== "hero") . aname)
 
 instance Binary ActorId where
   put (AHero n)    = putWord8 0 >> put n

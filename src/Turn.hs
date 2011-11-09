@@ -64,7 +64,7 @@ handle =
   do
     debug "handle"
     state <- get
-    let ptime = atime (getPlayerBody state)  -- time of player's next move
+    let ptime = btime (getPlayerBody state)  -- time of player's next move
     let time  = stime state                  -- current game time
     debug $ "handle: time check. ptime = " ++ show ptime ++ ", time = " ++ show time
     if ptime > time
@@ -91,10 +91,10 @@ handleMonsters =
     pl   <- gets splayer
     if IM.null ms
       then nextMove
-      else let order  = Ord.comparing (atime . snd)
+      else let order  = Ord.comparing (btime . snd)
                (i, m) = L.minimumBy order (IM.assocs ms)
                actor = AMonster i
-           in  if atime m > time || actor == pl
+           in  if btime m > time || actor == pl
                then nextMove  -- no monster is ready for another move
                else handleMonster actor
 
@@ -135,17 +135,17 @@ handlePlayer =
     remember  -- the hero perceives his (potentially new) surroundings
     -- determine perception before running player command, in case monsters
     -- have opened doors ...
-    oldPlayerTime <- gets (atime . getPlayerBody)
+    oldPlayerTime <- gets (btime . getPlayerBody)
     withPerception playerCommand -- get and process a player command
     -- at this point, the command was successful and possibly took some time
-    newPlayerTime <- gets (atime . getPlayerBody)
+    newPlayerTime <- gets (btime . getPlayerBody)
     if newPlayerTime == oldPlayerTime
       then withPerception handlePlayer  -- no time taken, repeat
       else do
         state <- get
         pl    <- gets splayer
         let time = stime state
-            ploc = aloc (getPlayerBody state)
+            ploc = bloc (getPlayerBody state)
             sTimeout = Config.get (sconfig state) "monsters" "smellTimeout"
         -- update smell
         when (isAHero pl) $  -- only humans leave strong scent
