@@ -103,10 +103,10 @@ buildLevel buildCave cfg@(LevelConfig{levelBound = (sx, sy)}) isLast =
             (\ l t -> l /= su && Tile.isBoring t)
             (\ l _ -> distance (sx + 1) su l >= minStairsDistance cfg)
     is <- rollItems cfg lmap1 su sd
-    let lm2 = M.insert (fromLoc (sx + 1) su) Tile.stairsLightUpId lm1
+    let lm2 = M.insert (fromLoc (sx + 1) su) Tile.stairsUpId lm1
         lm3 = if isLast
               then lm2
-              else M.insert (fromLoc (sx + 1) sd) Tile.stairsLightDownId lm2
+              else M.insert (fromLoc (sx + 1) sd) Tile.stairsDownId lm2
     let lmap3 = listArrayCfg cfg lm3
         level = Level emptyParty (sx + 1) (sy + 1) emptyParty IM.empty IM.empty (IM.fromList is) lmap3 (unknownTileMap cfg) "bigroom" (su, sd)
     return level
@@ -300,15 +300,9 @@ rogueRoom cfg@(LevelConfig {levelBound}) isLast =
     is <- rollItems cfg lmapd su sd
     let lm2 = if isLast
               then dlmap
-              else M.update (\ t ->
-                              Just $ if isLit t
-                                     then Tile.stairsLightDownId
-                                     else Tile.stairsDarkDownId)
+              else M.update (\ _ -> Just Tile.stairsDownId)
                    (fromLoc (sx + 1) sd) dlmap
-        lm3 = M.update (\ t ->
-                         Just $ if isLit t
-                                then Tile.stairsLightUpId
-                                else Tile.stairsDarkUpId)
+        lm3 = M.update (\ _ -> Just Tile.stairsUpId)
               (fromLoc (sx + 1) su) lm2
         -- generate map and level from the data
         meta = show allConnects

@@ -9,7 +9,7 @@ import qualified Kind
 
 -- TODO: remove this file
 
-wallId, openingId, floorLightId, floorDarkId, unknownId, doorOpenId, doorClosedId, doorSecretId, stairsLightUpId, stairsLightDownId, stairsDarkUpId, stairsDarkDownId :: Kind.Id TileKind
+wallId, openingId, floorLightId, floorDarkId, unknownId, doorOpenId, doorClosedId, doorSecretId, stairsUpId, stairsDownId :: Kind.Id TileKind
 wallId = Kind.getId (\ t -> usymbol t == '#' && (L.null $ ufeature t))
 openingId = Kind.getId (\ t -> usymbol t == '.' && kindHasFeature F.Exit t)
 floorLightId =
@@ -20,10 +20,8 @@ unknownId = Kind.getId ((== ' ') . usymbol)
 doorOpenId = Kind.getId (kindHasFeature F.Closable)
 doorClosedId = Kind.getId (kindHasFeature F.Openable)
 doorSecretId = Kind.getId (kindHasFeature F.Hidden)
-stairsLightUpId = Kind.getId (kindHas [F.Lit, F.Climbable] [])
-stairsLightDownId = Kind.getId (kindHas [F.Lit, F.Descendable] [])
-stairsDarkUpId = Kind.getId (kindHas [F.Climbable] [F.Lit])
-stairsDarkDownId = Kind.getId (kindHas [F.Descendable] [F.Lit])
+stairsUpId = Kind.getId (kindHas [F.Lit, F.Climbable] [])
+stairsDownId = Kind.getId (kindHas [F.Lit, F.Descendable] [])
 
 -- | The player can't tell if the tile is a secret door or not.
 canBeSecretDoor :: Kind.Id TileKind -> Bool

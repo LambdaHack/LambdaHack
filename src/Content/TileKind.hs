@@ -18,9 +18,9 @@ data TileKind = TileKind
 instance Content.Content.Content TileKind where
   getFreq = ufreq
   content =
-    [wall, doorOpen, doorClosed, doorSecret, opening, floorLight, floorDark, stairsLightUp, stairsLightDown, stairsDarkUp, stairsDarkDown, unknown]
+    [wall, doorOpen, doorClosed, doorSecret, opening, floorLight, floorDark, stairsUp, stairsDown, unknown]
 
-wall,      doorOpen, doorClosed, doorSecret, opening, floorLight, floorDark, stairsLightUp, stairsLightDown, stairsDarkUp, stairsDarkDown, unknown :: TileKind
+wall,      doorOpen, doorClosed, doorSecret, opening, floorLight, floorDark, stairsUp, stairsDown, unknown :: TileKind
 
 wall = TileKind
   { usymbol  = '#'
@@ -80,7 +80,7 @@ floorDark = TileKind
   , ufeature = [Walkable, Clear]
   }
 
-stairsLightUp = TileKind
+stairsUp = TileKind
   { usymbol  = '<'
   , uname    = "A staircase up."
   , ucolor   = BrWhite
@@ -90,33 +90,13 @@ stairsLightUp = TileKind
                 Climbable, Cause Effect.Teleport]
   }
 
-stairsLightDown = TileKind
+stairsDown = TileKind
   { usymbol  = '>'
   , uname    = "A staircase down."
   , ucolor   = BrWhite
   , ucolor2  = defFG
   , ufreq    = 100
   , ufeature = [Walkable, Clear, Exit, Lit,
-                Descendable, Cause Effect.Teleport]
-  }
-
-stairsDarkUp = TileKind
-  { usymbol  = '<'
-  , uname    = "A staircase up."
-  , ucolor   = BrYellow
-  , ucolor2  = BrBlack
-  , ufreq    = 100
-  , ufeature = [Walkable, Clear, Exit,
-                Climbable, Cause Effect.Teleport]
-  }
-
-stairsDarkDown = TileKind
-  { usymbol  = '>'
-  , uname    = "A staircase down."
-  , ucolor   = BrYellow
-  , ucolor2  = BrBlack
-  , ufreq    = 100
-  , ufeature = [Walkable, Clear, Exit,
                 Descendable, Cause Effect.Teleport]
   }
 
