@@ -90,10 +90,52 @@ mergeCorridor _ t | Tile.isWalkable t = t
 mergeCorridor _ t | Tile.isUnknown t  = Tile.floorDarkId
 mergeCorridor _ _                     = Tile.openingId
 
+-- | Create a level consisting of only one room. Optionally, insert some walls.
+buildLevel :: (LevelConfig -> Rnd LMap) -> LevelConfig -> Bool
+             -> Rnd Level
+buildLevel buildCave cfg@(LevelConfig{levelBound = (sx, sy)}) isLast =
+  do
+    lm1 <- buildCave cfg
+    let lmap1 = listArrayCfg cfg lm1
+    -- Roll locations of the stairs.
+    su <- findLoc lmap1 (const Tile.isBoring)
+    sd <- findLocTry 2000 lmap1
+            (\ l t -> l /= su && Tile.isBoring t)
+            (\ l _ -> distance (sx + 1) su l >= minStairsDistance cfg)
+    is <- rollItems cfg lmap1 su sd
+    let lm2 = M.insert (fromLoc (sx + 1) su) Tile.stairsLightUpId lm1
+        lm3 = if isLast
+              then lm2
+              else M.insert (fromLoc (sx + 1) sd) Tile.stairsLightDownId lm2
+    let lmap3 = listArrayCfg cfg lm3
+        level = Level emptyParty (sx + 1) (sy + 1) emptyParty IM.empty IM.empty (IM.fromList is) lmap3 (unknownTileMap cfg) "bigroom" (su, sd)
+    return level
+
+-- | For a bigroom level: Create a level consisting of only one, empty room.
+bigRoom :: LevelConfig -> Bool -> Rnd Level
+bigRoom = buildLevel caveEmpty
+
+-- | For a noiseroom level: Create a level consisting of only one room
+-- with randomly distributed pillars.
+noiseRoom :: LevelConfig -> Bool -> Rnd Level
+noiseRoom = buildLevel caveNoise
+
+caveEmpty :: LevelConfig -> Rnd LMap
+caveEmpty LevelConfig{levelBound = (sx, sy)} =
+  return $ digRoom True (1, 1, sx-1, sy-1) M.empty
+
+caveNoise :: LevelConfig -> Rnd LMap
+caveNoise cfg@(LevelConfig{levelBound = (sx, sy)}) = do
+  em <- caveEmpty cfg
+  nri <- 100 *~ nrItems cfg
+  lxy <- replicateM nri $ xyInArea (1, 1, sx - 1, sy - 1)
+  let insertRock lm xy = M.insert xy Tile.wallId lm
+  return $ L.foldl' insertRock em lxy
+
 -- | If the room has size 1, it is at most a start of a corridor.
 digRoom :: Bool -> Room -> LMap -> LMap
-digRoom dl (x0, y0, x1, y1) l
-  | x0 == x1 && y0 == y1 = l
+digRoom dl (x0, y0, x1, y1) lmap
+  | x0 == x1 && y0 == y1 = lmap
   | otherwise =
   let floorDL = if dl then Tile.floorLightId else Tile.floorDarkId
       rm =
@@ -102,49 +144,7 @@ digRoom dl (x0, y0, x1, y1) l
            | x <- [x0-1, x1+1], y <- [y0..y1] ]
         ++ [ ((x, y), Tile.wallId)
            | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
-  in M.unionWith const (M.fromList rm) l
-
--- | Create a level consisting of only one room. Optionally, insert some walls.
-emptyRoom :: (TileMap -> Rnd (LMap -> LMap)) -> LevelConfig -> Bool
-             -> Rnd Level
-emptyRoom addRocksRnd cfg@(LevelConfig {levelBound}) isLast =
-  do
-    let lm1 = digRoom True (1, 1, sx-1, sy-1) (emptyLMap (sx, sy))
-        (sx, sy) = levelBound
-        unknown = unknownTileMap cfg
-        lmap1 = listArrayCfg cfg lm1
-    -- locations of the stairs
-    su <- findLoc lmap1 (const Tile.isBoring)
-    sd <- findLocTry 2000 lmap1
-            (const Tile.isBoring)
-            (\ l _ -> distance (sx + 1) su l > minStairsDistance cfg)
-    is <- rollItems cfg lmap1 su
-    let lm2 = if isLast
-              then lm1
-              else M.insert (fromLoc (sx + 1) sd) Tile.stairsLightDownId lm1
-        lm3 = M.insert (fromLoc (sx + 1) su) Tile.stairsLightUpId lm2
-    addRocks <- addRocksRnd lmap1
-    let lm4 = addRocks lm3
-        lmap4 = listArrayCfg cfg lm4
-        level = Level emptyParty (sx + 1) (sy + 1) emptyParty IM.empty IM.empty (IM.fromList is) lmap4 unknown "bigroom" (su, sd)
-    return level
-
--- | For a bigroom level: Create a level consisting of only one, empty room.
-bigRoom :: LevelConfig -> Bool -> Rnd Level
-bigRoom = emptyRoom (\ _lvl -> return id)
-
--- | For a noiseroom level: Create a level consisting of only one room
--- with randomly distributed pillars.
-noiseRoom :: LevelConfig -> Bool -> Rnd Level
-noiseRoom cfg =
-  let addRocks lmap = do
-        rs <- rollPillars cfg lmap
-        let insertRock lm xy =
-              case lm M.! xy of
-                t | Tile.isBoring t -> M.insert xy Tile.wallId lm
-                _ -> lm
-        return $ \ lm -> L.foldl' insertRock lm rs
-  in emptyRoom addRocks cfg
+  in M.union (M.fromList rm) lmap
 
 data LevelConfig = LevelConfig
   { levelGrid         :: Rnd (X, Y)
@@ -295,9 +295,9 @@ rogueRoom cfg@(LevelConfig {levelBound}) isLast =
     su <- findLoc lmapd (const Tile.isBoring)
     sd <- findLocTry 2000 lmapd
             (const Tile.isBoring)
-            (\ l _ -> distance (sx + 1) su l > minStairsDistance cfg)
+            (\ l _ -> distance (sx + 1) su l >= minStairsDistance cfg)
     -- determine number of items, items and locations for the items
-    is <- rollItems cfg lmapd su
+    is <- rollItems cfg lmapd su sd
     let lm2 = if isLast
               then dlmap
               else M.update (\ t ->
@@ -316,29 +316,23 @@ rogueRoom cfg@(LevelConfig {levelBound}) isLast =
     return $
       Level emptyParty (sx + 1) (sy + 1) emptyParty IM.empty secretMap (IM.fromList is) lmap3 unknown meta (su, sd)
 
-rollItems :: LevelConfig -> TileMap -> Loc -> Rnd [(Loc, ([Item], [Item]))]
-rollItems cfg@LevelConfig{levelBound = (sx, _)} lmap ploc =
+rollItems :: LevelConfig -> TileMap -> Loc -> Loc
+             -> Rnd [(Loc, ([Item], [Item]))]
+rollItems cfg@LevelConfig{levelBound = (sx, _)} lmap ploc sd =
   do
     nri <- nrItems cfg
     replicateM nri $
       do
-        t <- newItem (depth cfg)
-        l <- case jname (Kind.getKind (ikind t)) of
+        item <- newItem (depth cfg)
+        l <- case jname (Kind.getKind (ikind item)) of
                "sword" ->
                  -- swords generated close to monsters; MUAHAHAHA
                  findLocTry 2000 lmap
-                   (const Tile.isBoring)
+                   (\ l t -> l /= ploc && l /= sd && Tile.isBoring t)
                    (\ l _ -> distance (sx + 1) ploc l > 30)
-               _ -> findLoc lmap (const Tile.isBoring)
-        return (l,([t], []))
-
-rollPillars :: LevelConfig -> TileMap -> Rnd [(X, Y)]
-rollPillars cfg@LevelConfig{levelBound = (sx, _)} lmap =
-  do
-    nri <- 100 *~ nrItems cfg
-    replicateM nri $ do
-      loc <- findLoc lmap (const Tile.isBoring)  -- TODO: and no item there
-      return (fromLoc (sx + 1) loc)
+               _ -> findLoc lmap
+                      (\ l t -> l /= ploc && l /= sd && Tile.isBoring t)
+        return (l,([item], []))
 
 emptyLMap :: (X, Y) -> LMap
 emptyLMap (mx, my) =
