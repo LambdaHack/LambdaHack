@@ -2,10 +2,18 @@ module Tile where
 
 import qualified Data.List as L
 import qualified Data.Array.Unboxed as A
+import Data.Binary
 
 import Content.TileKind
 import qualified Feature as F
 import qualified Kind
+import Geometry
+
+newtype SecretStrength = SecretStrength{secretStrength :: Time}
+  deriving (Show, Eq, Ord)
+instance Binary SecretStrength where
+  put = put . secretStrength
+  get = fmap SecretStrength get
 
 -- TODO: remove this file
 

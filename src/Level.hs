@@ -1,5 +1,5 @@
 module Level
-  ( Party, SmellTime(..), SmellMap, SecretStrength(..), SecretMap
+  ( SmellTime(..), SmellMap, SecretMap
   , ItemMap, TileMap, Level(..)
   , updateHeroes, updateMonsters, updateLMap, updateLRMap, updateIMap
   , updateSmell , emptyParty, at, rememberAt, iat, irememberAt
@@ -21,20 +21,13 @@ import qualified Tile
 import qualified Feature as F
 import qualified Kind
 
-type Party = IM.IntMap Actor
-
 newtype SmellTime = SmellTime{smelltime :: Time} deriving Show
 instance Binary SmellTime where
   put = put . smelltime
   get = fmap SmellTime get
 type SmellMap = IM.IntMap SmellTime
 
-newtype SecretStrength = SecretStrength{secretStrength :: Time}
-  deriving (Show, Eq, Ord)
-instance Binary SecretStrength where
-  put = put . secretStrength
-  get = fmap SecretStrength get
-type SecretMap = IM.IntMap SecretStrength
+type SecretMap = IM.IntMap Tile.SecretStrength
 
 type ItemMap = IM.IntMap ([Item], [Item])
 
@@ -128,7 +121,7 @@ accessible lvl _source target =
   in  Tile.isWalkable tgt
 
 -- check whether the location contains a door of secrecy level lower than k
-openable :: Level -> SecretStrength -> Loc -> Bool
+openable :: Level -> Tile.SecretStrength -> Loc -> Bool
 openable lvl k target =
   let le = lsecret lvl
       tgt = lvl `at` target

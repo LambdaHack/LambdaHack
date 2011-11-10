@@ -11,7 +11,7 @@ import Actor
 import Geometry
 import Loc
 import Level
-import Dungeon
+import qualified Dungeon
 import Item
 import Message
 import WorldLoc
@@ -28,7 +28,7 @@ data State = State
   , stime        :: Time
   , sflavour     :: FlavourMap   -- ^ association of flavour to items
   , sdisco       :: Discoveries  -- ^ items (kinds) that have been discovered
-  , sdungeon     :: Dungeon      -- ^ all but the current dungeon level
+  , sdungeon     :: Dungeon.Dungeon  -- ^ all but the current dungeon level
   , slid         :: LevelId
   , scounter     :: (Int, Int)   -- ^ stores next hero index and monster index
   , sparty       :: IS.IntSet    -- ^ heroes in the party
@@ -46,9 +46,9 @@ data Cursor = Cursor
   deriving Show
 
 slevel :: State -> Level
-slevel State{slid, sdungeon} = sdungeon ! slid
+slevel State{slid, sdungeon} = sdungeon Dungeon.! slid
 
-defaultState :: Dungeon -> LevelId -> Loc -> R.StdGen -> State
+defaultState :: Dungeon.Dungeon -> LevelId -> Loc -> R.StdGen -> State
 defaultState dng lid ploc g =
   State
     (AHero 0)  -- hack: the hero is not yet alive
@@ -78,9 +78,9 @@ updateDiscoveries :: (Discoveries -> Discoveries) -> State -> State
 updateDiscoveries f s = s { sdisco = f (sdisco s) }
 
 updateLevel :: (Level -> Level) -> State -> State
-updateLevel f s = updateDungeon (adjust f (slid s)) s
+updateLevel f s = updateDungeon (Dungeon.adjust f (slid s)) s
 
-updateDungeon :: (Dungeon -> Dungeon) -> State -> State
+updateDungeon :: (Dungeon.Dungeon -> Dungeon.Dungeon) -> State -> State
 updateDungeon f s = s {sdungeon = f (sdungeon s)}
 
 toggleVision :: State -> State

@@ -118,7 +118,7 @@ strategy actor oldState@State{splayer = pl, stime = time} per =
     -- Monsters don't see doors more secret than that. Enforced when actually
     -- opening doors, too, so that monsters don't cheat. TODO: remove the code
     -- duplication, though.
-    openPower      = SecretStrength $
+    openPower      = Tile.SecretStrength $
                      case strongestItem items "ring" of
                        Just i  -> aiq mk + jpower i
                        Nothing -> aiq mk

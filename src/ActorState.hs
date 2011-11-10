@@ -11,7 +11,7 @@ import Utils.Assert
 import Loc
 import Actor
 import Level
-import Dungeon
+import qualified Dungeon
 import State
 import WorldLoc
 
@@ -27,7 +27,7 @@ findActorAnyLevel actor state@State{slid, sdungeon} =
         case actor of
           AHero n    -> IM.lookup n (lheroes lvl)
           AMonster n -> IM.lookup n (lmonsters lvl)
-  in case mapMaybe chk (currentFirst slid sdungeon) of
+  in case mapMaybe chk (Dungeon.currentFirst slid sdungeon) of
     []    -> assert `failure` actor
     res:_ -> res  -- checking if res is unique would break laziness
 
@@ -48,7 +48,7 @@ allHeroesAnyLevel :: State -> [(ActorId, LevelId)]
 allHeroesAnyLevel State{slid, sdungeon} =
   let one (ln, Level{lheroes}) =
         L.map (\ (i, _) -> (AHero i, ln)) (IM.assocs lheroes)
-  in L.concatMap one (currentFirst slid sdungeon)
+  in L.concatMap one (Dungeon.currentFirst slid sdungeon)
 
 updateAnyActorBody :: ActorId -> (Actor -> Actor) -> State -> State
 updateAnyActorBody actor f state =
@@ -60,7 +60,7 @@ updateAnyActorBody actor f state =
 updateAnyLevel :: (Level -> Level) -> LevelId -> State -> State
 updateAnyLevel f ln state@State{slid, sdungeon}
   | ln == slid = updateLevel f state
-  | otherwise = updateDungeon (const $ adjust f ln sdungeon) state
+  | otherwise = updateDungeon (const $ Dungeon.adjust f ln sdungeon) state
 
 -- | Calculate the location of player's target.
 targetToLoc :: S.Set Loc -> State -> Maybe Loc

@@ -7,7 +7,7 @@ import qualified Control.Monad.State as MState
 import Utils.Assert
 import Loc
 import Level
-import Dungeon
+import qualified Dungeon
 import Random
 import qualified Config
 import WorldLoc
@@ -15,6 +15,7 @@ import State
 import qualified Feature as F
 import qualified Tile
 import Content.CaveKind
+import Cave
 
 matchGenerator :: Int -> Maybe String -> CaveKind -> Bool
                   -> Rnd Level
@@ -33,7 +34,7 @@ findGenerator config n depth =
        n genName (defaultCaveKind n) (n == depth)
 
 -- | Generate the dungeon for a new game.
-generate :: Config.CP -> Rnd (Loc, LevelId, Dungeon)
+generate :: Config.CP -> Rnd (Loc, LevelId, Dungeon.Dungeon)
 generate config =
   let depth = Config.get config "dungeon" "depth"
       gen :: R.StdGen -> Int -> (R.StdGen, (LevelId, Level))
@@ -41,11 +42,11 @@ generate config =
         let (g1, g2) = R.split g
             res = MState.evalState (findGenerator config k depth) g1
         in (g2, (LambdaCave k, res))
-      con :: R.StdGen -> ((Loc, LevelId, Dungeon), R.StdGen)
+      con :: R.StdGen -> ((Loc, LevelId, Dungeon.Dungeon), R.StdGen)
       con g =
         let (gd, levels) = L.mapAccumL gen g [1..depth]
             ploc = fst (lstairs (snd (head levels)))
-        in ((ploc, LambdaCave 1, fromList levels), gd)
+        in ((ploc, LambdaCave 1, Dungeon.fromList levels), gd)
   in MState.state con
 
 whereTo :: State -> Loc -> Maybe WorldLoc
@@ -58,7 +59,7 @@ whereTo state@State{slid, sdungeon} loc =
       n = levelNumber slid
       nln = n + k
       ln = LambdaCave nln
-      lvlTrg = sdungeon ! ln
+      lvlTrg = sdungeon Dungeon.! ln
   in if (nln < 1)
      then Nothing
      else Just (ln, (if k == 1 then fst else snd) (lstairs lvlTrg))

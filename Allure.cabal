@@ -39,7 +39,7 @@ executable Allure
   main-is:       Main.hs
   hs-source-dirs: src
   other-modules: Action, Actions, ActorAdd, Actor, ActorState, Area, AreaRnd,
-                 Color, Command, Config, ConfigDefault,
+                 Cave, Color, Command, Config, ConfigDefault,
                  Content.Content, Content.ActorKind, Content.CaveKind,
                  Content.ItemKind, Content.TileKind,
                  Dir, Display, Dungeon, DungeonState,

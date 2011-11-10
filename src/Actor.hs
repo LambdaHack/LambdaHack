@@ -2,6 +2,7 @@ module Actor where
 
 import Data.Binary
 import Control.Monad
+import qualified Data.IntMap as IM
 
 import Utils.Assert
 import Geometry
@@ -57,6 +58,8 @@ instance Binary Actor where
 data ActorId = AHero !Int     -- ^ hero index (on the lheroes intmap)
              | AMonster !Int  -- ^ monster index (on the lmonsters intmap)
   deriving (Show, Eq, Ord)
+
+type Party = IM.IntMap Actor
 
 isAHero :: ActorId -> Bool
 isAHero (AHero _) = True
