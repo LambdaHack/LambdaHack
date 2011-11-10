@@ -3,6 +3,9 @@ module DungeonState where
 import qualified System.Random as R
 import qualified Data.List as L
 import qualified Control.Monad.State as MState
+import qualified Data.Map as M
+import qualified Data.IntMap as IM
+import Control.Monad
 
 import Utils.Assert
 import Loc
@@ -16,13 +19,66 @@ import qualified Feature as F
 import qualified Tile
 import Content.CaveKind
 import Cave
+import Content.ItemKind
+import qualified Kind
+import Item
+
+listArrayCfg :: CaveKind -> TileMapXY -> TileMap
+listArrayCfg cfg@CaveKind{levelBound = (sx, _)} lmap =
+  Kind.listArray (zeroLoc, toLoc (sx + 1) (levelBound cfg))
+    (M.elems $ M.mapKeys (\ (x, y) -> (y, x)) lmap)
+
+unknownTileMap :: CaveKind -> TileMap
+unknownTileMap cfg@CaveKind{levelBound = (sx, _)} =
+  Kind.listArray (zeroLoc, toLoc (sx + 1) (levelBound cfg))
+    (repeat Tile.unknownId)
+
+rollItems :: CaveKind -> TileMap -> Loc
+             -> Rnd [(Loc, ([Item], [Item]))]
+rollItems cfg@CaveKind{levelBound = (sx, _)} lmap ploc =
+  do
+    nri <- nrItems cfg
+    replicateM nri $
+      do
+        item <- newItem (depth cfg)
+        l <- case iname (Kind.getKind (jkind item)) of
+               "sword" ->
+                 -- swords generated close to monsters; MUAHAHAHA
+                 findLocTry 2000 lmap
+                   (const Tile.isBoring)
+                   (\ l _ -> distance (sx + 1) ploc l > 30)
+               _ -> findLoc lmap
+                      (const Tile.isBoring)
+        return (l,([item], []))
+
+-- | Create a level consisting of only one room. Optionally, insert some walls.
+buildLevel :: (CaveKind -> Rnd (TileMapXY, SecretMap, String))
+              -> CaveKind -> Bool
+              -> Rnd Level
+buildLevel buildCave cfg@(CaveKind{levelBound = (sx, sy)}) isLast =
+  do
+    (caveXY, secretMap, meta) <- buildCave cfg
+    let cave = listArrayCfg cfg caveXY
+    -- Roll locations of the stairs.
+    su <- findLoc cave (const Tile.isBoring)
+    sd <- findLocTry 2000 cave
+            (\ l t -> l /= su && Tile.isBoring t)
+            (\ l _ -> distance (sx + 1) su l >= minStairsDistance cfg)
+    let stairs =
+          [(su, Tile.stairsUpId)]
+          ++ if isLast then [] else [(sd, Tile.stairsDownId)]
+        level = cave Kind.// stairs
+    is <- rollItems cfg level su
+    return $ Level emptyParty (sx + 1) (sy + 1) emptyParty
+                   IM.empty secretMap (IM.fromList is) level (unknownTileMap cfg)
+                   meta (su, sd)
 
 matchGenerator :: Int -> Maybe String -> CaveKind -> Bool
                   -> Rnd Level
-matchGenerator _ Nothing = rogueRoom  -- the default
-matchGenerator _ (Just "bigRoom")   = bigRoom
-matchGenerator _ (Just "noiseRoom") = noiseRoom
-matchGenerator _ (Just "rogueRoom") = rogueRoom
+matchGenerator _ Nothing = buildLevel caveRogue  -- the default
+matchGenerator _ (Just "bigRoom")   = buildLevel caveEmpty
+matchGenerator _ (Just "noiseRoom") = buildLevel caveNoise
+matchGenerator _ (Just "rogueRoom") = buildLevel caveRogue
 matchGenerator n (Just s) =
   error $ "Unknown dungeon generator " ++ s ++ " for level " ++ show n ++ "."
 
