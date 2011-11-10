@@ -1,4 +1,4 @@
-module Content.CaveKind (CaveKind(..)                      , defaultCaveKind, normalLevelBound) where
+module Content.CaveKind (CaveKind(..)                      , normalLevelBound) where
 
 import Data.Ratio
 
@@ -8,17 +8,17 @@ import Random
 
 instance Content.Content.Content CaveKind where
   getFreq = undefined  --afreq
-  content = []
---    [hero, eye, fastEye, nose]
+  content =
+    [defaultCaveKind, largeCaveKind]
 
---hero,      eye, fastEye, nose :: CaveKind
+defaultCaveKind,      largeCaveKind :: CaveKind
 
 data CaveKind = CaveKind
   { cxsize    :: X
   , cysize    :: Y
   , levelGrid         :: Rnd (X, Y)
   , minRoomSize       :: Rnd (X ,Y)
-  , darkRoomChance    :: Rnd Bool
+  , darkRoomChance    :: Int -> Rnd Bool
   , border            :: Int         -- must be at least 2!
   , extraConnects     :: (X, Y) -> Int
       -- relative to grid (in fact a range, because of duplicate connects)
@@ -30,14 +30,13 @@ data CaveKind = CaveKind
   , doorSecretChance  :: Rnd Bool
   , doorSecretMax     :: Int
   , nrItems           :: Rnd Int     -- range
-  , depth             :: Int         -- general indicator of difficulty
   }
 
 normalLevelBound :: (X, Y)
 normalLevelBound = (79, 22)
 
-defaultCaveKind :: Int -> CaveKind
-defaultCaveKind d =
+defaultCaveKind :: CaveKind
+defaultCaveKind =
   CaveKind {
     cxsize = fst normalLevelBound + 1,
     cysize = snd normalLevelBound + 1,
@@ -46,7 +45,7 @@ defaultCaveKind d =
                           y <- Random.randomR (2, 4)
                           return (x, y),
     minRoomSize       = return (2, 2),
-    darkRoomChance    = Random.chance $ 1%((22 - (2 * fromIntegral d)) `max` 2),
+    darkRoomChance    = \ d -> Random.chance $ 1%((22 - (2 * fromIntegral d)) `max` 2),
     border            = 2,
     extraConnects     = \ (x, y) -> (x * y) `div` 3,
     noRooms           = \ (x, y) -> Random.randomR (0, (x * y) `div` 3),
@@ -55,13 +54,12 @@ defaultCaveKind d =
     doorOpenChance    = Random.chance $ 1%10,
     doorSecretChance  = Random.chance $ 1%4,
     doorSecretMax     = 15,
-    nrItems           = Random.randomR (5, 10),
-    depth             = d
+    nrItems           = Random.randomR (5, 10)
   }
 
-_largeCaveKind :: Int -> CaveKind
-_largeCaveKind d =
-  (defaultCaveKind d) {
+largeCaveKind :: CaveKind
+largeCaveKind =
+  defaultCaveKind {
     cxsize = 231,
     cysize = 77,
     levelGrid         = return (10, 7),
