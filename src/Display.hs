@@ -41,7 +41,6 @@ import qualified Keys as K
 import WorldLoc
 import Random
 import qualified Kind
-import Content.CaveKind
 
 -- Re-exported from the display frontend, with an extra slot for function
 -- for translating keys to a canonical form.
@@ -69,7 +68,7 @@ displayBlankConfirm :: Session -> String -> IO Bool
 displayBlankConfirm session txt =
   let x = txt ++ more
       doBlank = const (Color.defaultAttr, ' ')
-      (lx, ly) = normalLevelBound
+      (lx, ly) = normalLevelBound  -- TODO: query terminal size instead
   in do
        display (0, 0, lx, ly) session doBlank x ""
        getConfirm session

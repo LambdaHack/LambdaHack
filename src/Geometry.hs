@@ -1,5 +1,5 @@
 module Geometry
-  ( Time, X, Y, shiftXY, movesXY, lenXY, euclidLenSq ) where
+  ( Time, X, Y, shiftXY, movesXY, lenXY, euclidLenSq, normalLevelBound ) where
 
 -- | Game time in turns. The time dimension.
 type Time = Int
@@ -24,3 +24,6 @@ lenXY (x, y) = max (abs x) (abs y)
 euclidLenSq :: (X, Y) -> Int
 euclidLenSq (x, y) = let square a = a * a
                      in square x + square y
+
+normalLevelBound :: (X, Y)
+normalLevelBound = (79, 22)  -- TODO: query terminal size instead

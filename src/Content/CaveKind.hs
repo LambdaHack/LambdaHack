@@ -1,4 +1,4 @@
-module Content.CaveKind (CaveKind(..)                      , normalLevelBound) where
+module Content.CaveKind (CaveKind(..)) where
 
 import Data.Ratio
 
@@ -31,9 +31,6 @@ data CaveKind = CaveKind
   , doorSecretMax     :: Int
   , nrItems           :: Rnd Int     -- range
   }
-
-normalLevelBound :: (X, Y)
-normalLevelBound = (79, 22)
 
 defaultCaveKind :: CaveKind
 defaultCaveKind =

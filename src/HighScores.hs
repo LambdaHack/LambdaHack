@@ -11,7 +11,7 @@ import qualified Data.List as L
 import Utils.File
 import qualified Config
 import WorldLoc
-import Content.CaveKind
+import Geometry
 
 -- | A single score.
 -- TODO: add heroes' names, exp and level, cause of death, user number/name.
@@ -134,7 +134,7 @@ register config write s =
   do
     h <- restore config
     let (h', pos) = insertPos s h
-        (_, nlines) = normalLevelBound
+        (_, nlines) = normalLevelBound  -- TODO: query terminal size instead
         height = nlines `div` 3
         (msgCurrent, msgUnless) =
           case status s of
