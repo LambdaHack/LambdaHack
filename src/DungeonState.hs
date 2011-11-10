@@ -14,8 +14,9 @@ import WorldLoc
 import State
 import qualified Feature as F
 import qualified Tile
+import Content.CaveKind
 
-matchGenerator :: Int -> Maybe String -> LevelConfig -> Bool
+matchGenerator :: Int -> Maybe String -> CaveKind -> Bool
                   -> Rnd Level
 matchGenerator _ Nothing = rogueRoom  -- the default
 matchGenerator _ (Just "bigRoom")   = bigRoom
@@ -29,7 +30,7 @@ findGenerator config n depth =
   let ln = "LambdaCave_" ++ show n
       genName = Config.getOption config "dungeon" ln
   in matchGenerator
-       n genName (defaultLevelConfig n) (n == depth)
+       n genName (defaultCaveKind n) (n == depth)
 
 -- | Generate the dungeon for a new game.
 generate :: Config.CP -> Rnd (Loc, LevelId, Dungeon)

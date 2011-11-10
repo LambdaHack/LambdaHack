@@ -31,7 +31,6 @@ import Geometry
 import Loc
 import Area
 import Level
-import Dungeon
 import Perception
 import Actor
 import ActorState
@@ -42,6 +41,7 @@ import qualified Keys as K
 import WorldLoc
 import Random
 import qualified Kind
+import Content.CaveKind
 
 -- Re-exported from the display frontend, with an extra slot for function
 -- for translating keys to a canonical form.

@@ -9,9 +9,9 @@ import Data.Binary
 import qualified Data.List as L
 
 import Utils.File
-import Dungeon
 import qualified Config
 import WorldLoc
+import Content.CaveKind
 
 -- | A single score.
 -- TODO: add heroes' names, exp and level, cause of death, user number/name.
