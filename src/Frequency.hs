@@ -31,3 +31,6 @@ scale n (Frequency xs) = Frequency (map (\ (p, x) -> (n * p, x)) xs)
 
 uniform :: [a] -> Frequency a
 uniform = Frequency . map (\ x -> (1, x))
+
+filterFreq :: (a -> Bool) -> Frequency a -> Frequency a
+filterFreq p (Frequency l) = Frequency $ filter (p . snd) l

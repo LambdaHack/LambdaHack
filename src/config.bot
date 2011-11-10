@@ -9,15 +9,12 @@
 ; git repository.
 
 [dungeon]
-; the hardcoded default for levels with no specified layout:
-LambdaCave_1: rogueRoom
-; access to stairs may be blocked, so only suitable for the last level:
-LambdaCave_10: noiseRoom
-LambdaCave_20: noiseRoom
-LambdaCave_30: noiseRoom
-LambdaCave_3: bigRoom
-LambdaCave_13: bigRoom
-LambdaCave_23: bigRoom
+; fixed caves for the first levels, then randomly picked caves
+LambdaCave_1: caveRogue
+LambdaCave_2: caveRogue
+LambdaCave_3: caveEmpty
+; access to stairs may be blocked, so normally only suitable for the last level:
+LambdaCave_4: caveNoise
 depth: 1000
 
 [engine]

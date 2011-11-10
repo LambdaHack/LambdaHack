@@ -1,7 +1,5 @@
 module Cave
-  ( Cave(..), SecretMapXY, ItemMapXY, TileMapXY
-  , caveEmpty, caveNoise, caveRogue
-  ) where
+  ( Cave(..), SecretMapXY, ItemMapXY, TileMapXY, buildCave ) where
 
 import Control.Monad
 import qualified Data.Map as M
@@ -32,6 +30,14 @@ data Cave = Cave
   , dmeta     :: String
   }
   deriving Show
+
+buildCave :: Int -> Kind.Id CaveKind -> Rnd Cave
+buildCave n ci =
+  let CaveKind{clayout} = Kind.getKind ci
+  in case clayout of
+       CaveRogue -> caveRogue n ci
+       CaveEmpty -> caveEmpty n ci
+       CaveNoise -> caveNoise n ci
 
 -- | Cave consisting of only one, empty room.
 caveEmpty :: Int -> Kind.Id CaveKind -> Rnd Cave

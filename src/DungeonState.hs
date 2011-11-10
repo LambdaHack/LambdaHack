@@ -23,14 +23,15 @@ import Content.ItemKind
 import qualified Kind
 import Item
 import Geometry
+import Frequency
 
-listArrayCfg :: CaveKind -> TileMapXY -> TileMap
-listArrayCfg CaveKind{cxsize, cysize} lmap =
+listArrayCfg :: Int -> Int -> TileMapXY -> TileMap
+listArrayCfg cxsize cysize lmap =
   Kind.listArray (zeroLoc, toLoc cxsize (cxsize - 1, cysize - 1))
     (M.elems $ M.mapKeys (\ (x, y) -> (y, x)) lmap)
 
-unknownTileMap :: CaveKind -> TileMap
-unknownTileMap CaveKind{cxsize, cysize} =
+unknownTileMap :: Int -> Int ->  TileMap
+unknownTileMap cxsize cysize =
   Kind.listArray (zeroLoc, toLoc cxsize (cxsize - 1, cysize - 1))
     (repeat Tile.unknownId)
 
@@ -39,9 +40,9 @@ mapToIMap cxsize m =
   IM.fromList $ map (\ (xy, a) -> (toLoc cxsize xy, a)) (M.assocs m)
 
 rollItems :: Int -> CaveKind -> TileMap -> Loc -> Rnd [(Loc, Item)]
-rollItems n cfg@CaveKind{cxsize} lmap ploc =
+rollItems n CaveKind{cxsize, nrItems} lmap ploc =
   do
-    nri <- nrItems cfg
+    nri <- nrItems
     replicateM nri $
       do
         item <- newItem n
@@ -56,16 +57,15 @@ rollItems n cfg@CaveKind{cxsize} lmap ploc =
         return (l, item)
 
 -- | Create a level from a cave, from a cave kind.
-buildLevel :: Rnd Cave -> Int -> Int -> Rnd Level
-buildLevel cave n depth = do
-  Cave{dkind, dsecret, ditem, dmap, dmeta} <- cave
-  let cfg@CaveKind{cxsize, cysize} = Kind.getKind dkind
-  let cmap = listArrayCfg cfg dmap
+buildLevel :: Cave -> Int -> Int -> Rnd Level
+buildLevel Cave{dkind, dsecret, ditem, dmap, dmeta} n depth = do
+  let cfg@CaveKind{cxsize, cysize, minStairsDistance} = Kind.getKind dkind
+      cmap = listArrayCfg  cxsize cysize dmap
   -- Roll locations of the stairs.
   su <- findLoc cmap (const Tile.isBoring)
   sd <- findLocTry 2000 cmap
           (\ l t -> l /= su && Tile.isBoring t)
-          (\ l _ -> distance cxsize su l >= minStairsDistance cfg)
+          (\ l _ -> distance cxsize su l >= minStairsDistance)
   let stairs =
         [(su, Tile.stairsUpId)]
         ++ if n == depth then [] else [(sd, Tile.stairsDownId)]
@@ -82,27 +82,36 @@ buildLevel cave n depth = do
         , lsecret = mapToIMap cxsize dsecret
         , litem
         , lmap
-        , lrmap = unknownTileMap cfg
+        , lrmap = unknownTileMap cxsize cysize
         , lmeta = dmeta
         , lstairs = (su, sd)
         }
   return level
 
-matchGenerator :: Maybe String -> Kind.Id CaveKind -> Int -> Int
-                  -> Rnd Level
-matchGenerator Nothing ci n = buildLevel (caveRogue n ci) n -- the default
-matchGenerator (Just "bigRoom") ci n = buildLevel (caveEmpty n ci) n
-matchGenerator (Just "noiseRoom") ci n = buildLevel (caveNoise n ci) n
-matchGenerator (Just "rogueRoom") ci n = buildLevel (caveRogue n ci) n
-matchGenerator (Just s) _ci n =
-  error $ "Unknown dungeon generator " ++ s ++ " for level " ++ show n ++ "."
+matchGenerator :: Maybe String -> Rnd (Kind.Id CaveKind)
+matchGenerator Nothing = do
+  (ci, _) <- frequency Kind.frequency
+  return ci
+matchGenerator (Just "caveRogue") = do
+  let freq = filterFreq ((== CaveRogue) . clayout . snd) Kind.frequency
+  (ci, _) <- frequency freq
+  return ci
+matchGenerator (Just "caveEmpty") = do
+  let freq = filterFreq ((== CaveEmpty) . clayout . snd) Kind.frequency
+  (ci, _) <- frequency freq
+  return ci
+matchGenerator (Just "caveNoise") =
+  return $ Kind.getId (\ cc -> clayout cc == CaveNoise && cxsize cc < 100)
+matchGenerator (Just s) =
+  error $ "Unknown dungeon generator " ++ s
 
 findGenerator :: Config.CP -> Int -> Int -> Rnd Level
-findGenerator config n depth =
+findGenerator config n depth = do
   let ln = "LambdaCave_" ++ show n
       genName = Config.getOption config "dungeon" ln
-      defaultCaveKindId = Kind.getId ((<= 100) . cxsize)
-  in matchGenerator genName defaultCaveKindId n depth
+  ci <- matchGenerator genName
+  cave <- buildCave n ci
+  buildLevel cave n depth
 
 -- | Generate the dungeon for a new game.
 generate :: Config.CP -> Rnd (Loc, LevelId, Dungeon.Dungeon)
