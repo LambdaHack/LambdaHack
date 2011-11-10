@@ -28,8 +28,8 @@ data CaveKind = CaveKind
   , doorChance        :: Rnd Bool
   , doorOpenChance    :: Rnd Bool
   , doorSecretChance  :: Rnd Bool
-  , doorSecretMax     :: Int
-  , nrItems           :: Rnd Int
+  , csecretStrength   :: RollDice
+  , citemNum          :: RollDice
   , clayout           :: CaveLayout
   , cfreq             :: Int
   }
@@ -53,8 +53,8 @@ rogue = CaveKind
   , doorChance        = Random.chance $ 2%3
   , doorOpenChance    = Random.chance $ 1%10
   , doorSecretChance  = Random.chance $ 1%4
-  , doorSecretMax     = 15
-  , nrItems           = Random.randomR (5, 10)
+  , csecretStrength   = (7, 2)
+  , citemNum          = (5, 2)
   , clayout           = CaveRogue
   , cfreq             = 80
   }

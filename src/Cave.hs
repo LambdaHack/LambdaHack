@@ -57,11 +57,11 @@ caveEmpty _ ci =
 -- | Cave consisting of only one room with randomly distributed pillars.
 caveNoise :: Int -> Kind.Id CaveKind -> Rnd Cave
 caveNoise _ ci = do
-  let cfg@CaveKind{cxsize, cysize} = Kind.getKind ci
+  let CaveKind{cxsize, cysize} = Kind.getKind ci
       room = (1, 1, cxsize - 2, cysize - 2)
       em = digRoom True room M.empty
-  nri <- 100 *~ nrItems cfg
-  lxy <- replicateM nri $ xyInArea (1, 1, cxsize - 2, cysize - 2)
+  nri <- rollDice (fromIntegral (cysize `div` 5), 3)
+  lxy <- replicateM (cxsize * nri) $ xyInArea (1, 1, cxsize - 2, cysize - 2)
   let insertRock lm xy = M.insert xy Tile.wallId lm
       dmap = L.foldl' insertRock em lxy
       cave = Cave
@@ -121,7 +121,7 @@ caveRogue n ci = do
     nr   <- replicateM nrnr $ xyInArea (0, 0, gx - 1, gy - 1)
     rs0  <- mapM (\ (i, r) -> do
                               r' <- if i `elem` nr
-                                      then mkNoRoom (border cfg) r
+                                      then mkRoom (border cfg) (1, 1) r
                                       else mkRoom (border cfg) lminroom r
                               return (i, r')) gs
     let rooms :: [Area]
@@ -166,8 +166,7 @@ caveRogue n ci = do
                                  if not rsc
                                    then return (((x, y), Tile.doorClosedId) : l, le)
                                    else do
-                                     rs1 <- randomR (doorSecretMax cfg `div` 2,
-                                                     doorSecretMax cfg)
+                                     rs1 <- rollDice (csecretStrength cfg)
                                      return (((x, y), Tile.doorSecretId) : l, M.insert (x, y) (SecretStrength rs1) le)
                     _ -> return (o : l, le)
       (l, le) <- foldM f ([], M.empty) (M.toList lm)
@@ -194,15 +193,6 @@ mkRoom bd (xm, ym) (x0, y0, x1, y1) =
     (rx0, ry0) <- xyInArea (x0 + bd, y0 + bd, x1 - bd - xm + 1, y1 - bd - ym + 1)
     (rx1, ry1) <- xyInArea (rx0 + xm - 1, ry0 + ym - 1, x1 - bd, y1 - bd)
     return (rx0, ry0, rx1, ry1)
-
--- | Create a no-room, i.e., a single corridor field.
-mkNoRoom :: Int ->      -- ^ border columns
-            Area ->     -- ^ this is an area, not the room itself
-            Rnd Room    -- ^ this is the upper-left and lower-right corner of the room
-mkNoRoom bd (x0, y0, x1, y1) =
-  do
-    (rx, ry) <- xyInArea (x0 + bd, y0 + bd, x1 - bd, y1 - bd)
-    return (rx, ry, rx, ry)
 
 digCorridors :: Corridor -> TileMapXY
 digCorridors (p1:p2:ps) =

@@ -40,9 +40,9 @@ mapToIMap cxsize m =
   IM.fromList $ map (\ (xy, a) -> (toLoc cxsize xy, a)) (M.assocs m)
 
 rollItems :: Int -> CaveKind -> TileMap -> Loc -> Rnd [(Loc, Item)]
-rollItems n CaveKind{cxsize, nrItems} lmap ploc =
+rollItems n CaveKind{cxsize, citemNum} lmap ploc =
   do
-    nri <- nrItems
+    nri <- rollDice citemNum
     replicateM nri $
       do
         item <- newItem n
