@@ -24,18 +24,18 @@ import qualified Kind
 import Item
 
 listArrayCfg :: CaveKind -> TileMapXY -> TileMap
-listArrayCfg cfg@CaveKind{levelBound = (sx, _)} lmap =
-  Kind.listArray (zeroLoc, toLoc (sx + 1) (levelBound cfg))
+listArrayCfg CaveKind{cxsize, cysize} lmap =
+  Kind.listArray (zeroLoc, toLoc cxsize (cxsize - 1, cysize - 1))
     (M.elems $ M.mapKeys (\ (x, y) -> (y, x)) lmap)
 
 unknownTileMap :: CaveKind -> TileMap
-unknownTileMap cfg@CaveKind{levelBound = (sx, _)} =
-  Kind.listArray (zeroLoc, toLoc (sx + 1) (levelBound cfg))
+unknownTileMap CaveKind{cxsize, cysize} =
+  Kind.listArray (zeroLoc, toLoc cxsize (cxsize - 1, cysize - 1))
     (repeat Tile.unknownId)
 
 rollItems :: CaveKind -> TileMap -> Loc
              -> Rnd [(Loc, ([Item], [Item]))]
-rollItems cfg@CaveKind{levelBound = (sx, _)} lmap ploc =
+rollItems cfg@CaveKind{cxsize} lmap ploc =
   do
     nri <- nrItems cfg
     replicateM nri $
@@ -46,7 +46,7 @@ rollItems cfg@CaveKind{levelBound = (sx, _)} lmap ploc =
                  -- swords generated close to monsters; MUAHAHAHA
                  findLocTry 2000 lmap
                    (const Tile.isBoring)
-                   (\ l _ -> distance (sx + 1) ploc l > 30)
+                   (\ l _ -> distance cxsize ploc l > 30)
                _ -> findLoc lmap
                       (const Tile.isBoring)
         return (l,([item], []))
@@ -55,7 +55,7 @@ rollItems cfg@CaveKind{levelBound = (sx, _)} lmap ploc =
 buildLevel :: (CaveKind -> Rnd (TileMapXY, SecretMap, String))
               -> CaveKind -> Bool
               -> Rnd Level
-buildLevel buildCave cfg@(CaveKind{levelBound = (sx, sy)}) isLast =
+buildLevel buildCave cfg@CaveKind{cxsize, cysize} isLast =
   do
     (caveXY, secretMap, meta) <- buildCave cfg
     let cave = listArrayCfg cfg caveXY
@@ -63,13 +63,13 @@ buildLevel buildCave cfg@(CaveKind{levelBound = (sx, sy)}) isLast =
     su <- findLoc cave (const Tile.isBoring)
     sd <- findLocTry 2000 cave
             (\ l t -> l /= su && Tile.isBoring t)
-            (\ l _ -> distance (sx + 1) su l >= minStairsDistance cfg)
+            (\ l _ -> distance cxsize su l >= minStairsDistance cfg)
     let stairs =
           [(su, Tile.stairsUpId)]
           ++ if isLast then [] else [(sd, Tile.stairsDownId)]
         level = cave Kind.// stairs
     is <- rollItems cfg level su
-    return $ Level emptyParty (sx + 1) (sy + 1) emptyParty
+    return $ Level emptyParty cxsize cysize emptyParty
                    IM.empty secretMap (IM.fromList is) level (unknownTileMap cfg)
                    meta (su, sd)
 

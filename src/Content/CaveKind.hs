@@ -14,11 +14,12 @@ instance Content.Content.Content CaveKind where
 --hero,      eye, fastEye, nose :: CaveKind
 
 data CaveKind = CaveKind
-  { levelGrid         :: Rnd (X, Y)
+  { cxsize    :: X
+  , cysize    :: Y
+  , levelGrid         :: Rnd (X, Y)
   , minRoomSize       :: Rnd (X ,Y)
   , darkRoomChance    :: Rnd Bool
   , border            :: Int         -- must be at least 2!
-  , levelBound        :: (X, Y)      -- lower right point; TODO: change to size or rename to 'bound'
   , extraConnects     :: (X, Y) -> Int
       -- relative to grid (in fact a range, because of duplicate connects)
   , noRooms           :: (X, Y) -> Rnd Int
@@ -38,6 +39,8 @@ normalLevelBound = (79, 22)
 defaultCaveKind :: Int -> CaveKind
 defaultCaveKind d =
   CaveKind {
+    cxsize = fst normalLevelBound + 1,
+    cysize = snd normalLevelBound + 1,
     levelGrid         = do
                           x <- Random.randomR (3, 5)
                           y <- Random.randomR (2, 4)
@@ -45,7 +48,6 @@ defaultCaveKind d =
     minRoomSize       = return (2, 2),
     darkRoomChance    = Random.chance $ 1%((22 - (2 * fromIntegral d)) `max` 2),
     border            = 2,
-    levelBound        = normalLevelBound,
     extraConnects     = \ (x, y) -> (x * y) `div` 3,
     noRooms           = \ (x, y) -> Random.randomR (0, (x * y) `div` 3),
     minStairsDistance = 30,
@@ -60,7 +62,8 @@ defaultCaveKind d =
 _largeCaveKind :: Int -> CaveKind
 _largeCaveKind d =
   (defaultCaveKind d) {
+    cxsize = 231,
+    cysize = 77,
     levelGrid         = return (10, 7),
-    levelBound        = (231, 77),
     extraConnects     = const 10
   }
