@@ -1,27 +1,12 @@
-module ItemKind
-  (ItemKind(..), ItemKindId, getIK, itemFrequency, itemFlavours, swordKindId)
-  where
+module ItemKind where
 
-import Data.Binary
 import qualified Data.List as L
-import qualified Data.Map as M
 import qualified Data.IntMap as IM
-import Control.Monad
-import Data.Maybe
 
 import Color
 import Effect
 import Random
-import Flavour
 
--- TODO: jpower is out of place here. It doesn't make sense for all items,
--- and will mean different things for different items. Perhaps it should
--- be part of the Effect, but then we have to be careful to distinguish
--- parts of the Effect that are rolled on item creation and those rolled
--- at each use (e.g., sword magical +damage vs. sword damage dice).
--- Another thing to keep in minds is that jpower will heavily determine
--- the value of the item for shops, treasure chests, artifact set rebalancing,
--- etc., so if we make jpower complex, the value computation gets complex too.
 data ItemKind = ItemKind
   { jsymbol  :: !Char      -- ^ map symbol
   , jflavour :: [Flavour]  -- ^ possible flavours
@@ -33,31 +18,26 @@ data ItemKind = ItemKind
   }
   deriving (Show, Eq, Ord)
 
-newtype ItemKindId = ItemKindId Int
-  deriving (Show, Eq, Ord)
+type Flavour = (Color, Bool)  -- the flag tells to use fancy color names
 
-instance Binary ItemKindId where
-  put (ItemKindId i) = put i
-  get = liftM ItemKindId get
+zipPlain cs = L.zip cs (repeat False)
+zipFancy cs = L.zip cs (repeat True)
+darkCol    = [Red .. Cyan]
+brightCol  = [BrRed .. BrCyan]  -- BrBlack is not really that bright
+stdCol     = darkCol ++ brightCol
+stdFlav    = zipPlain stdCol ++ zipFancy stdCol
 
-itemAssocs :: [(Int, ItemKind)]
-itemAssocs = L.zip [0..] loot
+flavourToName :: Flavour -> String
+flavourToName (c, False) = colorToName c
+flavourToName (c, True) = colorToName' c
 
-itemContent :: IM.IntMap ItemKind
-itemContent = IM.fromDistinctAscList itemAssocs
+flavourToColor :: Flavour -> Color
+flavourToColor (c, _) = c
 
-getIK :: ItemKindId -> ItemKind
-getIK (ItemKindId i) = itemContent IM.! i
+dungeonLoot :: IM.IntMap ItemKind
+dungeonLoot = IM.fromDistinctAscList (L.zip [0..] loot)
 
-itemFrequency :: Frequency ItemKindId
-itemFrequency = Frequency [(jfreq ik, ItemKindId i) | (i, ik) <- itemAssocs]
-
-itemFlavours :: M.Map ItemKindId [Flavour]
-itemFlavours =
-  M.fromDistinctAscList [(ItemKindId i, jflavour ik) | (i, ik) <- itemAssocs]
-
-swordKindId :: ItemKindId
-swordKindId = ItemKindId $ fromJust $ L.elemIndex sword loot
+getIK ik = dungeonLoot IM.! ik
 
 loot :: [ItemKind]
 loot =

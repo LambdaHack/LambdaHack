@@ -9,9 +9,9 @@ import Control.Monad
 import Geometry
 import State
 import Level
-import Actor
-import ActorState
-import qualified ActorKind
+import Movable
+import MovableState
+import qualified MovableKind
 import FOV
 import qualified Config
 
@@ -32,7 +32,7 @@ ptreachable = preachable . ptotal
 ptvisible   = pvisible . ptotal
 
 actorPrLoc :: (Perception -> S.Set Loc) ->
-              ActorId -> Loc -> Perceptions -> Maybe ActorId -> Bool
+              Actor -> Loc -> Perceptions -> Maybe Actor -> Bool
 actorPrLoc projection actor loc per pl =
   let tryHero = case actor of
                   AMonster _ -> Nothing
@@ -46,15 +46,14 @@ actorPrLoc projection actor loc per pl =
       tryAny  = tryHero `mplus` tryPl
   in  fromMaybe False tryAny  -- assume not visible, if no perception found
 
-actorSeesLoc    :: ActorId -> Loc -> Perceptions -> Maybe ActorId -> Bool
+actorSeesLoc    :: Actor -> Loc -> Perceptions -> Maybe Actor -> Bool
 actorSeesLoc    = actorPrLoc pvisible
 
-actorReachesLoc :: ActorId -> Loc -> Perceptions -> Maybe ActorId -> Bool
+actorReachesLoc :: Actor -> Loc -> Perceptions -> Maybe Actor -> Bool
 actorReachesLoc = actorPrLoc preachable
 
 -- Not quite correct if FOV not symmetric (Shadow).
-actorReachesActor :: ActorId -> ActorId -> Loc -> Loc
-                     -> Perceptions -> Maybe ActorId
+actorReachesActor :: Actor -> Actor -> Loc -> Loc -> Perceptions -> Maybe Actor
                      -> Bool
 actorReachesActor actor1 actor2 loc1 loc2 per pl =
   actorReachesLoc actor1 loc2 per pl ||
@@ -67,7 +66,7 @@ perception_ state@(State { splayer = pl,
                            ssensory = sensory }) =
   let mode   = Config.get config "engine" "fovMode"
       radius = Config.get config "engine" "fovRadius"
-      fovMode m = if not $ ActorKind.bsight (akind m) then Blind else
+      fovMode m = if not $ MovableKind.nsight (mkind m) then Blind else
         -- terrible, temporary hack
         case sensory of
           Vision 3 -> Digital radius
@@ -84,9 +83,9 @@ perception_ state@(State { splayer = pl,
       -- Perception for a player-controlled monster on the current level.
       pper = if isAMonster pl && memActor pl state
              then let m = getPlayerBody state
-                  in Just $ perception (fovMode m) (aloc m) lmap
+                  in Just $ perception (fovMode m) (mloc m) lmap
              else Nothing
-      pers = IM.map (\ h -> perception (fovMode h) (aloc h) lmap) hs
+      pers = IM.map (\ h -> perception (fovMode h) (mloc h) lmap) hs
       lpers = maybeToList pper ++ IM.elems pers
       reachable = S.unions (L.map preachable lpers)
       visible = S.unions (L.map pvisible lpers)

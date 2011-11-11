@@ -22,10 +22,10 @@ import qualified Keys as K
 import Level
 import LevelState
 import Message
-import Actor
-import ActorState
-import ActorKind
-import ActorAdd
+import Movable
+import MovableState
+import MovableKind
+import MovableAdd
 import Perception
 import Random
 import State
@@ -42,7 +42,7 @@ import EffectAction
 -- | Display inventory
 inventory :: Action a
 inventory = do
-  items <- gets (aitems . getPlayerBody)
+  items <- gets (mitems . getPlayerBody)
   if L.null items
     then abortWith "Not carrying anything."
     else do
@@ -53,9 +53,6 @@ inventory = do
 -- | Let the player choose any item with a given group name.
 -- Note that this does not guarantee an item from the group to be chosen,
 -- as the player can override the choice.
--- TODO: There should be a datatype for item groups instead of strings
--- or perhaps the functionality should be implemented differently,
--- e.g., based on equipment slot, as soon as it's specified for item kinds.
 getGroupItem :: [Item] ->  -- all objects in question
                 String ->  -- name of the group
                 String ->  -- prompt
@@ -66,9 +63,9 @@ getGroupItem is groupName prompt packName =
       header = capitalize $ suffixS groupName
   in  getItem prompt choice header is packName
 
-applyGroupItem :: ActorId ->  -- actor applying the item; on current level
-                  String ->   -- how the "applying" is called
-                  Item ->     -- the item to be applied
+applyGroupItem :: Actor ->   -- actor applying the item; on current level
+                  String ->  -- how the "applying" is called
+                  Item ->    -- the item to be applied
                   Action ()
 applyGroupItem actor verb item = do
   state <- get
@@ -77,15 +74,15 @@ applyGroupItem actor verb item = do
   -- only one item consumed, even if several in inventory
   let consumed = item { icount = 1 }
       msg = subjectVerbIObject state body verb consumed ""
-      loc = aloc body
+      loc = mloc body
   removeFromInventory actor consumed loc
   when (loc `S.member` ptvisible per) $ messageAdd msg
-  itemEffectAction 5 actor actor consumed
+  itemEffectAction actor actor consumed
   advanceTime actor
 
 playerApplyGroupItem :: String -> Action ()
 playerApplyGroupItem groupName = do
-  is   <- gets (aitems . getPlayerBody)
+  is   <- gets (mitems . getPlayerBody)
   iOpt <- getGroupItem is groupName
             ("What to " ++ applyToVerb groupName ++ "?") "in inventory"
   pl   <- gets splayer
@@ -106,39 +103,35 @@ quaffPotion = playerApplyGroupItem "potion"
 readScroll :: Action ()
 readScroll = playerApplyGroupItem "scroll"
 
-zapGroupItem :: ActorId ->  -- actor zapping the item; on current level
-                Loc ->      -- target location for the zapping
-                String ->   -- how the "zapping" is called
-                Item ->     -- the item to be zapped
+zapGroupItem :: Actor ->   -- actor zapping the item; on current level
+                Loc ->     -- target location for the zapping
+                String ->  -- how the "zapping" is called
+                Item ->    -- the item to be zapped
                 Action ()
 zapGroupItem source loc verb item = do
   state <- get
   sm    <- gets (getActor source)
   per   <- currentPerception
   let consumed = item { icount = 1 }
-      sloc = aloc sm
-      subject = if sloc `S.member` ptvisible per
-                then sm
-                else template (hero {bname = "somebody"}) 99 sloc
-      msg = subjectVerbIObject state subject verb consumed ""
+      msg = subjectVerbIObject state sm verb consumed ""
+      sloc = mloc sm
   removeFromInventory source consumed sloc
+  -- The message describes the source part of the action.
+  when (sloc `S.member` ptvisible per) $ messageAdd msg
   case locToActor loc state of
     Just ta -> do
-      -- The message describes the source part of the action.
-      when (sloc `S.member` ptvisible per || isAHero ta) $ messageAdd msg
       -- Messages inside itemEffectAction describe the target part.
-      b <- itemEffectAction 10 source ta consumed
+      b <- itemEffectAction source ta consumed
       when (not b) $
         modify (updateLevel (dropItemsAt [consumed] loc))
-    Nothing -> do
-      when (sloc `S.member` ptvisible per) $ messageAdd msg
+    Nothing ->
       modify (updateLevel (dropItemsAt [consumed] loc))
   advanceTime source
 
 playerZapGroupItem :: String -> Action ()
 playerZapGroupItem groupName = do
   state <- get
-  is    <- gets (aitems . getPlayerBody)
+  is    <- gets (mitems . getPlayerBody)
   iOpt  <- getGroupItem is groupName
              ("What to " ++ zapToVerb groupName ++ "?") "in inventory"
   pl    <- gets splayer
@@ -173,13 +166,13 @@ dropItem = do
   pl    <- gets splayer
   state <- get
   pbody <- gets getPlayerBody
-  ploc  <- gets (aloc . getPlayerBody)
-  items <- gets (aitems . getPlayerBody)
+  ploc  <- gets (mloc . getPlayerBody)
+  items <- gets (mitems . getPlayerBody)
   iOpt  <- getAnyItem "What to drop?" items "inventory"
   case iOpt of
     Just stack -> do
       let i = stack { icount = 1 }
-      removeOnlyFromInventory pl i (aloc pbody)
+      removeOnlyFromInventory pl i (mloc pbody)
       messageAdd (subjectVerbIObject state pbody "drop" i "")
       modify (updateLevel (dropItemsAt [i] ploc))
     Nothing -> neverMind True
@@ -187,9 +180,9 @@ dropItem = do
 
 -- TODO: this is a hack for dropItem, because removeFromInventory
 -- makes it impossible to drop items if the floor not empty.
-removeOnlyFromInventory :: ActorId -> Item -> Loc -> Action ()
+removeOnlyFromInventory :: Actor -> Item -> Loc -> Action ()
 removeOnlyFromInventory actor i loc = do
-  updateAnyActor actor (\ m -> m { aitems = removeItemByLetter i (aitems m) })
+  updateAnyActor actor (\ m -> m { mitems = removeItemByLetter i (mitems m) })
 
 -- | Remove given item from an actor's inventory or floor.
 -- TODO: this is subtly wrong: if identical items are on the floor and in
@@ -198,11 +191,11 @@ removeOnlyFromInventory actor i loc = do
 -- of dead heros/monsters. The subtle incorrectness helps here a lot,
 -- because items of dead heroes land on the floor, so we use them up
 -- in inventory, but remove them after use from the floor.
-removeFromInventory :: ActorId -> Item -> Loc -> Action ()
+removeFromInventory :: Actor -> Item -> Loc -> Action ()
 removeFromInventory actor i loc = do
   b <- removeFromLoc i loc
   when (not b) $
-    updateAnyActor actor (\ m -> m { aitems = removeItemByLetter i (aitems m) })
+    updateAnyActor actor (\ m -> m { mitems = removeItemByLetter i (mitems m) })
 
 -- | Remove given item from the given location. Tell if successful.
 removeFromLoc :: Item -> Loc -> Action Bool
@@ -217,14 +210,14 @@ removeFromLoc i loc = do
           adj = M.adjust (\ (t, rt) -> (remove t, rt)) loc
           remove t = t { titems = removeItemByIdentity i (titems t) }
 
-actorPickupItem :: ActorId -> Action ()
+actorPickupItem :: Actor -> Action ()
 actorPickupItem actor = do
   state <- get
   pl    <- gets splayer
   per   <- currentPerception
   lmap  <- gets (lmap . slevel)
   body  <- gets (getActor actor)
-  let loc       = aloc body
+  let loc       = mloc body
       t         = lmap `at` loc -- the map tile in question
       perceived = loc `S.member` ptvisible per
       isPlayer  = actor == pl
@@ -232,9 +225,9 @@ actorPickupItem actor = do
   case titems t of
     []   -> abortIfWith isPlayer "nothing here"
     i:rs -> -- pick up first item; TODO: let player select item;not for monsters
-      case assignLetter (iletter i) (aletter body) (aitems body) of
+      case assignLetter (iletter i) (mletter body) (mitems body) of
         Just l -> do
-          let (ni, nitems) = joinItem (i { iletter = Just l }) (aitems body)
+          let (ni, nitems) = joinItem (i { iletter = Just l }) (mitems body)
           -- message depends on who picks up and if a hero can perceive it
           if isPlayer
             then messageAdd (letterLabel (iletter ni) ++ objectItem state ni)
@@ -243,7 +236,7 @@ actorPickupItem actor = do
           assertTrue $ removeFromLoc i loc
           -- add item to actor's inventory:
           updateAnyActor actor $ \ m ->
-            m { aitems = nitems, aletter = maxLetter l (aletter body) }
+            m { mitems = nitems, mletter = maxLetter l (mletter body) }
         Nothing -> abortIfWith isPlayer "cannot carry any more"
   advanceTime actor
 
@@ -285,7 +278,7 @@ getItem :: String ->              -- prompt message
 getItem prompt p ptext is0 isn = do
   lmap  <- gets (lmap . slevel)
   body  <- gets getPlayerBody
-  let loc       = aloc body
+  let loc       = mloc body
       t         = lmap `at` loc -- the map tile in question
       tis       = titems t
       floorMsg  = if L.null tis then "" else " -,"
@@ -297,11 +290,11 @@ getItem prompt p ptext is0 isn = do
       interact = do
         when (L.null is0 && L.null tis) $
           abortWith "Not carrying anything."
-        messageReset (prompt ++ " " ++ choice)
+        messageWipeAndSet (prompt ++ " " ++ choice)
         display
         session nextCommand >>= perform
       perform command = do
-        messageClear
+        resetMessage
         case command of
           K.Char '?' -> do
             -- filter for supposedly suitable objects

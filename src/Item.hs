@@ -4,7 +4,6 @@ import Data.Binary
 import Data.Set as S
 import Data.List as L
 import qualified Data.IntMap as IM
-import qualified Data.Map as M
 import Data.Maybe
 import Data.Char
 import Data.Function
@@ -13,11 +12,10 @@ import Control.Monad
 import Random
 import ItemKind
 import qualified Color
-import Flavour
 
 data Item = Item
-  { ikind    :: !ItemKindId,
-    ipower   :: !Int,  -- TODO: see the TODO about jpower
+  { ikind    :: !Int,
+    ipower   :: !Int,  -- https://github.com/Mikolaj/LambdaHack/issues#issue/11
     iletter  :: Maybe Char,  -- ^ inventory identifier
     icount   :: !Int }
   deriving Show
@@ -27,39 +25,39 @@ instance Binary Item where
     put ikind >> put ipower >> put iletter >> put icount
   get = liftM4 Item get get get get
 
-type Assocs = M.Map ItemKindId Flavour  -- TODO: rewrite and move elsewhere
+type Assocs = IM.IntMap Flavour
 
-type Discoveries = S.Set ItemKindId
+type Discoveries = S.Set Int
 
 -- | Assinges flavours to item kinds. Assures no flavor is repeated,
 -- except for items with only one permitted flavour.
-rollAssocs :: ItemKindId -> [Flavour] ->
-              Rnd (Assocs, S.Set Flavour) ->
-              Rnd (Assocs, S.Set Flavour)
-rollAssocs key flavours rnd =
-  if L.length flavours == 1
+rollAssocs :: Int -> ItemKind ->
+              Rnd (IM.IntMap Flavour, S.Set Flavour) ->
+              Rnd (IM.IntMap Flavour, S.Set Flavour)
+rollAssocs key kind rnd =
+  if L.length (jflavour kind) == 1
   then rnd
   else do
     (assocs, available) <- rnd
-    let proper = S.fromList flavours `S.intersection` available
+    let proper = S.fromList (jflavour kind) `S.intersection` available
     flavour <- oneOf (S.toList proper)
-    return (M.insert key flavour assocs, S.delete flavour available)
+    return (IM.insert key flavour assocs, S.delete flavour available)
 
 -- | Randomly chooses flavour for all item kinds for this game.
 dungeonAssocs :: Rnd Assocs
 dungeonAssocs =
   liftM fst $
-  M.foldWithKey rollAssocs (return (M.empty, S.fromList stdFlav)) itemFlavours
+  IM.foldWithKey rollAssocs (return (IM.empty, S.fromList stdFlav)) dungeonLoot
 
-getFlavour :: Assocs -> ItemKindId -> Flavour
+getFlavour :: Assocs -> Int -> Flavour
 getFlavour assocs ik =
   let kind = ItemKind.getIK ik
   in  case jflavour kind of
         []  -> error "getFlavour"
         [f] -> f
-        _:_ -> assocs M.! ik
+        _:_ -> assocs IM.! ik
 
-viewItem :: ItemKindId -> Assocs -> (Char, Color.Color)
+viewItem :: Int -> Assocs -> (Char, Color.Color)
 viewItem ik assocs = (jsymbol (getIK ik), flavourToColor $ getFlavour assocs ik)
 
 itemLetter :: ItemKind -> Maybe Char
@@ -68,7 +66,9 @@ itemLetter ik = if jsymbol ik == '$' then Just '$' else Nothing
 -- | Generate an item.
 newItem :: Int -> Rnd Item
 newItem lvl = do
-  ikChosen <- frequency itemFrequency
+  let dLoot = IM.assocs dungeonLoot
+      fik = Frequency $ L.zip (L.map (jfreq . snd) dLoot) (L.map fst dLoot)
+  ikChosen <- frequency fik
   let kind = getIK ikChosen
   count <- rollQuad lvl (jcount kind)
   if count == 0

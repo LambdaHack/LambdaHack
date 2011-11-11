@@ -7,7 +7,7 @@ import Control.Monad
 import Data.Binary
 import qualified Config
 
-import Actor
+import Movable
 import Geometry
 import Level
 import Dungeon
@@ -21,7 +21,7 @@ import qualified ItemKind
 -- TODO: consider changing slevel to LevelName, removing the lname field
 -- and not removing the current level from the dungeon.
 data State = State
-  { splayer      :: ActorId,      -- ^ represents the player-controlled actor
+  { splayer      :: Actor,        -- ^ represents the player-controlled movable
     scursor      :: Cursor,       -- ^ cursor location and level to return to
     shistory     :: [Message],
     ssensory     :: SensoryMode,
@@ -52,7 +52,7 @@ defaultState dng lvl =
     []
     Implicit Normal
     0
-    M.empty
+    IM.empty
     S.empty
     dng
     lvl

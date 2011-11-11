@@ -79,6 +79,7 @@ showScore (pos, score) =
       time  = calendarTimeToString . toUTCTime . date $ score
       big   = "                                                 "
       lil   = "              "
+      -- TODO: later: https://github.com/kosmikus/LambdaHack/issues#issue/9
       steps = negTurn score `div` (-10)
   in
    printf

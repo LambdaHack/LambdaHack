@@ -4,8 +4,8 @@ LambdaHack
 LambdaHack is a small [roguelike] [1] game written in [Haskell] [2].
 It is getting more and more configurable and aims to become a flexible
 rouguelike engine, suitable for large and small dungeon crawling games
-of arbitrary themes. In particular, we try to keep the AI code independent
-of particular monster, item and terrain definitions.
+of arbitrary themes. In particular, we try to keep AI independent
+of monster, item and terrain definitions.
 
 
 Compilation and installation

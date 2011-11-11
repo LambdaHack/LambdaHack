@@ -146,7 +146,7 @@ emptyRoom addWallsRnd cfg@(LevelConfig { levelSize = (sy,sx) }) nm =
           addWalls $
           maybe id (\ l -> M.insert su (newTile (Stairs Light Up   l))) lu $
           maybe id (\ l -> M.insert sd (newTile (Stairs Light Down l))) ld $
-          (\lmap -> L.foldl' addItem lmap is) $
+          (\lmap -> foldl' addItem lmap is) $
           lmap
         level lu ld = Level nm emptyParty (sy,sx) emptyParty smap (flmap lu ld) "bigroom"
     return (level, su, sd)
@@ -167,7 +167,7 @@ noiseRoom cfg =
               case lmap `at` l of
                 Tile (Floor _) [] -> M.insert l (newTile (Wall O)) lmap
                 _ -> lmap
-        return $ \ lmap -> L.foldl' insertWall lmap rs
+        return $ \ lmap -> foldl' insertWall lmap rs
   in  emptyRoom addWalls cfg
 
 data LevelConfig =
@@ -260,7 +260,7 @@ rogueRoom cfg nm =
     let smap = M.fromList [ ((y,x),-100) | let (sy,sx) = levelSize cfg,
                                            y <- [0..sy], x <- [0..sx] ]
     let lmap :: LMap
-        lmap = L.foldr digCorridor (L.foldr (\ (r, dl) m -> digRoom dl r m)
+        lmap = foldr digCorridor (foldr (\ (r, dl) m -> digRoom dl r m)
                                         (emptyLMap (levelSize cfg)) dlrooms) cs
     let lvl = Level nm emptyParty (levelSize cfg) emptyParty smap lmap ""
     -- convert openings into doors
@@ -297,7 +297,7 @@ rogueRoom cfg nm =
     return (\ lu ld ->
       let flmap = maybe id (\ l -> M.update (\ (t,r) -> Just $ newTile (Stairs (toDL $ light t) Up   l)) su) lu $
                   maybe id (\ l -> M.update (\ (t,r) -> Just $ newTile (Stairs (toDL $ light t) Down l)) sd) ld $
-                  L.foldr (\ (l,it) f -> M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l . f) id is
+                  foldr (\ (l,it) f -> M.update (\ (t,r) -> Just (t { titems = it : titems t }, r)) l . f) id is
                   dlmap
       in  Level nm emptyParty (levelSize cfg) emptyParty smap flmap meta, su, sd)
 

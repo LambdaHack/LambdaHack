@@ -9,7 +9,7 @@ import qualified Data.IntMap as IM
 
 import Geometry
 import GeometryRnd
-import Actor
+import Movable
 import Item
 import Random
 import qualified Terrain
@@ -34,7 +34,7 @@ levelNumber (LambdaCave n) = n
 -- | A dungeon location is a level together with a location on that level.
 type DungeonLoc = (LevelName, Loc)
 
-type Party = IM.IntMap Actor
+type Party = IM.IntMap Movable
 
 data Level = Level
   { lname     :: LevelName,
@@ -152,10 +152,10 @@ passive = Terrain.passive . tterrain
 perceptible :: Tile -> [Dir]
 perceptible = Terrain.perceptible . tterrain
 
--- Checks for the presence of actors. Does *not* check if the tile is open.
-unoccupied :: [Actor] -> Loc -> Bool
-unoccupied actors loc =
-  all (\ body -> aloc body /= loc) actors
+-- Checks for the presence of movables. Does *not* check if the tile is open.
+unoccupied :: [Movable] -> Loc -> Bool
+unoccupied movables loc =
+  all (\ m -> mloc m /= loc) movables
 
 -- check whether one location is accessible from the other
 -- precondition: the two locations are next to each other
