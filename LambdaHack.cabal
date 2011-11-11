@@ -4,8 +4,8 @@ version:       0.1.20110919
 license:       BSD3
 license-file:  LICENSE
 tested-with:   GHC == 7.2.1, GHC == 7.3
-data-files:    LICENSE, CREDITS, PLAYING.md,
-               README.md, src/config.default, src/config.bot, scores
+data-files:    LICENSE, CREDITS, PLAYING.md, README.md,
+               config.default, config.bot, scores
 author:        Andres Loeh, Mikolaj Konarski
 maintainer:    Andres Loeh <mail@andres-loeh.de>
 description:   This is an alpha release of LambdaHack, a roguelike game engine
