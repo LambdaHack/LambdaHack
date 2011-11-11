@@ -195,5 +195,5 @@ itemPrice :: Item -> Int
 itemPrice i =
   case iname (Kind.getKind (jkind i)) of
     "gold piece" -> jcount i
-    "gem" -> 100
+    "gem" -> jcount i * 100
     _ -> 0

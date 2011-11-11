@@ -15,11 +15,11 @@ encodeEOF :: Binary a => FilePath -> a -> IO ()
 encodeEOF f a = encodeCompressedFile f (a, "OK")
 
 strictReadCompressedFile :: FilePath -> IO LBS.ByteString
-strictReadCompressedFile f = do
-  h <- openBinaryFile f ReadMode
-  c <- LBS.hGetContents h
-  let d = Z.decompress c
-  LBS.length d `seq` return d
+strictReadCompressedFile f =
+  withBinaryFile f ReadMode $ \ h -> do
+    c <- LBS.hGetContents h
+    let d = Z.decompress c
+    LBS.length d `seq` return d
 
 strictDecodeCompressedFile :: Binary a => FilePath -> IO a
 strictDecodeCompressedFile = fmap decode . strictReadCompressedFile
