@@ -1,17 +1,16 @@
 {-# LANGUAGE CPP #-}
-
-module Display where
+module Game.LambdaHack.Display where
 
 -- wrapper for selected Display frontend
 
 #ifdef CURSES
-import qualified Display.Curses as D
+import qualified Game.LambdaHack.Display.Curses as D
 #elif VTY
-import qualified Display.Vty as D
+import qualified Game.LambdaHack.Display.Vty as D
 #elif STD
-import qualified Display.Std as D
+import qualified Game.LambdaHack.Display.Std as D
 #else
-import qualified Display.Gtk as D
+import qualified Game.LambdaHack.Display.Gtk as D
 #endif
 
 -- Display routines that are independent of the selected display frontend.
@@ -24,23 +23,23 @@ import qualified Data.IntMap as IM
 import Control.Monad.IO.Class
 import Data.Maybe
 
-import Message
-import qualified Color
-import State
-import Geometry
-import Loc
-import Area
-import Level
-import Perception
-import Actor
-import ActorState
-import Content.ActorKind
-import Content.TileKind
-import Item
-import qualified Keys as K
-import WorldLoc
-import Random
-import qualified Kind
+import Game.LambdaHack.Message
+import qualified Game.LambdaHack.Color as Color
+import Game.LambdaHack.State
+import Game.LambdaHack.Geometry
+import Game.LambdaHack.Loc
+import Game.LambdaHack.Area
+import Game.LambdaHack.Level
+import Game.LambdaHack.Perception
+import Game.LambdaHack.Actor
+import Game.LambdaHack.ActorState
+import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.Content.TileKind
+import qualified Game.LambdaHack.Item as Item
+import qualified Game.LambdaHack.Keys as K
+import Game.LambdaHack.WorldLoc
+import Game.LambdaHack.Random
+import qualified Game.LambdaHack.Kind as Kind
 
 -- Re-exported from the display frontend, with an extra slot for function
 -- for translating keys to a canonical form.
@@ -150,9 +149,9 @@ displayLevel dm session per
                                       then Color.Magenta
                                       else Color.defBG
                 else \ _vis _rea -> Color.defBG
-      wealth  = L.sum $ L.map itemPrice bitems
-      damage  = case strongestItem bitems "sword" of
-                  Just sw -> 3 + jpower sw
+      wealth  = L.sum $ L.map Item.itemPrice bitems
+      damage  = case Item.strongestItem bitems "sword" of
+                  Just sw -> 3 + Item.jpower sw
                   Nothing -> 3
       hs      = levelHeroList state
       ms      = levelMonsterList state
@@ -175,7 +174,7 @@ displayLevel dm session per
               | otherwise = Char.intToDigit k
             rainbow loc = toEnum $ loc `rem` 14 + 1
             (char, fg0) =
-              case L.find (\ m -> loc0 == Actor.bloc m) (hs ++ ms) of
+              case L.find (\ m -> loc0 == Game.LambdaHack.Actor.bloc m) (hs ++ ms) of
                 Just m | sOmn || vis -> viewActor loc0 m
                 _ | sSml && sml >= 0 -> (viewSmell sml, rainbow loc0)
                   | otherwise ->
@@ -184,7 +183,7 @@ displayLevel dm session per
                       let u = Kind.getKind tile
                       in (tsymbol u, if vis then tcolor u else tcolor2 u)
                     i : _ ->
-                      Item.viewItem (jkind i) sflavour
+                      Item.viewItem (Item.jkind i) sflavour
             vis = S.member loc0 visible
             rea = S.member loc0 reachable
             bg0 = if ctargeting scursor && loc0 == clocation scursor

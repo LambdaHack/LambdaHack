@@ -1,5 +1,6 @@
-module Display.Gtk
-  (displayId, startup, shutdown, display, nextEvent, Session) where
+module Game.LambdaHack.Display.Gtk
+  ( displayId, startup, shutdown, display, nextEvent, Session
+  ) where
 
 import Control.Monad
 import Control.Concurrent
@@ -10,11 +11,11 @@ import Data.IORef
 import qualified Data.Map as M
 import qualified Data.ByteString.Char8 as BS
 
-import Area
-import Loc
-import Geometry
-import qualified Keys as K (Key(..), keyTranslate)
-import qualified Color
+import Game.LambdaHack.Area
+import Game.LambdaHack.Loc
+import Game.LambdaHack.Geometry
+import qualified Game.LambdaHack.Keys as K (Key(..), keyTranslate)
+import qualified Game.LambdaHack.Color as Color
 
 displayId :: String
 displayId = "gtk"

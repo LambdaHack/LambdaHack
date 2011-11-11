@@ -1,22 +1,22 @@
 {-# LANGUAGE MultiParamTypeClasses, RankNTypes #-}
-module Action where
+module Game.LambdaHack.Action where
 
 import Control.Monad
 import Control.Monad.State hiding (State, state)
 import qualified Data.IntMap as IM
 -- import System.IO (hPutStrLn, stderr) -- just for debugging
 
-import Perception
-import Display hiding (display)
-import Message
-import State
-import Level
-import Actor
-import ActorState
-import Content.ActorKind
-import qualified Save
-import qualified Kind
-import Random
+import Game.LambdaHack.Perception
+import Game.LambdaHack.Display hiding (display)
+import Game.LambdaHack.Message
+import Game.LambdaHack.State
+import Game.LambdaHack.Level
+import Game.LambdaHack.Actor
+import Game.LambdaHack.ActorState
+import Game.LambdaHack.Content.ActorKind
+import qualified Game.LambdaHack.Save as Save
+import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Random
 
 newtype Action a = Action
   { runAction ::

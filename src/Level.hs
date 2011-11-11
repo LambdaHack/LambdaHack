@@ -1,4 +1,4 @@
-module Level
+module Game.LambdaHack.Level
   ( SmellTime(..), SmellMap, SecretMap
   , ItemMap, TileMap, Level(..)
   , updateHeroes, updateMonsters, updateLMap, updateLRMap, updateIMap
@@ -10,16 +10,16 @@ import Data.Binary
 import qualified Data.List as L
 import qualified Data.IntMap as IM
 
-import Utils.Assert
-import Geometry
-import Loc
-import Actor
-import Item
-import Content.TileKind
-import Random
-import qualified Tile
-import qualified Feature as F
-import qualified Kind
+import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Geometry
+import Game.LambdaHack.Loc
+import Game.LambdaHack.Actor
+import Game.LambdaHack.Item
+import Game.LambdaHack.Content.TileKind
+import Game.LambdaHack.Random
+import qualified Game.LambdaHack.Tile as Tile
+import qualified Game.LambdaHack.Feature as F
+import qualified Game.LambdaHack.Kind as Kind
 
 newtype SmellTime = SmellTime{smelltime :: Time} deriving Show
 instance Binary SmellTime where

@@ -1,12 +1,12 @@
-module AreaRnd where
+module Game.LambdaHack.AreaRnd where
 
 import qualified Data.List as L
 import qualified Data.Set as S
 import qualified System.Random as R
 
-import Geometry
-import Area
-import Random
+import Game.LambdaHack.Geometry
+import Game.LambdaHack.Area
+import Game.LambdaHack.Random
 
 xyInArea :: Area -> Rnd (X, Y)
 xyInArea (x0, y0, x1, y1) = do

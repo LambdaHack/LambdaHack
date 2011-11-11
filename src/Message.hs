@@ -1,4 +1,4 @@
-module Message where
+module Game.LambdaHack.Message where
 
 import qualified Data.List as L
 import Data.Char

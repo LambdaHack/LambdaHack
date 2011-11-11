@@ -1,11 +1,11 @@
-module FOV.Digital (scan) where
+module Game.LambdaHack.FOV.Digital (scan) where
 
 import qualified Data.Set as S
 
-import Utils.Assert
-import FOV.Common
-import Loc
-import Level
+import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.FOV.Common
+import Game.LambdaHack.Loc
+import Game.LambdaHack.Level
 
 -- Digital FOV with a given range.
 

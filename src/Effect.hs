@@ -1,6 +1,6 @@
-module Effect where
+module Game.LambdaHack.Effect where
 
-import Random
+import Game.LambdaHack.Random
 
 data Effect =
     NoEffect

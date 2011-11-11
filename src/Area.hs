@@ -1,10 +1,11 @@
-module Area
-  ( Area, neighbors, fromTo, normalize, normalizeArea, grid ) where
+module Game.LambdaHack.Area
+  ( Area, neighbors, fromTo, normalize, normalizeArea, grid )
+  where
 
 import qualified Data.List as L
 
-import Geometry
-import Utils.Assert
+import Game.LambdaHack.Geometry
+import Game.LambdaHack.Utils.Assert
 
 type Area = (X, Y, X, Y)
 

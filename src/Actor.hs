@@ -1,17 +1,17 @@
-module Actor where
+module Game.LambdaHack.Actor where
 
 import Data.Binary
 import Control.Monad
 import qualified Data.IntMap as IM
 
-import Utils.Assert
-import Geometry
-import Dir
-import Loc
-import Item
-import Content.ActorKind
-import qualified Kind
-import Random
+import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Geometry
+import Game.LambdaHack.Dir
+import Game.LambdaHack.Loc
+import Game.LambdaHack.Item
+import Game.LambdaHack.Content.ActorKind
+import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Random
 
 -- | Monster properties that are changing a lot. If they are dublets
 -- of properties form ActorKind, the intention is they may be modified

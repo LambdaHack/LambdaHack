@@ -1,11 +1,11 @@
-module Save where
+module Game.LambdaHack.Save where
 
 import System.Directory
 import qualified Control.Exception as E hiding (handle)
 
-import Utils.File
-import State
-import qualified Config
+import Game.LambdaHack.Utils.File
+import Game.LambdaHack.State
+import qualified Game.LambdaHack.Config as Config
 
 -- | Name of the save game.
 file :: Config.CP -> IO FilePath

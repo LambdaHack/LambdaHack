@@ -1,17 +1,17 @@
-module Random
-  (Rnd, randomR, binaryChoice, chance,
-   roll, oneOf, frequency, (*~), (~+~),
-   RollDice, rollDice, maxDice, minDice, meanDice,
-   RollQuad, rollQuad, intToQuad)
-  where
+module Game.LambdaHack.Random
+  ( Rnd, randomR, binaryChoice, chance
+  , roll, oneOf, frequency, (*~), (~+~)
+  , RollDice, rollDice, maxDice, minDice, meanDice
+  , RollQuad, rollQuad, intToQuad
+  ) where
 
 import qualified Data.Binary as Binary
 import Data.Ratio
 import qualified System.Random as R
 import Control.Monad.State
 
-import Utils.Assert
-import Frequency
+import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Frequency
 
 -- TODO: if the file grows much larger, split it and move a part to Utils/
 

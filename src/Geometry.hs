@@ -1,4 +1,4 @@
-module Geometry
+module Game.LambdaHack.Geometry
   ( Time, X, Y, shiftXY, movesXY, lenXY, euclidLenSq, normalLevelBound ) where
 
 -- | Game time in turns. The time dimension.

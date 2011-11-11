@@ -1,11 +1,13 @@
-module Dungeon (Dungeon, fromList, currentFirst, adjust, (!)) where
+module Game.LambdaHack.Dungeon
+  ( Dungeon, fromList, currentFirst, adjust, (!)
+  ) where
 
 import Data.Binary
 import qualified Data.Map as M
 import qualified Data.List as L
 
-import Level
-import WorldLoc
+import Game.LambdaHack.Level
+import Game.LambdaHack.WorldLoc
 
 -- | The complete dungeon is a map from level names to levels.
 -- We usually store all but the current level in this data structure.

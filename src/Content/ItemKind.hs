@@ -1,10 +1,12 @@
-module Content.ItemKind (ItemKind(..)) where
+module Game.LambdaHack.Content.ItemKind
+  ( ItemKind(..)
+  ) where
 
-import Color
-import qualified Content.Content
-import Effect
-import Flavour
-import Random
+import Game.LambdaHack.Color
+import qualified Game.LambdaHack.Content.Content as Content
+import Game.LambdaHack.Effect
+import Game.LambdaHack.Flavour
+import Game.LambdaHack.Random
 
 -- TODO: jpower is out of place here. It doesn't make sense for all items,
 -- and will mean different things for different items. Perhaps it should
@@ -25,7 +27,7 @@ data ItemKind = ItemKind
   }
   deriving (Show, Eq, Ord)
 
-instance Content.Content.Content ItemKind where
+instance Content.Content ItemKind where
   getFreq = ifreq
   content =
     [amulet, dart, gem1, gem2, gem3, gem4, gold, potion1, potion2, potion3, ring, scroll1, scroll2, sword, fist, wand]

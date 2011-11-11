@@ -1,4 +1,4 @@
-module Keys where
+module Game.LambdaHack.Keys where
 
 import Prelude hiding (Left, Right)
 import qualified Data.Map as M
@@ -6,8 +6,8 @@ import qualified Data.List as L
 import Data.Char
 import Data.Maybe
 
-import Geometry
-import Dir
+import Game.LambdaHack.Geometry
+import Game.LambdaHack.Dir
 
 -- TODO: if the file grows much larger, split it and move a part to Utils/
 

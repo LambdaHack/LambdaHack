@@ -1,14 +1,16 @@
-module FOV (FovMode(..), fullscan) where
+module Game.LambdaHack.FOV
+  ( FovMode(..), fullscan
+  ) where
 
 import qualified Data.Set as S
 import qualified Data.List as L
 
-import FOV.Common
-import qualified FOV.Digital
-import qualified FOV.Permissive
-import qualified FOV.Shadow
-import Loc
-import Level
+import Game.LambdaHack.FOV.Common
+import qualified Game.LambdaHack.FOV.Digital as Digital
+import qualified Game.LambdaHack.FOV.Permissive as Permissive
+import qualified Game.LambdaHack.FOV.Shadow as Shadow
+import Game.LambdaHack.Loc
+import Game.LambdaHack.Level
 
 -- TODO: should Blind really be a FovMode, or a modifier? Let's decide
 -- when other similar modifiers are added.
@@ -24,18 +26,18 @@ fullscan fovMode loc lvl@Level{lxsize} =
   case fovMode of
     Shadow ->  -- shadow casting with infinite range
       S.unions $
-      L.map (\ tr -> FOV.Shadow.scan tr lvl 1 (0,1))
+      L.map (\ tr -> Shadow.scan tr lvl 1 (0,1))
         [tr0, tr1, tr2, tr3, tr4, tr5, tr6, tr7]
     Permissive r  ->  -- permissive with range r
       S.unions $
-      L.map (\ tr -> FOV.Permissive.scan r tr lvl) [qtr0, qtr1, qtr2, qtr3]
+      L.map (\ tr -> Permissive.scan r tr lvl) [qtr0, qtr1, qtr2, qtr3]
     Digital r ->  -- digital with range r
       S.unions $
-      L.map (\ tr -> FOV.Digital.scan r tr lvl) [qtr0, qtr1, qtr2, qtr3]
+      L.map (\ tr -> Digital.scan r tr lvl) [qtr0, qtr1, qtr2, qtr3]
     Blind ->  -- only feeling out adjacent tiles by touch
       let radius = 1
       in S.unions $
-         L.map (\ tr -> FOV.Digital.scan radius tr lvl) [qtr0, qtr1, qtr2, qtr3]
+         L.map (\ tr -> Digital.scan radius tr lvl) [qtr0, qtr1, qtr2, qtr3]
  where
   trL = trLoc lxsize
 

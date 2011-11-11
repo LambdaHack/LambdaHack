@@ -1,4 +1,6 @@
-module Content.Content (Content(..)) where
+module Game.LambdaHack.Content.Content
+  ( Content(..)
+  ) where
 
 import qualified Data.List as L
 import qualified Data.IntMap as IM

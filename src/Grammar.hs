@@ -1,18 +1,18 @@
-module Grammar where
+module Game.LambdaHack.Grammar where
 
 import Data.Char
 import qualified Data.Set as S
 import qualified Data.List as L
 import Data.Maybe
 
-import Item
-import Actor
-import Content.ActorKind
-import State
-import Content.ItemKind
-import Effect
-import Flavour
-import qualified Kind
+import Game.LambdaHack.Item
+import Game.LambdaHack.Actor
+import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.State
+import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Effect
+import Game.LambdaHack.Flavour
+import qualified Game.LambdaHack.Kind as Kind
 
 suffixS :: String -> String
 suffixS word = case last word of

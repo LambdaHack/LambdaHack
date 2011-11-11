@@ -1,17 +1,16 @@
-module HighScores where
+module Game.LambdaHack.HighScores where
 
 import System.Directory
 import Control.Monad
 import Text.Printf
 import System.Time
-
 import Data.Binary
 import qualified Data.List as L
 
-import Utils.File
-import qualified Config
-import WorldLoc
-import Geometry
+import Game.LambdaHack.Utils.File
+import qualified Game.LambdaHack.Config as Config
+import Game.LambdaHack.WorldLoc
+import Game.LambdaHack.Geometry
 
 -- | A single score.
 -- TODO: add heroes' names, exp and level, cause of death, user number/name.

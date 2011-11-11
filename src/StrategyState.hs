@@ -1,4 +1,4 @@
-module StrategyState where
+module Game.LambdaHack.StrategyState where
 
 import qualified Data.List as L
 import qualified Data.IntMap as IM
@@ -6,24 +6,24 @@ import Data.Maybe
 import Control.Monad
 import Control.Arrow
 
-import Loc
-import Dir
-import Level
-import Actor
-import ActorState
-import Content.ActorKind
-import Frequency
-import Perception
-import Strategy
-import State
-import Action
-import Actions
-import ItemAction
-import Content.ItemKind
-import Item
-import qualified Effect
-import qualified Tile
-import qualified Kind
+import Game.LambdaHack.Loc
+import Game.LambdaHack.Dir
+import Game.LambdaHack.Level
+import Game.LambdaHack.Actor
+import Game.LambdaHack.ActorState
+import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.Frequency
+import Game.LambdaHack.Perception
+import Game.LambdaHack.Strategy
+import Game.LambdaHack.State
+import Game.LambdaHack.Action
+import Game.LambdaHack.Actions
+import Game.LambdaHack.ItemAction
+import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Item
+import qualified Game.LambdaHack.Effect as Effect
+import qualified Game.LambdaHack.Tile as Tile
+import qualified Game.LambdaHack.Kind as Kind
 
 {-
 Monster movement

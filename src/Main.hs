@@ -4,16 +4,16 @@ import System.Directory
 import qualified System.Random as R
 import qualified Control.Monad.State as MState
 
-import Action
-import State
-import DungeonState
-import qualified Display
-import qualified Save
-import Turn
-import qualified Config
-import ActorAdd
-import Item
-import qualified Keybindings as KB
+import Game.LambdaHack.Action
+import Game.LambdaHack.State
+import Game.LambdaHack.DungeonState
+import qualified Game.LambdaHack.Display as Display
+import qualified Game.LambdaHack.Save as Save
+import Game.LambdaHack.Turn
+import qualified Game.LambdaHack.Config as Config
+import Game.LambdaHack.ActorAdd
+import Game.LambdaHack.Item
+import qualified Game.LambdaHack.Keybindings as KB
 
 main :: IO ()
 main = Display.startup start

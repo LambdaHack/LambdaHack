@@ -1,5 +1,5 @@
-module Kind
-  ( Id, Kind.getKind, getId, frequency, foldrWithKey, boundsId
+module Game.LambdaHack.Kind
+  ( Id, getKind, getId, frequency, foldrWithKey, boundsId
   , Array, (!), (//), listArray, bounds
   ) where
 
@@ -10,9 +10,9 @@ import qualified Data.Word as Word
 import qualified Data.Array.Unboxed as A
 import qualified Data.Ix as Ix
 
-import Utils.Assert
-import Content.Content
-import Frequency
+import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Content.Content
+import Game.LambdaHack.Frequency
 
 newtype Id a = Id{kindId :: Word8} deriving (Show, Eq, Ord, Ix.Ix)
 

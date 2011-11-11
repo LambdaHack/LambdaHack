@@ -1,4 +1,4 @@
-module ActorState where
+module Game.LambdaHack.ActorState where
 
 import qualified Data.List as L
 import qualified Data.Set as S
@@ -7,13 +7,13 @@ import qualified Data.IntMap as IM
 import Control.Monad
 import Data.Maybe
 
-import Utils.Assert
-import Loc
-import Actor
-import Level
-import qualified Dungeon
-import State
-import WorldLoc
+import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Loc
+import Game.LambdaHack.Actor
+import Game.LambdaHack.Level
+import qualified Game.LambdaHack.Dungeon as Dungeon
+import Game.LambdaHack.State
+import Game.LambdaHack.WorldLoc
 
 -- The operations with "Any", and those that use them, consider all the dungeon.
 -- All the other actor and level operations only consider the current level.

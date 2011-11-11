@@ -1,13 +1,13 @@
-module FOV.Shadow (scan) where
+module Game.LambdaHack.FOV.Shadow (scan) where
 
 import Data.Ratio
 import qualified Data.Set as S
 
-import Utils.Assert
-import FOV.Common
-import Loc
-import Level
-import qualified Tile
+import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.FOV.Common
+import Game.LambdaHack.Loc
+import Game.LambdaHack.Level
+import qualified Game.LambdaHack.Tile as Tile
 
 -- Recursive Shadow Casting.
 

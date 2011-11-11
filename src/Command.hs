@@ -1,10 +1,10 @@
-module Command where
+module Game.LambdaHack.Command where
 
-import Action
-import Actions
-import Dir
-import ItemAction
-import Version
+import Game.LambdaHack.Action
+import Game.LambdaHack.Actions
+import Game.LambdaHack.Dir
+import Game.LambdaHack.ItemAction
+import Game.LambdaHack.Version
 
 data Described a = Described { chelp :: String, caction :: a }
                  | Undescribed { caction :: a }

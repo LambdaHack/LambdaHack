@@ -1,4 +1,4 @@
-module Turn where
+module Game.LambdaHack.Turn where
 
 import Control.Monad
 import Control.Monad.State hiding (State, state)
@@ -9,21 +9,21 @@ import qualified Data.Ord as Ord
 import qualified Data.IntMap as IM
 import qualified Data.Char as Char
 
-import Action
-import Actions
-import Command
-import qualified Config
-import Display hiding (display)
-import EffectAction
-import Keybindings
-import qualified Keys as K
-import Level
-import Actor
-import ActorState
-import Random
-import State
-import Strategy
-import StrategyState
+import Game.LambdaHack.Action
+import Game.LambdaHack.Actions
+import Game.LambdaHack.Command
+import qualified Game.LambdaHack.Config as Config
+import Game.LambdaHack.Display hiding (display)
+import Game.LambdaHack.EffectAction
+import Game.LambdaHack.Keybindings
+import qualified Game.LambdaHack.Keys as K
+import Game.LambdaHack.Level
+import Game.LambdaHack.Actor
+import Game.LambdaHack.ActorState
+import Game.LambdaHack.Random
+import Game.LambdaHack.State
+import Game.LambdaHack.Strategy
+import Game.LambdaHack.StrategyState
 
 -- One turn proceeds through the following functions:
 --

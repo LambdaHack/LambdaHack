@@ -1,5 +1,6 @@
-module Display.Curses
-  (displayId, startup, shutdown, display, nextEvent, Session) where
+module Game.LambdaHack.Display.Curses
+  ( displayId, startup, shutdown, display, nextEvent, Session
+  ) where
 
 import qualified UI.HSCurses.Curses as C
 import qualified UI.HSCurses.CursesHelper as C
@@ -7,10 +8,10 @@ import qualified Data.List as L
 import qualified Data.Map as M
 import Control.Monad
 
-import Area
-import Loc
-import qualified Keys as K (Key(..))
-import qualified Color
+import Game.LambdaHack.Area
+import Game.LambdaHack.Loc
+import qualified Game.LambdaHack.Keys as K (Key(..))
+import qualified Game.LambdaHack.Color as Color
 
 displayId :: String
 displayId = "curses"

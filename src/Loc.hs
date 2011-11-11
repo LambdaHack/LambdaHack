@@ -1,9 +1,9 @@
-module Loc
-  ( Loc, toLoc, fromLoc, trLoc, zeroLoc, distance, adjacent, surroundings )
-  where
+module Game.LambdaHack.Loc
+  ( Loc, toLoc, fromLoc, trLoc, zeroLoc, distance, adjacent, surroundings
+  ) where
 
-import Geometry
-import Utils.Assert
+import Game.LambdaHack.Geometry
+import Game.LambdaHack.Utils.Assert
 
 -- Loc is a positivie integer for speed and to enforce the use of wrappers
 -- (we don't want newtype to avoid the trouble with using EnumMap

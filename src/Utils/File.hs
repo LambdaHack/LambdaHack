@@ -1,4 +1,6 @@
-module Utils.File (encodeEOF, strictDecodeEOF) where
+module Game.LambdaHack.Utils.File
+  ( encodeEOF, strictDecodeEOF
+  ) where
 
 import System.IO
 import Data.Binary

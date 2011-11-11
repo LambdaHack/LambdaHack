@@ -1,11 +1,11 @@
-module LevelState where
+module Game.LambdaHack.LevelState where
 
-import Level
-import State
-import Grammar
-import Loc
-import Content.TileKind
-import qualified Kind
+import Game.LambdaHack.Level
+import Game.LambdaHack.State
+import Game.LambdaHack.Grammar
+import Game.LambdaHack.Loc
+import Game.LambdaHack.Content.TileKind
+import qualified Game.LambdaHack.Kind as Kind
 
 -- | Produces a textual description of the terrain and items at an already
 -- explored location. Mute for unknown locations.

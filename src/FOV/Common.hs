@@ -1,4 +1,4 @@
-module FOV.Common
+module Game.LambdaHack.FOV.Common
   ( Distance, Progress
   , Bump(..)
   , Line, ConvexHull, Edge, EdgeInterval
@@ -7,10 +7,10 @@ module FOV.Common
 
 import qualified Data.List as L
 
-import Geometry
-import Loc
-import qualified Tile
-import Level
+import Game.LambdaHack.Geometry
+import Game.LambdaHack.Loc
+import qualified Game.LambdaHack.Tile as Tile
+import Game.LambdaHack.Level
 
 type Distance = Int
 type Progress = Int

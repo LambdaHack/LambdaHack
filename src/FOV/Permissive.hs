@@ -1,11 +1,11 @@
-module FOV.Permissive (scan) where
+module Game.LambdaHack.FOV.Permissive (scan) where
 
 import qualified Data.Set as S
 
-import Utils.Assert
-import FOV.Common
-import Loc
-import Level
+import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.FOV.Common
+import Game.LambdaHack.Loc
+import Game.LambdaHack.Level
 
 -- Permissive FOV with a given range.
 

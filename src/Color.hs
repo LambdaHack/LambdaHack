@@ -1,6 +1,6 @@
-module Color
-  (Color(..), Attr, defBG, defFG, defaultAttr, isBright, legalBG, colorToRGB)
-  where
+module Game.LambdaHack.Color
+  ( Color(..), Attr, defBG, defFG, defaultAttr, isBright, legalBG, colorToRGB
+  ) where
 
 import qualified Data.Binary as Binary
 
@@ -39,10 +39,10 @@ defBG, defFG :: Color
 defBG = Black
 defFG = White
 
-type Attr = (Color.Color, Color.Color)
+type Attr = (Color, Color)
 
 defaultAttr :: Attr
-defaultAttr = (Color.defFG, Color.defBG)
+defaultAttr = (defFG, defBG)
 
 isBright :: Color -> Bool
 isBright c = fromEnum c > 7  -- for terminals that display bright via bold

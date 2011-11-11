@@ -1,4 +1,4 @@
-module Frequency where
+module Game.LambdaHack.Frequency where
 
 import Control.Monad
 

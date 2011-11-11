@@ -1,11 +1,12 @@
-module Dir
-  ( Dir, dirDistSq, diagonal, neg, moves, shift, towards ) where
+module Game.LambdaHack.Dir
+  ( Dir, dirDistSq, diagonal, neg, moves, shift, towards
+  ) where
 
 import Data.Binary
 
-import Geometry
-import Loc
-import Utils.Assert
+import Game.LambdaHack.Geometry
+import Game.LambdaHack.Loc
+import Game.LambdaHack.Utils.Assert
 
 -- Vectors of length 1 (in our metric), that is, geographical directions.
 -- Implemented as an offset in the linear framebuffer indexed by Loc.

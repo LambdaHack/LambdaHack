@@ -1,4 +1,4 @@
-module EffectAction where
+module Game.LambdaHack.EffectAction where
 
 import Control.Monad
 import Control.Monad.State hiding (State, state)
@@ -8,26 +8,26 @@ import qualified Data.IntMap as IM
 import qualified Data.Set as S
 import System.Time
 
-import Utils.Assert
-import Action
-import Actor
-import ActorState
-import Content.ActorKind
-import ActorAdd
-import Display hiding (display)
-import Grammar
-import Loc
-import qualified HighScores as H
-import Item
-import Content.ItemKind
-import Level
-import Message
-import Perception
-import Random
-import State
-import qualified Config
-import qualified Effect
-import qualified Kind
+import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Action
+import Game.LambdaHack.Actor
+import Game.LambdaHack.ActorState
+import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.ActorAdd
+import Game.LambdaHack.Display hiding (display)
+import Game.LambdaHack.Grammar
+import Game.LambdaHack.Loc
+import qualified Game.LambdaHack.HighScores as H
+import Game.LambdaHack.Item
+import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Level
+import Game.LambdaHack.Message
+import Game.LambdaHack.Perception
+import Game.LambdaHack.Random
+import Game.LambdaHack.State
+import qualified Game.LambdaHack.Config as Config
+import qualified Game.LambdaHack.Effect as Effect
+import qualified Game.LambdaHack.Kind as Kind
 
 -- The effectToAction function and all it depends on.
 -- This file should not depend on Action.hs nor ItemAction.hs.

@@ -1,7 +1,9 @@
-module Feature (Feature(..)) where
+module Game.LambdaHack.Feature
+  ( Feature(..)
+  ) where
 
-import Effect
-import Random
+import Game.LambdaHack.Effect
+import Game.LambdaHack.Random
 
 data Feature =
     Walkable           -- ^ actors can walk through

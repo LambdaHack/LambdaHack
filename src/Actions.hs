@@ -1,4 +1,4 @@
-module Actions where
+module Game.LambdaHack.Actions where
 
 import Control.Monad
 import Control.Monad.State hiding (State, state)
@@ -7,31 +7,31 @@ import qualified Data.IntMap as IM
 import Data.Maybe
 import qualified Data.Set as S
 
-import Utils.Assert
-import Action
-import Display hiding (display)
-import Loc
-import Dir
-import Grammar
-import qualified HighScores as H
-import Item
-import qualified Keys as K
-import Level
-import LevelState
-import Actor
-import ActorState
-import Content.ActorKind
-import ActorAdd
-import Perception
-import State
-import qualified Config
-import qualified Save
-import EffectAction
-import WorldLoc
-import Tile  -- TODO: qualified
-import qualified Kind
-import qualified Feature as F
-import DungeonState
+import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Action
+import Game.LambdaHack.Display hiding (display)
+import Game.LambdaHack.Loc
+import Game.LambdaHack.Dir
+import Game.LambdaHack.Grammar
+import qualified Game.LambdaHack.HighScores as H
+import Game.LambdaHack.Item
+import qualified Game.LambdaHack.Keys as K
+import Game.LambdaHack.Level
+import Game.LambdaHack.LevelState
+import Game.LambdaHack.Actor
+import Game.LambdaHack.ActorState
+import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.ActorAdd
+import Game.LambdaHack.Perception
+import Game.LambdaHack.State
+import qualified Game.LambdaHack.Config as Config
+import qualified Game.LambdaHack.Save as Save
+import Game.LambdaHack.EffectAction
+import Game.LambdaHack.WorldLoc
+import qualified Game.LambdaHack.Tile as Tile
+import qualified Game.LambdaHack.Kind as Kind
+import qualified Game.LambdaHack.Feature as F
+import Game.LambdaHack.DungeonState
 
 -- The Action stuff that is independent from ItemAction.hs.
 -- (Both depend on EffectAction.hs).
@@ -194,7 +194,7 @@ continueRun dir =
           -- TODO: even in corridors, stop if you run past an exit (rare)
           let ns = L.filter (\ x -> dirDistSq lxsize (neg dir) x > 1
                                     && (accessible lvl loc (loc `shift` x))
-                                        || openable lvl (SecretStrength 1) (loc `shift` x))
+                                        || openable lvl (Tile.SecretStrength 1) (loc `shift` x))
                             (moves lxsize)
               allCloseTo main = L.all (\ d -> dirDistSq lxsize main d <= 1) ns
           in  case ns of
@@ -211,7 +211,7 @@ continueRun dir =
           let ns = L.filter (\ x -> x /= dir && dirDistSq lxsize (neg dir) x > 1) (moves lxsize)
               ls = L.map (loc `shift`) ns
               as = L.filter (\ x -> accessible lvl loc x
-                                    || openable lvl (SecretStrength 1) x) ls
+                                    || openable lvl (Tile.SecretStrength 1) x) ls
               ts = L.map (lvl `rememberAt`) as
           in if L.any Tile.isExit ts then abort else run dir
     hop
@@ -256,7 +256,7 @@ playerCloseDoor dir = do
   let hms = levelHeroList state ++ levelMonsterList state
       dloc = shift (bloc body) dir  -- the location we act upon
       t = lvl `at` dloc
-  if hasFeature F.Closable t
+  if Tile.hasFeature F.Closable t
     then
       case lvl `iat` dloc of
         [] ->
@@ -265,7 +265,7 @@ playerCloseDoor dir = do
                in modify (updateLevel (updateLMap adj))
           else abortWith "blocked"  -- by monsters or heroes
         _:_ -> abortWith "jammed"  -- by items
-    else if hasFeature F.Openable t
+    else if Tile.hasFeature F.Openable t
          then abortWith "already closed"
          else neverMind True  -- no visible doors (can be secret)
   advanceTime pl
@@ -281,18 +281,18 @@ actorOpenDoor actor dir = do
       isPlayer = actor == pl
       isVerbose = isPlayer  -- don't report enemy failures, if it's not player
       iq = aiq $ Kind.getKind $ bkind body
-      openPower = SecretStrength $
+      openPower = Tile.SecretStrength $
         if isPlayer
         then 1  -- player can't open secret doors
         else case strongestItem (bitems body) "ring" of  -- TODO: hack
                Just i  -> iq + jpower i
                Nothing -> iq
   unless (openable lvl openPower dloc) $ neverMind isVerbose
-  if hasFeature F.Closable t
+  if Tile.hasFeature F.Closable t
     then abortIfWith isVerbose "already open"
-    else if not (hasFeature F.Closable t ||
-                 hasFeature F.Openable t ||
-                 hasFeature F.Hidden t)
+    else if not (Tile.hasFeature F.Closable t ||
+                 Tile.hasFeature F.Openable t ||
+                 Tile.hasFeature F.Hidden t)
          then neverMind isVerbose  -- not doors at all
          else
            let adj = (Kind.// [(dloc, Tile.doorOpenId)])
@@ -329,8 +329,8 @@ lvlGoUp isUp =
     let loc = if targeting then clocation cursor else bloc pbody
         tile = lvl `at` loc
         vdir = if isUp then 1 else -1
-        sdir | hasFeature F.Climbable tile = Just 1
-             | hasFeature F.Descendable tile = Just (-1)
+        sdir | Tile.hasFeature F.Climbable tile = Just 1
+             | Tile.hasFeature F.Descendable tile = Just (-1)
              | otherwise = Nothing
     case sdir of
       Just vdir'
@@ -353,9 +353,10 @@ lvlGoUp isUp =
                   -- do not freely reveal the other end of the stairs
                   lvl2 <- gets slevel
                   let upd cur =
-                        let clocation = if isUnknown (lvl2 `rememberAt` nloc)
-                                        then loc
-                                        else nloc
+                        let clocation =
+                              if Tile.isUnknown (lvl2 `rememberAt` nloc)
+                              then loc
+                              else nloc
                         in  cur { clocation, clocLn = nln }
                   modify (updateCursor upd)
                   doLook
@@ -449,11 +450,11 @@ search =
                   Nothing -> 1
         searchTile loc (slm, sle) =
           let t = lm Kind.! loc
-              k = secretStrength (le IM.! loc) - delta
-          in if hasFeature F.Hidden t
+              k = Tile.secretStrength (le IM.! loc) - delta
+          in if Tile.hasFeature F.Hidden t
              then if k > 0
                   then (slm,
-                        IM.insert loc (SecretStrength k) sle)
+                        IM.insert loc (Tile.SecretStrength k) sle)
                   else ((loc, Tile.doorClosedId) : slm,
                         IM.delete loc sle)
              else (slm, sle)
@@ -583,7 +584,7 @@ moveOrAttack allowAttacks autoOpen actor dir = do
                 messageAdd $ lookAt False True state lvl tloc ""
               advanceTime actor
           | allowAttacks && actor == pl
-            && canBeSecretDoor (lvl `rememberAt` tloc)
+            && Tile.canBeSecretDoor (lvl `rememberAt` tloc)
             -> do
               messageAdd "You search your surroundings."  -- TODO: proper msg
               search
@@ -611,7 +612,7 @@ actorAttackActor source target = do
       verb = attackToVerb groupName
       sloc = bloc sm
       -- The hand-to-hand "weapon", equivalent to +0 sword.
-      h2h = Item Item.fistKindId 0 Nothing 1
+      h2h = Item fistKindId 0 Nothing 1
       str = strongestItem (bitems sm) groupName
       stack  = fromMaybe h2h str
       single = stack { jcount = 1 }

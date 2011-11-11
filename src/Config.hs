@@ -1,12 +1,13 @@
-module Config
- (CP, defaultCP, config, getOption, getItems, get, getFile, set, dump) where
+module Game.LambdaHack.Config
+  ( CP, defaultCP, config, getOption, getItems, get, getFile, set, dump
+  ) where
 
 import System.Directory
 import System.FilePath
 import qualified Data.ConfigFile as CF
 import qualified Data.Binary as Binary
 
-import qualified ConfigDefault
+import qualified Game.LambdaHack.ConfigDefault as ConfigDefault
 
 newtype CP = CP CF.ConfigParser
 

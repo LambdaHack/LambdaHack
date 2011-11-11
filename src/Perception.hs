@@ -1,4 +1,4 @@
-module Perception where
+module Game.LambdaHack.Perception where
 
 import qualified Data.Set as S
 import qualified Data.List as L
@@ -6,16 +6,16 @@ import qualified Data.IntMap as IM
 import Data.Maybe
 import Control.Monad
 
-import Loc
-import State
-import Level
-import Actor
-import ActorState
-import Content.ActorKind
-import FOV
-import qualified Config
-import qualified Tile
-import qualified Kind
+import Game.LambdaHack.Loc
+import Game.LambdaHack.State
+import Game.LambdaHack.Level
+import Game.LambdaHack.Actor
+import Game.LambdaHack.ActorState
+import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.FOV
+import qualified Game.LambdaHack.Config as Config
+import qualified Game.LambdaHack.Tile as Tile
+import qualified Game.LambdaHack.Kind as Kind
 
 data Perception = Perception
   { preachable :: S.Set Loc

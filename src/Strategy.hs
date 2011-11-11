@@ -1,8 +1,8 @@
-module Strategy where
+module Game.LambdaHack.Strategy where
 
 import Control.Monad
 
-import Frequency
+import Game.LambdaHack.Frequency
 
 -- Monster strategies
 

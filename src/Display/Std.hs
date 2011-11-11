@@ -1,14 +1,15 @@
-module Display.Std
-  (displayId, startup, shutdown, display, nextEvent, Session) where
+module Game.LambdaHack.Display.Std
+  ( displayId, startup, shutdown, display, nextEvent, Session
+  ) where
 
 import qualified Data.List as L
 import qualified Data.ByteString.Char8 as BS
 import qualified System.IO as SIO
 
-import Area
-import Loc
-import qualified Keys as K (Key(..))
-import qualified Color
+import Game.LambdaHack.Area
+import Game.LambdaHack.Loc
+import qualified Game.LambdaHack.Keys as K (Key(..))
+import qualified Game.LambdaHack.Color as Color
 
 displayId :: String
 displayId = "std"

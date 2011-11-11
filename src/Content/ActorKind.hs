@@ -1,9 +1,11 @@
-module Content.ActorKind (ActorKind(..)) where
+module Game.LambdaHack.Content.ActorKind
+  ( ActorKind(..)
+  ) where
 
-import Color
-import qualified Content.Content
-import qualified Geometry
-import qualified Random
+import Game.LambdaHack.Color
+import qualified Game.LambdaHack.Content.Content as Content
+import qualified Game.LambdaHack.Geometry as Geometry
+import qualified Game.LambdaHack.Random as Random
 
 -- | Monster properties that are changing rarely and permanently.
 data ActorKind = ActorKind
@@ -20,7 +22,7 @@ data ActorKind = ActorKind
   }
   deriving (Show, Eq, Ord)
 
-instance Content.Content.Content ActorKind where
+instance Content.Content ActorKind where
   getFreq = afreq
   content =
     [hero, eye, fastEye, nose]

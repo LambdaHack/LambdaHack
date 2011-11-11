@@ -1,20 +1,20 @@
-module State where
+module Game.LambdaHack.State where
 
 import qualified Data.Map as M
 import qualified Data.Set as S
 import qualified Data.IntSet as IS
 import Data.Binary
-import qualified Config
+import qualified Game.LambdaHack.Config as Config
 import qualified System.Random as R
 
-import Actor
-import Geometry
-import Loc
-import Level
-import qualified Dungeon
-import Item
-import Message
-import WorldLoc
+import Game.LambdaHack.Actor
+import Game.LambdaHack.Geometry
+import Game.LambdaHack.Loc
+import Game.LambdaHack.Level
+import qualified Game.LambdaHack.Dungeon as Dungeon
+import Game.LambdaHack.Item
+import Game.LambdaHack.Message
+import Game.LambdaHack.WorldLoc
 
 -- | The 'State' contains all the game state that has to be saved.
 -- In practice, we maintain extra state, but that state is state

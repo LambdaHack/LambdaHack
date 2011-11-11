@@ -1,4 +1,4 @@
-module ActorAdd where
+module Game.LambdaHack.ActorAdd where
 
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
@@ -7,18 +7,18 @@ import Data.Ratio
 import Data.Maybe
 import qualified Data.Char as Char
 
-import Utils.Assert
-import Loc
-import State
-import Level
-import Actor
-import ActorState
-import Content.ActorKind
-import Random
-import qualified Config
-import WorldLoc
-import qualified Tile
-import qualified Kind
+import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Loc
+import Game.LambdaHack.State
+import Game.LambdaHack.Level
+import Game.LambdaHack.Actor
+import Game.LambdaHack.ActorState
+import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.Random
+import qualified Game.LambdaHack.Config as Config
+import Game.LambdaHack.WorldLoc
+import qualified Game.LambdaHack.Tile as Tile
+import qualified Game.LambdaHack.Kind as Kind
 
 -- Generic functions
 
@@ -57,7 +57,7 @@ addHero ploc state =
       symbol = if n < 1 || n > 9 then Nothing else Just $ Char.intToDigit n
       name = findHeroName config n
       startHP = bHP `div` min 10 (n + 1)
-      m = template Actor.heroKindId (Just name) symbol startHP loc
+      m = template heroKindId (Just name) symbol startHP loc
       state' = state { scounter = (n + 1, snd (scounter state))
                      , sparty = IS.insert n (sparty state) }
   in  updateLevel (updateHeroes (IM.insert n m)) state'

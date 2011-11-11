@@ -1,38 +1,40 @@
-module Content.CaveKind (CaveKind(..), CaveLayout(..)) where
+module Game.LambdaHack.Content.CaveKind
+  ( CaveKind(..), CaveLayout(..)
+  ) where
 
 import Data.Ratio
 
-import qualified Content.Content
-import Geometry
-import Random
+import qualified Game.LambdaHack.Content.Content as Content
+import Game.LambdaHack.Geometry
+import qualified Game.LambdaHack.Random as Random
 
-instance Content.Content.Content CaveKind where
+data CaveKind = CaveKind
+  { cxsize            :: X
+  , cysize            :: Y
+  , levelGrid         :: Random.Rnd (X, Y)
+  , minRoomSize       :: Random.Rnd (X ,Y)
+  , darkRoomChance    :: Int -> Random.Rnd Bool  -- TODO: use RollQuad instead, etc.
+  , border            :: Int         -- must be at least 2!
+  , extraConnects     :: (X, Y) -> Int
+      -- relative to grid (in fact a range, because of duplicate connects)
+  , noRooms           :: (X, Y) -> Random.Rnd Int
+      -- range, relative to grid
+  , minStairsDistance :: Int
+  , doorChance        :: Random.Rnd Bool
+  , doorOpenChance    :: Random.Rnd Bool
+  , doorSecretChance  :: Random.Rnd Bool
+  , csecretStrength   :: Random.RollDice
+  , citemNum          :: Random.RollDice
+  , clayout           :: CaveLayout
+  , cfreq             :: Int
+  }
+
+instance Content.Content CaveKind where
   getFreq = cfreq
   content =
     [rogue, empty, noise, largeNoise]
 
 rogue,      empty, noise, largeNoise:: CaveKind
-
-data CaveKind = CaveKind
-  { cxsize            :: X
-  , cysize            :: Y
-  , levelGrid         :: Rnd (X, Y)
-  , minRoomSize       :: Rnd (X ,Y)
-  , darkRoomChance    :: Int -> Rnd Bool  -- TODO: use RollQuad instead, etc.
-  , border            :: Int         -- must be at least 2!
-  , extraConnects     :: (X, Y) -> Int
-      -- relative to grid (in fact a range, because of duplicate connects)
-  , noRooms           :: (X, Y) -> Rnd Int
-      -- range, relative to grid
-  , minStairsDistance :: Int
-  , doorChance        :: Rnd Bool
-  , doorOpenChance    :: Rnd Bool
-  , doorSecretChance  :: Rnd Bool
-  , csecretStrength   :: RollDice
-  , citemNum          :: RollDice
-  , clayout           :: CaveLayout
-  , cfreq             :: Int
-  }
 
 -- TODO: express those using many fine-graned parameters instead
 data CaveLayout = CaveRogue | CaveEmpty | CaveNoise deriving Eq

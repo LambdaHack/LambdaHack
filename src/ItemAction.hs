@@ -1,4 +1,4 @@
-module ItemAction where
+module Game.LambdaHack.ItemAction where
 
 import Control.Monad
 import Control.Monad.State hiding (State, state)
@@ -7,22 +7,22 @@ import qualified Data.IntMap as IM
 import Data.Maybe
 import qualified Data.Set as S
 
-import Utils.Assert
-import Action
-import Display hiding (display)
-import Loc
-import Grammar
-import Item
-import Content.ItemKind
-import qualified Keys as K
-import Level
-import Actor
-import ActorState
-import ActorAdd
-import Perception
-import State
-import EffectAction
-import qualified Kind
+import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Action
+import Game.LambdaHack.Display hiding (display)
+import Game.LambdaHack.Loc
+import Game.LambdaHack.Grammar
+import Game.LambdaHack.Item
+import Game.LambdaHack.Content.ItemKind
+import qualified Game.LambdaHack.Keys as K
+import Game.LambdaHack.Level
+import Game.LambdaHack.Actor
+import Game.LambdaHack.ActorState
+import Game.LambdaHack.ActorAdd
+import Game.LambdaHack.Perception
+import Game.LambdaHack.State
+import Game.LambdaHack.EffectAction
+import qualified Game.LambdaHack.Kind as Kind
 
 -- Item UI code with the Action type and everything it depends on
 -- that is not already in Action.hs and EffectAction.hs.
@@ -109,7 +109,7 @@ zapGroupItem source loc verb item = do
       subject =
         if sloc `S.member` ptvisible per
         then sm
-        else template Actor.heroKindId (Just "somebody") Nothing 99 sloc
+        else template heroKindId (Just "somebody") Nothing 99 sloc
       msg = subjectVerbIObject state subject verb consumed ""
   removeFromInventory source consumed sloc
   case locToActor loc state of

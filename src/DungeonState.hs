@@ -1,4 +1,4 @@
-module DungeonState where
+module Game.LambdaHack.DungeonState where
 
 import qualified System.Random as R
 import qualified Data.List as L
@@ -7,23 +7,23 @@ import qualified Data.Map as M
 import qualified Data.IntMap as IM
 import Control.Monad
 
-import Utils.Assert
-import Loc
-import Level
-import qualified Dungeon
-import Random
-import qualified Config
-import WorldLoc
-import State
-import qualified Feature as F
-import qualified Tile
-import Content.CaveKind
-import Cave
-import Content.ItemKind
-import qualified Kind
-import Item
-import Geometry
-import Frequency
+import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Loc
+import Game.LambdaHack.Level
+import qualified Game.LambdaHack.Dungeon as Dungeon
+import Game.LambdaHack.Random
+import qualified Game.LambdaHack.Config as Config
+import Game.LambdaHack.WorldLoc
+import Game.LambdaHack.State
+import qualified Game.LambdaHack.Feature as F
+import qualified Game.LambdaHack.Tile as Tile
+import Game.LambdaHack.Content.CaveKind
+import Game.LambdaHack.Cave
+import Game.LambdaHack.Content.ItemKind
+import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Item
+import Game.LambdaHack.Geometry
+import Game.LambdaHack.Frequency
 
 listArrayCfg :: Int -> Int -> TileMapXY -> TileMap
 listArrayCfg cxsize cysize lmap =

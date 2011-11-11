@@ -1,9 +1,11 @@
-module Content.TileKind (TileKind(..)) where
+module Game.LambdaHack.Content.TileKind
+  ( TileKind(..)
+  ) where
 
-import Color
-import qualified Content.Content
-import qualified Effect
-import Feature
+import Game.LambdaHack.Color
+import qualified Game.LambdaHack.Content.Content as Content
+import qualified Game.LambdaHack.Effect as Effect
+import Game.LambdaHack.Feature
 
 data TileKind = TileKind
   { tsymbol  :: !Char       -- ^ map symbol
@@ -15,7 +17,7 @@ data TileKind = TileKind
   }
   deriving (Show, Eq, Ord)
 
-instance Content.Content.Content TileKind where
+instance Content.Content TileKind where
   getFreq = tfreq
   content =
     [wall, doorOpen, doorClosed, doorSecret, opening, floorLight, floorDark, stairsUp, stairsDown, unknown]

@@ -1,13 +1,13 @@
-module Tile where
+module Game.LambdaHack.Tile where
 
 import qualified Data.List as L
 import qualified Data.Array.Unboxed as A
 import Data.Binary
 
-import Content.TileKind
-import qualified Feature as F
-import qualified Kind
-import Geometry
+import Game.LambdaHack.Content.TileKind
+import qualified Game.LambdaHack.Feature as F
+import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Geometry
 
 newtype SecretStrength = SecretStrength{secretStrength :: Time}
   deriving (Show, Eq, Ord)

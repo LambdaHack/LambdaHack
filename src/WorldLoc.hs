@@ -1,8 +1,10 @@
-module WorldLoc
-  ( LevelId(..), levelName, levelNumber, WorldLoc) where
+module Game.LambdaHack.WorldLoc
+  ( LevelId(..), levelName, levelNumber, WorldLoc
+  ) where
 
 import Data.Binary
-import Loc
+
+import Game.LambdaHack.Loc
 
 -- | Level ids are integers and (for now) ordered linearly.
 newtype LevelId = LambdaCave Int

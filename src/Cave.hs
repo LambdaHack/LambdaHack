@@ -1,21 +1,22 @@
-module Cave
-  ( Cave(..), SecretMapXY, ItemMapXY, TileMapXY, buildCave ) where
+module Game.LambdaHack.Cave
+  ( Cave(..), SecretMapXY, ItemMapXY, TileMapXY, buildCave )
+  where
 
 import Control.Monad
 import qualified Data.Map as M
 import qualified Data.List as L
 
-import Geometry
-import Area
-import AreaRnd
-import Item
-import Random
-import Content.TileKind
-import Tile
-import qualified Kind
-import Content.CaveKind
+import Game.LambdaHack.Geometry
+import Game.LambdaHack.Area
+import Game.LambdaHack.AreaRnd
+import Game.LambdaHack.Item
+import Game.LambdaHack.Random
+import Game.LambdaHack.Content.TileKind
+import qualified Game.LambdaHack.Tile as Tile
+import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Content.CaveKind
 
-type SecretMapXY = M.Map (X, Y) SecretStrength
+type SecretMapXY = M.Map (X, Y) Tile.SecretStrength
 
 type ItemMapXY = M.Map (X, Y) Item
 
@@ -167,7 +168,7 @@ caveRogue n ci = do
                                    then return (((x, y), Tile.doorClosedId) : l, le)
                                    else do
                                      rs1 <- rollDice (csecretStrength cfg)
-                                     return (((x, y), Tile.doorSecretId) : l, M.insert (x, y) (SecretStrength rs1) le)
+                                     return (((x, y), Tile.doorSecretId) : l, M.insert (x, y) (Tile.SecretStrength rs1) le)
                     _ -> return (o : l, le)
       (l, le) <- foldM f ([], M.empty) (M.toList lm)
       return (M.fromList l, le)

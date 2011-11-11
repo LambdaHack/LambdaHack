@@ -1,11 +1,12 @@
-module Flavour
+module Game.LambdaHack.Flavour
   ( Flavour
   , zipPlain, zipFancy, darkCol, brightCol, stdCol, stdFlav
-  , flavourToColor, flavourToName)
-  where
+  , flavourToColor, flavourToName
+  ) where
 
 import qualified Data.List as L
-import Color
+
+import Game.LambdaHack.Color
 
 -- TODO: add more variety, as the number of items increases
 type Flavour = (Color, Bool)  -- the flag tells to use fancy color names

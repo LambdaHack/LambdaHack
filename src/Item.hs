@@ -1,4 +1,4 @@
-module Item where
+module Game.LambdaHack.Item where
 
 import Data.Binary
 import qualified Data.Set as S
@@ -10,12 +10,12 @@ import Data.Function
 import Data.Ord
 import Control.Monad
 
-import Utils.Assert
-import Random
-import Content.ItemKind
-import qualified Color
-import Flavour
-import qualified Kind
+import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Random
+import Game.LambdaHack.Content.ItemKind
+import qualified Game.LambdaHack.Color as Color
+import Game.LambdaHack.Flavour
+import qualified Game.LambdaHack.Kind as Kind
 
 data Item = Item
   { jkind   :: !(Kind.Id ItemKind)

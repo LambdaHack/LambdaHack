@@ -1,13 +1,13 @@
-module Keybindings where
+module Game.LambdaHack.Keybindings where
 
 import qualified Data.Map as M
 import qualified Data.List as L
 
-import Utils.Assert
-import Action
-import Command
-import Geometry
-import qualified Keys as K
+import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Action
+import Game.LambdaHack.Command
+import Game.LambdaHack.Geometry
+import qualified Game.LambdaHack.Keys as K
 
 -- | Keybindings.
 data Keybindings = Keybindings
