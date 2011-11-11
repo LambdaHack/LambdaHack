@@ -3,11 +3,11 @@ Allure of the Stars
 
 This is an alpha pre-release of Allure of the Stars,
 a near-future Sci-Fi [roguelike] [1] and tactical squad game.
-Long term goals are high replayability and auto-balancing
+Long-term goals are high replayability and auto-balancing
 through procedural content generation and persistent content
 modification based on player behaviour.
 The game is written in [Haskell] [2] and based
-on the [LambdaHack roguelike engine] [3],
+on the [LambdaHack roguelike engine] [3].
 
 
 Compilation and installation
@@ -28,6 +28,18 @@ The best frontend (keyboard support and colours) is gtk,
 but if needed, you may try one of the terminal frontends with, e.g,
 
     cabal install -fvty
+
+To use a crude bot for testing the game, you have to compile with
+the standard input/output frontend, as follows
+
+    cabal install -fstd
+
+and run the bot, for example, in the following way
+
+    BotAllure 42 20000000 | Allure > /tmp/log
+
+You may wish to tweak the game configuration file to let the bot play longer,
+e.g., by making the dungeon much deeper, as in the supplied config.bot.
 
 
 Savegame directory
