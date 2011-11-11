@@ -1,80 +1,85 @@
 module Item where
 
 import Data.Binary
-import Data.Set as S
-import Data.List as L
-import qualified Data.IntMap as IM
+import qualified Data.Set as S
+import qualified Data.List as L
+import qualified Data.Map as M
 import Data.Maybe
 import Data.Char
 import Data.Function
+import Data.Ord
 import Control.Monad
 
+import Utils.Assert
 import Random
-import ItemKind
+import Content.ItemKind
 import qualified Color
+import Flavour
+import qualified Kind
 
 data Item = Item
-  { ikind    :: !Int,
-    ipower   :: !Int,  -- https://github.com/Mikolaj/LambdaHack/issues#issue/11
-    iletter  :: Maybe Char,  -- ^ inventory identifier
-    icount   :: !Int }
+  { jkind   :: !(Kind.Id ItemKind)
+  , jpower  :: !Int         -- TODO: see the TODO about jpower
+  , jletter :: Maybe Char  -- ^ inventory identifier
+  , jcount  :: !Int
+  }
   deriving Show
 
 instance Binary Item where
-  put (Item ikind ipower iletter icount ) =
-    put ikind >> put ipower >> put iletter >> put icount
+  put (Item ik ip il ic ) =
+    put ik >> put ip >> put il >> put ic
   get = liftM4 Item get get get get
 
-type Assocs = IM.IntMap Flavour
+type FlavourMap = M.Map (Kind.Id ItemKind) Flavour  -- TODO: rewrite and move elsewhere
 
-type Discoveries = S.Set Int
+type Discoveries = S.Set (Kind.Id ItemKind)
 
--- | Assinges flavours to item kinds. Assures no flavor is repeated,
+-- | Assigns flavours to item kinds. Assures no flavor is repeated,
 -- except for items with only one permitted flavour.
-rollAssocs :: Int -> ItemKind ->
-              Rnd (IM.IntMap Flavour, S.Set Flavour) ->
-              Rnd (IM.IntMap Flavour, S.Set Flavour)
-rollAssocs key kind rnd =
-  if L.length (jflavour kind) == 1
-  then rnd
-  else do
-    (assocs, available) <- rnd
-    let proper = S.fromList (jflavour kind) `S.intersection` available
-    flavour <- oneOf (S.toList proper)
-    return (IM.insert key flavour assocs, S.delete flavour available)
+rollFlavourMap :: Kind.Id ItemKind -> ItemKind ->
+              Rnd (FlavourMap, S.Set Flavour) ->
+              Rnd (FlavourMap, S.Set Flavour)
+rollFlavourMap key ik rnd =
+  let flavours = iflavour ik
+  in if L.length flavours == 1
+     then rnd
+     else do
+       (assocs, available) <- rnd
+       let proper = S.fromList flavours `S.intersection` available
+       flavour <- oneOf (S.toList proper)
+       return (M.insert key flavour assocs, S.delete flavour available)
 
 -- | Randomly chooses flavour for all item kinds for this game.
-dungeonAssocs :: Rnd Assocs
-dungeonAssocs =
-  liftM fst $
-  IM.foldWithKey rollAssocs (return (IM.empty, S.fromList stdFlav)) dungeonLoot
+dungeonFlavourMap :: Rnd FlavourMap
+dungeonFlavourMap =
+  liftM fst $ Kind.foldrWithKey rollFlavourMap (return (M.empty, S.fromList stdFlav))
 
-getFlavour :: Assocs -> Int -> Flavour
+getFlavour :: FlavourMap -> Kind.Id ItemKind -> Flavour
 getFlavour assocs ik =
-  let kind = ItemKind.getIK ik
-  in  case jflavour kind of
-        []  -> error "getFlavour"
+  let kind = Kind.getKind ik
+  in  case iflavour kind of
+        []  -> assert `failure` (assocs, ik, kind)
         [f] -> f
-        _:_ -> assocs IM.! ik
+        _:_ -> assocs M.! ik
 
-viewItem :: Int -> Assocs -> (Char, Color.Color)
-viewItem ik assocs = (jsymbol (getIK ik), flavourToColor $ getFlavour assocs ik)
+fistKindId :: Kind.Id ItemKind
+fistKindId = Kind.getId ((== "fist") . iname)
+
+viewItem :: Kind.Id ItemKind -> FlavourMap -> (Char, Color.Color)
+viewItem ik assocs = (isymbol (Kind.getKind ik), flavourToColor $ getFlavour assocs ik)
 
 itemLetter :: ItemKind -> Maybe Char
-itemLetter ik = if jsymbol ik == '$' then Just '$' else Nothing
+itemLetter ik = if isymbol ik == '$' then Just '$' else Nothing
 
 -- | Generate an item.
 newItem :: Int -> Rnd Item
 newItem lvl = do
-  let dLoot = IM.assocs dungeonLoot
-      fik = Frequency $ L.zip (L.map (jfreq . snd) dLoot) (L.map fst dLoot)
-  ikChosen <- frequency fik
-  let kind = getIK ikChosen
-  count <- rollQuad lvl (jcount kind)
+  (ikChosen, kind) <- frequency Kind.frequency
+  count <- rollQuad lvl (icount kind)
   if count == 0
     then newItem lvl  -- Rare item; beware of inifite loops.
     else do
-      power <- rollQuad lvl (jpower kind)
+      power <- rollQuad lvl (ipower kind)
       return $ Item ikChosen power (itemLetter kind) count
 
 -- | Assigns a letter to an item, for inclusion
@@ -86,7 +91,7 @@ assignLetter r c is =
       Just l | l `L.elem` allowed -> Just l
       _ -> listToMaybe free
   where
-    current    = S.fromList (concatMap (maybeToList . iletter) is)
+    current    = S.fromList (mapMaybe jletter is)
     allLetters = ['a'..'z'] ++ ['A'..'Z']
     candidates = take (length allLetters) $
                    drop (fromJust (L.findIndex (==c) allLetters)) $
@@ -108,13 +113,14 @@ maxBy cmp x y = case cmp x y of
                   LT  ->  y
                   _   ->  x
 
+maxLetter :: Char -> Char -> Char
 maxLetter = maxBy cmpLetter
 
 mergeLetter :: Maybe Char -> Maybe Char -> Maybe Char
 mergeLetter = mplus
 
 letterRange :: [Char] -> String
-letterRange xs = sectionBy (sortBy cmpLetter xs) Nothing
+letterRange ls = sectionBy (L.sortBy cmpLetter ls) Nothing
   where
     succLetter c d = ord d - ord c == 1
 
@@ -141,8 +147,8 @@ joinItem :: Item -> [Item] -> (Item, [Item])
 joinItem i is =
   case findItem (equalItemIdentity i) is of
     Nothing     -> (i, i : is)
-    Just (j,js) -> let n = i { icount = icount i + icount j,
-                               iletter = mergeLetter (iletter j) (iletter i) }
+    Just (j,js) -> let n = i { jcount = jcount i + jcount j,
+                               jletter = mergeLetter (jletter j) (jletter i) }
                    in (n, n : js)
 
 -- | Removes an item from a list of items.
@@ -150,42 +156,44 @@ joinItem i is =
 removeItemBy :: (Item -> Item -> Bool) -> Item -> [Item] -> [Item]
 removeItemBy eq i = concatMap $ \ x ->
                     if eq i x
-                      then let remaining = icount x - icount i
-                           in  if remaining > 0
-                                 then [x { icount = remaining }]
-                                 else []
+                      then let remaining = jcount x - jcount i
+                           in if remaining > 0
+                              then [x { jcount = remaining }]
+                              else []
                       else [x]
 
 equalItemIdentity :: Item -> Item -> Bool
-equalItemIdentity i1 i2 = ipower i1 == ipower i2 && ikind i1 == ikind i2
+equalItemIdentity i1 i2 = jpower i1 == jpower i2 && jkind i1 == jkind i2
 
+removeItemByIdentity :: Item -> [Item] -> [Item]
 removeItemByIdentity = removeItemBy equalItemIdentity
 
 equalItemLetter :: Item -> Item -> Bool
-equalItemLetter = (==) `on` iletter
+equalItemLetter = (==) `on` jletter
 
+removeItemByLetter :: Item -> [Item] -> [Item]
 removeItemByLetter = removeItemBy equalItemLetter
 
 -- | Finds an item in a list of items.
 findItem :: (Item -> Bool) -> [Item] -> Maybe (Item, [Item])
-findItem p is = findItem' [] is
+findItem p = findItem' []
   where
-    findItem' acc []     = Nothing
+    findItem' _   []     = Nothing
     findItem' acc (i:is)
       | p i              = Just (i, reverse acc ++ is)
       | otherwise        = findItem' (i:acc) is
 
 strongestItem :: [Item] -> String -> Maybe Item
 strongestItem is groupName =
-  let cmp = compare `on` ipower
-      igs = L.filter (\ i -> jname (getIK (ikind i)) == groupName) is
+  let cmp = comparing jpower
+      igs = L.filter (\ i -> iname (Kind.getKind (jkind i)) == groupName) is
   in  case igs of
         [] -> Nothing
         _  -> Just $ L.maximumBy cmp igs
 
 itemPrice :: Item -> Int
 itemPrice i =
-  case jname (getIK (ikind i)) of
-    "gold piece" -> icount i
-    "gem" -> 100
+  case iname (Kind.getKind (jkind i)) of
+    "gold piece" -> jcount i
+    "gem" -> jcount i * 100
     _ -> 0

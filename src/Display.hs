@@ -6,44 +6,54 @@ module Display where
 
 #ifdef CURSES
 import qualified Display.Curses as D
-#elif GTK
-import qualified Display.Gtk as D
-#else
+#elif VTY
 import qualified Display.Vty as D
+#elif STD
+import qualified Display.Std as D
+#else
+import qualified Display.Gtk as D
 #endif
 
 -- Display routines that are independent of the selected display frontend.
 
 import qualified Data.Char as Char
-import Data.Set as S
-import Data.List as L
-import Data.Map as M
+import qualified Data.Set as S
+import qualified Data.List as L
+import qualified Data.Map as M
 import qualified Data.IntMap as IM
-import Control.Monad.State hiding (State) -- for MonadIO, seems to be portable between mtl-1 and 2
+import Control.Monad.IO.Class
 import Data.Maybe
 
 import Message
 import qualified Color
 import State
 import Geometry
+import Loc
+import Area
 import Level
-import LevelState
-import Dungeon
 import Perception
-import Movable
-import MovableState
-import MovableKind
+import Actor
+import ActorState
+import Content.ActorKind
+import Content.TileKind
 import Item
 import qualified Keys as K
-import qualified Terrain
+import WorldLoc
+import Random
+import qualified Kind
 
 -- Re-exported from the display frontend, with an extra slot for function
 -- for translating keys to a canonical form.
 type InternalSession = D.Session
 type Session = (InternalSession, M.Map K.Key K.Key)
+display :: Area -> Session -> (Loc -> (Color.Attr, Char)) -> String -> String
+           -> IO ()
 display area = D.display area . fst
+startup :: (InternalSession -> IO ()) -> IO ()
 startup = D.startup
+shutdown :: Session -> IO ()
 shutdown = D.shutdown . fst
+displayId :: String
 displayId = D.displayId
 
 -- | Next event translated to a canonical form.
@@ -51,18 +61,16 @@ nextCommand :: MonadIO m => Session -> m K.Key
 nextCommand session =
   do
     e <- liftIO $ D.nextEvent (fst session)
-    return $
-      case M.lookup e (snd session) of
-        Just key -> key
-        Nothing  -> K.canonMoveKey e
+    return $ fromMaybe (K.canonMoveKey e) (M.lookup e (snd session))
 
 -- | Displays a message on a blank screen. Waits for confirmation.
 displayBlankConfirm :: Session -> String -> IO Bool
 displayBlankConfirm session txt =
   let x = txt ++ more
       doBlank = const (Color.defaultAttr, ' ')
+      (lx, ly) = normalLevelBound  -- TODO: query terminal size instead
   in do
-       display ((0, 0), normalLevelSize) session doBlank x ""
+       display (0, 0, lx, ly) session doBlank x ""
        getConfirm session
 
 -- | Waits for a space or return or '?' or '*'. The last two act this way,
@@ -107,99 +115,107 @@ splitOverlay s xs = splitOverlay' (lines xs)
 -- string by location. Takes the height of the display plus
 -- the string. Returns also the number of screens required
 -- to display all of the string.
-stringByLocation :: Y -> String -> (Int, Loc -> Maybe Char)
+stringByLocation :: Y -> String -> (Int, (X, Y) -> Maybe Char)
 stringByLocation sy xs =
   let
     ls   = splitOverlay sy xs
     m    = M.fromList (zip [0..] (L.map (M.fromList . zip [0..]) (concat ls)))
     k    = length ls
   in
-    (k, \ (y,x) -> M.lookup y m >>= \ n -> M.lookup x n)
+    (k, \ (x, y) -> M.lookup y m >>= \ n -> M.lookup x n)
+
+data ColorMode = ColorFull | ColorBW
 
 displayLevel ::
-  Bool -> Session -> Perceptions -> State -> Message -> Maybe String -> IO Bool
-displayLevel
-  blackAndWhite session per
-  (state@(State { scursor = cursor,
-                  stime   = time,
-                  sassocs = assocs,
-                  slevel  = Level ln _ (sy, sx) _ smap lmap _ }))
-  msg moverlay =
-  let Movable { mkind = MovableKind { nhpMax = xhp },
-                mhp = php, mloc = ploc, mitems = pitems } = getPlayerBody state
+  ColorMode -> Session -> Perceptions -> State -> Message -> Maybe String
+  -> IO Bool
+displayLevel dm session per
+             state@State{scursor, stime, sflavour, slid} msg moverlay =
+  let lvl@Level{lxsize = sx, lysize = sy, lsmell = smap} = slevel state
+      Actor{bkind, bhp, bloc, bitems} = getPlayerBody state
+      ActorKind{ahp} = Kind.getKind bkind
       reachable = ptreachable per
       visible   = ptvisible per
       overlay   = fromMaybe "" moverlay
-      (n, over) = stringByLocation (sy+1) overlay -- n overlay screens needed
+      (ns, over) = stringByLocation sy overlay -- n overlay screens needed
       sSml   = ssensory state == Smell
       sVis   = case ssensory state of Vision _ -> True; _ -> False
       sOmn   = sdisplay state == Omniscient
-      sTer   = case sdisplay state of Terrain n -> n; _ -> 0
-      lAt    = if sOmn || sTer > 0 then at else rememberAt
+      lAt    = if sOmn then at else rememberAt
+      liAt   = if sOmn then iat else irememberAt
       sVisBG = if sVis
                then \ vis rea -> if vis
                                  then Color.Blue
                                  else if rea
                                       then Color.Magenta
                                       else Color.defBG
-                else \ vis rea -> Color.defBG
-      wealth  = L.sum $ L.map itemPrice pitems
-      damage  = case strongestItem pitems "sword" of
-                  Just sw -> 3 + ipower sw
+                else \ _vis _rea -> Color.defBG
+      wealth  = L.sum $ L.map itemPrice bitems
+      damage  = case strongestItem bitems "sword" of
+                  Just sw -> 3 + jpower sw
                   Nothing -> 3
       hs      = levelHeroList state
       ms      = levelMonsterList state
-      dis n loc =
-        let tile = lmap `lAt` loc
-            sml  = ((smap ! loc) - time) `div` 100
-            viewMovable loc (Movable { mkind = mk })
-              | loc == ploc && ln == creturnLn cursor =
-                  (nsymbol mk, Color.defBG)  -- highlight player
-              | otherwise = (nsymbol mk, ncolor mk)
+      dis n loc0 =
+        let tile = lvl `lAt` loc0
+            items = lvl `liAt` loc0
+            sm = smelltime $ IM.findWithDefault (SmellTime 0) loc0 smap
+            sml = (sm - stime) `div` 100
+            viewActor loc Actor{bkind = bkind2, bsymbol}
+              | loc == bloc && slid == creturnLn scursor =
+                  (symbol, Color.defBG)  -- highlight player
+              | otherwise = (symbol, acolor)
+              where
+                ActorKind{asymbol, acolor} = Kind.getKind bkind2
+                symbol = fromMaybe asymbol bsymbol
             viewSmell :: Int -> Char
-            viewSmell n
-              | n > 9     = '*'
-              | n < 0     = '-'
-              | otherwise = Char.intToDigit n
-            rainbow loc = toEnum ((fst loc + snd loc) `mod` 14 + 1)
-            (char, fg) =
-              case L.find (\ m -> loc == mloc m) (hs ++ ms) of
-                _ | sTer > 0 -> Terrain.viewTerrain sTer False (tterrain tile)
-                Just m | sOmn || vis -> viewMovable loc m
-                _ | sSml && sml >= 0 -> (viewSmell sml, rainbow loc)
-                  | otherwise        -> viewTile vis tile assocs
-            vis = S.member loc visible
-            rea = S.member loc reachable
-            bg = if ctargeting cursor && loc == clocation cursor
-                 then Color.defFG      -- highlight targeting cursor
-                 else sVisBG vis rea  -- FOV debug
+            viewSmell k
+              | k > 9     = '*'
+              | k < 0     = '-'
+              | otherwise = Char.intToDigit k
+            rainbow loc = toEnum $ loc `rem` 14 + 1
+            (char, fg0) =
+              case L.find (\ m -> loc0 == Actor.bloc m) (hs ++ ms) of
+                Just m | sOmn || vis -> viewActor loc0 m
+                _ | sSml && sml >= 0 -> (viewSmell sml, rainbow loc0)
+                  | otherwise ->
+                  case items of
+                    [] ->
+                      let u = Kind.getKind tile
+                      in (tsymbol u, if vis then tcolor u else tcolor2 u)
+                    i : _ ->
+                      Item.viewItem (jkind i) sflavour
+            vis = S.member loc0 visible
+            rea = S.member loc0 reachable
+            bg0 = if ctargeting scursor && loc0 == clocation scursor
+                  then Color.defFG      -- highlight targeting cursor
+                  else sVisBG vis rea  -- FOV debug
             reverseVideo = (snd Color.defaultAttr, fst Color.defaultAttr)
             optVisually (fg, bg) =
-              if fg == Color.defBG
+              if (fg == Color.defBG) || (bg == Color.defFG && fg == Color.defFG)
               then reverseVideo
-              else if bg == Color.defFG && fg == Color.defFG
-                   then reverseVideo
-                   else (fg, bg)
-            a = if blackAndWhite
-                then Color.defaultAttr
-                else optVisually (fg, bg)
-        in case over (loc `shift` ((sy+1) * n, 0)) of
+              else (fg, bg)
+            a = case dm of
+                  ColorBW   -> Color.defaultAttr
+                  ColorFull -> optVisually (fg0, bg0)
+        in case over (fromLoc sx loc0 `shiftXY` (0, sy * n)) of
              Just c -> (Color.defaultAttr, c)
              _      -> (a, char)
       status =
-        take 30 (levelName ln ++ repeat ' ') ++
-        take 10 ("T: " ++ show (time `div` 10) ++ repeat ' ') ++
+        take 30 (levelName slid ++ repeat ' ') ++
+        take 10 ("T: " ++ show (stime `div` 10) ++ repeat ' ') ++
         take 10 ("$: " ++ show wealth ++ repeat ' ') ++
         take 10 ("Dmg: " ++ show damage ++ repeat ' ') ++
-        take 20 ("HP: " ++ show php ++ " (" ++ show xhp ++ ")" ++ repeat ' ')
-      disp n msg = display ((0, 0), (sy, sx)) session (dis n) msg status
+        take 20 ("HP: " ++ show bhp ++
+                 " (" ++ show (maxDice ahp) ++ ")" ++ repeat ' ')
+      disp n mesg = display (0, 0, sx - 1, sy - 1) session (dis n) mesg status
       msgs = splitMsg sx msg
       perf k []     = perfo k ""
       perf k [xs]   = perfo k xs
-      perf k (x:xs) = disp n (x ++ more) >> getConfirm session >>= \ b ->
+      perf k (x:xs) = disp ns (x ++ more) >> getConfirm session >>= \ b ->
                       if b then perf k xs else return False
       perfo k xs
-        | k < n - 1 = disp k xs >> getConfirm session >>= \ b ->
-                      if b then perfo (k+1) xs else return False
+        | k < ns - 1 = disp k xs >> getConfirm session >>= \ b ->
+                       if b then perfo (k+1) xs else return False
         | otherwise = disp k xs >> return True
   in  perf 0 msgs

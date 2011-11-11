@@ -2,8 +2,7 @@
 module Action where
 
 import Control.Monad
-import Control.Monad.State hiding (State)
-import Data.List as L
+import Control.Monad.State hiding (State, state)
 import qualified Data.IntMap as IM
 -- import System.IO (hPutStrLn, stderr) -- just for debugging
 
@@ -12,10 +11,12 @@ import Display hiding (display)
 import Message
 import State
 import Level
-import Movable
-import MovableState
-import MovableKind
+import Actor
+import ActorState
+import Content.ActorKind
 import qualified Save
+import qualified Kind
+import Random
 
 newtype Action a = Action
   { runAction ::
@@ -30,13 +31,15 @@ newtype Action a = Action
       IO r
   }
 
+-- TODO: check if it's strict enough, if we don't keep old states for too long,
+-- Perhaps make state type fields strict for that, too?
 instance Monad Action where
   return = returnAction
   (>>=)  = bindAction
 
 -- | Invokes the continuation.
 returnAction :: a -> Action a
-returnAction x = Action (\ s e p k a st m -> k st m x)
+returnAction x = Action (\ _s _e _p k _a st m -> k st m x)
 
 -- | Distributes the session and shutdown continuation,
 -- threads the state and message.
@@ -47,23 +50,31 @@ bindAction m f = Action (\ s e p k a st ms ->
                            in  runAction m s e p next a st ms)
 
 instance MonadIO Action where
-  liftIO x = Action (\ s e p k a st ms -> x >>= k st ms)
+  liftIO x = Action (\ _s _e _p k _a st ms -> x >>= k st ms)
 
 instance MonadState State Action where
-  get     = Action (\ s e p k a st ms -> k  st ms st)
-  put nst = Action (\ s e p k a st ms -> k nst ms ())
+  get     = Action (\ _s _e _p k _a  st ms -> k st  ms st)
+  put nst = Action (\ _s _e _p k _a _st ms -> k nst ms ())
 
 -- | Exported function to run the monad.
 handlerToIO :: Session -> State -> Message -> Action () -> IO ()
-handlerToIO session state msg h =
+handlerToIO sess state msg h =
   runAction h
-    session
-    (Save.rmBkp (sconfig state) >> shutdown session)  -- get out of the game
+    sess
+    (Save.rmBkp (sconfig state) >> shutdown sess)  -- get out of the game
     (perception_ state)        -- cached perception
     (\ _ _ x -> return x)      -- final continuation returns result
     (ioError $ userError "unhandled abort")
     state
     msg
+
+-- | Invoke pseudo-random computation with the generator kept in the state.
+rndToAction :: Rnd a -> Action a
+rndToAction r = do
+  g <- gets srandom
+  let (a, ng) = runState r g
+  modify (\ state -> state {srandom = ng})
+  return a
 
 -- | Invoking a session command.
 session :: (Session -> Action a) -> Action a
@@ -71,60 +82,44 @@ session f = Action (\ s e p k a st ms -> runAction (f s) s e p k a st ms)
 
 -- | Invoking a session command.
 sessionIO :: (Session -> IO a) -> Action a
-sessionIO f = Action (\ s e p k a st ms -> f s >>= k st ms)
+sessionIO f = Action (\ s _e _p k _a st ms -> f s >>= k st ms)
 
--- | Display the current level, without any message.
-displayWithoutMessage :: Action Bool
-displayWithoutMessage = Action (\ s e p k a st ms -> displayLevel False s p st "" Nothing >>= k st ms)
+-- | Display the current level with modified current message.
+displayGeneric :: ColorMode -> (String -> String) -> Action Bool
+displayGeneric dm f = Action (\ s _e p k _a st ms -> displayLevel dm s p st (f ms) Nothing >>= k st ms)
 
--- | Display the current level, with the current message.
+-- | Display the current level, with the current message and color. Most common.
 display :: Action Bool
-display = Action (\ s e p k a st ms -> displayLevel False s p st ms Nothing >>= k st ms)
-
--- | Display the current level in black and white, and the current message,
-displayBW :: Action Bool
-displayBW = Action (\ s e p k a st ms -> displayLevel True s p st ms Nothing >>= k st ms)
+display = displayGeneric ColorFull id
 
 -- | Display an overlay on top of the current screen.
 overlay :: String -> Action Bool
-overlay txt = Action (\ s e p k a st ms -> displayLevel False s p st ms (Just txt) >>= k st ms)
+overlay txt = Action (\ s _e p k _a st ms -> displayLevel ColorFull s p st ms (Just txt) >>= k st ms)
 
--- | Set the current message.
-messageWipeAndSet :: Message -> Action ()
-messageWipeAndSet nm = Action (\ s e p k a st ms -> k st nm ())
+-- | Wipe out and set a new value for the current message.
+messageReset :: Message -> Action ()
+messageReset nm = Action (\ _s _e _p k _a st _ms -> k st nm ())
 
 -- | Add to the current message.
 messageAdd :: Message -> Action ()
-messageAdd nm = Action (\ s e p k a st ms -> k st (addMsg ms nm) ())
+messageAdd nm = Action (\ _s _e _p k _a st ms -> k st (addMsg ms nm) ())
 
 -- | Clear the current message.
-resetMessage :: Action Message
-resetMessage = Action (\ s e p k a st ms -> k st "" ms)
+messageClear :: Action ()
+messageClear = Action (\ _s _e _p k _a st _ms -> k st "" ())
 
 -- | Get the current message.
 currentMessage :: Action Message
-currentMessage = Action (\ s e p k a st ms -> k st ms ms)
+currentMessage = Action (\ _s _e _p k _a st ms -> k st ms ms)
 
 -- | End the game, i.e., invoke the shutdown continuation.
 end :: Action ()
-end = Action (\ s e p k a st ms -> e)
+end = Action (\ _s e _p _k _a _st _ms -> e)
 
 -- | Reset the state and resume from the last backup point, i.e., invoke
 -- the failure continuation.
 abort :: Action a
-abort = Action (\ s e p k a st ms -> a)
-
--- | Perform an action and signal an error if the result is False.
-assertTrue :: Action Bool -> Action ()
-assertTrue h = do
-  b <- h
-  when (not b) $ error "assertTrue: failure"
-
--- | Perform an action and signal an error if the result is True.
-assertFalse :: Action Bool -> Action ()
-assertFalse h = do
-  b <- h
-  when b $ error "assertFalse: failure"
+abort = Action (\ _s _e _p _k a _st _ms -> a)
 
 -- | Set the current exception handler. First argument is the handler,
 -- second is the computation the handler scopes over.
@@ -146,12 +141,12 @@ tryRepeatedly = tryRepeatedlyWith (return ())
 
 -- | Print a debug message or ignore.
 debug :: String -> Action ()
-debug x = return () -- liftIO $ hPutStrLn stderr x
+debug _x = return () -- liftIO $ hPutStrLn stderr _x
 
 -- | Print the given message, then abort.
 abortWith :: Message -> Action a
 abortWith msg = do
-  messageWipeAndSet msg
+  messageReset msg
   display
   abort
 
@@ -165,21 +160,21 @@ abortIfWith False _  = abortWith ""
 
 -- | Print message, await confirmation. Return value indicates
 -- if the player tried to abort/escape.
-messageMoreConfirm :: Bool -> Message -> Action Bool
-messageMoreConfirm blackAndWhite msg = do
+messageMoreConfirm :: ColorMode -> Message -> Action Bool
+messageMoreConfirm dm msg = do
   messageAdd (msg ++ more)
-  if blackAndWhite then displayBW else display
+  displayGeneric dm id
   session getConfirm
 
 -- | Print message, await confirmation, ignore confirmation.
 messageMore :: Message -> Action ()
-messageMore msg = resetMessage >> messageMoreConfirm False msg >> return ()
+messageMore msg = messageClear >> messageMoreConfirm ColorFull msg >> return ()
 
 -- | Print a yes/no question and return the player's answer.
 messageYesNo :: Message -> Action Bool
 messageYesNo msg = do
-  messageWipeAndSet (msg ++ yesno)
-  displayBW  -- turn player's attention to the choice
+  messageReset (msg ++ yesno)
+  displayGeneric ColorBW id  -- turn player's attention to the choice
   session getYesNo
 
 -- | Print a message and an overlay, await confirmation. Return value
@@ -190,26 +185,25 @@ messageOverlayConfirm msg txt = messageOverlaysConfirm msg [txt]
 -- | Prints several overlays, one per page, and awaits confirmation.
 -- Return value indicates if the player tried to abort/escape.
 messageOverlaysConfirm :: Message -> [String] -> Action Bool
-messageOverlaysConfirm msg [] =
+messageOverlaysConfirm _msg [] =
   do
-    resetMessage
+    messageClear
     display
     return True
 messageOverlaysConfirm msg (x:xs) =
   do
-    messageWipeAndSet msg
-    b <- overlay (x ++ more)
-    if b
+    messageReset msg
+    b0 <- overlay (x ++ more)
+    if b0
       then do
         b <- session getConfirm
         if b
-          then do
-            messageOverlaysConfirm msg xs
+          then messageOverlaysConfirm msg xs
           else stop
       else stop
   where
     stop = do
-      resetMessage
+      messageClear
       display
       return False
 
@@ -220,37 +214,37 @@ withPerception h = Action (\ s e _ k a st ms ->
 
 -- | Get the current perception.
 currentPerception :: Action Perceptions
-currentPerception = Action (\ s e p k a st ms -> k st ms p)
+currentPerception = Action (\ _s _e p k _a st ms -> k st ms p)
 
 -- | If in targeting mode, check if the current level is the same
 -- as player level and refuse performing the action otherwise.
 checkCursor :: Action () -> Action ()
 checkCursor h = do
   cursor <- gets scursor
-  level  <- gets slevel
-  if creturnLn cursor == lname level
+  slid <- gets slid
+  if creturnLn cursor == slid
     then h
     else abortWith "this command does not work on remote levels"
 
-updateAnyActor :: Actor -> (Movable -> Movable) -> Action ()
+updateAnyActor :: ActorId -> (Actor -> Actor) -> Action ()
 updateAnyActor actor f = modify (updateAnyActorBody actor f)
 
-updatePlayerBody :: (Movable -> Movable) -> Action ()
+updatePlayerBody :: (Actor -> Actor) -> Action ()
 updatePlayerBody f = do
   pl <- gets splayer
   updateAnyActor pl f
 
 -- | Advance the move time for the given actor.
-advanceTime :: Actor -> Action ()
+advanceTime :: ActorId -> Action ()
 advanceTime actor = do
   time <- gets stime
-  let upd m = m { mtime = time + (nspeed (mkind m)) }
+  let upd m = m { btime = time + aspeed (Kind.getKind (bkind m)) }
   -- A hack to synchronize the whole party:
   pl <- gets splayer
-  if (actor == pl || isAHero actor)
+  if actor == pl || isAHero actor
     then do
            modify (updateLevel (updateHeroes (IM.map upd)))
-           when (not $ isAHero pl) $ updatePlayerBody upd
+           unless (isAHero pl) $ updatePlayerBody upd
     else updateAnyActor actor upd
 
 playerAdvanceTime :: Action ()

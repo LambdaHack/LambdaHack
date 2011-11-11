@@ -1,19 +1,17 @@
 module HighScores where
 
 import System.Directory
-import Control.Exception as E hiding (handle)
 import Control.Monad
 import Text.Printf
 import System.Time
 
 import Data.Binary
-import Data.List as L
-import Data.Maybe
+import qualified Data.List as L
 
-import File
-import Dungeon
-import Level
+import Utils.File
 import qualified Config
+import WorldLoc
+import Geometry
 
 -- | A single score.
 -- TODO: add heroes' names, exp and level, cause of death, user number/name.
@@ -22,25 +20,15 @@ import qualified Config
 -- and I couldn't use Datetime because it needs old base (and is under GPL).
 -- TODO: When we finally move to Date.Time, let's take timezone into account.
 data ScoreRecord = ScoreRecord
-                     { points  :: Int,
-                       negTurn :: Int,
-                       date    :: ClockTime,
-                       status  :: Status}
+  { points  :: !Int
+  , negTurn :: !Int
+  , date    :: !ClockTime
+  , status  :: !Status
+  }
   deriving (Eq, Ord)
 
-data Status = Killed LevelName | Camping LevelName | Victor
+data Status = Killed !LevelId | Camping !LevelId | Victor
   deriving (Eq, Ord)
-
-instance Binary ClockTime where
-  put (TOD s p) =
-    do
-      put s
-      put p
-  get =
-    do
-      s <- get
-      p <- get
-      return (TOD s p)
 
 instance Binary Status where
   put (Killed ln)  = putWord8 0 >> put ln
@@ -52,21 +40,24 @@ instance Binary Status where
             0 -> liftM Killed  get
             1 -> liftM Camping get
             2 -> return Victor
+            _ -> fail "no parse (Status)"
 
 instance Binary ScoreRecord where
-  put (ScoreRecord points negTurn date status) =
+  put (ScoreRecord p n (TOD cs cp) s) =
     do
-      put points
-      put negTurn
-      put date
-      put status
+      put p
+      put n
+      put cs
+      put cp
+      put s
   get =
     do
-      points <- get
-      negTurn <- get
-      date <- get
-      status <- get
-      return (ScoreRecord points negTurn date status)
+      p <- get
+      n <- get
+      cs <- get
+      cp <- get
+      s <- get
+      return (ScoreRecord p n (TOD cs cp) s)
 
 -- | Show a single high score.
 showScore :: (Int, ScoreRecord) -> String
@@ -79,7 +70,6 @@ showScore (pos, score) =
       time  = calendarTimeToString . toUTCTime . date $ score
       big   = "                                                 "
       lil   = "              "
-      -- TODO: later: https://github.com/kosmikus/LambdaHack/issues#issue/9
       steps = negTurn score `div` (-10)
   in
    printf
@@ -100,26 +90,25 @@ file config = Config.getFile config "files" "highScores"
 -- | We save a simple serialized version of the high scores table.
 -- The 'False' is used only as an EOF marker.
 save :: Config.CP -> ScoreTable -> IO ()
-save config scores =
-  do
-    f <- file config
-    E.catch (removeFile f) (\ e -> case e :: IOException of _ -> return ())
-    encodeCompressedFile f (scores, False)
+save config scores = do
+  f <- file config
+  encodeEOF f scores
 
 -- | Read the high scores table. Return the empty table if no file.
 restore :: Config.CP -> IO ScoreTable
-restore config =
-  E.catch (do
-             f <- file config
-             (x, z) <- strictDecodeCompressedFile f
-             (z :: Bool) `seq` return x)
-          (\ e -> case e :: IOException of
-                    _ -> return [])
+restore config = do
+  f <- file config
+  b <- doesFileExist f
+  if not b
+    then return []
+    else do
+      scores <- strictDecodeEOF f
+      return scores
 
 -- | Insert a new score into the table, Return new table and the position.
 insertPos :: ScoreRecord -> ScoreTable -> (ScoreTable, Int)
 insertPos s h =
-  let (prefix, suffix) = L.span (\ x -> x > s) h in
+  let (prefix, suffix) = L.span (> s) h in
   (prefix ++ [s] ++ suffix, L.length prefix + 1)
 
 -- | Show a screenful of the high scores table.
@@ -145,8 +134,8 @@ register config write s =
   do
     h <- restore config
     let (h', pos) = insertPos s h
-        (lines, _) = normalLevelSize
-        height = lines `div` 3
+        (_, nlines) = normalLevelBound  -- TODO: query terminal size instead
+        height = nlines `div` 3
         (msgCurrent, msgUnless) =
           case status s of
             Killed _  -> (" short-lived", " (score halved)")
@@ -157,5 +146,5 @@ register config write s =
                           else "")
         msg = printf "Your%s exploits award you place >> %d <<%s."
                 msgCurrent pos msgUnless
-    if write then save config h' else return ()
+    when write $ save config h'
     return (msg, slideshow pos h' height)

@@ -2,15 +2,17 @@ module Frequency where
 
 import Control.Monad
 
+-- TODO: perhaps move to Utils/ (generally useful enough? more ops needed?)
+
 newtype Frequency a = Frequency { runFrequency :: [(Int, a)] }
   deriving Show
 
 instance Monad Frequency where
-  return x  =  Frequency [(1, x)]
-  m >>= f   =  Frequency
-               [(p * q, y) | (p, x) <- runFrequency m, 
+  return x = Frequency [(1, x)]
+  m >>= f  = Frequency
+               [(p * q, y) | (p, x) <- runFrequency m,
                              (q, y) <- runFrequency (f x) ]
-  fail ""   =  Frequency []
+  fail _   = Frequency []
 
 instance MonadPlus Frequency where
   mplus (Frequency xs) (Frequency ys) = Frequency (xs ++ ys)
@@ -22,10 +24,13 @@ instance Functor Frequency where
 -- only try the second possibility if the first fails
 melse :: Frequency a -> Frequency a -> Frequency a
 melse (Frequency []) y = y
-melse x              y = x
+melse x             _y = x
 
 scale :: Int -> Frequency a -> Frequency a
 scale n (Frequency xs) = Frequency (map (\ (p, x) -> (n * p, x)) xs)
 
 uniform :: [a] -> Frequency a
 uniform = Frequency . map (\ x -> (1, x))
+
+filterFreq :: (a -> Bool) -> Frequency a -> Frequency a
+filterFreq p (Frequency l) = Frequency $ filter (p . snd) l

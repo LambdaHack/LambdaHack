@@ -1,27 +1,29 @@
 module Display.Gtk
   (displayId, startup, shutdown, display, nextEvent, Session) where
 
-import qualified Data.Binary
 import Control.Monad
 import Control.Concurrent
 import Graphics.UI.Gtk.Gdk.Events  -- TODO: replace, deprecated
 import Graphics.UI.Gtk
-import Data.List as L
+import qualified Data.List as L
 import Data.IORef
-import Data.Map as M
+import qualified Data.Map as M
 import qualified Data.ByteString.Char8 as BS
 
+import Area
+import Loc
 import Geometry
 import qualified Keys as K (Key(..), keyTranslate)
 import qualified Color
 
+displayId :: String
 displayId = "gtk"
 
-data Session =
-  Session {
-    schan :: Chan String,
-    stags :: Map Color.Attr TextTag,
-    sview :: TextView }
+data Session = Session
+  { schan :: Chan String
+  , stags :: M.Map Color.Attr TextTag
+  , sview :: TextView
+  }
 
 startup :: (Session -> IO ()) -> IO ()
 startup k =
@@ -60,12 +62,12 @@ startup k =
                                Button { Graphics.UI.Gtk.Gdk.Events.eventButton = RightButton } ->
                                  do
                                    fsd <- fontSelectionDialogNew "Choose font"
-                                   cf <- readIORef currentfont
-                                   fd <- fontDescriptionToString cf
-                                   fontSelectionDialogSetFontName fsd fd
+                                   cf  <- readIORef currentfont
+                                   fds <- fontDescriptionToString cf
+                                   fontSelectionDialogSetFontName fsd fds
                                    fontSelectionDialogSetPreviewText fsd "+##@##-...|"
-                                   response <- dialogRun fsd
-                                   when (response == ResponseOk) $
+                                   resp <- dialogRun fsd
+                                   when (resp == ResponseOk) $
                                      do
                                        fn <- fontSelectionDialogGetFontName fsd
                                        case fn of
@@ -79,29 +81,33 @@ startup k =
                                _ -> return False)
 
     let black = Color minBound minBound minBound  -- Color.defBG == Color.Black
-        white = Color 0xAAAA 0xAAAA 0xAAAA        -- Color.defFG == Color.White
+        white = Color 0xC500 0xBC00 0xB800        -- Color.defFG == Color.White
     widgetModifyBase tv StateNormal black
     widgetModifyText tv StateNormal white
 
     ec <- newChan
     forkIO $ k (Session ec tts tv)
 
-    onKeyPress tv (\ e -> postGUIAsync (writeChan ec (Graphics.UI.Gtk.Gdk.Events.eventKeyName e)) >> return True)
+    onKeyPress tv
+      (\ e -> do
+          writeChan ec (Graphics.UI.Gtk.Gdk.Events.eventKeyName e)
+          return True)
 
     onDestroy w mainQuit -- set quit handler
     widgetShowAll w
     yield
     mainGUI
 
+shutdown :: Session -> IO ()
 shutdown _ = mainQuit
 
 display :: Area -> Session -> (Loc -> (Color.Attr, Char)) -> String -> String
            -> IO ()
-display ((y0,x0), (y1,x1)) session f msg status =
-  postGUIAsync $
-  do
+display (x0, y0, x1, y1) session f msg status =
+  postGUIAsync $ do
     tb <- textViewGetBuffer (sview session)
-    let fLine y = let (as, cs) = unzip [ f (y, x) | x <- [x0..x1] ]
+    let fLine y = let (as, cs) = unzip [ f (toLoc (x1 + 1) (x, y))
+                                       | x <- [x0..x1] ]
                   in  ((y, as), BS.pack cs)
         memo  = L.map fLine [y0..y1]
         attrs = L.map fst memo
@@ -110,26 +116,27 @@ display ((y0,x0), (y1,x1)) session f msg status =
     textBufferSetByteString tb (BS.concat bs)
     mapM_ (setTo tb (stags session) x0) attrs
 
-setTo :: TextBuffer -> Map Color.Attr TextTag -> X -> (Y, [Color.Attr]) -> IO ()
-setTo tb tts lx (ly, []) = return ()
-setTo tb tts lx (ly, a:as) = do
+setTo :: TextBuffer -> M.Map Color.Attr TextTag -> X -> (Y, [Color.Attr])
+         -> IO ()
+setTo _  _   _  (_,  [])         = return ()
+setTo tb tts lx (ly, attr:attrs) = do
   ib <- textBufferGetIterAtLineOffset tb (ly + 1) lx
   ie <- textIterCopy ib
   let setIter :: Color.Attr -> Int -> [Color.Attr] -> IO ()
       setIter previous repetitions [] = do
         textIterForwardChars ie repetitions
         when (previous /= Color.defaultAttr) $
-          textBufferApplyTag tb (tts ! previous) ib ie
+          textBufferApplyTag tb (tts M.! previous) ib ie
       setIter previous repetitions (a:as)
         | a == previous =
             setIter a (repetitions + 1) as
         | otherwise = do
             textIterForwardChars ie repetitions
             when (previous /= Color.defaultAttr) $
-              textBufferApplyTag tb (tts ! previous) ib ie
+              textBufferApplyTag tb (tts M.! previous) ib ie
             textIterForwardChars ib repetitions
             setIter a 1 as
-  setIter a 1 as
+  setIter attr 1 attrs
 
 -- | reads until a non-dead key encountered
 readUndeadChan :: Chan String -> IO String

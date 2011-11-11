@@ -1,0 +1,101 @@
+cabal-version: >= 1.10
+name:          Allure
+version:       0.4.2
+license:       BSD3
+license-file:  LICENSE
+tested-with:   GHC == 7.2.1, GHC == 7.3
+data-files:    LICENSE, CREDITS, PLAYING.md,
+               README.md, src/config.default, src/config.bot, scores
+author:        Andres Loeh, Mikolaj Konarski and others
+maintainer:    Mikolaj Konarski <mikolaj.konarski@funktory.com>
+description:   This is an alpha pre-release of Allure of the Stars,
+               a near-future Sci-Fi roguelike and tactical squad game.
+               Long term goals are high replayability and auto-balancing
+               through procedural content generation and persistent content
+               modification based on player behaviour.
+               .
+               The game is based (for the time being, as a fork)
+               on the LambdaHack roguelike game engine available
+               at <http://hackage.haskell.org/package/Allure>.
+synopsis:      Near-future roguelike game in early development
+homepage:      http://github.com/Mikolaj/Allure
+bug-reports:   http://github.com/Mikolaj/Allure/issues
+category:      Game
+build-type:    Simple
+
+flag curses
+  description:   enable curses support
+  default:       False
+
+flag vty
+  description:   enable vty support
+  default:       False
+
+flag std
+  description:   enable stdin/stdout support
+  default:       False
+
+executable Allure
+  main-is:       Main.hs
+  hs-source-dirs: src
+  other-modules: Action, Actions, ActorAdd, Actor, ActorState, Area, AreaRnd,
+                 Cave, Color, Command, Config, ConfigDefault,
+                 Content.Content, Content.ActorKind, Content.CaveKind,
+                 Content.ItemKind, Content.TileKind,
+                 Dir, Display, Dungeon, DungeonState,
+                 Effect, EffectAction, Feature, Flavour,
+                 FOV, FOV.Common, FOV.Digital, FOV.Permissive, FOV.Shadow,
+                 Frequency, Geometry, Grammar,
+                 HighScores, Item, ItemAction,
+                 Keys, Keybindings, Kind, Level, LevelState, Loc
+                 Message, Perception, Random,
+                 Save, State, Strategy, StrategyState, Tile, Turn,
+                 Utils.Assert, Utils.File, Utils.Multiline,
+                 Version, WorldLoc
+  build-depends: ConfigFile >= 1.1.1 && < 2,
+                 array >= 0.3.0.3 && < 1, base >= 4 && < 5,
+                 binary >= 0.5.0.2 && < 1, bytestring >= 0.9.2 && < 1,
+                 containers >= 0.4.1 && < 1, directory >= 1.1.0.1 && < 2,
+                 filepath >= 1.2.0.1 && < 2, mtl >= 2.0.1 && < 3,
+                 old-time >= 1.0.0.7 && < 2, random >= 1.0.1 && < 2,
+                 template-haskell >= 2.6 && < 3, transformers >= 0.2.2 && < 1,
+                 zlib >= 0.5.3.1 && < 1
+
+  default-language: Haskell2010
+  default-extensions: BangPatterns, RecordWildCards, NamedFieldPuns
+  other-extensions: CPP, QuasiQuotes, MultiParamTypeClasses, RankNTypes
+  ghc-options:   -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-monomorphism-restriction -fwarn-unrecognised-pragmas
+  ghc-options:   -fno-warn-auto-orphans -fno-warn-implicit-prelude -fno-warn-unused-do-bind
+  ghc-options:   -fno-ignore-asserts -funbox-strict-fields
+
+  if flag(curses) {
+    other-modules: Display.Curses
+    build-depends: hscurses >= 1.4.1 && < 2
+    cpp-options:   -DCURSES
+    extra-libraries: curses
+  } else { if flag(vty) {
+    other-modules: Display.Vty
+    build-depends: vty >= 4.7.0.6
+    cpp-options:   -DVTY
+  } else { if flag(std) {
+    cpp-options:   -DSTD
+  } else {
+    other-modules: Display.Gtk
+    build-depends: gtk >= 0.12.1 && < 0.13
+    ghc-options:   -threaded
+  } } }
+
+executable BotAllure
+  main-is:       Bot.hs
+  hs-source-dirs: src
+  build-depends: base >= 4 && < 5, random >= 1.0.1 && < 2
+  default-language: Haskell2010
+  default-extensions: BangPatterns, RecordWildCards, NamedFieldPuns
+  other-extensions: CPP, QuasiQuotes, MultiParamTypeClasses, RankNTypes
+  ghc-options:   -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-monomorphism-restriction -fwarn-unrecognised-pragmas
+  ghc-options:   -fno-warn-auto-orphans -fno-warn-implicit-prelude -fno-warn-unused-do-bind
+  ghc-options:   -fno-ignore-asserts -funbox-strict-fields
+
+source-repository head
+  type:              git
+  location:          git://github.com/Mikolaj/Allure.git

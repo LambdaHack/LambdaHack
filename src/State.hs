@@ -2,62 +2,68 @@ module State where
 
 import qualified Data.Map as M
 import qualified Data.Set as S
-import qualified Data.IntMap as IM
-import Control.Monad
+import qualified Data.IntSet as IS
 import Data.Binary
 import qualified Config
+import qualified System.Random as R
 
-import Movable
+import Actor
 import Geometry
+import Loc
 import Level
-import Dungeon
+import qualified Dungeon
 import Item
 import Message
-import qualified ItemKind
+import WorldLoc
 
 -- | The 'State' contains all the game state that has to be saved.
 -- In practice, we maintain extra state, but that state is state
 -- accumulated during a turn or relevant only to the current session.
--- TODO: consider changing slevel to LevelName, removing the lname field
--- and not removing the current level from the dungeon.
 data State = State
-  { splayer      :: Actor,        -- ^ represents the player-controlled movable
-    scursor      :: Cursor,       -- ^ cursor location and level to return to
-    shistory     :: [Message],
-    ssensory     :: SensoryMode,
-    sdisplay     :: DisplayMode,
-    stime        :: Time,
-    sassocs      :: Assocs,       -- ^ how every item appears
-    sdiscoveries :: Discoveries,  -- ^ items (kinds) that have been discovered
-    sdungeon     :: Dungeon,      -- ^ all but the current dungeon level
-    slevel       :: Level,
-    scounter     :: (Int, Int),   -- ^ stores next hero index and monster index
-    sconfig      :: Config.CP
+  { splayer      :: ActorId      -- ^ represents the player-controlled actor
+  , scursor      :: Cursor       -- ^ cursor location and level to return to
+  , shistory     :: [Message]
+  , ssensory     :: SensoryMode
+  , sdisplay     :: DisplayMode
+  , stime        :: Time
+  , sflavour     :: FlavourMap   -- ^ association of flavour to items
+  , sdisco       :: Discoveries  -- ^ items (kinds) that have been discovered
+  , sdungeon     :: Dungeon.Dungeon  -- ^ all but the current dungeon level
+  , slid         :: LevelId
+  , scounter     :: (Int, Int)   -- ^ stores next hero index and monster index
+  , sparty       :: IS.IntSet    -- ^ heroes in the party
+  , srandom      :: R.StdGen     -- ^ current random generator
+  , sconfig      :: Config.CP
   }
   deriving Show
 
 data Cursor = Cursor
-  { ctargeting :: Bool,       -- ^ are we in targeting mode?
-    clocLn     :: LevelName,  -- ^ cursor level
-    clocation  :: Loc,        -- ^ cursor coordinates
-    creturnLn  :: LevelName   -- ^ the level current player resides on
+  { ctargeting :: Bool       -- ^ are we in targeting mode?
+  , clocLn     :: LevelId    -- ^ cursor level
+  , clocation  :: Loc        -- ^ cursor coordinates
+  , creturnLn  :: LevelId    -- ^ the level current player resides on
   }
   deriving Show
 
-defaultState :: Dungeon -> Level -> State
-defaultState dng lvl =
+slevel :: State -> Level
+slevel State{slid, sdungeon} = sdungeon Dungeon.! slid
+
+defaultState :: Dungeon.Dungeon -> LevelId -> Loc -> R.StdGen -> State
+defaultState dng lid ploc g =
   State
-    (AHero 0)
-    (Cursor False (LambdaCave (-1)) (-1, -1) (lname lvl))
+    (AHero 0)  -- hack: the hero is not yet alive
+    (Cursor False lid ploc lid)
     []
     Implicit Normal
     0
-    IM.empty
+    M.empty
     S.empty
     dng
-    lvl
+    lid
     (0, 0)
-    (Config.defaultCP)
+    IS.empty
+    g
+    Config.defaultCP
 
 updateCursor :: (Cursor -> Cursor) -> State -> State
 updateCursor f s = s { scursor = f (scursor s) }
@@ -69,12 +75,12 @@ updateTime :: (Time -> Time) -> State -> State
 updateTime f s = s { stime = f (stime s) }
 
 updateDiscoveries :: (Discoveries -> Discoveries) -> State -> State
-updateDiscoveries f s = s { sdiscoveries = f (sdiscoveries s) }
+updateDiscoveries f s = s { sdisco = f (sdisco s) }
 
 updateLevel :: (Level -> Level) -> State -> State
-updateLevel f s = s { slevel = f (slevel s) }
+updateLevel f s = updateDungeon (Dungeon.adjust f (slid s)) s
 
-updateDungeon :: (Dungeon -> Dungeon) -> State -> State
+updateDungeon :: (Dungeon.Dungeon -> Dungeon.Dungeon) -> State -> State
 updateDungeon f s = s {sdungeon = f (sdungeon s)}
 
 toggleVision :: State -> State
@@ -94,7 +100,8 @@ toggleTerrain s = s { sdisplay = case sdisplay s of Terrain 1 -> Normal
                                                     _         -> Terrain 4 }
 
 instance Binary State where
-  put (State player cursor hst sense disp time assocs discs dng lvl ct config) =
+  put (State player cursor hst sense disp time flav disco dng lid ct
+       party g config) =
     do
       put player
       put cursor
@@ -102,11 +109,13 @@ instance Binary State where
       put sense
       put disp
       put time
-      put assocs
-      put discs
+      put flav
+      put disco
       put dng
-      put lvl
+      put lid
       put ct
+      put party
+      put (show g)
       put config
   get =
     do
@@ -116,14 +125,17 @@ instance Binary State where
       sense  <- get
       disp   <- get
       time   <- get
-      assocs <- get
-      discs  <- get
+      flav   <- get
+      disco  <- get
       dng    <- get
-      lvl    <- get
+      lid    <- get
       ct     <- get
+      party  <- get
+      g      <- get
       config <- get
       return
-        (State player cursor hst sense disp time assocs discs dng lvl ct config)
+        (State player cursor hst sense disp time flav disco dng lid ct
+         party (read g) config)
 
 instance Binary Cursor where
   put (Cursor act cln loc rln) =
@@ -154,14 +166,14 @@ instance Binary SensoryMode where
           tag <- getWord8
           case tag of
             0 -> return Implicit
-            1 -> liftM Vision get
+            1 -> fmap Vision get
             2 -> return Smell
             _ -> fail "no parse (SensoryMode)"
 
 data DisplayMode =
     Normal
   | Omniscient
-  | Terrain Int
+  | Terrain Int  -- TODO: unused right now
   deriving (Show, Eq)
 
 instance Binary DisplayMode where
@@ -173,5 +185,5 @@ instance Binary DisplayMode where
           case tag of
             0 -> return Normal
             1 -> return Omniscient
-            2 -> liftM Terrain get
+            2 -> fmap Terrain get
             _ -> fail "no parse (DisplayMode)"

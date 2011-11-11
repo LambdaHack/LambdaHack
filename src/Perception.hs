@@ -1,44 +1,48 @@
 module Perception where
 
 import qualified Data.Set as S
-import Data.List as L
+import qualified Data.List as L
 import qualified Data.IntMap as IM
 import Data.Maybe
 import Control.Monad
 
-import Geometry
+import Loc
 import State
 import Level
-import Movable
-import MovableState
-import qualified MovableKind
+import Actor
+import ActorState
+import Content.ActorKind
 import FOV
 import qualified Config
+import qualified Tile
+import qualified Kind
 
-data Perception =
-  Perception { preachable :: S.Set Loc, pvisible :: S.Set Loc }
+data Perception = Perception
+  { preachable :: S.Set Loc
+  , pvisible :: S.Set Loc
+  }
 
 -- The pplayer field is void if player not on the current level,
--- or if the player controls a blind monster (TODO. But perhaps only non-blind
--- monsters should be controllable?). Right now, the field is used only
+-- or if the player controls a blind monster. Right now, the field is used only
 -- for player-controlled monsters on the current level.
-data Perceptions =
-  Perceptions { pplayer :: Maybe Perception,
-                pheroes :: IM.IntMap Perception,
-                ptotal  :: Perception }
+data Perceptions = Perceptions
+  { pplayer :: Maybe Perception
+  , pheroes :: IM.IntMap Perception
+  , ptotal  :: Perception
+  }
 
 ptreachable, ptvisible :: Perceptions -> S.Set Loc
 ptreachable = preachable . ptotal
 ptvisible   = pvisible . ptotal
 
 actorPrLoc :: (Perception -> S.Set Loc) ->
-              Actor -> Loc -> Perceptions -> Maybe Actor -> Bool
+              ActorId -> Loc -> Perceptions -> Maybe ActorId -> Bool
 actorPrLoc projection actor loc per pl =
   let tryHero = case actor of
                   AMonster _ -> Nothing
                   AHero i -> do
                     hper <- IM.lookup i (pheroes per)
-                    return $ loc `S.member` (projection hper)
+                    return $ loc `S.member` projection hper
       tryPl   = do  -- the case for a monster under player control
                   guard $ Just actor == pl
                   pper <- pplayer per
@@ -46,14 +50,15 @@ actorPrLoc projection actor loc per pl =
       tryAny  = tryHero `mplus` tryPl
   in  fromMaybe False tryAny  -- assume not visible, if no perception found
 
-actorSeesLoc    :: Actor -> Loc -> Perceptions -> Maybe Actor -> Bool
+actorSeesLoc    :: ActorId -> Loc -> Perceptions -> Maybe ActorId -> Bool
 actorSeesLoc    = actorPrLoc pvisible
 
-actorReachesLoc :: Actor -> Loc -> Perceptions -> Maybe Actor -> Bool
+actorReachesLoc :: ActorId -> Loc -> Perceptions -> Maybe ActorId -> Bool
 actorReachesLoc = actorPrLoc preachable
 
 -- Not quite correct if FOV not symmetric (Shadow).
-actorReachesActor :: Actor -> Actor -> Loc -> Loc -> Perceptions -> Maybe Actor
+actorReachesActor :: ActorId -> ActorId -> Loc -> Loc
+                     -> Perceptions -> Maybe ActorId
                      -> Bool
 actorReachesActor actor1 actor2 loc1 loc2 per pl =
   actorReachesLoc actor1 loc2 per pl ||
@@ -61,12 +66,17 @@ actorReachesActor actor1 actor2 loc1 loc2 per pl =
 
 perception_ :: State -> Perceptions
 perception_ state@(State { splayer = pl,
-                           slevel   = Level { lmap = lmap, lheroes = hs },
                            sconfig  = config,
                            ssensory = sensory }) =
-  let mode   = Config.get config "engine" "fovMode"
-      radius = Config.get config "engine" "fovRadius"
-      fovMode m = if not $ MovableKind.nsight (mkind m) then Blind else
+  let lvl@Level{lheroes = hs} = slevel state
+      mode   = Config.get config "engine" "fovMode"
+      radius = let r = Config.get config "engine" "fovRadius"
+               in if r < 1
+                  then error $ "FOV radius is " ++ show r ++ ", should be >= 1"
+                  else r
+      fovMode m = if not $ asight $ Kind.getKind $ bkind m
+                  then Blind
+                  else
         -- terrible, temporary hack
         case sensory of
           Vision 3 -> Digital radius
@@ -78,14 +88,14 @@ perception_ state@(State { splayer = pl,
               "permissive" -> Permissive radius
               "digital"    -> Digital radius
               "shadow"     -> Shadow
-              _            -> error $ "perception_: unknown mode: " ++ show mode
+              _            -> error $ "Unknown FOV mode: " ++ show mode
 
       -- Perception for a player-controlled monster on the current level.
       pper = if isAMonster pl && memActor pl state
              then let m = getPlayerBody state
-                  in Just $ perception (fovMode m) (mloc m) lmap
+                  in Just $ perception (fovMode m) (bloc m) lvl
              else Nothing
-      pers = IM.map (\ h -> perception (fovMode h) (mloc h) lmap) hs
+      pers = IM.map (\ h -> perception (fovMode h) (bloc h) lvl) hs
       lpers = maybeToList pper ++ IM.elems pers
       reachable = S.unions (L.map preachable lpers)
       visible = S.unions (L.map pvisible lpers)
@@ -93,51 +103,23 @@ perception_ state@(State { splayer = pl,
                     pheroes = pers,
                     ptotal = Perception reachable visible }
 
-perception :: FovMode -> Loc -> LMap -> Perception
-perception fovMode ploc lmap =
+-- | Once we compute the reachable fields using FOV, it is possible
+-- to compute what the hero can actually see.
+perception :: FovMode -> Loc -> Level -> Perception
+perception fovMode ploc lvl@Level{lxsize, lysize} =
   let
-    -- This part is simple. "reachable" contains everything that is on an
-    -- unblocked path from the hero position.
-    reachable  = fullscan fovMode ploc lmap
-    -- In "actVisible", we store the locations that have light and are
-    -- reachable. Furthermore, the hero location itself is always visible.
-    litVisible = S.filter (\ loc -> light (lmap `at` loc)) reachable
-    actVisible = S.insert ploc litVisible
-    srnd       = S.fromList $ surroundings ploc
-    -- In "dirVisible", we store locations in the surroundings that are
-    -- perceptible from the current position.
-    dirVisible = S.filter (\ loc -> let p = perceptible (lmap `at` loc) :: [Dir]
-                                    in  any (\ d -> shift loc d == ploc) p)
-                          srnd
-    ownVisible = S.union actVisible dirVisible
-    -- Something is "pasVisible" if it is reachable passively visible from an
-    -- "actVisible" location, *or* if it is in the surroundings and passively
-    -- visible from a "dirVisible" location. (This is complicated, and I'd
-    -- like to simplify it, but for now, it seems to at least do what I
-    -- want.)
-    pasVisible = S.filter (\ loc -> let p = passive (lmap `at` loc)
-                                        dp = S.member loc srnd
-                                        s = if dp then ownVisible else actVisible
-                                    in  any (\ d -> S.member (shift loc d) s) p)
-                          reachable
-    visible = S.unions [pasVisible, actVisible, dirVisible]
-    -- A simpler way to make walls of lit rooms visible, at the cost of making
-    -- them reflect light from all sides, also from corridors.
-    -- Can be hacked around by checking for corridors in the condition below.
-    -- The version in the comment assumes hero light has diameter 3, not 1,
-    -- which looks a bit differently in dark rooms, revealing more walls.
-    openSurroundings = S.filter (\ loc -> open (lmap `at` loc)) srnd
-    openVisible = S.union actVisible openSurroundings
-    simpleVisible =
+    -- Reachable are all fields on an unblocked path from the hero position.
+    -- The player position is visible, but not reachable (e.g. for targeting).
+    reachable  = fullscan fovMode ploc lvl
+    -- Everybody can see locations that are lit and are reachable.
+    uniVisible = S.filter (\ loc -> Tile.isLit (lvl `at` loc)) reachable
+    -- The hero is assumed to carry a light source, too.
+    litVisible = S.insert ploc uniVisible
+    -- Reachable fields adjacent to lit fields are visible, too.
+    adjVisible =
       S.filter
-        (\ loc -> S.member loc openVisible
-                  || (reflects (lmap `at` loc)
-                      && L.any
-                           (\ l -> S.member l actVisible{-openVisible-})
-                           (surroundings loc))
-        ) (S.insert ploc reachable)
-  in
-    case fovMode of
-      Shadow -> Perception reachable visible
-      Blind  -> Perception reachable visible
-      _      -> Perception reachable simpleVisible
+        (L.any (`S.member` litVisible) . surroundings lxsize lysize)
+        reachable
+    -- Visible fields are either lit or adjacent to lit.
+    visible = S.union litVisible adjVisible
+  in Perception reachable visible

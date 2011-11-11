@@ -4,14 +4,15 @@ import Random
 
 data Effect =
     NoEffect
-  | Heal            -- healing strength in ipower
-  | Wound RollDice  -- base damage, to-dam bonus in ipower
+  | Heal             -- healing strength in ipower
+  | Wound !RollDice  -- base damage, to-dam bonus in ipower
   | Dominate
   | SummonFriend
   | SummonEnemy
   | ApplyPerfume
   | Regneration
   | Searching
+  | Teleport
   deriving (Show, Eq, Ord)
 
 effectToName :: Effect -> String
@@ -26,6 +27,7 @@ effectToName SummonEnemy = "of summoning"
 effectToName ApplyPerfume = "of rose water"
 effectToName Regneration = "of regeneration"
 effectToName Searching = "of searching"
+effectToName Teleport = "of teleportation"
 
 -- | How much AI benefits from applying the effect. Multipllied by item power.
 -- Negative means harm to the enemy when thrown. Zero won't ever be used.
@@ -39,3 +41,4 @@ effectToBenefit SummonEnemy = 0
 effectToBenefit ApplyPerfume = 0
 effectToBenefit Regneration = 0     -- much more benefit from carrying around
 effectToBenefit Searching = 0       -- AI does not need to search
+effectToBenefit Teleport = 0        -- AI does not know when to teleport

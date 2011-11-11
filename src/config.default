@@ -1,28 +1,31 @@
 ; This is the default config file, included in the binary itself.
-; The game looks for the user config file in ~/.LambdaHack/config.
+; The game looks for the user config file in ~/.Allure/config.
 ; We restricts the config file format by insisting that
 ; options are case-sensitive and permitting only ';' comments.
 
-; If you contribute to the game, please create directory ~/.LambdaHack/
-; as described in README.markdown. In this way, you will not accidentally
+; If you contribute to the game, please create directory ~/.Allure/
+; as described in README.md. In this way, you will not accidentally
 ; commit your private high scores (nor your save files) to the game
 ; git repository.
 
 [dungeon]
-; the hardcoded default for levels with no specified layout:
-LambdaCave_1: rogueRoom
+; fixed caves for the first levels, then randomly picked caves
+LambdaCave_1: caveRogue
+LambdaCave_2: caveRogue
+LambdaCave_3: caveEmpty
 ; access to stairs may be blocked, so only suitable for the last level:
-LambdaCave_10: noiseRoom
-LambdaCave_3: bigRoom
+LambdaCave_10: caveNoise
 depth: 10
 
 [engine]
-fovMode: shadow
-;fovMode: digital
+fovMode: digital
 ;fovMode: permissive
+;fovMode: shadow
 fovRadius: 40
+;startingRandomGenerator: 42
+;dungeonRandomGenerator: 42
 
-; paths to various game files; relative to ~/.LambdaHack/
+; paths to various game files; relative to ~/.Allure/
 ; (or analogous prefixes for other OSes, see getAppUserDataDirectory)
 [files]
 highScores: scores
@@ -46,11 +49,9 @@ firstDeathEnds: False
 ; TODO: in gtk it could be implemented via unGetChan,
 ; unless we prefer an explicit command queue, with flushing, etc.
 ;
-; NetHack compatibility
-S: X
-colon: slash
+; Handy with Vi keys:
 comma: g
-; Angband compatibility
+; Angband compatibility:
 v: t
 
 [monsters]

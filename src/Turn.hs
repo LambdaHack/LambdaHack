@@ -1,10 +1,10 @@
 module Turn where
 
 import Control.Monad
-import Control.Monad.State hiding (State)
-import Data.List as L
-import Data.Map as M
-import Data.Set as S
+import Control.Monad.State hiding (State, state)
+import qualified Data.List as L
+import qualified Data.Map as M
+import qualified Data.Set as S
 import qualified Data.Ord as Ord
 import qualified Data.IntMap as IM
 import qualified Data.Char as Char
@@ -18,8 +18,8 @@ import EffectAction
 import Keybindings
 import qualified Keys as K
 import Level
-import Movable
-import MovableState
+import Actor
+import ActorState
 import Random
 import State
 import Strategy
@@ -64,25 +64,24 @@ handle =
   do
     debug "handle"
     state <- get
-    pl <- gets splayer
-    let ptime = mtime (getPlayerBody state)  -- time of player's next move
+    let ptime = btime (getPlayerBody state)  -- time of player's next move
     let time  = stime state                  -- current game time
     debug $ "handle: time check. ptime = " ++ show ptime ++ ", time = " ++ show time
     if ptime > time
-      then do
-             -- the hero can't make a move yet; monsters first
-             -- we redraw the map even between player moves so that the movements of fast
-             -- monsters can be traced on the map; we disable this functionality if the
-             -- player is currently running, as it would slow down the running process
-             -- unnecessarily
-             ifRunning (const $ return True) displayWithoutMessage
-             handleMonsters
-      else do
-             handlePlayer -- it's the hero's turn!
+      then handleMonsters  -- the hero can't make a move yet; monsters first
+      else handlePlayer    -- it's the hero's turn!
+
+    -- TODO: readd this, but only for the turns when anything moved
+    -- and only after a rendering delay is added, so that the move is visible
+    -- on modern computers. Use the same delay for running (not disabled now).
+    -- We redraw the map even between player moves so that the movements of fast
+    -- monsters can be traced on the map.
+    -- displayGeneric ColorFull (const "")
 
 -- | Handle monster moves. Perform moves for individual monsters as long as
 -- there are monsters that have a move time which is less than or equal to
 -- the current time.
+-- TODO: We should replace thi structure using a priority search queue/tree.
 handleMonsters :: Action ()
 handleMonsters =
   do
@@ -92,15 +91,15 @@ handleMonsters =
     pl   <- gets splayer
     if IM.null ms
       then nextMove
-      else let order  = Ord.comparing (mtime . snd)
+      else let order  = Ord.comparing (btime . snd)
                (i, m) = L.minimumBy order (IM.assocs ms)
                actor = AMonster i
-           in  if mtime m > time || actor == pl
+           in  if btime m > time || actor == pl
                then nextMove  -- no monster is ready for another move
                else handleMonster actor
 
 -- | Handle the move of a single monster.
-handleMonster :: Actor -> Action ()
+handleMonster :: ActorId -> Action ()
 handleMonster actor =
   do
     debug "handleMonster"
@@ -108,7 +107,7 @@ handleMonster actor =
     per <- currentPerception
     -- Run the AI: choses an action from those given by the AI strategy.
     action <-
-      liftIO $ rndToIO $
+      rndToAction $
         frequency (head (runStrategy (strategy actor state per .| wait actor)))
     action
     handleMonsters
@@ -136,21 +135,22 @@ handlePlayer =
     remember  -- the hero perceives his (potentially new) surroundings
     -- determine perception before running player command, in case monsters
     -- have opened doors ...
-    oldPlayerTime <- gets (mtime . getPlayerBody)
+    oldPlayerTime <- gets (btime . getPlayerBody)
     withPerception playerCommand -- get and process a player command
     -- at this point, the command was successful and possibly took some time
-    newPlayerTime <- gets (mtime . getPlayerBody)
+    newPlayerTime <- gets (btime . getPlayerBody)
     if newPlayerTime == oldPlayerTime
       then withPerception handlePlayer  -- no time taken, repeat
       else do
         state <- get
         pl    <- gets splayer
         let time = stime state
-            ploc = mloc (getPlayerBody state)
+            ploc = bloc (getPlayerBody state)
             sTimeout = Config.get (sconfig state) "monsters" "smellTimeout"
         -- update smell
         when (isAHero pl) $  -- only humans leave strong scent
-          modify (updateLevel (updateSMap (M.insert ploc (time + sTimeout))))
+          modify (updateLevel (updateSmell (IM.insert ploc
+                                             (SmellTime (time + sTimeout)))))
         -- determine player perception and continue with monster moves
         withPerception handleMonsters
 
@@ -158,12 +158,13 @@ handlePlayer =
 playerCommand :: Action ()
 playerCommand =
   do
+    lxsize <- gets (lxsize . slevel)
     display -- draw the current surroundings
     history -- update the message history and reset current message
-    tryRepeatedlyWith stopRunning $ do -- on abort, just ask for a new command
+    tryRepeatedlyWith stopRunning $  -- on abort, just ask for a new command
       ifRunning continueRun $ do
         k <- session nextCommand
-        handleKey stdKeybindings k
+        handleKey lxsize stdKeybindings k
 
               -- Design thoughts (in order to get rid or partially rid of the somewhat
               -- convoluted design we have): We have three kinds of commands.
@@ -199,16 +200,17 @@ playerCommand =
 -- functions.
 
 -- TODO: Should be defined in Command module.
-helpCommand      = Described "display help"      displayHelp
+helpCommand :: Described (Action ())
+helpCommand = Described "display help"      displayHelp
 
 -- | Display command help. TODO: Should be defined in Actions module.
 displayHelp :: Action ()
 displayHelp = do
-  let coImage session k =
-        let macros = snd session
+  let coImage sess k =
+        let macros = snd sess
             domain = M.keysSet macros
-        in  if k `S.member` domain then [] else [k]
-            ++ [ from | (from, to) <- M.assocs macros, to == k ]
+        in  if k `S.member` domain then [] else
+              k : [ from | (from, to) <- M.assocs macros, to == k ]
   aliases <- session (return . coImage)
   let helpString = keyHelp aliases stdKeybindings
   messageOverlayConfirm "Basic keys:" helpString
@@ -228,9 +230,7 @@ stdKeybindings = Keybindings
     kother = M.fromList $
              heroSelection ++
              [ -- interaction with the dungeon
-               (K.Char 'o',  openCommand),
                (K.Char 'c',  closeCommand),
-               (K.Char 's',  searchCommand),
 
                (K.Char '<',  ascendCommand),
                (K.Char '>',  descendCommand),
@@ -249,8 +249,7 @@ stdKeybindings = Keybindings
                (K.Char 'a',  aimCommand),
 
                -- wait
-               -- (K.Char ' ',  waitCommand),  -- dangerous, space is -more- key
-               (K.Char '.',  waitCommand),
+               (K.Char '.',  Undescribed playerAdvanceTime),
 
                -- saving or ending the game
                (K.Char 'X',  saveCommand),
