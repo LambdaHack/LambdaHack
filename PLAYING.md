@@ -1,11 +1,10 @@
-Playing Allure of the Stars
-===========================
+Playing LambdaHack
+==================
 
-Playing Allure of the Stars involves walking around the dungeon
-(err, a Solar System space-ship that incidentally closely resembles
-a fantasy dungeon, in this pre-release version of the game),
-alone or in a party of fearless adventurers, jumping between levels,
-bumping into monsters, doors and walls, gathering magical treasure
+LambdaHack is a small dungeon crawler illustrating the roguelike game engine
+library also called LambdaHack. Playing the game involves walking around
+the dungeon, alone or in a party of fearless adventurers, jumping between
+levels, bumping into monsters, doors and walls, gathering magical treasure
 and making creative use of it. The bloodthirsty monsters do the same,
 intelligence allowing, while tirelessly chasing the noble heroes
 by smell and night-sight.
@@ -13,8 +12,7 @@ by smell and night-sight.
 Once the few basic command keys and on-screen symbols are learned,
 mastery and enjoyment of the game is the matter of tactical skill
 and literary imagination. To be honest, a lot of imagination is required
-right now, but the game is already playable and winnable.
-Contributions welcome.
+for this simple game, but it's is playable and winnable.
 
 
 Dungeon
@@ -27,11 +25,14 @@ The basic tiles are as follows.
 
                dungeon terrain type               on-screen symbol
                floor                              .
-               wall                               #
+               corridor                           #
+               wall (horizontal and vertical)     - and |
+               pillar wall                        O
                stairs up                          <
                stairs down                        >
-               open door                          '
+               open door                          | and -
                closed door                        +
+               rock                               blank
 
 The game world is persistent, i.e., every time the player visits a level
 during a single game, the level layout is the same. Some items
@@ -144,3 +145,14 @@ If all heroes die, your score is halved and only the treasure carried
 by the last standing hero counts. You are free to start again
 from the first level of the dungeon, but all your wealth and items
 are gone and the dungeon and it's treasure look differently.
+
+
+Savegame directory
+------------------
+
+If you don't want LambdaHack to write to the current directory,
+create a personal savegame directory (on Linux it's ~/.LambdaHack/).
+and copy the scores file there. You may also want
+to copy the configuration file config.default to
+~/.LambdaHack/config and modify it, but be careful changing
+gameplay options --- this can easily unbalance or break the game.
