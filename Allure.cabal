@@ -1,25 +1,24 @@
 cabal-version: >= 1.10
-name:          Allure
-version:       0.4.2
+name:          LambdaHack
+version:       0.1.20110919
 license:       BSD3
 license-file:  LICENSE
 tested-with:   GHC == 7.2.1, GHC == 7.3
 data-files:    LICENSE, CREDITS, PLAYING.md,
                README.md, src/config.default, src/config.bot, scores
-author:        Andres Loeh, Mikolaj Konarski and others
-maintainer:    Mikolaj Konarski <mikolaj.konarski@funktory.com>
-description:   This is an alpha pre-release of Allure of the Stars,
-               a near-future Sci-Fi roguelike and tactical squad game.
-               Long term goals are high replayability and auto-balancing
-               through procedural content generation and persistent content
-               modification based on player behaviour.
-               .
-               The game is based (for the time being, as a fork)
-               on the LambdaHack roguelike game engine available
-               at <http://hackage.haskell.org/package/Allure>.
-synopsis:      Near-future roguelike game in early development
-homepage:      http://github.com/Mikolaj/Allure
-bug-reports:   http://github.com/Mikolaj/Allure/issues
+author:        Andres Loeh, Mikolaj Konarski
+maintainer:    Andres Loeh <mail@andres-loeh.de>
+description:   This is an alpha release of LambdaHack, a roguelike game engine
+               packaged together with a small example roguelike game
+               (not yet well separated, this is one of future work directions,
+               another being the improvement of the AI monad EDSL,
+               so that the rules for synthesising monster behaviour
+               from game content are more readable and easier to debug).
+               A larger game using this engine will be Allure of the Stars
+               (http://hackage.haskell.org/package/Allure).
+synopsis:      A roguelike game engine in early development
+homepage:      http://github.com/kosmikus/LambdaHack
+bug-reports:   http://github.com/kosmikus/LambdaHack/issues
 category:      Game
 build-type:    Simple
 
@@ -35,7 +34,7 @@ flag std
   description:   enable stdin/stdout support
   default:       False
 
-executable Allure
+executable LambdaHack
   main-is:       Main.hs
   hs-source-dirs: src
   other-modules: Action, Actions, ActorAdd, Actor, ActorState, Area, AreaRnd,
@@ -85,7 +84,7 @@ executable Allure
     ghc-options:   -threaded
   } } }
 
-executable BotAllure
+executable BotLambdaHack
   main-is:       Bot.hs
   hs-source-dirs: src
   build-depends: base >= 4 && < 5, random >= 1.0.1 && < 2
@@ -98,4 +97,4 @@ executable BotAllure
 
 source-repository head
   type:              git
-  location:          git://github.com/Mikolaj/Allure.git
+  location:          git://github.com/kosmikus/LambdaHack.git
