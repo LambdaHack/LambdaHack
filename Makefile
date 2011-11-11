@@ -1,7 +1,7 @@
 default : dist/setup-config
 	runghc Setup build
 
-dist/setup-config : Allure.cabal
+dist/setup-config : LambdaHack.cabal
 	runghc Setup configure -fvty --user
 
 vty :
