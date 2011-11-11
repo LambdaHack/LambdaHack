@@ -46,7 +46,7 @@ defaultCP = toCP defCF
 file :: IO FilePath
 file =
   do
-    appData <- getAppUserDataDirectory "Allure"
+    appData <- getAppUserDataDirectory "LambdaHack"
     return $ combine appData "config"
 
 -- | The configuration read from the user configuration file.
@@ -103,7 +103,7 @@ getFile :: CP -> CF.SectionSpec -> CF.OptionSpec -> IO FilePath
 getFile conf s o =
   do
     current <- getCurrentDirectory
-    appData <- getAppUserDataDirectory "Allure"
+    appData <- getAppUserDataDirectory "LambdaHack"
     let path    = get conf s o
         appPath = combine appData path
         curPath = combine current path

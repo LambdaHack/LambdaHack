@@ -3,7 +3,7 @@ module Version where
 import Data.Version
 
 -- Cabal
-import qualified Paths_Allure as Self (version)
+import qualified Paths_LambdaHack as Self (version)
 
 import qualified Display
 

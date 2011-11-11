@@ -32,7 +32,7 @@ start internalSession = do
               then do
                      Display.displayBlankConfirm sess "Restoring save game"
                      Save.restoreGame config
-              else return $ Right "Welcome to Allure of the Stars!"  -- new game
+              else return $ Right "Welcome to LambdaHack!"  -- new game
   case restored of
     Right msg  -> do
       -- TODO: move somewhere sane
@@ -65,4 +65,4 @@ start internalSession = do
           hstate = initialHeroes ploc state
       handlerToIO sess hstate msg handle
     Left state ->
-      handlerToIO sess state "Welcome back to Allure of the Stars." handle
+      handlerToIO sess state "Welcome back to LambdaHack." handle
