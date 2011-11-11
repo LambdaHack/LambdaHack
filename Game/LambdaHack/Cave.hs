@@ -1,3 +1,4 @@
+-- | Generation of caves (not yet inhabited dungeon levels) from cave kinds.
 module Game.LambdaHack.Cave
   ( Cave(..), SecretMapXY, ItemMapXY, TileMapXY, buildCave )
   where
@@ -185,10 +186,10 @@ type Corridor = [(X, Y)]
 type Room = Area
 
 -- | Create a random room according to given parameters.
-mkRoom :: Int ->      -- ^ border columns
-          (X, Y) ->    -- ^ minimum size
-          Area ->     -- ^ this is an area, not the room itself
-          Rnd Room    -- ^ this is the upper-left and lower-right corner of the room
+mkRoom :: Int       -- ^ border columns
+       -> (X, Y)    -- ^ minimum size
+       -> Area      -- ^ this is an area, not the room itself
+       -> Rnd Room  -- ^ this is the upper-left and lower-right corner of the room
 mkRoom bd (xm, ym) (x0, y0, x1, y1) =
   do
     (rx0, ry0) <- xyInArea (x0 + bd, y0 + bd, x1 - bd - xm + 1, y1 - bd - ym + 1)

@@ -1,4 +1,4 @@
-module Game.LambdaHack.FOV.Shadow (scan) where
+module Game.LambdaHack.FOV.Shadow (scan, Interval) where
 
 import Data.Ratio
 import qualified Data.Set as S

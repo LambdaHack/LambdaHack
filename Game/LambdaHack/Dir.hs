@@ -8,10 +8,10 @@ import Game.LambdaHack.Geometry
 import Game.LambdaHack.Loc
 import Game.LambdaHack.Utils.Assert
 
--- Vectors of length 1 (in our metric), that is, geographical directions.
+-- | Vectors of length 1 (in our metric), that is, geographical directions.
 -- Implemented as an offset in the linear framebuffer indexed by Loc.
 -- A newtype to prevent mixing up with Loc itself.
--- Level X size has to be > 1 for the @moves@ vectors to make sense.
+-- Level X size has to be > 1 for the 'moves' vectors to make sense.
 newtype Dir = Dir Int deriving (Show, Eq)
 
 instance Binary Dir where

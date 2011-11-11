@@ -7,7 +7,9 @@ import Debug.Trace (trace)
 
 infix 1 `blame`
 -- | If the condition fails, Display the value blamed for the failure.
--- Used as in "assert (c /= 0 `blame` c) $ 10 / c".
+-- Used as in
+--
+-- > assert (c /= 0 `blame` c) $ 10 / c
 blame :: Show a => Bool -> a -> Bool
 {-# INLINE blame #-}
 blame condition blamed
