@@ -24,7 +24,7 @@ fovMode: digital
 fovRadius: 4
 ;startingRandomGenerator: 42
 ;dungeonRandomGenerator: 42
-;BotLambdaHack 42 20000000 | LambdaHack > /tmp/log
+;DumbBot 42 20000000 | LambdaHack > /tmp/log
 
 ; paths to various game files; relative to ~/.LambdaHack/
 ; (or analogous prefixes for other OSes, see getAppUserDataDirectory)

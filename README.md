@@ -49,7 +49,7 @@ the standard intput/output frontend, as follows
 
 and run the bot, for example, in the following way
 
-    BotLambdaHack 42 20000000 | LambdaHack > /tmp/log
+    DumbBot 42 20000000 | LambdaHack > /tmp/log
 
 You may wish to tweak the game configuration file to let the bot play longer,
 e.g., by making the dungeon much deeper, as in the supplied config.bot.
