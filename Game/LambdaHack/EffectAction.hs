@@ -74,7 +74,8 @@ effectToAction (Effect.Wound nDm) verbosity source target power = do
     updateAnyActor target $ \ m -> m { bhp = newHP }  -- Damage the target.
     when killed $ do
       -- Place the actor's possessions on the map.
-      modify (updateLevel (dropItemsAt (bitems tm) (bloc tm)))
+      bitems <- gets (getActorItem target)
+      modify (updateLevel (dropItemsAt bitems (bloc tm)))
       -- Clean bodies up.
       pl <- gets splayer
       if target == pl
@@ -166,7 +167,7 @@ selectPlayer actor =
       else do
         state <- get
         when (absentHero actor state) $ abortWith "No such member of the party."
-        let (nln, pbody) = findActorAnyLevel actor state
+        let (nln, pbody, _) = findActorAnyLevel actor state
         -- Make the new actor the player-controlled actor.
         modify (\ s -> s { splayer = actor })
         -- Record the original level of the new player.
@@ -257,7 +258,7 @@ gameOver showEndingScreens =
 -- | Calculate loot's worth for heroes on the current level.
 calculateTotal :: State -> Int
 calculateTotal s =
-  L.sum $ L.map itemPrice $ L.concatMap bitems (levelHeroList s)
+  L.sum $ L.map itemPrice $ L.concat $ IM.elems $ lheroItem $ slevel s
 
 -- | Handle current score and display it with the high scores. Scores
 -- should not be shown during the game,

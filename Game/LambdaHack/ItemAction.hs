@@ -31,7 +31,7 @@ import qualified Game.LambdaHack.Kind as Kind
 -- | Display inventory
 inventory :: Action a
 inventory = do
-  items <- gets (bitems . getPlayerBody)
+  items <- gets getPlayerItem
   if L.null items
     then abortWith "Not carrying anything."
     else do
@@ -74,7 +74,7 @@ applyGroupItem actor verb item = do
 
 playerApplyGroupItem :: String -> Action ()
 playerApplyGroupItem groupName = do
-  is   <- gets (bitems . getPlayerBody)
+  is   <- gets getPlayerItem
   iOpt <- getGroupItem is groupName
             ("What to " ++ applyToVerb groupName ++ "?") "in inventory"
   pl   <- gets splayer
@@ -127,7 +127,7 @@ zapGroupItem source loc verb item = do
 playerZapGroupItem :: String -> Action ()
 playerZapGroupItem groupName = do
   state <- get
-  is    <- gets (bitems . getPlayerBody)
+  is    <- gets getPlayerItem
   iOpt  <- getGroupItem is groupName
              ("What to " ++ zapToVerb groupName ++ "?") "in inventory"
   pl    <- gets splayer
@@ -163,7 +163,7 @@ dropItem = do
   state <- get
   pbody <- gets getPlayerBody
   ploc  <- gets (bloc . getPlayerBody)
-  items <- gets (bitems . getPlayerBody)
+  items <- gets getPlayerItem
   iOpt  <- getAnyItem "What to drop?" items "inventory"
   case iOpt of
     Just stack -> do
@@ -178,7 +178,7 @@ dropItem = do
 -- makes it impossible to drop items if the floor not empty.
 removeOnlyFromInventory :: ActorId -> Item -> Loc -> Action ()
 removeOnlyFromInventory actor i _loc =
-  updateAnyActor actor (\ m -> m { bitems = removeItemByLetter i (bitems m) })
+  modify (updateAnyActorItem actor (removeItemByLetter i))
 
 -- | Remove given item from an actor's inventory or floor.
 -- TODO: this is subtly wrong: if identical items are on the floor and in
@@ -191,7 +191,7 @@ removeFromInventory :: ActorId -> Item -> Loc -> Action ()
 removeFromInventory actor i loc = do
   b <- removeFromLoc i loc
   unless b $
-    updateAnyActor actor (\ m -> m { bitems = removeItemByLetter i (bitems m) })
+    modify (updateAnyActorItem actor (removeItemByLetter i))
 
 -- | Remove given item from the given location. Tell if successful.
 removeFromLoc :: Item -> Loc -> Action Bool
@@ -217,6 +217,7 @@ actorPickupItem actor = do
   per   <- currentPerception
   lvl   <- gets slevel
   body  <- gets (getActor actor)
+  bitems <- gets (getActorItem actor)
   let loc       = bloc body
       perceived = loc `S.member` ptvisible per
       isPlayer  = actor == pl
@@ -224,9 +225,9 @@ actorPickupItem actor = do
   case lvl `iat` loc of
     []   -> abortIfWith isPlayer "nothing here"
     i:is -> -- pick up first item; TODO: let player select item; not for monsters
-      case assignLetter (jletter i) (bletter body) (bitems body) of
+      case assignLetter (jletter i) (bletter body) bitems of
         Just l -> do
-          let (ni, nitems) = joinItem (i { jletter = Just l }) (bitems body)
+          let (ni, nitems) = joinItem (i { jletter = Just l }) bitems
           -- message depends on who picks up and if a hero can perceive it
           if isPlayer
             then messageAdd (letterLabel (jletter ni) ++ objectItem state ni)
@@ -236,7 +237,8 @@ actorPickupItem actor = do
             >>= assert `trueM` (i, is, loc, "item is stuck")
           -- add item to actor's inventory:
           updateAnyActor actor $ \ m ->
-            m { bitems = nitems, bletter = maxLetter l (bletter body) }
+            m { bletter = maxLetter l (bletter body) }
+          modify (updateAnyActorItem actor (const nitems))
         Nothing -> abortIfWith isPlayer "cannot carry any more"
   advanceTime actor
 

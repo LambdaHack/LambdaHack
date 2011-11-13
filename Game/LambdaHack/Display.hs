@@ -129,9 +129,9 @@ displayLevel ::
   ColorMode -> Session -> Perceptions -> State -> Message -> Maybe String
   -> IO Bool
 displayLevel dm session per
-             state@State{scursor, stime, sflavour, slid} msg moverlay =
+             state@State{scursor, stime, sflavour, slid, splayer} msg moverlay =
   let lvl@Level{lxsize = sx, lysize = sy, lsmell = smap} = slevel state
-      Actor{bkind, bhp, bloc, bitems} = getPlayerBody state
+      (_, Actor{bkind, bhp, bloc}, bitems) = findActorAnyLevel splayer state
       ActorKind{ahp} = Kind.getKind bkind
       reachable = ptreachable per
       visible   = ptvisible per

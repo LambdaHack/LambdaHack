@@ -1,8 +1,9 @@
 module Game.LambdaHack.Level
-  ( SmellTime(..), SmellMap, SecretMap
+  ( Party, SmellTime(..), SmellMap, SecretMap
   , ItemMap, TileMap, Level(..)
-  , updateHeroes, updateMonsters, updateLMap, updateLRMap, updateIMap
-  , updateSmell , emptyParty, at, rememberAt, iat, irememberAt
+  , updateHeroes, updateHeroItem, updateMonsters, updateMonItem
+  , updateLMap, updateLRMap, updateIMap
+  , updateSmell , at, rememberAt, iat, irememberAt
   , accessible, openable, findLoc, findLocTry, dropItemsAt
   ) where
 
@@ -21,6 +22,10 @@ import qualified Game.LambdaHack.Tile as Tile
 import qualified Game.LambdaHack.Feature as F
 import qualified Game.LambdaHack.Kind as Kind
 
+type Party = IM.IntMap Actor
+
+type PartyItem = IM.IntMap [Item]
+
 newtype SmellTime = SmellTime{smelltime :: Time} deriving Show
 instance Binary SmellTime where
   put = put . smelltime
@@ -35,9 +40,11 @@ type TileMap = Kind.Array Loc TileKind
 
 data Level = Level
   { lheroes   :: Party      -- ^ all heroes on the level
+  , lheroItem :: PartyItem
   , lxsize    :: X
   , lysize    :: Y
   , lmonsters :: Party      -- ^ all monsters on the level
+  , lmonItem  :: PartyItem
   , lsmell    :: SmellMap
   , lsecret   :: SecretMap
   , litem     :: ItemMap
@@ -62,22 +69,27 @@ updateIMap f lvl = lvl { litem = f (litem lvl) }
 updateSmell :: (SmellMap -> SmellMap) -> Level -> Level
 updateSmell f lvl = lvl { lsmell = f (lsmell lvl) }
 
-updateMonsters :: (Party -> Party) -> Level -> Level
-updateMonsters f lvl = lvl { lmonsters = f (lmonsters lvl) }
-
 updateHeroes :: (Party -> Party) -> Level -> Level
 updateHeroes f lvl = lvl { lheroes = f (lheroes lvl) }
 
-emptyParty :: Party
-emptyParty = IM.empty
+updateHeroItem :: (PartyItem -> PartyItem) -> Level -> Level
+updateHeroItem f lvl = lvl { lheroItem = f (lheroItem lvl) }
+
+updateMonsters :: (Party -> Party) -> Level -> Level
+updateMonsters f lvl = lvl { lmonsters = f (lmonsters lvl) }
+
+updateMonItem :: (PartyItem -> PartyItem) -> Level -> Level
+updateMonItem f lvl = lvl { lmonItem = f (lmonItem lvl) }
 
 instance Binary Level where
-  put (Level hs sx sy ms ls le li lm lrm lme lstairs) =
+  put (Level hs hi sx sy ms mi ls le li lm lrm lme lstairs) =
         do
           put hs
+          put hi
           put sx
           put sy
           put ms
+          put mi
           put ls
           put le
           put (assert
@@ -90,9 +102,11 @@ instance Binary Level where
           put lstairs
   get = do
           hs <- get
+          hi <- get
           sx <- get
           sy <- get
           ms <- get
+          mi <- get
           ls <- get
           le <- get
           li <- get
@@ -100,7 +114,7 @@ instance Binary Level where
           lrm <- get
           lme <- get
           lstairs <- get
-          return (Level hs sx sy ms ls le li lm lrm lme lstairs)
+          return (Level hs hi sx sy ms mi ls le li lm lrm lme lstairs)
 
 at, rememberAt :: Level -> Loc -> (Kind.Id TileKind)
 at         l p = lmap l Kind.! p

@@ -74,10 +74,12 @@ buildLevel Cave{dkind, dsecret, ditem, dmap, dmeta} n depth = do
   let itemMap = mapToIMap cxsize ditem `IM.union` IM.fromList is
       litem = IM.map (\ i -> ([i], [])) itemMap
       level = Level
-        { lheroes = emptyParty
+        { lheroes = IM.empty
+        , lheroItem = IM.empty
         , lxsize = cxsize
         , lysize = cysize
-        , lmonsters = emptyParty
+        , lmonsters = IM.empty
+        , lmonItem = IM.empty
         , lsmell = IM.empty
         , lsecret = mapToIMap cxsize dsecret
         , litem

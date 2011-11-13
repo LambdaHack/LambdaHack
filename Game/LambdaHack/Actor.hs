@@ -2,13 +2,11 @@ module Game.LambdaHack.Actor where
 
 import Data.Binary
 import Control.Monad
-import qualified Data.IntMap as IM
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Geometry
 import Game.LambdaHack.Dir
 import Game.LambdaHack.Loc
-import Game.LambdaHack.Item
 import Game.LambdaHack.Content.ActorKind
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Random
@@ -24,14 +22,13 @@ data Actor = Actor
   , bdir    :: !(Maybe Dir)     -- ^ the direction of running
   , btarget :: Target           -- ^ the target for distance attacks and AI
   , bloc    :: !Loc             -- ^ current location
-  , bitems  :: [Item]           -- ^ inventory
   , bletter :: !Char            -- ^ next inventory letter
   , btime   :: !Time            -- ^ time of next action
   }
   deriving Show
 
 instance Binary Actor where
-  put (Actor ak an as ah ad at al ai ale ati) = do
+  put (Actor ak an as ah ad at al ale ati) = do
     put ak
     put an
     put as
@@ -39,7 +36,6 @@ instance Binary Actor where
     put ad
     put at
     put al
-    put ai
     put ale
     put ati
   get = do
@@ -50,16 +46,13 @@ instance Binary Actor where
     ad  <- get
     at  <- get
     al  <- get
-    ai  <- get
     ale <- get
     ati <- get
-    return (Actor ak an as ah ad at al ai ale ati)
+    return (Actor ak an as ah ad at al ale ati)
 
 data ActorId = AHero !Int     -- ^ hero index (on the lheroes intmap)
              | AMonster !Int  -- ^ monster index (on the lmonsters intmap)
   deriving (Show, Eq, Ord)
-
-type Party = IM.IntMap Actor
 
 isAHero :: ActorId -> Bool
 isAHero (AHero _) = True

@@ -59,8 +59,9 @@ strategy actor oldState@State{splayer = pl, stime = time} per =
   where
     lvl@Level{lsmell = nsmap, lxsize} = slevel oldState
     Actor { bkind = ak, bloc = me, bdir = ad,
-            btarget = tgt, bitems = items } =
+            btarget = tgt } =
       getActor actor oldState
+    items = getActorItem actor oldState
     mk = Kind.getKind ak
     delState = deleteActor actor oldState
     enemyVisible a l =

@@ -276,6 +276,7 @@ actorOpenDoor actor dir = do
   lvl  <- gets slevel
   pl   <- gets splayer
   body <- gets (getActor actor)
+  bitems <- gets (getActorItem actor)
   let dloc = shift (bloc body) dir  -- the location we act upon
       t = lvl `at` dloc
       isPlayer = actor == pl
@@ -284,7 +285,7 @@ actorOpenDoor actor dir = do
       openPower = Tile.SecretStrength $
         if isPlayer
         then 1  -- player can't open secret doors
-        else case strongestItem (bitems body) "ring" of  -- TODO: hack
+        else case strongestItem bitems "ring" of  -- TODO: hack
                Just i  -> iq + jpower i
                Nothing -> iq
   unless (openable lvl openPower dloc) $ neverMind isVerbose
@@ -361,6 +362,7 @@ lvlGoUp isUp =
                   modify (updateCursor upd)
                   doLook
                 else tryWith (abortWith "somebody blocks the staircase") $ do
+                  bitems <- gets getPlayerItem
                   -- Remove the player from the old level.
                   modify (deleteActor pl)
                   hs <- gets levelHeroList
@@ -374,6 +376,7 @@ lvlGoUp isUp =
                     modify (\ state -> state{slid = nln})
                   -- Add the player to the new level.
                   modify (insertActor pl pbody)
+                  modify (updateAnyActorItem pl (const bitems))
                   -- At this place the invariant is restored again.
                   -- Land the player at the other end of the stairs.
                   updatePlayerBody (\ p -> p { bloc = nloc })
@@ -406,7 +409,7 @@ fleeDungeon =
   do
     state <- get
     let total = calculateTotal state
-        items = L.concatMap bitems (levelHeroList state)
+        items = L.concat $ IM.elems $ lheroItem $ slevel state
     if total == 0
       then do
              go <- messageClear >> messageMoreConfirm ColorFull "Coward!"
@@ -444,7 +447,7 @@ search =
     le     <- gets (lsecret . slevel)
     lxsize <- gets (lxsize . slevel)
     ploc   <- gets (bloc . getPlayerBody)
-    pitems <- gets (bitems . getPlayerBody)
+    pitems <- gets getPlayerItem
     let delta = case strongestItem pitems "ring" of
                   Just i  -> 1 + jpower i
                   Nothing -> 1
@@ -608,12 +611,13 @@ actorAttackActor source target = do
   sm    <- gets (getActor source)
   tm    <- gets (getActor target)
   per   <- currentPerception
+  bitems <- gets (getActorItem source)
   let groupName = "sword"
       verb = attackToVerb groupName
       sloc = bloc sm
       -- The hand-to-hand "weapon", equivalent to +0 sword.
       h2h = Item fistKindId 0 Nothing 1
-      str = strongestItem (bitems sm) groupName
+      str = strongestItem bitems groupName
       stack  = fromMaybe h2h str
       single = stack { jcount = 1 }
       -- The message describes the source part of the action.
@@ -659,10 +663,11 @@ regenerateLevelHP :: Action ()
 regenerateLevelHP =
   do
     time <- gets stime
-    let upd m =
+    let upd itemIM a m =
           let ak = Kind.getKind $ bkind m
+              bitems = fromMaybe [] $ IM.lookup a itemIM
               regen = aregen ak `div`
-                      case strongestItem (bitems m) "amulet" of
+                      case strongestItem bitems "amulet" of
                         Just i  -> jpower i
                         Nothing -> 1
           in if time `mod` regen /= 0
@@ -673,5 +678,7 @@ regenerateLevelHP =
     -- Only the heroes on the current level regenerate (others are frozen
     -- in time together with their level). This prevents cheating
     -- via sending one hero to a safe level and waiting there.
-    modify (updateLevel (updateHeroes   (IM.map upd)))
-    modify (updateLevel (updateMonsters (IM.map upd)))
+    hi  <- gets (lheroItem . slevel)
+    modify (updateLevel (updateHeroes   (IM.mapWithKey (upd hi))))
+    mi  <- gets (lmonItem . slevel)
+    modify (updateLevel (updateMonsters (IM.mapWithKey (upd mi))))

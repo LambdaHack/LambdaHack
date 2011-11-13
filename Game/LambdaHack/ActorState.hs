@@ -14,22 +14,25 @@ import Game.LambdaHack.Level
 import qualified Game.LambdaHack.Dungeon as Dungeon
 import Game.LambdaHack.State
 import Game.LambdaHack.WorldLoc
+import Game.LambdaHack.Item
 
 -- The operations with "Any", and those that use them, consider all the dungeon.
 -- All the other actor and level operations only consider the current level.
 
 -- | Finds an actor body on any level. Fails if not found.
-findActorAnyLevel :: ActorId -> State -> (LevelId, Actor)
+findActorAnyLevel :: ActorId -> State -> (LevelId, Actor, [Item])
 findActorAnyLevel actor state@State{slid, sdungeon} =
   assert (not (absentHero actor state) `blame` actor) $
   let chk (ln, lvl) =
-        fmap (\ m -> (ln, m)) $
-        case actor of
-          AHero n    -> IM.lookup n (lheroes lvl)
-          AMonster n -> IM.lookup n (lmonsters lvl)
+        let (m, mi) = case actor of
+              AHero n    -> (IM.lookup n (lheroes lvl),
+                             IM.lookup n (lheroItem lvl))
+              AMonster n -> (IM.lookup n (lmonsters lvl),
+                             IM.lookup n (lmonItem lvl))
+        in fmap (\ a -> (ln, a, fromMaybe [] mi)) m
   in case mapMaybe chk (Dungeon.currentFirst slid sdungeon) of
     []    -> assert `failure` actor
-    res:_ -> res  -- checking if res is unique would break laziness
+    res : _ -> res  -- checking if res is unique would break laziness
 
 -- | Checks whether an actor is a hero, but not a member of the party.
 absentHero :: ActorId -> State -> Bool
@@ -41,7 +44,14 @@ absentHero a State{sparty} =
 getPlayerBody :: State -> Actor
 getPlayerBody state =
   let pl = splayer state
-  in snd $ findActorAnyLevel pl state
+      (_, actor, _) = findActorAnyLevel pl state
+  in actor
+
+getPlayerItem :: State -> [Item]
+getPlayerItem state =
+  let pl = splayer state
+      (_, _, items) = findActorAnyLevel pl state
+  in items
 
 -- | The list of actors and levels for all heroes in the dungeon.
 allHeroesAnyLevel :: State -> [(ActorId, LevelId)]
@@ -52,10 +62,19 @@ allHeroesAnyLevel State{slid, sdungeon} =
 
 updateAnyActorBody :: ActorId -> (Actor -> Actor) -> State -> State
 updateAnyActorBody actor f state =
-  let (ln, _) = findActorAnyLevel actor state
+  let (ln, _, _) = findActorAnyLevel actor state
   in case actor of
        AHero n    -> updateAnyLevel (updateHeroes   $ IM.adjust f n) ln state
        AMonster n -> updateAnyLevel (updateMonsters $ IM.adjust f n) ln state
+
+updateAnyActorItem :: ActorId -> ([Item] -> [Item]) -> State -> State
+updateAnyActorItem actor f state =
+  let (ln, _, _) = findActorAnyLevel actor state
+      g Nothing   = Just $ f []
+      g (Just is) = Just $ f is
+  in case actor of
+       AHero n    -> updateAnyLevel (updateHeroItem $ IM.alter g n) ln state
+       AMonster n -> updateAnyLevel (updateMonItem  $ IM.alter g n) ln state
 
 updateAnyLevel :: (Level -> Level) -> LevelId -> State -> State
 updateAnyLevel f ln state@State{slid, sdungeon}
@@ -93,12 +112,24 @@ getActor a state =
     AHero n    -> lheroes   (slevel state) IM.! n
     AMonster n -> lmonsters (slevel state) IM.! n
 
+-- | Gets actor's items from the current level. Empty list, if not found.
+getActorItem :: ActorId -> State -> [Item]
+getActorItem a state =
+  fromMaybe [] $
+  case a of
+    AHero n    -> IM.lookup n (lheroItem (slevel state))
+    AMonster n -> IM.lookup n (lmonItem  (slevel state))
+
 -- | Removes the actor, if present, from the current level.
 deleteActor :: ActorId -> State -> State
 deleteActor a =
   case a of
-    AHero n    -> updateLevel (updateHeroes   (IM.delete n))
-    AMonster n -> updateLevel (updateMonsters (IM.delete n))
+    AHero n ->
+      let d = IM.delete n
+      in updateLevel (updateHeroes d . updateHeroItem d)
+    AMonster n ->
+      let d = IM.delete n
+      in updateLevel (updateMonsters d . updateMonItem d)
 
 -- | Add actor to the current level.
 insertActor :: ActorId -> Actor -> State -> State

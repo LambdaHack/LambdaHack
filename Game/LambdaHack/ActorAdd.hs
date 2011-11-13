@@ -28,7 +28,7 @@ import qualified Game.LambdaHack.Kind as Kind
 -- the time to the creation time instead.
 template :: Kind.Id ActorKind -> Maybe String -> Maybe Char -> Int -> Loc
             -> Actor
-template mk ms mc hp loc = Actor mk ms mc hp Nothing TCursor loc [] 'a' 0
+template mk ms mc hp loc = Actor mk ms mc hp Nothing TCursor loc 'a' 0
 
 nearbyFreeLoc :: Loc -> State -> Loc
 nearbyFreeLoc origin state =
