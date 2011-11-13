@@ -92,18 +92,16 @@ matchGenerator :: Maybe String -> Rnd (Kind.Id CaveKind)
 matchGenerator Nothing = do
   (ci, _) <- frequency Kind.frequency
   return ci
-matchGenerator (Just "caveRogue") = do
-  let freq = filterFreq ((== CaveRogue) . clayout . snd) Kind.frequency
-  (ci, _) <- frequency freq
-  return ci
-matchGenerator (Just "caveEmpty") = do
-  let freq = filterFreq ((== CaveEmpty) . clayout . snd) Kind.frequency
-  (ci, _) <- frequency freq
-  return ci
-matchGenerator (Just "caveNoise") =
-  return $ Kind.getId (\ cc -> clayout cc == CaveNoise && cxsize cc < 100)
-matchGenerator (Just s) =
-  error $ "Unknown dungeon generator " ++ s
+matchGenerator (Just name) =
+  let freq@(Frequency l) =
+        filterFreq ((== name) . Kind.getName . snd) Kind.frequency
+  in case l of
+    [] -> error $ "Unknown dungeon generator " ++ name
+    _ | sum (map fst l) == 0 ->  -- HACK for dangerous levels
+          return $ fst (snd (head l))
+      | otherwise -> do
+          (ci, _) <- frequency freq
+          return ci
 
 findGenerator :: Config.CP -> Int -> Int -> Rnd Level
 findGenerator config n depth = do

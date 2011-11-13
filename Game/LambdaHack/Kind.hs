@@ -1,5 +1,6 @@
 module Game.LambdaHack.Kind
-  ( Id, getKind, getId, frequency, foldrWithKey, boundsId
+  ( Content, getSymbol, getName, getFreq
+  , Id, getKind, getId, frequency, foldrWithKey, boundsId
   , Array, (!), (//), listArray, bounds
   ) where
 
