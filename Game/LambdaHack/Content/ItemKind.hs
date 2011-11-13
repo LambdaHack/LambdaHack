@@ -18,16 +18,18 @@ import Game.LambdaHack.Random
 -- etc., so if we make jpower complex, the value computation gets complex too.
 data ItemKind = ItemKind
   { isymbol  :: !Char       -- ^ map symbol
-  , iflavour :: ![Flavour]  -- ^ possible flavours
   , iname    :: !String     -- ^ group name
+  , ifreq    :: !Int        -- ^ created that often
+  , iflavour :: ![Flavour]  -- ^ possible flavours
   , ieffect  :: !Effect     -- ^ the effect when activated
   , icount   :: !RollQuad   -- ^ created in that quantify
-  , ifreq    :: !Int        -- ^ created that often
   , ipower   :: !RollQuad   -- ^ created with that power
   }
   deriving (Show, Eq, Ord)
 
 instance Content.Content ItemKind where
+  getSymbol = isymbol
+  getName = iname
   getFreq = ifreq
   content =
     [amulet, dart, gem1, gem2, gem3, gem4, gold, potion1, potion2, potion3, ring, scroll1, scroll2, sword, fist, wand]

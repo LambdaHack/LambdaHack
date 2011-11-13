@@ -9,20 +9,22 @@ import qualified Game.LambdaHack.Random as Random
 
 -- | Monster properties that are changing rarely and permanently.
 data ActorKind = ActorKind
-  { ahp     :: !Random.RollDice  -- ^ encodes initial and maximal hp
-  , aspeed  :: !Geometry.Time    -- ^ natural speed
-  , asymbol :: !Char             -- ^ map symbol
-  , acolor  :: !Color            -- ^ map color
+  { asymbol :: !Char             -- ^ map symbol
   , aname   :: !String           -- ^ name
+  , afreq   :: !Int              -- ^ dungeon frequency
+  , aspeed  :: !Geometry.Time    -- ^ natural speed
+  , ahp     :: !Random.RollDice  -- ^ encodes initial and maximal hp
+  , acolor  :: !Color            -- ^ map color
   , asight  :: !Bool             -- ^ can it see?
   , asmell  :: !Bool             -- ^ can it smell?
   , aiq     :: !Int              -- ^ intelligence
   , aregen  :: !Int              -- ^ regeneration interval
-  , afreq   :: !Int              -- ^ dungeon frequency
   }
   deriving (Show, Eq, Ord)
 
 instance Content.Content ActorKind where
+  getSymbol = asymbol
+  getName = aname
   getFreq = afreq
   content =
     [hero, eye, fastEye, nose]

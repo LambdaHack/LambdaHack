@@ -9,7 +9,10 @@ import Game.LambdaHack.Geometry
 import qualified Game.LambdaHack.Random as Random
 
 data CaveKind = CaveKind
-  { cxsize            :: X
+  { csymbol           :: Char
+  , cname             :: String
+  , cfreq             :: Int
+  , cxsize            :: X
   , cysize            :: Y
   , levelGrid         :: Random.Rnd (X, Y)
   , minRoomSize       :: Random.Rnd (X ,Y)
@@ -26,10 +29,11 @@ data CaveKind = CaveKind
   , csecretStrength   :: Random.RollDice
   , citemNum          :: Random.RollDice
   , clayout           :: CaveLayout
-  , cfreq             :: Int
   }
 
 instance Content.Content CaveKind where
+  getSymbol = csymbol
+  getName = cname
   getFreq = cfreq
   content =
     [rogue, empty, noise, largeNoise]
@@ -40,7 +44,10 @@ rogue,      empty, noise, largeNoise:: CaveKind
 data CaveLayout = CaveRogue | CaveEmpty | CaveNoise deriving Eq
 
 rogue = CaveKind
-  { cxsize            = fst normalLevelBound + 1
+  { csymbol           = '$'
+  , cname             = "caveRogue"
+  , cfreq             = 80
+  , cxsize            = fst normalLevelBound + 1
   , cysize            = snd normalLevelBound + 1
   , levelGrid         = do
                           x <- Random.randomR (3, 5)
@@ -58,18 +65,23 @@ rogue = CaveKind
   , csecretStrength   = (7, 2)
   , citemNum          = (5, 2)
   , clayout           = CaveRogue
-  , cfreq             = 80
   }
 empty = rogue
-  { clayout           = CaveEmpty
+  { csymbol           = '.'
+  , cname             = "caveEmpty"
   , cfreq             = 20
+  , clayout           = CaveEmpty
   }
 noise = rogue
-  { clayout           = CaveNoise
+  { csymbol           = '!'
+  , cname             = "caveNoise"
   , cfreq             = 0  -- stairs may be blocked, so only for the last level
+  , clayout           = CaveNoise
   }
 largeNoise = noise
-  { cxsize            = 231
-  , cysize            = 77
+  { csymbol           = 'L'
+  , cname             = "caveLargeNoise"
   , cfreq             = 0  -- experimental
+  , cxsize            = 231
+  , cysize            = 77
   }

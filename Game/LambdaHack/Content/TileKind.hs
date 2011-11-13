@@ -10,14 +10,16 @@ import Game.LambdaHack.Feature
 data TileKind = TileKind
   { tsymbol  :: !Char       -- ^ map symbol
   , tname    :: !String     -- ^ name
+  , tfreq    :: !Int        -- ^ created that often (within a group?)
   , tcolor   :: !Color      -- ^ map color
   , tcolor2  :: !Color      -- ^ map color when not in FOV
-  , tfreq    :: !Int        -- ^ created that often (within a group?)
   , tfeature :: ![Feature]  -- ^ properties
   }
   deriving (Show, Eq, Ord)
 
 instance Content.Content TileKind where
+  getSymbol = tsymbol
+  getName = tname
   getFreq = tfreq
   content =
     [wall, doorOpen, doorClosed, doorSecret, opening, floorLight, floorDark, stairsUp, stairsDown, unknown]

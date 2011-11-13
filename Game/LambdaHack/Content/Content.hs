@@ -7,6 +7,8 @@ import qualified Data.IntMap as IM
 import qualified Data.Word as Word
 
 class Content a where
+  getSymbol :: a -> Char
+  getName :: a -> String
   getFreq :: a -> Int
 
   content :: [a]
