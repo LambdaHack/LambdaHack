@@ -15,7 +15,7 @@ data TileKind = TileKind
   , tcolor2  :: !Color      -- ^ map color when not in FOV
   , tfeature :: ![Feature]  -- ^ properties
   }
-  deriving (Show, Eq, Ord)
+  deriving Show
 
 instance Content.Content TileKind where
   getSymbol = tsymbol

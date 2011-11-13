@@ -20,7 +20,7 @@ data ActorKind = ActorKind
   , aiq     :: !Int              -- ^ intelligence
   , aregen  :: !Int              -- ^ regeneration interval
   }
-  deriving (Show, Eq, Ord)
+  deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 
 instance Content.Content ActorKind where
   getSymbol = asymbol

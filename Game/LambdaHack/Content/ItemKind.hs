@@ -25,7 +25,7 @@ data ItemKind = ItemKind
   , icount   :: !RollQuad   -- ^ created in that quantify
   , ipower   :: !RollQuad   -- ^ created with that power
   }
-  deriving (Show, Eq, Ord)
+  deriving Show
 
 instance Content.Content ItemKind where
   getSymbol = isymbol
