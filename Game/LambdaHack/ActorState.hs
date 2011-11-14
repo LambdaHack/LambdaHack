@@ -125,11 +125,9 @@ deleteActor :: ActorId -> State -> State
 deleteActor a =
   case a of
     AHero n ->
-      let d = IM.delete n
-      in updateLevel (updateHeroes d . updateHeroItem d)
+      updateLevel (updateHeroes (IM.delete n) . updateHeroItem (IM.delete n))
     AMonster n ->
-      let d = IM.delete n
-      in updateLevel (updateMonsters d . updateMonItem d)
+      updateLevel (updateMonsters (IM.delete n) . updateMonItem (IM.delete n))
 
 -- | Add actor to the current level.
 insertActor :: ActorId -> Actor -> State -> State
