@@ -15,6 +15,7 @@ import qualified Game.LambdaHack.Dungeon as Dungeon
 import Game.LambdaHack.Item
 import Game.LambdaHack.Message
 import Game.LambdaHack.WorldLoc
+import qualified Game.LambdaHack.Kind as Kind
 
 -- | The 'State' contains all the game state that has to be saved.
 -- In practice, we maintain extra state, but that state is state
@@ -34,6 +35,7 @@ data State = State
   , sparty       :: IS.IntSet    -- ^ heroes in the party
   , srandom      :: R.StdGen     -- ^ current random generator
   , sconfig      :: Config.CP
+  , scops        :: Kind.COps  -- not saved/restored
   }
   deriving Show
 
@@ -48,8 +50,9 @@ data Cursor = Cursor
 slevel :: State -> Level
 slevel State{slid, sdungeon} = sdungeon Dungeon.! slid
 
-defaultState :: Dungeon.Dungeon -> LevelId -> Loc -> R.StdGen -> State
-defaultState dng lid ploc g =
+defaultState :: Kind.COps -> Dungeon.Dungeon -> LevelId
+             -> Loc -> R.StdGen -> State
+defaultState scops dng lid ploc g =
   State
     (AHero 0)  -- hack: the hero is not yet alive
     (Cursor False lid ploc lid)
@@ -64,6 +67,7 @@ defaultState dng lid ploc g =
     IS.empty
     g
     Config.defaultCP
+    scops
 
 updateCursor :: (Cursor -> Cursor) -> State -> State
 updateCursor f s = s { scursor = f (scursor s) }
@@ -101,7 +105,7 @@ toggleTerrain s = s { sdisplay = case sdisplay s of Terrain 1 -> Normal
 
 instance Binary State where
   put (State player cursor hst sense disp time flav disco dng lid ct
-       party g config) =
+       party g config _scops) =
     do
       put player
       put cursor
@@ -135,7 +139,7 @@ instance Binary State where
       config <- get
       return
         (State player cursor hst sense disp time flav disco dng lid ct
-         party (read g) config)
+         party (read g) config undefined)
 
 instance Binary Cursor where
   put (Cursor act cln loc rln) =

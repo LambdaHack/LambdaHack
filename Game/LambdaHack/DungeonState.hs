@@ -90,13 +90,13 @@ buildLevel Cave{dkind, dsecret, ditem, dmap, dmeta} n depth = do
         }
   return level
 
-matchGenerator :: Maybe String -> Rnd (Kind.Id CaveKind)
-matchGenerator Nothing = do
-  (ci, _) <- frequency Kind.frequency
+matchGenerator :: Kind.COps -> Maybe String -> Rnd (Kind.Id CaveKind)
+matchGenerator Kind.COps{cocave=Kind.Ops{ofrequency}} Nothing = do
+  (ci, _) <- frequency ofrequency
   return ci
-matchGenerator (Just name) =
+matchGenerator Kind.COps{cocave=Kind.Ops{oname}} (Just name) =
   let freq@(Frequency l) =
-        filterFreq ((== name) . Kind.getName . snd) Kind.frequency
+        filterFreq ((== name) . oname . snd) Kind.frequency
   in case l of
     [] -> error $ "Unknown dungeon generator " ++ name
     _ | sum (map fst l) == 0 ->  -- HACK for dangerous levels
@@ -105,22 +105,22 @@ matchGenerator (Just name) =
           (ci, _) <- frequency freq
           return ci
 
-findGenerator :: Config.CP -> Int -> Int -> Rnd Level
-findGenerator config n depth = do
+findGenerator :: Kind.COps -> Config.CP -> Int -> Int -> Rnd Level
+findGenerator cops config n depth = do
   let ln = "LambdaCave_" ++ show n
       genName = Config.getOption config "dungeon" ln
-  ci <- matchGenerator genName
+  ci <- matchGenerator cops genName
   cave <- buildCave n ci
   buildLevel cave n depth
 
 -- | Generate the dungeon for a new game.
-generate :: Config.CP -> Rnd (Loc, LevelId, Dungeon.Dungeon)
-generate config =
+generate :: Kind.COps -> Config.CP -> Rnd (Loc, LevelId, Dungeon.Dungeon)
+generate cops config =
   let depth = Config.get config "dungeon" "depth"
       gen :: R.StdGen -> Int -> (R.StdGen, (LevelId, Level))
       gen g k =
         let (g1, g2) = R.split g
-            res = MState.evalState (findGenerator config k depth) g1
+            res = MState.evalState (findGenerator cops config k depth) g1
         in (g2, (LambdaCave k, res))
       con :: R.StdGen -> ((Loc, LevelId, Dungeon.Dungeon), R.StdGen)
       con g =

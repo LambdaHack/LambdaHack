@@ -14,6 +14,7 @@ import qualified Game.LambdaHack.Config as Config
 import Game.LambdaHack.ActorAdd
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Keybindings as KB
+import Game.LambdaHack.Kind
 
 main :: IO ()
 main = Display.startup start
@@ -47,7 +48,8 @@ start internalSession = do
             let gs = show g
                 c = Config.set config "engine" "dungeonRandomGenerator" gs
             return (g, c)
-      let ((ploc, lid, dng), ag) = MState.runState (generate configD) dg
+      let scops = contentOps
+          ((ploc, lid, dng), ag) = MState.runState (generate scops configD) dg
           sflavour = MState.evalState dungeonFlavourMap ag
       (sg, sconfig) <-
         case Config.getOption configD "engine" "startingRandomGenerator" of
@@ -60,9 +62,10 @@ start internalSession = do
             let gs = show g
                 c = Config.set configD "engine" "startingRandomGenerator" gs
             return (g, c)
-      let defState = defaultState dng lid ploc sg
+      let defState = defaultState scops dng lid ploc sg
           state = defState{sconfig, sflavour}
           hstate = initialHeroes ploc state
       handlerToIO sess hstate msg handle
-    Left state ->
-      handlerToIO sess state "Welcome back to LambdaHack." handle
+    Left state -> do
+      let scops = contentOps
+      handlerToIO sess (state {scops}) "Welcome back to LambdaHack." handle
