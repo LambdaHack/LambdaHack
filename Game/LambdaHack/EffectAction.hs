@@ -207,7 +207,8 @@ summonHeroes n loc =
 
 summonMonsters :: Int -> Loc -> Action ()
 summonMonsters n loc = do
-  (mk, k) <- rndToAction $ frequency Kind.frequency
+  Kind.COps{coactor=Kind.Ops{ofrequency}} <- gets scops
+  (mk, k) <- rndToAction $ frequency ofrequency
   hp <- rndToAction $ rollDice $ ahp k
   modify (\ state ->
            iterate (addMonster mk hp loc) state !! n)

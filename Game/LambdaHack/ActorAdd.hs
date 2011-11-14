@@ -94,7 +94,8 @@ rollMonster state = do
   let lvl = slevel state
       hs = levelHeroList state
       ms = levelMonsterList state
-      isLit = Tile.isLit (scops state)
+      cops@Kind.COps{coactor=Kind.Ops{ofrequency}} = scops state
+      isLit = Tile.isLit cops
   rc <- monsterGenChance (slid state) (L.length ms)
   if not rc
     then return state
@@ -110,6 +111,6 @@ rollMonster state = do
                        && L.all (\ pl -> distance
                                            (lxsize lvl)
                                            (bloc pl) l > 30) hs)
-      (mk, k) <- frequency Kind.frequency
+      (mk, k) <- frequency ofrequency
       hp <- rollDice $ ahp k
       return $ addMonster mk hp loc state

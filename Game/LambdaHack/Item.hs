@@ -72,12 +72,12 @@ itemLetter :: ItemKind -> Maybe Char
 itemLetter ik = if isymbol ik == '$' then Just '$' else Nothing
 
 -- | Generate an item.
-newItem :: Int -> Rnd Item
-newItem lvl = do
-  (ikChosen, kind) <- frequency Kind.frequency
+newItem :: Kind.COps -> Int -> Rnd Item
+newItem scops@Kind.COps{coitem=Kind.Ops{ofrequency}} lvl = do
+  (ikChosen, kind) <- frequency ofrequency
   count <- rollQuad lvl (icount kind)
   if count == 0
-    then newItem lvl  -- Rare item; beware of inifite loops.
+    then newItem scops lvl  -- Rare item; beware of inifite loops.
     else do
       power <- rollQuad lvl (ipower kind)
       return $ Item ikChosen power (itemLetter kind) count

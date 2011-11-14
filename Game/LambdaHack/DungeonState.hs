@@ -39,14 +39,14 @@ mapToIMap :: X -> M.Map (X, Y) a -> IM.IntMap a
 mapToIMap cxsize m =
   IM.fromList $ map (\ (xy, a) -> (toLoc cxsize xy, a)) (M.assocs m)
 
-rollItems :: Int -> CaveKind -> TileMap -> Loc -> Rnd [(Loc, Item)]
-rollItems n CaveKind{cxsize, citemNum} lmap ploc =
+rollItems :: Kind.COps -> Int -> CaveKind -> TileMap -> Loc -> Rnd [(Loc, Item)]
+rollItems cops@Kind.COps{coitem=Kind.Ops{ofindKind}} n CaveKind{cxsize, citemNum} lmap ploc =
   do
     nri <- rollDice citemNum
     replicateM nri $
       do
-        item <- newItem n
-        l <- case iname (Kind.getKind (jkind item)) of
+        item <- newItem cops n
+        l <- case iname (ofindKind (jkind item)) of
                "sword" ->
                  -- swords generated close to monsters; MUAHAHAHA
                  findLocTry 2000 lmap
@@ -57,8 +57,8 @@ rollItems n CaveKind{cxsize, citemNum} lmap ploc =
         return (l, item)
 
 -- | Create a level from a cave, from a cave kind.
-buildLevel :: Cave -> Int -> Int -> Rnd Level
-buildLevel Cave{dkind, dsecret, ditem, dmap, dmeta} n depth = do
+buildLevel :: Kind.COps -> Cave -> Int -> Int -> Rnd Level
+buildLevel cops Cave{dkind, dsecret, ditem, dmap, dmeta} n depth = do
   let cfg@CaveKind{cxsize, cysize, minStairsDistance} = Kind.getKind dkind
       cmap = listArrayCfg  cxsize cysize dmap
   -- Roll locations of the stairs.
@@ -70,7 +70,7 @@ buildLevel Cave{dkind, dsecret, ditem, dmap, dmeta} n depth = do
         [(su, Tile.stairsUpId)]
         ++ if n == depth then [] else [(sd, Tile.stairsDownId)]
       lmap = cmap Kind.// stairs
-  is <- rollItems n cfg lmap su
+  is <- rollItems cops n cfg lmap su
   let itemMap = mapToIMap cxsize ditem `IM.union` IM.fromList is
       litem = IM.map (\ i -> ([i], [])) itemMap
       level = Level
@@ -94,9 +94,9 @@ matchGenerator :: Kind.COps -> Maybe String -> Rnd (Kind.Id CaveKind)
 matchGenerator Kind.COps{cocave=Kind.Ops{ofrequency}} Nothing = do
   (ci, _) <- frequency ofrequency
   return ci
-matchGenerator Kind.COps{cocave=Kind.Ops{oname}} (Just name) =
+matchGenerator Kind.COps{cocave=Kind.Ops{ofrequency, oname}} (Just name) =
   let freq@(Frequency l) =
-        filterFreq ((== name) . oname . snd) Kind.frequency
+        filterFreq ((== name) . oname . snd) ofrequency
   in case l of
     [] -> error $ "Unknown dungeon generator " ++ name
     _ | sum (map fst l) == 0 ->  -- HACK for dangerous levels
@@ -111,7 +111,7 @@ findGenerator cops config n depth = do
       genName = Config.getOption config "dungeon" ln
   ci <- matchGenerator cops genName
   cave <- buildCave n ci
-  buildLevel cave n depth
+  buildLevel cops cave n depth
 
 -- | Generate the dungeon for a new game.
 generate :: Kind.COps -> Config.CP -> Rnd (Loc, LevelId, Dungeon.Dungeon)

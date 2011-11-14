@@ -1,7 +1,7 @@
 {-# LANGUAGE RankNTypes #-}
 module Game.LambdaHack.Kind
   ( Ops(..), COps(..), contentOps
-  , Id, getKind, getId, frequency
+  , Id, getKind, getId
   , Array, (!), (//), listArray, bounds
   ) where
 
@@ -90,9 +90,6 @@ getId :: Content a => (a -> Bool) -> Id a
 getId f = case [Id i | (i, k) <- kindAssocs, f k] of
             [i] -> i
             l -> assert `failure` l
-
-frequency :: Content a => Frequency (Id a, a)
-frequency = Frequency [(getFreq k, (Id i, k)) | (i, k) <- kindAssocs]
 
 limitsId :: Content a => ((Id a, a), (Id a, a))
 limitsId = let (i1, a1) = IM.findMin kindMap

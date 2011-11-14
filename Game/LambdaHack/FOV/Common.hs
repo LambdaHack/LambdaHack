@@ -8,8 +8,6 @@ module Game.LambdaHack.FOV.Common
 import qualified Data.List as L
 
 import Game.LambdaHack.Geometry
-import Game.LambdaHack.Loc
-import Game.LambdaHack.Level
 
 type Distance = Int
 type Progress = Int
