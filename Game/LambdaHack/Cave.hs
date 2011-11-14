@@ -33,7 +33,7 @@ data Cave = Cave
   }
   deriving Show
 
-buildCave ::  Kind.COps -> Int -> Kind.Id CaveKind -> Rnd Cave
+buildCave :: Kind.COps -> Int -> Kind.Id CaveKind -> Rnd Cave
 buildCave cops@Kind.COps{cocave=Kind.Ops{ofindKind}} n ci =
   let CaveKind{clayout} = ofindKind ci
   in case clayout of
@@ -42,11 +42,11 @@ buildCave cops@Kind.COps{cocave=Kind.Ops{ofindKind}} n ci =
        CaveNoise -> caveNoise cops n ci
 
 -- | Cave consisting of only one, empty room.
-caveEmpty ::  Kind.COps -> Int -> Kind.Id CaveKind -> Rnd Cave
-caveEmpty Kind.COps{cocave=Kind.Ops{ofindKind}}  _ ci =
+caveEmpty :: Kind.COps -> Int -> Kind.Id CaveKind -> Rnd Cave
+caveEmpty cops@Kind.COps{cocave=Kind.Ops{ofindKind}}  _ ci =
   let CaveKind{cxsize, cysize} = ofindKind ci
       room = (1, 1, cxsize - 2, cysize - 2)
-      dmap = digRoom True room M.empty
+      dmap = digRoom cops True room M.empty
       cave = Cave
         { dkind = ci
         , dsecret = M.empty
@@ -57,14 +57,14 @@ caveEmpty Kind.COps{cocave=Kind.Ops{ofindKind}}  _ ci =
   in return cave
 
 -- | Cave consisting of only one room with randomly distributed pillars.
-caveNoise ::  Kind.COps -> Int -> Kind.Id CaveKind -> Rnd Cave
-caveNoise Kind.COps{cocave=Kind.Ops{ofindKind}}  _ ci = do
+caveNoise :: Kind.COps -> Int -> Kind.Id CaveKind -> Rnd Cave
+caveNoise cops@Kind.COps{cocave=Kind.Ops{ofindKind}}  _ ci = do
   let CaveKind{cxsize, cysize} = ofindKind ci
       room = (1, 1, cxsize - 2, cysize - 2)
-      em = digRoom True room M.empty
+      em = digRoom cops True room M.empty
   nri <- rollDice (fromIntegral (cysize `div` 5), 3)
   lxy <- replicateM (cxsize * nri) $ xyInArea (1, 1, cxsize - 2, cysize - 2)
-  let insertRock lm xy = M.insert xy Tile.wallId lm
+  let insertRock lm xy = M.insert xy (Tile.wallId cops) lm
       dmap = L.foldl' insertRock em lxy
       cave = Cave
         { dkind = ci
@@ -76,16 +76,16 @@ caveNoise Kind.COps{cocave=Kind.Ops{ofindKind}}  _ ci = do
   return cave
 
 -- | If the room has size 1, it is at most a start of a corridor.
-digRoom :: Bool -> Room -> TileMapXY -> TileMapXY
-digRoom dl (x0, y0, x1, y1) lmap
+digRoom :: Kind.COps -> Bool -> Room -> TileMapXY -> TileMapXY
+digRoom cops dl (x0, y0, x1, y1) lmap
   | x0 == x1 && y0 == y1 = lmap
   | otherwise =
-  let floorDL = if dl then Tile.floorLightId else Tile.floorDarkId
+  let floorDL = if dl then Tile.floorLightId cops else Tile.floorDarkId cops
       rm =
         [ ((x, y), floorDL) | x <- [x0..x1], y <- [y0..y1] ]
-        ++ [ ((x, y), Tile.wallId)
+        ++ [ ((x, y), Tile.wallId cops)
            | x <- [x0-1, x1+1], y <- [y0..y1] ]
-        ++ [ ((x, y), Tile.wallId)
+        ++ [ ((x, y), Tile.wallId cops)
            | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
   in M.union (M.fromList rm) lmap
 
@@ -142,16 +142,16 @@ caveRogue cops@Kind.COps{cocave=Kind.Ops{ofindKind}} n ci = do
                            let r0 = rs M.! p0
                                r1 = rs M.! p1
                            connectRooms r0 r1) allConnects
-    let lrooms = L.foldr (\ (r, dl) m -> digRoom dl r m) M.empty dlrooms
-        lcorridors = M.unions (L.map digCorridors cs)
+    let lrooms = L.foldr (\ (r, dl) m -> digRoom cops dl r m) M.empty dlrooms
+        lcorridors = M.unions (L.map (digCorridors (Tile.floorDarkId cops)) cs)
         lrocks =
-          M.fromList [ ((x, y), Tile.wallId) | x <- [0..cxsize - 1], y <- [0..cysize - 1] ]
+          M.fromList [ ((x, y), Tile.wallId cops) | x <- [0..cxsize - 1], y <- [0..cysize - 1] ]
         lm = M.union (M.unionWith (mergeCorridor cops) lcorridors lrooms) lrocks
     -- convert openings into doors
     (dmap, secretMap) <- do
       let f (l, le) o@((x, y), t) =
                   case t of
-                    _ | Tile.isOpening t ->
+                    _ | Tile.isOpening cops t ->
                       do
                         -- openings have a certain chance to be doors;
                         -- doors have a certain chance to be open; and
@@ -162,14 +162,14 @@ caveRogue cops@Kind.COps{cocave=Kind.Ops{ofindKind}} n ci = do
                         if not rb
                           then return (o : l, le)
                           else if ro
-                               then return (((x, y), Tile.doorOpenId) : l, le)
+                               then return (((x, y), Tile.doorOpenId cops) : l, le)
                                else do
                                  rsc <- doorSecretChance cfg
                                  if not rsc
-                                   then return (((x, y), Tile.doorClosedId) : l, le)
+                                   then return (((x, y), Tile.doorClosedId cops) : l, le)
                                    else do
                                      rs1 <- rollDice (csecretStrength cfg)
-                                     return (((x, y), Tile.doorSecretId) : l, M.insert (x, y) (Tile.SecretStrength rs1) le)
+                                     return (((x, y), Tile.doorSecretId cops) : l, M.insert (x, y) (Tile.SecretStrength rs1) le)
                     _ -> return (o : l, le)
       (l, le) <- foldM f ([], M.empty) (M.toList lm)
       return (M.fromList l, le)
@@ -196,15 +196,15 @@ mkRoom bd (xm, ym) (x0, y0, x1, y1) =
     (rx1, ry1) <- xyInArea (rx0 + xm - 1, ry0 + ym - 1, x1 - bd, y1 - bd)
     return (rx0, ry0, rx1, ry1)
 
-digCorridors :: Corridor -> TileMapXY
-digCorridors (p1:p2:ps) =
-  M.union corPos (digCorridors (p2:ps))
+digCorridors :: Kind.Id TileKind -> Corridor -> TileMapXY
+digCorridors tile (p1:p2:ps) =
+  M.union corPos (digCorridors tile (p2:ps))
   where
     corXY  = fromTo p1 p2
-    corPos = M.fromList $ L.zip corXY (repeat Tile.floorDarkId)
-digCorridors _ = M.empty
+    corPos = M.fromList $ L.zip corXY (repeat tile)
+digCorridors _ _ = M.empty
 
 mergeCorridor :: Kind.COps -> Kind.Id TileKind -> Kind.Id TileKind -> Kind.Id TileKind
 mergeCorridor cops _ t | Tile.isWalkable cops t = t
-mergeCorridor _    _ t | Tile.isUnknown t       = Tile.floorDarkId
-mergeCorridor _    _ _                          = Tile.openingId
+mergeCorridor cops _ t | Tile.isUnknown  cops t = Tile.floorDarkId cops
+mergeCorridor cops _ _                          = Tile.openingId cops

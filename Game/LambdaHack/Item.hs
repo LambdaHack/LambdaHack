@@ -62,8 +62,9 @@ getFlavour Kind.COps{coitem=Kind.Ops{ofindKind}} assocs ik =
         [f] -> f
         _:_ -> assocs M.! ik
 
-fistKindId :: Kind.Id ItemKind
-fistKindId = Kind.getId ((== "fist") . iname)
+fistKindId :: Kind.COps -> Kind.Id ItemKind
+fistKindId Kind.COps{coitem=Kind.Ops{ogetId}} =
+  ogetId ((== "fist") . iname)
 
 viewItem :: Kind.COps -> Kind.Id ItemKind -> FlavourMap -> (Char, Color.Color)
 viewItem scops@Kind.COps{coitem=Kind.Ops{ofindSymbol}} ik assocs =

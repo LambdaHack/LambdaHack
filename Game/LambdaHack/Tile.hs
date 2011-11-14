@@ -17,35 +17,35 @@ instance Binary SecretStrength where
 
 -- TODO: remove this file
 
-wallId, openingId, floorLightId, floorDarkId, unknownId, doorOpenId, doorClosedId, doorSecretId, stairsUpId, stairsDownId :: Kind.Id TileKind
-wallId = Kind.getId (\ t -> tsymbol t == '#' && (L.null $ tfeature t))
-openingId = Kind.getId (\ t -> tsymbol t == '.' && kindHasFeature F.Exit t)
-floorLightId =
-  Kind.getId (\ t -> tsymbol t == '.' && kindHas [F.Lit] [F.Exit] t)
-floorDarkId =
-  Kind.getId (\ t -> tsymbol t == '.' && kindHas [] [F.Exit, F.Lit] t)
-unknownId = Kind.getId ((== ' ') . tsymbol)
-doorOpenId = Kind.getId (kindHasFeature F.Closable)
-doorClosedId = Kind.getId (kindHasFeature F.Openable)
-doorSecretId = Kind.getId (kindHasFeature F.Hidden)
-stairsUpId = Kind.getId (kindHas [F.Lit, F.Climbable] [])
-stairsDownId = Kind.getId (kindHas [F.Lit, F.Descendable] [])
+wallId, openingId, floorLightId, floorDarkId, unknownId, doorOpenId, doorClosedId, doorSecretId, stairsUpId, stairsDownId :: Kind.COps -> Kind.Id TileKind
+wallId Kind.COps{cotile=Kind.Ops{ogetId}} = ogetId (\ t -> tsymbol t == '#' && (L.null $ tfeature t))
+openingId Kind.COps{cotile=Kind.Ops{ogetId}} = ogetId (\ t -> tsymbol t == '.' && kindHasFeature F.Exit t)
+floorLightId Kind.COps{cotile=Kind.Ops{ogetId}} =
+  ogetId (\ t -> tsymbol t == '.' && kindHas [F.Lit] [F.Exit] t)
+floorDarkId Kind.COps{cotile=Kind.Ops{ogetId}} =
+  ogetId (\ t -> tsymbol t == '.' && kindHas [] [F.Exit, F.Lit] t)
+unknownId Kind.COps{cotile=Kind.Ops{ogetId}} = ogetId ((== ' ') . tsymbol)
+doorOpenId Kind.COps{cotile=Kind.Ops{ogetId}} = ogetId (kindHasFeature F.Closable)
+doorClosedId Kind.COps{cotile=Kind.Ops{ogetId}} = ogetId (kindHasFeature F.Openable)
+doorSecretId Kind.COps{cotile=Kind.Ops{ogetId}} = ogetId (kindHasFeature F.Hidden)
+stairsUpId Kind.COps{cotile=Kind.Ops{ogetId}} = ogetId (kindHas [F.Lit, F.Climbable] [])
+stairsDownId Kind.COps{cotile=Kind.Ops{ogetId}} = ogetId (kindHas [F.Lit, F.Descendable] [])
 
 -- | The player can't tell if the tile is a secret door or not.
 canBeSecretDoor :: Kind.COps -> Kind.Id TileKind -> Bool
-canBeSecretDoor Kind.COps{cotile=Kind.Ops{ofindKind}} t =
+canBeSecretDoor cops@Kind.COps{cotile=Kind.Ops{ofindKind}} t =
   let u = ofindKind t
-      s = ofindKind doorSecretId
+      s = ofindKind (doorSecretId cops)
   in tsymbol u == tsymbol s &&
      tname u == tname s &&
      tcolor u == tcolor s &&
      tcolor2 u == tcolor2 s
 
-isUnknown :: Kind.Id TileKind -> Bool
-isUnknown t = t == unknownId
+isUnknown :: Kind.COps -> Kind.Id TileKind -> Bool
+isUnknown cops t = t == unknownId cops
 
-isOpening :: Kind.Id TileKind -> Bool
-isOpening t = t == openingId
+isOpening :: Kind.COps -> Kind.Id TileKind -> Bool
+isOpening cops t = t == openingId cops
 
 kindHasFeature :: F.Feature -> TileKind -> Bool
 kindHasFeature f t = f `elem` tfeature t

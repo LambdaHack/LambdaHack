@@ -29,10 +29,10 @@ listArrayCfg cxsize cysize lmap =
   Kind.listArray (zeroLoc, toLoc cxsize (cxsize - 1, cysize - 1))
     (M.elems $ M.mapKeys (\ (x, y) -> (y, x)) lmap)
 
-unknownTileMap :: Int -> Int ->  TileMap
-unknownTileMap cxsize cysize =
+unknownTileMap :: Kind.COps -> Int -> Int ->  TileMap
+unknownTileMap cops cxsize cysize =
   Kind.listArray (zeroLoc, toLoc cxsize (cxsize - 1, cysize - 1))
-    (repeat Tile.unknownId)
+    (repeat (Tile.unknownId cops))
 
 mapToIMap :: X -> M.Map (X, Y) a -> IM.IntMap a
 mapToIMap cxsize m =
@@ -68,8 +68,8 @@ buildLevel cops@Kind.COps{cocave=Kind.Ops{ofindKind}}
           (\ l t -> l /= su && Tile.isBoring cops t)
           (\ l _ -> distance cxsize su l >= minStairsDistance)
   let stairs =
-        [(su, Tile.stairsUpId)]
-        ++ if n == depth then [] else [(sd, Tile.stairsDownId)]
+        [(su, Tile.stairsUpId cops)]
+        ++ if n == depth then [] else [(sd, Tile.stairsDownId cops)]
       lmap = cmap Kind.// stairs
   is <- rollItems cops n cfg lmap su
   let itemMap = mapToIMap cxsize ditem `IM.union` IM.fromList is
@@ -85,7 +85,7 @@ buildLevel cops@Kind.COps{cocave=Kind.Ops{ofindKind}}
         , lsecret = mapToIMap cxsize dsecret
         , litem
         , lmap
-        , lrmap = unknownTileMap cxsize cysize
+        , lrmap = unknownTileMap cops cxsize cysize
         , lmeta = dmeta
         , lstairs = (su, sd)
         }

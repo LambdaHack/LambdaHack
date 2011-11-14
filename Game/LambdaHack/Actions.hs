@@ -265,7 +265,7 @@ playerCloseDoor dir = do
       case lvl `iat` dloc of
         [] ->
           if unoccupied hms dloc
-          then let adj = (Kind.// [(dloc, Tile.doorClosedId)])
+          then let adj = (Kind.// [(dloc, Tile.doorClosedId cops)])
                in modify (updateLevel (updateLMap adj))
           else abortWith "blocked"  -- by monsters or heroes
         _:_ -> abortWith "jammed"  -- by items
@@ -301,7 +301,7 @@ actorOpenDoor actor dir = do
                  Tile.hasFeature cops F.Hidden t)
          then neverMind isVerbose  -- not doors at all
          else
-           let adj = (Kind.// [(dloc, Tile.doorOpenId)])
+           let adj = (Kind.// [(dloc, Tile.doorOpenId cops)])
            in  modify (updateLevel (updateLMap adj))
   advanceTime actor
 
@@ -361,7 +361,7 @@ lvlGoUp isUp =
                   lvl2 <- gets slevel
                   let upd cur =
                         let clocation =
-                              if Tile.isUnknown (lvl2 `rememberAt` nloc)
+                              if Tile.isUnknown cops (lvl2 `rememberAt` nloc)
                               then loc
                               else nloc
                         in  cur { clocation, clocLn = nln }
@@ -465,7 +465,7 @@ search =
              then if k > 0
                   then (slm,
                         IM.insert loc (Tile.SecretStrength k) sle)
-                  else ((loc, Tile.doorClosedId) : slm,
+                  else ((loc, Tile.doorClosedId cops) : slm,
                         IM.delete loc sle)
              else (slm, sle)
         f (slm, sle) m = searchTile (shift ploc m) (slm, sle)
@@ -626,7 +626,7 @@ actorAttackActor source target = do
       verb = attackToVerb groupName
       sloc = bloc sm
       -- The hand-to-hand "weapon", equivalent to +0 sword.
-      h2h = Item fistKindId 0 Nothing 1
+      h2h = Item (fistKindId cops) 0 Nothing 1
       str = strongestItem cops bitems groupName
       stack  = fromMaybe h2h str
       single = stack { jcount = 1 }

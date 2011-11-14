@@ -102,6 +102,7 @@ zapGroupItem :: ActorId ->  -- actor zapping the item; on current level
                 Item ->     -- the item to be zapped
                 Action ()
 zapGroupItem source loc verb item = do
+  cops <- gets scops
   state <- get
   sm    <- gets (getActor source)
   per   <- currentPerception
@@ -110,7 +111,7 @@ zapGroupItem source loc verb item = do
       subject =
         if sloc `S.member` ptvisible per
         then sm
-        else template heroKindId (Just "somebody") Nothing 99 sloc
+        else template (heroKindId cops) (Just "somebody") Nothing 99 sloc
       msg = subjectVerbIObject state subject verb consumed ""
   removeFromInventory source consumed sloc
   case locToActor loc state of

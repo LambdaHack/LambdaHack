@@ -7,7 +7,6 @@ import Data.Maybe
 
 import Game.LambdaHack.Item
 import Game.LambdaHack.Actor
-import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.State
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Effect

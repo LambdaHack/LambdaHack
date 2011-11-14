@@ -1,7 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 module Game.LambdaHack.Kind
   ( Id, Ops(..), COps(..), contentOps
-  , getId
   , Array, (!), (//), listArray, bounds
   ) where
 
@@ -34,10 +33,9 @@ data Ops a = Ops
   , ofindName :: Id a -> String
   , ofindFreq :: Id a -> Int
   , ofindKind :: Id a -> a
-  , ofilter :: (a -> Bool) -> [(Id a, a)]
+  , ogetId :: (a -> Bool) -> Id a
   , ofrequency :: Frequency (Id a, a)
   , ofoldrWithKey :: forall b . (Id a -> a -> b -> b) -> b -> b
-  , olimits :: ((Id a, a), (Id a, a))
   , obounds :: (Id a, Id a)
   }
 
@@ -56,13 +54,16 @@ createOps =
   , ofindName = getName . ofindKind
   , ofindFreq = getFreq . ofindKind
   , ofindKind = ofindKind
-  , ofilter = \ f -> [(Id i, k) | (i, k) <- kindAssocs, f k]
+  , ogetId = \ f -> case [Id i | (i, k) <- kindAssocs, f k] of
+     [i] -> i
+     l -> assert `failure` l
   , ofrequency = Frequency [(getFreq k, (Id i, k)) | (i, k) <- kindAssocs]
   , ofoldrWithKey = \ f z -> L.foldr (\ (i, a) -> f (Id i) a) z kindAssocs
-  , olimits = let (i1, a1) = IM.findMin kindMap
-                  (i2, a2) = IM.findMax kindMap
-              in ((Id (toEnum i1), a1), (Id (toEnum i2), a2))
-  , obounds = (Id 0, (fst . snd) limitsId)
+  , obounds =
+     let limits = let (i1, a1) = IM.findMin kindMap
+                      (i2, a2) = IM.findMax kindMap
+                  in ((Id (toEnum i1), a1), (Id (toEnum i2), a2))
+     in (Id 0, (fst . snd) limits)
   }
 
 data COps = COps
@@ -82,16 +83,6 @@ contentOps = COps
   , coitem  = createOps
   , cotile  = createOps
   }
-
-getId :: Content a => (a -> Bool) -> Id a
-getId f = case [Id i | (i, k) <- kindAssocs, f k] of
-            [i] -> i
-            l -> assert `failure` l
-
-limitsId :: Content a => ((Id a, a), (Id a, a))
-limitsId = let (i1, a1) = IM.findMin kindMap
-               (i2, a2) = IM.findMax kindMap
-           in ((Id (toEnum i1), a1), (Id (toEnum i2), a2))
 
 newtype Array i c = Array (A.UArray i Word.Word8) deriving Show
 
