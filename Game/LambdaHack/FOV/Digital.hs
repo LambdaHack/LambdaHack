@@ -6,6 +6,8 @@ import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.FOV.Common
 import Game.LambdaHack.Loc
 import Game.LambdaHack.Level
+import qualified Game.LambdaHack.Tile as Tile
+import qualified Game.LambdaHack.Kind as Kind
 
 -- Digital FOV with a given range.
 
@@ -19,8 +21,8 @@ import Game.LambdaHack.Level
 -- | The current state of a scan is kept in Maybe (Line, ConvexHull).
 -- If Just something, we're in a visible interval. If Nothing, we're in
 -- a shadowed interval.
-scan :: Distance -> (Bump -> Loc) -> Level -> S.Set Loc
-scan r tr l =
+scan :: Distance -> (Bump -> Loc) -> Kind.COps -> Level -> S.Set Loc
+scan r tr scops l =
   -- the scanned area is a square, which is a sphere in this metric; good
   dscan 1 (((B(1, 0), B(-r, r)),  [B(0, 0)]), ((B(0, 0), B(r+1, r)), [B(1, 0)]))
  where
@@ -38,17 +40,19 @@ scan r tr l =
         inside = S.fromList [tr (B(p, d)) | p <- [ps0..pe]]
         outside
           | d >= r = S.empty
-          | isClear l tr (B(ps0, d)) =
+          | isClear (B(ps0, d)) =
               mscan (Just s0) (ps0+1) pe      -- start in light
           | otherwise =
               mscan Nothing (ps0+1) pe        -- start in shadow
     in assert (r >= d && d >= 0 && pe >= ps0 `blame` (r,d,s0,e,ps0,pe)) $
        S.union inside outside
    where
+    isClear :: Bump -> Bool
+    isClear = Tile.isClear scops . (l `at`) . tr
     mscan :: Maybe Edge -> Progress -> Progress -> S.Set Loc
     mscan (Just s@(_, sBumps)) ps pe
       | ps > pe = dscan (d+1) (s, e)          -- reached end, scan next
-      | not $ isClear l tr steepBump =        -- entering shadow
+      | not $ isClear steepBump =        -- entering shadow
           S.union (dscan (d+1) (s, (dline nep steepBump, neBumps)))
                   (mscan Nothing (ps+1) pe)
       | otherwise = mscan (Just s) (ps+1) pe  -- continue in light
@@ -60,7 +64,7 @@ scan r tr l =
 
     mscan Nothing ps pe
       | ps > pe = S.empty                     -- reached end while in shadow
-      | isClear l tr shallowBump =            -- moving out of shadow
+      | isClear shallowBump =            -- moving out of shadow
           mscan (Just (dline nsp shallowBump, nsBumps)) (ps+1) pe
       | otherwise = mscan Nothing (ps+1) pe   -- continue in shadow
      where

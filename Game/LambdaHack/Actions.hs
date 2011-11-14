@@ -174,6 +174,7 @@ continueRun dir =
     lxsize <- gets (lxsize . slevel)
     lvl <- gets slevel
     pl  <- gets splayer
+    scops  <- gets scops
     let dms = case pl of
                 AMonster n -> IM.delete n ms  -- don't be afraid of yourself
                 AHero _ -> ms
@@ -185,7 +186,7 @@ continueRun dir =
         heroThere = (loc `shift` dir) `elem` L.map bloc (IM.elems hs)
         dirOK     = accessible lvl loc (loc `shift` dir)
         isTExit   = Tile.isExit tile
-        isWalkableDark = Tile.isWalkable tile && not (Tile.isLit tile)
+        isWalkableDark = Tile.isWalkable tile && not (Tile.isLit scops tile)
     -- What happens next is mostly depending on the terrain we're currently on.
     let hop | (monstersVisible || heroThere || newsReported ||
                itemsHere || isTExit) = abort

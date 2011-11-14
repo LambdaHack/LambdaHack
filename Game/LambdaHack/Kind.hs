@@ -1,7 +1,7 @@
 {-# LANGUAGE RankNTypes #-}
 module Game.LambdaHack.Kind
   ( Ops(..), COps(..), contentOps
-  , Id, getKind, getId, frequency, foldrWithKey, boundsId
+  , Id, getKind, getId, frequency
   , Array, (!), (//), listArray, bounds
   ) where
 
@@ -94,16 +94,10 @@ getId f = case [Id i | (i, k) <- kindAssocs, f k] of
 frequency :: Content a => Frequency (Id a, a)
 frequency = Frequency [(getFreq k, (Id i, k)) | (i, k) <- kindAssocs]
 
-foldrWithKey :: Content a => (Id a -> a -> b -> b) -> b -> b
-foldrWithKey f z = L.foldr (\ (i, a) -> f (Id i) a) z kindAssocs
-
 limitsId :: Content a => ((Id a, a), (Id a, a))
 limitsId = let (i1, a1) = IM.findMin kindMap
                (i2, a2) = IM.findMax kindMap
            in ((Id (toEnum i1), a1), (Id (toEnum i2), a2))
-
-boundsId :: Content a => (Id a, Id a)
-boundsId = (Id 0, (fst . snd) limitsId)
 
 newtype Array i c = Array (A.UArray i Word.Word8) deriving Show
 

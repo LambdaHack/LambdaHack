@@ -2,14 +2,13 @@ module Game.LambdaHack.FOV.Common
   ( Distance, Progress
   , Bump(..)
   , Line, ConvexHull, Edge, EdgeInterval
-  , isClear, divUp, maximal, steeper, addHull
+  , divUp, maximal, steeper, addHull
   ) where
 
 import qualified Data.List as L
 
 import Game.LambdaHack.Geometry
 import Game.LambdaHack.Loc
-import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Level
 
 type Distance = Int
@@ -28,9 +27,6 @@ type Line         = (Bump, Bump)
 type ConvexHull   = [Bump]
 type Edge         = (Line, ConvexHull)
 type EdgeInterval = (Edge, Edge)
-
-isClear :: Level -> (Bump -> Loc) -> Bump -> Bool
-isClear l tr = Tile.isClear . (l `at`) . tr
 
 -- | Integer division, rounding up.
 divUp :: Int -> Int -> Int

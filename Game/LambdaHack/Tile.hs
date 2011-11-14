@@ -58,22 +58,30 @@ hasFeature :: F.Feature -> Kind.Id TileKind -> Bool
 hasFeature f t = kindHasFeature f (Kind.getKind t)
 
 -- | Does not block vision. Essential for efficiency of FOV, hence tabulated.
-clearTab :: A.UArray (Kind.Id TileKind) Bool
-clearTab = let f _ k acc = kindHasFeature F.Clear k : acc
-               clearAssocs = Kind.foldrWithKey f []
-           in A.listArray Kind.boundsId clearAssocs
+clearTab :: Kind.COps -> A.UArray (Kind.Id TileKind) Bool
+clearTab Kind.COps{cotile=Kind.Ops{ofoldrWithKey, obounds}} =
+  let f _ k acc = kindHasFeature F.Clear k : acc
+      clearAssocs = ofoldrWithKey f []
+  in A.listArray obounds clearAssocs
 
-isClear :: Kind.Id TileKind -> Bool
-isClear i = clearTab A.! i
+-- TODO: now it's created many times, optimize
+isClear :: Kind.COps -> Kind.Id TileKind -> Bool
+isClear scops =
+  let tab = clearTab scops
+  in (tab A.!)
 
 -- | Is lit on its own. Essential for efficiency of Perception, hence tabulated.
-litTab :: A.UArray (Kind.Id TileKind) Bool
-litTab = let f _ k acc = kindHasFeature F.Lit k : acc
-             litAssocs = Kind.foldrWithKey f []
-         in A.listArray Kind.boundsId litAssocs
+litTab :: Kind.COps -> A.UArray (Kind.Id TileKind) Bool
+litTab Kind.COps{cotile=Kind.Ops{ofoldrWithKey, obounds}} =
+  let f _ k acc = kindHasFeature F.Lit k : acc
+      litAssocs = ofoldrWithKey f []
+  in A.listArray obounds litAssocs
 
-isLit :: Kind.Id TileKind -> Bool
-isLit i = litTab A.! i
+-- TODO: now it's created many times, optimize
+isLit :: Kind.COps -> Kind.Id TileKind -> Bool
+isLit scops =
+  let tab = litTab scops
+  in (tab A.!)
 
 -- | Does not block land movement.
 isWalkable :: Kind.Id TileKind -> Bool

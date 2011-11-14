@@ -50,7 +50,7 @@ start internalSession = do
             return (g, c)
       let scops = contentOps
           ((ploc, lid, dng), ag) = MState.runState (generate scops configD) dg
-          sflavour = MState.evalState dungeonFlavourMap ag
+          sflavour = MState.evalState (dungeonFlavourMap scops) ag
       (sg, sconfig) <-
         case Config.getOption configD "engine" "startingRandomGenerator" of
           Just sg ->

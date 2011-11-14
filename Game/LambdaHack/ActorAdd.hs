@@ -94,6 +94,7 @@ rollMonster state = do
   let lvl = slevel state
       hs = levelHeroList state
       ms = levelMonsterList state
+      isLit = Tile.isLit (scops state)
   rc <- monsterGenChance (slid state) (L.length ms)
   if not rc
     then return state
@@ -105,7 +106,7 @@ rollMonster state = do
       loc <- findLocTry 2000 (lmap lvl)
              (\ l t -> Tile.isWalkable t
                        && l `L.notElem` L.map bloc (hs ++ ms))
-             (\ l t -> not (Tile.isLit t)  -- try a dark, distant place first
+             (\ l t -> not (isLit t)  -- try a dark, distant place first
                        && L.all (\ pl -> distance
                                            (lxsize lvl)
                                            (bloc pl) l > 30) hs)
