@@ -4,7 +4,6 @@ import Game.LambdaHack.Level
 import Game.LambdaHack.State
 import Game.LambdaHack.Grammar
 import Game.LambdaHack.Loc
-import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Kind as Kind
 
 -- | Produces a textual description of the terrain and items at an already
@@ -13,8 +12,9 @@ import qualified Game.LambdaHack.Kind as Kind
 lookAt :: Bool -> Bool -> State -> Level -> Loc -> String -> String
 lookAt detailed canSee s lvl loc msg
   | detailed  =
-    let tile = lvl `rememberAt` loc
-        name = tname . Kind.getKind $ tile
+    let Kind.COps{cotile=Kind.Ops{ofindName}} = scops s
+        tile = lvl `rememberAt` loc
+        name = ofindName  $ tile
     in name ++ " " ++ msg ++ isd
   | otherwise = msg ++ isd
   where

@@ -32,10 +32,10 @@ stairsUpId = Kind.getId (kindHas [F.Lit, F.Climbable] [])
 stairsDownId = Kind.getId (kindHas [F.Lit, F.Descendable] [])
 
 -- | The player can't tell if the tile is a secret door or not.
-canBeSecretDoor :: Kind.Id TileKind -> Bool
-canBeSecretDoor t =
-  let u = Kind.getKind t
-      s = Kind.getKind doorSecretId
+canBeSecretDoor :: Kind.COps -> Kind.Id TileKind -> Bool
+canBeSecretDoor Kind.COps{cotile=Kind.Ops{ofindKind}} t =
+  let u = ofindKind t
+      s = ofindKind doorSecretId
   in tsymbol u == tsymbol s &&
      tname u == tname s &&
      tcolor u == tcolor s &&
@@ -54,8 +54,9 @@ kindHas :: [F.Feature] -> [F.Feature] -> TileKind -> Bool
 kindHas yes no t = L.all (flip kindHasFeature t) yes &&
                    not (L.any (flip kindHasFeature t) no)
 
-hasFeature :: F.Feature -> Kind.Id TileKind -> Bool
-hasFeature f t = kindHasFeature f (Kind.getKind t)
+hasFeature ::Kind.COps ->  F.Feature -> Kind.Id TileKind -> Bool
+hasFeature Kind.COps{cotile=Kind.Ops{ofindKind}} f t =
+  kindHasFeature f (ofindKind t)
 
 -- | Does not block vision. Essential for efficiency of FOV, hence tabulated.
 clearTab :: Kind.COps -> A.UArray (Kind.Id TileKind) Bool
@@ -84,18 +85,18 @@ isLit scops =
   in (tab A.!)
 
 -- | Does not block land movement.
-isWalkable :: Kind.Id TileKind -> Bool
-isWalkable = hasFeature F.Walkable
+isWalkable :: Kind.COps -> Kind.Id TileKind -> Bool
+isWalkable cops = hasFeature cops F.Walkable
 
 
 -- | Provides an exit from a room.
-isExit :: Kind.Id TileKind -> Bool
-isExit = hasFeature F.Exit
+isExit :: Kind.COps -> Kind.Id TileKind -> Bool
+isExit cops = hasFeature cops F.Exit
 
 -- | Is a good candidate to deposit items, replace by other tiles, etc.
-isBoring :: Kind.Id TileKind -> Bool
-isBoring t =
-  let fs = tfeature (Kind.getKind t)
+isBoring :: Kind.COps -> Kind.Id TileKind -> Bool
+isBoring Kind.COps{cotile=Kind.Ops{ofindKind}} t =
+  let fs = tfeature (ofindKind t)
       optional = [F.Exit, F.Lit]
       mandatory = [F.Walkable, F.Clear]
   in fs L.\\ optional `L.elem` L.permutations mandatory

@@ -35,46 +35,51 @@ makeObject n adj obj = show n ++ " " ++ adj (suffixS obj)
 -- TODO: when there's more of the above, split and move to Utils/
 
 -- | How to refer to an actor in object position of a sentence.
-objectActor :: Actor -> String
-objectActor a = fromMaybe (aname $ Kind.getKind $ bkind a) (bname a)
+objectActor :: Kind.COps -> Actor -> String
+objectActor Kind.COps{coactor=Kind.Ops{ofindName}} a =
+  fromMaybe (ofindName $ bkind a) (bname a)
 
 -- | How to refer to an actor in subject position of a sentence.
-subjectActor :: Actor -> String
-subjectActor x = capitalize $ objectActor x
+subjectActor :: Kind.COps -> Actor -> String
+subjectActor cops x = capitalize $ objectActor cops x
 
-verbActor :: Actor -> String -> String
-verbActor a v = if objectActor a == "you" then v else suffixS v
+verbActor :: Kind.COps -> Actor -> String -> String
+verbActor cops a v = if objectActor cops a == "you" then v else suffixS v
 
 -- | Sentences such like "The dog barks".
-subjectActorVerb :: Actor -> String -> String
-subjectActorVerb x v = subjectActor x ++ " " ++ verbActor x v
+subjectActorVerb :: Kind.COps -> Actor -> String -> String
+subjectActorVerb cops x v = subjectActor cops x ++ " " ++ verbActor cops x v
 
-compoundVerbActor :: Actor -> String -> String -> String
-compoundVerbActor m v p = verbActor m v ++ " " ++ p
+compoundVerbActor :: Kind.COps -> Actor -> String -> String -> String
+compoundVerbActor cops m v p = verbActor cops m v ++ " " ++ p
 
-subjectVerbIObject :: State -> Actor -> String -> Item -> String -> String
+subjectVerbIObject :: State -> Actor -> String -> Item -> String
+                   -> String
 subjectVerbIObject state m v o add =
-  subjectActor m ++ " " ++
-  verbActor m v ++ " " ++
-  objectItem state o ++ add ++ "."
+  let cops = scops state
+  in subjectActor cops m ++ " " ++
+     verbActor cops m v ++ " " ++
+     objectItem state o ++ add ++ "."
 
-subjectVerbMObject :: Actor -> String -> Actor -> String -> String
-subjectVerbMObject m v o add =
-  subjectActor m ++ " " ++
-  verbActor m v ++ " " ++
-  objectActor o ++ add ++ "."
+subjectVerbMObject :: Kind.COps -> Actor -> String -> Actor -> String -> String
+subjectVerbMObject cops m v o add =
+  subjectActor cops m ++ " " ++
+  verbActor cops m v ++ " " ++
+  objectActor cops o ++ add ++ "."
 
 subjCompoundVerbIObj :: State -> Actor -> String -> String ->
                         Item -> String -> String
 subjCompoundVerbIObj state m v p o add =
-  subjectActor m ++ " " ++
-  compoundVerbActor m v p ++ " " ++
-  objectItem state o ++ add ++ "."
+  let cops = scops state
+  in subjectActor cops m ++ " " ++
+     compoundVerbActor cops m v p ++ " " ++
+     objectItem state o ++ add ++ "."
 
 objectItem :: State -> Item -> String
 objectItem state o =
-  let ik = jkind o
-      kind = Kind.getKind ik
+  let cops@Kind.COps{coitem=Kind.Ops{ofindKind}} = scops state
+      ik = jkind o
+      kind = ofindKind ik
       identified = L.length (iflavour kind) == 1 ||
                    ik `S.member` sdisco state
       addSpace s = if s == "" then "" else " " ++ s
@@ -82,6 +87,6 @@ objectItem state o =
       pwr = if jpower o == 0 then "" else "(+" ++ show (jpower o) ++ ")"
       adj name = if identified
                  then name ++ addSpace eff ++ addSpace pwr
-                 else let flavour = getFlavour (sflavour state) ik
+                 else let flavour = getFlavour cops (sflavour state) ik
                       in  flavourToName flavour ++ " " ++ name
   in  makeObject (jcount o) adj (iname kind)

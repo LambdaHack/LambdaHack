@@ -54,9 +54,9 @@ dungeonFlavourMap :: Kind.COps -> Rnd FlavourMap
 dungeonFlavourMap Kind.COps{coitem=Kind.Ops{ofoldrWithKey}} =
   liftM fst $ ofoldrWithKey rollFlavourMap (return (M.empty, S.fromList stdFlav))
 
-getFlavour :: FlavourMap -> Kind.Id ItemKind -> Flavour
-getFlavour assocs ik =
-  let kind = Kind.getKind ik
+getFlavour :: Kind.COps -> FlavourMap -> Kind.Id ItemKind -> Flavour
+getFlavour Kind.COps{coitem=Kind.Ops{ofindKind}} assocs ik =
+  let kind = ofindKind ik
   in  case iflavour kind of
         []  -> assert `failure` (assocs, ik, kind)
         [f] -> f
@@ -65,8 +65,9 @@ getFlavour assocs ik =
 fistKindId :: Kind.Id ItemKind
 fistKindId = Kind.getId ((== "fist") . iname)
 
-viewItem :: Kind.Id ItemKind -> FlavourMap -> (Char, Color.Color)
-viewItem ik assocs = (isymbol (Kind.getKind ik), flavourToColor $ getFlavour assocs ik)
+viewItem :: Kind.COps -> Kind.Id ItemKind -> FlavourMap -> (Char, Color.Color)
+viewItem scops@Kind.COps{coitem=Kind.Ops{ofindSymbol}} ik assocs =
+  (ofindSymbol ik, flavourToColor $ getFlavour scops assocs ik)
 
 itemLetter :: ItemKind -> Maybe Char
 itemLetter ik = if isymbol ik == '$' then Just '$' else Nothing
@@ -183,17 +184,17 @@ findItem p = findItem' []
       | p i              = Just (i, reverse acc ++ is)
       | otherwise        = findItem' (i:acc) is
 
-strongestItem :: [Item] -> String -> Maybe Item
-strongestItem is groupName =
+strongestItem :: Kind.COps -> [Item] -> String -> Maybe Item
+strongestItem Kind.COps{coitem=Kind.Ops{ofindName}} is groupName =
   let cmp = comparing jpower
-      igs = L.filter (\ i -> iname (Kind.getKind (jkind i)) == groupName) is
+      igs = L.filter (\ i -> ofindName (jkind i) == groupName) is
   in  case igs of
         [] -> Nothing
         _  -> Just $ L.maximumBy cmp igs
 
-itemPrice :: Item -> Int
-itemPrice i =
-  case iname (Kind.getKind (jkind i)) of
+itemPrice :: Kind.COps -> Item -> Int
+itemPrice Kind.COps{coitem=Kind.Ops{ofindName}} i =
+  case ofindName (jkind i) of
     "gold piece" -> jcount i
     "gem" -> jcount i * 100
     _ -> 0

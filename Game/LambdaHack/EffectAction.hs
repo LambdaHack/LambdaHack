@@ -44,15 +44,17 @@ effectToAction :: Effect.Effect -> Int -> ActorId -> ActorId -> Int ->
                   Action (Bool, String)
 effectToAction Effect.NoEffect _ _ _ _ = nullEffect
 effectToAction Effect.Heal _ _source target power = do
-  let bhpMax m = maxDice (ahp $ Kind.getKind $ bkind m)
+  cops@Kind.COps{coactor=Kind.Ops{ofindKind}} <- gets scops
+  let bhpMax m = maxDice (ahp $ ofindKind $ bkind m)
   tm <- gets (getActor target)
   if bhp tm >= bhpMax tm || power <= 0
     then nullEffect
     else do
       focusIfAHero target
-      updateAnyActor target (addHp power)  -- TODO: duplicates maxDice, etc.
-      return (True, subjectActorVerb tm "feel" ++ " better.")
+      updateAnyActor target (addHp cops power)  -- TODO: duplicates maxDice, etc.
+      return (True, subjectActorVerb cops tm "feel" ++ " better.")
 effectToAction (Effect.Wound nDm) verbosity source target power = do
+  cops <- gets scops
   n <- rndToAction $ rollDice nDm
   if n + power <= 0 then nullEffect else do
     focusIfAHero target
@@ -61,16 +63,16 @@ effectToAction (Effect.Wound nDm) verbosity source target power = do
         killed = newHP <= 0
         msg
           | source == target =  -- a potion of wounding, etc.
-            subjectActorVerb tm "feel" ++
+            subjectActorVerb cops tm "feel" ++
               if killed then " mortally" else "" ++ " wounded."
           | killed =
             if isAHero target then "" else
-              subjectActorVerb tm "die" ++ "."
+              subjectActorVerb cops tm "die" ++ "."
           | verbosity <= 0 = ""
           | isAHero target =
-            subjectActorVerb tm "lose" ++
+            subjectActorVerb cops tm "lose" ++
               " " ++ show (n + power) ++ "HP."
-          | otherwise = subjectActorVerb tm "hiss" ++ " in pain."
+          | otherwise = subjectActorVerb cops tm "hiss" ++ " in pain."
     updateAnyActor target $ \ m -> m { bhp = newHP }  -- Damage the target.
     when killed $ do
       -- Place the actor's possessions on the map.
@@ -124,9 +126,10 @@ nullEffect = return (False, "Nothing happens.")
 -- If either actor is a hero, the item may get identified.
 itemEffectAction :: Int -> ActorId -> ActorId -> Item -> Action Bool
 itemEffectAction verbosity source target item = do
+  Kind.COps{coitem=Kind.Ops{ofindKind}} <- gets scops
   tm  <- gets (getActor target)
   per <- currentPerception
-  let effect = ieffect $ Kind.getKind $ jkind item
+  let effect = ieffect $ ofindKind $ jkind item
   -- The message describes the target part of the action.
   (b, msg) <- effectToAction effect verbosity source target (jpower item)
   -- Determine how the player perceives the event.
@@ -144,11 +147,12 @@ itemEffectAction verbosity source target item = do
 -- | Given item is now known to the player.
 discover :: Item -> Action ()
 discover i = do
+  Kind.COps{coitem=Kind.Ops{ofindKind}} <- gets scops
   state <- get
   let ik = jkind i
       obj = unwords $ tail $ words $ objectItem state i
       msg = "The " ++ obj ++ " turns out to be "
-      kind = Kind.getKind ik
+      kind = ofindKind ik
       alreadyIdentified = L.length (iflavour kind) == 1 ||
                           ik `S.member` sdisco state
   unless alreadyIdentified $ do
@@ -161,6 +165,7 @@ discover i = do
 selectPlayer :: ActorId -> Action Bool
 selectPlayer actor =
   do
+    cops@Kind.COps{coactor=Kind.Ops{ofindKind}} <- gets scops
     pl <- gets splayer
     if actor == pl
       then return False -- already selected
@@ -179,12 +184,12 @@ selectPlayer actor =
         -- Set smell display, depending on player capabilities.
         -- This also resets FOV mode.
         modify (\ s -> s { ssensory =
-                             if asmell $ Kind.getKind $
+                             if asmell $ ofindKind $
                                 bkind pbody
                              then Smell
                              else Implicit })
         -- Announce.
-        messageAdd $ subjectActor pbody ++ " selected."
+        messageAdd $ subjectActor cops pbody ++ " selected."
         return True
 
 focusIfAHero :: ActorId -> Action ()
@@ -220,13 +225,14 @@ summonMonsters n loc = do
 checkPartyDeath :: Action ()
 checkPartyDeath =
   do
+    cops <- gets scops
     ahs    <- gets allHeroesAnyLevel
     pl     <- gets splayer
     pbody  <- gets getPlayerBody
     config <- gets sconfig
     when (bhp pbody <= 0) $ do  -- TODO: change to guard? define mzero? Why are the writes to the files performed when I call abort later? That probably breaks the laws of MonadPlus.
       go <- messageMoreConfirm ColorBW $
-              subjectActorVerb pbody "die" ++ "."
+              subjectActorVerb cops pbody "die" ++ "."
       history  -- Prevent the messages from being repeated.
       let firstDeathEnds = Config.get config "heroes" "firstDeathEnds"
       if firstDeathEnds
@@ -259,7 +265,8 @@ gameOver showEndingScreens =
 -- | Calculate loot's worth for heroes on the current level.
 calculateTotal :: State -> Int
 calculateTotal s =
-  L.sum $ L.map itemPrice $ L.concat $ IM.elems $ lheroItem $ slevel s
+  let cops = scops s
+  in L.sum $ L.map (itemPrice cops) $ L.concat $ IM.elems $ lheroItem $ slevel s
 
 -- | Handle current score and display it with the high scores. Scores
 -- should not be shown during the game,

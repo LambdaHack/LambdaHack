@@ -1,7 +1,7 @@
 {-# LANGUAGE RankNTypes #-}
 module Game.LambdaHack.Kind
-  ( Ops(..), COps(..), contentOps
-  , Id, getKind, getId
+  ( Id, Ops(..), COps(..), contentOps
+  , getId
   , Array, (!), (//), listArray, bounds
   ) where
 
@@ -82,9 +82,6 @@ contentOps = COps
   , coitem  = createOps
   , cotile  = createOps
   }
-
-getKind :: Content a => Id a -> a
-getKind (Id i) = kindMap IM.! (fromEnum i)
 
 getId :: Content a => (a -> Bool) -> Id a
 getId f = case [Id i | (i, k) <- kindAssocs, f k] of

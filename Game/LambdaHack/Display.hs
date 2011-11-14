@@ -130,9 +130,11 @@ displayLevel ::
   -> IO Bool
 displayLevel dm session per
              state@State{scursor, stime, sflavour, slid, splayer} msg moverlay =
-  let lvl@Level{lxsize = sx, lysize = sy, lsmell = smap} = slevel state
+  let cops@Kind.COps{ coactor=Kind.Ops{ofindKind}
+                    , cotile=Kind.Ops{ofindKind=tofindKind} } = scops state
+      lvl@Level{lxsize = sx, lysize = sy, lsmell = smap} = slevel state
       (_, Actor{bkind, bhp, bloc}, bitems) = findActorAnyLevel splayer state
-      ActorKind{ahp} = Kind.getKind bkind
+      ActorKind{ahp} = ofindKind bkind
       reachable = ptreachable per
       visible   = ptvisible per
       overlay   = fromMaybe "" moverlay
@@ -149,8 +151,8 @@ displayLevel dm session per
                                       then Color.Magenta
                                       else Color.defBG
                 else \ _vis _rea -> Color.defBG
-      wealth  = L.sum $ L.map Item.itemPrice bitems
-      damage  = case Item.strongestItem bitems "sword" of
+      wealth  = L.sum $ L.map (Item.itemPrice cops) bitems
+      damage  = case Item.strongestItem cops bitems "sword" of
                   Just sw -> 3 + Item.jpower sw
                   Nothing -> 3
       hs      = levelHeroList state
@@ -165,7 +167,7 @@ displayLevel dm session per
                   (symbol, Color.defBG)  -- highlight player
               | otherwise = (symbol, acolor)
               where
-                ActorKind{asymbol, acolor} = Kind.getKind bkind2
+                ActorKind{asymbol, acolor} = ofindKind bkind2
                 symbol = fromMaybe asymbol bsymbol
             viewSmell :: Int -> Char
             viewSmell k
@@ -180,10 +182,10 @@ displayLevel dm session per
                   | otherwise ->
                   case items of
                     [] ->
-                      let u = Kind.getKind tile
+                      let u = tofindKind tile
                       in (tsymbol u, if vis then tcolor u else tcolor2 u)
                     i : _ ->
-                      Item.viewItem (Item.jkind i) sflavour
+                      Item.viewItem cops (Item.jkind i) sflavour
             vis = S.member loc0 visible
             rea = S.member loc0 reachable
             bg0 = if ctargeting scursor && loc0 == clocation scursor

@@ -35,8 +35,9 @@ nearbyFreeLoc origin state =
   let lvl@Level{lxsize, lysize} = slevel state
       hs = levelHeroList state
       ms = levelMonsterList state
+      cops = scops state
       places = origin : L.nub (concatMap (surroundings lxsize lysize) places)
-      good loc = Tile.isWalkable (lvl `at` loc)
+      good loc = Tile.isWalkable cops (lvl `at` loc)
                  && loc `L.notElem` L.map bloc (hs ++ ms)
   in  fromMaybe (assert `failure` "too crowded map") $ L.find good places
 
@@ -105,7 +106,7 @@ rollMonster state = do
       -- levels with few rooms are dangerous, because monsters may spawn
       -- in adjacent and unexpected places
       loc <- findLocTry 2000 (lmap lvl)
-             (\ l t -> Tile.isWalkable t
+             (\ l t -> Tile.isWalkable cops t
                        && l `L.notElem` L.map bloc (hs ++ ms))
              (\ l t -> not (isLit t)  -- try a dark, distant place first
                        && L.all (\ pl -> distance

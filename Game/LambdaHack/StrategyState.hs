@@ -57,12 +57,14 @@ strategy :: ActorId -> State -> Perceptions -> Strategy (Action ())
 strategy actor oldState@State{splayer = pl, stime = time} per =
     strat
   where
+    cops@Kind.COps{ coactor=Kind.Ops{ofindKind}
+                  , coitem=Kind.Ops{ofindKind=iofindKind} } = scops oldState
     lvl@Level{lsmell = nsmap, lxsize} = slevel oldState
     Actor { bkind = ak, bloc = me, bdir = ad,
             btarget = tgt } =
       getActor actor oldState
     items = getActorItem actor oldState
-    mk = Kind.getKind ak
+    mk = ofindKind ak
     delState = deleteActor actor oldState
     enemyVisible a l =
       -- We assume monster sight is infravision, so light has no significance.
@@ -111,7 +113,7 @@ strategy actor oldState@State{splayer = pl, stime = time} per =
                          in  only (\ x -> dirDistSq lxsize foeDir x <= 1)
     lootHere x     = not $ L.null $ lvl `iat` x
     onlyLoot       = onlyMoves lootHere me
-    exitHere x     = let t = lvl `at` x in Tile.isExit t
+    exitHere x     = let t = lvl `at` x in Tile.isExit cops t
     onlyExit       = onlyMoves exitHere me
     onlyKeepsDir k = only (\ x -> maybe True (\ d -> dirDistSq lxsize d x <= k) ad)
     onlyKeepsDir_9 = only (\ x -> maybe True (\ d -> neg x /= d) ad)
@@ -120,12 +122,12 @@ strategy actor oldState@State{splayer = pl, stime = time} per =
     -- opening doors, too, so that monsters don't cheat. TODO: remove the code
     -- duplication, though.
     openPower      = Tile.SecretStrength $
-                     case strongestItem items "ring" of
+                     case strongestItem cops items "ring" of
                        Just i  -> aiq mk + jpower i
                        Nothing -> aiq mk
-    openableHere   = openable lvl openPower
+    openableHere   = openable cops lvl openPower
     onlyOpenable   = onlyMoves openableHere me
-    accessibleHere = accessible lvl me
+    accessibleHere = accessible cops lvl me
     onlySensible   = onlyMoves (\ l -> accessibleHere l || openableHere l) me
     focusedMonster = aiq mk > 10
     smells         =
@@ -149,7 +151,7 @@ strategy actor oldState@State{splayer = pl, stime = time} per =
     applyFreq is multi = Frequency
       [ (benefit * multi, actionApply (iname ik) i)
       | i <- is,
-        let ik = Kind.getKind (jkind i),
+        let ik = iofindKind (jkind i),
         let benefit =
               (1 + jpower i) * Effect.effectToBenefit (ieffect ik),
         benefit > 0,
@@ -158,7 +160,7 @@ strategy actor oldState@State{splayer = pl, stime = time} per =
     throwFreq is multi = if not $ asight mk then mzero else Frequency
       [ (benefit * multi, actionThrow (iname ik) i)
       | i <- is,
-        let ik = Kind.getKind (jkind i),
+        let ik = iofindKind (jkind i),
         let benefit =
               - (1 + jpower i) * Effect.effectToBenefit (ieffect ik),
         benefit > 0,

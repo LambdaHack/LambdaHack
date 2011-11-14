@@ -129,18 +129,18 @@ irememberAt l p = snd $ IM.findWithDefault ([], []) p (litem l)
 -- Precondition: the two locations are next to each other.
 -- Currently only implements that the target location has to be open.
 -- TODO: in the future check flying for chasms, swimming for water, etc.
-accessible :: Level -> Loc -> Loc -> Bool
-accessible lvl _source target =
+accessible :: Kind.COps -> Level -> Loc -> Loc -> Bool
+accessible cops lvl _source target =
   let tgt = lvl `at` target
-  in  Tile.isWalkable tgt
+  in  Tile.isWalkable cops tgt
 
 -- check whether the location contains a door of secrecy level lower than k
-openable :: Level -> Tile.SecretStrength -> Loc -> Bool
-openable lvl k target =
+openable :: Kind.COps -> Level -> Tile.SecretStrength -> Loc -> Bool
+openable cops lvl k target =
   let le = lsecret lvl
       tgt = lvl `at` target
-  in Tile.hasFeature F.Openable tgt ||
-     (Tile.hasFeature F.Hidden tgt &&
+  in Tile.hasFeature cops F.Openable tgt ||
+     (Tile.hasFeature cops F.Hidden tgt &&
       le IM.! target < k)
 
 -- Do not scatter items around, it's too much work for the player.

@@ -19,7 +19,6 @@ import qualified Game.LambdaHack.Feature as F
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Cave
-import Game.LambdaHack.Content.ItemKind
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Item
 import Game.LambdaHack.Geometry
@@ -40,31 +39,33 @@ mapToIMap cxsize m =
   IM.fromList $ map (\ (xy, a) -> (toLoc cxsize xy, a)) (M.assocs m)
 
 rollItems :: Kind.COps -> Int -> CaveKind -> TileMap -> Loc -> Rnd [(Loc, Item)]
-rollItems cops@Kind.COps{coitem=Kind.Ops{ofindKind}} n CaveKind{cxsize, citemNum} lmap ploc =
+rollItems cops@Kind.COps{coitem=Kind.Ops{ofindName}}
+          n CaveKind{cxsize, citemNum} lmap ploc =
   do
     nri <- rollDice citemNum
     replicateM nri $
       do
         item <- newItem cops n
-        l <- case iname (ofindKind (jkind item)) of
+        l <- case ofindName (jkind item) of
                "sword" ->
                  -- swords generated close to monsters; MUAHAHAHA
                  findLocTry 2000 lmap
-                   (const Tile.isBoring)
+                   (const (Tile.isBoring cops))
                    (\ l _ -> distance cxsize ploc l > 30)
                _ -> findLoc lmap
-                      (const Tile.isBoring)
+                      (const (Tile.isBoring cops))
         return (l, item)
 
 -- | Create a level from a cave, from a cave kind.
 buildLevel :: Kind.COps -> Cave -> Int -> Int -> Rnd Level
-buildLevel cops Cave{dkind, dsecret, ditem, dmap, dmeta} n depth = do
-  let cfg@CaveKind{cxsize, cysize, minStairsDistance} = Kind.getKind dkind
+buildLevel cops@Kind.COps{cocave=Kind.Ops{ofindKind}}
+           Cave{dkind, dsecret, ditem, dmap, dmeta} n depth = do
+  let cfg@CaveKind{cxsize, cysize, minStairsDistance} = ofindKind dkind
       cmap = listArrayCfg  cxsize cysize dmap
   -- Roll locations of the stairs.
-  su <- findLoc cmap (const Tile.isBoring)
+  su <- findLoc cmap (const (Tile.isBoring cops))
   sd <- findLocTry 2000 cmap
-          (\ l t -> l /= su && Tile.isBoring t)
+          (\ l t -> l /= su && Tile.isBoring cops t)
           (\ l _ -> distance cxsize su l >= minStairsDistance)
   let stairs =
         [(su, Tile.stairsUpId)]
@@ -110,7 +111,7 @@ findGenerator cops config n depth = do
   let ln = "LambdaCave_" ++ show n
       genName = Config.getOption config "dungeon" ln
   ci <- matchGenerator cops genName
-  cave <- buildCave n ci
+  cave <- buildCave cops n ci
   buildLevel cops cave n depth
 
 -- | Generate the dungeon for a new game.
@@ -131,10 +132,11 @@ generate cops config =
 
 whereTo :: State -> Loc -> Maybe WorldLoc
 whereTo state@State{slid, sdungeon} loc =
-  let lvl = slevel state
+  let cops = scops state
+      lvl = slevel state
       tile = lvl `at` loc
-      k | Tile.hasFeature F.Climbable tile = -1
-        | Tile.hasFeature F.Descendable tile = 1
+      k | Tile.hasFeature cops F.Climbable tile = -1
+        | Tile.hasFeature cops F.Descendable tile = 1
         | otherwise = assert `failure` tile
       n = levelNumber slid
       nln = n + k

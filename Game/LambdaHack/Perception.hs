@@ -68,14 +68,14 @@ perception_ :: State -> Perceptions
 perception_ state@(State { splayer = pl
                          , sconfig  = config
                          , ssensory = sensory
-                         , scops }) =
+                         , scops = scops@Kind.COps{coactor=Kind.Ops{ofindKind}} }) =
   let lvl@Level{lheroes = hs} = slevel state
       mode   = Config.get config "engine" "fovMode"
       radius = let r = Config.get config "engine" "fovRadius"
                in if r < 1
                   then error $ "FOV radius is " ++ show r ++ ", should be >= 1"
                   else r
-      fovMode m = if not $ asight $ Kind.getKind $ bkind m
+      fovMode m = if not $ asight $ ofindKind $ bkind m
                   then Blind
                   else
         -- terrible, temporary hack

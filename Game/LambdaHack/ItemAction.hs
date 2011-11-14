@@ -13,7 +13,6 @@ import Game.LambdaHack.Display hiding (display)
 import Game.LambdaHack.Loc
 import Game.LambdaHack.Grammar
 import Game.LambdaHack.Item
-import Game.LambdaHack.Content.ItemKind
 import qualified Game.LambdaHack.Keys as K
 import Game.LambdaHack.Level
 import Game.LambdaHack.Actor
@@ -50,10 +49,11 @@ getGroupItem :: [Item] ->  -- all objects in question
                 String ->  -- prompt
                 String ->  -- how to refer to the collection of objects
                 Action (Maybe Item)
-getGroupItem is groupName prompt packName =
-  let choice i = groupName == iname (Kind.getKind (jkind i))
+getGroupItem is groupName prompt packName = do
+  Kind.COps{coitem=Kind.Ops{ofindName}} <- gets scops
+  let choice i = groupName == ofindName (jkind i)
       header = capitalize $ suffixS groupName
-  in  getItem prompt choice header is packName
+  getItem prompt choice header is packName
 
 applyGroupItem :: ActorId ->  -- actor applying the item; on current level
                   String ->   -- how the "applying" is called
@@ -74,13 +74,14 @@ applyGroupItem actor verb item = do
 
 playerApplyGroupItem :: String -> Action ()
 playerApplyGroupItem groupName = do
+  Kind.COps{coitem=Kind.Ops{ofindName}} <- gets scops
   is   <- gets getPlayerItem
   iOpt <- getGroupItem is groupName
             ("What to " ++ applyToVerb groupName ++ "?") "in inventory"
   pl   <- gets splayer
   case iOpt of
     Just i  ->
-      let verb = applyToVerb (iname (Kind.getKind (jkind i)))
+      let verb = applyToVerb (ofindName (jkind i))
       in  applyGroupItem pl verb i
     Nothing -> neverMind True
 
@@ -126,6 +127,7 @@ zapGroupItem source loc verb item = do
 
 playerZapGroupItem :: String -> Action ()
 playerZapGroupItem groupName = do
+  Kind.COps{coitem=Kind.Ops{ofindName}} <- gets scops
   state <- get
   is    <- gets getPlayerItem
   iOpt  <- getGroupItem is groupName
@@ -139,7 +141,7 @@ playerZapGroupItem groupName = do
         Just loc ->
           -- TODO: draw digital line and see if obstacles prevent firing
           if actorReachesLoc pl loc per (Just pl)
-          then let verb = zapToVerb (iname (Kind.getKind (jkind i)))
+          then let verb = zapToVerb (ofindName (jkind i))
                in  zapGroupItem pl loc verb i
           else abortWith "target not reachable"
     Nothing -> neverMind True
