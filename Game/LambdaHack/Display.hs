@@ -125,13 +125,12 @@ stringByLocation sy xs =
 
 data ColorMode = ColorFull | ColorBW
 
-displayLevel ::
-  ColorMode -> Session -> Perceptions -> State -> Message -> Maybe String
-  -> IO Bool
-displayLevel dm session per
+displayLevel :: Kind.COps -> ColorMode -> Session -> Perceptions -> State
+             -> Message -> Maybe String -> IO Bool
+displayLevel cops dm session per
              state@State{scursor, stime, sflavour, slid, splayer} msg moverlay =
-  let cops@Kind.COps{ coactor=Kind.Ops{okind}
-                    , cotile=Kind.Ops{okind=tokind} } = scops state
+  let Kind.COps{ coactor=Kind.Ops{okind}
+               , cotile=Kind.Ops{okind=tokind} } = cops
       lvl@Level{lxsize = sx, lysize = sy, lsmell = smap} = slevel state
       (_, Actor{bkind, bhp, bloc}, bitems) = findActorAnyLevel splayer state
       ActorKind{ahp} = okind bkind

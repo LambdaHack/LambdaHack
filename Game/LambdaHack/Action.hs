@@ -86,7 +86,7 @@ sessionIO f = Action (\ s _e _p k _a st ms -> f s >>= k st ms)
 
 -- | Display the current level with modified current message.
 displayGeneric :: ColorMode -> (String -> String) -> Action Bool
-displayGeneric dm f = Action (\ s _e p k _a st ms -> displayLevel dm s p st (f ms) Nothing >>= k st ms)
+displayGeneric dm f = Action (\ s _e p k _a st ms -> displayLevel (scops st) dm s p st (f ms) Nothing >>= k st ms)
 
 -- | Display the current level, with the current message and color. Most common.
 display :: Action Bool
@@ -94,7 +94,7 @@ display = displayGeneric ColorFull id
 
 -- | Display an overlay on top of the current screen.
 overlay :: String -> Action Bool
-overlay txt = Action (\ s _e p k _a st ms -> displayLevel ColorFull s p st ms (Just txt) >>= k st ms)
+overlay txt = Action (\ s _e p k _a st ms -> displayLevel (scops st) ColorFull s p st ms (Just txt) >>= k st ms)
 
 -- | Wipe out and set a new value for the current message.
 messageReset :: Message -> Action ()

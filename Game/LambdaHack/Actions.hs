@@ -58,10 +58,11 @@ saveGame =
     if b
       then do
         -- Save the game state
+        cops <- gets scops
         state <- get
         liftIO $ Save.saveGame state
         ln <- gets slid
-        let total = calculateTotal state
+        let total = calculateTotal cops state
             status = H.Camping ln
         go <- handleScores False status total
         when go $ messageMore "See you soon, stronger and braver!"
@@ -342,7 +343,7 @@ lvlGoUp isUp =
     case sdir of
       Just vdir'
         | vdir == vdir' -> -- stairs are in the right direction
-          case whereTo st loc of
+          case whereTo cops st loc of
             Nothing ->
               -- we are at the "end" of the dungeon
               if targeting
@@ -413,8 +414,9 @@ lvlGoUp isUp =
 fleeDungeon :: Action ()
 fleeDungeon =
   do
+    cops <- gets scops
     state <- get
-    let total = calculateTotal state
+    let total = calculateTotal cops state
         items = L.concat $ IM.elems $ lheroItem $ slevel state
     if total == 0
       then do
@@ -549,7 +551,7 @@ doLook =
                  TLoc _     -> "[targeting location] "
                  TCursor    -> "[targeting current] "
         -- general info about current loc
-        lookMsg = mode ++ lookAt True canSee state lvl loc monsterMsg
+        lookMsg = mode ++ lookAt cops True canSee state lvl loc monsterMsg
         -- check if there's something lying around at current loc
         is = lvl `irememberAt` loc
     if length is <= 2
@@ -586,14 +588,14 @@ moveOrAttack allowAttacks autoOpen actor dir = do
               -- Switching positions requires full access.
               actorRunActor actor target
               when (actor == pl) $
-                messageAdd $ lookAt False True state lvl tloc ""
+                messageAdd $ lookAt cops False True state lvl tloc ""
           | otherwise -> abortWith ""
         Nothing
           | accessible cops lvl sloc tloc -> do
               -- perform the move
               updateAnyActor actor $ \ body -> body {bloc = tloc}
               when (actor == pl) $
-                messageAdd $ lookAt False True state lvl tloc ""
+                messageAdd $ lookAt cops False True state lvl tloc ""
               advanceTime actor
           | allowAttacks && actor == pl
             && Tile.canBeSecretDoor cops  (lvl `rememberAt` tloc)
@@ -635,7 +637,7 @@ actorAttackActor source target = do
       -- perhaps, when a weapon is equipped, just say "you hit" or "you miss"
       -- and then "nose dies" or "nose yells in pain".
       msg = subjectVerbMObject cops sm verb tm $
-              if isJust str then " with " ++ objectItem state single else ""
+              if isJust str then " with " ++ objectItem cops state single else ""
   when (sloc `S.member` ptvisible per) $ messageAdd msg
   -- Messages inside itemEffectAction describe the target part.
   itemEffectAction 0 source target single

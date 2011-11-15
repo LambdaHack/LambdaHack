@@ -52,13 +52,12 @@ subjectActorVerb cops x v = subjectActor cops x ++ " " ++ verbActor cops x v
 compoundVerbActor :: Kind.COps -> Actor -> String -> String -> String
 compoundVerbActor cops m v p = verbActor cops m v ++ " " ++ p
 
-subjectVerbIObject :: State -> Actor -> String -> Item -> String
+subjectVerbIObject :: Kind.COps -> State -> Actor -> String -> Item -> String
                    -> String
-subjectVerbIObject state m v o add =
-  let cops = scops state
-  in subjectActor cops m ++ " " ++
-     verbActor cops m v ++ " " ++
-     objectItem state o ++ add ++ "."
+subjectVerbIObject cops state m v o add =
+  subjectActor cops m ++ " " ++
+  verbActor cops m v ++ " " ++
+  objectItem cops state o ++ add ++ "."
 
 subjectVerbMObject :: Kind.COps -> Actor -> String -> Actor -> String -> String
 subjectVerbMObject cops m v o add =
@@ -66,18 +65,16 @@ subjectVerbMObject cops m v o add =
   verbActor cops m v ++ " " ++
   objectActor cops o ++ add ++ "."
 
-subjCompoundVerbIObj :: State -> Actor -> String -> String ->
+subjCompoundVerbIObj :: Kind.COps -> State -> Actor -> String -> String ->
                         Item -> String -> String
-subjCompoundVerbIObj state m v p o add =
-  let cops = scops state
-  in subjectActor cops m ++ " " ++
-     compoundVerbActor cops m v p ++ " " ++
-     objectItem state o ++ add ++ "."
+subjCompoundVerbIObj cops state m v p o add =
+  subjectActor cops m ++ " " ++
+  compoundVerbActor cops m v p ++ " " ++
+  objectItem cops state o ++ add ++ "."
 
-objectItem :: State -> Item -> String
-objectItem state o =
-  let cops@Kind.COps{coitem=Kind.Ops{okind}} = scops state
-      ik = jkind o
+objectItem :: Kind.COps -> State -> Item -> String
+objectItem cops@Kind.COps{coitem=Kind.Ops{okind}} state o =
+  let ik = jkind o
       kind = okind ik
       identified = L.length (iflavour kind) == 1 ||
                    ik `S.member` sdisco state

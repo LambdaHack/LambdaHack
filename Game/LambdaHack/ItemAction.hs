@@ -60,12 +60,13 @@ applyGroupItem :: ActorId ->  -- actor applying the item; on current level
                   Item ->     -- the item to be applied
                   Action ()
 applyGroupItem actor verb item = do
+  cops  <- gets scops
   state <- get
   body  <- gets (getActor actor)
   per   <- currentPerception
   -- only one item consumed, even if several in inventory
   let consumed = item { jcount = 1 }
-      msg = subjectVerbIObject state body verb consumed ""
+      msg = subjectVerbIObject cops state body verb consumed ""
       loc = bloc body
   removeFromInventory actor consumed loc
   when (loc `S.member` ptvisible per) $ messageAdd msg
@@ -112,7 +113,7 @@ zapGroupItem source loc verb item = do
         if sloc `S.member` ptvisible per
         then sm
         else template (heroKindId cops) (Just "somebody") Nothing 99 sloc
-      msg = subjectVerbIObject state subject verb consumed ""
+      msg = subjectVerbIObject cops state subject verb consumed ""
   removeFromInventory source consumed sloc
   case locToActor loc state of
     Just ta -> do
@@ -162,6 +163,7 @@ throwItem = playerZapGroupItem "dart"
 -- TODO: allow dropping a given number of identical items.
 dropItem :: Action ()
 dropItem = do
+  cops  <- gets scops
   pl    <- gets splayer
   state <- get
   pbody <- gets getPlayerBody
@@ -172,7 +174,7 @@ dropItem = do
     Just stack -> do
       let i = stack { jcount = 1 }
       removeOnlyFromInventory pl i (bloc pbody)
-      messageAdd (subjectVerbIObject state pbody "drop" i "")
+      messageAdd (subjectVerbIObject cops state pbody "drop" i "")
       modify (updateLevel (dropItemsAt [i] ploc))
     Nothing -> neverMind True
   playerAdvanceTime
@@ -215,6 +217,7 @@ removeFromLoc i loc = do
 
 actorPickupItem :: ActorId -> Action ()
 actorPickupItem actor = do
+  cops  <- gets scops
   state <- get
   pl    <- gets splayer
   per   <- currentPerception
@@ -233,9 +236,10 @@ actorPickupItem actor = do
           let (ni, nitems) = joinItem (i { jletter = Just l }) bitems
           -- message depends on who picks up and if a hero can perceive it
           if isPlayer
-            then messageAdd (letterLabel (jletter ni) ++ objectItem state ni)
+            then messageAdd (letterLabel (jletter ni)
+                             ++ objectItem cops state ni)
             else when perceived $
-                   messageAdd $ subjCompoundVerbIObj state body "pick" "up" i ""
+                   messageAdd $ subjCompoundVerbIObj cops state body "pick" "up" i ""
           removeFromLoc i loc
             >>= assert `trueM` (i, is, loc, "item is stuck")
           -- add item to actor's inventory:

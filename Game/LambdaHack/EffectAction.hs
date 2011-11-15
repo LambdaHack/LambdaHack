@@ -147,10 +147,10 @@ itemEffectAction verbosity source target item = do
 -- | Given item is now known to the player.
 discover :: Item -> Action ()
 discover i = do
-  Kind.COps{coitem=Kind.Ops{okind}} <- gets scops
+  cops@Kind.COps{coitem=Kind.Ops{okind}} <- gets scops
   state <- get
   let ik = jkind i
-      obj = unwords $ tail $ words $ objectItem state i
+      obj = unwords $ tail $ words $ objectItem cops state i
       msg = "The " ++ obj ++ " turns out to be "
       kind = okind ik
       alreadyIdentified = L.length (iflavour kind) == 1 ||
@@ -158,7 +158,7 @@ discover i = do
   unless alreadyIdentified $ do
     modify (updateDiscoveries (S.insert ik))
     state2 <- get
-    messageAdd $ msg ++ objectItem state2 i ++ "."
+    messageAdd $ msg ++ objectItem cops state2 i ++ "."
 
 -- | Make the actor controlled by the player.
 -- Focus on the actor if level changes. False, if nothing to do.
@@ -255,19 +255,19 @@ gameOver :: Bool -> Action ()
 gameOver showEndingScreens =
   do
     when showEndingScreens $ do
+      cops <- gets scops
       state <- get
       slid <- gets slid
-      let total = calculateTotal state
+      let total = calculateTotal cops state
           status = H.Killed slid
       handleScores True status total
       messageMore "Let's hope another party can save the day!"
     end
 
 -- | Calculate loot's worth for heroes on the current level.
-calculateTotal :: State -> Int
-calculateTotal s =
-  let cops = scops s
-  in L.sum $ L.map (itemPrice cops) $ L.concat $ IM.elems $ lheroItem $ slevel s
+calculateTotal :: Kind.COps -> State -> Int
+calculateTotal cops s =
+  L.sum $ L.map (itemPrice cops) $ L.concat $ IM.elems $ lheroItem $ slevel s
 
 -- | Handle current score and display it with the high scores. Scores
 -- should not be shown during the game,
@@ -293,9 +293,11 @@ handleScores write status total =
 -- and I know no better place to put it.
 displayItems :: Message -> Bool -> [Item] -> Action Bool
 displayItems msg sorted is = do
+  cops <- gets scops
   state <- get
   let inv = unlines $
-            L.map (\ i -> letterLabel (jletter i) ++ objectItem state i ++ " ")
+            L.map (\ i -> letterLabel (jletter i)
+                          ++ objectItem cops state i ++ " ")
               ((if sorted then L.sortBy (cmpLetter' `on` jletter) else id) is)
   let ovl = inv ++ more
   messageReset msg

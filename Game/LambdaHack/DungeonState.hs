@@ -130,10 +130,9 @@ generate cops config =
         in ((ploc, LambdaCave 1, Dungeon.fromList levels), gd)
   in MState.state con
 
-whereTo :: State -> Loc -> Maybe WorldLoc
-whereTo state@State{slid, sdungeon} loc =
-  let cops = scops state
-      lvl = slevel state
+whereTo :: Kind.COps -> State -> Loc -> Maybe WorldLoc
+whereTo cops state@State{slid, sdungeon} loc =
+  let lvl = slevel state
       tile = lvl `at` loc
       k | Tile.hasFeature cops F.Climbable tile = -1
         | Tile.hasFeature cops F.Descendable tile = 1
