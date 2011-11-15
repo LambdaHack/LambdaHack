@@ -16,6 +16,7 @@ import Game.LambdaHack.FOV
 import qualified Game.LambdaHack.Config as Config
 import qualified Game.LambdaHack.Tile as Tile
 import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Content.TileKind
 
 data Perception = Perception
   { preachable :: S.Set Loc
@@ -65,7 +66,7 @@ actorReachesActor actor1 actor2 loc1 loc2 per pl =
   actorReachesLoc actor2 loc1 per pl
 
 perception_ :: Kind.COps -> State -> Perceptions
-perception_ cops@Kind.COps{coactor=Kind.Ops{okind}}
+perception_ Kind.COps{cotile, coactor=Kind.Ops{okind}}
             state@(State { splayer = pl
                          , sconfig  = config
                          , ssensory = sensory }) =
@@ -94,9 +95,9 @@ perception_ cops@Kind.COps{coactor=Kind.Ops{okind}}
       -- Perception for a player-controlled monster on the current level.
       pper = if isAMonster pl && memActor pl state
              then let m = getPlayerBody state
-                  in Just $ perception (fovMode m) (bloc m) cops lvl
+                  in Just $ perception (fovMode m) (bloc m) cotile lvl
              else Nothing
-      pers = IM.map (\ h -> perception (fovMode h) (bloc h) cops lvl) hs
+      pers = IM.map (\ h -> perception (fovMode h) (bloc h) cotile lvl) hs
       lpers = maybeToList pper ++ IM.elems pers
       reachable = S.unions (L.map preachable lpers)
       visible = S.unions (L.map pvisible lpers)
@@ -106,7 +107,7 @@ perception_ cops@Kind.COps{coactor=Kind.Ops{okind}}
 
 -- | Once we compute the reachable fields using FOV, it is possible
 -- to compute what the hero can actually see.
-perception :: FovMode -> Loc -> Kind.COps -> Level -> Perception
+perception :: FovMode -> Loc -> Kind.Ops TileKind -> Level -> Perception
 perception fovMode ploc cops lvl@Level{lxsize, lysize} =
   let
     -- Reachable are all fields on an unblocked path from the hero position.

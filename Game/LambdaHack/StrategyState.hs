@@ -57,8 +57,9 @@ strategy :: Kind.COps -> ActorId -> State -> Perceptions -> Strategy (Action ())
 strategy cops actor oldState@State{splayer = pl, stime = time} per =
     strat
   where
-    Kind.COps{ coactor=Kind.Ops{okind}
-             , coitem=Kind.Ops{okind=iokind} } = cops
+    Kind.COps{ cotile
+             , coactor=Kind.Ops{okind}
+             , coitem=coitem@Kind.Ops{okind=iokind} } = cops
     lvl@Level{lsmell = nsmap, lxsize} = slevel oldState
     Actor { bkind = ak, bloc = me, bdir = ad,
             btarget = tgt } =
@@ -113,7 +114,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
                          in  only (\ x -> dirDistSq lxsize foeDir x <= 1)
     lootHere x     = not $ L.null $ lvl `iat` x
     onlyLoot       = onlyMoves lootHere me
-    exitHere x     = let t = lvl `at` x in Tile.isExit cops t
+    exitHere x     = let t = lvl `at` x in Tile.isExit cotile t
     onlyExit       = onlyMoves exitHere me
     onlyKeepsDir k = only (\ x -> maybe True (\ d -> dirDistSq lxsize d x <= k) ad)
     onlyKeepsDir_9 = only (\ x -> maybe True (\ d -> neg x /= d) ad)
@@ -122,12 +123,12 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
     -- opening doors, too, so that monsters don't cheat. TODO: remove the code
     -- duplication, though.
     openPower      = Tile.SecretStrength $
-                     case strongestItem cops items "ring" of
+                     case strongestItem coitem items "ring" of
                        Just i  -> aiq mk + jpower i
                        Nothing -> aiq mk
-    openableHere   = openable cops lvl openPower
+    openableHere   = openable cotile lvl openPower
     onlyOpenable   = onlyMoves openableHere me
-    accessibleHere = accessible cops lvl me
+    accessibleHere = accessible cotile lvl me
     onlySensible   = onlyMoves (\ l -> accessibleHere l || openableHere l) me
     focusedMonster = aiq mk > 10
     smells         =

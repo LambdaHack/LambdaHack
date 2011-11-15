@@ -14,6 +14,7 @@ import Game.LambdaHack.Level
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Config as Config
 import Game.LambdaHack.WorldLoc
@@ -30,7 +31,7 @@ template :: Kind.Id ActorKind -> Maybe String -> Maybe Char -> Int -> Loc
             -> Actor
 template mk ms mc hp loc = Actor mk ms mc hp Nothing TCursor loc 'a' 0
 
-nearbyFreeLoc :: Kind.COps -> Loc -> State -> Loc
+nearbyFreeLoc :: Kind.Ops TileKind -> Loc -> State -> Loc
 nearbyFreeLoc cops origin state =
   let lvl@Level{lxsize, lysize} = slevel state
       hs = levelHeroList state
@@ -49,15 +50,15 @@ findHeroName config n =
 
 -- | Create a new hero on the current level, close to the given location.
 addHero :: Kind.COps -> Loc -> State -> State
-addHero cops ploc state =
+addHero Kind.COps{coactor, cotile} ploc state =
   let config = sconfig state
       bHP = Config.get config "heroes" "baseHP"
-      loc = nearbyFreeLoc cops ploc state
+      loc = nearbyFreeLoc cotile ploc state
       n = fst (scounter state)
       symbol = if n < 1 || n > 9 then Nothing else Just $ Char.intToDigit n
       name = findHeroName config n
       startHP = bHP `div` min 10 (n + 1)
-      m = template (heroKindId (Kind.coactor cops)) (Just name) symbol startHP loc
+      m = template (heroKindId coactor) (Just name) symbol startHP loc
       state' = state { scounter = (n + 1, snd (scounter state))
                      , sparty = IS.insert n (sparty state) }
   in  updateLevel (updateHeroes (IM.insert n m)) state'
@@ -80,7 +81,8 @@ monsterGenChance (LambdaCave d) numMonsters =
   chance $ 1%(fromIntegral (250 + 200 * (numMonsters - d)) `max` 50)
 
 -- | Create a new monster in the level, at a random position.
-addMonster :: Kind.COps -> Kind.Id ActorKind -> Int -> Loc -> State -> State
+addMonster :: Kind.Ops TileKind -> Kind.Id ActorKind -> Int -> Loc -> State
+           -> State
 addMonster cops mk hp ploc state = do
   let loc = nearbyFreeLoc cops ploc state
       n = snd (scounter state)
@@ -90,11 +92,11 @@ addMonster cops mk hp ploc state = do
 
 -- | Create a new monster in the level, at a random position.
 rollMonster :: Kind.COps -> State -> Rnd State
-rollMonster cops@Kind.COps{coactor=Kind.Ops{ofrequency}} state = do
+rollMonster Kind.COps{cotile, coactor=Kind.Ops{ofrequency}} state = do
   let lvl = slevel state
       hs = levelHeroList state
       ms = levelMonsterList state
-      isLit = Tile.isLit cops
+      isLit = Tile.isLit cotile
   rc <- monsterGenChance (slid state) (L.length ms)
   if not rc
     then return state
@@ -104,7 +106,7 @@ rollMonster cops@Kind.COps{coactor=Kind.Ops{ofrequency}} state = do
       -- levels with few rooms are dangerous, because monsters may spawn
       -- in adjacent and unexpected places
       loc <- findLocTry 2000 (lmap lvl)
-             (\ l t -> Tile.isWalkable cops t
+             (\ l t -> Tile.isWalkable cotile t
                        && l `L.notElem` L.map bloc (hs ++ ms))
              (\ l t -> not (isLit t)  -- try a dark, distant place first
                        && L.all (\ pl -> distance
@@ -112,4 +114,4 @@ rollMonster cops@Kind.COps{coactor=Kind.Ops{ofrequency}} state = do
                                            (bloc pl) l > 30) hs)
       (mk, k) <- frequency ofrequency
       hp <- rollDice $ ahp k
-      return $ addMonster cops mk hp loc state
+      return $ addMonster cotile mk hp loc state

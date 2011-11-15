@@ -9,6 +9,7 @@ import Game.LambdaHack.Loc
 import Game.LambdaHack.Level
 import qualified Game.LambdaHack.Tile as Tile
 import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Content.TileKind
 
 -- Recursive Shadow Casting.
 
@@ -74,7 +75,7 @@ type Interval = (Rational, Rational)
 -- | The current state of a scan is kept in a variable of Maybe Rational.
 -- If Just something, we're in a visible interval. If Nothing, we're in
 -- a shadowed interval.
-scan :: ((Progress, Distance) -> Loc) -> Kind.COps -> Level -> Distance
+scan :: ((Progress, Distance) -> Loc) -> Kind.Ops TileKind -> Level -> Distance
      -> Interval -> S.Set Loc
 scan tr cops l d (s0, e) =
     let ps = downBias (s0 * fromIntegral d)  -- minimal progress to check

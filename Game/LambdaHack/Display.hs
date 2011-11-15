@@ -150,8 +150,8 @@ displayLevel dm session@(_, _, cops) per
                                       then Color.Magenta
                                       else Color.defBG
                 else \ _vis _rea -> Color.defBG
-      wealth  = L.sum $ L.map (Item.itemPrice cops) bitems
-      damage  = case Item.strongestItem cops bitems "sword" of
+      wealth  = L.sum $ L.map (Item.itemPrice coitem) bitems
+      damage  = case Item.strongestItem coitem bitems "sword" of
                   Just sw -> 3 + Item.jpower sw
                   Nothing -> 3
       hs      = levelHeroList state

@@ -8,6 +8,7 @@ import Game.LambdaHack.Loc
 import Game.LambdaHack.Level
 import qualified Game.LambdaHack.Tile as Tile
 import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Content.TileKind
 
 -- Permissive FOV with a given range.
 
@@ -27,7 +28,7 @@ import qualified Game.LambdaHack.Kind as Kind
 -- | The current state of a scan is kept in Maybe (Line, ConvexHull).
 -- If Just something, we're in a visible interval. If Nothing, we're in
 -- a shadowed interval.
-scan :: Distance -> (Bump -> Loc) -> Kind.COps -> Level -> S.Set Loc
+scan :: Distance -> (Bump -> Loc) -> Kind.Ops TileKind -> Level -> S.Set Loc
 scan r tr cops l =
   -- the area is diagonal, which is incorrect, but looks good enough
   dscan 1 (((B(0, 1), B(r+1, 0)), [B(1, 0)]), ((B(1, 0), B(0, r+1)), [B(0, 1)]))

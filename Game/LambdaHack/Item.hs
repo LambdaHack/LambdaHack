@@ -50,8 +50,8 @@ rollFlavourMap key ik rnd =
        return (M.insert key flavour assocs, S.delete flavour available)
 
 -- | Randomly chooses flavour for all item kinds for this game.
-dungeonFlavourMap :: Kind.COps -> Rnd FlavourMap
-dungeonFlavourMap Kind.COps{coitem=Kind.Ops{ofoldrWithKey}} =
+dungeonFlavourMap :: Kind.Ops ItemKind -> Rnd FlavourMap
+dungeonFlavourMap Kind.Ops{ofoldrWithKey} =
   liftM fst $ ofoldrWithKey rollFlavourMap (return (M.empty, S.fromList stdFlav))
 
 getFlavour :: Kind.Ops ItemKind -> FlavourMap -> Kind.Id ItemKind -> Flavour
@@ -62,8 +62,8 @@ getFlavour Kind.Ops{okind} assocs ik =
         [f] -> f
         _:_ -> assocs M.! ik
 
-fistKindId :: Kind.COps -> Kind.Id ItemKind
-fistKindId Kind.COps{coitem=Kind.Ops{ogetId}} =
+fistKindId :: Kind.Ops ItemKind -> Kind.Id ItemKind
+fistKindId Kind.Ops{ogetId} =
   ogetId ((== "fist") . iname)
 
 viewItem :: Kind.Ops ItemKind -> Kind.Id ItemKind -> FlavourMap
@@ -75,8 +75,8 @@ itemLetter :: ItemKind -> Maybe Char
 itemLetter ik = if isymbol ik == '$' then Just '$' else Nothing
 
 -- | Generate an item.
-newItem :: Kind.COps -> Int -> Rnd Item
-newItem cops@Kind.COps{coitem=Kind.Ops{ofrequency}} lvl = do
+newItem :: Kind.Ops ItemKind -> Int -> Rnd Item
+newItem cops@Kind.Ops{ofrequency} lvl = do
   (ikChosen, kind) <- frequency ofrequency
   count <- rollQuad lvl (icount kind)
   if count == 0
@@ -186,16 +186,16 @@ findItem p = findItem' []
       | p i              = Just (i, reverse acc ++ is)
       | otherwise        = findItem' (i:acc) is
 
-strongestItem :: Kind.COps -> [Item] -> String -> Maybe Item
-strongestItem Kind.COps{coitem=Kind.Ops{oname}} is groupName =
+strongestItem :: Kind.Ops ItemKind -> [Item] -> String -> Maybe Item
+strongestItem Kind.Ops{oname} is groupName =
   let cmp = comparing jpower
       igs = L.filter (\ i -> oname (jkind i) == groupName) is
   in  case igs of
         [] -> Nothing
         _  -> Just $ L.maximumBy cmp igs
 
-itemPrice :: Kind.COps -> Item -> Int
-itemPrice Kind.COps{coitem=Kind.Ops{oname}} i =
+itemPrice :: Kind.Ops ItemKind -> Item -> Int
+itemPrice Kind.Ops{oname} i =
   case oname (jkind i) of
     "gold piece" -> jcount i
     "gem" -> jcount i * 100

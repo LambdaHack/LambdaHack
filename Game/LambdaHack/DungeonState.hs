@@ -23,13 +23,14 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Item
 import Game.LambdaHack.Geometry
 import Game.LambdaHack.Frequency
+import Game.LambdaHack.Content.TileKind
 
 listArrayCfg :: Int -> Int -> TileMapXY -> TileMap
 listArrayCfg cxsize cysize lmap =
   Kind.listArray (zeroLoc, toLoc cxsize (cxsize - 1, cysize - 1))
     (M.elems $ M.mapKeys (\ (x, y) -> (y, x)) lmap)
 
-unknownTileMap :: Kind.COps -> Int -> Int ->  TileMap
+unknownTileMap :: Kind.Ops TileKind -> Int -> Int ->  TileMap
 unknownTileMap cops cxsize cysize =
   Kind.listArray (zeroLoc, toLoc cxsize (cxsize - 1, cysize - 1))
     (repeat (Tile.unknownId cops))
@@ -39,37 +40,37 @@ mapToIMap cxsize m =
   IM.fromList $ map (\ (xy, a) -> (toLoc cxsize xy, a)) (M.assocs m)
 
 rollItems :: Kind.COps -> Int -> CaveKind -> TileMap -> Loc -> Rnd [(Loc, Item)]
-rollItems cops@Kind.COps{coitem=Kind.Ops{oname}}
+rollItems Kind.COps{cotile, coitem=coitem@Kind.Ops{oname}}
           n CaveKind{cxsize, citemNum} lmap ploc =
   do
     nri <- rollDice citemNum
     replicateM nri $
       do
-        item <- newItem cops n
+        item <- newItem coitem n
         l <- case oname (jkind item) of
                "sword" ->
                  -- swords generated close to monsters; MUAHAHAHA
                  findLocTry 2000 lmap
-                   (const (Tile.isBoring cops))
+                   (const (Tile.isBoring cotile))
                    (\ l _ -> distance cxsize ploc l > 30)
                _ -> findLoc lmap
-                      (const (Tile.isBoring cops))
+                      (const (Tile.isBoring cotile))
         return (l, item)
 
 -- | Create a level from a cave, from a cave kind.
 buildLevel :: Kind.COps -> Cave -> Int -> Int -> Rnd Level
-buildLevel cops@Kind.COps{cocave=Kind.Ops{okind}}
+buildLevel cops@Kind.COps{cotile, cocave=Kind.Ops{okind}}
            Cave{dkind, dsecret, ditem, dmap, dmeta} n depth = do
   let cfg@CaveKind{cxsize, cysize, minStairsDistance} = okind dkind
       cmap = listArrayCfg  cxsize cysize dmap
   -- Roll locations of the stairs.
-  su <- findLoc cmap (const (Tile.isBoring cops))
+  su <- findLoc cmap (const (Tile.isBoring cotile))
   sd <- findLocTry 2000 cmap
-          (\ l t -> l /= su && Tile.isBoring cops t)
+          (\ l t -> l /= su && Tile.isBoring cotile t)
           (\ l _ -> distance cxsize su l >= minStairsDistance)
   let stairs =
-        [(su, Tile.stairsUpId cops)]
-        ++ if n == depth then [] else [(sd, Tile.stairsDownId cops)]
+        [(su, Tile.stairsUpId cotile)]
+        ++ if n == depth then [] else [(sd, Tile.stairsDownId cotile)]
       lmap = cmap Kind.// stairs
   is <- rollItems cops n cfg lmap su
   let itemMap = mapToIMap cxsize ditem `IM.union` IM.fromList is
@@ -85,17 +86,17 @@ buildLevel cops@Kind.COps{cocave=Kind.Ops{okind}}
         , lsecret = mapToIMap cxsize dsecret
         , litem
         , lmap
-        , lrmap = unknownTileMap cops cxsize cysize
+        , lrmap = unknownTileMap cotile cxsize cysize
         , lmeta = dmeta
         , lstairs = (su, sd)
         }
   return level
 
-matchGenerator :: Kind.COps -> Maybe String -> Rnd (Kind.Id CaveKind)
-matchGenerator Kind.COps{cocave=Kind.Ops{ofrequency}} Nothing = do
+matchGenerator :: Kind.Ops CaveKind -> Maybe String -> Rnd (Kind.Id CaveKind)
+matchGenerator Kind.Ops{ofrequency} Nothing = do
   (ci, _) <- frequency ofrequency
   return ci
-matchGenerator Kind.COps{cocave=Kind.Ops{ofrequency}} (Just name) =
+matchGenerator Kind.Ops{ofrequency} (Just name) =
   let freq@(Frequency l) =
         filterFreq ((== name) . cname . snd) ofrequency
   in case l of
@@ -110,7 +111,7 @@ findGenerator :: Kind.COps -> Config.CP -> Int -> Int -> Rnd Level
 findGenerator cops config n depth = do
   let ln = "LambdaCave_" ++ show n
       genName = Config.getOption config "dungeon" ln
-  ci <- matchGenerator cops genName
+  ci <- matchGenerator (Kind.cocave cops) genName
   cave <- buildCave cops n ci
   buildLevel cops cave n depth
 
@@ -130,7 +131,7 @@ generate cops config =
         in ((ploc, LambdaCave 1, Dungeon.fromList levels), gd)
   in MState.state con
 
-whereTo :: Kind.COps -> State -> Loc -> Maybe WorldLoc
+whereTo :: Kind.Ops TileKind -> State -> Loc -> Maybe WorldLoc
 whereTo cops state@State{slid, sdungeon} loc =
   let lvl = slevel state
       tile = lvl `at` loc

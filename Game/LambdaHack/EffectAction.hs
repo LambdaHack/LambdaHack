@@ -126,7 +126,7 @@ nullEffect = return (False, "Nothing happens.")
 -- If either actor is a hero, the item may get identified.
 itemEffectAction :: Int -> ActorId -> ActorId -> Item -> Action Bool
 itemEffectAction verbosity source target item = do
-  Kind.COps{coitem=Kind.Ops{okind}} <- contentOps
+  Kind.Ops{okind} <- contentf Kind.coitem
   tm  <- gets (getActor target)
   per <- currentPerception
   let effect = ieffect $ okind $ jkind item
@@ -213,11 +213,11 @@ summonHeroes n loc =
 
 summonMonsters :: Int -> Loc -> Action ()
 summonMonsters n loc = do
-  cops@Kind.COps{coactor=Kind.Ops{ofrequency}} <- contentOps
+  Kind.COps{cotile, coactor=Kind.Ops{ofrequency}} <- contentOps
   (mk, k) <- rndToAction $ frequency ofrequency
   hp <- rndToAction $ rollDice $ ahp k
   modify (\ state ->
-           iterate (addMonster cops mk hp loc) state !! n)
+           iterate (addMonster cotile mk hp loc) state !! n)
 
 -- | Remove dead heroes (or dominated monsters), check if game over.
 -- For now we only check the selected hero and at current level,
@@ -255,7 +255,7 @@ gameOver :: Bool -> Action ()
 gameOver showEndingScreens =
   do
     when showEndingScreens $ do
-      cops  <- contentOps
+      cops  <- contentf Kind.coitem
       state <- get
       slid  <- gets slid
       let total = calculateTotal cops state
@@ -265,7 +265,7 @@ gameOver showEndingScreens =
     end
 
 -- | Calculate loot's worth for heroes on the current level.
-calculateTotal :: Kind.COps -> State -> Int
+calculateTotal :: Kind.Ops ItemKind -> State -> Int
 calculateTotal cops s =
   L.sum $ L.map (itemPrice cops) $ L.concat $ IM.elems $ lheroItem $ slevel s
 

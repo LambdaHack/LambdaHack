@@ -62,7 +62,7 @@ start internalSession = do
             return (g, c)
       let ((ploc, lid, dng), ag) =
             MState.runState (generate cops configD) dg
-          sflavour = MState.evalState (dungeonFlavourMap cops) ag
+          sflavour = MState.evalState (dungeonFlavourMap (Kind.coitem cops)) ag
       (sg, sconfig) <-
         case Config.getOption configD "engine" "startingRandomGenerator" of
           Just sg ->

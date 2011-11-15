@@ -12,6 +12,7 @@ import qualified Game.LambdaHack.FOV.Shadow as Shadow
 import Game.LambdaHack.Loc
 import Game.LambdaHack.Level
 import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Content.TileKind
 
 -- TODO: should Blind really be a FovMode, or a modifier? Let's decide
 -- when other similar modifiers are added.
@@ -22,7 +23,7 @@ data FovMode = Shadow | Permissive Int | Digital Int | Blind
 -- algorithm to use is set in the config file.
 -- Press a command key in the game to cycle among the algorithms
 -- and see a special visualization of their effects..
-fullscan :: FovMode -> Loc -> Kind.COps -> Level -> S.Set Loc
+fullscan :: FovMode -> Loc -> Kind.Ops TileKind -> Level -> S.Set Loc
 fullscan fovMode loc cops lvl@Level{lxsize} =
   case fovMode of
     Shadow ->  -- shadow casting with infinite range

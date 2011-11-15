@@ -50,7 +50,7 @@ getGroupItem :: [Item] ->  -- all objects in question
                 String ->  -- how to refer to the collection of objects
                 Action (Maybe Item)
 getGroupItem is groupName prompt packName = do
-  Kind.COps{coitem=Kind.Ops{oname}} <- contentOps
+  Kind.Ops{oname} <- contentf Kind.coitem
   let choice i = groupName == oname (jkind i)
       header = capitalize $ suffixS groupName
   getItem prompt choice header is packName
@@ -75,7 +75,7 @@ applyGroupItem actor verb item = do
 
 playerApplyGroupItem :: String -> Action ()
 playerApplyGroupItem groupName = do
-  Kind.COps{coitem=Kind.Ops{oname}} <- contentOps
+  Kind.Ops{oname} <- contentf Kind.coitem
   is   <- gets getPlayerItem
   iOpt <- getGroupItem is groupName
             ("What to " ++ applyToVerb groupName ++ "?") "in inventory"
@@ -130,7 +130,7 @@ zapGroupItem source loc verb item = do
 
 playerZapGroupItem :: String -> Action ()
 playerZapGroupItem groupName = do
-  Kind.COps{coitem=Kind.Ops{oname}} <- contentOps
+  Kind.Ops{oname} <- contentf Kind.coitem
   state <- get
   is    <- gets getPlayerItem
   iOpt  <- getGroupItem is groupName

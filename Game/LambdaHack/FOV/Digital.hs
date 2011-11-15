@@ -8,6 +8,7 @@ import Game.LambdaHack.Loc
 import Game.LambdaHack.Level
 import qualified Game.LambdaHack.Tile as Tile
 import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Content.TileKind
 
 -- Digital FOV with a given range.
 
@@ -21,7 +22,7 @@ import qualified Game.LambdaHack.Kind as Kind
 -- | The current state of a scan is kept in Maybe (Line, ConvexHull).
 -- If Just something, we're in a visible interval. If Nothing, we're in
 -- a shadowed interval.
-scan :: Distance -> (Bump -> Loc) -> Kind.COps -> Level -> S.Set Loc
+scan :: Distance -> (Bump -> Loc) -> Kind.Ops TileKind -> Level -> S.Set Loc
 scan r tr cops l =
   -- the scanned area is a square, which is a sphere in this metric; good
   dscan 1 (((B(1, 0), B(-r, r)),  [B(0, 0)]), ((B(0, 0), B(r+1, r)), [B(1, 0)]))

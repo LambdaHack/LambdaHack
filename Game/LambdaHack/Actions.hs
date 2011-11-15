@@ -58,7 +58,7 @@ saveGame =
     if b
       then do
         -- Save the game state
-        cops <- contentOps
+        cops <- contentf Kind.coitem
         state <- get
         liftIO $ Save.saveGame state
         ln <- gets slid
@@ -168,7 +168,7 @@ run dir = do
 continueRun :: Dir -> Action ()
 continueRun dir =
   do
-    cops <- contentOps
+    cops <- contentf Kind.cotile
     loc <- gets (bloc . getPlayerBody)
     per <- currentPerception
     msg <- currentMessage
@@ -252,7 +252,7 @@ closeDoor = do
 -- | Player closes a door. AI never does.
 playerCloseDoor :: Dir -> Action ()
 playerCloseDoor dir = do
-  cops  <- contentOps
+  cops  <- contentf Kind.cotile
   state <- get
   lvl   <- gets slevel
   pl    <- gets splayer
@@ -277,7 +277,7 @@ playerCloseDoor dir = do
 -- | An actor closes a door. Player (hero or monster) or enemy.
 actorOpenDoor :: ActorId -> Dir -> Action ()
 actorOpenDoor actor dir = do
-  cops@Kind.COps{coactor=Kind.Ops{okind}} <- contentOps
+  Kind.COps{cotile, coitem, coactor=Kind.Ops{okind}} <- contentOps
   lvl  <- gets slevel
   pl   <- gets splayer
   body <- gets (getActor actor)
@@ -290,18 +290,18 @@ actorOpenDoor actor dir = do
       openPower = Tile.SecretStrength $
         if isPlayer
         then 1  -- player can't open secret doors
-        else case strongestItem cops bitems "ring" of  -- TODO: hack
+        else case strongestItem coitem bitems "ring" of  -- TODO: hack
                Just i  -> iq + jpower i
                Nothing -> iq
-  unless (openable cops lvl openPower dloc) $ neverMind isVerbose
-  if Tile.hasFeature cops F.Closable t
+  unless (openable cotile lvl openPower dloc) $ neverMind isVerbose
+  if Tile.hasFeature cotile F.Closable t
     then abortIfWith isVerbose "already open"
-    else if not (Tile.hasFeature cops F.Closable t ||
-                 Tile.hasFeature cops F.Openable t ||
-                 Tile.hasFeature cops F.Hidden t)
+    else if not (Tile.hasFeature cotile F.Closable t ||
+                 Tile.hasFeature cotile F.Openable t ||
+                 Tile.hasFeature cotile F.Hidden t)
          then neverMind isVerbose  -- not doors at all
          else
-           let adj = (Kind.// [(dloc, Tile.doorOpenId cops)])
+           let adj = (Kind.// [(dloc, Tile.doorOpenId cotile)])
            in  modify (updateLevel (updateLMap adj))
   advanceTime actor
 
@@ -325,7 +325,7 @@ lvlAscend k =
 lvlGoUp :: Bool -> Action ()
 lvlGoUp isUp =
   do
-    cops      <- contentOps
+    cops      <- contentf Kind.cotile
     cursor    <- gets scursor
     targeting <- gets (ctargeting . scursor)
     pbody     <- gets getPlayerBody
@@ -413,7 +413,7 @@ lvlGoUp isUp =
 fleeDungeon :: Action ()
 fleeDungeon =
   do
-    cops <- contentOps
+    cops <- contentf Kind.coitem
     state <- get
     let total = calculateTotal cops state
         items = L.concat $ IM.elems $ lheroItem $ slevel state
@@ -450,7 +450,8 @@ cycleHero =
 search :: Action ()
 search =
   do
-    cops   <- contentOps
+    cops   <- contentf Kind.coitem
+    cotile <- contentf Kind.cotile
     lm     <- gets (lmap . slevel)
     le     <- gets (lsecret . slevel)
     lxsize <- gets (lxsize . slevel)
@@ -462,11 +463,11 @@ search =
         searchTile loc (slm, sle) =
           let t = lm Kind.! loc
               k = Tile.secretStrength (le IM.! loc) - delta
-          in if Tile.hasFeature cops F.Hidden t
+          in if Tile.hasFeature cotile F.Hidden t
              then if k > 0
                   then (slm,
                         IM.insert loc (Tile.SecretStrength k) sle)
-                  else ((loc, Tile.doorClosedId cops) : slm,
+                  else ((loc, Tile.doorClosedId cotile) : slm,
                         IM.delete loc sle)
              else (slm, sle)
         f (slm, sle) m = searchTile (shift ploc m) (slm, sle)
@@ -571,6 +572,7 @@ moveOrAttack :: Bool ->        -- allow attacks?
 moveOrAttack allowAttacks autoOpen actor dir = do
       -- We start by looking at the target position.
       cops  <- contentOps
+      cotile <- contentf Kind.cotile
       state <- get
       pl    <- gets splayer
       lvl   <- gets slevel
@@ -583,21 +585,21 @@ moveOrAttack allowAttacks autoOpen actor dir = do
           | allowAttacks ->
               -- Attacking does not require full access, adjacency is enough.
               actorAttackActor actor target
-          | accessible cops lvl sloc tloc -> do
+          | accessible cotile lvl sloc tloc -> do
               -- Switching positions requires full access.
               actorRunActor actor target
               when (actor == pl) $
                 messageAdd $ lookAt cops False True state lvl tloc ""
           | otherwise -> abortWith ""
         Nothing
-          | accessible cops lvl sloc tloc -> do
+          | accessible cotile lvl sloc tloc -> do
               -- perform the move
               updateAnyActor actor $ \ body -> body {bloc = tloc}
               when (actor == pl) $
                 messageAdd $ lookAt cops False True state lvl tloc ""
               advanceTime actor
           | allowAttacks && actor == pl
-            && Tile.canBeSecretDoor cops  (lvl `rememberAt` tloc)
+            && Tile.canBeSecretDoor cotile (lvl `rememberAt` tloc)
             -> do
               messageAdd "You search your surroundings."  -- TODO: proper msg
               search
@@ -617,7 +619,7 @@ actorAttackActor source@(AHero _) target@(AHero _) =
   selectPlayer target
     >>= assert `trueM` (source, target, "player bumps into himself")
 actorAttackActor source target = do
-  cops@Kind.COps{coactor, coitem} <- contentOps
+  Kind.COps{coactor, coitem} <- contentOps
   state <- get
   sm    <- gets (getActor source)
   tm    <- gets (getActor target)
@@ -627,8 +629,8 @@ actorAttackActor source target = do
       verb = attackToVerb groupName
       sloc = bloc sm
       -- The hand-to-hand "weapon", equivalent to +0 sword.
-      h2h = Item (fistKindId cops) 0 Nothing 1
-      str = strongestItem cops bitems groupName
+      h2h = Item (fistKindId coitem) 0 Nothing 1
+      str = strongestItem coitem bitems groupName
       stack  = fromMaybe h2h str
       single = stack { jcount = 1 }
       -- The message describes the source part of the action.
@@ -676,7 +678,7 @@ regenerateLevelHP :: Action ()
 regenerateLevelHP =
   do
     coactor@Kind.Ops{okind} <- contentf Kind.coactor
-    cops <- contentOps
+    cops <- contentf Kind.coitem
     time <- gets stime
     let upd itemIM a m =
           let ak = okind $ bkind m
