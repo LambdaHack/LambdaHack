@@ -1,6 +1,4 @@
-module Content.ItemKind
-  (
-  ) where
+module Content.ItemKind ( cdefs ) where
 
 import Game.LambdaHack.Color
 import qualified Game.LambdaHack.Content.Content as Content
@@ -9,14 +7,15 @@ import Game.LambdaHack.Flavour
 import Game.LambdaHack.Random
 import Game.LambdaHack.Content.ItemKind
 
-instance Content.Content ItemKind where
-  getSymbol = isymbol
-  getName = iname
-  getFreq = ifreq
-  content =
-    [amulet, dart, gem1, gem2, gem3, gem4, gold, potion1, potion2, potion3, ring, scroll1, scroll2, sword, fist, wand]
-
-amulet,      dart, gem1, gem2, gem3, gem4, gold, potion1, potion2, potion3, ring, scroll1, scroll2, sword, fist, wand :: ItemKind
+cdefs :: Content.CDefs ItemKind
+cdefs = Content.CDefs
+  { getSymbol = isymbol
+  , getName = iname
+  , getFreq = ifreq
+  , content =
+      [amulet, dart, gem1, gem2, gem3, gem4, gold, potion1, potion2, potion3, ring, scroll1, scroll2, sword, fist, wand]
+  }
+amulet,        dart, gem1, gem2, gem3, gem4, gold, potion1, potion2, potion3, ring, scroll1, scroll2, sword, fist, wand :: ItemKind
 
 gem, potion, scroll :: ItemKind  -- generic templates
 

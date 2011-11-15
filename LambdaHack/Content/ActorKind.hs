@@ -1,19 +1,18 @@
-module Content.ActorKind
-  (
-  ) where
+module Content.ActorKind ( cdefs ) where
 
 import Game.LambdaHack.Color
 import qualified Game.LambdaHack.Content.Content as Content
 import Game.LambdaHack.Content.ActorKind
 
-instance Content.Content ActorKind where
-  getSymbol = asymbol
-  getName = aname
-  getFreq = afreq
-  content =
-    [hero, eye, fastEye, nose]
-
-hero,      eye, fastEye, nose :: ActorKind
+cdefs :: Content.CDefs ActorKind
+cdefs = Content.CDefs
+  { getSymbol = asymbol
+  , getName = aname
+  , getFreq = afreq
+  , content =
+      [hero, eye, fastEye, nose]
+  }
+hero,        eye, fastEye, nose :: ActorKind
 
 hero = ActorKind
   { ahp     = (50, 1)

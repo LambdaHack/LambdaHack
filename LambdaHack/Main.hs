@@ -15,17 +15,17 @@ import Game.LambdaHack.ActorAdd
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Keybindings as KB
 import qualified Game.LambdaHack.Kind as Kind
-import Content.ActorKind ()
-import Content.CaveKind ()
-import Content.ItemKind ()
-import Content.TileKind ()
+import qualified Content.ActorKind
+import qualified Content.CaveKind
+import qualified Content.ItemKind
+import qualified Content.TileKind
 
 contentOps :: Kind.COps
 contentOps = Kind.COps
-  { coactor = Kind.createOps
-  , cocave  = Kind.createOps
-  , coitem  = Kind.createOps
-  , cotile  = Kind.createOps
+  { coactor = Kind.createOps Content.ActorKind.cdefs
+  , cocave  = Kind.createOps Content.CaveKind.cdefs
+  , coitem  = Kind.createOps Content.ItemKind.cdefs
+  , cotile  = Kind.createOps Content.TileKind.cdefs
   }
 
 main :: IO ()

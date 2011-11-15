@@ -12,12 +12,12 @@ import qualified Data.Array.Unboxed as A
 import qualified Data.Ix as Ix
 
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Content.Content
 import Game.LambdaHack.Frequency
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind
+import Game.LambdaHack.Content.Content
 
 newtype Id a = Id Word8 deriving (Show, Eq, Ord, Ix.Ix)
 
@@ -36,8 +36,8 @@ data Ops a = Ops
   , obounds :: (Id a, Id a)
   }
 
-createOps :: Content a => Ops a
-createOps =
+createOps :: CDefs a -> Ops a
+createOps CDefs{getSymbol, getName, getFreq, content} =
   let -- kindAssocs :: [(Word.Word8, a)]
       kindAssocs = L.zip [0..] content
       -- kindMap :: IM.IntMap a

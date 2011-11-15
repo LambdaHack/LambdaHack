@@ -1,20 +1,8 @@
-module Game.LambdaHack.Content.Content
-  ( Content(..)
-  ) where
+module Game.LambdaHack.Content.Content ( CDefs(..) ) where
 
-import qualified Data.List as L
-import qualified Data.IntMap as IM
-import qualified Data.Word as Word
-
-class Content a where
-  getSymbol :: a -> Char
-  getName :: a -> String
-  getFreq :: a -> Int
-
-  content :: [a]
-
-  kindAssocs :: [(Word.Word8, a)]
-  kindAssocs = L.zip [0..] content
-
-  kindMap :: IM.IntMap a
-  kindMap = IM.fromDistinctAscList $ L.zip [0..] content
+data CDefs a = CDefs
+  { getSymbol :: a -> Char
+  , getName :: a -> String
+  , getFreq :: a -> Int
+  , content :: [a]
+  }

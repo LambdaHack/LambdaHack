@@ -1,6 +1,4 @@
-module Content.CaveKind
-  (
-  ) where
+module Content.CaveKind ( cdefs ) where
 
 import Data.Ratio
 
@@ -9,15 +7,15 @@ import Game.LambdaHack.Geometry
 import qualified Game.LambdaHack.Random as Random
 import Game.LambdaHack.Content.CaveKind
 
-
-instance Content.Content CaveKind where
-  getSymbol = csymbol
-  getName = cname
-  getFreq = cfreq
-  content =
-    [rogue, empty, noise, largeNoise]
-
-rogue,      empty, noise, largeNoise:: CaveKind
+cdefs :: Content.CDefs CaveKind
+cdefs = Content.CDefs
+  { getSymbol = csymbol
+  , getName = cname
+  , getFreq = cfreq
+  , content =
+      [rogue, empty, noise, largeNoise]
+  }
+rogue,        empty, noise, largeNoise:: CaveKind
 
 rogue = CaveKind
   { csymbol           = '$'

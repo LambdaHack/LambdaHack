@@ -1,6 +1,4 @@
-module Content.TileKind
-  (
-  ) where
+module Content.TileKind ( cdefs ) where
 
 import Game.LambdaHack.Color
 import qualified Game.LambdaHack.Content.Content as Content
@@ -8,14 +6,15 @@ import qualified Game.LambdaHack.Effect as Effect
 import Game.LambdaHack.Feature
 import Game.LambdaHack.Content.TileKind
 
-instance Content.Content TileKind where
-  getSymbol = tsymbol
-  getName = tname
-  getFreq = tfreq
-  content =
-    [wall, doorOpen, doorClosed, doorSecret, opening, floorLight, floorDark, stairsUp, stairsDown, unknown]
-
-wall,      doorOpen, doorClosed, doorSecret, opening, floorLight, floorDark, stairsUp, stairsDown, unknown :: TileKind
+cdefs :: Content.CDefs TileKind
+cdefs = Content.CDefs
+  { getSymbol = tsymbol
+  , getName = tname
+  , getFreq = tfreq
+  , content =
+      [wall, doorOpen, doorClosed, doorSecret, opening, floorLight, floorDark, stairsUp, stairsDown, unknown]
+  }
+wall,        doorOpen, doorClosed, doorSecret, opening, floorLight, floorDark, stairsUp, stairsDown, unknown :: TileKind
 
 wall = TileKind
   { tsymbol  = '#'
