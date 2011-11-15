@@ -203,8 +203,9 @@ focusIfAHero target =
 summonHeroes :: Int -> Loc -> Action ()
 summonHeroes n loc =
   assert (n > 0) $ do
+  cops <- gets scops
   newHeroId <- gets (fst . scounter)
-  modify (\ state -> iterate (addHero loc) state !! n)
+  modify (\ state -> iterate (addHero cops loc) state !! n)
   selectPlayer (AHero newHeroId)
     >>= assert `trueM` (newHeroId, "player summons himself")
   -- Display status line for the new hero.
@@ -212,11 +213,11 @@ summonHeroes n loc =
 
 summonMonsters :: Int -> Loc -> Action ()
 summonMonsters n loc = do
-  Kind.COps{coactor=Kind.Ops{ofrequency}} <- gets scops
+  cops@Kind.COps{coactor=Kind.Ops{ofrequency}} <- gets scops
   (mk, k) <- rndToAction $ frequency ofrequency
   hp <- rndToAction $ rollDice $ ahp k
   modify (\ state ->
-           iterate (addMonster mk hp loc) state !! n)
+           iterate (addMonster cops mk hp loc) state !! n)
 
 -- | Remove dead heroes (or dominated monsters), check if game over.
 -- For now we only check the selected hero and at current level,

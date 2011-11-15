@@ -76,7 +76,7 @@ start internalSession = do
             return (g, c)
       let defState = defaultState scops dng lid ploc sg
           state = defState{sconfig, sflavour}
-          hstate = initialHeroes ploc state
+          hstate = initialHeroes scops ploc state
       handlerToIO sess hstate msg handle
     Left state -> do
       let scops = contentOps

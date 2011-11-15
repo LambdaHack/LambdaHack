@@ -663,8 +663,9 @@ actorRunActor source target = do
 -- | Generate a monster, possibly.
 generateMonster :: Action ()
 generateMonster = do
+  cops <- gets scops
   state  <- get
-  nstate <- rndToAction $ rollMonster state
+  nstate <- rndToAction $ rollMonster cops state
   srandom <- gets srandom
   put $ nstate{srandom}
 
