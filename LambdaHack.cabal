@@ -126,6 +126,8 @@ library
 
 executable LambdaHack
   main-is:         Main.hs
+  other-modules:   Content.ActorKind, Content.CaveKind,
+                   Content.ItemKind, Content.TileKind
   hs-source-dirs:  LambdaHack
   build-depends:   LambdaHack, ConfigFile >= 1.1.1 && < 2,
                    array >= 0.3.0.3 && < 1, base >= 4 && < 5,

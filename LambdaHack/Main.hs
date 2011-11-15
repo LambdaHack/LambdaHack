@@ -14,7 +14,19 @@ import qualified Game.LambdaHack.Config as Config
 import Game.LambdaHack.ActorAdd
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Keybindings as KB
-import Game.LambdaHack.Kind
+import qualified Game.LambdaHack.Kind as Kind
+import Content.ActorKind ()
+import Content.CaveKind ()
+import Content.ItemKind ()
+import Content.TileKind ()
+
+contentOps :: Kind.COps
+contentOps = Kind.COps
+  { coactor = Kind.createOps
+  , cocave  = Kind.createOps
+  , coitem  = Kind.createOps
+  , cotile  = Kind.createOps
+  }
 
 main :: IO ()
 main = Display.startup start

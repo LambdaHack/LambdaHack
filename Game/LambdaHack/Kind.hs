@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 module Game.LambdaHack.Kind
-  ( Id, Ops(..), COps(..), contentOps
+  ( Id, Ops(..), COps(..), createOps
   , Array, (!), (//), listArray, bounds
   ) where
 
@@ -75,14 +75,6 @@ data COps = COps
 
 instance Show COps where
   show _ = "Game content."
-
-contentOps :: COps
-contentOps = COps
-  { coactor = createOps
-  , cocave  = createOps
-  , coitem  = createOps
-  , cotile  = createOps
-  }
 
 newtype Array i c = Array (A.UArray i Word.Word8) deriving Show
 
