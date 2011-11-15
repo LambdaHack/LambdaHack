@@ -50,7 +50,7 @@ getGroupItem :: [Item] ->  -- all objects in question
                 String ->  -- how to refer to the collection of objects
                 Action (Maybe Item)
 getGroupItem is groupName prompt packName = do
-  Kind.COps{coitem=Kind.Ops{oname}} <- gets scops
+  Kind.COps{coitem=Kind.Ops{oname}} <- contentOps
   let choice i = groupName == oname (jkind i)
       header = capitalize $ suffixS groupName
   getItem prompt choice header is packName
@@ -60,7 +60,7 @@ applyGroupItem :: ActorId ->  -- actor applying the item; on current level
                   Item ->     -- the item to be applied
                   Action ()
 applyGroupItem actor verb item = do
-  cops  <- gets scops
+  cops  <- contentOps
   state <- get
   body  <- gets (getActor actor)
   per   <- currentPerception
@@ -75,7 +75,7 @@ applyGroupItem actor verb item = do
 
 playerApplyGroupItem :: String -> Action ()
 playerApplyGroupItem groupName = do
-  Kind.COps{coitem=Kind.Ops{oname}} <- gets scops
+  Kind.COps{coitem=Kind.Ops{oname}} <- contentOps
   is   <- gets getPlayerItem
   iOpt <- getGroupItem is groupName
             ("What to " ++ applyToVerb groupName ++ "?") "in inventory"
@@ -103,7 +103,7 @@ zapGroupItem :: ActorId ->  -- actor zapping the item; on current level
                 Item ->     -- the item to be zapped
                 Action ()
 zapGroupItem source loc verb item = do
-  cops <- gets scops
+  cops  <- contentOps
   state <- get
   sm    <- gets (getActor source)
   per   <- currentPerception
@@ -129,7 +129,7 @@ zapGroupItem source loc verb item = do
 
 playerZapGroupItem :: String -> Action ()
 playerZapGroupItem groupName = do
-  Kind.COps{coitem=Kind.Ops{oname}} <- gets scops
+  Kind.COps{coitem=Kind.Ops{oname}} <- contentOps
   state <- get
   is    <- gets getPlayerItem
   iOpt  <- getGroupItem is groupName
@@ -163,7 +163,7 @@ throwItem = playerZapGroupItem "dart"
 -- TODO: allow dropping a given number of identical items.
 dropItem :: Action ()
 dropItem = do
-  cops  <- gets scops
+  cops  <- contentOps
   pl    <- gets splayer
   state <- get
   pbody <- gets getPlayerBody
@@ -217,7 +217,7 @@ removeFromLoc i loc = do
 
 actorPickupItem :: ActorId -> Action ()
 actorPickupItem actor = do
-  cops  <- gets scops
+  cops  <- contentOps
   state <- get
   pl    <- gets splayer
   per   <- currentPerception

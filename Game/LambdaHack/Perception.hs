@@ -64,11 +64,11 @@ actorReachesActor actor1 actor2 loc1 loc2 per pl =
   actorReachesLoc actor1 loc2 per pl ||
   actorReachesLoc actor2 loc1 per pl
 
-perception_ :: State -> Perceptions
-perception_ state@(State { splayer = pl
+perception_ :: Kind.COps -> State -> Perceptions
+perception_ cops@Kind.COps{coactor=Kind.Ops{okind}}
+            state@(State { splayer = pl
                          , sconfig  = config
-                         , ssensory = sensory
-                         , scops = scops@Kind.COps{coactor=Kind.Ops{okind}} }) =
+                         , ssensory = sensory }) =
   let lvl@Level{lheroes = hs} = slevel state
       mode   = Config.get config "engine" "fovMode"
       radius = let r = Config.get config "engine" "fovRadius"
@@ -94,9 +94,9 @@ perception_ state@(State { splayer = pl
       -- Perception for a player-controlled monster on the current level.
       pper = if isAMonster pl && memActor pl state
              then let m = getPlayerBody state
-                  in Just $ perception (fovMode m) (bloc m) scops lvl
+                  in Just $ perception (fovMode m) (bloc m) cops lvl
              else Nothing
-      pers = IM.map (\ h -> perception (fovMode h) (bloc h) scops lvl) hs
+      pers = IM.map (\ h -> perception (fovMode h) (bloc h) cops lvl) hs
       lpers = maybeToList pper ++ IM.elems pers
       reachable = S.unions (L.map preachable lpers)
       visible = S.unions (L.map pvisible lpers)
@@ -107,13 +107,13 @@ perception_ state@(State { splayer = pl
 -- | Once we compute the reachable fields using FOV, it is possible
 -- to compute what the hero can actually see.
 perception :: FovMode -> Loc -> Kind.COps -> Level -> Perception
-perception fovMode ploc scops lvl@Level{lxsize, lysize} =
+perception fovMode ploc cops lvl@Level{lxsize, lysize} =
   let
     -- Reachable are all fields on an unblocked path from the hero position.
     -- The player position is visible, but not reachable (e.g. for targeting).
-    reachable  = fullscan fovMode ploc scops lvl
+    reachable  = fullscan fovMode ploc cops lvl
     -- Everybody can see locations that are lit and are reachable.
-    uniVisible = S.filter (\ loc -> Tile.isLit scops (lvl `at` loc)) reachable
+    uniVisible = S.filter (\ loc -> Tile.isLit cops (lvl `at` loc)) reachable
     -- The hero is assumed to carry a light source, too.
     litVisible = S.insert ploc uniVisible
     -- Reachable fields adjacent to lit fields are visible, too.

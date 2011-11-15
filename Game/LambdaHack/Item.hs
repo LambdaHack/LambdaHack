@@ -67,19 +67,19 @@ fistKindId Kind.COps{coitem=Kind.Ops{ogetId}} =
   ogetId ((== "fist") . iname)
 
 viewItem :: Kind.COps -> Kind.Id ItemKind -> FlavourMap -> (Char, Color.Color)
-viewItem scops@Kind.COps{coitem=Kind.Ops{osymbol}} ik assocs =
-  (osymbol ik, flavourToColor $ getFlavour scops assocs ik)
+viewItem cops@Kind.COps{coitem=Kind.Ops{osymbol}} ik assocs =
+  (osymbol ik, flavourToColor $ getFlavour cops assocs ik)
 
 itemLetter :: ItemKind -> Maybe Char
 itemLetter ik = if isymbol ik == '$' then Just '$' else Nothing
 
 -- | Generate an item.
 newItem :: Kind.COps -> Int -> Rnd Item
-newItem scops@Kind.COps{coitem=Kind.Ops{ofrequency}} lvl = do
+newItem cops@Kind.COps{coitem=Kind.Ops{ofrequency}} lvl = do
   (ikChosen, kind) <- frequency ofrequency
   count <- rollQuad lvl (icount kind)
   if count == 0
-    then newItem scops lvl  -- Rare item; beware of inifite loops.
+    then newItem cops lvl  -- Rare item; beware of inifite loops.
     else do
       power <- rollQuad lvl (ipower kind)
       return $ Item ikChosen power (itemLetter kind) count

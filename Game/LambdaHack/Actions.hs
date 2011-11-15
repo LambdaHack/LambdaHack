@@ -58,7 +58,7 @@ saveGame =
     if b
       then do
         -- Save the game state
-        cops <- gets scops
+        cops <- contentOps
         state <- get
         liftIO $ Save.saveGame state
         ln <- gets slid
@@ -95,7 +95,7 @@ endTargeting accept = do
 
 endTargetingMsg :: Action ()
 endTargetingMsg = do
-  cops   <- gets scops
+  cops   <- contentOps
   pbody  <- gets getPlayerBody
   state  <- get
   lxsize <- gets (lxsize . slevel)
@@ -168,7 +168,7 @@ run dir = do
 continueRun :: Dir -> Action ()
 continueRun dir =
   do
-    cops <- gets scops
+    cops <- contentOps
     loc <- gets (bloc . getPlayerBody)
     per <- currentPerception
     msg <- currentMessage
@@ -177,7 +177,6 @@ continueRun dir =
     lxsize <- gets (lxsize . slevel)
     lvl <- gets slevel
     pl  <- gets splayer
-    scops  <- gets scops
     let dms = case pl of
                 AMonster n -> IM.delete n ms  -- don't be afraid of yourself
                 AHero _ -> ms
@@ -189,7 +188,7 @@ continueRun dir =
         heroThere = (loc `shift` dir) `elem` L.map bloc (IM.elems hs)
         dirOK     = accessible cops lvl loc (loc `shift` dir)
         isTExit   = Tile.isExit cops tile
-        isWalkableDark = Tile.isWalkable cops tile && not (Tile.isLit scops tile)
+        isWalkableDark = Tile.isWalkable cops tile && not (Tile.isLit cops tile)
     -- What happens next is mostly depending on the terrain we're currently on.
     let hop | (monstersVisible || heroThere || newsReported ||
                itemsHere || isTExit) = abort
@@ -253,7 +252,7 @@ closeDoor = do
 -- | Player closes a door. AI never does.
 playerCloseDoor :: Dir -> Action ()
 playerCloseDoor dir = do
-  cops  <- gets scops
+  cops  <- contentOps
   state <- get
   lvl   <- gets slevel
   pl    <- gets splayer
@@ -278,7 +277,7 @@ playerCloseDoor dir = do
 -- | An actor closes a door. Player (hero or monster) or enemy.
 actorOpenDoor :: ActorId -> Dir -> Action ()
 actorOpenDoor actor dir = do
-  cops@Kind.COps{coactor=Kind.Ops{okind}} <- gets scops
+  cops@Kind.COps{coactor=Kind.Ops{okind}} <- contentOps
   lvl  <- gets slevel
   pl   <- gets splayer
   body <- gets (getActor actor)
@@ -326,7 +325,7 @@ lvlAscend k =
 lvlGoUp :: Bool -> Action ()
 lvlGoUp isUp =
   do
-    cops      <- gets scops
+    cops      <- contentOps
     cursor    <- gets scursor
     targeting <- gets (ctargeting . scursor)
     pbody     <- gets getPlayerBody
@@ -414,7 +413,7 @@ lvlGoUp isUp =
 fleeDungeon :: Action ()
 fleeDungeon =
   do
-    cops <- gets scops
+    cops <- contentOps
     state <- get
     let total = calculateTotal cops state
         items = L.concat $ IM.elems $ lheroItem $ slevel state
@@ -451,7 +450,7 @@ cycleHero =
 search :: Action ()
 search =
   do
-    cops   <- gets scops
+    cops   <- contentOps
     lm     <- gets (lmap . slevel)
     le     <- gets (lsecret . slevel)
     lxsize <- gets (lxsize . slevel)
@@ -533,7 +532,7 @@ setCursor = do
 doLook :: Action ()
 doLook =
   do
-    cops   <- gets scops
+    cops   <- contentOps
     loc    <- gets (clocation . scursor)
     state  <- get
     lvl    <- gets slevel
@@ -571,7 +570,7 @@ moveOrAttack :: Bool ->        -- allow attacks?
                 Action ()
 moveOrAttack allowAttacks autoOpen actor dir = do
       -- We start by looking at the target position.
-      cops  <- gets scops
+      cops  <- contentOps
       state <- get
       pl    <- gets splayer
       lvl   <- gets slevel
@@ -618,7 +617,7 @@ actorAttackActor source@(AHero _) target@(AHero _) =
   selectPlayer target
     >>= assert `trueM` (source, target, "player bumps into himself")
 actorAttackActor source target = do
-  cops  <- gets scops
+  cops  <- contentOps
   state <- get
   sm    <- gets (getActor source)
   tm    <- gets (getActor target)
@@ -665,7 +664,7 @@ actorRunActor source target = do
 -- | Generate a monster, possibly.
 generateMonster :: Action ()
 generateMonster = do
-  cops <- gets scops
+  cops <- contentOps
   state  <- get
   nstate <- rndToAction $ rollMonster cops state
   srandom <- gets srandom
@@ -675,7 +674,7 @@ generateMonster = do
 regenerateLevelHP :: Action ()
 regenerateLevelHP =
   do
-    cops@Kind.COps{coactor=Kind.Ops{okind}} <- gets scops
+    cops@Kind.COps{coactor=Kind.Ops{okind}} <- contentOps
     time <- gets stime
     let upd itemIM a m =
           let ak = okind $ bkind m

@@ -76,7 +76,7 @@ type Interval = (Rational, Rational)
 -- a shadowed interval.
 scan :: ((Progress, Distance) -> Loc) -> Kind.COps -> Level -> Distance
      -> Interval -> S.Set Loc
-scan tr scops l d (s0, e) =
+scan tr cops l d (s0, e) =
     let ps = downBias (s0 * fromIntegral d)  -- minimal progress to check
         pe = upBias (e * fromIntegral d)     -- maximal progress to check
         st = if isClear (ps, d)
@@ -87,14 +87,14 @@ scan tr scops l d (s0, e) =
                 `blame` (d,s0,e,ps,pe)) $
         S.union (S.fromList [tr (p, d) | p <- [ps..pe]]) (mscan st ps pe)
   where
-    isClear psd = Tile.isClear scops (l `at` tr psd)
+    isClear psd = Tile.isClear cops (l `at` tr psd)
     mscan :: Maybe Rational -> Progress -> Progress -> S.Set Loc
     mscan (Just s) ps pe
       | s  >= e  = S.empty                -- empty interval
-      | ps > pe  = scan tr scops l (d+1) (s, e) -- reached end, scan next
+      | ps > pe  = scan tr cops l (d+1) (s, e) -- reached end, scan next
       | not $ isClear (ps, d) =
                    let ne = (fromIntegral ps - (1%2)) / (fromIntegral d + (1%2))
-                   in  scan tr scops l (d+1) (s, ne) `S.union` mscan Nothing (ps+1) pe
+                   in  scan tr cops l (d+1) (s, ne) `S.union` mscan Nothing (ps+1) pe
                                       -- entering shadow
       | otherwise = mscan (Just s) (ps+1) pe
                                       -- continue in light

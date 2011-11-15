@@ -103,12 +103,14 @@ handleMonster :: ActorId -> Action ()
 handleMonster actor =
   do
     debug "handleMonster"
+    cops  <- contentOps
     state <- get
-    per <- currentPerception
+    per   <- currentPerception
     -- Run the AI: choses an action from those given by the AI strategy.
     action <-
       rndToAction $
-        frequency (head (runStrategy (strategy actor state per .| wait actor)))
+        frequency (head (runStrategy (strategy cops actor state per
+                                           .| wait actor)))
     action
     handleMonsters
 
@@ -206,9 +208,8 @@ helpCommand = Described "display help"      displayHelp
 -- | Display command help. TODO: Should be defined in Actions module.
 displayHelp :: Action ()
 displayHelp = do
-  let coImage sess k =
-        let macros = snd sess
-            domain = M.keysSet macros
+  let coImage (_, macros, _) k =
+        let domain = M.keysSet macros
         in  if k `S.member` domain then [] else
               k : [ from | (from, to) <- M.assocs macros, to == k ]
   aliases <- session (return . coImage)

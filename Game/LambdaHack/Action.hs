@@ -58,11 +58,11 @@ instance MonadState State Action where
 
 -- | Exported function to run the monad.
 handlerToIO :: Session -> State -> Message -> Action () -> IO ()
-handlerToIO sess state msg h =
+handlerToIO sess@(_, _, cops) state msg h =
   runAction h
     sess
     (Save.rmBkp (sconfig state) >> shutdown sess)  -- get out of the game
-    (perception_ state)        -- cached perception
+    (perception_ cops state)        -- cached perception
     (\ _ _ x -> return x)      -- final continuation returns result
     (ioError $ userError "unhandled abort")
     state
@@ -86,7 +86,7 @@ sessionIO f = Action (\ s _e _p k _a st ms -> f s >>= k st ms)
 
 -- | Display the current level with modified current message.
 displayGeneric :: ColorMode -> (String -> String) -> Action Bool
-displayGeneric dm f = Action (\ s _e p k _a st ms -> displayLevel (scops st) dm s p st (f ms) Nothing >>= k st ms)
+displayGeneric dm f = Action (\ s _e p k _a st ms -> displayLevel dm s p st (f ms) Nothing >>= k st ms)
 
 -- | Display the current level, with the current message and color. Most common.
 display :: Action Bool
@@ -94,7 +94,7 @@ display = displayGeneric ColorFull id
 
 -- | Display an overlay on top of the current screen.
 overlay :: String -> Action Bool
-overlay txt = Action (\ s _e p k _a st ms -> displayLevel (scops st) ColorFull s p st ms (Just txt) >>= k st ms)
+overlay txt = Action (\ s _e p k _a st ms -> displayLevel ColorFull s p st ms (Just txt) >>= k st ms)
 
 -- | Wipe out and set a new value for the current message.
 messageReset :: Message -> Action ()
@@ -111,6 +111,10 @@ messageClear = Action (\ _s _e _p k _a st _ms -> k st "" ())
 -- | Get the current message.
 currentMessage :: Action Message
 currentMessage = Action (\ _s _e _p k _a st ms -> k st ms ms)
+
+-- | Get the content ops.
+contentOps :: Action Kind.COps
+contentOps = Action (\ (_, _, cops) _e _p k _a st ms -> k st ms cops)
 
 -- | End the game, i.e., invoke the shutdown continuation.
 end :: Action ()
@@ -209,8 +213,8 @@ messageOverlaysConfirm msg (x:xs) =
 
 -- | Update the cached perception for the given computation.
 withPerception :: Action () -> Action ()
-withPerception h = Action (\ s e _ k a st ms ->
-                            runAction h s e (perception_ st) k a st ms)
+withPerception h = Action (\ s@(_, _, cops) e _ k a st ms ->
+                            runAction h s e (perception_ cops st) k a st ms)
 
 -- | Get the current perception.
 currentPerception :: Action Perceptions
@@ -237,7 +241,7 @@ updatePlayerBody f = do
 -- | Advance the move time for the given actor.
 advanceTime :: ActorId -> Action ()
 advanceTime actor = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- gets scops
+  Kind.COps{coactor=Kind.Ops{okind}} <- contentOps
   time <- gets stime
   let upd m = m { btime = time + aspeed (okind (bkind m)) }
   -- A hack to synchronize the whole party:

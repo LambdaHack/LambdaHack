@@ -23,23 +23,23 @@ data FovMode = Shadow | Permissive Int | Digital Int | Blind
 -- Press a command key in the game to cycle among the algorithms
 -- and see a special visualization of their effects..
 fullscan :: FovMode -> Loc -> Kind.COps -> Level -> S.Set Loc
-fullscan fovMode loc scops lvl@Level{lxsize} =
+fullscan fovMode loc cops lvl@Level{lxsize} =
   case fovMode of
     Shadow ->  -- shadow casting with infinite range
       S.unions $
-      L.map (\ tr -> Shadow.scan tr scops lvl 1 (0,1))
+      L.map (\ tr -> Shadow.scan tr cops lvl 1 (0,1))
         [tr0, tr1, tr2, tr3, tr4, tr5, tr6, tr7]
     Permissive r  ->  -- permissive with range r
       S.unions $
-      L.map (\ tr -> Permissive.scan r tr scops lvl) [qtr0, qtr1, qtr2, qtr3]
+      L.map (\ tr -> Permissive.scan r tr cops lvl) [qtr0, qtr1, qtr2, qtr3]
     Digital r ->  -- digital with range r
       S.unions $
-      L.map (\ tr -> Digital.scan r tr scops lvl) [qtr0, qtr1, qtr2, qtr3]
+      L.map (\ tr -> Digital.scan r tr cops lvl) [qtr0, qtr1, qtr2, qtr3]
     Blind ->  -- only feeling out adjacent tiles by touch
       let radius = 1
       in S.unions $
          L.map (\ tr ->
-                 Digital.scan radius tr scops lvl) [qtr0, qtr1, qtr2, qtr3]
+                 Digital.scan radius tr cops lvl) [qtr0, qtr1, qtr2, qtr3]
  where
   trL = trLoc lxsize
 

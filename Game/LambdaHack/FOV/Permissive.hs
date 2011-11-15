@@ -28,7 +28,7 @@ import qualified Game.LambdaHack.Kind as Kind
 -- If Just something, we're in a visible interval. If Nothing, we're in
 -- a shadowed interval.
 scan :: Distance -> (Bump -> Loc) -> Kind.COps -> Level -> S.Set Loc
-scan r tr scops l =
+scan r tr cops l =
   -- the area is diagonal, which is incorrect, but looks good enough
   dscan 1 (((B(0, 1), B(r+1, 0)), [B(1, 0)]), ((B(1, 0), B(0, r+1)), [B(0, 1)]))
  where
@@ -49,7 +49,7 @@ scan r tr scops l =
     pd2bump     (p, di) = B(di - p    , p)
     bottomRight (p, di) = B(di - p + 1, p)
     isClear :: Bump -> Bool
-    isClear = Tile.isClear scops . (l `at`) . tr
+    isClear = Tile.isClear cops . (l `at`) . tr
 
     inside = S.fromList [tr (pd2bump (p, d)) | p <- [ps0..pe]]
     outside

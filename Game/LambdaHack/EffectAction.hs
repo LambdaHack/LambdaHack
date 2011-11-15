@@ -44,7 +44,7 @@ effectToAction :: Effect.Effect -> Int -> ActorId -> ActorId -> Int ->
                   Action (Bool, String)
 effectToAction Effect.NoEffect _ _ _ _ = nullEffect
 effectToAction Effect.Heal _ _source target power = do
-  cops@Kind.COps{coactor=Kind.Ops{okind}} <- gets scops
+  cops@Kind.COps{coactor=Kind.Ops{okind}} <- contentOps
   let bhpMax m = maxDice (ahp $ okind $ bkind m)
   tm <- gets (getActor target)
   if bhp tm >= bhpMax tm || power <= 0
@@ -54,7 +54,7 @@ effectToAction Effect.Heal _ _source target power = do
       updateAnyActor target (addHp cops power)  -- TODO: duplicates maxDice, etc.
       return (True, subjectActorVerb cops tm "feel" ++ " better.")
 effectToAction (Effect.Wound nDm) verbosity source target power = do
-  cops <- gets scops
+  cops <- contentOps
   n <- rndToAction $ rollDice nDm
   if n + power <= 0 then nullEffect else do
     focusIfAHero target
@@ -126,7 +126,7 @@ nullEffect = return (False, "Nothing happens.")
 -- If either actor is a hero, the item may get identified.
 itemEffectAction :: Int -> ActorId -> ActorId -> Item -> Action Bool
 itemEffectAction verbosity source target item = do
-  Kind.COps{coitem=Kind.Ops{okind}} <- gets scops
+  Kind.COps{coitem=Kind.Ops{okind}} <- contentOps
   tm  <- gets (getActor target)
   per <- currentPerception
   let effect = ieffect $ okind $ jkind item
@@ -147,7 +147,7 @@ itemEffectAction verbosity source target item = do
 -- | Given item is now known to the player.
 discover :: Item -> Action ()
 discover i = do
-  cops@Kind.COps{coitem=Kind.Ops{okind}} <- gets scops
+  cops@Kind.COps{coitem=Kind.Ops{okind}} <- contentOps
   state <- get
   let ik = jkind i
       obj = unwords $ tail $ words $ objectItem cops state i
@@ -165,7 +165,7 @@ discover i = do
 selectPlayer :: ActorId -> Action Bool
 selectPlayer actor =
   do
-    cops@Kind.COps{coactor=Kind.Ops{okind}} <- gets scops
+    cops@Kind.COps{coactor=Kind.Ops{okind}} <- contentOps
     pl <- gets splayer
     if actor == pl
       then return False -- already selected
@@ -203,7 +203,7 @@ focusIfAHero target =
 summonHeroes :: Int -> Loc -> Action ()
 summonHeroes n loc =
   assert (n > 0) $ do
-  cops <- gets scops
+  cops <- contentOps
   newHeroId <- gets (fst . scounter)
   modify (\ state -> iterate (addHero cops loc) state !! n)
   selectPlayer (AHero newHeroId)
@@ -213,7 +213,7 @@ summonHeroes n loc =
 
 summonMonsters :: Int -> Loc -> Action ()
 summonMonsters n loc = do
-  cops@Kind.COps{coactor=Kind.Ops{ofrequency}} <- gets scops
+  cops@Kind.COps{coactor=Kind.Ops{ofrequency}} <- contentOps
   (mk, k) <- rndToAction $ frequency ofrequency
   hp <- rndToAction $ rollDice $ ahp k
   modify (\ state ->
@@ -226,7 +226,7 @@ summonMonsters n loc = do
 checkPartyDeath :: Action ()
 checkPartyDeath =
   do
-    cops <- gets scops
+    cops   <- contentOps
     ahs    <- gets allHeroesAnyLevel
     pl     <- gets splayer
     pbody  <- gets getPlayerBody
@@ -255,9 +255,9 @@ gameOver :: Bool -> Action ()
 gameOver showEndingScreens =
   do
     when showEndingScreens $ do
-      cops <- gets scops
+      cops  <- contentOps
       state <- get
-      slid <- gets slid
+      slid  <- gets slid
       let total = calculateTotal cops state
           status = H.Killed slid
       handleScores True status total
@@ -293,7 +293,7 @@ handleScores write status total =
 -- and I know no better place to put it.
 displayItems :: Message -> Bool -> [Item] -> Action Bool
 displayItems msg sorted is = do
-  cops <- gets scops
+  cops <- contentOps
   state <- get
   let inv = unlines $
             L.map (\ i -> letterLabel (jletter i)

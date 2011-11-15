@@ -22,7 +22,7 @@ import qualified Game.LambdaHack.Kind as Kind
 -- If Just something, we're in a visible interval. If Nothing, we're in
 -- a shadowed interval.
 scan :: Distance -> (Bump -> Loc) -> Kind.COps -> Level -> S.Set Loc
-scan r tr scops l =
+scan r tr cops l =
   -- the scanned area is a square, which is a sphere in this metric; good
   dscan 1 (((B(1, 0), B(-r, r)),  [B(0, 0)]), ((B(0, 0), B(r+1, r)), [B(1, 0)]))
  where
@@ -48,7 +48,7 @@ scan r tr scops l =
        S.union inside outside
    where
     isClear :: Bump -> Bool
-    isClear = Tile.isClear scops . (l `at`) . tr
+    isClear = Tile.isClear cops . (l `at`) . tr
     mscan :: Maybe Edge -> Progress -> Progress -> S.Set Loc
     mscan (Just s@(_, sBumps)) ps pe
       | ps > pe = dscan (d+1) (s, e)          -- reached end, scan next

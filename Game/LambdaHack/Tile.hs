@@ -67,8 +67,8 @@ clearTab Kind.COps{cotile=Kind.Ops{ofoldrWithKey, obounds}} =
 
 -- TODO: now it's created many times, optimize
 isClear :: Kind.COps -> Kind.Id TileKind -> Bool
-isClear scops =
-  let tab = clearTab scops
+isClear cops =
+  let tab = clearTab cops
   in (tab A.!)
 
 -- | Is lit on its own. Essential for efficiency of Perception, hence tabulated.
@@ -80,8 +80,8 @@ litTab Kind.COps{cotile=Kind.Ops{ofoldrWithKey, obounds}} =
 
 -- TODO: now it's created many times, optimize
 isLit :: Kind.COps -> Kind.Id TileKind -> Bool
-isLit scops =
-  let tab = litTab scops
+isLit cops =
+  let tab = litTab cops
   in (tab A.!)
 
 -- | Does not block land movement.

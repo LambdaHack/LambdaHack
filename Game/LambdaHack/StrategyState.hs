@@ -53,12 +53,12 @@ and the monster is small enough, the monster can hear the hero
 and moves into the approximate direction of the hero.
 -}
 
-strategy :: ActorId -> State -> Perceptions -> Strategy (Action ())
-strategy actor oldState@State{splayer = pl, stime = time} per =
+strategy :: Kind.COps -> ActorId -> State -> Perceptions -> Strategy (Action ())
+strategy cops actor oldState@State{splayer = pl, stime = time} per =
     strat
   where
-    cops@Kind.COps{ coactor=Kind.Ops{okind}
-                  , coitem=Kind.Ops{okind=iokind} } = scops oldState
+    Kind.COps{ coactor=Kind.Ops{okind}
+             , coitem=Kind.Ops{okind=iokind} } = cops
     lvl@Level{lsmell = nsmap, lxsize} = slevel oldState
     Actor { bkind = ak, bloc = me, bdir = ad,
             btarget = tgt } =

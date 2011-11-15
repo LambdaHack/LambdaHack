@@ -20,8 +20,8 @@ import qualified Content.CaveKind
 import qualified Content.ItemKind
 import qualified Content.TileKind
 
-contentOps :: Kind.COps
-contentOps = Kind.COps
+cops :: Kind.COps
+cops = Kind.COps
   { coactor = Kind.createOps Content.ActorKind.cdefs
   , cocave  = Kind.createOps Content.CaveKind.cdefs
   , coitem  = Kind.createOps Content.ItemKind.cdefs
@@ -37,7 +37,7 @@ start internalSession = do
   config <- Config.config
   let section = Config.getItems config "macros"
       !macros = KB.macroKey section
-      sess = (internalSession, macros)
+      sess = (internalSession, macros, cops)
   -- check if we have a savegame
   f <- Save.file config
   b <- doesFileExist f
@@ -60,9 +60,9 @@ start internalSession = do
             let gs = show g
                 c = Config.set config "engine" "dungeonRandomGenerator" gs
             return (g, c)
-      let scops = contentOps
-          ((ploc, lid, dng), ag) = MState.runState (generate scops configD) dg
-          sflavour = MState.evalState (dungeonFlavourMap scops) ag
+      let ((ploc, lid, dng), ag) =
+            MState.runState (generate cops configD) dg
+          sflavour = MState.evalState (dungeonFlavourMap cops) ag
       (sg, sconfig) <-
         case Config.getOption configD "engine" "startingRandomGenerator" of
           Just sg ->
@@ -74,10 +74,9 @@ start internalSession = do
             let gs = show g
                 c = Config.set configD "engine" "startingRandomGenerator" gs
             return (g, c)
-      let defState = defaultState scops dng lid ploc sg
+      let defState = defaultState dng lid ploc sg
           state = defState{sconfig, sflavour}
-          hstate = initialHeroes scops ploc state
+          hstate = initialHeroes cops ploc state
       handlerToIO sess hstate msg handle
-    Left state -> do
-      let scops = contentOps
-      handlerToIO sess (state {scops}) "Welcome back to LambdaHack." handle
+    Left state ->
+      handlerToIO sess state "Welcome back to LambdaHack." handle

@@ -44,23 +44,22 @@ import qualified Game.LambdaHack.Kind as Kind
 -- Re-exported from the display frontend, with an extra slot for function
 -- for translating keys to a canonical form.
 type InternalSession = D.Session
-type Session = (InternalSession, M.Map K.Key K.Key)
+type Session = (InternalSession, M.Map K.Key K.Key, Kind.COps)
 display :: Area -> Session -> (Loc -> (Color.Attr, Char)) -> String -> String
            -> IO ()
-display area = D.display area . fst
+display area (session, _, _) = D.display area session
 startup :: (InternalSession -> IO ()) -> IO ()
 startup = D.startup
 shutdown :: Session -> IO ()
-shutdown = D.shutdown . fst
+shutdown (session, _, _) = D.shutdown session
 displayId :: String
 displayId = D.displayId
 
 -- | Next event translated to a canonical form.
 nextCommand :: MonadIO m => Session -> m K.Key
-nextCommand session =
-  do
-    e <- liftIO $ D.nextEvent (fst session)
-    return $ fromMaybe (K.canonMoveKey e) (M.lookup e (snd session))
+nextCommand (sess, macros, _) = do
+  e <- liftIO $ D.nextEvent sess
+  return $ fromMaybe (K.canonMoveKey e) (M.lookup e macros)
 
 -- | Displays a message on a blank screen. Waits for confirmation.
 displayBlankConfirm :: Session -> String -> IO Bool
@@ -125,9 +124,9 @@ stringByLocation sy xs =
 
 data ColorMode = ColorFull | ColorBW
 
-displayLevel :: Kind.COps -> ColorMode -> Session -> Perceptions -> State
+displayLevel :: ColorMode -> Session -> Perceptions -> State
              -> Message -> Maybe String -> IO Bool
-displayLevel cops dm session per
+displayLevel dm session@(_, _, cops) per
              state@State{scursor, stime, sflavour, slid, splayer} msg moverlay =
   let Kind.COps{ coactor=Kind.Ops{okind}
                , cotile=Kind.Ops{okind=tokind} } = cops
