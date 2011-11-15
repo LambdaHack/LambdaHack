@@ -1,4 +1,4 @@
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RankNTypes, ScopedTypeVariables #-}
 module Game.LambdaHack.Kind
   ( Id, Ops(..), COps(..), createOps
   , Array, (!), (//), listArray, bounds
@@ -32,15 +32,15 @@ data Ops a = Ops
   , okind :: Id a -> a
   , ogetId :: (a -> Bool) -> Id a
   , ofrequency :: Frequency (Id a, a)
-  , ofoldrWithKey :: forall b . (Id a -> a -> b -> b) -> b -> b
+  , ofoldrWithKey :: forall b. (Id a -> a -> b -> b) -> b -> b
   , obounds :: (Id a, Id a)
   }
 
-createOps :: CDefs a -> Ops a
+createOps :: forall a. CDefs a -> Ops a
 createOps CDefs{getSymbol, getName, getFreq, content} =
-  let -- kindAssocs :: [(Word.Word8, a)]
+  let kindAssocs :: [(Word.Word8, a)]
       kindAssocs = L.zip [0..] content
-      -- kindMap :: IM.IntMap a
+      kindMap :: IM.IntMap a
       kindMap = IM.fromDistinctAscList $ L.zip [0..] content
       okind = \ (Id i) -> kindMap IM.! (fromEnum i)
   in Ops
