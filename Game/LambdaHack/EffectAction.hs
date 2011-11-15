@@ -44,7 +44,7 @@ effectToAction :: Effect.Effect -> Int -> ActorId -> ActorId -> Int ->
                   Action (Bool, String)
 effectToAction Effect.NoEffect _ _ _ _ = nullEffect
 effectToAction Effect.Heal _ _source target power = do
-  cops@Kind.COps{coactor=Kind.Ops{okind}} <- contentOps
+  cops@Kind.Ops{okind} <- contentf Kind.coactor
   let bhpMax m = maxDice (ahp $ okind $ bkind m)
   tm <- gets (getActor target)
   if bhp tm >= bhpMax tm || power <= 0
@@ -54,7 +54,7 @@ effectToAction Effect.Heal _ _source target power = do
       updateAnyActor target (addHp cops power)  -- TODO: duplicates maxDice, etc.
       return (True, subjectActorVerb cops tm "feel" ++ " better.")
 effectToAction (Effect.Wound nDm) verbosity source target power = do
-  cops <- contentOps
+  cops <- contentf Kind.coactor
   n <- rndToAction $ rollDice nDm
   if n + power <= 0 then nullEffect else do
     focusIfAHero target
@@ -147,7 +147,7 @@ itemEffectAction verbosity source target item = do
 -- | Given item is now known to the player.
 discover :: Item -> Action ()
 discover i = do
-  cops@Kind.COps{coitem=Kind.Ops{okind}} <- contentOps
+  cops@Kind.Ops{okind} <- contentf Kind.coitem
   state <- get
   let ik = jkind i
       obj = unwords $ tail $ words $ objectItem cops state i
@@ -165,7 +165,7 @@ discover i = do
 selectPlayer :: ActorId -> Action Bool
 selectPlayer actor =
   do
-    cops@Kind.COps{coactor=Kind.Ops{okind}} <- contentOps
+    cops@Kind.Ops{okind} <- contentf Kind.coactor
     pl <- gets splayer
     if actor == pl
       then return False -- already selected
@@ -226,7 +226,7 @@ summonMonsters n loc = do
 checkPartyDeath :: Action ()
 checkPartyDeath =
   do
-    cops   <- contentOps
+    cops   <- contentf Kind.coactor
     ahs    <- gets allHeroesAnyLevel
     pl     <- gets splayer
     pbody  <- gets getPlayerBody
@@ -293,7 +293,7 @@ handleScores write status total =
 -- and I know no better place to put it.
 displayItems :: Message -> Bool -> [Item] -> Action Bool
 displayItems msg sorted is = do
-  cops <- contentOps
+  cops <- contentf Kind.coitem
   state <- get
   let inv = unlines $
             L.map (\ i -> letterLabel (jletter i)

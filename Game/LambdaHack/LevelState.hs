@@ -10,7 +10,7 @@ import qualified Game.LambdaHack.Kind as Kind
 -- explored location. Mute for unknown locations.
 -- The "detailed" variant is for use in the targeting mode.
 lookAt :: Kind.COps -> Bool -> Bool -> State -> Level -> Loc -> String -> String
-lookAt cops@Kind.COps{cotile=Kind.Ops{oname}} detailed canSee s lvl loc msg
+lookAt Kind.COps{coitem, cotile=Kind.Ops{oname}} detailed canSee s lvl loc msg
   | detailed  =
     let tile = lvl `rememberAt` loc
         name = oname  $ tile
@@ -24,7 +24,7 @@ lookAt cops@Kind.COps{cotile=Kind.Ops{oname}} detailed canSee s lvl loc msg
                   else "You remember several objects here"
     isd = case is of
             []    -> ""
-            [i]   -> prefixSee ++ objectItem cops s i ++ "."
-            [i,j] -> prefixSee ++ objectItem cops s i ++ " and "
-                               ++ objectItem cops s j ++ "."
+            [i]   -> prefixSee ++ objectItem coitem s i ++ "."
+            [i,j] -> prefixSee ++ objectItem coitem s i ++ " and "
+                               ++ objectItem coitem s j ++ "."
             _     -> prefixThere ++ if detailed then ":" else "."

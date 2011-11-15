@@ -95,7 +95,7 @@ endTargeting accept = do
 
 endTargetingMsg :: Action ()
 endTargetingMsg = do
-  cops   <- contentOps
+  cops   <- contentf Kind.coactor
   pbody  <- gets getPlayerBody
   state  <- get
   lxsize <- gets (lxsize . slevel)
@@ -542,7 +542,7 @@ doLook =
         monsterMsg =
           if canSee
           then case L.find (\ m -> bloc m == loc) (levelMonsterList state) of
-                 Just m  -> subjectActor cops m ++ " is here. "
+                 Just m  -> subjectActor (Kind.coactor cops) m ++ " is here. "
                  Nothing -> ""
           else ""
         mode = case target of
@@ -617,7 +617,7 @@ actorAttackActor source@(AHero _) target@(AHero _) =
   selectPlayer target
     >>= assert `trueM` (source, target, "player bumps into himself")
 actorAttackActor source target = do
-  cops  <- contentOps
+  cops@Kind.COps{coactor, coitem} <- contentOps
   state <- get
   sm    <- gets (getActor source)
   tm    <- gets (getActor target)
@@ -635,8 +635,9 @@ actorAttackActor source target = do
       -- TODO: right now it also describes the victim and weapon;
       -- perhaps, when a weapon is equipped, just say "you hit" or "you miss"
       -- and then "nose dies" or "nose yells in pain".
-      msg = subjectVerbMObject cops sm verb tm $
-              if isJust str then " with " ++ objectItem cops state single else ""
+      msg = subjectVerbMObject coactor sm verb tm $
+              if isJust str then " with "
+                                 ++ objectItem coitem state single else ""
   when (sloc `S.member` ptvisible per) $ messageAdd msg
   -- Messages inside itemEffectAction describe the target part.
   itemEffectAction 0 source target single
@@ -674,7 +675,8 @@ generateMonster = do
 regenerateLevelHP :: Action ()
 regenerateLevelHP =
   do
-    cops@Kind.COps{coactor=Kind.Ops{okind}} <- contentOps
+    coactor@Kind.Ops{okind} <- contentf Kind.coactor
+    cops <- contentOps
     time <- gets stime
     let upd itemIM a m =
           let ak = okind $ bkind m
@@ -685,7 +687,7 @@ regenerateLevelHP =
                         Nothing -> 1
           in if time `mod` regen /= 0
              then m
-             else addHp cops 1 m
+             else addHp coactor 1 m
     -- We really want hero selection to be a purely UI distinction,
     -- so all heroes need to regenerate, not just the player.
     -- Only the heroes on the current level regenerate (others are frozen

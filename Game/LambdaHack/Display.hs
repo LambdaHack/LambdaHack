@@ -129,6 +129,7 @@ displayLevel :: ColorMode -> Session -> Perceptions -> State
 displayLevel dm session@(_, _, cops) per
              state@State{scursor, stime, sflavour, slid, splayer} msg moverlay =
   let Kind.COps{ coactor=Kind.Ops{okind}
+               , coitem
                , cotile=Kind.Ops{okind=tokind} } = cops
       lvl@Level{lxsize = sx, lysize = sy, lsmell = smap} = slevel state
       (_, Actor{bkind, bhp, bloc}, bitems) = findActorAnyLevel splayer state
@@ -183,7 +184,7 @@ displayLevel dm session@(_, _, cops) per
                       let u = tokind tile
                       in (tsymbol u, if vis then tcolor u else tcolor2 u)
                     i : _ ->
-                      Item.viewItem cops (Item.jkind i) sflavour
+                      Item.viewItem coitem (Item.jkind i) sflavour
             vis = S.member loc0 visible
             rea = S.member loc0 reachable
             bg0 = if ctargeting scursor && loc0 == clocation scursor

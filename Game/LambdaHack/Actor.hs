@@ -61,8 +61,8 @@ isAHero (AMonster _) = False
 isAMonster :: ActorId -> Bool
 isAMonster = not . isAHero
 
-addHp :: Kind.COps -> Int -> Actor -> Actor
-addHp Kind.COps{coactor=Kind.Ops{okind}} extra m =
+addHp :: Kind.Ops ActorKind -> Int -> Actor -> Actor
+addHp Kind.Ops{okind} extra m =
   assert (extra >= 0 `blame` extra) $
   let maxHP = maxDice (ahp $ okind $ bkind m)
       currentHP = bhp m
@@ -75,8 +75,8 @@ unoccupied :: [Actor] -> Loc -> Bool
 unoccupied actors loc =
   all (\ body -> bloc body /= loc) actors
 
-heroKindId :: Kind.COps -> Kind.Id ActorKind
-heroKindId Kind.COps{coactor=Kind.Ops{ogetId}} =
+heroKindId :: Kind.Ops ActorKind -> Kind.Id ActorKind
+heroKindId Kind.Ops{ogetId} =
   ogetId ((== "hero") . aname)
 
 instance Binary ActorId where

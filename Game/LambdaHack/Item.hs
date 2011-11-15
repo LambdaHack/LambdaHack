@@ -54,8 +54,8 @@ dungeonFlavourMap :: Kind.COps -> Rnd FlavourMap
 dungeonFlavourMap Kind.COps{coitem=Kind.Ops{ofoldrWithKey}} =
   liftM fst $ ofoldrWithKey rollFlavourMap (return (M.empty, S.fromList stdFlav))
 
-getFlavour :: Kind.COps -> FlavourMap -> Kind.Id ItemKind -> Flavour
-getFlavour Kind.COps{coitem=Kind.Ops{okind}} assocs ik =
+getFlavour :: Kind.Ops ItemKind -> FlavourMap -> Kind.Id ItemKind -> Flavour
+getFlavour Kind.Ops{okind} assocs ik =
   let kind = okind ik
   in  case iflavour kind of
         []  -> assert `failure` (assocs, ik, kind)
@@ -66,8 +66,9 @@ fistKindId :: Kind.COps -> Kind.Id ItemKind
 fistKindId Kind.COps{coitem=Kind.Ops{ogetId}} =
   ogetId ((== "fist") . iname)
 
-viewItem :: Kind.COps -> Kind.Id ItemKind -> FlavourMap -> (Char, Color.Color)
-viewItem cops@Kind.COps{coitem=Kind.Ops{osymbol}} ik assocs =
+viewItem :: Kind.Ops ItemKind -> Kind.Id ItemKind -> FlavourMap
+         -> (Char, Color.Color)
+viewItem cops@Kind.Ops{osymbol} ik assocs =
   (osymbol ik, flavourToColor $ getFlavour cops assocs ik)
 
 itemLetter :: ItemKind -> Maybe Char

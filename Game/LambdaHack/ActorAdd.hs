@@ -57,7 +57,7 @@ addHero cops ploc state =
       symbol = if n < 1 || n > 9 then Nothing else Just $ Char.intToDigit n
       name = findHeroName config n
       startHP = bHP `div` min 10 (n + 1)
-      m = template (heroKindId cops) (Just name) symbol startHP loc
+      m = template (heroKindId (Kind.coactor cops)) (Just name) symbol startHP loc
       state' = state { scounter = (n + 1, snd (scounter state))
                      , sparty = IS.insert n (sparty state) }
   in  updateLevel (updateHeroes (IM.insert n m)) state'

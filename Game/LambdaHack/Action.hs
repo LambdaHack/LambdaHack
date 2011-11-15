@@ -116,6 +116,10 @@ currentMessage = Action (\ _s _e _p k _a st ms -> k st ms ms)
 contentOps :: Action Kind.COps
 contentOps = Action (\ (_, _, cops) _e _p k _a st ms -> k st ms cops)
 
+-- | Get the content ops modified by a function.
+contentf :: (Kind.COps -> a) -> Action a
+contentf f = Action (\ (_, _, cops) _e _p k _a st ms -> k st ms (f cops))
+
 -- | End the game, i.e., invoke the shutdown continuation.
 end :: Action ()
 end = Action (\ _s e _p _k _a _st _ms -> e)
@@ -241,7 +245,7 @@ updatePlayerBody f = do
 -- | Advance the move time for the given actor.
 advanceTime :: ActorId -> Action ()
 advanceTime actor = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- contentOps
+  Kind.Ops{okind} <- contentf Kind.coactor
   time <- gets stime
   let upd m = m { btime = time + aspeed (okind (bkind m)) }
   -- A hack to synchronize the whole party:

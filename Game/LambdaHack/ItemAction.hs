@@ -112,7 +112,8 @@ zapGroupItem source loc verb item = do
       subject =
         if sloc `S.member` ptvisible per
         then sm
-        else template (heroKindId cops) (Just "somebody") Nothing 99 sloc
+        else template (heroKindId (Kind.coactor cops))
+               (Just "somebody") Nothing 99 sloc
       msg = subjectVerbIObject cops state subject verb consumed ""
   removeFromInventory source consumed sloc
   case locToActor loc state of
@@ -217,6 +218,7 @@ removeFromLoc i loc = do
 
 actorPickupItem :: ActorId -> Action ()
 actorPickupItem actor = do
+  coitem <- contentf Kind.coitem
   cops  <- contentOps
   state <- get
   pl    <- gets splayer
@@ -237,7 +239,7 @@ actorPickupItem actor = do
           -- message depends on who picks up and if a hero can perceive it
           if isPlayer
             then messageAdd (letterLabel (jletter ni)
-                             ++ objectItem cops state ni)
+                             ++ objectItem coitem state ni)
             else when perceived $
                    messageAdd $ subjCompoundVerbIObj cops state body "pick" "up" i ""
           removeFromLoc i loc

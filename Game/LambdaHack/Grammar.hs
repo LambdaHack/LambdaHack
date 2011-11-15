@@ -9,6 +9,7 @@ import Game.LambdaHack.Item
 import Game.LambdaHack.Actor
 import Game.LambdaHack.State
 import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Effect
 import Game.LambdaHack.Flavour
 import qualified Game.LambdaHack.Kind as Kind
@@ -34,32 +35,33 @@ makeObject n adj obj = show n ++ " " ++ adj (suffixS obj)
 -- TODO: when there's more of the above, split and move to Utils/
 
 -- | How to refer to an actor in object position of a sentence.
-objectActor :: Kind.COps -> Actor -> String
-objectActor Kind.COps{coactor=Kind.Ops{oname}} a =
+objectActor :: Kind.Ops ActorKind -> Actor -> String
+objectActor Kind.Ops{oname} a =
   fromMaybe (oname $ bkind a) (bname a)
 
 -- | How to refer to an actor in subject position of a sentence.
-subjectActor :: Kind.COps -> Actor -> String
+subjectActor :: Kind.Ops ActorKind -> Actor -> String
 subjectActor cops x = capitalize $ objectActor cops x
 
-verbActor :: Kind.COps -> Actor -> String -> String
+verbActor :: Kind.Ops ActorKind -> Actor -> String -> String
 verbActor cops a v = if objectActor cops a == "you" then v else suffixS v
 
 -- | Sentences such like "The dog barks".
-subjectActorVerb :: Kind.COps -> Actor -> String -> String
+subjectActorVerb :: Kind.Ops ActorKind -> Actor -> String -> String
 subjectActorVerb cops x v = subjectActor cops x ++ " " ++ verbActor cops x v
 
-compoundVerbActor :: Kind.COps -> Actor -> String -> String -> String
+compoundVerbActor :: Kind.Ops ActorKind -> Actor -> String -> String -> String
 compoundVerbActor cops m v p = verbActor cops m v ++ " " ++ p
 
 subjectVerbIObject :: Kind.COps -> State -> Actor -> String -> Item -> String
                    -> String
-subjectVerbIObject cops state m v o add =
-  subjectActor cops m ++ " " ++
-  verbActor cops m v ++ " " ++
-  objectItem cops state o ++ add ++ "."
+subjectVerbIObject Kind.COps{coactor, coitem} state m v o add =
+  subjectActor coactor m ++ " " ++
+  verbActor coactor m v ++ " " ++
+  objectItem coitem state o ++ add ++ "."
 
-subjectVerbMObject :: Kind.COps -> Actor -> String -> Actor -> String -> String
+subjectVerbMObject :: Kind.Ops ActorKind -> Actor -> String -> Actor -> String
+                   -> String
 subjectVerbMObject cops m v o add =
   subjectActor cops m ++ " " ++
   verbActor cops m v ++ " " ++
@@ -67,13 +69,13 @@ subjectVerbMObject cops m v o add =
 
 subjCompoundVerbIObj :: Kind.COps -> State -> Actor -> String -> String ->
                         Item -> String -> String
-subjCompoundVerbIObj cops state m v p o add =
-  subjectActor cops m ++ " " ++
-  compoundVerbActor cops m v p ++ " " ++
-  objectItem cops state o ++ add ++ "."
+subjCompoundVerbIObj Kind.COps{coactor, coitem} state m v p o add =
+  subjectActor coactor m ++ " " ++
+  compoundVerbActor coactor m v p ++ " " ++
+  objectItem coitem state o ++ add ++ "."
 
-objectItem :: Kind.COps -> State -> Item -> String
-objectItem cops@Kind.COps{coitem=Kind.Ops{okind}} state o =
+objectItem :: Kind.Ops ItemKind -> State -> Item -> String
+objectItem cops@Kind.Ops{okind} state o =
   let ik = jkind o
       kind = okind ik
       identified = L.length (iflavour kind) == 1 ||
