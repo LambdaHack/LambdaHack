@@ -95,9 +95,9 @@ matchGenerator :: Kind.COps -> Maybe String -> Rnd (Kind.Id CaveKind)
 matchGenerator Kind.COps{cocave=Kind.Ops{ofrequency}} Nothing = do
   (ci, _) <- frequency ofrequency
   return ci
-matchGenerator Kind.COps{cocave=Kind.Ops{ofrequency, oname}} (Just name) =
+matchGenerator Kind.COps{cocave=Kind.Ops{ofrequency}} (Just name) =
   let freq@(Frequency l) =
-        filterFreq ((== name) . oname . snd) ofrequency
+        filterFreq ((== name) . cname . snd) ofrequency
   in case l of
     [] -> error $ "Unknown dungeon generator " ++ name
     _ | sum (map fst l) == 0 ->  -- HACK for dangerous levels

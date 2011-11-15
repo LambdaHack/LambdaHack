@@ -26,10 +26,7 @@ instance Binary (Id a) where
   get = fmap Id get
 
 data Ops a = Ops
-  { osymbol :: a -> Char
-  , oname :: a -> String
-  , ofreq :: a -> Int
-  , ofindSymbol :: Id a -> Char
+  { ofindSymbol :: Id a -> Char
   , ofindName :: Id a -> String
   , ofindFreq :: Id a -> Int
   , ofindKind :: Id a -> a
@@ -47,10 +44,7 @@ createOps =
       kindMap = IM.fromDistinctAscList $ L.zip [0..] content
       ofindKind = \ (Id i) -> kindMap IM.! (fromEnum i)
   in Ops
-  { osymbol = getSymbol
-  , oname = getName
-  , ofreq = getFreq
-  , ofindSymbol = getSymbol . ofindKind
+  { ofindSymbol = getSymbol . ofindKind
   , ofindName = getName . ofindKind
   , ofindFreq = getFreq . ofindKind
   , ofindKind = ofindKind
