@@ -130,11 +130,11 @@ displayLevel ::
   -> IO Bool
 displayLevel dm session per
              state@State{scursor, stime, sflavour, slid, splayer} msg moverlay =
-  let cops@Kind.COps{ coactor=Kind.Ops{ofindKind}
-                    , cotile=Kind.Ops{ofindKind=tofindKind} } = scops state
+  let cops@Kind.COps{ coactor=Kind.Ops{okind}
+                    , cotile=Kind.Ops{okind=tokind} } = scops state
       lvl@Level{lxsize = sx, lysize = sy, lsmell = smap} = slevel state
       (_, Actor{bkind, bhp, bloc}, bitems) = findActorAnyLevel splayer state
-      ActorKind{ahp} = ofindKind bkind
+      ActorKind{ahp} = okind bkind
       reachable = ptreachable per
       visible   = ptvisible per
       overlay   = fromMaybe "" moverlay
@@ -167,7 +167,7 @@ displayLevel dm session per
                   (symbol, Color.defBG)  -- highlight player
               | otherwise = (symbol, acolor)
               where
-                ActorKind{asymbol, acolor} = ofindKind bkind2
+                ActorKind{asymbol, acolor} = okind bkind2
                 symbol = fromMaybe asymbol bsymbol
             viewSmell :: Int -> Char
             viewSmell k
@@ -182,7 +182,7 @@ displayLevel dm session per
                   | otherwise ->
                   case items of
                     [] ->
-                      let u = tofindKind tile
+                      let u = tokind tile
                       in (tsymbol u, if vis then tcolor u else tcolor2 u)
                     i : _ ->
                       Item.viewItem cops (Item.jkind i) sflavour

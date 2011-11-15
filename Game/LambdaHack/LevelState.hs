@@ -12,9 +12,9 @@ import qualified Game.LambdaHack.Kind as Kind
 lookAt :: Bool -> Bool -> State -> Level -> Loc -> String -> String
 lookAt detailed canSee s lvl loc msg
   | detailed  =
-    let Kind.COps{cotile=Kind.Ops{ofindName}} = scops s
+    let Kind.COps{cotile=Kind.Ops{oname}} = scops s
         tile = lvl `rememberAt` loc
-        name = ofindName  $ tile
+        name = oname  $ tile
     in name ++ " " ++ msg ++ isd
   | otherwise = msg ++ isd
   where

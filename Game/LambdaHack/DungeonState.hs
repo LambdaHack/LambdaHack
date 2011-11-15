@@ -39,14 +39,14 @@ mapToIMap cxsize m =
   IM.fromList $ map (\ (xy, a) -> (toLoc cxsize xy, a)) (M.assocs m)
 
 rollItems :: Kind.COps -> Int -> CaveKind -> TileMap -> Loc -> Rnd [(Loc, Item)]
-rollItems cops@Kind.COps{coitem=Kind.Ops{ofindName}}
+rollItems cops@Kind.COps{coitem=Kind.Ops{oname}}
           n CaveKind{cxsize, citemNum} lmap ploc =
   do
     nri <- rollDice citemNum
     replicateM nri $
       do
         item <- newItem cops n
-        l <- case ofindName (jkind item) of
+        l <- case oname (jkind item) of
                "sword" ->
                  -- swords generated close to monsters; MUAHAHAHA
                  findLocTry 2000 lmap
@@ -58,9 +58,9 @@ rollItems cops@Kind.COps{coitem=Kind.Ops{ofindName}}
 
 -- | Create a level from a cave, from a cave kind.
 buildLevel :: Kind.COps -> Cave -> Int -> Int -> Rnd Level
-buildLevel cops@Kind.COps{cocave=Kind.Ops{ofindKind}}
+buildLevel cops@Kind.COps{cocave=Kind.Ops{okind}}
            Cave{dkind, dsecret, ditem, dmap, dmeta} n depth = do
-  let cfg@CaveKind{cxsize, cysize, minStairsDistance} = ofindKind dkind
+  let cfg@CaveKind{cxsize, cysize, minStairsDistance} = okind dkind
       cmap = listArrayCfg  cxsize cysize dmap
   -- Roll locations of the stairs.
   su <- findLoc cmap (const (Tile.isBoring cops))

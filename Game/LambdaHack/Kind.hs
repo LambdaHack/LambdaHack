@@ -26,10 +26,10 @@ instance Binary (Id a) where
   get = fmap Id get
 
 data Ops a = Ops
-  { ofindSymbol :: Id a -> Char
-  , ofindName :: Id a -> String
-  , ofindFreq :: Id a -> Int
-  , ofindKind :: Id a -> a
+  { osymbol :: Id a -> Char
+  , oname :: Id a -> String
+  , ofreq :: Id a -> Int
+  , okind :: Id a -> a
   , ogetId :: (a -> Bool) -> Id a
   , ofrequency :: Frequency (Id a, a)
   , ofoldrWithKey :: forall b . (Id a -> a -> b -> b) -> b -> b
@@ -42,12 +42,12 @@ createOps =
       kindAssocs = L.zip [0..] content
       -- kindMap :: IM.IntMap a
       kindMap = IM.fromDistinctAscList $ L.zip [0..] content
-      ofindKind = \ (Id i) -> kindMap IM.! (fromEnum i)
+      okind = \ (Id i) -> kindMap IM.! (fromEnum i)
   in Ops
-  { ofindSymbol = getSymbol . ofindKind
-  , ofindName = getName . ofindKind
-  , ofindFreq = getFreq . ofindKind
-  , ofindKind = ofindKind
+  { osymbol = getSymbol . okind
+  , oname = getName . okind
+  , ofreq = getFreq . okind
+  , okind = okind
   , ogetId = \ f -> case [Id i | (i, k) <- kindAssocs, f k] of
      [i] -> i
      l -> assert `failure` l

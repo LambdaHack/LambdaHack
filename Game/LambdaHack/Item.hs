@@ -55,8 +55,8 @@ dungeonFlavourMap Kind.COps{coitem=Kind.Ops{ofoldrWithKey}} =
   liftM fst $ ofoldrWithKey rollFlavourMap (return (M.empty, S.fromList stdFlav))
 
 getFlavour :: Kind.COps -> FlavourMap -> Kind.Id ItemKind -> Flavour
-getFlavour Kind.COps{coitem=Kind.Ops{ofindKind}} assocs ik =
-  let kind = ofindKind ik
+getFlavour Kind.COps{coitem=Kind.Ops{okind}} assocs ik =
+  let kind = okind ik
   in  case iflavour kind of
         []  -> assert `failure` (assocs, ik, kind)
         [f] -> f
@@ -67,8 +67,8 @@ fistKindId Kind.COps{coitem=Kind.Ops{ogetId}} =
   ogetId ((== "fist") . iname)
 
 viewItem :: Kind.COps -> Kind.Id ItemKind -> FlavourMap -> (Char, Color.Color)
-viewItem scops@Kind.COps{coitem=Kind.Ops{ofindSymbol}} ik assocs =
-  (ofindSymbol ik, flavourToColor $ getFlavour scops assocs ik)
+viewItem scops@Kind.COps{coitem=Kind.Ops{osymbol}} ik assocs =
+  (osymbol ik, flavourToColor $ getFlavour scops assocs ik)
 
 itemLetter :: ItemKind -> Maybe Char
 itemLetter ik = if isymbol ik == '$' then Just '$' else Nothing
@@ -186,16 +186,16 @@ findItem p = findItem' []
       | otherwise        = findItem' (i:acc) is
 
 strongestItem :: Kind.COps -> [Item] -> String -> Maybe Item
-strongestItem Kind.COps{coitem=Kind.Ops{ofindName}} is groupName =
+strongestItem Kind.COps{coitem=Kind.Ops{oname}} is groupName =
   let cmp = comparing jpower
-      igs = L.filter (\ i -> ofindName (jkind i) == groupName) is
+      igs = L.filter (\ i -> oname (jkind i) == groupName) is
   in  case igs of
         [] -> Nothing
         _  -> Just $ L.maximumBy cmp igs
 
 itemPrice :: Kind.COps -> Item -> Int
-itemPrice Kind.COps{coitem=Kind.Ops{ofindName}} i =
-  case ofindName (jkind i) of
+itemPrice Kind.COps{coitem=Kind.Ops{oname}} i =
+  case oname (jkind i) of
     "gold piece" -> jcount i
     "gem" -> jcount i * 100
     _ -> 0

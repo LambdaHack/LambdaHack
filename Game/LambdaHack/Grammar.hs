@@ -35,8 +35,8 @@ makeObject n adj obj = show n ++ " " ++ adj (suffixS obj)
 
 -- | How to refer to an actor in object position of a sentence.
 objectActor :: Kind.COps -> Actor -> String
-objectActor Kind.COps{coactor=Kind.Ops{ofindName}} a =
-  fromMaybe (ofindName $ bkind a) (bname a)
+objectActor Kind.COps{coactor=Kind.Ops{oname}} a =
+  fromMaybe (oname $ bkind a) (bname a)
 
 -- | How to refer to an actor in subject position of a sentence.
 subjectActor :: Kind.COps -> Actor -> String
@@ -76,9 +76,9 @@ subjCompoundVerbIObj state m v p o add =
 
 objectItem :: State -> Item -> String
 objectItem state o =
-  let cops@Kind.COps{coitem=Kind.Ops{ofindKind}} = scops state
+  let cops@Kind.COps{coitem=Kind.Ops{okind}} = scops state
       ik = jkind o
-      kind = ofindKind ik
+      kind = okind ik
       identified = L.length (iflavour kind) == 1 ||
                    ik `S.member` sdisco state
       addSpace s = if s == "" then "" else " " ++ s

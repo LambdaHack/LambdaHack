@@ -62,9 +62,9 @@ isAMonster :: ActorId -> Bool
 isAMonster = not . isAHero
 
 addHp :: Kind.COps -> Int -> Actor -> Actor
-addHp Kind.COps{coactor=Kind.Ops{ofindKind}} extra m =
+addHp Kind.COps{coactor=Kind.Ops{okind}} extra m =
   assert (extra >= 0 `blame` extra) $
-  let maxHP = maxDice (ahp $ ofindKind $ bkind m)
+  let maxHP = maxDice (ahp $ okind $ bkind m)
       currentHP = bhp m
   in if currentHP > maxHP
      then m

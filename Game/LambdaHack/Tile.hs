@@ -33,9 +33,9 @@ stairsDownId Kind.COps{cotile=Kind.Ops{ogetId}} = ogetId (kindHas [F.Lit, F.Desc
 
 -- | The player can't tell if the tile is a secret door or not.
 canBeSecretDoor :: Kind.COps -> Kind.Id TileKind -> Bool
-canBeSecretDoor cops@Kind.COps{cotile=Kind.Ops{ofindKind}} t =
-  let u = ofindKind t
-      s = ofindKind (doorSecretId cops)
+canBeSecretDoor cops@Kind.COps{cotile=Kind.Ops{okind}} t =
+  let u = okind t
+      s = okind (doorSecretId cops)
   in tsymbol u == tsymbol s &&
      tname u == tname s &&
      tcolor u == tcolor s &&
@@ -55,8 +55,8 @@ kindHas yes no t = L.all (flip kindHasFeature t) yes &&
                    not (L.any (flip kindHasFeature t) no)
 
 hasFeature ::Kind.COps ->  F.Feature -> Kind.Id TileKind -> Bool
-hasFeature Kind.COps{cotile=Kind.Ops{ofindKind}} f t =
-  kindHasFeature f (ofindKind t)
+hasFeature Kind.COps{cotile=Kind.Ops{okind}} f t =
+  kindHasFeature f (okind t)
 
 -- | Does not block vision. Essential for efficiency of FOV, hence tabulated.
 clearTab :: Kind.COps -> A.UArray (Kind.Id TileKind) Bool
@@ -95,8 +95,8 @@ isExit cops = hasFeature cops F.Exit
 
 -- | Is a good candidate to deposit items, replace by other tiles, etc.
 isBoring :: Kind.COps -> Kind.Id TileKind -> Bool
-isBoring Kind.COps{cotile=Kind.Ops{ofindKind}} t =
-  let fs = tfeature (ofindKind t)
+isBoring Kind.COps{cotile=Kind.Ops{okind}} t =
+  let fs = tfeature (okind t)
       optional = [F.Exit, F.Lit]
       mandatory = [F.Walkable, F.Clear]
   in fs L.\\ optional `L.elem` L.permutations mandatory

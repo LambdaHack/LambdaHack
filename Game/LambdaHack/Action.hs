@@ -237,9 +237,9 @@ updatePlayerBody f = do
 -- | Advance the move time for the given actor.
 advanceTime :: ActorId -> Action ()
 advanceTime actor = do
-  Kind.COps{coactor=Kind.Ops{ofindKind}} <- gets scops
+  Kind.COps{coactor=Kind.Ops{okind}} <- gets scops
   time <- gets stime
-  let upd m = m { btime = time + aspeed (ofindKind (bkind m)) }
+  let upd m = m { btime = time + aspeed (okind (bkind m)) }
   -- A hack to synchronize the whole party:
   pl <- gets splayer
   if actor == pl || isAHero actor

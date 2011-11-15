@@ -57,14 +57,14 @@ strategy :: ActorId -> State -> Perceptions -> Strategy (Action ())
 strategy actor oldState@State{splayer = pl, stime = time} per =
     strat
   where
-    cops@Kind.COps{ coactor=Kind.Ops{ofindKind}
-                  , coitem=Kind.Ops{ofindKind=iofindKind} } = scops oldState
+    cops@Kind.COps{ coactor=Kind.Ops{okind}
+                  , coitem=Kind.Ops{okind=iokind} } = scops oldState
     lvl@Level{lsmell = nsmap, lxsize} = slevel oldState
     Actor { bkind = ak, bloc = me, bdir = ad,
             btarget = tgt } =
       getActor actor oldState
     items = getActorItem actor oldState
-    mk = ofindKind ak
+    mk = okind ak
     delState = deleteActor actor oldState
     enemyVisible a l =
       -- We assume monster sight is infravision, so light has no significance.
@@ -151,7 +151,7 @@ strategy actor oldState@State{splayer = pl, stime = time} per =
     applyFreq is multi = Frequency
       [ (benefit * multi, actionApply (iname ik) i)
       | i <- is,
-        let ik = iofindKind (jkind i),
+        let ik = iokind (jkind i),
         let benefit =
               (1 + jpower i) * Effect.effectToBenefit (ieffect ik),
         benefit > 0,
@@ -160,7 +160,7 @@ strategy actor oldState@State{splayer = pl, stime = time} per =
     throwFreq is multi = if not $ asight mk then mzero else Frequency
       [ (benefit * multi, actionThrow (iname ik) i)
       | i <- is,
-        let ik = iofindKind (jkind i),
+        let ik = iokind (jkind i),
         let benefit =
               - (1 + jpower i) * Effect.effectToBenefit (ieffect ik),
         benefit > 0,

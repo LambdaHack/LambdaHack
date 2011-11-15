@@ -50,8 +50,8 @@ getGroupItem :: [Item] ->  -- all objects in question
                 String ->  -- how to refer to the collection of objects
                 Action (Maybe Item)
 getGroupItem is groupName prompt packName = do
-  Kind.COps{coitem=Kind.Ops{ofindName}} <- gets scops
-  let choice i = groupName == ofindName (jkind i)
+  Kind.COps{coitem=Kind.Ops{oname}} <- gets scops
+  let choice i = groupName == oname (jkind i)
       header = capitalize $ suffixS groupName
   getItem prompt choice header is packName
 
@@ -74,14 +74,14 @@ applyGroupItem actor verb item = do
 
 playerApplyGroupItem :: String -> Action ()
 playerApplyGroupItem groupName = do
-  Kind.COps{coitem=Kind.Ops{ofindName}} <- gets scops
+  Kind.COps{coitem=Kind.Ops{oname}} <- gets scops
   is   <- gets getPlayerItem
   iOpt <- getGroupItem is groupName
             ("What to " ++ applyToVerb groupName ++ "?") "in inventory"
   pl   <- gets splayer
   case iOpt of
     Just i  ->
-      let verb = applyToVerb (ofindName (jkind i))
+      let verb = applyToVerb (oname (jkind i))
       in  applyGroupItem pl verb i
     Nothing -> neverMind True
 
@@ -128,7 +128,7 @@ zapGroupItem source loc verb item = do
 
 playerZapGroupItem :: String -> Action ()
 playerZapGroupItem groupName = do
-  Kind.COps{coitem=Kind.Ops{ofindName}} <- gets scops
+  Kind.COps{coitem=Kind.Ops{oname}} <- gets scops
   state <- get
   is    <- gets getPlayerItem
   iOpt  <- getGroupItem is groupName
@@ -142,7 +142,7 @@ playerZapGroupItem groupName = do
         Just loc ->
           -- TODO: draw digital line and see if obstacles prevent firing
           if actorReachesLoc pl loc per (Just pl)
-          then let verb = zapToVerb (ofindName (jkind i))
+          then let verb = zapToVerb (oname (jkind i))
                in  zapGroupItem pl loc verb i
           else abortWith "target not reachable"
     Nothing -> neverMind True

@@ -44,8 +44,8 @@ effectToAction :: Effect.Effect -> Int -> ActorId -> ActorId -> Int ->
                   Action (Bool, String)
 effectToAction Effect.NoEffect _ _ _ _ = nullEffect
 effectToAction Effect.Heal _ _source target power = do
-  cops@Kind.COps{coactor=Kind.Ops{ofindKind}} <- gets scops
-  let bhpMax m = maxDice (ahp $ ofindKind $ bkind m)
+  cops@Kind.COps{coactor=Kind.Ops{okind}} <- gets scops
+  let bhpMax m = maxDice (ahp $ okind $ bkind m)
   tm <- gets (getActor target)
   if bhp tm >= bhpMax tm || power <= 0
     then nullEffect
@@ -126,10 +126,10 @@ nullEffect = return (False, "Nothing happens.")
 -- If either actor is a hero, the item may get identified.
 itemEffectAction :: Int -> ActorId -> ActorId -> Item -> Action Bool
 itemEffectAction verbosity source target item = do
-  Kind.COps{coitem=Kind.Ops{ofindKind}} <- gets scops
+  Kind.COps{coitem=Kind.Ops{okind}} <- gets scops
   tm  <- gets (getActor target)
   per <- currentPerception
-  let effect = ieffect $ ofindKind $ jkind item
+  let effect = ieffect $ okind $ jkind item
   -- The message describes the target part of the action.
   (b, msg) <- effectToAction effect verbosity source target (jpower item)
   -- Determine how the player perceives the event.
@@ -147,12 +147,12 @@ itemEffectAction verbosity source target item = do
 -- | Given item is now known to the player.
 discover :: Item -> Action ()
 discover i = do
-  Kind.COps{coitem=Kind.Ops{ofindKind}} <- gets scops
+  Kind.COps{coitem=Kind.Ops{okind}} <- gets scops
   state <- get
   let ik = jkind i
       obj = unwords $ tail $ words $ objectItem state i
       msg = "The " ++ obj ++ " turns out to be "
-      kind = ofindKind ik
+      kind = okind ik
       alreadyIdentified = L.length (iflavour kind) == 1 ||
                           ik `S.member` sdisco state
   unless alreadyIdentified $ do
@@ -165,7 +165,7 @@ discover i = do
 selectPlayer :: ActorId -> Action Bool
 selectPlayer actor =
   do
-    cops@Kind.COps{coactor=Kind.Ops{ofindKind}} <- gets scops
+    cops@Kind.COps{coactor=Kind.Ops{okind}} <- gets scops
     pl <- gets splayer
     if actor == pl
       then return False -- already selected
@@ -184,7 +184,7 @@ selectPlayer actor =
         -- Set smell display, depending on player capabilities.
         -- This also resets FOV mode.
         modify (\ s -> s { ssensory =
-                             if asmell $ ofindKind $
+                             if asmell $ okind $
                                 bkind pbody
                              then Smell
                              else Implicit })

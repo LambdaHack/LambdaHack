@@ -277,7 +277,7 @@ playerCloseDoor dir = do
 -- | An actor closes a door. Player (hero or monster) or enemy.
 actorOpenDoor :: ActorId -> Dir -> Action ()
 actorOpenDoor actor dir = do
-  cops@Kind.COps{coactor=Kind.Ops{ofindKind}} <- gets scops
+  cops@Kind.COps{coactor=Kind.Ops{okind}} <- gets scops
   lvl  <- gets slevel
   pl   <- gets splayer
   body <- gets (getActor actor)
@@ -286,7 +286,7 @@ actorOpenDoor actor dir = do
       t = lvl `at` dloc
       isPlayer = actor == pl
       isVerbose = isPlayer  -- don't report enemy failures, if it's not player
-      iq = aiq $ ofindKind $ bkind body
+      iq = aiq $ okind $ bkind body
       openPower = Tile.SecretStrength $
         if isPlayer
         then 1  -- player can't open secret doors
@@ -672,10 +672,10 @@ generateMonster = do
 regenerateLevelHP :: Action ()
 regenerateLevelHP =
   do
-    cops@Kind.COps{coactor=Kind.Ops{ofindKind}} <- gets scops
+    cops@Kind.COps{coactor=Kind.Ops{okind}} <- gets scops
     time <- gets stime
     let upd itemIM a m =
-          let ak = ofindKind $ bkind m
+          let ak = okind $ bkind m
               bitems = fromMaybe [] $ IM.lookup a itemIM
               regen = aregen ak `div`
                       case strongestItem cops bitems "amulet" of
