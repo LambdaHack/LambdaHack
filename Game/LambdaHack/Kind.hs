@@ -34,6 +34,7 @@ data Ops a = Ops
   , ofrequency :: Frequency (Id a, a)
   , ofoldrWithKey :: forall b. (Id a -> a -> b -> b) -> b -> b
   , obounds :: (Id a, Id a)
+  , ospeedup :: [Id a -> Bool]  -- TODO: switch list to tuple via a type family?
   }
 
 createOps :: forall a. CDefs a -> Ops a
@@ -58,6 +59,7 @@ createOps CDefs{getSymbol, getName, getFreq, content} =
                       (i2, a2) = IM.findMax kindMap
                   in ((Id (toEnum i1), a1), (Id (toEnum i2), a2))
      in (Id 0, (fst . snd) limits)
+  , ospeedup = []  -- the default, override elsewhere
   }
 
 data COps = COps

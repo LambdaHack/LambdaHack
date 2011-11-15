@@ -3,6 +3,7 @@ module Main where
 import System.Directory
 import qualified System.Random as R
 import qualified Control.Monad.State as MState
+import qualified Data.Array.Unboxed as A
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.State
@@ -13,6 +14,9 @@ import Game.LambdaHack.Turn
 import qualified Game.LambdaHack.Config as Config
 import Game.LambdaHack.ActorAdd
 import Game.LambdaHack.Item
+import qualified Game.LambdaHack.Feature as F
+import Game.LambdaHack.Content.TileKind
+import Game.LambdaHack.Tile
 import qualified Game.LambdaHack.Keybindings as KB
 import qualified Game.LambdaHack.Kind as Kind
 import qualified Content.ActorKind
@@ -20,13 +24,28 @@ import qualified Content.CaveKind
 import qualified Content.ItemKind
 import qualified Content.TileKind
 
+speedup :: Kind.Ops TileKind -> [Kind.Id TileKind -> Bool]
+speedup Kind.Ops{ofoldrWithKey, obounds} =
+  let createTab :: (TileKind -> Bool) -> A.UArray (Kind.Id TileKind) Bool
+      createTab p =
+        let f _ k acc = p k : acc
+            clearAssocs = ofoldrWithKey f []
+        in A.listArray obounds clearAssocs
+      tabulate :: (TileKind -> Bool) -> Kind.Id TileKind -> Bool
+      tabulate p = (createTab p A.!)
+      isClearTab = tabulate $ kindHasFeature F.Clear
+      isLitTab   = tabulate $ kindHasFeature F.Lit
+  in [isClearTab, isLitTab]
+
 cops :: Kind.COps
-cops = Kind.COps
-  { coactor = Kind.createOps Content.ActorKind.cdefs
-  , cocave  = Kind.createOps Content.CaveKind.cdefs
-  , coitem  = Kind.createOps Content.ItemKind.cdefs
-  , cotile  = Kind.createOps Content.TileKind.cdefs
-  }
+cops =
+  let cotile = Kind.createOps Content.TileKind.cdefs
+  in Kind.COps
+    { coactor = Kind.createOps Content.ActorKind.cdefs
+    , cocave  = Kind.createOps Content.CaveKind.cdefs
+    , coitem  = Kind.createOps Content.ItemKind.cdefs
+    , cotile  = cotile {Kind.ospeedup = speedup cotile}
+    }
 
 main :: IO ()
 main = Display.startup start
