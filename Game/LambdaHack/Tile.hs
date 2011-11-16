@@ -17,7 +17,7 @@ instance Binary SecretStrength where
 
 -- TODO: remove this file
 
-wallId, openingId, floorLightId, floorDarkId, unknownId, doorOpenId, doorClosedId, doorSecretId, stairsUpId, stairsDownId :: Kind.Ops TileKind -> Kind.Id TileKind
+-- wallId, openingId, floorLightId, floorDarkId, unknownId, doorOpenId, doorClosedId, doorSecretId, stairsUpId, stairsDownId :: Kind.Ops TileKind -> Kind.Id TileKind
 wallId Kind.Ops{ogetId} = ogetId (\ t -> tsymbol t == '#' && (L.null $ tfeature t))
 openingId Kind.Ops{ogetId} = ogetId (\ t -> tsymbol t == '.' && kindHasFeature F.Exit t)
 floorLightId Kind.Ops{ogetId} =
@@ -28,8 +28,8 @@ unknownId Kind.Ops{ogetId} = ogetId ((== ' ') . tsymbol)
 doorOpenId Kind.Ops{ogetId} = ogetId (kindHasFeature F.Closable)
 doorClosedId Kind.Ops{ogetId} = ogetId (kindHasFeature F.Openable)
 doorSecretId Kind.Ops{ogetId} = ogetId (kindHasFeature F.Hidden)
-stairsUpId Kind.Ops{ogetId} = ogetId (kindHas [F.Lit, F.Climbable] [])
-stairsDownId Kind.Ops{ogetId} = ogetId (kindHas [F.Lit, F.Descendable] [])
+stairsUpId Kind.Ops{opick} = opick $ kindHasFeature F.Climbable
+stairsDownId Kind.Ops{opick} = opick $ kindHasFeature F.Descendable
 
 -- | The player can't tell if the tile is a secret door or not.
 canBeSecretDoor :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool

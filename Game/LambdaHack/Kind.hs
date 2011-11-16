@@ -18,6 +18,7 @@ import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Content.Content
+import Game.LambdaHack.Random
 
 newtype Id a = Id Word8 deriving (Show, Eq, Ord, Ix.Ix)
 
@@ -32,6 +33,7 @@ data Ops a = Ops
   , okind :: Id a -> a
   , ogetId :: (a -> Bool) -> Id a
   , ofrequency :: Frequency (Id a, a)
+  , opick :: (a -> Bool) -> Rnd (Id a)
   , ofoldrWithKey :: forall b. (Id a -> a -> b -> b) -> b -> b
   , obounds :: (Id a, Id a)
   , ospeedup :: [Id a -> Bool]  -- TODO: switch list to tuple via a type family?
@@ -53,6 +55,12 @@ createOps CDefs{getSymbol, getName, getFreq, content} =
      [i] -> i
      l -> assert `failure` l
   , ofrequency = Frequency [(getFreq k, (Id i, k)) | (i, k) <- kindAssocs]
+  , opick = \ p ->
+     let fs = [ (n, Id i)
+              | (i, k) <- kindAssocs
+              , let n = getFreq k
+              , n > 0 && p k ]
+     in frequency $ Frequency fs
   , ofoldrWithKey = \ f z -> L.foldr (\ (i, a) -> f (Id i) a) z kindAssocs
   , obounds =
      let limits = let (i1, a1) = IM.findMin kindMap

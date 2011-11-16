@@ -68,9 +68,9 @@ buildLevel cops@Kind.COps{cotile, cocave=Kind.Ops{okind}}
   sd <- findLocTry 2000 cmap
           (\ l t -> l /= su && Tile.isBoring cotile t)
           (\ l _ -> distance cxsize su l >= minStairsDistance)
-  let stairs =
-        [(su, Tile.stairsUpId cotile)]
-        ++ if n == depth then [] else [(sd, Tile.stairsDownId cotile)]
+  upId   <- Tile.stairsUpId   cotile
+  downId <- Tile.stairsDownId cotile
+  let stairs = [(su, upId)] ++ if n == depth then [] else [(sd, downId)]
       lmap = cmap Kind.// stairs
   is <- rollItems cops n cfg lmap su
   let itemMap = mapToIMap cxsize ditem `IM.union` IM.fromList is

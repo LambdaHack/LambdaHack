@@ -52,11 +52,11 @@ oneOf xs =
     return (xs !! r)
 
 frequency :: Frequency a -> Rnd a
-frequency (Frequency fs) =
-  do
-    r <- randomR (1, sum (map fst fs))
-    return (frequency' r fs)
+frequency (Frequency fs) = do
+  r <- randomR (1, sumf)
+  return (frequency' r fs)
  where
+  sumf = sum (map fst fs)
   frequency' :: Int -> [(Int, a)] -> a
   frequency' m []       = assert `failure` (map fst fs, m)
   frequency' m ((n, x) : xs)
