@@ -1,6 +1,6 @@
 module Game.LambdaHack.FOV.Permissive (scan) where
 
-import qualified Data.Set as S
+import qualified Data.List as L
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.FOV.Common
@@ -24,16 +24,17 @@ import Game.LambdaHack.Loc
 -- | The current state of a scan is kept in Maybe (Line, ConvexHull).
 -- If Just something, we're in a visible interval. If Nothing, we're in
 -- a shadowed interval.
-scan :: Distance -> (Bump -> Loc) -> (Bump -> Bool) -> S.Set Loc
+scan :: Distance -> (Bump -> Loc) -> (Bump -> Bool) -> [Loc] -> [Loc]
 scan r tr isClear =
   -- the area is diagonal, which is incorrect, but looks good enough
   dscan 1 (((B(0, 1), B(r+1, 0)), [B(1, 0)]), ((B(1, 0), B(0, r+1)), [B(0, 1)]))
  where
-  dscan :: Distance -> EdgeInterval -> S.Set Loc
-  dscan d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps)) =
+  dscan :: Distance -> EdgeInterval -> [Loc] -> [Loc]
+  dscan d (s0@(sl{-shallow line-}, sBumps0),
+           e @(el{-  steep line-}, eBumps)) !acc1 =
     assert (r >= d && d >= 0 && pe + 1 >= ps0 && ps0 >= 0
             `blame` (r,d,s0,e,ps0,pe)) $
-    if illegal then S.empty else S.union inside outside
+    if illegal then acc1 else result
    where
     (ns, ks) = intersect sl d
     (ne, ke) = intersect el d
@@ -46,36 +47,38 @@ scan r tr isClear =
     pd2bump     (p, di) = B(di - p    , p)
     bottomRight (p, di) = B(di - p + 1, p)
 
-    inside = S.fromList [tr (pd2bump (p, d)) | p <- [ps0..pe]]
-    outside
-      | d >= r = S.empty
-      | isClear (pd2bump (ps0, d)) = mscan (Just s0) ps0  -- start in light
-      | ps0 == ns `divUp` ks = mscan (Just s0) ps0          -- start in a corner
-      | otherwise = mscan Nothing (ps0+1)                   -- start in mid-wall
+    consLoc acc2 p = let !loc = tr (pd2bump (p, d)) in loc : acc2
+    acc3 = L.foldl' consLoc acc1 [ps0..pe]
+    result
+      | d >= r = acc3
+      | isClear (pd2bump (ps0, d)) =                     -- start in light
+          mscan (Just s0) ps0 acc3
+      | ps0 == ns `divUp` ks = mscan (Just s0) ps0 acc3  -- start in a corner
+      | otherwise = mscan Nothing (ps0+1) acc3           -- start in mid-wall
 
-    mscan :: Maybe Edge -> Progress -> S.Set Loc
-    mscan (Just s@(_, sBumps)) ps
-      | ps > pe = dscan (d+1) (s, e)            -- reached end, scan next
-      | not $ isClear (pd2bump (ps, d)) =  -- enter shadow, steep bump
+    mscan :: Maybe Edge -> Progress -> [Loc] -> [Loc]
+    mscan (Just s@(_, sBumps)) ps !acc
+      | ps > pe = dscan (d+1) (s, e) acc       -- reached end, scan next
+      | not $ isClear (pd2bump (ps, d)) =      -- enter shadow, steep bump
           let steepBump = bottomRight (ps, d)
               gte = flip $ dsteeper steepBump
               -- sBumps may contain steepBump, but maximal will ignore it
               nep = maximal gte sBumps
               neBumps = addHull gte steepBump eBumps
-          in S.union (dscan (d+1) (s, (dline nep steepBump, neBumps)))
-                     (mscan Nothing (ps+1))
-      | otherwise = mscan (Just s) (ps+1)       -- continue in light
+          in dscan (d+1) (s, (dline nep steepBump, neBumps))
+               (mscan Nothing (ps+1) acc)
+      | otherwise = mscan (Just s) (ps+1) acc  -- continue in light
 
-    mscan Nothing ps
-      | ps > ne `div` ke = S.empty              -- reached absolute end
-      | otherwise =                             -- out of shadow, shallow bump
+    mscan Nothing ps !acc
+      | ps > ne `div` ke = acc                 -- reached absolute end
+      | otherwise =                            -- out of shadow, shallow bump
           -- the light can be just through a corner of diagonal walls
           -- and the recursive call verifies that at the same ps coordinate
           let shallowBump = bottomRight (ps, d)
               gte = dsteeper shallowBump
               nsp = maximal gte eBumps
               nsBumps = addHull gte shallowBump sBumps0
-          in mscan (Just (dline nsp shallowBump, nsBumps)) ps
+          in mscan (Just (dline nsp shallowBump, nsBumps)) ps acc
 
 -- | Create a line from two points. Debug: check if well-defined.
 dline :: Bump -> Bump -> Line

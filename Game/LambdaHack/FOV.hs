@@ -2,7 +2,6 @@ module Game.LambdaHack.FOV
   ( FovMode(..), fullscan
   ) where
 
-import qualified Data.Set as S
 import qualified Data.List as L
 
 import Game.LambdaHack.FOV.Common
@@ -24,24 +23,22 @@ data FovMode = Shadow | Permissive Int | Digital Int | Blind
 -- algorithm to use is set in the config file.
 -- Press a command key in the game to cycle among the algorithms
 -- and see a special visualization of their effects..
-fullscan :: FovMode -> Loc -> Kind.Ops TileKind -> Level -> S.Set Loc
+fullscan :: FovMode -> Loc -> Kind.Ops TileKind -> Level -> [Loc]
 fullscan fovMode loc cops Level{lxsize, lmap} =
   case fovMode of
     Shadow ->  -- shadow casting with infinite range
-      S.unions $
-      L.map (\ tr -> Shadow.scan tr (isCl . tr) 1 (0,1))
-        [tr0, tr1, tr2, tr3, tr4, tr5, tr6, tr7]
+      L.foldl' (\ acc tr -> Shadow.scan tr (isCl . tr) 1 (0, 1) acc)
+        [] [tr0, tr1, tr2, tr3, tr4, tr5, tr6, tr7]
     Permissive r  ->  -- permissive with range r
-      S.unions $
-      L.map (\ tr -> Permissive.scan r tr (isCl . tr)) [qtr0, qtr1, qtr2, qtr3]
+      L.foldl' (\ acc tr -> Permissive.scan r tr (isCl . tr) acc)
+        [] [qtr0, qtr1, qtr2, qtr3]
     Digital r ->  -- digital with range r
-      S.unions $
-      L.map (\ tr -> Digital.scan r tr (isCl . tr)) [qtr0, qtr1, qtr2, qtr3]
+      L.foldl' (\ acc tr -> Digital.scan r tr (isCl . tr) acc)
+        [] [qtr0, qtr1, qtr2, qtr3]
     Blind ->  -- only feeling out adjacent tiles by touch
       let radius = 1
-      in S.unions $
-         L.map (\ tr ->
-                 Digital.scan radius tr (isCl . tr)) [qtr0, qtr1, qtr2, qtr3]
+      in L.foldl' (\ acc tr -> Digital.scan radius tr (isCl . tr) acc)
+           [] [qtr0, qtr1, qtr2, qtr3]
  where
   isCl :: Loc -> Bool
   isCl = Tile.isClear cops . (lmap Kind.!)

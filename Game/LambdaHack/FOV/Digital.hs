@@ -1,6 +1,6 @@
 module Game.LambdaHack.FOV.Digital (scan) where
 
-import qualified Data.Set as S
+import qualified Data.List as L
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.FOV.Common
@@ -18,13 +18,14 @@ import Game.LambdaHack.Loc
 -- | The current state of a scan is kept in Maybe (Line, ConvexHull).
 -- If Just something, we're in a visible interval. If Nothing, we're in
 -- a shadowed interval.
-scan :: Distance -> (Bump -> Loc) -> (Bump -> Bool) -> S.Set Loc
+scan :: Distance -> (Bump -> Loc) -> (Bump -> Bool) -> [Loc] -> [Loc]
 scan r tr isClear =
   -- the scanned area is a square, which is a sphere in this metric; good
-  dscan 1 (((B(1, 0), B(-r, r)),  [B(0, 0)]), ((B(0, 0), B(r+1, r)), [B(1, 0)]))
+  dscan 1 (((B(1, 0), B(-r, r)), [B(0, 0)]), ((B(0, 0), B(r+1, r)), [B(1, 0)]))
  where
-  dscan :: Distance -> EdgeInterval -> S.Set Loc
-  dscan d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps)) =
+  dscan :: Distance -> EdgeInterval -> [Loc] -> [Loc]
+  dscan d (s0@(sl{-shallow line-}, sBumps0),
+           e @(el{-  steep line-}, eBumps)) !acc1 =
     let ps0 = let (n, k) = intersect sl d  -- minimal progress to consider
               in n `div` k
         pe = let (n, k) = intersect el d   -- maximal progress to consider
@@ -34,34 +35,37 @@ scan r tr isClear =
                -- at a corner, choose the diamond leading to a smaller view.
              in -1 + n `divUp` k
 
-        inside = S.fromList [tr (B(p, d)) | p <- [ps0..pe]]
-        outside
-          | d >= r = S.empty
-          | isClear (B(ps0, d)) =
-              mscan (Just s0) (ps0+1) pe      -- start in light
-          | otherwise =
-              mscan Nothing (ps0+1) pe        -- start in shadow
+        consLoc acc2 p = let !loc = tr (B(p, d)) in loc : acc2
+        acc = L.foldl' consLoc acc1 [ps0..pe]
+        result
+          | d >= r = acc
+          | isClear (B(ps0, d)) =             -- start in light
+              mscan (Just s0) (ps0+1) pe acc
+          | otherwise =                       -- start in shadow
+              mscan Nothing (ps0+1) pe acc
     in assert (r >= d && d >= 0 && pe >= ps0 `blame` (r,d,s0,e,ps0,pe)) $
-       S.union inside outside
+       result
    where
-    mscan :: Maybe Edge -> Progress -> Progress -> S.Set Loc
-    mscan (Just s@(_, sBumps)) ps pe
-      | ps > pe = dscan (d+1) (s, e)          -- reached end, scan next
-      | not $ isClear steepBump =        -- entering shadow
-          S.union (dscan (d+1) (s, (dline nep steepBump, neBumps)))
-                  (mscan Nothing (ps+1) pe)
-      | otherwise = mscan (Just s) (ps+1) pe  -- continue in light
+    mscan :: Maybe Edge -> Progress -> Progress -> [Loc] -> [Loc]
+    mscan (Just s@(_, sBumps)) ps pe !acc
+      | ps > pe = dscan (d+1) (s, e) acc      -- reached end, scan next
+      | not $ isClear steepBump =             -- entering shadow
+          dscan (d+1) (s, (dline nep steepBump, neBumps))
+            (mscan Nothing (ps+1) pe acc)
+      | otherwise =                           -- continue in light
+          mscan (Just s) (ps+1) pe acc
      where
       steepBump = B(ps, d)
       gte = dsteeper steepBump
       nep = maximal gte sBumps
       neBumps = addHull gte steepBump eBumps
 
-    mscan Nothing ps pe
-      | ps > pe = S.empty                     -- reached end while in shadow
-      | isClear shallowBump =            -- moving out of shadow
-          mscan (Just (dline nsp shallowBump, nsBumps)) (ps+1) pe
-      | otherwise = mscan Nothing (ps+1) pe   -- continue in shadow
+    mscan Nothing ps pe !acc
+      | ps > pe = acc                         -- reached end while in shadow
+      | isClear shallowBump =                 -- moving out of shadow
+          mscan (Just (dline nsp shallowBump, nsBumps)) (ps+1) pe acc
+      | otherwise =                           -- continue in shadow
+          mscan Nothing (ps+1) pe acc
      where
       shallowBump = B(ps, d)
       gte = flip $ dsteeper shallowBump

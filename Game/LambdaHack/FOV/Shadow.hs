@@ -1,7 +1,7 @@
 module Game.LambdaHack.FOV.Shadow (scan, Interval) where
 
 import Data.Ratio
-import qualified Data.Set as S
+import qualified Data.List as L
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.FOV.Common
@@ -71,37 +71,37 @@ type Interval = (Rational, Rational)
 -- | The current state of a scan is kept in a variable of Maybe Rational.
 -- If Just something, we're in a visible interval. If Nothing, we're in
 -- a shadowed interval.
-scan :: ((Progress, Distance) -> Loc) -> ((Progress, Distance) -> Bool) -> Distance
-     -> Interval -> S.Set Loc
-scan tr isClear d (s0, e) =
+scan :: ((Distance, Progress) -> Loc) -> ((Progress, Distance) -> Bool)
+     -> Distance -> Interval -> [Loc] -> [Loc]
+scan tr isClear d (s0, e) !acc1 =
     let ps = downBias (s0 * fromIntegral d)  -- minimal progress to check
         pe = upBias (e * fromIntegral d)     -- maximal progress to check
         st = if isClear (ps, d)
              then Just s0  -- start in light
              else Nothing  -- start in shadow
-    in
-        assert (d >= 0 && e >= 0 && s0 >= 0 && pe >= ps && ps >= 0
-                `blame` (d,s0,e,ps,pe)) $
-        S.union (S.fromList [tr (p, d) | p <- [ps..pe]]) (mscan st ps pe)
+        consLoc acc2 p = let !loc = tr (p, d) in loc : acc2
+        acc = L.foldl' consLoc acc1 [ps..pe]
+    in assert (d >= 0 && e >= 0 && s0 >= 0 && pe >= ps && ps >= 0
+               `blame` (d,s0,e,ps,pe)) $
+       mscan st ps pe acc
   where
-    mscan :: Maybe Rational -> Progress -> Progress -> S.Set Loc
-    mscan (Just s) ps pe
-      | s  >= e  = S.empty                -- empty interval
-      | ps > pe  = scan tr isClear (d+1) (s, e) -- reached end, scan next
-      | not $ isClear (ps, d) =
-                   let ne = (fromIntegral ps - (1%2)) / (fromIntegral d + (1%2))
-                   in  scan tr isClear (d+1) (s, ne) `S.union` mscan Nothing (ps+1) pe
-                                      -- entering shadow
-      | otherwise = mscan (Just s) (ps+1) pe
-                                      -- continue in light
-    mscan Nothing ps pe
-      | ps > pe  = S.empty            -- reached end while in shadow
-      | isClear (ps, d) =
-                   let ns = (fromIntegral ps - (1%2)) / (fromIntegral d - (1%2))
-                   in  mscan (Just ns) (ps+1) pe
-                                      -- moving out of shadow
-      | otherwise = mscan Nothing (ps+1) pe
-                                      -- continue in shadow
+    mscan :: Maybe Rational -> Progress -> Progress -> [Loc] -> [Loc]
+    mscan (Just s) ps pe !acc
+      | s  >= e  = acc                               -- empty interval
+      | ps > pe  = scan tr isClear (d+1) (s, e) acc  -- reached end, scan next
+      | not $ isClear (ps, d) =                      -- entering shadow
+          let ne = (fromIntegral ps - (1%2)) / (fromIntegral d + (1%2))
+          in scan tr isClear (d+1) (s, ne) (mscan Nothing (ps+1) pe acc)
+      | otherwise = mscan (Just s) (ps+1) pe acc     -- continue in light
+
+    mscan Nothing ps pe !acc
+      | ps > pe  = acc                  -- reached end while in shadow
+      | isClear (ps, d) =               -- moving out of shadow
+          let ns = (fromIntegral ps - (1%2)) / (fromIntegral d - (1%2))
+          in mscan (Just ns) (ps+1) pe acc
+      | otherwise =                     -- continue in shadow
+           mscan Nothing (ps+1) pe acc
+
 
 downBias, upBias :: (Integral a, Integral b) => Ratio a -> b
 downBias x = round (x - 1 % (denominator x * 3))
