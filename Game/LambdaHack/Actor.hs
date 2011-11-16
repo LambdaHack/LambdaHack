@@ -76,8 +76,8 @@ unoccupied actors loc =
   all (\ body -> bloc body /= loc) actors
 
 heroKindId :: Kind.Ops ActorKind -> Kind.Id ActorKind
-heroKindId Kind.Ops{ogetId} =
-  ogetId ((== "hero") . aname)
+heroKindId Kind.Ops{ogetUniqId} =
+  ogetUniqId ((== "hero") . aname)
 
 instance Binary ActorId where
   put (AHero n)    = putWord8 0 >> put n

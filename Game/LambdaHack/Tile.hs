@@ -8,6 +8,8 @@ import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Feature as F
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Geometry
+import Game.LambdaHack.Random
+import Game.LambdaHack.Frequency
 
 newtype SecretStrength = SecretStrength{secretStrength :: Time}
   deriving (Show, Eq, Ord)
@@ -17,35 +19,51 @@ instance Binary SecretStrength where
 
 -- TODO: remove this file
 
--- wallId, openingId, floorLightId, floorDarkId, unknownId, doorOpenId, doorClosedId, doorSecretId, stairsUpId, stairsDownId :: Kind.Ops TileKind -> Kind.Id TileKind
-wallId Kind.Ops{ogetId} = ogetId (\ t -> tsymbol t == '#' && (L.null $ tfeature t))
-openingId Kind.Ops{ogetId} = ogetId (\ t -> tsymbol t == '.' && kindHasFeature F.Exit t)
-floorLightId Kind.Ops{ogetId} =
-  ogetId (\ t -> tsymbol t == '.' && kindHas [F.Lit] [F.Exit] t)
-floorDarkId Kind.Ops{ogetId} =
-  ogetId (\ t -> tsymbol t == '.' && kindHas [] [F.Exit, F.Lit] t)
-unknownId Kind.Ops{ogetId} = ogetId ((== ' ') . tsymbol)
-doorOpenId Kind.Ops{ogetId} = ogetId (kindHasFeature F.Closable)
-doorClosedId Kind.Ops{ogetId} = ogetId (kindHasFeature F.Openable)
-doorSecretId Kind.Ops{ogetId} = ogetId (kindHasFeature F.Hidden)
+wallId, openingId, floorLightId, floorDarkId, unknownId, doorOpenId, doorClosedId, doorSecretId, stairsUpId, stairsDownId :: Kind.Ops TileKind -> Rnd (Kind.Id TileKind)
+wallId Kind.Ops{opick} =
+  opick $ \ t -> tsymbol t == '#' && L.null (tfeature t)
+openingId Kind.Ops{opick} = opick isOpeningKind
+floorLightId Kind.Ops{opick} =
+  opick $ \ t -> tsymbol t == '.' && kindHas [F.Lit] [F.Exit] t
+floorDarkId Kind.Ops{opick} =
+  opick $ \ t -> tsymbol t == '.' && kindHas [] [F.Exit, F.Lit] t
+unknownId Kind.Ops{opick} = opick isUnknownKind
+doorOpenId Kind.Ops{opick} = opick $ kindHasFeature F.Closable
+doorClosedId Kind.Ops{opick} = opick $ kindHasFeature F.Openable
+doorSecretId Kind.Ops{opick} = opick isdoorSecretKind
 stairsUpId Kind.Ops{opick} = opick $ kindHasFeature F.Climbable
 stairsDownId Kind.Ops{opick} = opick $ kindHasFeature F.Descendable
 
 -- | The player can't tell if the tile is a secret door or not.
 canBeSecretDoor :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
-canBeSecretDoor cops@Kind.Ops{okind} t =
+canBeSecretDoor Kind.Ops{okind, ofrequency} t =
   let u = okind t
-      s = okind (doorSecretId cops)
-  in tsymbol u == tsymbol s &&
-     tname u == tname s &&
-     tcolor u == tcolor s &&
-     tcolor2 u == tcolor2 s
+      Frequency sFreq = filterFreq (isdoorSecretKind . snd) ofrequency
+      similar s =
+        tsymbol u == tsymbol s &&
+        tname u == tname s &&
+        tcolor u == tcolor s &&
+        tcolor2 u == tcolor2 s
+  in L.any (similar . snd . snd) sFreq
 
+isdoorSecretKind :: TileKind -> Bool
+isdoorSecretKind = kindHasFeature F.Hidden
+
+isdoorSecretId :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+isdoorSecretId Kind.Ops{okind} = isdoorSecretKind . okind
+
+isUnknownKind :: TileKind -> Bool
+isUnknownKind = (== ' ') . tsymbol
+
+-- TODO: rename to *Id
 isUnknown :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
-isUnknown cops t = t == unknownId cops
+isUnknown Kind.Ops{okind} = isUnknownKind . okind
+
+isOpeningKind :: TileKind -> Bool
+isOpeningKind t = tsymbol t == '.' && kindHasFeature F.Exit t
 
 isOpening :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
-isOpening cops t = t == openingId cops
+isOpening Kind.Ops{okind} = isOpeningKind . okind
 
 kindHasFeature :: F.Feature -> TileKind -> Bool
 kindHasFeature f t = f `elem` tfeature t

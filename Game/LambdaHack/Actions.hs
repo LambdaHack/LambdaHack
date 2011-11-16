@@ -265,8 +265,10 @@ playerCloseDoor dir = do
       case lvl `iat` dloc of
         [] ->
           if unoccupied hms dloc
-          then let adj = (Kind.// [(dloc, Tile.doorClosedId cops)])
-               in modify (updateLevel (updateLMap adj))
+          then do
+            doorClosedId <- rndToAction $ Tile.doorClosedId cops
+            let adj = (Kind.// [(dloc, doorClosedId)])
+            modify (updateLevel (updateLMap adj))
           else abortWith "blocked"  -- by monsters or heroes
         _:_ -> abortWith "jammed"  -- by items
     else if Tile.hasFeature cops F.Openable t
@@ -300,9 +302,10 @@ actorOpenDoor actor dir = do
                  Tile.hasFeature cotile F.Openable t ||
                  Tile.hasFeature cotile F.Hidden t)
          then neverMind isVerbose  -- not doors at all
-         else
-           let adj = (Kind.// [(dloc, Tile.doorOpenId cotile)])
-           in  modify (updateLevel (updateLMap adj))
+         else do
+           doorOpenId <- rndToAction $ Tile.doorOpenId cotile
+           let adj = (Kind.// [(dloc, doorOpenId)])
+           modify (updateLevel (updateLMap adj))
   advanceTime actor
 
 -- | Attempt a level switch to k levels shallower.
@@ -457,6 +460,7 @@ search =
     lxsize <- gets (lxsize . slevel)
     ploc   <- gets (bloc . getPlayerBody)
     pitems <- gets getPlayerItem
+    doorClosedId <- rndToAction $ Tile.doorClosedId cotile
     let delta = case strongestItem cops pitems "ring" of
                   Just i  -> 1 + jpower i
                   Nothing -> 1
@@ -467,7 +471,7 @@ search =
              then if k > 0
                   then (slm,
                         IM.insert loc (Tile.SecretStrength k) sle)
-                  else ((loc, Tile.doorClosedId cotile) : slm,
+                  else ((loc, doorClosedId) : slm,
                         IM.delete loc sle)
              else (slm, sle)
         f (slm, sle) m = searchTile (shift ploc m) (slm, sle)

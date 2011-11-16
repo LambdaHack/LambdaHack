@@ -31,7 +31,7 @@ data Ops a = Ops
   , oname :: Id a -> String
   , ofreq :: Id a -> Int
   , okind :: Id a -> a
-  , ogetId :: (a -> Bool) -> Id a
+  , ogetUniqId :: (a -> Bool) -> Id a
   , ofrequency :: Frequency (Id a, a)
   , opick :: (a -> Bool) -> Rnd (Id a)
   , ofoldrWithKey :: forall b. (Id a -> a -> b -> b) -> b -> b
@@ -51,7 +51,7 @@ createOps CDefs{getSymbol, getName, getFreq, content} =
   , oname = getName . okind
   , ofreq = getFreq . okind
   , okind = okind
-  , ogetId = \ f -> case [Id i | (i, k) <- kindAssocs, f k] of
+  , ogetUniqId = \ f -> case [Id i | (i, k) <- kindAssocs, f k] of
      [i] -> i
      l -> assert `failure` l
   , ofrequency = Frequency [(getFreq k, (Id i, k)) | (i, k) <- kindAssocs]
