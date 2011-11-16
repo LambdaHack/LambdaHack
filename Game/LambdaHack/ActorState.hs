@@ -1,7 +1,6 @@
 module Game.LambdaHack.ActorState where
 
 import qualified Data.List as L
-import qualified Data.Set as S
 import qualified Data.IntSet as IS
 import qualified Data.IntMap as IM
 import Control.Monad
@@ -82,7 +81,7 @@ updateAnyLevel f ln state@State{slid, sdungeon}
   | otherwise = updateDungeon (const $ Dungeon.adjust f ln sdungeon) state
 
 -- | Calculate the location of player's target.
-targetToLoc :: S.Set Loc -> State -> Maybe Loc
+targetToLoc :: IS.IntSet -> State -> Maybe Loc
 targetToLoc visible state =
   case btarget (getPlayerBody state) of
     TLoc loc -> Just loc
@@ -93,7 +92,7 @@ targetToLoc visible state =
     TEnemy a _ll -> do
       guard $ memActor a state           -- alive and on the current level?
       let loc = bloc (getActor a state)
-      guard $ S.member loc visible       -- visible?
+      guard $ IS.member loc visible       -- visible?
       return loc
 
 -- The operations below disregard levels other than the current.

@@ -30,6 +30,8 @@ instance Binary Item where
     put ik >> put ip >> put il >> put ic
   get = liftM4 Item get get get get
 
+-- Could be optimized to IntMap and IntSet, but won't ever be a bottleneck,
+-- unless we have thousands of item kinds.
 type FlavourMap = M.Map (Kind.Id ItemKind) Flavour  -- TODO: rewrite and move elsewhere
 
 type Discoveries = S.Set (Kind.Id ItemKind)

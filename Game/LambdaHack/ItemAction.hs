@@ -5,7 +5,7 @@ import Control.Monad.State hiding (State, state)
 import qualified Data.List as L
 import qualified Data.IntMap as IM
 import Data.Maybe
-import qualified Data.Set as S
+import qualified Data.IntSet as IS
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
@@ -69,7 +69,7 @@ applyGroupItem actor verb item = do
       msg = subjectVerbIObject cops state body verb consumed ""
       loc = bloc body
   removeFromInventory actor consumed loc
-  when (loc `S.member` ptvisible per) $ messageAdd msg
+  when (loc `IS.member` ptvisible per) $ messageAdd msg
   itemEffectAction 5 actor actor consumed
   advanceTime actor
 
@@ -110,7 +110,7 @@ zapGroupItem source loc verb item = do
   let consumed = item { jcount = 1 }
       sloc = bloc sm
       subject =
-        if sloc `S.member` ptvisible per
+        if sloc `IS.member` ptvisible per
         then sm
         else template (heroKindId (Kind.coactor cops))
                (Just "somebody") Nothing 99 sloc
@@ -119,12 +119,12 @@ zapGroupItem source loc verb item = do
   case locToActor loc state of
     Just ta -> do
       -- The message describes the source part of the action.
-      when (sloc `S.member` ptvisible per || isAHero ta) $ messageAdd msg
+      when (sloc `IS.member` ptvisible per || isAHero ta) $ messageAdd msg
       -- Messages inside itemEffectAction describe the target part.
       b <- itemEffectAction 10 source ta consumed
       unless b $ modify (updateLevel (dropItemsAt [consumed] loc))
     Nothing -> do
-      when (sloc `S.member` ptvisible per) $ messageAdd msg
+      when (sloc `IS.member` ptvisible per) $ messageAdd msg
       modify (updateLevel (dropItemsAt [consumed] loc))
   advanceTime source
 
@@ -227,7 +227,7 @@ actorPickupItem actor = do
   body  <- gets (getActor actor)
   bitems <- gets (getActorItem actor)
   let loc       = bloc body
-      perceived = loc `S.member` ptvisible per
+      perceived = loc `IS.member` ptvisible per
       isPlayer  = actor == pl
   -- check if something is here to pick up
   case lvl `iat` loc of

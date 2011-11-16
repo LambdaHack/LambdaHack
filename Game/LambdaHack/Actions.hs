@@ -5,7 +5,7 @@ import Control.Monad.State hiding (State, state)
 import qualified Data.List as L
 import qualified Data.IntMap as IM
 import Data.Maybe
-import qualified Data.Set as S
+import qualified Data.IntSet as IS
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
@@ -180,8 +180,8 @@ continueRun dir =
     let dms = case pl of
                 AMonster n -> IM.delete n ms  -- don't be afraid of yourself
                 AHero _ -> ms
-        mslocs = S.fromList (L.map bloc (IM.elems dms))
-        monstersVisible = not (S.null (mslocs `S.intersection` ptvisible per))
+        mslocs = IS.fromList (L.map bloc (IM.elems dms))
+        monstersVisible = not (IS.null (mslocs `IS.intersection` ptvisible per))
         newsReported    = not (L.null msg)
         tile      = lvl `rememberAt` loc  -- tile at current location
         itemsHere = not (L.null (lvl `irememberAt` loc))
@@ -231,7 +231,7 @@ remember =
   do
     per <- currentPerception
     lvl <- gets slevel
-    let vis = S.toList (ptvisible per)
+    let vis = IS.toList (ptvisible per)
     let rememberTile = [(loc, lvl `at` loc) | loc <- vis]
     modify (updateLevel (updateLRMap (Kind.// rememberTile)))
     let alt Nothing      = Nothing
@@ -539,7 +539,7 @@ doLook =
     lvl    <- gets slevel
     per    <- currentPerception
     target <- gets (btarget . getPlayerBody)
-    let canSee = S.member loc (ptvisible per)
+    let canSee = IS.member loc (ptvisible per)
         monsterMsg =
           if canSee
           then case L.find (\ m -> bloc m == loc) (levelMonsterList state) of
@@ -640,7 +640,7 @@ actorAttackActor source target = do
       msg = subjectVerbMObject coactor sm verb tm $
               if isJust str then " with "
                                  ++ objectItem coitem state single else ""
-  when (sloc `S.member` ptvisible per) $ messageAdd msg
+  when (sloc `IS.member` ptvisible per) $ messageAdd msg
   -- Messages inside itemEffectAction describe the target part.
   itemEffectAction 0 source target single
   advanceTime source

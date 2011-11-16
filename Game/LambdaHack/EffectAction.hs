@@ -6,6 +6,7 @@ import Data.Function
 import qualified Data.List as L
 import qualified Data.IntMap as IM
 import qualified Data.Set as S
+import qualified Data.IntSet as IS
 import System.Time
 
 import Game.LambdaHack.Utils.Assert
@@ -135,7 +136,7 @@ itemEffectAction verbosity source target item = do
   -- Determine how the player perceives the event.
   -- TODO: factor it out as a function messageActor
   -- and messageActorVerb (incorporating subjectActorVerb).
-  if bloc tm `S.member` ptvisible per
+  if bloc tm `IS.member` ptvisible per
      then messageAdd msg
      else unless b $
             -- victim is not seen and but somethig interestng happens

@@ -1,6 +1,6 @@
 module Game.LambdaHack.Perception where
 
-import qualified Data.Set as S
+import qualified Data.IntSet as IS
 import qualified Data.List as L
 import qualified Data.IntMap as IM
 import Data.Maybe
@@ -19,8 +19,8 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Content.TileKind
 
 data Perception = Perception
-  { preachable :: S.Set Loc
-  , pvisible :: S.Set Loc
+  { preachable :: IS.IntSet
+  , pvisible :: IS.IntSet
   }
 
 -- The pplayer field is void if player not on the current level,
@@ -32,22 +32,22 @@ data Perceptions = Perceptions
   , ptotal  :: Perception
   }
 
-ptreachable, ptvisible :: Perceptions -> S.Set Loc
+ptreachable, ptvisible :: Perceptions -> IS.IntSet
 ptreachable = preachable . ptotal
 ptvisible   = pvisible . ptotal
 
-actorPrLoc :: (Perception -> S.Set Loc) ->
+actorPrLoc :: (Perception -> IS.IntSet) ->
               ActorId -> Loc -> Perceptions -> Maybe ActorId -> Bool
 actorPrLoc projection actor loc per pl =
   let tryHero = case actor of
                   AMonster _ -> Nothing
                   AHero i -> do
                     hper <- IM.lookup i (pheroes per)
-                    return $ loc `S.member` projection hper
+                    return $ loc `IS.member` projection hper
       tryPl   = do  -- the case for a monster under player control
                   guard $ Just actor == pl
                   pper <- pplayer per
-                  return $ loc `S.member` projection pper
+                  return $ loc `IS.member` projection pper
       tryAny  = tryHero `mplus` tryPl
   in  fromMaybe False tryAny  -- assume not visible, if no perception found
 
@@ -99,8 +99,8 @@ perception_ Kind.COps{cotile, coactor=Kind.Ops{okind}}
              else Nothing
       pers = IM.map (\ h -> perception (fovMode h) (bloc h) cotile lvl) hs
       lpers = maybeToList pper ++ IM.elems pers
-      reachable = S.unions (L.map preachable lpers)
-      visible = S.unions (L.map pvisible lpers)
+      reachable = IS.unions (L.map preachable lpers)
+      visible = IS.unions (L.map pvisible lpers)
   in  Perceptions { pplayer = pper,
                     pheroes = pers,
                     ptotal = Perception reachable visible }
@@ -112,16 +112,16 @@ perception fovMode ploc cops lvl@Level{lxsize, lysize} =
   let
     -- Reachable are all fields on an unblocked path from the hero position.
     -- The player position is visible, but not reachable (e.g. for targeting).
-    reachable  = S.fromList $ fullscan fovMode ploc cops lvl
+    reachable  = IS.fromList $ fullscan fovMode ploc cops lvl
     -- Everybody can see locations that are lit and are reachable.
-    uniVisible = S.filter (\ loc -> Tile.isLit cops (lvl `at` loc)) reachable
+    uniVisible = IS.filter (\ loc -> Tile.isLit cops (lvl `at` loc)) reachable
     -- The hero is assumed to carry a light source, too.
-    litVisible = S.insert ploc uniVisible
+    litVisible = IS.insert ploc uniVisible
     -- Reachable fields adjacent to lit fields are visible, too.
     adjVisible =
-      S.filter
-        (L.any (`S.member` litVisible) . surroundings lxsize lysize)
+      IS.filter
+        (L.any (`IS.member` litVisible) . surroundings lxsize lysize)
         reachable
     -- Visible fields are either lit or adjacent to lit.
-    visible = S.union litVisible adjVisible
+    visible = IS.union litVisible adjVisible
   in Perception reachable visible

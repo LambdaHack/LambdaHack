@@ -16,7 +16,7 @@ import qualified Game.LambdaHack.Display.Gtk as D
 -- Display routines that are independent of the selected display frontend.
 
 import qualified Data.Char as Char
-import qualified Data.Set as S
+import qualified Data.IntSet as IS
 import qualified Data.List as L
 import qualified Data.Map as M
 import qualified Data.IntMap as IM
@@ -185,8 +185,8 @@ displayLevel dm session@(_, _, cops) per
                       in (tsymbol u, if vis then tcolor u else tcolor2 u)
                     i : _ ->
                       Item.viewItem coitem (Item.jkind i) sflavour
-            vis = S.member loc0 visible
-            rea = S.member loc0 reachable
+            vis = IS.member loc0 visible
+            rea = IS.member loc0 reachable
             bg0 = if ctargeting scursor && loc0 == clocation scursor
                   then Color.defFG      -- highlight targeting cursor
                   else sVisBG vis rea  -- FOV debug
