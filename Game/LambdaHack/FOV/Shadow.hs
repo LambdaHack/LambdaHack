@@ -6,10 +6,6 @@ import qualified Data.Set as S
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.FOV.Common
 import Game.LambdaHack.Loc
-import Game.LambdaHack.Level
-import qualified Game.LambdaHack.Tile as Tile
-import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Content.TileKind
 
 -- Recursive Shadow Casting.
 
@@ -75,9 +71,9 @@ type Interval = (Rational, Rational)
 -- | The current state of a scan is kept in a variable of Maybe Rational.
 -- If Just something, we're in a visible interval. If Nothing, we're in
 -- a shadowed interval.
-scan :: ((Progress, Distance) -> Loc) -> Kind.Ops TileKind -> Level -> Distance
+scan :: ((Progress, Distance) -> Loc) -> ((Progress, Distance) -> Bool) -> Distance
      -> Interval -> S.Set Loc
-scan tr cops l d (s0, e) =
+scan tr isClear d (s0, e) =
     let ps = downBias (s0 * fromIntegral d)  -- minimal progress to check
         pe = upBias (e * fromIntegral d)     -- maximal progress to check
         st = if isClear (ps, d)
@@ -88,14 +84,13 @@ scan tr cops l d (s0, e) =
                 `blame` (d,s0,e,ps,pe)) $
         S.union (S.fromList [tr (p, d) | p <- [ps..pe]]) (mscan st ps pe)
   where
-    isClear psd = Tile.isClear cops (l `at` tr psd)
     mscan :: Maybe Rational -> Progress -> Progress -> S.Set Loc
     mscan (Just s) ps pe
       | s  >= e  = S.empty                -- empty interval
-      | ps > pe  = scan tr cops l (d+1) (s, e) -- reached end, scan next
+      | ps > pe  = scan tr isClear (d+1) (s, e) -- reached end, scan next
       | not $ isClear (ps, d) =
                    let ne = (fromIntegral ps - (1%2)) / (fromIntegral d + (1%2))
-                   in  scan tr cops l (d+1) (s, ne) `S.union` mscan Nothing (ps+1) pe
+                   in  scan tr isClear (d+1) (s, ne) `S.union` mscan Nothing (ps+1) pe
                                       -- entering shadow
       | otherwise = mscan (Just s) (ps+1) pe
                                       -- continue in light

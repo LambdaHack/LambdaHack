@@ -5,10 +5,6 @@ import qualified Data.Set as S
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.FOV.Common
 import Game.LambdaHack.Loc
-import Game.LambdaHack.Level
-import qualified Game.LambdaHack.Tile as Tile
-import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Content.TileKind
 
 -- Digital FOV with a given range.
 
@@ -22,8 +18,8 @@ import Game.LambdaHack.Content.TileKind
 -- | The current state of a scan is kept in Maybe (Line, ConvexHull).
 -- If Just something, we're in a visible interval. If Nothing, we're in
 -- a shadowed interval.
-scan :: Distance -> (Bump -> Loc) -> Kind.Ops TileKind -> Level -> S.Set Loc
-scan r tr cops l =
+scan :: Distance -> (Bump -> Loc) -> (Bump -> Bool) -> S.Set Loc
+scan r tr isClear =
   -- the scanned area is a square, which is a sphere in this metric; good
   dscan 1 (((B(1, 0), B(-r, r)),  [B(0, 0)]), ((B(0, 0), B(r+1, r)), [B(1, 0)]))
  where
@@ -48,8 +44,6 @@ scan r tr cops l =
     in assert (r >= d && d >= 0 && pe >= ps0 `blame` (r,d,s0,e,ps0,pe)) $
        S.union inside outside
    where
-    isClear :: Bump -> Bool
-    isClear = Tile.isClear cops . (l `at`) . tr
     mscan :: Maybe Edge -> Progress -> Progress -> S.Set Loc
     mscan (Just s@(_, sBumps)) ps pe
       | ps > pe = dscan (d+1) (s, e)          -- reached end, scan next

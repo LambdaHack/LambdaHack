@@ -13,6 +13,7 @@ import Game.LambdaHack.Loc
 import Game.LambdaHack.Level
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Content.TileKind
+import qualified Game.LambdaHack.Tile as Tile
 
 -- TODO: should Blind really be a FovMode, or a modifier? Let's decide
 -- when other similar modifiers are added.
@@ -24,24 +25,27 @@ data FovMode = Shadow | Permissive Int | Digital Int | Blind
 -- Press a command key in the game to cycle among the algorithms
 -- and see a special visualization of their effects..
 fullscan :: FovMode -> Loc -> Kind.Ops TileKind -> Level -> S.Set Loc
-fullscan fovMode loc cops lvl@Level{lxsize} =
+fullscan fovMode loc cops Level{lxsize, lmap} =
   case fovMode of
     Shadow ->  -- shadow casting with infinite range
       S.unions $
-      L.map (\ tr -> Shadow.scan tr cops lvl 1 (0,1))
+      L.map (\ tr -> Shadow.scan tr (isCl . tr) 1 (0,1))
         [tr0, tr1, tr2, tr3, tr4, tr5, tr6, tr7]
     Permissive r  ->  -- permissive with range r
       S.unions $
-      L.map (\ tr -> Permissive.scan r tr cops lvl) [qtr0, qtr1, qtr2, qtr3]
+      L.map (\ tr -> Permissive.scan r tr (isCl . tr)) [qtr0, qtr1, qtr2, qtr3]
     Digital r ->  -- digital with range r
       S.unions $
-      L.map (\ tr -> Digital.scan r tr cops lvl) [qtr0, qtr1, qtr2, qtr3]
+      L.map (\ tr -> Digital.scan r tr (isCl . tr)) [qtr0, qtr1, qtr2, qtr3]
     Blind ->  -- only feeling out adjacent tiles by touch
       let radius = 1
       in S.unions $
          L.map (\ tr ->
-                 Digital.scan radius tr cops lvl) [qtr0, qtr1, qtr2, qtr3]
+                 Digital.scan radius tr (isCl . tr)) [qtr0, qtr1, qtr2, qtr3]
  where
+  isCl :: Loc -> Bool
+  isCl = Tile.isClear cops . (lmap Kind.!)
+
   trL = trLoc lxsize
 
   -- | The translation, rotation and symmetry functions for octants.

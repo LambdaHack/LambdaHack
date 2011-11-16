@@ -117,13 +117,13 @@ instance Binary Level where
           return (Level hs hi sx sy ms mi ls le li lm lrm lme lstairs)
 
 at, rememberAt :: Level -> Loc -> (Kind.Id TileKind)
-at         l p = lmap l Kind.! p
-rememberAt l p = lrmap l Kind.! p
+at         Level{lmap}  p = lmap Kind.! p
+rememberAt Level{lrmap} p = lrmap Kind.! p
 
 -- Note: representations with 2 maps leads to longer code and slower 'remember'.
 iat, irememberAt :: Level -> Loc -> [Item]
-iat         l p = fst $ IM.findWithDefault ([], []) p (litem l)
-irememberAt l p = snd $ IM.findWithDefault ([], []) p (litem l)
+iat         Level{litem} p = fst $ IM.findWithDefault ([], []) p litem
+irememberAt Level{litem} p = snd $ IM.findWithDefault ([], []) p litem
 
 -- Check whether one location is accessible from the other.
 -- Precondition: the two locations are next to each other.
