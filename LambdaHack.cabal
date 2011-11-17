@@ -77,7 +77,7 @@ library
                    Game.LambdaHack.Level,
                    Game.LambdaHack.LevelState,
                    Game.LambdaHack.Loc,
-                   Game.LambdaHack.Message,
+                   Game.LambdaHack.Msg,
                    Game.LambdaHack.Perception,
                    Game.LambdaHack.Random,
                    Game.LambdaHack.Save,

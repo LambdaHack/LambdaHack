@@ -171,7 +171,7 @@ continueRun dir =
     cops <- contentf Kind.cotile
     loc <- gets (bloc . getPlayerBody)
     per <- currentPerception
-    msg <- currentMessage
+    msg <- currentMsg
     ms  <- gets (lmonsters . slevel)
     hs  <- gets (lheroes . slevel)
     lxsize <- gets (lxsize . slevel)

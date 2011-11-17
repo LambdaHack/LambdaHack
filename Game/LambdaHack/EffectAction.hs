@@ -22,7 +22,7 @@ import qualified Game.LambdaHack.HighScores as H
 import Game.LambdaHack.Item
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Level
-import Game.LambdaHack.Message
+import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Random
 import Game.LambdaHack.State
@@ -292,7 +292,7 @@ handleScores write status total =
 
 -- effectToAction does not depend on this function right now, but it might,
 -- and I know no better place to put it.
-displayItems :: Message -> Bool -> [Item] -> Action Bool
+displayItems :: Msg -> Bool -> [Item] -> Action Bool
 displayItems msg sorted is = do
   cops <- contentf Kind.coitem
   state <- get
@@ -312,7 +312,7 @@ history :: Action ()
 history =
   do
     sx     <- gets (lxsize . slevel)
-    msg    <- currentMessage
+    msg    <- currentMsg
     messageClear
     config <- gets sconfig
     let historyMax = Config.get config "ui" "historyMax"

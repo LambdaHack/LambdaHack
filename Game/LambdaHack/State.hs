@@ -13,7 +13,7 @@ import Game.LambdaHack.Loc
 import Game.LambdaHack.Level
 import qualified Game.LambdaHack.Dungeon as Dungeon
 import Game.LambdaHack.Item
-import Game.LambdaHack.Message
+import Game.LambdaHack.Msg
 import Game.LambdaHack.WorldLoc
 
 -- | The 'State' contains all the game state that has to be saved.
@@ -22,7 +22,7 @@ import Game.LambdaHack.WorldLoc
 data State = State
   { splayer      :: ActorId      -- ^ represents the player-controlled actor
   , scursor      :: Cursor       -- ^ cursor location and level to return to
-  , shistory     :: [Message]
+  , shistory     :: [Msg]
   , ssensory     :: SensoryMode
   , sdisplay     :: DisplayMode
   , stime        :: Time

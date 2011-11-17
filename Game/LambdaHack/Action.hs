@@ -8,7 +8,7 @@ import qualified Data.IntMap as IM
 
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Display hiding (display)
-import Game.LambdaHack.Message
+import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 import Game.LambdaHack.Level
 import Game.LambdaHack.Actor
@@ -21,14 +21,14 @@ import Game.LambdaHack.Random
 newtype Action a = Action
   { runAction ::
       forall r .
-      Session ->
-      IO r ->                             -- shutdown cont
-      Perceptions ->                      -- cached perception
-      (State -> Message -> a -> IO r) ->  -- continuation
-      IO r ->                             -- failure/reset cont
-      State ->                            -- current state
-      Message ->                          -- current message
-      IO r
+      Session                         -- ^ session setup data
+      -> IO r                         -- ^ shutdown cont
+      -> Perceptions                  -- ^ cached perception
+      -> (State -> Msg -> a -> IO r)  -- ^ continuation
+      -> IO r                         -- ^ failure/reset cont
+      -> State                        -- ^ current state
+      -> Msg                          -- ^ current message
+      -> IO r
   }
 
 -- TODO: check if it's strict enough, if we don't keep old states for too long,
@@ -57,7 +57,7 @@ instance MonadState State Action where
   put nst = Action (\ _s _e _p k _a _st ms -> k nst ms ())
 
 -- | Exported function to run the monad.
-handlerToIO :: Session -> State -> Message -> Action () -> IO ()
+handlerToIO :: Session -> State -> Msg -> Action () -> IO ()
 handlerToIO sess@(_, _, cops) state msg h =
   runAction h
     sess
@@ -97,11 +97,11 @@ overlay :: String -> Action Bool
 overlay txt = Action (\ s _e p k _a st ms -> displayLevel ColorFull s p st ms (Just txt) >>= k st ms)
 
 -- | Wipe out and set a new value for the current message.
-messageReset :: Message -> Action ()
+messageReset :: Msg -> Action ()
 messageReset nm = Action (\ _s _e _p k _a st _ms -> k st nm ())
 
 -- | Add to the current message.
-messageAdd :: Message -> Action ()
+messageAdd :: Msg -> Action ()
 messageAdd nm = Action (\ _s _e _p k _a st ms -> k st (addMsg ms nm) ())
 
 -- | Clear the current message.
@@ -109,8 +109,8 @@ messageClear :: Action ()
 messageClear = Action (\ _s _e _p k _a st _ms -> k st "" ())
 
 -- | Get the current message.
-currentMessage :: Action Message
-currentMessage = Action (\ _s _e _p k _a st ms -> k st ms ms)
+currentMsg :: Action Msg
+currentMsg = Action (\ _s _e _p k _a st ms -> k st ms ms)
 
 -- | Get the content ops.
 contentOps :: Action Kind.COps
@@ -152,7 +152,7 @@ debug :: String -> Action ()
 debug _x = return () -- liftIO $ hPutStrLn stderr _x
 
 -- | Print the given message, then abort.
-abortWith :: Message -> Action a
+abortWith :: Msg -> Action a
 abortWith msg = do
   messageReset msg
   display
@@ -162,24 +162,24 @@ neverMind :: Bool -> Action a
 neverMind b = abortIfWith b "never mind"
 
 -- | Abort, and print the given message if the condition is true.
-abortIfWith :: Bool -> Message -> Action a
+abortIfWith :: Bool -> Msg -> Action a
 abortIfWith True msg = abortWith msg
 abortIfWith False _  = abortWith ""
 
 -- | Print message, await confirmation. Return value indicates
 -- if the player tried to abort/escape.
-messageMoreConfirm :: ColorMode -> Message -> Action Bool
+messageMoreConfirm :: ColorMode -> Msg -> Action Bool
 messageMoreConfirm dm msg = do
   messageAdd (msg ++ more)
   displayGeneric dm id
   session getConfirm
 
 -- | Print message, await confirmation, ignore confirmation.
-messageMore :: Message -> Action ()
+messageMore :: Msg -> Action ()
 messageMore msg = messageClear >> messageMoreConfirm ColorFull msg >> return ()
 
 -- | Print a yes/no question and return the player's answer.
-messageYesNo :: Message -> Action Bool
+messageYesNo :: Msg -> Action Bool
 messageYesNo msg = do
   messageReset (msg ++ yesno)
   displayGeneric ColorBW id  -- turn player's attention to the choice
@@ -187,12 +187,12 @@ messageYesNo msg = do
 
 -- | Print a message and an overlay, await confirmation. Return value
 -- indicates if the player tried to abort/escape.
-messageOverlayConfirm :: Message -> String -> Action Bool
+messageOverlayConfirm :: Msg -> String -> Action Bool
 messageOverlayConfirm msg txt = messageOverlaysConfirm msg [txt]
 
 -- | Prints several overlays, one per page, and awaits confirmation.
 -- Return value indicates if the player tried to abort/escape.
-messageOverlaysConfirm :: Message -> [String] -> Action Bool
+messageOverlaysConfirm :: Msg -> [String] -> Action Bool
 messageOverlaysConfirm _msg [] =
   do
     messageClear

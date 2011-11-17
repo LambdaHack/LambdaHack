@@ -1,22 +1,22 @@
-module Game.LambdaHack.Message where
+module Game.LambdaHack.Msg where
 
 import qualified Data.List as L
 import Data.Char
 
-type Message = String
+type Msg = String
 
-more :: Message
+more :: Msg
 more = " --more--  "
 
-yesno :: Message
+yesno :: Msg
 yesno = " [yn]"
 
-addMsg :: Message -> Message -> Message
+addMsg :: Msg -> Msg -> Msg
 addMsg [] x  = x
 addMsg xs [] = xs
 addMsg xs x  = xs ++ " " ++ x
 
-splitMsg :: Int -> Message -> [String]
+splitMsg :: Int -> Msg -> [String]
 splitMsg w xs
   | w <= m = [xs]   -- border case, we cannot make progress
   | l <= w = [xs]   -- no problem, everything fits

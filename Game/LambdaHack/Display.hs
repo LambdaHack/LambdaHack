@@ -23,7 +23,7 @@ import qualified Data.IntMap as IM
 import Control.Monad.IO.Class
 import Data.Maybe
 
-import Game.LambdaHack.Message
+import Game.LambdaHack.Msg
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.State
 import Game.LambdaHack.Geometry
@@ -125,7 +125,7 @@ stringByLocation sy xs =
 data ColorMode = ColorFull | ColorBW
 
 displayLevel :: ColorMode -> Session -> Perceptions -> State
-             -> Message -> Maybe String -> IO Bool
+             -> Msg -> Maybe String -> IO Bool
 displayLevel dm session@(_, _, cops) per
              state@State{scursor, stime, sflavour, slid, splayer} msg moverlay =
   let Kind.COps{ coactor=Kind.Ops{okind}
