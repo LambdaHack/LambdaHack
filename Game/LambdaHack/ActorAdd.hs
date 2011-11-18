@@ -28,7 +28,7 @@ import qualified Game.LambdaHack.Kind as Kind
 -- a bad idea, but it would certainly be "more correct" to set
 -- the time to the creation time instead.
 template :: Kind.Id ActorKind -> Maybe String -> Maybe Char -> Int -> Loc
-            -> Actor
+         -> Actor
 template mk ms mc hp loc = Actor mk ms mc hp Nothing TCursor loc 'a' 0
 
 nearbyFreeLoc :: Kind.Ops TileKind -> Loc -> State -> Loc
@@ -39,14 +39,14 @@ nearbyFreeLoc cops origin state =
       places = origin : L.nub (concatMap (surroundings lxsize lysize) places)
       good loc = Tile.isWalkable cops (lvl `at` loc)
                  && loc `L.notElem` L.map bloc (hs ++ ms)
-  in  fromMaybe (assert `failure` "too crowded map") $ L.find good places
+  in fromMaybe (assert `failure` "too crowded map") $ L.find good places
 
 -- Adding heroes
 
 findHeroName :: Config.CP -> Int -> String
 findHeroName config n =
   let heroName = Config.getOption config "heroes" ("HeroName_" ++ show n)
-  in  fromMaybe ("hero number " ++ show n) heroName
+  in fromMaybe ("hero number " ++ show n) heroName
 
 -- | Create a new hero on the current level, close to the given location.
 addHero :: Kind.COps -> Loc -> State -> State
@@ -61,13 +61,13 @@ addHero Kind.COps{coactor, cotile} ploc state =
       m = template (heroKindId coactor) (Just name) symbol startHP loc
       state' = state { scounter = (n + 1, snd (scounter state))
                      , sparty = IS.insert n (sparty state) }
-  in  updateLevel (updateHeroes (IM.insert n m)) state'
+  in updateLevel (updateHeroes (IM.insert n m)) state'
 
 -- | Create a set of initial heroes on the current level, at location ploc.
 initialHeroes :: Kind.COps -> Loc -> State -> State
 initialHeroes cops ploc state =
   let k = 1 + Config.get (sconfig state) "heroes" "extraHeroes"
-  in  iterate (addHero cops ploc) state !! k
+  in iterate (addHero cops ploc) state !! k
 
 -- Adding monsters
 
@@ -101,7 +101,7 @@ rollMonster Kind.COps{cotile, coactor=Kind.Ops{ofrequency}} state = do
   if not rc
     then return state
     else do
-      -- TODO: new monsters should always be generated in a place that isn't
+      -- TODO: new monsters should be generated in a place that isn't
       -- visible by the player (if possible -- not possible for bigrooms)
       -- levels with few rooms are dangerous, because monsters may spawn
       -- in adjacent and unexpected places
@@ -109,9 +109,8 @@ rollMonster Kind.COps{cotile, coactor=Kind.Ops{ofrequency}} state = do
              (\ l t -> Tile.isWalkable cotile t
                        && l `L.notElem` L.map bloc (hs ++ ms))
              (\ l t -> not (isLit t)  -- try a dark, distant place first
-                       && L.all (\ pl -> distance
-                                           (lxsize lvl)
-                                           (bloc pl) l > 30) hs)
+                       && L.all (\ pl ->
+                                  distance (lxsize lvl)(bloc pl) l > 30) hs)
       (mk, k) <- frequency ofrequency
       hp <- rollDice $ ahp k
       return $ addMonster cotile mk hp loc state

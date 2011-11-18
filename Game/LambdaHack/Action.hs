@@ -45,9 +45,9 @@ returnAction x = Action (\ _s _e _p k _a st m -> k st m x)
 -- threads the state and message.
 bindAction :: Action a -> (a -> Action b) -> Action b
 bindAction m f = Action (\ s e p k a st ms ->
-                           let next nst nm x =
-                                 runAction (f x) s e p k a nst nm
-                           in  runAction m s e p next a st ms)
+                          let next nst nm x =
+                                runAction (f x) s e p k a nst nm
+                          in runAction m s e p next a st ms)
 
 instance MonadIO Action where
   liftIO x = Action (\ _s _e _p k _a st ms -> x >>= k st ms)
@@ -62,8 +62,8 @@ handlerToIO sess@(_, _, cops) state msg h =
   runAction h
     sess
     (Save.rmBkp (sconfig state) >> shutdown sess)  -- get out of the game
-    (perception_ cops state)        -- cached perception
-    (\ _ _ x -> return x)      -- final continuation returns result
+    (perception_ cops state)  -- create and cache perception
+    (\ _ _ x -> return x)     -- final continuation returns result
     (ioError $ userError "unhandled abort")
     state
     msg
@@ -86,7 +86,9 @@ sessionIO f = Action (\ s _e _p k _a st ms -> f s >>= k st ms)
 
 -- | Display the current level with modified current message.
 displayGeneric :: ColorMode -> (String -> String) -> Action Bool
-displayGeneric dm f = Action (\ s _e p k _a st ms -> displayLevel dm s p st (f ms) Nothing >>= k st ms)
+displayGeneric dm f = Action (\ s _e p k _a st ms ->
+                               displayLevel dm s p st (f ms) Nothing
+                               >>= k st ms)
 
 -- | Display the current level, with the current message and color. Most common.
 display :: Action Bool
@@ -94,7 +96,9 @@ display = displayGeneric ColorFull id
 
 -- | Display an overlay on top of the current screen.
 overlay :: String -> Action Bool
-overlay txt = Action (\ s _e p k _a st ms -> displayLevel ColorFull s p st ms (Just txt) >>= k st ms)
+overlay txt = Action (\ s _e p k _a st ms ->
+                       displayLevel ColorFull s p st ms (Just txt)
+                       >>= k st ms)
 
 -- | Wipe out and set a new value for the current message.
 messageReset :: Msg -> Action ()
@@ -132,7 +136,9 @@ abort = Action (\ _s _e _p _k a _st _ms -> a)
 -- | Set the current exception handler. First argument is the handler,
 -- second is the computation the handler scopes over.
 tryWith :: Action () -> Action () -> Action ()
-tryWith exc h = Action (\ s e p k a st ms -> runAction h s e p k (runAction exc s e p k a st ms) st ms)
+tryWith exc h = Action (\ s e p k a st ms ->
+                         let runA = runAction exc s e p k a st ms
+                         in runAction h s e p k runA st ms)
 
 -- | Takes a handler and a computation. If the computation fails, the
 -- handler is invoked and then the computation is retried.
@@ -193,27 +199,25 @@ messageOverlayConfirm msg txt = messageOverlaysConfirm msg [txt]
 -- | Prints several overlays, one per page, and awaits confirmation.
 -- Return value indicates if the player tried to abort/escape.
 messageOverlaysConfirm :: Msg -> [String] -> Action Bool
-messageOverlaysConfirm _msg [] =
-  do
+messageOverlaysConfirm _msg [] = do
+  messageClear
+  display
+  return True
+messageOverlaysConfirm msg (x:xs) = do
+  messageReset msg
+  b0 <- overlay (x ++ more)
+  if b0
+    then do
+      b <- session getConfirm
+      if b
+        then messageOverlaysConfirm msg xs
+        else stop
+    else stop
+ where
+  stop = do
     messageClear
     display
-    return True
-messageOverlaysConfirm msg (x:xs) =
-  do
-    messageReset msg
-    b0 <- overlay (x ++ more)
-    if b0
-      then do
-        b <- session getConfirm
-        if b
-          then messageOverlaysConfirm msg xs
-          else stop
-      else stop
-  where
-    stop = do
-      messageClear
-      display
-      return False
+    return False
 
 -- | Update the cached perception for the given computation.
 withPerception :: Action () -> Action ()
@@ -252,9 +256,10 @@ advanceTime actor = do
   pl <- gets splayer
   if actor == pl || isAHero actor
     then do
-           modify (updateLevel (updateHeroes (IM.map upd)))
-           unless (isAHero pl) $ updatePlayerBody upd
-    else updateAnyActor actor upd
+      modify (updateLevel (updateHeroes (IM.map upd)))
+      unless (isAHero pl) $ updatePlayerBody upd
+    else
+      updateAnyActor actor upd
 
 playerAdvanceTime :: Action ()
 playerAdvanceTime = do

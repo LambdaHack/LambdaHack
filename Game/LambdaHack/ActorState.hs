@@ -30,7 +30,7 @@ findActorAnyLevel actor state@State{slid, sdungeon} =
                              IM.lookup n (lmonItem lvl))
         in fmap (\ a -> (ln, a, fromMaybe [] mi)) m
   in case mapMaybe chk (Dungeon.currentFirst slid sdungeon) of
-    []    -> assert `failure` actor
+    []      -> assert `failure` actor
     res : _ -> res  -- checking if res is unique would break laziness
 
 -- | Checks whether an actor is a hero, but not a member of the party.
@@ -157,8 +157,8 @@ locToActor loc state =
 locToActors :: Loc -> State -> [ActorId]
 locToActors loc state =
   getIndex (lmonsters, AMonster) ++ getIndex (lheroes, AHero)
-    where
-      getIndex (projection, injection) =
-        let l  = IM.assocs $ projection $ slevel state
-            im = L.filter (\ (_i, m) -> bloc m == loc) l
-        in  fmap (injection . fst) im
+ where
+  getIndex (projection, injection) =
+    let l  = IM.assocs $ projection $ slevel state
+        im = L.filter (\ (_i, m) -> bloc m == loc) l
+    in fmap (injection . fst) im

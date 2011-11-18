@@ -9,13 +9,13 @@ import Game.LambdaHack.Utils.Assert
 
 type Area = (X, Y, X, Y)
 
-neighbors :: Area ->        {- size limitation -}
-             (X, Y) ->      {- location to find neighbors of -}
-             [(X, Y)]
+neighbors :: Area      -- ^ limit the search to this area
+          -> (X, Y)    -- ^ location to find neighbors of
+          -> [(X, Y)]
 neighbors area xy =
   let cs = [ xy `shiftXY` (dx, dy)
            | dy <- [-1..1], dx <- [-1..1], (dx + dy) `mod` 2 == 1 ]
-  in  L.filter (`inside` area) cs
+  in L.filter (`inside` area) cs
 
 inside :: (X, Y) -> Area -> Bool
 inside (x, y) (x0, y0, x1, y1) =

@@ -16,14 +16,14 @@ import Game.LambdaHack.Random
 -- temporarily, but tend to return to the original value over time. E.g., HP.
 data Actor = Actor
   { bkind   :: !(Kind.Id ActorKind)  -- ^ the kind of the actor
-  , bname   :: !(Maybe String)  -- ^ individual name
-  , bsymbol :: !(Maybe Char)    -- ^ individual map symbol
-  , bhp     :: !Int             -- ^ current hit pints
-  , bdir    :: !(Maybe Dir)     -- ^ the direction of running
-  , btarget :: Target           -- ^ the target for distance attacks and AI
-  , bloc    :: !Loc             -- ^ current location
-  , bletter :: !Char            -- ^ next inventory letter
-  , btime   :: !Time            -- ^ time of next action
+  , bname   :: !(Maybe String)       -- ^ individual name
+  , bsymbol :: !(Maybe Char)         -- ^ individual map symbol
+  , bhp     :: !Int                  -- ^ current hit pints
+  , bdir    :: !(Maybe Dir)          -- ^ the direction of running
+  , btarget :: Target                -- ^ the target for distance attacks and AI
+  , bloc    :: !Loc                  -- ^ current location
+  , bletter :: !Char                 -- ^ next inventory letter
+  , btime   :: !Time                 -- ^ time of next action
   }
   deriving Show
 
@@ -83,11 +83,11 @@ instance Binary ActorId where
   put (AHero n)    = putWord8 0 >> put n
   put (AMonster n) = putWord8 1 >> put n
   get = do
-          tag <- getWord8
-          case tag of
-            0 -> liftM AHero get
-            1 -> liftM AMonster get
-            _ -> fail "no parse (ActorId)"
+    tag <- getWord8
+    case tag of
+      0 -> liftM AHero get
+      1 -> liftM AMonster get
+      _ -> fail "no parse (ActorId)"
 
 data Target =
     TEnemy ActorId Loc  -- ^ fire at the actor; last seen location
@@ -100,9 +100,9 @@ instance Binary Target where
   put (TLoc loc) = putWord8 1 >> put loc
   put TCursor    = putWord8 2
   get = do
-          tag <- getWord8
-          case tag of
-            0 -> liftM2 TEnemy get get
-            1 -> liftM TLoc get
-            2 -> return TCursor
-            _ -> fail "no parse (Target)"
+    tag <- getWord8
+    case tag of
+      0 -> liftM2 TEnemy get get
+      1 -> liftM TLoc get
+      2 -> return TCursor
+      _ -> fail "no parse (Target)"

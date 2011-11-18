@@ -37,45 +37,41 @@ import Game.LambdaHack.DungeonState
 -- (Both depend on EffectAction.hs).
 
 displayHistory :: Action ()
-displayHistory =
-  do
-    hst <- gets shistory
-    messageOverlayConfirm "" (unlines hst)
-    abort
+displayHistory = do
+  hst <- gets shistory
+  messageOverlayConfirm "" (unlines hst)
+  abort
 
 dumpConfig :: Action ()
-dumpConfig =
-  do
-    config <- gets sconfig
-    let fn = "config.dump"
-    liftIO $ Config.dump fn config
-    abortWith $ "Current configuration dumped to file " ++ fn ++ "."
+dumpConfig = do
+  config <- gets sconfig
+  let fn = "config.dump"
+  liftIO $ Config.dump fn config
+  abortWith $ "Current configuration dumped to file " ++ fn ++ "."
 
 saveGame :: Action ()
-saveGame =
-  do
-    b <- messageYesNo "Really save?"
-    if b
-      then do
-        -- Save the game state
-        cops <- contentf Kind.coitem
-        state <- get
-        liftIO $ Save.saveGame state
-        ln <- gets slid
-        let total = calculateTotal cops state
-            status = H.Camping ln
-        go <- handleScores False status total
-        when go $ messageMore "See you soon, stronger and braver!"
-        end
-      else abortWith "Game resumed."
+saveGame = do
+  b <- messageYesNo "Really save?"
+  if b
+    then do
+      -- Save the game state
+      cops <- contentf Kind.coitem
+      state <- get
+      liftIO $ Save.saveGame state
+      ln <- gets slid
+      let total = calculateTotal cops state
+          status = H.Camping ln
+      go <- handleScores False status total
+      when go $ messageMore "See you soon, stronger and braver!"
+      end
+    else abortWith "Game resumed."
 
 quitGame :: Action ()
-quitGame =
-  do
-    b <- messageYesNo "Really quit?"
-    if b
-      then end -- no highscore display for quitters
-      else abortWith "Game resumed."
+quitGame = do
+  b <- messageYesNo "Really quit?"
+  if b
+    then end -- no highscore display for quitters
+    else abortWith "Game resumed."
 
 -- | End targeting mode, accepting the current location or not.
 endTargeting :: Bool -> Action ()
@@ -166,79 +162,76 @@ run dir = do
 -- have to stop running because something interested happened, and it checks
 -- if we have to adjust the direction because we're in the corner of a corridor.
 continueRun :: Dir -> Action ()
-continueRun dir =
-  do
-    cops <- contentf Kind.cotile
-    loc <- gets (bloc . getPlayerBody)
-    per <- currentPerception
-    msg <- currentMsg
-    ms  <- gets (lmonsters . slevel)
-    hs  <- gets (lheroes . slevel)
-    lxsize <- gets (lxsize . slevel)
-    lvl <- gets slevel
-    pl  <- gets splayer
-    let dms = case pl of
-                AMonster n -> IM.delete n ms  -- don't be afraid of yourself
-                AHero _ -> ms
-        mslocs = IS.fromList (L.map bloc (IM.elems dms))
-        monstersVisible = not (IS.null (mslocs `IS.intersection` ptvisible per))
-        newsReported    = not (L.null msg)
-        tile      = lvl `rememberAt` loc  -- tile at current location
-        itemsHere = not (L.null (lvl `irememberAt` loc))
-        heroThere = (loc `shift` dir) `elem` L.map bloc (IM.elems hs)
-        dirOK     = accessible cops lvl loc (loc `shift` dir)
-        isTExit   = Tile.isExit cops tile
-        isWalkableDark = Tile.isWalkable cops tile && not (Tile.isLit cops tile)
-    -- What happens next is mostly depending on the terrain we're currently on.
-    let hop | (monstersVisible || heroThere || newsReported ||
-               itemsHere || isTExit) = abort
-            | isWalkableDark =
-          -- in corridors, explore all corners and stop at all crossings
-          -- TODO: even in corridors, stop if you run past an exit (rare)
-          let ns = L.filter (\ x -> dirDistSq lxsize (neg dir) x > 1
-                                    && (accessible cops lvl loc (loc `shift` x))
-                                        || openable cops lvl (Tile.SecretStrength 1) (loc `shift` x))
-                            (moves lxsize)
-              allCloseTo main = L.all (\ d -> dirDistSq lxsize main d <= 1) ns
-          in  case ns of
-                [onlyDir] -> run onlyDir  -- can be diagonal
-                _         ->
-                  -- prefer orthogonal to diagonal dirs, for hero's safety
-                  case L.filter (not . diagonal lxsize) ns of
-                    [ortoDir]
-                      | allCloseTo ortoDir -> run ortoDir
-                    _ -> abort
-            | not dirOK =
-          abort -- outside corridors never change direction
-            | otherwise =
-          let ns = L.filter (\ x -> x /= dir && dirDistSq lxsize (neg dir) x > 1) (moves lxsize)
-              ls = L.map (loc `shift`) ns
-              as = L.filter (\ x -> accessible cops lvl loc x
-                                    || openable cops lvl (Tile.SecretStrength 1) x) ls
-              ts = L.map (lvl `rememberAt`) as
-          in if L.any (Tile.isExit cops) ts then abort else run dir
-    hop
+continueRun dir = do
+  cops <- contentf Kind.cotile
+  loc <- gets (bloc . getPlayerBody)
+  per <- currentPerception
+  msg <- currentMsg
+  ms  <- gets (lmonsters . slevel)
+  hs  <- gets (lheroes . slevel)
+  lxsize <- gets (lxsize . slevel)
+  lvl <- gets slevel
+  pl  <- gets splayer
+  let dms = case pl of
+              AMonster n -> IM.delete n ms  -- don't be afraid of yourself
+              AHero _ -> ms
+      mslocs = IS.fromList (L.map bloc (IM.elems dms))
+      monstersVisible = not (IS.null (mslocs `IS.intersection` ptvisible per))
+      newsReported    = not (L.null msg)
+      tile      = lvl `rememberAt` loc  -- tile at current location
+      itemsHere = not (L.null (lvl `irememberAt` loc))
+      heroThere = (loc `shift` dir) `elem` L.map bloc (IM.elems hs)
+      dirOK     = accessible cops lvl loc (loc `shift` dir)
+      isTExit   = Tile.isExit cops tile
+      isWalkableDark = Tile.isWalkable cops tile && not (Tile.isLit cops tile)
+  -- What happens next is mostly depending on the terrain we're currently on.
+  let hop | (monstersVisible || heroThere || newsReported ||
+             itemsHere || isTExit) = abort
+          | isWalkableDark =
+        -- in corridors, explore all corners and stop at all crossings
+        -- TODO: even in corridors, stop if you run past an exit (rare)
+        let ns = L.filter (\ x -> dirDistSq lxsize (neg dir) x > 1
+                                  && (accessible cops lvl loc (loc `shift` x))
+                                      || openable cops lvl (Tile.SecretStrength 1) (loc `shift` x))
+                          (moves lxsize)
+            allCloseTo main = L.all (\ d -> dirDistSq lxsize main d <= 1) ns
+        in case ns of
+             [onlyDir] -> run onlyDir  -- can be diagonal
+             _         ->
+               -- prefer orthogonal to diagonal dirs, for hero's safety
+               case L.filter (not . diagonal lxsize) ns of
+                 [ortoDir]
+                   | allCloseTo ortoDir -> run ortoDir
+                 _ -> abort
+          | not dirOK =
+        abort -- outside corridors never change direction
+          | otherwise =
+        let ns = L.filter (\ x -> x /= dir && dirDistSq lxsize (neg dir) x > 1) (moves lxsize)
+            ls = L.map (loc `shift`) ns
+            as = L.filter (\ x -> accessible cops lvl loc x
+                                  || openable cops lvl (Tile.SecretStrength 1) x) ls
+            ts = L.map (lvl `rememberAt`) as
+        in if L.any (Tile.isExit cops) ts then abort else run dir
+  hop
 
 ifRunning :: (Dir -> Action a) -> Action a -> Action a
-ifRunning t e =
-  do
-    ad <- gets (bdir . getPlayerBody)
-    maybe e t ad
+ifRunning t e = do
+  ad <- gets (bdir . getPlayerBody)
+  maybe e t ad
 
 -- | Update player memory.
 remember :: Action ()
-remember =
-  do
-    per <- currentPerception
-    lvl <- gets slevel
-    let vis = IS.toList (ptvisible per)
-    let rememberTile = [(loc, lvl `at` loc) | loc <- vis]
-    modify (updateLevel (updateLRMap (Kind.// rememberTile)))
-    let alt Nothing      = Nothing
-        alt (Just ([], _)) = Nothing
-        alt (Just (t, _))  = Just (t, t)
-        rememberItem = IM.alter alt
-    modify (updateLevel (updateIMap (\ m -> L.foldr rememberItem m vis)))
+remember = do
+  per <- currentPerception
+  lvl <- gets slevel
+  let vis = IS.toList (ptvisible per)
+  let rememberTile = [(loc, lvl `at` loc) | loc <- vis]
+  modify (updateLevel (updateLRMap (Kind.// rememberTile)))
+  let alt Nothing      = Nothing
+      alt (Just ([], _)) = Nothing
+      alt (Just (t, _))  = Just (t, t)
+      rememberItem = IM.alter alt
+  modify (updateLevel (updateIMap (\ m -> L.foldr rememberItem m vis)))
 
 -- | Ask for a direction and close the door, if any
 closeDoor :: Action ()
@@ -312,173 +305,168 @@ actorOpenDoor actor dir = do
 -- TODO: perhaps set up some level name arithmetics in Level.hs
 -- and hide there the fact levels are now essentially Ints.
 lvlAscend :: Int -> Action ()
-lvlAscend k =
-  do
-    slid   <- gets slid
-    config <- gets sconfig
-    let n = levelNumber slid
-        nln = n - k
-        depth = Config.get config "dungeon" "depth"
-    when (nln < 1 || nln > depth) $
-      abortWith "no more levels in this direction"
-    modify (\ state -> state{slid = (LambdaCave nln)})
+lvlAscend k = do
+  slid   <- gets slid
+  config <- gets sconfig
+  let n = levelNumber slid
+      nln = n - k
+      depth = Config.get config "dungeon" "depth"
+  when (nln < 1 || nln > depth) $
+    abortWith "no more levels in this direction"
+  modify (\ state -> state{slid = (LambdaCave nln)})
 
 -- | Attempt a level change via up level and down level keys.
 -- Will quit the game if the player leaves the dungeon.
 lvlGoUp :: Bool -> Action ()
-lvlGoUp isUp =
-  do
-    cops      <- contentf Kind.cotile
-    cursor    <- gets scursor
-    targeting <- gets (ctargeting . scursor)
-    pbody     <- gets getPlayerBody
-    pl        <- gets splayer
-    slid      <- gets slid
-    lvl       <- gets slevel
-    st        <- get
-    let loc = if targeting then clocation cursor else bloc pbody
-        tile = lvl `at` loc
-        vdir = if isUp then 1 else -1
-        sdir | Tile.hasFeature cops F.Climbable tile = Just 1
-             | Tile.hasFeature cops F.Descendable tile = Just (-1)
-             | otherwise = Nothing
-    case sdir of
-      Just vdir'
-        | vdir == vdir' -> -- stairs are in the right direction
-          case whereTo cops st loc of
-            Nothing ->
-              -- we are at the "end" of the dungeon
-              if targeting
-              then abortWith "cannot escape dungeon in targeting mode"
-              else do
-                b <- messageYesNo "Really escape the dungeon?"
-                if b
-                  then fleeDungeon
-                  else abortWith "Game resumed."
-            Just (nln, nloc) ->
-              if targeting
-                then do
-                  assert (nln /= slid `blame` (nln, "stairs looped")) $
-                    modify (\ state -> state{slid = nln})
-                  -- do not freely reveal the other end of the stairs
-                  lvl2 <- gets slevel
-                  let upd cur =
-                        let clocation =
-                              if Tile.isUnknown cops (lvl2 `rememberAt` nloc)
-                              then loc
-                              else nloc
-                        in  cur { clocation, clocLn = nln }
-                  modify (updateCursor upd)
-                  doLook
-                else tryWith (abortWith "somebody blocks the staircase") $ do
-                  bitems <- gets getPlayerItem
-                  -- Remove the player from the old level.
-                  modify (deleteActor pl)
-                  hs <- gets levelHeroList
-                  -- Monsters hear that players not on the level. Cancel smell.
-                  -- Reduces memory load and savefile size.
-                  when (L.null hs) $
-                    modify (updateLevel (updateSmell (const IM.empty)))
-                  -- At this place the invariant that the player exists fails.
-                  -- Change to the new level (invariant not needed).
-                  assert (nln /= slid `blame` (nln, "stairs looped")) $
-                    modify (\ state -> state{slid = nln})
-                  -- Add the player to the new level.
-                  modify (insertActor pl pbody)
-                  modify (updateAnyActorItem pl (const bitems))
-                  -- At this place the invariant is restored again.
-                  -- Land the player at the other end of the stairs.
-                  updatePlayerBody (\ p -> p { bloc = nloc })
-                  -- Change the level of the player recorded in cursor.
-                  modify (updateCursor (\ c -> c { creturnLn = nln }))
-                  -- Bail out if anybody blocks the staircase.
-                  inhabitants <- gets (locToActors nloc)
-                  when (length inhabitants > 1) abort
-                  -- The invariant "at most one actor on a tile" restored.
-                  -- Create a backup of the savegame.
-                  state <- get
-                  liftIO $ do
-                    Save.saveGame state
-                    Save.mvBkp (sconfig state)
-                  playerAdvanceTime
-      _ -> -- no stairs in the right direction
-        if targeting
-        then do
-          lvlAscend vdir
-          let upd cur = cur {clocLn = slid}
-          modify (updateCursor upd)
-          doLook
-        else
-          let txt = if isUp then "up" else "down"
-          in  abortWith ("no stairs " ++ txt)
+lvlGoUp isUp = do
+  cops      <- contentf Kind.cotile
+  cursor    <- gets scursor
+  targeting <- gets (ctargeting . scursor)
+  pbody     <- gets getPlayerBody
+  pl        <- gets splayer
+  slid      <- gets slid
+  lvl       <- gets slevel
+  st        <- get
+  let loc = if targeting then clocation cursor else bloc pbody
+      tile = lvl `at` loc
+      vdir = if isUp then 1 else -1
+      sdir | Tile.hasFeature cops F.Climbable tile = Just 1
+           | Tile.hasFeature cops F.Descendable tile = Just (-1)
+           | otherwise = Nothing
+  case sdir of
+    Just vdir'
+      | vdir == vdir' -> -- stairs are in the right direction
+        case whereTo cops st loc of
+          Nothing ->
+            -- we are at the "end" of the dungeon
+            if targeting
+            then abortWith "cannot escape dungeon in targeting mode"
+            else do
+              b <- messageYesNo "Really escape the dungeon?"
+              if b
+                then fleeDungeon
+                else abortWith "Game resumed."
+          Just (nln, nloc) ->
+            if targeting
+              then do
+                assert (nln /= slid `blame` (nln, "stairs looped")) $
+                  modify (\ state -> state{slid = nln})
+                -- do not freely reveal the other end of the stairs
+                lvl2 <- gets slevel
+                let upd cur =
+                      let clocation =
+                            if Tile.isUnknown cops (lvl2 `rememberAt` nloc)
+                            then loc
+                            else nloc
+                      in cur { clocation, clocLn = nln }
+                modify (updateCursor upd)
+                doLook
+              else tryWith (abortWith "somebody blocks the staircase") $ do
+                bitems <- gets getPlayerItem
+                -- Remove the player from the old level.
+                modify (deleteActor pl)
+                hs <- gets levelHeroList
+                -- Monsters hear that players not on the level. Cancel smell.
+                -- Reduces memory load and savefile size.
+                when (L.null hs) $
+                  modify (updateLevel (updateSmell (const IM.empty)))
+                -- At this place the invariant that the player exists fails.
+                -- Change to the new level (invariant not needed).
+                assert (nln /= slid `blame` (nln, "stairs looped")) $
+                  modify (\ state -> state{slid = nln})
+                -- Add the player to the new level.
+                modify (insertActor pl pbody)
+                modify (updateAnyActorItem pl (const bitems))
+                -- At this place the invariant is restored again.
+                -- Land the player at the other end of the stairs.
+                updatePlayerBody (\ p -> p { bloc = nloc })
+                -- Change the level of the player recorded in cursor.
+                modify (updateCursor (\ c -> c { creturnLn = nln }))
+                -- Bail out if anybody blocks the staircase.
+                inhabitants <- gets (locToActors nloc)
+                when (length inhabitants > 1) abort
+                -- The invariant "at most one actor on a tile" restored.
+                -- Create a backup of the savegame.
+                state <- get
+                liftIO $ do
+                  Save.saveGame state
+                  Save.mvBkp (sconfig state)
+                playerAdvanceTime
+    _ -> -- no stairs in the right direction
+      if targeting
+      then do
+        lvlAscend vdir
+        let upd cur = cur {clocLn = slid}
+        modify (updateCursor upd)
+        doLook
+      else
+        let txt = if isUp then "up" else "down"
+        in abortWith ("no stairs " ++ txt)
 
 -- | Hero has left the dungeon.
 fleeDungeon :: Action ()
-fleeDungeon =
-  do
-    cops <- contentf Kind.coitem
-    state <- get
-    let total = calculateTotal cops state
-        items = L.concat $ IM.elems $ lheroItem $ slevel state
-    if total == 0
-      then do
-             go <- messageClear >> messageMoreConfirm ColorFull "Coward!"
-             when go $
-               messageMore "Next time try to grab some loot before escape!"
-             end
-      else do
-             let winMsg = "Congratulations, you won! Your loot, worth " ++
-                          show total ++ " gold, is:"
-             displayItems winMsg True items
-             go <- session getConfirm
-             when go $ do
-               go2 <- handleScores True H.Victor total
-               when go2 $ messageMore "Can it be done better, though?"
-             end
+fleeDungeon = do
+  cops <- contentf Kind.coitem
+  state <- get
+  let total = calculateTotal cops state
+      items = L.concat $ IM.elems $ lheroItem $ slevel state
+  if total == 0
+    then do
+      go <- messageClear >> messageMoreConfirm ColorFull "Coward!"
+      when go $
+        messageMore "Next time try to grab some loot before escape!"
+      end
+    else do
+      let winMsg = "Congratulations, you won! Your loot, worth " ++
+                   show total ++ " gold, is:"
+      displayItems winMsg True items
+      go <- session getConfirm
+      when go $ do
+        go2 <- handleScores True H.Victor total
+        when go2 $ messageMore "Can it be done better, though?"
+      end
 
 -- | Switches current hero to the next hero on the level, if any, wrapping.
 cycleHero :: Action ()
-cycleHero =
-  do
-    pl <- gets splayer
-    hs <- gets (lheroes . slevel)
-    let i        = case pl of AHero n -> n ; _ -> -1
-        (lt, gt) = IM.split i hs
-    case IM.keys gt ++ IM.keys lt of
-      [] -> abortWith "Cannot select another hero on this level."
-      ni : _ -> selectPlayer (AHero ni)
-                  >>= assert `trueM` (pl, ni, "hero duplicated")
+cycleHero = do
+  pl <- gets splayer
+  hs <- gets (lheroes . slevel)
+  let i        = case pl of AHero n -> n ; _ -> -1
+      (lt, gt) = IM.split i hs
+  case IM.keys gt ++ IM.keys lt of
+    [] -> abortWith "Cannot select another hero on this level."
+    ni : _ -> selectPlayer (AHero ni)
+              >>= assert `trueM` (pl, ni, "hero duplicated")
 
 -- | Search for secret doors
 search :: Action ()
-search =
-  do
-    cops   <- contentf Kind.coitem
-    cotile <- contentf Kind.cotile
-    lm     <- gets (lmap . slevel)
-    le     <- gets (lsecret . slevel)
-    lxsize <- gets (lxsize . slevel)
-    ploc   <- gets (bloc . getPlayerBody)
-    pitems <- gets getPlayerItem
-    doorClosedId <- rndToAction $ Tile.doorClosedId cotile
-    let delta = case strongestItem cops pitems "ring" of
-                  Just i  -> 1 + jpower i
-                  Nothing -> 1
-        searchTile loc (slm, sle) =
-          let t = lm Kind.! loc
-              k = Tile.secretStrength (le IM.! loc) - delta
-          in if Tile.hasFeature cotile F.Hidden t
-             then if k > 0
-                  then (slm,
-                        IM.insert loc (Tile.SecretStrength k) sle)
-                  else ((loc, doorClosedId) : slm,
-                        IM.delete loc sle)
-             else (slm, sle)
-        f (slm, sle) m = searchTile (shift ploc m) (slm, sle)
-        (lmDiff, lemap) = L.foldl' f ([], le) (moves lxsize)
-        lmNew = if L.null lmDiff then lm else lm Kind.// lmDiff
-    modify (updateLevel (\ l -> l{lmap = lmNew, lsecret = lemap}))
-    playerAdvanceTime
+search = do
+  cops   <- contentf Kind.coitem
+  cotile <- contentf Kind.cotile
+  lm     <- gets (lmap . slevel)
+  le     <- gets (lsecret . slevel)
+  lxsize <- gets (lxsize . slevel)
+  ploc   <- gets (bloc . getPlayerBody)
+  pitems <- gets getPlayerItem
+  doorClosedId <- rndToAction $ Tile.doorClosedId cotile
+  let delta = case strongestItem cops pitems "ring" of
+                Just i  -> 1 + jpower i
+                Nothing -> 1
+      searchTile loc (slm, sle) =
+        let t = lm Kind.! loc
+            k = Tile.secretStrength (le IM.! loc) - delta
+        in if Tile.hasFeature cotile F.Hidden t
+           then if k > 0
+                then (slm,
+                      IM.insert loc (Tile.SecretStrength k) sle)
+                else ((loc, doorClosedId) : slm,
+                      IM.delete loc sle)
+           else (slm, sle)
+      f (slm, sle) m = searchTile (shift ploc m) (slm, sle)
+      (lmDiff, lemap) = L.foldl' f ([], le) (moves lxsize)
+      lmNew = if L.null lmDiff then lm else lm Kind.// lmDiff
+  modify (updateLevel (\ l -> l{lmap = lmNew, lsecret = lemap}))
+  playerAdvanceTime
 
 -- | Start the floor targeting mode or reset the cursor location to the player.
 targetFloor :: Action ()
@@ -535,80 +523,77 @@ setCursor = do
 -- | Perform look around in the current location of the cursor.
 -- TODO: depending on tgt, show extra info about tile or monster or both
 doLook :: Action ()
-doLook =
-  do
-    cops   <- contentOps
-    loc    <- gets (clocation . scursor)
-    state  <- get
-    lvl    <- gets slevel
-    per    <- currentPerception
-    target <- gets (btarget . getPlayerBody)
-    let canSee = IS.member loc (ptvisible per)
-        monsterMsg =
-          if canSee
-          then case L.find (\ m -> bloc m == loc) (levelMonsterList state) of
-                 Just m  -> subjectActor (Kind.coactor cops) m ++ " is here. "
-                 Nothing -> ""
-          else ""
-        mode = case target of
-                 TEnemy _ _ -> "[targeting monster] "
-                 TLoc _     -> "[targeting location] "
-                 TCursor    -> "[targeting current] "
-        -- general info about current loc
-        lookMsg = mode ++ lookAt cops True canSee state lvl loc monsterMsg
-        -- check if there's something lying around at current loc
-        is = lvl `irememberAt` loc
-    if length is <= 2
-      then do
-             messageAdd lookMsg
-      else do
-             displayItems lookMsg False is
-             session getConfirm
-             messageAdd ""
+doLook = do
+  cops   <- contentOps
+  loc    <- gets (clocation . scursor)
+  state  <- get
+  lvl    <- gets slevel
+  per    <- currentPerception
+  target <- gets (btarget . getPlayerBody)
+  let canSee = IS.member loc (ptvisible per)
+      monsterMsg =
+        if canSee
+        then case L.find (\ m -> bloc m == loc) (levelMonsterList state) of
+               Just m  -> subjectActor (Kind.coactor cops) m ++ " is here. "
+               Nothing -> ""
+        else ""
+      mode = case target of
+               TEnemy _ _ -> "[targeting monster] "
+               TLoc _     -> "[targeting location] "
+               TCursor    -> "[targeting current] "
+      -- general info about current loc
+      lookMsg = mode ++ lookAt cops True canSee state lvl loc monsterMsg
+      -- check if there's something lying around at current loc
+      is = lvl `irememberAt` loc
+  if length is <= 2
+    then messageAdd lookMsg
+    else do
+      displayItems lookMsg False is
+      session getConfirm
+      messageAdd ""
 
 -- | This function performs a move (or attack) by any actor,
 -- i.e., it can handle monsters, heroes and both.
-moveOrAttack :: Bool ->        -- allow attacks?
-                Bool ->        -- auto-open doors on move
-                ActorId ->     -- who's moving?
-                Dir ->
-                Action ()
+moveOrAttack :: Bool       -- ^ allow attacks?
+             -> Bool       -- ^ auto-open doors on move?
+             -> ActorId    -- ^ who's moving?
+             -> Dir        -- ^ in which direction?
+             -> Action ()
 moveOrAttack allowAttacks autoOpen actor dir = do
-      -- We start by looking at the target position.
-      cops  <- contentOps
-      cotile <- contentf Kind.cotile
-      state <- get
-      pl    <- gets splayer
-      lvl   <- gets slevel
-      sm    <- gets (getActor actor)
-      let sloc = bloc sm           -- source location
-          tloc = sloc `shift` dir  -- target location
-      tgt <- gets (locToActor tloc)
-      case tgt of
-        Just target
-          | allowAttacks ->
-              -- Attacking does not require full access, adjacency is enough.
-              actorAttackActor actor target
-          | accessible cotile lvl sloc tloc -> do
-              -- Switching positions requires full access.
-              actorRunActor actor target
-              when (actor == pl) $
-                messageAdd $ lookAt cops False True state lvl tloc ""
-          | otherwise -> abortWith ""
-        Nothing
-          | accessible cotile lvl sloc tloc -> do
-              -- perform the move
-              updateAnyActor actor $ \ body -> body {bloc = tloc}
-              when (actor == pl) $
-                messageAdd $ lookAt cops False True state lvl tloc ""
-              advanceTime actor
-          | allowAttacks && actor == pl
-            && Tile.canBeSecretDoor cotile (lvl `rememberAt` tloc)
-            -> do
-              messageAdd "You search your surroundings."  -- TODO: proper msg
-              search
-          | autoOpen -> actorOpenDoor actor dir  -- try to open a door
-          | otherwise -> abortWith ""
+  -- We start by looking at the target position.
+  cops   <- contentOps
+  cotile <- contentf Kind.cotile
+  state  <- get
+  pl     <- gets splayer
+  lvl    <- gets slevel
+  sm     <- gets (getActor actor)
+  let sloc = bloc sm           -- source location
+      tloc = sloc `shift` dir  -- target location
+  tgt <- gets (locToActor tloc)
+  case tgt of
+    Just target
+      | allowAttacks ->
+          -- Attacking does not require full access, adjacency is enough.
+          actorAttackActor actor target
+      | accessible cotile lvl sloc tloc -> do
+          -- Switching positions requires full access.
+          actorRunActor actor target
+          when (actor == pl) $
+            messageAdd $ lookAt cops False True state lvl tloc ""
+      | otherwise -> abortWith ""
+    Nothing
+      | accessible cotile lvl sloc tloc -> do
+          -- perform the move
+          updateAnyActor actor $ \ body -> body {bloc = tloc}
+          when (actor == pl) $
+            messageAdd $ lookAt cops False True state lvl tloc ""
+          advanceTime actor
+      | allowAttacks && actor == pl
+        && Tile.canBeSecretDoor cotile (lvl `rememberAt` tloc) -> do
+          messageAdd "You search your surroundings."  -- TODO: proper msg
+          search
+      | autoOpen -> actorOpenDoor actor dir  -- try to open a door
+      | otherwise -> abortWith ""
 
 -- | Resolves the result of an actor moving into another. Usually this
 -- involves melee attack, but with two heroes it just changes focus.
@@ -621,7 +606,7 @@ actorAttackActor :: ActorId -> ActorId -> Action ()
 actorAttackActor source@(AHero _) target@(AHero _) =
   -- Select adjacent hero by bumping into him. Takes no time.
   selectPlayer target
-    >>= assert `trueM` (source, target, "player bumps into himself")
+  >>= assert `trueM` (source, target, "player bumps into himself")
 actorAttackActor source target = do
   Kind.COps{coactor, coitem} <- contentOps
   state <- get
@@ -642,8 +627,9 @@ actorAttackActor source target = do
       -- perhaps, when a weapon is equipped, just say "you hit" or "you miss"
       -- and then "nose dies" or "nose yells in pain".
       msg = subjectVerbMObject coactor sm verb tm $
-              if isJust str then " with "
-                                 ++ objectItem coitem state single else ""
+              if isJust str
+              then " with " ++ objectItem coitem state single
+              else ""
   when (sloc `IS.member` ptvisible per) $ messageAdd msg
   -- Messages inside itemEffectAction describe the target part.
   itemEffectAction 0 source target single
@@ -675,31 +661,30 @@ generateMonster = do
   state  <- get
   nstate <- rndToAction $ rollMonster cops state
   srandom <- gets srandom
-  put $ nstate{srandom}
+  put nstate{srandom}
 
 -- | Possibly regenerate HP for all actors on the current level.
 regenerateLevelHP :: Action ()
-regenerateLevelHP =
-  do
-    coactor@Kind.Ops{okind} <- contentf Kind.coactor
-    cops <- contentf Kind.coitem
-    time <- gets stime
-    let upd itemIM a m =
-          let ak = okind $ bkind m
-              bitems = fromMaybe [] $ IM.lookup a itemIM
-              regen = aregen ak `div`
-                      case strongestItem cops bitems "amulet" of
-                        Just i  -> jpower i
-                        Nothing -> 1
-          in if time `mod` regen /= 0
-             then m
-             else addHp coactor 1 m
-    -- We really want hero selection to be a purely UI distinction,
-    -- so all heroes need to regenerate, not just the player.
-    -- Only the heroes on the current level regenerate (others are frozen
-    -- in time together with their level). This prevents cheating
-    -- via sending one hero to a safe level and waiting there.
-    hi  <- gets (lheroItem . slevel)
-    modify (updateLevel (updateHeroes   (IM.mapWithKey (upd hi))))
-    mi  <- gets (lmonItem . slevel)
-    modify (updateLevel (updateMonsters (IM.mapWithKey (upd mi))))
+regenerateLevelHP = do
+  coactor@Kind.Ops{okind} <- contentf Kind.coactor
+  cops <- contentf Kind.coitem
+  time <- gets stime
+  let upd itemIM a m =
+        let ak = okind $ bkind m
+            bitems = fromMaybe [] $ IM.lookup a itemIM
+            regen = aregen ak `div`
+                    case strongestItem cops bitems "amulet" of
+                      Just i  -> jpower i
+                      Nothing -> 1
+        in if time `mod` regen /= 0
+           then m
+           else addHp coactor 1 m
+  -- We really want hero selection to be a purely UI distinction,
+  -- so all heroes need to regenerate, not just the player.
+  -- Only the heroes on the current level regenerate (others are frozen
+  -- in time together with their level). This prevents cheating
+  -- via sending one hero to a safe level and waiting there.
+  hi  <- gets (lheroItem . slevel)
+  modify (updateLevel (updateHeroes   (IM.mapWithKey (upd hi))))
+  mi  <- gets (lmonItem . slevel)
+  modify (updateLevel (updateMonsters (IM.mapWithKey (upd mi))))
