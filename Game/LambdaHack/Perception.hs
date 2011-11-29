@@ -1,4 +1,7 @@
-module Game.LambdaHack.Perception where
+module Game.LambdaHack.Perception
+  ( Perceptions, ptreachable, ptvisible, perception_
+  , actorSeesLoc, actorReachesLoc, actorReachesActor
+  ) where
 
 import qualified Data.IntSet as IS
 import qualified Data.List as L
@@ -20,7 +23,7 @@ import Game.LambdaHack.Content.TileKind
 
 data Perception = Perception
   { preachable :: IS.IntSet
-  , pvisible :: IS.IntSet
+  , pvisible   :: IS.IntSet
   }
 
 -- The pplayer field is void if player not on the current level,
@@ -36,8 +39,8 @@ ptreachable, ptvisible :: Perceptions -> IS.IntSet
 ptreachable = preachable . ptotal
 ptvisible   = pvisible . ptotal
 
-actorPrLoc :: (Perception -> IS.IntSet) ->
-              ActorId -> Loc -> Perceptions -> Maybe ActorId -> Bool
+actorPrLoc :: (Perception -> IS.IntSet)
+           ->  ActorId -> Loc -> Perceptions -> Maybe ActorId -> Bool
 actorPrLoc projection actor loc per pl =
   let tryHero = case actor of
                   AMonster _ -> Nothing
@@ -49,27 +52,27 @@ actorPrLoc projection actor loc per pl =
                   pper <- pplayer per
                   return $ loc `IS.member` projection pper
       tryAny  = tryHero `mplus` tryPl
-  in  fromMaybe False tryAny  -- assume not visible, if no perception found
+  in fromMaybe False tryAny  -- assume not visible, if no perception found
 
-actorSeesLoc    :: ActorId -> Loc -> Perceptions -> Maybe ActorId -> Bool
-actorSeesLoc    = actorPrLoc pvisible
+actorSeesLoc :: ActorId -> Loc -> Perceptions -> Maybe ActorId -> Bool
+actorSeesLoc = actorPrLoc pvisible
 
 actorReachesLoc :: ActorId -> Loc -> Perceptions -> Maybe ActorId -> Bool
 actorReachesLoc = actorPrLoc preachable
 
 -- Not quite correct if FOV not symmetric (Shadow).
 actorReachesActor :: ActorId -> ActorId -> Loc -> Loc
-                     -> Perceptions -> Maybe ActorId
-                     -> Bool
+                  -> Perceptions -> Maybe ActorId
+                  -> Bool
 actorReachesActor actor1 actor2 loc1 loc2 per pl =
   actorReachesLoc actor1 loc2 per pl ||
   actorReachesLoc actor2 loc1 per pl
 
 perception_ :: Kind.COps -> State -> Perceptions
 perception_ Kind.COps{cotile, coactor=Kind.Ops{okind}}
-            state@(State { splayer = pl
-                         , sconfig  = config
-                         , ssensory = sensory }) =
+            state@State{ splayer = pl
+                       , sconfig  = config
+                       , ssensory = sensory } =
   let lvl@Level{lheroes = hs} = slevel state
       mode   = Config.get config "engine" "fovMode"
       radius = let r = Config.get config "engine" "fovRadius"
@@ -101,9 +104,10 @@ perception_ Kind.COps{cotile, coactor=Kind.Ops{okind}}
       lpers = maybeToList pper ++ IM.elems pers
       reachable = IS.unions (L.map preachable lpers)
       visible = IS.unions (L.map pvisible lpers)
-  in  Perceptions { pplayer = pper,
-                    pheroes = pers,
-                    ptotal = Perception reachable visible }
+  in  Perceptions { pplayer = pper
+                  , pheroes = pers
+                  , ptotal = Perception reachable visible
+                  }
 
 -- | Once we compute the reachable fields using FOV, it is possible
 -- to compute what the hero can actually see.
