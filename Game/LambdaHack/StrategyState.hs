@@ -148,7 +148,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
     actionPickup = return $ actorPickupItem actor
     tis = lvl `iat` me
     freqs = [applyFreq items 1, applyFreq tis 2,
-             throwFreq items 2, throwFreq tis 5, towardsFreq]
+             throwFreq items 2, throwFreq tis 5] ++ towardsFreq
     applyFreq is multi = Frequency
       [ (benefit * multi, actionApply (iname ik) i)
       | i <- is,
@@ -171,9 +171,9 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
       zapGroupItem actor (fromJust floc) (zapToVerb groupName)
     towardsFreq =
       let freqs2 = runStrategy $ fromDir False moveTowards
-      in  if asight mk && not (L.null freqs2)
-          then scale 30 $ head freqs2
-          else mzero
+      in  if asight mk
+          then map (scale 30) freqs2
+          else [mzero]
     moveTowards = onlySensible $ onlyNoMs (towardsFoe moveFreely)
     moveAround =
       onlySensible $
@@ -181,11 +181,14 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
           asmell mk .=> L.foldr ((.|) . return) reject smells
           .| onlyOpenable moveFreely
           .| moveFreely
+    moveIQ = aiq mk > 15 .=> onlyKeepsDir 0 moveRandomly
+             .| aiq mk > 10 .=> onlyKeepsDir 1 moveRandomly
+             .| aiq mk > 5  .=> onlyKeepsDir 2 moveRandomly
+    exitFreq =
+      runStrategy moveIQ
+      ++ map (scale 3) (runStrategy $ onlyExit (onlyKeepsDir 2 moveRandomly))
     moveFreely = onlyLoot moveRandomly
-                 .| onlyExit (onlyKeepsDir 2 moveRandomly)
-                 .| aiq mk > 15 .=> onlyKeepsDir 0 moveRandomly
-                 .| aiq mk > 10 .=> onlyKeepsDir 1 moveRandomly
-                 .| aiq mk > 5  .=> onlyKeepsDir 2 moveRandomly
+                 .| liftFrequency (msum exitFreq)
                  .| onlyKeepsDir_9 moveRandomly
                  .| moveRandomly
     onlyMoves :: (Loc -> Bool) -> Loc -> Strategy Dir -> Strategy Dir

@@ -107,7 +107,7 @@ handleMonster actor =
     state <- get
     -- Simplification: this is the perception after the last player command
     -- and does not take into account, e.g., other monsters opening doors.
-    per   <- currentPerception
+    per <- currentPerception
     -- Run the AI: choses an action from those given by the AI strategy.
     action <-
       rndToAction $
