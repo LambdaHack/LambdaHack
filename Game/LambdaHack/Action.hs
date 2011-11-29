@@ -62,8 +62,8 @@ handlerToIO sess@(_, _, cops) state msg h =
   runAction h
     sess
     (Save.rmBkp (sconfig state) >> shutdown sess)  -- get out of the game
-    (perception_ cops state)  -- create and cache perception
-    (\ _ _ x -> return x)     -- final continuation returns result
+    (perception cops state)  -- create and cache perception
+    (\ _ _ x -> return x)    -- final continuation returns result
     (ioError $ userError "unhandled abort")
     state
     msg
@@ -222,7 +222,7 @@ messageOverlaysConfirm msg (x:xs) = do
 -- | Update the cached perception for the given computation.
 withPerception :: Action () -> Action ()
 withPerception h = Action (\ s@(_, _, cops) e _ k a st ms ->
-                            runAction h s e (perception_ cops st) k a st ms)
+                            runAction h s e (perception cops st) k a st ms)
 
 -- | Get the current perception.
 currentPerception :: Action Perceptions

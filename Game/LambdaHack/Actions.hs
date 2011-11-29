@@ -500,7 +500,11 @@ targetMonster = do
               AHero _ -> ms
       (lt, gt) = IM.split i dms
       gtlt     = IM.assocs gt ++ IM.assocs lt
-      lf = L.filter (\ (_, m) -> actorSeesLoc pl (bloc m) per (Just pl)) gtlt
+      seen (_, m) =
+        let mloc = bloc m
+        in mloc `IS.member` ptvisible per            -- visible by any
+           && actorReachesLoc pl mloc per (Just pl)  -- reachable by player
+      lf = L.filter seen gtlt
       tgt = case lf of
               [] -> target  -- no monsters in sight, stick to last target
               (na, nm) : _ -> TEnemy (AMonster na) (bloc nm)  -- pick the next

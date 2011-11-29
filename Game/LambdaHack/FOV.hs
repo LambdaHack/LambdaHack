@@ -36,8 +36,8 @@ fullscan fovMode loc cops Level{lxsize, lmap} =
       L.foldl' (\ acc tr -> Digital.scan r tr (isCl . tr) acc)
         [] [qtr0, qtr1, qtr2, qtr3]
     Blind ->  -- only feeling out adjacent tiles by touch
-      let radius = 1
-      in L.foldl' (\ acc tr -> Digital.scan radius tr (isCl . tr) acc)
+      let radiusOne = 1
+      in L.foldl' (\ acc tr -> Digital.scan radiusOne tr (isCl . tr) acc)
            [] [qtr0, qtr1, qtr2, qtr3]
  where
   isCl :: Loc -> Bool
