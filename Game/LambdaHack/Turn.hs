@@ -105,6 +105,8 @@ handleMonster actor =
     debug "handleMonster"
     cops  <- contentOps
     state <- get
+    -- Simplification: this is the perception after the last player command
+    -- and does not take into account, e.g., other monsters opening doors.
     per   <- currentPerception
     -- Run the AI: choses an action from those given by the AI strategy.
     action <-
@@ -134,26 +136,26 @@ handlePlayer :: Action ()
 handlePlayer =
   do
     debug "handlePlayer"
-    remember  -- the hero perceives his (potentially new) surroundings
-    -- determine perception before running player command, in case monsters
-    -- have opened doors ...
+    remember  -- The hero notices his surroundings, before they get displayed.
     oldPlayerTime <- gets (btime . getPlayerBody)
-    withPerception playerCommand -- get and process a player command
-    -- at this point, the command was successful and possibly took some time
+    -- Determine perception before running player command, in case monsters
+    -- have opened doors, etc.
+    withPerception playerCommand
+    -- At this point, the command was successful and possibly took some time.
     newPlayerTime <- gets (btime . getPlayerBody)
     if newPlayerTime == oldPlayerTime
-      then withPerception handlePlayer  -- no time taken, repeat
+      then handlePlayer  -- no time taken, repeat
       else do
         state <- get
         pl    <- gets splayer
         let time = stime state
             ploc = bloc (getPlayerBody state)
             sTimeout = Config.get (sconfig state) "monsters" "smellTimeout"
-        -- update smell
-        when (isAHero pl) $  -- only humans leave strong scent
+        -- Update smell. Only humans leave a strong scent.
+        when (isAHero pl) $
           modify (updateLevel (updateSmell (IM.insert ploc
                                              (SmellTime (time + sTimeout)))))
-        -- determine player perception and continue with monster moves
+        -- Determine perception to let monsters target heroes.
         withPerception handleMonsters
 
 -- | Determine and process the next player command.
@@ -221,8 +223,8 @@ heroSelection :: [(K.Key, Command)]
 heroSelection =
   let heroSelect k = (K.Char (Char.intToDigit k),
                       Undescribed $
-                      selectPlayer (AHero k) >> withPerception playerCommand)
-  in  fmap heroSelect [0..9]
+                      selectPlayer (AHero k) >> return ())
+  in fmap heroSelect [0..9]
 
 stdKeybindings :: Keybindings
 stdKeybindings = Keybindings
