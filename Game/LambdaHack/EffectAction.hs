@@ -136,7 +136,7 @@ itemEffectAction verbosity source target item = do
   -- Determine how the player perceives the event.
   -- TODO: factor it out as a function messageActor
   -- and messageActorVerb (incorporating subjectActorVerb).
-  if bloc tm `IS.member` ptvisible per
+  if bloc tm `IS.member` totalVisible per
      then messageAdd msg
      else unless b $
             -- victim is not seen and but somethig interestng happens

@@ -176,7 +176,7 @@ continueRun dir = do
               AMonster n -> IM.delete n ms  -- don't be afraid of yourself
               AHero _ -> ms
       mslocs = IS.fromList (L.map bloc (IM.elems dms))
-      monstersVisible = not (IS.null (mslocs `IS.intersection` ptvisible per))
+      monstersVisible = not (IS.null (mslocs `IS.intersection` totalVisible per))
       newsReported    = not (L.null msg)
       tile      = lvl `rememberAt` loc  -- tile at current location
       itemsHere = not (L.null (lvl `irememberAt` loc))
@@ -224,7 +224,7 @@ remember :: Action ()
 remember = do
   per <- currentPerception
   lvl <- gets slevel
-  let vis = IS.toList (ptvisible per)
+  let vis = IS.toList (totalVisible per)
   let rememberTile = [(loc, lvl `at` loc) | loc <- vis]
   modify (updateLevel (updateLRMap (Kind.// rememberTile)))
   let alt Nothing      = Nothing
@@ -502,7 +502,7 @@ targetMonster = do
       gtlt     = IM.assocs gt ++ IM.assocs lt
       seen (_, m) =
         let mloc = bloc m
-        in mloc `IS.member` ptvisible per            -- visible by any
+        in mloc `IS.member` totalVisible per            -- visible by any
            && actorReachesLoc pl mloc per (Just pl)  -- reachable by player
       lf = L.filter seen gtlt
       tgt = case lf of
@@ -519,7 +519,7 @@ setCursor = do
   ploc  <- gets (bloc . getPlayerBody)
   clocLn <- gets slid
   let upd cursor =
-        let clocation = fromMaybe ploc (targetToLoc (ptvisible per) state)
+        let clocation = fromMaybe ploc (targetToLoc (totalVisible per) state)
         in cursor { ctargeting = True, clocation, clocLn }
   modify (updateCursor upd)
   doLook
@@ -534,7 +534,7 @@ doLook = do
   lvl    <- gets slevel
   per    <- currentPerception
   target <- gets (btarget . getPlayerBody)
-  let canSee = IS.member loc (ptvisible per)
+  let canSee = IS.member loc (totalVisible per)
       monsterMsg =
         if canSee
         then case L.find (\ m -> bloc m == loc) (levelMonsterList state) of
@@ -634,7 +634,7 @@ actorAttackActor source target = do
               if isJust str
               then " with " ++ objectItem coitem state single
               else ""
-  when (sloc `IS.member` ptvisible per) $ messageAdd msg
+  when (sloc `IS.member` totalVisible per) $ messageAdd msg
   -- Messages inside itemEffectAction describe the target part.
   itemEffectAction 0 source target single
   advanceTime source

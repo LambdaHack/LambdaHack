@@ -69,7 +69,7 @@ applyGroupItem actor verb item = do
       msg = subjectVerbIObject cops state body verb consumed ""
       loc = bloc body
   removeFromInventory actor consumed loc
-  when (loc `IS.member` ptvisible per) $ messageAdd msg
+  when (loc `IS.member` totalVisible per) $ messageAdd msg
   itemEffectAction 5 actor actor consumed
   advanceTime actor
 
@@ -110,7 +110,7 @@ zapGroupItem source loc verb item = do
   let consumed = item { jcount = 1 }
       sloc = bloc sm
       subject =
-        if sloc `IS.member` ptvisible per
+        if sloc `IS.member` totalVisible per
         then sm
         else template (heroKindId (Kind.coactor cops))
                (Just "somebody") Nothing 99 sloc
@@ -119,12 +119,12 @@ zapGroupItem source loc verb item = do
   case locToActor loc state of
     Just ta -> do
       -- The message describes the source part of the action.
-      when (sloc `IS.member` ptvisible per || isAHero ta) $ messageAdd msg
+      when (sloc `IS.member` totalVisible per || isAHero ta) $ messageAdd msg
       -- Messages inside itemEffectAction describe the target part.
       b <- itemEffectAction 10 source ta consumed
       unless b $ modify (updateLevel (dropItemsAt [consumed] loc))
     Nothing -> do
-      when (sloc `IS.member` ptvisible per) $ messageAdd msg
+      when (sloc `IS.member` totalVisible per) $ messageAdd msg
       modify (updateLevel (dropItemsAt [consumed] loc))
   advanceTime source
 
@@ -139,7 +139,7 @@ playerZapGroupItem groupName = do
   per   <- currentPerception
   case iOpt of
     Just i  ->
-      case targetToLoc (ptvisible per) state of
+      case targetToLoc (totalVisible per) state of
         Nothing  -> abortWith "target invalid"
         Just loc ->
           -- TODO: draw digital line and see if obstacles prevent firing
@@ -227,7 +227,7 @@ actorPickupItem actor = do
   body  <- gets (getActor actor)
   bitems <- gets (getActorItem actor)
   let loc       = bloc body
-      perceived = loc `IS.member` ptvisible per
+      perceived = loc `IS.member` totalVisible per
       isPlayer  = actor == pl
   -- check if something is here to pick up
   case lvl `iat` loc of

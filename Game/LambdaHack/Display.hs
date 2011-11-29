@@ -134,8 +134,8 @@ displayLevel dm session@(_, _, cops) per
       lvl@Level{lxsize = sx, lysize = sy, lsmell = smap} = slevel state
       (_, Actor{bkind, bhp, bloc}, bitems) = findActorAnyLevel splayer state
       ActorKind{ahp} = okind bkind
-      reachable = ptreachable per
-      visible   = ptvisible per
+      reachable = debugTotalReachable per
+      visible   = totalVisible per
       overlay   = fromMaybe "" moverlay
       (ns, over) = stringByLocation sy overlay -- n overlay screens needed
       sSml   = ssensory state == Smell
@@ -188,7 +188,7 @@ displayLevel dm session@(_, _, cops) per
             vis = IS.member loc0 visible
             rea = IS.member loc0 reachable
             bg0 = if ctargeting scursor && loc0 == clocation scursor
-                  then Color.defFG      -- highlight targeting cursor
+                  then Color.defFG     -- highlight targeting cursor
                   else sVisBG vis rea  -- FOV debug
             reverseVideo = (snd Color.defaultAttr, fst Color.defaultAttr)
             optVisually (fg, bg) =

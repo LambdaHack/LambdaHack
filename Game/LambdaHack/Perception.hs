@@ -1,5 +1,5 @@
 module Game.LambdaHack.Perception
-  ( Perceptions, ptreachable, ptvisible, perception
+  ( Perceptions, totalVisible, debugTotalReachable, perception
   , actorReachesLoc, actorReachesActor
   ) where
 
@@ -21,26 +21,29 @@ import qualified Game.LambdaHack.Tile as Tile
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Content.TileKind
 
-data Perception = Perception
+newtype PerceptionReachable = PerceptionReachable
   { preachable :: IS.IntSet
-  , pvisible   :: IS.IntSet
+  }
+
+newtype PerceptionVisible = PerceptionVisible
+  { pvisible :: IS.IntSet
   }
 
 -- Heroes share visibility and only have separate reachability.
-type HeroPerception = IS.IntSet
-
 -- The pplayer field is void if player not on the current level,
 -- or if the player controls a blind monster. Right now, the field is used only
 -- for player-controlled monsters on the current level.
 data Perceptions = Perceptions
-  { pplayer :: Maybe HeroPerception
-  , pheroes :: IM.IntMap HeroPerception
-  , ptotal  :: Perception
+  { pplayer :: Maybe PerceptionReachable
+  , pheroes :: IM.IntMap PerceptionReachable
+  , ptotal  :: PerceptionVisible
   }
 
-ptreachable, ptvisible :: Perceptions -> IS.IntSet
-ptreachable = preachable . ptotal
-ptvisible   = pvisible . ptotal
+totalVisible, debugTotalReachable :: Perceptions -> IS.IntSet
+totalVisible = pvisible . ptotal
+debugTotalReachable per =
+  let lpers = maybeToList (pplayer per) ++ IM.elems (pheroes per)
+  in IS.unions (map preachable lpers)
 
 actorReachesLoc :: ActorId -> Loc -> Perceptions -> Maybe ActorId -> Bool
 actorReachesLoc actor loc per pl =
@@ -48,11 +51,11 @@ actorReachesLoc actor loc per pl =
                   AMonster _ -> Nothing
                   AHero i -> do
                     hper <- IM.lookup i (pheroes per)
-                    return $ loc `IS.member` hper
+                    return $ loc `IS.member` preachable hper
       tryPl   = do  -- the case for a monster under player control
                   guard $ Just actor == pl
                   pper <- pplayer per
-                  return $ loc `IS.member` pper
+                  return $ loc `IS.member` preachable pper
       tryAny  = tryHero `mplus` tryPl
   in fromMaybe False tryAny  -- assume not visible, if no perception found
 
@@ -85,12 +88,12 @@ perception cops@Kind.COps{cotile}
       pers = IM.map (\ h -> computeReachable cops radius mode sensory h lvl) hs
       locs = IM.map bloc hs
       lpers = maybeToList mPer ++ IM.elems pers
-      reachable = IS.unions lpers
+      reachable = PerceptionReachable $ IS.unions (map preachable lpers)
       lights = IS.fromList $ maybeToList mLoc ++ IM.elems locs
       visible = computeVisible cotile reachable lvl lights
   in  Perceptions { pplayer = mPer
                   , pheroes = pers
-                  , ptotal  = Perception reachable visible
+                  , ptotal  = visible
                   }
 
 -- | A location can be directly lit by an ambient shine or a portable
@@ -103,21 +106,23 @@ perception cops@Kind.COps{cotile}
 -- e.g., if I don't see the reachable light seen by another hero,
 -- there must be a wall in-between. Stray rays indicate doors,
 -- moving shadows indicate monsters, etc.).
-computeVisible :: Kind.Ops TileKind -> IS.IntSet -> Level -> IS.IntSet
-               -> IS.IntSet
-computeVisible cops reachable lvl@Level{lxsize, lysize} lights' =
+computeVisible :: Kind.Ops TileKind -> PerceptionReachable -> Level -> IS.IntSet
+               -> PerceptionVisible
+computeVisible cops (PerceptionReachable reachable)
+               lvl@Level{lxsize, lysize} lights' =
   let lights = IS.intersection lights' reachable  -- optimization
       litDirectly loc = Tile.isLit cops (lvl `at` loc) || loc `IS.member` lights
       l_and_R loc = litDirectly loc && loc `IS.member` reachable
       lit loc =
         let srds = surroundings lxsize lysize loc
         in litDirectly loc || L.any l_and_R srds
-  in IS.filter lit reachable
+  in PerceptionVisible $
+     IS.filter lit reachable
 
 -- | Reachable are all fields on an unblocked path from the hero position.
 -- The player's own position is considred reachable by him.
 computeReachable :: Kind.COps -> Int -> String -> SensoryMode
-                 -> Actor -> Level -> IS.IntSet
+                 -> Actor -> Level -> PerceptionReachable
 computeReachable Kind.COps{cotile, coactor=Kind.Ops{okind}}
                  radius mode sensory actor lvl =
   let fovMode m = if not $ asight $ okind $ bkind m
@@ -136,4 +141,5 @@ computeReachable Kind.COps{cotile, coactor=Kind.Ops{okind}}
               "shadow"     -> Shadow
               _            -> error $ "Unknown FOV mode: " ++ show mode
       ploc = bloc actor
-  in IS.insert ploc $ IS.fromList $ fullscan (fovMode actor) ploc cotile lvl
+  in PerceptionReachable $
+     IS.insert ploc $ IS.fromList $ fullscan (fovMode actor) ploc cotile lvl
