@@ -17,9 +17,9 @@ cdefs = Content.CDefs
   , getName = cname
   , getFreq = cfreq
   , content =
-      [rogue, empty, noise, largeNoise]
+      [rogue, arena, empty, noise, largeNoise]
   }
-rogue,        empty, noise, largeNoise:: CaveKind
+rogue,        arena, empty, noise, largeNoise:: CaveKind
 
 rogue = CaveKind
   { csymbol           = '$'
@@ -44,6 +44,13 @@ rogue = CaveKind
   , citemNum          = (5, 2)
   , clayout           = CaveRogue
   , defTile           = \ t -> tsymbol t == '#' && L.null (tfeature t)
+  }
+arena = rogue
+  { csymbol           = 'A'
+  , cname             = "caveArena"
+  , cfreq             = 20
+  , clayout           = CaveRogue
+  , defTile           = \ t -> tsymbol t == '.' && kindHas [F.Lit] [F.Exit] t
   }
 empty = rogue
   { csymbol           = '.'
