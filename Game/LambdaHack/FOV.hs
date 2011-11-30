@@ -27,18 +27,18 @@ fullscan :: FovMode -> Loc -> Kind.Ops TileKind -> Level -> [Loc]
 fullscan fovMode loc cops Level{lxsize, lmap} =
   case fovMode of
     Shadow ->  -- shadow casting with infinite range
-      L.foldl' (\ acc tr -> Shadow.scan tr (isCl . tr) 1 (0, 1) acc)
-        [] [tr0, tr1, tr2, tr3, tr4, tr5, tr6, tr7]
+      L.concatMap (\ tr -> map tr (Shadow.scan (isCl . tr) 1 (0, 1)))
+        [tr0, tr1, tr2, tr3, tr4, tr5, tr6, tr7]
     Permissive r  ->  -- permissive with range r
-      L.foldl' (\ acc tr -> Permissive.scan r tr (isCl . tr) acc)
-        [] [qtr0, qtr1, qtr2, qtr3]
+      L.concatMap (\ tr -> map tr (Permissive.scan r (isCl . tr)))
+        [qtr0, qtr1, qtr2, qtr3]
     Digital r ->  -- digital with range r
-      L.foldl' (\ acc tr -> Digital.scan r tr (isCl . tr) acc)
-        [] [qtr0, qtr1, qtr2, qtr3]
+      L.concatMap (\ tr -> map tr (Digital.scan r (isCl . tr)))
+        [qtr0, qtr1, qtr2, qtr3]
     Blind ->  -- only feeling out adjacent tiles by touch
       let radiusOne = 1
-      in L.foldl' (\ acc tr -> Digital.scan radiusOne tr (isCl . tr) acc)
-           [] [qtr0, qtr1, qtr2, qtr3]
+      in L.concatMap (\ tr -> map tr (Digital.scan radiusOne (isCl . tr)))
+           [qtr0, qtr1, qtr2, qtr3]
  where
   isCl :: Loc -> Bool
   isCl = Tile.isClear cops . (lmap Kind.!)
