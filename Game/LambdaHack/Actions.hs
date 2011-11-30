@@ -179,7 +179,7 @@ continueRun dir = do
       monstersVisible = not (IS.null (mslocs `IS.intersection` totalVisible per))
       newsReported    = not (L.null msg)
       tile      = lvl `rememberAt` loc  -- tile at current location
-      itemsHere = not (L.null (lvl `irememberAt` loc))
+      itemsHere = not (L.null (lvl `rememberAtI` loc))
       heroThere = (loc `shift` dir) `elem` L.map bloc (IM.elems hs)
       dirOK     = accessible cops lvl loc (loc `shift` dir)
       isTExit   = Tile.isExit cops tile
@@ -255,7 +255,7 @@ playerCloseDoor dir = do
       t = lvl `at` dloc
   if Tile.hasFeature cops F.Closable t
     then
-      case lvl `iat` dloc of
+      case lvl `atI` dloc of
         [] ->
           if unoccupied hms dloc
           then do
@@ -548,7 +548,7 @@ doLook = do
       -- general info about current loc
       lookMsg = mode ++ lookAt cops True canSee state lvl loc monsterMsg
       -- check if there's something lying around at current loc
-      is = lvl `irememberAt` loc
+      is = lvl `rememberAtI` loc
   if length is <= 2
     then messageAdd lookMsg
     else do

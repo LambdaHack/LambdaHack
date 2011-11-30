@@ -142,7 +142,7 @@ displayLevel dm session@(_, _, cops) per
       sVis   = case ssensory state of Vision _ -> True; _ -> False
       sOmn   = sdisplay state == Omniscient
       lAt    = if sOmn then at else rememberAt
-      liAt   = if sOmn then iat else irememberAt
+      liAt   = if sOmn then atI else rememberAtI
       sVisBG = if sVis
                then \ vis rea -> if vis
                                  then Color.Blue

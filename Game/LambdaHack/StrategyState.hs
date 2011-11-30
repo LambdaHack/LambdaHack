@@ -112,7 +112,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
                        Just loc ->
                          let foeDir = towards lxsize me loc
                          in  only (\ x -> dirDistSq lxsize foeDir x <= 1)
-    lootHere x     = not $ L.null $ lvl `iat` x
+    lootHere x     = not $ L.null $ lvl `atI` x
     onlyLoot       = onlyMoves lootHere me
     exitHere x     = let t = lvl `at` x in Tile.isExit cotile t
     onlyExit       = onlyMoves exitHere me
@@ -146,7 +146,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
       .| lootHere me .=> actionPickup
       .| fromDir True moveAround
     actionPickup = return $ actorPickupItem actor
-    tis = lvl `iat` me
+    tis = lvl `atI` me
     freqs = [applyFreq items 1, applyFreq tis 2,
              throwFreq items 2, throwFreq tis 5] ++ towardsFreq
     applyFreq is multi = Frequency

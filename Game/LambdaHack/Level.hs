@@ -3,7 +3,7 @@ module Game.LambdaHack.Level
   , ItemMap, TileMap, Level(..)
   , updateHeroes, updateHeroItem, updateMonsters, updateMonItem
   , updateLMap, updateLRMap, updateIMap
-  , updateSmell , at, rememberAt, iat, irememberAt
+  , updateSmell , at, rememberAt, atI, rememberAtI
   , accessible, openable, findLoc, findLocTry, dropItemsAt
   ) where
 
@@ -121,9 +121,9 @@ at         Level{lmap}  p = lmap Kind.! p
 rememberAt Level{lrmap} p = lrmap Kind.! p
 
 -- Note: representations with 2 maps leads to longer code and slower 'remember'.
-iat, irememberAt :: Level -> Loc -> [Item]
-iat         Level{litem} p = fst $ IM.findWithDefault ([], []) p litem
-irememberAt Level{litem} p = snd $ IM.findWithDefault ([], []) p litem
+atI, rememberAtI :: Level -> Loc -> [Item]
+atI         Level{litem} p = fst $ IM.findWithDefault ([], []) p litem
+rememberAtI Level{litem} p = snd $ IM.findWithDefault ([], []) p litem
 
 -- Check whether one location is accessible from the other.
 -- Precondition: the two locations are next to each other.

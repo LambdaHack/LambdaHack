@@ -203,7 +203,7 @@ removeFromInventory actor i loc = do
 removeFromLoc :: Item -> Loc -> Action Bool
 removeFromLoc i loc = do
   lvl <- gets slevel
-  if not $ L.any (equalItemIdentity i) (lvl `iat` loc)
+  if not $ L.any (equalItemIdentity i) (lvl `atI` loc)
     then return False
     else
       modify (updateLevel (updateIMap adj)) >>
@@ -230,7 +230,7 @@ actorPickupItem actor = do
       perceived = loc `IS.member` totalVisible per
       isPlayer  = actor == pl
   -- check if something is here to pick up
-  case lvl `iat` loc of
+  case lvl `atI` loc of
     []   -> abortIfWith isPlayer "nothing here"
     i:is -> -- pick up first item; TODO: let player select item; not for monsters
       case assignLetter (jletter i) (bletter body) bitems of
@@ -290,7 +290,7 @@ getItem prompt p ptext is0 isn = do
   lvl  <- gets slevel
   body <- gets getPlayerBody
   let loc       = bloc body
-      tis       = lvl `iat` loc
+      tis       = lvl `atI` loc
       floorMsg  = if L.null tis then "" else " -,"
       is = L.filter p is0
       choice = if L.null is
