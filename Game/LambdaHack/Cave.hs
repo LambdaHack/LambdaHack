@@ -17,6 +17,9 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.TileKind
 
+-- All maps here are sparse. In case of the tile map, the default tile
+-- is specified in the cave kind specification.
+
 type SecretMapXY = M.Map (X, Y) Tile.SecretStrength
 
 type ItemMapXY = M.Map (X, Y) Item

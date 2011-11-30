@@ -4,6 +4,7 @@ module Game.LambdaHack.Content.CaveKind
 
 import Game.LambdaHack.Geometry
 import qualified Game.LambdaHack.Random as Random
+import Game.LambdaHack.Content.TileKind
 
 data CaveKind = CaveKind
   { csymbol           :: Char
@@ -26,6 +27,7 @@ data CaveKind = CaveKind
   , csecretStrength   :: Random.RollDice
   , citemNum          :: Random.RollDice
   , clayout           :: CaveLayout
+  , defTile           :: TileKind -> Bool
   }
 
 -- TODO: express those using many fine-graned parameters instead

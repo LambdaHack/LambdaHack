@@ -25,10 +25,11 @@ import Game.LambdaHack.Geometry
 import Game.LambdaHack.Frequency
 import Game.LambdaHack.Content.TileKind
 
-listArrayCfg :: Int -> Int -> TileMapXY -> TileMap
-listArrayCfg cxsize cysize lmap =
-  Kind.listArray (zeroLoc, toLoc cxsize (cxsize - 1, cysize - 1))
-    (M.elems $ M.mapKeys (\ (x, y) -> (y, x)) lmap)
+convertTileMaps :: (Kind.Id TileKind) -> Int -> Int -> TileMapXY -> TileMap
+convertTileMaps defTile cxsize cysize lmap =
+  let bounds = (zeroLoc, toLoc cxsize (cxsize - 1, cysize - 1))
+      assocs = map (\ (xy, t) -> (toLoc cxsize xy, t)) (M.assocs lmap)
+  in Kind.listArray bounds (repeat defTile) Kind.// assocs
 
 unknownTileMap :: Kind.Id TileKind -> Int -> Int -> TileMap
 unknownTileMap unknownId cxsize cysize =
@@ -59,10 +60,11 @@ rollItems Kind.COps{cotile, coitem=coitem@Kind.Ops{oname}}
 
 -- | Create a level from a cave, from a cave kind.
 buildLevel :: Kind.COps -> Cave -> Int -> Int -> Rnd Level
-buildLevel cops@Kind.COps{cotile, cocave=Kind.Ops{okind}}
+buildLevel cops@Kind.COps{cotile=cotile@Kind.Ops{opick}, cocave=Kind.Ops{okind}}
            Cave{dkind, dsecret, ditem, dmap, dmeta} n depth = do
-  let cfg@CaveKind{cxsize, cysize, minStairsDistance} = okind dkind
-      cmap = listArrayCfg  cxsize cysize dmap
+  let cfg@CaveKind{cxsize, cysize, minStairsDistance, defTile} = okind dkind
+  pickedDefTile <- opick defTile
+  let cmap = convertTileMaps pickedDefTile cxsize cysize dmap
   -- Roll locations of the stairs.
   su <- findLoc cmap (const (Tile.isBoring cotile))
   sd <- findLocTry 2000 cmap

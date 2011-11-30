@@ -1,7 +1,7 @@
 {-# LANGUAGE RankNTypes, ScopedTypeVariables #-}
 module Game.LambdaHack.Kind
   ( Id, Ops(..), COps(..), createOps
-  , Array, (!), (//), listArray, bounds
+  , Array, (!), (//), listArray, array, bounds
   ) where
 
 import Data.Binary
@@ -97,6 +97,9 @@ instance (Ix.Ix i, Binary i) => Binary (Array i c) where
 
 listArray :: Ix.Ix i => (i, i) -> [Id c] -> Array i c
 listArray bds l = Array $ A.listArray bds [e | Id e <- l]
+
+array :: Ix.Ix i => (i, i) -> [(i, Id c)] -> Array i c
+array bds l = Array $ A.array bds [(i, e) | (i, Id e) <- l]
 
 bounds :: Ix.Ix i => Array i c -> (i, i)
 bounds (Array a) = A.bounds a

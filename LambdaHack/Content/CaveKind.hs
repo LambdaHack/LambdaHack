@@ -1,11 +1,15 @@
 module Content.CaveKind ( cdefs ) where
 
 import Data.Ratio
+import qualified Data.List as L
 
 import qualified Game.LambdaHack.Content.Content as Content
 import Game.LambdaHack.Geometry
 import qualified Game.LambdaHack.Random as Random
 import Game.LambdaHack.Content.CaveKind
+import Game.LambdaHack.Content.TileKind
+import qualified Game.LambdaHack.Feature as F
+import Game.LambdaHack.Tile
 
 cdefs :: Content.CDefs CaveKind
 cdefs = Content.CDefs
@@ -39,18 +43,21 @@ rogue = CaveKind
   , csecretStrength   = (7, 2)
   , citemNum          = (5, 2)
   , clayout           = CaveRogue
+  , defTile           = \ t -> tsymbol t == '#' && L.null (tfeature t)
   }
 empty = rogue
   { csymbol           = '.'
   , cname             = "caveEmpty"
   , cfreq             = 20
   , clayout           = CaveEmpty
+  , defTile           = \ t -> tsymbol t == '.' && kindHas [F.Lit] [F.Exit] t
   }
 noise = rogue
   { csymbol           = '!'
   , cname             = "caveNoise"
   , cfreq             = 0  -- stairs may be blocked, so only for the last level
   , clayout           = CaveNoise
+  , defTile           = \ t -> tsymbol t == '.' && kindHas [F.Lit] [F.Exit] t
   }
 largeNoise = noise
   { csymbol           = 'L'
