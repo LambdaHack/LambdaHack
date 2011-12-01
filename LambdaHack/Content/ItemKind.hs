@@ -124,7 +124,8 @@ sword = ItemKind
   , ipower   = (1, 2, 4, 2)
   }
 fist = sword
-  { iname    = "fist"
+  { isymbol  = '@'
+  , iname    = "fist"
   , ifreq    = 0  -- Does not appear randomly in the dungeon.
   }
 wand = ItemKind

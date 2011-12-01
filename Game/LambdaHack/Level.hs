@@ -129,8 +129,8 @@ rememberAtI Level{litem} p = snd $ IM.findWithDefault ([], []) p litem
 -- Check whether one location is accessible from another.
 accessible :: Kind.COps -> Level -> Loc -> Loc -> Bool
 accessible Kind.COps{ cotile=Kind.Ops{okind=tokind}
-                    , corule=Kind.Ops{okind, ogetUniqId}} lvl sloc tloc =
-  let check = raccessible $ okind $ ogetUniqId ((== 's') . rsymbol)
+                    , corule=Kind.Ops{okind, ouniqSymbol}} lvl sloc tloc =
+  let check = raccessible $ okind $ ouniqSymbol 's'
       src = tokind $ lvl `at` sloc
       tgt = tokind $ lvl `at` tloc
   in check sloc src tloc tgt
