@@ -45,6 +45,9 @@ createOps CDefs{getSymbol, getName, getFreq, content} =
       kindAssocs = L.zip [0..] content
       kindMap :: IM.IntMap a
       kindMap = IM.fromDistinctAscList $ L.zip [0..] content
+      kindFreq :: Frequency (Id a, a)
+      kindFreq = Frequency [ (n, (Id i, k))
+                           | (i, k) <- kindAssocs, let n = getFreq k, n > 0 ]
       okind = \ (Id i) -> kindMap IM.! (fromEnum i)
   in Ops
   { osymbol = getSymbol . okind
@@ -55,12 +58,7 @@ createOps CDefs{getSymbol, getName, getFreq, content} =
      case [Id i | (i, k) <- kindAssocs, getSymbol k == sym] of
        [i] -> i
        l -> assert `failure` l
-  , opick = \ p ->
-     let fs = [ (n, Id i)
-              | (i, k) <- kindAssocs
-              , let n = getFreq k
-              , n > 0 && p k ]
-     in frequency $ Frequency fs
+  , opick = \ p -> fmap fst $ frequency $ filterFreq (p . snd) kindFreq
   , ofoldrWithKey = \ f z -> L.foldr (\ (i, a) -> f (Id i) a) z kindAssocs
   , obounds =
      let limits = let (i1, a1) = IM.findMin kindMap
