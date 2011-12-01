@@ -19,4 +19,5 @@ data Feature =
   | Openable           -- ^ triggered by opening
   | Closable           -- ^ triggered by closable
   | Hidden             -- ^ triggered when the tile's secrecy becomes (Just 0)
+  | Special            -- ^ a variation for special flavour
   deriving (Show, Eq, Ord)

@@ -24,9 +24,9 @@ wallId Kind.Ops{opick} =
   opick $ \ t -> tsymbol t == '#' && L.null (tfeature t)
 openingId Kind.Ops{opick} = opick isOpeningKind
 floorLightId Kind.Ops{opick} =
-  opick $ \ t -> tsymbol t == '.' && kindHas [F.Lit] [F.Exit] t
+  opick $ \ t -> tsymbol t == '.' && kindHas [F.Lit] [F.Exit, F.Special] t
 floorDarkId Kind.Ops{opick} =
-  opick $ \ t -> tsymbol t == '.' && kindHas [] [F.Exit, F.Lit] t
+  opick $ \ t -> tsymbol t == '.' && kindHas [] [F.Exit, F.Lit, F.Special] t
 unknownId Kind.Ops{opick} = opick isUnknownKind
 doorOpenId Kind.Ops{opick} = opick $ kindHasFeature F.Closable
 doorClosedId Kind.Ops{opick} = opick $ kindHasFeature F.Openable
