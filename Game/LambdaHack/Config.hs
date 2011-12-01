@@ -33,9 +33,8 @@ toSensitive cp = cp {CF.optionxform = id}
 -- | The default configuration taken from the default configuration file
 -- included via CPP in ConfigDefault.hs.
 defCF :: CF.ConfigParser
-defCF =
-  let c = CF.readstring CF.emptyCP ConfigDefault.configDefault
-  in  toSensitive $ forceEither c
+defCF = let c = CF.readstring CF.emptyCP ConfigDefault.configDefault
+        in toSensitive $ forceEither c
 
 toCP :: CF.ConfigParser -> CP
 toCP cp = CP $ toSensitive cp
@@ -45,10 +44,9 @@ defaultCP = toCP defCF
 
 -- | Path to the user configuration file.
 file :: IO FilePath
-file =
-  do
-    appData <- getAppUserDataDirectory "LambdaHack"
-    return $ combine appData "config"
+file = do
+  appData <- getAppUserDataDirectory "LambdaHack"
+  return $ combine appData "config"
 
 -- | The configuration read from the user configuration file.
 -- The default configuration file provides underlying defaults
@@ -56,8 +54,7 @@ file =
 config :: IO CP
 config =
   -- evaluate, to catch config errors ASAP
-  defCF `seq`
-  do
+  defCF `seq` do
     f <- file
     b <- doesFileExist f
     if not b
@@ -101,15 +98,14 @@ getItems (CP conf) s =
 -- the path is appended to it; otherwise, it's appended
 -- to the current directory.
 getFile :: CP -> CF.SectionSpec -> CF.OptionSpec -> IO FilePath
-getFile conf s o =
-  do
-    current <- getCurrentDirectory
-    appData <- getAppUserDataDirectory "LambdaHack"
-    let path    = get conf s o
-        appPath = combine appData path
-        curPath = combine current path
-    b <- doesDirectoryExist appData
-    return $ if b then appPath else curPath
+getFile conf s o = do
+  current <- getCurrentDirectory
+  appData <- getAppUserDataDirectory "LambdaHack"
+  let path    = get conf s o
+      appPath = combine appData path
+      curPath = combine current path
+  b <- doesDirectoryExist appData
+  return $ if b then appPath else curPath
 
 dump :: FilePath -> CP -> IO ()
 dump fn (CP conf) = do

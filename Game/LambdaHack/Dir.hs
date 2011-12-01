@@ -29,11 +29,11 @@ fromDir lxsize (Dir dir) =
           `blame` (lxsize, dir, res)) $
   res
  where
-   (x, y) = (dir `mod` lxsize, dir `div` lxsize)
-   -- Pick the vector's canonical form of length 1:
-   res = if x > 1
-         then (x - lxsize, y + 1)
-         else (x, y)
+  (x, y) = (dir `mod` lxsize, dir `div` lxsize)
+  -- Pick the vector's canonical form of length 1:
+  res = if x > 1
+        then (x - lxsize, y + 1)
+        else (x, y)
 
 -- | Squared euclidean distance between two directions.
 dirDistSq :: X -> Dir -> Dir -> Int

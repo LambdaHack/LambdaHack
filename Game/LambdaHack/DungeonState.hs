@@ -42,21 +42,18 @@ mapToIMap cxsize m =
 
 rollItems :: Kind.COps -> Int -> CaveKind -> TileMap -> Loc -> Rnd [(Loc, Item)]
 rollItems Kind.COps{cotile, coitem=coitem@Kind.Ops{oname}}
-          n CaveKind{cxsize, citemNum} lmap ploc =
-  do
-    nri <- rollDice citemNum
-    replicateM nri $
-      do
-        item <- newItem coitem n
-        l <- case oname (jkind item) of
-               "sword" ->
-                 -- swords generated close to monsters; MUAHAHAHA
-                 findLocTry 2000 lmap
-                   (const (Tile.isBoring cotile))
-                   (\ l _ -> distance cxsize ploc l > 30)
-               _ -> findLoc lmap
-                      (const (Tile.isBoring cotile))
-        return (l, item)
+          n CaveKind{cxsize, citemNum} lmap ploc = do
+  nri <- rollDice citemNum
+  replicateM nri $ do
+    item <- newItem coitem n
+    l <- case oname (jkind item) of
+           "sword" ->
+             -- swords generated close to monsters; MUAHAHAHA
+             findLocTry 2000 lmap
+               (const (Tile.isBoring cotile))
+               (\ l _ -> distance cxsize ploc l > 30)
+           _ -> findLoc lmap (const (Tile.isBoring cotile))
+    return (l, item)
 
 -- | Create a level from a cave, from a cave kind.
 buildLevel :: Kind.COps -> Cave -> Int -> Int -> Rnd Level
@@ -100,8 +97,7 @@ matchGenerator Kind.Ops{ofrequency} Nothing = do
   (ci, _) <- frequency ofrequency
   return ci
 matchGenerator Kind.Ops{ofrequency} (Just name) =
-  let freq@(Frequency l) =
-        filterFreq ((== name) . cname . snd) ofrequency
+  let freq@(Frequency l) = filterFreq ((== name) . cname . snd) ofrequency
   in case l of
     [] -> error $ "Unknown dungeon generator " ++ name
     _ | sum (map fst l) == 0 ->  -- HACK for dangerous levels

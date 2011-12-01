@@ -31,7 +31,7 @@ import Game.LambdaHack.Loc
 import Game.LambdaHack.Area
 import Game.LambdaHack.Level
 import Game.LambdaHack.Perception
-import Game.LambdaHack.Actor
+import Game.LambdaHack.Actor as Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind
@@ -46,7 +46,7 @@ import qualified Game.LambdaHack.Kind as Kind
 type InternalSession = D.Session
 type Session = (InternalSession, M.Map K.Key K.Key, Kind.COps)
 display :: Area -> Session -> (Loc -> (Color.Attr, Char)) -> String -> String
-           -> IO ()
+         -> IO ()
 display area (session, _, _) = D.display area session
 startup :: (InternalSession -> IO ()) -> IO ()
 startup = D.startup
@@ -68,8 +68,8 @@ displayBlankConfirm session txt =
       doBlank = const (Color.defaultAttr, ' ')
       (lx, ly) = normalLevelBound  -- TODO: query terminal size instead
   in do
-       display (0, 0, lx, ly) session doBlank x ""
-       getConfirm session
+    display (0, 0, lx, ly) session doBlank x ""
+    getConfirm session
 
 -- | Waits for a space or return or '?' or '*'. The last two act this way,
 -- to let keys that request information toggle display the information off.
@@ -79,35 +79,33 @@ getConfirm session =
 
 getOptionalConfirm :: MonadIO m =>
                       (Bool -> m a) -> (K.Key -> m a) -> Session -> m a
-getOptionalConfirm h k session =
-  do
-    e <- liftIO $ nextCommand session
-    case e of
-      K.Char ' ' -> h True
-      K.Char '?' -> h True
-      K.Char '*' -> h True
-      K.Return   -> h True
-      K.Esc      -> h False
-      _          -> k e
+getOptionalConfirm h k session = do
+  e <- liftIO $ nextCommand session
+  case e of
+    K.Char ' ' -> h True
+    K.Char '?' -> h True
+    K.Char '*' -> h True
+    K.Return   -> h True
+    K.Esc      -> h False
+    _          -> k e
 
 -- | A yes-no confirmation.
 getYesNo :: MonadIO m => Session -> m Bool
-getYesNo session =
-  do
-    e <- liftIO $ nextCommand session
-    case e of
-      K.Char 'y' -> return True
-      K.Char 'n' -> return False
-      K.Esc      -> return False
-      _          -> getYesNo session
+getYesNo session = do
+  e <- liftIO $ nextCommand session
+  case e of
+    K.Char 'y' -> return True
+    K.Char 'n' -> return False
+    K.Esc      -> return False
+    _          -> getYesNo session
 
 splitOverlay :: Int -> String -> [[String]]
 splitOverlay s xs = splitOverlay' (lines xs)
-  where
-    splitOverlay' ls
-      | length ls <= s = [ls]  -- everything fits on one screen
-      | otherwise      = let (pre,post) = splitAt (s - 1) ls
-                         in  (pre ++ [more]) : splitOverlay' post
+ where
+  splitOverlay' ls
+    | length ls <= s = [ls]  -- everything fits on one screen
+    | otherwise      = let (pre,post) = splitAt (s - 1) ls
+                       in  (pre ++ [more]) : splitOverlay' post
 
 -- | Returns a function that looks up the characters in the
 -- string by location. Takes the height of the display plus
@@ -115,12 +113,10 @@ splitOverlay s xs = splitOverlay' (lines xs)
 -- to display all of the string.
 stringByLocation :: Y -> String -> (Int, (X, Y) -> Maybe Char)
 stringByLocation sy xs =
-  let
-    ls   = splitOverlay sy xs
-    m    = M.fromList (zip [0..] (L.map (M.fromList . zip [0..]) (concat ls)))
-    k    = length ls
-  in
-    (k, \ (x, y) -> M.lookup y m >>= \ n -> M.lookup x n)
+  let ls = splitOverlay sy xs
+      m  = M.fromList (zip [0..] (L.map (M.fromList . zip [0..]) (concat ls)))
+      k  = length ls
+  in (k, \ (x, y) -> M.lookup y m >>= \ n -> M.lookup x n)
 
 data ColorMode = ColorFull | ColorBW
 
@@ -165,9 +161,9 @@ displayLevel dm session@(_, _, cops) per
               | loc == bloc && slid == creturnLn scursor =
                   (symbol, Color.defBG)  -- highlight player
               | otherwise = (symbol, acolor)
-              where
-                ActorKind{asymbol, acolor} = okind bkind2
-                symbol = fromMaybe asymbol bsymbol
+             where
+              ActorKind{asymbol, acolor} = okind bkind2
+              symbol = fromMaybe asymbol bsymbol
             viewSmell :: Int -> Char
             viewSmell k
               | k > 9     = '*'
@@ -175,16 +171,14 @@ displayLevel dm session@(_, _, cops) per
               | otherwise = Char.intToDigit k
             rainbow loc = toEnum $ loc `rem` 14 + 1
             (char, fg0) =
-              case L.find (\ m -> loc0 == Game.LambdaHack.Actor.bloc m) (hs ++ ms) of
+              case L.find (\ m -> loc0 == Actor.bloc m) (hs ++ ms) of
                 Just m | sOmn || vis -> viewActor loc0 m
                 _ | sSml && sml >= 0 -> (viewSmell sml, rainbow loc0)
                   | otherwise ->
                   case items of
-                    [] ->
-                      let u = tokind tile
-                      in (tsymbol u, if vis then tcolor u else tcolor2 u)
-                    i : _ ->
-                      Item.viewItem coitem (Item.jkind i) sflavour
+                    [] -> let u = tokind tile
+                          in (tsymbol u, if vis then tcolor u else tcolor2 u)
+                    i : _ -> Item.viewItem coitem (Item.jkind i) sflavour
             vis = IS.member loc0 visible
             rea = IS.member loc0 reachable
             bg0 = if ctargeting scursor && loc0 == clocation scursor
@@ -218,4 +212,4 @@ displayLevel dm session@(_, _, cops) per
         | k < ns - 1 = disp k xs >> getConfirm session >>= \ b ->
                        if b then perfo (k+1) xs else return False
         | otherwise = disp k xs >> return True
-  in  perf 0 msgs
+  in perf 0 msgs
