@@ -41,10 +41,11 @@ import Game.LambdaHack.WorldLoc
 import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Kind as Kind
 
--- Re-exported from the display frontend, with an extra slot for function
--- for translating keys to a canonical form.
+-- Re-exported from the display frontend, with extra slots for function for
+-- translating keys to a canonical form and for content. TODO: move elsewhere.
 type InternalSession = D.Session
 type Session = (InternalSession, M.Map K.Key K.Key, Kind.COps)
+
 display :: Area -> Session -> (Loc -> (Color.Attr, Char)) -> String -> String
          -> IO ()
 display area (session, _, _) = D.display area session

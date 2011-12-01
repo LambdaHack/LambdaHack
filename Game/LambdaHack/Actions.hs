@@ -163,7 +163,7 @@ run dir = do
 -- if we have to adjust the direction because we're in the corner of a corridor.
 continueRun :: Dir -> Action ()
 continueRun dir = do
-  cops <- contentf Kind.cotile
+  cops@Kind.COps{cotile} <- contentOps
   loc <- gets (bloc . getPlayerBody)
   per <- currentPerception
   msg <- currentMsg
@@ -182,8 +182,8 @@ continueRun dir = do
       itemsHere = not (L.null (lvl `rememberAtI` loc))
       heroThere = (loc `shift` dir) `elem` L.map bloc (IM.elems hs)
       dirOK     = accessible cops lvl loc (loc `shift` dir)
-      isTExit   = Tile.isExit cops tile
-      isWalkableDark = Tile.isWalkable cops tile && not (Tile.isLit cops tile)
+      isTExit   = Tile.isExit cotile tile
+      isWalkableDark = Tile.isWalkable cotile tile && not (Tile.isLit cotile tile)
   -- What happens next is mostly depending on the terrain we're currently on.
   let hop | (monstersVisible || heroThere || newsReported ||
              itemsHere || isTExit) = abort
@@ -192,7 +192,7 @@ continueRun dir = do
         -- TODO: even in corridors, stop if you run past an exit (rare)
         let ns = L.filter (\ x -> dirDistSq lxsize (neg dir) x > 1
                                   && (accessible cops lvl loc (loc `shift` x))
-                                      || openable cops lvl (Tile.SecretStrength 1) (loc `shift` x))
+                                      || openable cotile lvl (Tile.SecretStrength 1) (loc `shift` x))
                           (moves lxsize)
             allCloseTo main = L.all (\ d -> dirDistSq lxsize main d <= 1) ns
         in case ns of
@@ -209,9 +209,9 @@ continueRun dir = do
         let ns = L.filter (\ x -> x /= dir && dirDistSq lxsize (neg dir) x > 1) (moves lxsize)
             ls = L.map (loc `shift`) ns
             as = L.filter (\ x -> accessible cops lvl loc x
-                                  || openable cops lvl (Tile.SecretStrength 1) x) ls
+                                  || openable cotile lvl (Tile.SecretStrength 1) x) ls
             ts = L.map (lvl `rememberAt`) as
-        in if L.any (Tile.isExit cops) ts then abort else run dir
+        in if L.any (Tile.isExit cotile) ts then abort else run dir
   hop
 
 ifRunning :: (Dir -> Action a) -> Action a -> Action a
@@ -579,14 +579,14 @@ moveOrAttack allowAttacks autoOpen actor dir = do
       | allowAttacks ->
           -- Attacking does not require full access, adjacency is enough.
           actorAttackActor actor target
-      | accessible cotile lvl sloc tloc -> do
+      | accessible cops lvl sloc tloc -> do
           -- Switching positions requires full access.
           actorRunActor actor target
           when (actor == pl) $
             messageAdd $ lookAt cops False True state lvl tloc ""
       | otherwise -> abortWith ""
     Nothing
-      | accessible cotile lvl sloc tloc -> do
+      | accessible cops lvl sloc tloc -> do
           -- perform the move
           updateAnyActor actor $ \ body -> body {bloc = tloc}
           when (actor == pl) $

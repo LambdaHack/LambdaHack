@@ -51,6 +51,7 @@ library
                    Game.LambdaHack.Content.ActorKind,
                    Game.LambdaHack.Content.CaveKind,
                    Game.LambdaHack.Content.ItemKind,
+                   Game.LambdaHack.Content.RuleKind,
                    Game.LambdaHack.Content.TileKind,
                    Game.LambdaHack.Dir,
                    Game.LambdaHack.Display,
@@ -129,7 +130,7 @@ library
 executable LambdaHack
   main-is:         Main.hs
   other-modules:   Content.ActorKind, Content.CaveKind,
-                   Content.ItemKind, Content.TileKind
+                   Content.ItemKind, Content.RuleKind, Content.TileKind
   hs-source-dirs:  LambdaHack
   build-depends:   LambdaHack, ConfigFile >= 1.1.1 && < 2,
                    array >= 0.3.0.3 && < 1, base >= 4 && < 5,

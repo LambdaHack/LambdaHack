@@ -19,7 +19,7 @@ cdefs = Content.CDefs
   , content =
       [rogue, arena, empty, noise, largeNoise]
   }
-rogue,        arena, empty, noise, largeNoise:: CaveKind
+rogue,        arena, empty, noise, largeNoise :: CaveKind
 
 rogue = CaveKind
   { csymbol           = '$'

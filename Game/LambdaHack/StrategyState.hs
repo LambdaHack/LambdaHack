@@ -128,7 +128,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
                        Nothing -> aiq mk
     openableHere   = openable cotile lvl openPower
     onlyOpenable   = onlyMoves openableHere me
-    accessibleHere = accessible cotile lvl me
+    accessibleHere = accessible cops lvl me
     onlySensible   = onlyMoves (\ l -> accessibleHere l || openableHere l) me
     focusedMonster = aiq mk > 10
     smells         =

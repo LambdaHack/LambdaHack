@@ -17,6 +17,7 @@ import Game.LambdaHack.Loc
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Item
 import Game.LambdaHack.Content.TileKind
+import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Tile as Tile
 import qualified Game.LambdaHack.Feature as F
@@ -125,14 +126,14 @@ atI, rememberAtI :: Level -> Loc -> [Item]
 atI         Level{litem} p = fst $ IM.findWithDefault ([], []) p litem
 rememberAtI Level{litem} p = snd $ IM.findWithDefault ([], []) p litem
 
--- Check whether one location is accessible from the other.
--- Precondition: the two locations are next to each other.
--- Currently only implements that the target location has to be open.
--- TODO: in the future check flying for chasms, swimming for water, etc.
-accessible :: Kind.Ops TileKind -> Level -> Loc -> Loc -> Bool
-accessible cops lvl _source target =
-  let tgt = lvl `at` target
-  in  Tile.isWalkable cops tgt
+-- Check whether one location is accessible from another.
+accessible :: Kind.COps -> Level -> Loc -> Loc -> Bool
+accessible Kind.COps{ cotile=Kind.Ops{okind=tokind}
+                    , corule=Kind.Ops{okind, ogetUniqId}} lvl sloc tloc =
+  let check = raccessible $ okind $ ogetUniqId ((== 's') . rsymbol)
+      src = tokind $ lvl `at` sloc
+      tgt = tokind $ lvl `at` tloc
+  in check sloc src tloc tgt
 
 -- check whether the location contains a door of secrecy level lower than k
 openable :: Kind.Ops TileKind -> Level -> Tile.SecretStrength -> Loc -> Bool
