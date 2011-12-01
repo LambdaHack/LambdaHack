@@ -52,6 +52,7 @@ oneOf xs =
     return (xs !! r)
 
 frequency :: Frequency a -> Rnd a
+frequency (Frequency [(n, x)]) | n > 0 = return x  -- speedup
 frequency (Frequency fs) = do
   r <- randomR (1, sumf)
   return (frequency' r fs)
