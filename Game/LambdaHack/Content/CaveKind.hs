@@ -28,6 +28,7 @@ data CaveKind = CaveKind
   , citemNum          :: Random.RollDice
   , clayout           :: CaveLayout
   , defTile           :: TileKind -> Bool
+  , corTile           :: TileKind -> Bool
   }
 
 -- TODO: express those using many fine-graned parameters instead

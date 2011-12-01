@@ -44,6 +44,7 @@ rogue = CaveKind
   , citemNum          = (5, 2)
   , clayout           = CaveRogue
   , defTile           = \ t -> tsymbol t == '#' && L.null (tfeature t)
+  , corTile           = \ t -> tsymbol t == '.' && kindHas [] [F.Exit, F.Lit] t
   }
 arena = rogue
   { csymbol           = 'A'
@@ -51,6 +52,7 @@ arena = rogue
   , cfreq             = 20
   , clayout           = CaveRogue
   , defTile           = \ t -> tsymbol t == '.' && kindHas [F.Lit] [F.Exit] t
+  , corTile           = \ t -> tsymbol t == '.' && kindHas [F.Lit] [F.Exit] t
   }
 empty = rogue
   { csymbol           = '.'
