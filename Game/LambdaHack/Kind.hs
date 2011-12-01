@@ -33,7 +33,6 @@ data Ops a = Ops
   , ofreq :: Id a -> Int
   , okind :: Id a -> a
   , ouniqSymbol :: Char -> Id a
-  , ofrequency :: Frequency (Id a, a)
   , opick :: (a -> Bool) -> Rnd (Id a)
   , ofoldrWithKey :: forall b. (Id a -> a -> b -> b) -> b -> b
   , obounds :: (Id a, Id a)
@@ -56,7 +55,6 @@ createOps CDefs{getSymbol, getName, getFreq, content} =
      case [Id i | (i, k) <- kindAssocs, getSymbol k == sym] of
        [i] -> i
        l -> assert `failure` l
-  , ofrequency = Frequency [(getFreq k, (Id i, k)) | (i, k) <- kindAssocs]
   , opick = \ p ->
      let fs = [ (n, Id i)
               | (i, k) <- kindAssocs

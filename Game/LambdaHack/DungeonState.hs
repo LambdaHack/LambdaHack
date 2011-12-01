@@ -22,7 +22,6 @@ import Game.LambdaHack.Cave
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Item
 import Game.LambdaHack.Geometry
-import Game.LambdaHack.Frequency
 import Game.LambdaHack.Content.TileKind
 
 convertTileMaps :: (Kind.Id TileKind) -> Int -> Int -> TileMapXY -> TileMap
@@ -93,18 +92,16 @@ buildLevel cops@Kind.COps{cotile=cotile@Kind.Ops{opick}, cocave=Kind.Ops{okind}}
   return level
 
 matchGenerator :: Kind.Ops CaveKind -> Maybe String -> Rnd (Kind.Id CaveKind)
-matchGenerator Kind.Ops{ofrequency} Nothing = do
-  (ci, _) <- frequency ofrequency
-  return ci
-matchGenerator Kind.Ops{ofrequency} (Just name) =
-  let freq@(Frequency l) = filterFreq ((== name) . cname . snd) ofrequency
+matchGenerator Kind.Ops{opick} Nothing = opick (const True)
+matchGenerator Kind.Ops{ofoldrWithKey, ofreq, opick} (Just name) =
+  let l = ofoldrWithKey (\ i k is -> if cname k == name then i : is else is) []
   in case l of
     [] -> error $ "Unknown dungeon generator " ++ name
-    _ | sum (map fst l) == 0 ->  -- HACK for dangerous levels
-          return $ fst (snd (head l))
-      | otherwise -> do
-          (ci, _) <- frequency freq
-          return ci
+    i : _
+      | sum (map ofreq l) == 0 ->
+          -- The user insists on a dangerous level, so just pick the first.
+          return i
+      | otherwise -> opick (const True)
 
 findGenerator :: Kind.COps -> Config.CP -> Int -> Int -> Rnd Level
 findGenerator cops config n depth = do

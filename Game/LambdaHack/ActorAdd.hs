@@ -92,7 +92,7 @@ addMonster cops mk hp ploc state = do
 
 -- | Create a new monster in the level, at a random position.
 rollMonster :: Kind.COps -> State -> Rnd State
-rollMonster Kind.COps{cotile, coactor=Kind.Ops{ofrequency}} state = do
+rollMonster Kind.COps{cotile, coactor=Kind.Ops{opick, okind}} state = do
   let lvl = slevel state
       hs = levelHeroList state
       ms = levelMonsterList state
@@ -111,6 +111,6 @@ rollMonster Kind.COps{cotile, coactor=Kind.Ops{ofrequency}} state = do
              (\ l t -> not (isLit t)  -- try a dark, distant place first
                        && L.all (\ pl ->
                                   distance (lxsize lvl)(bloc pl) l > 30) hs)
-      (mk, k) <- frequency ofrequency
-      hp <- rollDice $ ahp k
+      mk <- opick (const True)
+      hp <- rollDice $ ahp $ okind mk
       return $ addMonster cotile mk hp loc state

@@ -214,9 +214,9 @@ summonHeroes n loc =
 
 summonMonsters :: Int -> Loc -> Action ()
 summonMonsters n loc = do
-  Kind.COps{cotile, coactor=Kind.Ops{ofrequency}} <- contentOps
-  (mk, k) <- rndToAction $ frequency ofrequency
-  hp <- rndToAction $ rollDice $ ahp k
+  Kind.COps{cotile, coactor=Kind.Ops{opick, okind}} <- contentOps
+  mk <- rndToAction $ opick (const True)
+  hp <- rndToAction $ rollDice $ ahp $ okind mk
   modify (\ state ->
            iterate (addMonster cotile mk hp loc) state !! n)
 

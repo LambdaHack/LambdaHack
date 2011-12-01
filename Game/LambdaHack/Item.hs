@@ -77,8 +77,9 @@ itemLetter ik = if isymbol ik == '$' then Just '$' else Nothing
 
 -- | Generate an item.
 newItem :: Kind.Ops ItemKind -> Int -> Rnd Item
-newItem cops@Kind.Ops{ofrequency} lvl = do
-  (ikChosen, kind) <- frequency ofrequency
+newItem cops@Kind.Ops{opick, okind} lvl = do
+  ikChosen <- opick (const True)
+  let kind = okind ikChosen
   count <- rollQuad lvl (icount kind)
   if count == 0
     then newItem cops lvl  -- Rare item; beware of inifite loops.

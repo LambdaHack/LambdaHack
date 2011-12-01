@@ -9,7 +9,6 @@ import qualified Game.LambdaHack.Feature as F
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Geometry
 import Game.LambdaHack.Random
-import Game.LambdaHack.Frequency
 
 newtype SecretStrength = SecretStrength{secretStrength :: Time}
   deriving (Show, Eq, Ord)
@@ -36,15 +35,15 @@ stairsDownId Kind.Ops{opick} = opick $ kindHasFeature F.Descendable
 
 -- | The player can't tell if the tile is a secret door or not.
 canBeSecretDoor :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
-canBeSecretDoor Kind.Ops{okind, ofrequency} t =
+canBeSecretDoor Kind.Ops{okind, ofoldrWithKey} t =
   let u = okind t
-      Frequency sFreq = filterFreq (isdoorSecretKind . snd) ofrequency
-      similar s =
+      similar _ s acc = acc ||
+        isdoorSecretKind s &&
         tsymbol u == tsymbol s &&
         tname u == tname s &&
         tcolor u == tcolor s &&
         tcolor2 u == tcolor2 s
-  in L.any (similar . snd . snd) sFreq
+  in ofoldrWithKey similar False
 
 isdoorSecretKind :: TileKind -> Bool
 isdoorSecretKind = kindHasFeature F.Hidden
