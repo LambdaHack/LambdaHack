@@ -313,7 +313,7 @@ lvlAscend k = do
       depth = Config.get config "dungeon" "depth"
   when (nln < 1 || nln > depth) $
     abortWith "no more levels in this direction"
-  modify (\ state -> state{slid = (LambdaCave nln)})
+  modify (\ state -> state {slid = (LambdaCave nln)})
 
 -- | Attempt a level change via up level and down level keys.
 -- Will quit the game if the player leaves the dungeon.
