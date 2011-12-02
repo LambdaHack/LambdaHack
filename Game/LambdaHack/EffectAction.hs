@@ -41,8 +41,8 @@ import qualified Game.LambdaHack.Kind as Kind
 -- TODO: separately define messages for the case when source == target
 -- and for the other case; then use the messages outside of effectToAction,
 -- depending on the returned bool, perception and identity of the actors.
-effectToAction :: Effect.Effect -> Int -> ActorId -> ActorId -> Int ->
-                  Action (Bool, String)
+effectToAction :: Effect.Effect -> Int -> ActorId -> ActorId -> Int
+               -> Action (Bool, String)
 effectToAction Effect.NoEffect _ _ _ _ = nullEffect
 effectToAction Effect.Heal _ _source target power = do
   cops@Kind.Ops{okind} <- contentf Kind.coactor
@@ -67,8 +67,9 @@ effectToAction (Effect.Wound nDm) verbosity source target power = do
             subjectActorVerb cops tm "feel" ++
               if killed then " mortally" else "" ++ " wounded."
           | killed =
-            if isAHero target then "" else
-              subjectActorVerb cops tm "die" ++ "."
+            if isAHero target
+            then ""
+            else subjectActorVerb cops tm "die" ++ "."
           | verbosity <= 0 = ""
           | isAHero target =
             subjectActorVerb cops tm "lose" ++
@@ -154,8 +155,8 @@ discover i = do
       obj = unwords $ tail $ words $ objectItem cops state i
       msg = "The " ++ obj ++ " turns out to be "
       kind = okind ik
-      alreadyIdentified = L.length (iflavour kind) == 1 ||
-                          ik `S.member` sdisco state
+      alreadyIdentified = L.length (iflavour kind) == 1
+                          || ik `S.member` sdisco state
   unless alreadyIdentified $ do
     modify (updateDiscoveries (S.insert ik))
     state2 <- get
@@ -164,34 +165,33 @@ discover i = do
 -- | Make the actor controlled by the player.
 -- Focus on the actor if level changes. False, if nothing to do.
 selectPlayer :: ActorId -> Action Bool
-selectPlayer actor =
-  do
-    cops@Kind.Ops{okind} <- contentf Kind.coactor
-    pl <- gets splayer
-    if actor == pl
-      then return False -- already selected
-      else do
-        state <- get
-        when (absentHero actor state) $ abortWith "No such member of the party."
-        let (nln, pbody, _) = findActorAnyLevel actor state
-        -- Make the new actor the player-controlled actor.
-        modify (\ s -> s { splayer = actor })
-        -- Record the original level of the new player.
-        modify (updateCursor (\ c -> c { creturnLn = nln }))
-        -- Don't continue an old run, if any.
-        stopRunning
-        -- Switch to the level.
-        modify (\ s -> s{slid = nln})
-        -- Set smell display, depending on player capabilities.
-        -- This also resets FOV mode.
-        modify (\ s -> s { ssensory =
-                             if asmell $ okind $
-                                bkind pbody
-                             then Smell
-                             else Implicit })
-        -- Announce.
-        messageAdd $ subjectActor cops pbody ++ " selected."
-        return True
+selectPlayer actor = do
+  cops@Kind.Ops{okind} <- contentf Kind.coactor
+  pl <- gets splayer
+  if actor == pl
+    then return False -- already selected
+    else do
+      state <- get
+      when (absentHero actor state) $ abortWith "No such member of the party."
+      let (nln, pbody, _) = findActorAnyLevel actor state
+      -- Make the new actor the player-controlled actor.
+      modify (\ s -> s { splayer = actor })
+      -- Record the original level of the new player.
+      modify (updateCursor (\ c -> c { creturnLn = nln }))
+      -- Don't continue an old run, if any.
+      stopRunning
+      -- Switch to the level.
+      modify (\ s -> s{slid = nln})
+      -- Set smell display, depending on player capabilities.
+      -- This also resets FOV mode.
+      modify (\ s -> s { ssensory =
+                           if asmell $ okind $
+                              bkind pbody
+                           then Smell
+                           else Implicit })
+      -- Announce.
+      messageAdd $ subjectActor cops pbody ++ " selected."
+      return True
 
 focusIfAHero :: ActorId -> Action ()
 focusIfAHero target =
@@ -225,45 +225,43 @@ summonMonsters n loc = do
 -- but if poison, etc. is implemented, we'd need to check all heroes
 -- on any level.
 checkPartyDeath :: Action ()
-checkPartyDeath =
-  do
-    cops   <- contentf Kind.coactor
-    ahs    <- gets allHeroesAnyLevel
-    pl     <- gets splayer
-    pbody  <- gets getPlayerBody
-    config <- gets sconfig
-    when (bhp pbody <= 0) $ do  -- TODO: change to guard? define mzero? Why are the writes to the files performed when I call abort later? That probably breaks the laws of MonadPlus.
-      go <- messageMoreConfirm ColorBW $
-              subjectActorVerb cops pbody "die" ++ "."
-      history  -- Prevent the messages from being repeated.
-      let firstDeathEnds = Config.get config "heroes" "firstDeathEnds"
-      if firstDeathEnds
-        then gameOver go
-        else case L.filter (\ (actor, _) -> actor /= pl) ahs of
-               [] -> gameOver go
-               (actor, _nln) : _ -> do
-                 messageAdd "The survivors carry on."
-                 -- Remove the dead player.
-                 modify deletePlayer
-                 -- At this place the invariant that the player exists fails.
-                 -- Focus on the new hero (invariant not needed).
-                 selectPlayer actor
-                   >>= assert `trueM` (pl, actor, "player resurrects")
-                 -- At this place the invariant is restored again.
+checkPartyDeath = do
+  cops   <- contentf Kind.coactor
+  ahs    <- gets allHeroesAnyLevel
+  pl     <- gets splayer
+  pbody  <- gets getPlayerBody
+  config <- gets sconfig
+  when (bhp pbody <= 0) $ do  -- TODO: change to guard? define mzero? Why are the writes to the files performed when I call abort later? That probably breaks the laws of MonadPlus.
+    go <- messageMoreConfirm ColorBW $
+            subjectActorVerb cops pbody "die" ++ "."
+    history  -- Prevent the messages from being repeated.
+    let firstDeathEnds = Config.get config "heroes" "firstDeathEnds"
+    if firstDeathEnds
+      then gameOver go
+      else case L.filter (\ (actor, _) -> actor /= pl) ahs of
+             [] -> gameOver go
+             (actor, _nln) : _ -> do
+               messageAdd "The survivors carry on."
+               -- Remove the dead player.
+               modify deletePlayer
+               -- At this place the invariant that the player exists fails.
+               -- Focus on the new hero (invariant not needed).
+               selectPlayer actor
+                 >>= assert `trueM` (pl, actor, "player resurrects")
+               -- At this place the invariant is restored again.
 
 -- | End game, showing the ending screens, if requested.
 gameOver :: Bool -> Action ()
-gameOver showEndingScreens =
-  do
-    when showEndingScreens $ do
-      cops  <- contentf Kind.coitem
-      state <- get
-      slid  <- gets slid
-      let total = calculateTotal cops state
-          status = H.Killed slid
-      handleScores True status total
-      messageMore "Let's hope another party can save the day!"
-    end
+gameOver showEndingScreens = do
+  when showEndingScreens $ do
+    cops  <- contentf Kind.coitem
+    state <- get
+    slid  <- gets slid
+    let total = calculateTotal cops state
+        status = H.Killed slid
+    handleScores True status total
+    messageMore "Let's hope another party can save the day!"
+  end
 
 -- | Calculate loot's worth for heroes on the current level.
 calculateTotal :: Kind.Ops ItemKind -> State -> Int
@@ -294,7 +292,7 @@ handleScores write status total =
 -- and I know no better place to put it.
 displayItems :: Msg -> Bool -> [Item] -> Action Bool
 displayItems msg sorted is = do
-  cops <- contentf Kind.coitem
+  cops  <- contentf Kind.coitem
   state <- get
   let inv = unlines $
             L.map (\ i -> letterLabel (jletter i)
@@ -309,14 +307,13 @@ stopRunning = updatePlayerBody (\ p -> p { bdir = Nothing })
 
 -- | Store current message in the history and reset current message.
 history :: Action ()
-history =
-  do
-    sx     <- gets (lxsize . slevel)
-    msg    <- currentMsg
-    messageClear
-    config <- gets sconfig
-    let historyMax = Config.get config "ui" "historyMax"
-        -- TODO: not ideal, continuations of sentences are atop beginnings.
-        splitS = splitMsg (sx + 1) (msg ++ " ")
-    unless (L.null msg) $
-      modify (updateHistory (take historyMax . (L.reverse splitS ++)))
+history = do
+  sx     <- gets (lxsize . slevel)
+  msg    <- currentMsg
+  messageClear
+  config <- gets sconfig
+  let historyMax = Config.get config "ui" "historyMax"
+      -- TODO: not ideal, continuations of sentences are atop beginnings.
+      splitS = splitMsg (sx + 1) (msg ++ " ")
+  unless (L.null msg) $
+    modify (updateHistory (take historyMax . (L.reverse splitS ++)))

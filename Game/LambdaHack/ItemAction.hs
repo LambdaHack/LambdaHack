@@ -34,9 +34,9 @@ inventory = do
   if L.null items
     then abortWith "Not carrying anything."
     else do
-           displayItems "Carrying:" True items
-           session getConfirm
-           abortWith ""
+      displayItems "Carrying:" True items
+      session getConfirm
+      abortWith ""
 
 -- | Let the player choose any item with a given group name.
 -- Note that this does not guarantee an item from the group to be chosen,
@@ -44,21 +44,21 @@ inventory = do
 -- TODO: There should be a datatype for item groups instead of strings
 -- or perhaps the functionality should be implemented differently,
 -- e.g., based on equipment slot, as soon as it's specified for item kinds.
-getGroupItem :: [Item] ->  -- all objects in question
-                String ->  -- name of the group
-                String ->  -- prompt
-                String ->  -- how to refer to the collection of objects
-                Action (Maybe Item)
+getGroupItem :: [Item]  -- ^ all objects in question
+             -> String  -- ^ name of the group
+             -> String  -- ^ prompt
+             -> String  -- ^ how to refer to the collection of objects
+             -> Action (Maybe Item)
 getGroupItem is groupName prompt packName = do
   Kind.Ops{oname} <- contentf Kind.coitem
   let choice i = groupName == oname (jkind i)
       header = capitalize $ suffixS groupName
   getItem prompt choice header is packName
 
-applyGroupItem :: ActorId ->  -- actor applying the item; on current level
-                  String ->   -- how the "applying" is called
-                  Item ->     -- the item to be applied
-                  Action ()
+applyGroupItem :: ActorId  -- ^ actor applying the item; on current level
+               -> String   -- ^ how the "applying" is called
+               -> Item     -- ^ the item to be applied
+               -> Action ()
 applyGroupItem actor verb item = do
   cops  <- contentOps
   state <- get
@@ -83,7 +83,7 @@ playerApplyGroupItem groupName = do
   case iOpt of
     Just i  ->
       let verb = applyToVerb (oname (jkind i))
-      in  applyGroupItem pl verb i
+      in applyGroupItem pl verb i
     Nothing -> neverMind True
 
 applyToVerb :: String -> String
@@ -97,13 +97,13 @@ quaffPotion = playerApplyGroupItem "potion"
 readScroll :: Action ()
 readScroll = playerApplyGroupItem "scroll"
 
-zapGroupItem :: ActorId ->  -- actor zapping the item; on current level
-                Loc ->      -- target location for the zapping
-                String ->   -- how the "zapping" is called
-                Item ->     -- the item to be zapped
-                Action ()
+zapGroupItem :: ActorId  -- ^ actor zapping the item; on current level
+             -> Loc      -- ^ target location for the zapping
+             -> String   -- ^ how the "zapping" is called
+             -> Item     -- ^ the item to be zapped
+             -> Action ()
 zapGroupItem source loc verb item = do
-  cops  <- contentOps
+  cops@Kind.COps{coactor} <- contentOps
   state <- get
   sm    <- gets (getActor source)
   per   <- currentPerception
@@ -112,7 +112,7 @@ zapGroupItem source loc verb item = do
       subject =
         if sloc `IS.member` totalVisible per
         then sm
-        else template (heroKindId (Kind.coactor cops))
+        else template (heroKindId coactor)
                (Just "somebody") Nothing 99 sloc
       msg = subjectVerbIObject cops state subject verb consumed ""
   removeFromInventory source consumed sloc
@@ -145,7 +145,7 @@ playerZapGroupItem groupName = do
           -- TODO: draw digital line and see if obstacles prevent firing
           if actorReachesLoc pl loc per (Just pl)
           then let verb = zapToVerb (oname (jkind i))
-               in  zapGroupItem pl loc verb i
+               in zapGroupItem pl loc verb i
           else abortWith "target not reachable"
     Nothing -> neverMind True
 
@@ -208,18 +208,17 @@ removeFromLoc i loc = do
     else
       modify (updateLevel (updateIMap adj)) >>
       return True
-        where
-          rib Nothing = assert `failure` (i, loc)
-          rib (Just (is, irs)) =
-            case (removeItemByIdentity i is, irs) of
-              ([], []) -> Nothing
-              iss -> Just iss
-          adj = IM.alter rib loc
+     where
+      rib Nothing = assert `failure` (i, loc)
+      rib (Just (is, irs)) =
+        case (removeItemByIdentity i is, irs) of
+          ([], []) -> Nothing
+          iss -> Just iss
+      adj = IM.alter rib loc
 
 actorPickupItem :: ActorId -> Action ()
 actorPickupItem actor = do
-  coitem <- contentf Kind.coitem
-  cops  <- contentOps
+  cops@Kind.COps{coitem} <- contentOps
   state <- get
   pl    <- gets splayer
   per   <- currentPerception
@@ -241,7 +240,8 @@ actorPickupItem actor = do
             then messageAdd (letterLabel (jletter ni)
                              ++ objectItem coitem state ni)
             else when perceived $
-                   messageAdd $ subjCompoundVerbIObj cops state body "pick" "up" i ""
+                   messageAdd $
+                   subjCompoundVerbIObj cops state body "pick" "up" i ""
           removeFromLoc i loc
             >>= assert `trueM` (i, is, loc, "item is stuck")
           -- add item to actor's inventory:
@@ -273,25 +273,25 @@ pickupItem = do
 -- | Let the player choose any item from a list of items.
 -- TODO: you can drop an item on the floor, which works correctly,
 -- but is weird and useless.
-getAnyItem :: String ->  -- prompt
-              [Item] ->  -- all objects in question
-              String ->  -- how to refer to the collection of objects
-              Action (Maybe Item)
+getAnyItem :: String  -- ^ prompt
+           -> [Item]  -- ^ all objects in question
+           -> String  -- ^ how to refer to the collection of objects
+           -> Action (Maybe Item)
 getAnyItem prompt = getItem prompt (const True) "Objects"
 
 -- | Let the player choose a single item from a list of items.
-getItem :: String ->              -- prompt message
-           (Item -> Bool) ->      -- which items to consider suitable
-           String ->              -- how to describe suitable objects
-           [Item] ->              -- all objects in question
-           String ->              -- how to refer to the collection of objects
-           Action (Maybe Item)
+getItem :: String               -- ^ prompt message
+        -> (Item -> Bool)       -- ^ which items to consider suitable
+        -> String               -- ^ how to describe suitable objects
+        -> [Item]               -- ^ all objects in question
+        -> String               -- ^ how to refer to the collection of objects
+        -> Action (Maybe Item)
 getItem prompt p ptext is0 isn = do
   lvl  <- gets slevel
   body <- gets getPlayerBody
-  let loc       = bloc body
-      tis       = lvl `atI` loc
-      floorMsg  = if L.null tis then "" else " -,"
+  let loc = bloc body
+      tis = lvl `atI` loc
+      floorMsg = if L.null tis then "" else " -,"
       is = L.filter p is0
       choice = if L.null is
                then "[*," ++ floorMsg ++ " ESC]"

@@ -38,9 +38,9 @@ type Discoveries = S.Set (Kind.Id ItemKind)
 
 -- | Assigns flavours to item kinds. Assures no flavor is repeated,
 -- except for items with only one permitted flavour.
-rollFlavourMap :: Kind.Id ItemKind -> ItemKind ->
-              Rnd (FlavourMap, S.Set Flavour) ->
-              Rnd (FlavourMap, S.Set Flavour)
+rollFlavourMap :: Kind.Id ItemKind -> ItemKind
+               -> Rnd (FlavourMap, S.Set Flavour)
+               -> Rnd (FlavourMap, S.Set Flavour)
 rollFlavourMap key ik rnd =
   let flavours = iflavour ik
   in if L.length flavours == 1
@@ -92,17 +92,17 @@ newItem cops@Kind.Ops{opick, okind} lvl = do
 -- letter and a starting letter.
 assignLetter :: Maybe Char -> Char -> [Item] -> Maybe Char
 assignLetter r c is =
-    case r of
-      Just l | l `L.elem` allowed -> Just l
-      _ -> listToMaybe free
-  where
-    current    = S.fromList (mapMaybe jletter is)
-    allLetters = ['a'..'z'] ++ ['A'..'Z']
-    candidates = take (length allLetters) $
-                   drop (fromJust (L.findIndex (==c) allLetters)) $
-                     cycle allLetters
-    free       = L.filter (\x -> not (x `S.member` current)) candidates
-    allowed    = '$' : free
+  case r of
+    Just l | l `L.elem` allowed -> Just l
+    _ -> listToMaybe free
+ where
+  current    = S.fromList (mapMaybe jletter is)
+  allLetters = ['a'..'z'] ++ ['A'..'Z']
+  candidates = take (length allLetters) $
+                 drop (fromJust (L.findIndex (==c) allLetters)) $
+                   cycle allLetters
+  free       = L.filter (\x -> not (x `S.member` current)) candidates
+  allowed    = '$' : free
 
 cmpLetter :: Char -> Char -> Ordering
 cmpLetter x y = compare (isUpper x, toLower x) (isUpper y, toLower y)
@@ -125,20 +125,21 @@ mergeLetter :: Maybe Char -> Maybe Char -> Maybe Char
 mergeLetter = mplus
 
 letterRange :: [Char] -> String
-letterRange ls = sectionBy (L.sortBy cmpLetter ls) Nothing
-  where
-    succLetter c d = ord d - ord c == 1
+letterRange ls =
+  sectionBy (L.sortBy cmpLetter ls) Nothing
+ where
+  succLetter c d = ord d - ord c == 1
 
-    sectionBy []     Nothing      = ""
-    sectionBy []     (Just (c,d)) = finish (c,d)
-    sectionBy (x:xs) Nothing      = sectionBy xs (Just (x,x))
-    sectionBy (x:xs) (Just (c,d))
-      | succLetter d x            = sectionBy xs (Just (c,x))
-      | otherwise                 = finish (c,d) ++ sectionBy xs (Just (x,x))
+  sectionBy []     Nothing      = ""
+  sectionBy []     (Just (c,d)) = finish (c,d)
+  sectionBy (x:xs) Nothing      = sectionBy xs (Just (x,x))
+  sectionBy (x:xs) (Just (c,d))
+    | succLetter d x            = sectionBy xs (Just (c,x))
+    | otherwise                 = finish (c,d) ++ sectionBy xs (Just (x,x))
 
-    finish (c,d) | c == d         = [c]
-                 | succLetter c d = [c,d]
-                 | otherwise      = [c,'-',d]
+  finish (c,d) | c == d         = [c]
+               | succLetter c d = [c,d]
+               | otherwise      = [c,'-',d]
 
 letterLabel :: Maybe Char -> String
 letterLabel Nothing  = "    "
@@ -160,7 +161,7 @@ joinItem i is =
 -- Takes an equality function (i.e., by letter or ny kind) as an argument.
 removeItemBy :: (Item -> Item -> Bool) -> Item -> [Item] -> [Item]
 removeItemBy eq i = concatMap $ \ x ->
-                    if eq i x
+                      if eq i x
                       then let remaining = jcount x - jcount i
                            in if remaining > 0
                               then [x { jcount = remaining }]
@@ -181,20 +182,21 @@ removeItemByLetter = removeItemBy equalItemLetter
 
 -- | Finds an item in a list of items.
 findItem :: (Item -> Bool) -> [Item] -> Maybe (Item, [Item])
-findItem p = findItem' []
-  where
-    findItem' _   []     = Nothing
-    findItem' acc (i:is)
-      | p i              = Just (i, reverse acc ++ is)
-      | otherwise        = findItem' (i:acc) is
+findItem p =
+  findItem' []
+ where
+  findItem' _   []     = Nothing
+  findItem' acc (i:is)
+    | p i              = Just (i, reverse acc ++ is)
+    | otherwise        = findItem' (i:acc) is
 
 strongestItem :: Kind.Ops ItemKind -> [Item] -> String -> Maybe Item
 strongestItem Kind.Ops{oname} is groupName =
   let cmp = comparing jpower
       igs = L.filter (\ i -> oname (jkind i) == groupName) is
-  in  case igs of
-        [] -> Nothing
-        _  -> Just $ L.maximumBy cmp igs
+  in case igs of
+       [] -> Nothing
+       _  -> Just $ L.maximumBy cmp igs
 
 itemPrice :: Kind.Ops ItemKind -> Item -> Int
 itemPrice Kind.Ops{oname} i =

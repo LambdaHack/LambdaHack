@@ -27,9 +27,9 @@ capitalize (c : cs) = toUpper c : cs
 
 makeObject :: Int -> (String -> String) -> String -> String
 makeObject 1 adj obj = let b = adj obj
-                       in  case b of
-                             (c:_) | c `elem` "aeio" -> "an " ++ b
-                             _                       -> "a " ++ b
+                       in case b of
+                            (c:_) | c `elem` "aeio" -> "an " ++ b
+                            _                       -> "a " ++ b
 makeObject n adj obj = show n ++ " " ++ adj (suffixS obj)
 
 -- TODO: when there's more of the above, split and move to Utils/
@@ -67,8 +67,8 @@ subjectVerbMObject cops m v o add =
   verbActor cops m v ++ " " ++
   objectActor cops o ++ add ++ "."
 
-subjCompoundVerbIObj :: Kind.COps -> State -> Actor -> String -> String ->
-                        Item -> String -> String
+subjCompoundVerbIObj :: Kind.COps -> State -> Actor -> String -> String
+                     -> Item -> String -> String
 subjCompoundVerbIObj Kind.COps{coactor, coitem} state m v p o add =
   subjectActor coactor m ++ " " ++
   compoundVerbActor coactor m v p ++ " " ++
@@ -86,5 +86,5 @@ objectItem cops@Kind.Ops{okind} state o =
       adj name = if identified
                  then name ++ addSpace eff ++ addSpace pwr
                  else let flavour = getFlavour cops (sflavour state) ik
-                      in  flavourToName flavour ++ " " ++ name
+                      in flavourToName flavour ++ " " ++ name
   in  makeObject (jcount o) adj (iname kind)
