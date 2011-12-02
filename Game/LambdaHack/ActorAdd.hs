@@ -83,12 +83,11 @@ monsterGenChance (LambdaCave d) numMonsters =
 -- | Create a new monster in the level, at a random position.
 addMonster :: Kind.Ops TileKind -> Kind.Id ActorKind -> Int -> Loc -> State
            -> State
-addMonster cops mk hp ploc state = do
-  let loc = nearbyFreeLoc cops ploc state
-      n = snd (scounter state)
+addMonster cotile mk hp ploc state@State{scounter = (heroC, monsterC)} = do
+  let loc = nearbyFreeLoc cotile ploc state
       m = template mk Nothing Nothing hp loc
-      state' = state { scounter = (fst (scounter state), n + 1) }
-  updateLevel (updateMonsters (IM.insert n m)) state'
+      state' = state { scounter = (heroC, monsterC + 1) }
+  updateLevel (updateMonsters (IM.insert monsterC m)) state'
 
 -- | Create a new monster in the level, at a random position.
 rollMonster :: Kind.COps -> State -> Rnd State

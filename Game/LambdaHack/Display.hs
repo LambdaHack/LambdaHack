@@ -47,7 +47,7 @@ type InternalSession = D.Session
 type Session = (InternalSession, M.Map K.Key K.Key, Kind.COps)
 
 display :: Area -> Session -> (Loc -> (Color.Attr, Char)) -> String -> String
-         -> IO ()
+        -> IO ()
 display area (session, _, _) = D.display area session
 startup :: (InternalSession -> IO ()) -> IO ()
 startup = D.startup
@@ -124,20 +124,21 @@ data ColorMode = ColorFull | ColorBW
 displayLevel :: ColorMode -> Session -> Perceptions -> State
              -> Msg -> Maybe String -> IO Bool
 displayLevel dm session@(_, _, cops) per
-             state@State{scursor, stime, sflavour, slid, splayer} msg moverlay =
+             s@State{scursor, stime, sflavour, slid, splayer, ssensory, sdisplay}
+             msg moverlay =
   let Kind.COps{ coactor=Kind.Ops{okind}
                , coitem
                , cotile=Kind.Ops{okind=tokind} } = cops
-      lvl@Level{lxsize = sx, lysize = sy, lsmell = smap} = slevel state
-      (_, Actor{bkind, bhp, bloc}, bitems) = findActorAnyLevel splayer state
+      lvl@Level{lxsize = sx, lysize = sy, lsmell = smap} = slevel s
+      (_, Actor{bkind, bhp, bloc}, bitems) = findActorAnyLevel splayer s
       ActorKind{ahp} = okind bkind
       reachable = debugTotalReachable per
       visible   = totalVisible per
       overlay   = fromMaybe "" moverlay
       (ns, over) = stringByLocation sy overlay -- n overlay screens needed
-      sSml   = ssensory state == Smell
-      sVis   = case ssensory state of Vision _ -> True; _ -> False
-      sOmn   = sdisplay state == Omniscient
+      sSml   = ssensory == Smell
+      sVis   = case ssensory of Vision _ -> True; _ -> False
+      sOmn   = sdisplay == Omniscient
       lAt    = if sOmn then at else rememberAt
       liAt   = if sOmn then atI else rememberAtI
       sVisBG = if sVis
@@ -151,8 +152,8 @@ displayLevel dm session@(_, _, cops) per
       damage  = case Item.strongestItem coitem bitems "sword" of
                   Just sw -> 3 + Item.jpower sw
                   Nothing -> 3
-      hs      = levelHeroList state
-      ms      = levelMonsterList state
+      hs      = levelHeroList s
+      ms      = levelMonsterList s
       dis n loc0 =
         let tile = lvl `lAt` loc0
             items = lvl `liAt` loc0

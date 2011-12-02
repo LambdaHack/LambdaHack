@@ -128,11 +128,11 @@ generate cops config =
   in MState.state con
 
 whereTo :: Kind.Ops TileKind -> State -> Loc -> Maybe WorldLoc
-whereTo cops state@State{slid, sdungeon} loc =
-  let lvl = slevel state
+whereTo cotile s@State{slid, sdungeon} loc =
+  let lvl = slevel s
       tile = lvl `at` loc
-      k | Tile.hasFeature cops F.Climbable tile = -1
-        | Tile.hasFeature cops F.Descendable tile = 1
+      k | Tile.hasFeature cotile F.Climbable tile = -1
+        | Tile.hasFeature cotile F.Descendable tile = 1
         | otherwise = assert `failure` tile
       n = levelNumber slid
       nln = n + k

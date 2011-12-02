@@ -26,12 +26,12 @@ fromList = Dungeon . M.fromList
 -- Starts at the supplied level id (usually the current level)
 -- to try to speed up the searches and keep the dungeon lazy.
 currentFirst :: LevelId -> Dungeon -> [(LevelId, Level)]
-currentFirst slevel (Dungeon m) =
-  (slevel, m M.! slevel)
-  : L.filter ((/= slevel) . fst) (M.assocs m)
+currentFirst lid (Dungeon m) =
+  (lid, m M.! lid)
+  : L.filter ((/= lid) . fst) (M.assocs m)
 
 adjust :: (Level -> Level) -> LevelId -> Dungeon -> Dungeon
-adjust f ln (Dungeon m) = Dungeon (M.adjust f ln m)
+adjust f lid (Dungeon m) = Dungeon (M.adjust f lid m)
 
 (!) :: Dungeon -> LevelId -> Level
-(!) (Dungeon m) slid = m M.! slid
+(!) (Dungeon m) lid = m M.! lid

@@ -41,15 +41,13 @@ absentHero a State{sparty} =
     AMonster _ -> False
 
 getPlayerBody :: State -> Actor
-getPlayerBody state =
-  let pl = splayer state
-      (_, actor, _) = findActorAnyLevel pl state
+getPlayerBody s@State{splayer} =
+  let (_, actor, _) = findActorAnyLevel splayer s
   in actor
 
 getPlayerItem :: State -> [Item]
-getPlayerItem state =
-  let pl = splayer state
-      (_, _, items) = findActorAnyLevel pl state
+getPlayerItem s@State{splayer} =
+  let (_, _, items) = findActorAnyLevel splayer s
   in items
 
 -- | The list of actors and levels for all heroes in the dungeon.
@@ -76,23 +74,23 @@ updateAnyActorItem actor f state =
        AMonster n -> updateAnyLevel (updateMonItem  $ IM.alter g n) ln state
 
 updateAnyLevel :: (Level -> Level) -> LevelId -> State -> State
-updateAnyLevel f ln state@State{slid, sdungeon}
-  | ln == slid = updateLevel f state
-  | otherwise = updateDungeon (const $ Dungeon.adjust f ln sdungeon) state
+updateAnyLevel f ln s@State{slid, sdungeon}
+  | ln == slid = updateLevel f s
+  | otherwise = updateDungeon (const $ Dungeon.adjust f ln sdungeon) s
 
 -- | Calculate the location of player's target.
 targetToLoc :: IS.IntSet -> State -> Maybe Loc
-targetToLoc visible state =
-  case btarget (getPlayerBody state) of
+targetToLoc visible s@State{slid, scursor} =
+  case btarget (getPlayerBody s) of
     TLoc loc -> Just loc
     TCursor  ->
-      if slid state == clocLn (scursor state)
-      then Just $ clocation (scursor state)
+      if slid == clocLn scursor
+      then Just $ clocation scursor
       else Nothing  -- cursor invalid: set at a different level
     TEnemy a _ll -> do
-      guard $ memActor a state           -- alive and on the current level?
-      let loc = bloc (getActor a state)
-      guard $ IS.member loc visible       -- visible?
+      guard $ memActor a s           -- alive and on the current level?
+      let loc = bloc (getActor a s)
+      guard $ IS.member loc visible  -- visible?
       return loc
 
 -- The operations below disregard levels other than the current.
@@ -137,11 +135,11 @@ insertActor a m =
 
 -- | Removes a player from the current level and party list.
 deletePlayer :: State -> State
-deletePlayer state@State{splayer, sparty} =
-  let s = deleteActor splayer state
+deletePlayer s@State{splayer, sparty} =
+  let s2 = deleteActor splayer s
   in case splayer of
-    AHero n    -> s{sparty = IS.delete n sparty}
-    AMonster _ -> s
+    AHero n    -> s2{sparty = IS.delete n sparty}
+    AMonster _ -> s2
 
 levelHeroList, levelMonsterList :: State -> [Actor]
 levelHeroList    state = IM.elems $ lheroes   $ slevel state

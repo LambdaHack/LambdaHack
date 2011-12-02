@@ -80,7 +80,7 @@ endTargeting accept = do
   target   <- gets (btarget . getPlayerBody)
   cloc     <- gets (clocation . scursor)
   -- return to the original level of the player
-  modify (\ state -> state{slid = returnLn})
+  modify (\ state -> state {slid = returnLn})
   modify (updateCursor (\ c -> c { ctargeting = False }))
   let isEnemy = case target of TEnemy _ _ -> True ; _ -> False
   unless isEnemy $
@@ -350,7 +350,7 @@ lvlGoUp isUp = do
             if targeting
               then do
                 assert (nln /= slid `blame` (nln, "stairs looped")) $
-                  modify (\ state -> state{slid = nln})
+                  modify (\ state -> state {slid = nln})
                 -- do not freely reveal the other end of the stairs
                 lvl2 <- gets slevel
                 let upd cur =
@@ -373,7 +373,7 @@ lvlGoUp isUp = do
                 -- At this place the invariant that the player exists fails.
                 -- Change to the new level (invariant not needed).
                 assert (nln /= slid `blame` (nln, "stairs looped")) $
-                  modify (\ state -> state{slid = nln})
+                  modify (\ state -> state {slid = nln})
                 -- Add the player to the new level.
                 modify (insertActor pl pbody)
                 modify (updateAnyActorItem pl (const bitems))
@@ -441,15 +441,14 @@ cycleHero = do
 -- | Search for secret doors
 search :: Action ()
 search = do
-  cops   <- contentf Kind.coitem
-  cotile <- contentf Kind.cotile
+  Kind.COps{coitem, cotile} <- contentOps
   lm     <- gets (lmap . slevel)
   le     <- gets (lsecret . slevel)
   lxsize <- gets (lxsize . slevel)
   ploc   <- gets (bloc . getPlayerBody)
   pitems <- gets getPlayerItem
   doorClosedId <- rndToAction $ Tile.doorClosedId cotile
-  let delta = case strongestItem cops pitems "ring" of
+  let delta = case strongestItem coitem pitems "ring" of
                 Just i  -> 1 + jpower i
                 Nothing -> 1
       searchTile loc (slm, sle) =
@@ -565,8 +564,7 @@ moveOrAttack :: Bool       -- ^ allow attacks?
              -> Action ()
 moveOrAttack allowAttacks autoOpen actor dir = do
   -- We start by looking at the target position.
-  cops   <- contentOps
-  cotile <- contentf Kind.cotile
+  cops@Kind.COps{cotile} <- contentOps
   state  <- get
   pl     <- gets splayer
   lvl    <- gets slevel
@@ -665,19 +663,18 @@ generateMonster = do
   state  <- get
   nstate <- rndToAction $ rollMonster cops state
   srandom <- gets srandom
-  put nstate{srandom}
+  put $ nstate {srandom}
 
 -- | Possibly regenerate HP for all actors on the current level.
 regenerateLevelHP :: Action ()
 regenerateLevelHP = do
-  coactor@Kind.Ops{okind} <- contentf Kind.coactor
-  cops <- contentf Kind.coitem
+  Kind.COps{coitem, coactor=coactor@Kind.Ops{okind}} <- contentOps
   time <- gets stime
   let upd itemIM a m =
         let ak = okind $ bkind m
             bitems = fromMaybe [] $ IM.lookup a itemIM
             regen = aregen ak `div`
-                    case strongestItem cops bitems "amulet" of
+                    case strongestItem coitem bitems "amulet" of
                       Just i  -> jpower i
                       Nothing -> 1
         in if time `mod` regen /= 0
