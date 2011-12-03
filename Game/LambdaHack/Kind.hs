@@ -16,6 +16,7 @@ import Game.LambdaHack.Frequency
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.RoomKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Content.Content
@@ -72,6 +73,7 @@ data COps = COps
   { coactor :: Ops ActorKind
   , cocave  :: Ops CaveKind
   , coitem  :: Ops ItemKind
+  , coroom  :: Ops RoomKind
   , corule  :: Ops RuleKind
   , cotile  :: Ops TileKind
   }
