@@ -1,5 +1,6 @@
 module Game.LambdaHack.Geometry
-  ( Time, X, Y, shiftXY, movesXY, lenXY, euclidLenSq, normalLevelBound ) where
+  ( Time, X, Y, shiftXY, movesXY, lenXY, euclidLenSq, normalLevelBound, divUp
+  ) where
 
 -- | Game time in turns. The time dimension.
 type Time = Int
@@ -27,3 +28,7 @@ euclidLenSq (x, y) = let square a = a * a
 
 normalLevelBound :: (X, Y)
 normalLevelBound = (79, 22)  -- TODO: query terminal size instead
+
+-- | Integer division, rounding up.
+divUp :: Int -> Int -> Int
+divUp n k = (n + k - 1) `div` k

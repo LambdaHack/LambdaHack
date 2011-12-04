@@ -1,5 +1,6 @@
 module Game.LambdaHack.FOV.Digital (scan) where
 
+import Game.LambdaHack.Geometry
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.FOV.Common
 

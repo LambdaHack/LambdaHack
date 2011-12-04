@@ -2,7 +2,7 @@ module Game.LambdaHack.FOV.Common
   ( Distance, Progress
   , Bump(..)
   , Line, ConvexHull, Edge, EdgeInterval
-  , divUp, maximal, steeper, addHull
+  , maximal, steeper, addHull
   ) where
 
 import qualified Data.List as L
@@ -25,10 +25,6 @@ type Line         = (Bump, Bump)
 type ConvexHull   = [Bump]
 type Edge         = (Line, ConvexHull)
 type EdgeInterval = (Edge, Edge)
-
--- | Integer division, rounding up.
-divUp :: Int -> Int -> Int
-divUp n k = (n + k - 1) `div` k
 
 -- | Maximal element of a non-empty list. Prefers elements from the rear,
 -- which is essential for PFOV, to avoid ill-defined lines.
