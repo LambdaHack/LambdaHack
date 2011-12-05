@@ -1,5 +1,5 @@
 module Game.LambdaHack.Content.CaveKind
-  ( CaveKind(..), CaveLayout(..)
+  ( CaveKind(..), CaveLayout(..), validCave
   ) where
 
 import Game.LambdaHack.Geometry
@@ -31,5 +31,11 @@ data CaveKind = CaveKind
   , corTile           :: TileKind -> Bool
   }
 
+instance Show CaveKind where
+  show _ = "A cave kind specification." -- TODO
+
 -- TODO: express those using many fine-graned parameters instead
 data CaveLayout = CaveRogue | CaveEmpty | CaveNoise deriving Eq
+
+validCave :: CaveKind -> Bool
+validCave CaveKind{..} = True -- TODO

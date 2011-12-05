@@ -1,5 +1,5 @@
 module Game.LambdaHack.Content.TileKind
-  ( TileKind(..)
+  ( TileKind(..), validTile
   ) where
 
 import Game.LambdaHack.Color
@@ -14,3 +14,6 @@ data TileKind = TileKind
   , tfeature :: ![Feature]  -- ^ properties
   }
   deriving Show
+
+validTile :: TileKind -> Bool
+validTile TileKind{..} = True -- TODO

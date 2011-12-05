@@ -1,5 +1,5 @@
 module Game.LambdaHack.Content.ItemKind
-  ( ItemKind(..)
+  ( ItemKind(..), validItem
   ) where
 
 import Game.LambdaHack.Effect
@@ -24,3 +24,6 @@ data ItemKind = ItemKind
   , ipower   :: !RollQuad   -- ^ created with that power
   }
   deriving Show
+
+validItem :: ItemKind -> Bool
+validItem ItemKind{..} = True -- TODO

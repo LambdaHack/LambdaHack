@@ -8,6 +8,7 @@ cdefs = Content.CDefs
   { getSymbol = rsymbol
   , getName = rname
   , getFreq = rfreq
+  , valid = validRoom
   , content =
       [rect, oval, ovalW, colonnade, colonnadeW, colonnade2]
   }

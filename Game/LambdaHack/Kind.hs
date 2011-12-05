@@ -40,8 +40,8 @@ data Ops a = Ops
   , ospeedup :: [Id a -> Bool]  -- TODO: switch list to tuple via a type family?
   }
 
-createOps :: forall a. CDefs a -> Ops a
-createOps CDefs{getSymbol, getName, getFreq, content} =
+createOps :: forall a. Show a => CDefs a -> Ops a
+createOps CDefs{getSymbol, getName, getFreq, content, valid} =
   let kindAssocs :: [(Word.Word8, a)]
       kindAssocs = L.zip [0..] content
       kindMap :: IM.IntMap a
@@ -50,7 +50,8 @@ createOps CDefs{getSymbol, getName, getFreq, content} =
       kindFreq = Frequency [ (n, (Id i, k))
                            | (i, k) <- kindAssocs, let n = getFreq k, n > 0 ]
       okind = \ (Id i) -> kindMap IM.! (fromEnum i)
-  in Ops
+      correct a = valid a && not (L.null (getName a)) && getFreq a >= 0
+  in assert (allB correct content) $ Ops
   { osymbol = getSymbol . okind
   , oname = getName . okind
   , ofreq = getFreq . okind

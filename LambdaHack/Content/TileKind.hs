@@ -11,6 +11,7 @@ cdefs = Content.CDefs
   { getSymbol = tsymbol
   , getName = tname
   , getFreq = tfreq
+  , valid = validTile
   , content =
       [wall, doorOpen, doorClosed, doorSecret, opening, floorLight, floorDark, stairsUp, stairsDown, unknown, floorRed, floorBlue, floorGreen, floorBrown]
   }
@@ -80,10 +81,10 @@ stairsDown = TileKind
   }
 unknown = TileKind
   { tsymbol  = ' '
-  , tname    = ""
+  , tname    = "An unknown space."
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfreq    = 100
+  , tfreq    = 0
   , tfeature = []
   }
 floorRed = floorLight

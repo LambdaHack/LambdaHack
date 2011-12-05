@@ -71,7 +71,6 @@ buildLevel cops@Kind.COps{cotile=cotile@Kind.Ops{opick}, cocave=Kind.Ops{okind}}
   let stairs = [(su, upId)] ++ if n == depth then [] else [(sd, downId)]
       lmap = cmap Kind.// stairs
   is <- rollItems cops n cfg lmap su
-  unknownId <- Tile.unknownId cotile
   let itemMap = mapToIMap cxsize ditem `IM.union` IM.fromList is
       litem = IM.map (\ i -> ([i], [])) itemMap
       level = Level
@@ -85,7 +84,7 @@ buildLevel cops@Kind.COps{cotile=cotile@Kind.Ops{opick}, cocave=Kind.Ops{okind}}
         , lsecret = mapToIMap cxsize dsecret
         , litem
         , lmap
-        , lrmap = unknownTileMap unknownId cxsize cysize
+        , lrmap = unknownTileMap (Tile.unknownId cotile) cxsize cysize
         , lmeta = dmeta
         , lstairs = (su, sd)
         }

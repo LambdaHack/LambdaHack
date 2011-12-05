@@ -1,5 +1,5 @@
 module Game.LambdaHack.Content.RoomKind
-  ( RoomKind(..)
+  ( RoomKind(..), validRoom
   ) where
 
 import qualified Data.List as L
@@ -14,3 +14,8 @@ data RoomKind = RoomKind
   , rtopLeft :: [String]  -- ^ the top-left corner of the room
   }
   deriving Show
+
+validRoom :: RoomKind -> Bool
+validRoom RoomKind{..} =
+  let dxcorner = case rtopLeft of [] -> 0 ; l : _ -> L.length l
+  in (rcover || dxcorner > 0) && L.all (== dxcorner) (L.map L.length rtopLeft)

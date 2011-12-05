@@ -9,6 +9,7 @@ cdefs = Content.CDefs
   { getSymbol = asymbol
   , getName = aname
   , getFreq = afreq
+  , valid = validActor
   , content =
       [hero, eye, fastEye, nose]
   }

@@ -1,5 +1,5 @@
 module Game.LambdaHack.Content.ActorKind
-  ( ActorKind(..)
+  ( ActorKind(..), validActor
   ) where
 
 import Game.LambdaHack.Color
@@ -20,3 +20,6 @@ data ActorKind = ActorKind
   , aregen  :: !Int              -- ^ regeneration interval
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
+
+validActor :: ActorKind -> Bool
+validActor ActorKind{..} = True -- TODO

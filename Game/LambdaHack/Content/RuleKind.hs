@@ -1,5 +1,5 @@
 module Game.LambdaHack.Content.RuleKind
-  ( RuleKind(..)
+  ( RuleKind(..), validRule
   ) where
 
 import Game.LambdaHack.Content.TileKind
@@ -13,3 +13,9 @@ data RuleKind = RuleKind
     -- Precondition: the two locations are next to each other.
   , raccessible       :: Loc -> TileKind -> Loc -> TileKind -> Bool
   }
+
+instance Show RuleKind where
+  show _ = "A game ruleset specification." -- TODO
+
+validRule :: RuleKind -> Bool
+validRule RuleKind{..} = True -- TODO
