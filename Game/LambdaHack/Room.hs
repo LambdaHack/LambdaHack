@@ -7,7 +7,6 @@ module Game.LambdaHack.Room
 import qualified Data.Map as M
 import qualified Data.List as L
 
-import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Geometry
 import Game.LambdaHack.Area
 import qualified Game.LambdaHack.Kind as Kind
@@ -52,12 +51,11 @@ tileRoom (x0, y0, x1, y1) RoomKind{..} =
   let dx = x1 - x0 + 1
       dy = y1 - y0 + 1
       fromX (x, y) = L.zip [x..] (repeat y)
-      fromTiled from l = M.fromDistinctAscList (L.zip from l)
-      fillInterior :: (forall a. Int -> [a] -> [a]) -> [M.Map (X, Y) Char]
+      fillInterior :: (forall a. Int -> [a] -> [a]) -> [((X, Y), Char)]
       fillInterior f =
-        let tileInterior (y, row) = fromTiled (fromX (x0, y)) $ f dx row
+        let tileInterior (y, row) = L.zip (fromX (x0, y)) $ f dx row
             reflected = L.zip [y0..] $ f dy rtopLeft
-        in L.map tileInterior reflected
+        in L.concatMap tileInterior reflected
       tileReflect :: Int -> [a] -> [a]
       tileReflect d pat =
         let lstart = L.take (d `divUp` 2) pat
@@ -76,5 +74,4 @@ tileRoom (x0, y0, x1, y1) RoomKind{..} =
           let reflect :: Int -> [a] -> [a]
               reflect d pat = tileReflect d (L.cycle pat)
           in fillInterior reflect
-      verify c1 c2 = assert (c1 == c2 `blame` (c1, c2)) $ c1
-  in M.unionsWith verify interior
+  in M.fromList interior
