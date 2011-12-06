@@ -1,5 +1,5 @@
 module Game.LambdaHack.Content.RoomKind
-  ( RoomKind(..), Cover(..), validRoom
+  ( RoomKind(..), Cover(..), rvalidate
   ) where
 
 import qualified Data.List as L
@@ -20,7 +20,7 @@ data Cover =
   | CReflect  -- ^ tile separately and symmetrically the quarters of the room
   deriving Show
 
-validRoom :: RoomKind -> Bool
-validRoom RoomKind{..} =
+rvalidate :: [RoomKind] -> [RoomKind]
+rvalidate = L.filter (\ RoomKind{..} ->
   let dxcorner = case rtopLeft of [] -> 0 ; l : _ -> L.length l
-  in dxcorner > 0 && L.all (== dxcorner) (L.map L.length rtopLeft)
+  in dxcorner == 0 || L.any (/= dxcorner) (L.map L.length rtopLeft))

@@ -11,7 +11,7 @@ cdefs = Content.CDefs
   { getSymbol = tsymbol
   , getName = tname
   , getFreq = tfreq
-  , valid = validTile
+  , validate = tvalidate
   , content =
       [wall, doorOpen, doorClosed, doorSecret, opening, floorLight, floorDark, stairsUp, stairsDown, unknown, floorRed, floorBlue, floorGreen, floorBrown]
   }

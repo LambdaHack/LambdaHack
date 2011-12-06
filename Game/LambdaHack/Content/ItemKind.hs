@@ -1,5 +1,5 @@
 module Game.LambdaHack.Content.ItemKind
-  ( ItemKind(..), validItem
+  ( ItemKind(..), ivalidate
   ) where
 
 import Game.LambdaHack.Effect
@@ -25,5 +25,5 @@ data ItemKind = ItemKind
   }
   deriving Show
 
-validItem :: ItemKind -> Bool
-validItem ItemKind{..} = True -- TODO
+ivalidate :: [ItemKind] -> [ItemKind]
+ivalidate _ = [] -- TODO

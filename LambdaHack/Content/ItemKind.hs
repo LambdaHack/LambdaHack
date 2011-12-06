@@ -12,7 +12,7 @@ cdefs = Content.CDefs
   { getSymbol = isymbol
   , getName = iname
   , getFreq = ifreq
-  , valid = validItem
+  , validate = ivalidate
   , content =
       [amulet, dart, gem1, gem2, gem3, gem4, gold, potion1, potion2, potion3, ring, scroll1, scroll2, sword, fist, wand]
   }

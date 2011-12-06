@@ -41,7 +41,7 @@ data Ops a = Ops
   }
 
 createOps :: forall a. Show a => CDefs a -> Ops a
-createOps CDefs{getSymbol, getName, getFreq, content, valid} =
+createOps CDefs{getSymbol, getName, getFreq, content, validate} =
   let kindAssocs :: [(Word.Word8, a)]
       kindAssocs = L.zip [0..] content
       kindMap :: IM.IntMap a
@@ -50,8 +50,11 @@ createOps CDefs{getSymbol, getName, getFreq, content, valid} =
       kindFreq = Frequency [ (n, (Id i, k))
                            | (i, k) <- kindAssocs, let n = getFreq k, n > 0 ]
       okind = \ (Id i) -> kindMap IM.! (fromEnum i)
-      correct a = valid a && not (L.null (getName a)) && getFreq a >= 0
-  in assert (allB correct content) $ Ops
+      correct a = not (L.null (getName a)) && getFreq a >= 0
+      offenders = validate content
+  in assert (allB correct content) $
+     assert (L.null offenders `blame` offenders) $
+     Ops
   { osymbol = getSymbol . okind
   , oname = getName . okind
   , ofreq = getFreq . okind

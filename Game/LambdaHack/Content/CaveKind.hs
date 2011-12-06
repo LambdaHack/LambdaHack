@@ -1,5 +1,5 @@
 module Game.LambdaHack.Content.CaveKind
-  ( CaveKind(..), CaveLayout(..), validCave
+  ( CaveKind(..), CaveLayout(..), cvalidate
   ) where
 
 import Game.LambdaHack.Geometry
@@ -37,5 +37,5 @@ instance Show CaveKind where
 -- TODO: express those using many fine-grained parameters instead
 data CaveLayout = CaveRogue | CaveEmpty deriving Eq
 
-validCave :: CaveKind -> Bool
-validCave CaveKind{..} = True -- TODO
+cvalidate :: [CaveKind] -> [CaveKind]
+cvalidate _ = [] -- TODO

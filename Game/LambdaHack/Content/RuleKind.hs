@@ -1,5 +1,5 @@
 module Game.LambdaHack.Content.RuleKind
-  ( RuleKind(..), validRule
+  ( RuleKind(..), ruvalidate
   ) where
 
 import Game.LambdaHack.Content.TileKind
@@ -17,5 +17,5 @@ data RuleKind = RuleKind
 instance Show RuleKind where
   show _ = "A game ruleset specification." -- TODO
 
-validRule :: RuleKind -> Bool
-validRule RuleKind{..} = True -- TODO
+ruvalidate :: [RuleKind] -> [RuleKind]
+ruvalidate _ = [] -- TODO

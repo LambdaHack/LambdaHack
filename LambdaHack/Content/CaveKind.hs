@@ -16,7 +16,7 @@ cdefs = Content.CDefs
   { getSymbol = csymbol
   , getName = cname
   , getFreq = cfreq
-  , valid = validCave
+  , validate = cvalidate
   , content =
       [rogue, arena, empty, noise, largeNoise]
   }

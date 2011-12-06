@@ -10,7 +10,7 @@ cdefs = Content.CDefs
   { getSymbol = rsymbol
   , getName = rname
   , getFreq = rfreq
-  , valid = validRule
+  , validate = ruvalidate
   , content =
       [standard]
   }

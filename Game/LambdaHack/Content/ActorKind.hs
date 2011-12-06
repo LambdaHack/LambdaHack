@@ -1,5 +1,5 @@
 module Game.LambdaHack.Content.ActorKind
-  ( ActorKind(..), validActor
+  ( ActorKind(..), avalidate
   ) where
 
 import Game.LambdaHack.Color
@@ -21,5 +21,5 @@ data ActorKind = ActorKind
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 
-validActor :: ActorKind -> Bool
-validActor ActorKind{..} = True -- TODO
+avalidate :: [ActorKind] -> [ActorKind]
+avalidate _ = [] -- TODO
