@@ -53,7 +53,7 @@ caveEmpty Kind.COps{cotile, cocave=Kind.Ops{okind}} _ ci = do
   wallId  <- Tile.wallId cotile
   let CaveKind{cxsize, cysize} = okind ci
       room = (1, 1, cxsize - 2, cysize - 2)
-      dmap = caveBorder wallId room
+      dmap = buildFence wallId room
       cave = Cave
         { dkind = ci
         , dsecret = M.empty
@@ -69,7 +69,7 @@ caveNoise Kind.COps{cotile, cocave=Kind.Ops{okind}} _ ci = do
   wallId  <- Tile.wallId cotile
   let CaveKind{cxsize, cysize} = okind ci
       room = (1, 1, cxsize - 2, cysize - 2)
-      em = caveBorder wallId room
+      em = buildFence wallId room
   nri <- rollDice (fromIntegral (cysize `div` 5), 3)
   lr <- replicateM (cxsize * nri) $ do
     xy <- xyInArea (1, 1, cxsize - 2, cysize - 2)
@@ -90,19 +90,15 @@ caveNoise Kind.COps{cotile, cocave=Kind.Ops{okind}} _ ci = do
 -- | Construct room of a given kind, with the given floor and wall tiles.
 digRoom :: RoomKind -> Kind.Id TileKind -> Kind.Id TileKind -> Area
         -> TileMapXY
-digRoom rk floorId wallId area@(x0, y0, x1, y1) =
-  let interior = [ ((x, y), floorId) | x <- [x0-1..x1+1], y <- [y0-1..y1+1] ]
-      fence
-        | rfence rk =
-          [ ((x, y), wallId) | x <- [x0-1, x1+1], y <- [y0..y1] ] ++
-          [ ((x, y), wallId) | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
-        | otherwise = []
+digRoom rk floorId wallId area =
+  let fenceId | rfence rk = wallId
+              | otherwise = floorId
+      fence = buildFence fenceId area
       legend = M.fromList [('.', floorId), ('#', wallId)]
-  in M.union (M.map (legend M.!) $ tileRoom area rk)
-       (M.fromList $ interior ++ fence)
+  in M.union (M.map (legend M.!) $ tileRoom area rk) fence
 
-caveBorder :: Kind.Id TileKind -> Area -> TileMapXY
-caveBorder wallId (x0, y0, x1, y1) =
+buildFence :: Kind.Id TileKind -> Area -> TileMapXY
+buildFence wallId (x0, y0, x1, y1) =
   M.fromList $ [ ((x, y), wallId) | x <- [x0-1, x1+1], y <- [y0..y1] ] ++
                [ ((x, y), wallId) | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
 
@@ -252,40 +248,30 @@ tileRoom :: Area                           -- ^ the area to fill
 tileRoom (x0, y0, x1, y1) RoomKind{..} =
   let dx = x1 - x0 + 1
       dy = y1 - y0 + 1
-      dxcorner = case rtopLeft of [] -> 0 ; l : _ -> L.length l
-      dycorner = L.length rtopLeft
-      tileFill :: [k] -> Int -> [a] -> [(k, a)]
-      tileFill from darea pat
-        | darea <= 0 || dxcorner == 0 = []
-        | rcover && dxcorner * dycorner < 5 = L.zip from $ L.take darea pat
-        | otherwise =
-          let fr = L.reverse $ L.take darea from
-              lstart = L.zip (L.take (darea `divUp` 2) from) pat
-              lend   = L.zip (L.take (darea `div`   2) fr)   pat
-          in lstart ++ L.reverse lend
       fromX (x, y) = L.zip [x..] (repeat y)
-      fromY (x, y) = L.zip (repeat x) [y..]
-      fillInterior :: (forall a. [a] -> [a]) -> [M.Map (X, Y) Char]
+      fromTiled from l = M.fromDistinctAscList (L.zip from l)
+      fillInterior :: (forall a. Int -> [a] -> [a]) -> [M.Map (X, Y) Char]
       fillInterior f =
-        let tileInterior (y, row) = M.fromDistinctAscList $
-                                      tileFill (fromX (x0, y)) dx $ f row
-            reflected = tileFill [y0..] dy $ f rtopLeft
+        let tileInterior (y, row) = fromTiled (fromX (x0, y)) $ f dx row
+            reflected = L.zip [y0..] $ f dy rtopLeft
         in L.map tileInterior reflected
+      tileReflect :: Int -> [a] -> [a]
+      tileReflect d pat =
+        let lstart = L.take (d `divUp` 2) pat
+            lend   = L.take (d `div`   2) pat
+        in lstart ++ L.reverse lend
+      interior = case rcover of
+        CTile    ->
+          let tile :: Int -> [a] -> [a]
+              tile d pat = L.take d (L.cycle pat)
+          in fillInterior tile
+        CStretch ->
+          let stretch :: Int -> [a] -> [a]
+              stretch d pat = tileReflect d (pat ++ L.repeat (L.last pat))
+          in fillInterior stretch
+        CReflect ->
+          let reflect :: Int -> [a] -> [a]
+              reflect d pat = tileReflect d (L.cycle pat)
+          in fillInterior reflect
       verify c1 c2 = assert (c1 == c2 `blame` (c1, c2)) $ c1
-      cover = M.unionsWith verify $ fillInterior L.cycle
-      borders =
-        let (borderH, widthH, borderV, widthV) =
-              (L.cycle [L.last $ L.head rtopLeft], dx - 2 * dxcorner,
-               L.cycle [L.head $ L.last rtopLeft], dy - 2 * dycorner)
-            tileBorderH y = M.fromDistinctAscList $
-                              tileFill (fromX (x0 + dxcorner, y)) widthH borderH
-            tileBorderV x = M.fromDistinctAscList $
-                              tileFill (fromY (x, y0 + dycorner)) widthV borderV
-            borderTop    = tileBorderH y0
-            borderLeft   = tileBorderV x0
-            borderBottom = tileBorderH y1
-            borderRight  = tileBorderV x1
-            corners      = fillInterior id
-        in M.unionsWith verify $
-             borderTop : borderLeft : borderBottom : borderRight : corners
-  in if rcover then cover else borders
+  in M.unionsWith verify interior

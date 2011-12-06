@@ -1,5 +1,5 @@
 module Game.LambdaHack.Content.RoomKind
-  ( RoomKind(..), validRoom
+  ( RoomKind(..), Cover(..), validRoom
   ) where
 
 import qualified Data.List as L
@@ -8,14 +8,19 @@ data RoomKind = RoomKind
   { rsymbol  :: Char
   , rname    :: String
   , rfreq    :: Int
-  , rcover   :: Bool      -- ^ whether to tile the corner along the whole room
-                          -- or only the NE and SW tiles along the borders
+  , rcover   :: Cover     -- ^ how to fill whole room based on the corner
   , rfence   :: Bool      -- ^ whether to fence the room with solid border
-  , rtopLeft :: [String]  -- ^ the top-left corner of the room
+  , rtopLeft :: [String]  -- ^ plan of the top-left corner of the room
   }
+  deriving Show
+
+data Cover =
+    CTile     -- ^ tile the corner plan, cutting off at the right and bottom
+  | CStretch  -- ^ fill symmetrically all corners and stretch their borders
+  | CReflect  -- ^ tile separately and symmetrically the quarters of the room
   deriving Show
 
 validRoom :: RoomKind -> Bool
 validRoom RoomKind{..} =
   let dxcorner = case rtopLeft of [] -> 0 ; l : _ -> L.length l
-  in (rcover || dxcorner > 0) && L.all (== dxcorner) (L.map L.length rtopLeft)
+  in dxcorner > 0 && L.all (== dxcorner) (L.map L.length rtopLeft)

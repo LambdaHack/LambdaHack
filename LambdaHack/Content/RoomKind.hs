@@ -10,23 +10,23 @@ cdefs = Content.CDefs
   , getFreq = rfreq
   , valid = validRoom
   , content =
-      [rect, oval, ovalW, colonnade, colonnadeW, colonnade2]
+      [rect, oval, ovalW, colonnade, colonnadeW, colonnadeS, colonnade2]
   }
-rect,        oval, ovalW, colonnade, colonnadeW, colonnade2 :: RoomKind
+rect,        oval, ovalW, colonnade, colonnadeW, colonnadeS, colonnade2 :: RoomKind
 
-rect = RoomKind  -- this room is valid for any area, hence low frequency
+rect = RoomKind  -- this room is valid for any nonempty area, hence low frequency
   { rsymbol           = 'r'
   , rname             = "room"
   , rfreq             = 100
-  , rcover            = True
+  , rcover            = CTile
   , rfence            = True
-  , rtopLeft          = []
+  , rtopLeft          = ["."]
   }
 oval = RoomKind  -- needs a large area, hence high frequency
   { rsymbol           = 'o'
   , rname             = "oval room"
   , rfreq             = 100
-  , rcover            = False
+  , rcover            = CStretch
   , rfence            = True
   , rtopLeft          = [ "####.."
                         , "##...."
@@ -51,7 +51,7 @@ colonnade = RoomKind
   { rsymbol           = 'c'
   , rname             = "colonnade"
   , rfreq             = 50
-  , rcover            = True
+  , rcover            = CTile
   , rfence            = True
   , rtopLeft          = [ ".#"
                         , "#."
@@ -65,8 +65,16 @@ colonnadeW = colonnade
                         , ".#.#"
                         ]
   }
+colonnadeS = colonnade
+  { rtopLeft          = [ "...."
+                        , ".#.#"
+                        , "...."
+                        , ".#.#"
+                        ]
+  }
 colonnade2 = colonnade
-  { rtopLeft          = [ "..#"
+  { rcover            = CReflect
+  , rtopLeft          = [ "..#"
                         , "..#"
                         , "##."
                         ]
