@@ -82,6 +82,7 @@ library
                    Game.LambdaHack.Msg,
                    Game.LambdaHack.Perception,
                    Game.LambdaHack.Random,
+                   Game.LambdaHack.Room,
                    Game.LambdaHack.Save,
                    Game.LambdaHack.Start,
                    Game.LambdaHack.State,
