@@ -42,7 +42,6 @@ buildCave cops@Kind.COps{cocave=Kind.Ops{okind}} n ci =
   in case clayout of
        CaveRogue -> caveRogue cops n ci
        CaveEmpty -> caveEmpty cops n ci
-       CaveNoise -> caveNoise cops n ci
 
 -- | Cave consisting of only one, empty room.
 caveEmpty :: Kind.COps -> Int -> Kind.Id CaveKind -> Rnd Cave
@@ -57,30 +56,6 @@ caveEmpty Kind.COps{cotile, cocave=Kind.Ops{okind}} _ ci = do
         , ditem = M.empty
         , dmap
         , dmeta = "empty room"
-        }
-  return cave
-
--- | Cave consisting of only one room with randomly distributed pillars.
-caveNoise :: Kind.COps -> Int -> Kind.Id CaveKind -> Rnd Cave
-caveNoise Kind.COps{cotile, cocave=Kind.Ops{okind}} _ ci = do
-  wallId  <- Tile.wallId cotile
-  let CaveKind{cxsize, cysize} = okind ci
-      room = (1, 1, cxsize - 2, cysize - 2)
-      em = buildFence wallId room
-  nri <- rollDice (fromIntegral (cysize `div` 5), 3)
-  lr <- replicateM (cxsize * nri) $ do
-    xy <- xyInArea (1, 1, cxsize - 2, cysize - 2)
-    -- Each pillar can be from different rock type.
-    rock <- Tile.wallId cotile
-    return (xy, rock)
-  let insertRock lm (xy, rock) = M.insert xy rock lm
-      dmap = L.foldl' insertRock em lr
-      cave = Cave
-        { dkind = ci
-        , dsecret = M.empty
-        , ditem = M.empty
-        , dmap
-        , dmeta = "noise room"
         }
   return cave
 

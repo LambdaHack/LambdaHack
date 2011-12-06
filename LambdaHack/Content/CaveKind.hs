@@ -70,9 +70,10 @@ noise = rogue
   { csymbol           = '!'
   , cname             = "caveNoise"
   , cfreq             = 0  -- stairs may be blocked, so only for the last level
-  , clayout           = CaveNoise
-  , defTile           = \ t -> tsymbol t == '.'
-                               && kindHas [F.Lit] [F.Exit, F.Special] t
+  , clayout           = CaveEmpty
+  , defTile           = \ t -> tsymbol t == '#' && L.null (tfeature t)
+                               || (tsymbol t == '.'
+                                  && kindHas [F.Lit] [F.Exit, F.Special] t)
   }
 largeNoise = noise
   { csymbol           = 'L'

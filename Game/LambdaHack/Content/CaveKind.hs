@@ -34,8 +34,8 @@ data CaveKind = CaveKind
 instance Show CaveKind where
   show _ = "A cave kind specification." -- TODO
 
--- TODO: express those using many fine-graned parameters instead
-data CaveLayout = CaveRogue | CaveEmpty | CaveNoise deriving Eq
+-- TODO: express those using many fine-grained parameters instead
+data CaveLayout = CaveRogue | CaveEmpty deriving Eq
 
 validCave :: CaveKind -> Bool
 validCave CaveKind{..} = True -- TODO
