@@ -58,7 +58,7 @@ floorDark = floorLight
   , tfeature = [Walkable, Clear]
   }
 opening = floorLight
-  { tfeature = [Walkable, Clear, Exit{-TODO: , Lit-}]
+  { tfeature = Exit : tfeature floorLight  -- TODO: make also dark openings?
   }
 stairsUp = TileKind
   { tsymbol  = '<'

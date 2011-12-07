@@ -53,7 +53,8 @@ oneOf xs =
 
 frequency :: Frequency a -> Rnd a
 frequency (Frequency [(n, x)]) | n > 0 = return x  -- speedup
-frequency (Frequency fs) = do
+frequency (Frequency fs) =
+  assert (sumf > 0 `blame` map fst fs) $ do
   r <- randomR (1, sumf)
   return (frequency' r fs)
  where

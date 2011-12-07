@@ -99,6 +99,6 @@ isExit cops = hasFeature cops F.Exit
 isBoring :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 isBoring Kind.Ops{okind} t =
   let fs = tfeature (okind t)
-      optional = [F.Exit, F.Lit]
+      optional = [F.Lit]
       mandatory = [F.Walkable, F.Clear]
   in fs L.\\ optional `L.elem` L.permutations mandatory

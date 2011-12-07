@@ -13,8 +13,8 @@
 LambdaCave_1: caveRogue
 LambdaCave_2: caveRogue
 LambdaCave_3: caveEmpty
-; access to stairs may be blocked, so normally only suitable for the last level:
-LambdaCave_4: caveNoise
+LambdaCave_4: caveArena
+LambdaCave_5: caveNoise
 depth: 1000
 
 [engine]
