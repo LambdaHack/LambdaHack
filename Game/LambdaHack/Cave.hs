@@ -46,10 +46,10 @@ buildCave cops@Kind.COps{cocave=Kind.Ops{okind}} n ci =
 -- | Cave consisting of only one, empty room.
 caveEmpty :: Kind.COps -> Int -> Kind.Id CaveKind -> Rnd Cave
 caveEmpty Kind.COps{cotile, cocave=Kind.Ops{okind}} _ ci = do
-  wallId  <- Tile.wallId cotile
+  fenceId <- Tile.wallId cotile
   let CaveKind{cxsize, cysize} = okind ci
-      room = (1, 1, cxsize - 2, cysize - 2)
-      dmap = buildFence wallId room
+      fenceBounds = (1, 1, cxsize - 2, cysize - 2)
+      dmap = buildFence fenceId fenceBounds
       cave = Cave
         { dkind = ci
         , dsecret = M.empty
@@ -110,6 +110,9 @@ caveRogue Kind.COps{ cotile=cotile@Kind.Ops{opick}
                  let r0 = rs M.! p0
                      r1 = rs M.! p1
                  connectRooms r0 r1) allConnects
+  fenceId <- Tile.wallId cotile
+  let fenceBounds = (1, 1, cxsize - 2, cysize - 2)
+      fence = buildFence fenceId fenceBounds
   lrooms <- foldM (\ m (r, dl) -> do
                       roomId  <- ropick (roomValid r)
                       let kr = rokind roomId
@@ -119,7 +122,7 @@ caveRogue Kind.COps{ cotile=cotile@Kind.Ops{opick}
                       wallId  <- Tile.wallId cotile
                       let room = digRoom kr floorId wallId r
                       return $ M.union room m
-                  ) M.empty dlrooms
+                  ) fence dlrooms
   pickedCorTile <- opick corTile
   openingId <- Tile.openingId cotile
   let lcorridors = M.unions (L.map (digCorridors pickedCorTile) cs)
