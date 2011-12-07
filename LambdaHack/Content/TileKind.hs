@@ -58,8 +58,7 @@ floorDark = floorLight
   , tfeature = [Walkable, Clear]
   }
 opening = floorLight
-  { tname    = "An opening."
-  , tfeature = [Walkable, Clear, Exit{-TODO: , Lit-}]
+  { tfeature = [Walkable, Clear, Exit{-TODO: , Lit-}]
   }
 stairsUp = TileKind
   { tsymbol  = '<'
@@ -104,7 +103,7 @@ floorGreen = floorRed
   , tcolor2  = Green
   }
 floorBrown = floorRed
-  { tname    = "Rotting wooden deck."
-  , tcolor   = Yellow
-  , tcolor2  = BrBlack
+  { tname    = "Rotting mahogany deck."
+  , tcolor   = BrMagenta
+  , tcolor2  = Magenta
   }
