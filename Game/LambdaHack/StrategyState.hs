@@ -184,11 +184,14 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
     moveIQ = aiq mk > 15 .=> onlyKeepsDir 0 moveRandomly
              .| aiq mk > 10 .=> onlyKeepsDir 1 moveRandomly
              .| aiq mk > 5  .=> onlyKeepsDir 2 moveRandomly
-    exitFreq =
-      runStrategy moveIQ
-      ++ map (scale 3) (runStrategy $ onlyExit (onlyKeepsDir 2 moveRandomly))
+    exitFreq =  -- don't detour towards an exit if already on an exit
+      if exitHere me
+      then []
+      else map (scale 3) (runStrategy $ onlyExit (onlyKeepsDir 2 moveRandomly))
+    exitIQFreq =
+      exitFreq ++ runStrategy moveIQ
     moveFreely = onlyLoot moveRandomly
-                 .| liftFrequency (msum exitFreq)
+                 .| liftFrequency (msum exitIQFreq)
                  .| onlyKeepsDir_9 moveRandomly
                  .| moveRandomly
     onlyMoves :: (Loc -> Bool) -> Loc -> Strategy Dir -> Strategy Dir
