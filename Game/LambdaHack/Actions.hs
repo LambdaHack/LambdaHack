@@ -147,14 +147,14 @@ move dir = do
   targeting <- gets (ctargeting . scursor)
   if targeting then moveCursor dir 1 else moveOrAttack True True pl dir
 
-run :: Dir -> Action ()
-run dir = do
+run :: (Dir, Int) -> Action ()
+run (dir, dist) = do
   pl <- gets splayer
   targeting <- gets (ctargeting . scursor)
   if targeting
     then moveCursor dir 10
     else do
-      updatePlayerBody (\ p -> p { bdir = Just dir })
+      updatePlayerBody (\ p -> p { bdir = Just (dir, dist) })
       -- attacks and opening doors disallowed while running
       moveOrAttack False False pl dir
 
@@ -164,8 +164,8 @@ data RunMode = RunRoom | RunCorridor Dir | RunDeadEnd
 -- have to stop running because something interesting cropped up
 -- and it ajusts the direction if we reached a corridor's corner
 -- (we never change the direction in a room or next to a nontrivial crossing).
-continueRun :: Dir -> Action ()
-continueRun dirLast = do
+continueRun :: (Dir, Int) -> Action ()
+continueRun (dirLast, dist) = do
   cops@Kind.COps{cotile} <- contentOps
   locHere <- gets (bloc . getPlayerBody)
   per <- currentPerception
@@ -187,11 +187,10 @@ continueRun dirLast = do
       locThere dir = locHere `shift` dir
       heroThere dir = locThere dir `elem` L.map bloc (IM.elems hs)
       funThere dir = funAt (locThere dir)
-      -- TODO: continue, if enemy was already seen before, until he's close.
       tryRun dir | heroThere dir || funNew && not (funThere dir)
                  = abort
                  | accessible cops lvl locHere (locHere `shift` dir)
-                 = run dir
+                 = run (dir, dist + 1)
                  | otherwise
                  = abort
       runMode loc dir =
@@ -220,7 +219,7 @@ continueRun dirLast = do
               [dirOrto] | allCloseTo dirOrto dir -> RunCorridor dirOrto
               _ -> RunRoom
   assert (isAHero pl) $  -- monsters never run
-    if msgShown || enemySeen || funAt locHere
+    if msgShown || enemySeen || dist > 0 && funAt locHere || dist > 20
     then abort
     else case runMode locHere dirLast of
       RunDeadEnd          -> abort           -- dead end
@@ -231,7 +230,7 @@ continueRun dirLast = do
           RunRoom       -> abort             -- stop before the room/crossing
           RunCorridor _ -> tryRun dirNext    -- follow the corridor
 
-ifRunning :: (Dir -> Action a) -> Action a -> Action a
+ifRunning :: ((Dir, Int) -> Action a) -> Action a -> Action a
 ifRunning t e = do
   ad <- gets (bdir . getPlayerBody)
   maybe e t ad

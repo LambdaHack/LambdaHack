@@ -38,4 +38,4 @@ acceptCommand h  = Described "accept choice"     (acceptCurrent h)
 
 moveDirCommand, runDirCommand :: Described (Dir -> Action ())
 moveDirCommand   = Described "move in direction" move
-runDirCommand    = Described "run in direction"  run
+runDirCommand    = Described "run in direction"  (\ dir -> run (dir, 0))

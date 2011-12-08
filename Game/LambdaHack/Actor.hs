@@ -19,7 +19,7 @@ data Actor = Actor
   , bname   :: !(Maybe String)       -- ^ individual name
   , bsymbol :: !(Maybe Char)         -- ^ individual map symbol
   , bhp     :: !Int                  -- ^ current hit pints
-  , bdir    :: !(Maybe Dir)          -- ^ the direction of running
+  , bdir    :: !(Maybe (Dir, Int))   -- ^ the direction and distance of running
   , btarget :: Target                -- ^ the target for distance attacks and AI
   , bloc    :: !Loc                  -- ^ current location
   , bletter :: !Char                 -- ^ next inventory letter

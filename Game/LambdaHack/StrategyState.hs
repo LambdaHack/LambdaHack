@@ -116,8 +116,8 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
     onlyLoot       = onlyMoves lootHere me
     exitHere x     = let t = lvl `at` x in Tile.isExit cotile t
     onlyExit       = onlyMoves exitHere me
-    onlyKeepsDir k = only (\ x -> maybe True (\ d -> dirDistSq lxsize d x <= k) ad)
-    onlyKeepsDir_9 = only (\ x -> maybe True (\ d -> neg x /= d) ad)
+    onlyKeepsDir k = only (\ x -> maybe True (\ (d, _) -> dirDistSq lxsize d x <= k) ad)
+    onlyKeepsDir_9 = only (\ x -> maybe True (\ (d, _) -> neg x /= d) ad)
     onlyNoMs       = onlyMoves (unoccupied (levelMonsterList delState)) me
     -- Monsters don't see doors more secret than that. Enforced when actually
     -- opening doors, too, so that monsters don't cheat. TODO: remove the code
@@ -202,7 +202,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
 dirToAction :: ActorId -> Target -> Bool -> Dir -> Action ()
 dirToAction actor tgt allowAttacks dir = do
   -- set new direction
-  updateAnyActor actor $ \ m -> m { bdir = Just dir, btarget = tgt }
+  updateAnyActor actor $ \ m -> m { bdir = Just (dir, 0), btarget = tgt }
   -- perform action
   tryWith (advanceTime actor) $
     -- if the following action aborts, we just advance the time and continue
