@@ -137,12 +137,11 @@ accessible Kind.COps{ cotile=Kind.Ops{okind=tokind}
 
 -- check whether the location contains a door of secrecy level lower than k
 openable :: Kind.Ops TileKind -> Level -> Tile.SecretStrength -> Loc -> Bool
-openable cops lvl k target =
-  let le = lsecret lvl
-      tgt = lvl `at` target
+openable cops lvl@Level{lsecret} k target =
+  let tgt = lvl `at` target
   in Tile.hasFeature cops F.Openable tgt ||
      (Tile.hasFeature cops F.Hidden tgt &&
-      le IM.! target < k)
+      lsecret IM.! target < k)
 
 -- Do not scatter items around, it's too much work for the player.
 dropItemsAt :: [Item] -> Loc -> Level -> Level
