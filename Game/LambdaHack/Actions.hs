@@ -158,11 +158,14 @@ run dir = do
       -- attacks and opening doors disallowed while running
       moveOrAttack False False pl dir
 
+data RunMode = RunRoom | RunCorridor Dir | RunDeadEnd
+
 -- | This function implements the actual "logic" of running. It checks if we
 -- have to stop running because something interesting cropped up
--- and it ajusts the direction if we reached a corridor's corner.
+-- and it ajusts the direction if we reached a corridor's corner
+-- (we never change the direction in a room or next to a nontrivial crossing).
 continueRun :: Dir -> Action ()
-continueRun dir = do
+continueRun dirLast = do
   cops@Kind.COps{cotile} <- contentOps
   locHere <- gets (bloc . getPlayerBody)
   per <- currentPerception
@@ -171,58 +174,62 @@ continueRun dir = do
   hs  <- gets (lheroes . slevel)
   lvl@Level{lxsize, lysize} <- gets slevel
   pl  <- gets splayer
-  let msgShown   = not (L.null msg)
-      mslocs     = IS.fromList (L.map bloc (IM.elems ms))
-      enemySeen  = not (IS.null (mslocs `IS.intersection` totalVisible per))
-      locLast    = locHere `shift` (neg dir)
-      surrLast   = surroundings lxsize lysize locLast
-      surrHere   = surroundings lxsize lysize locHere
-      itemAt loc = not (L.null (lvl `rememberAtI` loc))
-      itemNew    = L.all (\ loc -> not (itemAt loc)) (locLast : surrLast) &&
-                   L.any (\ loc -> itemAt loc) surrHere
-      itemHere   = itemAt locHere
-      exitAt loc = Tile.isExit cotile (lvl `rememberAt` loc)
-      exitNew    = L.all (\ loc -> not (exitAt loc)) (locLast : surrLast) &&
-                   L.any (\ loc -> exitAt loc) surrHere
-      exitHere   = exitAt locHere
-      locThere ndir  = locHere `shift` ndir
-      heroThere ndir = locThere ndir `elem` L.map bloc (IM.elems hs)
-      itemThere ndir = itemAt (locThere ndir)
-      tile = lvl `rememberAt` locHere
-      -- TODO: tell corridors from dark rooms
-      isRoom = Tile.isLit cotile tile && not exitHere
+  let msgShown  = not (L.null msg)
+      mslocs    = IS.fromList (L.map bloc (IM.elems ms))
+      enemySeen = not (IS.null (mslocs `IS.intersection` totalVisible per))
+      locLast   = locHere `shift` (neg dirLast)
+      surrLast  = surroundings lxsize lysize locLast
+      surrHere  = surroundings lxsize lysize locHere
+      funAt loc = Tile.isExit cotile (lvl `at` loc)
+                  || not (L.null (lvl `atI` loc))
+      funNew    = L.all (\ loc -> not (funAt loc)) (locLast : surrLast) &&
+                  L.any (\ loc -> funAt loc) surrHere
+      locThere dir = locHere `shift` dir
+      heroThere dir = locThere dir `elem` L.map bloc (IM.elems hs)
+      funThere dir = funAt (locThere dir)
       -- TODO: continue, if enemy was already seen before, until he's close.
-      continue ndir = not $
-        heroThere ndir
-        || exitNew
-        || itemNew && not (itemThere ndir) || itemHere
-      nextDir | isRoom =
-        -- Outside corridors never change direction.
-        Just dir
-              | otherwise =
+      tryRun dir | heroThere dir || funNew && not (funThere dir)
+                 = abort
+                 | accessible cops lvl locHere (locHere `shift` dir)
+                 = run dir
+                 | otherwise
+                 = abort
+      runMode loc dir =
         -- In corridors, explore all corners and stop at all crossings.
-        let possible x =
-              let xloc = locHere `shift` x
-              in dirDistSq lxsize dir x <= 2
-                 && (accessible cops lvl locHere xloc
+        let dirsClose dir1 dir2 = dirDistSq lxsize dir1 dir2 <= 2
+            possible x =
+              let xloc = loc `shift` x
+              in x /= neg dir
+                 && (accessible cops lvl loc xloc
                      || openable cotile lvl (Tile.SecretStrength 1) xloc)
             pm = L.filter possible (moves lxsize)
-            allCloseTo mv = L.all (\ d -> dirDistSq lxsize mv d <= 1) pm
+            allCloseTo dirOrto dirBase =
+              L.all (\ d -> -- close to both
+                            dirsClose dirOrto d &&
+                            dirsClose dirBase d ||
+                            -- or distant from both
+                            not (dirsClose dirOrto d) &&
+                            not (dirsClose dirBase d)) pm
         in case pm of
-          [onlyDir] -> Just onlyDir  -- can be diagonal
-          _         ->
-            -- prefer orthogonal to diagonal dirs, for hero's safety
-            case L.filter (not . diagonal lxsize) pm of
-              [ortoDir] | allCloseTo ortoDir -> Just ortoDir
-              _ -> Nothing
+          []          -> RunDeadEnd
+          [dirUnique] -> RunCorridor dirUnique  -- can be diagonal
+          _           ->
+            -- Prefer orthogonal to diagonal dirs, for hero's safety.
+            case L.filter (\ d -> not (diagonal lxsize d)
+                                  && dirsClose d dir) pm of
+              [dirOrto] | allCloseTo dirOrto dir -> RunCorridor dirOrto
+              _ -> RunRoom
   assert (isAHero pl) $  -- monsters never run
-    if msgShown || enemySeen
+    if msgShown || enemySeen || funAt locHere
     then abort
-    else case nextDir of
-      Just ndir
-        | accessible cops lvl locHere (locHere `shift` ndir) && continue ndir ->
-          run ndir
-      _ -> abort
+    else case runMode locHere dirLast of
+      RunDeadEnd          -> abort           -- dead end
+      RunRoom             -> tryRun dirLast  -- inside a room/crossing
+      RunCorridor dirNext ->                 -- in a corridor
+        case runMode (locThere dirNext) dirNext of
+          RunDeadEnd    -> tryRun dirNext    -- explore the dead end
+          RunRoom       -> abort             -- stop before the room/crossing
+          RunCorridor _ -> tryRun dirNext    -- follow the corridor
 
 ifRunning :: (Dir -> Action a) -> Action a -> Action a
 ifRunning t e = do
