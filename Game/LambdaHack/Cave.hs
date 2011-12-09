@@ -117,24 +117,23 @@ caveRogue Kind.COps{ cotile=cotile@Kind.Ops{opick}
                       roomId  <- ropick (roomValid r)
                       let kr = rokind roomId
                       floorId <- (if dl || not (rfence kr)
-                                  then Tile.floorLightId
-                                  else Tile.floorDarkId) cotile
+                                  then Tile.floorRoomLitId
+                                  else Tile.floorRoomDarkId) cotile
                       wallId  <- Tile.wallId cotile
                       let room = digRoom kr floorId wallId r
                       return $ M.union room m
                   ) fence dlrooms
   pickedCorTile <- opick corTile
-  openingId <- Tile.openingId cotile
   let lcorridors = M.unions (L.map (digCorridors pickedCorTile) cs)
-      lm = M.unionWith (mergeCorridor openingId cotile)
+      lm = M.unionWith (mergeCorridor (Tile.unknownId cotile) cotile)
              lcorridors lrooms
-  -- convert openings into doors
+  -- Convert openings into doors.
   doorOpenId <- Tile.doorOpenId cotile
   doorClosedId <- Tile.doorClosedId cotile
   doorSecretId <- Tile.doorSecretId cotile
   (dmap, secretMap) <-
     let f (l, le) ((x, y), t) =
-          if Tile.isOpening cotile t
+          if Tile.isUnknownId cotile t
           then do
             -- Openings have a certain chance to be doors;
             -- doors have a certain chance to be open; and
@@ -142,7 +141,7 @@ caveRogue Kind.COps{ cotile=cotile@Kind.Ops{opick}
             rb <- doorChance cfg
             ro <- doorOpenChance cfg
             if not rb
-              then return (l, le)
+              then return (M.insert (x, y) pickedCorTile l, le)
               else if ro
                    then return (M.insert (x, y) doorOpenId l, le)
                    else do
@@ -187,4 +186,4 @@ digCorridors _ _ = M.empty
 mergeCorridor :: Kind.Id TileKind -> Kind.Ops TileKind -> Kind.Id TileKind
               -> Kind.Id TileKind -> Kind.Id TileKind
 mergeCorridor _         cops _ t | Tile.isWalkable cops t = t
-mergeCorridor openingId _    _ _                          = openingId
+mergeCorridor unknownId _    _ _                          = unknownId

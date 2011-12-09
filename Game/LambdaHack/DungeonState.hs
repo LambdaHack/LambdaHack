@@ -51,9 +51,9 @@ rollItems Kind.COps{cotile, coitem=coitem@Kind.Ops{oname}}
            "sword" ->
              -- swords generated close to monsters; MUAHAHAHA
              findLocTry 2000 lmap
-               (const (Tile.isBoring cotile))
+               (const (Tile.hasFeature cotile F.Boring))
                (\ l _ -> distance cxsize ploc l > 30)
-           _ -> findLoc lmap (const (Tile.isBoring cotile))
+           _ -> findLoc lmap (const (Tile.hasFeature cotile F.Boring))
     return (l, item)
 
 -- | Create a level from a cave, from a cave kind.
@@ -63,9 +63,9 @@ buildLevel cops@Kind.COps{cotile=cotile@Kind.Ops{opick}, cocave=Kind.Ops{okind}}
   let cfg@CaveKind{cxsize, cysize, minStairsDistance, defTile} = okind dkind
   cmap <- convertTileMaps (opick defTile) cxsize cysize dmap
   -- Roll locations of the stairs.
-  su <- findLoc cmap (const (Tile.isBoring cotile))
+  su <- findLoc cmap (const (Tile.hasFeature cotile F.Boring))
   sd <- findLocTry 2000 cmap
-          (\ l t -> l /= su && Tile.isBoring cotile t)
+          (\ l t -> l /= su && Tile.hasFeature cotile F.Boring t)
           (\ l _ -> distance cxsize su l >= minStairsDistance)
   upId   <- Tile.stairsUpId   cotile
   downId <- Tile.stairsDownId cotile

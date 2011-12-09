@@ -13,9 +13,9 @@ cdefs = Content.CDefs
   , getFreq = tfreq
   , validate = tvalidate
   , content =
-      [wall, doorOpen, doorClosed, doorSecret, opening, floorLight, floorDark, stairsUp, stairsDown, unknown, floorRed, floorBlue, floorGreen, floorBrown]
+      [wall, doorOpen, doorClosed, doorSecret, stairsUp, stairsDown, unknown, floorCorridorLit, floorCorridorDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown]
   }
-wall,        doorOpen, doorClosed, doorSecret, opening, floorLight, floorDark, stairsUp, stairsDown, unknown, floorRed, floorBlue, floorGreen, floorBrown :: TileKind
+wall,        doorOpen, doorClosed, doorSecret, stairsUp, stairsDown, unknown, floorCorridorLit, floorCorridorDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown :: TileKind
 
 wall = TileKind
   { tsymbol  = '#'
@@ -31,7 +31,7 @@ doorOpen = TileKind
   , tcolor   = Yellow
   , tcolor2  = BrBlack
   , tfreq    = 100
-  , tfeature = [Walkable, Clear, Exit{-TODO:, Lit-}, Change '+', Closable]
+  , tfeature = [Walkable, Clear, Exit, Change '+', Closable]
   }
 doorClosed = TileKind
   { tsymbol  = '+'
@@ -44,30 +44,13 @@ doorClosed = TileKind
 doorSecret = wall
   { tfeature = [Hidden, Change '+', Secret (7, 2)]
   }
-floorLight = TileKind
-  { tsymbol  = '.'
-  , tname    = "Dirt."
-  , tcolor   = BrWhite
-  , tcolor2  = defFG
-  , tfreq    = 100
-  , tfeature = [Walkable, Clear, Lit]
-  }
-floorDark = floorLight
-  { tcolor   = BrYellow
-  , tcolor2  = BrBlack
-  , tfeature = [Walkable, Clear]
-  }
-opening = floorLight
-  { tfeature = Exit : tfeature floorLight  -- TODO: make also dark openings?
-  }
 stairsUp = TileKind
   { tsymbol  = '<'
   , tname    = "A staircase up."
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfreq    = 100
-  , tfeature = [Walkable, Clear, Exit, Lit,
-                Climbable, Cause Effect.Teleport]
+  , tfeature = [Walkable, Clear, Lit, Exit, Climbable, Cause Effect.Teleport]
   }
 stairsDown = TileKind
   { tsymbol  = '>'
@@ -75,8 +58,7 @@ stairsDown = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfreq    = 100
-  , tfeature = [Walkable, Clear, Exit, Lit,
-                Descendable, Cause Effect.Teleport]
+  , tfeature = [Walkable, Clear, Lit, Exit, Descendable, Cause Effect.Teleport]
   }
 unknown = TileKind
   { tsymbol  = ' '
@@ -86,11 +68,30 @@ unknown = TileKind
   , tfreq    = 0
   , tfeature = []
   }
-floorRed = floorLight
+floorCorridorLit = TileKind
+  { tsymbol  = '.'
+  , tname    = "Dirt."
+  , tcolor   = BrWhite
+  , tcolor2  = defFG
+  , tfreq    = 100
+  , tfeature = [Walkable, Clear, Lit]
+  }
+floorCorridorDark = floorCorridorLit
+  { tcolor   = BrYellow
+  , tcolor2  = BrBlack
+  , tfeature = [Walkable, Clear]
+  }
+floorRoomLit = floorCorridorLit
+  { tfeature = Boring : tfeature floorCorridorLit
+  }
+floorRoomDark = floorCorridorDark
+  { tfeature = Boring : tfeature floorCorridorDark
+  }
+floorRed = floorCorridorLit
   { tname    = "Brick pavement."
   , tcolor   = BrRed
   , tcolor2  = Red
-  , tfeature = [Walkable, Clear, Lit, Special]
+  , tfeature = Special : tfeature floorCorridorLit
   }
 floorBlue = floorRed
   { tname    = "Granite cobblestones."

@@ -46,7 +46,7 @@ rogue = CaveKind
   , clayout           = CaveRogue
   , defTile           = \ t -> tsymbol t == '#' && L.null (tfeature t)
   , corTile           = \ t -> tsymbol t == '.'
-                               && kindHas [] [F.Exit, F.Lit, F.Special] t
+                               && kindHas [] [F.Lit, F.Special, F.Boring] t
   }
 arena = rogue
   { csymbol           = 'A'
@@ -54,9 +54,9 @@ arena = rogue
   , cfreq             = 20
   , clayout           = CaveRogue
   , defTile           = \ t -> tsymbol t == '.'
-                               && kindHas [F.Lit, F.Exit] [F.Special] t
+                               && kindHas [F.Lit] [F.Special, F.Boring] t
   , corTile           = \ t -> tsymbol t == '.'
-                               && kindHas [F.Lit, F.Special] [F.Exit] t
+                               && kindHas [F.Lit, F.Special] [F.Boring] t
   }
 empty = rogue
   { csymbol           = '.'
@@ -64,7 +64,7 @@ empty = rogue
   , cfreq             = 20
   , clayout           = CaveEmpty
   , defTile           = \ t -> tsymbol t == '.'
-                               && kindHas [F.Lit] [F.Exit, F.Special] t
+                               && kindHas [F.Lit, F.Boring] [F.Special] t
   }
 noise = rogue
   { csymbol           = '!'
@@ -73,9 +73,9 @@ noise = rogue
   , clayout           = CaveRogue
   , defTile           = \ t -> tsymbol t == '#' && L.null (tfeature t)
                                || (tsymbol t == '.'
-                                  && kindHas [F.Lit, F.Exit] [F.Special] t)
+                                  && kindHas [F.Lit] [F.Special, F.Boring] t)
   , corTile           = \ t -> tsymbol t == '.'
-                               && kindHas [F.Lit, F.Special] [F.Exit] t
+                               && kindHas [F.Lit, F.Special] [F.Boring] t
   }
 largeNoise = noise
   { csymbol           = 'L'

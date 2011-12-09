@@ -18,14 +18,13 @@ instance Binary SecretStrength where
 
 -- TODO: remove this file
 
-wallId, openingId, floorLightId, floorDarkId, doorOpenId, doorClosedId, doorSecretId, stairsUpId, stairsDownId :: Kind.Ops TileKind -> Rnd (Kind.Id TileKind)
+wallId, floorRoomLitId, floorRoomDarkId, doorOpenId, doorClosedId, doorSecretId, stairsUpId, stairsDownId :: Kind.Ops TileKind -> Rnd (Kind.Id TileKind)
 wallId Kind.Ops{opick} =
   opick $ \ t -> tsymbol t == '#' && L.null (tfeature t)
-openingId Kind.Ops{opick} = opick isOpeningKind
-floorLightId Kind.Ops{opick} =
-  opick $ \ t -> tsymbol t == '.' && kindHas [F.Lit] [F.Exit, F.Special] t
-floorDarkId Kind.Ops{opick} =
-  opick $ \ t -> tsymbol t == '.' && kindHas [] [F.Exit, F.Lit, F.Special] t
+floorRoomLitId Kind.Ops{opick} =
+  opick $ \ t -> tsymbol t == '.' && kindHas [F.Lit, F.Boring] [F.Special] t
+floorRoomDarkId Kind.Ops{opick} =
+  opick $ \ t -> tsymbol t == '.' && kindHas [F.Boring] [F.Lit, F.Special] t
 doorOpenId Kind.Ops{opick} = opick $ kindHasFeature F.Closable
 doorClosedId Kind.Ops{opick} = opick $ kindHasFeature F.Openable
 doorSecretId Kind.Ops{opick} = opick isdoorSecretKind
@@ -56,15 +55,8 @@ isdoorSecretId Kind.Ops{okind} = isdoorSecretKind . okind
 isUnknownKind :: TileKind -> Bool
 isUnknownKind = (== ' ') . tsymbol
 
--- TODO: rename to *Id
-isUnknown :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
-isUnknown Kind.Ops{okind} = isUnknownKind . okind
-
-isOpeningKind :: TileKind -> Bool
-isOpeningKind t = tsymbol t == '.' && kindHasFeature F.Exit t
-
-isOpening :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
-isOpening Kind.Ops{okind} = isOpeningKind . okind
+isUnknownId :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+isUnknownId Kind.Ops{okind} = isUnknownKind . okind
 
 kindHasFeature :: F.Feature -> TileKind -> Bool
 kindHasFeature f t = f `elem` tfeature t
@@ -73,7 +65,7 @@ kindHas :: [F.Feature] -> [F.Feature] -> TileKind -> Bool
 kindHas yes no t = L.all (flip kindHasFeature t) yes &&
                    not (L.any (flip kindHasFeature t) no)
 
-hasFeature ::Kind.Ops TileKind ->  F.Feature -> Kind.Id TileKind -> Bool
+hasFeature ::Kind.Ops TileKind -> F.Feature -> Kind.Id TileKind -> Bool
 hasFeature Kind.Ops{okind} f t =
   kindHasFeature f (okind t)
 
@@ -94,11 +86,3 @@ isWalkable cops = hasFeature cops F.Walkable
 -- | Provides an exit from a room.
 isExit :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 isExit cops = hasFeature cops F.Exit
-
--- | Is a good candidate to deposit items, replace by other tiles, etc.
-isBoring :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
-isBoring Kind.Ops{okind} t =
-  let fs = tfeature (okind t)
-      optional = [F.Lit]
-      mandatory = [F.Walkable, F.Clear]
-  in fs L.\\ optional `L.elem` L.permutations mandatory

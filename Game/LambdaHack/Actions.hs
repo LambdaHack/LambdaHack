@@ -180,14 +180,23 @@ continueRun (dirLast, dist) = do
       locLast   = locHere `shift` (neg dirLast)
       surrLast  = surroundings lxsize lysize locLast
       surrHere  = surroundings lxsize lysize locHere
-      funAt loc = Tile.isExit cotile (lvl `at` loc)
-                  || not (L.null (lvl `atI` loc))
-      funNew    = L.all (\ loc -> not (funAt loc)) (locLast : surrLast) &&
-                  L.any (\ loc -> funAt loc) surrHere
       locThere dir = locHere `shift` dir
       heroThere dir = locThere dir `elem` L.map bloc (IM.elems hs)
-      funThere dir = funAt (locThere dir)
-      tryRun dir | heroThere dir || funNew && not (funThere dir)
+      funThere dir fun = fun (locThere dir)
+      -- Stop if you touch these, but will not enter next move,
+      -- or if you do enter next move, stop then.
+      stopList  = [ \ loc -> Tile.hasFeature cotile F.Exit (lvl `at` loc)
+                  , \ loc -> not (L.null (lvl `atI` loc))
+                  ]
+      -- Stop if you touch these, but will not enter next move.
+      peekList  = [ \ loc -> Tile.hasFeature cotile F.Special (lvl `at` loc)
+                  , \ loc -> not (Tile.hasFeature cotile F.Lit (lvl `at` loc))
+                  ]
+      funList   = stopList ++ peekList
+      funNew dir fun = L.all (\ loc -> not (fun loc)) (locLast : surrLast) &&
+                       L.any (\ loc -> fun loc) surrHere &&
+                       not (funThere dir fun)
+      tryRun dir | heroThere dir || L.any (funNew dir) funList
                  = abort
                  | accessible cops lvl locHere (locHere `shift` dir)
                  = run (dir, dist + 1)
@@ -200,7 +209,7 @@ continueRun (dirLast, dist) = do
               let xloc = loc `shift` x
               in x /= neg dir
                  && (accessible cops lvl loc xloc
-                     || openable cotile lvl (Tile.SecretStrength 1) xloc)
+                     || Tile.hasFeature cotile F.Openable (lvl `at` xloc))
             pm = L.filter possible (moves lxsize)
             allCloseTo dirOrto dirBase =
               L.all (\ d -> -- close to both
@@ -219,7 +228,8 @@ continueRun (dirLast, dist) = do
               [dirOrto] | allCloseTo dirOrto dir -> RunCorridor dirOrto
               _ -> RunRoom
   assert (isAHero pl) $  -- monsters never run
-    if msgShown || enemySeen || dist > 0 && funAt locHere || dist > 20
+    if msgShown || enemySeen
+       || dist > 0 && L.any (\ f -> f locHere) stopList || dist > 20
     then abort
     else case runMode locHere dirLast of
       RunDeadEnd          -> abort           -- dead end
@@ -371,7 +381,7 @@ lvlGoUp isUp = do
                 lvl2 <- gets slevel
                 let upd cur =
                       let clocation =
-                            if Tile.isUnknown cops (lvl2 `rememberAt` nloc)
+                            if Tile.isUnknownId cops (lvl2 `rememberAt` nloc)
                             then loc
                             else nloc
                       in cur { clocation, clocLn = nln }

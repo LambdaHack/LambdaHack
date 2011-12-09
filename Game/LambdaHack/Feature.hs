@@ -20,4 +20,5 @@ data Feature =
   | Closable           -- ^ triggered by closable
   | Hidden             -- ^ triggered when the tile's secrecy becomes (Just 0)
   | Special            -- ^ a variation for special flavour
+  | Boring             -- ^ items and stairs can be generated there
   deriving (Show, Eq, Ord)

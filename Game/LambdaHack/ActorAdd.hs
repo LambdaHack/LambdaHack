@@ -109,7 +109,7 @@ rollMonster Kind.COps{cotile, coactor=Kind.Ops{opick, okind}} state = do
                        && l `L.notElem` L.map bloc (hs ++ ms))
              (\ l t -> not (isLit t)  -- try a dark, distant place first
                        && L.all (\ pl ->
-                                  distance (lxsize lvl)(bloc pl) l > 30) hs)
+                                  distance (lxsize lvl) (bloc pl) l > 20) hs)
       mk <- opick (const True)
       hp <- rollDice $ ahp $ okind mk
       return $ addMonster cotile mk hp loc state
