@@ -148,18 +148,24 @@ move :: Dir -> Action ()
 move dir = do
   pl <- gets splayer
   targeting <- gets (ctargeting . scursor)
-  if targeting then moveCursor dir 1 else moveOrAttack True True pl dir
+  if targeting then moveCursor dir 1 else moveOrAttack True pl dir
 
 run :: (Dir, Int) -> Action ()
 run (dir, dist) = do
+  cops <- contentOps
   pl <- gets splayer
+  locHere <- gets (bloc . getPlayerBody)
+  lvl <- gets slevel
   targeting <- gets (ctargeting . scursor)
   if targeting
     then moveCursor dir 10
     else do
-      updatePlayerBody (\ p -> p { bdir = Just (dir, dist + 1) })
+      let accessibleDir loc d = accessible cops lvl loc (loc `shift` d)
+          -- Do not count distance if we just open a door.
+          distNew = if accessibleDir locHere dir then dist + 1 else dist
+      updatePlayerBody (\ p -> p { bdir = Just (dir, distNew) })
       -- attacks and opening doors disallowed while running
-      moveOrAttack False False pl dir
+      moveOrAttack False pl dir
 
 -- | Player running mode, determined from the nearby cave layout.
 data RunMode =
@@ -201,15 +207,14 @@ runMode loc dir dirEnterable lxsize =
         _ -> RunHub  -- a hub of many separate corridors
 
 -- | Check for disturbances to running such newly visible items, monsters, etc.
-runDisturbance :: (Dir, Int) -> Msg -> Party -> Party -> Perceptions -> Loc
+runDisturbance :: Loc -> Int -> Msg -> Party -> Party -> Perceptions -> Loc
                -> (F.Feature -> Loc -> Bool) -> (Loc -> Bool) -> X -> Y
                -> (Dir, Int) -> Maybe (Dir, Int)
-runDisturbance (dirLast, distLast) msg hs ms per locHere
+runDisturbance locLast distLast msg hs ms per locHere
                locHasFeature locHasItems lxsize lysize (dirNew, distNew) =
   let msgShown  = not (L.null msg)
       mslocs    = IS.fromList (L.map bloc (IM.elems ms))
       enemySeen = not (IS.null (mslocs `IS.intersection` totalVisible per))
-      locLast   = locHere `shift` (neg dirLast)
       surrLast  = locLast : surroundings lxsize lysize locLast
       surrHere  = locHere : surroundings lxsize lysize locHere
       locThere  = locHere `shift` dirNew
@@ -234,7 +239,9 @@ runDisturbance (dirLast, distLast) msg hs ms per locHere
         in touchHere L.\\ touchLast
       touchExplore fun = touchNew fun == [locThere]
       touchStop fun = touchNew fun /= []
-      standNew fun = L.filter (locHasFeature F.Walkable) (touchNew fun)
+      standNew fun = L.filter (\ loc -> locHasFeature F.Walkable loc ||
+                                        locHasFeature F.Openable loc)
+                       (touchNew fun)
       standExplore fun = not (fun locHere) && standNew fun == [locThere]
       standStop fun = not (fun locHere) && standNew fun /= []
       firstNew fun = L.all (\ loc -> not (fun loc)) surrLast &&
@@ -269,10 +276,13 @@ continueRun (dirLast, distLast) = do
   pl  <- gets splayer
   let locHasFeature f loc = Tile.hasFeature cotile f (lvl `at` loc)
       locHasItems loc = not $ L.null $ lvl `atI` loc
-      tryRunDist (dir, distNew) =
-        maybe abort run $
-          runDisturbance (dirLast, distLast) msg hs ms per locHere
-            locHasFeature locHasItems lxsize lysize (dir, distNew)
+      locLast = if distLast == 0 then locHere else locHere `shift` (neg dirLast)
+      tryRunDist (dir, distNew)
+        | accessibleDir locHere dir =
+          maybe abort run $
+            runDisturbance locLast distLast msg hs ms per locHere
+              locHasFeature locHasItems lxsize lysize (dir, distNew)
+        | otherwise = abort  -- do not open doors in the middle of a run
       tryRun dir = tryRunDist (dir, distLast)
       tryRunAndStop dir = tryRunDist (dir, 1000)
       accessibleDir loc dir = accessible cops lvl loc (loc `shift` dir)
@@ -658,11 +668,10 @@ canBeSecretDoor Kind.Ops{okind, ofoldrWithKey} t =
 -- | This function performs a move (or attack) by any actor,
 -- i.e., it can handle monsters, heroes and both.
 moveOrAttack :: Bool       -- ^ allow attacks?
-             -> Bool       -- ^ auto-open doors on move?
              -> ActorId    -- ^ who's moving?
              -> Dir        -- ^ in which direction?
              -> Action ()
-moveOrAttack allowAttacks autoOpen actor dir = do
+moveOrAttack allowAttacks actor dir = do
   -- We start by looking at the target position.
   cops@Kind.COps{cotile} <- contentOps
   state  <- get
@@ -694,8 +703,7 @@ moveOrAttack allowAttacks autoOpen actor dir = do
         && canBeSecretDoor cotile (lvl `rememberAt` tloc) -> do
           messageAdd "You search your surroundings."  -- TODO: proper msg
           search
-      | autoOpen -> actorOpenDoor actor dir  -- try to open a door
-      | otherwise -> abortWith ""
+      | otherwise -> actorOpenDoor actor dir  -- try to open a door
 
 -- | Resolves the result of an actor moving into another. Usually this
 -- involves melee attack, but with two heroes it just changes focus.

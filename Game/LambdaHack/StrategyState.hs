@@ -209,7 +209,7 @@ dirToAction actor tgt allowAttacks dir = do
   tryWith (advanceTime actor) $
     -- if the following action aborts, we just advance the time and continue
     -- TODO: ensure time is taken for other aborted actions in this file
-    moveOrAttack allowAttacks True actor dir
+    moveOrAttack allowAttacks actor dir
 
 wait :: ActorId -> Strategy (Action ())
 wait actor = return $ advanceTime actor
