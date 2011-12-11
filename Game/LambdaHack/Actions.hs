@@ -13,11 +13,13 @@ import Game.LambdaHack.Display hiding (display)
 import Game.LambdaHack.Loc
 import Game.LambdaHack.Dir
 import Game.LambdaHack.Grammar
+import Game.LambdaHack.Geometry
 import qualified Game.LambdaHack.HighScores as H
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Keys as K
 import Game.LambdaHack.Level
 import Game.LambdaHack.LevelState
+import Game.LambdaHack.Msg
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Content.ActorKind
@@ -167,7 +169,7 @@ data RunMode =
 
 -- | Determine the running mode. For corridors, pick the running direction
 -- trying to explore all corners, by prefering orthogonal to diagonal moves.
-runMode :: Loc -> Dir -> (Loc -> Dir -> Bool) -> Int -> RunMode
+runMode :: Loc -> Dir -> (Loc -> Dir -> Bool) -> X -> RunMode
 runMode loc dir dirEnterable lxsize =
   let dirNearby dir1 dir2 = dirDistSq lxsize dir1 dir2 == 1
       dirBackward d = dirDistSq lxsize (neg dir) d <= 1
@@ -197,12 +199,56 @@ runMode loc dir dirEnterable lxsize =
           RunCorridor (if diagonal lxsize d1 then d2 else d1, True)
         _ -> RunHub  -- a hub of many separate corridors
 
+-- | Check for disturbances to running such newly visible items, monsters, etc.
+runDisturbance :: (Dir, Int) -> Msg -> Party -> Party -> Perceptions -> Loc
+               -> (F.Feature -> Loc -> Bool) -> (Loc -> Bool) -> X -> Y
+               -> (Dir, Int) -> Maybe (Dir, Int)
+runDisturbance (dirLast, distLast) msg hs ms per locHere
+               locHasFeature locHasItems lxsize lysize (dirNew, distNew) =
+  let msgShown  = not (L.null msg)
+      mslocs    = IS.fromList (L.map bloc (IM.elems ms))
+      enemySeen = not (IS.null (mslocs `IS.intersection` totalVisible per))
+      locLast   = locHere `shift` (neg dirLast)
+      surrLast  = locLast : surroundings lxsize lysize locLast
+      surrHere  = locHere : surroundings lxsize lysize locHere
+      locThere  = locHere `shift` dirNew
+      heroThere = locThere `elem` L.map bloc (IM.elems hs)
+      -- Stop if you touch any individual tile with these propereties
+      -- first time, unless you enter it next move, in which case stop then.
+      oneList   = [ locHasFeature F.Exit
+                  , locHasItems
+                  ]
+      -- Here additionally ignore a tile property if you stand on such tile.
+      -- TODO: either stop at lack of Special or prefer Special when running.
+      massList  = [ locHasFeature F.Special
+                  , locHasFeature F.Lit
+                  , not . locHasFeature F.Lit
+                  ]
+      oneNew fun =
+        let oneLast = L.filter (\ loc -> fun loc) surrLast
+            oneHere = L.filter (\ loc -> fun loc) surrHere
+        in oneHere L.\\ oneLast
+      oneExplore fun = oneNew fun == [locThere]
+      oneStop fun = oneNew fun /= []
+      massNew fun = L.filter (locHasFeature F.Walkable) (oneNew fun)
+      massExplore fun = not (fun locHere) && massNew fun == [locThere]
+      massStop fun = not (fun locHere) && massNew fun /= []
+      tryRunMaybe
+        | msgShown || enemySeen
+          || heroThere || distLast >= 40  = Nothing
+        | L.any oneExplore oneList    = Just (dirNew, 1000)
+        | L.any massExplore massList  = Just (dirNew, 1000)
+        | L.any oneStop oneList       = Nothing
+        | L.any massStop massList     = Nothing
+        | otherwise                   = Just (dirNew, distNew)
+  in tryRunMaybe
+
 -- | This function implements the actual "logic" of running. It checks if we
 -- have to stop running because something interesting cropped up
 -- and it ajusts the direction if we reached a corridor's corner
 -- (we never change direction except in corridors).
 continueRun :: (Dir, Int) -> Action ()
-continueRun (dirLast, dist) = do
+continueRun (dirLast, distLast) = do
   cops@Kind.COps{cotile} <- contentOps
   locHere <- gets (bloc . getPlayerBody)
   per <- currentPerception
@@ -211,33 +257,14 @@ continueRun (dirLast, dist) = do
   hs  <- gets (lheroes . slevel)
   lvl@Level{lxsize, lysize} <- gets slevel
   pl  <- gets splayer
-  let msgShown  = not (L.null msg)
-      mslocs    = IS.fromList (L.map bloc (IM.elems ms))
-      enemySeen = not (IS.null (mslocs `IS.intersection` totalVisible per))
-      locLast   = locHere `shift` (neg dirLast)
-      surrLast  = surroundings lxsize lysize locLast
-      surrHere  = surroundings lxsize lysize locHere
-      locThere dir = locHere `shift` dir
-      heroThere dir = locThere dir `elem` L.map bloc (IM.elems hs)
-      funThere dir fun = fun (locThere dir)
-      -- Stop if you touch these, unless you enter them next move,
-      -- in which case stop then.
-      funList = [ \ loc -> Tile.hasFeature cotile F.Exit (lvl `at` loc)
-                , \ loc -> not (L.null (lvl `atI` loc))
-                , \ loc -> Tile.hasFeature cotile F.Special (lvl `at` loc)
-                , \ loc -> not (Tile.hasFeature cotile F.Lit (lvl `at` loc))
-                , \ loc ->     (Tile.hasFeature cotile F.Lit (lvl `at` loc))
-                ]
-      funNew fun = L.all (\ loc -> not (fun loc)) (locLast : surrLast) &&
-                   L.any (\ loc -> fun loc) surrHere
-      funNewMissed dir fun = funNew fun && not (funThere dir fun)
-      tryRunDist dir distNew
-        | msgShown || enemySeen || heroThere dir || distNew >= 10 = abort
-        | L.any (funNewMissed dir) funList = abort
-        | L.any funNew funList = run (dir, 1000)
-        | otherwise = run (dir, distNew)
-      tryRun dir = tryRunDist dir dist
-      tryRunAndStop dir = tryRunDist dir 1000
+  let locHasFeature f loc = Tile.hasFeature cotile f (lvl `at` loc)
+      locHasItems loc = not $ L.null $ lvl `atI` loc
+      tryRunDist (dir, distNew) =
+        maybe abort run $
+          runDisturbance (dirLast, distLast) msg hs ms per locHere
+            locHasFeature locHasItems lxsize lysize (dir, distNew)
+      tryRun dir = tryRunDist (dir, distLast)
+      tryRunAndStop dir = tryRunDist (dir, 1000)
       accessibleDir loc dir = accessible cops lvl loc (loc `shift` dir)
       openableDir loc dir   = Tile.hasFeature cotile F.Openable
                                 (lvl `at` (loc `shift` dir))
@@ -248,7 +275,7 @@ continueRun (dirLast, dist) = do
       RunOpen    -> tryRun dirLast          -- run forward into the open space
       RunHub     -> abort                   -- stop and decide where to go
       RunCorridor (dirNext, turn) ->        -- look ahead
-        case runMode (locThere dirNext) dirNext dirEnterable lxsize of
+        case runMode (locHere `shift` dirNext) dirNext dirEnterable lxsize of
           RunDeadEnd     -> tryRun dirNext  -- explore the dead end
           RunCorridor _  -> tryRun dirNext  -- follow the corridor
           RunOpen | turn -> abort           -- stop and decide when to turn
