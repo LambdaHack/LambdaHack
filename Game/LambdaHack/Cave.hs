@@ -18,11 +18,12 @@ import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Content.RoomKind
 import Game.LambdaHack.Room
+import qualified Game.LambdaHack.Feature as F
 
 -- All maps used here are sparse. In case of the tile map, the default tile
 -- is specified in the cave kind specification.
 
-type SecretMapXY = M.Map (X, Y) Tile.SecretStrength
+type SecretMapXY = M.Map (X, Y) SecretStrength
 
 type ItemMapXY = M.Map (X, Y) Item
 
@@ -40,8 +41,8 @@ buildCave :: Kind.COps -> Int -> Kind.Id CaveKind -> Rnd Cave
 buildCave cops@Kind.COps{cocave=Kind.Ops{okind}} n ci =
   let CaveKind{clayout} = okind ci
   in case clayout of
-       CaveRogue -> caveRogue cops n ci
-       CaveEmpty -> caveEmpty cops n ci
+    CaveRogue -> caveRogue cops n ci
+    CaveEmpty -> caveEmpty cops n ci
 
 -- | Cave consisting of only one, empty room.
 caveEmpty :: Kind.COps -> Int -> Kind.Id CaveKind -> Rnd Cave
@@ -133,7 +134,7 @@ caveRogue Kind.COps{ cotile=cotile@Kind.Ops{opick}
   doorSecretId <- Tile.doorSecretId cotile
   (dmap, secretMap) <-
     let f (l, le) ((x, y), t) =
-          if Tile.isUnknownId cotile t
+          if t == Tile.unknownId cotile
           then do
             -- Openings have a certain chance to be doors;
             -- doors have a certain chance to be open; and
@@ -151,7 +152,7 @@ caveRogue Kind.COps{ cotile=cotile@Kind.Ops{opick}
                        else do
                          rs1 <- rollDice (csecretStrength cfg)
                          return (M.insert (x, y) doorSecretId l,
-                                 M.insert (x, y) (Tile.SecretStrength rs1) le)
+                                 M.insert (x, y) (SecretStrength rs1) le)
           else return (l, le)
     in foldM f (lm, M.empty) (M.toList lm)
   let cave = Cave
@@ -185,5 +186,5 @@ digCorridors _ _ = M.empty
 
 mergeCorridor :: Kind.Id TileKind -> Kind.Ops TileKind -> Kind.Id TileKind
               -> Kind.Id TileKind -> Kind.Id TileKind
-mergeCorridor _         cops _ t | Tile.isWalkable cops t = t
-mergeCorridor unknownId _    _ _                          = unknownId
+mergeCorridor _         cotile _ t | Tile.hasFeature cotile F.Walkable t = t
+mergeCorridor unknownId _      _ _ = unknownId

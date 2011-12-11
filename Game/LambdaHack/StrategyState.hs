@@ -24,6 +24,8 @@ import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Effect as Effect
 import qualified Game.LambdaHack.Tile as Tile
 import qualified Game.LambdaHack.Kind as Kind
+import qualified Game.LambdaHack.Feature as F
+import Game.LambdaHack.Content.TileKind as TileKind
 
 {-
 Monster movement
@@ -113,7 +115,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
                        in only (\ x -> dirDistSq lxsize foeDir x <= 1)
   lootHere x     = not $ L.null $ lvl `atI` x
   onlyLoot       = onlyMoves lootHere me
-  exitHere x     = let t = lvl `at` x in Tile.isExit cotile t
+  exitHere x     = let t = lvl `at` x in Tile.hasFeature cotile F.Exit t
   onlyExit       = onlyMoves exitHere me
   onlyKeepsDir k =
     only (\ x -> maybe True (\ (d, _) -> dirDistSq lxsize d x <= k) ad)
@@ -122,7 +124,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   -- Monsters don't see doors more secret than that. Enforced when actually
   -- opening doors, too, so that monsters don't cheat. TODO: remove the code
   -- duplication, though.
-  openPower      = Tile.SecretStrength $
+  openPower      = TileKind.SecretStrength $
                    case strongestItem coitem items "ring" of
                      Just i  -> aiq mk + jpower i
                      Nothing -> aiq mk

@@ -34,6 +34,7 @@ import qualified Game.LambdaHack.Tile as Tile
 import qualified Game.LambdaHack.Kind as Kind
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.DungeonState
+import Game.LambdaHack.Content.TileKind as TileKind
 
 -- The Action stuff that is independent from ItemAction.hs.
 -- (Both depend on EffectAction.hs).
@@ -360,7 +361,7 @@ actorOpenDoor actor dir = do
       isPlayer = actor == pl
       isVerbose = isPlayer  -- don't report enemy failures, if it's not player
       iq = aiq $ okind $ bkind body
-      openPower = Tile.SecretStrength $
+      openPower = TileKind.SecretStrength $
         if isPlayer
         then 1  -- player can't open secret doors
         else case strongestItem coitem bitems "ring" of  -- TODO: hack
@@ -397,7 +398,7 @@ lvlAscend k = do
 -- Will quit the game if the player leaves the dungeon.
 lvlGoUp :: Bool -> Action ()
 lvlGoUp isUp = do
-  cops      <- contentf Kind.cotile
+  cotile    <- contentf Kind.cotile
   cursor    <- gets scursor
   targeting <- gets (ctargeting . scursor)
   pbody     <- gets getPlayerBody
@@ -408,13 +409,13 @@ lvlGoUp isUp = do
   let loc = if targeting then clocation cursor else bloc pbody
       tile = lvl `at` loc
       vdir = if isUp then 1 else -1
-      sdir | Tile.hasFeature cops F.Climbable tile = Just 1
-           | Tile.hasFeature cops F.Descendable tile = Just (-1)
+      sdir | Tile.hasFeature cotile F.Climbable tile = Just 1
+           | Tile.hasFeature cotile F.Descendable tile = Just (-1)
            | otherwise = Nothing
   case sdir of
     Just vdir'
       | vdir == vdir' -> -- stairs are in the right direction
-        case whereTo cops st loc of
+        case whereTo cotile st loc of
           Nothing ->
             -- we are at the "end" of the dungeon
             if targeting
@@ -433,7 +434,7 @@ lvlGoUp isUp = do
                 lvl2 <- gets slevel
                 let upd cur =
                       let clocation =
-                            if Tile.isUnknownId cops (lvl2 `rememberAt` nloc)
+                            if (lvl2 `rememberAt` nloc) == Tile.unknownId cotile
                             then loc
                             else nloc
                       in cur { clocation, clocLn = nln }
@@ -484,9 +485,9 @@ lvlGoUp isUp = do
 -- | Hero has left the dungeon.
 fleeDungeon :: Action ()
 fleeDungeon = do
-  cops <- contentf Kind.coitem
+  coitem <- contentf Kind.coitem
   state <- get
-  let total = calculateTotal cops state
+  let total = calculateTotal coitem state
       items = L.concat $ IM.elems $ lheroItem $ slevel state
   if total == 0
     then do
@@ -531,11 +532,11 @@ search = do
                 Nothing -> 1
       searchTile loc (slm, sle) =
         let t = lm Kind.! loc
-            k = Tile.secretStrength (le IM.! loc) - delta
+            k = TileKind.secretStrength (le IM.! loc) - delta
         in if Tile.hasFeature cotile F.Hidden t
            then if k > 0
                 then (slm,
-                      IM.insert loc (Tile.SecretStrength k) sle)
+                      IM.insert loc (TileKind.SecretStrength k) sle)
                 else ((loc, doorClosedId) : slm,
                       IM.delete loc sle)
            else (slm, sle)
@@ -633,6 +634,18 @@ doLook = do
       session getConfirm
       messageAdd ""
 
+-- | The player can't tell if the tile is a secret door or not.
+canBeSecretDoor :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+canBeSecretDoor Kind.Ops{okind, ofoldrWithKey} t =
+  let u = okind t
+      similar _ s acc = acc ||
+        Tile.kindHasFeature F.Hidden s &&
+        TileKind.tsymbol u == TileKind.tsymbol s &&
+        TileKind.tname u   == TileKind.tname s   &&
+        TileKind.tcolor u  == TileKind.tcolor s  &&
+        TileKind.tcolor2 u == TileKind.tcolor2 s
+  in ofoldrWithKey similar False
+
 -- | This function performs a move (or attack) by any actor,
 -- i.e., it can handle monsters, heroes and both.
 moveOrAttack :: Bool       -- ^ allow attacks?
@@ -669,7 +682,7 @@ moveOrAttack allowAttacks autoOpen actor dir = do
             messageAdd $ lookAt cops False True state lvl tloc ""
           advanceTime actor
       | allowAttacks && actor == pl
-        && Tile.canBeSecretDoor cotile (lvl `rememberAt` tloc) -> do
+        && canBeSecretDoor cotile (lvl `rememberAt` tloc) -> do
           messageAdd "You search your surroundings."  -- TODO: proper msg
           search
       | autoOpen -> actorOpenDoor actor dir  -- try to open a door

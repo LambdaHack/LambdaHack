@@ -33,7 +33,7 @@ instance Binary SmellTime where
   get = fmap SmellTime get
 type SmellMap = IM.IntMap SmellTime
 
-type SecretMap = IM.IntMap Tile.SecretStrength
+type SecretMap = IM.IntMap SecretStrength
 
 type ItemMap = IM.IntMap ([Item], [Item])
 
@@ -133,7 +133,7 @@ accessible Kind.COps{ cotile=Kind.Ops{okind=tokind}
   in check sloc src tloc tgt
 
 -- check whether the location contains a door of secrecy level lower than k
-openable :: Kind.Ops TileKind -> Level -> Tile.SecretStrength -> Loc -> Bool
+openable :: Kind.Ops TileKind -> Level -> SecretStrength -> Loc -> Bool
 openable cops lvl@Level{lsecret} k target =
   let tgt = lvl `at` target
   in Tile.hasFeature cops F.Openable tgt ||

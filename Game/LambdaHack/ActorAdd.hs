@@ -20,6 +20,7 @@ import qualified Game.LambdaHack.Config as Config
 import Game.LambdaHack.WorldLoc
 import qualified Game.LambdaHack.Tile as Tile
 import qualified Game.LambdaHack.Kind as Kind
+import qualified Game.LambdaHack.Feature as F
 
 -- Generic functions
 
@@ -32,12 +33,12 @@ template :: Kind.Id ActorKind -> Maybe String -> Maybe Char -> Int -> Loc
 template mk ms mc hp loc = Actor mk ms mc hp Nothing TCursor loc 'a' 0
 
 nearbyFreeLoc :: Kind.Ops TileKind -> Loc -> State -> Loc
-nearbyFreeLoc cops origin state =
+nearbyFreeLoc cotile origin state =
   let lvl@Level{lxsize, lysize} = slevel state
       hs = levelHeroList state
       ms = levelMonsterList state
       places = origin : L.nub (concatMap (surroundings lxsize lysize) places)
-      good loc = Tile.isWalkable cops (lvl `at` loc)
+      good loc = Tile.hasFeature cotile F.Walkable (lvl `at` loc)
                  && loc `L.notElem` L.map bloc (hs ++ ms)
   in fromMaybe (assert `failure` "too crowded map") $ L.find good places
 
@@ -105,7 +106,7 @@ rollMonster Kind.COps{cotile, coactor=Kind.Ops{opick, okind}} state = do
       -- levels with few rooms are dangerous, because monsters may spawn
       -- in adjacent and unexpected places
       loc <- findLocTry 2000 (lmap lvl)
-             (\ l t -> Tile.isWalkable cotile t
+             (\ l t -> Tile.hasFeature cotile F.Walkable t
                        && l `L.notElem` L.map bloc (hs ++ ms))
              (\ l t -> not (isLit t)  -- try a dark, distant place first
                        && L.all (\ pl ->

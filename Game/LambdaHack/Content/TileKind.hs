@@ -1,9 +1,11 @@
 module Game.LambdaHack.Content.TileKind
-  ( TileKind(..), tvalidate
+  ( TileKind(..), SecretStrength(..), tvalidate
   ) where
 
 import qualified Data.List as L
 import qualified Data.Map as M
+import Data.Binary
+import Game.LambdaHack.Geometry
 
 import Game.LambdaHack.Color
 import Game.LambdaHack.Feature
@@ -17,6 +19,12 @@ data TileKind = TileKind
   , tfeature :: ![Feature]  -- ^ properties
   }
   deriving Show
+
+newtype SecretStrength = SecretStrength{secretStrength :: Time}
+  deriving (Show, Eq, Ord)
+instance Binary SecretStrength where
+  put = put . secretStrength
+  get = fmap SecretStrength get
 
 tvalidate :: [TileKind] -> [TileKind]
 tvalidate lt =
