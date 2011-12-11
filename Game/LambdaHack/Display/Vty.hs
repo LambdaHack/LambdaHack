@@ -20,19 +20,21 @@ startup :: (Session -> IO ()) -> IO ()
 startup k = mkVty >>= k
 
 display :: Area -> Session -> (Loc -> (Color.Attr, Char)) -> String -> String
-           -> IO ()
+        -> IO ()
 display (x0, y0, x1, y1) vty f msg status =
   let img = (foldr (<->) empty_image .
              L.map (foldr (<|>) empty_image .
                     L.map (\ (x, y) -> let (a, c) = f (toLoc (x1 + 1) (x, y))
-                                       in  char (setAttr a) c)))
+                                       in char (setAttr a) c)))
             [ [ (x, y) | x <- [x0..x1] ] | y <- [y0..y1] ]
-  in  update vty (pic_for_image
-       (utf8_bytestring (setAttr Color.defaultAttr)
-        (BS.pack (toWidth (x1 - x0 + 1) msg)) <->
-        img <->
-        utf8_bytestring (setAttr Color.defaultAttr)
-        (BS.pack (toWidth (x1 - x0 + 1) status))))
+  in update vty (pic_for_image
+                   (utf8_bytestring
+                      (setAttr Color.defaultAttr)
+                      (BS.pack (toWidth (x1 - x0 + 1) msg))
+                      <-> img <->
+                      utf8_bytestring
+                        (setAttr Color.defaultAttr)
+                        (BS.pack (toWidth (x1 - x0 + 1) status))))
 
 toWidth :: Int -> String -> String
 toWidth n x = take n (x ++ repeat ' ')
@@ -60,10 +62,9 @@ keyTranslate e =
     _                        -> K.Unknown (show e)
 
 nextEvent :: Session -> IO K.Key
-nextEvent session =
-  do
-    e <- next_event session
-    return (keyTranslate e)
+nextEvent session = do
+  e <- next_event session
+  return (keyTranslate e)
 
 -- A hack to get bright colors via the bold attribute. Depending on terminal
 -- settings this is needed or not and the characters really get bold or not.
@@ -77,9 +78,9 @@ setAttr (fg, bg) =
 --  if (fg, bg) == Color.defaultAttr
 --  then def_attr
 --  else
-    hack fg $ hack bg $
-      def_attr { attr_fore_color = SetTo (aToc fg),
-                 attr_back_color = SetTo (aToc bg) }
+  hack fg $ hack bg $
+    def_attr { attr_fore_color = SetTo (aToc fg)
+             , attr_back_color = SetTo (aToc bg) }
 
 aToc :: Color.Color -> Color
 aToc Color.Black     = black

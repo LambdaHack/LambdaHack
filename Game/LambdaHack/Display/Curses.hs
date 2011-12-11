@@ -22,42 +22,40 @@ data Session = Session
   }
 
 startup :: (Session -> IO ()) -> IO ()
-startup k =
-  do
-    C.start
-    C.cursSet C.CursorInvisible
-    let s = [ ((f, b), C.Style (toFColor f) (toBColor b))
-            | f <- [minBound..maxBound],
-              -- No more color combinations possible: 16*4, 64 is max.
-              b <- Color.legalBG ]
-    nr <- C.colorPairs
-    when (nr < L.length s) $
-      C.end >>
-      error ("Terminal has too few color pairs (" ++ show nr ++ "). Giving up.")
-    let (ks, vs) = unzip s
-    ws <- C.convertStyles vs
-    let styleMap = M.fromList (zip ks ws)
-    k (Session C.stdScr styleMap)
+startup k = do
+  C.start
+  C.cursSet C.CursorInvisible
+  let s = [ ((f, b), C.Style (toFColor f) (toBColor b))
+          | f <- [minBound..maxBound],
+            -- No more color combinations possible: 16*4, 64 is max.
+            b <- Color.legalBG ]
+  nr <- C.colorPairs
+  when (nr < L.length s) $
+    C.end >>
+    error ("Terminal has too few color pairs (" ++ show nr ++ "). Giving up.")
+  let (ks, vs) = unzip s
+  ws <- C.convertStyles vs
+  let styleMap = M.fromList (zip ks ws)
+  k (Session C.stdScr styleMap)
 
 shutdown :: Session -> IO ()
 shutdown _ = C.end
 
 display :: Area -> Session -> (Loc -> (Color.Attr, Char)) -> String -> String
-           -> IO ()
-display (x0, y0, x1, y1) (Session { win = w, styles = s }) f msg status =
-  do
-    -- let defaultStyle = C.defaultCursesStyle
-    -- Terminals with white background require this:
-    let defaultStyle = s M.! Color.defaultAttr
-    C.erase
-    C.setStyle defaultStyle
-    C.mvWAddStr w 0 0 (toWidth (x1 - x0 + 1) msg)  -- TODO: BS as in vty
-    C.mvWAddStr w (y1+2) 0 (toWidth (x1 - x0 + 1) status)
-    sequence_ [ C.setStyle (M.findWithDefault defaultStyle a s)
-                >> C.mvWAddStr w (y + 1) x [c]
-              | x <- [x0..x1], y <- [y0..y1],
-                let (a, c) = f (toLoc (x1 + 1) (x, y)) ]
-    C.refresh
+        -> IO ()
+display (x0, y0, x1, y1) (Session { win = w, styles = s }) f msg status = do
+  -- let defaultStyle = C.defaultCursesStyle
+  -- Terminals with white background require this:
+  let defaultStyle = s M.! Color.defaultAttr
+  C.erase
+  C.setStyle defaultStyle
+  C.mvWAddStr w 0 0 (toWidth (x1 - x0 + 1) msg)  -- TODO: BS as in vty
+  C.mvWAddStr w (y1+2) 0 (toWidth (x1 - x0 + 1) status)
+  sequence_ [ C.setStyle (M.findWithDefault defaultStyle a s)
+              >> C.mvWAddStr w (y + 1) x [c]
+            | x <- [x0..x1], y <- [y0..y1],
+              let (a, c) = f (toLoc (x1 + 1) (x, y)) ]
+  C.refresh
 
 toWidth :: Int -> String -> String
 toWidth n x = take n (x ++ repeat ' ')
@@ -92,13 +90,12 @@ keyTranslate e =
     _                       -> K.Unknown (show e)
 
 nextEvent :: Session -> IO K.Key
-nextEvent _session =
-  do
-    e <- C.getKey C.refresh
-    return (keyTranslate e)
---    case keyTranslate e of
---      Unknown _ -> nextEvent session
---      k -> return k
+nextEvent _session = do
+  e <- C.getKey C.refresh
+  return (keyTranslate e)
+--  case keyTranslate e of
+--    Unknown _ -> nextEvent session
+--    k -> return k
 
 toFColor :: Color.Color -> C.ForegroundColor
 toFColor Color.Black     = C.BlackF

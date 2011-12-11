@@ -23,7 +23,7 @@ shutdown :: Session -> IO ()
 shutdown _session = return ()
 
 display :: Area -> Session -> (Loc -> (Color.Attr, Char)) -> String -> String
-           -> IO ()
+        -> IO ()
 display (x0, y0, x1, y1) _session f msg status =
   let size   = x1 - x0 + 1
       g y x  = if x > x1

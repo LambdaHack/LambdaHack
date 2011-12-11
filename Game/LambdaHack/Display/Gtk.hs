@@ -27,89 +27,84 @@ data Session = Session
   }
 
 startup :: (Session -> IO ()) -> IO ()
-startup k =
-  do
-    -- initGUI
-    unsafeInitGUIForThreadedRTS
-    w <- windowNew
-
-    ttt <- textTagTableNew
-    -- text attributes
-    tts <- fmap M.fromList $
-           mapM (\ ak -> do
-                           tt <- textTagNew Nothing
-                           textTagTableAdd ttt tt
-                           doAttr tt ak
-                           return (ak, tt))
-                [ (f, b) | f <- [minBound..maxBound], b <- Color.legalBG ]
-
-    -- text buffer
-    tb <- textBufferNew (Just ttt)
-    textBufferSetText tb (unlines (replicate 25 (replicate 80 ' ')))
-
-    -- create text view
-    tv <- textViewNewWithBuffer tb
-    containerAdd w tv
-    textViewSetEditable tv False
-    textViewSetCursorVisible tv False
-
-    -- font
-    f <- fontDescriptionNew
-    fontDescriptionSetFamily f "Monospace"
-    fontDescriptionSetSize f 12
-    widgetModifyFont tv (Just f)
-    currentfont <- newIORef f
-    onButtonPress tv (\ e -> case e of
-                               Button { Graphics.UI.Gtk.Gdk.Events.eventButton = RightButton } ->
-                                 do
-                                   fsd <- fontSelectionDialogNew "Choose font"
-                                   cf  <- readIORef currentfont
-                                   fds <- fontDescriptionToString cf
-                                   fontSelectionDialogSetFontName fsd fds
-                                   fontSelectionDialogSetPreviewText fsd "+##@##-...|"
-                                   resp <- dialogRun fsd
-                                   when (resp == ResponseOk) $
-                                     do
-                                       fn <- fontSelectionDialogGetFontName fsd
-                                       case fn of
-                                         Just fn' -> do
-                                                       fd <- fontDescriptionFromString fn'
-                                                       writeIORef currentfont fd
-                                                       widgetModifyFont tv (Just fd)
-                                         Nothing  -> return ()
-                                   widgetDestroy fsd
-                                   return True
-                               _ -> return False)
-
-    let black = Color minBound minBound minBound  -- Color.defBG == Color.Black
-        white = Color 0xC500 0xBC00 0xB800        -- Color.defFG == Color.White
-    widgetModifyBase tv StateNormal black
-    widgetModifyText tv StateNormal white
-
-    ec <- newChan
-    forkIO $ k (Session ec tts tv)
-
-    onKeyPress tv
-      (\ e -> do
-          writeChan ec (Graphics.UI.Gtk.Gdk.Events.eventKeyName e)
-          return True)
-
-    onDestroy w mainQuit -- set quit handler
-    widgetShowAll w
-    yield
-    mainGUI
+startup k = do
+  -- initGUI
+  unsafeInitGUIForThreadedRTS
+  w <- windowNew
+  ttt <- textTagTableNew
+  -- text attributes
+  tts <- fmap M.fromList $
+         mapM (\ ak -> do
+                  tt <- textTagNew Nothing
+                  textTagTableAdd ttt tt
+                  doAttr tt ak
+                  return (ak, tt))
+              [ (f, b) | f <- [minBound..maxBound], b <- Color.legalBG ]
+  -- text buffer
+  tb <- textBufferNew (Just ttt)
+  textBufferSetText tb (unlines (replicate 25 (replicate 80 ' ')))
+  -- create text view
+  tv <- textViewNewWithBuffer tb
+  containerAdd w tv
+  textViewSetEditable tv False
+  textViewSetCursorVisible tv False
+  -- font
+  f <- fontDescriptionNew
+  fontDescriptionSetFamily f "Monospace"
+  fontDescriptionSetSize f 12
+  widgetModifyFont tv (Just f)
+  currentfont <- newIORef f
+  let buttonPressHandler e = case e of
+        Button { Graphics.UI.Gtk.Gdk.Events.eventButton = RightButton } -> do
+          fsd <- fontSelectionDialogNew "Choose font"
+          cf  <- readIORef currentfont
+          fds <- fontDescriptionToString cf
+          fontSelectionDialogSetFontName fsd fds
+          fontSelectionDialogSetPreviewText fsd "eee...@.##+##"
+          resp <- dialogRun fsd
+          when (resp == ResponseOk) $ do
+            fn <- fontSelectionDialogGetFontName fsd
+            case fn of
+              Just fn' -> do
+                fd <- fontDescriptionFromString fn'
+                writeIORef currentfont fd
+                widgetModifyFont tv (Just fd)
+              Nothing  -> return ()
+          widgetDestroy fsd
+          return True
+        _ -> return False
+  onButtonPress tv buttonPressHandler
+  -- modify default colours
+  let black = Color minBound minBound minBound  -- Color.defBG == Color.Black
+      white = Color 0xC500 0xBC00 0xB800        -- Color.defFG == Color.White
+  widgetModifyBase tv StateNormal black
+  widgetModifyText tv StateNormal white
+  -- set up the channel for communication
+  ec <- newChan
+  forkIO $ k (Session ec tts tv)
+  -- fill the channel
+  onKeyPress tv
+    (\ e -> do
+        writeChan ec (Graphics.UI.Gtk.Gdk.Events.eventKeyName e)
+        return True)
+  -- set quit handler
+  onDestroy w mainQuit
+  -- start it up
+  widgetShowAll w
+  yield
+  mainGUI
 
 shutdown :: Session -> IO ()
 shutdown _ = mainQuit
 
 display :: Area -> Session -> (Loc -> (Color.Attr, Char)) -> String -> String
-           -> IO ()
+        -> IO ()
 display (x0, y0, x1, y1) session f msg status =
   postGUIAsync $ do
     tb <- textViewGetBuffer (sview session)
     let fLine y = let (as, cs) = unzip [ f (toLoc (x1 + 1) (x, y))
                                        | x <- [x0..x1] ]
-                  in  ((y, as), BS.pack cs)
+                  in ((y, as), BS.pack cs)
         memo  = L.map fLine [y0..y1]
         attrs = L.map fst memo
         chars = L.map snd memo
@@ -118,7 +113,7 @@ display (x0, y0, x1, y1) session f msg status =
     mapM_ (setTo tb (stags session) x0) attrs
 
 setTo :: TextBuffer -> M.Map Color.Attr TextTag -> X -> (Y, [Color.Attr])
-         -> IO ()
+      -> IO ()
 setTo _  _   _  (_,  [])         = return ()
 setTo tb tts lx (ly, attr:attrs) = do
   ib <- textBufferGetIterAtLineOffset tb (ly + 1) lx
@@ -141,35 +136,32 @@ setTo tb tts lx (ly, attr:attrs) = do
 
 -- | reads until a non-dead key encountered
 readUndeadChan :: Chan String -> IO String
-readUndeadChan ch =
-  do
-    x <- readChan ch
-    if dead x then readUndeadChan ch else return x
-      where
-        dead x =
-          case x of
-            "Shift_R"          -> True
-            "Shift_L"          -> True
-            "Control_L"        -> True
-            "Control_R"        -> True
-            "Super_L"          -> True
-            "Super_R"          -> True
-            "Menu"             -> True
-            "Alt_L"            -> True
-            "Alt_R"            -> True
-            "ISO_Level2_Shift" -> True
-            "ISO_Level3_Shift" -> True
-            "ISO_Level2_Latch" -> True
-            "ISO_Level3_Latch" -> True
-            "Num_Lock"         -> True
-            "Caps_Lock"        -> True
-            _                  -> False
+readUndeadChan ch = do
+  x <- readChan ch
+  if dead x then readUndeadChan ch else return x
+ where
+  dead x = case x of
+    "Shift_R"          -> True
+    "Shift_L"          -> True
+    "Control_L"        -> True
+    "Control_R"        -> True
+    "Super_L"          -> True
+    "Super_R"          -> True
+    "Menu"             -> True
+    "Alt_L"            -> True
+    "Alt_R"            -> True
+    "ISO_Level2_Shift" -> True
+    "ISO_Level3_Shift" -> True
+    "ISO_Level2_Latch" -> True
+    "ISO_Level3_Latch" -> True
+    "Num_Lock"         -> True
+    "Caps_Lock"        -> True
+    _                  -> False
 
 nextEvent :: Session -> IO K.Key
-nextEvent session =
-  do
-    e <- readUndeadChan (schan session)
-    return (K.keyTranslate e)
+nextEvent session = do
+  e <- readUndeadChan (schan session)
+  return (K.keyTranslate e)
 
 doAttr :: TextTag -> Color.Attr -> IO ()
 doAttr tt (fg, bg)
