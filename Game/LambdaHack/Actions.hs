@@ -321,10 +321,22 @@ closeDoor = do
   lxsize <- gets (lxsize . slevel)
   K.handleDirection lxsize e playerCloseDoor (neverMind True)
 
+-- | Perform the action specified for the tile in case it's triggered.
+triggerTile :: Kind.Ops TileKind -> Level -> Loc -> Action ()
+triggerTile Kind.Ops{okind, opick} lvl dloc =
+  let f F.Aura{} = return ()  -- TODO
+      f F.Cause{} = return ()  -- TODO
+      f (F.Change symbol) = do
+        newTileId <- rndToAction $ opick $ \ t -> tsymbol t == symbol
+        let adj = (Kind.// [(dloc, newTileId)])
+        modify (updateLevel (updateLMap adj))
+      f _ = return ()
+  in mapM_ f $ TileKind.tfeature $ okind $ lvl `at` dloc
+
 -- | Player closes a door. AI never does.
 playerCloseDoor :: Dir -> Action ()
 playerCloseDoor dir = do
-  cops  <- contentf Kind.cotile
+  cotile <- contentf Kind.cotile
   state <- get
   lvl   <- gets slevel
   pl    <- gets splayer
@@ -332,23 +344,19 @@ playerCloseDoor dir = do
   let hms = levelHeroList state ++ levelMonsterList state
       dloc = shift (bloc body) dir  -- the location we act upon
       t = lvl `at` dloc
-  if Tile.hasFeature cops F.Closable t
+  if Tile.hasFeature cotile F.Closable t
     then
       case lvl `atI` dloc of
-        [] ->
-          if unoccupied hms dloc
-          then do
-            doorClosedId <- rndToAction $ Tile.doorClosedId cops
-            let adj = (Kind.// [(dloc, doorClosedId)])
-            modify (updateLevel (updateLMap adj))
-          else abortWith "blocked"  -- by monsters or heroes
-        _:_ -> abortWith "jammed"  -- by items
-    else if Tile.hasFeature cops F.Openable t
+        [] -> if unoccupied hms dloc
+              then triggerTile cotile lvl dloc
+              else abortWith "blocked"  -- by monsters or heroes
+        _ : _ -> abortWith "jammed"  -- by items
+    else if Tile.hasFeature cotile F.Openable t
          then abortWith "already closed"
          else neverMind True  -- no visible doors (can be secret)
   advanceTime pl
 
--- | An actor closes a door. Player (hero or monster) or enemy.
+-- | An actor opens a door. Player (hero or monster) or enemy.
 actorOpenDoor :: ActorId -> Dir -> Action ()
 actorOpenDoor actor dir = do
   Kind.COps{cotile, coitem, coactor=Kind.Ops{okind}} <- contentOps
@@ -374,10 +382,7 @@ actorOpenDoor actor dir = do
                  Tile.hasFeature cotile F.Openable t ||
                  Tile.hasFeature cotile F.Hidden t)
          then neverMind isVerbose  -- not doors at all
-         else do
-           doorOpenId <- rndToAction $ Tile.doorOpenId cotile
-           let adj = (Kind.// [(dloc, doorOpenId)])
-           modify (updateLevel (updateLMap adj))
+         else triggerTile cotile lvl dloc
   advanceTime actor
 
 -- | Attempt a level switch to k levels shallower.
@@ -521,29 +526,33 @@ cycleHero = do
 search :: Action ()
 search = do
   Kind.COps{coitem, cotile} <- contentOps
-  lm     <- gets (lmap . slevel)
+  lvl    <- gets slevel
   le     <- gets (lsecret . slevel)
   lxsize <- gets (lxsize . slevel)
   ploc   <- gets (bloc . getPlayerBody)
   pitems <- gets getPlayerItem
-  doorClosedId <- rndToAction $ Tile.doorClosedId cotile
   let delta = case strongestItem coitem pitems "ring" of
                 Just i  -> 1 + jpower i
                 Nothing -> 1
-      searchTile loc (slm, sle) =
-        let t = lm Kind.! loc
+      searchTile sle mv =
+        let loc = shift ploc mv
+            t = lvl `at` loc
             k = TileKind.secretStrength (le IM.! loc) - delta
         in if Tile.hasFeature cotile F.Hidden t
            then if k > 0
-                then (slm,
-                      IM.insert loc (TileKind.SecretStrength k) sle)
-                else ((loc, doorClosedId) : slm,
-                      IM.delete loc sle)
-           else (slm, sle)
-      f (slm, sle) m = searchTile (shift ploc m) (slm, sle)
-      (lmDiff, lemap) = L.foldl' f ([], le) (moves lxsize)
-      lmNew = if L.null lmDiff then lm else lm Kind.// lmDiff
-  modify (updateLevel (\ l -> l{lmap = lmNew, lsecret = lemap}))
+                then IM.insert loc (TileKind.SecretStrength k) sle
+                else IM.delete loc sle
+           else sle
+      leNew = L.foldl' searchTile le (moves lxsize)
+  modify (updateLevel (\ l -> l {lsecret = leNew}))
+  lvlNew <- gets slevel
+  let triggerHidden mv =
+        let dloc = shift ploc mv
+            t = lvlNew `at` dloc
+        in if Tile.hasFeature cotile F.Hidden t && IM.notMember dloc leNew
+           then triggerTile cotile lvlNew dloc
+           else return ()
+  mapM_ triggerHidden (moves lxsize)
   playerAdvanceTime
 
 -- | Start the floor targeting mode or reset the cursor location to the player.
