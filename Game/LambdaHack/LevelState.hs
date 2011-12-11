@@ -16,15 +16,15 @@ lookAt Kind.COps{coitem, cotile=Kind.Ops{oname}} detailed canSee s lvl loc msg
         name = oname  $ tile
     in name ++ " " ++ msg ++ isd
   | otherwise = msg ++ isd
-  where
-    is  = lvl `rememberAtI` loc
-    prefixSee = if canSee then "You see " else "You remember "
-    prefixThere = if canSee
-                  then "There are several objects here"
-                  else "You remember several objects here"
-    isd = case is of
-            []    -> ""
-            [i]   -> prefixSee ++ objectItem coitem s i ++ "."
-            [i,j] -> prefixSee ++ objectItem coitem s i ++ " and "
-                               ++ objectItem coitem s j ++ "."
-            _     -> prefixThere ++ if detailed then ":" else "."
+ where
+  is  = lvl `rememberAtI` loc
+  prefixSee = if canSee then "You see " else "You remember "
+  prefixThere = if canSee
+                then "There are several objects here"
+                else "You remember several objects here"
+  isd = case is of
+          []    -> ""
+          [i]   -> prefixSee ++ objectItem coitem s i ++ "."
+          [i,j] -> prefixSee ++ objectItem coitem s i ++ " and "
+                             ++ objectItem coitem s j ++ "."
+          _     -> prefixThere ++ if detailed then ":" else "."

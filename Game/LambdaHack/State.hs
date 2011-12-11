@@ -94,63 +94,54 @@ toggleOmniscient s = s { sdisplay = if sdisplay s == Omniscient
                                     then Normal
                                     else Omniscient }
 
-toggleTerrain :: State -> State
-toggleTerrain s = s { sdisplay = case sdisplay s of Terrain 1 -> Normal
-                                                    Terrain n -> Terrain (n-1)
-                                                    _         -> Terrain 4 }
-
 instance Binary State where
   put (State player cursor hst sense disp time flav disco dng lid ct
-       party g config) =
-    do
-      put player
-      put cursor
-      put hst
-      put sense
-      put disp
-      put time
-      put flav
-      put disco
-      put dng
-      put lid
-      put ct
-      put party
-      put (show g)
-      put config
-  get =
-    do
-      player <- get
-      cursor <- get
-      hst    <- get
-      sense  <- get
-      disp   <- get
-      time   <- get
-      flav   <- get
-      disco  <- get
-      dng    <- get
-      lid    <- get
-      ct     <- get
-      party  <- get
-      g      <- get
-      config <- get
-      return
-        (State player cursor hst sense disp time flav disco dng lid ct
-         party (read g) config)
+       party g config) = do
+    put player
+    put cursor
+    put hst
+    put sense
+    put disp
+    put time
+    put flav
+    put disco
+    put dng
+    put lid
+    put ct
+    put party
+    put (show g)
+    put config
+  get = do
+    player <- get
+    cursor <- get
+    hst    <- get
+    sense  <- get
+    disp   <- get
+    time   <- get
+    flav   <- get
+    disco  <- get
+    dng    <- get
+    lid    <- get
+    ct     <- get
+    party  <- get
+    g      <- get
+    config <- get
+    return
+      (State player cursor hst sense disp time flav disco dng lid ct
+       party (read g) config)
 
 instance Binary Cursor where
-  put (Cursor act cln loc rln) =
-    do
-      put act
-      put cln
-      put loc
-      put rln
-  get =
-    do
-      act <- get
-      cln <- get
-      loc <- get
-      rln <- get
-      return (Cursor act cln loc rln)
+  put (Cursor act cln loc rln) = do
+    put act
+    put cln
+    put loc
+    put rln
+  get = do
+    act <- get
+    cln <- get
+    loc <- get
+    rln <- get
+    return (Cursor act cln loc rln)
 
 data SensoryMode =
     Implicit
@@ -173,17 +164,14 @@ instance Binary SensoryMode where
 data DisplayMode =
     Normal
   | Omniscient
-  | Terrain Int  -- TODO: unused right now
   deriving (Show, Eq)
 
 instance Binary DisplayMode where
   put Normal      = putWord8 0
   put Omniscient  = putWord8 1
-  put (Terrain n) = putWord8 2 >> put n
   get = do
           tag <- getWord8
           case tag of
             0 -> return Normal
             1 -> return Omniscient
-            2 -> fmap Terrain get
             _ -> fail "no parse (DisplayMode)"

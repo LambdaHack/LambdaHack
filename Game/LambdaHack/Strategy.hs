@@ -45,7 +45,6 @@ p .=> m | p          =  m
         | otherwise  =  mzero
 
 only :: (a -> Bool) -> Strategy a -> Strategy a
-only p s =
-  do
-    x <- s
-    p x .=> return x
+only p s = do
+  x <- s
+  p x .=> return x

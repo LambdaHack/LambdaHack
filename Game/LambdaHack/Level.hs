@@ -62,9 +62,7 @@ updateLMap f lvl = lvl { lmap = f (lmap lvl) }
 updateLRMap :: (TileMap -> TileMap) -> Level -> Level
 updateLRMap f lvl = lvl { lrmap = f (lrmap lvl) }
 
-updateIMap :: (IM.IntMap ([Item], [Item]) ->
-               IM.IntMap ([Item], [Item])) -> Level
-              -> Level
+updateIMap :: (ItemMap -> ItemMap) -> Level -> Level
 updateIMap f lvl = lvl { litem = f (litem lvl) }
 
 updateSmell :: (SmellMap -> SmellMap) -> Level -> Level
@@ -83,39 +81,38 @@ updateMonItem :: (PartyItem -> PartyItem) -> Level -> Level
 updateMonItem f lvl = lvl { lmonItem = f (lmonItem lvl) }
 
 instance Binary Level where
-  put (Level hs hi sx sy ms mi ls le li lm lrm lme lstairs) =
-        do
-          put hs
-          put hi
-          put sx
-          put sy
-          put ms
-          put mi
-          put ls
-          put le
-          put (assert
-                 (IM.null (IM.filter (\ (is1, is2) ->
-                                       L.null is1 && L.null is2) li)
-                 `blame` li) li)
-          put lm
-          put lrm
-          put lme
-          put lstairs
+  put (Level hs hi sx sy ms mi ls le li lm lrm lme lstairs) = do
+    put hs
+    put hi
+    put sx
+    put sy
+    put ms
+    put mi
+    put ls
+    put le
+    put (assert
+           (IM.null (IM.filter (\ (is1, is2) ->
+                                 L.null is1 && L.null is2) li)
+           `blame` li) li)
+    put lm
+    put lrm
+    put lme
+    put lstairs
   get = do
-          hs <- get
-          hi <- get
-          sx <- get
-          sy <- get
-          ms <- get
-          mi <- get
-          ls <- get
-          le <- get
-          li <- get
-          lm <- get
-          lrm <- get
-          lme <- get
-          lstairs <- get
-          return (Level hs hi sx sy ms mi ls le li lm lrm lme lstairs)
+    hs <- get
+    hi <- get
+    sx <- get
+    sy <- get
+    ms <- get
+    mi <- get
+    ls <- get
+    le <- get
+    li <- get
+    lm <- get
+    lrm <- get
+    lme <- get
+    lstairs <- get
+    return (Level hs hi sx sy ms mi ls le li lm lrm lme lstairs)
 
 at, rememberAt :: Level -> Loc -> (Kind.Id TileKind)
 at         Level{lmap}  p = lmap Kind.! p
@@ -162,12 +159,11 @@ findLoc lmap p =
           else search
   in search
 
-findLocTry ::
-  Int ->  -- try to pTry only so many times
-  TileMap ->
-  (Loc -> Kind.Id TileKind -> Bool) ->  -- loop until satisfied
-  (Loc -> Kind.Id TileKind -> Bool) ->  -- only try to satisfy k times
-  Rnd Loc
+findLocTry :: Int                                -- ^ the number of tries
+           -> TileMap                            -- ^ look up in this map
+           -> (Loc -> Kind.Id TileKind -> Bool)  -- ^ loop until satisfied
+           -> (Loc -> Kind.Id TileKind -> Bool)  -- ^ try only so many times
+           -> Rnd Loc
 findLocTry numTries lmap p pTry =
   let search k = do
         loc <- randomR $ Kind.bounds lmap

@@ -20,36 +20,32 @@ type Rnd a = State R.StdGen a
 -- TODO: rewrite; was written in a "portable" way because the implementation of
 -- State changes between mtl versions 1 and 2. Now we are using only mtl 2.
 randomR :: (R.Random a) => (a, a) -> Rnd a
-randomR rng =
-  do
-    g <- get
-    let (x, ng) = R.randomR rng g
-    put ng
-    return x
+randomR rng = do
+  g <- get
+  let (x, ng) = R.randomR rng g
+  put ng
+  return x
 
 binaryChoice :: a -> a -> Rnd a
-binaryChoice p0 p1 =
-  do
-    b <- randomR (False,True)
-    return (if b then p0 else p1)
+binaryChoice p0 p1 = do
+  b <- randomR (False,True)
+  return (if b then p0 else p1)
 
 chance :: Rational -> Rnd Bool
-chance r =
-  do
-    let n = numerator r
-        d = denominator r
-    k <- randomR (1, d)
-    return (k <= n)
+chance r = do
+  let n = numerator r
+      d = denominator r
+  k <- randomR (1, d)
+  return (k <= n)
 
 -- | roll a single die
 roll :: Int -> Rnd Int
 roll x = if x <= 0 then return 0 else randomR (1,x)
 
 oneOf :: [a] -> Rnd a
-oneOf xs =
-  do
-    r <- randomR (0, length xs - 1)
-    return (xs !! r)
+oneOf xs = do
+  r <- randomR (0, length xs - 1)
+  return (xs !! r)
 
 frequency :: Frequency a -> Rnd a
 frequency (Frequency [(n, x)]) | n > 0 = return x  -- speedup
@@ -111,6 +107,6 @@ rollQuad lvl (a, b, x, y) = do
 intToQuad :: Int -> RollQuad
 intToQuad 0 = (0, 0, 0, 0)
 intToQuad n = let n' = toEnum n
-              in  if n' > maxBound || n' < minBound
-                  then assert `failure` n
-                  else (n', 1, 0, 0)
+              in if n' > maxBound || n' < minBound
+                 then assert `failure` n
+                 else (n', 1, 0, 0)

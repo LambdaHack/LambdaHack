@@ -65,7 +65,7 @@ kindHas :: [F.Feature] -> [F.Feature] -> TileKind -> Bool
 kindHas yes no t = L.all (flip kindHasFeature t) yes &&
                    not (L.any (flip kindHasFeature t) no)
 
-hasFeature ::Kind.Ops TileKind -> F.Feature -> Kind.Id TileKind -> Bool
+hasFeature :: Kind.Ops TileKind -> F.Feature -> Kind.Id TileKind -> Bool
 hasFeature Kind.Ops{okind} f t =
   kindHasFeature f (okind t)
 

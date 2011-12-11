@@ -21,22 +21,19 @@ saveGame state = do
 -- or a string containing an error message if restoring the game fails.
 restoreGame :: Config.CP -> IO (Either State String)
 restoreGame config =
-  E.catch (do
-             mvBkp config
-             f <- file config
-             state <- strictDecodeEOF (f ++ ".bkp")
-             return (Left state))
+  E.catch (do mvBkp config
+              f <- file config
+              state <- strictDecodeEOF (f ++ ".bkp")
+              return (Left state))
           (\ e -> case e :: E.IOException of
-                    _ -> return (Right $
-                                   "Restore failed: "
-                                   ++ (unwords . lines) (show e)))
+                    _ -> return (Right $ "Restore failed: "
+                                         ++ (unwords . lines) (show e)))
 
 -- | Move the savegame file to a backup slot.
 mvBkp :: Config.CP -> IO ()
-mvBkp config =
-  do
-    f <- file config
-    renameFile f (f ++ ".bkp")
+mvBkp config = do
+  f <- file config
+  renameFile f (f ++ ".bkp")
 
 -- | Remove the backup of the savegame. Should be called before any
 -- non-error exit from the game. Sometimes it does not exist and it's OK.
@@ -44,8 +41,7 @@ mvBkp config =
 -- is relatively unimportant and because most probably the exception
 -- would be reported for the main savefile, where it should not be overlooked.
 rmBkp :: Config.CP -> IO ()
-rmBkp config =
-  do
-    f <- file config
-    E.catch (removeFile (f ++ ".bkp"))
-      (\ e -> case e :: E.IOException of _ -> return ())
+rmBkp config = do
+  f <- file config
+  E.catch (removeFile (f ++ ".bkp"))
+    (\ e -> case e :: E.IOException of _ -> return ())

@@ -24,9 +24,9 @@ splitMsg w xs
       let (pre, post) = splitAt (w - m) xs
           (ppre, ppost) = break (`L.elem` " .,:!;") $ reverse pre
           rpost = dropWhile isSpace ppost
-      in  if L.null rpost
-          then pre : splitMsg w post
-          else reverse rpost : splitMsg w (reverse ppre ++ post)
-  where
-    m = length more
-    l = length xs
+      in if L.null rpost
+         then pre : splitMsg w post
+         else reverse rpost : splitMsg w (reverse ppre ++ post)
+ where
+  m = length more
+  l = length xs

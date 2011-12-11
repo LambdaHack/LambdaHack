@@ -51,9 +51,8 @@ start scops internalSession = do
   f <- Save.file config
   b <- doesFileExist f
   restored <- if b
-              then do
-                     Display.displayBlankConfirm sess "Restoring save game"
-                     Save.restoreGame config
+              then do Display.displayBlankConfirm sess "Restoring save game"
+                      Save.restoreGame config
               else return $ Right "Welcome to LambdaHack!"  -- new game
   case restored of
     Right msg  -> do

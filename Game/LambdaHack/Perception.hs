@@ -52,10 +52,10 @@ actorReachesLoc actor loc per pl =
                   AHero i -> do
                     hper <- IM.lookup i (pheroes per)
                     return $ loc `IS.member` preachable hper
-      tryPl   = do  -- the case for a monster under player control
-                  guard $ Just actor == pl
-                  pper <- pplayer per
-                  return $ loc `IS.member` preachable pper
+      tryPl   = do -- the case for a monster under player control
+                   guard $ Just actor == pl
+                   pper <- pplayer per
+                   return $ loc `IS.member` preachable pper
       tryAny  = tryHero `mplus` tryPl
   in fromMaybe False tryAny  -- assume not visible, if no perception found
 
@@ -125,21 +125,22 @@ computeReachable :: Kind.COps -> Int -> String -> SensoryMode
                  -> Actor -> Level -> PerceptionReachable
 computeReachable Kind.COps{cotile, coactor=Kind.Ops{okind}}
                  radius mode sensory actor lvl =
-  let fovMode m = if not $ asight $ okind $ bkind m
-                  then Blind
-                  else
-        -- terrible, temporary hack
-        case sensory of
-          Vision 3 -> Digital radius
-          Vision 2 -> Permissive radius
-          Vision 1 -> Shadow
-          _        ->
-            -- this is not a hack
-            case mode of
-              "permissive" -> Permissive radius
-              "digital"    -> Digital radius
-              "shadow"     -> Shadow
-              _            -> error $ "Unknown FOV mode: " ++ show mode
+  let fovMode m =
+        if not $ asight $ okind $ bkind m
+        then Blind
+        else
+          -- terrible, temporary hack
+          case sensory of
+            Vision 3 -> Digital radius
+            Vision 2 -> Permissive radius
+            Vision 1 -> Shadow
+            _        ->
+              -- this is not a hack
+              case mode of
+                "permissive" -> Permissive radius
+                "digital"    -> Digital radius
+                "shadow"     -> Shadow
+                _            -> error $ "Unknown FOV mode: " ++ show mode
       ploc = bloc actor
   in PerceptionReachable $
-     IS.insert ploc $ IS.fromList $ fullscan (fovMode actor) ploc cotile lvl
+       IS.insert ploc $ IS.fromList $ fullscan (fovMode actor) ploc cotile lvl

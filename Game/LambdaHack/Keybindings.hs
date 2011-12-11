@@ -75,7 +75,7 @@ macroKey section =
                   kt -> kt
       trMacro (from, to) = let fromTr = trans from
                                !toTr  = K.canonMoveKey $ trans to
-                           in  if fromTr == toTr
-                               then assert `failure` ("degenerate alias", toTr)
-                               else (fromTr, toTr)
-  in  M.fromList $ L.map trMacro section
+                           in if fromTr == toTr
+                              then assert `failure` ("degenerate alias", toTr)
+                              else (fromTr, toTr)
+  in M.fromList $ L.map trMacro section

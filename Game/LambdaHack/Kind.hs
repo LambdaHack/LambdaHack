@@ -55,23 +55,23 @@ createOps CDefs{getSymbol, getName, getFreq, content, validate} =
   in assert (allB correct content) $
      assert (L.null offenders `blame` offenders) $
      Ops
-  { osymbol = getSymbol . okind
-  , oname = getName . okind
-  , ofreq = getFreq . okind
-  , okind = okind
-  , ouniqSymbol = \ sym ->
-     case [Id i | (i, k) <- kindAssocs, getSymbol k == sym] of
-       [i] -> i
-       l -> assert `failure` l
-  , opick = \ p -> fmap fst $ frequency $ filterFreq (p . snd) kindFreq
-  , ofoldrWithKey = \ f z -> L.foldr (\ (i, a) -> f (Id i) a) z kindAssocs
-  , obounds =
-     let limits = let (i1, a1) = IM.findMin kindMap
-                      (i2, a2) = IM.findMax kindMap
-                  in ((Id (toEnum i1), a1), (Id (toEnum i2), a2))
-     in (Id 0, (fst . snd) limits)
-  , ospeedup = []  -- the default, override elsewhere
-  }
+       { osymbol = getSymbol . okind
+       , oname = getName . okind
+       , ofreq = getFreq . okind
+       , okind = okind
+       , ouniqSymbol = \ sym ->
+           case [Id i | (i, k) <- kindAssocs, getSymbol k == sym] of
+             [i] -> i
+             l -> assert `failure` l
+       , opick = \ p -> fmap fst $ frequency $ filterFreq (p . snd) kindFreq
+       , ofoldrWithKey = \ f z -> L.foldr (\ (i, a) -> f (Id i) a) z kindAssocs
+       , obounds =
+         let limits = let (i1, a1) = IM.findMin kindMap
+                          (i2, a2) = IM.findMax kindMap
+                      in ((Id (toEnum i1), a1), (Id (toEnum i2), a2))
+         in (Id 0, (fst . snd) limits)
+       , ospeedup = []  -- the default, override elsewhere
+       }
 
 data COps = COps
   { coactor :: Ops ActorKind
