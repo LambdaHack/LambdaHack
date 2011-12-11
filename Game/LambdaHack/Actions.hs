@@ -154,16 +154,53 @@ run (dir, dist) = do
   if targeting
     then moveCursor dir 10
     else do
-      updatePlayerBody (\ p -> p { bdir = Just (dir, dist) })
+      updatePlayerBody (\ p -> p { bdir = Just (dir, dist + 1) })
       -- attacks and opening doors disallowed while running
       moveOrAttack False False pl dir
 
-data RunMode = RunRoom | RunCorridor Dir | RunDeadEnd
+-- | Player running mode, determined from the nearby cave layout.
+data RunMode =
+    RunOpen                  -- ^ open space, in particular the T crossing
+  | RunHub                   -- ^ a hub of separate corridors
+  | RunCorridor (Dir, Bool)  -- ^ a single corridor, turning at this place or not
+  | RunDeadEnd               -- ^ dead end
+
+-- | Determine the running mode. For corridors, pick the running direction
+-- trying to explore all corners, by prefering orthogonal to diagonal moves.
+runMode :: Loc -> Dir -> (Loc -> Dir -> Bool) -> Int -> RunMode
+runMode loc dir dirEnterable lxsize =
+  let dirNearby dir1 dir2 = dirDistSq lxsize dir1 dir2 == 1
+      dirBackward d = dirDistSq lxsize (neg dir) d <= 1
+      dirAhead d = dirDistSq lxsize dir d <= 2
+      findOpen =
+        let f dirC open = open ++
+              case L.filter (dirNearby dirC) dirsEnterable of
+                l | dirBackward dirC -> dirC : l  -- points backwards
+                []  -> []  -- a narrow corridor, just one tile wide
+                [_] -> []  -- a turning corridor, two tiles wide
+                l   -> dirC : l  -- too wide
+        in L.foldr f []
+      dirsEnterable = L.filter (dirEnterable loc) (moves lxsize)
+  in case dirsEnterable of
+    [] -> assert `failure` (loc, dir)
+    [negdir] -> assert (negdir == neg dir) $ RunDeadEnd
+    _ ->
+      let dirsOpen = findOpen dirsEnterable
+          dirsCorridor = dirsEnterable L.\\ dirsOpen
+      in case dirsCorridor of
+        [] -> RunOpen  -- no corridors
+        _ | L.any dirAhead dirsOpen -> RunOpen  -- open space ahead
+        [d] -> RunCorridor (d, False)  -- corridor with no turn
+        [d1, d2] | dirNearby d1 d2 ->  -- corridor with a turn
+          -- Prefer orthogonal to diagonal dirs, for hero safety,
+          -- even if that means changing direction.
+          RunCorridor (if diagonal lxsize d1 then d2 else d1, True)
+        _ -> RunHub  -- a hub of many separate corridors
 
 -- | This function implements the actual "logic" of running. It checks if we
 -- have to stop running because something interesting cropped up
 -- and it ajusts the direction if we reached a corridor's corner
--- (we never change the direction in a room or next to a nontrivial crossing).
+-- (we never change direction except in corridors).
 continueRun :: (Dir, Int) -> Action ()
 continueRun (dirLast, dist) = do
   cops@Kind.COps{cotile} <- contentOps
@@ -183,62 +220,41 @@ continueRun (dirLast, dist) = do
       locThere dir = locHere `shift` dir
       heroThere dir = locThere dir `elem` L.map bloc (IM.elems hs)
       funThere dir fun = fun (locThere dir)
-      -- Stop if you touch these, but will not enter next move,
-      -- or if you do enter next move, stop then.
-      stopList  = [ \ loc -> Tile.hasFeature cotile F.Exit (lvl `at` loc)
-                  , \ loc -> not (L.null (lvl `atI` loc))
-                  ]
-      -- Stop if you touch these, but will not enter next move.
-      peekList  = [ \ loc -> Tile.hasFeature cotile F.Special (lvl `at` loc)
-                  , \ loc -> not (Tile.hasFeature cotile F.Lit (lvl `at` loc))
-                  ]
-      funList   = stopList ++ peekList
-      funNew dir fun = L.all (\ loc -> not (fun loc)) (locLast : surrLast) &&
-                       L.any (\ loc -> fun loc) surrHere &&
-                       not (funThere dir fun)
-      tryRun dir | heroThere dir || L.any (funNew dir) funList
-                 = abort
-                 | accessible cops lvl locHere (locHere `shift` dir)
-                 = run (dir, dist + 1)
-                 | otherwise
-                 = abort
-      runMode loc dir =
-        -- In corridors, explore all corners and stop at all crossings.
-        let dirsClose dir1 dir2 = dirDistSq lxsize dir1 dir2 <= 2
-            possible x =
-              let xloc = loc `shift` x
-              in x /= neg dir
-                 && (accessible cops lvl loc xloc
-                     || Tile.hasFeature cotile F.Openable (lvl `at` xloc))
-            pm = L.filter possible (moves lxsize)
-            allCloseTo dirOrto dirBase =
-              L.all (\ d -> -- close to both
-                            dirsClose dirOrto d &&
-                            dirsClose dirBase d ||
-                            -- or distant from both
-                            not (dirsClose dirOrto d) &&
-                            not (dirsClose dirBase d)) pm
-        in case pm of
-          []          -> RunDeadEnd
-          [dirUnique] -> RunCorridor dirUnique  -- can be diagonal
-          _           ->
-            -- Prefer orthogonal to diagonal dirs, for hero's safety.
-            case L.filter (\ d -> not (diagonal lxsize d)
-                                  && dirsClose d dir) pm of
-              [dirOrto] | allCloseTo dirOrto dir -> RunCorridor dirOrto
-              _ -> RunRoom
+      -- Stop if you touch these, unless you enter them next move,
+      -- in which case stop then.
+      funList = [ \ loc -> Tile.hasFeature cotile F.Exit (lvl `at` loc)
+                , \ loc -> not (L.null (lvl `atI` loc))
+                , \ loc -> Tile.hasFeature cotile F.Special (lvl `at` loc)
+                , \ loc -> not (Tile.hasFeature cotile F.Lit (lvl `at` loc))
+                , \ loc ->     (Tile.hasFeature cotile F.Lit (lvl `at` loc))
+                ]
+      funNew fun = L.all (\ loc -> not (fun loc)) (locLast : surrLast) &&
+                   L.any (\ loc -> fun loc) surrHere
+      funNewMissed dir fun = funNew fun && not (funThere dir fun)
+      tryRunDist dir distNew
+        | msgShown || enemySeen || heroThere dir || distNew >= 10 = abort
+        | L.any (funNewMissed dir) funList = abort
+        | L.any funNew funList = run (dir, 1000)
+        | otherwise = run (dir, distNew)
+      tryRun dir = tryRunDist dir dist
+      tryRunAndStop dir = tryRunDist dir 1000
+      accessibleDir loc dir = accessible cops lvl loc (loc `shift` dir)
+      openableDir loc dir   = Tile.hasFeature cotile F.Openable
+                                (lvl `at` (loc `shift` dir))
+      dirEnterable loc d = accessibleDir loc d || openableDir loc d
   assert (isAHero pl) $  -- monsters never run
-    if msgShown || enemySeen
-       || dist > 0 && L.any (\ f -> f locHere) stopList || dist > 20
-    then abort
-    else case runMode locHere dirLast of
-      RunDeadEnd          -> abort           -- dead end
-      RunRoom             -> tryRun dirLast  -- inside a room/crossing
-      RunCorridor dirNext ->                 -- in a corridor
-        case runMode (locThere dirNext) dirNext of
-          RunDeadEnd    -> tryRun dirNext    -- explore the dead end
-          RunRoom       -> abort             -- stop before the room/crossing
-          RunCorridor _ -> tryRun dirNext    -- follow the corridor
+    case runMode locHere dirLast dirEnterable lxsize of
+      RunDeadEnd -> abort                   -- we don't run backwards
+      RunOpen    -> tryRun dirLast          -- run forward into the open space
+      RunHub     -> abort                   -- stop and decide where to go
+      RunCorridor (dirNext, turn) ->        -- look ahead
+        case runMode (locThere dirNext) dirNext dirEnterable lxsize of
+          RunDeadEnd     -> tryRun dirNext  -- explore the dead end
+          RunCorridor _  -> tryRun dirNext  -- follow the corridor
+          RunOpen | turn -> abort           -- stop and decide when to turn
+          RunHub  | turn -> abort           -- stop and decide when to turn
+          RunOpen -> tryRunAndStop dirNext  -- no turn, get closer and stop
+          RunHub  -> tryRunAndStop dirNext  -- no turn, get closer and stop
 
 ifRunning :: ((Dir, Int) -> Action a) -> Action a -> Action a
 ifRunning t e = do
