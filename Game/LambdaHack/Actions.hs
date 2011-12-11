@@ -215,32 +215,41 @@ runDisturbance (dirLast, distLast) msg hs ms per locHere
       heroThere = locThere `elem` L.map bloc (IM.elems hs)
       -- Stop if you touch any individual tile with these propereties
       -- first time, unless you enter it next move, in which case stop then.
-      oneList   = [ locHasFeature F.Exit
+      touchList = [ locHasFeature F.Exit
                   , locHasItems
                   ]
       -- Here additionally ignore a tile property if you stand on such tile.
-      -- TODO: either stop at lack of Special or prefer Special when running.
-      massList  = [ locHasFeature F.Special
-                  , locHasFeature F.Lit
+      standList = [ locHasFeature F.Special
                   , not . locHasFeature F.Lit
                   ]
-      oneNew fun =
-        let oneLast = L.filter (\ loc -> fun loc) surrLast
-            oneHere = L.filter (\ loc -> fun loc) surrHere
-        in oneHere L.\\ oneLast
-      oneExplore fun = oneNew fun == [locThere]
-      oneStop fun = oneNew fun /= []
-      massNew fun = L.filter (locHasFeature F.Walkable) (oneNew fun)
-      massExplore fun = not (fun locHere) && massNew fun == [locThere]
-      massStop fun = not (fun locHere) && massNew fun /= []
+      -- Here stop only if you touch any such tile for the first time.
+      -- TODO: perhaps in open areas change direction to follow lit and special.
+      firstList = [ locHasFeature F.Lit
+                  , not . locHasFeature F.Special
+                  ]
+      touchNew fun =
+        let touchLast = L.filter (\ loc -> fun loc) surrLast
+            touchHere = L.filter (\ loc -> fun loc) surrHere
+        in touchHere L.\\ touchLast
+      touchExplore fun = touchNew fun == [locThere]
+      touchStop fun = touchNew fun /= []
+      standNew fun = L.filter (locHasFeature F.Walkable) (touchNew fun)
+      standExplore fun = not (fun locHere) && standNew fun == [locThere]
+      standStop fun = not (fun locHere) && standNew fun /= []
+      firstNew fun = L.all (\ loc -> not (fun loc)) surrLast &&
+                     L.any (\ loc -> fun loc) surrHere
+      firstExplore fun = firstNew fun && fun locThere
+      firstStop fun = firstNew fun
       tryRunMaybe
         | msgShown || enemySeen
           || heroThere || distLast >= 40  = Nothing
-        | L.any oneExplore oneList    = Just (dirNew, 1000)
-        | L.any massExplore massList  = Just (dirNew, 1000)
-        | L.any oneStop oneList       = Nothing
-        | L.any massStop massList     = Nothing
-        | otherwise                   = Just (dirNew, distNew)
+        | L.any touchExplore touchList    = Just (dirNew, 1000)
+        | L.any standExplore standList    = Just (dirNew, 1000)
+        | L.any firstExplore firstList    = Just (dirNew, 1000)
+        | L.any touchStop touchList       = Nothing
+        | L.any standStop standList       = Nothing
+        | L.any firstStop firstList       = Nothing
+        | otherwise                       = Just (dirNew, distNew)
   in tryRunMaybe
 
 -- | This function implements the actual "logic" of running. It checks if we
