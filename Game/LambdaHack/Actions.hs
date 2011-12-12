@@ -331,6 +331,37 @@ closeDoor = do
   lxsize <- gets (lxsize . slevel)
   K.handleDirection lxsize e playerCloseDoor (neverMind True)
 
+-- | Guess and report why the bump command failed.
+guessBump :: Kind.Ops TileKind -> F.Feature -> Kind.Id TileKind -> Action ()
+guessBump cotile F.Openable t | Tile.hasFeature cotile F.Closable t =
+  abortWith "already open"
+guessBump cotile F.Closable t | Tile.hasFeature cotile F.Openable t =
+  abortWith "already closed"
+guessBump cotile F.Climbable t | Tile.hasFeature cotile F.Descendable t =
+  abortWith "the way goes down, not up"
+guessBump cotile F.Descendable t | Tile.hasFeature cotile F.Climbable t =
+  abortWith "the way goes up, not down"
+guessBump _ _ _ = neverMind True
+
+-- | Try to trigger a tile using a feature.
+-- TODO: use in more places.
+bumpTile :: Loc -> F.Feature -> Action ()
+bumpTile dloc feat = do
+  cotile <- contentf Kind.cotile
+  state <- get
+  lvl   <- gets slevel
+  pl    <- gets splayer
+  let hms = levelHeroList state ++ levelMonsterList state
+      t = lvl `at` dloc
+  if Tile.hasFeature cotile feat t
+    then case lvl `atI` dloc of
+      [] -> if unoccupied hms dloc
+            then triggerTile cotile lvl dloc
+            else abortWith "blocked"  -- by monsters or heroes
+      _ : _ -> abortWith "jammed"  -- by items
+    else guessBump cotile feat t
+  advanceTime pl
+
 -- | Perform the action specified for the tile in case it's triggered.
 triggerTile :: Kind.Ops TileKind -> Level -> Loc -> Action ()
 triggerTile Kind.Ops{okind, opick} lvl dloc =
@@ -346,25 +377,10 @@ triggerTile Kind.Ops{okind, opick} lvl dloc =
 -- | Player closes a door. AI never does.
 playerCloseDoor :: Dir -> Action ()
 playerCloseDoor dir = do
-  cotile <- contentf Kind.cotile
-  state <- get
-  lvl   <- gets slevel
   pl    <- gets splayer
   body  <- gets (getActor pl)
-  let hms = levelHeroList state ++ levelMonsterList state
-      dloc = shift (bloc body) dir  -- the location we act upon
-      t = lvl `at` dloc
-  if Tile.hasFeature cotile F.Closable t
-    then
-      case lvl `atI` dloc of
-        [] -> if unoccupied hms dloc
-              then triggerTile cotile lvl dloc
-              else abortWith "blocked"  -- by monsters or heroes
-        _ : _ -> abortWith "jammed"  -- by items
-    else if Tile.hasFeature cotile F.Openable t
-         then abortWith "already closed"
-         else neverMind True  -- no visible doors (can be secret)
-  advanceTime pl
+  let dloc = bloc body `shift` dir
+  bumpTile dloc F.Closable
 
 -- | An actor opens a door. Player (hero or monster) or enemy.
 actorOpenDoor :: ActorId -> Dir -> Action ()
