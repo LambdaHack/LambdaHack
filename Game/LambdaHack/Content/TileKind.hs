@@ -26,11 +26,14 @@ instance Binary SecretStrength where
   put = put . secretStrength
   get = fmap SecretStrength get
 
+-- | If tiles look the same on the map, the description should be the same, too.
+-- Otherwise, the player has to inspect manually all the tiles of that kind
+-- to see if any is special. This is a part of a stronger
+-- but less precise property that tiles that look the same can't be
+-- distinguished by player actions (but may behave differently
+-- wrt dungeon generation, AI preferences, etc.).
 tvalidate :: [TileKind] -> [TileKind]
 tvalidate lt =
-  -- If it looks the same on the map, the description should be the same, too.
-  -- Otherwise, the player has to inspect manually all the tiles of that kind
-  -- to see if any is special.
   let listFov f = L.map (\ kt -> ((tsymbol kt, f kt), [kt])) lt
       mapFov :: (TileKind -> Color) -> M.Map (Char, Color) [TileKind]
       mapFov f = M.fromListWith (++) $ listFov f

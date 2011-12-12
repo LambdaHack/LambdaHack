@@ -20,7 +20,8 @@ data Cover =
   | CReflect  -- ^ tile separately and symmetrically the quarters of the room
   deriving Show
 
+-- | Verify that the top-left corner map is rectangular and not empty.
 rvalidate :: [RoomKind] -> [RoomKind]
 rvalidate = L.filter (\ RoomKind{..} ->
   let dxcorner = case rtopLeft of [] -> 0 ; l : _ -> L.length l
-  in dxcorner == 0 || L.any (/= dxcorner) (L.map L.length rtopLeft))
+  in dxcorner /= 0 && L.any (/= dxcorner) (L.map L.length rtopLeft))
