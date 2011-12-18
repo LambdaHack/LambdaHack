@@ -43,7 +43,6 @@ rogue = CaveKind
   , doorSecretChance  = Random.chance $ 1%4
   , csecretStrength   = (7, 2)
   , citemNum          = (5, 2)
-  , clayout           = CaveRogue
   , defTile           = \ t -> tsymbol t == '#' && L.null (tfeature t)
   , corTile           = \ t -> tsymbol t == '.'
                                && kindHas [] [F.Lit, F.Special, F.Boring] t
@@ -52,7 +51,6 @@ arena = rogue
   { csymbol           = 'A'
   , cname             = "caveArena"
   , cfreq             = 20
-  , clayout           = CaveRogue
   , defTile           = \ t -> tsymbol t == '.'
                                && kindHas [F.Lit] [F.Special, F.Boring] t
   , corTile           = \ t -> tsymbol t == '.'
@@ -62,15 +60,20 @@ empty = rogue
   { csymbol           = '.'
   , cname             = "caveEmpty"
   , cfreq             = 20
-  , clayout           = CaveEmpty
+  , levelGrid         = do
+                          x <- Random.randomR (2, 3)
+                          y <- Random.randomR (1, 2)
+                          return (x, y)
+  , minRoomSize       = return (4, 4)
   , defTile           = \ t -> tsymbol t == '.'
+                               && kindHas [F.Lit, F.Boring] [F.Special] t
+  , corTile           = \ t -> tsymbol t == '.'
                                && kindHas [F.Lit, F.Boring] [F.Special] t
   }
 noise = rogue
   { csymbol           = '!'
   , cname             = "caveNoise"
   , cfreq             = 20
-  , clayout           = CaveRogue
   , defTile           = \ t -> tsymbol t == '#' && L.null (tfeature t)
                                || (tsymbol t == '.'
                                   && kindHas [F.Lit] [F.Special, F.Boring] t)
