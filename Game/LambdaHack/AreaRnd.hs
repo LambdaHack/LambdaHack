@@ -74,7 +74,7 @@ mkCorridor hv ((x0, y0), (x1, y1)) b = do
 -- exist a suitable intermediate point if the rooms are allowed to be close
 -- together.
 connectRooms :: Area -> Area -> Rnd [(X, Y)]
-connectRooms sa@(sx0, _, sx1, sy1) ta@(tx0, ty0, tx1, _) = do
+connectRooms sa@(_, _, sx1, sy1) ta@(tx0, ty0, _, _) = do
   let trim (x0, y0, x1, y1) =
         let trim4 (v0, v1) = if v1 - v0 < 9 then (v0, v1) else (v0 + 4, v1 - 4)
             (nx0, nx1) = trim4 (x0, x1)
@@ -82,19 +82,18 @@ connectRooms sa@(sx0, _, sx1, sy1) ta@(tx0, ty0, tx1, _) = do
         in (nx0, ny0, nx1, ny1)
   (sx, sy) <- xyInArea $ trim sa
   (tx, ty) <- xyInArea $ trim ta
-  let xok = sx1 < tx0 - 3
-      xarea = normalizeArea (sx1+2, sy, tx0-2, ty)
-      yok = sy1 < ty0 - 3
-      yarea = normalizeArea (sx, sy1+2, tx, ty0-2)
-      xyarea = normalizeArea (sx1+2, sy1+2, tx0-2, ty0-2)
-  (hv, area) <- if xok && yok
+  let xarea = (sx1+2, min sy ty, tx0-2, max sy ty)
+      yarea = (sx, sy1+2, tx, ty0-2)
+      xyarea = (sx1+2, sy1+2, tx0-2, ty0-2)
+  (hv, area) <- if validArea xyarea
                 then fmap (\ hv -> (hv, xyarea)) (binaryChoice Horiz Vert)
-                else if xok then return (Horiz, xarea)
-                            else return (Vert, yarea)
+                else if validArea xarea
+                     then return (Horiz, xarea)
+                     else return (Vert, normalizeArea yarea)  -- vertical bias
   let ((x0, y0), (x1, y1)) =
         case hv of
-          Horiz -> ((if sx0 == sx1 then sx else sx1 + 1, sy),
-                    (if tx0 == tx1 then tx else tx0 - 1, ty))
-          Vert  -> ((sx, if sx0 == sx1 then sy else sy1 + 1),
-                    (tx, if tx0 == tx1 then ty else ty0 - 1))
+          Horiz -> ((if trivialArea sa then sx else sx1 + 1, sy),
+                    (if trivialArea ta then tx else tx0 - 1, ty))
+          Vert  -> ((sx, if trivialArea sa then sy else sy1 + 1),
+                    (tx, if trivialArea ta then ty else ty0 - 1))
   mkCorridor hv ((x0, y0), (x1, y1)) area

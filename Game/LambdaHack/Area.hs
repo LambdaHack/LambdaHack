@@ -1,5 +1,6 @@
 module Game.LambdaHack.Area
-  ( Area, neighbors, fromTo, normalize, normalizeArea, grid )
+  ( Area, neighbors, fromTo, normalize, normalizeArea, grid
+  , validArea, trivialArea )
   where
 
 import qualified Data.List as L
@@ -50,3 +51,11 @@ grid (nx, ny) (x0, y0, x1, y1) =
                  x0 + (xd * (x + 1) `div` nx - 1),
                  y0 + (yd * (y + 1) `div` ny - 1)))
      | x <- [0..nx-1], y <- [0..ny-1] ]
+
+-- | Area with at least one field.
+validArea :: Area -> Bool
+validArea (x0, y0, x1, y1) = x0 <= x1 && y0 <= y1
+
+-- | Area with exactly one field.
+trivialArea :: Area -> Bool
+trivialArea (x0, y0, x1, y1) = x0 == x1 && y0 == y1

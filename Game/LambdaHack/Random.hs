@@ -1,7 +1,7 @@
 module Game.LambdaHack.Random
   ( Rnd, randomR, binaryChoice, chance
   , roll, oneOf, frequency, (*~), (~+~)
-  , RollDice, rollDice, maxDice, minDice, meanDice
+  , RollDice, rollDice, maxDice, minDice, meanDice, rollDiceXY
   , RollQuad, rollQuad, intToQuad
   ) where
 
@@ -94,6 +94,14 @@ meanDice :: RollDice -> Rational
 meanDice (a', b') =
   let (a, b) = (fromIntegral a', fromIntegral b')
   in if b' == 0 then 0 else a * (b + 1) % 2
+
+rollDiceXY :: (RollDice, RollDice) -> Rnd (Int, Int)
+rollDiceXY ((xa', xb'), (ya', yb')) = do
+  let (xa, xb) = (fromEnum xa', fromEnum xb')
+      (ya, yb) = (fromEnum ya', fromEnum yb')
+  x <- xa *~ roll xb
+  y <- ya *~ roll yb
+  return (x, y)
 
 -- rollQuad (a, b, x, y) = a *~ roll b + (lvl * (x *~ roll y)) / 10
 type RollQuad = (Binary.Word8, Binary.Word8, Binary.Word8, Binary.Word8)

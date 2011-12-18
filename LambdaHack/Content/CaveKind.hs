@@ -28,13 +28,10 @@ rogue = CaveKind
   , cfreq             = 80
   , cxsize            = fst normalLevelBound + 1
   , cysize            = snd normalLevelBound + 1
-  , levelGrid         = do
-                          x <- Random.randomR (3, 5)
-                          y <- Random.randomR (2, 4)
-                          return (x, y)
-  , minRoomSize       = return (2, 2)
+  , levelGrid         = ((3, 2), (2, 2))
+  , minRoomSize       = ((2, 1), (2, 1))
   , darkRoomChance    = \ d -> Random.chance $ 1%((22 - (2 * fromIntegral d)) `max` 2)
-  , border            = 2
+  , border            = 1
   , extraConnects     = \ (x, y) -> (x * y) `div` 3
   , noRooms           = \ (x, y) -> Random.randomR (0, (x * y) `div` 3)
   , minStairsDistance = 30
@@ -60,11 +57,9 @@ empty = rogue
   { csymbol           = '.'
   , cname             = "caveEmpty"
   , cfreq             = 20
-  , levelGrid         = do
-                          x <- Random.randomR (2, 3)
-                          y <- Random.randomR (1, 2)
-                          return (x, y)
-  , minRoomSize       = return (4, 4)
+  , levelGrid         = ((1, 3), (1, 2))
+  , minRoomSize       = ((2, 2), (2, 2))
+  , noRooms           = \ _ -> return 0
   , defTile           = \ t -> tsymbol t == '.'
                                && kindHas [F.Lit, F.Boring] [F.Special] t
   , corTile           = \ t -> tsymbol t == '.'
