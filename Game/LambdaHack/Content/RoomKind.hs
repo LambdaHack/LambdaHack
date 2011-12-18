@@ -21,6 +21,8 @@ data Cover =
   deriving Show
 
 -- | Verify that the top-left corner map is rectangular and not empty.
+-- TODO: Verify that rooms are fully accessible from any entrace on the fence
+-- that is at least 4 tiles distant from the edges, if the room is big enough.
 rvalidate :: [RoomKind] -> [RoomKind]
 rvalidate = L.filter (\ RoomKind{..} ->
   let dxcorner = case rtopLeft of [] -> 0 ; l : _ -> L.length l
