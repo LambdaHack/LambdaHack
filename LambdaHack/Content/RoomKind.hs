@@ -40,7 +40,7 @@ ovalW = oval  -- without outer solid fence, the pattern visible from outside
   { rfence   = False
   , rtopLeft = [ "....###"
                , "..###.."
-               , ".##...."
+               , ".#+...."
                , ".#....."
                , "##....."
                , "#......"

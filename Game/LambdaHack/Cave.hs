@@ -114,6 +114,7 @@ caveRogue Kind.COps{ cotile=cotile@Kind.Ops{opick}
   fenceId <- Tile.wallId cotile
   let fenceBounds = (1, 1, cxsize - 2, cysize - 2)
       fence = buildFence fenceId fenceBounds
+      unknownId = Tile.unknownId cotile
   lrooms <- foldM (\ m (r, dl) -> do
                       roomId  <- ropick (roomValid r)
                       let kr = rokind roomId
@@ -121,12 +122,12 @@ caveRogue Kind.COps{ cotile=cotile@Kind.Ops{opick}
                                   then Tile.floorRoomLitId
                                   else Tile.floorRoomDarkId) cotile
                       wallId  <- Tile.wallId cotile
-                      let room = digRoom kr floorId wallId r
+                      let room = digRoom kr floorId wallId unknownId r
                       return $ M.union room m
                   ) fence dlrooms
   pickedCorTile <- opick corTile
   let lcorridors = M.unions (L.map (digCorridors pickedCorTile) cs)
-      lm = M.unionWith (mergeCorridor (Tile.unknownId cotile) cotile)
+      lm = M.unionWith (mergeCorridor unknownId cotile)
              lcorridors lrooms
   -- Convert openings into doors.
   doorOpenId <- Tile.doorOpenId cotile
@@ -134,7 +135,7 @@ caveRogue Kind.COps{ cotile=cotile@Kind.Ops{opick}
   doorSecretId <- Tile.doorSecretId cotile
   (dmap, secretMap) <-
     let f (l, le) ((x, y), t) =
-          if t == Tile.unknownId cotile
+          if t == unknownId
           then do
             -- Openings have a certain chance to be doors;
             -- doors have a certain chance to be open; and

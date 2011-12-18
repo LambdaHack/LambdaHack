@@ -34,13 +34,15 @@ buildFence wallId (x0, y0, x1, y1) =
                [ ((x, y), wallId) | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
 
 -- | Construct room of a given kind, with the given floor and wall tiles.
-digRoom :: RoomKind -> Kind.Id TileKind -> Kind.Id TileKind -> Area
+digRoom :: RoomKind
+        -> Kind.Id TileKind -> Kind.Id TileKind -> Kind.Id TileKind
+        -> Area
         -> TileMapXY
-digRoom rk floorId wallId area =
+digRoom rk floorId wallId doorId area =
   let fenceId | rfence rk = wallId
               | otherwise = floorId
       fence = buildFence fenceId area
-      legend = M.fromList [('.', floorId), ('#', wallId)]
+      legend = M.fromList [('.', floorId), ('#', wallId), ('+', doorId)]
   in M.union (M.map (legend M.!) $ tileRoom area rk) fence
 
 -- | Create the room by tiling patterns.
