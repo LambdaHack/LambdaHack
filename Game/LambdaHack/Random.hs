@@ -28,7 +28,7 @@ randomR rng = do
 
 binaryChoice :: a -> a -> Rnd a
 binaryChoice p0 p1 = do
-  b <- randomR (False,True)
+  b <- randomR (False, True)
   return (if b then p0 else p1)
 
 chance :: Rational -> Rnd Bool
@@ -40,7 +40,7 @@ chance r = do
 
 -- | roll a single die
 roll :: Int -> Rnd Int
-roll x = if x <= 0 then return 0 else randomR (1,x)
+roll x = if x <= 0 then return 0 else randomR (1, x)
 
 oneOf :: [a] -> Rnd a
 oneOf xs = do

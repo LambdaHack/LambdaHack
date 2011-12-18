@@ -2,7 +2,6 @@ module Game.LambdaHack.AreaRnd where
 
 import qualified Data.List as L
 import qualified Data.Set as S
-import qualified System.Random as R
 
 import Game.LambdaHack.Geometry
 import Game.LambdaHack.Area
@@ -44,7 +43,7 @@ connectGrid (nx, ny) = do
 
 randomConnection :: (X, Y) -> Rnd ((X, Y), (X, Y))
 randomConnection (nx, ny) = do
-  rb  <- randomR (False, True)
+  rb <- binaryChoice False True
   if rb
     then do
       rx  <- randomR (0, nx-2)
@@ -56,20 +55,6 @@ randomConnection (nx, ny) = do
       return (normalize ((rx, ry), (rx, ry+1)))
 
 data HV = Horiz | Vert
-  deriving (Eq, Show, Bounded)
-
-fromHV :: HV -> Bool
-fromHV Horiz = True
-fromHV Vert  = False
-
-toHV :: Bool -> HV
-toHV True  = Horiz
-toHV False = Vert
-
-instance R.Random HV where
-  randomR (a, b0) g = case R.randomR (fromHV a, fromHV b0) g of
-                        (b, g') -> (toHV b, g')
-  random = R.randomR (minBound, maxBound)
 
 -- | Create a corridor, either horizontal or vertical, with
 -- a possible intermediate part that is in the opposite direction.
