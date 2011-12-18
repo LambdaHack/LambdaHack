@@ -83,12 +83,16 @@ connectRooms sa@(_, _, sx1, sy1) ta@(tx0, ty0, _, _) = do
   (sx, sy) <- xyInArea $ trim sa
   (tx, ty) <- xyInArea $ trim ta
   let xok = sx1 < tx0 - 3
-  let xarea = normalizeArea (sx1+2, sy, tx0-2, ty)
-  let yok = sy1 < ty0 - 3
-  let yarea = normalizeArea (sx, sy1+2, tx, ty0-2)
-  let xyarea = normalizeArea (sx1+2, sy1+2, tx0-2, ty0-2)
+      xarea = normalizeArea (sx1+2, sy, tx0-2, ty)
+      yok = sy1 < ty0 - 3
+      yarea = normalizeArea (sx, sy1+2, tx, ty0-2)
+      xyarea = normalizeArea (sx1+2, sy1+2, tx0-2, ty0-2)
   (hv, area) <- if xok && yok
                 then fmap (\ hv -> (hv, xyarea)) (binaryChoice Horiz Vert)
                 else if xok then return (Horiz, xarea)
                             else return (Vert, yarea)
-  mkCorridor hv ((sx, sy), (tx, ty)) area
+  let ((x0, y0), (x1, y1)) =
+        case hv of
+          Horiz -> ((sx1 + 1, sy), (tx0 - 1, ty))
+          Vert  -> ((sx, sy1 + 1), (tx, ty0 - 1))
+  mkCorridor hv ((x0, y0), (x1, y1)) area
