@@ -615,7 +615,7 @@ targetMonster = do
       gtlt     = IM.assocs gt ++ IM.assocs lt
       seen (_, m) =
         let mloc = bloc m
-        in mloc `IS.member` totalVisible per            -- visible by any
+        in mloc `IS.member` totalVisible per         -- visible by any
            && actorReachesLoc pl mloc per (Just pl)  -- reachable by player
       lf = L.filter seen gtlt
       tgt = case lf of

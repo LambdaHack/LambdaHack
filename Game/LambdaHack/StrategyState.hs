@@ -62,7 +62,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   Kind.COps{ cotile
            , coactor=Kind.Ops{okind}
            , coitem=coitem@Kind.Ops{okind=iokind} } = cops
-  lvl@Level{lsmell = nsmap, lxsize} = slevel oldState
+  lvl@Level{lsmell = nsmap, lxsize, lysize} = slevel oldState
   Actor { bkind = ak, bloc = me, bdir = ad, btarget = tgt } =
     getActor actor oldState
   items = getActorItem actor oldState
@@ -115,8 +115,13 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
                        in only (\ x -> dirDistSq lxsize foeDir x <= 1)
   lootHere x     = not $ L.null $ lvl `atI` x
   onlyLoot       = onlyMoves lootHere me
-  exitHere x     = let t = lvl `at` x in Tile.hasFeature cotile F.Exit t
-  onlyExit       = onlyMoves exitHere me
+  interestHere x = let t = lvl `at` x
+                       ts = map (lvl `at`) $ surroundings lxsize lysize x
+                   in Tile.hasFeature cotile F.Exit t ||
+                      -- Lit indirectly. E.g., a room entrance.
+                      (not (Tile.hasFeature cotile F.Lit t) &&
+                       L.any (Tile.hasFeature cotile F.Lit) ts)
+  onlyInterest   = onlyMoves interestHere me
   onlyKeepsDir k =
     only (\ x -> maybe True (\ (d, _) -> dirDistSq lxsize d x <= k) ad)
   onlyKeepsDir_9 = only (\ x -> maybe True (\ (d, _) -> neg x /= d) ad)
@@ -186,14 +191,13 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   moveIQ = aiq mk > 15 .=> onlyKeepsDir 0 moveRandomly
            .| aiq mk > 10 .=> onlyKeepsDir 1 moveRandomly
            .| aiq mk > 5  .=> onlyKeepsDir 2 moveRandomly
-  exitFreq =  -- don't detour towards an exit if already on an exit
-    if exitHere me
+  interestFreq =  -- don't detour towards an interest if already on one
+    if interestHere me
     then []
-    else map (scale 3) (runStrategy $ onlyExit (onlyKeepsDir 2 moveRandomly))
-  exitIQFreq =
-    exitFreq ++ runStrategy moveIQ
+    else map (scale 3) (runStrategy $ onlyInterest (onlyKeepsDir 2 moveRandomly))
+  interestIQFreq = interestFreq ++ runStrategy moveIQ
   moveFreely = onlyLoot moveRandomly
-               .| liftFrequency (msum exitIQFreq)
+               .| liftFrequency (msum interestIQFreq)
                .| onlyKeepsDir_9 moveRandomly
                .| moveRandomly
   onlyMoves :: (Loc -> Bool) -> Loc -> Strategy Dir -> Strategy Dir

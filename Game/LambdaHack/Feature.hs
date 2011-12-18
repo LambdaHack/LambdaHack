@@ -8,7 +8,7 @@ import Game.LambdaHack.Random
 data Feature =
     Walkable           -- ^ actors can walk through
   | Clear              -- ^ actors can see through
-  | Exit               -- ^ is an exit from a room
+  | Exit               -- ^ is a non-secret door or a stair
   | Lit                -- ^ is lit with an ambient shine
   | Secret !RollDice   -- ^ tile is generated with this high secrecy value
   | Aura !Effect       -- ^ sustains the effect continuously

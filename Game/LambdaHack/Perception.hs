@@ -89,7 +89,9 @@ perception cops@Kind.COps{cotile}
       locs = IM.map bloc hs
       lpers = maybeToList mPer ++ IM.elems pers
       reachable = PerceptionReachable $ IS.unions (map preachable lpers)
-      lights = IS.fromList $ maybeToList mLoc ++ IM.elems locs
+      -- TODO: Instead of giving the monster a light source, alter vision.
+      playerControlledMonsterLight = maybeToList mLoc
+      lights = IS.fromList $ playerControlledMonsterLight ++ IM.elems locs
       visible = computeVisible cotile reachable lvl lights
   in  Perceptions { pplayer = mPer
                   , pheroes = pers
@@ -116,8 +118,7 @@ computeVisible cops (PerceptionReachable reachable)
       lit loc =
         let srds = surroundings lxsize lysize loc
         in litDirectly loc || L.any l_and_R srds
-  in PerceptionVisible $
-     IS.filter lit reachable
+  in PerceptionVisible $ IS.filter lit reachable
 
 -- | Reachable are all fields on an unblocked path from the hero position.
 -- The player's own position is considred reachable by him.
