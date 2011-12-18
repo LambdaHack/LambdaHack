@@ -10,9 +10,9 @@ cdefs = Content.CDefs
   , getFreq = rfreq
   , validate = rvalidate
   , content =
-      [rect, oval, ovalW, colonnade, colonnadeW, colonnadeS, colonnade2]
+      [rect, oval, ovalW, ovalD, colonnade, colonnadeW, colonnadeS, colonnade2]
   }
-rect,        oval, ovalW, colonnade, colonnadeW, colonnadeS, colonnade2 :: RoomKind
+rect,        oval, ovalW, ovalD, colonnade, colonnadeW, colonnadeS, colonnade2 :: RoomKind
 
 rect = RoomKind  -- this room is valid for any nonempty area, hence low frequency
   { rsymbol  = 'r'
@@ -34,18 +34,25 @@ oval = RoomKind  -- needs a large area, hence high frequency
                , "#....."
                , "......"
                , "......"
-              ]
+               ]
   }
 ovalW = oval  -- without outer solid fence, the pattern visible from outside
   { rfence   = False
-  , rtopLeft = [ "....###"
-               , "..###.."
-               , ".#+...."
-               , ".#....."
-               , "##....."
-               , "#......"
-               , "#......"
-              ]
+  , rtopLeft = [ "....+#"
+               , "..###."
+               , ".##..."
+               , ".#...."
+               , "+#...."
+               , "#....."
+               ]
+  }
+ovalD = ovalW
+  { rtopLeft = [ ".###+"
+               , "##..."
+               , "#...."
+               , "#...."
+               , "+...."
+               ]
   }
 colonnade = RoomKind
   { rsymbol  = 'c'

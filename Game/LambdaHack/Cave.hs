@@ -114,7 +114,9 @@ caveRogue Kind.COps{ cotile=cotile@Kind.Ops{opick}
   fenceId <- Tile.wallId cotile
   let fenceBounds = (1, 1, cxsize - 2, cysize - 2)
       fence = buildFence fenceId fenceBounds
-      unknownId = Tile.unknownId cotile
+  doorOpenId   <- Tile.doorOpenId cotile
+  doorClosedId <- Tile.doorClosedId cotile
+  doorSecretId <- Tile.doorSecretId cotile
   lrooms <- foldM (\ m (r, dl) -> do
                       roomId  <- ropick (roomValid r)
                       let kr = rokind roomId
@@ -122,33 +124,31 @@ caveRogue Kind.COps{ cotile=cotile@Kind.Ops{opick}
                                   then Tile.floorRoomLitId
                                   else Tile.floorRoomDarkId) cotile
                       wallId  <- Tile.wallId cotile
-                      let room = digRoom kr floorId wallId unknownId r
+                      let room = digRoom kr floorId wallId doorOpenId r
                       return $ M.union room m
                   ) fence dlrooms
   pickedCorTile <- opick corTile
   let lcorridors = M.unions (L.map (digCorridors pickedCorTile) cs)
+      unknownId = Tile.unknownId cotile
       lm = M.unionWith (mergeCorridor unknownId cotile)
              lcorridors lrooms
-  -- Convert openings into doors.
-  doorOpenId <- Tile.doorOpenId cotile
-  doorClosedId <- Tile.doorClosedId cotile
-  doorSecretId <- Tile.doorSecretId cotile
+  -- Convert openings into doors, possibly.
   (dmap, secretMap) <-
     let f (l, le) ((x, y), t) =
-          if t == unknownId
+          if t == doorOpenId || t == unknownId
           then do
             -- Openings have a certain chance to be doors;
             -- doors have a certain chance to be open; and
             -- closed doors have a certain chance to be secret
             rb <- doorChance cfg
             ro <- doorOpenChance cfg
-            if not rb
+            if t /= doorOpenId && not rb
               then return (M.insert (x, y) pickedCorTile l, le)
               else if ro
                    then return (M.insert (x, y) doorOpenId l, le)
                    else do
                      rsc <- doorSecretChance cfg
-                     if not rsc
+                     if t == doorOpenId || not rsc
                        then return (M.insert (x, y) doorClosedId l, le)
                        else do
                          rs1 <- rollDice (csecretStrength cfg)
