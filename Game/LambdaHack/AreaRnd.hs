@@ -72,9 +72,9 @@ mkCorridor hv ((x0, y0), (x1, y1)) b = do
 -- Choose entrances at least 4 tiles distant from the edges, if possible.
 -- The condition passed to mkCorridor is tricky; there might not always
 -- exist a suitable intermediate point if the rooms are allowed to be close
--- together ...
+-- together.
 connectRooms :: Area -> Area -> Rnd [(X, Y)]
-connectRooms sa@(_, _, sx1, sy1) ta@(tx0, ty0, _, _) = do
+connectRooms sa@(sx0, _, sx1, sy1) ta@(tx0, ty0, tx1, _) = do
   let trim (x0, y0, x1, y1) =
         let trim4 (v0, v1) = if v1 - v0 < 9 then (v0, v1) else (v0 + 4, v1 - 4)
             (nx0, nx1) = trim4 (x0, x1)
@@ -93,6 +93,8 @@ connectRooms sa@(_, _, sx1, sy1) ta@(tx0, ty0, _, _) = do
                             else return (Vert, yarea)
   let ((x0, y0), (x1, y1)) =
         case hv of
-          Horiz -> ((sx1 + 1, sy), (tx0 - 1, ty))
-          Vert  -> ((sx, sy1 + 1), (tx, ty0 - 1))
+          Horiz -> ((if sx0 == sx1 then sx else sx1 + 1, sy),
+                    (if tx0 == tx1 then tx else tx0 - 1, ty))
+          Vert  -> ((sx, if sx0 == sx1 then sy else sy1 + 1),
+                    (tx, if tx0 == tx1 then ty else ty0 - 1))
   mkCorridor hv ((x0, y0), (x1, y1)) area
