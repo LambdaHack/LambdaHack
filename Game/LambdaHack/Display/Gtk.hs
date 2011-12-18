@@ -97,12 +97,14 @@ startup k = do
 shutdown :: Session -> IO ()
 shutdown _ = mainQuit
 
-display :: Area -> Session -> (Loc -> (Color.Attr, Char)) -> String -> String
+display :: Area -> Int -> Session
+        -> (Loc -> (Color.Attr, Char)) -> String -> String
         -> IO ()
-display (x0, y0, x1, y1) session f msg status =
+display (x0, y0, x1, y1) _width session f msg status =
   postGUIAsync $ do
     tb <- textViewGetBuffer (sview session)
-    let fLine y = let (as, cs) = unzip [ f (toLoc (x1 + 1) (x, y))
+    let xsize  = x1 - x0 + 1
+        fLine y = let (as, cs) = unzip [ f (toLoc xsize (x, y))
                                        | x <- [x0..x1] ]
                   in ((y, as), BS.pack cs)
         memo  = L.map fLine [y0..y1]

@@ -17,6 +17,7 @@ import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.ActorAdd
 import Game.LambdaHack.Display hiding (display)
 import Game.LambdaHack.Grammar
+import Game.LambdaHack.Geometry
 import Game.LambdaHack.Loc
 import qualified Game.LambdaHack.HighScores as H
 import Game.LambdaHack.Item
@@ -308,12 +309,11 @@ stopRunning = updatePlayerBody (\ p -> p { bdir = Nothing })
 -- | Store current message in the history and reset current message.
 history :: Action ()
 history = do
-  sx     <- gets (lxsize . slevel)
-  msg    <- currentMsg
+  msg <- currentMsg
   messageClear
   config <- gets sconfig
   let historyMax = Config.get config "ui" "historyMax"
       -- TODO: not ideal, continuations of sentences are atop beginnings.
-      splitS = splitMsg (sx + 1) (msg ++ " ")
+      splitS = splitMsg (fst normalLevelBound + 1) (msg ++ " ")
   unless (L.null msg) $
     modify (updateHistory (take historyMax . (L.reverse splitS ++)))

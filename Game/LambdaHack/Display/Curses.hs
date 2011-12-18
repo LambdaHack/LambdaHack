@@ -41,20 +41,26 @@ startup k = do
 shutdown :: Session -> IO ()
 shutdown _ = C.end
 
-display :: Area -> Session -> (Loc -> (Color.Attr, Char)) -> String -> String
+display :: Area -> Int -> Session
+        -> (Loc -> (Color.Attr, Char)) -> String -> String
         -> IO ()
-display (x0, y0, x1, y1) (Session { win = w, styles = s }) f msg status = do
+display (x0, y0, x1, y1) width (Session { win = w, styles = s })
+        f msg status = do
   -- let defaultStyle = C.defaultCursesStyle
   -- Terminals with white background require this:
   let defaultStyle = s M.! Color.defaultAttr
+      xsize  = x1 - x0 + 1
   C.erase
   C.setStyle defaultStyle
-  C.mvWAddStr w 0 0 (toWidth (x1 - x0 + 1) msg)  -- TODO: BS as in vty
-  C.mvWAddStr w (y1+2) 0 (toWidth (x1 - x0 + 1) status)
+  C.mvWAddStr w 0 0 (toWidth width msg)
+  C.mvWAddStr w (y1 + 2) 0 (toWidth (width - 1) status)
+  -- TODO: the following does not work in standard xterm window,
+  -- due to the curses historical limitations.
+  -- C.mvWAddStr w (y1 + 2) (width - 1) " "
   sequence_ [ C.setStyle (M.findWithDefault defaultStyle a s)
               >> C.mvWAddStr w (y + 1) x [c]
             | x <- [x0..x1], y <- [y0..y1],
-              let (a, c) = f (toLoc (x1 + 1) (x, y)) ]
+              let (a, c) = f (toLoc xsize (x, y)) ]
   C.refresh
 
 toWidth :: Int -> String -> String

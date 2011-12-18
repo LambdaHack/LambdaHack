@@ -19,22 +19,24 @@ type Session = Vty
 startup :: (Session -> IO ()) -> IO ()
 startup k = mkVty >>= k
 
-display :: Area -> Session -> (Loc -> (Color.Attr, Char)) -> String -> String
+display :: Area -> Int -> Session
+        -> (Loc -> (Color.Attr, Char)) -> String -> String
         -> IO ()
-display (x0, y0, x1, y1) vty f msg status =
-  let img = (foldr (<->) empty_image .
+display (x0, y0, x1, y1) width vty f msg status =
+  let xsize  = x1 - x0 + 1
+      img = (foldr (<->) empty_image .
              L.map (foldr (<|>) empty_image .
-                    L.map (\ (x, y) -> let (a, c) = f (toLoc (x1 + 1) (x, y))
+                    L.map (\ (x, y) -> let (a, c) = f (toLoc xsize (x, y))
                                        in char (setAttr a) c)))
             [ [ (x, y) | x <- [x0..x1] ] | y <- [y0..y1] ]
   in update vty (pic_for_image
                    (utf8_bytestring
                       (setAttr Color.defaultAttr)
-                      (BS.pack (toWidth (x1 - x0 + 1) msg))
+                      (BS.pack (toWidth width msg))
                       <-> img <->
                       utf8_bytestring
                         (setAttr Color.defaultAttr)
-                        (BS.pack (toWidth (x1 - x0 + 1) status))))
+                        (BS.pack (toWidth width status))))
 
 toWidth :: Int -> String -> String
 toWidth n x = take n (x ++ repeat ' ')

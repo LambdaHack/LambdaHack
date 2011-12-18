@@ -46,9 +46,10 @@ import qualified Game.LambdaHack.Kind as Kind
 type InternalSession = D.Session
 type Session = (InternalSession, M.Map K.Key K.Key, Kind.COps)
 
-display :: Area -> Session -> (Loc -> (Color.Attr, Char)) -> String -> String
+display :: Area -> Int -> Session
+        -> (Loc -> (Color.Attr, Char)) -> String -> String
         -> IO ()
-display area (session, _, _) = D.display area session
+display area width (session, _, _) = D.display area width session
 startup :: (InternalSession -> IO ()) -> IO ()
 startup = D.startup
 shutdown :: Session -> IO ()
@@ -69,7 +70,7 @@ displayBlankConfirm session txt =
       doBlank = const (Color.defaultAttr, ' ')
       (lx, ly) = normalLevelBound  -- TODO: query terminal size instead
   in do
-    display (0, 0, lx, ly) session doBlank x ""
+    display (0, 0, lx, ly) (fst normalLevelBound + 1) session doBlank x ""
     getConfirm session
 
 -- | Waits for a space or return or '?' or '*'. The last two act this way,
@@ -204,8 +205,9 @@ displayLevel dm session@(_, _, cops) per
         take 10 ("Dmg: " ++ show damage ++ repeat ' ') ++
         take 20 ("HP: " ++ show bhp ++
                  " (" ++ show (maxDice ahp) ++ ")" ++ repeat ' ')
-      disp n mesg = display (0, 0, sx - 1, sy - 1) session (dis n) mesg status
-      msgs = splitMsg sx msg
+      disp n mesg = display (0, 0, sx - 1, sy - 1) (fst normalLevelBound + 1)
+                      session (dis n) mesg status
+      msgs = splitMsg (fst normalLevelBound + 1) msg
       perf k []     = perfo k ""
       perf k [xs]   = perfo k xs
       perf k (x:xs) = disp ns (x ++ more) >> getConfirm session >>= \ b ->

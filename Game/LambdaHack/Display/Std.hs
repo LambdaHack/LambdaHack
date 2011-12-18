@@ -22,14 +22,15 @@ startup k = k ()
 shutdown :: Session -> IO ()
 shutdown _session = return ()
 
-display :: Area -> Session -> (Loc -> (Color.Attr, Char)) -> String -> String
+display :: Area -> Int -> Session
+        -> (Loc -> (Color.Attr, Char)) -> String -> String
         -> IO ()
-display (x0, y0, x1, y1) _session f msg status =
-  let size   = x1 - x0 + 1
+display (x0, y0, x1, y1) _width _session f msg status =
+  let xsize  = x1 - x0 + 1
       g y x  = if x > x1
                then Nothing
                else Just (snd (f (toLoc (x1 + 1) (x, y))), x + 1)
-      fl y   = fst $ BS.unfoldrN size (g y) x0
+      fl y   = fst $ BS.unfoldrN xsize (g y) x0
       level  = L.map fl [y0..y1]
       screen = [BS.pack msg] ++ level ++ [BS.pack status, BS.empty]
   in mapM_ BS.putStrLn screen

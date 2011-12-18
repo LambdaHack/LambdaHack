@@ -27,7 +27,7 @@ euclidLenSq (x, y) = let square a = a * a
                      in square x + square y
 
 normalLevelBound :: (X, Y)
-normalLevelBound = (79, 22)  -- TODO: query terminal size instead
+normalLevelBound = (79, 21)  -- TODO: query terminal size instead
 
 -- | Integer division, rounding up.
 divUp :: Int -> Int -> Int
