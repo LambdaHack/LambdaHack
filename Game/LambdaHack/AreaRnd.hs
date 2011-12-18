@@ -3,6 +3,7 @@ module Game.LambdaHack.AreaRnd where
 import qualified Data.List as L
 import qualified Data.Set as S
 
+import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Geometry
 import Game.LambdaHack.Area
 import Game.LambdaHack.Random
@@ -42,16 +43,17 @@ connectGrid (nx, ny) = do
   connectGrid' (nx, ny) unconnected candidates []
 
 randomConnection :: (X, Y) -> Rnd ((X, Y), (X, Y))
-randomConnection (nx, ny) = do
+randomConnection (nx, ny) =
+  assert (nx > 1 && ny > 0 || nx > 0 && ny > 1 `blame` (nx, ny)) $ do
   rb <- binaryChoice False True
-  if rb
+  if rb || not (ny > 1)
     then do
       rx  <- randomR (0, nx-2)
       ry  <- randomR (0, ny-1)
       return (normalize ((rx, ry), (rx+1, ry)))
     else do
-      ry  <- randomR (0, ny-2)
       rx  <- randomR (0, nx-1)
+      ry  <- randomR (0, ny-2)
       return (normalize ((rx, ry), (rx, ry+1)))
 
 data HV = Horiz | Vert

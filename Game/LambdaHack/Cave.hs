@@ -81,7 +81,10 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{opick}
                       c <- darkRoomChance cfg n
                       return (r, not c)) rs0
   connects <- connectGrid lgrid
-  addedConnects <- replicateM (extraConnects cfg lgrid) (randomConnection lgrid)
+  addedConnects <- if gx > 1 || gy > 1
+                   then replicateM (extraConnects cfg lgrid)
+                          (randomConnection lgrid)
+                   else return []
   let allConnects = L.nub (addedConnects ++ connects)
       rs = M.fromList rs0
   cs <- mapM (\ (p0, p1) -> do
