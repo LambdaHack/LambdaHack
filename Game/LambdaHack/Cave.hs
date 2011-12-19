@@ -74,8 +74,8 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{opick}
   nr   <- replicateM nrnr $ xyInArea (0, 0, gx - 1, gy - 1)
   rs0  <- mapM (\ (i, r) -> do
                    r' <- if i `elem` nr
-                         then mkNoRoom (border cfg) r
-                         else mkRoom (border cfg) lminroom r
+                         then mkNoRoom r
+                         else mkRoom lminroom r
                    return (i, r')) gs
   dlrooms <- mapM (\ (_, r) -> do
                       c <- darkRoomChance cfg n
@@ -151,28 +151,24 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{opick}
 type Corridor = [(X, Y)]
 
 -- | Create a random room according to given parameters.
-mkRoom :: Int       -- ^ border columns
-       -> (X, Y)    -- ^ minimum size
+mkRoom :: (X, Y)    -- ^ minimum size
        -> Area      -- ^ this is the area, not the room itself
        -> Rnd Area  -- ^ upper-left and lower-right corner of the room
-mkRoom bd (xm, ym) (x0, y0, x1, y1) =
-  let area0 = (x0 + bd, y0 + bd, x1 - bd - xm + 1, y1 - bd - ym + 1)
+mkRoom (xm, ym) (x0, y0, x1, y1) =
+  let area0 = (x0, y0, x1 - xm + 1, y1 - ym + 1)
   in assert (validArea area0 `blame` area0) $ do
     (rx0, ry0) <- xyInArea area0
-    let area1 = (rx0 + xm - 1, ry0 + ym - 1, x1 - bd, y1 - bd)
+    let area1 = (rx0 + xm - 1, ry0 + ym - 1, x1, y1)
       in assert (validArea area1 `blame` area1) $ do
       (rx1, ry1) <- xyInArea area1
       return (rx0, ry0, rx1, ry1)
 
 -- | Create a no-room, i.e., a single corridor field.
-mkNoRoom :: Int      -- ^ border columns
-         -> Area     -- ^ this is the area, not the room itself
+mkNoRoom :: Area     -- ^ this is the area, not the room itself
          -> Rnd Area -- ^ upper-left and lower-right corner of the room
-mkNoRoom bd (y0, x0, y1, x1) =
-  let area = (y0 + bd, x0 + bd, y1 - bd, x1 - bd)
-  in assert (validArea area `blame` area) $ do
-    (ry, rx) <- xyInArea area
-    return (ry, rx, ry, rx)
+mkNoRoom area = assert (validArea area `blame` area) $ do
+  (ry, rx) <- xyInArea area
+  return (ry, rx, ry, rx)
 
 digCorridors :: Kind.Id TileKind -> Corridor -> TileMapXY
 digCorridors tile (p1:p2:ps) =

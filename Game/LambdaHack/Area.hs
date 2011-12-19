@@ -44,12 +44,15 @@ normalizeArea (x0, y0, x1, y1) = (min x0 x1, min y0 y1, max x0 x1, max y0 y1)
 
 grid :: (X, Y) -> Area -> [((X, Y), Area)]
 grid (nx, ny) (x0, y0, x1, y1) =
-  let yd = y1 - y0
-      xd = x1 - x0
-  in [ ((x, y), (x0 + (xd * x `div` nx),
-                 y0 + (yd * y `div` ny),
-                 x0 + (xd * (x + 1) `div` nx - 1),
-                 y0 + (yd * (y + 1) `div` ny - 1)))
+  let xd = x1 - x0
+      yd = y1 - y0
+      -- Make sure there is a passage across empty caves.
+      xborder = if nx == 1 then 3 else 2
+      yborder = if ny == 1 then 3 else 2
+  in [ ((x, y), (x0 + (xd * x `div` nx) + xborder,
+                 y0 + (yd * y `div` ny) + yborder,
+                 x0 + (xd * (x + 1) `div` nx) - xborder,
+                 y0 + (yd * (y + 1) `div` ny) - yborder))
      | x <- [0..nx-1], y <- [0..ny-1] ]
 
 -- | Area with at least one field.

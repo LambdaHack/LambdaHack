@@ -17,7 +17,6 @@ data CaveKind = CaveKind
   , levelGrid         :: (Random.RollDice, Random.RollDice)
   , minRoomSize       :: (Random.RollDice, Random.RollDice)
   , darkRoomChance    :: Int -> Random.Rnd Bool  -- TODO: use RollQuad instead, etc.
-  , border            :: Int         -- must be at least 2!
   , extraConnects     :: (X, Y) -> Int
       -- ^ relative to grid (in fact a range, because of duplicate connects)
   , noRooms           :: (X, Y) -> Random.Rnd Int
@@ -42,5 +41,7 @@ cvalidate = L.filter (\ CaveKind{..} ->
       maxGridY = Random.maxDice $ snd levelGrid
       maxRoomSizeX = Random.maxDice $ fst minRoomSize
       maxRoomSizeY = Random.maxDice $ snd minRoomSize
-  in maxGridX * (2 * border + maxRoomSizeX) > cxsize ||
-     maxGridY * (2 * border + maxRoomSizeY) > cysize)
+      xborder = if maxGridX == 1 then 5 else 3
+      yborder = if maxGridX == 1 then 5 else 3
+  in maxGridX * (xborder + maxRoomSizeX) + 1 > cxsize ||
+     maxGridY * (yborder + maxRoomSizeY) + 1 > cysize)
