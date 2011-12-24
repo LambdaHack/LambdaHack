@@ -24,4 +24,5 @@ standard = RuleKind
     -- Precondition: the two locations are next to each other.
     -- TODO: in the future check flying for chasms, swimming for water, etc.
   , raccessible       = \ _sloc _src _tloc tgt -> F.Walkable `elem` tfeature tgt
+  , rtitle            = "LambdaHack"
   }

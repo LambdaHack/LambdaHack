@@ -16,6 +16,7 @@ import Game.LambdaHack.ActorAdd
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Content.TileKind
+import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Tile
 import qualified Game.LambdaHack.Keybindings as KB
 import qualified Game.LambdaHack.Kind as Kind
@@ -42,7 +43,8 @@ speedupCops scops@Kind.COps{cotile=sct} =
 -- | Either restore a saved game, or setup a new game.
 start :: Kind.COps -> Display.InternalSession -> IO ()
 start scops internalSession = do
-  let cops = speedupCops scops
+  let cops@Kind.COps{corule=Kind.Ops{okind, ouniqSymbol}} = speedupCops scops
+      title = rtitle $ okind $ ouniqSymbol 's'
   config <- Config.config
   let section = Config.getItems config "macros"
       !macros = KB.macroKey section
@@ -53,7 +55,7 @@ start scops internalSession = do
   restored <- if b
               then do Display.displayBlankConfirm sess "Restoring save game"
                       Save.restoreGame config
-              else return $ Right "Welcome to LambdaHack!"  -- new game
+              else return $ Right $ "Welcome to " ++ title ++ "!"  -- new game
   case restored of
     Right msg  -> do
       -- TODO: move somewhere sane
@@ -87,4 +89,4 @@ start scops internalSession = do
           hstate = initialHeroes cops ploc state
       handlerToIO sess hstate msg handle
     Left state ->
-      handlerToIO sess state "Welcome back to LambdaHack." handle
+      handlerToIO sess state ("Welcome back to " ++ title ++ ".") handle

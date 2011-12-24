@@ -12,6 +12,7 @@ data RuleKind = RuleKind
     -- Check whether one location is accessible from another.
     -- Precondition: the two locations are next to each other.
   , raccessible       :: Loc -> TileKind -> Loc -> TileKind -> Bool
+  , rtitle            :: String
   }
 
 instance Show RuleKind where
