@@ -18,9 +18,9 @@ cdefs = Content.CDefs
   , getFreq = cfreq
   , validate = cvalidate
   , content =
-      [rogue, arena, empty, noise, largeNoise]
+      [rogue, arena, empty, noise]
   }
-rogue,        arena, empty, noise, largeNoise :: CaveKind
+rogue,        arena, empty, noise :: CaveKind
 
 rogue = CaveKind
   { csymbol           = '$'
@@ -81,11 +81,4 @@ noise = rogue
                                   && kindHas [F.Lit] [F.Special, F.Boring] t)
   , corTile           = \ t -> tsymbol t == '.'
                                && kindHas [F.Lit, F.Special] [F.Boring] t
-  }
-largeNoise = noise
-  { csymbol           = 'L'
-  , cname             = "caveLargeNoise"
-  , cfreq             = 0  -- experimental
-  , cxsize            = 231
-  , cysize            = 77
   }

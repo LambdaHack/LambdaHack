@@ -126,11 +126,12 @@ rememberAtI Level{litem} p = snd $ IM.findWithDefault ([], []) p litem
 -- Check whether one location is accessible from another.
 accessible :: Kind.COps -> Level -> Loc -> Loc -> Bool
 accessible Kind.COps{ cotile=Kind.Ops{okind=tokind}
-                    , corule=Kind.Ops{okind, ouniqSymbol}} lvl sloc tloc =
+                    , corule=Kind.Ops{okind, ouniqSymbol}}
+           lvl@Level{lxsize} sloc tloc =
   let check = raccessible $ okind $ ouniqSymbol 's'
       src = tokind $ lvl `at` sloc
       tgt = tokind $ lvl `at` tloc
-  in check sloc src tloc tgt
+  in check lxsize sloc src tloc tgt
 
 -- check whether the location contains a door of secrecy level lower than k
 openable :: Kind.Ops TileKind -> Level -> SecretStrength -> Loc -> Bool

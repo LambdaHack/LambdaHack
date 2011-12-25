@@ -1,5 +1,6 @@
 module Content.RuleKind ( cdefs ) where
 
+import Game.LambdaHack.Dir
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Feature as F
@@ -22,7 +23,12 @@ standard = RuleKind
   , rfreq             = 100
     -- Check whether one location is accessible from another.
     -- Precondition: the two locations are next to each other.
-    -- TODO: in the future check flying for chasms, swimming for water, etc.
-  , raccessible       = \ _sloc _src _tloc tgt -> F.Walkable `elem` tfeature tgt
+    -- Apart of checking the target tile, we forbid diagonal movement
+    -- to and from doors.
+  , raccessible       = \ lxsize sloc src tloc tgt ->
+      F.Walkable `elem` tfeature tgt
+      && not ((F.Closable `elem` tfeature src ||
+               F.Closable `elem` tfeature tgt)
+              && diagonal lxsize (towards lxsize sloc tloc))
   , rtitle            = "LambdaHack"
   }
