@@ -43,7 +43,7 @@ of the terminal frontends using Cabal flags, e.g,
     cabal install -fvty
 
 To use a crude bot for testing the game, you have to compile with
-the standard intput/output frontend, as follows
+the standard input/output frontend, as follows
 
     cabal install -fstd
 

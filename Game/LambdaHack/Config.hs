@@ -4,8 +4,11 @@ module Game.LambdaHack.Config
 
 import System.Directory
 import System.FilePath
+import System.Environment
 import qualified Data.ConfigFile as CF
 import qualified Data.Binary as Binary
+import qualified Data.Char as Char
+import qualified Data.List as L
 
 import qualified Game.LambdaHack.ConfigDefault as ConfigDefault
 
@@ -42,10 +45,16 @@ toCP cp = CP $ toSensitive cp
 defaultCP :: CP
 defaultCP = toCP defCF
 
+appDataDir :: IO FilePath
+appDataDir = do
+  progName <- getProgName
+  let name = L.takeWhile Char.isAlphaNum progName
+  getAppUserDataDirectory name
+
 -- | Path to the user configuration file.
 file :: IO FilePath
 file = do
-  appData <- getAppUserDataDirectory "LambdaHack"
+  appData <- appDataDir
   return $ combine appData "config"
 
 -- | The configuration read from the user configuration file.
@@ -100,7 +109,7 @@ getItems (CP conf) s =
 getFile :: CP -> CF.SectionSpec -> CF.OptionSpec -> IO FilePath
 getFile conf s o = do
   current <- getCurrentDirectory
-  appData <- getAppUserDataDirectory "LambdaHack"
+  appData <- appDataDir
   let path    = get conf s o
       appPath = combine appData path
       curPath = combine current path
