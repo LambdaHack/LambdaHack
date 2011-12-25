@@ -5,6 +5,7 @@ module Game.LambdaHack.Cave
 
 import Control.Monad
 import qualified Data.Map as M
+import qualified Data.Set as S
 import qualified Data.List as L
 
 import Game.LambdaHack.Utils.Assert
@@ -107,7 +108,8 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{opick}
                                   then Tile.floorRoomLitId
                                   else Tile.floorRoomDarkId) cotile
                       wallId <- Tile.wallId cotile
-                      let room = digRoom kr floorId wallId doorOpenId r
+                      legend <- olegend cotile
+                      let room = digRoom kr legend floorId wallId doorClosedId r
                       return $ M.union room m
                   ) fence dlrooms
   pickedCorTile <- opick corTile
@@ -118,20 +120,20 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{opick}
   -- Convert openings into doors, possibly.
   (dmap, secretMap) <-
     let f (l, le) ((x, y), t) =
-          if t == doorOpenId || t == unknownId
+          if t == doorClosedId || t == unknownId
           then do
             -- Openings have a certain chance to be doors;
             -- doors have a certain chance to be open; and
             -- closed doors have a certain chance to be secret
             rb <- doorChance cfg
             ro <- doorOpenChance cfg
-            if t /= doorOpenId && not rb
+            if t /= doorClosedId && not rb
               then return (M.insert (x, y) pickedCorTile l, le)
               else if ro
                    then return (M.insert (x, y) doorOpenId l, le)
                    else do
                      rsc <- doorSecretChance cfg
-                     if t == doorOpenId || not rsc
+                     if t == doorClosedId || not rsc
                        then return (M.insert (x, y) doorClosedId l, le)
                        else do
                          rs1 <- rollDice $ csecretStrength cfg
@@ -147,6 +149,20 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{opick}
         , dmeta = show allConnects
         }
   return cave
+
+olegend :: Kind.Ops TileKind -> Rnd (M.Map Char (Kind.Id TileKind))
+olegend Kind.Ops{ofoldrWithKey, opick} =
+  let getSymbols _ tk acc =
+        if tfreq tk > 0
+        then S.insert (tsymbol tk) acc
+        else acc
+      symbols = ofoldrWithKey getSymbols S.empty
+      getLegend s acc = do
+        m <- acc
+        tk <- opick ((== s) . tsymbol)
+        return $ M.insert s tk m
+      legend = S.fold getLegend (return M.empty) symbols
+  in legend
 
 type Corridor = [(X, Y)]
 
