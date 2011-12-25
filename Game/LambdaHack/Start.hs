@@ -43,8 +43,8 @@ speedupCops scops@Kind.COps{cotile=sct} =
 -- | Either restore a saved game, or setup a new game.
 start :: Kind.COps -> Display.InternalSession -> IO ()
 start scops internalSession = do
-  let cops@Kind.COps{corule=Kind.Ops{okind, ouniqSymbol}} = speedupCops scops
-      title = rtitle $ okind $ ouniqSymbol 's'
+  let cops@Kind.COps{corule=Kind.Ops{okind, ouniqName}} = speedupCops scops
+      title = rtitle $ okind $ ouniqName "standard game ruleset"
   config <- Config.config
   let section = Config.getItems config "macros"
       !macros = KB.macroKey section

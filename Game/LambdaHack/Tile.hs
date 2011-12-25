@@ -26,7 +26,7 @@ stairsUpId Kind.Ops{opick} = opick $ kindHasFeature F.Climbable
 stairsDownId Kind.Ops{opick} = opick $ kindHasFeature F.Descendable
 
 unknownId :: Kind.Ops TileKind -> Kind.Id TileKind
-unknownId Kind.Ops{ouniqSymbol} = ouniqSymbol ' '
+unknownId Kind.Ops{ouniqName} = ouniqName "unknown space"
 
 kindHasFeature :: F.Feature -> TileKind -> Bool
 kindHasFeature f t = f `elem` tfeature t

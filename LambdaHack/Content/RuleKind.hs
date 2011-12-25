@@ -19,7 +19,7 @@ standard :: RuleKind
 
 standard = RuleKind
   { rsymbol           = 's'
-  , rname             = "Standard game ruleset"
+  , rname             = "standard game ruleset"
   , rfreq             = 100
     -- Check whether one location is accessible from another.
     -- Precondition: the two locations are next to each other.

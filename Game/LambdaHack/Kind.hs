@@ -33,7 +33,7 @@ data Ops a = Ops
   , oname :: Id a -> String
   , ofreq :: Id a -> Int
   , okind :: Id a -> a
-  , ouniqSymbol :: Char -> Id a
+  , ouniqName :: String -> Id a
   , opick :: (a -> Bool) -> Rnd (Id a)
   , ofoldrWithKey :: forall b. (Id a -> a -> b -> b) -> b -> b
   , obounds :: (Id a, Id a)
@@ -59,8 +59,8 @@ createOps CDefs{getSymbol, getName, getFreq, content, validate} =
        , oname = getName . okind
        , ofreq = getFreq . okind
        , okind = okind
-       , ouniqSymbol = \ sym ->
-           case [Id i | (i, k) <- kindAssocs, getSymbol k == sym] of
+       , ouniqName = \ name ->
+           case [Id i | (i, k) <- kindAssocs, getName k == name] of
              [i] -> i
              l -> assert `failure` l
        , opick = \ p -> fmap fst $ frequency $ filterFreq (p . snd) kindFreq

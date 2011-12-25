@@ -19,7 +19,7 @@ wall,        wallV, wallH, pillar, doorOpen, doorClosed, doorSecret, stairsUp, s
 
 wall = TileKind
   { tsymbol  = '#'
-  , tname    = "A wall."
+  , tname    = "wall"
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfreq    = 100
@@ -27,7 +27,7 @@ wall = TileKind
   }
 wallV = TileKind
   { tsymbol  = '|'
-  , tname    = "A wall."
+  , tname    = "wall"
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfreq    = 100
@@ -35,7 +35,7 @@ wallV = TileKind
   }
 wallH = TileKind
   { tsymbol  = '-'
-  , tname    = "A wall."
+  , tname    = "wall"
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfreq    = 100
@@ -43,7 +43,7 @@ wallH = TileKind
   }
 pillar = TileKind
   { tsymbol  = 'O'
-  , tname    = "A pillar."
+  , tname    = "pillar"
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfreq    = 100
@@ -51,7 +51,7 @@ pillar = TileKind
   }
 doorOpen = TileKind
   { tsymbol  = '\''
-  , tname    = "An open door."
+  , tname    = "open door"
   , tcolor   = Yellow
   , tcolor2  = BrBlack
   , tfreq    = 100
@@ -59,7 +59,7 @@ doorOpen = TileKind
   }
 doorClosed = TileKind
   { tsymbol  = '+'
-  , tname    = "A closed door."
+  , tname    = "closed door"
   , tcolor   = Yellow
   , tcolor2  = BrBlack
   , tfreq    = 100
@@ -70,7 +70,7 @@ doorSecret = wall
   }
 stairsUp = TileKind
   { tsymbol  = '<'
-  , tname    = "A staircase up."
+  , tname    = "staircase up"
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfreq    = 100
@@ -78,7 +78,7 @@ stairsUp = TileKind
   }
 stairsDown = TileKind
   { tsymbol  = '>'
-  , tname    = "A staircase down."
+  , tname    = "staircase down"
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfreq    = 100
@@ -86,7 +86,7 @@ stairsDown = TileKind
   }
 unknown = TileKind
   { tsymbol  = ' '
-  , tname    = "An unknown space."
+  , tname    = "unknown space"
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfreq    = 0
@@ -94,7 +94,7 @@ unknown = TileKind
   }
 floorCorridorLit = TileKind
   { tsymbol  = '.'
-  , tname    = "Dirt."
+  , tname    = "dirt"
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfreq    = 100
@@ -112,23 +112,23 @@ floorRoomDark = floorCorridorDark
   { tfeature = Boring : tfeature floorCorridorDark
   }
 floorRed = floorCorridorLit
-  { tname    = "Brick pavement."
+  { tname    = "brick pavement"
   , tcolor   = BrRed
   , tcolor2  = Red
   , tfeature = Special : tfeature floorCorridorLit
   }
 floorBlue = floorRed
-  { tname    = "Granite cobblestones."
+  { tname    = "granite cobblestones"
   , tcolor   = BrBlue
   , tcolor2  = Blue
   }
 floorGreen = floorRed
-  { tname    = "Mossy stone path."
+  { tname    = "mossy stone path"
   , tcolor   = BrGreen
   , tcolor2  = Green
   }
 floorBrown = floorRed
-  { tname    = "Rotting mahogany deck."
+  { tname    = "rotting mahogany deck"
   , tcolor   = BrMagenta
   , tcolor2  = Magenta
   }
