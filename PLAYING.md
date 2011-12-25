@@ -27,7 +27,7 @@ The basic tiles are as follows.
                floor                              .
                corridor                           #
                wall (horizontal and vertical)     - and |
-               pillar wall                        O
+               pillar                             O
                stairs up                          <
                stairs down                        >
                open door                          | and -

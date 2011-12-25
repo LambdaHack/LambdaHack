@@ -13,13 +13,37 @@ cdefs = Content.CDefs
   , getFreq = tfreq
   , validate = tvalidate
   , content =
-      [wall, doorOpen, doorClosed, doorSecret, stairsUp, stairsDown, unknown, floorCorridorLit, floorCorridorDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown]
+      [wall, wallV, wallH, pillar, doorOpen, doorClosed, doorSecret, stairsUp, stairsDown, unknown, floorCorridorLit, floorCorridorDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown]
   }
-wall,        doorOpen, doorClosed, doorSecret, stairsUp, stairsDown, unknown, floorCorridorLit, floorCorridorDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown :: TileKind
+wall,        wallV, wallH, pillar, doorOpen, doorClosed, doorSecret, stairsUp, stairsDown, unknown, floorCorridorLit, floorCorridorDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown :: TileKind
 
 wall = TileKind
   { tsymbol  = '#'
   , tname    = "A wall."
+  , tcolor   = BrWhite
+  , tcolor2  = defFG
+  , tfreq    = 100
+  , tfeature = []
+  }
+wallV = TileKind
+  { tsymbol  = '|'
+  , tname    = "A wall."
+  , tcolor   = BrWhite
+  , tcolor2  = defFG
+  , tfreq    = 100
+  , tfeature = []
+  }
+wallH = TileKind
+  { tsymbol  = '-'
+  , tname    = "A wall."
+  , tcolor   = BrWhite
+  , tcolor2  = defFG
+  , tfreq    = 100
+  , tfeature = []
+  }
+pillar = TileKind
+  { tsymbol  = 'O'
+  , tname    = "A pillar."
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfreq    = 100
