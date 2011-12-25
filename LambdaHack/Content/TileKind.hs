@@ -13,13 +13,13 @@ cdefs = Content.CDefs
   , getFreq = tfreq
   , validate = tvalidate
   , content =
-      [wall, wallV, wallH, pillar, doorOpen, doorClosed, doorSecret, stairsUp, stairsDown, unknown, floorCorridorLit, floorCorridorDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown]
+      [wall, wallV, wallH, pillar, doorOpen, doorClosed, doorSecret, stairsUp, stairsDown, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown]
   }
-wall,        wallV, wallH, pillar, doorOpen, doorClosed, doorSecret, stairsUp, stairsDown, unknown, floorCorridorLit, floorCorridorDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown :: TileKind
+wall,        wallV, wallH, pillar, doorOpen, doorClosed, doorSecret, stairsUp, stairsDown, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown :: TileKind
 
 wall = TileKind
-  { tsymbol  = '#'
-  , tname    = "wall"
+  { tsymbol  = ' '
+  , tname    = "rock"
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfreq    = 100
@@ -31,7 +31,7 @@ wallV = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfreq    = 100
-  , tfeature = []
+  , tfeature = [Special]
   }
 wallH = TileKind
   { tsymbol  = '-'
@@ -39,7 +39,7 @@ wallH = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfreq    = 100
-  , tfeature = []
+  , tfeature = [Special]
   }
 pillar = TileKind
   { tsymbol  = 'O'
@@ -47,7 +47,7 @@ pillar = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfreq    = 100
-  , tfeature = []
+  , tfeature = [Special]
   }
 doorOpen = TileKind
   { tsymbol  = '\''
@@ -87,13 +87,13 @@ stairsDown = TileKind
 unknown = TileKind
   { tsymbol  = ' '
   , tname    = "unknown space"
-  , tcolor   = BrWhite
-  , tcolor2  = defFG
+  , tcolor   = defFG
+  , tcolor2  = BrWhite
   , tfreq    = 0
-  , tfeature = []
+  , tfeature = [Boring]
   }
 floorCorridorLit = TileKind
-  { tsymbol  = '.'
+  { tsymbol  = '#'
   , tname    = "dirt"
   , tcolor   = BrWhite
   , tcolor2  = defFG
@@ -105,17 +105,25 @@ floorCorridorDark = floorCorridorLit
   , tcolor2  = BrBlack
   , tfeature = [Walkable, Clear]
   }
-floorRoomLit = floorCorridorLit
-  { tfeature = Boring : tfeature floorCorridorLit
+floorArenaLit = floorCorridorLit
+  { tsymbol  = '.'
+  , tname    = "floor"
   }
-floorRoomDark = floorCorridorDark
-  { tfeature = Boring : tfeature floorCorridorDark
+floorArenaDark = floorCorridorDark
+  { tsymbol  = '.'
+  , tname    = "floor"
   }
-floorRed = floorCorridorLit
+floorRoomLit = floorArenaLit
+  { tfeature = Boring : tfeature floorArenaLit
+  }
+floorRoomDark = floorArenaDark
+  { tfeature = Boring : tfeature floorArenaDark
+  }
+floorRed = floorArenaLit
   { tname    = "brick pavement"
   , tcolor   = BrRed
   , tcolor2  = Red
-  , tfeature = Special : tfeature floorCorridorLit
+  , tfeature = Special : tfeature floorArenaLit
   }
 floorBlue = floorRed
   { tname    = "granite cobblestones"

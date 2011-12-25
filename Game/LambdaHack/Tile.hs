@@ -1,7 +1,9 @@
 module Game.LambdaHack.Tile
-  ( wallId, floorRoomLitId, floorRoomDarkId, doorOpenId, doorClosedId
-  , doorSecretId, stairsUpId, stairsDownId, unknownId, kindHasFeature
-  , kindHas, hasFeature, isClear, isLit
+  ( wallP, floorRoomLitP, floorRoomDarkP
+  , floorCorridorLitP, floorCorridorDarkP, floorSpecialP
+  , wallId, floorRoomLitId, floorRoomDarkId, doorOpenId, doorClosedId
+  , doorSecretId, stairsUpId, stairsDownId, unknownId
+  , kindHasFeature, kindHas, hasFeature, isClear, isLit
   ) where
 
 import qualified Data.List as L
@@ -12,13 +14,23 @@ import qualified Game.LambdaHack.Feature as F
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Random
 
+wallP, floorRoomLitP, floorRoomDarkP, floorCorridorLitP, floorCorridorDarkP, floorSpecialP :: TileKind -> Bool
+wallP t            = tfeature t == []
+floorRoomLitP      = kindHas [F.Walkable, F.Clear, F.Lit, F.Boring]
+                             [F.Special]
+floorRoomDarkP     = kindHas [F.Walkable, F.Clear, F.Boring]
+                             [F.Lit, F.Special]
+floorCorridorLitP  = kindHas [F.Walkable, F.Clear, F.Lit]
+                             [F.Exit, F.Special, F.Boring]
+floorCorridorDarkP = kindHas [F.Walkable, F.Clear]
+                             [F.Lit, F.Exit, F.Special, F.Boring]
+floorSpecialP      = kindHas [F.Walkable, F.Clear, F.Lit, F.Special]
+                             [F.Exit, F.Boring]
+
 wallId, floorRoomLitId, floorRoomDarkId, doorOpenId, doorClosedId, doorSecretId, stairsUpId, stairsDownId :: Kind.Ops TileKind -> Rnd (Kind.Id TileKind)
-wallId Kind.Ops{opick} =
-  opick $ \ t -> tsymbol t == '#' && L.null (tfeature t)
-floorRoomLitId Kind.Ops{opick} =
-  opick $ \ t -> tsymbol t == '.' && kindHas [F.Lit, F.Boring] [F.Special] t
-floorRoomDarkId Kind.Ops{opick} =
-  opick $ \ t -> tsymbol t == '.' && kindHas [F.Boring] [F.Lit, F.Special] t
+wallId Kind.Ops{opick} = opick wallP
+floorRoomLitId Kind.Ops{opick} = opick floorRoomLitP
+floorRoomDarkId Kind.Ops{opick} = opick floorRoomDarkP
 doorOpenId Kind.Ops{opick} = opick $ kindHasFeature F.Closable
 doorClosedId Kind.Ops{opick} = opick $ kindHasFeature F.Openable
 doorSecretId Kind.Ops{opick} = opick $ kindHasFeature F.Hidden
