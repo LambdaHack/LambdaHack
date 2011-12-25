@@ -22,8 +22,8 @@ roomValid :: Area      -- ^ the area to fill
           -> RoomKind  -- ^ the room kind to construct
           -> Bool
 roomValid (x0, y0, x1, y1) RoomKind{..} =
-  let dx = x1 - x0 + 1
-      dy = y1 - y0 + 1
+  let dx = x1 - x0 + if rfence == FNone then 3 else 1
+      dy = y1 - y0 + if rfence == FNone then 3 else 1
       dxcorner = case rtopLeft of [] -> 0 ; l : _ -> L.length l
       dycorner = L.length rtopLeft
   in dx >= 2 * dxcorner - 1 &&  dy >= 2 * dycorner - 1
@@ -40,13 +40,14 @@ digRoom :: RoomKind
         -> Area
         -> TileMapXY
 digRoom rk defLegend floorId wallId doorId area =
-  let fenceId | rfence rk = wallId
-              | otherwise = floorId
-      fence = buildFence fenceId area
+  let (roomArea, fence) = case rfence rk of
+        FWall  -> (area, buildFence wallId area)
+        FFloor -> (area, buildFence floorId area)
+        FNone  -> (expand area 1, M.empty)
       legend = M.insert '.' floorId $
                M.insert '#' wallId $
                M.insert '+' doorId defLegend
-  in M.union (M.map (legend M.!) $ tileRoom area rk) fence
+  in M.union (M.map (legend M.!) $ tileRoom roomArea rk) fence
 
 -- | Create the room by tiling patterns.
 tileRoom :: Area                           -- ^ the area to fill

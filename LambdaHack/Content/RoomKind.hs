@@ -10,16 +10,16 @@ cdefs = Content.CDefs
   , getFreq = rfreq
   , validate = rvalidate
   , content =
-      [rect, oval, ovalW, ovalD, colonnade, colonnadeW, colonnadeS, colonnade2]
+      [rect, oval, ovalW, ovalD, colonnade, colonnadeF, colonnadeW, cells]
   }
-rect,        oval, ovalW, ovalD, colonnade, colonnadeW, colonnadeS, colonnade2 :: RoomKind
+rect,        oval, ovalW, ovalD, colonnade, colonnadeF, colonnadeW, cells :: RoomKind
 
 rect = RoomKind  -- this room is valid for any nonempty area, hence low frequency
   { rsymbol  = 'r'
   , rname    = "room"
   , rfreq    = 100
   , rcover   = CTile
-  , rfence   = True
+  , rfence   = FWall
   , rtopLeft = ["."]
   }
 oval = RoomKind  -- needs a large area, hence high frequency
@@ -27,7 +27,7 @@ oval = RoomKind  -- needs a large area, hence high frequency
   , rname    = "oval room"
   , rfreq    = 100
   , rcover   = CStretch
-  , rfence   = True
+  , rfence   = FWall
   , rtopLeft = [ "####.."
                , "##...."
                , "#....."
@@ -37,7 +37,7 @@ oval = RoomKind  -- needs a large area, hence high frequency
                ]
   }
 ovalW = oval  -- without outer solid fence, the pattern visible from outside
-  { rfence   = False
+  { rfence   = FFloor
   , rtopLeft = [ "....+#"
                , "..###."
                , ".##..."
@@ -59,28 +59,35 @@ colonnade = RoomKind
   , rname    = "colonnade"
   , rfreq    = 50
   , rcover   = CTile
-  , rfence   = True
-  , rtopLeft = [ ".#"
-               , "#."
+  , rfence   = FNone
+  , rtopLeft = [ ".#.#"
+               , "#.#."
+               , ".#.#"
+               , "#.#."
                ]
   }
-colonnadeW = colonnade
-  { rfence   = False
+colonnadeF = colonnade
+  { rfence   = FFloor
   , rtopLeft = [ "#.#."
                , ".#.#"
                , "#.#."
                , ".#.#"
                ]
   }
-colonnadeS = colonnade
-  { rtopLeft = [ "...."
+colonnadeW = colonnade
+  { rfence   = FWall
+  , rtopLeft = [ "...."
                , ".#.#"
                , "...."
                , ".#.#"
                ]
   }
-colonnade2 = colonnade
-  { rcover   = CReflect
+cells = RoomKind
+  { rsymbol  = '#'
+  , rname    = "cells"
+  , rfreq    = 50
+  , rcover   = CReflect
+  , rfence   = FWall
   , rtopLeft = [ "..#"
                , "..#"
                , "##."

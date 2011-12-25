@@ -1,6 +1,6 @@
 module Game.LambdaHack.Area
   ( Area, neighbors, fromTo, normalize, normalizeArea, grid
-  , validArea, trivialArea )
+  , validArea, trivialArea, expand )
   where
 
 import qualified Data.List as L
@@ -62,3 +62,6 @@ validArea (x0, y0, x1, y1) = x0 <= x1 && y0 <= y1
 -- | Area with exactly one field.
 trivialArea :: Area -> Bool
 trivialArea (x0, y0, x1, y1) = x0 == x1 && y0 == y1
+
+expand :: Area -> Int -> Area
+expand (x0, y0, x1, y1) k = (x0 - k, y0 - k, x1 + k, y1 + k)

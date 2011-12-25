@@ -104,7 +104,7 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{opick}
                     else do
                       roomId <- ropick (roomValid r)
                       let kr = rokind roomId
-                      floorId <- (if dl || not (rfence kr)
+                      floorId <- (if dl || rfence kr == FFloor
                                   then Tile.floorRoomLitId
                                   else Tile.floorRoomDarkId) cotile
                       wallId <- Tile.wallId cotile

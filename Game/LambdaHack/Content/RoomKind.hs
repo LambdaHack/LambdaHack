@@ -1,5 +1,5 @@
 module Game.LambdaHack.Content.RoomKind
-  ( RoomKind(..), Cover(..), rvalidate
+  ( RoomKind(..), Cover(..), Fence(..), rvalidate
   ) where
 
 import qualified Data.List as L
@@ -9,7 +9,7 @@ data RoomKind = RoomKind
   , rname    :: String
   , rfreq    :: Int
   , rcover   :: Cover     -- ^ how to fill whole room based on the corner
-  , rfence   :: Bool      -- ^ whether to fence the room with solid border
+  , rfence   :: Fence     -- ^ whether to fence the room with solid border
   , rtopLeft :: [String]  -- ^ plan of the top-left corner of the room
   }
   deriving Show
@@ -18,7 +18,13 @@ data Cover =
     CTile     -- ^ tile the corner plan, cutting off at the right and bottom
   | CStretch  -- ^ fill symmetrically all corners and stretch their borders
   | CReflect  -- ^ tile separately and symmetrically the quarters of the room
-  deriving Show
+  deriving (Show, Eq)
+
+data Fence =
+    FWall   -- ^ put a solid wall fence around the room
+  | FFloor  -- ^ leave an empty floor space around the room
+  | FNone   -- ^ skip the fence and fill all with the room proper
+  deriving (Show, Eq)
 
 -- | Verify that the top-left corner map is rectangular and not empty.
 -- TODO: Verify that rooms are fully accessible from any entrace on the fence
