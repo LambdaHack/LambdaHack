@@ -98,6 +98,7 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{opick}
   doorOpenId   <- Tile.doorOpenId cotile
   doorClosedId <- Tile.doorClosedId cotile
   doorSecretId <- Tile.doorSecretId cotile
+  pickedCorTile <- opick corTile
   lrooms <- foldM (\ m (r@(x0, _, x1, _), dl) ->
                     if x0 == x1
                     then return m
@@ -109,10 +110,10 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{opick}
                                   else Tile.floorRoomDarkId) cotile
                       wallId <- Tile.wallId cotile
                       legend <- olegend cotile
-                      let room = digRoom kr legend floorId wallId doorClosedId r
+                      let room = digRoom kr legend
+                                   floorId wallId doorClosedId pickedCorTile r
                       return $ M.union room m
                   ) fence dlrooms
-  pickedCorTile <- opick corTile
   let lcorridors = M.unions (L.map (digCorridors pickedCorTile) cs)
       unknownId = Tile.unknownId cotile
       lm = M.unionWith (mergeCorridor unknownId cotile)

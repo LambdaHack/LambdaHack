@@ -41,13 +41,11 @@ oval = RoomKind  -- needs a large area, hence high frequency
 colonnade = RoomKind
   { rsymbol  = 'c'
   , rname    = "colonnade"
-  , rfreq    = 50
+  , rfreq    = 100
   , rcover   = CTile
   , rfence   = FFloor
-  , rtopLeft = [ ".O.O"
-               , "O.O."
-               , ".O.O"
-               , "O.O."
+  , rtopLeft = [ ".O"
+               , "O."
                ]
   }
 colonnadeW = colonnade

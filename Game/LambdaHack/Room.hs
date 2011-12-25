@@ -22,8 +22,12 @@ roomValid :: Area      -- ^ the area to fill
           -> RoomKind  -- ^ the room kind to construct
           -> Bool
 roomValid (x0, y0, x1, y1) RoomKind{..} =
-  let dx = x1 - x0 + if rfence == FNone then 3 else 1
-      dy = y1 - y0 + if rfence == FNone then 3 else 1
+  let extra = case rfence of
+        FWall  -> 1
+        FFloor -> -1
+        FNone  -> 3
+      dx = x1 - x0 + extra
+      dy = y1 - y0 + extra
       dxcorner = case rtopLeft of [] -> 0 ; l : _ -> L.length l
       dycorner = L.length rtopLeft
   in dx >= 2 * dxcorner - 1 &&  dy >= 2 * dycorner - 1
@@ -36,13 +40,14 @@ buildFence wallId (x0, y0, x1, y1) =
 -- | Construct room of a given kind, with the given floor and wall tiles.
 digRoom :: RoomKind
         -> M.Map Char (Kind.Id TileKind)
-        -> Kind.Id TileKind -> Kind.Id TileKind -> Kind.Id TileKind
+        -> Kind.Id TileKind -> Kind.Id TileKind
+        -> Kind.Id TileKind -> Kind.Id TileKind
         -> Area
         -> TileMapXY
-digRoom rk defLegend floorId wallId doorId area =
+digRoom rk defLegend floorId wallId doorId corId area =
   let (roomArea, fence) = case rfence rk of
         FWall  -> (area, buildFence wallId area)
-        FFloor -> (area, buildFence floorId area)
+        FFloor -> (expand area (-1), buildFence corId $ expand area (-1))
         FNone  -> (expand area 1, M.empty)
       legend = M.insert '.' floorId $
                M.insert '#' wallId $
