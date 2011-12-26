@@ -25,7 +25,6 @@ data CaveKind = CaveKind
   , doorChance        :: Random.Rnd Bool
   , doorOpenChance    :: Random.Rnd Bool
   , doorSecretChance  :: Random.Rnd Bool
-  , csecretStrength   :: Random.RollDice
   , citemNum          :: Random.RollDice
   , defTile           :: TileKind -> Bool
   , corTile           :: TileKind -> Bool

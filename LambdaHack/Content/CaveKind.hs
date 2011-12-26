@@ -36,7 +36,6 @@ rogue = CaveKind
   , doorChance        = Random.chance $ 2%3
   , doorOpenChance    = Random.chance $ 1%10
   , doorSecretChance  = Random.chance $ 1%4
-  , csecretStrength   = (7, 2)
   , citemNum          = (5, 2)
   , defTile           = Tile.wallP
   , corTile           = \ t -> tsymbol t == '#' && Tile.floorCorridorDarkP t
