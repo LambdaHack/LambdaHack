@@ -364,11 +364,11 @@ bumpTile dloc feat = do
 
 -- | Perform the action specified for the tile in case it's triggered.
 triggerTile :: Kind.Ops TileKind -> Level -> Loc -> Action ()
-triggerTile Kind.Ops{okind, opick} lvl dloc =
+triggerTile cotile@Kind.Ops{okind} lvl dloc =
   let f F.Aura{} = return ()  -- TODO
       f F.Cause{} = return ()  -- TODO
-      f (F.Change symbol) = do
-        newTileId <- rndToAction $ opick $ \ t -> tsymbol t == symbol
+      f (F.ChangeTo name) = do
+        newTileId <- rndToAction $ Tile.changeTo cotile name
         let adj = (Kind.// [(dloc, newTileId)])
         modify (updateLevel (updateLMap adj))
       f _ = return ()

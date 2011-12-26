@@ -28,7 +28,9 @@ data Fence =
 
 -- | Verify that the top-left corner map is rectangular and not empty.
 -- TODO: Verify that rooms are fully accessible from any entrace on the fence
--- that is at least 4 tiles distant from the edges, if the room is big enough.
+-- that is at least 4 tiles distant from the edges, if the room is big enough,
+-- (unless the room has FNone fence, in which case the entrance is
+-- at the outer tiles of the room).
 -- TODO: Check that all symbols in room plans are covered in tile content.
 rvalidate :: [RoomKind] -> [RoomKind]
 rvalidate = L.filter (\ RoomKind{..} ->

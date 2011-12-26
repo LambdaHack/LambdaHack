@@ -1,9 +1,9 @@
 module Game.LambdaHack.Tile
   ( wallP, floorRoomLitP, floorRoomDarkP
   , floorCorridorLitP, floorCorridorDarkP, floorSpecialP
-  , wallId, floorRoomLitId, floorRoomDarkId, doorOpenId, doorClosedId
-  , doorSecretId, stairsUpId, stairsDownId, unknownId
-  , kindHasFeature, kindHas, hasFeature, isClear, isLit, similar, canBeHidden
+  , wallId, floorRoomLitId, floorRoomDarkId, stairsUpId, stairsDownId, unknownId
+  , kindHasFeature, kindHas, hasFeature, isClear, isLit
+  , similar, canBeHidden, changeTo
   ) where
 
 import qualified Data.List as L
@@ -27,13 +27,10 @@ floorCorridorDarkP = kindHas [F.Walkable, F.Clear]
 floorSpecialP      = kindHas [F.Walkable, F.Clear, F.Lit, F.Special]
                              [F.Exit, F.Boring]
 
-wallId, floorRoomLitId, floorRoomDarkId, doorOpenId, doorClosedId, doorSecretId, stairsUpId, stairsDownId :: Kind.Ops TileKind -> Rnd (Kind.Id TileKind)
+wallId, floorRoomLitId, floorRoomDarkId, stairsUpId, stairsDownId :: Kind.Ops TileKind -> Rnd (Kind.Id TileKind)
 wallId Kind.Ops{opick} = opick wallP
 floorRoomLitId Kind.Ops{opick} = opick floorRoomLitP
 floorRoomDarkId Kind.Ops{opick} = opick floorRoomDarkP
-doorOpenId Kind.Ops{opick} = opick $ kindHasFeature F.Closable
-doorClosedId Kind.Ops{opick} = opick $ kindHasFeature F.Openable
-doorSecretId Kind.Ops{opick} = opick $ kindHasFeature F.Hidden
 stairsUpId Kind.Ops{opick} = opick $ kindHasFeature F.Climbable
 stairsDownId Kind.Ops{opick} = opick $ kindHasFeature F.Descendable
 
@@ -74,3 +71,8 @@ canBeHidden :: Kind.Ops TileKind -> TileKind -> Bool
 canBeHidden Kind.Ops{ofoldrWithKey} t =
   let sim _ s acc = acc || kindHasFeature F.Hidden s && similar t s
   in ofoldrWithKey sim False
+
+changeTo :: Kind.Ops TileKind -> String -> Rnd (Kind.Id TileKind)
+changeTo Kind.Ops{opick} name =
+  let p tk = kindHasFeature (F.ChangeFrom name) tk
+  in opick p

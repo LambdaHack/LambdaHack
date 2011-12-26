@@ -18,7 +18,6 @@ import qualified Game.LambdaHack.Tile as Tile
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.Content.RoomKind
 import Game.LambdaHack.Room
 import qualified Game.LambdaHack.Feature as F
 
@@ -95,8 +94,6 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick, ofoldrWithKey}
   fenceId <- Tile.wallId cotile
   let fenceBounds = (1, 1, cxsize - 2, cysize - 2)
       fence = buildFence fenceId fenceBounds
-  doorOpenId   <- Tile.doorOpenId cotile
-  doorClosedId <- Tile.doorClosedId cotile
   pickedCorTile <- opick corTile
   lrooms <- foldM (\ m (r@(x0, _, x1, _), dl) ->
                     if x0 == x1
@@ -104,13 +101,13 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick, ofoldrWithKey}
                     else do
                       roomId <- ropick (roomValid r)
                       let kr = rokind roomId
-                      floorId <- (if dl || rfence kr == FFloor
+                      floorId <- (if dl
                                   then Tile.floorRoomLitId
                                   else Tile.floorRoomDarkId) cotile
                       wallId <- Tile.wallId cotile
                       legend <- olegend cotile
-                      let room = digRoom kr legend
-                                   floorId wallId doorClosedId pickedCorTile r
+                      let room =
+                            digRoom kr legend floorId wallId pickedCorTile r
                       return $ M.union room m
                   ) fence dlrooms
   let lcorridors = M.unions (L.map (digCorridors pickedCorTile) cs)
@@ -138,17 +135,22 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick, ofoldrWithKey}
               else do
                 ro <- doorOpenChance cfg
                 if ro
-                   then return (M.insert (x, y) doorOpenId{-!!!-} l, le)
-                   else do
-                     rs <- doorSecretChance cfg
-                     if not rs
-                       then return (M.insert (x, y) doorClosedId{-!!!-} l, le)
-                       else do
-                         let getDice (F.Secret dice) _ = dice
-                             getDice _ acc = acc
-                             d = foldr getDice (5, 2) (tfeature (tokind t))
-                         rs1 <- rollDice d
-                         return (l, M.insert (x, y) (SecretStrength rs1) le)
+                  then do
+                    doorClosedId <- trigger cotile t
+                    doorOpenId   <- trigger cotile doorClosedId
+                    return (M.insert (x, y) doorOpenId l, le)
+                  else do
+                    rs <- doorSecretChance cfg
+                    if not rs
+                      then do
+                        doorClosedId <- trigger cotile t
+                        return (M.insert (x, y) doorClosedId l, le)
+                      else do
+                        let getDice (F.Secret dice) _ = dice
+                            getDice _ acc = acc
+                            d = foldr getDice (5, 2) (tfeature (tokind t))
+                        rs1 <- rollDice d
+                        return (l, M.insert (x, y) (SecretStrength rs1) le)
           else return (l, le)
     in foldM f (lm, M.empty) (M.toList lm)
   let cave = Cave
@@ -176,6 +178,14 @@ olegend Kind.Ops{ofoldrWithKey, opick} =
         return $ M.insert s tk m
       legend = S.fold getLegend (return M.empty) symbols
   in legend
+
+trigger :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
+trigger cotile@Kind.Ops{okind} t =
+  let getTo (F.ChangeTo name) _ = name
+      getTo _ acc = acc
+  in case foldr getTo "" (tfeature (okind t)) of
+       ""   -> return t
+       name -> Tile.changeTo cotile name
 
 type Corridor = [(X, Y)]
 

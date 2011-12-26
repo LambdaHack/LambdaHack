@@ -40,18 +40,16 @@ buildFence wallId (x0, y0, x1, y1) =
 -- | Construct room of a given kind, with the given floor and wall tiles.
 digRoom :: RoomKind
         -> M.Map Char (Kind.Id TileKind)
-        -> Kind.Id TileKind -> Kind.Id TileKind
-        -> Kind.Id TileKind -> Kind.Id TileKind
+        -> Kind.Id TileKind -> Kind.Id TileKind -> Kind.Id TileKind
         -> Area
         -> TileMapXY
-digRoom rk defLegend floorId wallId doorId corId area =
+digRoom rk defLegend floorId wallId corId area =
   let (roomArea, fence) = case rfence rk of
         FWall  -> (area, buildFence wallId area)
         FFloor -> (expand area (-1), buildFence corId $ expand area (-1))
         FNone  -> (expand area 1, M.empty)
       legend = M.insert '.' floorId $
-               M.insert '#' wallId $
-               M.insert '+' doorId defLegend
+               M.insert '#' wallId defLegend
   in M.union (M.map (legend M.!) $ tileRoom roomArea rk) fence
 
 -- | Create the room by tiling patterns.

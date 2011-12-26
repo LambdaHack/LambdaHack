@@ -78,7 +78,7 @@ mkCorridor hv ((x0, y0), (x1, y1)) b = do
 connectRooms :: Area -> Area -> Rnd [(X, Y)]
 connectRooms sa@(_, _, sx1, sy1) ta@(tx0, ty0, _, _) = do
   let trim (x0, y0, x1, y1) =
-        let trim4 (v0, v1) = if v1 - v0 < 9 then (v0, v1) else (v0 + 4, v1 - 4)
+        let trim4 (v0, v1) = if v1 - v0 < 8 then (v0, v1) else (v0 + 4, v1 - 4)
             (nx0, nx1) = trim4 (x0, x1)
             (ny0, ny1) = trim4 (y0, y1)
         in (nx0, ny0, nx1, ny1)

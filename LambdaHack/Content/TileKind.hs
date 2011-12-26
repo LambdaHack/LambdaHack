@@ -55,7 +55,9 @@ doorOpen = TileKind
   , tcolor   = Yellow
   , tcolor2  = BrBlack
   , tfreq    = 100
-  , tfeature = [Walkable, Clear, Exit, Change '+', Closable]
+  , tfeature = [ Walkable, Clear, Exit, Closable
+               , ChangeTo "closed door", ChangeFrom "open door"
+               ]
   }
 doorClosed = TileKind
   { tsymbol  = '+'
@@ -63,48 +65,66 @@ doorClosed = TileKind
   , tcolor   = Yellow
   , tcolor2  = BrBlack
   , tfreq    = 100
-  , tfeature = [Exit, Change '\'', Openable]
+  , tfeature = [ Exit, Openable
+               , ChangeTo "open door", ChangeFrom "closed door"
+               ]
   }
 doorSecret = wall
-  { tfeature = [Hidden, Change '+', Secret (7, 2)]
+  { tfeature = [Hidden, Secret (7, 2), ChangeTo "closed door"]
   }
 doorOpenV = TileKind
   { tsymbol  = '-'
   , tname    = "open door"
   , tcolor   = Yellow
   , tcolor2  = BrBlack
-  , tfreq    = 0
-  , tfeature = [Special, Walkable, Clear, Exit, Change '+', Closable]
+  , tfreq    = 100
+  , tfeature = [ Special, Walkable, Clear, Exit, Closable
+               , ChangeTo "vertical closed door"
+               , ChangeFrom "vertical open door"
+               ]
   }
 doorClosedV = TileKind
   { tsymbol  = '+'
   , tname    = "closed door"
   , tcolor   = Yellow
   , tcolor2  = BrBlack
-  , tfreq    = 0
-  , tfeature = [Special, Exit, Change '-', Openable]
+  , tfreq    = 100
+  , tfeature = [ Special, Exit, Openable
+               , ChangeTo "vertical open door"
+               , ChangeFrom "vertical closed door"
+               ]
   }
 doorSecretV = wallV
-  { tfeature = [Special, Hidden, Change '+', Secret (7, 2)]
+  { tfeature = [ Special, Hidden, Secret (7, 2)
+               , ChangeTo "vertical closed door"
+               ]
   }
 doorOpenH = TileKind
   { tsymbol  = '|'
   , tname    = "open door"
   , tcolor   = Yellow
   , tcolor2  = BrBlack
-  , tfreq    = 0
-  , tfeature = [Special, Walkable, Clear, Exit, Change '+', Closable]
+  , tfreq    = 100
+  , tfeature = [ Special, Walkable, Clear, Exit, Closable
+               , ChangeTo "horizontal closed door"
+               , ChangeFrom "horizontal open door"
+               ]
   }
 doorClosedH = TileKind
   { tsymbol  = '+'
   , tname    = "closed door"
   , tcolor   = Yellow
   , tcolor2  = BrBlack
-  , tfreq    = 0
-  , tfeature = [Special, Exit, Change '|', Openable]
+  , tfreq    = 100
+  , tfeature = [ Special, Exit, Openable
+               , ChangeTo "horizontal open door"
+               , ChangeFrom "horizontal closed door"
+               ]
   }
 doorSecretH = wallH
-  { tfeature = [Special, Hidden, Change '+', Secret (7, 2)]
+  { tfeature = [ Special, Hidden, Secret (7, 2)
+               , ChangeTo "horizontal closed door"
+               ]
   }
 stairsUp = TileKind
   { tsymbol  = '<'

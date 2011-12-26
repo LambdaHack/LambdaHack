@@ -13,7 +13,8 @@ data Feature =
   | Secret !RollDice   -- ^ tile is generated with this high secrecy value
   | Aura !Effect       -- ^ sustains the effect continuously, TODO
   | Cause !Effect      -- ^ causes the effect when triggered, TODO
-  | Change !Char       -- ^ transitions to any such tile when triggered
+  | ChangeTo !String   -- ^ transitions to any such tile when triggered
+  | ChangeFrom !String -- ^ a possible target of transitions
   | Climbable          -- ^ triggered by climbing onto
   | Descendable        -- ^ triggered by descending into
   | Openable           -- ^ triggered by opening
