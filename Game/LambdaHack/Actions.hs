@@ -669,18 +669,6 @@ doLook = do
       session getConfirm
       messageAdd ""
 
--- | The player can't tell if the tile is a secret door or not.
-canBeSecretDoor :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
-canBeSecretDoor Kind.Ops{okind, ofoldrWithKey} t =
-  let u = okind t
-      similar _ s acc = acc ||
-        Tile.kindHasFeature F.Hidden s &&
-        TileKind.tsymbol u == TileKind.tsymbol s &&
-        TileKind.tname u   == TileKind.tname s   &&
-        TileKind.tcolor u  == TileKind.tcolor s  &&
-        TileKind.tcolor2 u == TileKind.tcolor2 s
-  in ofoldrWithKey similar False
-
 -- | This function performs a move (or attack) by any actor,
 -- i.e., it can handle monsters, heroes and both.
 moveOrAttack :: Bool       -- ^ allow attacks?
@@ -689,7 +677,7 @@ moveOrAttack :: Bool       -- ^ allow attacks?
              -> Action ()
 moveOrAttack allowAttacks actor dir = do
   -- We start by looking at the target position.
-  cops@Kind.COps{cotile} <- contentOps
+  cops@Kind.COps{cotile = cotile@Kind.Ops{okind}} <- contentOps
   state  <- get
   pl     <- gets splayer
   lvl    <- gets slevel
@@ -716,7 +704,7 @@ moveOrAttack allowAttacks actor dir = do
             messageAdd $ lookAt cops False True state lvl tloc ""
           advanceTime actor
       | allowAttacks && actor == pl
-        && canBeSecretDoor cotile (lvl `rememberAt` tloc) -> do
+        && Tile.canBeHidden cotile (okind $ lvl `rememberAt` tloc) -> do
           messageAdd "You search your surroundings."  -- TODO: proper msg
           search
       | otherwise -> actorOpenDoor actor dir  -- try to open a door

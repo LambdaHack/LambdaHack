@@ -20,7 +20,7 @@ depth: 10
 fovMode: digital
 ;fovMode: permissive
 ;fovMode: shadow
-fovRadius: 40
+fovRadius: 10
 ;startingRandomGenerator: 42
 ;dungeonRandomGenerator: 42
 

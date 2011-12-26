@@ -3,7 +3,7 @@ module Game.LambdaHack.Tile
   , floorCorridorLitP, floorCorridorDarkP, floorSpecialP
   , wallId, floorRoomLitId, floorRoomDarkId, doorOpenId, doorClosedId
   , doorSecretId, stairsUpId, stairsDownId, unknownId
-  , kindHasFeature, kindHas, hasFeature, isClear, isLit
+  , kindHasFeature, kindHas, hasFeature, isClear, isLit, similar, canBeHidden
   ) where
 
 import qualified Data.List as L
@@ -60,3 +60,17 @@ isClear Kind.Ops{ospeedup} = assert `failure` L.length ospeedup
 isLit :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 isLit Kind.Ops{ospeedup = _ : isLitTab : _} = isLitTab
 isLit Kind.Ops{ospeedup} = assert `failure` L.length ospeedup
+
+-- | The player can't one tile from the other.
+similar :: TileKind -> TileKind -> Bool
+similar t u =
+  tsymbol t == tsymbol u &&
+  tname   t == tname   u &&
+  tcolor  t == tcolor  u &&
+  tcolor2 t == tcolor2 u
+
+-- | The player can't tell if the tile is hidden or not.
+canBeHidden :: Kind.Ops TileKind -> TileKind -> Bool
+canBeHidden Kind.Ops{ofoldrWithKey} t =
+  let sim _ s acc = acc || kindHasFeature F.Hidden s && similar t s
+  in ofoldrWithKey sim False

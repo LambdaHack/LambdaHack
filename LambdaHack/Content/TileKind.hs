@@ -13,9 +13,9 @@ cdefs = Content.CDefs
   , getFreq = tfreq
   , validate = tvalidate
   , content =
-      [wall, wallV, wallH, pillar, doorOpen, doorClosed, doorSecret, stairsUp, stairsDown, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown]
+      [wall, wallV, wallH, pillar, doorOpen, doorClosed, doorSecret, doorOpenV, doorClosedV, doorSecretV, doorOpenH, doorClosedH, doorSecretH, stairsUp, stairsDown, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown]
   }
-wall,        wallV, wallH, pillar, doorOpen, doorClosed, doorSecret, stairsUp, stairsDown, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown :: TileKind
+wall,        wallV, wallH, pillar, doorOpen, doorClosed, doorSecret, doorOpenV, doorClosedV, doorSecretV, doorOpenH, doorClosedH, doorSecretH, stairsUp, stairsDown, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown :: TileKind
 
 wall = TileKind
   { tsymbol  = ' '
@@ -68,6 +68,44 @@ doorClosed = TileKind
 doorSecret = wall
   { tfeature = [Hidden, Change '+', Secret (7, 2)]
   }
+doorOpenV = TileKind
+  { tsymbol  = '-'
+  , tname    = "open door"
+  , tcolor   = Yellow
+  , tcolor2  = BrBlack
+  , tfreq    = 0
+  , tfeature = [Special, Walkable, Clear, Exit, Change '+', Closable]
+  }
+doorClosedV = TileKind
+  { tsymbol  = '+'
+  , tname    = "closed door"
+  , tcolor   = Yellow
+  , tcolor2  = BrBlack
+  , tfreq    = 0
+  , tfeature = [Special, Exit, Change '-', Openable]
+  }
+doorSecretV = wallV
+  { tfeature = [Special, Hidden, Change '+', Secret (7, 2)]
+  }
+doorOpenH = TileKind
+  { tsymbol  = '|'
+  , tname    = "open door"
+  , tcolor   = Yellow
+  , tcolor2  = BrBlack
+  , tfreq    = 0
+  , tfeature = [Special, Walkable, Clear, Exit, Change '+', Closable]
+  }
+doorClosedH = TileKind
+  { tsymbol  = '+'
+  , tname    = "closed door"
+  , tcolor   = Yellow
+  , tcolor2  = BrBlack
+  , tfreq    = 0
+  , tfeature = [Special, Exit, Change '|', Openable]
+  }
+doorSecretH = wallH
+  { tfeature = [Special, Hidden, Change '+', Secret (7, 2)]
+  }
 stairsUp = TileKind
   { tsymbol  = '<'
   , tname    = "staircase up"
@@ -101,9 +139,7 @@ floorCorridorLit = TileKind
   , tfeature = [Walkable, Clear, Lit]
   }
 floorCorridorDark = floorCorridorLit
-  { tcolor   = BrYellow
-  , tcolor2  = BrBlack
-  , tfeature = [Walkable, Clear]
+  { tfeature = [Walkable, Clear]
   }
 floorArenaLit = floorCorridorLit
   { tsymbol  = '.'
@@ -112,6 +148,7 @@ floorArenaLit = floorCorridorLit
 floorArenaDark = floorCorridorDark
   { tsymbol  = '.'
   , tname    = "floor"
+  , tcolor2  = BrBlack
   }
 floorRoomLit = floorArenaLit
   { tfeature = Boring : tfeature floorArenaLit

@@ -30,12 +30,13 @@ oval = RoomKind  -- needs a large area, hence high frequency
   , rfreq    = 1000
   , rcover   = CStretch
   , rfence   = FFloor
-  , rtopLeft = [ "...|-+"
-               , ".--|.."
-               , ".|...."
-               , "--...."
-               , "|....."
-               , "+....."
+  , rtopLeft = [ "...|--."
+               , ".--|..."
+               , ".|....."
+               , "--....."
+               , "|......"
+               , "|......"
+               , "......."
                ]
   }
 colonnade = RoomKind

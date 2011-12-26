@@ -10,9 +10,9 @@ data Feature =
   | Clear              -- ^ actors can see through
   | Exit               -- ^ is a non-secret door or a stair
   | Lit                -- ^ is lit with an ambient shine
-  | Secret !RollDice   -- ^ tile is generated with this high secrecy value
-  | Aura !Effect       -- ^ sustains the effect continuously
-  | Cause !Effect      -- ^ causes the effect when triggered
+  | Secret !RollDice   -- ^ tile is generated with this high secrecy value, TODO
+  | Aura !Effect       -- ^ sustains the effect continuously, TODO
+  | Cause !Effect      -- ^ causes the effect when triggered, TODO
   | Change !Char       -- ^ transitions to any such tile when triggered
   | Climbable          -- ^ triggered by climbing onto
   | Descendable        -- ^ triggered by descending into

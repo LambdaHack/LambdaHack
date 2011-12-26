@@ -32,6 +32,7 @@ instance Binary SecretStrength where
 -- but less precise property that tiles that look the same can't be
 -- distinguished by player actions (but may behave differently
 -- wrt dungeon generation, AI preferences, etc.).
+-- TODO: check that all solid room boundaries have hidden counterparts.
 tvalidate :: [TileKind] -> [TileKind]
 tvalidate lt =
   let listFov f = L.map (\ kt -> ((tsymbol kt, f kt), [kt])) lt
