@@ -152,7 +152,7 @@ unknown = TileKind
   }
 floorCorridorLit = TileKind
   { tsymbol  = '#'
-  , tname    = "dirt"
+  , tname    = "corridor"
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfreq    = 100
@@ -163,11 +163,11 @@ floorCorridorDark = floorCorridorLit
   }
 floorArenaLit = floorCorridorLit
   { tsymbol  = '.'
-  , tname    = "floor"
+  , tname    = "stone floor"
   }
 floorArenaDark = floorCorridorDark
   { tsymbol  = '.'
-  , tname    = "floor"
+  , tname    = "stone floor"
   , tcolor2  = BrBlack
   }
 floorRoomLit = floorArenaLit
@@ -180,20 +180,24 @@ floorRed = floorArenaLit
   { tname    = "brick pavement"
   , tcolor   = BrRed
   , tcolor2  = Red
+  , tfreq    = 30
   , tfeature = Special : tfeature floorArenaLit
   }
 floorBlue = floorRed
   { tname    = "granite cobblestones"
   , tcolor   = BrBlue
   , tcolor2  = Blue
+  , tfreq    = 100
   }
 floorGreen = floorRed
   { tname    = "mossy stone path"
   , tcolor   = BrGreen
   , tcolor2  = Green
+  , tfreq    = 100
   }
 floorBrown = floorRed
   { tname    = "rotting mahogany deck"
   , tcolor   = BrMagenta
   , tcolor2  = Magenta
+  , tfreq    = 10
   }

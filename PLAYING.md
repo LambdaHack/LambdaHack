@@ -3,7 +3,7 @@ Playing LambdaHack
 
 LambdaHack is a small dungeon crawler illustrating the roguelike game engine
 library also called LambdaHack. Playing the game involves walking around
-the dungeon, alone or in a party of fearless adventurers, jumping between
+the dungeon, alone or in a party of fearless adventurers, gaining access to new
 levels, bumping into monsters, doors and walls, gathering magical treasure
 and making creative use of it. The bloodthirsty monsters do the same,
 intelligence allowing, while tirelessly chasing the noble heroes
@@ -12,7 +12,7 @@ by smell and night-sight.
 Once the few basic command keys and on-screen symbols are learned,
 mastery and enjoyment of the game is the matter of tactical skill
 and literary imagination. To be honest, a lot of imagination is required
-for this simple game, but it's is playable and winnable.
+for this simple game, but it's playable and winnable.
 
 
 Dungeon

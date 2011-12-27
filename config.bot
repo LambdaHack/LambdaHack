@@ -52,8 +52,6 @@ firstDeathEnds: False
 ;
 ; Handy with Vi keys:
 comma: g
-; Angband compatibility:
-v: t
 
 [monsters]
 smellTimeout: 1000
