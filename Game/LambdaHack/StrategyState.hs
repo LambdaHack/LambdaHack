@@ -176,7 +176,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
       -- Wasting swords would be too cruel to the player.
       isymbol ik /= ')']
   actionThrow groupName =
-    zapGroupItem actor (fromJust floc) (zapToVerb groupName)
+    projectGroupItem actor (fromJust floc) (projectToVerb groupName)
   towardsFreq =
     let freqs = runStrategy $ fromDir False moveTowards
     in if asight mk

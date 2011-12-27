@@ -76,7 +76,7 @@ Below are the basic default keys form common commands.
                i      display inventory
                q      quaff a potion
                r      read a scroll
-               a      aim a wand
+               z      zap a wand
                t      throw a weapon
 
 Searching for secret doors and opening closed doors have no keys assigned.

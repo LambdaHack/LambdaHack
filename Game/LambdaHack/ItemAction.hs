@@ -96,12 +96,12 @@ quaffPotion = playerApplyGroupItem "potion" "!"
 readScroll :: Action ()
 readScroll = playerApplyGroupItem "scroll" "?"
 
-zapGroupItem :: ActorId  -- ^ actor zapping the item; on current level
-             -> Loc      -- ^ target location for the zapping
-             -> String   -- ^ how the "zapping" is called
-             -> Item     -- ^ the item to be zapped
+projectGroupItem :: ActorId  -- ^ actor projecting the item; on current level
+             -> Loc      -- ^ target location for the projecting
+             -> String   -- ^ how the "projecting" is called
+             -> Item     -- ^ the item to be projected
              -> Action ()
-zapGroupItem source loc verb item = do
+projectGroupItem source loc verb item = do
   cops@Kind.COps{coactor} <- contentOps
   state <- get
   sm    <- gets (getActor source)
@@ -127,13 +127,13 @@ zapGroupItem source loc verb item = do
       modify (updateLevel (dropItemsAt [consumed] loc))
   advanceTime source
 
-playerZapGroupItem :: String -> [Char] -> Action ()
-playerZapGroupItem groupName syms = do
+playerProjectGroupItem :: String -> [Char] -> Action ()
+playerProjectGroupItem groupName syms = do
   Kind.Ops{oname} <- contentf Kind.coitem
   state <- get
   is    <- gets getPlayerItem
   iOpt  <- getGroupItem is groupName syms
-             ("What to " ++ zapToVerb groupName ++ "?") "in inventory"
+             ("What to " ++ projectToVerb groupName ++ "?") "in inventory"
   pl    <- gets splayer
   per   <- currentPerception
   case iOpt of
@@ -143,22 +143,22 @@ playerZapGroupItem groupName syms = do
         Just loc ->
           -- TODO: draw digital line and see if obstacles prevent firing
           if actorReachesLoc pl loc per (Just pl)
-          then let verb = zapToVerb (oname (jkind i))
-               in zapGroupItem pl loc verb i
+          then let verb = projectToVerb (oname (jkind i))
+               in projectGroupItem pl loc verb i
           else abortWith "target not reachable"
     Nothing -> neverMind True
 
-zapToVerb :: String -> String
-zapToVerb "wand" = "aim"
-zapToVerb "dart" = "throw"
-zapToVerb "item" = "zap"
-zapToVerb _ = "furiously zap"
+projectToVerb :: String -> String
+projectToVerb "wand" = "zap"
+projectToVerb "dart" = "throw"
+projectToVerb "item" = "project"
+projectToVerb _ = "furiously project"
 
-aimItem :: Action ()
-aimItem = playerZapGroupItem "wand" "/"
+zapItem :: Action ()
+zapItem = playerProjectGroupItem "wand" "/"
 
 throwItem :: Action ()
-throwItem = playerZapGroupItem "dart" "|"
+throwItem = playerProjectGroupItem "dart" "|"
 
 -- | Drop a single item.
 -- TODO: allow dropping a given number of identical items.

@@ -246,7 +246,7 @@ stdKeybindings = Keybindings
                (K.Char 'q',  quaffCommand),
                (K.Char 'r',  readCommand),
                (K.Char 't',  throwCommand),
-               (K.Char 'a',  aimCommand),
+               (K.Char 'z',  zapCommand),
 
                -- wait
                (K.Char '.',  Undescribed playerAdvanceTime),

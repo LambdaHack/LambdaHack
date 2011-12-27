@@ -55,7 +55,9 @@ keyTranslate e =
     'q'    -> K.Char 'q'
     'r'    -> K.Char 'r'
     't'    -> K.Char 'g'  -- tagetting is too hard, so don't throw
-    'a'    -> K.Char 'g'  -- and don't aim
+    'z'    -> K.Char 'g'  -- and don't zap
+    'p'    -> K.Char 'g'  -- and don't project
+    'a'    -> K.Char 'g'  -- and don't apply
     -- For bots: don't let them give up, write files, procrastinate.
     '.'    -> K.Return
     'Q'    -> K.Return

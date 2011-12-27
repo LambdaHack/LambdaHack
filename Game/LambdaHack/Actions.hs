@@ -719,7 +719,7 @@ moveOrAttack allowAttacks actor dir = do
 -- Actors on blocked locations can be attacked without any restrictions.
 -- For instance, an actor capable of moving through walls
 -- can be attacked from an adjacent position.
--- This function is analogous to zapGroupItem, but for melee
+-- This function is analogous to projectGroupItem, but for melee
 -- and not using up the weapon.
 actorAttackActor :: ActorId -> ActorId -> Action ()
 actorAttackActor source@(AHero _) target@(AHero _) =
