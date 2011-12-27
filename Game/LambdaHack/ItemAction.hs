@@ -22,6 +22,7 @@ import Game.LambdaHack.Perception
 import Game.LambdaHack.State
 import Game.LambdaHack.EffectAction
 import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Content.ItemKind
 
 -- Item UI code with the Action type and everything it depends on
 -- that is not already in Action.hs and EffectAction.hs.
@@ -71,30 +72,22 @@ applyGroupItem actor verb item = do
   itemEffectAction 5 actor actor consumed
   advanceTime actor
 
-playerApplyGroupItem :: String -> [Char] -> Action ()
-playerApplyGroupItem groupName syms = do
-  Kind.Ops{oname} <- contentf Kind.coitem
+playerApplyGroupItem :: String -> String -> [Char] -> Action ()
+playerApplyGroupItem verb groupName syms = do
+  Kind.Ops{okind} <- contentf Kind.coitem
   is   <- gets getPlayerItem
   iOpt <- getGroupItem is groupName syms
-            ("What to " ++ applyToVerb groupName ++ "?") "in inventory"
+            ("What to " ++ verb ++ "?") "in inventory"
   pl   <- gets splayer
   case iOpt of
-    Just i  ->
-      let verb = applyToVerb (oname (jkind i))
-      in applyGroupItem pl verb i
+    Just i  -> applyGroupItem pl (iverbApply $ okind $ jkind i) i
     Nothing -> neverMind True
 
-applyToVerb :: String -> String
-applyToVerb "potion" = "quaff"
-applyToVerb "scroll" = "read"
-applyToVerb "item"   = "apply"
-applyToVerb _ = "destructively apply"
-
 quaffPotion :: Action ()
-quaffPotion = playerApplyGroupItem "potion" "!"
+quaffPotion = playerApplyGroupItem "quaff" "potion" "!"
 
 readScroll :: Action ()
-readScroll = playerApplyGroupItem "scroll" "?"
+readScroll = playerApplyGroupItem "read" "scroll" "?"
 
 projectGroupItem :: ActorId  -- ^ actor projecting the item; on current level
              -> Loc      -- ^ target location for the projecting
@@ -127,13 +120,13 @@ projectGroupItem source loc verb item = do
       modify (updateLevel (dropItemsAt [consumed] loc))
   advanceTime source
 
-playerProjectGroupItem :: String -> [Char] -> Action ()
-playerProjectGroupItem groupName syms = do
-  Kind.Ops{oname} <- contentf Kind.coitem
+playerProjectGroupItem :: String -> String -> [Char] -> Action ()
+playerProjectGroupItem verb groupName syms = do
+  Kind.Ops{okind} <- contentf Kind.coitem
   state <- get
   is    <- gets getPlayerItem
   iOpt  <- getGroupItem is groupName syms
-             ("What to " ++ projectToVerb groupName ++ "?") "in inventory"
+             ("What to " ++ verb ++ "?") "in inventory"
   pl    <- gets splayer
   per   <- currentPerception
   case iOpt of
@@ -143,22 +136,15 @@ playerProjectGroupItem groupName syms = do
         Just loc ->
           -- TODO: draw digital line and see if obstacles prevent firing
           if actorReachesLoc pl loc per (Just pl)
-          then let verb = projectToVerb (oname (jkind i))
-               in projectGroupItem pl loc verb i
+          then projectGroupItem pl loc (iverbProject $ okind $ jkind i) i
           else abortWith "target not reachable"
     Nothing -> neverMind True
 
-projectToVerb :: String -> String
-projectToVerb "wand" = "zap"
-projectToVerb "dart" = "throw"
-projectToVerb "item" = "project"
-projectToVerb _ = "furiously project"
-
 zapItem :: Action ()
-zapItem = playerProjectGroupItem "wand" "/"
+zapItem = playerProjectGroupItem "zap" "wand" "/"
 
 throwItem :: Action ()
-throwItem = playerProjectGroupItem "dart" "|"
+throwItem = playerProjectGroupItem "throw" "dart" "|"
 
 -- | Drop a single item.
 -- TODO: allow dropping a given number of identical items.

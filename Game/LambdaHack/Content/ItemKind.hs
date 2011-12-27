@@ -22,6 +22,8 @@ data ItemKind = ItemKind
   , ieffect  :: !Effect     -- ^ the effect when activated
   , icount   :: !RollQuad   -- ^ created in that quantify
   , ipower   :: !RollQuad   -- ^ created with that power
+  , iverbApply   :: !String
+  , iverbProject :: !String
   }
   deriving Show
 

@@ -158,16 +158,17 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   seenFreqs = [applyFreq items 1, applyFreq tis 2,
                throwFreq items 2, throwFreq tis 5] ++ towardsFreq
   applyFreq is multi = Frequency
-    [ (benefit * multi, actionApply (iname ik) i)
+    [ (benefit * multi,
+       applyGroupItem actor (iverbApply ik) i)
     | i <- is,
       let ik = iokind (jkind i),
       let benefit =
             (1 + jpower i) * Effect.effectToBenefit (ieffect ik),
       benefit > 0,
       asight mk || isymbol ik /= '!']
-  actionApply groupName = applyGroupItem actor (applyToVerb groupName)
   throwFreq is multi = if not $ asight mk then mzero else Frequency
-    [ (benefit * multi, actionThrow (iname ik) i)
+    [ (benefit * multi,
+       projectGroupItem actor (fromJust floc) (iverbProject ik) i)
     | i <- is,
       let ik = iokind (jkind i),
       let benefit =
@@ -175,8 +176,6 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
       benefit > 0,
       -- Wasting swords would be too cruel to the player.
       isymbol ik /= ')']
-  actionThrow groupName =
-    projectGroupItem actor (fromJust floc) (projectToVerb groupName)
   towardsFreq =
     let freqs = runStrategy $ fromDir False moveTowards
     in if asight mk

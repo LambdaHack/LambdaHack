@@ -30,6 +30,8 @@ amulet = ItemKind
   , icount   = intToQuad 1
   , ifreq    = 10
   , ipower   = (2, 1, 2, 2)
+  , iverbApply   = "tear down"
+  , iverbProject = "throw"
   }
 dart = ItemKind
   { isymbol  = '|'
@@ -39,6 +41,8 @@ dart = ItemKind
   , icount   = (3, 3, 0, 0)
   , ifreq    = 30
   , ipower   = intToQuad 0
+  , iverbApply   = "break up"
+  , iverbProject = "throw"
   }
 gem = ItemKind
   { isymbol  = '*'
@@ -48,6 +52,8 @@ gem = ItemKind
   , icount   = intToQuad 0
   , ifreq    = 20  -- x4, but rare on shallow levels
   , ipower   = intToQuad 0
+  , iverbApply   = "crush"
+  , iverbProject = "throw"
   }
 gem1 = gem
   { icount   = (1, 1, 0, 0)  -- appears on lvl 1
@@ -69,6 +75,8 @@ gold = ItemKind
   , icount   = (0, 0, 10, 10)
   , ifreq    = 80
   , ipower   = intToQuad 0
+  , iverbApply   = "grind"
+  , iverbProject = "throw"
   }
 potion = ItemKind
   { isymbol  = '!'
@@ -78,6 +86,8 @@ potion = ItemKind
   , icount   = intToQuad 1
   , ifreq    = 10
   , ipower   = intToQuad 0
+  , iverbApply   = "gulp down"
+  , iverbProject = "lob"
   }
 potion1 = potion
   { ieffect  = ApplyPerfume
@@ -98,6 +108,8 @@ ring = ItemKind
   , icount   = intToQuad 1
   , ifreq    = 10
   , ipower   = (1, 1, 2, 2)
+  , iverbApply   = "squeeze down"
+  , iverbProject = "throw"
   }
 scroll = ItemKind
   { isymbol  = '?'
@@ -107,6 +119,8 @@ scroll = ItemKind
   , icount   = intToQuad 1
   , ifreq    = 10
   , ipower   = intToQuad 0
+  , iverbApply   = "decipher"
+  , iverbProject = "throw"
   }
 scroll1 = scroll
   { ieffect  = SummonFriend
@@ -123,11 +137,15 @@ sword = ItemKind
   , icount   = intToQuad 1
   , ifreq    = 60
   , ipower   = (1, 2, 4, 2)
+  , iverbApply   = "splinter"
+  , iverbProject = "heave"
   }
 fist = sword
   { isymbol  = '@'
   , iname    = "fist"
   , ifreq    = 0  -- Does not appear randomly in the dungeon.
+  , iverbApply   = "ERROR, please report: iverbApply fist"
+  , iverbProject = "ERROR, please report: iverbProject fist"
   }
 wand = ItemKind
   { isymbol  = '/'
@@ -137,4 +155,6 @@ wand = ItemKind
   , icount   = intToQuad 1
   , ifreq    = 10
   , ipower   = intToQuad 0
+  , iverbApply   = "snap"
+  , iverbProject = "zap"
   }
