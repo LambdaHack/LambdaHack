@@ -273,7 +273,6 @@ continueRun (dirLast, distLast) = do
   ms  <- gets (lmonsters . slevel)
   hs  <- gets (lheroes . slevel)
   lvl@Level{lxsize, lysize} <- gets slevel
-  pl  <- gets splayer
   let locHasFeature f loc = Tile.hasFeature cotile f (lvl `at` loc)
       locHasItems loc = not $ L.null $ lvl `atI` loc
       locLast = if distLast == 0 then locHere else locHere `shift` (neg dirLast)
@@ -289,19 +288,18 @@ continueRun (dirLast, distLast) = do
       openableDir loc dir   = Tile.hasFeature cotile F.Openable
                                 (lvl `at` (loc `shift` dir))
       dirEnterable loc d = accessibleDir loc d || openableDir loc d
-  assert (isAHero pl) $  -- monsters never run
-    case runMode locHere dirLast dirEnterable lxsize of
-      RunDeadEnd -> abort                   -- we don't run backwards
-      RunOpen    -> tryRun dirLast          -- run forward into the open space
-      RunHub     -> abort                   -- stop and decide where to go
-      RunCorridor (dirNext, turn) ->        -- look ahead
-        case runMode (locHere `shift` dirNext) dirNext dirEnterable lxsize of
-          RunDeadEnd     -> tryRun dirNext  -- explore the dead end
-          RunCorridor _  -> tryRun dirNext  -- follow the corridor
-          RunOpen | turn -> abort           -- stop and decide when to turn
-          RunHub  | turn -> abort           -- stop and decide when to turn
-          RunOpen -> tryRunAndStop dirNext  -- no turn, get closer and stop
-          RunHub  -> tryRunAndStop dirNext  -- no turn, get closer and stop
+  case runMode locHere dirLast dirEnterable lxsize of
+    RunDeadEnd -> abort                   -- we don't run backwards
+    RunOpen    -> tryRun dirLast          -- run forward into the open space
+    RunHub     -> abort                   -- stop and decide where to go
+    RunCorridor (dirNext, turn) ->        -- look ahead
+      case runMode (locHere `shift` dirNext) dirNext dirEnterable lxsize of
+        RunDeadEnd     -> tryRun dirNext  -- explore the dead end
+        RunCorridor _  -> tryRun dirNext  -- follow the corridor
+        RunOpen | turn -> abort           -- stop and decide when to turn
+        RunHub  | turn -> abort           -- stop and decide when to turn
+        RunOpen -> tryRunAndStop dirNext  -- no turn, get closer and stop
+        RunHub  -> tryRunAndStop dirNext  -- no turn, get closer and stop
 
 ifRunning :: ((Dir, Int) -> Action a) -> Action a -> Action a
 ifRunning t e = do
