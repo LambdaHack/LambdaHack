@@ -32,7 +32,7 @@ amulet = ItemKind
   , ipower   = (2, 1, 2, 2)
   }
 dart = ItemKind
-  { isymbol  = ')'
+  { isymbol  = '|'
   , iflavour = [(Yellow, False)]
   , iname    = "dart"
   , ieffect  = Wound (1, 1)

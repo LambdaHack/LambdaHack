@@ -164,7 +164,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
       let benefit =
             (1 + jpower i) * Effect.effectToBenefit (ieffect ik),
       benefit > 0,
-      asight mk || iname ik /= "scroll"]
+      asight mk || isymbol ik /= '!']
   actionApply groupName = applyGroupItem actor (applyToVerb groupName)
   throwFreq is multi = if not $ asight mk then mzero else Frequency
     [ (benefit * multi, actionThrow (iname ik) i)
@@ -174,7 +174,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
             - (1 + jpower i) * Effect.effectToBenefit (ieffect ik),
       benefit > 0,
       -- Wasting swords would be too cruel to the player.
-      iname ik /= "sword"]
+      isymbol ik /= ')']
   actionThrow groupName =
     zapGroupItem actor (fromJust floc) (zapToVerb groupName)
   towardsFreq =

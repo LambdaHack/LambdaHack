@@ -42,14 +42,14 @@ mapToIMap cxsize m =
   IM.fromList $ map (\ (xy, a) -> (toLoc cxsize xy, a)) (M.assocs m)
 
 rollItems :: Kind.COps -> Int -> CaveKind -> TileMap -> Loc -> Rnd [(Loc, Item)]
-rollItems Kind.COps{cotile, coitem=coitem@Kind.Ops{oname}}
+rollItems Kind.COps{cotile, coitem=coitem@Kind.Ops{osymbol}}
           n CaveKind{cxsize, citemNum} lmap ploc = do
   nri <- rollDice citemNum
   replicateM nri $ do
     item <- newItem coitem n
-    l <- case oname (jkind item) of
-           "sword" ->
-             -- swords generated close to monsters; MUAHAHAHA
+    l <- case osymbol (jkind item) of
+           ')' ->
+             -- melee weapons generated close to monsters; MUAHAHAHA
              findLocTry 2000 lmap
                (const (Tile.hasFeature cotile F.Boring))
                (\ l _ -> distance cxsize ploc l > 30)

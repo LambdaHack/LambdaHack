@@ -39,7 +39,7 @@ tvalidate lt =
       mapFov :: (TileKind -> Color) -> M.Map (Char, Color) [TileKind]
       mapFov f = M.fromListWith (++) $ listFov f
       namesUnequal l = let name = tname (L.head l)
-                       in L.any (\ kt -> tname kt /= name) l
+                       in L.any (/= name) (L.map tname l)
       confusions f = L.filter namesUnequal $ M.elems $ mapFov f
   in case confusions tcolor ++ confusions tcolor2 of
     [] -> []

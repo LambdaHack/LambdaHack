@@ -248,8 +248,8 @@ runDisturbance locLast distLast msg hs ms per locHere
                        (touchNew fun)
       standExplore fun = not (fun locHere) && standNew fun == [locThere]
       standStop fun = not (fun locHere) && standNew fun /= []
-      firstNew fun = L.all (\ loc -> not (fun loc)) surrLast &&
-                     L.any (\ loc -> fun loc) surrHere
+      firstNew fun = L.all (not . fun) surrLast &&
+                     L.any fun surrHere
       firstExplore fun = firstNew fun && fun locThere
       firstStop fun = firstNew fun
       tryRunMaybe

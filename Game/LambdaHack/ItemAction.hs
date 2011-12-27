@@ -41,17 +41,15 @@ inventory = do
 -- | Let the player choose any item with a given group name.
 -- Note that this does not guarantee an item from the group to be chosen,
 -- as the player can override the choice.
--- TODO: There should be a datatype for item groups instead of strings
--- or perhaps the functionality should be implemented differently,
--- e.g., based on equipment slot, as soon as it's specified for item kinds.
 getGroupItem :: [Item]  -- ^ all objects in question
              -> String  -- ^ name of the group
+             -> [Char]  -- ^ accepted item symbols
              -> String  -- ^ prompt
              -> String  -- ^ how to refer to the collection of objects
              -> Action (Maybe Item)
-getGroupItem is groupName prompt packName = do
-  Kind.Ops{oname} <- contentf Kind.coitem
-  let choice i = groupName == oname (jkind i)
+getGroupItem is groupName syms prompt packName = do
+  Kind.Ops{osymbol} <- contentf Kind.coitem
+  let choice i = osymbol (jkind i) `L.elem` syms
       header = capitalize $ suffixS groupName
   getItem prompt choice header is packName
 
@@ -73,11 +71,11 @@ applyGroupItem actor verb item = do
   itemEffectAction 5 actor actor consumed
   advanceTime actor
 
-playerApplyGroupItem :: String -> Action ()
-playerApplyGroupItem groupName = do
+playerApplyGroupItem :: String -> [Char] -> Action ()
+playerApplyGroupItem groupName syms = do
   Kind.Ops{oname} <- contentf Kind.coitem
   is   <- gets getPlayerItem
-  iOpt <- getGroupItem is groupName
+  iOpt <- getGroupItem is groupName syms
             ("What to " ++ applyToVerb groupName ++ "?") "in inventory"
   pl   <- gets splayer
   case iOpt of
@@ -86,17 +84,17 @@ playerApplyGroupItem groupName = do
       in applyGroupItem pl verb i
     Nothing -> neverMind True
 
--- TODO: rewrite in a content-independent way; also elsewhere: grep for "wand" and all other ItemKind names
 applyToVerb :: String -> String
 applyToVerb "potion" = "quaff"
 applyToVerb "scroll" = "read"
+applyToVerb "item"   = "apply"
 applyToVerb _ = "destructively apply"
 
 quaffPotion :: Action ()
-quaffPotion = playerApplyGroupItem "potion"
+quaffPotion = playerApplyGroupItem "potion" "!"
 
 readScroll :: Action ()
-readScroll = playerApplyGroupItem "scroll"
+readScroll = playerApplyGroupItem "scroll" "?"
 
 zapGroupItem :: ActorId  -- ^ actor zapping the item; on current level
              -> Loc      -- ^ target location for the zapping
@@ -129,12 +127,12 @@ zapGroupItem source loc verb item = do
       modify (updateLevel (dropItemsAt [consumed] loc))
   advanceTime source
 
-playerZapGroupItem :: String -> Action ()
-playerZapGroupItem groupName = do
+playerZapGroupItem :: String -> [Char] -> Action ()
+playerZapGroupItem groupName syms = do
   Kind.Ops{oname} <- contentf Kind.coitem
   state <- get
   is    <- gets getPlayerItem
-  iOpt  <- getGroupItem is groupName
+  iOpt  <- getGroupItem is groupName syms
              ("What to " ++ zapToVerb groupName ++ "?") "in inventory"
   pl    <- gets splayer
   per   <- currentPerception
@@ -153,13 +151,14 @@ playerZapGroupItem groupName = do
 zapToVerb :: String -> String
 zapToVerb "wand" = "aim"
 zapToVerb "dart" = "throw"
+zapToVerb "item" = "zap"
 zapToVerb _ = "furiously zap"
 
 aimItem :: Action ()
-aimItem = playerZapGroupItem "wand"
+aimItem = playerZapGroupItem "wand" "/"
 
 throwItem :: Action ()
-throwItem = playerZapGroupItem "dart"
+throwItem = playerZapGroupItem "dart" "|"
 
 -- | Drop a single item.
 -- TODO: allow dropping a given number of identical items.

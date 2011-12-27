@@ -210,8 +210,8 @@ strongestSearch Kind.Ops{okind} bitems =
 
 -- TODO: generalise
 strongestSword :: Kind.Ops ItemKind -> [Item] -> Maybe Item
-strongestSword Kind.Ops{oname} bitems =
-  strongestItem bitems $ \ i -> (oname $ jkind i) == "sword"
+strongestSword Kind.Ops{osymbol} bitems =
+  strongestItem bitems $ \ i -> (osymbol $ jkind i) == ')'
 
 itemPrice :: Kind.Ops ItemKind -> Item -> Int
 itemPrice Kind.Ops{osymbol} i =
