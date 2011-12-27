@@ -175,7 +175,7 @@ data RunMode =
   | RunDeadEnd               -- ^ dead end
 
 -- | Determine the running mode. For corridors, pick the running direction
--- trying to explore all corners, by prefering orthogonal to diagonal moves.
+-- trying to explore all corners, by prefering cardinal to diagonal moves.
 runMode :: Loc -> Dir -> (Loc -> Dir -> Bool) -> X -> RunMode
 runMode loc dir dirEnterable lxsize =
   let dirNearby dir1 dir2 = dirDistSq lxsize dir1 dir2 == 1
@@ -201,7 +201,7 @@ runMode loc dir dirEnterable lxsize =
         _ | L.any dirAhead dirsOpen -> RunOpen  -- open space ahead
         [d] -> RunCorridor (d, False)  -- corridor with no turn
         [d1, d2] | dirNearby d1 d2 ->  -- corridor with a turn
-          -- Prefer orthogonal to diagonal dirs, for hero safety,
+          -- Prefer cardinal to diagonal dirs, for hero safety,
           -- even if that means changing direction.
           RunCorridor (if diagonal lxsize d1 then d2 else d1, True)
         _ -> RunHub  -- a hub of many separate corridors
@@ -233,6 +233,10 @@ runDisturbance locLast distLast msg hs ms per locHere
       firstList = [ locHasFeature F.Lit
                   , not . locHasFeature F.Special
                   ]
+      -- TODO: stop when walls vanish from cardinal directions or when any
+      -- walls re-appear again. Actually stop one tile before that happens.
+      -- Then remove some other, subsumed conditions.
+      -- This will help with corridors starting in dark rooms.
       touchNew fun =
         let touchLast = L.filter (\ loc -> fun loc) surrLast
             touchHere = L.filter (\ loc -> fun loc) surrHere
