@@ -81,20 +81,20 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   ms = L.map (AMonster *** bloc) $
          IM.assocs $ lmonsters $ slevel delState
   -- Below, "foe" is the hero (or a monster, or loc) chased by the actor.
-  (newTgt, floc) =
+  (newTgt, floc, foeVisible) =
     case tgt of
       TEnemy a ll | focusedMonster ->
         if memActor a delState
         then let l = bloc $ getActor a delState
              in if enemyVisible a l
-                then (TEnemy a l, Just l)
-                else if isJust (snd closest) || me == ll
-                     then closest         -- prefer visible foes
-                     else (tgt, Just ll)  -- last known location of enemy
+                then (TEnemy a l, Just l, True)
+                else if isJust (case closest of (_, m, _) -> m) || me == ll
+                     then closest                -- prefer visible foes
+                     else (tgt, Just ll, False)  -- last known location of enemy
         else closest  -- enemy not on the level, temporarily chase others
       TLoc loc -> if me == loc
                   then closest
-                  else (tgt, Just loc)  -- ignore everything and go to loc
+                  else (tgt, Just loc, False)  -- ignore all and go to loc
       _  -> closest
   closest =
     let hsAndTraitor = if isAMonster pl
@@ -102,12 +102,12 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
                        else hs
         foes = if L.null hsAndTraitor then ms else hsAndTraitor
         -- We assume monster sight is infravision, so light has no effect.
-        foeVisible = L.filter (uncurry enemyVisible) foes
-        foeDist = L.map (\ (a, l) -> (distance lxsize me l, l, a)) foeVisible
+        visible = L.filter (uncurry enemyVisible) foes
+        foeDist = L.map (\ (a, l) -> (distance lxsize me l, l, a)) visible
     in case foeDist of
-         [] -> (TCursor, Nothing)
+         [] -> (TCursor, Nothing, False)
          _  -> let (_, l, a) = L.minimum foeDist
-               in (TEnemy a l, Just l)
+               in (TEnemy a l, Just l, True)
   onlyFoe        = onlyMoves (maybe (const False) (==) floc) me
   towardsFoe     = case floc of
                      Nothing -> const mzero
@@ -150,13 +150,13 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
 
   strat =
     fromDir True (onlyFoe moveFreely)
-    .| isJust floc .=> liftFrequency (msum freqs)
+    .| foeVisible .=> liftFrequency (msum seenFreqs)
     .| lootHere me .=> actionPickup
     .| fromDir True moveAround
   actionPickup = return $ actorPickupItem actor
   tis = lvl `atI` me
-  freqs = [applyFreq items 1, applyFreq tis 2,
-           throwFreq items 2, throwFreq tis 5] ++ towardsFreq
+  seenFreqs = [applyFreq items 1, applyFreq tis 2,
+               throwFreq items 2, throwFreq tis 5] ++ towardsFreq
   applyFreq is multi = Frequency
     [ (benefit * multi, actionApply (iname ik) i)
     | i <- is,
@@ -178,9 +178,9 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   actionThrow groupName =
     zapGroupItem actor (fromJust floc) (zapToVerb groupName)
   towardsFreq =
-    let freqs2 = runStrategy $ fromDir False moveTowards
+    let freqs = runStrategy $ fromDir False moveTowards
     in if asight mk
-       then map (scale 30) freqs2
+       then map (scale 30) freqs
        else [mzero]
   moveTowards = onlySensible $ onlyNoMs (towardsFoe moveFreely)
   moveAround =
