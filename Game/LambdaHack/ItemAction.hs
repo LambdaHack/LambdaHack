@@ -86,6 +86,7 @@ playerApplyGroupItem groupName = do
       in applyGroupItem pl verb i
     Nothing -> neverMind True
 
+-- TODO: rewrite in a content-independent way; also elsewhere: grep for "wand" and all other ItemKind names
 applyToVerb :: String -> String
 applyToVerb "potion" = "quaff"
 applyToVerb "scroll" = "read"

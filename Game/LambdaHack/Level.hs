@@ -52,7 +52,7 @@ data Level = Level
   , lmap      :: TileMap
   , lrmap     :: TileMap
   , lmeta     :: String
-  , lstairs   :: (Loc, Loc) -- ^ here the stairs (down, up) from other levels end
+  , lstairs   :: (Loc, Loc) -- ^ here the stairs (up/down) from other levels end
   }
   deriving Show
 

@@ -14,7 +14,7 @@ cdefs = Content.CDefs
   }
 rect,        oval, colonnade, colonnadeW :: RoomKind
 
-rect = RoomKind  -- this room is valid for any nonempty area, hence low frequency
+rect = RoomKind  -- room is valid for any nonempty area, hence low frequency
   { rsymbol  = 'r'
   , rname    = "room"
   , rfreq    = 100

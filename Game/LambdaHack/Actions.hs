@@ -531,7 +531,7 @@ fleeDungeon = do
       end
     else do
       let winMsg = "Congratulations, you won! Your loot, worth " ++
-                   show total ++ " gold, is:"
+                   show total ++ " gold, is:"  -- TODO: use the name of the '$' item instead
       displayItems winMsg True items
       go <- session getConfirm
       when go $ do
@@ -731,7 +731,7 @@ actorAttackActor source target = do
   tm    <- gets (getActor target)
   per   <- currentPerception
   bitems <- gets (getActorItem source)
-  let verb = attackToVerb "sword"
+  let verb = attackToVerb "sword"  -- TODO
       sloc = bloc sm
       -- The hand-to-hand "weapon", equivalent to +0 sword.
       h2h = Item (fistKindId coitem) 0 Nothing 1

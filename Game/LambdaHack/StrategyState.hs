@@ -195,7 +195,8 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   interestFreq =  -- don't detour towards an interest if already on one
     if interestHere me
     then []
-    else map (scale 3) (runStrategy $ onlyInterest (onlyKeepsDir 2 moveRandomly))
+    else
+      map (scale 3) (runStrategy $ onlyInterest (onlyKeepsDir 2 moveRandomly))
   interestIQFreq = interestFreq ++ runStrategy moveIQ
   moveFreely = onlyLoot moveRandomly
                .| liftFrequency (msum interestIQFreq)

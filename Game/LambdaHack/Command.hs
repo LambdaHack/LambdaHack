@@ -21,10 +21,13 @@ ascendCommand    = Described "ascend a level"    (lvlGoUp True)
 descendCommand   = Described "descend a level"   (lvlGoUp False)
 floorCommand     = Described "target location"   targetFloor
 monsterCommand   = Described "target monster"    (checkCursor targetMonster)
+
+-- TODO: make these a part of content
 quaffCommand     = Described "quaff a potion"    (checkCursor quaffPotion)
 readCommand      = Described "read a scroll"     (checkCursor readScroll)
 throwCommand     = Described "throw a weapon"    (checkCursor throwItem)
 aimCommand       = Described "aim a wand"        (checkCursor aimItem)
+
 saveCommand      = Described "save and exit the game" saveGame
 quitCommand      = Described "quit without saving" quitGame
 cancelCommand    = Described "cancel action"     cancelCurrent

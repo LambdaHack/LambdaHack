@@ -24,11 +24,11 @@ blame condition blamed
 -- assert `failure` ((x1, y1), (x2, y2), "designate a vertical line")
 failure :: Show a => (Bool -> b -> b) -> a -> b
 {-# INLINE failure #-}
-failure assrt blamed =
+failure asrt blamed =
   let s = "Internal failure occured and the following is to blame:\n" ++
           "  " ++ show blamed
   in trace s $
-     assrt False (error "Assert.failure: no error location (upgrade to GHC 7.4)")
+     asrt False (error "Assert.failure: no error location (upgrade to GHC 7.4)")
 
 -- | Like List.all, but if the predicate fails, blame all the list elements
 -- and especially those for which it fails. To be used as in:
@@ -43,17 +43,18 @@ allB predicate l =
 -- Reports source location and the suspects. Drops the value.
 checkM :: (Show a, Monad m) =>
           (Bool -> m () -> m ()) -> (c -> Bool) -> a -> c -> m ()
-checkM assrt predicate blamed value
+checkM asrt predicate blamed value
   | predicate value = return ()
   | otherwise =
     let s = "The returned value is wrong and the following is to blame:\n" ++
             "  " ++ show blamed
     in trace s $
-       assrt False
+       asrt False
          (error "Assert.checkM: no error location (upgrade to GHC 7.4)")
 
 -- | Verifies that the returned value is true (respectively, false). Used as in:
 -- open newValve >>= assert `trueM` (newValve, "is already opened, not new")
-trueM, falseM :: (Show a, Monad m) => (Bool -> m () -> m ()) -> a -> Bool -> m ()
-trueM  assrt = checkM assrt id
-falseM assrt = checkM assrt not
+trueM, falseM :: (Show a, Monad m) => (Bool -> m () -> m ()) -> a -> Bool
+              -> m ()
+trueM  asrt = checkM asrt id
+falseM asrt = checkM asrt not

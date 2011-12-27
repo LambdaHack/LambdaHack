@@ -55,7 +55,8 @@ rollFlavourMap key ik rnd =
 -- | Randomly chooses flavour for all item kinds for this game.
 dungeonFlavourMap :: Kind.Ops ItemKind -> Rnd FlavourMap
 dungeonFlavourMap Kind.Ops{ofoldrWithKey} =
-  liftM fst $ ofoldrWithKey rollFlavourMap (return (M.empty, S.fromList stdFlav))
+  liftM fst $
+    ofoldrWithKey rollFlavourMap (return (M.empty, S.fromList stdFlav))
 
 getFlavour :: Kind.Ops ItemKind -> FlavourMap -> Kind.Id ItemKind -> Flavour
 getFlavour Kind.Ops{okind} assocs ik =
