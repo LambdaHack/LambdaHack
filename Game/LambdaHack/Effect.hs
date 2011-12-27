@@ -10,7 +10,7 @@ data Effect =
   | SummonFriend
   | SummonEnemy
   | ApplyPerfume
-  | Regneration
+  | Regeneration
   | Searching
   | Teleport
   deriving (Show, Eq, Ord)
@@ -25,7 +25,7 @@ effectToName Dominate = "of domination"
 effectToName SummonFriend = "of aid calling"
 effectToName SummonEnemy = "of summoning"
 effectToName ApplyPerfume = "of rose water"
-effectToName Regneration = "of regeneration"
+effectToName Regeneration = "of regeneration"
 effectToName Searching = "of searching"
 effectToName Teleport = "of teleportation"
 
@@ -39,6 +39,6 @@ effectToBenefit Dominate = 0        -- AI can't use this
 effectToBenefit SummonFriend = 100
 effectToBenefit SummonEnemy = 0
 effectToBenefit ApplyPerfume = 0
-effectToBenefit Regneration = 0     -- much more benefit from carrying around
+effectToBenefit Regeneration = 0    -- much more benefit from carrying around
 effectToBenefit Searching = 0       -- AI does not need to search
 effectToBenefit Teleport = 0        -- AI does not know when to teleport

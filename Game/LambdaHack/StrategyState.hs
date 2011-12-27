@@ -61,7 +61,8 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
  where
   Kind.COps{ cotile
            , coactor=Kind.Ops{okind}
-           , coitem=coitem@Kind.Ops{okind=iokind} } = cops
+           , coitem=coitem@Kind.Ops{okind=iokind}
+           } = cops
   lvl@Level{lsmell = nsmap, lxsize, lysize} = slevel oldState
   Actor { bkind = ak, bloc = me, bdir = ad, btarget = tgt } =
     getActor actor oldState
@@ -130,7 +131,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   -- opening doors, too, so that monsters don't cheat. TODO: remove the code
   -- duplication, though.
   openPower      = TileKind.SecretStrength $
-                   case strongestItem coitem items "ring" of
+                   case strongestSearch coitem items of
                      Just i  -> aiq mk + jpower i
                      Nothing -> aiq mk
   openableHere   = openable cotile lvl openPower

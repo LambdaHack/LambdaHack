@@ -16,6 +16,7 @@ import Game.LambdaHack.Content.ItemKind
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Flavour
 import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Effect
 
 data Item = Item
   { jkind   :: !(Kind.Id ItemKind)
@@ -190,17 +191,30 @@ findItem p =
     | p i              = Just (i, reverse acc ++ is)
     | otherwise        = findItem' (i:acc) is
 
-strongestItem :: Kind.Ops ItemKind -> [Item] -> String -> Maybe Item
-strongestItem Kind.Ops{oname} is groupName =
+strongestItem :: [Item] -> (Item -> Bool) -> Maybe Item
+strongestItem is p =
   let cmp = comparing jpower
-      igs = L.filter (\ i -> oname (jkind i) == groupName) is
+      igs = L.filter p is
   in case igs of
        [] -> Nothing
        _  -> Just $ L.maximumBy cmp igs
 
+strongestRegen :: Kind.Ops ItemKind -> [Item] -> Maybe Item
+strongestRegen Kind.Ops{okind} bitems =
+  strongestItem bitems $ \ i -> (ieffect $ okind $ jkind i) == Regeneration
+
+strongestSearch :: Kind.Ops ItemKind -> [Item] -> Maybe Item
+strongestSearch Kind.Ops{okind} bitems =
+  strongestItem bitems $ \ i -> (ieffect $ okind $ jkind i) == Searching
+
+-- TODO: generalise
+strongestSword :: Kind.Ops ItemKind -> [Item] -> Maybe Item
+strongestSword Kind.Ops{oname} bitems =
+  strongestItem bitems $ \ i -> (oname $ jkind i) == "sword"
+
 itemPrice :: Kind.Ops ItemKind -> Item -> Int
-itemPrice Kind.Ops{oname} i =
-  case oname (jkind i) of
-    "gold piece" -> jcount i
-    "gem" -> jcount i * 100
+itemPrice Kind.Ops{osymbol} i =
+  case osymbol (jkind i) of
+    '$' -> jcount i
+    '*' -> jcount i * 100
     _ -> 0

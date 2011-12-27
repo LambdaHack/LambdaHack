@@ -22,7 +22,6 @@ import Game.LambdaHack.LevelState
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.ActorAdd
 import Game.LambdaHack.Perception
 import Game.LambdaHack.State
@@ -34,6 +33,7 @@ import qualified Game.LambdaHack.Tile as Tile
 import qualified Game.LambdaHack.Kind as Kind
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.DungeonState
+import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind as TileKind
 
 -- The Action stuff that is independent from ItemAction.hs.
@@ -171,7 +171,7 @@ run (dir, dist) = do
 data RunMode =
     RunOpen                  -- ^ open space, in particular the T crossing
   | RunHub                   -- ^ a hub of separate corridors
-  | RunCorridor (Dir, Bool)  -- ^ a single corridor, turning at this place or not
+  | RunCorridor (Dir, Bool)  -- ^ a single corridor, turning here or not
   | RunDeadEnd               -- ^ dead end
 
 -- | Determine the running mode. For corridors, pick the running direction
@@ -385,7 +385,10 @@ playerCloseDoor dir = do
 -- | An actor opens a door. Player (hero or monster) or enemy.
 actorOpenDoor :: ActorId -> Dir -> Action ()
 actorOpenDoor actor dir = do
-  Kind.COps{cotile, coitem, coactor=Kind.Ops{okind}} <- contentOps
+  Kind.COps{ cotile
+           , coitem
+           , coactor=Kind.Ops{okind}
+           } <- contentOps
   lvl  <- gets slevel
   pl   <- gets splayer
   body <- gets (getActor actor)
@@ -398,7 +401,7 @@ actorOpenDoor actor dir = do
       openPower = TileKind.SecretStrength $
         if isPlayer
         then 1  -- player can't open secret doors
-        else case strongestItem coitem bitems "ring" of  -- TODO: hack
+        else case strongestSearch coitem bitems of
                Just i  -> iq + jpower i
                Nothing -> iq
   unless (openable cotile lvl openPower dloc) $ neverMind isVerbose
@@ -557,7 +560,7 @@ search = do
   lxsize <- gets (lxsize . slevel)
   ploc   <- gets (bloc . getPlayerBody)
   pitems <- gets getPlayerItem
-  let delta = case strongestItem coitem pitems "ring" of
+  let delta = case strongestSearch coitem pitems of
                 Just i  -> 1 + jpower i
                 Nothing -> 1
       searchTile sle mv =
@@ -728,12 +731,11 @@ actorAttackActor source target = do
   tm    <- gets (getActor target)
   per   <- currentPerception
   bitems <- gets (getActorItem source)
-  let groupName = "sword"
-      verb = attackToVerb groupName
+  let verb = attackToVerb "sword"
       sloc = bloc sm
       -- The hand-to-hand "weapon", equivalent to +0 sword.
       h2h = Item (fistKindId coitem) 0 Nothing 1
-      str = strongestItem coitem bitems groupName
+      str = strongestSword coitem bitems
       stack  = fromMaybe h2h str
       single = stack { jcount = 1 }
       -- The message describes the source part of the action.
@@ -780,13 +782,15 @@ generateMonster = do
 -- | Possibly regenerate HP for all actors on the current level.
 regenerateLevelHP :: Action ()
 regenerateLevelHP = do
-  Kind.COps{coitem, coactor=coactor@Kind.Ops{okind}} <- contentOps
+  Kind.COps{ coitem
+           , coactor=coactor@Kind.Ops{okind}
+           } <- contentOps
   time <- gets stime
   let upd itemIM a m =
         let ak = okind $ bkind m
             bitems = fromMaybe [] $ IM.lookup a itemIM
             regen = aregen ak `div`
-                    case strongestItem coitem bitems "amulet" of
+                    case strongestRegen coitem bitems of
                       Just i  -> jpower i
                       Nothing -> 1
         in if time `mod` regen /= 0

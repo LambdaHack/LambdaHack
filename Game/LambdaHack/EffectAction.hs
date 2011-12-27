@@ -116,7 +116,7 @@ effectToAction Effect.ApplyPerfume _ source target _ =
     let upd lvl = lvl { lsmell = IM.empty }
     modify (updateLevel upd)
     return (True, "The fragrance quells all scents in the vicinity.")
-effectToAction Effect.Regneration verbosity source target power =
+effectToAction Effect.Regeneration verbosity source target power =
   effectToAction Effect.Heal verbosity source target power
 effectToAction Effect.Searching _ _source _target _power =
   return (True, "It gets lost and you search in vain.")
