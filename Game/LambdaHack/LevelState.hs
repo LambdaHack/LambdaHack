@@ -13,8 +13,8 @@ lookAt :: Kind.COps -> Bool -> Bool -> State -> Level -> Loc -> String -> String
 lookAt Kind.COps{coitem, cotile=Kind.Ops{oname}} detailed canSee s lvl loc msg
   | detailed  =
     let tile = lvl `rememberAt` loc
-        name = oname  $ tile
-    in name ++ " " ++ msg ++ isd
+        name = capitalize $ oname tile
+    in name ++ ". " ++ msg ++ isd
   | otherwise = msg ++ isd
  where
   is  = lvl `rememberAtI` loc
