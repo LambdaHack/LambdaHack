@@ -25,11 +25,13 @@ capitalize :: String -> String
 capitalize [] = []
 capitalize (c : cs) = toUpper c : cs
 
+addIndefinite :: String -> String
+addIndefinite b = case b of
+                    c : _ | c `elem` "aeio" -> "an " ++ b
+                    _                       -> "a "  ++ b
+
 makeObject :: Int -> (String -> String) -> String -> String
-makeObject 1 adj obj = let b = adj obj
-                       in case b of
-                            (c:_) | c `elem` "aeio" -> "an " ++ b
-                            _                       -> "a " ++ b
+makeObject 1 adj obj = addIndefinite $ adj obj
 makeObject n adj obj = show n ++ " " ++ adj (suffixS obj)
 
 -- TODO: when there's more of the above, split and move to Utils/

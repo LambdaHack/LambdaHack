@@ -43,7 +43,11 @@ baseHP: 1000000
 extraHeroes: 4
 firstDeathEnds: False
 
+[commands]
+; This sections can be empty, but has to be there.
+
 [macros]
+; This sections can be empty, but has to be there.
 ; TODO: the following does not work yet:
 ; ; throw a dart at the closest monster
 ; t: asterisk Return t Return

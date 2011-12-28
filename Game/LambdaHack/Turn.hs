@@ -9,9 +9,12 @@ import qualified Data.Ord as Ord
 import qualified Data.IntMap as IM
 import qualified Data.Char as Char
 
+import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
+import Game.LambdaHack.ItemAction
 import Game.LambdaHack.Command
+import Game.LambdaHack.Grammar
 import qualified Game.LambdaHack.Config as Config
 import Game.LambdaHack.Display hiding (display)
 import Game.LambdaHack.EffectAction
@@ -164,7 +167,8 @@ playerCommand = do
   tryRepeatedlyWith stopRunning $  -- on abort, just ask for a new command
     ifRunning continueRun $ do
       k <- session nextCommand
-      handleKey lxsize stdKeybindings k
+      config <- gets sconfig
+      handleKey lxsize (stdKeybindings config) k
 
 -- Design thoughts (in order to get rid or partially rid of the somewhat
 -- convoluted design we have): We have three kinds of commands.
@@ -212,7 +216,8 @@ displayHelp = do
            then []
            else k : [ from | (from, to) <- M.assocs macros, to == k ]
   aliases <- session (return . coImage)
-  let helpString = keyHelp aliases stdKeybindings
+  config  <- gets sconfig
+  let helpString = keyHelp aliases (stdKeybindings config)
   messageOverlayConfirm "Basic keys:" helpString
   abort
 
@@ -223,12 +228,30 @@ heroSelection =
                       selectPlayer (AHero k) >> return ())
   in fmap heroSelect [0..9]
 
-stdKeybindings :: Keybindings
-stdKeybindings = Keybindings
+configCommands :: Config.CP -> [(K.Key, Command)]
+configCommands config =
+  let section = Config.getItems config "commands"
+      mkCommand (key, def) =
+        case (key, words def) of
+          ([k], [act, verb, noun, syms]) ->
+            let prompt = verb ++ " " ++ addIndefinite noun
+                action = case act of
+                  "apply"   -> playerApplyGroupItem
+                  "project" -> playerProjectGroupItem
+                  _ -> assert `failure` "unknown config command action"
+                command = checkCursor $ action verb noun syms
+            in (K.Char k, Described prompt command)
+          _ -> assert `failure` "can't parse config command definitions"
+  in L.map mkCommand section
+
+-- TODO: Keep in session, instead of recomputing before each command.
+stdKeybindings :: Config.CP -> Keybindings
+stdKeybindings config = Keybindings
   { kdir   = moveDirCommand,
     kudir  = runDirCommand,
     kother = M.fromList $
              heroSelection ++
+             configCommands config ++
              [ -- interaction with the dungeon
                (K.Char 'c',  closeCommand),
 
@@ -243,10 +266,6 @@ stdKeybindings = Keybindings
                (K.Char 'g',  pickupCommand),
                (K.Char 'd',  dropCommand),
                (K.Char 'i',  inventoryCommand),
-               (K.Char 'q',  quaffCommand),
-               (K.Char 'r',  readCommand),
-               (K.Char 't',  throwCommand),
-               (K.Char 'z',  zapCommand),
 
                -- wait
                (K.Char '.',  Undescribed playerAdvanceTime),

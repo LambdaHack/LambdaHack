@@ -48,10 +48,10 @@ getGroupItem :: [Item]  -- ^ all objects in question
              -> String  -- ^ prompt
              -> String  -- ^ how to refer to the collection of objects
              -> Action (Maybe Item)
-getGroupItem is groupName syms prompt packName = do
+getGroupItem is noun syms prompt packName = do
   Kind.Ops{osymbol} <- contentf Kind.coitem
   let choice i = osymbol (jkind i) `L.elem` syms
-      header = capitalize $ suffixS groupName
+      header = capitalize $ suffixS noun
   getItem prompt choice header is packName
 
 applyGroupItem :: ActorId  -- ^ actor applying the item; on current level
@@ -73,21 +73,15 @@ applyGroupItem actor verb item = do
   advanceTime actor
 
 playerApplyGroupItem :: String -> String -> [Char] -> Action ()
-playerApplyGroupItem verb groupName syms = do
+playerApplyGroupItem verb noun syms = do
   Kind.Ops{okind} <- contentf Kind.coitem
   is   <- gets getPlayerItem
-  iOpt <- getGroupItem is groupName syms
+  iOpt <- getGroupItem is noun syms
             ("What to " ++ verb ++ "?") "in inventory"
   pl   <- gets splayer
   case iOpt of
     Just i  -> applyGroupItem pl (iverbApply $ okind $ jkind i) i
     Nothing -> neverMind True
-
-quaffPotion :: Action ()
-quaffPotion = playerApplyGroupItem "quaff" "potion" "!"
-
-readScroll :: Action ()
-readScroll = playerApplyGroupItem "read" "scroll" "?"
 
 projectGroupItem :: ActorId  -- ^ actor projecting the item; on current level
              -> Loc      -- ^ target location for the projecting
@@ -121,11 +115,11 @@ projectGroupItem source loc verb item = do
   advanceTime source
 
 playerProjectGroupItem :: String -> String -> [Char] -> Action ()
-playerProjectGroupItem verb groupName syms = do
+playerProjectGroupItem verb noun syms = do
   Kind.Ops{okind} <- contentf Kind.coitem
   state <- get
   is    <- gets getPlayerItem
-  iOpt  <- getGroupItem is groupName syms
+  iOpt  <- getGroupItem is noun syms
              ("What to " ++ verb ++ "?") "in inventory"
   pl    <- gets splayer
   per   <- currentPerception
@@ -139,12 +133,6 @@ playerProjectGroupItem verb groupName syms = do
           then projectGroupItem pl loc (iverbProject $ okind $ jkind i) i
           else abortWith "target not reachable"
     Nothing -> neverMind True
-
-zapItem :: Action ()
-zapItem = playerProjectGroupItem "zap" "wand" "/"
-
-throwItem :: Action ()
-throwItem = playerProjectGroupItem "throw" "dart" "|"
 
 -- | Drop a single item.
 -- TODO: allow dropping a given number of identical items.

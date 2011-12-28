@@ -41,7 +41,15 @@ baseHP: 50
 extraHeroes: 0
 firstDeathEnds: False
 
+[commands]
+; This sections can be empty, but has to be there.
+q: apply quaff potion !
+r: apply read scroll ?
+z: project zap wand /
+t: project throw dart |
+
 [macros]
+; This sections can be empty, but has to be there.
 ; TODO: the following does not work yet:
 ; ; throw a dart at the closest monster
 ; t: asterisk Return t Return

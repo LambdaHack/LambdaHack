@@ -12,7 +12,7 @@ data Described a = Described { chelp :: String, caction :: a }
 type Command    = Described (Action ())
 type DirCommand = Described (Dir -> Action ())
 
-closeCommand, pickupCommand, dropCommand, inventoryCommand, ascendCommand, descendCommand, floorCommand, monsterCommand, quaffCommand, readCommand, throwCommand, zapCommand, saveCommand, quitCommand, cancelCommand, historyCommand, dumpCommand, heroCommand, versionCommand :: Described (Action ())
+closeCommand, pickupCommand, dropCommand, inventoryCommand, ascendCommand, descendCommand, floorCommand, monsterCommand, saveCommand, quitCommand, cancelCommand, historyCommand, dumpCommand, heroCommand, versionCommand :: Described (Action ())
 closeCommand     = Described "close a door"      (checkCursor closeDoor)
 pickupCommand    = Described "get an object"     (checkCursor pickupItem)
 dropCommand      = Described "drop an object"    (checkCursor dropItem)
@@ -21,13 +21,6 @@ ascendCommand    = Described "ascend a level"    (lvlGoUp True)
 descendCommand   = Described "descend a level"   (lvlGoUp False)
 floorCommand     = Described "target location"   targetFloor
 monsterCommand   = Described "target monster"    (checkCursor targetMonster)
-
--- TODO: make these a part of content
-quaffCommand     = Described "quaff a potion"    (checkCursor quaffPotion)
-readCommand      = Described "read a scroll"     (checkCursor readScroll)
-throwCommand     = Described "throw a weapon"    (checkCursor throwItem)
-zapCommand       = Described "zap a wand"        (checkCursor zapItem)
-
 saveCommand      = Described "save and exit the game" saveGame
 quitCommand      = Described "quit without saving" quitGame
 cancelCommand    = Described "cancel action"     cancelCurrent
