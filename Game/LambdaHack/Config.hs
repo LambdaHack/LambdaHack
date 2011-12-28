@@ -69,7 +69,7 @@ config =
     if not b
       then return $ toCP defCF
       else do
-        c <- CF.readfile defCF f
+        c <- CF.readfile CF.emptyCP f
         return $ toCP $ forceEither c
 
 -- | A simplified access to an option in a given section,
