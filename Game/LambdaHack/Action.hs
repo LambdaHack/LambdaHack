@@ -258,8 +258,10 @@ advanceTime actor = do
     then do
       modify (updateLevel (updateHeroes (IM.map upd)))
       unless (isAHero pl) $ updatePlayerBody upd
-    else
-      updateAnyActor actor upd
+    else do
+      s <- get
+      -- If actor dead or not on current level, don't bother.
+      when (memActor actor s) $ updateAnyActor actor upd
 
 playerAdvanceTime :: Action ()
 playerAdvanceTime = do

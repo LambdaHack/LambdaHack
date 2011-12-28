@@ -66,6 +66,7 @@ effectToAction (Effect.Wound nDm) verbosity source target power = do
         msg
           | source == target =  -- a potion of wounding, etc.
             subjectActorVerb cops tm "feel" ++
+              -- TODO: this is displayed too late, after hero death, etc.
               if killed then " mortally" else "" ++ " wounded."
           | killed =
             if isAHero target
