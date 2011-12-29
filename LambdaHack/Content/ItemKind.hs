@@ -14,9 +14,9 @@ cdefs = Content.CDefs
   , getFreq = ifreq
   , validate = ivalidate
   , content =
-      [amulet, dart, gem1, gem2, gem3, gem4, gold, potion1, potion2, potion3, ring, scroll1, scroll2, sword, fist, wand]
+      [amulet, dart, gem1, gem2, gem3, gem4, gold, javelin, potion1, potion2, potion3, ring, scroll1, scroll2, sword, fist, wand]
   }
-amulet,        dart, gem1, gem2, gem3, gem4, gold, potion1, potion2, potion3, ring, scroll1, scroll2, sword, fist, wand :: ItemKind
+amulet,        dart, gem1, gem2, gem3, gem4, gold, javelin, potion1, potion2, potion3, ring, scroll1, scroll2, sword, fist, wand :: ItemKind
 
 gem, potion, scroll :: ItemKind  -- generic templates
 
@@ -35,13 +35,13 @@ amulet = ItemKind
   }
 dart = ItemKind
   { isymbol  = '|'
-  , iflavour = [(Yellow, False)]
+  , iflavour = [(Cyan, False)]
   , iname    = "dart"
   , ieffect  = Wound (1, 1)
   , icount   = (3, 3, 0, 0)
   , ifreq    = 30
   , ipower   = intToQuad 0
-  , iverbApply   = "break up"
+  , iverbApply   = "snap"
   , iverbProject = "throw"
   }
 gem = ItemKind
@@ -76,6 +76,17 @@ gold = ItemKind
   , ifreq    = 80
   , ipower   = intToQuad 0
   , iverbApply   = "grind"
+  , iverbProject = "throw"
+  }
+javelin = ItemKind
+  { isymbol  = '|'
+  , iflavour = [(Yellow, False)]
+  , iname    = "javelin"
+  , ieffect  = Wound (1, 1)
+  , icount   = (0, 0, 2, 2)
+  , ifreq    = 30
+  , ipower   = (1, 7, 0, 0)
+  , iverbApply   = "break up"
   , iverbProject = "throw"
   }
 potion = ItemKind

@@ -116,6 +116,15 @@ projectGroupItem source loc verb item = do
 
 playerProjectGroupItem :: String -> String -> [Char] -> Action ()
 playerProjectGroupItem verb noun syms = do
+  ms     <- gets (lmonsters . slevel)
+  lxsize <- gets (lxsize . slevel)
+  ploc   <- gets (bloc . getPlayerBody)
+  if L.any (adjacent lxsize ploc) (L.map bloc $ IM.elems ms)
+    then abortWith "You can't aim in melee."
+    else playerProjectGI verb noun syms
+
+playerProjectGI :: String -> String -> [Char] -> Action ()
+playerProjectGI verb noun syms = do
   Kind.Ops{okind} <- contentf Kind.coitem
   state <- get
   is    <- gets getPlayerItem
