@@ -45,8 +45,36 @@ firstDeathEnds: False
 
 [commands]
 ; This sections can be empty, but has to be there.
-q: apply quaff potion !
-r: apply read scroll ?
+;
+; interaction with the dungeon
+c: Close
+less: Ascend
+greater: Descend
+slash: TgtFloor
+asterisk: TgtEnemy
+Tab: HeroCycle
+;
+; items
+g: Pickup
+d: Drop
+i: Inventory
+q: Apply { verb = "quaff", noun = "potion", syms = "!" }
+r: Apply { verb = "read", noun = "scroll", syms = "?" }
+;
+; saving or ending the game
+X: GameSave
+Q: GameQuit
+;
+;information for the player
+P: History
+V: Version
+question: Help
+D: CfgDump
+;
+; general
+period: Wait
+Escape: Cancel
+Return: Accept
 
 [macros]
 ; This sections can be empty, but has to be there.

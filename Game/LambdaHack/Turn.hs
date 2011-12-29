@@ -3,23 +3,16 @@ module Game.LambdaHack.Turn where
 import Control.Monad
 import Control.Monad.State hiding (State, state)
 import qualified Data.List as L
-import qualified Data.Map as M
-import qualified Data.Set as S
 import qualified Data.Ord as Ord
 import qualified Data.IntMap as IM
-import qualified Data.Char as Char
 
-import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
-import Game.LambdaHack.ItemAction
 import Game.LambdaHack.Command
-import Game.LambdaHack.Grammar
 import qualified Game.LambdaHack.Config as Config
 import Game.LambdaHack.Display hiding (display)
 import Game.LambdaHack.EffectAction
 import Game.LambdaHack.Keybindings
-import qualified Game.LambdaHack.Keys as K
 import Game.LambdaHack.Level
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
@@ -202,89 +195,3 @@ playerCommand = do
 
 -- The remaining functions in this module are individual actions or helper
 -- functions.
-
--- TODO: Should be defined in Command module.
-helpCommand :: Described (Action ())
-helpCommand = Described "display help"      displayHelp
-
--- | Display command help. TODO: Should be defined in Actions module.
-displayHelp :: Action ()
-displayHelp = do
-  let coImage (_, macros, _) k =
-        let domain = M.keysSet macros
-        in if k `S.member` domain
-           then []
-           else k : [ from | (from, to) <- M.assocs macros, to == k ]
-  aliases <- session (return . coImage)
-  config  <- gets sconfig
-  let helpString = keyHelp aliases (stdKeybindings config)
-  messageOverlayConfirm "Basic keys:" helpString
-  abort
-
-heroSelection :: [(K.Key, Command)]
-heroSelection =
-  let heroSelect k = (K.Char (Char.intToDigit k),
-                      Undescribed $
-                      selectPlayer (AHero k) >> return ())
-  in fmap heroSelect [0..9]
-
-configCommands :: Config.CP -> [(K.Key, Command)]
-configCommands config =
-  let section = Config.getItems config "commands"
-      mkCommand (key, def) =
-        case (key, words def) of
-          ([k], [act, verb, noun, syms]) ->
-            let prompt = verb ++ " " ++ addIndefinite noun
-                action = case act of
-                  "apply"   -> playerApplyGroupItem
-                  "project" -> playerProjectGroupItem
-                  _ -> assert `failure` "unknown config command action"
-                command = checkCursor $ action verb noun syms
-            in (K.Char k, Described prompt command)
-          _ -> assert `failure` "can't parse config command definitions"
-  in L.map mkCommand section
-
--- TODO: Keep in session, instead of recomputing before each command.
-stdKeybindings :: Config.CP -> Keybindings
-stdKeybindings config = Keybindings
-  { kdir   = moveDirCommand,
-    kudir  = runDirCommand,
-    kother = M.fromList $
-             heroSelection ++
-             configCommands config ++
-             [ -- interaction with the dungeon
-               (K.Char 'c',  closeCommand),
-
-               (K.Char '<',  ascendCommand),
-               (K.Char '>',  descendCommand),
-
-               (K.Char '*',  monsterCommand),
-               (K.Char '/',  floorCommand),
-               (K.Tab     ,  heroCommand),
-
-               -- items
-               (K.Char 'g',  pickupCommand),
-               (K.Char 'd',  dropCommand),
-               (K.Char 'i',  inventoryCommand),
-
-               -- wait
-               (K.Char '.',  Undescribed playerAdvanceTime),
-
-               -- saving or ending the game
-               (K.Char 'X',  saveCommand),
-               (K.Char 'Q',  quitCommand),
-
-               -- debug modes
-               (K.Char 'R',  Undescribed $ modify toggleVision),
-               (K.Char 'O',  Undescribed $ modify toggleOmniscient),
-               (K.Char 'I',  Undescribed $ gets (lmeta . slevel) >>= abortWith),
-
-               -- information for the player
-               (K.Char 'V',  versionCommand),
-               (K.Char 'P',  historyCommand),
-               (K.Char 'D',  dumpCommand),
-               (K.Char '?',  helpCommand),
-               (K.Return  ,  acceptCommand displayHelp),
-               (K.Esc     ,  cancelCommand)
-             ]
-  }

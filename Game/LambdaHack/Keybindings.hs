@@ -5,9 +5,15 @@ import qualified Data.List as L
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
-import Game.LambdaHack.Command
 import Game.LambdaHack.Geometry
 import qualified Game.LambdaHack.Keys as K
+import Game.LambdaHack.Dir
+
+data Described a = Described { chelp :: String, caction :: a }
+                 | Undescribed { caction :: a }
+
+type Command    = Described (Action ())
+type DirCommand = Described (Dir -> Action ())
 
 -- | Keybindings.
 data Keybindings = Keybindings
