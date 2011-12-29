@@ -45,6 +45,8 @@ firstDeathEnds: False
 
 [commands]
 ; This sections can be empty, but has to be there.
+q: apply quaff potion !
+r: apply read scroll ?
 
 [macros]
 ; This sections can be empty, but has to be there.
