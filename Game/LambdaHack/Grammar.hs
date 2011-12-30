@@ -14,6 +14,9 @@ import Game.LambdaHack.Effect
 import Game.LambdaHack.Flavour
 import qualified Game.LambdaHack.Kind as Kind
 
+type Verb = String
+type Object = String
+
 suffixS :: String -> String
 suffixS word = case last word of
                 'y' -> init word ++ "ies"
@@ -30,7 +33,7 @@ addIndefinite b = case b of
                     c : _ | c `elem` "aeio" -> "an " ++ b
                     _                       -> "a "  ++ b
 
-makeObject :: Int -> (String -> String) -> String -> String
+makeObject :: Int -> (Object -> Object) -> Object -> String
 makeObject 1 adj obj = addIndefinite $ adj obj
 makeObject n adj obj = show n ++ " " ++ adj (suffixS obj)
 
@@ -45,31 +48,31 @@ objectActor Kind.Ops{oname} a =
 subjectActor :: Kind.Ops ActorKind -> Actor -> String
 subjectActor cops x = capitalize $ objectActor cops x
 
-verbActor :: Kind.Ops ActorKind -> Actor -> String -> String
+verbActor :: Kind.Ops ActorKind -> Actor -> Verb -> String
 verbActor cops a v = if objectActor cops a == "you" then v else suffixS v
 
 -- | Sentences such like "The dog barks".
-subjectActorVerb :: Kind.Ops ActorKind -> Actor -> String -> String
+subjectActorVerb :: Kind.Ops ActorKind -> Actor -> Verb -> String
 subjectActorVerb cops x v = subjectActor cops x ++ " " ++ verbActor cops x v
 
-compoundVerbActor :: Kind.Ops ActorKind -> Actor -> String -> String -> String
+compoundVerbActor :: Kind.Ops ActorKind -> Actor -> Verb -> String -> String
 compoundVerbActor cops m v p = verbActor cops m v ++ " " ++ p
 
-subjectVerbIObject :: Kind.COps -> State -> Actor -> String -> Item -> String
+subjectVerbIObject :: Kind.COps -> State -> Actor -> Verb -> Item -> String
                    -> String
 subjectVerbIObject Kind.COps{coactor, coitem} state m v o add =
   subjectActor coactor m ++ " " ++
   verbActor coactor m v ++ " " ++
   objectItem coitem state o ++ add ++ "."
 
-subjectVerbMObject :: Kind.Ops ActorKind -> Actor -> String -> Actor -> String
+subjectVerbMObject :: Kind.Ops ActorKind -> Actor -> Verb -> Actor -> String
                    -> String
 subjectVerbMObject cops m v o add =
   subjectActor cops m ++ " " ++
   verbActor cops m v ++ " " ++
   objectActor cops o ++ add ++ "."
 
-subjCompoundVerbIObj :: Kind.COps -> State -> Actor -> String -> String
+subjCompoundVerbIObj :: Kind.COps -> State -> Actor -> Verb -> String
                      -> Item -> String -> String
 subjCompoundVerbIObj Kind.COps{coactor, coitem} state m v p o add =
   subjectActor coactor m ++ " " ++

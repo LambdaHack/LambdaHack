@@ -43,19 +43,19 @@ inventory = do
 -- Note that this does not guarantee an item from the group to be chosen,
 -- as the player can override the choice.
 getGroupItem :: [Item]  -- ^ all objects in question
-             -> String  -- ^ name of the group
+             -> Object  -- ^ name of the group
              -> [Char]  -- ^ accepted item symbols
              -> String  -- ^ prompt
              -> String  -- ^ how to refer to the collection of objects
              -> Action (Maybe Item)
-getGroupItem is noun syms prompt packName = do
+getGroupItem is object syms prompt packName = do
   Kind.Ops{osymbol} <- contentf Kind.coitem
   let choice i = osymbol (jkind i) `L.elem` syms
-      header = capitalize $ suffixS noun
+      header = capitalize $ suffixS object
   getItem prompt choice header is packName
 
 applyGroupItem :: ActorId  -- ^ actor applying the item; on current level
-               -> String   -- ^ how the "applying" is called
+               -> Verb     -- ^ how the "applying" is called
                -> Item     -- ^ the item to be applied
                -> Action ()
 applyGroupItem actor verb item = do
@@ -72,11 +72,11 @@ applyGroupItem actor verb item = do
   itemEffectAction 5 actor actor consumed
   advanceTime actor
 
-playerApplyGroupItem :: String -> String -> [Char] -> Action ()
-playerApplyGroupItem verb noun syms = do
+playerApplyGroupItem :: Verb -> Object -> [Char] -> Action ()
+playerApplyGroupItem verb object syms = do
   Kind.Ops{okind} <- contentf Kind.coitem
   is   <- gets getPlayerItem
-  iOpt <- getGroupItem is noun syms
+  iOpt <- getGroupItem is object syms
             ("What to " ++ verb ++ "?") "in inventory"
   pl   <- gets splayer
   case iOpt of
@@ -84,10 +84,10 @@ playerApplyGroupItem verb noun syms = do
     Nothing -> neverMind True
 
 projectGroupItem :: ActorId  -- ^ actor projecting the item; on current level
-             -> Loc      -- ^ target location for the projecting
-             -> String   -- ^ how the "projecting" is called
-             -> Item     -- ^ the item to be projected
-             -> Action ()
+                 -> Loc      -- ^ target location for the projecting
+                 -> Verb     -- ^ how the "projecting" is called
+                 -> Item     -- ^ the item to be projected
+                 -> Action ()
 projectGroupItem source loc verb item = do
   cops@Kind.COps{coactor} <- contentOps
   state <- get
@@ -114,21 +114,21 @@ projectGroupItem source loc verb item = do
       modify (updateLevel (dropItemsAt [consumed] loc))
   advanceTime source
 
-playerProjectGroupItem :: String -> String -> [Char] -> Action ()
-playerProjectGroupItem verb noun syms = do
+playerProjectGroupItem :: Verb -> Object -> [Char] -> Action ()
+playerProjectGroupItem verb object syms = do
   ms     <- gets (lmonsters . slevel)
   lxsize <- gets (lxsize . slevel)
   ploc   <- gets (bloc . getPlayerBody)
   if L.any (adjacent lxsize ploc) (L.map bloc $ IM.elems ms)
     then abortWith "You can't aim in melee."
-    else playerProjectGI verb noun syms
+    else playerProjectGI verb object syms
 
-playerProjectGI :: String -> String -> [Char] -> Action ()
-playerProjectGI verb noun syms = do
+playerProjectGI :: Verb -> Object -> [Char] -> Action ()
+playerProjectGI verb object syms = do
   Kind.Ops{okind} <- contentf Kind.coitem
   state <- get
   is    <- gets getPlayerItem
-  iOpt  <- getGroupItem is noun syms
+  iOpt  <- getGroupItem is object syms
              ("What to " ++ verb ++ "?") "in inventory"
   pl    <- gets splayer
   per   <- currentPerception
@@ -257,17 +257,17 @@ pickupItem = do
 -- TODO: you can drop an item on the floor, which works correctly,
 -- but is weird and useless.
 getAnyItem :: String  -- ^ prompt
-           -> [Item]  -- ^ all objects in question
-           -> String  -- ^ how to refer to the collection of objects
+           -> [Item]  -- ^ all items in question
+           -> String  -- ^ how to refer to the collection of items
            -> Action (Maybe Item)
 getAnyItem prompt = getItem prompt (const True) "Objects"
 
 -- | Let the player choose a single item from a list of items.
 getItem :: String               -- ^ prompt message
         -> (Item -> Bool)       -- ^ which items to consider suitable
-        -> String               -- ^ how to describe suitable objects
-        -> [Item]               -- ^ all objects in question
-        -> String               -- ^ how to refer to the collection of objects
+        -> String               -- ^ how to describe suitable items
+        -> [Item]               -- ^ all items in question
+        -> String               -- ^ how to refer to the collection of items
         -> Action (Maybe Item)
 getItem prompt p ptext is0 isn = do
   lvl  <- gets slevel
@@ -290,12 +290,12 @@ getItem prompt p ptext is0 isn = do
         messageClear
         case command of
           K.Char '?' -> do
-            -- filter for supposedly suitable objects
+            -- filter for supposedly suitable items
             b <- displayItems (ptext ++ " " ++ isn) True is
             if b then session (getOptionalConfirm (const ask) perform)
                  else ask
           K.Char '*' -> do
-            -- show all objects
+            -- show all items
             b <- displayItems ("Objects " ++ isn) True is0
             if b then session (getOptionalConfirm (const ask) perform)
                  else ask

@@ -23,13 +23,10 @@ import Game.LambdaHack.Version
 import Game.LambdaHack.Dir
 import qualified Game.LambdaHack.Feature as F
 
-type Verb = String
-type Noun = String
-
 data Cmd =
-    Apply     { verb :: Verb, noun :: Noun, syms :: [Char] }
-  | Project   { verb :: Verb, noun :: Noun, syms :: [Char] }
-  | Trigger   { verb :: Verb, noun :: Noun, feature :: F.Feature }
+    Apply     { verb :: Verb, object :: Object, syms :: [Char] }
+  | Project   { verb :: Verb, object :: Object, syms :: [Char] }
+  | Trigger   { verb :: Verb, object :: Object, feature :: F.Feature }
   | Pickup
   | Drop
   | Inventory
@@ -83,16 +80,16 @@ configCommands config =
           key -> key
       mkCmd s =
         case read s :: Cmd of
-          Apply verb noun syms ->
-            let prompt = verb ++ " " ++ addIndefinite noun
-                command = checkCursor $ playerApplyGroupItem verb noun syms
+          Apply verb object syms ->
+            let prompt = verb ++ " " ++ addIndefinite object
+                command = checkCursor $ playerApplyGroupItem verb object syms
             in Described prompt command
-          Project verb noun syms ->
-            let prompt = verb ++ " " ++ addIndefinite noun
-                command = checkCursor $ playerProjectGroupItem verb noun syms
+          Project verb object syms ->
+            let prompt = verb ++ " " ++ addIndefinite object
+                command = checkCursor $ playerProjectGroupItem verb object syms
             in Described prompt command
-          Trigger verb noun feat ->
-            let prompt = verb ++ " " ++ addIndefinite noun
+          Trigger verb object feat ->
+            let prompt = verb ++ " " ++ addIndefinite object
                 command = checkCursor $ playerTriggerTile feat
             in Described prompt command
           Pickup ->    Described "get an object"     (checkCursor pickupItem)

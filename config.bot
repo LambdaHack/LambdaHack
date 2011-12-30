@@ -44,10 +44,8 @@ extraHeroes: 4
 firstDeathEnds: False
 
 [commands]
-; This sections can be empty, but has to be there.
-;
 ; interaction with the dungeon
-c: Trigger { verb = "close", noun = "door", feature = Closable }
+c: Trigger { verb = "close", object = "door", feature = Closable }
 less: Ascend
 greater: Descend
 slash: TgtFloor
@@ -58,8 +56,8 @@ Tab: HeroCycle
 g: Pickup
 d: Drop
 i: Inventory
-q: Apply { verb = "quaff", noun = "potion", syms = "!" }
-r: Apply { verb = "read", noun = "scroll", syms = "?" }
+q: Apply { verb = "quaff", object = "potion", syms = "!" }
+r: Apply { verb = "read", object = "scroll", syms = "?" }
 ;
 ; saving or ending the game
 X: GameSave
