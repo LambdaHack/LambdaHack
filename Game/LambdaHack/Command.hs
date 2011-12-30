@@ -71,6 +71,52 @@ heroSelection =
                       selectPlayer (AHero k) >> return ())
   in fmap heroSelect [0..9]
 
+cmdSemantics :: Cmd -> Action ()
+cmdSemantics cmd = case cmd of
+  Apply verb obj syms -> checkCursor $ playerApplyGroupItem verb obj syms
+  Project verb obj syms -> checkCursor $ playerProjectGroupItem verb obj syms
+  Trigger _verb _obj feat -> checkCursor $ playerTriggerTile feat
+  Pickup ->    checkCursor pickupItem
+  Drop ->      checkCursor dropItem
+  Inventory -> inventory
+  Ascend ->    lvlGoUp True
+  Descend ->   lvlGoUp False
+  TgtFloor ->  targetFloor
+  TgtEnemy ->  checkCursor targetMonster
+  GameSave ->  saveGame
+  GameQuit ->  quitGame
+  Cancel ->    cancelCurrent
+  Accept ->    acceptCurrent displayHelp
+  History ->   displayHistory
+  CfgDump ->   dumpConfig
+  HeroCycle -> cycleHero
+  Version ->   abortWith version
+  Help ->      displayHelp
+  Wait ->      playerAdvanceTime
+
+cmdDescription :: Cmd -> Maybe String
+cmdDescription cmd = case cmd of
+  Apply verb obj _syms -> Just $ verb ++ " " ++ addIndefinite obj
+  Project verb obj _syms -> Just $ verb ++ " " ++ addIndefinite obj
+  Trigger verb obj _feat -> Just $ verb ++ " " ++ addIndefinite obj
+  Pickup ->    Just "get an object"
+  Drop ->      Just "drop an object"
+  Inventory -> Just "display inventory"
+  Ascend ->    Just "ascend a level"
+  Descend ->   Just "descend a level"
+  TgtFloor ->  Just "target location"
+  TgtEnemy ->  Just "target monster"
+  GameSave ->  Just "save and exit the game"
+  GameQuit ->  Just "quit without saving"
+  Cancel ->    Just "cancel action"
+  Accept ->    Just "accept choice"
+  History ->   Just "display previous messages"
+  CfgDump ->   Just "dump current configuration"
+  HeroCycle -> Just "cycle among heroes on level"
+  Version ->   Just "display game version"
+  Help ->      Just "display help"
+  Wait ->      Nothing
+
 configCommands :: Config.CP -> [(K.Key, Command)]
 configCommands config =
   let section = Config.getItems config "commands"
@@ -78,38 +124,12 @@ configCommands config =
         case K.keyTranslate s of
           K.Unknown _ -> assert `failure` ("unknown command key " ++ s)
           key -> key
-      mkCmd s =
-        case read s :: Cmd of
-          Apply verb object syms ->
-            let prompt = verb ++ " " ++ addIndefinite object
-                command = checkCursor $ playerApplyGroupItem verb object syms
-            in Described prompt command
-          Project verb object syms ->
-            let prompt = verb ++ " " ++ addIndefinite object
-                command = checkCursor $ playerProjectGroupItem verb object syms
-            in Described prompt command
-          Trigger verb object feat ->
-            let prompt = verb ++ " " ++ addIndefinite object
-                command = checkCursor $ playerTriggerTile feat
-            in Described prompt command
-          Pickup ->    Described "get an object"     (checkCursor pickupItem)
-          Drop ->      Described "drop an object"    (checkCursor dropItem)
-          Inventory -> Described "display inventory" inventory
-          Ascend ->    Described "ascend a level"    (lvlGoUp True)
-          Descend ->   Described "descend a level"   (lvlGoUp False)
-          TgtFloor ->  Described "target location"   targetFloor
-          TgtEnemy ->  Described "target monster"    (checkCursor targetMonster)
-          GameSave ->  Described "save and exit the game" saveGame
-          GameQuit ->  Described "quit without saving" quitGame
-          Cancel ->    Described "cancel action"     cancelCurrent
-          Accept ->    Described "accept choice"     (acceptCurrent displayHelp)
-          History ->   Described "display previous messages" displayHistory
-          CfgDump ->   Described "dump current configuration" dumpConfig
-          HeroCycle -> Described "cycle among heroes on level" cycleHero
-          Version ->   Described "display game version" (abortWith version)
-          Help ->      Described "display help"      displayHelp
-          Wait ->      Undescribed playerAdvanceTime
-      mkCommand (key, def) = (mkKey key, mkCmd def)
+      mkDescribed s =
+        let cmd = read s :: Cmd
+        in case cmdDescription cmd of
+          Nothing -> Undescribed $ cmdSemantics cmd
+          Just d  -> Described d $ cmdSemantics cmd
+      mkCommand (key, def) = (mkKey key, mkDescribed def)
   in L.map mkCommand section
 
 -- TODO: Keep in session, instead of recomputing before each command.
