@@ -10,7 +10,6 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
 import Game.LambdaHack.Command
 import qualified Game.LambdaHack.Config as Config
-import Game.LambdaHack.Display hiding (display)
 import Game.LambdaHack.EffectAction
 import Game.LambdaHack.Keybindings
 import Game.LambdaHack.Level
@@ -155,8 +154,8 @@ handlePlayer = do
 playerCommand :: Action ()
 playerCommand = do
   lxsize <- gets (lxsize . slevel)
-  display -- draw the current surroundings
-  history -- update the message history and reset current message
+  displayAll -- draw the current surroundings
+  history    -- update the message history and reset current message
   tryRepeatedlyWith stopRunning $  -- on abort, just ask for a new command
     ifRunning continueRun $ do
       k <- session nextCommand

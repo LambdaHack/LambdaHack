@@ -9,7 +9,6 @@ import qualified Data.IntSet as IS
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
-import Game.LambdaHack.Display hiding (display)
 import Game.LambdaHack.Loc
 import Game.LambdaHack.Grammar
 import Game.LambdaHack.Item
@@ -284,7 +283,7 @@ getItem prompt p ptext is0 isn = do
         when (L.null is0 && L.null tis) $
           abortWith "Not carrying anything."
         messageReset (prompt ++ " " ++ choice)
-        display
+        displayAll
         session nextCommand >>= perform
       perform command = do
         messageClear

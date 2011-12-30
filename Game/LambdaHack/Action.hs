@@ -4,10 +4,11 @@ module Game.LambdaHack.Action where
 import Control.Monad
 import Control.Monad.State hiding (State, state)
 import qualified Data.IntMap as IM
+import qualified Data.Map as M
 -- import System.IO (hPutStrLn, stderr) -- just for debugging
 
 import Game.LambdaHack.Perception
-import Game.LambdaHack.Display hiding (display)
+import Game.LambdaHack.Display
 import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 import Game.LambdaHack.Level
@@ -17,6 +18,9 @@ import Game.LambdaHack.Content.ActorKind
 import qualified Game.LambdaHack.Save as Save
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Random
+import qualified Game.LambdaHack.Keys as K
+
+type Session = (FrontendSession, M.Map K.Key K.Key, Kind.COps)
 
 newtype Action a = Action
   { runAction ::
@@ -58,10 +62,10 @@ instance MonadState State Action where
 
 -- | Exported function to run the monad.
 handlerToIO :: Session -> State -> Msg -> Action () -> IO ()
-handlerToIO sess@(_, _, cops) state msg h =
+handlerToIO sess@(fs, _, cops) state msg h =
   runAction h
     sess
-    (Save.rmBkp (sconfig state) >> shutdown sess)  -- get out of the game
+    (Save.rmBkp (sconfig state) >> shutdown fs)  -- get out of the game
     (perception cops state)  -- create and cache perception
     (\ _ _ x -> return x)    -- final continuation returns result
     (ioError $ userError "unhandled abort")
@@ -91,8 +95,8 @@ displayGeneric dm f = Action (\ s _e p k _a st ms ->
                                >>= k st ms)
 
 -- | Display the current level, with the current message and color. Most common.
-display :: Action Bool
-display = displayGeneric ColorFull id
+displayAll :: Action Bool
+displayAll = displayGeneric ColorFull id
 
 -- | Display an overlay on top of the current screen.
 overlay :: String -> Action Bool
@@ -161,7 +165,7 @@ debug _x = return () -- liftIO $ hPutStrLn stderr _x
 abortWith :: Msg -> Action a
 abortWith msg = do
   messageReset msg
-  display
+  displayAll
   abort
 
 neverMind :: Bool -> Action a
@@ -171,6 +175,21 @@ neverMind b = abortIfWith b "never mind"
 abortIfWith :: Bool -> Msg -> Action a
 abortIfWith True msg = abortWith msg
 abortIfWith False _  = abortWith ""
+
+getConfirm :: Session -> Action Bool
+getConfirm (fs, macros, _) = getConfirmD fs macros
+
+getYesNo :: Session -> Action Bool
+getYesNo (fs, macros, _) = getYesNoD fs macros
+
+nextCommand :: Session -> Action K.Key
+nextCommand (fs, macros, _) = nextCommandD fs macros
+
+getOptionalConfirm :: (Bool -> Action a)
+                    -> (K.Key -> Action a)
+                    -> Session
+                    -> Action a
+getOptionalConfirm h k (fs, macros, _) =getOptionalConfirmD h k fs macros
 
 -- | Print message, await confirmation. Return value indicates
 -- if the player tried to abort/escape.
@@ -201,7 +220,7 @@ messageOverlayConfirm msg txt = messageOverlaysConfirm msg [txt]
 messageOverlaysConfirm :: Msg -> [String] -> Action Bool
 messageOverlaysConfirm _msg [] = do
   messageClear
-  display
+  displayAll
   return True
 messageOverlaysConfirm msg (x:xs) = do
   messageReset msg
@@ -216,7 +235,7 @@ messageOverlaysConfirm msg (x:xs) = do
  where
   stop = do
     messageClear
-    display
+    displayAll
     return False
 
 -- | Update the cached perception for the given computation.

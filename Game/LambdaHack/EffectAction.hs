@@ -15,7 +15,7 @@ import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.ActorAdd
-import Game.LambdaHack.Display hiding (display)
+import Game.LambdaHack.Display
 import Game.LambdaHack.Grammar
 import Game.LambdaHack.Geometry
 import Game.LambdaHack.Loc
@@ -95,7 +95,7 @@ effectToAction Effect.Dominate _ source target _power =
       >>= assert `trueM` (source, target, "player dominates himself")
     -- Prevent AI from getting a few free moves until new player ready.
     updatePlayerBody (\ m -> m { btime = 0})
-    display
+    displayAll
     return (True, "")
   else nullEffect
 effectToAction Effect.SummonFriend _ source target power = do
@@ -201,7 +201,7 @@ focusIfAHero target =
     -- Focus on the hero being wounded/displaced/etc.
     b <- selectPlayer target
     -- Display status line for the new hero.
-    when b $ display >> return ()
+    when b $ displayAll >> return ()
 
 summonHeroes :: Int -> Loc -> Action ()
 summonHeroes n loc =
@@ -212,7 +212,7 @@ summonHeroes n loc =
   selectPlayer (AHero newHeroId)
     >>= assert `trueM` (newHeroId, "player summons himself")
   -- Display status line for the new hero.
-  display >> return ()
+  displayAll >> return ()
 
 summonMonsters :: Int -> Loc -> Action ()
 summonMonsters n loc = do

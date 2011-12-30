@@ -53,7 +53,7 @@ start scops frontendSession = do
   f <- Save.file config
   b <- doesFileExist f
   restored <- if b
-              then do Display.displayBlankConfirm sess "Restoring save game"
+              then do Display.displayBlankConfirmD frontendSession macros "Restoring save game"
                       Save.restoreGame config
               else return $ Right $ "Welcome to " ++ title ++ "!"  -- new game
   case restored of

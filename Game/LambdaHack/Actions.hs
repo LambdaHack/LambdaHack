@@ -9,7 +9,7 @@ import qualified Data.IntSet as IS
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
-import Game.LambdaHack.Display hiding (display)
+import Game.LambdaHack.Display
 import Game.LambdaHack.Loc
 import Game.LambdaHack.Dir
 import Game.LambdaHack.Grammar
@@ -371,7 +371,7 @@ triggerTile cotile@Kind.Ops{okind} lvl dloc =
 playerTriggerTile :: F.Feature -> Action ()
 playerTriggerTile feat = do
   messageReset "direction?"
-  display
+  displayAll
   e <- session nextCommand
   lxsize <- gets (lxsize . slevel)
   K.handleDirection lxsize e (playerBumpTile feat) (neverMind True)
