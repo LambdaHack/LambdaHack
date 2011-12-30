@@ -1,5 +1,9 @@
 {-# LANGUAGE CPP #-}
-module Game.LambdaHack.Display where
+module Game.LambdaHack.Display
+  ( Session, FrontendSession, display, startup, shutdown, frontendName
+  , nextCommand, displayBlankConfirm, getConfirm, getOptionalConfirm
+  , getYesNo, splitOverlay, stringByLocation, displayLevel, ColorMode(..)
+  ) where
 
 -- wrapper for selected Display frontend
 
@@ -43,19 +47,19 @@ import qualified Game.LambdaHack.Kind as Kind
 
 -- Re-exported from the display frontend, with extra slots for function for
 -- translating keys to a canonical form and for content. TODO: move elsewhere.
-type InternalSession = D.Session
-type Session = (InternalSession, M.Map K.Key K.Key, Kind.COps)
+type Session = (D.FrontendSession, M.Map K.Key K.Key, Kind.COps)
+type FrontendSession = D.FrontendSession
 
 display :: Area -> Int -> Session
         -> (Loc -> (Color.Attr, Char)) -> String -> String
         -> IO ()
 display area width (session, _, _) = D.display area width session
-startup :: (InternalSession -> IO ()) -> IO ()
+startup :: (D.FrontendSession -> IO ()) -> IO ()
 startup = D.startup
 shutdown :: Session -> IO ()
 shutdown (session, _, _) = D.shutdown session
-displayId :: String
-displayId = D.displayId
+frontendName :: String
+frontendName = D.frontendName
 
 -- | Next event translated to a canonical form.
 nextCommand :: MonadIO m => Session -> m K.Key

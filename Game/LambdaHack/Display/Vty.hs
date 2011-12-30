@@ -1,5 +1,5 @@
 module Game.LambdaHack.Display.Vty
-  ( displayId, startup, shutdown, display, nextEvent, Session
+  ( frontendName, startup, shutdown, display, nextEvent, FrontendSession
   ) where
 
 import Graphics.Vty
@@ -11,15 +11,15 @@ import Game.LambdaHack.Loc
 import qualified Game.LambdaHack.Keys as K (Key(..))
 import qualified Game.LambdaHack.Color as Color
 
-displayId :: String
-displayId = "vty"
+frontendName :: String
+frontendName = "vty"
 
-type Session = Vty
+type FrontendSession = Vty
 
-startup :: (Session -> IO ()) -> IO ()
+startup :: (FrontendSession -> IO ()) -> IO ()
 startup k = mkVty >>= k
 
-display :: Area -> Int -> Session
+display :: Area -> Int -> FrontendSession
         -> (Loc -> (Color.Attr, Char)) -> String -> String
         -> IO ()
 display (x0, y0, x1, y1) width vty f msg status =
@@ -63,7 +63,7 @@ keyTranslate e =
       | otherwise            -> K.Char c
     _                        -> K.Unknown (show e)
 
-nextEvent :: Session -> IO K.Key
+nextEvent :: FrontendSession -> IO K.Key
 nextEvent session = do
   e <- next_event session
   return (keyTranslate e)

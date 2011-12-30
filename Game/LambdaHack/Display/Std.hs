@@ -1,5 +1,5 @@
 module Game.LambdaHack.Display.Std
-  ( displayId, startup, shutdown, display, nextEvent, Session
+  ( frontendName, startup, shutdown, display, nextEvent, FrontendSession
   ) where
 
 import qualified Data.List as L
@@ -11,18 +11,18 @@ import Game.LambdaHack.Loc
 import qualified Game.LambdaHack.Keys as K (Key(..))
 import qualified Game.LambdaHack.Color as Color
 
-displayId :: String
-displayId = "std"
+frontendName :: String
+frontendName = "std"
 
-type Session = ()
+type FrontendSession = ()
 
-startup :: (Session -> IO ()) -> IO ()
+startup :: (FrontendSession -> IO ()) -> IO ()
 startup k = k ()
 
-shutdown :: Session -> IO ()
+shutdown :: FrontendSession -> IO ()
 shutdown _session = return ()
 
-display :: Area -> Int -> Session
+display :: Area -> Int -> FrontendSession
         -> (Loc -> (Color.Attr, Char)) -> String -> String
         -> IO ()
 display (x0, y0, x1, y1) _width _session f msg status =
@@ -78,7 +78,7 @@ keyTranslate e =
     c | c `elem` ['0'..'9'] -> K.Char c
     _      -> K.Char '>'  -- try hard to descend
 
-nextEvent :: Session -> IO K.Key
+nextEvent :: FrontendSession -> IO K.Key
 nextEvent _session = do
   e <- BS.hGet SIO.stdin 1
   let c = BS.head e

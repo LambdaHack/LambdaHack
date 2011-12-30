@@ -1,5 +1,5 @@
 module Game.LambdaHack.Display.Gtk
-  ( displayId, startup, shutdown, display, nextEvent, Session
+  ( frontendName, startup, shutdown, display, nextEvent, FrontendSession
   ) where
 
 import Control.Monad
@@ -17,16 +17,16 @@ import Game.LambdaHack.Geometry
 import qualified Game.LambdaHack.Keys as K (Key(..), keyTranslate)
 import qualified Game.LambdaHack.Color as Color
 
-displayId :: String
-displayId = "gtk"
+frontendName :: String
+frontendName = "gtk"
 
-data Session = Session
+data FrontendSession = FrontendSession
   { schan :: Chan String
   , stags :: M.Map Color.Attr TextTag
   , sview :: TextView
   }
 
-startup :: (Session -> IO ()) -> IO ()
+startup :: (FrontendSession -> IO ()) -> IO ()
 startup k = do
   -- initGUI
   unsafeInitGUIForThreadedRTS
@@ -81,7 +81,7 @@ startup k = do
   widgetModifyText tv StateNormal white
   -- set up the channel for communication
   ec <- newChan
-  forkIO $ k (Session ec tts tv)
+  forkIO $ k (FrontendSession ec tts tv)
   -- fill the channel
   onKeyPress tv
     (\ e -> do
@@ -94,10 +94,10 @@ startup k = do
   yield
   mainGUI
 
-shutdown :: Session -> IO ()
+shutdown :: FrontendSession -> IO ()
 shutdown _ = mainQuit
 
-display :: Area -> Int -> Session
+display :: Area -> Int -> FrontendSession
         -> (Loc -> (Color.Attr, Char)) -> String -> String
         -> IO ()
 display (x0, y0, x1, y1) _width session f msg status =
@@ -160,7 +160,7 @@ readUndeadChan ch = do
     "Caps_Lock"        -> True
     _                  -> False
 
-nextEvent :: Session -> IO K.Key
+nextEvent :: FrontendSession -> IO K.Key
 nextEvent session = do
   e <- readUndeadChan (schan session)
   return (K.keyTranslate e)

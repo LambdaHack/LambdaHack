@@ -1,5 +1,5 @@
 module Game.LambdaHack.Display.Curses
-  ( displayId, startup, shutdown, display, nextEvent, Session
+  ( frontendName, startup, shutdown, display, nextEvent, FrontendSession
   ) where
 
 import qualified UI.HSCurses.Curses as C
@@ -13,15 +13,15 @@ import Game.LambdaHack.Loc
 import qualified Game.LambdaHack.Keys as K (Key(..))
 import qualified Game.LambdaHack.Color as Color
 
-displayId :: String
-displayId = "curses"
+frontendName :: String
+frontendName = "curses"
 
-data Session = Session
+data FrontendSession = FrontendSession
   { win :: C.Window
   , styles :: M.Map (Color.Color, Color.Color) C.CursesStyle
   }
 
-startup :: (Session -> IO ()) -> IO ()
+startup :: (FrontendSession -> IO ()) -> IO ()
 startup k = do
   C.start
   C.cursSet C.CursorInvisible
@@ -36,15 +36,15 @@ startup k = do
   let (ks, vs) = unzip s
   ws <- C.convertStyles vs
   let styleMap = M.fromList (zip ks ws)
-  k (Session C.stdScr styleMap)
+  k (FrontendSession C.stdScr styleMap)
 
-shutdown :: Session -> IO ()
+shutdown :: FrontendSession -> IO ()
 shutdown _ = C.end
 
-display :: Area -> Int -> Session
+display :: Area -> Int -> FrontendSession
         -> (Loc -> (Color.Attr, Char)) -> String -> String
         -> IO ()
-display (x0, y0, x1, y1) width (Session { win = w, styles = s })
+display (x0, y0, x1, y1) width (FrontendSession { win = w, styles = s })
         f msg status = do
   -- let defaultStyle = C.defaultCursesStyle
   -- Terminals with white background require this:
@@ -95,7 +95,7 @@ keyTranslate e =
       | otherwise           -> K.Char c
     _                       -> K.Unknown (show e)
 
-nextEvent :: Session -> IO K.Key
+nextEvent :: FrontendSession -> IO K.Key
 nextEvent _session = do
   e <- C.getKey C.refresh
   return (keyTranslate e)

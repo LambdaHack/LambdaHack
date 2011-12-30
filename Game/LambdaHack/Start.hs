@@ -41,14 +41,14 @@ speedupCops scops@Kind.COps{cotile=sct} =
   in scops {Kind.cotile}
 
 -- | Either restore a saved game, or setup a new game.
-start :: Kind.COps -> Display.InternalSession -> IO ()
-start scops internalSession = do
+start :: Kind.COps -> Display.FrontendSession -> IO ()
+start scops frontendSession = do
   let cops@Kind.COps{corule=Kind.Ops{okind, ouniqName}} = speedupCops scops
       title = rtitle $ okind $ ouniqName "standard game ruleset"
   config <- Config.config
   let section = Config.getItems config "macros"
       !macros = KB.macroKey section
-      sess = (internalSession, macros, cops)
+      sess = (frontendSession, macros, cops)
   -- check if we have a savegame
   f <- Save.file config
   b <- doesFileExist f
