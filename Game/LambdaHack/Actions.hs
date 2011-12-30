@@ -324,15 +324,6 @@ remember = do
       rememberItem = IM.alter alt
   modify (updateLevel (updateIMap (\ m -> L.foldr rememberItem m vis)))
 
--- | Ask for a direction and close the door, if any
-closeDoor :: Action ()
-closeDoor = do
-  messageReset "direction?"
-  display
-  e <- session nextCommand
-  lxsize <- gets (lxsize . slevel)
-  K.handleDirection lxsize e playerCloseDoor (neverMind True)
-
 -- | Guess and report why the bump command failed.
 guessBump :: Kind.Ops TileKind -> F.Feature -> Kind.Id TileKind -> Action ()
 guessBump cotile F.Openable t | Tile.hasFeature cotile F.Closable t =
@@ -376,13 +367,22 @@ triggerTile cotile@Kind.Ops{okind} lvl dloc =
       f _ = return ()
   in mapM_ f $ TileKind.tfeature $ okind $ lvl `at` dloc
 
+-- | Ask for a direction and alter a tile, if possible.
+playerTriggerTile :: F.Feature -> Action ()
+playerTriggerTile feat = do
+  messageReset "direction?"
+  display
+  e <- session nextCommand
+  lxsize <- gets (lxsize . slevel)
+  K.handleDirection lxsize e (playerBumpTile feat) (neverMind True)
+
 -- | Player closes a door. AI never does.
-playerCloseDoor :: Dir -> Action ()
-playerCloseDoor dir = do
+playerBumpTile :: F.Feature -> Dir -> Action ()
+playerBumpTile feat dir = do
   pl    <- gets splayer
   body  <- gets (getActor pl)
   let dloc = bloc body `shift` dir
-  bumpTile dloc F.Closable
+  bumpTile dloc feat
 
 -- | An actor opens a door. Player (hero or monster) or enemy.
 actorOpenDoor :: ActorId -> Dir -> Action ()
@@ -398,7 +398,7 @@ actorOpenDoor actor dir = do
   let dloc = shift (bloc body) dir  -- the location we act upon
       t = lvl `at` dloc
       isPlayer = actor == pl
-      isVerbose = isPlayer  -- don't report enemy failures, if it's not player
+      isVerbose = isPlayer  -- don't report monster failures, if it's not player
       iq = aiq $ okind $ bkind body
       openPower = TileKind.SecretStrength $
         if isPlayer

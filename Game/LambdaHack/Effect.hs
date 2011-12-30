@@ -13,7 +13,7 @@ data Effect =
   | Regeneration
   | Searching
   | Teleport
-  deriving (Show, Eq, Ord)
+  deriving (Show, Read, Eq, Ord)
 
 effectToName :: Effect -> String
 effectToName NoEffect = ""

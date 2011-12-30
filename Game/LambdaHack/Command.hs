@@ -21,6 +21,7 @@ import Game.LambdaHack.Actor
 import Game.LambdaHack.State
 import Game.LambdaHack.Version
 import Game.LambdaHack.Dir
+import qualified Game.LambdaHack.Feature as F
 
 type Verb = String
 type Noun = String
@@ -28,7 +29,7 @@ type Noun = String
 data Cmd =
     Apply     { verb :: Verb, noun :: Noun, syms :: [Char] }
   | Project   { verb :: Verb, noun :: Noun, syms :: [Char] }
-  | Close
+  | Trigger   { verb :: Verb, noun :: Noun, feature :: F.Feature }
   | Pickup
   | Drop
   | Inventory
@@ -90,7 +91,10 @@ configCommands config =
             let prompt = verb ++ " " ++ addIndefinite noun
                 command = checkCursor $ playerProjectGroupItem verb noun syms
             in Described prompt command
-          Close ->     Described "close a door"      (checkCursor closeDoor)
+          Trigger verb noun feat ->
+            let prompt = verb ++ " " ++ addIndefinite noun
+                command = checkCursor $ playerTriggerTile feat
+            in Described prompt command
           Pickup ->    Described "get an object"     (checkCursor pickupItem)
           Drop ->      Described "drop an object"    (checkCursor dropItem)
           Inventory -> Described "display inventory" inventory

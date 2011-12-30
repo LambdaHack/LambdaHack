@@ -22,4 +22,4 @@ data Feature =
   | Hidden             -- ^ triggered when the tile's secrecy becomes zero
   | Special            -- ^ a variation for special flavour
   | Boring             -- ^ items and stairs can be generated there
-  deriving (Show, Eq, Ord)
+  deriving (Show, Read, Eq, Ord)

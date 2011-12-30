@@ -74,13 +74,14 @@ Below are the basic default keys form common commands.
                d      drop an object
                g      get an object
                i      display inventory
+               o      open a door
                q      quaff a potion
                r      read a scroll
                z      zap a wand
                t      throw a weapon
 
-Searching for secret doors and opening closed doors have no keys assigned.
-Instead, bump into a wall to search and bump into a door to open.
+Searching for secret doors and opening closed doors can be done
+by bumping into a wall and bumping into a door, respectively.
 
 To make a distance attack, you need to set your target first.
 The targeting commands are listed below, together with all the other

@@ -45,7 +45,8 @@ firstDeathEnds: False
 ; This sections can be empty, but has to be there.
 ;
 ; interaction with the dungeon
-c: Close
+c: Trigger { verb = "close", noun = "door", feature = Closable }
+o: Trigger { verb = "open", noun = "door", feature = Openable }
 less: Ascend
 greater: Descend
 slash: TgtFloor
