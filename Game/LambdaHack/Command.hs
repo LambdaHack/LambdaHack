@@ -64,7 +64,7 @@ displayHelp = do
   messageOverlayConfirm "Basic keys:" helpString
   abort
 
-heroSelection :: [(K.Key, Command)]
+heroSelection :: [(K.Key, Described (Action ()))]
 heroSelection =
   let heroSelect k = (K.Char (Char.intToDigit k),
                       Undescribed $
@@ -117,7 +117,7 @@ cmdDescription cmd = case cmd of
   Help ->      Just "display help"
   Wait ->      Nothing
 
-configCommands :: Config.CP -> [(K.Key, Command)]
+configCommands :: Config.CP -> [(K.Key, Described (Action ()))]
 configCommands config =
   let section = Config.getItems config "commands"
       mkKey s =
@@ -133,7 +133,7 @@ configCommands config =
   in L.map mkCommand section
 
 -- TODO: Keep in session, instead of recomputing before each command.
-stdKeybindings :: Config.CP -> Keybindings
+stdKeybindings :: Config.CP -> Keybindings (Action ())
 stdKeybindings config = Keybindings
   { kdir   = moveDirCommand,
     kudir  = runDirCommand,

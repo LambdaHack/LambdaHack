@@ -160,7 +160,7 @@ playerCommand = do
     ifRunning continueRun $ do
       k <- session nextCommand
       config <- gets sconfig
-      handleKey lxsize (stdKeybindings config) k
+      handleKey lxsize (stdKeybindings config) k abortWith
 
 -- Design thoughts (in order to get rid or partially rid of the somewhat
 -- convoluted design we have): We have three kinds of commands.

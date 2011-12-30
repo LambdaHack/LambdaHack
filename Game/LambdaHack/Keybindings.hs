@@ -4,33 +4,30 @@ import qualified Data.Map as M
 import qualified Data.List as L
 
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Action
 import Game.LambdaHack.Geometry
 import qualified Game.LambdaHack.Keys as K
 import Game.LambdaHack.Dir
 
 data Described a = Described { chelp :: String, caction :: a }
                  | Undescribed { caction :: a }
-
-type Command    = Described (Action ())
-type DirCommand = Described (Dir -> Action ())
+type DirCommand a = Described (Dir -> a)
 
 -- | Keybindings.
-data Keybindings = Keybindings
-  { kdir   :: DirCommand
-  , kudir  :: DirCommand
-  , kother :: M.Map K.Key Command
+data Keybindings a = Keybindings
+  { kdir   :: DirCommand a
+  , kudir  :: DirCommand a
+  , kother :: M.Map K.Key (Described a)
   }
 
-handleKey :: X -> Keybindings -> K.Key -> Action ()
-handleKey lxsize kb k =
+handleKey :: X -> Keybindings a -> K.Key -> (String -> a) -> a
+handleKey lxsize kb k abortWith=
   K.handleDirection lxsize k (caction $ kdir kb) $
     K.handleUDirection lxsize k (caction $ kudir kb) $
       case M.lookup k (kother kb) of
         Just c  -> caction c
         Nothing -> abortWith $ "unknown command (" ++ K.showKey k ++ ")"
 
-keyHelp :: (K.Key -> [K.Key]) -> Keybindings -> String
+keyHelp :: (K.Key -> [K.Key]) -> Keybindings a -> String
 keyHelp aliases kb =
   let
     fmt k h = replicate 15 ' ' ++ k ++ replicate ((13 - length k) `max` 1) ' '
