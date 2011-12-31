@@ -18,6 +18,7 @@ import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Tile
+import Game.LambdaHack.Command
 import qualified Game.LambdaHack.Keybindings as KB
 import qualified Game.LambdaHack.Kind as Kind
 
@@ -48,7 +49,8 @@ start scops frontendSession = do
   config <- Config.config
   let section = Config.getItems config "macros"
       !macros = KB.macroKey section
-      sess = (frontendSession, macros, cops)
+      !keyb = stdKeybindings config
+      sess = (frontendSession, macros, cops, keyb)
   -- check if we have a savegame
   f <- Save.file config
   b <- doesFileExist f

@@ -12,7 +12,6 @@ data Described a = Described { chelp :: String, caction :: a }
                  | Undescribed { caction :: a }
 type DirCommand a = Described (Dir -> a)
 
--- | Keybindings.
 data Keybindings a = Keybindings
   { kdir   :: DirCommand a
   , kudir  :: DirCommand a

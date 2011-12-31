@@ -19,8 +19,10 @@ import qualified Game.LambdaHack.Save as Save
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Keys as K
+import Game.LambdaHack.Keybindings
 
-type Session = (FrontendSession, M.Map K.Key K.Key, Kind.COps)
+type Session =
+  (FrontendSession, M.Map K.Key K.Key, Kind.COps, Keybindings (Action ()))
 
 newtype Action a = Action
   { runAction ::
@@ -62,7 +64,7 @@ instance MonadState State Action where
 
 -- | Exported function to run the monad.
 handlerToIO :: Session -> State -> Msg -> Action () -> IO ()
-handlerToIO sess@(fs, _, cops) state msg h =
+handlerToIO sess@(fs, _, cops, _) state msg h =
   runAction h
     sess
     (Save.rmBkp (sconfig state) >> shutdown fs)  -- get out of the game
@@ -90,9 +92,10 @@ sessionIO f = Action (\ s _e _p k _a st ms -> f s >>= k st ms)
 
 -- | Display the current level with modified current message.
 displayGeneric :: ColorMode -> (String -> String) -> Action Bool
-displayGeneric dm f = Action (\ s _e p k _a st ms ->
-                               displayLevel dm s p st (f ms) Nothing
-                               >>= k st ms)
+displayGeneric dm f =
+  Action (\ (fs, macros, cops, _) _e p k _a st ms ->
+           displayLevel dm (fs, macros, cops) p st (f ms) Nothing
+           >>= k st ms)
 
 -- | Display the current level, with the current message and color. Most common.
 displayAll :: Action Bool
@@ -100,9 +103,10 @@ displayAll = displayGeneric ColorFull id
 
 -- | Display an overlay on top of the current screen.
 overlay :: String -> Action Bool
-overlay txt = Action (\ s _e p k _a st ms ->
-                       displayLevel ColorFull s p st ms (Just txt)
-                       >>= k st ms)
+overlay txt =
+  Action (\ (fs, macros, cops, _) _e p k _a st ms ->
+           displayLevel ColorFull (fs, macros, cops) p st ms (Just txt)
+           >>= k st ms)
 
 -- | Wipe out and set a new value for the current message.
 messageReset :: Msg -> Action ()
@@ -122,11 +126,11 @@ currentMsg = Action (\ _s _e _p k _a st ms -> k st ms ms)
 
 -- | Get the content ops.
 contentOps :: Action Kind.COps
-contentOps = Action (\ (_, _, cops) _e _p k _a st ms -> k st ms cops)
+contentOps = Action (\ (_, _, cops, _) _e _p k _a st ms -> k st ms cops)
 
 -- | Get the content ops modified by a function.
 contentf :: (Kind.COps -> a) -> Action a
-contentf f = Action (\ (_, _, cops) _e _p k _a st ms -> k st ms (f cops))
+contentf f = Action (\ (_, _, cops, _) _e _p k _a st ms -> k st ms (f cops))
 
 -- | End the game, i.e., invoke the shutdown continuation.
 end :: Action ()
@@ -177,19 +181,19 @@ abortIfWith True msg = abortWith msg
 abortIfWith False _  = abortWith ""
 
 getConfirm :: Session -> Action Bool
-getConfirm (fs, macros, _) = getConfirmD fs macros
+getConfirm (fs, macros, _, _) = getConfirmD fs macros
 
 getYesNo :: Session -> Action Bool
-getYesNo (fs, macros, _) = getYesNoD fs macros
+getYesNo (fs, macros, _, _) = getYesNoD fs macros
 
 nextCommand :: Session -> Action K.Key
-nextCommand (fs, macros, _) = nextCommandD fs macros
+nextCommand (fs, macros, _, _) = nextCommandD fs macros
 
 getOptionalConfirm :: (Bool -> Action a)
                     -> (K.Key -> Action a)
                     -> Session
                     -> Action a
-getOptionalConfirm h k (fs, macros, _) =getOptionalConfirmD h k fs macros
+getOptionalConfirm h k (fs, macros, _, _) =getOptionalConfirmD h k fs macros
 
 -- | Print message, await confirmation. Return value indicates
 -- if the player tried to abort/escape.
@@ -240,7 +244,7 @@ messageOverlaysConfirm msg (x:xs) = do
 
 -- | Update the cached perception for the given computation.
 withPerception :: Action () -> Action ()
-withPerception h = Action (\ s@(_, _, cops) e _ k a st ms ->
+withPerception h = Action (\ s@(_, _, cops, _) e _ k a st ms ->
                             runAction h s e (perception cops st) k a st ms)
 
 -- | Get the current perception.

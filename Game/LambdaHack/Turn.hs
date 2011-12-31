@@ -8,7 +8,6 @@ import qualified Data.IntMap as IM
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
-import Game.LambdaHack.Command
 import qualified Game.LambdaHack.Config as Config
 import Game.LambdaHack.EffectAction
 import Game.LambdaHack.Keybindings
@@ -159,8 +158,7 @@ playerCommand = do
   tryRepeatedlyWith stopRunning $  -- on abort, just ask for a new command
     ifRunning continueRun $ do
       k <- session nextCommand
-      config <- gets sconfig
-      handleKey lxsize (stdKeybindings config) k abortWith
+      session (\ (_, _, _, keyb) -> handleKey lxsize keyb k abortWith)
 
 -- Design thoughts (in order to get rid or partially rid of the somewhat
 -- convoluted design we have): We have three kinds of commands.

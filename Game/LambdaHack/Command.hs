@@ -53,7 +53,7 @@ runDirCommand    = Described "run in direction"  (\ dir -> run (dir, 0))
 -- | Display command help. TODO: Should be defined in Actions module.
 displayHelp :: Action ()
 displayHelp = do
-  let coImage (_, macros, _) k =
+  let coImage (_, macros, _, _) k =
         let domain = M.keysSet macros
         in if k `S.member` domain
            then []
@@ -132,7 +132,6 @@ configCommands config =
       mkCommand (key, def) = (mkKey key, mkDescribed def)
   in L.map mkCommand section
 
--- TODO: Keep in session, instead of recomputing before each command.
 stdKeybindings :: Config.CP -> Keybindings (Action ())
 stdKeybindings config = Keybindings
   { kdir   = moveDirCommand,
