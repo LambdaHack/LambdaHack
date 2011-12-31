@@ -31,11 +31,13 @@ import Game.LambdaHack.State
 import Game.LambdaHack.Geometry
 import Game.LambdaHack.Loc
 import Game.LambdaHack.Level
+import Game.LambdaHack.Effect
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Actor as Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind
+import Game.LambdaHack.Content.ItemKind
 import qualified Game.LambdaHack.Item as Item
 import qualified Game.LambdaHack.Keys as K
 import Game.LambdaHack.WorldLoc
@@ -98,7 +100,7 @@ displayLevel dm fs cops per
              s@State{scursor, stime, sflavour, slid, splayer, ssensory, sdisplay}
              msg moverlay =
   let Kind.COps{ coactor=Kind.Ops{okind}
-               , coitem
+               , coitem=coitem@Kind.Ops{okind=iokind}
                , cotile=Kind.Ops{okind=tokind} } = cops
       lvl@Level{lxsize = sx, lysize = sy, lsmell = smap} = slevel s
       (_, Actor{bkind, bhp, bloc}, bitems) = findActorAnyLevel splayer s
@@ -121,8 +123,10 @@ displayLevel dm fs cops per
                 else \ _vis _rea -> Color.defBG
       wealth  = L.sum $ L.map (Item.itemPrice coitem) bitems
       damage  = case Item.strongestSword coitem bitems of
-                  Just sw -> 3 + Item.jpower sw
-                  Nothing -> 3
+                  Just sw -> case ieffect $ iokind $ Item.jkind sw of
+                    Wound dice -> show dice ++ " + " ++ show (Item.jpower sw)
+                    _ -> show (Item.jpower sw)
+                  Nothing -> "3d1"  -- TODO; use the item 'fist'
       hs      = levelHeroList s
       ms      = levelMonsterList s
       dis n loc0 =
@@ -171,9 +175,9 @@ displayLevel dm fs cops per
       status =
         take 30 (levelName slid ++ repeat ' ') ++
         take 10 ("T: " ++ show (stime `div` 10) ++ repeat ' ') ++
-        take 10 ("$: " ++ show wealth ++ repeat ' ') ++
-        take 10 ("Dmg: " ++ show damage ++ repeat ' ') ++
-        take 20 ("HP: " ++ show bhp ++
+        take 8 ("$: " ++ show wealth ++ repeat ' ') ++
+        take 15 ("Dmg: " ++ damage ++ repeat ' ') ++
+        take 17 ("HP: " ++ show bhp ++
                  " (" ++ show (maxDice ahp) ++ ")" ++ repeat ' ')
       disp n mesg = display (0, 0, sx - 1, sy - 1) (fst normalLevelBound + 1)
                       fs (dis n) mesg status
