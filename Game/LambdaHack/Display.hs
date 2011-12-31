@@ -1,8 +1,7 @@
 {-# LANGUAGE CPP #-}
 module Game.LambdaHack.Display
-  ( FrontendSession, display, startup, shutdown, frontendName
-  , nextCommandD, displayBlankConfirmD, getConfirmD, getOptionalConfirmD
-  , getYesNoD, displayLevel, ColorMode(..)
+  ( FrontendSession, startup, shutdown, frontendName
+  , nextCommandD, displayBlankConfirmD, displayLevel, ColorMode(..)
   ) where
 
 -- wrapper for selected Display frontend
@@ -24,7 +23,6 @@ import qualified Data.IntSet as IS
 import qualified Data.List as L
 import qualified Data.Map as M
 import qualified Data.IntMap as IM
-import Control.Monad.IO.Class
 import Data.Maybe
 
 import Game.LambdaHack.Msg
@@ -44,52 +42,33 @@ import Game.LambdaHack.WorldLoc
 import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Kind as Kind
 
--- | Next event translated to a canonical form. TODO: remove the monad.
-nextCommandD :: MonadIO m => FrontendSession -> m K.Key
+-- | Next event translated to a canonical form.
+nextCommandD :: FrontendSession -> IO K.Key
 nextCommandD fs = do
-  e <- liftIO $ nextEvent fs
+  e <- nextEvent fs
   return $ K.canonMoveKey e
 
 -- | Displays a message on a blank screen. Waits for confirmation.
 displayBlankConfirmD :: FrontendSession -> String -> IO Bool
-displayBlankConfirmD fs txt =
+displayBlankConfirmD fs txt = do
   let x = txt ++ more
       doBlank = const (Color.defaultAttr, ' ')
       (lx, ly) = normalLevelBound  -- TODO: query terminal size instead
-  in do
-    display (0, 0, lx, ly) (fst normalLevelBound + 1) fs doBlank x ""
-    getConfirmD fs
+  display (0, 0, lx, ly) (fst normalLevelBound + 1) fs doBlank x ""
+  getConfirmD fs
 
--- | Waits for a space or return or '?' or '*'. The last two act this way,
--- to let keys that request information toggle display the information off.
-getConfirmD :: MonadIO m => FrontendSession -> m Bool
-getConfirmD fs =
-  getOptionalConfirmD return (const $ getConfirmD fs) fs
-
-getOptionalConfirmD :: MonadIO m =>
-                       (Bool -> m a)
-                    -> (K.Key -> m a)
-                    -> FrontendSession
-                    -> m a
-getOptionalConfirmD h k fs = do
-  e <- liftIO $ nextCommandD fs
+-- | Waits for a space or return or escape. The last two act this way,
+-- to let keys that request information toggle display of the information off.
+getConfirmD :: FrontendSession -> IO Bool
+getConfirmD fs = do
+  e <- nextCommandD fs
   case e of
-    K.Char ' ' -> h True
-    K.Char '?' -> h True
-    K.Char '*' -> h True
-    K.Return   -> h True
-    K.Esc      -> h False
-    _          -> k e
-
--- | A yes-no confirmation.
-getYesNoD :: MonadIO m => FrontendSession -> m Bool
-getYesNoD fs = do
-  e <- liftIO $ nextCommandD fs
-  case e of
-    K.Char 'y' -> return True
-    K.Char 'n' -> return False
+    K.Char ' ' -> return True
+    K.Char '?' -> return True
+    K.Char '*' -> return True
+    K.Return   -> return True
     K.Esc      -> return False
-    _          -> getYesNoD fs
+    _          -> getConfirmD fs
 
 splitOverlay :: Int -> String -> [[String]]
 splitOverlay s xs = splitOverlay' (lines xs)

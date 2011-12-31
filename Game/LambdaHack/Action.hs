@@ -181,22 +181,39 @@ abortIfWith :: Bool -> Msg -> Action a
 abortIfWith True msg = abortWith msg
 abortIfWith False _  = abortWith ""
 
-getConfirm :: Session -> Action Bool
-getConfirm (fs, _, _) = getConfirmD fs
-
-getYesNo :: Session -> Action Bool
-getYesNo (fs, _, _) = getYesNoD fs
-
 nextCommand :: Session -> Action K.Key
 nextCommand (fs, _, keyb) = do
-  nc <- nextCommandD fs
+  nc <- liftIO $ nextCommandD fs
   return $ fromMaybe nc $ M.lookup nc $ kmacro keyb
 
+-- | A yes-no confirmation.
+getYesNo :: Session -> Action Bool
+getYesNo sess@(fs, _, _) = do
+  e <- liftIO $ nextCommandD fs
+  case e of
+    K.Char 'y' -> return True
+    K.Char 'n' -> return False
+    K.Esc      -> return False
+    _          -> getYesNo sess
+
+-- | Waits for a space or return or '?' or '*'. The last two act this way,
+-- to let keys that request information toggle display of the information off.
 getOptionalConfirm :: (Bool -> Action a)
                     -> (K.Key -> Action a)
                     -> Session
                     -> Action a
-getOptionalConfirm h k (fs, _, _) =getOptionalConfirmD h k fs
+getOptionalConfirm h k (fs, _, _) = do
+  e <- liftIO $ nextCommandD fs
+  case e of
+    K.Char ' ' -> h True
+    K.Char '?' -> h True
+    K.Char '*' -> h True
+    K.Return   -> h True
+    K.Esc      -> h False
+    _          -> k e
+
+getConfirm :: Session -> Action Bool
+getConfirm sess = getOptionalConfirm return (const $ getConfirm sess) sess
 
 -- | Print message, await confirmation. Return value indicates
 -- if the player tried to abort/escape.
