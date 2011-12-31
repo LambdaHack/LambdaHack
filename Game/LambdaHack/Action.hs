@@ -5,6 +5,7 @@ import Control.Monad
 import Control.Monad.State hiding (State, state)
 import qualified Data.IntMap as IM
 import qualified Data.Map as M
+import Data.Maybe
 -- import System.IO (hPutStrLn, stderr) -- just for debugging
 
 import Game.LambdaHack.Perception
@@ -93,8 +94,8 @@ sessionIO f = Action (\ s _e _p k _a st ms -> f s >>= k st ms)
 -- | Display the current level with modified current message.
 displayGeneric :: ColorMode -> (String -> String) -> Action Bool
 displayGeneric dm f =
-  Action (\ (fs, macros, cops, _) _e p k _a st ms ->
-           displayLevel dm (fs, macros, cops) p st (f ms) Nothing
+  Action (\ (fs, _, cops, _) _e p k _a st ms ->
+           displayLevel dm fs cops p st (f ms) Nothing
            >>= k st ms)
 
 -- | Display the current level, with the current message and color. Most common.
@@ -104,8 +105,8 @@ displayAll = displayGeneric ColorFull id
 -- | Display an overlay on top of the current screen.
 overlay :: String -> Action Bool
 overlay txt =
-  Action (\ (fs, macros, cops, _) _e p k _a st ms ->
-           displayLevel ColorFull (fs, macros, cops) p st ms (Just txt)
+  Action (\ (fs, _, cops, _) _e p k _a st ms ->
+           displayLevel ColorFull fs cops p st ms (Just txt)
            >>= k st ms)
 
 -- | Wipe out and set a new value for the current message.
@@ -181,19 +182,21 @@ abortIfWith True msg = abortWith msg
 abortIfWith False _  = abortWith ""
 
 getConfirm :: Session -> Action Bool
-getConfirm (fs, macros, _, _) = getConfirmD fs macros
+getConfirm (fs, _, _, _) = getConfirmD fs
 
 getYesNo :: Session -> Action Bool
-getYesNo (fs, macros, _, _) = getYesNoD fs macros
+getYesNo (fs, _, _, _) = getYesNoD fs
 
 nextCommand :: Session -> Action K.Key
-nextCommand (fs, macros, _, _) = nextCommandD fs macros
+nextCommand (fs, macros, _, _) = do
+  nc <- nextCommandD fs
+  return $ fromMaybe nc (M.lookup nc macros)
 
 getOptionalConfirm :: (Bool -> Action a)
                     -> (K.Key -> Action a)
                     -> Session
                     -> Action a
-getOptionalConfirm h k (fs, macros, _, _) =getOptionalConfirmD h k fs macros
+getOptionalConfirm h k (fs, _, _, _) =getOptionalConfirmD h k fs
 
 -- | Print message, await confirmation. Return value indicates
 -- if the player tried to abort/escape.

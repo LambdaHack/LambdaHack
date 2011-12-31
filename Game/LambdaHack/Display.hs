@@ -44,36 +44,35 @@ import Game.LambdaHack.WorldLoc
 import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Kind as Kind
 
--- | Next event translated to a canonical form.
-nextCommandD :: MonadIO m => FrontendSession -> M.Map K.Key K.Key -> m K.Key
-nextCommandD fs macros = do
+-- | Next event translated to a canonical form. TODO: remove the monad.
+nextCommandD :: MonadIO m => FrontendSession -> m K.Key
+nextCommandD fs = do
   e <- liftIO $ nextEvent fs
-  return $ fromMaybe (K.canonMoveKey e) (M.lookup e macros)
+  return $ K.canonMoveKey e
 
 -- | Displays a message on a blank screen. Waits for confirmation.
-displayBlankConfirmD :: FrontendSession -> M.Map K.Key K.Key -> String
-                     -> IO Bool
-displayBlankConfirmD fs macros txt =
+displayBlankConfirmD :: FrontendSession -> String -> IO Bool
+displayBlankConfirmD fs txt =
   let x = txt ++ more
       doBlank = const (Color.defaultAttr, ' ')
       (lx, ly) = normalLevelBound  -- TODO: query terminal size instead
   in do
     display (0, 0, lx, ly) (fst normalLevelBound + 1) fs doBlank x ""
-    getConfirmD fs macros
+    getConfirmD fs
 
 -- | Waits for a space or return or '?' or '*'. The last two act this way,
 -- to let keys that request information toggle display the information off.
-getConfirmD :: MonadIO m => FrontendSession -> M.Map K.Key K.Key -> m Bool
-getConfirmD fs macros =
-  getOptionalConfirmD return (const $ getConfirmD fs macros) fs macros
+getConfirmD :: MonadIO m => FrontendSession -> m Bool
+getConfirmD fs =
+  getOptionalConfirmD return (const $ getConfirmD fs) fs
 
 getOptionalConfirmD :: MonadIO m =>
-                      (Bool -> m a)
+                       (Bool -> m a)
                     -> (K.Key -> m a)
-                    -> FrontendSession -> M.Map K.Key K.Key
+                    -> FrontendSession
                     -> m a
-getOptionalConfirmD h k fs macros = do
-  e <- liftIO $ nextCommandD fs macros
+getOptionalConfirmD h k fs = do
+  e <- liftIO $ nextCommandD fs
   case e of
     K.Char ' ' -> h True
     K.Char '?' -> h True
@@ -83,14 +82,14 @@ getOptionalConfirmD h k fs macros = do
     _          -> k e
 
 -- | A yes-no confirmation.
-getYesNoD :: MonadIO m => FrontendSession -> M.Map K.Key K.Key -> m Bool
-getYesNoD fs macros = do
-  e <- liftIO $ nextCommandD fs macros
+getYesNoD :: MonadIO m => FrontendSession -> m Bool
+getYesNoD fs = do
+  e <- liftIO $ nextCommandD fs
   case e of
     K.Char 'y' -> return True
     K.Char 'n' -> return False
     K.Esc      -> return False
-    _          -> getYesNoD fs macros
+    _          -> getYesNoD fs
 
 splitOverlay :: Int -> String -> [[String]]
 splitOverlay s xs = splitOverlay' (lines xs)
@@ -113,10 +112,10 @@ stringByLocation sy xs =
 
 data ColorMode = ColorFull | ColorBW
 
-displayLevel :: ColorMode -> (FrontendSession, M.Map K.Key K.Key, Kind.COps)
+displayLevel :: ColorMode -> FrontendSession -> Kind.COps
              -> Perceptions -> State
              -> Msg -> Maybe String -> IO Bool
-displayLevel dm (fs, macros, cops) per
+displayLevel dm fs cops per
              s@State{scursor, stime, sflavour, slid, splayer, ssensory, sdisplay}
              msg moverlay =
   let Kind.COps{ coactor=Kind.Ops{okind}
@@ -202,10 +201,10 @@ displayLevel dm (fs, macros, cops) per
       msgs = splitMsg (fst normalLevelBound + 1) msg
       perf k []     = perfo k ""
       perf k [xs]   = perfo k xs
-      perf k (x:xs) = disp ns (x ++ more) >> getConfirmD fs macros >>= \ b ->
+      perf k (x:xs) = disp ns (x ++ more) >> getConfirmD fs >>= \ b ->
                       if b then perf k xs else return False
       perfo k xs
-        | k < ns - 1 = disp k xs >> getConfirmD fs macros >>= \ b ->
+        | k < ns - 1 = disp k xs >> getConfirmD fs >>= \ b ->
                        if b then perfo (k+1) xs else return False
         | otherwise = disp k xs >> return True
   in perf 0 msgs
