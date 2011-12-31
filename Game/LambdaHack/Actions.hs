@@ -6,6 +6,8 @@ import qualified Data.List as L
 import qualified Data.IntMap as IM
 import Data.Maybe
 import qualified Data.IntSet as IS
+import qualified Data.Map as M
+import qualified Data.Set as S
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
@@ -35,6 +37,7 @@ import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.DungeonState
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind as TileKind
+import Game.LambdaHack.Keybindings
 
 -- The Action stuff that is independent from ItemAction.hs.
 -- (Both depend on EffectAction.hs).
@@ -807,3 +810,16 @@ regenerateLevelHP = do
   modify (updateLevel (updateHeroes   (IM.mapWithKey (upd hi))))
   mi  <- gets (lmonItem . slevel)
   modify (updateLevel (updateMonsters (IM.mapWithKey (upd mi))))
+
+-- | Display command help.
+displayHelp :: Action ()
+displayHelp = do
+  let coImage (_, macros, _, _) k =
+        let domain = M.keysSet macros
+        in if k `S.member` domain
+           then []
+           else k : [ from | (from, to) <- M.assocs macros, to == k ]
+  aliases <- session (return . coImage)
+  session (\ (_, _, _, keyb) ->
+            messageOverlayConfirm "Basic keys:" $ keyHelp aliases keyb)
+  abort

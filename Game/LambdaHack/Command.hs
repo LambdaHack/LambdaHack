@@ -4,7 +4,6 @@ import Control.Monad
 import Control.Monad.State hiding (State, state)
 import qualified Data.List as L
 import qualified Data.Map as M
-import qualified Data.Set as S
 import qualified Data.Char as Char
 
 import Game.LambdaHack.Utils.Assert
@@ -49,20 +48,6 @@ data Cmd =
 moveDirCommand, runDirCommand :: Described (Dir -> Action ())
 moveDirCommand   = Described "move in direction" move
 runDirCommand    = Described "run in direction"  (\ dir -> run (dir, 0))
-
--- | Display command help. TODO: Should be defined in Actions module.
-displayHelp :: Action ()
-displayHelp = do
-  let coImage (_, macros, _, _) k =
-        let domain = M.keysSet macros
-        in if k `S.member` domain
-           then []
-           else k : [ from | (from, to) <- M.assocs macros, to == k ]
-  aliases <- session (return . coImage)
-  config  <- gets sconfig
-  let helpString = keyHelp aliases (stdKeybindings config)
-  messageOverlayConfirm "Basic keys:" helpString
-  abort
 
 heroSelection :: [(K.Key, Described (Action ()))]
 heroSelection =
@@ -117,8 +102,11 @@ cmdDescription cmd = case cmd of
   Help ->      Just "display help"
   Wait ->      Nothing
 
-configCommands :: Config.CP -> [(K.Key, Described (Action ()))]
-configCommands config =
+configCommands :: Config.CP
+               -> (Cmd -> Action ())
+               -> (Cmd -> Maybe String)
+               -> [(K.Key, Described (Action ()))]
+configCommands config cmdS cmdD =
   let section = Config.getItems config "commands"
       mkKey s =
         case K.keyTranslate s of
@@ -126,19 +114,22 @@ configCommands config =
           key -> key
       mkDescribed s =
         let cmd = read s :: Cmd
-        in case cmdDescription cmd of
-          Nothing -> Undescribed $ cmdSemantics cmd
-          Just d  -> Described d $ cmdSemantics cmd
+        in case cmdD cmd of
+          Nothing -> Undescribed $ cmdS cmd
+          Just d  -> Described d $ cmdS cmd
       mkCommand (key, def) = (mkKey key, mkDescribed def)
   in L.map mkCommand section
 
-stdKeybindings :: Config.CP -> Keybindings (Action ())
-stdKeybindings config = Keybindings
+stdKeybindings :: Config.CP
+               -> (Cmd -> Action ())
+               -> (Cmd -> Maybe String)
+               -> Keybindings (Action ())
+stdKeybindings config cmdS cmdD = Keybindings
   { kdir   = moveDirCommand,
     kudir  = runDirCommand,
     kother = M.fromList $
              heroSelection ++
-             configCommands config ++
+             configCommands config cmdS cmdD ++
              [ -- debug commands, TODO: access them from a common menu or prefix
                (K.Char 'R', Undescribed $ modify toggleVision),
                (K.Char 'O', Undescribed $ modify toggleOmniscient),

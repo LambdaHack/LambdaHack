@@ -42,14 +42,18 @@ speedupCops scops@Kind.COps{cotile=sct} =
   in scops {Kind.cotile}
 
 -- | Either restore a saved game, or setup a new game.
-start :: Kind.COps -> Display.FrontendSession -> IO ()
-start scops frontendSession = do
+start :: Kind.COps
+      -> (Cmd -> Action ())
+      -> (Cmd -> Maybe String)
+      -> Display.FrontendSession
+      -> IO ()
+start scops cmdS cmdD frontendSession = do
   let cops@Kind.COps{corule=Kind.Ops{okind, ouniqName}} = speedupCops scops
       title = rtitle $ okind $ ouniqName "standard game ruleset"
   config <- Config.config
   let section = Config.getItems config "macros"
       !macros = KB.macroKey section
-      !keyb = stdKeybindings config
+      !keyb = stdKeybindings config cmdS cmdD
       sess = (frontendSession, macros, cops, keyb)
   -- check if we have a savegame
   f <- Save.file config

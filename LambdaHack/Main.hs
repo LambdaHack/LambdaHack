@@ -9,6 +9,7 @@ import qualified Content.RoomKind
 import qualified Content.RuleKind
 import qualified Content.TileKind
 import qualified Game.LambdaHack.Start as Start
+import Game.LambdaHack.Command
 
 cops :: Kind.COps
 cops = Kind.COps
@@ -21,4 +22,4 @@ cops = Kind.COps
   }
 
 main :: IO ()
-main = Display.startup (Start.start cops)
+main = Display.startup (Start.start cops cmdSemantics cmdDescription)
