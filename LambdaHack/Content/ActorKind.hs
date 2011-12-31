@@ -3,6 +3,7 @@ module Content.ActorKind ( cdefs ) where
 import Game.LambdaHack.Color
 import qualified Game.LambdaHack.Content.Content as Content
 import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.Random
 
 cdefs :: Content.CDefs ActorKind
 cdefs = Content.CDefs
@@ -16,7 +17,7 @@ cdefs = Content.CDefs
 hero,        eye, fastEye, nose :: ActorKind
 
 hero = ActorKind
-  { ahp     = (50, 1)
+  { ahp     = RollDice 50 1
   , aspeed  = 10
   , asymbol = '@'
   , aname   = "hero"
@@ -30,7 +31,7 @@ hero = ActorKind
   }
 
 eye = ActorKind
-  { ahp     = (1, 12)  -- falls in 1--4 unarmed rounds
+  { ahp     = RollDice 1 12  -- falls in 1--4 unarmed rounds
   , aspeed  = 10
   , asymbol = 'e'
   , acolor  = BrRed
@@ -42,7 +43,7 @@ eye = ActorKind
   , afreq   = 6
   }
 fastEye = ActorKind
-  { ahp     = (1, 6)  -- falls in 1--2 unarmed rounds
+  { ahp     = RollDice 1 6  -- falls in 1--2 unarmed rounds
   , aspeed  = 4
   , asymbol = 'e'
   , acolor  = BrBlue
@@ -54,7 +55,7 @@ fastEye = ActorKind
   , afreq   = 1
   }
 nose = ActorKind
-  { ahp     = (6, 2)  -- 2--5 and in 1 round of the strongest sword
+  { ahp     = RollDice 6 2  -- 2--5 and in 1 round of the strongest sword
   , aspeed  = 11
   , asymbol = 'n'
   , acolor  = Green

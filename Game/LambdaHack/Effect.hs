@@ -18,9 +18,10 @@ data Effect =
 effectToName :: Effect -> String
 effectToName NoEffect = ""
 effectToName Heal = "of healing"
-effectToName (Wound (a, b)) = if a == 0 && b == 0
-                              then "of wounding"
-                              else "(" ++ show a ++ "d" ++ show b ++ ")"
+effectToName (Wound (RollDice a b)) =
+  if a == 0 && b == 0
+  then "of wounding"
+  else "(" ++ show a ++ "d" ++ show b ++ ")"
 effectToName Dominate = "of domination"
 effectToName SummonFriend = "of aid calling"
 effectToName SummonEnemy = "of summoning"

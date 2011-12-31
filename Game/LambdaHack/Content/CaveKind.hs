@@ -14,8 +14,8 @@ data CaveKind = CaveKind
   , cfreq             :: Int
   , cxsize            :: X
   , cysize            :: Y
-  , levelGrid         :: (Random.RollDice, Random.RollDice)
-  , minRoomSize       :: (Random.RollDice, Random.RollDice)
+  , levelGrid         :: Random.RollDiceXY
+  , minRoomSize       :: Random.RollDiceXY
   , darkRoomChance    :: Int -> Random.Rnd Bool  -- TODO: use RollQuad instead, etc.
   , extraConnects     :: (X, Y) -> Int
       -- ^ relative to grid (in fact a range, because of duplicate connects)

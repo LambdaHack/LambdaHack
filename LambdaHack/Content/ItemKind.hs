@@ -29,7 +29,7 @@ amulet = ItemKind
   , ieffect  = Regeneration
   , icount   = intToQuad 1
   , ifreq    = 10
-  , ipower   = (2, 1, 2, 2)
+  , ipower   = (RollDice 2 1, RollDice 2 2)
   , iverbApply   = "tear down"
   , iverbProject = "throw"
   }
@@ -37,8 +37,8 @@ dart = ItemKind
   { isymbol  = '|'
   , iflavour = [(Cyan, False)]
   , iname    = "dart"
-  , ieffect  = Wound (1, 1)
-  , icount   = (3, 3, 0, 0)
+  , ieffect  = Wound (RollDice 1 1)
+  , icount   = (RollDice 3 3, RollDice 0 0)
   , ifreq    = 30
   , ipower   = intToQuad 0
   , iverbApply   = "snap"
@@ -56,23 +56,23 @@ gem = ItemKind
   , iverbProject = "throw"
   }
 gem1 = gem
-  { icount   = (1, 1, 0, 0)  -- appears on lvl 1
+  { icount   = (RollDice 1 1, RollDice 0 0)  -- appears on lvl 1
   }
 gem2 = gem
-  { icount   = (0, 0, 2, 1)  -- appears on lvl 5, doubled on lvl 10
+  { icount   = (RollDice 0 0, RollDice 2 1)  -- appears on lvl 5, doubled on 10
   }
 gem3 = gem
-  { icount   = (0, 0, 1, 1)  -- appears on lvl 10
+  { icount   = (RollDice 0 0, RollDice 1 1)  -- appears on lvl 10
   }
 gem4 = gem
-  { icount   = (0, 0, 1, 1)  -- appears on lvl 10
+  { icount   = (RollDice 0 0, RollDice 1 1)  -- appears on lvl 10
   }
 gold = ItemKind
   { isymbol  = '$'
   , iflavour = [(BrYellow, False)]
   , iname    = "gold piece"
   , ieffect  = NoEffect
-  , icount   = (0, 0, 10, 10)
+  , icount   = (RollDice 0 0, RollDice 10 10)
   , ifreq    = 80
   , ipower   = intToQuad 0
   , iverbApply   = "grind"
@@ -82,10 +82,10 @@ javelin = ItemKind
   { isymbol  = '|'
   , iflavour = [(Yellow, False)]
   , iname    = "javelin"
-  , ieffect  = Wound (1, 1)
-  , icount   = (0, 0, 2, 2)
+  , ieffect  = Wound (RollDice 1 1)
+  , icount   = (RollDice 0 0, RollDice 2 2)
   , ifreq    = 30
-  , ipower   = (1, 7, 0, 0)
+  , ipower   = (RollDice 1 7, RollDice 0 0)
   , iverbApply   = "break up"
   , iverbProject = "throw"
   }
@@ -105,11 +105,11 @@ potion1 = potion
   }
 potion2 = potion
   { ieffect  = Heal
-  , ipower   = (10, 1, 0, 0)
+  , ipower   = (RollDice 10 1, RollDice 0 0)
   }
 potion3 = potion
-  { ieffect  = Wound (0, 0)
-  , ipower   = (10, 1, 0, 0)
+  { ieffect  = Wound (RollDice 0 0)
+  , ipower   = (RollDice 10 1, RollDice 0 0)
   }
 ring = ItemKind
   { isymbol  = '='
@@ -118,7 +118,7 @@ ring = ItemKind
   , ieffect  = Searching
   , icount   = intToQuad 1
   , ifreq    = 10
-  , ipower   = (1, 1, 2, 2)
+  , ipower   = (RollDice 1 1, RollDice 2 2)
   , iverbApply   = "squeeze down"
   , iverbProject = "throw"
   }
@@ -144,10 +144,10 @@ sword = ItemKind
   { isymbol  = ')'
   , iflavour = [(BrCyan, False)]
   , iname    = "sword"
-  , ieffect  = Wound (3, 1)
+  , ieffect  = Wound (RollDice 3 1)
   , icount   = intToQuad 1
   , ifreq    = 60
-  , ipower   = (1, 2, 4, 2)
+  , ipower   = (RollDice 1 2, RollDice 4 2)
   , iverbApply   = "splinter"
   , iverbProject = "heave"
   }

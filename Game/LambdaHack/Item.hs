@@ -208,7 +208,7 @@ strongestSearch :: Kind.Ops ItemKind -> [Item] -> Maybe Item
 strongestSearch Kind.Ops{okind} bitems =
   strongestItem bitems $ \ i -> (ieffect $ okind $ jkind i) == Searching
 
--- TODO: generalise
+-- TODO: generalise, in particular take base damage into account
 strongestSword :: Kind.Ops ItemKind -> [Item] -> Maybe Item
 strongestSword Kind.Ops{osymbol} bitems =
   strongestItem bitems $ \ i -> (osymbol $ jkind i) == ')'

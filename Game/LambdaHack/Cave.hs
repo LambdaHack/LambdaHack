@@ -148,7 +148,8 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick, ofoldrWithKey}
                       else do
                         let getDice (F.Secret dice) _ = dice
                             getDice _ acc = acc
-                            d = foldr getDice (5, 2) (tfeature (tokind t))
+                            d = foldr getDice (RollDice 5 2)
+                                  (tfeature (tokind t))
                         rs1 <- rollDice d
                         return (l, M.insert (x, y) (SecretStrength rs1) le)
           else return (l, le)

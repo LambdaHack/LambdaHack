@@ -1,7 +1,8 @@
 module Game.LambdaHack.Random
   ( Rnd, randomR, binaryChoice, chance
   , roll, oneOf, frequency, (*~), (~+~)
-  , RollDice, rollDice, maxDice, minDice, meanDice, rollDiceXY
+  , RollDice(..), rollDice, maxDice, minDice, meanDice
+  , RollDiceXY, rollDiceXY
   , RollQuad, rollQuad, intToQuad
   ) where
 
@@ -9,6 +10,7 @@ import qualified Data.Binary as Binary
 import Data.Ratio
 import qualified System.Random as R
 import Control.Monad.State
+import qualified Data.List as L
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Frequency
@@ -72,49 +74,63 @@ infixl 6 ~+~
 (*~) :: Num a => Int -> Rnd a -> Rnd a
 x *~ r = liftM sum (replicateM x r)
 
--- RollDice: 1d7, 3d3, 2d0, etc. (a, b) represent (a *~ roll b).
-type RollDice = (Binary.Word8, Binary.Word8)
+-- | 1d7, 3d3, 2d0, etc. 'RollDice a b' represents 'a *~ roll b)'.
+data RollDice = RollDice Binary.Word8 Binary.Word8
+  deriving (Eq, Ord)
+
+instance Show RollDice where
+  show (RollDice a b) = show a ++ "d" ++ show b
+
+instance Read RollDice where
+  readsPrec d s =
+    let (a, db) = L.break (== 'd') s
+        av = read a
+    in case db of
+      'd' : b -> [ (RollDice av bv, rest) | (bv, rest) <- readsPrec d b ]
+      _ -> []
 
 rollDice :: RollDice -> Rnd Int
-rollDice (a', b') =
+rollDice (RollDice a' b') =
   let (a, b) = (fromEnum a', fromEnum b')
   in a *~ roll b
 
 maxDice :: RollDice -> Int
-maxDice (a', b') =
+maxDice (RollDice a' b') =
   let (a, b) = (fromEnum a', fromEnum b')
   in a * b
 
 minDice :: RollDice -> Int
-minDice (a', b') =
+minDice (RollDice a' b') =
   let (a, b) = (fromEnum a', fromEnum b')
   in if b == 0 then 0 else a
 
 meanDice :: RollDice -> Rational
-meanDice (a', b') =
+meanDice (RollDice a' b') =
   let (a, b) = (fromIntegral a', fromIntegral b')
   in if b' == 0 then 0 else a * (b + 1) % 2
 
-rollDiceXY :: (RollDice, RollDice) -> Rnd (Int, Int)
-rollDiceXY ((xa', xb'), (ya', yb')) = do
+type RollDiceXY = (RollDice, RollDice)
+
+rollDiceXY :: RollDiceXY -> Rnd (Int, Int)
+rollDiceXY (RollDice xa' xb', RollDice ya' yb') = do
   let (xa, xb) = (fromEnum xa', fromEnum xb')
       (ya, yb) = (fromEnum ya', fromEnum yb')
   x <- xa *~ roll xb
   y <- ya *~ roll yb
   return (x, y)
 
--- rollQuad (a, b, x, y) = a *~ roll b + (lvl * (x *~ roll y)) / 10
-type RollQuad = (Binary.Word8, Binary.Word8, Binary.Word8, Binary.Word8)
+-- | 'rollQuad (a, b, x, y) = a *~ roll b + (lvl * (x *~ roll y)) / 10'
+type RollQuad = (RollDice, RollDice)
 
 rollQuad :: Int -> RollQuad -> Rnd Int
-rollQuad lvl (a, b, x, y) = do
-  aDb <- rollDice (a, b)
-  xDy <- rollDice (x, y)
+rollQuad lvl (RollDice a b, RollDice x y) = do
+  aDb <- rollDice (RollDice a b)
+  xDy <- rollDice (RollDice x y)
   return $ aDb + (lvl * xDy) `div` 10
 
 intToQuad :: Int -> RollQuad
-intToQuad 0 = (0, 0, 0, 0)
-intToQuad n = let n' = toEnum n
-              in if n' > maxBound || n' < minBound
-                 then assert `failure` n
-                 else (n', 1, 0, 0)
+intToQuad 0  = (RollDice 0 0, RollDice 0 0)
+intToQuad n' = let n = toEnum n'
+               in if n > maxBound || n < minBound
+                  then assert `failure` n'
+                  else (RollDice n 1, RollDice 0 0)
