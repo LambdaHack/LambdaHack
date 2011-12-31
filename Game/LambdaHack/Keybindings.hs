@@ -16,6 +16,7 @@ data Keybindings a = Keybindings
   { kdir   :: DirCommand a
   , kudir  :: DirCommand a
   , kother :: M.Map K.Key (Described a)
+  , kmacro :: M.Map K.Key K.Key
   }
 
 handleKey :: X -> Keybindings a -> K.Key -> (String -> a) -> a

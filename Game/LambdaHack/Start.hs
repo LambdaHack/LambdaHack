@@ -53,8 +53,8 @@ start scops cmdS cmdD frontendSession = do
   config <- Config.config
   let section = Config.getItems config "macros"
       !macros = KB.macroKey section
-      !keyb = stdKeybindings config cmdS cmdD
-      sess = (frontendSession, macros, cops, keyb)
+      !keyb = stdKeybindings config macros cmdS cmdD
+      sess = (frontendSession, cops, keyb)
   -- check if we have a savegame
   f <- Save.file config
   b <- doesFileExist f

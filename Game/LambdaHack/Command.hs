@@ -121,13 +121,14 @@ configCommands config cmdS cmdD =
   in L.map mkCommand section
 
 stdKeybindings :: Config.CP
+               -> M.Map K.Key K.Key
                -> (Cmd -> Action ())
                -> (Cmd -> Maybe String)
                -> Keybindings (Action ())
-stdKeybindings config cmdS cmdD = Keybindings
-  { kdir   = moveDirCommand,
-    kudir  = runDirCommand,
-    kother = M.fromList $
+stdKeybindings config kmacro cmdS cmdD = Keybindings
+  { kdir   = moveDirCommand
+  , kudir  = runDirCommand
+  , kother = M.fromList $
              heroSelection ++
              configCommands config cmdS cmdD ++
              [ -- debug commands, TODO: access them from a common menu or prefix
@@ -135,4 +136,5 @@ stdKeybindings config cmdS cmdD = Keybindings
                (K.Char 'O', Undescribed $ modify toggleOmniscient),
                (K.Char 'I', Undescribed $ gets (lmeta . slevel) >>= abortWith)
              ]
+  , kmacro
   }

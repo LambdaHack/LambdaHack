@@ -814,12 +814,13 @@ regenerateLevelHP = do
 -- | Display command help.
 displayHelp :: Action ()
 displayHelp = do
-  let coImage (_, macros, _, _) k =
-        let domain = M.keysSet macros
-        in if k `S.member` domain
-           then []
-           else k : [ from | (from, to) <- M.assocs macros, to == k ]
-  aliases <- session (return . coImage)
-  session (\ (_, _, _, keyb) ->
-            messageOverlayConfirm "Basic keys:" $ keyHelp aliases keyb)
+  let disp (_, _, keyb@Keybindings{kmacro}) =
+        let coImage k =
+              let domain = M.keysSet kmacro
+              in if k `S.member` domain
+                 then []
+                 else k : [ from | (from, to) <- M.assocs kmacro, to == k ]
+            help = keyHelp coImage keyb
+        in messageOverlayConfirm "Basic keys:" help
+  session disp
   abort
