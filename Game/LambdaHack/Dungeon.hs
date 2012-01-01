@@ -1,7 +1,8 @@
 module Game.LambdaHack.Dungeon
-  ( Dungeon, fromList, currentFirst, adjust, (!)
+  ( Dungeon, fromList, currentFirst, adjust, (!), lookup
   ) where
 
+import Prelude hiding (lookup)
 import Data.Binary
 import qualified Data.Map as M
 import qualified Data.List as L
@@ -35,3 +36,6 @@ adjust f lid (Dungeon m) = Dungeon (M.adjust f lid m)
 
 (!) :: Dungeon -> LevelId -> Level
 (!) (Dungeon m) lid = m M.! lid
+
+lookup :: LevelId -> Dungeon -> Maybe Level
+lookup lid (Dungeon m) = M.lookup lid m

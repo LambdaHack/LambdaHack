@@ -14,9 +14,9 @@ cdefs = Content.CDefs
   , getFreq = ifreq
   , validate = ivalidate
   , content =
-      [amulet, dart, gem1, gem2, gem3, gem4, gold, javelin, potion1, potion2, potion3, ring, scroll1, scroll2, sword, fist, wand]
+      [amulet, dart, gem1, gem2, gem3, gem4, gold, javelin, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, fist, wand]
   }
-amulet,        dart, gem1, gem2, gem3, gem4, gold, javelin, potion1, potion2, potion3, ring, scroll1, scroll2, sword, fist, wand :: ItemKind
+amulet,        dart, gem1, gem2, gem3, gem4, gold, javelin, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, fist, wand :: ItemKind
 
 gem, potion, scroll :: ItemKind  -- generic templates
 
@@ -139,6 +139,9 @@ scroll1 = scroll
   }
 scroll2 = scroll
   { ieffect  = SummonEnemy
+  }
+scroll3 = scroll
+  { ieffect  = Descend
   }
 sword = ItemKind
   { isymbol  = ')'

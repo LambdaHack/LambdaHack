@@ -31,6 +31,8 @@ import Game.LambdaHack.LevelState
 import qualified Game.LambdaHack.Config as Config
 import qualified Game.LambdaHack.Effect as Effect
 import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.DungeonState
+import qualified Game.LambdaHack.Save as Save
 
 -- The effectToAction function and all it depends on.
 -- This file should not depend on Action.hs nor ItemAction.hs.
@@ -47,17 +49,17 @@ effectToAction :: Effect.Effect -> Int -> ActorId -> ActorId -> Int
                -> Action (Bool, String)
 effectToAction Effect.NoEffect _ _ _ _ = nullEffect
 effectToAction Effect.Heal _ _source target power = do
-  cops@Kind.Ops{okind} <- contentf Kind.coactor
+  coactor@Kind.Ops{okind} <- contentf Kind.coactor
   let bhpMax m = maxDice (ahp $ okind $ bkind m)
   tm <- gets (getActor target)
   if bhp tm >= bhpMax tm || power <= 0
     then nullEffect
     else do
       focusIfAHero target
-      updateAnyActor target (addHp cops power)  -- TODO: duplicates maxDice, etc.
-      return (True, subjectActorVerb cops tm "feel" ++ " better.")
+      updateAnyActor target (addHp coactor power)  -- TODO: duplicates maxDice, etc.
+      return (True, subjectActorVerb coactor tm "feel" ++ " better.")
 effectToAction (Effect.Wound nDm) verbosity source target power = do
-  cops <- contentf Kind.coactor
+  coactor <- contentf Kind.coactor
   n <- rndToAction $ rollDice nDm
   if n + power <= 0 then nullEffect else do
     focusIfAHero target
@@ -66,18 +68,18 @@ effectToAction (Effect.Wound nDm) verbosity source target power = do
         killed = newHP <= 0
         msg
           | source == target =  -- a potion of wounding, etc.
-            subjectActorVerb cops tm "feel" ++
+            subjectActorVerb coactor tm "feel" ++
               -- TODO: this is displayed too late, after hero death, etc.
               if killed then " mortally" else "" ++ " wounded."
           | killed =
             if isAHero target
             then ""
-            else subjectActorVerb cops tm "die" ++ "."
+            else subjectActorVerb coactor tm "die" ++ "."
           | verbosity <= 0 = ""
           | isAHero target =
-            subjectActorVerb cops tm "lose" ++
+            subjectActorVerb coactor tm "lose" ++
               " " ++ show (n + power) ++ "HP."
-          | otherwise = subjectActorVerb cops tm "hiss" ++ " in pain."
+          | otherwise = subjectActorVerb coactor tm "hiss" ++ " in pain."
     updateAnyActor target $ \ m -> m { bhp = newHP }  -- Damage the target.
     when killed $ do
       -- Place the actor's possessions on the map.
@@ -122,11 +124,88 @@ effectToAction Effect.Regeneration verbosity source target power =
   effectToAction Effect.Heal verbosity source target power
 effectToAction Effect.Searching _ _source _target _power =
   return (True, "It gets lost and you search in vain.")
-effectToAction Effect.Ascend _ _ _ _ = nullEffect  -- TODO
-effectToAction Effect.Descend _ _ _ _ = nullEffect  -- TODO
+effectToAction Effect.Ascend _ _ target power = do
+  coactor <- contentf Kind.coactor
+  tm <- gets (getActor target)
+  effLvlvGoUp (power + 1)
+  return (True, subjectActorVerb coactor tm "get" ++ " yanked upwards.")
+effectToAction Effect.Descend _ _ target power = do
+  coactor <- contentf Kind.coactor
+  tm <- gets (getActor target)
+  effLvlvGoUp (- (power + 1))
+  return (True, subjectActorVerb coactor tm "get" ++ " yanked downwards.")
 
 nullEffect :: Action (Bool, String)
 nullEffect = return (False, "Nothing happens.")
+
+effLvlvGoUp :: Int -> Action ()
+effLvlvGoUp k = do
+  targeting <- gets (ctargeting . scursor)
+  pbody     <- gets getPlayerBody
+  pl        <- gets splayer
+  slid      <- gets slid
+  st        <- get
+  case whereTo st k of
+    Nothing -> do -- we are at the "end" of the dungeon
+      b <- msgYesNo "Really escape the dungeon?"
+      if b
+        then fleeDungeon
+        else abortWith "Game resumed."
+    Just (nln, nloc) ->
+      assert (nln /= slid `blame` (nln, "stairs looped")) $
+      tryWith (abortWith "somebody blocks the staircase") $ do
+        bitems <- gets getPlayerItem
+        -- Remove the player from the old level.
+        modify (deleteActor pl)
+        hs <- gets levelHeroList
+        -- Monsters hear that players not on the level. Cancel smell.
+        -- Reduces memory load and savefile size.
+        when (L.null hs) $
+          modify (updateLevel (updateSmell (const IM.empty)))
+        -- At this place the invariant that the player exists fails.
+        -- Change to the new level (invariant not needed).
+        modify (\ state -> state {slid = nln})
+        -- Add the player to the new level.
+        modify (insertActor pl pbody)
+        modify (updateAnyActorItem pl (const bitems))
+        -- At this place the invariant is restored again.
+        -- Land the player at the other end of the stairs.
+        updatePlayerBody (\ p -> p { bloc = nloc })
+        -- Change the level of the player recorded in cursor.
+        modify (updateCursor (\ c -> c { creturnLn = nln }))
+        -- Bail out if anybody blocks the staircase.
+        inhabitants <- gets (locToActors nloc)
+        when (length inhabitants > 1) abort
+        -- The invariant "at most one actor on a tile" restored.
+        -- Create a backup of the savegame.
+        state <- get
+        liftIO $ do
+          Save.saveGame state
+          Save.mvBkp (sconfig state)
+        when (targeting /= TgtOff) doLook
+
+-- | Hero has left the dungeon.
+fleeDungeon :: Action ()
+fleeDungeon = do
+  coitem <- contentf Kind.coitem
+  state <- get
+  let total = calculateTotal coitem state
+      items = L.concat $ IM.elems $ lheroItem $ slevel state
+  if total == 0
+    then do
+      go <- msgClear >> msgMoreConfirm ColorFull "Coward!"
+      when go $
+        msgMore "Next time try to grab some loot before escape!"
+      end
+    else do
+      let winMsg = "Congratulations, you won! Your loot, worth " ++
+                   show total ++ " gold, is:"  -- TODO: use the name of the '$' item instead
+      displayItems winMsg True items
+      go <- session getConfirm
+      when go $ do
+        go2 <- handleScores True H.Victor total
+        when go2 $ msgMore "Can it be done better, though?"
+      end
 
 -- | The source actor affects the target actor, with a given item.
 -- If either actor is a hero, the item may get identified.
@@ -172,6 +251,7 @@ selectPlayer :: ActorId -> Action Bool
 selectPlayer actor = do
   cops@Kind.Ops{okind} <- contentf Kind.coactor
   pl <- gets splayer
+  targeting <- gets (ctargeting . scursor)
   if actor == pl
     then return False -- already selected
     else do
@@ -195,6 +275,7 @@ selectPlayer actor = do
                            else Implicit })
       -- Announce.
       msgAdd $ subjectActor cops pbody ++ " selected."
+      when (targeting /= TgtOff) doLook
       return True
 
 focusIfAHero :: ActorId -> Action ()

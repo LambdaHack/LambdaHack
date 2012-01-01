@@ -23,7 +23,6 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Item
 import Game.LambdaHack.Geometry
 import Game.LambdaHack.Content.TileKind
-import qualified Game.LambdaHack.Effect as Effect
 
 convertTileMaps :: Rnd (Kind.Id TileKind) -> Int -> Int -> TileMapXY
                 -> Rnd TileMap
@@ -130,17 +129,11 @@ generate cops config =
   in MState.state con
 
 -- | Computes the target world location of using stairs.
-whereTo :: Kind.Ops TileKind -> State -> Loc -> Maybe WorldLoc
-whereTo cotile s@State{slid, sdungeon} loc =
-  let lvl = slevel s
-      tile = lvl `at` loc
-      k | Tile.hasFeature cotile (F.Cause Effect.Ascend) tile = -1
-        | Tile.hasFeature cotile (F.Cause Effect.Descend) tile = 1
-        | otherwise = assert `failure` tile
-      n = levelNumber slid
-      nln = n + k
+whereTo :: State -> Int -> Maybe WorldLoc
+whereTo State{slid, sdungeon} k = assert (k /= 0) $
+  let n = levelNumber slid
+      nln = n - k
       ln = LambdaCave nln
-      lvlTrg = sdungeon Dungeon.! ln
-  in if (nln < 1)
-     then Nothing
-     else Just (ln, (if k == 1 then fst else snd) (lstairs lvlTrg))
+  in case Dungeon.lookup ln sdungeon of
+     Nothing     -> Nothing
+     Just lvlTrg -> Just (ln, (if k < 0 then fst else snd) (lstairs lvlTrg))

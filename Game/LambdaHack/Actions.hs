@@ -11,7 +11,6 @@ import qualified Data.Set as S
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
-import Game.LambdaHack.Display
 import Game.LambdaHack.Loc
 import Game.LambdaHack.Dir
 import Game.LambdaHack.Grammar
@@ -392,20 +391,19 @@ lvlGoUp isUp = do
   cursor    <- gets scursor
   targeting <- gets (ctargeting . scursor)
   pbody     <- gets getPlayerBody
-  pl        <- gets splayer
   slid      <- gets slid
   lvl       <- gets slevel
   st        <- get
   let loc = if targeting /= TgtOff then clocation cursor else bloc pbody
       tile = lvl `at` loc
-      vdir = if isUp then 1 else -1
+      k = if isUp then 1 else -1
       sdir | Tile.hasFeature cotile (F.Cause Effect.Ascend) tile = Just 1
            | Tile.hasFeature cotile (F.Cause Effect.Descend) tile = Just (-1)
            | otherwise = Nothing
   case sdir of
-    Just vdir' | vdir == vdir' -> -- stairs are in the right direction
+    Just vdir | k == vdir -> -- stairs are in the right direction
       if targeting /= TgtOff
-      then case whereTo cotile st loc of
+      then case whereTo st k of
         Nothing ->  -- we are at the "end" of the dungeon
           abortWith "cannot escape dungeon in targeting mode"
         Just (nln, nloc) ->
@@ -421,77 +419,19 @@ lvlGoUp isUp = do
                   in cur { clocation, clocLn = nln }
             modify (updateCursor upd)
             doLook
-      else case whereTo cotile st loc of
-        Nothing -> do  -- we are at the "end" of the dungeon
-          b <- msgYesNo "Really escape the dungeon?"
-          if b
-            then fleeDungeon
-            else abortWith "Game resumed."
-        Just (nln, nloc) ->
-          assert (nln /= slid `blame` (nln, "stairs looped")) $
-          tryWith (abortWith "somebody blocks the staircase") $ do
-            bitems <- gets getPlayerItem
-            -- Remove the player from the old level.
-            modify (deleteActor pl)
-            hs <- gets levelHeroList
-            -- Monsters hear that players not on the level. Cancel smell.
-            -- Reduces memory load and savefile size.
-            when (L.null hs) $
-              modify (updateLevel (updateSmell (const IM.empty)))
-            -- At this place the invariant that the player exists fails.
-            -- Change to the new level (invariant not needed).
-            modify (\ state -> state {slid = nln})
-            -- Add the player to the new level.
-            modify (insertActor pl pbody)
-            modify (updateAnyActorItem pl (const bitems))
-            -- At this place the invariant is restored again.
-            -- Land the player at the other end of the stairs.
-            updatePlayerBody (\ p -> p { bloc = nloc })
-            -- Change the level of the player recorded in cursor.
-            modify (updateCursor (\ c -> c { creturnLn = nln }))
-            -- Bail out if anybody blocks the staircase.
-            inhabitants <- gets (locToActors nloc)
-            when (length inhabitants > 1) abort
-            -- The invariant "at most one actor on a tile" restored.
-            -- Create a backup of the savegame.
-            state <- get
-            liftIO $ do
-              Save.saveGame state
-              Save.mvBkp (sconfig state)
-            playerAdvanceTime
+      else do
+        effLvlvGoUp k
+        playerAdvanceTime
     _ -> -- no stairs in the right direction
       if targeting /= TgtOff
       then do
-        lvlAscend vdir
+        lvlAscend k
         let upd cur = cur {clocLn = slid}
         modify (updateCursor upd)
         doLook
       else
         let txt = if isUp then "up" else "down"
         in abortWith ("no stairs " ++ txt)
-
--- | Hero has left the dungeon.
-fleeDungeon :: Action ()
-fleeDungeon = do
-  coitem <- contentf Kind.coitem
-  state <- get
-  let total = calculateTotal coitem state
-      items = L.concat $ IM.elems $ lheroItem $ slevel state
-  if total == 0
-    then do
-      go <- msgClear >> msgMoreConfirm ColorFull "Coward!"
-      when go $
-        msgMore "Next time try to grab some loot before escape!"
-      end
-    else do
-      let winMsg = "Congratulations, you won! Your loot, worth " ++
-                   show total ++ " gold, is:"  -- TODO: use the name of the '$' item instead
-      displayItems winMsg True items
-      go <- session getConfirm
-      when go $ do
-        go2 <- handleScores True H.Victor total
-        when go2 $ msgMore "Can it be done better, though?"
-      end
 
 -- | Switches current hero to the next hero on the level, if any, wrapping.
 cycleHero :: Action ()
