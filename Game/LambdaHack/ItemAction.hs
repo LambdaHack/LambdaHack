@@ -124,23 +124,81 @@ playerProjectGroupItem verb object syms = do
 
 playerProjectGI :: Verb -> Object -> [Char] -> Action ()
 playerProjectGI verb object syms = do
-  Kind.Ops{okind} <- contentf Kind.coitem
   state <- get
-  is    <- gets getPlayerItem
-  iOpt  <- getGroupItem is object syms
-             ("What to " ++ verb ++ "?") "in inventory"
   pl    <- gets splayer
   per   <- currentPerception
-  case iOpt of
-    Just i  ->
-      case targetToLoc (totalVisible per) state of
-        Nothing  -> abortWith "target invalid"
-        Just loc ->
-          -- TODO: draw digital line and see if obstacles prevent firing
-          if actorReachesLoc pl loc per (Just pl)
-          then projectGroupItem pl loc (iverbProject $ okind $ jkind i) i
-          else abortWith "target not reachable"
-    Nothing -> neverMind True
+  -- TODO: draw digital line and see if obstacles prevent firing
+  case targetToLoc (totalVisible per) state of
+    Just loc | actorReachesLoc pl loc per (Just pl) -> do
+      Kind.Ops{okind} <- contentf Kind.coitem
+      is   <- gets getPlayerItem
+      iOpt <- getGroupItem is object syms
+                ("What to " ++ verb ++ "?") "in inventory"
+      case iOpt of
+        Just i -> projectGroupItem pl loc (iverbProject $ okind $ jkind i) i
+        Nothing -> neverMind True
+    Just _  -> do
+      messageAdd "Last target unreachable."
+      targetMonster
+    Nothing -> do
+      messageAdd "Last target invalid."
+      targetMonster
+
+-- | Start the monster targeting mode. Cycle between monster targets.
+-- TODO: also target a monster by moving the cursor, if in target monster mode.
+-- TODO: sort monsters by distance to the player.
+targetMonster :: Action ()
+targetMonster = do
+  pl        <- gets splayer
+  ms        <- gets (lmonsters . slevel)
+  per       <- currentPerception
+  target    <- gets (btarget . getPlayerBody)
+  targeting <- gets (ctargeting . scursor)
+  let i = case target of
+            TEnemy (AMonster n) _ | targeting -> n  -- try next monster
+            TEnemy (AMonster n) _ -> n - 1  -- try to retarget old monster
+            _ -> -1  -- try to target first monster (e.g., number 0)
+      dms = case pl of
+              AMonster n -> IM.delete n ms  -- don't target yourself
+              AHero _ -> ms
+      (lt, gt) = IM.split i dms
+      gtlt     = IM.assocs gt ++ IM.assocs lt
+      seen (_, m) =
+        let mloc = bloc m
+        in mloc `IS.member` totalVisible per         -- visible by any
+           && actorReachesLoc pl mloc per (Just pl)  -- reachable by player
+      lf = L.filter seen gtlt
+      tgt = case lf of
+              [] -> target  -- no monsters in sight, stick to last target
+              (na, nm) : _ -> TEnemy (AMonster na) (bloc nm)  -- pick the next
+  updatePlayerBody (\ p -> p { btarget = tgt })
+  setCursor
+
+-- | Start the floor targeting mode or reset the cursor location to the player.
+targetFloor :: Action ()
+targetFloor = do
+  ploc      <- gets (bloc . getPlayerBody)
+  target    <- gets (btarget . getPlayerBody)
+  targeting <- gets (ctargeting . scursor)
+  let tgt = case target of
+              _ | targeting -> TLoc ploc  -- double key press: reset cursor
+              TEnemy _ _ -> TCursor  -- forget enemy target, keep the cursor
+              t -> t  -- keep the target from previous targeting session
+  updatePlayerBody (\ p -> p { btarget = tgt })
+  setCursor
+
+-- | Set, activate and display cursor information.
+setCursor :: Action ()
+setCursor = do
+  state <- get
+  per   <- currentPerception
+  ploc  <- gets (bloc . getPlayerBody)
+  clocLn <- gets slid
+  let upd cursor =
+        let clocation = fromMaybe ploc (targetToLoc (totalVisible per) state)
+        in cursor { ctargeting = True, clocation, clocLn }
+  modify (updateCursor upd)
+  doLook
 
 -- | Drop a single item.
 -- TODO: allow dropping a given number of identical items.

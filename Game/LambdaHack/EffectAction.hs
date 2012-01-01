@@ -27,6 +27,7 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Random
 import Game.LambdaHack.State
+import Game.LambdaHack.LevelState
 import qualified Game.LambdaHack.Config as Config
 import qualified Game.LambdaHack.Effect as Effect
 import qualified Game.LambdaHack.Kind as Kind
@@ -318,3 +319,35 @@ history = do
       splitS = splitMsg (fst normalLevelBound + 1) (msg ++ " ")
   unless (L.null msg) $
     modify (updateHistory (take historyMax . (L.reverse splitS ++)))
+
+-- | Perform look around in the current location of the cursor.
+-- TODO: depending on tgt, show extra info about tile or monster or both
+doLook :: Action ()
+doLook = do
+  cops   <- contentOps
+  loc    <- gets (clocation . scursor)
+  state  <- get
+  lvl    <- gets slevel
+  per    <- currentPerception
+  target <- gets (btarget . getPlayerBody)
+  let canSee = IS.member loc (totalVisible per)
+      monsterMsg =
+        if canSee
+        then case L.find (\ m -> bloc m == loc) (levelMonsterList state) of
+               Just m  -> subjectActor (Kind.coactor cops) m ++ " is here. "
+               Nothing -> ""
+        else ""
+      mode = case target of
+               TEnemy _ _ -> "[targeting monster] "
+               TLoc _     -> "[targeting location] "
+               TCursor    -> "[targeting current] "
+      -- general info about current loc
+      lookMsg = mode ++ lookAt cops True canSee state lvl loc monsterMsg
+      -- check if there's something lying around at current loc
+      is = lvl `rememberAtI` loc
+  if length is <= 2
+    then messageAdd lookMsg
+    else do
+      displayItems lookMsg False is
+      session getConfirm
+      messageAdd ""
