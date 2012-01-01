@@ -49,7 +49,7 @@ returnAction :: a -> Action a
 returnAction x = Action (\ _s _e _p k _a st m -> k st m x)
 
 -- | Distributes the session and shutdown continuation,
--- threads the state and message.
+-- threads the state and msg.
 bindAction :: Action a -> (a -> Action b) -> Action b
 bindAction m f = Action (\ s e p k a st ms ->
                           let next nst nm x =
@@ -91,14 +91,14 @@ session f = Action (\ s e p k a st ms -> runAction (f s) s e p k a st ms)
 sessionIO :: (Session -> IO a) -> Action a
 sessionIO f = Action (\ s _e _p k _a st ms -> f s >>= k st ms)
 
--- | Display the current level with modified current message.
+-- | Display the current level with modified current msg.
 displayGeneric :: ColorMode -> (String -> String) -> Action Bool
 displayGeneric dm f =
   Action (\ (fs, cops, _) _e p k _a st ms ->
            displayLevel dm fs cops p st (f ms) Nothing
            >>= k st ms)
 
--- | Display the current level, with the current message and color. Most common.
+-- | Display the current level, with the current msg and color. Most common.
 displayAll :: Action Bool
 displayAll = displayGeneric ColorFull id
 
@@ -109,19 +109,19 @@ overlay txt =
            displayLevel ColorFull fs cops p st ms (Just txt)
            >>= k st ms)
 
--- | Wipe out and set a new value for the current message.
-messageReset :: Msg -> Action ()
-messageReset nm = Action (\ _s _e _p k _a st _ms -> k st nm ())
+-- | Wipe out and set a new value for the current msg.
+msgReset :: Msg -> Action ()
+msgReset nm = Action (\ _s _e _p k _a st _ms -> k st nm ())
 
--- | Add to the current message.
-messageAdd :: Msg -> Action ()
-messageAdd nm = Action (\ _s _e _p k _a st ms -> k st (addMsg ms nm) ())
+-- | Add to the current msg.
+msgAdd :: Msg -> Action ()
+msgAdd nm = Action (\ _s _e _p k _a st ms -> k st (addMsg ms nm) ())
 
--- | Clear the current message.
-messageClear :: Action ()
-messageClear = Action (\ _s _e _p k _a st _ms -> k st "" ())
+-- | Clear the current msg.
+msgClear :: Action ()
+msgClear = Action (\ _s _e _p k _a st _ms -> k st "" ())
 
--- | Get the current message.
+-- | Get the current msg.
 currentMsg :: Action Msg
 currentMsg = Action (\ _s _e _p k _a st ms -> k st ms ms)
 
@@ -162,21 +162,21 @@ try = tryWith (return ())
 tryRepeatedly :: Action () -> Action ()
 tryRepeatedly = tryRepeatedlyWith (return ())
 
--- | Print a debug message or ignore.
+-- | Print a debug msg or ignore.
 debug :: String -> Action ()
 debug _x = return () -- liftIO $ hPutStrLn stderr _x
 
--- | Print the given message, then abort.
+-- | Print the given msg, then abort.
 abortWith :: Msg -> Action a
 abortWith msg = do
-  messageReset msg
+  msgReset msg
   displayAll
   abort
 
 neverMind :: Bool -> Action a
 neverMind b = abortIfWith b "never mind"
 
--- | Abort, and print the given message if the condition is true.
+-- | Abort, and print the given msg if the condition is true.
 abortIfWith :: Bool -> Msg -> Action a
 abortIfWith True msg = abortWith msg
 abortIfWith False _  = abortWith ""
@@ -215,50 +215,50 @@ getOptionalConfirm h k (fs, _, _) = do
 getConfirm :: Session -> Action Bool
 getConfirm sess = getOptionalConfirm return (const $ getConfirm sess) sess
 
--- | Print message, await confirmation. Return value indicates
+-- | Print msg, await confirmation. Return value indicates
 -- if the player tried to abort/escape.
-messageMoreConfirm :: ColorMode -> Msg -> Action Bool
-messageMoreConfirm dm msg = do
-  messageAdd (msg ++ more)
+msgMoreConfirm :: ColorMode -> Msg -> Action Bool
+msgMoreConfirm dm msg = do
+  msgAdd (msg ++ more)
   displayGeneric dm id
   session getConfirm
 
--- | Print message, await confirmation, ignore confirmation.
-messageMore :: Msg -> Action ()
-messageMore msg = messageClear >> messageMoreConfirm ColorFull msg >> return ()
+-- | Print msg, await confirmation, ignore confirmation.
+msgMore :: Msg -> Action ()
+msgMore msg = msgClear >> msgMoreConfirm ColorFull msg >> return ()
 
 -- | Print a yes/no question and return the player's answer.
-messageYesNo :: Msg -> Action Bool
-messageYesNo msg = do
-  messageReset (msg ++ yesno)
+msgYesNo :: Msg -> Action Bool
+msgYesNo msg = do
+  msgReset (msg ++ yesno)
   displayGeneric ColorBW id  -- turn player's attention to the choice
   session getYesNo
 
--- | Print a message and an overlay, await confirmation. Return value
+-- | Print a msg and an overlay, await confirmation. Return value
 -- indicates if the player tried to abort/escape.
-messageOverlayConfirm :: Msg -> String -> Action Bool
-messageOverlayConfirm msg txt = messageOverlaysConfirm msg [txt]
+msgOverlayConfirm :: Msg -> String -> Action Bool
+msgOverlayConfirm msg txt = msgOverlaysConfirm msg [txt]
 
 -- | Prints several overlays, one per page, and awaits confirmation.
 -- Return value indicates if the player tried to abort/escape.
-messageOverlaysConfirm :: Msg -> [String] -> Action Bool
-messageOverlaysConfirm _msg [] = do
-  messageClear
+msgOverlaysConfirm :: Msg -> [String] -> Action Bool
+msgOverlaysConfirm _msg [] = do
+  msgClear
   displayAll
   return True
-messageOverlaysConfirm msg (x:xs) = do
-  messageReset msg
+msgOverlaysConfirm msg (x:xs) = do
+  msgReset msg
   b0 <- overlay (x ++ more)
   if b0
     then do
       b <- session getConfirm
       if b
-        then messageOverlaysConfirm msg xs
+        then msgOverlaysConfirm msg xs
         else stop
     else stop
  where
   stop = do
-    messageClear
+    msgClear
     displayAll
     return False
 

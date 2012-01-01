@@ -135,16 +135,16 @@ itemEffectAction verbosity source target item = do
   tm  <- gets (getActor target)
   per <- currentPerception
   let effect = ieffect $ okind $ jkind item
-  -- The message describes the target part of the action.
+  -- The msg describes the target part of the action.
   (b, msg) <- effectToAction effect verbosity source target (jpower item)
   -- Determine how the player perceives the event.
-  -- TODO: factor it out as a function messageActor
-  -- and messageActorVerb (incorporating subjectActorVerb).
+  -- TODO: factor it out as a function msgActor
+  -- and msgActorVerb (incorporating subjectActorVerb).
   if bloc tm `IS.member` totalVisible per
-     then messageAdd msg
+     then msgAdd msg
      else unless b $
             -- victim is not seen and but somethig interestng happens
-            messageAdd "You hear some noises."
+            msgAdd "You hear some noises."
   -- If something happens, the item gets identified.
   when (b && (isAHero source || isAHero target)) $ discover item
   return b
@@ -163,7 +163,7 @@ discover i = do
   unless alreadyIdentified $ do
     modify (updateDiscoveries (S.insert ik))
     state2 <- get
-    messageAdd $ msg ++ objectItem cops state2 i ++ "."
+    msgAdd $ msg ++ objectItem cops state2 i ++ "."
 
 -- | Make the actor controlled by the player.
 -- Focus on the actor if level changes. False, if nothing to do.
@@ -193,7 +193,7 @@ selectPlayer actor = do
                            then Smell
                            else Implicit })
       -- Announce.
-      messageAdd $ subjectActor cops pbody ++ " selected."
+      msgAdd $ subjectActor cops pbody ++ " selected."
       return True
 
 focusIfAHero :: ActorId -> Action ()
@@ -235,16 +235,16 @@ checkPartyDeath = do
   pbody  <- gets getPlayerBody
   config <- gets sconfig
   when (bhp pbody <= 0) $ do  -- TODO: change to guard? define mzero? Why are the writes to the files performed when I call abort later? That probably breaks the laws of MonadPlus.
-    go <- messageMoreConfirm ColorBW $
+    go <- msgMoreConfirm ColorBW $
             subjectActorVerb cops pbody "die" ++ "."
-    history  -- Prevent the messages from being repeated.
+    history  -- Prevent the msgs from being repeated.
     let firstDeathEnds = Config.get config "heroes" "firstDeathEnds"
     if firstDeathEnds
       then gameOver go
       else case L.filter (\ (actor, _) -> actor /= pl) ahs of
              [] -> gameOver go
              (actor, _nln) : _ -> do
-               messageAdd "The survivors carry on."
+               msgAdd "The survivors carry on."
                -- Remove the dead player.
                modify deletePlayer
                -- At this place the invariant that the player exists fails.
@@ -263,7 +263,7 @@ gameOver showEndingScreens = do
     let total = calculateTotal cops state
         status = H.Killed slid
     handleScores True status total
-    messageMore "Let's hope another party can save the day!"
+    msgMore "Let's hope another party can save the day!"
   end
 
 -- | Calculate loot's worth for heroes on the current level.
@@ -289,7 +289,7 @@ handleScores write status total =
                    _ -> total
     let score = H.ScoreRecord points (-time) curDate status
     (placeMsg, slideshow) <- liftIO $ H.register config write score
-    messageOverlaysConfirm placeMsg slideshow
+    msgOverlaysConfirm placeMsg slideshow
 
 -- effectToAction does not depend on this function right now, but it might,
 -- and I know no better place to put it.
@@ -302,17 +302,17 @@ displayItems msg sorted is = do
                           ++ objectItem cops state i ++ " ")
               ((if sorted then L.sortBy (cmpLetter' `on` jletter) else id) is)
   let ovl = inv ++ more
-  messageReset msg
+  msgReset msg
   overlay ovl
 
 stopRunning :: Action ()
 stopRunning = updatePlayerBody (\ p -> p { bdir = Nothing })
 
--- | Store current message in the history and reset current message.
+-- | Store current msg in the history and reset current msg.
 history :: Action ()
 history = do
   msg <- currentMsg
-  messageClear
+  msgClear
   config <- gets sconfig
   let historyMax = Config.get config "ui" "historyMax"
       -- TODO: not ideal, continuations of sentences are atop beginnings.
@@ -346,8 +346,8 @@ doLook = do
       -- check if there's something lying around at current loc
       is = lvl `rememberAtI` loc
   if length is <= 2
-    then messageAdd lookMsg
+    then msgAdd lookMsg
     else do
       displayItems lookMsg False is
       session getConfirm
-      messageAdd ""
+      msgAdd ""

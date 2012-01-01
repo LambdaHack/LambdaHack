@@ -69,7 +69,7 @@ applyGroupItem actor verb item = do
       msg = subjectVerbIObject cops state body verb consumed ""
       loc = bloc body
   removeFromInventory actor consumed loc
-  when (loc `IS.member` totalVisible per) $ messageAdd msg
+  when (loc `IS.member` totalVisible per) $ msgAdd msg
   itemEffectAction 5 actor actor consumed
   advanceTime actor
 
@@ -108,13 +108,13 @@ projectGroupItem source loc verb item = do
   removeFromInventory source consumed sloc
   case locToActor loc state of
     Just ta -> do
-      -- The message describes the source part of the action.
-      when (sloc `IS.member` totalVisible per || isAHero ta) $ messageAdd msg
-      -- Messages inside itemEffectAction describe the target part.
+      -- The msg describes the source part of the action.
+      when (sloc `IS.member` totalVisible per || isAHero ta) $ msgAdd msg
+      -- Msgs inside itemEffectAction describe the target part.
       b <- itemEffectAction 10 source ta consumed
       unless b $ modify (updateLevel (dropItemsAt [consumed] loc))
     Nothing | locWalkable -> do
-      when (sloc `IS.member` totalVisible per) $ messageAdd msg
+      when (sloc `IS.member` totalVisible per) $ msgAdd msg
       modify (updateLevel (dropItemsAt [consumed] loc))
     _ -> abortWith "blocked"
   advanceTime source
@@ -135,7 +135,7 @@ playerProjectGI verb object syms = do
   ploc  <- gets (bloc . getPlayerBody)
   per   <- currentPerception
   let retarget msg = do
-        messageAdd msg
+        msgAdd msg
         updatePlayerBody (\ p -> p { btarget = TCursor })
         let upd cursor = cursor {clocation=ploc}
         modify (updateCursor upd)
@@ -241,7 +241,7 @@ endTargetingMsg = do
                       else "a fear of the past"
                     TLoc loc -> "location " ++ show (fromLoc lxsize loc)
                     TCursor  -> "current cursor position continuously"
-  messageAdd $ subjectActorVerb cops pbody verb ++ " " ++ targetMsg ++ "."
+  msgAdd $ subjectActorVerb cops pbody verb ++ " " ++ targetMsg ++ "."
 
 -- | Cancel something, e.g., targeting mode, resetting the cursor
 -- to the position of the player. Chosen target is not invalidated.
@@ -276,7 +276,7 @@ dropItem = do
     Just stack -> do
       let i = stack { jcount = 1 }
       removeOnlyFromInventory pl i (bloc pbody)
-      messageAdd (subjectVerbIObject cops state pbody "drop" i "")
+      msgAdd (subjectVerbIObject cops state pbody "drop" i "")
       modify (updateLevel (dropItemsAt [i] ploc))
     Nothing -> neverMind True
   playerAdvanceTime
@@ -336,12 +336,12 @@ actorPickupItem actor = do
       case assignLetter (jletter i) (bletter body) bitems of
         Just l -> do
           let (ni, nitems) = joinItem (i { jletter = Just l }) bitems
-          -- message depends on who picks up and if a hero can perceive it
+          -- msg depends on who picks up and if a hero can perceive it
           if isPlayer
-            then messageAdd (letterLabel (jletter ni)
+            then msgAdd (letterLabel (jletter ni)
                              ++ objectItem coitem state ni)
             else when perceived $
-                   messageAdd $
+                   msgAdd $
                    subjCompoundVerbIObj cops state body "pick" "up" i ""
           removeFromLoc i loc
             >>= assert `trueM` (i, is, loc, "item is stuck")
@@ -401,11 +401,11 @@ getItem prompt p ptext is0 isn = do
       ask = do
         when (L.null is0 && L.null tis) $
           abortWith "Not carrying anything."
-        messageReset (prompt ++ " " ++ choice)
+        msgReset (prompt ++ " " ++ choice)
         displayAll
         session nextCommand >>= perform
       perform command = do
-        messageClear
+        msgClear
         case command of
           K.Char '?' -> do
             -- filter for supposedly suitable items

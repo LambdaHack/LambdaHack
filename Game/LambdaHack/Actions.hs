@@ -45,7 +45,7 @@ import Game.LambdaHack.Keybindings
 displayHistory :: Action ()
 displayHistory = do
   hst <- gets shistory
-  messageOverlayConfirm "" (unlines hst)
+  msgOverlayConfirm "" (unlines hst)
   abort
 
 dumpConfig :: Action ()
@@ -57,7 +57,7 @@ dumpConfig = do
 
 saveGame :: Action ()
 saveGame = do
-  b <- messageYesNo "Really save?"
+  b <- msgYesNo "Really save?"
   if b
     then do
       -- Save the game state
@@ -68,13 +68,13 @@ saveGame = do
       let total = calculateTotal cops state
           status = H.Camping ln
       go <- handleScores False status total
-      when go $ messageMore "See you soon, stronger and braver!"
+      when go $ msgMore "See you soon, stronger and braver!"
       end
     else abortWith "Game resumed."
 
 quitGame :: Action ()
 quitGame = do
-  b <- messageYesNo "Really quit?"
+  b <- msgYesNo "Really quit?"
   if b
     then end -- no highscore display for quitters
     else abortWith "Game resumed."
@@ -323,7 +323,7 @@ triggerTile cotile@Kind.Ops{okind} lvl dloc =
 -- | Ask for a direction and alter a tile, if possible.
 playerTriggerTile :: F.Feature -> Action ()
 playerTriggerTile feat = do
-  messageReset "direction?"
+  msgReset "direction?"
   displayAll
   e <- session nextCommand
   lxsize <- gets (lxsize . slevel)
@@ -410,7 +410,7 @@ lvlGoUp isUp = do
             if targeting /= TgtOff
             then abortWith "cannot escape dungeon in targeting mode"
             else do
-              b <- messageYesNo "Really escape the dungeon?"
+              b <- msgYesNo "Really escape the dungeon?"
               if b
                 then fleeDungeon
                 else abortWith "Game resumed."
@@ -480,9 +480,9 @@ fleeDungeon = do
       items = L.concat $ IM.elems $ lheroItem $ slevel state
   if total == 0
     then do
-      go <- messageClear >> messageMoreConfirm ColorFull "Coward!"
+      go <- msgClear >> msgMoreConfirm ColorFull "Coward!"
       when go $
-        messageMore "Next time try to grab some loot before escape!"
+        msgMore "Next time try to grab some loot before escape!"
       end
     else do
       let winMsg = "Congratulations, you won! Your loot, worth " ++
@@ -491,7 +491,7 @@ fleeDungeon = do
       go <- session getConfirm
       when go $ do
         go2 <- handleScores True H.Victor total
-        when go2 $ messageMore "Can it be done better, though?"
+        when go2 $ msgMore "Can it be done better, though?"
       end
 
 -- | Switches current hero to the next hero on the level, if any, wrapping.
@@ -564,18 +564,18 @@ moveOrAttack allowAttacks actor dir = do
           -- Switching positions requires full access.
           actorRunActor actor target
           when (actor == pl) $
-            messageAdd $ lookAt cops False True state lvl tloc ""
+            msgAdd $ lookAt cops False True state lvl tloc ""
       | otherwise -> abortWith ""
     Nothing
       | accessible cops lvl sloc tloc -> do
           -- perform the move
           updateAnyActor actor $ \ body -> body {bloc = tloc}
           when (actor == pl) $
-            messageAdd $ lookAt cops False True state lvl tloc ""
+            msgAdd $ lookAt cops False True state lvl tloc ""
           advanceTime actor
       | allowAttacks && actor == pl
         && Tile.canBeHidden cotile (okind $ lvl `rememberAt` tloc) -> do
-          messageAdd "You search your surroundings."  -- TODO: proper msg
+          msgAdd "You search your surroundings."  -- TODO: proper msg
           search
       | otherwise -> actorOpenDoor actor dir  -- try to open a door
 
@@ -605,7 +605,7 @@ actorAttackActor source target = do
       str = strongestSword coitem bitems
       stack  = fromMaybe h2h str
       single = stack { jcount = 1 }
-      -- The message describes the source part of the action.
+      -- The msg describes the source part of the action.
       -- TODO: right now it also describes the victim and weapon;
       -- perhaps, when a weapon is equipped, just say "you hit" or "you miss"
       -- and then "nose dies" or "nose yells in pain".
@@ -613,8 +613,8 @@ actorAttackActor source target = do
               if isJust str
               then " with " ++ objectItem coitem state single
               else ""
-  when (sloc `IS.member` totalVisible per) $ messageAdd msg
-  -- Messages inside itemEffectAction describe the target part.
+  when (sloc `IS.member` totalVisible per) $ msgAdd msg
+  -- Msgs inside itemEffectAction describe the target part.
   itemEffectAction 0 source target single
   advanceTime source
 
@@ -683,6 +683,6 @@ displayHelp = do
                  then []
                  else k : [ from | (from, to) <- M.assocs kmacro, to == k ]
             help = keyHelp coImage keyb
-        in messageOverlayConfirm "Basic keys:" help
+        in msgOverlayConfirm "Basic keys:" help
   session disp
   abort
