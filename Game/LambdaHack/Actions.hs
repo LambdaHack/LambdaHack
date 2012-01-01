@@ -87,7 +87,7 @@ endTargeting accept = do
   cloc     <- gets (clocation . scursor)
   -- return to the original level of the player
   modify (\ state -> state {slid = returnLn})
-  modify (updateCursor (\ c -> c { ctargeting = False }))
+  modify (updateCursor (\ c -> c { ctargeting = TgtOff }))
   let isEnemy = case target of TEnemy _ _ -> True ; _ -> False
   unless isEnemy $
     if accept
@@ -116,7 +116,7 @@ endTargetingMsg = do
 cancelCurrent :: Action ()
 cancelCurrent = do
   targeting <- gets (ctargeting . scursor)
-  if targeting
+  if targeting /= TgtOff
     then endTargeting False
     else abortWith "Press Q to quit."
 
@@ -125,7 +125,7 @@ cancelCurrent = do
 acceptCurrent :: Action () -> Action ()
 acceptCurrent h = do
   targeting <- gets (ctargeting . scursor)
-  if targeting
+  if targeting /= TgtOff
     then endTargeting True
     else h  -- nothing to accept right now
 
@@ -151,7 +151,7 @@ move :: Dir -> Action ()
 move dir = do
   pl <- gets splayer
   targeting <- gets (ctargeting . scursor)
-  if targeting then moveCursor dir 1 else moveOrAttack True pl dir
+  if targeting /= TgtOff then moveCursor dir 1 else moveOrAttack True pl dir
 
 run :: (Dir, Int) -> Action ()
 run (dir, dist) = do
@@ -160,7 +160,7 @@ run (dir, dist) = do
   locHere <- gets (bloc . getPlayerBody)
   lvl <- gets slevel
   targeting <- gets (ctargeting . scursor)
-  if targeting
+  if targeting /= TgtOff
     then moveCursor dir 10
     else do
       let accessibleDir loc d = accessible cops lvl loc (loc `shift` d)
@@ -445,7 +445,7 @@ lvlGoUp isUp = do
   slid      <- gets slid
   lvl       <- gets slevel
   st        <- get
-  let loc = if targeting then clocation cursor else bloc pbody
+  let loc = if targeting /= TgtOff then clocation cursor else bloc pbody
       tile = lvl `at` loc
       vdir = if isUp then 1 else -1
       sdir | Tile.hasFeature cotile F.Climbable tile = Just 1
@@ -457,7 +457,7 @@ lvlGoUp isUp = do
         case whereTo cotile st loc of
           Nothing ->
             -- we are at the "end" of the dungeon
-            if targeting
+            if targeting /= TgtOff
             then abortWith "cannot escape dungeon in targeting mode"
             else do
               b <- messageYesNo "Really escape the dungeon?"
@@ -465,7 +465,7 @@ lvlGoUp isUp = do
                 then fleeDungeon
                 else abortWith "Game resumed."
           Just (nln, nloc) ->
-            if targeting
+            if targeting /= TgtOff
               then do
                 assert (nln /= slid `blame` (nln, "stairs looped")) $
                   modify (\ state -> state {slid = nln})
@@ -511,7 +511,7 @@ lvlGoUp isUp = do
                   Save.mvBkp (sconfig state)
                 playerAdvanceTime
     _ -> -- no stairs in the right direction
-      if targeting
+      if targeting /= TgtOff
       then do
         lvlAscend vdir
         let upd cur = cur {clocLn = slid}

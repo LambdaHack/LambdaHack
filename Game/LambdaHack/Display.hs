@@ -158,7 +158,7 @@ displayLevel dm fs cops per
                     i : _ -> Item.viewItem coitem (Item.jkind i) sflavour
             vis = IS.member loc0 visible
             rea = IS.member loc0 reachable
-            bg0 = if ctargeting scursor && loc0 == clocation scursor
+            bg0 = if ctargeting scursor /= TgtOff && loc0 == clocation scursor
                   then Color.defFG     -- highlight targeting cursor
                   else sVisBG vis rea  -- FOV debug
             reverseVideo = (snd Color.defaultAttr, fst Color.defaultAttr)

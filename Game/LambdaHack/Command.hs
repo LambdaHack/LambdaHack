@@ -66,8 +66,8 @@ cmdSemantics cmd = case cmd of
   Inventory -> inventory
   Ascend ->    lvlGoUp True
   Descend ->   lvlGoUp False
-  TgtFloor ->  targetFloor
-  TgtEnemy ->  checkCursor targetMonster
+  TgtFloor ->  checkCursor $ targetFloor   TgtPlayer
+  TgtEnemy ->  checkCursor $ targetMonster TgtPlayer
   GameSave ->  saveGame
   GameQuit ->  quitGame
   Cancel ->    cancelCurrent

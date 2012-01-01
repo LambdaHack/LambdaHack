@@ -37,11 +37,17 @@ data State = State
   }
   deriving Show
 
+data TgtMode =
+    TgtOff     -- ^ not in targeting mode
+  | TgtPlayer  -- ^ the player requested targetting mode explicitly
+  | TgtAuto    -- ^ the mode was entered (and will be exited) automatically
+  deriving (Show, Eq)
+
 data Cursor = Cursor
-  { ctargeting :: Bool       -- ^ are we in targeting mode?
-  , clocLn     :: LevelId    -- ^ cursor level
-  , clocation  :: Loc        -- ^ cursor coordinates
-  , creturnLn  :: LevelId    -- ^ the level current player resides on
+  { ctargeting :: TgtMode  -- ^ targeting mode
+  , clocLn     :: LevelId  -- ^ cursor level
+  , clocation  :: Loc      -- ^ cursor coordinates
+  , creturnLn  :: LevelId  -- ^ the level current player resides on
   }
   deriving Show
 
@@ -52,7 +58,7 @@ defaultState :: Dungeon.Dungeon -> LevelId -> Loc -> R.StdGen -> State
 defaultState dng lid ploc g =
   State
     (AHero 0)  -- hack: the hero is not yet alive
-    (Cursor False lid ploc lid)
+    (Cursor TgtOff lid ploc lid)
     []
     Implicit Normal
     0
@@ -142,6 +148,18 @@ instance Binary Cursor where
     loc <- get
     rln <- get
     return (Cursor act cln loc rln)
+
+instance Binary TgtMode where
+  put TgtOff    = putWord8 0
+  put TgtPlayer = putWord8 1
+  put TgtAuto   = putWord8 2
+  get = do
+    tag <- getWord8
+    case tag of
+      0 -> return TgtOff
+      1 -> return TgtPlayer
+      2 -> return TgtAuto
+      _ -> fail "no parse (TgtMode)"
 
 data SensoryMode =
     Implicit
