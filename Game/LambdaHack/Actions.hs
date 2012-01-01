@@ -381,61 +381,56 @@ actorOpenDoor actor dir = do
          else triggerTile dloc
   advanceTime actor
 
--- | Attempt a level switch to k levels shallower.
--- TODO: perhaps set up some level name arithmetics in Level.hs
--- and hide there the fact levels are now essentially Ints.
-lvlAscend :: Int -> Action ()
-lvlAscend k = do
-  slid   <- gets slid
-  config <- gets sconfig
-  let n = levelNumber slid
-      nln = n - k
-      depth = Config.get config "dungeon" "depth"
-  when (nln < 1 || nln > depth) $
-    abortWith "no more levels in this direction"
-  modify (\ state -> state {slid = (LambdaCave nln)})
-
 -- | Attempt a level change via up level and down level keys.
 -- Will quit the game if the player leaves the dungeon.
 lvlChange :: F.Feature -> Action ()
 lvlChange feat = do
+  loc <- gets (bloc . getPlayerBody)
+  bumpTile loc feat
+
+-- | Change the displayed level in targetting mode to (at most)
+-- k levels shallower.
+tgtAscend :: Int -> Action ()
+tgtAscend k = do
   cotile    <- contentf Kind.cotile
   cursor    <- gets scursor
   targeting <- gets (ctargeting . scursor)
-  pbody     <- gets getPlayerBody
   slid      <- gets slid
   lvl       <- gets slevel
   st        <- get
-  let loc = if targeting /= TgtOff then clocation cursor else bloc pbody
+  config <- gets sconfig
+  let loc = clocation cursor
       tile = lvl `at` loc
-      k | feat == F.Cause Effect.Ascend = 1
-        | feat == F.Cause Effect.Descend = -1
-        | otherwise = assert `failure` feat
-  if targeting /= TgtOff
-    then
-      if Tile.hasFeature cotile feat tile  -- stairs, in the right direction
-      then case whereTo st k of
-        Nothing ->  -- we are at the "end" of the dungeon
-          abortWith "cannot escape dungeon in targeting mode"
-        Just (nln, nloc) ->
-          assert (nln /= slid `blame` (nln, "stairs looped")) $ do
-            modify (\ state -> state {slid = nln})
-            -- do not freely reveal the other end of the stairs
-            lvl2 <- gets slevel
-            let upd cur =
-                  let clocation =
-                        if (lvl2 `rememberAt` nloc) == Tile.unknownId cotile
-                        then loc
-                        else nloc
-                  in cur { clocation, clocLn = nln }
-            modify (updateCursor upd)
-            doLook
-      else do  -- no stairs in the right direction
-        lvlAscend k
-        let upd cur = cur {clocLn = slid}
-        modify (updateCursor upd)
-        doLook
-    else bumpTile loc feat
+      rightStairs =
+        k ==  1 && Tile.hasFeature cotile (F.Cause Effect.Ascend)  tile ||
+        k == -1 && Tile.hasFeature cotile (F.Cause Effect.Descend) tile
+  assert (targeting /= TgtOff) $ do
+    if rightStairs  -- stairs, in the right direction
+    then case whereTo st k of
+      Nothing ->  -- we are at the "end" of the dungeon
+        abortWith "cannot escape dungeon in targeting mode"
+      Just (nln, nloc) ->
+        assert (nln /= slid `blame` (nln, "stairs looped")) $ do
+          modify (\ state -> state {slid = nln})
+          -- do not freely reveal the other end of the stairs
+          lvl2 <- gets slevel
+          let upd cur =
+                let clocation =
+                      if (lvl2 `rememberAt` nloc) == Tile.unknownId cotile
+                      then loc
+                      else nloc
+                in cur { clocation, clocLn = nln }
+          modify (updateCursor upd)
+          doLook
+    else do  -- no stairs in the right direction
+      let n = levelNumber slid
+          depth = Config.get config "dungeon" "depth"
+          nln = max depth $ min 1 $ n - k
+      when (nln == n) $ abortWith "no more levels in this direction"
+      modify (\ state -> state {slid = (LambdaCave nln)})
+      let upd cur = cur {clocLn = slid}
+      modify (updateCursor upd)
+      doLook
 
 -- | Switches current hero to the next hero on the level, if any, wrapping.
 cycleHero :: Action ()
