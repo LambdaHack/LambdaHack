@@ -12,7 +12,8 @@ data Effect =
   | ApplyPerfume
   | Regeneration
   | Searching
-  | Teleport
+  | Ascend
+  | Descend
   deriving (Show, Read, Eq, Ord)
 
 effectToName :: Effect -> String
@@ -28,7 +29,8 @@ effectToName SummonEnemy = "of summoning"
 effectToName ApplyPerfume = "of rose water"
 effectToName Regeneration = "of regeneration"
 effectToName Searching = "of searching"
-effectToName Teleport = "of teleportation"
+effectToName Ascend = "of ascending"
+effectToName Descend = "of descending"
 
 -- | How much AI benefits from applying the effect. Multipllied by item power.
 -- Negative means harm to the enemy when thrown. Zero won't ever be used.
@@ -42,4 +44,5 @@ effectToBenefit SummonEnemy = 0
 effectToBenefit ApplyPerfume = 0
 effectToBenefit Regeneration = 0    -- much more benefit from carrying around
 effectToBenefit Searching = 0       -- AI does not need to search
-effectToBenefit Teleport = 0        -- AI does not know when to teleport
+effectToBenefit Ascend = 0          -- AI can't change levels
+effectToBenefit Descend = 0

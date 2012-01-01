@@ -15,8 +15,8 @@ data Feature =
   | Cause !Effect      -- ^ causes the effect when triggered, TODO
   | ChangeTo !String   -- ^ transitions to any such tile when triggered
   | ChangeFrom !String -- ^ a possible target of transitions
-  | Climbable          -- ^ triggered by climbing onto
-  | Descendable        -- ^ triggered by descending into
+  | Ascendable         -- ^ triggered by ascending
+  | Descendable        -- ^ triggered by descending
   | Openable           -- ^ triggered by opening
   | Closable           -- ^ triggered by closing
   | Hidden             -- ^ triggered when the tile's secrecy becomes zero

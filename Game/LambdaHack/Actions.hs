@@ -29,6 +29,7 @@ import Game.LambdaHack.Perception
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Config as Config
 import qualified Game.LambdaHack.Save as Save
+import qualified Game.LambdaHack.Effect as Effect
 import Game.LambdaHack.EffectAction
 import Game.LambdaHack.WorldLoc
 import qualified Game.LambdaHack.Tile as Tile
@@ -283,9 +284,9 @@ guessBump cotile F.Openable t | Tile.hasFeature cotile F.Closable t =
   abortWith "already open"
 guessBump cotile F.Closable t | Tile.hasFeature cotile F.Openable t =
   abortWith "already closed"
-guessBump cotile F.Climbable t | Tile.hasFeature cotile F.Descendable t =
+guessBump cotile F.Ascendable t | Tile.hasFeature cotile F.Descendable t =
   abortWith "the way goes down, not up"
-guessBump cotile F.Descendable t | Tile.hasFeature cotile F.Climbable t =
+guessBump cotile F.Descendable t | Tile.hasFeature cotile F.Ascendable t =
   abortWith "the way goes up, not down"
 guessBump _ _ _ = neverMind True
 
@@ -398,8 +399,8 @@ lvlGoUp isUp = do
   let loc = if targeting /= TgtOff then clocation cursor else bloc pbody
       tile = lvl `at` loc
       vdir = if isUp then 1 else -1
-      sdir | Tile.hasFeature cotile F.Climbable tile = Just 1
-           | Tile.hasFeature cotile F.Descendable tile = Just (-1)
+      sdir | Tile.hasFeature cotile (F.Cause Effect.Ascend) tile = Just 1
+           | Tile.hasFeature cotile (F.Cause Effect.Descend) tile = Just (-1)
            | otherwise = Nothing
   case sdir of
     Just vdir'

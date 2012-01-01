@@ -133,7 +133,7 @@ stairsUp = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfreq    = 100
-  , tfeature = [Walkable, Clear, Lit, Exit, Climbable, Cause Effect.Teleport]
+  , tfeature = [Walkable, Clear, Lit, Exit, Ascendable, Cause Effect.Ascend]
   }
 stairsDown = TileKind
   { tsymbol  = '>'
@@ -141,7 +141,7 @@ stairsDown = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfreq    = 100
-  , tfeature = [Walkable, Clear, Lit, Exit, Descendable, Cause Effect.Teleport]
+  , tfeature = [Walkable, Clear, Lit, Exit, Descendable, Cause Effect.Descend]
   }
 unknown = TileKind
   { tsymbol  = ' '

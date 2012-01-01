@@ -122,7 +122,8 @@ effectToAction Effect.Regeneration verbosity source target power =
   effectToAction Effect.Heal verbosity source target power
 effectToAction Effect.Searching _ _source _target _power =
   return (True, "It gets lost and you search in vain.")
-effectToAction Effect.Teleport _ _ _ _ = nullEffect  -- TODO
+effectToAction Effect.Ascend _ _ _ _ = nullEffect  -- TODO
+effectToAction Effect.Descend _ _ _ _ = nullEffect  -- TODO
 
 nullEffect :: Action (Bool, String)
 nullEffect = return (False, "Nothing happens.")

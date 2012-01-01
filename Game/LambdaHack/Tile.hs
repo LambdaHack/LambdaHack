@@ -31,7 +31,7 @@ wallId, floorRoomLitId, floorRoomDarkId, stairsUpId, stairsDownId :: Kind.Ops Ti
 wallId Kind.Ops{opick} = opick wallP
 floorRoomLitId Kind.Ops{opick} = opick floorRoomLitP
 floorRoomDarkId Kind.Ops{opick} = opick floorRoomDarkP
-stairsUpId Kind.Ops{opick} = opick $ kindHasFeature F.Climbable
+stairsUpId Kind.Ops{opick} = opick $ kindHasFeature F.Ascendable
 stairsDownId Kind.Ops{opick} = opick $ kindHasFeature F.Descendable
 
 unknownId :: Kind.Ops TileKind -> Kind.Id TileKind
