@@ -330,6 +330,7 @@ doLook = do
   lvl    <- gets slevel
   per    <- currentPerception
   target <- gets (btarget . getPlayerBody)
+  pl        <- gets splayer
   let canSee = IS.member loc (totalVisible per)
       monsterMsg =
         if canSee
@@ -337,10 +338,15 @@ doLook = do
                Just m  -> subjectActor (Kind.coactor cops) m ++ " is here. "
                Nothing -> ""
         else ""
+      vis = if not $ loc `IS.member` totalVisible per
+            then " (not visible)"  -- by party
+            else if actorReachesLoc pl loc per (Just pl)
+                 then ""
+                 else " (not reachable)"  -- by hero
       mode = case target of
-               TEnemy _ _ -> "[targeting monster] "
-               TLoc _     -> "[targeting location] "
-               TCursor    -> "[targeting current] "
+               TEnemy _ _ -> "[targeting monster" ++ vis ++ "] "
+               TLoc _     -> "[targeting location" ++ vis ++ "] "
+               TCursor    -> "[targeting current" ++ vis ++ "] "
       -- general info about current loc
       lookMsg = mode ++ lookAt cops True canSee state lvl loc monsterMsg
       -- check if there's something lying around at current loc

@@ -141,6 +141,9 @@ playerProjectGI verb object syms = do
         modify (updateCursor upd)
         targetMonster TgtAuto
   -- TODO: draw digital line and see if obstacles prevent firing
+  -- TODO: don't tell the player if the tiles he can't see are reachable,
+  -- but let him throw there and let them land closer, if not reachable
+  -- TODO: similarly let him throw at walls and land in front (digital line)
   case targetToLoc (totalVisible per) state of
     Just loc | actorReachesLoc pl loc per (Just pl) -> do
       Kind.Ops{okind} <- contentf Kind.coitem
