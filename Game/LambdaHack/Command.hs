@@ -12,7 +12,6 @@ import Game.LambdaHack.Actions
 import Game.LambdaHack.ItemAction
 import Game.LambdaHack.Grammar
 import qualified Game.LambdaHack.Config as Config
-import qualified Game.LambdaHack.Effect as Effect
 import Game.LambdaHack.EffectAction
 import Game.LambdaHack.Keybindings
 import qualified Game.LambdaHack.Keys as K
@@ -24,14 +23,13 @@ import Game.LambdaHack.Dir
 import qualified Game.LambdaHack.Feature as F
 
 data Cmd =
-    Apply     { verb :: Verb, object :: Object, syms :: [Char] }
-  | Project   { verb :: Verb, object :: Object, syms :: [Char] }
-  | Trigger   { verb :: Verb, object :: Object, feature :: F.Feature }
+    Apply       { verb :: Verb, object :: Object, syms :: [Char] }
+  | Project     { verb :: Verb, object :: Object, syms :: [Char] }
+  | TriggerDir  { verb :: Verb, object :: Object, feature :: F.Feature }
+  | TriggerTile { verb :: Verb, object :: Object, feature :: F.Feature }
   | Pickup
   | Drop
   | Inventory
-  | Ascend
-  | Descend
   | TgtFloor
   | TgtEnemy
   | GameSave
@@ -59,14 +57,13 @@ heroSelection =
 
 cmdSemantics :: Cmd -> Action ()
 cmdSemantics cmd = case cmd of
-  Apply verb obj syms -> checkCursor $ playerApplyGroupItem verb obj syms
+  Apply   verb obj syms -> checkCursor $ playerApplyGroupItem verb obj syms
   Project verb obj syms -> checkCursor $ playerProjectGroupItem verb obj syms
-  Trigger _verb _obj feat -> checkCursor $ playerTriggerTile feat
+  TriggerDir  _verb _obj feat -> checkCursor $ playerTriggerDir feat
+  TriggerTile _verb _obj feat -> checkCursor $ playerTriggerTile feat
   Pickup ->    checkCursor pickupItem
   Drop ->      checkCursor dropItem
   Inventory -> inventory
-  Ascend ->    lvlChange (F.Cause Effect.Ascend)
-  Descend ->   lvlChange (F.Cause Effect.Descend)
   TgtFloor ->  checkCursor $ targetFloor   TgtPlayer
   TgtEnemy ->  checkCursor $ targetMonster TgtPlayer
   GameSave ->  saveGame
@@ -82,14 +79,13 @@ cmdSemantics cmd = case cmd of
 
 cmdDescription :: Cmd -> Maybe String
 cmdDescription cmd = case cmd of
-  Apply verb obj _syms -> Just $ verb ++ " " ++ addIndefinite obj
+  Apply   verb obj _syms -> Just $ verb ++ " " ++ addIndefinite obj
   Project verb obj _syms -> Just $ verb ++ " " ++ addIndefinite obj
-  Trigger verb obj _feat -> Just $ verb ++ " " ++ addIndefinite obj
+  TriggerDir  verb obj _feat -> Just $ verb ++ " " ++ addIndefinite obj
+  TriggerTile verb obj _feat -> Just $ verb ++ " " ++ addIndefinite obj
   Pickup ->    Just "get an object"
   Drop ->      Just "drop an object"
   Inventory -> Just "display inventory"
-  Ascend ->    Just "ascend a level"
-  Descend ->   Just "descend a level"
   TgtFloor ->  Just "target location"
   TgtEnemy ->  Just "target monster"
   GameSave ->  Just "save and exit the game"

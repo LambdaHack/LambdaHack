@@ -45,9 +45,9 @@ firstDeathEnds: False
 
 [commands]
 ; interaction with the dungeon
-c: Trigger { verb = "close", object = "door", feature = Closable }
-less: Ascend
-greater: Descend
+c: TriggerDir { verb = "close", object = "door", feature = Closable }
+less:    TriggerTile { verb = "ascend", object = "level", feature = Cause Ascend }
+greater: TriggerTile { verb = "descend", object = "level", feature = Cause Descend }
 slash: TgtFloor
 asterisk: TgtEnemy
 Tab: HeroCycle

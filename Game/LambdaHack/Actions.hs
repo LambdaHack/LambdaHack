@@ -332,22 +332,28 @@ triggerTile dloc = do
       f _ = return ()
   mapM_ f $ TileKind.tfeature $ okind $ lvl `at` dloc
 
--- | Ask for a direction and alter a tile, if possible.
-playerTriggerTile :: F.Feature -> Action ()
-playerTriggerTile feat = do
+-- | Ask for a direction and trigger a tile, if possible.
+playerTriggerDir :: F.Feature -> Action ()
+playerTriggerDir feat = do
   msgReset "direction?"
   displayAll
   e <- session nextCommand
   lxsize <- gets (lxsize . slevel)
-  K.handleDirection lxsize e (playerBumpTile feat) (neverMind True)
+  K.handleDirection lxsize e (playerBumpDir feat) (neverMind True)
 
--- | Player closes a door. AI never does.
-playerBumpTile :: F.Feature -> Dir -> Action ()
-playerBumpTile feat dir = do
+-- | Player tries to trigger a tile in a given direction.
+playerBumpDir :: F.Feature -> Dir -> Action ()
+playerBumpDir feat dir = do
   pl    <- gets splayer
   body  <- gets (getActor pl)
   let dloc = bloc body `shift` dir
   bumpTile dloc feat
+
+-- | Player tries to trigger the tile he's standing on.
+playerTriggerTile :: F.Feature -> Action ()
+playerTriggerTile feat = do
+  ploc <- gets (bloc . getPlayerBody)
+  bumpTile ploc feat
 
 -- | An actor opens a door. Player (hero or monster) or enemy.
 actorOpenDoor :: ActorId -> Dir -> Action ()
