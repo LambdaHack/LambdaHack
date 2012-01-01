@@ -22,6 +22,8 @@ import Game.LambdaHack.State
 import Game.LambdaHack.EffectAction
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Content.ItemKind
+import qualified Game.LambdaHack.Feature as F
+import qualified Game.LambdaHack.Tile as Tile
 
 -- Item UI code with the Action type and everything it depends on
 -- that is not already in Action.hs and EffectAction.hs.
@@ -88,11 +90,14 @@ projectGroupItem :: ActorId  -- ^ actor projecting the item; on current level
                  -> Item     -- ^ the item to be projected
                  -> Action ()
 projectGroupItem source loc verb item = do
-  cops@Kind.COps{coactor} <- contentOps
+  cops@Kind.COps{coactor, cotile} <- contentOps
   state <- get
   sm    <- gets (getActor source)
   per   <- currentPerception
-  let consumed = item { jcount = 1 }
+  lvl   <- gets slevel
+  let -- TODO: refine for, e.g., wands of digging that are aimed into walls.
+      locWalkable = Tile.hasFeature cotile F.Walkable (lvl `at` loc)
+      consumed = item { jcount = 1 }
       sloc = bloc sm
       subject =
         if sloc `IS.member` totalVisible per
@@ -108,9 +113,10 @@ projectGroupItem source loc verb item = do
       -- Messages inside itemEffectAction describe the target part.
       b <- itemEffectAction 10 source ta consumed
       unless b $ modify (updateLevel (dropItemsAt [consumed] loc))
-    Nothing -> do
+    Nothing | locWalkable -> do
       when (sloc `IS.member` totalVisible per) $ messageAdd msg
       modify (updateLevel (dropItemsAt [consumed] loc))
+    _ -> abortWith "blocked"
   advanceTime source
 
 playerProjectGroupItem :: Verb -> Object -> [Char] -> Action ()
