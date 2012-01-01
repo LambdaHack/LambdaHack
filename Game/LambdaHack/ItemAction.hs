@@ -127,6 +127,10 @@ playerProjectGI verb object syms = do
   state <- get
   pl    <- gets splayer
   per   <- currentPerception
+  let retarget msg = do
+        messageAdd msg
+        updatePlayerBody (\ p -> p { btarget = TCursor })
+        targetMonster TgtAuto
   -- TODO: draw digital line and see if obstacles prevent firing
   case targetToLoc (totalVisible per) state of
     Just loc | actorReachesLoc pl loc per (Just pl) -> do
@@ -134,15 +138,13 @@ playerProjectGI verb object syms = do
       is   <- gets getPlayerItem
       iOpt <- getGroupItem is object syms
                 ("What to " ++ verb ++ "?") "in inventory"
+      targeting <- gets (ctargeting . scursor)
+      when (targeting == TgtAuto) $ endTargeting True
       case iOpt of
         Just i -> projectGroupItem pl loc (iverbProject $ okind $ jkind i) i
         Nothing -> neverMind True
-    Just _  -> do
-      messageAdd "Last target unreachable."
-      targetMonster TgtAuto
-    Nothing -> do
-      messageAdd "Last target invalid."
-      targetMonster TgtAuto
+    Just _  -> retarget "Last target unreachable."
+    Nothing -> retarget "Last target invalid."
 
 -- | Start the monster targeting mode. Cycle between monster targets.
 -- TODO: also target a monster by moving the cursor, if in target monster mode.
@@ -199,6 +201,56 @@ setCursor tgtMode = assert (tgtMode /= TgtOff) $ do
         in cursor { ctargeting = tgtMode, clocation, clocLn }
   modify (updateCursor upd)
   doLook
+
+-- | End targeting mode, accepting the current location or not.
+endTargeting :: Bool -> Action ()
+endTargeting accept = do
+  returnLn <- gets (creturnLn . scursor)
+  target   <- gets (btarget . getPlayerBody)
+  cloc     <- gets (clocation . scursor)
+  -- return to the original level of the player
+  modify (\ state -> state {slid = returnLn})
+  modify (updateCursor (\ c -> c { ctargeting = TgtOff }))
+  let isEnemy = case target of TEnemy _ _ -> True ; _ -> False
+  unless isEnemy $
+    if accept
+       then updatePlayerBody (\ p -> p { btarget = TLoc cloc })
+       else updatePlayerBody (\ p -> p { btarget = TCursor })
+  endTargetingMsg
+
+endTargetingMsg :: Action ()
+endTargetingMsg = do
+  cops   <- contentf Kind.coactor
+  pbody  <- gets getPlayerBody
+  state  <- get
+  lxsize <- gets (lxsize . slevel)
+  let verb = "target"
+      targetMsg = case btarget pbody of
+                    TEnemy a _ll ->
+                      if memActor a state
+                      then objectActor cops $ getActor a state
+                      else "a fear of the past"
+                    TLoc loc -> "location " ++ show (fromLoc lxsize loc)
+                    TCursor  -> "current cursor position continuously"
+  messageAdd $ subjectActorVerb cops pbody verb ++ " " ++ targetMsg ++ "."
+
+-- | Cancel something, e.g., targeting mode, resetting the cursor
+-- to the position of the player. Chosen target is not invalidated.
+cancelCurrent :: Action ()
+cancelCurrent = do
+  targeting <- gets (ctargeting . scursor)
+  if targeting /= TgtOff
+    then endTargeting False
+    else abortWith "Press Q to quit."
+
+-- | Accept something, e.g., targeting mode, keeping cursor where it was.
+-- Or perform the default action, if nothing needs accepting.
+acceptCurrent :: Action () -> Action ()
+acceptCurrent h = do
+  targeting <- gets (ctargeting . scursor)
+  if targeting /= TgtOff
+    then endTargeting True
+    else h  -- nothing to accept right now
 
 -- | Drop a single item.
 -- TODO: allow dropping a given number of identical items.
