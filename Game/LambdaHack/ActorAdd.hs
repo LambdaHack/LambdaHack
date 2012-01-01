@@ -30,7 +30,10 @@ import qualified Game.LambdaHack.Feature as F
 -- the time to the creation time instead.
 template :: Kind.Id ActorKind -> Maybe String -> Maybe Char -> Int -> Loc
          -> Actor
-template mk ms mc hp loc = Actor mk ms mc hp Nothing TCursor loc 'a' 0
+template mk ms mc hp loc =
+  -- The initial target is invalid to force re-evaluating it.
+  let invalidTarget = TEnemy invalidActorId loc
+  in Actor mk ms mc hp Nothing invalidTarget loc 'a' 0
 
 nearbyFreeLoc :: Kind.Ops TileKind -> Loc -> State -> Loc
 nearbyFreeLoc cotile origin state =

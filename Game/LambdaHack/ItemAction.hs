@@ -126,10 +126,13 @@ playerProjectGI :: Verb -> Object -> [Char] -> Action ()
 playerProjectGI verb object syms = do
   state <- get
   pl    <- gets splayer
+  ploc  <- gets (bloc . getPlayerBody)
   per   <- currentPerception
   let retarget msg = do
         messageAdd msg
         updatePlayerBody (\ p -> p { btarget = TCursor })
+        let upd cursor = cursor {clocation=ploc}
+        modify (updateCursor upd)
         targetMonster TgtAuto
   -- TODO: draw digital line and see if obstacles prevent firing
   case targetToLoc (totalVisible per) state of

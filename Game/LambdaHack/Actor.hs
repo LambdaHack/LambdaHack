@@ -54,6 +54,10 @@ data ActorId = AHero !Int     -- ^ hero index (on the lheroes intmap)
              | AMonster !Int  -- ^ monster index (on the lmonsters intmap)
   deriving (Show, Eq, Ord)
 
+-- | An actor that is not on any level.
+invalidActorId :: ActorId
+invalidActorId = AMonster (-1)
+
 isAHero :: ActorId -> Bool
 isAHero (AHero _) = True
 isAHero (AMonster _) = False
