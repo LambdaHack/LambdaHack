@@ -12,7 +12,7 @@ data Feature =
   | Lit                -- ^ is lit with an ambient shine
   | Secret !RollDice   -- ^ tile is generated with this high secrecy value
   | Aura !Effect       -- ^ sustains the effect continuously, TODO
-  | Cause !Effect      -- ^ causes the effect when triggered, TODO
+  | Cause !Effect      -- ^ causes the effect when triggered
   | ChangeTo !String   -- ^ transitions to any such tile when triggered
   | ChangeFrom !String -- ^ a possible target of transitions
   | Ascendable         -- ^ triggered by ascending

@@ -182,7 +182,7 @@ effLvlvGoUp k = do
         liftIO $ do
           Save.saveGame state
           Save.mvBkp (sconfig state)
-        when (targeting /= TgtOff) doLook
+        when (targeting /= TgtOff) doLook  -- TODO: lags behind perception
 
 -- | Hero has left the dungeon.
 fleeDungeon :: Action ()

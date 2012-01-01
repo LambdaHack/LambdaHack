@@ -281,44 +281,56 @@ remember = do
 guessBump :: Kind.Ops TileKind -> F.Feature -> Kind.Id TileKind -> Action ()
 guessBump cotile F.Openable t | Tile.hasFeature cotile F.Closable t =
   abortWith "already open"
+guessBump _ F.Openable _ =
+  abortWith "not a door"
 guessBump cotile F.Closable t | Tile.hasFeature cotile F.Openable t =
   abortWith "already closed"
+guessBump _ F.Closable _ =
+  abortWith "not a door"
 guessBump cotile F.Ascendable t | Tile.hasFeature cotile F.Descendable t =
   abortWith "the way goes down, not up"
+guessBump _ F.Ascendable _ =
+  abortWith "no stairs up"
 guessBump cotile F.Descendable t | Tile.hasFeature cotile F.Ascendable t =
   abortWith "the way goes up, not down"
+guessBump _ F.Descendable _ =
+  abortWith "no stairs down"
 guessBump _ _ _ = neverMind True
 
--- | Try to trigger a tile using a feature.
+-- | Player tries to trigger a tile using a feature.
 -- TODO: use in more places.
 bumpTile :: Loc -> F.Feature -> Action ()
 bumpTile dloc feat = do
   cotile <- contentf Kind.cotile
-  state <- get
-  lvl   <- gets slevel
-  pl    <- gets splayer
-  let hms = levelHeroList state ++ levelMonsterList state
-      t = lvl `at` dloc
+  lvl    <- gets slevel
+  let t = lvl `at` dloc
   if Tile.hasFeature cotile feat t
-    then case lvl `atI` dloc of
-      [] -> if unoccupied hms dloc
-            then triggerTile cotile lvl dloc
-            else abortWith "blocked"  -- by monsters or heroes
-      _ : _ -> abortWith "jammed"  -- by items
+    then triggerTile dloc
     else guessBump cotile feat t
-  advanceTime pl
+  playerAdvanceTime
 
 -- | Perform the action specified for the tile in case it's triggered.
-triggerTile :: Kind.Ops TileKind -> Level -> Loc -> Action ()
-triggerTile cotile@Kind.Ops{okind} lvl dloc =
-  let f F.Aura{} = return ()  -- TODO
-      f F.Cause{} = return ()  -- TODO
+triggerTile :: Loc -> Action ()
+triggerTile dloc = do
+  cotile@Kind.Ops{okind} <- contentf Kind.cotile
+  lvl <- gets slevel
+  let f (F.Cause effect) = do
+        pl <- gets splayer
+        (_b, _msg) <- effectToAction effect 0 pl pl 0
+        return ()
       f (F.ChangeTo name) = do
-        newTileId <- rndToAction $ Tile.changeTo cotile name
-        let adj = (Kind.// [(dloc, newTileId)])
-        modify (updateLevel (updateLMap adj))
+        state <- get
+        let hms = levelHeroList state ++ levelMonsterList state
+        case lvl `atI` dloc of
+          [] -> if unoccupied hms dloc
+                then do
+                  newTileId <- rndToAction $ Tile.changeTo cotile name
+                  let adj = (Kind.// [(dloc, newTileId)])
+                  modify (updateLevel (updateLMap adj))
+                else abortWith "blocked"  -- by monsters or heroes
+          _ : _ -> abortWith "jammed"  -- by items
       f _ = return ()
-  in mapM_ f $ TileKind.tfeature $ okind $ lvl `at` dloc
+  mapM_ f $ TileKind.tfeature $ okind $ lvl `at` dloc
 
 -- | Ask for a direction and alter a tile, if possible.
 playerTriggerTile :: F.Feature -> Action ()
@@ -366,7 +378,7 @@ actorOpenDoor actor dir = do
                  Tile.hasFeature cotile F.Openable t ||
                  Tile.hasFeature cotile F.Hidden t)
          then neverMind isVerbose  -- not doors at all
-         else triggerTile cotile lvl dloc
+         else triggerTile dloc
   advanceTime actor
 
 -- | Attempt a level switch to k levels shallower.
@@ -385,8 +397,8 @@ lvlAscend k = do
 
 -- | Attempt a level change via up level and down level keys.
 -- Will quit the game if the player leaves the dungeon.
-lvlGoUp :: Bool -> Action ()
-lvlGoUp isUp = do
+lvlChange :: F.Feature -> Action ()
+lvlChange feat = do
   cotile    <- contentf Kind.cotile
   cursor    <- gets scursor
   targeting <- gets (ctargeting . scursor)
@@ -396,13 +408,12 @@ lvlGoUp isUp = do
   st        <- get
   let loc = if targeting /= TgtOff then clocation cursor else bloc pbody
       tile = lvl `at` loc
-      k = if isUp then 1 else -1
-      sdir | Tile.hasFeature cotile (F.Cause Effect.Ascend) tile = Just 1
-           | Tile.hasFeature cotile (F.Cause Effect.Descend) tile = Just (-1)
-           | otherwise = Nothing
-  case sdir of
-    Just vdir | k == vdir -> -- stairs are in the right direction
-      if targeting /= TgtOff
+      k | feat == F.Cause Effect.Ascend = 1
+        | feat == F.Cause Effect.Descend = -1
+        | otherwise = assert `failure` feat
+  if targeting /= TgtOff
+    then
+      if Tile.hasFeature cotile feat tile  -- stairs, in the right direction
       then case whereTo st k of
         Nothing ->  -- we are at the "end" of the dungeon
           abortWith "cannot escape dungeon in targeting mode"
@@ -419,19 +430,12 @@ lvlGoUp isUp = do
                   in cur { clocation, clocLn = nln }
             modify (updateCursor upd)
             doLook
-      else do
-        effLvlvGoUp k
-        playerAdvanceTime
-    _ -> -- no stairs in the right direction
-      if targeting /= TgtOff
-      then do
+      else do  -- no stairs in the right direction
         lvlAscend k
         let upd cur = cur {clocLn = slid}
         modify (updateCursor upd)
         doLook
-      else
-        let txt = if isUp then "up" else "down"
-        in abortWith ("no stairs " ++ txt)
+    else bumpTile loc feat
 
 -- | Switches current hero to the next hero on the level, if any, wrapping.
 cycleHero :: Action ()
@@ -473,7 +477,7 @@ search = do
         let dloc = shift ploc mv
             t = lvlNew `at` dloc
         in if Tile.hasFeature cotile F.Hidden t && IM.notMember dloc leNew
-           then triggerTile cotile lvlNew dloc
+           then triggerTile dloc
            else return ()
   mapM_ triggerHidden (moves lxsize)
   playerAdvanceTime

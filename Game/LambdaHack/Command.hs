@@ -12,6 +12,7 @@ import Game.LambdaHack.Actions
 import Game.LambdaHack.ItemAction
 import Game.LambdaHack.Grammar
 import qualified Game.LambdaHack.Config as Config
+import qualified Game.LambdaHack.Effect as Effect
 import Game.LambdaHack.EffectAction
 import Game.LambdaHack.Keybindings
 import qualified Game.LambdaHack.Keys as K
@@ -64,8 +65,8 @@ cmdSemantics cmd = case cmd of
   Pickup ->    checkCursor pickupItem
   Drop ->      checkCursor dropItem
   Inventory -> inventory
-  Ascend ->    lvlGoUp True
-  Descend ->   lvlGoUp False
+  Ascend ->    lvlChange (F.Cause Effect.Ascend)
+  Descend ->   lvlChange (F.Cause Effect.Descend)
   TgtFloor ->  checkCursor $ targetFloor   TgtPlayer
   TgtEnemy ->  checkCursor $ targetMonster TgtPlayer
   GameSave ->  saveGame
