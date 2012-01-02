@@ -77,8 +77,8 @@ Below are the basic default keys form common commands.
                o      open a door
                q      quaff a potion
                r      read a scroll
-               z      zap a wand
                t      throw a weapon
+               z      zap a wand
 
 Searching for secret doors and opening closed doors can be done
 by bumping into a wall and bumping into a door, respectively.
@@ -97,6 +97,10 @@ less used commands.
                D      dump current configuration
                P      display previous messages
                V      display game version
+               [      target next shallower level
+               ]      target next deeper level
+               {      target 10 levels shallower
+               }      target 10 levels deeper
 
 There are also some debug and cheat keys. Use at your peril!
 

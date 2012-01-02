@@ -1,34 +1,55 @@
-; This is the default config file, included in the binary itself.
-; The game looks for the user config file in ~/.LambdaHack/config.
-; We restricts the config file format by insisting that
-; options are case-sensitive and permitting only ';' comments.
+; Config file for the bot:
+; DumbBot 42 20000000 | LambdaHack > /tmp/log
 
-; If you contribute to the game, please create directory ~/.LambdaHack/
-; as described in README.md. In this way, you will not accidentally
-; commit your private high scores (nor your save files) to the game
-; git repository.
+[commands]
+; All commands are defined here, except movement, hero selection and debug.
+;
+; Interaction with the dungeon.
+c: TriggerDir { verb = "close", object = "door", feature = Closable }
+less:    TriggerTile { verb = "ascend", object = "level", feature = Cause Ascend }
+greater: TriggerTile { verb = "descend", object = "level", feature = Cause Descend }
+Tab: HeroCycle
+;
+; Items.
+g: Pickup
+d: Drop
+i: Inventory
+q: Apply { verb = "quaff", object = "potion", syms = "!" }
+r: Apply { verb = "read", object = "scroll", syms = "?" }
+;
+; Saving or ending the game.
+X: GameSave
+Q: GameQuit
+;
+; Information for the player.
+P: History
+V: Version
+question: Help
+D: CfgDump
+;
+; General.
+period: Wait
+Escape: Cancel
+Return: Accept
 
 [dungeon]
-; fixed caves for the first levels, then randomly picked caves
+; Fixed caves for the first levels, then randomly picked caves.
 LambdaCave_1: caveRogue
 LambdaCave_2: caveRogue
 LambdaCave_3: caveEmpty
-LambdaCave_4: caveArena
-LambdaCave_5: caveNoise
+LambdaCave_10: caveNoise
 depth: 1000
 
 [engine]
 fovMode: digital
 ;fovMode: permissive
 ;fovMode: shadow
-fovRadius: 4
+fovRadius: 10
 ;startingRandomGenerator: 42
 ;dungeonRandomGenerator: 42
-;DumbBot 42 20000000 | LambdaHack > /tmp/log
 
-; paths to various game files; relative to ~/.LambdaHack/
-; (or analogous prefixes for other OSes, see getAppUserDataDirectory)
 [files]
+; Paths to various game files; relative to the save file directory.
 scoresFile: scores
 saveFile: save
 diaryFile : diary
@@ -44,42 +65,11 @@ baseHP: 1000000
 extraHeroes: 4
 firstDeathEnds: False
 
-[commands]
-; interaction with the dungeon
-c: TriggerDir { verb = "close", object = "door", feature = Closable }
-less:    TriggerTile { verb = "ascend", object = "level", feature = Cause Ascend }
-greater: TriggerTile { verb = "descend", object = "level", feature = Cause Descend }
-slash: TgtFloor
-asterisk: TgtEnemy
-Tab: HeroCycle
-;
-; items
-g: Pickup
-d: Drop
-i: Inventory
-q: Apply { verb = "quaff", object = "potion", syms = "!" }
-r: Apply { verb = "read", object = "scroll", syms = "?" }
-;
-; saving or ending the game
-X: GameSave
-Q: GameQuit
-;
-;information for the player
-P: History
-V: Version
-question: Help
-D: CfgDump
-;
-; general
-period: Wait
-Escape: Cancel
-Return: Accept
-
 [macros]
 ; This sections can be empty, but has to be there.
 ; TODO: the following does not work yet:
-; ; throw a dart at the closest monster
-; t: asterisk Return t Return
+;; throw a dart at the closest monster
+;t: asterisk Return t Return
 ; TODO: in gtk it could be implemented via unGetChan,
 ; unless we prefer an explicit command queue, with flushing, etc.
 ;
@@ -90,4 +80,4 @@ comma: g
 smellTimeout: 1000
 
 [ui]
-historyMax: 500
+historyMax: 5000
