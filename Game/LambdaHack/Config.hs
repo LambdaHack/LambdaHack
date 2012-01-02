@@ -1,5 +1,6 @@
 module Game.LambdaHack.Config
-  ( CP, defaultCP, config, getOption, getItems, get, getFile, set, dump
+  ( CP, defaultCP, config, getOption, getItems, get, getFile
+  , appDataDir, set, dump
   ) where
 
 import System.Directory

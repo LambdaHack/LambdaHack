@@ -146,14 +146,3 @@ If all heroes die, your score is halved and only the treasure carried
 by the last standing hero counts. You are free to start again
 from the first level of the dungeon, but all your wealth and items
 are gone and the dungeon and it's treasure look differently.
-
-
-Savegame directory
-------------------
-
-If you don't want LambdaHack to write to the current directory,
-create a personal savegame directory (on Linux it's ~/.LambdaHack/).
-and copy the scores file there. You may also want
-to copy the configuration file config.default to
-~/.LambdaHack/config and modify it, but be careful changing
-gameplay options --- this can easily unbalance or break the game.

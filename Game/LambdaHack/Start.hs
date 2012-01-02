@@ -1,6 +1,5 @@
 module Game.LambdaHack.Start ( start ) where
 
-import System.Directory
 import qualified System.Random as R
 import Control.Monad
 import qualified Control.Monad.State as MState
@@ -42,6 +41,20 @@ speedupCops scops@Kind.COps{cotile=sct} =
       cotile = sct {Kind.ospeedup}
   in scops {Kind.cotile}
 
+-- TODO: move somewhere sane, probably Config.hs
+-- Warning: this function changes the config file!
+getGen :: Config.CP -> String -> IO (R.StdGen, Config.CP)
+getGen config option =
+  case Config.getOption config "engine" option of
+    Just sg -> return (read sg, config)
+    Nothing -> do
+      -- Pick the randomly chosen dungeon generator from the IO monad
+      -- and record it in the config for debugging (can be 'D'umped).
+      g <- R.newStdGen
+      let gs = show g
+          c = Config.set config "engine" option gs
+      return (g, c)
+
 -- | Either restore a saved game, or setup a new game.
 start :: Kind.COps
       -> (Cmd -> Action ())
@@ -56,47 +69,19 @@ start scops cmdS cmdD frontendSession = do
       !macros = KB.macroKey section
       !keyb = stdKeybindings config macros cmdS cmdD
       sess = (frontendSession, cops, keyb)
-  -- check if we have a savegame
-  sf <- Save.saveFile config
-  sb <- doesFileExist sf
-  when sb $ do
-    Display.displayBlankConfirmD frontendSession "Restoring saved game"
-    return ()
-  restored <- Save.restoreGame config
+  restored <- Save.restoreGame config title
   case restored of
-    Right (msg', diary)  -> do
-      let msg = if sb then msg' else "Welcome to " ++ title ++ "!"
-      -- TODO: move somewhere sane
-      (dg, configD) <-
-        case Config.getOption config "engine" "dungeonRandomGenerator" of
-          Just sg ->
-            return (read sg, config)
-          Nothing -> do
-            -- Pick the randomly chosen dungeon generator from the IO monad
-            -- and record it in the config for debugging (can be 'D'umped).
-            g <- R.getStdGen
-            let gs = show g
-                c = Config.set config "engine" "dungeonRandomGenerator" gs
-            return (g, c)
+    Right (msg, diary) -> do  -- Starting a new game.
+      (dg, configD) <- getGen config "dungeonRandomGenerator"
+      (sg, sconfig) <- getGen configD "startingRandomGenerator"
       let ((ploc, lid, dng), ag) =
             MState.runState (generate cops configD) dg
           sflavour = MState.evalState (dungeonFlavourMap (Kind.coitem cops)) ag
-      (sg, sconfig) <-
-        case Config.getOption configD "engine" "startingRandomGenerator" of
-          Just sg ->
-            return (read sg, configD)
-          Nothing -> do
-            -- Pick the randomly chosen starting generator from the IO monad
-            -- and record it in the config for debugging (can be 'D'umped).
-            g <- R.getStdGen
-            let gs = show g
-                c = Config.set configD "engine" "startingRandomGenerator" gs
-            return (g, c)
-      let defState = defaultState dng lid ploc sg
+          defState = defaultState dng lid ploc sg
           state = defState{sconfig, sflavour}
           hstate = initialHeroes cops ploc state
       handlerToIO sess hstate diary{smsg = msg} handle
-    Left (state, diary) ->
+    Left (state, diary) ->  -- Running a restored a game.
       handlerToIO sess state
         diary{smsg = "Welcome back to " ++ title ++ "."}  -- TODO: save old msg?
         handle

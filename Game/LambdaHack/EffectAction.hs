@@ -181,9 +181,7 @@ effLvlvGoUp k = do
         -- Create a backup of the savegame.
         state <- get
         diary <- currentDiary
-        liftIO $ do
-          Save.saveGame state diary
-          Save.mvBkp (sconfig state)
+        liftIO $ Save.saveGameBkp state diary
         when (targeting /= TgtOff) doLook  -- TODO: lags behind perception
 
 -- | Hero has left the dungeon.

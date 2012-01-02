@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP #-}
 module Game.LambdaHack.Display
   ( FrontendSession, startup, shutdown, frontendName
-  , nextCommandD, displayBlankConfirmD, displayLevel, ColorMode(..)
+  , nextCommandD, displayLevel, ColorMode(..)
   ) where
 
 -- wrapper for selected Display frontend
@@ -49,15 +49,6 @@ nextCommandD :: FrontendSession -> IO K.Key
 nextCommandD fs = do
   e <- nextEvent fs
   return $ K.canonMoveKey e
-
--- | Displays a message on a blank screen. Waits for confirmation.
-displayBlankConfirmD :: FrontendSession -> String -> IO Bool
-displayBlankConfirmD fs txt = do
-  let x = txt ++ more
-      doBlank = const (Color.defaultAttr, ' ')
-      (lx, ly) = normalLevelBound  -- TODO: query terminal size instead
-  display (0, 0, lx, ly) (fst normalLevelBound + 1) fs doBlank x ""
-  getConfirmD fs
 
 -- | Waits for a space or return or escape. The last two act this way,
 -- to let keys that request information toggle display of the information off.
