@@ -6,6 +6,7 @@ import qualified Data.IntSet as IS
 import Data.Binary
 import qualified Game.LambdaHack.Config as Config
 import qualified System.Random as R
+import System.Time
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Geometry
@@ -16,13 +17,21 @@ import Game.LambdaHack.Item
 import Game.LambdaHack.Msg
 import Game.LambdaHack.WorldLoc
 
--- | The 'State' contains all the game state that has to be saved.
+-- | The diary contains all the player data that carries over from game to game.
+-- That includes the last message, previous messages and otherwise recorded
+-- history of past games. This can be used for calculating player
+-- achievements, unlocking advanced game features and general data mining.
+data Diary = Diary
+  { smsg         :: Msg
+  , shistory     :: [Msg]
+  }
+
+-- | The 'State' contains all the single game state that has to be saved.
 -- In practice, we maintain extra state, but that state is state
 -- accumulated during a turn or relevant only to the current session.
 data State = State
   { splayer      :: ActorId      -- ^ represents the player-controlled actor
   , scursor      :: Cursor       -- ^ cursor location and level to return to
-  , shistory     :: [Msg]
   , ssensory     :: SensoryMode
   , sdisplay     :: DisplayMode
   , stime        :: Time
@@ -54,12 +63,21 @@ data Cursor = Cursor
 slevel :: State -> Level
 slevel State{slid, sdungeon} = sdungeon Dungeon.! slid
 
+-- TODO: add date.
+defaultDiary :: IO Diary
+defaultDiary = do
+  curDate <- getClockTime
+  let time = calendarTimeToString $ toUTCTime $ curDate
+  return $ Diary
+    { smsg = ""
+    , shistory = ["Player diary started on " ++ time ++ "."]
+    }
+
 defaultState :: Dungeon.Dungeon -> LevelId -> Loc -> R.StdGen -> State
 defaultState dng lid ploc g =
   State
     (AHero 0)  -- hack: the hero is not yet alive
     (Cursor TgtOff lid ploc lid)
-    []
     Implicit Normal
     0
     M.empty
@@ -73,9 +91,6 @@ defaultState dng lid ploc g =
 
 updateCursor :: (Cursor -> Cursor) -> State -> State
 updateCursor f s = s { scursor = f (scursor s) }
-
-updateHistory :: ([String] -> [String]) -> State -> State
-updateHistory f s = s { shistory = f (shistory s) }
 
 updateTime :: (Time -> Time) -> State -> State
 updateTime f s = s { stime = f (stime s) }
@@ -100,12 +115,20 @@ toggleOmniscient s = s { sdisplay = if sdisplay s == Omniscient
                                     then Normal
                                     else Omniscient }
 
+instance Binary Diary where
+  put Diary{..} = do
+    put smsg
+    put shistory
+  get = do
+    smsg     <- get
+    shistory <- get
+    return Diary{..}
+
 instance Binary State where
-  put (State player cursor hst sense disp time flav disco dng lid ct
+  put (State player cursor sense disp time flav disco dng lid ct
        party g config) = do
     put player
     put cursor
-    put hst
     put sense
     put disp
     put time
@@ -120,7 +143,6 @@ instance Binary State where
   get = do
     player <- get
     cursor <- get
-    hst    <- get
     sense  <- get
     disp   <- get
     time   <- get
@@ -133,7 +155,7 @@ instance Binary State where
     g      <- get
     config <- get
     return
-      (State player cursor hst sense disp time flav disco dng lid ct
+      (State player cursor sense disp time flav disco dng lid ct
        party (read g) config)
 
 instance Binary Cursor where

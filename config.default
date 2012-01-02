@@ -29,7 +29,7 @@ fovRadius: 10
 [files]
 scoresFile: scores
 saveFile: save
-playerFile : player
+diaryFile : diary
 
 [heroes]
 HeroName_0: you
@@ -95,4 +95,4 @@ comma: g
 smellTimeout: 1000
 
 [ui]
-historyMax: 500
+historyMax: 5000

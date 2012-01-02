@@ -31,7 +31,7 @@ fovRadius: 4
 [files]
 scoresFile: scores
 saveFile: save
-playerFile : player
+diaryFile : diary
 
 [heroes]
 HeroName_0: you

@@ -180,8 +180,9 @@ effLvlvGoUp k = do
         -- The invariant "at most one actor on a tile" restored.
         -- Create a backup of the savegame.
         state <- get
+        diary <- currentDiary
         liftIO $ do
-          Save.saveGame state
+          Save.saveGame state diary
           Save.mvBkp (sconfig state)
         when (targeting /= TgtOff) doLook  -- TODO: lags behind perception
 
@@ -400,8 +401,10 @@ history = do
   let historyMax = Config.get config "ui" "historyMax"
       -- TODO: not ideal, continuations of sentences are atop beginnings.
       splitS = splitMsg (fst normalLevelBound + 1) (msg ++ " ")
-  unless (L.null msg) $
-    modify (updateHistory (take historyMax . (L.reverse splitS ++)))
+      takeMax diary = take historyMax $ L.reverse splitS ++ shistory diary
+  unless (L.null msg) $ do
+    diary <- currentDiary
+    diaryReset $ diary {shistory = takeMax diary}
 
 -- | Perform look around in the current location of the cursor.
 -- TODO: depending on tgt, show extra info about tile or monster or both

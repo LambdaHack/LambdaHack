@@ -44,8 +44,8 @@ import Game.LambdaHack.Keybindings
 
 displayHistory :: Action ()
 displayHistory = do
-  hst <- gets shistory
-  msgOverlayConfirm "" (unlines hst)
+  diary <- currentDiary
+  msgOverlayConfirm ""  $ unlines $ shistory diary
   abort
 
 dumpConfig :: Action ()
@@ -63,7 +63,8 @@ saveGame = do
       -- Save the game state
       cops <- contentf Kind.coitem
       state <- get
-      liftIO $ Save.saveGame state
+      diary <- currentDiary
+      liftIO $ Save.saveGame state diary
       ln <- gets slid
       let total = calculateTotal cops state
           status = H.Camping ln

@@ -28,13 +28,13 @@ type Session =
 newtype Action a = Action
   { runAction ::
       forall r .
-      Session                         -- ^ session setup data
-      -> IO r                         -- ^ shutdown cont
-      -> Perceptions                  -- ^ cached perception
-      -> (State -> Msg -> a -> IO r)  -- ^ continuation
-      -> IO r                         -- ^ failure/reset cont
-      -> State                        -- ^ current state
-      -> Msg                          -- ^ current message
+      Session                           -- ^ session setup data
+      -> (State -> Diary -> IO r)       -- ^ shutdown cont
+      -> Perceptions                    -- ^ cached perception
+      -> (State -> Diary -> a -> IO r)  -- ^ continuation
+      -> IO r                           -- ^ failure/reset cont
+      -> State                          -- ^ current state
+      -> Diary                          -- ^ current diary
       -> IO r
   }
 
@@ -64,16 +64,17 @@ instance MonadState State Action where
   put nst = Action (\ _s _e _p k _a _st ms -> k nst ms ())
 
 -- | Exported function to run the monad.
-handlerToIO :: Session -> State -> Msg -> Action () -> IO ()
-handlerToIO sess@(fs, cops, _) state msg h =
+handlerToIO :: Session -> State -> Diary -> Action () -> IO ()
+handlerToIO sess@(fs, cops, _) state diary h =
   runAction h
     sess
-    (Save.rmBkp (sconfig state) >> shutdown fs)  -- get out of the game
+    (\ ns ndiary -> Save.rmBkpSaveDiary ns ndiary
+                 >> shutdown fs)  -- get out of the game
     (perception cops state)  -- create and cache perception
     (\ _ _ x -> return x)    -- final continuation returns result
     (ioError $ userError "unhandled abort")
     state
-    msg
+    diary
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: Rnd a -> Action a
@@ -92,10 +93,10 @@ sessionIO :: (Session -> IO a) -> Action a
 sessionIO f = Action (\ s _e _p k _a st ms -> f s >>= k st ms)
 
 -- | Display the current level with modified current msg.
-displayGeneric :: ColorMode -> (String -> String) -> Action Bool
+displayGeneric :: ColorMode -> (Msg -> Msg) -> Action Bool
 displayGeneric dm f =
   Action (\ (fs, cops, _) _e p k _a st ms ->
-           displayLevel dm fs cops p st (f ms) Nothing
+           displayLevel dm fs cops p st (f (smsg ms)) Nothing
            >>= k st ms)
 
 -- | Display the current level, with the current msg and color. Most common.
@@ -106,24 +107,33 @@ displayAll = displayGeneric ColorFull id
 overlay :: String -> Action Bool
 overlay txt =
   Action (\ (fs, cops, _) _e p k _a st ms ->
-           displayLevel ColorFull fs cops p st ms (Just txt)
+           displayLevel ColorFull fs cops p st (smsg ms) (Just txt)
            >>= k st ms)
 
--- | Wipe out and set a new value for the current msg.
-msgReset :: Msg -> Action ()
-msgReset nm = Action (\ _s _e _p k _a st _ms -> k st nm ())
+-- | Get the current diary.
+currentDiary :: Action Diary
+currentDiary = Action (\ _s _e _p k _a st diary -> k st diary diary)
 
--- | Add to the current msg.
-msgAdd :: Msg -> Action ()
-msgAdd nm = Action (\ _s _e _p k _a st ms -> k st (addMsg ms nm) ())
-
--- | Clear the current msg.
-msgClear :: Action ()
-msgClear = Action (\ _s _e _p k _a st _ms -> k st "" ())
+-- | Wipe out and set a new value for the current diary.
+diaryReset :: Diary -> Action ()
+diaryReset ndiary = Action (\ _s _e _p k _a st _diary -> k st ndiary ())
 
 -- | Get the current msg.
 currentMsg :: Action Msg
-currentMsg = Action (\ _s _e _p k _a st ms -> k st ms ms)
+currentMsg = Action (\ _s _e _p k _a st ms -> k st ms (smsg ms))
+
+-- | Wipe out and set a new value for the current msg.
+msgReset :: Msg -> Action ()
+msgReset nm = Action (\ _s _e _p k _a st ms -> k st ms{smsg = nm} ())
+
+-- | Add to the current msg.
+msgAdd :: Msg -> Action ()
+msgAdd nm = Action (\ _s _e _p k _a st ms ->
+                     k st ms{smsg = addMsg (smsg ms) nm} ())
+
+-- | Clear the current msg.
+msgClear :: Action ()
+msgClear = Action (\ _s _e _p k _a st ms -> k st ms{smsg = ""} ())
 
 -- | Get the content ops.
 contentOps :: Action Kind.COps
@@ -135,7 +145,7 @@ contentf f = Action (\ (_, cops, _) _e _p k _a st ms -> k st ms (f cops))
 
 -- | End the game, i.e., invoke the shutdown continuation.
 end :: Action ()
-end = Action (\ _s e _p _k _a _st _ms -> e)
+end = Action (\ _s e _p _k _a s diary -> e s diary)
 
 -- | Reset the state and resume from the last backup point, i.e., invoke
 -- the failure continuation.

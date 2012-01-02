@@ -2,6 +2,7 @@ module Game.LambdaHack.Start ( start ) where
 
 import System.Directory
 import qualified System.Random as R
+import Control.Monad
 import qualified Control.Monad.State as MState
 import qualified Data.Array.Unboxed as A
 
@@ -56,14 +57,15 @@ start scops cmdS cmdD frontendSession = do
       !keyb = stdKeybindings config macros cmdS cmdD
       sess = (frontendSession, cops, keyb)
   -- check if we have a savegame
-  f <- Save.saveFile config
-  b <- doesFileExist f
-  restored <- if b
-              then do Display.displayBlankConfirmD frontendSession "Restoring save game"
-                      Save.restoreGame config
-              else return $ Right $ "Welcome to " ++ title ++ "!"  -- new game
+  sf <- Save.saveFile config
+  sb <- doesFileExist sf
+  when sb $ do
+    Display.displayBlankConfirmD frontendSession "Restoring saved game"
+    return ()
+  restored <- Save.restoreGame config
   case restored of
-    Right msg  -> do
+    Right (msg', diary)  -> do
+      let msg = if sb then msg' else "Welcome to " ++ title ++ "!"
       -- TODO: move somewhere sane
       (dg, configD) <-
         case Config.getOption config "engine" "dungeonRandomGenerator" of
@@ -93,6 +95,8 @@ start scops cmdS cmdD frontendSession = do
       let defState = defaultState dng lid ploc sg
           state = defState{sconfig, sflavour}
           hstate = initialHeroes cops ploc state
-      handlerToIO sess hstate msg handle
-    Left state ->
-      handlerToIO sess state ("Welcome back to " ++ title ++ ".") handle
+      handlerToIO sess hstate diary{smsg = msg} handle
+    Left (state, diary) ->
+      handlerToIO sess state
+        diary{smsg = "Welcome back to " ++ title ++ "."}  -- TODO: save old msg?
+        handle
