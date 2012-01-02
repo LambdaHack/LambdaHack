@@ -3,6 +3,7 @@ module Game.LambdaHack.EffectAction where
 import Control.Monad
 import Control.Monad.State hiding (State, state)
 import Data.Function
+import Data.Version
 import qualified Data.List as L
 import qualified Data.IntMap as IM
 import qualified Data.Set as S
@@ -15,6 +16,7 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.ActorAdd
 import Game.LambdaHack.Display
 import Game.LambdaHack.Grammar
@@ -441,3 +443,10 @@ doLook = do
       displayItems lookMsg False is
       session getConfirm
       msgAdd ""
+
+gameVersion :: Action ()
+gameVersion = do
+  Kind.COps{corule=Kind.Ops{okind, ouniqName}} <- contentOps
+  let pathsVersion = rpathsVersion $ okind $ ouniqName "standard game ruleset"
+      msg = showVersion pathsVersion ++ " (" ++ frontendName ++ " frontend)"
+  abortWith msg

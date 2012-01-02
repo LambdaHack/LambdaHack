@@ -1,5 +1,8 @@
 module Content.RuleKind ( cdefs ) where
 
+-- Cabal
+import qualified Paths_LambdaHack as Self (getDataFileName, version)
+
 import Game.LambdaHack.Dir
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
@@ -31,4 +34,6 @@ standard = RuleKind
                F.Closable `elem` tfeature tgt)
               && diagonal lxsize (towards lxsize sloc tloc))
   , rtitle            = "LambdaHack"
+  , rpathsDataFile    = Self.getDataFileName
+  , rpathsVersion     = Self.version
   }

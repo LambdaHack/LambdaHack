@@ -64,12 +64,13 @@ start :: Kind.COps
 start scops cmdS cmdD frontendSession = do
   let cops@Kind.COps{corule=Kind.Ops{okind, ouniqName}} = speedupCops scops
       title = rtitle $ okind $ ouniqName "standard game ruleset"
+      pathsDataFile = rpathsDataFile $ okind $ ouniqName "standard game ruleset"
   config <- Config.config
   let section = Config.getItems config "macros"
       !macros = KB.macroKey section
       !keyb = stdKeybindings config macros cmdS cmdD
       sess = (frontendSession, cops, keyb)
-  restored <- Save.restoreGame config title
+  restored <- Save.restoreGame pathsDataFile config title
   case restored of
     Right (msg, diary) -> do  -- Starting a new game.
       (dg, configD) <- getGen config "dungeonRandomGenerator"

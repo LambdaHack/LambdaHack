@@ -18,7 +18,6 @@ import qualified Game.LambdaHack.Keys as K
 import Game.LambdaHack.Level
 import Game.LambdaHack.Actor
 import Game.LambdaHack.State
-import Game.LambdaHack.Version
 import Game.LambdaHack.Dir
 import qualified Game.LambdaHack.Feature as F
 
@@ -75,7 +74,7 @@ cmdSemantics cmd = case cmd of
   History ->   displayHistory
   CfgDump ->   dumpConfig
   HeroCycle -> cycleHero
-  Version ->   abortWith version
+  Version ->   gameVersion
   Help ->      displayHelp
   Wait ->      playerAdvanceTime
 
