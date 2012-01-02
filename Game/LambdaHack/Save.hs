@@ -3,8 +3,12 @@ module Game.LambdaHack.Save
   ) where
 
 import System.Directory
+import System.FilePath
 import qualified Control.Exception as E hiding (handle)
 import Control.Monad
+
+-- Cabal
+import qualified Paths_LambdaHack as Self (getDataFileName)
 
 import Game.LambdaHack.Utils.File
 import Game.LambdaHack.State
@@ -46,6 +50,20 @@ tryCreateDir dir =
     (createDirectory dir)
     (\ e -> case e :: E.IOException of _ -> return ())
 
+-- | Try to copy over data files. Hide errors due to,
+-- e.g., insufficient permissions, because the game can run
+-- without data files just as well.
+tryCopyDataFiles :: FilePath -> IO ()
+tryCopyDataFiles dirNew = do
+  configFile <- Self.getDataFileName "config.default"
+  scoresFile <- Self.getDataFileName "scores"
+  let configNew = combine dirNew "config"
+      scoresNew = combine dirNew "scores"
+--  E.catch
+  (do copyFile configFile configNew
+      copyFile scoresFile scoresNew)
+--    (\ e -> case e :: E.IOException of _ -> return ())
+
 -- | Restore a saved game, if it exists. Initialize directory structure,
 -- if needed.
 restoreGame :: Config.CP -> String -> IO (Either (State, Diary) (String, Diary))
@@ -54,6 +72,8 @@ restoreGame config title = do
   ab <- doesDirectoryExist appData
   -- If the directory can't be created, the current directory will be used.
   unless ab $ tryCreateDir appData
+  -- Possibly copy over data files. No problem if it fails.
+  tryCopyDataFiles appData
   -- If the diary file does not exist, create an empty diary.
   diary <-
     do dfile <- diaryFile config
