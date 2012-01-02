@@ -7,6 +7,7 @@ import qualified Data.List as L
 import qualified Data.IntMap as IM
 import qualified Data.Set as S
 import qualified Data.IntSet as IS
+import Data.Maybe
 import System.Time
 
 import Game.LambdaHack.Utils.Assert

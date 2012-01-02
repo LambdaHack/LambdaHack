@@ -39,7 +39,7 @@ data State = State
 
 data TgtMode =
     TgtOff     -- ^ not in targeting mode
-  | TgtPlayer  -- ^ the player requested targetting mode explicitly
+  | TgtPlayer  -- ^ the player requested targeting mode explicitly
   | TgtAuto    -- ^ the mode was entered (and will be exited) automatically
   deriving (Show, Eq)
 

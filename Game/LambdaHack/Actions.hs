@@ -387,15 +387,8 @@ actorOpenDoor actor dir = do
          else triggerTile dloc
   advanceTime actor
 
--- | Attempt a level change via up level and down level keys.
--- Will quit the game if the player leaves the dungeon.
-lvlChange :: F.Feature -> Action ()
-lvlChange feat = do
-  loc <- gets (bloc . getPlayerBody)
-  bumpTile loc feat
-
--- | Change the displayed level in targetting mode to (at most)
--- k levels shallower.
+-- | Change the displayed level in targeting mode to (at most)
+-- k levels shallower. Enters targeting mode, if no already in one.
 tgtAscend :: Int -> Action ()
 tgtAscend k = do
   cotile    <- contentf Kind.cotile
@@ -404,17 +397,16 @@ tgtAscend k = do
   slid      <- gets slid
   lvl       <- gets slevel
   st        <- get
-  config <- gets sconfig
+  config    <- gets sconfig
   let loc = clocation cursor
       tile = lvl `at` loc
       rightStairs =
         k ==  1 && Tile.hasFeature cotile (F.Cause Effect.Ascend)  tile ||
         k == -1 && Tile.hasFeature cotile (F.Cause Effect.Descend) tile
-  assert (targeting /= TgtOff) $ do
-    if rightStairs  -- stairs, in the right direction
+  if rightStairs  -- stairs, in the right direction
     then case whereTo st k of
       Nothing ->  -- we are at the "end" of the dungeon
-        abortWith "cannot escape dungeon in targeting mode"
+        abortWith "no more levels in this direction"
       Just (nln, nloc) ->
         assert (nln /= slid `blame` (nln, "stairs looped")) $ do
           modify (\ state -> state {slid = nln})
@@ -427,16 +419,18 @@ tgtAscend k = do
                       else nloc
                 in cur { clocation, clocLn = nln }
           modify (updateCursor upd)
-          doLook
     else do  -- no stairs in the right direction
       let n = levelNumber slid
           depth = Config.get config "dungeon" "depth"
-          nln = max depth $ min 1 $ n - k
-      when (nln == n) $ abortWith "no more levels in this direction"
-      modify (\ state -> state {slid = (LambdaCave nln)})
-      let upd cur = cur {clocLn = slid}
+          nln = LambdaCave $ min depth $ max 1 $ n - k
+      when (nln == slid) $ abortWith "no more levels in this direction"
+      modify (\ state -> state {slid = nln})
+      let upd cur = cur {clocLn = nln}
       modify (updateCursor upd)
-      doLook
+  when (targeting == TgtOff) $ do
+    let upd cur = cur {ctargeting = TgtPlayer}
+    modify (updateCursor upd)
+  doLook
 
 -- | Switches current hero to the next hero on the level, if any, wrapping.
 cycleHero :: Action ()

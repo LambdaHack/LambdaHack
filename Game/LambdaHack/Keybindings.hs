@@ -27,6 +27,7 @@ handleKey lxsize kb k abortWith=
         Just c  -> caction c
         Nothing -> abortWith $ "unknown command (" ++ K.showKey k ++ ")"
 
+-- TODO: mark commands that behave differently in targeting mode with "*"
 keyHelp :: (K.Key -> [K.Key]) -> Keybindings a -> String
 keyHelp aliases kb =
   let

@@ -204,9 +204,9 @@ targetFloor tgtMode = do
 -- | Set, activate and display cursor information.
 setCursor :: TgtMode -> Action ()
 setCursor tgtMode = assert (tgtMode /= TgtOff) $ do
-  state <- get
-  per   <- currentPerception
-  ploc  <- gets (bloc . getPlayerBody)
+  state  <- get
+  per    <- currentPerception
+  ploc   <- gets (bloc . getPlayerBody)
   clocLn <- gets slid
   let upd cursor =
         let clocation = fromMaybe ploc (targetToLoc (totalVisible per) state)

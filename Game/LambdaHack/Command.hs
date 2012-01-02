@@ -32,6 +32,7 @@ data Cmd =
   | Inventory
   | TgtFloor
   | TgtEnemy
+  | TgtAscend Int
   | GameSave
   | GameQuit
   | Cancel
@@ -66,6 +67,7 @@ cmdSemantics cmd = case cmd of
   Inventory -> inventory
   TgtFloor ->  checkCursor $ targetFloor   TgtPlayer
   TgtEnemy ->  checkCursor $ targetMonster TgtPlayer
+  TgtAscend k -> tgtAscend k
   GameSave ->  saveGame
   GameQuit ->  quitGame
   Cancel ->    cancelCurrent
@@ -88,6 +90,11 @@ cmdDescription cmd = case cmd of
   Inventory -> Just "display inventory"
   TgtFloor ->  Just "target location"
   TgtEnemy ->  Just "target monster"
+  TgtAscend k | k == 1  -> Just $ "target next shallower level"
+  TgtAscend k | k >= 2  -> Just $ "target " ++ show k    ++ " levels shallower"
+  TgtAscend k | k == -1 -> Just $ "target next deeper level"
+  TgtAscend k | k <= -2 -> Just $ "target " ++ show (-k) ++ " levels deeper"
+  TgtAscend _ -> error $ "void level change in targeting mode in config file"
   GameSave ->  Just "save and exit the game"
   GameQuit ->  Just "quit without saving"
   Cancel ->    Just "cancel action"

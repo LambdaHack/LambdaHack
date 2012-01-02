@@ -46,8 +46,8 @@ keyTranslate e =
     -- For bots: (assuming they go from '0' to 'z').
     '<'    -> K.Char 'q'  -- ban ascending to speed up descending
     '>'    -> K.Char 'r'
-    '*'    -> K.Char 'g'  -- targetting is too hard
-    '/'    -> K.Char 'c'  -- targetting is too hard
+    '*'    -> K.Char 'g'  -- targeting is too hard
+    '/'    -> K.Char 'c'  -- targeting is too hard
     'c'    -> K.Char 'c'
     'g'    -> K.Char 'g'
     'd'    -> K.Char 'g'  -- don't let bots drop stuff
