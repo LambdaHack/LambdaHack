@@ -1,9 +1,9 @@
 {-# LANGUAGE CPP, QuasiQuotes #-}
-module Game.LambdaHack.ConfigDefault
+module ConfigDefault
   ( configDefault
   ) where
 
-import Game.LambdaHack.Utils.Multiline
+import Multiline
 
 -- Consider code.haskell.org/~dons/code/compiled-constants (dead link, BTW?)
 -- as soon as the config file grows very big.
@@ -17,11 +17,11 @@ configDefault = [multiline|
 
 #ifdef STD
 
-#include "../../config.bot"
+#include "../config.bot"
 
 #else
 
-#include "../../config.default"
+#include "../config.default"
 
 #endif
 

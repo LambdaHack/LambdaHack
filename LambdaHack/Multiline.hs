@@ -1,4 +1,4 @@
-module Game.LambdaHack.Utils.Multiline (multiline) where
+module Multiline (multiline) where
 
 import qualified Language.Haskell.TH as TH
 import qualified Language.Haskell.TH.Quote as TQ

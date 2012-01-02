@@ -11,6 +11,8 @@ import qualified Content.TileKind
 import qualified Game.LambdaHack.Start as Start
 import Game.LambdaHack.Command
 
+import qualified ConfigDefault
+
 cops :: Kind.COps
 cops = Kind.COps
   { coactor = Kind.createOps Content.ActorKind.cdefs
@@ -22,4 +24,6 @@ cops = Kind.COps
   }
 
 main :: IO ()
-main = Display.startup (Start.start cops cmdSemantics cmdDescription)
+main =
+  Display.startup $
+    Start.start cops ConfigDefault.configDefault cmdSemantics cmdDescription

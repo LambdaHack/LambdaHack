@@ -1,6 +1,5 @@
 module Game.LambdaHack.Config
-  ( CP, defaultCP, config, getOption, getItems, get, getFile
-  , appDataDir, set, dump
+  ( CP, mkConfig, getOption, getItems, get, getFile, appDataDir, set, dump
   ) where
 
 import System.Directory
@@ -11,16 +10,13 @@ import qualified Data.Binary as Binary
 import qualified Data.Char as Char
 import qualified Data.List as L
 
-import qualified Game.LambdaHack.ConfigDefault as ConfigDefault
-
 newtype CP = CP CF.ConfigParser
 
 instance Binary.Binary CP where
   put (CP conf) = Binary.put $ CF.to_string conf
   get = do
     string <- Binary.get
-    -- use config in case savegame is from older version and lacks some options
-    let c = CF.readstring defCF string
+    let c = CF.readstring CF.emptyCP string
     return $ toCP $ forceEither c
 
 instance Show CP where
@@ -34,17 +30,24 @@ forceEither (Right b) = b
 toSensitive :: CF.ConfigParser -> CF.ConfigParser
 toSensitive cp = cp {CF.optionxform = id}
 
--- | The default configuration taken from the default configuration file
--- included via CPP in ConfigDefault.hs.
-defCF :: CF.ConfigParser
-defCF = let c = CF.readstring CF.emptyCP ConfigDefault.configDefault
-        in toSensitive $ forceEither c
-
 toCP :: CF.ConfigParser -> CP
-toCP cp = CP $ toSensitive cp
+toCP cf = CP $ toSensitive cf
 
-defaultCP :: CP
-defaultCP = toCP defCF
+-- | The argument 'configDefault' is expected to be the default configuration
+-- taken from the default configuration file included via CPP
+-- in ConfigDefault.hs. It is overwritten completely by
+-- the configuration read from the user configuration file, if any.
+mkConfig :: String -> IO CP
+mkConfig configDefault = do
+  -- Evaluate, to catch config errors ASAP.
+  let !defCF = forceEither $ CF.readstring CF.emptyCP configDefault
+  cfile <- configFile
+  b <- doesFileExist cfile
+  if not b
+    then return $ toCP defCF
+    else do
+     c <- CF.readfile CF.emptyCP cfile
+     return $ toCP $ forceEither c
 
 appDataDir :: IO FilePath
 appDataDir = do
@@ -53,25 +56,10 @@ appDataDir = do
   getAppUserDataDirectory name
 
 -- | Path to the user configuration file.
-file :: IO FilePath
-file = do
+configFile :: IO FilePath
+configFile = do
   appData <- appDataDir
   return $ combine appData "config"
-
--- | The configuration read from the user configuration file.
--- The default configuration file provides underlying defaults
--- in case some options, or the whole file, are missing.
-config :: IO CP
-config =
-  -- evaluate, to catch config errors ASAP
-  defCF `seq` do
-    f <- file
-    b <- doesFileExist f
-    if not b
-      then return $ toCP defCF
-      else do
-        c <- CF.readfile CF.emptyCP f
-        return $ toCP $ forceEither c
 
 -- | A simplified access to an option in a given section,
 -- with simple error reporting (no error is caught and hidden).

@@ -57,15 +57,16 @@ getGen config option =
 
 -- | Either restore a saved game, or setup a new game.
 start :: Kind.COps
+      -> String
       -> (Cmd -> Action ())
       -> (Cmd -> Maybe String)
       -> Display.FrontendSession
       -> IO ()
-start scops cmdS cmdD frontendSession = do
+start scops configDefault cmdS cmdD frontendSession = do
   let cops@Kind.COps{corule=Kind.Ops{okind, ouniqName}} = speedupCops scops
       title = rtitle $ okind $ ouniqName "standard game ruleset"
       pathsDataFile = rpathsDataFile $ okind $ ouniqName "standard game ruleset"
-  config <- Config.config
+  config <- Config.mkConfig configDefault
   let section = Config.getItems config "macros"
       !macros = KB.macroKey section
       !keyb = stdKeybindings config macros cmdS cmdD
@@ -78,8 +79,7 @@ start scops cmdS cmdD frontendSession = do
       let ((ploc, lid, dng), ag) =
             MState.runState (generate cops configD) dg
           sflavour = MState.evalState (dungeonFlavourMap (Kind.coitem cops)) ag
-          defState = defaultState dng lid ploc sg
-          state = defState{sconfig, sflavour}
+          state = defaultState sconfig sflavour dng lid ploc sg
           hstate = initialHeroes cops ploc state
       handlerToIO sess hstate diary{smsg = msg} handle
     Left (state, diary) ->  -- Running a restored a game.

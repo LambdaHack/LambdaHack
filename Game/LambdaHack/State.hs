@@ -1,6 +1,5 @@
 module Game.LambdaHack.State where
 
-import qualified Data.Map as M
 import qualified Data.Set as S
 import qualified Data.IntSet as IS
 import Data.Binary
@@ -73,21 +72,22 @@ defaultDiary = do
     , shistory = ["Player diary started on " ++ time ++ "."]
     }
 
-defaultState :: Dungeon.Dungeon -> LevelId -> Loc -> R.StdGen -> State
-defaultState dng lid ploc g =
+defaultState :: Config.CP -> FlavourMap -> Dungeon.Dungeon -> LevelId
+             -> Loc -> R.StdGen -> State
+defaultState config flavour dng lid ploc g =
   State
     (AHero 0)  -- hack: the hero is not yet alive
     (Cursor TgtOff lid ploc lid)
     Implicit Normal
     0
-    M.empty
+    flavour
     S.empty
     dng
     lid
     (0, 0)
     IS.empty
     g
-    Config.defaultCP
+    config
 
 updateCursor :: (Cursor -> Cursor) -> State -> State
 updateCursor f s = s { scursor = f (scursor s) }
