@@ -28,7 +28,7 @@ data State = State
   , stime        :: Time
   , sflavour     :: FlavourMap   -- ^ association of flavour to items
   , sdisco       :: Discoveries  -- ^ items (kinds) that have been discovered
-  , sdungeon     :: Dungeon.Dungeon  -- ^ all but the current dungeon level
+  , sdungeon     :: Dungeon.Dungeon  -- ^ all dungeon levels
   , slid         :: LevelId
   , scounter     :: (Int, Int)   -- ^ stores next hero index and monster index
   , sparty       :: IS.IntSet    -- ^ heroes in the party

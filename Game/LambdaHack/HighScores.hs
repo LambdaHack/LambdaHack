@@ -81,20 +81,20 @@ empty :: ScoreTable
 empty = []
 
 -- | Name of the high scores file.
-file :: Config.CP -> IO String
-file config = Config.getFile config "files" "highScores"
+scoresFile :: Config.CP -> IO String
+scoresFile config = Config.getFile config "files" "scoresFile"
 
 -- | We save a simple serialized version of the high scores table.
 -- The 'False' is used only as an EOF marker.
 save :: Config.CP -> ScoreTable -> IO ()
 save config scores = do
-  f <- file config
+  f <- scoresFile config
   encodeEOF f scores
 
 -- | Read the high scores table. Return the empty table if no file.
 restore :: Config.CP -> IO ScoreTable
 restore config = do
-  f <- file config
+  f <- scoresFile config
   b <- doesFileExist f
   if not b
     then return []

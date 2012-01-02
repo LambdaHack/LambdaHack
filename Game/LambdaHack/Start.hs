@@ -56,7 +56,7 @@ start scops cmdS cmdD frontendSession = do
       !keyb = stdKeybindings config macros cmdS cmdD
       sess = (frontendSession, cops, keyb)
   -- check if we have a savegame
-  f <- Save.file config
+  f <- Save.saveFile config
   b <- doesFileExist f
   restored <- if b
               then do Display.displayBlankConfirmD frontendSession "Restoring save game"
