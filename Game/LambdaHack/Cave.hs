@@ -133,17 +133,16 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick, ofoldrWithKey}
             if not rd
               then return (M.insert (x, y) pickedCorTile l, le)
               else do
+                doorClosedId <- trigger cotile t
+                doorOpenId   <- trigger cotile doorClosedId
                 ro <- doorOpenChance cfg
                 if ro
                   then do
-                    doorClosedId <- trigger cotile t
-                    doorOpenId   <- trigger cotile doorClosedId
                     return (M.insert (x, y) doorOpenId l, le)
                   else do
                     rs <- doorSecretChance cfg
                     if not rs
                       then do
-                        doorClosedId <- trigger cotile t
                         return (M.insert (x, y) doorClosedId l, le)
                       else do
                         let getDice (F.Secret dice) _ = dice

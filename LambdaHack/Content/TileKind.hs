@@ -14,9 +14,9 @@ cdefs = Content.CDefs
   , getFreq = tfreq
   , validate = tvalidate
   , content =
-      [wall, wallV, wallH, pillar, doorOpen, doorClosed, doorSecret, doorOpenV, doorClosedV, doorSecretV, doorOpenH, doorClosedH, doorSecretH, stairsUp, stairsDown, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown]
+      [wall, pillar, wallV, doorSecretV, doorClosedV, doorOpenV, wallH, doorSecretH, doorClosedH, doorOpenH, stairsUp, stairsDown, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown]
   }
-wall,        wallV, wallH, pillar, doorOpen, doorClosed, doorSecret, doorOpenV, doorClosedV, doorSecretV, doorOpenH, doorClosedH, doorSecretH, stairsUp, stairsDown, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown :: TileKind
+wall,        pillar, wallV, doorSecretV, doorClosedV, doorOpenV, wallH, doorSecretH, doorClosedH, doorOpenH, stairsUp, stairsDown, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown :: TileKind
 
 wall = TileKind
   { tsymbol  = ' '
@@ -26,6 +26,14 @@ wall = TileKind
   , tfreq    = 100
   , tfeature = []
   }
+pillar = TileKind
+  { tsymbol  = 'O'
+  , tname    = "pillar"
+  , tcolor   = BrWhite
+  , tcolor2  = defFG
+  , tfreq    = 100
+  , tfeature = [Special]
+  }
 wallV = TileKind
   { tsymbol  = '|'
   , tname    = "wall"
@@ -33,6 +41,35 @@ wallV = TileKind
   , tcolor2  = defFG
   , tfreq    = 100
   , tfeature = [Special]
+  }
+doorSecretV = wallV
+  { tfeature = [ Hidden, Secret (Random.RollDice 7 2)
+               , ChangeTo "vertical closed door"
+               ]
+  }
+doorClosedV = TileKind
+  { tsymbol  = '+'
+  , tname    = "closed door"
+  , tcolor   = Yellow
+  , tcolor2  = BrBlack
+  , tfreq    = 100
+  , tfeature = [ Special  -- too hard to choose V or H a closed door for a room
+               , Exit, Openable
+               , ChangeTo "vertical open door"
+               , ChangeFrom "vertical closed door"
+               ]
+  }
+doorOpenV = TileKind
+  { tsymbol  = '-'
+  , tname    = "open door"
+  , tcolor   = Yellow
+  , tcolor2  = BrBlack
+  , tfreq    = 100
+  , tfeature = [ Special  -- to avoid mixing it up with horizontal wall in rooms
+               , Walkable, Clear, Exit, Closable
+               , ChangeTo "vertical closed door"
+               , ChangeFrom "vertical open door"
+               ]
   }
 wallH = TileKind
   { tsymbol  = '-'
@@ -42,73 +79,9 @@ wallH = TileKind
   , tfreq    = 100
   , tfeature = [Special]
   }
-pillar = TileKind
-  { tsymbol  = 'O'
-  , tname    = "pillar"
-  , tcolor   = BrWhite
-  , tcolor2  = defFG
-  , tfreq    = 100
-  , tfeature = [Special]
-  }
-doorOpen = TileKind
-  { tsymbol  = '\''
-  , tname    = "open door"
-  , tcolor   = Yellow
-  , tcolor2  = BrBlack
-  , tfreq    = 100
-  , tfeature = [ Walkable, Clear, Exit, Closable
-               , ChangeTo "closed door", ChangeFrom "open door"
-               ]
-  }
-doorClosed = TileKind
-  { tsymbol  = '+'
-  , tname    = "closed door"
-  , tcolor   = Yellow
-  , tcolor2  = BrBlack
-  , tfreq    = 100
-  , tfeature = [ Exit, Openable
-               , ChangeTo "open door", ChangeFrom "closed door"
-               ]
-  }
-doorSecret = wall
-  { tfeature = [Hidden, Secret (Random.RollDice 7 2), ChangeTo "closed door"]
-  }
-doorOpenV = TileKind
-  { tsymbol  = '-'
-  , tname    = "open door"
-  , tcolor   = Yellow
-  , tcolor2  = BrBlack
-  , tfreq    = 100
-  , tfeature = [ Special, Walkable, Clear, Exit, Closable
-               , ChangeTo "vertical closed door"
-               , ChangeFrom "vertical open door"
-               ]
-  }
-doorClosedV = TileKind
-  { tsymbol  = '+'
-  , tname    = "closed door"
-  , tcolor   = Yellow
-  , tcolor2  = BrBlack
-  , tfreq    = 100
-  , tfeature = [ Special, Exit, Openable
-               , ChangeTo "vertical open door"
-               , ChangeFrom "vertical closed door"
-               ]
-  }
-doorSecretV = wallV
-  { tfeature = [ Special, Hidden, Secret (Random.RollDice 7 2)
-               , ChangeTo "vertical closed door"
-               ]
-  }
-doorOpenH = TileKind
-  { tsymbol  = '|'
-  , tname    = "open door"
-  , tcolor   = Yellow
-  , tcolor2  = BrBlack
-  , tfreq    = 100
-  , tfeature = [ Special, Walkable, Clear, Exit, Closable
+doorSecretH = wallH
+  { tfeature = [ Hidden, Secret (Random.RollDice 7 2)
                , ChangeTo "horizontal closed door"
-               , ChangeFrom "horizontal open door"
                ]
   }
 doorClosedH = TileKind
@@ -117,14 +90,22 @@ doorClosedH = TileKind
   , tcolor   = Yellow
   , tcolor2  = BrBlack
   , tfreq    = 100
-  , tfeature = [ Special, Exit, Openable
+  , tfeature = [ Special  -- too hard to choose V or H a closed door for a room
+               , Exit, Openable
                , ChangeTo "horizontal open door"
                , ChangeFrom "horizontal closed door"
                ]
   }
-doorSecretH = wallH
-  { tfeature = [ Special, Hidden, Secret (Random.RollDice 7 2)
+doorOpenH = TileKind
+  { tsymbol  = '|'
+  , tname    = "open door"
+  , tcolor   = Yellow
+  , tcolor2  = BrBlack
+  , tfreq    = 100
+  , tfeature = [ Special  -- to avoid mixing it up with vertical wall in rooms
+               , Walkable, Clear, Exit, Closable
                , ChangeTo "horizontal closed door"
+               , ChangeFrom "horizontal open door"
                ]
   }
 stairsUp = TileKind
