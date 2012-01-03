@@ -6,8 +6,6 @@ import qualified Data.List as L
 import qualified Data.IntMap as IM
 import Data.Maybe
 import qualified Data.IntSet as IS
-import qualified Data.Map as M
-import qualified Data.Set as S
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
@@ -45,7 +43,7 @@ import Game.LambdaHack.Keybindings
 displayHistory :: Action ()
 displayHistory = do
   diary <- currentDiary
-  msgOverlayConfirm ""  $ unlines $ shistory diary
+  msgOverlaysConfirm "" [unlines $ shistory diary]
   abort
 
 dumpConfig :: Action ()
@@ -615,13 +613,6 @@ regenerateLevelHP = do
 -- | Display command help.
 displayHelp :: Action ()
 displayHelp = do
-  let disp (_, _, keyb@Keybindings{kmacro}) =
-        let coImage k =
-              let domain = M.keysSet kmacro
-              in if k `S.member` domain
-                 then []
-                 else k : [ from | (from, to) <- M.assocs kmacro, to == k ]
-            help = keyHelp coImage keyb
-        in msgOverlayConfirm "Basic keys:" help
+  let disp (_, _, keyb) = msgOverlaysConfirm "Basic keys:" [keyHelp keyb]
   session disp
   abort

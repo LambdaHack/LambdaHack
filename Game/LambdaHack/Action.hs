@@ -244,12 +244,7 @@ msgYesNo msg = do
   displayGeneric ColorBW id  -- turn player's attention to the choice
   session getYesNo
 
--- | Print a msg and an overlay, await confirmation. Return value
--- indicates if the player tried to abort/escape.
-msgOverlayConfirm :: Msg -> String -> Action Bool
-msgOverlayConfirm msg txt = msgOverlaysConfirm msg [txt]
-
--- | Prints several overlays, one per page, and awaits confirmation.
+-- | Prins a msg and several overlays, one per page, and awais confirmation.
 -- Return value indicates if the player tried to abort/escape.
 msgOverlaysConfirm :: Msg -> [String] -> Action Bool
 msgOverlaysConfirm _msg [] = do

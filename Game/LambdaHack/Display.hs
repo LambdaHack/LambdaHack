@@ -150,7 +150,7 @@ displayLevel dm fs cops per
             vis = IS.member loc0 visible
             rea = IS.member loc0 reachable
             bg0 = if ctargeting scursor /= TgtOff && loc0 == clocation scursor
-                  then Color.defFG     -- highlight targeting cursor
+                  then Color.defFG     -- highlight target cursor
                   else sVisBG vis rea  -- FOV debug
             reverseVideo = (snd Color.defaultAttr, fst Color.defaultAttr)
             optVisually (fg, bg) =

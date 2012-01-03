@@ -2,6 +2,7 @@ module Game.LambdaHack.Keybindings where
 
 import qualified Data.Map as M
 import qualified Data.List as L
+import qualified Data.Set as S
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Geometry
@@ -27,17 +28,19 @@ handleKey lxsize kb k abortWith=
         Just c  -> caction c
         Nothing -> abortWith $ "unknown command (" ++ K.showKey k ++ ")"
 
+coImage :: M.Map K.Key K.Key -> K.Key -> [K.Key]
+coImage kmacro k =
+  let domain = M.keysSet kmacro
+  in if k `S.member` domain
+     then []
+     else k : [ from | (from, to) <- M.assocs kmacro, to == k ]
+
 -- TODO: mark commands that behave differently in targeting mode with "*"
-keyHelp :: (K.Key -> [K.Key]) -> Keybindings a -> String
-keyHelp aliases kb =
+keyHelp ::  Keybindings a -> String
+keyHelp Keybindings{kother, kmacro} =
   let
-    fmt k h = replicate 15 ' ' ++ k ++ replicate ((13 - length k) `max` 1) ' '
-                               ++ h ++ replicate ((35 - length h) `max` 1) ' '
-    fmts s  = replicate 2  ' ' ++ s ++ replicate ((71 - length s) `max` 1) ' '
-    blank   = fmt "" ""
     movKs   =
-      [ ""
-      , "You move throughout the level using the numerical keypad or"
+      [ "You move throughout the level using the numerical keypad or"
       , "the vi text editor keys (also known as \"Rogue-like keys\")."
       , ""
       , "               7 8 9     y k u"
@@ -48,6 +51,7 @@ keyHelp aliases kb =
       , ""
       , "Shift and a movement key make the hero run in the indicated direction,"
       , "until anything of interest is spotted. '5' and '.' skip a turn."
+      , "In targeting mode, the keys move the target cursor."
       , ""
       , "To search, open or attack, bump into walls, doors or monsters."
       , ""
@@ -57,13 +61,17 @@ keyHelp aliases kb =
       , ""
       , ""
       ]
+    fmt k h = replicate 15 ' ' ++ k ++ replicate ((13 - length k) `max` 1) ' '
+                               ++ h ++ replicate ((35 - length h) `max` 1) ' '
+    fmts s  = replicate 2  ' ' ++ s ++ replicate ((71 - length s) `max` 1) ' '
+    blank   = fmt "" ""
     mov     = map fmts movKs
     keyC    = fmt "keys" "command"
 --    footer  =
 --      fmts "(To search, open or attack, bump into walls, doors or monsters.)"
-    disp k  = L.concatMap show $ aliases k
+    disp k  = L.concatMap show $ coImage kmacro k
     rest    = [ fmt (disp k) h
-              | (k, Described h _) <- M.toAscList (kother kb) ]
+              | (k, Described h _) <- M.toAscList kother ]
   in
     unlines ([blank] ++ mov ++ [blank, keyC] ++ rest)
 --             [blank, footer, blank])

@@ -62,7 +62,7 @@ until anything of interest is spotted. '5' and '.' skip a turn.
 numerical keypad may not work correctly depending on the versions
 of curses, terminfo and terminal emulators. Vi keys should work regardless.)
 
-Below are the basic default keys form common commands.
+Below are the basic default keys for common commands.
 
                key    command
                <      ascend a level
