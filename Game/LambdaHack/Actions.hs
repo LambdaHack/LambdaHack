@@ -613,6 +613,6 @@ regenerateLevelHP = do
 -- | Display command help.
 displayHelp :: Action ()
 displayHelp = do
-  let disp (_, _, keyb) = msgOverlaysConfirm "Basic keys:" [keyHelp keyb]
+  let disp (_, _, keyb) = msgOverlaysConfirm "Basic keys:" $ keyHelp keyb
   session disp
   abort

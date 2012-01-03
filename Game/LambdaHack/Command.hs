@@ -48,6 +48,20 @@ moveDirCommand, runDirCommand :: Described (Dir -> Action ())
 moveDirCommand   = Described "move in direction" move
 runDirCommand    = Described "run in direction"  (\ dir -> run (dir, 0))
 
+majorCmd :: Cmd -> Bool
+majorCmd cmd = case cmd of
+  Apply{}       -> True
+  Project{}     -> True
+  TriggerDir{}  -> True
+  TriggerTile{} -> True
+  Pickup        -> True
+  Drop          -> True
+  Inventory     -> True
+  GameSave      -> True
+  GameQuit      -> True
+  Help          -> True
+  _             -> False
+
 heroSelection :: [(K.Key, Described (Action ()))]
 heroSelection =
   let heroSelect k = (K.Char (Char.intToDigit k),
@@ -105,39 +119,48 @@ cmdDescription cmd = case cmd of
   Help ->      Just "display help"
   Wait ->      Nothing
 
-configCommands :: Config.CP
-               -> (Cmd -> Action ())
-               -> (Cmd -> Maybe String)
-               -> [(K.Key, Described (Action ()))]
-configCommands config cmdS cmdD =
+configCommands :: Config.CP -> [(K.Key, Cmd)]
+configCommands config =
   let section = Config.getItems config "commands"
       mkKey s =
         case K.keyTranslate s of
           K.Unknown _ -> assert `failure` ("unknown command key " ++ s)
           key -> key
-      mkDescribed s =
-        let cmd = read s :: Cmd
-        in case cmdD cmd of
+      mkCmd s = read s :: Cmd
+      mkCommand (key, def) = (mkKey key, mkCmd def)
+  in L.map mkCommand section
+
+semanticsCommands :: [(K.Key, Cmd)]
+                  -> (Cmd -> Action ())
+                  -> (Cmd -> Maybe String)
+                  -> [(K.Key, Described (Action ()))]
+semanticsCommands cmdList cmdS cmdD =
+  let mkDescribed cmd =
+        case cmdD cmd of
           Nothing -> Undescribed $ cmdS cmd
           Just d  -> Described d $ cmdS cmd
-      mkCommand (key, def) = (mkKey key, mkDescribed def)
-  in L.map mkCommand section
+      mkCommand (key, def) = (key, mkDescribed def)
+  in L.map mkCommand cmdList
 
 stdKeybindings :: Config.CP
                -> M.Map K.Key K.Key
                -> (Cmd -> Action ())
                -> (Cmd -> Maybe String)
                -> Keybindings (Action ())
-stdKeybindings config kmacro cmdS cmdD = Keybindings
+stdKeybindings config kmacro cmdS cmdD =
+  let cmdList = configCommands config
+      semList = semanticsCommands cmdList cmdS cmdD
+  in Keybindings
   { kdir   = moveDirCommand
   , kudir  = runDirCommand
   , kother = M.fromList $
              heroSelection ++
-             configCommands config cmdS cmdD ++
+             semList ++
              [ -- debug commands, TODO: access them from a common menu or prefix
                (K.Char 'R', Undescribed $ modify toggleVision),
                (K.Char 'O', Undescribed $ modify toggleOmniscient),
                (K.Char 'I', Undescribed $ gets (lmeta . slevel) >>= abortWith)
              ]
   , kmacro
+  , kmajor = L.map fst $ L.filter (majorCmd . snd) cmdList
   }

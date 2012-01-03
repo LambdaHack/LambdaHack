@@ -18,6 +18,7 @@ data Keybindings a = Keybindings
   , kudir  :: DirCommand a
   , kother :: M.Map K.Key (Described a)
   , kmacro :: M.Map K.Key K.Key
+  , kmajor :: [K.Key]
   }
 
 handleKey :: X -> Keybindings a -> K.Key -> (String -> a) -> a
@@ -36,8 +37,8 @@ coImage kmacro k =
      else k : [ from | (from, to) <- M.assocs kmacro, to == k ]
 
 -- TODO: mark commands that behave differently in targeting mode with "*"
-keyHelp ::  Keybindings a -> String
-keyHelp Keybindings{kother, kmacro} =
+keyHelp ::  Keybindings a -> [String]
+keyHelp Keybindings{kother, kmacro, kmajor} =
   let
     movKs   =
       [ "You move throughout the level using the numerical keypad or"
@@ -58,22 +59,25 @@ keyHelp Keybindings{kother, kmacro} =
       , "For more playing instructions see file PLAYING.md."
       , ""
       , "Press space to see the next page."
-      , ""
-      , ""
       ]
     fmt k h = replicate 15 ' ' ++ k ++ replicate ((13 - length k) `max` 1) ' '
                                ++ h ++ replicate ((35 - length h) `max` 1) ' '
     fmts s  = replicate 2  ' ' ++ s ++ replicate ((71 - length s) `max` 1) ' '
     blank   = fmt "" ""
     mov     = map fmts movKs
-    keyC    = fmt "keys" "command"
+    keyCaption = fmt "keys" "command"
 --    footer  =
 --      fmts "(To search, open or attack, bump into walls, doors or monsters.)"
     disp k  = L.concatMap show $ coImage kmacro k
-    rest    = [ fmt (disp k) h
-              | (k, Described h _) <- M.toAscList kother ]
+    keys l  = [ fmt (disp k) h | (k, Described h _) <- l ]
+    keysAll = M.toAscList kother
+    keysMajor = keys [ (k, c) | (k, c) <- keysAll, k `L.elem` kmajor]
+    keysMinor = keys [ (k, c) | (k, c) <- keysAll, k `L.notElem` kmajor]
   in
-    unlines ([blank] ++ mov ++ [blank, keyC] ++ rest)
+    L.map unlines [ [blank] ++ mov ++ [blank]
+                  , [blank, keyCaption] ++ keysMajor ++ [blank]
+                  , [blank, keyCaption] ++ keysMinor ++ [blank]
+                  ]
 --             [blank, footer, blank])
 
 -- | Maps a key to the canonical key for the command it denotes.

@@ -91,7 +91,6 @@ less used commands.
                ESC    cancel action
                RET    accept choice
                TAB    cycle among heroes on level
-               0--9   select a hero anywhere in the dungeon (gtk only)
                *      target monster
                /      target location
                D      dump current configuration
@@ -101,6 +100,7 @@ less used commands.
                ]      target next deeper level
                {      target 10 levels shallower
                }      target 10 levels deeper
+               0--9   select a hero anywhere in the dungeon (gtk only)
 
 There are also some debug and cheat keys. Use at your peril!
 
