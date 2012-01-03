@@ -164,17 +164,19 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick, ofoldrWithKey}
 
 olegend :: Kind.Ops TileKind -> Rnd (M.Map Char (Kind.Id TileKind))
 olegend Kind.Ops{ofoldrWithKey, opick} =
-  let getSymbols _ tk acc =
-        if tfreq tk > 0
-        then S.insert (tsymbol tk) acc
-        else acc
+  let excluded tk =
+        tfreq tk <= 0  -- too rare
+        || Tile.kindHasFeature F.Hidden tk   -- too secret
+        || Tile.kindHasFeature F.Special tk  -- too hard, because exits need to
+           && Tile.kindHasFeature F.Exit tk  -- agree with surrounding terrain
+      getSymbols _ tk acc =
+        if excluded tk
+        then acc
+        else S.insert (tsymbol tk) acc
       symbols = ofoldrWithKey getSymbols S.empty
       getLegend s acc = do
         m <- acc
-        tk <- opick (\ k -> tsymbol k == s
-                            && not (Tile.kindHasFeature F.Hidden k
-                                    || Tile.kindHasFeature F.Special k
-                                       && Tile.kindHasFeature F.Exit k))
+        tk <- opick (\ k -> tsymbol k == s && not (excluded k))
         return $ M.insert s tk m
       legend = S.fold getLegend (return M.empty) symbols
   in legend
