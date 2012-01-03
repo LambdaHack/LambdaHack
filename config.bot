@@ -6,8 +6,15 @@
 ;
 ; Interaction with the dungeon.
 c: TriggerDir { verb = "close", object = "door", feature = Closable }
+o: TriggerDir { verb = "open", object = "door", feature = Openable }
 less:    TriggerTile { verb = "ascend", object = "level", feature = Cause Ascend }
 greater: TriggerTile { verb = "descend", object = "level", feature = Cause Descend }
+bracketleft:  TgtAscend 1
+bracketright: TgtAscend (-1)
+braceleft:    TgtAscend 10
+braceright:   TgtAscend (-10)
+slash: TgtFloor
+asterisk: TgtEnemy
 Tab: HeroCycle
 ;
 ; Items.
@@ -16,6 +23,8 @@ d: Drop
 i: Inventory
 q: Apply { verb = "quaff", object = "potion", syms = "!" }
 r: Apply { verb = "read", object = "scroll", syms = "?" }
+z: Project { verb = "zap", object = "wand", syms = "/" }
+t: Project { verb = "throw", object = "dart", syms = "|" }
 ;
 ; Saving or ending the game.
 X: GameSave

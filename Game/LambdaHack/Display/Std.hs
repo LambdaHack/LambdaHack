@@ -38,39 +38,44 @@ display (x0, y0, x1, y1) _width _session f msg status =
 keyTranslate :: Char -> K.Key
 keyTranslate e =
   case e of
-    -- For human players: translate some special keys (use vi keys to move).
+    -- Translate some special keys (use vi keys to move).
     '\ESC' -> K.Esc
     '\n'   -> K.Return
     '\r'   -> K.Return
     '\t'   -> K.Tab
-    -- For bots: (assuming they go from '0' to 'z').
+    --  For bots: disable purely UI commands.
+    'P'    -> K.Char 'U'
+    'V'    -> K.Char 'Y'
+    'O'    -> K.Char 'J'
+    'I'    -> K.Char 'L'
+    'R'    -> K.Char 'K'
+    '?'    -> K.Char 'N'
+    -- For bots: don't let them give up, write files, procrastinate.
+    'Q'    -> K.Char 'H'
+    'X'    -> K.Char 'B'
+    'D'    -> K.Return
+    '.'    -> K.Return
+    -- For bots (assuming they go from '0' to 'z'): major commands.
     '<'    -> K.Char 'q'  -- ban ascending to speed up descending
-    '>'    -> K.Char 'r'
-    '*'    -> K.Char 'g'  -- targeting is too hard
-    '/'    -> K.Char 'c'  -- targeting is too hard
+    '>'    -> K.Char '>'
     'c'    -> K.Char 'c'
+    'd'    -> K.Char 'r'  -- don't let bots drop stuff
     'g'    -> K.Char 'g'
-    'd'    -> K.Char 'g'  -- don't let bots drop stuff
     'i'    -> K.Char 'i'
+    'o'    -> K.Char 'o'
     'q'    -> K.Char 'q'
     'r'    -> K.Char 'r'
     't'    -> K.Char 'g'  -- tagetting is too hard, so don't throw
     'z'    -> K.Char 'g'  -- and don't zap
     'p'    -> K.Char 'g'  -- and don't project
     'a'    -> K.Char 'g'  -- and don't apply
-    -- For bots: don't let them give up, write files, procrastinate.
-    '.'    -> K.Return
-    'Q'    -> K.Return
-    'X'    -> K.Return
-    --  For bots: disable purely UI commands.
-    'R'    -> K.Char 'K'
-    'O'    -> K.Char 'J'
-    'T'    -> K.Char 'H'
-    'I'    -> K.Char 'L'
-    'V'    -> K.Char 'Y'
-    'P'    -> K.Char 'U'
-    'D'    -> K.Char 'B'
-    '?'    -> K.Char 'N'
+    -- For bots: minor commands. Targeting is too hard, so don't do it.
+    '*'    -> K.Char 'c'
+    '/'    -> K.Char 'c'
+    '['    -> K.Char 'g'
+    ']'    -> K.Char 'g'
+    '{'    -> K.Char 'g'
+    '}'    -> K.Char 'g'
     -- Hack for bots: dump config at the start.
     ' '    -> K.Char 'D'
     -- Movement and hero selection.
