@@ -10,9 +10,9 @@ cdefs = Content.CDefs
   , getFreq = rfreq
   , validate = rvalidate
   , content =
-      [rect, oval, colonnade, colonnadeW]
+      [rect, pillar, colonnade, colonnadeW]
   }
-rect,        oval, colonnade, colonnadeW :: RoomKind
+rect,        pillar, colonnade, colonnadeW :: RoomKind
 
 rect = RoomKind  -- room is valid for any nonempty area, hence low frequency
   { rsymbol  = 'r'
@@ -24,34 +24,33 @@ rect = RoomKind  -- room is valid for any nonempty area, hence low frequency
                , "|."
                ]
   }
-oval = RoomKind  -- needs a large area, hence high frequency
-  { rsymbol  = 'o'
-  , rname    = "oval room"
-  , rfreq    = 1000
+pillar = RoomKind
+  { rsymbol  = 'p'
+  , rname    = "pillar"
+  , rfreq    = 1000  -- needs a large area, hence high frequency
   , rcover   = CStretch
-  , rfence   = FFloor
-  , rtopLeft = [ "...|--."
-               , ".--|..."
-               , ".|....."
-               , "--....."
-               , "|......"
-               , "|......"
-               , "......."
-               ]
+  , rfence   = FNone
+  , rtopLeft = [ "-----"
+               , "|...."
+               , "|.O.."
+               , "|...."
+               , "|...."
+              ]
   }
 colonnade = RoomKind
   { rsymbol  = 'c'
   , rname    = "colonnade"
-  , rfreq    = 100
+  , rfreq    = 5000  -- needs a larger area, hence higher frequency
   , rcover   = CTile
   , rfence   = FFloor
-  , rtopLeft = [ ".O"
-               , "O."
+  , rtopLeft = [ ".O.O"
+               , "O.O."
+               , ".O.O"
+               , "O.O."
                ]
   }
 colonnadeW = colonnade
-  { rfence   = FFloor
-  , rtopLeft = [ "O.O."
+  { rtopLeft = [ "O.O."
                , "...."
                , "O.O."
                , "...."
