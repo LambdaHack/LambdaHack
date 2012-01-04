@@ -10,9 +10,9 @@ cdefs = Content.CDefs
   , getFreq = rfreq
   , validate = rvalidate
   , content =
-      [rect, pillar, colonnade, colonnadeW]
+      [rect, pillar, pillarC, pillar3, colonnade, colonnadeW]
   }
-rect,        pillar, colonnade, colonnadeW :: RoomKind
+rect,        pillar, pillarC, pillar3, colonnade, colonnadeW :: RoomKind
 
 rect = RoomKind  -- room is valid for any nonempty area, hence low frequency
   { rsymbol  = 'r'
@@ -34,6 +34,22 @@ pillar = RoomKind
                , "|...."
                , "|.O.."
                , "|...."
+               , "|...."
+              ]
+  }
+pillarC = pillar
+  { rtopLeft = [ "-----"
+               , "|O..."
+               , "|...."
+               , "|...."
+               , "|...."
+              ]
+  }
+pillar3 = pillar
+  { rtopLeft = [ "-----"
+               , "|O.O."
+               , "|...."
+               , "|O..."
                , "|...."
               ]
   }
