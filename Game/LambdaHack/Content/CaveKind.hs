@@ -11,6 +11,7 @@ import Game.LambdaHack.Content.TileKind
 data CaveKind = CaveKind
   { csymbol           :: Char
   , cname             :: String
+  , cdesc             :: String  -- ^ cave description for the player
   , cfreq             :: Int
   , cxsize            :: X
   , cysize            :: Y
@@ -42,5 +43,6 @@ cvalidate = L.filter (\ CaveKind{..} ->
       maxRoomSizeY = Random.maxDice $ snd minRoomSize
       xborder = if maxGridX == 1 then 5 else 3
       yborder = if maxGridX == 1 then 5 else 3
-  in maxGridX * (xborder + maxRoomSizeX) + 1 > cxsize ||
-     maxGridY * (yborder + maxRoomSizeY) + 1 > cysize)
+  in length cdesc <= 25
+     && (maxGridX * (xborder + maxRoomSizeX) + 1 > cxsize ||
+         maxGridY * (yborder + maxRoomSizeY) + 1 > cysize))

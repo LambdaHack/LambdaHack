@@ -51,6 +51,7 @@ data Level = Level
   , litem     :: ItemMap
   , lmap      :: TileMap
   , lrmap     :: TileMap
+  , ldesc     :: String     -- ^ level description for the player
   , lmeta     :: String
   , lstairs   :: (Loc, Loc) -- ^ here the stairs (up/down) from other levels end
   }
@@ -81,7 +82,7 @@ updateMonItem :: (PartyItem -> PartyItem) -> Level -> Level
 updateMonItem f lvl = lvl { lmonItem = f (lmonItem lvl) }
 
 instance Binary Level where
-  put (Level hs hi sx sy ms mi ls le li lm lrm lme lstairs) = do
+  put (Level hs hi sx sy ms mi ls le li lm lrm ld lme lstairs) = do
     put hs
     put hi
     put sx
@@ -96,6 +97,7 @@ instance Binary Level where
            `blame` li) li)
     put lm
     put lrm
+    put ld
     put lme
     put lstairs
   get = do
@@ -109,10 +111,11 @@ instance Binary Level where
     le <- get
     li <- get
     lm <- get
+    ld <- get
     lrm <- get
     lme <- get
     lstairs <- get
-    return (Level hs hi sx sy ms mi ls le li lm lrm lme lstairs)
+    return (Level hs hi sx sy ms mi ls le li lm lrm ld lme lstairs)
 
 at, rememberAt :: Level -> Loc -> (Kind.Id TileKind)
 at         Level{lmap}  p = lmap Kind.! p

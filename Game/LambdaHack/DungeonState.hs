@@ -60,7 +60,7 @@ rollItems Kind.COps{cotile, coitem=coitem@Kind.Ops{osymbol}}
 buildLevel :: Kind.COps -> Cave -> Int -> Int -> Rnd Level
 buildLevel cops@Kind.COps{cotile=cotile@Kind.Ops{opick}, cocave=Kind.Ops{okind}}
            Cave{dkind, dsecret, ditem, dmap, dmeta} n depth = do
-  let cfg@CaveKind{cxsize, cysize, minStairsDistance, defTile} = okind dkind
+  let cfg@CaveKind{..} = okind dkind
   cmap <- convertTileMaps (opick defTile) cxsize cysize dmap
   -- Roll locations of the stairs.
   su <- findLoc cmap (const (Tile.hasFeature cotile F.Boring))
@@ -86,6 +86,7 @@ buildLevel cops@Kind.COps{cotile=cotile@Kind.Ops{opick}, cocave=Kind.Ops{okind}}
         , litem
         , lmap
         , lrmap = unknownTileMap (Tile.unknownId cotile) cxsize cysize
+        , ldesc = cdesc
         , lmeta = dmeta
         , lstairs = (su, sd)
         }

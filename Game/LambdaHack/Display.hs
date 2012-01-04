@@ -93,7 +93,7 @@ displayLevel dm fs cops per
   let Kind.COps{ coactor=Kind.Ops{okind}
                , coitem=coitem@Kind.Ops{okind=iokind}
                , cotile=Kind.Ops{okind=tokind} } = cops
-      lvl@Level{lxsize = sx, lysize = sy, lsmell = smap} = slevel s
+      lvl@Level{lxsize = sx, lysize = sy, lsmell = smap, ldesc} = slevel s
       (_, Actor{bkind, bhp, bloc}, bitems) = findActorAnyLevel splayer s
       ActorKind{ahp} = okind bkind
       reachable = debugTotalReachable per
@@ -163,12 +163,13 @@ displayLevel dm fs cops per
         in case over (fromLoc sx loc0 `shiftXY` (0, sy * n)) of
              Just c -> (Color.defaultAttr, c)
              _      -> (a, char)
-      status =
-        take 30 (levelName slid ++ repeat ' ') ++
-        take 10 ("T: " ++ show (stime `div` 10) ++ repeat ' ') ++
+      status = take 80 $
+        take 27 (ldesc ++ repeat ' ') ++
+        take 7 ("L: " ++ show (levelNumber slid) ++ repeat ' ') ++
+        take 9 ("T: " ++ show (stime `div` 10) ++ repeat ' ') ++
         take 8 ("$: " ++ show wealth ++ repeat ' ') ++
         take 15 ("Dmg: " ++ damage ++ repeat ' ') ++
-        take 17 ("HP: " ++ show bhp ++
+        take 99 ("HP: " ++ show bhp ++
                  " (" ++ show (maxDice ahp) ++ ")" ++ repeat ' ')
       disp n mesg = display (0, 0, sx - 1, sy - 1) (fst normalLevelBound + 1)
                       fs (dis n) mesg status
