@@ -14,6 +14,14 @@ import qualified Game.LambdaHack.Feature as F
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Random
 
+-- | There is not type Tile, of particular concrete tiles in the dungeon,
+-- corresponding corresponding to type TileKind, of kinds of terrain tiles.
+-- This is because the tiles are too numerous to make
+-- the type complex and big enough, on one hand,
+-- and accessed too often in performance critial code to try to compress
+-- and recompute the values, on the other hand. Instead, various properties
+-- of concrete tiles are expressed by arrays or sparse IntMaps, as required.
+
 wallP, floorRoomLitP, floorRoomDarkP, floorCorridorLitP, floorCorridorDarkP, floorSpecialP :: TileKind -> Bool
 wallP t            = tfeature t == []
 floorRoomLitP      = kindHas [F.Walkable, F.Clear, F.Lit, F.Boring]

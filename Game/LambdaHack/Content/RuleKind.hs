@@ -8,6 +8,11 @@ import Game.LambdaHack.Geometry
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Loc
 
+-- TODO: very few rules are configurable yet, extend as needed.
+-- | As long as the rules immutable, there is no type Rule, just RuleKInd.
+-- However, in the future, when the rules can get changed during gameplay
+-- based on data mining of player behaviour, there we may add such type
+-- and then RuleKind will just remain a starting template.
 data RuleKind = RuleKind
   { rsymbol           :: Char
   , rname             :: String
@@ -21,7 +26,7 @@ data RuleKind = RuleKind
   }
 
 instance Show RuleKind where
-  show _ = "A game ruleset specification." -- TODO
+  show _ = "A game ruleset specification."
 
 ruvalidate :: [RuleKind] -> [RuleKind]
 ruvalidate _ = [] -- TODO
