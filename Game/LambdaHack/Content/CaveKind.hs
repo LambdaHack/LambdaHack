@@ -18,14 +18,12 @@ data CaveKind = CaveKind
   , cgrid         :: Random.RollDiceXY
   , cminRoomSize  :: Random.RollDiceXY
   , cdarkChance   :: Int -> Random.Rnd Bool  -- TODO: use RollQuad instead, etc.
-  , cauxConnects  :: (X, Y) -> Int
-      -- ^ relative to grid (in fact a range, because of duplicate connects)
-  , cvoidRooms    :: (X, Y) -> Random.Rnd Int
-      -- ^ range, relative to grid
+  , cauxConnects  :: Rational    -- ^ not exact, because of duplications
+  , croomChance   :: Random.Chance
   , cminStairDist :: Int
-  , cdoorChance   :: Random.Rnd Bool
-  , copenChance   :: Random.Rnd Bool
-  , csecretChance :: Random.Rnd Bool
+  , cdoorChance   :: Random.Chance
+  , copenChance   :: Random.Chance
+  , csecretChance :: Random.Chance
   , citemNum      :: Random.RollDice
   , cdefTile      :: TileKind -> Bool
   , ccorTile      :: TileKind -> Bool

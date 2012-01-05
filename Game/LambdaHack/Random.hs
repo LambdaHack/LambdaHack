@@ -1,9 +1,10 @@
 module Game.LambdaHack.Random
-  ( Rnd, randomR, binaryChoice, chance
+  ( Rnd, randomR, binaryChoice
   , roll, oneOf, frequency, (*~), (~+~)
   , RollDice(..), rollDice, maxDice, minDice, meanDice
   , RollDiceXY, rollDiceXY
   , RollQuad, rollQuad, intToQuad
+  , Chance, chance
   ) where
 
 import qualified Data.Binary as Binary
@@ -32,13 +33,6 @@ binaryChoice :: a -> a -> Rnd a
 binaryChoice p0 p1 = do
   b <- randomR (False, True)
   return (if b then p0 else p1)
-
-chance :: Rational -> Rnd Bool
-chance r = do
-  let n = numerator r
-      d = denominator r
-  k <- randomR (1, d)
-  return (k <= n)
 
 -- | roll a single die
 roll :: Int -> Rnd Int
@@ -134,3 +128,12 @@ intToQuad n' = let n = toEnum n'
                in if n > maxBound || n < minBound
                   then assert `failure` n'
                   else (RollDice n 1, RollDice 0 0)
+
+type Chance = Rational
+
+chance :: Chance -> Rnd Bool
+chance r = do
+  let n = numerator r
+      d = denominator r
+  k <- randomR (1, d)
+  return (k <= n)

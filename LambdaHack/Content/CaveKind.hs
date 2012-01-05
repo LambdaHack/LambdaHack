@@ -31,12 +31,12 @@ rogue = CaveKind
   , cgrid         = (RollDice 3 2, RollDice 2 2)
   , cminRoomSize  = (RollDice 2 2, RollDice 2 1)
   , cdarkChance   = \ d -> Random.chance $ 1%((22 - (2 * fromIntegral d)) `max` 2)
-  , cauxConnects  = \ (x, y) -> (x * y) `div` 3
-  , cvoidRooms    = \ (x, y) -> Random.randomR (0, (x * y) `div` 3)
+  , cauxConnects  = 1%3
+  , croomChance   = 2%3
   , cminStairDist = 30
-  , cdoorChance   = Random.chance $ 2%3
-  , copenChance   = Random.chance $ 1%10
-  , csecretChance = Random.chance $ 1%4
+  , cdoorChance   = 3%4
+  , copenChance   = 1%10
+  , csecretChance = 1%4
   , citemNum      = RollDice 5 2
   , cdefTile      = Tile.wallP
   , ccorTile      = \ t -> tsymbol t == '#' && Tile.floorCorridorDarkP t
@@ -48,7 +48,7 @@ arena = rogue
   , cdesc         = "Underground city"
   , cgrid         = (RollDice 2 2, RollDice 2 2)
   , cminRoomSize  = (RollDice 3 2, RollDice 2 1)
-  , cvoidRooms    = \ (x, y) -> Random.randomR (0, (x * y) `div` 2)
+  , croomChance   = 1%2
   , cdefTile      = \ t -> tsymbol t == '.' && Tile.floorCorridorLitP t
   , ccorTile      = Tile.floorSpecialP
   }
@@ -59,8 +59,7 @@ empty = rogue
   , cdesc         = "Tall cavern"
   , cgrid         = (RollDice 2 2, RollDice 1 2)
   , cminRoomSize  = (RollDice 4 3, RollDice 4 1)
-  , cvoidRooms    = \ (x, y) -> Random.randomR (max 0 (x * y - 3),
-                                               max 0 (x * y - 1))
+  , croomChance   = 1%2
   , cdefTile      = Tile.floorRoomLitP
   , ccorTile      = Tile.floorRoomLitP
   }
@@ -72,7 +71,7 @@ noise = rogue
   , cgrid         = (RollDice 2 2, RollDice 1 2)
   , cminRoomSize  = (RollDice 4 2, RollDice 4 1)
   , cdarkChance   = \ _ -> return True
-  , cvoidRooms    = \ _ -> return 0
+  , croomChance   = 1
   , cdefTile      = \ t -> tsymbol t == 'O' && tfeature t == [F.Special] ||
                           tsymbol t == '.' && Tile.floorCorridorLitP t
   , ccorTile      = Tile.floorSpecialP

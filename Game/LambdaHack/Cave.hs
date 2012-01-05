@@ -45,9 +45,9 @@ as follows:
   * The available area is divided into a grid, e.g, 3 by 3,
     where each of the 9 grid cells has approximately the same size.
 
-  * In each of the 9 grid cells one room is placed at a random location.
-    The minimum size of a room is, e.g, 2 by 2 floor tiles. A room is surrounded
-    by walls, and the walls still have to fit into the assigned grid cells.
+  * In each of the 9 grid cells one room is placed at a random location
+    and with a random size, but larger than The minimum size,
+    e.g, 2 by 2 floor tiles.
 
   * Rooms that are on horizontally or vertically adjacent grid cells
     may be connected by a corridor. Corridors consist of 3 segments of straight
@@ -70,21 +70,21 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick, ofoldrWithKey}
   lminroom <- rollDiceXY $ cminRoomSize cfg
   let gs = grid lgrid (0, 0, cxsize - 1, cysize - 1)
   -- grid locations of "no-rooms"
-  nrnr <- cvoidRooms cfg lgrid
-  nr   <- replicateM nrnr $ xyInArea (0, 0, gx - 1, gy - 1)
   rooms0 <- mapM (\ (i, r) -> do
-                   r' <- if i `elem` nr
-                         then mkNoRoom r
-                         else mkRoom lminroom r
-                   return (i, r')) gs
+                     rd <- chance $ croomChance cfg
+                     r' <- if rd
+                           then mkRoom lminroom r
+                           else mkVoidRoom r
+                     return (i, r')) gs
   dlrooms <- mapM (\ (_, r) -> do
                       c <- cdarkChance cfg n
                       return (r, not c)) rooms0
   connects <- connectGrid lgrid
-  addedConnects <- if gx > 1 || gy > 1
-                   then replicateM (cauxConnects cfg lgrid)
-                          (randomConnection lgrid)
-                   else return []
+  addedConnects <-
+    if gx * gy > 1
+    then let caux = round $ cauxConnects cfg * fromIntegral (gx * gy)
+         in replicateM caux (randomConnection lgrid)
+    else return []
   let allConnects = L.nub (addedConnects ++ connects)
       rooms = M.fromList rooms0
   cs <- mapM (\ (p0, p1) -> do
@@ -129,18 +129,18 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick, ofoldrWithKey}
             -- Openings have a certain chance to be doors;
             -- doors have a certain chance to be open; and
             -- closed doors have a certain chance to be secret
-            rd <- cdoorChance cfg
+            rd <- chance $ cdoorChance cfg
             if not rd
               then return (M.insert (x, y) pickedCorTile l, le)
               else do
                 doorClosedId <- trigger cotile t
                 doorOpenId   <- trigger cotile doorClosedId
-                ro <- copenChance cfg
+                ro <- chance $ copenChance cfg
                 if ro
                   then do
                     return (M.insert (x, y) doorOpenId l, le)
                   else do
-                    rs <- csecretChance cfg
+                    rs <- chance $ csecretChance cfg
                     if not rs
                       then do
                         return (M.insert (x, y) doorClosedId l, le)
@@ -204,10 +204,10 @@ mkRoom (xm, ym) (x0, y0, x1, y1) =
       (rx1, ry1) <- xyInArea area1
       return (rx0, ry0, rx1, ry1)
 
--- | Create a no-room, i.e., a single corridor field.
-mkNoRoom :: Area     -- ^ this is the area, not the room itself
-         -> Rnd Area -- ^ upper-left and lower-right corner of the room
-mkNoRoom area = assert (validArea area `blame` area) $ do
+-- | Create a void room, i.e., a single corridor field.
+mkVoidRoom :: Area     -- ^ this is the area, not the room itself
+           -> Rnd Area -- ^ upper-left and lower-right corner of the room
+mkVoidRoom area = assert (validArea area `blame` area) $ do
   (ry, rx) <- xyInArea area
   return (ry, rx, ry, rx)
 
