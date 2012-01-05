@@ -446,7 +446,7 @@ doLook = do
 
 gameVersion :: Action ()
 gameVersion = do
-  Kind.COps{corule=Kind.Ops{okind, ouniqName}} <- contentOps
-  let pathsVersion = rpathsVersion $ okind $ ouniqName "standard game ruleset"
+  Kind.COps{corule} <- contentOps
+  let pathsVersion = rpathsVersion $ stdRuleset corule
       msg = showVersion pathsVersion ++ " (" ++ frontendName ++ " frontend)"
   abortWith msg

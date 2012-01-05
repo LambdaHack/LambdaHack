@@ -14,9 +14,9 @@ cdefs = Content.CDefs
   , getFreq = ifreq
   , validate = ivalidate
   , content =
-      [amulet, dart, gem1, gem2, gem3, gem4, gold, javelin, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, fist, wand]
+      [amulet, dart, gem1, gem2, gem3, gem4, gold, javelin, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand, fist, foot]
   }
-amulet,        dart, gem1, gem2, gem3, gem4, gold, javelin, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, fist, wand :: ItemKind
+amulet,        dart, gem1, gem2, gem3, gem4, gold, javelin, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand, fist, foot :: ItemKind
 
 gem, potion, scroll :: ItemKind  -- generic templates
 
@@ -151,15 +151,8 @@ sword = ItemKind
   , ieffect  = Wound (RollDice 3 1)
   , icount   = intToQuad 1
   , ipower   = (RollDice 1 2, RollDice 4 2)
-  , iverbApply   = "splinter"
+  , iverbApply   = "hit"
   , iverbProject = "heave"
-  }
-fist = sword
-  { isymbol  = '@'
-  , iname    = "fist"
-  , ifreq    = []  -- Does not appear randomly in the dungeon.
-  , iverbApply   = "ERROR, please report: iverbApply fist"
-  , iverbProject = "ERROR, please report: iverbProject fist"
   }
 wand = ItemKind
   { isymbol  = '/'
@@ -171,4 +164,18 @@ wand = ItemKind
   , ipower   = intToQuad 0
   , iverbApply   = "snap"
   , iverbProject = "zap"
+  }
+fist = sword
+  { isymbol  = '@'
+  , iname    = "fist"
+  , ifreq    = [("barehanded", 100)]
+  , iverbApply   = "punch"  -- TODO
+  , iverbProject = "ERROR, please report: iverbProject fist"
+  }
+foot = sword
+  { isymbol  = '@'
+  , iname    = "foot"
+  , ifreq    = [("barehanded", 100)]
+  , iverbApply   = "kick"
+  , iverbProject = "ERROR, please report: iverbProject foot"
   }

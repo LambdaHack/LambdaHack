@@ -67,9 +67,6 @@ getFlavour Kind.Ops{okind} assocs ik =
         [f] -> f
         _:_ -> assocs M.! ik
 
-fistKindId :: Kind.Ops ItemKind -> Kind.Id ItemKind
-fistKindId Kind.Ops{ouniqName} = ouniqName "fist"
-
 viewItem :: Kind.Ops ItemKind -> Kind.Id ItemKind -> FlavourMap
          -> (Char, Color.Color)
 viewItem cops@Kind.Ops{osymbol} ik assocs =

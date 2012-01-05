@@ -33,7 +33,7 @@ data Ops a = Ops
   { osymbol :: Id a -> Char
   , oname :: Id a -> String
   , okind :: Id a -> a
-  , ouniqName :: String -> Id a  -- TODO: change to ouniqGroup
+  , ouniqGroup :: String -> Id a
   , opick :: String -> (a -> Bool) -> Rnd (Id a)
   , ofoldrWithKey :: forall b. (Id a -> a -> b -> b) -> b -> b
   , obounds :: (Id a, Id a)
@@ -60,8 +60,8 @@ createOps CDefs{getSymbol, getName, getFreq, content, validate} =
        { osymbol = getSymbol . okind
        , oname = getName . okind
        , okind = okind
-       , ouniqName = \ name ->
-           case [Id i | (i, k) <- kindAssocs, getName k == name] of
+       , ouniqGroup = \ group ->
+           case [Id i | (i, k) <- kindAssocs, groupFreq group k > 0] of
              [i] -> i
              l -> assert `failure` l
        , opick = \ group p ->

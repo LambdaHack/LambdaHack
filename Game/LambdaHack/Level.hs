@@ -5,6 +5,7 @@ module Game.LambdaHack.Level
   , updateLMap, updateLRMap, updateIMap
   , updateSmell , at, rememberAt, atI, rememberAtI
   , accessible, openable, findLoc, findLocTry, dropItemsAt
+  , stdRuleset
   ) where
 
 import Data.Binary
@@ -126,14 +127,16 @@ atI, rememberAtI :: Level -> Loc -> [Item]
 atI         Level{litem} p = fst $ IM.findWithDefault ([], []) p litem
 rememberAtI Level{litem} p = snd $ IM.findWithDefault ([], []) p litem
 
+stdRuleset :: Kind.Ops RuleKind -> RuleKind
+stdRuleset Kind.Ops{ouniqGroup, okind} = okind $ ouniqGroup "standard"
+
 -- Check whether one location is accessible from another.
 accessible :: Kind.COps -> Level -> Loc -> Loc -> Bool
-accessible Kind.COps{ cotile=Kind.Ops{okind=tokind}
-                    , corule=Kind.Ops{okind, ouniqName}}
+accessible Kind.COps{ cotile=Kind.Ops{okind=okind}, corule}
            lvl@Level{lxsize} sloc tloc =
-  let check = raccessible $ okind $ ouniqName "standard game ruleset"
-      src = tokind $ lvl `at` sloc
-      tgt = tokind $ lvl `at` tloc
+  let check = raccessible $ stdRuleset corule
+      src = okind $ lvl `at` sloc
+      tgt = okind $ lvl `at` tloc
   in check lxsize sloc src tloc tgt
 
 -- check whether the location contains a door of secrecy level lower than k

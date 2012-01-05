@@ -7,6 +7,7 @@ import Data.Binary
 import qualified Data.Map as M
 import qualified Data.List as L
 
+import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Level
 import Game.LambdaHack.WorldLoc
 
@@ -20,17 +21,18 @@ data Dungeon = Dungeon
 
 instance Binary Dungeon where
   put Dungeon{..} = do
-    put (M.assocs dungeonLevelMap)
+    put (M.toAscList dungeonLevelMap)
     put dungeonDepth
   get = do
     lvls <- get
-    let dungeonLevelMap = M.fromList lvls
+    let dungeonLevelMap = M.fromDistinctAscList lvls
     dungeonDepth <- get
     return Dungeon{..}
 
--- | Create a dungeon from a list of levels.
+-- | Create a dungeon from a list of levels and maximum depth (danger).
 fromList :: [(LevelId, Level)] -> Int -> Dungeon
-fromList lvls d = Dungeon (M.fromList lvls) d
+fromList lvls d = assert (d <= L.length lvls `blame` (d, L.length lvls)) $
+  Dungeon (M.fromList lvls) d
 
 -- | Association list corresponding to the dungeon.
 -- Starts at the supplied level id (usually the current level)

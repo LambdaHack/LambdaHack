@@ -530,16 +530,17 @@ actorAttackActor source@(AHero _) target@(AHero _) =
   selectPlayer target
   >>= assert `trueM` (source, target, "player bumps into himself")
 actorAttackActor source target = do
-  Kind.COps{coactor, coitem} <- contentOps
+  Kind.COps{coactor, coitem=coitem@Kind.Ops{opick}} <- contentOps
   state <- get
   sm    <- gets (getActor source)
   tm    <- gets (getActor target)
   per   <- currentPerception
   bitems <- gets (getActorItem source)
+  barehanded <- rndToAction $ opick "barehanded" (const True)
   let verb = attackToVerb "sword"  -- TODO
       sloc = bloc sm
-      -- The hand-to-hand "weapon", equivalent to +0 sword.
-      h2h = Item (fistKindId coitem) 0 Nothing 1
+      -- The picked barehanded "weapon".
+      h2h = Item barehanded 0 Nothing 1
       str = strongestSword coitem bitems
       stack  = fromMaybe h2h str
       single = stack { jcount = 1 }

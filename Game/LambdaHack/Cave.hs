@@ -67,24 +67,24 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick, ofoldrWithKey}
                    , cocave=Kind.Ops{okind}
                    , coroom=Kind.Ops{okind=rokind, opick=ropick}}
           lvl depth ci = do
-  let cfg@CaveKind{cxsize, cysize, ccorTile} = okind ci
-  lgrid@(gx, gy) <- rollDiceXY $ cgrid cfg
-  lminroom <- rollDiceXY $ cminRoomSize cfg
+  let CaveKind{..} = okind ci
+  lgrid@(gx, gy) <- rollDiceXY cgrid
+  lminroom <- rollDiceXY $ cminRoomSize
   let gs = grid lgrid (0, 0, cxsize - 1, cysize - 1)
   -- grid locations of "no-rooms"
   rooms0 <- mapM (\ (i, r) -> do
-                     rd <- chance $ croomChance cfg
+                     rd <- chance $ croomChance
                      r' <- if rd
                            then mkRoom lminroom r
                            else mkVoidRoom r
                      return (i, r')) gs
   dlrooms <- mapM (\ (_, r) -> do
-                      c <- chanceQuad lvl depth (cdarkChance cfg)
+                      c <- chanceQuad lvl depth cdarkChance
                       return (r, not c)) rooms0
   connects <- connectGrid lgrid
   addedConnects <-
     if gx * gy > 1
-    then let caux = round $ cauxConnects cfg * fromIntegral (gx * gy)
+    then let caux = round $ cauxConnects * fromIntegral (gx * gy)
          in replicateM caux (randomConnection lgrid)
     else return []
   let allConnects = L.nub (addedConnects ++ connects)
@@ -131,18 +131,18 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick, ofoldrWithKey}
             -- Openings have a certain chance to be doors;
             -- doors have a certain chance to be open; and
             -- closed doors have a certain chance to be secret
-            rd <- chance $ cdoorChance cfg
+            rd <- chance cdoorChance
             if not rd
               then return (M.insert (x, y) pickedCorTile l, le)
               else do
                 doorClosedId <- trigger cotile t
                 doorOpenId   <- trigger cotile doorClosedId
-                ro <- chance $ copenChance cfg
+                ro <- chance copenChance
                 if ro
                   then do
                     return (M.insert (x, y) doorOpenId l, le)
                   else do
-                    rs <- chance $ csecretChance cfg
+                    rs <- chance csecretChance
                     if not rs
                       then do
                         return (M.insert (x, y) doorClosedId l, le)

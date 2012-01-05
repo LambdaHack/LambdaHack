@@ -18,6 +18,7 @@ import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Tile
+import Game.LambdaHack.Level
 import Game.LambdaHack.Command
 import qualified Game.LambdaHack.Keybindings as KB
 import qualified Game.LambdaHack.Kind as Kind
@@ -63,9 +64,9 @@ start :: Kind.COps
       -> Display.FrontendSession
       -> IO ()
 start scops configDefault cmdS cmdD frontendSession = do
-  let cops@Kind.COps{corule=Kind.Ops{okind, ouniqName}} = speedupCops scops
-      title = rtitle $ okind $ ouniqName "standard game ruleset"
-      pathsDataFile = rpathsDataFile $ okind $ ouniqName "standard game ruleset"
+  let cops@Kind.COps{corule} = speedupCops scops
+      title = rtitle $ stdRuleset corule
+      pathsDataFile = rpathsDataFile $ stdRuleset corule
   config <- Config.mkConfig configDefault
   let section = Config.getItems config "macros"
       !macros = KB.macroKey section

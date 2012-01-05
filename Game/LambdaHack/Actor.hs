@@ -80,7 +80,7 @@ unoccupied actors loc =
   all (\ body -> bloc body /= loc) actors
 
 heroKindId :: Kind.Ops ActorKind -> Kind.Id ActorKind
-heroKindId Kind.Ops{ouniqName} = ouniqName "hero"
+heroKindId Kind.Ops{ouniqGroup} = ouniqGroup "hero"
 
 instance Binary ActorId where
   put (AHero n)    = putWord8 0 >> put n
