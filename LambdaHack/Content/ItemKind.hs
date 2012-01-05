@@ -20,7 +20,7 @@ amulet,        dart, gem1, gem2, gem3, gem4, gold, javelin, potion1, potion2, po
 
 gem, potion, scroll :: ItemKind  -- generic templates
 
--- rollQuad (a, b, x, y) = a * roll b + (lvl * x * roll y) / 10
+-- rollQuad (aDb, xDy) = rollDice aDb + lvl * rollDice xDy / depth
 
 amulet = ItemKind
   { isymbol  = '"'
@@ -59,13 +59,13 @@ gem1 = gem
   { icount   = (RollDice 1 1, RollDice 0 0)  -- appears on lvl 1
   }
 gem2 = gem
-  { icount   = (RollDice 0 0, RollDice 2 1)  -- appears on lvl 5, doubled on 10
+  { icount   = (RollDice 0 0, RollDice 2 1)  -- appears halfway, doubled on max
   }
 gem3 = gem
-  { icount   = (RollDice 0 0, RollDice 1 1)  -- appears on lvl 10
+  { icount   = (RollDice 0 0, RollDice 1 1)  -- appears on max depth
   }
 gem4 = gem
-  { icount   = (RollDice 0 0, RollDice 1 1)  -- appears on lvl 10
+  { icount   = (RollDice 0 0, RollDice 1 1)  -- appears on max depth
   }
 gold = ItemKind
   { isymbol  = '$'

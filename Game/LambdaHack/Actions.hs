@@ -13,6 +13,7 @@ import Game.LambdaHack.Loc
 import Game.LambdaHack.Dir
 import Game.LambdaHack.Grammar
 import Game.LambdaHack.Geometry
+import qualified Game.LambdaHack.Dungeon as Dungeon
 import qualified Game.LambdaHack.HighScores as H
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Keys as K
@@ -396,7 +397,7 @@ tgtAscend k = do
   slid      <- gets slid
   lvl       <- gets slevel
   st        <- get
-  config    <- gets sconfig
+  dungeon   <- gets sdungeon
   let loc = clocation cursor
       tile = lvl `at` loc
       rightStairs =
@@ -420,7 +421,7 @@ tgtAscend k = do
           modify (updateCursor upd)
     else do  -- no stairs in the right direction
       let n = levelNumber slid
-          depth = Config.get config "dungeon" "depth"
+          depth = Dungeon.depth dungeon
           nln = LambdaCave $ min depth $ max 1 $ n - k
       when (nln == slid) $ abortWith "no more levels in this direction"
       modify (\ state -> state {slid = nln})

@@ -3,7 +3,7 @@ module Game.LambdaHack.Random
   , roll, oneOf, frequency, (*~), (~+~)
   , RollDice(..), rollDice, maxDice, minDice, meanDice
   , RollDiceXY, rollDiceXY
-  , RollQuad, rollQuad, intToQuad
+  , RollQuad, rollQuad, chanceQuad, intToQuad
   , Chance, chance
   ) where
 
@@ -15,6 +15,7 @@ import qualified Data.List as L
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Frequency
+import Game.LambdaHack.WorldLoc
 
 -- TODO: if the file grows much larger, split it and move a part to Utils/
 
@@ -84,6 +85,7 @@ instance Read RollDice where
       _ -> []
 
 rollDice :: RollDice -> Rnd Int
+rollDice (RollDice a' 1)  = return $ fromEnum a'  -- optimization
 rollDice (RollDice a' b') =
   let (a, b) = (fromEnum a', fromEnum b')
   in a *~ roll b
@@ -113,14 +115,22 @@ rollDiceXY (RollDice xa' xb', RollDice ya' yb') = do
   y <- ya *~ roll yb
   return (x, y)
 
--- | 'rollQuad (a, b, x, y) = a *~ roll b + (lvl * (x *~ roll y)) / 10'
+-- | 'rollQuad (aDb, xDy) = rollDice aDb + lvl * rollDice xDy / depth'
 type RollQuad = (RollDice, RollDice)
 
-rollQuad :: Int -> RollQuad -> Rnd Int
-rollQuad lvl (RollDice a b, RollDice x y) = do
+rollQuad :: LevelId -> Int -> RollQuad -> Rnd Int
+rollQuad lvl depth (RollDice a b, RollDice x y) =
+  assert (n > 0 && n <= depth `blame` (lvl, depth)) $ do
   aDb <- rollDice (RollDice a b)
   xDy <- rollDice (RollDice x y)
-  return $ aDb + (lvl * xDy) `div` 10
+  return $ aDb + ((n - 1) * xDy) `div` (depth - 1)
+ where
+  n = levelNumber lvl
+
+chanceQuad :: LevelId -> Int -> RollQuad -> Rnd Bool
+chanceQuad lvl depth quad = do
+  c <- rollQuad lvl depth quad
+  return $ c > 50
 
 intToQuad :: Int -> RollQuad
 intToQuad 0  = (RollDice 0 0, RollDice 0 0)

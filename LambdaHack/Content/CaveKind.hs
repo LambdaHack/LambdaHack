@@ -30,7 +30,7 @@ rogue = CaveKind
   , cysize        = snd normalLevelBound + 1
   , cgrid         = (RollDice 3 2, RollDice 2 2)
   , cminRoomSize  = (RollDice 2 2, RollDice 2 1)
-  , cdarkChance   = \ d -> Random.chance $ 1%((22 - (2 * fromIntegral d)) `max` 2)
+  , cdarkChance   = (RollDice 1 53, RollDice 25 1)
   , cauxConnects  = 1%3
   , croomChance   = 2%3
   , cminStairDist = 30
@@ -70,9 +70,9 @@ noise = rogue
   , cdesc         = "Glittering cave"
   , cgrid         = (RollDice 2 2, RollDice 1 2)
   , cminRoomSize  = (RollDice 4 2, RollDice 4 1)
-  , cdarkChance   = \ _ -> return True
+  , cdarkChance   = intToQuad 100
   , croomChance   = 1
   , cdefTile      = \ t -> tsymbol t == 'O' && tfeature t == [F.Special] ||
-                          tsymbol t == '.' && Tile.floorCorridorLitP t
+                           tsymbol t == '.' && Tile.floorCorridorLitP t
   , ccorTile      = Tile.floorSpecialP
   }

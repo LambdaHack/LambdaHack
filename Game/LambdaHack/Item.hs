@@ -17,6 +17,7 @@ import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Flavour
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Effect
+import Game.LambdaHack.WorldLoc
 
 data Item = Item
   { jkind   :: !(Kind.Id ItemKind)
@@ -78,15 +79,15 @@ itemLetter :: ItemKind -> Maybe Char
 itemLetter ik = if isymbol ik == '$' then Just '$' else Nothing
 
 -- | Generate an item.
-newItem :: Kind.Ops ItemKind -> Int -> Rnd Item
-newItem cops@Kind.Ops{opick, okind} lvl = do
+newItem :: Kind.Ops ItemKind -> LevelId -> Int -> Rnd Item
+newItem cops@Kind.Ops{opick, okind} lvl depth = do
   ikChosen <- opick (const True)
   let kind = okind ikChosen
-  count <- rollQuad lvl (icount kind)
+  count <- rollQuad lvl depth (icount kind)
   if count == 0
-    then newItem cops lvl  -- Rare item; beware of inifite loops.
+    then newItem cops lvl depth  -- Rare item; beware of inifite loops.
     else do
-      power <- rollQuad lvl (ipower kind)
+      power <- rollQuad lvl depth (ipower kind)
       return $ Item ikChosen power (itemLetter kind) count
 
 -- | Assigns a letter to an item, for inclusion

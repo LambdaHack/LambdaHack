@@ -41,12 +41,13 @@ mapToIMap :: X -> M.Map (X, Y) a -> IM.IntMap a
 mapToIMap cxsize m =
   IM.fromList $ map (\ (xy, a) -> (toLoc cxsize xy, a)) (M.assocs m)
 
-rollItems :: Kind.COps -> Int -> CaveKind -> TileMap -> Loc -> Rnd [(Loc, Item)]
+rollItems :: Kind.COps -> LevelId -> Int -> CaveKind -> TileMap -> Loc
+          -> Rnd [(Loc, Item)]
 rollItems Kind.COps{cotile, coitem=coitem@Kind.Ops{osymbol}}
-          n CaveKind{cxsize, citemNum} lmap ploc = do
+          lvl depth CaveKind{cxsize, citemNum} lmap ploc = do
   nri <- rollDice citemNum
   replicateM nri $ do
-    item <- newItem coitem n
+    item <- newItem coitem lvl depth
     l <- case osymbol (jkind item) of
            ')' ->
              -- melee weapons generated close to monsters; MUAHAHAHA
@@ -57,9 +58,9 @@ rollItems Kind.COps{cotile, coitem=coitem@Kind.Ops{osymbol}}
     return (l, item)
 
 -- | Create a level from a cave, from a cave kind.
-buildLevel :: Kind.COps -> Cave -> Int -> Int -> Rnd Level
+buildLevel :: Kind.COps -> Cave -> LevelId -> Int -> Rnd Level
 buildLevel cops@Kind.COps{cotile=cotile@Kind.Ops{opick}, cocave=Kind.Ops{okind}}
-           Cave{dkind, dsecret, ditem, dmap, dmeta} n depth = do
+           Cave{dkind, dsecret, ditem, dmap, dmeta} lvl depth = do
   let cfg@CaveKind{..} = okind dkind
   cmap <- convertTileMaps (opick cdefTile) cxsize cysize dmap
   -- Roll locations of the stairs.
@@ -69,9 +70,11 @@ buildLevel cops@Kind.COps{cotile=cotile@Kind.Ops{opick}, cocave=Kind.Ops{okind}}
           (\ l _ -> distance cxsize su l >= cminStairDist)
   upId   <- Tile.stairsUpId   cotile
   downId <- Tile.stairsDownId cotile
-  let stairs = [(su, upId)] ++ if n == depth then [] else [(sd, downId)]
+  let stairs = [(su, upId)] ++ if levelNumber lvl == depth
+                               then []
+                               else [(sd, downId)]
       lmap = cmap Kind.// stairs
-  is <- rollItems cops n cfg lmap su
+  is <- rollItems cops lvl depth cfg lmap su
   let itemMap = mapToIMap cxsize ditem `IM.union` IM.fromList is
       litem = IM.map (\ i -> ([i], [])) itemMap
       level = Level
@@ -106,12 +109,13 @@ matchGenerator Kind.Ops{ofoldrWithKey, ofreq, opick} (Just name) =
       | otherwise -> opick p
 
 findGenerator :: Kind.COps -> Config.CP -> Int -> Int -> Rnd Level
-findGenerator cops config n depth = do
-  let ln = "LambdaCave_" ++ show n
+findGenerator cops config k depth = do
+  let ln = "LambdaCave_" ++ show k
       genName = Config.getOption config "dungeon" ln
+      lvl = LambdaCave k
   ci <- matchGenerator (Kind.cocave cops) genName
-  cave <- buildCave cops n ci
-  buildLevel cops cave n depth
+  cave <- buildCave cops lvl depth ci
+  buildLevel cops cave lvl depth
 
 -- | Generate the dungeon for a new game.
 generate :: Kind.COps -> Config.CP -> Rnd (Loc, LevelId, Dungeon.Dungeon)
@@ -126,7 +130,7 @@ generate cops config =
       con g =
         let (gd, levels) = L.mapAccumL gen g [1..depth]
             ploc = fst (lstairs (snd (head levels)))
-        in ((ploc, LambdaCave 1, Dungeon.fromList levels), gd)
+        in ((ploc, LambdaCave 1, Dungeon.fromList levels depth), gd)
   in MState.state con
 
 -- | Computes the target world location of using stairs.
