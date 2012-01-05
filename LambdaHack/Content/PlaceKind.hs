@@ -5,32 +5,32 @@ import Game.LambdaHack.Content.PlaceKind
 
 cdefs :: Content.CDefs PlaceKind
 cdefs = Content.CDefs
-  { getSymbol = rsymbol
-  , getName = rname
-  , getFreq = rfreq
-  , validate = rvalidate
+  { getSymbol = psymbol
+  , getName = pname
+  , getFreq = pfreq
+  , validate = pvalidate
   , content =
       [rect, pillar, pillarC, pillar3, colonnade, colonnadeW]
   }
 rect,        pillar, pillarC, pillar3, colonnade, colonnadeW :: PlaceKind
 
 rect = PlaceKind  -- room is valid for any nonempty area, hence low frequency
-  { rsymbol  = 'r'
-  , rname    = "room"
-  , rfreq    = 100
-  , rcover   = CStretch
-  , rfence   = FNone
-  , rtopLeft = [ "--"
+  { psymbol  = 'r'
+  , pname    = "room"
+  , pfreq    = 100
+  , pcover   = CStretch
+  , pfence   = FNone
+  , ptopLeft = [ "--"
                , "|."
                ]
   }
 pillar = PlaceKind
-  { rsymbol  = 'p'
-  , rname    = "pillar"
-  , rfreq    = 1000  -- needs a large area, hence high frequency
-  , rcover   = CStretch
-  , rfence   = FNone
-  , rtopLeft = [ "-----"
+  { psymbol  = 'p'
+  , pname    = "pillar"
+  , pfreq    = 1000  -- needs a large area, hence high frequency
+  , pcover   = CStretch
+  , pfence   = FNone
+  , ptopLeft = [ "-----"
                , "|...."
                , "|.O.."
                , "|...."
@@ -38,7 +38,7 @@ pillar = PlaceKind
               ]
   }
 pillarC = pillar
-  { rtopLeft = [ "-----"
+  { ptopLeft = [ "-----"
                , "|O..."
                , "|...."
                , "|...."
@@ -46,7 +46,7 @@ pillarC = pillar
               ]
   }
 pillar3 = pillar
-  { rtopLeft = [ "-----"
+  { ptopLeft = [ "-----"
                , "|O.O."
                , "|...."
                , "|O..."
@@ -54,19 +54,19 @@ pillar3 = pillar
               ]
   }
 colonnade = PlaceKind
-  { rsymbol  = 'c'
-  , rname    = "colonnade"
-  , rfreq    = 5000  -- needs a larger area, hence higher frequency
-  , rcover   = CTile
-  , rfence   = FFloor
-  , rtopLeft = [ ".O.O"
+  { psymbol  = 'c'
+  , pname    = "colonnade"
+  , pfreq    = 5000  -- needs a larger area, hence higher frequency
+  , pcover   = CTile
+  , pfence   = FFloor
+  , ptopLeft = [ ".O.O"
                , "O.O."
                , ".O.O"
                , "O.O."
                ]
   }
 colonnadeW = colonnade
-  { rtopLeft = [ "O.O."
+  { ptopLeft = [ "O.O."
                , "...."
                , "O.O."
                , "...."

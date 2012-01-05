@@ -22,14 +22,14 @@ roomValid :: Area      -- ^ the area to fill
           -> PlaceKind  -- ^ the room kind to construct
           -> Bool
 roomValid (x0, y0, x1, y1) PlaceKind{..} =
-  let extra = case rfence of
+  let extra = case pfence of
         FWall  -> 1
         FFloor -> -1
         FNone  -> 3
       dx = x1 - x0 + extra
       dy = y1 - y0 + extra
-      dxcorner = case rtopLeft of [] -> 0 ; l : _ -> L.length l
-      dycorner = L.length rtopLeft
+      dxcorner = case ptopLeft of [] -> 0 ; l : _ -> L.length l
+      dycorner = L.length ptopLeft
   in dx >= 2 * dxcorner - 1 &&  dy >= 2 * dycorner - 1
 
 buildFence :: Kind.Id TileKind -> Area -> TileMapXY
@@ -44,7 +44,7 @@ digRoom :: PlaceKind
         -> Area
         -> TileMapXY
 digRoom rk defLegend floorId wallId corId area =
-  let (roomArea, fence) = case rfence rk of
+  let (roomArea, fence) = case pfence rk of
         FWall  -> (area, buildFence wallId area)
         FFloor -> (expand area (-1), buildFence corId $ expand area (-1))
         FNone  -> (expand area 1, M.empty)
@@ -63,14 +63,14 @@ tileRoom (x0, y0, x1, y1) PlaceKind{..} =
       fillInterior :: (forall a. Int -> [a] -> [a]) -> [((X, Y), Char)]
       fillInterior f =
         let tileInterior (y, row) = L.zip (fromX (x0, y)) $ f dx row
-            reflected = L.zip [y0..] $ f dy rtopLeft
+            reflected = L.zip [y0..] $ f dy ptopLeft
         in L.concatMap tileInterior reflected
       tileReflect :: Int -> [a] -> [a]
       tileReflect d pat =
         let lstart = L.take (d `divUp` 2) pat
             lend   = L.take (d `div`   2) pat
         in lstart ++ L.reverse lend
-      interior = case rcover of
+      interior = case pcover of
         CTile    ->
           let tile :: Int -> [a] -> [a]
               tile d pat = L.take d (L.cycle pat)

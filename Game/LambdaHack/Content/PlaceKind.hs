@@ -1,16 +1,16 @@
 module Game.LambdaHack.Content.PlaceKind
-  ( PlaceKind(..), Cover(..), Fence(..), rvalidate
+  ( PlaceKind(..), Cover(..), Fence(..), pvalidate
   ) where
 
 import qualified Data.List as L
 
 data PlaceKind = PlaceKind
-  { rsymbol  :: Char
-  , rname    :: String
-  , rfreq    :: Int
-  , rcover   :: Cover     -- ^ how to fill whole place based on the corner
-  , rfence   :: Fence     -- ^ whether to fence the place with solid border
-  , rtopLeft :: [String]  -- ^ plan of the top-left corner of the place
+  { psymbol  :: Char
+  , pname    :: String
+  , pfreq    :: Int
+  , pcover   :: Cover     -- ^ how to fill whole place based on the corner
+  , pfence   :: Fence     -- ^ whether to fence the place with solid border
+  , ptopLeft :: [String]  -- ^ plan of the top-left corner of the place
   }
   deriving Show
 
@@ -32,7 +32,7 @@ data Fence =
 -- (unless the place has FNone fence, in which case the entrance is
 -- at the outer tiles of the place).
 -- TODO: Check that all symbols in place plans are covered in tile content.
-rvalidate :: [PlaceKind] -> [PlaceKind]
-rvalidate = L.filter (\ PlaceKind{..} ->
-  let dxcorner = case rtopLeft of [] -> 0 ; l : _ -> L.length l
-  in dxcorner /= 0 && L.any (/= dxcorner) (L.map L.length rtopLeft))
+pvalidate :: [PlaceKind] -> [PlaceKind]
+pvalidate = L.filter (\ PlaceKind{..} ->
+  let dxcorner = case ptopLeft of [] -> 0 ; l : _ -> L.length l
+  in dxcorner /= 0 && L.any (/= dxcorner) (L.map L.length ptopLeft))
