@@ -6,13 +6,11 @@ import qualified Data.List as L
 
 import Game.LambdaHack.Geometry
 import Game.LambdaHack.Random
-import Game.LambdaHack.Content.TileKind
 
 data CaveKind = CaveKind
   { csymbol       :: Char
-  , cname         :: String
+  , cname         :: String      -- ^ short cave description for the player
   , cfreq         :: [(String, Int)]  -- ^ frequency within groups
-  , cdesc         :: String      -- ^ cave description for the player
   , cxsize        :: X
   , cysize        :: Y
   , cgrid         :: RollDiceXY
@@ -25,12 +23,10 @@ data CaveKind = CaveKind
   , copenChance   :: Chance
   , csecretChance :: Chance
   , citemNum      :: RollDice
-  , cdefTile      :: TileKind -> Bool
-  , ccorTile      :: TileKind -> Bool
+  , cdefTile      :: String
+  , ccorTile      :: String
   }
-
-instance Show CaveKind where
-  show _ = "A cave kind specification." -- TODO
+  deriving Show
 
 -- | Catch caves with not enough space for all the rooms.
 cvalidate :: [CaveKind] -> [CaveKind]
@@ -41,6 +37,6 @@ cvalidate = L.filter (\ CaveKind{..} ->
       maxRoomSizeY = maxDice $ snd cminRoomSize
       xborder = if maxGridX == 1 then 5 else 3
       yborder = if maxGridX == 1 then 5 else 3
-  in length cdesc <= 25
+  in length cname <= 25
      && (maxGridX * (xborder + maxRoomSizeX) + 1 > cxsize ||
          maxGridY * (yborder + maxRoomSizeY) + 1 > cysize))

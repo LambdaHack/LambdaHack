@@ -178,13 +178,13 @@ runDisturbance locLast distLast msg hs ms per locHere
                   , locHasItems
                   ]
       -- Here additionally ignore a tile property if you stand on such tile.
-      standList = [ locHasFeature F.Special
+      standList = [ locHasFeature F.Path
                   , not . locHasFeature F.Lit
                   ]
       -- Here stop only if you touch any such tile for the first time.
-      -- TODO: perhaps in open areas change direction to follow lit and special.
+      -- TODO: perhaps in open areas change direction to follow lit and paths.
       firstList = [ locHasFeature F.Lit
-                  , not . locHasFeature F.Special
+                  , not . locHasFeature F.Path
                   ]
       -- TODO: stop when walls vanish from cardinal directions or when any
       -- walls re-appear again. Actually stop one tile before that happens.
@@ -312,7 +312,7 @@ bumpTile dloc feat = do
 -- | Perform the action specified for the tile in case it's triggered.
 triggerTile :: Loc -> Action ()
 triggerTile dloc = do
-  cotile@Kind.Ops{okind} <- contentf Kind.cotile
+  Kind.Ops{okind, opick} <- contentf Kind.cotile
   lvl <- gets slevel
   let f (F.Cause effect) = do
         pl <- gets splayer
@@ -324,7 +324,7 @@ triggerTile dloc = do
         case lvl `atI` dloc of
           [] -> if unoccupied hms dloc
                 then do
-                  newTileId <- rndToAction $ Tile.changeTo cotile name
+                  newTileId <- rndToAction $ opick name (const True)
                   let adj = (Kind.// [(dloc, newTileId)])
                   modify (updateLevel (updateLMap adj))
                 else abortWith "blocked"  -- by monsters or heroes

@@ -96,16 +96,16 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick, ofoldrWithKey}
   fenceId <- Tile.wallId cotile
   let fenceBounds = (1, 1, cxsize - 2, cysize - 2)
       fence = buildFence fenceId fenceBounds
-  pickedCorTile <- opick ccorTile
+  pickedCorTile <- opick ccorTile (const True)
   lrooms <- foldM (\ m (r@(x0, _, x1, _), dl) ->
                     if x0 == x1
                     then return m
                     else do
-                      roomId <- ropick (roomValid r)
+                      roomId <- ropick "rogue" (roomValid r)
                       let kr = rokind roomId
-                      floorId <- (if dl
-                                  then Tile.floorRoomLitId
-                                  else Tile.floorRoomDarkId) cotile
+                      floorId <- if dl
+                                 then opick "floorRoomLit" (const True)
+                                 else opick "floorRoomDark" (const True)
                       wallId <- Tile.wallId cotile
                       legend <- olegend cotile
                       let room =
@@ -116,8 +116,8 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick, ofoldrWithKey}
       getSecret ti tk acc =
         if Tile.canBeHidden cotile tk
         then do
-          ti2 <- opick $ \ k -> Tile.kindHasFeature F.Hidden k
-                                && Tile.similar k tk
+          ti2 <- opick "hidden" $ \ k -> Tile.kindHasFeature F.Hidden k
+                                         && Tile.similar k tk
           m <- acc
           return $ M.insert ti ti2 m
         else acc
@@ -166,29 +166,24 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick, ofoldrWithKey}
 
 olegend :: Kind.Ops TileKind -> Rnd (M.Map Char (Kind.Id TileKind))
 olegend Kind.Ops{ofoldrWithKey, opick} =
-  let excluded tk =
-        Tile.kindHasFeature F.Hidden tk   -- too secret
-        || Tile.kindHasFeature F.Special tk  -- too hard, because exits need to
-           && Tile.kindHasFeature F.Exit tk  -- agree with surrounding terrain
-      getSymbols _ tk acc =
-        if excluded tk
-        then acc
-        else S.insert (tsymbol tk) acc
+  let getSymbols _ tk acc =
+        maybe acc (const $ S.insert (tsymbol tk) acc)
+          (L.lookup "legend" $ tfreq tk)
       symbols = ofoldrWithKey getSymbols S.empty
       getLegend s acc = do
         m <- acc
-        tk <- opick (\ k -> tsymbol k == s && not (excluded k))
+        tk <- opick "legend" (\ k -> tsymbol k == s)
         return $ M.insert s tk m
       legend = S.fold getLegend (return M.empty) symbols
   in legend
 
 trigger :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
-trigger cotile@Kind.Ops{okind} t =
+trigger Kind.Ops{okind, opick} t =
   let getTo (F.ChangeTo name) _ = name
       getTo _ acc = acc
   in case foldr getTo "" (tfeature (okind t)) of
        ""   -> return t
-       name -> Tile.changeTo cotile name
+       name -> opick name (const True)
 
 type Corridor = [(X, Y)]
 

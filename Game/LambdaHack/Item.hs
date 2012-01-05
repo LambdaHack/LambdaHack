@@ -81,7 +81,7 @@ itemLetter ik = if isymbol ik == '$' then Just '$' else Nothing
 -- | Generate an item.
 newItem :: Kind.Ops ItemKind -> LevelId -> Int -> Rnd Item
 newItem cops@Kind.Ops{opick, okind} lvl depth = do
-  ikChosen <- opick (const True)
+  ikChosen <- opick "dng" (const True)
   let kind = okind ikChosen
   count <- rollQuad lvl depth (icount kind)
   if count == 0

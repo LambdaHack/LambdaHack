@@ -14,12 +14,11 @@ data Feature =
   | Aura !Effect       -- ^ sustains the effect continuously, TODO
   | Cause !Effect      -- ^ causes the effect when triggered
   | ChangeTo !String   -- ^ transitions to any such tile when triggered
-  | ChangeFrom !String -- ^ a possible target of transitions
   | Ascendable         -- ^ triggered by ascending
   | Descendable        -- ^ triggered by descending
   | Openable           -- ^ triggered by opening
   | Closable           -- ^ triggered by closing
   | Hidden             -- ^ triggered when the tile's secrecy becomes zero
-  | Special            -- ^ a variation for special flavour
+  | Path               -- ^ distinct path throughout the level
   | Boring             -- ^ items and stairs can be generated there
   deriving (Show, Read, Eq, Ord)

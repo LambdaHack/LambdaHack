@@ -34,7 +34,7 @@ data Ops a = Ops
   , oname :: Id a -> String
   , okind :: Id a -> a
   , ouniqName :: String -> Id a  -- TODO: change to ouniqGroup
-  , opick :: (a -> Bool) -> Rnd (Id a)
+  , opick :: String -> (a -> Bool) -> Rnd (Id a)
   , ofoldrWithKey :: forall b. (Id a -> a -> b -> b) -> b -> b
   , obounds :: (Id a, Id a)
   , ospeedup :: [Id a -> Bool]  -- TODO: switch list to tuple via a type family?
@@ -64,8 +64,8 @@ createOps CDefs{getSymbol, getName, getFreq, content, validate} =
            case [Id i | (i, k) <- kindAssocs, getName k == name] of
              [i] -> i
              l -> assert `failure` l
-       , opick =
-           \ p -> fmap fst $ frequency $filterFreq (p . snd) $ kindFreq ""
+       , opick = \ group p ->
+           fmap fst $ frequency $ filterFreq (p . snd) $ kindFreq group
        , ofoldrWithKey = \ f z -> L.foldr (\ (i, a) -> f (Id i) a) z kindAssocs
        , obounds =
          let limits = let (i1, a1) = IM.findMin kindMap

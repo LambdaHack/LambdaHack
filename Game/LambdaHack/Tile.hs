@@ -1,9 +1,6 @@
 module Game.LambdaHack.Tile
-  ( wallP, floorRoomLitP, floorRoomDarkP
-  , floorCorridorLitP, floorCorridorDarkP, floorSpecialP
-  , wallId, floorRoomLitId, floorRoomDarkId, stairsUpId, stairsDownId, unknownId
-  , kindHasFeature, kindHas, hasFeature, isClear, isLit
-  , similar, canBeHidden, changeTo
+  ( wallId, stairsUpId, stairsDownId, unknownId
+  , kindHasFeature, kindHas, hasFeature, isClear, isLit, similar, canBeHidden
   ) where
 
 import qualified Data.List as L
@@ -22,25 +19,10 @@ import Game.LambdaHack.Random
 -- and recompute the values, on the other hand. Instead, various properties
 -- of concrete tiles are expressed by arrays or sparse IntMaps, as required.
 
-wallP, floorRoomLitP, floorRoomDarkP, floorCorridorLitP, floorCorridorDarkP, floorSpecialP :: TileKind -> Bool
-wallP t            = tfeature t == []
-floorRoomLitP      = kindHas [F.Walkable, F.Clear, F.Lit, F.Boring]
-                             [F.Special]
-floorRoomDarkP     = kindHas [F.Walkable, F.Clear, F.Boring]
-                             [F.Lit, F.Special]
-floorCorridorLitP  = kindHas [F.Walkable, F.Clear, F.Lit]
-                             [F.Exit, F.Special, F.Boring]
-floorCorridorDarkP = kindHas [F.Walkable, F.Clear]
-                             [F.Lit, F.Exit, F.Special, F.Boring]
-floorSpecialP      = kindHas [F.Walkable, F.Clear, F.Lit, F.Special]
-                             [F.Exit, F.Boring]
-
-wallId, floorRoomLitId, floorRoomDarkId, stairsUpId, stairsDownId :: Kind.Ops TileKind -> Rnd (Kind.Id TileKind)
-wallId Kind.Ops{opick} = opick wallP
-floorRoomLitId Kind.Ops{opick} = opick floorRoomLitP
-floorRoomDarkId Kind.Ops{opick} = opick floorRoomDarkP
-stairsUpId Kind.Ops{opick} = opick $ kindHasFeature F.Ascendable
-stairsDownId Kind.Ops{opick} = opick $ kindHasFeature F.Descendable
+wallId, stairsUpId, stairsDownId :: Kind.Ops TileKind -> Rnd (Kind.Id TileKind)
+wallId Kind.Ops{opick} = opick "fillerWall" (const True)
+stairsUpId Kind.Ops{opick} = opick "legend" $ kindHasFeature F.Ascendable
+stairsDownId Kind.Ops{opick} = opick "legend" $ kindHasFeature F.Descendable
 
 unknownId :: Kind.Ops TileKind -> Kind.Id TileKind
 unknownId Kind.Ops{ouniqName} = ouniqName "unknown space"
@@ -79,8 +61,3 @@ canBeHidden :: Kind.Ops TileKind -> TileKind -> Bool
 canBeHidden Kind.Ops{ofoldrWithKey} t =
   let sim _ s acc = acc || kindHasFeature F.Hidden s && similar t s
   in ofoldrWithKey sim False
-
-changeTo :: Kind.Ops TileKind -> String -> Rnd (Kind.Id TileKind)
-changeTo Kind.Ops{opick} name =
-  let p tk = kindHasFeature (F.ChangeFrom name) tk
-  in opick p

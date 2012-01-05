@@ -5,6 +5,7 @@ import qualified Data.List as L
 import qualified Control.Monad.State as MState
 import qualified Data.Map as M
 import qualified Data.IntMap as IM
+import Data.Maybe
 import Control.Monad
 
 import Game.LambdaHack.Utils.Assert
@@ -62,7 +63,7 @@ buildLevel :: Kind.COps -> Cave -> LevelId -> Int -> Rnd Level
 buildLevel cops@Kind.COps{cotile=cotile@Kind.Ops{opick}, cocave=Kind.Ops{okind}}
            Cave{dkind, dsecret, ditem, dmap, dmeta} lvl depth = do
   let cfg@CaveKind{..} = okind dkind
-  cmap <- convertTileMaps (opick cdefTile) cxsize cysize dmap
+  cmap <- convertTileMaps (opick cdefTile (const True)) cxsize cysize dmap
   -- Roll locations of the stairs.
   su <- findLoc cmap (const (Tile.hasFeature cotile F.Boring))
   sd <- findLocTry 2000 cmap
@@ -89,20 +90,15 @@ buildLevel cops@Kind.COps{cotile=cotile@Kind.Ops{opick}, cocave=Kind.Ops{okind}}
         , litem
         , lmap
         , lrmap = unknownTileMap (Tile.unknownId cotile) cxsize cysize
-        , ldesc = cdesc
+        , ldesc = cname
         , lmeta = dmeta
         , lstairs = (su, sd)
         }
   return level
 
 matchGenerator :: Kind.Ops CaveKind -> Maybe String -> Rnd (Kind.Id CaveKind)
-matchGenerator Kind.Ops{opick} Nothing = opick (const True)
-matchGenerator Kind.Ops{ofoldrWithKey, opick} (Just name) =
-  let p = (== name) . cname
-      l = ofoldrWithKey (\ i k is -> if p k then i : is else is) []
-  in case l of
-    [] -> error $ "Unknown dungeon generator " ++ name
-    _  -> opick p
+matchGenerator Kind.Ops{opick} mname =
+  opick (fromMaybe "dng" mname) (const True)
 
 findGenerator :: Kind.COps -> Config.CP -> Int -> Int -> Rnd Level
 findGenerator cops config k depth = do
