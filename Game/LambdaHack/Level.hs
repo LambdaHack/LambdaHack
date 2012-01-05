@@ -112,8 +112,8 @@ instance Binary Level where
     le <- get
     li <- get
     lm <- get
-    ld <- get
     lrm <- get
+    ld <- get
     lme <- get
     lstairs <- get
     return (Level hs hi sx sy ms mi ls le li lm lrm ld lme lstairs)
