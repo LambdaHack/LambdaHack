@@ -21,25 +21,25 @@ wall,        pillar, wallV, doorSecretV, doorClosedV, doorOpenV, wallH, doorSecr
 wall = TileKind
   { tsymbol  = ' '
   , tname    = "rock"
+  , tfreq    = [("", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfreq    = 100
   , tfeature = []
   }
 pillar = TileKind
   { tsymbol  = 'O'
   , tname    = "pillar"
+  , tfreq    = [("", 60)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfreq    = 60
   , tfeature = [Special]
   }
 wallV = TileKind
   { tsymbol  = '|'
   , tname    = "wall"
+  , tfreq    = [("", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfreq    = 100
   , tfeature = [Special]
   }
 doorSecretV = wallV
@@ -50,9 +50,9 @@ doorSecretV = wallV
 doorClosedV = TileKind
   { tsymbol  = '+'
   , tname    = "closed door"
+  , tfreq    = [("", 100)]
   , tcolor   = Yellow
   , tcolor2  = BrBlack
-  , tfreq    = 100
   , tfeature = [ Special  -- too hard to choose V or H a closed door for a room
                , Exit, Openable
                , ChangeTo "vertical open door"
@@ -62,9 +62,9 @@ doorClosedV = TileKind
 doorOpenV = TileKind
   { tsymbol  = '-'
   , tname    = "open door"
+  , tfreq    = [("", 100)]
   , tcolor   = Yellow
   , tcolor2  = BrBlack
-  , tfreq    = 100
   , tfeature = [ Special  -- to avoid mixing it up with horizontal wall in rooms
                , Walkable, Clear, Exit, Closable
                , ChangeTo "vertical closed door"
@@ -74,9 +74,9 @@ doorOpenV = TileKind
 wallH = TileKind
   { tsymbol  = '-'
   , tname    = "wall"
+  , tfreq    = [("", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfreq    = 100
   , tfeature = [Special]
   }
 doorSecretH = wallH
@@ -87,9 +87,9 @@ doorSecretH = wallH
 doorClosedH = TileKind
   { tsymbol  = '+'
   , tname    = "closed door"
+  , tfreq    = [("", 100)]
   , tcolor   = Yellow
   , tcolor2  = BrBlack
-  , tfreq    = 100
   , tfeature = [ Special  -- too hard to choose V or H a closed door for a room
                , Exit, Openable
                , ChangeTo "horizontal open door"
@@ -99,9 +99,9 @@ doorClosedH = TileKind
 doorOpenH = TileKind
   { tsymbol  = '|'
   , tname    = "open door"
+  , tfreq    = [("", 100)]
   , tcolor   = Yellow
   , tcolor2  = BrBlack
-  , tfreq    = 100
   , tfeature = [ Special  -- to avoid mixing it up with vertical wall in rooms
                , Walkable, Clear, Exit, Closable
                , ChangeTo "horizontal closed door"
@@ -111,33 +111,33 @@ doorOpenH = TileKind
 stairsUp = TileKind
   { tsymbol  = '<'
   , tname    = "staircase up"
+  , tfreq    = [("", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfreq    = 100
   , tfeature = [Walkable, Clear, Lit, Exit, Ascendable, Cause Effect.Ascend]
   }
 stairsDown = TileKind
   { tsymbol  = '>'
   , tname    = "staircase down"
+  , tfreq    = [("", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfreq    = 100
   , tfeature = [Walkable, Clear, Lit, Exit, Descendable, Cause Effect.Descend]
   }
 unknown = TileKind
   { tsymbol  = ' '
   , tname    = "unknown space"
+  , tfreq    = []
   , tcolor   = defFG
   , tcolor2  = BrWhite
-  , tfreq    = 0
   , tfeature = [Boring]
   }
 floorCorridorLit = TileKind
   { tsymbol  = '#'
   , tname    = "corridor"
+  , tfreq    = [("", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfreq    = 100
   , tfeature = [Walkable, Clear, Lit]
   }
 floorCorridorDark = floorCorridorLit
@@ -160,26 +160,26 @@ floorRoomDark = floorArenaDark
   }
 floorRed = floorArenaLit
   { tname    = "brick pavement"
+  , tfreq    = [("", 30)]
   , tcolor   = BrRed
   , tcolor2  = Red
-  , tfreq    = 30
   , tfeature = Special : tfeature floorArenaLit
   }
 floorBlue = floorRed
   { tname    = "granite cobblestones"
+  , tfreq    = [("", 100)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
-  , tfreq    = 100
   }
 floorGreen = floorRed
   { tname    = "mossy stone path"
+  , tfreq    = [("", 100)]
   , tcolor   = BrGreen
   , tcolor2  = Green
-  , tfreq    = 100
   }
 floorBrown = floorRed
   { tname    = "rotting mahogany deck"
+  , tfreq    = [("", 10)]
   , tcolor   = BrMagenta
   , tcolor2  = Magenta
-  , tfreq    = 10
   }

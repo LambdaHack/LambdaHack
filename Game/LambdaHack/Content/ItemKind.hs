@@ -17,7 +17,7 @@ import Game.LambdaHack.Random
 data ItemKind = ItemKind
   { isymbol  :: !Char       -- ^ map symbol
   , iname    :: !String     -- ^ group name
-  , ifreq    :: !Int        -- ^ created that often
+  , ifreq    :: ![(String, Int)]  -- ^ frequency within groups
   , iflavour :: ![Flavour]  -- ^ possible flavours
   , ieffect  :: !Effect     -- ^ the effect when activated
   , icount   :: !RollQuad   -- ^ created in that quantify

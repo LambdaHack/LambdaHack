@@ -10,6 +10,7 @@ import qualified Data.IntMap as IM
 import qualified Data.Word as Word
 import qualified Data.Array.Unboxed as A
 import qualified Data.Ix as Ix
+import Data.Maybe
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Frequency
@@ -31,9 +32,8 @@ instance Binary (Id a) where
 data Ops a = Ops
   { osymbol :: Id a -> Char
   , oname :: Id a -> String
-  , ofreq :: Id a -> Int
   , okind :: Id a -> a
-  , ouniqName :: String -> Id a
+  , ouniqName :: String -> Id a  -- TODO: change to ouniqGroup
   , opick :: (a -> Bool) -> Rnd (Id a)
   , ofoldrWithKey :: forall b. (Id a -> a -> b -> b) -> b -> b
   , obounds :: (Id a, Id a)
@@ -46,24 +46,26 @@ createOps CDefs{getSymbol, getName, getFreq, content, validate} =
       kindAssocs = L.zip [0..] content
       kindMap :: IM.IntMap a
       kindMap = IM.fromDistinctAscList $ L.zip [0..] content
-      kindFreq :: Frequency (Id a, a)
-      kindFreq = Frequency [ (n, (Id i, k))
-                           | (i, k) <- kindAssocs, let n = getFreq k, n > 0 ]
+      groupFreq group k = fromMaybe 0 (L.lookup group $ getFreq k)
+      kindFreq :: String -> Frequency (Id a, a)
+      kindFreq group =
+        Frequency [ (n, (Id i, k))
+                  | (i, k) <- kindAssocs, let n = groupFreq group k, n > 0 ]
       okind = \ (Id i) -> kindMap IM.! (fromEnum i)
-      correct a = not (L.null (getName a)) && getFreq a >= 0
+      correct a = not (L.null (getName a)) && L.all ((> 0) . snd) (getFreq a)
       offenders = validate content
   in assert (allB correct content) $
      assert (L.null offenders `blame` offenders) $
      Ops
        { osymbol = getSymbol . okind
        , oname = getName . okind
-       , ofreq = getFreq . okind
        , okind = okind
        , ouniqName = \ name ->
            case [Id i | (i, k) <- kindAssocs, getName k == name] of
              [i] -> i
              l -> assert `failure` l
-       , opick = \ p -> fmap fst $ frequency $ filterFreq (p . snd) kindFreq
+       , opick =
+           \ p -> fmap fst $ frequency $filterFreq (p . snd) $ kindFreq ""
        , ofoldrWithKey = \ f z -> L.foldr (\ (i, a) -> f (Id i) a) z kindAssocs
        , obounds =
          let limits = let (i1, a1) = IM.findMin kindMap

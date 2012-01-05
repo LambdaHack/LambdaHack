@@ -16,7 +16,7 @@ import Game.LambdaHack.Loc
 data RuleKind = RuleKind
   { rsymbol           :: Char
   , rname             :: String
-  , rfreq             :: Int
+  , rfreq             :: [(String, Int)]  -- ^ frequency within groups
     -- Check whether one location is accessible from another.
     -- Precondition: the two locations are next to each other.
   , raccessible       :: X -> Loc -> TileKind -> Loc -> TileKind -> Bool

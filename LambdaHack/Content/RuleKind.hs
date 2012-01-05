@@ -23,7 +23,7 @@ standard :: RuleKind
 standard = RuleKind
   { rsymbol           = 's'
   , rname             = "standard game ruleset"
-  , rfreq             = 100
+  , rfreq             = [("", 100)]
     -- Check whether one location is accessible from another.
     -- Precondition: the two locations are next to each other.
     -- Apart of checking the target tile, we forbid diagonal movement

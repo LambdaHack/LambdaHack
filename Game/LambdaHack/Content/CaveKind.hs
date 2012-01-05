@@ -11,7 +11,7 @@ import Game.LambdaHack.Content.TileKind
 data CaveKind = CaveKind
   { csymbol       :: Char
   , cname         :: String
-  , cfreq         :: Int
+  , cfreq         :: [(String, Int)]  -- ^ frequency within groups
   , cdesc         :: String      -- ^ cave description for the player
   , cxsize        :: X
   , cysize        :: Y

@@ -97,16 +97,12 @@ buildLevel cops@Kind.COps{cotile=cotile@Kind.Ops{opick}, cocave=Kind.Ops{okind}}
 
 matchGenerator :: Kind.Ops CaveKind -> Maybe String -> Rnd (Kind.Id CaveKind)
 matchGenerator Kind.Ops{opick} Nothing = opick (const True)
-matchGenerator Kind.Ops{ofoldrWithKey, ofreq, opick} (Just name) =
+matchGenerator Kind.Ops{ofoldrWithKey, opick} (Just name) =
   let p = (== name) . cname
       l = ofoldrWithKey (\ i k is -> if p k then i : is else is) []
   in case l of
     [] -> error $ "Unknown dungeon generator " ++ name
-    i : _
-      | sum (map ofreq l) == 0 ->
-          -- The user insists on a dangerous level, so just pick the first.
-          return i
-      | otherwise -> opick p
+    _  -> opick p
 
 findGenerator :: Kind.COps -> Config.CP -> Int -> Int -> Rnd Level
 findGenerator cops config k depth = do

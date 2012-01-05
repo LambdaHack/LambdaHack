@@ -167,8 +167,7 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick, ofoldrWithKey}
 olegend :: Kind.Ops TileKind -> Rnd (M.Map Char (Kind.Id TileKind))
 olegend Kind.Ops{ofoldrWithKey, opick} =
   let excluded tk =
-        tfreq tk <= 0  -- too rare
-        || Tile.kindHasFeature F.Hidden tk   -- too secret
+        Tile.kindHasFeature F.Hidden tk   -- too secret
         || Tile.kindHasFeature F.Special tk  -- too hard, because exits need to
            && Tile.kindHasFeature F.Exit tk  -- agree with surrounding terrain
       getSymbols _ tk acc =

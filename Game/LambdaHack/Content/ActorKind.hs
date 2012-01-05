@@ -13,7 +13,7 @@ import qualified Game.LambdaHack.Random as Random
 data ActorKind = ActorKind
   { asymbol :: !Char             -- ^ map symbol
   , aname   :: !String           -- ^ name
-  , afreq   :: !Int              -- ^ created that often
+  , afreq   :: ![(String, Int)]  -- ^ frequency within groups
   , aspeed  :: !Geometry.Time    -- ^ natural speed
   , ahp     :: !Random.RollDice  -- ^ encodes initial and maximal hp
   , acolor  :: !Color            -- ^ map color

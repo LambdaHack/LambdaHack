@@ -7,7 +7,7 @@ import qualified Data.List as L
 data PlaceKind = PlaceKind
   { psymbol  :: Char
   , pname    :: String
-  , pfreq    :: Int
+  , pfreq    :: [(String, Int)]  -- ^ frequency within groups
   , pcover   :: Cover     -- ^ how to fill whole place based on the corner
   , pfence   :: Fence     -- ^ whether to fence the place with solid border
   , ptopLeft :: [String]  -- ^ plan of the top-left corner of the place
