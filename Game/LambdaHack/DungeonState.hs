@@ -26,10 +26,10 @@ import Game.LambdaHack.Content.TileKind
 
 convertTileMaps :: Rnd (Kind.Id TileKind) -> Int -> Int -> TileMapXY
                 -> Rnd TileMap
-convertTileMaps defTile cxsize cysize lmap = do
+convertTileMaps cdefTile cxsize cysize lmap = do
   let bounds = (zeroLoc, toLoc cxsize (cxsize - 1, cysize - 1))
       assocs = map (\ (xy, t) -> (toLoc cxsize xy, t)) (M.assocs lmap)
-  pickedTiles <- replicateM (cxsize * cysize) defTile
+  pickedTiles <- replicateM (cxsize * cysize) cdefTile
   return $ Kind.listArray bounds pickedTiles Kind.// assocs
 
 unknownTileMap :: Kind.Id TileKind -> Int -> Int -> TileMap
@@ -61,12 +61,12 @@ buildLevel :: Kind.COps -> Cave -> Int -> Int -> Rnd Level
 buildLevel cops@Kind.COps{cotile=cotile@Kind.Ops{opick}, cocave=Kind.Ops{okind}}
            Cave{dkind, dsecret, ditem, dmap, dmeta} n depth = do
   let cfg@CaveKind{..} = okind dkind
-  cmap <- convertTileMaps (opick defTile) cxsize cysize dmap
+  cmap <- convertTileMaps (opick cdefTile) cxsize cysize dmap
   -- Roll locations of the stairs.
   su <- findLoc cmap (const (Tile.hasFeature cotile F.Boring))
   sd <- findLocTry 2000 cmap
           (\ l t -> l /= su && Tile.hasFeature cotile F.Boring t)
-          (\ l _ -> distance cxsize su l >= minStairsDistance)
+          (\ l _ -> distance cxsize su l >= cminStairDist)
   upId   <- Tile.stairsUpId   cotile
   downId <- Tile.stairsDownId cotile
   let stairs = [(su, upId)] ++ if n == depth then [] else [(sd, downId)]

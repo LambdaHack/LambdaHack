@@ -65,12 +65,12 @@ buildCave :: Kind.COps -> Int -> Kind.Id CaveKind -> Rnd Cave
 buildCave Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick, ofoldrWithKey}
                    , cocave=Kind.Ops{okind}
                    , coroom=Kind.Ops{okind=rokind, opick=ropick}} n ci = do
-  let cfg@CaveKind{cxsize, cysize, corTile} = okind ci
-  lgrid@(gx, gy) <- rollDiceXY $ levelGrid cfg
-  lminroom <- rollDiceXY $ minRoomSize cfg
+  let cfg@CaveKind{cxsize, cysize, ccorTile} = okind ci
+  lgrid@(gx, gy) <- rollDiceXY $ cgrid cfg
+  lminroom <- rollDiceXY $ cminRoomSize cfg
   let gs = grid lgrid (0, 0, cxsize - 1, cysize - 1)
   -- grid locations of "no-rooms"
-  nrnr <- noRooms cfg lgrid
+  nrnr <- cvoidRooms cfg lgrid
   nr   <- replicateM nrnr $ xyInArea (0, 0, gx - 1, gy - 1)
   rooms0 <- mapM (\ (i, r) -> do
                    r' <- if i `elem` nr
@@ -78,11 +78,11 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick, ofoldrWithKey}
                          else mkRoom lminroom r
                    return (i, r')) gs
   dlrooms <- mapM (\ (_, r) -> do
-                      c <- darkRoomChance cfg n
+                      c <- cdarkChance cfg n
                       return (r, not c)) rooms0
   connects <- connectGrid lgrid
   addedConnects <- if gx > 1 || gy > 1
-                   then replicateM (extraConnects cfg lgrid)
+                   then replicateM (cauxConnects cfg lgrid)
                           (randomConnection lgrid)
                    else return []
   let allConnects = L.nub (addedConnects ++ connects)
@@ -94,7 +94,7 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick, ofoldrWithKey}
   fenceId <- Tile.wallId cotile
   let fenceBounds = (1, 1, cxsize - 2, cysize - 2)
       fence = buildFence fenceId fenceBounds
-  pickedCorTile <- opick corTile
+  pickedCorTile <- opick ccorTile
   lrooms <- foldM (\ m (r@(x0, _, x1, _), dl) ->
                     if x0 == x1
                     then return m
@@ -129,18 +129,18 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick, ofoldrWithKey}
             -- Openings have a certain chance to be doors;
             -- doors have a certain chance to be open; and
             -- closed doors have a certain chance to be secret
-            rd <- doorChance cfg
+            rd <- cdoorChance cfg
             if not rd
               then return (M.insert (x, y) pickedCorTile l, le)
               else do
                 doorClosedId <- trigger cotile t
                 doorOpenId   <- trigger cotile doorClosedId
-                ro <- doorOpenChance cfg
+                ro <- copenChance cfg
                 if ro
                   then do
                     return (M.insert (x, y) doorOpenId l, le)
                   else do
-                    rs <- doorSecretChance cfg
+                    rs <- csecretChance cfg
                     if not rs
                       then do
                         return (M.insert (x, y) doorClosedId l, le)
