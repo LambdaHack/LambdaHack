@@ -1,9 +1,9 @@
-module Content.RoomKind ( cdefs ) where
+module Content.PlaceKind ( cdefs ) where
 
 import qualified Game.LambdaHack.Content.Content as Content
-import Game.LambdaHack.Content.RoomKind
+import Game.LambdaHack.Content.PlaceKind
 
-cdefs :: Content.CDefs RoomKind
+cdefs :: Content.CDefs PlaceKind
 cdefs = Content.CDefs
   { getSymbol = rsymbol
   , getName = rname
@@ -12,9 +12,9 @@ cdefs = Content.CDefs
   , content =
       [rect, pillar, pillarC, pillar3, colonnade, colonnadeW]
   }
-rect,        pillar, pillarC, pillar3, colonnade, colonnadeW :: RoomKind
+rect,        pillar, pillarC, pillar3, colonnade, colonnadeW :: PlaceKind
 
-rect = RoomKind  -- room is valid for any nonempty area, hence low frequency
+rect = PlaceKind  -- room is valid for any nonempty area, hence low frequency
   { rsymbol  = 'r'
   , rname    = "room"
   , rfreq    = 100
@@ -24,7 +24,7 @@ rect = RoomKind  -- room is valid for any nonempty area, hence low frequency
                , "|."
                ]
   }
-pillar = RoomKind
+pillar = PlaceKind
   { rsymbol  = 'p'
   , rname    = "pillar"
   , rfreq    = 1000  -- needs a large area, hence high frequency
@@ -53,7 +53,7 @@ pillar3 = pillar
                , "|...."
               ]
   }
-colonnade = RoomKind
+colonnade = PlaceKind
   { rsymbol  = 'c'
   , rname    = "colonnade"
   , rfreq    = 5000  -- needs a larger area, hence higher frequency

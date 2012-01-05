@@ -11,7 +11,7 @@ import Game.LambdaHack.Geometry
 import Game.LambdaHack.Area
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.Content.RoomKind
+import Game.LambdaHack.Content.PlaceKind
 
 -- | The sparse room and cave map.
 type TileMapXY = M.Map (X, Y) (Kind.Id TileKind)
@@ -19,9 +19,9 @@ type TileMapXY = M.Map (X, Y) (Kind.Id TileKind)
 -- | Check if the area large enough for tiling the corner twice in each
 -- diraction, with a possible one tile overlap.
 roomValid :: Area      -- ^ the area to fill
-          -> RoomKind  -- ^ the room kind to construct
+          -> PlaceKind  -- ^ the room kind to construct
           -> Bool
-roomValid (x0, y0, x1, y1) RoomKind{..} =
+roomValid (x0, y0, x1, y1) PlaceKind{..} =
   let extra = case rfence of
         FWall  -> 1
         FFloor -> -1
@@ -38,7 +38,7 @@ buildFence wallId (x0, y0, x1, y1) =
                [ ((x, y), wallId) | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
 
 -- | Construct room of a given kind, with the given floor and wall tiles.
-digRoom :: RoomKind
+digRoom :: PlaceKind
         -> M.Map Char (Kind.Id TileKind)
         -> Kind.Id TileKind -> Kind.Id TileKind -> Kind.Id TileKind
         -> Area
@@ -54,9 +54,9 @@ digRoom rk defLegend floorId wallId corId area =
 
 -- | Create the room by tiling patterns.
 tileRoom :: Area                           -- ^ the area to fill
-         -> RoomKind                       -- ^ the room kind to construct
+         -> PlaceKind                       -- ^ the room kind to construct
          -> M.Map (X, Y) Char
-tileRoom (x0, y0, x1, y1) RoomKind{..} =
+tileRoom (x0, y0, x1, y1) PlaceKind{..} =
   let dx = x1 - x0 + 1
       dy = y1 - y0 + 1
       fromX (x, y) = L.zip [x..] (repeat y)
