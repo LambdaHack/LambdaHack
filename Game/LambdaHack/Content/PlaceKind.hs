@@ -3,11 +3,12 @@ module Game.LambdaHack.Content.PlaceKind
   ) where
 
 import qualified Data.List as L
+import Game.LambdaHack.Content.Content
 
 data PlaceKind = PlaceKind
-  { psymbol  :: Char
-  , pname    :: String
-  , pfreq    :: [(String, Int)]  -- ^ frequency within groups
+  { psymbol  :: Char      -- ^ a symbol
+  , pname    :: String    -- ^ short description
+  , pfreq    :: Freqs     -- ^ frequency within groups
   , pcover   :: Cover     -- ^ how to fill whole place based on the corner
   , pfence   :: Fence     -- ^ whether to fence the place with solid border
   , ptopLeft :: [String]  -- ^ plan of the top-left corner of the place
@@ -31,7 +32,8 @@ data Fence =
 -- that is at least 4 tiles distant from the edges, if the place is big enough,
 -- (unless the place has FNone fence, in which case the entrance is
 -- at the outer tiles of the place).
--- TODO: Check that all symbols in place plans are covered in tile content.
+-- TODO: Check that all symbols in place plans are present in the legend.
+-- TODO: Add a filed with tile group to be used as the legend.
 pvalidate :: [PlaceKind] -> [PlaceKind]
 pvalidate = L.filter (\ PlaceKind{..} ->
   let dxcorner = case ptopLeft of [] -> 0 ; l : _ -> L.length l

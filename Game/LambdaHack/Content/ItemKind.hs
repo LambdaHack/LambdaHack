@@ -5,6 +5,7 @@ module Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Effect
 import Game.LambdaHack.Flavour
 import Game.LambdaHack.Random
+import Game.LambdaHack.Content.Content
 
 -- TODO: jpower is out of place here. It doesn't make sense for all items,
 -- and will mean different things for different items. Perhaps it should
@@ -15,17 +16,18 @@ import Game.LambdaHack.Random
 -- the value of the item for shops, treasure chests, artifact set rebalancing,
 -- etc., so if we make jpower complex, the value computation gets complex too.
 data ItemKind = ItemKind
-  { isymbol  :: !Char       -- ^ map symbol
-  , iname    :: !String     -- ^ group name
-  , ifreq    :: ![(String, Int)]  -- ^ frequency within groups
-  , iflavour :: ![Flavour]  -- ^ possible flavours
-  , ieffect  :: !Effect     -- ^ the effect when activated
-  , icount   :: !RollQuad   -- ^ created in that quantify
-  , ipower   :: !RollQuad   -- ^ created with that power
-  , iverbApply   :: !String
-  , iverbProject :: !String
+  { isymbol  :: !Char        -- ^ map symbol
+  , iname    :: !String      -- ^ generic name
+  , ifreq    :: !Freqs       -- ^ frequency within groups
+  , iflavour :: ![Flavour]   -- ^ possible flavours
+  , ieffect  :: !Effect      -- ^ the effect when activated
+  , icount   :: !RollQuad    -- ^ created in that quantify
+  , ipower   :: !RollQuad    -- ^ created with that power
+  , iverbApply   :: !String  -- ^ the verb for applying and possibly combat
+  , iverbProject :: !String  -- ^ the verb for projecting
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 
+-- | No specific possible problems for the content of this kind, so far.
 ivalidate :: [ItemKind] -> [ItemKind]
-ivalidate _ = [] -- TODO
+ivalidate _ = []

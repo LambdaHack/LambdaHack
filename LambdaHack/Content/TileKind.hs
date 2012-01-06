@@ -14,9 +14,9 @@ cdefs = Content.CDefs
   , getFreq = tfreq
   , validate = tvalidate
   , content =
-      [wall, pillar, wallV, doorSecretV, doorClosedV, doorOpenV, wallH, doorSecretH, doorClosedH, doorOpenH, stairsUp, stairsDown, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown]
+      [wall, pillar, wallV, doorHiddenV, doorClosedV, doorOpenV, wallH, doorHiddenH, doorClosedH, doorOpenH, stairsUp, stairsDown, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown]
   }
-wall,        pillar, wallV, doorSecretV, doorClosedV, doorOpenV, wallH, doorSecretH, doorClosedH, doorOpenH, stairsUp, stairsDown, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown :: TileKind
+wall,        pillar, wallV, doorHiddenV, doorClosedV, doorOpenV, wallH, doorHiddenH, doorClosedH, doorOpenH, stairsUp, stairsDown, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown :: TileKind
 
 wall = TileKind
   { tsymbol  = ' '
@@ -42,7 +42,7 @@ wallV = TileKind
   , tcolor2  = defFG
   , tfeature = []
   }
-doorSecretV = wallV
+doorHiddenV = wallV
   { tfreq    = [("hidden", 100)]
   , tfeature = [ Hidden, Secret (Random.RollDice 7 2)
                , ChangeTo "vertical closed door"
@@ -76,7 +76,7 @@ wallH = TileKind
   , tcolor2  = defFG
   , tfeature = []
   }
-doorSecretH = wallH
+doorHiddenH = wallH
   { tfreq    = [("hidden", 100)]
   , tfeature = [ Hidden, Secret (Random.RollDice 7 2)
                , ChangeTo "horizontal closed door"

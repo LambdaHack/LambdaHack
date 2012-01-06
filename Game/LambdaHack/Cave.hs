@@ -71,10 +71,10 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick, ofoldrWithKey}
   lminplace <- rollDiceXY $ cminPlaceSize
   let gs = grid lgrid (0, 0, cxsize - 1, cysize - 1)
   places0 <- mapM (\ (i, r) -> do
-                     rd <- chance $ cplaceChance
-                     r' <- if rd
-                           then mkPlace lminplace r
-                           else mkVoidPlace r
+                     rv <- chance $ cvoidChance
+                     r' <- if rv
+                           then mkVoidPlace r
+                           else mkPlace lminplace r
                      return (i, r')) gs
   dlplaces <- mapM (\ (_, r) -> do
                       c <- chanceQuad lvl depth cdarkChance
@@ -111,7 +111,7 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick, ofoldrWithKey}
                       return $ M.union tmap m
                   ) fence dlplaces
   let lcorridors = M.unions (L.map (digCorridors pickedCorTile) cs)
-      getSecret ti tk acc =
+      getHidden ti tk acc =
         if Tile.canBeHidden cotile tk
         then do
           ti2 <- opick "hidden" $ \ k -> Tile.kindHasFeature F.Hidden k
@@ -119,8 +119,8 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick, ofoldrWithKey}
           m <- acc
           return $ M.insert ti ti2 m
         else acc
-  secrets <- ofoldrWithKey getSecret (return M.empty)
-  let lm = M.unionWith (mergeCorridor cotile secrets) lcorridors lplaces
+  hidden <- ofoldrWithKey getHidden (return M.empty)
+  let lm = M.unionWith (mergeCorridor cotile hidden) lcorridors lplaces
   -- Convert openings into doors, possibly.
   (dmap, secretMap) <-
     let f (l, le) ((x, y), t) =
@@ -128,7 +128,7 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick, ofoldrWithKey}
           then do
             -- Openings have a certain chance to be doors;
             -- doors have a certain chance to be open; and
-            -- closed doors have a certain chance to be secret
+            -- closed doors have a certain chance to be hidden
             rd <- chance cdoorChance
             if not rd
               then return (M.insert (x, y) pickedCorTile l, le)
@@ -140,7 +140,7 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick, ofoldrWithKey}
                   then do
                     return (M.insert (x, y) doorOpenId l, le)
                   else do
-                    rs <- chance csecretChance
+                    rs <- chance chiddenChance
                     if not rs
                       then do
                         return (M.insert (x, y) doorClosedId l, le)

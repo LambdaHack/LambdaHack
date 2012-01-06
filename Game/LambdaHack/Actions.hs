@@ -374,7 +374,7 @@ actorOpenDoor actor dir = do
       iq = aiq $ okind $ bkind body
       openPower = TileKind.SecretStrength $
         if isPlayer
-        then 1  -- player can't open secret doors
+        then 1  -- player can't open hidden doors
         else case strongestSearch coitem bitems of
                Just i  -> iq + jpower i
                Nothing -> iq
@@ -445,7 +445,7 @@ cycleHero = do
     ni : _ -> selectPlayer (AHero ni)
               >>= assert `trueM` (pl, ni, "hero duplicated")
 
--- | Search for secret doors
+-- | Search for hidden doors
 search :: Action ()
 search = do
   Kind.COps{coitem, cotile} <- contentOps
