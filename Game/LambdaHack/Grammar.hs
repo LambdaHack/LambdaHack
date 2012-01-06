@@ -17,12 +17,21 @@ import qualified Game.LambdaHack.Kind as Kind
 type Verb = String
 type Object = String
 
+vowel :: Char -> Bool
+vowel l = l `elem` "aeio"  -- TODO: 'u' is hard, as is "eu"
+
 suffixS :: String -> String
-suffixS word = case last word of
-                'y' -> init word ++ "ies"
-                's' -> word ++ "es"
-                'x' -> word ++ "es"
-                _   -> word ++ "s"
+suffixS word = case L.reverse word of
+                'h' : 'c' : _ -> word ++ "es"
+                'h' : 's' : _ -> word ++ "es"
+                'i' : 's' : _ -> word ++ "es"
+                's' : _ -> word ++ "es"
+                'z' : _ -> word ++ "es"
+                'x' : _ -> word ++ "es"
+                'g' : _ -> word ++ "es"
+                'j' : _ -> word ++ "es"
+                'y' : l : _ | not (vowel l) -> init word ++ "ies"
+                _ -> word ++ "s"
 
 capitalize :: String -> String
 capitalize [] = []
@@ -30,8 +39,8 @@ capitalize (c : cs) = toUpper c : cs
 
 addIndefinite :: String -> String
 addIndefinite b = case b of
-                    c : _ | c `elem` "aeio" -> "an " ++ b
-                    _                       -> "a "  ++ b
+                    c : _ | vowel c -> "an " ++ b  -- TODO: 'h' is hard
+                    _               -> "a "  ++ b
 
 makeObject :: Int -> (Object -> Object) -> Object -> String
 makeObject 1 adj obj = addIndefinite $ adj obj
