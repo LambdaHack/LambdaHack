@@ -14,10 +14,10 @@ data CaveKind = CaveKind
   , cxsize        :: X
   , cysize        :: Y
   , cgrid         :: RollDiceXY
-  , cminRoomSize  :: RollDiceXY
+  , cminPlaceSize :: RollDiceXY
   , cdarkChance   :: RollQuad
   , cauxConnects  :: Rational    -- ^ not exact, because of duplications
-  , croomChance   :: Chance
+  , cplaceChance  :: Chance
   , cminStairDist :: Int
   , cdoorChance   :: Chance
   , copenChance   :: Chance
@@ -26,17 +26,17 @@ data CaveKind = CaveKind
   , cdefTile      :: String
   , ccorTile      :: String
   }
-  deriving Show
+  deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 
--- | Catch caves with not enough space for all the rooms.
+-- | Catch caves with not enough space for all the places.
 cvalidate :: [CaveKind] -> [CaveKind]
 cvalidate = L.filter (\ CaveKind{..} ->
   let maxGridX = maxDice $ fst cgrid
       maxGridY = maxDice $ snd cgrid
-      maxRoomSizeX = maxDice $ fst cminRoomSize
-      maxRoomSizeY = maxDice $ snd cminRoomSize
+      maxPlaceSizeX = maxDice $ fst cminPlaceSize
+      maxPlaceSizeY = maxDice $ snd cminPlaceSize
       xborder = if maxGridX == 1 then 5 else 3
       yborder = if maxGridX == 1 then 5 else 3
   in length cname <= 25
-     && (maxGridX * (xborder + maxRoomSizeX) + 1 > cxsize ||
-         maxGridY * (yborder + maxRoomSizeY) + 1 > cysize))
+     && (maxGridX * (xborder + maxPlaceSizeX) + 1 > cxsize ||
+         maxGridY * (yborder + maxPlaceSizeY) + 1 > cysize))

@@ -28,12 +28,12 @@ import qualified Game.LambdaHack.Feature as F
 -- move immediately after generation. This does not seem like
 -- a bad idea, but it would certainly be "more correct" to set
 -- the time to the creation time instead.
-template :: Kind.Id ActorKind -> Maybe String -> Maybe Char -> Int -> Loc
+template :: Kind.Id ActorKind -> Maybe Char -> Maybe String -> Int -> Loc
          -> Actor
-template mk ms mc hp loc =
+template mk mc ms hp loc =
   -- The initial target is invalid to force re-evaluating it.
   let invalidTarget = TEnemy invalidActorId loc
-  in Actor mk ms mc hp Nothing invalidTarget loc 'a' 0
+  in Actor mk mc ms hp Nothing invalidTarget loc 'a' 0
 
 nearbyFreeLoc :: Kind.Ops TileKind -> Loc -> State -> Loc
 nearbyFreeLoc cotile origin state =
@@ -62,7 +62,7 @@ addHero Kind.COps{coactor, cotile} ploc state =
       symbol = if n < 1 || n > 9 then Nothing else Just $ Char.intToDigit n
       name = findHeroName config n
       startHP = bHP `div` min 10 (n + 1)
-      m = template (heroKindId coactor) (Just name) symbol startHP loc
+      m = template (heroKindId coactor) symbol (Just name) startHP loc
       state' = state { scounter = (n + 1, snd (scounter state))
                      , sparty = IS.insert n (sparty state) }
   in updateLevel (updateHeroes (IM.insert n m)) state'
@@ -104,10 +104,10 @@ rollMonster Kind.COps{cotile, coactor=Kind.Ops{opick, okind}} state = do
   if not rc
     then return state
     else do
-      -- TODO: new monsters should be generated in a place that isn't
-      -- visible by the player (if possible -- not possible for bigrooms)
-      -- levels with few rooms are dangerous, because monsters may spawn
-      -- in adjacent and unexpected places
+      -- TODO: New monsters should be generated in a place that isn't
+      -- visible by the player, if possible.
+      -- Levels with few rooms are dangerous, because monsters may spawn
+      -- in adjacent and unexpected places.
       loc <- findLocTry 2000 (lmap lvl)
              (\ l t -> Tile.hasFeature cotile F.Walkable t
                        && l `L.notElem` L.map bloc (hs ++ ms))

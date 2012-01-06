@@ -14,7 +14,7 @@ cdefs = Content.CDefs
   }
 rect,        pillar, pillarC, pillar3, colonnade, colonnadeW :: PlaceKind
 
-rect = PlaceKind  -- room is valid for any nonempty area, hence low frequency
+rect = PlaceKind  -- valid for any nonempty area, hence low frequency
   { psymbol  = 'r'
   , pname    = "room"
   , pfreq    = [("rogue", 100)]
@@ -26,7 +26,7 @@ rect = PlaceKind  -- room is valid for any nonempty area, hence low frequency
   }
 pillar = PlaceKind
   { psymbol  = 'p'
-  , pname    = "pillar"
+  , pname    = "pillar room"
   , pfreq    = [("rogue", 1000)]  -- needs a large area, hence high frequency
   , pcover   = CStretch
   , pfence   = FNone

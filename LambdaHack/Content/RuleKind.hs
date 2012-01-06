@@ -21,19 +21,19 @@ cdefs = Content.CDefs
 standard :: RuleKind
 
 standard = RuleKind
-  { rsymbol           = 's'
-  , rname             = "standard game ruleset"
-  , rfreq             = [("standard", 100)]
+  { rsymbol        = 's'
+  , rname          = "standard game ruleset"
+  , rfreq          = [("standard", 100)]
     -- Check whether one location is accessible from another.
     -- Precondition: the two locations are next to each other.
     -- Apart of checking the target tile, we forbid diagonal movement
     -- to and from doors.
-  , raccessible       = \ lxsize sloc src tloc tgt ->
+  , raccessible    = \ lxsize sloc src tloc tgt ->
       F.Walkable `elem` tfeature tgt
       && not ((F.Closable `elem` tfeature src ||
                F.Closable `elem` tfeature tgt)
               && diagonal lxsize (towards lxsize sloc tloc))
-  , rtitle            = "LambdaHack"
-  , rpathsDataFile    = Self.getDataFileName
-  , rpathsVersion     = Self.version
+  , rtitle         = "LambdaHack"
+  , rpathsDataFile = Self.getDataFileName
+  , rpathsVersion  = Self.version
   }

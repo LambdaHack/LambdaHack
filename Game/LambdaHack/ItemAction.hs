@@ -103,7 +103,7 @@ projectGroupItem source loc verb item = do
         if sloc `IS.member` totalVisible per
         then sm
         else template (heroKindId coactor)
-               (Just "somebody") Nothing 99 sloc
+               Nothing (Just "somebody") 99 sloc
       msg = subjectVerbIObject cops state subject verb consumed ""
   removeFromInventory source consumed sloc
   case locToActor loc state of

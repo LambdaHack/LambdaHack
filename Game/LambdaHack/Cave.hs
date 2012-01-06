@@ -18,9 +18,9 @@ import qualified Game.LambdaHack.Tile as Tile
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.Room
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.WorldLoc
+import Game.LambdaHack.Place
 
 -- All maps used here are sparse. In case of the tile map, the default tile
 -- is specified in the cave kind specification.
@@ -29,7 +29,6 @@ type SecretMapXY = M.Map (X, Y) SecretStrength
 
 type ItemMapXY = M.Map (X, Y) Item
 
--- TODO: dmonsters :: [(X, Y), actorKind]  -- ^ fixed monsters on the level
 data Cave = Cave
   { dkind     :: !(Kind.Id CaveKind)  -- ^ the kind of the cave
   , dsecret   :: SecretMapXY
@@ -65,22 +64,21 @@ as follows:
 buildCave :: Kind.COps -> LevelId -> Int -> Kind.Id CaveKind -> Rnd Cave
 buildCave Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick, ofoldrWithKey}
                    , cocave=Kind.Ops{okind}
-                   , coroom=Kind.Ops{okind=rokind, opick=ropick}}
+                   , coplace=Kind.Ops{okind=pokind, opick=popick}}
           lvl depth ci = do
   let CaveKind{..} = okind ci
   lgrid@(gx, gy) <- rollDiceXY cgrid
-  lminroom <- rollDiceXY $ cminRoomSize
+  lminplace <- rollDiceXY $ cminPlaceSize
   let gs = grid lgrid (0, 0, cxsize - 1, cysize - 1)
-  -- grid locations of "no-rooms"
-  rooms0 <- mapM (\ (i, r) -> do
-                     rd <- chance $ croomChance
+  places0 <- mapM (\ (i, r) -> do
+                     rd <- chance $ cplaceChance
                      r' <- if rd
-                           then mkRoom lminroom r
-                           else mkVoidRoom r
+                           then mkPlace lminplace r
+                           else mkVoidPlace r
                      return (i, r')) gs
-  dlrooms <- mapM (\ (_, r) -> do
+  dlplaces <- mapM (\ (_, r) -> do
                       c <- chanceQuad lvl depth cdarkChance
-                      return (r, not c)) rooms0
+                      return (r, not c)) places0
   connects <- connectGrid lgrid
   addedConnects <-
     if gx * gy > 1
@@ -88,29 +86,30 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick, ofoldrWithKey}
          in replicateM caux (randomConnection lgrid)
     else return []
   let allConnects = L.nub (addedConnects ++ connects)
-      rooms = M.fromList rooms0
+      places = M.fromList places0
   cs <- mapM (\ (p0, p1) -> do
-                 let r0 = rooms M.! p0
-                     r1 = rooms M.! p1
-                 connectRooms r0 r1) allConnects
+                 let r0 = places M.! p0
+                     r1 = places M.! p1
+                 connectPlaces r0 r1) allConnects
   wallId <- opick "fillerWall" (const True)
   let fenceBounds = (1, 1, cxsize - 2, cysize - 2)
       fence = buildFence wallId fenceBounds
   pickedCorTile <- opick ccorTile (const True)
-  lrooms <- foldM (\ m (r@(x0, _, x1, _), dl) ->
+  lplaces <- foldM (\ m (r@(x0, _, x1, _), dl) ->
                     if x0 == x1
                     then return m
                     else do
-                      roomId <- ropick "rogue" (roomValid r)
-                      let kr = rokind roomId
+                      placeId <- popick "rogue" (placeValid r)
+                      let kr = pokind placeId
                       floorId <- if dl
                                  then opick "floorRoomLit" (const True)
                                  else opick "floorRoomDark" (const True)
                       legend <- olegend cotile
-                      let room =
-                            digRoom kr legend floorId wallId pickedCorTile r
-                      return $ M.union room m
-                  ) fence dlrooms
+                      let (tmap, _place) =  -- TODO: store and use place
+                            digPlace placeId kr
+                              legend floorId wallId pickedCorTile r
+                      return $ M.union tmap m
+                  ) fence dlplaces
   let lcorridors = M.unions (L.map (digCorridors pickedCorTile) cs)
       getSecret ti tk acc =
         if Tile.canBeHidden cotile tk
@@ -121,7 +120,7 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick, ofoldrWithKey}
           return $ M.insert ti ti2 m
         else acc
   secrets <- ofoldrWithKey getSecret (return M.empty)
-  let lm = M.unionWith (mergeCorridor cotile secrets) lcorridors lrooms
+  let lm = M.unionWith (mergeCorridor cotile secrets) lcorridors lplaces
   -- Convert openings into doors, possibly.
   (dmap, secretMap) <-
     let f (l, le) ((x, y), t) =
@@ -186,11 +185,11 @@ trigger Kind.Ops{okind, opick} t =
 
 type Corridor = [(X, Y)]
 
--- | Create a random room according to given parameters.
-mkRoom :: (X, Y)    -- ^ minimum size
-       -> Area      -- ^ this is the area, not the room itself
-       -> Rnd Area  -- ^ upper-left and lower-right corner of the room
-mkRoom (xm, ym) (x0, y0, x1, y1) =
+-- | Create a random place according to given parameters.
+mkPlace :: (X, Y)    -- ^ minimum size
+        -> Area      -- ^ this is the area, not the place itself
+        -> Rnd Area  -- ^ upper-left and lower-right corner of the place
+mkPlace (xm, ym) (x0, y0, x1, y1) =
   let area0 = (x0, y0, x1 - xm + 1, y1 - ym + 1)
   in assert (validArea area0 `blame` area0) $ do
     (rx0, ry0) <- xyInArea area0
@@ -199,10 +198,10 @@ mkRoom (xm, ym) (x0, y0, x1, y1) =
       (rx1, ry1) <- xyInArea area1
       return (rx0, ry0, rx1, ry1)
 
--- | Create a void room, i.e., a single corridor field.
-mkVoidRoom :: Area     -- ^ this is the area, not the room itself
-           -> Rnd Area -- ^ upper-left and lower-right corner of the room
-mkVoidRoom area = assert (validArea area `blame` area) $ do
+-- | Create a void place, i.e., a single corridor field.
+mkVoidPlace :: Area     -- ^ this is the area, not the place itself
+            -> Rnd Area -- ^ upper-left and lower-right corner of the place
+mkVoidPlace area = assert (validArea area `blame` area) $ do
   (ry, rx) <- xyInArea area
   return (ry, rx, ry, rx)
 

@@ -70,13 +70,13 @@ mkCorridor hv ((x0, y0), (x1, y1)) b = do
     Horiz -> return [(x0, y0), (rx, y0), (rx, y1), (x1, y1)]
     Vert  -> return [(x0, y0), (x0, ry), (x1, ry), (x1, y1)]
 
--- | Try to connect two rooms with a corridor.
+-- | Try to connect two places with a corridor.
 -- Choose entrances at least 4 tiles distant from the edges, if possible.
 -- The condition passed to mkCorridor is tricky; there might not always
--- exist a suitable intermediate point if the rooms are allowed to be close
+-- exist a suitable intermediate point if the places are allowed to be close
 -- together.
-connectRooms :: Area -> Area -> Rnd [(X, Y)]
-connectRooms sa@(_, _, sx1, sy1) ta@(tx0, ty0, _, _) = do
+connectPlaces :: Area -> Area -> Rnd [(X, Y)]
+connectPlaces sa@(_, _, sx1, sy1) ta@(tx0, ty0, _, _) = do
   let trim (x0, y0, x1, y1) =
         let trim4 (v0, v1) = if v1 - v0 < 8 then (v0, v1) else (v0 + 4, v1 - 4)
             (nx0, nx1) = trim4 (x0, x1)

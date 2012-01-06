@@ -25,7 +25,7 @@ data ItemKind = ItemKind
   , iverbApply   :: !String
   , iverbProject :: !String
   }
-  deriving Show
+  deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 
 ivalidate :: [ItemKind] -> [ItemKind]
 ivalidate _ = [] -- TODO

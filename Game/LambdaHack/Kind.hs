@@ -79,7 +79,7 @@ data COps = COps
   { coactor :: Ops ActorKind
   , cocave  :: Ops CaveKind
   , coitem  :: Ops ItemKind
-  , coroom  :: Ops PlaceKind
+  , coplace :: Ops PlaceKind
   , corule  :: Ops RuleKind
   , cotile  :: Ops TileKind
   }

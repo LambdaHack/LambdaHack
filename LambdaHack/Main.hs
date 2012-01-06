@@ -18,7 +18,7 @@ cops = Kind.COps
   { coactor = Kind.createOps Content.ActorKind.cdefs
   , cocave  = Kind.createOps Content.CaveKind.cdefs
   , coitem  = Kind.createOps Content.ItemKind.cdefs
-  , coroom  = Kind.createOps Content.PlaceKind.cdefs
+  , coplace = Kind.createOps Content.PlaceKind.cdefs
   , corule  = Kind.createOps Content.RuleKind.cdefs
   , cotile  = Kind.createOps Content.TileKind.cdefs
   }

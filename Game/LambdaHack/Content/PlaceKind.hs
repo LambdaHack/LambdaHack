@@ -12,7 +12,7 @@ data PlaceKind = PlaceKind
   , pfence   :: Fence     -- ^ whether to fence the place with solid border
   , ptopLeft :: [String]  -- ^ plan of the top-left corner of the place
   }
-  deriving Show
+  deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 
 data Cover =
     CTile     -- ^ tile the corner plan, cutting off at the right and bottom

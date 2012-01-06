@@ -20,7 +20,7 @@ data TileKind = TileKind
   , tcolor2  :: !Color      -- ^ map color when not in FOV
   , tfeature :: ![Feature]  -- ^ properties
   }
-  deriving Show
+  deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 
 newtype SecretStrength = SecretStrength{secretStrength :: Time}
   deriving (Show, Eq, Ord)
@@ -34,7 +34,7 @@ instance Binary SecretStrength where
 -- but less precise property that tiles that look the same can't be
 -- distinguished by player actions (but may behave differently
 -- wrt dungeon generation, AI preferences, etc.).
--- TODO: check that all solid room boundaries have hidden counterparts.
+-- TODO: check that all posible solid place fences have hidden counterparts.
 tvalidate :: [TileKind] -> [TileKind]
 tvalidate lt =
   let listFov f = L.map (\ kt -> ((tsymbol kt, f kt), [kt])) lt

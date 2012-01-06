@@ -16,8 +16,8 @@ import Game.LambdaHack.Random
 -- temporarily, but tend to return to the original value over time. E.g., HP.
 data Actor = Actor
   { bkind   :: !(Kind.Id ActorKind)  -- ^ the kind of the actor
-  , bname   :: !(Maybe String)       -- ^ individual name
   , bsymbol :: !(Maybe Char)         -- ^ individual map symbol
+  , bname   :: !(Maybe String)       -- ^ individual name
   , bhp     :: !Int                  -- ^ current hit pints
   , bdir    :: !(Maybe (Dir, Int))   -- ^ the direction and distance of running
   , btarget :: Target                -- ^ the target for distance attacks and AI

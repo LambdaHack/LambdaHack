@@ -1,27 +1,47 @@
--- | Generation of rooms from room kinds.
+-- | Generation of places from place kinds.
 {-# LANGUAGE RankNTypes #-}
-module Game.LambdaHack.Room
-  ( TileMapXY, roomValid, buildFence, digRoom
+module Game.LambdaHack.Place
+  ( TileMapXY, Place(..), placeValid, buildFence, digPlace
   ) where
 
+import Data.Binary
+import Control.Monad
 import qualified Data.Map as M
 import qualified Data.List as L
 
-import Game.LambdaHack.Geometry
-import Game.LambdaHack.Area
-import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Content.PlaceKind
+import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Area
+import Game.LambdaHack.Geometry
+import Game.LambdaHack.Content.TileKind
 
--- | The sparse room and cave map.
+data Place = Place
+  { qkind :: !(Kind.Id PlaceKind)
+  , qarea :: !Area
+  , qseen :: !Bool
+  }
+  deriving Show
+
+instance Binary Place where
+  put Place{..} = do
+    put qkind
+    put qarea
+    put qseen
+  get = do
+    qkind <- get
+    qarea <- get
+    qseen <- get
+    return Place{..}
+
+-- | The sparse place and cave map.
 type TileMapXY = M.Map (X, Y) (Kind.Id TileKind)
 
 -- | Check if the area large enough for tiling the corner twice in each
 -- diraction, with a possible one tile overlap.
-roomValid :: Area      -- ^ the area to fill
-          -> PlaceKind  -- ^ the room kind to construct
+placeValid :: Area      -- ^ the area to fill
+          -> PlaceKind  -- ^ the place kind to construct
           -> Bool
-roomValid (x0, y0, x1, y1) PlaceKind{..} =
+placeValid (x0, y0, x1, y1) PlaceKind{..} =
   let extra = case pfence of
         FWall  -> 1
         FFloor -> -1
@@ -37,26 +57,27 @@ buildFence wallId (x0, y0, x1, y1) =
   M.fromList $ [ ((x, y), wallId) | x <- [x0-1, x1+1], y <- [y0..y1] ] ++
                [ ((x, y), wallId) | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
 
--- | Construct room of a given kind, with the given floor and wall tiles.
-digRoom :: PlaceKind
-        -> M.Map Char (Kind.Id TileKind)
-        -> Kind.Id TileKind -> Kind.Id TileKind -> Kind.Id TileKind
-        -> Area
-        -> TileMapXY
-digRoom rk defLegend floorId wallId corId area =
-  let (roomArea, fence) = case pfence rk of
+-- | Construct place of a given kind, with the given floor and wall tiles.
+digPlace :: Kind.Id PlaceKind -> PlaceKind
+         -> M.Map Char (Kind.Id TileKind)
+         -> Kind.Id TileKind -> Kind.Id TileKind -> Kind.Id TileKind
+         -> Area
+         -> (TileMapXY, Place)
+digPlace placeId rk defLegend floorId wallId corId area =
+  let (placeArea, fence) = case pfence rk of
         FWall  -> (area, buildFence wallId area)
         FFloor -> (expand area (-1), buildFence corId $ expand area (-1))
         FNone  -> (expand area 1, M.empty)
       legend = M.insert '.' floorId $
                M.insert '#' wallId defLegend
-  in M.union (M.map (legend M.!) $ tileRoom roomArea rk) fence
+      tmap = M.union (M.map (legend M.!) $ tilePlace placeArea rk) fence
+  in (tmap, Place placeId placeArea False)
 
--- | Create the room by tiling patterns.
-tileRoom :: Area                           -- ^ the area to fill
-         -> PlaceKind                       -- ^ the room kind to construct
+-- | Create the place by tiling patterns.
+tilePlace :: Area                           -- ^ the area to fill
+         -> PlaceKind                      -- ^ the place kind to construct
          -> M.Map (X, Y) Char
-tileRoom (x0, y0, x1, y1) PlaceKind{..} =
+tilePlace (x0, y0, x1, y1) PlaceKind{..} =
   let dx = x1 - x0 + 1
       dy = y1 - y0 + 1
       fromX (x, y) = L.zip [x..] (repeat y)

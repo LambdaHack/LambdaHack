@@ -43,7 +43,7 @@ startup k = do
   -- text buffer
   tb <- textBufferNew (Just ttt)
   textBufferSetText tb (unlines (replicate 25 (replicate 80 ' ')))
-  -- create text view
+  -- create text view, TODO: use GtkLayout or DrawingArea instead of TextView?
   tv <- textViewNewWithBuffer tb
   containerAdd w tv
   textViewSetEditable tv False
