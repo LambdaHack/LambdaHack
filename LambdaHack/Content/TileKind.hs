@@ -1,3 +1,4 @@
+-- | Terrain tiles for LambdaHack.
 module Content.TileKind ( cdefs ) where
 
 import Game.LambdaHack.Color

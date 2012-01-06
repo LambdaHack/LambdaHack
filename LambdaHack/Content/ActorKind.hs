@@ -1,3 +1,4 @@
+-- | Monsters and heroes for LambdaHack.
 module Content.ActorKind ( cdefs ) where
 
 import Game.LambdaHack.Color
@@ -34,7 +35,7 @@ eye = ActorKind
   , aname   = "reducible eye"
   , afreq   = [("monster", 60), ("summon", 50)]
   , acolor  = BrRed
-  , ahp     = RollDice 1 12  -- falls in 1--4 unarmed rounds
+  , ahp     = RollDice 1 12  -- Falls in 1--4 unarmed rounds.
   , aspeed  = 10
   , asight  = True
   , asmell  = False
@@ -46,7 +47,7 @@ fastEye = ActorKind
   , aname   = "super-fast eye"
   , afreq   = [("monster", 10)]
   , acolor  = BrBlue
-  , ahp     = RollDice 1 6  -- falls in 1--2 unarmed rounds
+  , ahp     = RollDice 1 6  -- Falls in 1--2 unarmed rounds.
   , aspeed  = 4
   , asight  = True
   , asmell  = False
@@ -58,7 +59,7 @@ nose = ActorKind
   , aname   = "point-free nose"
   , afreq   = [("monster", 20), ("summon", 100)]
   , acolor  = Green
-  , ahp     = RollDice 6 2  -- 2--5 and in 1 round of the strongest sword
+  , ahp     = RollDice 6 2
   , aspeed  = 11
   , asight  = False
   , asmell  = True

@@ -1,3 +1,4 @@
+-- | Weapons and treasure for LambdaHack.
 module Content.ItemKind ( cdefs ) where
 
 import Game.LambdaHack.Color

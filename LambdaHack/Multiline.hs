@@ -1,3 +1,4 @@
+-- | Template Haskell machinery for quoting multiline strings.
 module Multiline (multiline) where
 
 import qualified Language.Haskell.TH as TH

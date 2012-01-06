@@ -1,3 +1,4 @@
+-- | Rooms, halls and passages for LambdaHack.
 module Content.PlaceKind ( cdefs ) where
 
 import qualified Game.LambdaHack.Content.Content as Content
@@ -14,7 +15,7 @@ cdefs = Content.CDefs
   }
 rect,        pillar, pillarC, pillar3, colonnade, colonnadeW :: PlaceKind
 
-rect = PlaceKind  -- valid for any nonempty area, hence low frequency
+rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
   { psymbol  = 'r'
   , pname    = "room"
   , pfreq    = [("rogue", 100)]
@@ -27,7 +28,7 @@ rect = PlaceKind  -- valid for any nonempty area, hence low frequency
 pillar = PlaceKind
   { psymbol  = 'p'
   , pname    = "pillar room"
-  , pfreq    = [("rogue", 1000)]  -- needs a large area, hence high frequency
+  , pfreq    = [("rogue", 1000)]  -- Needs a large area, hence high frequency.
   , pcover   = CStretch
   , pfence   = FNone
   , ptopLeft = [ "-----"
@@ -56,7 +57,7 @@ pillar3 = pillar
 colonnade = PlaceKind
   { psymbol  = 'c'
   , pname    = "colonnade"
-  , pfreq    = [("rogue", 5000)]  -- needs a larger area, hence higher frequency
+  , pfreq    = [("rogue", 5000)]  -- Needs a large area, hence high frequency.
   , pcover   = CTile
   , pfence   = FFloor
   , ptopLeft = [ ".O.O"

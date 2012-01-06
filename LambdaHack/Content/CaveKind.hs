@@ -1,3 +1,4 @@
+-- | Cave layouts for LambdaHack.
 module Content.CaveKind ( cdefs ) where
 
 import Data.Ratio

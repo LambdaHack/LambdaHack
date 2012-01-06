@@ -1,3 +1,4 @@
+-- | Game rules and assorted data for LambdaHack.
 module Content.RuleKind ( cdefs ) where
 
 -- Cabal
