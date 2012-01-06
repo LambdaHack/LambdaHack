@@ -537,10 +537,10 @@ actorAttackActor source target = do
   tm    <- gets (getActor target)
   per   <- currentPerception
   bitems <- gets (getActorItem source)
-  let h2hGroup = if isAHero source then "barehanded" else "monstrous"
+  let h2hGroup = if isAHero source then "unarmed" else "monstrous"
   h2hKind <- rndToAction $ opick h2hGroup (const True)
   let sloc = bloc sm
-      -- The picked barehanded "weapon".
+      -- The picked bodily "weapon".
       h2h = Item h2hKind 0 Nothing 1
       str = strongestSword coitem bitems
       stack  = fromMaybe h2h str

@@ -168,14 +168,14 @@ wand = ItemKind
 fist = sword
   { isymbol  = '@'
   , iname    = "fist"
-  , ifreq    = [("barehanded", 100)]
+  , ifreq    = [("unarmed", 100)]
   , iverbApply   = "punch"
   , iverbProject = "ERROR, please report: iverbProject fist"
   }
 foot = sword
   { isymbol  = '@'
   , iname    = "foot"
-  , ifreq    = [("barehanded", 50)]
+  , ifreq    = [("unarmed", 50)]
   , iverbApply   = "kick"
   , iverbProject = "ERROR, please report: iverbProject foot"
   }

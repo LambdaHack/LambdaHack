@@ -1,5 +1,8 @@
 module Game.LambdaHack.EffectAction where
 
+-- Cabal
+import qualified Paths_LambdaHack as Self (version)
+
 import Control.Monad
 import Control.Monad.State hiding (State, state)
 import Data.Function
@@ -448,5 +451,7 @@ gameVersion :: Action ()
 gameVersion = do
   Kind.COps{corule} <- contentOps
   let pathsVersion = rpathsVersion $ stdRuleset corule
-      msg = showVersion pathsVersion ++ " (" ++ frontendName ++ " frontend)"
+      msg = "v. " ++ showVersion pathsVersion ++ " ("
+            ++ frontendName ++ " frontend, engine LambdaHack "
+            ++ showVersion Self.version ++ ")"
   abortWith msg
