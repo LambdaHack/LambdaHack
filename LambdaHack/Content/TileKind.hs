@@ -154,8 +154,8 @@ floorRoomLit = floorArenaLit
   , tfeature = Boring : tfeature floorArenaLit
   }
 floorRoomDark = floorArenaDark
-  { tfeature = Boring : tfeature floorArenaDark
-  , tfreq    = [("floorRoomDark", 1)]
+  { tfreq    = [("floorRoomDark", 1)]
+  , tfeature = Boring : tfeature floorArenaDark
   }
 floorRed = floorArenaLit
   { tname    = "brick pavement"

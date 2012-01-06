@@ -36,6 +36,7 @@ import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.DungeonState
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind as TileKind
+import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Keybindings
 
 -- The Action stuff that is independent from ItemAction.hs.
@@ -318,13 +319,13 @@ triggerTile dloc = do
         pl <- gets splayer
         (_b, _msg) <- effectToAction effect 0 pl pl 0
         return ()
-      f (F.ChangeTo name) = do
+      f (F.ChangeTo group) = do
         state <- get
         let hms = levelHeroList state ++ levelMonsterList state
         case lvl `atI` dloc of
           [] -> if unoccupied hms dloc
                 then do
-                  newTileId <- rndToAction $ opick name (const True)
+                  newTileId <- rndToAction $ opick group (const True)
                   let adj = (Kind.// [(dloc, newTileId)])
                   modify (updateLevel (updateLMap adj))
                 else abortWith "blocked"  -- by monsters or heroes
@@ -530,20 +531,21 @@ actorAttackActor source@(AHero _) target@(AHero _) =
   selectPlayer target
   >>= assert `trueM` (source, target, "player bumps into himself")
 actorAttackActor source target = do
-  Kind.COps{coactor, coitem=coitem@Kind.Ops{opick}} <- contentOps
+  Kind.COps{coactor, coitem=coitem@Kind.Ops{opick, okind}} <- contentOps
   state <- get
   sm    <- gets (getActor source)
   tm    <- gets (getActor target)
   per   <- currentPerception
   bitems <- gets (getActorItem source)
-  barehanded <- rndToAction $ opick "barehanded" (const True)
-  let verb = attackToVerb "sword"  -- TODO
-      sloc = bloc sm
+  let h2hGroup = if isAHero source then "barehanded" else "monstrous"
+  h2hKind <- rndToAction $ opick h2hGroup (const True)
+  let sloc = bloc sm
       -- The picked barehanded "weapon".
-      h2h = Item barehanded 0 Nothing 1
+      h2h = Item h2hKind 0 Nothing 1
       str = strongestSword coitem bitems
       stack  = fromMaybe h2h str
       single = stack { jcount = 1 }
+      verb = iverbApply $ okind $ jkind single
       -- The msg describes the source part of the action.
       -- TODO: right now it also describes the victim and weapon;
       -- perhaps, when a weapon is equipped, just say "you hit" or "you miss"
@@ -556,11 +558,6 @@ actorAttackActor source target = do
   -- Msgs inside itemEffectAction describe the target part.
   itemEffectAction 0 source target single
   advanceTime source
-
-attackToVerb :: String -> String
-attackToVerb "sword" = "hit"  -- TODO: "slash"? "pierce"? "swing"?
-attackToVerb "mace" = "bludgeon"
-attackToVerb _ = "hit"
 
 -- | Resolves the result of an actor running into another.
 -- This involves switching positions of the two actors.

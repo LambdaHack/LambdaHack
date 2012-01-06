@@ -93,9 +93,9 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick, ofoldrWithKey}
                  let r0 = rooms M.! p0
                      r1 = rooms M.! p1
                  connectRooms r0 r1) allConnects
-  fenceId <- Tile.wallId cotile
+  wallId <- opick "fillerWall" (const True)
   let fenceBounds = (1, 1, cxsize - 2, cysize - 2)
-      fence = buildFence fenceId fenceBounds
+      fence = buildFence wallId fenceBounds
   pickedCorTile <- opick ccorTile (const True)
   lrooms <- foldM (\ m (r@(x0, _, x1, _), dl) ->
                     if x0 == x1
@@ -106,7 +106,6 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick, ofoldrWithKey}
                       floorId <- if dl
                                  then opick "floorRoomLit" (const True)
                                  else opick "floorRoomDark" (const True)
-                      wallId <- Tile.wallId cotile
                       legend <- olegend cotile
                       let room =
                             digRoom kr legend floorId wallId pickedCorTile r
@@ -172,18 +171,18 @@ olegend Kind.Ops{ofoldrWithKey, opick} =
       symbols = ofoldrWithKey getSymbols S.empty
       getLegend s acc = do
         m <- acc
-        tk <- opick "legend" (\ k -> tsymbol k == s)
+        tk <- opick "legend" $ (== s) . tsymbol
         return $ M.insert s tk m
       legend = S.fold getLegend (return M.empty) symbols
   in legend
 
 trigger :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
 trigger Kind.Ops{okind, opick} t =
-  let getTo (F.ChangeTo name) _ = name
+  let getTo (F.ChangeTo group) _ = Just group
       getTo _ acc = acc
-  in case foldr getTo "" (tfeature (okind t)) of
-       ""   -> return t
-       name -> opick name (const True)
+  in case foldr getTo Nothing (tfeature (okind t)) of
+       Nothing    -> return t
+       Just group -> opick group (const True)
 
 type Corridor = [(X, Y)]
 

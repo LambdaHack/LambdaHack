@@ -69,8 +69,8 @@ buildLevel cops@Kind.COps{cotile=cotile@Kind.Ops{opick}, cocave=Kind.Ops{okind}}
   sd <- findLocTry 2000 cmap
           (\ l t -> l /= su && Tile.hasFeature cotile F.Boring t)
           (\ l _ -> distance cxsize su l >= cminStairDist)
-  upId   <- Tile.stairsUpId   cotile
-  downId <- Tile.stairsDownId cotile
+  upId   <- opick "legend" $ Tile.kindHasFeature F.Ascendable
+  downId <- opick "legend" $ Tile.kindHasFeature F.Descendable
   let stairs = [(su, upId)] ++ if levelNumber lvl == depth
                                then []
                                else [(sd, downId)]

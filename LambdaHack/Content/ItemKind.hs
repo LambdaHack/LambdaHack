@@ -14,9 +14,9 @@ cdefs = Content.CDefs
   , getFreq = ifreq
   , validate = ivalidate
   , content =
-      [amulet, dart, gem1, gem2, gem3, gem4, gold, javelin, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand, fist, foot]
+      [amulet, dart, gem1, gem2, gem3, gem4, gold, javelin, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand, fist, foot, tentacle]
   }
-amulet,        dart, gem1, gem2, gem3, gem4, gold, javelin, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand, fist, foot :: ItemKind
+amulet,        dart, gem1, gem2, gem3, gem4, gold, javelin, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand, fist, foot, tentacle :: ItemKind
 
 gem, potion, scroll :: ItemKind  -- generic templates
 
@@ -169,13 +169,20 @@ fist = sword
   { isymbol  = '@'
   , iname    = "fist"
   , ifreq    = [("barehanded", 100)]
-  , iverbApply   = "punch"  -- TODO
+  , iverbApply   = "punch"
   , iverbProject = "ERROR, please report: iverbProject fist"
   }
 foot = sword
   { isymbol  = '@'
   , iname    = "foot"
-  , ifreq    = [("barehanded", 100)]
+  , ifreq    = [("barehanded", 50)]
   , iverbApply   = "kick"
   , iverbProject = "ERROR, please report: iverbProject foot"
+  }
+tentacle = sword
+  { isymbol  = 'S'
+  , iname    = "tentacle"
+  , ifreq    = [("monstrous", 100)]
+  , iverbApply   = "hit"
+  , iverbProject = "ERROR, please report: iverbProject tentacle"
   }

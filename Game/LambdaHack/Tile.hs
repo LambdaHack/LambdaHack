@@ -1,6 +1,6 @@
 module Game.LambdaHack.Tile
-  ( wallId, stairsUpId, stairsDownId, unknownId
-  , kindHasFeature, kindHas, hasFeature, isClear, isLit, similar, canBeHidden
+  ( unknownId, kindHasFeature, kindHas, hasFeature
+  , isClear, isLit, similar, canBeHidden
   ) where
 
 import qualified Data.List as L
@@ -9,7 +9,6 @@ import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Feature as F
 import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Random
 
 -- | There is not type Tile, of particular concrete tiles in the dungeon,
 -- corresponding corresponding to type TileKind, of kinds of terrain tiles.
@@ -18,11 +17,6 @@ import Game.LambdaHack.Random
 -- and accessed too often in performance critial code to try to compress
 -- and recompute the values, on the other hand. Instead, various properties
 -- of concrete tiles are expressed by arrays or sparse IntMaps, as required.
-
-wallId, stairsUpId, stairsDownId :: Kind.Ops TileKind -> Rnd (Kind.Id TileKind)
-wallId Kind.Ops{opick} = opick "fillerWall" (const True)
-stairsUpId Kind.Ops{opick} = opick "legend" $ kindHasFeature F.Ascendable
-stairsDownId Kind.Ops{opick} = opick "legend" $ kindHasFeature F.Descendable
 
 unknownId :: Kind.Ops TileKind -> Kind.Id TileKind
 unknownId Kind.Ops{ouniqGroup} = ouniqGroup "unknown space"
