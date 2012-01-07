@@ -14,7 +14,7 @@ import Game.LambdaHack.Dir
 import Game.LambdaHack.Grammar
 import Game.LambdaHack.Geometry
 import qualified Game.LambdaHack.Dungeon as Dungeon
-import qualified Game.LambdaHack.HighScores as H
+import qualified Game.LambdaHack.HighScore as H
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Keys as K
 import Game.LambdaHack.Level
@@ -37,7 +37,7 @@ import Game.LambdaHack.DungeonState
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Content.ItemKind
-import Game.LambdaHack.Keybindings
+import Game.LambdaHack.Keybinding
 
 -- The Action stuff that is independent from ItemAction.hs.
 -- (Both depend on EffectAction.hs).

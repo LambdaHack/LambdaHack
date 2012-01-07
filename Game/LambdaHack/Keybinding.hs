@@ -1,4 +1,4 @@
-module Game.LambdaHack.Keybindings where
+module Game.LambdaHack.Keybinding where
 
 import qualified Data.Map as M
 import qualified Data.List as L
@@ -13,7 +13,7 @@ data Described a = Described { chelp :: String, caction :: a }
                  | Undescribed { caction :: a }
 type DirCommand a = Described (Dir -> a)
 
-data Keybindings a = Keybindings
+data Keybinding a = Keybinding
   { kdir   :: DirCommand a
   , kudir  :: DirCommand a
   , kother :: M.Map K.Key (Described a)
@@ -21,7 +21,7 @@ data Keybindings a = Keybindings
   , kmajor :: [K.Key]
   }
 
-handleKey :: X -> Keybindings a -> K.Key -> (String -> a) -> a
+handleKey :: X -> Keybinding a -> K.Key -> (String -> a) -> a
 handleKey lxsize kb k abortWith=
   K.handleDirection lxsize k (caction $ kdir kb) $
     K.handleUDirection lxsize k (caction $ kudir kb) $
@@ -37,8 +37,8 @@ coImage kmacro k =
      else k : [ from | (from, to) <- M.assocs kmacro, to == k ]
 
 -- TODO: mark commands that behave differently in targeting mode with "*"
-keyHelp ::  Keybindings a -> [String]
-keyHelp Keybindings{kother, kmacro, kmajor} =
+keyHelp ::  Keybinding a -> [String]
+keyHelp Keybinding{kother, kmacro, kmajor} =
   let
     movKs   =
       [ "You move throughout the level using the numerical keypad or"

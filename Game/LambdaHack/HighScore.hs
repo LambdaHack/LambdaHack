@@ -1,4 +1,4 @@
-module Game.LambdaHack.HighScores where
+module Game.LambdaHack.HighScore where
 
 import System.Directory
 import Control.Monad

@@ -20,10 +20,10 @@ import qualified Game.LambdaHack.Save as Save
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Keys as K
-import Game.LambdaHack.Keybindings
+import Game.LambdaHack.Keybinding
 
 type Session =
-  (FrontendSession, Kind.COps, Keybindings (Action ()))
+  (FrontendSession, Kind.COps, Keybinding (Action ()))
 
 newtype Action a = Action
   { runAction ::

@@ -20,7 +20,7 @@ import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Tile
 import Game.LambdaHack.Level
 import Game.LambdaHack.Command
-import qualified Game.LambdaHack.Keybindings as KB
+import qualified Game.LambdaHack.Keybinding as KB
 import qualified Game.LambdaHack.Kind as Kind
 
 speedup :: Kind.Ops TileKind -> [Kind.Id TileKind -> Bool]
@@ -70,7 +70,7 @@ start scops configDefault cmdS cmdD frontendSession = do
   config <- Config.mkConfig configDefault
   let section = Config.getItems config "macros"
       !macros = KB.macroKey section
-      !keyb = stdKeybindings config macros cmdS cmdD
+      !keyb = stdKeybinding config macros cmdS cmdD
       sess = (frontendSession, cops, keyb)
   restored <- Save.restoreGame pathsDataFile config title
   case restored of

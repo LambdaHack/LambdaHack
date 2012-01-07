@@ -13,7 +13,7 @@ import Game.LambdaHack.ItemAction
 import Game.LambdaHack.Grammar
 import qualified Game.LambdaHack.Config as Config
 import Game.LambdaHack.EffectAction
-import Game.LambdaHack.Keybindings
+import Game.LambdaHack.Keybinding
 import qualified Game.LambdaHack.Keys as K
 import Game.LambdaHack.Level
 import Game.LambdaHack.Actor
@@ -142,15 +142,15 @@ semanticsCommands cmdList cmdS cmdD =
       mkCommand (key, def) = (key, mkDescribed def)
   in L.map mkCommand cmdList
 
-stdKeybindings :: Config.CP
-               -> M.Map K.Key K.Key
-               -> (Cmd -> Action ())
-               -> (Cmd -> Maybe String)
-               -> Keybindings (Action ())
-stdKeybindings config kmacro cmdS cmdD =
+stdKeybinding :: Config.CP
+              -> M.Map K.Key K.Key
+              -> (Cmd -> Action ())
+              -> (Cmd -> Maybe String)
+              -> Keybinding (Action ())
+stdKeybinding config kmacro cmdS cmdD =
   let cmdList = configCommands config
       semList = semanticsCommands cmdList cmdS cmdD
-  in Keybindings
+  in Keybinding
   { kdir   = moveDirCommand
   , kudir  = runDirCommand
   , kother = M.fromList $

@@ -10,7 +10,7 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
 import qualified Game.LambdaHack.Config as Config
 import Game.LambdaHack.EffectAction
-import Game.LambdaHack.Keybindings
+import Game.LambdaHack.Keybinding
 import Game.LambdaHack.Level
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
