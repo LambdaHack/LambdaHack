@@ -1,5 +1,11 @@
+-- | Text frontend based on HSCurses.
 module Game.LambdaHack.Display.Curses
-  ( frontendName, startup, shutdown, display, nextEvent, FrontendSession
+  ( -- * Session data type for the frontend
+    FrontendSession
+    -- * The output and input operations
+  , display, nextEvent
+    -- * Frontend administration tools
+  , frontendName, startup, shutdown
   ) where
 
 import qualified UI.HSCurses.Curses as C
@@ -13,14 +19,18 @@ import Game.LambdaHack.Loc
 import qualified Game.LambdaHack.Keys as K (Key(..))
 import qualified Game.LambdaHack.Color as Color
 
+-- | Session data maintained by the frontend.
+data FrontendSession = FrontendSession
+  { swin    :: C.Window  -- ^ the window to draw to
+  , sstyles :: M.Map (Color.Color, Color.Color) C.CursesStyle
+      -- ^ map from fore/back colour pairs to defined curses styles
+  }
+
+-- | The name of the frontend for the user's information.
 frontendName :: String
 frontendName = "curses"
 
-data FrontendSession = FrontendSession
-  { win :: C.Window
-  , styles :: M.Map (Color.Color, Color.Color) C.CursesStyle
-  }
-
+-- | Starts the main program loop using the frontend input and output.
 startup :: (FrontendSession -> IO ()) -> IO ()
 startup k = do
   C.start
@@ -38,33 +48,43 @@ startup k = do
   let styleMap = M.fromList (zip ks ws)
   k (FrontendSession C.stdScr styleMap)
 
+-- | Shuts down the frontend cleanly.
 shutdown :: FrontendSession -> IO ()
 shutdown _ = C.end
 
-display :: Area -> Int -> FrontendSession
-        -> (Loc -> (Color.Attr, Char)) -> String -> String
+-- | Output to the screen via the frontend.
+display :: Area                         -- ^ the size of the drawn area
+        -> FrontendSession              -- ^ current session data
+        -> (Loc -> (Color.Attr, Char))  -- ^ the content of the screen
+        -> String                       -- ^ an extra line to show at the top
+        -> String                       -- ^ an extra line to show at the bottom
         -> IO ()
-display (x0, y0, x1, y1) width (FrontendSession { win = w, styles = s })
-        f msg status = do
+display (x0, y0, x1, y1) FrontendSession{..} f msg status = do
   -- let defaultStyle = C.defaultCursesStyle
   -- Terminals with white background require this:
-  let defaultStyle = s M.! Color.defaultAttr
+  let defaultStyle = sstyles M.! Color.defaultAttr
       xsize  = x1 - x0 + 1
   C.erase
   C.setStyle defaultStyle
-  C.mvWAddStr w 0 0 (toWidth width msg)
-  C.mvWAddStr w (y1 + 2) 0 (toWidth (width - 1) status)
-  -- TODO: the following does not work in standard xterm window,
+  C.mvWAddStr swin 0 0 msg
+  C.mvWAddStr swin (y1 + 2) 0 (L.init status)
+  -- TODO: we need to remove the last character from the status line,
+  -- because otherwise it would overflow a standard size xterm window,
   -- due to the curses historical limitations.
-  -- C.mvWAddStr w (y1 + 2) (width - 1) " "
-  sequence_ [ C.setStyle (M.findWithDefault defaultStyle a s)
-              >> C.mvWAddStr w (y + 1) x [c]
+  sequence_ [ C.setStyle (M.findWithDefault defaultStyle a sstyles)
+              >> C.mvWAddStr swin (y + 1) x [c]
             | x <- [x0..x1], y <- [y0..y1],
               let (a, c) = f (toLoc xsize (x, y)) ]
   C.refresh
 
-toWidth :: Int -> String -> String
-toWidth n x = take n (x ++ repeat ' ')
+-- | Input key via the frontend.
+nextEvent :: FrontendSession -> IO K.Key
+nextEvent _sess = do
+  e <- C.getKey C.refresh
+  return (keyTranslate e)
+--  case keyTranslate e of
+--    Unknown _ -> nextEvent sess
+--    k -> return k
 
 keyTranslate :: C.Key -> K.Key
 keyTranslate e =
@@ -94,14 +114,6 @@ keyTranslate e =
       | c `elem` ['1'..'9'] -> K.KP c
       | otherwise           -> K.Char c
     _                       -> K.Unknown (show e)
-
-nextEvent :: FrontendSession -> IO K.Key
-nextEvent _session = do
-  e <- C.getKey C.refresh
-  return (keyTranslate e)
---  case keyTranslate e of
---    Unknown _ -> nextEvent session
---    k -> return k
 
 toFColor :: Color.Color -> C.ForegroundColor
 toFColor Color.Black     = C.BlackF

@@ -1,3 +1,4 @@
+-- | The type of kinds of weapons and treasure.
 module Game.LambdaHack.Content.ItemKind
   ( ItemKind(..), ivalidate
   ) where
@@ -15,6 +16,7 @@ import Game.LambdaHack.Content.Content
 -- Another thing to keep in minds is that jpower will heavily determine
 -- the value of the item for shops, treasure chests, artifact set rebalancing,
 -- etc., so if we make jpower complex, the value computation gets complex too.
+-- | Item properties that are changing rarely and permanently, if ever.
 data ItemKind = ItemKind
   { isymbol  :: !Char        -- ^ map symbol
   , iname    :: !String      -- ^ generic name
@@ -28,6 +30,7 @@ data ItemKind = ItemKind
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 
--- | No specific possible problems for the content of this kind, so far.
+-- | No specific possible problems for the content of this kind, so far,
+-- so the validation function always returns the empty list of offending kinds.
 ivalidate :: [ItemKind] -> [ItemKind]
 ivalidate _ = []

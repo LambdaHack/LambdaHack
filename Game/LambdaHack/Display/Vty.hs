@@ -1,8 +1,15 @@
+-- | Text frontend based on Vty.
 module Game.LambdaHack.Display.Vty
-  ( frontendName, startup, shutdown, display, nextEvent, FrontendSession
+  ( -- * Session data type for the frontend
+    FrontendSession
+    -- * The output and input operations
+  , display, nextEvent
+    -- * Frontend administration tools
+  , frontendName, startup, shutdown
   ) where
 
-import Graphics.Vty
+import Graphics.Vty hiding (shutdown)
+import qualified Graphics.Vty as Vty
 import qualified Data.List as L
 import qualified Data.ByteString.Char8 as BS
 
@@ -11,35 +18,46 @@ import Game.LambdaHack.Loc
 import qualified Game.LambdaHack.Keys as K (Key(..))
 import qualified Game.LambdaHack.Color as Color
 
+-- | Session data maintained by the frontend.
+type FrontendSession = Vty
+
+-- | The name of the frontend for the user's information.
 frontendName :: String
 frontendName = "vty"
 
-type FrontendSession = Vty
-
+-- | Starts the main program loop using the frontend input and output.
 startup :: (FrontendSession -> IO ()) -> IO ()
 startup k = mkVty >>= k
 
-display :: Area -> Int -> FrontendSession
-        -> (Loc -> (Color.Attr, Char)) -> String -> String
+-- | Shuts down the frontend cleanly.
+shutdown :: FrontendSession -> IO ()
+shutdown = Vty.shutdown
+
+-- | Output to the screen via the frontend.
+display :: Area                         -- ^ the size of the drawn area
+        -> FrontendSession              -- ^ current session data
+        -> (Loc -> (Color.Attr, Char))  -- ^ the content of the screen
+        -> String                       -- ^ an extra line to show at the top
+        -> String                       -- ^ an extra line to show at the bottom
         -> IO ()
-display (x0, y0, x1, y1) width vty f msg status =
+display (x0, y0, x1, y1) vty f msg status =
   let xsize  = x1 - x0 + 1
       img = (foldr (<->) empty_image .
              L.map (foldr (<|>) empty_image .
                     L.map (\ (x, y) -> let (a, c) = f (toLoc xsize (x, y))
                                        in char (setAttr a) c)))
             [ [ (x, y) | x <- [x0..x1] ] | y <- [y0..y1] ]
-  in update vty (pic_for_image
-                   (utf8_bytestring
-                      (setAttr Color.defaultAttr)
-                      (BS.pack (toWidth width msg))
-                      <-> img <->
-                      utf8_bytestring
-                        (setAttr Color.defaultAttr)
-                        (BS.pack (toWidth width status))))
+      pic = pic_for_image $
+              utf8_bytestring (setAttr Color.defaultAttr) (BS.pack msg)
+              <-> img <->
+              utf8_bytestring (setAttr Color.defaultAttr) (BS.pack status)
+  in update vty pic
 
-toWidth :: Int -> String -> String
-toWidth n x = take n (x ++ repeat ' ')
+-- | Input key via the frontend.
+nextEvent :: FrontendSession -> IO K.Key
+nextEvent sess = do
+  e <- next_event sess
+  return (keyTranslate e)
 
 keyTranslate :: Event -> K.Key
 keyTranslate e =
@@ -62,11 +80,6 @@ keyTranslate e =
       | c `elem` ['1'..'9']  -> K.KP c
       | otherwise            -> K.Char c
     _                        -> K.Unknown (show e)
-
-nextEvent :: FrontendSession -> IO K.Key
-nextEvent session = do
-  e <- next_event session
-  return (keyTranslate e)
 
 -- A hack to get bright colors via the bold attribute. Depending on terminal
 -- settings this is needed or not and the characters really get bold or not.

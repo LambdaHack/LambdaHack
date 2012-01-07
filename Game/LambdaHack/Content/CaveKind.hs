@@ -1,3 +1,4 @@
+-- | The type of cave layout kinds.
 module Game.LambdaHack.Content.CaveKind
   ( CaveKind(..), cvalidate
   ) where
@@ -8,6 +9,7 @@ import Game.LambdaHack.Geometry
 import Game.LambdaHack.Random
 import Game.LambdaHack.Content.Content
 
+-- | Parameters for the generation of dungeon levels.
 data CaveKind = CaveKind
   { csymbol       :: Char        -- ^ a symbol
   , cname         :: String      -- ^ short description
@@ -29,8 +31,10 @@ data CaveKind = CaveKind
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 
--- | Catch caves with not enough space for all the places. Check the size
--- of the cave description.
+-- | Filter a list of kinds, passing through only the incorrect ones, if any.
+--
+-- Catch caves with not enough space for all the places. Check the size
+-- of the cave descriptions, to make sure they fit on screen.
 cvalidate :: [CaveKind] -> [CaveKind]
 cvalidate = L.filter (\ CaveKind{..} ->
   let maxGridX = maxDice $ fst cgrid

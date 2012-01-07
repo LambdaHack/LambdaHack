@@ -1,5 +1,11 @@
+-- | Text frontend based on Gtk.
 module Game.LambdaHack.Display.Gtk
-  ( frontendName, startup, shutdown, display, nextEvent, FrontendSession
+  ( -- * Session data type for the frontend
+    FrontendSession
+    -- * The output and input operations
+  , display, nextEvent
+    -- * Frontend administration tools
+  , frontendName, startup, shutdown
   ) where
 
 import Control.Monad
@@ -17,15 +23,18 @@ import Game.LambdaHack.Geometry
 import qualified Game.LambdaHack.Keys as K (Key(..), keyTranslate)
 import qualified Game.LambdaHack.Color as Color
 
+-- | Session data maintained by the frontend.
+data FrontendSession = FrontendSession
+  { sview :: TextView                  -- ^ the widget to draw to
+  , stags :: M.Map Color.Attr TextTag  -- ^ text tags for fore/back colour pairs
+  , schan :: Chan String               -- ^ the channel that carries input
+  }
+
+-- | The name of the frontend for the user's information.
 frontendName :: String
 frontendName = "gtk"
 
-data FrontendSession = FrontendSession
-  { schan :: Chan String
-  , stags :: M.Map Color.Attr TextTag
-  , sview :: TextView
-  }
-
+-- | Starts the main program loop using the frontend input and output.
 startup :: (FrontendSession -> IO ()) -> IO ()
 startup k = do
   -- initGUI
@@ -33,26 +42,26 @@ startup k = do
   w <- windowNew
   ttt <- textTagTableNew
   -- text attributes
-  tts <- fmap M.fromList $
-         mapM (\ ak -> do
-                  tt <- textTagNew Nothing
-                  textTagTableAdd ttt tt
-                  doAttr tt ak
-                  return (ak, tt))
-              [ (f, b) | f <- [minBound..maxBound], b <- Color.legalBG ]
+  stags <- fmap M.fromList $
+             mapM (\ ak -> do
+                      tt <- textTagNew Nothing
+                      textTagTableAdd ttt tt
+                      doAttr tt ak
+                      return (ak, tt))
+               [ (f, b) | f <- [minBound..maxBound], b <- Color.legalBG ]
   -- text buffer
   tb <- textBufferNew (Just ttt)
   textBufferSetText tb (unlines (replicate 25 (replicate 80 ' ')))
   -- create text view, TODO: use GtkLayout or DrawingArea instead of TextView?
-  tv <- textViewNewWithBuffer tb
-  containerAdd w tv
-  textViewSetEditable tv False
-  textViewSetCursorVisible tv False
+  sview <- textViewNewWithBuffer tb
+  containerAdd w sview
+  textViewSetEditable sview False
+  textViewSetCursorVisible sview False
   -- font
   f <- fontDescriptionNew
   fontDescriptionSetFamily f "Monospace"
   fontDescriptionSetSize f 12
-  widgetModifyFont tv (Just f)
+  widgetModifyFont sview (Just f)
   currentfont <- newIORef f
   let buttonPressHandler e = case e of
         Button { Graphics.UI.Gtk.Gdk.Events.eventButton = RightButton } -> do
@@ -68,24 +77,24 @@ startup k = do
               Just fn' -> do
                 fd <- fontDescriptionFromString fn'
                 writeIORef currentfont fd
-                widgetModifyFont tv (Just fd)
+                widgetModifyFont sview (Just fd)
               Nothing  -> return ()
           widgetDestroy fsd
           return True
         _ -> return False
-  onButtonPress tv buttonPressHandler
+  onButtonPress sview buttonPressHandler
   -- modify default colours
   let black = Color minBound minBound minBound  -- Color.defBG == Color.Black
       white = Color 0xC500 0xBC00 0xB800        -- Color.defFG == Color.White
-  widgetModifyBase tv StateNormal black
-  widgetModifyText tv StateNormal white
+  widgetModifyBase sview StateNormal black
+  widgetModifyText sview StateNormal white
   -- set up the channel for communication
-  ec <- newChan
-  forkIO $ k (FrontendSession ec tts tv)
+  schan <- newChan
+  forkIO $ k FrontendSession{..}
   -- fill the channel
-  onKeyPress tv
+  onKeyPress sview
     (\ e -> do
-        writeChan ec (Graphics.UI.Gtk.Gdk.Events.eventKeyName e)
+        writeChan schan (Graphics.UI.Gtk.Gdk.Events.eventKeyName e)
         return True)
   -- set quit handler
   onDestroy w mainQuit
@@ -94,15 +103,20 @@ startup k = do
   yield
   mainGUI
 
+-- | Shuts down the frontend cleanly.
 shutdown :: FrontendSession -> IO ()
 shutdown _ = mainQuit
 
-display :: Area -> Int -> FrontendSession
-        -> (Loc -> (Color.Attr, Char)) -> String -> String
+-- | Output to the screen via the frontend.
+display :: Area                         -- ^ the size of the drawn area
+        -> FrontendSession              -- ^ current session data
+        -> (Loc -> (Color.Attr, Char))  -- ^ the content of the screen
+        -> String                       -- ^ an extra line to show at the top
+        -> String                       -- ^ an extra line to show at the bottom
         -> IO ()
-display (x0, y0, x1, y1) _width session f msg status =
+display (x0, y0, x1, y1) FrontendSession{sview, stags} f msg status =
   postGUIAsync $ do
-    tb <- textViewGetBuffer (sview session)
+    tb <- textViewGetBuffer sview
     let xsize  = x1 - x0 + 1
         fLine y = let (as, cs) = unzip [ f (toLoc xsize (x, y))
                                        | x <- [x0..x1] ]
@@ -112,7 +126,7 @@ display (x0, y0, x1, y1) _width session f msg status =
         chars = L.map snd memo
         bs    = [BS.pack msg, BS.pack "\n", BS.unlines chars, BS.pack status]
     textBufferSetByteString tb (BS.concat bs)
-    mapM_ (setTo tb (stags session) x0) attrs
+    mapM_ (setTo tb stags x0) attrs
 
 setTo :: TextBuffer -> M.Map Color.Attr TextTag -> X -> (Y, [Color.Attr])
       -> IO ()
@@ -136,7 +150,13 @@ setTo tb tts lx (ly, attr:attrs) = do
             setIter a 1 as
   setIter attr 1 attrs
 
--- | reads until a non-dead key encountered
+-- | Input key via the frontend.
+nextEvent :: FrontendSession -> IO K.Key
+nextEvent sess = do
+  e <- readUndeadChan (schan sess)
+  return (K.keyTranslate e)
+
+-- | Reads until a non-dead key encountered.
 readUndeadChan :: Chan String -> IO String
 readUndeadChan ch = do
   x <- readChan ch
@@ -159,11 +179,6 @@ readUndeadChan ch = do
     "Num_Lock"         -> True
     "Caps_Lock"        -> True
     _                  -> False
-
-nextEvent :: FrontendSession -> IO K.Key
-nextEvent session = do
-  e <- readUndeadChan (schan session)
-  return (K.keyTranslate e)
 
 doAttr :: TextTag -> Color.Attr -> IO ()
 doAttr tt (fg, bg)

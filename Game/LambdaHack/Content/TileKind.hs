@@ -1,3 +1,4 @@
+-- | The type of kinds of terrain tiles.
 module Game.LambdaHack.Content.TileKind
   ( TileKind(..), SecretStrength(..), tvalidate
   ) where
@@ -11,8 +12,9 @@ import Game.LambdaHack.Color
 import Game.LambdaHack.Feature
 import Game.LambdaHack.Content.Content
 
--- | The type of kinds of terrain tiles. See Tile.hs about why there is no
--- corresponding type Tile, of particular concrete tiles in the dungeon.
+-- | The type of kinds of terrain tiles. See @Tile.hs@ about why there is no
+-- corresponding type @Tile@, of particular concrete tiles in the dungeon,
+-- unlike for the other content.
 data TileKind = TileKind
   { tsymbol  :: !Char       -- ^ map symbol
   , tname    :: !String     -- ^ short description
@@ -23,19 +25,23 @@ data TileKind = TileKind
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 
+-- | The type of secrecy strength of hidden terrain tiles (e.g., doors).
 newtype SecretStrength = SecretStrength{secretStrength :: Time}
   deriving (Show, Eq, Ord)
 instance Binary SecretStrength where
   put = put . secretStrength
   get = fmap SecretStrength get
 
--- | If tiles look the same on the map, the description should be the same, too.
+-- TODO: check that all posible solid place fences have hidden counterparts.
+
+-- | Filter a list of kinds, passing through only the incorrect ones, if any.
+--
+-- If tiles look the same on the map, the description should be the same, too.
 -- Otherwise, the player has to inspect manually all the tiles of that kind
 -- to see if any is special. This is a part of a stronger
 -- but less precise property that tiles that look the same can't be
 -- distinguished by player actions (but may behave differently
 -- wrt dungeon generation, AI preferences, etc.).
--- TODO: check that all posible solid place fences have hidden counterparts.
 tvalidate :: [TileKind] -> [TileKind]
 tvalidate lt =
   let listFov f = L.map (\ kt -> ((tsymbol kt, f kt), [kt])) lt

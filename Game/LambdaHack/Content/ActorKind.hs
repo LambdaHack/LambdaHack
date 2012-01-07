@@ -1,3 +1,4 @@
+-- | The type of kinds of monsters and heroes.
 module Game.LambdaHack.Content.ActorKind
   ( ActorKind(..), avalidate
   ) where
@@ -25,7 +26,8 @@ data ActorKind = ActorKind
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 
--- | Make sure actor kinds can be told apart on the map.
+-- | Filter a list of kinds, passing through only the incorrect ones, if any.
+-- Make sure actor kinds can be told apart on the game map.
 avalidate :: [ActorKind] -> [ActorKind]
 avalidate l =
   let cmp = Ord.comparing (\ ka -> (asymbol ka, acolor ka))

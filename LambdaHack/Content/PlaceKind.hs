@@ -47,7 +47,8 @@ pillarC = pillar
               ]
   }
 pillar3 = pillar
-  { ptopLeft = [ "-----"
+  { pfreq    = [("rogue", 100)]  -- Feels a bit intrusive with so many pillars.
+  , ptopLeft = [ "-----"
                , "|O.O."
                , "|...."
                , "|O..."
