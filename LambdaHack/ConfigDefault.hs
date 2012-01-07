@@ -1,8 +1,6 @@
 -- | The default configurations file included via CPP as a Haskell string.
 {-# LANGUAGE CPP, QuasiQuotes #-}
-module ConfigDefault
-  ( configDefault
-  ) where
+module ConfigDefault ( configDefault ) where
 
 import Multiline
 

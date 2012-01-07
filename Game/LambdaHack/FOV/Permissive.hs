@@ -1,28 +1,25 @@
+-- | PFOV (Permissive Field of View) clean-room reimplemented based on the algorithm described in <http://roguebasin.roguelikedevelopment.org/index.php?title=Precise_Permissive_Field_of_View>,
+-- though the general structure is more influenced by recursive shadow casting,
+-- as implemented in Shadow.hs. In the result, this algorithm is much faster
+-- than the original algorithm on dense maps, since it does not scan
+-- areas blocked by shadows.
+-- See <https://github.com/Mikolaj/Allure/wiki/Fov-and-los>
+-- for some more context and references.
 module Game.LambdaHack.FOV.Permissive (scan) where
 
 import Game.LambdaHack.Geometry
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.FOV.Common
 
--- Permissive FOV with a given range.
-
--- | PFOV, clean-room reimplemented based on the algorithm described in http://roguebasin.roguelikedevelopment.org/index.php?title=Precise_Permissive_Field_of_View,
--- though the general structure is more influenced by recursive shadow casting,
--- as implemented in Shadow.hs. In the result, this algorithm is much faster
--- than the original algorithm on dense maps, since it does not scan
--- areas blocked by shadows.
--- See https://github.com/Mikolaj/Allure/wiki/Fov-and-los
--- for some more context.
-
 -- TODO: Scanning squares on horizontal lines in octants, not squares
 -- on diagonals in quadrants, may be much faster and a bit simpler.
 -- Right now we build new view on each end of each visible wall tile
 -- and this is necessary only for straight, thin, diagonal walls.
 
--- | The current state of a scan is kept in Maybe (Line, ConvexHull).
--- If Just something, we're in a visible interval. If Nothing, we're in
--- a shadowed interval.
-scan :: Distance -> (Bump -> Bool) -> [Bump]
+-- | Calculates the list of tiles visible from (0, 0).
+scan :: Distance        -- ^ visiblity radius
+     -> (Bump -> Bool)  -- ^ clear tile predicate
+     -> [Bump]
 scan r isClear =
   -- the area is diagonal, which is incorrect, but looks good enough
   dscan 1 (((B(0, 1), B(r+1, 0)), [B(1, 0)]), ((B(1, 0), B(0, r+1)), [B(0, 1)]))
@@ -51,6 +48,9 @@ scan r isClear =
       | ps0 == ns `divUp` ks = mscan (Just s0) ps0        -- start in a corner
       | otherwise = mscan Nothing (ps0+1)                 -- start in mid-wall
 
+    -- The current state of a scan is kept in @Maybe Edge@.
+    -- If it's the @Just@ case, we're in a visible interval. If @Nothing@,
+    -- we're in a shadowed interval.
     mscan :: Maybe Edge -> Progress -> [Bump]
     mscan (Just s@(_, sBumps)) ps
       | ps > pe = dscan (d+1) (s, e)           -- reached end, scan next
@@ -81,7 +81,7 @@ dline p1 p2 =
   assert (uncurry blame $ debugLine (p1, p2)) $
   (p1, p2)
 
--- | Compare steepness of (p1, f) and (p2, f).
+-- | Compare steepness of @(p1, f)@ and @(p2, f)@.
 -- Debug: Verify that the results of 2 independent checks are equal.
 dsteeper :: Bump ->  Bump -> Bump -> Bool
 dsteeper f p1 p2 =
@@ -89,8 +89,9 @@ dsteeper f p1 p2 =
   res
    where res = steeper f p1 p2
 
--- | The y coordinate, represented as a fraction, of the intersection of
--- a given line and the line of diagonals of squares at distance d from (0, 0).
+-- | The Y coordinate, represented as a fraction, of the intersection of
+-- a given line and the line of diagonals of squares at distance
+-- @d2 from (0, 0).
 intersect :: Line -> Distance -> (Int, Int)
 intersect (B(x, y), B(xf, yf)) d =
   assert (allB (>= 0) [x, y, xf, yf]) $

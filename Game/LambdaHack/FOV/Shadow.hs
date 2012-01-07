@@ -1,17 +1,13 @@
-module Game.LambdaHack.FOV.Shadow (scan, Interval) where
+-- | A restrictive variant of Recursive Shadow Casting FOV with infinite range.
+-- It's not designed for dungeons with diagonal walls, so they block visibility,
+-- though they don't block movement. The main advantages are that
+-- it's very simple and fast.
+module Game.LambdaHack.FOV.Shadow (Interval, scan) where
 
 import Data.Ratio
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.FOV.Common
-
--- Recursive Shadow Casting.
-
--- | A restrictive variant of Recursive Shadow Casting FOV with infinite range.
--- It's not designed for dungeons with diagonal walls, so they block visibility,
--- though they don't block movement. Such cases appear in the game only
--- when two corridors touch diagonally by accident and on the random pillars
--- levels.
 
 {-
 Field Of View
@@ -64,13 +60,20 @@ This is what interval and angle do. If a field is blocking, the interval
 for the square is added to the shadow set.
 -}
 
-type Interval = (Rational, Rational)
+-- | Rotated and translated coordinates of 2D points, so that they fit
+-- in the same single octant area.
 type SBump = (Progress, Distance)
 
--- | The current state of a scan is kept in a variable of Maybe Rational.
--- If Just something, we're in a visible interval. If Nothing, we're in
--- a shadowed interval.
-scan :: (SBump -> Bool) -> Distance -> Interval -> [SBump]
+-- | The area left to be scanned, delimited by fractions of the original arc.
+-- Interval @(0, 1)@ means the whole 45 degrees arc of the processed octant
+-- is to be scanned.
+type Interval = (Rational, Rational)
+
+-- | Calculates the list of tiles visible from (0, 0).
+scan :: (SBump -> Bool)  -- ^ clear tile predicate
+     -> Distance         -- ^ the current distance from (0, 0)
+     -> Interval         -- ^ the current interval to scan
+     -> [SBump]
 scan isClear d (s0, e) =
   let ps = downBias (s0 * fromIntegral d)   -- minimal progress to consider
       pe = upBias (e * fromIntegral d)      -- maximal progress to consider
@@ -82,14 +85,17 @@ scan isClear d (s0, e) =
              `blame` (d,s0,e,ps,pe)) $
      inside ++ outside
  where
+  -- The current state of a scan is kept in @Maybe Rational@.
+  -- If it's the @Just@ case, we're in a visible interval. If @Nothing@,
+  -- we're in a shadowed interval.
   mscan :: Maybe Rational -> Progress -> Progress -> [SBump]
   mscan (Just s) ps pe
     | s >= e = []                           -- empty interval
     | ps > pe  = scan isClear (d+1) (s, e)  -- reached end, scan next
-    | not $ isClear (ps, d) =                      -- entering shadow
+    | not $ isClear (ps, d) =               -- entering shadow
         let ne = (fromIntegral ps - (1%2)) / (fromIntegral d + (1%2))
         in mscan Nothing (ps+1) pe ++ scan isClear (d+1) (s, ne)
-    | otherwise = mscan (Just s) (ps+1) pe         -- continue in light
+    | otherwise = mscan (Just s) (ps+1) pe  -- continue in light
 
   mscan Nothing ps pe
     | ps > pe = []                          -- reached end while in shadow

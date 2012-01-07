@@ -1,22 +1,18 @@
+-- | DFOV (Digital Field of View) implemented according to specification at <http://roguebasin.roguelikedevelopment.org/index.php?title=Digital_field_of_view_implementation>.
+-- This fast version of the algorithm, based on "PFOV", have, AFAIK,
+-- never been described nor implemented before.
+-- See <https://github.com/Mikolaj/Allure/wiki/Fov-and-los>
+-- for some more context and references.
 module Game.LambdaHack.FOV.Digital (scan) where
 
 import Game.LambdaHack.Geometry
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.FOV.Common
 
--- Digital FOV with a given range.
-
--- | DFOV, according to specification at http://roguebasin.roguelikedevelopment.org/index.php?title=Digital_field_of_view_implementation,
--- but AFAIK, this algorithm (fast DFOV done similarly as PFOV) has never been
--- implemented before. The algorithm is based on the PFOV algorithm,
--- clean-room reimplemented based on http://roguebasin.roguelikedevelopment.org/index.php?title=Precise_Permissive_Field_of_View.
--- See https://github.com/Mikolaj/Allure/wiki/Fov-and-los
--- for some more context.
-
--- | The current state of a scan is kept in Maybe (Line, ConvexHull).
--- If Just something, we're in a visible interval. If Nothing, we're in
--- a shadowed interval.
-scan :: Distance -> (Bump -> Bool) -> [Bump]
+-- | Calculates the list of tiles visible from (0, 0).
+scan :: Distance        -- ^ visiblity radius
+     -> (Bump -> Bool)  -- ^ clear tile predicate
+     -> [Bump]
 scan r isClear =
   -- the scanned area is a square, which is a sphere in this metric; good
   dscan 1 (((B(1, 0), B(-r, r)), [B(0, 0)]), ((B(0, 0), B(r+1, r)), [B(1, 0)]))
@@ -39,6 +35,9 @@ scan r isClear =
     in assert (r >= d && d >= 0 && pe >= ps0 `blame` (r,d,s0,e,ps0,pe)) $
        inside ++ outside
    where
+    -- The current state of a scan is kept in @Maybe Edge@.
+    -- If it's the @Just@ case, we're in a visible interval. If @Nothing@,
+    -- we're in a shadowed interval.
     mscan :: Maybe Edge -> Progress -> Progress -> [Bump]
     mscan (Just s@(_, sBumps)) ps pe
       | ps > pe = dscan (d+1) (s, e)          -- reached end, scan next
@@ -69,7 +68,7 @@ dline p1 p2 =
   assert (uncurry blame $ debugLine (p1, p2)) $
   (p1, p2)
 
--- | Compare steepness of (p1, f) and (p2, f).
+-- | Compare steepness of @(p1, f)@ and @(p2, f)@.
 -- Debug: Verify that the results of 2 independent checks are equal.
 dsteeper :: Bump ->  Bump -> Bump -> Bool
 dsteeper f p1 p2 =
@@ -77,8 +76,9 @@ dsteeper f p1 p2 =
   res
    where res = steeper f p1 p2
 
--- | The x coordinate, represented as a fraction, of the intersection of
--- a given line and the line of diagonals of diamonds at distance d from (0, 0).
+-- | The X coordinate, represented as a fraction, of the intersection of
+-- a given line and the line of diagonals of diamonds at distance
+-- @d@ from (0, 0).
 intersect :: Line -> Distance -> (Int, Int)
 intersect (B(x, y), B(xf, yf)) d =
   assert (allB (>= 0) [y, yf]) $
