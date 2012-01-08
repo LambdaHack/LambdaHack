@@ -18,6 +18,7 @@ import Game.LambdaHack.Random
 import Game.LambdaHack.State
 import Game.LambdaHack.Strategy
 import Game.LambdaHack.StrategyState
+import Game.LambdaHack.Running
 
 -- One turn proceeds through the following functions:
 --

@@ -9,6 +9,7 @@ import qualified Data.Char as Char
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
+import Game.LambdaHack.Running
 import Game.LambdaHack.ItemAction
 import Game.LambdaHack.Grammar
 import qualified Game.LambdaHack.Config as Config
