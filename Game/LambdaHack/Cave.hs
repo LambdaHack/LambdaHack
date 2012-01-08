@@ -70,9 +70,13 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick, ofoldrWithKey}
   lgrid@(gx, gy) <- rollDiceXY cgrid
   lminplace <- rollDiceXY $ cminPlaceSize
   let gs = grid lgrid (0, 0, cxsize - 1, cysize - 1)
+  mandatory1 <- replicateM (cnonVoidMin `div` 2) $
+                  xyInArea (0, 0, gx `div` 3, gy - 1)
+  mandatory2 <- replicateM (cnonVoidMin `divUp` 2) $
+                  xyInArea (gx - 1 - (gx `div` 3), 0, gx - 1, gy - 1)
   places0 <- mapM (\ (i, r) -> do
                      rv <- chance $ cvoidChance
-                     r' <- if rv
+                     r' <- if rv && i `notElem` (mandatory1 ++ mandatory2)
                            then mkVoidPlace r
                            else mkPlace lminplace r
                      return (i, r')) gs

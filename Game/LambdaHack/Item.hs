@@ -93,7 +93,7 @@ newItem cops@Kind.Ops{opick, okind} lvl depth = do
 assignLetter :: Maybe Char -> Char -> [Item] -> Maybe Char
 assignLetter r c is =
   case r of
-    Just l | l `L.elem` allowed -> Just l
+    Just l | l `elem` allowed -> Just l
     _ -> listToMaybe free
  where
   current    = S.fromList (mapMaybe jletter is)

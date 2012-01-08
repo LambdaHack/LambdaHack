@@ -29,7 +29,8 @@ rogue = CaveKind
   , cminPlaceSize = (RollDice 2 2, RollDice 2 1)
   , cdarkChance   = (RollDice 1 53, RollDice 25 1)
   , cauxConnects  = 1%3
-  , cvoidChance   = 1%6
+  , cvoidChance   = 1%4
+  , cnonVoidMin   = 4
   , cminStairDist = 30
   , cdoorChance   = 2%3
   , copenChance   = 1%10
@@ -44,7 +45,8 @@ arena = rogue
   , cfreq         = [("dng", 20), ("caveArena", 1)]
   , cgrid         = (RollDice 2 2, RollDice 2 2)
   , cminPlaceSize = (RollDice 3 2, RollDice 2 1)
-  , cvoidChance   = 1%4
+  , cvoidChance   = 1%3
+  , cnonVoidMin   = 2
   , cdefTile      = "floorArenaLit"
   , ccorTile      = "path"
   }
@@ -55,6 +57,7 @@ empty = rogue
   , cgrid         = (RollDice 2 2, RollDice 1 2)
   , cminPlaceSize = (RollDice 4 3, RollDice 4 1)
   , cvoidChance   = 1%2
+  , cnonVoidMin   = 0
   , cdefTile      = "floorRoomLit"
   , ccorTile      = "floorRoomLit"
   }
@@ -65,6 +68,7 @@ noise = rogue
   , cgrid         = (RollDice 2 2, RollDice 1 2)
   , cminPlaceSize = (RollDice 4 2, RollDice 4 1)
   , cvoidChance   = 0
+  , cnonVoidMin   = 0
   , cdefTile      = "noiseSet"
   , ccorTile      = "path"
   }

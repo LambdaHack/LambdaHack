@@ -176,7 +176,7 @@ nearbyFreeLoc cotile origin state =
       ms = levelMonsterList state
       locs = origin : L.nub (concatMap (surroundings lxsize lysize) locs)
       good loc = Tile.hasFeature cotile F.Walkable (lvl `at` loc)
-                 && loc `L.notElem` L.map bloc (hs ++ ms)
+                 && loc `notElem` L.map bloc (hs ++ ms)
   in fromMaybe (assert `failure` "too crowded map") $ L.find good locs
 
 -- Adding heroes
@@ -230,7 +230,7 @@ rollMonster Kind.COps{cotile, coactor=Kind.Ops{opick, okind}} state = do
       -- in adjacent and unexpected locations.
       loc <- findLocTry 2000 (lmap lvl)
              (\ l t -> Tile.hasFeature cotile F.Walkable t
-                       && l `L.notElem` L.map bloc (hs ++ ms))
+                       && l `notElem` L.map bloc (hs ++ ms))
              (\ l t -> not (isLit t)  -- try a dark, distant place first
                        && L.all (\ pl ->
                                   distance (lxsize lvl) (bloc pl) l > 20) hs)

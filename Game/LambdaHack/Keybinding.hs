@@ -84,11 +84,11 @@ keyHelp Keybinding{kother, kmacro, kmajor, ktimed} =
 --    footer  =
 --      fmts "(To search, open or attack, bump into walls, doors or monsters.)"
     disp k  = L.concatMap show $ coImage kmacro k
-    ti k = if k `L.elem` ktimed then "*" else ""
+    ti k = if k `elem` ktimed then "*" else ""
     keys l  = [ fmt (disp k) (h ++ ti k) | (k, Described h _) <- l ]
     keysAll = M.toAscList kother
-    keysMajor = keys [ (k, c) | (k, c) <- keysAll, k `L.elem` kmajor]
-    keysMinor = keys [ (k, c) | (k, c) <- keysAll, k `L.notElem` kmajor]
+    keysMajor = keys [ (k, c) | (k, c) <- keysAll, k `elem` kmajor]
+    keysMinor = keys [ (k, c) | (k, c) <- keysAll, k `notElem` kmajor]
   in
     L.map unlines [ [blank] ++ mov
                   , [blank] ++ [keyCaption] ++ keysMajor ++ major

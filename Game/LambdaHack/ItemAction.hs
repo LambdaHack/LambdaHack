@@ -50,7 +50,7 @@ getGroupItem :: [Item]  -- ^ all objects in question
              -> Action (Maybe Item)
 getGroupItem is object syms prompt packName = do
   Kind.Ops{osymbol} <- contentf Kind.coitem
-  let choice i = osymbol (jkind i) `L.elem` syms
+  let choice i = osymbol (jkind i) `elem` syms
       header = capitalize $ suffixS object
   getItem prompt choice header is packName
 

@@ -22,7 +22,7 @@ splitMsg w xs
   | l <= w = [xs]   -- no problem, everything fits
   | otherwise =
       let (pre, post) = splitAt (w - m) xs
-          (ppre, ppost) = break (`L.elem` " .,:!;") $ reverse pre
+          (ppre, ppost) = break (`elem` " .,:!;") $ reverse pre
           rpost = dropWhile isSpace ppost
       in if L.null rpost
          then pre : splitMsg w post
