@@ -144,12 +144,13 @@ semanticsCommands cmdList cmdS cmdD =
   in L.map mkCommand cmdList
 
 stdKeybinding :: Config.CP
-              -> M.Map K.Key K.Key
               -> (Cmd -> Action ())
               -> (Cmd -> Maybe String)
               -> Keybinding (Action ())
-stdKeybinding config kmacro cmdS cmdD =
-  let cmdList = configCommands config
+stdKeybinding config cmdS cmdD =
+  let section = Config.getItems config "macros"
+      !kmacro = macroKey section
+      cmdList = configCommands config
       semList = semanticsCommands cmdList cmdS cmdD
   in Keybinding
   { kdir   = moveDirCommand

@@ -14,6 +14,8 @@ import qualified Content.TileKind
 import qualified Game.LambdaHack.Start as Start
 import Game.LambdaHack.Command
 import Game.LambdaHack.Display
+import qualified Game.LambdaHack.Config as Config
+import Game.LambdaHack.Action
 
 import qualified ConfigDefault
 
@@ -28,12 +30,23 @@ cops = Kind.COps
   , cotile  = Kind.createOps Content.TileKind.cdefs
   }
 
--- | Wire together the content, the default config file and the definitions
--- of the game commands. Each of these parts is autonomously modifiable.
-start :: FrontendSession -> IO ()
-start = Start.start cops ConfigDefault.configDefault cmdSemantics cmdDescription
+-- | Wire together config, content and the definitions of game commands
+-- to form the starting game session. Each of these is autonomously modifiable.
+sess :: Config.CP -> FrontendSession -> Session
+sess config frontendSession =
+  let !keyb = stdKeybinding config cmdSemantics cmdDescription
+      !scops = Start.speedupCops cops
+  in (frontendSession, scops, keyb)
 
--- | Start the frontend with the game rules. Which of the frontends is run
--- depends on the flags supplied when compiling the engine library.
+-- | Create the starting game config from the default config file
+-- and initialize the engine with the starting session.
+start :: FrontendSession -> IO ()
+start frontendSession = do
+  config <- Config.mkConfig ConfigDefault.configDefault
+  Start.start config $ sess config frontendSession
+
+-- | Fire up the frontend with the engine fueled by config and content.
+-- Which of the frontends is run depends on the flags supplied
+-- when compiling the engine library.
 main :: IO ()
 main = Display.startup start

@@ -1,4 +1,4 @@
-module Game.LambdaHack.Start ( start ) where
+module Game.LambdaHack.Start ( start, speedupCops ) where
 
 import qualified System.Random as R
 import Control.Monad
@@ -8,7 +8,6 @@ import qualified Data.Array.Unboxed as A
 import Game.LambdaHack.Action
 import Game.LambdaHack.State
 import Game.LambdaHack.DungeonState
-import qualified Game.LambdaHack.Display as Display
 import qualified Game.LambdaHack.Save as Save
 import Game.LambdaHack.Turn
 import qualified Game.LambdaHack.Config as Config
@@ -19,8 +18,6 @@ import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Tile
 import Game.LambdaHack.Level
-import Game.LambdaHack.Command
-import qualified Game.LambdaHack.Keybinding as KB
 import qualified Game.LambdaHack.Kind as Kind
 
 speedup :: Kind.Ops TileKind -> [Kind.Id TileKind -> Bool]
@@ -57,21 +54,10 @@ getGen config option =
       return (g, c)
 
 -- | Either restore a saved game, or setup a new game.
-start :: Kind.COps
-      -> String
-      -> (Cmd -> Action ())
-      -> (Cmd -> Maybe String)
-      -> Display.FrontendSession
-      -> IO ()
-start scops configDefault cmdS cmdD frontendSession = do
-  let cops@Kind.COps{corule} = speedupCops scops
-      title = rtitle $ stdRuleset corule
+start :: Config.CP -> Session -> IO ()
+start config sess@(_, cops@Kind.COps{corule}, _) = do
+  let title = rtitle $ stdRuleset corule
       pathsDataFile = rpathsDataFile $ stdRuleset corule
-  config <- Config.mkConfig configDefault
-  let section = Config.getItems config "macros"
-      !macros = KB.macroKey section
-      !keyb = stdKeybinding config macros cmdS cmdD
-      sess = (frontendSession, cops, keyb)
   restored <- Save.restoreGame pathsDataFile config title
   case restored of
     Right (msg, diary) -> do  -- Starting a new game.
