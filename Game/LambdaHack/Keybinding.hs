@@ -19,6 +19,7 @@ data Keybinding a = Keybinding
   , kother :: M.Map K.Key (Described a)
   , kmacro :: M.Map K.Key K.Key
   , kmajor :: [K.Key]
+  , ktimed :: [K.Key]
   }
 
 handleKey :: X -> Keybinding a -> K.Key -> (String -> a) -> a
@@ -36,9 +37,8 @@ coImage kmacro k =
      then []
      else k : [ from | (from, to) <- M.assocs kmacro, to == k ]
 
--- TODO: mark commands that behave differently in targeting mode with "*"
 keyHelp ::  Keybinding a -> [String]
-keyHelp Keybinding{kother, kmacro, kmajor} =
+keyHelp Keybinding{kother, kmacro, kmajor, ktimed} =
   let
     movKs   =
       [ "You move throughout the level using the numerical keypad or"
@@ -56,27 +56,43 @@ keyHelp Keybinding{kother, kmacro, kmajor} =
       , ""
       , "To search, open or attack, bump into walls, doors or monsters."
       , ""
+      , "Press space to see the next page, with the list of major commands."
+      , ""
+      ]
+    majorKs   =
+      [ ""
+      , "Commands marked by * take hero time and are blocked on remote levels."
+      , ""
+      , "Press space to see the next page, with the list of minor commands."
+      , ""
+      ]
+    minorKs   =
+      [ ""
       , "For more playing instructions see file PLAYING.md."
       , ""
-      , "Press space to see the next page."
+      , "Press space to go back to the game."
+      , ""
       ]
     fmt k h = replicate 15 ' ' ++ k ++ replicate ((13 - length k) `max` 1) ' '
                                ++ h ++ replicate ((35 - length h) `max` 1) ' '
     fmts s  = replicate 2  ' ' ++ s ++ replicate ((71 - length s) `max` 1) ' '
     blank   = fmt "" ""
     mov     = map fmts movKs
+    major   = map fmts majorKs
+    minor   = map fmts minorKs
     keyCaption = fmt "keys" "command"
 --    footer  =
 --      fmts "(To search, open or attack, bump into walls, doors or monsters.)"
     disp k  = L.concatMap show $ coImage kmacro k
-    keys l  = [ fmt (disp k) h | (k, Described h _) <- l ]
+    ti k = if k `L.elem` ktimed then "*" else ""
+    keys l  = [ fmt (disp k) (h ++ ti k) | (k, Described h _) <- l ]
     keysAll = M.toAscList kother
     keysMajor = keys [ (k, c) | (k, c) <- keysAll, k `L.elem` kmajor]
     keysMinor = keys [ (k, c) | (k, c) <- keysAll, k `L.notElem` kmajor]
   in
-    L.map unlines [ [blank] ++ mov ++ [blank]
-                  , [blank, keyCaption] ++ keysMajor ++ [blank]
-                  , [blank, keyCaption] ++ keysMinor ++ [blank]
+    L.map unlines [ [blank] ++ mov
+                  , [blank] ++ [keyCaption] ++ keysMajor ++ major
+                  , [blank] ++ [keyCaption] ++ keysMinor ++ minor
                   ]
 --             [blank, footer, blank])
 

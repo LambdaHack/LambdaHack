@@ -61,31 +61,37 @@ until anything of interest is spotted. '5' and '.' skip a turn.
 (Note that If you are using the curses or vty frontends,
 numerical keypad may not work correctly depending on the versions
 of curses, terminfo and terminal emulators. Vi keys should work regardless.)
+Melee, searching for secret doors and opening closed doors can be done
+by bumping into a monster, a wall and a door, respectively.
 
-Below are the basic default keys for common commands.
+Below are the default keys for major commands. Those of them that take
+hero time are marked with a *.
 
                key    command
-               <      ascend a level
-               >      descend a level
+               <      ascend a level*
+               >      descend a level*
                ?      display help
                Q      quit without saving
                X      save and exit the game
-               c      close a door
-               d      drop an object
-               g      get an object
+               c      close a door*
+               d      drop an object*
+               g      get an object*
                i      display inventory
-               o      open a door
-               q      quaff a potion
-               r      read a scroll
-               t      throw a weapon
-               z      zap a wand
+               o      open a door*
+               q      quaff a potion*
+               r      read a scroll*
+               t      throw a dart*
+               z      zap a wand*
 
-Searching for secret doors and opening closed doors can be done
-by bumping into a wall and bumping into a door, respectively.
-
-To make a distance attack, you need to set your target first.
-The targeting commands are listed below, together with all the other
-less used commands.
+To make a ranged attack, you need to set your target first, using
+targeting mode. Note that the target, for the few commands that require any,
+is indicated by the targeting cursor, but the origin of a command
+--- the  hero that performs it --- is unaffacted by targeting. For example,
+not the targeted door, but one adjacent to the selected hero is closed by him.
+To avoid confusion, commands that take time are blocked when targeting
+a remote level (when the cursor is on a different level than the selected hero).
+The targeting commands and all the less used commands are listed below.
+None of them takes hero time.
 
                key    command
                ESC    cancel action
@@ -102,7 +108,7 @@ less used commands.
                }      target 10 levels deeper
                0--9   select a hero anywhere in the dungeon (gtk only)
 
-There are also some debug and cheat keys. Use at your peril!
+There are also some debug and cheat keys. Use at your own peril!
 
                key    command
                O      toggle "omniscience"

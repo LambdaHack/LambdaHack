@@ -49,6 +49,13 @@ moveDirCommand, runDirCommand :: Described (Dir -> Action ())
 moveDirCommand   = Described "move in direction" move
 runDirCommand    = Described "run in direction"  (\ dir -> run (dir, 0))
 
+heroSelection :: [(K.Key, Described (Action ()))]
+heroSelection =
+  let heroSelect k = (K.Char (Char.intToDigit k),
+                      Undescribed $
+                      selectPlayer (AHero k) >> return ())
+  in fmap heroSelect [0..9]
+
 majorCmd :: Cmd -> Bool
 majorCmd cmd = case cmd of
   Apply{}       -> True
@@ -63,24 +70,41 @@ majorCmd cmd = case cmd of
   Help          -> True
   _             -> False
 
-heroSelection :: [(K.Key, Described (Action ()))]
-heroSelection =
-  let heroSelect k = (K.Char (Char.intToDigit k),
-                      Undescribed $
-                      selectPlayer (AHero k) >> return ())
-  in fmap heroSelect [0..9]
+-- | If in targeting mode, check if the current level is the same
+-- as player level and refuse performing the action otherwise.
+checkCursor :: Action () -> Action ()
+checkCursor h = do
+  cursor <- gets scursor
+  slid <- gets slid
+  if creturnLn cursor == slid
+    then h
+    else abortWith "this command does not work on remote levels"
+
+-- TODO: Advance time automatically for these, but somehow advance
+-- time for monsters, too. Perhaps wait until monsters use commands, too
+-- (or rather the micro-commands to be added in the future).
+timedCmd :: Cmd -> Bool
+timedCmd cmd = case cmd of
+  Apply{}       -> True
+  Project{}     -> True
+  TriggerDir{}  -> True
+  TriggerTile{} -> True
+  Pickup        -> True
+  Drop          -> True
+  Wait          -> True
+  _             -> False
 
 cmdSemantics :: Cmd -> Action ()
 cmdSemantics cmd = case cmd of
-  Apply   verb obj syms -> checkCursor $ playerApplyGroupItem verb obj syms
-  Project verb obj syms -> checkCursor $ playerProjectGroupItem verb obj syms
-  TriggerDir  _verb _obj feat -> checkCursor $ playerTriggerDir feat
-  TriggerTile _verb _obj feat -> checkCursor $ playerTriggerTile feat
-  Pickup ->    checkCursor pickupItem
-  Drop ->      checkCursor dropItem
+  Apply   verb obj syms -> playerApplyGroupItem verb obj syms
+  Project verb obj syms -> playerProjectGroupItem verb obj syms
+  TriggerDir  _verb _obj feat -> playerTriggerDir feat
+  TriggerTile _verb _obj feat -> playerTriggerTile feat
+  Pickup ->    pickupItem
+  Drop ->      dropItem
   Inventory -> inventory
-  TgtFloor ->  checkCursor $ targetFloor   TgtPlayer
-  TgtEnemy ->  checkCursor $ targetMonster TgtPlayer
+  TgtFloor ->  targetFloor   TgtPlayer
+  TgtEnemy ->  targetMonster TgtPlayer
   TgtAscend k -> tgtAscend k
   GameSave ->  saveGame
   GameQuit ->  quitGame
@@ -137,9 +161,12 @@ semanticsCommands :: [(K.Key, Cmd)]
                   -> [(K.Key, Described (Action ()))]
 semanticsCommands cmdList cmdS cmdD =
   let mkDescribed cmd =
-        case cmdD cmd of
-          Nothing -> Undescribed $ cmdS cmd
-          Just d  -> Described d $ cmdS cmd
+        let semantics = if timedCmd cmd
+                        then checkCursor $ cmdS cmd
+                        else cmdS cmd
+        in case cmdD cmd of
+          Nothing -> Undescribed semantics
+          Just d  -> Described d semantics
       mkCommand (key, def) = (key, mkDescribed def)
   in L.map mkCommand cmdList
 
@@ -165,4 +192,5 @@ stdKeybinding config cmdS cmdD =
              ]
   , kmacro
   , kmajor = L.map fst $ L.filter (majorCmd . snd) cmdList
+  , ktimed = L.map fst $ L.filter (timedCmd . snd) cmdList
   }

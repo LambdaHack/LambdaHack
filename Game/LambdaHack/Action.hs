@@ -282,16 +282,6 @@ withPerception h = Action (\ sess@Session{scops} e _ k a st ms ->
 currentPerception :: Action Perceptions
 currentPerception = Action (\ _s _e p k _a st ms -> k st ms p)
 
--- | If in targeting mode, check if the current level is the same
--- as player level and refuse performing the action otherwise.
-checkCursor :: Action () -> Action ()
-checkCursor h = do
-  cursor <- gets scursor
-  slid <- gets slid
-  if creturnLn cursor == slid
-    then h
-    else abortWith "this command does not work on remote levels"
-
 updateAnyActor :: ActorId -> (Actor -> Actor) -> Action ()
 updateAnyActor actor f = modify (updateAnyActorBody actor f)
 
