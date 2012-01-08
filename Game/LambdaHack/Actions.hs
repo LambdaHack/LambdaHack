@@ -35,7 +35,6 @@ import Game.LambdaHack.DungeonState
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Content.ItemKind
-import Game.LambdaHack.Keybinding
 
 -- The Action stuff that is independent from ItemAction.hs.
 -- (Both depend on EffectAction.hs).
@@ -451,10 +450,3 @@ regenerateLevelHP = do
   modify (updateLevel (updateHeroes   (IM.mapWithKey (upd hi))))
   mi  <- gets (lmonItem . slevel)
   modify (updateLevel (updateMonsters (IM.mapWithKey (upd mi))))
-
--- | Display command help.
-displayHelp :: Action ()
-displayHelp = do
-  let disp (_, _, keyb) = msgOverlaysConfirm "Basic keys:" $ keyHelp keyb
-  session disp
-  abort

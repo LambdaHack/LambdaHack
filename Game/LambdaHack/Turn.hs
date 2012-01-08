@@ -159,7 +159,7 @@ playerCommand = do
   tryRepeatedlyWith stopRunning $  -- on abort, just ask for a new command
     ifRunning continueRun $ do
       k <- session nextCommand
-      session (\ (_, _, keyb) -> handleKey lxsize keyb k abortWith)
+      session (\ Session{skeyb} -> handleKey lxsize skeyb k abortWith)
 
 -- Design thoughts (in order to get rid or partially rid of the somewhat
 -- convoluted design we have): We have three kinds of commands.

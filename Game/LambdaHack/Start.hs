@@ -55,7 +55,7 @@ getGen config option =
 
 -- | Either restore a saved game, or setup a new game.
 start :: Config.CP -> Session -> IO ()
-start config sess@(_, cops@Kind.COps{corule}, _) = do
+start config sess@Session{scops = cops@Kind.COps{corule}} = do
   let title = rtitle $ stdRuleset corule
       pathsDataFile = rpathsDataFile $ stdRuleset corule
   restored <- Save.restoreGame pathsDataFile config title

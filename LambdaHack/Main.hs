@@ -33,17 +33,17 @@ cops = Kind.COps
 -- | Wire together config, content and the definitions of game commands
 -- to form the starting game session. Each of these is autonomously modifiable.
 sess :: Config.CP -> FrontendSession -> Session
-sess config frontendSession =
-  let !keyb = stdKeybinding config cmdSemantics cmdDescription
+sess config sfs =
+  let !skeyb = stdKeybinding config cmdSemantics cmdDescription
       !scops = Start.speedupCops cops
-  in (frontendSession, scops, keyb)
+  in Session{sfs, scops, skeyb}
 
 -- | Create the starting game config from the default config file
 -- and initialize the engine with the starting session.
 start :: FrontendSession -> IO ()
-start frontendSession = do
+start sfs = do
   config <- Config.mkConfig ConfigDefault.configDefault
-  Start.start config $ sess config frontendSession
+  Start.start config $ sess config sfs
 
 -- | Fire up the frontend with the engine fueled by config and content.
 -- Which of the frontends is run depends on the flags supplied

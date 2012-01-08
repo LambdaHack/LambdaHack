@@ -1,3 +1,5 @@
+-- | The game action monad and basic actions.
+-- TODO: Add an export list and document after it's rewritten according to #50.
 {-# LANGUAGE MultiParamTypeClasses, RankNTypes #-}
 module Game.LambdaHack.Action where
 
@@ -22,8 +24,11 @@ import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Keys as K
 import Game.LambdaHack.Keybinding
 
-type Session =
-  (FrontendSession, Kind.COps, Keybinding (Action ()))
+data Session = Session
+  { sfs   :: FrontendSession
+  , scops :: Kind.COps
+  , skeyb :: Keybinding (Action ())
+  }
 
 newtype Action a = Action
   { runAction ::
@@ -65,12 +70,12 @@ instance MonadState State Action where
 
 -- | Exported function to run the monad.
 handlerToIO :: Session -> State -> Diary -> Action () -> IO ()
-handlerToIO sess@(fs, cops, _) state diary h =
+handlerToIO sess@Session{sfs, scops} state diary h =
   runAction h
     sess
     (\ ns ndiary -> Save.rmBkpSaveDiary ns ndiary
-                 >> shutdown fs)  -- get out of the game
-    (perception cops state)  -- create and cache perception
+                 >> shutdown sfs)  -- get out of the game
+    (perception scops state)  -- create and cache perception
     (\ _ _ x -> return x)    -- final continuation returns result
     (ioError $ userError "unhandled abort")
     state
@@ -86,17 +91,18 @@ rndToAction r = do
 
 -- | Invoking a session command.
 session :: (Session -> Action a) -> Action a
-session f = Action (\ s e p k a st ms -> runAction (f s) s e p k a st ms)
+session f = Action (\ sess e p k a st ms ->
+                     runAction (f sess) sess e p k a st ms)
 
 -- | Invoking a session command.
 sessionIO :: (Session -> IO a) -> Action a
-sessionIO f = Action (\ s _e _p k _a st ms -> f s >>= k st ms)
+sessionIO f = Action (\ sess _e _p k _a st ms -> f sess >>= k st ms)
 
 -- | Display the current level with modified current msg.
 displayGeneric :: ColorMode -> (Msg -> Msg) -> Action Bool
 displayGeneric dm f =
-  Action (\ (fs, cops, _) _e p k _a st ms ->
-           displayLevel dm fs cops p st (f (smsg ms)) Nothing
+  Action (\ Session{sfs, scops} _e p k _a st ms ->
+           displayLevel dm sfs scops p st (f (smsg ms)) Nothing
            >>= k st ms)
 
 -- | Display the current level, with the current msg and color. Most common.
@@ -106,8 +112,8 @@ displayAll = displayGeneric ColorFull id
 -- | Display an overlay on top of the current screen.
 overlay :: String -> Action Bool
 overlay txt =
-  Action (\ (fs, cops, _) _e p k _a st ms ->
-           displayLevel ColorFull fs cops p st (smsg ms) (Just txt)
+  Action (\ Session{sfs, scops} _e p k _a st ms ->
+           displayLevel ColorFull sfs scops p st (smsg ms) (Just txt)
            >>= k st ms)
 
 -- | Get the current diary.
@@ -137,11 +143,11 @@ msgClear = Action (\ _s _e _p k _a st ms -> k st ms{smsg = ""} ())
 
 -- | Get the content ops.
 contentOps :: Action Kind.COps
-contentOps = Action (\ (_, cops, _) _e _p k _a st ms -> k st ms cops)
+contentOps = Action (\ Session{scops} _e _p k _a st ms -> k st ms scops)
 
 -- | Get the content ops modified by a function.
 contentf :: (Kind.COps -> a) -> Action a
-contentf f = Action (\ (_, cops, _) _e _p k _a st ms -> k st ms (f cops))
+contentf f = Action (\ Session{scops} _e _p k _a st ms -> k st ms (f scops))
 
 -- | End the game, i.e., invoke the shutdown continuation.
 end :: Action ()
@@ -192,28 +198,28 @@ abortIfWith True msg = abortWith msg
 abortIfWith False _  = abortWith ""
 
 nextCommand :: Session -> Action K.Key
-nextCommand (fs, _, keyb) = do
-  nc <- liftIO $ nextCommandD fs
-  return $ fromMaybe nc $ M.lookup nc $ kmacro keyb
+nextCommand Session{sfs, skeyb} = do
+  nc <- liftIO $ nextCommandD sfs
+  return $ fromMaybe nc $ M.lookup nc $ kmacro skeyb
 
 -- | A yes-no confirmation.
 getYesNo :: Session -> Action Bool
-getYesNo sess@(fs, _, _) = do
-  e <- liftIO $ nextCommandD fs
+getYesNo sess@Session{sfs} = do
+  e <- liftIO $ nextCommandD sfs
   case e of
     K.Char 'y' -> return True
     K.Char 'n' -> return False
     K.Esc      -> return False
     _          -> getYesNo sess
 
--- | Waits for a space or return or '?' or '*'. The last two act this way,
+-- | Waits for a space or return or @?@ or @*@. The last two act this way,
 -- to let keys that request information toggle display of the information off.
 getOptionalConfirm :: (Bool -> Action a)
                     -> (K.Key -> Action a)
                     -> Session
                     -> Action a
-getOptionalConfirm h k (fs, _, _) = do
-  e <- liftIO $ nextCommandD fs
+getOptionalConfirm h k Session{sfs} = do
+  e <- liftIO $ nextCommandD sfs
   case e of
     K.Char ' ' -> h True
     K.Char '?' -> h True
@@ -244,7 +250,7 @@ msgYesNo msg = do
   displayGeneric ColorBW id  -- turn player's attention to the choice
   session getYesNo
 
--- | Prins a msg and several overlays, one per page, and awais confirmation.
+-- | Prins a msg and several overlays, one per page, and awaits confirmation.
 -- Return value indicates if the player tried to abort/escape.
 msgOverlaysConfirm :: Msg -> [String] -> Action Bool
 msgOverlaysConfirm _msg [] = do
@@ -269,8 +275,8 @@ msgOverlaysConfirm msg (x:xs) = do
 
 -- | Update the cached perception for the given computation.
 withPerception :: Action () -> Action ()
-withPerception h = Action (\ s@(_, cops, _) e _ k a st ms ->
-                            runAction h s e (perception cops st) k a st ms)
+withPerception h = Action (\ sess@Session{scops} e _ k a st ms ->
+                            runAction h sess e (perception scops st) k a st ms)
 
 -- | Get the current perception.
 currentPerception :: Action Perceptions
@@ -315,3 +321,10 @@ playerAdvanceTime :: Action ()
 playerAdvanceTime = do
   pl <- gets splayer
   advanceTime pl
+
+-- | Display command help.
+displayHelp :: Action ()
+displayHelp = do
+  let disp Session{skeyb} = msgOverlaysConfirm "Basic keys:" $ keyHelp skeyb
+  session disp
+  abort
