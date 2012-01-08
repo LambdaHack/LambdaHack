@@ -19,9 +19,9 @@ data PlaceKind = PlaceKind
 
 -- | A method of filling the whole area by transforming a given corner.
 data Cover =
-    CTile     -- ^ tile the corner plan, cutting off at the right and bottom
-  | CStretch  -- ^ fill symmetrically all corners and stretch their borders
-  | CReflect  -- ^ tile separately and symmetrically the quarters of the place
+    CAlternate   -- ^ reflect every other corner, overlapping 1 row and column
+  | CStretch     -- ^ fill symmetrically all corners and stretch their borders
+  | CReflect     -- ^ tile separately and symmetrically quarters of the place
   deriving (Show, Eq)
 
 -- | The choice of a fence type for the place.

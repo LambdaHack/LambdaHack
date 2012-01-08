@@ -64,7 +64,6 @@ noise = rogue
   , cfreq         = [("dng", 20), ("caveNoise", 1)]
   , cgrid         = (RollDice 2 2, RollDice 1 2)
   , cminPlaceSize = (RollDice 4 2, RollDice 4 1)
-  , cdarkChance   = intToQuad 100
   , cvoidChance   = 0
   , cdefTile      = "noiseSet"
   , ccorTile      = "path"

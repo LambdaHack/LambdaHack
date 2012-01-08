@@ -36,11 +36,14 @@ instance Binary Place where
 -- | The sparse place and cave map.
 type TileMapXY = M.Map (X, Y) (Kind.Id TileKind)
 
--- | Check if the area large enough for tiling the corner twice in each
--- diraction, with a possible one tile overlap.
+-- | For @CAlternate@ tiling, require the place be comprised
+-- of an even number of whole corners, with exactly one square
+-- overlap between consecutive coners and no trimming.
+-- For other tiling methods, check that the area large enough for tiling
+-- the corner twice in each direction, with a possible one row/column overlap..
 placeValid :: Area      -- ^ the area to fill
-          -> PlaceKind  -- ^ the place kind to construct
-          -> Bool
+           -> PlaceKind  -- ^ the place kind to construct
+           -> Bool
 placeValid (x0, y0, x1, y1) PlaceKind{..} =
   let extra = case pfence of
         FWall  -> 1
@@ -50,7 +53,12 @@ placeValid (x0, y0, x1, y1) PlaceKind{..} =
       dy = y1 - y0 + extra
       dxcorner = case ptopLeft of [] -> 0 ; l : _ -> L.length l
       dycorner = L.length ptopLeft
-  in dx >= 2 * dxcorner - 1 &&  dy >= 2 * dycorner - 1
+      wholeOverlapped d dcorner = d > 1 && dcorner > 1 &&
+                                  (d - 1) `mod` (2 * (dcorner - 1)) == 0
+  in case pcover of
+    CAlternate -> wholeOverlapped dx dxcorner &&
+                  wholeOverlapped dy dycorner
+    _          -> dx >= 2 * dxcorner - 1 &&  dy >= 2 * dycorner - 1
 
 buildFence :: Kind.Id TileKind -> Area -> TileMapXY
 buildFence wallId (x0, y0, x1, y1) =
@@ -92,9 +100,10 @@ tilePlace (x0, y0, x1, y1) PlaceKind{..} =
             lend   = L.take (d `div`   2) pat
         in lstart ++ L.reverse lend
       interior = case pcover of
-        CTile    ->
+        CAlternate ->
           let tile :: Int -> [a] -> [a]
-              tile d pat = L.take d (L.cycle pat)
+              tile d pat =
+                L.take d (L.cycle $ L.init pat ++ L.init (L.reverse pat))
           in fillInterior tile
         CStretch ->
           let stretch :: Int -> [a] -> [a]
