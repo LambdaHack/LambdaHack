@@ -1,3 +1,6 @@
+-- | The game action stuff that is independent from ItemAction.hs.
+-- (Both depend on EffectAction.hs).
+-- TODO: Add an export list and document after it's rewritten according to #50.
 module Game.LambdaHack.Actions where
 
 import Control.Monad
@@ -35,9 +38,6 @@ import Game.LambdaHack.DungeonState
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Content.ItemKind
-
--- The Action stuff that is independent from ItemAction.hs.
--- (Both depend on EffectAction.hs).
 
 displayHistory :: Action ()
 displayHistory = do
@@ -141,7 +141,6 @@ guessBump _ F.Descendable _ =
 guessBump _ _ _ = neverMind True
 
 -- | Player tries to trigger a tile using a feature.
--- TODO: use in more places.
 bumpTile :: Loc -> F.Feature -> Action ()
 bumpTile dloc feat = do
   cotile <- contentf Kind.cotile

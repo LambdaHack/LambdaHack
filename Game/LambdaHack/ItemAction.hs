@@ -1,3 +1,7 @@
+-- | Item UI code with the Action type and everything it depends on
+-- that is not already in Action.hs and EffectAction.hs.
+-- This file should not depend on Actions.hs.
+-- TODO: Add an export list and document after it's rewritten according to #50.
 module Game.LambdaHack.ItemAction where
 
 import Control.Monad
@@ -24,10 +28,6 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Content.ItemKind
 import qualified Game.LambdaHack.Feature as F
 import qualified Game.LambdaHack.Tile as Tile
-
--- Item UI code with the Action type and everything it depends on
--- that is not already in Action.hs and EffectAction.hs.
--- This file should not depend on Action.hs.
 
 -- | Display inventory
 inventory :: Action a
@@ -158,9 +158,10 @@ playerProjectGI verb object syms = do
     Just _  -> retarget "Last target unreachable."
     Nothing -> retarget "Last target invalid."
 
--- | Start the monster targeting mode. Cycle between monster targets.
 -- TODO: also target a monster by moving the cursor, if in target monster mode.
 -- TODO: sort monsters by distance to the player.
+
+-- | Start the monster targeting mode. Cycle between monster targets.
 targetMonster :: TgtMode -> Action ()
 targetMonster tgtMode = do
   pl        <- gets splayer
@@ -265,9 +266,9 @@ acceptCurrent h = do
     else h  -- nothing to accept right now
 
 -- | Drop a single item.
--- TODO: allow dropping a given number of identical items.
 dropItem :: Action ()
 dropItem = do
+  -- TODO: allow dropping a given number of identical items.
   cops  <- contentOps
   pl    <- gets splayer
   state <- get
@@ -374,9 +375,10 @@ pickupItem = do
 -- Perhaps this means half of this code should be split and moved
 -- to ItemState, to be independent of any IO code from Action/Display. Actually, not, since the message display depends on Display. Unless we return a string to be displayed.
 
--- | Let the player choose any item from a list of items.
--- TODO: you can drop an item on the floor, which works correctly,
+-- TODO: you can drop an item already the floor, which works correctly,
 -- but is weird and useless.
+
+-- | Let the player choose any item from a list of items.
 getAnyItem :: String  -- ^ prompt
            -> [Item]  -- ^ all items in question
            -> String  -- ^ how to refer to the collection of items

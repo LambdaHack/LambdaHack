@@ -1,3 +1,6 @@
+-- | The effectToAction function and all it depends on.
+-- This file should not depend on Actions.hs nor ItemAction.hs.
+-- TODO: Add an export list and document after it's rewritten according to #50.
 module Game.LambdaHack.EffectAction where
 
 -- Cabal
@@ -40,17 +43,16 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.DungeonState
 import qualified Game.LambdaHack.Save as Save
 
--- The effectToAction function and all it depends on.
--- This file should not depend on Action.hs nor ItemAction.hs.
 
--- | The source actor affects the target actor, with a given effect and power.
--- The second argument is verbosity of the resulting message.
 -- TODO: instead of verbosity return msg components and tailor them outside?
--- Both actors are on the current level and can be the same actor.
--- The bool result indicates if the actors identify the effect.
 -- TODO: separately define messages for the case when source == target
 -- and for the other case; then use the messages outside of effectToAction,
 -- depending on the returned bool, perception and identity of the actors.
+
+-- | The source actor affects the target actor, with a given effect and power.
+-- The second argument is verbosity of the resulting message.
+-- Both actors are on the current level and can be the same actor.
+-- The bool result indicates if the actors identify the effect.
 effectToAction :: Effect.Effect -> Int -> ActorId -> ActorId -> Int
                -> Action (Bool, String)
 effectToAction Effect.NoEffect _ _ _ _ = nullEffect
@@ -310,7 +312,7 @@ summonMonsters n loc = do
   modify (\ state ->
            iterate (addMonster cotile mk hp loc) state !! n)
 
--- | Remove dead heroes (or dominated monsters), check if game over.
+-- | Remove dead heroes (or dead dominated monsters), check if game over.
 -- For now we only check the selected hero and at current level,
 -- but if poison, etc. is implemented, we'd need to check all heroes
 -- on any level.
@@ -409,8 +411,9 @@ history = do
     diary <- currentDiary
     diaryReset $ diary {shistory = takeMax diary}
 
--- | Perform look around in the current location of the cursor.
 -- TODO: depending on tgt, show extra info about tile or monster or both
+
+-- | Perform look around in the current location of the cursor.
 doLook :: Action ()
 doLook = do
   cops   <- contentOps
