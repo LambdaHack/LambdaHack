@@ -20,7 +20,6 @@ import qualified Game.LambdaHack.Keys as K
 import Game.LambdaHack.Level
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.ActorAdd
 import Game.LambdaHack.Perception
 import Game.LambdaHack.State
 import Game.LambdaHack.EffectAction

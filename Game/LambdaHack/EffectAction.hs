@@ -23,7 +23,6 @@ import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.ActorAdd
 import Game.LambdaHack.Display
 import Game.LambdaHack.Grammar
 import Game.LambdaHack.Geometry

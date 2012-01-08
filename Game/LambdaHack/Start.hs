@@ -11,7 +11,7 @@ import Game.LambdaHack.DungeonState
 import qualified Game.LambdaHack.Save as Save
 import Game.LambdaHack.Turn
 import qualified Game.LambdaHack.Config as Config
-import Game.LambdaHack.ActorAdd
+import Game.LambdaHack.ActorState
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Content.TileKind

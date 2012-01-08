@@ -1,7 +1,9 @@
 module Game.LambdaHack.Actor where
 
-import Data.Binary
 import Control.Monad
+import Data.Binary
+import Data.Maybe
+import Data.Ratio
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Geometry
@@ -10,6 +12,8 @@ import Game.LambdaHack.Loc
 import Game.LambdaHack.Content.ActorKind
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Random
+import qualified Game.LambdaHack.Config as Config
+import Game.LambdaHack.WorldLoc
 
 -- | Monster properties that are changing a lot. If they are dublets
 -- of properties from ActorKind, the intention is they may be modified
@@ -54,6 +58,16 @@ data ActorId = AHero !Int     -- ^ hero index (on the lheroes intmap)
              | AMonster !Int  -- ^ monster index (on the lmonsters intmap)
   deriving (Show, Eq, Ord)
 
+instance Binary ActorId where
+  put (AHero n)    = putWord8 0 >> put n
+  put (AMonster n) = putWord8 1 >> put n
+  get = do
+    tag <- getWord8
+    case tag of
+      0 -> liftM AHero get
+      1 -> liftM AMonster get
+      _ -> fail "no parse (ActorId)"
+
 -- | An actor that is not on any level.
 invalidActorId :: ActorId
 invalidActorId = AMonster (-1)
@@ -82,15 +96,31 @@ unoccupied actors loc =
 heroKindId :: Kind.Ops ActorKind -> Kind.Id ActorKind
 heroKindId Kind.Ops{ouniqGroup} = ouniqGroup "hero"
 
-instance Binary ActorId where
-  put (AHero n)    = putWord8 0 >> put n
-  put (AMonster n) = putWord8 1 >> put n
-  get = do
-    tag <- getWord8
-    case tag of
-      0 -> liftM AHero get
-      1 -> liftM AMonster get
-      _ -> fail "no parse (ActorId)"
+-- Setting the time of new monsters to 0 makes them able to
+-- move immediately after generation. This does not seem like
+-- a bad idea, but it would certainly be "more correct" to set
+-- the time to the creation time instead.
+template :: Kind.Id ActorKind -> Maybe Char -> Maybe String -> Int -> Loc
+         -> Actor
+template mk mc ms hp loc =
+  -- The initial target is invalid to force re-evaluating it.
+  let invalidTarget = TEnemy invalidActorId loc
+  in Actor mk mc ms hp Nothing invalidTarget loc 'a' 0
+
+findHeroName :: Config.CP -> Int -> String
+findHeroName config n =
+  let heroName = Config.getOption config "heroes" ("HeroName_" ++ show n)
+  in fromMaybe ("hero number " ++ show n) heroName
+
+-- | Chance that a new monster is generated. Currently depends on the
+-- number of monsters already present, and on the level. In the future,
+-- the strength of the character and the strength of the monsters present
+-- could further influence the chance, and the chance could also affect
+-- which monster is generated. How many and which monsters are generated
+-- will also depend on the cave kind used to build the level.
+monsterGenChance :: LevelId -> Int -> Rnd Bool
+monsterGenChance (LambdaCave d) numMonsters =
+  chance $ 1%(fromIntegral (250 + 200 * (numMonsters - d)) `max` 50)
 
 data Target =
     TEnemy ActorId Loc  -- ^ fire at the actor; last seen location

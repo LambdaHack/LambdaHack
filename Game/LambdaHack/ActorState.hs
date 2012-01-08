@@ -1,10 +1,11 @@
 module Game.LambdaHack.ActorState where
 
+import Control.Monad
 import qualified Data.List as L
 import qualified Data.IntSet as IS
 import qualified Data.IntMap as IM
-import Control.Monad
 import Data.Maybe
+import qualified Data.Char as Char
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Loc
@@ -14,6 +15,13 @@ import qualified Game.LambdaHack.Dungeon as Dungeon
 import Game.LambdaHack.State
 import Game.LambdaHack.WorldLoc
 import Game.LambdaHack.Item
+import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.Content.TileKind
+import Game.LambdaHack.Random
+import qualified Game.LambdaHack.Config as Config
+import qualified Game.LambdaHack.Tile as Tile
+import qualified Game.LambdaHack.Kind as Kind
+import qualified Game.LambdaHack.Feature as F
 
 -- The operations with "Any", and those that use them, consider all the dungeon.
 -- All the other actor and level operations only consider the current level.
@@ -160,3 +168,72 @@ locToActors loc state =
     let l  = IM.assocs $ projection $ slevel state
         im = L.filter (\ (_i, m) -> bloc m == loc) l
     in fmap (injection . fst) im
+
+nearbyFreeLoc :: Kind.Ops TileKind -> Loc -> State -> Loc
+nearbyFreeLoc cotile origin state =
+  let lvl@Level{lxsize, lysize} = slevel state
+      hs = levelHeroList state
+      ms = levelMonsterList state
+      locs = origin : L.nub (concatMap (surroundings lxsize lysize) locs)
+      good loc = Tile.hasFeature cotile F.Walkable (lvl `at` loc)
+                 && loc `L.notElem` L.map bloc (hs ++ ms)
+  in fromMaybe (assert `failure` "too crowded map") $ L.find good locs
+
+-- Adding heroes
+
+-- | Create a new hero on the current level, close to the given location.
+addHero :: Kind.COps -> Loc -> State -> State
+addHero Kind.COps{coactor, cotile} ploc state =
+  let config = sconfig state
+      bHP = Config.get config "heroes" "baseHP"
+      loc = nearbyFreeLoc cotile ploc state
+      n = fst (scounter state)
+      symbol = if n < 1 || n > 9 then Nothing else Just $ Char.intToDigit n
+      name = findHeroName config n
+      startHP = bHP `div` min 10 (n + 1)
+      m = template (heroKindId coactor) symbol (Just name) startHP loc
+      state' = state { scounter = (n + 1, snd (scounter state))
+                     , sparty = IS.insert n (sparty state) }
+  in updateLevel (updateHeroes (IM.insert n m)) state'
+
+-- | Create a set of initial heroes on the current level, at location ploc.
+initialHeroes :: Kind.COps -> Loc -> State -> State
+initialHeroes cops ploc state =
+  let k = 1 + Config.get (sconfig state) "heroes" "extraHeroes"
+  in iterate (addHero cops ploc) state !! k
+
+-- Adding monsters
+
+-- | Create a new monster in the level, at a random position.
+addMonster :: Kind.Ops TileKind -> Kind.Id ActorKind -> Int -> Loc -> State
+           -> State
+addMonster cotile mk hp ploc state@State{scounter = (heroC, monsterC)} = do
+  let loc = nearbyFreeLoc cotile ploc state
+      m = template mk Nothing Nothing hp loc
+      state' = state { scounter = (heroC, monsterC + 1) }
+  updateLevel (updateMonsters (IM.insert monsterC m)) state'
+
+-- | Create a new monster in the level, at a random position.
+rollMonster :: Kind.COps -> State -> Rnd State
+rollMonster Kind.COps{cotile, coactor=Kind.Ops{opick, okind}} state = do
+  let lvl = slevel state
+      hs = levelHeroList state
+      ms = levelMonsterList state
+      isLit = Tile.isLit cotile
+  rc <- monsterGenChance (slid state) (L.length ms)
+  if not rc
+    then return state
+    else do
+      -- TODO: New monsters should be generated in a place that isn't
+      -- visible by the player, if possible.
+      -- Levels with few rooms are dangerous, because monsters may spawn
+      -- in adjacent and unexpected locations.
+      loc <- findLocTry 2000 (lmap lvl)
+             (\ l t -> Tile.hasFeature cotile F.Walkable t
+                       && l `L.notElem` L.map bloc (hs ++ ms))
+             (\ l t -> not (isLit t)  -- try a dark, distant place first
+                       && L.all (\ pl ->
+                                  distance (lxsize lvl) (bloc pl) l > 20) hs)
+      mk <- opick "monster" (const True)
+      hp <- rollDice $ ahp $ okind mk
+      return $ addMonster cotile mk hp loc state

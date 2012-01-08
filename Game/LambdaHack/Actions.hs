@@ -23,7 +23,6 @@ import Game.LambdaHack.Level
 import Game.LambdaHack.LevelState
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.ActorAdd
 import Game.LambdaHack.Perception
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Config as Config

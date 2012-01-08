@@ -41,7 +41,6 @@ flag std
 library
   exposed-modules: Game.LambdaHack.Action,
                    Game.LambdaHack.Actions,
-                   Game.LambdaHack.ActorAdd,
                    Game.LambdaHack.Actor,
                    Game.LambdaHack.ActorState,
                    Game.LambdaHack.Area,
