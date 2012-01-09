@@ -29,7 +29,6 @@ import qualified Game.LambdaHack.Config as Config
 import qualified Game.LambdaHack.Save as Save
 import qualified Game.LambdaHack.Effect as Effect
 import Game.LambdaHack.EffectAction
-import Game.LambdaHack.WorldLoc
 import qualified Game.LambdaHack.Tile as Tile
 import qualified Game.LambdaHack.Kind as Kind
 import qualified Game.LambdaHack.Feature as F
@@ -261,9 +260,9 @@ tgtAscend k = do
                 in cur { clocation, clocLn = nln }
           modify (updateCursor upd)
     else do  -- no stairs in the right direction
-      let n = levelNumber slid
+      let n = Dungeon.levelNumber slid
           depth = Dungeon.depth dungeon
-          nln = LambdaCave $ min depth $ max 1 $ n - k
+          nln = Dungeon.levelDefault $ min depth $ max 1 $ n - k
       when (nln == slid) $ abortWith "no more levels in this direction"
       modify (\ state -> state {slid = nln})
       let upd cur = cur {clocLn = nln}

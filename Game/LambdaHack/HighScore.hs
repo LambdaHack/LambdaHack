@@ -9,7 +9,7 @@ import qualified Data.List as L
 
 import Game.LambdaHack.Utils.File
 import qualified Game.LambdaHack.Config as Config
-import Game.LambdaHack.WorldLoc
+import Game.LambdaHack.Dungeon
 import Game.LambdaHack.Geometry
 
 -- | A single score.
@@ -61,8 +61,8 @@ showScore :: (Int, ScoreRecord) -> String
 showScore (pos, score) =
   let died  =
         case status score of
-          Killed (LambdaCave n) -> "perished on level " ++ show n ++ ","
-          Camping (LambdaCave n) -> "is camping on level " ++ show n ++ ","
+          Killed lvl -> "perished on level " ++ show (levelNumber lvl) ++ ","
+          Camping lvl -> "is camping on level " ++ show (levelNumber lvl) ++ ","
           Victor -> "emerged victorious"
       time  = calendarTimeToString . toUTCTime . date $ score
       big   = "                                                 "

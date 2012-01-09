@@ -14,9 +14,8 @@ import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Loc
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Level
-import qualified Game.LambdaHack.Dungeon as Dungeon
+import Game.LambdaHack.Dungeon
 import Game.LambdaHack.State
-import Game.LambdaHack.WorldLoc
 import Game.LambdaHack.Item
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind
@@ -40,7 +39,7 @@ findActorAnyLevel actor state@State{slid, sdungeon} =
               AMonster n -> (IM.lookup n (lmonsters lvl),
                              IM.lookup n (lmonItem lvl))
         in fmap (\ a -> (ln, a, fromMaybe [] mi)) m
-  in case mapMaybe chk (Dungeon.currentFirst slid sdungeon) of
+  in case mapMaybe chk (currentFirst slid sdungeon) of
     []      -> assert `failure` actor
     res : _ -> res  -- checking if res is unique would break laziness
 
@@ -66,7 +65,7 @@ allHeroesAnyLevel :: State -> [(ActorId, LevelId)]
 allHeroesAnyLevel State{slid, sdungeon} =
   let one (ln, Level{lheroes}) =
         L.map (\ (i, _) -> (AHero i, ln)) (IM.assocs lheroes)
-  in L.concatMap one (Dungeon.currentFirst slid sdungeon)
+  in L.concatMap one (currentFirst slid sdungeon)
 
 updateAnyActorBody :: ActorId -> (Actor -> Actor) -> State -> State
 updateAnyActorBody actor f state =
@@ -87,7 +86,7 @@ updateAnyActorItem actor f state =
 updateAnyLevel :: (Level -> Level) -> LevelId -> State -> State
 updateAnyLevel f ln s@State{slid, sdungeon}
   | ln == slid = updateLevel f s
-  | otherwise = updateDungeon (const $ Dungeon.adjust f ln sdungeon) s
+  | otherwise = updateDungeon (const $ adjust f ln sdungeon) s
 
 -- | Calculate the location of player's target.
 targetToLoc :: IS.IntSet -> State -> Maybe Loc
@@ -223,7 +222,7 @@ rollMonster Kind.COps{cotile, coactor=Kind.Ops{opick, okind}} state = do
       hs = levelHeroList state
       ms = levelMonsterList state
       isLit = Tile.isLit cotile
-  rc <- monsterGenChance (slid state) (L.length ms)
+  rc <- monsterGenChance (levelNumber $ slid state) (L.length ms)
   if not rc
     then return state
     else do

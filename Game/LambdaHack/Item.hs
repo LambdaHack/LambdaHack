@@ -17,7 +17,6 @@ import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Flavour
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Effect
-import Game.LambdaHack.WorldLoc
 
 data Item = Item
   { jkind   :: !(Kind.Id ItemKind)
@@ -76,7 +75,7 @@ itemLetter :: ItemKind -> Maybe Char
 itemLetter ik = if isymbol ik == '$' then Just '$' else Nothing
 
 -- | Generate an item.
-newItem :: Kind.Ops ItemKind -> LevelId -> Int -> Rnd Item
+newItem :: Kind.Ops ItemKind -> Int -> Int -> Rnd Item
 newItem cops@Kind.Ops{opick, okind} lvl depth = do
   ikChosen <- opick "dng" (const True)
   let kind = okind ikChosen

@@ -15,7 +15,6 @@ import qualified Data.List as L
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Frequency
-import Game.LambdaHack.WorldLoc
 
 -- TODO: if the file grows much larger, split it and move a part to Utils/
 
@@ -118,18 +117,16 @@ rollDiceXY (RollDice xa' xb', RollDice ya' yb') = do
 -- | 'rollQuad (aDb, xDy) = rollDice aDb + lvl * rollDice xDy / depth'
 type RollQuad = (RollDice, RollDice)
 
-rollQuad :: LevelId -> Int -> RollQuad -> Rnd Int
-rollQuad lvl depth (RollDice a b, RollDice x y) =
-  assert (n > 0 && n <= depth `blame` (lvl, depth)) $ do
+rollQuad :: Int -> Int -> RollQuad -> Rnd Int
+rollQuad n depth (RollDice a b, RollDice x y) =
+  assert (n > 0 && n <= depth `blame` (n, depth)) $ do
   aDb <- rollDice (RollDice a b)
   xDy <- rollDice (RollDice x y)
   return $ aDb + ((n - 1) * xDy) `div` (depth - 1)
- where
-  n = levelNumber lvl
 
-chanceQuad :: LevelId -> Int -> RollQuad -> Rnd Bool
-chanceQuad lvl depth quad = do
-  c <- rollQuad lvl depth quad
+chanceQuad :: Int -> Int -> RollQuad -> Rnd Bool
+chanceQuad n depth quad = do
+  c <- rollQuad n depth quad
   return $ c > 50
 
 intToQuad :: Int -> RollQuad

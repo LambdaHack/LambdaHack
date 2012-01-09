@@ -94,8 +94,7 @@ library
                    Game.LambdaHack.Tile,
                    Game.LambdaHack.Turn,
                    Game.LambdaHack.Utils.Assert,
-                   Game.LambdaHack.Utils.File,
-                   Game.LambdaHack.WorldLoc
+                   Game.LambdaHack.Utils.File
   other-modules:   Paths_LambdaHack
   build-depends:   ConfigFile >= 1.1.1 && < 2,
                    array >= 0.3.0.3 && < 1, base >= 4 && < 5,

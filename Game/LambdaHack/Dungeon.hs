@@ -1,5 +1,6 @@
 module Game.LambdaHack.Dungeon
-  ( Dungeon, fromList, currentFirst, adjust, (!), lookup, depth
+  ( LevelId, levelNumber, levelDefault
+  , Dungeon, fromList, currentFirst, adjust, (!), lookup, depth
   ) where
 
 import Prelude hiding (lookup)
@@ -9,7 +10,22 @@ import qualified Data.List as L
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Level
-import Game.LambdaHack.WorldLoc
+
+-- | Level ids are integers and (for now) ordered linearly.
+newtype LevelId = LambdaCave Int
+  deriving (Show, Eq, Ord)
+
+instance Binary LevelId where
+  put (LambdaCave n) = put n
+  get = fmap LambdaCave get
+
+-- | Depth of a level.
+levelNumber :: LevelId -> Int
+levelNumber (LambdaCave n) = n
+
+-- | Default level of a given depth.
+levelDefault :: Int -> LevelId
+levelDefault n = LambdaCave n
 
 -- | The complete dungeon is a map from level names to levels.
 -- We usually store all but the current level in this data structure.

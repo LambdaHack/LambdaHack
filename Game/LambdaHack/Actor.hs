@@ -22,7 +22,6 @@ import Game.LambdaHack.Content.ActorKind
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Config as Config
-import Game.LambdaHack.WorldLoc
 
 -- | Monster properties that are changing a lot. If they are dublets
 -- of properties from ActorKind, the intention is they may be modified
@@ -105,8 +104,8 @@ findHeroName config n =
 -- could further influence the chance, and the chance could also affect
 -- which monster is generated. How many and which monsters are generated
 -- will also depend on the cave kind used to build the level.
-monsterGenChance :: LevelId -> Int -> Rnd Bool
-monsterGenChance (LambdaCave d) numMonsters =
+monsterGenChance :: Int -> Int -> Rnd Bool
+monsterGenChance d numMonsters =
   chance $ 1%(fromIntegral (250 + 200 * (numMonsters - d)) `max` 50)
 
 -- Actor operations

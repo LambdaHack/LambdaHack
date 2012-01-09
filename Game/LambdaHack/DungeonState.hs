@@ -14,7 +14,6 @@ import Game.LambdaHack.Level
 import qualified Game.LambdaHack.Dungeon as Dungeon
 import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Config as Config
-import Game.LambdaHack.WorldLoc
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Feature as F
 import qualified Game.LambdaHack.Tile as Tile
@@ -42,7 +41,7 @@ mapToIMap :: X -> M.Map (X, Y) a -> IM.IntMap a
 mapToIMap cxsize m =
   IM.fromList $ map (\ (xy, a) -> (toLoc cxsize xy, a)) (M.assocs m)
 
-rollItems :: Kind.COps -> LevelId -> Int -> CaveKind -> TileMap -> Loc
+rollItems :: Kind.COps -> Int -> Int -> CaveKind -> TileMap -> Loc
           -> Rnd [(Loc, Item)]
 rollItems Kind.COps{cotile, coitem=coitem@Kind.Ops{osymbol}}
           lvl depth CaveKind{cxsize, citemNum} lmap ploc = do
@@ -59,7 +58,7 @@ rollItems Kind.COps{cotile, coitem=coitem@Kind.Ops{osymbol}}
     return (l, item)
 
 -- | Create a level from a cave, from a cave kind.
-buildLevel :: Kind.COps -> Cave -> LevelId -> Int -> Rnd Level
+buildLevel :: Kind.COps -> Cave -> Int -> Int -> Rnd Level
 buildLevel cops@Kind.COps{cotile=cotile@Kind.Ops{opick}, cocave=Kind.Ops{okind}}
            Cave{dkind, dsecret, ditem, dmap, dmeta} lvl depth = do
   let cfg@CaveKind{..} = okind dkind
@@ -71,7 +70,7 @@ buildLevel cops@Kind.COps{cotile=cotile@Kind.Ops{opick}, cocave=Kind.Ops{okind}}
           (\ l _ -> distance cxsize su l >= cminStairDist)
   upId   <- opick "legend" $ Tile.kindHasFeature F.Ascendable
   downId <- opick "legend" $ Tile.kindHasFeature F.Descendable
-  let stairs = [(su, upId)] ++ if levelNumber lvl == depth
+  let stairs = [(su, upId)] ++ if lvl == depth
                                then []
                                else [(sd, downId)]
       lmap = cmap Kind.// stairs
@@ -104,33 +103,33 @@ findGenerator :: Kind.COps -> Config.CP -> Int -> Int -> Rnd Level
 findGenerator cops config k depth = do
   let ln = "LambdaCave_" ++ show k
       genName = Config.getOption config "dungeon" ln
-      lvl = LambdaCave k
   ci <- matchGenerator (Kind.cocave cops) genName
-  cave <- buildCave cops lvl depth ci
-  buildLevel cops cave lvl depth
+  cave <- buildCave cops k depth ci
+  buildLevel cops cave k depth
 
 -- | Generate the dungeon for a new game.
-generate :: Kind.COps -> Config.CP -> Rnd (Loc, LevelId, Dungeon.Dungeon)
+generate :: Kind.COps -> Config.CP
+         -> Rnd (Loc, Dungeon.LevelId, Dungeon.Dungeon)
 generate cops config =
   let depth = Config.get config "dungeon" "depth"
-      gen :: R.StdGen -> Int -> (R.StdGen, (LevelId, Level))
+      gen :: R.StdGen -> Int -> (R.StdGen, (Dungeon.LevelId, Level))
       gen g k =
         let (g1, g2) = R.split g
             res = MState.evalState (findGenerator cops config k depth) g1
-        in (g2, (LambdaCave k, res))
-      con :: R.StdGen -> ((Loc, LevelId, Dungeon.Dungeon), R.StdGen)
+        in (g2, (Dungeon.levelDefault k, res))
+      con :: R.StdGen -> ((Loc, Dungeon.LevelId, Dungeon.Dungeon), R.StdGen)
       con g =
         let (gd, levels) = L.mapAccumL gen g [1..depth]
             ploc = fst (lstairs (snd (head levels)))
-        in ((ploc, LambdaCave 1, Dungeon.fromList levels depth), gd)
+        in ((ploc, Dungeon.levelDefault 1, Dungeon.fromList levels depth), gd)
   in MState.state con
 
 -- | Computes the target world location of using stairs.
-whereTo :: State -> Int -> Maybe WorldLoc
+whereTo :: State -> Int -> Maybe (Dungeon.LevelId, Loc)
 whereTo State{slid, sdungeon} k = assert (k /= 0) $
-  let n = levelNumber slid
+  let n = Dungeon.levelNumber slid
       nln = n - k
-      ln = LambdaCave nln
+      ln = Dungeon.levelDefault nln
   in case Dungeon.lookup ln sdungeon of
      Nothing     -> Nothing
      Just lvlTrg -> Just (ln, (if k < 0 then fst else snd) (lstairs lvlTrg))

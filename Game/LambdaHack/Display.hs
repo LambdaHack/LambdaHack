@@ -35,12 +35,12 @@ import Game.LambdaHack.Effect
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Actor as Actor
 import Game.LambdaHack.ActorState
+import qualified Game.LambdaHack.Dungeon as Dungeon
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Content.ItemKind
 import qualified Game.LambdaHack.Item as Item
 import qualified Game.LambdaHack.Keys as K
-import Game.LambdaHack.WorldLoc
 import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Kind as Kind
 
@@ -165,7 +165,7 @@ displayLevel dm fs cops per
              _      -> (a, char)
       status =
         take 27 (ldesc ++ repeat ' ') ++
-        take 7 ("L: " ++ show (levelNumber slid) ++ repeat ' ') ++
+        take 7 ("L: " ++ show (Dungeon.levelNumber slid) ++ repeat ' ') ++
         take 9 ("T: " ++ show (stime `div` 10) ++ repeat ' ') ++
         take 8 ("$: " ++ show wealth ++ repeat ' ') ++
         take 15 ("Dmg: " ++ damage ++ repeat ' ') ++

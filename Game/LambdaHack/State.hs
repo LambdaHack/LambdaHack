@@ -14,7 +14,6 @@ import Game.LambdaHack.Level
 import qualified Game.LambdaHack.Dungeon as Dungeon
 import Game.LambdaHack.Item
 import Game.LambdaHack.Msg
-import Game.LambdaHack.WorldLoc
 
 -- | The diary contains all the player data that carries over from game to game.
 -- That includes the last message, previous messages and otherwise recorded
@@ -37,7 +36,7 @@ data State = State
   , sflavour     :: FlavourMap   -- ^ association of flavour to items
   , sdisco       :: Discoveries  -- ^ items (kinds) that have been discovered
   , sdungeon     :: Dungeon.Dungeon  -- ^ all dungeon levels
-  , slid         :: LevelId
+  , slid         :: Dungeon.LevelId
   , scounter     :: (Int, Int)   -- ^ stores next hero index and monster index
   , sparty       :: IS.IntSet    -- ^ heroes in the party
   , srandom      :: R.StdGen     -- ^ current random generator
@@ -53,9 +52,9 @@ data TgtMode =
 
 data Cursor = Cursor
   { ctargeting :: TgtMode  -- ^ targeting mode
-  , clocLn     :: LevelId  -- ^ cursor level
+  , clocLn     :: Dungeon.LevelId  -- ^ cursor level
   , clocation  :: Loc      -- ^ cursor coordinates
-  , creturnLn  :: LevelId  -- ^ the level current player resides on
+  , creturnLn  :: Dungeon.LevelId  -- ^ the level current player resides on
   }
   deriving Show
 
@@ -72,7 +71,7 @@ defaultDiary = do
     , shistory = ["Player diary started on " ++ time ++ "."]
     }
 
-defaultState :: Config.CP -> FlavourMap -> Dungeon.Dungeon -> LevelId
+defaultState :: Config.CP -> FlavourMap -> Dungeon.Dungeon -> Dungeon.LevelId
              -> Loc -> R.StdGen -> State
 defaultState config flavour dng lid ploc g =
   State
