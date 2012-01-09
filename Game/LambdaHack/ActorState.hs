@@ -1,3 +1,6 @@
+-- | Operations on the "Actor" type that need the "State" type,
+-- but not the "Action" type.
+-- TODO: Add an export list and document after it's rewritten according to #50.
 module Game.LambdaHack.ActorState where
 
 import Control.Monad

@@ -42,7 +42,6 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.DungeonState
 import qualified Game.LambdaHack.Save as Save
 
-
 -- TODO: instead of verbosity return msg components and tailor them outside?
 -- TODO: separately define messages for the case when source == target
 -- and for the other case; then use the messages outside of effectToAction,

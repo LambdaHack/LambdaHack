@@ -1,4 +1,13 @@
-module Game.LambdaHack.Actor where
+-- | Actors in the game: monsters and heroes.
+module Game.LambdaHack.Actor
+  ( -- * Actor identifiers and related operations
+    ActorId(..), isAHero, isAMonster, invalidActorId
+  , findHeroName, monsterGenChance
+    -- * The@ Acto@r type
+  , Actor(..), template, addHp, unoccupied, heroKindId
+    -- * Type of na actor target
+  , Target(..)
+  ) where
 
 import Control.Monad
 import Data.Binary
@@ -54,7 +63,10 @@ instance Binary Actor where
     ati <- get
     return (Actor ak an as ah ad at al ale ati)
 
-data ActorId = AHero !Int     -- ^ hero index (on the lheroes intmap)
+-- ActorId operations
+
+-- | A unique identifier of an actor in a dungeon.
+data ActorId = AHero    !Int  -- ^ hero index (on the lheroes intmap)
              | AMonster !Int  -- ^ monster index (on the lmonsters intmap)
   deriving (Show, Eq, Ord)
 
@@ -68,45 +80,20 @@ instance Binary ActorId where
       1 -> liftM AMonster get
       _ -> fail "no parse (ActorId)"
 
--- | An actor that is not on any level.
-invalidActorId :: ActorId
-invalidActorId = AMonster (-1)
-
+-- | Checks whether an actor identifier represents a hero.
 isAHero :: ActorId -> Bool
 isAHero (AHero _) = True
 isAHero (AMonster _) = False
 
+-- | Checks whether an actor identifier represents a monster.
 isAMonster :: ActorId -> Bool
 isAMonster = not . isAHero
 
-addHp :: Kind.Ops ActorKind -> Int -> Actor -> Actor
-addHp Kind.Ops{okind} extra m =
-  assert (extra >= 0 `blame` extra) $
-  let maxHP = maxDice (ahp $ okind $ bkind m)
-      currentHP = bhp m
-  in if currentHP > maxHP
-     then m
-     else m{bhp = min maxHP (currentHP + extra)}
+-- | An actor that is not on any level.
+invalidActorId :: ActorId
+invalidActorId = AMonster (-1)
 
--- Checks for the presence of actors. Does *not* check if the tile is open.
-unoccupied :: [Actor] -> Loc -> Bool
-unoccupied actors loc =
-  all (\ body -> bloc body /= loc) actors
-
-heroKindId :: Kind.Ops ActorKind -> Kind.Id ActorKind
-heroKindId Kind.Ops{ouniqGroup} = ouniqGroup "hero"
-
--- Setting the time of new monsters to 0 makes them able to
--- move immediately after generation. This does not seem like
--- a bad idea, but it would certainly be "more correct" to set
--- the time to the creation time instead.
-template :: Kind.Id ActorKind -> Maybe Char -> Maybe String -> Int -> Loc
-         -> Actor
-template mk mc ms hp loc =
-  -- The initial target is invalid to force re-evaluating it.
-  let invalidTarget = TEnemy invalidActorId loc
-  in Actor mk mc ms hp Nothing invalidTarget loc 'a' 0
-
+-- | Find a hero name in the config file, or create a stock name.
 findHeroName :: Config.CP -> Int -> String
 findHeroName config n =
   let heroName = Config.getOption config "heroes" ("HeroName_" ++ show n)
@@ -122,10 +109,48 @@ monsterGenChance :: LevelId -> Int -> Rnd Bool
 monsterGenChance (LambdaCave d) numMonsters =
   chance $ 1%(fromIntegral (250 + 200 * (numMonsters - d)) `max` 50)
 
+-- Actor operations
+
+-- TODO: Setting the time of new monsters to 0 makes them able to
+-- move immediately after generation. This does not seem like
+-- a bad idea, but it would certainly be "more correct" to set
+-- the time to the creation time instead.
+
+-- | A template for a new actor. The initial target is invalid
+-- to force a reset ASAP.
+template :: Kind.Id ActorKind -> Maybe Char -> Maybe String -> Int -> Loc
+         -> Actor
+template mk mc ms hp loc =
+  let invalidTarget = TEnemy invalidActorId loc
+  in Actor mk mc ms hp Nothing invalidTarget loc 'a' 0
+
+-- | Modify current hit points of an actor.
+addHp :: Kind.Ops ActorKind -> Int -> Actor -> Actor
+addHp Kind.Ops{okind} extra m =
+  assert (extra >= 0 `blame` extra) $
+  let maxHP = maxDice (ahp $ okind $ bkind m)
+      currentHP = bhp m
+  in if currentHP > maxHP
+     then m
+     else m{bhp = min maxHP (currentHP + extra)}
+
+-- | Checks for the presence of actors in a location.
+-- Does not check if the tile is open.
+unoccupied :: [Actor] -> Loc -> Bool
+unoccupied actors loc =
+  all (\ body -> bloc body /= loc) actors
+
+-- | The unique kind of heroes.
+heroKindId :: Kind.Ops ActorKind -> Kind.Id ActorKind
+heroKindId Kind.Ops{ouniqGroup} = ouniqGroup "hero"
+
+-- Target
+
+-- | The type of na actor target.
 data Target =
-    TEnemy ActorId Loc  -- ^ fire at the actor; last seen location
-  | TLoc Loc            -- ^ fire at a given location
-  | TCursor             -- ^ fire at the current position of the cursor; default
+    TEnemy ActorId Loc  -- ^ target an actor; last seen location
+  | TLoc Loc            -- ^ target a given location
+  | TCursor             -- ^ target the current position of the cursor; default
   deriving (Show, Eq)
 
 instance Binary Target where

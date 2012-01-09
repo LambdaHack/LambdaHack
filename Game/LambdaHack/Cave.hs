@@ -8,7 +8,6 @@ import qualified Data.Map as M
 import qualified Data.Set as S
 import qualified Data.List as L
 
-import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Geometry
 import Game.LambdaHack.Area
 import Game.LambdaHack.AreaRnd
@@ -77,8 +76,8 @@ buildCave Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick, ofoldrWithKey}
   places0 <- mapM (\ (i, r) -> do
                      rv <- chance $ cvoidChance
                      r' <- if rv && i `notElem` (mandatory1 ++ mandatory2)
-                           then mkVoidPlace r
-                           else mkPlace lminplace r
+                           then mkVoidRoom r
+                           else mkRoom lminplace r
                      return (i, r')) gs
   dlplaces <- mapM (\ (_, r) -> do
                       c <- chanceQuad lvl depth cdarkChance
@@ -186,28 +185,6 @@ trigger Kind.Ops{okind, opick} t =
   in case foldr getTo Nothing (tfeature (okind t)) of
        Nothing    -> return t
        Just group -> opick group (const True)
-
-type Corridor = [(X, Y)]
-
--- | Create a random place according to given parameters.
-mkPlace :: (X, Y)    -- ^ minimum size
-        -> Area      -- ^ this is the area, not the place itself
-        -> Rnd Area  -- ^ upper-left and lower-right corner of the place
-mkPlace (xm, ym) (x0, y0, x1, y1) =
-  let area0 = (x0, y0, x1 - xm + 1, y1 - ym + 1)
-  in assert (validArea area0 `blame` area0) $ do
-    (rx0, ry0) <- xyInArea area0
-    let area1 = (rx0 + xm - 1, ry0 + ym - 1, x1, y1)
-      in assert (validArea area1 `blame` area1) $ do
-      (rx1, ry1) <- xyInArea area1
-      return (rx0, ry0, rx1, ry1)
-
--- | Create a void place, i.e., a single corridor field.
-mkVoidPlace :: Area     -- ^ this is the area, not the place itself
-            -> Rnd Area -- ^ upper-left and lower-right corner of the place
-mkVoidPlace area = assert (validArea area `blame` area) $ do
-  (ry, rx) <- xyInArea area
-  return (ry, rx, ry, rx)
 
 digCorridors :: Kind.Id TileKind -> Corridor -> TileMapXY
 digCorridors tile (p1:p2:ps) =
