@@ -152,14 +152,16 @@ displayLevel dm fs cops per
             bg0 = if ctargeting scursor /= TgtOff && loc0 == clocation scursor
                   then Color.defFG     -- highlight target cursor
                   else sVisBG vis rea  -- FOV debug
-            reverseVideo = (snd Color.defaultAttr, fst Color.defaultAttr)
-            optVisually (fg, bg) =
+            reverseVideo = Color.Attr{ fg = Color.bg Color.defaultAttr
+                                     , bg = Color.fg Color.defaultAttr
+                                     }
+            optVisually attr@Color.Attr{fg, bg} =
               if (fg == Color.defBG) || (bg == Color.defFG && fg == Color.defFG)
               then reverseVideo
-              else (fg, bg)
+              else attr
             a = case dm of
                   ColorBW   -> Color.defaultAttr
-                  ColorFull -> optVisually (fg0, bg0)
+                  ColorFull -> optVisually Color.Attr{fg = fg0, bg = bg0}
         in case over (fromLoc sx loc0 `shiftXY` (0, sy * n)) of
              Just c -> (Color.defaultAttr, c)
              _      -> (a, char)

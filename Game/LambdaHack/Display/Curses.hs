@@ -22,7 +22,7 @@ import qualified Game.LambdaHack.Color as Color
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
   { swin    :: C.Window  -- ^ the window to draw to
-  , sstyles :: M.Map (Color.Color, Color.Color) C.CursesStyle
+  , sstyles :: M.Map Color.Attr C.CursesStyle
       -- ^ map from fore/back colour pairs to defined curses styles
   }
 
@@ -35,10 +35,10 @@ startup :: (FrontendSession -> IO ()) -> IO ()
 startup k = do
   C.start
   C.cursSet C.CursorInvisible
-  let s = [ ((f, b), C.Style (toFColor f) (toBColor b))
-          | f <- [minBound..maxBound],
+  let s = [ (Color.Attr{fg, bg}, C.Style (toFColor fg) (toBColor bg))
+          | fg <- [minBound..maxBound],
             -- No more color combinations possible: 16*4, 64 is max.
-            b <- Color.legalBG ]
+            bg <- Color.legalBG ]
   nr <- C.colorPairs
   when (nr < L.length s) $
     C.end >>

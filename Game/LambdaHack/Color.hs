@@ -1,10 +1,12 @@
+-- | Colours and text attributes.
 module Game.LambdaHack.Color
-  ( Color(..), Attr, defBG, defFG, defaultAttr, isBright, legalBG, colorToRGB
+  ( -- * Colours
+    Color(..), defBG, defFG, isBright, legalBG, colorToRGB
+    -- * Text attributes
+  , Attr(..), defaultAttr
   ) where
 
 import qualified Data.Binary as Binary
-
--- TODO: if the file grows much larger, split into Utils/Color.hs and Attr.hs
 
 -- TODO: since this type may be essential to speed, consider implementing
 -- it as an Int, with color numbered as they are on terminals, see
@@ -12,6 +14,7 @@ import qualified Data.Binary as Binary
 -- If we ever switch to 256 colours, the Int implementation or similar
 -- will be more natural, anyway.
 
+-- | Colours supported by the major frontends.
 data Color =
     Black
   | Red
@@ -35,28 +38,37 @@ instance Binary.Binary Color where
   put = Binary.putWord8 . toEnum . fromEnum
   get = fmap (toEnum . fromEnum) Binary.getWord8
 
+-- | The default colours, to optimize attribute setting.
 defBG, defFG :: Color
 defBG = Black
 defFG = White
 
-type Attr = (Color, Color)
+-- | Text attributes: foreground and backgroud colors.
+data Attr = Attr
+  { fg :: !Color  -- ^ foreground colour
+  , bg :: !Color  -- ^ backgroud color
+  }
+  deriving (Show, Eq, Ord)
 
+-- | The default attribute, to optimize attribute setting.
 defaultAttr :: Attr
-defaultAttr = (defFG, defBG)
+defaultAttr = Attr defFG defBG
 
+-- | A helper for the terminal frontends that display bright via bold.
 isBright :: Color -> Bool
-isBright c = fromEnum c > 7  -- for terminals that display bright via bold
+isBright c = c >= BrBlack
 
--- | Due to limitation of curses, only these are legal backgrounds.
+-- | Due to the limitation of the curses library used in the curses frontend,
+-- only these are legal backgrounds.
 legalBG :: [Color]
 legalBG = [Black, White, Blue, Magenta]
 
--- Heavily modified Linux console colors.
+-- | Translationg to heavily modified Linux console colors.
 colorToRGB :: Color -> String
 colorToRGB Black     = "#000000"
 colorToRGB Red       = "#D50000"
 colorToRGB Green     = "#00AA00"
-colorToRGB Brown     = "#AA5500"  -- brown
+colorToRGB Brown     = "#AA5500"
 colorToRGB Blue      = "#203AF0"
 colorToRGB Magenta   = "#AA00AA"
 colorToRGB Cyan      = "#00AAAA"
@@ -70,13 +82,13 @@ colorToRGB BrMagenta = "#FF77FF"
 colorToRGB BrCyan    = "#60FFF0"
 colorToRGB BrWhite   = "#FFFFFF"
 
--- For reference, the original Linux console colors.
+-- | For reference, the original Linux console colors.
 -- Good old retro feel and more useful than xterm (e.g. brown).
 _olorToRGB :: Color -> String
 _olorToRGB Black     = "#000000"
 _olorToRGB Red       = "#AA0000"
 _olorToRGB Green     = "#00AA00"
-_olorToRGB Brown     = "#AA5500"  -- brown
+_olorToRGB Brown     = "#AA5500"
 _olorToRGB Blue      = "#0000AA"
 _olorToRGB Magenta   = "#AA00AA"
 _olorToRGB Cyan      = "#00AAAA"

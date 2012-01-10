@@ -48,7 +48,8 @@ startup k = do
                       textTagTableAdd ttt tt
                       doAttr tt ak
                       return (ak, tt))
-               [ (f, b) | f <- [minBound..maxBound], b <- Color.legalBG ]
+               [ Color.Attr{fg, bg}
+               | fg <- [minBound..maxBound], bg <- Color.legalBG ]
   -- text buffer
   tb <- textBufferNew (Just ttt)
   textBufferSetText tb (unlines (replicate 25 (replicate 80 ' ')))
@@ -181,8 +182,8 @@ readUndeadChan ch = do
     _                  -> False
 
 doAttr :: TextTag -> Color.Attr -> IO ()
-doAttr tt (fg, bg)
-  | (fg, bg) == Color.defaultAttr = return ()
+doAttr tt attr@Color.Attr{fg, bg}
+  | attr == Color.defaultAttr = return ()
   | fg == Color.defFG = set tt [textTagBackground := Color.colorToRGB bg]
   | bg == Color.defBG = set tt [textTagForeground := Color.colorToRGB fg]
   | otherwise         = set tt [textTagForeground := Color.colorToRGB fg,

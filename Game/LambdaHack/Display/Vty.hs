@@ -87,8 +87,8 @@ keyTranslate e =
 hack :: Color.Color -> Attr -> Attr
 hack c a = if Color.isBright c then with_style a bold else a
 
-setAttr :: (Color.Color, Color.Color) -> Attr
-setAttr (fg, bg) =
+setAttr :: Color.Attr -> Attr
+setAttr Color.Attr{fg, bg} =
 -- This optimization breaks display for white background terminals:
 --  if (fg, bg) == Color.defaultAttr
 --  then def_attr
