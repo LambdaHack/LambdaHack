@@ -59,14 +59,10 @@ type TileMapXY = M.Map (X, Y) (Kind.Id TileKind)
 placeValid :: Area      -- ^ the area to fill
            -> PlaceKind  -- ^ the place kind to construct
            -> Bool
-placeValid r@(x0, y0, x1, y1) PlaceKind{..} =
-  assert (validArea r `blame` r) $
-  let extra = case pfence of  -- TODO: factor out
-        FWall  -> 1
-        FFloor -> -1
-        FNone  -> 3
-      dx = x1 - x0 + extra
-      dy = y1 - y0 + extra
+placeValid r PlaceKind{..} =
+  let (x0, y0, x1, y1) = expandFence pfence r
+      dx = x1 - x0 + 1
+      dy = y1 - y0 + 1
       dxcorner = case ptopLeft of [] -> 0 ; l : _ -> L.length l
       dycorner = L.length ptopLeft
       wholeOverlapped d dcorner = d > 1 && dcorner > 1 &&
@@ -74,7 +70,14 @@ placeValid r@(x0, y0, x1, y1) PlaceKind{..} =
   in case pcover of
     CAlternate -> wholeOverlapped dx dxcorner &&
                   wholeOverlapped dy dycorner
-    _          -> dx >= 2 * dxcorner - 1 &&  dy >= 2 * dycorner - 1
+    _          -> dx >= 2 * dxcorner - 1 &&
+                  dy >= 2 * dycorner - 1
+
+expandFence :: Fence -> Area -> Area
+expandFence fence r = case fence of
+  FWall  -> r
+  FFloor -> expand r (-1)
+  FNone  -> expand r 1
 
 addPlace :: Kind.COps -> Kind.Id TileKind -> Kind.Id TileKind
          -> RollQuad -> Int -> Int -> Area
@@ -85,13 +88,11 @@ addPlace Kind.COps{cotile, coplace=Kind.Ops{okind=pokind, opick=popick}}
   dark <- chanceQuad lvl depth cdarkChance
   qkind <- popick "rogue" (placeValid r)
   let kr = pokind qkind
-      qarea = case pfence kr of  -- TODO: factor out
-        FWall  -> r
-        FFloor -> expand r (-1)
-        FNone  -> expand r 1
       qlegend = if dark then "darkLegend" else "litLegend"
       qseen = False
-      place = Place{..}
+      qarea = expandFence (pfence kr) r
+      place = assert (validArea qarea `blame` qarea) $
+              Place{..}
   legend <- olegend cotile qlegend
   let xlegend = M.insert 'X' qhollowFence legend
   return (digPlace place kr xlegend, place)
