@@ -93,7 +93,8 @@ addPlace Kind.COps{cotile, coplace=Kind.Ops{okind=pokind, opick=popick}}
       qseen = False
       place = Place{..}
   legend <- olegend cotile qlegend
-  return (digPlace place kr legend, place)
+  let xlegend = M.insert 'X' qhollowFence legend
+  return (digPlace place kr xlegend, place)
 
 olegend :: Kind.Ops TileKind -> String -> Rnd (M.Map Char (Kind.Id TileKind))
 olegend Kind.Ops{ofoldrWithKey, opick} group =
