@@ -1,3 +1,4 @@
+-- | Dungeon operations that require "State", "COps" or "Config".
 module Game.LambdaHack.DungeonState where
 
 import qualified System.Random as R
@@ -60,7 +61,7 @@ rollItems Kind.COps{cotile, coitem=coitem@Kind.Ops{osymbol}}
 -- | Create a level from a cave, from a cave kind.
 buildLevel :: Kind.COps -> Cave -> Int -> Int -> Rnd Level
 buildLevel cops@Kind.COps{cotile=cotile@Kind.Ops{opick}, cocave=Kind.Ops{okind}}
-           Cave{dkind, dsecret, ditem, dmap, dmeta} lvl depth = do
+           Cave{..} lvl depth = do
   let cfg@CaveKind{..} = okind dkind
   cmap <- convertTileMaps (opick cdefTile (const True)) cxsize cysize dmap
   -- Roll locations of the stairs.
@@ -75,6 +76,7 @@ buildLevel cops@Kind.COps{cotile=cotile@Kind.Ops{opick}, cocave=Kind.Ops{okind}}
                                else [(sd, downId)]
       lmap = cmap Kind.// stairs
   is <- rollItems cops lvl depth cfg lmap su
+  -- TODO: split this into Level.defaultLevel
   let itemMap = mapToIMap cxsize ditem `IM.union` IM.fromList is
       litem = IM.map (\ i -> ([i], [])) itemMap
       level = Level

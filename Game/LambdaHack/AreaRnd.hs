@@ -47,7 +47,7 @@ mkVoidRoom area = assert (validArea area `blame` area) $ do
 
 -- Choosing connections between areas in a grid
 
--- | Pick a subset of connections between adjacent areas within a grid so that
+-- | Pick a subset of connections between adjacent areas within a grid until
 -- there is only one connected component in the graph of all areas.
 connectGrid :: (X, Y) -> Rnd [((X, Y), (X, Y))]
 connectGrid (nx, ny) = do

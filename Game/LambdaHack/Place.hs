@@ -33,7 +33,9 @@ instance Binary Place where
     qseen <- get
     return Place{..}
 
--- | The sparse place and cave map.
+-- | The map of tile kinds in a cave and any place in a cave.
+-- The map is sparse. The default tile that eventually fills the empty spaces
+-- is specified in the cave kind specification.
 type TileMapXY = M.Map (X, Y) (Kind.Id TileKind)
 
 -- | For @CAlternate@ tiling, require the place be comprised
@@ -61,23 +63,21 @@ placeValid (x0, y0, x1, y1) PlaceKind{..} =
     _          -> dx >= 2 * dxcorner - 1 &&  dy >= 2 * dycorner - 1
 
 buildFence :: Kind.Id TileKind -> Area -> TileMapXY
-buildFence wallId (x0, y0, x1, y1) =
-  M.fromList $ [ ((x, y), wallId) | x <- [x0-1, x1+1], y <- [y0..y1] ] ++
-               [ ((x, y), wallId) | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
+buildFence fenceId (x0, y0, x1, y1) =
+  M.fromList $ [ ((x, y), fenceId) | x <- [x0-1, x1+1], y <- [y0..y1] ] ++
+               [ ((x, y), fenceId) | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
 
--- | Construct place of a given kind, with the given floor and wall tiles.
+-- | Construct place of a given kind, with the given fence tile.
 digPlace :: Kind.Id PlaceKind -> PlaceKind
          -> M.Map Char (Kind.Id TileKind)
-         -> Kind.Id TileKind -> Kind.Id TileKind -> Kind.Id TileKind
+         -> Kind.Id TileKind -> Kind.Id TileKind
          -> Area
          -> (TileMapXY, Place)
-digPlace placeId rk defLegend floorId wallId corId area =
+digPlace placeId rk legend wallId corId area =
   let (placeArea, fence) = case pfence rk of
         FWall  -> (area, buildFence wallId area)
         FFloor -> (expand area (-1), buildFence corId $ expand area (-1))
         FNone  -> (expand area 1, M.empty)
-      legend = M.insert '.' floorId $
-               M.insert '#' wallId defLegend
       tmap = M.union (M.map (legend M.!) $ tilePlace placeArea rk) fence
   in (tmap, Place placeId placeArea False)
 
