@@ -119,7 +119,7 @@ toFColor :: Color.Color -> C.ForegroundColor
 toFColor Color.Black     = C.BlackF
 toFColor Color.Red       = C.DarkRedF
 toFColor Color.Green     = C.DarkGreenF
-toFColor Color.Yellow    = C.BrownF
+toFColor Color.Brown     = C.BrownF
 toFColor Color.Blue      = C.DarkBlueF
 toFColor Color.Magenta   = C.PurpleF
 toFColor Color.Cyan      = C.DarkCyanF
@@ -137,7 +137,7 @@ toBColor :: Color.Color -> C.BackgroundColor
 toBColor Color.Black     = C.BlackB
 toBColor Color.Red       = C.DarkRedB
 toBColor Color.Green     = C.DarkGreenB
-toBColor Color.Yellow    = C.BrownB
+toBColor Color.Brown     = C.BrownB
 toBColor Color.Blue      = C.DarkBlueB
 toBColor Color.Magenta   = C.PurpleB
 toBColor Color.Cyan      = C.DarkCyanB

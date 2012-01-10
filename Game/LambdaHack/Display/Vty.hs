@@ -101,7 +101,7 @@ aToc :: Color.Color -> Color
 aToc Color.Black     = black
 aToc Color.Red       = red
 aToc Color.Green     = green
-aToc Color.Yellow    = yellow
+aToc Color.Brown     = yellow
 aToc Color.Blue      = blue
 aToc Color.Magenta   = magenta
 aToc Color.Cyan      = cyan

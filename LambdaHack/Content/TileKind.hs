@@ -53,7 +53,7 @@ doorClosedV = TileKind
   { tsymbol  = '+'
   , tname    = "closed door"
   , tfreq    = [("vertical closed door", 1)]
-  , tcolor   = Yellow
+  , tcolor   = Brown
   , tcolor2  = BrBlack
   , tfeature = [ Exit, Openable
                , ChangeTo "vertical open door"
@@ -63,7 +63,7 @@ doorOpenV = TileKind
   { tsymbol  = '-'
   , tname    = "open door"
   , tfreq    = [("vertical open door", 1)]
-  , tcolor   = Yellow
+  , tcolor   = Brown
   , tcolor2  = BrBlack
   , tfeature = [ Walkable, Clear, Exit, Closable
                , ChangeTo "vertical closed door"
@@ -87,7 +87,7 @@ doorClosedH = TileKind
   { tsymbol  = '+'
   , tname    = "closed door"
   , tfreq    = [("horizontal closed door", 1)]
-  , tcolor   = Yellow
+  , tcolor   = Brown
   , tcolor2  = BrBlack
   , tfeature = [ Exit, Openable
                , ChangeTo "horizontal open door"
@@ -97,7 +97,7 @@ doorOpenH = TileKind
   { tsymbol  = '|'
   , tname    = "open door"
   , tfreq    = [("horizontal open door", 1)]
-  , tcolor   = Yellow
+  , tcolor   = Brown
   , tcolor2  = BrBlack
   , tfeature = [ Walkable, Clear, Exit, Closable
                , ChangeTo "horizontal closed door"

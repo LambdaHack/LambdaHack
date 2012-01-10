@@ -16,7 +16,7 @@ data Color =
     Black
   | Red
   | Green
-  | Yellow
+  | Brown
   | Blue
   | Magenta
   | Cyan
@@ -56,7 +56,7 @@ colorToRGB :: Color -> String
 colorToRGB Black     = "#000000"
 colorToRGB Red       = "#D50000"
 colorToRGB Green     = "#00AA00"
-colorToRGB Yellow    = "#AA5500"  -- brown
+colorToRGB Brown     = "#AA5500"  -- brown
 colorToRGB Blue      = "#203AF0"
 colorToRGB Magenta   = "#AA00AA"
 colorToRGB Cyan      = "#00AAAA"
@@ -76,7 +76,7 @@ _olorToRGB :: Color -> String
 _olorToRGB Black     = "#000000"
 _olorToRGB Red       = "#AA0000"
 _olorToRGB Green     = "#00AA00"
-_olorToRGB Yellow    = "#AA5500"  -- brown
+_olorToRGB Brown     = "#AA5500"  -- brown
 _olorToRGB Blue      = "#0000AA"
 _olorToRGB Magenta   = "#AA00AA"
 _olorToRGB Cyan      = "#00AAAA"
