@@ -1,27 +1,18 @@
-module Game.LambdaHack.Command where
+-- | Abstract syntax of player commands and their semantics.
+module Game.LambdaHack.Command
+  ( Cmd, majorCmd, timedCmd, cmdSemantics, cmdDescription
+  ) where
 
-import Control.Monad
-import Control.Monad.State hiding (State, state)
-import qualified Data.List as L
-import qualified Data.Map as M
-import qualified Data.Char as Char
-
-import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
-import Game.LambdaHack.Running
 import Game.LambdaHack.ItemAction
 import Game.LambdaHack.Grammar
-import qualified Game.LambdaHack.Config as Config
 import Game.LambdaHack.EffectAction
-import Game.LambdaHack.Keybinding
-import qualified Game.LambdaHack.Keys as K
-import Game.LambdaHack.Level
-import Game.LambdaHack.Actor
 import Game.LambdaHack.State
-import Game.LambdaHack.Dir
 import qualified Game.LambdaHack.Feature as F
 
+-- | Abstract syntax of player commands. The type is abstract, but the values
+-- are created outside this module via the Read class (from config file) .
 data Cmd =
     Apply       { verb :: Verb, object :: Object, syms :: [Char] }
   | Project     { verb :: Verb, object :: Object, syms :: [Char] }
@@ -45,17 +36,7 @@ data Cmd =
   | Wait
   deriving (Show, Read)
 
-moveDirCommand, runDirCommand :: Described (Dir -> Action ())
-moveDirCommand   = Described "move in direction" move
-runDirCommand    = Described "run in direction"  (\ dir -> run (dir, 0))
-
-heroSelection :: [(K.Key, Described (Action ()))]
-heroSelection =
-  let heroSelect k = (K.Char (Char.intToDigit k),
-                      Undescribed $
-                      selectPlayer (AHero k) >> return ())
-  in fmap heroSelect [0..9]
-
+-- | Major commands land on the first page of command help.
 majorCmd :: Cmd -> Bool
 majorCmd cmd = case cmd of
   Apply{}       -> True
@@ -70,19 +51,13 @@ majorCmd cmd = case cmd of
   Help          -> True
   _             -> False
 
--- | If in targeting mode, check if the current level is the same
--- as player level and refuse performing the action otherwise.
-checkCursor :: Action () -> Action ()
-checkCursor h = do
-  cursor <- gets scursor
-  slid <- gets slid
-  if creturnLn cursor == slid
-    then h
-    else abortWith "this command does not work on remote levels"
-
 -- TODO: Advance time automatically for these, but somehow advance
 -- time for monsters, too. Perhaps wait until monsters use commands, too
 -- (or rather the micro-commands to be added in the future).
+
+-- | Time cosuming commands are marked as such in help and cannot be
+-- invoked in targeting mode on a remote level (level different than
+-- the level of the selected hero).
 timedCmd :: Cmd -> Bool
 timedCmd cmd = case cmd of
   Apply{}       -> True
@@ -94,12 +69,13 @@ timedCmd cmd = case cmd of
   Wait          -> True
   _             -> False
 
+-- | The semantics of player commands in terms of the @Action@ monad.
 cmdSemantics :: Cmd -> Action ()
 cmdSemantics cmd = case cmd of
-  Apply   verb obj syms -> playerApplyGroupItem verb obj syms
-  Project verb obj syms -> playerProjectGroupItem verb obj syms
-  TriggerDir  _verb _obj feat -> playerTriggerDir feat
-  TriggerTile _verb _obj feat -> playerTriggerTile feat
+  Apply{..}       -> playerApplyGroupItem verb object syms
+  Project{..}     -> playerProjectGroupItem verb object syms
+  TriggerDir{..}  -> playerTriggerDir feature
+  TriggerTile{..} -> playerTriggerTile feature
   Pickup ->    pickupItem
   Drop ->      dropItem
   Inventory -> inventory
@@ -117,12 +93,13 @@ cmdSemantics cmd = case cmd of
   Help ->      displayHelp
   Wait ->      playerAdvanceTime
 
+-- | Description of player commands.
 cmdDescription :: Cmd -> Maybe String
 cmdDescription cmd = case cmd of
-  Apply   verb obj _syms -> Just $ verb ++ " " ++ addIndefinite obj
-  Project verb obj _syms -> Just $ verb ++ " " ++ addIndefinite obj
-  TriggerDir  verb obj _feat -> Just $ verb ++ " " ++ addIndefinite obj
-  TriggerTile verb obj _feat -> Just $ verb ++ " " ++ addIndefinite obj
+  Apply{..}       -> Just $ verb ++ " " ++ addIndefinite object
+  Project{..}     -> Just $ verb ++ " " ++ addIndefinite object
+  TriggerDir{..}  -> Just $ verb ++ " " ++ addIndefinite object
+  TriggerTile{..} -> Just $ verb ++ " " ++ addIndefinite object
   Pickup ->    Just "get an object"
   Drop ->      Just "drop an object"
   Inventory -> Just "display inventory"
@@ -143,54 +120,3 @@ cmdDescription cmd = case cmd of
   Version ->   Just "display game version"
   Help ->      Just "display help"
   Wait ->      Nothing
-
-configCommands :: Config.CP -> [(K.Key, Cmd)]
-configCommands config =
-  let section = Config.getItems config "commands"
-      mkKey s =
-        case K.keyTranslate s of
-          K.Unknown _ -> assert `failure` ("unknown command key " ++ s)
-          key -> key
-      mkCmd s = read s :: Cmd
-      mkCommand (key, def) = (mkKey key, mkCmd def)
-  in L.map mkCommand section
-
-semanticsCommands :: [(K.Key, Cmd)]
-                  -> (Cmd -> Action ())
-                  -> (Cmd -> Maybe String)
-                  -> [(K.Key, Described (Action ()))]
-semanticsCommands cmdList cmdS cmdD =
-  let mkDescribed cmd =
-        let semantics = if timedCmd cmd
-                        then checkCursor $ cmdS cmd
-                        else cmdS cmd
-        in case cmdD cmd of
-          Nothing -> Undescribed semantics
-          Just d  -> Described d semantics
-      mkCommand (key, def) = (key, mkDescribed def)
-  in L.map mkCommand cmdList
-
-stdKeybinding :: Config.CP
-              -> (Cmd -> Action ())
-              -> (Cmd -> Maybe String)
-              -> Keybinding (Action ())
-stdKeybinding config cmdS cmdD =
-  let section = Config.getItems config "macros"
-      !kmacro = macroKey section
-      cmdList = configCommands config
-      semList = semanticsCommands cmdList cmdS cmdD
-  in Keybinding
-  { kdir   = moveDirCommand
-  , kudir  = runDirCommand
-  , kother = M.fromList $
-             heroSelection ++
-             semList ++
-             [ -- debug commands, TODO: access them from a common menu or prefix
-               (K.Char 'R', Undescribed $ modify toggleVision),
-               (K.Char 'O', Undescribed $ modify toggleOmniscient),
-               (K.Char 'I', Undescribed $ gets (lmeta . slevel) >>= abortWith)
-             ]
-  , kmacro
-  , kmajor = L.map fst $ L.filter (majorCmd . snd) cmdList
-  , ktimed = L.map fst $ L.filter (timedCmd . snd) cmdList
-  }

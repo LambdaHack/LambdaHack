@@ -1,9 +1,15 @@
-module Game.LambdaHack.Start ( start, speedupCops ) where
+module Game.LambdaHack.Start
+       -- ( start, speedupCops )
+  where
 
 import qualified System.Random as R
 import Control.Monad
+import Control.Monad.State hiding (State, state)
 import qualified Control.Monad.State as MState
 import qualified Data.Array.Unboxed as A
+import qualified Data.List as L
+import qualified Data.Map as M
+import qualified Data.Char as Char
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.State
@@ -19,6 +25,15 @@ import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Tile
 import Game.LambdaHack.Level
 import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Actions
+import Game.LambdaHack.Running
+import Game.LambdaHack.EffectAction
+import Game.LambdaHack.Keybinding
+import qualified Game.LambdaHack.Keys as K
+import Game.LambdaHack.Actor
+import Game.LambdaHack.Dir
+import Game.LambdaHack.Command
 
 speedup :: Kind.Ops TileKind -> [Kind.Id TileKind -> Bool]
 speedup Kind.Ops{ofoldrWithKey, obounds} =
@@ -73,3 +88,75 @@ start config sess@Session{scops = cops@Kind.COps{corule}} = do
       handlerToIO sess state
         diary{smsg = "Welcome back to " ++ title ++ "."}  -- TODO: save old msg?
         handle
+
+configCommands :: Config.CP -> [(K.Key, Cmd)]
+configCommands config =
+  let section = Config.getItems config "commands"
+      mkKey s =
+        case K.keyTranslate s of
+          K.Unknown _ -> assert `failure` ("unknown command key " ++ s)
+          key -> key
+      mkCmd s = read s :: Cmd
+      mkCommand (key, def) = (mkKey key, mkCmd def)
+  in L.map mkCommand section
+
+semanticsCommands :: [(K.Key, Cmd)]
+                  -> (Cmd -> Action ())
+                  -> (Cmd -> Maybe String)
+                  -> [(K.Key, Described (Action ()))]
+semanticsCommands cmdList cmdS cmdD =
+  let mkDescribed cmd =
+        let semantics = if timedCmd cmd
+                        then checkCursor $ cmdS cmd
+                        else cmdS cmd
+        in case cmdD cmd of
+          Nothing -> Undescribed semantics
+          Just d  -> Described d semantics
+      mkCommand (key, def) = (key, mkDescribed def)
+  in L.map mkCommand cmdList
+
+-- | If in targeting mode, check if the current level is the same
+-- as player level and refuse performing the action otherwise.
+checkCursor :: Action () -> Action ()
+checkCursor h = do
+  cursor <- gets scursor
+  slid <- gets slid
+  if creturnLn cursor == slid
+    then h
+    else abortWith "this command does not work on remote levels"
+
+moveDirCommand, runDirCommand :: Described (Dir -> Action ())
+moveDirCommand   = Described "move in direction" move
+runDirCommand    = Described "run in direction"  (\ dir -> run (dir, 0))
+
+heroSelection :: [(K.Key, Described (Action ()))]
+heroSelection =
+  let heroSelect k = (K.Char (Char.intToDigit k),
+                      Undescribed $
+                      selectPlayer (AHero k) >> return ())
+  in fmap heroSelect [0..9]
+
+stdKeybinding :: Config.CP
+              -> (Cmd -> Action ())
+              -> (Cmd -> Maybe String)
+              -> Keybinding (Action ())
+stdKeybinding config cmdS cmdD =
+  let section = Config.getItems config "macros"
+      !kmacro = macroKey section
+      cmdList = configCommands config
+      semList = semanticsCommands cmdList cmdS cmdD
+  in Keybinding
+  { kdir   = moveDirCommand
+  , kudir  = runDirCommand
+  , kother = M.fromList $
+             heroSelection ++
+             semList ++
+             [ -- debug commands, TODO: access them from a common menu or prefix
+               (K.Char 'R', Undescribed $ modify toggleVision),
+               (K.Char 'O', Undescribed $ modify toggleOmniscient),
+               (K.Char 'I', Undescribed $ gets (lmeta . slevel) >>= abortWith)
+             ]
+  , kmacro
+  , kmajor = L.map fst $ L.filter (majorCmd . snd) cmdList
+  , ktimed = L.map fst $ L.filter (timedCmd . snd) cmdList
+  }

@@ -34,7 +34,7 @@ cops = Kind.COps
 -- to form the starting game session. Each of these is autonomously modifiable.
 sess :: Config.CP -> FrontendSession -> Session
 sess config sfs =
-  let !skeyb = stdKeybinding config cmdSemantics cmdDescription
+  let !skeyb = Start.stdKeybinding config cmdSemantics cmdDescription
       !scops = Start.speedupCops cops
   in Session{sfs, scops, skeyb}
 
