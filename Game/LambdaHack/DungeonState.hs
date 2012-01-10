@@ -24,6 +24,8 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Item
 import Game.LambdaHack.Geometry
 import Game.LambdaHack.Content.TileKind
+import Game.LambdaHack.Place
+import Game.LambdaHack.Area
 
 convertTileMaps :: Rnd (Kind.Id TileKind) -> Int -> Int -> TileMapXY
                 -> Rnd TileMap
@@ -69,8 +71,10 @@ buildLevel cops@Kind.COps{cotile=cotile@Kind.Ops{opick}, cocave=Kind.Ops{okind}}
   sd <- findLocTry 2000 cmap
           (\ l t -> l /= su && Tile.hasFeature cotile F.Boring t)
           (\ l _ -> distance cxsize su l >= cminStairDist)
-  upId   <- opick "legend" $ Tile.kindHasFeature F.Ascendable
-  downId <- opick "legend" $ Tile.kindHasFeature F.Descendable
+  let fitArea loc = inside (fromLoc cxsize loc) . qarea
+      findLegend loc = maybe "litLegend" qlegend $ L.find (fitArea loc) dplaces
+  upId   <- opick (findLegend su) $ Tile.kindHasFeature F.Ascendable
+  downId <- opick (findLegend sd) $ Tile.kindHasFeature F.Descendable
   let stairs = [(su, upId)] ++ if lvl == depth
                                then []
                                else [(sd, downId)]

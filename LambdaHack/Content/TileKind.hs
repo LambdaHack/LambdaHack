@@ -15,14 +15,14 @@ cdefs = Content.CDefs
   , getFreq = tfreq
   , validate = tvalidate
   , content =
-      [wall, pillar, wallV, doorHiddenV, doorClosedV, doorOpenV, wallH, doorHiddenH, doorClosedH, doorOpenH, stairsUp, stairsDown, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown]
+      [wall, pillar, wallV, doorHiddenV, doorClosedV, doorOpenV, wallH, doorHiddenH, doorClosedH, doorOpenH, stairsUpDark, stairsUpLit, stairsDownDark, stairsDownLit, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown]
   }
-wall,        pillar, wallV, doorHiddenV, doorClosedV, doorOpenV, wallH, doorHiddenH, doorClosedH, doorOpenH, stairsUp, stairsDown, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown :: TileKind
+wall,        pillar, wallV, doorHiddenV, doorClosedV, doorOpenV, wallH, doorHiddenH, doorClosedH, doorOpenH, stairsUpDark, stairsUpLit, stairsDownDark, stairsDownLit, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown :: TileKind
 
 wall = TileKind
   { tsymbol  = ' '
   , tname    = "rock"
-  , tfreq    = [("legend", 100), ("fillerWall", 1)]
+  , tfreq    = [("litLegend", 100), ("darkLegend", 100), ("fillerWall", 1)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfeature = []
@@ -30,7 +30,7 @@ wall = TileKind
 pillar = TileKind
   { tsymbol  = 'O'
   , tname    = "pillar"
-  , tfreq    = [("legend", 100), ("noiseSet", 60)]
+  , tfreq    = [("litLegend", 100), ("darkLegend", 100), ("noiseSet", 60)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfeature = []
@@ -38,7 +38,7 @@ pillar = TileKind
 wallV = TileKind
   { tsymbol  = '|'
   , tname    = "wall"
-  , tfreq    = [("legend", 100)]
+  , tfreq    = [("litLegend", 100), ("darkLegend", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfeature = []
@@ -72,7 +72,7 @@ doorOpenV = TileKind
 wallH = TileKind
   { tsymbol  = '-'
   , tname    = "wall"
-  , tfreq    = [("legend", 100)]
+  , tfreq    = [("litLegend", 100), ("darkLegend", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfeature = []
@@ -103,21 +103,39 @@ doorOpenH = TileKind
                , ChangeTo "horizontal closed door"
                ]
   }
-stairsUp = TileKind
+stairsUpDark = TileKind
   { tsymbol  = '<'
   , tname    = "staircase up"
-  , tfreq    = [("legend", 100)]
+  , tfreq    = [("darkLegend", 100)]
+-- Disabled, because the yellow artificial light does not fit LambdaHack.
+--  , tcolor   = BrYellow
+-- Dark room interior, OTOH, is fine:
+  , tcolor   = BrWhite
+  , tcolor2  = BrBlack
+  , tfeature = [Walkable, Clear, Exit, Ascendable, Cause Effect.Ascend]
+  }
+stairsUpLit = stairsUpDark
+  { tfreq    = [("litLegend", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = [Walkable, Clear, Lit, Exit, Ascendable, Cause Effect.Ascend]
+  , tfeature = Lit : tfeature stairsUpDark
   }
-stairsDown = TileKind
+stairsDownDark = TileKind
   { tsymbol  = '>'
   , tname    = "staircase down"
-  , tfreq    = [("legend", 100)]
+  , tfreq    = [("darkLegend", 100)]
+-- Disabled, because the yellow artificial light does not fit LambdaHack.
+--  , tcolor   = BrYellow
+-- Dark room interior, OTOH, is fine:
+  , tcolor   = BrWhite
+  , tcolor2  = BrBlack
+  , tfeature = [Walkable, Clear, Exit, Descendable, Cause Effect.Descend]
+  }
+stairsDownLit = stairsDownDark
+  { tfreq    = [("litLegend", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = [Walkable, Clear, Lit, Exit, Descendable, Cause Effect.Descend]
+  , tfeature = Lit : tfeature stairsDownDark
   }
 unknown = TileKind
   { tsymbol  = ' '
@@ -136,7 +154,10 @@ floorCorridorLit = TileKind
   , tfeature = [Walkable, Clear, Lit]
   }
 floorCorridorDark = floorCorridorLit
-  { tfreq    = [("legend", 100), ("darkCorridor", 1)]
+  { tfreq    = [("darkCorridor", 1)]
+-- Disabled, because dark corridors and yellow light does not fit LambdaHack.
+--  , tcolor   = BrYellow
+--  , tcolor2  = BrBlack
   , tfeature = [Walkable, Clear]
   }
 floorArenaLit = floorCorridorLit
@@ -148,14 +169,17 @@ floorArenaDark = floorCorridorDark
   { tsymbol  = '.'
   , tname    = "stone floor"
   , tfreq    = []
+-- Disabled, because the yellow artificial light does not fit LambdaHack.
+--  , tcolor   = BrYellow
+-- Dark room interior, OTOH, is fine:
   , tcolor2  = BrBlack
   }
 floorRoomLit = floorArenaLit
-  { tfreq    = [("legend", 100), ("floorRoomLit", 1)]
+  { tfreq    = [("litLegend", 100), ("floorRoomLit", 1)]
   , tfeature = Boring : tfeature floorArenaLit
   }
 floorRoomDark = floorArenaDark
-  { tfreq    = [("floorRoomDark", 1)]
+  { tfreq    = [("darkLegend", 100)]
   , tfeature = Boring : tfeature floorArenaDark
   }
 floorRed = floorArenaLit

@@ -1,6 +1,6 @@
 -- | Rectangular areas of levels and their operations.
 module Game.LambdaHack.Area
-  ( Area, neighbors, fromTo, normalize, normalizeArea, grid
+  ( Area, neighbors, inside, fromTo, normalize, normalizeArea, grid
   , validArea, trivialArea, expand
   ) where
 

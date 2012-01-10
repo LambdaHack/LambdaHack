@@ -5,7 +5,6 @@ module Game.LambdaHack.Cave
 
 import Control.Monad
 import qualified Data.Map as M
-import qualified Data.Set as S
 import qualified Data.List as L
 
 import Game.LambdaHack.Geometry
@@ -35,6 +34,7 @@ data Cave = Cave
   , dsecret   :: SecretMapXY          -- ^ secrecy strength of cave tiles
   , ditem     :: ItemMapXY            -- ^ starting items in the cave
   , dmeta     :: String               -- ^ debug information about the cave
+  , dplaces   :: [Place]              -- ^ places generated in the cave
   }
   deriving Show
 
@@ -60,6 +60,7 @@ as follows:
     on the grid is connected, and a few more might be. It is not sufficient
     to always connect all adjacent rooms.
 -}
+-- TODO: fix identifier naming and split, after the code grows some more
 -- | Cave generation by an algorithm inspired by the original Rogue,
 buildCave :: Kind.COps         -- ^ content definitions
           -> Int               -- ^ depth of the level to generate
@@ -99,8 +100,12 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick}
   let fenceBounds = (1, 1, cxsize - 2, cysize - 2)
       fence = buildFence wallId fenceBounds
   pickedCorTile <- opick ccorTile (const True)
-  lplaces <- foldM (addPlace cops wallId pickedCorTile cdarkChance lvl depth)
-               fence places0
+  let addPl (m, pls) (_, (x0, _, x1, _)) | x0 == x1 = return (m, pls)
+      addPl (m, pls) (_, r) = do
+        (tmap, place) <-
+          addPlace cops wallId pickedCorTile cdarkChance lvl depth r
+        return (M.union tmap m, place : pls)
+  (lplaces, dplaces) <- foldM addPl (fence, []) places0
   let lcorridors = M.unions (L.map (digCorridors pickedCorTile) cs)
   hiddenMap <- mapToHidden cotile
   let lm = M.unionWith (mergeCorridor cotile hiddenMap) lcorridors lplaces
@@ -137,6 +142,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick}
         , ditem = M.empty
         , dmap
         , dmeta = show allConnects
+        , dplaces
         }
   return cave
 
@@ -148,38 +154,6 @@ rollSecret t = do
       d = foldr getDice defaultDice (tfeature t)
   secret <- rollDice d
   return $ SecretStrength secret
-
-addPlace :: Kind.COps -> Kind.Id TileKind -> Kind.Id TileKind
-         -> RollQuad -> Int -> Int -> TileMapXY -> ((X, Y), Area)
-         -> Rnd TileMapXY
-addPlace _ _ _ _ _ _ m (_, (x0, _, x1, _)) | x0 == x1 = return m
-addPlace Kind.COps{ cotile=cotile@Kind.Ops{opick}
-                  , coplace=Kind.Ops{okind=pokind, opick=popick} }
-         wallId pickedCorTile cdarkChance lvl depth m (_, r) = do
-  dark <- chanceQuad lvl depth cdarkChance
-  placeId <- popick "rogue" (placeValid r)
-  let kr = pokind placeId
-  defLegend <- olegend cotile
-  floorId <- if dark
-             then opick "floorRoomDark" (const True)
-             else opick "floorRoomLit" (const True)
-  let legend = M.insert '.' floorId defLegend
-  -- TODO: store and use _place
-      (tmap, _place) = digPlace placeId kr legend wallId pickedCorTile r
-  return $ M.union tmap m
-
-olegend :: Kind.Ops TileKind -> Rnd (M.Map Char (Kind.Id TileKind))
-olegend Kind.Ops{ofoldrWithKey, opick} =
-  let getSymbols _ tk acc =
-        maybe acc (const $ S.insert (tsymbol tk) acc)
-          (L.lookup "legend" $ tfreq tk)
-      symbols = ofoldrWithKey getSymbols S.empty
-      getLegend s acc = do
-        m <- acc
-        tk <- opick "legend" $ (== s) . tsymbol
-        return $ M.insert s tk m
-      legend = S.fold getLegend (return M.empty) symbols
-  in legend
 
 trigger :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
 trigger Kind.Ops{okind, opick} t =

@@ -1,24 +1,31 @@
 -- | Generation of places from place kinds.
 {-# LANGUAGE RankNTypes #-}
 module Game.LambdaHack.Place
-  ( TileMapXY, Place(..), placeValid, buildFence, digPlace
+  ( TileMapXY, Place(..), placeValid, buildFence, addPlace
   ) where
 
 import Data.Binary
 import Control.Monad
 import qualified Data.Map as M
 import qualified Data.List as L
+import qualified Data.Set as S
 
+import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Content.PlaceKind
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Area
 import Game.LambdaHack.Geometry
 import Game.LambdaHack.Content.TileKind
+import Game.LambdaHack.Random
 
+-- | The parameters with which a place was generated.
 data Place = Place
-  { qkind :: !(Kind.Id PlaceKind)
-  , qarea :: !Area
-  , qseen :: !Bool
+  { qkind        :: !(Kind.Id PlaceKind)
+  , qarea        :: !Area
+  , qseen        :: !Bool
+  , qlegend      :: !String
+  , qsolidFence  :: !(Kind.Id TileKind)
+  , qhollowFence :: !(Kind.Id TileKind)
   }
   deriving Show
 
@@ -27,10 +34,16 @@ instance Binary Place where
     put qkind
     put qarea
     put qseen
+    put qlegend
+    put qsolidFence
+    put qhollowFence
   get = do
     qkind <- get
     qarea <- get
     qseen <- get
+    qlegend <- get
+    qsolidFence <- get
+    qhollowFence <- get
     return Place{..}
 
 -- | The map of tile kinds in a cave and any place in a cave.
@@ -46,8 +59,9 @@ type TileMapXY = M.Map (X, Y) (Kind.Id TileKind)
 placeValid :: Area      -- ^ the area to fill
            -> PlaceKind  -- ^ the place kind to construct
            -> Bool
-placeValid (x0, y0, x1, y1) PlaceKind{..} =
-  let extra = case pfence of
+placeValid r@(x0, y0, x1, y1) PlaceKind{..} =
+  assert (validArea r `blame` r) $
+  let extra = case pfence of  -- TODO: factor out
         FWall  -> 1
         FFloor -> -1
         FNone  -> 3
@@ -62,29 +76,59 @@ placeValid (x0, y0, x1, y1) PlaceKind{..} =
                   wholeOverlapped dy dycorner
     _          -> dx >= 2 * dxcorner - 1 &&  dy >= 2 * dycorner - 1
 
+addPlace :: Kind.COps -> Kind.Id TileKind -> Kind.Id TileKind
+         -> RollQuad -> Int -> Int -> Area
+         -> Rnd (TileMapXY, Place)
+addPlace Kind.COps{cotile, coplace=Kind.Ops{okind=pokind, opick=popick}}
+         qsolidFence qhollowFence cdarkChance lvl depth
+         r = assert (not (trivialArea r) `blame` r) $ do
+  dark <- chanceQuad lvl depth cdarkChance
+  qkind <- popick "rogue" (placeValid r)
+  let kr = pokind qkind
+      qarea = case pfence kr of  -- TODO: factor out
+        FWall  -> r
+        FFloor -> expand r (-1)
+        FNone  -> expand r 1
+      qlegend = if dark then "darkLegend" else "litLegend"
+      qseen = False
+      place = Place{..}
+  legend <- olegend cotile qlegend
+  return (digPlace place kr legend, place)
+
+olegend :: Kind.Ops TileKind -> String -> Rnd (M.Map Char (Kind.Id TileKind))
+olegend Kind.Ops{ofoldrWithKey, opick} group =
+  let getSymbols _ tk acc =
+        maybe acc (const $ S.insert (tsymbol tk) acc)
+          (L.lookup group $ tfreq tk)
+      symbols = ofoldrWithKey getSymbols S.empty
+      getLegend s acc = do
+        m <- acc
+        tk <- opick group $ (== s) . tsymbol
+        return $ M.insert s tk m
+      legend = S.fold getLegend (return M.empty) symbols
+  in legend
+
 buildFence :: Kind.Id TileKind -> Area -> TileMapXY
 buildFence fenceId (x0, y0, x1, y1) =
   M.fromList $ [ ((x, y), fenceId) | x <- [x0-1, x1+1], y <- [y0..y1] ] ++
                [ ((x, y), fenceId) | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
 
 -- | Construct place of a given kind, with the given fence tile.
-digPlace :: Kind.Id PlaceKind -> PlaceKind
+digPlace :: Place
+         -> PlaceKind
          -> M.Map Char (Kind.Id TileKind)
-         -> Kind.Id TileKind -> Kind.Id TileKind
-         -> Area
-         -> (TileMapXY, Place)
-digPlace placeId rk legend wallId corId area =
-  let (placeArea, fence) = case pfence rk of
-        FWall  -> (area, buildFence wallId area)
-        FFloor -> (expand area (-1), buildFence corId $ expand area (-1))
-        FNone  -> (expand area 1, M.empty)
-      tmap = M.union (M.map (legend M.!) $ tilePlace placeArea rk) fence
-  in (tmap, Place placeId placeArea False)
+         -> TileMapXY
+digPlace Place{..} kr legend =
+  let fence = case pfence kr of
+        FWall  -> buildFence qsolidFence qarea
+        FFloor -> buildFence qhollowFence qarea
+        FNone  -> M.empty
+  in M.union (M.map (legend M.!) $ tilePlace qarea kr) fence
 
 -- | Create the place by tiling patterns.
 tilePlace :: Area                           -- ^ the area to fill
-         -> PlaceKind                      -- ^ the place kind to construct
-         -> M.Map (X, Y) Char
+          -> PlaceKind                      -- ^ the place kind to construct
+          -> M.Map (X, Y) Char
 tilePlace (x0, y0, x1, y1) PlaceKind{..} =
   let dx = x1 - x0 + 1
       dy = y1 - y0 + 1
