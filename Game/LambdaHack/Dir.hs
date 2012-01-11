@@ -1,3 +1,4 @@
+-- | Geografical directions implemented in an efficient way.
 module Game.LambdaHack.Dir
   ( Dir, dirDistSq, diagonal, neg, moves, shift, towards
   ) where
@@ -11,7 +12,8 @@ import Game.LambdaHack.Utils.Assert
 -- | Vectors of length 1 (in our metric), that is, geographical directions.
 -- Implemented as an offset in the linear framebuffer indexed by Loc.
 -- A newtype to prevent mixing up with Loc itself.
--- Level X size has to be > 1 for the 'moves' vectors to make sense.
+-- The X size of the level has to be > 1 for the 'moves' list of
+-- vectors to make sense.
 newtype Dir = Dir Int deriving (Show, Eq)
 
 instance Binary Dir where
@@ -41,11 +43,12 @@ dirDistSq lxsize dir0 dir1
   | (x0, y0) <- fromDir lxsize dir0, (x1, y1) <- fromDir lxsize dir1 =
   euclidLenSq ((y1 - y0), (x1 - x0))
 
+-- | Checks whether a direction is diagonal, as opposed to cardinal.
 diagonal :: X -> Dir -> Bool
 diagonal lxsize dir | (x, y) <- fromDir lxsize dir =
   x * y /= 0
 
--- | Invert a direction (vector).
+-- | Reverse a direction (vector).
 neg :: Dir -> Dir
 neg (Dir dir) = Dir (-dir)
 
@@ -54,13 +57,17 @@ moves :: X -> [Dir]
 moves lxsize = map (toDir lxsize) movesXY
 
 -- | Move one square in the given direction.
--- Particularly simple in the linear representation.
+--
+-- Particularly simple and fast implementation in the linear representation.
 shift :: Loc -> Dir -> Loc
 shift loc (Dir dir) = loc + dir
 
+-- TODO: Perhaps produce all acceptable directions and let AI choose.
+-- That would also eliminate the Doubles.
 -- | Given two distinct locations, determine the direction in which one should
--- move from the first in order to get closer to the second. Does not
--- pay attention to obstacles at all.
+-- move from the first in order to get closer to the second. Ignores obstacles.
+-- Of several equally good directions in the metric with cost 1 diagonal moves,
+-- if picks the one that visually, in the euclidean metric, would be the best.
 towards :: X -> Loc -> Loc -> Dir
 towards lxsize loc0 loc1
   | (x0, y0) <- fromLoc lxsize loc0, (x1, y1) <- fromLoc lxsize loc1 =
@@ -74,5 +81,6 @@ towards lxsize loc0 loc1
           | angle <= 0.25  = (1, 0)
           | angle <= 0.75  = (1, 1)
           | angle <= 1.25  = (0, 1)
-          | otherwise = assert `failure` (lxsize, loc0, loc1, (x0, y0), (x1, y1))
+          | otherwise =
+              assert `failure` (lxsize, loc0, loc1, (x0, y0), (x1, y1))
   in if dx >= 0 then toDir lxsize dxy else neg (toDir lxsize dxy)
