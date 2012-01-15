@@ -13,7 +13,7 @@ import qualified Data.Char as Char
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.State
-import Game.LambdaHack.DungeonState
+import qualified Game.LambdaHack.DungeonState as DungeonState
 import qualified Game.LambdaHack.Save as Save
 import Game.LambdaHack.Turn
 import qualified Game.LambdaHack.Config as Config
@@ -78,11 +78,12 @@ start config sess@Session{scops = cops@Kind.COps{corule}} = do
     Right (msg, diary) -> do  -- Starting a new game.
       (dg, configD) <- getGen config "dungeonRandomGenerator"
       (sg, sconfig) <- getGen configD "startingRandomGenerator"
-      let ((ploc, lid, dng), ag) =
-            MState.runState (generate cops configD) dg
+      let (DungeonState.FreshDungeon{..}, ag) =
+            MState.runState (DungeonState.generate cops configD) dg
           sflavour = MState.evalState (dungeonFlavourMap (Kind.coitem cops)) ag
-          state = defaultState sconfig sflavour dng lid ploc sg
-          hstate = initialHeroes cops ploc state
+          state = defaultState
+                    sconfig sflavour freshDungeon entryLevel entryLoc sg
+          hstate = initialHeroes cops entryLoc state
       handlerToIO sess hstate diary{smsg = msg} handle
     Left (state, diary) ->  -- Running a restored a game.
       handlerToIO sess state

@@ -1,10 +1,14 @@
+-- | Display on the screen, using one of the available frontends
+-- (chosen at compile time).
 {-# LANGUAGE CPP #-}
 module Game.LambdaHack.Display
-  ( FrontendSession, startup, shutdown, frontendName
-  , nextCommandD, displayLevel, ColorMode(..)
+  ( -- * Re-exported frontend
+    FrontendSession, startup, shutdown, frontendName
+    -- * Derived operations
+  , ColorMode(..), displayLevel, nextCommandD
   ) where
 
--- wrapper for selected Display frontend
+-- Wrapper for selected Display frontend.
 
 #ifdef CURSES
 import Game.LambdaHack.Display.Curses as D
@@ -15,8 +19,6 @@ import Game.LambdaHack.Display.Std as D
 #else
 import Game.LambdaHack.Display.Gtk as D
 #endif
-
--- Display routines that are independent of the selected display frontend.
 
 import qualified Data.Char as Char
 import qualified Data.IntSet as IS
@@ -44,14 +46,13 @@ import qualified Game.LambdaHack.Keys as K
 import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Kind as Kind
 
--- | Next event translated to a canonical form.
+-- | Next input event translated to a canonical form.
 nextCommandD :: FrontendSession -> IO K.Key
 nextCommandD fs = do
   e <- nextEvent fs
   return $ K.canonMoveKey e
 
--- | Waits for a space or return or escape. The last two act this way,
--- to let keys that request information toggle display of the information off.
+-- | Waits for a space or return or escape.
 getConfirmD :: FrontendSession -> IO Bool
 getConfirmD fs = do
   e <- nextCommandD fs
@@ -82,8 +83,14 @@ stringByLocation sy xs =
       k  = length ls
   in (k, \ (x, y) -> M.lookup y m >>= \ n -> M.lookup x n)
 
-data ColorMode = ColorFull | ColorBW
+-- | Display color mode.
+data ColorMode =
+    ColorFull  -- ^ normal, with full colours
+  | ColorBW    -- ^ black+white only
 
+-- TODO: split up and generally rewrite.
+-- | Display the whole screen: level map, messages and status area
+-- and multiple-page overlaid information, if any.
 displayLevel :: ColorMode -> FrontendSession -> Kind.COps
              -> Perceptions -> State
              -> Msg -> Maybe String -> IO Bool
@@ -111,7 +118,7 @@ displayLevel dm fs cops per
                                  else if rea
                                       then Color.Magenta
                                       else Color.defBG
-                else \ _vis _rea -> Color.defBG
+               else \ _vis _rea -> Color.defBG
       wealth  = L.sum $ L.map (Item.itemPrice coitem) bitems
       damage  = case Item.strongestSword coitem bitems of
                   Just sw -> case ieffect $ iokind $ Item.jkind sw of

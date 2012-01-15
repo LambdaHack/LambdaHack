@@ -1,5 +1,8 @@
+-- | The game arena, comprised of levels.
 module Game.LambdaHack.Dungeon
-  ( LevelId, levelNumber, levelDefault
+  ( -- * Level identifier
+    LevelId, levelNumber, levelDefault
+    -- * Dungeon
   , Dungeon, fromList, currentFirst, adjust, (!), lookup, depth
   ) where
 
@@ -11,7 +14,7 @@ import qualified Data.List as L
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Level
 
--- | Level ids are integers and (for now) ordered linearly.
+-- | Level ids are, for now, ordered linearly by depth.
 newtype LevelId = LambdaCave Int
   deriving (Show, Eq, Ord)
 
@@ -23,12 +26,11 @@ instance Binary LevelId where
 levelNumber :: LevelId -> Int
 levelNumber (LambdaCave n) = n
 
--- | Default level of a given depth.
+-- | Default level for a given depth.
 levelDefault :: Int -> LevelId
 levelDefault n = LambdaCave n
 
 -- | The complete dungeon is a map from level names to levels.
--- We usually store all but the current level in this data structure.
 data Dungeon = Dungeon
   { dungeonLevelMap :: M.Map LevelId Level
   , dungeonDepth :: Int  -- can be different than the number of levels
@@ -45,7 +47,9 @@ instance Binary Dungeon where
     dungeonDepth <- get
     return Dungeon{..}
 
--- | Create a dungeon from a list of levels and maximum depth (danger).
+-- | Create a dungeon from a list of levels and maximum depth.
+-- The depth is a danger indicator; there may potentially be multiple levels
+-- with the same depth.
 fromList :: [(LevelId, Level)] -> Int -> Dungeon
 fromList lvls d = assert (d <= L.length lvls `blame` (d, L.length lvls)) $
   Dungeon (M.fromList lvls) d
@@ -58,14 +62,18 @@ currentFirst lid (Dungeon m _) =
   (lid, m M.! lid)
   : L.filter ((/= lid) . fst) (M.assocs m)
 
+-- | Adjust the level at a given id.
 adjust :: (Level -> Level) -> LevelId -> Dungeon -> Dungeon
 adjust f lid (Dungeon m d) = Dungeon (M.adjust f lid m) d
 
+-- | Find a level with the given id.
 (!) :: Dungeon -> LevelId -> Level
 (!) (Dungeon m _) lid = m M.! lid
 
+-- | Try to look up a level with the given id.
 lookup :: LevelId -> Dungeon -> Maybe Level
 lookup lid (Dungeon m _) = M.lookup lid m
 
+-- | Maximum depth of the dungeon.
 depth :: Dungeon -> Int
 depth = dungeonDepth

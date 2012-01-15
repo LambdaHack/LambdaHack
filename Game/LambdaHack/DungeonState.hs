@@ -1,5 +1,10 @@
 -- | Dungeon operations that require "State", "COps" or "Config".
-module Game.LambdaHack.DungeonState where
+module Game.LambdaHack.DungeonState
+  ( -- * Dungeon generation
+    FreshDungeon(..), generate
+    -- * Dungeon travel
+  , whereTo
+  ) where
 
 import qualified System.Random as R
 import qualified Data.List as L
@@ -53,20 +58,16 @@ rollItems Kind.COps{cotile, coitem=coitem@Kind.Ops{osymbol}}
     item <- newItem coitem lvl depth
     l <- case osymbol (jkind item) of
            ')' ->
-             -- melee weapons generated close to monsters; MUAHAHAHA
+             -- HACK: melee weapons generated close to monsters; MUAHAHAHA
              findLocTry 2000 lmap
                (const (Tile.hasFeature cotile F.Boring))
                (\ l _ -> distance cxsize ploc l > 30)
            _ -> findLoc lmap (const (Tile.hasFeature cotile F.Boring))
     return (l, item)
 
--- | Create a level from a cave, from a cave kind.
-buildLevel :: Kind.COps -> Cave -> Int -> Int -> Rnd Level
-buildLevel cops@Kind.COps{cotile=cotile@Kind.Ops{opick}, cocave=Kind.Ops{okind}}
-           Cave{..} lvl depth = do
-  let cfg@CaveKind{..} = okind dkind
-  cmap <- convertTileMaps (opick cdefTile (const True)) cxsize cysize dmap
-  -- Roll locations of the stairs.
+placeStairs :: Kind.Ops TileKind -> TileMap -> X -> Int -> [Place]
+            -> Rnd (Loc, Kind.Id TileKind, Loc, Kind.Id TileKind)
+placeStairs cotile@Kind.Ops{opick} cmap cxsize cminStairDist dplaces = do
   su <- findLoc cmap (const (Tile.hasFeature cotile F.Boring))
   sd <- findLocTry 2000 cmap
           (\ l t -> l /= su && Tile.hasFeature cotile F.Boring t)
@@ -75,6 +76,15 @@ buildLevel cops@Kind.COps{cotile=cotile@Kind.Ops{opick}, cocave=Kind.Ops{okind}}
       findLegend loc = maybe "litLegend" qlegend $ L.find (fitArea loc) dplaces
   upId   <- opick (findLegend su) $ Tile.kindHasFeature F.Ascendable
   downId <- opick (findLegend sd) $ Tile.kindHasFeature F.Descendable
+  return (su, upId, sd, downId)
+
+-- | Create a level from a cave, from a cave kind.
+buildLevel :: Kind.COps -> Cave -> Int -> Int -> Rnd Level
+buildLevel cops@Kind.COps{cotile=cotile@Kind.Ops{opick}, cocave=Kind.Ops{okind}}
+           Cave{..} lvl depth = do
+  let cfg@CaveKind{..} = okind dkind
+  cmap <- convertTileMaps (opick cdefTile (const True)) cxsize cysize dmap
+  (su, upId, sd, downId) <- placeStairs cotile cmap cxsize cminStairDist dplaces
   let stairs = [(su, upId)] ++ if lvl == depth
                                then []
                                else [(sd, downId)]
@@ -113,9 +123,15 @@ findGenerator cops config k depth = do
   cave <- buildCave cops k depth ci
   buildLevel cops cave k depth
 
+-- | Freshly generate dungeon, with the entry area indicated.
+data FreshDungeon = FreshDungeon
+  { entryLevel   :: Dungeon.LevelId
+  , entryLoc     :: Loc
+  , freshDungeon :: Dungeon.Dungeon
+  }
+
 -- | Generate the dungeon for a new game.
-generate :: Kind.COps -> Config.CP
-         -> Rnd (Loc, Dungeon.LevelId, Dungeon.Dungeon)
+generate :: Kind.COps -> Config.CP -> Rnd FreshDungeon
 generate cops config =
   let depth = Config.get config "dungeon" "depth"
       gen :: R.StdGen -> Int -> (R.StdGen, (Dungeon.LevelId, Level))
@@ -123,11 +139,13 @@ generate cops config =
         let (g1, g2) = R.split g
             res = MState.evalState (findGenerator cops config k depth) g1
         in (g2, (Dungeon.levelDefault k, res))
-      con :: R.StdGen -> ((Loc, Dungeon.LevelId, Dungeon.Dungeon), R.StdGen)
+      con :: R.StdGen -> (FreshDungeon, R.StdGen)
       con g =
         let (gd, levels) = L.mapAccumL gen g [1..depth]
-            ploc = fst (lstairs (snd (head levels)))
-        in ((ploc, Dungeon.levelDefault 1, Dungeon.fromList levels depth), gd)
+            entryLevel = Dungeon.levelDefault 1
+            entryLoc = fst (lstairs (snd (head levels)))
+            freshDungeon = Dungeon.fromList levels depth
+        in (FreshDungeon{..}, gd)
   in MState.state con
 
 -- | Computes the target world location of using stairs.
@@ -137,5 +155,5 @@ whereTo State{slid, sdungeon} k = assert (k /= 0) $
       nln = n - k
       ln = Dungeon.levelDefault nln
   in case Dungeon.lookup ln sdungeon of
-     Nothing     -> Nothing
-     Just lvlTrg -> Just (ln, (if k < 0 then fst else snd) (lstairs lvlTrg))
+    Nothing     -> Nothing
+    Just lvlTrg -> Just (ln, (if k < 0 then fst else snd) (lstairs lvlTrg))
