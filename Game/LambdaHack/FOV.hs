@@ -16,7 +16,7 @@ import qualified Game.LambdaHack.Tile as Tile
 
 -- TODO: should Blind really be a FovMode, or a modifier? Let's decide
 -- when other similar modifiers are added.
-data FovMode = Shadow | Permissive Int | Digital Int | Blind
+data FovMode = Shadow | Permissive | Digital Int | Blind
 
 -- | Perform a full scan for a given location. Returns the locations
 -- that are currently in the field of view. The Field of View
@@ -28,8 +28,8 @@ fullscan fovMode loc cops Level{lxsize, lmap} =
   case fovMode of
     Shadow ->
       L.concatMap (\ tr -> map tr (Shadow.scan (isCl . tr) 1 (0, 1))) tr8
-    Permissive r  ->
-      L.concatMap (\ tr -> map tr (Permissive.scan r (isCl . tr))) tr4
+    Permissive ->
+      L.concatMap (\ tr -> map tr (Permissive.scan (isCl . tr))) tr4
     Digital r ->
       L.concatMap (\ tr -> map tr (Digital.scan r (isCl . tr))) tr4
     Blind ->  -- only feeling out adjacent tiles by touch

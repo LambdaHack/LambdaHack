@@ -133,12 +133,13 @@ computeReachable Kind.COps{cotile, coactor=Kind.Ops{okind}}
           -- terrible, temporary hack
           case sensory of
             Vision 3 -> Digital radius
-            Vision 2 -> Permissive radius
+            Vision 2 -> Permissive
             Vision 1 -> Shadow
+            Smell    -> Blind
             _        ->
               -- this is not a hack
               case mode of
-                "permissive" -> Permissive radius
+                "permissive" -> Permissive
                 "digital"    -> Digital radius
                 "shadow"     -> Shadow
                 _            -> error $ "Unknown FOV mode: " ++ show mode

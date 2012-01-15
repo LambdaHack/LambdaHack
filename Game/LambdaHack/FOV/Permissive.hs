@@ -17,17 +17,15 @@ import Game.LambdaHack.FOV.Common
 -- and this is necessary only for straight, thin, diagonal walls.
 
 -- | Calculates the list of tiles visible from (0, 0).
-scan :: Distance        -- ^ visiblity radius
-     -> (Bump -> Bool)  -- ^ clear tile predicate
+scan :: (Bump -> Bool)  -- ^ clear tile predicate
      -> [Bump]
-scan r isClear =
-  -- the area is diagonal, which is incorrect, but looks good enough
-  dscan 1 (((B(0, 1), B(r+1, 0)), [B(1, 0)]), ((B(1, 0), B(0, r+1)), [B(0, 1)]))
+scan isClear =
+  dscan 1 (((B(0, 1), B(999, 0)), [B(1, 0)]), ((B(1, 0), B(0, 999)), [B(0, 1)]))
  where
   dscan :: Distance -> EdgeInterval -> [Bump]
   dscan d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps)) =
-    assert (r >= d && d >= 0 && pe + 1 >= ps0 && ps0 >= 0
-            `blame` (r,d,s0,e,ps0,pe)) $
+    assert (d >= 0 && pe + 1 >= ps0 && ps0 >= 0
+            `blame` (d,s0,e,ps0,pe)) $
     if illegal then [] else inside ++ outside
    where
     (ns, ks) = intersect sl d
@@ -43,7 +41,6 @@ scan r isClear =
 
     inside = [pd2bump (p, d) | p <- [ps0..pe]]
     outside
-      | d >= r = []
       | isClear (pd2bump (ps0, d)) = mscan (Just s0) ps0  -- start in light
       | ps0 == ns `divUp` ks = mscan (Just s0) ps0        -- start in a corner
       | otherwise = mscan Nothing (ps0+1)                 -- start in mid-wall
