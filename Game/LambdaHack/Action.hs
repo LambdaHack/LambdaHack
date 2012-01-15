@@ -30,17 +30,19 @@ data Session = Session
   , skeyb :: Keybinding (Action ())
   }
 
+-- | The function inside any Action. Separated to document with haddock.
+type ActionFun r a =
+   Session                           -- ^ session setup data
+   -> (State -> Diary -> IO r)       -- ^ shutdown cont
+   -> Perceptions                    -- ^ cached perception
+   -> (State -> Diary -> a -> IO r)  -- ^ continuation
+   -> IO r                           -- ^ failure/reset cont
+   -> State                          -- ^ current state
+   -> Diary                          -- ^ current diary
+   -> IO r
+
 newtype Action a = Action
-  { runAction ::
-      forall r .
-      Session                           -- ^ session setup data
-      -> (State -> Diary -> IO r)       -- ^ shutdown cont
-      -> Perceptions                    -- ^ cached perception
-      -> (State -> Diary -> a -> IO r)  -- ^ continuation
-      -> IO r                           -- ^ failure/reset cont
-      -> State                          -- ^ current state
-      -> Diary                          -- ^ current diary
-      -> IO r
+  { runAction :: forall r . ActionFun r a
   }
 
 -- TODO: check if it's strict enough, if we don't keep old states for too long,

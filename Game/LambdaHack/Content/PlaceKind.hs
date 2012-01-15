@@ -37,7 +37,6 @@ data Fence =
 -- at the outer tiles of the place).
 -- TODO: Check that all symbols in place plans are present in the legend.
 -- TODO: Add a field with tile group to be used as the legend.
-
 -- | Filter a list of kinds, passing through only the incorrect ones, if any.
 -- Verify that the top-left corner map is rectangular and not empty.
 pvalidate :: [PlaceKind] -> [PlaceKind]

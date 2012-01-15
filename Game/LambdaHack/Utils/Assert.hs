@@ -11,6 +11,7 @@ import Debug.Trace (trace)
 infix 1 `blame`
 -- | If the condition fails, display the value blamed for the failure.
 -- Used as in
+--
 -- > assert (c /= 0 `blame` c) $ 10 / c
 blame :: Show a => Bool -> a -> Bool
 {-# INLINE blame #-}
@@ -23,6 +24,7 @@ blame condition blamed
 
 -- | Like 'Prelude.undefined', but shows the source location
 -- and also the value to blame for the failure. To be used as in:
+--
 -- > assert `failure` ((x1, y1), (x2, y2), "designate a vertical line")
 failure :: Show a => (Bool -> b -> b) -> a -> b
 {-# INLINE failure #-}
@@ -34,6 +36,7 @@ failure asrt blamed =
 
 -- | Like 'List.all', but if the predicate fails, blame all the list elements
 -- and especially those for which it fails. To be used as in:
+--
 -- > assert (allB (>= 0) [yf, xf, y1, x1, y2, x2])
 allB :: Show a => (a -> Bool) -> [a] -> Bool
 {-# INLINE allB #-}
@@ -55,6 +58,7 @@ checkM asrt predicate blamed value
          (error "Assert.checkM: no error location (upgrade to GHC 7.4)")
 
 -- | Verifies that the returned value is true (respectively, false). Used as in:
+--
 -- > open newValve >>= assert `trueM` (newValve, "is already opened, not new")
 trueM, falseM :: (Show a, Monad m) => (Bool -> m () -> m ()) -> a -> Bool
               -> m ()

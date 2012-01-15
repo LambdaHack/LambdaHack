@@ -2,7 +2,7 @@
 -- It's not designed for dungeons with diagonal walls, so they block visibility,
 -- though they don't block movement. The main advantages are that
 -- it's very simple and fast.
-module Game.LambdaHack.FOV.Shadow (Interval, scan) where
+module Game.LambdaHack.FOV.Shadow (SBump, Interval, scan) where
 
 import Data.Ratio
 

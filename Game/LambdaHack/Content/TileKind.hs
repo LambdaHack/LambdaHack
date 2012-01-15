@@ -33,7 +33,6 @@ instance Binary SecretStrength where
   get = fmap SecretStrength get
 
 -- TODO: check that all posible solid place fences have hidden counterparts.
-
 -- | Filter a list of kinds, passing through only the incorrect ones, if any.
 --
 -- If tiles look the same on the map, the description should be the same, too.

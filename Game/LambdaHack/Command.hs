@@ -54,7 +54,6 @@ majorCmd cmd = case cmd of
 -- TODO: Advance time automatically for these, but somehow advance
 -- time for monsters, too. Perhaps wait until monsters use commands, too
 -- (or rather the micro-commands to be added in the future).
-
 -- | Time cosuming commands are marked as such in help and cannot be
 -- invoked in targeting mode on a remote level (level different than
 -- the level of the selected hero).

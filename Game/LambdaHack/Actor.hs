@@ -114,7 +114,6 @@ monsterGenChance d numMonsters =
 -- move immediately after generation. This does not seem like
 -- a bad idea, but it would certainly be "more correct" to set
 -- the time to the creation time instead.
-
 -- | A template for a new actor. The initial target is invalid
 -- to force a reset ASAP.
 template :: Kind.Id ActorKind -> Maybe Char -> Maybe String -> Int -> Loc

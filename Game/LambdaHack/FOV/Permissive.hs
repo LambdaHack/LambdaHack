@@ -91,7 +91,7 @@ dsteeper f p1 p2 =
 
 -- | The Y coordinate, represented as a fraction, of the intersection of
 -- a given line and the line of diagonals of squares at distance
--- @d2 from (0, 0).
+-- @d@ from (0, 0).
 intersect :: Line -> Distance -> (Int, Int)
 intersect (B(x, y), B(xf, yf)) d =
   assert (allB (>= 0) [x, y, xf, yf]) $

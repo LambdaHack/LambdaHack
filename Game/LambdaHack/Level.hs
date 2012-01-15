@@ -1,5 +1,5 @@
 module Game.LambdaHack.Level
-  ( Party, SmellTime(..), SmellMap, SecretMap
+  ( Party, PartyItem, SmellTime(..), SmellMap, SecretMap
   , ItemMap, TileMap, Level(..)
   , updateHeroes, updateHeroItem, updateMonsters, updateMonItem
   , updateLMap, updateLRMap, updateIMap

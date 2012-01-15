@@ -13,7 +13,6 @@ import qualified Data.Binary as Binary
 -- http://www.haskell.org/haskellwiki/Performance/Data_types#Enumerations
 -- If we ever switch to 256 colours, the Int implementation or similar
 -- will be more natural, anyway.
-
 -- | Colours supported by the major frontends.
 data Color =
     Black
