@@ -145,4 +145,4 @@ computeReachable Kind.COps{cotile, coactor=Kind.Ops{okind}}
                 _            -> error $ "Unknown FOV mode: " ++ show mode
       ploc = bloc actor
   in PerceptionReachable $
-       IS.insert ploc $ IS.fromList $ fullscan (fovMode actor) ploc cotile lvl
+       IS.insert ploc $ IS.fromList $ fullscan cotile (fovMode actor) ploc lvl

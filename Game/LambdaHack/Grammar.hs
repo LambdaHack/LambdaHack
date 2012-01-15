@@ -95,7 +95,7 @@ objectItem cops@Kind.Ops{okind} state o =
       identified = L.length (iflavour kind) == 1 ||
                    ik `S.member` sdisco state
       addSpace s = if s == "" then "" else " " ++ s
-      eff = effectToName (ieffect kind)
+      eff = effectToSuffix (ieffect kind)
       pwr = if jpower o == 0 then "" else "(+" ++ show (jpower o) ++ ")"
       adj name = if identified
                  then name ++ addSpace eff ++ addSpace pwr
