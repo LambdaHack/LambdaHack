@@ -56,10 +56,10 @@ tryCopyDataFiles pathsDataFile dirNew = do
   scoresFile <- pathsDataFile "scores"
   let configNew = combine dirNew "config"
       scoresNew = combine dirNew "scores"
---  E.catch
-  (do copyFile configFile configNew
-      copyFile scoresFile scoresNew)
---    (\ e -> case e :: E.IOException of _ -> return ())
+  E.catch
+    (copyFile configFile configNew >>
+     copyFile scoresFile scoresNew)
+    (\ e -> case e :: E.IOException of _ -> return ())
 
 -- | Restore a saved game, if it exists. Initialize directory structure,
 -- if needed.
@@ -69,9 +69,10 @@ restoreGame pathsDataFile config title = do
   appData <- Config.appDataDir
   ab <- doesDirectoryExist appData
   -- If the directory can't be created, the current directory will be used.
-  unless ab $ tryCreateDir appData
-  -- Possibly copy over data files. No problem if it fails.
-  tryCopyDataFiles pathsDataFile appData
+  unless ab $ do
+    tryCreateDir appData
+    -- Possibly copy over data files. No problem if it fails.
+    tryCopyDataFiles pathsDataFile appData
   -- If the diary file does not exist, create an empty diary.
   diary <-
     do dfile <- diaryFile config
