@@ -1,69 +1,93 @@
+-- | The appearance of in-game items, as communicated to the player.
 module Game.LambdaHack.Flavour
-  ( Flavour
-  , zipPlain, zipFancy, darkCol, brightCol, stdCol, stdFlav
-  , flavourToColor, flavourToName
+  ( -- * The @Flavour@ type
+    Flavour
+  , -- * Constructors
+    zipPlain, zipFancy, darkCol, brightCol, stdCol, stdFlav
+  , -- * Accessors
+    flavourToColor, flavourToName
   ) where
 
 import qualified Data.List as L
+import Data.Binary
 
 import Game.LambdaHack.Color
 
 -- TODO: add more variety, as the number of items increases
-type Flavour = (Color, Bool)  -- the flag tells to use fancy color names
+-- | The type of item flavours.
+data Flavour = Flavour
+  { fancyName :: Bool   -- ^ should the colour description be fancy or plain
+  , baseColor :: Color  -- ^ the colour of the flavour
+  }
+  deriving (Show, Eq, Ord)
 
-zipPlain, zipFancy :: [Color] -> [(Color, Bool)]
-zipPlain cs = L.zip cs (repeat False)
-zipFancy cs = L.zip cs (repeat True)
+instance Binary Flavour where
+  put Flavour{..} = do
+    put fancyName
+    put baseColor
+  get = do
+    fancyName <- get
+    baseColor <- get
+    return Flavour{..}
 
+-- | Turn a colour set into a flavour set.
+zipPlain, zipFancy :: [Color] -> [Flavour]
+zipPlain cs = L.map (Flavour False) cs
+zipFancy cs = L.map (Flavour True) cs
+
+-- | Colour sets.
 darkCol, brightCol, stdCol :: [Color]
 darkCol   = [Red .. Cyan]
 brightCol = [BrRed .. BrCyan]  -- BrBlack is not really that bright
 stdCol    = darkCol ++ brightCol
 
-stdFlav :: [(Color, Bool)]
+-- | The standard full set of flavours.
+stdFlav :: [Flavour]
 stdFlav = zipPlain stdCol ++ zipFancy stdCol
 
-flavourToName :: Flavour -> String
-flavourToName (c, False) = colorToName c
-flavourToName (c, True)  = colorToName' c
-
+-- | Get the underlying base colour of a flavour.
 flavourToColor :: Flavour -> Color
-flavourToColor (c, _) = c
+flavourToColor Flavour{baseColor} = baseColor
 
--- Human-readable names, for item descriptions. The simple set.
-colorToName :: Color -> String
-colorToName Black     = "black"
-colorToName Red       = "red"
-colorToName Green     = "green"
-colorToName Brown     = "brown"
-colorToName Blue      = "blue"
-colorToName Magenta   = "purple"
-colorToName Cyan      = "cyan"
-colorToName White     = "ivory"
-colorToName BrBlack   = "gray"
-colorToName BrRed     = "coral"
-colorToName BrGreen   = "lime"
-colorToName BrYellow  = "yellow"
-colorToName BrBlue    = "azure"
-colorToName BrMagenta = "pink"
-colorToName BrCyan    = "aquamarine"
-colorToName BrWhite   = "white"
+-- | Construct the full name of a flavour.
+flavourToName :: Flavour -> String
+flavourToName Flavour{..} | fancyName = colorToFancyName baseColor
+flavourToName Flavour{..} | otherwise = colorToPlainName baseColor
 
--- The fancy set.
-colorToName' :: Color -> String
-colorToName' Black     = "smoky black"
-colorToName' Red       = "apple red"
-colorToName' Green     = "forest green"
-colorToName' Brown     = "mahogany"
-colorToName' Blue      = "royal blue"
-colorToName' Magenta   = "indigo"
-colorToName' Cyan      = "teal"
-colorToName' White     = "silver gray"
-colorToName' BrBlack   = "charcoal"
-colorToName' BrRed     = "salmon"
-colorToName' BrGreen   = "emerald"
-colorToName' BrYellow  = "amber"
-colorToName' BrBlue    = "sky blue"
-colorToName' BrMagenta = "magenta"
-colorToName' BrCyan    = "turquoise"
-colorToName' BrWhite   = "ghost white"
+-- | Human-readable names, for item colors. The simple set.
+colorToPlainName :: Color -> String
+colorToPlainName Black     = "black"
+colorToPlainName Red       = "red"
+colorToPlainName Green     = "green"
+colorToPlainName Brown     = "brown"
+colorToPlainName Blue      = "blue"
+colorToPlainName Magenta   = "purple"
+colorToPlainName Cyan      = "cyan"
+colorToPlainName White     = "ivory"
+colorToPlainName BrBlack   = "gray"
+colorToPlainName BrRed     = "coral"
+colorToPlainName BrGreen   = "lime"
+colorToPlainName BrYellow  = "yellow"
+colorToPlainName BrBlue    = "azure"
+colorToPlainName BrMagenta = "pink"
+colorToPlainName BrCyan    = "aquamarine"
+colorToPlainName BrWhite   = "white"
+
+-- | Human-readable names, for item colors. The fancy set.
+colorToFancyName :: Color -> String
+colorToFancyName Black     = "smoky black"
+colorToFancyName Red       = "apple red"
+colorToFancyName Green     = "forest green"
+colorToFancyName Brown     = "mahogany"
+colorToFancyName Blue      = "royal blue"
+colorToFancyName Magenta   = "indigo"
+colorToFancyName Cyan      = "teal"
+colorToFancyName White     = "silver gray"
+colorToFancyName BrBlack   = "charcoal"
+colorToFancyName BrRed     = "salmon"
+colorToFancyName BrGreen   = "emerald"
+colorToFancyName BrYellow  = "amber"
+colorToFancyName BrBlue    = "sky blue"
+colorToFancyName BrMagenta = "magenta"
+colorToFancyName BrCyan    = "turquoise"
+colorToFancyName BrWhite   = "ghost white"
