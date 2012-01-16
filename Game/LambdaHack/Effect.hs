@@ -6,7 +6,7 @@ module Game.LambdaHack.Effect
 import Game.LambdaHack.Random
 
 -- TODO: document each constructor
--- | All possible effects, some of the parameterized or dependent
+-- | All possible effects, some of them parameterized or dependent
 -- on outside coefficients, e.g., item power.
 data Effect =
     NoEffect
