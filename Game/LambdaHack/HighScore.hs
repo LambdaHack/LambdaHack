@@ -1,4 +1,7 @@
-module Game.LambdaHack.HighScore where
+-- | High score table operations.
+module Game.LambdaHack.HighScore
+  ( Status(..), ScoreRecord(..), ScoreTable, save, restore, register, slideshow
+  ) where
 
 import System.Directory
 import Control.Monad
@@ -12,21 +15,26 @@ import qualified Game.LambdaHack.Config as Config
 import Game.LambdaHack.Dungeon
 import Game.LambdaHack.Geometry
 
--- | A single score.
 -- TODO: add heroes' names, exp and level, cause of death, user number/name.
 -- Note: I tried using Date.Time, but got all kinds of problems,
 -- including build problems and opaque types that make serialization difficult,
 -- and I couldn't use Datetime because it needs old base (and is under GPL).
--- TODO: When we finally move to Date.Time, let's take timezone into account.
+-- TODO: When we finally move to Date.Time, let's take timezone into account,
+-- at least while displaying.
+-- | A single score.
 data ScoreRecord = ScoreRecord
-  { points  :: !Int
-  , negTurn :: !Int
-  , date    :: !ClockTime
-  , status  :: !Status
+  { points  :: !Int        -- ^ point score
+  , negTurn :: !Int        -- ^ number of turns (negated for ordering)
+  , date    :: !ClockTime  -- ^ date of the last game interruption
+  , status  :: !Status     -- ^ reason of the game interruption
   }
   deriving (Eq, Ord)
 
-data Status = Killed !LevelId | Camping !LevelId | Victor
+-- | Status of the player after the last game interruption.
+data Status =
+    Killed !LevelId   -- ^ the player lost on the given level
+  | Camping !LevelId  -- ^ game is supended with the player on the given level
+  | Victor            -- ^ the player won
   deriving (Eq, Ord)
 
 instance Binary Status where
@@ -56,22 +64,20 @@ instance Binary ScoreRecord where
     s <- get
     return (ScoreRecord p n (TOD cs cp) s)
 
--- | Show a single high score.
+-- | Show a single high score, from the given ranking in the high score table.
 showScore :: (Int, ScoreRecord) -> String
 showScore (pos, score) =
-  let died  =
-        case status score of
-          Killed lvl -> "perished on level " ++ show (levelNumber lvl) ++ ","
-          Camping lvl -> "is camping on level " ++ show (levelNumber lvl) ++ ","
-          Victor -> "emerged victorious"
+  let died = case status score of
+        Killed lvl -> "perished on level " ++ show (levelNumber lvl) ++ ","
+        Camping lvl -> "is camping on level " ++ show (levelNumber lvl) ++ ","
+        Victor -> "emerged victorious"
       time  = calendarTimeToString . toUTCTime . date $ score
       big   = "                                                 "
       lil   = "              "
       steps = negTurn score `div` (-10)
-  in
-   printf
-     "%s\n%4d. %6d  This adventuring party %s after %d steps  \n%son %s.  \n"
-     big pos (points score) died steps lil time
+  in printf
+       "%s\n%4d. %6d  This adventuring party %s after %d steps  \n%son %s.  \n"
+       big pos (points score) died steps lil time
 
 -- | The list of scores, in decreasing order.
 type ScoreTable = [ScoreRecord]
@@ -85,7 +91,6 @@ scoresFile :: Config.CP -> IO String
 scoresFile config = Config.getFile config "files" "scoresFile"
 
 -- | We save a simple serialized version of the high scores table.
--- The 'False' is used only as an EOF marker.
 save :: Config.CP -> ScoreTable -> IO ()
 save config scores = do
   f <- scoresFile config
@@ -97,12 +102,12 @@ restore config = do
   f <- scoresFile config
   b <- doesFileExist f
   if not b
-    then return []
+    then return empty
     else do
       scores <- strictDecodeEOF f
       return scores
 
--- | Insert a new score into the table, Return new table and the position.
+-- | Insert a new score into the table, Return new table and the ranking.
 insertPos :: ScoreRecord -> ScoreTable -> (ScoreTable, Int)
 insertPos s h =
   let (prefix, suffix) = L.span (> s) h
@@ -124,7 +129,8 @@ slideshow pos h height =
   else [showTable h 1 height,
         showTable h (max (height + 1) (pos - height `div` 2)) height]
 
--- | Take care of a new score, return a list of messages to display.
+-- | Take care of saving a new score to the table
+-- and return a list of messages to display.
 register :: Config.CP -> Bool -> ScoreRecord -> IO (String, [String])
 register config write s = do
   h <- restore config
