@@ -12,6 +12,7 @@ import Data.Ratio
 import qualified System.Random as R
 import Control.Monad.State
 import qualified Data.List as L
+import qualified Control.Monad.State as MState
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Frequency
@@ -23,9 +24,9 @@ type Rnd a = State R.StdGen a
 -- TODO: rewrite; was written in a "portable" way because the implementation of
 -- State changes between mtl versions 1 and 2. Now we are using only mtl 2.
 randomR :: (R.Random a) => (a, a) -> Rnd a
-randomR rng = do
+randomR range = do
   g <- get
-  let (x, ng) = R.randomR rng g
+  let (x, ng) = R.randomR range g
   put ng
   return x
 
@@ -43,19 +44,8 @@ oneOf xs = do
   r <- randomR (0, length xs - 1)
   return (xs !! r)
 
-frequency :: Frequency a -> Rnd a
-frequency (Frequency [(n, x)]) | n > 0 = return x  -- speedup
-frequency (Frequency fs) =
-  assert (sumf > 0 `blame` map fst fs) $ do
-  r <- randomR (1, sumf)
-  return (frequency' r fs)
- where
-  sumf = sum (map fst fs)
-  frequency' :: Int -> [(Int, a)] -> a
-  frequency' m []       = assert `failure` (map fst fs, m)
-  frequency' m ((n, x) : xs)
-    | m <= n            = x
-    | otherwise         = frequency' (m - n) xs
+frequency :: Show a => Frequency a -> Rnd a
+frequency fr = MState.state $ rollFreq fr
 
 -- ** Arithmetic operations on Rnd.
 

@@ -12,19 +12,19 @@ newtype Strategy a = Strategy { runStrategy :: [Frequency a] }
 
 -- | Strategy is a monad. TODO: Can we write this as a monad transformer?
 instance Monad Strategy where
-  return x = Strategy $ return (Frequency [(1, x)])
+  return x = Strategy $ return $ uniformFreq [x]
   m >>= f  = Strategy $
-               filter (\ (Frequency xs) -> not (null xs))
-               [ Frequency [ (p * q, b)
-                           | (p, a) <- runFrequency x
-                           , y <- runStrategy (f a)
-                           , (q, b) <- runFrequency y
-                           ]
+               filter (not . nullFreq)
+               [ toFreq [ (p * q, b)
+                        | (p, a) <- runFrequency x
+                        , y <- runStrategy (f a)
+                        , (q, b) <- runFrequency y
+                        ]
                | x <- runStrategy m ]
 
 liftFrequency :: Frequency a -> Strategy a
 liftFrequency f =
-  Strategy $ filter (\ (Frequency xs) -> not (null xs)) $ return f
+  Strategy $ filter (not . nullFreq) $ return f
 
 instance MonadPlus Strategy where
   mzero = Strategy []

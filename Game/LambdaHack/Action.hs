@@ -45,6 +45,9 @@ newtype Action a = Action
   { runAction :: forall r . ActionFun r a
   }
 
+instance Show (Action a) where
+  show _ = "an action"
+
 -- TODO: check if it's strict enough, if we don't keep old states for too long,
 -- Perhaps make state type fields strict for that, too?
 instance Monad Action where

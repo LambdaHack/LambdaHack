@@ -157,7 +157,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   tis = lvl `atI` me
   seenFreqs = [applyFreq items 1, applyFreq tis 2,
                throwFreq items 2, throwFreq tis 5] ++ towardsFreq
-  applyFreq is multi = Frequency
+  applyFreq is multi = toFreq
     [ (benefit * multi,
        applyGroupItem actor (iverbApply ik) i)
     | i <- is,
@@ -166,7 +166,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
             (1 + jpower i) * Effect.effectToBenefit (ieffect ik),
       benefit > 0,
       asight mk || isymbol ik /= '!']
-  throwFreq is multi = if not $ asight mk then mzero else Frequency
+  throwFreq is multi = if not $ asight mk then mzero else toFreq
     [ (benefit * multi,
        projectGroupItem actor (fromJust floc) (iverbProject ik) i)
     | i <- is,
@@ -179,7 +179,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   towardsFreq =
     let freqs = runStrategy $ fromDir False moveTowards
     in if asight mk
-       then map (scale 30) freqs
+       then map (scaleFreq 30) freqs
        else [mzero]
   moveTowards = onlySensible $ onlyNoMs (towardsFoe moveFreely)
   moveAround =
@@ -195,7 +195,8 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
     if interestHere me
     then []
     else
-      map (scale 3) (runStrategy $ onlyInterest (onlyKeepsDir 2 moveRandomly))
+      map (scaleFreq 3)
+        (runStrategy $ onlyInterest (onlyKeepsDir 2 moveRandomly))
   interestIQFreq = interestFreq ++ runStrategy moveIQ
   moveFreely = onlyLoot moveRandomly
                .| liftFrequency (msum interestIQFreq)
@@ -204,7 +205,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   onlyMoves :: (Loc -> Bool) -> Loc -> Strategy Dir -> Strategy Dir
   onlyMoves p l = only (\ x -> p (l `shift` x))
   moveRandomly :: Strategy Dir
-  moveRandomly = liftFrequency $ uniform (moves lxsize)
+  moveRandomly = liftFrequency $ uniformFreq (moves lxsize)
 
 dirToAction :: ActorId -> Target -> Bool -> Dir -> Action ()
 dirToAction actor tgt allowAttacks dir = do
