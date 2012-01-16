@@ -24,10 +24,11 @@ import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Keys as K
 import Game.LambdaHack.Keybinding
 
+-- | The constant session information, not saved to the game save file.
 data Session = Session
-  { sfs   :: FrontendSession
-  , scops :: Kind.COps
-  , skeyb :: Keybinding (Action ())
+  { sfs   :: FrontendSession         -- ^ frontend session information
+  , scops :: Kind.COps               -- ^ game content
+  , skeyb :: Keybinding (Action ())  -- ^ binding of keys to commands
   }
 
 -- | The function inside any Action. Separated to document with haddock.
@@ -41,6 +42,7 @@ type ActionFun r a =
    -> Diary                          -- ^ current diary
    -> IO r
 
+-- | Actions of player-controlled characters and non-player characters.
 newtype Action a = Action
   { runAction :: forall r . ActionFun r a
   }

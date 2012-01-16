@@ -1,9 +1,10 @@
+-- | Basic euclidean geometry operations.
 module Game.LambdaHack.Geometry
-  ( Time, X, Y, shiftXY, movesXY, lenXY, euclidLenSq, normalLevelBound, divUp
+  ( -- * Geometry
+    X, Y, shiftXY, movesXY, lenXY, euclidLenSq, normalLevelBound
+    -- * Assorted
+  , Time, divUp
   ) where
-
--- | Game time in turns. The time dimension.
-type Time = Int
 
 -- | Spacial dimensions, points and vectors.
 type X = Int
@@ -26,8 +27,12 @@ euclidLenSq :: (X, Y) -> Int
 euclidLenSq (x, y) = let square a = a * a
                      in square x + square y
 
+-- | Level bounds. TODO: query terminal size instead and scroll view.
 normalLevelBound :: (X, Y)
-normalLevelBound = (79, 21)  -- TODO: query terminal size instead
+normalLevelBound = (79, 21)
+
+-- | Game time in turns. The time dimension.
+type Time = Int
 
 -- | Integer division, rounding up.
 divUp :: Int -> Int -> Int
