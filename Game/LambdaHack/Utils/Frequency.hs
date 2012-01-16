@@ -1,5 +1,5 @@
 -- | A list of items with relative frequencies of appearance.
-module Game.LambdaHack.Frequency
+module Game.LambdaHack.Utils.Frequency
   ( -- * The @Frequency@ type
     Frequency
     -- * Construction

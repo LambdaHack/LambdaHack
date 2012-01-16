@@ -13,7 +13,7 @@ import qualified Data.Ix as Ix
 import Data.Maybe
 
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Frequency
+import Game.LambdaHack.Utils.Frequency
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.ItemKind

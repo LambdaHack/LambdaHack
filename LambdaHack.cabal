@@ -69,7 +69,6 @@ library
                    Game.LambdaHack.FOV.Digital,
                    Game.LambdaHack.FOV.Permissive,
                    Game.LambdaHack.FOV.Shadow,
-                   Game.LambdaHack.Frequency,
                    Game.LambdaHack.Geometry,
                    Game.LambdaHack.Grammar,
                    Game.LambdaHack.HighScore,
@@ -94,7 +93,8 @@ library
                    Game.LambdaHack.Tile,
                    Game.LambdaHack.Turn,
                    Game.LambdaHack.Utils.Assert,
-                   Game.LambdaHack.Utils.File
+                   Game.LambdaHack.Utils.File,
+                   Game.LambdaHack.Utils.Frequency
   other-modules:   Paths_LambdaHack
   build-depends:   ConfigFile >= 1.1.1 && < 2,
                    array >= 0.3.0.3 && < 1, base >= 4 && < 5,

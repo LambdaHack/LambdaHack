@@ -15,7 +15,7 @@ import qualified Data.List as L
 import qualified Control.Monad.State as MState
 
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Frequency
+import Game.LambdaHack.Utils.Frequency
 
 -- TODO: if the file grows much larger, split it and move a part to Utils/
 

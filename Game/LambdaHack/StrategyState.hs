@@ -12,7 +12,7 @@ import Game.LambdaHack.Level
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Frequency
+import Game.LambdaHack.Utils.Frequency
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Strategy
 import Game.LambdaHack.State

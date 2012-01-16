@@ -2,7 +2,7 @@ module Game.LambdaHack.Strategy where
 
 import Control.Monad
 
-import Game.LambdaHack.Frequency
+import Game.LambdaHack.Utils.Frequency
 
 -- Monster strategies
 
