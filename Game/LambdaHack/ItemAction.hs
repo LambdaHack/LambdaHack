@@ -65,7 +65,7 @@ applyGroupItem actor verb item = do
   per   <- currentPerception
   -- only one item consumed, even if several in inventory
   let consumed = item { jcount = 1 }
-      msg = subjectVerbIObject cops state body verb consumed ""
+      msg = actorVerbItemExtra cops state body verb consumed ""
       loc = bloc body
   removeFromInventory actor consumed loc
   when (loc `IS.member` totalVisible per) $ msgAdd msg
@@ -103,7 +103,7 @@ projectGroupItem source loc verb item = do
         then sm
         else template (heroKindId coactor)
                Nothing (Just "somebody") 99 sloc
-      msg = subjectVerbIObject cops state subject verb consumed ""
+      msg = actorVerbItemExtra cops state subject verb consumed ""
   removeFromInventory source consumed sloc
   case locToActor loc state of
     Just ta -> do
@@ -244,7 +244,7 @@ endTargetingMsg = do
                       else "a fear of the past"
                     TLoc loc -> "location " ++ show (fromLoc lxsize loc)
                     TCursor  -> "current cursor position continuously"
-  msgAdd $ subjectActorVerb cops pbody verb ++ " " ++ targetMsg ++ "."
+  msgAdd $ actorVerbExtra cops pbody verb targetMsg
 
 -- | Cancel something, e.g., targeting mode, resetting the cursor
 -- to the position of the player. Chosen target is not invalidated.
@@ -279,7 +279,7 @@ dropItem = do
     Just stack -> do
       let i = stack { jcount = 1 }
       removeOnlyFromInventory pl i (bloc pbody)
-      msgAdd (subjectVerbIObject cops state pbody "drop" i "")
+      msgAdd (actorVerbItemExtra cops state pbody "drop" i "")
       modify (updateLevel (dropItemsAt [i] ploc))
     Nothing -> neverMind True
   playerAdvanceTime
@@ -345,7 +345,7 @@ actorPickupItem actor = do
                              ++ objectItem coitem state ni)
             else when perceived $
                    msgAdd $
-                   subjCompoundVerbIObj cops state body "pick" "up" i ""
+                   actorVerbExtraItemExtra cops state body "pick" "up" i ""
           removeFromLoc i loc
             >>= assert `trueM` (i, is, loc, "item is stuck")
           -- add item to actor's inventory:

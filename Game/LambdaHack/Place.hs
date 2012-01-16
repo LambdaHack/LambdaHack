@@ -55,7 +55,7 @@ type TileMapXY = M.Map (X, Y) (Kind.Id TileKind)
 -- of an even number of whole corners, with exactly one square
 -- overlap between consecutive coners and no trimming.
 -- For other tiling methods, check that the area large enough for tiling
--- the corner twice in each direction, with a possible one row/column overlap..
+-- the corner twice in each direction, with a possible one row/column overlap.
 placeValid :: Area      -- ^ the area to fill
            -> PlaceKind  -- ^ the place kind to construct
            -> Bool

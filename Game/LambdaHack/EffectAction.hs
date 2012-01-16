@@ -63,7 +63,7 @@ effectToAction Effect.Heal _ _source target power = do
     else do
       focusIfAHero target
       updateAnyActor target (addHp coactor power)  -- TODO: duplicates maxDice, etc.
-      return (True, subjectActorVerb coactor tm "feel" ++ " better.")
+      return (True, actorVerbExtra coactor tm "feel" "better")
 effectToAction (Effect.Wound nDm) verbosity source target power = do
   coactor <- contentf Kind.coactor
   n <- rndToAction $ rollDice nDm
@@ -74,18 +74,18 @@ effectToAction (Effect.Wound nDm) verbosity source target power = do
         killed = newHP <= 0
         msg
           | source == target =  -- a potion of wounding, etc.
-            subjectActorVerb coactor tm "feel" ++
+            actorVerbExtra coactor tm "feel" $
               -- TODO: this is displayed too late, after hero death, etc.
-              if killed then " mortally" else "" ++ " wounded."
+              if killed then "mortally " else "" ++ "wounded"
           | killed =
             if isAHero target
             then ""
-            else subjectActorVerb coactor tm "die" ++ "."
+            else actorVerb coactor tm "die"
           | verbosity <= 0 = ""
           | isAHero target =
-            subjectActorVerb coactor tm "lose" ++
-              " " ++ show (n + power) ++ "HP."
-          | otherwise = subjectActorVerb coactor tm "hiss" ++ " in pain."
+            actorVerbExtra coactor tm "lose" $
+              show (n + power) ++ "HP"
+          | otherwise = actorVerbExtra coactor tm "hiss" "in pain"
     updateAnyActor target $ \ m -> m { bhp = newHP }  -- Damage the target.
     when killed $ do
       -- Place the actor's possessions on the map.
@@ -134,12 +134,12 @@ effectToAction Effect.Ascend _ _ target power = do
   coactor <- contentf Kind.coactor
   tm <- gets (getActor target)
   effLvlvGoUp (power + 1)
-  return (True, subjectActorVerb coactor tm "get" ++ " yanked upwards.")
+  return (True, actorVerbExtra coactor tm "get" "yanked upwards")
 effectToAction Effect.Descend _ _ target power = do
   coactor <- contentf Kind.coactor
   tm <- gets (getActor target)
   effLvlvGoUp (- (power + 1))
-  return (True, subjectActorVerb coactor tm "get" ++ " yanked downwards.")
+  return (True, actorVerbExtra coactor tm "get" "yanked downwards")
 
 nullEffect :: Action (Bool, String)
 nullEffect = return (False, "Nothing happens.")
@@ -279,7 +279,7 @@ selectPlayer actor = do
                            then Smell
                            else Implicit })
       -- Announce.
-      msgAdd $ subjectActor cops pbody ++ " selected."
+      msgAdd $ capActor cops pbody ++ " selected."
       when (targeting /= TgtOff) doLook
       return True
 
@@ -323,7 +323,7 @@ checkPartyDeath = do
   config <- gets sconfig
   when (bhp pbody <= 0) $ do  -- TODO: change to guard? define mzero? Why are the writes to the files performed when I call abort later? That probably breaks the laws of MonadPlus.
     go <- msgMoreConfirm ColorBW $
-            subjectActorVerb cops pbody "die" ++ "."
+            actorVerb cops pbody "die"
     history  -- Prevent the msgs from being repeated.
     let firstDeathEnds = Config.get config "heroes" "firstDeathEnds"
     if firstDeathEnds
@@ -425,7 +425,7 @@ doLook = do
       monsterMsg =
         if canSee
         then case L.find (\ m -> bloc m == loc) (levelMonsterList state) of
-               Just m  -> subjectActor (Kind.coactor cops) m ++ " is here. "
+               Just m  -> capActor (Kind.coactor cops) m ++ " is here. "
                Nothing -> ""
         else ""
       vis = if not $ loc `IS.member` totalVisible per

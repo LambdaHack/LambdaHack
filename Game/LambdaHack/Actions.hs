@@ -389,7 +389,7 @@ actorAttackActor source target = do
       -- TODO: right now it also describes the victim and weapon;
       -- perhaps, when a weapon is equipped, just say "you hit" or "you miss"
       -- and then "nose dies" or "nose yells in pain".
-      msg = subjectVerbMObject coactor sm verb tm $
+      msg = actorVerbActorExtra coactor sm verb tm $
               if isJust str
               then " with " ++ objectItem coitem state single
               else ""
