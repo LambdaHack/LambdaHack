@@ -387,7 +387,9 @@ displayItems msg sorted is = do
   let inv = unlines $
             L.map (\ i -> letterLabel (jletter i)
                           ++ objectItem cops state i ++ " ")
-              ((if sorted then L.sortBy (cmpLetter' `on` jletter) else id) is)
+              ((if sorted
+                then L.sortBy (cmpLetterMaybe `on` jletter)
+                else id) is)
   let ovl = inv ++ more
   msgReset msg
   overlay ovl

@@ -1,4 +1,21 @@
-module Game.LambdaHack.Item where
+-- | Weapons, treasure and all the other items in the game.
+-- TODO: Document after it's rethought and rewritten wrt separating
+-- inventory manangement and items proper.
+module Game.LambdaHack.Item
+  ( -- * Teh @Item@ type
+    Item(..), newItem, viewItem, itemPrice
+    -- * Inventory search
+  , strongestSearch, strongestSword, strongestRegen
+    -- * Inventory management
+  , joinItem, removeItemByLetter, equalItemIdentity, removeItemByIdentity
+  , assignLetter
+    -- * Inventory symbol operations
+  , letterLabel, cmpLetterMaybe, maxLetter, letterRange
+    -- * The @FlavourMap@ type
+  , FlavourMap, getFlavour, dungeonFlavourMap
+    -- * The @Discoveries@ type
+  , Discoveries
+  ) where
 
 import Data.Binary
 import qualified Data.Set as S
@@ -18,11 +35,19 @@ import Game.LambdaHack.Flavour
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Effect
 
+-- TODO: see the TODO about ipower in ItemKind.
+-- TODO: define type InvSymbol = Char and move all ops to another file.
+-- TODO: perhaps remove jletter and jcount? Should inventory semantics
+-- be separate from item semantics?
+-- TODO: the list resulting from joinItem can contain items
+-- with the same letter.
+-- TODO: name [Item] Inventory and have some invariants, e.g. no equal letters.
+-- | Game items in inventories or strewn around the dungeon.
 data Item = Item
-  { jkind   :: !(Kind.Id ItemKind)
-  , jpower  :: !Int         -- TODO: see the TODO about jpower
-  , jletter :: Maybe Char  -- ^ inventory identifier
-  , jcount  :: !Int
+  { jkind   :: !(Kind.Id ItemKind)  -- ^ kind of the
+  , jpower  :: !Int                 -- ^ power of the item
+  , jletter :: Maybe Char           -- ^ inventory symbol
+  , jcount  :: !Int                 -- ^ inventory count
   }
   deriving Show
 
@@ -31,11 +56,40 @@ instance Binary Item where
     put ik >> put ip >> put il >> put ic
   get = liftM4 Item get get get get
 
+-- | Generate an item.
+newItem :: Kind.Ops ItemKind -> Int -> Int -> Rnd Item
+newItem cops@Kind.Ops{opick, okind} lvl depth = do
+  ikChosen <- opick "dng" (const True)
+  let kind = okind ikChosen
+  count <- rollQuad lvl depth (icount kind)
+  if count == 0
+    then newItem cops lvl depth  -- Rare item; beware of inifite loops.
+    else do
+      power <- rollQuad lvl depth (ipower kind)
+      return $ Item ikChosen power (itemLetter kind) count
+
+-- | Represent an item on the map.
+viewItem :: Kind.Ops ItemKind -> Kind.Id ItemKind -> FlavourMap
+         -> (Char, Color.Color)
+viewItem cops@Kind.Ops{osymbol} ik assocs =
+  (osymbol ik, flavourToColor $ getFlavour cops assocs ik)
+
+-- | Price an item, taking count into consideration.
+itemPrice :: Kind.Ops ItemKind -> Item -> Int
+itemPrice Kind.Ops{osymbol} i =
+  case osymbol (jkind i) of
+    '$' -> jcount i
+    '*' -> jcount i * 100
+    _   -> 0
+
+-- | The type of already discovered items.
+type Discoveries = S.Set (Kind.Id ItemKind)
+
 -- Could be optimized to IntMap and IntSet, but won't ever be a bottleneck,
 -- unless we have thousands of item kinds.
-type FlavourMap = M.Map (Kind.Id ItemKind) Flavour  -- TODO: rewrite and move elsewhere
-
-type Discoveries = S.Set (Kind.Id ItemKind)
+-- TODO: rewrite and move elsewhere
+-- | Flavours assigned to items in this game.
+type FlavourMap = M.Map (Kind.Id ItemKind) Flavour
 
 -- | Assigns flavours to item kinds. Assures no flavor is repeated,
 -- except for items with only one permitted flavour.
@@ -61,30 +115,13 @@ dungeonFlavourMap Kind.Ops{ofoldrWithKey} =
 getFlavour :: Kind.Ops ItemKind -> FlavourMap -> Kind.Id ItemKind -> Flavour
 getFlavour Kind.Ops{okind} assocs ik =
   let kind = okind ik
-  in  case iflavour kind of
-        []  -> assert `failure` (assocs, ik, kind)
-        [f] -> f
-        _:_ -> assocs M.! ik
-
-viewItem :: Kind.Ops ItemKind -> Kind.Id ItemKind -> FlavourMap
-         -> (Char, Color.Color)
-viewItem cops@Kind.Ops{osymbol} ik assocs =
-  (osymbol ik, flavourToColor $ getFlavour cops assocs ik)
+  in case iflavour kind of
+    []  -> assert `failure` (assocs, ik, kind)
+    [f] -> f
+    _:_ -> assocs M.! ik
 
 itemLetter :: ItemKind -> Maybe Char
 itemLetter ik = if isymbol ik == '$' then Just '$' else Nothing
-
--- | Generate an item.
-newItem :: Kind.Ops ItemKind -> Int -> Int -> Rnd Item
-newItem cops@Kind.Ops{opick, okind} lvl depth = do
-  ikChosen <- opick "dng" (const True)
-  let kind = okind ikChosen
-  count <- rollQuad lvl depth (icount kind)
-  if count == 0
-    then newItem cops lvl depth  -- Rare item; beware of inifite loops.
-    else do
-      power <- rollQuad lvl depth (ipower kind)
-      return $ Item ikChosen power (itemLetter kind) count
 
 -- | Assigns a letter to an item, for inclusion
 -- in the inventory of a hero. Takes a remembered
@@ -106,11 +143,11 @@ assignLetter r c is =
 cmpLetter :: Char -> Char -> Ordering
 cmpLetter x y = compare (isUpper x, toLower x) (isUpper y, toLower y)
 
-cmpLetter' :: Maybe Char -> Maybe Char -> Ordering
-cmpLetter' Nothing  Nothing   = EQ
-cmpLetter' Nothing  (Just _)  = GT
-cmpLetter' (Just _) Nothing   = LT
-cmpLetter' (Just l) (Just l') = cmpLetter l l'
+cmpLetterMaybe :: Maybe Char -> Maybe Char -> Ordering
+cmpLetterMaybe Nothing  Nothing   = EQ
+cmpLetterMaybe Nothing  (Just _)  = GT
+cmpLetterMaybe (Just _) Nothing   = LT
+cmpLetterMaybe (Just l) (Just l') = cmpLetter l l'
 
 maxBy :: (a -> a -> Ordering) -> a -> a -> a
 maxBy cmp x y = case cmp x y of
@@ -146,8 +183,6 @@ letterLabel (Just c) = c : " - "
 
 -- | Adds an item to a list of items, joining equal items.
 -- Also returns the joined item.
--- TODO: the resulting list can contain items with the same letter.
--- TODO: name [Item] Inventory and have some invariants, e.g. no equal letters.
 joinItem :: Item -> [Item] -> (Item, [Item])
 joinItem i is =
   case findItem (equalItemIdentity i) is of
@@ -160,12 +195,12 @@ joinItem i is =
 -- Takes an equality function (i.e., by letter or ny kind) as an argument.
 removeItemBy :: (Item -> Item -> Bool) -> Item -> [Item] -> [Item]
 removeItemBy eq i = concatMap $ \ x ->
-                      if eq i x
-                      then let remaining = jcount x - jcount i
-                           in if remaining > 0
-                              then [x { jcount = remaining }]
-                              else []
-                      else [x]
+  if eq i x
+  then let remaining = jcount x - jcount i
+       in if remaining > 0
+          then [x { jcount = remaining }]
+          else []
+  else [x]
 
 equalItemIdentity :: Item -> Item -> Bool
 equalItemIdentity i1 i2 = jpower i1 == jpower i2 && jkind i1 == jkind i2
@@ -194,12 +229,8 @@ strongestItem is p =
   let cmp = comparing jpower
       igs = L.filter p is
   in case igs of
-       [] -> Nothing
-       _  -> Just $ L.maximumBy cmp igs
-
-strongestRegen :: Kind.Ops ItemKind -> [Item] -> Maybe Item
-strongestRegen Kind.Ops{okind} bitems =
-  strongestItem bitems $ \ i -> (ieffect $ okind $ jkind i) == Regeneration
+    [] -> Nothing
+    _  -> Just $ L.maximumBy cmp igs
 
 strongestSearch :: Kind.Ops ItemKind -> [Item] -> Maybe Item
 strongestSearch Kind.Ops{okind} bitems =
@@ -210,9 +241,6 @@ strongestSword :: Kind.Ops ItemKind -> [Item] -> Maybe Item
 strongestSword Kind.Ops{osymbol} bitems =
   strongestItem bitems $ \ i -> (osymbol $ jkind i) == ')'
 
-itemPrice :: Kind.Ops ItemKind -> Item -> Int
-itemPrice Kind.Ops{osymbol} i =
-  case osymbol (jkind i) of
-    '$' -> jcount i
-    '*' -> jcount i * 100
-    _ -> 0
+strongestRegen :: Kind.Ops ItemKind -> [Item] -> Maybe Item
+strongestRegen Kind.Ops{okind} bitems =
+  strongestItem bitems $ \ i -> (ieffect $ okind $ jkind i) == Regeneration
