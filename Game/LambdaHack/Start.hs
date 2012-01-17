@@ -138,10 +138,15 @@ stdKeybinding config cmdS cmdD =
       !kmacro = macroKey section
       cmdList = configCommands config
       semList = semanticsCommands cmdList cmdS cmdD
+      moveWidth f = do
+        lxsize <- gets (lxsize . slevel)
+        move $ f lxsize
+      runWidth f = do
+        lxsize <- gets (lxsize . slevel)
+        run (f lxsize, 0)
   in Keybinding
-  { kmove  = move
-  , krun   = \ dir -> run (dir, 0)
-  , kother = M.fromList $
+  { kcmd   = M.fromList $
+             K.moveBinding moveWidth runWidth ++
              heroSelection ++
              semList ++
              [ -- debug commands, TODO: access them from a common menu or prefix

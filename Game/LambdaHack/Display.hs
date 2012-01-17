@@ -5,7 +5,7 @@ module Game.LambdaHack.Display
   ( -- * Re-exported frontend
     FrontendSession, startup, shutdown, frontendName
     -- * Derived operations
-  , ColorMode(..), displayLevel, nextCommandD
+  , ColorMode(..), displayLevel, nextEvent
   ) where
 
 -- Wrapper for selected Display frontend.
@@ -46,16 +46,10 @@ import qualified Game.LambdaHack.Keys as K
 import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Kind as Kind
 
--- | Next input event translated to a canonical form.
-nextCommandD :: FrontendSession -> IO K.Key
-nextCommandD fs = do
-  e <- nextEvent fs
-  return $ K.canonMoveKey e
-
 -- | Waits for a space or return or escape.
 getConfirmD :: FrontendSession -> IO Bool
 getConfirmD fs = do
-  e <- nextCommandD fs
+  e <- nextEvent fs
   case e of
     K.Char ' ' -> return True
     K.Char '?' -> return True

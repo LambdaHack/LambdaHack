@@ -5,6 +5,7 @@ import Control.Monad.State hiding (State, state)
 import qualified Data.List as L
 import qualified Data.Ord as Ord
 import qualified Data.IntMap as IM
+import qualified Data.Map as M
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
@@ -19,6 +20,7 @@ import Game.LambdaHack.State
 import Game.LambdaHack.Strategy
 import Game.LambdaHack.StrategyState
 import Game.LambdaHack.Running
+import qualified Game.LambdaHack.Keys as K
 
 -- One turn proceeds through the following functions:
 --
@@ -153,14 +155,16 @@ handlePlayer = do
 -- | Determine and process the next player command.
 playerCommand :: Action ()
 playerCommand = do
-  lxsize <- gets (lxsize . slevel)
   displayAll -- draw the current surroundings
   history    -- update the message history and reset current message
   tryRepeatedlyWith stopRunning $  -- on abort, just ask for a new command
     ifRunning continueRun $ do
       k <- session nextCommand
       session (\ Session{skeyb} ->
-                Keybinding.handleKey lxsize skeyb k abortWith)
+                case M.lookup k (Keybinding.kcmd skeyb) of
+                  Just (_, c)  -> c
+                  Nothing ->
+                    abortWith $ "unknown command (" ++ K.showKey k ++ ")")
 
 -- Design thoughts (in order to get rid or partially rid of the somewhat
 -- convoluted design we have): We have three kinds of commands.

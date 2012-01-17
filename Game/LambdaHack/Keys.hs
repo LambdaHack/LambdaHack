@@ -1,10 +1,8 @@
 module Game.LambdaHack.Keys where
 
 import Prelude hiding (Left, Right)
-import qualified Data.Map as M
 import qualified Data.List as L
 import Data.Char
-import Data.Maybe
 
 import Game.LambdaHack.Geometry
 import Game.LambdaHack.Dir
@@ -51,38 +49,36 @@ showKey (Unknown s) = s
 instance Show Key where
   show = showKey
 
-dirChars :: [Char]
-dirChars = ['y', 'k', 'u', 'l', 'n', 'j', 'b', 'h']
+dirViChar :: [Char]
+dirViChar = ['y', 'k', 'u', 'l', 'n', 'j', 'b', 'h']
 
-dirKeys :: [Key]
-dirKeys = map Char dirChars
+dirViMoveKey :: [Key]
+dirViMoveKey = map Char dirViChar
 
-dirUKeys :: [Key]
-dirUKeys = map (Char . toUpper) dirChars
+dirViRunKey :: [Key]
+dirViRunKey = map (Char . toUpper) dirViChar
 
--- | Maps a keypad movement key to the canonical form.
--- Hard-coded not to bloat config files.
-canonMoveKey :: Key -> Key
-canonMoveKey =
-  let assocs = (Begin, Char '.') : (KP '5', Char '.') :
-        zip [Home, Up, PgUp, Right, PgDn, Down, End, Left] dirKeys ++
-        zip (map KP ['7', '8', '9', '6', '3', '2', '1', '4']) dirUKeys
-      m = M.fromList assocs
-  in \ e -> fromMaybe e (M.lookup e m)
+dirMoveKey :: [Key]
+dirMoveKey = [Home, Up, PgUp, Right, PgDn, Down, End, Left]
 
--- | Configurable event handler for the direction keys. Is used to
---   handle player moves, but can also be used for directed commands
---   such as close door.
+dirRunKey :: [Key]
+dirRunKey = map KP ['7', '8', '9', '6', '3', '2', '1', '4']
+
+-- | Configurable event handler for the direction keys.
+-- Used for directed commands such as close door.
 handleDirection :: X -> Key -> (Dir -> a) -> a -> a
 handleDirection lxsize e h k =
-  let assocs = zip dirKeys (moves lxsize)
+  let mvs = moves lxsize
+      assocs = zip dirViMoveKey mvs ++ zip dirMoveKey mvs
   in maybe k h (L.lookup e assocs)
 
--- | Configurable event handler for the upper direction keys.
-handleUDirection :: X -> Key -> (Dir -> a) -> a -> a
-handleUDirection lxsize e h k =
-  let assocs = zip dirUKeys (moves lxsize)
-  in maybe k h (L.lookup e assocs)
+moveBinding :: ((X -> Dir) -> a) -> ((X -> Dir) -> a) -> [(Key, (String, a))]
+moveBinding move run =
+  let assign f (key, dir) = (key, ("", f dir))
+  in map (assign move) (zip dirViMoveKey movesWidth) ++
+     map (assign move) (zip dirMoveKey movesWidth) ++
+     map (assign run) (zip dirViRunKey movesWidth) ++
+     map (assign run) (zip dirRunKey movesWidth)
 
 -- | Translate key from a GTK string description to our internal key type.
 -- To be used, in particular, for the macros in the config file.

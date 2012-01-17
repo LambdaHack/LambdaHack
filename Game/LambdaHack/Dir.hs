@@ -1,6 +1,6 @@
 -- | Geografical directions implemented in an efficient way.
 module Game.LambdaHack.Dir
-  ( Dir, dirDistSq, diagonal, neg, moves, shift, towards
+  ( Dir, dirDistSq, diagonal, neg, moves, movesWidth, shift, towards
   ) where
 
 import Data.Binary
@@ -55,6 +55,11 @@ neg (Dir dir) = Dir (-dir)
 -- | Directions of all unit moves, clockwise, starting north-west.
 moves :: X -> [Dir]
 moves lxsize = map (toDir lxsize) movesXY
+
+-- | Directions of all unit moves, clockwise, starting north-west,
+-- parameterized by level width.
+movesWidth :: [X -> Dir]
+movesWidth = map (flip toDir) movesXY
 
 -- | Move one square in the given direction.
 --

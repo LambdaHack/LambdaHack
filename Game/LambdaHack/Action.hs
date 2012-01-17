@@ -206,13 +206,13 @@ abortIfWith False _  = abortWith ""
 
 nextCommand :: Session -> Action K.Key
 nextCommand Session{sfs, skeyb} = do
-  nc <- liftIO $ nextCommandD sfs
+  nc <- liftIO $ nextEvent sfs
   return $ fromMaybe nc $ M.lookup nc $ kmacro skeyb
 
 -- | A yes-no confirmation.
 getYesNo :: Session -> Action Bool
 getYesNo sess@Session{sfs} = do
-  e <- liftIO $ nextCommandD sfs
+  e <- liftIO $ nextEvent sfs
   case e of
     K.Char 'y' -> return True
     K.Char 'n' -> return False
@@ -226,7 +226,7 @@ getOptionalConfirm :: (Bool -> Action a)
                     -> Session
                     -> Action a
 getOptionalConfirm h k Session{sfs} = do
-  e <- liftIO $ nextCommandD sfs
+  e <- liftIO $ nextEvent sfs
   case e of
     K.Char ' ' -> h True
     K.Char '?' -> h True
