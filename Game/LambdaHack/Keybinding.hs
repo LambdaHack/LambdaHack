@@ -1,3 +1,4 @@
+-- | Binding of keys to commands, macros, command help.
 module Game.LambdaHack.Keybinding
   ( Keybinding(..), macroKey, keyHelp,
   ) where
@@ -9,17 +10,17 @@ import qualified Data.Set as S
 import Game.LambdaHack.Utils.Assert
 import qualified Game.LambdaHack.Keys as K
 
+-- | Bindings and other information about player commands.
 data Keybinding a = Keybinding
-  { kcmd   :: M.Map K.Key (String, a)
-  , kmacro :: M.Map K.Key K.Key
-  , kmajor :: [K.Key]
+  { kcmd   :: M.Map K.Key (String, a)  -- ^ binding to descriptions and cmds
+  , kmacro :: M.Map K.Key K.Key        -- ^ macros map
+  , kmajor :: [K.Key]  -- ^ major, most often used, commands
   , ktimed :: [K.Key]  -- ^ commands that take time, except movement commands
   }
 
--- | Maps a key to the canonical key for the command it denotes.
--- Takes into account any macros from a config file.
--- Macros cannot depend on each other.
--- This has to be fully evaluated to catch errors in macro definitions early.
+-- | Produce the macro map from a macro association list
+-- taken from the config file. Macros cannot depend on each other.
+-- The map is fully evaluated to catch errors in macro definitions early.
 macroKey :: [(String, String)] -> M.Map K.Key K.Key
 macroKey section =
   let trans k = case K.keyTranslate k of
@@ -39,10 +40,11 @@ coImage kmacro k =
      then []
      else k : [ from | (from, to) <- M.assocs kmacro, to == k ]
 
-keyHelp ::  Keybinding a -> [String]
+-- | Produce a set of help screens from the key bindings.
+keyHelp :: Keybinding a -> [String]
 keyHelp Keybinding{kcmd, kmacro, kmajor, ktimed} =
   let
-    movKs   =
+    movBlurb =
       [ "You move throughout the level using the numerical keypad or"
       , "the vi text editor keys (also known as \"Rogue-like keys\")."
       , ""
@@ -61,14 +63,14 @@ keyHelp Keybinding{kcmd, kmacro, kmajor, ktimed} =
       , "Press space to see the next page, with the list of major commands."
       , ""
       ]
-    majorKs   =
+    majorBlurb =
       [ ""
       , "Commands marked by * take hero time and are blocked on remote levels."
       , ""
       , "Press space to see the next page, with the list of minor commands."
       , ""
       ]
-    minorKs   =
+    minorBlurb =
       [ ""
       , "For more playing instructions see file PLAYING.md."
       , ""
@@ -79,18 +81,16 @@ keyHelp Keybinding{kcmd, kmacro, kmajor, ktimed} =
                                ++ h ++ replicate ((35 - length h) `max` 1) ' '
     fmts s  = replicate 2  ' ' ++ s ++ replicate ((71 - length s) `max` 1) ' '
     blank   = fmt "" ""
-    mov     = map fmts movKs
-    major   = map fmts majorKs
-    minor   = map fmts minorKs
+    mov     = map fmts movBlurb
+    major   = map fmts majorBlurb
+    minor   = map fmts minorBlurb
     keyCaption = fmt "keys" "command"
     disp k  = L.concatMap show $ coImage kmacro k
-    ti k = if k `elem` ktimed then "*" else ""
+    ti k    = if k `elem` ktimed then "*" else ""
     keys l  = [ fmt (disp k) (h ++ ti k) | (k, (h, _)) <- l, h /= "" ]
-    keysAll = M.toAscList kcmd
-    keysMajor = keys [ (k, c) | (k, c) <- keysAll, k `elem` kmajor]
-    keysMinor = keys [ (k, c) | (k, c) <- keysAll, k `notElem` kmajor]
+    (kcMajor, kcMinor) = L.partition ((`elem` kmajor) . fst) (M.toAscList kcmd)
   in
     L.map unlines [ [blank] ++ mov
-                  , [blank] ++ [keyCaption] ++ keysMajor ++ major
-                  , [blank] ++ [keyCaption] ++ keysMinor ++ minor
+                  , [blank] ++ [keyCaption] ++ keys kcMajor ++ major
+                  , [blank] ++ [keyCaption] ++ keys kcMinor ++ minor
                   ]
