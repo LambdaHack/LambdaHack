@@ -1,6 +1,9 @@
+-- | General content types and operations.
 {-# LANGUAGE RankNTypes, ScopedTypeVariables #-}
 module Game.LambdaHack.Kind
-  ( Id, Ops(..), COps(..), createOps
+  ( -- * General content types
+    Id, Ops(..), COps(..), createOps
+    -- * Arrays of content identifiers
   , Array, (!), (//), listArray, array, bounds
   ) where
 
@@ -23,23 +26,31 @@ import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Content.Content
 import Game.LambdaHack.Random
 
-newtype Id a = Id Word8 deriving (Show, Eq, Ord, Ix.Ix)
+-- | Content identifiers of the content of type @c@.
+newtype Id c = Id Word8 deriving (Show, Eq, Ord, Ix.Ix)
 
-instance Binary (Id a) where
+instance Binary (Id c) where
   put (Id i) = put i
   get = fmap Id get
 
+-- | Content operations for the content of type @a@.
 data Ops a = Ops
-  { osymbol :: Id a -> Char
-  , oname :: Id a -> String
-  , okind :: Id a -> a
-  , ouniqGroup :: String -> Id a
+  { osymbol :: Id a -> Char       -- ^ the symbol of a content element at id
+  , oname :: Id a -> String       -- ^ the name of a content element at id
+  , okind :: Id a -> a            -- ^ the content element at given id
+  , ouniqGroup :: String -> Id a  -- ^ the id of the unique member of
+                                  -- a singleton content group
   , opick :: String -> (a -> Bool) -> Rnd (Id a)
+                                  -- ^ pick a random id belonging to a group
+                                  -- and satisfying a predicate
   , ofoldrWithKey :: forall b. (Id a -> a -> b -> b) -> b -> b
-  , obounds :: (Id a, Id a)
-  , ospeedup :: [Id a -> Bool]  -- TODO: switch list to tuple via a type family?
+                                  -- ^ fold over all content elements of @a@
+  , obounds :: (Id a, Id a)       -- ^ bounds od identifiers of all content @a@
+  , ospeedup :: [Id a -> Bool]    -- ^ tabulated predicates over content
   }
 
+-- | Create content operations for type @a@ from definition of content
+-- of type @a@.
 createOps :: forall a. Show a => CDefs a -> Ops a
 createOps CDefs{getSymbol, getName, getFreq, content, validate} =
   let kindAssocs :: [(Word.Word8, a)]
@@ -73,8 +84,10 @@ createOps CDefs{getSymbol, getName, getFreq, content, validate} =
                       in ((Id (toEnum i1), a1), (Id (toEnum i2), a2))
          in (Id 0, (fst . snd) limits)
        , ospeedup = []  -- the default, override elsewhere
+                        -- TODO: switch the list to tuple via a type family?
        }
 
+-- | Operations for all content types, gathered together. See @Content/@.
 data COps = COps
   { coactor :: Ops ActorKind
   , cocave  :: Ops CaveKind
@@ -87,6 +100,9 @@ data COps = COps
 instance Show COps where
   show _ = "Game content."
 
+-- | Arrays, indexed by @i@ of content identifiers pointing to
+-- the content type @c@, where the identifiers are represented as @Word8@
+-- (and so content of type @c@ can have at most 256 elements).
 newtype Array i c = Array (A.UArray i Word.Word8) deriving Show
 
 -- TODO: save/restore is still too slow, but we are already past
@@ -96,17 +112,22 @@ instance (Ix.Ix i, Binary i) => Binary (Array i c) where
   put (Array a) = put a
   get = fmap Array get
 
+-- | Array lookup.
 (!) :: Ix.Ix i => Array i c -> i -> Id c
 (!) (Array a) i = Id $ a A.! i
 
+-- | Construct an array updated with the association list.
 (//) :: Ix.Ix i => Array i c -> [(i, Id c)] -> Array i c
 (//) (Array a) l = Array $ a A.// [(i, e) | (i, Id e) <- l]
 
+-- | Create an array from a list of elements.
 listArray :: Ix.Ix i => (i, i) -> [Id c] -> Array i c
 listArray bds l = Array $ A.listArray bds [e | Id e <- l]
 
+-- | Create an array frpm an association list.
 array :: Ix.Ix i => (i, i) -> [(i, Id c)] -> Array i c
 array bds l = Array $ A.array bds [(i, e) | (i, Id e) <- l]
 
+-- | Array bounds.
 bounds :: Ix.Ix i => Array i c -> (i, i)
 bounds (Array a) = A.bounds a

@@ -1,4 +1,7 @@
-module Game.LambdaHack.Keys where
+-- | Frontend-independent keyboard input operations.
+module Game.LambdaHack.Keys
+  ( Key(..), handleDirection, moveBinding, keyTranslate
+  ) where
 
 import Prelude hiding (Left, Right)
 import qualified Data.List as L
@@ -72,6 +75,7 @@ handleDirection lxsize e h k =
       assocs = zip dirViMoveKey mvs ++ zip dirMoveKey mvs
   in maybe k h (L.lookup e assocs)
 
+-- | Binding of both sets of movement keys.
 moveBinding :: ((X -> Dir) -> a) -> ((X -> Dir) -> a) -> [(Key, (String, a))]
 moveBinding move run =
   let assign f (key, dir) = (key, ("", f dir))
@@ -81,7 +85,8 @@ moveBinding move run =
      map (assign run) (zip dirRunKey movesWidth)
 
 -- | Translate key from a GTK string description to our internal key type.
--- To be used, in particular, for the macros in the config file.
+-- To be used, in particular, for the command bindings and macros
+-- in the config file.
 keyTranslate :: String -> Key
 keyTranslate "less"          = Char '<'
 keyTranslate "greater"       = Char '>'

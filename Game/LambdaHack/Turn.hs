@@ -20,7 +20,6 @@ import Game.LambdaHack.State
 import Game.LambdaHack.Strategy
 import Game.LambdaHack.StrategyState
 import Game.LambdaHack.Running
-import qualified Game.LambdaHack.Keys as K
 
 -- One turn proceeds through the following functions:
 --
@@ -164,7 +163,7 @@ playerCommand = do
                 case M.lookup k (Keybinding.kcmd skeyb) of
                   Just (_, c)  -> c
                   Nothing ->
-                    abortWith $ "unknown command (" ++ K.showKey k ++ ")")
+                    abortWith $ "unknown command (" ++ show k ++ ")")
 
 -- Design thoughts (in order to get rid or partially rid of the somewhat
 -- convoluted design we have): We have three kinds of commands.
