@@ -93,29 +93,29 @@ cmdSemantics cmd = case cmd of
   Wait ->      playerAdvanceTime
 
 -- | Description of player commands.
-cmdDescription :: Cmd -> Maybe String
+cmdDescription :: Cmd -> String
 cmdDescription cmd = case cmd of
-  Apply{..}       -> Just $ verb ++ " " ++ addIndefinite object
-  Project{..}     -> Just $ verb ++ " " ++ addIndefinite object
-  TriggerDir{..}  -> Just $ verb ++ " " ++ addIndefinite object
-  TriggerTile{..} -> Just $ verb ++ " " ++ addIndefinite object
-  Pickup ->    Just "get an object"
-  Drop ->      Just "drop an object"
-  Inventory -> Just "display inventory"
-  TgtFloor ->  Just "target location"
-  TgtEnemy ->  Just "target monster"
-  TgtAscend k | k == 1  -> Just $ "target next shallower level"
-  TgtAscend k | k >= 2  -> Just $ "target " ++ show k    ++ " levels shallower"
-  TgtAscend k | k == -1 -> Just $ "target next deeper level"
-  TgtAscend k | k <= -2 -> Just $ "target " ++ show (-k) ++ " levels deeper"
+  Apply{..}       -> verb ++ " " ++ addIndefinite object
+  Project{..}     -> verb ++ " " ++ addIndefinite object
+  TriggerDir{..}  -> verb ++ " " ++ addIndefinite object
+  TriggerTile{..} -> verb ++ " " ++ addIndefinite object
+  Pickup ->    "get an object"
+  Drop ->      "drop an object"
+  Inventory -> "display inventory"
+  TgtFloor ->  "target location"
+  TgtEnemy ->  "target monster"
+  TgtAscend k | k == 1  -> "target next shallower level"
+  TgtAscend k | k >= 2  -> "target " ++ show k    ++ " levels shallower"
+  TgtAscend k | k == -1 -> "target next deeper level"
+  TgtAscend k | k <= -2 -> "target " ++ show (-k) ++ " levels deeper"
   TgtAscend _ -> error $ "void level change in targeting mode in config file"
-  GameSave ->  Just "save and exit the game"
-  GameQuit ->  Just "quit without saving"
-  Cancel ->    Just "cancel action"
-  Accept ->    Just "accept choice"
-  History ->   Just "display previous messages"
-  CfgDump ->   Just "dump current configuration"
-  HeroCycle -> Just "cycle among heroes on level"
-  Version ->   Just "display game version"
-  Help ->      Just "display help"
-  Wait ->      Nothing
+  GameSave ->  "save and exit the game"
+  GameQuit ->  "quit without saving"
+  Cancel ->    "cancel action"
+  Accept ->    "accept choice"
+  History ->   "display previous messages"
+  CfgDump ->   "dump current configuration"
+  HeroCycle -> "cycle among heroes on level"
+  Version ->   "display game version"
+  Help ->      "display help"
+  Wait ->      ""

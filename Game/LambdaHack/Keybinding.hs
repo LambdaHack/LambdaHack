@@ -1,4 +1,6 @@
-module Game.LambdaHack.Keybinding where
+module Game.LambdaHack.Keybinding
+  ( Keybinding(..), handleKey, keyHelp, macroKey
+  ) where
 
 import qualified Data.Map as M
 import qualified Data.List as L
@@ -9,14 +11,10 @@ import Game.LambdaHack.Geometry
 import qualified Game.LambdaHack.Keys as K
 import Game.LambdaHack.Dir
 
-data Described a = Described { chelp :: String, caction :: a }
-                 | Undescribed { caction :: a }
-type DirCommand a = Described (Dir -> a)
-
 data Keybinding a = Keybinding
-  { kdir   :: DirCommand a
-  , kudir  :: DirCommand a
-  , kother :: M.Map K.Key (Described a)
+  { kmove  :: Dir -> a
+  , krun   :: Dir -> a
+  , kother :: M.Map K.Key (String, a)
   , kmacro :: M.Map K.Key K.Key
   , kmajor :: [K.Key]
   , ktimed :: [K.Key]
@@ -24,10 +22,10 @@ data Keybinding a = Keybinding
 
 handleKey :: X -> Keybinding a -> K.Key -> (String -> a) -> a
 handleKey lxsize kb k abortWith=
-  K.handleDirection lxsize k (caction $ kdir kb) $
-    K.handleUDirection lxsize k (caction $ kudir kb) $
+  K.handleDirection lxsize k (kmove kb) $
+    K.handleUDirection lxsize k (krun kb) $
       case M.lookup k (kother kb) of
-        Just c  -> caction c
+        Just (_, c)  -> c
         Nothing -> abortWith $ "unknown command (" ++ K.showKey k ++ ")"
 
 coImage :: M.Map K.Key K.Key -> K.Key -> [K.Key]
@@ -81,11 +79,9 @@ keyHelp Keybinding{kother, kmacro, kmajor, ktimed} =
     major   = map fmts majorKs
     minor   = map fmts minorKs
     keyCaption = fmt "keys" "command"
---    footer  =
---      fmts "(To search, open or attack, bump into walls, doors or monsters.)"
     disp k  = L.concatMap show $ coImage kmacro k
     ti k = if k `elem` ktimed then "*" else ""
-    keys l  = [ fmt (disp k) (h ++ ti k) | (k, Described h _) <- l ]
+    keys l  = [ fmt (disp k) (h ++ ti k) | (k, (h, _)) <- l, h /= "" ]
     keysAll = M.toAscList kother
     keysMajor = keys [ (k, c) | (k, c) <- keysAll, k `elem` kmajor]
     keysMinor = keys [ (k, c) | (k, c) <- keysAll, k `notElem` kmajor]
@@ -94,7 +90,6 @@ keyHelp Keybinding{kother, kmacro, kmajor, ktimed} =
                   , [blank] ++ [keyCaption] ++ keysMajor ++ major
                   , [blank] ++ [keyCaption] ++ keysMinor ++ minor
                   ]
---             [blank, footer, blank])
 
 -- | Maps a key to the canonical key for the command it denotes.
 -- Takes into account the keypad and any macros from a config file.

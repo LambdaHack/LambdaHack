@@ -10,7 +10,7 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
 import qualified Game.LambdaHack.Config as Config
 import Game.LambdaHack.EffectAction
-import Game.LambdaHack.Keybinding
+import qualified Game.LambdaHack.Keybinding as Keybinding
 import Game.LambdaHack.Level
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
@@ -159,7 +159,8 @@ playerCommand = do
   tryRepeatedlyWith stopRunning $  -- on abort, just ask for a new command
     ifRunning continueRun $ do
       k <- session nextCommand
-      session (\ Session{skeyb} -> handleKey lxsize skeyb k abortWith)
+      session (\ Session{skeyb} ->
+                Keybinding.handleKey lxsize skeyb k abortWith)
 
 -- Design thoughts (in order to get rid or partially rid of the somewhat
 -- convoluted design we have): We have three kinds of commands.

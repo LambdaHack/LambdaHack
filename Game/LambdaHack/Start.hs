@@ -32,7 +32,6 @@ import Game.LambdaHack.EffectAction
 import Game.LambdaHack.Keybinding
 import qualified Game.LambdaHack.Keys as K
 import Game.LambdaHack.Actor
-import Game.LambdaHack.Dir
 import Game.LambdaHack.Command
 
 speedup :: Kind.Ops TileKind -> [Kind.Id TileKind -> Bool]
@@ -103,16 +102,14 @@ configCommands config =
 
 semanticsCommands :: [(K.Key, Cmd)]
                   -> (Cmd -> Action ())
-                  -> (Cmd -> Maybe String)
-                  -> [(K.Key, Described (Action ()))]
+                  -> (Cmd -> String)
+                  -> [(K.Key, (String, Action ()))]
 semanticsCommands cmdList cmdS cmdD =
   let mkDescribed cmd =
         let semantics = if timedCmd cmd
                         then checkCursor $ cmdS cmd
                         else cmdS cmd
-        in case cmdD cmd of
-          Nothing -> Undescribed semantics
-          Just d  -> Described d semantics
+        in (cmdD cmd, semantics)
       mkCommand (key, def) = (key, mkDescribed def)
   in L.map mkCommand cmdList
 
@@ -126,20 +123,15 @@ checkCursor h = do
     then h
     else abortWith "this command does not work on remote levels"
 
-moveDirCommand, runDirCommand :: Described (Dir -> Action ())
-moveDirCommand   = Described "move in direction" move
-runDirCommand    = Described "run in direction"  (\ dir -> run (dir, 0))
-
-heroSelection :: [(K.Key, Described (Action ()))]
+heroSelection :: [(K.Key, (String, Action ()))]
 heroSelection =
   let heroSelect k = (K.Char (Char.intToDigit k),
-                      Undescribed $
-                      selectPlayer (AHero k) >> return ())
+                      ("", selectPlayer (AHero k) >> return ()))
   in fmap heroSelect [0..9]
 
 stdKeybinding :: Config.CP
               -> (Cmd -> Action ())
-              -> (Cmd -> Maybe String)
+              -> (Cmd -> String)
               -> Keybinding (Action ())
 stdKeybinding config cmdS cmdD =
   let section = Config.getItems config "macros"
@@ -147,15 +139,15 @@ stdKeybinding config cmdS cmdD =
       cmdList = configCommands config
       semList = semanticsCommands cmdList cmdS cmdD
   in Keybinding
-  { kdir   = moveDirCommand
-  , kudir  = runDirCommand
+  { kmove  = move
+  , krun   = \ dir -> run (dir, 0)
   , kother = M.fromList $
              heroSelection ++
              semList ++
              [ -- debug commands, TODO: access them from a common menu or prefix
-               (K.Char 'R', Undescribed $ modify toggleVision),
-               (K.Char 'O', Undescribed $ modify toggleOmniscient),
-               (K.Char 'I', Undescribed $ gets (lmeta . slevel) >>= abortWith)
+               (K.Char 'R', ("", modify toggleVision)),
+               (K.Char 'O', ("", modify toggleOmniscient)),
+               (K.Char 'I', ("", gets (lmeta . slevel) >>= abortWith))
              ]
   , kmacro
   , kmajor = L.map fst $ L.filter (majorCmd . snd) cmdList
