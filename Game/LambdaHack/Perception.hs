@@ -116,7 +116,7 @@ computeVisible cops (PerceptionReachable reachable)
       litDirectly loc = Tile.isLit cops (lvl `at` loc) || loc `IS.member` lights
       l_and_R loc = litDirectly loc && loc `IS.member` reachable
       lit loc =
-        let srds = surroundings lxsize lysize loc
+        let srds = vicinity lxsize lysize loc
         in litDirectly loc || L.any l_and_R srds
   in PerceptionVisible $ IS.filter lit reachable
 

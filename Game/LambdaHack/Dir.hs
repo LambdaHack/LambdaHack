@@ -41,7 +41,7 @@ fromDir lxsize (Dir dir) =
 dirDistSq :: X -> Dir -> Dir -> Int
 dirDistSq lxsize dir0 dir1
   | (x0, y0) <- fromDir lxsize dir0, (x1, y1) <- fromDir lxsize dir1 =
-  euclidLenSq ((y1 - y0), (x1 - x0))
+  euclidDistSq ((y1 - y0), (x1 - x0))
 
 -- | Checks whether a direction is diagonal, as opposed to cardinal.
 diagonal :: X -> Dir -> Bool
@@ -70,9 +70,10 @@ shift loc (Dir dir) = loc + dir
 -- TODO: Perhaps produce all acceptable directions and let AI choose.
 -- That would also eliminate the Doubles.
 -- | Given two distinct locations, determine the direction in which one should
--- move from the first in order to get closer to the second. Ignores obstacles.
--- Of several equally good directions in the metric with cost 1 diagonal moves,
--- if picks the one that visually, in the euclidean metric, would be the best.
+-- move from the first in order to get closer to the second.
+-- Ignores obstacles. Of several equally good directions
+-- (in the metric where diagonal moves cost 1) it picks the one that visually
+-- (in the euclidean metric) would be the best.
 towards :: X -> Loc -> Loc -> Dir
 towards lxsize loc0 loc1
   | (x0, y0) <- fromLoc lxsize loc0, (x1, y1) <- fromLoc lxsize loc1 =

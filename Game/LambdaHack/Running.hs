@@ -89,8 +89,8 @@ runDisturbance locLast distLast msg hs ms per locHere
   let msgShown  = not (L.null msg)
       mslocs    = IS.delete locHere $ IS.fromList (L.map bloc (IM.elems ms))
       enemySeen = not (IS.null (mslocs `IS.intersection` totalVisible per))
-      surrLast  = locLast : surroundings lxsize lysize locLast
-      surrHere  = locHere : surroundings lxsize lysize locHere
+      surrLast  = locLast : vicinity lxsize lysize locLast
+      surrHere  = locHere : vicinity lxsize lysize locHere
       locThere  = locHere `shift` dirNew
       heroThere = locThere `elem` L.map bloc (IM.elems hs)
       -- Stop if you touch any individual tile with these propereties

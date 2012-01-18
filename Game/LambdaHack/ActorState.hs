@@ -176,7 +176,7 @@ nearbyFreeLoc cotile origin state =
   let lvl@Level{lxsize, lysize} = slevel state
       hs = levelHeroList state
       ms = levelMonsterList state
-      locs = origin : L.nub (concatMap (surroundings lxsize lysize) locs)
+      locs = origin : L.nub (concatMap (vicinity lxsize lysize) locs)
       good loc = Tile.hasFeature cotile F.Walkable (lvl `at` loc)
                  && loc `notElem` L.map bloc (hs ++ ms)
   in fromMaybe (assert `failure` "too crowded map") $ L.find good locs

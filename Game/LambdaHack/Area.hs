@@ -1,7 +1,7 @@
 -- | Rectangular areas of levels and their operations.
 module Game.LambdaHack.Area
-  ( Area, neighbors, inside, fromTo, normalize, normalizeArea, grid
-  , validArea, trivialArea, expand
+  ( Area, vicinityXY, vicinityCardinalXY, inside, fromTo
+  , normalize, normalizeArea, grid, validArea, trivialArea, expand
   ) where
 
 import qualified Data.List as L
@@ -13,13 +13,18 @@ import Game.LambdaHack.Utils.Assert
 type Area = (X, Y, X, Y)
 
 -- | All (8 at most) closest neighbours of a point within an area.
-neighbors :: Area      -- ^ limit the search to this area
-          -> (X, Y)    -- ^ location to find neighbors of
-          -> [(X, Y)]
-neighbors area xy =
-  let cs = [ xy `shiftXY` (dx, dy)
-           | dy <- [-1..1], dx <- [-1..1], (dx + dy) `mod` 2 == 1 ]
-  in L.filter (`inside` area) cs
+vicinityXY :: Area      -- ^ limit the search to this area
+           -> (X, Y)    -- ^ location to find neighbors of
+           -> [(X, Y)]
+vicinityXY area xy =
+  [ res | dxy <- movesXY, let res = shiftXY xy dxy, inside res area ]
+
+-- | All (4 at most) cardinal direction neighbours of a point within an area.
+vicinityCardinalXY :: Area  -- ^ limit the search to this area
+           -> (X, Y)        -- ^ location to find neighbors of
+           -> [(X, Y)]
+vicinityCardinalXY area xy =
+  [ res | dxy <- movesCardinalXY, let res = shiftXY xy dxy, inside res area ]
 
 -- | Checks that a point belongs to an area.
 inside :: (X, Y) -> Area -> Bool

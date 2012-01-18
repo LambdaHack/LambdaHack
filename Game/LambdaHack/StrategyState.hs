@@ -116,7 +116,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   lootHere x     = not $ L.null $ lvl `atI` x
   onlyLoot       = onlyMoves lootHere me
   interestHere x = let t = lvl `at` x
-                       ts = map (lvl `at`) $ surroundings lxsize lysize x
+                       ts = map (lvl `at`) $ vicinity lxsize lysize x
                    in Tile.hasFeature cotile F.Exit t ||
                       -- Lit indirectly. E.g., a room entrance.
                       (not (Tile.hasFeature cotile F.Lit t) &&

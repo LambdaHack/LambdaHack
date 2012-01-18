@@ -66,7 +66,7 @@ connectGrid' (nx, ny) unconnected candidates acc
   | otherwise = do
       c <- oneOf (S.toList candidates)
       -- potential new candidates:
-      let ns = S.fromList $ neighbors (0, 0, nx-1, ny-1) c
+      let ns = S.fromList $ vicinityCardinalXY (0, 0, nx-1, ny-1) c
           nu = S.delete c unconnected  -- new unconnected
           -- (new candidates, potential connections):
           (nc, ds) = S.partition (`S.member` nu) ns
