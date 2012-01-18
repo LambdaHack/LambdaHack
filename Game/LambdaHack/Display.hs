@@ -35,6 +35,7 @@ import Game.LambdaHack.Loc
 import Game.LambdaHack.Level
 import Game.LambdaHack.Effect
 import Game.LambdaHack.Perception
+import Game.LambdaHack.Tile
 import Game.LambdaHack.Actor as Actor
 import Game.LambdaHack.ActorState
 import qualified Game.LambdaHack.Dungeon as Dungeon

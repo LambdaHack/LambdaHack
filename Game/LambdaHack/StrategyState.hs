@@ -25,7 +25,6 @@ import qualified Game.LambdaHack.Effect as Effect
 import qualified Game.LambdaHack.Tile as Tile
 import qualified Game.LambdaHack.Kind as Kind
 import qualified Game.LambdaHack.Feature as F
-import Game.LambdaHack.Content.TileKind as TileKind
 
 {-
 Monster movement
@@ -130,7 +129,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   -- Monsters don't see doors more secret than that. Enforced when actually
   -- opening doors, too, so that monsters don't cheat. TODO: remove the code
   -- duplication, though.
-  openPower      = TileKind.SecretStrength $
+  openPower      = Tile.SecretStrength $
                    case strongestSearch coitem items of
                      Just i  -> aiq mk + jpower i
                      Nothing -> aiq mk
@@ -143,8 +142,8 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
     L.map fst $
     L.sortBy (\ (_, s1) (_, s2) -> compare s2 s1) $
     L.filter (\ (_, s) -> s > 0) $
-    L.map (\ x -> let sm = smelltime $ IM.findWithDefault
-                                         (SmellTime 0) (me `shift` x) nsmap
+    L.map (\ x -> let sm = Tile.smelltime $ IM.findWithDefault
+                             (Tile.SmellTime 0) (me `shift` x) nsmap
                   in (x, (sm - time) `max` 0)) (moves lxsize)
   fromDir allowAttacks d = dirToAction actor newTgt allowAttacks `liftM` d
 

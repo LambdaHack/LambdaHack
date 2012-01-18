@@ -1,9 +1,8 @@
 module Game.LambdaHack.Level
-  ( Party, PartyItem, SmellTime(..), SmellMap, SecretMap
-  , ItemMap, TileMap, Level(..)
+  ( Party, PartyItem, SmellMap, SecretMap, ItemMap, TileMap, Level(..)
   , updateHeroes, updateHeroItem, updateMonsters, updateMonItem
   , updateLMap, updateLRMap, updateIMap
-  , updateSmell , at, rememberAt, atI, rememberAtI
+  , updateSmell, at, rememberAt, atI, rememberAtI
   , accessible, openable, findLoc, findLocTry, dropItemsAt
   , stdRuleset
   ) where
@@ -20,7 +19,7 @@ import Game.LambdaHack.Item
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Random
-import qualified Game.LambdaHack.Tile as Tile
+import Game.LambdaHack.Tile
 import qualified Game.LambdaHack.Feature as F
 import qualified Game.LambdaHack.Kind as Kind
 
@@ -28,10 +27,6 @@ type Party = IM.IntMap Actor
 
 type PartyItem = IM.IntMap [Item]
 
-newtype SmellTime = SmellTime{smelltime :: Time} deriving Show
-instance Binary SmellTime where
-  put = put . smelltime
-  get = fmap SmellTime get
 type SmellMap = IM.IntMap SmellTime
 
 type SecretMap = IM.IntMap SecretStrength
@@ -143,8 +138,8 @@ accessible Kind.COps{ cotile=Kind.Ops{okind=okind}, corule}
 openable :: Kind.Ops TileKind -> Level -> SecretStrength -> Loc -> Bool
 openable cops lvl@Level{lsecret} k target =
   let tgt = lvl `at` target
-  in Tile.hasFeature cops F.Openable tgt ||
-     (Tile.hasFeature cops F.Hidden tgt &&
+  in hasFeature cops F.Openable tgt ||
+     (hasFeature cops F.Hidden tgt &&
       lsecret IM.! target < k)
 
 -- Do not scatter items around, it's too much work for the player.

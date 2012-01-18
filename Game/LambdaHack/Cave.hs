@@ -21,7 +21,7 @@ import Game.LambdaHack.Place
 
 -- | The map of starting secrecy strength of tiles in a cave. The map is sparse.
 -- Unspecified tiles have secrecy strength of 0.
-type SecretMapXY = M.Map (X, Y) SecretStrength
+type SecretMapXY = M.Map (X, Y) Tile.SecretStrength
 
 -- | The map of starting items in tiles of a cave. The map is sparse.
 -- Unspecified tiles have no starting items.
@@ -146,14 +146,14 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick}
         }
   return cave
 
-rollSecret :: TileKind -> Rnd SecretStrength
+rollSecret :: TileKind -> Rnd Tile.SecretStrength
 rollSecret t = do
   let getDice (F.Secret dice) _ = dice
       getDice _ acc = acc
       defaultDice = RollDice 5 2
       d = foldr getDice defaultDice (tfeature t)
   secret <- rollDice d
-  return $ SecretStrength secret
+  return $ Tile.SecretStrength secret
 
 trigger :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
 trigger Kind.Ops{okind, opick} t =

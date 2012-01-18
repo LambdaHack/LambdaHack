@@ -1,12 +1,10 @@
 -- | The type of kinds of terrain tiles.
 module Game.LambdaHack.Content.TileKind
-  ( TileKind(..), SecretStrength(..), tvalidate
+  ( TileKind(..), tvalidate
   ) where
 
 import qualified Data.List as L
 import qualified Data.Map as M
-import Data.Binary
-import Game.LambdaHack.Geometry
 
 import Game.LambdaHack.Color
 import Game.LambdaHack.Feature
@@ -24,13 +22,6 @@ data TileKind = TileKind
   , tfeature :: ![Feature]  -- ^ properties
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
-
--- | The type of secrecy strength of hidden terrain tiles (e.g., doors).
-newtype SecretStrength = SecretStrength{secretStrength :: Time}
-  deriving (Show, Eq, Ord)
-instance Binary SecretStrength where
-  put = put . secretStrength
-  get = fmap SecretStrength get
 
 -- TODO: check that all posible solid place fences have hidden counterparts.
 -- | Filter a list of kinds, passing through only the incorrect ones, if any.

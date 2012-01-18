@@ -20,6 +20,7 @@ import Game.LambdaHack.State
 import Game.LambdaHack.Strategy
 import Game.LambdaHack.StrategyState
 import Game.LambdaHack.Running
+import qualified Game.LambdaHack.Tile as Tile
 
 -- One turn proceeds through the following functions:
 --
@@ -147,7 +148,8 @@ handlePlayer = do
         -- Update smell. Only humans leave a strong scent.
         when (isAHero pl) $
           modify (updateLevel (updateSmell (IM.insert ploc
-                                             (SmellTime (time + sTimeout)))))
+                                             (Tile.SmellTime
+                                                (time + sTimeout)))))
         -- Determine perception to let monsters target heroes.
         withPerception handleMonsters
 

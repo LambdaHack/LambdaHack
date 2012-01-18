@@ -1,14 +1,17 @@
 module Game.LambdaHack.Tile
-  ( unknownId, kindHasFeature, kindHas, hasFeature
+  ( SecretStrength(..), SmellTime(..)
+  , unknownId, kindHasFeature, kindHas, hasFeature
   , isClear, isLit, similar, canBeHidden
   ) where
 
 import qualified Data.List as L
+import Data.Binary
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Feature as F
 import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Geometry
 
 -- | There is not type Tile, of particular concrete tiles in the dungeon,
 -- corresponding corresponding to type TileKind, of kinds of terrain tiles.
@@ -17,6 +20,18 @@ import qualified Game.LambdaHack.Kind as Kind
 -- and accessed too often in performance critial code to try to compress
 -- and recompute the values, on the other hand. Instead, various properties
 -- of concrete tiles are expressed by arrays or sparse IntMaps, as required.
+
+-- | The type of secrecy strength of hidden terrain tiles (e.g., doors).
+newtype SecretStrength = SecretStrength{secretStrength :: Time}
+  deriving (Show, Eq, Ord)
+instance Binary SecretStrength where
+  put = put . secretStrength
+  get = fmap SecretStrength get
+
+newtype SmellTime = SmellTime{smelltime :: Time} deriving Show
+instance Binary SmellTime where
+  put = put . smelltime
+  get = fmap SmellTime get
 
 unknownId :: Kind.Ops TileKind -> Kind.Id TileKind
 unknownId Kind.Ops{ouniqGroup} = ouniqGroup "unknown space"

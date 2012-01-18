@@ -211,7 +211,7 @@ actorOpenDoor actor dir = do
       isPlayer = actor == pl
       isVerbose = isPlayer  -- don't report monster failures, if it's not player
       iq = aiq $ okind $ bkind body
-      openPower = TileKind.SecretStrength $
+      openPower = Tile.SecretStrength $
         if isPlayer
         then 1  -- player can't open hidden doors
         else case strongestSearch coitem bitems of
@@ -299,10 +299,10 @@ search = do
       searchTile sle mv =
         let loc = shift ploc mv
             t = lvl `at` loc
-            k = TileKind.secretStrength (le IM.! loc) - delta
+            k = Tile.secretStrength (le IM.! loc) - delta
         in if Tile.hasFeature cotile F.Hidden t
            then if k > 0
-                then IM.insert loc (TileKind.SecretStrength k) sle
+                then IM.insert loc (Tile.SecretStrength k) sle
                 else IM.delete loc sle
            else sle
       leNew = L.foldl' searchTile le (moves lxsize)
