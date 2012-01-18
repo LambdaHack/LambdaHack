@@ -35,7 +35,7 @@ data Session = Session
 type ActionFun r a =
    Session                           -- ^ session setup data
    -> (State -> Diary -> IO r)       -- ^ shutdown cont
-   -> Perceptions                    -- ^ cached perception
+   -> Perception                     -- ^ cached perception
    -> (State -> Diary -> a -> IO r)  -- ^ continuation
    -> IO r                           -- ^ failure/reset cont
    -> State                          -- ^ current state
@@ -286,7 +286,7 @@ withPerception h = Action (\ sess@Session{scops} e _ k a st ms ->
                             runAction h sess e (perception scops st) k a st ms)
 
 -- | Get the current perception.
-currentPerception :: Action Perceptions
+currentPerception :: Action Perception
 currentPerception = Action (\ _s _e p k _a st ms -> k st ms p)
 
 updateAnyActor :: ActorId -> (Actor -> Actor) -> Action ()

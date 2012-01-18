@@ -54,7 +54,7 @@ and the monster is small enough, the monster can hear the hero
 and moves into the approximate direction of the hero.
 -}
 
-strategy :: Kind.COps -> ActorId -> State -> Perceptions -> Strategy (Action ())
+strategy :: Kind.COps -> ActorId -> State -> Perception -> Strategy (Action ())
 strategy cops actor oldState@State{splayer = pl, stime = time} per =
   strat
  where

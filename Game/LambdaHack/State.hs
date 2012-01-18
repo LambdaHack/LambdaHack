@@ -14,6 +14,7 @@ import Game.LambdaHack.Level
 import qualified Game.LambdaHack.Dungeon as Dungeon
 import Game.LambdaHack.Item
 import Game.LambdaHack.Msg
+import Game.LambdaHack.FOV
 
 -- | The diary contains all the player data that carries over from game to game.
 -- That includes the last message, previous messages and otherwise recorded
@@ -30,8 +31,8 @@ data Diary = Diary
 data State = State
   { splayer      :: ActorId      -- ^ represents the player-controlled actor
   , scursor      :: Cursor       -- ^ cursor location and level to return to
-  , ssensory     :: SensoryMode
-  , sdisplay     :: DisplayMode
+  , ssensory     :: SensoryMode  -- ^ debug only
+  , sdisplay     :: DisplayMode  -- ^ debug only
   , stime        :: Time
   , sflavour     :: FlavourMap   -- ^ association of flavour to items
   , sdisco       :: Discoveries  -- ^ items (kinds) that have been discovered
@@ -56,6 +57,16 @@ data Cursor = Cursor
   , clocation  :: Loc      -- ^ cursor coordinates
   , creturnLn  :: Dungeon.LevelId  -- ^ the level current player resides on
   }
+  deriving Show
+
+data SensoryMode =
+    Implicit
+  | Vision FovMode
+  deriving Show
+
+data DisplayMode =
+    Normal
+  | Omniscient
   deriving Show
 
 slevel :: State -> Level
@@ -104,15 +115,17 @@ updateDungeon :: (Dungeon.Dungeon -> Dungeon.Dungeon) -> State -> State
 updateDungeon f s = s {sdungeon = f (sdungeon s)}
 
 toggleVision :: State -> State
-toggleVision s = s { ssensory = case ssensory s of Vision 1 -> Smell
-                                                   Vision n -> Vision (n-1)
-                                                   Smell    -> Implicit
-                                                   Implicit -> Vision 3 }
+toggleVision s = s { ssensory = case ssensory s of
+                        Implicit           -> Vision (Digital 100)
+                        Vision (Digital _) -> Vision Permissive
+                        Vision Permissive  -> Vision Shadow
+                        Vision Shadow      -> Vision Blind
+                        Vision Blind       -> Implicit }
 
 toggleOmniscient :: State -> State
-toggleOmniscient s = s { sdisplay = if sdisplay s == Omniscient
-                                    then Normal
-                                    else Omniscient }
+toggleOmniscient s = s { sdisplay = case sdisplay s of
+                            Omniscient -> Normal
+                            Normal     -> Omniscient }
 
 instance Binary Diary where
   put Diary{..} = do
@@ -124,12 +137,10 @@ instance Binary Diary where
     return Diary{..}
 
 instance Binary State where
-  put (State player cursor sense disp time flav disco dng lid ct
+  put (State player cursor _ _ time flav disco dng lid ct
        party g config) = do
     put player
     put cursor
-    put sense
-    put disp
     put time
     put flav
     put disco
@@ -142,8 +153,6 @@ instance Binary State where
   get = do
     player <- get
     cursor <- get
-    sense  <- get
-    disp   <- get
     time   <- get
     flav   <- get
     disco  <- get
@@ -154,7 +163,7 @@ instance Binary State where
     g      <- get
     config <- get
     return
-      (State player cursor sense disp time flav disco dng lid ct
+      (State player cursor Implicit Normal time flav disco dng lid ct
        party (read g) config)
 
 instance Binary Cursor where
@@ -181,36 +190,3 @@ instance Binary TgtMode where
       1 -> return TgtPlayer
       2 -> return TgtAuto
       _ -> fail "no parse (TgtMode)"
-
-data SensoryMode =
-    Implicit
-  | Vision Int
-  | Smell
-  deriving (Show, Eq)
-
-instance Binary SensoryMode where
-  put Implicit   = putWord8 0
-  put (Vision n) = putWord8 1 >> put n
-  put Smell      = putWord8 2
-  get = do
-          tag <- getWord8
-          case tag of
-            0 -> return Implicit
-            1 -> fmap Vision get
-            2 -> return Smell
-            _ -> fail "no parse (SensoryMode)"
-
-data DisplayMode =
-    Normal
-  | Omniscient
-  deriving (Show, Eq)
-
-instance Binary DisplayMode where
-  put Normal      = putWord8 0
-  put Omniscient  = putWord8 1
-  get = do
-          tag <- getWord8
-          case tag of
-            0 -> return Normal
-            1 -> return Omniscient
-            _ -> fail "no parse (DisplayMode)"

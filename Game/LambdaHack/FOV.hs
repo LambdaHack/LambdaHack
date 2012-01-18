@@ -23,6 +23,7 @@ data FovMode =
   | Permissive   -- ^ permissive FOV
   | Digital Int  -- ^ digital FOV with the given radius
   | Blind        -- ^ only feeling out adjacent tiles by touch
+  deriving Show
 
 -- | Perform a full scan for a given location. Returns the locations
 -- that are currently in the field of view. The Field of View

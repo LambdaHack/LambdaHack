@@ -46,6 +46,7 @@ import qualified Game.LambdaHack.Item as Item
 import qualified Game.LambdaHack.Keys as K
 import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.FOV
 
 -- | Waits for a space or return or escape.
 getConfirmD :: FrontendSession -> IO Bool
@@ -87,7 +88,7 @@ data ColorMode =
 -- | Display the whole screen: level map, messages and status area
 -- and multiple-page overlaid information, if any.
 displayLevel :: ColorMode -> FrontendSession -> Kind.COps
-             -> Perceptions -> State
+             -> Perception -> State
              -> Msg -> Maybe String -> IO Bool
 displayLevel dm fs cops per
              s@State{scursor, stime, sflavour, slid, splayer, ssensory, sdisplay}
@@ -97,14 +98,17 @@ displayLevel dm fs cops per
                , cotile=Kind.Ops{okind=tokind} } = cops
       lvl@Level{lxsize = sx, lysize = sy, lsmell = smap, ldesc} = slevel s
       (_, Actor{bkind, bhp, bloc}, bitems) = findActorAnyLevel splayer s
-      ActorKind{ahp} = okind bkind
+      ActorKind{ahp, asmell} = okind bkind
       reachable = debugTotalReachable per
       visible   = totalVisible per
       overlay   = fromMaybe "" moverlay
       (ns, over) = stringByLocation sy overlay -- n overlay screens needed
-      sSml   = ssensory == Smell
-      sVis   = case ssensory of Vision _ -> True; _ -> False
-      sOmn   = sdisplay == Omniscient
+      (sSml, sVis) = case ssensory of
+        Vision Blind -> (True, True)
+        Vision _  -> (False, True)
+        Implicit | asmell -> (True, False)
+        Implicit -> (False, False)
+      sOmn   = case sdisplay of Omniscient -> True; _ -> False
       lAt    = if sOmn then at else rememberAt
       liAt   = if sOmn then atI else rememberAtI
       sVisBG = if sVis

@@ -253,7 +253,7 @@ discover i = do
 -- Focus on the actor if level changes. False, if nothing to do.
 selectPlayer :: ActorId -> Action Bool
 selectPlayer actor = do
-  cops@Kind.Ops{okind} <- contentf Kind.coactor
+  coactor <- contentf Kind.coactor
   pl <- gets splayer
   targeting <- gets (ctargeting . scursor)
   if actor == pl
@@ -270,15 +270,8 @@ selectPlayer actor = do
       stopRunning
       -- Switch to the level.
       modify (\ s -> s{slid = nln})
-      -- Set smell display, depending on player capabilities.
-      -- This also resets FOV mode.
-      modify (\ s -> s { ssensory =
-                           if asmell $ okind $
-                              bkind pbody
-                           then Smell
-                           else Implicit })
       -- Announce.
-      msgAdd $ capActor cops pbody ++ " selected."
+      msgAdd $ capActor coactor pbody ++ " selected."
       when (targeting /= TgtOff) doLook
       return True
 

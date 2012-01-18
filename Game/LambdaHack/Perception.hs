@@ -1,5 +1,6 @@
+-- | Actors perceiving the dungeon and other actors.
 module Game.LambdaHack.Perception
-  ( Perceptions, totalVisible, debugTotalReachable, perception
+  ( Perception, totalVisible, debugTotalReachable, perception
   , actorReachesLoc, actorReachesActor
   ) where
 
@@ -29,23 +30,31 @@ newtype PerceptionVisible = PerceptionVisible
   { pvisible :: IS.IntSet
   }
 
--- Heroes share visibility and only have separate reachability.
--- The pplayer field is void if player not on the current level,
--- or if the player controls a blind monster. Right now, the field is used only
--- for player-controlled monsters on the current level.
-data Perceptions = Perceptions
+-- Note: Heroes share visibility and only have separate reachability.
+-- The pplayer field must be void if the player is not on the current level.
+-- Right now, the field is used only for player-controlled monsters.
+-- | The type represent the perception of all actors on the level.
+data Perception = Perception
   { pplayer :: Maybe PerceptionReachable
   , pheroes :: IM.IntMap PerceptionReachable
   , ptotal  :: PerceptionVisible
   }
 
-totalVisible, debugTotalReachable :: Perceptions -> IS.IntSet
+-- | The set of tiles visible by at least one hero.
+totalVisible :: Perception -> IS.IntSet
 totalVisible = pvisible . ptotal
+
+-- | For debug only: the set of tiles reachable
+-- (would be visible if lit) by at least one hero.
+debugTotalReachable :: Perception -> IS.IntSet
 debugTotalReachable per =
   let lpers = maybeToList (pplayer per) ++ IM.elems (pheroes per)
   in IS.unions (map preachable lpers)
 
-actorReachesLoc :: ActorId -> Loc -> Perceptions -> Maybe ActorId -> Bool
+-- | Check whether a location is within the visually reachable area
+-- of the given actor (disregarding lighting).
+-- Defaults to false if the actor is not player-controlled (monster or hero).
+actorReachesLoc :: ActorId -> Loc -> Perception -> Maybe ActorId -> Bool
 actorReachesLoc actor loc per pl =
   let tryHero = case actor of
                   AMonster _ -> Nothing
@@ -59,15 +68,19 @@ actorReachesLoc actor loc per pl =
       tryAny  = tryHero `mplus` tryPl
   in fromMaybe False tryAny  -- assume not visible, if no perception found
 
--- Not quite correct if FOV not symmetric (Shadow).
+-- | Check whether an actor is within the visually reachable area
+-- of the given actor (disregarding lighting).
+-- Not quite correct if FOV not symmetric (e.g., @Shadow@).
+-- Defaults to false if neither actor is player-controlled.
 actorReachesActor :: ActorId -> ActorId -> Loc -> Loc
-                  -> Perceptions -> Maybe ActorId
+                  -> Perception -> Maybe ActorId
                   -> Bool
 actorReachesActor actor1 actor2 loc1 loc2 per pl =
   actorReachesLoc actor1 loc2 per pl ||
   actorReachesLoc actor2 loc1 per pl
 
-perception :: Kind.COps -> State -> Perceptions
+-- | Calculate the perception of all actors on the level.
+perception :: Kind.COps -> State -> Perception
 perception cops@Kind.COps{cotile}
            state@State{ splayer = pl
                       , sconfig  = config
@@ -93,10 +106,10 @@ perception cops@Kind.COps{cotile}
       playerControlledMonsterLight = maybeToList mLoc
       lights = IS.fromList $ playerControlledMonsterLight ++ IM.elems locs
       visible = computeVisible cotile reachable lvl lights
-  in  Perceptions { pplayer = mPer
-                  , pheroes = pers
-                  , ptotal  = visible
-                  }
+  in  Perception { pplayer = mPer
+                 , pheroes = pers
+                 , ptotal  = visible
+                 }
 
 -- | A location can be directly lit by an ambient shine or a portable
 -- light source, e.g,, carried by a hero. (Only lights of radius 0
@@ -107,7 +120,7 @@ perception cops@Kind.COps{cotile}
 -- can be attributed to deduction based on combined vague visual hints,
 -- e.g., if I don't see the reachable light seen by another hero,
 -- there must be a wall in-between. Stray rays indicate doors,
--- moving shadows indicate monsters, etc.).
+-- moving shadows indicate monsters, etc.
 computeVisible :: Kind.Ops TileKind -> PerceptionReachable -> Level -> IS.IntSet
                -> PerceptionVisible
 computeVisible cops (PerceptionReachable reachable)
@@ -129,20 +142,13 @@ computeReachable Kind.COps{cotile, coactor=Kind.Ops{okind}}
   let fovMode m =
         if not $ asight $ okind $ bkind m
         then Blind
-        else
-          -- terrible, temporary hack
-          case sensory of
-            Vision 3 -> Digital radius
-            Vision 2 -> Permissive
-            Vision 1 -> Shadow
-            Smell    -> Blind
-            _        ->
-              -- this is not a hack
-              case mode of
-                "permissive" -> Permissive
-                "digital"    -> Digital radius
-                "shadow"     -> Shadow
-                _            -> error $ "Unknown FOV mode: " ++ show mode
+        else case sensory of
+          Vision fm -> fm
+          _ -> case mode of
+            "shadow"     -> Shadow
+            "permissive" -> Permissive
+            "digital"    -> Digital radius
+            _            -> error $ "Unknown FOV mode: " ++ show mode
       ploc = bloc actor
   in PerceptionReachable $
        IS.insert ploc $ IS.fromList $ fullscan cotile (fovMode actor) ploc lvl
