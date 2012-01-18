@@ -78,7 +78,6 @@ library
                    Game.LambdaHack.Keybinding,
                    Game.LambdaHack.Kind,
                    Game.LambdaHack.Level,
-                   Game.LambdaHack.LevelState,
                    Game.LambdaHack.Loc,
                    Game.LambdaHack.Msg,
                    Game.LambdaHack.Perception,

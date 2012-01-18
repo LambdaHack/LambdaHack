@@ -9,6 +9,8 @@ module Game.LambdaHack.Grammar
     -- * Sentences
   , actorVerb, actorVerbExtra, actorVerbItemExtra
   , actorVerbActorExtra, actorVerbExtraItemExtra
+    -- * Scenery description
+  , lookAt
   ) where
 
 import Data.Char
@@ -16,8 +18,10 @@ import qualified Data.Set as S
 import qualified Data.List as L
 import Data.Maybe
 
+import Game.LambdaHack.Loc
 import Game.LambdaHack.Item
 import Game.LambdaHack.Actor
+import Game.LambdaHack.Level
 import Game.LambdaHack.State
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.ActorKind
@@ -124,3 +128,26 @@ actorVerbExtraItemExtra :: Kind.COps -> State -> Actor -> Verb -> String
 actorVerbExtraItemExtra Kind.COps{coactor, coitem} state a v extra1 i extra2 =
   actorVerbExtra coactor a v $
     extra1 ++ " " ++ objectItem coitem state i ++ extra2
+
+-- | Produces a textual description of the terrain and items at an already
+-- explored location. Mute for unknown locations.
+-- The "detailed" variant is for use in the targeting mode.
+lookAt :: Kind.COps -> Bool -> Bool -> State -> Level -> Loc -> String -> String
+lookAt Kind.COps{coitem, cotile=Kind.Ops{oname}} detailed canSee s lvl loc msg
+  | detailed  =
+    let tile = lvl `rememberAt` loc
+        name = capitalize $ oname tile
+    in name ++ ". " ++ msg ++ isd
+  | otherwise = msg ++ isd
+ where
+  is  = lvl `rememberAtI` loc
+  prefixSee = if canSee then "You see " else "You remember "
+  prefixThere = if canSee
+                then "There are several objects here"
+                else "You remember several objects here"
+  isd = case is of
+          []    -> ""
+          [i]   -> prefixSee ++ objectItem coitem s i ++ "."
+          [i,j] -> prefixSee ++ objectItem coitem s i ++ " and "
+                             ++ objectItem coitem s j ++ "."
+          _     -> prefixThere ++ if detailed then ":" else "."

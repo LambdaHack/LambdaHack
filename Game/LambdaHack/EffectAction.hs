@@ -35,7 +35,6 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Random
 import Game.LambdaHack.State
-import Game.LambdaHack.LevelState
 import qualified Game.LambdaHack.Config as Config
 import qualified Game.LambdaHack.Effect as Effect
 import qualified Game.LambdaHack.Kind as Kind

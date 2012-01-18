@@ -20,7 +20,6 @@ import qualified Game.LambdaHack.HighScore as H
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Keys as K
 import Game.LambdaHack.Level
-import Game.LambdaHack.LevelState
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Perception
