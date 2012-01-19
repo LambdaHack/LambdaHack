@@ -52,9 +52,9 @@ data RunMode =
 -- trying to explore all corners, by prefering cardinal to diagonal moves.
 runMode :: Point -> Vector -> (Point -> Vector -> Bool) -> X -> RunMode
 runMode loc dir dirEnterable lxsize =
-  let dirNearby dir1 dir2 = dirDistSq lxsize dir1 dir2 == 1
-      dirBackward d = dirDistSq lxsize (neg dir) d <= 1
-      dirAhead d = dirDistSq lxsize dir d <= 2
+  let dirNearby dir1 dir2 = euclidDistSq lxsize dir1 dir2 == 1
+      dirBackward d = euclidDistSq lxsize (neg dir) d <= 1
+      dirAhead d = euclidDistSq lxsize dir d <= 2
       findOpen =
         let f dirC open = open ++
               case L.filter (dirNearby dirC) dirsEnterable of

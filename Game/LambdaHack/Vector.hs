@@ -1,6 +1,7 @@
--- | Geografical directions implemented in an efficient way.
+-- | Basic operations on 2D vectors represented in an efficient,
+-- but not unique, way.
 module Game.LambdaHack.Vector
-  ( Vector, dirDistSq, diagonal, neg, moves, movesWidth, shift, towards
+  ( Vector, shift, moves, movesWidth, euclidDistSq, diagonal, neg, towards
   ) where
 
 import Data.Binary
@@ -10,25 +11,34 @@ import Game.LambdaHack.VectorXY
 import Game.LambdaHack.Point
 import Game.LambdaHack.Utils.Assert
 
--- | Vectors of length 1 (in our metric), that is, geographical directions.
--- Implemented as an offset in the linear framebuffer indexed by Point.
--- A newtype to prevent mixing up with Point itself.
--- The X size of the level has to be > 1 for the 'moves' list of
--- vectors to make sense.
-newtype Vector = Vector Int deriving (Show, Eq)
+-- | 2D vectors  represented as offsets in the linear framebuffer
+-- indexed by 'Point'.
+--
+-- A newtype is used to prevent mixing up the type with @Point@ itself.
+-- Right now only vectors of lenth 1 in the chessboard metric, denoting
+-- geographical directions, can be constructed. If the level width and
+-- height are at least 3, representations of such vectors are
+-- pairwise distinct.
+newtype Vector = Vector Int
+  deriving (Show, Eq)
 
 instance Binary Vector where
   put (Vector dir) = put dir
   get = fmap Vector get
 
-toDir :: X -> (X, Y) -> Vector
+-- | Converts a unit vector in cartesian representation into @Vector@.
+toDir :: X -> VectorXY -> Vector
 toDir lxsize (x, y) =
-  assert (lxsize > 1 && chessDistXY (x, y) == 1 `blame` (lxsize, (x, y))) $
+  assert (lxsize >= 3 && chessDistXY (x, y) == 1 `blame` (lxsize, (x, y))) $
   Vector $ x + y * lxsize
 
-fromDir :: X -> Vector -> (X, Y)
+-- | Converts a unit vector in the offset representation
+-- into the cartesian representation. Arbitrary vectors can't be
+-- converted uniquely.
+fromDir :: X -> Vector -> VectorXY
 fromDir lxsize (Vector dir) =
-  assert (chessDistXY res == 1 && fst res + snd res * lxsize == dir
+  assert (lxsize >= 3 && chessDistXY res == 1 &&
+          fst res + snd res * lxsize == dir
           `blame` (lxsize, dir, res)) $
   res
  where
@@ -38,43 +48,44 @@ fromDir lxsize (Vector dir) =
         then (x - lxsize, y + 1)
         else (x, y)
 
--- | Squared euclidean distance between two directions.
-dirDistSq :: X -> Vector -> Vector -> Int
-dirDistSq lxsize dir0 dir1
-  | (x0, y0) <- fromDir lxsize dir0, (x1, y1) <- fromDir lxsize dir1 =
-  euclidDistSq ((y1 - y0), (x1 - x0))
-
--- | Checks whether a direction is diagonal, as opposed to cardinal.
-diagonal :: X -> Vector -> Bool
-diagonal lxsize dir | (x, y) <- fromDir lxsize dir =
-  x * y /= 0
-
--- | Reverse a direction (vector).
-neg :: Vector -> Vector
-neg (Vector dir) = Vector (-dir)
-
--- | Vector ections of all unit moves, clockwise, starting north-west.
-moves :: X -> [Vector]
-moves lxsize = map (toDir lxsize) movesXY
-
--- | Vector ections of all unit moves, clockwise, starting north-west,
--- parameterized by level width.
-movesWidth :: [X -> Vector]
-movesWidth = map (flip toDir) movesXY
-
--- | Move one square in the given direction.
+-- | Translate a point by a vector.
 --
 -- Particularly simple and fast implementation in the linear representation.
 shift :: Point -> Vector -> Point
 shift loc (Vector dir) = loc + dir
 
+-- | Vectors of all unit moves, clockwise, starting north-west.
+moves :: X -> [Vector]
+moves lxsize = map (toDir lxsize) movesXY
+
+-- | Vectors of all unit moves, clockwise, starting north-west,
+-- parameterized by level width.
+movesWidth :: [X -> Vector]
+movesWidth = map (flip toDir) movesXY
+
+-- | Squared euclidean distance between two unit vectors.
+euclidDistSq :: X -> Vector -> Vector -> Int
+euclidDistSq lxsize dir0 dir1
+  | (x0, y0) <- fromDir lxsize dir0, (x1, y1) <- fromDir lxsize dir1 =
+  euclidDistSqXY ((y1 - y0), (x1 - x0))
+
+-- | Checks whether a unit vector is a diagonal direction,
+-- as opposed to cardinal.
+diagonal :: X -> Vector -> Bool
+diagonal lxsize dir | (x, y) <- fromDir lxsize dir =
+  x * y /= 0
+
+-- | Reverse an arbirary vector.
+neg :: Vector -> Vector
+neg (Vector dir) = Vector (-dir)
+
 -- TODO: Perhaps produce all acceptable directions and let AI choose.
 -- That would also eliminate the Doubles.
--- | Given two distinct locations, determine the direction in which one should
--- move from the first in order to get closer to the second.
+-- | Given two distinct locations, determine the direction (a unit vector)
+-- in which one should move from the first in order to get closer to the second.
 -- Ignores obstacles. Of several equally good directions
--- (in the metric where diagonal moves cost 1) it picks the one that visually
--- (in the euclidean metric) would be the best.
+-- (in the chessboard metric) it picks one of those that visually
+-- (in the euclidean metric) are maximally straightforward.
 towards :: X -> Point -> Point -> Vector
 towards lxsize loc0 loc1
   | (x0, y0) <- fromLoc lxsize loc0, (x1, y1) <- fromLoc lxsize loc1 =

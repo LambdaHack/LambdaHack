@@ -178,7 +178,7 @@ playerTriggerDir feat = do
   displayAll
   e <- session nextCommand
   lxsize <- gets (lxsize . slevel)
-  K.handleDirection lxsize e (playerBumpDir feat) (neverMind True)
+  K.handleDir lxsize e (playerBumpDir feat) (neverMind True)
 
 -- | Player tries to trigger a tile in a given direction.
 playerBumpDir :: F.Feature -> Vector -> Action ()

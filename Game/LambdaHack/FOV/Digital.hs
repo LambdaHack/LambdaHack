@@ -14,7 +14,7 @@ scan :: Distance        -- ^ visiblity radius
      -> (Bump -> Bool)  -- ^ clear tile predicate
      -> [Bump]
 scan r isClear =
-  -- the scanned area is a square, which is a sphere in this metric; good
+  -- The scanned area is a square, which is a sphere in the chessboard metric.
   dscan 1 (((B(1, 0), B(-r, r)), [B(0, 0)]), ((B(0, 0), B(r+1, r)), [B(1, 0)]))
  where
   dscan :: Distance -> EdgeInterval -> [Bump]

@@ -1,6 +1,6 @@
 -- | Basic cartesian geometry operations on 2D vectors.
 module Game.LambdaHack.VectorXY
-  ( VectorXY, shiftXY, movesXY, movesCardinalXY, chessDistXY, euclidDistSq
+  ( VectorXY, shiftXY, movesXY, movesCardinalXY, chessDistXY, euclidDistSqXY
   ) where
 
 import Game.LambdaHack.PointXY
@@ -27,5 +27,5 @@ chessDistXY :: VectorXY -> Int
 chessDistXY (x, y) = max (abs x) (abs y)
 
 -- | Squared euclidean length of a vector.
-euclidDistSq :: VectorXY -> Int
-euclidDistSq (x, y) = x * x + y * y
+euclidDistSqXY :: VectorXY -> Int
+euclidDistSqXY (x, y) = x * x + y * y

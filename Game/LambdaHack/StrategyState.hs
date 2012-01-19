@@ -112,7 +112,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
                      Nothing -> const mzero
                      Just loc ->
                        let foeDir = towards lxsize me loc
-                       in only (\ x -> dirDistSq lxsize foeDir x <= 1)
+                       in only (\ x -> euclidDistSq lxsize foeDir x <= 1)
   lootHere x     = not $ L.null $ lvl `atI` x
   onlyLoot       = onlyMoves lootHere me
   interestHere x = let t = lvl `at` x
@@ -123,7 +123,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
                        L.any (Tile.hasFeature cotile F.Lit) ts)
   onlyInterest   = onlyMoves interestHere me
   onlyKeepsDir k =
-    only (\ x -> maybe True (\ (d, _) -> dirDistSq lxsize d x <= k) ad)
+    only (\ x -> maybe True (\ (d, _) -> euclidDistSq lxsize d x <= k) ad)
   onlyKeepsDir_9 = only (\ x -> maybe True (\ (d, _) -> neg x /= d) ad)
   onlyNoMs       = onlyMoves (unoccupied (levelMonsterList delState)) me
   -- Monsters don't see doors more secret than that. Enforced when actually
@@ -145,13 +145,14 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
     L.map (\ x -> let sm = Tile.smelltime $ IM.findWithDefault
                              (Tile.SmellTime 0) (me `shift` x) nsmap
                   in (x, (sm - time) `max` 0)) (moves lxsize)
-  fromDir allowAttacks d = dirToAction actor newTgt allowAttacks `liftM` d
+  attackDir d = dirToAction actor newTgt True  `liftM` d
+  moveDir d   = dirToAction actor newTgt False `liftM` d
 
   strat =
-    fromDir True (onlyFoe moveFreely)
+    attackDir (onlyFoe moveFreely)
     .| foeVisible .=> liftFrequency (msum seenFreqs)
     .| lootHere me .=> actionPickup
-    .| fromDir True moveAround
+    .| attackDir moveAround
   actionPickup = return $ actorPickupItem actor
   tis = lvl `atI` me
   seenFreqs = [applyFreq items 1, applyFreq tis 2,
@@ -176,7 +177,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
       -- Wasting swords would be too cruel to the player.
       isymbol ik /= ')']
   towardsFreq =
-    let freqs = runStrategy $ fromDir False moveTowards
+    let freqs = runStrategy $ moveDir moveTowards
     in if asight mk
        then map (scaleFreq 30) freqs
        else [mzero]

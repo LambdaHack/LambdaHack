@@ -41,7 +41,7 @@ trLoc lxsize loc (dx, dy) =
   -- Vector coordinates can be negative, but locs are always positive.
   assert (loc >= 0 && res >= 0 `blame` (lxsize, loc, (dx, dy))) $
   res
-   where res = loc + dx + dy * lxsize
+ where res = loc + dx + dy * lxsize
 
 -- | The top-left corner location of the level.
 zeroLoc :: Point
