@@ -31,7 +31,6 @@ import Game.LambdaHack.Msg
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.State
 import Game.LambdaHack.PointXY
-import Game.LambdaHack.VectorXY
 import Game.LambdaHack.Point
 import Game.LambdaHack.Level
 import Game.LambdaHack.Effect
@@ -127,8 +126,9 @@ displayLevel dm fs cops per
                   Nothing -> "3d1"  -- TODO; use the item 'fist'
       hs      = levelHeroList s
       ms      = levelMonsterList s
-      dis n loc0 =
-        let tile = lvl `lAt` loc0
+      dis n (x0, y0) =
+        let loc0 = toLoc sx (x0, y0)
+            tile = lvl `lAt` loc0
             items = lvl `liAt` loc0
             sm = smelltime $ IM.findWithDefault (SmellTime 0) loc0 smap
             sml = (sm - stime) `div` 100
@@ -169,7 +169,7 @@ displayLevel dm fs cops per
             a = case dm of
                   ColorBW   -> Color.defaultAttr
                   ColorFull -> optVisually Color.Attr{fg = fg0, bg = bg0}
-        in case over (fromLoc sx loc0 `shiftXY` (0, sy * n)) of
+        in case over (x0, y0 + sy * n) of
              Just c -> (Color.defaultAttr, c)
              _      -> (a, char)
       status =

@@ -47,11 +47,11 @@ trLoc lxsize loc (dx, dy) =
 zeroLoc :: Point
 zeroLoc = 0
 
--- | The distance between two points in the metric with cheap diagonal moves.
+-- | The distance between two points in the chessboard metric.
 distance :: X -> Point -> Point -> Int
 distance lxsize loc0 loc1
   | (x0, y0) <- fromLoc lxsize loc0, (x1, y1) <- fromLoc lxsize loc1 =
-  chessDistXY (x1 - x0, y1 - y0)
+  chessDistXY $ VectorXY (x1 - x0, y1 - y0)
 
 -- | Checks whether two locations are adjacent on the map
 -- (horizontally, vertically or diagonally).
