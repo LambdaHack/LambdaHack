@@ -49,8 +49,8 @@ mapToIMap :: X -> M.Map (X, Y) a -> IM.IntMap a
 mapToIMap cxsize m =
   IM.fromList $ map (\ (xy, a) -> (toLoc cxsize xy, a)) (M.assocs m)
 
-rollItems :: Kind.COps -> Int -> Int -> CaveKind -> TileMap -> Loc
-          -> Rnd [(Loc, Item)]
+rollItems :: Kind.COps -> Int -> Int -> CaveKind -> TileMap -> Point
+          -> Rnd [(Point, Item)]
 rollItems Kind.COps{cotile, coitem=coitem@Kind.Ops{osymbol}}
           lvl depth CaveKind{cxsize, citemNum} lmap ploc = do
   nri <- rollDice citemNum
@@ -66,7 +66,7 @@ rollItems Kind.COps{cotile, coitem=coitem@Kind.Ops{osymbol}}
     return (l, item)
 
 placeStairs :: Kind.Ops TileKind -> TileMap -> X -> Int -> [Place]
-            -> Rnd (Loc, Kind.Id TileKind, Loc, Kind.Id TileKind)
+            -> Rnd (Point, Kind.Id TileKind, Point, Kind.Id TileKind)
 placeStairs cotile@Kind.Ops{opick} cmap cxsize cminStairDist dplaces = do
   su <- findLoc cmap (const (Tile.hasFeature cotile F.Boring))
   sd <- findLocTry 2000 cmap
@@ -126,7 +126,7 @@ findGenerator cops config k depth = do
 -- | Freshly generate dungeon, with the entry area indicated.
 data FreshDungeon = FreshDungeon
   { entryLevel   :: Dungeon.LevelId
-  , entryLoc     :: Loc
+  , entryLoc     :: Point
   , freshDungeon :: Dungeon.Dungeon
   }
 
@@ -149,7 +149,7 @@ generate cops config =
   in MState.state con
 
 -- | Computes the target world location of using stairs.
-whereTo :: State -> Int -> Maybe (Dungeon.LevelId, Loc)
+whereTo :: State -> Int -> Maybe (Dungeon.LevelId, Point)
 whereTo State{slid, sdungeon} k = assert (k /= 0) $
   let n = Dungeon.levelNumber slid
       nln = n - k

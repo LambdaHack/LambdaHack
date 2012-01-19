@@ -54,7 +54,7 @@ data TgtMode =
 data Cursor = Cursor
   { ctargeting :: TgtMode  -- ^ targeting mode
   , clocLn     :: Dungeon.LevelId  -- ^ cursor level
-  , clocation  :: Loc      -- ^ cursor coordinates
+  , clocation  :: Point      -- ^ cursor coordinates
   , creturnLn  :: Dungeon.LevelId  -- ^ the level current player resides on
   }
   deriving Show
@@ -83,7 +83,7 @@ defaultDiary = do
     }
 
 defaultState :: Config.CP -> FlavourMap -> Dungeon.Dungeon -> Dungeon.LevelId
-             -> Loc -> R.StdGen -> State
+             -> Point -> R.StdGen -> State
 defaultState config flavour dng lid ploc g =
   State
     (AHero 0)  -- hack: the hero is not yet alive

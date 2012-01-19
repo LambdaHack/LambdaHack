@@ -24,7 +24,7 @@ import qualified Game.LambdaHack.Tile as Tile
 import qualified Game.LambdaHack.Kind as Kind
 import qualified Game.LambdaHack.Feature as F
 
-run :: (Dir, Int) -> Action ()
+run :: (Vector, Int) -> Action ()
 run (dir, dist) = do
   cops <- contentOps
   pl <- gets splayer
@@ -43,14 +43,14 @@ run (dir, dist) = do
 
 -- | Player running mode, determined from the nearby cave layout.
 data RunMode =
-    RunOpen                  -- ^ open space, in particular the T crossing
-  | RunHub                   -- ^ a hub of separate corridors
-  | RunCorridor (Dir, Bool)  -- ^ a single corridor, turning here or not
-  | RunDeadEnd               -- ^ dead end
+    RunOpen                     -- ^ open space, in particular the T crossing
+  | RunHub                      -- ^ a hub of separate corridors
+  | RunCorridor (Vector, Bool)  -- ^ a single corridor, turning here or not
+  | RunDeadEnd                  -- ^ dead end
 
 -- | Determine the running mode. For corridors, pick the running direction
 -- trying to explore all corners, by prefering cardinal to diagonal moves.
-runMode :: Loc -> Dir -> (Loc -> Dir -> Bool) -> X -> RunMode
+runMode :: Point -> Vector -> (Point -> Vector -> Bool) -> X -> RunMode
 runMode loc dir dirEnterable lxsize =
   let dirNearby dir1 dir2 = dirDistSq lxsize dir1 dir2 == 1
       dirBackward d = dirDistSq lxsize (neg dir) d <= 1
@@ -81,9 +81,9 @@ runMode loc dir dirEnterable lxsize =
         _ -> RunHub  -- a hub of many separate corridors
 
 -- | Check for disturbances to running such newly visible items, monsters, etc.
-runDisturbance :: Loc -> Int -> Msg -> Party -> Party -> Perception -> Loc
-               -> (F.Feature -> Loc -> Bool) -> (Loc -> Bool) -> X -> Y
-               -> (Dir, Int) -> Maybe (Dir, Int)
+runDisturbance :: Point -> Int -> Msg -> Party -> Party -> Perception -> Point
+               -> (F.Feature -> Point -> Bool) -> (Point -> Bool) -> X -> Y
+               -> (Vector, Int) -> Maybe (Vector, Int)
 runDisturbance locLast distLast msg hs ms per locHere
                locHasFeature locHasItems lxsize lysize (dirNew, distNew) =
   let msgShown  = not (L.null msg)
@@ -142,7 +142,7 @@ runDisturbance locLast distLast msg hs ms per locHere
 -- have to stop running because something interesting cropped up
 -- and it ajusts the direction if we reached a corridor's corner
 -- (we never change direction except in corridors).
-continueRun :: (Dir, Int) -> Action ()
+continueRun :: (Vector, Int) -> Action ()
 continueRun (dirLast, distLast) = do
   cops@Kind.COps{cotile} <- contentOps
   locHere <- gets (bloc . getPlayerBody)

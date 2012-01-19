@@ -69,14 +69,14 @@ dirRunKey = map KP ['7', '8', '9', '6', '3', '2', '1', '4']
 
 -- | Configurable event handler for the direction keys.
 -- Used for directed commands such as close door.
-handleDirection :: X -> Key -> (Dir -> a) -> a -> a
+handleDirection :: X -> Key -> (Vector -> a) -> a -> a
 handleDirection lxsize e h k =
   let mvs = moves lxsize
       assocs = zip dirViMoveKey mvs ++ zip dirMoveKey mvs
   in maybe k h (L.lookup e assocs)
 
 -- | Binding of both sets of movement keys.
-moveBinding :: ((X -> Dir) -> a) -> ((X -> Dir) -> a) -> [(Key, (String, a))]
+moveBinding :: ((X -> Vector) -> a) -> ((X -> Vector) -> a) -> [(Key, (String, a))]
 moveBinding move run =
   let assign f (key, dir) = (key, ("", f dir))
   in map (assign move) (zip dirViMoveKey movesWidth) ++

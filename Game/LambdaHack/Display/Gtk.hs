@@ -11,7 +11,7 @@ module Game.LambdaHack.Display.Gtk
 import Control.Monad
 import Control.Concurrent
 import Graphics.UI.Gtk.Gdk.Events  -- TODO: replace, deprecated
-import Graphics.UI.Gtk
+import Graphics.UI.Gtk hiding (Point)
 import qualified Data.List as L
 import Data.IORef
 import qualified Data.Map as M
@@ -109,11 +109,12 @@ shutdown :: FrontendSession -> IO ()
 shutdown _ = mainQuit
 
 -- | Output to the screen via the frontend.
-display :: Area                         -- ^ the size of the drawn area
-        -> FrontendSession              -- ^ current session data
-        -> (Loc -> (Color.Attr, Char))  -- ^ the content of the screen
-        -> String                       -- ^ an extra line to show at the top
-        -> String                       -- ^ an extra line to show at the bottom
+display :: Area             -- ^ the size of the drawn area
+        -> FrontendSession  -- ^ current session data
+        -> (Point -> (Color.Attr, Char))
+                            -- ^ the content of the screen
+        -> String           -- ^ an extra line to show at the top
+        -> String           -- ^ an extra line to show at the bottom
         -> IO ()
 display (x0, y0, x1, y1) FrontendSession{sview, stags} f msg status =
   postGUIAsync $ do

@@ -74,7 +74,7 @@ quitGame = do
     then end -- no highscore display for quitters
     else abortWith "Game resumed."
 
-moveCursor :: Dir -> Int -> Action ()
+moveCursor :: Vector -> Int -> Action ()
 moveCursor dir n = do
   lxsize <- gets (lxsize . slevel)
   lysize <- gets (lysize . slevel)
@@ -92,13 +92,13 @@ moveCursor dir n = do
 -- TODO: Think about doing the mode dispatch elsewhere, especially if over
 -- time more and more commands need to do the dispatch inside their code
 -- (currently only a couple do).
-move :: Dir -> Action ()
+move :: Vector -> Action ()
 move dir = do
   pl <- gets splayer
   targeting <- gets (ctargeting . scursor)
   if targeting /= TgtOff then moveCursor dir 1 else moveOrAttack True pl dir
 
-ifRunning :: ((Dir, Int) -> Action a) -> Action a -> Action a
+ifRunning :: ((Vector, Int) -> Action a) -> Action a -> Action a
 ifRunning t e = do
   ad <- gets (bdir . getPlayerBody)
   maybe e t ad
@@ -138,7 +138,7 @@ guessBump _ F.Descendable _ =
 guessBump _ _ _ = neverMind True
 
 -- | Player tries to trigger a tile using a feature.
-bumpTile :: Loc -> F.Feature -> Action ()
+bumpTile :: Point -> F.Feature -> Action ()
 bumpTile dloc feat = do
   cotile <- contentf Kind.cotile
   lvl    <- gets slevel
@@ -149,7 +149,7 @@ bumpTile dloc feat = do
   playerAdvanceTime
 
 -- | Perform the action specified for the tile in case it's triggered.
-triggerTile :: Loc -> Action ()
+triggerTile :: Point -> Action ()
 triggerTile dloc = do
   Kind.Ops{okind, opick} <- contentf Kind.cotile
   lvl <- gets slevel
@@ -181,7 +181,7 @@ playerTriggerDir feat = do
   K.handleDirection lxsize e (playerBumpDir feat) (neverMind True)
 
 -- | Player tries to trigger a tile in a given direction.
-playerBumpDir :: F.Feature -> Dir -> Action ()
+playerBumpDir :: F.Feature -> Vector -> Action ()
 playerBumpDir feat dir = do
   pl    <- gets splayer
   body  <- gets (getActor pl)
@@ -195,7 +195,7 @@ playerTriggerTile feat = do
   bumpTile ploc feat
 
 -- | An actor opens a door. Player (hero or monster) or enemy.
-actorOpenDoor :: ActorId -> Dir -> Action ()
+actorOpenDoor :: ActorId -> Vector -> Action ()
 actorOpenDoor actor dir = do
   Kind.COps{ cotile
            , coitem
@@ -320,7 +320,7 @@ search = do
 -- i.e., it can handle monsters, heroes and both.
 moveOrAttack :: Bool       -- ^ allow attacks?
              -> ActorId    -- ^ who's moving?
-             -> Dir        -- ^ in which direction?
+             -> Vector     -- ^ in which direction?
              -> Action ()
 moveOrAttack allowAttacks actor dir = do
   -- We start by looking at the target position.

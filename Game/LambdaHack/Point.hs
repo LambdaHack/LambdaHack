@@ -1,6 +1,6 @@
 -- | Locations on the level map.
 module Game.LambdaHack.Point
-  ( Loc, toLoc, fromLoc, trLoc, zeroLoc, distance, adjacent, vicinity
+  ( Point, toLoc, fromLoc, trLoc, zeroLoc, distance, adjacent, vicinity
   ) where
 
 import Game.LambdaHack.PointXY
@@ -21,22 +21,22 @@ import Game.LambdaHack.Utils.Assert
 -- including cheaper bounds checks.
 -- We don't use a newtype to avoid the trouble with using @EnumMap@
 -- in place of @IntMap@, etc.
-type Loc = Int
+type Point = Int
 
 -- | Conversion from cartesian coordinates to @Loc@.
-toLoc :: X -> (X, Y) -> Loc
+toLoc :: X -> (X, Y) -> Point
 toLoc lxsize (x, y) =
   assert (lxsize > x && x >= 0 && y >= 0 `blame` (lxsize, x, y)) $
   x + y * lxsize
 
--- | Conversion from @Loc@ to cartesian coordinates.
-fromLoc :: X -> Loc -> (X, Y)
+-- | Conversion from @Point@ to cartesian coordinates.
+fromLoc :: X -> Point -> (X, Y)
 fromLoc lxsize loc =
   assert (loc >= 0 `blame` (lxsize, loc)) $
   (loc `rem` lxsize, loc `quot` lxsize)
 
 -- | Translation by a vector.
-trLoc :: X -> Loc -> (X, Y) -> Loc
+trLoc :: X -> Point -> (X, Y) -> Point
 trLoc lxsize loc (dx, dy) =
   -- Vector coordinates can be negative, but locs are always positive.
   assert (loc >= 0 && res >= 0 `blame` (lxsize, loc, (dx, dy))) $
@@ -44,11 +44,11 @@ trLoc lxsize loc (dx, dy) =
    where res = loc + dx + dy * lxsize
 
 -- | The top-left corner location of the level.
-zeroLoc :: Loc
+zeroLoc :: Point
 zeroLoc = 0
 
 -- | The distance between two points in the metric with cheap diagonal moves.
-distance :: X -> Loc -> Loc -> Int
+distance :: X -> Point -> Point -> Int
 distance lxsize loc0 loc1
   | (x0, y0) <- fromLoc lxsize loc0, (x1, y1) <- fromLoc lxsize loc1 =
   chessDistXY (x1 - x0, y1 - y0)
@@ -56,11 +56,11 @@ distance lxsize loc0 loc1
 -- | Checks whether two locations are adjacent on the map
 -- (horizontally, vertically or diagonally).
 -- A position is also considered adjacent to itself.
-adjacent :: X -> Loc -> Loc -> Bool
+adjacent :: X -> Point -> Point -> Bool
 adjacent lxsize s t = distance lxsize s t <= 1
 
 -- | Returns the 8, or less, surrounding locations of a given location.
-vicinity :: X -> Y -> Loc -> [Loc]
+vicinity :: X -> Y -> Point -> [Point]
 vicinity lxsize lysize loc =
   map (toLoc lxsize) $
     vicinityXY (0, 0, lxsize - 1, lysize - 1) $

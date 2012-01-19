@@ -117,7 +117,7 @@ wrt the restrictive shadow casting algorithm. The line in the curent state
 of mscan is not the steep line, but the shallow line,
 and we start scanning from the bottom right.
 
-The Loc coordinates are cartesian. The Bump coordinates are cartesian,
+The Point coordinates are cartesian. The Bump coordinates are cartesian,
 translated so that the hero is at (0, 0) and rotated so that he always
 looks at the first quadrant. The (Progress, Distance) cordinates
 are mangled and not used for geometry.

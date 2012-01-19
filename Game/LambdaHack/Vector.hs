@@ -1,6 +1,6 @@
 -- | Geografical directions implemented in an efficient way.
 module Game.LambdaHack.Vector
-  ( Dir, dirDistSq, diagonal, neg, moves, movesWidth, shift, towards
+  ( Vector, dirDistSq, diagonal, neg, moves, movesWidth, shift, towards
   ) where
 
 import Data.Binary
@@ -11,23 +11,23 @@ import Game.LambdaHack.Point
 import Game.LambdaHack.Utils.Assert
 
 -- | Vectors of length 1 (in our metric), that is, geographical directions.
--- Implemented as an offset in the linear framebuffer indexed by Loc.
--- A newtype to prevent mixing up with Loc itself.
+-- Implemented as an offset in the linear framebuffer indexed by Point.
+-- A newtype to prevent mixing up with Point itself.
 -- The X size of the level has to be > 1 for the 'moves' list of
 -- vectors to make sense.
-newtype Dir = Dir Int deriving (Show, Eq)
+newtype Vector = Vector Int deriving (Show, Eq)
 
-instance Binary Dir where
-  put (Dir dir) = put dir
-  get = fmap Dir get
+instance Binary Vector where
+  put (Vector dir) = put dir
+  get = fmap Vector get
 
-toDir :: X -> (X, Y) -> Dir
+toDir :: X -> (X, Y) -> Vector
 toDir lxsize (x, y) =
   assert (lxsize > 1 && chessDistXY (x, y) == 1 `blame` (lxsize, (x, y))) $
-  Dir $ x + y * lxsize
+  Vector $ x + y * lxsize
 
-fromDir :: X -> Dir -> (X, Y)
-fromDir lxsize (Dir dir) =
+fromDir :: X -> Vector -> (X, Y)
+fromDir lxsize (Vector dir) =
   assert (chessDistXY res == 1 && fst res + snd res * lxsize == dir
           `blame` (lxsize, dir, res)) $
   res
@@ -39,34 +39,34 @@ fromDir lxsize (Dir dir) =
         else (x, y)
 
 -- | Squared euclidean distance between two directions.
-dirDistSq :: X -> Dir -> Dir -> Int
+dirDistSq :: X -> Vector -> Vector -> Int
 dirDistSq lxsize dir0 dir1
   | (x0, y0) <- fromDir lxsize dir0, (x1, y1) <- fromDir lxsize dir1 =
   euclidDistSq ((y1 - y0), (x1 - x0))
 
 -- | Checks whether a direction is diagonal, as opposed to cardinal.
-diagonal :: X -> Dir -> Bool
+diagonal :: X -> Vector -> Bool
 diagonal lxsize dir | (x, y) <- fromDir lxsize dir =
   x * y /= 0
 
 -- | Reverse a direction (vector).
-neg :: Dir -> Dir
-neg (Dir dir) = Dir (-dir)
+neg :: Vector -> Vector
+neg (Vector dir) = Vector (-dir)
 
--- | Directions of all unit moves, clockwise, starting north-west.
-moves :: X -> [Dir]
+-- | Vector ections of all unit moves, clockwise, starting north-west.
+moves :: X -> [Vector]
 moves lxsize = map (toDir lxsize) movesXY
 
--- | Directions of all unit moves, clockwise, starting north-west,
+-- | Vector ections of all unit moves, clockwise, starting north-west,
 -- parameterized by level width.
-movesWidth :: [X -> Dir]
+movesWidth :: [X -> Vector]
 movesWidth = map (flip toDir) movesXY
 
 -- | Move one square in the given direction.
 --
 -- Particularly simple and fast implementation in the linear representation.
-shift :: Loc -> Dir -> Loc
-shift loc (Dir dir) = loc + dir
+shift :: Point -> Vector -> Point
+shift loc (Vector dir) = loc + dir
 
 -- TODO: Perhaps produce all acceptable directions and let AI choose.
 -- That would also eliminate the Doubles.
@@ -75,7 +75,7 @@ shift loc (Dir dir) = loc + dir
 -- Ignores obstacles. Of several equally good directions
 -- (in the metric where diagonal moves cost 1) it picks the one that visually
 -- (in the euclidean metric) would be the best.
-towards :: X -> Loc -> Loc -> Dir
+towards :: X -> Point -> Point -> Vector
 towards lxsize loc0 loc1
   | (x0, y0) <- fromLoc lxsize loc0, (x1, y1) <- fromLoc lxsize loc1 =
   assert (loc0 /= loc1 `blame` (loc0, loc1, x0, y0)) $

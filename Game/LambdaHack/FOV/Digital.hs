@@ -106,7 +106,7 @@ The line in the curent state of mscan is called the shallow line,
 but it's the one that delimits the view from the left, while the steep
 line is on the right, opposite to PFOV. We start scanning from the left.
 
-The Loc coordinates are cartesian. The Bump coordinates are cartesian,
+The Point coordinates are cartesian. The Bump coordinates are cartesian,
 translated so that the hero is at (0, 0) and rotated so that he always
 looks at the first (rotated 45 degrees) quadrant. The (Progress, Distance)
 cordinates coincide with the Bump coordinates, unlike in PFOV.

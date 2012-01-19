@@ -30,9 +30,9 @@ data FovMode =
 -- algorithm to use, passed in the second argument, is set in the config file.
 fullscan :: Kind.Ops TileKind  -- ^ tile content, determines clear tiles
          -> FovMode            -- ^ scanning mode
-         -> Loc                -- ^ location of the spectacor
+         -> Point              -- ^ location of the spectacor
          -> Level              -- ^ the map that is scanned
-         -> [Loc]
+         -> [Point]
 fullscan cotile fovMode loc Level{lxsize, lmap} =
   case fovMode of
     Shadow ->
@@ -45,13 +45,13 @@ fullscan cotile fovMode loc Level{lxsize, lmap} =
       let radiusOne = 1
       in L.concatMap (\ tr -> map tr (Digital.scan radiusOne (isCl . tr))) tr4
  where
-  isCl :: Loc -> Bool
+  isCl :: Point -> Bool
   isCl = Tile.isClear cotile . (lmap Kind.!)
 
   trL = trLoc lxsize loc
 
   -- | The translation, rotation and symmetry functions for octants.
-  tr8 :: [(Distance, Progress) -> Loc]
+  tr8 :: [(Distance, Progress) -> Point]
   tr8 =
     [ \ (p, d) -> trL (  p,   d)
     , \ (p, d) -> trL (- p,   d)
@@ -64,7 +64,7 @@ fullscan cotile fovMode loc Level{lxsize, lmap} =
     ]
 
   -- | The translation and rotation functions for quadrants.
-  tr4 :: [Bump -> Loc]
+  tr4 :: [Bump -> Point]
   tr4 =
     [ \ (B(x, y)) -> trL (  x, - y)  -- quadrant I
     , \ (B(x, y)) -> trL (  y,   x)  -- II (we rotate counter-clockwise)

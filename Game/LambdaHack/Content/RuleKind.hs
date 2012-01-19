@@ -26,7 +26,7 @@ data RuleKind = RuleKind
   , rfreq             :: Freqs    -- ^ frequency within groups
     -- Predicate that tells whether one location is accessible from another.
     -- Precondition: the two locations are next to each other.
-  , raccessible       :: X -> Loc -> TileKind -> Loc -> TileKind -> Bool
+  , raccessible       :: X -> Point -> TileKind -> Point -> TileKind -> Bool
   , rtitle            :: String   -- ^ the title of the game
   , rpathsDataFile    :: FilePath -> IO FilePath  -- ^ the path to data files
   , rpathsVersion     :: Version  -- ^ the version of the game

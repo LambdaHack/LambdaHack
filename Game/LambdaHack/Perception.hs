@@ -54,7 +54,7 @@ debugTotalReachable per =
 -- | Check whether a location is within the visually reachable area
 -- of the given actor (disregarding lighting).
 -- Defaults to false if the actor is not player-controlled (monster or hero).
-actorReachesLoc :: ActorId -> Loc -> Perception -> Maybe ActorId -> Bool
+actorReachesLoc :: ActorId -> Point -> Perception -> Maybe ActorId -> Bool
 actorReachesLoc actor loc per pl =
   let tryHero = case actor of
                   AMonster _ -> Nothing
@@ -72,7 +72,7 @@ actorReachesLoc actor loc per pl =
 -- of the given actor (disregarding lighting).
 -- Not quite correct if FOV not symmetric (e.g., @Shadow@).
 -- Defaults to false if neither actor is player-controlled.
-actorReachesActor :: ActorId -> ActorId -> Loc -> Loc
+actorReachesActor :: ActorId -> ActorId -> Point -> Point
                   -> Perception -> Maybe ActorId
                   -> Bool
 actorReachesActor actor1 actor2 loc1 loc2 per pl =

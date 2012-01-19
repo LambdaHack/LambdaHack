@@ -89,7 +89,7 @@ updateAnyLevel f ln s@State{slid, sdungeon}
   | otherwise = updateDungeon (const $ adjust f ln sdungeon) s
 
 -- | Calculate the location of player's target.
-targetToLoc :: IS.IntSet -> State -> Maybe Loc
+targetToLoc :: IS.IntSet -> State -> Maybe Point
 targetToLoc visible s@State{slid, scursor} =
   case btarget (getPlayerBody s) of
     TLoc loc -> Just loc
@@ -156,13 +156,13 @@ levelHeroList    state = IM.elems $ lheroes   $ slevel state
 levelMonsterList state = IM.elems $ lmonsters $ slevel state
 
 -- | Finds an actor at a location on the current level. Perception irrelevant.
-locToActor :: Loc -> State -> Maybe ActorId
+locToActor :: Point -> State -> Maybe ActorId
 locToActor loc state =
   let l = locToActors loc state
   in assert (L.length l <= 1 `blame` l) $
      listToMaybe l
 
-locToActors :: Loc -> State -> [ActorId]
+locToActors :: Point -> State -> [ActorId]
 locToActors loc state =
   getIndex (lmonsters, AMonster) ++ getIndex (lheroes, AHero)
  where
@@ -171,7 +171,7 @@ locToActors loc state =
         im = L.filter (\ (_i, m) -> bloc m == loc) l
     in fmap (injection . fst) im
 
-nearbyFreeLoc :: Kind.Ops TileKind -> Loc -> State -> Loc
+nearbyFreeLoc :: Kind.Ops TileKind -> Point -> State -> Point
 nearbyFreeLoc cotile origin state =
   let lvl@Level{lxsize, lysize} = slevel state
       hs = levelHeroList state
@@ -184,7 +184,7 @@ nearbyFreeLoc cotile origin state =
 -- Adding heroes
 
 -- | Create a new hero on the current level, close to the given location.
-addHero :: Kind.COps -> Loc -> State -> State
+addHero :: Kind.COps -> Point -> State -> State
 addHero Kind.COps{coactor, cotile} ploc state =
   let config = sconfig state
       bHP = Config.get config "heroes" "baseHP"
@@ -199,7 +199,7 @@ addHero Kind.COps{coactor, cotile} ploc state =
   in updateLevel (updateHeroes (IM.insert n m)) state'
 
 -- | Create a set of initial heroes on the current level, at location ploc.
-initialHeroes :: Kind.COps -> Loc -> State -> State
+initialHeroes :: Kind.COps -> Point -> State -> State
 initialHeroes cops ploc state =
   let k = 1 + Config.get (sconfig state) "heroes" "extraHeroes"
   in iterate (addHero cops ploc) state !! k
@@ -207,7 +207,7 @@ initialHeroes cops ploc state =
 -- Adding monsters
 
 -- | Create a new monster in the level, at a random position.
-addMonster :: Kind.Ops TileKind -> Kind.Id ActorKind -> Int -> Loc -> State
+addMonster :: Kind.Ops TileKind -> Kind.Id ActorKind -> Int -> Point -> State
            -> State
 addMonster cotile mk hp ploc state@State{scounter = (heroC, monsterC)} = do
   let loc = nearbyFreeLoc cotile ploc state

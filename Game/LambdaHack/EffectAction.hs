@@ -283,7 +283,7 @@ focusIfAHero target =
     -- Display status line for the new hero.
     when b $ displayAll >> return ()
 
-summonHeroes :: Int -> Loc -> Action ()
+summonHeroes :: Int -> Point -> Action ()
 summonHeroes n loc =
   assert (n > 0) $ do
   cops <- contentOps
@@ -294,7 +294,7 @@ summonHeroes n loc =
   -- Display status line for the new hero.
   displayAll >> return ()
 
-summonMonsters :: Int -> Loc -> Action ()
+summonMonsters :: Int -> Point -> Action ()
 summonMonsters n loc = do
   Kind.COps{cotile, coactor=Kind.Ops{opick, okind}} <- contentOps
   mk <- rndToAction $ opick "summon" (const True)

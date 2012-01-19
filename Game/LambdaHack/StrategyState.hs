@@ -201,12 +201,12 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
                .| liftFrequency (msum interestIQFreq)
                .| onlyKeepsDir_9 moveRandomly
                .| moveRandomly
-  onlyMoves :: (Loc -> Bool) -> Loc -> Strategy Dir -> Strategy Dir
+  onlyMoves :: (Point -> Bool) -> Point -> Strategy Vector -> Strategy Vector
   onlyMoves p l = only (\ x -> p (l `shift` x))
-  moveRandomly :: Strategy Dir
+  moveRandomly :: Strategy Vector
   moveRandomly = liftFrequency $ uniformFreq (moves lxsize)
 
-dirToAction :: ActorId -> Target -> Bool -> Dir -> Action ()
+dirToAction :: ActorId -> Target -> Bool -> Vector -> Action ()
 dirToAction actor tgt allowAttacks dir = do
   -- set new direction
   updateAnyActor actor $ \ m -> m { bdir = Just (dir, 0), btarget = tgt }

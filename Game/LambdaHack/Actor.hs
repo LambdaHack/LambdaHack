@@ -27,15 +27,15 @@ import qualified Game.LambdaHack.Config as Config
 -- of properties from ActorKind, the intention is they may be modified
 -- temporarily, but tend to return to the original value over time. E.g., HP.
 data Actor = Actor
-  { bkind   :: !(Kind.Id ActorKind)  -- ^ the kind of the actor
-  , bsymbol :: !(Maybe Char)         -- ^ individual map symbol
-  , bname   :: !(Maybe String)       -- ^ individual name
-  , bhp     :: !Int                  -- ^ current hit pints
-  , bdir    :: !(Maybe (Dir, Int))   -- ^ the direction and distance of running
-  , btarget :: Target                -- ^ the target for distance attacks and AI
-  , bloc    :: !Loc                  -- ^ current location
-  , bletter :: !Char                 -- ^ next inventory letter
-  , btime   :: !Time                 -- ^ time of next action
+  { bkind   :: !(Kind.Id ActorKind)    -- ^ the kind of the actor
+  , bsymbol :: !(Maybe Char)           -- ^ individual map symbol
+  , bname   :: !(Maybe String)         -- ^ individual name
+  , bhp     :: !Int                    -- ^ current hit pints
+  , bdir    :: !(Maybe (Vector, Int))  -- ^ direction and distance of running
+  , btarget :: Target                  -- ^ target for ranged attacks and AI
+  , bloc    :: !Point                  -- ^ current location
+  , bletter :: !Char                   -- ^ next inventory letter
+  , btime   :: !Time                   -- ^ time of next action
   }
   deriving Show
 
@@ -116,7 +116,7 @@ monsterGenChance d numMonsters =
 -- the time to the creation time instead.
 -- | A template for a new actor. The initial target is invalid
 -- to force a reset ASAP.
-template :: Kind.Id ActorKind -> Maybe Char -> Maybe String -> Int -> Loc
+template :: Kind.Id ActorKind -> Maybe Char -> Maybe String -> Int -> Point
          -> Actor
 template mk mc ms hp loc =
   let invalidTarget = TEnemy invalidActorId loc
@@ -134,7 +134,7 @@ addHp Kind.Ops{okind} extra m =
 
 -- | Checks for the presence of actors in a location.
 -- Does not check if the tile is open.
-unoccupied :: [Actor] -> Loc -> Bool
+unoccupied :: [Actor] -> Point -> Bool
 unoccupied actors loc =
   all (\ body -> bloc body /= loc) actors
 
@@ -146,9 +146,9 @@ heroKindId Kind.Ops{ouniqGroup} = ouniqGroup "hero"
 
 -- | The type of na actor target.
 data Target =
-    TEnemy ActorId Loc  -- ^ target an actor; last seen location
-  | TLoc Loc            -- ^ target a given location
-  | TCursor             -- ^ target the current position of the cursor; default
+    TEnemy ActorId Point  -- ^ target an actor; last seen location
+  | TLoc Point            -- ^ target a given location
+  | TCursor               -- ^ target current position of the cursor; default
   deriving (Show, Eq)
 
 instance Binary Target where

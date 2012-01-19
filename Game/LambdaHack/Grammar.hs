@@ -132,7 +132,7 @@ actorVerbExtraItemExtra Kind.COps{coactor, coitem} state a v extra1 i extra2 =
 -- | Produces a textual description of the terrain and items at an already
 -- explored location. Mute for unknown locations.
 -- The "detailed" variant is for use in the targeting mode.
-lookAt :: Kind.COps -> Bool -> Bool -> State -> Level -> Loc -> String -> String
+lookAt :: Kind.COps -> Bool -> Bool -> State -> Level -> Point -> String -> String
 lookAt Kind.COps{coitem, cotile=Kind.Ops{oname}} detailed canSee s lvl loc msg
   | detailed  =
     let tile = lvl `rememberAt` loc

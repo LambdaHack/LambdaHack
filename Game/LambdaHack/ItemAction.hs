@@ -84,7 +84,7 @@ playerApplyGroupItem verb object syms = do
     Nothing -> neverMind True
 
 projectGroupItem :: ActorId  -- ^ actor projecting the item; on current level
-                 -> Loc      -- ^ target location for the projecting
+                 -> Point    -- ^ target location for the projecting
                  -> Verb     -- ^ how the "projecting" is called
                  -> Item     -- ^ the item to be projected
                  -> Action ()
@@ -286,7 +286,7 @@ dropItem = do
 
 -- TODO: this is a hack for dropItem, because removeFromInventory
 -- makes it impossible to drop items if the floor not empty.
-removeOnlyFromInventory :: ActorId -> Item -> Loc -> Action ()
+removeOnlyFromInventory :: ActorId -> Item -> Point -> Action ()
 removeOnlyFromInventory actor i _loc =
   modify (updateAnyActorItem actor (removeItemByLetter i))
 
@@ -297,14 +297,14 @@ removeOnlyFromInventory actor i _loc =
 -- of dead heros/monsters. The subtle incorrectness helps here a lot,
 -- because items of dead heroes land on the floor, so we use them up
 -- in inventory, but remove them after use from the floor.
-removeFromInventory :: ActorId -> Item -> Loc -> Action ()
+removeFromInventory :: ActorId -> Item -> Point -> Action ()
 removeFromInventory actor i loc = do
   b <- removeFromLoc i loc
   unless b $
     modify (updateAnyActorItem actor (removeItemByLetter i))
 
 -- | Remove given item from the given location. Tell if successful.
-removeFromLoc :: Item -> Loc -> Action Bool
+removeFromLoc :: Item -> Point -> Action Bool
 removeFromLoc i loc = do
   lvl <- gets slevel
   if not $ L.any (equalItemIdentity i) (lvl `atI` loc)
