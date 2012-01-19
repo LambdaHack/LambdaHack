@@ -25,7 +25,7 @@ import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Display
 import Game.LambdaHack.Grammar
-import Game.LambdaHack.Geometry
+import Game.LambdaHack.PointXY
 import Game.LambdaHack.Loc
 import qualified Game.LambdaHack.HighScore as H
 import Game.LambdaHack.Item

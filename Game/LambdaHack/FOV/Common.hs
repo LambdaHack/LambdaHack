@@ -14,7 +14,7 @@ module Game.LambdaHack.FOV.Common
 
 import qualified Data.List as L
 
-import Game.LambdaHack.Geometry
+import Game.LambdaHack.PointXY
 
 -- | Distance from the (0, 0) point where FOV originates.
 type Distance = Int

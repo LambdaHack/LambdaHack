@@ -7,7 +7,7 @@
 -- for some more context and references.
 module Game.LambdaHack.FOV.Permissive (scan) where
 
-import Game.LambdaHack.Geometry
+import Game.LambdaHack.PointXY
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.FOV.Common
 

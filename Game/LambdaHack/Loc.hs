@@ -3,7 +3,8 @@ module Game.LambdaHack.Loc
   ( Loc, toLoc, fromLoc, trLoc, zeroLoc, distance, adjacent, vicinity
   ) where
 
-import Game.LambdaHack.Geometry
+import Game.LambdaHack.PointXY
+import Game.LambdaHack.VectorXY
 import Game.LambdaHack.Area
 import Game.LambdaHack.Utils.Assert
 
@@ -50,7 +51,7 @@ zeroLoc = 0
 distance :: X -> Loc -> Loc -> Int
 distance lxsize loc0 loc1
   | (x0, y0) <- fromLoc lxsize loc0, (x1, y1) <- fromLoc lxsize loc1 =
-  lenXY (x1 - x0, y1 - y0)
+  chessDistXY (x1 - x0, y1 - y0)
 
 -- | Checks whether two locations are adjacent on the map
 -- (horizontally, vertically or diagonally).

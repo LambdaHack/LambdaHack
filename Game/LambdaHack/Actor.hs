@@ -15,7 +15,7 @@ import Data.Maybe
 import Data.Ratio
 
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Geometry
+import Game.LambdaHack.PointXY
 import Game.LambdaHack.Dir
 import Game.LambdaHack.Loc
 import Game.LambdaHack.Content.ActorKind

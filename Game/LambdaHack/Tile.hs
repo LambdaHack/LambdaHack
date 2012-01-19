@@ -11,7 +11,7 @@ import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Feature as F
 import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Geometry
+import Game.LambdaHack.PointXY
 
 -- | There is not type Tile, of particular concrete tiles in the dungeon,
 -- corresponding corresponding to type TileKind, of kinds of terrain tiles.

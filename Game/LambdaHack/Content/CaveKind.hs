@@ -5,7 +5,7 @@ module Game.LambdaHack.Content.CaveKind
 
 import qualified Data.List as L
 
-import Game.LambdaHack.Geometry
+import Game.LambdaHack.PointXY
 import Game.LambdaHack.Random
 import Game.LambdaHack.Content.Content
 

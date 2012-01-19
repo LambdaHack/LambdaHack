@@ -13,7 +13,7 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
 import Game.LambdaHack.Loc
 import Game.LambdaHack.Dir
-import Game.LambdaHack.Geometry
+import Game.LambdaHack.PointXY
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Actor

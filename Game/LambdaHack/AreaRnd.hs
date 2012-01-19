@@ -12,7 +12,7 @@ import qualified Data.List as L
 import qualified Data.Set as S
 
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Geometry
+import Game.LambdaHack.PointXY
 import Game.LambdaHack.Area
 import Game.LambdaHack.Random
 

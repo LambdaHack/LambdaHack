@@ -5,7 +5,8 @@ module Game.LambdaHack.Dir
 
 import Data.Binary
 
-import Game.LambdaHack.Geometry
+import Game.LambdaHack.PointXY
+import Game.LambdaHack.VectorXY
 import Game.LambdaHack.Loc
 import Game.LambdaHack.Utils.Assert
 
@@ -22,12 +23,12 @@ instance Binary Dir where
 
 toDir :: X -> (X, Y) -> Dir
 toDir lxsize (x, y) =
-  assert (lxsize > 1 && lenXY (x, y) == 1 `blame` (lxsize, (x, y))) $
+  assert (lxsize > 1 && chessDistXY (x, y) == 1 `blame` (lxsize, (x, y))) $
   Dir $ x + y * lxsize
 
 fromDir :: X -> Dir -> (X, Y)
 fromDir lxsize (Dir dir) =
-  assert (lenXY res == 1 && fst res + snd res * lxsize == dir
+  assert (chessDistXY res == 1 && fst res + snd res * lxsize == dir
           `blame` (lxsize, dir, res)) $
   res
  where

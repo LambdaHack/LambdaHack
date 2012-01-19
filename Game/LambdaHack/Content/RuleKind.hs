@@ -5,7 +5,7 @@ module Game.LambdaHack.Content.RuleKind
 
 import Data.Version
 
-import Game.LambdaHack.Geometry
+import Game.LambdaHack.PointXY
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Loc
 import Game.LambdaHack.Content.Content

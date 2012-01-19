@@ -30,7 +30,8 @@ import Data.Maybe
 import Game.LambdaHack.Msg
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.State
-import Game.LambdaHack.Geometry
+import Game.LambdaHack.PointXY
+import Game.LambdaHack.VectorXY
 import Game.LambdaHack.Loc
 import Game.LambdaHack.Level
 import Game.LambdaHack.Effect

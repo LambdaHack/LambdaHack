@@ -27,7 +27,7 @@ import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Cave
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Item
-import Game.LambdaHack.Geometry
+import Game.LambdaHack.PointXY
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Place
 import Game.LambdaHack.Area

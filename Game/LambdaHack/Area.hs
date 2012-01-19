@@ -6,7 +6,8 @@ module Game.LambdaHack.Area
 
 import qualified Data.List as L
 
-import Game.LambdaHack.Geometry
+import Game.LambdaHack.PointXY
+import Game.LambdaHack.VectorXY
 import Game.LambdaHack.Utils.Assert
 
 -- | The type of areas. The bottom left and the top right points.

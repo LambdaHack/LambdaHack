@@ -7,7 +7,7 @@ import qualified Data.List as L
 import qualified Data.Ord as Ord
 
 import Game.LambdaHack.Color
-import qualified Game.LambdaHack.Geometry as Geometry
+import qualified Game.LambdaHack.PointXY as PointXY
 import qualified Game.LambdaHack.Random as Random
 import Game.LambdaHack.Content.Content
 
@@ -17,7 +17,7 @@ data ActorKind = ActorKind
   , aname   :: !String           -- ^ short description
   , afreq   :: !Freqs            -- ^ frequency within groups
   , acolor  :: !Color            -- ^ map color
-  , aspeed  :: !Geometry.Time    -- ^ natural speed
+  , aspeed  :: !PointXY.Time     -- ^ natural speed
   , ahp     :: !Random.RollDice  -- ^ encodes initial and maximal hp
   , asight  :: !Bool             -- ^ can it see?
   , asmell  :: !Bool             -- ^ can it smell?

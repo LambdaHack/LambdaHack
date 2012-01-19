@@ -7,7 +7,7 @@ import Control.Monad
 import qualified Data.Map as M
 import qualified Data.List as L
 
-import Game.LambdaHack.Geometry
+import Game.LambdaHack.PointXY
 import Game.LambdaHack.Area
 import Game.LambdaHack.AreaRnd
 import Game.LambdaHack.Item

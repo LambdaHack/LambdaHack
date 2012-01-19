@@ -7,7 +7,7 @@ import Prelude hiding (Left, Right)
 import qualified Data.List as L
 import Data.Char
 
-import Game.LambdaHack.Geometry
+import Game.LambdaHack.PointXY
 import Game.LambdaHack.Dir
 
 -- TODO: if the file grows much larger, split it and move a part to Utils/
