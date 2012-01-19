@@ -56,7 +56,6 @@ library
                    Game.LambdaHack.Content.PlaceKind,
                    Game.LambdaHack.Content.RuleKind,
                    Game.LambdaHack.Content.TileKind,
-                   Game.LambdaHack.Dir,
                    Game.LambdaHack.Display,
                    Game.LambdaHack.Dungeon,
                    Game.LambdaHack.DungeonState,
@@ -77,10 +76,10 @@ library
                    Game.LambdaHack.Keybinding,
                    Game.LambdaHack.Kind,
                    Game.LambdaHack.Level,
-                   Game.LambdaHack.Loc,
                    Game.LambdaHack.Msg,
                    Game.LambdaHack.Perception,
                    Game.LambdaHack.Place,
+                   Game.LambdaHack.Point,
                    Game.LambdaHack.PointXY,
                    Game.LambdaHack.Random,
                    Game.LambdaHack.Running,
@@ -94,6 +93,7 @@ library
                    Game.LambdaHack.Utils.Assert,
                    Game.LambdaHack.Utils.File,
                    Game.LambdaHack.Utils.Frequency,
+                   Game.LambdaHack.Vector
                    Game.LambdaHack.VectorXY
   other-modules:   Paths_LambdaHack
   build-depends:   ConfigFile >= 1.1.1 && < 2,

@@ -15,7 +15,7 @@ import Data.Maybe
 import Control.Monad
 
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Loc
+import Game.LambdaHack.Point
 import Game.LambdaHack.Level
 import qualified Game.LambdaHack.Dungeon as Dungeon
 import Game.LambdaHack.Random

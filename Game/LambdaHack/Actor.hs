@@ -16,8 +16,8 @@ import Data.Ratio
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.PointXY
-import Game.LambdaHack.Dir
-import Game.LambdaHack.Loc
+import Game.LambdaHack.Vector
+import Game.LambdaHack.Point
 import Game.LambdaHack.Content.ActorKind
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Random

@@ -1,5 +1,5 @@
 -- | Locations on the level map.
-module Game.LambdaHack.Loc
+module Game.LambdaHack.Point
   ( Loc, toLoc, fromLoc, trLoc, zeroLoc, distance, adjacent, vicinity
   ) where
 

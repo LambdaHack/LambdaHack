@@ -11,8 +11,8 @@ import qualified Data.IntSet as IS
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
-import Game.LambdaHack.Loc
-import Game.LambdaHack.Dir
+import Game.LambdaHack.Point
+import Game.LambdaHack.Vector
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg

@@ -4,7 +4,7 @@ module Content.RuleKind ( cdefs ) where
 -- Cabal
 import qualified Paths_LambdaHack as Self (getDataFileName, version)
 
-import Game.LambdaHack.Dir
+import Game.LambdaHack.Vector
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Feature as F

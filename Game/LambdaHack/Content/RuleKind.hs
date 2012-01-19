@@ -7,7 +7,7 @@ import Data.Version
 
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.Loc
+import Game.LambdaHack.Point
 import Game.LambdaHack.Content.Content
 
 -- TODO: very few rules are configurable yet, extend as needed.

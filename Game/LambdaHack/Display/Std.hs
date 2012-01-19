@@ -13,7 +13,7 @@ import qualified Data.ByteString.Char8 as BS
 import qualified System.IO as SIO
 
 import Game.LambdaHack.Area
-import Game.LambdaHack.Loc
+import Game.LambdaHack.Point
 import qualified Game.LambdaHack.Keys as K (Key(..))
 import qualified Game.LambdaHack.Color as Color
 

@@ -8,7 +8,7 @@ import qualified Data.List as L
 import Data.Char
 
 import Game.LambdaHack.PointXY
-import Game.LambdaHack.Dir
+import Game.LambdaHack.Vector
 
 -- TODO: if the file grows much larger, split it and move a part to Utils/
 

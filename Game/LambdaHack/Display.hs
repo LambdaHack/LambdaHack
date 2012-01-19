@@ -32,7 +32,7 @@ import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.State
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.VectorXY
-import Game.LambdaHack.Loc
+import Game.LambdaHack.Point
 import Game.LambdaHack.Level
 import Game.LambdaHack.Effect
 import Game.LambdaHack.Perception

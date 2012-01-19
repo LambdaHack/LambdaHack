@@ -9,7 +9,7 @@ import Game.LambdaHack.FOV.Common
 import qualified Game.LambdaHack.FOV.Digital as Digital
 import qualified Game.LambdaHack.FOV.Permissive as Permissive
 import qualified Game.LambdaHack.FOV.Shadow as Shadow
-import Game.LambdaHack.Loc
+import Game.LambdaHack.Point
 import Game.LambdaHack.Level
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Content.TileKind

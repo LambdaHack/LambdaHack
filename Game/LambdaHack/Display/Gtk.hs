@@ -18,7 +18,7 @@ import qualified Data.Map as M
 import qualified Data.ByteString.Char8 as BS
 
 import Game.LambdaHack.Area
-import Game.LambdaHack.Loc
+import Game.LambdaHack.Point
 import Game.LambdaHack.PointXY
 import qualified Game.LambdaHack.Keys as K (Key(..), keyTranslate)
 import qualified Game.LambdaHack.Color as Color

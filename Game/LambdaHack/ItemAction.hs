@@ -13,7 +13,7 @@ import qualified Data.IntSet as IS
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
-import Game.LambdaHack.Loc
+import Game.LambdaHack.Point
 import Game.LambdaHack.Grammar
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Keys as K

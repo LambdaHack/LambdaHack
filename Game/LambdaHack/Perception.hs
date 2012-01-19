@@ -10,7 +10,7 @@ import qualified Data.IntMap as IM
 import Data.Maybe
 import Control.Monad
 
-import Game.LambdaHack.Loc
+import Game.LambdaHack.Point
 import Game.LambdaHack.State
 import Game.LambdaHack.Level
 import Game.LambdaHack.Actor

@@ -11,7 +11,7 @@ import Data.Maybe
 import qualified Data.Char as Char
 
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Loc
+import Game.LambdaHack.Point
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Level
 import Game.LambdaHack.Dungeon

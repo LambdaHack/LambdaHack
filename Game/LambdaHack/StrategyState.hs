@@ -6,8 +6,8 @@ import Data.Maybe
 import Control.Monad
 import Control.Arrow
 
-import Game.LambdaHack.Loc
-import Game.LambdaHack.Dir
+import Game.LambdaHack.Point
+import Game.LambdaHack.Vector
 import Game.LambdaHack.Level
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState

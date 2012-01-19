@@ -15,7 +15,7 @@ import qualified Data.Map as M
 import Control.Monad
 
 import Game.LambdaHack.Area
-import Game.LambdaHack.Loc
+import Game.LambdaHack.Point
 import qualified Game.LambdaHack.Keys as K (Key(..))
 import qualified Game.LambdaHack.Color as Color
 

@@ -17,7 +17,7 @@ import qualified Data.IntMap as IM
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.PointXY
-import Game.LambdaHack.Loc
+import Game.LambdaHack.Point
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Item
 import Game.LambdaHack.Content.TileKind

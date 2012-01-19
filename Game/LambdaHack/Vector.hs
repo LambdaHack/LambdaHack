@@ -1,5 +1,5 @@
 -- | Geografical directions implemented in an efficient way.
-module Game.LambdaHack.Dir
+module Game.LambdaHack.Vector
   ( Dir, dirDistSq, diagonal, neg, moves, movesWidth, shift, towards
   ) where
 
@@ -7,7 +7,7 @@ import Data.Binary
 
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.VectorXY
-import Game.LambdaHack.Loc
+import Game.LambdaHack.Point
 import Game.LambdaHack.Utils.Assert
 
 -- | Vectors of length 1 (in our metric), that is, geographical directions.

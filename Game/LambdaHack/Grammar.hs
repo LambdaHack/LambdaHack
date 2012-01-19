@@ -18,7 +18,7 @@ import qualified Data.Set as S
 import qualified Data.List as L
 import Data.Maybe
 
-import Game.LambdaHack.Loc
+import Game.LambdaHack.Point
 import Game.LambdaHack.Item
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Level
