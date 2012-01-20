@@ -242,7 +242,7 @@ endTargetingMsg = do
                       if memActor a state
                       then objectActor cops $ getActor a state
                       else "a fear of the past"
-                    TLoc loc -> "location " ++ show (fromLoc lxsize loc)
+                    TLoc loc -> "location " ++ showPoint lxsize loc
                     TCursor  -> "current cursor position continuously"
   msgAdd $ actorVerbExtra cops pbody verb targetMsg
 

@@ -14,7 +14,7 @@ import qualified Data.List as L
 import qualified Data.ByteString.Char8 as BS
 
 import Game.LambdaHack.Area
-import Game.LambdaHack.Point
+import Game.LambdaHack.PointXY
 import qualified Game.LambdaHack.Keys as K (Key(..))
 import qualified Game.LambdaHack.Color as Color
 
@@ -34,17 +34,17 @@ shutdown :: FrontendSession -> IO ()
 shutdown = Vty.shutdown
 
 -- | Output to the screen via the frontend.
-display :: Area                         -- ^ the size of the drawn area
-        -> FrontendSession              -- ^ current session data
-        -> (Loc -> (Color.Attr, Char))  -- ^ the content of the screen
-        -> String                       -- ^ an extra line to show at the top
-        -> String                       -- ^ an extra line to show at the bottom
+display :: Area             -- ^ the size of the drawn area
+        -> FrontendSession  -- ^ current session data
+        -> (PointXY -> (Color.Attr, Char))
+                            -- ^ the content of the screen
+        -> String           -- ^ an extra line to show at the top
+        -> String           -- ^ an extra line to show at bottom
         -> IO ()
 display (x0, y0, x1, y1) vty f msg status =
-  let xsize  = x1 - x0 + 1
-      img = (foldr (<->) empty_image .
+  let img = (foldr (<->) empty_image .
              L.map (foldr (<|>) empty_image .
-                    L.map (\ (x, y) -> let (a, c) = f (toLoc xsize (x, y))
+                    L.map (\ (x, y) -> let (a, c) = f (x, y)
                                        in char (setAttr a) c)))
             [ [ (x, y) | x <- [x0..x1] ] | y <- [y0..y1] ]
       pic = pic_for_image $

@@ -15,14 +15,14 @@ type Area = (X, Y, X, Y)
 
 -- | All (8 at most) closest neighbours of a point within an area.
 vicinityXY :: Area      -- ^ limit the search to this area
-           -> (X, Y)    -- ^ location to find neighbors of
+           -> (X, Y)    -- ^ location to find neighbours of
            -> [(X, Y)]
 vicinityXY area xy =
   [ res | dxy <- movesXY, let res = shiftXY xy dxy, inside res area ]
 
 -- | All (4 at most) cardinal direction neighbours of a point within an area.
 vicinityCardinalXY :: Area  -- ^ limit the search to this area
-           -> (X, Y)        -- ^ location to find neighbors of
+           -> (X, Y)        -- ^ location to find neighbours of
            -> [(X, Y)]
 vicinityCardinalXY area xy =
   [ res | dxy <- movesCardinalXY, let res = shiftXY xy dxy, inside res area ]

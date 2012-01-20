@@ -35,19 +35,19 @@ import Game.LambdaHack.Area
 convertTileMaps :: Rnd (Kind.Id TileKind) -> Int -> Int -> TileMapXY
                 -> Rnd TileMap
 convertTileMaps cdefTile cxsize cysize lmap = do
-  let bounds = (zeroLoc, toLoc cxsize (cxsize - 1, cysize - 1))
-      assocs = map (\ (xy, t) -> (toLoc cxsize xy, t)) (M.assocs lmap)
+  let bounds = (origin, toPoint cxsize (cxsize - 1, cysize - 1))
+      assocs = map (\ (xy, t) -> (toPoint cxsize xy, t)) (M.assocs lmap)
   pickedTiles <- replicateM (cxsize * cysize) cdefTile
   return $ Kind.listArray bounds pickedTiles Kind.// assocs
 
 unknownTileMap :: Kind.Id TileKind -> Int -> Int -> TileMap
 unknownTileMap unknownId cxsize cysize =
-  Kind.listArray (zeroLoc, toLoc cxsize (cxsize - 1, cysize - 1))
+  Kind.listArray (origin, toPoint cxsize (cxsize - 1, cysize - 1))
     (repeat unknownId)
 
 mapToIMap :: X -> M.Map (X, Y) a -> IM.IntMap a
 mapToIMap cxsize m =
-  IM.fromList $ map (\ (xy, a) -> (toLoc cxsize xy, a)) (M.assocs m)
+  IM.fromList $ map (\ (xy, a) -> (toPoint cxsize xy, a)) (M.assocs m)
 
 rollItems :: Kind.COps -> Int -> Int -> CaveKind -> TileMap -> Point
           -> Rnd [(Point, Item)]
@@ -61,7 +61,7 @@ rollItems Kind.COps{cotile, coitem=coitem@Kind.Ops{osymbol}}
              -- HACK: melee weapons generated close to monsters; MUAHAHAHA
              findLocTry 2000 lmap
                (const (Tile.hasFeature cotile F.Boring))
-               (\ l _ -> distance cxsize ploc l > 30)
+               (\ l _ -> chessDist cxsize ploc l > 30)
            _ -> findLoc lmap (const (Tile.hasFeature cotile F.Boring))
     return (l, item)
 
@@ -71,8 +71,8 @@ placeStairs cotile@Kind.Ops{opick} cmap cxsize cminStairDist dplaces = do
   su <- findLoc cmap (const (Tile.hasFeature cotile F.Boring))
   sd <- findLocTry 2000 cmap
           (\ l t -> l /= su && Tile.hasFeature cotile F.Boring t)
-          (\ l _ -> distance cxsize su l >= cminStairDist)
-  let fitArea loc = inside (fromLoc cxsize loc) . qarea
+          (\ l _ -> chessDist cxsize su l >= cminStairDist)
+  let fitArea loc = inside (fromPoint cxsize loc) . qarea
       findLegend loc = maybe "litLegend" qlegend $ L.find (fitArea loc) dplaces
   upId   <- opick (findLegend su) $ Tile.kindHasFeature F.Ascendable
   downId <- opick (findLegend sd) $ Tile.kindHasFeature F.Descendable

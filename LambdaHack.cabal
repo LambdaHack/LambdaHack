@@ -3,7 +3,7 @@ name:          LambdaHack
 version:       0.2.0
 license:       BSD3
 license-file:  LICENSE
-tested-with:   GHC == 7.2.1, GHC == 7.3
+tested-with:   GHC == 7.2, GHC == 7.4
 data-files:    LICENSE, CREDITS, PLAYING.md, README.md,
                config.default, config.bot, scores
 author:        Andres Loeh, Mikolaj Konarski

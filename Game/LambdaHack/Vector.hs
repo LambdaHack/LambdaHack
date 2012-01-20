@@ -90,7 +90,7 @@ neg (Vector dir) = Vector (-dir)
 -- (in the euclidean metric) are maximally straightforward.
 towards :: X -> Point -> Point -> Vector
 towards lxsize loc0 loc1
-  | (x0, y0) <- fromLoc lxsize loc0, (x1, y1) <- fromLoc lxsize loc1 =
+  | (x0, y0) <- fromPoint lxsize loc0, (x1, y1) <- fromPoint lxsize loc1 =
   assert (loc0 /= loc1 `blame` (loc0, loc1, x0, y0)) $
   let dx = x1 - x0
       dy = y1 - y0

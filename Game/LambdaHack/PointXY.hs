@@ -10,6 +10,8 @@ module Game.LambdaHack.PointXY
 type X = Int
 type Y = Int
 
+-- TODO: change some (X, Y) in the code to PointXY, some to VectorXY
+-- Perhaps make PointXY a newtype to enforce that, but it may be too heavy.
 -- | 2D points in cartesian representation.
 type PointXY = (X, Y)
 

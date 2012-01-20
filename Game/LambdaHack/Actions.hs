@@ -80,10 +80,10 @@ moveCursor dir n = do
   lysize <- gets (lysize . slevel)
   let upd cursor =
         let boundedShift loc =
-              let (sx, sy) = fromLoc lxsize (loc `shift` dir)
+              let (sx, sy) = fromPoint lxsize (loc `shift` dir)
                   (bx, by) = (max 1 $ min sx (lxsize - 2),
                               max 1 $ min sy (lysize - 2))
-              in toLoc lxsize (bx, by)
+              in toPoint lxsize (bx, by)
             cloc = iterate boundedShift (clocation cursor) !! n
         in cursor{ clocation = cloc }
   modify (updateCursor upd)

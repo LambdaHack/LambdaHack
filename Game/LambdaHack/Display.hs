@@ -127,7 +127,7 @@ displayLevel dm fs cops per
       hs      = levelHeroList s
       ms      = levelMonsterList s
       dis n (x0, y0) =
-        let loc0 = toLoc sx (x0, y0)
+        let loc0 = toPoint sx (x0, y0)
             tile = lvl `lAt` loc0
             items = lvl `liAt` loc0
             sm = smelltime $ IM.findWithDefault (SmellTime 0) loc0 smap

@@ -172,11 +172,11 @@ locToActors loc state =
     in fmap (injection . fst) im
 
 nearbyFreeLoc :: Kind.Ops TileKind -> Point -> State -> Point
-nearbyFreeLoc cotile origin state =
+nearbyFreeLoc cotile start state =
   let lvl@Level{lxsize, lysize} = slevel state
       hs = levelHeroList state
       ms = levelMonsterList state
-      locs = origin : L.nub (concatMap (vicinity lxsize lysize) locs)
+      locs = start : L.nub (concatMap (vicinity lxsize lysize) locs)
       good loc = Tile.hasFeature cotile F.Walkable (lvl `at` loc)
                  && loc `notElem` L.map bloc (hs ++ ms)
   in fromMaybe (assert `failure` "too crowded map") $ L.find good locs
@@ -235,7 +235,7 @@ rollMonster Kind.COps{cotile, coactor=Kind.Ops{opick, okind}} state = do
                        && l `notElem` L.map bloc (hs ++ ms))
              (\ l t -> not (isLit t)  -- try a dark, distant place first
                        && L.all (\ pl ->
-                                  distance (lxsize lvl) (bloc pl) l > 20) hs)
+                                  chessDist (lxsize lvl) (bloc pl) l > 20) hs)
       mk <- opick "monster" (const True)
       hp <- rollDice $ ahp $ okind mk
       return $ addMonster cotile mk hp loc state

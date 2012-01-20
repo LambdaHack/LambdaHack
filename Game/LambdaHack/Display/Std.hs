@@ -13,7 +13,7 @@ import qualified Data.ByteString.Char8 as BS
 import qualified System.IO as SIO
 
 import Game.LambdaHack.Area
-import Game.LambdaHack.Point
+import Game.LambdaHack.PointXY
 import qualified Game.LambdaHack.Keys as K (Key(..))
 import qualified Game.LambdaHack.Color as Color
 
@@ -33,17 +33,18 @@ shutdown :: FrontendSession -> IO ()
 shutdown _ = return ()
 
 -- | Output to the screen via the frontend.
-display :: Area                         -- ^ the size of the drawn area
-        -> FrontendSession              -- ^ current session data
-        -> (Loc -> (Color.Attr, Char))  -- ^ the content of the screen
-        -> String                       -- ^ an extra line to show at the top
-        -> String                       -- ^ an extra line to show at the bottom
+display :: Area             -- ^ the size of the drawn area
+        -> FrontendSession  -- ^ current session data
+        -> (PointXY -> (Color.Attr, Char))
+                            -- ^ the content of the screen
+        -> String           -- ^ an extra line to show at the top
+        -> String           -- ^ an extra line to show at the bottom
         -> IO ()
 display (x0, y0, x1, y1) _sess f msg status =
   let xsize  = x1 - x0 + 1
       g y x  = if x > x1
                then Nothing
-               else Just (snd (f (toLoc (x1 + 1) (x, y))), x + 1)
+               else Just (snd (f (x, y)), x + 1)
       fl y   = fst $ BS.unfoldrN xsize (g y) x0
       level  = L.map fl [y0..y1]
       screen = [BS.pack msg] ++ level ++ [BS.pack status, BS.empty]

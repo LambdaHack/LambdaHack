@@ -5,7 +5,6 @@ module Game.LambdaHack.Place
   ) where
 
 import Data.Binary
-import Control.Monad
 import qualified Data.Map as M
 import qualified Data.List as L
 import qualified Data.Set as S

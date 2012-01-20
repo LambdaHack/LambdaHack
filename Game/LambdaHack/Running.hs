@@ -5,7 +5,6 @@ module Game.LambdaHack.Running where
 import Control.Monad.State hiding (State, state)
 import qualified Data.List as L
 import qualified Data.IntMap as IM
-import Data.Maybe
 import qualified Data.IntSet as IS
 
 import Game.LambdaHack.Utils.Assert

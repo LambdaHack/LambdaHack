@@ -9,6 +9,7 @@ import Game.LambdaHack.FOV.Common
 import qualified Game.LambdaHack.FOV.Digital as Digital
 import qualified Game.LambdaHack.FOV.Permissive as Permissive
 import qualified Game.LambdaHack.FOV.Shadow as Shadow
+import Game.LambdaHack.VectorXY
 import Game.LambdaHack.Point
 import Game.LambdaHack.Level
 import qualified Game.LambdaHack.Kind as Kind
@@ -48,26 +49,26 @@ fullscan cotile fovMode loc Level{lxsize, lmap} =
   isCl :: Point -> Bool
   isCl = Tile.isClear cotile . (lmap Kind.!)
 
-  trL = trLoc lxsize loc
+  trV xy = translate lxsize loc (VectorXY xy)
 
   -- | The translation, rotation and symmetry functions for octants.
   tr8 :: [(Distance, Progress) -> Point]
   tr8 =
-    [ \ (p, d) -> trL (  p,   d)
-    , \ (p, d) -> trL (- p,   d)
-    , \ (p, d) -> trL (  p, - d)
-    , \ (p, d) -> trL (- p, - d)
-    , \ (p, d) -> trL (  d,   p)
-    , \ (p, d) -> trL (- d,   p)
-    , \ (p, d) -> trL (  d, - p)
-    , \ (p, d) -> trL (- d, - p)
+    [ \ (p, d) -> trV (  p,   d)
+    , \ (p, d) -> trV (- p,   d)
+    , \ (p, d) -> trV (  p, - d)
+    , \ (p, d) -> trV (- p, - d)
+    , \ (p, d) -> trV (  d,   p)
+    , \ (p, d) -> trV (- d,   p)
+    , \ (p, d) -> trV (  d, - p)
+    , \ (p, d) -> trV (- d, - p)
     ]
 
   -- | The translation and rotation functions for quadrants.
   tr4 :: [Bump -> Point]
   tr4 =
-    [ \ (B(x, y)) -> trL (  x, - y)  -- quadrant I
-    , \ (B(x, y)) -> trL (  y,   x)  -- II (we rotate counter-clockwise)
-    , \ (B(x, y)) -> trL (- x,   y)  -- III
-    , \ (B(x, y)) -> trL (- y, - x)  -- IV
+    [ \ (B(x, y)) -> trV (  x, - y)  -- quadrant I
+    , \ (B(x, y)) -> trV (  y,   x)  -- II (we rotate counter-clockwise)
+    , \ (B(x, y)) -> trV (- x,   y)  -- III
+    , \ (B(x, y)) -> trV (- y, - x)  -- IV
     ]

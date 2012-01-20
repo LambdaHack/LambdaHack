@@ -1,6 +1,7 @@
--- | Locations on the level map.
+-- | Basic operations on 2D points represented as linear offsets.
 module Game.LambdaHack.Point
-  ( Point, toLoc, fromLoc, trLoc, zeroLoc, distance, adjacent, vicinity
+  ( Point, toPoint, fromPoint, showPoint
+  , origin, translate, chessDist, adjacent, vicinity
   ) where
 
 import Game.LambdaHack.PointXY
@@ -8,14 +9,15 @@ import Game.LambdaHack.VectorXY
 import Game.LambdaHack.Area
 import Game.LambdaHack.Utils.Assert
 
--- | The type of level map locations, heavily optimized.
+-- TODO: limit the places toPoint and fromPoint are used.
+-- | The type of locations on the 2D level map, heavily optimized.
 --
 -- We represent the (level map on the) screen as a linear framebuffer,
--- where @Loc@ is an @Int@ offset counted from the first cell.
+-- where @Point@ is an @Int@ offset counted from the first cell.
 -- We do bounds check for the X size ASAP and each subsequent
 -- array access performs another check, effectively for Y size.
--- After dungeon is generated (using (X, Y) points, not @Loc@),
--- and converted to the @Loc@ representation, locations are used
+-- After dungeon is generated (using @PointXY@, not @Point@),
+-- and converted to the @Point@ representation, points are used
 -- mainly as keys and not constructed often, so the performance will improve
 -- due to smaller save files, the use of @IntMap@ and cheaper array indexing,
 -- including cheaper bounds checks.
@@ -23,45 +25,49 @@ import Game.LambdaHack.Utils.Assert
 -- in place of @IntMap@, etc.
 type Point = Int
 
--- | Conversion from cartesian coordinates to @Loc@.
-toLoc :: X -> (X, Y) -> Point
-toLoc lxsize (x, y) =
+-- | Print a point as a tuple of cartesian coordinates.
+showPoint :: X -> Point -> String
+showPoint lxsize = show . fromPoint lxsize
+
+-- | Conversion from cartesian coordinates to @Point@.
+toPoint :: X -> PointXY -> Point
+toPoint lxsize (x, y) =
   assert (lxsize > x && x >= 0 && y >= 0 `blame` (lxsize, x, y)) $
   x + y * lxsize
 
 -- | Conversion from @Point@ to cartesian coordinates.
-fromLoc :: X -> Point -> (X, Y)
-fromLoc lxsize loc =
+fromPoint :: X -> Point -> PointXY
+fromPoint lxsize loc =
   assert (loc >= 0 `blame` (lxsize, loc)) $
   (loc `rem` lxsize, loc `quot` lxsize)
 
--- | Translation by a vector.
-trLoc :: X -> Point -> (X, Y) -> Point
-trLoc lxsize loc (dx, dy) =
+-- | Translate of a point by a cartesian vector.
+translate :: X -> Point -> VectorXY -> Point
+translate lxsize loc (VectorXY (dx, dy)) =
   -- Vector coordinates can be negative, but locs are always positive.
   assert (loc >= 0 && res >= 0 `blame` (lxsize, loc, (dx, dy))) $
   res
  where res = loc + dx + dy * lxsize
 
 -- | The top-left corner location of the level.
-zeroLoc :: Point
-zeroLoc = 0
+origin :: Point
+origin = 0
 
 -- | The distance between two points in the chessboard metric.
-distance :: X -> Point -> Point -> Int
-distance lxsize loc0 loc1
-  | (x0, y0) <- fromLoc lxsize loc0, (x1, y1) <- fromLoc lxsize loc1 =
+chessDist :: X -> Point -> Point -> Int
+chessDist lxsize loc0 loc1
+  | (x0, y0) <- fromPoint lxsize loc0, (x1, y1) <- fromPoint lxsize loc1 =
   chessDistXY $ VectorXY (x1 - x0, y1 - y0)
 
--- | Checks whether two locations are adjacent on the map
+-- | Checks whether two points are adjacent on the map
 -- (horizontally, vertically or diagonally).
 -- A position is also considered adjacent to itself.
 adjacent :: X -> Point -> Point -> Bool
-adjacent lxsize s t = distance lxsize s t <= 1
+adjacent lxsize s t = chessDist lxsize s t <= 1
 
 -- | Returns the 8, or less, surrounding locations of a given location.
 vicinity :: X -> Y -> Point -> [Point]
 vicinity lxsize lysize loc =
-  map (toLoc lxsize) $
+  map (toPoint lxsize) $
     vicinityXY (0, 0, lxsize - 1, lysize - 1) $
-      fromLoc lxsize loc
+      fromPoint lxsize loc

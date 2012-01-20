@@ -102,7 +102,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
         foes = if L.null hsAndTraitor then ms else hsAndTraitor
         -- We assume monster sight is infravision, so light has no effect.
         visible = L.filter (uncurry enemyVisible) foes
-        foeDist = L.map (\ (a, l) -> (distance lxsize me l, l, a)) visible
+        foeDist = L.map (\ (a, l) -> (chessDist lxsize me l, l, a)) visible
     in case foeDist of
          [] -> (TCursor, Nothing, False)
          _  -> let (_, l, a) = L.minimum foeDist

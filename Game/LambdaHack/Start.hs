@@ -3,7 +3,6 @@ module Game.LambdaHack.Start
   where
 
 import qualified System.Random as R
-import Control.Monad
 import Control.Monad.State hiding (State, state)
 import qualified Control.Monad.State as MState
 import qualified Data.Array.Unboxed as A

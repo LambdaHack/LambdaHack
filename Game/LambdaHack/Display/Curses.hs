@@ -15,7 +15,7 @@ import qualified Data.Map as M
 import Control.Monad
 
 import Game.LambdaHack.Area
-import Game.LambdaHack.Point
+import Game.LambdaHack.PointXY
 import qualified Game.LambdaHack.Keys as K (Key(..))
 import qualified Game.LambdaHack.Color as Color
 
@@ -53,17 +53,17 @@ shutdown :: FrontendSession -> IO ()
 shutdown _ = C.end
 
 -- | Output to the screen via the frontend.
-display :: Area                         -- ^ the size of the drawn area
-        -> FrontendSession              -- ^ current session data
-        -> (Loc -> (Color.Attr, Char))  -- ^ the content of the screen
-        -> String                       -- ^ an extra line to show at the top
-        -> String                       -- ^ an extra line to show at the bottom
+display :: Area             -- ^ the size of the drawn area
+        -> FrontendSession  -- ^ current session data
+        -> (PointXY -> (Color.Attr, Char))
+                            -- ^ the content of the screen
+        -> String           -- ^ an extra line to show at the top
+        -> String           -- ^ an extra line to show at the bottom
         -> IO ()
 display (x0, y0, x1, y1) FrontendSession{..} f msg status = do
   -- let defaultStyle = C.defaultCursesStyle
   -- Terminals with white background require this:
   let defaultStyle = sstyles M.! Color.defaultAttr
-      xsize  = x1 - x0 + 1
   C.erase
   C.setStyle defaultStyle
   C.mvWAddStr swin 0 0 msg
@@ -74,7 +74,7 @@ display (x0, y0, x1, y1) FrontendSession{..} f msg status = do
   sequence_ [ C.setStyle (M.findWithDefault defaultStyle a sstyles)
               >> C.mvWAddStr swin (y + 1) x [c]
             | x <- [x0..x1], y <- [y0..y1],
-              let (a, c) = f (toLoc xsize (x, y)) ]
+              let (a, c) = f (x, y) ]
   C.refresh
 
 -- | Input key via the frontend.

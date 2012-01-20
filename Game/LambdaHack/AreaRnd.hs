@@ -52,8 +52,8 @@ mkVoidRoom area = assert (validArea area `blame` area) $ do
 connectGrid :: (X, Y) -> Rnd [((X, Y), (X, Y))]
 connectGrid (nx, ny) = do
   let unconnected = S.fromList [ (x, y) | x <- [0..nx-1], y <- [0..ny-1] ]
-  -- candidates are neighbors that are still unconnected; we start with
-  -- a random choice
+  -- Candidates are neighbours that are still unconnected. We start with
+  -- a random choice.
   rx <- randomR (0, nx-1)
   ry <- randomR (0, ny-1)
   let candidates = S.fromList [ (rx, ry) ]
