@@ -9,8 +9,9 @@ import Game.LambdaHack.FOV.Common
 import qualified Game.LambdaHack.FOV.Digital as Digital
 import qualified Game.LambdaHack.FOV.Permissive as Permissive
 import qualified Game.LambdaHack.FOV.Shadow as Shadow
-import Game.LambdaHack.VectorXY
 import Game.LambdaHack.Point
+import Game.LambdaHack.VectorXY
+import Game.LambdaHack.Vector
 import Game.LambdaHack.Level
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Content.TileKind
@@ -49,7 +50,7 @@ fullscan cotile fovMode loc Level{lxsize, lmap} =
   isCl :: Point -> Bool
   isCl = Tile.isClear cotile . (lmap Kind.!)
 
-  trV xy = translate lxsize loc (VectorXY xy)
+  trV xy = shift loc $ toVector lxsize $ VectorXY xy
 
   -- | The translation, rotation and symmetry functions for octants.
   tr8 :: [(Distance, Progress) -> Point]

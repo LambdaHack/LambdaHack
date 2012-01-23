@@ -1,7 +1,8 @@
 -- | Basic operations on 2D vectors represented in an efficient,
 -- but not unique, way.
 module Game.LambdaHack.Vector
-  ( Vector, shift, moves, movesWidth, euclidDistSq, diagonal, neg, towards
+  ( Vector, toVector, shift, moves, movesWidth
+  , euclidDistSq, diagonal, neg, towards
   ) where
 
 import Data.Binary
@@ -15,16 +16,21 @@ import Game.LambdaHack.Utils.Assert
 -- indexed by 'Point'.
 --
 -- A newtype is used to prevent mixing up the type with @Point@ itself.
--- Right now only vectors of lenth 1 in the chessboard metric, denoting
--- geographical directions, can be constructed. If the level width and
--- height are at least 3, representations of such vectors are
--- pairwise distinct.
+-- Note that the offset representations of a vector is usually not unique.
+-- For vectors of lenth 1 in the chessboard metric, used to denote
+-- geographical directions, if the level width and height are at least 3,
+-- the representations are pairwise distinct.
 newtype Vector = Vector Int
   deriving (Show, Eq)
 
 instance Binary Vector where
   put (Vector dir) = put dir
   get = fmap Vector get
+
+-- | Converts a vector in cartesian representation into @Vector@.
+toVector :: X -> VectorXY -> Vector
+toVector lxsize (VectorXY (x, y)) =
+  Vector $ x + y * lxsize
 
 -- | Converts a unit vector in cartesian representation into @Vector@.
 toDir :: X -> VectorXY -> Vector

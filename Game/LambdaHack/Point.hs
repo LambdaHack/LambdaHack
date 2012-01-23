@@ -1,7 +1,7 @@
 -- | Basic operations on 2D points represented as linear offsets.
 module Game.LambdaHack.Point
   ( Point, toPoint, fromPoint, showPoint
-  , origin, translate, chessDist, adjacent, vicinity
+  , origin, chessDist, adjacent, vicinity
   ) where
 
 import Game.LambdaHack.PointXY
@@ -40,14 +40,6 @@ fromPoint :: X -> Point -> PointXY
 fromPoint lxsize loc =
   assert (loc >= 0 `blame` (lxsize, loc)) $
   (loc `rem` lxsize, loc `quot` lxsize)
-
--- | Translate of a point by a cartesian vector.
-translate :: X -> Point -> VectorXY -> Point
-translate lxsize loc (VectorXY (dx, dy)) =
-  -- Vector coordinates can be negative, but locs are always positive.
-  assert (loc >= 0 && res >= 0 `blame` (lxsize, loc, (dx, dy))) $
-  res
- where res = loc + dx + dy * lxsize
 
 -- | The top-left corner location of the level.
 origin :: Point
