@@ -121,12 +121,13 @@ perception cops@Kind.COps{cotile}
 -- e.g., if I don't see the reachable light seen by another hero,
 -- there must be a wall in-between. Stray rays indicate doors,
 -- moving shadows indicate monsters, etc.
-computeVisible :: Kind.Ops TileKind -> PerceptionReachable -> Level -> IS.IntSet
-               -> PerceptionVisible
+computeVisible :: Kind.Ops TileKind -> PerceptionReachable
+               -> Level -> IS.IntSet -> PerceptionVisible
 computeVisible cops (PerceptionReachable reachable)
                lvl@Level{lxsize, lysize} lights' =
   let lights = IS.intersection lights' reachable  -- optimization
-      litDirectly loc = Tile.isLit cops (lvl `at` loc) || loc `IS.member` lights
+      litDirectly loc = Tile.isLit cops (lvl `at` loc)
+                        || loc `IS.member` lights
       l_and_R loc = litDirectly loc && loc `IS.member` reachable
       lit loc =
         let srds = vicinity lxsize lysize loc

@@ -124,7 +124,7 @@ instance (Ix.Ix i, Binary i) => Binary (Array i c) where
 listArray :: Ix.Ix i => (i, i) -> [Id c] -> Array i c
 listArray bds l = Array $ A.listArray bds [e | Id e <- l]
 
--- | Create an array frpm an association list.
+-- | Create an array from an association list.
 array :: Ix.Ix i => (i, i) -> [(i, Id c)] -> Array i c
 array bds l = Array $ A.array bds [(i, e) | (i, Id e) <- l]
 

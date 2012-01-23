@@ -8,7 +8,6 @@ module Game.LambdaHack.AreaRnd
   , Corridor, connectPlaces
   ) where
 
-import qualified Data.List as L
 import qualified Data.Set as S
 
 import Game.LambdaHack.Utils.Assert

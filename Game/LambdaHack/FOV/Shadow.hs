@@ -69,6 +69,7 @@ type SBump = (Progress, Distance)
 -- is to be scanned.
 type Interval = (Rational, Rational)
 
+-- TODO: if every used, apply static argument transformation to isClear.
 -- | Calculates the list of tiles visible from (0, 0).
 scan :: (SBump -> Bool)  -- ^ clear tile predicate
      -> Distance         -- ^ the current distance from (0, 0)

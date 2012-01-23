@@ -49,7 +49,7 @@ maximal gte = L.foldl1' (\ acc e -> if gte e acc then e else acc)
 -- than the line from the third point to the first. This is related
 -- to the formal notion of gradient (or angle), but hacked wrt signs
 -- to work in this particular setup. Returns True for ill-defined lines.
-steeper :: Bump ->  Bump -> Bump -> Bool
+steeper :: Bump -> Bump -> Bump -> Bool
 steeper (B(xf, yf)) (B(x1, y1)) (B(x2, y2)) =
   (yf - y1)*(xf - x2) >= (yf - y2)*(xf - x1)
 
@@ -60,5 +60,7 @@ addHull :: (Bump -> Bump -> Bool)  -- ^ a comparison function
         -> Bump                    -- ^ a new bump to consider
         -> ConvexHull  -- ^ a convex hull of bumps represented as a list
         -> ConvexHull
-addHull gte new (a:b:cs) | gte a b = addHull gte new (b:cs)
-addHull _   new l = new : l
+addHull gte new l = new : go l
+ where
+  go (a:b:cs) | gte a b = go (b:cs)
+  go l = l
