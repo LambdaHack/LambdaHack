@@ -1,7 +1,7 @@
 -- | Basic operations on 2D points represented as linear offsets.
 module Game.LambdaHack.Point
   ( Point, toPoint, fromPoint, showPoint
-  , origin, chessDist, adjacent, vicinity
+  , origin, chessDist, adjacent, vicinity, displacement
   ) where
 
 import Game.LambdaHack.PointXY
@@ -63,3 +63,9 @@ vicinity lxsize lysize loc =
   map (toPoint lxsize) $
     vicinityXY (0, 0, lxsize - 1, lysize - 1) $
       fromPoint lxsize loc
+
+-- | Calculate the displacement vector of a location wrt another location.
+displacement :: X -> Point -> Point -> VectorXY
+displacement lxsize loc0 loc1
+  | (x0, y0) <- fromPoint lxsize loc0, (x1, y1) <- fromPoint lxsize loc1 =
+  VectorXY (x1 - x0, y1 - y0)

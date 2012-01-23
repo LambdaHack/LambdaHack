@@ -87,28 +87,34 @@ diagonal lxsize dir | VectorXY (x, y) <- fromDir lxsize dir =
 neg :: Vector -> Vector
 neg (Vector dir) = Vector (-dir)
 
--- TODO: Perhaps produce all acceptable directions and let AI choose.
--- That would also eliminate the Doubles.
--- | Given two distinct locations, determine the direction (a unit vector)
--- in which one should move from the first in order to get closer to the second.
--- Ignores obstacles. Of several equally good directions
--- (in the chessboard metric) it picks one of those that visually
--- (in the euclidean metric) are maximally straightforward.
-towards :: X -> Point -> Point -> Vector
-towards lxsize loc0 loc1
-  | (x0, y0) <- fromPoint lxsize loc0, (x1, y1) <- fromPoint lxsize loc1 =
-  assert (loc0 /= loc1 `blame` (loc0, loc1, x0, y0)) $
-  let dx = x1 - x0
-      dy = y1 - y0
-      angle :: Double
+-- | Given a vector of arbitrary non-zero length, produce a unit vector
+-- that points in the same direction (in the chessboard metric).
+-- Of several equally good directions it picks one of those that visually
+-- (in the euclidean metric) maximally align with the original vector.
+normalize :: X -> VectorXY -> Vector
+normalize lxsize (VectorXY (dx, dy)) =
+  assert (dx /= 0 || dy /= 0 `blame` (dx, dy)) $
+  let angle :: Double
       angle = atan (fromIntegral dy / fromIntegral dx) / (pi / 2)
       dxy | angle <= -0.75 = (0, -1)
           | angle <= -0.25 = (1, -1)
           | angle <= 0.25  = (1, 0)
           | angle <= 0.75  = (1, 1)
           | angle <= 1.25  = (0, 1)
-          | otherwise =
-              assert `failure` (lxsize, loc0, loc1, (x0, y0), (x1, y1))
+          | otherwise = assert `failure` (lxsize, dx, dy, angle)
   in if dx >= 0
      then toDir lxsize $ VectorXY dxy
      else neg (toDir lxsize $ VectorXY dxy)
+
+-- TODO: Perhaps produce all acceptable directions and let AI choose.
+-- That would also eliminate the Doubles.
+-- | Given two distinct locations, determine the direction (a unit vector)
+-- in which one should move from the first in order to get closer
+-- to the second. Ignores obstacles. Of several equally good directions
+-- (in the chessboard metric) it picks one of those that visually
+-- (in the euclidean metric) maximally align with the original vector.
+towards :: X -> Point -> Point -> Vector
+towards lxsize loc0 loc1 =
+  assert (loc0 /= loc1 `blame` (loc0, loc1)) $
+  let v = displacement lxsize loc0 loc1
+  in normalize lxsize v

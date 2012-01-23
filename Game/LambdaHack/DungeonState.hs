@@ -42,8 +42,8 @@ convertTileMaps cdefTile cxsize cysize lmap = do
 
 unknownTileMap :: Kind.Id TileKind -> Int -> Int -> TileMap
 unknownTileMap unknownId cxsize cysize =
-  Kind.listArray (origin, toPoint cxsize (cxsize - 1, cysize - 1))
-    (repeat unknownId)
+  let bounds = (origin, toPoint cxsize (cxsize - 1, cysize - 1))
+  in Kind.listArray bounds (repeat unknownId)
 
 mapToIMap :: X -> M.Map (X, Y) a -> IM.IntMap a
 mapToIMap cxsize m =
