@@ -118,7 +118,7 @@ display :: Area             -- ^ the size of the drawn area
 display (x0, y0, x1, y1) FrontendSession{sview, stags} f msg status =
   postGUIAsync $ do
     tb <- textViewGetBuffer sview
-    let fLine y = let (as, cs) = unzip [ f (x, y)
+    let fLine y = let (as, cs) = unzip [ f (PointXY (x, y))
                                        | x <- [x0..x1] ]
                   in ((y, as), BS.pack cs)
         memo  = L.map fLine [y0..y1]

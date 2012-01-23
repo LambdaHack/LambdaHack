@@ -48,7 +48,7 @@ instance Binary Place where
 -- | The map of tile kinds in a cave and any place in a cave.
 -- The map is sparse. The default tile that eventually fills the empty spaces
 -- is specified in the cave kind specification.
-type TileMapXY = M.Map (X, Y) (Kind.Id TileKind)
+type TileMapXY = M.Map PointXY (Kind.Id TileKind)
 
 -- | For @CAlternate@ tiling, require the place be comprised
 -- of an even number of whole corners, with exactly one square
@@ -111,8 +111,10 @@ olegend Kind.Ops{ofoldrWithKey, opick} group =
 
 buildFence :: Kind.Id TileKind -> Area -> TileMapXY
 buildFence fenceId (x0, y0, x1, y1) =
-  M.fromList $ [ ((x, y), fenceId) | x <- [x0-1, x1+1], y <- [y0..y1] ] ++
-               [ ((x, y), fenceId) | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
+  M.fromList $ [ (PointXY (x, y), fenceId)
+               | x <- [x0-1, x1+1], y <- [y0..y1] ] ++
+               [ (PointXY (x, y), fenceId)
+               | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
 
 -- | Construct place of a given kind, with the given fence tile.
 digPlace :: Place
@@ -129,12 +131,12 @@ digPlace Place{..} kr legend =
 -- | Create the place by tiling patterns.
 tilePlace :: Area                           -- ^ the area to fill
           -> PlaceKind                      -- ^ the place kind to construct
-          -> M.Map (X, Y) Char
+          -> M.Map PointXY Char
 tilePlace (x0, y0, x1, y1) PlaceKind{..} =
   let dx = x1 - x0 + 1
       dy = y1 - y0 + 1
-      fromX (x, y) = L.zip [x..] (repeat y)
-      fillInterior :: (forall a. Int -> [a] -> [a]) -> [((X, Y), Char)]
+      fromX (x, y) = L.map PointXY $ L.zip [x..] (repeat y)
+      fillInterior :: (forall a. Int -> [a] -> [a]) -> [(PointXY, Char)]
       fillInterior f =
         let tileInterior (y, row) = L.zip (fromX (x0, y)) $ f dx row
             reflected = L.zip [y0..] $ f dy ptopLeft

@@ -74,7 +74,7 @@ display (x0, y0, x1, y1) FrontendSession{..} f msg status = do
   sequence_ [ C.setStyle (M.findWithDefault defaultStyle a sstyles)
               >> C.mvWAddStr swin (y + 1) x [c]
             | x <- [x0..x1], y <- [y0..y1],
-              let (a, c) = f (x, y) ]
+              let (a, c) = f (PointXY (x, y)) ]
   C.refresh
 
 -- | Input key via the frontend.

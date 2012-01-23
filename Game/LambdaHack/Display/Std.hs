@@ -44,7 +44,7 @@ display (x0, y0, x1, y1) _sess f msg status =
   let xsize  = x1 - x0 + 1
       g y x  = if x > x1
                then Nothing
-               else Just (snd (f (x, y)), x + 1)
+               else Just (snd (f (PointXY (x, y))), x + 1)
       fl y   = fst $ BS.unfoldrN xsize (g y) x0
       level  = L.map fl [y0..y1]
       screen = [BS.pack msg] ++ level ++ [BS.pack status, BS.empty]

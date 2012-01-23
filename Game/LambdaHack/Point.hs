@@ -30,12 +30,12 @@ showPoint lxsize = show . fromPoint lxsize
 
 -- | Conversion from cartesian coordinates to @Point@.
 toPoint :: X -> PointXY -> Point
-toPoint lxsize (x, y) =
+toPoint lxsize (PointXY (x, y)) =
   assert (lxsize > x && x >= 0 && y >= 0 `blame` (lxsize, x, y)) $
   x + y * lxsize
 
 -- | Conversion from @Point@ to cartesian coordinates.
-fromPoint :: X -> Point -> PointXY
+fromPoint :: X -> Point -> (X, Y)
 fromPoint lxsize loc =
   assert (loc >= 0 `blame` (lxsize, loc)) $
   (loc `rem` lxsize, loc `quot` lxsize)
@@ -61,11 +61,11 @@ vicinity :: X -> Y -> Point -> [Point]
 vicinity lxsize lysize loc =
   map (toPoint lxsize) $
     vicinityXY (0, 0, lxsize - 1, lysize - 1) $
-      fromPoint lxsize loc
+      PointXY $ fromPoint lxsize loc
 
 -- | Checks that a point belongs to an area.
 inside :: X -> Point -> Area -> Bool
-inside lxsize loc = insideXY (fromPoint lxsize loc)
+inside lxsize loc = insideXY (PointXY $ fromPoint lxsize loc)
 
 -- | Calculate the displacement vector of a location wrt another location.
 displacement :: X -> Point -> Point -> VectorXY

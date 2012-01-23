@@ -34,17 +34,17 @@ import Game.LambdaHack.Place
 convertTileMaps :: Rnd (Kind.Id TileKind) -> Int -> Int -> TileMapXY
                 -> Rnd TileMap
 convertTileMaps cdefTile cxsize cysize lmap = do
-  let bounds = (origin, toPoint cxsize (cxsize - 1, cysize - 1))
+  let bounds = (origin, toPoint cxsize $ PointXY (cxsize - 1, cysize - 1))
       assocs = map (\ (xy, t) -> (toPoint cxsize xy, t)) (M.assocs lmap)
   pickedTiles <- replicateM (cxsize * cysize) cdefTile
   return $ Kind.listArray bounds pickedTiles Kind.// assocs
 
 unknownTileMap :: Kind.Id TileKind -> Int -> Int -> TileMap
 unknownTileMap unknownId cxsize cysize =
-  let bounds = (origin, toPoint cxsize (cxsize - 1, cysize - 1))
+  let bounds = (origin, toPoint cxsize $ PointXY (cxsize - 1, cysize - 1))
   in Kind.listArray bounds (repeat unknownId)
 
-mapToIMap :: X -> M.Map (X, Y) a -> IM.IntMap a
+mapToIMap :: X -> M.Map PointXY a -> IM.IntMap a
 mapToIMap cxsize m =
   IM.fromList $ map (\ (xy, a) -> (toPoint cxsize xy, a)) (M.assocs m)
 

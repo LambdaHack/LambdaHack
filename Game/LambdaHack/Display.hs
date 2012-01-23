@@ -126,8 +126,8 @@ displayLevel dm fs cops per
                   Nothing -> "3d1"  -- TODO; use the item 'fist'
       hs      = levelHeroList s
       ms      = levelMonsterList s
-      dis n (x0, y0) =
-        let loc0 = toPoint sx (x0, y0)
+      dis n p@(PointXY (x0, y0)) =
+        let loc0 = toPoint sx p
             tile = lvl `lAt` loc0
             items = lvl `liAt` loc0
             sm = smelltime $ IM.findWithDefault (SmellTime 0) loc0 smap

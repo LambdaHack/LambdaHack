@@ -21,11 +21,11 @@ import Game.LambdaHack.Place
 
 -- | The map of starting secrecy strength of tiles in a cave. The map is sparse.
 -- Unspecified tiles have secrecy strength of 0.
-type SecretMapXY = M.Map (X, Y) Tile.SecretStrength
+type SecretMapXY = M.Map PointXY Tile.SecretStrength
 
 -- | The map of starting items in tiles of a cave. The map is sparse.
 -- Unspecified tiles have no starting items.
-type ItemMapXY = M.Map (X, Y) Item
+type ItemMapXY = M.Map PointXY Item
 
 -- | The type of caves (not yet inhabited dungeon levels).
 data Cave = Cave
@@ -92,8 +92,9 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick}
     else return []
   let allConnects = L.nub (addedConnects ++ connects)
       places = M.fromList places0
-  cs <- mapM (\ (p0, p1) -> do
-                 let r0 = places M.! p0
+  cs <- mapM (\ conn -> do
+                 let (p0, p1) = sortPointXY conn
+                     r0 = places M.! p0
                      r1 = places M.! p1
                  connectPlaces r0 r1) allConnects
   wallId <- opick "fillerWall" (const True)
@@ -111,7 +112,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick}
   let lm = M.unionWith (mergeCorridor cotile hiddenMap) lcorridors lplaces
   -- Convert openings into doors, possibly.
   (dmap, secretMap) <-
-    let f (l, le) ((x, y), t) =
+    let f (l, le) (p, t) =
           if Tile.hasFeature cotile F.Hidden t
           then do
             -- Openings have a certain chance to be doors;
@@ -119,21 +120,21 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick}
             -- closed doors have a certain chance to be hidden
             rd <- chance cdoorChance
             if not rd
-              then return (M.insert (x, y) pickedCorTile l, le)
+              then return (M.insert p pickedCorTile l, le)
               else do
                 doorClosedId <- trigger cotile t
                 doorOpenId   <- trigger cotile doorClosedId
                 ro <- chance copenChance
                 if ro
                   then do
-                    return (M.insert (x, y) doorOpenId l, le)
+                    return (M.insert p doorOpenId l, le)
                   else do
                     rs <- chance chiddenChance
                     if not rs
-                      then return (M.insert (x, y) doorClosedId l, le)
+                      then return (M.insert p doorClosedId l, le)
                       else do
-                        secret <- rollSecret(tokind t)
-                        return (l, M.insert (x, y) secret le)
+                        secret <- rollSecret (tokind t)
+                        return (l, M.insert p secret le)
           else return (l, le)
     in foldM f (lm, M.empty) (M.toList lm)
   let cave = Cave

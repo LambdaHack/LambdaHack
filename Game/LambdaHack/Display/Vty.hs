@@ -44,7 +44,7 @@ display :: Area             -- ^ the size of the drawn area
 display (x0, y0, x1, y1) vty f msg status =
   let img = (foldr (<->) empty_image .
              L.map (foldr (<|>) empty_image .
-                    L.map (\ (x, y) -> let (a, c) = f (x, y)
+                    L.map (\ (x, y) -> let (a, c) = f (PointXY (x, y))
                                        in char (setAttr a) c)))
             [ [ (x, y) | x <- [x0..x1] ] | y <- [y0..y1] ]
       pic = pic_for_image $
