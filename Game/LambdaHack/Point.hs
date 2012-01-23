@@ -1,7 +1,7 @@
 -- | Basic operations on 2D points represented as linear offsets.
 module Game.LambdaHack.Point
-  ( Point, toPoint, fromPoint, showPoint
-  , origin, chessDist, adjacent, vicinity, displacement
+  ( Point, toPoint, showPoint
+  , origin, chessDist, adjacent, vicinity, inside, displacement
   ) where
 
 import Game.LambdaHack.PointXY
@@ -9,7 +9,6 @@ import Game.LambdaHack.VectorXY
 import Game.LambdaHack.Area
 import Game.LambdaHack.Utils.Assert
 
--- TODO: limit the places toPoint and fromPoint are used.
 -- | The type of locations on the 2D level map, heavily optimized.
 --
 -- We represent the (level map on the) screen as a linear framebuffer,
@@ -63,6 +62,10 @@ vicinity lxsize lysize loc =
   map (toPoint lxsize) $
     vicinityXY (0, 0, lxsize - 1, lysize - 1) $
       fromPoint lxsize loc
+
+-- | Checks that a point belongs to an area.
+inside :: X -> Point -> Area -> Bool
+inside lxsize loc = insideXY (fromPoint lxsize loc)
 
 -- | Calculate the displacement vector of a location wrt another location.
 displacement :: X -> Point -> Point -> VectorXY

@@ -1,7 +1,7 @@
 -- | Basic operations on 2D vectors represented in an efficient,
 -- but not unique, way.
 module Game.LambdaHack.Vector
-  ( Vector, toVector, shift, moves, movesWidth
+  ( Vector, toVector, shift, shiftBounded, moves, movesWidth
   , euclidDistSq, diagonal, neg, towards
   ) where
 
@@ -9,6 +9,7 @@ import Data.Binary
 
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.VectorXY
+import Game.LambdaHack.Area
 import Game.LambdaHack.Point
 import Game.LambdaHack.Utils.Assert
 
@@ -60,6 +61,12 @@ fromDir lxsize (Vector dir) =
 -- Particularly simple and fast implementation in the linear representation.
 shift :: Point -> Vector -> Point
 shift loc (Vector dir) = loc + dir
+
+-- | Translate a point by a vector, but only if the result fits in an area.
+shiftBounded :: X -> Area -> Point -> Vector -> Point
+shiftBounded lxsize area loc dir =
+  let res = shift loc dir
+  in if inside lxsize res area then res else loc
 
 -- | Vectors of all unit moves, clockwise, starting north-west.
 moves :: X -> [Vector]

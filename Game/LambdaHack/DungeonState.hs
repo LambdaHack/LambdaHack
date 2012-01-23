@@ -30,7 +30,6 @@ import Game.LambdaHack.Item
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Place
-import Game.LambdaHack.Area
 
 convertTileMaps :: Rnd (Kind.Id TileKind) -> Int -> Int -> TileMapXY
                 -> Rnd TileMap
@@ -72,7 +71,7 @@ placeStairs cotile@Kind.Ops{opick} cmap cxsize cminStairDist dplaces = do
   sd <- findLocTry 2000 cmap
           (\ l t -> l /= su && Tile.hasFeature cotile F.Boring t)
           (\ l _ -> chessDist cxsize su l >= cminStairDist)
-  let fitArea loc = inside (fromPoint cxsize loc) . qarea
+  let fitArea loc = inside cxsize loc . qarea
       findLegend loc = maybe "litLegend" qlegend $ L.find (fitArea loc) dplaces
   upId   <- opick (findLegend su) $ Tile.kindHasFeature F.Ascendable
   downId <- opick (findLegend sd) $ Tile.kindHasFeature F.Descendable

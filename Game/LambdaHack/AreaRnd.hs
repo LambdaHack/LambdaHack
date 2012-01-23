@@ -62,7 +62,7 @@ connectGrid (nx, ny) = do
 connectGrid' :: (X, Y) -> S.Set (X, Y) -> S.Set (X, Y) -> [((X, Y), (X, Y))]
              -> Rnd [((X, Y), (X, Y))]
 connectGrid' (nx, ny) unconnected candidates acc
-  | S.null candidates = return (L.map normalize acc)
+  | S.null candidates = return (L.map sortPointXY acc)
   | otherwise = do
       c <- oneOf (S.toList candidates)
       -- potential new candidates:
@@ -86,11 +86,11 @@ randomConnection (nx, ny) =
     then do
       rx  <- randomR (0, nx-2)
       ry  <- randomR (0, ny-1)
-      return (normalize ((rx, ry), (rx+1, ry)))
+      return (sortPointXY ((rx, ry), (rx+1, ry)))
     else do
       rx  <- randomR (0, nx-1)
       ry  <- randomR (0, ny-2)
-      return (normalize ((rx, ry), (rx, ry+1)))
+      return (sortPointXY ((rx, ry), (rx, ry+1)))
 
 -- Plotting individual corridors between two areas
 

@@ -1,7 +1,7 @@
 -- | Rectangular areas of levels and their operations.
 module Game.LambdaHack.Area
-  ( Area, vicinityXY, vicinityCardinalXY, inside, fromTo
-  , normalize, normalizeArea, grid, validArea, trivialArea, expand
+  ( Area, vicinityXY, vicinityCardinalXY, insideXY, fromTo
+  , sortPointXY, normalizeArea, grid, validArea, trivialArea, expand
   ) where
 
 import qualified Data.List as L
@@ -18,18 +18,19 @@ vicinityXY :: Area      -- ^ limit the search to this area
            -> (X, Y)    -- ^ location to find neighbours of
            -> [(X, Y)]
 vicinityXY area xy =
-  [ res | dxy <- movesXY, let res = shiftXY xy dxy, inside res area ]
+  [ res | dxy <- movesXY, let res = shiftXY xy dxy, insideXY res area ]
 
 -- | All (4 at most) cardinal direction neighbours of a point within an area.
 vicinityCardinalXY :: Area  -- ^ limit the search to this area
            -> (X, Y)        -- ^ location to find neighbours of
            -> [(X, Y)]
 vicinityCardinalXY area xy =
-  [ res | dxy <- movesCardinalXY, let res = shiftXY xy dxy, inside res area ]
+  [ res
+  | dxy <- movesCardinalXY, let res = shiftXY xy dxy, insideXY res area ]
 
 -- | Checks that a point belongs to an area.
-inside :: (X, Y) -> Area -> Bool
-inside (x, y) (x0, y0, x1, y1) =
+insideXY :: PointXY -> Area -> Bool
+insideXY (x, y) (x0, y0, x1, y1) =
   x1 >= x && x >= x0 && y1 >= y && y >= y0
 
 -- | A list of all points on a straight vertical or horizontal line
@@ -48,9 +49,9 @@ fromTo1 x0 x1
   | otherwise = [x0,x0-1..x1]
 
 -- | Sort the collection of two points, in the derived lexicographic order.
-normalize :: ((X, Y), (X, Y)) -> ((X, Y), (X, Y))
-normalize (a, b) | a <= b    = (a, b)
-                 | otherwise = (b, a)
+sortPointXY :: (PointXY, PointXY) -> (PointXY, PointXY)
+sortPointXY (a, b) | a <= b    = (a, b)
+                   | otherwise = (b, a)
 
 -- | Sort the corners of an area so that the bottom left is the first point.
 normalizeArea :: Area -> Area
