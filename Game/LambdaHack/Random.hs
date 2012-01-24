@@ -1,64 +1,52 @@
+-- | Representation of probabilities and random computations.
 module Game.LambdaHack.Random
-  ( Rnd, randomR, binaryChoice
-  , roll, oneOf, frequency, (*~), (~+~)
+  ( -- * The @Rng@ monad
+    Rnd
+    -- * Random operations
+  , randomR, oneOf, frequency, roll
+    -- * Rolling dice
   , RollDice(..), rollDice, maxDice, minDice, meanDice
-  , RollDiceXY, rollDiceXY
-  , RollQuad, rollQuad, chanceQuad, intToQuad
+    -- * Rolling 2D coordinates
+  , RollDiceXY(..), rollDiceXY
+    -- * Rolling dependent on depth
+  , RollDeep, rollDeep, chanceDeep, intToDeep
+    -- * Fractional chance
   , Chance, chance
   ) where
 
 import qualified Data.Binary as Binary
 import Data.Ratio
 import qualified System.Random as R
-import Control.Monad.State
+import Control.Monad
 import qualified Data.List as L
 import qualified Control.Monad.State as MState
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.Frequency
 
--- TODO: if the file grows much larger, split it and move a part to Utils/
+-- | The monad of computations with random generator state.
+type Rnd a = MState.State R.StdGen a
 
-type Rnd a = State R.StdGen a
-
--- TODO: rewrite; was written in a "portable" way because the implementation of
--- State changes between mtl versions 1 and 2. Now we are using only mtl 2.
+-- | Get a random object within a range with a uniform distribution.
 randomR :: (R.Random a) => (a, a) -> Rnd a
-randomR range = do
-  g <- get
-  let (x, ng) = R.randomR range g
-  put ng
-  return x
+randomR range = MState.state $ R.randomR range
 
-binaryChoice :: a -> a -> Rnd a
-binaryChoice p0 p1 = do
-  b <- randomR (False, True)
-  return (if b then p0 else p1)
-
--- | roll a single die
-roll :: Int -> Rnd Int
-roll x = if x <= 0 then return 0 else randomR (1, x)
-
+-- | Get any element of a list with equal probability.
 oneOf :: [a] -> Rnd a
 oneOf xs = do
   r <- randomR (0, length xs - 1)
   return (xs !! r)
 
+-- | Gen an element according to a frequency distribution.
 frequency :: Show a => Frequency a -> Rnd a
 frequency fr = MState.state $ rollFreq fr
 
--- ** Arithmetic operations on Rnd.
+-- | Roll a single die.
+roll :: Int -> Rnd Int
+roll x = if x <= 0 then return 0 else randomR (1, x)
 
-infixl 7 *~
-infixl 6 ~+~
-
-(~+~) :: Num a => Rnd a -> Rnd a -> Rnd a
-(~+~) = liftM2 (+)
-
-(*~) :: Num a => Int -> Rnd a -> Rnd a
-x *~ r = liftM sum (replicateM x r)
-
--- | 1d7, 3d3, 2d0, etc. 'RollDice a b' represents 'a *~ roll b)'.
+-- | Dice: 1d7, 3d3, 1d0, etc.
+-- @RollDice a b@ represents @a@ rolls of @b@-sided die.
 data RollDice = RollDice Binary.Word8 Binary.Word8
   deriving (Eq, Ord)
 
@@ -73,61 +61,75 @@ instance Read RollDice where
       'd' : b -> [ (RollDice av bv, rest) | (bv, rest) <- readsPrec d b ]
       _ -> []
 
+-- | Roll dice and sum the results.
 rollDice :: RollDice -> Rnd Int
 rollDice (RollDice a' 1)  = return $ fromEnum a'  -- optimization
 rollDice (RollDice a' b') =
   let (a, b) = (fromEnum a', fromEnum b')
-  in a *~ roll b
+  in liftM sum (replicateM a (roll b))
 
+-- | Maximal value of dice.
 maxDice :: RollDice -> Int
 maxDice (RollDice a' b') =
   let (a, b) = (fromEnum a', fromEnum b')
   in a * b
 
+-- | Minimal value of dice.
 minDice :: RollDice -> Int
 minDice (RollDice a' b') =
   let (a, b) = (fromEnum a', fromEnum b')
   in if b == 0 then 0 else a
 
+-- | Mean value of dice.
 meanDice :: RollDice -> Rational
 meanDice (RollDice a' b') =
   let (a, b) = (fromIntegral a', fromIntegral b')
   in if b' == 0 then 0 else a * (b + 1) % 2
 
-type RollDiceXY = (RollDice, RollDice)
+-- | Dice for rolling a pair of integer parameters pertaining to,
+-- respectively, the X and Y cartesian 2D coordinates.
+data RollDiceXY = RollDiceXY (RollDice, RollDice)
+  deriving Show
 
+-- | Roll the two sets of dice.
 rollDiceXY :: RollDiceXY -> Rnd (Int, Int)
-rollDiceXY (RollDice xa' xb', RollDice ya' yb') = do
-  let (xa, xb) = (fromEnum xa', fromEnum xb')
-      (ya, yb) = (fromEnum ya', fromEnum yb')
-  x <- xa *~ roll xb
-  y <- ya *~ roll yb
+rollDiceXY (RollDiceXY (xd, yd)) = do
+  x <- rollDice xd
+  y <- rollDice yd
   return (x, y)
 
--- | 'rollQuad (aDb, xDy) = rollDice aDb + lvl * rollDice xDy / depth'
-type RollQuad = (RollDice, RollDice)
+-- | Dice for parameters scaled with current level depth.
+-- To the result of rolling the first set of dice we add the second,
+-- scaled in proportion to current depth divided by maximal dungeon depth.
+type RollDeep = (RollDice, RollDice)
 
-rollQuad :: Int -> Int -> RollQuad -> Rnd Int
-rollQuad n depth (RollDice a b, RollDice x y) =
+-- | Roll dice scaled with current level depth.
+rollDeep :: Int -> Int -> RollDeep -> Rnd Int
+rollDeep n depth (d1, d2) =
   assert (n > 0 && n <= depth `blame` (n, depth)) $ do
-  aDb <- rollDice (RollDice a b)
-  xDy <- rollDice (RollDice x y)
-  return $ aDb + ((n - 1) * xDy) `div` (depth - 1)
+  r1 <- rollDice d1
+  r2 <- rollDice d2
+  return $ r1 + ((n - 1) * r2) `div` (depth - 1)
 
-chanceQuad :: Int -> Int -> RollQuad -> Rnd Bool
-chanceQuad n depth quad = do
-  c <- rollQuad n depth quad
+-- | Roll dice scaled with current level depth and return @True@
+-- if the results if greater than 50.
+chanceDeep :: Int -> Int -> RollDeep -> Rnd Bool
+chanceDeep n depth deep = do
+  c <- rollDeep n depth deep
   return $ c > 50
 
-intToQuad :: Int -> RollQuad
-intToQuad 0  = (RollDice 0 0, RollDice 0 0)
-intToQuad n' = let n = toEnum n'
+-- | Generate a @RollDeep@ that always gives a constant integer.
+intToDeep :: Int -> RollDeep
+intToDeep 0  = (RollDice 0 0, RollDice 0 0)
+intToDeep n' = let n = toEnum n'
                in if n > maxBound || n < minBound
                   then assert `failure` n'
                   else (RollDice n 1, RollDice 0 0)
 
+-- | Fractional chance.
 type Chance = Rational
 
+-- | True, with probability given by the fraction.
 chance :: Chance -> Rnd Bool
 chance r = do
   let n = numerator r

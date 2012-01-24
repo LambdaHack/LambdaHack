@@ -60,7 +60,7 @@ addHull :: (Bump -> Bump -> Bool)  -- ^ a comparison function
         -> Bump                    -- ^ a new bump to consider
         -> ConvexHull  -- ^ a convex hull of bumps represented as a list
         -> ConvexHull
-addHull gte new l = new : go l
+addHull gte new = (new :) . go
  where
   go (a:b:cs) | gte a b = go (b:cs)
   go l = l

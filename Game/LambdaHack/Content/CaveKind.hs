@@ -18,7 +18,7 @@ data CaveKind = CaveKind
   , cysize        :: Y           -- ^ Y size of the whole cave
   , cgrid         :: RollDiceXY  -- ^ the dimensions of the grid of places
   , cminPlaceSize :: RollDiceXY  -- ^ minimal size of places
-  , cdarkChance   :: RollQuad    -- ^ the chance a place is dark
+  , cdarkChance   :: RollDeep    -- ^ the chance a place is dark
   , cauxConnects  :: Rational    -- ^ a proportion of extra connections
   , cvoidChance   :: Chance      -- ^ the chance of not creating a place
   , cnonVoidMin   :: Int         -- ^ extra places, may overlap except two
@@ -26,7 +26,7 @@ data CaveKind = CaveKind
   , cdoorChance   :: Chance      -- ^ the chance of a door in an opening
   , copenChance   :: Chance      -- ^ if there's a door, is it open?
   , chiddenChance :: Chance      -- ^ if not open, is it hidden?
-  , citemNum      :: RollDice    -- ^ the number of items on the cave
+  , citemNum      :: RollDice    -- ^ the number of items in the cave
   , cdefTile      :: String      -- ^ the default cave tile group name
   , ccorTile      :: String      -- ^ the cave corridor tile group
   }
@@ -37,11 +37,12 @@ data CaveKind = CaveKind
 -- Catch caves with not enough space for all the places. Check the size
 -- of the cave descriptions, to make sure they fit on screen.
 cvalidate :: [CaveKind] -> [CaveKind]
-cvalidate = L.filter (\ CaveKind{..} ->
-  let maxGridX = maxDice $ fst cgrid
-      maxGridY = maxDice $ snd cgrid
-      maxPlaceSizeX = maxDice $ fst cminPlaceSize
-      maxPlaceSizeY = maxDice $ snd cminPlaceSize
+cvalidate = L.filter (\ CaveKind{ cgrid = RollDiceXY (gx, gy)
+                                , cminPlaceSize = RollDiceXY (mx, my)
+                                , ..
+                                } ->
+  let (maxGridX, maxGridY) = (maxDice gx, maxDice gy)
+      (maxPlaceSizeX, maxPlaceSizeY) = (maxDice mx,  maxDice my)
       xborder = if maxGridX == 1 then 5 else 3
       yborder = if maxGridX == 1 then 5 else 3
   in length cname <= 25

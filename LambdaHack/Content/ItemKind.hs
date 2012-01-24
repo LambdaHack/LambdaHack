@@ -21,7 +21,7 @@ amulet,        dart, gem1, gem2, gem3, gem4, gold, javelin, potion1, potion2, po
 
 gem, potion, scroll :: ItemKind  -- generic templates
 
--- rollQuad (aDb, xDy) = rollDice aDb + lvl * rollDice xDy / depth
+-- rollDeep (aDb, xDy) = rollDice aDb + lvl * rollDice xDy / depth
 
 amulet = ItemKind
   { isymbol  = '"'
@@ -29,7 +29,7 @@ amulet = ItemKind
   , ifreq    = [("dng", 10)]
   , iflavour = zipFancy [BrGreen]
   , ieffect  = Regeneration
-  , icount   = intToQuad 1
+  , icount   = intToDeep 1
   , ipower   = (RollDice 2 1, RollDice 2 2)
   , iverbApply   = "tear down"
   , iverbProject = "throw"
@@ -41,7 +41,7 @@ dart = ItemKind
   , iflavour = zipPlain [Cyan]
   , ieffect  = Wound (RollDice 1 1)
   , icount   = (RollDice 3 3, RollDice 0 0)
-  , ipower   = intToQuad 0
+  , ipower   = intToDeep 0
   , iverbApply   = "snap"
   , iverbProject = "throw"
   }
@@ -51,8 +51,8 @@ gem = ItemKind
   , ifreq    = [("dng", 20)]  -- x4, but rare on shallow levels
   , iflavour = zipPlain brightCol  -- natural, so not fancy
   , ieffect  = NoEffect
-  , icount   = intToQuad 0
-  , ipower   = intToQuad 0
+  , icount   = intToDeep 0
+  , ipower   = intToDeep 0
   , iverbApply   = "crush"
   , iverbProject = "throw"
   }
@@ -75,7 +75,7 @@ gold = ItemKind
   , iflavour = zipPlain [BrYellow]
   , ieffect  = NoEffect
   , icount   = (RollDice 0 0, RollDice 10 10)
-  , ipower   = intToQuad 0
+  , ipower   = intToDeep 0
   , iverbApply   = "grind"
   , iverbProject = "throw"
   }
@@ -96,8 +96,8 @@ potion = ItemKind
   , ifreq    = [("dng", 10)]
   , iflavour = zipFancy stdCol
   , ieffect  = NoEffect
-  , icount   = intToQuad 1
-  , ipower   = intToQuad 0
+  , icount   = intToDeep 1
+  , ipower   = intToDeep 0
   , iverbApply   = "gulp down"
   , iverbProject = "lob"
   }
@@ -118,7 +118,7 @@ ring = ItemKind
   , ifreq    = [("dng", 10)]
   , iflavour = zipPlain [White]
   , ieffect  = Searching
-  , icount   = intToQuad 1
+  , icount   = intToDeep 1
   , ipower   = (RollDice 1 1, RollDice 2 2)
   , iverbApply   = "squeeze down"
   , iverbProject = "throw"
@@ -129,8 +129,8 @@ scroll = ItemKind
   , ifreq    = [("dng", 10)]
   , iflavour = zipFancy darkCol  -- arcane and old
   , ieffect  = NoEffect
-  , icount   = intToQuad 1
-  , ipower   = intToQuad 0
+  , icount   = intToDeep 1
+  , ipower   = intToDeep 0
   , iverbApply   = "decipher"
   , iverbProject = "throw"
   }
@@ -150,7 +150,7 @@ sword = ItemKind
   , ifreq    = [("dng", 60)]
   , iflavour = zipPlain [BrCyan]
   , ieffect  = Wound (RollDice 3 1)
-  , icount   = intToQuad 1
+  , icount   = intToDeep 1
   , ipower   = (RollDice 1 2, RollDice 4 2)
   , iverbApply   = "hit"
   , iverbProject = "heave"
@@ -161,8 +161,8 @@ wand = ItemKind
   , ifreq    = [("dng", 10)]
   , iflavour = zipFancy [BrRed]
   , ieffect  = Dominate
-  , icount   = intToQuad 1
-  , ipower   = intToQuad 0
+  , icount   = intToDeep 1
+  , ipower   = intToDeep 0
   , iverbApply   = "snap"
   , iverbProject = "zap"
   }

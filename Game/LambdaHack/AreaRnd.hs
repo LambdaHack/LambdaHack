@@ -82,7 +82,7 @@ connectGrid' (nx, ny) unconnected candidates acc
 randomConnection :: (X, Y) -> Rnd (PointXY, PointXY)
 randomConnection (nx, ny) =
   assert (nx > 1 && ny > 0 || nx > 0 && ny > 1 `blame` (nx, ny)) $ do
-  rb <- binaryChoice False True
+  rb <- oneOf [False, True]
   if rb || not (ny > 1)
     then do
       rx  <- randomR (0, nx-2)
@@ -130,7 +130,7 @@ connectPlaces sa@(_, _, sx1, sy1) ta@(tx0, ty0, _, _) = do
       yarea = (sx, sy1+2, tx, ty0-2)
       xyarea = (sx1+2, sy1+2, tx0-2, ty0-2)
   (hv, area) <- if validArea xyarea
-                then fmap (\ hv -> (hv, xyarea)) (binaryChoice Horiz Vert)
+                then fmap (\ hv -> (hv, xyarea)) (oneOf [Horiz, Vert])
                 else if validArea xarea
                      then return (Horiz, xarea)
                      else return (Vert, normalizeArea yarea)  -- vertical bias

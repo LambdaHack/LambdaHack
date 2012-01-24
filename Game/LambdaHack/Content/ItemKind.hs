@@ -23,8 +23,8 @@ data ItemKind = ItemKind
   , ifreq    :: !Freqs       -- ^ frequency within groups
   , iflavour :: ![Flavour]   -- ^ possible flavours
   , ieffect  :: !Effect      -- ^ the effect when activated
-  , icount   :: !RollQuad    -- ^ created in that quantify
-  , ipower   :: !RollQuad    -- ^ created with that power
+  , icount   :: !RollDeep    -- ^ created in that quantify
+  , ipower   :: !RollDeep    -- ^ created with that power
   , iverbApply   :: !String  -- ^ the verb for applying and possibly combat
   , iverbProject :: !String  -- ^ the verb for projecting
   }

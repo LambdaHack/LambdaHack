@@ -61,11 +61,11 @@ newItem :: Kind.Ops ItemKind -> Int -> Int -> Rnd Item
 newItem cops@Kind.Ops{opick, okind} lvl depth = do
   ikChosen <- opick "dng" (const True)
   let kind = okind ikChosen
-  count <- rollQuad lvl depth (icount kind)
+  count <- rollDeep lvl depth (icount kind)
   if count == 0
     then newItem cops lvl depth  -- Rare item; beware of inifite loops.
     else do
-      power <- rollQuad lvl depth (ipower kind)
+      power <- rollDeep lvl depth (ipower kind)
       return $ Item ikChosen power (itemLetter kind) count
 
 -- | Represent an item on the map.

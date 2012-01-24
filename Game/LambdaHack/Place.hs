@@ -86,7 +86,7 @@ expandFence fence r = case fence of
 buildPlace :: Kind.COps         -- ^ the game content
            -> Kind.Id TileKind  -- ^ fence tile, if fence solid
            -> Kind.Id TileKind  -- ^ fence tile, if fence hollow
-           -> RollQuad          -- ^ the chance of a dark place
+           -> RollDeep          -- ^ the chance of a dark place
            -> Int               -- ^ current level depth
            -> Int               -- ^ maximum depth
            -> Area              -- ^ place interior area
@@ -94,7 +94,7 @@ buildPlace :: Kind.COps         -- ^ the game content
 buildPlace Kind.COps{cotile, coplace=Kind.Ops{okind=pokind, opick=popick}}
            qsolidFence qhollowFence cdarkChance lvl depth
            r = assert (not (trivialArea r) `blame` r) $ do
-  dark <- chanceQuad lvl depth cdarkChance
+  dark <- chanceDeep lvl depth cdarkChance
   qkind <- popick "rogue" (placeValid r)
   let kr = pokind qkind
       qlegend = if dark then "darkLegend" else "litLegend"
