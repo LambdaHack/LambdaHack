@@ -1,7 +1,7 @@
 -- | Generation of places from place kinds.
 {-# LANGUAGE RankNTypes #-}
 module Game.LambdaHack.Place
-  ( TileMapXY, Place(..), placeValid, buildFence, addPlace
+  ( TileMapXY, Place(..), placeValid, buildFence, buildPlace
   ) where
 
 import Data.Binary
@@ -17,7 +17,9 @@ import Game.LambdaHack.PointXY
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Random
 
--- | The parameters with which a place was generated.
+-- TODO: use more, rewrite as needed, document each field.
+-- | The parameters of a place. Most are immutable and set
+-- at the time when a place was generated.
 data Place = Place
   { qkind        :: !(Kind.Id PlaceKind)
   , qarea        :: !Area
@@ -47,15 +49,15 @@ instance Binary Place where
 
 -- | The map of tile kinds in a cave and any place in a cave.
 -- The map is sparse. The default tile that eventually fills the empty spaces
--- is specified in the cave kind specification.
+-- is specified in the cave kind specification with @cdefTile@.
 type TileMapXY = M.Map PointXY (Kind.Id TileKind)
 
 -- | For @CAlternate@ tiling, require the place be comprised
 -- of an even number of whole corners, with exactly one square
 -- overlap between consecutive coners and no trimming.
--- For other tiling methods, check that the area large enough for tiling
+-- For other tiling methods, check that the area is large enough for tiling
 -- the corner twice in each direction, with a possible one row/column overlap.
-placeValid :: Area      -- ^ the area to fill
+placeValid :: Area       -- ^ the area to fill
            -> PlaceKind  -- ^ the place kind to construct
            -> Bool
 placeValid r PlaceKind{..} =
@@ -72,18 +74,26 @@ placeValid r PlaceKind{..} =
     _          -> dx >= 2 * dxcorner - 1 &&
                   dy >= 2 * dycorner - 1
 
+-- | Modify available room area according to fence type.
 expandFence :: Fence -> Area -> Area
 expandFence fence r = case fence of
   FWall  -> r
   FFloor -> expand r (-1)
   FNone  -> expand r 1
 
-addPlace :: Kind.COps -> Kind.Id TileKind -> Kind.Id TileKind
-         -> RollQuad -> Int -> Int -> Area
-         -> Rnd (TileMapXY, Place)
-addPlace Kind.COps{cotile, coplace=Kind.Ops{okind=pokind, opick=popick}}
-         qsolidFence qhollowFence cdarkChance lvl depth
-         r = assert (not (trivialArea r) `blame` r) $ do
+-- | Given a few parameters, roll and construct a 'Place' datastructure
+-- and fill a cave section acccording to it.
+buildPlace :: Kind.COps         -- ^ the game content
+           -> Kind.Id TileKind  -- ^ fence tile, if fence solid
+           -> Kind.Id TileKind  -- ^ fence tile, if fence hollow
+           -> RollQuad          -- ^ the chance of a dark place
+           -> Int               -- ^ current level depth
+           -> Int               -- ^ maximum depth
+           -> Area              -- ^ place interior area
+           -> Rnd (TileMapXY, Place)
+buildPlace Kind.COps{cotile, coplace=Kind.Ops{okind=pokind, opick=popick}}
+           qsolidFence qhollowFence cdarkChance lvl depth
+           r = assert (not (trivialArea r) `blame` r) $ do
   dark <- chanceQuad lvl depth cdarkChance
   qkind <- popick "rogue" (placeValid r)
   let kr = pokind qkind
@@ -96,6 +106,7 @@ addPlace Kind.COps{cotile, coplace=Kind.Ops{okind=pokind, opick=popick}}
   let xlegend = M.insert 'X' qhollowFence legend
   return (digPlace place kr xlegend, place)
 
+-- | Roll a legend of a place plan: a map from plan symbols to tile kinds.
 olegend :: Kind.Ops TileKind -> String -> Rnd (M.Map Char (Kind.Id TileKind))
 olegend Kind.Ops{ofoldrWithKey, opick} group =
   let getSymbols _ tk acc =
@@ -109,6 +120,7 @@ olegend Kind.Ops{ofoldrWithKey, opick} group =
       legend = S.fold getLegend (return M.empty) symbols
   in legend
 
+-- | Construct a fence around an area, with the given tile kind.
 buildFence :: Kind.Id TileKind -> Area -> TileMapXY
 buildFence fenceId (x0, y0, x1, y1) =
   M.fromList $ [ (PointXY (x, y), fenceId)
@@ -116,10 +128,10 @@ buildFence fenceId (x0, y0, x1, y1) =
                [ (PointXY (x, y), fenceId)
                | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
 
--- | Construct place of a given kind, with the given fence tile.
-digPlace :: Place
-         -> PlaceKind
-         -> M.Map Char (Kind.Id TileKind)
+-- | Construct a place of the given kind, with the given fence tile.
+digPlace :: Place                          -- ^ the place parameters
+         -> PlaceKind                      -- ^ the place kind
+         -> M.Map Char (Kind.Id TileKind)  -- ^ the legend
          -> TileMapXY
 digPlace Place{..} kr legend =
   let fence = case pfence kr of
@@ -128,7 +140,7 @@ digPlace Place{..} kr legend =
         FNone  -> M.empty
   in M.union (M.map (legend M.!) $ tilePlace qarea kr) fence
 
--- | Create the place by tiling patterns.
+-- | Create a place by tiling patterns.
 tilePlace :: Area                           -- ^ the area to fill
           -> PlaceKind                      -- ^ the place kind to construct
           -> M.Map PointXY Char

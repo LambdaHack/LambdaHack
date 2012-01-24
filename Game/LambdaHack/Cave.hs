@@ -104,7 +104,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick}
   let addPl (m, pls) (_, (x0, _, x1, _)) | x0 == x1 = return (m, pls)
       addPl (m, pls) (_, r) = do
         (tmap, place) <-
-          addPlace cops wallId pickedCorTile cdarkChance lvl depth r
+          buildPlace cops wallId pickedCorTile cdarkChance lvl depth r
         return (M.union tmap m, place : pls)
   (lplaces, dplaces) <- foldM addPl (fence, []) places0
   let lcorridors = M.unions (L.map (digCorridors pickedCorTile) cs)
