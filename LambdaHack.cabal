@@ -45,6 +45,7 @@ library
                    Game.LambdaHack.ActorState,
                    Game.LambdaHack.Area,
                    Game.LambdaHack.AreaRnd,
+                   Game.LambdaHack.BindingAction,
                    Game.LambdaHack.Cave,
                    Game.LambdaHack.Color,
                    Game.LambdaHack.Command,

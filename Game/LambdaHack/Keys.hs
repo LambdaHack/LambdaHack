@@ -76,7 +76,8 @@ handleDir lxsize e h k =
   in maybe k h (L.lookup e assocs)
 
 -- | Binding of both sets of movement keys.
-moveBinding :: ((X -> Vector) -> a) -> ((X -> Vector) -> a) -> [(Key, (String, a))]
+moveBinding :: ((X -> Vector) -> a) -> ((X -> Vector) -> a)
+            -> [(Key, (String, a))]
 moveBinding move run =
   let assign f (key, dir) = (key, ("", f dir))
   in map (assign move) (zip dirViMoveKey movesWidth) ++

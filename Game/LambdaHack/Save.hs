@@ -1,5 +1,6 @@
+-- | Saving and restoring games and player diaries.
 module Game.LambdaHack.Save
-  ( saveFile, saveGame, restoreGame, rmBkpSaveDiary, saveGameBkp
+  ( saveGame, restoreGame, rmBkpSaveDiary, saveGameBkp
   ) where
 
 import System.Directory
@@ -95,7 +96,8 @@ restoreGame pathsDataFile config title = do
           state <- strictDecodeEOF bfile
           return $ Left (state, diary))
       (\ e -> case e :: E.SomeException of
-                _ -> let msg = "Starting a new game, because restore failed. The error message was: "
+                _ -> let msg = "Starting a new game, because restore failed. "
+                               ++ "The error message was: "
                                ++ (unwords . lines) (show e)
                      in return $ Right (msg, diary))
     else

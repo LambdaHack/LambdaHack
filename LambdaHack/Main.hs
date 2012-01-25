@@ -16,6 +16,7 @@ import Game.LambdaHack.Command
 import Game.LambdaHack.Display
 import qualified Game.LambdaHack.Config as Config
 import Game.LambdaHack.Action
+import qualified Game.LambdaHack.BindingAction as BindingAction
 
 import qualified ConfigDefault
 
@@ -34,7 +35,7 @@ cops = Kind.COps
 -- to form the starting game session. Each of these is autonomously modifiable.
 sess :: Config.CP -> FrontendSession -> Session
 sess config sfs =
-  let !skeyb = Start.stdKeybinding config cmdSemantics cmdDescription
+  let !skeyb = BindingAction.stdKeybinding config cmdSemantics cmdDescription
       !scops = Start.speedupCops cops
   in Session{sfs, scops, skeyb}
 
