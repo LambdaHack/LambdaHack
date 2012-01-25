@@ -1,4 +1,5 @@
--- | Binding of keys to commands, procesing macros, printing command help.
+-- | Generic binding of keys to commands, procesing macros,
+-- printing command help.
 module Game.LambdaHack.Binding
   ( Binding(..), macroKey, keyHelp,
   ) where

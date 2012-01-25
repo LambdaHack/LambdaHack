@@ -1,3 +1,4 @@
+-- | Binding of keys to commands implemented with the 'Action' monad.
 module Game.LambdaHack.BindingAction
   ( stdBinding
   ) where
@@ -20,8 +21,8 @@ import qualified Game.LambdaHack.Key as K
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Command
 
-configCommands :: Config.CP -> [(K.Key, Cmd)]
-configCommands config =
+configCmd :: Config.CP -> [(K.Key, Cmd)]
+configCmd config =
   let section = Config.getItems config "commands"
       mkKey s =
         case K.keyTranslate s of
@@ -31,11 +32,11 @@ configCommands config =
       mkCommand (key, def) = (mkKey key, mkCmd def)
   in L.map mkCommand section
 
-semanticsCommands :: [(K.Key, Cmd)]
-                  -> (Cmd -> Action ())
-                  -> (Cmd -> String)
-                  -> [(K.Key, (String, Action ()))]
-semanticsCommands cmdList cmdS cmdD =
+semanticsCmd :: [(K.Key, Cmd)]
+             -> (Cmd -> Action ())
+             -> (Cmd -> String)
+             -> [(K.Key, (String, Action ()))]
+semanticsCmd cmdList cmdS cmdD =
   let mkDescribed cmd =
         let semantics = if timedCmd cmd
                         then checkCursor $ cmdS cmd
@@ -60,15 +61,17 @@ heroSelection =
                       ("", selectPlayer (AHero k) >> return ()))
   in fmap heroSelect [0..9]
 
-stdBinding :: Config.CP
-           -> (Cmd -> Action ())
-           -> (Cmd -> String)
-           -> Binding (Action ())
+-- | Binding of movement and other standard commands,
+-- as well as of macros and commands defined in the config file.
+stdBinding :: Config.CP            -- ^ game config
+           -> (Cmd -> Action ())   -- ^ semantics of abstract commands
+           -> (Cmd -> String)      -- ^ description of abstract commands
+           -> Binding (Action ())  -- ^ concrete binding
 stdBinding config cmdS cmdD =
   let section = Config.getItems config "macros"
       !kmacro = macroKey section
-      cmdList = configCommands config
-      semList = semanticsCommands cmdList cmdS cmdD
+      cmdList = configCmd config
+      semList = semanticsCmd cmdList cmdS cmdD
       moveWidth f = do
         lxsize <- gets (lxsize . slevel)
         move $ f lxsize
