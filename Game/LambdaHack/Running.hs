@@ -1,6 +1,7 @@
 -- | Running and disturbance.
--- TODO: Add an export list and document after it's rewritten according to #50.
-module Game.LambdaHack.Running where
+module Game.LambdaHack.Running
+  ( run, continueRun
+  ) where
 
 import Control.Monad.State hiding (State, state)
 import qualified Data.List as L
@@ -23,6 +24,11 @@ import qualified Game.LambdaHack.Tile as Tile
 import qualified Game.LambdaHack.Kind as Kind
 import qualified Game.LambdaHack.Feature as F
 
+-- | Start running in the given direction and with the given number
+-- of tiles already traversed (usually 0). The first step of running
+-- succeeds much more often than subsequent steps, because most
+-- of the disturbances are ignored, since the player is aware of them
+-- and still explicitly requests a run.
 run :: (Vector, Int) -> Action ()
 run (dir, dist) = do
   cops <- contentOps
@@ -138,9 +144,10 @@ runDisturbance locLast distLast msg hs ms per locHere
   in tryRunMaybe
 
 -- | This function implements the actual logic of running. It checks if we
--- have to stop running because something interesting cropped up
--- and it ajusts the direction if we reached a corridor's corner
--- (we never change direction except in corridors).
+-- have to stop running because something interesting cropped up,
+-- it ajusts the direction given by the vector, if we reached
+-- a corridor's corner (we never change direction except in corridors)
+-- and it increments the counter of traversed tiles.
 continueRun :: (Vector, Int) -> Action ()
 continueRun (dirLast, distLast) = do
   cops@Kind.COps{cotile} <- contentOps
