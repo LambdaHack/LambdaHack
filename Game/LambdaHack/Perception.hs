@@ -84,7 +84,7 @@ perception :: Kind.COps -> State -> Perception
 perception cops@Kind.COps{cotile}
            state@State{ splayer = pl
                       , sconfig  = config
-                      , ssensory = sensory } =
+                      , sdebug = DebugMode{smarkVision}} =
   let lvl@Level{lheroes = hs} = slevel state
       mode   = Config.get config "engine" "fovMode"
       radius = let r = Config.get config "engine" "fovRadius"
@@ -95,10 +95,12 @@ perception cops@Kind.COps{cotile}
       mLocPer =
         if isAMonster pl && memActor pl state
         then let m = getPlayerBody state
-             in Just (bloc m, computeReachable cops radius mode sensory m lvl)
+             in Just (bloc m,
+                      computeReachable cops radius mode smarkVision m lvl)
         else Nothing
       (mLoc, mPer) = (fmap fst mLocPer, fmap snd mLocPer)
-      pers = IM.map (\ h -> computeReachable cops radius mode sensory h lvl) hs
+      pers = IM.map (\ h ->
+                      computeReachable cops radius mode smarkVision h lvl) hs
       locs = IM.map bloc hs
       lpers = maybeToList mPer ++ IM.elems pers
       reachable = PerceptionReachable $ IS.unions (map preachable lpers)
@@ -136,16 +138,16 @@ computeVisible cops (PerceptionReachable reachable)
 
 -- | Reachable are all fields on an unblocked path from the hero position.
 -- The player's own position is considred reachable by him.
-computeReachable :: Kind.COps -> Int -> String -> SensoryMode
+computeReachable :: Kind.COps -> Int -> String -> Maybe FovMode
                  -> Actor -> Level -> PerceptionReachable
 computeReachable Kind.COps{cotile, coactor=Kind.Ops{okind}}
-                 radius mode sensory actor lvl =
+                 radius mode smarkVision actor lvl =
   let fovMode m =
         if not $ asight $ okind $ bkind m
         then Blind
-        else case sensory of
-          Vision fm -> fm
-          _ -> case mode of
+        else case smarkVision of
+          Just fm -> fm
+          Nothing -> case mode of
             "shadow"     -> Shadow
             "permissive" -> Permissive
             "digital"    -> Digital radius

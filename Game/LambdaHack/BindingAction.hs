@@ -84,7 +84,7 @@ stdBinding config cmdS cmdD =
              heroSelection ++
              semList ++
              [ -- debug commands, TODO:access them from a common menu or prefix
-               (K.Char 'R', ("", modify toggleVision)),
+               (K.Char 'R', ("", modify cycleMarkVision)),
                (K.Char 'O', ("", modify toggleOmniscient)),
                (K.Char 'I', ("", gets (lmeta . slevel) >>= abortWith))
              ]

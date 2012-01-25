@@ -91,11 +91,12 @@ displayLevel :: ColorMode -> FrontendSession -> Kind.COps
              -> Perception -> State
              -> Msg -> Maybe String -> IO Bool
 displayLevel dm fs cops per
-             s@State{scursor, stime, sflavour, slid, splayer, ssensory, sdisplay}
+             s@State{scursor, stime, sflavour, slid, splayer, sdebug}
              msg moverlay =
   let Kind.COps{ coactor=Kind.Ops{okind}
                , coitem=coitem@Kind.Ops{okind=iokind}
                , cotile=Kind.Ops{okind=tokind} } = cops
+      DebugMode{smarkVision, somniscient} = sdebug
       lvl@Level{lxsize = sx, lysize = sy, lsmell = smap, ldesc} = slevel s
       (_, Actor{bkind, bhp, bloc}, bitems) = findActorAnyLevel splayer s
       ActorKind{ahp, asmell} = okind bkind
@@ -103,14 +104,13 @@ displayLevel dm fs cops per
       visible   = totalVisible per
       overlay   = fromMaybe "" moverlay
       (ns, over) = stringByLocation sy overlay -- n overlay screens needed
-      (sSml, sVis) = case ssensory of
-        Vision Blind -> (True, True)
-        Vision _  -> (False, True)
-        Implicit | asmell -> (True, False)
-        Implicit -> (False, False)
-      sOmn   = case sdisplay of Omniscient -> True; _ -> False
-      lAt    = if sOmn then at else rememberAt
-      liAt   = if sOmn then atI else rememberAtI
+      (sSml, sVis) = case smarkVision of
+        Just Blind -> (True, True)
+        Just _  -> (False, True)
+        Nothing | asmell -> (True, False)
+        Nothing -> (False, False)
+      lAt    = if somniscient then at else rememberAt
+      liAt   = if somniscient then atI else rememberAtI
       sVisBG = if sVis
                then \ vis rea -> if vis
                                  then Color.Blue
@@ -147,7 +147,7 @@ displayLevel dm fs cops per
             rainbow loc = toEnum $ loc `rem` 14 + 1
             (char, fg0) =
               case L.find (\ m -> loc0 == Actor.bloc m) (hs ++ ms) of
-                Just m | sOmn || vis -> viewActor loc0 m
+                Just m | somniscient || vis -> viewActor loc0 m
                 _ | sSml && sml >= 0 -> (viewSmell sml, rainbow loc0)
                   | otherwise ->
                   case items of

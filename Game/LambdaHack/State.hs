@@ -11,7 +11,7 @@ module Game.LambdaHack.State
     -- * Player diary
   , Diary(..), defaultDiary
     -- * Debug flags
-  , SensoryMode(..), DisplayMode(..), toggleVision, toggleOmniscient
+  , DebugMode(..), cycleMarkVision, toggleOmniscient
   ) where
 
 import qualified Data.Set as S
@@ -46,8 +46,6 @@ data Diary = Diary
 data State = State
   { splayer  :: ActorId      -- ^ represents the player-controlled actor
   , scursor  :: Cursor       -- ^ cursor location and level to return to
-  , ssensory :: SensoryMode  -- ^ debug only
-  , sdisplay :: DisplayMode  -- ^ debug only
   , stime    :: Time         -- ^ current in-game time
   , sflavour :: FlavourMap   -- ^ association of flavour to items
   , sdisco   :: Discoveries  -- ^ items (kinds) that have been discovered
@@ -57,6 +55,7 @@ data State = State
   , sparty   :: IS.IntSet    -- ^ heroes in the party
   , srandom  :: R.StdGen     -- ^ current random generator
   , sconfig  :: Config.CP    -- ^ game config
+  , sdebug   :: DebugMode    -- ^ debugging mode
   }
   deriving Show
 
@@ -76,14 +75,10 @@ data Cursor = Cursor
   }
   deriving Show
 
-data SensoryMode =
-    Implicit
-  | Vision FovMode
-  deriving Show
-
-data DisplayMode =
-    Normal
-  | Omniscient
+data DebugMode = DebugMode
+  { smarkVision :: Maybe FovMode
+  , somniscient :: Bool
+  }
   deriving Show
 
 -- | Get current level from the dungeon data.
@@ -108,7 +103,6 @@ defaultState config flavour dng lid ploc g =
   State
     (AHero 0)  -- hack: the hero is not yet alive
     (Cursor TgtOff lid ploc lid)
-    Implicit Normal
     0
     flavour
     S.empty
@@ -118,6 +112,13 @@ defaultState config flavour dng lid ploc g =
     IS.empty
     g
     config
+    defaultDebugMode
+
+defaultDebugMode :: DebugMode
+defaultDebugMode = DebugMode
+  { smarkVision = Nothing
+  , somniscient = False
+  }
 
 -- | Update cursor parameters within state.
 updateCursor :: (Cursor -> Cursor) -> State -> State
@@ -139,18 +140,18 @@ updateLevel f s = updateDungeon (Dungeon.adjust f (slid s)) s
 updateDungeon :: (Dungeon.Dungeon -> Dungeon.Dungeon) -> State -> State
 updateDungeon f s = s {sdungeon = f (sdungeon s)}
 
-toggleVision :: State -> State
-toggleVision s = s { ssensory = case ssensory s of
-                        Implicit           -> Vision (Digital 100)
-                        Vision (Digital _) -> Vision Permissive
-                        Vision Permissive  -> Vision Shadow
-                        Vision Shadow      -> Vision Blind
-                        Vision Blind       -> Implicit }
+cycleMarkVision :: State -> State
+cycleMarkVision s@State{sdebug = sdebug@DebugMode{smarkVision}} =
+  s {sdebug = sdebug {smarkVision = case smarkVision of
+                        Nothing          -> Just (Digital 100)
+                        Just (Digital _) -> Just Permissive
+                        Just Permissive  -> Just Shadow
+                        Just Shadow      -> Just Blind
+                        Just Blind       -> Nothing }}
 
 toggleOmniscient :: State -> State
-toggleOmniscient s = s { sdisplay = case sdisplay s of
-                            Omniscient -> Normal
-                            Normal     -> Omniscient }
+toggleOmniscient s@State{sdebug = sdebug@DebugMode{somniscient}} =
+  s {sdebug = sdebug {somniscient = not somniscient}}
 
 instance Binary Diary where
   put Diary{..} = do
@@ -162,8 +163,8 @@ instance Binary Diary where
     return Diary{..}
 
 instance Binary State where
-  put (State player cursor _ _ time flav disco dng lid ct
-       party g config) = do
+  put (State player cursor time flav disco dng lid ct
+         party g config _) = do
     put player
     put cursor
     put time
@@ -188,8 +189,8 @@ instance Binary State where
     g      <- get
     config <- get
     return
-      (State player cursor Implicit Normal time flav disco dng lid ct
-       party (read g) config)
+      (State player cursor time flav disco dng lid ct
+         party (read g) config defaultDebugMode)
 
 instance Binary Cursor where
   put (Cursor act cln loc rln) = do
