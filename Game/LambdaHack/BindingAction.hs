@@ -1,5 +1,5 @@
 module Game.LambdaHack.BindingAction
-  ( stdKeybinding
+  ( stdBinding
   ) where
 
 import Control.Monad.State hiding (State, state)
@@ -15,8 +15,8 @@ import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Actions
 import Game.LambdaHack.Running
 import Game.LambdaHack.EffectAction
-import Game.LambdaHack.Keybinding
-import qualified Game.LambdaHack.Keys as K
+import Game.LambdaHack.Binding
+import qualified Game.LambdaHack.Key as K
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Command
 
@@ -60,11 +60,11 @@ heroSelection =
                       ("", selectPlayer (AHero k) >> return ()))
   in fmap heroSelect [0..9]
 
-stdKeybinding :: Config.CP
-              -> (Cmd -> Action ())
-              -> (Cmd -> String)
-              -> Keybinding (Action ())
-stdKeybinding config cmdS cmdD =
+stdBinding :: Config.CP
+           -> (Cmd -> Action ())
+           -> (Cmd -> String)
+           -> Binding (Action ())
+stdBinding config cmdS cmdD =
   let section = Config.getItems config "macros"
       !kmacro = macroKey section
       cmdList = configCommands config
@@ -75,12 +75,12 @@ stdKeybinding config cmdS cmdD =
       runWidth f = do
         lxsize <- gets (lxsize . slevel)
         run (f lxsize, 0)
-  in Keybinding
+  in Binding
   { kcmd   = M.fromList $
              K.moveBinding moveWidth runWidth ++
              heroSelection ++
              semList ++
-             [ -- debug commands, TODO: access them from a common menu or prefix
+             [ -- debug commands, TODO:access them from a common menu or prefix
                (K.Char 'R', ("", modify toggleVision)),
                (K.Char 'O', ("", modify toggleOmniscient)),
                (K.Char 'I', ("", gets (lmeta . slevel) >>= abortWith))

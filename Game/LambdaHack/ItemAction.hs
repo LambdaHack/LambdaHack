@@ -16,7 +16,7 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Point
 import Game.LambdaHack.Grammar
 import Game.LambdaHack.Item
-import qualified Game.LambdaHack.Keys as K
+import qualified Game.LambdaHack.Key as K
 import Game.LambdaHack.Level
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState

@@ -21,14 +21,14 @@ import Game.LambdaHack.Content.ActorKind
 import qualified Game.LambdaHack.Save as Save
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Random
-import qualified Game.LambdaHack.Keys as K
-import Game.LambdaHack.Keybinding
+import qualified Game.LambdaHack.Key as K
+import Game.LambdaHack.Binding
 
 -- | The constant session information, not saved to the game save file.
 data Session = Session
   { sfs   :: FrontendSession         -- ^ frontend session information
   , scops :: Kind.COps               -- ^ game content
-  , skeyb :: Keybinding (Action ())  -- ^ binding of keys to commands
+  , skeyb :: Binding (Action ())     -- ^ binding of keys to commands
   }
 
 -- | The function inside any Action. Separated to document with haddock.

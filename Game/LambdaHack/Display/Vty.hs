@@ -15,7 +15,7 @@ import qualified Data.ByteString.Char8 as BS
 
 import Game.LambdaHack.Area
 import Game.LambdaHack.PointXY
-import qualified Game.LambdaHack.Keys as K (Key(..))
+import qualified Game.LambdaHack.Key as K (Key(..))
 import qualified Game.LambdaHack.Color as Color
 
 -- | Session data maintained by the frontend.

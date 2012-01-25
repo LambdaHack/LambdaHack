@@ -43,7 +43,7 @@ import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Content.ItemKind
 import qualified Game.LambdaHack.Item as Item
-import qualified Game.LambdaHack.Keys as K
+import qualified Game.LambdaHack.Key as K
 import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.FOV

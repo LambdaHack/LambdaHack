@@ -1,5 +1,5 @@
 -- | Frontend-independent keyboard input operations.
-module Game.LambdaHack.Keys
+module Game.LambdaHack.Key
   ( Key(..), handleDir, moveBinding, keyTranslate
   ) where
 

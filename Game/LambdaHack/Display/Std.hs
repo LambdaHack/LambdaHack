@@ -14,7 +14,7 @@ import qualified System.IO as SIO
 
 import Game.LambdaHack.Area
 import Game.LambdaHack.PointXY
-import qualified Game.LambdaHack.Keys as K (Key(..))
+import qualified Game.LambdaHack.Key as K (Key(..))
 import qualified Game.LambdaHack.Color as Color
 
 -- | No session data needs to be maintained by this frontend.

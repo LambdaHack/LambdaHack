@@ -11,7 +11,7 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
 import qualified Game.LambdaHack.Config as Config
 import Game.LambdaHack.EffectAction
-import qualified Game.LambdaHack.Keybinding as Keybinding
+import qualified Game.LambdaHack.Binding as Binding
 import Game.LambdaHack.Level
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
@@ -162,7 +162,7 @@ playerCommand = do
     ifRunning continueRun $ do
       k <- session nextCommand
       session (\ Session{skeyb} ->
-                case M.lookup k (Keybinding.kcmd skeyb) of
+                case M.lookup k (Binding.kcmd skeyb) of
                   Just (_, c)  -> c
                   Nothing ->
                     abortWith $ "unknown command (" ++ show k ++ ")")

@@ -18,7 +18,7 @@ import Game.LambdaHack.Grammar
 import qualified Game.LambdaHack.Dungeon as Dungeon
 import qualified Game.LambdaHack.HighScore as H
 import Game.LambdaHack.Item
-import qualified Game.LambdaHack.Keys as K
+import qualified Game.LambdaHack.Key as K
 import Game.LambdaHack.Level
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState

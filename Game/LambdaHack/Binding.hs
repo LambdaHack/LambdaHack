@@ -1,6 +1,6 @@
--- | Binding of keys to commands, macros, command help.
-module Game.LambdaHack.Keybinding
-  ( Keybinding(..), macroKey, keyHelp,
+-- | Binding of keys to commands, procesing macros, printing command help.
+module Game.LambdaHack.Binding
+  ( Binding(..), macroKey, keyHelp,
   ) where
 
 import qualified Data.Map as M
@@ -8,10 +8,10 @@ import qualified Data.List as L
 import qualified Data.Set as S
 
 import Game.LambdaHack.Utils.Assert
-import qualified Game.LambdaHack.Keys as K
+import qualified Game.LambdaHack.Key as K
 
 -- | Bindings and other information about player commands.
-data Keybinding a = Keybinding
+data Binding a = Binding
   { kcmd   :: M.Map K.Key (String, a)  -- ^ binding to descriptions and cmds
   , kmacro :: M.Map K.Key K.Key        -- ^ macros map
   , kmajor :: [K.Key]  -- ^ major, most often used, commands
@@ -41,8 +41,8 @@ coImage kmacro k =
      else k : [ from | (from, to) <- M.assocs kmacro, to == k ]
 
 -- | Produce a set of help screens from the key bindings.
-keyHelp :: Keybinding a -> [String]
-keyHelp Keybinding{kcmd, kmacro, kmajor, ktimed} =
+keyHelp :: Binding a -> [String]
+keyHelp Binding{kcmd, kmacro, kmajor, ktimed} =
   let
     movBlurb =
       [ "You move throughout the level using the numerical keypad or"
