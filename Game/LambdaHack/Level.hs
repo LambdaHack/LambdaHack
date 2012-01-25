@@ -78,7 +78,7 @@ updateMonItem f lvl = lvl { lmonItem = f (lmonItem lvl) }
 updateSmell :: (SmellMap -> SmellMap) -> Level -> Level
 updateSmell f lvl = lvl { lsmell = f (lsmell lvl) }
 
--- | Update the item on the ground map.
+-- | Update the items on the ground map.
 updateIMap :: (ItemMap -> ItemMap) -> Level -> Level
 updateIMap f lvl = lvl { litem = f (litem lvl) }
 

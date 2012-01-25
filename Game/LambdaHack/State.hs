@@ -1,4 +1,18 @@
-module Game.LambdaHack.State where
+-- | Game state type and persistent player diary type definitions.
+module Game.LambdaHack.State
+  ( -- * Game state
+    State(..), TgtMode(..), Cursor(..)
+    -- * Accessor
+  , slevel
+    -- * Constructor
+  , defaultState
+    -- * State update
+  , updateCursor, updateTime, updateDiscoveries, updateLevel, updateDungeon
+    -- * Player diary
+  , Diary(..), defaultDiary
+    -- * Debug flags
+  , SensoryMode(..), DisplayMode(..), toggleVision, toggleOmniscient
+  ) where
 
 import qualified Data.Set as S
 import qualified Data.IntSet as IS
@@ -16,7 +30,8 @@ import Game.LambdaHack.Item
 import Game.LambdaHack.Msg
 import Game.LambdaHack.FOV
 
--- | The diary contains all the player data that carries over from game to game.
+-- | The diary contains all the player data
+-- that carries over from game to game.
 -- That includes the last message, previous messages and otherwise recorded
 -- history of past games. This can be used for calculating player
 -- achievements, unlocking advanced game features and general data mining.
@@ -25,36 +40,38 @@ data Diary = Diary
   , shistory     :: [Msg]
   }
 
--- | The 'State' contains all the single game state that has to be saved.
--- In practice, we maintain extra state, but that state is state
--- accumulated during a turn or relevant only to the current session.
+-- | The state of a single game that can be save and restored.
+-- In practice, we maintain some extra state, but it's
+-- temporary for a single turn or relevant only to the current session.
 data State = State
-  { splayer      :: ActorId      -- ^ represents the player-controlled actor
-  , scursor      :: Cursor       -- ^ cursor location and level to return to
-  , ssensory     :: SensoryMode  -- ^ debug only
-  , sdisplay     :: DisplayMode  -- ^ debug only
-  , stime        :: Time
-  , sflavour     :: FlavourMap   -- ^ association of flavour to items
-  , sdisco       :: Discoveries  -- ^ items (kinds) that have been discovered
-  , sdungeon     :: Dungeon.Dungeon  -- ^ all dungeon levels
-  , slid         :: Dungeon.LevelId
-  , scounter     :: (Int, Int)   -- ^ stores next hero index and monster index
-  , sparty       :: IS.IntSet    -- ^ heroes in the party
-  , srandom      :: R.StdGen     -- ^ current random generator
-  , sconfig      :: Config.CP
+  { splayer  :: ActorId      -- ^ represents the player-controlled actor
+  , scursor  :: Cursor       -- ^ cursor location and level to return to
+  , ssensory :: SensoryMode  -- ^ debug only
+  , sdisplay :: DisplayMode  -- ^ debug only
+  , stime    :: Time         -- ^ current in-game time
+  , sflavour :: FlavourMap   -- ^ association of flavour to items
+  , sdisco   :: Discoveries  -- ^ items (kinds) that have been discovered
+  , sdungeon :: Dungeon.Dungeon  -- ^ all dungeon levels
+  , slid     :: Dungeon.LevelId  -- ^ identifier of the current level
+  , scounter :: (Int, Int)   -- ^ stores next hero index and monster index
+  , sparty   :: IS.IntSet    -- ^ heroes in the party
+  , srandom  :: R.StdGen     -- ^ current random generator
+  , sconfig  :: Config.CP    -- ^ game config
   }
   deriving Show
 
+-- | Current targeting mode of the player.
 data TgtMode =
     TgtOff     -- ^ not in targeting mode
   | TgtPlayer  -- ^ the player requested targeting mode explicitly
   | TgtAuto    -- ^ the mode was entered (and will be exited) automatically
   deriving (Show, Eq)
 
+-- | Current targeting cursor parameters.
 data Cursor = Cursor
-  { ctargeting :: TgtMode  -- ^ targeting mode
+  { ctargeting :: TgtMode          -- ^ targeting mode
   , clocLn     :: Dungeon.LevelId  -- ^ cursor level
-  , clocation  :: Point      -- ^ cursor coordinates
+  , clocation  :: Point            -- ^ cursor coordinates
   , creturnLn  :: Dungeon.LevelId  -- ^ the level current player resides on
   }
   deriving Show
@@ -69,10 +86,12 @@ data DisplayMode =
   | Omniscient
   deriving Show
 
+-- | Get current level from the dungeon data.
 slevel :: State -> Level
 slevel State{slid, sdungeon} = sdungeon Dungeon.! slid
 
 -- TODO: add date.
+-- | Initial player diary.
 defaultDiary :: IO Diary
 defaultDiary = do
   curDate <- getClockTime
@@ -82,6 +101,7 @@ defaultDiary = do
     , shistory = ["Player diary started on " ++ time ++ "."]
     }
 
+-- | Initial game state.
 defaultState :: Config.CP -> FlavourMap -> Dungeon.Dungeon -> Dungeon.LevelId
              -> Point -> R.StdGen -> State
 defaultState config flavour dng lid ploc g =
@@ -99,18 +119,23 @@ defaultState config flavour dng lid ploc g =
     g
     config
 
+-- | Update cursor parameters within state.
 updateCursor :: (Cursor -> Cursor) -> State -> State
 updateCursor f s = s { scursor = f (scursor s) }
 
+-- | Update time within state.
 updateTime :: (Time -> Time) -> State -> State
 updateTime f s = s { stime = f (stime s) }
 
+-- | Update item discoveries within state.
 updateDiscoveries :: (Discoveries -> Discoveries) -> State -> State
 updateDiscoveries f s = s { sdisco = f (sdisco s) }
 
+-- | Update level data within state.
 updateLevel :: (Level -> Level) -> State -> State
 updateLevel f s = updateDungeon (Dungeon.adjust f (slid s)) s
 
+-- | Update dungeon data within state.
 updateDungeon :: (Dungeon.Dungeon -> Dungeon.Dungeon) -> State -> State
 updateDungeon f s = s {sdungeon = f (sdungeon s)}
 
