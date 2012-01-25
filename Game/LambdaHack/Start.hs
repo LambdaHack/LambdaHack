@@ -1,8 +1,8 @@
+-- | Game data setup and the procedure for restoring or starting a game.
 module Game.LambdaHack.Start
   ( start, speedupCops
   ) where
 
-import qualified System.Random as R
 import qualified Control.Monad.State as MState
 import qualified Data.Array.Unboxed as A
 
@@ -34,41 +34,30 @@ speedup Kind.Ops{ofoldrWithKey, obounds} =
       isLitTab   = tabulate $ kindHasFeature F.Lit
   in [isClearTab, isLitTab]
 
+-- | Compute and insert auxiliary optimized components into game content,
+-- to be used in time-critical sections of the code.
 speedupCops :: Kind.COps -> Kind.COps
 speedupCops scops@Kind.COps{cotile=sct} =
   let ospeedup = speedup sct
       cotile = sct {Kind.ospeedup}
   in scops {Kind.cotile}
 
--- TODO: move somewhere sane, probably Config.hs
--- Warning: this function changes the config file!
-getGen :: Config.CP -> String -> IO (R.StdGen, Config.CP)
-getGen config option =
-  case Config.getOption config "engine" option of
-    Just sg -> return (read sg, config)
-    Nothing -> do
-      -- Pick the randomly chosen dungeon generator from the IO monad
-      -- and record it in the config for debugging (can be 'D'umped).
-      g <- R.newStdGen
-      let gs = show g
-          c = Config.set config "engine" option gs
-      return (g, c)
-
 -- | Either restore a saved game, or setup a new game.
+-- Then call the main game loop.
 start :: Config.CP -> Session -> IO ()
-start config sess@Session{scops = cops@Kind.COps{corule}} = do
+start config1 sess@Session{scops = cops@Kind.COps{corule}} = do
   let title = rtitle $ stdRuleset corule
       pathsDataFile = rpathsDataFile $ stdRuleset corule
-  restored <- Save.restoreGame pathsDataFile config title
+  restored <- Save.restoreGame pathsDataFile config1 title
   case restored of
     Right (msg, diary) -> do  -- Starting a new game.
-      (dg, configD) <- getGen config "dungeonRandomGenerator"
-      (sg, sconfig) <- getGen configD "startingRandomGenerator"
+      (g2, config2) <- Config.getSetGen config1 "dungeonRandomGenerator"
       let (DungeonState.FreshDungeon{..}, ag) =
-            MState.runState (DungeonState.generate cops configD) dg
+            MState.runState (DungeonState.generate cops config2) g2
           sflavour = MState.evalState (dungeonFlavourMap (Kind.coitem cops)) ag
-          state = defaultState
-                    sconfig sflavour freshDungeon entryLevel entryLoc sg
+      (g3, config3) <- Config.getSetGen config2 "startingRandomGenerator"
+      let state = defaultState
+                    config3 sflavour freshDungeon entryLevel entryLoc g3
           hstate = initialHeroes cops entryLoc state
       handlerToIO sess hstate diary{smsg = msg} handle
     Left (state, diary) ->  -- Running a restored a game.

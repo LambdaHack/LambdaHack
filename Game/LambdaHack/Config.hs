@@ -1,6 +1,7 @@
 -- | Personal game configuration file support.
 module Game.LambdaHack.Config
-  ( CP, mkConfig, appDataDir, getOption, getItems, getFile, get, set, dump
+  ( CP, mkConfig, appDataDir
+  , getOption, getItems, getFile, get, dump, getSetGen
   ) where
 
 import System.Directory
@@ -10,6 +11,7 @@ import qualified Data.ConfigFile as CF
 import qualified Data.Binary as Binary
 import qualified Data.Char as Char
 import qualified Data.List as L
+import qualified System.Random as R
 
 -- | The content of the configuration file. It's parsed
 -- in a case sensitive way (unlike by default in ConfigFile).
@@ -118,3 +120,19 @@ dump fn (CP conf) = do
   let path  = combine current fn
       sdump = CF.to_string conf
   writeFile path sdump
+
+-- | Gets a random generator from the config or,
+-- if not specified, generates one and updates the config with it.
+getSetGen :: CP  -- ^ config
+          -> String     -- ^ name of the generator
+          -> IO (R.StdGen, CP)
+getSetGen config option =
+  case getOption config "engine" option of
+    Just sg -> return (read sg, config)
+    Nothing -> do
+      -- Pick the randomly chosen generator from the IO monad
+      -- and record it in the config for debugging (can be 'D'umped).
+      g <- R.newStdGen
+      let gs = show g
+          c = set config "engine" option gs
+      return (g, c)
