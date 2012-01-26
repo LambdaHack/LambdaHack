@@ -82,18 +82,18 @@ actorReachesActor actor1 actor2 loc1 loc2 per pl =
 -- | Calculate the perception of all actors on the level.
 perception :: Kind.COps -> State -> Perception
 perception cops@Kind.COps{cotile}
-           state@State{ splayer = pl
-                      , sconfig  = config
+           state@State{ splayer
+                      , sconfig
                       , sdebug = DebugMode{smarkVision}} =
   let lvl@Level{lheroes = hs} = slevel state
-      mode   = Config.get config "engine" "fovMode"
-      radius = let r = Config.get config "engine" "fovRadius"
+      mode   = Config.get sconfig "engine" "fovMode"
+      radius = let r = Config.get sconfig "engine" "fovRadius"
                in if r < 1
                   then error $ "FOV radius is " ++ show r ++ ", should be >= 1"
                   else r
       -- Perception for a player-controlled monster on the current level.
       mLocPer =
-        if isAMonster pl && memActor pl state
+        if isAMonster splayer && memActor splayer state
         then let m = getPlayerBody state
              in Just (bloc m,
                       computeReachable cops radius mode smarkVision m lvl)

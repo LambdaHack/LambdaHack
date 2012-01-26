@@ -1,3 +1,6 @@
+-- | AI strategies to direct actors not controlled by the player.
+-- No operation in this module
+-- involves the 'State' or 'Action' type.
 module Game.LambdaHack.Strategy where
 
 import Control.Monad

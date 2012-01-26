@@ -1,4 +1,4 @@
--- | Dungeon operations that require "State", "COps" or "Config".
+-- | Dungeon operations that require 'State', 'COps' or 'Config' type.
 module Game.LambdaHack.DungeonState
   ( -- * Dungeon generation
     FreshDungeon(..), generate

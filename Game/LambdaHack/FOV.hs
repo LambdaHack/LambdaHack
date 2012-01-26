@@ -1,4 +1,4 @@
--- | Field Of View scanning.
+-- | Field Of View scanning with a variety of algorithms.
 module Game.LambdaHack.FOV
   ( FovMode(..), fullscan
   ) where

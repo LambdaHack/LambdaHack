@@ -1,4 +1,4 @@
--- | Rectangular areas of levels and their operations.
+-- | Rectangular areas of levels and their basic operations.
 module Game.LambdaHack.Area
   ( Area, vicinityXY, vicinityCardinalXY, insideXY
   , normalizeArea, grid, validArea, trivialArea, expand

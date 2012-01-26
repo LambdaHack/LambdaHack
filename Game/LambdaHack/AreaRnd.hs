@@ -1,4 +1,4 @@
--- | Operations on the "Area" type that involve random numbers.
+-- | Operations on the 'Area' type that involve random numbers.
 module Game.LambdaHack.AreaRnd
   ( -- * Picking random points inside areas
     xyInArea, mkRoom, mkVoidRoom

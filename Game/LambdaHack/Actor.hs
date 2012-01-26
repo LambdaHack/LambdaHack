@@ -1,4 +1,5 @@
--- | Actors in the game: monsters and heroes.
+-- | Actors in the game: monsters and heroes. No operation in this module
+-- involves the 'State' or 'Action' type.
 module Game.LambdaHack.Actor
   ( -- * Actor identifiers and related operations
     ActorId(..), isAHero, isAMonster, invalidActorId

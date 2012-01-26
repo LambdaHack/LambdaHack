@@ -1,4 +1,5 @@
--- | The game arena, comprised of levels.
+-- | The game arena, comprised of levels. No operation in this module
+-- involves the 'State', 'COps', 'Config' or 'Action' type.
 module Game.LambdaHack.Dungeon
   ( -- * Level identifier
     LevelId, levelNumber, levelDefault

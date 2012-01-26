@@ -1,3 +1,4 @@
+-- | AI strategy operations implemented with the 'Action' monad.
 module Game.LambdaHack.StrategyState where
 
 import qualified Data.List as L

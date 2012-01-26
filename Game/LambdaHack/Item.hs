@@ -1,4 +1,6 @@
 -- | Weapons, treasure and all the other items in the game.
+-- No operation in this module
+-- involves the 'State' or 'Action' type.
 -- TODO: Document after it's rethought and rewritten wrt separating
 -- inventory manangement and items proper.
 module Game.LambdaHack.Item

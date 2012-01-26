@@ -1,4 +1,5 @@
--- | Effects of content on other content.
+-- | Effects of content on other content. No operation in this module
+-- involves the 'State' or 'Action' type.
 module Game.LambdaHack.Effect
   ( Effect(..), effectToSuffix, effectToBenefit
   ) where
