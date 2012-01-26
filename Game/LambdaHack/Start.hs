@@ -1,7 +1,5 @@
 -- | Game data setup and the procedure for restoring or starting a game.
-module Game.LambdaHack.Start
-  ( start, speedupCops
-  ) where
+module Game.LambdaHack.Start ( start ) where
 
 import qualified Control.Monad.State as MState
 import qualified Data.Array.Unboxed as A
@@ -36,17 +34,19 @@ speedup Kind.Ops{ofoldrWithKey, obounds} =
 
 -- | Compute and insert auxiliary optimized components into game content,
 -- to be used in time-critical sections of the code.
-speedupCops :: Kind.COps -> Kind.COps
-speedupCops scops@Kind.COps{cotile=sct} =
-  let ospeedup = speedup sct
-      cotile = sct {Kind.ospeedup}
-  in scops {Kind.cotile}
+speedupCops :: Session -> Session
+speedupCops sess@Session{scops = cops@Kind.COps{cotile=tile}} =
+  let ospeedup = speedup tile
+      cotile = tile {Kind.ospeedup}
+      scops = cops {Kind.cotile}
+  in sess {scops}
 
 -- | Either restore a saved game, or setup a new game.
 -- Then call the main game loop.
 start :: Config.CP -> Session -> IO ()
-start config1 sess@Session{scops = cops@Kind.COps{corule}} = do
-  let title = rtitle $ stdRuleset corule
+start config1 slowSess = do
+  let sess@Session{scops = cops@Kind.COps{corule}} = speedupCops slowSess
+      title = rtitle $ stdRuleset corule
       pathsDataFile = rpathsDataFile $ stdRuleset corule
   restored <- Save.restoreGame pathsDataFile config1 title
   case restored of

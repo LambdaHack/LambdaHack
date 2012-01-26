@@ -97,12 +97,12 @@ createOps CDefs{getSymbol, getName, getFreq, content, validate} =
 
 -- | Operations for all content types, gathered together. See @Content/@.
 data COps = COps
-  { coactor :: Ops ActorKind
-  , cocave  :: Ops CaveKind
-  , coitem  :: Ops ItemKind
-  , coplace :: Ops PlaceKind
-  , corule  :: Ops RuleKind
-  , cotile  :: Ops TileKind
+  { coactor :: !(Ops ActorKind)
+  , cocave  :: !(Ops CaveKind)
+  , coitem  :: !(Ops ItemKind)
+  , coplace :: !(Ops PlaceKind)
+  , corule  :: !(Ops RuleKind)
+  , cotile  :: !(Ops TileKind)
   }
 
 instance Show COps where
