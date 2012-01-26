@@ -88,7 +88,7 @@ library
                    Game.LambdaHack.Start,
                    Game.LambdaHack.State,
                    Game.LambdaHack.Strategy,
-                   Game.LambdaHack.StrategyState,
+                   Game.LambdaHack.StrategyAction,
                    Game.LambdaHack.Tile,
                    Game.LambdaHack.Turn,
                    Game.LambdaHack.Utils.Assert,

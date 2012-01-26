@@ -1,5 +1,5 @@
 -- | AI strategy operations implemented with the 'Action' monad.
-module Game.LambdaHack.StrategyState where
+module Game.LambdaHack.StrategyAction where
 
 import qualified Data.List as L
 import qualified Data.IntMap as IM

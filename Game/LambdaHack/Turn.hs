@@ -18,7 +18,7 @@ import Game.LambdaHack.ActorState
 import Game.LambdaHack.Random
 import Game.LambdaHack.State
 import Game.LambdaHack.Strategy
-import Game.LambdaHack.StrategyState
+import Game.LambdaHack.StrategyAction
 import Game.LambdaHack.Running
 import qualified Game.LambdaHack.Tile as Tile
 
