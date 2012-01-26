@@ -21,7 +21,7 @@ import Game.LambdaHack.Tile
 import Game.LambdaHack.Level
 import qualified Game.LambdaHack.Kind as Kind
 
-speedup :: Kind.Ops TileKind -> [Kind.Id TileKind -> Bool]
+speedup :: Kind.Ops TileKind -> Kind.Speedup TileKind
 speedup Kind.Ops{ofoldrWithKey, obounds} =
   let createTab :: (TileKind -> Bool) -> A.UArray (Kind.Id TileKind) Bool
       createTab p =
@@ -32,7 +32,7 @@ speedup Kind.Ops{ofoldrWithKey, obounds} =
       tabulate p = (createTab p A.!)
       isClearTab = tabulate $ kindHasFeature F.Clear
       isLitTab   = tabulate $ kindHasFeature F.Lit
-  in [isClearTab, isLitTab]
+  in Kind.TileSpeedup {isClearTab, isLitTab}
 
 -- | Compute and insert auxiliary optimized components into game content,
 -- to be used in time-critical sections of the code.

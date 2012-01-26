@@ -1,8 +1,8 @@
 -- | General content types and operations.
-{-# LANGUAGE RankNTypes, ScopedTypeVariables #-}
+{-# LANGUAGE RankNTypes, ScopedTypeVariables, TypeFamilies #-}
 module Game.LambdaHack.Kind
   ( -- * General content types
-    Id, Ops(..), COps(..), createOps
+    Id, Speedup(..), Ops(..), COps(..), createOps
     -- * Arrays of content identifiers
   , Array, (!), (//), listArray, array, bounds
   ) where
@@ -33,6 +33,15 @@ instance Binary (Id c) where
   put (Id i) = put i
   get = fmap Id get
 
+-- | Type family for auxiliary data structures for speeding up
+-- content operations.
+data family Speedup a
+
+data instance Speedup TileKind = TileSpeedup
+  { isClearTab :: Id TileKind -> Bool
+  , isLitTab   :: Id TileKind -> Bool
+  }
+
 -- | Content operations for the content of type @a@.
 data Ops a = Ops
   { osymbol :: Id a -> Char       -- ^ the symbol of a content element at id
@@ -46,7 +55,7 @@ data Ops a = Ops
   , ofoldrWithKey :: forall b. (Id a -> a -> b -> b) -> b -> b
                                   -- ^ fold over all content elements of @a@
   , obounds :: (Id a, Id a)       -- ^ bounds od identifiers of all content @a@
-  , ospeedup :: [Id a -> Bool]    -- ^ tabulated predicates over content
+  , ospeedup :: Speedup a         -- ^ auxiliary speedup components
   }
 
 -- | Create content operations for type @a@ from definition of content
@@ -83,8 +92,7 @@ createOps CDefs{getSymbol, getName, getFreq, content, validate} =
                           (i2, a2) = IM.findMax kindMap
                       in ((Id (toEnum i1), a1), (Id (toEnum i2), a2))
          in (Id 0, (fst . snd) limits)
-       , ospeedup = []  -- the default, override elsewhere
-                        -- TODO: switch the list to tuple via a type family?
+       , ospeedup = undefined  -- define elsewhere
        }
 
 -- | Operations for all content types, gathered together. See @Content/@.

@@ -7,7 +7,6 @@ module Game.LambdaHack.Tile
 import qualified Data.List as L
 import Data.Binary
 
-import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Feature as F
 import qualified Game.LambdaHack.Kind as Kind
@@ -49,13 +48,11 @@ hasFeature Kind.Ops{okind} f t =
 
 -- | Does not block vision. Essential for efficiency of FOV, hence tabulated.
 isClear :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
-isClear Kind.Ops{ospeedup = isClearTab : _} = isClearTab
-isClear Kind.Ops{ospeedup} = assert `failure` L.length ospeedup
+isClear Kind.Ops{ospeedup = Kind.TileSpeedup{isClearTab}} = isClearTab
 
 -- | Is lit on its own. Essential for efficiency of Perception, hence tabulated.
 isLit :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
-isLit Kind.Ops{ospeedup = _ : isLitTab : _} = isLitTab
-isLit Kind.Ops{ospeedup} = assert `failure` L.length ospeedup
+isLit Kind.Ops{ospeedup = Kind.TileSpeedup{isLitTab}} = isLitTab
 
 -- | The player can't one tile from the other.
 similar :: TileKind -> TileKind -> Bool
