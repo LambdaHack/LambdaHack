@@ -1,5 +1,7 @@
 -- | AI strategy operations implemented with the 'Action' monad.
-module Game.LambdaHack.StrategyAction where
+module Game.LambdaHack.StrategyAction
+  ( strategy, wait
+  ) where
 
 import qualified Data.List as L
 import qualified Data.IntMap as IM
@@ -55,6 +57,8 @@ and the monster is small enough, the monster can hear the hero
 and moves into the approximate direction of the hero.
 -}
 
+-- TODO: improve, split up, etc.
+-- | Monster AI strategy based on monster sight, smell, intelligence, etc.
 strategy :: Kind.COps -> ActorId -> State -> Perception -> Strategy (Action ())
 strategy cops actor oldState@State{splayer = pl, stime = time} per =
   strat
@@ -195,9 +199,8 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   interestFreq =  -- don't detour towards an interest if already on one
     if interestHere me
     then []
-    else
-      map (scaleFreq 3)
-        (runStrategy $ onlyInterest (onlyKeepsDir 2 moveRandomly))
+    else map (scaleFreq 3)
+           (runStrategy $ onlyInterest (onlyKeepsDir 2 moveRandomly))
   interestIQFreq = interestFreq ++ runStrategy moveIQ
   moveFreely = onlyLoot moveRandomly
                .| liftFrequency (msum interestIQFreq)
@@ -218,5 +221,6 @@ dirToAction actor tgt allowAttacks dir = do
     -- TODO: ensure time is taken for other aborted actions in this file
     moveOrAttack allowAttacks actor dir
 
+-- | A strategy to always just wait.
 wait :: ActorId -> Strategy (Action ())
 wait actor = return $ advanceTime actor
