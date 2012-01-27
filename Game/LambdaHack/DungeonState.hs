@@ -79,7 +79,8 @@ placeStairs cotile@Kind.Ops{opick} cmap cxsize cminStairDist dplaces = do
 
 -- | Create a level from a cave, from a cave kind.
 buildLevel :: Kind.COps -> Cave -> Int -> Int -> Rnd Level
-buildLevel cops@Kind.COps{cotile=cotile@Kind.Ops{opick}, cocave=Kind.Ops{okind}}
+buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, ouniqGroup}
+                         , cocave=Kind.Ops{okind} }
            Cave{..} lvl depth = do
   let cfg@CaveKind{..} = okind dkind
   cmap <- convertTileMaps (opick cdefTile (const True)) cxsize cysize dmap
@@ -92,6 +93,7 @@ buildLevel cops@Kind.COps{cotile=cotile@Kind.Ops{opick}, cocave=Kind.Ops{okind}}
   -- TODO: split this into Level.defaultLevel
   let itemMap = mapToIMap cxsize ditem `IM.union` IM.fromList is
       litem = IM.map (\ i -> ([i], [])) itemMap
+      unknownId = ouniqGroup "unknown space"
       level = Level
         { lheroes = IM.empty
         , lheroItem = IM.empty
@@ -103,7 +105,7 @@ buildLevel cops@Kind.COps{cotile=cotile@Kind.Ops{opick}, cocave=Kind.Ops{okind}}
         , lsecret = mapToIMap cxsize dsecret
         , litem
         , lmap
-        , lrmap = unknownTileMap (Tile.unknownId cotile) cxsize cysize
+        , lrmap = unknownTileMap unknownId cxsize cysize
         , ldesc = cname
         , lmeta = dmeta
         , lstairs = (su, sd)

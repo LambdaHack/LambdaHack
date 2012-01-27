@@ -250,9 +250,9 @@ tgtAscend k = do
           lvl2 <- gets slevel
           let upd cur =
                 let clocation =
-                      if (lvl2 `rememberAt` nloc) == Tile.unknownId cotile
-                      then loc
-                      else nloc
+                      if Tile.hasFeature cotile F.Exit (lvl2 `rememberAt` nloc)
+                      then nloc  -- already know as an exit, focus on it
+                      else loc   -- unknow, do not reveal the position
                 in cur { clocation, clocLn = nln }
           modify (updateCursor upd)
     else do  -- no stairs in the right direction
