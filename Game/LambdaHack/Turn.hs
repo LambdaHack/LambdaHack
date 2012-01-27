@@ -1,4 +1,5 @@
-module Game.LambdaHack.Turn where
+-- | The main loop of the game, processing player and AI moves turn by turn.
+module Game.LambdaHack.Turn ( handle ) where
 
 import Control.Monad
 import Control.Monad.State hiding (State, state)
@@ -25,7 +26,7 @@ import qualified Game.LambdaHack.Tile as Tile
 -- One turn proceeds through the following functions:
 --
 -- handle
--- handleMonsters, handleMonster
+-- handleAI, handleMonster
 -- nextMove
 -- handle (again)
 --
@@ -33,19 +34,19 @@ import qualified Game.LambdaHack.Tile as Tile
 --
 -- handle
 -- handlePlayer, playerCommand
--- handleMonsters, handleMonster
+-- handleAI, handleMonster
 -- nextMove
 -- handle (again)
 --
 -- What's happening where:
 --
 -- handle: determine who moves next,
---   dispatch to handleMonsters or handlePlayer
+--   dispatch to handleAI or handlePlayer
 --
 -- handlePlayer: remember, display, get and process commmand(s),
 --   update smell map, update perception
 --
--- handleMonsters: find monsters that can move
+-- handleAI: find monsters that can move
 --
 -- handleMonster: determine and process monster action, advance monster time
 --
@@ -54,8 +55,8 @@ import qualified Game.LambdaHack.Tile as Tile
 -- This is rather convoluted, and the functions aren't named very aptly, so we
 -- should clean this up later. TODO.
 
--- | Decide if the hero is ready for another move.
--- Dispatch to either 'handleMonsters' or 'handlePlayer'.
+-- | Decide if the hero is ready for another move,
+-- if yes, run a player move, if not, run an AI move and start next turn.
 handle :: Action ()
 handle = do
   debug "handle"
@@ -65,7 +66,7 @@ handle = do
   debug $ "handle: time check. ptime = "
           ++ show ptime ++ ", time = " ++ show time
   if ptime > time
-    then handleMonsters  -- the hero can't make a move yet; monsters first
+    then handleAI  -- the hero can't make a move yet; monsters first
     else handlePlayer    -- it's the hero's turn!
 
     -- TODO: readd this, but only for the turns when anything moved
@@ -75,13 +76,13 @@ handle = do
     -- monsters can be traced on the map.
     -- displayGeneric ColorFull (const "")
 
+-- TODO: We should replace this structure using a priority search queue/tree.
 -- | Handle monster moves. Perform moves for individual monsters as long as
 -- there are monsters that have a move time which is less than or equal to
 -- the current time.
--- TODO: We should replace this structure using a priority search queue/tree.
-handleMonsters :: Action ()
-handleMonsters = do
-  debug "handleMonsters"
+handleAI :: Action ()
+handleAI = do
+  debug "handleAI"
   time <- gets stime
   ms   <- gets (lmonsters . slevel)
   pl   <- gets splayer
@@ -107,16 +108,16 @@ handleMonster actor = do
   action <-
     rndToAction $
       frequency (head (runStrategy (strategy cops actor state per
-                                         .| wait actor)))
+                                    .| wait actor)))
   action
-  handleMonsters
+  handleAI
 
--- | After everything has been handled for the current game time, we can
--- advance the time. Here is the place to do whatever has to be done for
--- every time unit; currently, that's monster generation.
 -- TODO: nextMove may not be a good name. It's part of the problem of the
 -- current design that all of the top-level functions directly call each
 -- other, rather than being called by a driver function.
+-- | After everything has been handled for the current game time, we can
+-- advance the time. Here is the place to do whatever has to be done for
+-- every time unit, e.g., monster generation.
 nextMove :: Action ()
 nextMove = do
   debug "nextMove"
@@ -151,7 +152,7 @@ handlePlayer = do
                                              (Tile.SmellTime
                                                 (time + sTimeout)))))
         -- Determine perception to let monsters target heroes.
-        withPerception handleMonsters
+        withPerception handleAI
 
 -- | Determine and process the next player command.
 playerCommand :: Action ()
@@ -196,6 +197,3 @@ playerCommand = do
 -- monster may be scheduled. Or a move event for a monster suddenly put to sleep. We
 -- therefore have to given handlers the option of accessing and cleaning up the event
 -- queue.
-
--- The remaining functions in this module are individual actions or helper
--- functions.
