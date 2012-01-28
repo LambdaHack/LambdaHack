@@ -1,5 +1,7 @@
--- | The game action monad and basic actions.
--- TODO: Add an export list and document after it's rewritten according to #50.
+-- TODO: Add an export list, with sections, after the file is rewritten
+-- according to #50. Perhaps make some types abstract.
+-- | Game action monad and basic building blocks
+-- for player and monster actions.
 {-# LANGUAGE MultiParamTypeClasses, RankNTypes #-}
 module Game.LambdaHack.Action where
 
@@ -31,18 +33,19 @@ data Session = Session
   , skeyb :: Binding (Action ())     -- ^ binding of keys to commands
   }
 
--- | The function inside any Action. Separated to document with haddock.
+-- | The type of the function inside any action.
+-- (Separated from the @Action@ type to document each argument with haddock.)
 type ActionFun r a =
    Session                           -- ^ session setup data
-   -> (State -> Diary -> IO r)       -- ^ shutdown cont
+   -> (State -> Diary -> IO r)       -- ^ shutdown continuation
    -> Perception                     -- ^ cached perception
    -> (State -> Diary -> a -> IO r)  -- ^ continuation
-   -> IO r                           -- ^ failure/reset cont
+   -> IO r                           -- ^ failure/reset continuation
    -> State                          -- ^ current state
    -> Diary                          -- ^ current diary
    -> IO r
 
--- | Actions of player-controlled characters and non-player characters.
+-- | Actions of player-controlled characters and of any other actors.
 newtype Action a = Action
   { runAction :: forall r . ActionFun r a
   }
@@ -56,12 +59,12 @@ instance Monad Action where
   return = returnAction
   (>>=)  = bindAction
 
--- | Invokes the continuation.
+-- | Invokes the action continuation on the provided argument.
 returnAction :: a -> Action a
 returnAction x = Action (\ _s _e _p k _a st m -> k st m x)
 
 -- | Distributes the session and shutdown continuation,
--- threads the state and msg.
+-- threads the state and diary.
 bindAction :: Action a -> (a -> Action b) -> Action b
 bindAction m f = Action (\ s e p k a st ms ->
                           let next nst nm x =
@@ -75,7 +78,7 @@ instance MonadState State Action where
   get     = Action (\ _s _e _p k _a  st ms -> k st  ms st)
   put nst = Action (\ _s _e _p k _a _st ms -> k nst ms ())
 
--- | Exported function to run the monad.
+-- | Run an action, with a given session, state and diary, in the @IO@ monad.
 handlerToIO :: Session -> State -> Diary -> Action () -> IO ()
 handlerToIO sess@Session{sfs, scops} state diary h =
   runAction h
@@ -96,12 +99,12 @@ rndToAction r = do
   modify (\ state -> state {srandom = ng})
   return a
 
--- | Invoking a session command.
+-- | Invoke a session command.
 session :: (Session -> Action a) -> Action a
 session f = Action (\ sess e p k a st ms ->
                      runAction (f sess) sess e p k a st ms)
 
--- | Invoking a session command.
+-- | Invoke a session @IO@ command.
 sessionIO :: (Session -> IO a) -> Action a
 sessionIO f = Action (\ sess _e _p k _a st ms -> f sess >>= k st ms)
 
@@ -112,7 +115,7 @@ displayGeneric dm f =
            displayLevel dm sfs scops p st (f (smsg ms)) Nothing
            >>= k st ms)
 
--- | Display the current level, with the current msg and color. Most common.
+-- | Display the current level, with the current msg and color.
 displayAll :: Action Bool
 displayAll = displayGeneric ColorFull id
 
@@ -148,11 +151,11 @@ msgAdd nm = Action (\ _s _e _p k _a st ms ->
 msgClear :: Action ()
 msgClear = Action (\ _s _e _p k _a st ms -> k st ms{smsg = ""} ())
 
--- | Get the content ops.
+-- | Get the content operations.
 contentOps :: Action Kind.COps
 contentOps = Action (\ Session{scops} _e _p k _a st ms -> k st ms scops)
 
--- | Get the content ops modified by a function.
+-- | Get the content operations modified by a function (usually a selector).
 contentf :: (Kind.COps -> a) -> Action a
 contentf f = Action (\ Session{scops} _e _p k _a st ms -> k st ms (f scops))
 
@@ -172,7 +175,7 @@ tryWith exc h = Action (\ s e p k a st ms ->
                          let runA = runAction exc s e p k a st ms
                          in runAction h s e p k runA st ms)
 
--- | Takes a handler and a computation. If the computation fails, the
+-- | Take a handler and a computation. If the computation fails, the
 -- handler is invoked and then the computation is retried.
 tryRepeatedlyWith :: Action () -> Action () -> Action ()
 tryRepeatedlyWith exc h = tryWith (exc >> tryRepeatedlyWith exc h) h
@@ -185,7 +188,7 @@ try = tryWith (return ())
 tryRepeatedly :: Action () -> Action ()
 tryRepeatedly = tryRepeatedlyWith (return ())
 
--- | Print a debug msg or ignore.
+-- | Debugging.
 debug :: String -> Action ()
 debug _x = return () -- liftIO $ hPutStrLn stderr _x
 
@@ -196,14 +199,16 @@ abortWith msg = do
   displayAll
   abort
 
-neverMind :: Bool -> Action a
-neverMind b = abortIfWith b "never mind"
-
 -- | Abort, and print the given msg if the condition is true.
 abortIfWith :: Bool -> Msg -> Action a
 abortIfWith True msg = abortWith msg
 abortIfWith False _  = abortWith ""
 
+-- | Abort conditionally, with a fixed message.
+neverMind :: Bool -> Action a
+neverMind b = abortIfWith b "never mind"
+
+-- | Wait for a player keypress.
 nextCommand :: Session -> Action K.Key
 nextCommand Session{sfs, skeyb} = do
   nc <- liftIO $ nextEvent sfs
@@ -235,6 +240,8 @@ getOptionalConfirm h k Session{sfs} = do
     K.Esc      -> h False
     _          -> k e
 
+-- | Ignore unexpected kestrokes until either a confimation or a rejection
+-- key is pressed.
 getConfirm :: Session -> Action Bool
 getConfirm sess = getOptionalConfirm return (const $ getConfirm sess) sess
 
@@ -257,8 +264,8 @@ msgYesNo msg = do
   displayGeneric ColorBW id  -- turn player's attention to the choice
   session getYesNo
 
--- | Prins a msg and several overlays, one per page, and awaits confirmation.
--- Return value indicates if the player tried to abort/escape.
+-- | Print a msg and several overlays, one per page, and await confirmation.
+-- The return value indicates if the player tried to abort/escape.
 msgOverlaysConfirm :: Msg -> [String] -> Action Bool
 msgOverlaysConfirm _msg [] = do
   msgClear
@@ -289,9 +296,11 @@ withPerception h = Action (\ sess@Session{scops} e _ k a st ms ->
 currentPerception :: Action Perception
 currentPerception = Action (\ _s _e p k _a st ms -> k st ms p)
 
+-- | Update actor stats. Works for actors on other levels, too.
 updateAnyActor :: ActorId -> (Actor -> Actor) -> Action ()
 updateAnyActor actor f = modify (updateAnyActorBody actor f)
 
+-- | Update player-controlled actor stats.
 updatePlayerBody :: (Actor -> Actor) -> Action ()
 updatePlayerBody f = do
   pl <- gets splayer
@@ -314,6 +323,7 @@ advanceTime actor = do
       -- If actor dead or not on current level, don't bother.
       when (memActor actor s) $ updateAnyActor actor upd
 
+-- | Add a turn to the player time counter.
 playerAdvanceTime :: Action ()
 playerAdvanceTime = do
   pl <- gets splayer

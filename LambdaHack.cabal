@@ -15,9 +15,9 @@ description:   This is an alpha release of LambdaHack, a roguelike game engine
                but the fundamental source of flexibility is the strict
                and type-safe separation of code and content.
                .
-               New features to come are: improved squad combat,
-               player action undo/redo, ranged combat animations
-               and complete UI redesign. Long term goals are focused
+               Features to come: improved squad combat,
+               player action undo/redo, ranged combat animations,
+               completely redesigned UI. Long term goals are focused
                around procedural content generation and include
                an improvement of the AI monad EDSL,
                so that the rules for synthesising monster behaviour
