@@ -8,7 +8,7 @@ import qualified Data.Map as M
 
 import Game.LambdaHack.Color
 import Game.LambdaHack.Feature
-import Game.LambdaHack.Content.Content
+import Game.LambdaHack.Misc
 
 -- | The type of kinds of terrain tiles. See @Tile.hs@ about why there is no
 -- corresponding type @Tile@, of particular concrete tiles in the dungeon,

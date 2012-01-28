@@ -7,12 +7,9 @@
 -- @Content/@. On the other hand, game content, that is all elements
 -- of @CDefs@ instances, are defined exclusively in the game code proper,
 -- with names corresponding to the their kinds.
-module Game.LambdaHack.Content.Content ( Freqs, CDefs(..) ) where
+module Game.LambdaHack.Content.Content (CDefs(..)) where
 
--- | For each group that the kind belongs to, denoted by a @String@ name
--- in the first component of a pair, the second component of a pair shows
--- how common the kind is within the group.
-type Freqs = [(String, Int)]
+import Game.LambdaHack.Misc
 
 -- | The general type of a particular game content, e.g., item kinds.
 data CDefs a = CDefs

@@ -22,7 +22,7 @@ import qualified System.Random as R
 import System.Time
 
 import Game.LambdaHack.Actor
-import Game.LambdaHack.PointXY
+import Game.LambdaHack.Misc
 import Game.LambdaHack.Point
 import Game.LambdaHack.Level
 import qualified Game.LambdaHack.Dungeon as Dungeon

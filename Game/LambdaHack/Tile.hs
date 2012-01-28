@@ -21,7 +21,7 @@ import Data.Binary
 import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Feature as F
 import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.PointXY
+import Game.LambdaHack.Misc
 
 -- | The type of secrecy strength of hidden terrain tiles (e.g., doors).
 newtype SecretStrength = SecretStrength{secretStrength :: Time}

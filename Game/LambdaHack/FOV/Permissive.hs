@@ -5,7 +5,7 @@
 -- areas blocked by shadows.
 module Game.LambdaHack.FOV.Permissive (scan) where
 
-import Game.LambdaHack.PointXY
+import Game.LambdaHack.Misc
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.FOV.Common
 

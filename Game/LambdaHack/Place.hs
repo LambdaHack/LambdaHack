@@ -14,6 +14,7 @@ import Game.LambdaHack.Content.PlaceKind
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Area
 import Game.LambdaHack.PointXY
+import Game.LambdaHack.Misc
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Random
 

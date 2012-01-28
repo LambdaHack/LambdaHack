@@ -27,6 +27,7 @@ import qualified Data.Map as M
 import qualified Data.IntMap as IM
 import Data.Maybe
 
+import Game.LambdaHack.Misc
 import Game.LambdaHack.Msg
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.State

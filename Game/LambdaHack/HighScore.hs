@@ -13,7 +13,7 @@ import qualified Data.List as L
 import Game.LambdaHack.Utils.File
 import qualified Game.LambdaHack.Config as Config
 import Game.LambdaHack.Dungeon
-import Game.LambdaHack.PointXY
+import Game.LambdaHack.Misc
 
 -- TODO: add heroes' names, exp and level, cause of death, user number/name.
 -- Note: I tried using Date.Time, but got all kinds of problems,

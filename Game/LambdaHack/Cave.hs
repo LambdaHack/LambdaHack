@@ -18,6 +18,7 @@ import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Place
+import Game.LambdaHack.Misc
 
 -- | The map of starting secrecy strength of tiles in a cave. The map is sparse.
 -- Unspecified tiles have secrecy strength of 0.

@@ -3,7 +3,7 @@
 -- never been described nor implemented before.
 module Game.LambdaHack.FOV.Digital (scan) where
 
-import Game.LambdaHack.PointXY
+import Game.LambdaHack.Misc
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.FOV.Common
 

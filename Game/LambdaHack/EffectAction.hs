@@ -16,6 +16,7 @@ import qualified Data.Set as S
 import qualified Data.IntSet as IS
 import System.Time
 
+import Game.LambdaHack.Misc
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -24,7 +25,6 @@ import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Display
 import Game.LambdaHack.Grammar
-import Game.LambdaHack.PointXY
 import Game.LambdaHack.Point
 import qualified Game.LambdaHack.HighScore as H
 import Game.LambdaHack.Item

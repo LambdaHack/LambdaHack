@@ -6,7 +6,7 @@ module Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Effect
 import Game.LambdaHack.Flavour
 import Game.LambdaHack.Random
-import Game.LambdaHack.Content.Content
+import Game.LambdaHack.Misc
 
 -- TODO: ipower is out of place here. It doesn't make sense for all items,
 -- and will mean different things for different items. Perhaps it should

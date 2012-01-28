@@ -7,9 +7,8 @@ import qualified Data.List as L
 import qualified Data.Ord as Ord
 
 import Game.LambdaHack.Color
-import qualified Game.LambdaHack.PointXY as PointXY
 import qualified Game.LambdaHack.Random as Random
-import Game.LambdaHack.Content.Content
+import Game.LambdaHack.Misc
 
 -- | Monster properties that are changing rarely and permanently.
 data ActorKind = ActorKind
@@ -17,7 +16,7 @@ data ActorKind = ActorKind
   , aname   :: !String           -- ^ short description
   , afreq   :: !Freqs            -- ^ frequency within groups
   , acolor  :: !Color            -- ^ map color
-  , aspeed  :: !PointXY.Time     -- ^ natural speed
+  , aspeed  :: !Time             -- ^ natural speed
   , ahp     :: !Random.RollDice  -- ^ encodes initial and maximal hp
   , asight  :: !Bool             -- ^ can it see?
   , asmell  :: !Bool             -- ^ can it smell?

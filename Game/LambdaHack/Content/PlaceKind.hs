@@ -4,7 +4,7 @@ module Game.LambdaHack.Content.PlaceKind
   ) where
 
 import qualified Data.List as L
-import Game.LambdaHack.Content.Content
+import Game.LambdaHack.Misc
 
 -- | Parameters for the generation of small areas within a dungeon level.
 data PlaceKind = PlaceKind
