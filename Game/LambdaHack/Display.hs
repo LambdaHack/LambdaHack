@@ -1,11 +1,11 @@
 -- | Display on the screen, using one of the available frontends
--- (chosen at compile time).
+-- (determined at compile time with cabal flags).
 {-# LANGUAGE CPP #-}
 module Game.LambdaHack.Display
   ( -- * Re-exported frontend
-    FrontendSession, startup, shutdown, frontendName
+    FrontendSession, startup, shutdown, frontendName, nextEvent
     -- * Derived operations
-  , ColorMode(..), displayLevel, nextEvent
+  , ColorMode(..), displayLevel
   ) where
 
 -- Wrapper for selected Display frontend.

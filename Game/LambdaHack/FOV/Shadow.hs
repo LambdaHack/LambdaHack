@@ -1,7 +1,7 @@
 -- | A restrictive variant of Recursive Shadow Casting FOV with infinite range.
--- It's not designed for dungeons with diagonal walls, so they block visibility,
--- though they don't block movement. The main advantages are that
--- it's very simple and fast.
+-- It's not designed for dungeons with diagonal walls and so here
+-- they block visibility, though they don't block movement.
+-- The main advantage of the algorithm is that it's very simple and fast.
 module Game.LambdaHack.FOV.Shadow (SBump, Interval, scan) where
 
 import Data.Ratio
@@ -15,7 +15,7 @@ Field Of View
 
 The algorithm used is a variant of Shadow Casting. We first compute
 fields that are reachable (have unobstructed line of sight) from the hero's
-position. Later, in Perception.hs,  from this information we compute
+position. Later, in Perception.hs, from this information we compute
 the fields that are visible (not hidden in darkness, etc.).
 
 As input to the algorithm, we require information about fields that
@@ -70,7 +70,7 @@ type SBump = (Progress, Distance)
 type Interval = (Rational, Rational)
 
 -- TODO: if every used, apply static argument transformation to isClear.
--- | Calculates the list of tiles visible from (0, 0).
+-- | Calculates the list of tiles, in @SBump@ coordinates, visible from (0, 0).
 scan :: (SBump -> Bool)  -- ^ clear tile predicate
      -> Distance         -- ^ the current distance from (0, 0)
      -> Interval         -- ^ the current interval to scan

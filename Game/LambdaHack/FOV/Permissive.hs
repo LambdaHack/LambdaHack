@@ -3,8 +3,6 @@
 -- as implemented in Shadow.hs. In the result, this algorithm is much faster
 -- than the original algorithm on dense maps, since it does not scan
 -- areas blocked by shadows.
--- See <https://github.com/Mikolaj/Allure/wiki/Fov-and-los>
--- for some more context and references.
 module Game.LambdaHack.FOV.Permissive (scan) where
 
 import Game.LambdaHack.PointXY
@@ -16,7 +14,7 @@ import Game.LambdaHack.FOV.Common
 -- Right now we build new view on each end of each visible wall tile
 -- and this is necessary only for straight, thin, diagonal walls.
 
--- | Calculates the list of tiles visible from (0, 0).
+-- | Calculates the list of tiles, in @Bump@ coordinates, visible from (0, 0).
 scan :: (Bump -> Bool)  -- ^ clear tile predicate
      -> [Bump]
 scan isClear =

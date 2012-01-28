@@ -1,15 +1,14 @@
 -- | DFOV (Digital Field of View) implemented according to specification at <http://roguebasin.roguelikedevelopment.org/index.php?title=Digital_field_of_view_implementation>.
--- This fast version of the algorithm, based on "PFOV", have, AFAIK,
+-- This fast version of the algorithm, based on "PFOV", has AFAIK
 -- never been described nor implemented before.
--- See <https://github.com/Mikolaj/Allure/wiki/Fov-and-los>
--- for some more context and references.
 module Game.LambdaHack.FOV.Digital (scan) where
 
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.FOV.Common
 
--- | Calculates the list of tiles visible from (0, 0).
+-- | Calculates the list of tiles, in @Bump@ coordinates, visible from (0, 0),
+-- within the given sight range.
 scan :: Distance        -- ^ visiblity radius
      -> (Bump -> Bool)  -- ^ clear tile predicate
      -> [Bump]
