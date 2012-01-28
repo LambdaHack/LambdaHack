@@ -2,7 +2,7 @@
 module Content.ActorKind ( cdefs ) where
 
 import Game.LambdaHack.Color
-import qualified Game.LambdaHack.Content.Content as Content
+import qualified Game.LambdaHack.Content as Content
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Random
 

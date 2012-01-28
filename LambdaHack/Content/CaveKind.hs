@@ -3,7 +3,7 @@ module Content.CaveKind ( cdefs ) where
 
 import Data.Ratio
 
-import qualified Game.LambdaHack.Content.Content as Content
+import qualified Game.LambdaHack.Content as Content
 import Game.LambdaHack.Random as Random
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Misc

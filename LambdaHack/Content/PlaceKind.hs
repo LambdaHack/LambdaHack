@@ -1,7 +1,7 @@
 -- | Rooms, halls and passages for LambdaHack.
 module Content.PlaceKind ( cdefs ) where
 
-import qualified Game.LambdaHack.Content.Content as Content
+import qualified Game.LambdaHack.Content as Content
 import Game.LambdaHack.Content.PlaceKind
 
 cdefs :: Content.CDefs PlaceKind

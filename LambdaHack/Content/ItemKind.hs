@@ -2,7 +2,7 @@
 module Content.ItemKind ( cdefs ) where
 
 import Game.LambdaHack.Color
-import qualified Game.LambdaHack.Content.Content as Content
+import qualified Game.LambdaHack.Content as Content
 import Game.LambdaHack.Effect
 import Game.LambdaHack.Flavour
 import Game.LambdaHack.Random

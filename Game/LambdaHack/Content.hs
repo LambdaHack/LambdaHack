@@ -2,12 +2,12 @@
 -- and game content, defined completely afresh for the particular game.
 -- The general type of the content is @CDefs@ and it has instances
 -- for all content kinds, such as items kinds
--- ('Game.LambdaHack.Content.ItemKind').
--- The possible kinds are fixed in the library and defined in the directory
--- @Content/@. On the other hand, game content, that is all elements
--- of @CDefs@ instances, are defined exclusively in the game code proper,
--- with names corresponding to the their kinds.
-module Game.LambdaHack.Content.Content (CDefs(..)) where
+-- (@Game.LambdaHack.Content.ItemKind@).
+-- The possible kinds are fixed in the library and all defined in the same
+-- directory. On the other hand, game content, that is all elements
+-- of @CDefs@ instances, are defined in a directory
+-- of the game code proper, with names corresponding to their kinds.
+module Game.LambdaHack.Content (CDefs(..)) where
 
 import Game.LambdaHack.Misc
 

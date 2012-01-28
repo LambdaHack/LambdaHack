@@ -23,7 +23,7 @@ import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.Content.Content
+import Game.LambdaHack.Content
 import Game.LambdaHack.Random
 
 -- | Content identifiers of the content of type @c@.

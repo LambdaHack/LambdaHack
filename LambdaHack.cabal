@@ -62,7 +62,7 @@ library
                    Game.LambdaHack.Color,
                    Game.LambdaHack.Command,
                    Game.LambdaHack.Config,
-                   Game.LambdaHack.Content.Content,
+                   Game.LambdaHack.Content,
                    Game.LambdaHack.Content.ActorKind,
                    Game.LambdaHack.Content.CaveKind,
                    Game.LambdaHack.Content.ItemKind,
