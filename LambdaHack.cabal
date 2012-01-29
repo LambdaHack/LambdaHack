@@ -1,80 +1,183 @@
-cabal-version: >= 1.6
+cabal-version: >= 1.10
 name:          LambdaHack
-version:       0.1.20110918
+version:       0.2.0
 license:       BSD3
 license-file:  LICENSE
-tested-with:   GHC == 6.12.3, GHC == 7.3.20110911
-data-files:    LICENSE, CREDITS, DESIGN.markdown, PLAYING.markdown,
-               README.markdown, src/config.default, scores
+tested-with:   GHC == 7.2, GHC == 7.4
+data-files:    LICENSE, CREDITS, PLAYING.md, README.md,
+               config.default, config.bot, scores
 author:        Andres Loeh, Mikolaj Konarski
-maintainer:    Andres Loeh <mail@andres-loeh.de>
+maintainer:    Mikolaj Konarski <mikolaj.konarski@funktory.com>
 description:   This is an alpha release of LambdaHack, a roguelike game engine
-               packaged together with a small example roguelike game
-               (not yet well separated; this is future work,
-               together with improving the AI monad EDSL,
-               so that the rules for synthesising monster behaviour
-               from game content are more readable and easier to debug).
+               packaged together with a small example dungeon crawler.
+               Several frontends are available (GTK is the default)
+               and the main loop is easily extended or replaced,
+               but the fundamental source of flexibility is the strict
+               and type-safe separation of code and content.
                .
-               Another game using this engine is Allure of the Stars
-               at <http://hackage.haskell.org/package/Allure>.
+               Features to come: improved squad combat,
+               player action undo/redo, ranged combat animations,
+               completely redesigned UI. Long term goals are focused
+               around procedural content generation and include
+               an improvement of the AI monad EDSL,
+               so that the rules for synthesising monster behaviour
+               from game content are extensible, readable
+               and easy to debug.
+               .
+               A larger game that depends on the LambdaHack library
+               is Allure of the Stars, available from
+               <http://hackage.haskell.org/package/Allure>.
 synopsis:      A roguelike game engine in early development
 homepage:      http://github.com/kosmikus/LambdaHack
 bug-reports:   http://github.com/kosmikus/LambdaHack/issues
-category:      Game
+category:      Game Engine
 build-type:    Simple
 
+source-repository head
+  type:            git
+  location:        git://github.com/kosmikus/LambdaHack.git
+
 flag curses
-  description:   enable curses support
-  default:       False
+  description:     pick the curses frontend
+  default:         False
 
 flag vty
-  description:   enable vty support
-  default:       False
+  description:     pick the vty frontend
+  default:         False
 
-executable LambdaHack
-  main-is:       Main.hs
-  hs-source-dirs:src
-  other-modules: Action, Actions, ActorAdd, ActorKind, Actor, ActorState,
-                 Color, Command, Config, ConfigDefault,
-                 Display, Dungeon, DungeonState,
-                 Effect, EffectAction, File, Flavour,
-                 FOV, FOV.Common, FOV.Digital, FOV.Permissive, FOV.Shadow,
-                 Frequency, Geometry, GeometryRnd, Grammar,
-                 HighScores, Item, ItemKind, ItemAction,
-                 Keys, Keybindings, Level, LevelState,
-                 Main, Message, Multiline, Perception, Random,
-                 Save, State, Strategy, StrategyState,
-                 Turn, Terrain, Version
-  build-depends: base >= 4 && < 5, containers >= 0.1 && < 1,
-                 binary >= 0.4 && < 1,
-                 random >= 1 && < 2, zlib >= 0.4 && < 1,
-                 bytestring >= 0.9 && < 1, directory >= 1 && < 2,
-                 mtl >= 1.1 && < 3, old-time, ConfigFile >= 1.0.6 && < 2,
-                 MissingH >= 1.1.0.3 && < 1.2, filepath >= 1.1.0.3 && < 2
-  extensions:    CPP, FlexibleContexts, QuasiQuotes, MultiParamTypeClasses,
-                 RankNTypes, BangPatterns
+flag std
+  description:     pick the stdin/stdout frontend
+  default:         False
 
-  if impl(ghc < 7.0)
-     -- GHC 6.12.3 does not like template-haskell 2.6 and 7.3 does not like 2.5
-      build-depends: template-haskell >= 2.5 && < 2.6
-  else
-      build-depends: template-haskell >= 2.5
+library
+  exposed-modules: Game.LambdaHack.Action,
+                   Game.LambdaHack.Actions,
+                   Game.LambdaHack.Actor,
+                   Game.LambdaHack.ActorState,
+                   Game.LambdaHack.Area,
+                   Game.LambdaHack.AreaRnd,
+                   Game.LambdaHack.Binding,
+                   Game.LambdaHack.BindingAction,
+                   Game.LambdaHack.Cave,
+                   Game.LambdaHack.Color,
+                   Game.LambdaHack.Command,
+                   Game.LambdaHack.Config,
+                   Game.LambdaHack.Content,
+                   Game.LambdaHack.Content.ActorKind,
+                   Game.LambdaHack.Content.CaveKind,
+                   Game.LambdaHack.Content.ItemKind,
+                   Game.LambdaHack.Content.PlaceKind,
+                   Game.LambdaHack.Content.RuleKind,
+                   Game.LambdaHack.Content.TileKind,
+                   Game.LambdaHack.Display,
+                   Game.LambdaHack.Dungeon,
+                   Game.LambdaHack.DungeonState,
+                   Game.LambdaHack.Effect,
+                   Game.LambdaHack.EffectAction,
+                   Game.LambdaHack.Feature,
+                   Game.LambdaHack.Flavour,
+                   Game.LambdaHack.FOV,
+                   Game.LambdaHack.FOV.Common,
+                   Game.LambdaHack.FOV.Digital,
+                   Game.LambdaHack.FOV.Permissive,
+                   Game.LambdaHack.FOV.Shadow,
+                   Game.LambdaHack.Grammar,
+                   Game.LambdaHack.HighScore,
+                   Game.LambdaHack.Item,
+                   Game.LambdaHack.ItemAction,
+                   Game.LambdaHack.Key,
+                   Game.LambdaHack.Kind,
+                   Game.LambdaHack.Level,
+                   Game.LambdaHack.Misc,
+                   Game.LambdaHack.Msg,
+                   Game.LambdaHack.Perception,
+                   Game.LambdaHack.Place,
+                   Game.LambdaHack.Point,
+                   Game.LambdaHack.PointXY,
+                   Game.LambdaHack.Random,
+                   Game.LambdaHack.Running,
+                   Game.LambdaHack.Save,
+                   Game.LambdaHack.Start,
+                   Game.LambdaHack.State,
+                   Game.LambdaHack.Strategy,
+                   Game.LambdaHack.StrategyAction,
+                   Game.LambdaHack.Tile,
+                   Game.LambdaHack.Turn,
+                   Game.LambdaHack.Utils.Assert,
+                   Game.LambdaHack.Utils.File,
+                   Game.LambdaHack.Utils.Frequency,
+                   Game.LambdaHack.Vector
+                   Game.LambdaHack.VectorXY
+  other-modules:   Paths_LambdaHack
+  build-depends:   ConfigFile >= 1.1.1 && < 2,
+                   array >= 0.3.0.3 && < 1, base >= 4 && < 5,
+                   binary >= 0.5.0.2 && < 1, bytestring >= 0.9.2 && < 1,
+                   containers >= 0.4.1 && < 1, directory >= 1.1.0.1 && < 2,
+                   filepath >= 1.2.0.1 && < 2, mtl >= 2.0.1 && < 3,
+                   old-time >= 1.0.0.7 && < 2, random >= 1.0.1 && < 2,
+                   zlib >= 0.5.3.1 && < 1
+  default-language: Haskell2010
+  default-extensions: MonoLocalBinds,
+                      BangPatterns, RecordWildCards, NamedFieldPuns
+  other-extensions: MultiParamTypeClasses, RankNTypes, ScopedTypeVariables
+  ghc-options:     -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-monomorphism-restriction -fwarn-unrecognised-pragmas
+  ghc-options:     -fno-warn-auto-orphans -fno-warn-implicit-prelude -fno-warn-unused-do-bind
+  ghc-options:     -fno-ignore-asserts -funbox-strict-fields
 
   if flag(curses) {
-    other-modules: Display.Curses
-    build-depends: hscurses >= 1.3 && < 2
+    exposed-modules: Game.LambdaHack.Display.Curses
+    build-depends: hscurses >= 1.4.1 && < 2
     cpp-options:   -DCURSES
-    extra-libraries: curses
   } else { if flag(vty) {
-    other-modules: Display.Vty
-    build-depends: vty >= 4.4
+    exposed-modules: Game.LambdaHack.Display.Vty
+    build-depends: vty >= 4.7.0.6
+    cpp-options:   -DVTY
+  } else { if flag(std) {
+    exposed-modules: Game.LambdaHack.Display.Std
+    cpp-options:   -DSTD
   } else {
-    other-modules: Display.Gtk
-    build-depends: gtk >= 0.11 && < 0.13
-    cpp-options:   -DGTK
-    ghc-options:   -threaded
-  } }
+    exposed-modules: Game.LambdaHack.Display.Gtk
+    build-depends: gtk >= 0.12.1 && < 0.13
+  } } }
 
-source-repository head
-  type:              git
-  location:          git://github.com/kosmikus/LambdaHack.git
+executable LambdaHack
+  main-is:         Main.hs
+  other-modules:   Content.ActorKind,
+                   Content.CaveKind,
+                   Content.ItemKind,
+                   Content.PlaceKind,
+                   Content.RuleKind,
+                   Content.TileKind,
+                   Multiline,
+                   ConfigDefault
+  hs-source-dirs:  LambdaHack
+  other-modules:   Paths_LambdaHack
+  build-depends:   LambdaHack == 0.2.0, ConfigFile >= 1.1.1 && < 2,
+                   array >= 0.3.0.3 && < 1, base >= 4 && < 5,
+                   binary >= 0.5.0.2 && < 1, bytestring >= 0.9.2 && < 1,
+                   containers >= 0.4.1 && < 1, directory >= 1.1.0.1 && < 2,
+                   filepath >= 1.2.0.1 && < 2, mtl >= 2.0.1 && < 3,
+                   old-time >= 1.0.0.7 && < 2, random >= 1.0.1 && < 2,
+                   template-haskell >= 2.6 && < 3,
+                   zlib >= 0.5.3.1 && < 1
+  default-language: Haskell2010
+  default-extensions: MonoLocalBinds,
+                      BangPatterns, RecordWildCards, NamedFieldPuns
+  other-extensions: CPP, QuasiQuotes,
+                    MultiParamTypeClasses, RankNTypes, ScopedTypeVariables
+  ghc-options:     -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-monomorphism-restriction -fwarn-unrecognised-pragmas
+  ghc-options:     -fno-warn-auto-orphans -fno-warn-implicit-prelude -fno-warn-unused-do-bind
+  ghc-options:     -fno-ignore-asserts -funbox-strict-fields
+  ghc-options:     -threaded
+
+executable DumbBot
+  main-is:         Main.hs
+  hs-source-dirs:  DumbBot
+  build-depends:   base >= 4 && < 5, random >= 1.0.1 && < 2
+  default-language: Haskell2010
+  default-extensions: MonoLocalBinds,
+                      BangPatterns, RecordWildCards, NamedFieldPuns
+  other-extensions: MultiParamTypeClasses, RankNTypes, ScopedTypeVariables
+  ghc-options:     -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-monomorphism-restriction -fwarn-unrecognised-pragmas
+  ghc-options:     -fno-warn-auto-orphans -fno-warn-implicit-prelude -fno-warn-unused-do-bind
+  ghc-options:     -fno-ignore-asserts -funbox-strict-fields

@@ -1,0 +1,92 @@
+; Config file for the bot:
+; DumbBot 42 20000000 | LambdaHack > /tmp/log
+
+[commands]
+; All commands are defined here, except movement, hero selection and debug.
+;
+; Interaction with the dungeon.
+c: TriggerDir { verb = "close", object = "door", feature = Closable }
+o: TriggerDir { verb = "open", object = "door", feature = Openable }
+less:    TriggerTile { verb = "ascend", object = "level", feature = Cause Ascend }
+greater: TriggerTile { verb = "descend", object = "level", feature = Cause Descend }
+bracketleft:  TgtAscend 1
+bracketright: TgtAscend (-1)
+braceleft:    TgtAscend 10
+braceright:   TgtAscend (-10)
+slash: TgtFloor
+asterisk: TgtEnemy
+Tab: HeroCycle
+;
+; Items.
+g: Pickup
+d: Drop
+i: Inventory
+q: Apply { verb = "quaff", object = "potion", syms = "!" }
+r: Apply { verb = "read", object = "scroll", syms = "?" }
+z: Project { verb = "zap", object = "wand", syms = "/" }
+t: Project { verb = "throw", object = "dart", syms = "|" }
+;
+; Saving or ending the game.
+X: GameSave
+Q: GameQuit
+;
+; Information for the player.
+P: History
+V: Version
+question: Help
+D: CfgDump
+;
+; General.
+period: Wait
+Escape: Cancel
+Return: Accept
+
+[dungeon]
+; Fixed caves for the first levels, then randomly picked caves.
+LambdaCave_1: caveRogue
+LambdaCave_2: caveRogue
+LambdaCave_3: caveEmpty
+LambdaCave_10: caveNoise
+depth: 1000
+
+[engine]
+fovMode: digital
+;fovMode: permissive
+;fovMode: shadow
+fovRadius: 10
+;startingRandomGenerator: 42
+;dungeonRandomGenerator: 42
+
+[files]
+; Paths to various game files; relative to the save file directory.
+scoresFile: scores
+saveFile: save
+diaryFile : diary
+
+[heroes]
+HeroName_0: you
+HeroName_1: Haskell Alvin
+HeroName_2: Alonzo Barkley
+HeroName_3: Ernst Abraham
+HeroName_4: Samuel Saunders
+HeroName_5: Roger Robin
+baseHP: 1000000
+extraHeroes: 4
+firstDeathEnds: False
+
+[macros]
+; This sections can be empty, but has to be there.
+; TODO: the following does not work yet:
+;; throw a dart at the closest monster
+;t: asterisk Return t Return
+; TODO: in gtk it could be implemented via unGetChan,
+; unless we prefer an explicit command queue, with flushing, etc.
+;
+; Handy with Vi keys:
+comma: g
+
+[monsters]
+smellTimeout: 1000
+
+[ui]
+historyMax: 5000
