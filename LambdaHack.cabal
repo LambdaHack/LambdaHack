@@ -7,7 +7,7 @@ tested-with:   GHC == 7.2, GHC == 7.4
 data-files:    LICENSE, CREDITS, PLAYING.md, README.md,
                config.default, config.bot, scores
 author:        Andres Loeh, Mikolaj Konarski
-maintainer:    Andres Loeh <mail@andres-loeh.de>
+maintainer:    Mikolaj Konarski <mikolaj.konarski@funktory.com>
 description:   This is an alpha release of LambdaHack, a roguelike game engine
                packaged together with a small example dungeon crawler.
                Several frontends are available (GTK is the default)
