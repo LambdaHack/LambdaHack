@@ -14,18 +14,21 @@ import Game.LambdaHack.Misc
 
 -- | The type of game rule sets and assorted game data.
 --
--- As long as the rules are immutable througout the game, there is
--- no type @Rule@ to hold the changing parapaters, just @RuleKind@.
+-- For now the rules are immutable througout the game, so there is
+-- no type @Rule@ to hold any changing parameters, just @RuleKind@
+-- for the fixed set.
 -- However, in the future, if the rules can get changed during gameplay
 -- based on data mining of player behaviour, we may add such a type
--- and then @RuleKind@ will just remain a starting template, analogously
+-- and then @RuleKind@ will become just a starting template, analogously
 -- as for the other content.
+--
+-- The @raccessible@ field holds a predicate that tells
+-- whether one location is accessible from another.
+-- Precondition: the two locations are next to each other.
 data RuleKind = RuleKind
   { rsymbol           :: Char     -- ^ a symbol
   , rname             :: String   -- ^ short description
   , rfreq             :: Freqs    -- ^ frequency within groups
-    -- Predicate that tells whether one location is accessible from another.
-    -- Precondition: the two locations are next to each other.
   , raccessible       :: X -> Point -> TileKind -> Point -> TileKind -> Bool
   , rtitle            :: String   -- ^ the title of the game
   , rpathsDataFile    :: FilePath -> IO FilePath  -- ^ the path to data files

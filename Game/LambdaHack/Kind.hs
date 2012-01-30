@@ -26,7 +26,7 @@ import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Content
 import Game.LambdaHack.Random
 
--- | Content identifiers of the content of type @c@.
+-- | Content identifiers for the content type @c@.
 newtype Id c = Id Word8 deriving (Show, Eq, Ord, Ix.Ix)
 
 instance Binary (Id c) where
@@ -54,7 +54,7 @@ data Ops a = Ops
                                   -- and satisfying a predicate
   , ofoldrWithKey :: forall b. (Id a -> a -> b -> b) -> b -> b
                                   -- ^ fold over all content elements of @a@
-  , obounds :: (Id a, Id a)       -- ^ bounds od identifiers of all content @a@
+  , obounds :: (Id a, Id a)       -- ^ bounds of identifiers of content @a@
   , ospeedup :: Speedup a         -- ^ auxiliary speedup components
   }
 
@@ -95,7 +95,7 @@ createOps CDefs{getSymbol, getName, getFreq, content, validate} =
        , ospeedup = undefined  -- define elsewhere
        }
 
--- | Operations for all content types, gathered together. See @Content/@.
+-- | Operations for all content types, gathered together.
 data COps = COps
   { coactor :: !(Ops ActorKind)
   , cocave  :: !(Ops CaveKind)
@@ -108,8 +108,8 @@ data COps = COps
 instance Show COps where
   show _ = "Game content."
 
--- | Arrays, indexed by @i@ of content identifiers pointing to
--- the content type @c@, where the identifiers are represented as @Word8@
+-- | Arrays, indexed by type @i@ of content identifiers pointing to
+-- content type @c@, where the identifiers are represented as @Word8@
 -- (and so content of type @c@ can have at most 256 elements).
 newtype Array i c = Array (A.UArray i Word.Word8) deriving Show
 
@@ -120,22 +120,22 @@ instance (Ix.Ix i, Binary i) => Binary (Array i c) where
   put (Array a) = put a
   get = fmap Array get
 
--- | Array lookup.
+-- | Content identifiers array lookup.
 (!) :: Ix.Ix i => Array i c -> i -> Id c
 (!) (Array a) i = Id $ a A.! i
 
--- | Construct an array updated with the association list.
+-- | Construct a content identifiers array updated with the association list.
 (//) :: Ix.Ix i => Array i c -> [(i, Id c)] -> Array i c
 (//) (Array a) l = Array $ a A.// [(i, e) | (i, Id e) <- l]
 
--- | Create an array from a list of elements.
+-- | Create a content identifiers array from a list of elements.
 listArray :: Ix.Ix i => (i, i) -> [Id c] -> Array i c
 listArray bds l = Array $ A.listArray bds [e | Id e <- l]
 
--- | Create an array from an association list.
+-- | Create a content identifiers array from an association list.
 array :: Ix.Ix i => (i, i) -> [(i, Id c)] -> Array i c
 array bds l = Array $ A.array bds [(i, e) | (i, Id e) <- l]
 
--- | Array bounds.
+-- | Content identifiers array bounds.
 bounds :: Ix.Ix i => Array i c -> (i, i)
 bounds (Array a) = A.bounds a

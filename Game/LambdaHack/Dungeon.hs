@@ -1,4 +1,4 @@
--- | The game arena, comprised of levels. No operation in this module
+-- | The game arena comprised of levels. No operation in this module
 -- involves the 'State', 'COps', 'Config' or 'Action' type.
 module Game.LambdaHack.Dungeon
   ( -- * Level identifier
@@ -49,7 +49,8 @@ instance Binary Dungeon where
     return Dungeon{..}
 
 -- | Create a dungeon from a list of levels and maximum depth.
--- The depth is a danger indicator; there may potentially be multiple levels
+-- The depth is only a danger indicator;
+-- there may potentially be multiple levels
 -- with the same depth.
 fromList :: [(LevelId, Level)] -> Int -> Dungeon
 fromList lvls d = assert (d <= L.length lvls `blame` (d, L.length lvls)) $

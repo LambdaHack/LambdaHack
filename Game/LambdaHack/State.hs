@@ -1,4 +1,4 @@
--- | Game state type and persistent player diary type definitions.
+-- | Game state and persistent player diary types and operations.
 module Game.LambdaHack.State
   ( -- * Game state
     State(..), TgtMode(..), Cursor(..)
@@ -61,9 +61,9 @@ data State = State
 
 -- | Current targeting mode of the player.
 data TgtMode =
-    TgtOff     -- ^ not in targeting mode
-  | TgtPlayer  -- ^ the player requested targeting mode explicitly
-  | TgtAuto    -- ^ the mode was entered (and will be exited) automatically
+    TgtOff       -- ^ not in targeting mode
+  | TgtExplicit  -- ^ the player requested targeting mode explicitly
+  | TgtAuto      -- ^ the mode was entered (and will be exited) automatically
   deriving (Show, Eq)
 
 -- | Current targeting cursor parameters.
@@ -206,13 +206,13 @@ instance Binary Cursor where
     return (Cursor act cln loc rln)
 
 instance Binary TgtMode where
-  put TgtOff    = putWord8 0
-  put TgtPlayer = putWord8 1
-  put TgtAuto   = putWord8 2
+  put TgtOff      = putWord8 0
+  put TgtExplicit = putWord8 1
+  put TgtAuto     = putWord8 2
   get = do
     tag <- getWord8
     case tag of
       0 -> return TgtOff
-      1 -> return TgtPlayer
+      1 -> return TgtExplicit
       2 -> return TgtAuto
       _ -> fail "no parse (TgtMode)"

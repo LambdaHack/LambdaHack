@@ -26,7 +26,7 @@ data FrontendSession = FrontendSession
       -- ^ map from fore/back colour pairs to defined curses styles
   }
 
--- | The name of the frontend for the user's information.
+-- | The name of the frontend.
 frontendName :: String
 frontendName = "curses"
 

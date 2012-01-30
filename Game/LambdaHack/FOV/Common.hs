@@ -1,12 +1,12 @@
 -- | Common definitions for the Field of View algorithms.
--- See <https://github.com/Mikolaj/Allure/wiki/Fov-and-los>
+-- See <https://github.com/kosmikus/LambdaHack/wiki/Fov-and-los>
 -- for some more context and references.
 module Game.LambdaHack.FOV.Common
-  ( -- * Physical distance from the spectacor and a section of an arc sweeped.
+  ( -- * Current scan parameters
     Distance, Progress
-    -- * A special coordinate system
+    -- * Scanning coordinate system
   , Bump(..)
-    -- * Geometry in the special coordinate system @Bump@
+    -- * Geometry in system @Bump@
   , Line, ConvexHull, Edge, EdgeInterval
     -- * Assorted minor operations
   , maximal, steeper, addHull
@@ -31,11 +31,12 @@ type Progress = Int
 newtype Bump = B (X, Y)
   deriving (Show)
 
--- | Geometrical line.
+-- | Straight line between points.
 type Line         = (Bump, Bump)
 -- | Convex hull represented as a list of points.
 type ConvexHull   = [Bump]
--- | An edge, comprising of a line and a convex hull, of the area to be scanned.
+-- | An edge (comprising of a line and a convex hull)
+-- of the area to be scanned.
 type Edge         = (Line, ConvexHull)
 -- | The area left to be scanned, delimited by edges.
 type EdgeInterval = (Edge, Edge)
@@ -48,14 +49,14 @@ maximal gte = L.foldl1' (\ acc e -> if gte e acc then e else acc)
 -- | Check if the line from the second point to the first is more steep
 -- than the line from the third point to the first. This is related
 -- to the formal notion of gradient (or angle), but hacked wrt signs
--- to work in this particular setup. Returns True for ill-defined lines.
+-- to work fast in this particular setup. Returns True for ill-defined lines.
 steeper :: Bump -> Bump -> Bump -> Bool
 steeper (B(xf, yf)) (B(x1, y1)) (B(x2, y2)) =
   (yf - y1)*(xf - x2) >= (yf - y2)*(xf - x1)
 
 -- | Extends a convex hull of bumps with a new bump. Nothing needs to be done
--- if the new bump already lies within the hull. The @gte@ argument is
--- typically `steeper`, optionally negated, applied to the @new@ argument.
+-- if the new bump already lies within the hull. The first argument is
+-- typically `steeper`, optionally negated, applied to the second argument.
 addHull :: (Bump -> Bump -> Bool)  -- ^ a comparison function
         -> Bump                    -- ^ a new bump to consider
         -> ConvexHull  -- ^ a convex hull of bumps represented as a list

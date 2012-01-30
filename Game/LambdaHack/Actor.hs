@@ -24,14 +24,15 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Config as Config
 
--- | Monster properties that are changing a lot. If they are dublets
--- of properties from ActorKind, the intention is they may be modified
--- temporarily, but tend to return to the original value over time. E.g., HP.
+-- | Actor properties that are changing throughout the game.
+-- If they are dublets of properties from @ActorKind@,
+-- they are usually modified temporarily, but tend to return
+-- to the original value from @ActorKind@ over time. E.g., HP.
 data Actor = Actor
   { bkind   :: !(Kind.Id ActorKind)    -- ^ the kind of the actor
   , bsymbol :: !(Maybe Char)           -- ^ individual map symbol
   , bname   :: !(Maybe String)         -- ^ individual name
-  , bhp     :: !Int                    -- ^ current hit pints
+  , bhp     :: !Int                    -- ^ current hit points
   , bdir    :: !(Maybe (Vector, Int))  -- ^ direction and distance of running
   , btarget :: Target                  -- ^ target for ranged attacks and AI
   , bloc    :: !Point                  -- ^ current location
@@ -123,7 +124,7 @@ template mk mc ms hp loc =
   let invalidTarget = TEnemy invalidActorId loc
   in Actor mk mc ms hp Nothing invalidTarget loc 'a' 0
 
--- | Modify current hit points of an actor.
+-- | Increment current hit points of an actor.
 addHp :: Kind.Ops ActorKind -> Int -> Actor -> Actor
 addHp Kind.Ops{okind} extra m =
   assert (extra >= 0 `blame` extra) $
@@ -134,7 +135,7 @@ addHp Kind.Ops{okind} extra m =
      else m{bhp = min maxHP (currentHP + extra)}
 
 -- | Checks for the presence of actors in a location.
--- Does not check if the tile is open.
+-- Does not check if the tile is walkable.
 unoccupied :: [Actor] -> Point -> Bool
 unoccupied actors loc =
   all (\ body -> bloc body /= loc) actors
@@ -147,7 +148,7 @@ heroKindId Kind.Ops{ouniqGroup} = ouniqGroup "hero"
 
 -- | The type of na actor target.
 data Target =
-    TEnemy ActorId Point  -- ^ target an actor; last seen location
+    TEnemy ActorId Point  -- ^ target an actor with its last seen location
   | TLoc Point            -- ^ target a given location
   | TCursor               -- ^ target current position of the cursor; default
   deriving (Show, Eq)

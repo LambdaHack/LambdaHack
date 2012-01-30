@@ -145,7 +145,7 @@ runDisturbance locLast distLast msg hs ms per locHere
 
 -- | This function implements the actual logic of running. It checks if we
 -- have to stop running because something interesting cropped up,
--- it ajusts the direction given by the vector, if we reached
+-- it ajusts the direction given by the vector if we reached
 -- a corridor's corner (we never change direction except in corridors)
 -- and it increments the counter of traversed tiles.
 continueRun :: (Vector, Int) -> Action ()

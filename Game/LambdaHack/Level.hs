@@ -52,7 +52,7 @@ data Level = Level
   , lxsize    :: X               -- ^ width of the level
   , lysize    :: Y               -- ^ height of the level
   , lmonsters :: Party           -- ^ all monsters on the level
-  , lmonItem  :: PartyItem       -- ^ monster imtems
+  , lmonItem  :: PartyItem       -- ^ monster items
   , lsmell    :: SmellMap        -- ^ smells
   , lsecret   :: SecretMap       -- ^ secrecy values
   , litem     :: ItemMap         -- ^ items on the ground
@@ -158,7 +158,7 @@ accessible Kind.COps{ cotile=Kind.Ops{okind=okind}, corule}
       tgt = okind $ lvl `at` tloc
   in check lxsize sloc src tloc tgt
 
--- | Check whether the location contains a door of secrecy lower than k
+-- | Check whether the location contains a door of secrecy lower than @k@
 -- and that can be opened according to the standard ruleset.
 openable :: Kind.Ops TileKind -> Level -> SecretStrength -> Point -> Bool
 openable cops lvl@Level{lsecret} k target =
@@ -183,7 +183,7 @@ findLoc lmap p =
 findLocTry :: Int                                  -- ^ the number of tries
            -> TileMap                              -- ^ look up in this map
            -> (Point -> Kind.Id TileKind -> Bool)  -- ^ loop until satisfied
-           -> (Point -> Kind.Id TileKind -> Bool)  -- ^ try only so long
+           -> (Point -> Kind.Id TileKind -> Bool)  -- ^ try to satisfy
            -> Rnd Point
 findLocTry numTries lmap p pTry =
   let search k = do

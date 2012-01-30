@@ -1,4 +1,5 @@
--- | Dungeon operations that require 'State', 'COps' or 'Config' type.
+-- | Dungeon operations that require 'State', 'Kind.COps'
+-- or 'Config.Config' type.
 module Game.LambdaHack.DungeonState
   ( -- * Dungeon generation
     FreshDungeon(..), generate
@@ -24,7 +25,7 @@ import Game.LambdaHack.State
 import qualified Game.LambdaHack.Feature as F
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Content.CaveKind
-import Game.LambdaHack.Cave
+import Game.LambdaHack.Cave hiding (TileMapXY)
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Item
 import Game.LambdaHack.PointXY
@@ -124,11 +125,11 @@ findGenerator cops config k depth = do
   cave <- buildCave cops k depth ci
   buildLevel cops cave k depth
 
--- | Freshly generate dungeon, with the entry area indicated.
+-- | Freshly generated and not yet populated dungeon.
 data FreshDungeon = FreshDungeon
-  { entryLevel   :: Dungeon.LevelId
-  , entryLoc     :: Point
-  , freshDungeon :: Dungeon.Dungeon
+  { entryLevel   :: Dungeon.LevelId  -- ^ starting level for the party
+  , entryLoc     :: Point            -- ^ starting location for the party
+  , freshDungeon :: Dungeon.Dungeon  -- ^ level maps
   }
 
 -- | Generate the dungeon for a new game.
@@ -149,8 +150,12 @@ generate cops config =
         in (FreshDungeon{..}, gd)
   in MState.state con
 
--- | Computes the target world location of using stairs.
-whereTo :: State -> Int -> Maybe (Dungeon.LevelId, Point)
+-- | Compute the level identifier and starting location on the level,
+-- after a level change.
+whereTo :: State  -- ^ game state
+        -> Int    -- ^ jump this many levels
+        -> Maybe (Dungeon.LevelId, Point)
+             -- ^ target level and the location of its receiving stairs
 whereTo State{slid, sdungeon} k = assert (k /= 0) $
   let n = Dungeon.levelNumber slid
       nln = n - k

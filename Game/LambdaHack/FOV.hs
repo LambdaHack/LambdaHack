@@ -1,5 +1,5 @@
 -- | Field Of View scanning with a variety of algorithms.
--- See <https://github.com/Mikolaj/Allure/wiki/Fov-and-los>
+-- See <https://github.com/kosmikus/LambdaHack/wiki/Fov-and-los>
 -- for discussion.
 module Game.LambdaHack.FOV
   ( FovMode(..), fullscan

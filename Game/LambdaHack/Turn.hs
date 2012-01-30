@@ -55,8 +55,9 @@ import qualified Game.LambdaHack.Tile as Tile
 -- This is rather convoluted, and the functions aren't named very aptly, so we
 -- should clean this up later. TODO.
 
--- | Decide if the hero is ready for another move,
--- if yes, run a player move, if not, run an AI move and start next turn.
+-- | Decide if the hero is ready for another move.
+-- If yes, run a player move, if not, run an AI move.
+-- In either case, eventually the next turn is started or the game ends.
 handle :: Action ()
 handle = do
   debug "handle"

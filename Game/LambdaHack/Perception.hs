@@ -1,4 +1,4 @@
--- | Actors perceiving the dungeon and other actors.
+-- | Actors perceiving other actors and the dungeon level.
 module Game.LambdaHack.Perception
   ( Perception, totalVisible, debugTotalReachable, perception
   , actorReachesLoc, actorReachesActor
@@ -33,7 +33,7 @@ newtype PerceptionVisible = PerceptionVisible
 -- Note: Heroes share visibility and only have separate reachability.
 -- The pplayer field must be void if the player is not on the current level.
 -- Right now, the field is used only for player-controlled monsters.
--- | The type represent the perception of all actors on the level.
+-- | The type representing the perception of all actors on the level.
 data Perception = Perception
   { pplayer :: Maybe PerceptionReachable
   , pheroes :: IM.IntMap PerceptionReachable

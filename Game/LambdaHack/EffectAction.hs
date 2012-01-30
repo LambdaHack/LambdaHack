@@ -187,7 +187,7 @@ effLvlvGoUp k = do
         liftIO $ Save.saveGameBkp state diary
         when (targeting /= TgtOff) doLook  -- TODO: lags behind perception
 
--- | Hero has left the dungeon.
+-- | The player leaves the dungeon.
 fleeDungeon :: Action ()
 fleeDungeon = do
   coitem <- contentf Kind.coitem
@@ -232,7 +232,7 @@ itemEffectAction verbosity source target item = do
   when (b && (isAHero source || isAHero target)) $ discover item
   return b
 
--- | Given item is now known to the player.
+-- | Make the item known to the player.
 discover :: Item -> Action ()
 discover i = do
   cops@Kind.Ops{okind} <- contentf Kind.coitem
@@ -301,7 +301,7 @@ summonMonsters n loc = do
   modify (\ state ->
            iterate (addMonster cotile mk hp loc) state !! n)
 
--- | Remove dead heroes (or dead dominated monsters), check if game over.
+-- | Remove dead heroes (or dead dominated monsters). Check if game is over.
 -- For now we only check the selected hero and at current level,
 -- but if poison, etc. is implemented, we'd need to check all heroes
 -- on any level.
@@ -349,11 +349,12 @@ calculateTotal :: Kind.Ops ItemKind -> State -> Int
 calculateTotal cops s =
   L.sum $ L.map (itemPrice cops) $ L.concat $ IM.elems $ lheroItem $ slevel s
 
--- | Handle current score and display it with the high scores. Scores
--- should not be shown during the game,
--- because ultimately the worth of items might give
--- information about the nature of the items.
--- False if display of the scores was void or interrupted by the user
+-- | Handle current score and display it with the high scores.
+-- False if display of the scores was void or interrupted by the user.
+--
+-- Warning: scores are shown during the game,
+-- so we should be careful not to leak secret information through them
+-- (e.g., the nature of the items through the total worth of inventory).
 handleScores :: Bool -> H.Status -> Int -> Action Bool
 handleScores write status total =
   if total == 0

@@ -16,7 +16,7 @@ import Game.LambdaHack.Misc
 -- Another thing to keep in minds is that ipower will heavily determine
 -- the value of the item for shops, treasure chests, artifact set rebalancing,
 -- etc., so if we make ipower complex, the value computation gets complex too.
--- | Item properties that are changing rarely and permanently, if ever.
+-- | Item properties that are fixed for a given kind of items.
 data ItemKind = ItemKind
   { isymbol  :: !Char        -- ^ map symbol
   , iname    :: !String      -- ^ generic name

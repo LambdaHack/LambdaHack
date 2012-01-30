@@ -2,13 +2,14 @@
 --
 -- Unlike for many other content types, there is no type @Tile@,
 -- of particular concrete tiles in the dungeon,
--- corresponding to 'TileKind', the type of kinds of terrain tiles.
+-- corresponding to 'TileKind' (the type of kinds of terrain tiles).
 -- This is because the tiles are too numerous and there's not enough
--- storage for a well-rounded @Tile@ type, on one hand, and on the other hand,
--- tiles are accessed too often in performance critical code
+-- storage space for a well-rounded @Tile@ type, on one hand,
+-- and on the other hand, tiles are accessed
+-- too often in performance critical code
 -- to try to compress their representation and/or recompute them.
--- Instead, various properties of concrete tiles are expressed
--- by arrays or sparse IntMaps, as appropriate.
+-- Instead, of defining a @Tile@ type, we express various properties
+-- of concrete tiles by arrays or sparse IntMaps, as appropriate.
 module Game.LambdaHack.Tile
   ( SecretStrength(..), SmellTime(..)
   , kindHasFeature, kindHas, hasFeature
@@ -52,12 +53,12 @@ hasFeature :: Kind.Ops TileKind -> F.Feature -> Kind.Id TileKind -> Bool
 hasFeature Kind.Ops{okind} f t =
   kindHasFeature f (okind t)
 
--- | The tile does not block vision.
+-- | Whether a tile does not block vision.
 -- Essential for efficiency of "FOV", hence tabulated.
 isClear :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 isClear Kind.Ops{ospeedup = Kind.TileSpeedup{isClearTab}} = isClearTab
 
--- | The tile is lit on its own.
+-- | Whether a tile is lit on its own.
 -- Essential for efficiency of "Perception", hence tabulated.
 isLit :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 isLit Kind.Ops{ospeedup = Kind.TileSpeedup{isLitTab}} = isLitTab

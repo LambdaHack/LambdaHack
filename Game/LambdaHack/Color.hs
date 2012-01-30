@@ -62,7 +62,7 @@ isBright c = c >= BrBlack
 legalBG :: [Color]
 legalBG = [Black, White, Blue, Magenta]
 
--- | Translationg to heavily modified Linux console colors.
+-- | Translationg to heavily modified Linux console color RGB values.
 colorToRGB :: Color -> String
 colorToRGB Black     = "#000000"
 colorToRGB Red       = "#D50000"

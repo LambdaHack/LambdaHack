@@ -17,7 +17,7 @@ more = " --more--  "
 yesno :: Msg
 yesno = " [yn]"
 
--- | Append messages.
+-- | Append two messages.
 addMsg :: Msg -> Msg -> Msg
 addMsg [] x  = x
 addMsg xs [] = xs

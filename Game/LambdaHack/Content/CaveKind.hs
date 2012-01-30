@@ -28,14 +28,14 @@ data CaveKind = CaveKind
   , chiddenChance :: Chance      -- ^ if not open, is it hidden?
   , citemNum      :: RollDice    -- ^ the number of items in the cave
   , cdefTile      :: String      -- ^ the default cave tile group name
-  , ccorTile      :: String      -- ^ the cave corridor tile group
+  , ccorTile      :: String      -- ^ the cave corridor tile group name
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 
 -- | Filter a list of kinds, passing through only the incorrect ones, if any.
 --
 -- Catch caves with not enough space for all the places. Check the size
--- of the cave descriptions, to make sure they fit on screen.
+-- of the cave descriptions to make sure they fit on screen.
 cvalidate :: [CaveKind] -> [CaveKind]
 cvalidate = L.filter (\ CaveKind{ cgrid = RollDiceXY (gx, gy)
                                 , cminPlaceSize = RollDiceXY (mx, my)

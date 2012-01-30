@@ -17,7 +17,9 @@ import Game.LambdaHack.Utils.Assert
 
 -- TODO: do not expose runFrequency
 -- | The frequency distribution type.
-newtype Frequency a = Frequency { runFrequency :: [(Int, a)] }
+newtype Frequency a = Frequency
+  { runFrequency :: [(Int, a)]  -- ^ Give acces to raw frequency values.
+  }
   deriving Show
 
 instance Monad Frequency where

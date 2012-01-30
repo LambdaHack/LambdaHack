@@ -10,9 +10,9 @@ import Game.LambdaHack.Color
 import Game.LambdaHack.Feature
 import Game.LambdaHack.Misc
 
--- | The type of kinds of terrain tiles. See @Tile.hs@ about why there is no
--- corresponding type @Tile@, of particular concrete tiles in the dungeon,
--- unlike for the other content.
+-- | The type of kinds of terrain tiles. See @Tile.hs@ for explanation
+-- of the absence of a corresponding type @Tile@ that would hold
+-- particular concrete tiles in the dungeon.
 data TileKind = TileKind
   { tsymbol  :: !Char       -- ^ map symbol
   , tname    :: !String     -- ^ short description

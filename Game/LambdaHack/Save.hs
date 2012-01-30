@@ -26,13 +26,13 @@ bkpFile config = do
 diaryFile :: Config.CP -> IO FilePath
 diaryFile config = Config.getFile config "files" "diaryFile"
 
--- | We save a simple serialized version of the current player diary.
+-- | Save a simple serialized version of the current player diary.
 saveDiary :: State -> Diary -> IO ()
 saveDiary state diary = do
   dfile <- diaryFile (sconfig state)
   encodeEOF dfile diary
 
--- | We save a simple serialized version of the current state.
+-- | Save a simple serialized version of the current state and diary.
 saveGame :: State -> Diary -> IO ()
 saveGame state diary = do
   sfile <- saveFile (sconfig state)
@@ -110,7 +110,7 @@ mvBkp config = do
   bfile <- bkpFile config
   renameFile sfile bfile
 
--- | We save a backup of the save game file, in case of crashes.
+-- | Save the diary and a backup of the save game file, in case of crashes.
 saveGameBkp :: State -> Diary -> IO ()
 saveGameBkp state diary = do
   saveGame state diary

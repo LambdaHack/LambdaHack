@@ -1,4 +1,4 @@
--- | Display on the screen, using one of the available frontends
+-- | Display game data on the screen using one of the available frontends
 -- (determined at compile time with cabal flags).
 {-# LANGUAGE CPP #-}
 module Game.LambdaHack.Display
@@ -80,14 +80,14 @@ stringByLocation sy xs =
       k  = length ls
   in (k, \ (x, y) -> M.lookup y m >>= \ n -> M.lookup x n)
 
--- | Display color mode.
+-- | Color mode for the display.
 data ColorMode =
     ColorFull  -- ^ normal, with full colours
   | ColorBW    -- ^ black+white only
 
 -- TODO: split up and generally rewrite.
 -- | Display the whole screen: level map, messages and status area
--- and multiple-page overlaid information, if any.
+-- and multi-page overlaid information, if any.
 displayLevel :: ColorMode -> FrontendSession -> Kind.COps
              -> Perception -> State
              -> Msg -> Maybe String -> IO Bool

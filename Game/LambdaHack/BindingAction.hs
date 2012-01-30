@@ -61,8 +61,8 @@ heroSelection =
                       ("", selectPlayer (AHero k) >> return ()))
   in fmap heroSelect [0..9]
 
--- | Binding of movement and other standard commands,
--- as well as of macros and commands defined in the config file.
+-- | Binding of keys to movement and other standard commands,
+-- as well as commands defined in the config file.
 stdBinding :: Config.CP            -- ^ game config
            -> (Cmd -> Action ())   -- ^ semantics of abstract commands
            -> (Cmd -> String)      -- ^ description of abstract commands

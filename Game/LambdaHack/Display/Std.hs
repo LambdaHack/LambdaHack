@@ -20,7 +20,7 @@ import qualified Game.LambdaHack.Color as Color
 -- | No session data needs to be maintained by this frontend.
 type FrontendSession = ()
 
--- | The name of the frontend for the user's information.
+-- | The name of the frontend.
 frontendName :: String
 frontendName = "std"
 

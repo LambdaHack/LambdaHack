@@ -40,7 +40,7 @@ inventory = do
       abortWith ""
 
 -- | Let the player choose any item with a given group name.
--- Note that this does not guarantee an item from the group to be chosen,
+-- Note that this does not guarantee the chosen item belongs to the group,
 -- as the player can override the choice.
 getGroupItem :: [Item]  -- ^ all objects in question
              -> Object  -- ^ name of the group
@@ -54,8 +54,8 @@ getGroupItem is object syms prompt packName = do
       header = capitalize $ suffixS object
   getItem prompt choice header is packName
 
-applyGroupItem :: ActorId  -- ^ actor applying the item; on current level
-               -> Verb     -- ^ how the "applying" is called
+applyGroupItem :: ActorId  -- ^ actor applying the item (is on current level)
+               -> Verb     -- ^ how the applying is called
                -> Item     -- ^ the item to be applied
                -> Action ()
 applyGroupItem actor verb item = do
@@ -83,9 +83,9 @@ playerApplyGroupItem verb object syms = do
     Just i  -> applyGroupItem pl (iverbApply $ okind $ jkind i) i
     Nothing -> neverMind True
 
-projectGroupItem :: ActorId  -- ^ actor projecting the item; on current level
+projectGroupItem :: ActorId  -- ^ actor projecting the item (is on current lvl)
                  -> Point    -- ^ target location for the projecting
-                 -> Verb     -- ^ how the "projecting" is called
+                 -> Verb     -- ^ how the projecting is called
                  -> Item     -- ^ the item to be projected
                  -> Action ()
 projectGroupItem source loc verb item = do
@@ -384,7 +384,8 @@ getAnyItem :: String  -- ^ prompt
            -> Action (Maybe Item)
 getAnyItem prompt = getItem prompt (const True) "Objects"
 
--- | Let the player choose a single item from a list of items.
+-- | Let the player choose a single, preferably suitable,
+-- item from a list of items.
 getItem :: String               -- ^ prompt message
         -> (Item -> Bool)       -- ^ which items to consider suitable
         -> String               -- ^ how to describe suitable items

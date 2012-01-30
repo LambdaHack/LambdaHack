@@ -1,5 +1,5 @@
--- | The game action stuff that is independent from ItemAction.hs.
--- (Both depend on EffectAction.hs).
+-- | The game action stuff that is independent from ItemAction.hs
+-- (both depend on EffectAction.hs).
 -- TODO: Add an export list and document after it's rewritten according to #17.
 module Game.LambdaHack.Actions where
 
@@ -59,9 +59,8 @@ saveGame = do
       state <- get
       diary <- currentDiary
       liftIO $ Save.saveGame state diary
-      ln <- gets slid
       let total = calculateTotal cops state
-          status = H.Camping ln
+          status = H.Camping
       go <- handleScores False status total
       when go $ msgMore "See you soon, stronger and braver!"
       end
@@ -191,7 +190,7 @@ playerTriggerTile feat = do
   ploc <- gets (bloc . getPlayerBody)
   bumpTile ploc feat
 
--- | An actor opens a door. Player (hero or monster) or enemy.
+-- | An actor opens a door. Player (hero or controlled monster) or enemy.
 actorOpenDoor :: ActorId -> Vector -> Action ()
 actorOpenDoor actor dir = do
   Kind.COps{ cotile
@@ -224,7 +223,7 @@ actorOpenDoor actor dir = do
   advanceTime actor
 
 -- | Change the displayed level in targeting mode to (at most)
--- k levels shallower. Enters targeting mode, if no already in one.
+-- k levels shallower. Enters targeting mode, if not already in one.
 tgtAscend :: Int -> Action ()
 tgtAscend k = do
   cotile    <- contentf Kind.cotile
@@ -264,7 +263,7 @@ tgtAscend k = do
       let upd cur = cur {clocLn = nln}
       modify (updateCursor upd)
   when (targeting == TgtOff) $ do
-    let upd cur = cur {ctargeting = TgtPlayer}
+    let upd cur = cur {ctargeting = TgtExplicit}
     modify (updateCursor upd)
   doLook
 
@@ -280,7 +279,7 @@ cycleHero = do
     ni : _ -> selectPlayer (AHero ni)
               >>= assert `trueM` (pl, ni, "hero duplicated")
 
--- | Search for hidden doors
+-- | Search for hidden doors.
 search :: Action ()
 search = do
   Kind.COps{coitem, cotile} <- contentOps
@@ -356,7 +355,7 @@ moveOrAttack allowAttacks actor dir = do
 -- | Resolves the result of an actor moving into another. Usually this
 -- involves melee attack, but with two heroes it just changes focus.
 -- Actors on blocked locations can be attacked without any restrictions.
--- For instance, an actor capable of moving through walls
+-- For instance, an actor embedded in a wall
 -- can be attacked from an adjacent position.
 -- This function is analogous to projectGroupItem, but for melee
 -- and not using up the weapon.
@@ -394,7 +393,7 @@ actorAttackActor source target = do
   itemEffectAction 0 source target single
   advanceTime source
 
--- | Resolves the result of an actor running into another.
+-- | Resolves the result of an actor running (not walking) into another.
 -- This involves switching positions of the two actors.
 actorRunActor :: ActorId -> ActorId -> Action ()
 actorRunActor source target = do

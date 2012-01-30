@@ -13,15 +13,16 @@ import Game.LambdaHack.Utils.Assert
 --
 -- We represent the (level map on the) screen as a linear framebuffer,
 -- where @Point@ is an @Int@ offset counted from the first cell.
--- We do bounds check for the X size ASAP and each subsequent
+-- We do bounds check for the X size whenever we convert between
+-- representations and each subsequent
 -- array access performs another check, effectively for Y size.
 -- After dungeon is generated (using @PointXY@, not @Point@),
 -- and converted to the @Point@ representation, points are used
 -- mainly as keys and not constructed often, so the performance will improve
 -- due to smaller save files, the use of @IntMap@ and cheaper array indexing,
 -- including cheaper bounds checks.
--- We don't use a newtype to avoid the trouble with using @EnumMap@
--- in place of @IntMap@, etc.
+-- We don't defin @Point@ as a newtype to avoid the trouble
+-- with using @EnumMap@ in place of @IntMap@, etc.
 type Point = Int
 
 -- | Print a point as a tuple of cartesian coordinates.

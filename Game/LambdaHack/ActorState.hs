@@ -60,7 +60,7 @@ getPlayerItem s@State{splayer} =
   let (_, _, items) = findActorAnyLevel splayer s
   in items
 
--- | The list of actors and levels for all heroes in the dungeon.
+-- | The list of actors and their levels for all heroes in the dungeon.
 allHeroesAnyLevel :: State -> [(ActorId, LevelId)]
 allHeroesAnyLevel State{slid, sdungeon} =
   let one (ln, Level{lheroes}) =
@@ -206,7 +206,8 @@ initialHeroes cops ploc state =
 
 -- Adding monsters
 
--- | Create a new monster in the level, at a random position.
+-- | Create a new monster in the level, at a given position
+-- and with a given actor kind and HP.
 addMonster :: Kind.Ops TileKind -> Kind.Id ActorKind -> Int -> Point -> State
            -> State
 addMonster cotile mk hp ploc state@State{scounter = (heroC, monsterC)} = do

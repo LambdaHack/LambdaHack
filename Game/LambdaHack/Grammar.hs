@@ -32,7 +32,7 @@ import qualified Game.LambdaHack.Kind as Kind
 -- | The type of verbs.
 type Verb = String
 
--- | Grammatical object type
+-- | The grammatical object type.
 type Object = String
 
 -- | Tests if a character is a vowel (@u@ is too hard, so is @eu@).
@@ -58,7 +58,7 @@ capitalize :: Object -> Object
 capitalize [] = []
 capitalize (c : cs) = toUpper c : cs
 
--- | Add the indefinite article (@a@, @an@) to a word (@h@ is too hard)
+-- | Add the indefinite article (@a@, @an@) to a word (@h@ is too hard).
 addIndefinite :: Object -> Object
 addIndefinite b = case b of
                     c : _ | vowel c -> "an " ++ b
@@ -131,8 +131,15 @@ actorVerbExtraItemExtra Kind.COps{coactor, coitem} state a v extra1 i extra2 =
 
 -- | Produces a textual description of the terrain and items at an already
 -- explored location. Mute for unknown locations.
--- The "detailed" variant is for use in the targeting mode.
-lookAt :: Kind.COps -> Bool -> Bool -> State -> Level -> Point -> String -> String
+-- The detailed variant is for use in the targeting mode.
+lookAt :: Kind.COps  -- ^ game content
+       -> Bool       -- ^ detailed?
+       -> Bool       -- ^ can be seen right now?
+       -> State      -- ^ game state
+       -> Level      -- ^ current level
+       -> Point      -- ^ location to describe
+       -> String     -- ^ an extra sentence to print
+       -> String
 lookAt Kind.COps{coitem, cotile=Kind.Ops{oname}} detailed canSee s lvl loc msg
   | detailed  =
     let tile = lvl `rememberAt` loc

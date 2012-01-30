@@ -29,7 +29,7 @@ instance MonadPlus Strategy where
   mzero = Strategy []
   mplus (Strategy xs) (Strategy ys) = Strategy (xs ++ ys)
 
--- | Strategy where only the actions from the given frequency table
+-- | Strategy where only the actions from the given single frequency table
 -- can be picked.
 liftFrequency :: Frequency a -> Strategy a
 liftFrequency f =

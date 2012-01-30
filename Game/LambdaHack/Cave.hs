@@ -17,11 +17,17 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Feature as F
-import Game.LambdaHack.Place
+import Game.LambdaHack.Place hiding (TileMapXY)
+import qualified Game.LambdaHack.Place as Place
 import Game.LambdaHack.Misc
 
--- | The map of starting secrecy strength of tiles in a cave. The map is sparse.
--- Unspecified tiles have secrecy strength of 0.
+-- | The map of tile kinds in a cave.
+-- The map is sparse. The default tile that eventually fills the empty spaces
+-- is specified in the cave kind specification with @cdefTile@.
+type TileMapXY = Place.TileMapXY
+
+-- | The map of starting secrecy strength of tiles in a cave.
+-- The map is sparse. Unspecified tiles have secrecy strength of 0.
 type SecretMapXY = M.Map PointXY Tile.SecretStrength
 
 -- | The map of starting items in tiles of a cave. The map is sparse.
@@ -31,7 +37,7 @@ type ItemMapXY = M.Map PointXY Item
 -- | The type of caves (not yet inhabited dungeon levels).
 data Cave = Cave
   { dkind     :: !(Kind.Id CaveKind)  -- ^ the kind of the cave
-  , dmap      :: TileMapXY            -- ^ tile kinds in the case
+  , dmap      :: TileMapXY            -- ^ tile kinds in the cave
   , dsecret   :: SecretMapXY          -- ^ secrecy strength of cave tiles
   , ditem     :: ItemMapXY            -- ^ starting items in the cave
   , dmeta     :: String               -- ^ debug information about the cave

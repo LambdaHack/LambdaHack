@@ -1,6 +1,6 @@
--- | Improved tools for specifying assertions. A step towards contracts.
--- Actually, a bunch of hacks wrapping the original 'assert' function,
--- because the source location can be comfortably obtained only from @assert@.
+-- | Tools for specifying assertions. A step towards contracts.
+-- Actually, a bunch of hacks wrapping the original @assert@ function,
+-- which is the only easy way of obtaining source locations.
 module Game.LambdaHack.Utils.Assert
   ( assert, blame, failure, allB, checkM, trueM, falseM
   ) where

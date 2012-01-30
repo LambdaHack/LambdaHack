@@ -18,9 +18,9 @@ import Game.LambdaHack.Utils.Assert
 --
 -- A newtype is used to prevent mixing up the type with @Point@ itself.
 -- Note that the offset representations of a vector is usually not unique.
--- For vectors of lenth 1 in the chessboard metric, used to denote
--- geographical directions, if the level width and height are at least 3,
--- the representations are pairwise distinct.
+-- E.g., for vectors of lenth 1 in the chessboard metric, used to denote
+-- geographical directions, the representations are pairwise distinct
+-- if and only if the level width and height are at least 3.
 newtype Vector = Vector Int
   deriving (Show, Eq)
 
@@ -119,7 +119,8 @@ normalize lxsize (VectorXY (dx, dy)) =
 -- in which one should move from the first in order to get closer
 -- to the second. Ignores obstacles. Of several equally good directions
 -- (in the chessboard metric) it picks one of those that visually
--- (in the euclidean metric) maximally align with the original vector.
+-- (in the euclidean metric) maximally align with the vector between
+-- the two points..
 towards :: X -> Point -> Point -> Vector
 towards lxsize loc0 loc1 =
   assert (loc0 /= loc1 `blame` (loc0, loc1)) $

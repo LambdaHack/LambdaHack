@@ -129,7 +129,7 @@ intToDeep n' = let n = toEnum n'
 -- | Fractional chance.
 type Chance = Rational
 
--- | True, with probability given by the fraction.
+-- | Give @True@, with probability determined by the fraction.
 chance :: Chance -> Rnd Bool
 chance r = do
   let n = numerator r

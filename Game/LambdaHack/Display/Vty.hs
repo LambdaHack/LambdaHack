@@ -21,7 +21,7 @@ import qualified Game.LambdaHack.Color as Color
 -- | Session data maintained by the frontend.
 type FrontendSession = Vty
 
--- | The name of the frontend for the user's information.
+-- | The name of the frontend.
 frontendName :: String
 frontendName = "vty"
 

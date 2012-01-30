@@ -1,7 +1,7 @@
 -- | Personal game configuration file support.
 module Game.LambdaHack.Config
   ( CP, mkConfig, appDataDir
-  , getOption, getItems, getFile, get, dump, getSetGen
+  , getOption, get, getItems, getFile, dump, getSetGen
   ) where
 
 import System.Directory
@@ -39,7 +39,8 @@ toCP cf = CP $ cf {CF.optionxform = id}
 
 -- | Read the player configuration file, fall back to default config.
 --
--- The argument @configDefault@ is expected to come from
+-- The default config, passed in argument @configDefault@,
+-- is expected to come from
 -- the default configuration file included via CPP
 -- in file @ConfigDefault.hs@. It is overwritten completely by
 -- the configuration read from the user configuration file, if any.
@@ -56,7 +57,7 @@ mkConfig configDefault = do
       return $ toCP $ forceEither c
 
 -- | Personal data directory for the game. Depends on the OS and the game,
--- e.g., for LambdaHack under Linux it's @~/.LambdaHack/@.
+-- e.g., for LambdaHack under Linux it's @~\/.LambdaHack\/@.
 appDataDir :: IO FilePath
 appDataDir = do
   progName <- getProgName
@@ -77,6 +78,14 @@ getOption (CP conf) s o =
   if CF.has_option conf s o
   then Just $ forceEither $ CF.get conf s o
   else Nothing
+
+-- | Simplified access to an option in a given section.
+-- Fails if the option is not present.
+get :: CF.Get_C a => CP -> CF.SectionSpec -> CF.OptionSpec -> a
+get (CP conf) s o =
+  if CF.has_option conf s o
+  then forceEither $ CF.get conf s o
+  else error $ "Unknown config option: " ++ s ++ "." ++ o
 
 -- | An association list corresponding to a section. Fails if no such section.
 getItems :: CP -> CF.SectionSpec -> [(String, String)]
@@ -99,20 +108,6 @@ getFile conf s o = do
   b <- doesDirectoryExist appData
   return $ if b then appPath else curPath
 
--- | Simplified access to an option in a given section.
-get :: CF.Get_C a => CP -> CF.SectionSpec -> CF.OptionSpec -> a
-get (CP conf) s o =
-  if CF.has_option conf s o
-  then forceEither $ CF.get conf s o
-  else error $ "Unknown config option: " ++ s ++ "." ++ o
-
--- | Simplified setting of an option in a given section. Overwriting forbidden.
-set :: CP -> CF.SectionSpec -> CF.OptionSpec -> String -> CP
-set (CP conf) s o v =
-  if CF.has_option conf s o
-  then error $ "Overwritten config option: " ++ s ++ "." ++ o
-  else CP $ forceEither $ CF.set conf s o v
-
 -- | Dumps the current configuration to a file.
 dump :: FilePath -> CP -> IO ()
 dump fn (CP conf) = do
@@ -121,8 +116,15 @@ dump fn (CP conf) = do
       sdump = CF.to_string conf
   writeFile path sdump
 
+-- | Simplified setting of an option in a given section. Overwriting forbidden.
+set :: CP -> CF.SectionSpec -> CF.OptionSpec -> String -> CP
+set (CP conf) s o v =
+  if CF.has_option conf s o
+  then error $ "Overwritten config option: " ++ s ++ "." ++ o
+  else CP $ forceEither $ CF.set conf s o v
+
 -- | Gets a random generator from the config or,
--- if not specified, generates one and updates the config with it.
+-- if not present, generates one and updates the config with it.
 getSetGen :: CP  -- ^ config
           -> String     -- ^ name of the generator
           -> IO (R.StdGen, CP)

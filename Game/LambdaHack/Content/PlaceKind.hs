@@ -20,7 +20,7 @@ data PlaceKind = PlaceKind
 -- | A method of filling the whole area by transforming a given corner.
 data Cover =
     CAlternate   -- ^ reflect every other corner, overlapping 1 row and column
-  | CStretch     -- ^ fill symmetrically all corners and stretch their borders
+  | CStretch     -- ^ fill symmetrically 4 corners and stretch their borders
   | CReflect     -- ^ tile separately and symmetrically quarters of the place
   deriving (Show, Eq)
 
@@ -38,6 +38,7 @@ data Fence =
 -- TODO: Check that all symbols in place plans are present in the legend.
 -- TODO: Add a field with tile group to be used as the legend.
 -- | Filter a list of kinds, passing through only the incorrect ones, if any.
+--
 -- Verify that the top-left corner map is rectangular and not empty.
 pvalidate :: [PlaceKind] -> [PlaceKind]
 pvalidate = L.filter (\ PlaceKind{..} ->

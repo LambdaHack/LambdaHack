@@ -29,7 +29,7 @@ data FrontendSession = FrontendSession
   , schan :: Chan String               -- ^ the channel that carries input
   }
 
--- | The name of the frontend for the user's information.
+-- | The name of the frontend.
 frontendName :: String
 frontendName = "gtk"
 

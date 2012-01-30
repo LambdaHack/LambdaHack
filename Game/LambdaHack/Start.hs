@@ -1,4 +1,4 @@
--- | Game data setup and the procedure for restoring or starting a game.
+-- | Setting up game data and restoring or starting a game.
 module Game.LambdaHack.Start ( start ) where
 
 import qualified Control.Monad.State as MState

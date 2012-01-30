@@ -10,7 +10,7 @@ import Game.LambdaHack.Color
 import qualified Game.LambdaHack.Random as Random
 import Game.LambdaHack.Misc
 
--- | Monster properties that are changing rarely and permanently.
+-- | Actor properties that are fixed for a given kind of actors.
 data ActorKind = ActorKind
   { asymbol :: !Char             -- ^ map symbol
   , aname   :: !String           -- ^ short description
@@ -26,7 +26,8 @@ data ActorKind = ActorKind
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 
 -- | Filter a list of kinds, passing through only the incorrect ones, if any.
--- Make sure actor kinds can be told apart on the game map.
+--
+-- Make sure actor kinds can be told apart on the level map.
 avalidate :: [ActorKind] -> [ActorKind]
 avalidate l =
   let cmp = Ord.comparing (\ ka -> (asymbol ka, acolor ka))

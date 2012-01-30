@@ -1,10 +1,10 @@
 -- | Operations on the 'Area' type that involve random numbers.
 module Game.LambdaHack.AreaRnd
-  ( -- * Picking random points inside areas
+  ( -- * Picking points inside areas
     xyInArea, mkRoom, mkVoidRoom
-    -- * Choosing connections between areas in a grid
+    -- * Choosing connections
   , connectGrid, randomConnection
-    -- * Plotting individual corridors between two areas
+    -- * Plotting corridors
   , Corridor, connectPlaces
   ) where
 

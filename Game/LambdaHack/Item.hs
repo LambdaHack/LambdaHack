@@ -46,7 +46,7 @@ import Game.LambdaHack.Effect
 -- TODO: name [Item] Inventory and have some invariants, e.g. no equal letters.
 -- | Game items in inventories or strewn around the dungeon.
 data Item = Item
-  { jkind   :: !(Kind.Id ItemKind)  -- ^ kind of the
+  { jkind   :: !(Kind.Id ItemKind)  -- ^ kind of the item
   , jpower  :: !Int                 -- ^ power of the item
   , jletter :: Maybe Char           -- ^ inventory symbol
   , jcount  :: !Int                 -- ^ inventory count

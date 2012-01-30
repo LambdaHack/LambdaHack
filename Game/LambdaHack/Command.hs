@@ -78,8 +78,8 @@ cmdSemantics cmd = case cmd of
   Pickup ->    pickupItem
   Drop ->      dropItem
   Inventory -> inventory
-  TgtFloor ->  targetFloor   TgtPlayer
-  TgtEnemy ->  targetMonster TgtPlayer
+  TgtFloor ->  targetFloor   TgtExplicit
+  TgtEnemy ->  targetMonster TgtExplicit
   TgtAscend k -> tgtAscend k
   GameSave ->  saveGame
   GameQuit ->  quitGame

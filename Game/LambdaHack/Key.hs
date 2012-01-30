@@ -28,7 +28,7 @@ data Key =
   | Home
   | KP !Char        -- ^ a keypad key for a character (digits and operators)
   | Char !Char      -- ^ a single printable character
-  | Unknown !String -- ^ an unknown key, collected to warn the user later
+  | Unknown !String -- ^ an unknown key, registered to warn the user
   deriving (Ord, Eq)
 
 showKey :: Key -> String

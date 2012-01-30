@@ -20,7 +20,7 @@ import Game.LambdaHack.Random
 
 -- TODO: use more, rewrite as needed, document each field.
 -- | The parameters of a place. Most are immutable and set
--- at the time when a place was generated.
+-- at the time when a place is generated.
 data Place = Place
   { qkind        :: !(Kind.Id PlaceKind)
   , qarea        :: !Area
@@ -48,7 +48,7 @@ instance Binary Place where
     qhollowFence <- get
     return Place{..}
 
--- | The map of tile kinds in a cave and any place in a cave.
+-- | The map of tile kinds in a place (and generally anywhere in a cave).
 -- The map is sparse. The default tile that eventually fills the empty spaces
 -- is specified in the cave kind specification with @cdefTile@.
 type TileMapXY = M.Map PointXY (Kind.Id TileKind)
@@ -90,7 +90,7 @@ buildPlace :: Kind.COps         -- ^ the game content
            -> RollDeep          -- ^ the chance of a dark place
            -> Int               -- ^ current level depth
            -> Int               -- ^ maximum depth
-           -> Area              -- ^ place interior area
+           -> Area              -- ^ interior area of the place
            -> Rnd (TileMapXY, Place)
 buildPlace Kind.COps{cotile, coplace=Kind.Ops{okind=pokind, opick=popick}}
            qsolidFence qhollowFence cdarkChance lvl depth
