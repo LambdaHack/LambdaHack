@@ -1,7 +1,7 @@
 -- | Item UI code with the 'Action' type and everything it depends on
 -- that is not already in Action.hs and EffectAction.hs.
 -- This file should not depend on Actions.hs.
--- TODO: Add an export list and document after it's rewritten according to #50.
+-- TODO: Add an export list and document after it's rewritten according to #17.
 module Game.LambdaHack.ItemAction where
 
 import Control.Monad

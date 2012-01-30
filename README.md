@@ -58,8 +58,7 @@ e.g., by making the dungeon much deeper, as in the supplied config.bot.
 Further information
 -------------------
 
-For more information, visit the wiki (!!!!!!!!!!!!!TODO!!!!!!!!!!)
-at https://github.com/kosmikus/LambdaHack/wiki
+For more information, visit the [wiki] [6]
 and see the files PLAYING.md, CREDITS and LICENSE.
 
 Have fun!
@@ -71,3 +70,4 @@ Have fun!
 [3]: http://hackage.haskell.org/package/LambdaHack
 [4]: http://hackage.haskell.org/package/Allure
 [5]: http://github.com/kosmikus/LambdaHack
+[6]: https://github.com/kosmikus/LambdaHack/wiki

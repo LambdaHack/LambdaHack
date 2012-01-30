@@ -1,6 +1,6 @@
 -- | The effectToAction function and all it depends on.
 -- This file should not depend on Actions.hs nor ItemAction.hs.
--- TODO: Add an export list and document after it's rewritten according to #50.
+-- TODO: Add an export list and document after it's rewritten according to #17.
 module Game.LambdaHack.EffectAction where
 
 -- Cabal

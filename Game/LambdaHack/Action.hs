@@ -1,5 +1,5 @@
 -- TODO: Add an export list, with sections, after the file is rewritten
--- according to #50. Perhaps make some types abstract.
+-- according to #17. Perhaps make some types abstract.
 -- | Game action monad and basic building blocks
 -- for player and monster actions.
 {-# LANGUAGE MultiParamTypeClasses, RankNTypes #-}

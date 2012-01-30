@@ -1,6 +1,6 @@
 -- | The game action stuff that is independent from ItemAction.hs.
 -- (Both depend on EffectAction.hs).
--- TODO: Add an export list and document after it's rewritten according to #50.
+-- TODO: Add an export list and document after it's rewritten according to #17.
 module Game.LambdaHack.Actions where
 
 import Control.Monad
