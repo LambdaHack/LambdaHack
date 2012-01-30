@@ -47,41 +47,41 @@ keyHelp :: Binding a -> [String]
 keyHelp Binding{kcmd, kmacro, kmajor, ktimed} =
   let
     movBlurb =
-      [ "You move throughout the level using the numerical keypad or"
-      , "the vi text editor keys (also known as \"Rogue-like keys\")."
+      [ "Move throughout the level with numerical keypad or"
+      , "the Vi text editor keys (also known as \"Rogue-like keys\"):"
       , ""
-      , "               7 8 9     y k u"
-      , "                \\|/       \\|/"
-      , "               4-5-6     h-.-l"
-      , "                /|\\       /|\\"
-      , "               1 2 3     b j n"
+      , "               7 8 9          y k u"
+      , "                \\|/            \\|/"
+      , "               4-5-6          h-.-l"
+      , "                /|\\            /|\\"
+      , "               1 2 3          b j n"
       , ""
-      , "Shift and a movement key make the hero run in the indicated direction,"
-      , "until anything of interest is spotted. '5' and '.' skip a turn."
-      , "In targeting mode, the keys move the target cursor."
+      , "Run ahead, until anything of interest is spotted,"
+      , "with SHIFT and a movement key. Press '5' or '.' to skip a turn."
+      , "In targeting mode the same keys move the targeting cursor."
       , ""
-      , "To search, open or attack, bump into walls, doors or monsters."
+      , "Search, open and attack, by bumping into walls, doors and monsters."
       , ""
-      , "Press space to see the next page, with the list of major commands."
+      , "Press SPACE to see the next page, with the list of major commands."
       , ""
       ]
     majorBlurb =
       [ ""
-      , "Commands marked by * take hero time and are blocked on remote levels."
+      , "Commands marked with * take time and are blocked on remote levels."
       , ""
-      , "Press space to see the next page, with the list of minor commands."
+      , "Press SPACE to see the next page, with the list of minor commands."
       , ""
       ]
     minorBlurb =
       [ ""
       , "For more playing instructions see file PLAYING.md."
       , ""
-      , "Press space to go back to the game."
+      , "Press SPACE to go back to the game."
       , ""
       ]
-    fmt k h = replicate 15 ' ' ++ k ++ replicate ((13 - length k) `max` 1) ' '
-                               ++ h ++ replicate ((35 - length h) `max` 1) ' '
-    fmts s  = replicate 2  ' ' ++ s ++ replicate ((71 - length s) `max` 1) ' '
+    fmt k h = replicate 16 ' ' ++ k ++ replicate ((15 - length k) `max` 1) ' '
+                               ++ h ++ replicate ((40 - length h) `max` 1) ' '
+    fmts s  = replicate 1  ' ' ++ s ++ replicate ((70 - length s) `max` 1) ' '
     blank   = fmt "" ""
     mov     = map fmts movBlurb
     major   = map fmts majorBlurb
