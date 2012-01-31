@@ -131,19 +131,19 @@ effectToAction Effect.Searching _ _source _target _power =
 effectToAction Effect.Ascend _ _ target power = do
   coactor <- contentf Kind.coactor
   tm <- gets (getActor target)
-  effLvlvGoUp (power + 1)
+  effLvlGoUp (power + 1)
   return (True, actorVerbExtra coactor tm "get" "yanked upwards")
 effectToAction Effect.Descend _ _ target power = do
   coactor <- contentf Kind.coactor
   tm <- gets (getActor target)
-  effLvlvGoUp (- (power + 1))
+  effLvlGoUp (- (power + 1))
   return (True, actorVerbExtra coactor tm "get" "yanked downwards")
 
 nullEffect :: Action (Bool, String)
 nullEffect = return (False, "Nothing happens.")
 
-effLvlvGoUp :: Int -> Action ()
-effLvlvGoUp k = do
+effLvlGoUp :: Int -> Action ()
+effLvlGoUp k = do
   targeting <- gets (ctargeting . scursor)
   pbody     <- gets getPlayerBody
   pl        <- gets splayer
@@ -159,6 +159,8 @@ effLvlvGoUp k = do
       assert (nln /= slid `blame` (nln, "stairs looped")) $
       tryWith (abortWith "somebody blocks the staircase") $ do
         bitems <- gets getPlayerItem
+        -- Remember the level (e.g., for a teleport via scroll on the floor).
+        remember
         -- Remove the player from the old level.
         modify (deleteActor pl)
         hs <- gets levelHeroList
@@ -301,6 +303,20 @@ summonMonsters n loc = do
   modify (\ state ->
            iterate (addMonster cotile mk hp loc) state !! n)
 
+-- | Update player memory.
+remember :: Action ()
+remember = do
+  per <- currentPerception
+  lvl <- gets slevel
+  let vis = IS.toList (totalVisible per)
+  let rememberTile = [(loc, lvl `at` loc) | loc <- vis]
+  modify (updateLevel (updateLRMap (Kind.// rememberTile)))
+  let alt Nothing      = Nothing
+      alt (Just ([], _)) = Nothing
+      alt (Just (t, _))  = Just (t, t)
+      rememberItem = IM.alter alt
+  modify (updateLevel (updateIMap (\ m -> L.foldr rememberItem m vis)))
+
 -- | Remove dead heroes (or dead dominated monsters). Check if game is over.
 -- For now we only check the selected hero and at current level,
 -- but if poison, etc. is implemented, we'd need to check all heroes
@@ -313,8 +329,7 @@ checkPartyDeath = do
   pbody  <- gets getPlayerBody
   config <- gets sconfig
   when (bhp pbody <= 0) $ do  -- TODO: change to guard? define mzero? Why are the writes to the files performed when I call abort later? That probably breaks the laws of MonadPlus.
-    go <- msgMoreConfirm ColorBW $
-            actorVerb cops pbody "die"
+    go <- msgMoreConfirm ColorBW $ actorVerb cops pbody "die"
     history  -- Prevent the msgs from being repeated.
     let firstDeathEnds = Config.get config "heroes" "firstDeathEnds"
     if firstDeathEnds
@@ -323,6 +338,8 @@ checkPartyDeath = do
              [] -> gameOver go
              (actor, _nln) : _ -> do
                msgAdd "The survivors carry on."
+               -- One last look at the beautiful world.
+               remember
                -- Remove the dead player.
                modify deletePlayer
                -- At this place the invariant that the player exists fails.

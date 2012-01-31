@@ -99,20 +99,6 @@ ifRunning t e = do
   ad <- gets (bdir . getPlayerBody)
   maybe e t ad
 
--- | Update player memory.
-remember :: Action ()
-remember = do
-  per <- currentPerception
-  lvl <- gets slevel
-  let vis = IS.toList (totalVisible per)
-  let rememberTile = [(loc, lvl `at` loc) | loc <- vis]
-  modify (updateLevel (updateLRMap (Kind.// rememberTile)))
-  let alt Nothing      = Nothing
-      alt (Just ([], _)) = Nothing
-      alt (Just (t, _))  = Just (t, t)
-      rememberItem = IM.alter alt
-  modify (updateLevel (updateIMap (\ m -> L.foldr rememberItem m vis)))
-
 -- | Guess and report why the bump command failed.
 guessBump :: Kind.Ops TileKind -> F.Feature -> Kind.Id TileKind -> Action ()
 guessBump cotile F.Openable t | Tile.hasFeature cotile F.Closable t =
