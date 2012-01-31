@@ -143,13 +143,14 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   accessibleHere = accessible cops lvl me
   onlySensible   = onlyMoves (\ l -> accessibleHere l || openableHere l) me
   focusedMonster = aiq mk > 10
+  movesNotBack   = maybe id (\ (d, _) -> L.filter (/= neg d)) ad $ moves lxsize
   smells         =
     L.map fst $
     L.sortBy (\ (_, s1) (_, s2) -> compare s2 s1) $
     L.filter (\ (_, s) -> s > 0) $
     L.map (\ x -> let sm = Tile.smelltime $ IM.findWithDefault
                              (Tile.SmellTime 0) (me `shift` x) nsmap
-                  in (x, (sm - time) `max` 0)) (moves lxsize)
+                  in (x, (sm - time) `max` 0)) movesNotBack
   attackDir d = dirToAction actor newTgt True  `liftM` d
   moveDir d   = dirToAction actor newTgt False `liftM` d
 
@@ -194,8 +195,9 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
         .| onlyOpenable moveFreely
         .| moveFreely
   moveIQ = aiq mk > 15 .=> onlyKeepsDir 0 moveRandomly
-           .| aiq mk > 10 .=> onlyKeepsDir 1 moveRandomly
-           .| aiq mk > 5  .=> onlyKeepsDir 2 moveRandomly
+        .| aiq mk > 10 .=> onlyKeepsDir 1 moveRandomly
+        .| aiq mk > 5  .=> onlyKeepsDir 2 moveRandomly
+        .| onlyKeepsDir_9 moveRandomly
   interestFreq =  -- don't detour towards an interest if already on one
     if interestHere me
     then []
@@ -204,7 +206,6 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   interestIQFreq = interestFreq ++ runStrategy moveIQ
   moveFreely = onlyLoot moveRandomly
                .| liftFrequency (msum interestIQFreq)
-               .| onlyKeepsDir_9 moveRandomly
                .| moveRandomly
   onlyMoves :: (Point -> Bool) -> Point -> Strategy Vector -> Strategy Vector
   onlyMoves p l = only (\ x -> p (l `shift` x))
