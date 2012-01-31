@@ -15,7 +15,10 @@ type Y = Int
 
 -- | 2D points in cartesian representation.
 newtype PointXY = PointXY (X, Y)
-  deriving (Show, Eq, Ord)
+  deriving (Eq, Ord)
+
+instance Show PointXY where
+  show (PointXY (x, y)) = show (x, y)
 
 -- | A list of all points on a straight vertical or straight horizontal line
 -- between two points. Fails if no such line exists.

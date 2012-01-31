@@ -36,10 +36,10 @@ toPoint lxsize (PointXY (x, y)) =
   x + y * lxsize
 
 -- | Conversion from @Point@ to cartesian coordinates.
-fromPoint :: X -> Point -> (X, Y)
+fromPoint :: X -> Point -> PointXY
 fromPoint lxsize loc =
   assert (loc >= 0 `blame` (lxsize, loc)) $
-  (loc `rem` lxsize, loc `quot` lxsize)
+  PointXY (loc `rem` lxsize, loc `quot` lxsize)
 
 -- | The top-left corner location of the level.
 origin :: Point
@@ -48,7 +48,8 @@ origin = 0
 -- | The distance between two points in the chessboard metric.
 chessDist :: X -> Point -> Point -> Int
 chessDist lxsize loc0 loc1
-  | (x0, y0) <- fromPoint lxsize loc0, (x1, y1) <- fromPoint lxsize loc1 =
+  | PointXY (x0, y0) <- fromPoint lxsize loc0
+  , PointXY (x1, y1) <- fromPoint lxsize loc1 =
   chessDistXY $ VectorXY (x1 - x0, y1 - y0)
 
 -- | Checks whether two points are adjacent on the map
@@ -62,14 +63,15 @@ vicinity :: X -> Y -> Point -> [Point]
 vicinity lxsize lysize loc =
   map (toPoint lxsize) $
     vicinityXY (0, 0, lxsize - 1, lysize - 1) $
-      PointXY $ fromPoint lxsize loc
+      fromPoint lxsize loc
 
 -- | Checks that a point belongs to an area.
 inside :: X -> Point -> Area -> Bool
-inside lxsize loc = insideXY (PointXY $ fromPoint lxsize loc)
+inside lxsize loc = insideXY $ fromPoint lxsize loc
 
 -- | Calculate the displacement vector of a location wrt another location.
 displacement :: X -> Point -> Point -> VectorXY
 displacement lxsize loc0 loc1
-  | (x0, y0) <- fromPoint lxsize loc0, (x1, y1) <- fromPoint lxsize loc1 =
+  | PointXY (x0, y0) <- fromPoint lxsize loc0
+  , PointXY (x1, y1) <- fromPoint lxsize loc1 =
   VectorXY (x1 - x0, y1 - y0)
