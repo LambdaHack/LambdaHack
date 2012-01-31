@@ -89,4 +89,5 @@ comma: g
 smellTimeout: 1000
 
 [ui]
+font: Terminus,Monospace normal normal normal normal 12
 historyMax: 5000

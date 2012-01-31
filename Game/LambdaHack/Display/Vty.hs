@@ -26,8 +26,8 @@ frontendName :: String
 frontendName = "vty"
 
 -- | Starts the main program loop using the frontend input and output.
-startup :: (FrontendSession -> IO ()) -> IO ()
-startup k = mkVty >>= k
+startup :: String -> (FrontendSession -> IO ()) -> IO ()
+startup _ k = mkVty >>= k
 
 -- | Shuts down the frontend cleanly.
 shutdown :: FrontendSession -> IO ()

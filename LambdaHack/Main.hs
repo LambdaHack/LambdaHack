@@ -3,6 +3,8 @@
 -- resulting in an executable game.
 module Main ( main ) where
 
+import Data.Maybe
+
 import qualified Game.LambdaHack.Display as Display
 import qualified Game.LambdaHack.Kind as Kind
 import qualified Content.ActorKind
@@ -41,13 +43,16 @@ sess config sfs =
 
 -- | Create the starting game config from the default config file
 -- and initialize the engine with the starting session.
-start :: FrontendSession -> IO ()
-start sfs = do
+start :: IO (String, FrontendSession -> IO ())
+start = do
   config <- Config.mkConfig ConfigDefault.configDefault
-  Start.start config $ sess config sfs
+  let configFont = fromMaybe "" $ Config.getOption config "ui" "font"
+  return (configFont, \ sfs -> Start.start config $ sess config sfs)
 
 -- | Fire up the frontend with the engine fueled by config and content.
 -- Which of the frontends is run depends on the flags supplied
 -- when compiling the engine library.
 main :: IO ()
-main = Display.startup start
+main = do
+  (configFont, loop) <- start
+  Display.startup configFont loop

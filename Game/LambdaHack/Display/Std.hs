@@ -25,8 +25,8 @@ frontendName :: String
 frontendName = "std"
 
 -- | Starts the main program loop using the frontend input and output.
-startup :: (FrontendSession -> IO ()) -> IO ()
-startup k = k ()
+startup :: String -> (FrontendSession -> IO ()) -> IO ()
+startup _ k = k ()
 
 -- | Shuts down the frontend cleanly. Nothing to be done in this case.
 shutdown :: FrontendSession -> IO ()

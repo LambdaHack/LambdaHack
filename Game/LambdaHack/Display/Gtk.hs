@@ -34,8 +34,8 @@ frontendName :: String
 frontendName = "gtk"
 
 -- | Starts the main program loop using the frontend input and output.
-startup :: (FrontendSession -> IO ()) -> IO ()
-startup k = do
+startup :: String -> (FrontendSession -> IO ()) -> IO ()
+startup configFont k = do
   -- initGUI
   unsafeInitGUIForThreadedRTS
   w <- windowNew
@@ -58,15 +58,13 @@ startup k = do
   textViewSetEditable sview False
   textViewSetCursorVisible sview False
   -- font
-  f <- fontDescriptionNew
-  fontDescriptionSetFamily f "Monospace"
-  fontDescriptionSetSize f 12
+  f <- fontDescriptionFromString configFont
   widgetModifyFont sview (Just f)
   currentfont <- newIORef f
   let buttonPressHandler e = case e of
         Button { Graphics.UI.Gtk.Gdk.Events.eventButton = RightButton } -> do
           fsd <- fontSelectionDialogNew "Choose font"
-          cf  <- readIORef currentfont
+          cf  <- readIORef currentfont  -- TODO: "Terminus,Monospace" fails
           fds <- fontDescriptionToString cf
           fontSelectionDialogSetFontName fsd fds
           fontSelectionDialogSetPreviewText fsd "eee...@.##+##"

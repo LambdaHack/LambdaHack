@@ -31,8 +31,8 @@ frontendName :: String
 frontendName = "curses"
 
 -- | Starts the main program loop using the frontend input and output.
-startup :: (FrontendSession -> IO ()) -> IO ()
-startup k = do
+startup :: String -> (FrontendSession -> IO ()) -> IO ()
+startup _ k = do
   C.start
   C.cursSet C.CursorInvisible
   let s = [ (Color.Attr{fg, bg}, C.Style (toFColor fg) (toBColor bg))

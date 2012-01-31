@@ -446,7 +446,7 @@ gameVersion :: Action ()
 gameVersion = do
   Kind.COps{corule} <- contentOps
   let pathsVersion = rpathsVersion $ stdRuleset corule
-      msg = "v. " ++ showVersion pathsVersion
+      msg = "Version " ++ showVersion pathsVersion
             ++ " (frontend: " ++ frontendName
             ++ ", engine: LambdaHack " ++ showVersion Self.version ++ ")"
   abortWith msg
