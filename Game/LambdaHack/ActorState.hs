@@ -19,7 +19,6 @@ import Game.LambdaHack.State
 import Game.LambdaHack.Item
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Config as Config
 import qualified Game.LambdaHack.Tile as Tile
 import qualified Game.LambdaHack.Kind as Kind
@@ -215,28 +214,3 @@ addMonster cotile mk hp ploc state@State{scounter = (heroC, monsterC)} = do
       m = template mk Nothing Nothing hp loc
       state' = state { scounter = (heroC, monsterC + 1) }
   updateLevel (updateMonsters (IM.insert monsterC m)) state'
-
--- | Create a new monster in the level, at a random position.
-rollMonster :: Kind.COps -> State -> Rnd State
-rollMonster Kind.COps{cotile, coactor=Kind.Ops{opick, okind}} state = do
-  let lvl = slevel state
-      hs = levelHeroList state
-      ms = levelMonsterList state
-      isLit = Tile.isLit cotile
-  rc <- monsterGenChance (levelNumber $ slid state) (L.length ms)
-  if not rc
-    then return state
-    else do
-      -- TODO: New monsters should be generated in a place that isn't
-      -- visible by the player, if possible.
-      -- Levels with few rooms are dangerous, because monsters may spawn
-      -- in adjacent and unexpected locations.
-      loc <- findLocTry 2000 (lmap lvl)
-             (\ l t -> Tile.hasFeature cotile F.Walkable t
-                       && l `notElem` L.map bloc (hs ++ ms))
-             (\ l t -> not (isLit t)  -- try a dark, distant place first
-                       && L.all (\ pl ->
-                                  chessDist (lxsize lvl) (bloc pl) l > 20) hs)
-      mk <- opick "monster" (const True)
-      hp <- rollDice $ ahp $ okind mk
-      return $ addMonster cotile mk hp loc state

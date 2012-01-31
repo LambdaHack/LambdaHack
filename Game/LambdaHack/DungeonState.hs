@@ -52,16 +52,18 @@ mapToIMap cxsize m =
 rollItems :: Kind.COps -> Int -> Int -> CaveKind -> TileMap -> Point
           -> Rnd [(Point, Item)]
 rollItems Kind.COps{cotile, coitem=coitem@Kind.Ops{osymbol}}
-          lvl depth CaveKind{cxsize, citemNum} lmap ploc = do
+          lvl depth CaveKind{cxsize, citemNum, cminStairDist} lmap ploc = do
   nri <- rollDice citemNum
   replicateM nri $ do
     item <- newItem coitem lvl depth
     l <- case osymbol (jkind item) of
            ')' ->
              -- HACK: melee weapons generated close to monsters; MUAHAHAHA
-             findLocTry 2000 lmap
-               (const (Tile.hasFeature cotile F.Boring))
-               (\ l _ -> chessDist cxsize ploc l > 30)
+             findLocTry 1000 lmap
+               [ \ l _ -> chessDist cxsize ploc l > cminStairDist
+               , \ l _ -> chessDist cxsize ploc l > cminStairDist `div` 2
+               , const (Tile.hasFeature cotile F.Boring)
+               ]
            _ -> findLoc lmap (const (Tile.hasFeature cotile F.Boring))
     return (l, item)
 
@@ -70,8 +72,10 @@ placeStairs :: Kind.Ops TileKind -> TileMap -> X -> Int -> [Place]
 placeStairs cotile@Kind.Ops{opick} cmap cxsize cminStairDist dplaces = do
   su <- findLoc cmap (const (Tile.hasFeature cotile F.Boring))
   sd <- findLocTry 2000 cmap
-          (\ l t -> l /= su && Tile.hasFeature cotile F.Boring t)
-          (\ l _ -> chessDist cxsize su l >= cminStairDist)
+          [ \ l _ -> chessDist cxsize su l >= cminStairDist
+          , \ l _ -> chessDist cxsize su l >= cminStairDist `div` 2
+          , \ l t -> l /= su && Tile.hasFeature cotile F.Boring t
+          ]
   let fitArea loc = inside cxsize loc . qarea
       findLegend loc = maybe "litLegend" qlegend $ L.find (fitArea loc) dplaces
   upId   <- opick (findLegend su) $ Tile.kindHasFeature F.Ascendable

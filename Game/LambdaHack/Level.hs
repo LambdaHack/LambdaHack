@@ -178,21 +178,23 @@ findLoc lmap p =
           else search
   in search
 
--- | Find a random location on the map satisfying the first predicate and,
--- if the premitted number of attempts suffices, also satisfying the second.
+-- | Try to find a random location on the map satisfying
+-- the conjunction of the list of predicates.
+-- If the premitted number of attempts is not enough,
+-- try again the same number of times without the first predicate,
+-- then without the first two, etc., until only one predicate remains,
+-- at which point try as many times, as needed.
 findLocTry :: Int                                  -- ^ the number of tries
            -> TileMap                              -- ^ look up in this map
-           -> (Point -> Kind.Id TileKind -> Bool)  -- ^ loop until satisfied
-           -> (Point -> Kind.Id TileKind -> Bool)  -- ^ try to satisfy
+           -> [Point -> Kind.Id TileKind -> Bool]  -- ^ predicates to satisfy
            -> Rnd Point
-findLocTry numTries lmap p pTry =
-  let search k = do
+findLocTry _        lmap [p] = findLoc lmap p
+findLocTry numTries lmap l   = assert (numTries > 0) $
+  let search 0 = findLocTry numTries lmap (L.tail l)
+      search k = do
         loc <- randomR $ Kind.bounds lmap
         let tile = lmap Kind.! loc
-        if p loc tile && pTry loc tile
+        if L.all (\ p -> p loc tile) l
           then return loc
-          else if k > 1
-            then search (k - 1)
-            else findLoc lmap p
-  in assert (numTries > 0) $
-     search numTries
+          else search (k - 1)
+  in search numTries

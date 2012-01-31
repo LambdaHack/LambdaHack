@@ -35,6 +35,7 @@ import Game.LambdaHack.DungeonState
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Random
 
 displayHistory :: Action ()
 displayHistory = do
@@ -394,12 +395,40 @@ actorRunActor source target = do
     else when (isAMonster source) $ focusIfAHero target
   advanceTime source
 
+-- | Create a new monster in the level, at a random position.
+rollMonster :: Kind.COps -> Perception -> State -> Rnd State
+rollMonster Kind.COps{cotile, coactor=Kind.Ops{opick, okind}} per state = do
+  let lvl = slevel state
+      hs = levelHeroList state
+      ms = levelMonsterList state
+      isLit = Tile.isLit cotile
+  rc <- monsterGenChance (Dungeon.levelNumber $ slid state) (L.length ms)
+  if not rc
+    then return state
+    else do
+      let distantAtLeast d =
+            \ l _ -> L.all (\ h -> chessDist (lxsize lvl) (bloc h) l > d) hs
+      loc <-
+        findLocTry 1000 (lmap lvl)
+          [ distantAtLeast 40
+          , \ _ t -> not (isLit t)
+          , distantAtLeast 20
+          , \ l _ -> not $ l `IS.member` totalVisible per
+          , distantAtLeast 5
+          , \ l t -> Tile.hasFeature cotile F.Walkable t
+                     && l `notElem` L.map bloc (hs ++ ms)
+          ]
+      mk <- opick "monster" (const True)
+      hp <- rollDice $ ahp $ okind mk
+      return $ addMonster cotile mk hp loc state
+
 -- | Generate a monster, possibly.
 generateMonster :: Action ()
 generateMonster = do
-  cops <- contentOps
-  state  <- get
-  nstate <- rndToAction $ rollMonster cops state
+  cops    <- contentOps
+  state   <- get
+  per     <- currentPerception
+  nstate  <- rndToAction $ rollMonster cops per state
   srandom <- gets srandom
   put $ nstate {srandom}
 
