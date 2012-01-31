@@ -408,7 +408,7 @@ history = do
 -- | Perform look around in the current location of the cursor.
 doLook :: Action ()
 doLook = do
-  cops   <- contentOps
+  cops@Kind.COps{coactor} <- contentOps
   loc    <- gets (clocation . scursor)
   state  <- get
   lvl    <- gets slevel
@@ -419,7 +419,7 @@ doLook = do
       monsterMsg =
         if canSee
         then case L.find (\ m -> bloc m == loc) (levelMonsterList state) of
-               Just m  -> capActor (Kind.coactor cops) m ++ " is here. "
+               Just m  -> actorVerbExtra coactor m "be" "here" ++ " "
                Nothing -> ""
         else ""
       vis = if not $ loc `IS.member` totalVisible per

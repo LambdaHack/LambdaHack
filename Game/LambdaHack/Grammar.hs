@@ -53,6 +53,14 @@ suffixS word = case L.reverse word of
                 'y' : l : _ | not (vowel l) -> init word ++ "ies"
                 _ -> word ++ "s"
 
+conjugate :: String -> Verb -> Verb
+conjugate "you" "be" = "are"
+conjugate "You" "be" = "are"
+conjugate _     "be" = "is"
+conjugate "you" verb = verb
+conjugate "You" verb = verb
+conjugate _     verb = suffixS verb
+
 -- | Capitalize a string.
 capitalize :: Object -> Object
 capitalize [] = []
@@ -100,7 +108,7 @@ capActor coactor x = capitalize $ objectActor coactor x
 actorVerb :: Kind.Ops ActorKind -> Actor -> Verb -> String
 actorVerb coactor a v =
   let cactor = capActor coactor a
-      verb = if cactor == "You" then v else suffixS v
+      verb = conjugate cactor v
   in cactor ++ " " ++ verb ++ "."
 
 -- | Sentences such as \"Dog barks loudly.\"

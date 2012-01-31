@@ -275,7 +275,7 @@ cycleHero = do
   let i        = case pl of AHero n -> n ; _ -> -1
       (lt, gt) = IM.split i hs
   case IM.keys gt ++ IM.keys lt of
-    [] -> abortWith "Cannot select another hero on this level."
+    [] -> abortWith "Cannot select any other hero on this level."
     ni : _ -> selectPlayer (AHero ni)
               >>= assert `trueM` (pl, ni, "hero duplicated")
 
