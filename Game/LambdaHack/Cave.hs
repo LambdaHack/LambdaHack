@@ -97,11 +97,10 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick}
     then let caux = round $ cauxConnects * fromIntegral (gx * gy)
          in replicateM caux (randomConnection lgrid)
     else return []
-  let allConnects = L.nub (addedConnects ++ connects)
+  let allConnects = L.union connects addedConnects  -- no duplicates
       places = M.fromList places0
-  cs <- mapM (\ conn -> do
-                 let (p0, p1) = sortPointXY conn
-                     r0 = places M.! p0
+  cs <- mapM (\ (p0, p1) -> do
+                 let r0 = places M.! p0
                      r1 = places M.! p1
                  connectPlaces r0 r1) allConnects
   wallId <- opick "fillerWall" (const True)

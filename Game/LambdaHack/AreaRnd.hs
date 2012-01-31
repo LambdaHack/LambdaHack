@@ -63,7 +63,7 @@ connectGrid' :: (X, Y) -> S.Set PointXY -> S.Set PointXY
              -> [(PointXY, PointXY)]
              -> Rnd [(PointXY, PointXY)]
 connectGrid' (nx, ny) unconnected candidates acc
-  | S.null candidates = return acc
+  | S.null candidates = return $ map sortPointXY acc
   | otherwise = do
       c <- oneOf (S.toList candidates)
       -- potential new candidates:
