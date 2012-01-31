@@ -39,7 +39,7 @@ question: Help
 D: CfgDump
 ;
 ; General.
-period: Wait
+KP_Begin: Wait
 Escape: Cancel
 Return: Accept
 
@@ -86,6 +86,7 @@ firstDeathEnds: False
 ;
 ; Handy with Vi keys:
 comma: g
+period: KP_Begin
 
 [monsters]
 smellTimeout: 1000
