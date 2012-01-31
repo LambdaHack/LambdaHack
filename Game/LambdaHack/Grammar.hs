@@ -40,6 +40,7 @@ vowel :: Char -> Bool
 vowel l = l `elem` "aeio"
 
 -- | Adds the plural (@s@, @es@, @ies@) suffix to a word.
+-- See http://en.wikipedia.org/wiki/English_plural.
 suffixS :: String -> String
 suffixS word = case L.reverse word of
                 'h' : 'c' : _ -> word ++ "es"
@@ -48,8 +49,8 @@ suffixS word = case L.reverse word of
                 's' : _ -> word ++ "es"
                 'z' : _ -> word ++ "es"
                 'x' : _ -> word ++ "es"
-                'g' : _ -> word ++ "es"
                 'j' : _ -> word ++ "es"
+                'o' : l : _ | not (vowel l) -> init word ++ "es"
                 'y' : l : _ | not (vowel l) -> init word ++ "ies"
                 _ -> word ++ "s"
 
