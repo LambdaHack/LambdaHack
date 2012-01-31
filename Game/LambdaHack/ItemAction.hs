@@ -219,15 +219,25 @@ endTargeting :: Bool -> Action ()
 endTargeting accept = do
   returnLn <- gets (creturnLn . scursor)
   target   <- gets (btarget . getPlayerBody)
+  per      <- currentPerception
   cloc     <- gets (clocation . scursor)
+  ms       <- gets (lmonsters . slevel)
   -- return to the original level of the player
   modify (\ state -> state {slid = returnLn})
   modify (updateCursor (\ c -> c { ctargeting = TgtOff }))
-  let isEnemy = case target of TEnemy _ _ -> True ; _ -> False
-  unless isEnemy $
-    if accept
-       then updatePlayerBody (\ p -> p { btarget = TLoc cloc })
-       else updatePlayerBody (\ p -> p { btarget = TCursor })
+  case target of
+    TEnemy _ _ -> do
+      let canSee = IS.member cloc (totalVisible per)
+      when (accept && canSee) $
+        case L.find (\ (_im, m) -> bloc m == cloc) (IM.assocs ms) of
+          Just (im, m)  ->
+            let tgt = TEnemy (AMonster im) (bloc m)
+            in updatePlayerBody (\ p -> p { btarget = tgt })
+          Nothing -> return ()
+    _ ->
+      if accept
+      then updatePlayerBody (\ p -> p { btarget = TLoc cloc })
+      else updatePlayerBody (\ p -> p { btarget = TCursor })
   endTargetingMsg
 
 endTargetingMsg :: Action ()

@@ -414,7 +414,7 @@ doLook = do
   lvl    <- gets slevel
   per    <- currentPerception
   target <- gets (btarget . getPlayerBody)
-  pl        <- gets splayer
+  pl     <- gets splayer
   let canSee = IS.member loc (totalVisible per)
       monsterMsg =
         if canSee
