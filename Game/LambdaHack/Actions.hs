@@ -388,7 +388,8 @@ actorAttackActor source target = do
               if isJust str
               then " with " ++ objectItem coitem state single
               else ""
-  when (sloc `IS.member` totalVisible per) $ msgAdd msg
+      visible = sloc `IS.member` totalVisible per
+  when visible $ msgAdd msg
   -- Msgs inside itemEffectAction describe the target part.
   itemEffectAction 0 source target single
   advanceTime source

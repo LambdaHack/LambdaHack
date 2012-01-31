@@ -225,8 +225,8 @@ itemEffectAction verbosity source target item = do
   -- and msgActorVerb (incorporating subjectActorVerb).
   if bloc tm `IS.member` totalVisible per
      then msgAdd msg
-     else unless b $
-            -- victim is not seen and but somethig interestng happens
+     else when b $
+            -- Victim is not seen and but somethig interestng happens.
             msgAdd "You hear some noises."
   -- If something happens, the item gets identified.
   when (b && (isAHero source || isAHero target)) $ discover item
