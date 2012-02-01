@@ -208,9 +208,10 @@ setCursor tgtMode = assert (tgtMode /= TgtOff) $ do
   per    <- currentPerception
   ploc   <- gets (bloc . getPlayerBody)
   clocLn <- gets slid
-  let upd cursor =
+  let upd cursor@Cursor{ctargeting} =
         let clocation = fromMaybe ploc (targetToLoc (totalVisible per) state)
-        in cursor { ctargeting = tgtMode, clocation, clocLn }
+            newTgtMode = if ctargeting == TgtOff then tgtMode else ctargeting
+        in cursor { ctargeting = newTgtMode, clocation, clocLn }
   modify (updateCursor upd)
   doLook
 

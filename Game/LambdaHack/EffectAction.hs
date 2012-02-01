@@ -60,7 +60,7 @@ effectToAction Effect.Heal _ _source target power = do
     then nullEffect
     else do
       focusIfAHero target
-      updateAnyActor target (addHp coactor power)  -- TODO: duplicates maxDice, etc.
+      updateAnyActor target (addHp coactor power)  -- TODO: duplicate code in  bhpMax and addHp
       return (True, actorVerbExtra coactor tm "feel" "better")
 effectToAction (Effect.Wound nDm) verbosity source target power = do
   coactor <- contentf Kind.coactor
@@ -74,7 +74,7 @@ effectToAction (Effect.Wound nDm) verbosity source target power = do
           | source == target =  -- a potion of wounding, etc.
             actorVerbExtra coactor tm "feel" $
               -- TODO: this is displayed too late, after hero death, etc.
-              if killed then "mortally " else "" ++ "wounded"
+              (if killed then "mortally " else "") ++ "wounded"
           | killed =
             if isAHero target
             then ""
