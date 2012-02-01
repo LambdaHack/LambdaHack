@@ -31,6 +31,8 @@ import Game.LambdaHack.Item
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Place
+import qualified Game.LambdaHack.Effect as Effect
+import Game.LambdaHack.Content.ItemKind
 
 convertTileMaps :: Rnd (Kind.Id TileKind) -> Int -> Int -> TileMapXY
                 -> Rnd TileMap
@@ -51,14 +53,16 @@ mapToIMap cxsize m =
 
 rollItems :: Kind.COps -> Int -> Int -> CaveKind -> TileMap -> Point
           -> Rnd [(Point, Item)]
-rollItems Kind.COps{cotile, coitem=coitem@Kind.Ops{osymbol}}
+rollItems Kind.COps{cotile, coitem=coitem@Kind.Ops{okind}}
           lvl depth CaveKind{cxsize, citemNum, cminStairDist} lmap ploc = do
   nri <- rollDice citemNum
   replicateM nri $ do
     item <- newItem coitem lvl depth
-    l <- case osymbol (jkind item) of
-           ')' ->
-             -- HACK: melee weapons generated close to monsters; MUAHAHAHA
+    let ik = okind (jkind item)
+    l <- case ieffect ik of
+           Effect.Wound dice | maxDice dice > 0  -- a weapon
+                               && maxDice dice + maxDeep (ipower ik) > 3 ->
+             -- Powerful weapons generated close to monsters, MUAHAHAHA.
              findLocTry 1000 lmap
                [ \ l _ -> chessDist cxsize ploc l > cminStairDist
                , \ l _ -> chessDist cxsize ploc l > cminStairDist `div` 2

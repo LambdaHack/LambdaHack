@@ -9,7 +9,7 @@ module Game.LambdaHack.Random
     -- * Rolling 2D coordinates
   , RollDiceXY(..), rollDiceXY
     -- * Rolling dependent on depth
-  , RollDeep, rollDeep, chanceDeep, intToDeep
+  , RollDeep, rollDeep, chanceDeep, intToDeep, maxDeep
     -- * Fractional chance
   , Chance, chance
   ) where
@@ -125,6 +125,10 @@ intToDeep n' = let n = toEnum n'
                in if n > maxBound || n < minBound
                   then assert `failure` n'
                   else (RollDice n 1, RollDice 0 0)
+
+-- | Maximal value of scaled dice.
+maxDeep :: RollDeep -> Int
+maxDeep (d1, d2) = maxDice d1 + maxDice d2
 
 -- | Fractional chance.
 type Chance = Rational

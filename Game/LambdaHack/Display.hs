@@ -122,7 +122,7 @@ displayLevel dm fs cops per
       wealth  = L.sum $ L.map (Item.itemPrice coitem) bitems
       damage  = case Item.strongestSword coitem bitems of
                   Just sw -> case ieffect $ iokind $ Item.jkind sw of
-                    Wound dice -> show dice ++ " + " ++ show (Item.jpower sw)
+                    Wound dice -> show dice ++ "+" ++ show (Item.jpower sw)
                     _ -> show (Item.jpower sw)
                   Nothing -> "3d1"  -- TODO; use the item 'fist'
       hs      = levelHeroList s
@@ -176,9 +176,9 @@ displayLevel dm fs cops per
       status =
         take 27 (ldesc ++ repeat ' ') ++
         take 7 ("L: " ++ show (Dungeon.levelNumber slid) ++ repeat ' ') ++
-        take 9 ("T: " ++ show (stime `div` 10) ++ repeat ' ') ++
-        take 8 ("$: " ++ show wealth ++ repeat ' ') ++
-        take 15 ("Dmg: " ++ damage ++ repeat ' ') ++
+        take 10 ("T: " ++ show (stime `div` 10) ++ repeat ' ') ++
+        take 9 ("$: " ++ show wealth ++ repeat ' ') ++
+        take 13 ("Dmg: " ++ damage ++ repeat ' ') ++
         take 30 ("HP: " ++ show bhp ++
                  " (" ++ show (maxDice ahp) ++ ")" ++ repeat ' ')
       width = fst normalLevelBound + 1
