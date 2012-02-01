@@ -37,24 +37,27 @@ forceEither (Right b) = b
 toCP :: CF.ConfigParser -> CP
 toCP cf = CP $ cf {CF.optionxform = id}
 
--- | Read the player configuration file, fall back to default config.
+overrideCP :: CP -> FilePath -> IO CP
+overrideCP (CP defCF) cfile = do
+  c <- CF.readfile defCF cfile
+  return $ toCP $ forceEither c
+
+-- | Read the player configuration file and use it to override
+-- any default config options. Currently we can't unset options, only override.
 --
 -- The default config, passed in argument @configDefault@,
--- is expected to come from
--- the default configuration file included via CPP
--- in file @ConfigDefault.hs@. It is overwritten completely by
--- the configuration read from the user configuration file, if any.
+-- is expected to come from the default configuration file included via CPP
+-- in file @ConfigDefault.hs@.
 mkConfig :: String -> IO CP
 mkConfig configDefault = do
   -- Evaluate, to catch config errors ASAP.
   let !defCF = forceEither $ CF.readstring CF.emptyCP configDefault
+      defConfig = toCP defCF
   cfile <- configFile
   b <- doesFileExist cfile
   if not b
-    then return $ toCP defCF
-    else do
-      c <- CF.readfile CF.emptyCP cfile
-      return $ toCP $ forceEither c
+    then return defConfig
+    else overrideCP defConfig cfile
 
 -- | Personal data directory for the game. Depends on the OS and the game,
 -- e.g., for LambdaHack under Linux it's @~\/.LambdaHack\/@.

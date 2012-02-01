@@ -1,7 +1,7 @@
-; This is a copy of the default config file, included in the binary itself.
-; The game normally looks for the user config file in ~/.LambdaHack/config.
-; We restricts the usual config file format by insisting that
-; options are case-sensitive and permitting only ';' comments.
+; This is a copy of the default config file that is embedded in the binary.
+; The game looks for the user config file that overrides some options
+; in the ~/.LambdaHack/config file (or similar, depending on the OS).
+; Warning: options are case-sensitive and only ';' comments are permitted.
 
 [commands]
 ; All commands are defined here, except movement, hero selection and debug.
@@ -77,13 +77,6 @@ extraHeroes: 0
 firstDeathEnds: False
 
 [macros]
-; This sections can be empty, but has to be there.
-; TODO: the following does not work yet:
-;; throw a dart at the closest monster
-;t: asterisk Return t Return
-; TODO: in gtk it could be implemented via unGetChan,
-; unless we prefer an explicit command queue, with flushing, etc.
-;
 ; Handy with Vi keys:
 comma: g
 period: KP_Begin
