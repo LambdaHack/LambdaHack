@@ -50,9 +50,12 @@ overrideCP (CP defCF) cfile = do
 -- in file @ConfigDefault.hs@.
 mkConfig :: String -> IO CP
 mkConfig configDefault = do
-  -- Evaluate, to catch config errors ASAP.
-  let !defCF = forceEither $ CF.readstring CF.emptyCP configDefault
-      defConfig = toCP defCF
+  let delFileMarker = L.init $ L.drop 3 $ lines configDefault
+      delComment = L.map (L.drop 2) $ delFileMarker
+      unConfig = unlines delComment
+      -- Evaluate, to catch config errors ASAP.
+      !defCF = forceEither $ CF.readstring CF.emptyCP unConfig
+      !defConfig = toCP defCF
   cfile <- configFile
   b <- doesFileExist cfile
   if not b
