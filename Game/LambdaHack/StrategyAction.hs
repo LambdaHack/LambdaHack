@@ -172,7 +172,9 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
             (1 + jpower i) * Effect.effectToBenefit (ieffect ik),
       benefit > 0,
       asight mk || isymbol ik /= '!']
-  throwFreq is multi = if not $ asight mk then mzero else toFreq
+  throwFreq is multi = if adjacent lxsize me (fromJust floc) || not (asight mk)
+                       then mzero
+                       else toFreq
     [ (benefit * multi,
        projectGroupItem actor (fromJust floc) (iverbProject ik) i)
     | i <- is,
