@@ -54,9 +54,8 @@ chessDist lxsize loc0 loc1
 
 -- | Checks whether two points are adjacent on the map
 -- (horizontally, vertically or diagonally).
--- A position is also considered adjacent to itself.
 adjacent :: X -> Point -> Point -> Bool
-adjacent lxsize s t = chessDist lxsize s t <= 1
+adjacent lxsize s t = chessDist lxsize s t == 1
 
 -- | Returns the 8, or less, surrounding locations of a given location.
 vicinity :: X -> Y -> Point -> [Point]
