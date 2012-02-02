@@ -213,25 +213,28 @@ fleeDungeon = do
       end
 
 -- | The source actor affects the target actor, with a given item.
--- If either actor is a hero, the item may get identified.
+-- If the event is seen, the item may get identified.
 itemEffectAction :: Int -> ActorId -> ActorId -> Item -> Action Bool
 itemEffectAction verbosity source target item = do
   Kind.Ops{okind} <- contentf Kind.coitem
+  sm  <- gets (getActor source)
   tm  <- gets (getActor target)
   per <- currentPerception
+  pl  <- gets splayer
   let effect = ieffect $ okind $ jkind item
   -- The msg describes the target part of the action.
   (b, msg) <- effectToAction effect verbosity source target (jpower item)
-  -- Determine how the player perceives the event.
-  -- TODO: factor it out as a function msgActor
-  -- and msgActorVerb (incorporating subjectActorVerb).
-  if bloc tm `IS.member` totalVisible per
-     then msgAdd msg
-     else when b $
-            -- Victim is not seen and but somethig interestng happens.
-            msgAdd "You hear some noises."
-  -- If something happens, the item gets identified.
-  when (b && (isAHero source || isAHero target)) $ discover item
+  if isAHero source || isAHero target || pl == source || pl == target ||
+     (bloc tm `IS.member` totalVisible per &&
+      bloc sm `IS.member` totalVisible per)
+    then do
+      -- Party sees or affected, so reported.
+      msgAdd msg
+      -- Party sees or affected, so if interesting, the item gets identified.
+      when b $ discover item
+    else
+      -- Hidden, but if interesting then heard.
+      when b $ msgAdd "You hear some noises."
   return b
 
 -- | Make the item known to the player.

@@ -167,7 +167,7 @@ playerCommand = do
                 case M.lookup k (Binding.kcmd skeyb) of
                   Just (_, c)  -> c
                   Nothing ->
-                    abortWith $ "unknown command (" ++ show k ++ ")")
+                    abortWith $ "unknown command <" ++ show k ++ ">")
 
 -- Design thoughts (in order to get rid or partially rid of the somewhat
 -- convoluted design we have): We have three kinds of commands.
