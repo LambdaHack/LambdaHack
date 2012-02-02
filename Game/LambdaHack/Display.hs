@@ -5,7 +5,7 @@ module Game.LambdaHack.Display
   ( -- * Re-exported frontend
     FrontendSession, startup, shutdown, frontendName, nextEvent
     -- * Derived operations
-  , ColorMode(..), displayLevel
+  , ColorMode(..), displayLevel, getConfirmD
   ) where
 
 -- Wrapper for selected Display frontend.
@@ -49,14 +49,12 @@ import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.FOV
 
--- | Waits for a space or return or escape.
+-- | Waits for a SPACE or RET or ESC.
 getConfirmD :: FrontendSession -> IO Bool
 getConfirmD fs = do
   e <- nextEvent fs
   case e of
     K.Char ' ' -> return True
-    K.Char '?' -> return True
-    K.Char '*' -> return True
     K.Return   -> return True
     K.Esc      -> return False
     _          -> getConfirmD fs
@@ -67,7 +65,7 @@ splitOverlay s xs = splitOverlay' (lines xs)
   splitOverlay' ls
     | length ls <= s = [ls]  -- everything fits on one screen
     | otherwise      = let (pre,post) = splitAt (s - 1) ls
-                       in  (pre ++ [more]) : splitOverlay' post
+                       in (pre ++ [more]) : splitOverlay' post
 
 -- | Returns a function that looks up the characters in the
 -- string by location. Takes the height of the display plus
@@ -191,8 +189,13 @@ displayLevel dm fs cops per
       perf k [xs]   = perfo k xs
       perf k (x:xs) = disp ns (x ++ more) >> getConfirmD fs >>= \ b ->
                       if b then perf k xs else return False
-      perfo k xs
-        | k < ns - 1 = disp k xs >> getConfirmD fs >>= \ b ->
-                       if b then perfo (k+1) xs else return False
-        | otherwise = disp k xs >> return True
+      perfo k xs =
+        if k < ns - 1
+        then do
+          disp k xs
+          b <- getConfirmD fs
+          if b then perfo (k+1) xs else return False
+        else do
+          disp k xs
+          return True
   in perf 0 msgs

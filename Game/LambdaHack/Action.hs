@@ -224,8 +224,8 @@ getYesNo sess@Session{sfs} = do
     K.Esc      -> return False
     _          -> getYesNo sess
 
--- | Waits for a space or return or @?@ or @*@. The last two act this way,
--- to let keys that request information toggle display of the information off.
+-- | Waits for a SPACE or ESC. Passes along any other key, including RET,
+-- to an argument function.
 getOptionalConfirm :: (Bool -> Action a)
                     -> (K.Key -> Action a)
                     -> Session
@@ -234,16 +234,12 @@ getOptionalConfirm h k Session{sfs} = do
   e <- liftIO $ nextEvent sfs
   case e of
     K.Char ' ' -> h True
-    K.Char '?' -> h True
-    K.Char '*' -> h True
-    K.Return   -> h True
     K.Esc      -> h False
     _          -> k e
 
--- | Ignore unexpected kestrokes until either a confimation or a rejection
--- key is pressed.
+-- | Ignore unexpected kestrokes until a SPACE or RET or ESC is pressed.
 getConfirm :: Session -> Action Bool
-getConfirm sess = getOptionalConfirm return (const $ getConfirm sess) sess
+getConfirm Session{sfs} = liftIO $ getConfirmD sfs
 
 -- | Print msg, await confirmation. Return value indicates
 -- if the player tried to abort/escape.

@@ -136,10 +136,10 @@ This gives the opponent a free blow, but can improve the tactical situation
 or aid escape.
 
 Throwing weapons at targets wounds them, consuming the weapon in the process.
-You can target a monster with the '*' key from the top row or kepad.
-You may throw any object in your possession
-(press '*' for a non-standard choice) or on the floor (press '-'),
-though only objects of a few kinds inflict any damage.
+Target a monster with the '*' key from the top keboard row or from kepad.
+You may throw any object in your possession (press '?' to choose
+an object and press it again for a non-standard choice) or on the floor
+(press '-'). Only objects of a few kinds inflict any damage.
 Whenever a monster or a hero hit points reach zero, the combatant dies.
 When the last hero dies, the game ends.
 
