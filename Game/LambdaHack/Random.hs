@@ -104,6 +104,7 @@ rollDiceXY (RollDiceXY (xd, yd)) = do
 type RollDeep = (RollDice, RollDice)
 
 -- | Roll dice scaled with current level depth.
+-- Note that at the first level, the scaled dice are always ignored.
 rollDeep :: Int -> Int -> RollDeep -> Rnd Int
 rollDeep n depth (d1, d2) =
   assert (n > 0 && n <= depth `blame` (n, depth)) $ do

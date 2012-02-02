@@ -137,13 +137,16 @@ assignLetter r c is =
   current    = S.fromList (mapMaybe jletter is)
   allLetters = ['a'..'z'] ++ ['A'..'Z']
   candidates = take (length allLetters) $
-                 drop (fromJust (L.findIndex (==c) allLetters)) $
+                 drop (fromJust (L.findIndex (== c) allLetters)) $
                    cycle allLetters
   free       = L.filter (\x -> not (x `S.member` current)) candidates
   allowed    = '$' : free
 
 cmpLetter :: Char -> Char -> Ordering
-cmpLetter x y = compare (isUpper x, toLower x) (isUpper y, toLower y)
+cmpLetter '$' '$' = EQ
+cmpLetter '$'  _  = GT
+cmpLetter  _  '$' = LT
+cmpLetter  x   y  = compare (isUpper x, toLower x) (isUpper y, toLower y)
 
 cmpLetterMaybe :: Maybe Char -> Maybe Char -> Ordering
 cmpLetterMaybe Nothing  Nothing   = EQ

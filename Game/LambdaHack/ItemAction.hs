@@ -360,8 +360,9 @@ actorPickupItem actor = do
           removeFromLoc i loc
             >>= assert `trueM` (i, is, loc, "item is stuck")
           -- add item to actor's inventory:
-          updateAnyActor actor $ \ m ->
-            m { bletter = maxLetter l (bletter body) }
+          unless (l == '$') $
+            updateAnyActor actor $ \ m ->
+              m { bletter = maxLetter l (bletter body) }
           modify (updateAnyActorItem actor (const nitems))
         Nothing -> abortIfWith isPlayer "cannot carry any more"
   advanceTime actor
@@ -448,8 +449,11 @@ getItem prompt p ptext is0 isn = do
                       return $ Just i
           K.Char l ->
             return (L.find (maybe False (== l) . jletter) is0)
-          K.Return -> do -- TODO: it should be the first displayed (except $)
+          K.Return ->
             let ims = if itemDialogState == INone then is0 else is
-            return (case ims of [] -> Nothing ; i : _ -> Just i)
+                cmpItemLM i1 i2 = cmpLetterMaybe (jletter i1) (jletter i2)
+            in if L.null ims
+               then return Nothing
+               else return $ Just $ L.minimumBy cmpItemLM ims
           _ -> return Nothing
   ask
