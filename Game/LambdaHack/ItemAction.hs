@@ -346,14 +346,14 @@ actorPickupItem actor = do
   -- check if something is here to pick up
   case lvl `atI` loc of
     []   -> abortIfWith isPlayer "nothing here"
-    i:is -> -- pick up first item; TODO: let player select item; not for monsters
+    i:is -> -- pick up first item; TODO: let pl select item; not for monsters
       case assignLetter (jletter i) (bletter body) bitems of
         Just l -> do
           let (ni, nitems) = joinItem (i { jletter = Just l }) bitems
           -- msg depends on who picks up and if a hero can perceive it
           if isPlayer
             then msgAdd (letterLabel (jletter ni)
-                             ++ objectItem coitem state ni)
+                         ++ objectItem coitem state ni)
             else when perceived $
                    msgAdd $
                    actorVerbExtraItemExtra cops state body "pick" "up" i ""
@@ -395,6 +395,8 @@ getAnyItem :: String  -- ^ prompt
            -> Action (Maybe Item)
 getAnyItem prompt = getItem prompt (const True) "Objects"
 
+data ItemDialogState = INone | ISuitable | IAll deriving Eq
+
 -- | Let the player choose a single, preferably suitable,
 -- item from a list of items.
 getItem :: String               -- ^ prompt message
@@ -410,37 +412,44 @@ getItem prompt p ptext is0 isn = do
       tis = lvl `atI` loc
       floorMsg = if L.null tis then "" else " -,"
       is = L.filter p is0
-      choice = if L.null is
-               then "[*," ++ floorMsg ++ " ESC]"
-               else let r = letterRange $ mapMaybe jletter is
-                    in  "[" ++ r ++ ", ?, *," ++ floorMsg ++ " RET, ESC]"
+      choice ims =
+        if L.null ims
+        then "[?," ++ floorMsg ++ " ESC]"
+        else let r = letterRange $ mapMaybe jletter ims
+             in "[" ++ r ++ ", ?," ++ floorMsg ++ " RET, ESC]"
       ask = do
         when (L.null is0 && L.null tis) $
           abortWith "Not carrying anything."
-        msgReset (prompt ++ " " ++ choice)
+        msgReset (prompt ++ " " ++ choice is)
         displayAll
-        session nextCommand >>= perform
-      perform command = do
+        session nextCommand >>= perform ISuitable
+      perform itemDialogState command = do
         msgClear
         case command of
-          K.Char '?' -> do
-            -- filter for supposedly suitable items
-            b <- displayItems (ptext ++ " " ++ isn) True is
-            if b then session (getOptionalConfirm (const ask) perform)
+          K.Char '?' | itemDialogState == ISuitable -> do
+            -- filter for suitable items
+            b <- displayItems
+                   (ptext ++ " " ++ isn ++ ". " ++ choice is) True is
+            if b then session (getOptionalConfirm (const ask)
+                                 (perform IAll))
                  else ask
-          K.Char '*' -> do
+          K.Char '?' | itemDialogState == IAll -> do
             -- show all items
-            b <- displayItems ("Objects " ++ isn) True is0
-            if b then session (getOptionalConfirm (const ask) perform)
+            b <- displayItems
+                   ("Objects " ++ isn ++ ". " ++ choice is0) True is0
+            if b then session (getOptionalConfirm (const ask)
+                                 (perform INone))
                  else ask
+          K.Char '?' | itemDialogState == INone -> ask
           K.Char '-' ->
             case tis of
               []   -> return Nothing
               i:_rs -> -- use first item; TODO: let player select item
                       return $ Just i
-          K.Char l   ->
+          K.Char l ->
             return (L.find (maybe False (== l) . jletter) is0)
-          K.Return   ->  -- TODO: it should be the first displayed (except $)
-            return (case is of [] -> Nothing ; i : _ -> Just i)
-          _          -> return Nothing
+          K.Return -> do -- TODO: it should be the first displayed (except $)
+            let ims = if itemDialogState == INone then is0 else is
+            return (case ims of [] -> Nothing ; i : _ -> Just i)
+          _ -> return Nothing
   ask
