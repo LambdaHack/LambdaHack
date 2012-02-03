@@ -10,6 +10,7 @@ import Control.Monad
 import Control.Monad.State hiding (State, state)
 import Data.Function
 import Data.Version
+import Data.Maybe
 import qualified Data.List as L
 import qualified Data.IntMap as IM
 import qualified Data.Set as S
@@ -144,6 +145,7 @@ nullEffect = return (False, "Nothing happens.")
 
 effLvlGoUp :: Int -> Action ()
 effLvlGoUp k = do
+  Kind.COps{coactor, coitem=coitem@Kind.Ops{okind, ouniqGroup}} <- contentOps
   targeting <- gets (ctargeting . scursor)
   pbody     <- gets getPlayerBody
   pl        <- gets splayer
@@ -170,18 +172,36 @@ effLvlGoUp k = do
           modify (updateLevel (updateSmell (const IM.empty)))
         -- At this place the invariant that the player exists fails.
         -- Change to the new level (invariant not needed).
-        modify (\ state -> state {slid = nln})
+        modify (\ s -> s {slid = nln})
         -- Add the player to the new level.
         modify (insertActor pl pbody)
         modify (updateAnyActorItem pl (const bitems))
         -- At this place the invariant is restored again.
+        inhabitants <- gets (locToActor nloc)
+        case inhabitants of
+          Nothing -> return ()
+          Just h | isAHero h ->
+            -- Bail out if a party member blocks the staircase.
+            abort
+          Just m -> do
+            -- Somewhat of a workaround: squash monster blocking the staircase.
+            -- TODO: refactor with actorAttackActor.
+            tm <- gets (getActor m)
+            let h2hKind = ouniqGroup "weight"
+                power = maxDeep $ ipower $ okind h2hKind
+                h2h = Item h2hKind power Nothing 1
+                verb = iverbApply $ okind h2hKind
+                msg = actorVerbActorExtra coactor pbody verb tm $
+                        " with " ++ objectItem coitem st h2h
+            msgAdd msg
+            itemEffectAction 0 pl m h2h >>= assert `trueM` (m, "affected")
+        -- Verify the monster on the staircase died.
+        inhabitants2 <- gets (locToActor nloc)
+        when (isJust inhabitants2) $ assert `failure` inhabitants2
         -- Land the player at the other end of the stairs.
         updatePlayerBody (\ p -> p { bloc = nloc })
         -- Change the level of the player recorded in cursor.
         modify (updateCursor (\ c -> c { creturnLn = nln }))
-        -- Bail out if anybody blocks the staircase.
-        inhabitants <- gets (locToActors nloc)
-        when (length inhabitants > 1) abort
         -- The invariant "at most one actor on a tile" restored.
         -- Create a backup of the savegame.
         state <- get

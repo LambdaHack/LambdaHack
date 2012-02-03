@@ -15,9 +15,9 @@ cdefs = Content.CDefs
   , getFreq = ifreq
   , validate = ivalidate
   , content =
-      [amulet, dart, gem1, gem2, gem3, gold, javelin, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand, fist, foot, tentacle]
+      [amulet, dart, gem1, gem2, gem3, gold, javelin, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand, fist, foot, tentacle, weight]
   }
-amulet,        dart, gem1, gem2, gem3, gold, javelin, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand, fist, foot, tentacle :: ItemKind
+amulet,        dart, gem1, gem2, gem3, gold, javelin, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand, fist, foot, tentacle, weight :: ItemKind
 
 gem, potion, scroll :: ItemKind  -- generic templates
 
@@ -183,4 +183,13 @@ tentacle = sword
   , ifreq    = [("monstrous", 100)]
   , iverbApply   = "hit"
   , iverbProject = "ERROR, please report: iverbProject tentacle"
+  }
+weight = sword
+  { isymbol  = '@'
+  , iname    = "jump from high up"
+  , ifreq    = [("weight", 100)]
+  , ieffect  = Wound (RollDice 99 99)
+  , ipower   = (RollDice 1 99, RollDice 0 0)
+  , iverbApply   = "squash"
+  , iverbProject = "ERROR, please report: iverbProject weight"
   }
