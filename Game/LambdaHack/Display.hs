@@ -72,8 +72,8 @@ splitOverlay s xs = splitOverlay' (lines xs)
 -- the string. Returns also the number of screens required
 -- to display all of the string.
 stringByLocation :: Y -> String -> (Int, (X, Y) -> Maybe Char)
-stringByLocation sy xs =
-  let ls = splitOverlay sy xs
+stringByLocation lysize xs =
+  let ls = splitOverlay lysize xs
       m  = M.fromList (zip [0..] (L.map (M.fromList . zip [0..]) (concat ls)))
       k  = length ls
   in (k, \ (x, y) -> M.lookup y m >>= \ n -> M.lookup x n)
@@ -96,13 +96,13 @@ displayLevel dm fs cops per
                , coitem=coitem@Kind.Ops{okind=iokind}
                , cotile=Kind.Ops{okind=tokind} } = cops
       DebugMode{smarkVision, somniscient} = sdebug
-      lvl@Level{lxsize = sx, lysize = sy, lsmell = smap, ldesc} = slevel s
+      lvl@Level{lxsize, lysize, lsmell, ldesc} = slevel s
       (_, Actor{bkind, bhp, bloc}, bitems) = findActorAnyLevel splayer s
       ActorKind{ahp, asmell} = okind bkind
       reachable = debugTotalReachable per
       visible   = totalVisible per
       overlay   = fromMaybe "" moverlay
-      (ns, over) = stringByLocation sy overlay -- n overlay screens needed
+      (ns, over) = stringByLocation lysize overlay -- n overlay screens needed
       (sSml, sVis) = case smarkVision of
         Just Blind -> (True, True)
         Just _  -> (False, True)
@@ -125,11 +125,11 @@ displayLevel dm fs cops per
                   Nothing -> "3d1"  -- TODO; use the item 'fist'
       hs      = levelHeroList s
       ms      = levelMonsterList s
-      dis n p@(PointXY (x0, y0)) =
-        let loc0 = toPoint sx p
+      dis offset p@(PointXY (x0, y0)) =
+        let loc0 = toPoint lxsize p
             tile = lvl `lAt` loc0
             items = lvl `liAt` loc0
-            sm = smelltime $ IM.findWithDefault (SmellTime 0) loc0 smap
+            sm = smelltime $ IM.findWithDefault (SmellTime 0) loc0 lsmell
             sml = (sm - stime) `div` 100
             viewActor loc Actor{bkind = bkind2, bsymbol}
               | loc == bloc && slid == creturnLn scursor =
@@ -168,7 +168,7 @@ displayLevel dm fs cops per
             a = case dm of
                   ColorBW   -> Color.defaultAttr
                   ColorFull -> optVisually Color.Attr{fg = fg0, bg = bg0}
-        in case over (x0, y0 + sy * n) of
+        in case over (x0, y0 + offset) of
              Just c -> (Color.defaultAttr, c)
              _      -> (a, char)
       status =
@@ -182,7 +182,7 @@ displayLevel dm fs cops per
       width = fst normalLevelBound + 1
       toWidth :: Int -> String -> String
       toWidth n x = take n (x ++ repeat ' ')
-      disp n mesg = display (0, 0, sx - 1, sy - 1) fs (dis n)
+      disp n mesg = display (0, 0, lxsize-1, lysize-1) fs (dis (lysize * n))
                       (toWidth width mesg) (toWidth width status)
       msgs = splitMsg (fst normalLevelBound + 1) msg
       perf k []     = perfo k ""
