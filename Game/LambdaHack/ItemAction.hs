@@ -29,15 +29,14 @@ import qualified Game.LambdaHack.Feature as F
 import qualified Game.LambdaHack.Tile as Tile
 
 -- | Display inventory
-inventory :: Action a
+inventory :: Action ()
 inventory = do
   items <- gets getPlayerItem
   if L.null items
     then abortWith "Not carrying anything."
     else do
       displayItems "Carrying:" True items
-      session getConfirm
-      abortWith ""
+      abort
 
 -- | Let the player choose any item with a given group name.
 -- Note that this does not guarantee the chosen item belongs to the group,

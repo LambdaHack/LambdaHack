@@ -351,7 +351,7 @@ checkPartyDeath = do
   pl     <- gets splayer
   pbody  <- gets getPlayerBody
   config <- gets sconfig
-  when (bhp pbody <= 0) $ do  -- TODO: change to guard? define mzero? Why are the writes to the files performed when I call abort later? That probably breaks the laws of MonadPlus.
+  when (bhp pbody <= 0) $ do  -- TODO: change to guard? define mzero as abort? Why are the writes to the files performed when I call abort later? That probably breaks the laws of MonadPlus. Or is the tryWith abort handler placed after the write to files?
     go <- msgMoreConfirm ColorBW $ actorVerb cops pbody "die"
     history  -- Prevent the msgs from being repeated.
     let firstDeathEnds = Config.get config "heroes" "firstDeathEnds"
@@ -409,6 +409,7 @@ handleScores write status total =
     let score = H.ScoreRecord points (-time) curDate status
     (placeMsg, slideshow) <- liftIO $ H.register config write score
     msgOverlaysConfirm placeMsg slideshow
+    session getConfirm
 
 -- effectToAction does not depend on this function right now, but it might,
 -- and I know no better place to put it.
@@ -422,7 +423,7 @@ displayItems msg sorted is = do
               ((if sorted
                 then L.sortBy (cmpLetterMaybe `on` jletter)
                 else id) is)
-  let ovl = inv ++ more
+  let ovl = inv ++ msgEnd
   msgReset msg
   overlay ovl
 
@@ -446,7 +447,6 @@ history = do
     diaryReset $ diary {shistory = takeMax diary}
 
 -- TODO: depending on tgt, show extra info about tile or monster or both
-
 -- | Perform look around in the current location of the cursor.
 doLook :: Action ()
 doLook = do
@@ -481,8 +481,7 @@ doLook = do
     then msgAdd lookMsg
     else do
       displayItems lookMsg False is
-      session getConfirm
-      msgAdd ""
+      session getConfirm >> msgAdd ""  -- TODO: a hack; instead keep current overlay in the state to keep it from being overwritten on the screen in Turn.hs, just as msg is kept, and reset each turn
 
 gameVersion :: Action ()
 gameVersion = do
