@@ -1,6 +1,6 @@
 -- | Game messages displayed on top of the screen for the player to read.
 module Game.LambdaHack.Msg
-  ( Msg, more, yesno, addMsg, splitMsg, padMsg
+  ( Msg, more, msgEnd, yesno, addMsg, splitMsg, padMsg
   ) where
 
 import qualified Data.List as L
@@ -9,9 +9,13 @@ import Data.Char
 -- | The type of messages.
 type Msg = String
 
--- | The \"press something to see more\" message.
+-- | The \"press something to see more\" mark.
 more :: Msg
 more = " --more--  "
+
+-- | The \"the end of overlays or messages\" mark.
+msgEnd :: Msg
+msgEnd = " --end--  "
 
 -- | The confirmation request message.
 yesno :: Msg

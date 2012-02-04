@@ -260,13 +260,23 @@ msgYesNo msg = do
   displayGeneric ColorBW id  -- turn player's attention to the choice
   session getYesNo
 
+-- | Clear message and overlay.
+clearDisplay :: Action Bool
+clearDisplay = do
+  msgClear
+  displayAll
+  return False
+
 -- | Print a msg and several overlays, one per page, and await confirmation.
 -- The return value indicates if the player tried to abort/escape.
 msgOverlaysConfirm :: Msg -> [String] -> Action Bool
-msgOverlaysConfirm _msg [] = do
-  msgClear
-  displayAll
-  return True
+msgOverlaysConfirm _msg [] = return True
+msgOverlaysConfirm msg [x] = do
+  msgReset msg
+  b0 <- overlay (x ++ msgEnd)
+  if b0
+    then return True
+    else clearDisplay
 msgOverlaysConfirm msg (x:xs) = do
   msgReset msg
   b0 <- overlay (x ++ more)
@@ -275,13 +285,8 @@ msgOverlaysConfirm msg (x:xs) = do
       b <- session getConfirm
       if b
         then msgOverlaysConfirm msg xs
-        else stop
-    else stop
- where
-  stop = do
-    msgClear
-    displayAll
-    return False
+        else clearDisplay
+    else clearDisplay
 
 -- | Update the cached perception for the given computation.
 withPerception :: Action () -> Action ()
@@ -328,6 +333,7 @@ playerAdvanceTime = do
 -- | Display command help.
 displayHelp :: Action ()
 displayHelp = do
-  let disp Session{skeyb} = msgOverlaysConfirm "Basic keys. [press SPACE or ESC]" $ keyHelp skeyb
+  let disp Session{skeyb} =
+        msgOverlaysConfirm "Basic keys. [press SPACE or ESC]" $ keyHelp skeyb
   session disp
   abort

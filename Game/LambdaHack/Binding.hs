@@ -76,7 +76,7 @@ keyHelp Binding{kcmd, kmacro, kmajor, ktimed} =
       [ ""
       , "For more playing instructions see file PLAYING.md."
       , ""
-      , "Press SPACE to go back to the game."
+      , "Press SPACE to clear the messages and go back to the game."
       , ""
       ]
     fmt k h = replicate 16 ' ' ++ k ++ replicate ((15 - length k) `max` 1) ' '

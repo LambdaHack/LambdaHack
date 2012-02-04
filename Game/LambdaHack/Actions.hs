@@ -40,7 +40,7 @@ import Game.LambdaHack.Random
 displayHistory :: Action ()
 displayHistory = do
   diary <- currentDiary
-  msgOverlaysConfirm "" [unlines $ shistory diary]
+  msgOverlaysConfirm "History:" [unlines $ shistory diary]
   abort
 
 dumpConfig :: Action ()
