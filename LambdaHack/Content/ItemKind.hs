@@ -112,18 +112,18 @@ potion3 = potion
 ring = ItemKind
   { isymbol  = '='
   , iname    = "ring"
-  , ifreq    = [("dng", 10)]
+  , ifreq    = [("dng", 7)]
   , iflavour = zipPlain [White]
   , ieffect  = Searching
   , icount   = intToDeep 1
-  , ipower   = (RollDice 1 1, RollDice 2 2)
+  , ipower   = (RollDice 1 2, RollDice 2 2)
   , iverbApply   = "squeeze down"
   , iverbProject = "throw"
   }
 scroll = ItemKind
   { isymbol  = '?'
   , iname    = "scroll"
-  , ifreq    = [("dng", 10)]
+  , ifreq    = [("dng", 7)]
   , iflavour = zipFancy darkCol  -- arcane and old
   , ieffect  = NoEffect
   , icount   = intToDeep 1
@@ -133,7 +133,6 @@ scroll = ItemKind
   }
 scroll1 = scroll
   { ieffect  = SummonFriend
-  , ifreq    = [("dng", 20)]
   }
 scroll2 = scroll
   { ieffect  = SummonEnemy
@@ -155,7 +154,7 @@ sword = ItemKind
 wand = ItemKind
   { isymbol  = '/'
   , iname    = "wand"
-  , ifreq    = [("dng", 10)]
+  , ifreq    = [("dng", 7)]
   , iflavour = zipFancy [BrRed]
   , ieffect  = Dominate
   , icount   = intToDeep 1

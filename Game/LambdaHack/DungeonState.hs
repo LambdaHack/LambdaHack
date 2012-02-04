@@ -63,9 +63,11 @@ rollItems Kind.COps{cotile, coitem=coitem@Kind.Ops{okind}}
            Effect.Wound dice | maxDice dice > 0  -- a weapon
                                && maxDice dice + maxDeep (ipower ik) > 3 ->
              -- Powerful weapons generated close to monsters, MUAHAHAHA.
-             findLocTry 1000 lmap
+             findLocTry 20 lmap  -- 20 only, for unpredictability
                [ \ l _ -> chessDist cxsize ploc l > cminStairDist
+               , \ l _ -> chessDist cxsize ploc l > 2 * cminStairDist `div` 3
                , \ l _ -> chessDist cxsize ploc l > cminStairDist `div` 2
+               , \ l _ -> chessDist cxsize ploc l > cminStairDist `div` 3
                , const (Tile.hasFeature cotile F.Boring)
                ]
            _ -> findLoc lmap (const (Tile.hasFeature cotile F.Boring))
@@ -75,7 +77,7 @@ placeStairs :: Kind.Ops TileKind -> TileMap -> X -> Int -> [Place]
             -> Rnd (Point, Kind.Id TileKind, Point, Kind.Id TileKind)
 placeStairs cotile@Kind.Ops{opick} cmap cxsize cminStairDist dplaces = do
   su <- findLoc cmap (const (Tile.hasFeature cotile F.Boring))
-  sd <- findLocTry 2000 cmap
+  sd <- findLocTry 1000 cmap
           [ \ l _ -> chessDist cxsize su l >= cminStairDist
           , \ l _ -> chessDist cxsize su l >= cminStairDist `div` 2
           , \ l t -> l /= su && Tile.hasFeature cotile F.Boring t

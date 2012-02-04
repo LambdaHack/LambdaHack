@@ -409,10 +409,12 @@ rollMonster Kind.COps{cotile, coactor=Kind.Ops{opick, okind}} per state = do
       let distantAtLeast d =
             \ l _ -> L.all (\ h -> chessDist (lxsize lvl) (bloc h) l > d) hs
       loc <-
-        findLocTry 1000 (lmap lvl)
-          [ distantAtLeast 40
-          , \ _ t -> not (isLit t)
+        findLocTry 20 (lmap lvl)  -- 20 only, for unpredictability
+          [ \ _ t -> not (isLit t)
+          , distantAtLeast 30
           , distantAtLeast 20
+          , \ l t -> not (isLit t) || distantAtLeast 20 l t
+          , distantAtLeast 10
           , \ l _ -> not $ l `IS.member` totalVisible per
           , distantAtLeast 5
           , \ l t -> Tile.hasFeature cotile F.Walkable t
