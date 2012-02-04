@@ -428,6 +428,7 @@ getItem prompt p ptext is0 isn = do
         displayAll
         session nextCommand >>= perform ISuitable
       perform itemDialogState command = do
+        let ims = if itemDialogState == INone then is0 else is
         msgClear
         case command of
           K.Char '?' | itemDialogState == ISuitable -> do
@@ -451,11 +452,10 @@ getItem prompt p ptext is0 isn = do
               i:_rs -> -- use first item; TODO: let player select item
                       return $ Just i
           K.Char l ->
-            return (L.find (maybe False (== l) . jletter) is0)
+            return (L.find (maybe False (== l) . jletter) ims)
           K.Return ->
-            let ims = if itemDialogState == INone then is0 else is
-            in if L.null ims
-               then return Nothing
-               else return $ Just $ L.maximumBy cmpItemLM ims
+            if L.null ims
+            then return Nothing
+            else return $ Just $ L.maximumBy cmpItemLM ims
           _ -> return Nothing
   ask
