@@ -360,9 +360,8 @@ actorPickupItem actor = do
           removeFromLoc i loc
             >>= assert `trueM` (i, is, loc, "item is stuck")
           -- add item to actor's inventory:
-          unless (l == '$') $
-            updateAnyActor actor $ \ m ->
-              m { bletter = maxLetter l (bletter body) }
+          updateAnyActor actor $ \ m ->
+            m { bletter = maxLetter l (bletter body) }
           modify (updateAnyActorItem actor (const nitems))
         Nothing -> abortIfWith isPlayer "cannot carry any more"
   advanceTime actor
@@ -454,6 +453,6 @@ getItem prompt p ptext is0 isn = do
                 cmpItemLM i1 i2 = cmpLetterMaybe (jletter i1) (jletter i2)
             in if L.null ims
                then return Nothing
-               else return $ Just $ L.minimumBy cmpItemLM ims
+               else return $ Just $ L.maximumBy cmpItemLM ims
           _ -> return Nothing
   ask

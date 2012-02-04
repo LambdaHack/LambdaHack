@@ -143,10 +143,7 @@ assignLetter r c is =
   allowed    = '$' : free
 
 cmpLetter :: Char -> Char -> Ordering
-cmpLetter '$' '$' = EQ
-cmpLetter '$'  _  = GT
-cmpLetter  _  '$' = LT
-cmpLetter  x   y  = compare (isUpper x, toLower x) (isUpper y, toLower y)
+cmpLetter x y = compare (isUpper x, toLower x) (isUpper y, toLower y)
 
 cmpLetterMaybe :: Maybe Char -> Maybe Char -> Ordering
 cmpLetterMaybe Nothing  Nothing   = EQ
