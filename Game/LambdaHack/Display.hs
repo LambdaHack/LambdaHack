@@ -27,6 +27,7 @@ import qualified Data.Map as M
 import qualified Data.IntMap as IM
 import Data.Maybe
 
+import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Misc
 import Game.LambdaHack.Msg
 import qualified Game.LambdaHack.Color as Color
@@ -64,7 +65,7 @@ splitOverlay s xs = splitOverlay' (lines xs)
  where
   splitOverlay' ls
     | length ls <= s = [ls]  -- everything fits on one screen
-    | otherwise      = let (pre,post) = splitAt (s - 1) ls
+    | otherwise      = let (pre, post) = splitAt (s - 1) ls
                        in (pre ++ [more]) : splitOverlay' post
 
 -- | Returns a function that looks up the characters in the
@@ -101,8 +102,21 @@ displayLevel dm fs cops per
       ActorKind{ahp, asmell} = okind bkind
       reachable = debugTotalReachable per
       visible   = totalVisible per
-      overlay   = fromMaybe "" moverlay
-      (ns, over) = stringByLocation lysize overlay -- n overlay screens needed
+      (msgs, (ns, over)) =
+        case moverlay of
+          Just overlay ->
+            ( splitMsg (fst normalLevelBound + 1) msg (length more)
+            , -- ns overlay screens needed
+              stringByLocation lysize overlay
+            )
+          Nothing ->
+            case splitMsg (fst normalLevelBound + 1) msg 0 of
+              msgTop : mss ->
+                ( [msgTop]
+                , stringByLocation lysize $ unlines $
+                    L.map (padMsg (fst normalLevelBound + 1)) mss
+                )
+              [] -> assert `failure` msg
       (sSml, sVis) = case smarkVision of
         Just Blind -> (True, True)
         Just _  -> (False, True)
@@ -184,7 +198,6 @@ displayLevel dm fs cops per
       toWidth n x = take n (x ++ repeat ' ')
       disp n mesg = display (0, 0, lxsize-1, lysize-1) fs (dis (lysize * n))
                       (toWidth width mesg) (toWidth width status)
-      msgs = splitMsg (fst normalLevelBound + 1) msg
       perf k []     = perfo k ""
       perf k [xs]   = perfo k xs
       perf k (x:xs) = disp ns (x ++ more) >> getConfirmD fs >>= \ b ->

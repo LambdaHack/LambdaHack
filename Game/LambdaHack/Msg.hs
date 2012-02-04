@@ -24,17 +24,14 @@ addMsg xs [] = xs
 addMsg xs x  = xs ++ " " ++ x
 
 -- | Split a message into chunks that fit in one line.
-splitMsg :: Int -> Msg -> [String]
-splitMsg w xs
+splitMsg :: Int -> Msg -> Int -> [String]
+splitMsg w xs m
   | w <= m = [xs]   -- border case, we cannot make progress
-  | w >= l = [xs]   -- no problem, everything fits
+  | w >= length xs = [xs]   -- no problem, everything fits
   | otherwise =
       let (pre, post) = splitAt (w - m) xs
           (ppre, ppost) = break (`elem` " .,:;!?") $ reverse pre
           rpost = dropWhile isSpace ppost
       in if L.null rpost
-         then pre : splitMsg w post
-         else reverse rpost : splitMsg w (reverse ppre ++ post)
- where
-  m = length more
-  l = length xs
+         then pre : splitMsg w post m
+         else reverse rpost : splitMsg w (reverse ppre ++ post) m

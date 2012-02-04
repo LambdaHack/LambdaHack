@@ -437,8 +437,10 @@ history = do
   config <- gets sconfig
   let historyMax = Config.get config "ui" "historyMax"
       -- TODO: not ideal, continuations of sentences are atop beginnings.
-      splitS = splitMsg (fst normalLevelBound + 1) (msg ++ " ")
-      takeMax diary = take historyMax $ L.reverse splitS ++ shistory diary
+      splitS = splitMsg (fst normalLevelBound + 1) msg 0
+      takeMax diary =
+        take historyMax $
+          L.map (padMsg (fst normalLevelBound + 1)) splitS ++ shistory diary
   unless (L.null msg) $ do
     diary <- currentDiary
     diaryReset $ diary {shistory = takeMax diary}
