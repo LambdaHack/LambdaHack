@@ -412,11 +412,15 @@ getItem prompt p ptext is0 isn = do
       tis = lvl `atI` loc
       floorMsg = if L.null tis then "" else " -,"
       is = L.filter p is0
+      cmpItemLM i1 i2 = cmpLetterMaybe (jletter i1) (jletter i2)
       choice ims =
         if L.null ims
         then "[?," ++ floorMsg ++ " ESC]"
-        else let r = letterRange $ mapMaybe jletter ims
-             in "[" ++ r ++ ", ?," ++ floorMsg ++ " RET, ESC]"
+        else let mls = mapMaybe jletter ims
+                 r = letterRange mls
+                 ret = maybe "" (\ l -> ['(', l, ')']) $
+                         jletter $ L.maximumBy cmpItemLM ims
+             in "[" ++ r ++ ", ?," ++ floorMsg ++ " RET" ++ ret ++ ", ESC]"
       ask = do
         when (L.null is0 && L.null tis) $
           abortWith "Not carrying anything."
@@ -450,7 +454,6 @@ getItem prompt p ptext is0 isn = do
             return (L.find (maybe False (== l) . jletter) is0)
           K.Return ->
             let ims = if itemDialogState == INone then is0 else is
-                cmpItemLM i1 i2 = cmpLetterMaybe (jletter i1) (jletter i2)
             in if L.null ims
                then return Nothing
                else return $ Just $ L.maximumBy cmpItemLM ims
