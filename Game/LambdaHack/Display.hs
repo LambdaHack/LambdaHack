@@ -50,13 +50,12 @@ import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.FOV
 
--- | Waits for a SPACE or RET or ESC.
+-- | Waits for a SPACE or ESC.
 getConfirmD :: FrontendSession -> IO Bool
 getConfirmD fs = do
   e <- nextEvent fs
   case e of
-    K.Char ' ' -> return True
-    K.Return   -> return True
+    K.Space    -> return True
     K.Esc      -> return False
     _          -> getConfirmD fs
 

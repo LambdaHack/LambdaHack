@@ -233,11 +233,11 @@ getOptionalConfirm :: (Bool -> Action a)
 getOptionalConfirm h k Session{sfs} = do
   e <- liftIO $ nextEvent sfs
   case e of
-    K.Char ' ' -> h True
+    K.Space    -> h True
     K.Esc      -> h False
     _          -> k e
 
--- | Ignore unexpected kestrokes until a SPACE or RET or ESC is pressed.
+-- | Ignore unexpected kestrokes until a SPACE or ESC is pressed.
 getConfirm :: Session -> Action Bool
 getConfirm Session{sfs} = liftIO $ getConfirmD sfs
 
@@ -328,6 +328,6 @@ playerAdvanceTime = do
 -- | Display command help.
 displayHelp :: Action ()
 displayHelp = do
-  let disp Session{skeyb} = msgOverlaysConfirm "Basic keys:" $ keyHelp skeyb
+  let disp Session{skeyb} = msgOverlaysConfirm "Basic keys. [press SPACE or ESC]" $ keyHelp skeyb
   session disp
   abort

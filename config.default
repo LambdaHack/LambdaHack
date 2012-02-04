@@ -43,6 +43,7 @@
 ; KP_Begin: Wait
 ; Escape: Cancel
 ; Return: Accept
+; space: Redraw
 
 ; [dungeon]
 ; ; Fixed caves for the first levels, then randomly picked caves.

@@ -5,7 +5,7 @@ module Game.LambdaHack.Key
 
 import Prelude hiding (Left, Right)
 import qualified Data.List as L
-import Data.Char
+import qualified Data.Char as Char
 
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Vector
@@ -16,6 +16,7 @@ import Game.LambdaHack.Vector
 data Key =
     Esc
   | Return
+  | Space
   | Tab
   | PgUp
   | PgDn
@@ -32,10 +33,10 @@ data Key =
   deriving (Ord, Eq)
 
 showKey :: Key -> String
-showKey (Char ' ') = "SPACE"  -- warnings about "command ( )" look wrong
 showKey (Char c) = [c]
 showKey Esc      = "ESC"  -- these three are common and terse abbreviations
 showKey Return   = "RET"
+showKey Space    = "SPACE"
 showKey Tab      = "TAB"
 showKey PgUp     = "<page-up>"
 showKey PgDn     = "<page-down>"
@@ -59,7 +60,7 @@ dirViMoveKey :: [Key]
 dirViMoveKey = map Char dirViChar
 
 dirViRunKey :: [Key]
-dirViRunKey = map (Char . toUpper) dirViChar
+dirViRunKey = map (Char . Char.toUpper) dirViChar
 
 dirMoveKey :: [Key]
 dirMoveKey = [Home, Up, PgUp, Right, PgDn, Down, End, Left]
@@ -94,7 +95,6 @@ keyTranslate "greater"       = Char '>'
 keyTranslate "period"        = Char '.'
 keyTranslate "colon"         = Char ':'
 keyTranslate "comma"         = Char ','
-keyTranslate "space"         = Char ' '
 keyTranslate "question"      = Char '?'
 keyTranslate "dollar"        = Char '$'
 keyTranslate "asterisk"      = Char '*'
@@ -110,6 +110,7 @@ keyTranslate "braceleft"     = Char '{'
 keyTranslate "braceright"    = Char '}'
 keyTranslate "Escape"        = Esc
 keyTranslate "Return"        = Return
+keyTranslate "space"         = Space
 keyTranslate "Tab"           = Tab
 keyTranslate "KP_Up"         = Up
 keyTranslate "KP_Down"       = Down

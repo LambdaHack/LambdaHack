@@ -34,6 +34,7 @@ data Cmd =
   | Version
   | Help
   | Wait
+  | Redraw
   deriving (Show, Read)
 
 -- | Major commands land on the first page of command help.
@@ -91,6 +92,7 @@ cmdSemantics cmd = case cmd of
   Version ->   gameVersion
   Help ->      displayHelp
   Wait ->      playerAdvanceTime
+  Redraw ->    return ()
 
 -- | Description of player commands.
 cmdDescription :: Cmd -> String
@@ -119,3 +121,4 @@ cmdDescription cmd = case cmd of
   Version ->   "display game version"
   Help ->      "display help"
   Wait ->      ""
+  Redraw ->    "clear messages"

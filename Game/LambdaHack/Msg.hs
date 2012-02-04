@@ -1,6 +1,6 @@
 -- | Game messages displayed on top of the screen for the player to read.
 module Game.LambdaHack.Msg
-  ( Msg, more, yesno, addMsg, splitMsg
+  ( Msg, more, yesno, addMsg, splitMsg, padMsg
   ) where
 
 import qualified Data.List as L
@@ -35,3 +35,12 @@ splitMsg w xs m
       in if L.null rpost
          then pre : splitMsg w post m
          else reverse rpost : splitMsg w (reverse ppre ++ post) m
+
+-- | Add spaces at the message end, for display overlayed over the level map.
+padMsg :: Int -> String -> String
+padMsg w xs =
+  case L.reverse xs of
+    [] -> xs
+    ' ' : _ -> xs
+    _ | w == length xs -> xs
+    reversed -> L.reverse $ ' ' : reversed
