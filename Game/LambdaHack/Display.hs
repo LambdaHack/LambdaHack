@@ -197,17 +197,22 @@ displayLevel dm fs cops per
       toWidth n x = take n (x ++ repeat ' ')
       disp n mesg = display (0, 0, lxsize-1, lysize-1) fs (dis (lysize * n))
                       (toWidth width mesg) (toWidth width status)
-      perf k []     = perfo k ""
-      perf k [xs]   = perfo k xs
-      perf k (x:xs) = disp ns (x ++ more) >> getConfirmD fs >>= \ b ->
-                      if b then perf k xs else return False
-      perfo k xs =
+      -- Perform messages slideshow.
+      perf []     = perfOverlay 0 ""
+      perf [xs]   = perfOverlay 0 xs
+      perf (x:xs) = do
+        disp ns (x ++ more)
+        b <- getConfirmD fs
+        if b then perf xs else return False
+      -- Perform overlay pages slideshow.
+      perfOverlay k xs = do
+        disp k xs
         if k < ns - 1
-        then do
-          disp k xs
-          b <- getConfirmD fs
-          if b then perfo (k+1) xs else return False
-        else do
-          disp k xs
-          return True
-  in perf 0 msgs
+          then do
+            b <- getConfirmD fs
+            if b
+              then perfOverlay (k + 1) xs
+              else return False
+          else
+            return True
+  in perf msgs
