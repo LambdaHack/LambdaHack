@@ -185,7 +185,7 @@ tentacle = sword
   }
 weight = sword
   { isymbol  = '@'
-  , iname    = "jump from high up"
+  , iname    = "power jump"
   , ifreq    = [("weight", 100)]
   , ieffect  = Wound (RollDice 99 99)
   , ipower   = (RollDice 1 99, RollDice 0 0)
