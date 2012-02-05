@@ -1,7 +1,8 @@
 -- | Basic operations on 2D points represented as linear offsets.
 module Game.LambdaHack.Point
   ( Point, toPoint, showPoint
-  , origin, chessDist, adjacent, vicinity, inside, displacement
+  , origin, chessDist, adjacent, vicinity, vicinityCardinal
+  , inside, displacement
   ) where
 
 import Game.LambdaHack.PointXY
@@ -62,6 +63,14 @@ vicinity :: X -> Y -> Point -> [Point]
 vicinity lxsize lysize loc =
   map (toPoint lxsize) $
     vicinityXY (0, 0, lxsize - 1, lysize - 1) $
+      fromPoint lxsize loc
+
+-- | Returns the 4, or less, surrounding locations in cardinal directions
+-- from a given location.
+vicinityCardinal :: X -> Y -> Point -> [Point]
+vicinityCardinal lxsize lysize loc =
+  map (toPoint lxsize) $
+    vicinityCardinalXY (0, 0, lxsize - 1, lysize - 1) $
       fromPoint lxsize loc
 
 -- | Checks that a point belongs to an area.

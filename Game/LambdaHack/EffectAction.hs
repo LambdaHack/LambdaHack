@@ -105,6 +105,14 @@ effectToAction Effect.Dominate _ source target _power =
     updatePlayerBody (\ m -> m { btime = 0})
     displayAll
     return (True, "")
+  else if source == target then do
+    lm <- gets (lmonsters . slevel)
+    lxsize <- gets (lxsize . slevel)
+    lysize <- gets (lysize . slevel)
+    let cross m = bloc m : vicinityCardinal lxsize lysize (bloc m)
+        vis = L.concatMap cross $ IM.elems lm
+    rememberList vis
+    return (True, "A dozen voices yells in anger.")
   else nullEffect
 effectToAction Effect.SummonFriend _ source target power = do
   tm <- gets (getActor target)
@@ -330,8 +338,12 @@ summonMonsters n loc = do
 remember :: Action ()
 remember = do
   per <- currentPerception
-  lvl <- gets slevel
   let vis = IS.toList (totalVisible per)
+  rememberList vis
+
+rememberList :: [Point] -> Action ()
+rememberList vis = do
+  lvl <- gets slevel
   let rememberTile = [(loc, lvl `at` loc) | loc <- vis]
   modify (updateLevel (updateLRMap (Kind.// rememberTile)))
   let alt Nothing      = Nothing
