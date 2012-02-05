@@ -130,7 +130,7 @@ displayLevel dm fs cops per
                                       then Color.Magenta
                                       else Color.defBG
                else \ _vis _rea -> Color.defBG
-      wealth  = L.sum $ L.map (Item.itemPrice coitem) bitems
+      wealth  = calculateTotal coitem s
       damage  = case Item.strongestSword coitem bitems of
                   Just sw -> case ieffect $ iokind $ Item.jkind sw of
                     Wound dice -> show dice ++ "+" ++ show (Item.jpower sw)

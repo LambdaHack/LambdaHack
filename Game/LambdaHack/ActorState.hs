@@ -19,6 +19,7 @@ import Game.LambdaHack.State
 import Game.LambdaHack.Item
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind
+import Game.LambdaHack.Content.ItemKind
 import qualified Game.LambdaHack.Config as Config
 import qualified Game.LambdaHack.Tile as Tile
 import qualified Game.LambdaHack.Kind as Kind
@@ -214,3 +215,8 @@ addMonster cotile mk hp ploc state@State{scounter = (heroC, monsterC)} = do
       m = template mk Nothing Nothing hp loc
       state' = state { scounter = (heroC, monsterC + 1) }
   updateLevel (updateMonsters (IM.insert monsterC m)) state'
+
+-- | Calculate loot's worth for heroes on the current level.
+calculateTotal :: Kind.Ops ItemKind -> State -> Int
+calculateTotal coitem s =
+  L.sum $ L.map (itemPrice coitem) $ L.concat $ IM.elems $ lheroItem $ slevel s

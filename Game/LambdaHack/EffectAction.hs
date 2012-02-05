@@ -384,11 +384,6 @@ gameOver showEndingScreens = do
     msgMore "Let's hope another party can save the day!"
   end
 
--- | Calculate loot's worth for heroes on the current level.
-calculateTotal :: Kind.Ops ItemKind -> State -> Int
-calculateTotal cops s =
-  L.sum $ L.map (itemPrice cops) $ L.concat $ IM.elems $ lheroItem $ slevel s
-
 -- | Handle current score and display it with the high scores.
 -- False if display of the scores was void or interrupted by the user.
 --
