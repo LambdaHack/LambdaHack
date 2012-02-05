@@ -133,12 +133,12 @@ effectToAction Effect.Ascend _ _ target power = do
   coactor <- contentf Kind.coactor
   tm <- gets (getActor target)
   effLvlGoUp (power + 1)
-  return (True, actorVerbExtra coactor tm "get" "yanked upwards")
+  return (True, actorVerbExtra coactor tm "find" "a shortcut upstrairs")
 effectToAction Effect.Descend _ _ target power = do
   coactor <- contentf Kind.coactor
   tm <- gets (getActor target)
   effLvlGoUp (- (power + 1))
-  return (True, actorVerbExtra coactor tm "get" "yanked downwards")
+  return (True, actorVerbExtra coactor tm "find" "a shortcut downstairs")
 
 nullEffect :: Action (Bool, String)
 nullEffect = return (False, "Nothing happens.")

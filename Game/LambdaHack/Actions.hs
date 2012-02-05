@@ -444,10 +444,11 @@ regenerateLevelHP = do
   let upd itemIM a m =
         let ak = okind $ bkind m
             bitems = fromMaybe [] $ IM.lookup a itemIM
-            regen = aregen ak `div`
-                    case strongestRegen coitem bitems of
-                      Just i  -> jpower i
-                      Nothing -> 1
+            regen = max 10 $
+                      aregen ak `div`
+                      case strongestRegen coitem bitems of
+                        Just i  -> 5 * jpower i
+                        Nothing -> 1
         in if time `mod` regen /= 0
            then m
            else addHp coactor 1 m

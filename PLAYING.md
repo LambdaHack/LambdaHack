@@ -96,6 +96,7 @@ None of them takes hero time.
                key    command
                ESC    cancel action
                RET    accept choice
+               SPACE  clear messages
                TAB    cycle among heroes on level
                *      target monster
                /      target location

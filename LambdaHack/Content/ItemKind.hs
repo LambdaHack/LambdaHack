@@ -26,7 +26,7 @@ gem, potion, scroll :: ItemKind  -- generic templates
 amulet = ItemKind
   { isymbol  = '"'
   , iname    = "amulet"
-  , ifreq    = [("dng", 5)]
+  , ifreq    = [("dng", 6)]
   , iflavour = zipFancy [BrGreen]
   , ieffect  = Regeneration
   , icount   = intToDeep 1
@@ -48,7 +48,7 @@ dart = ItemKind
 gem = ItemKind
   { isymbol  = '*'
   , iname    = "gem"
-  , ifreq    = [("dng", 20)]  -- x4, but rare on shallow levels
+  , ifreq    = [("dng", 20)]       -- x3, but rare on shallow levels
   , iflavour = zipPlain brightCol  -- natural, so not fancy
   , ieffect  = NoEffect
   , icount   = intToDeep 0
@@ -90,7 +90,7 @@ javelin = ItemKind
 potion = ItemKind
   { isymbol  = '!'
   , iname    = "potion"
-  , ifreq    = [("dng", 10)]
+  , ifreq    = [("dng", 15)]
   , iflavour = zipFancy stdCol
   , ieffect  = NoEffect
   , icount   = intToDeep 1
@@ -99,20 +99,22 @@ potion = ItemKind
   , iverbProject = "lob"
   }
 potion1 = potion
-  { ieffect  = ApplyPerfume
+  { ifreq    = [("dng", 5)]
+  , ieffect  = ApplyPerfume
   }
 potion2 = potion
   { ieffect  = Heal
-  , ipower   = (RollDice 10 1, RollDice 0 0)
+  , ipower   = (RollDice 5 1, RollDice 0 0)
   }
 potion3 = potion
-  { ieffect  = Wound (RollDice 0 0)
-  , ipower   = (RollDice 10 1, RollDice 0 0)
+  { ifreq    = [("dng", 5)]
+  , ieffect  = Wound (RollDice 0 0)
+  , ipower   = (RollDice 5 1, RollDice 0 0)
   }
 ring = ItemKind
   { isymbol  = '='
   , iname    = "ring"
-  , ifreq    = [("dng", 7)]
+  , ifreq    = [("dng", 10)]
   , iflavour = zipPlain [White]
   , ieffect  = Searching
   , icount   = intToDeep 1
@@ -123,7 +125,7 @@ ring = ItemKind
 scroll = ItemKind
   { isymbol  = '?'
   , iname    = "scroll"
-  , ifreq    = [("dng", 7)]
+  , ifreq    = [("dng", 6)]
   , iflavour = zipFancy darkCol  -- arcane and old
   , ieffect  = NoEffect
   , icount   = intToDeep 1
@@ -135,7 +137,8 @@ scroll1 = scroll
   { ieffect  = SummonFriend
   }
 scroll2 = scroll
-  { ieffect  = SummonEnemy
+  { ifreq    = [("dng", 3)]
+  , ieffect  = SummonEnemy
   }
 scroll3 = scroll
   { ieffect  = Descend
@@ -154,7 +157,7 @@ sword = ItemKind
 wand = ItemKind
   { isymbol  = '/'
   , iname    = "wand"
-  , ifreq    = [("dng", 7)]
+  , ifreq    = [("dng", 15)]
   , iflavour = zipFancy [BrRed]
   , ieffect  = Dominate
   , icount   = intToDeep 1

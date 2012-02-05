@@ -132,7 +132,7 @@ addHp Kind.Ops{okind} extra m =
       currentHP = bhp m
   in if currentHP > maxHP
      then m
-     else m{bhp = min maxHP (currentHP + extra)}
+     else m {bhp = min maxHP (currentHP + extra)}
 
 -- | Checks for the presence of actors in a location.
 -- Does not check if the tile is walkable.
