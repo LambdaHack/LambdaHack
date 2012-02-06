@@ -94,7 +94,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
                 then (TEnemy a l, Just l, True)
                 else if isJust (case closest of (_, m, _) -> m) || me == ll
                      then closest                -- prefer visible foes
-                     else (tgt, Just ll, False)  -- last known location of enemy
+                     else (tgt, Just ll, False)  -- last known loc of enemy
         else closest  -- enemy not on the level, temporarily chase others
       TLoc loc -> if me == loc
                   then closest

@@ -191,7 +191,7 @@ actorOpenDoor actor dir = do
   let dloc = shift (bloc body) dir  -- the location we act upon
       t = lvl `at` dloc
       isPlayer = actor == pl
-      isVerbose = isPlayer  -- don't report monster failures, if it's not player
+      isVerbose = isPlayer  -- don't report, unless it's player-controlled
       iq = aiq $ okind $ bkind body
       openPower = Tile.SecretStrength $
         if isPlayer
@@ -337,7 +337,7 @@ moveOrAttack allowAttacks actor dir = do
         && Tile.canBeHidden cotile (okind $ lvl `rememberAt` tloc) -> do
           msgAdd "You search your surroundings."  -- TODO: proper msg
           search
-      | otherwise -> actorOpenDoor actor dir  -- try to open a door
+      | otherwise -> actorOpenDoor actor dir  -- try to open a door, TODO: playerBumpDir instead: TriggerDir { verb = "open", object = "door", feature = Openable }
 
 -- | Resolves the result of an actor moving into another. Usually this
 -- involves melee attack, but with two heroes it just changes focus.

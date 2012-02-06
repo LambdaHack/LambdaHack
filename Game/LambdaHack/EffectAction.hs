@@ -65,23 +65,22 @@ effectToAction Effect.Heal _ _source target power = do
       return (True, actorVerbExtra coactor tm "feel" "better")
 effectToAction (Effect.Wound nDm) verbosity source target power = do
   coactor <- contentf Kind.coactor
-  n <- rndToAction $ rollDice nDm
+  pl <- gets splayer
+  n  <- rndToAction $ rollDice nDm
   if n + power <= 0 then nullEffect else do
     focusIfAHero target
     tm <- gets (getActor target)
     let newHP  = bhp tm - n - power
         killed = newHP <= 0
         msg
-          | source == target =  -- a potion of wounding, etc.
-            actorVerbExtra coactor tm "feel" $
-              -- TODO: this is displayed too late, after hero death, etc.
-              (if killed then "mortally " else "") ++ "wounded"
           | killed =
-            if isAHero target
-            then ""
+            if isAHero target || target == pl
+            then ""  -- handled later on in checkPartyDeath
             else actorVerb coactor tm "die"
+          | source == target =  -- a potion of wounding, etc.
+            actorVerbExtra coactor tm "feel" "wounded"
           | verbosity <= 0 = ""
-          | isAHero target =
+          | isAHero target || target == pl =
             actorVerbExtra coactor tm "lose" $
               show (n + power) ++ "HP"
           | otherwise = actorVerbExtra coactor tm "hiss" "in pain"
@@ -91,7 +90,6 @@ effectToAction (Effect.Wound nDm) verbosity source target power = do
       bitems <- gets (getActorItem target)
       modify (updateLevel (dropItemsAt bitems (bloc tm)))
       -- Clean bodies up.
-      pl <- gets splayer
       if target == pl
         then checkPartyDeath  -- kills the player and checks game over
         else modify (deleteActor target)  -- kills the enemy
@@ -137,23 +135,44 @@ effectToAction Effect.Regeneration verbosity source target power =
   effectToAction Effect.Heal verbosity source target power
 effectToAction Effect.Searching _ _source _target _power =
   return (True, "It gets lost and you search in vain.")
-effectToAction Effect.Ascend _ _ target power = do
+effectToAction Effect.Ascend _ source target power = do
   coactor <- contentf Kind.coactor
   tm <- gets (getActor target)
-  effLvlGoUp (power + 1)
+  if isAMonster target
+    then squashActor source target
+    else effLvlGoUp (power + 1)
+  -- TODO: The following message too late if a monster squashed:
   return (True, actorVerbExtra coactor tm "find" "a shortcut upstrairs")
-effectToAction Effect.Descend _ _ target power = do
+effectToAction Effect.Descend _ source target power = do
   coactor <- contentf Kind.coactor
   tm <- gets (getActor target)
-  effLvlGoUp (- (power + 1))
+  if isAMonster target
+    then squashActor source target
+    else effLvlGoUp (- (power + 1))
+  -- TODO: The following message too late if a monster squashed:
   return (True, actorVerbExtra coactor tm "find" "a shortcut downstairs")
 
 nullEffect :: Action (Bool, String)
 nullEffect = return (False, "Nothing happens.")
 
+-- TODO: refactor with actorAttackActor.
+squashActor :: ActorId -> ActorId -> Action ()
+squashActor source target = do
+  Kind.COps{coactor, coitem=Kind.Ops{okind, ouniqGroup}} <- contentOps
+  sm <- gets (getActor source)
+  tm <- gets (getActor target)
+  let h2hKind = ouniqGroup "weight"
+      power = maxDeep $ ipower $ okind h2hKind
+      h2h = Item h2hKind power Nothing 1
+      verb = iverbApply $ okind h2hKind
+      msg = actorVerbActorExtra coactor sm verb tm $
+              " in a staircase accident"
+  msgAdd msg
+  itemEffectAction 0 source target h2h
+    >>= assert `trueM` (source, target, "affected")
+
 effLvlGoUp :: Int -> Action ()
 effLvlGoUp k = do
-  Kind.COps{coactor, coitem=coitem@Kind.Ops{okind, ouniqGroup}} <- contentOps
   targeting <- gets (ctargeting . scursor)
   pbody     <- gets getPlayerBody
   pl        <- gets splayer
@@ -191,18 +210,9 @@ effLvlGoUp k = do
           Just h | isAHero h ->
             -- Bail out if a party member blocks the staircase.
             abort
-          Just m -> do
+          Just m ->
             -- Somewhat of a workaround: squash monster blocking the staircase.
-            -- TODO: refactor with actorAttackActor.
-            tm <- gets (getActor m)
-            let h2hKind = ouniqGroup "weight"
-                power = maxDeep $ ipower $ okind h2hKind
-                h2h = Item h2hKind power Nothing 1
-                verb = iverbApply $ okind h2hKind
-                msg = actorVerbActorExtra coactor pbody verb tm $
-                        " with " ++ objectItem coitem st h2h
-            msgAdd msg
-            itemEffectAction 0 pl m h2h >>= assert `trueM` (m, "affected")
+            squashActor pl m
         -- Verify the monster on the staircase died.
         inhabitants2 <- gets (locToActor nloc)
         when (isJust inhabitants2) $ assert `failure` inhabitants2
