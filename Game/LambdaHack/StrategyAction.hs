@@ -144,7 +144,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   onlyOpenable   = onlyMoves openableHere me
   accessibleHere = accessible cops lvl me
   onlySensible   = onlyMoves (\ l -> accessibleHere l || openableHere l) me
-  focusedMonster = aiq mk > 10
+  focusedMonster = aspeed mk >= 10
   movesNotBack   = maybe id (\ (d, _) -> L.filter (/= neg d)) ad $ moves lxsize
   smells         =
     L.map fst $
@@ -157,9 +157,10 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   moveDir d   = dirToAction actor newTgt False `liftM` d
 
   strat =
-    attackDir (onlyFoe moveFreely)
+    foeVisible .=> attackDir (onlyFoe moveFreely)
     .| foeVisible .=> liftFrequency (msum seenFreqs)
     .| lootHere me .=> actionPickup
+    .| moveDir moveTowards  -- go to last known foe location
     .| attackDir moveAround
   actionPickup = return $ actorPickupItem actor
   tis = lvl `atI` me
@@ -185,11 +186,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
       benefit > 0,
       -- Wasting swords would be too cruel to the player.
       isymbol ik /= ')']
-  towardsFreq =
-    let freqs = runStrategy $ moveDir moveTowards
-    in if asight mk
-       then map (scaleFreq 30) freqs
-       else [mzero]
+  towardsFreq = map (scaleFreq 30) $ runStrategy $ moveDir moveTowards
   moveTowards = onlySensible $ onlyNoMs (towardsFoe moveFreely)
   moveAround =
     onlySensible $
