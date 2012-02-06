@@ -41,7 +41,8 @@ The simplest way to have a monster move is at random.
 
 * Sight
 If a monster can see the hero (as an approximation,
-we assume it is the case when the hero can see the monster),
+we assume it is the case when the hero can see the monster,
+unless either of the locations is dark),
 the monster should move toward the hero.
 
 * Smell
@@ -74,12 +75,14 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   mk = okind ak
   delState = deleteActor actor oldState
   enemyVisible a l =
-    -- We assume monster sight is infravision, so light has no significance.
-    asight mk && actorReachesActor a actor l me per Nothing ||
-    -- Any enemy is visible if adjacent (e. g., a monster player).
-    memActor a delState && adjacent lxsize me l
+    asight mk && monsterSeesHero cotile per lvl actor a me l ||
+    -- Any enemy can be flet if adjacent (e. g., a monster player).
+    -- TODO: can this be replaced by setting 'lights' to [me]?
+    adjacent lxsize me l
   -- If no heroes on the level, monsters go at each other. TODO: let them
   -- earn XP by killing each other to make this dangerous to the player.
+  -- TODO: with some commands blocked, this can't happen now. Find a way
+  -- to test it, nevertheless. Have a scroll of monster fury?
   hs = L.map (AHero *** bloc) $
          IM.assocs $ lheroes $ slevel delState
   ms = L.map (AMonster *** bloc) $
@@ -101,11 +104,10 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
                   else (tgt, Just loc, False)  -- ignore all and go to loc
       _  -> closest
   closest =
-    let hsAndTraitor = if isAMonster pl
+    let hsAndTraitor = if isAMonster pl && memActor pl delState
                        then (pl, bloc $ getPlayerBody delState) : hs
                        else hs
         foes = if L.null hsAndTraitor then ms else hsAndTraitor
-        -- We assume monster sight is infravision, so light has no effect.
         visible = L.filter (uncurry enemyVisible) foes
         foeDist = L.map (\ (a, l) -> (chessDist lxsize me l, l, a)) visible
     in case foeDist of
@@ -168,10 +170,9 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
        applyGroupItem actor (iverbApply ik) i)
     | i <- is,
       let ik = iokind (jkind i),
-      let benefit =
-            (1 + jpower i) * Effect.effectToBenefit (ieffect ik),
+      let benefit = (1 + jpower i) * Effect.effectToBenefit (ieffect ik),
       benefit > 0,
-      asight mk || isymbol ik /= '!']
+      asight mk || isymbol ik == '!']
   throwFreq is multi = if adjacent lxsize me (fromJust floc) || not (asight mk)
                        then mzero
                        else toFreq

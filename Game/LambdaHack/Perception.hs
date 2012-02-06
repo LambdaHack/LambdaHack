@@ -1,7 +1,7 @@
 -- | Actors perceiving other actors and the dungeon level.
 module Game.LambdaHack.Perception
   ( Perception, totalVisible, debugTotalReachable, perception
-  , actorReachesLoc, actorReachesActor
+  , actorReachesLoc, actorReachesActor, monsterSeesHero
   ) where
 
 import qualified Data.IntSet as IS
@@ -79,12 +79,30 @@ actorReachesActor actor1 actor2 loc1 loc2 per pl =
   actorReachesLoc actor1 loc2 per pl ||
   actorReachesLoc actor2 loc1 per pl
 
+-- TODO: When the code for throwing, digital lines and lights is complete.
+-- make this a special case of ActorSeesActor.
+-- | Whether a monster can see a hero (@False@ if the target is not a hero).
+-- An approximation, to avoid computing FOV for the monster.
+-- If the target actor has no FOV pre-computed, we assume it can't be seen.
+monsterSeesHero :: Kind.Ops TileKind -> Perception -> Level
+                 -> ActorId -> ActorId -> Point -> Point -> Bool
+monsterSeesHero cotile per lvl _source target sloc tloc =
+  let rempty = PerceptionReachable IS.empty
+      reachable@PerceptionReachable{preachable} = case target of
+        AMonster _ -> rempty
+        -- TODO: instead of this fromMaybe clean up how Perception
+        -- is regenerated when levels are switched
+        AHero    i -> fromMaybe rempty $ IM.lookup i $ pheroes per
+  in sloc `IS.member` preachable
+     && isVisible cotile reachable lvl IS.empty tloc
+
 -- | Calculate the perception of all actors on the level.
 perception :: Kind.COps -> State -> Perception
 perception cops@Kind.COps{cotile}
            state@State{ splayer
                       , sconfig
-                      , sdebug = DebugMode{smarkVision}} =
+                      , sdebug = DebugMode{smarkVision}
+                      } =
   let lvl@Level{lheroes = hs} = slevel state
       mode   = Config.get sconfig "engine" "fovMode"
       radius = let r = Config.get sconfig "engine" "fovRadius"
@@ -113,11 +131,15 @@ perception cops@Kind.COps{cotile}
                  , ptotal  = visible
                  }
 
--- | A location can be directly lit by an ambient shine or a portable
+-- | A location can be directly lit by an ambient shine or a weak, portable
 -- light source, e.g,, carried by a hero. (Only lights of radius 0
--- are considered for now.) A location is visible if it's directly lit
--- or adjacent to one that is directly lit _and_ reachable. The last condition
--- approximates being on the same side of obstacles as the light source.
+-- are considered for now and it's assumed they do not reveal hero's position.
+-- TODO: change this to be radius 1 noctovision and introduce stronger
+-- light sources that show more but make the hero visible.)
+-- A location is visible if it's reachable and either directly lit
+-- or adjacent to one that is at once directly lit and reachable.
+-- The last condition approximates being
+-- on the same side of obstacles as the light source.
 -- The approximation is not exact for multiple heroes, but the discrepancy
 -- can be attributed to deduction based on combined vague visual hints,
 -- e.g., if I don't see the reachable light seen by another hero,
@@ -125,16 +147,19 @@ perception cops@Kind.COps{cotile}
 -- moving shadows indicate monsters, etc.
 computeVisible :: Kind.Ops TileKind -> PerceptionReachable
                -> Level -> IS.IntSet -> PerceptionVisible
-computeVisible cops (PerceptionReachable reachable)
-               lvl@Level{lxsize, lysize} lights' =
-  let lights = IS.intersection lights' reachable  -- optimization
-      litDirectly loc = Tile.isLit cops (lvl `at` loc)
+computeVisible cops reachable@PerceptionReachable{preachable} lvl lights' =
+  let lights = IS.intersection lights' preachable  -- optimization
+      isV = isVisible cops reachable lvl lights
+  in PerceptionVisible $ IS.filter isV preachable
+
+isVisible :: Kind.Ops TileKind -> PerceptionReachable
+          -> Level -> IS.IntSet -> Point -> Bool
+isVisible cotile PerceptionReachable{preachable}
+               lvl@Level{lxsize, lysize} lights loc0 =
+  let litDirectly loc = Tile.isLit cotile (lvl `at` loc)
                         || loc `IS.member` lights
-      l_and_R loc = litDirectly loc && loc `IS.member` reachable
-      lit loc =
-        let srds = vicinity lxsize lysize loc
-        in litDirectly loc || L.any l_and_R srds
-  in PerceptionVisible $ IS.filter lit reachable
+      l_and_R loc = litDirectly loc && loc `IS.member` preachable
+  in litDirectly loc0 || L.any l_and_R (vicinity lxsize lysize loc0)
 
 -- | Reachable are all fields on an unblocked path from the hero position.
 -- The player's own position is considred reachable by him.
