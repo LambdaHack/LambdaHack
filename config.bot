@@ -2,8 +2,8 @@
 ; DumbBot 42 20000000 | LambdaHack > /tmp/log
 
 [dungeon]
-depth: 1000
+depth: 100
 
 [heroes]
-baseHP: 1000000
-extraHeroes: 4
+baseHP: 999999
+extraHeroes: 1

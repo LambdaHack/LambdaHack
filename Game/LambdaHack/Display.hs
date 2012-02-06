@@ -189,7 +189,7 @@ displayLevel dm fs cops per
         take 7 ("L: " ++ show (Dungeon.levelNumber slid) ++ repeat ' ') ++
         take 10 ("T: " ++ show (stime `div` 10) ++ repeat ' ') ++
         take 9 ("$: " ++ show wealth ++ repeat ' ') ++
-        take 13 ("Dmg: " ++ damage ++ repeat ' ') ++
+        take 12 ("Dmg: " ++ damage ++ repeat ' ') ++
         take 30 ("HP: " ++ show bhp ++
                  " (" ++ show (maxDice ahp) ++ ")" ++ repeat ' ')
       width = fst normalLevelBound + 1

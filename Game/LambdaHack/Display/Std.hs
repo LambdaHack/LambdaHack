@@ -94,7 +94,7 @@ keyTranslate e =
     't'    -> K.Char 'g'  -- tagetting is too hard, so don't throw
     'z'    -> K.Char 'g'  -- and don't zap
     'p'    -> K.Char 'g'  -- and don't project
-    'a'    -> K.Char 'g'  -- and don't apply
+    'a'    -> K.Esc       -- and don't apply
     -- For bots: minor commands. Targeting is too hard, so don't do it.
     '*'    -> K.Char 'c'
     '/'    -> K.Char 'c'
