@@ -118,7 +118,7 @@ ring = ItemKind
   , iflavour = zipPlain [White]
   , ieffect  = Searching
   , icount   = intToDeep 1
-  , ipower   = (RollDice 1 2, RollDice 2 2)
+  , ipower   = (RollDice 1 6, RollDice 3 2)
   , iverbApply   = "squeeze down"
   , iverbProject = "throw"
   }

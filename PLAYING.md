@@ -7,7 +7,7 @@ the dungeon, alone or in a party of fearless adventurers, gaining access to new
 levels, bumping into monsters, doors and walls, gathering magical treasure
 and making creative use of it. The bloodthirsty monsters do the same,
 intelligence allowing, while tirelessly chasing the noble heroes
-by smell and night-sight.
+by smell and sight.
 
 Once the few basic command keys and on-screen symbols are learned,
 mastery and enjoyment of the game is the matter of tactical skill
