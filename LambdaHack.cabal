@@ -12,7 +12,7 @@ description:   This is an alpha release of LambdaHack, a roguelike game engine
                packaged together with a small example dungeon crawler.
                Several frontends are available (GTK is the default)
                and the main loop is easily extended or replaced,
-               but the fundamental source of flexibility is in the strict
+               but the fundamental source of flexibility lies in the strict
                and type-safe separation of code and content.
                .
                Upcoming new features: improved squad combat,

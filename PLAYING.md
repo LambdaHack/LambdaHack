@@ -3,10 +3,11 @@ Playing LambdaHack
 
 LambdaHack is a small dungeon crawler illustrating the roguelike game engine
 library also called LambdaHack. Playing the game involves walking around
-the dungeon, alone or in a party of fearless adventurers, gaining access to new
-levels, bumping into monsters, doors and walls, gathering magical treasure
+the dungeon, alone or in a party of fearless adventurers, setting up ambushes,
+hiding in shadow, covering tracks, breaking through to deeper caves,
+bumping into monsters, doors and walls, gathering magical treasure
 and making creative use of it. The bloodthirsty monsters do the same,
-intelligence allowing, while tirelessly chasing the noble heroes
+intelligence allowing, while tirelessly chasing the elusive heroes
 by smell and sight.
 
 Once the few basic command keys and on-screen symbols are learned,
@@ -37,11 +38,11 @@ The basic tiles are as follows.
 The game world is persistent, i.e., every time the player visits a level
 during a single game, the level layout is the same. Some items
 aid in dungeon exploration, e.g., a ring of searching improves the speed
-of finding hidden doors by heroes and monsters. The higher the magical
+of finding hidden doors by heroes and monsters. The higher the ability
 bonus displayed for this and other dungeon items, the more effective it is.
 Only the best item carried in a hero's or monster's inventory counts.
 You can throw the rest away, but beware that your adversaries may pick it up
-and use it against you.
+and use it against your party.
 
 
 Keys
@@ -85,13 +86,14 @@ hero time are marked with a *.
 
 To make a ranged attack, you need to set your target first, using
 targeting mode. Note that the target, for the few commands that require any,
-is indicated by the targeting cursor, but the origin of a command
---- the  hero that performs it --- is unaffacted by targeting. For example,
+is indicated by the targeting cursor. The origin of a command
+--- the  hero that performs it --- is unaffected by targeting. For example,
 not the targeted door, but one adjacent to the selected hero is closed by him.
+
 To avoid confusion, commands that take time are blocked when targeting
-a remote level (when the cursor is on a different level than the selected hero).
-The targeting commands and all the less used commands are listed below.
-None of them takes hero time.
+at a remote level (when the cursor is on a different level
+than the selected hero). The targeting commands and all the less used
+commands are listed below. None of them takes hero time.
 
                key    command
                ESC    cancel action
@@ -124,7 +126,7 @@ The hero is not alone in the dungeon. Monsters roam the dark caves
 and crawl from damp holes day and night. While heroes pay attention
 to all other party members and take moves sequentially, one after another,
 monsters don't care about each other and all move at once,
-sometimes brutally colliding by mistake.
+sometimes brutally colliding by accident.
 
 When the hero bumps into a monster or a monster attacks the hero,
 melee combat occurs. The best weapon carried by each opponent
@@ -137,11 +139,11 @@ This gives the opponent a free blow, but can improve the tactical situation
 or aid escape.
 
 Throwing weapons at targets wounds them, consuming the weapon in the process.
-Target a monster with the '*' key from the top keboard row or from kepad.
+Target a monster with the '*' key from the top keyboard row or from keypad.
 You may throw any object in your possession (press '?' to choose
 an object and press it again for a non-standard choice) or on the floor
 (press '-'). Only objects of a few kinds inflict any damage.
-Whenever a monster or a hero hit points reach zero, the combatant dies.
+Whenever the monster's or hero's hit points reach zero, the combatant dies.
 When the last hero dies, the game ends.
 
 
@@ -150,10 +152,10 @@ On Winning and Dying
 
 You win the game if you escape the dungeon alive. Your score is
 the sum of all gold you've plundered plus 100gp for each gem.
-Only the loot in possession of the party members on level 1 counts
-(the rest is considered MIA).
+Only the loot in possession of the party members on the current level
+counts (the rest of the party is considered MIA).
 
 If all heroes die, your score is halved and only the treasure carried
 by the last standing hero counts. You are free to start again
-from the first level of the dungeon, but all your wealth and items
-are gone and the dungeon and it's treasure look differently.
+from a different entrance to the dungeon, but all your previous wealth
+is gone and fresh, fearless enemies bar your way.

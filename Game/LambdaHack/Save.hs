@@ -48,6 +48,9 @@ tryCreateDir dir =
     (createDirectory dir)
     (\ e -> case e :: E.IOException of _ -> return ())
 
+-- TODO: perhaps take the target "scores" file name from config.
+-- TODO: perhaps source and "config", too, to be able to change all
+-- in one place.
 -- | Try to copy over data files. Hide errors due to,
 -- e.g., insufficient permissions, because the game can run
 -- without data files just as well.

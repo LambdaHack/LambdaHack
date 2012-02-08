@@ -1,6 +1,6 @@
 -- | High score table operations.
 module Game.LambdaHack.HighScore
-  ( Status(..), ScoreRecord(..), ScoreTable, save, restore, register, slideshow
+  ( Status(..), ScoreRecord(..), ScoreTable, restore, register, slideshow
   ) where
 
 import System.Directory
