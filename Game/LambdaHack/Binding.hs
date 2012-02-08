@@ -68,16 +68,12 @@ keyHelp Binding{kcmd, kmacro, kmajor, ktimed} =
     majorBlurb =
       [ ""
       , "Commands marked with * take time and are blocked on remote levels."
-      , ""
       , "Press SPACE to see the next page, with the list of minor commands."
-      , ""
       ]
     minorBlurb =
       [ ""
       , "For more playing instructions see file PLAYING.md."
-      , ""
       , "Press SPACE to clear the messages and go back to the game."
-      , ""
       ]
     fmt k h = replicate 16 ' ' ++ k ++ replicate ((15 - length k) `max` 1) ' '
                                ++ h ++ replicate ((40 - length h) `max` 1) ' '

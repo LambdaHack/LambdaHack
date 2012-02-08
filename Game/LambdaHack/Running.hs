@@ -108,6 +108,7 @@ runDisturbance locLast distLast msg hs ms per locHere
                   , not . locHasFeature F.Lit
                   ]
       -- Here stop only if you touch any such tile for the first time.
+      -- TODO: stop when running along a path and it ends (or turns).
       -- TODO: perhaps in open areas change direction to follow lit and paths.
       firstList = [ locHasFeature F.Lit
                   , not . locHasFeature F.Path

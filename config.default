@@ -57,7 +57,7 @@
 ; fovMode: digital
 ; ;fovMode: permissive
 ; ;fovMode: shadow
-; fovRadius: 10
+; fovRadius: 12
 ; ;startingRandomGenerator: 42
 ; ;dungeonRandomGenerator: 42
 

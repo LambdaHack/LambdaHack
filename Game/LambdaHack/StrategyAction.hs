@@ -165,7 +165,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   actionPickup = return $ actorPickupItem actor
   tis = lvl `atI` me
   seenFreqs = [applyFreq items 1, applyFreq tis 2,
-               throwFreq items 2, throwFreq tis 5] ++ towardsFreq
+               throwFreq items 3, throwFreq tis 6] ++ towardsFreq
   applyFreq is multi = toFreq
     [ (benefit * multi,
        applyGroupItem actor (iverbApply ik) i)
