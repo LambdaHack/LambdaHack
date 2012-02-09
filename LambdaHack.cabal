@@ -157,7 +157,7 @@ executable LambdaHack
                    ConfigDefault
   hs-source-dirs:  LambdaHack
   other-modules:   Paths_LambdaHack
-  build-depends:   LambdaHack == 0.2.0,
+  build-depends:   LambdaHack >= 0.2.0   && < 0.2.1,
                    template-haskell >= 2.6 && < 3,
 
                    ConfigFile >= 1.1.1   && < 2,
