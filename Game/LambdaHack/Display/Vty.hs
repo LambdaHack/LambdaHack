@@ -64,6 +64,7 @@ keyTranslate e =
   case e of
     EvKey KEsc []          -> K.Esc
     EvKey KEnter []        -> K.Return
+    EvKey (KASCII ' ') []  -> K.Space
     EvKey (KASCII '\t') [] -> K.Tab
     EvKey KUp []           -> K.Up
     EvKey KDown []         -> K.Down
