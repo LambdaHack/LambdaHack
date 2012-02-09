@@ -57,6 +57,14 @@ You may wish to tweak the game configuration file for the bot,
 e.g., by helping it play longer, as in the supplied config.bot.
 
 
+Compatibility note
+------------------
+
+The current code was tested with a few versions of GHC 7.2.*
+and a few pre-release versions of GHC 7.4.*. A [few tweaks] [6] are needed
+to compile with 7.0.* and some more are needed for 6.12.*.
+
+
 Further information
 -------------------
 
@@ -72,3 +80,4 @@ Have fun!
 [3]: http://hackage.haskell.org/package/LambdaHack
 [4]: https://github.com/kosmikus/LambdaHack/wiki
 [5]: http://github.com/kosmikus/LambdaHack
+[6]: https://github.com/Mikolaj/Allure/commit/3d0aa5bef7a0ef39e7611d4e12229224f4cead75
