@@ -2,14 +2,18 @@ LambdaHack
 ==========
 
 This is an alpha release of LambdaHack, a [Haskell] [1] game engine
-library for [roguelike] [2] games of arbitrary theme, size and complexity.
-When completed, it will let you specify content to be procedurally generated,
-define the AI behaviour on top of the generic content-independent rules,
-override any of the generic engine components and compile a ready-to-play
-game binary, using either the supplied or a custom-made main loop.
+library for [roguelike] [2] games of arbitrary theme, size and complexity,
+packaged together with a small example dungeon crawler. When completed,
+it will let you specify content to be procedurally generated,
+define the AI behaviour on top of the generic content-independent rules
+and compile a ready-to-play game binary, using either the supplied
+or a custom-made main loop. Several frontends are available
+(GTK is the default) and many other generic engine components
+are easily overridden, but the fundamental source of flexibility lies
+in the strict and type-safe separation of code and content.
 Long-term goals for LambdaHack include support for tactical squad combat,
-in-game content creation, auto-balancing and persistent content modification
-based on player behaviour.
+in-game content creation, auto-balancing and persistent content
+modification based on player behaviour.
 
 The engine comes with a sample code for a little dungeon crawler,
 called LambdaHack and described in PLAYING.md. The engine and the example

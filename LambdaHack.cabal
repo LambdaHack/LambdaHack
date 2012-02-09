@@ -8,12 +8,19 @@ data-files:    LICENSE, CREDITS, PLAYING.md, README.md,
                config.default, config.bot, scores
 author:        Andres Loeh, Mikolaj Konarski
 maintainer:    Mikolaj Konarski <mikolaj.konarski@funktory.com>
-description:   This is an alpha release of LambdaHack, a roguelike game engine
+description:   This is an alpha release of LambdaHack,
+               a game engine library for roguelike games
+               of arbitrary theme, size and complexity,
                packaged together with a small example dungeon crawler.
+               When completed, it will let you specify content
+               to be procedurally generated, define the AI behaviour
+               on top of the generic content-independent rules
+               and compile a ready-to-play game binary, using either
+               the supplied or a custom-made main loop.
                Several frontends are available (GTK is the default)
-               and the main loop is easily extended or replaced,
-               but the fundamental source of flexibility lies in the strict
-               and type-safe separation of code and content.
+               and many other generic engine components are easily overridden,
+               but the fundamental source of flexibility lies
+               in the strict and type-safe separation of code and content.
                .
                Upcoming new features: improved squad combat,
                player action undo/redo, ranged combat animations,
@@ -21,12 +28,14 @@ description:   This is an alpha release of LambdaHack, a roguelike game engine
                around procedural content generation and include
                the improvement of the AI monad EDSL, so that rules
                for synthesising monster behaviour from game content
-               are extensible, readable and easy to debug.
+               are extensible, readable and easy to debug,
+               in-game content creation, auto-balancing and persistent
+               content modification based on player behaviour.
                .
                A larger game that depends on the LambdaHack library
                is Allure of the Stars, available from
                <http://hackage.haskell.org/package/Allure>.
-synopsis:      A roguelike game engine in early development
+synopsis:      A roguelike game engine in early and very active development
 homepage:      http://github.com/kosmikus/LambdaHack
 bug-reports:   http://github.com/kosmikus/LambdaHack/issues
 category:      Game Engine
