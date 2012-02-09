@@ -104,9 +104,7 @@ restore config = do
   b <- doesFileExist f
   if not b
     then return empty
-    else do
-      scores <- strictDecodeEOF f
-      return scores
+    else strictDecodeEOF f
 
 -- | Insert a new score into the table, Return new table and the ranking.
 insertPos :: ScoreRecord -> ScoreTable -> (ScoreTable, Int)

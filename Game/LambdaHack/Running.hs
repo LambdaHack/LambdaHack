@@ -118,8 +118,8 @@ runDisturbance locLast distLast msg hs ms per locHere
       -- Then remove some other, subsumed conditions.
       -- This will help with corridors starting in dark rooms.
       touchNew fun =
-        let touchLast = L.filter (\ loc -> fun loc) surrLast
-            touchHere = L.filter (\ loc -> fun loc) surrHere
+        let touchLast = L.filter fun surrLast
+            touchHere = L.filter fun surrHere
         in touchHere L.\\ touchLast
       touchExplore fun = touchNew fun == [locThere]
       touchStop fun = touchNew fun /= []
@@ -131,7 +131,7 @@ runDisturbance locLast distLast msg hs ms per locHere
       firstNew fun = L.all (not . fun) surrLast &&
                      L.any fun surrHere
       firstExplore fun = firstNew fun && fun locThere
-      firstStop fun = firstNew fun
+      firstStop = firstNew
       tryRunMaybe
         | msgShown || enemySeen
           || heroThere || distLast >= 40  = Nothing
@@ -160,7 +160,7 @@ continueRun (dirLast, distLast) = do
   lvl@Level{lxsize, lysize} <- gets slevel
   let locHasFeature f loc = Tile.hasFeature cotile f (lvl `at` loc)
       locHasItems loc = not $ L.null $ lvl `atI` loc
-      locLast = if distLast == 0 then locHere else locHere `shift` (neg dirLast)
+      locLast = if distLast == 0 then locHere else locHere `shift` neg dirLast
       tryRunDist (dir, distNew)
         | accessibleDir locHere dir =
           maybe abort run $

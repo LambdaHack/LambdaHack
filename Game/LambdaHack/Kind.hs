@@ -71,7 +71,7 @@ createOps CDefs{getSymbol, getName, getFreq, content, validate} =
       kindFreq group =
         toFreq [ (n, (Id i, k))
                | (i, k) <- kindAssocs, let n = groupFreq group k, n > 0 ]
-      okind = \ (Id i) -> kindMap IM.! (fromEnum i)
+      okind (Id i) = kindMap IM.! fromEnum i
       correct a = not (L.null (getName a)) && L.all ((> 0) . snd) (getFreq a)
       offenders = validate content
   in assert (allB correct content) $

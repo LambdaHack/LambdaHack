@@ -32,8 +32,8 @@ instance Binary Flavour where
 
 -- | Turn a colour set into a flavour set.
 zipPlain, zipFancy :: [Color] -> [Flavour]
-zipPlain cs = L.map (Flavour False) cs
-zipFancy cs = L.map (Flavour True) cs
+zipPlain = L.map (Flavour False)
+zipFancy = L.map (Flavour True)
 
 -- | Colour sets.
 darkCol, brightCol, stdCol :: [Color]
@@ -52,7 +52,7 @@ flavourToColor Flavour{baseColor} = baseColor
 -- | Construct the full name of a flavour.
 flavourToName :: Flavour -> String
 flavourToName Flavour{..} | fancyName = colorToFancyName baseColor
-flavourToName Flavour{..} | otherwise = colorToPlainName baseColor
+flavourToName Flavour{..}             = colorToPlainName baseColor
 
 -- | Human-readable names, for item colors. The simple set.
 colorToPlainName :: Color -> String

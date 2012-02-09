@@ -59,6 +59,11 @@ instance Monad Action where
   return = returnAction
   (>>=)  = bindAction
 
+instance Functor Action where
+  fmap f (Action g) = Action (\ s e p k a st ms ->
+                               let k' st' ms' = k st' ms' . f
+                               in g s e p k' a st ms)
+
 -- | Invokes the action continuation on the provided argument.
 returnAction :: a -> Action a
 returnAction x = Action (\ _s _e _p k _a st m -> k st m x)

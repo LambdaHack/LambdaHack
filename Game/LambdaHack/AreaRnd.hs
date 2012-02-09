@@ -83,7 +83,7 @@ randomConnection :: (X, Y) -> Rnd (PointXY, PointXY)
 randomConnection (nx, ny) =
   assert (nx > 1 && ny > 0 || nx > 0 && ny > 1 `blame` (nx, ny)) $ do
   rb <- oneOf [False, True]
-  if rb || not (ny > 1)
+  if rb || ny <= 1
     then do
       rx  <- randomR (0, nx-2)
       ry  <- randomR (0, ny-1)

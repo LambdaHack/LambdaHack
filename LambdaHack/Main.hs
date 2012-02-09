@@ -48,7 +48,7 @@ start = do
   config <- Config.mkConfig ConfigDefault.configDefault
   -- The only option taken not from conif in savegame, but from fresh config.
   let configFont = fromMaybe "" $ Config.getOption config "ui" "font"
-  return (configFont, \ sfs -> Start.start config $ sess config sfs)
+  return (configFont, Start.start config . sess config)
 
 -- | Fire up the frontend with the engine fueled by config and content.
 -- Which of the frontends is run depends on the flags supplied

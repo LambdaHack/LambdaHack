@@ -51,7 +51,7 @@ overrideCP (CP defCF) cfile = do
 mkConfig :: String -> IO CP
 mkConfig configDefault = do
   let delFileMarker = L.init $ L.drop 3 $ lines configDefault
-      delComment = L.map (L.drop 2) $ delFileMarker
+      delComment = L.map (L.drop 2) delFileMarker
       unConfig = unlines delComment
       -- Evaluate, to catch config errors ASAP.
       !defCF = forceEither $ CF.readstring CF.emptyCP unConfig

@@ -82,7 +82,7 @@ euclidDistSq :: X -> Vector -> Vector -> Int
 euclidDistSq lxsize dir0 dir1
   | VectorXY (x0, y0) <- fromDir lxsize dir0
   , VectorXY (x1, y1) <- fromDir lxsize dir1 =
-  euclidDistSqXY $ VectorXY ((y1 - y0), (x1 - x0))
+  euclidDistSqXY $ VectorXY (y1 - y0, x1 - x0)
 
 -- | Checks whether a unit vector is a diagonal direction,
 -- as opposed to cardinal.

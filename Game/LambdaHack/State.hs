@@ -90,8 +90,8 @@ slevel State{slid, sdungeon} = sdungeon Dungeon.! slid
 defaultDiary :: IO Diary
 defaultDiary = do
   curDate <- getClockTime
-  let time = calendarTimeToString $ toUTCTime $ curDate
-  return $ Diary
+  let time = calendarTimeToString $ toUTCTime curDate
+  return Diary
     { smsg = ""
     , shistory = ["Player diary started on " ++ time ++ "."]
     }

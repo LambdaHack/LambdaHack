@@ -58,7 +58,7 @@ checkCursor h = do
 heroSelection :: [(K.Key, (String, Action ()))]
 heroSelection =
   let heroSelect k = (K.Char (Char.intToDigit k),
-                      ("", selectPlayer (AHero k) >> return ()))
+                      ("", void $ selectPlayer $ AHero k))
   in fmap heroSelect [0..9]
 
 -- | Binding of keys to movement and other standard commands,

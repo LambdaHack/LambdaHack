@@ -45,8 +45,8 @@ kindHasFeature f t = f `elem` tfeature t
 -- | Whether a tile kind has all features of the first set
 -- and no features of the second.
 kindHas :: [F.Feature] -> [F.Feature] -> TileKind -> Bool
-kindHas yes no t = L.all (flip kindHasFeature t) yes
-                   && not (L.any (flip kindHasFeature t) no)
+kindHas yes no t = L.all (`kindHasFeature` t) yes
+                   && not (L.any (`kindHasFeature` t) no)
 
 -- | Whether a tile kind (specified by its id) has the given feature.
 hasFeature :: Kind.Ops TileKind -> F.Feature -> Kind.Id TileKind -> Bool

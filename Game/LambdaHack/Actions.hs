@@ -290,12 +290,11 @@ search = do
       leNew = L.foldl' searchTile le (moves lxsize)
   modify (updateLevel (\ l -> l {lsecret = leNew}))
   lvlNew <- gets slevel
-  let triggerHidden mv =
+  let triggerHidden mv = do
         let dloc = shift ploc mv
             t = lvlNew `at` dloc
-        in if Tile.hasFeature cotile F.Hidden t && IM.notMember dloc leNew
-           then triggerTile dloc
-           else return ()
+        when (Tile.hasFeature cotile F.Hidden t && IM.notMember dloc leNew) $
+          triggerTile dloc
   mapM_ triggerHidden (moves lxsize)
   playerAdvanceTime
 

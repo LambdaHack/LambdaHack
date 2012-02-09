@@ -110,7 +110,7 @@ cmdDescription cmd = case cmd of
   TgtAscend k | k >= 2  -> "target " ++ show k    ++ " levels shallower"
   TgtAscend k | k == -1 -> "target next deeper level"
   TgtAscend k | k <= -2 -> "target " ++ show (-k) ++ " levels deeper"
-  TgtAscend _ -> error $ "void level change in targeting mode in config file"
+  TgtAscend _ -> error "void level change in targeting mode in config file"
   GameSave ->  "save and exit the game"
   GameQuit ->  "quit without saving"
   Cancel ->    "cancel action"

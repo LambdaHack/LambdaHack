@@ -106,11 +106,9 @@ handleMonster actor = do
   -- and does not take into account, e.g., other monsters opening doors.
   per <- currentPerception
   -- Run the AI: choses an action from those given by the AI strategy.
-  action <-
-    rndToAction $
-      frequency (head (runStrategy (strategy cops actor state per
-                                    .| wait actor)))
-  action
+  join $ rndToAction $
+           frequency (head (runStrategy (strategy cops actor state per
+                                         .| wait actor)))
   handleAI
 
 -- TODO: nextMove may not be a good name. It's part of the problem of the

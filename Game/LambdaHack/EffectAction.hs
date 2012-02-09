@@ -94,16 +94,15 @@ effectToAction (Effect.Wound nDm) verbosity source target power = do
         then checkPartyDeath  -- kills the player and checks game over
         else modify (deleteActor target)  -- kills the enemy
     return (True, msg)
-effectToAction Effect.Dominate _ source target _power =
-  if isAMonster target  -- Monsters have weaker will than heroes.
-  then do
+effectToAction Effect.Dominate _ source target _power
+  | isAMonster target = do  -- Monsters have weaker will than heroes.
     selectPlayer target
       >>= assert `trueM` (source, target, "player dominates himself")
     -- Prevent AI from getting a few free moves until new player ready.
     updatePlayerBody (\ m -> m { btime = 0})
     displayAll
     return (True, "")
-  else if source == target then do
+  | source == target = do
     lm <- gets (lmonsters . slevel)
     lxsize <- gets (lxsize . slevel)
     lysize <- gets (lysize . slevel)
@@ -111,7 +110,7 @@ effectToAction Effect.Dominate _ source target _power =
         vis = L.concatMap cross $ IM.elems lm
     rememberList vis
     return (True, "A dozen voices yells in anger.")
-  else nullEffect
+  | otherwise = nullEffect
 effectToAction Effect.SummonFriend _ source target power = do
   tm <- gets (getActor target)
   if isAHero source
@@ -165,8 +164,7 @@ squashActor source target = do
       power = maxDeep $ ipower $ okind h2hKind
       h2h = Item h2hKind power Nothing 1
       verb = iverbApply $ okind h2hKind
-      msg = actorVerbActorExtra coactor sm verb tm $
-              " in a staircase accident"
+      msg = actorVerbActorExtra coactor sm verb tm " in a staircase accident"
   msgAdd msg
   itemEffectAction 0 source target h2h
     >>= assert `trueM` (source, target, "affected")
@@ -323,7 +321,7 @@ focusIfAHero target =
     -- Focus on the hero being wounded/displaced/etc.
     b <- selectPlayer target
     -- Display status line for the new hero.
-    when b $ displayAll >> return ()
+    when b $ void displayAll
 
 summonHeroes :: Int -> Point -> Action ()
 summonHeroes n loc =
@@ -334,7 +332,7 @@ summonHeroes n loc =
   selectPlayer (AHero newHeroId)
     >>= assert `trueM` (newHeroId, "player summons himself")
   -- Display status line for the new hero.
-  displayAll >> return ()
+  void displayAll
 
 summonMonsters :: Int -> Point -> Action ()
 summonMonsters n loc = do
@@ -481,11 +479,10 @@ doLook = do
                Just m  -> actorVerbExtra coactor m "be" "here" ++ " "
                Nothing -> ""
         else ""
-      vis = if not $ loc `IS.member` totalVisible per
-            then " (not visible)"  -- by party
-            else if actorReachesLoc pl loc per (Just pl)
-                 then ""
-                 else " (not reachable)"  -- by hero
+      vis | not $ loc `IS.member` totalVisible per =
+              " (not visible)"  -- by party
+          | actorReachesLoc pl loc per (Just pl) = ""
+          | otherwise = " (not reachable)"  -- by hero
       mode = case target of
                TEnemy _ _ -> "[targeting monster" ++ vis ++ "] "
                TLoc _     -> "[targeting location" ++ vis ++ "] "

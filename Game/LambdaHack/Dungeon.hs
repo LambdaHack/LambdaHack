@@ -29,7 +29,7 @@ levelNumber (LambdaCave n) = n
 
 -- | Default level for a given depth.
 levelDefault :: Int -> LevelId
-levelDefault n = LambdaCave n
+levelDefault = LambdaCave
 
 -- | The complete dungeon is a map from level names to levels.
 data Dungeon = Dungeon

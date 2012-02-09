@@ -134,7 +134,7 @@ instance Binary Level where
     return (Level hs hi sx sy ms mi ls le li lm lrm ld lme lstairs)
 
 -- | Query for actual and remembered tile kinds on the map.
-at, rememberAt :: Level -> Point -> (Kind.Id TileKind)
+at, rememberAt :: Level -> Point -> Kind.Id TileKind
 at         Level{lmap}  p = lmap Kind.! p
 rememberAt Level{lrmap} p = lrmap Kind.! p
 
@@ -168,7 +168,7 @@ openable cops lvl@Level{lsecret} k target =
       lsecret IM.! target < k)
 
 -- | Find a random location on the map satisfying a predicate.
-findLoc :: TileMap -> (Point -> (Kind.Id TileKind) -> Bool) -> Rnd Point
+findLoc :: TileMap -> (Point -> Kind.Id TileKind -> Bool) -> Rnd Point
 findLoc lmap p =
   let search = do
         loc <- randomR $ Kind.bounds lmap

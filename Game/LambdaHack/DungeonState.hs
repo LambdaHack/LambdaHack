@@ -95,10 +95,9 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, ouniqGroup}
            Cave{..} lvl depth = do
   let cfg@CaveKind{..} = okind dkind
   cmap <- convertTileMaps (opick cdefTile (const True)) cxsize cysize dmap
-  (su, upId, sd, downId) <- placeStairs cotile cmap cxsize cminStairDist dplaces
-  let stairs = [(su, upId)] ++ if lvl == depth
-                               then []
-                               else [(sd, downId)]
+  (su, upId, sd, downId) <-
+    placeStairs cotile cmap cxsize cminStairDist dplaces
+  let stairs = (su, upId) : if lvl == depth then [] else [(sd, downId)]
       lmap = cmap Kind.// stairs
   is <- rollItems cops lvl depth cfg lmap su
   -- TODO: split this into Level.defaultLevel

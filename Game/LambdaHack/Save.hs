@@ -20,7 +20,7 @@ saveFile config = Config.getFile config "files" "saveFile"
 bkpFile :: Config.CP -> IO FilePath
 bkpFile config = do
   sfile <- saveFile config
-  return $ (sfile ++ ".bkp")
+  return $ sfile ++ ".bkp"
 
 -- | Name of the persistent player diary.
 diaryFile :: Config.CP -> IO FilePath
