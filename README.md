@@ -19,9 +19,9 @@ and the engine code, but please consider eventually splitting your changes
 into a separate Hackage package that depends on the upstream library,
 to help us exchange ideas and share improvements to the common code.
 
-Known games using the LambdaHack library:
+Games known to use the LambdaHack library:
 
-* Allure of the Stars, a near-future Sci-Fi game,
+* Allure of the Stars, a near-future Sci-Fi game in early development,
 see http://hackage.haskell.org/package/Allure
 
 
@@ -60,9 +60,9 @@ e.g., by helping it play longer, as in the supplied config.bot.
 Compatibility note
 ------------------
 
-The current code was tested with a few versions of GHC 7.2.*
-and a few pre-release versions of GHC 7.4.*. A [few tweaks] [6] are needed
-to compile with 7.0.* and some more are needed for 6.12.*.
+The current code was tested with GHC 7.2.2 and several pre-release versions
+of GHC 7.4. A [few tweaks] [6] are needed to compile with 7.0
+and some more are needed for 6.12.
 
 
 Further information
