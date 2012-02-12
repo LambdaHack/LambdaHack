@@ -166,7 +166,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   tis = lvl `atI` me
   seenFreqs = [applyFreq items 1, applyFreq tis 2,
                throwFreq items 3, throwFreq tis 6] ++ towardsFreq
-  applyFreq is multi = toFreq
+  applyFreq is multi = toFreq "applyFreq"
     [ (benefit * multi,
        applyGroupItem actor (iverbApply ik) i)
     | i <- is,
@@ -176,7 +176,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
       asight mk || isymbol ik == '!']
   throwFreq is multi = if adjacent lxsize me (fromJust floc) || not (asight mk)
                        then mzero
-                       else toFreq
+                       else toFreq "throwFreq"
     [ (benefit * multi,
        projectGroupItem actor (fromJust floc) (iverbProject ik) i)
     | i <- is,
@@ -210,7 +210,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   onlyMoves :: (Point -> Bool) -> Point -> Strategy Vector -> Strategy Vector
   onlyMoves p l = only (\ x -> p (l `shift` x))
   moveRandomly :: Strategy Vector
-  moveRandomly = liftFrequency $ uniformFreq (moves lxsize)
+  moveRandomly = liftFrequency $ uniformFreq "moveRandomly" (moves lxsize)
 
 dirToAction :: ActorId -> Target -> Bool -> Vector -> Action ()
 dirToAction actor tgt allowAttacks dir = do

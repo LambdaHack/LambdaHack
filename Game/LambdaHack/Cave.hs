@@ -6,7 +6,9 @@ module Game.LambdaHack.Cave
 import Control.Monad
 import qualified Data.Map as M
 import qualified Data.List as L
+import Data.Maybe
 
+import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Area
 import Game.LambdaHack.AreaRnd
@@ -196,4 +198,6 @@ mergeCorridor :: Kind.Ops TileKind
               -> Kind.Id TileKind -> Kind.Id TileKind -> Kind.Id TileKind
 mergeCorridor cotile _    _ t
   | L.any (\ f -> Tile.hasFeature cotile f t) passable = t
-mergeCorridor _ hiddenMap _ t = hiddenMap M.! t
+mergeCorridor _ hiddenMap u t =
+  fromMaybe (assert `failure` (u, hiddenMap, t)) $
+    M.lookup t hiddenMap

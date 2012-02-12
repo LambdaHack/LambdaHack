@@ -281,6 +281,7 @@ search = do
       searchTile sle mv =
         let loc = shift ploc mv
             t = lvl `at` loc
+            -- TODO: assert or cope elsewhere with the IM.! below
             k = Tile.secretStrength (le IM.! loc) - delta
         in if Tile.hasFeature cotile F.Hidden t
            then if k > 0
