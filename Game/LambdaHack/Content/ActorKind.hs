@@ -10,6 +10,8 @@ import Game.LambdaHack.Color
 import qualified Game.LambdaHack.Random as Random
 import Game.LambdaHack.Misc
 
+-- TODO: make all but a few fields optional in some way, so that, a.g.,
+-- a game content with no regeneration does not ever need to mention aregen.
 -- | Actor properties that are fixed for a given kind of actors.
 data ActorKind = ActorKind
   { asymbol :: !Char             -- ^ map symbol

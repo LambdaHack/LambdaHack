@@ -1,6 +1,6 @@
 cabal-version: >= 1.10
 name:          LambdaHack
-version:       0.2.0
+version:       0.2.1
 license:       BSD3
 license-file:  LICENSE
 tested-with:   GHC == 7.2.2, GHC == 7.4
@@ -22,15 +22,14 @@ description:   This is an alpha release of LambdaHack,
                but the fundamental source of flexibility lies
                in the strict and type-safe separation of code and content.
                .
-               Upcoming new features: improved squad combat,
-               player action undo/redo, ranged combat animations,
-               completely redesigned UI. Long term goals are focused
-               around procedural content generation and include
-               the improvement of the AI monad EDSL, so that rules
+               Upcoming new features: improved squad combat, player action
+               undo/redo, completely redesigned UI. Long term goals
+               are focused around procedural content generation and include
+               in-game content creation, auto-balancing, persistent
+               content modification based on player behaviour
+               and the improvement of the AI monad EDSL, so that rules
                for synthesising monster behaviour from game content
-               are extensible, readable and easy to debug,
-               in-game content creation, auto-balancing and persistent
-               content modification based on player behaviour.
+               are extensible, readable and easy to debug.
                .
                A larger game that depends on the LambdaHack library
                is Allure of the Stars, available from
@@ -166,7 +165,7 @@ executable LambdaHack
                    ConfigDefault
   hs-source-dirs:  LambdaHack
   other-modules:   Paths_LambdaHack
-  build-depends:   LambdaHack >= 0.2.0   && < 0.2.1,
+  build-depends:   LambdaHack >= 0.2.1   && < 0.2.2,
                    template-haskell >= 2.6 && < 3,
 
                    ConfigFile >= 1.1.1   && < 2,
