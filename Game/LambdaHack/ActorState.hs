@@ -25,7 +25,15 @@ import qualified Game.LambdaHack.Tile as Tile
 import qualified Game.LambdaHack.Kind as Kind
 import qualified Game.LambdaHack.Feature as F
 
--- The operations with "Any", and those that use them, consider all the dungeon.
+-- TODO: currently it's false for player-controlled monsters.
+-- When it's no longer, rewrite the places where it matters.
+-- | Checks whether an actor identifier represents a hero.
+isAHero :: State -> ActorId -> Bool
+isAHero s (AHero a) = IS.member a $ sparty s
+isAHero _ _ = False  -- TODO
+
+-- The operations with "Any", and those that use them,
+-- consider all the dungeon.
 -- All the other actor and level operations only consider the current level.
 
 -- | Finds an actor body on any level. Fails if not found.
@@ -181,6 +189,11 @@ nearbyFreeLoc cotile start state =
                  && loc `notElem` L.map bloc (hs ++ ms)
   in fromMaybe (assert `failure` "too crowded map") $ L.find good locs
 
+-- | Calculate loot's worth for heroes on the current level.
+calculateTotal :: Kind.Ops ItemKind -> State -> Int
+calculateTotal coitem s =
+  L.sum $ L.map (itemPrice coitem) $ L.concat $ IM.elems $ lheroItem $ slevel s
+
 -- Adding heroes
 
 -- | Create a new hero on the current level, close to the given location.
@@ -215,8 +228,3 @@ addMonster cotile mk hp ploc state@State{scounter = (heroC, monsterC)} = do
       m = template mk Nothing Nothing hp loc
       state' = state { scounter = (heroC, monsterC + 1) }
   updateLevel (updateMonsters (IM.insert monsterC m)) state'
-
--- | Calculate loot's worth for heroes on the current level.
-calculateTotal :: Kind.Ops ItemKind -> State -> Int
-calculateTotal coitem s =
-  L.sum $ L.map (itemPrice coitem) $ L.concat $ IM.elems $ lheroItem $ slevel s

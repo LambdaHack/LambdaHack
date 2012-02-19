@@ -107,7 +107,7 @@ projectGroupItem source loc verb item = do
   case locToActor loc state of
     Just ta -> do
       -- The msg describes the source part of the action.
-      when (sloc `IS.member` totalVisible per || isAHero ta) $ msgAdd msg
+      when (sloc `IS.member` totalVisible per || isAHero state ta) $ msgAdd msg
       -- Msgs inside itemEffectAction describe the target part.
       b <- itemEffectAction 10 source ta consumed
       unless b $ modify (updateLevel (dropItemsAt [consumed] loc))

@@ -2,7 +2,7 @@
 -- involves the 'State' or 'Action' type.
 module Game.LambdaHack.Actor
   ( -- * Actor identifiers and related operations
-    ActorId(..), isAHero, isAMonster, invalidActorId
+    ActorId(..), invalidActorId
   , findHeroName, monsterGenChance
     -- * The@ Acto@r type
   , Actor(..), template, addHp, unoccupied, heroKindId
@@ -80,15 +80,6 @@ instance Binary ActorId where
       0 -> liftM AHero get
       1 -> liftM AMonster get
       _ -> fail "no parse (ActorId)"
-
--- | Checks whether an actor identifier represents a hero.
-isAHero :: ActorId -> Bool
-isAHero (AHero _) = True
-isAHero (AMonster _) = False
-
--- | Checks whether an actor identifier represents a monster.
-isAMonster :: ActorId -> Bool
-isAMonster = not . isAHero
 
 -- | An actor that is not on any level.
 invalidActorId :: ActorId

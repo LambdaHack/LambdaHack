@@ -104,7 +104,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
                   else (tgt, Just loc, False)  -- ignore all and go to loc
       _  -> closest
   closest =
-    let hsAndTraitor = if isAMonster pl && memActor pl delState
+    let hsAndTraitor = if not (isAHero delState pl) && memActor pl delState
                        then (pl, bloc $ getPlayerBody delState) : hs
                        else hs
         foes = if L.null hsAndTraitor then ms else hsAndTraitor

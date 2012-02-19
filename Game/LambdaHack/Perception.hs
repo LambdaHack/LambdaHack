@@ -111,7 +111,7 @@ perception cops@Kind.COps{cotile}
                   else r
       -- Perception for a player-controlled monster on the current level.
       mLocPer =
-        if isAMonster splayer && memActor splayer state
+        if not (isAHero state splayer) && memActor splayer state
         then let m = getPlayerBody state
              in Just (bloc m,
                       computeReachable cops radius mode smarkVision m lvl)

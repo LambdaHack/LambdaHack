@@ -358,7 +358,7 @@ actorAttackActor source target = do
   tm    <- gets (getActor target)
   per   <- currentPerception
   bitems <- gets (getActorItem source)
-  let h2hGroup = if isAHero source then "unarmed" else "monstrous"
+  let h2hGroup = if isAHero state source then "unarmed" else "monstrous"
   h2hKind <- rndToAction $ opick h2hGroup (const True)
   let sloc = bloc sm
       -- The picked bodily "weapon".
@@ -385,6 +385,7 @@ actorAttackActor source target = do
 -- This involves switching positions of the two actors.
 actorRunActor :: ActorId -> ActorId -> Action ()
 actorRunActor source target = do
+  s    <- get
   pl   <- gets splayer
   sloc <- gets (bloc . getActor source)  -- source location
   tloc <- gets (bloc . getActor target)  -- target location
@@ -392,7 +393,7 @@ actorRunActor source target = do
   updateAnyActor target $ \ m -> m { bloc = sloc }
   if source == pl
     then stopRunning  -- do not switch positions repeatedly
-    else when (isAMonster source) $ focusIfAHero target
+    else unless (isAHero s source) $ focusIfAHero target
   advanceTime source
 
 -- | Create a new monster in the level, at a random position.

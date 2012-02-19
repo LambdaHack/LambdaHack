@@ -74,13 +74,13 @@ effectToAction (Effect.Wound nDm) verbosity source target power = do
         killed = newHP <= 0
         msg
           | killed =
-            if isAHero target || target == pl
+            if target == pl
             then ""  -- handled later on in checkPartyDeath
             else actorVerb coactor tm "die"
           | source == target =  -- a potion of wounding, etc.
             actorVerbExtra coactor tm "feel" "wounded"
           | verbosity <= 0 = ""
-          | isAHero target || target == pl =
+          | target == pl =
             actorVerbExtra coactor tm "lose" $
               show (n + power) ++ "HP"
           | otherwise = actorVerbExtra coactor tm "hiss" "in pain"
@@ -94,32 +94,37 @@ effectToAction (Effect.Wound nDm) verbosity source target power = do
         then checkPartyDeath  -- kills the player and checks game over
         else modify (deleteActor target)  -- kills the enemy
     return (True, msg)
-effectToAction Effect.Dominate _ source target _power
-  | isAMonster target = do  -- Monsters have weaker will than heroes.
-    selectPlayer target
-      >>= assert `trueM` (source, target, "player dominates himself")
-    -- Prevent AI from getting a few free moves until new player ready.
-    updatePlayerBody (\ m -> m { btime = 0})
-    displayAll
-    return (True, "")
-  | source == target = do
-    lm <- gets (lmonsters . slevel)
-    lxsize <- gets (lxsize . slevel)
-    lysize <- gets (lysize . slevel)
-    let cross m = bloc m : vicinityCardinal lxsize lysize (bloc m)
-        vis = L.concatMap cross $ IM.elems lm
-    rememberList vis
-    return (True, "A dozen voices yells in anger.")
-  | otherwise = nullEffect
+effectToAction Effect.Dominate _ source target _power = do
+  s <- get
+  if not $ isAHero s target
+    then do  -- Monsters have weaker will than heroes.
+      selectPlayer target
+        >>= assert `trueM` (source, target, "player dominates himself")
+      -- Prevent AI from getting a few free moves until new player ready.
+      updatePlayerBody (\ m -> m { btime = 0})
+      displayAll
+      return (True, "")
+    else if source == target
+         then do
+           lm <- gets (lmonsters . slevel)
+           lxsize <- gets (lxsize . slevel)
+           lysize <- gets (lysize . slevel)
+           let cross m = bloc m : vicinityCardinal lxsize lysize (bloc m)
+               vis = L.concatMap cross $ IM.elems lm
+           rememberList vis
+           return (True, "A dozen voices yells in anger.")
+         else nullEffect
 effectToAction Effect.SummonFriend _ source target power = do
   tm <- gets (getActor target)
-  if isAHero source
+  s <- get
+  if isAHero s source
     then summonHeroes (1 + power) (bloc tm)
     else summonMonsters (1 + power) (bloc tm)
   return (True, "")
 effectToAction Effect.SummonEnemy _ source target power = do
   tm <- gets (getActor target)
-  if not $ isAHero source  -- a trick: monster player will summon a hero
+  s  <- get
+  if not $ isAHero s source  -- a trick: monster player summons a hero
     then summonHeroes (1 + power) (bloc tm)
     else summonMonsters (1 + power) (bloc tm)
   return (True, "")
@@ -135,17 +140,19 @@ effectToAction Effect.Regeneration verbosity source target power =
 effectToAction Effect.Searching _ _source _target _power =
   return (True, "It gets lost and you search in vain.")
 effectToAction Effect.Ascend _ source target power = do
-  coactor <- contentf Kind.coactor
   tm <- gets (getActor target)
-  if isAMonster target
+  s  <- get
+  coactor <- contentf Kind.coactor
+  if not $ isAHero s target
     then squashActor source target
     else effLvlGoUp (power + 1)
   -- TODO: The following message too late if a monster squashed:
   return (True, actorVerbExtra coactor tm "find" "a shortcut upstrairs")
 effectToAction Effect.Descend _ source target power = do
-  coactor <- contentf Kind.coactor
   tm <- gets (getActor target)
-  if isAMonster target
+  s  <- get
+  coactor <- contentf Kind.coactor
+  if not $ isAHero s target
     then squashActor source target
     else effLvlGoUp (- (power + 1))
   -- TODO: The following message too late if a monster squashed:
@@ -205,7 +212,7 @@ effLvlGoUp k = do
         inhabitants <- gets (locToActor nloc)
         case inhabitants of
           Nothing -> return ()
-          Just h | isAHero h ->
+          Just h | isAHero st h ->
             -- Bail out if a party member blocks the staircase.
             abort
           Just m ->
@@ -257,10 +264,14 @@ itemEffectAction verbosity source target item = do
   tm  <- gets (getActor target)
   per <- currentPerception
   pl  <- gets splayer
+  s   <- get
   let effect = ieffect $ okind $ jkind item
   -- The msg describes the target part of the action.
   (b, msg) <- effectToAction effect verbosity source target (jpower item)
-  if isAHero source || isAHero target || pl == source || pl == target ||
+  if isAHero s source ||
+     isAHero s target ||
+     pl == source ||
+     pl == target ||
      (bloc tm `IS.member` totalVisible per &&
       bloc sm `IS.member` totalVisible per)
     then do
@@ -316,8 +327,9 @@ selectPlayer actor = do
       return True
 
 focusIfAHero :: ActorId -> Action ()
-focusIfAHero target =
-  when (isAHero target) $ do
+focusIfAHero target = do
+  s <- get
+  when (isAHero s target) $ do
     -- Focus on the hero being wounded/displaced/etc.
     b <- selectPlayer target
     -- Display status line for the new hero.

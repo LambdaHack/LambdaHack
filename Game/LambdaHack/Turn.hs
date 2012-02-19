@@ -146,7 +146,7 @@ handlePlayer = do
             ploc = bloc (getPlayerBody state)
             sTimeout = Config.get (sconfig state) "monsters" "smellTimeout"
         -- Update smell. Only humans leave a strong scent.
-        when (isAHero pl) $
+        when (isAHero state pl) $
           modify (updateLevel (updateSmell (IM.insert ploc
                                              (Tile.SmellTime
                                                 (time + sTimeout)))))

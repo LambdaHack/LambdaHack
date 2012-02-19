@@ -320,14 +320,11 @@ advanceTime actor = do
   let upd m = m { btime = time + aspeed (okind (bkind m)) }
   -- A hack to synchronize the whole party:
   pl <- gets splayer
-  if actor == pl || isAHero actor
-    then do
-      modify (updateLevel (updateHeroes (IM.map upd)))
-      unless (isAHero pl) $ updatePlayerBody upd
-    else do
-      s <- get
-      -- If actor dead or not on current level, don't bother.
-      when (memActor actor s) $ updateAnyActor actor upd
+  s <- get
+  -- If actor dead or not on current level, don't bother.
+  when (memActor actor s) $ updateAnyActor actor upd
+  when (actor == pl) $
+    modify (updateLevel (updateHeroes (IM.map upd)))
 
 -- | Add a turn to the player time counter.
 playerAdvanceTime :: Action ()
