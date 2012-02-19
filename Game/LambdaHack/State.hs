@@ -51,7 +51,7 @@ data State = State
   , sdisco   :: Discoveries  -- ^ items (kinds) that have been discovered
   , sdungeon :: Dungeon.Dungeon  -- ^ all dungeon levels
   , slid     :: Dungeon.LevelId  -- ^ identifier of the current level
-  , scounter :: (Int, Int)   -- ^ stores next hero index and monster index
+  , scounter :: Int          -- ^ stores next actor index
   , sparty   :: IS.IntSet    -- ^ heroes in the party
   , srandom  :: R.StdGen     -- ^ current random generator
   , sconfig  :: Config.CP    -- ^ game config
@@ -108,7 +108,7 @@ defaultState config flavour dng lid ploc g =
     S.empty
     dng
     lid
-    (0, 0)
+    0
     IS.empty
     g
     config

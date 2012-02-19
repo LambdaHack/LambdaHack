@@ -339,7 +339,7 @@ summonHeroes :: Int -> Point -> Action ()
 summonHeroes n loc =
   assert (n > 0) $ do
   cops <- contentOps
-  newHeroId <- gets (fst . scounter)
+  newHeroId <- gets scounter
   modify (\ state -> iterate (addHero cops loc) state !! n)
   selectPlayer (AHero newHeroId)
     >>= assert `trueM` (newHeroId, "player summons himself")

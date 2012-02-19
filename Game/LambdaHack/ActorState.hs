@@ -202,12 +202,12 @@ addHero Kind.COps{coactor, cotile} ploc state =
   let config = sconfig state
       bHP = Config.get config "heroes" "baseHP"
       loc = nearbyFreeLoc cotile ploc state
-      n = fst (scounter state)
+      n = scounter state
       symbol = if n < 1 || n > 9 then Nothing else Just $ Char.intToDigit n
       name = findHeroName config n
       startHP = bHP `div` min 10 (n + 1)
       m = template (heroKindId coactor) symbol (Just name) startHP loc
-      state' = state { scounter = (n + 1, snd (scounter state))
+      state' = state { scounter = n + 1
                      , sparty = IS.insert n (sparty state) }
   in updateLevel (updateHeroes (IM.insert n m)) state'
 
@@ -223,8 +223,8 @@ initialHeroes cops ploc state =
 -- and with a given actor kind and HP.
 addMonster :: Kind.Ops TileKind -> Kind.Id ActorKind -> Int -> Point -> State
            -> State
-addMonster cotile mk hp ploc state@State{scounter = (heroC, monsterC)} = do
+addMonster cotile mk hp ploc state@State{scounter} = do
   let loc = nearbyFreeLoc cotile ploc state
       m = template mk Nothing Nothing hp loc
-      state' = state { scounter = (heroC, monsterC + 1) }
-  updateLevel (updateMonsters (IM.insert monsterC m)) state'
+      state' = state {scounter = scounter + 1}
+  updateLevel (updateMonsters (IM.insert scounter m)) state'
