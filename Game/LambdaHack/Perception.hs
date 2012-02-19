@@ -103,7 +103,7 @@ perception cops@Kind.COps{cotile}
                       , sconfig
                       , sdebug = DebugMode{smarkVision}
                       } =
-  let lvl@Level{lheroes = hs} = slevel state
+  let lvl@Level{lactor} = slevel state
       mode   = Config.get sconfig "engine" "fovMode"
       radius = let r = Config.get sconfig "engine" "fovRadius"
                in if r < 1
@@ -117,6 +117,7 @@ perception cops@Kind.COps{cotile}
                       computeReachable cops radius mode smarkVision m lvl)
         else Nothing
       (mLoc, mPer) = (fmap fst mLocPer, fmap snd mLocPer)
+      hs = IM.filter (\ m -> bparty m == heroParty) lactor
       pers = IM.map (\ h ->
                       computeReachable cops radius mode smarkVision h lvl) hs
       locs = IM.map bloc hs

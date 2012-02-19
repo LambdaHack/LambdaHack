@@ -119,10 +119,10 @@ projectGroupItem source loc verb item = do
 
 playerProjectGroupItem :: Verb -> Object -> [Char] -> Action ()
 playerProjectGroupItem verb object syms = do
-  ms     <- gets (lmonsters . slevel)
+  ms     <- gets levelMonsterList
   lxsize <- gets (lxsize . slevel)
   ploc   <- gets (bloc . getPlayerBody)
-  if L.any (adjacent lxsize ploc) (L.map bloc $ IM.elems ms)
+  if L.any (adjacent lxsize ploc) (L.map bloc ms)
     then abortWith "You can't aim in melee."
     else playerProjectGI verb object syms
 
@@ -163,7 +163,7 @@ playerProjectGI verb object syms = do
 targetMonster :: TgtMode -> Action ()
 targetMonster tgtMode = do
   pl        <- gets splayer
-  ms        <- gets (lmonsters . slevel)
+  ms        <- gets (monsterAssocs . slevel)
   per       <- currentPerception
   target    <- gets (btarget . getPlayerBody)
   targeting <- gets (ctargeting . scursor)
@@ -171,11 +171,8 @@ targetMonster tgtMode = do
             TEnemy (AMonster n) _ | targeting /= TgtOff -> n  -- next monster
             TEnemy (AMonster n) _ -> n - 1  -- try to retarget old monster
             _ -> -1  -- try to target first monster (e.g., number 0)
-      dms = case pl of
-              AMonster n -> IM.delete n ms  -- don't target yourself
-              AHero _ -> ms
-      (lt, gt) = IM.split i dms
-      gtlt     = IM.assocs gt ++ IM.assocs lt
+      (lt, gt) = L.splitAt i ms
+      gtlt     = gt ++ lt
       seen (_, m) =
         let mloc = bloc m
         in mloc `IS.member` totalVisible per         -- visible by any
@@ -221,7 +218,7 @@ endTargeting accept = do
   target   <- gets (btarget . getPlayerBody)
   per      <- currentPerception
   cloc     <- gets (clocation . scursor)
-  ms       <- gets (lmonsters . slevel)
+  ms       <- gets (monsterAssocs . slevel)
   -- return to the original level of the player
   modify (\ state -> state {slid = returnLn})
   modify (updateCursor (\ c -> c { ctargeting = TgtOff }))
@@ -229,7 +226,7 @@ endTargeting accept = do
     TEnemy _ _ -> do
       let canSee = IS.member cloc (totalVisible per)
       when (accept && canSee) $
-        case L.find (\ (_im, m) -> bloc m == cloc) (IM.assocs ms) of
+        case L.find (\ (_im, m) -> bloc m == cloc) ms of
           Just (im, m)  ->
             let tgt = TEnemy (AMonster im) (bloc m)
             in updatePlayerBody (\ p -> p { btarget = tgt })

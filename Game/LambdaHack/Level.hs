@@ -2,9 +2,9 @@
 -- as the game progresses.
 module Game.LambdaHack.Level
   ( -- * The @Level@ type and its components
-    Party, PartyItem, SmellMap, SecretMap, ItemMap, TileMap, Level(..)
+    ActorDict, InvDict, SmellMap, SecretMap, ItemMap, TileMap, Level(..)
     -- * Level update
-  , updateHeroes, updateMonsters, updateHeroItem, updateMonItem
+  , updateActor, updateHeroes, updateMonsters, updateInv
   , updateSmell, updateIMap, updateLMap, updateLRMap, dropItemsAt
     -- * Level query
   , at, rememberAt, atI, rememberAtI
@@ -27,11 +27,11 @@ import Game.LambdaHack.Tile
 import qualified Game.LambdaHack.Feature as F
 import qualified Game.LambdaHack.Kind as Kind
 
--- | All actors of a given side on the level.
-type Party = IM.IntMap Actor
+-- | All actors on the level, indexed by actor identifier.
+type ActorDict = IM.IntMap Actor
 
--- | Items carried by each party member.
-type PartyItem = IM.IntMap [Item]
+-- | Items carried by actors, indexed by actor identifier.
+type InvDict = IM.IntMap [Item]
 
 -- | Current smell on map tiles.
 type SmellMap = IM.IntMap SmellTime
@@ -47,12 +47,10 @@ type TileMap = Kind.Array Point TileKind
 
 -- | A single, inhabited dungeon level.
 data Level = Level
-  { lheroes   :: Party           -- ^ all heroes on the level
-  , lheroItem :: PartyItem       -- ^ hero items
+  { lactor    :: ActorDict       -- ^ all actors on the level
+  , linv      :: InvDict         -- ^ items belonging to actors
   , lxsize    :: X               -- ^ width of the level
   , lysize    :: Y               -- ^ height of the level
-  , lmonsters :: Party           -- ^ all monsters on the level
-  , lmonItem  :: PartyItem       -- ^ monster items
   , lsmell    :: SmellMap        -- ^ smells
   , lsecret   :: SecretMap       -- ^ secrecy values
   , litem     :: ItemMap         -- ^ items on the ground
@@ -65,14 +63,17 @@ data Level = Level
   deriving Show
 
 -- | Update the hero and monster maps.
-updateHeroes, updateMonsters :: (Party -> Party) -> Level -> Level
-updateHeroes f lvl = lvl { lheroes = f (lheroes lvl) }
-updateMonsters f lvl = lvl { lmonsters = f (lmonsters lvl) }
+updateActor,updateHeroes, updateMonsters :: (ActorDict -> ActorDict) -> Level
+                                         -> Level
+updateActor f lvl = lvl { lactor = f (lactor lvl) }
+updateHeroes f =
+  updateActor (\ ad -> f $ IM.filter (\ m -> bparty m == heroParty) ad)
+updateMonsters f =
+  updateActor (\ ad -> f $ IM.filter (\ m -> bparty m == monsterParty) ad)
 
 -- | Update the hero items and monster items maps.
-updateHeroItem, updateMonItem :: (PartyItem -> PartyItem) -> Level -> Level
-updateHeroItem f lvl = lvl { lheroItem = f (lheroItem lvl) }
-updateMonItem f lvl = lvl { lmonItem = f (lmonItem lvl) }
+updateInv :: (InvDict -> InvDict) -> Level -> Level
+updateInv f lvl = lvl { linv = f (linv lvl) }
 
 -- | Update the smell map.
 updateSmell :: (SmellMap -> SmellMap) -> Level -> Level
@@ -98,13 +99,11 @@ dropItemsAt items loc =
   in  updateIMap (IM.alter adj loc)
 
 instance Binary Level where
-  put (Level hs hi sx sy ms mi ls le li lm lrm ld lme lstairs) = do
-    put hs
-    put hi
+  put (Level ad ia sx sy ls le li lm lrm ld lme lstairs) = do
+    put ad
+    put ia
     put sx
     put sy
-    put ms
-    put mi
     put ls
     put le
     put (assert
@@ -117,12 +116,10 @@ instance Binary Level where
     put lme
     put lstairs
   get = do
-    hs <- get
-    hi <- get
+    ad <- get
+    ia <- get
     sx <- get
     sy <- get
-    ms <- get
-    mi <- get
     ls <- get
     le <- get
     li <- get
@@ -131,7 +128,7 @@ instance Binary Level where
     ld <- get
     lme <- get
     lstairs <- get
-    return (Level hs hi sx sy ms mi ls le li lm lrm ld lme lstairs)
+    return (Level ad ia sx sy ls le li lm lrm ld lme lstairs)
 
 -- | Query for actual and remembered tile kinds on the map.
 at, rememberAt :: Level -> Point -> Kind.Id TileKind

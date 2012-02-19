@@ -106,11 +106,11 @@ effectToAction Effect.Dominate _ source target _power = do
       return (True, "")
     else if source == target
          then do
-           lm <- gets (lmonsters . slevel)
+           lm <- gets levelHeroList
            lxsize <- gets (lxsize . slevel)
            lysize <- gets (lysize . slevel)
            let cross m = bloc m : vicinityCardinal lxsize lysize (bloc m)
-               vis = L.concatMap cross $ IM.elems lm
+               vis = L.concatMap cross lm
            rememberList vis
            return (True, "A dozen voices yells in anger.")
          else nullEffect
@@ -237,8 +237,7 @@ fleeDungeon :: Action ()
 fleeDungeon = do
   coitem <- contentf Kind.coitem
   state <- get
-  let total = calculateTotal coitem state
-      items = L.concat $ IM.elems $ lheroItem $ slevel state
+  let (items, total) = calculateTotal coitem state
   if total == 0
     then do
       go <- msgClear >> msgMoreConfirm ColorFull "Coward!"
@@ -388,9 +387,9 @@ checkPartyDeath = do
     let firstDeathEnds = Config.get config "heroes" "firstDeathEnds"
     if firstDeathEnds
       then gameOver go
-      else case L.filter (\ (actor, _) -> actor /= pl) ahs of
+      else case L.filter ((/= pl) . AHero) ahs of
              [] -> gameOver go
-             (actor, _nln) : _ -> do
+             actor : _ -> do
                msgAdd "The survivors carry on."
                -- One last look at the beautiful world.
                remember
@@ -398,7 +397,7 @@ checkPartyDeath = do
                modify deletePlayer
                -- At this place the invariant that the player exists fails.
                -- Focus on the new hero (invariant not needed).
-               selectPlayer actor
+               selectPlayer (AHero actor)
                  >>= assert `trueM` (pl, actor, "player resurrects")
                -- At this place the invariant is restored again.
 
@@ -409,7 +408,7 @@ gameOver showEndingScreens = do
     cops  <- contentf Kind.coitem
     state <- get
     slid  <- gets slid
-    let total = calculateTotal cops state
+    let (_, total) = calculateTotal cops state
         status = H.Killed slid
     handleScores True status total
     msgMore "Let's hope another party can save the day!"

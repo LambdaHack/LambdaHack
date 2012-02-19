@@ -106,12 +106,10 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, ouniqGroup}
       litem = IM.map (\ i -> ([i], [])) itemMap
       unknownId = ouniqGroup "unknown space"
       level = Level
-        { lheroes = IM.empty
-        , lheroItem = IM.empty
+        { lactor = IM.empty
+        , linv = IM.empty
         , lxsize = cxsize
         , lysize = cysize
-        , lmonsters = IM.empty
-        , lmonItem = IM.empty
         , lsmell = IM.empty
         , lsecret = mapToIMap cxsize dsecret
         , litem

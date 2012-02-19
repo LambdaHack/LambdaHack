@@ -60,7 +60,7 @@ saveGame = do
       state <- get
       diary <- currentDiary
       liftIO $ Save.saveGame state diary
-      let total = calculateTotal cops state
+      let (_, total) = calculateTotal cops state
           status = H.Camping
       go <- handleScores False status total
       when go $ msgMore "See you soon, stronger and braver!"
@@ -255,13 +255,15 @@ tgtAscend k = do
   doLook
 
 -- | Switches current hero to the next hero on the level, if any, wrapping.
+-- We assume there are at most 10 heroes, numbered from 0 to 9.
 cycleHero :: Action ()
 cycleHero = do
   pl <- gets splayer
-  hs <- gets (lheroes . slevel)
-  let i        = case pl of AHero n -> n ; _ -> -1
-      (lt, gt) = IM.split i hs
-  case IM.keys gt ++ IM.keys lt of
+  s  <- get
+  let hs = catMaybes $ map (tryFindHeroK s) [0..9]
+      i        = case pl of AHero n -> n ; _ -> -1
+      (lt, gt) = L.splitAt i hs
+  case gt ++ lt of
     [] -> abortWith "Cannot select any other hero on this level."
     ni : _ -> selectPlayer (AHero ni)
               >>= assert `trueM` (pl, ni, "hero duplicated")
@@ -458,7 +460,5 @@ regenerateLevelHP = do
   -- Only the heroes on the current level regenerate (others are frozen
   -- in time together with their level). This prevents cheating
   -- via sending one hero to a safe level and waiting there.
-  hi  <- gets (lheroItem . slevel)
-  modify (updateLevel (updateHeroes   (IM.mapWithKey (upd hi))))
-  mi  <- gets (lmonItem . slevel)
-  modify (updateLevel (updateMonsters (IM.mapWithKey (upd mi))))
+  hi  <- gets (linv . slevel)
+  modify (updateLevel (updateActor (IM.mapWithKey (upd hi))))

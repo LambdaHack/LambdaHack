@@ -42,10 +42,10 @@ findActorAnyLevel :: ActorId -> State -> (LevelId, Actor, [Item])
 findActorAnyLevel actor State{slid, sdungeon} =
   let chk (ln, lvl) =
         let (m, mi) = case actor of
-              AHero n    -> (IM.lookup n (lheroes lvl),
-                             IM.lookup n (lheroItem lvl))
-              AMonster n -> (IM.lookup n (lmonsters lvl),
-                             IM.lookup n (lmonItem lvl))
+              AHero n    -> (IM.lookup n (lactor lvl),
+                             IM.lookup n (linv lvl))
+              AMonster n -> (IM.lookup n (lactor lvl),
+                             IM.lookup n (linv lvl))
         in fmap (\ a -> (ln, a, fromMaybe [] mi)) m
   in case mapMaybe chk (currentFirst slid sdungeon) of
     []      -> assert `failure` actor
@@ -54,9 +54,7 @@ findActorAnyLevel actor State{slid, sdungeon} =
 -- | Tries to finds an actor body satisfying a predicate on any level.
 tryFindActor :: State -> (Actor -> Bool) -> Maybe (Int, Actor)
 tryFindActor State{slid, sdungeon} p =
-  let chk (_ln, lvl) =
-        (L.find (p . snd) $ IM.assocs $ lheroes lvl) `mplus`
-        (L.find (p . snd) $ IM.assocs $ lmonsters lvl)
+  let chk (_ln, lvl) = L.find (p . snd) $ IM.assocs $ lactor lvl
   in case mapMaybe chk (currentFirst slid sdungeon) of
     []      -> Nothing
     res : _ -> Just res
@@ -72,18 +70,17 @@ getPlayerItem s@State{splayer} =
   in items
 
 -- | The list of actors and their levels for all heroes in the dungeon.
-allHeroesAnyLevel :: State -> [(ActorId, LevelId)]
+allHeroesAnyLevel :: State -> [Int]
 allHeroesAnyLevel State{slid, sdungeon} =
-  let one (ln, Level{lheroes}) =
-        L.map (\ (i, _) -> (AHero i, ln)) (IM.assocs lheroes)
+  let one (_, lvl) = L.map fst (heroAssocs lvl)
   in L.concatMap one (currentFirst slid sdungeon)
 
 updateAnyActorBody :: ActorId -> (Actor -> Actor) -> State -> State
 updateAnyActorBody actor f state =
   let (ln, _, _) = findActorAnyLevel actor state
   in case actor of
-       AHero n    -> updateAnyLevel (updateHeroes   $ IM.adjust f n) ln state
-       AMonster n -> updateAnyLevel (updateMonsters $ IM.adjust f n) ln state
+       AHero n    -> updateAnyLevel (updateActor $ IM.adjust f n) ln state
+       AMonster n -> updateAnyLevel (updateActor $ IM.adjust f n) ln state
 
 updateAnyActorItem :: ActorId -> ([Item] -> [Item]) -> State -> State
 updateAnyActorItem actor f state =
@@ -91,8 +88,8 @@ updateAnyActorItem actor f state =
       g Nothing   = Just $ f []
       g (Just is) = Just $ f is
   in case actor of
-       AHero n    -> updateAnyLevel (updateHeroItem $ IM.alter g n) ln state
-       AMonster n -> updateAnyLevel (updateMonItem  $ IM.alter g n) ln state
+       AHero n    -> updateAnyLevel (updateInv $ IM.alter g n) ln state
+       AMonster n -> updateAnyLevel (updateInv $ IM.alter g n) ln state
 
 updateAnyLevel :: (Level -> Level) -> LevelId -> State -> State
 updateAnyLevel f ln s@State{slid, sdungeon}
@@ -120,47 +117,55 @@ targetToLoc visible s@State{slid, scursor} =
 memActor :: ActorId -> State -> Bool
 memActor a state =
   case a of
-    AHero n    -> IM.member n (lheroes (slevel state))
-    AMonster n -> IM.member n (lmonsters (slevel state))
+    AHero n    -> IM.member n (lactor (slevel state))
+    AMonster n -> IM.member n (lactor (slevel state))
 
 -- | Gets actor body from the current level. Error if not found.
 getActor :: ActorId -> State -> Actor
 getActor a state =
   case a of
-    AHero n    -> lheroes   (slevel state) IM.! n
-    AMonster n -> lmonsters (slevel state) IM.! n
+    AHero n    -> lactor (slevel state) IM.! n
+    AMonster n -> lactor (slevel state) IM.! n
 
 -- | Gets actor's items from the current level. Empty list, if not found.
 getActorItem :: ActorId -> State -> [Item]
 getActorItem a state =
   fromMaybe [] $
   case a of
-    AHero n    -> IM.lookup n (lheroItem (slevel state))
-    AMonster n -> IM.lookup n (lmonItem  (slevel state))
+    AHero n    -> IM.lookup n (linv (slevel state))
+    AMonster n -> IM.lookup n (linv (slevel state))
 
 -- | Removes the actor, if present, from the current level.
 deleteActor :: ActorId -> State -> State
 deleteActor a =
   case a of
     AHero n ->
-      updateLevel (updateHeroes (IM.delete n) . updateHeroItem (IM.delete n))
+      updateLevel (updateActor (IM.delete n) . updateInv (IM.delete n))
     AMonster n ->
-      updateLevel (updateMonsters (IM.delete n) . updateMonItem (IM.delete n))
+      updateLevel (updateActor (IM.delete n) . updateInv (IM.delete n))
 
 -- | Add actor to the current level.
 insertActor :: ActorId -> Actor -> State -> State
 insertActor a m =
   case a of
-    AHero n    -> updateLevel (updateHeroes   (IM.insert n m))
-    AMonster n -> updateLevel (updateMonsters (IM.insert n m))
+    AHero n    -> updateLevel (updateActor   (IM.insert n m))
+    AMonster n -> updateLevel (updateActor (IM.insert n m))
 
 -- | Removes a player from the current level and party list.
 deletePlayer :: State -> State
 deletePlayer s@State{splayer} = deleteActor splayer s
 
+heroAssocs, monsterAssocs :: Level -> [(Int, Actor)]
+heroAssocs    lvl =
+  filter (\ (_, m) -> bparty m == heroParty) $ IM.toList $ lactor lvl
+monsterAssocs lvl =
+  filter (\ (_, m) -> bparty m == monsterParty) $ IM.toList $ lactor lvl
+
 levelHeroList, levelMonsterList :: State -> [Actor]
-levelHeroList    state = IM.elems $ lheroes   $ slevel state
-levelMonsterList state = IM.elems $ lmonsters $ slevel state
+levelHeroList    state =
+  filter (\ m -> bparty m == heroParty) $ IM.elems $ lactor $ slevel state
+levelMonsterList state =
+  filter (\ m -> bparty m == monsterParty) $ IM.elems $ lactor $ slevel state
 
 -- | Finds an actor at a location on the current level. Perception irrelevant.
 locToActor :: Point -> State -> Maybe ActorId
@@ -171,7 +176,7 @@ locToActor loc state =
 
 locToActors :: Point -> State -> [ActorId]
 locToActors loc state =
-  getIndex (lmonsters, AMonster) ++ getIndex (lheroes, AHero)
+  getIndex (lactor, AMonster)  -- FIXME
  where
   getIndex (projection, injection) =
     let l  = IM.assocs $ projection $ slevel state
@@ -189,9 +194,12 @@ nearbyFreeLoc cotile start state =
   in fromMaybe (assert `failure` "too crowded map") $ L.find good locs
 
 -- | Calculate loot's worth for heroes on the current level.
-calculateTotal :: Kind.Ops ItemKind -> State -> Int
+calculateTotal :: Kind.Ops ItemKind -> State -> ([Item], Int)
 calculateTotal coitem s =
-  L.sum $ L.map (itemPrice coitem) $ L.concat $ IM.elems $ lheroItem $ slevel s
+  let ha = heroAssocs $ slevel s
+      heroInv = L.concat $ catMaybes $
+                  L.map ( \ (k, _) -> IM.lookup k $ linv $ slevel s) ha
+  in (heroInv, L.sum $ L.map (itemPrice coitem) heroInv)
 
 -- Adding heroes
 
@@ -202,22 +210,24 @@ tryFindHeroK s k =
         | otherwise       = assert `failure` k
   in fmap fst $ tryFindActor s ((== c) . bsymbol)
 
--- | Create a new hero on the current level, close to the given location.
+-- | Create a new hero on the current level, close to the given location,
+-- unless all 10 heroes already alive.
 addHero :: Kind.COps -> Point -> State -> State
 addHero Kind.COps{coactor, cotile} ploc state@State{scounter} =
   let config = sconfig state
       bHP = Config.get config "heroes" "baseHP"
       loc = nearbyFreeLoc cotile ploc state
-      n = case L.elemIndex Nothing $ map (tryFindHeroK state) [0..9] of
-        Nothing -> 10
-        Just k -> k
-      symbol = if n < 1 || n > 9 then Nothing else Just $ Char.intToDigit n
-      name = findHeroName config n
-      startHP = bHP `div` min 5 (n + 1)
-      m = template
-            (heroKindId coactor) symbol (Just name) startHP loc heroParty
-      state' = state { scounter = scounter + 1 }
-  in updateLevel (updateHeroes (IM.insert scounter m)) state'
+      freeHeroK = L.elemIndex Nothing $ map (tryFindHeroK state) [0..9]
+  in case freeHeroK of
+    Nothing -> state
+    Just n ->
+      let symbol = if n < 1 || n > 9 then Nothing else Just $ Char.intToDigit n
+          name = findHeroName config n
+          startHP = bHP `div` min 5 (n + 1)
+          m = template
+                (heroKindId coactor) symbol (Just name) startHP loc heroParty
+          cstate = state { scounter = scounter + 1 }
+      in updateLevel (updateActor (IM.insert n m)) cstate
 
 -- | Create a set of initial heroes on the current level, at location ploc.
 initialHeroes :: Kind.COps -> Point -> State -> State
@@ -235,4 +245,4 @@ addMonster cotile mk hp ploc state@State{scounter} = do
   let loc = nearbyFreeLoc cotile ploc state
       m = template mk Nothing Nothing hp loc monsterParty
       state' = state {scounter = scounter + 1}
-  updateLevel (updateMonsters (IM.insert scounter m)) state'
+  updateLevel (updateActor (IM.insert scounter m)) state'

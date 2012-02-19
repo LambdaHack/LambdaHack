@@ -5,7 +5,6 @@ module Game.LambdaHack.Running
 
 import Control.Monad.State hiding (State, state)
 import qualified Data.List as L
-import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 
 import Game.LambdaHack.Utils.Assert
@@ -85,19 +84,20 @@ runMode loc dir dirEnterable lxsize =
           RunCorridor (if diagonal lxsize d1 then d2 else d1, True)
         _ -> RunHub  -- a hub of many separate corridors
 
--- | Check for disturbances to running such newly visible items, monsters, etc.
-runDisturbance :: Point -> Int -> Msg -> Party -> Party -> Perception -> Point
+-- | Check for disturbances to running such as newly visible items, monsters.
+runDisturbance :: Point -> Int -> Msg
+               -> [Actor] -> [Actor] -> Perception -> Point
                -> (F.Feature -> Point -> Bool) -> (Point -> Bool) -> X -> Y
                -> (Vector, Int) -> Maybe (Vector, Int)
 runDisturbance locLast distLast msg hs ms per locHere
                locHasFeature locHasItems lxsize lysize (dirNew, distNew) =
   let msgShown  = not (L.null msg)
-      mslocs    = IS.delete locHere $ IS.fromList (L.map bloc (IM.elems ms))
+      mslocs    = IS.delete locHere $ IS.fromList (L.map bloc ms)
       enemySeen = not (IS.null (mslocs `IS.intersection` totalVisible per))
       surrLast  = locLast : vicinity lxsize lysize locLast
       surrHere  = locHere : vicinity lxsize lysize locHere
       locThere  = locHere `shift` dirNew
-      heroThere = locThere `elem` L.map bloc (IM.elems hs)
+      heroThere = locThere `elem` L.map bloc hs
       -- Stop if you touch any individual tile with these propereties
       -- first time, unless you enter it next move, in which case stop then.
       touchList = [ locHasFeature F.Exit
@@ -155,8 +155,8 @@ continueRun (dirLast, distLast) = do
   locHere <- gets (bloc . getPlayerBody)
   per <- currentPerception
   msg <- currentMsg
-  ms  <- gets (lmonsters . slevel)
-  hs  <- gets (lheroes . slevel)
+  ms  <- gets levelMonsterList
+  hs  <- gets levelHeroList
   lvl@Level{lxsize, lysize} <- gets slevel
   let locHasFeature f loc = Tile.hasFeature cotile f (lvl `at` loc)
       locHasItems loc = not $ L.null $ lvl `atI` loc
