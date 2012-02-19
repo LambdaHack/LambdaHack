@@ -19,6 +19,7 @@ import Game.LambdaHack.EffectAction
 import Game.LambdaHack.Binding
 import qualified Game.LambdaHack.Key as K
 import Game.LambdaHack.Actor
+import Game.LambdaHack.ActorState
 import Game.LambdaHack.Command
 
 configCmd :: Config.CP -> [(K.Key, Cmd)]
@@ -57,8 +58,12 @@ checkCursor h = do
 
 heroSelection :: [(K.Key, (String, Action ()))]
 heroSelection =
-  let heroSelect k = (K.Char (Char.intToDigit k),
-                      ("", void $ selectPlayer $ AHero k))
+  let select k = do
+        s <- get
+        case tryFindHeroK s k of
+          Nothing -> abortWith "No such member of the party."
+          Just aid -> void $ selectPlayer (AHero aid)
+      heroSelect k = (K.Char (Char.intToDigit k), ("", select k))
   in fmap heroSelect [0..9]
 
 -- | Binding of keys to movement and other standard commands,

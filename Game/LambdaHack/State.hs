@@ -15,7 +15,6 @@ module Game.LambdaHack.State
   ) where
 
 import qualified Data.Set as S
-import qualified Data.IntSet as IS
 import Data.Binary
 import qualified Game.LambdaHack.Config as Config
 import qualified System.Random as R
@@ -52,7 +51,6 @@ data State = State
   , sdungeon :: Dungeon.Dungeon  -- ^ all dungeon levels
   , slid     :: Dungeon.LevelId  -- ^ identifier of the current level
   , scounter :: Int          -- ^ stores next actor index
-  , sparty   :: IS.IntSet    -- ^ heroes in the party
   , srandom  :: R.StdGen     -- ^ current random generator
   , sconfig  :: Config.CP    -- ^ game config
   , sdebug   :: DebugMode    -- ^ debugging mode
@@ -109,7 +107,6 @@ defaultState config flavour dng lid ploc g =
     dng
     lid
     0
-    IS.empty
     g
     config
     defaultDebugMode
@@ -164,7 +161,7 @@ instance Binary Diary where
 
 instance Binary State where
   put (State player cursor time flav disco dng lid ct
-         party g config _) = do
+         g config _) = do
     put player
     put cursor
     put time
@@ -173,7 +170,6 @@ instance Binary State where
     put dng
     put lid
     put ct
-    put party
     put (show g)
     put config
   get = do
@@ -185,12 +181,11 @@ instance Binary State where
     dng    <- get
     lid    <- get
     ct     <- get
-    party  <- get
     g      <- get
     config <- get
     return
       (State player cursor time flav disco dng lid ct
-         party (read g) config defaultDebugMode)
+         (read g) config defaultDebugMode)
 
 instance Binary Cursor where
   put (Cursor act cln loc rln) = do

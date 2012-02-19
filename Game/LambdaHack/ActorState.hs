@@ -39,8 +39,7 @@ isAHero s a =
 
 -- | Finds an actor body on any level. Fails if not found.
 findActorAnyLevel :: ActorId -> State -> (LevelId, Actor, [Item])
-findActorAnyLevel actor state@State{slid, sdungeon} =
-  assert (not (absentHero actor state) `blame` actor) $
+findActorAnyLevel actor State{slid, sdungeon} =
   let chk (ln, lvl) =
         let (m, mi) = case actor of
               AHero n    -> (IM.lookup n (lheroes lvl),
@@ -52,12 +51,15 @@ findActorAnyLevel actor state@State{slid, sdungeon} =
     []      -> assert `failure` actor
     res : _ -> res  -- checking if res is unique would break laziness
 
--- | Checks whether an actor is a hero, but not a member of the party.
-absentHero :: ActorId -> State -> Bool
-absentHero a State{sparty} =
-  case a of
-    AHero n    -> IS.notMember n sparty
-    AMonster _ -> False
+-- | Tries to finds an actor body satisfying a predicate on any level.
+tryFindActor :: State -> (Actor -> Bool) -> Maybe (Int, Actor)
+tryFindActor State{slid, sdungeon} p =
+  let chk (_ln, lvl) =
+        (L.find (p . snd) $ IM.assocs $ lheroes lvl) `mplus`
+        (L.find (p . snd) $ IM.assocs $ lmonsters lvl)
+  in case mapMaybe chk (currentFirst slid sdungeon) of
+    []      -> Nothing
+    res : _ -> Just res
 
 getPlayerBody :: State -> Actor
 getPlayerBody s@State{splayer} =
@@ -154,11 +156,7 @@ insertActor a m =
 
 -- | Removes a player from the current level and party list.
 deletePlayer :: State -> State
-deletePlayer s@State{splayer, sparty} =
-  let s2 = deleteActor splayer s
-  in case splayer of
-    AHero n    -> s2{sparty = IS.delete n sparty}
-    AMonster _ -> s2
+deletePlayer s@State{splayer} = deleteActor splayer s
 
 levelHeroList, levelMonsterList :: State -> [Actor]
 levelHeroList    state = IM.elems $ lheroes   $ slevel state
@@ -197,21 +195,29 @@ calculateTotal coitem s =
 
 -- Adding heroes
 
+tryFindHeroK :: State -> Int -> Maybe Int
+tryFindHeroK s k =
+  let c | k == 0          = Nothing
+        | k > 0 && k < 10 = Just $ Char.intToDigit k
+        | otherwise       = assert `failure` k
+  in fmap fst $ tryFindActor s ((== c) . bsymbol)
+
 -- | Create a new hero on the current level, close to the given location.
 addHero :: Kind.COps -> Point -> State -> State
-addHero Kind.COps{coactor, cotile} ploc state =
+addHero Kind.COps{coactor, cotile} ploc state@State{scounter} =
   let config = sconfig state
       bHP = Config.get config "heroes" "baseHP"
       loc = nearbyFreeLoc cotile ploc state
-      n = scounter state
+      n = case L.elemIndex Nothing $ map (tryFindHeroK state) [0..9] of
+        Nothing -> 10
+        Just k -> k
       symbol = if n < 1 || n > 9 then Nothing else Just $ Char.intToDigit n
       name = findHeroName config n
-      startHP = bHP `div` min 10 (n + 1)
+      startHP = bHP `div` min 5 (n + 1)
       m = template
             (heroKindId coactor) symbol (Just name) startHP loc heroParty
-      state' = state { scounter = n + 1
-                     , sparty = IS.insert n (sparty state) }
-  in updateLevel (updateHeroes (IM.insert n m)) state'
+      state' = state { scounter = scounter + 1 }
+  in updateLevel (updateHeroes (IM.insert scounter m)) state'
 
 -- | Create a set of initial heroes on the current level, at location ploc.
 initialHeroes :: Kind.COps -> Point -> State -> State

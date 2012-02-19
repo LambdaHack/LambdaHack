@@ -311,7 +311,6 @@ selectPlayer actor = do
     then return False -- already selected
     else do
       state <- get
-      when (absentHero actor state) $ abortWith "No such member of the party."
       let (nln, pbody, _) = findActorAnyLevel actor state
       -- Make the new actor the player-controlled actor.
       modify (\ s -> s { splayer = actor })
