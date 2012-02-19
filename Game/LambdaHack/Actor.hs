@@ -4,6 +4,8 @@ module Game.LambdaHack.Actor
   ( -- * Actor identifiers and related operations
     ActorId(..), invalidActorId
   , findHeroName, monsterGenChance
+    -- * Party identifiers
+  , PartyId, heroParty, monsterParty, neutralParty
     -- * The@ Acto@r type
   , Actor(..), template, addHp, unoccupied, heroKindId
     -- * Type of na actor target
@@ -24,6 +26,13 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Config as Config
 
+type PartyId = Int
+
+heroParty, monsterParty, neutralParty :: PartyId
+heroParty = 0
+monsterParty = 1
+neutralParty = 2
+
 -- | Actor properties that are changing throughout the game.
 -- If they are dublets of properties from @ActorKind@,
 -- they are usually modified temporarily, but tend to return
@@ -38,11 +47,12 @@ data Actor = Actor
   , bloc    :: !Point                  -- ^ current location
   , bletter :: !Char                   -- ^ next inventory letter
   , btime   :: !Time                   -- ^ time of next action
+  , bparty  :: !PartyId                -- ^ to which party the actor belongs
   }
   deriving Show
 
 instance Binary Actor where
-  put (Actor ak an as ah ad at al ale ati) = do
+  put (Actor ak an as ah ad at al ale ati pp) = do
     put ak
     put an
     put as
@@ -52,6 +62,7 @@ instance Binary Actor where
     put al
     put ale
     put ati
+    put pp
   get = do
     ak  <- get
     an  <- get
@@ -62,7 +73,8 @@ instance Binary Actor where
     al  <- get
     ale <- get
     ati <- get
-    return (Actor ak an as ah ad at al ale ati)
+    pp  <- get
+    return (Actor ak an as ah ad at al ale ati pp)
 
 -- ActorId operations
 
@@ -110,10 +122,10 @@ monsterGenChance d numMonsters =
 -- | A template for a new actor. The initial target is invalid
 -- to force a reset ASAP.
 template :: Kind.Id ActorKind -> Maybe Char -> Maybe String -> Int -> Point
-         -> Actor
-template mk mc ms hp loc =
+         -> PartyId -> Actor
+template mk mc ms hp loc pp =
   let invalidTarget = TEnemy invalidActorId loc
-  in Actor mk mc ms hp Nothing invalidTarget loc 'a' 0
+  in Actor mk mc ms hp Nothing invalidTarget loc 'a' 0 pp
 
 -- | Increment current hit points of an actor.
 addHp :: Kind.Ops ActorKind -> Int -> Actor -> Actor

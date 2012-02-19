@@ -29,8 +29,9 @@ import qualified Game.LambdaHack.Feature as F
 -- When it's no longer, rewrite the places where it matters.
 -- | Checks whether an actor identifier represents a hero.
 isAHero :: State -> ActorId -> Bool
-isAHero s (AHero a) = IS.member a $ sparty s
-isAHero _ _ = False  -- TODO
+isAHero s a =
+  let (_, actor, _) = findActorAnyLevel a s
+  in bparty actor == 0
 
 -- The operations with "Any", and those that use them,
 -- consider all the dungeon.
@@ -206,7 +207,8 @@ addHero Kind.COps{coactor, cotile} ploc state =
       symbol = if n < 1 || n > 9 then Nothing else Just $ Char.intToDigit n
       name = findHeroName config n
       startHP = bHP `div` min 10 (n + 1)
-      m = template (heroKindId coactor) symbol (Just name) startHP loc
+      m = template
+            (heroKindId coactor) symbol (Just name) startHP loc heroParty
       state' = state { scounter = n + 1
                      , sparty = IS.insert n (sparty state) }
   in updateLevel (updateHeroes (IM.insert n m)) state'
@@ -225,6 +227,6 @@ addMonster :: Kind.Ops TileKind -> Kind.Id ActorKind -> Int -> Point -> State
            -> State
 addMonster cotile mk hp ploc state@State{scounter} = do
   let loc = nearbyFreeLoc cotile ploc state
-      m = template mk Nothing Nothing hp loc
+      m = template mk Nothing Nothing hp loc monsterParty
       state' = state {scounter = scounter + 1}
   updateLevel (updateMonsters (IM.insert scounter m)) state'
