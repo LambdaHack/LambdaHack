@@ -26,12 +26,17 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Config as Config
 
-type PartyId = Int
+newtype PartyId = PartyId Int
+  deriving (Show, Eq)
 
 heroParty, monsterParty, neutralParty :: PartyId
-heroParty = 0
-monsterParty = 1
-neutralParty = 2
+heroParty = PartyId 0
+monsterParty = PartyId 1
+neutralParty = PartyId 2
+
+instance Binary PartyId where
+  put (PartyId n) = put n
+  get = fmap PartyId get
 
 -- | Actor properties that are changing throughout the game.
 -- If they are dublets of properties from @ActorKind@,

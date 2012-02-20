@@ -127,7 +127,7 @@ deleteActor a =
 insertActor :: ActorId -> Actor -> State -> State
 insertActor a m = updateLevel (updateActor (IM.insert a m))
 
--- | Removes a player from the current level and party list.
+-- | Removes a player from the current level.
 deletePlayer :: State -> State
 deletePlayer s@State{splayer} = deleteActor splayer s
 
