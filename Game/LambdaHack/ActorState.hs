@@ -106,6 +106,7 @@ targetToLoc visible s@State{slid, scursor} =
 
 -- The operations below disregard levels other than the current.
 
+-- TODO: switch arguments; also elsewhere.
 -- | Checks if the actor is present on the current level.
 memActor :: ActorId -> State -> Bool
 memActor a state = IM.member a (lactor (slevel state))
@@ -178,29 +179,26 @@ calculateTotal coitem s =
 
 tryFindHeroK :: State -> Int -> Maybe ActorId
 tryFindHeroK s k =
-  let c | k == 0          = Nothing
-        | k > 0 && k < 10 = Just $ Char.intToDigit k
+  let c | k == 0          = '@'
+        | k > 0 && k < 10 = Char.intToDigit k
         | otherwise       = assert `failure` k
-  in fmap fst $ tryFindActor s ((== c) . bsymbol)
+  in fmap fst $ tryFindActor s ((== Just c) . bsymbol)
 
--- | Create a new hero on the current level, close to the given location,
--- unless all 10 heroes already alive.
+-- | Create a new hero on the current level, close to the given location.
 addHero :: Kind.COps -> Point -> State -> State
 addHero Kind.COps{coactor, cotile} ploc state@State{scounter} =
   let config = sconfig state
       bHP = Config.get config "heroes" "baseHP"
       loc = nearbyFreeLoc cotile ploc state
       freeHeroK = L.elemIndex Nothing $ map (tryFindHeroK state) [0..9]
-  in case freeHeroK of
-    Nothing -> state
-    Just n ->
-      let symbol = if n < 1 || n > 9 then Nothing else Just $ Char.intToDigit n
-          name = findHeroName config n
-          startHP = bHP `div` min 5 (n + 1)
-          m = template
-                (heroKindId coactor) symbol (Just name) startHP loc heroParty
-          cstate = state { scounter = scounter + 1 }
-      in updateLevel (updateActor (IM.insert n m)) cstate
+      n = fromMaybe 10 freeHeroK
+      symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
+      name = findHeroName config n
+      startHP = bHP `div` min 5 (n + 1)
+      m = template (heroKindId coactor) (Just symbol) (Just name)
+                   startHP loc heroParty
+      cstate = state { scounter = scounter + 1 }
+  in updateLevel (updateActor (IM.insert scounter m)) cstate
 
 -- | Create a set of initial heroes on the current level, at location ploc.
 initialHeroes :: Kind.COps -> Point -> State -> State
@@ -217,5 +215,5 @@ addMonster :: Kind.Ops TileKind -> Kind.Id ActorKind -> Int -> Point -> State
 addMonster cotile mk hp ploc state@State{scounter} = do
   let loc = nearbyFreeLoc cotile ploc state
       m = template mk Nothing Nothing hp loc monsterParty
-      state' = state {scounter = scounter + 1}
-  updateLevel (updateActor (IM.insert scounter m)) state'
+      cstate = state {scounter = scounter + 1}
+  updateLevel (updateActor (IM.insert scounter m)) cstate

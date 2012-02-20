@@ -106,7 +106,7 @@ effectToAction Effect.Dominate _ source target _power = do
       return (True, "")
     else if source == target
          then do
-           lm <- gets levelHeroList
+           lm <- gets levelMonsterList
            lxsize <- gets (lxsize . slevel)
            lysize <- gets (lysize . slevel)
            let cross m = bloc m : vicinityCardinal lxsize lysize (bloc m)

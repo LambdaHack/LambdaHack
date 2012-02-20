@@ -323,8 +323,9 @@ advanceTime actor = do
   s <- get
   -- If actor dead or not on current level, don't bother.
   when (memActor actor s) $ updateAnyActor actor upd
-  when (actor == pl) $
-    modify (updateLevel (updateHeroes (IM.map upd)))
+  when (actor == pl) $ do
+    let updH a = if bparty a == heroParty then upd a else a
+    modify (updateLevel (updateActor (IM.map updH)))
 
 -- | Add a turn to the player time counter.
 playerAdvanceTime :: Action ()

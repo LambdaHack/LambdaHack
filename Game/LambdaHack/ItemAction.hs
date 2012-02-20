@@ -171,7 +171,8 @@ targetMonster tgtMode = do
             TEnemy n _ | targeting /= TgtOff -> n  -- next monster
             TEnemy n _ -> n - 1  -- try to retarget old monster
             _ -> -1  -- try to target first monster (e.g., number 0)
-      (lt, gt) = L.splitAt i ms
+      dms = L.filter ((/= pl) . fst) ms  -- don't target yourself
+      (lt, gt) = L.splitAt i dms
       gtlt     = gt ++ lt
       seen (_, m) =
         let mloc = bloc m

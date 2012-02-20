@@ -255,18 +255,18 @@ tgtAscend k = do
   doLook
 
 -- | Switches current hero to the next hero on the level, if any, wrapping.
--- We assume there are at most 10 heroes, numbered from 0 to 9.
+-- We cycle through at most 10 heroes (\@, 0--9).
 cycleHero :: Action ()
 cycleHero = do
   pl <- gets splayer
   s  <- get
   let hs = map (tryFindHeroK s) [0..9]
       i = fromMaybe (-1) $ L.findIndex (== Just pl) hs
-      (lt, gt) = L.splitAt i (catMaybes hs)
-  case gt ++ lt of
+      (lt, gt) = (take i hs, drop (i + 1) hs)
+  case L.filter (flip memActor s) $ catMaybes gt ++ catMaybes lt of
     [] -> abortWith "Cannot select any other hero on this level."
     ni : _ -> selectPlayer ni
-              >>= assert `trueM` (pl, ni, "hero duplicated")
+                >>= assert `trueM` (pl, ni, "hero duplicated")
 
 -- | Search for hidden doors.
 search :: Action ()
