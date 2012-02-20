@@ -56,15 +56,13 @@ debugTotalReachable per =
 -- Defaults to false if the actor is not player-controlled (monster or hero).
 actorReachesLoc :: ActorId -> Point -> Perception -> Maybe ActorId -> Bool
 actorReachesLoc actor loc per pl =
-  let tryHero = case actor of
-                  AMonster _ -> Nothing
-                  AHero i -> do
-                    hper <- IM.lookup i (pheroes per)
-                    return $ loc `IS.member` preachable hper
+  let tryHero = do
+        hper <- IM.lookup actor (pheroes per)
+        return $ loc `IS.member` preachable hper
       tryPl   = do -- the case for a monster under player control
-                   guard $ Just actor == pl
-                   pper <- pplayer per
-                   return $ loc `IS.member` preachable pper
+        guard $ Just actor == pl
+        pper <- pplayer per
+        return $ loc `IS.member` preachable pper
       tryAny  = tryHero `mplus` tryPl
   in fromMaybe False tryAny  -- assume not visible, if no perception found
 
@@ -88,11 +86,10 @@ monsterSeesHero :: Kind.Ops TileKind -> Perception -> Level
                  -> ActorId -> ActorId -> Point -> Point -> Bool
 monsterSeesHero cotile per lvl _source target sloc tloc =
   let rempty = PerceptionReachable IS.empty
-      reachable@PerceptionReachable{preachable} = case target of
-        AMonster _ -> rempty
-        -- TODO: instead of this fromMaybe clean up how Perception
-        -- is regenerated when levels are switched
-        AHero    i -> fromMaybe rempty $ IM.lookup i $ pheroes per
+      reachable@PerceptionReachable{preachable} =
+       -- TODO: instead of this fromMaybe clean up how Perception
+       -- is regenerated when levels are switched
+       fromMaybe rempty $ IM.lookup target $ pheroes per
   in sloc `IS.member` preachable
      && isVisible cotile reachable lvl IS.empty tloc
 

@@ -339,7 +339,7 @@ summonHeroes n loc =
   cops <- contentOps
   newHeroId <- gets scounter
   modify (\ state -> iterate (addHero cops loc) state !! n)
-  selectPlayer (AHero newHeroId)
+  selectPlayer newHeroId
     >>= assert `trueM` (newHeroId, "player summons himself")
   -- Display status line for the new hero.
   void displayAll
@@ -387,7 +387,7 @@ checkPartyDeath = do
     let firstDeathEnds = Config.get config "heroes" "firstDeathEnds"
     if firstDeathEnds
       then gameOver go
-      else case L.filter ((/= pl) . AHero) ahs of
+      else case L.filter (/= pl) ahs of
              [] -> gameOver go
              actor : _ -> do
                msgAdd "The survivors carry on."
@@ -397,7 +397,7 @@ checkPartyDeath = do
                modify deletePlayer
                -- At this place the invariant that the player exists fails.
                -- Focus on the new hero (invariant not needed).
-               selectPlayer (AHero actor)
+               selectPlayer actor
                  >>= assert `trueM` (pl, actor, "player resurrects")
                -- At this place the invariant is restored again.
 

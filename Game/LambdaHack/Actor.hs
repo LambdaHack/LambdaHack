@@ -2,7 +2,7 @@
 -- involves the 'State' or 'Action' type.
 module Game.LambdaHack.Actor
   ( -- * Actor identifiers and related operations
-    ActorId(..), invalidActorId
+    ActorId, invalidActorId
   , findHeroName, monsterGenChance
     -- * Party identifiers
   , PartyId, heroParty, monsterParty, neutralParty
@@ -79,23 +79,11 @@ instance Binary Actor where
 -- ActorId operations
 
 -- | A unique identifier of an actor in a dungeon.
-data ActorId = AHero    !Int  -- ^ hero index (on the lheroes intmap)
-             | AMonster !Int  -- ^ monster index (on the lmonsters intmap)
-  deriving (Show, Eq, Ord)
-
-instance Binary ActorId where
-  put (AHero n)    = putWord8 0 >> put n
-  put (AMonster n) = putWord8 1 >> put n
-  get = do
-    tag <- getWord8
-    case tag of
-      0 -> liftM AHero get
-      1 -> liftM AMonster get
-      _ -> fail "no parse (ActorId)"
+type ActorId = Int
 
 -- | An actor that is not on any level.
 invalidActorId :: ActorId
-invalidActorId = AMonster (-1)
+invalidActorId = -1
 
 -- | Find a hero name in the config file, or create a stock name.
 findHeroName :: Config.CP -> Int -> String

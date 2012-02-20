@@ -168,8 +168,8 @@ targetMonster tgtMode = do
   target    <- gets (btarget . getPlayerBody)
   targeting <- gets (ctargeting . scursor)
   let i = case target of
-            TEnemy (AMonster n) _ | targeting /= TgtOff -> n  -- next monster
-            TEnemy (AMonster n) _ -> n - 1  -- try to retarget old monster
+            TEnemy n _ | targeting /= TgtOff -> n  -- next monster
+            TEnemy n _ -> n - 1  -- try to retarget old monster
             _ -> -1  -- try to target first monster (e.g., number 0)
       (lt, gt) = L.splitAt i ms
       gtlt     = gt ++ lt
@@ -180,7 +180,7 @@ targetMonster tgtMode = do
       lf = L.filter seen gtlt
       tgt = case lf of
               [] -> target  -- no monsters in sight, stick to last target
-              (na, nm) : _ -> TEnemy (AMonster na) (bloc nm)  -- pick the next
+              (na, nm) : _ -> TEnemy na (bloc nm)  -- pick the next
   updatePlayerBody (\ p -> p { btarget = tgt })
   setCursor tgtMode
 
@@ -228,7 +228,7 @@ endTargeting accept = do
       when (accept && canSee) $
         case L.find (\ (_im, m) -> bloc m == cloc) ms of
           Just (im, m)  ->
-            let tgt = TEnemy (AMonster im) (bloc m)
+            let tgt = TEnemy im (bloc m)
             in updatePlayerBody (\ p -> p { btarget = tgt })
           Nothing -> return ()
     _ ->

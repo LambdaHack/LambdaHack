@@ -90,8 +90,7 @@ handleAI = do
   if null ms
     then nextMove
     else let order  = Ord.comparing (btime . snd)
-             (i, m) = L.minimumBy order ms
-             actor = AMonster i
+             (actor, m) = L.minimumBy order ms
          in if btime m > time || actor == pl
             then nextMove  -- no monster is ready for another move
             else handleMonster actor

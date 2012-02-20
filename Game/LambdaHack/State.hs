@@ -99,7 +99,7 @@ defaultState :: Config.CP -> FlavourMap -> Dungeon.Dungeon -> Dungeon.LevelId
              -> Point -> R.StdGen -> State
 defaultState config flavour dng lid ploc g =
   State
-    (AHero 0)  -- hack: the hero is not yet alive
+    0  -- hack: the hero is not yet alive
     (Cursor TgtOff lid ploc lid)
     0
     flavour

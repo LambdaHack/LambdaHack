@@ -83,8 +83,8 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   -- earn XP by killing each other to make this dangerous to the player.
   -- TODO: with some commands blocked, this can't happen now. Find a way
   -- to test it, nevertheless. Have a scroll of monster fury?
-  hs = L.map (AHero *** bloc) $ heroAssocs $ slevel delState
-  ms = L.map (AMonster *** bloc) $ monsterAssocs $ slevel delState
+  hs = L.map (second bloc) $ heroAssocs $ slevel delState
+  ms = L.map (second bloc) $ monsterAssocs $ slevel delState
   -- Below, "foe" is the hero (or a monster, or loc) chased by the actor.
   (newTgt, floc, foeVisible) =
     case tgt of

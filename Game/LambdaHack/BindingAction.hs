@@ -18,7 +18,6 @@ import Game.LambdaHack.Running
 import Game.LambdaHack.EffectAction
 import Game.LambdaHack.Binding
 import qualified Game.LambdaHack.Key as K
-import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Command
 
@@ -62,7 +61,7 @@ heroSelection =
         s <- get
         case tryFindHeroK s k of
           Nothing -> abortWith "No such member of the party."
-          Just aid -> void $ selectPlayer (AHero aid)
+          Just aid -> void $ selectPlayer aid
       heroSelect k = (K.Char (Char.intToDigit k), ("", select k))
   in fmap heroSelect [0..9]
 

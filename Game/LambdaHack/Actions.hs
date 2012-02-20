@@ -260,12 +260,12 @@ cycleHero :: Action ()
 cycleHero = do
   pl <- gets splayer
   s  <- get
-  let hs = catMaybes $ map (tryFindHeroK s) [0..9]
-      i        = case pl of AHero n -> n ; _ -> -1
-      (lt, gt) = L.splitAt i hs
+  let hs = map (tryFindHeroK s) [0..9]
+      i = fromMaybe (-1) $ L.findIndex (== Just pl) hs
+      (lt, gt) = L.splitAt i (catMaybes hs)
   case gt ++ lt of
     [] -> abortWith "Cannot select any other hero on this level."
-    ni : _ -> selectPlayer (AHero ni)
+    ni : _ -> selectPlayer ni
               >>= assert `trueM` (pl, ni, "hero duplicated")
 
 -- | Search for hidden doors.
@@ -349,39 +349,41 @@ moveOrAttack allowAttacks actor dir = do
 -- This function is analogous to projectGroupItem, but for melee
 -- and not using up the weapon.
 actorAttackActor :: ActorId -> ActorId -> Action ()
-actorAttackActor source@(AHero _) target@(AHero _) =
-  -- Select adjacent hero by bumping into him. Takes no time.
-  selectPlayer target
-  >>= assert `trueM` (source, target, "player bumps into himself")
 actorAttackActor source target = do
-  Kind.COps{coactor, coitem=coitem@Kind.Ops{opick, okind}} <- contentOps
-  state <- get
-  sm    <- gets (getActor source)
-  tm    <- gets (getActor target)
-  per   <- currentPerception
-  bitems <- gets (getActorItem source)
-  let h2hGroup = if isAHero state source then "unarmed" else "monstrous"
-  h2hKind <- rndToAction $ opick h2hGroup (const True)
-  let sloc = bloc sm
-      -- The picked bodily "weapon".
-      h2h = Item h2hKind 0 Nothing 1
-      str = strongestSword coitem bitems
-      stack  = fromMaybe h2h str
-      single = stack { jcount = 1 }
-      verb = iverbApply $ okind $ jkind single
-      -- The msg describes the source part of the action.
-      -- TODO: right now it also describes the victim and weapon;
-      -- perhaps, when a weapon is equipped, just say "you hit" or "you miss"
-      -- and then "nose dies" or "nose yells in pain".
-      msg = actorVerbActorExtra coactor sm verb tm $
-              if isJust str
-              then " with " ++ objectItem coitem state single
-              else ""
-      visible = sloc `IS.member` totalVisible per
-  when visible $ msgAdd msg
-  -- Msgs inside itemEffectAction describe the target part.
-  itemEffectAction 0 source target single
-  advanceTime source
+  sm <- gets (getActor source)
+  tm <- gets (getActor target)
+  if bparty sm == heroParty && bparty tm == heroParty
+    then
+      -- Select adjacent hero by bumping into him. Takes no time.
+      selectPlayer target
+        >>= assert `trueM` (source, target, "player bumps into himself")
+    else do
+      Kind.COps{coactor, coitem=coitem@Kind.Ops{opick, okind}} <- contentOps
+      state <- get
+      per   <- currentPerception
+      bitems <- gets (getActorItem source)
+      let h2hGroup = if isAHero state source then "unarmed" else "monstrous"
+      h2hKind <- rndToAction $ opick h2hGroup (const True)
+      let sloc = bloc sm
+          -- The picked bodily "weapon".
+          h2h = Item h2hKind 0 Nothing 1
+          str = strongestSword coitem bitems
+          stack  = fromMaybe h2h str
+          single = stack { jcount = 1 }
+          verb = iverbApply $ okind $ jkind single
+          -- The msg describes the source part of the action.
+          -- TODO: right now it also describes the victim and weapon;
+          -- perhaps, when a weapon is equipped, just say "you hit"
+          -- or "you miss" and then "nose dies" or "nose yells in pain".
+          msg = actorVerbActorExtra coactor sm verb tm $
+                  if isJust str
+                  then " with " ++ objectItem coitem state single
+                  else ""
+          visible = sloc `IS.member` totalVisible per
+      when visible $ msgAdd msg
+      -- Msgs inside itemEffectAction describe the target part.
+      itemEffectAction 0 source target single
+      advanceTime source
 
 -- | Resolves the result of an actor running (not walking) into another.
 -- This involves switching positions of the two actors.
