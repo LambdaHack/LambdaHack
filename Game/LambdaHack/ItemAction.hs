@@ -83,18 +83,18 @@ playerApplyGroupItem verb object syms = do
     Nothing -> neverMind True
 
 projectGroupItem :: ActorId  -- ^ actor projecting the item (is on current lvl)
-                 -> Point    -- ^ target location for the projecting
+                 -> Point    -- ^ target location of the projectile
                  -> Verb     -- ^ how the projecting is called
                  -> Item     -- ^ the item to be projected
                  -> Action ()
-projectGroupItem source loc verb item = do
+projectGroupItem source tloc verb item = do
   cops@Kind.COps{coactor, cotile} <- contentOps
   state <- get
   sm    <- gets (getActor source)
   per   <- currentPerception
   lvl   <- gets slevel
   let -- TODO: refine for, e.g., wands of digging that are aimed into walls.
-      locWalkable = Tile.hasFeature cotile F.Walkable (lvl `at` loc)
+      locWalkable = Tile.hasFeature cotile F.Walkable (lvl `at` tloc)
       consumed = item { jcount = 1 }
       sloc = bloc sm
       subject =
@@ -104,17 +104,20 @@ projectGroupItem source loc verb item = do
                Nothing (Just "somebody") 99 sloc neutralParty
       msg = actorVerbItemExtra cops state subject verb consumed ""
   removeFromInventory source consumed sloc
-  case locToActor loc state of
+  modify $ addProjectile cops consumed sloc tloc
+{-
+  case locToActor tloc state of
     Just ta -> do
       -- The msg describes the source part of the action.
       when (sloc `IS.member` totalVisible per || isAHero state ta) $ msgAdd msg
       -- Msgs inside itemEffectAction describe the target part.
       b <- itemEffectAction 10 source ta consumed
-      unless b $ modify (updateLevel (dropItemsAt [consumed] loc))
+      unless b $ modify (updateLevel (dropItemsAt [consumed] tloc))
     Nothing | locWalkable -> do
       when (sloc `IS.member` totalVisible per) $ msgAdd msg
-      modify (updateLevel (dropItemsAt [consumed] loc))
+      modify (updateLevel (dropItemsAt [consumed] tloc))
     _ -> abortWith "blocked"
+-}
   advanceTime source
 
 playerProjectGroupItem :: Verb -> Object -> [Char] -> Action ()

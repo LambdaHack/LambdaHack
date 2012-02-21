@@ -217,3 +217,28 @@ addMonster cotile mk hp ploc state@State{scounter} = do
       m = template mk Nothing Nothing hp loc monsterParty
       cstate = state {scounter = scounter + 1}
   updateLevel (updateActor (IM.insert scounter m)) cstate
+
+-- Adding projectiles
+
+-- | Create a projectile actor containing the given missile.
+addProjectile :: Kind.COps -> Item -> Point -> Point -> State -> State
+addProjectile Kind.COps{coactor, coitem=Kind.Ops{okind}}
+              item sloc tloc state@State{scounter} =
+  let ik = okind (jkind item)
+      name = "flying " ++ iname ik
+      m = Actor
+        { bkind   = projectileKindId coactor
+        , bsymbol = Nothing
+        , bname   = Just name
+        , bhp     = 0
+        , bdir    = Nothing
+        , btarget = TLoc tloc
+        , bloc    = sloc
+        , bletter = 'a'
+        , btime   = 0
+        , bparty  = monsterParty  -- neutralParty
+        }
+      cstate = state { scounter = scounter + 1 }
+      upd = updateActor (IM.insert scounter m)
+            . updateInv (IM.insert scounter [item])
+  in updateLevel upd cstate

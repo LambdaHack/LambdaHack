@@ -13,9 +13,9 @@ cdefs = Content.CDefs
   , getFreq = afreq
   , validate = avalidate
   , content =
-      [hero, eye, fastEye, nose]
+      [hero, projectile, eye, fastEye, nose]
   }
-hero,        eye, fastEye, nose :: ActorKind
+hero,        projectile, eye, fastEye, nose :: ActorKind
 
 hero = ActorKind
   { asymbol = '@'
@@ -28,6 +28,19 @@ hero = ActorKind
   , asmell  = False
   , aiq     = 13  -- Can see hidden doors, when he is under alien control.
   , aregen  = 5000
+  }
+
+projectile = ActorKind  -- includes homing missiles
+  { asymbol = '*'
+  , aname   = "projectile"
+  , afreq   = [("projectile", 1)]  -- Does not appear randomly in the dungeon.
+  , acolor  = BrWhite
+  , ahp     = RollDice 0 0
+  , aspeed  = 20
+  , asight  = False
+  , asmell  = False
+  , aiq     = 0
+  , aregen  = maxBound
   }
 
 eye = ActorKind

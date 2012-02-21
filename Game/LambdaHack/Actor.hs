@@ -7,7 +7,7 @@ module Game.LambdaHack.Actor
     -- * Party identifiers
   , PartyId, heroParty, monsterParty, neutralParty
     -- * The@ Acto@r type
-  , Actor(..), template, addHp, unoccupied, heroKindId
+  , Actor(..), template, addHp, unoccupied, heroKindId, projectileKindId
     -- * Type of na actor target
   , Target(..)
   ) where
@@ -139,6 +139,10 @@ unoccupied actors loc =
 -- | The unique kind of heroes.
 heroKindId :: Kind.Ops ActorKind -> Kind.Id ActorKind
 heroKindId Kind.Ops{ouniqGroup} = ouniqGroup "hero"
+
+-- | The unique kind of projectiles.
+projectileKindId :: Kind.Ops ActorKind -> Kind.Id ActorKind
+projectileKindId Kind.Ops{ouniqGroup} = ouniqGroup "projectile"
 
 -- Target
 
