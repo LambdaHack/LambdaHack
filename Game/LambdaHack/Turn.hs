@@ -86,11 +86,12 @@ handleAI = do
   debug "handleAI"
   time <- gets stime
   ms   <- gets (monsterAssocs . slevel)
+  ns   <- gets (neutralAssocs . slevel)
   pl   <- gets splayer
   if null ms
     then nextMove
     else let order  = Ord.comparing (btime . snd)
-             (actor, m) = L.minimumBy order ms
+             (actor, m) = L.minimumBy order (ns ++ ms)
          in if btime m > time || actor == pl
             then nextMove  -- no monster is ready for another move
             else handleMonster actor

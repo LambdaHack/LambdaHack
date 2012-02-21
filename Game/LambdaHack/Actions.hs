@@ -339,7 +339,7 @@ moveOrAttack allowAttacks actor dir = do
         && Tile.canBeHidden cotile (okind $ lvl `rememberAt` tloc) -> do
           msgAdd "You search your surroundings."  -- TODO: proper msg
           search
-      | otherwise -> actorOpenDoor actor dir  -- try to open a door, TODO: bumpTile tloc F.Openable, but wait until
+      | otherwise -> actorOpenDoor actor dir  -- try to open a door, TODO: bumpTile tloc F.Openable
 
 -- | Resolves the result of an actor moving into another. Usually this
 -- involves melee attack, but with two heroes it just changes focus.

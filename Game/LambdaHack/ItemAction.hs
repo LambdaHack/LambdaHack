@@ -197,6 +197,8 @@ targetFloor tgtMode = do
   let tgt = case target of
         _ | targeting /= TgtOff -> TLoc ploc  -- double key press: reset cursor
         TEnemy _ _ -> TCursor  -- forget enemy target, keep the cursor
+        TPath [] -> TCursor
+        TPath (loc:_) -> TLoc loc
         t -> t  -- keep the target from previous targeting session
   updatePlayerBody (\ p -> p { btarget = tgt })
   setCursor tgtMode
@@ -254,6 +256,7 @@ endTargetingMsg = do
                       then objectActor cops $ getActor a state
                       else "a fear of the past"
                     TLoc loc -> "location " ++ showPoint lxsize loc
+                    TPath _ -> "a path"
                     TCursor  -> "current cursor position continuously"
   msgAdd $ actorVerbExtra cops pbody verb targetMsg
 

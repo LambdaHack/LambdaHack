@@ -89,11 +89,12 @@ updateAnyLevel f ln s@State{slid, sdungeon}
   | ln == slid = updateLevel f s
   | otherwise = updateDungeon (const $ adjust f ln sdungeon) s
 
--- | Calculate the location of player's target.
+-- | Calculate the location of actor's target.
 targetToLoc :: IS.IntSet -> State -> Maybe Point
 targetToLoc visible s@State{slid, scursor} =
   case btarget (getPlayerBody s) of
     TLoc loc -> Just loc
+    TPath ls -> listToMaybe ls
     TCursor  ->
       if slid == clocLn scursor
       then Just $ clocation scursor
@@ -132,17 +133,21 @@ insertActor a m = updateLevel (updateActor (IM.insert a m))
 deletePlayer :: State -> State
 deletePlayer s@State{splayer} = deleteActor splayer s
 
-heroAssocs, monsterAssocs :: Level -> [(ActorId, Actor)]
+heroAssocs, monsterAssocs, neutralAssocs :: Level -> [(ActorId, Actor)]
 heroAssocs    lvl =
   filter (\ (_, m) -> bparty m == heroParty) $ IM.toList $ lactor lvl
 monsterAssocs lvl =
   filter (\ (_, m) -> bparty m == monsterParty) $ IM.toList $ lactor lvl
+neutralAssocs lvl =
+  filter (\ (_, m) -> bparty m == neutralParty) $ IM.toList $ lactor lvl
 
-levelHeroList, levelMonsterList :: State -> [Actor]
+levelHeroList, levelMonsterList, levelNeutralList :: State -> [Actor]
 levelHeroList    state =
   filter (\ m -> bparty m == heroParty) $ IM.elems $ lactor $ slevel state
 levelMonsterList state =
   filter (\ m -> bparty m == monsterParty) $ IM.elems $ lactor $ slevel state
+levelNeutralList state =
+  filter (\ m -> bparty m == neutralParty) $ IM.elems $ lactor $ slevel state
 
 -- | Finds an actor at a location on the current level. Perception irrelevant.
 locToActor :: Point -> State -> Maybe ActorId
@@ -232,11 +237,11 @@ addProjectile Kind.COps{coactor, coitem=Kind.Ops{okind}}
         , bname   = Just name
         , bhp     = 0
         , bdir    = Nothing
-        , btarget = TLoc tloc
+        , btarget = TPath [tloc]
         , bloc    = sloc
         , bletter = 'a'
         , btime   = 0
-        , bparty  = monsterParty  -- neutralParty
+        , bparty  = neutralParty
         }
       cstate = state { scounter = scounter + 1 }
       upd = updateActor (IM.insert scounter m)

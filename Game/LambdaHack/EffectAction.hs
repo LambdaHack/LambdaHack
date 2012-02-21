@@ -76,7 +76,7 @@ effectToAction (Effect.Wound nDm) verbosity source target power = do
           | killed =
             if target == pl
             then ""  -- handled later on in checkPartyDeath
-            else actorVerb coactor tm "die"
+            else actorVerb coactor tm "die"  -- take "die", etc. from content
           | source == target =  -- a potion of wounding, etc.
             actorVerbExtra coactor tm "feel" "wounded"
           | verbosity <= 0 = ""
@@ -281,6 +281,8 @@ itemEffectAction verbosity source target item = do
     else
       -- Hidden, but if interesting then heard.
       when b $ msgAdd "You hear some noises."
+  when (bhp sm <= 0) $
+    modify (deleteActor source)  -- destroys items: a hack for projectiles
   return b
 
 -- | Make the item known to the player.
@@ -496,6 +498,7 @@ doLook = do
       mode = case target of
                TEnemy _ _ -> "[targeting monster" ++ vis ++ "] "
                TLoc _     -> "[targeting location" ++ vis ++ "] "
+               TPath _    -> "[targeting path" ++ vis ++ "] "
                TCursor    -> "[targeting current" ++ vis ++ "] "
       -- general info about current loc
       lookMsg = mode ++ lookAt cops True canSee state lvl loc monsterMsg

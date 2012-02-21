@@ -137,7 +137,7 @@ displayLevel dm fs cops per
                     _ -> show (Item.jpower sw)
                   Nothing -> "3d1"  -- TODO; use the item 'fist'
       hs      = levelHeroList s
-      ms      = levelMonsterList s
+      ms      = levelMonsterList s ++ levelNeutralList s
       dis offset p@(PointXY (x0, y0)) =
         let loc0 = toPoint lxsize p
             tile = lvl `lAt` loc0

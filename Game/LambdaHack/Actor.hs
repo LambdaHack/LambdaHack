@@ -150,17 +150,20 @@ projectileKindId Kind.Ops{ouniqGroup} = ouniqGroup "projectile"
 data Target =
     TEnemy ActorId Point  -- ^ target an actor with its last seen location
   | TLoc Point            -- ^ target a given location
+  | TPath [Point]         -- ^ target the list of locations in turn
   | TCursor               -- ^ target current position of the cursor; default
   deriving (Show, Eq)
 
 instance Binary Target where
   put (TEnemy a ll) = putWord8 0 >> put a >> put ll
   put (TLoc loc) = putWord8 1 >> put loc
-  put TCursor    = putWord8 2
+  put (TPath ls) = putWord8 2 >> put ls
+  put TCursor    = putWord8 3
   get = do
     tag <- getWord8
     case tag of
       0 -> liftM2 TEnemy get get
       1 -> liftM TLoc get
-      2 -> return TCursor
+      2 -> liftM TPath get
+      3 -> return TCursor
       _ -> fail "no parse (Target)"

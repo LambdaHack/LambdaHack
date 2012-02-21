@@ -7,6 +7,7 @@ import qualified Data.List as L
 import qualified Data.IntMap as IM
 import Data.Maybe
 import Control.Monad
+import Control.Monad.State hiding (State, state)
 import Control.Arrow
 
 import Game.LambdaHack.Point
@@ -69,16 +70,16 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
            , coitem=coitem@Kind.Ops{okind=iokind}
            } = cops
   lvl@Level{lsmell = nsmap, lxsize, lysize} = slevel oldState
-  Actor { bkind = ak, bloc = me, bdir = ad, btarget = tgt } =
+  Actor { bkind = ak, bloc = me, bdir = ad, btarget, bhp } =
     getActor actor oldState
-  items = getActorItem actor oldState
+  bitems = getActorItem actor oldState
   mk = okind ak
   delState = deleteActor actor oldState
   enemyVisible a l =
     asight mk && monsterSeesHero cotile per lvl actor a me l ||
-    -- Any enemy can be flet if adjacent (e. g., a monster player).
+    -- Enemy can be felt if adjacent (e. g., a player-controlled monster).
     -- TODO: can this be replaced by setting 'lights' to [me]?
-    adjacent lxsize me l
+    (asmell mk || asight mk) && adjacent lxsize me l
   -- If no heroes on the level, monsters go at each other. TODO: let them
   -- earn XP by killing each other to make this dangerous to the player.
   -- TODO: with some commands blocked, this can't happen now. Find a way
@@ -86,21 +87,22 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   hs = L.map (second bloc) $ heroAssocs $ slevel delState
   ms = L.map (second bloc) $ monsterAssocs $ slevel delState
   -- Below, "foe" is the hero (or a monster, or loc) chased by the actor.
-  (newTgt, floc, foeVisible) =
+  chase tgt =
     case tgt of
-      TEnemy a ll | focusedMonster ->
-        if memActor a delState
-        then let l = bloc $ getActor a delState
-             in if enemyVisible a l
-                then (TEnemy a l, Just l, True)
-                else if isJust (case closest of (_, m, _) -> m) || me == ll
-                     then closest                -- prefer visible foes
-                     else (tgt, Just ll, False)  -- last known loc of enemy
-        else closest  -- enemy not on the level, temporarily chase others
-      TLoc loc -> if me == loc
-                  then closest
-                  else (tgt, Just loc, False)  -- ignore all and go to loc
+      TEnemy a ll | focusedMonster && memActor a delState ->
+        let l = bloc $ getActor a delState
+        in if enemyVisible a l
+           then (TEnemy a l, Just l, True)
+           else if isJust (case closest of (_, m, _) -> m) || me == ll
+                then closest                -- prefer visible foes
+                else (tgt, Just ll, False)  -- last known loc of enemy
+      TLoc loc | me == loc -> closest
+      TLoc loc -> (tgt, Just loc, False)  -- ignore all and go to loc
+      TPath [] -> (tgt, Nothing, False)  -- awaiting further instructions
+      TPath (loc : ls) | me == loc -> chase $ TPath ls
+      TPath (loc : _) -> (tgt, Just loc, True {- attack to free @loc@ -})
       _  -> closest
+  (newTgt, floc, foeVisible) = chase btarget
   closest =
     let hsAndTraitor = if not (isAHero delState pl) && memActor pl delState
                        then (pl, bloc $ getPlayerBody delState) : hs
@@ -135,7 +137,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   -- opening doors, too, so that monsters don't cheat. TODO: remove the code
   -- duplication, though.
   openPower      = Tile.SecretStrength $
-                   case strongestSearch coitem items of
+                   case strongestSearch coitem bitems of
                      Just i  -> aiq mk + jpower i
                      Nothing -> aiq mk
   openableHere   = openable cotile lvl openPower
@@ -155,15 +157,22 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   moveDir d   = dirToAction actor newTgt False `liftM` d
 
   strat =
-    foeVisible .=> attackDir (onlyFoe moveFreely)
+    newTgt == TPath [] .=> dieOrSleep
+    .| foeVisible .=> attackDir (onlyFoe moveFreely)
     .| foeVisible .=> liftFrequency (msum seenFreqs)
     .| lootHere me .=> actionPickup
     .| moveDir moveTowards  -- go to last known foe location
     .| attackDir moveAround
+  dieOrSleep =
+    if bhp <= 0
+    then return $ do  -- TODO: explode if a potion
+      modify (updateLevel (dropItemsAt bitems me))
+      modify (deleteActor actor)
+    else wait actor
   actionPickup = return $ actorPickupItem actor
   tis = lvl `atI` me
-  seenFreqs = [applyFreq items 1, applyFreq tis 2,
-               throwFreq items 3, throwFreq tis 6] ++ towardsFreq
+  seenFreqs = [applyFreq bitems 1, applyFreq tis 2,
+               throwFreq bitems 3, throwFreq tis 6] ++ towardsFreq
   applyFreq is multi = toFreq "applyFreq"
     [ (benefit * multi,
        applyGroupItem actor (iverbApply ik) i)
