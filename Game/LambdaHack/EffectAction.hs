@@ -76,7 +76,9 @@ effectToAction (Effect.Wound nDm) verbosity source target power = do
           | killed =
             if target == pl
             then ""  -- handled later on in checkPartyDeath
-            else actorVerb coactor tm "die"  -- take "die", etc. from content
+            else if bparty tm == neutralParty
+                 then actorVerbExtra coactor tm "drop" "down"  -- TODO: hack:
+                 else actorVerb coactor tm "die"  -- for projectiles
           | source == target =  -- a potion of wounding, etc.
             actorVerbExtra coactor tm "feel" "wounded"
           | verbosity <= 0 = ""

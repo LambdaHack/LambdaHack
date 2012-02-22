@@ -156,19 +156,18 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   attackDir d = dirToAction actor newTgt True  `liftM` d
   moveDir d   = dirToAction actor newTgt False `liftM` d
 
-  strat =
-    newTgt == TPath [] .=> dieOrSleep
-    .| foeVisible .=> attackDir (onlyFoe moveFreely)
-    .| foeVisible .=> liftFrequency (msum seenFreqs)
-    .| lootHere me .=> actionPickup
-    .| moveDir moveTowards  -- go to last known foe location
-    .| attackDir moveAround
-  dieOrSleep =
-    if bhp <= 0
-    then return $ do  -- TODO: explode if a potion
-      modify (updateLevel (dropItemsAt bitems me))
-      modify (deleteActor actor)
-    else wait actor
+  strat = case newTgt of
+    TPath [] -> dieOrSleep
+    TPath _ | foeAdjacent && not foeAccessible -> dieOrSleep
+    _ -> foeVisible .=> attackDir (onlyFoe moveFreely)
+         .| foeVisible .=> liftFrequency (msum seenFreqs)
+         .| lootHere me .=> actionPickup
+         .| moveDir moveTowards  -- go to last known foe location
+         .| attackDir moveAround
+  dieOrSleep | bhp <= 0  = dieNow actor
+             | otherwise = wait actor
+  foeAccessible =
+    maybe False (Tile.hasFeature cotile F.Walkable . (lvl `at`)) floc
   actionPickup = return $ actorPickupItem actor
   tis = lvl `atI` me
   seenFreqs = [applyFreq bitems 1, applyFreq tis 2,
@@ -181,7 +180,8 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
       let benefit = (1 + jpower i) * Effect.effectToBenefit (ieffect ik),
       benefit > 0,
       asight mk || isymbol ik == '!']
-  throwFreq is multi = if adjacent lxsize me (fromJust floc) || not (asight mk)
+  foeAdjacent = maybe False (adjacent lxsize me) floc
+  throwFreq is multi = if foeAdjacent || not (asight mk)
                        then mzero
                        else toFreq "throwFreq"
     [ (benefit * multi,
@@ -232,3 +232,11 @@ dirToAction actor tgt allowAttacks dir = do
 -- | A strategy to always just wait.
 wait :: ActorId -> Strategy (Action ())
 wait actor = return $ advanceTime actor
+
+-- | A strategy to always just die.
+dieNow :: ActorId -> Strategy (Action ())
+dieNow actor = return $ do  -- TODO: explode if a potion
+  bitems <- gets (getActorItem actor)
+  Actor{bloc} <- gets (getActor actor)
+  modify (updateLevel (dropItemsAt bitems bloc))
+  modify (deleteActor actor)

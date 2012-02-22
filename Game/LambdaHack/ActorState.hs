@@ -226,9 +226,9 @@ addMonster cotile mk hp ploc state@State{scounter} = do
 -- Adding projectiles
 
 -- | Create a projectile actor containing the given missile.
-addProjectile :: Kind.COps -> Item -> Point -> Point -> State -> State
+addProjectile :: Kind.COps -> Item -> Point -> [Point] -> State -> State
 addProjectile Kind.COps{coactor, coitem=Kind.Ops{okind}}
-              item sloc tloc state@State{scounter} =
+              item sloc path state@State{scounter} =
   let ik = okind (jkind item)
       name = "flying " ++ iname ik
       m = Actor
@@ -237,7 +237,7 @@ addProjectile Kind.COps{coactor, coitem=Kind.Ops{okind}}
         , bname   = Just name
         , bhp     = 0
         , bdir    = Nothing
-        , btarget = TPath [tloc]
+        , btarget = TPath path
         , bloc    = sloc
         , bletter = 'a'
         , btime   = 0

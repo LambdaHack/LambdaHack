@@ -90,6 +90,10 @@ projectGroupItem source tloc verb item = do
   state <- get
   sm    <- gets (getActor source)
   per   <- currentPerception
+  pl    <- gets splayer
+  ceps  <- gets (ceps . scursor)
+  lxsize <- gets (lxsize . slevel)
+  lysize <- gets (lysize . slevel)
   let consumed = item { jcount = 1 }
       sloc = bloc sm
       subject =
@@ -98,8 +102,11 @@ projectGroupItem source tloc verb item = do
         else template (heroKindId coactor)
                Nothing (Just "somebody") 99 sloc neutralParty
       msg = actorVerbItemExtra cops state subject verb consumed ""
+      -- TODO: AI should choose the best eps.
+      eps = if source == pl then ceps else 0
+      bl = bla lxsize lysize eps sloc tloc
   removeFromInventory source consumed sloc
-  modify $ addProjectile cops consumed sloc tloc
+  modify $ addProjectile cops consumed sloc bl
   when (sloc `IS.member` totalVisible per) $ msgAdd msg
   advanceTime source
 
