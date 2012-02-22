@@ -1,6 +1,6 @@
 -- | Basic cartesian geometry operations on 2D points.
 module Game.LambdaHack.PointXY
-  ( X, Y, PointXY(..), fromTo, sortPointXY
+  ( X, Y, PointXY(..), fromTo, sortPointXY, blaXY
   ) where
 
 import qualified Data.List as L
@@ -39,3 +39,22 @@ fromTo1 x0 x1
 sortPointXY :: (PointXY, PointXY) -> (PointXY, PointXY)
 sortPointXY (a, b) | a <= b    = (a, b)
                    | otherwise = (b, a)
+
+-- | See <http://roguebasin.roguelikedevelopment.org/index.php/Digital_lines>.
+balancedWord :: Int -> Int -> Int -> [Int]
+balancedWord p q eps | eps + p < q = 0 : balancedWord p q (eps + p)
+balancedWord p q eps               = 1 : balancedWord p q (eps + p - q)
+
+-- | Bresenham's line algorithm generalized to arbitrary starting @eps@
+-- (@eps@ value of 0 gives the standard BLA).
+-- Includes the first point and goes through the second to infinity.
+blaXY :: Int -> PointXY -> PointXY -> [PointXY]
+blaXY eps (PointXY (x0, y0)) (PointXY (x1, y1)) =
+  let (dx, dy) = (x1 - x0, y1 - y0)
+      xyStep b (x, y) = (x + signum dx,     y + signum dy * b)
+      yxStep b (x, y) = (x + signum dx * b, y + signum dy)
+      (p, q, step) | abs dx > abs dy = (abs dy, abs dx, xyStep)
+                   | otherwise       = (abs dx, abs dy, yxStep)
+      bw = balancedWord p q eps
+      walk w xy = xy : walk (tail w) (step (head w) xy)
+  in L.map PointXY $ walk bw (x0, y0)
