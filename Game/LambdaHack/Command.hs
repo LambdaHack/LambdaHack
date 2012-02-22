@@ -24,6 +24,7 @@ data Cmd =
   | TgtFloor
   | TgtEnemy
   | TgtAscend Int
+  | EpsIncr Bool
   | GameSave
   | GameQuit
   | Cancel
@@ -82,6 +83,7 @@ cmdSemantics cmd = case cmd of
   TgtFloor ->  targetFloor   TgtExplicit
   TgtEnemy ->  targetMonster TgtExplicit
   TgtAscend k -> tgtAscend k
+  EpsIncr b -> epsIncr b
   GameSave ->  saveGame
   GameQuit ->  quitGame
   Cancel ->    cancelCurrent
@@ -111,6 +113,8 @@ cmdDescription cmd = case cmd of
   TgtAscend k | k == -1 -> "target next deeper level"
   TgtAscend k | k <= -2 -> "target " ++ show (-k) ++ " levels deeper"
   TgtAscend _ -> error "void level change in targeting mode in config file"
+  EpsIncr True  -> "swerve targetting line"
+  EpsIncr False -> "unswerve targetting line"
   GameSave ->  "save and exit the game"
   GameQuit ->  "quit without saving"
   Cancel ->    "cancel action"

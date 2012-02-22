@@ -121,7 +121,7 @@ playerProjectGI verb object syms = do
   let retarget msg = do
         msgAdd msg
         updatePlayerBody (\ p -> p { btarget = TCursor })
-        let upd cursor = cursor {clocation=ploc}
+        let upd cursor = cursor {clocation=ploc, ceps=0}
         modify (updateCursor upd)
         targetMonster TgtAuto
   -- TODO: draw digital line and see if obstacles prevent firing
@@ -193,12 +193,19 @@ setCursor tgtMode = assert (tgtMode /= TgtOff) $ do
   per    <- currentPerception
   ploc   <- gets (bloc . getPlayerBody)
   clocLn <- gets slid
-  let upd cursor@Cursor{ctargeting} =
+  let upd cursor@Cursor{ctargeting, clocation=clocationOld, ceps=cepsOld} =
         let clocation = fromMaybe ploc (targetToLoc (totalVisible per) state)
+            ceps = if clocation == clocationOld then cepsOld else 0
             newTgtMode = if ctargeting == TgtOff then tgtMode else ctargeting
-        in cursor { ctargeting = newTgtMode, clocation, clocLn }
+        in cursor { ctargeting = newTgtMode, clocation, clocLn, ceps }
   modify (updateCursor upd)
   doLook
+
+-- | Tweak the @eps@ parameter of the targetting digital line.
+epsIncr :: Bool -> Action ()
+epsIncr b =
+  modify $ updateCursor $
+    \ c@Cursor{ceps} -> c {ceps = ceps + if b then 1 else -1}
 
 -- | End targeting mode, accepting the current location or not.
 endTargeting :: Bool -> Action ()

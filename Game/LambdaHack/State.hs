@@ -70,6 +70,7 @@ data Cursor = Cursor
   , clocLn     :: Dungeon.LevelId  -- ^ cursor level
   , clocation  :: Point            -- ^ cursor coordinates
   , creturnLn  :: Dungeon.LevelId  -- ^ the level current player resides on
+  , ceps       :: Int              -- ^ a parameter of the tgt digital line
   }
   deriving Show
 
@@ -100,7 +101,7 @@ defaultState :: Config.CP -> FlavourMap -> Dungeon.Dungeon -> Dungeon.LevelId
 defaultState config flavour dng lid ploc g =
   State
     0  -- hack: the hero is not yet alive
-    (Cursor TgtOff lid ploc lid)
+    (Cursor TgtOff lid ploc lid 0)
     0
     flavour
     S.empty
@@ -188,17 +189,19 @@ instance Binary State where
          (read g) config defaultDebugMode)
 
 instance Binary Cursor where
-  put (Cursor act cln loc rln) = do
+  put (Cursor act cln loc rln eps) = do
     put act
     put cln
     put loc
     put rln
+    put eps
   get = do
     act <- get
     cln <- get
     loc <- get
     rln <- get
-    return (Cursor act cln loc rln)
+    eps <- get
+    return (Cursor act cln loc rln eps)
 
 instance Binary TgtMode where
   put TgtOff      = putWord8 0

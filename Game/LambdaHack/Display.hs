@@ -91,7 +91,8 @@ displayLevel :: ColorMode -> FrontendSession -> Kind.COps
              -> Perception -> State
              -> Msg -> Maybe String -> IO Bool
 displayLevel dm fs cops per
-             s@State{scursor, stime, sflavour, slid, splayer, sdebug}
+             s@State{ scursor=Cursor{..}
+                    , stime, sflavour, slid, splayer, sdebug }
              msg moverlay =
   let Kind.COps{ coactor=Kind.Ops{okind}
                , coitem=coitem@Kind.Ops{okind=iokind}
@@ -139,7 +140,7 @@ displayLevel dm fs cops per
                   Nothing -> "3d1"  -- TODO; use the item 'fist'
       hs      = levelHeroList s
       ms      = levelMonsterList s ++ levelNeutralList s
-      bl = bla lxsize lysize 0 bloc (clocation scursor)
+      bl = bla lxsize lysize ceps bloc clocation
       dis offset p@(PointXY (x0, y0)) =
         let loc0 = toPoint lxsize p
             tile = lvl `lAt` loc0
@@ -148,7 +149,7 @@ displayLevel dm fs cops per
             sm = smelltime $ IM.findWithDefault (SmellTime 0) loc0 lsmell
             sml = (sm - stime) `div` 100
             viewActor loc Actor{bkind = bkind2, bsymbol}
-              | loc == bloc && slid == creturnLn scursor =
+              | loc == bloc && slid == creturnLn =
                   (symbol, Color.defBG)  -- highlight player
               | otherwise = (symbol, acolor)
              where
@@ -162,8 +163,8 @@ displayLevel dm fs cops per
             rainbow loc = toEnum $ loc `rem` 14 + 1
             (char, fg0) =
               case L.find (\ m -> loc0 == Actor.bloc m) (hs ++ ms) of
-                _ | ctargeting scursor /= TgtOff
-                    && slid == creturnLn scursor
+                _ | ctargeting /= TgtOff
+                    && slid == creturnLn
                     && L.elem loc0 bl ->
                       let unknownId = ouniqGroup "unknown space"
                       in ('*', case (vis, F.Walkable `elem` tfeature tk) of
@@ -180,7 +181,7 @@ displayLevel dm fs cops per
                     i : _ -> Item.viewItem coitem (Item.jkind i) sflavour
             vis = IS.member loc0 visible
             rea = IS.member loc0 reachable
-            bg0 = if ctargeting scursor /= TgtOff && loc0 == clocation scursor
+            bg0 = if ctargeting /= TgtOff && loc0 == clocation
                   then Color.defFG     -- highlight target cursor
                   else sVisBG vis rea  -- FOV debug or standard bg
             reverseVideo = Color.Attr{ fg = Color.bg Color.defaultAttr
