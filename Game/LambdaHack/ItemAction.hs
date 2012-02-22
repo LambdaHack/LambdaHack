@@ -131,12 +131,8 @@ playerProjectGI verb object syms = do
         let upd cursor = cursor {clocation=ploc, ceps=0}
         modify (updateCursor upd)
         targetMonster TgtAuto
-  -- TODO: draw digital line and see if obstacles prevent firing
-  -- TODO: don't tell the player if the tiles he can't see are reachable,
-  -- but let him throw there and let them land closer, if not reachable
-  -- TODO: similarly let him throw at walls and land in front (digital line)
   case targetToLoc (totalVisible per) state of
-    Just loc | actorReachesLoc pl loc per (Just pl) -> do
+    Just loc -> do
       Kind.Ops{okind} <- contentf Kind.coitem
       is   <- gets getPlayerItem
       iOpt <- getGroupItem is object syms
@@ -146,7 +142,6 @@ playerProjectGI verb object syms = do
       case iOpt of
         Just i -> projectGroupItem pl loc (iverbProject $ okind $ jkind i) i
         Nothing -> neverMind True
-    Just _  -> retarget "Last target unreachable."
     Nothing -> retarget "Last target invalid."
 
 -- TODO: also target a monster by moving the cursor, if in target monster mode.
