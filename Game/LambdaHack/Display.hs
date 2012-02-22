@@ -49,6 +49,7 @@ import qualified Game.LambdaHack.Key as K
 import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.FOV
+import qualified Game.LambdaHack.Feature as F
 
 -- | Waits for a SPACE or ESC.
 getConfirmD :: FrontendSession -> IO Bool
@@ -94,7 +95,7 @@ displayLevel dm fs cops per
              msg moverlay =
   let Kind.COps{ coactor=Kind.Ops{okind}
                , coitem=coitem@Kind.Ops{okind=iokind}
-               , cotile=Kind.Ops{okind=tokind} } = cops
+               , cotile=Kind.Ops{okind=tokind, ouniqGroup} } = cops
       DebugMode{smarkVision, somniscient} = sdebug
       lvl@Level{lxsize, lysize, lsmell, ldesc} = slevel s
       (_, Actor{bkind, bhp, bloc}, bitems) = findActorAnyLevel splayer s
@@ -138,9 +139,11 @@ displayLevel dm fs cops per
                   Nothing -> "3d1"  -- TODO; use the item 'fist'
       hs      = levelHeroList s
       ms      = levelMonsterList s ++ levelNeutralList s
+      bl = bla lxsize lysize 0 bloc (clocation scursor)
       dis offset p@(PointXY (x0, y0)) =
         let loc0 = toPoint lxsize p
             tile = lvl `lAt` loc0
+            tk = tokind tile
             items = lvl `liAt` loc0
             sm = smelltime $ IM.findWithDefault (SmellTime 0) loc0 lsmell
             sml = (sm - stime) `div` 100
@@ -159,18 +162,27 @@ displayLevel dm fs cops per
             rainbow loc = toEnum $ loc `rem` 14 + 1
             (char, fg0) =
               case L.find (\ m -> loc0 == Actor.bloc m) (hs ++ ms) of
+                _ | ctargeting scursor /= TgtOff
+                    && slid == creturnLn scursor
+                    && L.elem loc0 bl ->
+                      let unknownId = ouniqGroup "unknown space"
+                      in ('*', case (vis, F.Walkable `elem` tfeature tk) of
+                                 _ | tile == unknownId -> Color.BrBlack
+                                 (True, True)   -> Color.BrGreen
+                                 (True, False)  -> Color.BrRed
+                                 (False, True)  -> Color.Green
+                                 (False, False) -> Color.Red)
                 Just m | somniscient || vis -> viewActor loc0 m
                 _ | sSml && sml >= 0 -> (viewSmell sml, rainbow loc0)
                   | otherwise ->
                   case items of
-                    [] -> let u = tokind tile
-                          in (tsymbol u, if vis then tcolor u else tcolor2 u)
+                    [] -> (tsymbol tk, if vis then tcolor tk else tcolor2 tk)
                     i : _ -> Item.viewItem coitem (Item.jkind i) sflavour
             vis = IS.member loc0 visible
             rea = IS.member loc0 reachable
             bg0 = if ctargeting scursor /= TgtOff && loc0 == clocation scursor
                   then Color.defFG     -- highlight target cursor
-                  else sVisBG vis rea  -- FOV debug
+                  else sVisBG vis rea  -- FOV debug or standard bg
             reverseVideo = Color.Attr{ fg = Color.bg Color.defaultAttr
                                      , bg = Color.fg Color.defaultAttr
                                      }

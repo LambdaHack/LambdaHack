@@ -2,8 +2,10 @@
 module Game.LambdaHack.Point
   ( Point, toPoint, showPoint
   , origin, chessDist, adjacent, vicinity, vicinityCardinal
-  , inside, displacement
+  , inside, displacement, bla
   ) where
+
+import qualified Data.List as L
 
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.VectorXY
@@ -83,3 +85,15 @@ displacement lxsize loc0 loc1
   | PointXY (x0, y0) <- fromPoint lxsize loc0
   , PointXY (x1, y1) <- fromPoint lxsize loc1 =
   VectorXY (x1 - x0, y1 - y0)
+
+-- | Bresenham's line algorithm generalized to arbitrary starting @eps@
+-- (@eps@ value of 0 gives the standard BLA).
+-- Skips the first point and goes through the second to the edge of the level
+-- or the repetition of the first point.
+bla :: X -> Y -> Int -> Point -> Point -> [Point]
+bla lxsize lysize eps start end =
+  let s = fromPoint lxsize start
+      e = fromPoint lxsize end
+      inBounds p@(PointXY (x, y)) =
+        lxsize > x && x >= 0 && lysize > y && y >= 0 && p /= s
+  in L.map (toPoint lxsize) $ L.takeWhile inBounds $ L.tail $ blaXY eps s e
