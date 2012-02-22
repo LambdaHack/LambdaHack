@@ -366,11 +366,16 @@ actorAttackActor source target = do
       h2hKind <- rndToAction $ opick h2hGroup (const True)
       let sloc = bloc sm
           -- The picked bodily "weapon".
-          h2h = Item h2hKind 0 Nothing 1
+          h2h = if bparty sm == neutralParty && not (L.null bitems)
+                then head bitems  -- TODO: hack for projectiles
+                else Item h2hKind 0 Nothing 1
           str = strongestSword coitem bitems
-          stack  = fromMaybe h2h str
+          stack = fromMaybe h2h str
           single = stack { jcount = 1 }
-          verb = iverbApply $ okind $ jkind single
+          (verbosity, verb) =
+            if bparty sm == neutralParty && not (L.null bitems)
+            then (10, "hit")  -- TODO: hack for projectiles
+            else (0, iverbApply $ okind $ jkind single)
           -- The msg describes the source part of the action.
           -- TODO: right now it also describes the victim and weapon;
           -- perhaps, when a weapon is equipped, just say "you hit"
@@ -382,7 +387,7 @@ actorAttackActor source target = do
           visible = sloc `IS.member` totalVisible per
       when visible $ msgAdd msg
       -- Msgs inside itemEffectAction describe the target part.
-      itemEffectAction 0 source target single
+      itemEffectAction verbosity source target single
       advanceTime source
 
 -- | Resolves the result of an actor running (not walking) into another.

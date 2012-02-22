@@ -25,8 +25,6 @@ import Game.LambdaHack.State
 import Game.LambdaHack.EffectAction
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Content.ItemKind
-import qualified Game.LambdaHack.Feature as F
-import qualified Game.LambdaHack.Tile as Tile
 
 -- | Display inventory
 inventory :: Action ()
@@ -88,14 +86,11 @@ projectGroupItem :: ActorId  -- ^ actor projecting the item (is on current lvl)
                  -> Item     -- ^ the item to be projected
                  -> Action ()
 projectGroupItem source tloc verb item = do
-  cops@Kind.COps{coactor, cotile} <- contentOps
+  cops@Kind.COps{coactor} <- contentOps
   state <- get
   sm    <- gets (getActor source)
   per   <- currentPerception
-  lvl   <- gets slevel
-  let -- TODO: refine for, e.g., wands of digging that are aimed into walls.
-      locWalkable = Tile.hasFeature cotile F.Walkable (lvl `at` tloc)
-      consumed = item { jcount = 1 }
+  let consumed = item { jcount = 1 }
       sloc = bloc sm
       subject =
         if sloc `IS.member` totalVisible per
@@ -105,19 +100,7 @@ projectGroupItem source tloc verb item = do
       msg = actorVerbItemExtra cops state subject verb consumed ""
   removeFromInventory source consumed sloc
   modify $ addProjectile cops consumed sloc tloc
-{-
-  case locToActor tloc state of
-    Just ta -> do
-      -- The msg describes the source part of the action.
-      when (sloc `IS.member` totalVisible per || isAHero state ta) $ msgAdd msg
-      -- Msgs inside itemEffectAction describe the target part.
-      b <- itemEffectAction 10 source ta consumed
-      unless b $ modify (updateLevel (dropItemsAt [consumed] tloc))
-    Nothing | locWalkable -> do
-      when (sloc `IS.member` totalVisible per) $ msgAdd msg
-      modify (updateLevel (dropItemsAt [consumed] tloc))
-    _ -> abortWith "blocked"
--}
+  when (sloc `IS.member` totalVisible per) $ msgAdd msg
   advanceTime source
 
 playerProjectGroupItem :: Verb -> Object -> [Char] -> Action ()
