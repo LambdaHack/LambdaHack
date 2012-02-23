@@ -80,12 +80,6 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
     -- Enemy can be felt if adjacent (e. g., a player-controlled monster).
     -- TODO: can this be replaced by setting 'lights' to [me]?
     (asmell mk || asight mk) && adjacent lxsize me l
-  -- If no heroes on the level, monsters go at each other. TODO: let them
-  -- earn XP by killing each other to make this dangerous to the player.
-  -- TODO: with some commands blocked, this can't happen now. Find a way
-  -- to test it, nevertheless. Have a scroll of monster fury?
-  hs = L.map (second bloc) $ heroAssocs $ slevel delState
-  ms = L.map (second bloc) $ monsterAssocs $ slevel delState
   -- Below, "foe" is the hero (or a monster, or loc) chased by the actor.
   chase tgt =
     case tgt of
@@ -104,10 +98,10 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
       _  -> closest
   (newTgt, floc, foeVisible) = chase btarget
   closest =
-    let hsAndTraitor = if not (isAHero delState pl) && memActor pl delState
-                       then (pl, bloc $ getPlayerBody delState) : hs
-                       else hs
-        foes = if L.null hsAndTraitor then ms else hsAndTraitor
+    let hs = L.map (second bloc) $ heroAssocs $ slevel delState
+        foes = if not (isAHero delState pl) && memActor pl delState
+               then (pl, bloc $ getPlayerBody delState) : hs
+               else hs
         visible = L.filter (uncurry enemyVisible) foes
         foeDist = L.map (\ (a, l) -> (chessDist lxsize me l, l, a)) visible
     in case foeDist of

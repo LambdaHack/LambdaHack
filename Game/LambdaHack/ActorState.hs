@@ -164,12 +164,10 @@ locToActors loc state =
 
 nearbyFreeLoc :: Kind.Ops TileKind -> Point -> State -> Point
 nearbyFreeLoc cotile start state =
-  let lvl@Level{lxsize, lysize} = slevel state
-      hs = levelHeroList state
-      ms = levelMonsterList state
+  let lvl@Level{lxsize, lysize, lactor} = slevel state
       locs = start : L.nub (concatMap (vicinity lxsize lysize) locs)
       good loc = Tile.hasFeature cotile F.Walkable (lvl `at` loc)
-                 && loc `notElem` L.map bloc (hs ++ ms)
+                 && loc `IM.notMember` IM.map bloc lactor
   in fromMaybe (assert `failure` "too crowded map") $ L.find good locs
 
 -- | Calculate loot's worth for heroes on the current level.
@@ -226,9 +224,10 @@ addMonster cotile mk hp ploc state@State{scounter} = do
 -- Adding projectiles
 
 -- | Create a projectile actor containing the given missile.
-addProjectile :: Kind.COps -> Item -> Point -> [Point] -> State -> State
+addProjectile :: Kind.COps -> Item -> Point -> PartyId -> [Point] -> State
+              -> State
 addProjectile Kind.COps{coactor, coitem=Kind.Ops{okind}}
-              item sloc path state@State{scounter} =
+              item sloc bparty path state@State{scounter} =
   let ik = okind (jkind item)
       name = "flying " ++ iname ik
       m = Actor
@@ -241,7 +240,7 @@ addProjectile Kind.COps{coactor, coitem=Kind.Ops{okind}}
         , bloc    = sloc
         , bletter = 'a'
         , btime   = 0
-        , bparty  = neutralParty
+        , bparty
         }
       cstate = state { scounter = scounter + 1 }
       upd = updateActor (IM.insert scounter m)

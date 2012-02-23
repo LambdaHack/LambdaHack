@@ -76,7 +76,7 @@ effectToAction (Effect.Wound nDm) verbosity source target power = do
           | killed =
             if target == pl
             then ""  -- handled later on in checkPartyDeath
-            else if bparty tm == neutralParty
+            else if bhp tm == 0
                  then actorVerbExtra coactor tm "drop" "down"  -- TODO: hack:
                  else actorVerb coactor tm "die"  -- for projectiles
           | source == target =  -- a potion of wounding, etc.
@@ -483,13 +483,14 @@ doLook = do
   loc    <- gets (clocation . scursor)
   state  <- get
   lvl    <- gets slevel
+  hms    <- gets (lactor . slevel)
   per    <- currentPerception
   target <- gets (btarget . getPlayerBody)
   pl     <- gets splayer
   let canSee = IS.member loc (totalVisible per)
       monsterMsg =
         if canSee
-        then case L.find (\ m -> bloc m == loc) (levelMonsterList state) of
+        then case L.find (\ m -> bloc m == loc) (IM.elems hms) of
                Just m  -> actorVerbExtra coactor m "be" "here" ++ " "
                Nothing -> ""
         else ""

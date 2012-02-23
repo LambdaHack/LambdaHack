@@ -96,8 +96,9 @@ projectGroupItem source tloc verb item = do
   lysize <- gets (lysize . slevel)
   let consumed = item { jcount = 1 }
       sloc = bloc sm
+      sourceVis = sloc `IS.member` totalVisible per
       subject =
-        if sloc `IS.member` totalVisible per
+        if sourceVis
         then sm
         else template (heroKindId coactor)
                Nothing (Just "somebody") 99 sloc neutralParty
@@ -105,17 +106,21 @@ projectGroupItem source tloc verb item = do
       -- TODO: AI should choose the best eps.
       eps = if source == pl then ceps else 0
       bl = bla lxsize lysize eps sloc tloc
+      projVis = L.any (`IS.member` totalVisible per) (L.take 3 bl)
+      party = if bparty sm == heroParty
+              then neutralParty
+              else monsterParty
   removeFromInventory source consumed sloc
-  modify $ addProjectile cops consumed sloc bl
-  when (sloc `IS.member` totalVisible per) $ msgAdd msg
+  modify $ addProjectile cops consumed sloc party bl
+  when (sourceVis || projVis) $ msgAdd msg
   advanceTime source
 
 playerProjectGroupItem :: Verb -> Object -> [Char] -> Action ()
 playerProjectGroupItem verb object syms = do
-  ms     <- gets levelMonsterList
+  ms     <- gets levelMonsterList   -- TODO: exclude projectiles already here
   lxsize <- gets (lxsize . slevel)
   ploc   <- gets (bloc . getPlayerBody)
-  if L.any (adjacent lxsize ploc) (L.map bloc ms)
+  if L.any (adjacent lxsize ploc) $ L.map bloc $ L.filter ((> 0) . bhp) ms
     then abortWith "You can't aim in melee."
     else playerProjectGI verb object syms
 

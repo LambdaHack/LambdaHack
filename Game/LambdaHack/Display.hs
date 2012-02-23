@@ -98,7 +98,7 @@ displayLevel dm fs cops per
                , coitem=coitem@Kind.Ops{okind=iokind}
                , cotile=Kind.Ops{okind=tokind, ouniqGroup} } = cops
       DebugMode{smarkVision, somniscient} = sdebug
-      lvl@Level{lxsize, lysize, lsmell, ldesc} = slevel s
+      lvl@Level{lxsize, lysize, lsmell, ldesc, lactor} = slevel s
       (_, Actor{bkind, bhp, bloc}, bitems) = findActorAnyLevel splayer s
       ActorKind{ahp, asmell} = okind bkind
       reachable = debugTotalReachable per
@@ -138,8 +138,6 @@ displayLevel dm fs cops per
                     Wound dice -> show dice ++ "+" ++ show (Item.jpower sw)
                     _ -> show (Item.jpower sw)
                   Nothing -> "3d1"  -- TODO; use the item 'fist'
-      hs      = levelHeroList s
-      ms      = levelMonsterList s ++ levelNeutralList s
       bl = bla lxsize lysize ceps bloc clocation
       dis offset p@(PointXY (x0, y0)) =
         let loc0 = toPoint lxsize p
@@ -162,7 +160,7 @@ displayLevel dm fs cops per
               | otherwise = Char.intToDigit k
             rainbow loc = toEnum $ loc `rem` 14 + 1
             (char, fg0) =
-              case L.find (\ m -> loc0 == Actor.bloc m) (hs ++ ms) of
+              case L.find (\ m -> loc0 == Actor.bloc m) (IM.elems lactor) of
                 _ | ctargeting /= TgtOff
                     && slid == creturnLn
                     && L.elem loc0 bl ->

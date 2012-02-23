@@ -141,10 +141,9 @@ triggerTile dloc = do
         (_b, _msg) <- effectToAction effect 0 pl pl 0
         return ()
       f (F.ChangeTo group) = do
-        state <- get
-        let hms = levelHeroList state ++ levelMonsterList state
+        Level{lactor} <- gets slevel
         case lvl `atI` dloc of
-          [] -> if unoccupied hms dloc
+          [] -> if unoccupied (IM.elems lactor) dloc
                 then do
                   newTileId <- rndToAction $ opick group (const True)
                   let adj = (Kind.// [(dloc, newTileId)])
@@ -322,7 +321,7 @@ moveOrAttack allowAttacks actor dir = do
       | allowAttacks ->
           -- Attacking does not require full access, adjacency is enough.
           actorAttackActor actor target
-      | accessible cops lvl sloc tloc -> do
+      | accessible cops lvl sloc tloc && bhp (getActor target state) > 0 -> do
           -- Switching positions requires full access.
           actorRunActor actor target
           when (actor == pl) $
@@ -366,14 +365,14 @@ actorAttackActor source target = do
       h2hKind <- rndToAction $ opick h2hGroup (const True)
       let sloc = bloc sm
           -- The picked bodily "weapon".
-          h2h = if bparty sm == neutralParty && not (L.null bitems)
+          h2h = if bhp sm == 0 && not (L.null bitems)
                 then head bitems  -- TODO: hack for projectiles
                 else Item h2hKind 0 Nothing 1
           str = strongestSword coitem bitems
           stack = fromMaybe h2h str
           single = stack { jcount = 1 }
           (verbosity, verb) =
-            if bparty sm == neutralParty && not (L.null bitems)
+            if bhp sm == 0 && not (L.null bitems)
             then (10, "hit")  -- TODO: hack for projectiles
             else (0, iverbApply $ okind $ jkind single)
           -- The msg describes the source part of the action.
@@ -408,9 +407,9 @@ actorRunActor source target = do
 -- | Create a new monster in the level, at a random position.
 rollMonster :: Kind.COps -> Perception -> State -> Rnd State
 rollMonster Kind.COps{cotile, coactor=Kind.Ops{opick, okind}} per state = do
-  let lvl = slevel state
+  let lvl@Level{lactor} = slevel state
+      ms = L.filter ((> 0) . bhp) $ levelMonsterList state  -- TODO: hack: proj
       hs = levelHeroList state
-      ms = levelMonsterList state
       isLit = Tile.isLit cotile
   rc <- monsterGenChance (Dungeon.levelNumber $ slid state) (L.length ms)
   if not rc
@@ -428,7 +427,7 @@ rollMonster Kind.COps{cotile, coactor=Kind.Ops{opick, okind}} per state = do
           , \ l _ -> not $ l `IS.member` totalVisible per
           , distantAtLeast 5
           , \ l t -> Tile.hasFeature cotile F.Walkable t
-                     && l `notElem` L.map bloc (hs ++ ms)
+                     && l `IM.notMember` IM.map bloc lactor
           ]
       mk <- opick "monster" (const True)
       hp <- rollDice $ ahp $ okind mk

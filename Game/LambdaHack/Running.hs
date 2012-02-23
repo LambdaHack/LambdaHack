@@ -97,7 +97,7 @@ runDisturbance locLast distLast msg hs ms per locHere
       surrLast  = locLast : vicinity lxsize lysize locLast
       surrHere  = locHere : vicinity lxsize lysize locHere
       locThere  = locHere `shift` dirNew
-      heroThere = locThere `elem` L.map bloc hs
+      heroThere = locThere `elem` L.map bloc hs  -- TODO: include neutral; though not needed right now
       -- Stop if you touch any individual tile with these propereties
       -- first time, unless you enter it next move, in which case stop then.
       touchList = [ locHasFeature F.Exit
