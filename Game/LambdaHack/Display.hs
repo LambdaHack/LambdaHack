@@ -210,7 +210,8 @@ displayLevel dm fs cops per
         let fLine y = [ dis (lysize * n) (PointXY (x, y))
                       | x <- [0..lxsize-1] ]
             memo = L.map fLine [0..lysize-1]
-        in display fs (memo, (toWidth width mesg), (toWidth width status))
+        in pushFrame
+             fs (Just (memo, (toWidth width mesg), (toWidth width status)))
       -- Perform messages slideshow.
       perf []     = perfOverlay 0 ""
       perf [xs]   = perfOverlay 0 xs

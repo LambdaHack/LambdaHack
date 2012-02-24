@@ -3,7 +3,7 @@ module Game.LambdaHack.Display.Gtk
   ( -- * Session data type for the frontend
     FrontendSession
     -- * The output and input operations
-  , display, nextEvent
+  , pushFrame, nextEvent
     -- * Frontend administration tools
   , frontendName, startup, shutdown
   ) where
@@ -22,9 +22,11 @@ import qualified Game.LambdaHack.Color as Color
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { sview :: TextView                  -- ^ the widget to draw to
-  , stags :: M.Map Color.Attr TextTag  -- ^ text tags for fore/back colour pairs
-  , schan :: Chan String               -- ^ the channel that carries input
+  { sview       :: TextView                  -- ^ the widget to draw to
+  , stags       :: M.Map Color.Attr TextTag  -- ^ text color tags for fore/back
+  , schanKey    :: Chan String               -- ^ channel for keyboard input
+  , schanScreen :: Chan (Maybe Color.SingleFrame)
+                                             -- ^ channel for screen output
   }
 
 -- | The name of the frontend.
@@ -84,17 +86,23 @@ startup configFont k = do
       white = Color 0xC500 0xBC00 0xB800        -- Color.defFG == Color.White
   widgetModifyBase sview StateNormal black
   widgetModifyText sview StateNormal white
-  -- set up the channel for communication
-  schan <- newChan
-  forkIO $ k FrontendSession{..}
-  -- fill the channel
+  -- Set up the channel for keyboard input.
+  schanKey <- newChan
+  -- Set up the channel for screens sent to be drawn.
+  schanScreen <- newChan
+  let sess = FrontendSession{..}
+  -- Fork the game logic thread.
+  forkIO $ k sess
+  -- Fork the frame drawing thread.
+  forkIO $ waitForFrames sess
+  -- Fill the keyboard channel.
   onKeyPress sview
     (\ e -> do
-        writeChan schan (Graphics.UI.Gtk.Gdk.Events.eventKeyName e)
+        writeChan schanKey (Graphics.UI.Gtk.Gdk.Events.eventKeyName e)
         return True)
-  -- set quit handler
+  -- Set the quit handler.
   onDestroy w mainQuit
-  -- start it up
+  -- Start it up.
   widgetShowAll w
   yield
   mainGUI
@@ -104,10 +112,8 @@ shutdown :: FrontendSession -> IO ()
 shutdown _ = mainQuit
 
 -- | Output to the screen via the frontend.
-display :: FrontendSession  -- ^ frontend session data
-        -> ( [[(Color.Attr, Char)]]  -- ^ content of the screen, line by line
-           , String         -- ^ an extra line to show at the top
-           , String )       -- ^ an extra line to show at the bottom
+display :: FrontendSession    -- ^ frontend session data
+        -> Color.SingleFrame  -- ^ the screen frame to draw
         -> IO ()
 display FrontendSession{sview, stags} (memo, msg, status) =
   postGUIAsync $ do
@@ -140,11 +146,29 @@ setTo tb tts lx (ly, attr:attrs) = do
             setIter a 1 as
   setIter attr 1 attrs
 
+-- TODO: configure
+-- | Maximal frames per second.
+maxFps :: Int
+maxFps = 10
+
+-- | Wait on the channel and draw frames on demand.
+waitForFrames :: FrontendSession -> IO ()
+waitForFrames sess@FrontendSession{schanScreen} = do
+  mframe <- readChan schanScreen
+  maybe (return ()) (display sess) mframe
+  threadDelay $ 1000000 `div` maxFps
+  waitForFrames sess
+
 -- | Input key via the frontend.
 nextEvent :: FrontendSession -> IO K.Key
 nextEvent sess = do
-  e <- readUndeadChan (schan sess)
+  e <- readUndeadChan (schanKey sess)
   return (K.keyTranslate e)
+
+-- | Add a game screen frame to the drawing channel queue.
+pushFrame :: FrontendSession -> Maybe Color.SingleFrame -> IO ()
+pushFrame FrontendSession{schanScreen} mframe =
+  writeChan schanScreen mframe
 
 -- | Reads until a non-dead key encountered.
 readUndeadChan :: Chan String -> IO String

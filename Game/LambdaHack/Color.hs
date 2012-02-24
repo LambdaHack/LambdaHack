@@ -2,8 +2,8 @@
 module Game.LambdaHack.Color
   ( -- * Colours
     Color(..), defBG, defFG, isBright, legalBG, colorToRGB
-    -- * Text attributes
-  , Attr(..), defaultAttr
+    -- * Text attributes and the screen
+  , Attr(..), defaultAttr, SingleFrame
   ) where
 
 import qualified Data.Binary as Binary
@@ -52,6 +52,13 @@ data Attr = Attr
 -- | The default attribute, to optimize attribute setting.
 defaultAttr :: Attr
 defaultAttr = Attr defFG defBG
+
+-- | The data sufficent to draw a single game screen frame.
+type SingleFrame =
+  ( [[(Attr, Char)]]  -- ^ content of the screen, line by line
+  , String                  -- ^ an extra line to show at the top
+  , String                  -- ^ an extra line to show at the bottom
+  )
 
 -- | A helper for the terminal frontends that display bright via bold.
 isBright :: Color -> Bool
