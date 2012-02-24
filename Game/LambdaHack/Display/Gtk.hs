@@ -18,6 +18,7 @@ import qualified Data.List as L
 import Data.IORef
 import qualified Data.Map as M
 import qualified Data.ByteString.Char8 as BS
+import Data.Maybe
 
 import qualified Game.LambdaHack.Key as K (Key(..), keyTranslate)
 import qualified Game.LambdaHack.Color as Color
@@ -89,24 +90,30 @@ startup configFont k = do
   widgetModifyBase sview StateNormal black
   widgetModifyText sview StateNormal white
   -- Set up the channel for keyboard input.
-  schanKey <- newTBChanIO 10
+  schanKey <- newTBChanIO 3
   -- Set up the channel for drawing frames.
   -- TODO: perhaps increase the channel bound and use it to report
   -- excessive animation lag and reset buffers and abort player commands.
-  -- The current low frame bound value (30, 3 player turns)
+  -- The current low frame bound value (20, 2 player turns)
   -- is intended to improve fairness.
-  schanScreen <- newTBChanIO 30
+  schanScreen <- newTBChanIO 20
   let sess = FrontendSession{..}
   -- Fork the game logic thread.
   forkIO $ k sess
   -- Fork the frame drawing thread.
   forkIO $ waitForFrames sess
-  -- Fill the keyboard channel. Ignore keypresses over the channel bound.
+  -- Fill the keyboard channel.
   onKeyPress sview
     (\ e -> do
-        atomically $
-          tryWriteTBChan schanKey (Graphics.UI.Gtk.Gdk.Events.eventKeyName e)
-        return True)
+       let kn = Graphics.UI.Gtk.Gdk.Events.eventKeyName e
+       unless (deadKey kn) $ atomically $ do
+         -- Key pressed. Flush all old frames up to the bound limit.
+         flushChan schanScreen
+         -- Ignore keypresses over the channel bound.
+         -- TODO: this does not work, because game logic thread
+         -- is fast enough to comsume all and only frames lag behind.
+         void $ tryWriteTBChan schanKey kn
+       return True)
   -- Set the quit handler.
   onDestroy w mainQuit
   -- Start it up.
@@ -122,14 +129,13 @@ shutdown _ = mainQuit
 display :: FrontendSession    -- ^ frontend session data
         -> Color.SingleFrame  -- ^ the screen frame to draw
         -> IO ()
-display FrontendSession{sview, stags} (memo, msg, status) =
-  postGUIAsync $ do
-    tb <- textViewGetBuffer sview
-    let attrs = L.zip [0..] $ L.map (L.map fst) memo
-        chars = L.map (BS.pack . L.map snd) memo
-        bs    = [BS.pack msg, BS.pack "\n", BS.unlines chars, BS.pack status]
-    textBufferSetByteString tb (BS.concat bs)
-    mapM_ (setTo tb stags 0) attrs
+display FrontendSession{sview, stags} (memo, msg, status) = do
+  tb <- textViewGetBuffer sview
+  let attrs = L.zip [0..] $ L.map (L.map fst) memo
+      chars = L.map (BS.pack . L.map snd) memo
+      bs    = [BS.pack msg, BS.pack "\n", BS.unlines chars, BS.pack status]
+  textBufferSetByteString tb (BS.concat bs)
+  mapM_ (setTo tb stags 0) attrs
 
 setTo :: TextBuffer -> M.Map Color.Attr TextTag -> Int -> (Int, [Color.Attr])
       -> IO ()
@@ -153,54 +159,59 @@ setTo tb tts lx (ly, attr:attrs) = do
             setIter a 1 as
   setIter attr 1 attrs
 
+flushChan :: TBChan a -> STM ()
+flushChan chan = do
+  m <- tryReadTBChan chan
+  when (isJust m) $ flushChan chan
+
 -- TODO: configure
 -- | Maximal frames per second.
 maxFps :: Int
 maxFps = 10
 
+-- TODO: perhaps rewrite all with no STM, but a single MVar
+-- and hope running stops being jerky.
+-- Also, perhaps make the SingleFrame type strict.
 -- | Wait on the channel and draw frames on demand.
 waitForFrames :: FrontendSession -> IO ()
 waitForFrames sess@FrontendSession{schanScreen} = do
+  -- Wait until frame received.
   mframe <- atomically $ readTBChan schanScreen
-  maybe (return ()) (display sess) mframe
-  -- TODO: instead save old time and wait only the remaining time.
+  -- Don't wait until frame drawn.
+  maybe (return ()) (postGUIAsync . display sess) mframe
   threadDelay $ 1000000 `div` maxFps
   waitForFrames sess
 
 -- | Input key via the frontend.
 nextEvent :: FrontendSession -> IO K.Key
-nextEvent sess = do
-  e <- readUndeadChan (schanKey sess)
-  return (K.keyTranslate e)
+nextEvent FrontendSession{schanKey} = do
+  kn <- atomically $ readTBChan schanKey
+  return (K.keyTranslate kn)
 
 -- | Add a game screen frame to the drawing channel queue.
 pushFrame :: FrontendSession -> Maybe Color.SingleFrame -> IO ()
 pushFrame FrontendSession{schanScreen} mframe =
   atomically $ writeTBChan schanScreen mframe
 
--- | Reads until a non-dead key encountered.
-readUndeadChan :: TBChan String -> IO String
-readUndeadChan ch = do
-  x <- atomically $ readTBChan ch
-  if dead x then readUndeadChan ch else return x
- where
-  dead x = case x of
-    "Shift_R"          -> True
-    "Shift_L"          -> True
-    "Control_L"        -> True
-    "Control_R"        -> True
-    "Super_L"          -> True
-    "Super_R"          -> True
-    "Menu"             -> True
-    "Alt_L"            -> True
-    "Alt_R"            -> True
-    "ISO_Level2_Shift" -> True
-    "ISO_Level3_Shift" -> True
-    "ISO_Level2_Latch" -> True
-    "ISO_Level3_Latch" -> True
-    "Num_Lock"         -> True
-    "Caps_Lock"        -> True
-    _                  -> False
+-- | Tells a dead key.
+deadKey :: String -> Bool
+deadKey x = case x of
+  "Shift_R"          -> True
+  "Shift_L"          -> True
+  "Control_L"        -> True
+  "Control_R"        -> True
+  "Super_L"          -> True
+  "Super_R"          -> True
+  "Menu"             -> True
+  "Alt_L"            -> True
+  "Alt_R"            -> True
+  "ISO_Level2_Shift" -> True
+  "ISO_Level3_Shift" -> True
+  "ISO_Level2_Latch" -> True
+  "ISO_Level3_Latch" -> True
+  "Num_Lock"         -> True
+  "Caps_Lock"        -> True
+  _                  -> False
 
 doAttr :: TextTag -> Color.Attr -> IO ()
 doAttr tt attr@Color.Attr{fg, bg}
