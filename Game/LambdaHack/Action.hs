@@ -214,15 +214,15 @@ neverMind :: Bool -> Action a
 neverMind b = abortIfWith b "never mind"
 
 -- | Wait for a player keypress.
-nextCommand :: Session -> Action K.Key
+nextCommand :: Session -> Action (K.Key, K.Modifier)
 nextCommand Session{sfs, skeyb} = do
-  nc <- liftIO $ nextEvent sfs
-  return $ fromMaybe nc $ M.lookup nc $ kmacro skeyb
+  (nc, modifier) <- liftIO $ nextEvent sfs
+  return $ (fromMaybe nc $ M.lookup nc $ kmacro skeyb, modifier)
 
 -- | A yes-no confirmation.
 getYesNo :: Session -> Action Bool
 getYesNo sess@Session{sfs} = do
-  e <- liftIO $ nextEvent sfs
+  (e, _) <- liftIO $ nextEvent sfs
   case e of
     K.Char 'y' -> return True
     K.Char 'n' -> return False
@@ -232,15 +232,15 @@ getYesNo sess@Session{sfs} = do
 -- | Waits for a SPACE or ESC. Passes along any other key, including RET,
 -- to an argument function.
 getOptionalConfirm :: (Bool -> Action a)
-                    -> (K.Key -> Action a)
+                    -> ((K.Key, K.Modifier) -> Action a)
                     -> Session
                     -> Action a
 getOptionalConfirm h k Session{sfs} = do
-  e <- liftIO $ nextEvent sfs
+  (e, modifier) <- liftIO $ nextEvent sfs
   case e of
     K.Space    -> h True
     K.Esc      -> h False
-    _          -> k e
+    _          -> k (e, modifier)
 
 -- | Ignore unexpected kestrokes until a SPACE or ESC is pressed.
 getConfirm :: Session -> Action Bool

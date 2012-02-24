@@ -427,7 +427,7 @@ getItem prompt p ptext is0 isn = do
         msgReset (prompt ++ " " ++ choice is)
         displayAll
         session nextCommand >>= perform ISuitable
-      perform itemDialogState command = do
+      perform itemDialogState (command, K.NoModifier) = do
         let ims = if itemDialogState == INone then is0 else is
         msgClear
         case command of
@@ -458,4 +458,5 @@ getItem prompt p ptext is0 isn = do
             then return Nothing
             else return $ Just $ L.maximumBy cmpItemLM ims
           _ -> return Nothing
+      perform _itemDialogState (_command, _) = return Nothing
   ask

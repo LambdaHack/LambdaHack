@@ -21,16 +21,16 @@ import qualified Data.Map as M
 import qualified Data.ByteString.Char8 as BS
 import Data.Maybe
 
-import qualified Game.LambdaHack.Key as K (Key(..), keyTranslate)
+import qualified Game.LambdaHack.Key as K (Key(..), keyTranslate, Modifier(..))
 import qualified Game.LambdaHack.Color as Color
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { sview       :: TextView                  -- ^ the widget to draw to
-  , stags       :: M.Map Color.Attr TextTag  -- ^ text color tags for fore/back
-  , schanKey    :: TBChan String             -- ^ channel for keyboard input
-  , schanScreen :: TBChan (Maybe Color.SingleFrame)
-                                             -- ^ channel for screen output
+  { sview    :: TextView                    -- ^ the widget to draw to
+  , stags    :: M.Map Color.Attr TextTag    -- ^ text color tags for fore/back
+  , schanKey :: TBChan (K.Key, K.Modifier)  -- ^ channel for keyboard input
+  , schanScreen
+      :: TBChan (Maybe Color.SingleFrame)   -- ^ channel for screen output
   }
 
 -- | The name of the frontend.
@@ -106,15 +106,17 @@ startup configFont k = do
   forkIO $ waitForFrames sess
   -- Fill the keyboard channel.
   sview `on` keyPressEvent $ do
-    kn <- eventKeyName
+    n <- eventKeyName
+    mods <- eventModifier
     liftIO $ do
-      unless (deadKey kn) $ atomically $ do
+      unless (deadKey n) $ atomically $ do
         -- Key pressed. Flush all old frames up to the bound limit.
         flushChan schanScreen
         -- Ignore keypresses over the channel bound.
         -- TODO: this does not work, because game logic thread
         -- is fast enough to comsume all and only frames lag behind.
-        void $ tryWriteTBChan schanKey kn
+        void $
+          tryWriteTBChan schanKey (K.keyTranslate n, modifierTranslate mods)
       return True
   -- Set the quit handler.
   onDestroy w mainQuit
@@ -185,10 +187,10 @@ waitForFrames sess@FrontendSession{schanScreen} = do
   waitForFrames sess
 
 -- | Input key via the frontend.
-nextEvent :: FrontendSession -> IO K.Key
+nextEvent :: FrontendSession -> IO (K.Key, K.Modifier)
 nextEvent FrontendSession{schanKey} = do
-  kn <- atomically $ readTBChan schanKey
-  return (K.keyTranslate kn)
+  km <- atomically $ readTBChan schanKey
+  return km
 
 -- | Add a game screen frame to the drawing channel queue.
 pushFrame :: FrontendSession -> Maybe Color.SingleFrame -> IO ()
@@ -214,6 +216,11 @@ deadKey x = case x of
   "Num_Lock"         -> True
   "Caps_Lock"        -> True
   _                  -> False
+
+-- | Translates modifiers to our own encoding.
+modifierTranslate :: [Modifier] -> K.Modifier
+modifierTranslate mods =
+  if Control `elem` mods then K.Control else K.NoModifier
 
 doAttr :: TextTag -> Color.Attr -> IO ()
 doAttr tt attr@Color.Attr{fg, bg}

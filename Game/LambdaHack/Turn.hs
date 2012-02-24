@@ -22,6 +22,7 @@ import Game.LambdaHack.Strategy
 import Game.LambdaHack.StrategyAction
 import Game.LambdaHack.Running
 import qualified Game.LambdaHack.Tile as Tile
+import qualified Game.LambdaHack.Key as K
 
 -- One turn proceeds through the following functions:
 --
@@ -165,7 +166,7 @@ playerCommand = do
                 case M.lookup k (Binding.kcmd skeyb) of
                   Just (_, c)  -> c
                   Nothing ->
-                    abortWith $ "unknown command <" ++ show k ++ ">")
+                    abortWith $ "unknown command <" ++ K.showKM k ++ ">")
 
 -- Design thoughts (in order to get rid or partially rid of the somewhat
 -- convoluted design we have): We have three kinds of commands.

@@ -105,12 +105,8 @@ keyTranslate e =
     C.KeyBeg         -> K.Begin
     C.KeyB2          -> K.Begin
     C.KeyClear       -> K.Begin
-    -- No KP_ keys; see https://github.com/skogsbaer/hscurses/issues/10
-    -- Movement keys are more important than hero selection, so preferring them:
-    C.KeyChar c
-      | c `elem` ['1'..'9'] -> K.KP c
-      | otherwise           -> K.Char c
-    _                       -> K.Unknown (show e)
+    C.KeyChar c      -> K.Char c
+    _                -> K.Unknown (show e)
 
 toFColor :: Color.Color -> C.ForegroundColor
 toFColor Color.Black     = C.BlackF

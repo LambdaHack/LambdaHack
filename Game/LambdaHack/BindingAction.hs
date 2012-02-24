@@ -35,14 +35,14 @@ configCmd config =
 semanticsCmd :: [(K.Key, Cmd)]
              -> (Cmd -> Action ())
              -> (Cmd -> String)
-             -> [(K.Key, (String, Action ()))]
+             -> [((K.Key, K.Modifier), (String, Action ()))]
 semanticsCmd cmdList cmdS cmdD =
   let mkDescribed cmd =
         let semantics = if timedCmd cmd
                         then checkCursor $ cmdS cmd
                         else cmdS cmd
         in (cmdD cmd, semantics)
-      mkCommand (key, def) = (key, mkDescribed def)
+      mkCommand (key, def) = ((key, K.NoModifier), mkDescribed def)
   in L.map mkCommand cmdList
 
 -- | If in targeting mode, check if the current level is the same
@@ -55,14 +55,15 @@ checkCursor h = do
     then h
     else abortWith "this command does not work on remote levels"
 
-heroSelection :: [(K.Key, (String, Action ()))]
+heroSelection :: [((K.Key, K.Modifier), (String, Action ()))]
 heroSelection =
   let select k = do
         s <- get
         case tryFindHeroK s k of
           Nothing -> abortWith "No such member of the party."
           Just aid -> void $ selectPlayer aid
-      heroSelect k = (K.Char (Char.intToDigit k), ("", select k))
+      heroSelect k = ((K.Char (Char.intToDigit k), K.NoModifier),
+                      ("", select k))
   in fmap heroSelect [0..9]
 
 -- | Binding of keys to movement and other standard commands,
@@ -87,10 +88,11 @@ stdBinding config cmdS cmdD =
              K.moveBinding moveWidth runWidth ++
              heroSelection ++
              semList ++
-             [ -- debug commands, TODO:access them from a common menu or prefix
-               (K.Char 'R', ("", modify cycleMarkVision)),
-               (K.Char 'O', ("", modify toggleOmniscient)),
-               (K.Char 'I', ("", gets (lmeta . slevel) >>= abortWith))
+             [ -- Debug commands.
+               ((K.Char 'r', K.Control), ("", modify cycleMarkVision)),
+               ((K.Char 'o', K.Control), ("", modify toggleOmniscient)),
+               ((K.Char 'i', K.Control), ("", gets (lmeta . slevel)
+                                              >>= abortWith))
              ]
   , kmacro
   , kmajor = L.map fst $ L.filter (majorCmd . snd) cmdList

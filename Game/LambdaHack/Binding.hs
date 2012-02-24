@@ -14,10 +14,11 @@ import qualified Game.LambdaHack.Key as K
 
 -- | Bindings and other information about player commands.
 data Binding a = Binding
-  { kcmd   :: M.Map K.Key (String, a)  -- ^ binding keys to commands
-  , kmacro :: M.Map K.Key K.Key        -- ^ macro map
-  , kmajor :: [K.Key]  -- ^ major, most often used, commands
-  , ktimed :: [K.Key]  -- ^ commands that take time, except movement
+  { kcmd   :: M.Map (K.Key, K.Modifier) (String, a)
+                                 -- ^ binding keys to commands
+  , kmacro :: M.Map K.Key K.Key  -- ^ macro map
+  , kmajor :: [K.Key]            -- ^ major, most often used, commands
+  , ktimed :: [K.Key]            -- ^ commands that take time, except movement
   }
 
 -- | Produce the macro map from a macro association list
@@ -56,7 +57,7 @@ keyHelp Binding{kcmd, kmacro, kmajor, ktimed} =
       , "                /|\\            /|\\"
       , "               1 2 3          b j n"
       , ""
-      , "Run ahead until anything disturbs you, with SHIFT and a key."
+      ,"Run ahead until anything disturbs you, with SHIFT (or CTRL) and a key."
       , "Press keypad '5' or '.' to skip a turn."
       , "In targeting mode the same keys move the targeting cursor."
       , ""
@@ -85,8 +86,9 @@ keyHelp Binding{kcmd, kmacro, kmajor, ktimed} =
     keyCaption = fmt "keys" "command"
     disp k  = L.concatMap show $ coImage kmacro k
     ti k    = if k `elem` ktimed then "*" else ""
-    keys l  = [ fmt (disp k) (h ++ ti k) | (k, (h, _)) <- l, h /= "" ]
-    (kcMajor, kcMinor) = L.partition ((`elem` kmajor) . fst) (M.toAscList kcmd)
+    keys l  = [ fmt (disp k) (h ++ ti k) | ((k, _), (h, _)) <- l, h /= "" ]
+    (kcMajor, kcMinor) =
+      L.partition ((`elem` kmajor) . fst . fst) (M.toAscList kcmd)
   in
     L.map unlines [ [blank] ++ mov
                   , [blank] ++ [keyCaption] ++ keys kcMajor ++ major

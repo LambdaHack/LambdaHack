@@ -54,7 +54,7 @@ import qualified Game.LambdaHack.Feature as F
 -- | Waits for a SPACE or ESC.
 getConfirmD :: FrontendSession -> IO Bool
 getConfirmD fs = do
-  e <- nextEvent fs
+  (e, _) <- nextEvent fs
   case e of
     K.Space    -> return True
     K.Esc      -> return False

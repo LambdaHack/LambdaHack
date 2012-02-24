@@ -1,6 +1,6 @@
 -- | Frontend-independent keyboard input operations.
 module Game.LambdaHack.Key
-  ( Key(..), handleDir, moveBinding, keyTranslate
+  ( Key(..), handleDir, moveBinding, keyTranslate, Modifier(..), showKM
   ) where
 
 import Prelude hiding (Left, Right)
@@ -32,6 +32,12 @@ data Key =
   | Unknown !String -- ^ an unknown key, registered to warn the user
   deriving (Ord, Eq)
 
+-- | Our own encoding of modifiers. Incomplete.
+data Modifier =
+    Control
+  | NoModifier
+  deriving (Ord, Eq)
+
 showKey :: Key -> String
 showKey (Char c) = [c]
 showKey Esc      = "ESC"  -- these three are common and terse abbreviations
@@ -50,6 +56,11 @@ showKey Home     = "<home>"
 showKey (KP c)   = "<KeyPad " ++ [c] ++ ">"
 showKey (Unknown s) = s
 
+-- | Show a key with a modifier, if any.
+showKM :: (Key, Modifier) -> String
+showKM (key, Control) = "CTRL-" ++ showKey key
+showKM (key, NoModifier) = showKey key
+
 instance Show Key where
   show = showKey
 
@@ -65,26 +76,39 @@ dirViRunKey = map (Char . Char.toUpper) dirViChar
 dirMoveKey :: [Key]
 dirMoveKey = [Home, Up, PgUp, Right, PgDn, Down, End, Left]
 
+dirNums :: [Char]
+dirNums = ['7', '8', '9', '6', '3', '2', '1', '4']
+
 dirRunKey :: [Key]
-dirRunKey = map KP ['7', '8', '9', '6', '3', '2', '1', '4']
+dirRunKey = map KP dirNums
+
+dirHeroKey :: [Key]
+dirHeroKey = map Char dirNums
 
 -- | Configurable event handler for the direction keys.
 -- Used for directed commands such as close door.
-handleDir :: X -> Key -> (Vector -> a) -> a -> a
-handleDir lxsize e h k =
+handleDir :: X -> (Key, Modifier) -> (Vector -> a) -> a -> a
+handleDir lxsize (key, NoModifier) h k =
   let mvs = moves lxsize
       assocs = zip dirViMoveKey mvs ++ zip dirMoveKey mvs
-  in maybe k h (L.lookup e assocs)
+  in maybe k h (L.lookup key assocs)
+handleDir _lxsize (_key, _) _h k = k
 
+-- TODO: deduplicate
 -- | Binding of both sets of movement keys.
 moveBinding :: ((X -> Vector) -> a) -> ((X -> Vector) -> a)
-            -> [(Key, (String, a))]
+            -> [((Key, Modifier), (String, a))]
 moveBinding move run =
-  let assign f (key, dir) = (key, ("", f dir))
-  in map (assign move) (zip dirViMoveKey movesWidth) ++
-     map (assign move) (zip dirMoveKey movesWidth) ++
-     map (assign run) (zip dirViRunKey movesWidth) ++
-     map (assign run) (zip dirRunKey movesWidth)
+  let assign f (km, dir) = (km, ("", f dir))
+      rNoModifier = repeat NoModifier
+      rControl = repeat Control
+  in map (assign move) (zip (zip dirViMoveKey rNoModifier) movesWidth) ++
+     map (assign move) (zip (zip dirMoveKey rNoModifier) movesWidth) ++
+     map (assign run)  (zip (zip dirViRunKey rNoModifier) movesWidth) ++
+     map (assign run)  (zip (zip dirRunKey rNoModifier) movesWidth) ++
+     map (assign run)  (zip (zip dirMoveKey rControl) movesWidth) ++
+     map (assign run)  (zip (zip dirRunKey rControl) movesWidth) ++
+     map (assign run)  (zip (zip dirHeroKey rControl) movesWidth)
 
 -- | Translate key from a GTK string description to our internal key type.
 -- To be used, in particular, for the command bindings and macros
@@ -104,7 +128,7 @@ keyTranslate "KP_Divide"     = Char '/'
 keyTranslate "underscore"    = Char '_'
 keyTranslate "minus"         = Char '-'
 keyTranslate "KP_Subtract"   = Char '-'
-keyTranslate "plus"           = Char '+'
+keyTranslate "plus"          = Char '+'
 keyTranslate "KP_Add"        = Char '+'
 keyTranslate "bracketleft"   = Char '['
 keyTranslate "bracketright"  = Char ']'

@@ -70,12 +70,8 @@ keyTranslate e =
     EvKey KEnd []          -> K.End
     EvKey KPageDown []     -> K.PgDn
     EvKey KBegin []        -> K.Begin
-    -- No KP_ keys in vty; see https://github.com/coreyoconnor/vty/issues/8
-    -- For now, movement keys are more important than hero selection:
-    EvKey (KASCII c) []
-      | c `elem` ['1'..'9']  -> K.KP c
-      | otherwise            -> K.Char c
-    _                        -> K.Unknown (show e)
+    EvKey (KASCII c) []    -> K.Char c
+    _                      -> K.Unknown (show e)
 
 -- A hack to get bright colors via the bold attribute. Depending on terminal
 -- settings this is needed or not and the characters really get bold or not.
