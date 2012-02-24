@@ -10,9 +10,10 @@ module Game.LambdaHack.Display.Gtk
 
 import Control.Monad
 import Control.Monad.STM
+import Control.Monad.Reader
 import Control.Concurrent hiding (Chan)
 import Control.Concurrent.STM.TBChan
-import Graphics.UI.Gtk.Gdk.Events  -- TODO: replace, deprecated
+import Graphics.UI.Gtk.Gdk.EventM
 import Graphics.UI.Gtk hiding (Point)
 import qualified Data.List as L
 import Data.IORef
@@ -64,26 +65,27 @@ startup configFont k = do
   f <- fontDescriptionFromString configFont
   widgetModifyFont sview (Just f)
   currentfont <- newIORef f
-  let buttonPressHandler e = case e of
-        Button { Graphics.UI.Gtk.Gdk.Events.eventButton = RightButton } -> do
-          fsd <- fontSelectionDialogNew "Choose font"
-          cf  <- readIORef currentfont  -- TODO: "Terminus,Monospace" fails
-          fds <- fontDescriptionToString cf
-          fontSelectionDialogSetFontName fsd fds
-          fontSelectionDialogSetPreviewText fsd "eee...@.##+##"
-          resp <- dialogRun fsd
-          when (resp == ResponseOk) $ do
-            fn <- fontSelectionDialogGetFontName fsd
-            case fn of
-              Just fn' -> do
-                fd <- fontDescriptionFromString fn'
-                writeIORef currentfont fd
-                widgetModifyFont sview (Just fd)
-              Nothing  -> return ()
-          widgetDestroy fsd
-          return True
-        _ -> return False
-  onButtonPress sview buttonPressHandler
+  sview `on` buttonPressEvent $ do
+    but <- eventButton
+    liftIO $ case but of
+      RightButton -> do
+        fsd <- fontSelectionDialogNew "Choose font"
+        cf  <- readIORef currentfont  -- TODO: "Terminus,Monospace" fails
+        fds <- fontDescriptionToString cf
+        fontSelectionDialogSetFontName fsd fds
+        fontSelectionDialogSetPreviewText fsd "eee...@.##+##"
+        resp <- dialogRun fsd
+        when (resp == ResponseOk) $ do
+          fn <- fontSelectionDialogGetFontName fsd
+          case fn of
+            Just fn' -> do
+              fd <- fontDescriptionFromString fn'
+              writeIORef currentfont fd
+              widgetModifyFont sview (Just fd)
+            Nothing  -> return ()
+        widgetDestroy fsd
+        return True
+      _ -> return False
   -- modify default colours
   let black = Color minBound minBound minBound  -- Color.defBG == Color.Black
       white = Color 0xC500 0xBC00 0xB800        -- Color.defFG == Color.White
@@ -103,17 +105,17 @@ startup configFont k = do
   -- Fork the frame drawing thread.
   forkIO $ waitForFrames sess
   -- Fill the keyboard channel.
-  onKeyPress sview
-    (\ e -> do
-       let kn = Graphics.UI.Gtk.Gdk.Events.eventKeyName e
-       unless (deadKey kn) $ atomically $ do
-         -- Key pressed. Flush all old frames up to the bound limit.
-         flushChan schanScreen
-         -- Ignore keypresses over the channel bound.
-         -- TODO: this does not work, because game logic thread
-         -- is fast enough to comsume all and only frames lag behind.
-         void $ tryWriteTBChan schanKey kn
-       return True)
+  sview `on` keyPressEvent $ do
+    kn <- eventKeyName
+    liftIO $ do
+      unless (deadKey kn) $ atomically $ do
+        -- Key pressed. Flush all old frames up to the bound limit.
+        flushChan schanScreen
+        -- Ignore keypresses over the channel bound.
+        -- TODO: this does not work, because game logic thread
+        -- is fast enough to comsume all and only frames lag behind.
+        void $ tryWriteTBChan schanKey kn
+      return True
   -- Set the quit handler.
   onDestroy w mainQuit
   -- Start it up.
