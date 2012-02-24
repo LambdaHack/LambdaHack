@@ -14,8 +14,6 @@ import qualified Data.List as L
 import qualified Data.Map as M
 import Control.Monad
 
-import Game.LambdaHack.Area
-import Game.LambdaHack.PointXY
 import qualified Game.LambdaHack.Key as K (Key(..))
 import qualified Game.LambdaHack.Color as Color
 
@@ -53,28 +51,26 @@ shutdown :: FrontendSession -> IO ()
 shutdown _ = C.end
 
 -- | Output to the screen via the frontend.
-display :: Area             -- ^ the size of the drawn area
-        -> FrontendSession  -- ^ current session data
-        -> (PointXY -> (Color.Attr, Char))
-                            -- ^ the content of the screen
-        -> String           -- ^ an extra line to show at the top
-        -> String           -- ^ an extra line to show at the bottom
+display :: FrontendSession  -- ^ frontend session data
+        -> ( [[(Color.Attr, Char)]]  -- ^ content of the screen, line by line
+           , String         -- ^ an extra line to show at the top
+           , String )       -- ^ an extra line to show at the bottom
         -> IO ()
-display (x0, y0, x1, y1) FrontendSession{..} f msg status = do
+display FrontendSession{..} (memo, msg, status) = do
   -- let defaultStyle = C.defaultCursesStyle
   -- Terminals with white background require this:
   let defaultStyle = sstyles M.! Color.defaultAttr
   C.erase
   C.setStyle defaultStyle
   C.mvWAddStr swin 0 0 msg
-  C.mvWAddStr swin (y1 + 2) 0 (L.init status)
-  -- TODO: we need to remove the last character from the status line,
+  -- We need to remove the last character from the status line,
   -- because otherwise it would overflow a standard size xterm window,
   -- due to the curses historical limitations.
+  C.mvWAddStr swin (L.length memo + 1) 0 (L.init status)
+  let nm = L.zip [0..] $ L.map (L.zip [0..]) memo
   sequence_ [ C.setStyle (M.findWithDefault defaultStyle a sstyles)
               >> C.mvWAddStr swin (y + 1) x [c]
-            | x <- [x0..x1], y <- [y0..y1],
-              let (a, c) = f (PointXY (x, y)) ]
+            | (y, line) <- nm, (x, (a, c)) <- line ]
   C.refresh
 
 -- | Input key via the frontend.

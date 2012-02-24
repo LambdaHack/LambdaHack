@@ -17,8 +17,6 @@ import Data.IORef
 import qualified Data.Map as M
 import qualified Data.ByteString.Char8 as BS
 
-import Game.LambdaHack.Area
-import Game.LambdaHack.PointXY
 import qualified Game.LambdaHack.Key as K (Key(..), keyTranslate)
 import qualified Game.LambdaHack.Color as Color
 
@@ -106,27 +104,21 @@ shutdown :: FrontendSession -> IO ()
 shutdown _ = mainQuit
 
 -- | Output to the screen via the frontend.
-display :: Area             -- ^ the size of the drawn area
-        -> FrontendSession  -- ^ current session data
-        -> (PointXY -> (Color.Attr, Char))
-                            -- ^ the content of the screen
-        -> String           -- ^ an extra line to show at the top
-        -> String           -- ^ an extra line to show at the bottom
+display :: FrontendSession  -- ^ frontend session data
+        -> ( [[(Color.Attr, Char)]]  -- ^ content of the screen, line by line
+           , String         -- ^ an extra line to show at the top
+           , String )       -- ^ an extra line to show at the bottom
         -> IO ()
-display (x0, y0, x1, y1) FrontendSession{sview, stags} f msg status =
+display FrontendSession{sview, stags} (memo, msg, status) =
   postGUIAsync $ do
     tb <- textViewGetBuffer sview
-    let fLine y = let (as, cs) = unzip [ f (PointXY (x, y))
-                                       | x <- [x0..x1] ]
-                  in ((y, as), BS.pack cs)
-        memo  = L.map fLine [y0..y1]
-        attrs = L.map fst memo
-        chars = L.map snd memo
+    let attrs = L.zip [0..] $ L.map (L.map fst) memo
+        chars = L.map (BS.pack . L.map snd) memo
         bs    = [BS.pack msg, BS.pack "\n", BS.unlines chars, BS.pack status]
     textBufferSetByteString tb (BS.concat bs)
-    mapM_ (setTo tb stags x0) attrs
+    mapM_ (setTo tb stags 0) attrs
 
-setTo :: TextBuffer -> M.Map Color.Attr TextTag -> X -> (Y, [Color.Attr])
+setTo :: TextBuffer -> M.Map Color.Attr TextTag -> Int -> (Int, [Color.Attr])
       -> IO ()
 setTo _  _   _  (_,  [])         = return ()
 setTo tb tts lx (ly, attr:attrs) = do

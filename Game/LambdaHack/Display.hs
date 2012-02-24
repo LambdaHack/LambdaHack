@@ -206,8 +206,11 @@ displayLevel dm fs cops per
       width = fst normalLevelBound + 1
       toWidth :: Int -> String -> String
       toWidth n x = take n (x ++ repeat ' ')
-      disp n mesg = display (0, 0, lxsize-1, lysize-1) fs (dis (lysize * n))
-                      (toWidth width mesg) (toWidth width status)
+      disp n mesg =
+        let fLine y = [ dis (lysize * n) (PointXY (x, y))
+                      | x <- [0..lxsize-1] ]
+            memo = L.map fLine [0..lysize-1]
+        in display fs (memo, (toWidth width mesg), (toWidth width status))
       -- Perform messages slideshow.
       perf []     = perfOverlay 0 ""
       perf [xs]   = perfOverlay 0 xs

@@ -13,8 +13,6 @@ import qualified Graphics.Vty as Vty
 import qualified Data.List as L
 import qualified Data.ByteString.Char8 as BS
 
-import Game.LambdaHack.Area
-import Game.LambdaHack.PointXY
 import qualified Game.LambdaHack.Key as K (Key(..))
 import qualified Game.LambdaHack.Color as Color
 
@@ -34,19 +32,16 @@ shutdown :: FrontendSession -> IO ()
 shutdown = Vty.shutdown
 
 -- | Output to the screen via the frontend.
-display :: Area             -- ^ the size of the drawn area
-        -> FrontendSession  -- ^ current session data
-        -> (PointXY -> (Color.Attr, Char))
-                            -- ^ the content of the screen
-        -> String           -- ^ an extra line to show at the top
-        -> String           -- ^ an extra line to show at bottom
+display :: FrontendSession  -- ^ frontend session data
+        -> ( [[(Color.Attr, Char)]]  -- ^ content of the screen, line by line
+           , String         -- ^ an extra line to show at the top
+           , String )       -- ^ an extra line to show at the bottom
         -> IO ()
-display (x0, y0, x1, y1) vty f msg status =
-  let img = (foldr (<->) empty_image .
-             L.map (foldr (<|>) empty_image .
-                    L.map (\ (x, y) -> let (a, c) = f (PointXY (x, y))
-                                       in char (setAttr a) c)))
-            [ [ (x, y) | x <- [x0..x1] ] | y <- [y0..y1] ]
+display vty (memo, msg, status) =
+  let img = (foldr (<->) empty_image
+             . L.map (foldr (<|>) empty_image
+                      . L.map (\ (a, c) -> char (setAttr a) c)))
+            memo
       pic = pic_for_image $
               utf8_bytestring (setAttr Color.defaultAttr) (BS.pack msg)
               <-> img <->
