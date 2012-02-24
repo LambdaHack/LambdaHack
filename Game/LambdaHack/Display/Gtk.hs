@@ -9,7 +9,9 @@ module Game.LambdaHack.Display.Gtk
   ) where
 
 import Control.Monad
-import Control.Concurrent
+import Control.Monad.STM
+import Control.Concurrent hiding (Chan)
+import Control.Concurrent.STM.TBChan
 import Graphics.UI.Gtk.Gdk.Events  -- TODO: replace, deprecated
 import Graphics.UI.Gtk hiding (Point)
 import qualified Data.List as L
@@ -24,8 +26,8 @@ import qualified Game.LambdaHack.Color as Color
 data FrontendSession = FrontendSession
   { sview       :: TextView                  -- ^ the widget to draw to
   , stags       :: M.Map Color.Attr TextTag  -- ^ text color tags for fore/back
-  , schanKey    :: Chan String               -- ^ channel for keyboard input
-  , schanScreen :: Chan (Maybe Color.SingleFrame)
+  , schanKey    :: TBChan String             -- ^ channel for keyboard input
+  , schanScreen :: TBChan (Maybe Color.SingleFrame)
                                              -- ^ channel for screen output
   }
 
@@ -87,18 +89,23 @@ startup configFont k = do
   widgetModifyBase sview StateNormal black
   widgetModifyText sview StateNormal white
   -- Set up the channel for keyboard input.
-  schanKey <- newChan
-  -- Set up the channel for screens sent to be drawn.
-  schanScreen <- newChan
+  schanKey <- newTBChanIO 10
+  -- Set up the channel for drawing frames.
+  -- TODO: perhaps increase the channel bound and use it to report
+  -- excessive animation lag and reset buffers and abort player commands.
+  -- The current low frame bound value (30, 3 player turns)
+  -- is intended to improve fairness.
+  schanScreen <- newTBChanIO 30
   let sess = FrontendSession{..}
   -- Fork the game logic thread.
   forkIO $ k sess
   -- Fork the frame drawing thread.
   forkIO $ waitForFrames sess
-  -- Fill the keyboard channel.
+  -- Fill the keyboard channel. Ignore keypresses over the channel bound.
   onKeyPress sview
     (\ e -> do
-        writeChan schanKey (Graphics.UI.Gtk.Gdk.Events.eventKeyName e)
+        atomically $
+          tryWriteTBChan schanKey (Graphics.UI.Gtk.Gdk.Events.eventKeyName e)
         return True)
   -- Set the quit handler.
   onDestroy w mainQuit
@@ -154,8 +161,9 @@ maxFps = 10
 -- | Wait on the channel and draw frames on demand.
 waitForFrames :: FrontendSession -> IO ()
 waitForFrames sess@FrontendSession{schanScreen} = do
-  mframe <- readChan schanScreen
+  mframe <- atomically $ readTBChan schanScreen
   maybe (return ()) (display sess) mframe
+  -- TODO: instead save old time and wait only the remaining time.
   threadDelay $ 1000000 `div` maxFps
   waitForFrames sess
 
@@ -168,12 +176,12 @@ nextEvent sess = do
 -- | Add a game screen frame to the drawing channel queue.
 pushFrame :: FrontendSession -> Maybe Color.SingleFrame -> IO ()
 pushFrame FrontendSession{schanScreen} mframe =
-  writeChan schanScreen mframe
+  atomically $ writeTBChan schanScreen mframe
 
 -- | Reads until a non-dead key encountered.
-readUndeadChan :: Chan String -> IO String
+readUndeadChan :: TBChan String -> IO String
 readUndeadChan ch = do
-  x <- readChan ch
+  x <- atomically $ readTBChan ch
   if dead x then readUndeadChan ch else return x
  where
   dead x = case x of
