@@ -13,6 +13,7 @@ import Control.Monad.STM
 import Control.Monad.Reader
 import Control.Concurrent hiding (Chan)
 import Control.Concurrent.STM.TChan
+import Control.Exception (finally)
 import Graphics.UI.Gtk.Gdk.EventM
 import Graphics.UI.Gtk hiding (Point)
 import qualified Data.List as L
@@ -35,14 +36,25 @@ data FrontendSession = FrontendSession
 frontendName :: String
 frontendName = "gtk"
 
--- | Starts the main program loop using the frontend input and output.
+-- | Spawns the gtk input and output thread, which spawns all the other
+-- required threads. We crate a separate thread for gtk to minimize
+-- communication with the heavy main thread. The other threads have to be
+-- spawned after gtk is initialized, because they call @postGUIAsync@,
+-- and need 'sview' and 'stags'.
 startup :: String -> (FrontendSession -> IO ()) -> IO ()
 startup configFont k = do
+  mv <- newEmptyMVar
+  -- Fork the gtk input and output thread.
+  void $ forkIO (runGtk configFont k `finally` putMVar mv ())
+  takeMVar mv
+
+-- | Sets up and starts the main GTK loop providing input and output.
+runGtk :: String ->  (FrontendSession -> IO ()) -> IO ()
+runGtk configFont k = do
   -- Init GUI.
   unsafeInitGUIForThreadedRTS
-  w <- windowNew
-  ttt <- textTagTableNew
   -- Text attributes.
+  ttt <- textTagTableNew
   stags <- fmap M.fromList $
              mapM (\ ak -> do
                       tt <- textTagNew Nothing
@@ -53,12 +65,32 @@ startup configFont k = do
                | fg <- [minBound..maxBound], bg <- Color.legalBG ]
   -- Text buffer.
   tb <- textBufferNew (Just ttt)
-  textBufferSetText tb (unlines (replicate 25 (replicate 80 ' ')))
   -- Create text view. TODO: use GtkLayout or DrawingArea instead of TextView?
   sview <- textViewNewWithBuffer tb
-  containerAdd w sview
   textViewSetEditable sview False
   textViewSetCursorVisible sview False
+  -- Set up the channel for keyboard input.
+  schanKey <- newTChanIO
+  -- Set up the channel for drawing frames.
+  schanScreen <- newTChanIO
+  -- Create the session record.
+  let sess = FrontendSession{..}
+  -- Fork the game logic thread.
+  forkIO $ k sess
+  -- Fork the timer and frame drawing thread.
+  forkIO $ waitForFrames sess
+  -- Fill the keyboard channel.
+  sview `on` keyPressEvent $ do
+    n <- eventKeyName
+    mods <- eventModifier
+    liftIO $ do
+      unless (deadKey n) $ atomically $ do
+        -- Key pressed. Drop all the old frames.
+        flushChan schanScreen
+        let !key = K.keyTranslate n
+            !modifier = modifierTranslate mods
+        void $ writeTChan schanKey (key, modifier)
+      return True
   -- Set the font specified in config, if any.
   f <- fontDescriptionFromString configFont
   widgetModifyFont sview (Just f)
@@ -90,28 +122,9 @@ startup configFont k = do
       white = Color 0xC500 0xBC00 0xB800        -- Color.defFG == Color.White
   widgetModifyBase sview StateNormal black
   widgetModifyText sview StateNormal white
-  -- Set up the channel for keyboard input.
-  schanKey <- newTChanIO
-  -- Set up the channel for drawing frames.
-  schanScreen <- newTChanIO
-  let sess = FrontendSession{..}
-  -- Fork the game logic thread.
-  forkIO $ k sess
-  -- Fork the frame drawing thread.
-  forkIO $ waitForFrames sess
-  -- Fill the keyboard channel.
-  sview `on` keyPressEvent $ do
-    n <- eventKeyName
-    mods <- eventModifier
-    liftIO $ do
-      unless (deadKey n) $ atomically $ do
-        -- Key pressed. Drop all the old frames.
-        flushChan schanScreen
-        let !key = K.keyTranslate n
-            !modifier = modifierTranslate mods
-        void $ writeTChan schanKey (key, modifier)
-      return True
-  -- Set up the quit handler and widgets.
+  -- Set up the main window.
+  w <- windowNew
+  containerAdd w sview
   onDestroy w mainQuit
   widgetShowAll w
   -- Wait with showing the window until there's anything to draw.
