@@ -5,7 +5,7 @@ module Game.LambdaHack.Display
   ( -- * Re-exported frontend
     FrontendSession, startup, shutdown, frontendName, nextEvent
     -- * Derived operations
-  , ColorMode(..), displayLevel, getConfirmD
+  , ColorMode(..), displayLevel, displayNothingD, getConfirmD
   ) where
 
 -- Wrapper for selected Display frontend.
@@ -84,6 +84,11 @@ stringByLocation lysize xs =
 data ColorMode =
     ColorFull  -- ^ normal, with full colours
   | ColorBW    -- ^ black+white only
+
+displayNothingD :: FrontendSession -> IO Bool
+displayNothingD fs = do
+  pushFrame fs Color.NoFrame
+  return True
 
 -- TODO: split up and generally rewrite.
 -- | Display the whole screen: level map, messages and status area

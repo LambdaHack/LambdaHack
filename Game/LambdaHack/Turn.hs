@@ -68,49 +68,47 @@ handle = do
   debug $ "handle: time check. ptime = "
           ++ show ptime ++ ", time = " ++ show time
   if ptime > time
-    then handleAI  -- the hero can't make a move yet; monsters first
+    then handleAI False  -- the hero can't make a move yet; monsters first
     else handlePlayer    -- it's the hero's turn!
-
-    -- TODO: readd this, but only for the turns when anything moved
-    -- and only after a rendering delay is added, so that the move is visible
-    -- on modern computers. Use the same delay for running (not disabled now).
-    -- We redraw the map even between player moves so that the movements of fast
-    -- monsters can be traced on the map.
-    -- displayGeneric ColorFull (const "")
 
 -- TODO: We should replace this structure using a priority search queue/tree.
 -- | Handle monster moves. Perform moves for individual monsters as long as
 -- there are monsters that have a move time which is less than or equal to
 -- the current time.
-handleAI :: Action ()
-handleAI = do
+handleAI :: Bool -> Action ()
+handleAI dispAlready = do
   debug "handleAI"
   time <- gets stime
   ms   <- gets (monsterAssocs . slevel)
   ns   <- gets (neutralAssocs . slevel)
   pl   <- gets splayer
   if null ms
-    then nextMove
-    else let order  = Ord.comparing (btime . snd)
+    then nextMove dispAlready
+    else let order = Ord.comparing (btime . snd)
              (actor, m) = L.minimumBy order (ns ++ ms)
          in if btime m > time || actor == pl
-            then nextMove  -- no monster is ready for another move
+            then nextMove dispAlready  -- no monster is ready for another move
             else handleMonster actor
 
 -- | Handle the move of a single monster.
 handleMonster :: ActorId -> Action ()
 handleMonster actor = do
   debug "handleMonster"
-  cops  <- contentOps
-  state <- get
-  -- Simplification: this is the perception after the last player command
-  -- and does not take into account, e.g., other monsters opening doors.
-  per <- currentPerception
-  -- Run the AI: choses an action from those given by the AI strategy.
-  join $ rndToAction $
-           frequency (head (runStrategy (strategy cops actor state per
-                                         .| wait actor)))
-  handleAI
+  -- Determine perception to let monsters target heroes. The perception
+  -- may change between monster moves, e.g., when they open doors.
+  withPerception $ do
+    remember  -- The hero notices his surroundings, before they get displayed.
+    displayAll -- draw the current surroundings
+    cops  <- contentOps
+    state <- get
+    -- Simplification: this is the perception after the last player command
+    -- and does not take into account, e.g., other monsters opening doors.
+    per <- currentPerception
+    -- Run the AI: choses an action from those given by the AI strategy.
+    join $ rndToAction $
+             frequency (head (runStrategy (strategy cops actor state per
+                                           .| wait actor)))
+    handleAI True
 
 -- TODO: nextMove may not be a good name. It's part of the problem of the
 -- current design that all of the top-level functions directly call each
@@ -118,9 +116,10 @@ handleMonster actor = do
 -- | After everything has been handled for the current game time, we can
 -- advance the time. Here is the place to do whatever has to be done for
 -- every time unit, e.g., monster generation.
-nextMove :: Action ()
-nextMove = do
+nextMove :: Bool -> Action ()
+nextMove dispAlready = do
   debug "nextMove"
+  unless dispAlready $ void displayNothing
   modify (updateTime (+1))
   regenerateLevelHP
   generateMonster
@@ -139,7 +138,7 @@ handlePlayer = do
     -- At this point, the command was successful and possibly took some time.
     newPlayerTime <- gets (btime . getPlayerBody)
     if newPlayerTime == oldPlayerTime
-      then handlePlayer  -- no time taken, repeat
+      then handlePlayer  -- no time taken, repeat; TODO: should display at once
       else do
         state <- get
         pl    <- gets splayer
@@ -151,12 +150,12 @@ handlePlayer = do
           modify (updateLevel (updateSmell (IM.insert ploc
                                              (Tile.SmellTime
                                                 (time + sTimeout)))))
-        -- Determine perception to let monsters target heroes.
-        withPerception handleAI
+        handleAI True
 
 -- | Determine and process the next player command.
 playerCommand :: Action ()
 playerCommand = do
+  -- TODO: all displays except the 2 in this file should happen at once
   displayAll -- draw the current surroundings
   history    -- update the message history and reset current message
   tryRepeatedlyWith stopRunning $  -- on abort, just ask for a new command

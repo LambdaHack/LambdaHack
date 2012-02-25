@@ -185,7 +185,7 @@ flushChan chan = do
 -- TODO: configure
 -- | Maximal frames per second.
 maxFps :: Int
-maxFps = 10
+maxFps = 24
 
 -- | Draw a frame from a channel, if any.
 drawFrame :: FrontendSession -> IO Bool

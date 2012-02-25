@@ -113,6 +113,13 @@ session f = Action (\ sess e p k a st ms ->
 sessionIO :: (Session -> IO a) -> Action a
 sessionIO f = Action (\ sess _e _p k _a st ms -> f sess >>= k st ms)
 
+-- | Wait a single frame.
+displayNothing :: Action Bool
+displayNothing =
+  Action (\ Session{sfs} _e _p k _a st ms ->
+           displayNothingD sfs
+           >>= k st ms)
+
 -- | Display the current level with modified current msg.
 displayGeneric :: ColorMode -> (Msg -> Msg) -> Action Bool
 displayGeneric dm f =
