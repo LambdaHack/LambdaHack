@@ -211,7 +211,7 @@ displayLevel dm fs cops per
                       | x <- [0..lxsize-1] ]
             memo = L.map fLine [0..lysize-1]
         in pushFrame
-             fs (Just (memo, (toWidth width mesg), (toWidth width status)))
+             fs (Just (memo, toWidth width mesg, toWidth width status))
       -- Perform messages slideshow.
       perf []     = perfOverlay 0 ""
       perf [xs]   = perfOverlay 0 xs

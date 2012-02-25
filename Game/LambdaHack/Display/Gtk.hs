@@ -91,14 +91,12 @@ startup configFont k = do
       white = Color 0xC500 0xBC00 0xB800        -- Color.defFG == Color.White
   widgetModifyBase sview StateNormal black
   widgetModifyText sview StateNormal white
-  -- Set up the channel for keyboard input.
-  schanKey <- newTBChanIO 3
+  -- Set up the channel for keyboard input. Drop excessive auto-repeat.
+  schanKey <- newTBChanIO 10
   -- Set up the channel for drawing frames.
   -- TODO: perhaps increase the channel bound and use it to report
   -- excessive animation lag and reset buffers and abort player commands.
-  -- The current low frame bound value (20, 2 player turns)
-  -- is intended to improve fairness.
-  schanScreen <- newTBChanIO 20
+  schanScreen <- newTBChanIO 50
   let sess = FrontendSession{..}
   -- Fork the game logic thread.
   forkIO $ k sess
@@ -112,17 +110,20 @@ startup configFont k = do
       unless (deadKey n) $ atomically $ do
         -- Key pressed. Flush all old frames up to the bound limit.
         flushChan schanScreen
-        -- Ignore keypresses over the channel bound.
-        -- TODO: this does not work, because game logic thread
-        -- is fast enough to comsume all and only frames lag behind.
-        void $
-          tryWriteTBChan schanKey (K.keyTranslate n, modifierTranslate mods)
+        let !key = K.keyTranslate n
+            !modifier = modifierTranslate mods
+        -- Ignore keypresses over the channel bound. This is triggered
+        -- only with excessive auto-repeat, because GTK buffers keys, too,
+        -- and because the game logic thread is fast enough
+        -- to consume all keypresses. TODO: use an unbounded chan.
+        void $ tryWriteTBChan schanKey (key, modifier)
       return True
-  -- Set the quit handler.
+  -- Set up the quit handler and widgets.
   onDestroy w mainQuit
-  -- Start it up.
   widgetShowAll w
+  -- Wait with showing the window until there's anything to draw.
   yield
+  -- Show the window.
   mainGUI
 
 -- | Shuts down the frontend cleanly.
@@ -175,7 +176,8 @@ maxFps = 10
 
 -- TODO: perhaps rewrite all with no STM, but a single MVar
 -- and hope running stops being jerky.
--- Also, perhaps make the SingleFrame type strict.
+-- Also, perhaps make the SingleFrame type strict so that the GTK
+-- thread does not compute frame data, so that it's responsive to keystrokes.
 -- | Wait on the channel and draw frames on demand.
 waitForFrames :: FrontendSession -> IO ()
 waitForFrames sess@FrontendSession{schanScreen} = do
@@ -194,8 +196,13 @@ nextEvent FrontendSession{schanKey} = do
 
 -- | Add a game screen frame to the drawing channel queue.
 pushFrame :: FrontendSession -> Maybe Color.SingleFrame -> IO ()
-pushFrame FrontendSession{schanScreen} mframe =
+pushFrame FrontendSession{schanScreen} mframe = do
   atomically $ writeTBChan schanScreen mframe
+  -- Help GTK to start drawing it ASAP.
+  -- TODO: instead wait until any frame (not necessarily this one)
+  -- is fully evaluated and is being drawn. Or better, do anything
+  -- only during the delay.
+  yield
 
 -- | Tells a dead key.
 deadKey :: String -> Bool
