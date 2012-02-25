@@ -26,6 +26,7 @@ import qualified Data.List as L
 import qualified Data.Map as M
 import qualified Data.IntMap as IM
 import Data.Maybe
+import qualified Control.DeepSeq as DeepSeq
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Misc
@@ -207,11 +208,21 @@ displayLevel dm fs cops per
       toWidth :: Int -> String -> String
       toWidth n x = take n (x ++ repeat ' ')
       disp n mesg =
-        let fLine y = [ dis (lysize * n) (PointXY (x, y))
-                      | x <- [0..lxsize-1] ]
-            memo = L.map fLine [0..lysize-1]
-        in pushFrame
-             fs (Just (memo, toWidth width mesg, toWidth width status))
+        -- Totally strict.
+        let offset = lysize * n
+            fLine y =
+              let f l x =
+                    let (!a, !c) = dis offset (PointXY (x, y))
+                    in (a, c) : l
+              in L.foldl' f [] [lxsize-1,lxsize-2..0]
+            sflevel =
+              let f l y =
+                    let !line = fLine y
+                    in line : l
+              in L.foldl' f [] [lysize-1,lysize-2..0]
+            sfTop = DeepSeq.force $ toWidth width mesg
+            sfBottom = DeepSeq.force $ toWidth width status
+        in pushFrame fs Color.SingleFrame{..}
       -- Perform messages slideshow.
       perf []     = perfOverlay 0 ""
       perf [xs]   = perfOverlay 0 xs

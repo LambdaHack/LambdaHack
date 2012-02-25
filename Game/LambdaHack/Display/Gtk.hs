@@ -25,11 +25,10 @@ import qualified Game.LambdaHack.Color as Color
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { sview    :: TextView                    -- ^ the widget to draw to
-  , stags    :: M.Map Color.Attr TextTag    -- ^ text color tags for fore/back
-  , schanKey :: TChan (K.Key, K.Modifier)   -- ^ channel for keyboard input
-  , schanScreen
-      :: TChan (Maybe Color.SingleFrame)    -- ^ channel for screen output
+  { sview       :: TextView                    -- ^ the widget to draw to
+  , stags       :: M.Map Color.Attr TextTag    -- ^ text color tags for fg/bg
+  , schanKey    :: TChan (K.Key, K.Modifier)   -- ^ channel for keyboard input
+  , schanScreen :: TChan Color.SingleFrame     -- ^ channel for screen output
   }
 
 -- | The name of the frontend.
@@ -128,11 +127,12 @@ shutdown _ = mainQuit
 display :: FrontendSession    -- ^ frontend session data
         -> Color.SingleFrame  -- ^ the screen frame to draw
         -> IO ()
-display FrontendSession{sview, stags} (memo, msg, status) = do
+display _ Color.NoFrame = return ()
+display FrontendSession{sview, stags} Color.SingleFrame{..} = do
   tb <- textViewGetBuffer sview
-  let attrs = L.zip [0..] $ L.map (L.map fst) memo
-      chars = L.map (BS.pack . L.map snd) memo
-      bs    = [BS.pack msg, BS.pack "\n", BS.unlines chars, BS.pack status]
+  let attrs = L.zip [0..] $ L.map (L.map fst) sflevel
+      chars = L.map (BS.pack . L.map snd) sflevel
+      bs    = [BS.pack sfTop, BS.pack "\n", BS.unlines chars, BS.pack sfBottom]
   textBufferSetByteString tb (BS.concat bs)
   mapM_ (setTo tb stags 0) attrs
 
@@ -170,18 +170,19 @@ flushChan chan = do
 maxFps :: Int
 maxFps = 10
 
--- TODO: perhaps rewrite all with no STM, but a single MVar
--- and hope running stops being jerky.
--- Also, perhaps make the SingleFrame type strict so that the GTK
--- thread does not compute frame data, so that it's responsive to keystrokes.
+-- TODO: perhaps rewrite all with no STM, but a single MVar.
 -- | Wait on the channel and draw frames on demand.
 waitForFrames :: FrontendSession -> IO ()
-waitForFrames sess@FrontendSession{schanScreen} = do
+waitForFrames sess@FrontendSession{schanScreen, schanKey} = do
   -- Wait until frame received.
   mframe <- atomically $ readTChan schanScreen
   -- Don't wait until frame drawn.
-  maybe (return ()) (postGUIAsync . display sess) mframe
-  threadDelay $ 1000000 `div` maxFps
+  case mframe of
+    Color.NoFrame -> return ()
+    frame   -> postGUIAsync $ display sess frame
+  b <- atomically $ isEmptyTChan schanKey
+  -- Don't delay if the user acts (and drops old frames, if there were any).
+  when b $ threadDelay $ 1000000 `div` maxFps
   waitForFrames sess
 
 -- | Input key via the frontend.
@@ -191,7 +192,7 @@ nextEvent FrontendSession{schanKey} = do
   return km
 
 -- | Add a game screen frame to the drawing channel queue.
-pushFrame :: FrontendSession -> Maybe Color.SingleFrame -> IO ()
+pushFrame :: FrontendSession -> Color.SingleFrame -> IO ()
 pushFrame FrontendSession{schanScreen} mframe = do
   atomically $ writeTChan schanScreen mframe
   -- Help GTK to start drawing it ASAP.
