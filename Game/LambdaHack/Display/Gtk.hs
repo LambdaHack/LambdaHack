@@ -11,7 +11,7 @@ module Game.LambdaHack.Display.Gtk
 import Control.Monad
 import Control.Monad.STM
 import Control.Monad.Reader
-import Control.Concurrent hiding (Chan)
+import Control.Concurrent
 import Control.Concurrent.STM.TChan
 import Control.Exception (finally)
 import Graphics.UI.Gtk.Gdk.EventM
@@ -28,7 +28,7 @@ import qualified Game.LambdaHack.Color as Color
 data FrontendSession = FrontendSession
   { sview       :: TextView                    -- ^ the widget to draw to
   , stags       :: M.Map Color.Attr TextTag    -- ^ text color tags for fg/bg
-  , schanKey    :: TChan (K.Key, K.Modifier)   -- ^ channel for keyboard input
+  , schanKey    :: Chan (K.Key, K.Modifier)   -- ^ channel for keyboard input
   , schanScreen :: TChan Color.SingleFrame     -- ^ channel for screen output
   }
 
@@ -70,26 +70,27 @@ runGtk configFont k = do
   textViewSetEditable sview False
   textViewSetCursorVisible sview False
   -- Set up the channel for keyboard input.
-  schanKey <- newTChanIO
+  schanKey <- newChan
   -- Set up the channel for drawing frames.
   schanScreen <- newTChanIO
   -- Create the session record.
   let sess = FrontendSession{..}
   -- Fork the game logic thread.
   forkIO $ k sess
-  -- Fork the timer and frame drawing thread.
-  forkIO $ waitForFrames sess
+   -- Install a function that periodically draws a frame from a queue, if any.
+  timeoutAdd (drawFrame sess) (1000 `div` maxFps)
   -- Fill the keyboard channel.
   sview `on` keyPressEvent $ do
     n <- eventKeyName
     mods <- eventModifier
+    let !key = K.keyTranslate n
+        !modifier = modifierTranslate mods
     liftIO $ do
-      unless (deadKey n) $ atomically $ do
+      unless (deadKey n) $ do
         -- Key pressed. Drop all the old frames.
-        flushChan schanScreen
-        let !key = K.keyTranslate n
-            !modifier = modifierTranslate mods
-        void $ writeTChan schanKey (key, modifier)
+        atomically $ flushChan schanScreen
+        -- Store the key in the channel.
+        writeChan schanKey (key, modifier)
       return True
   -- Set the font specified in config, if any.
   f <- fontDescriptionFromString configFont
@@ -139,15 +140,16 @@ shutdown _ = mainQuit
 -- | Output to the screen via the frontend.
 display :: FrontendSession    -- ^ frontend session data
         -> Color.SingleFrame  -- ^ the screen frame to draw
-        -> IO ()
-display _ Color.NoFrame = return ()
-display FrontendSession{sview, stags} Color.SingleFrame{..} = do
+        -> IO Bool
+display _ Color.NoFrame = return True  -- timeout requested
+display FrontendSession{sview, stags} Color.SingleFrame{..} = do  -- new frame
   tb <- textViewGetBuffer sview
   let attrs = L.zip [0..] $ L.map (L.map fst) sflevel
       chars = L.map (BS.pack . L.map snd) sflevel
       bs    = [BS.pack sfTop, BS.pack "\n", BS.unlines chars, BS.pack sfBottom]
   textBufferSetByteString tb (BS.concat bs)
   mapM_ (setTo tb stags 0) attrs
+  return True
 
 setTo :: TextBuffer -> M.Map Color.Attr TextTag -> Int -> (Int, [Color.Attr])
       -> IO ()
@@ -171,11 +173,13 @@ setTo tb tts lx (ly, attr:attrs) = do
             setIter a 1 as
   setIter attr 1 attrs
 
+-- | Empty a channel, making sure nobody steals an element while we work
+-- (STM guarantess nobody can remove from the channel, while we flush).
 flushChan :: TChan a -> STM ()
 flushChan chan = do
   b <- isEmptyTChan chan
   unless b $ do
-    _ <- readTChan chan
+    readTChan chan
     flushChan chan
 
 -- TODO: configure
@@ -183,25 +187,21 @@ flushChan chan = do
 maxFps :: Int
 maxFps = 10
 
--- TODO: perhaps rewrite all with no STM, but a single MVar.
--- | Wait on the channel and draw frames on demand.
-waitForFrames :: FrontendSession -> IO ()
-waitForFrames sess@FrontendSession{schanScreen, schanKey} = do
-  -- Wait until frame received.
-  mframe <- atomically $ readTChan schanScreen
-  -- Don't wait until frame drawn.
-  case mframe of
-    Color.NoFrame -> return ()
-    frame   -> postGUIAsync $ display sess frame
-  b <- atomically $ isEmptyTChan schanKey
-  -- Don't delay if the user acts (and drops old frames, if there were any).
-  when b $ threadDelay $ 1000000 `div` maxFps
-  waitForFrames sess
+-- | Draw a frame from a channel, if any.
+drawFrame :: FrontendSession -> IO Bool
+drawFrame sess@FrontendSession{schanScreen} = do
+  -- Try to get a frame. Don't block.
+  mframe <- atomically $ do
+    b <- isEmptyTChan schanScreen
+    if b
+      then return Nothing
+      else fmap Just $ readTChan schanScreen
+  maybe (return True) (display sess) mframe
 
 -- | Input key via the frontend.
 nextEvent :: FrontendSession -> IO (K.Key, K.Modifier)
 nextEvent FrontendSession{schanKey} = do
-  km <- atomically $ readTChan schanKey
+  km <- readChan schanKey
   return km
 
 -- | Add a game screen frame to the drawing channel queue.
