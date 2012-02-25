@@ -40,7 +40,10 @@ import Game.LambdaHack.Random
 displayHistory :: Action ()
 displayHistory = do
   diary <- currentDiary
-  msgOverlaysConfirm "History:" [unlines $ shistory diary]
+  stime <- gets stime
+  let turn = show (stime `div` 10)
+      msg = "You adventuring lasts " ++ turn ++ " turns. Past messages:"
+  msgOverlaysConfirm msg [unlines $ shistory diary]
   abort
 
 dumpConfig :: Action ()

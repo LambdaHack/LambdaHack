@@ -197,12 +197,11 @@ displayLevel dm fs cops per
              Just c -> (Color.defaultAttr, c)
              _      -> (a, char)
       status =
-        take 27 (ldesc ++ repeat ' ') ++
-        take 7 ("L: " ++ show (Dungeon.levelNumber slid) ++ repeat ' ') ++
-        take 10 ("T: " ++ show (stime `div` 10) ++ repeat ' ') ++
-        take 9 ("$: " ++ show wealth ++ repeat ' ') ++
-        take 12 ("Dmg: " ++ damage ++ repeat ' ') ++
-        take 30 ("HP: " ++ show bhp ++
+        take 28 (ldesc ++ repeat ' ') ++
+        take 9 ("L: " ++ show (Dungeon.levelNumber slid) ++ repeat ' ') ++
+        take 11 ("$: " ++ show wealth ++ repeat ' ') ++
+        take 14 ("Dmg: " ++ damage ++ repeat ' ') ++
+        take 32 ("HP: " ++ show bhp ++
                  " (" ++ show (maxDice ahp) ++ ")" ++ repeat ' ')
       width = fst normalLevelBound + 1
       toWidth :: Int -> String -> String
