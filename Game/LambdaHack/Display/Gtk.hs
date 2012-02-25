@@ -12,14 +12,13 @@ import Control.Monad
 import Control.Monad.STM
 import Control.Monad.Reader
 import Control.Concurrent hiding (Chan)
-import Control.Concurrent.STM.TBChan
+import Control.Concurrent.STM.TChan
 import Graphics.UI.Gtk.Gdk.EventM
 import Graphics.UI.Gtk hiding (Point)
 import qualified Data.List as L
 import Data.IORef
 import qualified Data.Map as M
 import qualified Data.ByteString.Char8 as BS
-import Data.Maybe
 
 import qualified Game.LambdaHack.Key as K (Key(..), keyTranslate, Modifier(..))
 import qualified Game.LambdaHack.Color as Color
@@ -28,9 +27,9 @@ import qualified Game.LambdaHack.Color as Color
 data FrontendSession = FrontendSession
   { sview    :: TextView                    -- ^ the widget to draw to
   , stags    :: M.Map Color.Attr TextTag    -- ^ text color tags for fore/back
-  , schanKey :: TBChan (K.Key, K.Modifier)  -- ^ channel for keyboard input
+  , schanKey :: TChan (K.Key, K.Modifier)   -- ^ channel for keyboard input
   , schanScreen
-      :: TBChan (Maybe Color.SingleFrame)   -- ^ channel for screen output
+      :: TChan (Maybe Color.SingleFrame)    -- ^ channel for screen output
   }
 
 -- | The name of the frontend.
@@ -40,11 +39,11 @@ frontendName = "gtk"
 -- | Starts the main program loop using the frontend input and output.
 startup :: String -> (FrontendSession -> IO ()) -> IO ()
 startup configFont k = do
-  -- initGUI
+  -- Init GUI.
   unsafeInitGUIForThreadedRTS
   w <- windowNew
   ttt <- textTagTableNew
-  -- text attributes
+  -- Text attributes.
   stags <- fmap M.fromList $
              mapM (\ ak -> do
                       tt <- textTagNew Nothing
@@ -53,17 +52,18 @@ startup configFont k = do
                       return (ak, tt))
                [ Color.Attr{fg, bg}
                | fg <- [minBound..maxBound], bg <- Color.legalBG ]
-  -- text buffer
+  -- Text buffer.
   tb <- textBufferNew (Just ttt)
   textBufferSetText tb (unlines (replicate 25 (replicate 80 ' ')))
-  -- create text view, TODO: use GtkLayout or DrawingArea instead of TextView?
+  -- Create text view. TODO: use GtkLayout or DrawingArea instead of TextView?
   sview <- textViewNewWithBuffer tb
   containerAdd w sview
   textViewSetEditable sview False
   textViewSetCursorVisible sview False
-  -- font
+  -- Set the font specified in config, if any.
   f <- fontDescriptionFromString configFont
   widgetModifyFont sview (Just f)
+  -- Prepare font chooser dialog.
   currentfont <- newIORef f
   sview `on` buttonPressEvent $ do
     but <- eventButton
@@ -86,17 +86,15 @@ startup configFont k = do
         widgetDestroy fsd
         return True
       _ -> return False
-  -- modify default colours
+  -- Modify default colours.
   let black = Color minBound minBound minBound  -- Color.defBG == Color.Black
       white = Color 0xC500 0xBC00 0xB800        -- Color.defFG == Color.White
   widgetModifyBase sview StateNormal black
   widgetModifyText sview StateNormal white
-  -- Set up the channel for keyboard input. Drop excessive auto-repeat.
-  schanKey <- newTBChanIO 10
+  -- Set up the channel for keyboard input.
+  schanKey <- newTChanIO
   -- Set up the channel for drawing frames.
-  -- TODO: perhaps increase the channel bound and use it to report
-  -- excessive animation lag and reset buffers and abort player commands.
-  schanScreen <- newTBChanIO 50
+  schanScreen <- newTChanIO
   let sess = FrontendSession{..}
   -- Fork the game logic thread.
   forkIO $ k sess
@@ -108,15 +106,11 @@ startup configFont k = do
     mods <- eventModifier
     liftIO $ do
       unless (deadKey n) $ atomically $ do
-        -- Key pressed. Flush all old frames up to the bound limit.
+        -- Key pressed. Drop all the old frames.
         flushChan schanScreen
         let !key = K.keyTranslate n
             !modifier = modifierTranslate mods
-        -- Ignore keypresses over the channel bound. This is triggered
-        -- only with excessive auto-repeat, because GTK buffers keys, too,
-        -- and because the game logic thread is fast enough
-        -- to consume all keypresses. TODO: use an unbounded chan.
-        void $ tryWriteTBChan schanKey (key, modifier)
+        void $ writeTChan schanKey (key, modifier)
       return True
   -- Set up the quit handler and widgets.
   onDestroy w mainQuit
@@ -164,10 +158,12 @@ setTo tb tts lx (ly, attr:attrs) = do
             setIter a 1 as
   setIter attr 1 attrs
 
-flushChan :: TBChan a -> STM ()
+flushChan :: TChan a -> STM ()
 flushChan chan = do
-  m <- tryReadTBChan chan
-  when (isJust m) $ flushChan chan
+  b <- isEmptyTChan chan
+  unless b $ do
+    _ <- readTChan chan
+    flushChan chan
 
 -- TODO: configure
 -- | Maximal frames per second.
@@ -182,7 +178,7 @@ maxFps = 10
 waitForFrames :: FrontendSession -> IO ()
 waitForFrames sess@FrontendSession{schanScreen} = do
   -- Wait until frame received.
-  mframe <- atomically $ readTBChan schanScreen
+  mframe <- atomically $ readTChan schanScreen
   -- Don't wait until frame drawn.
   maybe (return ()) (postGUIAsync . display sess) mframe
   threadDelay $ 1000000 `div` maxFps
@@ -191,13 +187,13 @@ waitForFrames sess@FrontendSession{schanScreen} = do
 -- | Input key via the frontend.
 nextEvent :: FrontendSession -> IO (K.Key, K.Modifier)
 nextEvent FrontendSession{schanKey} = do
-  km <- atomically $ readTBChan schanKey
+  km <- atomically $ readTChan schanKey
   return km
 
 -- | Add a game screen frame to the drawing channel queue.
 pushFrame :: FrontendSession -> Maybe Color.SingleFrame -> IO ()
 pushFrame FrontendSession{schanScreen} mframe = do
-  atomically $ writeTBChan schanScreen mframe
+  atomically $ writeTChan schanScreen mframe
   -- Help GTK to start drawing it ASAP.
   -- TODO: instead wait until any frame (not necessarily this one)
   -- is fully evaluated and is being drawn. Or better, do anything
