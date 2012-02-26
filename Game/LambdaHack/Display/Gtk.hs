@@ -28,8 +28,10 @@ import qualified Game.LambdaHack.Color as Color
 data FrontendSession = FrontendSession
   { sview       :: TextView                    -- ^ the widget to draw to
   , stags       :: M.Map Color.Attr TextTag    -- ^ text color tags for fg/bg
-  , schanKey    :: Chan (K.Key, K.Modifier)   -- ^ channel for keyboard input
+  , schanKey    :: Chan (K.Key, K.Modifier)    -- ^ channel for keyboard input
   , schanScreen :: TChan Color.SingleFrame     -- ^ channel for screen output
+  , slastFull   :: IORef (Color.SingleFrame, Bool)
+      -- ^ most recent not empty, not repeated frame and if any followed
   }
 
 -- | The name of the frontend.
@@ -74,6 +76,7 @@ runGtk configFont k = do
   -- Set up the channel for drawing frames.
   schanScreen <- newTChanIO
   -- Create the session record.
+  slastFull <- newIORef (Color.NoFrame, False)
   let sess = FrontendSession{..}
   -- Fork the game logic thread.
   forkIO $ k sess
@@ -185,7 +188,7 @@ flushChan chan = do
 -- TODO: configure
 -- | Maximal frames per second.
 maxFps :: Int
-maxFps = 24
+maxFps = 30
 
 -- | Draw a frame from a channel, if any.
 drawFrame :: FrontendSession -> IO Bool
@@ -204,15 +207,19 @@ nextEvent FrontendSession{schanKey} = do
   km <- readChan schanKey
   return km
 
--- | Add a game screen frame to the drawing channel queue.
+-- | Add a game screen frame to the frame drawing channel.
 pushFrame :: FrontendSession -> Color.SingleFrame -> IO ()
-pushFrame FrontendSession{schanScreen} mframe = do
-  atomically $ writeTChan schanScreen mframe
-  -- Help GTK to start drawing it ASAP.
-  -- TODO: instead wait until any frame (not necessarily this one)
-  -- is fully evaluated and is being drawn. Or better, do anything
-  -- only during the delay.
-  yield
+pushFrame FrontendSession{schanScreen, slastFull} frame = do
+  (lastFrame, anyFollowed) <- readIORef slastFull
+  let nextFrame =
+        if frame == lastFrame
+        then Color.NoFrame  -- no sense repeating
+        else frame
+  unless (nextFrame == Color.NoFrame && anyFollowed) $ do  -- old news
+    atomically $ writeTChan schanScreen nextFrame
+    if nextFrame == Color.NoFrame
+      then writeIORef slastFull (lastFrame, True)
+      else writeIORef slastFull (nextFrame, False)
 
 -- | Tells a dead key.
 deadKey :: String -> Bool
