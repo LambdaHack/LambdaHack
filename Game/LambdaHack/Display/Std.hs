@@ -3,7 +3,7 @@ module Game.LambdaHack.Display.Std
   ( -- * Session data type for the frontend
     FrontendSession
     -- * The output and input operations
-  , display, nextEvent
+  , pushFrame, nextEvent
     -- * Frontend administration tools
   , frontendName, startup, shutdown
   ) where
@@ -12,7 +12,7 @@ import qualified Data.List as L
 import qualified Data.ByteString.Char8 as BS
 import qualified System.IO as SIO
 
-import qualified Game.LambdaHack.Key as K (Key(..))
+import qualified Game.LambdaHack.Key as K (Key(..),  Modifier(..))
 import qualified Game.LambdaHack.Color as Color
 
 -- | No session data needs to be maintained by this frontend.
@@ -31,24 +31,27 @@ shutdown :: FrontendSession -> IO ()
 shutdown _ = return ()
 
 -- | Output to the screen via the frontend.
-display :: FrontendSession  -- ^ frontend session data
-        -> ( [[(Color.Attr, Char)]]  -- ^ content of the screen, line by line
-           , String         -- ^ an extra line to show at the top
-           , String )       -- ^ an extra line to show at the bottom
+display :: FrontendSession    -- ^ frontend session data
+        -> Color.SingleFrame  -- ^ the screen frame to draw
         -> IO ()
-display _sess (memo, msg, status) =
-  let chars = L.map (BS.pack . L.map snd) memo
-      bs = [BS.pack msg, BS.empty] ++ chars ++ [BS.pack status, BS.empty]
+display _ Color.SingleFrame{..} =
+  let chars = L.map (BS.pack . L.map snd) sflevel
+      bs = [BS.pack sfTop, BS.empty] ++ chars ++ [BS.pack sfBottom, BS.empty]
   in mapM_ BS.putStrLn bs
 
+-- | Add a game screen frame to the frame drawing channel.
+pushFrame :: FrontendSession -> Maybe Color.SingleFrame -> IO ()
+pushFrame _    Nothing      = return ()
+pushFrame sess (Just frame) = display sess frame
+
 -- | Input key via the frontend.
-nextEvent :: FrontendSession -> IO K.Key
+nextEvent :: FrontendSession -> IO (K.Key, K.Modifier)
 nextEvent sess = do
   e <- BS.hGet SIO.stdin 1
   let c = BS.head e
   if c == '\n'  -- let \n mark the end of input, for human players
     then nextEvent sess
-    else return $ keyTranslate c
+    else return (keyTranslate c, K.NoModifier)
 
 -- HACK: Special translation that block commands the bots should not use
 -- and multiplies some other commands.

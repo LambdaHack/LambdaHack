@@ -165,7 +165,8 @@ playerCommand = do
                 case M.lookup k (Binding.kcmd skeyb) of
                   Just (_, c)  -> c
                   Nothing ->
-                    abortWith $ "unknown command <" ++ K.showKM k ++ ">")
+                    let msg = "unknown command <" ++ K.showKM k ++ ">"
+                    in abortWith msg)
 
 -- Design thoughts (in order to get rid or partially rid of the somewhat
 -- convoluted design we have): We have three kinds of commands.

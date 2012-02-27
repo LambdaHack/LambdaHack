@@ -3,7 +3,7 @@ module Game.LambdaHack.Display.Vty
   ( -- * Session data type for the frontend
     FrontendSession
     -- * The output and input operations
-  , display, nextEvent
+  , pushFrame, nextEvent
     -- * Frontend administration tools
   , frontendName, startup, shutdown
   ) where
@@ -13,7 +13,7 @@ import qualified Graphics.Vty as Vty
 import qualified Data.List as L
 import qualified Data.ByteString.Char8 as BS
 
-import qualified Game.LambdaHack.Key as K (Key(..))
+import qualified Game.LambdaHack.Key as K (Key(..), Modifier(..))
 import qualified Game.LambdaHack.Color as Color
 
 -- | Session data maintained by the frontend.
@@ -32,46 +32,59 @@ shutdown :: FrontendSession -> IO ()
 shutdown = Vty.shutdown
 
 -- | Output to the screen via the frontend.
-display :: FrontendSession  -- ^ frontend session data
-        -> ( [[(Color.Attr, Char)]]  -- ^ content of the screen, line by line
-           , String         -- ^ an extra line to show at the top
-           , String )       -- ^ an extra line to show at the bottom
+display :: FrontendSession    -- ^ frontend session data
+        -> Color.SingleFrame  -- ^ the screen frame to draw
         -> IO ()
-display vty (memo, msg, status) =
+display vty Color.SingleFrame{..} =
   let img = (foldr (<->) empty_image
              . L.map (foldr (<|>) empty_image
                       . L.map (\ (a, c) -> char (setAttr a) c)))
-            memo
+            sflevel
       pic = pic_for_image $
-              utf8_bytestring (setAttr Color.defaultAttr) (BS.pack msg)
+              utf8_bytestring (setAttr Color.defaultAttr) (BS.pack sfTop)
               <-> img <->
-              utf8_bytestring (setAttr Color.defaultAttr) (BS.pack status)
+              utf8_bytestring (setAttr Color.defaultAttr) (BS.pack sfBottom)
   in update vty pic
 
+-- | Add a game screen frame to the frame drawing channel.
+pushFrame :: FrontendSession -> Maybe Color.SingleFrame -> IO ()
+pushFrame _    Nothing      = return ()
+pushFrame sess (Just frame) = display sess frame
+
 -- | Input key via the frontend.
-nextEvent :: FrontendSession -> IO K.Key
+nextEvent :: FrontendSession -> IO (K.Key, K.Modifier)
 nextEvent sess = do
   e <- next_event sess
-  return (keyTranslate e)
-
-keyTranslate :: Event -> K.Key
-keyTranslate e =
   case e of
-    EvKey KEsc []          -> K.Esc
-    EvKey KEnter []        -> K.Return
-    EvKey (KASCII ' ') []  -> K.Space
-    EvKey (KASCII '\t') [] -> K.Tab
-    EvKey KUp []           -> K.Up
-    EvKey KDown []         -> K.Down
-    EvKey KLeft []         -> K.Left
-    EvKey KRight []        -> K.Right
-    EvKey KHome []         -> K.Home
-    EvKey KPageUp []       -> K.PgUp
-    EvKey KEnd []          -> K.End
-    EvKey KPageDown []     -> K.PgDn
-    EvKey KBegin []        -> K.Begin
-    EvKey (KASCII c) []    -> K.Char c
-    _                      -> K.Unknown (show e)
+    EvKey n mods -> do
+      let key = keyTranslate n
+          modifier = modifierTranslate mods
+      return (key, modifier)
+    _ -> nextEvent sess
+
+keyTranslate :: Key -> K.Key
+keyTranslate n =
+  case n of
+    KEsc          -> K.Esc
+    KEnter        -> K.Return
+    (KASCII ' ')  -> K.Space
+    (KASCII '\t') -> K.Tab
+    KUp           -> K.Up
+    KDown         -> K.Down
+    KLeft         -> K.Left
+    KRight        -> K.Right
+    KHome         -> K.Home
+    KPageUp       -> K.PgUp
+    KEnd          -> K.End
+    KPageDown     -> K.PgDn
+    KBegin        -> K.Begin
+    (KASCII c)    -> K.Char c
+    _             -> K.Unknown (show n)
+
+-- | Translates modifiers to our own encoding.
+modifierTranslate :: [Modifier] -> K.Modifier
+modifierTranslate mods =
+  if MCtrl `elem` mods then K.Control else K.NoModifier
 
 -- A hack to get bright colors via the bold attribute. Depending on terminal
 -- settings this is needed or not and the characters really get bold or not.

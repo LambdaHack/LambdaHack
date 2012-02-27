@@ -3,7 +3,7 @@ module Game.LambdaHack.Display.Curses
   ( -- * Session data type for the frontend
     FrontendSession
     -- * The output and input operations
-  , display, nextEvent
+  , pushFrame, nextEvent
     -- * Frontend administration tools
   , frontendName, startup, shutdown
   ) where
@@ -14,7 +14,7 @@ import qualified Data.List as L
 import qualified Data.Map as M
 import Control.Monad
 
-import qualified Game.LambdaHack.Key as K (Key(..))
+import qualified Game.LambdaHack.Key as K (Key(..),  Modifier(..))
 import qualified Game.LambdaHack.Color as Color
 
 -- | Session data maintained by the frontend.
@@ -32,6 +32,7 @@ frontendName = "curses"
 startup :: String -> (FrontendSession -> IO ()) -> IO ()
 startup _ k = do
   C.start
+--  C.keypad C.stdScr False  -- TODO: may help to fix xterm keypad on Ubuntu
   C.cursSet C.CursorInvisible
   let s = [ (Color.Attr{fg, bg}, C.Style (toFColor fg) (toBColor bg))
           | fg <- [minBound..maxBound],
@@ -51,36 +52,36 @@ shutdown :: FrontendSession -> IO ()
 shutdown _ = C.end
 
 -- | Output to the screen via the frontend.
-display :: FrontendSession  -- ^ frontend session data
-        -> ( [[(Color.Attr, Char)]]  -- ^ content of the screen, line by line
-           , String         -- ^ an extra line to show at the top
-           , String )       -- ^ an extra line to show at the bottom
+display :: FrontendSession    -- ^ frontend session data
+        -> Color.SingleFrame  -- ^ the screen frame to draw
         -> IO ()
-display FrontendSession{..} (memo, msg, status) = do
+display FrontendSession{..} Color.SingleFrame{..} = do
   -- let defaultStyle = C.defaultCursesStyle
   -- Terminals with white background require this:
   let defaultStyle = sstyles M.! Color.defaultAttr
   C.erase
   C.setStyle defaultStyle
-  C.mvWAddStr swin 0 0 msg
+  C.mvWAddStr swin 0 0 sfTop
   -- We need to remove the last character from the status line,
   -- because otherwise it would overflow a standard size xterm window,
   -- due to the curses historical limitations.
-  C.mvWAddStr swin (L.length memo + 1) 0 (L.init status)
-  let nm = L.zip [0..] $ L.map (L.zip [0..]) memo
+  C.mvWAddStr swin (L.length sflevel + 1) 0 (L.init sfBottom)
+  let nm = L.zip [0..] $ L.map (L.zip [0..]) sflevel
   sequence_ [ C.setStyle (M.findWithDefault defaultStyle a sstyles)
               >> C.mvWAddStr swin (y + 1) x [c]
             | (y, line) <- nm, (x, (a, c)) <- line ]
   C.refresh
 
+-- | Add a game screen frame to the frame drawing channel.
+pushFrame :: FrontendSession -> Maybe Color.SingleFrame -> IO ()
+pushFrame _    Nothing      = return ()
+pushFrame sess (Just frame) = display sess frame
+
 -- | Input key via the frontend.
-nextEvent :: FrontendSession -> IO K.Key
+nextEvent :: FrontendSession -> IO (K.Key, K.Modifier)
 nextEvent _sess = do
   e <- C.getKey C.refresh
-  return (keyTranslate e)
---  case keyTranslate e of
---    Unknown _ -> nextEvent sess
---    k -> return k
+  return (keyTranslate e, K.NoModifier)
 
 keyTranslate :: C.Key -> K.Key
 keyTranslate e =
@@ -105,8 +106,15 @@ keyTranslate e =
     C.KeyBeg         -> K.Begin
     C.KeyB2          -> K.Begin
     C.KeyClear       -> K.Begin
-    C.KeyChar c      -> K.Char c
-    _                -> K.Unknown (show e)
+    -- No KP_ keys; see https://github.com/skogsbaer/hscurses/issues/10
+    -- TODO: try to get the Control modifier from the escape gibberish
+    -- and use Control-keypad for KP_ movement.
+    -- Movement keys are more important than hero selection,
+    -- so disabling the latter and interpreting the keypad numbers as movement:
+    C.KeyChar c
+      | c `elem` ['1'..'9'] -> K.KP c
+      | otherwise           -> K.Char c
+    _                       -> K.Unknown (show e)
 
 toFColor :: Color.Color -> C.ForegroundColor
 toFColor Color.Black     = C.BlackF
