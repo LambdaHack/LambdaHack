@@ -16,6 +16,7 @@ import Graphics.UI.Gtk.Gdk.EventM
 import Graphics.UI.Gtk hiding (Point)
 import qualified Data.List as L
 import Data.IORef
+import Data.Maybe
 import qualified Data.Map as M
 import qualified Data.ByteString.Char8 as BS
 
@@ -25,10 +26,11 @@ import qualified Game.LambdaHack.Color as Color
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { sview       :: TextView                    -- ^ the widget to draw to
-  , stags       :: M.Map Color.Attr TextTag    -- ^ text color tags for fg/bg
-  , schanKey    :: Chan (K.Key, K.Modifier)    -- ^ channel for keyboard input
-  , schanScreen :: LQueue Color.SingleFrame    -- ^ channel for screen output
+  { sview       :: TextView                  -- ^ the widget to draw to
+  , stags       :: M.Map Color.Attr TextTag  -- ^ text color tags for fg/bg
+  , schanKey    :: Chan (K.Key, K.Modifier)  -- ^ channel for keyboard input
+  , schanScreen :: LQueue (Maybe Color.SingleFrame)
+                                             -- ^ channel for screen output
   , slastFull   :: IORef (Color.SingleFrame, Bool)
       -- ^ most recent not empty, not repeated frame and if any followed
   }
@@ -38,7 +40,7 @@ frontendName :: String
 frontendName = "gtk"
 
 -- | Spawns the gtk input and output thread, which spawns all the other
--- required threads. We crate a separate thread for gtk to minimize
+-- required threads. We create a separate thread for gtk to minimize
 -- communication with the heavy main thread. The other threads have to be
 -- spawned after gtk is initialized, because they call @postGUIAsync@,
 -- and need 'sview' and 'stags'.
@@ -75,7 +77,7 @@ runGtk configFont k = do
   -- Set up the channel for drawing frames.
   schanScreen <- newLQueue
   -- Create the session record.
-  slastFull <- newIORef (Color.NoFrame, False)
+  slastFull <- newIORef (Color.SingleFrame [] "" "", False)
   let sess = FrontendSession{..}
   -- Fork the game logic thread.
   forkIO $ k sess
@@ -141,7 +143,6 @@ shutdown _ = mainQuit
 display :: FrontendSession    -- ^ frontend session data
         -> Color.SingleFrame  -- ^ the screen frame to draw
         -> IO Bool
-display _ Color.NoFrame = return True  -- timeout requested
 display FrontendSession{sview, stags} Color.SingleFrame{..} = do  -- new frame
   tb <- textViewGetBuffer sview
   let attrs = L.zip [0..] $ L.map (L.map fst) sflevel
@@ -182,28 +183,31 @@ maxFps = 30
 drawFrame :: FrontendSession -> IO Bool
 drawFrame sess@FrontendSession{schanScreen} = do
   -- Try to get a frame. Don't block.
-  mframe <- tryReadLQueue schanScreen
-  maybe (return True) (display sess) mframe
+  mmframe <- tryReadLQueue schanScreen
+  case mmframe of
+    Just (Just frame) -> display sess frame
+    Just Nothing -> return True  --  timeout requested
+    Nothing -> return True  -- empty queue, do nothing
+
+-- | Add a game screen frame to the frame drawing channel.
+pushFrame :: FrontendSession -> Maybe Color.SingleFrame -> IO ()
+pushFrame FrontendSession{schanScreen, slastFull} frame = do
+  (lastFrame, anyFollowed) <- readIORef slastFull
+  let nextFrame =
+        if frame == Just lastFrame
+        then Nothing  -- no sense repeating
+        else frame
+  unless (isNothing nextFrame && anyFollowed) $ do  -- old news
+    writeLQueue schanScreen nextFrame
+    case nextFrame of
+      Nothing -> writeIORef slastFull (lastFrame, True)
+      Just f  -> writeIORef slastFull (f, False)
 
 -- | Input key via the frontend.
 nextEvent :: FrontendSession -> IO (K.Key, K.Modifier)
 nextEvent FrontendSession{schanKey} = do
   km <- readChan schanKey
   return km
-
--- | Add a game screen frame to the frame drawing channel.
-pushFrame :: FrontendSession -> Color.SingleFrame -> IO ()
-pushFrame FrontendSession{schanScreen, slastFull} frame = do
-  (lastFrame, anyFollowed) <- readIORef slastFull
-  let nextFrame =
-        if frame == lastFrame
-        then Color.NoFrame  -- no sense repeating
-        else frame
-  unless (nextFrame == Color.NoFrame && anyFollowed) $ do  -- old news
-    writeLQueue schanScreen nextFrame
-    if nextFrame == Color.NoFrame
-      then writeIORef slastFull (lastFrame, True)
-      else writeIORef slastFull (nextFrame, False)
 
 -- | Tells a dead key.
 deadKey :: String -> Bool

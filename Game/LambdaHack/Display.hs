@@ -87,7 +87,7 @@ data ColorMode =
 
 displayNothingD :: FrontendSession -> IO Bool
 displayNothingD fs = do
-  pushFrame fs Color.NoFrame
+  pushFrame fs Nothing
   return True
 
 -- TODO: split up and generally rewrite.
@@ -226,7 +226,7 @@ displayLevel dm fs cops per
               in L.foldl' f [] [lysize-1,lysize-2..0]
             sfTop = DeepSeq.force $ toWidth width mesg
             sfBottom = DeepSeq.force $ toWidth width status
-        in pushFrame fs Color.SingleFrame{..}
+        in pushFrame fs (Just Color.SingleFrame{..})
       -- Perform messages slideshow.
       perf []     = perfOverlay 0 ""
       perf [xs]   = perfOverlay 0 xs

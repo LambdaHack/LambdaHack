@@ -60,7 +60,6 @@ data SingleFrame =
       , sfTop    :: !String            -- ^ an extra line to show at the top
       , sfBottom :: !String            -- ^ an extra line to show at the bottom
       }
-  | NoFrame
   deriving Eq
 
 -- | A helper for the terminal frontends that display bright via bold.
