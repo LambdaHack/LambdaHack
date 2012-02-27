@@ -9,10 +9,8 @@ module Game.LambdaHack.Display.Gtk
   ) where
 
 import Control.Monad
-import Control.Monad.STM
 import Control.Monad.Reader
 import Control.Concurrent
-import Control.Concurrent.STM.TChan
 import Control.Exception (finally)
 import Graphics.UI.Gtk.Gdk.EventM
 import Graphics.UI.Gtk hiding (Point)
@@ -21,6 +19,7 @@ import Data.IORef
 import qualified Data.Map as M
 import qualified Data.ByteString.Char8 as BS
 
+import Game.LambdaHack.Utils.LQueue
 import qualified Game.LambdaHack.Key as K (Key(..), keyTranslate, Modifier(..))
 import qualified Game.LambdaHack.Color as Color
 
@@ -29,7 +28,7 @@ data FrontendSession = FrontendSession
   { sview       :: TextView                    -- ^ the widget to draw to
   , stags       :: M.Map Color.Attr TextTag    -- ^ text color tags for fg/bg
   , schanKey    :: Chan (K.Key, K.Modifier)    -- ^ channel for keyboard input
-  , schanScreen :: TChan Color.SingleFrame     -- ^ channel for screen output
+  , schanScreen :: LQueue Color.SingleFrame    -- ^ channel for screen output
   , slastFull   :: IORef (Color.SingleFrame, Bool)
       -- ^ most recent not empty, not repeated frame and if any followed
   }
@@ -74,7 +73,7 @@ runGtk configFont k = do
   -- Set up the channel for keyboard input.
   schanKey <- newChan
   -- Set up the channel for drawing frames.
-  schanScreen <- newTChanIO
+  schanScreen <- newLQueue
   -- Create the session record.
   slastFull <- newIORef (Color.NoFrame, False)
   let sess = FrontendSession{..}
@@ -91,7 +90,7 @@ runGtk configFont k = do
     liftIO $ do
       unless (deadKey n) $ do
         -- Key pressed. Drop all the old frames.
-        atomically $ flushChan schanScreen
+        clearLQueue schanScreen
         -- Store the key in the channel.
         writeChan schanKey (key, modifier)
       return True
@@ -174,15 +173,6 @@ setTo tb tts lx (ly, attr:attrs) = do
             setIter a 1 as
   setIter attr 1 attrs
 
--- | Empty a channel, making sure nobody steals an element while we work
--- (STM guarantess nobody can remove from the channel, while we flush).
-flushChan :: TChan a -> STM ()
-flushChan chan = do
-  b <- isEmptyTChan chan
-  unless b $ do
-    readTChan chan
-    flushChan chan
-
 -- TODO: configure
 -- | Maximal frames per second.
 maxFps :: Int
@@ -192,11 +182,7 @@ maxFps = 30
 drawFrame :: FrontendSession -> IO Bool
 drawFrame sess@FrontendSession{schanScreen} = do
   -- Try to get a frame. Don't block.
-  mframe <- atomically $ do
-    b <- isEmptyTChan schanScreen
-    if b
-      then return Nothing
-      else fmap Just $ readTChan schanScreen
+  mframe <- tryReadLQueue schanScreen
   maybe (return True) (display sess) mframe
 
 -- | Input key via the frontend.
@@ -214,7 +200,7 @@ pushFrame FrontendSession{schanScreen, slastFull} frame = do
         then Color.NoFrame  -- no sense repeating
         else frame
   unless (nextFrame == Color.NoFrame && anyFollowed) $ do  -- old news
-    atomically $ writeTChan schanScreen nextFrame
+    writeLQueue schanScreen nextFrame
     if nextFrame == Color.NoFrame
       then writeIORef slastFull (lastFrame, True)
       else writeIORef slastFull (nextFrame, False)
