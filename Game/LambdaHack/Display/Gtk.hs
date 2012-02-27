@@ -220,12 +220,12 @@ pushFrame sess@FrontendSession{schanScreen, slastFull} rawFrame = do
 
 evalFrame :: FrontendSession -> Color.SingleFrame -> GtkFrame
 evalFrame FrontendSession{stags} Color.SingleFrame{..} =
-  let levelChar = L.map (L.map snd) sflevel
+  let levelChar = L.map (L.map Color.acChar) sfLevel
       gfChar = BS.pack $ L.intercalate "\n" $ sfTop : levelChar ++ [sfBottom]
-      -- Strict version of @L.map (L.map ((stags M.!) . fst)) sflevel@.
-      gfAttr  = L.reverse $ L.foldl' ff [] sflevel
+      -- Strict version of @L.map (L.map ((stags M.!) . fst)) sfLevel@.
+      gfAttr  = L.reverse $ L.foldl' ff [] sfLevel
       ff ll l = (L.reverse $ L.foldl' f [] l) : ll
-      f l ac  = let !tag = stags M.! fst ac in tag : l
+      f l ac  = let !tag = stags M.! Color.acAttr ac in tag : l
   in GtkFrame{..}
 
 -- | Input key via the frontend.

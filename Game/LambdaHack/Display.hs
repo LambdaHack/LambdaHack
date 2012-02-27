@@ -198,8 +198,8 @@ displayLevel dm fs cops per
                   ColorBW   -> Color.defaultAttr
                   ColorFull -> optVisually Color.Attr{fg = fg0, bg = bg0}
         in case over (x0, y0 + offset) of
-             Just c -> (Color.defaultAttr, c)
-             _      -> (a, char)
+             Just c -> Color.AttrChar Color.defaultAttr c
+             _      -> Color.AttrChar a char
       status =
         take 28 (ldesc ++ repeat ' ') ++
         take 9 ("L: " ++ show (Dungeon.levelNumber slid) ++ repeat ' ') ++
@@ -211,15 +211,14 @@ displayLevel dm fs cops per
       toWidth :: Int -> String -> String
       toWidth n x = take n (x ++ repeat ' ')
       disp n mesg =
-        -- Totally strict.
         let offset = lysize * n
             fLine y =
-              let f l x = dis offset (PointXY (x, y)) : l
+              let f l x = let !ac = dis offset (PointXY (x, y)) in ac : l
               in L.foldl' f [] [lxsize-1,lxsize-2..0]
-            sflevel =
-              let f l y = fLine y : l
+            sfLevel =  -- Fully evaluated.
+              let f l y = let !line = fLine y in line : l
               in L.foldl' f [] [lysize-1,lysize-2..0]
-            sfTop =toWidth width mesg
+            sfTop = toWidth width mesg
             sfBottom = toWidth width status
         in pushFrame fs (Just Color.SingleFrame{..})
       -- Perform messages slideshow.

@@ -3,7 +3,7 @@ module Game.LambdaHack.Color
   ( -- * Colours
     Color(..), defBG, defFG, isBright, legalBG, colorToRGB
     -- * Text attributes and the screen
-  , Attr(..), defaultAttr, SingleFrame(..)
+  , Attr(..), defaultAttr, AttrChar(..), SingleFrame(..)
   ) where
 
 import qualified Data.Binary as Binary
@@ -53,11 +53,17 @@ data Attr = Attr
 defaultAttr :: Attr
 defaultAttr = Attr defFG defBG
 
+data AttrChar = AttrChar
+  { acAttr :: !Attr
+  , acChar :: !Char
+  }
+  deriving Eq
+
 -- | The data sufficent to draw a single game screen frame.
 data SingleFrame = SingleFrame
-  { sflevel  :: [[(Attr, Char)]]  -- ^ content of the screen, line by line
-  , sfTop    :: String            -- ^ an extra line to show at the top
-  , sfBottom :: String            -- ^ an extra line to show at the bottom
+  { sfLevel  :: ![[AttrChar]]  -- ^ content of the screen, line by line
+  , sfTop    :: String         -- ^ an extra line to show at the top
+  , sfBottom :: String         -- ^ an extra line to show at the bottom
   }
   deriving Eq
 
