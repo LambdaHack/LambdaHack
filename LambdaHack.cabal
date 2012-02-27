@@ -191,7 +191,7 @@ executable LambdaHack
   ghc-options:     -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-monomorphism-restriction -fwarn-unrecognised-pragmas
   ghc-options:     -fno-warn-auto-orphans -fno-warn-implicit-prelude -fno-warn-unused-do-bind
   ghc-options:     -fno-ignore-asserts -funbox-strict-fields
-  ghc-options:     -threaded
+  ghc-options:     -threaded -with-rtsopts=-C0.005
 
 executable DumbBot
   main-is:         Main.hs

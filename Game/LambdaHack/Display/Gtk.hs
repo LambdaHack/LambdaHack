@@ -131,8 +131,6 @@ runGtk configFont k = do
   containerAdd w sview
   onDestroy w mainQuit
   widgetShowAll w
-  -- Wait with showing the window until there's anything to draw.
-  yield
   -- Show the window.
   mainGUI
 
