@@ -30,8 +30,10 @@ data FrontendSession = FrontendSession
   , stags       :: M.Map Color.Attr TextTag  -- ^ text color tags for fg/bg
   , schanKey    :: Chan (K.Key, K.Modifier)  -- ^ channel for keyboard input
   , schanScreen :: LQueue (Maybe GtkFrame)   -- ^ channel for screen output
+  , slastShown  :: IORef GtkFrame            -- ^ last full frame shown
   , slastFull   :: IORef (GtkFrame, Bool)
-      -- ^ most recent not empty, not repeated frame and if any followed
+      -- ^ most recent full (not empty, not repeated) frame received
+      -- ^ and if any empty frame followed it
   }
 
 data GtkFrame = GtkFrame
@@ -39,6 +41,9 @@ data GtkFrame = GtkFrame
   , gfAttr :: ![[TextTag]]
   }
   deriving Eq
+
+dummyFrame :: GtkFrame
+dummyFrame = GtkFrame BS.empty []
 
 -- | The name of the frontend.
 frontendName :: String
@@ -82,7 +87,8 @@ runGtk configFont k = do
   -- Set up the channel for drawing frames.
   schanScreen <- newLQueue
   -- Create the session record.
-  slastFull <- newIORef (GtkFrame BS.empty [], False)
+  slastShown <- newIORef dummyFrame
+  slastFull  <- newIORef (dummyFrame, False)
   let sess = FrontendSession{..}
   -- Fork the game logic thread.
   forkIO $ k sess
@@ -96,7 +102,10 @@ runGtk configFont k = do
         !modifier = modifierTranslate mods
     liftIO $ do
       unless (deadKey n) $ do
-        -- Key pressed. Drop all the old frames.
+        -- Update the last received with the last shown.
+        lastShown <- readIORef slastShown
+        writeIORef slastFull (lastShown, True)
+        -- Drop all the old frames.
         clearLQueue schanScreen
         -- Store the key in the channel.
         writeChan schanKey (key, modifier)
@@ -184,11 +193,13 @@ maxFps = 30
 
 -- | Draw a frame from a channel, if any.
 drawFrame :: FrontendSession -> IO Bool
-drawFrame sess@FrontendSession{schanScreen} = do
+drawFrame sess@FrontendSession{schanScreen, slastShown} = do
   -- Try to get a frame. Don't block.
   mmframe <- tryReadLQueue schanScreen
   case mmframe of
-    Just (Just frame) -> display sess frame
+    Just (Just frame) -> do
+      writeIORef slastShown frame
+      display sess frame
     Just Nothing -> return True  --  timeout requested
     Nothing -> return True  -- empty queue, do nothing
 
