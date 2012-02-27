@@ -26,7 +26,6 @@ import qualified Data.List as L
 import qualified Data.Map as M
 import qualified Data.IntMap as IM
 import Data.Maybe
-import qualified Control.DeepSeq as DeepSeq
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Misc
@@ -215,17 +214,13 @@ displayLevel dm fs cops per
         -- Totally strict.
         let offset = lysize * n
             fLine y =
-              let f l x =
-                    let (!a, !c) = dis offset (PointXY (x, y))
-                    in (a, c) : l
+              let f l x = dis offset (PointXY (x, y)) : l
               in L.foldl' f [] [lxsize-1,lxsize-2..0]
             sflevel =
-              let f l y =
-                    let !line = fLine y
-                    in line : l
+              let f l y = fLine y : l
               in L.foldl' f [] [lysize-1,lysize-2..0]
-            sfTop = DeepSeq.force $ toWidth width mesg
-            sfBottom = DeepSeq.force $ toWidth width status
+            sfTop =toWidth width mesg
+            sfBottom = toWidth width status
         in pushFrame fs (Just Color.SingleFrame{..})
       -- Perform messages slideshow.
       perf []     = perfOverlay 0 ""

@@ -54,12 +54,11 @@ defaultAttr :: Attr
 defaultAttr = Attr defFG defBG
 
 -- | The data sufficent to draw a single game screen frame.
-data SingleFrame =
-    SingleFrame
-      { sflevel  :: ![[(Attr, Char)]]  -- ^ content of the screen, line by line
-      , sfTop    :: !String            -- ^ an extra line to show at the top
-      , sfBottom :: !String            -- ^ an extra line to show at the bottom
-      }
+data SingleFrame = SingleFrame
+  { sflevel  :: [[(Attr, Char)]]  -- ^ content of the screen, line by line
+  , sfTop    :: String            -- ^ an extra line to show at the top
+  , sfBottom :: String            -- ^ an extra line to show at the bottom
+  }
   deriving Eq
 
 -- | A helper for the terminal frontends that display bright via bold.

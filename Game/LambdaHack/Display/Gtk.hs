@@ -29,11 +29,16 @@ data FrontendSession = FrontendSession
   { sview       :: TextView                  -- ^ the widget to draw to
   , stags       :: M.Map Color.Attr TextTag  -- ^ text color tags for fg/bg
   , schanKey    :: Chan (K.Key, K.Modifier)  -- ^ channel for keyboard input
-  , schanScreen :: LQueue (Maybe Color.SingleFrame)
-                                             -- ^ channel for screen output
-  , slastFull   :: IORef (Color.SingleFrame, Bool)
+  , schanScreen :: LQueue (Maybe GtkFrame)   -- ^ channel for screen output
+  , slastFull   :: IORef (GtkFrame, Bool)
       -- ^ most recent not empty, not repeated frame and if any followed
   }
+
+data GtkFrame = GtkFrame
+  { gfChar :: !BS.ByteString
+  , gfAttr :: ![[TextTag]]
+  }
+  deriving Eq
 
 -- | The name of the frontend.
 frontendName :: String
@@ -77,7 +82,7 @@ runGtk configFont k = do
   -- Set up the channel for drawing frames.
   schanScreen <- newLQueue
   -- Create the session record.
-  slastFull <- newIORef (Color.SingleFrame [] "" "", False)
+  slastFull <- newIORef (GtkFrame BS.empty [], False)
   let sess = FrontendSession{..}
   -- Fork the game logic thread.
   forkIO $ k sess
@@ -140,36 +145,34 @@ shutdown :: FrontendSession -> IO ()
 shutdown _ = mainQuit
 
 -- | Output to the screen via the frontend.
-display :: FrontendSession    -- ^ frontend session data
-        -> Color.SingleFrame  -- ^ the screen frame to draw
+display :: FrontendSession  -- ^ frontend session data
+        -> GtkFrame         -- ^ the screen frame to draw
         -> IO Bool
-display FrontendSession{sview, stags} Color.SingleFrame{..} = do  -- new frame
+display FrontendSession{sview, stags} GtkFrame{..} = do  -- new frame
   tb <- textViewGetBuffer sview
-  let attrs = L.zip [0..] $ L.map (L.map fst) sflevel
-      chars = L.map (BS.pack . L.map snd) sflevel
-      bs    = [BS.pack sfTop, BS.pack "\n", BS.unlines chars, BS.pack sfBottom]
-  textBufferSetByteString tb (BS.concat bs)
-  mapM_ (setTo tb stags 0) attrs
+  let attrs = L.zip [0..] gfAttr
+      defaultAttr = stags M.! Color.defaultAttr
+  textBufferSetByteString tb gfChar
+  mapM_ (setTo tb defaultAttr 0) attrs
   return True
 
-setTo :: TextBuffer -> M.Map Color.Attr TextTag -> Int -> (Int, [Color.Attr])
-      -> IO ()
+setTo :: TextBuffer -> TextTag -> Int -> (Int, [TextTag]) -> IO ()
 setTo _  _   _  (_,  [])         = return ()
-setTo tb tts lx (ly, attr:attrs) = do
+setTo tb defaultAttr lx (ly, attr:attrs) = do
   ib <- textBufferGetIterAtLineOffset tb (ly + 1) lx
   ie <- textIterCopy ib
-  let setIter :: Color.Attr -> Int -> [Color.Attr] -> IO ()
+  let setIter :: TextTag -> Int -> [TextTag] -> IO ()
       setIter previous repetitions [] = do
         textIterForwardChars ie repetitions
-        when (previous /= Color.defaultAttr) $
-          textBufferApplyTag tb (tts M.! previous) ib ie
+        when (previous /= defaultAttr) $
+          textBufferApplyTag tb previous ib ie
       setIter previous repetitions (a:as)
         | a == previous =
             setIter a (repetitions + 1) as
         | otherwise = do
             textIterForwardChars ie repetitions
-            when (previous /= Color.defaultAttr) $
-              textBufferApplyTag tb (tts M.! previous) ib ie
+            when (previous /= defaultAttr) $
+              textBufferApplyTag tb previous ib ie
             textIterForwardChars ib repetitions
             setIter a 1 as
   setIter attr 1 attrs
@@ -191,9 +194,10 @@ drawFrame sess@FrontendSession{schanScreen} = do
 
 -- | Add a game screen frame to the frame drawing channel.
 pushFrame :: FrontendSession -> Maybe Color.SingleFrame -> IO ()
-pushFrame FrontendSession{schanScreen, slastFull} frame = do
+pushFrame sess@FrontendSession{schanScreen, slastFull} rawFrame = do
   (lastFrame, anyFollowed) <- readIORef slastFull
-  let nextFrame =
+  let frame = maybe Nothing (Just . evalFrame sess) rawFrame
+      nextFrame =
         if frame == Just lastFrame
         then Nothing  -- no sense repeating
         else frame
@@ -202,6 +206,16 @@ pushFrame FrontendSession{schanScreen, slastFull} frame = do
     case nextFrame of
       Nothing -> writeIORef slastFull (lastFrame, True)
       Just f  -> writeIORef slastFull (f, False)
+
+evalFrame :: FrontendSession -> Color.SingleFrame -> GtkFrame
+evalFrame FrontendSession{stags} Color.SingleFrame{..} =
+  let levelChar = L.map (L.map snd) sflevel
+      gfChar = BS.pack $ L.intercalate "\n" $ sfTop : levelChar ++ [sfBottom]
+      -- Strict version of @L.map (L.map ((stags M.!) . fst)) sflevel@.
+      gfAttr  = L.reverse $ L.foldl' ff [] sflevel
+      ff ll l = (L.reverse $ L.foldl' f [] l) : ll
+      f l ac  = let !tag = stags M.! fst ac in tag : l
+  in GtkFrame{..}
 
 -- | Input key via the frontend.
 nextEvent :: FrontendSession -> IO (K.Key, K.Modifier)
