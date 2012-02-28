@@ -9,6 +9,7 @@ module Game.LambdaHack.Msg
 import qualified Data.List as L
 import Data.Char
 import Data.Binary
+import qualified Data.ByteString.Char8 as BS
 
 import Game.LambdaHack.Misc
 
@@ -39,7 +40,7 @@ padMsg w xs =
     reversed -> L.reverse $ ' ' : reversed
 
 -- | The type of a set of messages to show at the screen at once.
-newtype Report = Report [(Msg, Int)]
+newtype Report = Report [(BS.ByteString, Int)]
   deriving Show
 
 instance Binary Report where
@@ -58,22 +59,24 @@ singletonReport m = addMsg emptyReport m
 -- | Append two messages.
 addMsg :: Report -> Msg -> Report
 addMsg r "" = r
-addMsg (Report ((x, n) : xns)) y | x == y = Report $ (y, n + 1) : xns
-addMsg (Report xns) y = Report $ (y, 1) : xns
+addMsg (Report ((x, n) : xns)) y' | x == y =
+  Report $ (y, n + 1) : xns
+ where y = BS.pack y'
+addMsg (Report xns) y = Report $ (BS.pack y, 1) : xns
 
 -- | Split a messages into chunks that fit in one line.
 splitReport :: Int -> Report -> [String]
 splitReport w (Report xs) =
   map (dropWhile isSpace) $ splitString w (renderReport xs)
 
-renderReport :: [(Msg, Int)] -> String
+renderReport :: [(BS.ByteString, Int)] -> String
 renderReport [] = ""
 renderReport [xn] = renderRepetition xn
 renderReport (xn : xs) = renderReport xs ++ " " ++ renderRepetition xn
 
-renderRepetition :: (Msg, Int) -> String
-renderRepetition (x, 1) = x
-renderRepetition (x, n) = x ++ "<x" ++ show n ++ ">"
+renderRepetition :: (BS.ByteString, Int) -> String
+renderRepetition (s, 1) = BS.unpack s
+renderRepetition (s, n) = BS.unpack s ++ "<x" ++ show n ++ ">"
 
 splitString :: Int -> String -> [String]
 splitString w xs
