@@ -60,8 +60,8 @@ start config1 slowSess = do
       let state = defaultState
                     config3 sflavour freshDungeon entryLevel entryLoc g3
           hstate = initialHeroes cops entryLoc state
-      handlerToIO sess hstate diary{smsg = singletonMsg msg} handle
+      handlerToIO sess hstate diary{smsg = singletonReport msg} handle
     Left (state, diary) ->  -- Running a restored a game.
       handlerToIO sess state
-        diary{smsg = singletonMsg $ "Welcome back to " ++ title ++ "."}  -- TODO:save old msg?
+        diary{smsg = singletonReport $ "Welcome back to " ++ title ++ "."}  -- TODO:save old msg?
         handle

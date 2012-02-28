@@ -91,8 +91,9 @@ defaultDiary = do
   curDate <- getClockTime
   let time = calendarTimeToString $ toUTCTime curDate
   return Diary
-    { smsg = []
-    , shistory = [singletonMsg $ "Player diary started on " ++ time ++ "."]
+    { smsg = emptyReport
+    , shistory = singletonHistory $ singletonReport $
+                   "Player diary started on " ++ time ++ "."
     }
 
 -- | Initial game state.

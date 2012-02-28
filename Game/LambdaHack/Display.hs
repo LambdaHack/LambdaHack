@@ -111,12 +111,12 @@ displayLevel dm fs cops per
       (msgs, (ns, over)) =
         case moverlay of
           Just overlay ->
-            ( splitMsg (fst normalLevelBound + 1) (length more) msg
+            ( splitReport (fst normalLevelBound + 1) (length more) msg
             , -- ns overlay screens needed
               stringByLocation lysize overlay
             )
           Nothing ->
-            case splitMsg (fst normalLevelBound + 1) 0 msg of
+            case splitReport (fst normalLevelBound + 1) 0 msg of
               msgTop : mss ->
                 ( [msgTop]
                 , stringByLocation lysize $ unlines $

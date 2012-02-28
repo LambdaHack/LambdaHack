@@ -153,7 +153,7 @@ currentMsg = Action (\ _s _e _p k _a st ms -> k st ms (smsg ms))
 -- | Wipe out and set a new value for the current msg.
 msgReset :: Msg -> Action ()
 msgReset nm = Action (\ _s _e _p k _a st ms ->
-                       k st ms{smsg = singletonMsg nm} ())
+                       k st ms{smsg = singletonReport nm} ())
 
 -- | Add to the current msg.
 msgAdd :: Msg -> Action ()

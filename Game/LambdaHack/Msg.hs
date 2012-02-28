@@ -1,12 +1,14 @@
 -- | Game messages displayed on top of the screen for the player to read.
 module Game.LambdaHack.Msg
-  ( Msg, more, msgEnd, yesno
-  , Report, singletonMsg, addMsg, splitMsg, padMsg
-  , History, renderHistory, addReport
+  ( Msg, more, msgEnd, yesno, padMsg
+  , Report, emptyReport, nullReport, singletonReport, addMsg, splitReport
+  , History, emptyHistory, singletonHistory, addReport, renderHistory
+  , takeHistory
   ) where
 
 import qualified Data.List as L
 import Data.Char
+import Data.Binary
 
 import Game.LambdaHack.Misc
 
@@ -27,33 +29,52 @@ msgEnd = " --end--  "
 yesno :: Msg
 yesno = " [yn]"
 
--- | The type of a set of messages to show at the screen at once.
-type Report = [(Msg, Int)]
+-- | Add spaces at the message end, for display overlayed over the level map.
+padMsg :: Int -> String -> String
+padMsg w xs =
+  case L.reverse xs of
+    [] -> xs
+    ' ' : _ -> xs
+    _ | w == length xs -> xs
+    reversed -> L.reverse $ ' ' : reversed
 
-singletonMsg :: Msg -> Report
-singletonMsg "" = []
-singletonMsg y = [(y, 1)]
+-- | The type of a set of messages to show at the screen at once.
+newtype Report = Report [(Msg, Int)]
+  deriving Show
+
+instance Binary Report where
+  put (Report x) = put x
+  get = fmap Report get
+
+emptyReport :: Report
+emptyReport = Report []
+
+nullReport :: Report -> Bool
+nullReport (Report l) = null l
+
+singletonReport :: Msg -> Report
+singletonReport m = addMsg emptyReport m
 
 -- | Append two messages.
 addMsg :: Report -> Msg -> Report
-addMsg xns "" = xns
-addMsg ((x, n) : xns) y | x == y = (y, n + 1) : xns
-addMsg xns y = (y, 1) : xns
+addMsg r "" = r
+addMsg (Report ((x, n) : xns)) y | x == y = Report $ (y, n + 1) : xns
+addMsg (Report xns) y = Report $ (y, 1) : xns
 
 -- | Split a messages into chunks that fit in one line.
-splitMsg :: Int -> Int -> Report -> [String]
-splitMsg w m xs = splitString w (renderMsg xs) m
+splitReport :: Int -> Int -> Report -> [String]
+splitReport w m (Report xs) = splitString w (renderReport xs) m
 
-renderMsg :: Report -> String
-renderMsg [] = ""
-renderMsg [xn] = renderRepetition xn
-renderMsg (xn : xs) = renderMsg xs ++ " " ++ renderRepetition xn
+renderReport :: [(Msg, Int)] -> String
+renderReport [] = ""
+renderReport [xn] = renderRepetition xn
+renderReport (xn : xs) = renderReport xs ++ " " ++ renderRepetition xn
 
 renderRepetition :: (Msg, Int) -> String
 renderRepetition (x, 1) = x
 renderRepetition (x, n) = x ++ "<x" ++ show n ++ ">"
 
-splitString :: Int -> Msg -> Int -> [String]
+splitString :: Int -> String -> Int -> [String]
 splitString w xs m
   | w <= m = [xs]   -- border case, we cannot make progress
   | w >= length xs = [xs]   -- no problem, everything fits
@@ -65,28 +86,34 @@ splitString w xs m
          then pre : splitString w post m
          else reverse rpost : splitString w (reverse ppre ++ post) m
 
--- | Add spaces at the message end, for display overlayed over the level map.
-padMsg :: Int -> String -> String
-padMsg w xs =
-  case L.reverse xs of
-    [] -> xs
-    ' ' : _ -> xs
-    _ | w == length xs -> xs
-    reversed -> L.reverse $ ' ' : reversed
-
 -- | The history of reports.
-type History = [Report]
+newtype History = History [Report]
+  deriving Show
+
+instance Binary History where
+  put (History x) = put x
+  get = fmap History get
+
+emptyHistory :: History
+emptyHistory = History []
+
+singletonHistory :: Report -> History
+singletonHistory r = addReport r emptyHistory
 
 renderHistory :: History -> String
-renderHistory h =
+renderHistory (History h) =
   let w = fst normalLevelBound + 1
-  in unlines $ L.concatMap (L.map (padMsg w) . splitMsg w 0) h
+  in unlines $ L.concatMap (L.map (padMsg w) . splitReport w 0) h
 
 addReport :: Report -> History -> History
-addReport m (h : hs) =
+addReport (Report []) h = h
+addReport m (History []) = History [m]
+addReport (Report m) (History (Report h : hs)) =
   case (reverse m, h) of
     ((s1, n1) : rs, (s2, n2) : hhs) | s1 == s2 ->
-      let hist = ((s2, n1 + n2) : hhs) : hs
-      in if null rs then hist else reverse rs : hist
-    _ -> m : h : hs
-addReport m h = m : h
+      let hist = Report ((s2, n1 + n2) : hhs) : hs
+      in History $ if null rs then hist else Report (reverse rs) : hist
+    _ -> History $ Report m : Report h : hs
+
+takeHistory :: Int -> History -> History
+takeHistory k (History h) = History $ take k h
