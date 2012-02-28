@@ -62,8 +62,9 @@ addMsg (Report ((x, n) : xns)) y | x == y = Report $ (y, n + 1) : xns
 addMsg (Report xns) y = Report $ (y, 1) : xns
 
 -- | Split a messages into chunks that fit in one line.
-splitReport :: Int -> Int -> Report -> [String]
-splitReport w m (Report xs) = splitString w (renderReport xs) m
+splitReport :: Int -> Report -> [String]
+splitReport w (Report xs) =
+  map (dropWhile isSpace) $ splitString w (renderReport xs)
 
 renderReport :: [(Msg, Int)] -> String
 renderReport [] = ""
@@ -74,17 +75,17 @@ renderRepetition :: (Msg, Int) -> String
 renderRepetition (x, 1) = x
 renderRepetition (x, n) = x ++ "<x" ++ show n ++ ">"
 
-splitString :: Int -> String -> Int -> [String]
-splitString w xs m
-  | w <= m = [xs]   -- border case, we cannot make progress
+splitString :: Int -> String -> [String]
+splitString w xs
+  | w <= 0 = [xs]   -- border case, we cannot make progress
   | w >= length xs = [xs]   -- no problem, everything fits
   | otherwise =
-      let (pre, post) = splitAt (w - m) xs
+      let (pre, post) = splitAt w xs
           (ppre, ppost) = break (`elem` " .,:;!?") $ reverse pre
           rpost = dropWhile isSpace ppost
       in if L.null rpost
-         then pre : splitString w post m
-         else reverse rpost : splitString w (reverse ppre ++ post) m
+         then pre : splitString w post
+         else reverse rpost : splitString w (reverse ppre ++ post)
 
 -- | The history of reports.
 newtype History = History [Report]
@@ -103,7 +104,7 @@ singletonHistory r = addReport r emptyHistory
 renderHistory :: History -> String
 renderHistory (History h) =
   let w = fst normalLevelBound + 1
-  in unlines $ L.concatMap (L.map (padMsg w) . splitReport w 0) h
+  in unlines $ L.concatMap (L.map (padMsg w) . splitReport w) h
 
 addReport :: Report -> History -> History
 addReport (Report []) h = h
