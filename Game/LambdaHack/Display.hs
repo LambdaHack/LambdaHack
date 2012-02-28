@@ -94,7 +94,7 @@ displayNothingD fs = do
 -- and multi-page overlaid information, if any.
 displayLevel :: ColorMode -> FrontendSession -> Kind.COps
              -> Perception -> State
-             -> Msg -> Maybe String -> IO Bool
+             -> Report -> Maybe String -> IO Bool
 displayLevel dm fs cops per
              s@State{ scursor=Cursor{..}
                     , stime, sflavour, slid, splayer, sdebug }
@@ -111,12 +111,12 @@ displayLevel dm fs cops per
       (msgs, (ns, over)) =
         case moverlay of
           Just overlay ->
-            ( splitMsg (fst normalLevelBound + 1) msg (length more)
+            ( splitMsg (fst normalLevelBound + 1) (length more) msg
             , -- ns overlay screens needed
               stringByLocation lysize overlay
             )
           Nothing ->
-            case splitMsg (fst normalLevelBound + 1) msg 0 of
+            case splitMsg (fst normalLevelBound + 1) 0 msg of
               msgTop : mss ->
                 ( [msgTop]
                 , stringByLocation lysize $ unlines $

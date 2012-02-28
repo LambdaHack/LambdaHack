@@ -121,15 +121,15 @@ displayNothing =
            >>= k st ms)
 
 -- | Display the current level with modified current msg.
-displayGeneric :: ColorMode -> (Msg -> Msg) -> Action Bool
-displayGeneric dm f =
+displayGeneric :: ColorMode -> Action Bool
+displayGeneric dm =
   Action (\ Session{sfs, scops} _e p k _a st ms ->
-           displayLevel dm sfs scops p st (f (smsg ms)) Nothing
+           displayLevel dm sfs scops p st (smsg ms) Nothing
            >>= k st ms)
 
 -- | Display the current level, with the current msg and color.
 displayAll :: Action Bool
-displayAll = displayGeneric ColorFull id
+displayAll = displayGeneric ColorFull
 
 -- | Display an overlay on top of the current screen.
 overlay :: String -> Action Bool
@@ -147,12 +147,13 @@ diaryReset :: Diary -> Action ()
 diaryReset ndiary = Action (\ _s _e _p k _a st _diary -> k st ndiary ())
 
 -- | Get the current msg.
-currentMsg :: Action Msg
+currentMsg :: Action Report
 currentMsg = Action (\ _s _e _p k _a st ms -> k st ms (smsg ms))
 
 -- | Wipe out and set a new value for the current msg.
 msgReset :: Msg -> Action ()
-msgReset nm = Action (\ _s _e _p k _a st ms -> k st ms{smsg = nm} ())
+msgReset nm = Action (\ _s _e _p k _a st ms ->
+                       k st ms{smsg = singletonMsg nm} ())
 
 -- | Add to the current msg.
 msgAdd :: Msg -> Action ()
@@ -161,7 +162,7 @@ msgAdd nm = Action (\ _s _e _p k _a st ms ->
 
 -- | Clear the current msg.
 msgClear :: Action ()
-msgClear = Action (\ _s _e _p k _a st ms -> k st ms{smsg = ""} ())
+msgClear = msgReset ""
 
 -- | Get the content operations.
 contentOps :: Action Kind.COps
@@ -258,7 +259,7 @@ getConfirm Session{sfs} = liftIO $ getConfirmD sfs
 msgMoreConfirm :: ColorMode -> Msg -> Action Bool
 msgMoreConfirm dm msg = do
   msgAdd (msg ++ more)
-  displayGeneric dm id
+  displayGeneric dm
   session getConfirm
 
 -- | Print msg, await confirmation, ignore confirmation.
@@ -269,7 +270,7 @@ msgMore msg = msgClear >> msgMoreConfirm ColorFull msg >> return ()
 msgYesNo :: Msg -> Action Bool
 msgYesNo msg = do
   msgReset (msg ++ yesno)
-  displayGeneric ColorBW id  -- turn player's attention to the choice
+  displayGeneric ColorBW  -- turn player's attention to the choice
   session getYesNo
 
 -- | Clear message and overlay.

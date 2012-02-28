@@ -36,6 +36,7 @@ import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Random
+import Game.LambdaHack.Msg
 
 displayHistory :: Action ()
 displayHistory = do
@@ -43,7 +44,7 @@ displayHistory = do
   stime <- gets stime
   let turn = show (stime `div` 10)
       msg = "You adventuring lasts " ++ turn ++ " turns. Past messages:"
-  msgOverlaysConfirm msg [unlines $ shistory diary]
+  msgOverlaysConfirm msg [renderHistory $ shistory diary]
   abort
 
 dumpConfig :: Action ()

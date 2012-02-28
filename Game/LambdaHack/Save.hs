@@ -78,6 +78,7 @@ restoreGame pathsDataFile config title = do
     -- Possibly copy over data files. No problem if it fails.
     tryCopyDataFiles pathsDataFile appData
   -- If the diary file does not exist, create an empty diary.
+  -- TODO: when diary gets corrupted, start a new one, too.
   diary <-
     do dfile <- diaryFile config
        db <- doesFileExist dfile

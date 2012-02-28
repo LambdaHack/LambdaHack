@@ -17,7 +17,6 @@ import qualified Data.Set as S
 import qualified Data.IntSet as IS
 import System.Time
 
-import Game.LambdaHack.Misc
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -462,18 +461,13 @@ stopRunning = updatePlayerBody (\ p -> p { bdir = Nothing })
 -- | Store current msg in the history and reset current msg.
 history :: Action ()
 history = do
-  msg <- currentMsg
-  msgClear
-  config <- gets sconfig
-  let historyMax = Config.get config "ui" "historyMax"
-      -- TODO: not ideal, continuations of sentences are atop beginnings.
-      splitS = splitMsg (fst normalLevelBound + 1) msg 0
-      takeMax diary =
-        take historyMax $
-          L.map (padMsg (fst normalLevelBound + 1)) splitS ++ shistory diary
-  unless (L.null msg) $ do
-    diary <- currentDiary
-    diaryReset $ diary {shistory = takeMax diary}
+  diary@Diary{smsg, shistory} <- currentDiary
+  unless (L.null smsg) $ do
+    config <- gets sconfig
+    let historyMax = Config.get config "ui" "historyMax"
+    diaryReset $ diary { smsg = []
+                       , shistory = take historyMax $ addReport smsg shistory
+                       }
 
 -- TODO: depending on tgt, show extra info about tile or monster or both
 -- | Perform look around in the current location of the cursor.

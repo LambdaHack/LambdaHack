@@ -35,8 +35,8 @@ import Game.LambdaHack.FOV
 -- history of past games. This can be used for calculating player
 -- achievements, unlocking advanced game features and general data mining.
 data Diary = Diary
-  { smsg         :: Msg
-  , shistory     :: [Msg]
+  { smsg         :: Report
+  , shistory     :: History
   }
 
 -- | The state of a single game that can be save and restored.
@@ -91,8 +91,8 @@ defaultDiary = do
   curDate <- getClockTime
   let time = calendarTimeToString $ toUTCTime curDate
   return Diary
-    { smsg = ""
-    , shistory = ["Player diary started on " ++ time ++ "."]
+    { smsg = []
+    , shistory = [singletonMsg $ "Player diary started on " ++ time ++ "."]
     }
 
 -- | Initial game state.

@@ -85,7 +85,7 @@ runMode loc dir dirEnterable lxsize =
         _ -> RunHub  -- a hub of many separate corridors
 
 -- | Check for disturbances to running such as newly visible items, monsters.
-runDisturbance :: Point -> Int -> Msg
+runDisturbance :: Point -> Int -> Report
                -> [Actor] -> [Actor] -> Perception -> Point
                -> (F.Feature -> Point -> Bool) -> (Point -> Bool) -> X -> Y
                -> (Vector, Int) -> Maybe (Vector, Int)
