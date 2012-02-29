@@ -19,6 +19,7 @@ import Data.Binary
 import qualified Game.LambdaHack.Config as Config
 import qualified System.Random as R
 import System.Time
+import qualified Data.IntMap as IM
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Misc
@@ -28,6 +29,7 @@ import qualified Game.LambdaHack.Dungeon as Dungeon
 import Game.LambdaHack.Item
 import Game.LambdaHack.Msg
 import Game.LambdaHack.FOV
+import qualified Game.LambdaHack.Color as Color
 
 -- | The diary contains all the player data
 -- that carries over from game to game.
@@ -52,10 +54,15 @@ data State = State
   , slid     :: Dungeon.LevelId  -- ^ identifier of the current level
   , scounter :: Int          -- ^ stores next actor index
   , srandom  :: R.StdGen     -- ^ current random generator
+  , sanim    :: Animation    -- ^ an animation to play
   , sconfig  :: Config.CP    -- ^ game config
   , sdebug   :: DebugMode    -- ^ debugging mode
   }
   deriving Show
+
+-- | Animation is a list of frame modifications to play one by one,
+-- where each modification if a map from locations to level map symbols.
+type Animation = [IM.IntMap Color.AttrChar]
 
 -- | Current targeting mode of the player.
 data TgtMode =
@@ -110,6 +117,7 @@ defaultState config flavour dng lid ploc g =
     lid
     0
     g
+    []
     config
     defaultDebugMode
 
@@ -163,7 +171,7 @@ instance Binary Diary where
 
 instance Binary State where
   put (State player cursor time flav disco dng lid ct
-         g config _) = do
+         g anim config _) = do
     put player
     put cursor
     put time
@@ -173,6 +181,7 @@ instance Binary State where
     put lid
     put ct
     put (show g)
+    put anim
     put config
   get = do
     player <- get
@@ -184,10 +193,11 @@ instance Binary State where
     lid    <- get
     ct     <- get
     g      <- get
+    anim   <- get
     config <- get
     return
       (State player cursor time flav disco dng lid ct
-         (read g) config defaultDebugMode)
+         (read g) anim config defaultDebugMode)
 
 instance Binary Cursor where
   put (Cursor act cln loc rln eps) = do

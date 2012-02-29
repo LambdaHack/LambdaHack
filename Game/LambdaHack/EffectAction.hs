@@ -39,6 +39,7 @@ import qualified Game.LambdaHack.Effect as Effect
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.DungeonState
 import qualified Game.LambdaHack.Save as Save
+import qualified Game.LambdaHack.Color as Color
 
 -- TODO: instead of verbosity return msg components and tailor them outside?
 -- TODO: separately define messages for the case when source == target
@@ -266,19 +267,34 @@ itemEffectAction verbosity source target item = do
   pl  <- gets splayer
   s   <- get
   let effect = ieffect $ okind $ jkind item
+      tloc = bloc tm
   -- The msg describes the target part of the action.
   (b, msg) <- effectToAction effect verbosity source target (jpower item)
   if isAHero s source ||
      isAHero s target ||
      pl == source ||
      pl == target ||
-     (bloc tm `IS.member` totalVisible per &&
+     (tloc `IS.member` totalVisible per &&
       bloc sm `IS.member` totalVisible per)
     then do
       -- Party sees or affected, so reported.
       msgAdd msg
       -- Party sees or affected, so if interesting, the item gets identified.
       when b $ discover item
+      -- Party sees or affected, so show an animation.
+      let sanim = map (IM.singleton tloc)
+            [ Color.AttrChar (Color.Attr Color.BrWhite Color.defBG) '*'
+            , Color.AttrChar (Color.Attr Color.BrRed Color.defBG) '/'
+            , Color.AttrChar (Color.Attr Color.Red Color.defBG) '/'
+            , Color.AttrChar (Color.Attr Color.BrRed Color.defBG) '-'
+            , Color.AttrChar (Color.Attr Color.BrWhite Color.defBG) '-'
+            , Color.AttrChar (Color.Attr Color.BrRed Color.defBG) '\\'
+            , Color.AttrChar (Color.Attr Color.Red Color.defBG) '\\'
+            , Color.AttrChar (Color.Attr Color.BrRed Color.defBG) '|'
+            , Color.AttrChar (Color.Attr Color.Red Color.defBG) '|'
+            , Color.AttrChar (Color.Attr Color.BrRed Color.defBG) '%'
+            ]
+      modify (\state -> state {sanim})
     else
       -- Hidden, but if interesting then heard.
       when b $ msgAdd "You hear some noises."

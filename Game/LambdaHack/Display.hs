@@ -98,7 +98,7 @@ displayLevel :: ColorMode -> FrontendSession -> Kind.COps
              -> Report -> Maybe String -> IO Bool
 displayLevel dm fs cops per
              s@State{ scursor=Cursor{..}
-                    , stime, sflavour, slid, splayer, sdebug }
+                    , stime, sflavour, slid, splayer, sanim, sdebug }
              msg moverlay =
   let Kind.COps{ coactor=Kind.Ops{okind}
                , coitem=coitem@Kind.Ops{okind=iokind}
@@ -214,6 +214,24 @@ displayLevel dm fs cops per
             sfTop = toWidth width mesg
             sfBottom = toWidth width status
         in Color.SingleFrame{..}
+      -- Make sure overlays or multi-line messages do not obscure animations.
+      msgAnim = if ns == 0 then msgTop else ""
+      basicFrame = disp (-1) msgAnim
+      modifyFrame Color.SingleFrame{sfLevel = levelOld, ..} am =
+        let fLine y lineOld =
+              let f l (x, acOld) =
+                    let loc = toPoint lxsize (PointXY (x, y))
+                        !ac = fromMaybe acOld $ IM.lookup loc am
+                    in ac : l
+              in L.foldl' f [] (zip [lxsize-1,lxsize-2..0] (reverse lineOld))
+            sfLevel =  -- Fully evaluated.
+              let f l (y, lineOld) = let !line = fLine y lineOld in line : l
+              in L.foldl' f [] (zip [lysize-1,lysize-2..0] (reverse levelOld))
+        in Color.SingleFrame{..}
+      playAnimations [] = return ()
+      playAnimations (am : ams) = do
+        pushFrame fs (Just $ modifyFrame basicFrame am)
+        playAnimations ams
       -- Perform overlay pages slideshow.
       perf k =
         if k < ns - 1
@@ -224,6 +242,11 @@ displayLevel dm fs cops per
             then perf (k + 1)
             else return False
         else do
+          -- Play animations after the last overlay frame
+          -- that requires confirmation
+          playAnimations sanim
+          -- Show the basic frame. If there are overlays, that's the last
+          -- overlay fram, the one that does not require confirmation.
           pushFrame fs $ Just $ disp k msgTop
           return True
   in perf 0

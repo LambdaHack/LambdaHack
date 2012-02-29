@@ -125,7 +125,7 @@ displayGeneric :: ColorMode -> Action Bool
 displayGeneric dm =
   Action (\ Session{sfs, scops} _e p k _a st ms ->
            displayLevel dm sfs scops p st (smsg ms) Nothing
-           >>= k st ms)
+           >>= k st{sanim=[]} ms)
 
 -- | Display the current level, with the current msg and color.
 displayAll :: Action Bool
@@ -136,7 +136,7 @@ overlay :: String -> Action Bool
 overlay txt =
   Action (\ Session{sfs, scops} _e p k _a st ms ->
            displayLevel ColorFull sfs scops p st (smsg ms) (Just txt)
-           >>= k st ms)
+           >>= k st{sanim=[]} ms)
 
 -- | Get the current diary.
 currentDiary :: Action Diary
