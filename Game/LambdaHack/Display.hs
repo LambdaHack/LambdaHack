@@ -23,7 +23,6 @@ import Game.LambdaHack.Display.Gtk as D
 import qualified Data.Char as Char
 import qualified Data.IntSet as IS
 import qualified Data.List as L
-import qualified Data.Map as M
 import qualified Data.IntMap as IM
 import Data.Maybe
 
@@ -64,6 +63,7 @@ splitOverlay :: Int -> String -> [[String]]
 splitOverlay s xs = splitOverlay' (lines xs)
  where
   splitOverlay' ls
+    | null ls        = []    -- no screens needed
     | length ls <= s = [ls]  -- everything fits on one screen
     | otherwise      = let (pre, post) = splitAt (s - 1) ls
                        in (pre ++ [more]) : splitOverlay' post
@@ -75,9 +75,10 @@ splitOverlay s xs = splitOverlay' (lines xs)
 stringByLocation :: Y -> String -> (Int, (X, Y) -> Maybe Char)
 stringByLocation lysize xs =
   let ls = splitOverlay lysize xs
-      m  = M.fromList (zip [0..] (L.map (M.fromList . zip [0..]) (concat ls)))
+      m  = IM.fromDistinctAscList $
+             zip [0..] (L.map (IM.fromList . zip [0..]) (concat ls))
       k  = length ls
-  in (k, \ (x, y) -> M.lookup y m >>= \ n -> M.lookup x n)
+  in (k, \ (x, y) -> IM.lookup y m >>= \ n -> IM.lookup x n)
 
 -- | Color mode for the display.
 data ColorMode =
@@ -108,21 +109,14 @@ displayLevel dm fs cops per
       ActorKind{ahp, asmell} = okind bkind
       reachable = debugTotalReachable per
       visible   = totalVisible per
-      (msgs, (ns, over)) =
-        case moverlay of
-          Just overlay ->
-            ( splitReport (fst normalLevelBound + 1) msg
-            , -- ns overlay screens needed
-              stringByLocation lysize overlay
-            )
-          Nothing ->
-            case splitReport (fst normalLevelBound + 1) msg of
-              msgTop : mss ->
-                ( [msgTop]
-                , stringByLocation lysize $ unlines $
-                    L.map (padMsg (fst normalLevelBound + 1)) mss
-                )
-              [] -> assert `failure` msg
+      width = fst normalLevelBound + 1
+      (msgTop, (ns, over)) =
+        case splitReport width msg of
+          mt : ms ->
+            let msgRest = unlines $ L.map (padMsg width) ms
+                msgAndOver = msgRest ++ fromMaybe "" moverlay
+            in (mt, stringByLocation lysize msgAndOver)
+          [] -> assert `failure` msg
       (sSml, sVis) = case smarkVision of
         Just Blind -> (True, True)
         Just _  -> (False, True)
@@ -207,7 +201,6 @@ displayLevel dm fs cops per
         take 14 ("Dmg: " ++ damage ++ repeat ' ') ++
         take 32 ("HP: " ++ show bhp ++
                  " (" ++ show (maxDice ahp) ++ ")" ++ repeat ' ')
-      width = fst normalLevelBound + 1
       toWidth :: Int -> String -> String
       toWidth n x = take n (x ++ repeat ' ')
       disp n mesg =
@@ -220,23 +213,17 @@ displayLevel dm fs cops per
               in L.foldl' f [] [lysize-1,lysize-2..0]
             sfTop = toWidth width mesg
             sfBottom = toWidth width status
-        in pushFrame fs (Just Color.SingleFrame{..})
-      -- Perform messages slideshow.
-      perf []     = perfOverlay 0 ""
-      perf [xs]   = perfOverlay 0 xs
-      perf (x:xs) = do
-        disp ns (x ++ more)
-        b <- getConfirmD fs
-        if b then perf xs else return False
+        in Color.SingleFrame{..}
       -- Perform overlay pages slideshow.
-      perfOverlay k xs = do
-        disp k xs
+      perf k =
         if k < ns - 1
-          then do
-            b <- getConfirmD fs
-            if b
-              then perfOverlay (k + 1) xs
-              else return False
-          else
-            return True
-  in perf msgs
+        then do
+          pushFrame fs $ Just $ disp k msgTop
+          b <- getConfirmD fs
+          if b
+            then perf (k + 1)
+            else return False
+        else do
+          pushFrame fs $ Just $ disp k msgTop
+          return True
+  in perf 0
