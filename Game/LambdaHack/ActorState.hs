@@ -167,7 +167,7 @@ nearbyFreeLoc cotile start state =
   let lvl@Level{lxsize, lysize, lactor} = slevel state
       locs = start : L.nub (concatMap (vicinity lxsize lysize) locs)
       good loc = Tile.hasFeature cotile F.Walkable (lvl `at` loc)
-                 && loc `IM.notMember` IM.map bloc lactor
+                 && unoccupied (IM.elems lactor) loc
   in fromMaybe (assert `failure` "too crowded map") $ L.find good locs
 
 -- | Calculate loot's worth for heroes on the current level.

@@ -117,12 +117,12 @@ perception cops@Kind.COps{cotile}
       hs = IM.filter (\ m -> bparty m == heroParty) lactor
       pers = IM.map (\ h ->
                       computeReachable cops radius mode smarkVision h lvl) hs
-      locs = IM.map bloc hs
+      locs = map bloc $ IM.elems hs
       lpers = maybeToList mPer ++ IM.elems pers
       reachable = PerceptionReachable $ IS.unions (map preachable lpers)
       -- TODO: Instead of giving the monster a light source, alter vision.
       playerControlledMonsterLight = maybeToList mLoc
-      lights = IS.fromList $ playerControlledMonsterLight ++ IM.elems locs
+      lights = IS.fromList $ playerControlledMonsterLight ++ locs
       visible = computeVisible cotile reachable lvl lights
   in  Perception { pplayer = mPer
                  , pheroes = pers

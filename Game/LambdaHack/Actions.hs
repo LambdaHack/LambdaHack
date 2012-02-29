@@ -431,7 +431,7 @@ rollMonster Kind.COps{cotile, coactor=Kind.Ops{opick, okind}} per state = do
           , \ l _ -> not $ l `IS.member` totalVisible per
           , distantAtLeast 5
           , \ l t -> Tile.hasFeature cotile F.Walkable t
-                     && l `IM.notMember` IM.map bloc lactor
+                     && unoccupied (IM.elems lactor) l
           ]
       mk <- opick "monster" (const True)
       hp <- rollDice $ ahp $ okind mk
