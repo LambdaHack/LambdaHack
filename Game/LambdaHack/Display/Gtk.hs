@@ -189,7 +189,7 @@ setTo tb defaultAttr lx (ly, attr:attrs) = do
 -- TODO: configure
 -- | Maximal frames per second.
 maxFps :: Int
-maxFps = 30
+maxFps = 15
 
 -- | Draw a frame from a channel, if any.
 drawFrame :: FrontendSession -> IO Bool
@@ -204,8 +204,8 @@ drawFrame sess@FrontendSession{schanScreen, slastShown} = do
     Nothing -> return True  -- empty queue, do nothing
 
 -- | Add a game screen frame to the frame drawing channel.
-pushFrame :: FrontendSession -> Maybe Color.SingleFrame -> IO ()
-pushFrame sess@FrontendSession{schanScreen, slastFull} rawFrame = do
+pushFrame :: FrontendSession -> Bool -> Maybe Color.SingleFrame -> IO ()
+pushFrame sess@FrontendSession{schanScreen, slastFull} noTimeout rawFrame = do
   (lastFrame, anyFollowed) <- readIORef slastFull
   let frame = maybe Nothing (Just . evalFrame sess) rawFrame
       nextFrame =
@@ -216,7 +216,7 @@ pushFrame sess@FrontendSession{schanScreen, slastFull} rawFrame = do
     writeLQueue schanScreen nextFrame
     case nextFrame of
       Nothing -> writeIORef slastFull (lastFrame, True)
-      Just f  -> writeIORef slastFull (f, False)
+      Just f  -> writeIORef slastFull (f, noTimeout)
 
 evalFrame :: FrontendSession -> Color.SingleFrame -> GtkFrame
 evalFrame FrontendSession{stags} Color.SingleFrame{..} =

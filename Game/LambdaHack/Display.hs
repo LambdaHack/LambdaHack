@@ -87,7 +87,7 @@ data ColorMode =
 
 displayNothingD :: FrontendSession -> IO Bool
 displayNothingD fs = do
-  pushFrame fs Nothing
+  pushFrame fs False Nothing
   return True
 
 -- TODO: split up and generally rewrite.
@@ -105,7 +105,7 @@ displayLevel dm fs cops per
                , cotile=Kind.Ops{okind=tokind, ouniqGroup} } = cops
       DebugMode{smarkVision, somniscient} = sdebug
       lvl@Level{lxsize, lysize, lsmell, ldesc, lactor} = slevel s
-      (_, Actor{bkind, bhp, bloc}, bitems) = findActorAnyLevel splayer s
+      (_, Actor{bkind, bhp, bloc, bdir}, bitems) = findActorAnyLevel splayer s
       ActorKind{ahp, asmell} = okind bkind
       reachable = debugTotalReachable per
       visible   = totalVisible per
@@ -230,13 +230,13 @@ displayLevel dm fs cops per
         in Color.SingleFrame{..}
       playAnimations [] = return ()
       playAnimations (am : ams) = do
-        pushFrame fs (Just $ modifyFrame basicFrame am)
+        pushFrame fs False (Just $ modifyFrame basicFrame am)
         playAnimations ams
       -- Perform overlay pages slideshow.
       perf k =
         if k < ns - 1
         then do
-          pushFrame fs $ Just $ disp k msgTop
+          pushFrame fs False $ Just $ disp k msgTop
           b <- getConfirmD fs
           if b
             then perf (k + 1)
@@ -245,8 +245,11 @@ displayLevel dm fs cops per
           -- Play animations after the last overlay frame
           -- that requires confirmation
           playAnimations sanim
+          -- Speed up, by remving all empty frames,
+          -- playing the move frames if the player is running.
+          let isRunning = isJust bdir
           -- Show the basic frame. If there are overlays, that's the last
-          -- overlay fram, the one that does not require confirmation.
-          pushFrame fs $ Just $ disp k msgTop
+          -- overlay frame, the one that does not require confirmation.
+          pushFrame fs isRunning $ Just $ disp k msgTop
           return True
   in perf 0
