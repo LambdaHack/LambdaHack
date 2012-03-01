@@ -1,6 +1,6 @@
 -- | Game messages displayed on top of the screen for the player to read.
 module Game.LambdaHack.Msg
-  ( Msg, more, msgEnd, yesno
+  ( Msg, moreMsg, endMsg, yesnoMsg
   , Report, emptyReport, nullReport, singletonReport, addMsg, splitReport
   , History, emptyHistory, singletonHistory, addReport, renderHistory
   , takeHistory
@@ -19,19 +19,17 @@ import Game.LambdaHack.PointXY
 -- | The type of a single message.
 type Msg  = String
 
--- TODO: do not record these in history. Perhaps implement them as
--- a 'sprompt' flag in the game state that requires a keypress to be cleared.
 -- | The \"press something to see more\" mark.
-more :: Msg
-more = " --more--  "
+moreMsg :: Msg
+moreMsg = " --more--  "
 
 -- | The \"the end of overlays or messages\" mark.
-msgEnd :: Msg
-msgEnd = " --end--  "
+endMsg :: Msg
+endMsg = " --end--  "
 
 -- | The confirmation request message.
-yesno :: Msg
-yesno = " [yn]"
+yesnoMsg :: Msg
+yesnoMsg = " [yn]"
 
 -- | Add spaces at the message end, for display overlayed over the level map.
 padMsg :: X -> String -> String
@@ -59,7 +57,7 @@ nullReport (Report l) = null l
 singletonReport :: Msg -> Report
 singletonReport m = addMsg emptyReport m
 
--- | Append two messages.
+-- | Add message to the end of report.
 addMsg :: Report -> Msg -> Report
 addMsg r "" = r
 addMsg (Report ((x, n) : xns)) y' | x == y =
@@ -137,7 +135,7 @@ splitOverlay :: Y -> Overlay -> [[String]]
 splitOverlay _ [] = []  -- nothing to print over the level area
 splitOverlay lysize ls | length ls <= lysize = [ls]  -- all fits on one screen
 splitOverlay lysize ls = let (pre, post) = splitAt (lysize - 1) ls
-                         in (pre ++ [more]) : splitOverlay lysize post
+                         in (pre ++ [moreMsg]) : splitOverlay lysize post
 
 -- | Returns a function that looks up the characters in the
 -- string by location. Takes the height of the display plus

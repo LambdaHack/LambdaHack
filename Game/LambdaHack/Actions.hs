@@ -37,6 +37,7 @@ import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Random
 import Game.LambdaHack.Msg
+import Game.LambdaHack.Binding
 
 displayHistory :: Action ()
 displayHistory = do
@@ -44,7 +45,7 @@ displayHistory = do
   stime <- gets stime
   let turn = show (stime `div` 10)
       msg = "You adventuring lasts " ++ turn ++ " turns. Past messages:"
-  msgOverlaysConfirm msg [renderHistory $ shistory diary]
+  displayOverConfirm msg [renderHistory $ shistory diary]
   abort
 
 dumpConfig :: Action ()
@@ -56,7 +57,7 @@ dumpConfig = do
 
 saveGame :: Action ()
 saveGame = do
-  b <- msgYesNo "Really save?"
+  b <- displayYesNoConfirm "Really save?"
   if b
     then do
       -- Save the game state
@@ -67,13 +68,13 @@ saveGame = do
       let (_, total) = calculateTotal cops state
           status = H.Camping
       go <- handleScores False status total
-      when go $ msgMore "See you soon, stronger and braver!"
+      when go $ displayMoreCancel "See you soon, stronger and braver!"
       end
     else abortWith "Game resumed."
 
 quitGame :: Action ()
 quitGame = do
-  b <- msgYesNo "Really quit?"
+  b <- displayYesNoConfirm "Really quit?"
   state <- get
   diary <- currentDiary
   if b
@@ -164,8 +165,8 @@ triggerTile dloc = do
 -- | Ask for a direction and trigger a tile, if possible.
 playerTriggerDir :: F.Feature -> Action ()
 playerTriggerDir feat = do
-  msgReset "direction?"
-  displayAll
+  msgClear
+  displayPrompt "direction?"
   e <- session nextCommand
   lxsize <- gets (lxsize . slevel)
   K.handleDir lxsize e (playerBumpDir feat) (neverMind True)
@@ -476,3 +477,11 @@ regenerateLevelHP = do
   -- via sending one hero to a safe level and waiting there.
   hi  <- gets (linv . slevel)
   modify (updateLevel (updateActor (IM.mapWithKey (upd hi))))
+
+-- | Display command help.
+displayHelp :: Action ()
+displayHelp = do
+  let disp Session{skeyb} =
+        displayOverConfirm "Basic keys. [press SPACE or ESC]" $ keyHelp skeyb
+  session disp
+  abort

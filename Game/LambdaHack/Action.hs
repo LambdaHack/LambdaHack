@@ -113,33 +113,6 @@ session f = Action (\ sess e p k a st ms ->
 sessionIO :: (Session -> IO a) -> Action a
 sessionIO f = Action (\ sess _e _p k _a st ms -> f sess >>= k st ms)
 
--- | Wait a single frame.
-displayNothing :: Action Bool
-displayNothing =
-  Action (\ Session{sfs} _e _p k _a st ms ->
-           displayNothingD sfs
-           >>= k st ms)
-
--- | Display the current level with modified current msg.
-displayGeneric :: ColorMode -> Action Bool
-displayGeneric dm =
-  Action (\ Session{sfs, scops} _e p k _a st diary@Diary{smsg} ->
-           let over = splitReport smsg
-           in displayLevel dm sfs scops p st over
-              >>= k st{sanim=[]} diary)
-
--- | Display the current level, with the current msg and color.
-displayAll :: Action Bool
-displayAll = displayGeneric ColorFull
-
--- | Display an overlay on top of the current screen.
-overlay :: Overlay -> Action Bool
-overlay txt =
-  Action (\ Session{sfs, scops} _e p k _a st diary@Diary{smsg} ->
-           let over = splitReport smsg ++ txt
-           in displayLevel ColorFull sfs scops p st over
-              >>= k st{sanim=[]} diary)
-
 -- | Get the current diary.
 currentDiary :: Action Diary
 currentDiary = Action (\ _s _e _p k _a st diary -> k st diary diary)
@@ -256,52 +229,70 @@ getOptionalConfirm h k Session{sfs} = do
 getConfirm :: Session -> Action Bool
 getConfirm Session{sfs} = liftIO $ getConfirmD sfs
 
--- | Print msg, await confirmation. Return value indicates
--- if the player tried to abort/escape.
-msgMoreConfirm :: ColorMode -> Msg -> Action Bool
-msgMoreConfirm dm msg = do
-  msgAdd (msg ++ more)
-  displayGeneric dm
+-- | Wait a single frame.
+displayNothing :: Action Bool
+displayNothing =
+  Action (\ Session{sfs} _e _p k _a st diary ->
+           displayNothingD sfs
+           >>= k st diary)
+
+-- | Display the current level. The prompt and the overlay are displayed,
+-- but not added to history. The prompt is appended to the current message,
+-- the overlay starts on next line below the (possibly multi-line message).
+displayGeneric :: ColorMode -> Msg -> Overlay -> Action Bool
+displayGeneric dm prompt overlay =
+  Action (\ Session{sfs, scops} _e p k _a st diary@Diary{smsg} ->
+           let over = splitReport (addMsg smsg prompt) ++ overlay
+           in displayLevel dm sfs scops p st over
+              >>= k st{sanim=[]} diary)
+
+-- | Display the current level, with the current msg and color.
+displayAll :: Action Bool
+displayAll = displayGeneric ColorFull "" []
+
+-- | Display the current level with an extra prompt.
+displayPrompt :: Msg -> Action Bool
+displayPrompt prompt = displayGeneric ColorFull prompt []
+
+-- | Print a @more@ prompt. Return value indicates if the player
+-- tried to abort/escape.
+displayMoreConfirm :: ColorMode -> Action Bool
+displayMoreConfirm dm = do
+  displayGeneric dm moreMsg []
   session getConfirm
 
--- | Print msg, await confirmation, ignore confirmation.
-msgMore :: Msg -> Action ()
-msgMore msg = msgClear >> msgMoreConfirm ColorFull msg >> return ()
+-- | Print a message with a @more@ prompt, await confirmation
+-- and ignore confirmation.
+displayMoreCancel :: Msg -> Action ()
+displayMoreCancel msg = do
+  displayGeneric ColorFull (msg ++ moreMsg) []
+  void $ session getConfirm
 
 -- | Print a yes/no question and return the player's answer.
-msgYesNo :: Msg -> Action Bool
-msgYesNo msg = do
-  msgReset (msg ++ yesno)
-  displayGeneric ColorBW  -- turn player's attention to the choice
+displayYesNoConfirm :: Msg -> Action Bool
+displayYesNoConfirm msg = do
+  -- Turn player's attention to the choice via BW colours.
+  displayGeneric ColorBW (msg ++ yesnoMsg) []
   session getYesNo
-
--- | Clear message and overlay.
-clearDisplay :: Action Bool
-clearDisplay = do
-  msgClear
-  displayAll
-  return False
 
 -- | Print a msg and several overlays, one per page, and await confirmation.
 -- The return value indicates if the player tried to abort/escape.
-msgOverlaysConfirm :: Msg -> [Overlay] -> Action Bool
-msgOverlaysConfirm _msg [] = return True
-msgOverlaysConfirm msg [x] = do
-  msgReset msg
-  b0 <- overlay (x ++ [msgEnd])
+displayOverConfirm :: Msg -> [Overlay] -> Action Bool
+displayOverConfirm _msg [] = return True
+displayOverConfirm msg [x] = do
+  b0 <- displayGeneric ColorFull msg (x ++ [endMsg])
   if b0
     then return True
-    else clearDisplay
-msgOverlaysConfirm msg (x:xs) = do
-  msgReset msg
-  b0 <- overlay (x ++ [more])
+    else displayAll >> return False
+displayOverConfirm msg (x:xs) = do
+  b0 <- displayGeneric ColorFull msg (x ++ [moreMsg])
   if b0
     then do
       b <- session getConfirm
       if b
-        then msgOverlaysConfirm msg xs
-        else clearDisplay
-    else clearDisplay
+        then displayOverConfirm msg xs
+        else displayAll >> return False
+    else displayAll >> return False
 
 -- | Update the cached perception for the given computation.
 withPerception :: Action () -> Action ()
@@ -342,11 +333,3 @@ playerAdvanceTime :: Action ()
 playerAdvanceTime = do
   pl <- gets splayer
   advanceTime pl
-
--- | Display command help.
-displayHelp :: Action ()
-displayHelp = do
-  let disp Session{skeyb} =
-        msgOverlaysConfirm "Basic keys. [press SPACE or ESC]" $ keyHelp skeyb
-  session disp
-  abort

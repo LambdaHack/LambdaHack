@@ -187,7 +187,7 @@ effLvlGoUp k = do
   st        <- get
   case whereTo st k of
     Nothing -> do -- we are at the "end" of the dungeon
-      b <- msgYesNo "Really escape the dungeon?"
+      b <- displayYesNoConfirm "Really escape the dungeon?"
       if b
         then fleeDungeon
         else abortWith "Game resumed."
@@ -244,9 +244,9 @@ fleeDungeon = do
   let (items, total) = calculateTotal coitem state
   if total == 0
     then do
-      go <- msgClear >> msgMoreConfirm ColorFull "Coward!"
+      go <- msgReset "Coward!" >> displayMoreConfirm ColorFull
       when go $
-        msgMore "Next time try to grab some loot before escape!"
+        displayMoreCancel "Next time try to grab some loot before escape!"
       end
     else do
       let winMsg = "Congratulations, you won! Your loot, worth " ++
@@ -255,7 +255,7 @@ fleeDungeon = do
       go <- session getConfirm
       when go $ do
         go2 <- handleScores True H.Victor total
-        when go2 $ msgMore "Can it be done better, though?"
+        when go2 $ displayMoreCancel "Can it be done better, though?"
       end
 
 -- | The source actor affects the target actor, with a given item.
@@ -403,7 +403,8 @@ checkPartyDeath = do
   pbody  <- gets getPlayerBody
   config <- gets sconfig
   when (bhp pbody <= 0) $ do  -- TODO: change to guard? define mzero as abort? Why are the writes to the files performed when I call abort later? That probably breaks the laws of MonadPlus. Or is the tryWith abort handler placed after the write to files?
-    go <- msgMoreConfirm ColorBW $ actorVerb cops pbody "die"
+    msgAdd $ actorVerb cops pbody "die"
+    go <- displayMoreConfirm ColorBW
     history  -- Prevent the msgs from being repeated.
     let firstDeathEnds = Config.get config "heroes" "firstDeathEnds"
     if firstDeathEnds
@@ -432,7 +433,7 @@ gameOver showEndingScreens = do
     let (_, total) = calculateTotal cops state
         status = H.Killed slid
     handleScores True status total
-    msgMore "Let's hope another party can save the day!"
+    displayMoreCancel "Let's hope another party can save the day!"
   end
 
 -- | Handle current score and display it with the high scores.
@@ -454,7 +455,7 @@ handleScores write status total =
                    _ -> total
     let score = H.ScoreRecord points (-time) curDate status
     (placeMsg, slideshow) <- liftIO $ H.register config write score
-    msgOverlaysConfirm placeMsg slideshow
+    displayOverConfirm placeMsg slideshow
     session getConfirm
 
 -- effectToAction does not depend on this function right now, but it might,
@@ -468,9 +469,8 @@ displayItems msg sorted is = do
               ((if sorted
                 then L.sortBy (cmpLetterMaybe `on` jletter)
                 else id) is)
-  let ovl = inv ++ [msgEnd]
-  msgReset msg
-  overlay ovl
+  msgClear
+  displayGeneric ColorFull msg (inv ++ [endMsg])
 
 stopRunning :: Action ()
 stopRunning = updatePlayerBody (\ p -> p { bdir = Nothing })
