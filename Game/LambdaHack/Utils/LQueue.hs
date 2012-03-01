@@ -4,7 +4,7 @@
 -- .
 -- The queue is implemented with two stacks to look very shortly for writes.
 module Game.LambdaHack.Utils.LQueue
-  ( LQueue, newLQueue, clearLQueue, tryReadLQueue, writeLQueue
+  ( LQueue, newLQueue, nullLQueue, clearLQueue, tryReadLQueue, writeLQueue
   ) where
 
 import Control.Concurrent
@@ -15,6 +15,12 @@ data LQueue a = LQueue (MVar ([a], [a]))  -- (read_end, write_end)
 -- | Create a new empty mutable queue.
 newLQueue :: IO (LQueue a)
 newLQueue = fmap LQueue $ newMVar ([], [])
+
+-- | Check if the queue is empty.
+nullLQueue :: LQueue a -> IO Bool
+nullLQueue (LQueue lq) = do
+  (rs, ws) <- readMVar lq
+  return $ null rs && null ws
 
 -- | Empty an @LQueue@. Waits on the lock.
 clearLQueue :: LQueue a -> IO ()

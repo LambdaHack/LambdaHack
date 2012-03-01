@@ -45,6 +45,18 @@ data GtkFrame = GtkFrame
 dummyFrame :: GtkFrame
 dummyFrame = GtkFrame BS.empty []
 
+-- | Remove all current elements from the queue.
+trimLQueue :: FrontendSession -> IO ()
+trimLQueue FrontendSession{slastShown, slastFull, schanScreen} = do
+  b <- nullLQueue schanScreen
+  when (not b) $ do
+    -- Drop all the old frames.
+    clearLQueue schanScreen
+    -- Update the last received with the last shown, to potentially avoid
+    -- some future frame drawing.
+    lastShown <- readIORef slastShown
+    writeIORef slastFull (lastShown, True)
+
 -- | The name of the frontend.
 frontendName :: String
 frontendName = "gtk"
@@ -102,11 +114,8 @@ runGtk configFont k = do
         !modifier = modifierTranslate mods
     liftIO $ do
       unless (deadKey n) $ do
-        -- Update the last received with the last shown.
-        lastShown <- readIORef slastShown
-        writeIORef slastFull (lastShown, True)
-        -- Drop all the old frames.
-        clearLQueue schanScreen
+        -- Drop all the old frames. Some more may be arriving at the same time.
+        trimLQueue sess
         -- Store the key in the channel.
         writeChan schanKey (key, modifier)
       return True
@@ -230,8 +239,10 @@ evalFrame FrontendSession{stags} Color.SingleFrame{..} =
 
 -- | Input key via the frontend.
 nextEvent :: FrontendSession -> IO (K.Key, K.Modifier)
-nextEvent FrontendSession{schanKey} = do
+nextEvent sess@FrontendSession{schanKey} = do
   km <- readChan schanKey
+  -- As soon as the key arrives, drop all the old frames. No more arrive.
+  trimLQueue sess
   return km
 
 -- | Tells a dead key.
