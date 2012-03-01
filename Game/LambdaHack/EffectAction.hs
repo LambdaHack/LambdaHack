@@ -239,6 +239,8 @@ fleeDungeon :: Action ()
 fleeDungeon = do
   coitem <- contentf Kind.coitem
   state <- get
+  diary <- currentDiary
+  liftIO $ Save.saveGameBkp state diary -- save the diary
   let (items, total) = calculateTotal coitem state
   if total == 0
     then do

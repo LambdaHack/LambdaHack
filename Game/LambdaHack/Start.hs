@@ -63,5 +63,6 @@ start config1 slowSess = do
       handlerToIO sess hstate diary{smsg = singletonReport msg} handle
     Left (state, diary) ->  -- Running a restored a game.
       handlerToIO sess state
-        diary{smsg = singletonReport $ "Welcome back to " ++ title ++ "."}  -- TODO:save old msg?
+        -- This overwrites the "Really save/quit?" messages.
+        diary{smsg = singletonReport $ "Welcome back to " ++ title ++ "."}
         handle

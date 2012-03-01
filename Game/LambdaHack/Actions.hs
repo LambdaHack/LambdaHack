@@ -74,8 +74,12 @@ saveGame = do
 quitGame :: Action ()
 quitGame = do
   b <- msgYesNo "Really quit?"
+  state <- get
+  diary <- currentDiary
   if b
-    then end -- no highscore display for quitters
+    then do
+      liftIO $ Save.saveGameBkp state diary -- save the diary
+      end -- no highscore display for quitters
     else abortWith "Game resumed."
 
 moveCursor :: Vector -> Int -> Action ()
