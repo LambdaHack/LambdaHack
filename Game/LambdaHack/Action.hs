@@ -123,20 +123,22 @@ displayNothing =
 -- | Display the current level with modified current msg.
 displayGeneric :: ColorMode -> Action Bool
 displayGeneric dm =
-  Action (\ Session{sfs, scops} _e p k _a st ms ->
-           displayLevel dm sfs scops p st (smsg ms) Nothing
-           >>= k st{sanim=[]} ms)
+  Action (\ Session{sfs, scops} _e p k _a st diary@Diary{smsg} ->
+           let over = splitReport smsg
+           in displayLevel dm sfs scops p st over
+              >>= k st{sanim=[]} diary)
 
 -- | Display the current level, with the current msg and color.
 displayAll :: Action Bool
 displayAll = displayGeneric ColorFull
 
 -- | Display an overlay on top of the current screen.
-overlay :: String -> Action Bool
+overlay :: Overlay -> Action Bool
 overlay txt =
-  Action (\ Session{sfs, scops} _e p k _a st ms ->
-           displayLevel ColorFull sfs scops p st (smsg ms) (Just txt)
-           >>= k st{sanim=[]} ms)
+  Action (\ Session{sfs, scops} _e p k _a st diary@Diary{smsg} ->
+           let over = splitReport smsg ++ txt
+           in displayLevel ColorFull sfs scops p st over
+              >>= k st{sanim=[]} diary)
 
 -- | Get the current diary.
 currentDiary :: Action Diary
@@ -282,17 +284,17 @@ clearDisplay = do
 
 -- | Print a msg and several overlays, one per page, and await confirmation.
 -- The return value indicates if the player tried to abort/escape.
-msgOverlaysConfirm :: Msg -> [String] -> Action Bool
+msgOverlaysConfirm :: Msg -> [Overlay] -> Action Bool
 msgOverlaysConfirm _msg [] = return True
 msgOverlaysConfirm msg [x] = do
   msgReset msg
-  b0 <- overlay (x ++ msgEnd)
+  b0 <- overlay (x ++ [msgEnd])
   if b0
     then return True
     else clearDisplay
 msgOverlaysConfirm msg (x:xs) = do
   msgReset msg
-  b0 <- overlay (x ++ more)
+  b0 <- overlay (x ++ [more])
   if b0
     then do
       b <- session getConfirm

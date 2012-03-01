@@ -11,6 +11,7 @@ import qualified Data.Set as S
 
 import Game.LambdaHack.Utils.Assert
 import qualified Game.LambdaHack.Key as K
+import Game.LambdaHack.Msg
 
 -- | Bindings and other information about player commands.
 data Binding a = Binding
@@ -44,7 +45,7 @@ coImage kmacro k =
      else k : [ from | (from, to) <- M.assocs kmacro, to == k ]
 
 -- | Produce a set of help screens from the key bindings.
-keyHelp :: Binding a -> [String]
+keyHelp :: Binding a -> [Overlay]
 keyHelp Binding{kcmd, kmacro, kmajor, ktimed} =
   let
     movBlurb =
@@ -77,8 +78,8 @@ keyHelp Binding{kcmd, kmacro, kmajor, ktimed} =
       , "Press SPACE to clear the messages and go back to the game."
       ]
     fmt k h = replicate 16 ' ' ++ k ++ replicate ((15 - length k) `max` 1) ' '
-                               ++ h ++ replicate ((40 - length h) `max` 1) ' '
-    fmts s  = replicate 1  ' ' ++ s ++ replicate ((70 - length s) `max` 1) ' '
+                               ++ h ++ replicate ((41 - length h) `max` 1) ' '
+    fmts s  = replicate 1  ' ' ++ s ++ replicate ((71 - length s) `max` 1) ' '
     blank   = fmt "" ""
     mov     = map fmts movBlurb
     major   = map fmts majorBlurb
@@ -90,7 +91,7 @@ keyHelp Binding{kcmd, kmacro, kmajor, ktimed} =
     (kcMajor, kcMinor) =
       L.partition ((`elem` kmajor) . fst . fst) (M.toAscList kcmd)
   in
-    L.map unlines [ [blank] ++ mov
-                  , [blank] ++ [keyCaption] ++ keys kcMajor ++ major
-                  , [blank] ++ [keyCaption] ++ keys kcMinor ++ minor
-                  ]
+    [ [blank] ++ mov
+    , [blank] ++ [keyCaption] ++ keys kcMajor ++ major
+    , [blank] ++ [keyCaption] ++ keys kcMinor ++ minor
+    ]

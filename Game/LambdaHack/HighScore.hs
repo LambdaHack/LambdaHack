@@ -14,6 +14,7 @@ import Game.LambdaHack.Utils.File
 import qualified Game.LambdaHack.Config as Config
 import Game.LambdaHack.Dungeon
 import Game.LambdaHack.Misc
+import Game.LambdaHack.Msg
 
 -- TODO: add heroes' names, exp and level, cause of death, user number/name.
 -- Note: I tried using Date.Time, but got all kinds of problems,
@@ -66,7 +67,7 @@ instance Binary ScoreRecord where
     return (ScoreRecord p n (TOD cs cp) s)
 
 -- | Show a single high score, from the given ranking in the high score table.
-showScore :: (Int, ScoreRecord) -> String
+showScore :: (Int, ScoreRecord) -> [String]
 showScore (pos, score) =
   let died = case status score of
         Killed lvl -> "perished on level " ++ show (levelNumber lvl) ++ ","
@@ -76,9 +77,18 @@ showScore (pos, score) =
       big   = "                                                 "
       lil   = "              "
       steps = negTurn score `div` (-10)
-  in printf
-       "%s\n%4d. %6d  This adventuring party %s after %d steps  \n%son %s.  \n"
-       big pos (points score) died steps lil time
+     -- TODO: the spaces at the end are hand-crafter. Remove when display
+     -- of overlays adds such spaces automatically.
+  in [ printf
+         "%s"
+         big
+     , printf
+         "%4d. %6d  This adventuring party %s after %d steps  "
+         pos (points score) died steps
+     , printf
+         "%son %s.  "
+         lil time
+     ]
 
 -- | The list of scores, in decreasing order.
 type ScoreTable = [ScoreRecord]
@@ -114,14 +124,14 @@ insertPos s h =
 
 -- | Show a screenful of the high scores table.
 -- Parameter height is the number of (3-line) scores to be shown.
-showTable :: ScoreTable -> Int -> Int -> String
+showTable :: ScoreTable -> Int -> Int -> Overlay
 showTable h start height =
   let zipped    = zip [1..] h
       screenful = take height . drop (start - 1) $ zipped
-  in L.concatMap showScore screenful
+  in concatMap showScore screenful
 
 -- | Produce a couple of renderings of the high scores table.
-slideshow :: Int -> ScoreTable -> Int -> [String]
+slideshow :: Int -> ScoreTable -> Int -> [Overlay]
 slideshow pos h height =
   if pos <= height
   then [showTable h 1 height]
@@ -130,7 +140,7 @@ slideshow pos h height =
 
 -- | Take care of saving a new score to the table
 -- and return a list of messages to display.
-register :: Config.CP -> Bool -> ScoreRecord -> IO (String, [String])
+register :: Config.CP -> Bool -> ScoreRecord -> IO (String, [Overlay])
 register config write s = do
   h <- restore config
   let (h', pos) = insertPos s h

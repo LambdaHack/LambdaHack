@@ -37,8 +37,8 @@ import qualified Game.LambdaHack.Color as Color
 -- history of past games. This can be used for calculating player
 -- achievements, unlocking advanced game features and general data mining.
 data Diary = Diary
-  { smsg         :: Report
-  , shistory     :: History
+  { smsg     :: Report
+  , shistory :: History
   }
 
 -- | The state of a single game that can be save and restored.

@@ -26,8 +26,6 @@ import qualified Data.List as L
 import qualified Data.IntMap as IM
 import Data.Maybe
 
-import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Misc
 import Game.LambdaHack.Msg
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.State
@@ -59,27 +57,6 @@ getConfirmD fs = do
     K.Esc      -> return False
     _          -> getConfirmD fs
 
-splitOverlay :: Int -> String -> [[String]]
-splitOverlay s xs = splitOverlay' (lines xs)
- where
-  splitOverlay' ls
-    | null ls        = []    -- no screens needed
-    | length ls <= s = [ls]  -- everything fits on one screen
-    | otherwise      = let (pre, post) = splitAt (s - 1) ls
-                       in (pre ++ [more]) : splitOverlay' post
-
--- | Returns a function that looks up the characters in the
--- string by location. Takes the height of the display plus
--- the string. Returns also the number of screens required
--- to display all of the string.
-stringByLocation :: Y -> String -> (Int, (X, Y) -> Maybe Char)
-stringByLocation lysize xs =
-  let ls = splitOverlay lysize xs
-      m  = IM.fromDistinctAscList $
-             zip [0..] (L.map (IM.fromList . zip [0..]) (concat ls))
-      k  = length ls
-  in (k, \ (x, y) -> IM.lookup y m >>= \ n -> IM.lookup x n)
-
 -- | Color mode for the display.
 data ColorMode =
     ColorFull  -- ^ normal, with full colours
@@ -94,12 +71,11 @@ displayNothingD fs = do
 -- | Display the whole screen: level map, messages and status area
 -- and multi-page overlaid information, if any.
 displayLevel :: ColorMode -> FrontendSession -> Kind.COps
-             -> Perception -> State
-             -> Report -> Maybe String -> IO Bool
+             -> Perception -> State -> Overlay -> IO Bool
 displayLevel dm fs cops per
              s@State{ scursor=Cursor{..}
                     , stime, sflavour, slid, splayer, sanim, sdebug }
-             msg moverlay =
+             overlay =
   let Kind.COps{ coactor=Kind.Ops{okind}
                , coitem=coitem@Kind.Ops{okind=iokind}
                , cotile=Kind.Ops{okind=tokind, ouniqGroup} } = cops
@@ -109,14 +85,7 @@ displayLevel dm fs cops per
       ActorKind{ahp, asmell} = okind bkind
       reachable = debugTotalReachable per
       visible   = totalVisible per
-      width = fst normalLevelBound + 1
-      (msgTop, (ns, over)) =
-        case splitReport width msg of
-          mt : ms ->
-            let msgRest = unlines $ L.map (padMsg width) ms
-                msgAndOver = msgRest ++ fromMaybe "" moverlay
-            in (mt, stringByLocation lysize msgAndOver)
-          [] -> assert `failure` msg
+      (msgTop, ns, over) = stringByLocation lxsize lysize overlay
       (sSml, sVis) = case smarkVision of
         Just Blind -> (True, True)
         Just _  -> (False, True)
@@ -211,8 +180,8 @@ displayLevel dm fs cops per
             sfLevel =  -- Fully evaluated.
               let f l y = let !line = fLine y in line : l
               in L.foldl' f [] [lysize-1,lysize-2..0]
-            sfTop = toWidth width mesg
-            sfBottom = toWidth width status
+            sfTop = toWidth lxsize mesg
+            sfBottom = toWidth lxsize status
         in Color.SingleFrame{..}
       -- Make sure overlays or multi-line messages do not obscure animations.
       msgAnim = if ns == 0 then msgTop else ""
