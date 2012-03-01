@@ -117,27 +117,24 @@ sessionIO f = Action (\ sess _e _p k _a st ms -> f sess >>= k st ms)
 currentDiary :: Action Diary
 currentDiary = Action (\ _s _e _p k _a st diary -> k st diary diary)
 
--- | Wipe out and set a new value for the current diary.
-diaryReset :: Diary -> Action ()
-diaryReset ndiary = Action (\ _s _e _p k _a st _diary -> k st ndiary ())
+-- | Wipe out and set a new value for the history.
+historyReset :: History -> Action ()
+historyReset shistory = Action (\ _s _e _p k _a st Diary{smsg} ->
+                                 k st Diary{..} ())
 
 -- | Get the current msg.
 currentMsg :: Action Report
 currentMsg = Action (\ _s _e _p k _a st ms -> k st ms (smsg ms))
-
--- | Wipe out and set a new value for the current msg.
-msgReset :: Msg -> Action ()
-msgReset nm = Action (\ _s _e _p k _a st ms ->
-                       k st ms{smsg = singletonReport nm} ())
 
 -- | Add to the current msg.
 msgAdd :: Msg -> Action ()
 msgAdd nm = Action (\ _s _e _p k _a st ms ->
                      k st ms{smsg = addMsg (smsg ms) nm} ())
 
--- | Clear the current msg.
-msgClear :: Action ()
-msgClear = msgReset ""
+-- | Wipe out and set a new value for the current msg.
+msgReset :: Msg -> Action ()
+msgReset nm = Action (\ _s _e _p k _a st ms ->
+                       k st ms{smsg = singletonReport nm} ())
 
 -- | Get the content operations.
 contentOps :: Action Kind.COps
@@ -256,17 +253,15 @@ displayPrompt prompt = displayGeneric ColorFull prompt []
 
 -- | Print a @more@ prompt. Return value indicates if the player
 -- tried to abort/escape.
-displayMoreConfirm :: ColorMode -> Action Bool
-displayMoreConfirm dm = do
-  displayGeneric dm moreMsg []
+displayMoreConfirm :: ColorMode -> Msg -> Action Bool
+displayMoreConfirm dm msg = do
+  displayGeneric dm (msg ++ moreMsg) []
   session getConfirm
 
 -- | Print a message with a @more@ prompt, await confirmation
 -- and ignore confirmation.
 displayMoreCancel :: Msg -> Action ()
-displayMoreCancel msg = do
-  displayGeneric ColorFull (msg ++ moreMsg) []
-  void $ session getConfirm
+displayMoreCancel msg = void $ displayMoreConfirm ColorFull msg
 
 -- | Print a yes/no question and return the player's answer.
 displayYesNoConfirm :: Msg -> Action Bool

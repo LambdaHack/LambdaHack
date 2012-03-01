@@ -244,7 +244,7 @@ fleeDungeon = do
   let (items, total) = calculateTotal coitem state
   if total == 0
     then do
-      go <- msgReset "Coward!" >> displayMoreConfirm ColorFull
+      go <- displayMoreConfirm ColorFull "Coward!"
       when go $
         displayMoreCancel "Next time try to grab some loot before escape!"
       end
@@ -404,7 +404,7 @@ checkPartyDeath = do
   config <- gets sconfig
   when (bhp pbody <= 0) $ do  -- TODO: change to guard? define mzero as abort? Why are the writes to the files performed when I call abort later? That probably breaks the laws of MonadPlus. Or is the tryWith abort handler placed after the write to files?
     msgAdd $ actorVerb cops pbody "die"
-    go <- displayMoreConfirm ColorBW
+    go <- displayMoreConfirm ColorBW ""
     history  -- Prevent the msgs from being repeated.
     let firstDeathEnds = Config.get config "heroes" "firstDeathEnds"
     if firstDeathEnds
@@ -469,7 +469,6 @@ displayItems msg sorted is = do
               ((if sorted
                 then L.sortBy (cmpLetterMaybe `on` jletter)
                 else id) is)
-  msgClear
   displayGeneric ColorFull msg (inv ++ [endMsg])
 
 stopRunning :: Action ()
@@ -478,14 +477,12 @@ stopRunning = updatePlayerBody (\ p -> p { bdir = Nothing })
 -- | Store current msg in the history and reset current msg.
 history :: Action ()
 history = do
-  diary@Diary{smsg, shistory} <- currentDiary
+  Diary{smsg, shistory} <- currentDiary
   unless (nullReport smsg) $ do
     config <- gets sconfig
     let historyMax = Config.get config "ui" "historyMax"
-    diaryReset $
-      diary { smsg = emptyReport
-            , shistory = takeHistory historyMax $ addReport smsg shistory
-            }
+    msgReset ""
+    historyReset $ takeHistory historyMax $ addReport smsg shistory
 
 -- TODO: depending on tgt, show extra info about tile or monster or both
 -- | Perform look around in the current location of the cursor.

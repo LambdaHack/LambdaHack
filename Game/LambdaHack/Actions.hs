@@ -165,7 +165,6 @@ triggerTile dloc = do
 -- | Ask for a direction and trigger a tile, if possible.
 playerTriggerDir :: F.Feature -> Action ()
 playerTriggerDir feat = do
-  msgClear
   displayPrompt "direction?"
   e <- session nextCommand
   lxsize <- gets (lxsize . slevel)
