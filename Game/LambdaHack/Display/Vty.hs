@@ -3,7 +3,7 @@ module Game.LambdaHack.Display.Vty
   ( -- * Session data type for the frontend
     FrontendSession
     -- * The output and input operations
-  , pushFrame, nextEvent
+  , display, nextEvent
     -- * Frontend administration tools
   , frontendName, startup, shutdown
   ) where
@@ -33,34 +33,33 @@ shutdown = Vty.shutdown
 
 -- | Output to the screen via the frontend.
 display :: FrontendSession    -- ^ frontend session data
-        -> Color.SingleFrame  -- ^ the screen frame to draw
+        -> Bool
+        -> Bool
+        -> Maybe Color.SingleFrame  -- ^ the screen frame to draw
         -> IO ()
-display vty Color.SingleFrame{..} =
+display _ _ _ Nothing = return ()
+display vty _ _ (Just Color.SingleFrame{..}) =
   let img = (foldr (<->) empty_image
              . L.map (foldr (<|>) empty_image
-                      . L.map (\ (a, c) -> char (setAttr a) c)))
-            sflevel
+                      . L.map (\ Color.AttrChar{..} ->
+                                char (setAttr acAttr) acChar)))
+            sfLevel
       pic = pic_for_image $
               utf8_bytestring (setAttr Color.defaultAttr) (BS.pack sfTop)
               <-> img <->
               utf8_bytestring (setAttr Color.defaultAttr) (BS.pack sfBottom)
   in update vty pic
 
--- | Add a game screen frame to the frame drawing channel.
-pushFrame :: FrontendSession -> Maybe Color.SingleFrame -> IO ()
-pushFrame _    Nothing      = return ()
-pushFrame sess (Just frame) = display sess frame
-
 -- | Input key via the frontend.
-nextEvent :: FrontendSession -> IO (K.Key, K.Modifier)
-nextEvent sess = do
+nextEvent :: FrontendSession -> Maybe Bool -> IO (K.Key, K.Modifier)
+nextEvent sess mb = do
   e <- next_event sess
   case e of
     EvKey n mods -> do
       let key = keyTranslate n
           modifier = modifierTranslate mods
       return (key, modifier)
-    _ -> nextEvent sess
+    _ -> nextEvent sess mb
 
 keyTranslate :: Key -> K.Key
 keyTranslate n =

@@ -59,9 +59,6 @@ the vi text editor keys (also known as "Rogue-like keys").
 
 SHIFT (or CTRL) and a movement key make the hero run in the indicated
 direction, until anything of interest is spotted. '5' and '.' skip a turn.
-(Note that If you are using the curses or vty frontends,
-numerical keypad may not work correctly depending on the versions
-of curses, terminfo and terminal emulators. Vi keys should work regardless.)
 Melee, searching for secret doors and opening closed doors can be done
 by bumping into a monster, a wall and a door, respectively.
 
@@ -109,7 +106,7 @@ commands are listed below. None of them takes hero time.
                ]       target next deeper level
                {       target 10 levels shallower
                }       target 10 levels deeper
-               0--9    select a hero anywhere in the dungeon (gtk only)
+               0--9    select a hero anywhere in the dungeon
 
 There are also some debug and cheat keys, all entered with the CTRL
 key modifier. Use at your own peril!
