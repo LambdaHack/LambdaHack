@@ -97,12 +97,10 @@ handleMonster actor = do
   -- Determine perception to let monsters target heroes. The perception
   -- may change between monster moves, e.g., when they open doors.
   withPerception $ do
-    remember  -- The hero notices his surroundings, before they get displayed.
-    displayAll -- draw the current surroundings
+    remember  -- hero notices his surroundings, before they get displayed
+    displayPush  -- draw the current surroundings
     cops  <- contentOps
     state <- get
-    -- Simplification: this is the perception after the last player command
-    -- and does not take into account, e.g., other monsters opening doors.
     per <- currentPerception
     -- Run the AI: choses an action from those given by the AI strategy.
     join $ rndToAction $
@@ -132,41 +130,48 @@ handlePlayer = do
   -- Determine perception before running player command, in case monsters
   -- have opened doors, etc.
   withPerception $ do
-    remember  -- The hero notices his surroundings, before they get displayed.
-    oldPlayerTime <- gets (btime . getPlayerBody)
+    remember  -- hero notices his surroundings, before they get displayed
+    displayPush  -- draw the current surroundings
+    -- Message shown, so update history and reset current message.
+    history
+    -- Let the player issue commands, until any of them takes time.
     playerCommand
-    -- At this point, the command was successful and possibly took some time.
-    newPlayerTime <- gets (btime . getPlayerBody)
-    if newPlayerTime == oldPlayerTime
-      then handlePlayer  -- no time taken, repeat; TODO: should display at once
-      else do
-        state <- get
-        pl    <- gets splayer
-        let time = stime state
-            ploc = bloc (getPlayerBody state)
-            sTimeout = Config.get (sconfig state) "monsters" "smellTimeout"
-        -- Update smell. Only humans leave a strong scent.
-        when (isAHero state pl) $
-          modify (updateLevel (updateSmell (IM.insert ploc
-                                             (Tile.SmellTime
-                                                (time + sTimeout)))))
-        handleAI True
+    -- TODO: refactor this:
+    state <- get
+    pl    <- gets splayer
+    let time = stime state
+        ploc = bloc (getPlayerBody state)
+        sTimeout = Config.get (sconfig state) "monsters" "smellTimeout"
+    -- Update smell. Only humans leave a strong scent.
+    when (isAHero state pl) $
+      modify (updateLevel (updateSmell (IM.insert ploc
+                                         (Tile.SmellTime
+                                            (time + sTimeout)))))
+    -- The command took some time, so other actors act.
+    handleAI True
 
 -- | Determine and process the next player command.
 playerCommand :: Action ()
 playerCommand = do
-  -- TODO: all displays except the 2 in this file should happen at once
-  displayAll  -- draw the current surroundings
-  history     -- update the message history and reset current message
+  oldPlayerTime <- gets (btime . getPlayerBody)
   tryRepeatedlyWith stopRunning $  -- on abort, just ask for a new command
     ifRunning continueRun $ do
-      k <- session nextCommand
+      k <- session getCommand
       session (\ Session{skeyb} ->
                 case M.lookup k (Binding.kcmd skeyb) of
                   Just (_, c)  -> c
                   Nothing ->
                     let msg = "unknown command <" ++ K.showKM k ++ ">"
                     in abortWith msg)
+  -- The command was successful and possibly took some time.
+  newPlayerTime <- gets (btime . getPlayerBody)
+  -- If no time taken, rinse and repeat.
+  when (newPlayerTime == oldPlayerTime) $ do
+    -- TODO: probably the redrawing is not needed, but for technical reasons,
+    -- to do with frame drawing in gtk, I can't eliminate it for now.
+    displayPush
+    msgReset ""
+    playerCommand
 
 -- Design thoughts (in order to get rid or partially rid of the somewhat
 -- convoluted design we have): We have three kinds of commands.

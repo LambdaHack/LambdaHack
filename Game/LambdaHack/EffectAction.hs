@@ -455,8 +455,10 @@ handleScores write status total =
                    _ -> total
     let score = H.ScoreRecord points (-time) curDate status
     (placeMsg, slideshow) <- liftIO $ H.register config write score
-    displayOverConfirm placeMsg slideshow
-    session getConfirm
+    b <- displayOverConfirm placeMsg slideshow
+    if b
+      then session getConfirm
+      else return False
 
 -- effectToAction does not depend on this function right now, but it might,
 -- and I know no better place to put it.
@@ -516,11 +518,8 @@ doLook = do
       lookMsg = mode ++ lookAt cops True canSee state lvl loc monsterMsg
       -- check if there's something lying around at current loc
       is = lvl `rememberAtI` loc
-  if length is <= 2
-    then msgAdd lookMsg
-    else do
-      displayItems lookMsg False is
-      session getConfirm >> msgAdd ""  -- TODO: a hack; instead keep current overlay in the state to keep it from being overwritten on the screen in Turn.hs, just as msg is kept, and reset each turn
+  msgAdd lookMsg
+  when (length is > 2) $ void $ displayItems "" False is
 
 gameVersion :: Action ()
 gameVersion = do
@@ -529,4 +528,4 @@ gameVersion = do
       msg = "Version " ++ showVersion pathsVersion
             ++ " (frontend: " ++ frontendName
             ++ ", engine: LambdaHack " ++ showVersion Self.version ++ ")"
-  abortWith msg
+  msgAdd msg

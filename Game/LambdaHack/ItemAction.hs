@@ -32,9 +32,7 @@ inventory = do
   items <- gets getPlayerItem
   if L.null items
     then abortWith "Not carrying anything."
-    else do
-      displayItems "Carrying:" True items
-      abort
+    else void $ displayItems "Carrying:" True items
 
 -- | Let the player choose any item with a given group name.
 -- Note that this does not guarantee the chosen item belongs to the group,
@@ -424,8 +422,7 @@ getItem prompt p ptext is0 isn = do
       ask = do
         when (L.null is0 && L.null tis) $
           abortWith "Not carrying anything."
-        displayPrompt $ prompt ++ " " ++ choice is
-        session nextKeypress >>= perform ISuitable
+        displayChoice (prompt ++ " " ++ choice is) >>= perform ISuitable
       perform itemDialogState (command, K.NoModifier) = do
         let ims = if itemDialogState == INone then is0 else is
         case command of

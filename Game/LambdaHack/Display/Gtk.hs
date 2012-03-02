@@ -226,7 +226,7 @@ drawFrame sess@FrontendSession{sframeState} = do
       putMVar sframeState fs
   return True
 
--- | Add a frame to be drawn
+-- | Add a frame to be drawn.
 display :: FrontendSession -> Bool -> Bool -> Maybe Color.SingleFrame -> IO ()
 display sess True noTimeout rawFrame = pushFrame sess noTimeout rawFrame
 display sess False _ (Just rawFrame) = setFrame sess rawFrame
@@ -249,7 +249,17 @@ pushFrame sess@FrontendSession{sframeState, slastFull} noTimeout rawFrame = do
       then putMVar sframeState fs  -- old news
       else putMVar sframeState
              FPushed{fpushed = writeLQueue fpushed nextFrame, ..}
-    FSet{} -> assert `failure` "pushFrame: FSet state"
+--    FSet{} -> assert `failure` "pushFrame: FSet state"
+    -- TODO: A hack until we ensure correctness via types in game logic.
+    -- The Action type should be parameterized by a phantom type representing
+    -- the frame state or, later, done in a way that can't be subverted
+    -- as easily.
+    -- The rawFrame is ignored, but next frames won't be.
+    FSet{fsetFrame} ->
+      putMVar sframeState
+             FPushed{ fpushed = writeLQueue newLQueue fsetFrame
+                    , fshown = dummyFrame
+                    }
     FNone ->
       -- Never start playing with an empty frame.
       let fpushed = if isJust nextFrame
@@ -297,14 +307,38 @@ setFrame sess@FrontendSession{slastFull, sframeState} rawFrame = do
 
 -- | Set key via the frontend. Fail if there is no frame to show
 -- to the player as a prompt for the keypress.
-nextEvent :: FrontendSession -> Bool -> IO (K.Key, K.Modifier)
-nextEvent sess@FrontendSession{schanKey, slastFull, sframeState}
-          expectPushedFrames = do
-  km <- readChan schanKey
-  -- As soon as the key arrives, take the lock.
+nextEvent :: FrontendSession -> Maybe Bool -> IO (K.Key, K.Modifier)
+nextEvent FrontendSession{schanKey, sframeState} Nothing = do
+  -- Take the lock to verify the state.
   fs <- takeMVar sframeState
   case fs of
-    FPushed{fshown} | expectPushedFrames -> do
+    FNone -> putMVar sframeState fs  -- old frame requested, as expected
+    FPushed{} -> assert `failure` "nextEvent: FPushed, expecting FNone"
+    FSet{}    -> assert `failure` "nextEvent: FSet, expecting FNone"
+  -- Wait for a keypress.
+  km <- readChan schanKey
+  return km
+nextEvent sess@FrontendSession{schanKey, sframeState} (Just False) = do
+  -- Take the lock to display the set frame.
+  fs <- takeMVar sframeState
+  case fs of
+    FSet{fsetFrame} -> do
+      -- If the frame not repeated, draw it.
+      maybe (return ()) (postGUIAsync . output sess) fsetFrame
+      -- Clear the stored frame. Release the lock.
+      putMVar sframeState FNone
+    FPushed{} -> assert `failure` "nextEvent: FPushed, expecting FSet"
+    FNone     -> assert `failure` "nextEvent: FNone, expecting FSet"
+  -- Wait for a keypress.
+  km <- readChan schanKey
+  return km
+nextEvent FrontendSession{schanKey, slastFull, sframeState} (Just True) = do
+  -- Wait for a keypress.
+  km <- readChan schanKey
+  -- Take the lock to clear the frame queue.
+  fs <- takeMVar sframeState
+  case fs of
+    FPushed{fshown} -> do
       -- Frame is already drawn or being drawn from the queue.
       -- Update the last received frame with the last shown,
       -- because we clear the queue and so invalidate the old value.
@@ -314,14 +348,8 @@ nextEvent sess@FrontendSession{schanKey, slastFull, sframeState}
       -- Clear the frame queue. No more frames will arrive, because we are
       -- on the same thread as pushFrame. Release the lock.
       putMVar sframeState FNone
-    FSet{fsetFrame} | not expectPushedFrames -> do
-      -- If the frame not repeated, draw it.
-      maybe (return ()) (postGUIAsync . output sess) fsetFrame
-      -- Clear the stored frame. Release the lock.
-      putMVar sframeState FNone
-    FNone     -> assert `failure` "nextEvent: FNone state"
-    FPushed{} -> assert `failure` "nextEvent: unexpected state FPushed"
-    FSet{}    -> assert `failure` "nextEvent: unexpected state FSet"
+    FSet{} -> assert `failure` "nextEvent: FSet, expecting FPushed"
+    FNone  -> assert `failure` "nextEvent: FNone, expecting FPushed"
   return km
 
 -- | Tells a dead key.

@@ -45,15 +45,14 @@ displayHistory = do
   stime <- gets stime
   let turn = show (stime `div` 10)
       msg = "You adventuring lasts " ++ turn ++ " turns. Past messages:"
-  displayOverConfirm msg [renderHistory $ shistory diary]
-  abort
+  void $ displayOverConfirm msg [renderHistory $ shistory diary]
 
 dumpConfig :: Action ()
 dumpConfig = do
   config <- gets sconfig
   let fn = "config.dump"
   liftIO $ Config.dump fn config
-  abortWith $ "Current configuration dumped to file " ++ fn ++ "."
+  void $ displayPrompt $ "Current configuration dumped to file " ++ fn ++ "."
 
 saveGame :: Action ()
 saveGame = do
@@ -165,8 +164,7 @@ triggerTile dloc = do
 -- | Ask for a direction and trigger a tile, if possible.
 playerTriggerDir :: F.Feature -> Action ()
 playerTriggerDir feat = do
-  displayPrompt "direction?"
-  e <- session nextKeypress
+  e <- displayChoice "direction?"
   lxsize <- gets (lxsize . slevel)
   K.handleDir lxsize e (playerBumpDir feat) (neverMind True)
 
@@ -482,5 +480,4 @@ displayHelp :: Action ()
 displayHelp = do
   let disp Session{skeyb} =
         displayOverConfirm "Basic keys. [press SPACE or ESC]" $ keyHelp skeyb
-  session disp
-  abort
+  void $ session disp

@@ -26,6 +26,7 @@ import qualified Data.List as L
 import qualified Data.IntMap as IM
 import Data.Maybe
 
+import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Msg
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.State
@@ -49,13 +50,15 @@ import Game.LambdaHack.FOV
 import qualified Game.LambdaHack.Feature as F
 
 -- | Waits for a SPACE or ESC.
-getConfirmD :: FrontendSession -> IO Bool
-getConfirmD fs = do
-  (e, _) <- nextEvent fs True{-TODO-}
-  case e of
-    K.Space    -> return True
-    K.Esc      -> return False
-    _          -> getConfirmD fs
+getConfirmD :: FrontendSession -> Maybe Bool -> IO Bool
+getConfirmD fs doPush =
+  let loop dp = do
+        (e, _) <- nextEvent fs dp
+        case e of
+          K.Space    -> return True
+          K.Esc      -> return False
+          _          -> loop Nothing
+  in loop doPush
 
 -- | Color mode for the display.
 data ColorMode =
@@ -70,9 +73,9 @@ displayNothingD fs = do
 -- TODO: split up and generally rewrite.
 -- | Display the whole screen: level map, messages and status area
 -- and multi-page overlaid information, if any.
-displayLevel :: ColorMode -> FrontendSession -> Kind.COps
+displayLevel :: Bool -> ColorMode -> FrontendSession -> Kind.COps
              -> Perception -> State -> Overlay -> IO Bool
-displayLevel dm fs cops per
+displayLevel doPush dm fs cops per
              s@State{ scursor=Cursor{..}
                     , stime, sflavour, slid, splayer, sanim, sdebug }
              overlay =
@@ -198,27 +201,27 @@ displayLevel dm fs cops per
               in L.foldl' f [] (zip [lysize-1,lysize-2..0] (reverse levelOld))
         in Color.SingleFrame{..}
       playAnimations [] = return ()
-      playAnimations (am : ams) = do
+      playAnimations (am : ams) = assert doPush $ do
         display fs True False (Just $ modifyFrame basicFrame am)
         playAnimations ams
       -- Perform overlay pages slideshow.
       perf k =
         if k < ns - 1
         then do
-          display fs True False $ Just $ disp k msgTop
-          b <- getConfirmD fs
+          display fs doPush False $ Just $ disp k msgTop
+          b <- getConfirmD fs (Just doPush)
           if b
             then perf (k + 1)
             else return False
         else do
           -- Play animations after the last overlay frame
-          -- that requires confirmation
+          -- that requires confirmation.
           playAnimations sanim
           -- Speed up, by remving all empty frames,
           -- playing the move frames if the player is running.
           let isRunning = isJust bdir
           -- Show the basic frame. If there are overlays, that's the last
           -- overlay frame, the one that does not require confirmation.
-          display fs True isRunning $ Just $ disp k msgTop
+          display fs doPush isRunning $ Just $ disp k msgTop
           return True
   in perf 0

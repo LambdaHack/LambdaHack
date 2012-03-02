@@ -12,6 +12,7 @@ import qualified Data.Map as M
 import Data.Maybe
 -- import System.IO (hPutStrLn, stderr) -- just for debugging
 
+import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Display
 import Game.LambdaHack.Msg
@@ -181,7 +182,7 @@ debug _x = return () -- liftIO $ hPutStrLn stderr _x
 abortWith :: Msg -> Action a
 abortWith msg = do
   msgReset msg
-  displayAll
+  displayPush
   abort
 
 -- | Abort, and print the given msg if the condition is true.
@@ -194,26 +195,28 @@ neverMind :: Bool -> Action a
 neverMind b = abortIfWith b "never mind"
 
 -- | Wait for a player command.
-nextCommand :: Session -> Action (K.Key, K.Modifier)
-nextCommand Session{sfs, skeyb} = do
-  (nc, modifier) <- liftIO $ nextEvent sfs True
+getCommand :: Session -> Action (K.Key, K.Modifier)
+getCommand Session{sfs, skeyb} = do
+  (nc, modifier) <- liftIO $ nextEvent sfs (Just True)
   return $ (fromMaybe nc $ M.lookup nc $ kmacro skeyb, modifier)
 
 -- | Wait for a player keypress.
-nextKeypress :: Session -> Action (K.Key, K.Modifier)
-nextKeypress Session{sfs, skeyb} = do
-  (nc, modifier) <- liftIO $ nextEvent sfs True{-False-}
+getChoice :: Session -> Action (K.Key, K.Modifier)
+getChoice Session{sfs, skeyb} = do
+  (nc, modifier) <- liftIO $ nextEvent sfs (Just False)
   return $ (fromMaybe nc $ M.lookup nc $ kmacro skeyb, modifier)
 
 -- | A yes-no confirmation.
 getYesNo :: Session -> Action Bool
-getYesNo sess@Session{sfs} = do
-  (e, _) <- liftIO $ nextEvent sfs True{-False-}
-  case e of
-    K.Char 'y' -> return True
-    K.Char 'n' -> return False
-    K.Esc      -> return False
-    _          -> getYesNo sess
+getYesNo Session{sfs} =
+  let loop doPush = do
+        (e, _) <- liftIO $ nextEvent sfs doPush
+        case e of
+          K.Char 'y' -> return True
+          K.Char 'n' -> return False
+          K.Esc      -> return False
+          _          -> loop Nothing
+  in loop (Just False)
 
 -- | Waits for a SPACE or ESC. Passes along any other key, including RET,
 -- to an argument function.
@@ -222,7 +225,7 @@ getOptionalConfirm :: (Bool -> Action a)
                     -> Session
                     -> Action a
 getOptionalConfirm h k Session{sfs} = do
-  (e, modifier) <- liftIO $ nextEvent sfs True{-False-}
+  (e, modifier) <- liftIO $ nextEvent sfs (Just False)
   case e of
     K.Space    -> h True
     K.Esc      -> h False
@@ -230,24 +233,35 @@ getOptionalConfirm h k Session{sfs} = do
 
 -- | Ignore unexpected kestrokes until a SPACE or ESC is pressed.
 getConfirm :: Session -> Action Bool
-getConfirm Session{sfs} = liftIO $ getConfirmD sfs
+getConfirm Session{sfs} = liftIO $ getConfirmD sfs (Just False)
 
--- | Wait a single frame.
+-- | Push a wait for a single frame to the frame queue.
 displayNothing :: Action Bool
 displayNothing =
   Action (\ Session{sfs} _e _p k _a st diary ->
            displayNothingD sfs
            >>= k st diary)
 
+-- | Push the frame depicting the current level to the frame queue.
+-- If there are any animations to play, they are pushed at this point, too,
+-- and cleared.
+displayPush :: Action Bool
+displayPush =
+  Action (\ Session{sfs, scops} _e p k _a st diary@Diary{smsg} ->
+           let over = splitReport smsg
+           in displayLevel True ColorFull sfs scops p st over
+              >>= k st{sanim=[]} diary)
+
 -- | Display the current level. The prompt and the overlay are displayed,
 -- but not added to history. The prompt is appended to the current message,
--- the overlay starts on next line below the (possibly multi-line message).
+-- the overlay starts on next line below the (possibly multi-line) message.
 displayGeneric :: ColorMode -> Msg -> Overlay -> Action Bool
 displayGeneric dm prompt overlay =
-  Action (\ Session{sfs, scops} _e p k _a st diary@Diary{smsg} ->
+  Action (\ Session{sfs, scops} _e p k _a st@State{sanim}  diary@Diary{smsg} ->
+           assert (null sanim `blame` length sanim) $
            let over = splitReport (addMsg smsg prompt) ++ overlay
-           in displayLevel dm sfs scops p st over
-              >>= k st{sanim=[]} diary)
+           in displayLevel False dm sfs scops p st over
+              >>= k st diary)
 
 -- | Display the current level, with the current msg and color.
 displayAll :: Action Bool
@@ -276,15 +290,17 @@ displayYesNoConfirm msg = do
   displayGeneric ColorBW (msg ++ yesnoMsg) []
   session getYesNo
 
+-- | Print a prompt and wait for a player keypress.
+displayChoice :: Msg -> Action (K.Key, K.Modifier)
+displayChoice msg = do
+  displayPrompt msg
+  session getChoice
+
 -- | Print a msg and several overlays, one per page, and await confirmation.
 -- The return value indicates if the player tried to abort/escape.
 displayOverConfirm :: Msg -> [Overlay] -> Action Bool
 displayOverConfirm _msg [] = return True
-displayOverConfirm msg [x] = do
-  b0 <- displayGeneric ColorFull msg (x ++ [endMsg])
-  if b0
-    then return True
-    else displayAll >> return False
+displayOverConfirm msg [x] = displayGeneric ColorFull msg (x ++ [endMsg])
 displayOverConfirm msg (x:xs) = do
   b0 <- displayGeneric ColorFull msg (x ++ [moreMsg])
   if b0
@@ -292,8 +308,8 @@ displayOverConfirm msg (x:xs) = do
       b <- session getConfirm
       if b
         then displayOverConfirm msg xs
-        else displayAll >> return False
-    else displayAll >> return False
+        else return False
+    else return False
 
 -- | Update the cached perception for the given computation.
 withPerception :: Action () -> Action ()
