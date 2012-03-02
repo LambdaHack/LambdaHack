@@ -3,12 +3,28 @@
 -- | Game action monad and basic building blocks
 -- for player and monster actions.
 {-# LANGUAGE MultiParamTypeClasses, RankNTypes #-}
-module Game.LambdaHack.Action where
+module Game.LambdaHack.Action
+  ( Session(..), ActionFun, Action
+  , handlerToIO, rndToAction, session
+  , currentDiary, historyReset, currentMsg, msgAdd, msgReset
+  , contentOps, contentf, end
+  , tryWith, tryRepeatedlyWith, try, tryRepeatedly, debug
+  , abort, abortWith, abortIfWith, neverMind
+  , getCommand, displayNothing, displayPush, displayAll
+  , displayPrompt, displayMoreConfirm, displayMoreCancel
+  , displayYesNoConfirm, displayChoice, displayOverlays
+  , withPerception, currentPerception, updateAnyActor, updatePlayerBody
+  , advanceTime, playerAdvanceTime
+  , currentDate, registerHS, saveGameBkp, saveGameFile, dump
+  -- Hide these:
+  , getConfirm, getOptionalConfirm
+  ) where
 
 import Control.Monad
-import Control.Monad.State hiding (State, state)
+import Control.Monad.State hiding (State, state, liftIO)
 import qualified Data.IntMap as IM
 import qualified Data.Map as M
+import System.Time
 import Data.Maybe
 -- import System.IO (hPutStrLn, stderr) -- just for debugging
 
@@ -26,6 +42,8 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Key as K
 import Game.LambdaHack.Binding
+import qualified Game.LambdaHack.HighScore as H
+import qualified Game.LambdaHack.Config as Config
 
 -- | The constant session information, not saved to the game save file.
 data Session = Session
@@ -77,12 +95,15 @@ bindAction m f = Action (\ s e p k a st ms ->
                                 runAction (f x) s e p k a nst nm
                           in runAction m s e p next a st ms)
 
-instance MonadIO Action where
-  liftIO x = Action (\ _s _e _p k _a st ms -> x >>= k st ms)
-
 instance MonadState State Action where
   get     = Action (\ _s _e _p k _a  st ms -> k st  ms st)
   put nst = Action (\ _s _e _p k _a _st ms -> k nst ms ())
+
+-- Commented out so that outside of this module
+-- nobody can subvert Action by invoking arbitrary IO.
+--   instance MonadIO Action where
+liftIO :: IO a -> Action a
+liftIO x = Action (\ _s _e _p k _a st ms -> x >>= k st ms)
 
 -- | Run an action, with a given session, state and diary, in the @IO@ monad.
 handlerToIO :: Session -> State -> Diary -> Action () -> IO ()
@@ -109,10 +130,6 @@ rndToAction r = do
 session :: (Session -> Action a) -> Action a
 session f = Action (\ sess e p k a st ms ->
                      runAction (f sess) sess e p k a st ms)
-
--- | Invoke a session @IO@ command.
-sessionIO :: (Session -> IO a) -> Action a
-sessionIO f = Action (\ sess _e _p k _a st ms -> f sess >>= k st ms)
 
 -- | Get the current diary.
 currentDiary :: Action Diary
@@ -141,6 +158,7 @@ msgReset nm = Action (\ _s _e _p k _a st ms ->
 contentOps :: Action Kind.COps
 contentOps = Action (\ Session{scops} _e _p k _a st ms -> k st ms scops)
 
+-- TODO: remove
 -- | Get the content operations modified by a function (usually a selector).
 contentf :: (Kind.COps -> a) -> Action a
 contentf f = Action (\ Session{scops} _e _p k _a st ms -> k st ms (f scops))
@@ -148,11 +166,6 @@ contentf f = Action (\ Session{scops} _e _p k _a st ms -> k st ms (f scops))
 -- | End the game, i.e., invoke the shutdown continuation.
 end :: Action ()
 end = Action (\ _s e _p _k _a s diary -> e s diary)
-
--- | Reset the state and resume from the last backup point, i.e., invoke
--- the failure continuation.
-abort :: Action a
-abort = Action (\ _s _e _p _k a _st _ms -> a)
 
 -- | Set the current exception handler. First argument is the handler,
 -- second is the computation the handler scopes over.
@@ -177,6 +190,11 @@ tryRepeatedly = tryRepeatedlyWith (return ())
 -- | Debugging.
 debug :: String -> Action ()
 debug _x = return () -- liftIO $ hPutStrLn stderr _x
+
+-- | Reset the state and resume from the last backup point, i.e., invoke
+-- the failure continuation.
+abort :: Action a
+abort = Action (\ _s _e _p _k a _st _ms -> a)
 
 -- | Print the given msg, then abort.
 abortWith :: Msg -> Action a
@@ -296,18 +314,18 @@ displayChoice msg = do
   displayPrompt msg
   session getChoice
 
--- | Print a msg and several overlays, one per page, and await confirmation.
+-- | Print a msg and several overlays, one per page.
 -- The return value indicates if the player tried to abort/escape.
-displayOverConfirm :: Msg -> [Overlay] -> Action Bool
-displayOverConfirm _msg [] = return True
-displayOverConfirm msg [x] = displayGeneric ColorFull msg (x ++ [endMsg])
-displayOverConfirm msg (x:xs) = do
+displayOverlays :: Msg -> [Overlay] -> Action Bool
+displayOverlays _msg [] = return True
+displayOverlays msg [x] = displayGeneric ColorFull msg (x ++ [endMsg])
+displayOverlays msg (x:xs) = do
   b0 <- displayGeneric ColorFull msg (x ++ [moreMsg])
   if b0
     then do
       b <- session getConfirm
       if b
-        then displayOverConfirm msg xs
+        then displayOverlays msg xs
         else return False
     else return False
 
@@ -350,3 +368,18 @@ playerAdvanceTime :: Action ()
 playerAdvanceTime = do
   pl <- gets splayer
   advanceTime pl
+
+currentDate :: Action ClockTime
+currentDate = liftIO getClockTime
+
+registerHS :: Config.CP -> Bool -> H.ScoreRecord -> Action (String, [Overlay])
+registerHS config write s = liftIO $ H.register config write s
+
+saveGameBkp :: State -> Diary -> Action ()
+saveGameBkp state diary = liftIO $ Save.saveGameBkp state diary
+
+saveGameFile :: State -> Diary -> Action ()
+saveGameFile state diary = liftIO $ Save.saveGameFile state diary
+
+dump :: FilePath -> Config.CP -> Action ()
+dump fn config = liftIO $ Config.dump fn config

@@ -15,7 +15,6 @@ import qualified Data.List as L
 import qualified Data.IntMap as IM
 import qualified Data.Set as S
 import qualified Data.IntSet as IS
-import System.Time
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
@@ -38,7 +37,6 @@ import qualified Game.LambdaHack.Config as Config
 import qualified Game.LambdaHack.Effect as Effect
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.DungeonState
-import qualified Game.LambdaHack.Save as Save
 import qualified Game.LambdaHack.Color as Color
 
 -- TODO: instead of verbosity return msg components and tailor them outside?
@@ -231,7 +229,7 @@ effLvlGoUp k = do
         -- Create a backup of the savegame.
         state <- get
         diary <- currentDiary
-        liftIO $ Save.saveGameBkp state diary
+        saveGameBkp state diary
         when (targeting /= TgtOff) doLook  -- TODO: lags behind perception
 
 -- | The player leaves the dungeon.
@@ -240,7 +238,7 @@ fleeDungeon = do
   coitem <- contentf Kind.coitem
   state <- get
   diary <- currentDiary
-  liftIO $ Save.saveGameBkp state diary -- save the diary
+  saveGameBkp state diary -- save the diary
   let (items, total) = calculateTotal coitem state
   if total == 0
     then do
@@ -449,13 +447,13 @@ handleScores write status total =
   else do
     config  <- gets sconfig
     time    <- gets stime
-    curDate <- liftIO getClockTime
+    curDate <- currentDate
     let points = case status of
                    H.Killed _ -> (total + 1) `div` 2
                    _ -> total
     let score = H.ScoreRecord points (-time) curDate status
-    (placeMsg, slideshow) <- liftIO $ H.register config write score
-    b <- displayOverConfirm placeMsg slideshow
+    (placeMsg, slideshow) <- registerHS config write score
+    b <- displayOverlays placeMsg slideshow
     if b
       then session getConfirm
       else return False
@@ -471,7 +469,7 @@ displayItems msg sorted is = do
               ((if sorted
                 then L.sortBy (cmpLetterMaybe `on` jletter)
                 else id) is)
-  displayGeneric ColorFull msg (inv ++ [endMsg])
+  displayOverlays msg [inv]
 
 stopRunning :: Action ()
 stopRunning = updatePlayerBody (\ p -> p { bdir = Nothing })

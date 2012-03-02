@@ -24,8 +24,6 @@ import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Perception
 import Game.LambdaHack.State
-import qualified Game.LambdaHack.Config as Config
-import qualified Game.LambdaHack.Save as Save
 import qualified Game.LambdaHack.Effect as Effect
 import Game.LambdaHack.EffectAction
 import qualified Game.LambdaHack.Tile as Tile
@@ -45,13 +43,13 @@ displayHistory = do
   stime <- gets stime
   let turn = show (stime `div` 10)
       msg = "You adventuring lasts " ++ turn ++ " turns. Past messages:"
-  void $ displayOverConfirm msg [renderHistory $ shistory diary]
+  void $ displayOverlays msg [renderHistory $ shistory diary]
 
 dumpConfig :: Action ()
 dumpConfig = do
   config <- gets sconfig
   let fn = "config.dump"
-  liftIO $ Config.dump fn config
+  dump fn config
   void $ displayPrompt $ "Current configuration dumped to file " ++ fn ++ "."
 
 saveGame :: Action ()
@@ -63,7 +61,7 @@ saveGame = do
       cops <- contentf Kind.coitem
       state <- get
       diary <- currentDiary
-      liftIO $ Save.saveGame state diary
+      saveGameFile state diary
       let (_, total) = calculateTotal cops state
           status = H.Camping
       go <- handleScores False status total
@@ -78,7 +76,7 @@ quitGame = do
   diary <- currentDiary
   if b
     then do
-      liftIO $ Save.saveGameBkp state diary -- save the diary
+      saveGameBkp state diary -- save the diary
       end -- no highscore display for quitters
     else abortWith "Game resumed."
 
@@ -479,5 +477,5 @@ regenerateLevelHP = do
 displayHelp :: Action ()
 displayHelp = do
   let disp Session{skeyb} =
-        displayOverConfirm "Basic keys. [press SPACE or ESC]" $ keyHelp skeyb
+        displayOverlays "Basic keys. [press SPACE or ESC]" $ keyHelp skeyb
   void $ session disp

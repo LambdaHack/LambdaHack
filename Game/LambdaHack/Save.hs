@@ -1,6 +1,6 @@
 -- | Saving and restoring games and player diaries.
 module Game.LambdaHack.Save
-  ( saveGame, restoreGame, rmBkpSaveDiary, saveGameBkp
+  ( saveGameFile, restoreGame, rmBkpSaveDiary, saveGameBkp
   ) where
 
 import System.Directory
@@ -33,8 +33,8 @@ saveDiary state diary = do
   encodeEOF dfile diary
 
 -- | Save a simple serialized version of the current state and diary.
-saveGame :: State -> Diary -> IO ()
-saveGame state diary = do
+saveGameFile :: State -> Diary -> IO ()
+saveGameFile state diary = do
   sfile <- saveFile (sconfig state)
   encodeEOF sfile state
   saveDiary state diary  -- save the diary often in case of crashes
@@ -117,7 +117,7 @@ mvBkp config = do
 -- | Save the diary and a backup of the save game file, in case of crashes.
 saveGameBkp :: State -> Diary -> IO ()
 saveGameBkp state diary = do
-  saveGame state diary
+  saveGameFile state diary
   mvBkp (sconfig state)
 
 -- | Remove the backup of the savegame and save the player diary.
