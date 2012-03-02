@@ -425,7 +425,7 @@ getItem prompt p ptext is0 isn = do
         when (L.null is0 && L.null tis) $
           abortWith "Not carrying anything."
         displayPrompt $ prompt ++ " " ++ choice is
-        session nextCommand >>= perform ISuitable
+        session nextKeypress >>= perform ISuitable
       perform itemDialogState (command, K.NoModifier) = do
         let ims = if itemDialogState == INone then is0 else is
         case command of

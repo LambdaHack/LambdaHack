@@ -51,7 +51,7 @@ import qualified Game.LambdaHack.Feature as F
 -- | Waits for a SPACE or ESC.
 getConfirmD :: FrontendSession -> IO Bool
 getConfirmD fs = do
-  (e, _) <- nextEvent fs
+  (e, _) <- nextEvent fs True{-TODO-}
   case e of
     K.Space    -> return True
     K.Esc      -> return False
@@ -64,7 +64,7 @@ data ColorMode =
 
 displayNothingD :: FrontendSession -> IO Bool
 displayNothingD fs = do
-  pushFrame fs False Nothing
+  display fs True False Nothing
   return True
 
 -- TODO: split up and generally rewrite.
@@ -199,13 +199,13 @@ displayLevel dm fs cops per
         in Color.SingleFrame{..}
       playAnimations [] = return ()
       playAnimations (am : ams) = do
-        pushFrame fs False (Just $ modifyFrame basicFrame am)
+        display fs True False (Just $ modifyFrame basicFrame am)
         playAnimations ams
       -- Perform overlay pages slideshow.
       perf k =
         if k < ns - 1
         then do
-          pushFrame fs False $ Just $ disp k msgTop
+          display fs True False $ Just $ disp k msgTop
           b <- getConfirmD fs
           if b
             then perf (k + 1)
@@ -219,6 +219,6 @@ displayLevel dm fs cops per
           let isRunning = isJust bdir
           -- Show the basic frame. If there are overlays, that's the last
           -- overlay frame, the one that does not require confirmation.
-          pushFrame fs isRunning $ Just $ disp k msgTop
+          display fs True isRunning $ Just $ disp k msgTop
           return True
   in perf 0

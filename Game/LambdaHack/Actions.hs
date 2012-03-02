@@ -166,7 +166,7 @@ triggerTile dloc = do
 playerTriggerDir :: F.Feature -> Action ()
 playerTriggerDir feat = do
   displayPrompt "direction?"
-  e <- session nextCommand
+  e <- session nextKeypress
   lxsize <- gets (lxsize . slevel)
   K.handleDir lxsize e (playerBumpDir feat) (neverMind True)
 

@@ -193,16 +193,22 @@ abortIfWith False _  = abortWith ""
 neverMind :: Bool -> Action a
 neverMind b = abortIfWith b "never mind"
 
--- | Wait for a player keypress.
+-- | Wait for a player command.
 nextCommand :: Session -> Action (K.Key, K.Modifier)
 nextCommand Session{sfs, skeyb} = do
-  (nc, modifier) <- liftIO $ nextEvent sfs
+  (nc, modifier) <- liftIO $ nextEvent sfs True
+  return $ (fromMaybe nc $ M.lookup nc $ kmacro skeyb, modifier)
+
+-- | Wait for a player keypress.
+nextKeypress :: Session -> Action (K.Key, K.Modifier)
+nextKeypress Session{sfs, skeyb} = do
+  (nc, modifier) <- liftIO $ nextEvent sfs True{-False-}
   return $ (fromMaybe nc $ M.lookup nc $ kmacro skeyb, modifier)
 
 -- | A yes-no confirmation.
 getYesNo :: Session -> Action Bool
 getYesNo sess@Session{sfs} = do
-  (e, _) <- liftIO $ nextEvent sfs
+  (e, _) <- liftIO $ nextEvent sfs True{-False-}
   case e of
     K.Char 'y' -> return True
     K.Char 'n' -> return False
@@ -216,7 +222,7 @@ getOptionalConfirm :: (Bool -> Action a)
                     -> Session
                     -> Action a
 getOptionalConfirm h k Session{sfs} = do
-  (e, modifier) <- liftIO $ nextEvent sfs
+  (e, modifier) <- liftIO $ nextEvent sfs True{-False-}
   case e of
     K.Space    -> h True
     K.Esc      -> h False
