@@ -24,16 +24,20 @@ import Game.LambdaHack.Utils.LQueue
 import qualified Game.LambdaHack.Key as K (Key(..), keyTranslate, Modifier(..))
 import qualified Game.LambdaHack.Color as Color
 
+data FrameState = FrameState
+  { schanScreen :: !(LQueue (Maybe GtkFrame))  -- ^ channel for screen output
+  , slastShown  :: !GtkFrame                   -- ^ last full frame shown
+  }
+
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { sview       :: TextView                  -- ^ the widget to draw to
-  , stags       :: M.Map Color.Attr TextTag  -- ^ text color tags for fg/bg
-  , schanKey    :: Chan (K.Key, K.Modifier)  -- ^ channel for keyboard input
-  , schanScreen :: LQueue (Maybe GtkFrame)   -- ^ channel for screen output
-  , slastShown  :: IORef GtkFrame            -- ^ last full frame shown
-  , slastFull   :: IORef (GtkFrame, Bool)
-      -- ^ most recent full (not empty, not repeated) frame received
-      -- ^ and if any empty frame followed it
+  { sview       :: !TextView                    -- ^ the widget to draw to
+  , stags       :: !(M.Map Color.Attr TextTag)  -- ^ text color tags for fg/bg
+  , schanKey    :: !(Chan (K.Key, K.Modifier))  -- ^ channel for keyboard input
+  , sframeState :: !(MVar FrameState)           -- ^ state of the frame machine
+  , slastFull   :: !(IORef (GtkFrame, Bool))
+       -- ^ most recent full (not empty, not repeated) frame received
+       -- and if any empty frame followed it
   }
 
 data GtkFrame = GtkFrame
@@ -45,17 +49,12 @@ data GtkFrame = GtkFrame
 dummyFrame :: GtkFrame
 dummyFrame = GtkFrame BS.empty []
 
--- | Remove all current elements from the queue.
-trimLQueue :: FrontendSession -> IO ()
-trimLQueue FrontendSession{slastShown, slastFull, schanScreen} = do
-  b <- nullLQueue schanScreen
-  when (not b) $ do
-    -- Drop all the old frames.
-    clearLQueue schanScreen
-    -- Update the last received with the last shown, to potentially avoid
-    -- some future frame drawing.
-    lastShown <- readIORef slastShown
-    writeIORef slastFull (lastShown, True)
+-- | Remove all but the last element of the frame queue.
+-- The kept last element ensures that slastFull is not invalidated.
+trimQueue :: FrontendSession -> IO ()
+trimQueue FrontendSession{sframeState} = do
+  sf@FrameState{schanScreen} <- takeMVar sframeState
+  putMVar sframeState $ sf {schanScreen = trimLQueue schanScreen}
 
 -- | The name of the frontend.
 frontendName :: String
@@ -96,11 +95,13 @@ runGtk configFont k = do
   textViewSetCursorVisible sview False
   -- Set up the channel for keyboard input.
   schanKey <- newChan
-  -- Set up the channel for drawing frames.
-  schanScreen <- newLQueue
+  -- Set up the frame state.
+  let schanScreen = newLQueue
+      slastShown  = dummyFrame
+      frameState  = FrameState{..}
   -- Create the session record.
-  slastShown <- newIORef dummyFrame
-  slastFull  <- newIORef (dummyFrame, False)
+  sframeState <- newMVar frameState
+  slastFull <- newIORef (dummyFrame, False)
   let sess = FrontendSession{..}
   -- Fork the game logic thread.
   forkIO $ k sess
@@ -115,7 +116,7 @@ runGtk configFont k = do
     liftIO $ do
       unless (deadKey n) $ do
         -- Drop all the old frames. Some more may be arriving at the same time.
-        trimLQueue sess
+        trimQueue sess
         -- Store the key in the channel.
         writeChan schanKey (key, modifier)
       return True
@@ -165,14 +166,13 @@ shutdown _ = mainQuit
 -- | Output to the screen via the frontend.
 display :: FrontendSession  -- ^ frontend session data
         -> GtkFrame         -- ^ the screen frame to draw
-        -> IO Bool
+        -> IO ()
 display FrontendSession{sview, stags} GtkFrame{..} = do  -- new frame
   tb <- textViewGetBuffer sview
   let attrs = L.zip [0..] gfAttr
       defaultAttr = stags M.! Color.defaultAttr
   textBufferSetByteString tb gfChar
   mapM_ (setTo tb defaultAttr 0) attrs
-  return True
 
 setTo :: TextBuffer -> TextTag -> Int -> (Int, [TextTag]) -> IO ()
 setTo _  _   _  (_,  [])         = return ()
@@ -200,21 +200,24 @@ setTo tb defaultAttr lx (ly, attr:attrs) = do
 maxFps :: Int
 maxFps = 15
 
--- | Draw a frame from a channel, if any.
+-- | Draw a frame from a channel. Don't block if not frame.
 drawFrame :: FrontendSession -> IO Bool
-drawFrame sess@FrontendSession{schanScreen, slastShown} = do
-  -- Try to get a frame. Don't block.
-  mmframe <- tryReadLQueue schanScreen
-  case mmframe of
-    Just (Just frame) -> do
-      writeIORef slastShown frame
+drawFrame sess@FrontendSession{sframeState} = do
+  fs@FrameState{schanScreen} <- takeMVar sframeState
+  case tryReadLQueue schanScreen of
+    Just (Just frame, queue) -> do
+      putMVar sframeState $ fs {schanScreen = queue, slastShown = frame}
       display sess frame
-    Just Nothing -> return True  --  timeout requested
-    Nothing -> return True  -- empty queue, do nothing
+    Just (Nothing, queue) ->  -- timeout requested via an empty frame
+      putMVar sframeState $ fs {schanScreen = queue}
+    Nothing ->  -- the queue is empty
+      putMVar sframeState fs
+  return True
 
 -- | Add a game screen frame to the frame drawing channel.
 pushFrame :: FrontendSession -> Bool -> Maybe Color.SingleFrame -> IO ()
-pushFrame sess@FrontendSession{schanScreen, slastFull} noTimeout rawFrame = do
+pushFrame sess@FrontendSession{sframeState, slastFull} noTimeout rawFrame = do
+  -- Full evaluation and comparison is done outside the mvar lock.
   (lastFrame, anyFollowed) <- readIORef slastFull
   let frame = maybe Nothing (Just . evalFrame sess) rawFrame
       nextFrame =
@@ -222,7 +225,8 @@ pushFrame sess@FrontendSession{schanScreen, slastFull} noTimeout rawFrame = do
         then Nothing  -- no sense repeating
         else frame
   unless (isNothing nextFrame && anyFollowed) $ do  -- old news
-    writeLQueue schanScreen nextFrame
+    fs@FrameState{schanScreen} <- takeMVar sframeState
+    putMVar sframeState $ fs {schanScreen = writeLQueue schanScreen nextFrame}
     case nextFrame of
       Nothing -> writeIORef slastFull (lastFrame, True)
       Just f  -> writeIORef slastFull (f, noTimeout)
@@ -239,10 +243,17 @@ evalFrame FrontendSession{stags} Color.SingleFrame{..} =
 
 -- | Input key via the frontend.
 nextEvent :: FrontendSession -> IO (K.Key, K.Modifier)
-nextEvent sess@FrontendSession{schanKey} = do
+nextEvent FrontendSession{schanKey, slastFull, sframeState} = do
   km <- readChan schanKey
-  -- As soon as the key arrives, drop all the old frames. No more arrive.
-  trimLQueue sess
+  -- As soon as the key arrives, take the lock.
+  sf@FrameState{..} <- takeMVar sframeState
+  -- Update the last received frame with the last shown,
+  -- to potentially avoid some future frame drawing.
+  -- There is no race condition, because we are on the same thread
+  -- as pushFrame and the lock synchronizes us with drawFrame.
+  writeIORef slastFull (slastShown, True)
+  -- Drop all the old frames. No more arrive. Release the lock.
+  putMVar sframeState $ sf {schanScreen = newLQueue}
   return km
 
 -- | Tells a dead key.

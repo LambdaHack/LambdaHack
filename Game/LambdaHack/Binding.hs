@@ -65,7 +65,6 @@ keyHelp Binding{kcmd, kmacro, kmajor, ktimed} =
       , "Search, open and attack, by bumping into walls, doors and monsters."
       , ""
       , "Press SPACE to see the next page, with the list of major commands."
-      , ""
       ]
     majorBlurb =
       [ ""
