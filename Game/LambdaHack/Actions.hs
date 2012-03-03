@@ -36,14 +36,16 @@ import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Random
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Binding
+import Game.LambdaHack.Display
 
 displayHistory :: Action ()
 displayHistory = do
   Diary{shistory} <- currentDiary
   stime <- gets stime
+  lysize <- gets (lysize . slevel)
   let turn = show (stime `div` 10)
       msg = "You adventuring lasts " ++ turn ++ " turns. Past messages:"
-  void $ displayOverlays msg [renderHistory shistory]
+  void $ displayOverlays msg $ splitOverlay lysize $ renderHistory shistory
 
 dumpConfig :: Action ()
 dumpConfig = do
@@ -51,7 +53,7 @@ dumpConfig = do
   let fn = "config.dump"
       msg = "Current configuration dumped to file " ++ fn ++ "."
   dump fn config
-  void $ displayOverlays msg []
+  void $ displayPrompt ColorFull msg
 
 saveGame :: Action ()
 saveGame = do

@@ -102,7 +102,7 @@ effectToAction Effect.Dominate _ source target _power = do
         >>= assert `trueM` (source, target, "player dominates himself")
       -- Prevent AI from getting a few free moves until new player ready.
       updatePlayerBody (\ m -> m { btime = 0})
-      displayAll
+      displayPrompt ColorBW ""
       return (True, "")
     else if source == target
          then do
@@ -250,7 +250,7 @@ fleeDungeon = do
       let winMsg = "Congratulations, you won! Your loot, worth " ++
                    show total ++ " gold, is:"  -- TODO: use the name of the '$' item instead
       io <- itemOverlay True items
-      go <- displayOverlays winMsg [io, []]
+      go <- displayOverlays winMsg $ io ++ []
       when go $ do
         go2 <- handleScores True H.Victor total
         when go2 $ displayMoreCancel "Can it be done better, though?"
@@ -350,7 +350,7 @@ focusIfAHero target = do
     -- Focus on the hero being wounded/displaced/etc.
     b <- selectPlayer target
     -- Display status line for the new hero.
-    when b $ void displayAll
+    when b $ void $ displayPrompt ColorFull ""
 
 summonHeroes :: Int -> Point -> Action ()
 summonHeroes n loc =
@@ -361,7 +361,7 @@ summonHeroes n loc =
   selectPlayer newHeroId
     >>= assert `trueM` (newHeroId, "player summons himself")
   -- Display status line for the new hero.
-  void displayAll
+  void $ displayPrompt ColorFull ""
 
 summonMonsters :: Int -> Point -> Action ()
 summonMonsters n loc = do
@@ -455,18 +455,18 @@ handleScores write status total =
     (placeMsg, slideshow) <- registerHS config write score
     displayOverlays placeMsg $ slideshow ++ []
 
--- effectToAction does not depend on this function right now, but it might,
--- and I know no better place to put it.
-itemOverlay ::Bool -> [Item] -> Action Overlay
+-- | Create a list of item names, split into many overlays.
+itemOverlay ::Bool -> [Item] -> Action [Overlay]
 itemOverlay sorted is = do
   cops  <- contentf Kind.coitem
   state <- get
+  lysize <- gets (lysize . slevel)
   let inv = L.map (\ i -> letterLabel (jletter i)
                           ++ objectItem cops state i ++ " ")
               ((if sorted
                 then L.sortBy (cmpLetterMaybe `on` jletter)
                 else id) is)
-  return inv
+  return $ splitOverlay lysize inv
 
 stopRunning :: Action ()
 stopRunning = updatePlayerBody (\ p -> p { bdir = Nothing })
@@ -515,7 +515,7 @@ doLook = do
       is = lvl `rememberAtI` loc
   msgAdd lookMsg
   io <- itemOverlay False is
-  when (length is > 2) $ void $ displayOverlays "" [io]
+  when (length is > 2) $ void $ displayOverlays "" io
 
 gameVersion :: Action ()
 gameVersion = do

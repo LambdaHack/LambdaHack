@@ -9,7 +9,7 @@ module Game.LambdaHack.Action
   , tryWith, tryRepeatedlyWith, try, tryRepeatedly, debug
   , abort, abortWith, abortIfWith, neverMind
   , currentDiary, historyReset, msgAdd, msgReset
-  , getCommand, displayNothingPush, displayPush, displayAll
+  , getCommand, displayNothingPush, displayPush, displayPrompt
   , displayMoreConfirm, displayMoreCancel
   , displayYesNo, displayChoice, displayOverlays
   , withPerception, currentPerception, updateAnyActor, updatePlayerBody
@@ -232,7 +232,8 @@ displayNothingPush =
 
 -- | Push the frame depicting the current level to the frame queue.
 -- If there are any animations to play, they are pushed at this point, too,
--- and cleared.
+-- and cleared. Only one screenful of the message is shown,
+-- the rest is ignored.
 displayPush :: Action Bool
 displayPush =
   Action (\ Session{sfs, scops} _e p k _a st diary@Diary{smsg} ->
@@ -240,26 +241,22 @@ displayPush =
            in displayLevel True ColorFull sfs scops p st over
               >>= k st{sanim=[]} diary)
 
--- | Display the current level. The prompt and the overlay are displayed,
--- but not added to history. The prompt is appended to the current message,
--- the overlay starts on next line below the (possibly multi-line) message.
-displayGeneric :: ColorMode -> Msg -> Overlay -> Action Bool
-displayGeneric dm prompt overlay =
-  Action (\ Session{sfs, scops} _e p k _a st@State{sanim}  diary@Diary{smsg} ->
+-- | Display the current level. The prompt is displayed, but not added
+-- to history. The prompt is appended to the current message
+-- and only the first screenful of the resulting overlay is displayed.
+displayPrompt :: ColorMode -> Msg -> Action Bool
+displayPrompt dm prompt =
+  Action (\ Session{sfs, scops} _e p k _a st@State{sanim} diary@Diary{smsg} ->
            assert (null sanim `blame` length sanim) $
-           let over = splitReport (addMsg smsg prompt) ++ overlay
+           let over = splitReport $ addMsg smsg prompt
            in displayLevel False dm sfs scops p st over
               >>= k st diary)
-
--- | Display the current level, with the current msg and color.
-displayAll :: Action Bool
-displayAll = displayGeneric ColorFull "" []
 
 -- | Display a msg with a @more@ prompt. Return value indicates if the player
 -- tried to abort/escape.
 displayMoreConfirm :: ColorMode -> Msg -> Action Bool
-displayMoreConfirm dm msg = do
-  b <- displayGeneric dm (msg ++ moreMsg) []
+displayMoreConfirm dm prompt = do
+  b <- displayPrompt dm (prompt ++ moreMsg)
   if b
     then session getConfirmSet
     else return False
@@ -267,42 +264,63 @@ displayMoreConfirm dm msg = do
 -- | Print a message with a @more@ prompt, await confirmation
 -- and ignore confirmation.
 displayMoreCancel :: Msg -> Action ()
-displayMoreCancel msg = void $ displayMoreConfirm ColorFull msg
+displayMoreCancel prompt = void $ displayMoreConfirm ColorFull prompt
 
 -- | Print a yes/no question and return the player's answer.
 displayYesNo :: Msg -> Action Bool
-displayYesNo msg = do
+displayYesNo prompt = do
   -- Turn player's attention to the choice via BW colours.
-  b <- displayGeneric ColorBW (msg ++ yesnoMsg) []
+  b <- displayPrompt ColorBW (prompt ++ yesnoMsg)
   if b
     then session getYesNoSet
     else return False  -- ESC counts as No
 
+-- | Display the current level. The prompt and the overlay are displayed,
+-- but not added to history. The prompt is appended to the current message
+-- and only the first line of the result is displayed.
+-- The overlay starts on the second line.
+displayOver :: ColorMode -> Msg -> Overlay -> Action Bool
+displayOver dm prompt overlay =
+  Action (\ Session{sfs, scops} _e p k _a st@State{sanim} diary@Diary{smsg} ->
+           assert (null sanim `blame` length sanim) $
+           let xsize = lxsize $ slevel $ st
+               msgPrompt = renderReport $ addMsg smsg prompt
+               over = padMsg xsize msgPrompt : overlay
+           in displayLevel False dm sfs scops p st over
+              >>= k st diary)
+
 -- | Print a prompt and an overlay and wait for a player keypress.
-displayChoice :: Msg -> Overlay -> Action (Maybe (K.Key, K.Modifier))
-displayChoice prompt over = do
-  b <- displayGeneric ColorFull prompt over
+-- If many overlays, scroll screenfuls with SPACE. Do not wrap screenfuls
+-- (in some menus @?@ cycles views, so the user can restart from the top).
+displayChoice :: Msg -> [Overlay] -> Action (Maybe (K.Key, K.Modifier))
+displayChoice prompt ovs = do
+  let (over, rest, spc, more) = case ovs of
+        [] -> ([], [], "", [])
+        [x] -> (x, [], "", [])
+        x:xs -> (x, xs, ", SPACE", [moreMsg])
+  b <- displayOver ColorFull (prompt ++ spc ++ ", ESC]") (over ++ more)
   if b
     then do
       (key, modifier) <- session getChoice
       case key of
-        K.Esc      -> return Nothing
-        _          -> return $ Just (key, modifier)
+        K.Esc -> return Nothing
+        K.Space | not (null rest) -> displayChoice prompt rest
+        _ -> return $ Just (key, modifier)
     else return Nothing
 
 -- | Print a msg and several overlays, one per page.
 -- The return value indicates if the player tried to abort/escape.
 displayOverlays :: Msg -> [Overlay] -> Action Bool
-displayOverlays msg []     = displayGeneric ColorFull msg [] -- special case
-displayOverlays _   [[]]   = return True  -- an extra confirmation at the end
-displayOverlays msg [x]    = displayGeneric ColorFull msg x
-displayOverlays msg (x:xs) = do
-  b0 <- displayGeneric ColorFull msg (x ++ [moreMsg])
+displayOverlays _      []     = return True
+displayOverlays _      [[]]   = return True  -- extra confirmation at the end
+displayOverlays prompt [x]    = displayOver ColorFull prompt x
+displayOverlays prompt (x:xs) = do
+  b0 <- displayOver ColorFull prompt (x ++ [moreMsg])
   if b0
     then do
       b <- session getConfirmSet
       if b
-        then displayOverlays msg xs
+        then displayOverlays prompt xs
         else return False
     else return False
 

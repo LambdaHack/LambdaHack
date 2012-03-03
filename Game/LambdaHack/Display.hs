@@ -88,8 +88,8 @@ displayNothing fs = do
   return True
 
 -- TODO: split up and generally rewrite.
--- | Display the whole screen: level map, messages and status area
--- and multi-page overlaid information, if any.
+-- | Display the whole screen: level map, status area and, at most,
+-- a single page overlay of text divided into lines.
 displayLevel :: Bool -> ColorMode -> FrontendSession -> Kind.COps
              -> Perception -> State -> Overlay -> IO Bool
 displayLevel doPush dm fs cops per
@@ -105,7 +105,7 @@ displayLevel doPush dm fs cops per
       ActorKind{ahp, asmell} = okind bkind
       reachable = debugTotalReachable per
       visible   = totalVisible per
-      (msgTop, ns, over) = stringByLocation lxsize lysize overlay
+      (msgTop, over) = stringByLocation lxsize lysize overlay
       (sSml, sVis) = case smarkVision of
         Just Blind -> (True, True)
         Just _  -> (False, True)
@@ -127,8 +127,8 @@ displayLevel doPush dm fs cops per
                     _ -> show (Item.jpower sw)
                   Nothing -> "3d1"  -- TODO; use the item 'fist'
       bl = bla lxsize lysize ceps bloc clocation
-      dis offset p@(PointXY (x0, y0)) =
-        let loc0 = toPoint lxsize p
+      dis ov pxy =
+        let loc0 = toPoint lxsize pxy
             tile = lvl `lAt` loc0
             tk = tokind tile
             items = lvl `liAt` loc0
@@ -180,7 +180,7 @@ displayLevel doPush dm fs cops per
             a = case dm of
                   ColorBW   -> Color.defaultAttr
                   ColorFull -> optVisually Color.Attr{fg = fg0, bg = bg0}
-        in case over (x0, y0 + offset) of
+        in case ov pxy of
              Just c -> Color.AttrChar Color.defaultAttr c
              _      -> Color.AttrChar a char
       status =
@@ -192,20 +192,18 @@ displayLevel doPush dm fs cops per
                  " (" ++ show (maxDice ahp) ++ ")" ++ repeat ' ')
       toWidth :: Int -> String -> String
       toWidth n x = take n (x ++ repeat ' ')
-      disp n mesg =
-        let offset = lysize * n
-            fLine y =
-              let f l x = let !ac = dis offset (PointXY (x, y)) in ac : l
+      disp ov =
+        let fLine y =
+              let f l x = let !ac = dis ov (PointXY (x, y)) in ac : l
               in L.foldl' f [] [lxsize-1,lxsize-2..0]
             sfLevel =  -- Fully evaluated.
               let f l y = let !line = fLine y in line : l
               in L.foldl' f [] [lysize-1,lysize-2..0]
-            sfTop = toWidth lxsize mesg
+            sfTop = toWidth lxsize msgTop
             sfBottom = toWidth lxsize status
         in Color.SingleFrame{..}
-      -- Make sure overlays or multi-line messages do not obscure animations.
-      msgAnim = if ns == 0 then msgTop else ""
-      basicFrame = disp (-1) msgAnim
+      -- Make sure the overlay does not obscure animations.
+      basicFrame = disp (const Nothing)
       modifyFrame Color.SingleFrame{sfLevel = levelOld, ..} am =
         let fLine y lineOld =
               let f l (x, acOld) =
@@ -221,24 +219,13 @@ displayLevel doPush dm fs cops per
       playAnimations (am : ams) = assert doPush $ do
         display fs True False (Just $ modifyFrame basicFrame am)
         playAnimations ams
-      -- Perform overlay pages slideshow.
-      perf k =
-        if k < ns - 1
-        then do
-          display fs doPush False $ Just $ disp k msgTop
-          b <- getConfirm fs doPush
-          if b
-            then perf (k + 1)
-            else return False
-        else do
-          -- Play animations after the last overlay frame
-          -- that requires confirmation.
-          playAnimations sanim
-          -- Speed up, by remving all empty frames,
-          -- playing the move frames if the player is running.
-          let isRunning = isJust bdir
-          -- Show the basic frame. If there are overlays, that's the last
-          -- overlay frame, the one that does not require confirmation.
-          display fs doPush isRunning $ Just $ disp k msgTop
-          return True
-  in perf 0
+      perf = do
+        playAnimations sanim
+        -- TODO: here switch from push to doPush mode, if equal.
+        -- Speed up (by remving all empty frames) the show of the sequence
+        -- of the move frames if the player is running.
+        let isRunning = isJust bdir
+            overlayFrame = disp over
+        display fs doPush isRunning $ Just overlayFrame
+        return True
+  in perf

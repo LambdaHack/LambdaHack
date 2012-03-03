@@ -34,7 +34,7 @@ inventory = do
     then abortWith "Not carrying anything."
     else do
       io <- itemOverlay True items
-      void $ displayOverlays "Carrying:" [io]
+      void $ displayOverlays "Carrying:" io
 
 -- | Let the player choose any item with a given group name.
 -- Note that this does not guarantee the chosen item belongs to the group,
@@ -410,17 +410,17 @@ getItem prompt p ptext is0 isn = do
   body <- gets getPlayerBody
   let loc = bloc body
       tis = lvl `atI` loc
-      floorMsg = if L.null tis then "" else " -,"
+      floorMsg = if L.null tis then "" else ", -"
       is = L.filter p is0
       cmpItemLM i1 i2 = cmpLetterMaybe (jletter i1) (jletter i2)
       choice ims =
         if L.null ims
-        then "[?," ++ floorMsg ++ " ESC]"
+        then "[?" ++ floorMsg
         else let mls = mapMaybe jletter ims
                  r = letterRange mls
                  ret = maybe "" (\ l -> ['(', l, ')']) $
                          jletter $ L.maximumBy cmpItemLM ims
-             in "[" ++ r ++ ", ?," ++ floorMsg ++ " RET" ++ ret ++ ", ESC]"
+             in "[" ++ r ++ ", ?" ++ floorMsg ++ ", RET" ++ ret
       ask = do
         when (L.null is0 && L.null tis) $
           abortWith "Not carrying anything."

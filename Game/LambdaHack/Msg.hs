@@ -1,10 +1,11 @@
 -- | Game messages displayed on top of the screen for the player to read.
 module Game.LambdaHack.Msg
-  ( Msg, moreMsg, yesnoMsg
-  , Report, emptyReport, nullReport, singletonReport, addMsg, splitReport
+  ( Msg, moreMsg, yesnoMsg, padMsg
+  , Report, emptyReport, nullReport, singletonReport, addMsg
+  , splitReport, renderReport
   , History, emptyHistory, singletonHistory, addReport, renderHistory
   , takeHistory
-  , Overlay, stringByLocation
+  , Overlay, splitOverlay, stringByLocation
   ) where
 
 import qualified Data.List as L
@@ -28,13 +29,18 @@ yesnoMsg :: Msg
 yesnoMsg = " [yn]"
 
 -- | Add spaces at the message end, for display overlayed over the level map.
+-- Also trims (does not wrap!) too long lines.
 padMsg :: X -> String -> String
 padMsg w xs =
-  case L.reverse xs of
-    [] -> xs
-    ' ' : _ -> xs
-    _ | w == length xs -> xs
-    reversed -> L.reverse $ ' ' : reversed
+  let len = length xs
+      rev = reverse xs
+  in case compare w len of
+       LT -> reverse $ '$' : drop (len - w + 1) rev
+       EQ -> xs
+       GT -> case rev of
+         [] -> xs
+         ' ' : _ -> xs
+         _ -> reverse $ ' ' : rev
 
 -- | The type of a set of messages to show at the screen at once.
 newtype Report = Report [(BS.ByteString, Int)]
@@ -64,14 +70,15 @@ addMsg (Report xns) y = Report $ (BS.pack y, 1) : xns
 -- | Split a messages into chunks that fit in one line.
 -- We assume the width of the messages line is the same as of level map.
 splitReport :: Report -> [String]
-splitReport (Report xs) =
+splitReport r =
   let w = fst normalLevelBound + 1
-  in splitString w (renderReport xs)
+  in splitString w $ renderReport r
 
-renderReport :: [(BS.ByteString, Int)] -> String
-renderReport [] = ""
-renderReport [xn] = renderRepetition xn
-renderReport (xn : xs) = renderReport xs ++ " " ++ renderRepetition xn
+renderReport ::Report  -> String
+renderReport (Report []) = ""
+renderReport (Report [xn]) = renderRepetition xn
+renderReport (Report (xn : xs)) =
+  renderReport (Report xs) ++ " " ++ renderRepetition xn
 
 renderRepetition :: (BS.ByteString, Int) -> String
 renderRepetition (s, 1) = BS.unpack s
@@ -127,21 +134,20 @@ takeHistory k (History h) = History $ take k h
 
 type Overlay = [String]
 
-splitOverlay :: Y -> Overlay -> [[String]]
+splitOverlay :: Y -> Overlay -> [Overlay]
 splitOverlay _ [] = []  -- nothing to print over the level area
 splitOverlay lysize ls | length ls <= lysize = [ls]  -- all fits on one screen
 splitOverlay lysize ls = let (pre, post) = splitAt (lysize - 1) ls
-                         in (pre ++ [moreMsg]) : splitOverlay lysize post
+                         in pre : splitOverlay lysize post
 
 -- | Returns a function that looks up the characters in the
 -- string by location. Takes the height of the display plus
 -- the string. Returns also the message to print at the top
 -- and number of screens required to display all of the string.
-stringByLocation :: X -> Y -> Overlay -> (String, Int, (X, Y) -> Maybe Char)
-stringByLocation _ _ [] = ("", 0, const Nothing)
+stringByLocation :: X -> Y -> Overlay -> (String, PointXY -> Maybe Char)
+stringByLocation _ _ [] = ("", const Nothing)
 stringByLocation lxsize lysize (msgTop : ls) =
-  let over = splitOverlay lysize $ map (padMsg lxsize) ls
+  let over = map (padMsg lxsize) $ take lysize ls
       m  = IM.fromDistinctAscList $
-             zip [0..] (L.map (IM.fromList . zip [0..]) (concat over))
-      ns = length over
-  in (msgTop, ns, \ (x, y) -> IM.lookup y m >>= \ n -> IM.lookup x n)
+             zip [0..] (L.map (IM.fromList . zip [0..]) over)
+  in (msgTop, \ (PointXY (x, y)) -> IM.lookup y m >>= \ n -> IM.lookup x n)
