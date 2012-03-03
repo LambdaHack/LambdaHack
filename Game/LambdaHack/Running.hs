@@ -154,7 +154,7 @@ continueRun (dirLast, distLast) = do
   cops@Kind.COps{cotile} <- contentOps
   locHere <- gets (bloc . getPlayerBody)
   per <- currentPerception
-  Diary{smsg} <- currentDiary
+  Diary{sreport} <- currentDiary
   ms  <- gets levelMonsterList
   hs  <- gets levelHeroList
   lvl@Level{lxsize, lysize} <- gets slevel
@@ -164,7 +164,7 @@ continueRun (dirLast, distLast) = do
       tryRunDist (dir, distNew)
         | accessibleDir locHere dir =
           maybe abort run $
-            runDisturbance locLast distLast smsg hs ms per locHere
+            runDisturbance locLast distLast sreport hs ms per locHere
               locHasFeature locHasItems lxsize lysize (dir, distNew)
         | otherwise = abort  -- do not open doors in the middle of a run
       tryRun dir = tryRunDist (dir, distLast)

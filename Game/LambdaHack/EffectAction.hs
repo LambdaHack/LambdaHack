@@ -474,12 +474,12 @@ stopRunning = updatePlayerBody (\ p -> p { bdir = Nothing })
 -- | Store current msg in the history and reset current msg.
 history :: Action ()
 history = do
-  Diary{smsg, shistory} <- currentDiary
-  unless (nullReport smsg) $ do
+  Diary{sreport, shistory} <- currentDiary
+  unless (nullReport sreport) $ do
     config <- gets sconfig
     let historyMax = Config.get config "ui" "historyMax"
     msgReset ""
-    historyReset $ takeHistory historyMax $ addReport smsg shistory
+    historyReset $ takeHistory historyMax $ addReport sreport shistory
 
 -- TODO: depending on tgt, show extra info about tile or monster or both
 -- | Perform look around in the current location of the cursor.

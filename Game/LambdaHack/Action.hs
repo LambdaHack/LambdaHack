@@ -192,18 +192,18 @@ currentDiary = Action (\ _s _e _p k _a st diary -> k st diary diary)
 
 -- | Wipe out and set a new value for the history.
 historyReset :: History -> Action ()
-historyReset shistory = Action (\ _s _e _p k _a st Diary{smsg} ->
+historyReset shistory = Action (\ _s _e _p k _a st Diary{sreport} ->
                                  k st Diary{..} ())
 
 -- | Add to the current msg.
 msgAdd :: Msg -> Action ()
 msgAdd nm = Action (\ _s _e _p k _a st ms ->
-                     k st ms{smsg = addMsg (smsg ms) nm} ())
+                     k st ms{sreport = addMsg (sreport ms) nm} ())
 
 -- | Wipe out and set a new value for the current msg.
 msgReset :: Msg -> Action ()
 msgReset nm = Action (\ _s _e _p k _a st ms ->
-                       k st ms{smsg = singletonReport nm} ())
+                       k st ms{sreport = singletonReport nm} ())
 
 -- | Wait for a player command.
 getCommand :: Session -> Action (K.Key, K.Modifier)
@@ -236,8 +236,8 @@ displayNothingPush =
 -- the rest is ignored.
 displayPush :: Action Bool
 displayPush =
-  Action (\ Session{sfs, scops} _e p k _a st diary@Diary{smsg} ->
-           let over = splitReport smsg
+  Action (\ Session{sfs, scops} _e p k _a st diary@Diary{sreport} ->
+           let over = splitReport sreport
            in displayLevel True ColorFull sfs scops p st over
               >>= k st{sanim=[]} diary)
 
@@ -246,9 +246,10 @@ displayPush =
 -- and only the first screenful of the resulting overlay is displayed.
 displayPrompt :: ColorMode -> Msg -> Action Bool
 displayPrompt dm prompt =
-  Action (\ Session{sfs, scops} _e p k _a st@State{sanim} diary@Diary{smsg} ->
+  Action (\ Session{sfs, scops} _e p k _a
+            st@State{sanim} diary@Diary{sreport} ->
            assert (null sanim `blame` length sanim) $
-           let over = splitReport $ addMsg smsg prompt
+           let over = splitReport $ addMsg sreport prompt
            in displayLevel False dm sfs scops p st over
               >>= k st diary)
 
@@ -281,10 +282,11 @@ displayYesNo prompt = do
 -- The overlay starts on the second line.
 displayOver :: ColorMode -> Msg -> Overlay -> Action Bool
 displayOver dm prompt overlay =
-  Action (\ Session{sfs, scops} _e p k _a st@State{sanim} diary@Diary{smsg} ->
+  Action (\ Session{sfs, scops} _e p k _a
+            st@State{sanim} diary@Diary{sreport} ->
            assert (null sanim `blame` length sanim) $
            let xsize = lxsize $ slevel $ st
-               msgPrompt = renderReport $ addMsg smsg prompt
+               msgPrompt = renderReport $ addMsg sreport prompt
                over = padMsg xsize msgPrompt : overlay
            in displayLevel False dm sfs scops p st over
               >>= k st diary)

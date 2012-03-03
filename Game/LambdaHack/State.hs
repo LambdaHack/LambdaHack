@@ -37,7 +37,7 @@ import qualified Game.LambdaHack.Color as Color
 -- history of past games. This can be used for calculating player
 -- achievements, unlocking advanced game features and general data mining.
 data Diary = Diary
-  { smsg     :: Report
+  { sreport     :: Report
   , shistory :: History
   }
 
@@ -98,7 +98,7 @@ defaultDiary = do
   curDate <- getClockTime
   let time = calendarTimeToString $ toUTCTime curDate
   return Diary
-    { smsg = emptyReport
+    { sreport = emptyReport
     , shistory = singletonHistory $ singletonReport $
                    "Player diary started on " ++ time ++ "."
     }
@@ -162,10 +162,10 @@ toggleOmniscient s@State{sdebug = sdebug@DebugMode{somniscient}} =
 
 instance Binary Diary where
   put Diary{..} = do
-    put smsg
+    put sreport
     put shistory
   get = do
-    smsg     <- get
+    sreport  <- get
     shistory <- get
     return Diary{..}
 
