@@ -75,7 +75,7 @@ cmdSemantics :: Cmd -> Action ()
 cmdSemantics cmd = case cmd of
   Apply{..}       -> playerApplyGroupItem verb object syms
   Project{..}     -> playerProjectGroupItem verb object syms
-  TriggerDir{..}  -> playerTriggerDir feature
+  TriggerDir{..}  -> playerTriggerDir feature verb
   TriggerTile{..} -> playerTriggerTile feature
   Pickup ->    pickupItem
   Drop ->      dropItem

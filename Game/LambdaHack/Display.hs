@@ -6,7 +6,7 @@ module Game.LambdaHack.Display
     FrontendSession, startup, shutdown, frontendName
     -- * Derived operations
   , ColorMode(..), displayLevel, displayNothing
-  , getConfirm, getKey, getYesNo
+  , getAnyKey, getKey
   ) where
 
 -- Wrapper for selected Display frontend.
@@ -50,32 +50,20 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.FOV
 import qualified Game.LambdaHack.Feature as F
 
--- | Waits for a SPACE or ESC.
-getConfirm :: FrontendSession -> Bool -> IO Bool
-getConfirm fs doPush =
+-- | Waits for any of the specified keys. Repeat if unexpected.
+getKey :: FrontendSession -> Bool -> [(K.Key, K.Modifier)]
+       -> IO (K.Key, K.Modifier)
+getKey fs doPush keys =
   let loop dp = do
-        (e, _) <- nextEvent fs dp
-        case e of
-          K.Space    -> return True
-          K.Esc      -> return False
-          _          -> loop Nothing
+        km <- nextEvent fs dp
+        if km `elem` keys
+          then return km
+          else loop Nothing
   in loop (Just doPush)
 
 -- | Wait for a player keypress.
-getKey :: FrontendSession -> Bool -> IO (K.Key, K.Modifier)
-getKey fs doPush = nextEvent fs (Just doPush)
-
--- | A yes-no confirmation.
-getYesNo :: FrontendSession -> IO Bool
-getYesNo fs =
-  let loop dp = do
-        (e, _) <- nextEvent fs dp
-        case e of
-          K.Char 'y' -> return True
-          K.Char 'n' -> return False
-          K.Esc      -> return False
-          _          -> loop Nothing
-  in loop (Just False)
+getAnyKey :: FrontendSession -> Bool -> IO (K.Key, K.Modifier)
+getAnyKey fs doPush = nextEvent fs (Just doPush)
 
 -- | Color mode for the display.
 data ColorMode =

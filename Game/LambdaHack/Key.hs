@@ -1,6 +1,7 @@
 -- | Frontend-independent keyboard input operations.
 module Game.LambdaHack.Key
-  ( Key(..), handleDir, moveBinding, keyTranslate, Modifier(..), showKM
+  ( Key(..), handleDir, dirAllMoveKey
+  , moveBinding, keyTranslate, Modifier(..), showKM
   ) where
 
 import Prelude hiding (Left, Right)
@@ -36,7 +37,7 @@ data Key =
 data Modifier =
     Control
   | NoModifier
-  deriving (Ord, Eq)
+  deriving (Show, Ord, Eq)
 
 showKey :: Key -> String
 showKey (Char c) = [c]
@@ -70,27 +71,33 @@ dirViChar = ['y', 'k', 'u', 'l', 'n', 'j', 'b', 'h']
 dirViMoveKey :: [Key]
 dirViMoveKey = map Char dirViChar
 
-dirViRunKey :: [Key]
-dirViRunKey = map (Char . Char.toUpper) dirViChar
-
 dirMoveKey :: [Key]
 dirMoveKey = [Home, Up, PgUp, Right, PgDn, Down, End, Left]
 
-dirNums :: [Char]
-dirNums = ['7', '8', '9', '6', '3', '2', '1', '4']
+dirAllMoveKey :: [Key]
+dirAllMoveKey = dirViMoveKey ++ dirMoveKey
+
+dirViRunKey :: [Key]
+dirViRunKey = map (Char . Char.toUpper) dirViChar
 
 dirRunKey :: [Key]
 dirRunKey = map KP dirNums
+
+_dirAllRunKey :: [Key]
+_dirAllRunKey = dirViRunKey ++ dirRunKey
+
+dirNums :: [Char]
+dirNums = ['7', '8', '9', '6', '3', '2', '1', '4']
 
 dirHeroKey :: [Key]
 dirHeroKey = map Char dirNums
 
 -- | Configurable event handler for the direction keys.
 -- Used for directed commands such as close door.
-handleDir :: X -> Maybe (Key, Modifier) -> (Vector -> a) -> a -> a
-handleDir lxsize (Just (key, NoModifier)) h k =
+handleDir :: X -> (Key, Modifier) -> (Vector -> a) -> a -> a
+handleDir lxsize (key, NoModifier) h k =
   let mvs = moves lxsize
-      assocs = zip dirViMoveKey mvs ++ zip dirMoveKey mvs
+      assocs = zip dirAllMoveKey $ mvs ++ mvs
   in maybe k h (L.lookup key assocs)
 handleDir _lxsize _ _h k = k
 

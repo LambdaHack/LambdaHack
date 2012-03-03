@@ -163,9 +163,10 @@ triggerTile dloc = do
   mapM_ f $ TileKind.tfeature $ okind $ lvl `at` dloc
 
 -- | Ask for a direction and trigger a tile, if possible.
-playerTriggerDir :: F.Feature -> Action ()
-playerTriggerDir feat = do
-  e <- displayChoice "direction?" []
+playerTriggerDir :: F.Feature -> Verb -> Action ()
+playerTriggerDir feat verb = do
+  let keys = zip K.dirAllMoveKey $ repeat K.NoModifier
+  e <- displayChoice ("What to " ++ verb ++ "? [movement key") [] keys
   lxsize <- gets (lxsize . slevel)
   K.handleDir lxsize e (playerBumpDir feat) (neverMind True)
 

@@ -208,20 +208,36 @@ msgReset nm = Action (\ _s _e _p k _a st ms ->
 -- | Wait for a player command.
 getCommand :: Session -> Action (K.Key, K.Modifier)
 getCommand Session{sfs, skeyb} = do
-  (nc, modifier) <- liftIO $ getKey sfs True
-  return $ (fromMaybe nc $ M.lookup nc $ kmacro skeyb, modifier)
+  (nc, modifier) <- liftIO $ getAnyKey sfs True
+  return $ case modifier of
+    K.NoModifier ->
+      (fromMaybe nc $ M.lookup nc $ kmacro skeyb, modifier)
+    _ -> (nc, modifier)
 
 -- | Wait for a player keypress.
-getChoice :: Session -> Action (K.Key, K.Modifier)
-getChoice Session{sfs} = liftIO $ getKey sfs False
+getChoice :: [(K.Key, K.Modifier)] -> Session -> Action (K.Key, K.Modifier)
+getChoice keys Session{sfs} = liftIO $ getKey sfs False keys
 
 -- | A yes-no confirmation.
-getYesNoSet :: Session -> Action Bool
-getYesNoSet Session{sfs} = liftIO $ getYesNo sfs
+getYesNo :: Session -> Action Bool
+getYesNo Session{sfs} = do
+  (k, _) <- liftIO $ getKey sfs False [ (K.Char 'y', K.NoModifier)
+                                      , (K.Char 'n', K.NoModifier)
+                                      , (K.Esc, K.NoModifier)
+                                      ]
+  case k of
+    K.Char 'y' -> return True
+    _          -> return False
 
 -- | Ignore unexpected kestrokes until a SPACE or ESC is pressed.
-getConfirmSet :: Session -> Action Bool
-getConfirmSet Session{sfs} = liftIO $ getConfirm sfs False
+getConfirm :: Session -> Action Bool
+getConfirm Session{sfs} = do
+  (k, _) <- liftIO $ getKey sfs False [ (K.Space, K.NoModifier)
+                                      , (K.Esc, K.NoModifier)
+                                      ]
+  case k of
+    K.Space -> return True
+    _       -> return False
 
 -- | Push a wait for a single frame to the frame queue.
 displayNothingPush :: Action Bool
@@ -259,7 +275,7 @@ displayMoreConfirm :: ColorMode -> Msg -> Action Bool
 displayMoreConfirm dm prompt = do
   b <- displayPrompt dm (prompt ++ moreMsg)
   if b
-    then session getConfirmSet
+    then session getConfirm
     else return False
 
 -- | Print a message with a @more@ prompt, await confirmation
@@ -273,7 +289,7 @@ displayYesNo prompt = do
   -- Turn player's attention to the choice via BW colours.
   b <- displayPrompt ColorBW (prompt ++ yesnoMsg)
   if b
-    then session getYesNoSet
+    then session getYesNo
     else return False  -- ESC counts as No
 
 -- | Display the current level. The prompt and the overlay are displayed,
@@ -294,21 +310,22 @@ displayOver dm prompt overlay =
 -- | Print a prompt and an overlay and wait for a player keypress.
 -- If many overlays, scroll screenfuls with SPACE. Do not wrap screenfuls
 -- (in some menus @?@ cycles views, so the user can restart from the top).
-displayChoice :: Msg -> [Overlay] -> Action (Maybe (K.Key, K.Modifier))
-displayChoice prompt ovs = do
-  let (over, rest, spc, more) = case ovs of
-        [] -> ([], [], "", [])
-        [x] -> (x, [], "", [])
-        x:xs -> (x, xs, ", SPACE", [moreMsg])
+displayChoice :: Msg -> [Overlay] -> [(K.Key, K.Modifier)]
+              -> Action (K.Key, K.Modifier)
+displayChoice prompt ovs keys = do
+  let (over, rest, spc, more, keysS) = case ovs of
+        [] -> ([], [], "", [], keys)
+        [x] -> (x, [], "", [], keys)
+        x:xs -> (x, xs, ", SPACE", [moreMsg], (K.Space, K.NoModifier) : keys)
   b <- displayOver ColorFull (prompt ++ spc ++ ", ESC]") (over ++ more)
   if b
     then do
-      (key, modifier) <- session getChoice
+      (key, modifier) <- session $ getChoice $ (K.Esc, K.NoModifier) : keysS
       case key of
-        K.Esc -> return Nothing
-        K.Space | not (null rest) -> displayChoice prompt rest
-        _ -> return $ Just (key, modifier)
-    else return Nothing
+        K.Esc -> neverMind True
+        K.Space | not (null rest) -> displayChoice prompt rest keys
+        _ -> return (key, modifier)
+    else neverMind True
 
 -- | Print a msg and several overlays, one per page.
 -- The return value indicates if the player tried to abort/escape.
@@ -320,7 +337,7 @@ displayOverlays prompt (x:xs) = do
   b0 <- displayOver ColorFull prompt (x ++ [moreMsg])
   if b0
     then do
-      b <- session getConfirmSet
+      b <- session getConfirm
       if b
         then displayOverlays prompt xs
         else return False

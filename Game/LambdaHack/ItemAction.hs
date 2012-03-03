@@ -44,7 +44,7 @@ getGroupItem :: [Item]  -- ^ all objects in question
              -> [Char]  -- ^ accepted item symbols
              -> String  -- ^ prompt
              -> String  -- ^ how to refer to the collection of objects
-             -> Action (Maybe Item)
+             -> Action Item
 getGroupItem is object syms prompt packName = do
   Kind.Ops{osymbol} <- contentf Kind.coitem
   let choice i = osymbol (jkind i) `elem` syms
@@ -73,12 +73,10 @@ playerApplyGroupItem :: Verb -> Object -> [Char] -> Action ()
 playerApplyGroupItem verb object syms = do
   Kind.Ops{okind} <- contentf Kind.coitem
   is   <- gets getPlayerItem
-  iOpt <- getGroupItem is object syms
+  item <- getGroupItem is object syms
             ("What to " ++ verb ++ "?") "in inventory"
   pl   <- gets splayer
-  case iOpt of
-    Just i  -> applyGroupItem pl (iverbApply $ okind $ jkind i) i
-    Nothing -> neverMind True
+  applyGroupItem pl (iverbApply $ okind $ jkind item) item
 
 projectGroupItem :: ActorId  -- ^ actor projecting the item (is on current lvl)
                  -> Point    -- ^ target location of the projectile
@@ -140,13 +138,11 @@ playerProjectGI verb object syms = do
     Just loc -> do
       Kind.Ops{okind} <- contentf Kind.coitem
       is   <- gets getPlayerItem
-      iOpt <- getGroupItem is object syms
+      item <- getGroupItem is object syms
                 ("What to " ++ verb ++ "?") "in inventory"
       targeting <- gets (ctargeting . scursor)
       when (targeting == TgtAuto) $ endTargeting True
-      case iOpt of
-        Just i -> projectGroupItem pl loc (iverbProject $ okind $ jkind i) i
-        Nothing -> neverMind True
+      projectGroupItem pl loc (iverbProject $ okind $ jkind item) item
     Nothing -> retarget "Last target invalid."
 
 -- TODO: also target a monster by moving the cursor, if in target monster mode.
@@ -284,15 +280,12 @@ dropItem = do
   state <- get
   pbody <- gets getPlayerBody
   ploc  <- gets (bloc . getPlayerBody)
-  items <- gets getPlayerItem
-  iOpt  <- getAnyItem "What to drop?" items "inventory"
-  case iOpt of
-    Just stack -> do
-      let i = stack { jcount = 1 }
-      removeOnlyFromInventory pl i (bloc pbody)
-      msgAdd (actorVerbItemExtra cops state pbody "drop" i "")
-      modify (updateLevel (dropItemsAt [i] ploc))
-    Nothing -> neverMind True
+  ims   <- gets getPlayerItem
+  stack <- getAnyItem "What to drop?" ims "in inventory"
+  let item = stack { jcount = 1 }
+  removeOnlyFromInventory pl item (bloc pbody)
+  msgAdd (actorVerbItemExtra cops state pbody "drop" item "")
+  modify (updateLevel (dropItemsAt [item] ploc))
   playerAdvanceTime
 
 -- TODO: this is a hack for dropItem, because removeFromInventory
@@ -382,18 +375,19 @@ pickupItem = do
 -- known. In actor handlers we should make sure
 -- that messages are printed to the player only if the
 -- hero can perceive the action.
--- Perhaps this means half of this code should be split and moved
--- to ItemState, to be independent of any IO code from Action/Display. Actually, not, since the message display depends on Display. Unless we return a string to be displayed.
 
 -- TODO: you can drop an item already the floor, which works correctly,
 -- but is weird and useless.
+
+allObjectsName :: String
+allObjectsName = "Objects"
 
 -- | Let the player choose any item from a list of items.
 getAnyItem :: String  -- ^ prompt
            -> [Item]  -- ^ all items in question
            -> String  -- ^ how to refer to the collection of items
-           -> Action (Maybe Item)
-getAnyItem prompt = getItem prompt (const True) "Objects"
+           -> Action Item
+getAnyItem prompt = getItem prompt (const True) allObjectsName
 
 data ItemDialogState = INone | ISuitable | IAll deriving Eq
 
@@ -404,53 +398,58 @@ getItem :: String               -- ^ prompt message
         -> String               -- ^ how to describe suitable items
         -> [Item]               -- ^ all items in question
         -> String               -- ^ how to refer to the collection of items
-        -> Action (Maybe Item)
+        -> Action Item
 getItem prompt p ptext is0 isn = do
   lvl  <- gets slevel
   body <- gets getPlayerBody
   let loc = bloc body
       tis = lvl `atI` loc
-      floorMsg = if L.null tis then "" else ", -"
-      is = L.filter p is0
+      floorFull = not $ null tis
+      (floorMsg, floorKey) | floorFull = (", -", [K.Char '-'])
+                           | otherwise = ("", [])
+      isp = L.filter p is0
+      bestFull = not $ null isp
+      (bestMsg, bestKey)
+        | bestFull =
+          let bestLetter = maybe "" (\ l -> ['(', l, ')']) $
+                             jletter $ L.maximumBy cmpItemLM isp
+          in (", RET" ++ bestLetter, [K.Return])
+        | otherwise = ("", [])
       cmpItemLM i1 i2 = cmpLetterMaybe (jletter i1) (jletter i2)
+      keys ims =
+        let mls = mapMaybe jletter ims
+            ks = bestKey ++ floorKey ++ [K.Char '?'] ++ map K.Char mls
+        in zip ks $ repeat K.NoModifier
       choice ims =
-        if L.null ims
+        if null ims
         then "[?" ++ floorMsg
         else let mls = mapMaybe jletter ims
                  r = letterRange mls
-                 ret = maybe "" (\ l -> ['(', l, ')']) $
-                         jletter $ L.maximumBy cmpItemLM ims
-             in "[" ++ r ++ ", ?" ++ floorMsg ++ ", RET" ++ ret
+             in "[" ++ r ++ ", ?" ++ floorMsg ++ bestMsg
       ask = do
         when (L.null is0 && L.null tis) $
           abortWith "Not carrying anything."
-        mk <- displayChoice (prompt ++ " " ++ choice is) []
-        maybe (neverMind True) (perform ISuitable) mk
-      perform itemDialogState (command, K.NoModifier) = do
-        let ims = if itemDialogState == INone then is0 else is
-        case command of
-          K.Char '?' | itemDialogState == ISuitable -> do
-            -- filter for suitable items
-            io <- itemOverlay True is
-            mk <- displayChoice (ptext ++ " " ++ isn ++ ". " ++ choice is) io
-            maybe (neverMind True) (perform IAll) mk
-          K.Char '?' | itemDialogState == IAll -> do
-            -- show all items
-            io <- itemOverlay True is0
-            mk <- displayChoice ("Objects " ++ isn ++ ". " ++ choice is0) io
-            maybe (neverMind True) (perform INone) mk
-          K.Char '?' | itemDialogState == INone -> ask
-          K.Char '-' ->
-            case tis of
-              []   -> return Nothing
-              i:_rs -> -- use first item; TODO: let player select item
-                      return $ Just i
-          K.Char l ->
-            return (L.find (maybe False (== l) . jletter) ims)
-          K.Return ->
-            if L.null ims
-            then return Nothing
-            else return $ Just $ L.maximumBy cmpItemLM ims
-          _ -> return Nothing
-      perform _itemDialogState (_command, _) = return Nothing
+        perform INone
+      perform itemDialogState = do
+        let (ims, imsOver, msg) = case itemDialogState of
+              INone     -> (isp, [], prompt ++ " ")
+              ISuitable -> (isp, isp, ptext ++ " " ++ isn ++ ". ")
+              IAll      -> (is0, is0, allObjectsName ++ " " ++ isn ++ ". ")
+        io <- itemOverlay True imsOver
+        (command, modifier) <- displayChoice (msg ++ choice ims) io (keys ims)
+        assert (modifier == K.NoModifier) $
+          case command of
+            K.Char '?' -> case itemDialogState of
+              INone -> perform ISuitable
+              ISuitable | ptext /= allObjectsName -> perform IAll
+              _ -> perform INone
+            K.Char '-' | floorFull ->
+              -- TODO: let player select item
+              return $ L.maximumBy cmpItemLM tis
+            K.Char l | l `elem` mapMaybe jletter ims ->
+              let mitem = L.find (maybe False (== l) . jletter) ims
+              in return $ fromJust mitem
+            K.Return | bestFull ->
+              return $ L.maximumBy cmpItemLM isp
+            k -> assert `failure` "perform: unexpected key: " ++ show k
   ask
