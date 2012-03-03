@@ -185,7 +185,7 @@ effLvlGoUp k = do
   st        <- get
   case whereTo st k of
     Nothing -> do -- we are at the "end" of the dungeon
-      b <- displayYesNoConfirm "Really escape the dungeon?"
+      b <- displayYesNo "Really escape the dungeon?"
       if b
         then fleeDungeon
         else abortWith "Game resumed."
@@ -249,8 +249,8 @@ fleeDungeon = do
     else do
       let winMsg = "Congratulations, you won! Your loot, worth " ++
                    show total ++ " gold, is:"  -- TODO: use the name of the '$' item instead
-      displayItems winMsg True items
-      go <- session getConfirm
+      io <- itemOverlay True items
+      go <- displayOverlays winMsg [io, []]
       when go $ do
         go2 <- handleScores True H.Victor total
         when go2 $ displayMoreCancel "Can it be done better, though?"
@@ -400,7 +400,7 @@ checkPartyDeath = do
   pl     <- gets splayer
   pbody  <- gets getPlayerBody
   config <- gets sconfig
-  when (bhp pbody <= 0) $ do  -- TODO: change to guard? define mzero as abort? Why are the writes to the files performed when I call abort later? That probably breaks the laws of MonadPlus. Or is the tryWith abort handler placed after the write to files?
+  when (bhp pbody <= 0) $ do
     msgAdd $ actorVerb cops pbody "die"
     go <- displayMoreConfirm ColorBW ""
     history  -- Prevent the msgs from being repeated.
@@ -453,15 +453,12 @@ handleScores write status total =
                    _ -> total
     let score = H.ScoreRecord points (-time) curDate status
     (placeMsg, slideshow) <- registerHS config write score
-    b <- displayOverlays placeMsg slideshow
-    if b
-      then session getConfirm
-      else return False
+    displayOverlays placeMsg $ slideshow ++ []
 
 -- effectToAction does not depend on this function right now, but it might,
 -- and I know no better place to put it.
-displayItems :: Msg -> Bool -> [Item] -> Action Bool
-displayItems msg sorted is = do
+itemOverlay ::Bool -> [Item] -> Action Overlay
+itemOverlay sorted is = do
   cops  <- contentf Kind.coitem
   state <- get
   let inv = L.map (\ i -> letterLabel (jletter i)
@@ -469,7 +466,7 @@ displayItems msg sorted is = do
               ((if sorted
                 then L.sortBy (cmpLetterMaybe `on` jletter)
                 else id) is)
-  displayOverlays msg [inv]
+  return inv
 
 stopRunning :: Action ()
 stopRunning = updatePlayerBody (\ p -> p { bdir = Nothing })
@@ -517,7 +514,8 @@ doLook = do
       -- check if there's something lying around at current loc
       is = lvl `rememberAtI` loc
   msgAdd lookMsg
-  when (length is > 2) $ void $ displayItems "" False is
+  io <- itemOverlay False is
+  when (length is > 2) $ void $ displayOverlays "" [io]
 
 gameVersion :: Action ()
 gameVersion = do

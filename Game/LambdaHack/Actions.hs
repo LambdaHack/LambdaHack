@@ -39,22 +39,23 @@ import Game.LambdaHack.Binding
 
 displayHistory :: Action ()
 displayHistory = do
-  diary <- currentDiary
+  Diary{shistory} <- currentDiary
   stime <- gets stime
   let turn = show (stime `div` 10)
       msg = "You adventuring lasts " ++ turn ++ " turns. Past messages:"
-  void $ displayOverlays msg [renderHistory $ shistory diary]
+  void $ displayOverlays msg [renderHistory shistory]
 
 dumpConfig :: Action ()
 dumpConfig = do
   config <- gets sconfig
   let fn = "config.dump"
+      msg = "Current configuration dumped to file " ++ fn ++ "."
   dump fn config
-  void $ displayPrompt $ "Current configuration dumped to file " ++ fn ++ "."
+  void $ displayOverlays msg []
 
 saveGame :: Action ()
 saveGame = do
-  b <- displayYesNoConfirm "Really save?"
+  b <- displayYesNo "Really save?"
   if b
     then do
       -- Save the game state
@@ -71,7 +72,7 @@ saveGame = do
 
 quitGame :: Action ()
 quitGame = do
-  b <- displayYesNoConfirm "Really quit?"
+  b <- displayYesNo "Really quit?"
   state <- get
   diary <- currentDiary
   if b
@@ -162,7 +163,7 @@ triggerTile dloc = do
 -- | Ask for a direction and trigger a tile, if possible.
 playerTriggerDir :: F.Feature -> Action ()
 playerTriggerDir feat = do
-  e <- displayChoice "direction?"
+  e <- displayChoice "direction?" []
   lxsize <- gets (lxsize . slevel)
   K.handleDir lxsize e (playerBumpDir feat) (neverMind True)
 

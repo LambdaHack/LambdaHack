@@ -3,9 +3,10 @@
 {-# LANGUAGE CPP #-}
 module Game.LambdaHack.Display
   ( -- * Re-exported frontend
-    FrontendSession, startup, shutdown, frontendName, nextEvent
+    FrontendSession, startup, shutdown, frontendName
     -- * Derived operations
-  , ColorMode(..), displayLevel, displayNothingD, getConfirmD
+  , ColorMode(..), displayLevel, displayNothing
+  , getConfirm, getKey, getYesNo
   ) where
 
 -- Wrapper for selected Display frontend.
@@ -50,23 +51,39 @@ import Game.LambdaHack.FOV
 import qualified Game.LambdaHack.Feature as F
 
 -- | Waits for a SPACE or ESC.
-getConfirmD :: FrontendSession -> Maybe Bool -> IO Bool
-getConfirmD fs doPush =
+getConfirm :: FrontendSession -> Bool -> IO Bool
+getConfirm fs doPush =
   let loop dp = do
         (e, _) <- nextEvent fs dp
         case e of
           K.Space    -> return True
           K.Esc      -> return False
           _          -> loop Nothing
-  in loop doPush
+  in loop (Just doPush)
+
+-- | Wait for a player keypress.
+getKey :: FrontendSession -> Bool -> IO (K.Key, K.Modifier)
+getKey fs doPush = nextEvent fs (Just doPush)
+
+-- | A yes-no confirmation.
+getYesNo :: FrontendSession -> IO Bool
+getYesNo fs =
+  let loop dp = do
+        (e, _) <- nextEvent fs dp
+        case e of
+          K.Char 'y' -> return True
+          K.Char 'n' -> return False
+          K.Esc      -> return False
+          _          -> loop Nothing
+  in loop (Just False)
 
 -- | Color mode for the display.
 data ColorMode =
     ColorFull  -- ^ normal, with full colours
   | ColorBW    -- ^ black+white only
 
-displayNothingD :: FrontendSession -> IO Bool
-displayNothingD fs = do
+displayNothing :: FrontendSession -> IO Bool
+displayNothing fs = do
   display fs True False Nothing
   return True
 
@@ -209,7 +226,7 @@ displayLevel doPush dm fs cops per
         if k < ns - 1
         then do
           display fs doPush False $ Just $ disp k msgTop
-          b <- getConfirmD fs (Just doPush)
+          b <- getConfirm fs doPush
           if b
             then perf (k + 1)
             else return False

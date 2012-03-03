@@ -87,12 +87,12 @@ dirHeroKey = map Char dirNums
 
 -- | Configurable event handler for the direction keys.
 -- Used for directed commands such as close door.
-handleDir :: X -> (Key, Modifier) -> (Vector -> a) -> a -> a
-handleDir lxsize (key, NoModifier) h k =
+handleDir :: X -> Maybe (Key, Modifier) -> (Vector -> a) -> a -> a
+handleDir lxsize (Just (key, NoModifier)) h k =
   let mvs = moves lxsize
       assocs = zip dirViMoveKey mvs ++ zip dirMoveKey mvs
   in maybe k h (L.lookup key assocs)
-handleDir _lxsize (_key, _) _h k = k
+handleDir _lxsize _ _h k = k
 
 -- TODO: deduplicate
 -- | Binding of both sets of movement keys.

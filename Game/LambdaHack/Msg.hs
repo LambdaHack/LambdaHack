@@ -1,6 +1,6 @@
 -- | Game messages displayed on top of the screen for the player to read.
 module Game.LambdaHack.Msg
-  ( Msg, moreMsg, endMsg, yesnoMsg
+  ( Msg, moreMsg, yesnoMsg
   , Report, emptyReport, nullReport, singletonReport, addMsg, splitReport
   , History, emptyHistory, singletonHistory, addReport, renderHistory
   , takeHistory
@@ -22,10 +22,6 @@ type Msg  = String
 -- | The \"press something to see more\" mark.
 moreMsg :: Msg
 moreMsg = " --more--  "
-
--- | The \"the end of overlays or messages\" mark.
-endMsg :: Msg
-endMsg = " --end--  "
 
 -- | The confirmation request message.
 yesnoMsg :: Msg

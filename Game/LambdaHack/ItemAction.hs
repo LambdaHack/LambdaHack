@@ -32,7 +32,9 @@ inventory = do
   items <- gets getPlayerItem
   if L.null items
     then abortWith "Not carrying anything."
-    else void $ displayItems "Carrying:" True items
+    else do
+      io <- itemOverlay True items
+      void $ displayOverlays "Carrying:" [io]
 
 -- | Let the player choose any item with a given group name.
 -- Note that this does not guarantee the chosen item belongs to the group,
@@ -422,24 +424,21 @@ getItem prompt p ptext is0 isn = do
       ask = do
         when (L.null is0 && L.null tis) $
           abortWith "Not carrying anything."
-        displayChoice (prompt ++ " " ++ choice is) >>= perform ISuitable
+        mk <- displayChoice (prompt ++ " " ++ choice is) []
+        maybe (neverMind True) (perform ISuitable) mk
       perform itemDialogState (command, K.NoModifier) = do
         let ims = if itemDialogState == INone then is0 else is
         case command of
           K.Char '?' | itemDialogState == ISuitable -> do
             -- filter for suitable items
-            b <- displayItems
-                   (ptext ++ " " ++ isn ++ ". " ++ choice is) True is
-            if b then session (getOptionalConfirm (const ask)
-                                 (perform IAll))
-                 else ask
+            io <- itemOverlay True is
+            mk <- displayChoice (ptext ++ " " ++ isn ++ ". " ++ choice is) io
+            maybe (neverMind True) (perform IAll) mk
           K.Char '?' | itemDialogState == IAll -> do
             -- show all items
-            b <- displayItems
-                   ("Objects " ++ isn ++ ". " ++ choice is0) True is0
-            if b then session (getOptionalConfirm (const ask)
-                                 (perform INone))
-                 else ask
+            io <- itemOverlay True is0
+            mk <- displayChoice ("Objects " ++ isn ++ ". " ++ choice is0) io
+            maybe (neverMind True) (perform INone) mk
           K.Char '?' | itemDialogState == INone -> ask
           K.Char '-' ->
             case tis of
