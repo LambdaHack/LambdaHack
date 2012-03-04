@@ -6,7 +6,7 @@ module Game.LambdaHack.Display
     FrontendSession, startup, shutdown, frontendName
     -- * Derived operations
   , displayLevel, displayAnimation, displayNothing
-  , getAnyKey, getKey
+  , getAnyKey, promptGetKey
   ) where
 
 -- Wrapper for selected Display frontend.
@@ -33,35 +33,25 @@ import qualified Game.LambdaHack.Key as K
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Draw
 
--- | Waits for any of the specified keys. Repeat if unexpected.
-getKey :: FrontendSession -> Bool -> [(K.Key, K.Modifier)]
-       -> IO (K.Key, K.Modifier)
-getKey fs doPush keys =
-  let loop dp = do
-        km <- nextEvent fs dp
-        if km `elem` keys
-          then return km
-          else loop Nothing
-  in loop (Just doPush)
-
 -- | Wait for a player keypress.
-getAnyKey :: FrontendSession -> Bool -> IO (K.Key, K.Modifier)
-getAnyKey fs doPush = nextEvent fs (Just doPush)
+getAnyKey :: FrontendSession -> Maybe Bool -> IO (K.Key, K.Modifier)
+getAnyKey fs doPush = nextEvent fs doPush
 
+-- | Push a wait for a single frame to the frame queue.
 displayNothing :: FrontendSession -> IO ()
 displayNothing fs =
   display fs True False Nothing
 
 -- | Display the screen, with an overlay, if any.
-displayLevel :: FrontendSession -> Bool -> ColorMode -> Kind.COps
+displayLevel :: FrontendSession -> ColorMode -> Kind.COps
              -> Perception -> State -> Overlay -> IO ()
-displayLevel fs doPush dm cops per s@State{splayer} overlay =
+displayLevel fs dm cops per s@State{splayer} overlay =
   let overlayFrame = draw dm cops per s overlay
       -- Speed up (by remving all empty frames) the show of the sequence
       -- of the move frames if the player is running.
       (_, Actor{bdir}, _) = findActorAnyLevel splayer s
       isRunning = isJust bdir
-  in display fs doPush isRunning $ Just overlayFrame
+  in display fs True isRunning $ Just overlayFrame
 
 -- | Display animations on top of the whole screen.
 displayAnimation :: FrontendSession -> Kind.COps

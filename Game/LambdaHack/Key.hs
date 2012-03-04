@@ -37,7 +37,7 @@ data Key =
 data Modifier =
     Control
   | NoModifier
-  deriving (Show, Ord, Eq)
+  deriving (Ord, Eq)
 
 showKey :: Key -> String
 showKey (Char c) = [c]

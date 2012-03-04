@@ -132,10 +132,11 @@ handlePlayer = do
   withPerception $ do
     remember  -- hero notices his surroundings, before they get displayed
     displayPush  -- draw the current surroundings
-    -- Message shown, so update history and reset current message.
-    history
-    -- Let the player issue commands, until any of them takes time.
-    playerCommand
+    -- If running, stop if aborted by a disturbance.
+    -- Otherwise let the player issue commands, until any of them takes time.
+    -- First time, just after pushing frames, ask for commands in Push mode.
+    tryWith (stopRunning >> playerCommand (Just True)) $
+      ifRunning continueRun abort
     -- TODO: refactor this:
     state <- get
     pl    <- gets splayer
@@ -151,27 +152,25 @@ handlePlayer = do
     handleAI True
 
 -- | Determine and process the next player command.
-playerCommand :: Action ()
-playerCommand = do
+playerCommand :: Maybe Bool -> Action ()
+playerCommand doPush = do
+  -- Report probably shown, so update history and reset current report.
+  -- If the command was aborted, the history was reset so nothing happens.
+  history
   oldPlayerTime <- gets (btime . getPlayerBody)
-  tryRepeatedlyWith stopRunning $  -- on abort, just ask for a new command
-    ifRunning continueRun $ do
-      k <- getCommand
-      keyb <- getBinding
-      case M.lookup k (Binding.kcmd keyb) of
-        Just (_, c)  -> c
-        Nothing ->
-          let msg = "unknown command <" ++ K.showKM k ++ ">"
-          in abortWith msg
-  -- The command was successful and possibly took some time.
+  try $ do  -- on abort, just reset state and call playerCommand again
+    km <- getCommand doPush
+    keyb <- getBinding
+    case M.lookup km (Binding.kcmd keyb) of
+      Just (_, c)  -> c
+      Nothing ->
+        let msg = "unknown command <" ++ K.showKM km ++ ">"
+        in abortWith msg
+  -- The command was aborted or successful and if the latter,
+  -- possibly took some time.
   newPlayerTime <- gets (btime . getPlayerBody)
   -- If no time taken, rinse and repeat.
-  when (newPlayerTime == oldPlayerTime) $ do
-    -- TODO: probably the redrawing is not needed, but for technical reasons,
-    -- to do with frame drawing in gtk, I can't eliminate it for now.
-    displayPush
-    msgReset ""
-    playerCommand
+  when (newPlayerTime == oldPlayerTime) $ playerCommand Nothing
 
 -- Design thoughts (in order to get rid or partially rid of the somewhat
 -- convoluted design we have): We have three kinds of commands.

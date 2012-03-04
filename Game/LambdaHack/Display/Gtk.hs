@@ -3,7 +3,7 @@ module Game.LambdaHack.Display.Gtk
   ( -- * Session data type for the frontend
     FrontendSession
     -- * The output and input operations
-  , display, nextEvent
+  , display, nextEvent, promptGetKey
     -- * Frontend administration tools
   , frontendName, startup, shutdown
   ) where
@@ -351,6 +351,35 @@ nextEvent FrontendSession{schanKey, slastFull, sframeState} (Just True) = do
     FSet{} -> assert `failure` "nextEvent: FSet, expecting FPushed"
     FNone  -> assert `failure` "nextEvent: FNone, expecting FPushed"
   return km
+
+-- TODO: simplify
+-- | Display a prompt, wait for any of the specified keys.
+-- Repeat if an unexpected key received.
+promptGetKey :: FrontendSession -> [(K.Key, K.Modifier)] -> Color.SingleFrame
+             -> IO (K.Key, K.Modifier)
+promptGetKey sess@FrontendSession{sframeState} [] frame = do  -- special case
+  display sess False False $ Just frame
+  -- Take the lock to display the frame.
+  fs <- takeMVar sframeState
+  case fs of
+    FSet{fsetFrame} -> do
+      -- If the frame not repeated, draw it.
+      maybe (return ()) (postGUIAsync . output sess) fsetFrame
+      -- Clear the stored frame. Release the lock.
+      putMVar sframeState FNone
+    FPushed{} -> assert `failure` "promptGetKey: FPushed, expecting FSet"
+    FNone     -> assert `failure` "promptGetKey: FNone, expecting FSet"
+  return (K.Esc, K.Control)  -- a hack
+promptGetKey sess keys frame = do
+  display sess False False $ Just frame
+  km <- nextEvent sess (Just False)
+  let loop km2 =
+        if km2 `elem` keys
+        then return km2
+        else do
+          km3 <- nextEvent sess Nothing
+          loop km3
+  loop km
 
 -- | Tells a dead key.
 deadKey :: String -> Bool

@@ -191,8 +191,7 @@ effLvlGoUp k = do
         then fleeDungeon
         else abortWith "Game resumed."
     Just (nln, nloc) ->
-      assert (nln /= slid `blame` (nln, "stairs looped")) $
-      tryWith (abortWith "somebody blocks the staircase") $ do
+      assert (nln /= slid `blame` (nln, "stairs looped")) $ do
         bitems <- gets getPlayerItem
         -- Remember the level (e.g., for a teleport via scroll on the floor).
         remember
@@ -215,7 +214,7 @@ effLvlGoUp k = do
           Nothing -> return ()
           Just h | isAHero st h ->
             -- Bail out if a party member blocks the staircase.
-            abort
+            abortWith "somebody blocks the staircase"
           Just m ->
             -- Somewhat of a workaround: squash monster blocking the staircase.
             squashActor pl m

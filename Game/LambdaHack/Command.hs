@@ -10,6 +10,7 @@ import Game.LambdaHack.Grammar
 import Game.LambdaHack.EffectAction
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Feature as F
+import Game.LambdaHack.Draw
 
 -- | Abstract syntax of player commands. The type is abstract, but the values
 -- are created outside this module via the Read class (from config file) .
@@ -94,7 +95,7 @@ cmdSemantics cmd = case cmd of
   Version ->   gameVersion
   Help ->      displayHelp
   Wait ->      playerAdvanceTime
-  Redraw ->    return ()
+  Redraw ->    displayPrompt ColorFull ""
 
 -- | Description of player commands.
 cmdDescription :: Cmd -> String

@@ -334,7 +334,7 @@ moveOrAttack allowAttacks actor dir = do
           actorRunActor actor target
           when (actor == pl) $
             msgAdd $ lookAt cops False True state lvl tloc ""
-      | otherwise -> abortWith ""
+      | otherwise -> abortWith "blocked"
     Nothing
       | accessible cops lvl sloc tloc -> do
           -- perform the move

@@ -41,6 +41,7 @@ import qualified Game.LambdaHack.Key as K
 import Game.LambdaHack.Binding
 import qualified Game.LambdaHack.HighScore as H
 import qualified Game.LambdaHack.Config as Config
+import qualified Game.LambdaHack.Color as Color
 
 -- | The type of the function inside any action.
 -- (Separated from the @Action@ type to document each argument with haddock.)
@@ -104,7 +105,7 @@ handlerToIO sess@Session{sfs, scops} state diary h =
                  >> shutdown sfs)  -- get out of the game
     (perception scops state)  -- create and cache perception
     (\ _ _ x -> return x)    -- final continuation returns result
-    (ioError $ userError "unhandled abort")
+    (ioError $ userError "unhandled abort")  -- e.g., in AI code
     state
     diary
 
@@ -171,8 +172,7 @@ abort = Action (\ _s _e _p _k a _st _ms -> a)
 -- | Print the given msg, then abort.
 abortWith :: Msg -> Action a
 abortWith msg = do
-  msgReset msg
-  displayPush
+  displayPrompt ColorFull msg
   abort
 
 -- | Abort and print the given msg if the condition is true.
@@ -204,44 +204,14 @@ msgReset nm = Action (\ _s _e _p k _a st ms ->
                        k st ms{sreport = singletonReport nm} ())
 
 -- | Wait for a player command.
-getCommand :: Action (K.Key, K.Modifier)
-getCommand = do
+getCommand :: Maybe Bool -> Action (K.Key, K.Modifier)
+getCommand doPush = do
   fs <- getFrontendSession
   keyb <- getBinding
-  (nc, modifier) <- liftIO $ getAnyKey fs True
+  (nc, modifier) <- liftIO $ getAnyKey fs doPush
   return $ case modifier of
-    K.NoModifier ->
-      (fromMaybe nc $ M.lookup nc $ kmacro keyb, modifier)
+    K.NoModifier -> (fromMaybe nc $ M.lookup nc $ kmacro keyb, modifier)
     _ -> (nc, modifier)
-
--- | Wait for a player keypress.
-getChoice :: [(K.Key, K.Modifier)] -> Action (K.Key, K.Modifier)
-getChoice keys = do
-  fs <- getFrontendSession
-  liftIO $ getKey fs False keys
-
--- | A yes-no confirmation.
-getYesNo :: Action Bool
-getYesNo = do
-  fs <- getFrontendSession
-  (k, _) <- liftIO $ getKey fs False [ (K.Char 'y', K.NoModifier)
-                                     , (K.Char 'n', K.NoModifier)
-                                     , (K.Esc, K.NoModifier)
-                                     ]
-  case k of
-    K.Char 'y' -> return True
-    _          -> return False
-
--- | Ignore unexpected kestrokes until a SPACE or ESC is pressed.
-getConfirm :: Action Bool
-getConfirm = do
-  fs <- getFrontendSession
-  (k, _) <- liftIO $ getKey fs False [ (K.Space, K.NoModifier)
-                                      , (K.Esc, K.NoModifier)
-                                      ]
-  case k of
-    K.Space -> return True
-    _       -> return False
 
 -- | Push a wait for a single frame to the frame queue.
 displayNothingPush :: Action ()
@@ -262,48 +232,37 @@ displayPush = do
   Diary{sreport} <- getDiary
   let over = splitReport sreport
       sNew = s {sanim=[]}
+  modify (const sNew)
   liftIO $ displayAnimation fs cops per sNew sanim
-  liftIO $ displayLevel fs True ColorFull cops per sNew over
+  liftIO $ displayLevel fs ColorFull cops per sNew over
 
--- | Display the current level. The prompt is displayed, but not added
+-- | Draw the current level. The prompt is displayed, but not added
 -- to history. The prompt is appended to the current message
 -- and only the first screenful of the resulting overlay is displayed.
-displayPrompt :: ColorMode -> Msg -> Action ()
-displayPrompt dm prompt = do
-  fs <- getFrontendSession
+drawPrompt :: ColorMode -> Msg -> Action Color.SingleFrame
+drawPrompt dm prompt = do
   cops <- getCOps
   per <- getPerception
   s <- get
   Diary{sreport} <- getDiary
   let over = splitReport $ addMsg sreport prompt
-  liftIO $ displayLevel fs False dm cops per s over
+  return $ draw dm cops per s over
 
--- | Display a msg with a @more@ prompt. Return value indicates if the player
--- tried to abort/escape.
-displayMoreConfirm :: ColorMode -> Msg -> Action Bool
-displayMoreConfirm dm prompt = do
-  displayPrompt dm (prompt ++ moreMsg)
-  getConfirm
+-- TODO: to remove, probably, replaced by addMsg?
+-- | Display the current level. The prompt is displayed, but not added
+-- to history. The prompt is appended to the current message
+-- and only the first screenful of the resulting overlay is displayed.
+displayPrompt :: ColorMode -> Msg -> Action ()
+displayPrompt dm prompt = do
+  frame <- drawPrompt dm prompt
+  displayNoKey frame
 
--- | Print a message with a @more@ prompt, await confirmation
--- and ignore confirmation.
-displayMoreCancel :: Msg -> Action ()
-displayMoreCancel prompt = void $ displayMoreConfirm ColorFull prompt
-
--- | Print a yes/no question and return the player's answer.
-displayYesNo :: Msg -> Action Bool
-displayYesNo prompt = do
-  -- Turn player's attention to the choice via BW colours.
-  displayPrompt ColorBW (prompt ++ yesnoMsg)
-  getYesNo
-
--- | Display the current level. The prompt and the overlay are displayed,
+-- | Draw the current level. The prompt and the overlay are displayed,
 -- but not added to history. The prompt is appended to the current message
 -- and only the first line of the result is displayed.
 -- The overlay starts on the second line.
-displayOver :: ColorMode -> Msg -> Overlay -> Action ()
-displayOver dm prompt overlay = do
-  fs <- getFrontendSession
+drawOver :: ColorMode -> Msg -> Overlay -> Action Color.SingleFrame
+drawOver dm prompt overlay = do
   cops <- getCOps
   per <- getPerception
   s <- get
@@ -311,7 +270,79 @@ displayOver dm prompt overlay = do
   let xsize = lxsize $ slevel s
       msgPrompt = renderReport $ addMsg sreport prompt
       over = padMsg xsize msgPrompt : overlay
-  liftIO $ displayLevel fs False dm cops per s over
+  return $ draw dm cops per s over
+
+-- | Display a frame and don't expect any key presses.
+-- Leaves the frontend in the same neutral state as if a key was pressed.
+displayNoKey :: Color.SingleFrame -> Action ()
+displayNoKey frame = do
+  fs <- getFrontendSession
+  void $ liftIO $ promptGetKey fs [] frame
+
+-- | A yes-no confirmation.
+getYesNo :: Color.SingleFrame -> Action Bool
+getYesNo frame = do
+  fs <- getFrontendSession
+  let keys = [ (K.Char 'y', K.NoModifier)
+             , (K.Char 'n', K.NoModifier)
+             , (K.Esc, K.NoModifier)
+             ]
+  (k, _) <- liftIO $ promptGetKey fs keys frame
+  case k of
+    K.Char 'y' -> return True
+    _          -> return False
+
+-- | Print a yes/no question and return the player's answer.
+displayYesNo :: Msg -> Action Bool
+displayYesNo prompt = do
+  -- Turn player's attention to the choice via BW colours.
+  frame <- drawPrompt ColorBW (prompt ++ yesnoMsg)
+  getYesNo frame
+
+-- | Ignore unexpected kestrokes until a SPACE or ESC is pressed.
+getConfirm :: Color.SingleFrame -> Action Bool
+getConfirm frame = do
+  fs <- getFrontendSession
+  let keys = [ (K.Space, K.NoModifier), (K.Esc, K.NoModifier)]
+  (k, _) <- liftIO $ promptGetKey fs keys frame
+  case k of
+    K.Space -> return True
+    _       -> return False
+
+-- | Display a msg with a @more@ prompt. Return value indicates if the player
+-- tried to abort/escape.
+displayMoreConfirm :: ColorMode -> Msg -> Action Bool
+displayMoreConfirm dm prompt = do
+  frame <- drawPrompt dm (prompt ++ moreMsg)
+  getConfirm frame
+
+-- | Print a message with a @more@ prompt, await confirmation
+-- and ignore confirmation.
+displayMoreCancel :: Msg -> Action ()
+displayMoreCancel prompt = void $ displayMoreConfirm ColorFull prompt
+
+-- | Print a msg and several overlays, one per page.
+-- The return value indicates if the player tried to abort/escape.
+displayOverlays :: Msg -> [Overlay] -> Action Bool
+displayOverlays _      []   = return True
+displayOverlays _      [[]] = return True  -- extra confirmation at the end
+displayOverlays prompt [x]  = do
+  frame <- drawOver ColorFull prompt x
+  displayNoKey frame
+  return True
+displayOverlays prompt (x:xs) = do
+  frame <- drawOver ColorFull prompt (x ++ [moreMsg])
+  b <- getConfirm frame
+  if b
+    then displayOverlays prompt xs
+    else return False
+
+-- | Wait for a player keypress.
+getChoice :: [(K.Key, K.Modifier)] -> Color.SingleFrame
+          -> Action (K.Key, K.Modifier)
+getChoice keys frame = do
+  fs <- getFrontendSession
+  liftIO $ promptGetKey fs keys frame
 
 -- | Print a prompt and an overlay and wait for a player keypress.
 -- If many overlays, scroll screenfuls with SPACE. Do not wrap screenfuls
@@ -323,27 +354,12 @@ displayChoice prompt ovs keys = do
         [] -> ([], [], "", [], keys)
         [x] -> (x, [], "", [], keys)
         x:xs -> (x, xs, ", SPACE", [moreMsg], (K.Space, K.NoModifier) : keys)
-  displayOver ColorFull (prompt ++ spc ++ ", ESC]") (over ++ more)
-  (key, modifier) <- getChoice $ (K.Esc, K.NoModifier) : keysS
+  frame <- drawOver ColorFull(prompt ++ spc ++ ", ESC]") (over ++ more)
+  (key, modifier) <- getChoice ((K.Esc, K.NoModifier) : keysS) frame
   case key of
     K.Esc -> neverMind True
     K.Space | not (null rest) -> displayChoice prompt rest keys
     _ -> return (key, modifier)
-
--- | Print a msg and several overlays, one per page.
--- The return value indicates if the player tried to abort/escape.
-displayOverlays :: Msg -> [Overlay] -> Action Bool
-displayOverlays _      []     = return True
-displayOverlays _      [[]]   = return True  -- extra confirmation at the end
-displayOverlays prompt [x]    = do
-  displayOver ColorFull prompt x
-  return True
-displayOverlays prompt (x:xs) = do
-  displayOver ColorFull prompt (x ++ [moreMsg])
-  b <- getConfirm
-  if b
-    then displayOverlays prompt xs
-    else return False
 
 -- | Update the cached perception for the given computation.
 withPerception :: Action () -> Action ()
