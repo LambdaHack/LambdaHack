@@ -78,7 +78,6 @@ instance Binary AttrChar where
     acChar <- get
     return AttrChar{..}
 
--- TODO: move to Draw.hs. Perhaps some other types, too.
 -- | The data sufficent to draw a single game screen frame.
 data SingleFrame = SingleFrame
   { sfLevel  :: ![[AttrChar]]  -- ^ content of the screen, line by line

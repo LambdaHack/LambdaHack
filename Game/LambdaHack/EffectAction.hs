@@ -250,11 +250,11 @@ fleeDungeon = do
       let winMsg = "Congratulations, you won! Your loot, worth " ++
                    show total ++ " gold, is:"  -- TODO: use the name of the '$' item instead
       io <- itemOverlay True items
-      go <- displayOverlays winMsg $ io ++ [[]]
-      when go $ do
-        go2 <- handleScores True H.Victor total
-        when go2 $ displayMoreCancel "Can it be done better, though?"
-      end
+      tryWith end $ do
+        displayOverlays winMsg $ io ++ [[]]
+        handleScores True H.Victor total
+        displayMoreCancel "Can it be done better, though?"
+        end
 
 -- | The source actor affects the target actor, with a given item.
 -- If the event is seen, the item may get identified.
@@ -440,11 +440,9 @@ gameOver showEndingScreens = do
 -- Warning: scores are shown during the game,
 -- so we should be careful not to leak secret information through them
 -- (e.g., the nature of the items through the total worth of inventory).
-handleScores :: Bool -> H.Status -> Int -> Action Bool
+handleScores :: Bool -> H.Status -> Int -> Action ()
 handleScores write status total =
-  if total == 0
-  then return False
-  else do
+  when (total /= 0) $ do
     config  <- gets sconfig
     time    <- gets stime
     curDate <- currentDate
@@ -515,7 +513,7 @@ doLook = do
       is = lvl `rememberAtI` loc
   msgAdd lookMsg
   io <- itemOverlay False is
-  when (length is > 2) $ void $ displayOverlays "" io
+  when (length is > 2) $ displayOverlays "" io
 
 gameVersion :: Action ()
 gameVersion = do

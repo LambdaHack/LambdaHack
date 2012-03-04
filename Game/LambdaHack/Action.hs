@@ -323,19 +323,18 @@ displayMoreCancel prompt = void $ displayMoreConfirm ColorFull prompt
 
 -- | Print a msg and several overlays, one per page.
 -- The return value indicates if the player tried to abort/escape.
-displayOverlays :: Msg -> [Overlay] -> Action Bool
-displayOverlays _      []   = return True
-displayOverlays _      [[]] = return True  -- extra confirmation at the end
+displayOverlays :: Msg -> [Overlay] -> Action ()
+displayOverlays _      []   = return ()
+displayOverlays _      [[]] = return ()  -- extra confirmation at the end
 displayOverlays prompt [x]  = do
   frame <- drawOver ColorFull prompt x
   displayNoKey frame
-  return True
 displayOverlays prompt (x:xs) = do
   frame <- drawOver ColorFull prompt (x ++ [moreMsg])
   b <- getConfirm frame
   if b
     then displayOverlays prompt xs
-    else return False
+    else abort
 
 -- | Wait for a player keypress.
 getChoice :: [(K.Key, K.Modifier)] -> Color.SingleFrame

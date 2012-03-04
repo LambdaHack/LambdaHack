@@ -38,23 +38,6 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.Binding
 import Game.LambdaHack.Draw
 
-displayHistory :: Action ()
-displayHistory = do
-  Diary{shistory} <- getDiary
-  stime <- gets stime
-  lysize <- gets (lysize . slevel)
-  let turn = show (stime `div` 10)
-      msg = "You adventuring lasts " ++ turn ++ " turns. Past messages:"
-  void $ displayOverlays msg $ splitOverlay lysize $ renderHistory shistory
-
-dumpConfig :: Action ()
-dumpConfig = do
-  config <- gets sconfig
-  let fn = "config.dump"
-      msg = "Current configuration dumped to file " ++ fn ++ "."
-  dump fn config
-  void $ displayPrompt ColorFull msg
-
 saveGame :: Action ()
 saveGame = do
   b <- displayYesNo "Really save?"
@@ -67,9 +50,10 @@ saveGame = do
       saveGameFile state diary
       let (_, total) = calculateTotal coitem state
           status = H.Camping
-      go <- handleScores False status total
-      when go $ displayMoreCancel "See you soon, stronger and braver!"
-      end
+      tryWith end $ do
+        handleScores False status total
+        displayMoreCancel "See you soon, stronger and braver!"
+        end
     else abortWith "Game resumed."
 
 quitGame :: Action ()
@@ -481,4 +465,21 @@ regenerateLevelHP = do
 displayHelp :: Action ()
 displayHelp = do
   keyb <- getBinding
-  void $ displayOverlays "Basic keys. [press SPACE or ESC]" $ keyHelp keyb
+  displayOverlays "Basic keys. [press SPACE or ESC]" $ keyHelp keyb
+
+displayHistory :: Action ()
+displayHistory = do
+  Diary{shistory} <- getDiary
+  stime <- gets stime
+  lysize <- gets (lysize . slevel)
+  let turn = show (stime `div` 10)
+      msg = "You adventuring lasts " ++ turn ++ " turns. Past messages:"
+  displayOverlays msg $ splitOverlay lysize $ renderHistory shistory
+
+dumpConfig :: Action ()
+dumpConfig = do
+  config <- gets sconfig
+  let fn = "config.dump"
+      msg = "Current configuration dumped to file " ++ fn ++ "."
+  dump fn config
+  displayPrompt ColorFull msg
