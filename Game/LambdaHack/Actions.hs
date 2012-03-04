@@ -40,7 +40,7 @@ import Game.LambdaHack.Draw
 
 displayHistory :: Action ()
 displayHistory = do
-  Diary{shistory} <- currentDiary
+  Diary{shistory} <- getDiary
   stime <- gets stime
   lysize <- gets (lysize . slevel)
   let turn = show (stime `div` 10)
@@ -61,11 +61,11 @@ saveGame = do
   if b
     then do
       -- Save the game state
-      cops <- contentf Kind.coitem
+      Kind.COps{coitem} <- getCOps
       state <- get
-      diary <- currentDiary
+      diary <- getDiary
       saveGameFile state diary
-      let (_, total) = calculateTotal cops state
+      let (_, total) = calculateTotal coitem state
           status = H.Camping
       go <- handleScores False status total
       when go $ displayMoreCancel "See you soon, stronger and braver!"
@@ -76,7 +76,7 @@ quitGame :: Action ()
 quitGame = do
   b <- displayYesNo "Really quit?"
   state <- get
-  diary <- currentDiary
+  diary <- getDiary
   if b
     then do
       saveGameBkp state diary -- save the diary
@@ -132,7 +132,7 @@ guessBump _ _ _ = neverMind True
 -- | Player tries to trigger a tile using a feature.
 bumpTile :: Point -> F.Feature -> Action ()
 bumpTile dloc feat = do
-  cotile <- contentf Kind.cotile
+  Kind.COps{cotile} <- getCOps
   lvl    <- gets slevel
   let t = lvl `at` dloc
   if Tile.hasFeature cotile feat t
@@ -143,7 +143,7 @@ bumpTile dloc feat = do
 -- | Perform the action specified for the tile in case it's triggered.
 triggerTile :: Point -> Action ()
 triggerTile dloc = do
-  Kind.Ops{okind, opick} <- contentf Kind.cotile
+  Kind.COps{cotile=Kind.Ops{okind, opick}} <- getCOps
   lvl <- gets slevel
   let f (F.Cause effect) = do
         pl <- gets splayer
@@ -190,7 +190,7 @@ actorOpenDoor actor dir = do
   Kind.COps{ cotile
            , coitem
            , coactor=Kind.Ops{okind}
-           } <- contentOps
+           } <- getCOps
   lvl  <- gets slevel
   pl   <- gets splayer
   body <- gets (getActor actor)
@@ -220,7 +220,7 @@ actorOpenDoor actor dir = do
 -- k levels shallower. Enters targeting mode, if not already in one.
 tgtAscend :: Int -> Action ()
 tgtAscend k = do
-  cotile    <- contentf Kind.cotile
+  Kind.COps{cotile} <- getCOps
   cursor    <- gets scursor
   targeting <- gets (ctargeting . scursor)
   slid      <- gets slid
@@ -278,7 +278,7 @@ cycleHero = do
 -- | Search for hidden doors.
 search :: Action ()
 search = do
-  Kind.COps{coitem, cotile} <- contentOps
+  Kind.COps{coitem, cotile} <- getCOps
   lvl    <- gets slevel
   le     <- gets (lsecret . slevel)
   lxsize <- gets (lxsize . slevel)
@@ -316,7 +316,7 @@ moveOrAttack :: Bool       -- ^ allow attacks?
              -> Action ()
 moveOrAttack allowAttacks actor dir = do
   -- We start by looking at the target position.
-  cops@Kind.COps{cotile = cotile@Kind.Ops{okind}} <- contentOps
+  cops@Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getCOps
   state  <- get
   pl     <- gets splayer
   lvl    <- gets slevel
@@ -365,9 +365,9 @@ actorAttackActor source target = do
       selectPlayer target
         >>= assert `trueM` (source, target, "player bumps into himself")
     else do
-      Kind.COps{coactor, coitem=coitem@Kind.Ops{opick, okind}} <- contentOps
+      Kind.COps{coactor, coitem=coitem@Kind.Ops{opick, okind}} <- getCOps
       state <- get
-      per   <- currentPerception
+      per   <- getPerception
       bitems <- gets (getActorItem source)
       let h2hGroup = if isAHero state source then "unarmed" else "monstrous"
       h2hKind <- rndToAction $ opick h2hGroup (const True)
@@ -444,9 +444,9 @@ rollMonster Kind.COps{cotile, coactor=Kind.Ops{opick, okind}} per state = do
 -- | Generate a monster, possibly.
 generateMonster :: Action ()
 generateMonster = do
-  cops    <- contentOps
+  cops    <- getCOps
   state   <- get
-  per     <- currentPerception
+  per     <- getPerception
   nstate  <- rndToAction $ rollMonster cops per state
   srandom <- gets srandom
   put $ nstate {srandom}
@@ -456,7 +456,7 @@ regenerateLevelHP :: Action ()
 regenerateLevelHP = do
   Kind.COps{ coitem
            , coactor=coactor@Kind.Ops{okind}
-           } <- contentOps
+           } <- getCOps
   time <- gets stime
   let upd itemIM a m =
         let ak = okind $ bkind m
@@ -480,6 +480,5 @@ regenerateLevelHP = do
 -- | Display command help.
 displayHelp :: Action ()
 displayHelp = do
-  let disp Session{skeyb} =
-        displayOverlays "Basic keys. [press SPACE or ESC]" $ keyHelp skeyb
-  void $ session disp
+  keyb <- getBinding
+  void $ displayOverlays "Basic keys. [press SPACE or ESC]" $ keyHelp keyb

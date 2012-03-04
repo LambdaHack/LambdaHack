@@ -5,14 +5,14 @@
 {-# LANGUAGE MultiParamTypeClasses, RankNTypes #-}
 module Game.LambdaHack.Action
   ( ActionFun, Action, handlerToIO, end, rndToAction
-  , Session(..), session, contentOps, contentf
+  , Session(..), getCOps, getBinding
   , tryWith, tryRepeatedlyWith, try, tryRepeatedly, debug
   , abort, abortWith, abortIfWith, neverMind
-  , currentDiary, historyReset, msgAdd, msgReset
+  , getDiary, historyReset, msgAdd, msgReset
   , getCommand, displayNothingPush, displayPush, displayPrompt
   , displayMoreConfirm, displayMoreCancel
   , displayYesNo, displayChoice, displayOverlays
-  , withPerception, currentPerception, updateAnyActor, updatePlayerBody
+  , withPerception, getPerception, updateAnyActor, updatePlayerBody
   , advanceTime, playerAdvanceTime
   , currentDate, registerHS, saveGameBkp, saveGameFile, dump
   ) where
@@ -127,19 +127,17 @@ data Session = Session
   , skeyb :: Binding (Action ())     -- ^ binding of keys to commands
   }
 
--- | Invoke a session command.
-session :: (Session -> Action a) -> Action a
-session f = Action (\ sess e p k a st ms ->
-                     runAction (f sess) sess e p k a st ms)
+-- | Get the frontend session.
+getFrontendSession :: Action FrontendSession
+getFrontendSession = Action (\ Session{sfs} _e _p k _a st ms -> k st ms sfs)
 
 -- | Get the content operations.
-contentOps :: Action Kind.COps
-contentOps = Action (\ Session{scops} _e _p k _a st ms -> k st ms scops)
+getCOps :: Action Kind.COps
+getCOps = Action (\ Session{scops} _e _p k _a st ms -> k st ms scops)
 
--- TODO: remove
--- | Get the content operations modified by a function (usually a selector).
-contentf :: (Kind.COps -> a) -> Action a
-contentf f = Action (\ Session{scops} _e _p k _a st ms -> k st ms (f scops))
+-- | Get the key binding.
+getBinding :: Action (Binding (Action ()))
+getBinding = Action (\ Session{skeyb} _e _p k _a st ms -> k st ms skeyb)
 
 -- | Set the current exception handler. First argument is the handler,
 -- second is the computation the handler scopes over.
@@ -187,8 +185,8 @@ neverMind :: Bool -> Action a
 neverMind b = abortIfWith b "never mind"
 
 -- | Get the current diary.
-currentDiary :: Action Diary
-currentDiary = Action (\ _s _e _p k _a st diary -> k st diary diary)
+getDiary :: Action Diary
+getDiary = Action (\ _s _e _p k _a st diary -> k st diary diary)
 
 -- | Wipe out and set a new value for the history.
 historyReset :: History -> Action ()
@@ -200,39 +198,45 @@ msgAdd :: Msg -> Action ()
 msgAdd nm = Action (\ _s _e _p k _a st ms ->
                      k st ms{sreport = addMsg (sreport ms) nm} ())
 
--- | Wipe out and set a new value for the current msg.
+-- | Wipe out and set a new value for the current report.
 msgReset :: Msg -> Action ()
 msgReset nm = Action (\ _s _e _p k _a st ms ->
                        k st ms{sreport = singletonReport nm} ())
 
 -- | Wait for a player command.
-getCommand :: Session -> Action (K.Key, K.Modifier)
-getCommand Session{sfs, skeyb} = do
-  (nc, modifier) <- liftIO $ getAnyKey sfs True
+getCommand :: Action (K.Key, K.Modifier)
+getCommand = do
+  fs <- getFrontendSession
+  keyb <- getBinding
+  (nc, modifier) <- liftIO $ getAnyKey fs True
   return $ case modifier of
     K.NoModifier ->
-      (fromMaybe nc $ M.lookup nc $ kmacro skeyb, modifier)
+      (fromMaybe nc $ M.lookup nc $ kmacro keyb, modifier)
     _ -> (nc, modifier)
 
 -- | Wait for a player keypress.
-getChoice :: [(K.Key, K.Modifier)] -> Session -> Action (K.Key, K.Modifier)
-getChoice keys Session{sfs} = liftIO $ getKey sfs False keys
+getChoice :: [(K.Key, K.Modifier)] -> Action (K.Key, K.Modifier)
+getChoice keys = do
+  fs <- getFrontendSession
+  liftIO $ getKey fs False keys
 
 -- | A yes-no confirmation.
-getYesNo :: Session -> Action Bool
-getYesNo Session{sfs} = do
-  (k, _) <- liftIO $ getKey sfs False [ (K.Char 'y', K.NoModifier)
-                                      , (K.Char 'n', K.NoModifier)
-                                      , (K.Esc, K.NoModifier)
-                                      ]
+getYesNo :: Action Bool
+getYesNo = do
+  fs <- getFrontendSession
+  (k, _) <- liftIO $ getKey fs False [ (K.Char 'y', K.NoModifier)
+                                     , (K.Char 'n', K.NoModifier)
+                                     , (K.Esc, K.NoModifier)
+                                     ]
   case k of
     K.Char 'y' -> return True
     _          -> return False
 
 -- | Ignore unexpected kestrokes until a SPACE or ESC is pressed.
-getConfirm :: Session -> Action Bool
-getConfirm Session{sfs} = do
-  (k, _) <- liftIO $ getKey sfs False [ (K.Space, K.NoModifier)
+getConfirm :: Action Bool
+getConfirm = do
+  fs <- getFrontendSession
+  (k, _) <- liftIO $ getKey fs False [ (K.Space, K.NoModifier)
                                       , (K.Esc, K.NoModifier)
                                       ]
   case k of
@@ -241,41 +245,45 @@ getConfirm Session{sfs} = do
 
 -- | Push a wait for a single frame to the frame queue.
 displayNothingPush :: Action ()
-displayNothingPush =
-  Action (\ Session{sfs} _e _p k _a s diary -> do
-           displayNothing sfs
-           k s diary ())
+displayNothingPush = do
+  fs <- getFrontendSession
+  liftIO $ displayNothing fs
 
 -- | Push the frame depicting the current level to the frame queue.
 -- If there are any animations to play, they are pushed at this point, too,
 -- and cleared. Only one screenful of the message is shown,
 -- the rest is ignored.
 displayPush :: Action ()
-displayPush =
-  Action (\ Session{sfs, scops} _e p k _a
-            s@State{sanim} diary@Diary{sreport} -> do
-            let over = splitReport sreport
-                sNew = s {sanim=[]}
-            displayAnimation sfs scops p sNew sanim
-            displayLevel sfs True ColorFull scops p sNew over
-            k sNew diary ())
+displayPush = do
+  fs <- getFrontendSession
+  cops <- getCOps
+  per <- getPerception
+  s@State{sanim} <- get
+  Diary{sreport} <- getDiary
+  let over = splitReport sreport
+      sNew = s {sanim=[]}
+  liftIO $ displayAnimation fs cops per sNew sanim
+  liftIO $ displayLevel fs True ColorFull cops per sNew over
 
 -- | Display the current level. The prompt is displayed, but not added
 -- to history. The prompt is appended to the current message
 -- and only the first screenful of the resulting overlay is displayed.
 displayPrompt :: ColorMode -> Msg -> Action ()
-displayPrompt dm prompt =
-  Action (\ Session{sfs, scops} _e p k _a s diary@Diary{sreport} -> do
-             let over = splitReport $ addMsg sreport prompt
-             displayLevel sfs False dm scops p s over
-             k s diary ())
+displayPrompt dm prompt = do
+  fs <- getFrontendSession
+  cops <- getCOps
+  per <- getPerception
+  s <- get
+  Diary{sreport} <- getDiary
+  let over = splitReport $ addMsg sreport prompt
+  liftIO $ displayLevel fs False dm cops per s over
 
 -- | Display a msg with a @more@ prompt. Return value indicates if the player
 -- tried to abort/escape.
 displayMoreConfirm :: ColorMode -> Msg -> Action Bool
 displayMoreConfirm dm prompt = do
   displayPrompt dm (prompt ++ moreMsg)
-  session getConfirm
+  getConfirm
 
 -- | Print a message with a @more@ prompt, await confirmation
 -- and ignore confirmation.
@@ -287,20 +295,23 @@ displayYesNo :: Msg -> Action Bool
 displayYesNo prompt = do
   -- Turn player's attention to the choice via BW colours.
   displayPrompt ColorBW (prompt ++ yesnoMsg)
-  session getYesNo
+  getYesNo
 
 -- | Display the current level. The prompt and the overlay are displayed,
 -- but not added to history. The prompt is appended to the current message
 -- and only the first line of the result is displayed.
 -- The overlay starts on the second line.
 displayOver :: ColorMode -> Msg -> Overlay -> Action ()
-displayOver dm prompt overlay =
-  Action (\ Session{sfs, scops} _e p k _a s diary@Diary{sreport} -> do
-             let xsize = lxsize $ slevel s
-                 msgPrompt = renderReport $ addMsg sreport prompt
-                 over = padMsg xsize msgPrompt : overlay
-             displayLevel sfs False dm scops p s over
-             k s diary ())
+displayOver dm prompt overlay = do
+  fs <- getFrontendSession
+  cops <- getCOps
+  per <- getPerception
+  s <- get
+  Diary{sreport} <- getDiary
+  let xsize = lxsize $ slevel s
+      msgPrompt = renderReport $ addMsg sreport prompt
+      over = padMsg xsize msgPrompt : overlay
+  liftIO $ displayLevel fs False dm cops per s over
 
 -- | Print a prompt and an overlay and wait for a player keypress.
 -- If many overlays, scroll screenfuls with SPACE. Do not wrap screenfuls
@@ -313,7 +324,7 @@ displayChoice prompt ovs keys = do
         [x] -> (x, [], "", [], keys)
         x:xs -> (x, xs, ", SPACE", [moreMsg], (K.Space, K.NoModifier) : keys)
   displayOver ColorFull (prompt ++ spc ++ ", ESC]") (over ++ more)
-  (key, modifier) <- session $ getChoice $ (K.Esc, K.NoModifier) : keysS
+  (key, modifier) <- getChoice $ (K.Esc, K.NoModifier) : keysS
   case key of
     K.Esc -> neverMind True
     K.Space | not (null rest) -> displayChoice prompt rest keys
@@ -329,7 +340,7 @@ displayOverlays prompt [x]    = do
   return True
 displayOverlays prompt (x:xs) = do
   displayOver ColorFull prompt (x ++ [moreMsg])
-  b <- session getConfirm
+  b <- getConfirm
   if b
     then displayOverlays prompt xs
     else return False
@@ -340,8 +351,8 @@ withPerception h = Action (\ sess@Session{scops} e _ k a st ms ->
                             runAction h sess e (perception scops st) k a st ms)
 
 -- | Get the current perception.
-currentPerception :: Action Perception
-currentPerception = Action (\ _s _e p k _a st ms -> k st ms p)
+getPerception :: Action Perception
+getPerception = Action (\ _s _e p k _a st ms -> k st ms p)
 
 -- | Update actor stats. Works for actors on other levels, too.
 updateAnyActor :: ActorId -> (Actor -> Actor) -> Action ()
@@ -356,7 +367,7 @@ updatePlayerBody f = do
 -- | Advance the move time for the given actor.
 advanceTime :: ActorId -> Action ()
 advanceTime actor = do
-  Kind.Ops{okind} <- contentf Kind.coactor
+  Kind.COps{coactor=Kind.Ops{okind}} <- getCOps
   time <- gets stime
   let upd m = m { btime = time + aspeed (okind (bkind m)) }
   -- A hack to synchronize the whole party:

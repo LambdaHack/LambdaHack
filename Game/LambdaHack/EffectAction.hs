@@ -53,7 +53,7 @@ effectToAction :: Effect.Effect -> Int -> ActorId -> ActorId -> Int
                -> Action (Bool, String)
 effectToAction Effect.NoEffect _ _ _ _ = nullEffect
 effectToAction Effect.Heal _ _source target power = do
-  coactor@Kind.Ops{okind} <- contentf Kind.coactor
+  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getCOps
   let bhpMax m = maxDice (ahp $ okind $ bkind m)
   tm <- gets (getActor target)
   if bhp tm >= bhpMax tm || power <= 0
@@ -63,7 +63,7 @@ effectToAction Effect.Heal _ _source target power = do
       updateAnyActor target (addHp coactor power)  -- TODO: duplicate code in  bhpMax and addHp
       return (True, actorVerbExtra coactor tm "feel" "better")
 effectToAction (Effect.Wound nDm) verbosity source target power = do
-  coactor <- contentf Kind.coactor
+  Kind.COps{coactor} <- getCOps
   pl <- gets splayer
   n  <- rndToAction $ rollDice nDm
   if n + power <= 0 then nullEffect else do
@@ -143,7 +143,7 @@ effectToAction Effect.Searching _ _source _target _power =
 effectToAction Effect.Ascend _ source target power = do
   tm <- gets (getActor target)
   s  <- get
-  coactor <- contentf Kind.coactor
+  Kind.COps{coactor} <- getCOps
   if not $ isAHero s target
     then squashActor source target
     else effLvlGoUp (power + 1)
@@ -152,7 +152,7 @@ effectToAction Effect.Ascend _ source target power = do
 effectToAction Effect.Descend _ source target power = do
   tm <- gets (getActor target)
   s  <- get
-  coactor <- contentf Kind.coactor
+  Kind.COps{coactor} <- getCOps
   if not $ isAHero s target
     then squashActor source target
     else effLvlGoUp (- (power + 1))
@@ -165,7 +165,7 @@ nullEffect = return (False, "Nothing happens.")
 -- TODO: refactor with actorAttackActor.
 squashActor :: ActorId -> ActorId -> Action ()
 squashActor source target = do
-  Kind.COps{coactor, coitem=Kind.Ops{okind, ouniqGroup}} <- contentOps
+  Kind.COps{coactor, coitem=Kind.Ops{okind, ouniqGroup}} <- getCOps
   sm <- gets (getActor source)
   tm <- gets (getActor target)
   let h2hKind = ouniqGroup "weight"
@@ -229,16 +229,16 @@ effLvlGoUp k = do
         -- The invariant "at most one actor on a tile" restored.
         -- Create a backup of the savegame.
         state <- get
-        diary <- currentDiary
+        diary <- getDiary
         saveGameBkp state diary
         when (targeting /= TgtOff) doLook  -- TODO: lags behind perception
 
 -- | The player leaves the dungeon.
 fleeDungeon :: Action ()
 fleeDungeon = do
-  coitem <- contentf Kind.coitem
+  Kind.COps{coitem} <- getCOps
   state <- get
-  diary <- currentDiary
+  diary <- getDiary
   saveGameBkp state diary -- save the diary
   let (items, total) = calculateTotal coitem state
   if total == 0
@@ -261,10 +261,10 @@ fleeDungeon = do
 -- If the event is seen, the item may get identified.
 itemEffectAction :: Int -> ActorId -> ActorId -> Item -> Action Bool
 itemEffectAction verbosity source target item = do
-  Kind.Ops{okind} <- contentf Kind.coitem
+  Kind.COps{coitem=Kind.Ops{okind}} <- getCOps
   sm  <- gets (getActor source)
   tm  <- gets (getActor target)
-  per <- currentPerception
+  per <- getPerception
   pl  <- gets splayer
   s   <- get
   let effect = ieffect $ okind $ jkind item
@@ -306,10 +306,10 @@ itemEffectAction verbosity source target item = do
 -- | Make the item known to the player.
 discover :: Item -> Action ()
 discover i = do
-  cops@Kind.Ops{okind} <- contentf Kind.coitem
+  Kind.COps{coitem=coitem@Kind.Ops{okind}} <- getCOps
   state <- get
   let ik = jkind i
-      obj = unwords $ tail $ words $ objectItem cops state i
+      obj = unwords $ tail $ words $ objectItem coitem state i
       msg = "The " ++ obj ++ " turns out to be "
       kind = okind ik
       alreadyIdentified = L.length (iflavour kind) == 1
@@ -317,13 +317,13 @@ discover i = do
   unless alreadyIdentified $ do
     modify (updateDiscoveries (S.insert ik))
     state2 <- get
-    msgAdd $ msg ++ objectItem cops state2 i ++ "."
+    msgAdd $ msg ++ objectItem coitem state2 i ++ "."
 
 -- | Make the actor controlled by the player.
 -- Focus on the actor if level changes. False, if nothing to do.
 selectPlayer :: ActorId -> Action Bool
 selectPlayer actor = do
-  coactor <- contentf Kind.coactor
+  Kind.COps{coactor} <- getCOps
   pl <- gets splayer
   targeting <- gets (ctargeting . scursor)
   if actor == pl
@@ -356,7 +356,7 @@ focusIfAHero target = do
 summonHeroes :: Int -> Point -> Action ()
 summonHeroes n loc =
   assert (n > 0) $ do
-  cops <- contentOps
+  cops <- getCOps
   newHeroId <- gets scounter
   modify (\ state -> iterate (addHero cops loc) state !! n)
   selectPlayer newHeroId
@@ -366,7 +366,7 @@ summonHeroes n loc =
 
 summonMonsters :: Int -> Point -> Action ()
 summonMonsters n loc = do
-  Kind.COps{cotile, coactor=Kind.Ops{opick, okind}} <- contentOps
+  Kind.COps{cotile, coactor=Kind.Ops{opick, okind}} <- getCOps
   mk <- rndToAction $ opick "summon" (const True)
   hp <- rndToAction $ rollDice $ ahp $ okind mk
   modify (\ state ->
@@ -375,7 +375,7 @@ summonMonsters n loc = do
 -- | Update player memory.
 remember :: Action ()
 remember = do
-  per <- currentPerception
+  per <- getPerception
   let vis = IS.toList (totalVisible per)
   rememberList vis
 
@@ -396,13 +396,13 @@ rememberList vis = do
 -- on any level.
 checkPartyDeath :: Action ()
 checkPartyDeath = do
-  cops   <- contentf Kind.coactor
+  Kind.COps{coactor} <- getCOps
   ahs    <- gets allHeroesAnyLevel
   pl     <- gets splayer
   pbody  <- gets getPlayerBody
   config <- gets sconfig
   when (bhp pbody <= 0) $ do
-    msgAdd $ actorVerb cops pbody "die"
+    msgAdd $ actorVerb coactor pbody "die"
     go <- displayMoreConfirm ColorBW ""
     history  -- Prevent the msgs from being repeated.
     let firstDeathEnds = Config.get config "heroes" "firstDeathEnds"
@@ -426,10 +426,10 @@ checkPartyDeath = do
 gameOver :: Bool -> Action ()
 gameOver showEndingScreens = do
   when showEndingScreens $ do
-    cops  <- contentf Kind.coitem
+    Kind.COps{coitem} <- getCOps
     state <- get
     slid  <- gets slid
-    let (_, total) = calculateTotal cops state
+    let (_, total) = calculateTotal coitem state
         status = H.Killed slid
     handleScores True status total
     displayMoreCancel "Let's hope another party can save the day!"
@@ -459,11 +459,11 @@ handleScores write status total =
 -- | Create a list of item names, split into many overlays.
 itemOverlay ::Bool -> [Item] -> Action [Overlay]
 itemOverlay sorted is = do
-  cops  <- contentf Kind.coitem
+  Kind.COps{coitem} <- getCOps
   state <- get
   lysize <- gets (lysize . slevel)
   let inv = L.map (\ i -> letterLabel (jletter i)
-                          ++ objectItem cops state i ++ " ")
+                          ++ objectItem coitem state i ++ " ")
               ((if sorted
                 then L.sortBy (cmpLetterMaybe `on` jletter)
                 else id) is)
@@ -475,7 +475,7 @@ stopRunning = updatePlayerBody (\ p -> p { bdir = Nothing })
 -- | Store current msg in the history and reset current msg.
 history :: Action ()
 history = do
-  Diary{sreport, shistory} <- currentDiary
+  Diary{sreport, shistory} <- getDiary
   unless (nullReport sreport) $ do
     config <- gets sconfig
     let historyMax = Config.get config "ui" "historyMax"
@@ -486,12 +486,12 @@ history = do
 -- | Perform look around in the current location of the cursor.
 doLook :: Action ()
 doLook = do
-  cops@Kind.COps{coactor} <- contentOps
+  cops@Kind.COps{coactor} <- getCOps
   loc    <- gets (clocation . scursor)
   state  <- get
   lvl    <- gets slevel
   hms    <- gets (lactor . slevel)
-  per    <- currentPerception
+  per    <- getPerception
   target <- gets (btarget . getPlayerBody)
   pl     <- gets splayer
   let canSee = IS.member loc (totalVisible per)
@@ -520,7 +520,7 @@ doLook = do
 
 gameVersion :: Action ()
 gameVersion = do
-  Kind.COps{corule} <- contentOps
+  Kind.COps{corule} <- getCOps
   let pathsVersion = rpathsVersion $ stdRuleset corule
       msg = "Version " ++ showVersion pathsVersion
             ++ " (frontend: " ++ frontendName

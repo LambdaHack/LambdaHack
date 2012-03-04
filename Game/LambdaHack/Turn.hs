@@ -99,9 +99,9 @@ handleMonster actor = do
   withPerception $ do
     remember  -- hero notices his surroundings, before they get displayed
     displayPush  -- draw the current surroundings
-    cops  <- contentOps
+    cops  <- getCOps
     state <- get
-    per <- currentPerception
+    per <- getPerception
     -- Run the AI: choses an action from those given by the AI strategy.
     join $ rndToAction $
              frequency (head (runStrategy (strategy cops actor state per
@@ -156,13 +156,13 @@ playerCommand = do
   oldPlayerTime <- gets (btime . getPlayerBody)
   tryRepeatedlyWith stopRunning $  -- on abort, just ask for a new command
     ifRunning continueRun $ do
-      k <- session getCommand
-      session (\ Session{skeyb} ->
-                case M.lookup k (Binding.kcmd skeyb) of
-                  Just (_, c)  -> c
-                  Nothing ->
-                    let msg = "unknown command <" ++ K.showKM k ++ ">"
-                    in abortWith msg)
+      k <- getCommand
+      keyb <- getBinding
+      case M.lookup k (Binding.kcmd keyb) of
+        Just (_, c)  -> c
+        Nothing ->
+          let msg = "unknown command <" ++ K.showKM k ++ ">"
+          in abortWith msg
   -- The command was successful and possibly took some time.
   newPlayerTime <- gets (btime . getPlayerBody)
   -- If no time taken, rinse and repeat.

@@ -46,7 +46,7 @@ getGroupItem :: [Item]  -- ^ all objects in question
              -> String  -- ^ how to refer to the collection of objects
              -> Action Item
 getGroupItem is object syms prompt packName = do
-  Kind.Ops{osymbol} <- contentf Kind.coitem
+  Kind.COps{coitem=Kind.Ops{osymbol}} <- getCOps
   let choice i = osymbol (jkind i) `elem` syms
       header = capitalize $ suffixS object
   getItem prompt choice header is packName
@@ -56,10 +56,10 @@ applyGroupItem :: ActorId  -- ^ actor applying the item (is on current level)
                -> Item     -- ^ the item to be applied
                -> Action ()
 applyGroupItem actor verb item = do
-  cops  <- contentOps
+  cops  <- getCOps
   state <- get
   body  <- gets (getActor actor)
-  per   <- currentPerception
+  per   <- getPerception
   -- only one item consumed, even if several in inventory
   let consumed = item { jcount = 1 }
       msg = actorVerbItemExtra cops state body verb consumed ""
@@ -71,7 +71,7 @@ applyGroupItem actor verb item = do
 
 playerApplyGroupItem :: Verb -> Object -> [Char] -> Action ()
 playerApplyGroupItem verb object syms = do
-  Kind.Ops{okind} <- contentf Kind.coitem
+  Kind.COps{coitem=Kind.Ops{okind}} <- getCOps
   is   <- gets getPlayerItem
   item <- getGroupItem is object syms
             ("What to " ++ verb ++ "?") "in inventory"
@@ -84,10 +84,10 @@ projectGroupItem :: ActorId  -- ^ actor projecting the item (is on current lvl)
                  -> Item     -- ^ the item to be projected
                  -> Action ()
 projectGroupItem source tloc verb item = do
-  cops@Kind.COps{coactor} <- contentOps
+  cops@Kind.COps{coactor} <- getCOps
   state <- get
   sm    <- gets (getActor source)
-  per   <- currentPerception
+  per   <- getPerception
   pl    <- gets splayer
   ceps  <- gets (ceps . scursor)
   lxsize <- gets (lxsize . slevel)
@@ -127,7 +127,7 @@ playerProjectGI verb object syms = do
   state <- get
   pl    <- gets splayer
   ploc  <- gets (bloc . getPlayerBody)
-  per   <- currentPerception
+  per   <- getPerception
   let retarget msg = do
         msgAdd msg
         updatePlayerBody (\ p -> p { btarget = TCursor })
@@ -136,7 +136,7 @@ playerProjectGI verb object syms = do
         targetMonster TgtAuto
   case targetToLoc (totalVisible per) state of
     Just loc -> do
-      Kind.Ops{okind} <- contentf Kind.coitem
+      Kind.COps{coitem=Kind.Ops{okind}} <- getCOps
       is   <- gets getPlayerItem
       item <- getGroupItem is object syms
                 ("What to " ++ verb ++ "?") "in inventory"
@@ -153,7 +153,7 @@ targetMonster :: TgtMode -> Action ()
 targetMonster tgtMode = do
   pl        <- gets splayer
   ms        <- gets (monsterAssocs . slevel)
-  per       <- currentPerception
+  per       <- getPerception
   target    <- gets (btarget . getPlayerBody)
   targeting <- gets (ctargeting . scursor)
   let i = case target of
@@ -193,7 +193,7 @@ targetFloor tgtMode = do
 setCursor :: TgtMode -> Action ()
 setCursor tgtMode = assert (tgtMode /= TgtOff) $ do
   state  <- get
-  per    <- currentPerception
+  per    <- getPerception
   ploc   <- gets (bloc . getPlayerBody)
   clocLn <- gets slid
   let upd cursor@Cursor{ctargeting, clocation=clocationOld, ceps=cepsOld} =
@@ -215,7 +215,7 @@ endTargeting :: Bool -> Action ()
 endTargeting accept = do
   returnLn <- gets (creturnLn . scursor)
   target   <- gets (btarget . getPlayerBody)
-  per      <- currentPerception
+  per      <- getPerception
   cloc     <- gets (clocation . scursor)
   ms       <- gets (monsterAssocs . slevel)
   -- return to the original level of the player
@@ -238,7 +238,7 @@ endTargeting accept = do
 
 endTargetingMsg :: Action ()
 endTargetingMsg = do
-  cops   <- contentf Kind.coactor
+  Kind.COps{coactor} <- getCOps
   pbody  <- gets getPlayerBody
   state  <- get
   lxsize <- gets (lxsize . slevel)
@@ -246,12 +246,12 @@ endTargetingMsg = do
       targetMsg = case btarget pbody of
                     TEnemy a _ll ->
                       if memActor a state
-                      then objectActor cops $ getActor a state
+                      then objectActor coactor $ getActor a state
                       else "a fear of the past"
                     TLoc loc -> "location " ++ showPoint lxsize loc
                     TPath _ -> "a path"
                     TCursor  -> "current cursor position continuously"
-  msgAdd $ actorVerbExtra cops pbody verb targetMsg
+  msgAdd $ actorVerbExtra coactor pbody verb targetMsg
 
 -- | Cancel something, e.g., targeting mode, resetting the cursor
 -- to the position of the player. Chosen target is not invalidated.
@@ -275,7 +275,7 @@ acceptCurrent h = do
 dropItem :: Action ()
 dropItem = do
   -- TODO: allow dropping a given number of identical items.
-  cops  <- contentOps
+  cops  <- getCOps
   pl    <- gets splayer
   state <- get
   pbody <- gets getPlayerBody
@@ -326,10 +326,10 @@ removeFromLoc i loc = do
 
 actorPickupItem :: ActorId -> Action ()
 actorPickupItem actor = do
-  cops@Kind.COps{coitem} <- contentOps
+  cops@Kind.COps{coitem} <- getCOps
   state <- get
   pl    <- gets splayer
-  per   <- currentPerception
+  per   <- getPerception
   lvl   <- gets slevel
   body  <- gets (getActor actor)
   bitems <- gets (getActorItem actor)
