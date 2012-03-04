@@ -77,6 +77,7 @@ library
                    Game.LambdaHack.Content.RuleKind,
                    Game.LambdaHack.Content.TileKind,
                    Game.LambdaHack.Display,
+                   Game.LambdaHack.Draw,
                    Game.LambdaHack.Dungeon,
                    Game.LambdaHack.DungeonState,
                    Game.LambdaHack.Effect,

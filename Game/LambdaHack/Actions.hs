@@ -36,7 +36,7 @@ import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Random
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Binding
-import Game.LambdaHack.Display
+import Game.LambdaHack.Draw
 
 displayHistory :: Action ()
 displayHistory = do

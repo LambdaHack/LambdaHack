@@ -23,6 +23,7 @@ import Game.LambdaHack.ActorState
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Display
+import Game.LambdaHack.Draw
 import Game.LambdaHack.Grammar
 import Game.LambdaHack.Point
 import qualified Game.LambdaHack.HighScore as H
@@ -250,7 +251,7 @@ fleeDungeon = do
       let winMsg = "Congratulations, you won! Your loot, worth " ++
                    show total ++ " gold, is:"  -- TODO: use the name of the '$' item instead
       io <- itemOverlay True items
-      go <- displayOverlays winMsg $ io ++ []
+      go <- displayOverlays winMsg $ io ++ [[]]
       when go $ do
         go2 <- handleScores True H.Victor total
         when go2 $ displayMoreCancel "Can it be done better, though?"
@@ -453,7 +454,7 @@ handleScores write status total =
                    _ -> total
     let score = H.ScoreRecord points (-time) curDate status
     (placeMsg, slideshow) <- registerHS config write score
-    displayOverlays placeMsg $ slideshow ++ []
+    displayOverlays placeMsg $ slideshow ++ [[]]
 
 -- | Create a list of item names, split into many overlays.
 itemOverlay ::Bool -> [Item] -> Action [Overlay]

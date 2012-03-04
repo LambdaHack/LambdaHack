@@ -19,7 +19,6 @@ import Data.Binary
 import qualified Game.LambdaHack.Config as Config
 import qualified System.Random as R
 import System.Time
-import qualified Data.IntMap as IM
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Misc
@@ -54,15 +53,11 @@ data State = State
   , slid     :: Dungeon.LevelId  -- ^ identifier of the current level
   , scounter :: Int          -- ^ stores next actor index
   , srandom  :: R.StdGen     -- ^ current random generator
-  , sanim    :: Animation    -- ^ an animation to play
+  , sanim    :: Color.Animation  -- ^ an animation to play
   , sconfig  :: Config.CP    -- ^ game config
   , sdebug   :: DebugMode    -- ^ debugging mode
   }
   deriving Show
-
--- | Animation is a list of frame modifications to play one by one,
--- where each modification if a map from locations to level map symbols.
-type Animation = [IM.IntMap Color.AttrChar]
 
 -- | Current targeting mode of the player.
 data TgtMode =

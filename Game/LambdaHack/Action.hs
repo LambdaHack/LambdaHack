@@ -25,9 +25,9 @@ import System.Time
 import Data.Maybe
 -- import System.IO (hPutStrLn, stderr) -- just for debugging
 
-import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Display
+import Game.LambdaHack.Draw
 import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 import Game.LambdaHack.Level
@@ -240,43 +240,42 @@ getConfirm Session{sfs} = do
     _       -> return False
 
 -- | Push a wait for a single frame to the frame queue.
-displayNothingPush :: Action Bool
+displayNothingPush :: Action ()
 displayNothingPush =
-  Action (\ Session{sfs} _e _p k _a st diary ->
+  Action (\ Session{sfs} _e _p k _a s diary -> do
            displayNothing sfs
-           >>= k st diary)
+           k s diary ())
 
 -- | Push the frame depicting the current level to the frame queue.
 -- If there are any animations to play, they are pushed at this point, too,
 -- and cleared. Only one screenful of the message is shown,
 -- the rest is ignored.
-displayPush :: Action Bool
+displayPush :: Action ()
 displayPush =
-  Action (\ Session{sfs, scops} _e p k _a st diary@Diary{sreport} ->
-           let over = splitReport sreport
-           in displayLevel True ColorFull sfs scops p st over
-              >>= k st{sanim=[]} diary)
+  Action (\ Session{sfs, scops} _e p k _a
+            s@State{sanim} diary@Diary{sreport} -> do
+            let over = splitReport sreport
+                sNew = s {sanim=[]}
+            displayAnimation sfs scops p sNew sanim
+            displayLevel sfs True ColorFull scops p sNew over
+            k sNew diary ())
 
 -- | Display the current level. The prompt is displayed, but not added
 -- to history. The prompt is appended to the current message
 -- and only the first screenful of the resulting overlay is displayed.
-displayPrompt :: ColorMode -> Msg -> Action Bool
+displayPrompt :: ColorMode -> Msg -> Action ()
 displayPrompt dm prompt =
-  Action (\ Session{sfs, scops} _e p k _a
-            st@State{sanim} diary@Diary{sreport} ->
-           assert (null sanim `blame` length sanim) $
-           let over = splitReport $ addMsg sreport prompt
-           in displayLevel False dm sfs scops p st over
-              >>= k st diary)
+  Action (\ Session{sfs, scops} _e p k _a s diary@Diary{sreport} -> do
+             let over = splitReport $ addMsg sreport prompt
+             displayLevel sfs False dm scops p s over
+             k s diary ())
 
 -- | Display a msg with a @more@ prompt. Return value indicates if the player
 -- tried to abort/escape.
 displayMoreConfirm :: ColorMode -> Msg -> Action Bool
 displayMoreConfirm dm prompt = do
-  b <- displayPrompt dm (prompt ++ moreMsg)
-  if b
-    then session getConfirm
-    else return False
+  displayPrompt dm (prompt ++ moreMsg)
+  session getConfirm
 
 -- | Print a message with a @more@ prompt, await confirmation
 -- and ignore confirmation.
@@ -287,25 +286,21 @@ displayMoreCancel prompt = void $ displayMoreConfirm ColorFull prompt
 displayYesNo :: Msg -> Action Bool
 displayYesNo prompt = do
   -- Turn player's attention to the choice via BW colours.
-  b <- displayPrompt ColorBW (prompt ++ yesnoMsg)
-  if b
-    then session getYesNo
-    else return False  -- ESC counts as No
+  displayPrompt ColorBW (prompt ++ yesnoMsg)
+  session getYesNo
 
 -- | Display the current level. The prompt and the overlay are displayed,
 -- but not added to history. The prompt is appended to the current message
 -- and only the first line of the result is displayed.
 -- The overlay starts on the second line.
-displayOver :: ColorMode -> Msg -> Overlay -> Action Bool
+displayOver :: ColorMode -> Msg -> Overlay -> Action ()
 displayOver dm prompt overlay =
-  Action (\ Session{sfs, scops} _e p k _a
-            st@State{sanim} diary@Diary{sreport} ->
-           assert (null sanim `blame` length sanim) $
-           let xsize = lxsize $ slevel $ st
-               msgPrompt = renderReport $ addMsg sreport prompt
-               over = padMsg xsize msgPrompt : overlay
-           in displayLevel False dm sfs scops p st over
-              >>= k st diary)
+  Action (\ Session{sfs, scops} _e p k _a s diary@Diary{sreport} -> do
+             let xsize = lxsize $ slevel s
+                 msgPrompt = renderReport $ addMsg sreport prompt
+                 over = padMsg xsize msgPrompt : overlay
+             displayLevel sfs False dm scops p s over
+             k s diary ())
 
 -- | Print a prompt and an overlay and wait for a player keypress.
 -- If many overlays, scroll screenfuls with SPACE. Do not wrap screenfuls
@@ -317,30 +312,26 @@ displayChoice prompt ovs keys = do
         [] -> ([], [], "", [], keys)
         [x] -> (x, [], "", [], keys)
         x:xs -> (x, xs, ", SPACE", [moreMsg], (K.Space, K.NoModifier) : keys)
-  b <- displayOver ColorFull (prompt ++ spc ++ ", ESC]") (over ++ more)
-  if b
-    then do
-      (key, modifier) <- session $ getChoice $ (K.Esc, K.NoModifier) : keysS
-      case key of
-        K.Esc -> neverMind True
-        K.Space | not (null rest) -> displayChoice prompt rest keys
-        _ -> return (key, modifier)
-    else neverMind True
+  displayOver ColorFull (prompt ++ spc ++ ", ESC]") (over ++ more)
+  (key, modifier) <- session $ getChoice $ (K.Esc, K.NoModifier) : keysS
+  case key of
+    K.Esc -> neverMind True
+    K.Space | not (null rest) -> displayChoice prompt rest keys
+    _ -> return (key, modifier)
 
 -- | Print a msg and several overlays, one per page.
 -- The return value indicates if the player tried to abort/escape.
 displayOverlays :: Msg -> [Overlay] -> Action Bool
 displayOverlays _      []     = return True
 displayOverlays _      [[]]   = return True  -- extra confirmation at the end
-displayOverlays prompt [x]    = displayOver ColorFull prompt x
+displayOverlays prompt [x]    = do
+  displayOver ColorFull prompt x
+  return True
 displayOverlays prompt (x:xs) = do
-  b0 <- displayOver ColorFull prompt (x ++ [moreMsg])
-  if b0
-    then do
-      b <- session getConfirm
-      if b
-        then displayOverlays prompt xs
-        else return False
+  displayOver ColorFull prompt (x ++ [moreMsg])
+  b <- session getConfirm
+  if b
+    then displayOverlays prompt xs
     else return False
 
 -- | Update the cached perception for the given computation.
