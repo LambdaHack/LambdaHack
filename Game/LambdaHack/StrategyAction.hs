@@ -167,8 +167,13 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   seenFreqs = [applyFreq bitems 1, applyFreq tis 2,
                throwFreq bitems 3, throwFreq tis 6] ++ towardsFreq
   applyFreq is multi = toFreq "applyFreq"
-    [ (benefit * multi,
-       applyGroupItem actor (iverbApply ik) i)
+    [ ( benefit * multi
+      , -- TODO: we currently stop when frames arrive and require confirmations
+        -- e.g. for the frames focusing on hit heroes; see how it plays and
+        -- perhaps instead push them ASAP to play them between enemy moves.
+        do ((), frames) <- applyGroupItem actor (iverbApply ik) i
+           try $ getOverConfirm frames
+      )
     | i <- is,
       let ik = iokind (jkind i),
       let benefit = (1 + jpower i) * Effect.effectToBenefit (ieffect ik),
@@ -222,7 +227,7 @@ dirToAction actor tgt allowAttacks dir = do
     -- if the following action aborts, we just advance the time and continue
     -- TODO: ensure time is taken for other aborted actions in this file
     -- TODO: or just fail at each abort in AI code?
-    -- TODO: we currently stop at when frames arrive and require confirmations,
+    -- TODO: we currently stop when frames arrive and require confirmations,
     -- e.g. for the frames focusing on hit heroes; see how it plays and
     -- perhaps instead push them ASAP to have them played between enemy moves.
     ((), frames) <- moveOrAttack allowAttacks actor dir
