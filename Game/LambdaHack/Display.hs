@@ -6,7 +6,7 @@ module Game.LambdaHack.Display
     FrontendSession, startup, shutdown, frontendName
     -- * Derived operations
   , displayLevel, displayAnimation, displayNothing
-  , getAnyKey, promptGetKey
+  , getAnyKey, promptGetKey, displayNoKey
   ) where
 
 -- Wrapper for selected Display frontend.

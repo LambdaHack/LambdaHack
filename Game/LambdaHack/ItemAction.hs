@@ -27,7 +27,7 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Content.ItemKind
 
 -- | Display inventory
-inventory :: Action ()
+inventory :: ActionFrame ()
 inventory = do
   items <- gets getPlayerItem
   if L.null items
@@ -113,7 +113,7 @@ projectGroupItem source tloc verb item = do
   when (sourceVis || projVis) $ msgAdd msg
   advanceTime source
 
-playerProjectGroupItem :: Verb -> Object -> [Char] -> Action ()
+playerProjectGroupItem :: Verb -> Object -> [Char] -> ActionFrame ()
 playerProjectGroupItem verb object syms = do
   ms     <- gets levelMonsterList   -- TODO: exclude projectiles already here
   lxsize <- gets (lxsize . slevel)
@@ -122,7 +122,7 @@ playerProjectGroupItem verb object syms = do
     then abortWith "You can't aim in melee."
     else playerProjectGI verb object syms
 
-playerProjectGI :: Verb -> Object -> [Char] -> Action ()
+playerProjectGI :: Verb -> Object -> [Char] -> ActionFrame ()
 playerProjectGI verb object syms = do
   state <- get
   pl    <- gets splayer
@@ -143,13 +143,14 @@ playerProjectGI verb object syms = do
       targeting <- gets (ctargeting . scursor)
       when (targeting == TgtAuto) $ endTargeting True
       projectGroupItem pl loc (iverbProject $ okind $ jkind item) item
+      returnNoFrame ()
     Nothing -> retarget "Last target invalid."
 
 -- TODO: also target a monster by moving the cursor, if in target monster mode.
 -- TODO: sort monsters by distance to the player.
 
 -- | Start the monster targeting mode. Cycle between monster targets.
-targetMonster :: TgtMode -> Action ()
+targetMonster :: TgtMode -> ActionFrame ()
 targetMonster tgtMode = do
   pl        <- gets splayer
   ms        <- gets (monsterAssocs . slevel)
@@ -175,7 +176,7 @@ targetMonster tgtMode = do
   setCursor tgtMode
 
 -- | Start the floor targeting mode or reset the cursor location to the player.
-targetFloor :: TgtMode -> Action ()
+targetFloor :: TgtMode -> ActionFrame ()
 targetFloor tgtMode = do
   ploc      <- gets (bloc . getPlayerBody)
   target    <- gets (btarget . getPlayerBody)
@@ -190,7 +191,7 @@ targetFloor tgtMode = do
   setCursor tgtMode
 
 -- | Set, activate and display cursor information.
-setCursor :: TgtMode -> Action ()
+setCursor :: TgtMode -> ActionFrame ()
 setCursor tgtMode = assert (tgtMode /= TgtOff) $ do
   state  <- get
   per    <- getPerception
@@ -264,11 +265,11 @@ cancelCurrent = do
 
 -- | Accept something, e.g., targeting mode, keeping cursor where it was.
 -- Or perform the default action, if nothing needs accepting.
-acceptCurrent :: Action () -> Action ()
+acceptCurrent :: ActionFrame () -> ActionFrame ()
 acceptCurrent h = do
   targeting <- gets (ctargeting . scursor)
   if targeting /= TgtOff
-    then endTargeting True
+    then inFrame $ endTargeting True
     else h  -- nothing to accept right now
 
 -- | Drop a single item.
@@ -338,7 +339,7 @@ actorPickupItem actor = do
       isPlayer  = actor == pl
   -- check if something is here to pick up
   case lvl `atI` loc of
-    []   -> abortIfWith isPlayer "nothing here"
+    []   -> abortWith "nothing here"
     i:is -> -- pick up first item; TODO: let pl select item; not for monsters
       case assignLetter (jletter i) (bletter body) bitems of
         Just l -> do
@@ -356,7 +357,7 @@ actorPickupItem actor = do
           updateAnyActor actor $ \ m ->
             m { bletter = maxLetter l (bletter body) }
           modify (updateAnyActorItem actor (const nitems))
-        Nothing -> abortIfWith isPlayer "cannot carry any more"
+        Nothing -> abortWith "cannot carry any more"
   advanceTime actor
 
 pickupItem :: Action ()

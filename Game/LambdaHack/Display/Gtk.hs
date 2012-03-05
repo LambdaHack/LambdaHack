@@ -1,9 +1,10 @@
 -- | Text frontend based on Gtk.
+{-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Game.LambdaHack.Display.Gtk
   ( -- * Session data type for the frontend
     FrontendSession
     -- * The output and input operations
-  , display, nextEvent, promptGetKey
+  , display, nextEvent, promptGetKey, displayNoKey
     -- * Frontend administration tools
   , frontendName, startup, shutdown
   ) where
@@ -353,11 +354,24 @@ nextEvent FrontendSession{schanKey, slastFull, sframeState} (Just True) = do
   return km
 
 -- TODO: simplify
--- | Display a prompt, wait for any of the specified keys.
--- Repeat if an unexpected key received.
+-- | Display a prompt, wait for any of the specified keys (for any key,
+-- if the list is empty). Repeat if an unexpected key received.
 promptGetKey :: FrontendSession -> [(K.Key, K.Modifier)] -> Color.SingleFrame
              -> IO (K.Key, K.Modifier)
-promptGetKey sess@FrontendSession{sframeState} [] frame = do  -- special case
+promptGetKey sess keys frame = do
+  display sess False False $ Just frame
+  km <- nextEvent sess (Just False)
+  let loop km2 =
+        if null keys || km2 `elem` keys
+        then return km2
+        else do
+          km3 <- nextEvent sess Nothing
+          loop km3
+  loop km
+
+-- TODO: simplify
+displayNoKey :: FrontendSession -> Color.SingleFrame -> IO ()
+displayNoKey sess@FrontendSession{sframeState} frame = do
   display sess False False $ Just frame
   -- Take the lock to display the frame.
   fs <- takeMVar sframeState
@@ -369,17 +383,7 @@ promptGetKey sess@FrontendSession{sframeState} [] frame = do  -- special case
       putMVar sframeState FNone
     FPushed{} -> assert `failure` "promptGetKey: FPushed, expecting FSet"
     FNone     -> assert `failure` "promptGetKey: FNone, expecting FSet"
-  return (K.Esc, K.Control)  -- a hack
-promptGetKey sess keys frame = do
-  display sess False False $ Just frame
-  km <- nextEvent sess (Just False)
-  let loop km2 =
-        if km2 `elem` keys
-        then return km2
-        else do
-          km3 <- nextEvent sess Nothing
-          loop km3
-  loop km
+  return ()
 
 -- | Tells a dead key.
 deadKey :: String -> Bool

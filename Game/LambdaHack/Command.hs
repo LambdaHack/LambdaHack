@@ -10,7 +10,6 @@ import Game.LambdaHack.Grammar
 import Game.LambdaHack.EffectAction
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Feature as F
-import Game.LambdaHack.Draw
 
 -- | Abstract syntax of player commands. The type is abstract, but the values
 -- are created outside this module via the Read class (from config file) .
@@ -72,30 +71,30 @@ timedCmd cmd = case cmd of
   _             -> False
 
 -- | The semantics of player commands in terms of the @Action@ monad.
-cmdSemantics :: Cmd -> Action ()
+cmdSemantics :: Cmd -> ActionFrame ()
 cmdSemantics cmd = case cmd of
-  Apply{..}       -> playerApplyGroupItem verb object syms
+  Apply{..}       -> inFrame $ playerApplyGroupItem verb object syms
   Project{..}     -> playerProjectGroupItem verb object syms
-  TriggerDir{..}  -> playerTriggerDir feature verb
-  TriggerTile{..} -> playerTriggerTile feature
-  Pickup ->    pickupItem
-  Drop ->      dropItem
+  TriggerDir{..}  -> inFrame $ playerTriggerDir feature verb
+  TriggerTile{..} -> inFrame $ playerTriggerTile feature
+  Pickup ->    inFrame $ pickupItem
+  Drop ->      inFrame $ dropItem
   Inventory -> inventory
   TgtFloor ->  targetFloor   TgtExplicit
   TgtEnemy ->  targetMonster TgtExplicit
   TgtAscend k -> tgtAscend k
-  EpsIncr b -> epsIncr b
-  GameSave ->  saveGame
-  GameQuit ->  quitGame
-  Cancel ->    cancelCurrent
+  EpsIncr b -> inFrame $ epsIncr b
+  GameSave ->  inFrame $ saveGame
+  GameQuit ->  inFrame $ quitGame
+  Cancel ->    inFrame $ cancelCurrent
   Accept ->    acceptCurrent displayHelp
   History ->   displayHistory
   CfgDump ->   dumpConfig
-  HeroCycle -> cycleHero
-  Version ->   gameVersion
+  HeroCycle -> inFrame $ cycleHero
+  Version ->   inFrame $ gameVersion
   Help ->      displayHelp
-  Wait ->      playerAdvanceTime
-  Redraw ->    displayPrompt ColorFull ""
+  Wait ->      inFrame $ playerAdvanceTime
+  Redraw ->    redraw
 
 -- | Description of player commands.
 cmdDescription :: Cmd -> String

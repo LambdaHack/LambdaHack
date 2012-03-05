@@ -33,9 +33,9 @@ configCmd config =
   in L.map mkCommand section
 
 semanticsCmd :: [(K.Key, Cmd)]
-             -> (Cmd -> Action ())
+             -> (Cmd -> ActionFrame ())
              -> (Cmd -> String)
-             -> [((K.Key, K.Modifier), (String, Action ()))]
+             -> [((K.Key, K.Modifier), (String, ActionFrame ()))]
 semanticsCmd cmdList cmdS cmdD =
   let mkDescribed cmd =
         let semantics = if timedCmd cmd
@@ -47,7 +47,7 @@ semanticsCmd cmdList cmdS cmdD =
 
 -- | If in targeting mode, check if the current level is the same
 -- as player level and refuse performing the action otherwise.
-checkCursor :: Action () -> Action ()
+checkCursor :: ActionFrame () -> ActionFrame ()
 checkCursor h = do
   cursor <- gets scursor
   slid <- gets slid
@@ -55,23 +55,23 @@ checkCursor h = do
     then h
     else abortWith "this command does not work on remote levels"
 
-heroSelection :: [((K.Key, K.Modifier), (String, Action ()))]
+heroSelection :: [((K.Key, K.Modifier), (String, ActionFrame ()))]
 heroSelection =
   let select k = do
         s <- get
         case tryFindHeroK s k of
           Nothing -> abortWith "No such member of the party."
-          Just aid -> void $ selectPlayer aid
+          Just aid -> selectPlayer aid >> returnNoFrame ()
       heroSelect k = ((K.Char (Char.intToDigit k), K.NoModifier),
                       ("", select k))
   in fmap heroSelect [0..9]
 
 -- | Binding of keys to movement and other standard commands,
 -- as well as commands defined in the config file.
-stdBinding :: Config.CP            -- ^ game config
-           -> (Cmd -> Action ())   -- ^ semantics of abstract commands
-           -> (Cmd -> String)      -- ^ description of abstract commands
-           -> Binding (Action ())  -- ^ concrete binding
+stdBinding :: Config.CP                 -- ^ game config
+           -> (Cmd -> ActionFrame ())   -- ^ semantics of abstract commands
+           -> (Cmd -> String)           -- ^ description of abstract commands
+           -> Binding (ActionFrame ())  -- ^ concrete binding
 stdBinding config cmdS cmdD =
   let section = Config.getItems config "macros"
       !kmacro = macroKey section
@@ -89,8 +89,10 @@ stdBinding config cmdS cmdD =
              heroSelection ++
              semList ++
              [ -- Debug commands.
-               ((K.Char 'r', K.Control), ("", modify cycleMarkVision)),
-               ((K.Char 'o', K.Control), ("", modify toggleOmniscient)),
+               ((K.Char 'r', K.Control), ("", modify cycleMarkVision
+                                              >> returnNoFrame ())),
+               ((K.Char 'o', K.Control), ("", modify toggleOmniscient
+                                              >> returnNoFrame ())),
                ((K.Char 'i', K.Control), ("", gets (lmeta . slevel)
                                               >>= abortWith))
              ]

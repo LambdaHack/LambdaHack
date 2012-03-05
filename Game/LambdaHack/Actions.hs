@@ -50,10 +50,10 @@ saveGame = do
       saveGameFile state diary
       let (_, total) = calculateTotal coitem state
           status = H.Camping
-      tryWith end $ do
+      try $ do
         handleScores False status total
         displayMoreCancel "See you soon, stronger and braver!"
-        end
+      end
     else abortWith "Game resumed."
 
 quitGame :: Action ()
@@ -67,7 +67,7 @@ quitGame = do
       end -- no highscore display for quitters
     else abortWith "Game resumed."
 
-moveCursor :: Vector -> Int -> Action ()
+moveCursor :: Vector -> Int -> ActionFrame ()
 moveCursor dir n = do
   lxsize <- gets (lxsize . slevel)
   lysize <- gets (lysize . slevel)
@@ -82,11 +82,13 @@ moveCursor dir n = do
 -- TODO: Think about doing the mode dispatch elsewhere, especially if over
 -- time more and more commands need to do the dispatch inside their code
 -- (currently only a couple do).
-move :: Vector -> Action ()
+move :: Vector -> ActionFrame ()
 move dir = do
   pl <- gets splayer
   targeting <- gets (ctargeting . scursor)
-  if targeting /= TgtOff then moveCursor dir 1 else moveOrAttack True pl dir
+  if targeting /= TgtOff
+    then moveCursor dir 1
+    else moveOrAttack True pl dir
 
 ifRunning :: ((Vector, Int) -> Action a) -> Action a -> Action a
 ifRunning t e = do
@@ -202,7 +204,7 @@ actorOpenDoor actor dir = do
 
 -- | Change the displayed level in targeting mode to (at most)
 -- k levels shallower. Enters targeting mode, if not already in one.
-tgtAscend :: Int -> Action ()
+tgtAscend :: Int -> ActionFrame ()
 tgtAscend k = do
   Kind.COps{cotile} <- getCOps
   cursor    <- gets scursor
@@ -297,7 +299,7 @@ search = do
 moveOrAttack :: Bool       -- ^ allow attacks?
              -> ActorId    -- ^ who's moving?
              -> Vector     -- ^ in which direction?
-             -> Action ()
+             -> ActionFrame ()
 moveOrAttack allowAttacks actor dir = do
   -- We start by looking at the target position.
   cops@Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getCOps
@@ -315,9 +317,9 @@ moveOrAttack allowAttacks actor dir = do
           actorAttackActor actor target
       | accessible cops lvl sloc tloc && bhp (getActor target state) > 0 -> do
           -- Switching positions requires full access.
-          actorRunActor actor target
           when (actor == pl) $
             msgAdd $ lookAt cops False True state lvl tloc ""
+          actorRunActor actor target
       | otherwise -> abortWith "blocked"
     Nothing
       | accessible cops lvl sloc tloc -> do
@@ -326,11 +328,15 @@ moveOrAttack allowAttacks actor dir = do
           when (actor == pl) $
             msgAdd $ lookAt cops False True state lvl tloc ""
           advanceTime actor
+          returnNoFrame ()
       | allowAttacks && actor == pl
         && Tile.canBeHidden cotile (okind $ lvl `rememberAt` tloc) -> do
           msgAdd "You search your surroundings."  -- TODO: proper msg
           search
-      | otherwise -> actorOpenDoor actor dir  -- try to open a door, TODO: bumpTile tloc F.Openable
+          returnNoFrame ()
+      | otherwise -> do
+          actorOpenDoor actor dir  -- try to open a door, TODO: bumpTile tloc F.Openable
+          returnNoFrame ()
 
 -- | Resolves the result of an actor moving into another. Usually this
 -- involves melee attack, but with two heroes it just changes focus.
@@ -339,15 +345,16 @@ moveOrAttack allowAttacks actor dir = do
 -- can be attacked from an adjacent position.
 -- This function is analogous to projectGroupItem, but for melee
 -- and not using up the weapon.
-actorAttackActor :: ActorId -> ActorId -> Action ()
+actorAttackActor :: ActorId -> ActorId -> ActionFrame ()
 actorAttackActor source target = do
   sm <- gets (getActor source)
   tm <- gets (getActor target)
   if bparty sm == heroParty && bparty tm == heroParty
-    then
+    then do
       -- Select adjacent hero by bumping into him. Takes no time.
       selectPlayer target
         >>= assert `trueM` (source, target, "player bumps into himself")
+      returnNoFrame ()
     else do
       Kind.COps{coactor, coitem=coitem@Kind.Ops{opick, okind}} <- getCOps
       state <- get
@@ -378,12 +385,13 @@ actorAttackActor source target = do
           visible = sloc `IS.member` totalVisible per
       when visible $ msgAdd msg
       -- Msgs inside itemEffectAction describe the target part.
-      itemEffectAction verbosity source target single
+      (_, frames) <- itemEffectAction verbosity source target single
       advanceTime source
+      return ((), frames)
 
 -- | Resolves the result of an actor running (not walking) into another.
 -- This involves switching positions of the two actors.
-actorRunActor :: ActorId -> ActorId -> Action ()
+actorRunActor :: ActorId -> ActorId -> ActionFrame ()
 actorRunActor source target = do
   s    <- get
   pl   <- gets splayer
@@ -391,10 +399,12 @@ actorRunActor source target = do
   tloc <- gets (bloc . getActor target)  -- target location
   updateAnyActor source $ \ m -> m { bloc = tloc }
   updateAnyActor target $ \ m -> m { bloc = sloc }
-  if source == pl
-    then stopRunning  -- do not switch positions repeatedly
-    else unless (isAHero s source) $ focusIfAHero target
   advanceTime source
+  if source == pl
+    then inFrame stopRunning  -- do not switch positions repeatedly
+    else whenFrame (not $ isAHero s source) $ do
+      (_, frames) <- focusIfOurs target
+      return ((), frames)
 
 -- | Create a new monster in the level, at a random position.
 rollMonster :: Kind.COps -> Perception -> State -> Rnd State
@@ -462,12 +472,12 @@ regenerateLevelHP = do
   modify (updateLevel (updateActor (IM.mapWithKey (upd hi))))
 
 -- | Display command help.
-displayHelp :: Action ()
+displayHelp :: ActionFrame ()
 displayHelp = do
   keyb <- getBinding
   displayOverlays "Basic keys. [press SPACE or ESC]" $ keyHelp keyb
 
-displayHistory :: Action ()
+displayHistory :: ActionFrame ()
 displayHistory = do
   Diary{shistory} <- getDiary
   stime <- gets stime
@@ -476,10 +486,16 @@ displayHistory = do
       msg = "You adventuring lasts " ++ turn ++ " turns. Past messages:"
   displayOverlays msg $ splitOverlay lysize $ renderHistory shistory
 
-dumpConfig :: Action ()
+dumpConfig :: ActionFrame ()
 dumpConfig = do
   config <- gets sconfig
   let fn = "config.dump"
       msg = "Current configuration dumped to file " ++ fn ++ "."
   dump fn config
-  displayPrompt ColorFull msg
+  fr <- drawPrompt ColorFull msg
+  return ((), [fr])
+
+redraw :: ActionFrame ()
+redraw = do
+  fr <- drawPrompt ColorFull ""
+  return ((), [fr])

@@ -117,7 +117,7 @@ handleMonster actor = do
 nextMove :: Bool -> Action ()
 nextMove dispAlready = do
   debug "nextMove"
-  unless dispAlready $ void displayNothingPush
+  unless dispAlready displayNothingPush
   modify (updateTime (+1))
   regenerateLevelHP
   generateMonster
@@ -135,7 +135,7 @@ handlePlayer = do
     -- If running, stop if aborted by a disturbance.
     -- Otherwise let the player issue commands, until any of them takes time.
     -- First time, just after pushing frames, ask for commands in Push mode.
-    tryWith (stopRunning >> playerCommand (Just True)) $
+    tryWith (stopRunning >> playerCommand) $
       ifRunning continueRun abort
     -- TODO: refactor this:
     state <- get
@@ -152,25 +152,43 @@ handlePlayer = do
     handleAI True
 
 -- | Determine and process the next player command.
-playerCommand :: Maybe Bool -> Action ()
-playerCommand doPush = do
-  -- Report probably shown, so update history and reset current report.
-  -- If the command was aborted, the history was reset so nothing happens.
-  history
+playerCommand :: Action ()
+playerCommand = do
   oldPlayerTime <- gets (btime . getPlayerBody)
-  try $ do  -- on abort, just reset state and call playerCommand again
-    km <- getCommand doPush
-    keyb <- getBinding
-    case M.lookup km (Binding.kcmd keyb) of
-      Just (_, c)  -> c
-      Nothing ->
-        let msg = "unknown command <" ++ K.showKM km ++ ">"
-        in abortWith msg
-  -- The command was aborted or successful and if the latter,
-  -- possibly took some time.
-  newPlayerTime <- gets (btime . getPlayerBody)
-  -- If no time taken, rinse and repeat.
-  when (newPlayerTime == oldPlayerTime) $ playerCommand Nothing
+  keyb <- getBinding
+  let loop :: (K.Key, K.Modifier) -> Action ()
+      loop km = do
+        -- On abort, just reset state and call playerCommand again below.
+        ((), frames) <- tryWith (returnNoFrame ()) $ do
+          -- Messages shown, so update history and reset current report.
+          -- On abort, history gets reset to the old value, just as state.
+          history
+          -- Look up the key.
+          case M.lookup km (Binding.kcmd keyb) of
+            Just (_, c) -> c
+            Nothing -> let msg = "unknown command <" ++ K.showKM km ++ ">"
+                       in abortWith msg
+        -- Analyse the obtained frames.
+        let (mfr, frs) = case reverse frames of
+              []     -> (Nothing, [])
+              f : fs -> (Just f, reverse fs)
+        -- Make a slideshow of all, but last frame.
+        try $ getOverConfirm frs
+        -- The command was aborted or successful and if the latter,
+        -- possibly took some time.
+        newPlayerTime <- gets (btime . getPlayerBody)
+        -- If no time taken, rinse and repeat.
+        if newPlayerTime == oldPlayerTime
+          then do
+            -- Display the last frame while waiting for the next key.
+            kmNext <- maybe (getCommand Nothing) (getChoice []) mfr
+            loop kmNext
+          else
+            -- No next key needed, but display the last frame anyway.
+            maybe (return ()) (void . getConfirm) mfr
+  kmPush <- getCommand (Just True)
+  loop kmPush
+
 
 -- Design thoughts (in order to get rid or partially rid of the somewhat
 -- convoluted design we have): We have three kinds of commands.

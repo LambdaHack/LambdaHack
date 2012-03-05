@@ -218,10 +218,15 @@ dirToAction actor tgt allowAttacks dir = do
   -- set new direction
   updateAnyActor actor $ \ m -> m { bdir = Just (dir, 0), btarget = tgt }
   -- perform action
-  tryWith (advanceTime actor) $
+  tryWith (advanceTime actor) $ do
     -- if the following action aborts, we just advance the time and continue
     -- TODO: ensure time is taken for other aborted actions in this file
-    moveOrAttack allowAttacks actor dir
+    -- TODO: or just fail at each abort in AI code?
+    -- TODO: we currently stop at when frames arrive and require confirmations,
+    -- e.g. for the frames focusing on hit heroes; see how it plays and
+    -- perhaps instead push them ASAP to have them played between enemy moves.
+    ((), frames) <- moveOrAttack allowAttacks actor dir
+    try $ getOverConfirm frames
 
 -- | A strategy to always just wait.
 wait :: ActorId -> Strategy (Action ())

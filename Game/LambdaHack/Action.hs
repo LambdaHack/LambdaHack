@@ -4,14 +4,17 @@
 -- for player and monster actions.
 {-# LANGUAGE MultiParamTypeClasses, RankNTypes #-}
 module Game.LambdaHack.Action
-  ( ActionFun, Action, handlerToIO, end, rndToAction
+  ( ActionFun, Action, ActionFrame
+  , returnNoFrame, whenFrame, inFrame
+  , handlerToIO, end, rndToAction
   , Session(..), getCOps, getBinding
   , tryWith, tryRepeatedlyWith, try, tryRepeatedly, debug
   , abort, abortWith, abortIfWith, neverMind
   , getDiary, historyReset, msgAdd, msgReset
-  , getCommand, displayNothingPush, displayPush, displayPrompt
-  , displayMoreConfirm, displayMoreCancel
-  , displayYesNo, displayChoice, displayOverlays
+  , getCommand, getConfirm, getChoice, getOverConfirm
+  , displayNothingPush, displayPush, drawPrompt
+  , displayMoreConfirm, displayMoreCancel, displayYesNo, displayChoice
+  , displayOverlays, displayOverConfirm
   , withPerception, getPerception, updateAnyActor, updatePlayerBody
   , advanceTime, playerAdvanceTime
   , currentDate, registerHS, saveGameBkp, saveGameFile, dump
@@ -59,6 +62,18 @@ type ActionFun r a =
 newtype Action a = Action
   { runAction :: forall r . ActionFun r a
   }
+
+type ActionFrame a = Action (a, [Color.SingleFrame])
+
+returnNoFrame :: a -> ActionFrame a
+returnNoFrame a = return (a, [])
+
+whenFrame :: Bool -> ActionFrame () -> ActionFrame ()
+whenFrame True x  = x
+whenFrame False _ = returnNoFrame ()
+
+inFrame :: Action () -> ActionFrame ()
+inFrame act = act >> returnNoFrame ()
 
 instance Show (Action a) where
   show _ = "an action"
@@ -110,7 +125,7 @@ handlerToIO sess@Session{sfs, scops} state diary h =
     diary
 
 -- | End the game, i.e., invoke the shutdown continuation.
-end :: Action ()
+end :: Action a
 end = Action (\ _s e _p _k _a s diary -> e s diary)
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
@@ -123,9 +138,9 @@ rndToAction r = do
 
 -- | The constant session information, not saved to the game save file.
 data Session = Session
-  { sfs   :: FrontendSession         -- ^ frontend session information
-  , scops :: Kind.COps               -- ^ game content
-  , skeyb :: Binding (Action ())     -- ^ binding of keys to commands
+  { sfs   :: FrontendSession           -- ^ frontend session information
+  , scops :: Kind.COps                 -- ^ game content
+  , skeyb :: Binding (ActionFrame ())  -- ^ binding of keys to commands
   }
 
 -- | Get the frontend session.
@@ -137,12 +152,12 @@ getCOps :: Action Kind.COps
 getCOps = Action (\ Session{scops} _e _p k _a st ms -> k st ms scops)
 
 -- | Get the key binding.
-getBinding :: Action (Binding (Action ()))
+getBinding :: Action (Binding (ActionFrame ()))
 getBinding = Action (\ Session{skeyb} _e _p k _a st ms -> k st ms skeyb)
 
 -- | Set the current exception handler. First argument is the handler,
 -- second is the computation the handler scopes over.
-tryWith :: Action () -> Action () -> Action ()
+tryWith :: Action a -> Action a -> Action a
 tryWith exc h = Action (\ s e p k a st ms ->
                          let runA = runAction exc s e p k a st ms
                          in runAction h s e p k runA st ms)
@@ -172,7 +187,9 @@ abort = Action (\ _s _e _p _k a _st _ms -> a)
 -- | Print the given msg, then abort.
 abortWith :: Msg -> Action a
 abortWith msg = do
-  displayPrompt ColorFull msg
+  frame <- drawPrompt ColorFull msg
+  fs <- getFrontendSession
+  liftIO $ displayNoKey fs frame
   abort
 
 -- | Abort and print the given msg if the condition is true.
@@ -234,6 +251,7 @@ displayPush = do
       sNew = s {sanim=[]}
   modify (const sNew)
   liftIO $ displayAnimation fs cops per sNew sanim
+  -- TODO: at least some frames should be shown after anim, e.g., focus
   liftIO $ displayLevel fs ColorFull cops per sNew over
 
 -- | Draw the current level. The prompt is displayed, but not added
@@ -247,15 +265,6 @@ drawPrompt dm prompt = do
   Diary{sreport} <- getDiary
   let over = splitReport $ addMsg sreport prompt
   return $ draw dm cops per s over
-
--- TODO: to remove, probably, replaced by addMsg?
--- | Display the current level. The prompt is displayed, but not added
--- to history. The prompt is appended to the current message
--- and only the first screenful of the resulting overlay is displayed.
-displayPrompt :: ColorMode -> Msg -> Action ()
-displayPrompt dm prompt = do
-  frame <- drawPrompt dm prompt
-  displayNoKey frame
 
 -- | Draw the current level. The prompt and the overlay are displayed,
 -- but not added to history. The prompt is appended to the current message
@@ -271,13 +280,6 @@ drawOver dm prompt overlay = do
       msgPrompt = renderReport $ addMsg sreport prompt
       over = padMsg xsize msgPrompt : overlay
   return $ draw dm cops per s over
-
--- | Display a frame and don't expect any key presses.
--- Leaves the frontend in the same neutral state as if a key was pressed.
-displayNoKey :: Color.SingleFrame -> Action ()
-displayNoKey frame = do
-  fs <- getFrontendSession
-  void $ liftIO $ promptGetKey fs [] frame
 
 -- | A yes-no confirmation.
 getYesNo :: Color.SingleFrame -> Action Bool
@@ -299,6 +301,8 @@ displayYesNo prompt = do
   frame <- drawPrompt ColorBW (prompt ++ yesnoMsg)
   getYesNo frame
 
+-- TODO: Find a way to add -more- into the frame, if needed.
+-- Perhaps in the bottom left corner.
 -- | Ignore unexpected kestrokes until a SPACE or ESC is pressed.
 getConfirm :: Color.SingleFrame -> Action Bool
 getConfirm frame = do
@@ -321,20 +325,38 @@ displayMoreConfirm dm prompt = do
 displayMoreCancel :: Msg -> Action ()
 displayMoreCancel prompt = void $ displayMoreConfirm ColorFull prompt
 
+-- TODO: implement with getOverConfirm, rename things so that drawOver
+-- and displayOverConfirm are not confused.
 -- | Print a msg and several overlays, one per page.
--- The return value indicates if the player tried to abort/escape.
-displayOverlays :: Msg -> [Overlay] -> Action ()
-displayOverlays _      []   = return ()
-displayOverlays _      [[]] = return ()  -- extra confirmation at the end
-displayOverlays prompt [x]  = do
+-- The last frame does not expect a confirmation.
+displayOverlays :: Msg -> [Overlay] -> ActionFrame ()
+displayOverlays _      []     = returnNoFrame ()
+displayOverlays prompt [x]    = do
   frame <- drawOver ColorFull prompt x
-  displayNoKey frame
+  return $ ((), [frame])
 displayOverlays prompt (x:xs) = do
   frame <- drawOver ColorFull prompt (x ++ [moreMsg])
   b <- getConfirm frame
   if b
     then displayOverlays prompt xs
     else abort
+
+-- | A series of confirmations for all overlays.
+getOverConfirm :: [Color.SingleFrame] -> Action ()
+getOverConfirm []     = return ()
+getOverConfirm (x:xs) = do
+  b <- getConfirm x
+  if b
+    then getOverConfirm xs
+    else abort
+
+-- | Print a msg and several overlays, one per page.
+-- All frames require confirmations.
+displayOverConfirm :: Msg -> [Overlay] -> Action ()
+displayOverConfirm prompt xs = do
+  let f x = drawOver ColorFull prompt (x ++ [moreMsg])
+  frames <- mapM f xs
+  getOverConfirm frames
 
 -- | Wait for a player keypress.
 getChoice :: [(K.Key, K.Modifier)] -> Color.SingleFrame

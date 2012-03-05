@@ -50,7 +50,7 @@ import qualified Game.LambdaHack.Color as Color
 -- Both actors are on the current level and can be the same actor.
 -- The bool result indicates if the actors identify the effect.
 effectToAction :: Effect.Effect -> Int -> ActorId -> ActorId -> Int
-               -> Action (Bool, String)
+               -> ActionFrame (Bool, String)
 effectToAction Effect.NoEffect _ _ _ _ = nullEffect
 effectToAction Effect.Heal _ _source target power = do
   Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getCOps
@@ -59,15 +59,15 @@ effectToAction Effect.Heal _ _source target power = do
   if bhp tm >= bhpMax tm || power <= 0
     then nullEffect
     else do
-      focusIfAHero target
+      (_, frames) <- focusIfOurs target
       updateAnyActor target (addHp coactor power)  -- TODO: duplicate code in  bhpMax and addHp
-      return (True, actorVerbExtra coactor tm "feel" "better")
+      return ((True, actorVerbExtra coactor tm "feel" "better"), frames)
 effectToAction (Effect.Wound nDm) verbosity source target power = do
   Kind.COps{coactor} <- getCOps
   pl <- gets splayer
   n  <- rndToAction $ rollDice nDm
   if n + power <= 0 then nullEffect else do
-    focusIfAHero target
+    (_, frames) <- focusIfOurs target
     tm <- gets (getActor target)
     let newHP  = bhp tm - n - power
         killed = newHP <= 0
@@ -86,25 +86,33 @@ effectToAction (Effect.Wound nDm) verbosity source target power = do
               show (n + power) ++ "HP"
           | otherwise = actorVerbExtra coactor tm "hiss" "in pain"
     updateAnyActor target $ \ m -> m { bhp = newHP }  -- Damage the target.
-    when killed $ do
-      -- Place the actor's possessions on the map.
-      bitems <- gets (getActorItem target)
-      modify (updateLevel (dropItemsAt bitems (bloc tm)))
-      -- Clean bodies up.
-      if target == pl
-        then checkPartyDeath  -- kills the player and checks game over
-        else modify (deleteActor target)  -- kills the enemy
-    return (True, msg)
+    if killed
+      then do
+        -- Perform all the focusing on the actor before he is killed.
+        getOverConfirm frames
+        -- Place the actor's possessions on the map.
+        bitems <- gets (getActorItem target)
+        modify (updateLevel (dropItemsAt bitems (bloc tm)))
+        -- Clean bodies up.
+        if target == pl
+          then -- Kill the player and check game over.
+               checkPartyDeath
+          else -- Kill the enemy.
+               modify (deleteActor target)
+        returnNoFrame (True, msg)
+      else return ((True, msg), frames)
 effectToAction Effect.Dominate _ source target _power = do
   s <- get
   if not $ isAHero s target
     then do  -- Monsters have weaker will than heroes.
+      -- Can't use @focusIfOurs@, because the actor is specifically not ours.
       selectPlayer target
         >>= assert `trueM` (source, target, "player dominates himself")
       -- Prevent AI from getting a few free moves until new player ready.
       updatePlayerBody (\ m -> m { btime = 0})
-      displayPrompt ColorBW ""
-      return (True, "")
+      -- Display status line and FOV for the newly controlled actor.
+      fr <- drawPrompt ColorBW ""
+      return ((True, ""), [fr])
     else if source == target
          then do
            lm <- gets levelMonsterList
@@ -113,33 +121,34 @@ effectToAction Effect.Dominate _ source target _power = do
            let cross m = bloc m : vicinityCardinal lxsize lysize (bloc m)
                vis = L.concatMap cross lm
            rememberList vis
-           return (True, "A dozen voices yells in anger.")
+           returnNoFrame (True, "A dozen voices yells in anger.")
          else nullEffect
 effectToAction Effect.SummonFriend _ source target power = do
   tm <- gets (getActor target)
   s <- get
-  if isAHero s source
+  ((), frames) <- if isAHero s source
     then summonHeroes (1 + power) (bloc tm)
-    else summonMonsters (1 + power) (bloc tm)
-  return (True, "")
+    else inFrame $ summonMonsters (1 + power) (bloc tm)
+  return ((True, ""), frames)
 effectToAction Effect.SummonEnemy _ source target power = do
   tm <- gets (getActor target)
   s  <- get
-  if not $ isAHero s source  -- a trick: monster player summons a hero
+  -- A trick: monster player summons a hero.
+  ((), frames) <- if not $ isAHero s source
     then summonHeroes (1 + power) (bloc tm)
-    else summonMonsters (1 + power) (bloc tm)
-  return (True, "")
+    else inFrame $ summonMonsters (1 + power) (bloc tm)
+  return ((True, ""), frames)
 effectToAction Effect.ApplyPerfume _ source target _ =
   if source == target
-  then return (True, "Tastes like water, but with a strong rose scent.")
+  then returnNoFrame (True, "Tastes like water, but with a strong rose scent.")
   else do
     let upd lvl = lvl { lsmell = IM.empty }
     modify (updateLevel upd)
-    return (True, "The fragrance quells all scents in the vicinity.")
+    returnNoFrame (True, "The fragrance quells all scents in the vicinity.")
 effectToAction Effect.Regeneration verbosity source target power =
   effectToAction Effect.Heal verbosity source target power
 effectToAction Effect.Searching _ _source _target _power =
-  return (True, "It gets lost and you search in vain.")
+  returnNoFrame (True, "It gets lost and you search in vain.")
 effectToAction Effect.Ascend _ source target power = do
   tm <- gets (getActor target)
   s  <- get
@@ -148,7 +157,7 @@ effectToAction Effect.Ascend _ source target power = do
     then squashActor source target
     else effLvlGoUp (power + 1)
   -- TODO: The following message too late if a monster squashed:
-  return (True, actorVerbExtra coactor tm "find" "a shortcut upstrairs")
+  returnNoFrame (True, actorVerbExtra coactor tm "find" "a shortcut upstrairs")
 effectToAction Effect.Descend _ source target power = do
   tm <- gets (getActor target)
   s  <- get
@@ -157,10 +166,10 @@ effectToAction Effect.Descend _ source target power = do
     then squashActor source target
     else effLvlGoUp (- (power + 1))
   -- TODO: The following message too late if a monster squashed:
-  return (True, actorVerbExtra coactor tm "find" "a shortcut downstairs")
+  returnNoFrame (True,actorVerbExtra coactor tm "find" "a shortcut downstairs")
 
-nullEffect :: Action (Bool, String)
-nullEffect = return (False, "Nothing happens.")
+nullEffect :: ActionFrame (Bool, String)
+nullEffect = returnNoFrame (False, "Nothing happens.")
 
 -- TODO: refactor with actorAttackActor.
 squashActor :: ActorId -> ActorId -> Action ()
@@ -174,16 +183,21 @@ squashActor source target = do
       verb = iverbApply $ okind h2hKind
       msg = actorVerbActorExtra coactor sm verb tm " in a staircase accident"
   msgAdd msg
-  itemEffectAction 0 source target h2h
-    >>= assert `trueM` (source, target, "affected")
+  (b, noFrames) <- itemEffectAction 0 source target h2h
+  -- The monster has to killed, because we may step there next turn.
+  assert (b `blame` (source, target, "affected")) $
+    -- Since monster is squashed, no extra frames generated to focus on it.
+    assert (null noFrames `blame` length noFrames) $
+      return ()
 
 effLvlGoUp :: Int -> Action ()
 effLvlGoUp k = do
-  targeting <- gets (ctargeting . scursor)
   pbody     <- gets getPlayerBody
   pl        <- gets splayer
   slid      <- gets slid
   st        <- get
+  cops      <- getCOps
+  lvl <- gets slevel
   case whereTo st k of
     Nothing -> do -- we are at the "end" of the dungeon
       b <- displayYesNo "Really escape the dungeon?"
@@ -217,6 +231,8 @@ effLvlGoUp k = do
             abortWith "somebody blocks the staircase"
           Just m ->
             -- Somewhat of a workaround: squash monster blocking the staircase.
+            -- This is not a duplication with the other calls to squashActor,
+            -- because here an inactive actor is squashed.
             squashActor pl m
         -- Verify the monster on the staircase died.
         inhabitants2 <- gets (locToActor nloc)
@@ -230,7 +246,8 @@ effLvlGoUp k = do
         state <- get
         diary <- getDiary
         saveGameBkp state diary
-        when (targeting /= TgtOff) doLook  -- TODO: lags behind perception
+        -- TODO: lags behind perception
+        msgAdd $ lookAt cops False True state lvl nloc ""
 
 -- | The player leaves the dungeon.
 fleeDungeon :: Action ()
@@ -250,15 +267,15 @@ fleeDungeon = do
       let winMsg = "Congratulations, you won! Your loot, worth " ++
                    show total ++ " gold, is:"  -- TODO: use the name of the '$' item instead
       io <- itemOverlay True items
-      tryWith end $ do
-        displayOverlays winMsg $ io ++ [[]]
+      try $ do
+        displayOverConfirm winMsg io
         handleScores True H.Victor total
         displayMoreCancel "Can it be done better, though?"
-        end
+      end
 
 -- | The source actor affects the target actor, with a given item.
 -- If the event is seen, the item may get identified.
-itemEffectAction :: Int -> ActorId -> ActorId -> Item -> Action Bool
+itemEffectAction :: Int -> ActorId -> ActorId -> Item -> ActionFrame Bool
 itemEffectAction verbosity source target item = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getCOps
   sm  <- gets (getActor source)
@@ -269,7 +286,8 @@ itemEffectAction verbosity source target item = do
   let effect = ieffect $ okind $ jkind item
       tloc = bloc tm
   -- The msg describes the target part of the action.
-  (b, msg) <- effectToAction effect verbosity source target (jpower item)
+  ((b, msg), frames) <-
+    effectToAction effect verbosity source target (jpower item)
   if isAHero s source ||
      isAHero s target ||
      pl == source ||
@@ -300,7 +318,7 @@ itemEffectAction verbosity source target item = do
       when b $ msgAdd "You hear some noises."
   when (bhp sm <= 0) $
     modify (deleteActor source)  -- destroys items: a hack for projectiles
-  return b
+  return (b, frames)
 
 -- | Make the item known to the player.
 discover :: Item -> Action ()
@@ -323,45 +341,53 @@ discover i = do
 selectPlayer :: ActorId -> Action Bool
 selectPlayer actor = do
   Kind.COps{coactor} <- getCOps
-  pl <- gets splayer
-  targeting <- gets (ctargeting . scursor)
+  pl    <- gets splayer
+  cops  <- getCOps
+  lvl   <- gets slevel
   if actor == pl
     then return False -- already selected
     else do
       state <- get
       let (nln, pbody, _) = findActorAnyLevel actor state
       -- Make the new actor the player-controlled actor.
-      modify (\ s -> s { splayer = actor })
+      modify (\ s -> s {splayer = actor})
       -- Record the original level of the new player.
-      modify (updateCursor (\ c -> c { creturnLn = nln }))
+      modify (updateCursor (\ c -> c {creturnLn = nln}))
       -- Don't continue an old run, if any.
       stopRunning
       -- Switch to the level.
-      modify (\ s -> s{slid = nln})
+      modify (\ s -> s {slid = nln})
       -- Announce.
       msgAdd $ capActor coactor pbody ++ " selected."
-      when (targeting /= TgtOff) doLook
+      msgAdd $ lookAt cops False True state lvl (bloc pbody) ""
       return True
 
-focusIfAHero :: ActorId -> Action ()
-focusIfAHero target = do
-  s <- get
-  when (isAHero s target) $ do
-    -- Focus on the hero being wounded/displaced/etc.
-    b <- selectPlayer target
-    -- Display status line for the new hero.
-    when b $ void $ displayPrompt ColorFull ""
+focusIfOurs :: ActorId -> ActionFrame Bool
+focusIfOurs target = do
+  s  <- get
+  pl <- gets splayer
+  if isAHero s target || target == pl
+    then do
+      -- Focus on the hero being wounded/displaced/etc.
+      b <- selectPlayer target
+      -- Display status line for the new hero.
+      if b
+        then do
+          -- Display status line and FOV for the new hero.
+          fr <- drawPrompt ColorFull ""
+          return (True, [fr])
+        else returnNoFrame False
+    else returnNoFrame False
 
-summonHeroes :: Int -> Point -> Action ()
+summonHeroes :: Int -> Point -> ActionFrame ()
 summonHeroes n loc =
   assert (n > 0) $ do
   cops <- getCOps
   newHeroId <- gets scounter
   modify (\ state -> iterate (addHero cops loc) state !! n)
-  selectPlayer newHeroId
-    >>= assert `trueM` (newHeroId, "player summons himself")
-  -- Display status line for the new hero.
-  void $ displayPrompt ColorFull ""
+  (b, frames) <- focusIfOurs newHeroId
+  assert (b `blame` (newHeroId, "player summons himself")) $
+    return ((), frames)
 
 summonMonsters :: Int -> Point -> Action ()
 summonMonsters n loc = do
@@ -416,13 +442,16 @@ checkPartyDeath = do
                -- Remove the dead player.
                modify deletePlayer
                -- At this place the invariant that the player exists fails.
-               -- Focus on the new hero (invariant not needed).
+               -- Focus on the new hero (invariant not needed),
+               -- though don't draw a frame for him, in case the focus
+               -- changes again during the same turn. He's just a random
+               -- next guy in the line.
                selectPlayer actor
                  >>= assert `trueM` (pl, actor, "player resurrects")
                -- At this place the invariant is restored again.
 
 -- | End game, showing the ending screens, if requested.
-gameOver :: Bool -> Action ()
+gameOver :: Bool -> Action a
 gameOver showEndingScreens = do
   when showEndingScreens $ do
     Kind.COps{coitem} <- getCOps
@@ -451,7 +480,7 @@ handleScores write status total =
                    _ -> total
     let score = H.ScoreRecord points (-time) curDate status
     (placeMsg, slideshow) <- registerHS config write score
-    displayOverlays placeMsg $ slideshow ++ [[]]
+    displayOverConfirm placeMsg slideshow
 
 -- | Create a list of item names, split into many overlays.
 itemOverlay ::Bool -> [Item] -> Action [Overlay]
@@ -481,7 +510,7 @@ history = do
 
 -- TODO: depending on tgt, show extra info about tile or monster or both
 -- | Perform look around in the current location of the cursor.
-doLook :: Action ()
+doLook :: ActionFrame ()
 doLook = do
   cops@Kind.COps{coactor} <- getCOps
   loc    <- gets (clocation . scursor)
@@ -491,29 +520,32 @@ doLook = do
   per    <- getPerception
   target <- gets (btarget . getPlayerBody)
   pl     <- gets splayer
-  let canSee = IS.member loc (totalVisible per)
-      monsterMsg =
-        if canSee
-        then case L.find (\ m -> bloc m == loc) (IM.elems hms) of
-               Just m  -> actorVerbExtra coactor m "be" "here" ++ " "
-               Nothing -> ""
-        else ""
-      vis | not $ loc `IS.member` totalVisible per =
-              " (not visible)"  -- by party
-          | actorReachesLoc pl loc per (Just pl) = ""
-          | otherwise = " (not reachable)"  -- by hero
-      mode = case target of
-               TEnemy _ _ -> "[targeting monster" ++ vis ++ "] "
-               TLoc _     -> "[targeting location" ++ vis ++ "] "
-               TPath _    -> "[targeting path" ++ vis ++ "] "
-               TCursor    -> "[targeting current" ++ vis ++ "] "
-      -- general info about current loc
-      lookMsg = mode ++ lookAt cops True canSee state lvl loc monsterMsg
-      -- check if there's something lying around at current loc
-      is = lvl `rememberAtI` loc
-  msgAdd lookMsg
-  io <- itemOverlay False is
-  when (length is > 2) $ displayOverlays "" io
+  targeting <- gets (ctargeting . scursor)
+  assert (targeting /= TgtOff) $ do
+    let canSee = IS.member loc (totalVisible per)
+        monsterMsg =
+          if canSee
+          then case L.find (\ m -> bloc m == loc) (IM.elems hms) of
+                 Just m  -> actorVerbExtra coactor m "be" "here" ++ " "
+                 Nothing -> ""
+          else ""
+        vis | not $ loc `IS.member` totalVisible per =
+                " (not visible)"  -- by party
+            | actorReachesLoc pl loc per (Just pl) = ""
+            | otherwise = " (not reachable)"  -- by hero
+        mode = case target of
+                 TEnemy _ _ -> "[targeting monster" ++ vis ++ "] "
+                 TLoc _     -> "[targeting location" ++ vis ++ "] "
+                 TPath _    -> "[targeting path" ++ vis ++ "] "
+                 TCursor    -> "[targeting current" ++ vis ++ "] "
+        -- general info about current loc
+        lookMsg = mode ++ lookAt cops True canSee state lvl loc monsterMsg
+        -- check if there's something lying around at current loc
+        is = lvl `rememberAtI` loc
+    msgAdd lookMsg
+    io <- itemOverlay False is
+    whenFrame (length is > 2) $
+      displayOverlays "" io
 
 gameVersion :: Action ()
 gameVersion = do

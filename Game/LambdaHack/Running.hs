@@ -28,7 +28,7 @@ import qualified Game.LambdaHack.Feature as F
 -- succeeds much more often than subsequent steps, because most
 -- of the disturbances are ignored, since the player is aware of them
 -- and still explicitly requests a run.
-run :: (Vector, Int) -> Action ()
+run :: (Vector, Int) -> ActionFrame ()
 run (dir, dist) = do
   cops <- getCOps
   pl <- gets splayer
@@ -173,7 +173,7 @@ continueRun (dirLast, distLast) = do
       openableDir loc dir   = Tile.hasFeature cotile F.Openable
                                 (lvl `at` (loc `shift` dir))
       dirEnterable loc d = accessibleDir loc d || openableDir loc d
-  case runMode locHere dirLast dirEnterable lxsize of
+  ((), frames) <- case runMode locHere dirLast dirEnterable lxsize of
     RunDeadEnd -> abort                   -- we don't run backwards
     RunOpen    -> tryRun dirLast          -- run forward into the open space
     RunHub     -> abort                   -- stop and decide where to go
@@ -185,3 +185,4 @@ continueRun (dirLast, distLast) = do
         RunHub  | turn -> abort           -- stop and decide when to turn
         RunOpen -> tryRunAndStop dirNext  -- no turn, get closer and stop
         RunHub  -> tryRunAndStop dirNext  -- no turn, get closer and stop
+  when (not $ null frames) abort  -- something serious happened, stop running
