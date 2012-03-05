@@ -23,6 +23,7 @@ import Game.LambdaHack.StrategyAction
 import Game.LambdaHack.Running
 import qualified Game.LambdaHack.Tile as Tile
 import qualified Game.LambdaHack.Key as K
+import Game.LambdaHack.Msg
 
 -- One turn proceeds through the following functions:
 --
@@ -135,7 +136,7 @@ handlePlayer = do
     -- If running, stop if aborted by a disturbance.
     -- Otherwise let the player issue commands, until any of them takes time.
     -- First time, just after pushing frames, ask for commands in Push mode.
-    tryWith (stopRunning >> playerCommand) $
+    tryWith (\ msg -> stopRunning >> playerCommand msg) $
       ifRunning continueRun abort
     -- TODO: refactor this:
     state <- get
@@ -151,15 +152,17 @@ handlePlayer = do
     -- The command took some time, so other actors act.
     handleAI True
 
--- | Determine and process the next player command.
-playerCommand :: Action ()
-playerCommand = do
+-- | Determine and process the next player command, given the last abort
+-- message, if any.
+playerCommand :: Msg -> Action ()
+playerCommand msg = do  -- TODO
   oldPlayerTime <- gets (btime . getPlayerBody)
   keyb <- getBinding
+  kmPush <- getCommand (Just True)
   let loop :: (K.Key, K.Modifier) -> Action ()
       loop km = do
         -- On abort, just reset state and call playerCommand again below.
-        ((), frames) <- tryWith (returnNoFrame ()) $ do
+        ((), frames) <- tryWith (\ msg -> returnNoFrame ()) $ do  -- TODO
           -- Messages shown, so update history and reset current report.
           -- On abort, history gets reset to the old value, just as state.
           history
@@ -173,20 +176,20 @@ playerCommand = do
               []     -> (Nothing, [])
               f : fs -> (Just f, reverse fs)
         -- Make a slideshow of all, but last frame.
-        try $ getOverConfirm frs
+        tryIgnore $ getOverConfirm frs
         -- The command was aborted or successful and if the latter,
         -- possibly took some time.
         newPlayerTime <- gets (btime . getPlayerBody)
         -- If no time taken, rinse and repeat.
         if newPlayerTime == oldPlayerTime
           then do
-            -- Display the last frame while waiting for the next key.
+            -- Display the last frame while waiting for the next key
+            -- or, if there is no next frame, just get the key.
             kmNext <- maybe (getCommand Nothing) (getChoice []) mfr
             loop kmNext
           else
             -- No next key needed, but display the last frame anyway.
             maybe (return ()) (void . getConfirm) mfr
-  kmPush <- getCommand (Just True)
   loop kmPush
 
 

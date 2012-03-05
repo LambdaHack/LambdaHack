@@ -50,7 +50,7 @@ saveGame = do
       saveGameFile state diary
       let (_, total) = calculateTotal coitem state
           status = H.Camping
-      try $ do
+      tryIgnore $ do
         handleScores False status total
         displayMoreCancel "See you soon, stronger and braver!"
       end

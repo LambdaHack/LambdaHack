@@ -4,7 +4,7 @@ module Game.LambdaHack.Display.Gtk
   ( -- * Session data type for the frontend
     FrontendSession
     -- * The output and input operations
-  , display, nextEvent, promptGetKey, displayNoKey
+  , display, nextEvent, promptGetKey
     -- * Frontend administration tools
   , frontendName, startup, shutdown
   ) where
@@ -284,7 +284,7 @@ evalFrame FrontendSession{stags} Color.SingleFrame{..} =
 
 -- | Set the frame to be drawn at the next invocation of @nextEvent@.
 -- Fail if there is already a frame pushed or set.
--- Dont show if the frame unchanged from the previous.
+-- Don't show the frame if it's unchanged vs the previous.
 setFrame :: FrontendSession -> Color.SingleFrame -> IO ()
 setFrame sess@FrontendSession{slastFull, sframeState} rawFrame = do
   -- Full evaluation and comparison is done outside the mvar lock.
@@ -313,7 +313,7 @@ nextEvent FrontendSession{schanKey, sframeState} Nothing = do
   -- Take the lock to verify the state.
   fs <- takeMVar sframeState
   case fs of
-    FNone -> putMVar sframeState fs  -- old frame requested, as expected
+    FNone     -> putMVar sframeState fs  -- old frame requested, as expected
     FPushed{} -> assert `failure` "nextEvent: FPushed, expecting FNone"
     FSet{}    -> assert `failure` "nextEvent: FSet, expecting FNone"
   -- Wait for a keypress.
@@ -353,9 +353,10 @@ nextEvent FrontendSession{schanKey, slastFull, sframeState} (Just True) = do
     FNone  -> assert `failure` "nextEvent: FNone, expecting FPushed"
   return km
 
--- TODO: simplify
+-- TODO: simplify a lot
 -- | Display a prompt, wait for any of the specified keys (for any key,
 -- if the list is empty). Repeat if an unexpected key received.
+-- Starts and stop in the None mode.
 promptGetKey :: FrontendSession -> [(K.Key, K.Modifier)] -> Color.SingleFrame
              -> IO (K.Key, K.Modifier)
 promptGetKey sess keys frame = do
@@ -368,22 +369,6 @@ promptGetKey sess keys frame = do
           km3 <- nextEvent sess Nothing
           loop km3
   loop km
-
--- TODO: simplify
-displayNoKey :: FrontendSession -> Color.SingleFrame -> IO ()
-displayNoKey sess@FrontendSession{sframeState} frame = do
-  display sess False False $ Just frame
-  -- Take the lock to display the frame.
-  fs <- takeMVar sframeState
-  case fs of
-    FSet{fsetFrame} -> do
-      -- If the frame not repeated, draw it.
-      maybe (return ()) (postGUIAsync . output sess) fsetFrame
-      -- Clear the stored frame. Release the lock.
-      putMVar sframeState FNone
-    FPushed{} -> assert `failure` "promptGetKey: FPushed, expecting FSet"
-    FNone     -> assert `failure` "promptGetKey: FNone, expecting FSet"
-  return ()
 
 -- | Tells a dead key.
 deadKey :: String -> Bool

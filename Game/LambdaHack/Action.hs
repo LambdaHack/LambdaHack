@@ -8,7 +8,7 @@ module Game.LambdaHack.Action
   , returnNoFrame, whenFrame, inFrame
   , handlerToIO, end, rndToAction
   , Session(..), getCOps, getBinding
-  , tryWith, tryRepeatedlyWith, try, tryRepeatedly, debug
+  , debug, tryWith, tryRepeatedlyWith, tryIgnore
   , abort, abortWith, abortIfWith, neverMind
   , getDiary, historyReset, msgAdd, msgReset
   , getCommand, getConfirm, getChoice, getOverConfirm
@@ -28,6 +28,7 @@ import System.Time
 import Data.Maybe
 -- import System.IO (hPutStrLn, stderr) -- just for debugging
 
+import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Display
 import Game.LambdaHack.Draw
@@ -53,7 +54,7 @@ type ActionFun r a =
    -> (State -> Diary -> IO r)       -- ^ shutdown continuation
    -> Perception                     -- ^ cached perception
    -> (State -> Diary -> a -> IO r)  -- ^ continuation
-   -> IO r                           -- ^ failure/reset continuation
+   -> (Msg -> IO r)                  -- ^ failure/reset continuation
    -> State                          -- ^ current state
    -> Diary                          -- ^ current diary
    -> IO r
@@ -120,7 +121,8 @@ handlerToIO sess@Session{sfs, scops} state diary h =
                  >> shutdown sfs)  -- get out of the game
     (perception scops state)  -- create and cache perception
     (\ _ _ x -> return x)    -- final continuation returns result
-    (ioError $ userError "unhandled abort")  -- e.g., in AI code
+    (\ msg ->
+      ioError $ userError $ "unhandled abort  " ++ msg)  -- e.g., in AI code
     state
     diary
 
@@ -155,42 +157,37 @@ getCOps = Action (\ Session{scops} _e _p k _a st ms -> k st ms scops)
 getBinding :: Action (Binding (ActionFrame ()))
 getBinding = Action (\ Session{skeyb} _e _p k _a st ms -> k st ms skeyb)
 
--- | Set the current exception handler. First argument is the handler,
--- second is the computation the handler scopes over.
-tryWith :: Action a -> Action a -> Action a
-tryWith exc h = Action (\ s e p k a st ms ->
-                         let runA = runAction exc s e p k a st ms
-                         in runAction h s e p k runA st ms)
-
--- | Take a handler and a computation. If the computation fails, the
--- handler is invoked and then the computation is retried.
-tryRepeatedlyWith :: Action () -> Action () -> Action ()
-tryRepeatedlyWith exc h = tryWith (exc >> tryRepeatedlyWith exc h) h
-
--- | Try the given computation and silently catch failure.
-try :: Action () -> Action ()
-try = tryWith (return ())
-
--- | Try the given computation until it succeeds without failure.
-tryRepeatedly :: Action () -> Action ()
-tryRepeatedly = tryRepeatedlyWith (return ())
-
 -- | Debugging.
 debug :: String -> Action ()
 debug _x = return () -- liftIO $ hPutStrLn stderr _x
 
+-- | Set the current exception handler. First argument is the handler,
+-- second is the computation the handler scopes over.
+tryWith :: (Msg -> Action a) -> Action a -> Action a
+tryWith exc h = Action (\ s e p k a st ms ->
+                         let runA msg = runAction (exc msg) s e p k a st ms
+                         in runAction h s e p k runA st ms)
+
+-- | Take a handler and a computation. If the computation fails, the
+-- handler is invoked and then the computation is retried.
+tryRepeatedlyWith ::  (Msg -> Action ()) -> Action () -> Action ()
+tryRepeatedlyWith exc h =
+  tryWith (\ msg -> exc msg >> tryRepeatedlyWith exc h) h
+
+-- | Try the given computation and silently catch failure.
+tryIgnore :: Action () -> Action ()
+tryIgnore = tryWith (\ msg -> if null msg
+                              then return ()
+                              else assert `failure` (msg, "in tryIgnore"))
+
 -- | Reset the state and resume from the last backup point, i.e., invoke
 -- the failure continuation.
 abort :: Action a
-abort = Action (\ _s _e _p _k a _st _ms -> a)
+abort = abortWith ""
 
--- | Print the given msg, then abort.
+-- | Abort with the given message.
 abortWith :: Msg -> Action a
-abortWith msg = do
-  frame <- drawPrompt ColorFull msg
-  fs <- getFrontendSession
-  liftIO $ displayNoKey fs frame
-  abort
+abortWith msg = Action (\ _s _e _p _k a _st _ms -> a msg)
 
 -- | Abort and print the given msg if the condition is true.
 abortIfWith :: Bool -> Msg -> Action a

@@ -10,6 +10,7 @@ import Control.Monad
 import Control.Monad.State hiding (State, state)
 import Control.Arrow
 
+import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Point
 import Game.LambdaHack.Vector
 import Game.LambdaHack.Level
@@ -172,7 +173,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
         -- e.g. for the frames focusing on hit heroes; see how it plays and
         -- perhaps instead push them ASAP to play them between enemy moves.
         do ((), frames) <- applyGroupItem actor (iverbApply ik) i
-           try $ getOverConfirm frames
+           tryIgnore $ getOverConfirm frames
       )
     | i <- is,
       let ik = iokind (jkind i),
@@ -223,15 +224,17 @@ dirToAction actor tgt allowAttacks dir = do
   -- set new direction
   updateAnyActor actor $ \ m -> m { bdir = Just (dir, 0), btarget = tgt }
   -- perform action
-  tryWith (advanceTime actor) $ do
-    -- if the following action aborts, we just advance the time and continue
+  tryWith (\ msg -> if null msg
+                    then advanceTime actor
+                    else assert `failure` (msg, "in AI")) $ do
+    -- If the following action aborts, we just advance the time and continue.
     -- TODO: ensure time is taken for other aborted actions in this file
     -- TODO: or just fail at each abort in AI code?
     -- TODO: we currently stop when frames arrive and require confirmations,
     -- e.g. for the frames focusing on hit heroes; see how it plays and
     -- perhaps instead push them ASAP to have them played between enemy moves.
     ((), frames) <- moveOrAttack allowAttacks actor dir
-    try $ getOverConfirm frames
+    tryIgnore $ getOverConfirm frames
 
 -- | A strategy to always just wait.
 wait :: ActorId -> Strategy (Action ())

@@ -267,7 +267,7 @@ fleeDungeon = do
       let winMsg = "Congratulations, you won! Your loot, worth " ++
                    show total ++ " gold, is:"  -- TODO: use the name of the '$' item instead
       io <- itemOverlay True items
-      try $ do
+      tryIgnore $ do
         displayOverConfirm winMsg io
         handleScores True H.Victor total
         displayMoreCancel "Can it be done better, though?"
