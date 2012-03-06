@@ -54,38 +54,35 @@ import qualified Game.LambdaHack.Color as Color
 effectToAction :: Effect.Effect -> Int -> ActorId -> ActorId -> Int
                -> ActionFrame (Bool, Bool)
 effectToAction effect verbosity source target power = do
+  oldTm <- gets (getActor target)
+  let oldHP = bhp oldTm
+  -- The msg describes the target part of the action.
+  ((b, msg), frames) <- eff effect verbosity source target power
+  -- We assume the target not killed outright by the effect.
   sm  <- gets (getActor source)
   tm  <- gets (getActor target)
   per <- getPerception
   pl  <- gets splayer
   s   <- get
-  let oldHP = bhp tm
-      tloc = bloc tm
-  -- The msg describes the target part of the action.
-  ((b, msg), frames) <- eff effect verbosity source target power
-  if isAHero s source ||
-     isAHero s target ||
-     pl == source ||
-     pl == target ||
-     (tloc `IS.member` totalVisible per &&
-      bloc sm `IS.member` totalVisible per)
+  let tloc = bloc tm
+      newHP = bhp $ getActor target s
+  (bb, frs) <-
+    if isAHero s source ||
+       isAHero s target ||
+       pl == source ||
+       pl == target ||
+       (tloc `IS.member` totalVisible per &&
+        bloc sm `IS.member` totalVisible per)
     then do
-      -- Party sees the effect or affected by it.
-      -- TODO: try to move the death message after the animation is show,
-      -- e.g., by delivering the message as a frame not in 'msg'.
+      -- Party sees the effect or is affected by it.
       msgAdd msg
-      -- Try to show an animation. Will be inserted before @frames@,
-      -- because they can contain the death frame.
-      -- TODO: clean this up, perhaps handle death around here.
+      -- Try to show an animation.
       lxsize <- gets (lxsize . slevel)
       cops <- getCOps
-      sNew <- get
       Diary{sreport} <- getDiary
-      let over = splitReport sreport
-          topLineOnly = case over of
-            [] -> ""
-            x:_ -> padMsg lxsize x
-          basicFrame = draw ColorFull cops per sNew [topLineOnly]
+      let over = renderReport sreport
+          topLineOnly = padMsg lxsize over
+          basicFrame = draw ColorFull cops per s [topLineOnly]
           twirlSplash c1 c2 = map (IM.singleton tloc)
             [ Color.AttrChar (Color.Attr Color.BrWhite Color.defBG) '*'
             , Color.AttrChar (Color.Attr c1 Color.defBG) '/'
@@ -98,17 +95,30 @@ effectToAction effect verbosity source target power = do
             , Color.AttrChar (Color.Attr c2 Color.defBG) '%'
             , Color.AttrChar (Color.Attr c2 Color.defBG) '%'
             ]
-          newHP | not (memActor target sNew) = 0
-                | otherwise = bhp $ getActor target sNew
           anim  | newHP >  oldHP = twirlSplash Color.BrBlue Color.Blue
                 | newHP <  oldHP = twirlSplash Color.BrRed  Color.Red
                 | otherwise      = []
-          animFrs = animate sNew basicFrame anim
+          animFrs = animate s basicFrame anim
       return ((b, True), frames ++ animFrs)
     else do
       -- Hidden, but if interesting then heard.
       when b $ msgAdd "You hear some noises."
       return ((b, False), frames)
+  -- Now kill the actor, if needed.
+  if newHP <= 0
+    then do
+      -- Place the actor's possessions on the map.
+      bitems <- gets (getActorItem target)
+      modify (updateLevel (dropItemsAt bitems (bloc tm)))
+      -- Clean bodies up.
+      if target == pl
+        then do -- Kill the player and check game over.
+          checkPartyDeath frs
+          return (bb, [])  -- frames displayed and so consumed
+        else do -- Kill the enemy.
+          modify (deleteActor target)
+          return (bb, frs)  -- frames unchanged
+    else return (bb, frs)  -- frames unchanged
 
 eff :: Effect.Effect -> Int -> ActorId -> ActorId -> Int
     -> ActionFrame (Bool, String)
@@ -131,14 +141,15 @@ eff (Effect.Wound nDm) verbosity source target power = do
     pl <- gets splayer
     tm <- gets (getActor target)
     let newHP  = bhp tm - n - power
-        killed = newHP <= 0
         msg
-          | killed =
+          | newHP <= 0 =
             if target == pl
-            then ""  -- handled later on in checkPartyDeath
-            else if bhp tm == 0
-                 then actorVerbExtra coactor tm "drop" "down"  -- TODO: hack:
-                 else actorVerb coactor tm "die"  -- for projectiles
+            then ""  -- Handled later on in checkPartyDeath. Suspense.
+            else -- Not as important, so let the player read the message
+                 -- about monster death while he watches the combat animation.
+              if bhp tm == 0
+              then actorVerbExtra coactor tm "drop" "down"  -- TODO: hack:
+              else actorVerb coactor tm "die"  -- for projectiles
           | source == target =  -- a potion of wounding, etc.
             actorVerbExtra coactor tm "feel" "wounded"
           | verbosity <= 0 = ""
@@ -147,22 +158,7 @@ eff (Effect.Wound nDm) verbosity source target power = do
               show (n + power) ++ "HP"
           | otherwise = actorVerbExtra coactor tm "hiss" "in pain"
     updateAnyActor target $ \ m -> m { bhp = newHP }  -- Damage the target.
-    if killed
-      then do
-        -- Perform all the focusing on the actor before he is killed.
-        -- TODO: clean up
-        tryIgnore $ getOverConfirm $ catMaybes frames
-        -- Place the actor's possessions on the map.
-        bitems <- gets (getActorItem target)
-        modify (updateLevel (dropItemsAt bitems (bloc tm)))
-        -- Clean bodies up.
-        if target == pl
-          then -- Kill the player and check game over.
-               checkPartyDeath
-          else -- Kill the enemy.
-               modify (deleteActor target)
-        returnNoFrame (True, msg)
-      else return ((True, msg), frames)
+    return ((True, msg), frames)
 eff Effect.Dominate _ source target _power = do
   s <- get
   if not $ isAHero s target
@@ -435,17 +431,19 @@ summonMonsters n loc = do
 -- For now we only check the selected hero and at current level,
 -- but if poison, etc. is implemented, we'd need to check all heroes
 -- on any level.
-checkPartyDeath :: Action ()
-checkPartyDeath = do
+checkPartyDeath :: [Maybe Color.SingleFrame] -> Action ()
+checkPartyDeath frs = do
   Kind.COps{coactor} <- getCOps
   ahs    <- gets allHeroesAnyLevel
   pl     <- gets splayer
   pbody  <- gets getPlayerBody
   config <- gets sconfig
   when (bhp pbody <= 0) $ do
+    -- Push all frames with combat animations, etc., before --more--.
+    mapM_ displayFramePush frs
     msgAdd $ actorVerb coactor pbody "die"
     go <- displayMoreConfirm ColorBW ""
-    recordHistory  -- Prevent the msgs from being repeated.
+    recordHistory  -- Prevent repeating the "die" msgs.
     let firstDeathEnds = Config.get config "heroes" "firstDeathEnds"
     if firstDeathEnds
       then gameOver go
@@ -458,8 +456,8 @@ checkPartyDeath = do
                -- Remove the dead player.
                modify deletePlayer
                -- At this place the invariant that the player exists fails.
-               -- Focus on the new hero (invariant not needed),
-               -- though don't draw a frame for him, in case the focus
+               -- Select the new player-controlled hero (invariant not needed),
+               -- but don't draw a frame for him, in case the focus
                -- changes again during the same turn. He's just a random
                -- next guy in the line.
                selectPlayer actor

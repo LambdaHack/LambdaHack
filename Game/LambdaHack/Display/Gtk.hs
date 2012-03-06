@@ -358,8 +358,9 @@ nextEvent sess@FrontendSession{schanKey, sframeState} (Just True) = do
 
 -- | Display a prompt, wait for any of the specified keys (for any key,
 -- if the list is empty). Repeat if an unexpected key received.
--- Starts and stop in the None mode. Spends most time waiting for a key,
--- so not performance critical, so does not optimization.
+-- Starts in Push or None, stop in the None mode.
+-- Spends most time waiting for a key, so not performance critical,
+-- so does not need optimization.
 promptGetKey :: FrontendSession -> [(K.Key, K.Modifier)] -> Color.SingleFrame
              -> IO (K.Key, K.Modifier)
 promptGetKey sess@FrontendSession{sframeState} keys frame = do
