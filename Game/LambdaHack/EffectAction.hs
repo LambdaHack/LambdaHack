@@ -64,10 +64,10 @@ effectToAction Effect.Heal _ _source target power = do
       return ((True, actorVerbExtra coactor tm "feel" "better"), frames)
 effectToAction (Effect.Wound nDm) verbosity source target power = do
   Kind.COps{coactor} <- getCOps
-  pl <- gets splayer
   n  <- rndToAction $ rollDice nDm
   if n + power <= 0 then nullEffect else do
     (_, frames) <- focusIfOurs target
+    pl <- gets splayer
     tm <- gets (getActor target)
     let newHP  = bhp tm - n - power
         killed = newHP <= 0
