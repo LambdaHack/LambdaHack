@@ -132,10 +132,9 @@ triggerTile dloc = do
   lvl <- gets slevel
   let f (F.Cause effect) = do
         pl <- gets splayer
--- TODO: take care of AI using this function (aborts, etc.)
--- and show animations, etc. if it's not AI and show the messages (_msg)
--- and focus on the hero only if seen (_b), etc.
-        (_b, _msg) <- effectToAction effect 0 pl pl 0
+-- TODO: take care of AI using this function (aborts, etc.).
+-- If it's not AI show or pass along the frames.
+        (_b, _frames) <- effectToAction effect 0 pl pl 0
         return ()
       f (F.ChangeTo group) = do
         Level{lactor} <- gets slevel
@@ -387,7 +386,7 @@ actorAttackActor source target = do
           visible = sloc `IS.member` totalVisible per
       when visible $ msgAdd msg
       -- Msgs inside itemEffectAction describe the target part.
-      (_, frames) <- itemEffectAction verbosity source target single
+      ((), frames) <- itemEffectAction verbosity source target single
       advanceTime source
       return ((), frames)
 

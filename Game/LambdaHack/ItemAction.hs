@@ -66,7 +66,7 @@ applyGroupItem actor verb item = do
       loc = bloc body
   removeFromInventory actor consumed loc
   when (loc `IS.member` totalVisible per) $ msgAdd msg
-  (_, frames) <- itemEffectAction 5 actor actor consumed
+  ((), frames) <- itemEffectAction 5 actor actor consumed
   advanceTime actor
   return ((), frames)
 

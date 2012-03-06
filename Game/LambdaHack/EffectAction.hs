@@ -48,11 +48,60 @@ import qualified Game.LambdaHack.Color as Color
 -- | The source actor affects the target actor, with a given effect and power.
 -- The second argument is verbosity of the resulting message.
 -- Both actors are on the current level and can be the same actor.
--- The bool result indicates if the actors identify the effect.
+-- The first bool result indicates if the effect was spectacular enough
+-- for the actors to identify it (and the item that caused it, if any).
+-- The second bool tells if the effect was seen by or affected the party.
 effectToAction :: Effect.Effect -> Int -> ActorId -> ActorId -> Int
-               -> ActionFrame (Bool, String)
-effectToAction Effect.NoEffect _ _ _ _ = nullEffect
-effectToAction Effect.Heal _ _source target power = do
+               -> ActionFrame (Bool, Bool)
+effectToAction effect verbosity source target power = do
+  sm  <- gets (getActor source)
+  tm  <- gets (getActor target)
+  per <- getPerception
+  pl  <- gets splayer
+  s   <- get
+  let oldHP = bhp tm
+      tloc = bloc tm
+  -- The msg describes the target part of the action.
+  ((b, msg), frames) <- eff effect verbosity source target power
+  if isAHero s source ||
+     isAHero s target ||
+     pl == source ||
+     pl == target ||
+     (tloc `IS.member` totalVisible per &&
+      bloc sm `IS.member` totalVisible per)
+    then do
+      -- Party sees or affected, so reported.
+      msgAdd msg
+      -- Party sees or affected, so show an animation.
+      sNew <- get
+      let twirlSplash c1 c2 = map (IM.singleton tloc)
+            [ Color.AttrChar (Color.Attr Color.BrWhite Color.defBG) '*'
+            , Color.AttrChar (Color.Attr c1 Color.defBG) '/'
+            , Color.AttrChar (Color.Attr c1 Color.defBG) '-'
+            , Color.AttrChar (Color.Attr c1 Color.defBG) '\\'
+            , Color.AttrChar (Color.Attr c1 Color.defBG) '|'
+            , Color.AttrChar (Color.Attr c1 Color.defBG) '/'
+            , Color.AttrChar (Color.Attr c1 Color.defBG) '-'
+            , Color.AttrChar (Color.Attr c2 Color.defBG) '\\'
+            , Color.AttrChar (Color.Attr c2 Color.defBG) '%'
+            , Color.AttrChar (Color.Attr c2 Color.defBG) '%'
+            ]
+          newHP | not (memActor target sNew) = 0
+                | otherwise = bhp $ getActor target sNew
+          animNew | newHP >  oldHP = twirlSplash Color.BrBlue Color.Blue
+                  | newHP <  oldHP = twirlSplash Color.BrRed  Color.Red
+                  | otherwise      = []
+      modify (\st@State{sanim} -> st {sanim = sanim ++ animNew})
+      return ((b, True), frames)
+    else do
+      -- Hidden, but if interesting then heard.
+      when b $ msgAdd "You hear some noises."
+      return ((b, False), frames)
+
+eff :: Effect.Effect -> Int -> ActorId -> ActorId -> Int
+    -> ActionFrame (Bool, String)
+eff Effect.NoEffect _ _ _ _ = nullEffect
+eff Effect.Heal _ _source target power = do
   Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getCOps
   let bhpMax m = maxDice (ahp $ okind $ bkind m)
   tm <- gets (getActor target)
@@ -62,7 +111,7 @@ effectToAction Effect.Heal _ _source target power = do
       (_, frames) <- focusIfOurs target
       updateAnyActor target (addHp coactor power)  -- TODO: duplicate code in  bhpMax and addHp
       return ((True, actorVerbExtra coactor tm "feel" "better"), frames)
-effectToAction (Effect.Wound nDm) verbosity source target power = do
+eff (Effect.Wound nDm) verbosity source target power = do
   Kind.COps{coactor} <- getCOps
   n  <- rndToAction $ rollDice nDm
   if n + power <= 0 then nullEffect else do
@@ -101,7 +150,7 @@ effectToAction (Effect.Wound nDm) verbosity source target power = do
                modify (deleteActor target)
         returnNoFrame (True, msg)
       else return ((True, msg), frames)
-effectToAction Effect.Dominate _ source target _power = do
+eff Effect.Dominate _ source target _power = do
   s <- get
   if not $ isAHero s target
     then do  -- Monsters have weaker will than heroes.
@@ -123,14 +172,14 @@ effectToAction Effect.Dominate _ source target _power = do
            rememberList vis
            returnNoFrame (True, "A dozen voices yells in anger.")
          else nullEffect
-effectToAction Effect.SummonFriend _ source target power = do
+eff Effect.SummonFriend _ source target power = do
   tm <- gets (getActor target)
   s <- get
   ((), frames) <- if isAHero s source
     then summonHeroes (1 + power) (bloc tm)
     else inFrame $ summonMonsters (1 + power) (bloc tm)
   return ((True, ""), frames)
-effectToAction Effect.SummonEnemy _ source target power = do
+eff Effect.SummonEnemy _ source target power = do
   tm <- gets (getActor target)
   s  <- get
   -- A trick: monster player summons a hero.
@@ -138,18 +187,18 @@ effectToAction Effect.SummonEnemy _ source target power = do
     then summonHeroes (1 + power) (bloc tm)
     else inFrame $ summonMonsters (1 + power) (bloc tm)
   return ((True, ""), frames)
-effectToAction Effect.ApplyPerfume _ source target _ =
+eff Effect.ApplyPerfume _ source target _ =
   if source == target
   then returnNoFrame (True, "Tastes like water, but with a strong rose scent.")
   else do
     let upd lvl = lvl { lsmell = IM.empty }
     modify (updateLevel upd)
     returnNoFrame (True, "The fragrance quells all scents in the vicinity.")
-effectToAction Effect.Regeneration verbosity source target power =
-  effectToAction Effect.Heal verbosity source target power
-effectToAction Effect.Searching _ _source _target _power =
+eff Effect.Regeneration verbosity source target power =
+  eff Effect.Heal verbosity source target power
+eff Effect.Searching _ _source _target _power =
   returnNoFrame (True, "It gets lost and you search in vain.")
-effectToAction Effect.Ascend _ source target power = do
+eff Effect.Ascend _ source target power = do
   tm <- gets (getActor target)
   s  <- get
   Kind.COps{coactor} <- getCOps
@@ -158,7 +207,7 @@ effectToAction Effect.Ascend _ source target power = do
     else effLvlGoUp (power + 1)
   -- TODO: The following message too late if a monster squashed:
   returnNoFrame (True, actorVerbExtra coactor tm "find" "a shortcut upstrairs")
-effectToAction Effect.Descend _ source target power = do
+eff Effect.Descend _ source target power = do
   tm <- gets (getActor target)
   s  <- get
   Kind.COps{coactor} <- getCOps
@@ -183,9 +232,10 @@ squashActor source target = do
       verb = iverbApply $ okind h2hKind
       msg = actorVerbActorExtra coactor sm verb tm " in a staircase accident"
   msgAdd msg
-  (b, noFrames) <- itemEffectAction 0 source target h2h
+  ((), noFrames) <- itemEffectAction 0 source target h2h
+  s <- get
   -- The monster has to killed, because we may step there next turn.
-  assert (b `blame` (source, target, "affected")) $
+  assert (not (memActor target s) `blame` (source, target, "not killed")) $
     -- Since monster is squashed, no extra frames generated to focus on it.
     assert (null noFrames `blame` length noFrames) $
       return ()
@@ -275,57 +325,21 @@ fleeDungeon = do
 
 -- | The source actor affects the target actor, with a given item.
 -- If the event is seen, the item may get identified.
-itemEffectAction :: Int -> ActorId -> ActorId -> Item -> ActionFrame Bool
+itemEffectAction :: Int -> ActorId -> ActorId -> Item -> ActionFrame ()
 itemEffectAction verbosity source target item = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getCOps
-  sm  <- gets (getActor source)
-  tm  <- gets (getActor target)
-  per <- getPerception
-  pl  <- gets splayer
-  s   <- get
-  let oldHP = bhp tm
-      effect = ieffect $ okind $ jkind item
-      tloc = bloc tm
+  sm <- gets (getActor source)
+  let effect = ieffect $ okind $ jkind item
   -- The msg describes the target part of the action.
-  ((b, msg), frames) <-
+  ((b1, b2), frames) <-
     effectToAction effect verbosity source target (jpower item)
-  if isAHero s source ||
-     isAHero s target ||
-     pl == source ||
-     pl == target ||
-     (tloc `IS.member` totalVisible per &&
-      bloc sm `IS.member` totalVisible per)
-    then do
-      -- Party sees or affected, so reported.
-      msgAdd msg
-      -- Party sees or affected, so if interesting, the item gets identified.
-      when b $ discover item
-      sNew <- get
-      -- Party sees or affected, so show an animation.
-      let twirlSplash c1 c2 = map (IM.singleton tloc)
-            [ Color.AttrChar (Color.Attr Color.BrWhite Color.defBG) '*'
-            , Color.AttrChar (Color.Attr c1 Color.defBG) '/'
-            , Color.AttrChar (Color.Attr c1 Color.defBG) '-'
-            , Color.AttrChar (Color.Attr c1 Color.defBG) '\\'
-            , Color.AttrChar (Color.Attr c1 Color.defBG) '|'
-            , Color.AttrChar (Color.Attr c1 Color.defBG) '/'
-            , Color.AttrChar (Color.Attr c1 Color.defBG) '-'
-            , Color.AttrChar (Color.Attr c2 Color.defBG) '\\'
-            , Color.AttrChar (Color.Attr c2 Color.defBG) '%'
-            , Color.AttrChar (Color.Attr c2 Color.defBG) '%'
-            ]
-          newHP | not (memActor target sNew) = 0
-                | otherwise = bhp $ getActor target sNew
-          animNew | newHP >  oldHP = twirlSplash Color.BrBlue Color.Blue
-                  | newHP <  oldHP = twirlSplash Color.BrRed  Color.Red
-                  | otherwise      = []
-      modify (\st@State{sanim=animOld} -> st {sanim = animOld ++ animNew})
-    else
-      -- Hidden, but if interesting then heard.
-      when b $ msgAdd "You hear some noises."
+  -- Party sees or affected, and the effect interesting,
+  -- so the item gets identified.
+  when (b1 && b2) $ discover item
+  -- Destroys attacking actor and its items: a hack for projectiles.
   when (bhp sm <= 0) $
-    modify (deleteActor source)  -- destroys items: a hack for projectiles
-  return (b, frames)
+    modify (deleteActor source)
+  return ((), frames)
 
 -- | Make the item known to the player.
 discover :: Item -> Action ()
