@@ -229,7 +229,7 @@ dirToAction actor tgt allowAttacks dir = do
                     else assert `failure` (msg, "in AI")) $ do
     -- If the following action aborts, we just advance the time and continue.
     -- TODO: ensure time is taken for other aborted actions in this file
-    -- TODO: or just fail at each abort in AI code?
+    -- TODO: or just fail at each abort in AI code? or use tryWithFrame
     -- TODO: we currently stop when frames arrive and require confirmations,
     -- e.g. for the frames focusing on hit heroes; see how it plays and
     -- perhaps instead push them ASAP to have them played between enemy moves.

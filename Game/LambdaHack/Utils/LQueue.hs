@@ -3,6 +3,8 @@ module Game.LambdaHack.Utils.LQueue
   ( LQueue, newLQueue, nullLQueue, trimLQueue, tryReadLQueue, writeLQueue
   ) where
 
+import Data.Maybe
+
 -- | Queues implemented with two stacks.
 type LQueue a = ([a], [a])  -- (read_end, write_end)
 
@@ -14,11 +16,13 @@ newLQueue = ([], [])
 nullLQueue :: LQueue a -> Bool
 nullLQueue (rs, ws) = null rs && null ws
 
--- | Remove all but the last written element of the queue.
-trimLQueue :: LQueue a -> LQueue a
-trimLQueue (_, w:_) = ([w], [])
-trimLQueue ([], []) = ([], [])
-trimLQueue (rs, []) = ([last rs], [])
+-- | Remove all but the last written non-@Nothing@ element of the queue.
+trimLQueue :: LQueue (Maybe a) -> LQueue (Maybe a)
+trimLQueue (rs, ws) =
+  let trim (_, w:_) = ([w], [])
+      trim ([], []) = ([], [])
+      trim (rsj, []) = ([last rsj], [])
+  in trim (filter isJust rs, filter isJust ws)
 
 -- | Try reading a queue. Return @Nothing@ if empty. Waits on the lock.
 tryReadLQueue :: LQueue a -> Maybe (a, LQueue a)

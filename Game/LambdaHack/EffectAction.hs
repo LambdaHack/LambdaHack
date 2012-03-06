@@ -89,7 +89,7 @@ effectToAction (Effect.Wound nDm) verbosity source target power = do
     if killed
       then do
         -- Perform all the focusing on the actor before he is killed.
-        getOverConfirm frames
+        tryIgnore $ getOverConfirm frames
         -- Place the actor's possessions on the map.
         bitems <- gets (getActorItem target)
         modify (updateLevel (dropItemsAt bitems (bloc tm)))
@@ -545,7 +545,7 @@ doLook = do
     msgAdd lookMsg
     io <- itemOverlay False is
     whenFrame (length is > 2) $
-      displayOverlays "" io
+      tryIgnoreFrame $ displayOverlays "" io
 
 gameVersion :: Action ()
 gameVersion = do

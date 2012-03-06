@@ -243,6 +243,7 @@ pushFrame sess@FrontendSession{sframeState, slastFull} noTimeout rawFrame = do
         if frame == Just lastFrame
         then Nothing  -- no sense repeating
         else frame
+  -- Now we take the lock.
   fs <- takeMVar sframeState
   case fs of
     FPushed{..} ->
@@ -250,17 +251,7 @@ pushFrame sess@FrontendSession{sframeState, slastFull} noTimeout rawFrame = do
       then putMVar sframeState fs  -- old news
       else putMVar sframeState
              FPushed{fpushed = writeLQueue fpushed nextFrame, ..}
---    FSet{} -> assert `failure` "pushFrame: FSet state"
-    -- TODO: A hack until we ensure correctness via types in game logic.
-    -- The Action type should be parameterized by a phantom type representing
-    -- the frame state or, later, done in a way that can't be subverted
-    -- as easily.
-    -- The rawFrame is ignored, but next frames won't be.
-    FSet{fsetFrame} ->
-      putMVar sframeState
-             FPushed{ fpushed = writeLQueue newLQueue fsetFrame
-                    , fshown = dummyFrame
-                    }
+    FSet{} -> assert `failure` "pushFrame: FSet, expecting FPushed or FNone"
     FNone ->
       -- Never start playing with an empty frame.
       let fpushed = if isJust nextFrame
@@ -268,6 +259,7 @@ pushFrame sess@FrontendSession{sframeState, slastFull} noTimeout rawFrame = do
                     else newLQueue
           fshown = dummyFrame
       in putMVar sframeState FPushed{..}
+  yield  -- drawing has priority
   case nextFrame of
     Nothing -> writeIORef slastFull (lastFrame, True)
     Just f  -> writeIORef slastFull (f, noTimeout)
@@ -294,26 +286,28 @@ setFrame sess@FrontendSession{slastFull, sframeState} rawFrame = do
         if frame == lastFrame
         then Nothing  -- no sense repeating
         else Just frame
+  -- Now we take the lock.
   fs <- takeMVar sframeState
   case fs of
-    FPushed{} -> assert `failure` "setFrame: FPushed state"
-    FSet{} -> assert `failure` "setFrame: FSet state"
+    FPushed{} -> assert `failure` "setFrame: FPushed, expecting FNone"
+    FSet{} -> assert `failure` "setFrame: FSet, expecting FNone"
     FNone -> do
       -- Update the last received frame with the processed frame.
       -- There is no race condition, because we are on the same thread
       -- as pushFrame.
       maybe (return ()) (\ fr -> writeIORef slastFull (fr, False)) fsetFrame
-      -- Store the frame. Release the lock.
-      putMVar sframeState FSet{..}
+  -- Store the frame. Release the lock.
+  putMVar sframeState FSet{..}
 
 -- | Set key via the frontend. Fail if there is no frame to show
 -- to the player as a prompt for the keypress.
 nextEvent :: FrontendSession -> Maybe Bool -> IO (K.Key, K.Modifier)
 nextEvent FrontendSession{schanKey, sframeState} Nothing = do
-  -- Take the lock to verify the state.
-  fs <- takeMVar sframeState
+  -- Verify the state.
+  -- Assumption: no other thread changes the main constructor in sframeState.
+  fs <- readMVar sframeState
   case fs of
-    FNone     -> putMVar sframeState fs  -- old frame requested, as expected
+    FNone     -> return ()  -- old frame requested, as expected
     FPushed{} -> assert `failure` "nextEvent: FPushed, expecting FNone"
     FSet{}    -> assert `failure` "nextEvent: FSet, expecting FNone"
   -- Wait for a keypress.
@@ -326,42 +320,58 @@ nextEvent sess@FrontendSession{schanKey, sframeState} (Just False) = do
     FSet{fsetFrame} -> do
       -- If the frame not repeated, draw it.
       maybe (return ()) (postGUIAsync . output sess) fsetFrame
-      -- Clear the stored frame. Release the lock.
-      putMVar sframeState FNone
     FPushed{} -> assert `failure` "nextEvent: FPushed, expecting FSet"
     FNone     -> assert `failure` "nextEvent: FNone, expecting FSet"
+  -- Clear the stored frame. Release the lock.
+  putMVar sframeState FNone
   -- Wait for a keypress.
   km <- readChan schanKey
   return km
-nextEvent FrontendSession{schanKey, slastFull, sframeState} (Just True) = do
+nextEvent sess@FrontendSession{schanKey, sframeState} (Just True) = do
   -- Wait for a keypress.
   km <- readChan schanKey
-  -- Take the lock to clear the frame queue.
+  -- Trim the queue.
+  trimQueue sess
+  -- Take the lock to wipe out the frame queue, unless it's empty already.
   fs <- takeMVar sframeState
   case fs of
-    FPushed{fshown} -> do
-      -- Frame is already drawn or being drawn from the queue.
-      -- Update the last received frame with the last shown,
-      -- because we clear the queue and so invalidate the old value.
-      -- There is no race condition, because we are on the same thread
-      -- as pushFrame and the lock synchronizes us with drawFrame.
-      writeIORef slastFull (fshown, False)
-      -- Clear the frame queue. No more frames will arrive, because we are
-      -- on the same thread as pushFrame. Release the lock.
-      putMVar sframeState FNone
+    FPushed{..} -> do
+      -- Draw the last frame ASAP.
+      case tryReadLQueue fpushed of
+        Just (Just frame, queue) -> assert (nullLQueue queue) $ do
+          -- Comparison is done inside the mvar lock, this time, but it's OK.
+          let lastFrame = fshown
+              nextFrame =
+                if frame == lastFrame
+                then Nothing  -- no sense repeating
+                else Just frame
+          maybe (return ()) (postGUIAsync . output sess) nextFrame
+        Just (Nothing, _) ->  assert `failure` "nextEvent: trimmed queue"
+        Nothing -> return ()
     FSet{} -> assert `failure` "nextEvent: FSet, expecting FPushed"
     FNone  -> assert `failure` "nextEvent: FNone, expecting FPushed"
+  -- Wipe out the frame queue. No more frames will arrive, because we are
+  -- on the same thread as pushFrame. Release the lock.
+  putMVar sframeState FNone
   return km
 
--- TODO: simplify a lot
 -- | Display a prompt, wait for any of the specified keys (for any key,
 -- if the list is empty). Repeat if an unexpected key received.
--- Starts and stop in the None mode.
+-- Starts and stop in the None mode. Spends most time waiting for a key,
+-- so not performance critical, so does not optimization.
 promptGetKey :: FrontendSession -> [(K.Key, K.Modifier)] -> Color.SingleFrame
              -> IO (K.Key, K.Modifier)
-promptGetKey sess keys frame = do
-  display sess False False $ Just frame
-  km <- nextEvent sess (Just False)
+promptGetKey sess@FrontendSession{sframeState} keys frame = do
+  -- Assumption: no other thread changes the main constructor in sframeState.
+  fs <- readMVar sframeState
+  yield  -- drawing has priority
+  let doPush = case fs of
+        FPushed{} -> True
+        FSet{}    ->
+          assert `failure` "promptGetKey: FSet, expecting FPushed or FNone"
+        FNone     -> False
+  display sess doPush True $ Just frame
+  km <- nextEvent sess (Just doPush)
   let loop km2 =
         if null keys || km2 `elem` keys
         then return km2

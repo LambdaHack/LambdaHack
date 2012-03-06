@@ -89,12 +89,12 @@ cmdSemantics cmd = case cmd of
   Cancel ->    inFrame $ cancelCurrent
   Accept ->    acceptCurrent displayHelp
   History ->   displayHistory
-  CfgDump ->   dumpConfig
+  CfgDump ->   inFrame $ dumpConfig
   HeroCycle -> inFrame $ cycleHero
   Version ->   inFrame $ gameVersion
   Help ->      displayHelp
   Wait ->      inFrame $ playerAdvanceTime
-  Redraw ->    redraw
+  Redraw ->    inFrame $ redraw
 
 -- | Description of player commands.
 cmdDescription :: Cmd -> String

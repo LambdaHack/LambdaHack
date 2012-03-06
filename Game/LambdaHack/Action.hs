@@ -8,7 +8,7 @@ module Game.LambdaHack.Action
   , returnNoFrame, whenFrame, inFrame
   , handlerToIO, end, rndToAction
   , Session(..), getCOps, getBinding
-  , debug, tryWith, tryRepeatedlyWith, tryIgnore
+  , debug, tryWith, tryWithFrame, tryRepeatedlyWith, tryIgnore, tryIgnoreFrame
   , abort, abortWith, abortIfWith, neverMind
   , getDiary, historyReset, msgAdd, msgReset
   , getCommand, getConfirm, getChoice, getOverConfirm
@@ -168,17 +168,40 @@ tryWith exc h = Action (\ s e p k a st ms ->
                          let runA msg = runAction (exc msg) s e p k a st ms
                          in runAction h s e p k runA st ms)
 
+-- | Set the current exception handler. Apart of executing it,
+-- draw and pass along a frame with the abort message, if any.
+tryWithFrame :: Action a -> ActionFrame a -> ActionFrame a
+tryWithFrame exc h =
+  let msgToFrames ""  = returnNoFrame ()
+      msgToFrames msg = do
+        msgReset ""
+        fr <- drawPrompt ColorFull msg
+        return ((), [fr])
+      excMsg msg = do
+        ((), frames) <- msgToFrames msg
+        a <- exc
+        return (a, frames)
+  in tryWith excMsg h
+
 -- | Take a handler and a computation. If the computation fails, the
 -- handler is invoked and then the computation is retried.
-tryRepeatedlyWith ::  (Msg -> Action ()) -> Action () -> Action ()
+tryRepeatedlyWith :: (Msg -> Action ()) -> Action () -> Action ()
 tryRepeatedlyWith exc h =
   tryWith (\ msg -> exc msg >> tryRepeatedlyWith exc h) h
 
 -- | Try the given computation and silently catch failure.
 tryIgnore :: Action () -> Action ()
-tryIgnore = tryWith (\ msg -> if null msg
-                              then return ()
-                              else assert `failure` (msg, "in tryIgnore"))
+tryIgnore =
+  tryWith (\ msg -> if null msg
+                    then return ()
+                    else assert `failure` (msg, "in tryIgnore"))
+
+-- | Try the given computation and silently catch failure.
+tryIgnoreFrame :: ActionFrame () -> ActionFrame ()
+tryIgnoreFrame =
+  tryWith (\ msg -> if null msg
+                    then returnNoFrame ()
+                    else assert `failure` (msg, "in tryIgnoreFrame"))
 
 -- | Reset the state and resume from the last backup point, i.e., invoke
 -- the failure continuation.
@@ -222,7 +245,7 @@ getCommand :: Maybe Bool -> Action (K.Key, K.Modifier)
 getCommand doPush = do
   fs <- getFrontendSession
   keyb <- getBinding
-  (nc, modifier) <- liftIO $ getAnyKey fs doPush
+  (nc, modifier) <- liftIO $ nextEvent fs doPush
   return $ case modifier of
     K.NoModifier -> (fromMaybe nc $ M.lookup nc $ kmacro keyb, modifier)
     _ -> (nc, modifier)
@@ -311,7 +334,7 @@ getConfirm frame = do
     _       -> return False
 
 -- | Display a msg with a @more@ prompt. Return value indicates if the player
--- tried to abort/escape.
+-- tried to cancel/escape.
 displayMoreConfirm :: ColorMode -> Msg -> Action Bool
 displayMoreConfirm dm prompt = do
   frame <- drawPrompt dm (prompt ++ moreMsg)
@@ -324,6 +347,7 @@ displayMoreCancel prompt = void $ displayMoreConfirm ColorFull prompt
 
 -- TODO: implement with getOverConfirm, rename things so that drawOver
 -- and displayOverConfirm are not confused.
+-- TODO: add Abort to the name to indicate try may needed in all 3 below.
 -- | Print a msg and several overlays, one per page.
 -- The last frame does not expect a confirmation.
 displayOverlays :: Msg -> [Overlay] -> ActionFrame ()
@@ -372,7 +396,7 @@ displayChoice prompt ovs keys = do
         [] -> ([], [], "", [], keys)
         [x] -> (x, [], "", [], keys)
         x:xs -> (x, xs, ", SPACE", [moreMsg], (K.Space, K.NoModifier) : keys)
-  frame <- drawOver ColorFull(prompt ++ spc ++ ", ESC]") (over ++ more)
+  frame <- drawOver ColorFull (prompt ++ spc ++ ", ESC]") (over ++ more)
   (key, modifier) <- getChoice ((K.Esc, K.NoModifier) : keysS) frame
   case key of
     K.Esc -> neverMind True

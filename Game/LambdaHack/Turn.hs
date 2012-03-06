@@ -24,6 +24,7 @@ import Game.LambdaHack.Running
 import qualified Game.LambdaHack.Tile as Tile
 import qualified Game.LambdaHack.Key as K
 import Game.LambdaHack.Msg
+import Game.LambdaHack.Draw
 
 -- One turn proceeds through the following functions:
 --
@@ -152,30 +153,45 @@ handlePlayer = do
     -- The command took some time, so other actors act.
     handleAI True
 
--- | Determine and process the next player command, given the last abort
--- message, if any.
+-- | Determine and process the next player command, given the last
+-- running abort message, if any.
 playerCommand :: Msg -> Action ()
-playerCommand msg = do  -- TODO
+playerCommand msgRunAbort = do
+  -- The frame state is now Push.
   oldPlayerTime <- gets (btime . getPlayerBody)
   keyb <- getBinding
-  kmPush <- getCommand (Just True)
+  kmPush <- case msgRunAbort of
+    "" -> getCommand (Just True)
+    _  -> drawPrompt ColorFull msgRunAbort >>= getChoice []
+  -- The frame state is now None and remains so after each code line below.
   let loop :: (K.Key, K.Modifier) -> Action ()
       loop km = do
-        -- On abort, just reset state and call playerCommand again below.
-        ((), frames) <- tryWith (\ msg -> returnNoFrame ()) $ do  -- TODO
+        -- On abort, just reset state and call loop again below.
+        ((), frames) <- tryWithFrame (return ()) $ do
           -- Messages shown, so update history and reset current report.
-          -- On abort, history gets reset to the old value, just as state.
+          -- On abort, history gets reset to the old value, so nothing changes.
           history
           -- Look up the key.
           case M.lookup km (Binding.kcmd keyb) of
-            Just (_, c) -> c
-            Nothing -> let msg = "unknown command <" ++ K.showKM km ++ ">"
-                       in abortWith msg
+            Just (_, c) -> do
+              -- TODO: redo by dividing commands in to time-taking and not
+              -- and doing many things automatically for them
+              -- (only time-taking will have type ActionFrame).
+              ((), frs) <- c
+              newPT <- gets (btime . getPlayerBody)
+              -- Add a frame if command takes no time. No frames for @abort@.
+              if null frs && newPT == oldPlayerTime
+                then do
+                  fr <- drawPrompt ColorFull ""
+                  return ((), [fr])
+                else return ((), frs)
+            Nothing -> let msgKey = "unknown command <" ++ K.showKM km ++ ">"
+                       in abortWith msgKey
         -- Analyse the obtained frames.
         let (mfr, frs) = case reverse frames of
               []     -> (Nothing, [])
               f : fs -> (Just f, reverse fs)
-        -- Make a slideshow of all, but last frame.
+        -- Make a slideshow of all but last frame.
         tryIgnore $ getOverConfirm frs
         -- The command was aborted or successful and if the latter,
         -- possibly took some time.
@@ -183,8 +199,8 @@ playerCommand msg = do  -- TODO
         -- If no time taken, rinse and repeat.
         if newPlayerTime == oldPlayerTime
           then do
-            -- Display the last frame while waiting for the next key
-            -- or, if there is no next frame, just get the key.
+            -- Display the last frame while waiting for the next key or,
+            -- if there is no next frame, just get the key.
             kmNext <- maybe (getCommand Nothing) (getChoice []) mfr
             loop kmNext
           else

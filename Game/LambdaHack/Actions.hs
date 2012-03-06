@@ -36,7 +36,6 @@ import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Random
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Binding
-import Game.LambdaHack.Draw
 
 saveGame :: Action ()
 saveGame = do
@@ -475,7 +474,8 @@ regenerateLevelHP = do
 displayHelp :: ActionFrame ()
 displayHelp = do
   keyb <- getBinding
-  displayOverlays "Basic keys. [press SPACE or ESC]" $ keyHelp keyb
+  tryIgnoreFrame $
+    displayOverlays "Basic keys. [press SPACE or ESC]" $ keyHelp keyb
 
 displayHistory :: ActionFrame ()
 displayHistory = do
@@ -484,18 +484,16 @@ displayHistory = do
   lysize <- gets (lysize . slevel)
   let turn = show (stime `div` 10)
       msg = "You adventuring lasts " ++ turn ++ " turns. Past messages:"
-  displayOverlays msg $ splitOverlay lysize $ renderHistory shistory
+  tryIgnoreFrame $
+    displayOverlays msg $ splitOverlay lysize $ renderHistory shistory
 
-dumpConfig :: ActionFrame ()
+dumpConfig :: Action ()
 dumpConfig = do
   config <- gets sconfig
   let fn = "config.dump"
       msg = "Current configuration dumped to file " ++ fn ++ "."
   dump fn config
-  fr <- drawPrompt ColorFull msg
-  return ((), [fr])
+  abortWith msg
 
-redraw :: ActionFrame ()
-redraw = do
-  fr <- drawPrompt ColorFull ""
-  return ((), [fr])
+redraw :: Action ()
+redraw = return ()

@@ -6,7 +6,7 @@ module Game.LambdaHack.Display
     FrontendSession, startup, shutdown, frontendName
     -- * Derived operations
   , displayLevel, displayAnimation, displayNothing
-  , getAnyKey, promptGetKey
+  , nextEvent, promptGetKey
   ) where
 
 -- Wrapper for selected Display frontend.
@@ -29,13 +29,8 @@ import Game.LambdaHack.State
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Actor as Actor
 import Game.LambdaHack.ActorState
-import qualified Game.LambdaHack.Key as K
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Draw
-
--- | Wait for a player keypress.
-getAnyKey :: FrontendSession -> Maybe Bool -> IO (K.Key, K.Modifier)
-getAnyKey fs doPush = nextEvent fs doPush
 
 -- | Push a wait for a single frame to the frame queue.
 displayNothing :: FrontendSession -> IO ()
