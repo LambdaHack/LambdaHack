@@ -163,7 +163,7 @@ playerCommand msgRunAbort = do
   kmPush <- case msgRunAbort of
     "" -> getCommand (Just True)
     _  -> drawPrompt ColorFull msgRunAbort >>= getChoice []
-  -- The frame state is now None and remains so after each code line below.
+  -- The frame state is now None.
   let loop :: (K.Key, K.Modifier) -> Action ()
       loop km = do
         -- On abort, just reset state and call loop again below.
@@ -187,26 +187,29 @@ playerCommand msgRunAbort = do
                 else return ((), frs)
             Nothing -> let msgKey = "unknown command <" ++ K.showKM km ++ ">"
                        in abortWith msgKey
-        -- Analyse the obtained frames.
-        let (mfr, frs) = case reverse frames of
-              []     -> (Nothing, [])
-              f : fs -> (Just f, reverse fs)
-        -- Make a slideshow of all but last frame.
-        tryIgnore $ getOverConfirm frs
-        -- The command was aborted or successful and if the latter,
+       -- The command was aborted or successful and if the latter,
         -- possibly took some time.
         newPlayerTime <- gets (btime . getPlayerBody)
         -- If no time taken, rinse and repeat.
         if newPlayerTime == oldPlayerTime
           then do
+            -- Analyse the obtained frames.
+            let (mfr, frs) = case reverse frames of
+                  []     -> (Nothing, [])
+                  f : fs -> (Just f, reverse fs)
+             -- Show in turn all but the last frame.
+            tryIgnore $ getOverConfirm frs
             -- Display the last frame while waiting for the next key or,
             -- if there is no next frame, just get the key.
             kmNext <- maybe (getCommand Nothing) (getChoice []) mfr
             loop kmNext
+            -- The frame state is still None.
           else
-            -- No next key needed, but display the last frame anyway.
-            maybe (return ()) (void . getConfirm) mfr
+            -- No next key needed, so just push all frames.
+            mapM_ (displayFramePush . Just) frames
+            -- The frame state is now Push.
   loop kmPush
+  -- The frame state is now Push.
 
 
 -- Design thoughts (in order to get rid or partially rid of the somewhat

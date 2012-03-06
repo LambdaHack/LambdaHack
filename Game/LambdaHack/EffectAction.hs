@@ -70,11 +70,23 @@ effectToAction effect verbosity source target power = do
      (tloc `IS.member` totalVisible per &&
       bloc sm `IS.member` totalVisible per)
     then do
-      -- Party sees or affected, so reported.
+      -- Party sees the effect or affected by it.
+      -- TODO: try to move the death message after the animation is show,
+      -- e.g., by delivering the message as a frame not in 'msg'.
       msgAdd msg
-      -- Party sees or affected, so show an animation.
+      -- Try to show an animation. Will be inserted before @frames@,
+      -- because they can contain the death frame.
+      -- TODO: clean this up, perhaps handle death around here.
+      lxsize <- gets (lxsize . slevel)
+      cops <- getCOps
       sNew <- get
-      let twirlSplash c1 c2 = map (IM.singleton tloc)
+      Diary{sreport} <- getDiary
+      let over = splitReport sreport
+          topLineOnly = case over of
+            [] -> ""
+            x:_ -> padMsg lxsize x
+          basicFrame = draw ColorFull cops per sNew [topLineOnly]
+          twirlSplash c1 c2 = map (IM.singleton tloc)
             [ Color.AttrChar (Color.Attr Color.BrWhite Color.defBG) '*'
             , Color.AttrChar (Color.Attr c1 Color.defBG) '/'
             , Color.AttrChar (Color.Attr c1 Color.defBG) '-'
@@ -88,11 +100,11 @@ effectToAction effect verbosity source target power = do
             ]
           newHP | not (memActor target sNew) = 0
                 | otherwise = bhp $ getActor target sNew
-          animNew | newHP >  oldHP = twirlSplash Color.BrBlue Color.Blue
-                  | newHP <  oldHP = twirlSplash Color.BrRed  Color.Red
-                  | otherwise      = []
-      modify (\st@State{sanim} -> st {sanim = sanim ++ animNew})
-      return ((b, True), frames)
+          anim  | newHP >  oldHP = twirlSplash Color.BrBlue Color.Blue
+                | newHP <  oldHP = twirlSplash Color.BrRed  Color.Red
+                | otherwise      = []
+          animFrs = animate sNew basicFrame anim
+      return ((b, True), frames ++ animFrs)
     else do
       -- Hidden, but if interesting then heard.
       when b $ msgAdd "You hear some noises."

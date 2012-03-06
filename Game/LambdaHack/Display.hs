@@ -3,10 +3,9 @@
 {-# LANGUAGE CPP #-}
 module Game.LambdaHack.Display
   ( -- * Re-exported frontend
-    FrontendSession, startup, shutdown, frontendName
+    FrontendSession, startup, shutdown, frontendName, nextEvent, promptGetKey
     -- * Derived operations
-  , displayFrame, displayLevel, displayAnimation
-  , nextEvent, promptGetKey
+  , displayFrame, displayLevel
   ) where
 
 -- Wrapper for selected Display frontend.
@@ -47,11 +46,3 @@ displayLevel fs dm cops per s@State{splayer} overlay =
       (_, Actor{bdir}, _) = findActorAnyLevel splayer s
       isRunning = isJust bdir
   in display fs True isRunning $ Just overlayFrame
-
--- | Display animations on top of the whole screen.
-displayAnimation :: FrontendSession -> Kind.COps
-                 -> Perception -> State -> Msg -> Color.Animation -> IO ()
-displayAnimation fs cops per s topLineOnly anim =
-  let basicFrame = draw ColorFull cops per s [topLineOnly]
-      playAnimation am = display fs True False (Just am)
-  in mapM_ playAnimation $ animate s basicFrame anim

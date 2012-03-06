@@ -267,26 +267,16 @@ displayFramePush frame = do
   liftIO $ displayFrame fs frame
 
 -- | Push the frame depicting the current level to the frame queue.
--- If there are any animations to play, they are pushed at this point, too,
--- and cleared. Only one screenful of the message is shown,
--- the rest is ignored.
+-- Only one screenful of the message is shown, the rest is ignored.
 displayPush :: Action ()
 displayPush = do
   fs <- getFrontendSession
-  lxsize <- gets (lxsize . slevel)
   cops <- getCOps
   per <- getPerception
-  s@State{sanim} <- get
+  s <- get
   Diary{sreport} <- getDiary
   let over = splitReport sreport
-      topLineOnly = case over of
-        [] -> ""
-        x:_ -> padMsg lxsize x
-      sNew = s {sanim=[]}
-  modify (const sNew)
-  liftIO $ displayAnimation fs cops per sNew topLineOnly sanim
-  -- TODO: at least some frames should be shown after anim, e.g., focus
-  liftIO $ displayLevel fs ColorFull cops per sNew over
+  liftIO $ displayLevel fs ColorFull cops per s over
 
 -- | Draw the current level. The prompt is displayed, but not added
 -- to history. The prompt is appended to the current message

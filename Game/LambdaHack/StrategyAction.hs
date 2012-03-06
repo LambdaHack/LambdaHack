@@ -170,12 +170,10 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   applyFreq is multi = toFreq "applyFreq"
     [ ( benefit * multi
       , do ((), frames) <- applyGroupItem actor (iverbApply ik) i
-           -- We immediately push frames caused by AI acions,
+           -- We immediately push frames caused by AI actions,
            -- e.g., frames focusing the view on the hit hero,
-           -- and we just pad them with timeouts to stand out among
-           -- frames depicting AI moves.
-           mapM_ displayFramePush $
-             [Nothing] ++ L.intersperse Nothing (map Just frames) ++ [Nothing]
+           -- or frames representing animations.
+           mapM_ (displayFramePush . Just) frames
       )
     | i <- is,
       let ik = iokind (jkind i),
@@ -233,12 +231,10 @@ dirToAction actor tgt allowAttacks dir = do
     -- TODO: ensure time is taken for other aborted actions in this file
     -- TODO: or just fail at each abort in AI code? or use tryWithFrame
     ((), frames) <- moveOrAttack allowAttacks actor dir
-    -- We immediately push frames caused by AI acions,
+    -- We immediately push frames caused by AI actions,
     -- e.g., frames focusing the view on the hit hero,
-    -- and we just pad them with timeouts to stand out among
-    -- frames depicting AI moves.
-    mapM_ displayFramePush $
-      [Nothing] ++ L.intersperse Nothing (map Just frames) ++ [Nothing]
+    -- or frames representing animations.
+    mapM_ (displayFramePush . Just) frames
 
 -- | A strategy to always just wait.
 wait :: ActorId -> Strategy (Action ())
