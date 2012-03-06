@@ -3,7 +3,7 @@ module Game.LambdaHack.Display.Curses
   ( -- * Session data type for the frontend
     FrontendSession
     -- * The output and input operations
-  , pushFrame, nextEvent
+  , display, nextEvent, promptGetKey
     -- * Frontend administration tools
   , frontendName, startup, shutdown
   ) where
@@ -33,7 +33,7 @@ startup :: String -> (FrontendSession -> IO ()) -> IO ()
 startup _ k = do
   C.start
 --  C.keypad C.stdScr False  -- TODO: may help to fix xterm keypad on Ubuntu
-  C.cursSet C.CursorInvisible
+  void $ C.cursSet C.CursorInvisible
   let s = [ (Color.Attr{fg, bg}, C.Style (toFColor fg) (toBColor bg))
           | fg <- [minBound..maxBound],
             -- No more color combinations possible: 16*4, 64 is max.
@@ -52,10 +52,13 @@ shutdown :: FrontendSession -> IO ()
 shutdown _ = C.end
 
 -- | Output to the screen via the frontend.
-display :: FrontendSession    -- ^ frontend session data
-        -> Color.SingleFrame  -- ^ the screen frame to draw
+display :: FrontendSession          -- ^ frontend session data
+        -> Bool
+        -> Bool
+        -> Maybe Color.SingleFrame  -- ^ the screen frame to draw
         -> IO ()
-display FrontendSession{..} Color.SingleFrame{..} = do
+display _ _ _ Nothing = return ()
+display FrontendSession{..}  _ _ (Just Color.SingleFrame{..}) = do
   -- let defaultStyle = C.defaultCursesStyle
   -- Terminals with white background require this:
   let defaultStyle = sstyles M.! Color.defaultAttr
@@ -65,23 +68,33 @@ display FrontendSession{..} Color.SingleFrame{..} = do
   -- We need to remove the last character from the status line,
   -- because otherwise it would overflow a standard size xterm window,
   -- due to the curses historical limitations.
-  C.mvWAddStr swin (L.length sflevel + 1) 0 (L.init sfBottom)
-  let nm = L.zip [0..] $ L.map (L.zip [0..]) sflevel
-  sequence_ [ C.setStyle (M.findWithDefault defaultStyle a sstyles)
-              >> C.mvWAddStr swin (y + 1) x [c]
-            | (y, line) <- nm, (x, (a, c)) <- line ]
+  C.mvWAddStr swin (L.length sfLevel + 1) 0 (L.init sfBottom)
+  let nm = L.zip [0..] $ L.map (L.zip [0..]) sfLevel
+  sequence_ [ C.setStyle (M.findWithDefault defaultStyle acAttr sstyles)
+              >> C.mvWAddStr swin (y + 1) x [acChar]
+            | (y, line) <- nm, (x, Color.AttrChar{..}) <- line ]
   C.refresh
 
--- | Add a game screen frame to the frame drawing channel.
-pushFrame :: FrontendSession -> Maybe Color.SingleFrame -> IO ()
-pushFrame _    Nothing      = return ()
-pushFrame sess (Just frame) = display sess frame
-
 -- | Input key via the frontend.
-nextEvent :: FrontendSession -> IO (K.Key, K.Modifier)
-nextEvent _sess = do
+nextEvent :: FrontendSession -> Maybe Bool -> IO (K.Key, K.Modifier)
+nextEvent _sess _ = do
   e <- C.getKey C.refresh
   return (keyTranslate e, K.NoModifier)
+
+-- | Display a prompt, wait for any of the specified keys (for any key,
+-- if the list is empty). Repeat if an unexpected key received.
+promptGetKey :: FrontendSession -> [(K.Key, K.Modifier)] -> Color.SingleFrame
+             -> IO (K.Key, K.Modifier)
+promptGetKey sess keys frame = do
+  display sess True True $ Just frame
+  km <- nextEvent sess Nothing
+  let loop km2 =
+        if null keys || km2 `elem` keys
+        then return km2
+        else do
+          km3 <- nextEvent sess Nothing
+          loop km3
+  loop km
 
 keyTranslate :: C.Key -> K.Key
 keyTranslate e =

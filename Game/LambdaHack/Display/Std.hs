@@ -3,7 +3,7 @@ module Game.LambdaHack.Display.Std
   ( -- * Session data type for the frontend
     FrontendSession
     -- * The output and input operations
-  , pushFrame, nextEvent
+  , display, nextEvent, promptGetKey
     -- * Frontend administration tools
   , frontendName, startup, shutdown
   ) where
@@ -31,27 +31,40 @@ shutdown :: FrontendSession -> IO ()
 shutdown _ = return ()
 
 -- | Output to the screen via the frontend.
-display :: FrontendSession    -- ^ frontend session data
-        -> Color.SingleFrame  -- ^ the screen frame to draw
+display :: FrontendSession          -- ^ frontend session data
+        -> Bool
+        -> Bool
+        -> Maybe Color.SingleFrame  -- ^ the screen frame to draw
         -> IO ()
-display _ Color.SingleFrame{..} =
-  let chars = L.map (BS.pack . L.map snd) sflevel
+display _ _ _ Nothing = return ()
+display _ _ _ (Just Color.SingleFrame{..}) =
+  let chars = L.map (BS.pack . L.map Color.acChar) sfLevel
       bs = [BS.pack sfTop, BS.empty] ++ chars ++ [BS.pack sfBottom, BS.empty]
   in mapM_ BS.putStrLn bs
 
--- | Add a game screen frame to the frame drawing channel.
-pushFrame :: FrontendSession -> Maybe Color.SingleFrame -> IO ()
-pushFrame _    Nothing      = return ()
-pushFrame sess (Just frame) = display sess frame
-
 -- | Input key via the frontend.
-nextEvent :: FrontendSession -> IO (K.Key, K.Modifier)
-nextEvent sess = do
+nextEvent :: FrontendSession -> Maybe Bool -> IO (K.Key, K.Modifier)
+nextEvent sess mb = do
   e <- BS.hGet SIO.stdin 1
   let c = BS.head e
   if c == '\n'  -- let \n mark the end of input, for human players
-    then nextEvent sess
+    then nextEvent sess mb
     else return (keyTranslate c, K.NoModifier)
+
+-- | Display a prompt, wait for any of the specified keys (for any key,
+-- if the list is empty). Repeat if an unexpected key received.
+promptGetKey :: FrontendSession -> [(K.Key, K.Modifier)] -> Color.SingleFrame
+             -> IO (K.Key, K.Modifier)
+promptGetKey sess keys frame = do
+  display sess True True $ Just frame
+  km <- nextEvent sess Nothing
+  let loop km2 =
+        if null keys || km2 `elem` keys
+        then return km2
+        else do
+          km3 <- nextEvent sess Nothing
+          loop km3
+  loop km
 
 -- HACK: Special translation that block commands the bots should not use
 -- and multiplies some other commands.
