@@ -159,7 +159,6 @@ handlePlayer = do
 playerCommand :: Msg -> Action ()
 playerCommand msgRunAbort = do
   -- The frame state is now Push.
-  oldPlayerTime <- gets (btime . getPlayerBody)
   keyb <- getBinding
   kmPush <- case msgRunAbort of
     "" -> getCommand (Just True)
@@ -168,31 +167,28 @@ playerCommand msgRunAbort = do
   let loop :: (K.Key, K.Modifier) -> Action ()
       loop km = do
         -- On abort, just reset state and call loop again below.
-        ((), frames) <- tryWithFrame (return ()) $ do
+        (timed, frames) <- tryWithFrame (return False) $ do
           -- Messages shown, so update history and reset current report.
           -- On abort, history gets reset to the old value, so nothing changes.
           recordHistory
           -- Look up the key.
           case M.lookup km (Binding.kcmd keyb) of
-            Just (_, c) -> do
+            Just (_, timed, c) -> do
               -- TODO: redo by dividing commands in to time-taking and not
               -- and doing many things automatically for them
               -- (only time-taking will have type ActionFrame).
               ((), frs) <- c
-              newPT <- gets (btime . getPlayerBody)
               -- Add a frame if command takes no time. No frames for @abort@.
-              if null frs && newPT == oldPlayerTime
+              if null frs && not timed
                 then do
                   fr <- drawPrompt ColorFull ""
-                  return ((), [Just fr])
-                else return ((), frs)
+                  return (timed, [Just fr])
+                else return (timed, frs)
             Nothing -> let msgKey = "unknown command <" ++ K.showKM km ++ ">"
                        in abortWith msgKey
-       -- The command was aborted or successful and if the latter,
-        -- possibly took some time.
-        newPlayerTime <- gets (btime . getPlayerBody)
-        -- If no time taken, rinse and repeat.
-        if newPlayerTime == oldPlayerTime
+        -- The command was aborted or successful and if the latter,
+        -- possibly took some time. If no time taken, rinse and repeat.
+        if not timed
           then do
             -- Analyse the obtained frames.
             let (mfr, frs) = case reverse $ catMaybes frames of

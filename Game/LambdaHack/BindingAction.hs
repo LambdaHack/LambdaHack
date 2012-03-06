@@ -35,13 +35,13 @@ configCmd config =
 semanticsCmd :: [(K.Key, Cmd)]
              -> (Cmd -> ActionFrame ())
              -> (Cmd -> String)
-             -> [((K.Key, K.Modifier), (String, ActionFrame ()))]
+             -> [((K.Key, K.Modifier), (String, Bool, ActionFrame ()))]
 semanticsCmd cmdList cmdS cmdD =
   let mkDescribed cmd =
         let semantics = if timedCmd cmd
                         then checkCursor $ cmdS cmd
                         else cmdS cmd
-        in (cmdD cmd, semantics)
+        in (cmdD cmd, timedCmd cmd, semantics)
       mkCommand (key, def) = ((key, K.NoModifier), mkDescribed def)
   in L.map mkCommand cmdList
 
@@ -55,15 +55,16 @@ checkCursor h = do
     then h
     else abortWith "this command does not work on remote levels"
 
-heroSelection :: [((K.Key, K.Modifier), (String, ActionFrame ()))]
+heroSelection :: [((K.Key, K.Modifier), (String, Bool, ActionFrame ()))]
 heroSelection =
   let select k = do
         s <- get
         case tryFindHeroK s k of
           Nothing -> abortWith "No such member of the party."
           Just aid -> selectPlayer aid >> returnNoFrame ()
-      heroSelect k = ((K.Char (Char.intToDigit k), K.NoModifier),
-                      ("", select k))
+      heroSelect k = ( (K.Char (Char.intToDigit k), K.NoModifier)
+                     , ("", False, select k)
+                     )
   in fmap heroSelect [0..9]
 
 -- | Binding of keys to movement and other standard commands,
@@ -89,14 +90,13 @@ stdBinding config cmdS cmdD =
              heroSelection ++
              semList ++
              [ -- Debug commands.
-               ((K.Char 'r', K.Control), ("", modify cycleMarkVision
-                                              >> returnNoFrame ())),
-               ((K.Char 'o', K.Control), ("", modify toggleOmniscient
-                                              >> returnNoFrame ())),
-               ((K.Char 'i', K.Control), ("", gets (lmeta . slevel)
-                                              >>= abortWith))
+               ((K.Char 'r', K.Control), ("", False, modify cycleMarkVision
+                                                     >> returnNoFrame ())),
+               ((K.Char 'o', K.Control), ("", False, modify toggleOmniscient
+                                                     >> returnNoFrame ())),
+               ((K.Char 'i', K.Control), ("", False, gets (lmeta . slevel)
+                                                     >>= abortWith))
              ]
   , kmacro
   , kmajor = L.map fst $ L.filter (majorCmd . snd) cmdList
-  , ktimed = L.map fst $ L.filter (timedCmd . snd) cmdList
   }

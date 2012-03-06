@@ -14,12 +14,15 @@ import qualified Game.LambdaHack.Feature as F
 -- | Abstract syntax of player commands. The type is abstract, but the values
 -- are created outside this module via the Read class (from config file) .
 data Cmd =
+    -- These take time:
     Apply       { verb :: Verb, object :: Object, syms :: [Char] }
   | Project     { verb :: Verb, object :: Object, syms :: [Char] }
   | TriggerDir  { verb :: Verb, object :: Object, feature :: F.Feature }
   | TriggerTile { verb :: Verb, object :: Object, feature :: F.Feature }
   | Pickup
   | Drop
+  | Wait
+    -- These do not take time:
   | Inventory
   | TgtFloor
   | TgtEnemy
@@ -34,7 +37,6 @@ data Cmd =
   | HeroCycle
   | Version
   | Help
-  | Wait
   | Redraw
   deriving (Show, Read)
 
@@ -79,6 +81,8 @@ cmdSemantics cmd = case cmd of
   TriggerTile{..} -> inFrame $ playerTriggerTile feature
   Pickup ->    inFrame $ pickupItem
   Drop ->      inFrame $ dropItem
+  Wait ->      inFrame $ playerAdvanceTime
+
   Inventory -> inventory
   TgtFloor ->  targetFloor   TgtExplicit
   TgtEnemy ->  targetMonster TgtExplicit
@@ -93,7 +97,6 @@ cmdSemantics cmd = case cmd of
   HeroCycle -> inFrame $ cycleHero
   Version ->   inFrame $ gameVersion
   Help ->      displayHelp
-  Wait ->      inFrame $ playerAdvanceTime
   Redraw ->    inFrame $ redraw
 
 -- | Description of player commands.
@@ -105,6 +108,8 @@ cmdDescription cmd = case cmd of
   TriggerTile{..} -> verb ++ " " ++ addIndefinite object
   Pickup ->    "get an object"
   Drop ->      "drop an object"
+  Wait ->      ""
+
   Inventory -> "display inventory"
   TgtFloor ->  "target location"
   TgtEnemy ->  "target monster"
@@ -124,5 +129,4 @@ cmdDescription cmd = case cmd of
   HeroCycle -> "cycle among heroes on level"
   Version ->   "display game version"
   Help ->      "display help"
-  Wait ->      ""
   Redraw ->    "clear messages"

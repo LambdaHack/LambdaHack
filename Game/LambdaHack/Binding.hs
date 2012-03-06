@@ -15,11 +15,10 @@ import Game.LambdaHack.Msg
 
 -- | Bindings and other information about player commands.
 data Binding a = Binding
-  { kcmd   :: M.Map (K.Key, K.Modifier) (String, a)
+  { kcmd   :: M.Map (K.Key, K.Modifier) (String, Bool, a)
                                  -- ^ binding keys to commands
   , kmacro :: M.Map K.Key K.Key  -- ^ macro map
   , kmajor :: [K.Key]            -- ^ major, most often used, commands
-  , ktimed :: [K.Key]            -- ^ commands that take time, except movement
   }
 
 -- | Produce the macro map from a macro association list
@@ -46,7 +45,7 @@ coImage kmacro k =
 
 -- | Produce a set of help screens from the key bindings.
 keyHelp :: Binding a -> [Overlay]
-keyHelp Binding{kcmd, kmacro, kmajor, ktimed} =
+keyHelp Binding{kcmd, kmacro, kmajor} =
   let
     movBlurb =
       [ "Move throughout the level with numerical keypad or"
@@ -85,8 +84,8 @@ keyHelp Binding{kcmd, kmacro, kmajor, ktimed} =
     minor   = map fmts minorBlurb
     keyCaption = fmt "keys" "command"
     disp k  = L.concatMap show $ coImage kmacro k
-    ti k    = if k `elem` ktimed then "*" else ""
-    keys l  = [ fmt (disp k) (h ++ ti k) | ((k, _), (h, _)) <- l, h /= "" ]
+    keys l  = [ fmt (disp k) (h ++ if timed then "*" else "")
+              | ((k, _), (h, timed, _)) <- l, h /= "" ]
     (kcMajor, kcMinor) =
       L.partition ((`elem` kmajor) . fst . fst) (M.toAscList kcmd)
   in
