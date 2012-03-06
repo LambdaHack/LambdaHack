@@ -10,7 +10,7 @@ module Game.LambdaHack.Action
   , Session(..), getCOps, getBinding
   , debug, tryWith, tryWithFrame, tryRepeatedlyWith, tryIgnore, tryIgnoreFrame
   , abort, abortWith, abortIfWith, neverMind
-  , getDiary, historyReset, msgAdd, msgReset
+  , getDiary, msgAdd, recordHistory
   , getCommand, getConfirm, getChoice, getOverConfirm
   , displayNothingPush, displayPush, drawPrompt
   , displayMoreConfirm, displayMoreCancel, displayYesNo, displayChoice
@@ -225,20 +225,30 @@ neverMind b = abortIfWith b "never mind"
 getDiary :: Action Diary
 getDiary = Action (\ _s _e _p k _a st diary -> k st diary diary)
 
--- | Wipe out and set a new value for the history.
-historyReset :: History -> Action ()
-historyReset shistory = Action (\ _s _e _p k _a st Diary{sreport} ->
-                                 k st Diary{..} ())
-
 -- | Add to the current msg.
 msgAdd :: Msg -> Action ()
 msgAdd nm = Action (\ _s _e _p k _a st ms ->
                      k st ms{sreport = addMsg (sreport ms) nm} ())
 
+-- | Wipe out and set a new value for the history.
+historyReset :: History -> Action ()
+historyReset shistory = Action (\ _s _e _p k _a st Diary{sreport} ->
+                                 k st Diary{..} ())
+
 -- | Wipe out and set a new value for the current report.
 msgReset :: Msg -> Action ()
 msgReset nm = Action (\ _s _e _p k _a st ms ->
                        k st ms{sreport = singletonReport nm} ())
+
+-- | Store current msg in the history and reset current msg.
+recordHistory :: Action ()
+recordHistory = do
+  Diary{sreport, shistory} <- getDiary
+  unless (nullReport sreport) $ do
+    config <- gets sconfig
+    let historyMax = Config.get config "ui" "historyMax"
+    msgReset ""
+    historyReset $ takeHistory historyMax $ addReport sreport shistory
 
 -- | Wait for a player command.
 getCommand :: Maybe Bool -> Action (K.Key, K.Modifier)

@@ -165,7 +165,8 @@ runGtk configFont k = do
   containerAdd w sview
   onDestroy w mainQuit
   widgetShowAll w
-  -- Show the window.
+  -- Wait until the other thread draws something and show the window.
+  yield
   mainGUI
 
 -- | Shuts down the frontend cleanly.

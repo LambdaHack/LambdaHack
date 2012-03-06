@@ -170,7 +170,7 @@ playerCommand msgRunAbort = do
         ((), frames) <- tryWithFrame (return ()) $ do
           -- Messages shown, so update history and reset current report.
           -- On abort, history gets reset to the old value, so nothing changes.
-          history
+          recordHistory
           -- Look up the key.
           case M.lookup km (Binding.kcmd keyb) of
             Just (_, c) -> do

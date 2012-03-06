@@ -429,7 +429,7 @@ checkPartyDeath = do
   when (bhp pbody <= 0) $ do
     msgAdd $ actorVerb coactor pbody "die"
     go <- displayMoreConfirm ColorBW ""
-    history  -- Prevent the msgs from being repeated.
+    recordHistory  -- Prevent the msgs from being repeated.
     let firstDeathEnds = Config.get config "heroes" "firstDeathEnds"
     if firstDeathEnds
       then gameOver go
@@ -498,16 +498,6 @@ itemOverlay sorted is = do
 stopRunning :: Action ()
 stopRunning = updatePlayerBody (\ p -> p { bdir = Nothing })
 
--- | Store current msg in the history and reset current msg.
-history :: Action ()
-history = do
-  Diary{sreport, shistory} <- getDiary
-  unless (nullReport sreport) $ do
-    config <- gets sconfig
-    let historyMax = Config.get config "ui" "historyMax"
-    msgReset ""
-    historyReset $ takeHistory historyMax $ addReport sreport shistory
-
 -- TODO: depending on tgt, show extra info about tile or monster or both
 -- | Perform look around in the current location of the cursor.
 doLook :: ActionFrame ()
@@ -542,10 +532,12 @@ doLook = do
         lookMsg = mode ++ lookAt cops True canSee state lvl loc monsterMsg
         -- check if there's something lying around at current loc
         is = lvl `rememberAtI` loc
-    msgAdd lookMsg
     io <- itemOverlay False is
-    whenFrame (length is > 2) $
-      tryIgnoreFrame $ displayOverlays "" io
+    if length is > 2
+      then tryIgnoreFrame $ displayOverlays lookMsg io
+      else do
+        fr <- drawPrompt ColorFull lookMsg
+        return ((), [fr])
 
 gameVersion :: Action ()
 gameVersion = do
@@ -554,4 +546,4 @@ gameVersion = do
       msg = "Version " ++ showVersion pathsVersion
             ++ " (frontend: " ++ frontendName
             ++ ", engine: LambdaHack " ++ showVersion Self.version ++ ")"
-  msgAdd msg
+  abortWith msg

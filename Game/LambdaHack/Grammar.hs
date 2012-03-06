@@ -158,10 +158,10 @@ lookAt Kind.COps{coitem, cotile=Kind.Ops{oname}} detailed canSee s lvl loc msg
  where
   is  = lvl `rememberAtI` loc
   prefixSee = if canSee then "You see " else "You remember "
-  prefixThere = "Objects"
   isd = case is of
           []    -> ""
           [i]   -> prefixSee ++ objectItem coitem s i ++ "."
           [i,j] -> prefixSee ++ objectItem coitem s i ++ " and "
                              ++ objectItem coitem s j ++ "."
-          _     -> prefixThere ++ if detailed then ":" else "."
+          _ | detailed -> "Objects:"
+          _ -> "Objects here."
