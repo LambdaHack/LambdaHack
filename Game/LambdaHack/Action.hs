@@ -273,14 +273,18 @@ displayNothingPush = do
 displayPush :: Action ()
 displayPush = do
   fs <- getFrontendSession
+  lxsize <- gets (lxsize . slevel)
   cops <- getCOps
   per <- getPerception
   s@State{sanim} <- get
   Diary{sreport} <- getDiary
   let over = splitReport sreport
+      topLineOnly = case over of
+        [] -> ""
+        x:_ -> padMsg lxsize x
       sNew = s {sanim=[]}
   modify (const sNew)
-  liftIO $ displayAnimation fs cops per sNew sanim
+  liftIO $ displayAnimation fs cops per sNew topLineOnly sanim
   -- TODO: at least some frames should be shown after anim, e.g., focus
   liftIO $ displayLevel fs ColorFull cops per sNew over
 

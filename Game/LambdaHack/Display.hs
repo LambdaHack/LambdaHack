@@ -50,8 +50,8 @@ displayLevel fs dm cops per s@State{splayer} overlay =
 
 -- | Display animations on top of the whole screen.
 displayAnimation :: FrontendSession -> Kind.COps
-                 -> Perception -> State -> Color.Animation -> IO ()
-displayAnimation fs cops per s anim =
-  let basicFrame = draw ColorFull cops per s []  -- no overlay for animations
+                 -> Perception -> State -> Msg -> Color.Animation -> IO ()
+displayAnimation fs cops per s topLineOnly anim =
+  let basicFrame = draw ColorFull cops per s [topLineOnly]
       playAnimation am = display fs True False (Just  am)
   in mapM_ playAnimation $ animate s basicFrame anim

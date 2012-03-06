@@ -283,7 +283,8 @@ itemEffectAction verbosity source target item = do
   per <- getPerception
   pl  <- gets splayer
   s   <- get
-  let effect = ieffect $ okind $ jkind item
+  let oldHP = bhp tm
+      effect = ieffect $ okind $ jkind item
       tloc = bloc tm
   -- The msg describes the target part of the action.
   ((b, msg), frames) <-
@@ -299,20 +300,26 @@ itemEffectAction verbosity source target item = do
       msgAdd msg
       -- Party sees or affected, so if interesting, the item gets identified.
       when b $ discover item
+      sNew <- get
       -- Party sees or affected, so show an animation.
-      let sanim = map (IM.singleton tloc)
+      let twirlSplash c1 c2 = map (IM.singleton tloc)
             [ Color.AttrChar (Color.Attr Color.BrWhite Color.defBG) '*'
-            , Color.AttrChar (Color.Attr Color.BrRed Color.defBG) '/'
-            , Color.AttrChar (Color.Attr Color.Red Color.defBG) '/'
-            , Color.AttrChar (Color.Attr Color.BrRed Color.defBG) '-'
-            , Color.AttrChar (Color.Attr Color.BrWhite Color.defBG) '-'
-            , Color.AttrChar (Color.Attr Color.BrRed Color.defBG) '\\'
-            , Color.AttrChar (Color.Attr Color.Red Color.defBG) '\\'
-            , Color.AttrChar (Color.Attr Color.BrRed Color.defBG) '|'
-            , Color.AttrChar (Color.Attr Color.Red Color.defBG) '|'
-            , Color.AttrChar (Color.Attr Color.BrRed Color.defBG) '%'
+            , Color.AttrChar (Color.Attr c1 Color.defBG) '/'
+            , Color.AttrChar (Color.Attr c1 Color.defBG) '-'
+            , Color.AttrChar (Color.Attr c1 Color.defBG) '\\'
+            , Color.AttrChar (Color.Attr c1 Color.defBG) '|'
+            , Color.AttrChar (Color.Attr c1 Color.defBG) '/'
+            , Color.AttrChar (Color.Attr c1 Color.defBG) '-'
+            , Color.AttrChar (Color.Attr c2 Color.defBG) '\\'
+            , Color.AttrChar (Color.Attr c2 Color.defBG) '%'
+            , Color.AttrChar (Color.Attr c2 Color.defBG) '%'
             ]
-      modify (\state -> state {sanim})
+          newHP | not (memActor target sNew) = 0
+                | otherwise = bhp $ getActor target sNew
+          animNew | newHP >  oldHP = twirlSplash Color.BrBlue Color.Blue
+                  | newHP <  oldHP = twirlSplash Color.BrRed  Color.Red
+                  | otherwise      = []
+      modify (\st@State{sanim=animOld} -> st {sanim = animOld ++ animNew})
     else
       -- Hidden, but if interesting then heard.
       when b $ msgAdd "You hear some noises."
