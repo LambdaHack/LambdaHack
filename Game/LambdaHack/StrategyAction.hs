@@ -169,11 +169,13 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
                throwFreq bitems 3, throwFreq tis 6] ++ towardsFreq
   applyFreq is multi = toFreq "applyFreq"
     [ ( benefit * multi
-      , -- TODO: we currently stop when frames arrive and require confirmations
-        -- e.g. for the frames focusing on hit heroes; see how it plays and
-        -- perhaps instead push them ASAP to play them between enemy moves.
-        do ((), frames) <- applyGroupItem actor (iverbApply ik) i
-           tryIgnore $ getOverConfirm frames
+      , do ((), frames) <- applyGroupItem actor (iverbApply ik) i
+           -- We immediately push frames caused by AI acions,
+           -- e.g., frames focusing the view on the hit hero,
+           -- and we just pad them with timeouts to stand out among
+           -- frames depicting AI moves.
+           mapM_ displayFramePush $
+             [Nothing] ++ L.intersperse Nothing (map Just frames) ++ [Nothing]
       )
     | i <- is,
       let ik = iokind (jkind i),
@@ -230,11 +232,13 @@ dirToAction actor tgt allowAttacks dir = do
     -- If the following action aborts, we just advance the time and continue.
     -- TODO: ensure time is taken for other aborted actions in this file
     -- TODO: or just fail at each abort in AI code? or use tryWithFrame
-    -- TODO: we currently stop when frames arrive and require confirmations,
-    -- e.g. for the frames focusing on hit heroes; see how it plays and
-    -- perhaps instead push them ASAP to have them played between enemy moves.
     ((), frames) <- moveOrAttack allowAttacks actor dir
-    tryIgnore $ getOverConfirm frames
+    -- We immediately push frames caused by AI acions,
+    -- e.g., frames focusing the view on the hit hero,
+    -- and we just pad them with timeouts to stand out among
+    -- frames depicting AI moves.
+    mapM_ displayFramePush $
+      [Nothing] ++ L.intersperse Nothing (map Just frames) ++ [Nothing]
 
 -- | A strategy to always just wait.
 wait :: ActorId -> Strategy (Action ())

@@ -5,7 +5,7 @@ module Game.LambdaHack.Display
   ( -- * Re-exported frontend
     FrontendSession, startup, shutdown, frontendName
     -- * Derived operations
-  , displayLevel, displayAnimation, displayNothing
+  , displayFrame, displayLevel, displayAnimation
   , nextEvent, promptGetKey
   ) where
 
@@ -32,10 +32,10 @@ import Game.LambdaHack.ActorState
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Draw
 
--- | Push a wait for a single frame to the frame queue.
-displayNothing :: FrontendSession -> IO ()
-displayNothing fs =
-  display fs True False Nothing
+-- | Push a single frame to the frame queue or, in case of Nothing,
+-- push a timeout request equal to a single frame.
+displayFrame :: FrontendSession -> Maybe Color.SingleFrame -> IO ()
+displayFrame fs = display fs True False
 
 -- | Display the screen, with an overlay, if any.
 displayLevel :: FrontendSession -> ColorMode -> Kind.COps
@@ -53,5 +53,5 @@ displayAnimation :: FrontendSession -> Kind.COps
                  -> Perception -> State -> Msg -> Color.Animation -> IO ()
 displayAnimation fs cops per s topLineOnly anim =
   let basicFrame = draw ColorFull cops per s [topLineOnly]
-      playAnimation am = display fs True False (Just  am)
+      playAnimation am = display fs True False (Just am)
   in mapM_ playAnimation $ animate s basicFrame anim

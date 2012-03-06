@@ -119,7 +119,7 @@ handleMonster actor = do
 nextMove :: Bool -> Action ()
 nextMove dispAlready = do
   debug "nextMove"
-  unless dispAlready displayNothingPush
+  unless dispAlready $ displayFramePush Nothing
   modify (updateTime (+1))
   regenerateLevelHP
   generateMonster

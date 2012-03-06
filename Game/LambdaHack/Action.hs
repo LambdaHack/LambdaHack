@@ -12,7 +12,7 @@ module Game.LambdaHack.Action
   , abort, abortWith, abortIfWith, neverMind
   , getDiary, msgAdd, recordHistory
   , getCommand, getConfirm, getChoice, getOverConfirm
-  , displayNothingPush, displayPush, drawPrompt
+  , displayFramePush, displayPush, drawPrompt
   , displayMoreConfirm, displayMoreCancel, displayYesNo, displayChoice
   , displayOverlays, displayOverConfirm
   , withPerception, getPerception, updateAnyActor, updatePlayerBody
@@ -261,10 +261,10 @@ getCommand doPush = do
     _ -> (nc, modifier)
 
 -- | Push a wait for a single frame to the frame queue.
-displayNothingPush :: Action ()
-displayNothingPush = do
+displayFramePush :: Maybe Color.SingleFrame -> Action ()
+displayFramePush frame = do
   fs <- getFrontendSession
-  liftIO $ displayNothing fs
+  liftIO $ displayFrame fs frame
 
 -- | Push the frame depicting the current level to the frame queue.
 -- If there are any animations to play, they are pushed at this point, too,

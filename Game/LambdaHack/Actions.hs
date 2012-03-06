@@ -132,6 +132,9 @@ triggerTile dloc = do
   lvl <- gets slevel
   let f (F.Cause effect) = do
         pl <- gets splayer
+-- TODO: take care of AI using this function (aborts, etc.)
+-- and show animations, etc. if it's not AI and show the messages (_msg)
+-- and focus on the hero only if seen (_b), etc.
         (_b, _msg) <- effectToAction effect 0 pl pl 0
         return ()
       f (F.ChangeTo group) = do
