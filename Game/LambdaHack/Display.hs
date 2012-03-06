@@ -32,7 +32,7 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Draw
 
 -- | Push a single frame to the frame queue or, in case of Nothing,
--- push a timeout request equal to a single frame.
+-- push a delay request equal to a single frame.
 displayFrame :: FrontendSession -> Maybe Color.SingleFrame -> IO ()
 displayFrame fs = display fs True False
 

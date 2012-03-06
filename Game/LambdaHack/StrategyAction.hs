@@ -173,7 +173,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
            -- We immediately push frames caused by AI actions,
            -- e.g., frames focusing the view on the hit hero,
            -- or frames representing animations.
-           mapM_ (displayFramePush . Just) frames
+           mapM_ displayFramePush frames
       )
     | i <- is,
       let ik = iokind (jkind i),
@@ -234,7 +234,7 @@ dirToAction actor tgt allowAttacks dir = do
     -- We immediately push frames caused by AI actions,
     -- e.g., frames focusing the view on the hit hero,
     -- or frames representing animations.
-    mapM_ (displayFramePush . Just) frames
+    mapM_ displayFramePush frames
 
 -- | A strategy to always just wait.
 wait :: ActorId -> Strategy (Action ())

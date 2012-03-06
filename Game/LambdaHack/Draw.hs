@@ -154,7 +154,7 @@ draw dm cops per s@State{ scursor=Cursor{..}
 
 -- | Render animations on top of a screen frame.
 animate :: State -> Color.SingleFrame -> Color.Animation
-        -> [Color.SingleFrame]
+        -> [Maybe Color.SingleFrame]
 animate s basicFrame anim =
   let Level{lxsize, lysize} = slevel s
       modifyFrame Color.SingleFrame{sfLevel = levelOld, ..} am =
@@ -167,5 +167,5 @@ animate s basicFrame anim =
             sfLevel =  -- Fully evaluated.
               let f l (y, lineOld) = let !line = fLine y lineOld in line : l
               in L.foldl' f [] (zip [lysize-1,lysize-2..0] (reverse levelOld))
-        in Color.SingleFrame{..}
+        in Just Color.SingleFrame{..}
   in map (modifyFrame basicFrame) anim

@@ -220,7 +220,7 @@ drawFrame sess@FrontendSession{sframeState} = do
         Just (Just frame, queue) -> do
           putMVar sframeState FPushed{fpushed = queue, fshown = frame}
           output sess frame
-        Just (Nothing, queue) ->  -- timeout requested via an empty frame
+        Just (Nothing, queue) ->  -- delay requested via an empty frame
           putMVar sframeState FPushed{fpushed = queue, ..}
         Nothing ->  -- the queue is empty
           putMVar sframeState fs
@@ -230,13 +230,13 @@ drawFrame sess@FrontendSession{sframeState} = do
 
 -- | Add a frame to be drawn.
 display :: FrontendSession -> Bool -> Bool -> Maybe Color.SingleFrame -> IO ()
-display sess True noTimeout rawFrame = pushFrame sess noTimeout rawFrame
+display sess True noDelay rawFrame = pushFrame sess noDelay rawFrame
 display sess False _ (Just rawFrame) = setFrame sess rawFrame
 display _ _ _ _ = assert `failure` "display: empty frame to be set"
 
 -- | Add a game screen frame to the frame drawing channel.
 pushFrame :: FrontendSession -> Bool -> Maybe Color.SingleFrame -> IO ()
-pushFrame sess@FrontendSession{sframeState, slastFull} noTimeout rawFrame = do
+pushFrame sess@FrontendSession{sframeState, slastFull} noDelay rawFrame = do
   -- Full evaluation and comparison is done outside the mvar lock.
   (lastFrame, anyFollowed) <- readIORef slastFull
   let frame = maybe Nothing (Just . evalFrame sess) rawFrame
@@ -263,7 +263,7 @@ pushFrame sess@FrontendSession{sframeState, slastFull} noTimeout rawFrame = do
   yield  -- drawing has priority
   case nextFrame of
     Nothing -> writeIORef slastFull (lastFrame, True)
-    Just f  -> writeIORef slastFull (f, noTimeout)
+    Just f  -> writeIORef slastFull (f, noDelay)
 
 evalFrame :: FrontendSession -> Color.SingleFrame -> GtkFrame
 evalFrame FrontendSession{stags} Color.SingleFrame{..} =

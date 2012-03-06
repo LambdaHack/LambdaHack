@@ -150,7 +150,8 @@ eff (Effect.Wound nDm) verbosity source target power = do
     if killed
       then do
         -- Perform all the focusing on the actor before he is killed.
-        tryIgnore $ getOverConfirm frames
+        -- TODO: clean up
+        tryIgnore $ getOverConfirm $ catMaybes frames
         -- Place the actor's possessions on the map.
         bitems <- gets (getActorItem target)
         modify (updateLevel (dropItemsAt bitems (bloc tm)))
@@ -173,7 +174,7 @@ eff Effect.Dominate _ source target _power = do
       updatePlayerBody (\ m -> m { btime = 0})
       -- Display status line and FOV for the newly controlled actor.
       fr <- drawPrompt ColorBW ""
-      return ((True, ""), [fr])
+      return ((True, ""), [Just fr])
     else if source == target
          then do
            lm <- gets levelMonsterList
@@ -408,7 +409,7 @@ focusIfOurs target = do
         then do
           -- Display status line and FOV for the new hero.
           fr <- drawPrompt ColorFull ""
-          return (True, [fr])
+          return (True, [Nothing, Just fr, Nothing])
         else returnNoFrame False
     else returnNoFrame False
 
@@ -570,7 +571,7 @@ doLook = do
       then tryIgnoreFrame $ displayOverlays lookMsg io
       else do
         fr <- drawPrompt ColorFull lookMsg
-        return ((), [fr])
+        return ((), [Just fr])
 
 gameVersion :: Action ()
 gameVersion = do

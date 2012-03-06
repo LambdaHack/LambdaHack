@@ -7,6 +7,7 @@ import qualified Data.List as L
 import qualified Data.Ord as Ord
 import qualified Data.IntMap as IM
 import qualified Data.Map as M
+import Data.Maybe
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
@@ -183,7 +184,7 @@ playerCommand msgRunAbort = do
               if null frs && newPT == oldPlayerTime
                 then do
                   fr <- drawPrompt ColorFull ""
-                  return ((), [fr])
+                  return ((), [Just fr])
                 else return ((), frs)
             Nothing -> let msgKey = "unknown command <" ++ K.showKM km ++ ">"
                        in abortWith msgKey
@@ -194,7 +195,7 @@ playerCommand msgRunAbort = do
         if newPlayerTime == oldPlayerTime
           then do
             -- Analyse the obtained frames.
-            let (mfr, frs) = case reverse frames of
+            let (mfr, frs) = case reverse $ catMaybes frames of
                   []     -> (Nothing, [])
                   f : fs -> (Just f, reverse fs)
              -- Show in turn all but the last frame.
@@ -206,7 +207,7 @@ playerCommand msgRunAbort = do
             -- The frame state is still None.
           else
             -- No next key needed, so just push all frames.
-            mapM_ (displayFramePush . Just) frames
+            mapM_ displayFramePush frames
             -- The frame state is now Push.
   loop kmPush
   -- The frame state is now Push.

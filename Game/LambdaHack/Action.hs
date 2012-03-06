@@ -64,7 +64,9 @@ newtype Action a = Action
   { runAction :: forall r . ActionFun r a
   }
 
-type ActionFrame a = Action (a, [Color.SingleFrame])
+-- | Actions and screen frames, including delays, resulting
+-- from performing the actions.
+type ActionFrame a = Action (a, [Maybe Color.SingleFrame])
 
 returnNoFrame :: a -> ActionFrame a
 returnNoFrame a = return (a, [])
@@ -176,7 +178,7 @@ tryWithFrame exc h =
       msgToFrames msg = do
         msgReset ""
         fr <- drawPrompt ColorFull msg
-        return ((), [fr])
+        return ((), [Just fr])
       excMsg msg = do
         ((), frames) <- msgToFrames msg
         a <- exc
@@ -358,7 +360,7 @@ displayOverlays :: Msg -> [Overlay] -> ActionFrame ()
 displayOverlays _      []     = returnNoFrame ()
 displayOverlays prompt [x]    = do
   frame <- drawOver ColorFull prompt x
-  return $ ((), [frame])
+  return $ ((), [Just frame])
 displayOverlays prompt (x:xs) = do
   frame <- drawOver ColorFull prompt (x ++ [moreMsg])
   b <- getConfirm frame
