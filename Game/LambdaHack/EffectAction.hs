@@ -431,24 +431,6 @@ summonMonsters n loc = do
   modify (\ state ->
            iterate (addMonster cotile mk hp loc) state !! n)
 
--- | Update player memory.
-remember :: Action ()
-remember = do
-  per <- getPerception
-  let vis = IS.toList (totalVisible per)
-  rememberList vis
-
-rememberList :: [Point] -> Action ()
-rememberList vis = do
-  lvl <- gets slevel
-  let rememberTile = [(loc, lvl `at` loc) | loc <- vis]
-  modify (updateLevel (updateLRMap (Kind.// rememberTile)))
-  let alt Nothing      = Nothing
-      alt (Just ([], _)) = Nothing
-      alt (Just (t, _))  = Just (t, t)
-      rememberItem = IM.alter alt
-  modify (updateLevel (updateIMap (\ m -> L.foldr rememberItem m vis)))
-
 -- | Remove dead heroes (or dead dominated monsters). Check if game is over.
 -- For now we only check the selected hero and at current level,
 -- but if poison, etc. is implemented, we'd need to check all heroes

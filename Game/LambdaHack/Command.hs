@@ -81,7 +81,7 @@ cmdSemantics cmd = case cmd of
   TriggerTile{..} -> inFrame $ playerTriggerTile feature
   Pickup ->    inFrame $ pickupItem
   Drop ->      inFrame $ dropItem
-  Wait ->      inFrame $ playerAdvanceTime
+  Wait ->      inFrame $ return ()
 
   Inventory -> inventory
   TgtFloor ->  targetFloor   TgtExplicit

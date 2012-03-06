@@ -97,18 +97,14 @@ handleAI dispAlready = do
 handleMonster :: ActorId -> Action ()
 handleMonster actor = do
   debug "handleMonster"
-  -- Determine perception to let monsters target heroes. The perception
-  -- may change between monster moves, e.g., when they open doors.
-  withPerception $ do
-    remember  -- hero notices his surroundings, before they get displayed
-    displayPush  -- draw the current surroundings
+  startTurn actor $ do
     cops  <- getCOps
     state <- get
     per <- getPerception
     -- Run the AI: choses an action from those given by the AI strategy.
     join $ rndToAction $
              frequency (head (runStrategy (strategy cops actor state per
-                                           .| wait actor)))
+                                           .| wait)))
     handleAI True
 
 -- TODO: nextMove may not be a good name. It's part of the problem of the
@@ -130,11 +126,8 @@ nextMove dispAlready = do
 handlePlayer :: Action ()
 handlePlayer = do
   debug "handlePlayer"
-  -- Determine perception before running player command, in case monsters
-  -- have opened doors, etc.
-  withPerception $ do
-    remember  -- hero notices his surroundings, before they get displayed
-    displayPush  -- draw the current surroundings
+  pl <- gets splayer
+  startTurn pl $ do
     -- If running, stop if aborted by a disturbance.
     -- Otherwise let the player issue commands, until any of them takes time.
     -- First time, just after pushing frames, ask for commands in Push mode.
@@ -142,12 +135,12 @@ handlePlayer = do
       ifRunning continueRun abort
     -- TODO: refactor this:
     state <- get
-    pl    <- gets splayer
+    pl2    <- gets splayer
     let time = stime state
         ploc = bloc (getPlayerBody state)
         sTimeout = Config.get (sconfig state) "monsters" "smellTimeout"
     -- Update smell. Only humans leave a strong scent.
-    when (isAHero state pl) $
+    when (isAHero state pl2) $
       modify (updateLevel (updateSmell (IM.insert ploc
                                          (Tile.SmellTime
                                             (time + sTimeout)))))
@@ -187,9 +180,10 @@ playerCommand msgRunAbort = do
             Nothing -> let msgKey = "unknown command <" ++ K.showKM km ++ ">"
                        in abortWith msgKey
         -- The command was aborted or successful and if the latter,
-        -- possibly took some time. If no time taken, rinse and repeat.
+        -- possibly took some time.
         if not timed
           then do
+            -- If no time taken, rinse and repeat.
             -- Analyse the obtained frames.
             let (mfr, frs) = case reverse $ catMaybes frames of
                   []     -> (Nothing, [])
@@ -201,7 +195,8 @@ playerCommand msgRunAbort = do
             kmNext <- maybe (getCommand Nothing) (getChoice []) mfr
             loop kmNext
             -- The frame state is still None.
-          else
+          else do
+            -- If some time taken, exit the loop and let other actors act.
             -- No next key needed, so just push all frames.
             mapM_ displayFramePush frames
             -- The frame state is now Push.

@@ -12,17 +12,18 @@ module Game.LambdaHack.Action
   , abort, abortWith, abortIfWith, neverMind
   , getDiary, msgAdd, recordHistory
   , getCommand, getConfirm, getChoice, getOverConfirm
-  , displayFramePush, displayPush, drawPrompt
+  , displayFramePush, startTurn, drawPrompt
   , displayMoreConfirm, displayMoreCancel, displayYesNo, displayChoice
   , displayOverlays, displayOverConfirm
-  , withPerception, getPerception, updateAnyActor, updatePlayerBody
-  , advanceTime, playerAdvanceTime
+  , getPerception, updateAnyActor, updatePlayerBody
   , currentDate, registerHS, saveGameBkp, saveGameFile, dump
+  , remember, rememberList
   ) where
 
 import Control.Monad
 import Control.Monad.State hiding (State, state, liftIO)
 import qualified Data.IntMap as IM
+import qualified Data.IntSet as IS
 import qualified Data.Map as M
 import System.Time
 import Data.Maybe
@@ -46,6 +47,7 @@ import Game.LambdaHack.Binding
 import qualified Game.LambdaHack.HighScore as H
 import qualified Game.LambdaHack.Config as Config
 import qualified Game.LambdaHack.Color as Color
+import Game.LambdaHack.Point
 
 -- | The type of the function inside any action.
 -- (Separated from the @Action@ type to document each argument with haddock.)
@@ -409,11 +411,6 @@ displayChoice prompt ovs keys = do
     K.Space | not (null rest) -> displayChoice prompt rest keys
     _ -> return (key, modifier)
 
--- | Update the cached perception for the given computation.
-withPerception :: Action () -> Action ()
-withPerception h = Action (\ sess@Session{scops} e _ k a st ms ->
-                            runAction h sess e (perception scops st) k a st ms)
-
 -- | Get the current perception.
 getPerception :: Action Perception
 getPerception = Action (\ _s _e p k _a st ms -> k st ms p)
@@ -427,27 +424,6 @@ updatePlayerBody :: (Actor -> Actor) -> Action ()
 updatePlayerBody f = do
   pl <- gets splayer
   updateAnyActor pl f
-
--- | Advance the move time for the given actor.
-advanceTime :: ActorId -> Action ()
-advanceTime actor = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getCOps
-  time <- gets stime
-  let upd m = m { btime = time + aspeed (okind (bkind m)) }
-  -- A hack to synchronize the whole party:
-  pl <- gets splayer
-  s <- get
-  -- If actor dead or not on current level, don't bother.
-  when (memActor actor s) $ updateAnyActor actor upd
-  when (actor == pl) $ do
-    let updH a = if bparty a == heroParty then upd a else a
-    modify (updateLevel (updateActor (IM.map updH)))
-
--- | Add a turn to the player time counter.
-playerAdvanceTime :: Action ()
-playerAdvanceTime = do
-  pl <- gets splayer
-  advanceTime pl
 
 currentDate :: Action ClockTime
 currentDate = liftIO getClockTime
@@ -463,3 +439,49 @@ saveGameFile state diary = liftIO $ Save.saveGameFile state diary
 
 dump :: FilePath -> Config.CP -> Action ()
 dump fn config = liftIO $ Config.dump fn config
+
+startTurn :: ActorId -> Action () -> Action ()
+startTurn actor action =
+  -- Determine perception before running player command, in case monsters
+  -- have opened doors, etc.
+  withPerception $ do
+    advanceTime actor  -- advance time while the actor still alive
+    remember  -- heroes notice their surroundings, before they get displayed
+    displayPush  -- draw the current surroundings
+    action  -- let the actor act
+
+-- | Update the cached perception for the given computation.
+withPerception :: Action () -> Action ()
+withPerception h = Action (\ sess@Session{scops} e _ k a st ms ->
+                            runAction h sess e (perception scops st) k a st ms)
+
+-- | Advance the move time for the given actor.
+advanceTime :: ActorId -> Action ()
+advanceTime actor = do
+  Kind.COps{coactor=Kind.Ops{okind}} <- getCOps
+  time <- gets stime
+  let upd m = m { btime = time + aspeed (okind (bkind m)) }
+  -- A hack to synchronize the whole party:
+  pl <- gets splayer
+  updateAnyActor actor upd
+  when (actor == pl) $ do
+    let updH a = if bparty a == heroParty then upd a else a
+    modify (updateLevel (updateActor (IM.map updH)))
+
+-- | Update player memory.
+remember :: Action ()
+remember = do
+  per <- getPerception
+  let vis = IS.toList (totalVisible per)
+  rememberList vis
+
+rememberList :: [Point] -> Action ()
+rememberList vis = do
+  lvl <- gets slevel
+  let rememberTile = [(loc, lvl `at` loc) | loc <- vis]
+  modify (updateLevel (updateLRMap (Kind.// rememberTile)))
+  let alt Nothing      = Nothing
+      alt (Just ([], _)) = Nothing
+      alt (Just (t, _))  = Just (t, t)
+      rememberItem = IM.alter alt
+  modify (updateLevel (updateIMap (\ m -> foldr rememberItem m vis)))

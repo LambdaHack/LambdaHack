@@ -160,7 +160,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
          .| moveDir moveTowards  -- go to last known foe location
          .| attackDir moveAround
   dieOrSleep | bhp <= 0  = dieNow actor
-             | otherwise = wait actor
+             | otherwise = wait
   foeAccessible =
     maybe False (Tile.hasFeature cotile F.Walkable . (lvl `at`)) floc
   actionPickup = return $ actorPickupItem actor
@@ -225,7 +225,7 @@ dirToAction actor tgt allowAttacks dir = do
   updateAnyActor actor $ \ m -> m { bdir = Just (dir, 0), btarget = tgt }
   -- perform action
   tryWith (\ msg -> if null msg
-                    then advanceTime actor
+                    then return ()
                     else assert `failure` (msg, "in AI")) $ do
     -- If the following action aborts, we just advance the time and continue.
     -- TODO: ensure time is taken for other aborted actions in this file
@@ -237,8 +237,8 @@ dirToAction actor tgt allowAttacks dir = do
     mapM_ displayFramePush frames
 
 -- | A strategy to always just wait.
-wait :: ActorId -> Strategy (Action ())
-wait actor = return $ advanceTime actor
+wait :: Strategy (Action ())
+wait = return $ return ()
 
 -- | A strategy to always just die.
 dieNow :: ActorId -> Strategy (Action ())

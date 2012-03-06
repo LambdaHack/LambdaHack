@@ -66,9 +66,7 @@ applyGroupItem actor verb item = do
       loc = bloc body
   removeFromInventory actor consumed loc
   when (loc `IS.member` totalVisible per) $ msgAdd msg
-  ((), frames) <- itemEffectAction 5 actor actor consumed
-  advanceTime actor
-  return ((), frames)
+  itemEffectAction 5 actor actor consumed
 
 playerApplyGroupItem :: Verb -> Object -> [Char] -> ActionFrame ()
 playerApplyGroupItem verb object syms = do
@@ -112,7 +110,6 @@ projectGroupItem source tloc verb item = do
   removeFromInventory source consumed sloc
   modify $ addProjectile cops consumed sloc party bl
   when (sourceVis || projVis) $ msgAdd msg
-  advanceTime source
 
 playerProjectGroupItem :: Verb -> Object -> [Char] -> ActionFrame ()
 playerProjectGroupItem verb object syms = do
@@ -288,7 +285,6 @@ dropItem = do
   removeOnlyFromInventory pl item (bloc pbody)
   msgAdd (actorVerbItemExtra cops state pbody "drop" item "")
   modify (updateLevel (dropItemsAt [item] ploc))
-  playerAdvanceTime
 
 -- TODO: this is a hack for dropItem, because removeFromInventory
 -- makes it impossible to drop items if the floor not empty.
@@ -359,7 +355,6 @@ actorPickupItem actor = do
             m { bletter = maxLetter l (bletter body) }
           modify (updateAnyActorItem actor (const nitems))
         Nothing -> abortWith "cannot carry any more"
-  advanceTime actor
 
 pickupItem :: Action ()
 pickupItem = do

@@ -123,7 +123,6 @@ bumpTile dloc feat = do
   if Tile.hasFeature cotile feat t
     then triggerTile dloc
     else guessBump cotile feat t
-  playerAdvanceTime
 
 -- | Perform the action specified for the tile in case it's triggered.
 triggerTile :: Point -> Action ()
@@ -201,7 +200,6 @@ actorOpenDoor actor dir = do
                  Tile.hasFeature cotile F.Hidden t)
          then neverMind isVerbose  -- not doors at all
          else triggerTile dloc
-  advanceTime actor
 
 -- | Change the displayed level in targeting mode to (at most)
 -- k levels shallower. Enters targeting mode, if not already in one.
@@ -293,7 +291,6 @@ search = do
         when (Tile.hasFeature cotile F.Hidden t && IM.notMember dloc leNew) $
           triggerTile dloc
   mapM_ triggerHidden (moves lxsize)
-  playerAdvanceTime
 
 -- | This function performs a move (or attack) by any actor,
 -- i.e., it can handle monsters, heroes and both.
@@ -328,7 +325,6 @@ moveOrAttack allowAttacks actor dir = do
           updateAnyActor actor $ \ body -> body {bloc = tloc}
           when (actor == pl) $
             msgAdd $ lookAt cops False True state lvl tloc ""
-          advanceTime actor
           returnNoFrame ()
       | allowAttacks && actor == pl
         && Tile.canBeHidden cotile (okind $ lvl `rememberAt` tloc) -> do
@@ -386,9 +382,7 @@ actorAttackActor source target = do
           visible = sloc `IS.member` totalVisible per
       when visible $ msgAdd msg
       -- Msgs inside itemEffectAction describe the target part.
-      ((), frames) <- itemEffectAction verbosity source target single
-      advanceTime source
-      return ((), frames)
+      itemEffectAction verbosity source target single
 
 -- | Resolves the result of an actor running (not walking) into another.
 -- This involves switching positions of the two actors.
@@ -400,7 +394,6 @@ actorRunActor source target = do
   tloc <- gets (bloc . getActor target)  -- target location
   updateAnyActor source $ \ m -> m { bloc = tloc }
   updateAnyActor target $ \ m -> m { bloc = sloc }
-  advanceTime source
   if source == pl
     then inFrame stopRunning  -- do not switch positions repeatedly
     else whenFrame (not $ isAHero s source) $ do
