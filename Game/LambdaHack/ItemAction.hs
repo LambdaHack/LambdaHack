@@ -9,6 +9,7 @@ import Control.Monad.State hiding (State, state)
 import qualified Data.List as L
 import qualified Data.IntMap as IM
 import Data.Maybe
+import Data.Ord
 import qualified Data.IntSet as IS
 
 import Game.LambdaHack.Utils.Assert
@@ -143,21 +144,28 @@ playerProjectGI verb object syms = do
       returnNoFrame ()
     Nothing -> retarget "Last target invalid."
 
--- TODO: sort monsters by distance to the player.
 -- | Start the monster targeting mode. Cycle between monster targets.
 targetMonster :: TgtMode -> ActionFrame ()
 targetMonster tgtMode = do
   pl        <- gets splayer
+  ploc      <- gets (bloc . getPlayerBody)
   ms        <- gets (monsterAssocs . slevel)
   per       <- getPerception
+  lxsize    <- gets (lxsize . slevel)
   target    <- gets (btarget . getPlayerBody)
   targeting <- gets (ctargeting . scursor)
-  let i = case target of
-            TEnemy n _ | targeting /= TgtOff -> n  -- next monster
-            TEnemy n _ -> n - 1  -- try to retarget old monster
-            _ -> -1  -- try to target first monster (e.g., number 0)
-      dms = L.filter ((/= pl) . fst) ms  -- don't target yourself
-      (lt, gt) = L.splitAt i dms
+      -- TODO: sort monsters by distance to the player.
+  let plms = L.filter ((/= pl) . fst) ms  -- don't target yourself
+      ordLoc (_, m) = (chessDist lxsize ploc $ bloc m, bloc m)
+      dms = L.sortBy (comparing ordLoc) plms
+      (lt, gt) = case target of
+            TEnemy n _ | targeting /= TgtOff ->  -- pick the next monster
+              let i = fromMaybe (-1) $ L.findIndex ((== n) . fst) dms
+              in L.splitAt (i + 1) dms
+            TEnemy n _ ->  -- try to retarget the old monster
+              let i = fromMaybe (-1) $ L.findIndex ((== n) . fst) dms
+              in L.splitAt i dms
+            _ -> (dms, [])  -- target first monster (e.g., number 0)
       gtlt     = gt ++ lt
       seen (_, m) =
         let mloc = bloc m
@@ -178,8 +186,8 @@ targetFloor tgtMode = do
   target    <- gets (btarget . getPlayerBody)
   targeting <- gets (ctargeting . scursor)
   let tgt = case target of
-        _ | targeting /= TgtOff -> TLoc ploc  -- double key press: reset cursor
         TEnemy _ _ -> TCursor  -- forget enemy target, keep the cursor
+        _ | targeting /= TgtOff -> TLoc ploc  -- double key press: reset cursor
         TPath [] -> TCursor
         TPath (loc:_) -> TLoc loc
         t -> t  -- keep the target from previous targeting session
