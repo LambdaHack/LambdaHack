@@ -128,7 +128,6 @@ playerProjectGI verb object syms = do
   per   <- getPerception
   let retarget msg = do
         msgAdd msg
-        updatePlayerBody (\ p -> p { btarget = TCursor })
         let upd cursor = cursor {clocation=ploc, ceps=0}
         modify (updateCursor upd)
         targetMonster TgtAuto
@@ -170,6 +169,7 @@ targetMonster tgtMode = do
       tgt = case lf of
               [] -> target  -- no monsters in sight, stick to last target
               (na, nm) : _ -> TEnemy na (bloc nm)  -- pick the next
+  -- Register the chosen monster, to pick another on next invocation.
   updatePlayerBody (\ p -> p { btarget = tgt })
   setCursor tgtMode
 
@@ -185,6 +185,7 @@ targetFloor tgtMode = do
         TPath [] -> TCursor
         TPath (loc:_) -> TLoc loc
         t -> t  -- keep the target from previous targeting session
+  -- Register that we want to target only locations.
   updatePlayerBody (\ p -> p { btarget = tgt })
   setCursor tgtMode
 
@@ -220,20 +221,22 @@ endTargeting accept = do
   -- return to the original level of the player
   modify (\ state -> state {slid = returnLn})
   modify (updateCursor (\ c -> c { ctargeting = TgtOff }))
-  case target of
-    TEnemy _ _ -> do
-      let canSee = IS.member cloc (totalVisible per)
-      when (accept && canSee) $
-        case L.find (\ (_im, m) -> bloc m == cloc) ms of
-          Just (im, m)  ->
-            let tgt = TEnemy im (bloc m)
-            in updatePlayerBody (\ p -> p { btarget = tgt })
-          Nothing -> return ()
-    _ ->
-      if accept
-      then updatePlayerBody (\ p -> p { btarget = TLoc cloc })
-      else updatePlayerBody (\ p -> p { btarget = TCursor })
-  endTargetingMsg
+  when accept $ do
+    case target of
+      TEnemy _ _ -> do
+        -- If in monster targeting mode, switch to the monster under
+        -- the current cursor location, if any.
+        let canSee = IS.member cloc (totalVisible per)
+        when (accept && canSee) $
+          case L.find (\ (_im, m) -> bloc m == cloc) ms of
+            Just (im, m)  ->
+              let tgt = TEnemy im (bloc m)
+              in updatePlayerBody (\ p -> p { btarget = tgt })
+            Nothing -> return ()
+      _ -> updatePlayerBody (\ p -> p { btarget = TLoc cloc })
+  if accept
+    then endTargetingMsg
+    else msgAdd "targeting canceled"
 
 endTargetingMsg :: Action ()
 endTargetingMsg = do

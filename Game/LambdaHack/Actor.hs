@@ -2,8 +2,7 @@
 -- involves the 'State' or 'Action' type.
 module Game.LambdaHack.Actor
   ( -- * Actor identifiers and related operations
-    ActorId, invalidActorId
-  , findHeroName, monsterGenChance
+    ActorId, findHeroName, monsterGenChance
     -- * Party identifiers
   , PartyId, heroParty, monsterParty, neutralParty
     -- * The@ Acto@r type
@@ -86,10 +85,6 @@ instance Binary Actor where
 -- | A unique identifier of an actor in a dungeon.
 type ActorId = Int
 
--- | An actor that is not on any level.
-invalidActorId :: ActorId
-invalidActorId = -1
-
 -- | Find a hero name in the config file, or create a stock name.
 findHeroName :: Config.CP -> Int -> String
 findHeroName config n =
@@ -117,8 +112,7 @@ monsterGenChance d numMonsters =
 template :: Kind.Id ActorKind -> Maybe Char -> Maybe String -> Int -> Point
          -> PartyId -> Actor
 template mk mc ms hp loc pp =
-  let invalidTarget = TEnemy invalidActorId loc
-  in Actor mk mc ms hp Nothing invalidTarget loc 'a' 0 pp
+  Actor mk mc ms hp Nothing invalidTarget loc 'a' 0 pp
 
 -- | Increment current hit points of an actor.
 addHp :: Kind.Ops ActorKind -> Int -> Actor -> Actor
@@ -153,6 +147,12 @@ data Target =
   | TPath [Point]         -- ^ target the list of locations in turn
   | TCursor               -- ^ target current position of the cursor; default
   deriving (Show, Eq)
+
+-- | An invalid target, with an actor that is not on any level.
+invalidTarget :: Target
+invalidTarget =
+  let invalidActorId = -1
+  in TEnemy invalidActorId origin
 
 instance Binary Target where
   put (TEnemy a ll) = putWord8 0 >> put a >> put ll
