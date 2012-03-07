@@ -1,23 +1,31 @@
--- TODO: Add an export list, with sections, after the file is rewritten
--- according to #17.
 -- | Game action monad and basic building blocks
 -- for player and monster actions.
 {-# LANGUAGE MultiParamTypeClasses, RankNTypes #-}
 module Game.LambdaHack.Action
-  ( ActionFun, Action, ActionFrame
-  , returnNoFrame, whenFrame, inFrame
-  , handlerToIO, end, rndToAction
+  ( -- * Actions and basic operations
+    ActionFun, Action, handlerToIO, end, rndToAction
+    -- * Actions returning frames
+  , ActionFrame, returnNoFrame, whenFrame, inFrame
+    -- * Game session and its accessors
   , Session(..), getCOps, getBinding
-  , debug, tryWith, tryWithFrame, tryRepeatedlyWith, tryIgnore, tryIgnoreFrame
+    -- * Various ways to abort action
   , abort, abortWith, abortIfWith, neverMind
+    -- * Abort exception handlers
+  , tryWith, tryWithFrame, tryRepeatedlyWith, tryIgnore, tryIgnoreFrame
+    -- * Diary and report
   , getDiary, msgAdd, recordHistory
-  , getCommand, getConfirm, getChoice, getOverConfirm
-  , displayFramePush, startTurn, drawPrompt
-  , displayMoreConfirm, displayMoreCancel, displayYesNo, displayChoice
-  , displayOverlays, displayOverConfirm
+    -- * Key input
+  , getKeyCommand, getKeyChoice, getOverConfirm
+    -- * Display each frame and confirm
+  , displayMoreConfirm, displayMoreCancel, displayYesNo, displayOverConfirm
+    -- * Assorted frame operations
+  , displayOverlays, displayChoice, displayFramePush, drawPrompt
+    -- * Start of turn operations
+  , startTurn, remember, rememberList
+    -- * Assorted operations
   , getPerception, updateAnyActor, updatePlayerBody
-  , currentDate, registerHS, saveGameBkp, saveGameFile, dump
-  , remember, rememberList
+    -- * Assorted primitives
+  , currentDate, registerHS, saveGameBkp, saveGameFile, dumpCfg, debug
   ) where
 
 import Control.Monad
@@ -66,20 +74,6 @@ newtype Action a = Action
   { runAction :: forall r . ActionFun r a
   }
 
--- | Actions and screen frames, including delays, resulting
--- from performing the actions.
-type ActionFrame a = Action (a, [Maybe Color.SingleFrame])
-
-returnNoFrame :: a -> ActionFrame a
-returnNoFrame a = return (a, [])
-
-whenFrame :: Bool -> ActionFrame () -> ActionFrame ()
-whenFrame True x  = x
-whenFrame False _ = returnNoFrame ()
-
-inFrame :: Action () -> ActionFrame ()
-inFrame act = act >> returnNoFrame ()
-
 instance Show (Action a) where
   show _ = "an action"
 
@@ -94,6 +88,10 @@ instance Functor Action where
                                let k' st' ms' = k st' ms' . f
                                in g s e p k' a st ms)
 
+instance MonadState State Action where
+  get     = Action (\ _s _e _p k _a  st ms -> k st  ms st)
+  put nst = Action (\ _s _e _p k _a _st ms -> k nst ms ())
+
 -- | Invokes the action continuation on the provided argument.
 returnAction :: a -> Action a
 returnAction x = Action (\ _s _e _p k _a st m -> k st m x)
@@ -105,10 +103,6 @@ bindAction m f = Action (\ s e p k a st ms ->
                           let next nst nm x =
                                 runAction (f x) s e p k a nst nm
                           in runAction m s e p next a st ms)
-
-instance MonadState State Action where
-  get     = Action (\ _s _e _p k _a  st ms -> k st  ms st)
-  put nst = Action (\ _s _e _p k _a _st ms -> k nst ms ())
 
 -- Instance commented out and action hiden, so that outside of this module
 -- nobody can subvert Action by invoking arbitrary IO.
@@ -122,7 +116,7 @@ handlerToIO sess@Session{sfs, scops} state diary h =
   runAction h
     sess
     (\ ns ndiary -> Save.rmBkpSaveDiary ns ndiary
-                 >> shutdown sfs)  -- get out of the game
+                 >> shutdown sfs)    -- get out of the game
     (dungeonPerception scops state)  -- create and cache perception
     (\ _ _ x -> return x)    -- final continuation returns result
     (\ msg ->
@@ -141,6 +135,20 @@ rndToAction r = do
   let (a, ng) = runState r g
   modify (\ state -> state {srandom = ng})
   return a
+
+-- | Actions and screen frames, including delays, resulting
+-- from performing the actions.
+type ActionFrame a = Action (a, [Maybe Color.SingleFrame])
+
+returnNoFrame :: a -> ActionFrame a
+returnNoFrame a = return (a, [])
+
+whenFrame :: Bool -> ActionFrame () -> ActionFrame ()
+whenFrame True x  = x
+whenFrame False _ = returnNoFrame ()
+
+inFrame :: Action () -> ActionFrame ()
+inFrame act = act >> returnNoFrame ()
 
 -- | The constant session information, not saved to the game save file.
 data Session = Session
@@ -161,9 +169,23 @@ getCOps = Action (\ Session{scops} _e _p k _a st ms -> k st ms scops)
 getBinding :: Action (Binding (ActionFrame ()))
 getBinding = Action (\ Session{skeyb} _e _p k _a st ms -> k st ms skeyb)
 
--- | Debugging.
-debug :: String -> Action ()
-debug _x = return () -- liftIO $ hPutStrLn stderr _x
+-- | Reset the state and resume from the last backup point, i.e., invoke
+-- the failure continuation.
+abort :: Action a
+abort = abortWith ""
+
+-- | Abort with the given message.
+abortWith :: Msg -> Action a
+abortWith msg = Action (\ _s _e _p _k a _st _ms -> a msg)
+
+-- | Abort and print the given msg if the condition is true.
+abortIfWith :: Bool -> Msg -> Action a
+abortIfWith True msg = abortWith msg
+abortIfWith False _  = abortWith ""
+
+-- | Abort and conditionally print the fixed message.
+neverMind :: Bool -> Action a
+neverMind b = abortIfWith b "never mind"
 
 -- | Set the current exception handler. First argument is the handler,
 -- second is the computation the handler scopes over.
@@ -207,24 +229,6 @@ tryIgnoreFrame =
                     then returnNoFrame ()
                     else assert `failure` (msg, "in tryIgnoreFrame"))
 
--- | Reset the state and resume from the last backup point, i.e., invoke
--- the failure continuation.
-abort :: Action a
-abort = abortWith ""
-
--- | Abort with the given message.
-abortWith :: Msg -> Action a
-abortWith msg = Action (\ _s _e _p _k a _st _ms -> a msg)
-
--- | Abort and print the given msg if the condition is true.
-abortIfWith :: Bool -> Msg -> Action a
-abortIfWith True msg = abortWith msg
-abortIfWith False _  = abortWith ""
-
--- | Abort and conditionally print the fixed message.
-neverMind :: Bool -> Action a
-neverMind b = abortIfWith b "never mind"
-
 -- | Get the current diary.
 getDiary :: Action Diary
 getDiary = Action (\ _s _e _p k _a st diary -> k st diary diary)
@@ -255,8 +259,8 @@ recordHistory = do
     historyReset $ takeHistory historyMax $ addReport sreport shistory
 
 -- | Wait for a player command.
-getCommand :: Maybe Bool -> Action (K.Key, K.Modifier)
-getCommand doPush = do
+getKeyCommand :: Maybe Bool -> Action (K.Key, K.Modifier)
+getKeyCommand doPush = do
   fs <- getFrontendSession
   keyb <- getBinding
   (nc, modifier) <- liftIO $ nextEvent fs doPush
@@ -264,23 +268,113 @@ getCommand doPush = do
     K.NoModifier -> (fromMaybe nc $ M.lookup nc $ kmacro keyb, modifier)
     _ -> (nc, modifier)
 
+-- | Wait for a player keypress.
+getKeyChoice :: [(K.Key, K.Modifier)] -> Color.SingleFrame
+          -> Action (K.Key, K.Modifier)
+getKeyChoice keys frame = do
+  fs <- getFrontendSession
+  liftIO $ promptGetKey fs keys frame
+
+-- | Ignore unexpected kestrokes until a SPACE or ESC is pressed.
+getConfirm :: Color.SingleFrame -> Action Bool
+getConfirm frame = do
+  fs <- getFrontendSession
+  let keys = [ (K.Space, K.NoModifier), (K.Esc, K.NoModifier)]
+  (k, _) <- liftIO $ promptGetKey fs keys frame
+  case k of
+    K.Space -> return True
+    _       -> return False
+
+-- | A series of confirmations for all overlays.
+getOverConfirm :: [Color.SingleFrame] -> Action ()
+getOverConfirm []     = return ()
+getOverConfirm (x:xs) = do
+  b <- getConfirm x
+  if b
+    then getOverConfirm xs
+    else abort
+
+-- | A yes-no confirmation.
+getYesNo :: Color.SingleFrame -> Action Bool
+getYesNo frame = do
+  fs <- getFrontendSession
+  let keys = [ (K.Char 'y', K.NoModifier)
+             , (K.Char 'n', K.NoModifier)
+             , (K.Esc, K.NoModifier)
+             ]
+  (k, _) <- liftIO $ promptGetKey fs keys frame
+  case k of
+    K.Char 'y' -> return True
+    _          -> return False
+
+-- | Display a msg with a @more@ prompt. Return value indicates if the player
+-- tried to cancel/escape.
+displayMoreConfirm :: ColorMode -> Msg -> Action Bool
+displayMoreConfirm dm prompt = do
+  frame <- drawPrompt dm (prompt ++ moreMsg)
+  getConfirm frame
+
+-- | Print a message with a @more@ prompt, await confirmation
+-- and ignore confirmation.
+displayMoreCancel :: Msg -> Action ()
+displayMoreCancel prompt = void $ displayMoreConfirm ColorFull prompt
+
+-- | Print a yes/no question and return the player's answer.
+displayYesNo :: Msg -> Action Bool
+displayYesNo prompt = do
+  -- Turn player's attention to the choice via BW colours.
+  frame <- drawPrompt ColorBW (prompt ++ yesnoMsg)
+  getYesNo frame
+
+-- | Print a msg and several overlays, one per page.
+-- All frames require confirmations.
+displayOverConfirm :: Msg -> [Overlay] -> Action ()
+displayOverConfirm prompt xs = do
+  let f x = drawOver ColorFull prompt (x ++ [moreMsg])
+  frames <- mapM f xs
+  getOverConfirm frames
+
+-- TODO: implement with getOverConfirm, rename things so that drawOver
+-- and displayOverConfirm are not confused.
+-- TODO: add Abort to the name to indicate try may needed in all 3 below.
+-- use it in Turn instead of getOverConfirm, does not need to split frs
+-- | Print a msg and several overlays, one per page.
+-- The last frame does not expect a confirmation.
+displayOverlays :: Msg -> [Overlay] -> ActionFrame ()
+displayOverlays _      []     = returnNoFrame ()
+displayOverlays prompt [x]    = do
+  frame <- drawOver ColorFull prompt x
+  return $ ((), [Just frame])
+displayOverlays prompt (x:xs) = do
+  frame <- drawOver ColorFull prompt (x ++ [moreMsg])
+  b <- getConfirm frame
+  if b
+    then displayOverlays prompt xs
+    else abort
+
+-- rename? use displayChoice in Turn?
+-- | Print a prompt and an overlay and wait for a player keypress.
+-- If many overlays, scroll screenfuls with SPACE. Do not wrap screenfuls
+-- (in some menus @?@ cycles views, so the user can restart from the top).
+displayChoice :: Msg -> [Overlay] -> [(K.Key, K.Modifier)]
+              -> Action (K.Key, K.Modifier)
+displayChoice prompt ovs keys = do
+  let (over, rest, spc, more, keysS) = case ovs of
+        [] -> ([], [], "", [], keys)
+        [x] -> (x, [], "", [], keys)
+        x:xs -> (x, xs, ", SPACE", [moreMsg], (K.Space, K.NoModifier) : keys)
+  frame <- drawOver ColorFull (prompt ++ spc ++ ", ESC]") (over ++ more)
+  (key, modifier) <- getKeyChoice ((K.Esc, K.NoModifier) : keysS) frame
+  case key of
+    K.Esc -> neverMind True
+    K.Space | not (null rest) -> displayChoice prompt rest keys
+    _ -> return (key, modifier)
+
 -- | Push a wait for a single frame to the frame queue.
 displayFramePush :: Maybe Color.SingleFrame -> Action ()
 displayFramePush frame = do
   fs <- getFrontendSession
   liftIO $ displayFrame fs frame
-
--- | Push the frame depicting the current level to the frame queue.
--- Only one screenful of the message is shown, the rest is ignored.
-displayPush :: Action ()
-displayPush = do
-  fs <- getFrontendSession
-  cops <- getCOps
-  per <- getPerception
-  s <- get
-  Diary{sreport} <- getDiary
-  let over = splitReport sreport
-  liftIO $ displayLevel fs ColorFull cops per s over
 
 -- | Draw the current level. The prompt is displayed, but not added
 -- to history. The prompt is appended to the current message
@@ -309,107 +403,50 @@ drawOver dm prompt overlay = do
       over = padMsg xsize msgPrompt : overlay
   return $ draw dm cops per s over
 
--- | A yes-no confirmation.
-getYesNo :: Color.SingleFrame -> Action Bool
-getYesNo frame = do
+startTurn :: Action () -> Action ()
+startTurn action =
+  -- Determine perception before running player command, in case monsters
+  -- have opened doors, etc.
+  withPerception $ do
+    remember  -- heroes notice their surroundings, before they get displayed
+    displayPush  -- draw the current surroundings
+    action  -- let the actor act
+
+-- | Push the frame depicting the current level to the frame queue.
+-- Only one screenful of the message is shown, the rest is ignored.
+displayPush :: Action ()
+displayPush = do
   fs <- getFrontendSession
-  let keys = [ (K.Char 'y', K.NoModifier)
-             , (K.Char 'n', K.NoModifier)
-             , (K.Esc, K.NoModifier)
-             ]
-  (k, _) <- liftIO $ promptGetKey fs keys frame
-  case k of
-    K.Char 'y' -> return True
-    _          -> return False
+  cops <- getCOps
+  per <- getPerception
+  s <- get
+  Diary{sreport} <- getDiary
+  let over = splitReport sreport
+  liftIO $ displayLevel fs ColorFull cops per s over
 
--- | Print a yes/no question and return the player's answer.
-displayYesNo :: Msg -> Action Bool
-displayYesNo prompt = do
-  -- Turn player's attention to the choice via BW colours.
-  frame <- drawPrompt ColorBW (prompt ++ yesnoMsg)
-  getYesNo frame
+-- | Update player memory.
+remember :: Action ()
+remember = do
+  per <- getPerception
+  let vis = IS.toList (totalVisible per)
+  rememberList vis
 
--- TODO: Find a way to add -more- into the frame, if needed.
--- Perhaps in the bottom left corner.
--- | Ignore unexpected kestrokes until a SPACE or ESC is pressed.
-getConfirm :: Color.SingleFrame -> Action Bool
-getConfirm frame = do
-  fs <- getFrontendSession
-  let keys = [ (K.Space, K.NoModifier), (K.Esc, K.NoModifier)]
-  (k, _) <- liftIO $ promptGetKey fs keys frame
-  case k of
-    K.Space -> return True
-    _       -> return False
+rememberList :: [Point] -> Action ()
+rememberList vis = do
+  lvl <- gets slevel
+  let rememberTile = [(loc, lvl `at` loc) | loc <- vis]
+  modify (updateLevel (updateLRMap (Kind.// rememberTile)))
+  let alt Nothing      = Nothing
+      alt (Just ([], _)) = Nothing
+      alt (Just (t, _))  = Just (t, t)
+      rememberItem = IM.alter alt
+  modify (updateLevel (updateIMap (\ m -> foldr rememberItem m vis)))
 
--- | Display a msg with a @more@ prompt. Return value indicates if the player
--- tried to cancel/escape.
-displayMoreConfirm :: ColorMode -> Msg -> Action Bool
-displayMoreConfirm dm prompt = do
-  frame <- drawPrompt dm (prompt ++ moreMsg)
-  getConfirm frame
-
--- | Print a message with a @more@ prompt, await confirmation
--- and ignore confirmation.
-displayMoreCancel :: Msg -> Action ()
-displayMoreCancel prompt = void $ displayMoreConfirm ColorFull prompt
-
--- TODO: implement with getOverConfirm, rename things so that drawOver
--- and displayOverConfirm are not confused.
--- TODO: add Abort to the name to indicate try may needed in all 3 below.
--- | Print a msg and several overlays, one per page.
--- The last frame does not expect a confirmation.
-displayOverlays :: Msg -> [Overlay] -> ActionFrame ()
-displayOverlays _      []     = returnNoFrame ()
-displayOverlays prompt [x]    = do
-  frame <- drawOver ColorFull prompt x
-  return $ ((), [Just frame])
-displayOverlays prompt (x:xs) = do
-  frame <- drawOver ColorFull prompt (x ++ [moreMsg])
-  b <- getConfirm frame
-  if b
-    then displayOverlays prompt xs
-    else abort
-
--- | A series of confirmations for all overlays.
-getOverConfirm :: [Color.SingleFrame] -> Action ()
-getOverConfirm []     = return ()
-getOverConfirm (x:xs) = do
-  b <- getConfirm x
-  if b
-    then getOverConfirm xs
-    else abort
-
--- | Print a msg and several overlays, one per page.
--- All frames require confirmations.
-displayOverConfirm :: Msg -> [Overlay] -> Action ()
-displayOverConfirm prompt xs = do
-  let f x = drawOver ColorFull prompt (x ++ [moreMsg])
-  frames <- mapM f xs
-  getOverConfirm frames
-
--- | Wait for a player keypress.
-getChoice :: [(K.Key, K.Modifier)] -> Color.SingleFrame
-          -> Action (K.Key, K.Modifier)
-getChoice keys frame = do
-  fs <- getFrontendSession
-  liftIO $ promptGetKey fs keys frame
-
--- | Print a prompt and an overlay and wait for a player keypress.
--- If many overlays, scroll screenfuls with SPACE. Do not wrap screenfuls
--- (in some menus @?@ cycles views, so the user can restart from the top).
-displayChoice :: Msg -> [Overlay] -> [(K.Key, K.Modifier)]
-              -> Action (K.Key, K.Modifier)
-displayChoice prompt ovs keys = do
-  let (over, rest, spc, more, keysS) = case ovs of
-        [] -> ([], [], "", [], keys)
-        [x] -> (x, [], "", [], keys)
-        x:xs -> (x, xs, ", SPACE", [moreMsg], (K.Space, K.NoModifier) : keys)
-  frame <- drawOver ColorFull (prompt ++ spc ++ ", ESC]") (over ++ more)
-  (key, modifier) <- getChoice ((K.Esc, K.NoModifier) : keysS) frame
-  case key of
-    K.Esc -> neverMind True
-    K.Space | not (null rest) -> displayChoice prompt rest keys
-    _ -> return (key, modifier)
+-- | Update the cached perception for the given computation.
+withPerception :: Action () -> Action ()
+withPerception h =
+  Action (\ sess@Session{scops} e _ k a st ms ->
+           runAction h sess e (dungeonPerception scops st) k a st ms)
 
 -- | Get the current perception.
 getPerception :: Action Perception
@@ -438,38 +475,9 @@ saveGameBkp state diary = liftIO $ Save.saveGameBkp state diary
 saveGameFile :: State -> Diary -> Action ()
 saveGameFile state diary = liftIO $ Save.saveGameFile state diary
 
-dump :: FilePath -> Config.CP -> Action ()
-dump fn config = liftIO $ Config.dump fn config
+dumpCfg :: FilePath -> Config.CP -> Action ()
+dumpCfg fn config = liftIO $ Config.dump fn config
 
-startTurn :: Action () -> Action ()
-startTurn action =
-  -- Determine perception before running player command, in case monsters
-  -- have opened doors, etc.
-  withPerception $ do
-    remember  -- heroes notice their surroundings, before they get displayed
-    displayPush  -- draw the current surroundings
-    action  -- let the actor act
-
--- | Update the cached perception for the given computation.
-withPerception :: Action () -> Action ()
-withPerception h =
-  Action (\ sess@Session{scops} e _ k a st ms ->
-           runAction h sess e (dungeonPerception scops st) k a st ms)
-
--- | Update player memory.
-remember :: Action ()
-remember = do
-  per <- getPerception
-  let vis = IS.toList (totalVisible per)
-  rememberList vis
-
-rememberList :: [Point] -> Action ()
-rememberList vis = do
-  lvl <- gets slevel
-  let rememberTile = [(loc, lvl `at` loc) | loc <- vis]
-  modify (updateLevel (updateLRMap (Kind.// rememberTile)))
-  let alt Nothing      = Nothing
-      alt (Just ([], _)) = Nothing
-      alt (Just (t, _))  = Just (t, t)
-      rememberItem = IM.alter alt
-  modify (updateLevel (updateIMap (\ m -> foldr rememberItem m vis)))
+-- | Debugging.
+debug :: String -> Action ()
+debug _x = return () -- liftIO $ hPutStrLn stderr _x

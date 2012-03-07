@@ -482,7 +482,7 @@ dumpConfig = do
   config <- gets sconfig
   let fn = "config.dump"
       msg = "Current configuration dumped to file " ++ fn ++ "."
-  dump fn config
+  dumpCfg fn config
   abortWith msg
 
 redraw :: Action ()
