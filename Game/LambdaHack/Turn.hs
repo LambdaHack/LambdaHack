@@ -131,11 +131,12 @@ handlePlayer :: Action ()
 handlePlayer = do
   debug "handlePlayer"
   startTurn $ do
+    pl <- gets splayer
     -- If running, stop if aborted by a disturbance.
     -- Otherwise let the player issue commands, until any of them takes time.
     -- First time, just after pushing frames, ask for commands in Push mode.
     tryWith (\ msg -> stopRunning >> playerCommand msg) $
-      ifRunning continueRun abort
+      ifRunning (\ x -> continueRun x >> advanceTime pl) abort
     -- TODO: refactor this:
     state <- get
     pl2    <- gets splayer
