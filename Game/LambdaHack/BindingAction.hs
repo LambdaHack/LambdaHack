@@ -84,9 +84,11 @@ stdBinding config cmdS cmdD =
       runWidth f = do
         lxsize <- gets (lxsize . slevel)
         run (f lxsize, 0)
+      -- Targeting cursor movement is marked as timed; fixed in Turn.hs.
+      cmdDir = K.moveBinding moveWidth runWidth
   in Binding
   { kcmd   = M.fromList $
-             K.moveBinding moveWidth runWidth ++
+             cmdDir ++
              heroSelection ++
              semList ++
              [ -- Debug commands.
@@ -99,4 +101,5 @@ stdBinding config cmdS cmdD =
              ]
   , kmacro
   , kmajor = L.map fst $ L.filter (majorCmd . snd) cmdList
+  , kdir   = L.map fst cmdDir
   }

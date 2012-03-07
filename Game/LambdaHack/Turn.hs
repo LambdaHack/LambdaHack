@@ -152,7 +152,7 @@ handlePlayer = do
 playerCommand :: Msg -> Action ()
 playerCommand msgRunAbort = do
   -- The frame state is now Push.
-  keyb <- getBinding
+  Binding.Binding{kcmd, kdir} <- getBinding
   kmPush <- case msgRunAbort of
     "" -> getCommand (Just True)
     _  -> drawPrompt ColorFull msgRunAbort >>= getChoice []
@@ -165,14 +165,15 @@ playerCommand msgRunAbort = do
           -- On abort, history gets reset to the old value, so nothing changes.
           recordHistory
           -- Look up the key.
-          case M.lookup km (Binding.kcmd keyb) of
-            Just (_, timed, c) -> do
-              -- TODO: redo by dividing commands in to time-taking and not
-              -- and doing many things automatically for them
-              -- (only time-taking will have type ActionFrame).
+          case M.lookup km kcmd of
+            Just (_, timed', c) -> do
+              -- Targeting cursor movement is marked as timed; fixed here.
+              targeting <- gets (ctargeting . scursor)
+              let timed = timed' && (km `notElem` kdir || targeting == TgtOff)
               ((), frs) <- c
-              -- Add a frame if command takes no time. No frames for @abort@.
-              if null frs && not timed
+              -- Ensure at least one frame if the command takes no time.
+              -- No frames for @abort@, so the code is here, not below.
+              if not timed && null (catMaybes frs)
                 then do
                   fr <- drawPrompt ColorFull ""
                   return (timed, [Just fr])
