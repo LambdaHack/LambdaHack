@@ -25,6 +25,7 @@ import Control.Monad.State hiding (State, state, liftIO)
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import qualified Data.Map as M
+import qualified Data.List as L
 import System.Time
 import Data.Maybe
 -- import System.IO (hPutStrLn, stderr) -- just for debugging
@@ -53,7 +54,7 @@ import Game.LambdaHack.Point
 type ActionFun r a =
    Session                           -- ^ session setup data
    -> (State -> Diary -> IO r)       -- ^ shutdown continuation
-   -> Perception                     -- ^ cached perception
+   -> DungeonPerception              -- ^ cached perception
    -> (State -> Diary -> a -> IO r)  -- ^ continuation
    -> (Msg -> IO r)                  -- ^ failure/reset continuation
    -> State                          -- ^ current state
@@ -122,7 +123,7 @@ handlerToIO sess@Session{sfs, scops} state diary h =
     sess
     (\ ns ndiary -> Save.rmBkpSaveDiary ns ndiary
                  >> shutdown sfs)  -- get out of the game
-    (perception scops state)  -- create and cache perception
+    (dungeonPerception scops state)  -- create and cache perception
     (\ _ _ x -> return x)    -- final continuation returns result
     (\ msg ->
       ioError $ userError $ "unhandled abort  " ++ msg)  -- e.g., in AI code
@@ -412,7 +413,8 @@ displayChoice prompt ovs keys = do
 
 -- | Get the current perception.
 getPerception :: Action Perception
-getPerception = Action (\ _s _e p k _a st ms -> k st ms p)
+getPerception = Action (\ _s _e per k _a s ms ->
+                         k s ms (fromJust $ L.lookup (slid s) per))
 
 -- | Update actor stats. Works for actors on other levels, too.
 updateAnyActor :: ActorId -> (Actor -> Actor) -> Action ()
@@ -450,8 +452,9 @@ startTurn action =
 
 -- | Update the cached perception for the given computation.
 withPerception :: Action () -> Action ()
-withPerception h = Action (\ sess@Session{scops} e _ k a st ms ->
-                            runAction h sess e (perception scops st) k a st ms)
+withPerception h =
+  Action (\ sess@Session{scops} e _ k a st ms ->
+           runAction h sess e (dungeonPerception scops st) k a st ms)
 
 -- | Update player memory.
 remember :: Action ()

@@ -1,6 +1,7 @@
 -- | Actors perceiving other actors and the dungeon level.
 module Game.LambdaHack.Perception
-  ( Perception, totalVisible, debugTotalReachable, perception
+  ( DungeonPerception, Perception
+  , totalVisible, debugTotalReachable, dungeonPerception
   , actorReachesLoc, actorReachesActor, monsterSeesHero
   ) where
 
@@ -15,6 +16,7 @@ import Game.LambdaHack.State
 import Game.LambdaHack.Level
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
+import Game.LambdaHack.Dungeon
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.FOV
 import qualified Game.LambdaHack.Config as Config
@@ -30,10 +32,14 @@ newtype PerceptionVisible = PerceptionVisible
   { pvisible :: IS.IntSet
   }
 
--- Note: Heroes share visibility and only have separate reachability.
--- The pplayer field must be void if the player is not on the current level.
--- Right now, the field is used only for player-controlled monsters.
+-- | The type representing the perception for all levels in the dungeon.
+type DungeonPerception = [(LevelId, Perception)]
+
 -- | The type representing the perception of all actors on the level.
+--
+-- Note: Heroes share visibility and only have separate reachability.
+-- The pplayer field must be void on all levels except where he resides.
+-- Right now, the field is used only for player-controlled monsters.
 data Perception = Perception
   { pplayer :: Maybe PerceptionReachable
   , pheroes :: IM.IntMap PerceptionReachable
@@ -94,21 +100,27 @@ monsterSeesHero cotile per lvl _source target sloc tloc =
      && isVisible cotile reachable lvl IS.empty tloc
 
 -- | Calculate the perception of all actors on the level.
-perception :: Kind.COps -> State -> Perception
-perception cops@Kind.COps{cotile}
-           state@State{ splayer
-                      , sconfig
-                      , sdebug = DebugMode{smarkVision}
-                      } =
-  let lvl@Level{lactor} = slevel state
-      mode   = Config.get sconfig "engine" "fovMode"
+dungeonPerception :: Kind.COps -> State -> DungeonPerception
+dungeonPerception cops s@State{slid, sdungeon} =
+  let lvlPer (ln, lvl) = (ln, levelPerception cops s lvl)
+  in map lvlPer $ currentFirst slid sdungeon
+
+-- | Calculate the perception of all actors on the level.
+levelPerception :: Kind.COps -> State -> Level -> Perception
+levelPerception cops@Kind.COps{cotile}
+                       state@State{ splayer
+                                  , sconfig
+                                  , sdebug = DebugMode{smarkVision}
+                                  }
+                       lvl@Level{lactor} =
+  let mode   = Config.get sconfig "engine" "fovMode"
       radius = let r = Config.get sconfig "engine" "fovRadius"
                in if r < 1
                   then error $ "FOV radius is " ++ show r ++ ", should be >= 1"
                   else r
       -- Perception for a player-controlled monster on the current level.
       mLocPer =
-        if not (isAHero state splayer) && memActor splayer state
+        if not (isAHero state splayer) && IM.member splayer lactor
         then let m = getPlayerBody state
              in Just (bloc m,
                       computeReachable cops radius mode smarkVision m lvl)
@@ -124,10 +136,10 @@ perception cops@Kind.COps{cotile}
       playerControlledMonsterLight = maybeToList mLoc
       lights = IS.fromList $ playerControlledMonsterLight ++ locs
       visible = computeVisible cotile reachable lvl lights
-  in  Perception { pplayer = mPer
-                 , pheroes = pers
-                 , ptotal  = visible
-                 }
+  in Perception { pplayer = mPer
+                , pheroes = pers
+                , ptotal  = visible
+                }
 
 -- | A location can be directly lit by an ambient shine or a weak, portable
 -- light source, e.g,, carried by a hero. (Only lights of radius 0
