@@ -52,12 +52,12 @@ import qualified Game.LambdaHack.Color as Color
 -- for the actors to identify it (and the item that caused it, if any).
 -- The second bool tells if the effect was seen by or affected the party.
 effectToAction :: Effect.Effect -> Int -> ActorId -> ActorId -> Int
-               -> ActionFrame (Bool, Bool)
+               -> Action (Bool, Bool)
 effectToAction effect verbosity source target power = do
   oldTm <- gets (getActor target)
   let oldHP = bhp oldTm
   -- The msg describes the target part of the action.
-  ((b, msg), frames) <- eff effect verbosity source target power
+  (b, msg) <- eff effect verbosity source target power
   -- We assume the target not killed outright by the effect.
   sm  <- gets (getActor source)
   tm  <- gets (getActor target)
@@ -66,7 +66,7 @@ effectToAction effect verbosity source target power = do
   s   <- get
   let tloc = bloc tm
       newHP = bhp $ getActor target s
-  (bb, frs) <-
+  bb <-
     if isAHero s source ||
        isAHero s target ||
        pl == source ||
@@ -99,29 +99,28 @@ effectToAction effect verbosity source target power = do
                 | newHP <  oldHP = twirlSplash Color.BrRed  Color.Red
                 | otherwise      = []
           animFrs = animate s basicFrame anim
-      return ((b, True), frames ++ animFrs)
+      mapM_ displayFramePush animFrs
+      return (b, True)
     else do
       -- Hidden, but if interesting then heard.
       when b $ msgAdd "You hear some noises."
-      return ((b, False), frames)
-  -- Now kill the actor, if needed.
-  if newHP <= 0
-    then do
-      -- Place the actor's possessions on the map.
-      bitems <- gets (getActorItem target)
-      modify (updateLevel (dropItemsAt bitems (bloc tm)))
-      -- Clean bodies up.
-      if target == pl
-        then do -- Kill the player and check game over.
-          checkPartyDeath frs
-          return (bb, [])  -- frames displayed and so consumed
-        else do -- Kill the enemy.
-          modify (deleteActor target)
-          return (bb, frs)  -- frames unchanged
-    else return (bb, frs)  -- frames unchanged
+      return (b, False)
+  -- Now kill the actor, if needed. For monsters, no "die" message
+  -- is shown below. It should have been showsn in @eff@.
+  when (newHP <= 0) $ do
+    -- Place the actor's possessions on the map.
+    bitems <- gets (getActorItem target)
+    modify (updateLevel (dropItemsAt bitems (bloc tm)))
+    -- Clean bodies up.
+    if target == pl
+      then  -- Kill the player and check game over.
+        checkPartyDeath
+      else  -- Kill the enemy.
+        modify (deleteActor target)
+  return bb
 
 eff :: Effect.Effect -> Int -> ActorId -> ActorId -> Int
-    -> ActionFrame (Bool, String)
+    -> Action (Bool, String)
 eff Effect.NoEffect _ _ _ _ = nullEffect
 eff Effect.Heal _ _source target power = do
   Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getCOps
@@ -130,14 +129,14 @@ eff Effect.Heal _ _source target power = do
   if bhp tm >= bhpMax tm || power <= 0
     then nullEffect
     else do
-      (_, frames) <- focusIfOurs target
-      updateAnyActor target (addHp coactor power)  -- TODO: duplicate code in  bhpMax and addHp
-      return ((True, actorVerbExtra coactor tm "feel" "better"), frames)
+      void $ focusIfOurs target
+      updateAnyActor target (addHp coactor power)
+      return (True, actorVerbExtra coactor tm "feel" "better")
 eff (Effect.Wound nDm) verbosity source target power = do
   Kind.COps{coactor} <- getCOps
   n  <- rndToAction $ rollDice nDm
   if n + power <= 0 then nullEffect else do
-    (_, frames) <- focusIfOurs target
+    void $ focusIfOurs target
     pl <- gets splayer
     tm <- gets (getActor target)
     let newHP  = bhp tm - n - power
@@ -158,7 +157,7 @@ eff (Effect.Wound nDm) verbosity source target power = do
               show (n + power) ++ "HP"
           | otherwise = actorVerbExtra coactor tm "hiss" "in pain"
     updateAnyActor target $ \ m -> m { bhp = newHP }  -- Damage the target.
-    return ((True, msg), frames)
+    return (True, msg)
 eff Effect.Dominate _ source target _power = do
   s <- get
   if not $ isAHero s target
@@ -170,7 +169,8 @@ eff Effect.Dominate _ source target _power = do
       updatePlayerBody (\ m -> m { btime = 0})
       -- Display status line and FOV for the newly controlled actor.
       fr <- drawPrompt ColorBW ""
-      return ((True, ""), [Just fr])
+      mapM_ displayFramePush [Nothing, Just fr, Nothing]
+      return (True, "")
     else if source == target
          then do
            lm <- gets levelMonsterList
@@ -179,34 +179,34 @@ eff Effect.Dominate _ source target _power = do
            let cross m = bloc m : vicinityCardinal lxsize lysize (bloc m)
                vis = L.concatMap cross lm
            rememberList vis
-           returnNoFrame (True, "A dozen voices yells in anger.")
+           return (True, "A dozen voices yells in anger.")
          else nullEffect
 eff Effect.SummonFriend _ source target power = do
   tm <- gets (getActor target)
   s <- get
-  ((), frames) <- if isAHero s source
+  if isAHero s source
     then summonHeroes (1 + power) (bloc tm)
-    else inFrame $ summonMonsters (1 + power) (bloc tm)
-  return ((True, ""), frames)
+    else summonMonsters (1 + power) (bloc tm)
+  return (True, "")
 eff Effect.SummonEnemy _ source target power = do
   tm <- gets (getActor target)
   s  <- get
   -- A trick: monster player summons a hero.
-  ((), frames) <- if not $ isAHero s source
+  if not $ isAHero s source
     then summonHeroes (1 + power) (bloc tm)
-    else inFrame $ summonMonsters (1 + power) (bloc tm)
-  return ((True, ""), frames)
+    else summonMonsters (1 + power) (bloc tm)
+  return (True, "")
 eff Effect.ApplyPerfume _ source target _ =
   if source == target
-  then returnNoFrame (True, "Tastes like water, but with a strong rose scent.")
+  then return (True, "Tastes like water, but with a strong rose scent.")
   else do
     let upd lvl = lvl { lsmell = IM.empty }
     modify (updateLevel upd)
-    returnNoFrame (True, "The fragrance quells all scents in the vicinity.")
+    return (True, "The fragrance quells all scents in the vicinity.")
 eff Effect.Regeneration verbosity source target power =
   eff Effect.Heal verbosity source target power
 eff Effect.Searching _ _source _target _power =
-  returnNoFrame (True, "It gets lost and you search in vain.")
+  return (True, "It gets lost and you search in vain.")
 eff Effect.Ascend _ source target power = do
   tm <- gets (getActor target)
   s  <- get
@@ -215,7 +215,7 @@ eff Effect.Ascend _ source target power = do
     then squashActor source target
     else effLvlGoUp (power + 1)
   -- TODO: The following message too late if a monster squashed:
-  returnNoFrame (True, actorVerbExtra coactor tm "find" "a shortcut upstrairs")
+  return (True, actorVerbExtra coactor tm "find" "a shortcut upstrairs")
 eff Effect.Descend _ source target power = do
   tm <- gets (getActor target)
   s  <- get
@@ -224,10 +224,10 @@ eff Effect.Descend _ source target power = do
     then squashActor source target
     else effLvlGoUp (- (power + 1))
   -- TODO: The following message too late if a monster squashed:
-  returnNoFrame (True,actorVerbExtra coactor tm "find" "a shortcut downstairs")
+  return (True,actorVerbExtra coactor tm "find" "a shortcut downstairs")
 
-nullEffect :: ActionFrame (Bool, String)
-nullEffect = returnNoFrame (False, "Nothing happens.")
+nullEffect :: Action (Bool, String)
+nullEffect = return (False, "Nothing happens.")
 
 -- TODO: refactor with actorAttackActor.
 squashActor :: ActorId -> ActorId -> Action ()
@@ -241,13 +241,11 @@ squashActor source target = do
       verb = iverbApply $ okind h2hKind
       msg = actorVerbActorExtra coactor sm verb tm " in a staircase accident"
   msgAdd msg
-  ((), noFrames) <- itemEffectAction 0 source target h2h
+  itemEffectAction 0 source target h2h
   s <- get
   -- The monster has to killed, because we may step there next turn.
   assert (not (memActor target s) `blame` (source, target, "not killed")) $
-    -- Since monster is squashed, no extra frames generated to focus on it.
-    assert (null noFrames `blame` length noFrames) $
-      return ()
+    return ()
 
 effLvlGoUp :: Int -> Action ()
 effLvlGoUp k = do
@@ -334,21 +332,19 @@ fleeDungeon = do
 
 -- | The source actor affects the target actor, with a given item.
 -- If the event is seen, the item may get identified.
-itemEffectAction :: Int -> ActorId -> ActorId -> Item -> ActionFrame ()
+itemEffectAction :: Int -> ActorId -> ActorId -> Item -> Action ()
 itemEffectAction verbosity source target item = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getCOps
   sm <- gets (getActor source)
   let effect = ieffect $ okind $ jkind item
   -- The msg describes the target part of the action.
-  ((b1, b2), frames) <-
-    effectToAction effect verbosity source target (jpower item)
+  (b1, b2) <- effectToAction effect verbosity source target (jpower item)
   -- Party sees or affected, and the effect interesting,
   -- so the item gets identified.
   when (b1 && b2) $ discover item
   -- Destroys attacking actor and its items: a hack for projectiles.
   when (bhp sm <= 0) $
     modify (deleteActor source)
-  return ((), frames)
 
 -- | Make the item known to the player.
 discover :: Item -> Action ()
@@ -392,7 +388,7 @@ selectPlayer actor = do
       msgAdd $ lookAt cops False True state lvl (bloc pbody) ""
       return True
 
-focusIfOurs :: ActorId -> ActionFrame Bool
+focusIfOurs :: ActorId -> Action Bool
 focusIfOurs target = do
   s  <- get
   pl <- gets splayer
@@ -401,23 +397,22 @@ focusIfOurs target = do
       -- Focus on the hero being wounded/displaced/etc.
       b <- selectPlayer target
       -- Display status line for the new hero.
-      if b
-        then do
-          -- Display status line and FOV for the new hero.
-          fr <- drawPrompt ColorFull ""
-          return (True, [Nothing, Just fr, Nothing])
-        else returnNoFrame False
-    else returnNoFrame False
+      when b $ do
+        -- Display status line and FOV for the new hero.
+        fr <- drawPrompt ColorFull ""
+        mapM_ displayFramePush [Nothing, Just fr, Nothing]
+      return b
+    else return False
 
-summonHeroes :: Int -> Point -> ActionFrame ()
+summonHeroes :: Int -> Point -> Action ()
 summonHeroes n loc =
   assert (n > 0) $ do
   cops <- getCOps
   newHeroId <- gets scounter
   modify (\ state -> iterate (addHero cops loc) state !! n)
-  (b, frames) <- focusIfOurs newHeroId
+  b <- focusIfOurs newHeroId
   assert (b `blame` (newHeroId, "player summons himself")) $
-    return ((), frames)
+    return ()
 
 summonMonsters :: Int -> Point -> Action ()
 summonMonsters n loc = do
@@ -431,16 +426,14 @@ summonMonsters n loc = do
 -- For now we only check the selected hero and at current level,
 -- but if poison, etc. is implemented, we'd need to check all heroes
 -- on any level.
-checkPartyDeath :: [Maybe Color.SingleFrame] -> Action ()
-checkPartyDeath frs = do
+checkPartyDeath :: Action ()
+checkPartyDeath = do
   Kind.COps{coactor} <- getCOps
   ahs    <- gets allHeroesAnyLevel
   pl     <- gets splayer
   pbody  <- gets getPlayerBody
   config <- gets sconfig
   when (bhp pbody <= 0) $ do
-    -- Push all frames with combat animations, etc., before --more--.
-    mapM_ displayFramePush frs
     msgAdd $ actorVerb coactor pbody "die"
     go <- displayMoreConfirm ColorBW ""
     recordHistory  -- Prevent repeating the "die" msgs.
@@ -457,9 +450,9 @@ checkPartyDeath frs = do
                modify deletePlayer
                -- At this place the invariant that the player exists fails.
                -- Select the new player-controlled hero (invariant not needed),
-               -- but don't draw a frame for him, in case the focus
-               -- changes again during the same turn. He's just a random
-               -- next guy in the line.
+               -- but don't draw a frame for him with focusIfOurs,
+               -- in case the focus changes again during the same turn.
+               -- He's just a random next guy in the line.
                selectPlayer actor
                  >>= assert `trueM` (pl, actor, "player resurrects")
                -- At this place the invariant is restored again.

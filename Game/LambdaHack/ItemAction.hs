@@ -54,7 +54,7 @@ getGroupItem is object syms prompt packName = do
 applyGroupItem :: ActorId  -- ^ actor applying the item (is on current level)
                -> Verb     -- ^ how the applying is called
                -> Item     -- ^ the item to be applied
-               -> ActionFrame ()
+               -> Action ()
 applyGroupItem actor verb item = do
   cops  <- getCOps
   state <- get
@@ -68,7 +68,7 @@ applyGroupItem actor verb item = do
   when (loc `IS.member` totalVisible per) $ msgAdd msg
   itemEffectAction 5 actor actor consumed
 
-playerApplyGroupItem :: Verb -> Object -> [Char] -> ActionFrame ()
+playerApplyGroupItem :: Verb -> Object -> [Char] -> Action ()
 playerApplyGroupItem verb object syms = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getCOps
   is   <- gets getPlayerItem

@@ -9,6 +9,7 @@ import qualified Data.IntMap as IM
 import qualified Data.Map as M
 import Data.Maybe
 
+import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
 import qualified Game.LambdaHack.Config as Config
@@ -156,7 +157,8 @@ playerCommand msgRunAbort = do
   kmPush <- case msgRunAbort of
     "" -> getCommand (Just True)
     _  -> drawPrompt ColorFull msgRunAbort >>= getChoice []
-  -- The frame state is now None.
+  -- The frame state is now None and remains so between each pair
+  -- of lines of @loop@ (but can change within called actions).
   let loop :: (K.Key, K.Modifier) -> Action ()
       loop km = do
         -- On abort, just reset state and call loop again below.
@@ -202,11 +204,9 @@ playerCommand msgRunAbort = do
             -- The frame state is still None.
           else do
             -- If some time taken, exit the loop and let other actors act.
-            -- No next key needed, so just push all frames.
-            mapM_ displayFramePush frames
-            -- The frame state is now Push.
+            -- No next key needed and frames can be generated.
+            assert (null frames `blame` length frames) $ return ()
   loop kmPush
-  -- The frame state is now Push.
 
 
 -- Design thoughts (in order to get rid or partially rid of the somewhat

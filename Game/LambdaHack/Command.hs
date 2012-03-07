@@ -75,7 +75,7 @@ timedCmd cmd = case cmd of
 -- | The semantics of player commands in terms of the @Action@ monad.
 cmdSemantics :: Cmd -> ActionFrame ()
 cmdSemantics cmd = case cmd of
-  Apply{..}       -> playerApplyGroupItem verb object syms
+  Apply{..}       -> inFrame $ playerApplyGroupItem verb object syms
   Project{..}     -> playerProjectGroupItem verb object syms
   TriggerDir{..}  -> inFrame $ playerTriggerDir feature verb
   TriggerTile{..} -> inFrame $ playerTriggerTile feature

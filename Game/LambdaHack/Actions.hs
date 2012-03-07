@@ -87,7 +87,7 @@ move dir = do
   targeting <- gets (ctargeting . scursor)
   if targeting /= TgtOff
     then moveCursor dir 1
-    else moveOrAttack True pl dir
+    else inFrame $ moveOrAttack True pl dir
 
 ifRunning :: ((Vector, Int) -> Action a) -> Action a -> Action a
 ifRunning t e = do
@@ -297,7 +297,7 @@ search = do
 moveOrAttack :: Bool       -- ^ allow attacks?
              -> ActorId    -- ^ who's moving?
              -> Vector     -- ^ in which direction?
-             -> ActionFrame ()
+             -> Action ()
 moveOrAttack allowAttacks actor dir = do
   -- We start by looking at the target position.
   cops@Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getCOps
@@ -325,15 +325,12 @@ moveOrAttack allowAttacks actor dir = do
           updateAnyActor actor $ \ body -> body {bloc = tloc}
           when (actor == pl) $
             msgAdd $ lookAt cops False True state lvl tloc ""
-          returnNoFrame ()
       | allowAttacks && actor == pl
         && Tile.canBeHidden cotile (okind $ lvl `rememberAt` tloc) -> do
           msgAdd "You search your surroundings."  -- TODO: proper msg
           search
-          returnNoFrame ()
-      | otherwise -> do
+      | otherwise ->
           actorOpenDoor actor dir  -- try to open a door, TODO: bumpTile tloc F.Openable
-          returnNoFrame ()
 
 -- | Resolves the result of an actor moving into another. Usually this
 -- involves melee attack, but with two heroes it just changes focus.
@@ -342,7 +339,7 @@ moveOrAttack allowAttacks actor dir = do
 -- can be attacked from an adjacent position.
 -- This function is analogous to projectGroupItem, but for melee
 -- and not using up the weapon.
-actorAttackActor :: ActorId -> ActorId -> ActionFrame ()
+actorAttackActor :: ActorId -> ActorId -> Action ()
 actorAttackActor source target = do
   sm <- gets (getActor source)
   tm <- gets (getActor target)
@@ -351,7 +348,6 @@ actorAttackActor source target = do
       -- Select adjacent hero by bumping into him. Takes no time.
       selectPlayer target
         >>= assert `trueM` (source, target, "player bumps into himself")
-      returnNoFrame ()
     else do
       Kind.COps{coactor, coitem=coitem@Kind.Ops{opick, okind}} <- getCOps
       state <- get
@@ -386,7 +382,7 @@ actorAttackActor source target = do
 
 -- | Resolves the result of an actor running (not walking) into another.
 -- This involves switching positions of the two actors.
-actorRunActor :: ActorId -> ActorId -> ActionFrame ()
+actorRunActor :: ActorId -> ActorId -> Action ()
 actorRunActor source target = do
   s    <- get
   pl   <- gets splayer
@@ -395,10 +391,9 @@ actorRunActor source target = do
   updateAnyActor source $ \ m -> m { bloc = tloc }
   updateAnyActor target $ \ m -> m { bloc = sloc }
   if source == pl
-    then inFrame stopRunning  -- do not switch positions repeatedly
-    else whenFrame (not $ isAHero s source) $ do
-      (_, frames) <- focusIfOurs target
-      return ((), frames)
+    then stopRunning  -- do not switch positions repeatedly
+    else when (not $ isAHero s source) $ do
+      void $ focusIfOurs target
 
 -- | Create a new monster in the level, at a random position.
 rollMonster :: Kind.COps -> Perception -> State -> Rnd State

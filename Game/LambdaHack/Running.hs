@@ -43,7 +43,7 @@ run (dir, dist) = do
           distNew = if accessibleDir locHere dir then dist + 1 else dist
       updatePlayerBody (\ p -> p { bdir = Just (dir, distNew) })
       -- attacks and opening doors disallowed while running
-      moveOrAttack False pl dir
+      inFrame $ moveOrAttack False pl dir
 
 -- | Player running mode, determined from the nearby cave layout.
 data RunMode =
