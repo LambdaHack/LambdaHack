@@ -27,6 +27,8 @@ import qualified Game.LambdaHack.Tile as Tile
 import qualified Game.LambdaHack.Key as K
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Draw
+import Game.LambdaHack.Content.ActorKind
+import qualified Game.LambdaHack.Kind as Kind
 
 -- One turn proceeds through the following functions:
 --
@@ -98,7 +100,8 @@ handleAI dispAlready = do
 handleMonster :: ActorId -> Action ()
 handleMonster actor = do
   debug "handleMonster"
-  startTurn actor $ do
+  startTurn $ do
+    advanceTime actor  -- advance time while the actor still alive
     cops  <- getCOps
     state <- get
     per <- getPerception
@@ -127,8 +130,7 @@ nextMove dispAlready = do
 handlePlayer :: Action ()
 handlePlayer = do
   debug "handlePlayer"
-  pl <- gets splayer
-  startTurn pl $ do
+  startTurn $ do
     -- If running, stop if aborted by a disturbance.
     -- Otherwise let the player issue commands, until any of them takes time.
     -- First time, just after pushing frames, ask for commands in Push mode.
@@ -203,10 +205,26 @@ playerCommand msgRunAbort = do
             loop kmNext
             -- The frame state is still None.
           else do
-            -- If some time taken, exit the loop and let other actors act.
-            -- No next key needed and frames can be generated.
-            assert (null frames `blame` length frames) $ return ()
+            -- If some time should be taken, take it, exit the loop
+            -- and let other actors act. No next key needed
+            -- and no frames could have been generated.
+            pl <- gets splayer
+            assert (null frames `blame` length frames) $
+              advanceTime pl
   loop kmPush
+
+-- | Advance the move time for the given actor.
+advanceTime :: ActorId -> Action ()
+advanceTime actor = do
+  Kind.COps{coactor=Kind.Ops{okind}} <- getCOps
+  time <- gets stime
+  let upd m = m { btime = time + aspeed (okind (bkind m)) }
+  -- A hack to synchronize the whole party:
+  pl <- gets splayer
+  updateAnyActor actor upd
+  when (actor == pl) $ do
+    let updH a = if bparty a == heroParty then upd a else a
+    modify (updateLevel (updateActor (IM.map updH)))
 
 
 -- Design thoughts (in order to get rid or partially rid of the somewhat

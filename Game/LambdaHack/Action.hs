@@ -38,7 +38,6 @@ import Game.LambdaHack.State
 import Game.LambdaHack.Level
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Content.ActorKind
 import qualified Game.LambdaHack.Save as Save
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Random
@@ -440,12 +439,11 @@ saveGameFile state diary = liftIO $ Save.saveGameFile state diary
 dump :: FilePath -> Config.CP -> Action ()
 dump fn config = liftIO $ Config.dump fn config
 
-startTurn :: ActorId -> Action () -> Action ()
-startTurn actor action =
+startTurn :: Action () -> Action ()
+startTurn action =
   -- Determine perception before running player command, in case monsters
   -- have opened doors, etc.
   withPerception $ do
-    advanceTime actor  -- advance time while the actor still alive
     remember  -- heroes notice their surroundings, before they get displayed
     displayPush  -- draw the current surroundings
     action  -- let the actor act
@@ -454,19 +452,6 @@ startTurn actor action =
 withPerception :: Action () -> Action ()
 withPerception h = Action (\ sess@Session{scops} e _ k a st ms ->
                             runAction h sess e (perception scops st) k a st ms)
-
--- | Advance the move time for the given actor.
-advanceTime :: ActorId -> Action ()
-advanceTime actor = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getCOps
-  time <- gets stime
-  let upd m = m { btime = time + aspeed (okind (bkind m)) }
-  -- A hack to synchronize the whole party:
-  pl <- gets splayer
-  updateAnyActor actor upd
-  when (actor == pl) $ do
-    let updH a = if bparty a == heroParty then upd a else a
-    modify (updateLevel (updateActor (IM.map updH)))
 
 -- | Update player memory.
 remember :: Action ()
