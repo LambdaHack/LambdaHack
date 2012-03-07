@@ -199,14 +199,16 @@ playerCommand msgRunAbort = do
                   []     -> (Nothing, [])
                   f : fs -> (Just f, reverse fs)
             -- Show in turn all but the last frame.
+            -- Note: the code that generates the frames is responsible
+            -- for inserting the @more@ prompt.
             b <- getOverConfirm frs
             -- Display the last frame while waiting for the next key or,
             -- if there is no next frame, just get the key.
             kmNext <- case mfr of
               Just fr | b -> getKeyChoice [] fr
               _           -> getKeyCommand Nothing
+            -- Look up and perform the next command.
             loop kmNext
-            -- The frame state is still None.
           else do
             -- If some time should be taken, take it, exit the loop
             -- and let other actors act. No next key needed

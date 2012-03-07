@@ -214,7 +214,8 @@ eff Effect.Ascend _ source target power = do
   if not $ isAHero s target
     then squashActor source target
     else effLvlGoUp (power + 1)
-  -- TODO: The following message too late if a monster squashed:
+  -- TODO: The following message too late if a monster squashed,
+  -- unless it's ironic. ;) The same below.
   return (True, actorVerbExtra coactor tm "find" "a shortcut upstrairs")
 eff Effect.Descend _ source target power = do
   tm <- gets (getActor target)
@@ -223,7 +224,6 @@ eff Effect.Descend _ source target power = do
   if not $ isAHero s target
     then squashActor source target
     else effLvlGoUp (- (power + 1))
-  -- TODO: The following message too late if a monster squashed:
   return (True,actorVerbExtra coactor tm "find" "a shortcut downstairs")
 
 nullEffect :: Action (Bool, String)
@@ -303,7 +303,6 @@ effLvlGoUp k = do
         state <- get
         diary <- getDiary
         saveGameBkp state diary
-        -- TODO: lags behind perception
         msgAdd $ lookAt cops False True state lvl nloc ""
 
 -- | The player leaves the dungeon.
@@ -328,7 +327,7 @@ fleeDungeon = do
                    show total ++ " gold, is:"  -- TODO: use the name of the '$' item instead
       io <- itemOverlay True items
       tryIgnore $ do
-        displayOverConfirm winMsg io
+        displayOverAbort winMsg io
         handleScores True H.Victor total
         void $ displayMore ColorFull "Can it be done better, though?"
       end
@@ -490,7 +489,7 @@ handleScores write status total =
                    _ -> total
     let score = H.ScoreRecord points (-time) curDate status
     (placeMsg, slideshow) <- registerHS config write score
-    displayOverConfirm placeMsg slideshow
+    displayOverAbort placeMsg slideshow
 
 -- | Create a list of item names, split into many overlays.
 itemOverlay ::Bool -> [Item] -> Action [Overlay]

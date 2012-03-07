@@ -77,7 +77,7 @@ showScore (pos, score) =
       big   = "                                                 "
       lil   = "              "
       steps = negTurn score `div` (-10)
-     -- TODO: the spaces at the end are hand-crafter. Remove when display
+     -- TODO: the spaces at the end are hand-crafted. Remove when display
      -- of overlays adds such spaces automatically.
   in [ printf
          "%s"

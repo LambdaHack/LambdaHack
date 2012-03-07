@@ -11,6 +11,7 @@ import qualified Data.IntMap as IM
 import Data.Maybe
 import Control.Monad
 
+import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Point
 import Game.LambdaHack.State
 import Game.LambdaHack.Level
@@ -91,11 +92,9 @@ actorReachesActor actor1 actor2 loc1 loc2 per pl =
 monsterSeesHero :: Kind.Ops TileKind -> Perception -> Level
                  -> ActorId -> ActorId -> Point -> Point -> Bool
 monsterSeesHero cotile per lvl _source target sloc tloc =
-  let rempty = PerceptionReachable IS.empty
+  let rerr = assert `failure` (_source, sloc, target, tloc)
       reachable@PerceptionReachable{preachable} =
-       -- TODO: instead of this fromMaybe clean up how Perception
-       -- is regenerated when levels are switched
-       fromMaybe rempty $ IM.lookup target $ pheroes per
+        fromMaybe rerr $ IM.lookup target $ pheroes per
   in sloc `IS.member` preachable
      && isVisible cotile reachable lvl IS.empty tloc
 

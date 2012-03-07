@@ -132,9 +132,7 @@ triggerTile dloc = do
   lvl <- gets slevel
   let f (F.Cause effect) = do
         pl <- gets splayer
--- TODO: take care of AI using this function (aborts, etc.).
--- If it's not AI show or pass along the frames.
-        (_b, _frames) <- effectToAction effect 0 pl pl 0
+        void $ effectToAction effect 0 pl pl 0
         return ()
       f (F.ChangeTo group) = do
         Level{lactor} <- gets slevel
@@ -144,6 +142,7 @@ triggerTile dloc = do
                   newTileId <- rndToAction $ opick group (const True)
                   let adj = (Kind.// [(dloc, newTileId)])
                   modify (updateLevel (updateLMap adj))
+-- TODO: take care of AI using this function (aborts, etc.).
                 else abortWith "blocked"  -- by monsters or heroes
           _ : _ -> abortWith "jammed"  -- by items
       f _ = return ()
@@ -153,7 +152,7 @@ triggerTile dloc = do
 playerTriggerDir :: F.Feature -> Verb -> Action ()
 playerTriggerDir feat verb = do
   let keys = zip K.dirAllMoveKey $ repeat K.NoModifier
-  e <- displayChoice ("What to " ++ verb ++ "? [movement key") [] keys
+  e <- displayChoiceUI ("What to " ++ verb ++ "? [movement key") [] keys
   lxsize <- gets (lxsize . slevel)
   K.handleDir lxsize e (playerBumpDir feat) (neverMind True)
 

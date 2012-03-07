@@ -84,7 +84,6 @@ data DebugMode = DebugMode
 slevel :: State -> Level
 slevel State{slid, sdungeon} = sdungeon Dungeon.! slid
 
--- TODO: add date.
 -- | Initial player diary.
 defaultDiary :: IO Diary
 defaultDiary = do

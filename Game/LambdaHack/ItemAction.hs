@@ -143,9 +143,7 @@ playerProjectGI verb object syms = do
       returnNoFrame ()
     Nothing -> retarget "Last target invalid."
 
--- TODO: also target a monster by moving the cursor, if in target monster mode.
 -- TODO: sort monsters by distance to the player.
-
 -- | Start the monster targeting mode. Cycle between monster targets.
 targetMonster :: TgtMode -> ActionFrame ()
 targetMonster tgtMode = do
@@ -436,7 +434,8 @@ getItem prompt p ptext is0 isn = do
               ISuitable -> (isp, isp, ptext ++ " " ++ isn ++ ". ")
               IAll      -> (is0, is0, allObjectsName ++ " " ++ isn ++ ". ")
         io <- itemOverlay True imsOver
-        (command, modifier) <- displayChoice (msg ++ choice ims) io (keys ims)
+        (command, modifier) <-
+          displayChoiceUI (msg ++ choice ims) io (keys ims)
         assert (modifier == K.NoModifier) $
           case command of
             K.Char '?' -> case itemDialogState of

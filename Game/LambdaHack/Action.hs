@@ -17,9 +17,9 @@ module Game.LambdaHack.Action
     -- * Key input
   , getKeyCommand, getKeyChoice, getOverConfirm
     -- * Display each frame and confirm
-  , displayMore, displayYesNo, displayOverConfirm
+  , displayMore, displayYesNo, displayOverAbort
     -- * Assorted frame operations
-  , displayOverlays, displayChoice, displayFramePush, drawPrompt
+  , displayOverlays, displayChoiceUI, displayFramePush, drawPrompt
     -- * Start of turn operations
   , startTurn, remember, rememberList
     -- * Assorted operations
@@ -140,13 +140,16 @@ rndToAction r = do
 -- from performing the actions.
 type ActionFrame a = Action (a, [Maybe Color.SingleFrame])
 
+-- | Return the value with an empty set of screen frames.
 returnNoFrame :: a -> ActionFrame a
 returnNoFrame a = return (a, [])
 
+-- | As the @when@ monad operation, but on type @ActionFrame ()@.
 whenFrame :: Bool -> ActionFrame () -> ActionFrame ()
 whenFrame True x  = x
 whenFrame False _ = returnNoFrame ()
 
+-- | Inject action into actions with screen frames.
 inFrame :: Action () -> ActionFrame ()
 inFrame act = act >> returnNoFrame ()
 
@@ -222,7 +225,8 @@ tryIgnore =
                     then return ()
                     else assert `failure` (msg, "in tryIgnore"))
 
--- | Try the given computation and silently catch failure.
+-- | Try the given computation and silently catch failure,
+-- returning empty set of screen frames.
 tryIgnoreFrame :: ActionFrame () -> ActionFrame ()
 tryIgnoreFrame =
   tryWith (\ msg -> if null msg
@@ -233,7 +237,7 @@ tryIgnoreFrame =
 getDiary :: Action Diary
 getDiary = Action (\ _s _e _p k _a st diary -> k st diary diary)
 
--- | Add to the current msg.
+-- | Add a message to the current report.
 msgAdd :: Msg -> Action ()
 msgAdd nm = Action (\ _s _e _p k _a st ms ->
                      k st ms{sreport = addMsg (sreport ms) nm} ())
@@ -248,7 +252,7 @@ msgReset :: Msg -> Action ()
 msgReset nm = Action (\ _s _e _p k _a st ms ->
                        k st ms{sreport = singletonReport nm} ())
 
--- | Store current msg in the history and reset current msg.
+-- | Store current report in the history and reset report.
 recordHistory :: Action ()
 recordHistory = do
   Diary{sreport, shistory} <- getDiary
@@ -314,63 +318,58 @@ displayMore dm prompt = do
   frame <- drawPrompt dm (prompt ++ moreMsg)
   getConfirm frame
 
--- | Print a yes/no question and return the player's answer.
+-- | Print a yes/no question and return the player's answer. Use black
+-- and white colours to turn player's attention to the choice.
 displayYesNo :: Msg -> Action Bool
 displayYesNo prompt = do
-  -- Turn player's attention to the choice via BW colours.
   frame <- drawPrompt ColorBW (prompt ++ yesnoMsg)
   getYesNo frame
 
 -- | Print a msg and several overlays, one per page.
--- All frames require confirmations.
-displayOverConfirm :: Msg -> [Overlay] -> Action ()
-displayOverConfirm prompt xs = do
-  let f x = drawOver ColorFull prompt (x ++ [moreMsg])
+-- All frames require confirmations. Raise @abort@ if the players presses ESC.
+displayOverAbort :: Msg -> [Overlay] -> Action ()
+displayOverAbort prompt xs = do
+  let f x = drawOverlay ColorFull prompt (x ++ [moreMsg])
   frames <- mapM f xs
   b <- getOverConfirm frames
   when (not b) abort
 
--- TODO: implement with getOverConfirm, rename things so that drawOver
--- and displayOverConfirm are not confused.
--- TODO: add Abort to the name to indicate try may needed in all 3 below.
--- use it in Turn instead of getOverConfirm, does not need to split frs
 -- | Print a msg and several overlays, one per page.
 -- The last frame does not expect a confirmation.
 displayOverlays :: Msg -> [Overlay] -> ActionFrame ()
 displayOverlays _      []     = returnNoFrame ()
 displayOverlays prompt [x]    = do
-  frame <- drawOver ColorFull prompt x
+  frame <- drawOverlay ColorFull prompt x
   return $ ((), [Just frame])
 displayOverlays prompt (x:xs) = do
-  frame <- drawOver ColorFull prompt (x ++ [moreMsg])
+  frame <- drawOverlay ColorFull prompt (x ++ [moreMsg])
   b <- getConfirm frame
   if b
     then displayOverlays prompt xs
     else returnNoFrame ()
 
--- rename? use displayChoice in Turn?
 -- | Print a prompt and an overlay and wait for a player keypress.
 -- If many overlays, scroll screenfuls with SPACE. Do not wrap screenfuls
 -- (in some menus @?@ cycles views, so the user can restart from the top).
-displayChoice :: Msg -> [Overlay] -> [(K.Key, K.Modifier)]
+displayChoiceUI :: Msg -> [Overlay] -> [(K.Key, K.Modifier)]
               -> Action (K.Key, K.Modifier)
-displayChoice prompt ovs keys = do
+displayChoiceUI prompt ovs keys = do
   let (over, rest, spc, more, keysS) = case ovs of
         [] -> ([], [], "", [], keys)
         [x] -> (x, [], "", [], keys)
         x:xs -> (x, xs, ", SPACE", [moreMsg], (K.Space, K.NoModifier) : keys)
-  frame <- drawOver ColorFull (prompt ++ spc ++ ", ESC]") (over ++ more)
+  frame <- drawOverlay ColorFull (prompt ++ spc ++ ", ESC]") (over ++ more)
   (key, modifier) <- getKeyChoice ((K.Esc, K.NoModifier) : keysS) frame
   case key of
     K.Esc -> neverMind True
-    K.Space | not (null rest) -> displayChoice prompt rest keys
+    K.Space | not (null rest) -> displayChoiceUI prompt rest keys
     _ -> return (key, modifier)
 
--- | Push a wait for a single frame to the frame queue.
+-- | Push a frame or a single frame's worth of delay to the frame queue.
 displayFramePush :: Maybe Color.SingleFrame -> Action ()
-displayFramePush frame = do
+displayFramePush mframe = do
   fs <- getFrontendSession
-  liftIO $ displayFrame fs frame
+  liftIO $ displayFrame fs False mframe
 
 -- | Draw the current level. The prompt is displayed, but not added
 -- to history. The prompt is appended to the current message
@@ -388,8 +387,8 @@ drawPrompt dm prompt = do
 -- but not added to history. The prompt is appended to the current message
 -- and only the first line of the result is displayed.
 -- The overlay starts on the second line.
-drawOver :: ColorMode -> Msg -> Overlay -> Action Color.SingleFrame
-drawOver dm prompt overlay = do
+drawOverlay :: ColorMode -> Msg -> Overlay -> Action Color.SingleFrame
+drawOverlay dm prompt overlay = do
   cops <- getCOps
   per <- getPerception
   s <- get
@@ -399,6 +398,7 @@ drawOver dm prompt overlay = do
       over = padMsg xsize msgPrompt : overlay
   return $ draw dm cops per s over
 
+-- | Initialize perception, etc., display level and run the action.
 startTurn :: Action () -> Action ()
 startTurn action =
   -- Determine perception before running player command, in case monsters
@@ -409,16 +409,18 @@ startTurn action =
     action  -- let the actor act
 
 -- | Push the frame depicting the current level to the frame queue.
--- Only one screenful of the message is shown, the rest is ignored.
+-- Only one screenful of the report is shown, the rest is ignored.
 displayPush :: Action ()
 displayPush = do
   fs <- getFrontendSession
-  cops <- getCOps
-  per <- getPerception
-  s <- get
-  Diary{sreport} <- getDiary
-  let over = splitReport sreport
-  liftIO $ displayLevel fs ColorFull cops per s over
+  s  <- get
+  pl <- gets splayer
+  frame <- drawPrompt ColorFull ""
+  -- Visually speed up (by remving all empty frames) the show of the sequence
+  -- of the move frames if the player is running.
+  let (_, Actor{bdir}, _) = findActorAnyLevel pl s
+      isRunning = isJust bdir
+  liftIO $ displayFrame fs isRunning $ Just frame
 
 -- | Update player memory.
 remember :: Action ()
@@ -427,6 +429,7 @@ remember = do
   let vis = IS.toList (totalVisible per)
   rememberList vis
 
+-- | Update player at the given list of locations..
 rememberList :: [Point] -> Action ()
 rememberList vis = do
   lvl <- gets slevel
@@ -459,18 +462,32 @@ updatePlayerBody f = do
   pl <- gets splayer
   updateAnyActor pl f
 
+-- | Obtains the current date and time.
 currentDate :: Action ClockTime
 currentDate = liftIO getClockTime
 
+-- | Take care of saving a new score to the table
+-- and return a list of messages to display.
+--
+-- See 'H.register'.
 registerHS :: Config.CP -> Bool -> H.ScoreRecord -> Action (String, [Overlay])
 registerHS config write s = liftIO $ H.register config write s
 
+-- | Save the diary and a backup of the save game file, in case of crashes.
+--
+-- See 'Save.saveGameBkp'.
 saveGameBkp :: State -> Diary -> Action ()
 saveGameBkp state diary = liftIO $ Save.saveGameBkp state diary
 
+-- | Save a simple serialized version of the current state and diary.
+--
+-- See 'Save.saveGameFile'.
 saveGameFile :: State -> Diary -> Action ()
 saveGameFile state diary = liftIO $ Save.saveGameFile state diary
 
+-- | Dumps the current configuration to a file.
+--
+-- See 'Config.dump'.
 dumpCfg :: FilePath -> Config.CP -> Action ()
 dumpCfg fn config = liftIO $ Config.dump fn config
 
