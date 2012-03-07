@@ -316,9 +316,12 @@ fleeDungeon = do
   let (items, total) = calculateTotal coitem state
   if total == 0
     then do
-      go <- displayMoreConfirm ColorFull "Coward!"
-      when go $
-        displayMoreCancel "Next time try to grab some loot before escape!"
+      -- The player can back off at each of these steps.
+      go1 <- displayMore ColorFull "Coward!"
+      when (not go1) abort
+      go2 <- displayMore ColorFull
+              "Next time try to grab some loot before escape!"
+      when (not go2) abort
       end
     else do
       let winMsg = "Congratulations, you won! Your loot, worth " ++
@@ -327,7 +330,7 @@ fleeDungeon = do
       tryIgnore $ do
         displayOverConfirm winMsg io
         handleScores True H.Victor total
-        displayMoreCancel "Can it be done better, though?"
+        void $ displayMore ColorFull "Can it be done better, though?"
       end
 
 -- | The source actor affects the target actor, with a given item.
@@ -435,7 +438,7 @@ checkPartyDeath = do
   config <- gets sconfig
   when (bhp pbody <= 0) $ do
     msgAdd $ actorVerb coactor pbody "die"
-    go <- displayMoreConfirm ColorBW ""
+    go <- displayMore ColorBW ""
     recordHistory  -- Prevent repeating the "die" msgs.
     let firstDeathEnds = Config.get config "heroes" "firstDeathEnds"
     if firstDeathEnds
@@ -467,7 +470,7 @@ gameOver showEndingScreens = do
     let (_, total) = calculateTotal coitem state
         status = H.Killed slid
     handleScores True status total
-    displayMoreCancel "Let's hope another party can save the day!"
+    void $ displayMore ColorFull "Let's hope another party can save the day!"
   end
 
 -- | Handle current score and display it with the high scores.
@@ -541,7 +544,7 @@ doLook = do
         is = lvl `rememberAtI` loc
     io <- itemOverlay False is
     if length is > 2
-      then tryIgnoreFrame $ displayOverlays lookMsg io
+      then displayOverlays lookMsg io
       else do
         fr <- drawPrompt ColorFull lookMsg
         return ((), [Just fr])

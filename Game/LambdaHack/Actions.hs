@@ -36,6 +36,7 @@ import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Random
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Binding
+import Game.LambdaHack.Draw
 
 saveGame :: Action ()
 saveGame = do
@@ -51,7 +52,7 @@ saveGame = do
           status = H.Camping
       tryIgnore $ do
         handleScores False status total
-        displayMoreCancel "See you soon, stronger and braver!"
+        void $ displayMore ColorFull "See you soon, stronger and braver!"
       end
     else abortWith "Game resumed."
 
@@ -464,8 +465,7 @@ regenerateLevelHP = do
 displayHelp :: ActionFrame ()
 displayHelp = do
   keyb <- getBinding
-  tryIgnoreFrame $
-    displayOverlays "Basic keys. [press SPACE or ESC]" $ keyHelp keyb
+  displayOverlays "Basic keys. [press SPACE or ESC]" $ keyHelp keyb
 
 displayHistory :: ActionFrame ()
 displayHistory = do
@@ -474,8 +474,7 @@ displayHistory = do
   lysize <- gets (lysize . slevel)
   let turn = show (stime `div` 10)
       msg = "You adventuring lasts " ++ turn ++ " turns. Past messages:"
-  tryIgnoreFrame $
-    displayOverlays msg $ splitOverlay lysize $ renderHistory shistory
+  displayOverlays msg $ splitOverlay lysize $ renderHistory shistory
 
 dumpConfig :: Action ()
 dumpConfig = do

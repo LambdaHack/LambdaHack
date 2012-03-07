@@ -17,7 +17,7 @@ module Game.LambdaHack.Action
     -- * Key input
   , getKeyCommand, getKeyChoice, getOverConfirm
     -- * Display each frame and confirm
-  , displayMoreConfirm, displayMoreCancel, displayYesNo, displayOverConfirm
+  , displayMore, displayYesNo, displayOverConfirm
     -- * Assorted frame operations
   , displayOverlays, displayChoice, displayFramePush, drawPrompt
     -- * Start of turn operations
@@ -286,13 +286,13 @@ getConfirm frame = do
     _       -> return False
 
 -- | A series of confirmations for all overlays.
-getOverConfirm :: [Color.SingleFrame] -> Action ()
-getOverConfirm []     = return ()
+getOverConfirm :: [Color.SingleFrame] -> Action Bool
+getOverConfirm []     = return True
 getOverConfirm (x:xs) = do
   b <- getConfirm x
   if b
     then getOverConfirm xs
-    else abort
+    else return False
 
 -- | A yes-no confirmation.
 getYesNo :: Color.SingleFrame -> Action Bool
@@ -309,15 +309,10 @@ getYesNo frame = do
 
 -- | Display a msg with a @more@ prompt. Return value indicates if the player
 -- tried to cancel/escape.
-displayMoreConfirm :: ColorMode -> Msg -> Action Bool
-displayMoreConfirm dm prompt = do
+displayMore :: ColorMode -> Msg -> Action Bool
+displayMore dm prompt = do
   frame <- drawPrompt dm (prompt ++ moreMsg)
   getConfirm frame
-
--- | Print a message with a @more@ prompt, await confirmation
--- and ignore confirmation.
-displayMoreCancel :: Msg -> Action ()
-displayMoreCancel prompt = void $ displayMoreConfirm ColorFull prompt
 
 -- | Print a yes/no question and return the player's answer.
 displayYesNo :: Msg -> Action Bool
@@ -332,7 +327,8 @@ displayOverConfirm :: Msg -> [Overlay] -> Action ()
 displayOverConfirm prompt xs = do
   let f x = drawOver ColorFull prompt (x ++ [moreMsg])
   frames <- mapM f xs
-  getOverConfirm frames
+  b <- getOverConfirm frames
+  when (not b) abort
 
 -- TODO: implement with getOverConfirm, rename things so that drawOver
 -- and displayOverConfirm are not confused.
@@ -350,7 +346,7 @@ displayOverlays prompt (x:xs) = do
   b <- getConfirm frame
   if b
     then displayOverlays prompt xs
-    else abort
+    else returnNoFrame ()
 
 -- rename? use displayChoice in Turn?
 -- | Print a prompt and an overlay and wait for a player keypress.

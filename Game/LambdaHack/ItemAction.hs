@@ -34,7 +34,7 @@ inventory = do
     then abortWith "Not carrying anything."
     else do
       io <- itemOverlay True items
-      tryIgnoreFrame $ displayOverlays "Carrying:" io
+      displayOverlays "Carrying:" io
 
 -- | Let the player choose any item with a given group name.
 -- Note that this does not guarantee the chosen item belongs to the group,

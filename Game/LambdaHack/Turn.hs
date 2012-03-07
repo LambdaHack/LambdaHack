@@ -198,11 +198,13 @@ playerCommand msgRunAbort = do
             let (mfr, frs) = case reverse $ catMaybes frames of
                   []     -> (Nothing, [])
                   f : fs -> (Just f, reverse fs)
-             -- Show in turn all but the last frame.
-            tryIgnore $ getOverConfirm frs
+            -- Show in turn all but the last frame.
+            b <- getOverConfirm frs
             -- Display the last frame while waiting for the next key or,
             -- if there is no next frame, just get the key.
-            kmNext <- maybe (getKeyCommand Nothing) (getKeyChoice []) mfr
+            kmNext <- case mfr of
+              Just fr | b -> getKeyChoice [] fr
+              _           -> getKeyCommand Nothing
             loop kmNext
             -- The frame state is still None.
           else do
