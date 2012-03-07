@@ -167,10 +167,14 @@ playerCommand msgRunAbort = do
           -- Look up the key.
           case M.lookup km kcmd of
             Just (_, timed', c) -> do
-              -- Targeting cursor movement is marked as timed; fixed here.
-              targeting <- gets (ctargeting . scursor)
-              let timed = timed' && (km `notElem` kdir || targeting == TgtOff)
+              oldTargeting <- gets (ctargeting . scursor)
               ((), frs) <- c
+              -- Targeting cursor movement and projecting that degenerates
+              -- into targeting are wrongly marked as timed; fixed here.
+              newTargeting <- gets (ctargeting . scursor)
+              let timed = timed'
+                          && (km `notElem` kdir || oldTargeting == TgtOff)
+                          && (newTargeting == TgtOff || oldTargeting /= TgtOff)
               -- Ensure at least one frame if the command takes no time.
               -- No frames for @abort@, so the code is here, not below.
               if not timed && null (catMaybes frs)
