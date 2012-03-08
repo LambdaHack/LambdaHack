@@ -37,6 +37,7 @@ import Game.LambdaHack.Random
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Binding
 import Game.LambdaHack.Draw
+import qualified Game.LambdaHack.Config as Config
 
 saveGame :: Action ()
 saveGame = do
@@ -485,3 +486,15 @@ dumpConfig = do
 
 redraw :: Action ()
 redraw = return ()
+
+-- | Add new smell traces to the level. Only humans leave a strong scent.
+addSmell :: Action ()
+addSmell = do
+  state <- get
+  pl    <- gets splayer
+  let time = stime state
+      ploc = bloc (getPlayerBody state)
+      sTimeout = Config.get (sconfig state) "monsters" "smellTimeout"
+      upd = IM.insert ploc $ Tile.SmellTime $ time + sTimeout
+  when (isAHero state pl) $
+    modify $ updateLevel $ updateSmell upd

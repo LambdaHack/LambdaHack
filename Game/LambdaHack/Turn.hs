@@ -12,7 +12,6 @@ import Data.Maybe
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
-import qualified Game.LambdaHack.Config as Config
 import Game.LambdaHack.EffectAction
 import qualified Game.LambdaHack.Binding as Binding
 import Game.LambdaHack.Level
@@ -23,7 +22,6 @@ import Game.LambdaHack.State
 import Game.LambdaHack.Strategy
 import Game.LambdaHack.StrategyAction
 import Game.LambdaHack.Running
-import qualified Game.LambdaHack.Tile as Tile
 import qualified Game.LambdaHack.Key as K
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Draw
@@ -33,15 +31,16 @@ import qualified Game.LambdaHack.Kind as Kind
 -- One turn proceeds through the following functions:
 --
 -- handle
--- handleAI, handleMonster
+-- [handleAI, handleMonster] (possibly repeated)
 -- nextMove
 -- handle (again)
 --
 -- OR:
 --
 -- handle
--- handlePlayer, playerCommand
--- handleAI, handleMonster
+-- handlePlayer
+-- playerCommand (skipped if player running)
+-- [handleAI, handleMonster] (possibly repeated)
 -- nextMove
 -- handle (again)
 --
@@ -50,12 +49,13 @@ import qualified Game.LambdaHack.Kind as Kind
 -- handle: determine who moves next,
 --   dispatch to handleAI or handlePlayer
 --
--- handlePlayer: remember, display, get and process commmand(s),
---   update smell map, update perception
+-- handlePlayer: update perception, remember, display,
+--   get and process commmands (zero or more), advance time, update smell map
 --
 -- handleAI: find monsters that can move
 --
--- handleMonster: determine and process monster action, advance monster time
+-- handleMonster: update perception, remember, display,
+-- determine and process monster action, advance monster time
 --
 -- nextMove: advance global game time, HP regeneration, monster generation
 --
@@ -132,22 +132,12 @@ handlePlayer = do
   debug "handlePlayer"
   startTurn $ do
     pl <- gets splayer
-    -- If running, stop if aborted by a disturbance.
+    -- When running, stop if aborted by a disturbance.
     -- Otherwise let the player issue commands, until any of them takes time.
     -- First time, just after pushing frames, ask for commands in Push mode.
     tryWith (\ msg -> stopRunning >> playerCommand msg) $
       ifRunning (\ x -> continueRun x >> advanceTime pl) abort
-    -- TODO: refactor this:
-    state <- get
-    pl2    <- gets splayer
-    let time = stime state
-        ploc = bloc (getPlayerBody state)
-        sTimeout = Config.get (sconfig state) "monsters" "smellTimeout"
-    -- Update smell. Only humans leave a strong scent.
-    when (isAHero state pl2) $
-      modify (updateLevel (updateSmell (IM.insert ploc
-                                         (Tile.SmellTime
-                                            (time + sTimeout)))))
+    addSmell
     -- The command took some time, so other actors act.
     handleAI True
 
@@ -232,6 +222,10 @@ advanceTime actor = do
     modify (updateLevel (updateActor (IM.map updH)))
 
 
+-- The issues below are now complicated (?) by the fact that we now generate
+-- a game screen frame every tick and a jointed pair of frame+key input
+-- for each command that does not take time.
+--
 -- Design thoughts (in order to get rid or partially rid of the somewhat
 -- convoluted design we have): We have three kinds of commands.
 --
