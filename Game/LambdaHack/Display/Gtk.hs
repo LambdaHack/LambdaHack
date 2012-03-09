@@ -115,7 +115,8 @@ runGtk configFont k = do
   -- Fork the game logic thread.
   forkIO $ k sess
    -- Install a function that periodically draws a frame from a queue, if any.
-  timeoutAdd (drawFrame sess) (1000 `div` maxFps)
+  polls <- newIORef 0
+  timeoutAdd (drawFrame sess polls) (1000 `div` (maxFps * maxPolls))
   -- Fill the keyboard channel.
   sview `on` keyPressEvent $ do
     n <- eventKeyName
@@ -210,22 +211,32 @@ setTo tb defaultAttr lx (ly, attr:attrs) = do
 maxFps :: Int
 maxFps = 15
 
--- | Draw a frame from a channel. Don't block if not frame.
-drawFrame :: FrontendSession -> IO Bool
-drawFrame sess@FrontendSession{sframeState} = do
-  fs <- takeMVar sframeState
-  case fs of
-    FPushed{..} ->
-      case tryReadLQueue fpushed of
-        Just (Just frame, queue) -> do
-          putMVar sframeState FPushed{fpushed = queue, fshown = frame}
-          output sess frame
-        Just (Nothing, queue) ->  -- delay requested via an empty frame
-          putMVar sframeState FPushed{fpushed = queue, ..}
-        Nothing ->  -- the queue is empty
-          putMVar sframeState fs
-    _ ->
-      putMVar sframeState fs
+-- | Maximal polls per frame.
+maxPolls :: Int
+maxPolls = 8
+
+-- | Draw a frame from a channel. Don't block if no frame.
+drawFrame :: FrontendSession -> IORef Int -> IO Bool
+drawFrame sess@FrontendSession{sframeState} polls = do
+  np <- readIORef polls
+  writeIORef polls $ np - 1
+  when (np <= 0) $ do
+    fs <- takeMVar sframeState
+    case fs of
+      FPushed{..} ->
+        case tryReadLQueue fpushed of
+          Just (Just frame, queue) -> do
+            putMVar sframeState FPushed{fpushed = queue, fshown = frame}
+            output sess frame
+            -- TODO: if output takes longer than the poll interval we get
+            -- a systematic lag
+            writeIORef polls $ maxPolls - 1
+          Just (Nothing, queue) ->  -- delay requested via an empty frame
+            putMVar sframeState FPushed{fpushed = queue, ..}
+          Nothing ->  -- the queue is empty
+            putMVar sframeState fs
+      _ ->
+        putMVar sframeState fs
   return True
 
 -- | Add a frame to be drawn.
