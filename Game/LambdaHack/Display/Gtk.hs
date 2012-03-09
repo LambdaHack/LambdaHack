@@ -20,6 +20,7 @@ import Data.IORef
 import Data.Maybe
 import qualified Data.Map as M
 import qualified Data.ByteString.Char8 as BS
+import System.Time
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.LQueue
@@ -114,9 +115,8 @@ runGtk configFont k = do
   let sess = FrontendSession{..}
   -- Fork the game logic thread.
   forkIO $ k sess
-   -- Install a function that periodically draws a frame from a queue, if any.
-  polls <- newIORef 0
-  timeoutAdd (drawFrame sess polls) (1000 `div` (maxFps * maxPolls))
+  -- Fork the thread that periodically draws a frame from a queue, if any.
+  forkIO $ pollFrames sess Nothing
   -- Fill the keyboard channel.
   sview `on` keyPressEvent $ do
     n <- eventKeyName
@@ -211,33 +211,71 @@ setTo tb defaultAttr lx (ly, attr:attrs) = do
 maxFps :: Int
 maxFps = 15
 
--- | Maximal polls per frame.
+-- | Maximal polls per second.
 maxPolls :: Int
-maxPolls = 8
+maxPolls = let maxP = 120
+           in assert (maxP >= 2 * maxFps `blame` (maxP, maxFps)) $
+              maxP
 
--- | Draw a frame from a channel. Don't block if no frame.
-drawFrame :: FrontendSession -> IORef Int -> IO Bool
-drawFrame sess@FrontendSession{sframeState} polls = do
-  np <- readIORef polls
-  writeIORef polls $ np - 1
-  when (np <= 0) $ do
-    fs <- takeMVar sframeState
-    case fs of
-      FPushed{..} ->
-        case tryReadLQueue fpushed of
-          Just (Just frame, queue) -> do
-            putMVar sframeState FPushed{fpushed = queue, fshown = frame}
-            output sess frame
-            -- TODO: if output takes longer than the poll interval we get
-            -- a systematic lag
-            writeIORef polls $ maxPolls - 1
-          Just (Nothing, queue) ->  -- delay requested via an empty frame
-            putMVar sframeState FPushed{fpushed = queue, ..}
-          Nothing ->  -- the queue is empty
-            putMVar sframeState fs
-      _ ->
-        putMVar sframeState fs
-  return True
+-- | Add a given number of microseconds to time.
+addTime :: ClockTime -> Int -> ClockTime
+addTime (TOD s p) ms = TOD s (p + fromIntegral (ms * 1000000))
+
+-- | The difference between the first and the second time, in microseconds.
+diffTime :: ClockTime -> ClockTime -> Int
+diffTime (TOD s1 p1) (TOD s2 p2) =
+  (fromIntegral $ s1 - s2) * 1000000 +
+  (fromIntegral $ p1 - p2) `div` 1000000
+
+-- | Poll the frame queue often and draw frames at fixed intervals.
+pollFrames :: FrontendSession -> Maybe ClockTime -> IO ()
+pollFrames sess (Just setTime) = do
+  -- Check if the time is up.
+  curTime <- getClockTime
+  let diffT = diffTime setTime curTime
+  if diffT > 1000000 `div` maxPolls
+    then do
+      -- Delay half of the time difference.
+      threadDelay $ diffTime curTime setTime `div` 2
+      pollFrames sess $ Just setTime
+    else
+      -- Don't delay, because time is up!
+      pollFrames sess Nothing
+pollFrames sess@FrontendSession{sframeState} Nothing = do
+  -- Time time is up, check if we actually wait for anyting.
+  fs <- takeMVar sframeState
+  case fs of
+    FPushed{..} ->
+      case tryReadLQueue fpushed of
+        Just (Just frame, queue) -> do
+          -- The frame has arrived so send it for drawing and update delay.
+          putMVar sframeState FPushed{fpushed = queue, fshown = frame}
+          postGUIAsync $ output sess frame
+          curTime <- getClockTime
+          threadDelay $ 1000000 `div` (maxFps * 2)
+          pollFrames sess $ Just $ addTime curTime $ 1000000 `div` maxFps
+        Just (Nothing, queue) -> do
+          -- Delay requested via an empty frame.
+          putMVar sframeState FPushed{fpushed = queue, ..}
+          curTime <- getClockTime
+          -- There is no problem if the delay is a bit delayed.
+          threadDelay $ 1000000 `div` maxFps
+          pollFrames sess $ Just $ addTime curTime $ 1000000 `div` maxFps
+        Nothing -> do
+          -- The queue is empty, the game logic thread lags.
+          putMVar sframeState fs
+          -- Time time is up, the game thread is going to send a frame,
+          -- (otherwise it would change the state), so poll often.
+          threadDelay $ 1000000 `div` maxPolls
+          pollFrames sess Nothing
+    _ -> do
+      putMVar sframeState fs
+      -- Not in the Push state, so poll lazily to catch the next state change.
+      -- The slow polling also gives the game logic a head start
+      -- in creating frames in case one of the further frames is slow
+      -- to generate and would normally cause a jerky delay in drawing.
+      threadDelay $ 1000000 `div` (maxFps * 2)
+      pollFrames sess Nothing
 
 -- | Add a frame to be drawn.
 display :: FrontendSession -> Bool -> Bool -> Maybe Color.SingleFrame -> IO ()
