@@ -37,7 +37,7 @@ import Game.LambdaHack.Random
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Binding
 import Game.LambdaHack.Draw
-import qualified Game.LambdaHack.Config as Config
+import Game.LambdaHack.Time
 
 saveGame :: Action ()
 saveGame = do
@@ -187,9 +187,9 @@ actorOpenDoor actor dir = do
       isPlayer = actor == pl
       isVerbose = isPlayer  -- don't report, unless it's player-controlled
       iq = aiq $ okind $ bkind body
-      openPower = Tile.SecretStrength $
+      openPower = timeScale timeStep $
         if isPlayer
-        then 1  -- player can't open hidden doors
+        then 0  -- player can't open hidden doors
         else case strongestSearch coitem bitems of
                Just i  -> iq + jpower i
                Nothing -> iq
@@ -270,17 +270,18 @@ search = do
   lxsize <- gets (lxsize . slevel)
   ploc   <- gets (bloc . getPlayerBody)
   pitems <- gets getPlayerItem
-  let delta = case strongestSearch coitem pitems of
-                Just i  -> 1 + jpower i
-                Nothing -> 1
+  let delta = timeScale timeStep $
+                case strongestSearch coitem pitems of
+                  Just i  -> 1 + jpower i
+                  Nothing -> 1
       searchTile sle mv =
         let loc = shift ploc mv
             t = lvl `at` loc
             -- TODO: assert or cope elsewhere with the IM.! below
-            k = Tile.secretStrength (le IM.! loc) - delta
+            k = timeAdd (le IM.! loc) $ timeNegate delta
         in if Tile.hasFeature cotile F.Hidden t
-           then if k > 0
-                then IM.insert loc (Tile.SecretStrength k) sle
+           then if k > timeZero
+                then IM.insert loc k sle
                 else IM.delete loc sle
            else sle
       leNew = L.foldl' searchTile le (moves lxsize)
@@ -442,15 +443,15 @@ regenerateLevelHP = do
            , coactor=coactor@Kind.Ops{okind}
            } <- getCOps
   time <- gets stime
-  let upd itemIM a m =
+  let upd itemIM a m =  -- TODO: rewrite; 10 is step/turn
         let ak = okind $ bkind m
             bitems = fromMaybe [] $ IM.lookup a itemIM
             regen = max 10 $
-                      aregen ak `div`
+                      (10 * aregen ak) `div`
                       case strongestRegen coitem bitems of
                         Just i  -> 5 * jpower i
                         Nothing -> 1
-        in if time `mod` regen /= 0
+        in if (time `timeFit` timeTurn) `mod` regen /= 0
            then m
            else addHp coactor 1 m
   -- We really want hero selection to be a purely UI distinction,
@@ -458,7 +459,7 @@ regenerateLevelHP = do
   -- Only the heroes on the current level regenerate (others are frozen
   -- in time together with their level). This prevents cheating
   -- via sending one hero to a safe level and waiting there.
-  hi  <- gets (linv . slevel)
+  hi <- gets (linv . slevel)
   modify (updateLevel (updateActor (IM.mapWithKey (upd hi))))
 
 -- | Display command help.
@@ -472,8 +473,8 @@ displayHistory = do
   Diary{shistory} <- getDiary
   stime <- gets stime
   lysize <- gets (lysize . slevel)
-  let step = show (stime `div` 10)
-      msg = "You adventuring lasts " ++ step
+  let step = show $ stime `timeFit` timeStep
+      msg = "Your adventuring lasts " ++ step
             ++ " half-second steps. Past messages:"
   displayOverlays msg $ splitOverlay lysize $ renderHistory shistory
 
@@ -491,11 +492,10 @@ redraw = return ()
 -- | Add new smell traces to the level. Only humans leave a strong scent.
 addSmell :: Action ()
 addSmell = do
-  state <- get
-  pl    <- gets splayer
-  let time = stime state
-      ploc = bloc (getPlayerBody state)
-      sTimeout = Config.get (sconfig state) "monsters" "smellTimeout"
-      upd = IM.insert ploc $ Tile.SmellTime $ time + sTimeout
-  when (isAHero state pl) $
+  s  <- get
+  pl <- gets splayer
+  let time = stime s
+      ploc = bloc (getPlayerBody s)
+      upd = IM.insert ploc $ timeAdd time $ smellTimeout s
+  when (isAHero s pl) $
     modify $ updateLevel $ updateSmell upd

@@ -34,6 +34,7 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Random
 import Game.LambdaHack.State
+import Game.LambdaHack.Time
 import qualified Game.LambdaHack.Config as Config
 import qualified Game.LambdaHack.Effect as Effect
 import qualified Game.LambdaHack.Kind as Kind
@@ -170,7 +171,7 @@ eff Effect.Dominate _ source target _power = do
       selectPlayer target
         >>= assert `trueM` (source, target, "player dominates himself")
       -- Prevent AI from getting a few free moves until new player ready.
-      updatePlayerBody (\ m -> m { btime = 0})
+      updatePlayerBody (\ m -> m { btime = timeZero})
       -- Display status line and FOV for the newly controlled actor.
       fr <- drawPrompt ColorBW ""
       mapM_ displayFramePush [Nothing, Just fr, Nothing]
@@ -491,7 +492,7 @@ handleScores write status total =
     let points = case status of
                    H.Killed _ -> (total + 1) `div` 2
                    _ -> total
-    let score = H.ScoreRecord points (-time) curDate status
+    let score = H.ScoreRecord points (timeNegate time) curDate status
     (placeMsg, slideshow) <- registerHS config write score
     displayOverAbort placeMsg slideshow
 

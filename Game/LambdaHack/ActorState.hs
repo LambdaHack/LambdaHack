@@ -24,6 +24,7 @@ import qualified Game.LambdaHack.Config as Config
 import qualified Game.LambdaHack.Tile as Tile
 import qualified Game.LambdaHack.Kind as Kind
 import qualified Game.LambdaHack.Feature as F
+import Game.LambdaHack.Time
 
 -- TODO: currently it's false for player-controlled monsters.
 -- When it's no longer, rewrite the places where it matters.
@@ -32,6 +33,13 @@ isAHero :: State -> ActorId -> Bool
 isAHero s a =
   let (_, actor, _) = findActorAnyLevel a s
   in bparty actor == heroParty
+
+-- TODO: move to TileState if ever created.
+-- | How long until an actor's smell vanishes from a tile.
+smellTimeout :: State -> Time
+smellTimeout s =
+  let smellSteps = Config.get (sconfig s) "monsters" "smellTimeout"
+  in timeScale timeStep smellSteps
 
 -- The operations with "Any", and those that use them,
 -- consider all the dungeon.
@@ -239,7 +247,7 @@ addProjectile Kind.COps{coactor, coitem=Kind.Ops{okind}}
         , btarget = TPath path
         , bloc    = sloc
         , bletter = 'a'
-        , btime   = 0
+        , btime   = timeZero
         , bparty
         }
       cstate = state { scounter = scounter + 1 }

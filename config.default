@@ -86,7 +86,7 @@
 ; period: KP_Begin
 
 ; [monsters]
-; smellTimeout: 1000
+; smellTimeout: 100
 
 ; [ui]
 ; font: Terminus,Monospace normal normal normal normal 12

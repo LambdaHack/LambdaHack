@@ -5,7 +5,6 @@ module Game.LambdaHack.Draw
   ( ColorMode(..), draw, animate
   ) where
 
-import qualified Data.Char as Char
 import qualified Data.IntSet as IS
 import qualified Data.List as L
 import qualified Data.IntMap as IM
@@ -19,7 +18,6 @@ import Game.LambdaHack.Point
 import Game.LambdaHack.Level
 import Game.LambdaHack.Effect
 import Game.LambdaHack.Perception
-import Game.LambdaHack.Tile
 import Game.LambdaHack.Actor as Actor
 import Game.LambdaHack.ActorState
 import qualified Game.LambdaHack.Dungeon as Dungeon
@@ -31,6 +29,7 @@ import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.FOV
 import qualified Game.LambdaHack.Feature as F
+import Game.LambdaHack.Time
 
 -- | Color mode for the display.
 data ColorMode =
@@ -81,8 +80,8 @@ draw dm cops per s@State{ scursor=Cursor{..}
             tile = lvl `lAt` loc0
             tk = tokind tile
             items = lvl `liAt` loc0
-            sm = smelltime $ IM.findWithDefault (SmellTime 0) loc0 lsmell
-            sml = (sm - stime) `div` 100
+            sm = IM.findWithDefault timeZero loc0 lsmell
+            sml = sm `timeAdd` timeNegate stime
             viewActor loc Actor{bkind = bkind2, bsymbol}
               | loc == bloc && slid == creturnLn =
                   (symbol, Color.defBG)  -- highlight player
@@ -90,11 +89,6 @@ draw dm cops per s@State{ scursor=Cursor{..}
              where
               ActorKind{asymbol, acolor} = okind bkind2
               symbol = fromMaybe asymbol bsymbol
-            viewSmell :: Int -> Char
-            viewSmell k
-              | k > 9     = '*'
-              | k < 0     = '-'
-              | otherwise = Char.intToDigit k
             rainbow loc = toEnum $ loc `rem` 14 + 1
             (char, fg0) =
               case L.find (\ m -> loc0 == Actor.bloc m) (IM.elems lactor) of
@@ -109,7 +103,8 @@ draw dm cops per s@State{ scursor=Cursor{..}
                                  (False, True)  -> Color.Green
                                  (False, False) -> Color.Red)
                 Just m | somniscient || vis -> viewActor loc0 m
-                _ | sSml && sml >= 0 -> (viewSmell sml, rainbow loc0)
+                _ | sSml && sml >= timeZero ->
+                  (timeToDigit (smellTimeout s) sml, rainbow loc0)
                   | otherwise ->
                   case items of
                     [] -> (tsymbol tk, if vis then tcolor tk else tcolor2 tk)

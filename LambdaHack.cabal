@@ -110,6 +110,7 @@ library
                    Game.LambdaHack.Strategy,
                    Game.LambdaHack.StrategyAction,
                    Game.LambdaHack.Tile,
+                   Game.LambdaHack.Time,
                    Game.LambdaHack.Turn,
                    Game.LambdaHack.Utils.Assert,
                    Game.LambdaHack.Utils.File,

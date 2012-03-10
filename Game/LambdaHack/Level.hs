@@ -37,7 +37,7 @@ type InvDict = IM.IntMap [Item]
 type SmellMap = IM.IntMap SmellTime
 
 -- | Current secrecy value on map tiles.
-type SecretMap = IM.IntMap SecretStrength
+type SecretMap = IM.IntMap SecretTime
 
 -- | Actual and remembered item lists on map tiles.
 type ItemMap = IM.IntMap ([Item], [Item])
@@ -152,12 +152,12 @@ accessible Kind.COps{ cotile=Kind.Ops{okind=okind}, corule}
 
 -- | Check whether the location contains a door of secrecy lower than @k@
 -- and that can be opened according to the standard ruleset.
-openable :: Kind.Ops TileKind -> Level -> SecretStrength -> Point -> Bool
+openable :: Kind.Ops TileKind -> Level -> SecretTime -> Point -> Bool
 openable cops lvl@Level{lsecret} k target =
   let tgt = lvl `at` target
   in hasFeature cops F.Openable tgt ||
      (hasFeature cops F.Hidden tgt &&
-      lsecret IM.! target < k)
+      lsecret IM.! target <= k)
 
 -- | Find a random location on the map satisfying a predicate.
 findLoc :: TileMap -> (Point -> Kind.Id TileKind -> Bool) -> Rnd Point

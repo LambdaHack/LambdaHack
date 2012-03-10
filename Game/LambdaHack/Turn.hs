@@ -27,6 +27,7 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.Draw
 import Game.LambdaHack.Content.ActorKind
 import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Time
 
 -- One turn proceeds through the following functions:
 --
@@ -121,7 +122,7 @@ nextMove :: Bool -> Action ()
 nextMove dispAlready = do
   debug "nextMove"
   unless dispAlready $ displayFramePush Nothing
-  modify (updateTime (+1))
+  modify (updateTime (timeAdd timeTurn))
   regenerateLevelHP
   generateMonster
   handle
@@ -213,7 +214,10 @@ advanceTime :: ActorId -> Action ()
 advanceTime actor = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getCOps
   time <- gets stime
-  let upd m = m { btime = time + 200 `div` aspeed (okind (bkind m)) }
+  let upd m =
+        let speed = aspeed (okind (bkind m))
+            ticks = ticksPerMeter speed
+        in m { btime = timeAdd time ticks }
   -- A hack to synchronize the whole party:
   pl <- gets splayer
   updateAnyActor actor upd

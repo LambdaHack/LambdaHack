@@ -17,13 +17,13 @@ import Data.Maybe
 import Data.Ratio
 
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Misc
 import Game.LambdaHack.Vector
 import Game.LambdaHack.Point
 import Game.LambdaHack.Content.ActorKind
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Config as Config
+import Game.LambdaHack.Time
 
 newtype PartyId = PartyId Int
   deriving (Show, Eq)
@@ -50,35 +50,35 @@ data Actor = Actor
   , btarget :: Target                  -- ^ target for ranged attacks and AI
   , bloc    :: !Point                  -- ^ current location
   , bletter :: !Char                   -- ^ next inventory letter
-  , btime   :: !Time                   -- ^ time of next action in time ticks
+  , btime   :: !Time                   -- ^ absolute time of next action
   , bparty  :: !PartyId                -- ^ to which party the actor belongs
   }
   deriving Show
 
 instance Binary Actor where
-  put (Actor ak an as ah ad at al ale ati pp) = do
-    put ak
-    put an
-    put as
-    put ah
-    put ad
-    put at
-    put al
-    put ale
-    put ati
-    put pp
+  put Actor{..} = do
+    put bkind
+    put bsymbol
+    put bname
+    put bhp
+    put bdir
+    put btarget
+    put bloc
+    put bletter
+    put btime
+    put bparty
   get = do
-    ak  <- get
-    an  <- get
-    as  <- get
-    ah  <- get
-    ad  <- get
-    at  <- get
-    al  <- get
-    ale <- get
-    ati <- get
-    pp  <- get
-    return (Actor ak an as ah ad at al ale ati pp)
+    bkind   <- get
+    bsymbol <- get
+    bname   <- get
+    bhp     <- get
+    bdir    <- get
+    btarget <- get
+    bloc    <- get
+    bletter <- get
+    btime   <- get
+    bparty  <- get
+    return Actor{..}
 
 -- ActorId operations
 
@@ -111,8 +111,12 @@ monsterGenChance d numMonsters =
 -- to force a reset ASAP.
 template :: Kind.Id ActorKind -> Maybe Char -> Maybe String -> Int -> Point
          -> PartyId -> Actor
-template mk mc ms hp loc pp =
-  Actor mk mc ms hp Nothing invalidTarget loc 'a' 0 pp
+template bkind bsymbol bname bhp bloc bparty =
+  let btarget = invalidTarget
+      bdir    = Nothing
+      bletter = 'a'
+      btime   = timeZero
+  in Actor{..}
 
 -- | Increment current hit points of an actor.
 addHp :: Kind.Ops ActorKind -> Int -> Actor -> Actor
@@ -144,7 +148,7 @@ projectileKindId Kind.Ops{ouniqGroup} = ouniqGroup "projectile"
 data Target =
     TEnemy ActorId Point  -- ^ target an actor with its last seen location
   | TLoc Point            -- ^ target a given location
-  | TPath [Point]         -- ^ target the list of locations in turn
+  | TPath [Point]         -- ^ target the list of locations one after another
   | TCursor               -- ^ target current position of the cursor; default
   deriving (Show, Eq)
 

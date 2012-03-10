@@ -14,6 +14,7 @@ import Game.LambdaHack.Utils.File
 import qualified Game.LambdaHack.Config as Config
 import Game.LambdaHack.Dungeon
 import Game.LambdaHack.Misc
+import Game.LambdaHack.Time
 import Game.LambdaHack.Msg
 
 -- TODO: add heroes' names, exp and level, cause of death, user number/name.
@@ -76,7 +77,7 @@ showScore (pos, score) =
       curDate = calendarTimeToString . toUTCTime . date $ score
       big   = "                                                 "
       lil   = "              "
-      steps = negTime score `div` (-10)
+      steps = - (negTime score `timeFit` timeTurn)
      -- TODO: the spaces at the end are hand-crafted. Remove when display
      -- of overlays adds such spaces automatically.
   in [ printf

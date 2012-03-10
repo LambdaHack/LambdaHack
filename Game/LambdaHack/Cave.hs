@@ -22,6 +22,7 @@ import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Place hiding (TileMapXY)
 import qualified Game.LambdaHack.Place as Place
 import Game.LambdaHack.Misc
+import Game.LambdaHack.Time
 
 -- | The map of tile kinds in a cave.
 -- The map is sparse. The default tile that eventually fills the empty spaces
@@ -30,7 +31,7 @@ type TileMapXY = Place.TileMapXY
 
 -- | The map of starting secrecy strength of tiles in a cave.
 -- The map is sparse. Unspecified tiles have secrecy strength of 0.
-type SecretMapXY = M.Map PointXY Tile.SecretStrength
+type SecretMapXY = M.Map PointXY Tile.SecretTime
 
 -- | The map of starting items in tiles of a cave. The map is sparse.
 -- Unspecified tiles have no starting items.
@@ -153,14 +154,14 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick}
         }
   return cave
 
-rollSecret :: TileKind -> Rnd Tile.SecretStrength
+rollSecret :: TileKind -> Rnd Tile.SecretTime
 rollSecret t = do
   let getDice (F.Secret dice) _ = dice
       getDice _ acc = acc
       defaultDice = RollDice 5 2
       d = foldr getDice defaultDice (tfeature t)
-  secret <- rollDice d
-  return $ Tile.SecretStrength secret
+  secretSteps <- rollDice d
+  return $ timeScale timeStep secretSteps
 
 trigger :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
 trigger Kind.Ops{okind, opick} t =
