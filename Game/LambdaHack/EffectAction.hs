@@ -58,22 +58,26 @@ effectToAction effect verbosity source target power = do
   let oldHP = bhp oldTm
   -- The msg describes the target part of the action.
   (b, msg) <- eff effect verbosity source target power
-  -- We assume the target not killed outright by the effect.
-  sm  <- gets (getActor source)
-  tm  <- gets (getActor target)
-  per <- getPerception
-  pl  <- gets splayer
-  s   <- get
-  let tloc = bloc tm
-      newHP = bhp $ getActor target s
-  bb <-
-    if isAHero s source ||
-       isAHero s target ||
-       pl == source ||
-       pl == target ||
-       (tloc `IS.member` totalVisible per &&
-        bloc sm `IS.member` totalVisible per)
-    then do
+  s <- get
+  -- If the target killed outright by the effect (e.g., in a recursive call),
+  -- there's nothing left to do. TODO: hacky
+  if not (memActor target s)
+   then return (b, False)
+   else do
+    sm  <- gets (getActor source)
+    tm  <- gets (getActor target)
+    per <- getPerception
+    pl  <- gets splayer
+    let tloc = bloc tm
+        newHP = bhp $ getActor target s
+    bb <-
+     if isAHero s source ||
+        isAHero s target ||
+        pl == source ||
+        pl == target ||
+        (tloc `IS.member` totalVisible per &&
+         bloc sm `IS.member` totalVisible per)
+     then do
       -- Party sees the effect or is affected by it.
       msgAdd msg
       -- Try to show an animation.
@@ -101,23 +105,23 @@ effectToAction effect verbosity source target power = do
           animFrs = animate s basicFrame anim
       mapM_ displayFramePush animFrs
       return (b, True)
-    else do
+     else do
       -- Hidden, but if interesting then heard.
       when b $ msgAdd "You hear some noises."
       return (b, False)
-  -- Now kill the actor, if needed. For monsters, no "die" message
-  -- is shown below. It should have been showsn in @eff@.
-  when (newHP <= 0) $ do
-    -- Place the actor's possessions on the map.
-    bitems <- gets (getActorItem target)
-    modify (updateLevel (dropItemsAt bitems (bloc tm)))
-    -- Clean bodies up.
-    if target == pl
-      then  -- Kill the player and check game over.
-        checkPartyDeath
-      else  -- Kill the enemy.
-        modify (deleteActor target)
-  return bb
+    -- Now kill the actor, if needed. For monsters, no "die" message
+    -- is shown below. It should have been showsn in @eff@.
+    when (newHP <= 0) $ do
+      -- Place the actor's possessions on the map.
+      bitems <- gets (getActorItem target)
+      modify (updateLevel (dropItemsAt bitems (bloc tm)))
+      -- Clean bodies up.
+      if target == pl
+        then  -- Kill the player and check game over.
+          checkPartyDeath
+        else  -- Kill the enemy.
+          modify (deleteActor target)
+    return bb
 
 eff :: Effect.Effect -> Int -> ActorId -> ActorId -> Int
     -> Action (Bool, String)
@@ -224,7 +228,7 @@ eff Effect.Descend _ source target power = do
   if not $ isAHero s target
     then squashActor source target
     else effLvlGoUp (- (power + 1))
-  return (True,actorVerbExtra coactor tm "find" "a shortcut downstairs")
+  return (True, actorVerbExtra coactor tm "find" "a shortcut downstairs")
 
 nullEffect :: Action (Bool, String)
 nullEffect = return (False, "Nothing happens.")
@@ -243,7 +247,7 @@ squashActor source target = do
   msgAdd msg
   itemEffectAction 0 source target h2h
   s <- get
-  -- The monster has to killed, because we may step there next turn.
+  -- The monster has to be killed, because we may step there next turn.
   assert (not (memActor target s) `blame` (source, target, "not killed")) $
     return ()
 

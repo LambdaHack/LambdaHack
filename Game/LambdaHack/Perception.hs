@@ -86,9 +86,8 @@ actorReachesActor actor1 actor2 loc1 loc2 per pl =
 
 -- TODO: When the code for throwing, digital lines and lights is complete.
 -- make this a special case of ActorSeesActor.
--- | Whether a monster can see a hero (@False@ if the target is not a hero).
+-- | Whether a monster can see a hero (fails if the target is not a hero).
 -- An approximation, to avoid computing FOV for the monster.
--- If the target actor has no FOV pre-computed, we assume it can't be seen.
 monsterSeesHero :: Kind.Ops TileKind -> Perception -> Level
                  -> ActorId -> ActorId -> Point -> Point -> Bool
 monsterSeesHero cotile per lvl _source target sloc tloc =

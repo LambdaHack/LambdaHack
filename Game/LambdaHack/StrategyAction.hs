@@ -77,10 +77,13 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   mk = okind ak
   delState = deleteActor actor oldState
   enemyVisible a l =
-    asight mk && monsterSeesHero cotile per lvl actor a me l ||
+    asight mk &&
+    isAHero delState a &&
+    monsterSeesHero cotile per lvl actor a me l
     -- Enemy can be felt if adjacent (e. g., a player-controlled monster).
     -- TODO: can this be replaced by setting 'lights' to [me]?
-    (asmell mk || asight mk) && adjacent lxsize me l
+    || (asmell mk || asight mk)
+       && adjacent lxsize me l
   -- Below, "foe" is the hero (or a monster, or loc) chased by the actor.
   chase tgt =
     case tgt of
