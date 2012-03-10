@@ -33,7 +33,9 @@ instance Binary SecretStrength where
 
 -- | The last time a hero left a smell in a given tile. To be used
 -- by monsters that hunt by smell.
-newtype SmellTime = SmellTime{smelltime :: Time} deriving Show
+newtype SmellTime = SmellTime {smelltime :: Time}
+  deriving Show
+
 instance Binary SmellTime where
   put = put . smelltime
   get = fmap SmellTime get

@@ -472,8 +472,9 @@ displayHistory = do
   Diary{shistory} <- getDiary
   stime <- gets stime
   lysize <- gets (lysize . slevel)
-  let turn = show (stime `div` 10)
-      msg = "You adventuring lasts " ++ turn ++ " turns. Past messages:"
+  let step = show (stime `div` 10)
+      msg = "You adventuring lasts " ++ step
+            ++ " half-second steps. Past messages:"
   displayOverlays msg $ splitOverlay lysize $ renderHistory shistory
 
 dumpConfig :: Action ()

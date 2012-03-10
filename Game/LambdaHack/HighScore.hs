@@ -26,7 +26,7 @@ import Game.LambdaHack.Msg
 -- from the best to the worst, in lexicographic ordering wrt the fields below.
 data ScoreRecord = ScoreRecord
   { points  :: !Int        -- ^ the score
-  , negTurn :: !Int        -- ^ number of turns (negated, so less better)
+  , negTime :: !Time       -- ^ game time spent (negated, so less better)
   , date    :: !ClockTime  -- ^ date of the last game interruption
   , status  :: !Status     -- ^ reason of the game interruption
   }
@@ -73,10 +73,10 @@ showScore (pos, score) =
         Killed lvl -> "perished on level " ++ show (levelNumber lvl) ++ ","
         Camping -> "is camping somewhere,"
         Victor -> "emerged victorious"
-      time  = calendarTimeToString . toUTCTime . date $ score
+      curDate = calendarTimeToString . toUTCTime . date $ score
       big   = "                                                 "
       lil   = "              "
-      steps = negTurn score `div` (-10)
+      steps = negTime score `div` (-10)
      -- TODO: the spaces at the end are hand-crafted. Remove when display
      -- of overlays adds such spaces automatically.
   in [ printf
@@ -87,7 +87,7 @@ showScore (pos, score) =
          pos (points score) died steps
      , printf
          "%son %s.  "
-         lil time
+         lil curDate
      ]
 
 -- | The list of scores, in decreasing order.

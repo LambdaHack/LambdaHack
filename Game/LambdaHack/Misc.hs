@@ -7,7 +7,10 @@ module Game.LambdaHack.Misc
 normalLevelBound :: (Int, Int)
 normalLevelBound = (79, 21)
 
--- | Game time in turns. The time dimension.
+-- | Game time in ticks. The time dimension.
+-- One tick is 0.05s, one turn is 0.05s, one step is 0.5s.
+-- Moves are resolved and screen frame is generated every turn.
+-- Actors at normal speed (2 m/s) take one step to move one tile (1 m by 1 m).
 type Time = Int
 
 -- | Integer division, rounding up.

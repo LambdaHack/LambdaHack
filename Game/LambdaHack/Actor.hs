@@ -50,7 +50,7 @@ data Actor = Actor
   , btarget :: Target                  -- ^ target for ranged attacks and AI
   , bloc    :: !Point                  -- ^ current location
   , bletter :: !Char                   -- ^ next inventory letter
-  , btime   :: !Time                   -- ^ time of next action
+  , btime   :: !Time                   -- ^ time of next action in time ticks
   , bparty  :: !PartyId                -- ^ to which party the actor belongs
   }
   deriving Show

@@ -23,7 +23,7 @@ data ActorKind = ActorKind
   , asight  :: !Bool             -- ^ can it see?
   , asmell  :: !Bool             -- ^ can it smell?
   , aiq     :: !Int              -- ^ intelligence
-  , aregen  :: !Int              -- ^ regeneration interval
+  , aregen  :: !Time             -- ^ regeneration interval in time ticks
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 

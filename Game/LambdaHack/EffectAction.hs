@@ -247,7 +247,7 @@ squashActor source target = do
   msgAdd msg
   itemEffectAction 0 source target h2h
   s <- get
-  -- The monster has to be killed, because we may step there next turn.
+  -- The monster has to be killed, because we may step there right now.
   assert (not (memActor target s) `blame` (source, target, "not killed")) $
     return ()
 

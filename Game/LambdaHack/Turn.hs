@@ -188,7 +188,7 @@ playerCommand msgRunAbort = do
             let (mfr, frs) = case reverse $ catMaybes frames of
                   []     -> (Nothing, [])
                   f : fs -> (Just f, reverse fs)
-            -- Show in turn all but the last frame.
+            -- Show, one by one, all but the last frame.
             -- Note: the code that generates the frames is responsible
             -- for inserting the @more@ prompt.
             b <- getOverConfirm frs

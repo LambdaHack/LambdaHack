@@ -45,7 +45,7 @@ data Diary = Diary
 data State = State
   { splayer  :: ActorId      -- ^ represents the player-controlled actor
   , scursor  :: Cursor       -- ^ cursor location and level to return to
-  , stime    :: Time         -- ^ current in-game time
+  , stime    :: Time         -- ^ current game time, counted since game start
   , sflavour :: FlavourMap   -- ^ association of flavour to items
   , sdisco   :: Discoveries  -- ^ items (kinds) that have been discovered
   , sdungeon :: Dungeon.Dungeon  -- ^ all dungeon levels
@@ -87,12 +87,12 @@ slevel State{slid, sdungeon} = sdungeon Dungeon.! slid
 -- | Initial player diary.
 defaultDiary :: IO Diary
 defaultDiary = do
-  curDate <- getClockTime
-  let time = calendarTimeToString $ toUTCTime curDate
+  dateTime <- getClockTime
+  let curDate = calendarTimeToString $ toUTCTime dateTime
   return Diary
     { sreport = emptyReport
     , shistory = singletonHistory $ singletonReport $
-                   "Player diary started on " ++ time ++ "."
+                   "Player diary started on " ++ curDate ++ "."
     }
 
 -- | Initial game state.
