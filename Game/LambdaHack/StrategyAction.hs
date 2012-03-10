@@ -142,7 +142,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   onlyOpenable   = onlyMoves openableHere me
   accessibleHere = accessible cops lvl me
   onlySensible   = onlyMoves (\ l -> accessibleHere l || openableHere l) me
-  focusedMonster = aspeed mk >= 10
+  focusedMonster = aspeed mk <= 20
   movesNotBack   = maybe id (\ (d, _) -> L.filter (/= neg d)) ad $ moves lxsize
   smells         =
     L.map fst $

@@ -213,7 +213,7 @@ advanceTime :: ActorId -> Action ()
 advanceTime actor = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getCOps
   time <- gets stime
-  let upd m = m { btime = time + aspeed (okind (bkind m)) }
+  let upd m = m { btime = time + 200 `div` aspeed (okind (bkind m)) }
   -- A hack to synchronize the whole party:
   pl <- gets splayer
   updateAnyActor actor upd
