@@ -189,7 +189,7 @@ eff Effect.Dominate _ source target _power = do
 eff Effect.SummonFriend _ source target power = do
   tm <- gets (getActor target)
   s <- get
-  if isAHero s source
+  if not $ isAMonster s source
     then summonHeroes (1 + power) (bloc tm)
     else summonMonsters (1 + power) (bloc tm)
   return (True, "")
@@ -197,7 +197,7 @@ eff Effect.SummonEnemy _ source target power = do
   tm <- gets (getActor target)
   s  <- get
   -- A trick: monster player summons a hero.
-  if not $ isAHero s source
+  if isAMonster s source
     then summonHeroes (1 + power) (bloc tm)
     else summonMonsters (1 + power) (bloc tm)
   return (True, "")

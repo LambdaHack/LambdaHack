@@ -11,7 +11,6 @@ import qualified Data.IntMap as IM
 import Data.Maybe
 import Control.Monad
 
-import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Point
 import Game.LambdaHack.State
 import Game.LambdaHack.Level
@@ -86,14 +85,16 @@ actorReachesActor actor1 actor2 loc1 loc2 per pl =
 
 -- TODO: When the code for throwing, digital lines and lights is complete.
 -- make this a special case of ActorSeesActor.
--- | Whether a monster can see a hero (fails if the target is not a hero).
+-- | Whether a monster can see a hero (@False@ if the target has
+-- no perceptionis, e.g., not a hero or a hero without perception, due
+-- to being spawned on the same turn by a monster and then seen by another).
 -- An approximation, to avoid computing FOV for the monster.
 monsterSeesHero :: Kind.Ops TileKind -> Perception -> Level
                  -> ActorId -> ActorId -> Point -> Point -> Bool
 monsterSeesHero cotile per lvl _source target sloc tloc =
-  let rerr = assert `failure` (_source, sloc, target, tloc)
+  let rempty = PerceptionReachable IS.empty
       reachable@PerceptionReachable{preachable} =
-        fromMaybe rerr $ IM.lookup target $ pheroes per
+        fromMaybe rempty $ IM.lookup target $ pheroes per
   in sloc `IS.member` preachable
      && isVisible cotile reachable lvl IS.empty tloc
 

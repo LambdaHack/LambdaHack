@@ -34,6 +34,13 @@ isAHero s a =
   let (_, actor, _) = findActorAnyLevel a s
   in bparty actor == heroParty
 
+-- | Checks whether an actor identifier represents a monster
+-- or a monster projectile.
+isAMonster :: State -> ActorId -> Bool
+isAMonster s a =
+  let (_, actor, _) = findActorAnyLevel a s
+  in bparty actor == monsterParty
+
 -- TODO: move to TileState if ever created.
 -- | How long until an actor's smell vanishes from a tile.
 smellTimeout :: State -> Time
