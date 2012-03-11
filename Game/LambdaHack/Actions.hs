@@ -460,7 +460,7 @@ regenerateLevelHP = do
   -- in time together with their level). This prevents cheating
   -- via sending one hero to a safe level and waiting there.
   hi <- gets (linv . slevel)
-  modify (updateLevel (updateActor (IM.mapWithKey (upd hi))))
+  modify (updateLevel (updateActorDict (IM.mapWithKey (upd hi))))
 
 -- | Display command help.
 displayHelp :: ActionFrame ()

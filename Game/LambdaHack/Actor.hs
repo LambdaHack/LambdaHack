@@ -114,13 +114,12 @@ monsterGenChance depth numMonsters =
 -- | A template for a new actor. The initial target is invalid
 -- to force a reset ASAP.
 template :: Kind.Id ActorKind -> Maybe Char -> Maybe String -> Int -> Point
-         -> PartyId -> Actor
-template bkind bsymbol bname bhp bloc bparty =
+         -> Time -> PartyId -> Actor
+template bkind bsymbol bname bhp bloc btime bparty =
   let bspeed  = Nothing
       btarget = invalidTarget
       bdir    = Nothing
       bletter = 'a'
-      btime   = timeZero
   in Actor{..}
 
 -- | Increment current hit points of an actor.

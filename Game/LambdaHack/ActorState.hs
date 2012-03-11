@@ -83,7 +83,7 @@ allHeroesAnyLevel State{slid, sdungeon} =
 updateAnyActorBody :: ActorId -> (Actor -> Actor) -> State -> State
 updateAnyActorBody actor f state =
   let (ln, _, _) = findActorAnyLevel actor state
-  in updateAnyLevel (updateActor $ IM.adjust f actor) ln state
+  in updateAnyLevel (updateActorDict $ IM.adjust f actor) ln state
 
 updateAnyActorItem :: ActorId -> ([Item] -> [Item]) -> State -> State
 updateAnyActorItem actor f state =
@@ -131,11 +131,11 @@ getActorItem a state = fromMaybe [] $ IM.lookup a (linv (slevel state))
 -- | Removes the actor, if present, from the current level.
 deleteActor :: ActorId -> State -> State
 deleteActor a =
-  updateLevel (updateActor (IM.delete a) . updateInv (IM.delete a))
+  updateLevel (updateActorDict (IM.delete a) . updateInv (IM.delete a))
 
 -- | Add actor to the current level.
 insertActor :: ActorId -> Actor -> State -> State
-insertActor a m = updateLevel (updateActor (IM.insert a m))
+insertActor a m = updateLevel (updateActorDict (IM.insert a m))
 
 -- | Removes a player from the current level.
 deletePlayer :: State -> State
@@ -207,9 +207,9 @@ addHero Kind.COps{coactor, cotile} ploc state@State{scounter} =
       name = findHeroName config n
       startHP = bHP `div` min 5 (n + 1)
       m = template (heroKindId coactor) (Just symbol) (Just name)
-                   startHP loc heroParty
+                   startHP loc (stime state) heroParty
       cstate = state { scounter = scounter + 1 }
-  in updateLevel (updateActor (IM.insert scounter m)) cstate
+  in updateLevel (updateActorDict (IM.insert scounter m)) cstate
 
 -- | Create a set of initial heroes on the current level, at location ploc.
 initialHeroes :: Kind.COps -> Point -> State -> State
@@ -225,9 +225,9 @@ addMonster :: Kind.Ops TileKind -> Kind.Id ActorKind -> Int -> Point -> State
            -> State
 addMonster cotile mk hp ploc state@State{scounter} = do
   let loc = nearbyFreeLoc cotile ploc state
-      m = template mk Nothing Nothing hp loc monsterParty
+      m = template mk Nothing Nothing hp loc (stime state) monsterParty
       cstate = state {scounter = scounter + 1}
-  updateLevel (updateActor (IM.insert scounter m)) cstate
+  updateLevel (updateActorDict (IM.insert scounter m)) cstate
 
 -- Adding projectiles
 
@@ -235,7 +235,7 @@ addMonster cotile mk hp ploc state@State{scounter} = do
 addProjectile :: Kind.COps -> Item -> Point -> PartyId -> [Point] -> State
               -> State
 addProjectile Kind.COps{coactor, coitem=Kind.Ops{okind}}
-              item sloc bparty path state@State{scounter} =
+              item sloc bparty path state@State{scounter, stime} =
   let ik = okind (jkind item)
       name = "flying " ++ iname ik
       m = Actor
@@ -248,10 +248,10 @@ addProjectile Kind.COps{coactor, coitem=Kind.Ops{okind}}
         , btarget = TPath path
         , bloc    = sloc
         , bletter = 'a'
-        , btime   = timeZero
+        , btime   = stime
         , bparty
         }
       cstate = state { scounter = scounter + 1 }
-      upd = updateActor (IM.insert scounter m)
+      upd = updateActorDict (IM.insert scounter m)
             . updateInv (IM.insert scounter [item])
   in updateLevel upd cstate

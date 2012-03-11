@@ -26,6 +26,7 @@ import Game.LambdaHack.State
 import Game.LambdaHack.EffectAction
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Time
 
 -- | Display inventory
 inventory :: ActionFrame ()
@@ -99,7 +100,7 @@ projectGroupItem source tloc verb item = do
         if sourceVis
         then sm
         else template (heroKindId coactor)
-               Nothing (Just "somebody") 99 sloc neutralParty
+               Nothing (Just "somebody") 99 sloc timeZero neutralParty
       msg = actorVerbItemExtra cops state subject verb consumed ""
       -- TODO: AI should choose the best eps.
       eps = if source == pl then ceps else 0

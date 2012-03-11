@@ -4,7 +4,7 @@ module Game.LambdaHack.Level
   ( -- * The @Level@ type and its components
     ActorDict, InvDict, SmellMap, SecretMap, ItemMap, TileMap, Level(..)
     -- * Level update
-  , updateActor, updateInv
+  , updateActorDict, updateInv
   , updateSmell, updateIMap, updateLMap, updateLRMap, dropItemsAt
     -- * Level query
   , at, rememberAt, atI, rememberAtI
@@ -63,8 +63,8 @@ data Level = Level
   deriving Show
 
 -- | Update the hero and monster maps.
-updateActor :: (ActorDict -> ActorDict) -> Level -> Level
-updateActor f lvl = lvl { lactor = f (lactor lvl) }
+updateActorDict :: (ActorDict -> ActorDict) -> Level -> Level
+updateActorDict f lvl = lvl { lactor = f (lactor lvl) }
 
 -- | Update the hero items and monster items maps.
 updateInv :: (InvDict -> InvDict) -> Level -> Level

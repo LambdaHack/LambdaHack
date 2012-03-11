@@ -81,7 +81,7 @@ handle = do
 -- | Handle monster moves. Perform moves for individual
 -- actors not controlled by the player, as long as there are actors
 -- with a move time less than or equal to the current time.
--- Some very fast actors may move many times a turn.
+-- Some very fast actors may move many times a turn, producing many frames.
 handleAI :: Bool -> Action ()
 handleAI dispAlready = do
   debug "handleAI"
@@ -116,8 +116,8 @@ handleMonster actor = do
 -- current design that all of the top-level functions directly call each
 -- other, rather than being called by a driver function.
 -- | After everything has been handled for the current game time, we can
--- advance the time. Here is the place to do whatever has to be done for
--- every time unit, e.g., monster generation.
+-- advance the time. Here is the place to do whatever has to be done
+-- every fixed number of time unit, e.g., monster generation.
 nextMove :: Bool -> Action ()
 nextMove dispAlready = do
   debug "nextMove"
@@ -143,10 +143,12 @@ handlePlayer = do
       ifRunning (\ x -> continueRun x >> advanceTime pl) abort
     addSmell
     -- The command took some time, so other actors act.
+    -- We don't let the player act twice a turn,because we assume
+    -- player speed is less or equal to one move/turn (200 m/10s).
     handleAI True
 
--- | Determine and process the next player command, given the last
--- running abort message, if any.
+-- | Determine and process the next player command. The argument is the last
+-- abort message due to running, if any.
 playerCommand :: Msg -> Action ()
 playerCommand msgRunAbort = do
   -- The frame state is now Push.
@@ -216,17 +218,16 @@ playerCommand msgRunAbort = do
 advanceTime :: ActorId -> Action ()
 advanceTime actor = do
   Kind.COps{coactor} <- getCOps
-  time <- gets stime
-  let upd m =
+  let upd m@Actor{btime} =
         let speed = actorSpeed coactor m
             ticks = ticksPerMeter speed
-        in m { btime = timeAdd time ticks }
+        in m { btime = timeAdd btime ticks }
+  updateAnyActor actor upd
   -- A hack to synchronize the whole party:
   pl <- gets splayer
-  updateAnyActor actor upd
   when (actor == pl) $ do
-    let updH a = if bparty a == heroParty then upd a else a
-    modify (updateLevel (updateActor (IM.map updH)))
+    let updH a m = if bparty m == heroParty && a /= pl then upd m else m
+    modify (updateLevel (updateActorDict (IM.mapWithKey updH)))
 
 
 -- The issues below are now complicated (?) by the fact that we now generate

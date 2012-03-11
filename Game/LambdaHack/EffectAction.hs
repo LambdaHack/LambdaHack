@@ -171,7 +171,7 @@ eff Effect.Dominate _ source target _power = do
       selectPlayer target
         >>= assert `trueM` (source, target, "player dominates himself")
       -- Prevent AI from getting a few free moves until new player ready.
-      updatePlayerBody (\ m -> m { btime = timeZero})
+      updatePlayerBody (\ m -> m { btime = stime s})
       -- Display status line and FOV for the newly controlled actor.
       fr <- drawPrompt ColorBW ""
       mapM_ displayFramePush [Nothing, Just fr, Nothing]
