@@ -4,7 +4,7 @@ module Game.LambdaHack.Time
   , timeAdd, timeFit, timeNegate, timeScale
   , timeToDigit
   , Speed(..), speedNormal, speedTilePerTurn
-  , speedScale, ticksPerMeter
+  , speedScale, ticksPerMeter, traveled, speedFromWeight, rangeFromSpeed
   ) where
 
 import Data.Binary
@@ -98,3 +98,27 @@ ticksPerMeter (Speed v) =
       stepsInSecond = 2
       secondsIn10s = 10
   in Time $ ticksInStep * stepsInSecond * secondsIn10s `div` v
+
+-- | Distance in meters traveled in a given time by a body with a given speed.
+traveled :: Speed -> Time -> Int
+traveled (Speed v) (Time t) =
+  let Time ticksInStep = timeStep
+      ticksIn10s = 10 * 2 * ticksInStep
+  in v * t `div` ticksIn10s
+
+-- | Calculate projectile speed from item weight in grams
+-- and speed bonus in percents.
+-- See https://github.com/kosmikus/LambdaHack/wiki/Item-statistics.
+speedFromWeight :: Int -> Int -> Speed
+speedFromWeight w bonus =
+  let mps | w <= 500 = 16
+          | w > 500 && w <= 2000 =
+            24 - round (sqrt $ fromIntegral $ 128 * w :: Double)
+          | otherwise = 10 - w
+      mp10s = 10 * mps
+  in Speed $ max 1 $ mp10s + mp10s * bonus `div` 100
+
+-- | Calculate maximum range in meters of a projectile from its speed.
+-- See https://github.com/kosmikus/LambdaHack/wiki/Item-statistics.
+rangeFromSpeed :: Speed -> Int
+rangeFromSpeed (Speed v) = v `div` 10
