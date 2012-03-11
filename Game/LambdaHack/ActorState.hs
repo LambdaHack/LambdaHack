@@ -242,8 +242,9 @@ addMonster cotile mk hp ploc state@State{scounter} = do
 addProjectile :: Kind.COps -> Item -> Point -> PartyId -> [Point] -> State
               -> State
 addProjectile Kind.COps{coactor, coitem=Kind.Ops{okind}}
-              item sloc bparty path state@State{scounter, stime} =
-  let ik = okind (jkind item)
+              item sloc bparty path state@State{scounter} =
+  let btime = stime state
+      ik = okind (jkind item)
       name = "flying " ++ iname ik
       m = Actor
         { bkind   = projectileKindId coactor
@@ -255,7 +256,7 @@ addProjectile Kind.COps{coactor, coitem=Kind.Ops{okind}}
         , btarget = TPath path
         , bloc    = sloc
         , bletter = 'a'
-        , btime   = stime
+        , btime
         , bparty
         }
       cstate = state { scounter = scounter + 1 }

@@ -42,13 +42,13 @@ data ColorMode =
 draw :: ColorMode -> Kind.COps -> Perception -> State -> Overlay
      -> Color.SingleFrame
 draw dm cops per s@State{ scursor=Cursor{..}
-                        , stime, sflavour, slid, splayer, sdebug
+                        , sflavour, slid, splayer, sdebug
                         } overlay =
   let Kind.COps{ coactor=Kind.Ops{okind}
                , coitem=coitem@Kind.Ops{okind=iokind}
                , cotile=Kind.Ops{okind=tokind, ouniqGroup} } = cops
       DebugMode{smarkVision, somniscient} = sdebug
-      lvl@Level{lxsize, lysize, lsmell, ldesc, lactor} = slevel s
+      lvl@Level{lxsize, lysize, lsmell, ldesc, lactor, ltime} = slevel s
       (_, Actor{bkind, bhp, bloc}, bitems) = findActorAnyLevel splayer s
       ActorKind{ahp, asmell} = okind bkind
       reachable = debugTotalReachable per
@@ -81,7 +81,7 @@ draw dm cops per s@State{ scursor=Cursor{..}
             tk = tokind tile
             items = lvl `liAt` loc0
             sm = IM.findWithDefault timeZero loc0 lsmell
-            sml = sm `timeAdd` timeNegate stime
+            sml = sm `timeAdd` timeNegate ltime
             viewActor loc Actor{bkind = bkind2, bsymbol}
               | loc == bloc && slid == creturnLn =
                   (symbol, Color.defBG)  -- highlight player

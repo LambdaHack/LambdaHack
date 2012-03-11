@@ -3,7 +3,7 @@ module Game.LambdaHack.State
   ( -- * Game state
     State(..), TgtMode(..), Cursor(..)
     -- * Accessor
-  , slevel
+  , slevel, stime
     -- * Constructor
   , defaultState
     -- * State update
@@ -45,7 +45,6 @@ data Diary = Diary
 data State = State
   { splayer  :: ActorId      -- ^ represents the player-controlled actor
   , scursor  :: Cursor       -- ^ cursor location and level to return to
-  , stime    :: Time         -- ^ current game time, counted since game start
   , sflavour :: FlavourMap   -- ^ association of flavour to items
   , sdisco   :: Discoveries  -- ^ items (kinds) that have been discovered
   , sdungeon :: Dungeon.Dungeon  -- ^ all dungeon levels
@@ -84,6 +83,10 @@ data DebugMode = DebugMode
 slevel :: State -> Level
 slevel State{slid, sdungeon} = sdungeon Dungeon.! slid
 
+-- | Get current time from the dungeon data.
+stime :: State -> Time
+stime State{slid, sdungeon} = ltime $ sdungeon Dungeon.! slid
+
 -- | Initial player diary.
 defaultDiary :: IO Diary
 defaultDiary = do
@@ -102,7 +105,6 @@ defaultState config flavour dng lid ploc g =
   State
     0  -- hack: the hero is not yet alive
     (Cursor TgtOff lid ploc lid 0)
-    (timeAdd timeStep timeStep)  -- just stepped into the dungeon
     flavour
     S.empty
     dng
@@ -124,7 +126,7 @@ updateCursor f s = s { scursor = f (scursor s) }
 
 -- | Update time within state.
 updateTime :: (Time -> Time) -> State -> State
-updateTime f s = s { stime = f (stime s) }
+updateTime f s = updateLevel (\ lvl@Level{ltime} -> lvl {ltime = f ltime}) s
 
 -- | Update item discoveries within state.
 updateDiscoveries :: (Discoveries -> Discoveries) -> State -> State
@@ -161,11 +163,10 @@ instance Binary Diary where
     return Diary{..}
 
 instance Binary State where
-  put (State player cursor time flav disco dng lid ct
+  put (State player cursor flav disco dng lid ct
          g config _) = do
     put player
     put cursor
-    put time
     put flav
     put disco
     put dng
@@ -176,7 +177,6 @@ instance Binary State where
   get = do
     player <- get
     cursor <- get
-    time   <- get
     flav   <- get
     disco  <- get
     dng    <- get
@@ -185,7 +185,7 @@ instance Binary State where
     g      <- get
     config <- get
     return
-      (State player cursor time flav disco dng lid ct
+      (State player cursor flav disco dng lid ct
          (read g) config defaultDebugMode)
 
 instance Binary Cursor where

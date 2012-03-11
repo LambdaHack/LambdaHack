@@ -33,6 +33,7 @@ import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Place
 import qualified Game.LambdaHack.Effect as Effect
 import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Time
 
 convertTileMaps :: Rnd (Kind.Id TileKind) -> Int -> Int -> TileMapXY
                 -> Rnd TileMap
@@ -118,6 +119,7 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, ouniqGroup}
         , ldesc = cname
         , lmeta = dmeta
         , lstairs = (su, sd)
+        , ltime = timeAdd timeStep timeStep  -- just stepped into the dungeon
         }
   return level
 

@@ -26,6 +26,7 @@ import Game.LambdaHack.Random
 import Game.LambdaHack.Tile
 import qualified Game.LambdaHack.Feature as F
 import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Time
 
 -- | All actors on the level, indexed by actor identifier.
 type ActorDict = IM.IntMap Actor
@@ -59,6 +60,7 @@ data Level = Level
   , ldesc     :: String          -- ^ level description for the player
   , lmeta     :: String          -- ^ debug information from cave generation
   , lstairs   :: (Point, Point)  -- ^ destination of the (up, down) stairs
+  , ltime     :: Time            -- ^ last time a turn ended on the level
   }
   deriving Show
 
@@ -94,7 +96,7 @@ dropItemsAt items loc =
   in  updateIMap (IM.alter adj loc)
 
 instance Binary Level where
-  put (Level ad ia sx sy ls le li lm lrm ld lme lstairs) = do
+  put (Level ad ia sx sy ls le li lm lrm ld lme lstairs ltime) = do
     put ad
     put ia
     put sx
@@ -110,6 +112,7 @@ instance Binary Level where
     put ld
     put lme
     put lstairs
+    put ltime
   get = do
     ad <- get
     ia <- get
@@ -123,7 +126,8 @@ instance Binary Level where
     ld <- get
     lme <- get
     lstairs <- get
-    return (Level ad ia sx sy ls le li lm lrm ld lme lstairs)
+    ltime <- get
+    return (Level ad ia sx sy ls le li lm lrm ld lme lstairs ltime)
 
 -- | Query for actual and remembered tile kinds on the map.
 at, rememberAt :: Level -> Point -> Kind.Id TileKind

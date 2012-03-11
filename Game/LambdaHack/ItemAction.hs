@@ -214,7 +214,7 @@ setCursor tgtMode = assert (tgtMode /= TgtOff) $ do
   modify (updateCursor upd)
   doLook
 
--- | Tweak the @eps@ parameter of the targetting digital line.
+-- | Tweak the @eps@ parameter of the targeting digital line.
 epsIncr :: Bool -> Action ()
 epsIncr b =
   modify $ updateCursor $
@@ -228,9 +228,10 @@ endTargeting accept = do
   per      <- getPerception
   cloc     <- gets (clocation . scursor)
   ms       <- gets (monsterAssocs . slevel)
-  -- Return to the original level of the player or go to another level,
-  -- if the player was changed while targetting.
-  modify (\ state -> state {slid = returnLn})
+  -- Return to the original level of the player. Note that this can be
+  -- a different level than the one we started targeting at,
+  -- if the player was changed while targeting.
+  switchLevel returnLn
   modify (updateCursor (\ c -> c { ctargeting = TgtOff }))
   when accept $ do
     case target of

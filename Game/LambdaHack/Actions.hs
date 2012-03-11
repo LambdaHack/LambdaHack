@@ -229,7 +229,11 @@ tgtAscend k = do
         abortWith "no more levels in this direction"
       Just (nln, nloc) ->
         assert (nln /= slid `blame` (nln, "stairs looped")) $ do
-          modify (\ state -> state {slid = nln})
+          -- We only look at the level, but we have to keep current
+          -- time somewhere, e.g., for when we change the player
+          -- to a hero on this level and then end targeting.
+          -- If that's too slow, we could keep current time in the @Cursor@.
+          switchLevel nln
           -- do not freely reveal the other end of the stairs
           lvl2 <- gets slevel
           let upd cur =
@@ -244,7 +248,7 @@ tgtAscend k = do
           depth = Dungeon.depth dungeon
           nln = Dungeon.levelDefault $ min depth $ max 1 $ n - k
       when (nln == slid) $ abortWith "no more levels in this direction"
-      modify (\ state -> state {slid = nln})
+      switchLevel nln  -- see comment above
       let upd cur = cur {clocLn = nln}
       modify (updateCursor upd)
   when (targeting == TgtOff) $ do
@@ -478,9 +482,9 @@ displayHelp = do
 displayHistory :: ActionFrame ()
 displayHistory = do
   Diary{shistory} <- getDiary
-  stime <- gets stime
+  time <- gets stime
   lysize <- gets (lysize . slevel)
-  let step = show $ stime `timeFit` timeStep
+  let step = show $ time `timeFit` timeStep
       msg = "Your adventuring lasts " ++ step
             ++ " half-second steps. Past messages:"
   displayOverlays msg $ splitOverlay lysize $ renderHistory shistory

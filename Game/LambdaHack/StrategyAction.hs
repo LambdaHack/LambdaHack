@@ -64,14 +64,14 @@ and moves into the approximate direction of the hero.
 -- TODO: improve, split up, etc.
 -- | Monster AI strategy based on monster sight, smell, intelligence, etc.
 strategy :: Kind.COps -> ActorId -> State -> Perception -> Strategy (Action ())
-strategy cops actor oldState@State{splayer = pl, stime = time} per =
+strategy cops actor oldState@State{splayer = pl} per =
   strat
  where
   Kind.COps{ cotile
            , coactor=coactor@Kind.Ops{okind}
            , coitem=coitem@Kind.Ops{okind=iokind}
            } = cops
-  lvl@Level{lsmell = nsmap, lxsize, lysize} = slevel oldState
+  lvl@Level{lsmell = nsmap, lxsize, lysize, ltime} = slevel oldState
   actorBody@Actor { bkind = ak, bloc = me, bdir = ad, btarget, bhp } =
     getActor actor oldState
   bitems = getActorItem actor oldState
@@ -150,7 +150,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
     L.sortBy (\ (_, s1) (_, s2) -> compare s2 s1) $
     L.filter (\ (_, s) -> s > timeZero) $
     L.map (\ x -> let sm = IM.findWithDefault timeZero (me `shift` x) nsmap
-                  in (x, (sm `timeAdd` timeNegate  time) `max` timeZero))
+                  in (x, (sm `timeAdd` timeNegate ltime) `max` timeZero))
       movesNotBack
   attackDir d = dirToAction actor newTgt True  `liftM` d
   moveDir d   = dirToAction actor newTgt False `liftM` d

@@ -40,6 +40,7 @@ import qualified Game.LambdaHack.Effect as Effect
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.DungeonState
 import qualified Game.LambdaHack.Color as Color
+import qualified Game.LambdaHack.Dungeon as Dungeon
 
 -- TODO: instead of verbosity return msg components and tailor them outside?
 -- TODO: separately define messages for the case when source == target
@@ -280,8 +281,8 @@ effLvlGoUp k = do
           modify (updateLevel (updateSmell (const IM.empty)))
         -- At this place the invariant that the player exists fails.
         -- Change to the new level (invariant not needed).
-        modify (\ s -> s {slid = nln})
-        -- Add the player to the new level.
+        switchLevel nln
+        -- The player can now be safely added to the new level.
         modify (insertActor pl pbody)
         modify (updateAnyActorItem pl (const bitems))
         -- At this place the invariant is restored again.
@@ -309,6 +310,25 @@ effLvlGoUp k = do
         diary <- getDiary
         saveGameBkp state diary
         msgAdd $ lookAt cops False True state lvl nloc ""
+
+-- | Change level and reset it's time and update the times of all actors.
+-- The player may be added to @lactor@ of the new level only after
+-- this operation is executed.
+switchLevel :: Dungeon.LevelId -> Action ()
+switchLevel nln = do
+  timeCurrent <- gets stime
+  slid <- gets slid
+  when (slid /= nln) $ do
+    -- Switch to the new level.
+    modify (\ s -> s {slid = nln})
+    timeLastVisited <- gets stime
+    let diff = timeAdd timeCurrent $ timeNegate timeLastVisited
+    when (diff /= timeZero) $ do
+      -- Reset the level time.
+      modify $ updateTime $ const timeCurrent
+      -- Update the times of all actors.
+      let upd m@Actor{btime} = m {btime = timeAdd btime diff}
+      modify (updateLevel (updateActorDict (IM.map upd)))
 
 -- | The player leaves the dungeon.
 fleeDungeon :: Action ()
@@ -382,14 +402,14 @@ selectPlayer actor = do
     else do
       state <- get
       let (nln, pbody, _) = findActorAnyLevel actor state
+      -- Switch to the new level.
+      switchLevel nln
       -- Make the new actor the player-controlled actor.
       modify (\ s -> s {splayer = actor})
       -- Record the original level of the new player.
       modify (updateCursor (\ c -> c {creturnLn = nln}))
       -- Don't continue an old run, if any.
       stopRunning
-      -- Switch to the level.
-      modify (\ s -> s {slid = nln})
       -- Announce.
       msgAdd $ capActor coactor pbody ++ " selected."
       msgAdd $ lookAt cops False True state lvl (bloc pbody) ""
