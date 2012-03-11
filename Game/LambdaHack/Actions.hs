@@ -443,15 +443,15 @@ regenerateLevelHP = do
            , coactor=coactor@Kind.Ops{okind}
            } <- getCOps
   time <- gets stime
-  let upd itemIM a m =  -- TODO: rewrite; 10 is step/turn
+  let upd itemIM a m =
         let ak = okind $ bkind m
             bitems = fromMaybe [] $ IM.lookup a itemIM
-            regen = max 10 $
-                      (10 * aregen ak) `div`
+            regen = max 1 $
+                      aregen ak `div`
                       case strongestRegen coitem bitems of
                         Just i  -> 5 * jpower i
                         Nothing -> 1
-        in if (time `timeFit` timeTurn) `mod` regen /= 0
+        in if (time `timeFit` timeStep) `mod` regen /= 0
            then m
            else addHp coactor 1 m
   -- We really want hero selection to be a purely UI distinction,

@@ -114,7 +114,7 @@ key modifier. Use at your own peril!
                key     command
                CTRL-o  toggle "omniscience"
                CTRL-i  inform about level meta-data
-               CTRL-r  rotate display modes
+               CTRL-r  rotate display modes (effective next turn)
 
 
 Monsters

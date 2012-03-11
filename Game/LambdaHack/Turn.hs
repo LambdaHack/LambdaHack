@@ -123,8 +123,11 @@ nextMove dispAlready = do
   debug "nextMove"
   unless dispAlready $ displayFramePush Nothing
   modify (updateTime (timeAdd timeTurn))
-  regenerateLevelHP
-  generateMonster
+  time <- gets stime
+  let turnN = (time `timeFit` timeTurn) `mod` (timeStep `timeFit` timeTurn)
+  -- Regenerate HP and add monsters each step, not each turn.
+  when (turnN == 3) regenerateLevelHP
+  when (turnN == 8) generateMonster
   handle
 
 -- | Handle the move of the hero.

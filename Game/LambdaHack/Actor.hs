@@ -98,8 +98,8 @@ findHeroName config n =
 -- which monster is generated. How many and which monsters are generated
 -- will also depend on the cave kind used to build the level.
 monsterGenChance :: Int -> Int -> Rnd Bool
-monsterGenChance d numMonsters =
-  chance $ 1%(fromIntegral (250 + 200 * (numMonsters - d)) `max` 50)
+monsterGenChance depth numMonsters =
+  chance $ 1%(fromIntegral (25 + 20 * (numMonsters - depth)) `max` 5)
 
 -- Actor operations
 
