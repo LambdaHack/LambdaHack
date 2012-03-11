@@ -24,18 +24,19 @@ instance Binary Time where
 timeZero :: Time
 timeZero = Time 0
 
--- | The smallest unit of time. It is not exported, because it's
--- an implementation detail. Determines resolution of the time dimension.
--- Currently one tick is 1 ms (0.001 s).
+-- | The smallest unit of time. It is not exported, because the proportion
+-- of step or turn to tick is an implementation detail.
+-- The significance of this detail is only that it determines resolution
+-- of the time dimension. Currently one tick is 1 ms (0.001 s).
 _timeTick :: Time
 _timeTick = Time 1
 
 -- | At least once per turn all moves are resolved and a frame
 -- or a frame delay is generated.
--- Currently one turn is 0.05 s, but it may change, though unlikely,
--- and the code should not depend on this absolute value.
+-- Currently one turn is 0.1 s, but it may change,
+-- and the code should not depend on this fixed value.
 timeTurn :: Time
-timeTurn = Time 50
+timeTurn = Time 100
 
 -- | One step is 0.5 s. The code may depend on that.
 -- Actors at normal speed (2 m/s) take one step to move one tile (1 m by 1 m).

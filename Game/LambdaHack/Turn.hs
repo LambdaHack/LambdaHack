@@ -66,8 +66,8 @@ handleTurn = do
   time <- gets stime  -- the end time of this turn, inclusive
   let turnN = (time `timeFit` timeTurn) `mod` (timeStep `timeFit` timeTurn)
   -- Regenerate HP and add monsters each step, not each turn.
-  when (turnN == 3) regenerateLevelHP
-  when (turnN == 8) generateMonster
+  when (turnN == 1) regenerateLevelHP
+  when (turnN == 3) generateMonster
   ptime <- gets (btime . getPlayerBody)  -- time of player's next move
   debug $ "handleTurn: time check. ptime = "
           ++ show ptime ++ ", time = " ++ show time
