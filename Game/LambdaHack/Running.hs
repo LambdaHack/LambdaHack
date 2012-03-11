@@ -36,7 +36,11 @@ run (dir, dist) = do
   lvl <- gets slevel
   targeting <- gets (ctargeting . scursor)
   if targeting /= TgtOff
-    then moveCursor dir 10
+    then do
+      frs <- moveCursor dir 10
+      -- Does not take time, so rewind time.
+      advanceTime False pl
+      return frs
     else do
       let accessibleDir loc d = accessible cops lvl loc (loc `shift` d)
           -- Do not count distance if we just open a door.

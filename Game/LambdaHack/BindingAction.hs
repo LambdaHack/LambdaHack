@@ -84,7 +84,8 @@ stdBinding config cmdS cmdD =
       runWidth f = do
         lxsize <- gets (lxsize . slevel)
         run (f lxsize, 0)
-      -- Targeting cursor movement is marked as timed; fixed in Turn.hs.
+      -- Targeting cursor movement and others are wrongly marked as timed;
+      -- fixed in their definitions by rewinding time.
       cmdDir = K.moveBinding moveWidth runWidth
   in Binding
   { kcmd   = M.fromList $

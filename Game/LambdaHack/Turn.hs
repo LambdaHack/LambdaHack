@@ -5,7 +5,6 @@ import Control.Monad
 import Control.Monad.State hiding (State, state)
 import qualified Data.List as L
 import qualified Data.Ord as Ord
-import qualified Data.IntMap as IM
 import qualified Data.Map as M
 import Data.Maybe
 
@@ -14,7 +13,6 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
 import Game.LambdaHack.EffectAction
 import qualified Game.LambdaHack.Binding as Binding
-import Game.LambdaHack.Level
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Random
@@ -74,8 +72,8 @@ handleTurn = do
   if ptime > time
     then handleAI timeZero -- the hero can't move this turn; monsters move
     else do
-      handlePlayer       -- the hero starts this turn
-      handleAI timeZero  -- monster follow
+      handlePlayer         -- the hero starts this turn
+      handleAI timeZero    -- monsters follow
   modify (updateTime (timeAdd timeTurn))
   handleTurn
 
@@ -124,7 +122,7 @@ handleAI subturnStart = do
 handleMonster :: ActorId -> Action ()
 handleMonster actor = do
   debug "handleMonster"
-  advanceTime actor  -- advance time while the actor still alive
+  advanceTime True actor  -- advance time while the actor still alive
   cops  <- getCOps
   state <- get
   per <- getPerception
@@ -143,7 +141,7 @@ handlePlayer = do
     -- Otherwise let the player issue commands, until any of them takes time.
     -- First time, just after pushing frames, ask for commands in Push mode.
     tryWith (\ msg -> stopRunning >> playerCommand msg) $
-      ifRunning (\ x -> continueRun x >> advanceTime pl) abort
+      ifRunning (\ x -> continueRun x >> advanceTime True pl) abort
     addSmell
     -- The command took some time, so other actors act.
     -- We don't let the player act twice a turn, because we assume
@@ -154,7 +152,7 @@ handlePlayer = do
 playerCommand :: Msg -> Action ()
 playerCommand msgRunAbort = do
   -- The frame state is now Push.
-  Binding.Binding{kcmd, kdir} <- getBinding
+  Binding.Binding{kcmd} <- getBinding
   kmPush <- case msgRunAbort of
     "" -> getKeyCommand (Just True)
     _  -> drawPrompt ColorFull msgRunAbort >>= getKeyChoice []
@@ -169,15 +167,17 @@ playerCommand msgRunAbort = do
           recordHistory
           -- Look up the key.
           case M.lookup km kcmd of
-            Just (_, timed', c) -> do
-              oldTargeting <- gets (ctargeting . scursor)
+            Just (_, declaredTimed, c) -> do
+              oldTime <- gets (btime . getPlayerBody)
               ((), frs) <- c
-              -- Targeting cursor movement and projecting that degenerates
-              -- into targeting are wrongly marked as timed; fixed here.
-              newTargeting <- gets (ctargeting . scursor)
-              let timed = timed'
-                          && (km `notElem` kdir || oldTargeting == TgtOff)
-                          && (newTargeting == TgtOff || oldTargeting /= TgtOff)
+              -- Advance time if the command is declared as taking time.
+              pl <- gets splayer
+              when declaredTimed $ advanceTime True pl
+              -- Targeting cursor movement and a few other subcommands
+              -- are wrongly marked as timed. This is fixed in their
+              -- definitions by rewinding time and registered here, too.
+              newTime <- gets (btime . getPlayerBody)
+              let timed = assert (newTime >= oldTime) $ newTime > oldTime
               -- Ensure at least one frame if the command takes no time.
               -- No frames for @abort@, so the code is here, not below.
               if not timed && null (catMaybes frs)
@@ -208,28 +208,11 @@ playerCommand msgRunAbort = do
             -- Look up and perform the next command.
             loop kmNext
           else do
-            -- If some time should be taken, take it, exit the loop
-            -- and let other actors act. No next key needed
+            -- Exit the loop and let other actors act. No next key needed
             -- and no frames could have been generated.
-            pl <- gets splayer
             assert (null frames `blame` length frames) $
-              advanceTime pl
+              return ()
   loop kmPush
-
--- | Advance the move time for the given actor.
-advanceTime :: ActorId -> Action ()
-advanceTime actor = do
-  Kind.COps{coactor} <- getCOps
-  let upd m@Actor{btime} =
-        let speed = actorSpeed coactor m
-            ticks = ticksPerMeter speed
-        in m { btime = timeAdd btime ticks }
-  updateAnyActor actor upd
-  -- A hack to synchronize the whole party:
-  pl <- gets splayer
-  when (actor == pl) $ do
-    let updH a m = if bparty m == heroParty && a /= pl then upd m else m
-    modify (updateLevel (updateActorDict (IM.mapWithKey updH)))
 
 
 -- The issues below are now complicated (?) by the fact that we now generate

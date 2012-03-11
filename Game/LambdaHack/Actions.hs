@@ -88,8 +88,13 @@ move dir = do
   pl <- gets splayer
   targeting <- gets (ctargeting . scursor)
   if targeting /= TgtOff
-    then moveCursor dir 1
-    else inFrame $ moveOrAttack True pl dir
+    then do
+      frs <- moveCursor dir 1
+      -- Does not take time, so rewind time.
+      advanceTime False pl
+      return frs
+    else
+      inFrame $ moveOrAttack True pl dir
 
 ifRunning :: ((Vector, Int) -> Action a) -> Action a -> Action a
 ifRunning t e = do
@@ -171,7 +176,7 @@ playerTriggerTile feat = do
   ploc <- gets (bloc . getPlayerBody)
   bumpTile ploc feat
 
--- | An actor opens a door. Player (hero or controlled monster) or enemy.
+-- | An actor opens a door: player (hero or controlled monster) or enemy.
 actorOpenDoor :: ActorId -> Vector -> Action ()
 actorOpenDoor actor dir = do
   Kind.COps{ cotile
@@ -323,7 +328,7 @@ moveOrAttack allowAttacks actor dir = do
       | otherwise -> abortWith "blocked"
     Nothing
       | accessible cops lvl sloc tloc -> do
-          -- perform the move
+          -- Perform the move.
           updateAnyActor actor $ \ body -> body {bloc = tloc}
           when (actor == pl) $
             msgAdd $ lookAt cops False True state lvl tloc ""
@@ -347,9 +352,11 @@ actorAttackActor source target = do
   tm <- gets (getActor target)
   if bparty sm == heroParty && bparty tm == heroParty
     then do
-      -- Select adjacent hero by bumping into him. Takes no time.
+      -- Select adjacent hero by bumping into him. Takes no time, so rewind.
       selectPlayer target
         >>= assert `trueM` (source, target, "player bumps into himself")
+      pl <- gets splayer
+      advanceTime False pl
     else do
       Kind.COps{coactor, coitem=coitem@Kind.Ops{opick, okind}} <- getCOps
       state <- get

@@ -132,7 +132,10 @@ playerProjectGI verb object syms = do
         msgAdd msg
         let upd cursor = cursor {clocation=ploc, ceps=0}
         modify (updateCursor upd)
-        targetMonster TgtAuto
+        frs <- targetMonster TgtAuto
+        -- Does not take time, so rewind time.
+        advanceTime False pl
+        return frs
   case targetToLoc (totalVisible per) state of
     Just loc -> do
       Kind.COps{coitem=Kind.Ops{okind}} <- getCOps
@@ -225,7 +228,8 @@ endTargeting accept = do
   per      <- getPerception
   cloc     <- gets (clocation . scursor)
   ms       <- gets (monsterAssocs . slevel)
-  -- return to the original level of the player
+  -- Return to the original level of the player or go to another level,
+  -- if the player was changed while targetting.
   modify (\ state -> state {slid = returnLn})
   modify (updateCursor (\ c -> c { ctargeting = TgtOff }))
   when accept $ do
