@@ -58,7 +58,6 @@ effectToAction :: Effect.Effect -> Int -> ActorId -> ActorId -> Int
 effectToAction effect verbosity source target power = do
   oldTm <- gets (getActor target)
   let oldHP = bhp oldTm
-  -- The msg describes the target part of the action.
   (b, msg) <- eff effect verbosity source target power
   s <- get
   -- If the target killed outright by the effect (e.g., in a recursive call),
@@ -125,6 +124,9 @@ effectToAction effect verbosity source target power = do
           modify (deleteActor target)
     return bb
 
+-- | The boolean part of the result says if the ation was interesting
+-- and the string part describes how the target reacted
+-- (not what the source did).
 eff :: Effect.Effect -> Int -> ActorId -> ActorId -> Int
     -> Action (Bool, String)
 eff Effect.NoEffect _ _ _ _ = nullEffect
@@ -217,20 +219,22 @@ eff Effect.Ascend _ source target power = do
   tm <- gets (getActor target)
   s  <- get
   Kind.COps{coactor} <- getCOps
-  if not $ isAHero s target
+  void $ focusIfOurs target
+  if not $ isAHero s target  -- not target /= pl: to squash friendly monster
     then squashActor source target
     else effLvlGoUp (power + 1)
-  -- TODO: The following message too late if a monster squashed,
+  -- TODO: The following message too late if a monster squashed by going up,
   -- unless it's ironic. ;) The same below.
-  return (True, actorVerbExtra coactor tm "find" "a shortcut upstrairs")
+  return (True, actorVerbExtra coactor tm "find" "a way upstairs")
 eff Effect.Descend _ source target power = do
   tm <- gets (getActor target)
   s  <- get
   Kind.COps{coactor} <- getCOps
+  void $ focusIfOurs target
   if not $ isAHero s target
     then squashActor source target
     else effLvlGoUp (- (power + 1))
-  return (True, actorVerbExtra coactor tm "find" "a shortcut downstairs")
+  return (True, actorVerbExtra coactor tm "find" "a way downstairs")
 
 nullEffect :: Action (Bool, String)
 nullEffect = return (False, "Nothing happens.")
@@ -289,9 +293,10 @@ effLvlGoUp k = do
         inhabitants <- gets (locToActor nloc)
         case inhabitants of
           Nothing -> return ()
-          Just h | isAHero st h ->
-            -- Bail out if a party member blocks the staircase.
-            abortWith "somebody blocks the staircase"
+-- Broken if the effect happens, e.g. via a scroll and abort is not enough.
+--          Just h | isAHero st h ->
+--            -- Bail out if a party member blocks the staircase.
+--            abortWith "somebody blocks the staircase"
           Just m ->
             -- Somewhat of a workaround: squash monster blocking the staircase.
             -- This is not a duplication with the other calls to squashActor,
@@ -363,6 +368,7 @@ itemEffectAction :: Int -> ActorId -> ActorId -> Item -> Action ()
 itemEffectAction verbosity source target item = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getCOps
   sm <- gets (getActor source)
+  slidOld <- gets slid
   let effect = ieffect $ okind $ jkind item
   -- The msg describes the target part of the action.
   (b1, b2) <- effectToAction effect verbosity source target (jpower item)
@@ -370,8 +376,11 @@ itemEffectAction verbosity source target item = do
   -- so the item gets identified.
   when (b1 && b2) $ discover item
   -- Destroys attacking actor and its items: a hack for projectiles.
+  slidNew <- gets slid
+  modify (\ s -> s {slid = slidOld})
   when (bhp sm <= 0) $
     modify (deleteActor source)
+  modify (\ s -> s {slid = slidNew})
 
 -- | Make the item known to the player.
 discover :: Item -> Action ()
