@@ -242,6 +242,7 @@ addProjectile Kind.COps{coactor, coitem=Kind.Ops{okind}}
         { bkind   = projectileKindId coactor
         , bsymbol = Nothing
         , bname   = Just name
+        , bspeed  = Just $ speedFromWeight (iweight ik) (itoThrow ik)
         , bhp     = 0
         , bdir    = Nothing
         , btarget = TPath path

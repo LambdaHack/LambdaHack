@@ -6,7 +6,8 @@ module Game.LambdaHack.Actor
     -- * Party identifiers
   , PartyId, heroParty, monsterParty, neutralParty
     -- * The@ Acto@r type
-  , Actor(..), template, addHp, unoccupied, heroKindId, projectileKindId
+  , Actor(..), template, addHp, unoccupied, heroKindId
+  , projectileKindId, actorSpeed
     -- * Type of na actor target
   , Target(..)
   ) where
@@ -45,6 +46,7 @@ data Actor = Actor
   { bkind   :: !(Kind.Id ActorKind)    -- ^ the kind of the actor
   , bsymbol :: !(Maybe Char)           -- ^ individual map symbol
   , bname   :: !(Maybe String)         -- ^ individual name
+  , bspeed  :: !(Maybe Speed)          -- ^ individual speed
   , bhp     :: !Int                    -- ^ current hit points
   , bdir    :: !(Maybe (Vector, Int))  -- ^ direction and distance of running
   , btarget :: Target                  -- ^ target for ranged attacks and AI
@@ -60,6 +62,7 @@ instance Binary Actor where
     put bkind
     put bsymbol
     put bname
+    put bspeed
     put bhp
     put bdir
     put btarget
@@ -71,6 +74,7 @@ instance Binary Actor where
     bkind   <- get
     bsymbol <- get
     bname   <- get
+    bspeed  <- get
     bhp     <- get
     bdir    <- get
     btarget <- get
@@ -112,7 +116,8 @@ monsterGenChance depth numMonsters =
 template :: Kind.Id ActorKind -> Maybe Char -> Maybe String -> Int -> Point
          -> PartyId -> Actor
 template bkind bsymbol bname bhp bloc bparty =
-  let btarget = invalidTarget
+  let bspeed  = Nothing
+      btarget = invalidTarget
       bdir    = Nothing
       bletter = 'a'
       btime   = timeZero
@@ -141,6 +146,12 @@ heroKindId Kind.Ops{ouniqGroup} = ouniqGroup "hero"
 -- | The unique kind of projectiles.
 projectileKindId :: Kind.Ops ActorKind -> Kind.Id ActorKind
 projectileKindId Kind.Ops{ouniqGroup} = ouniqGroup "projectile"
+
+-- | Access actor speed, individual or, otherwise, stock.
+actorSpeed :: Kind.Ops ActorKind -> Actor -> Speed
+actorSpeed Kind.Ops{okind} m =
+  let stockSpeed = aspeed $ okind $ bkind m
+  in fromMaybe stockSpeed $ bspeed m
 
 -- Target
 

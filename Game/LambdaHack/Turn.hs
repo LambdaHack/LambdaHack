@@ -25,7 +25,6 @@ import Game.LambdaHack.Running
 import qualified Game.LambdaHack.Key as K
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Draw
-import Game.LambdaHack.Content.ActorKind
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Time
 
@@ -79,9 +78,10 @@ handle = do
     else handlePlayer    -- it's the hero's turn!
 
 -- TODO: We should replace this structure using a priority search queue/tree.
--- | Handle monster moves. Perform moves for individual monsters as long as
--- there are monsters that have a move time which is less than or equal to
--- the current time.
+-- | Handle monster moves. Perform moves for individual
+-- actors not controlled by the player, as long as there are actors
+-- with a move time less than or equal to the current time.
+-- Some very fast actors may move many times a turn.
 handleAI :: Bool -> Action ()
 handleAI dispAlready = do
   debug "handleAI"
@@ -215,10 +215,10 @@ playerCommand msgRunAbort = do
 -- | Advance the move time for the given actor.
 advanceTime :: ActorId -> Action ()
 advanceTime actor = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getCOps
+  Kind.COps{coactor} <- getCOps
   time <- gets stime
   let upd m =
-        let speed = aspeed (okind (bkind m))
+        let speed = actorSpeed coactor m
             ticks = ticksPerMeter speed
         in m { btime = timeAdd time ticks }
   -- A hack to synchronize the whole party:

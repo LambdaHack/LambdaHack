@@ -68,11 +68,11 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   strat
  where
   Kind.COps{ cotile
-           , coactor=Kind.Ops{okind}
+           , coactor=coactor@Kind.Ops{okind}
            , coitem=coitem@Kind.Ops{okind=iokind}
            } = cops
   lvl@Level{lsmell = nsmap, lxsize, lysize} = slevel oldState
-  Actor { bkind = ak, bloc = me, bdir = ad, btarget, bhp } =
+  actorBody@Actor { bkind = ak, bloc = me, bdir = ad, btarget, bhp } =
     getActor actor oldState
   bitems = getActorItem actor oldState
   mk = okind ak
@@ -143,7 +143,7 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   onlyOpenable   = onlyMoves openableHere me
   accessibleHere = accessible cops lvl me
   onlySensible   = onlyMoves (\ l -> accessibleHere l || openableHere l) me
-  focusedMonster = aspeed mk <= speedNormal
+  focusedMonster = actorSpeed coactor actorBody <= speedNormal
   movesNotBack   = maybe id (\ (d, _) -> L.filter (/= neg d)) ad $ moves lxsize
   smells         =
     L.map fst $

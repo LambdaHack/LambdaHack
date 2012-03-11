@@ -41,6 +41,10 @@ timeTurn = Time 50
 timeStep :: Time
 timeStep = Time 500
 
+-- | This many steps fits in a single second.
+stepsInSecond :: Int
+stepsInSecond = 2
+
 -- | Time addition.
 timeAdd :: Time -> Time -> Time
 timeAdd (Time t1) (Time t2) = Time (t1 + t2)
@@ -95,7 +99,6 @@ speedScale (Speed v) s = Speed (v * s)
 ticksPerMeter :: Speed -> Time
 ticksPerMeter (Speed v) =
   let Time ticksInStep = timeStep
-      stepsInSecond = 2
       secondsIn10s = 10
   in Time $ ticksInStep * stepsInSecond * secondsIn10s `div` v
 
@@ -103,7 +106,7 @@ ticksPerMeter (Speed v) =
 traveled :: Speed -> Time -> Int
 traveled (Speed v) (Time t) =
   let Time ticksInStep = timeStep
-      ticksIn10s = 10 * 2 * ticksInStep
+      ticksIn10s = 10 * stepsInSecond * ticksInStep
   in v * t `div` ticksIn10s
 
 -- | Calculate projectile speed from item weight in grams
