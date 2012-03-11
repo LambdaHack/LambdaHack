@@ -60,9 +60,9 @@ start config1 slowSess = do
       let state = defaultState
                     config3 sflavour freshDungeon entryLevel entryLoc g3
           hstate = initialHeroes cops entryLoc state
-      handlerToIO sess hstate diary{sreport = singletonReport msg} handle
+      handlerToIO sess hstate diary{sreport = singletonReport msg} handleTurn
     Left (state, diary) ->  -- Running a restored a game.
       handlerToIO sess state
         -- This overwrites the "Really save/quit?" messages.
         diary{sreport = singletonReport $ "Welcome back to " ++ title ++ "."}
-        handle
+        handleTurn

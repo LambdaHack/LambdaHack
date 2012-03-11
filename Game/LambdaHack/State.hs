@@ -102,7 +102,7 @@ defaultState config flavour dng lid ploc g =
   State
     0  -- hack: the hero is not yet alive
     (Cursor TgtOff lid ploc lid 0)
-    timeZero
+    (timeAdd timeStep timeStep)  -- just stepped into the dungeon
     flavour
     S.empty
     dng

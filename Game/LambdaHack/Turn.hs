@@ -1,5 +1,5 @@
 -- | The main loop of the game, processing player and AI moves turn by turn.
-module Game.LambdaHack.Turn ( handle ) where
+module Game.LambdaHack.Turn ( handleTurn ) where
 
 import Control.Monad
 import Control.Monad.State hiding (State, state)
@@ -30,105 +30,108 @@ import Game.LambdaHack.Time
 
 -- One turn proceeds through the following functions:
 --
--- handle
+-- handleTurn
 -- [handleAI, handleMonster] (possibly repeated)
--- nextMove
--- handle (again)
+-- handleTurn (again)
 --
 -- OR:
 --
--- handle
+-- handleTurn
 -- handlePlayer
 -- playerCommand (skipped if player running)
 -- [handleAI, handleMonster] (possibly repeated)
--- nextMove
--- handle (again)
+-- handleTurn (again)
 --
 -- What's happening where:
 --
--- handle: determine who moves next,
---   dispatch to handleAI or handlePlayer
+-- handleTurn: HP regeneration, monster generation, determine who moves next,
+--   dispatch to handlePlayer and handleAI, advance global game time,
 --
--- handlePlayer: update perception, remember, display,
+-- handlePlayer: update perception, remember, display frames,
 --   get and process commmands (zero or more), advance time, update smell map
 --
--- handleAI: find monsters that can move
+-- handleAI: find monsters that can move, update perception, remember,
+--   push frames, perhaps a few times, for very fast actors (missiles)
 --
--- handleMonster: update perception, remember, display,
--- determine and process monster action, advance monster time
---
--- nextMove: advance global game time, HP regeneration, monster generation
---
--- This is rather convoluted, and the functions aren't named very aptly, so we
--- should clean this up later. TODO.
+-- handleMonster: determine and process monster action, advance monster time
 
--- | Decide if the hero is ready for another move.
+-- | Starting the turn. Do whatever has to be done
+-- every fixed number of time unit, e.g., monster generation.
+-- Decide if the hero is ready for another move.
 -- If yes, run a player move, if not, run an AI move.
--- In either case, eventually the next turn is started or the game ends.
-handle :: Action ()
-handle = do
-  debug "handle"
-  state <- get
-  let ptime = btime (getPlayerBody state)  -- time of player's next move
-  let time  = stime state                  -- current game time
-  debug $ "handle: time check. ptime = "
+-- Eventually advance the time and repeat.
+handleTurn :: Action ()
+handleTurn = do
+  debug "handleTurn"
+  time <- gets stime  -- the end time of this turn, inclusive
+  let turnN = (time `timeFit` timeTurn) `mod` (timeStep `timeFit` timeTurn)
+  -- Regenerate HP and add monsters each step, not each turn.
+  when (turnN == 3) regenerateLevelHP
+  when (turnN == 8) generateMonster
+  ptime <- gets (btime . getPlayerBody)  -- time of player's next move
+  debug $ "handleTurn: time check. ptime = "
           ++ show ptime ++ ", time = " ++ show time
   if ptime > time
-    then handleAI False  -- the hero can't make a move yet; monsters first
-    else handlePlayer    -- it's the hero's turn!
+    then handleAI timeZero -- the hero can't move this turn; monsters move
+    else do
+      handlePlayer       -- the hero starts this turn
+      handleAI timeZero  -- monster follow
+  modify (updateTime (timeAdd timeTurn))
+  handleTurn
 
 -- TODO: We should replace this structure using a priority search queue/tree.
--- | Handle monster moves. Perform moves for individual
--- actors not controlled by the player, as long as there are actors
--- with a move time less than or equal to the current time.
--- Some very fast actors may move many times a turn, producing many frames.
-handleAI :: Bool -> Action ()
-handleAI dispAlready = do
+-- | Perform moves for individual actors not controlled
+-- by the player, as long as there are actors
+-- with the next move time less than or equal to the current time.
+-- Some very fast actors may move many times a turn and then
+-- we introduce subturns and produce many frames per turn to avoid
+-- jerky movement. Otherwise we push exactly one frame or frame delay.
+handleAI :: Time       -- ^ the start time of current subturn, exclusive
+         -> Action ()
+handleAI subturnStart = do
   debug "handleAI"
-  time <- gets stime
+  Kind.COps{coactor} <- getCOps
+  time <- gets stime  -- the end time of this turn, inclusive
   ms   <- gets (monsterAssocs . slevel)
   ns   <- gets (neutralAssocs . slevel)
   pl   <- gets splayer
-  if null ms
-    then nextMove dispAlready
+  let done = when (subturnStart == timeZero) $ displayFramePush Nothing
+      as = ns ++ ms
+  if null as
+    then done
     else let order = Ord.comparing (btime . snd)
-             (actor, m) = L.minimumBy order (ns ++ ms)
-         in if btime m > time || actor == pl
-            then nextMove dispAlready  -- no monster is ready for another move
-            else handleMonster actor
+             (actor, m) = L.minimumBy order as
+             mtime = btime m
+         in if mtime > time || actor == pl
+            then done  -- no monster is ready for another move
+            else let speed = actorSpeed coactor m
+                     ticks = ticksPerMeter speed
+                 in if subturnStart == timeZero
+                       || mtime > timeAdd subturnStart ticks
+                    then do
+                      -- That's the first non-player move this turn
+                      -- or the monster has already moved this subturn.
+                      -- I either case, start a new subturn.
+                      startTurn $ do
+                        handleMonster actor
+                        handleAI mtime
+                    else do
+                      -- The monster didn't yet move this subturn.
+                      handleMonster actor
+                      handleAI subturnStart
 
 -- | Handle the move of a single monster.
 handleMonster :: ActorId -> Action ()
 handleMonster actor = do
   debug "handleMonster"
-  startTurn $ do
-    advanceTime actor  -- advance time while the actor still alive
-    cops  <- getCOps
-    state <- get
-    per <- getPerception
-    -- Run the AI: choses an action from those given by the AI strategy.
-    join $ rndToAction $
-             frequency (head (runStrategy (strategy cops actor state per
-                                           .| wait)))
-    handleAI True
-
--- TODO: nextMove may not be a good name. It's part of the problem of the
--- current design that all of the top-level functions directly call each
--- other, rather than being called by a driver function.
--- | After everything has been handled for the current game time, we can
--- advance the time. Here is the place to do whatever has to be done
--- every fixed number of time unit, e.g., monster generation.
-nextMove :: Bool -> Action ()
-nextMove dispAlready = do
-  debug "nextMove"
-  unless dispAlready $ displayFramePush Nothing
-  modify (updateTime (timeAdd timeTurn))
-  time <- gets stime
-  let turnN = (time `timeFit` timeTurn) `mod` (timeStep `timeFit` timeTurn)
-  -- Regenerate HP and add monsters each step, not each turn.
-  when (turnN == 3) regenerateLevelHP
-  when (turnN == 8) generateMonster
-  handle
+  advanceTime actor  -- advance time while the actor still alive
+  cops  <- getCOps
+  state <- get
+  per <- getPerception
+  -- Run the AI: choses an action from those given by the AI strategy.
+  join $ rndToAction $
+           frequency (head (runStrategy (strategy cops actor state per
+                                         .| wait)))
 
 -- | Handle the move of the hero.
 handlePlayer :: Action ()
@@ -143,9 +146,8 @@ handlePlayer = do
       ifRunning (\ x -> continueRun x >> advanceTime pl) abort
     addSmell
     -- The command took some time, so other actors act.
-    -- We don't let the player act twice a turn,because we assume
+    -- We don't let the player act twice a turn, because we assume
     -- player speed is less or equal to one move/turn (200 m/10s).
-    handleAI True
 
 -- | Determine and process the next player command. The argument is the last
 -- abort message due to running, if any.

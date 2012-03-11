@@ -30,7 +30,8 @@ timeZero = Time 0
 _timeTick :: Time
 _timeTick = Time 1
 
--- | Each turn all moves are resolved and a single screen frame is generated.
+-- | At least once per turn all moves are resolved and a frame
+-- or a frame delay is generated.
 -- Currently one turn is 0.05 s, but it may change, though unlikely,
 -- and the code should not depend on this absolute value.
 timeTurn :: Time
