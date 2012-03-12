@@ -41,15 +41,15 @@ import Game.LambdaHack.Time
 -- What's happening where:
 --
 -- handleTurn: HP regeneration, monster generation, determine who moves next,
---   dispatch to handlePlayer and handleActors, advance global game time,
+--   dispatch to handlePlayer and handleActors, advance global game time
 --
--- handleActors: find monsters that can move, update perception, remember,
---   push frames, perhaps a few times, for very fast actors (missiles)
+-- handleActors: find an actor that can move, advance actor time,
+--   update perception, remember, push frame, repeat
 --
 -- handlePlayer: update perception, remember, display frames,
---   get and process commmands (zero or more), advance time, update smell map
+--   get and process commmands (zero or more), update smell map
 --
--- handleMonster: determine and process monster action, advance monster time
+-- handleMonster: determine and process monster action
 
 -- | Starting the turn. Do whatever has to be done
 -- every fixed number of time unit, e.g., monster generation.
@@ -86,7 +86,7 @@ handleActors subturnStart = do
   time <- gets stime  -- the end time of this turn, inclusive
   lactor <- gets (lactor . slevel)
   pl <- gets splayer
-  let as = IM.toList lactor
+  let as = IM.toAscList lactor  -- older actors act first
       mnext = if null as  -- wait until any actor spawned
               then Nothing
               else let order = Ord.comparing (btime . snd)
@@ -97,9 +97,10 @@ handleActors subturnStart = do
   case mnext of
     Nothing -> when (subturnStart == timeZero) $ displayFramePush Nothing
     Just (actor, m) -> do
+      advanceTime actor  -- advance time while the actor still alive
       if actor == pl || bparty m == heroParty
         then
-          -- Player move always starts a subturn.
+          -- Player moves always start a subturn.
           startTurn $ do
           handlePlayer
           handleActors $ btime m
@@ -124,7 +125,6 @@ handleActors subturnStart = do
 handleMonster :: ActorId -> Action ()
 handleMonster actor = do
   debug "handleMonster"
-  advanceTime True actor  -- advance time while the actor still alive
   cops  <- getCOps
   state <- get
   per <- getPerception
@@ -137,12 +137,11 @@ handleMonster actor = do
 handlePlayer :: Action ()
 handlePlayer = do
   debug "handlePlayer"
-  pl <- gets splayer
   -- When running, stop if aborted by a disturbance.
   -- Otherwise let the player issue commands, until any of them takes time.
   -- First time, just after pushing frames, ask for commands in Push mode.
   tryWith (\ msg -> stopRunning >> playerCommand msg) $
-    ifRunning (\ x -> continueRun x >> advanceTime True pl) abort
+    ifRunning continueRun abort
   addSmell
 
 -- | Determine and process the next player command. The argument is the last
@@ -165,17 +164,14 @@ playerCommand msgRunAbort = do
           -- Look up the key.
           case M.lookup km kcmd of
             Just (_, declaredTimed, c) -> do
-              oldTime <- gets (btime . getPlayerBody)
               ((), frs) <- c
-              -- Advance time if the command is declared as taking time.
-              pl <- gets splayer
-              when declaredTimed $ advanceTime True pl
               -- Targeting cursor movement and a few other subcommands
-              -- are wrongly marked as timed. This is fixed in their
-              -- definitions by rewinding time and registered here, too.
-              newTime <- gets (btime . getPlayerBody)
-              let timed = assert (newTime >= oldTime) $ newTime > oldTime
-              -- Ensure at least one frame if the command takes no time.
+              -- are wrongly marked as timed. This is indicated in their
+              -- definitions by setting @snoTime@ flag and used and reset here.
+              snoTime <- gets snoTime
+              let timed = declaredTimed && not snoTime
+              modify (\ s -> s {snoTime = False})
+              -- Ensure at least one frame, if the command takes no time.
               -- No frames for @abort@, so the code is here, not below.
               if not timed && null (catMaybes frs)
                 then do
@@ -210,6 +206,23 @@ playerCommand msgRunAbort = do
             assert (null frames `blame` length frames) $
               return ()
   loop kmPush
+
+-- | Advance the move time for the given actor.
+advanceTime :: ActorId -> Action ()
+advanceTime actor = do
+  Kind.COps{coactor} <- getCOps
+  let upd m@Actor{btime} =
+        let speed = actorSpeed coactor m
+            ticks = ticksPerMeter speed
+        in m {btime = timeAdd btime ticks}
+  updateAnyActor actor upd
+  -- A hack to synchronize the whole party:
+  body <- gets (getActor actor)
+  when (bparty body == heroParty) $ do
+    let updParty m = if bparty m == heroParty
+                     then m {btime = btime body}
+                     else m
+    modify (updateLevel (updateActorDict (IM.map updParty)))
 
 
 -- The issues below are now complicated (?) by the fact that we now generate

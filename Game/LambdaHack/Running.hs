@@ -38,8 +38,8 @@ run (dir, dist) = do
   if targeting /= TgtOff
     then do
       frs <- moveCursor dir 10
-      -- Does not take time, so rewind time.
-      advanceTime False pl
+      -- Mark that unexpectedly it does not take time.
+      modify (\ s -> s {snoTime = True})
       return frs
     else do
       let accessibleDir loc d = accessible cops lvl loc (loc `shift` d)

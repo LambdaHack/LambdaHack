@@ -133,8 +133,8 @@ playerProjectGI verb object syms = do
         let upd cursor = cursor {clocation=ploc, ceps=0}
         modify (updateCursor upd)
         frs <- targetMonster TgtAuto
-        -- Does not take time, so rewind time.
-        advanceTime False pl
+        -- Mark that unexpectedly it does not take time.
+        modify (\ s -> s {snoTime = True})
         return frs
   case targetToLoc (totalVisible per) state of
     Just loc -> do

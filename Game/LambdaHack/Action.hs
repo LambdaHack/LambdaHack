@@ -23,7 +23,7 @@ module Game.LambdaHack.Action
     -- * Start of turn operations
   , startTurn, remember, rememberList
     -- * Assorted operations
-  , getPerception, updateAnyActor, updatePlayerBody, advanceTime
+  , getPerception, updateAnyActor, updatePlayerBody
     -- * Assorted primitives
   , currentDate, registerHS, saveGameBkp, saveGameFile, dumpCfg, debug
   ) where
@@ -56,7 +56,6 @@ import qualified Game.LambdaHack.HighScore as H
 import qualified Game.LambdaHack.Config as Config
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Point
-import Game.LambdaHack.Time
 
 -- | The type of the function inside any action.
 -- (Separated from the @Action@ type to document each argument with haddock.)
@@ -462,23 +461,6 @@ updatePlayerBody :: (Actor -> Actor) -> Action ()
 updatePlayerBody f = do
   pl <- gets splayer
   updateAnyActor pl f
-
--- | Advance (or rewind) the move time for the given actor.
-advanceTime :: Bool -> ActorId -> Action ()
-advanceTime forward actor = do
-  Kind.COps{coactor} <- getCOps
-  let upd m@Actor{btime} =
-        let speed = actorSpeed coactor m
-            ticks = ticksPerMeter speed
-            delta | forward   = ticks
-                  | otherwise = timeNegate ticks
-        in m { btime = timeAdd btime delta }
-  updateAnyActor actor upd
-  -- A hack to synchronize the whole party:
-  pl <- gets splayer
-  when (actor == pl) $ do
-    let updH a m = if bparty m == heroParty && a /= pl then upd m else m
-    modify (updateLevel (updateActorDict (IM.mapWithKey updH)))
 
 -- | Obtains the current date and time.
 currentDate :: Action ClockTime

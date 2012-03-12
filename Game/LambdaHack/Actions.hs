@@ -90,8 +90,8 @@ move dir = do
   if targeting /= TgtOff
     then do
       frs <- moveCursor dir 1
-      -- Does not take time, so rewind time.
-      advanceTime False pl
+      -- Mark that unexpectedly it does not take time.
+      modify (\ s -> s {snoTime = True})
       return frs
     else
       inFrame $ moveOrAttack True pl dir
@@ -359,8 +359,8 @@ actorAttackActor source target = do
       -- Select adjacent hero by bumping into him. Takes no time, so rewind.
       selectPlayer target
         >>= assert `trueM` (source, target, "player bumps into himself")
-      pl <- gets splayer
-      advanceTime False pl
+      -- Mark that unexpectedly it does not take time.
+      modify (\ s -> s {snoTime = True})
     else do
       Kind.COps{coactor, coitem=coitem@Kind.Ops{opick, okind}} <- getCOps
       state <- get
