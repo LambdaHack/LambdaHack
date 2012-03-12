@@ -84,12 +84,14 @@ projectGroupItem :: ActorId  -- ^ actor projecting the item (is on current lvl)
                  -> Verb     -- ^ how the projecting is called
                  -> Item     -- ^ the item to be projected
                  -> Action ()
-projectGroupItem source tloc verb item = do
+projectGroupItem source tloc _verb item = do
   cops@Kind.COps{coactor} <- getCOps
   state <- get
   sm    <- gets (getActor source)
   per   <- getPerception
   pl    <- gets splayer
+  body  <- gets getPlayerBody
+  lvl   <- gets slevel
   ceps  <- gets (ceps . scursor)
   lxsize <- gets (lxsize . slevel)
   lysize <- gets (lysize . slevel)
@@ -101,17 +103,35 @@ projectGroupItem source tloc verb item = do
         then sm
         else template (heroKindId coactor)
                Nothing (Just "somebody") 99 sloc timeZero neutralParty
-      msg = actorVerbItemExtra cops state subject verb consumed ""
+      -- When projecting, the first turn is spent aiming.
+      -- The projectile is seen one tile from the actor, giving a hint
+      -- about the aim and letting the target evade.
+      msg = actorVerbItemExtra cops state subject "aim" consumed ""
       -- TODO: AI should choose the best eps.
       eps = if source == pl then ceps else 0
-      bl = bla lxsize lysize eps sloc tloc
-      projVis = L.any (`IS.member` totalVisible per) (L.take 3 bl)
       party = if bparty sm == heroParty
               then neutralParty
               else monsterParty
-  removeFromInventory source consumed sloc
-  modify $ addProjectile cops consumed sloc party bl
-  when (sourceVis || projVis) $ msgAdd msg
+      bl = bla lxsize lysize eps sloc tloc
+  case bl of
+    Nothing -> abortWith "cannot zap oneself"
+    Just [] -> assert `failure` (sloc, tloc, "project from the edge of level")
+    Just (loc : path) -> do
+      let projVis = loc `IS.member` totalVisible per
+      removeFromInventory source consumed sloc
+      modify $ if accessible cops lvl sloc loc
+        -- Setting the projectile time to player time is brutal, but ensures
+        -- the projectile covers the whole normal distance already the first
+        -- step that the player observes it moving. This removes
+        -- the possibility of micromanagement by, e.g.,  waiting until
+        -- the first distance is short.
+        -- If and when monster all move at once, the projectile should be set
+        -- to the tile of the opposite party. Then it would be symmetric.
+        -- Both parties would see their projectiles move part of the way
+        -- and the opposite projectile waiting one step.
+        then addProjectile cops consumed loc party path (btime body)
+        else updateLevel (dropItemsAt [consumed] sloc)
+      when (sourceVis || projVis) $ msgAdd msg
 
 playerProjectGroupItem :: Verb -> Object -> [Char] -> ActionFrame ()
 playerProjectGroupItem verb object syms = do

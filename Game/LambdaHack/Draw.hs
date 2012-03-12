@@ -74,7 +74,7 @@ draw dm cops per s@State{ scursor=Cursor{..}
                     Wound dice -> show dice ++ "+" ++ show (Item.jpower sw)
                     _ -> show (Item.jpower sw)
                   Nothing -> "3d1"  -- TODO; use the item 'fist'
-      bl = bla lxsize lysize ceps bloc clocation
+      bl = fromMaybe [] $ bla lxsize lysize ceps bloc clocation
       dis pxy =
         let loc0 = toPoint lxsize pxy
             tile = lvl `lAt` loc0

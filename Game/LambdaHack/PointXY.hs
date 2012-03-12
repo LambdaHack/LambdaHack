@@ -46,8 +46,8 @@ balancedWord p q eps | eps + p < q = 0 : balancedWord p q (eps + p)
 balancedWord p q eps               = 1 : balancedWord p q (eps + p - q)
 
 -- | Bresenham's line algorithm generalized to arbitrary starting @eps@
--- (@eps@ value of 0 gives the standard BLA).
--- Includes the first point and goes through the second to infinity.
+-- (@eps@ value of 0 gives the standard BLA). Includes the source point
+-- and goes through the target point to infinity.
 blaXY :: Int -> PointXY -> PointXY -> [PointXY]
 blaXY eps (PointXY (x0, y0)) (PointXY (x1, y1)) =
   let (dx, dy) = (x1 - x0, y1 - y0)

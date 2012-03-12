@@ -88,12 +88,13 @@ displacement lxsize loc0 loc1
 
 -- | Bresenham's line algorithm generalized to arbitrary starting @eps@
 -- (@eps@ value of 0 gives the standard BLA).
--- Skips the first point and goes through the second to the edge of the level
--- or the repetition of the first point.
-bla :: X -> Y -> Int -> Point -> Point -> [Point]
-bla lxsize lysize eps start end =
-  let s = fromPoint lxsize start
-      e = fromPoint lxsize end
+-- Skips the source point and goes through the second point
+-- to the edge of the level. GIves @Nothing@ if the points are equal.
+bla :: X -> Y -> Int -> Point -> Point -> Maybe [Point]
+bla _ _ _ source target | source == target = Nothing
+bla lxsize lysize eps source target = Just $
+  let s = fromPoint lxsize source
+      e = fromPoint lxsize target
       inBounds p@(PointXY (x, y)) =
         lxsize > x && x >= 0 && lysize > y && y >= 0 && p /= s
   in L.map (toPoint lxsize) $ L.takeWhile inBounds $ L.tail $ blaXY eps s e

@@ -16,6 +16,7 @@ import Game.LambdaHack.Actor
 import Game.LambdaHack.Level
 import Game.LambdaHack.Dungeon
 import Game.LambdaHack.State
+import Game.LambdaHack.Grammar
 import Game.LambdaHack.Item
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind
@@ -122,8 +123,10 @@ targetToLoc visible s@State{slid, scursor} =
 
 -- The operations below disregard levels other than the current.
 
--- TODO: switch arguments; also elsewhere.
 -- | Checks if the actor is present on the current level.
+-- The order of argument here and in other functions is set to allow
+--
+-- > b <- gets (memActor a)
 memActor :: ActorId -> State -> Bool
 memActor a state = IM.member a (lactor (slevel state))
 
@@ -239,13 +242,13 @@ addMonster cotile mk hp ploc state@State{scounter} = do
 -- Adding projectiles
 
 -- | Create a projectile actor containing the given missile.
-addProjectile :: Kind.COps -> Item -> Point -> PartyId -> [Point] -> State
-              -> State
-addProjectile Kind.COps{coactor, coitem=Kind.Ops{okind}}
-              item sloc bparty path state@State{scounter} =
-  let btime = stime state
-      ik = okind (jkind item)
-      name = "flying " ++ iname ik
+addProjectile :: Kind.COps -> Item -> Point -> PartyId -> [Point] -> Time
+              -> State -> State
+addProjectile Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}}
+              item loc bparty path btime state@State{scounter} =
+  let ik = okind (jkind item)
+      object = objectItem coitem state item
+      name = "a flying " ++ unwords (tail (words object))
       m = Actor
         { bkind   = projectileKindId coactor
         , bsymbol = Nothing
@@ -254,7 +257,7 @@ addProjectile Kind.COps{coactor, coitem=Kind.Ops{okind}}
         , bhp     = 0
         , bdir    = Nothing
         , btarget = TPath path
-        , bloc    = sloc
+        , bloc    = loc
         , bletter = 'a'
         , btime
         , bparty
