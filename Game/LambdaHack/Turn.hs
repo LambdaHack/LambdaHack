@@ -6,6 +6,7 @@ import Control.Monad.State hiding (State, state)
 import qualified Data.List as L
 import qualified Data.Ord as Ord
 import qualified Data.Map as M
+import qualified Data.IntMap as IM
 import Data.Maybe
 
 import Game.LambdaHack.Utils.Assert
@@ -15,6 +16,7 @@ import Game.LambdaHack.EffectAction
 import qualified Game.LambdaHack.Binding as Binding
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
+import Game.LambdaHack.Level
 import Game.LambdaHack.Random
 import Game.LambdaHack.State
 import Game.LambdaHack.Strategy
@@ -29,27 +31,23 @@ import Game.LambdaHack.Time
 -- One turn proceeds through the following functions:
 --
 -- handleTurn
--- [handleAI, handleMonster] (possibly repeated)
+-- handleActors
+-- handleMonster or handlePlayer
+-- handleActors
+-- handleMonster or handlePlayer
+-- ...
 -- handleTurn (again)
---
--- OR:
---
--- handleTurn
--- handlePlayer
--- playerCommand (skipped if player running)
--- [handleAI, handleMonster] (possibly repeated)
--- handleTurn (again)
---
+
 -- What's happening where:
 --
 -- handleTurn: HP regeneration, monster generation, determine who moves next,
---   dispatch to handlePlayer and handleAI, advance global game time,
+--   dispatch to handlePlayer and handleActors, advance global game time,
+--
+-- handleActors: find monsters that can move, update perception, remember,
+--   push frames, perhaps a few times, for very fast actors (missiles)
 --
 -- handlePlayer: update perception, remember, display frames,
 --   get and process commmands (zero or more), advance time, update smell map
---
--- handleAI: find monsters that can move, update perception, remember,
---   push frames, perhaps a few times, for very fast actors (missiles)
 --
 -- handleMonster: determine and process monster action, advance monster time
 
@@ -69,11 +67,7 @@ handleTurn = do
   ptime <- gets (btime . getPlayerBody)  -- time of player's next move
   debug $ "handleTurn: time check. ptime = "
           ++ show ptime ++ ", time = " ++ show time
-  if ptime > time
-    then handleAI timeZero -- the hero can't move this turn; monsters move
-    else do
-      handlePlayer         -- the hero starts this turn
-      handleAI timeZero    -- monsters follow
+  handleActors timeZero
   modify (updateTime (timeAdd timeTurn))
   handleTurn
 
@@ -84,39 +78,47 @@ handleTurn = do
 -- Some very fast actors may move many times a turn and then
 -- we introduce subturns and produce many frames per turn to avoid
 -- jerky movement. Otherwise we push exactly one frame or frame delay.
-handleAI :: Time       -- ^ the start time of current subturn, exclusive
-         -> Action ()
-handleAI subturnStart = do
-  debug "handleAI"
+handleActors :: Time       -- ^ the start time of current subturn, exclusive
+             -> Action ()
+handleActors subturnStart = do
+  debug "handleActors"
   Kind.COps{coactor} <- getCOps
   time <- gets stime  -- the end time of this turn, inclusive
-  ms   <- gets (monsterAssocs . slevel)
-  ns   <- gets (neutralAssocs . slevel)
-  pl   <- gets splayer
-  let done = when (subturnStart == timeZero) $ displayFramePush Nothing
-      as = ns ++ ms
-  if null as
-    then done
-    else let order = Ord.comparing (btime . snd)
-             (actor, m) = L.minimumBy order as
-             mtime = btime m
-         in if mtime > time || actor == pl
-            then done  -- no monster is ready for another move
-            else let speed = actorSpeed coactor m
-                     ticks = ticksPerMeter speed
-                 in if subturnStart == timeZero
-                       || mtime > timeAdd subturnStart ticks
-                    then do
-                      -- That's the first non-player move this turn
-                      -- or the monster has already moved this subturn.
-                      -- I either case, start a new subturn.
-                      startTurn $ do
-                        handleMonster actor
-                        handleAI mtime
-                    else do
-                      -- The monster didn't yet move this subturn.
-                      handleMonster actor
-                      handleAI subturnStart
+  lactor <- gets (lactor . slevel)
+  pl <- gets splayer
+  let as = IM.toList lactor
+      mnext = if null as  -- wait until any actor spawned
+              then Nothing
+              else let order = Ord.comparing (btime . snd)
+                       (actor, m) = L.minimumBy order as
+                   in if btime m > time
+                      then Nothing  -- no actor is ready for another move
+                      else Just (actor, m)
+  case mnext of
+    Nothing -> when (subturnStart == timeZero) $ displayFramePush Nothing
+    Just (actor, m) -> do
+      if actor == pl || bparty m == heroParty
+        then
+          -- Player move always starts a subturn.
+          startTurn $ do
+          handlePlayer
+          handleActors $ btime m
+        else
+          let speed = actorSpeed coactor m
+              ticks = ticksPerMeter speed
+          in if subturnStart == timeZero
+                || btime m > timeAdd subturnStart ticks
+             then
+               -- That's the first move this turn
+               -- or the monster has already moved this subturn.
+               -- I either case, start a new subturn.
+               startTurn $ do
+                 handleMonster actor
+                 handleActors $ btime m
+             else do
+               -- The monster didn't yet move this subturn.
+               handleMonster actor
+               handleActors subturnStart
 
 -- | Handle the move of a single monster.
 handleMonster :: ActorId -> Action ()
@@ -135,17 +137,13 @@ handleMonster actor = do
 handlePlayer :: Action ()
 handlePlayer = do
   debug "handlePlayer"
-  startTurn $ do
-    pl <- gets splayer
-    -- When running, stop if aborted by a disturbance.
-    -- Otherwise let the player issue commands, until any of them takes time.
-    -- First time, just after pushing frames, ask for commands in Push mode.
-    tryWith (\ msg -> stopRunning >> playerCommand msg) $
-      ifRunning (\ x -> continueRun x >> advanceTime True pl) abort
-    addSmell
-    -- The command took some time, so other actors act.
-    -- We don't let the player act twice a turn, because we assume
-    -- player speed is less or equal to one move/turn (200 m/10s).
+  pl <- gets splayer
+  -- When running, stop if aborted by a disturbance.
+  -- Otherwise let the player issue commands, until any of them takes time.
+  -- First time, just after pushing frames, ask for commands in Push mode.
+  tryWith (\ msg -> stopRunning >> playerCommand msg) $
+    ifRunning (\ x -> continueRun x >> advanceTime True pl) abort
+  addSmell
 
 -- | Determine and process the next player command. The argument is the last
 -- abort message due to running, if any.
