@@ -347,10 +347,10 @@ fleeDungeon = do
     then do
       -- The player can back off at each of these steps.
       go1 <- displayMore ColorFull "Coward!"
-      when (not go1) abort
+      when (not go1) $ abortWith "Brave soul!"
       go2 <- displayMore ColorFull
               "Next time try to grab some loot before escape!"
-      when (not go2) abort
+      when (not go2) $ abortWith "Here's your chance!"
       end
     else do
       let winMsg = "Congratulations, you won! Your loot, worth " ++

@@ -160,11 +160,10 @@ playerCommand msgRunAbort = do
   -- of lines of @loop@ (but can change within called actions).
   let loop :: (K.Key, K.Modifier) -> Action ()
       loop km = do
+        -- Messages shown, so update history and reset current report.
+        recordHistory
         -- On abort, just reset state and call loop again below.
         (timed, frames) <- tryWithFrame (return False) $ do
-          -- Messages shown, so update history and reset current report.
-          -- On abort, history gets reset to the old value, so nothing changes.
-          recordHistory
           -- Look up the key.
           case M.lookup km kcmd of
             Just (_, declaredTimed, c) -> do
