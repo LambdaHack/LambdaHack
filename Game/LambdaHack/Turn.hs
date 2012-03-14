@@ -226,8 +226,8 @@ advanceTime actor = do
 
 
 -- The issues below are now complicated (?) by the fact that we now generate
--- a game screen frame every tick and a jointed pair of frame+key input
--- for each command that does not take time.
+-- a game screen frame at least once every turn and a jointed pair
+-- of frame+key input for each command that does not take time.
 --
 -- Design thoughts (in order to get rid or partially rid of the somewhat
 -- convoluted design we have): We have three kinds of commands.

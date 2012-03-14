@@ -77,7 +77,7 @@ showScore (pos, score) =
       curDate = calendarTimeToString . toUTCTime . date $ score
       big   = "                                                 "
       lil   = "              "
-      steps = - (negTime score `timeFit` timeTurn)
+      steps = - (negTime score `timeFit` timeStep)
      -- TODO: the spaces at the end are hand-crafted. Remove when display
      -- of overlays adds such spaces automatically.
   in [ printf
