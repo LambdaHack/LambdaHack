@@ -158,7 +158,7 @@ actorSpeed Kind.Ops{okind} m =
 data Target =
     TEnemy ActorId Point  -- ^ target an actor with its last seen location
   | TLoc Point            -- ^ target a given location
-  | TPath [Point]         -- ^ target the list of locations one after another
+  | TPath [Vector]        -- ^ target the list of locations one after another
   | TCursor               -- ^ target current position of the cursor; default
   deriving (Show, Eq)
 

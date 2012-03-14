@@ -324,7 +324,7 @@ moveOrAttack allowAttacks actor dir = do
       | allowAttacks ->
           -- Attacking does not require full access, adjacency is enough.
           actorAttackActor actor target
-      | accessible cops lvl sloc tloc && bhp (getActor target state) > 0 -> do
+      | accessible cops lvl sloc tloc -> do
           -- Switching positions requires full access.
           when (actor == pl) $
             msgAdd $ lookAt cops False True state lvl tloc ""
@@ -405,8 +405,7 @@ actorRunActor source target = do
   updateAnyActor target $ \ m -> m { bloc = sloc }
   if source == pl
     then stopRunning  -- do not switch positions repeatedly
-    else when (not $ isAHero s source) $ do
-      void $ focusIfOurs target
+    else when (not $ isAHero s source) $ void $ focusIfOurs target
 
 -- | Create a new monster in the level, at a random position.
 rollMonster :: Kind.COps -> Perception -> State -> Rnd State

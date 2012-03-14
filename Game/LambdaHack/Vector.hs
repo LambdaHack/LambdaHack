@@ -2,7 +2,7 @@
 -- but not unique, way.
 module Game.LambdaHack.Vector
   ( Vector, toVector, shift, shiftBounded, moves, movesWidth
-  , euclidDistSq, diagonal, neg, towards
+  , euclidDistSq, diagonal, neg, towards, displacement, displacePath
   ) where
 
 import Data.Binary
@@ -94,6 +94,7 @@ diagonal lxsize dir | VectorXY (x, y) <- fromDir lxsize dir =
 neg :: Vector -> Vector
 neg (Vector dir) = Vector (-dir)
 
+-- TODO: use bla for that
 -- | Given a vector of arbitrary non-zero length, produce a unit vector
 -- that points in the same direction (in the chessboard metric).
 -- Of several equally good directions it picks one of those that visually
@@ -114,7 +115,9 @@ normalize lxsize (VectorXY (dx, dy)) =
      else neg (toDir lxsize $ VectorXY dxy)
 
 -- TODO: Perhaps produce all acceptable directions and let AI choose.
--- That would also eliminate the Doubles.
+-- That would also eliminate the Doubles. Or only directions from bla?
+-- Smart monster could really use all dirs to be less predictable,
+-- but it wouldn't look as natural as bla, so for less smart bla is better.
 -- | Given two distinct locations, determine the direction (a unit vector)
 -- in which one should move from the first in order to get closer
 -- to the second. Ignores obstacles. Of several equally good directions
@@ -124,5 +127,19 @@ normalize lxsize (VectorXY (dx, dy)) =
 towards :: X -> Point -> Point -> Vector
 towards lxsize loc0 loc1 =
   assert (loc0 /= loc1 `blame` (loc0, loc1)) $
-  let v = displacement lxsize loc0 loc1
+  let v = displacementXYZ lxsize loc0 loc1
   in normalize lxsize v
+
+-- | A vector from a point to another. We have
+--
+-- > shift loc1 (displacement loc1 loc2) == loc2
+--
+-- Particularly simple and fast implementation in the linear representation.
+displacement :: Point -> Point -> Vector
+displacement loc1 loc2 = Vector $ loc2 - loc1
+
+-- | A vector from a point to another. W have
+displacePath :: [Point] -> [Vector]
+displacePath []  = []
+displacePath lp1@(_ : lp2) =
+  map (uncurry displacement) $ zip lp1 lp2

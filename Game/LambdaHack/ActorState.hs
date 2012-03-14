@@ -12,6 +12,7 @@ import qualified Data.Char as Char
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Point
+import Game.LambdaHack.Vector
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Level
 import Game.LambdaHack.Dungeon
@@ -105,13 +106,14 @@ updateAnyLevel f ln s@State{slid, sdungeon}
   | ln == slid = updateLevel f s
   | otherwise = updateDungeon (const $ adjust f ln sdungeon) s
 
--- | Calculate the location of actor's target.
-targetToLoc :: IS.IntSet -> State -> Maybe Point
-targetToLoc visible s@State{slid, scursor} =
+-- | Calculate the location of player's target.
+targetToLoc :: IS.IntSet -> State -> Point -> Maybe Point
+targetToLoc visible s@State{slid, scursor} aloc =
   case btarget (getPlayerBody s) of
     TLoc loc -> Just loc
-    TPath ls -> listToMaybe ls
-    TCursor  ->
+    TPath [] -> Nothing
+    TPath (dir:_) -> Just $ shift aloc dir
+    TCursor ->
       if slid == clocLn scursor
       then Just $ clocation scursor
       else Nothing  -- cursor invalid: set at a different level
@@ -242,7 +244,7 @@ addMonster cotile mk hp ploc state@State{scounter} = do
 -- Adding projectiles
 
 -- | Create a projectile actor containing the given missile.
-addProjectile :: Kind.COps -> Item -> Point -> PartyId -> [Point] -> Time
+addProjectile :: Kind.COps -> Item -> Point -> PartyId -> [Vector] -> Time
               -> State -> State
 addProjectile Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}}
               item loc bparty path btime state@State{scounter} =

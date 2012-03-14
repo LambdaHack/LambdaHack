@@ -98,8 +98,9 @@ strategy cops actor oldState@State{splayer = pl} per =
       TLoc loc | me == loc -> closest
       TLoc loc -> (tgt, Just loc, False)  -- ignore all and go to loc
       TPath [] -> (tgt, Nothing, False)  -- awaiting further instructions
-      TPath (loc : ls) | me == loc -> chase $ TPath ls
-      TPath (loc : _) -> (tgt, Just loc, True {- attack to free @loc@ -})
+      -- TODO: return the dir directly.
+      TPath (dir : lv) ->
+        (TPath lv, Just $ shift me dir, True {- attack to free the loc -})
       _  -> closest
   (newTgt, floc, foeVisible) = chase btarget
   closest =

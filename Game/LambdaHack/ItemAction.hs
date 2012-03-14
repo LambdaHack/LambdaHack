@@ -15,6 +15,7 @@ import qualified Data.IntSet as IS
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
 import Game.LambdaHack.Point
+import Game.LambdaHack.Vector
 import Game.LambdaHack.Grammar
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Key as K
@@ -116,10 +117,12 @@ projectGroupItem source tloc _verb item = do
   case bl of
     Nothing -> abortWith "cannot zap oneself"
     Just [] -> assert `failure` (sloc, tloc, "project from the edge of level")
-    Just (loc : path) -> do
+    Just lp@(loc:_) -> do
       let projVis = loc `IS.member` totalVisible per
+          dirPath = displacePath lp
       removeFromInventory source consumed sloc
-      modify $ if accessible cops lvl sloc loc
+      inhabitants <- gets (locToActor loc)
+      if accessible cops lvl sloc loc && isNothing inhabitants
         -- Setting the projectile time to player time is brutal, but ensures
         -- the projectile covers the whole normal distance already the first
         -- step that the player observes it moving. This removes
@@ -129,8 +132,10 @@ projectGroupItem source tloc _verb item = do
         -- to the tile of the opposite party. Then it would be symmetric.
         -- Both parties would see their projectiles move part of the way
         -- and the opposite projectile waiting one step.
-        then addProjectile cops consumed loc party path (btime body)
-        else updateLevel (dropItemsAt [consumed] sloc)
+        then
+          modify $ addProjectile cops consumed loc party dirPath (btime body)
+        else
+          abortWith "blocked"
       when (sourceVis || projVis) $ msgAdd msg
 
 playerProjectGroupItem :: Verb -> Object -> [Char] -> ActionFrame ()
@@ -156,7 +161,7 @@ playerProjectGI verb object syms = do
         -- Mark that unexpectedly it does not take time.
         modify (\ s -> s {snoTime = True})
         return frs
-  case targetToLoc (totalVisible per) state of
+  case targetToLoc (totalVisible per) state ploc of
     Just loc -> do
       Kind.COps{coitem=Kind.Ops{okind}} <- getCOps
       is   <- gets getPlayerItem
@@ -212,8 +217,7 @@ targetFloor tgtMode = do
   let tgt = case target of
         TEnemy _ _ -> TCursor  -- forget enemy target, keep the cursor
         _ | targeting /= TgtOff -> TLoc ploc  -- double key press: reset cursor
-        TPath [] -> TCursor
-        TPath (loc:_) -> TLoc loc
+        TPath _ -> TCursor
         t -> t  -- keep the target from previous targeting session
   -- Register that we want to target only locations.
   updatePlayerBody (\ p -> p { btarget = tgt })
@@ -227,7 +231,8 @@ setCursor tgtMode = assert (tgtMode /= TgtOff) $ do
   ploc   <- gets (bloc . getPlayerBody)
   clocLn <- gets slid
   let upd cursor@Cursor{ctargeting, clocation=clocationOld, ceps=cepsOld} =
-        let clocation = fromMaybe ploc (targetToLoc (totalVisible per) state)
+        let clocation =
+              fromMaybe ploc (targetToLoc (totalVisible per) state ploc)
             ceps = if clocation == clocationOld then cepsOld else 0
             newTgtMode = if ctargeting == TgtOff then tgtMode else ctargeting
         in cursor { ctargeting = newTgtMode, clocation, clocLn, ceps }

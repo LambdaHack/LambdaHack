@@ -2,7 +2,7 @@
 module Game.LambdaHack.Point
   ( Point, toPoint, showPoint
   , origin, chessDist, adjacent, vicinity, vicinityCardinal
-  , inside, displacement, bla
+  , inside, displacementXYZ, bla
   ) where
 
 import qualified Data.List as L
@@ -79,9 +79,9 @@ vicinityCardinal lxsize lysize loc =
 inside :: X -> Point -> Area -> Bool
 inside lxsize loc = insideXY $ fromPoint lxsize loc
 
--- | Calculate the displacement vector of a location wrt another location.
-displacement :: X -> Point -> Point -> VectorXY
-displacement lxsize loc0 loc1
+-- | Calculate the displacement vector from a location to another.
+displacementXYZ :: X -> Point -> Point -> VectorXY
+displacementXYZ lxsize loc0 loc1
   | PointXY (x0, y0) <- fromPoint lxsize loc0
   , PointXY (x1, y1) <- fromPoint lxsize loc1 =
   VectorXY (x1 - x0, y1 - y0)
