@@ -3,7 +3,7 @@ module Game.LambdaHack.Time
   ( Time, timeZero, timeTurn, timeStep  -- do not add timeTick!
   , timeAdd, timeFit, timeNegate, timeScale
   , timeToDigit
-  , Speed, toSpeed, speedNormal, speedTilePerTurn
+  , Speed, toSpeed, speedNormal
   , speedScale, ticksPerMeter, traveled, speedFromWeight, rangeFromSpeed
   ) where
 
@@ -47,6 +47,12 @@ timeStep = Time 500
 stepsInSecond :: Int
 stepsInSecond = 2
 
+-- | This many ticks fits in a single second.
+ticksInSecond :: Int
+ticksInSecond =
+  let Time ticksInStep = timeStep
+  in ticksInStep * stepsInSecond
+
 -- | Time addition.
 timeAdd :: Time -> Time -> Time
 timeAdd (Time t1) (Time t2) = Time (t1 + t2)
@@ -75,7 +81,7 @@ timeToDigit (Time maxT) (Time t) =
             | otherwise = Char.intToDigit k
   in digit
 
--- | Speed in meters per 10 seconds (m/10s).
+-- | Speed in meters per 1000 seconds (m/ks).
 -- Actors at normal speed (2 m/s) take one time step (0.5 s)
 -- to move one tile (1 m by 1 m).
 newtype Speed = Speed Int
@@ -85,17 +91,17 @@ instance Binary Speed where
   put (Speed n) = put n
   get = fmap Speed get
 
+-- | Number of seconds in a kilo-second.
+sInKs :: Int
+sInKs = 1000
+
 -- | Constructor for content definitions.
 toSpeed :: Double -> Speed
-toSpeed s = Speed $ round $ s * 10
+toSpeed s = Speed $ round $ s * fromIntegral sInKs
 
 -- | Normal speed (2 m/s) that suffices to move one tile in one step.
 speedNormal :: Speed
-speedNormal = Speed 20
-
--- | Speed of one tile per time turn (20 m/s).
-speedTilePerTurn :: Speed
-speedTilePerTurn = Speed 200
+speedNormal = Speed $ 2 * sInKs
 
 -- | Scale speed by an integer scalar value.
 speedScale :: Speed -> Int -> Speed
@@ -103,30 +109,24 @@ speedScale (Speed v) s = Speed (v * s)
 
 -- | The number of time ticks it takes to walk 1 meter at the given speed.
 ticksPerMeter :: Speed -> Time
-ticksPerMeter (Speed v) =
-  let Time ticksInStep = timeStep
-      secondsIn10s = 10
-  in Time $ ticksInStep * stepsInSecond * secondsIn10s `div` v
+ticksPerMeter (Speed v) = Time $ ticksInSecond * sInKs `div` v
 
--- | Distance in meters traveled in a given time by a body with a given speed.
+-- | Distance in meters (so also in tiles, given the chess metric)
+-- traveled in a given time by a body with a given speed.
 traveled :: Speed -> Time -> Int
-traveled (Speed v) (Time t) =
-  let Time ticksInStep = timeStep
-      ticksIn10s = 10 * stepsInSecond * ticksInStep
-  in v * t `div` ticksIn10s
+traveled (Speed v) (Time t) =  v * t `div` (ticksInSecond * sInKs)
 
 -- | Calculate projectile speed from item weight in grams
 -- and speed bonus in percents.
 -- See https://github.com/kosmikus/LambdaHack/wiki/Item-statistics.
 speedFromWeight :: Int -> Int -> Speed
 speedFromWeight w bonus =
-  let mps | w <= 500 = 16
-          | w > 500 && w <= 2000 = 16 * 1500 `div` (w + 1000)
-          | otherwise = 10 - w `div` 1000
-      mp10s = 10 * mps
-  in Speed $ max 1 $ mp10s + mp10s * bonus `div` 100
+  let mpKs | w <= 500 = sInKs * 16
+           | w > 500 && w <= 2000 = sInKs * 16 * 1500 `div` (w + 1000)
+           | otherwise = sInKs * (10000 - w) `div` 1000
+  in Speed $ max 0 $ mpKs * (100 + bonus) `div` 100
 
 -- | Calculate maximum range in meters of a projectile from its speed.
 -- See https://github.com/kosmikus/LambdaHack/wiki/Item-statistics.
 rangeFromSpeed :: Speed -> Int
-rangeFromSpeed (Speed v) = v `div` 10
+rangeFromSpeed (Speed v) = v `div` sInKs

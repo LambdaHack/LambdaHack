@@ -19,7 +19,7 @@ data ActorKind = ActorKind
   , aname   :: !String           -- ^ short description
   , afreq   :: !Freqs            -- ^ frequency within groups
   , acolor  :: !Color            -- ^ map color
-  , aspeed  :: !Speed            -- ^ natural speed in m/10s (1 step is 0.5 s)
+  , aspeed  :: !Speed            -- ^ natural speed in m/s
   , ahp     :: !Random.RollDice  -- ^ encodes initial and maximal hp
   , asight  :: !Bool             -- ^ can it see?
   , asmell  :: !Bool             -- ^ can it smell?
