@@ -117,9 +117,8 @@ traveled (Speed v) (Time t) =
 speedFromWeight :: Int -> Int -> Speed
 speedFromWeight w bonus =
   let mps | w <= 500 = 16
-          | w > 500 && w <= 2000 =
-            24 - round (sqrt $ fromIntegral $ 128 * w :: Double)
-          | otherwise = 10 - w
+          | w > 500 && w <= 2000 = 16 * 1500 `div` (w + 1000)
+          | otherwise = 10 - w `div` 1000
       mp10s = 10 * mps
   in Speed $ max 1 $ mp10s + mp10s * bonus `div` 100
 
