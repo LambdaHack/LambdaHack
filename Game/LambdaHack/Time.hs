@@ -3,7 +3,7 @@ module Game.LambdaHack.Time
   ( Time, timeZero, timeTurn, timeStep  -- do not add timeTick!
   , timeAdd, timeFit, timeNegate, timeScale
   , timeToDigit
-  , Speed(..), speedNormal, speedTilePerTurn
+  , Speed, toSpeed, speedNormal, speedTilePerTurn
   , speedScale, ticksPerMeter, traveled, speedFromWeight, rangeFromSpeed
   ) where
 
@@ -84,6 +84,10 @@ newtype Speed = Speed Int
 instance Binary Speed where
   put (Speed n) = put n
   get = fmap Speed get
+
+-- | Constructor for content definitions.
+toSpeed :: Double -> Speed
+toSpeed s = Speed $ round $ s * 10
 
 -- | Normal speed (2 m/s) that suffices to move one tile in one step.
 speedNormal :: Speed
