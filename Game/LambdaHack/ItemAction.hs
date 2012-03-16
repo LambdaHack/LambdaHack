@@ -15,7 +15,6 @@ import qualified Data.IntSet as IS
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
 import Game.LambdaHack.Point
-import Game.LambdaHack.Vector
 import Game.LambdaHack.Grammar
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Key as K
@@ -117,9 +116,8 @@ projectGroupItem source tloc _verb item = do
   case bl of
     Nothing -> abortWith "cannot zap oneself"
     Just [] -> assert `failure` (sloc, tloc, "project from the edge of level")
-    Just lp@(loc:_) -> do
+    Just path@(loc:_) -> do
       let projVis = loc `IS.member` totalVisible per
-          dirPath = displacePath lp
       removeFromInventory source consumed sloc
       inhabitants <- gets (locToActor loc)
       if accessible cops lvl sloc loc && isNothing inhabitants
@@ -133,7 +131,7 @@ projectGroupItem source tloc _verb item = do
         -- Both parties would see their projectiles move part of the way
         -- and the opposite projectile waiting one step.
         then
-          modify $ addProjectile cops consumed loc party dirPath (btime body)
+          modify $ addProjectile cops consumed loc party path (btime body)
         else
           abortWith "blocked"
       when (sourceVis || projVis) $ msgAdd msg

@@ -97,10 +97,6 @@ strategy cops actor oldState@State{splayer = pl} per =
                 else (tgt, Just ll, False)  -- last known loc of enemy
       TLoc loc | me == loc -> closest
       TLoc loc -> (tgt, Just loc, False)  -- ignore all and go to loc
-      TPath [] -> (tgt, Nothing, False)  -- awaiting further instructions
-      -- TODO: return the dir directly.
-      TPath (dir : lv) ->
-        (TPath lv, Just $ shift me dir, True {- attack to free the loc -})
       _  -> closest
   (newTgt, floc, foeVisible) = chase btarget
   closest =
@@ -156,9 +152,12 @@ strategy cops actor oldState@State{splayer = pl} per =
   attackDir d = dirToAction actor newTgt True  `liftM` d
   moveDir d   = dirToAction actor newTgt False `liftM` d
 
-  strat = case newTgt of
+  strat = case btarget of
     TPath [] -> dieOrSleep
-    TPath _ | foeAdjacent && not foeAccessible -> dieOrSleep
+    TPath (d : _) | not $ accessible cops lvl me (shift me d) -> dieOrSleep
+    -- TODO: perhaps colour missiles about to drop due to range grey?
+    -- or the whole second step of movement?
+    TPath (d : lv) -> return $ dirToAction actor (TPath lv) True d
     _ -> foeVisible .=> attackDir (onlyFoe moveFreely)
          .| foeVisible .=> liftFrequency (msum seenFreqs)
          .| lootHere me .=> actionPickup
@@ -166,8 +165,6 @@ strategy cops actor oldState@State{splayer = pl} per =
          .| attackDir moveAround
   dieOrSleep | bhp <= 0  = dieNow actor
              | otherwise = wait
-  foeAccessible =
-    maybe False (Tile.hasFeature cotile F.Walkable . (lvl `at`)) floc
   actionPickup = return $ actorPickupItem actor
   tis = lvl `atI` me
   seenFreqs = [applyFreq bitems 1, applyFreq tis 2,
@@ -180,7 +177,19 @@ strategy cops actor oldState@State{splayer = pl} per =
       benefit > 0,
       asight mk || isymbol ik == '!']
   foeAdjacent = maybe False (adjacent lxsize me) floc
-  throwFreq is multi = if foeAdjacent || not (asight mk)
+  -- TODO: also don't throw if any loc on path is visibly not accessible
+  -- from previous (and tweak eps in bla to make it accessible).
+  -- Also don't throw if target not in range.
+  eps = 0
+  bl = bla lxsize lysize eps me (fromJust floc)
+  loc1 = case bl of
+    Nothing -> me
+    Just [] -> me
+    Just (lbl:_) -> lbl
+  throwFreq is multi = if foeAdjacent
+                          || not (asight mk)
+                          || not (accessible cops lvl me loc1)
+                          || isJust (locToActor loc1 oldState)
                        then mzero
                        else toFreq "throwFreq"
     [ (benefit * multi,
@@ -219,9 +228,9 @@ strategy cops actor oldState@State{splayer = pl} per =
   moveRandomly = liftFrequency $ uniformFreq "moveRandomly" (moves lxsize)
 
 dirToAction :: ActorId -> Target -> Bool -> Vector -> Action ()
-dirToAction actor tgt allowAttacks dir = do
+dirToAction actor btarget allowAttacks dir = do
   -- set new direction
-  updateAnyActor actor $ \ m -> m { bdir = Just (dir, 0), btarget = tgt }
+  updateAnyActor actor $ \ m -> m { bdir = Just (dir, 0), btarget }
   -- perform action
   tryWith (\ msg -> if null msg
                     then return ()

@@ -32,6 +32,9 @@ timeZero = Time 0
 _timeTick :: Time
 _timeTick = Time 1
 
+-- TODO: don't have a fixed turn, but instead keep it at 1/3 or 1/4
+-- of time it takes the player to move one tile. Turns are a UI feature
+-- after all, so should depend on the user situation.
 -- | At least once per turn all moves are resolved and a frame
 -- or a frame delay is generated.
 -- Currently one turn is 0.1 s, but it may change,
@@ -132,5 +135,8 @@ speedFromWeight weight bonus =
 
 -- | Calculate maximum range in meters of a projectile from its speed.
 -- See https://github.com/kosmikus/LambdaHack/wiki/Item-statistics.
+-- With this formula, each projectile flies for exactly one second,
+-- that is 2 steps, and then drops to the ground.
+-- Dividing and multiplying by 2 ensures both steps have equal length.
 rangeFromSpeed :: Speed -> Int
-rangeFromSpeed (Speed v) = fromIntegral $ v `div` sInMs
+rangeFromSpeed (Speed v) = fromIntegral $ 2 * (v `div` (sInMs * 2))

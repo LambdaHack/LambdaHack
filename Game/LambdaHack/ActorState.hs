@@ -244,21 +244,24 @@ addMonster cotile mk hp ploc state@State{scounter} = do
 -- Adding projectiles
 
 -- | Create a projectile actor containing the given missile.
-addProjectile :: Kind.COps -> Item -> Point -> PartyId -> [Vector] -> Time
+addProjectile :: Kind.COps -> Item -> Point -> PartyId -> [Point] -> Time
               -> State -> State
 addProjectile Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}}
               item loc bparty path btime state@State{scounter} =
   let ik = okind (jkind item)
       object = objectItem coitem state item
       name = "a flying " ++ unwords (tail (words object))
+      speed = speedFromWeight (iweight ik) (itoThrow ik)
+      range = rangeFromSpeed speed
+      dirPath = take range $ displacePath path
       m = Actor
         { bkind   = projectileKindId coactor
         , bsymbol = Nothing
         , bname   = Just name
-        , bspeed  = Just $ speedFromWeight (iweight ik) (itoThrow ik)
+        , bspeed  = Just speed
         , bhp     = 0
         , bdir    = Nothing
-        , btarget = TPath path
+        , btarget = TPath dirPath
         , bloc    = loc
         , bletter = 'a'
         , btime
