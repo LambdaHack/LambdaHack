@@ -60,7 +60,7 @@ data Level = Level
   , ldesc     :: String          -- ^ level description for the player
   , lmeta     :: String          -- ^ debug information from cave generation
   , lstairs   :: (Point, Point)  -- ^ destination of the (up, down) stairs
-  , ltime     :: Time            -- ^ last time a turn ended on the level
+  , ltime     :: Time            -- ^ date of the last activity on the level
   }
   deriving Show
 

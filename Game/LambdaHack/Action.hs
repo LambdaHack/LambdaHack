@@ -20,8 +20,8 @@ module Game.LambdaHack.Action
   , displayMore, displayYesNo, displayOverAbort
     -- * Assorted frame operations
   , displayOverlays, displayChoiceUI, displayFramePush, drawPrompt
-    -- * Start of turn operations
-  , startTurn, remember, rememberList
+    -- * Clip init operations
+  , startClip, remember, rememberList
     -- * Assorted operations
   , getPerception, updateAnyActor, updatePlayerBody
     -- * Assorted primitives
@@ -399,8 +399,8 @@ drawOverlay dm prompt overlay = do
   return $ draw dm cops per s over
 
 -- | Initialize perception, etc., display level and run the action.
-startTurn :: Action () -> Action ()
-startTurn action =
+startClip :: Action () -> Action ()
+startClip action =
   -- Determine perception before running player command, in case monsters
   -- have opened doors, etc.
   withPerception $ do

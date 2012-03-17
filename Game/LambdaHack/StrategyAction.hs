@@ -132,7 +132,7 @@ strategy cops actor oldState@State{splayer = pl} per =
   -- Monsters don't see doors more secret than that. Enforced when actually
   -- opening doors, too, so that monsters don't cheat. TODO: remove the code
   -- duplication, though.
-  openPower      = timeScale timeStep $
+  openPower      = timeScale timeTurn $
                    case strongestSearch coitem bitems of
                      Just i  -> aiq mk + jpower i
                      Nothing -> aiq mk

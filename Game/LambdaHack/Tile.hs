@@ -11,7 +11,7 @@
 -- Instead, of defining a @Tile@ type, we express various properties
 -- of concrete tiles by arrays or sparse IntMaps, as appropriate.
 --
--- Actors at normal speed (2 m/s) take one step to move one tile (1 m by 1 m).
+-- Actors at normal speed (2 m/s) take one turn to move one tile (1 m by 1 m).
 module Game.LambdaHack.Tile
   (SecretTime, SmellTime
   , kindHasFeature, kindHas, hasFeature

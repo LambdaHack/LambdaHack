@@ -192,7 +192,7 @@ actorOpenDoor actor dir = do
       isPlayer = actor == pl
       isVerbose = isPlayer  -- don't report, unless it's player-controlled
       iq = aiq $ okind $ bkind body
-      openPower = timeScale timeStep $
+      openPower = timeScale timeTurn $
         if isPlayer
         then 0  -- player can't open hidden doors
         else case strongestSearch coitem bitems of
@@ -279,7 +279,7 @@ search = do
   lxsize <- gets (lxsize . slevel)
   ploc   <- gets (bloc . getPlayerBody)
   pitems <- gets getPlayerItem
-  let delta = timeScale timeStep $
+  let delta = timeScale timeTurn $
                 case strongestSearch coitem pitems of
                   Just i  -> 1 + jpower i
                   Nothing -> 1
@@ -461,7 +461,7 @@ regenerateLevelHP = do
                       case strongestRegen coitem bitems of
                         Just i  -> 5 * jpower i
                         Nothing -> 1
-        in if (time `timeFit` timeStep) `mod` regen /= 0
+        in if (time `timeFit` timeTurn) `mod` regen /= 0
            then m
            else addHp coactor 1 m
   -- We really want hero selection to be a purely UI distinction,
@@ -483,9 +483,9 @@ displayHistory = do
   Diary{shistory} <- getDiary
   time <- gets stime
   lysize <- gets (lysize . slevel)
-  let step = show $ time `timeFit` timeStep
-      msg = "Your adventuring lasts " ++ step
-            ++ " half-second steps. Past messages:"
+  let turn = show $ time `timeFit` timeTurn
+      msg = "Your adventuring lasts " ++ turn
+            ++ " half-second turns. Past messages:"
   displayOverlays msg $ splitOverlay lysize $ renderHistory shistory
 
 dumpConfig :: Action ()

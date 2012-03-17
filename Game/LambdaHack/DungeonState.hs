@@ -119,7 +119,7 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, ouniqGroup}
         , ldesc = cname
         , lmeta = dmeta
         , lstairs = (su, sd)
-        , ltime = timeAdd timeStep timeStep  -- just stepped into the dungeon
+        , ltime = timeAdd timeTurn timeTurn  -- just stepped into the dungeon
         }
   return level
 

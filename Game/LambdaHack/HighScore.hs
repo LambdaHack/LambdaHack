@@ -77,15 +77,15 @@ showScore (pos, score) =
       curDate = calendarTimeToString . toUTCTime . date $ score
       big   = "                                                 "
       lil   = "              "
-      steps = - (negTime score `timeFit` timeStep)
+      turns = - (negTime score `timeFit` timeTurn)
      -- TODO: the spaces at the end are hand-crafted. Remove when display
      -- of overlays adds such spaces automatically.
   in [ printf
          "%s"
          big
      , printf
-         "%4d. %6d  This adventuring party %s after %d steps  "
-         pos (points score) died steps
+         "%4d. %6d  This adventuring party %s after %d turns  "
+         pos (points score) died turns
      , printf
          "%son %s.  "
          lil curDate

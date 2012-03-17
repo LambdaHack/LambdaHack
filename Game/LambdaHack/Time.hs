@@ -1,6 +1,6 @@
 -- | Game time and speed.
 module Game.LambdaHack.Time
-  ( Time, timeZero, timeTurn, timeStep  -- do not add timeTick!
+  ( Time, timeZero, timeClip, timeTurn
   , timeAdd, timeFit, timeNegate, timeScale
   , timeToDigit
   , Speed, toSpeed, speedNormal
@@ -11,9 +11,9 @@ import Data.Binary
 import qualified Data.Char as Char
 
 -- | Game time in ticks. The time dimension.
--- One tick is 1 microsecond (one millionth of a second), one turn is 0.1 s,
--- one step is 0.5 s. Moves are resolved and screen frame is generated
--- at least every turn.
+-- One tick is 1 microsecond (one millionth of a second),
+-- one turn is 0.5 s. Moves are resolved and screen frame is generated
+-- at least every clip.
 newtype Time = Time Word64
   deriving (Show, Eq, Ord)
 
@@ -25,37 +25,37 @@ instance Binary Time where
 timeZero :: Time
 timeZero = Time 0
 
--- | The smallest unit of time. It is not exported, because the proportion
--- of step or turn to tick is an implementation detail.
+-- | The smallest unit of time. Do not export, because the proportion
+-- of turn to tick is an implementation detail.
 -- The significance of this detail is only that it determines resolution
 -- of the time dimension.
 _timeTick :: Time
 _timeTick = Time 1
 
--- TODO: don't have a fixed turn, but instead keep it at 1/3 or 1/4
--- of time it takes the player to move one tile. Turns are a UI feature
+-- TODO: don't have a fixed time, but instead set it at 1/3 or 1/4
+-- of timeTurn depending on level. Clips are a UI feature
 -- after all, so should depend on the user situation.
--- | At least once per turn all moves are resolved and a frame
+-- | At least once per clip all moves are resolved and a frame
 -- or a frame delay is generated.
--- Currently one turn is 0.1 s, but it may change,
+-- Currently one clip is 0.1 s, but it may change,
 -- and the code should not depend on this fixed value.
+timeClip :: Time
+timeClip = Time 100000
+
+-- | One turn is 0.5 s. The code may depend on that.
+-- Actors at normal speed (2 m/s) take one turn to move one tile (1 m by 1 m).
 timeTurn :: Time
-timeTurn = Time 100000
+timeTurn = Time 500000
 
--- | One step is 0.5 s. The code may depend on that.
--- Actors at normal speed (2 m/s) take one step to move one tile (1 m by 1 m).
-timeStep :: Time
-timeStep = Time 500000
+-- | This many turns fit in a single second.
+turnsInSecond :: Word64
+turnsInSecond = 2
 
--- | This many steps fits in a single second.
-stepsInSecond :: Word64
-stepsInSecond = 2
-
--- | This many ticks fits in a single second.
-ticksInSecond :: Word64
-ticksInSecond =
-  let Time ticksInStep = timeStep
-  in ticksInStep * stepsInSecond
+-- | This many ticks fits in a single second. Do not export,
+_ticksInSecond :: Word64
+_ticksInSecond =
+  let Time ticksInTurn = timeTurn
+  in ticksInTurn * turnsInSecond
 
 -- | Time addition.
 timeAdd :: Time -> Time -> Time
@@ -86,7 +86,7 @@ timeToDigit (Time maxT) (Time t) =
   in digit
 
 -- | Speed in meters per 1 million seconds (m/Ms).
--- Actors at normal speed (2 m/s) take one time step (0.5 s)
+-- Actors at normal speed (2 m/s) take one time turn (0.5 s)
 -- to move one tile (1 m by 1 m).
 newtype Speed = Speed Word64
   deriving (Show, Eq, Ord)
@@ -103,7 +103,7 @@ sInMs = 1000000
 toSpeed :: Double -> Speed
 toSpeed s = Speed $ round $ s * fromIntegral sInMs
 
--- | Normal speed (2 m/s) that suffices to move one tile in one step.
+-- | Normal speed (2 m/s) that suffices to move one tile in one turn.
 speedNormal :: Speed
 speedNormal = Speed $ 2 * sInMs
 
@@ -113,13 +113,13 @@ speedScale (Speed v) s = Speed (v * fromIntegral s)
 
 -- | The number of time ticks it takes to walk 1 meter at the given speed.
 ticksPerMeter :: Speed -> Time
-ticksPerMeter (Speed v) = Time $ ticksInSecond * sInMs `div` v
+ticksPerMeter (Speed v) = Time $ _ticksInSecond * sInMs `div` v
 
 -- | Distance in meters (so also in tiles, given the chess metric)
 -- traveled in a given time by a body with a given speed.
 traveled :: Speed -> Time -> Int
 traveled (Speed v) (Time t) =
-  fromIntegral $ v * t `div` (ticksInSecond * sInMs)
+  fromIntegral $ v * t `div` (_ticksInSecond * sInMs)
 
 -- | Calculate projectile speed from item weight in grams
 -- and speed bonus in percents.
@@ -136,7 +136,8 @@ speedFromWeight weight bonus =
 -- | Calculate maximum range in meters of a projectile from its speed.
 -- See https://github.com/kosmikus/LambdaHack/wiki/Item-statistics.
 -- With this formula, each projectile flies for exactly one second,
--- that is 2 steps, and then drops to the ground.
--- Dividing and multiplying by 2 ensures both steps have equal length.
+-- that is 2 turns, and then drops to the ground.
+-- Dividing and multiplying by 2 ensures both turns of flight
+-- result in the same distance traveled.
 rangeFromSpeed :: Speed -> Int
 rangeFromSpeed (Speed v) = fromIntegral $ 2 * (v `div` (sInMs * 2))

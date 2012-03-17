@@ -47,8 +47,8 @@ isAMonster s a =
 -- | How long until an actor's smell vanishes from a tile.
 smellTimeout :: State -> Time
 smellTimeout s =
-  let smellSteps = Config.get (sconfig s) "monsters" "smellTimeout"
-  in timeScale timeStep smellSteps
+  let smellTurns = Config.get (sconfig s) "monsters" "smellTimeout"
+  in timeScale timeTurn smellTurns
 
 -- The operations with "Any", and those that use them,
 -- consider all the dungeon.

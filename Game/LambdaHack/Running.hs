@@ -24,8 +24,8 @@ import qualified Game.LambdaHack.Kind as Kind
 import qualified Game.LambdaHack.Feature as F
 
 -- | Start running in the given direction and with the given number
--- of tiles already traversed (usually 0). The first step of running
--- succeeds much more often than subsequent steps, because most
+-- of tiles already traversed (usually 0). The first turn of running
+-- succeeds much more often than subsequent turns, because most
 -- of the disturbances are ignored, since the player is aware of them
 -- and still explicitly requests a run.
 run :: (Vector, Int) -> ActionFrame ()

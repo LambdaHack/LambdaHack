@@ -160,8 +160,8 @@ rollSecret t = do
       getDice _ acc = acc
       defaultDice = RollDice 5 2
       d = foldr getDice defaultDice (tfeature t)
-  secretSteps <- rollDice d
-  return $ timeScale timeStep secretSteps
+  secretTurns <- rollDice d
+  return $ timeScale timeTurn secretTurns
 
 trigger :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
 trigger Kind.Ops{okind, opick} t =

@@ -123,13 +123,13 @@ projectGroupItem source tloc _verb item = do
       if accessible cops lvl sloc loc && isNothing inhabitants
         -- Setting the projectile time to player time is brutal, but ensures
         -- the projectile covers the whole normal distance already the first
-        -- step that the player observes it moving. This removes
+        -- turn that the player observes it moving. This removes
         -- the possibility of micromanagement by, e.g.,  waiting until
         -- the first distance is short.
         -- If and when monster all move at once, the projectile should be set
         -- to the tile of the opposite party. Then it would be symmetric.
         -- Both parties would see their projectiles move part of the way
-        -- and the opposite projectile waiting one step.
+        -- and the opposite party's projectile waiting one turn.
         then
           modify $ addProjectile cops consumed loc party path (btime body)
         else

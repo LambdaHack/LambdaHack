@@ -59,7 +59,7 @@ keyHelp Binding{kcmd, kmacro, kmajor} =
       , "               1 2 3          b j n"
       , ""
       ,"Run ahead until anything disturbs you, with SHIFT (or CTRL) and a key."
-      , "Press keypad '5' or '.' to wait for one half-second step."
+      , "Press keypad '5' or '.' to skip a turn."
       , "In targeting mode the same keys move the targeting cursor."
       , ""
       , "Search, open and attack, by bumping into walls, doors and monsters."

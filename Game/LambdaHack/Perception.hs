@@ -86,7 +86,7 @@ actorReachesActor actor1 actor2 loc1 loc2 per pl =
 -- TODO: When the code for throwing, digital lines and lights is complete.
 -- make this a special case of ActorSeesActor.
 -- | Whether a monster can see a hero (@False@ if the target has
--- no perceptionis, e.g., not a hero or a hero without perception, due
+-- no perceptions, e.g., not a hero or a hero without perception, due
 -- to being spawned on the same turn by a monster and then seen by another).
 -- An approximation, to avoid computing FOV for the monster.
 monsterSeesHero :: Kind.Ops TileKind -> Perception -> Level

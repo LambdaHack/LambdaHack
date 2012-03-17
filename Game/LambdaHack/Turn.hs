@@ -28,7 +28,7 @@ import Game.LambdaHack.Draw
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Time
 
--- One turn proceeds through the following functions:
+-- One clip proceeds through the following functions:
 --
 -- handleTurn
 -- handleActors
@@ -51,7 +51,7 @@ import Game.LambdaHack.Time
 --
 -- handleMonster: determine and process monster action
 
--- | Starting the turn. Do whatever has to be done
+-- | Starting the clip. Do whatever has to be done
 -- every fixed number of time unit, e.g., monster generation.
 -- Decide if the hero is ready for another move.
 -- If yes, run a player move, if not, run an AI move.
@@ -59,31 +59,31 @@ import Game.LambdaHack.Time
 handleTurn :: Action ()
 handleTurn = do
   debug "handleTurn"
-  time <- gets stime  -- the end time of this turn, inclusive
-  let turnN = (time `timeFit` timeTurn) `mod` (timeStep `timeFit` timeTurn)
-  -- Regenerate HP and add monsters each step, not each turn.
-  when (turnN == 1) regenerateLevelHP
-  when (turnN == 3) generateMonster
+  time <- gets stime  -- the end time of this clip, inclusive
+  let clipN = (time `timeFit` timeClip) `mod` (timeTurn `timeFit` timeClip)
+  -- Regenerate HP and add monsters each turn, not each clip.
+  when (clipN == 1) regenerateLevelHP
+  when (clipN == 3) generateMonster
   ptime <- gets (btime . getPlayerBody)  -- time of player's next move
   debug $ "handleTurn: time check. ptime = "
           ++ show ptime ++ ", time = " ++ show time
   handleActors timeZero
-  modify (updateTime (timeAdd timeTurn))
+  modify (updateTime (timeAdd timeClip))
   handleTurn
 
 -- TODO: We should replace this structure using a priority search queue/tree.
 -- | Perform moves for individual actors not controlled
 -- by the player, as long as there are actors
 -- with the next move time less than or equal to the current time.
--- Some very fast actors may move many times a turn and then
--- we introduce subturns and produce many frames per turn to avoid
+-- Some very fast actors may move many times a clip and then
+-- we introduce subclips and produce many frames per clip to avoid
 -- jerky movement. Otherwise we push exactly one frame or frame delay.
-handleActors :: Time       -- ^ the start time of current subturn, exclusive
+handleActors :: Time       -- ^ the start time of current subclip, exclusive
              -> Action ()
-handleActors subturnStart = do
+handleActors subclipStart = do
   debug "handleActors"
   Kind.COps{coactor} <- getCOps
-  time <- gets stime  -- the end time of this turn, inclusive
+  time <- gets stime  -- the end time of this clip, inclusive
   lactor <- gets (lactor . slevel)
   pl <- gets splayer
   let as = IM.toAscList lactor  -- older actors act first
@@ -95,31 +95,31 @@ handleActors subturnStart = do
                       then Nothing  -- no actor is ready for another move
                       else Just (actor, m)
   case mnext of
-    Nothing -> when (subturnStart == timeZero) $ displayFramePush Nothing
+    Nothing -> when (subclipStart == timeZero) $ displayFramePush Nothing
     Just (actor, m) -> do
       advanceTime actor  -- advance time while the actor still alive
       if actor == pl || bparty m == heroParty
         then
-          -- Player moves always start a subturn.
-          startTurn $ do
-          handlePlayer
-          handleActors $ btime m
+          -- Player moves always start a new subclip.
+          startClip $ do
+            handlePlayer
+            handleActors $ btime m
         else
           let speed = actorSpeed coactor m
-              ticks = ticksPerMeter speed
-          in if subturnStart == timeZero
-                || btime m > timeAdd subturnStart ticks
+              delta = ticksPerMeter speed
+          in if subclipStart == timeZero
+                || btime m > timeAdd subclipStart delta
              then
-               -- That's the first move this turn
-               -- or the monster has already moved this subturn.
-               -- I either case, start a new subturn.
-               startTurn $ do
+               -- That's the first move this clip
+               -- or the monster has already moved this subclip.
+               -- I either case, start a new subclip.
+               startClip $ do
                  handleMonster actor
                  handleActors $ btime m
              else do
-               -- The monster didn't yet move this subturn.
+               -- The monster didn't yet move this subclip.
                handleMonster actor
-               handleActors subturnStart
+               handleActors subclipStart
 
 -- | Handle the move of a single monster.
 handleMonster :: ActorId -> Action ()
@@ -213,8 +213,8 @@ advanceTime actor = do
   Kind.COps{coactor} <- getCOps
   let upd m@Actor{btime} =
         let speed = actorSpeed coactor m
-            ticks = ticksPerMeter speed
-        in m {btime = timeAdd btime ticks}
+            delta = ticksPerMeter speed
+        in m {btime = timeAdd btime delta}
   updateAnyActor actor upd
   -- A hack to synchronize the whole party:
   body <- gets (getActor actor)
@@ -226,7 +226,7 @@ advanceTime actor = do
 
 
 -- The issues below are now complicated (?) by the fact that we now generate
--- a game screen frame at least once every turn and a jointed pair
+-- a game screen frame at least once every clip and a jointed pair
 -- of frame+key input for each command that does not take time.
 --
 -- Design thoughts (in order to get rid or partially rid of the somewhat
