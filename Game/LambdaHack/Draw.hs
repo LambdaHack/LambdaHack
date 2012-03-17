@@ -103,7 +103,7 @@ draw dm cops per s@State{ scursor=Cursor{..}
                                  (False, True)  -> Color.Green
                                  (False, False) -> Color.Red)
                 Just m | somniscient || vis -> viewActor loc0 m
-                _ | sSml && sml >= timeZero ->
+                _ | sSml && timeScale sml 10 >= smellTimeout s ->
                   (timeToDigit (smellTimeout s) sml, rainbow loc0)
                   | otherwise ->
                   case items of

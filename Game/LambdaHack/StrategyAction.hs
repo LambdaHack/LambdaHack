@@ -71,7 +71,7 @@ strategy cops actor oldState@State{splayer = pl} per =
            , coactor=coactor@Kind.Ops{okind}
            , coitem=coitem@Kind.Ops{okind=iokind}
            } = cops
-  lvl@Level{lsmell = nsmap, lxsize, lysize, ltime} = slevel oldState
+  lvl@Level{lsmell, lxsize, lysize, ltime} = slevel oldState
   actorBody@Actor { bkind = ak, bloc = me, bdir = ad, btarget, bhp } =
     getActor actor oldState
   bitems = getActorItem actor oldState
@@ -146,8 +146,8 @@ strategy cops actor oldState@State{splayer = pl} per =
     L.map fst $
     L.sortBy (\ (_, s1) (_, s2) -> compare s2 s1) $
     L.filter (\ (_, s) -> s > timeZero) $
-    L.map (\ x -> let sm = IM.findWithDefault timeZero (me `shift` x) nsmap
-                  in (x, (sm `timeAdd` timeNegate ltime) `max` timeZero))
+    L.map (\ x -> let sm = IM.findWithDefault timeZero (me `shift` x) lsmell
+                  in (x, max timeZero (sm `timeAdd` timeNegate ltime)))
       movesNotBack
   attackDir d = dirToAction actor newTgt True  `liftM` d
   moveDir d   = dirToAction actor newTgt False `liftM` d

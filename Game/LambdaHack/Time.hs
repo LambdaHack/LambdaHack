@@ -8,13 +8,14 @@ module Game.LambdaHack.Time
   ) where
 
 import Data.Binary
+import Data.Int (Int64)
 import qualified Data.Char as Char
 
 -- | Game time in ticks. The time dimension.
 -- One tick is 1 microsecond (one millionth of a second),
 -- one turn is 0.5 s. Moves are resolved and screen frame is generated
 -- at least every clip.
-newtype Time = Time Word64
+newtype Time = Time Int64
   deriving (Show, Eq, Ord)
 
 instance Binary Time where
@@ -48,11 +49,11 @@ timeTurn :: Time
 timeTurn = Time 500000
 
 -- | This many turns fit in a single second.
-turnsInSecond :: Word64
+turnsInSecond :: Int64
 turnsInSecond = 2
 
 -- | This many ticks fits in a single second. Do not export,
-_ticksInSecond :: Word64
+_ticksInSecond :: Int64
 _ticksInSecond =
   let Time ticksInTurn = timeTurn
   in ticksInTurn * turnsInSecond
@@ -88,7 +89,7 @@ timeToDigit (Time maxT) (Time t) =
 -- | Speed in meters per 1 million seconds (m/Ms).
 -- Actors at normal speed (2 m/s) take one time turn (0.5 s)
 -- to move one tile (1 m by 1 m).
-newtype Speed = Speed Word64
+newtype Speed = Speed Int64
   deriving (Show, Eq, Ord)
 
 instance Binary Speed where
@@ -96,7 +97,7 @@ instance Binary Speed where
   get = fmap Speed get
 
 -- | Number of seconds in a kilo-second.
-sInMs :: Word64
+sInMs :: Int64
 sInMs = 1000000
 
 -- | Constructor for content definitions.
