@@ -82,12 +82,13 @@ draw dm cops per s@State{ scursor=Cursor{..}
             items = lvl `liAt` loc0
             sm = IM.findWithDefault timeZero loc0 lsmell
             sml = sm `timeAdd` timeNegate ltime
-            viewActor loc Actor{bkind = bkind2, bsymbol}
+            viewActor loc Actor{bkind = bkind2, bsymbol, bcolor}
               | loc == bloc && slid == creturnLn =
                   (symbol, Color.defBG)  -- highlight player
-              | otherwise = (symbol, acolor)
+              | otherwise = (symbol, color)
              where
               ActorKind{asymbol, acolor} = okind bkind2
+              color  = fromMaybe acolor  bcolor
               symbol = fromMaybe asymbol bsymbol
             rainbow loc = toEnum $ loc `rem` 14 + 1
             (char, fg0) =

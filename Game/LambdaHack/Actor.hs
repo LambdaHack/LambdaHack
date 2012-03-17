@@ -25,6 +25,7 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Config as Config
 import Game.LambdaHack.Time
+import qualified Game.LambdaHack.Color as Color
 
 newtype PartyId = PartyId Int
   deriving (Show, Eq)
@@ -46,6 +47,7 @@ data Actor = Actor
   { bkind   :: !(Kind.Id ActorKind)    -- ^ the kind of the actor
   , bsymbol :: !(Maybe Char)           -- ^ individual map symbol
   , bname   :: !(Maybe String)         -- ^ individual name
+  , bcolor  :: !(Maybe Color.Color)    -- ^ individual map color
   , bspeed  :: !(Maybe Speed)          -- ^ individual speed
   , bhp     :: !Int                    -- ^ current hit points
   , bdir    :: !(Maybe (Vector, Int))  -- ^ direction and distance of running
@@ -62,6 +64,7 @@ instance Binary Actor where
     put bkind
     put bsymbol
     put bname
+    put bcolor
     put bspeed
     put bhp
     put bdir
@@ -74,6 +77,7 @@ instance Binary Actor where
     bkind   <- get
     bsymbol <- get
     bname   <- get
+    bcolor  <- get
     bspeed  <- get
     bhp     <- get
     bdir    <- get
@@ -116,7 +120,8 @@ monsterGenChance depth numMonsters =
 template :: Kind.Id ActorKind -> Maybe Char -> Maybe String -> Int -> Point
          -> Time -> PartyId -> Actor
 template bkind bsymbol bname bhp bloc btime bparty =
-  let bspeed  = Nothing
+  let bcolor  = Nothing
+      bspeed  = Nothing
       btarget = invalidTarget
       bdir    = Nothing
       bletter = 'a'

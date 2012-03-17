@@ -258,6 +258,7 @@ addProjectile Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}}
         { bkind   = projectileKindId coactor
         , bsymbol = Nothing
         , bname   = Just name
+        , bcolor  = Nothing
         , bspeed  = Just speed
         , bhp     = 0
         , bdir    = Nothing

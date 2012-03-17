@@ -31,6 +31,7 @@ import qualified Game.LambdaHack.Tile as Tile
 import qualified Game.LambdaHack.Kind as Kind
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Time
+import qualified Game.LambdaHack.Color as Color
 
 {-
 Monster movement
@@ -151,12 +152,13 @@ strategy cops actor oldState@State{splayer = pl} per =
       movesNotBack
   attackDir d = dirToAction actor newTgt True  `liftM` d
   moveDir d   = dirToAction actor newTgt False `liftM` d
+  darkenActor = updateAnyActor actor $ \ m -> m {bcolor = Just Color.BrBlack}
 
   strat = case btarget of
     TPath [] -> dieOrSleep
     TPath (d : _) | not $ accessible cops lvl me (shift me d) -> dieOrSleep
-    -- TODO: perhaps colour missiles about to drop due to range grey?
-    -- or the whole second step of movement?
+    -- TODO: perhaps colour differently the whole second turn of movement?
+    TPath [d] -> return $ darkenActor >> dirToAction actor (TPath []) True d
     TPath (d : lv) -> return $ dirToAction actor (TPath lv) True d
     _ -> foeVisible .=> attackDir (onlyFoe moveFreely)
          .| foeVisible .=> liftFrequency (msum seenFreqs)
