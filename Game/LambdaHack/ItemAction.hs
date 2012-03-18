@@ -90,7 +90,7 @@ projectGroupItem source tloc _verb item = do
   sm    <- gets (getActor source)
   per   <- getPerception
   pl    <- gets splayer
-  body  <- gets getPlayerBody
+  Actor{btime}  <- gets getPlayerBody
   lvl   <- gets slevel
   ceps  <- gets (ceps . scursor)
   lxsize <- gets (lxsize . slevel)
@@ -109,9 +109,19 @@ projectGroupItem source tloc _verb item = do
       msg = actorVerbItemExtra cops state subject "aim" consumed ""
       -- TODO: AI should choose the best eps.
       eps = if source == pl then ceps else 0
-      party = if bparty sm == heroParty
-              then neutralParty
-              else monsterParty
+      -- Setting monster's projectiles time to player time ensures
+      -- the projectile covers the whole normal distance already the first
+      -- turn that the player observes it moving. This removes
+      -- the possibility of micromanagement by, e.g.,  waiting until
+      -- the first distance is short.
+      -- If and when monster all move at once, player's projectiles
+      -- should be set to the time of the opposite party as well.
+      -- Both parties would see their own projectiles move part of the way
+      -- and the opposite party's projectiles waiting one turn.
+      (party, time) =
+        if bparty sm == heroParty || source == pl
+        then (neutralParty, timeAdd btime (timeNegate timeClip))
+        else (monsterParty, btime)
       bl = bla lxsize lysize eps sloc tloc
   case bl of
     Nothing -> abortWith "cannot zap oneself"
@@ -121,17 +131,8 @@ projectGroupItem source tloc _verb item = do
       removeFromInventory source consumed sloc
       inhabitants <- gets (locToActor loc)
       if accessible cops lvl sloc loc && isNothing inhabitants
-        -- Setting the projectile time to player time is brutal, but ensures
-        -- the projectile covers the whole normal distance already the first
-        -- turn that the player observes it moving. This removes
-        -- the possibility of micromanagement by, e.g.,  waiting until
-        -- the first distance is short.
-        -- If and when monster all move at once, the projectile should be set
-        -- to the tile of the opposite party. Then it would be symmetric.
-        -- Both parties would see their projectiles move part of the way
-        -- and the opposite party's projectile waiting one turn.
         then
-          modify $ addProjectile cops consumed loc party path (btime body)
+          modify $ addProjectile cops consumed loc party path time
         else
           abortWith "blocked"
       when (sourceVis || projVis) $ msgAdd msg
