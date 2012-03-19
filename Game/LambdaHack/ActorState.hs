@@ -36,12 +36,11 @@ isAHero s a =
   let (_, actor, _) = findActorAnyLevel a s
   in bparty actor == heroParty
 
--- | Checks whether an actor identifier represents a monster
--- or a monster projectile.
+-- | Checks whether an actor identifier represents a monster.
 isAMonster :: State -> ActorId -> Bool
 isAMonster s a =
   let (_, actor, _) = findActorAnyLevel a s
-  in bparty actor == monsterParty
+  in bparty actor == enemyParty
 
 -- TODO: move to TileState if ever created.
 -- | How long until an actor's smell vanishes from a tile.
@@ -153,21 +152,37 @@ insertActor a m = updateLevel (updateActorDict (IM.insert a m))
 deletePlayer :: State -> State
 deletePlayer s@State{splayer} = deleteActor splayer s
 
-heroAssocs, monsterAssocs, neutralAssocs :: Level -> [(ActorId, Actor)]
-heroAssocs    lvl =
+-- TODO: unify
+heroAssocs, hostileAssocs, dangerousAssocs, friendlyAssocs
+  :: Level -> [(ActorId, Actor)]
+heroAssocs lvl =
   filter (\ (_, m) -> bparty m == heroParty) $ IM.toList $ lactor lvl
-monsterAssocs lvl =
-  filter (\ (_, m) -> bparty m == monsterParty) $ IM.toList $ lactor lvl
-neutralAssocs lvl =
-  filter (\ (_, m) -> bparty m == neutralParty) $ IM.toList $ lactor lvl
+hostileAssocs lvl =
+  filter (\ (_, m) -> bparty m `elem` [enemyParty, animalParty]) $
+  IM.toList $ lactor lvl
+dangerousAssocs lvl =
+  filter (\ (_, m) -> bparty m `elem`
+                        [enemyParty, animalParty,
+                         enemyProjectiles, animalProjectiles]) $
+  IM.toList $ lactor lvl
+friendlyAssocs lvl =
+  filter (\ (_, m) -> bparty m `elem` [heroParty, heroProjectiles]) $
+  IM.toList $ lactor lvl
 
-levelHeroList, levelMonsterList, levelNeutralList :: State -> [Actor]
-levelHeroList    state =
+heroList, hostileList, dangerousList, friendlyList :: State -> [Actor]
+heroList state =
   filter (\ m -> bparty m == heroParty) $ IM.elems $ lactor $ slevel state
-levelMonsterList state =
-  filter (\ m -> bparty m == monsterParty) $ IM.elems $ lactor $ slevel state
-levelNeutralList state =
-  filter (\ m -> bparty m == neutralParty) $ IM.elems $ lactor $ slevel state
+hostileList state =
+  filter (\ m -> bparty m `elem` [enemyParty, animalParty]) $
+  IM.elems $ lactor $ slevel state
+dangerousList state =
+  filter (\ m -> bparty m `elem`
+                   [enemyParty, animalParty,
+                    enemyProjectiles, animalProjectiles]) $
+  IM.elems $ lactor $ slevel state
+friendlyList state =
+  filter (\ m -> bparty m `elem` [heroParty, heroProjectiles]) $
+  IM.elems $ lactor $ slevel state
 
 -- | Finds an actor at a location on the current level. Perception irrelevant.
 locToActor :: Point -> State -> Maybe ActorId
@@ -237,7 +252,7 @@ addMonster :: Kind.Ops TileKind -> Kind.Id ActorKind -> Int -> Point -> State
            -> State
 addMonster cotile mk hp ploc state@State{scounter} = do
   let loc = nearbyFreeLoc cotile ploc state
-      m = template mk Nothing Nothing hp loc (stime state) monsterParty
+      m = template mk Nothing Nothing hp loc (stime state) enemyParty
       cstate = state {scounter = scounter + 1}
   updateLevel (updateActorDict (IM.insert scounter m)) cstate
 

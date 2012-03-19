@@ -181,7 +181,7 @@ eff Effect.Dominate _ source target _power = do
       return (True, "")
     else if source == target
          then do
-           lm <- gets levelMonsterList
+           lm <- gets hostileList
            lxsize <- gets (lxsize . slevel)
            lysize <- gets (lysize . slevel)
            let cross m = bloc m : vicinityCardinal lxsize lysize (bloc m)
@@ -278,7 +278,7 @@ effLvlGoUp k = do
         remember
         -- Remove the player from the old level.
         modify (deleteActor pl)
-        hs <- gets levelHeroList
+        hs <- gets heroList
         -- Monsters hear that players not on the level. Cancel smell.
         -- Reduces memory load and savefile size.
         when (L.null hs) $

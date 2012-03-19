@@ -101,7 +101,7 @@ runDisturbance locLast distLast msg hs ms per locHere
       surrLast  = locLast : vicinity lxsize lysize locLast
       surrHere  = locHere : vicinity lxsize lysize locHere
       locThere  = locHere `shift` dirNew
-      heroThere = locThere `elem` L.map bloc hs  -- TODO: include neutral; though not needed right now
+      heroThere = locThere `elem` L.map bloc hs
       -- Stop if you touch any individual tile with these propereties
       -- first time, unless you enter it next move, in which case stop then.
       touchList = [ locHasFeature F.Exit
@@ -159,8 +159,8 @@ continueRun (dirLast, distLast) = do
   locHere <- gets (bloc . getPlayerBody)
   per <- getPerception
   Diary{sreport} <- getDiary
-  ms  <- gets levelMonsterList
-  hs  <- gets levelHeroList
+  ms  <- gets dangerousList
+  hs  <- gets friendlyList
   lvl@Level{lxsize, lysize} <- gets slevel
   let locHasFeature f loc = Tile.hasFeature cotile f (lvl `at` loc)
       locHasItems loc = not $ L.null $ lvl `atI` loc

@@ -129,7 +129,7 @@ strategy cops actor oldState@State{splayer = pl} per =
   onlyKeepsDir k =
     only (\ x -> maybe True (\ (d, _) -> euclidDistSq lxsize d x <= k) ad)
   onlyKeepsDir_9 = only (\ x -> maybe True (\ (d, _) -> neg x /= d) ad)
-  onlyNoMs       = onlyMoves (unoccupied (levelMonsterList delState)) me
+  onlyNoMs       = onlyMoves (unoccupied (dangerousList delState)) me
   -- Monsters don't see doors more secret than that. Enforced when actually
   -- opening doors, too, so that monsters don't cheat. TODO: remove the code
   -- duplication, though.

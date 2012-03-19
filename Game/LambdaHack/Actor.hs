@@ -4,7 +4,8 @@ module Game.LambdaHack.Actor
   ( -- * Actor identifiers and related operations
     ActorId, findHeroName, monsterGenChance
     -- * Party identifiers
-  , PartyId, heroParty, monsterParty, neutralParty
+  , PartyId, heroParty, enemyParty, animalParty
+  , heroProjectiles, enemyProjectiles, animalProjectiles
     -- * The@ Acto@r type
   , Actor(..), template, addHp, unoccupied, heroKindId
   , projectileKindId, actorSpeed
@@ -27,13 +28,21 @@ import qualified Game.LambdaHack.Config as Config
 import Game.LambdaHack.Time
 import qualified Game.LambdaHack.Color as Color
 
+-- | The type of party identifiers.
 newtype PartyId = PartyId Int
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
-heroParty, monsterParty, neutralParty :: PartyId
+-- | All supported party identifiers. Animals and projectiles move every turn.
+-- Projectiles don't recognize friends and foes, animals turn friedly
+-- or hostile, depending on various factors.
+heroParty, enemyParty, animalParty,
+  heroProjectiles, enemyProjectiles, animalProjectiles :: PartyId
 heroParty = PartyId 0
-monsterParty = PartyId 1
-neutralParty = PartyId 2
+enemyParty = PartyId 1
+animalParty = PartyId 2
+heroProjectiles = PartyId 3
+enemyProjectiles = PartyId 4
+animalProjectiles = PartyId 5
 
 instance Binary PartyId where
   put (PartyId n) = put n

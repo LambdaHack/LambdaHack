@@ -411,8 +411,8 @@ actorRunActor source target = do
 rollMonster :: Kind.COps -> Perception -> State -> Rnd State
 rollMonster Kind.COps{cotile, coactor=Kind.Ops{opick, okind}} per state = do
   let lvl@Level{lactor} = slevel state
-      ms = L.filter ((> 0) . bhp) $ levelMonsterList state  -- TODO: hack: proj
-      hs = levelHeroList state
+      ms = hostileList state
+      hs = heroList state
       isLit = Tile.isLit cotile
   rc <- monsterGenChance (Dungeon.levelNumber $ slid state) (L.length ms)
   if not rc

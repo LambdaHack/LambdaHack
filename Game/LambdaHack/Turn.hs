@@ -3,6 +3,7 @@ module Game.LambdaHack.Turn ( handleTurn ) where
 
 import Control.Monad
 import Control.Monad.State hiding (State, state)
+import Control.Arrow ((&&&))
 import qualified Data.List as L
 import qualified Data.Ord as Ord
 import qualified Data.Map as M
@@ -89,7 +90,8 @@ handleActors subclipStart = do
   let as = IM.toAscList lactor  -- older actors act first
       mnext = if null as  -- wait until any actor spawned
               then Nothing
-              else let order = Ord.comparing (btime . snd)
+              else let -- Heroes move first then monsters, then the rest.
+                       order = Ord.comparing (btime . snd &&& bparty . snd)
                        (actor, m) = L.minimumBy order as
                    in if btime m > time
                       then Nothing  -- no actor is ready for another move

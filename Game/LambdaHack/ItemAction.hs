@@ -102,7 +102,7 @@ projectGroupItem source tloc _verb item = do
         if sourceVis
         then sm
         else template (heroKindId coactor)
-               Nothing (Just "somebody") 99 sloc timeZero neutralParty
+               Nothing (Just "somebody") 99 sloc timeZero animalParty
       -- When projecting, the first turn is spent aiming.
       -- The projectile is seen one tile from the actor, giving a hint
       -- about the aim and letting the target evade.
@@ -120,8 +120,8 @@ projectGroupItem source tloc _verb item = do
       -- and the opposite party's projectiles waiting one turn.
       (party, time) =
         if bparty sm == heroParty || source == pl
-        then (neutralParty, timeAdd btime (timeNegate timeClip))
-        else (monsterParty, btime)
+        then (heroProjectiles, timeAdd btime (timeNegate timeClip))
+        else (enemyProjectiles, btime)
       bl = bla lxsize lysize eps sloc tloc
   case bl of
     Nothing -> abortWith "cannot zap oneself"
@@ -139,7 +139,7 @@ projectGroupItem source tloc _verb item = do
 
 playerProjectGroupItem :: Verb -> Object -> [Char] -> ActionFrame ()
 playerProjectGroupItem verb object syms = do
-  ms     <- gets levelMonsterList   -- TODO: exclude projectiles already here
+  ms     <- gets hostileList
   lxsize <- gets (lxsize . slevel)
   ploc   <- gets (bloc . getPlayerBody)
   if L.any (adjacent lxsize ploc) $ L.map bloc $ L.filter ((> 0) . bhp) ms
@@ -177,7 +177,7 @@ targetMonster :: TgtMode -> ActionFrame ()
 targetMonster tgtMode = do
   pl        <- gets splayer
   ploc      <- gets (bloc . getPlayerBody)
-  ms        <- gets (monsterAssocs . slevel)
+  ms        <- gets (hostileAssocs . slevel)
   per       <- getPerception
   lxsize    <- gets (lxsize . slevel)
   target    <- gets (btarget . getPlayerBody)
@@ -251,7 +251,7 @@ endTargeting accept = do
   target   <- gets (btarget . getPlayerBody)
   per      <- getPerception
   cloc     <- gets (clocation . scursor)
-  ms       <- gets (monsterAssocs . slevel)
+  ms       <- gets (hostileAssocs . slevel)
   -- Return to the original level of the player. Note that this can be
   -- a different level than the one we started targeting at,
   -- if the player was changed while targeting.
