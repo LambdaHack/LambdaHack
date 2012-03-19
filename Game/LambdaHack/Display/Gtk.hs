@@ -76,7 +76,7 @@ frontendName = "gtk"
 -- required threads. We create a separate thread for gtk to minimize
 -- communication with the heavy main thread. The other threads have to be
 -- spawned after gtk is initialized, because they call @postGUIAsync@,
--- and need 'sview' and 'stags'.
+-- and need @sview@ and @stags@.
 startup :: String -> (FrontendSession -> IO ()) -> IO ()
 startup configFont k = do
   mv <- newEmptyMVar

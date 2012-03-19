@@ -24,7 +24,7 @@ trimLQueue (rs, ws) =
       trim (rsj, []) = ([last rsj], [])
   in trim (filter isJust rs, filter isJust ws)
 
--- | Try reading a queue. Return @Nothing@ if empty. Waits on the lock.
+-- | Try reading a queue. Return @Nothing@ if empty.
 tryReadLQueue :: LQueue a -> Maybe (a, LQueue a)
 tryReadLQueue (r : rs, ws) = Just (r, (rs, ws))
 tryReadLQueue ([], []) = Nothing

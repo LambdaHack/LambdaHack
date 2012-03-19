@@ -51,10 +51,10 @@ import Game.LambdaHack.Time
 --
 -- handleMonster: determine and process monster action
 
--- | Starting the clip. Do whatever has to be done
--- every fixed number of time unit, e.g., monster generation.
--- Decide if the hero is ready for another move.
--- If yes, run a player move, if not, run an AI move.
+-- | Start a clip (a part of a turn for which one or more frames
+-- will be generated). Do whatever has to be done
+-- every fixed number of time units, e.g., monster generation.
+-- Run the player and other actors moves.
 -- Eventually advance the time and repeat.
 handleTurn :: Action ()
 handleTurn = do

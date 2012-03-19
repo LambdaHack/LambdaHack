@@ -13,8 +13,7 @@ import qualified Data.Char as Char
 
 -- | Game time in ticks. The time dimension.
 -- One tick is 1 microsecond (one millionth of a second),
--- one turn is 0.5 s. Moves are resolved and screen frame is generated
--- at least every clip.
+-- one turn is 0.5 s.
 newtype Time = Time Int64
   deriving (Show, Eq, Ord)
 
@@ -62,8 +61,8 @@ _ticksInSecond =
 timeAdd :: Time -> Time -> Time
 timeAdd (Time t1) (Time t2) = Time (t1 + t2)
 
--- | How many time intervals of the second kind fits in an interval
--- of the first kind.
+-- | How many time intervals of the latter kind fits in an interval
+-- of the former kind.
 timeFit :: Time -> Time -> Int
 timeFit (Time t1) (Time t2) = fromIntegral $ t1 `div` t2
 
@@ -72,7 +71,7 @@ timeFit (Time t1) (Time t2) = fromIntegral $ t1 `div` t2
 timeNegate :: Time -> Time
 timeNegate (Time t) = Time (-t)
 
--- | Scale time by an Int scalar value.
+-- | Scale time by an @Int@ scalar value.
 timeScale :: Time -> Int -> Time
 timeScale (Time t) s = Time (t * fromIntegral s)
 
@@ -108,7 +107,7 @@ toSpeed s = Speed $ round $ s * fromIntegral sInMs
 speedNormal :: Speed
 speedNormal = Speed $ 2 * sInMs
 
--- | Scale speed by an Int scalar value.
+-- | Scale speed by an @Int@ scalar value.
 speedScale :: Speed -> Int -> Speed
 speedScale (Speed v) s = Speed (v * fromIntegral s)
 
@@ -124,7 +123,7 @@ traveled (Speed v) (Time t) =
 
 -- | Calculate projectile speed from item weight in grams
 -- and speed bonus in percents.
--- See https://github.com/kosmikus/LambdaHack/wiki/Item-statistics.
+-- See <https://github.com/kosmikus/LambdaHack/wiki/Item-statistics>.
 speedFromWeight :: Int -> Int -> Speed
 speedFromWeight weight bonus =
   let w = fromIntegral weight
@@ -135,10 +134,10 @@ speedFromWeight weight bonus =
   in Speed $ max 0 $ mpMs * (100 + b) `div` 100
 
 -- | Calculate maximum range in meters of a projectile from its speed.
--- See https://github.com/kosmikus/LambdaHack/wiki/Item-statistics.
+-- See <https://github.com/kosmikus/LambdaHack/wiki/Item-statistics>.
 -- With this formula, each projectile flies for exactly one second,
 -- that is 2 turns, and then drops to the ground.
 -- Dividing and multiplying by 2 ensures both turns of flight
--- result in the same distance traveled.
+-- cover the same distance.
 rangeFromSpeed :: Speed -> Int
 rangeFromSpeed (Speed v) = fromIntegral $ 2 * (v `div` (sInMs * 2))

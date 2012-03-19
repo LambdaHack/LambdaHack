@@ -50,12 +50,15 @@ instance Binary Report where
   put (Report x) = put x
   get = fmap Report get
 
+-- | Empty set of messages.
 emptyReport :: Report
 emptyReport = Report []
 
+-- | Test if the set of messages is empty.
 nullReport :: Report -> Bool
 nullReport (Report l) = null l
 
+-- | Construct a singleton set of messages.
 singletonReport :: Msg -> Report
 singletonReport m = addMsg emptyReport m
 
@@ -74,6 +77,7 @@ splitReport r =
   let w = fst normalLevelBound + 1
   in splitString w $ renderReport r
 
+-- | Render a report as a (possibly very long) string.
 renderReport ::Report  -> String
 renderReport (Report []) = ""
 renderReport (Report [xn]) = renderRepetition xn
@@ -110,15 +114,19 @@ instance Binary History where
   put (History x) = put x
   get = fmap History get
 
+-- | Empty history of reports.
 emptyHistory :: History
 emptyHistory = History []
 
+-- | Construct a singleton history of reports.
 singletonHistory :: Report -> History
 singletonHistory r = addReport r emptyHistory
 
+-- | Render history as many lines of text, wrapping if necessary.
 renderHistory :: History -> Overlay
 renderHistory (History h) = L.concatMap splitReport h
 
+-- | Add a report to history, handling repetitions.
 addReport :: Report -> History -> History
 addReport (Report []) h = h
 addReport m (History []) = History [m]
@@ -129,11 +137,15 @@ addReport (Report m) (History (Report h : hs)) =
       in History $ if null rs then hist else Report (reverse rs) : hist
     _ -> History $ Report m : Report h : hs
 
+-- | Take the given prefix of reports from a history.
 takeHistory :: Int -> History -> History
 takeHistory k (History h) = History $ take k h
 
+-- | A screenful of text lines. When displayed, they are trimmed, not wrapped
+-- and any lines below the lower screen edge are not visible.
 type Overlay = [String]
 
+-- | Split an overlay into overlays that fit on the screen.
 splitOverlay :: Y -> Overlay -> [Overlay]
 splitOverlay _ [] = []  -- nothing to print over the level area
 splitOverlay lysize ls | length ls <= lysize = [ls]  -- all fits on one screen

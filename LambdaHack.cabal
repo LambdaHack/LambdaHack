@@ -3,7 +3,7 @@ name:          LambdaHack
 version:       0.2.1
 license:       BSD3
 license-file:  LICENSE
-tested-with:   GHC == 7.2.2, GHC == 7.4
+tested-with:   GHC == 7.2.2, GHC == 7.4.1
 data-files:    LICENSE, CREDITS, PLAYING.md, README.md,
                config.default, config.bot, scores
 author:        Andres Loeh, Mikolaj Konarski
@@ -22,6 +22,9 @@ description:   This is an alpha release of LambdaHack,
                but the fundamental source of flexibility lies
                in the strict and type-safe separation of code and content.
                .
+               New in this release are missiles flying for three turns
+               (by an old kosmikus' idea), visual feedback when targeting
+               and combat and individual monster moves animations.
                Upcoming new features: improved squad combat, player action
                undo/redo, completely redesigned UI. Long term goals
                are focused around procedural content generation and include

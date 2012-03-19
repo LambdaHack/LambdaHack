@@ -29,7 +29,7 @@
 ; q: Apply { verb = "quaff", object = "potion", syms = "!" }
 ; r: Apply { verb = "read", object = "scroll", syms = "?" }
 ; z: Project { verb = "zap", object = "wand", syms = "/" }
-; t: Project { verb = "throw", object = "dart", syms = "|" }
+; t: Project { verb = "throw", object = "missile", syms = "|" }
 ; ;
 ; ; Saving or ending the game.
 ; X: GameSave
