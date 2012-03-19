@@ -201,8 +201,9 @@ strategy cops actor oldState@State{splayer = pl} per =
       let benefit =
             - (1 + jpower i) * Effect.effectToBenefit (ieffect ik),
       benefit > 0,
-      -- Wasting swords would be too cruel to the player.
-      isymbol ik /= ')']
+      -- Wasting weapons and armour would be too cruel to the player.
+      -- TODO: specify in content
+      isymbol ik `notElem` "/|\\([])"]
   towardsFreq = map (scaleFreq 30) $ runStrategy $ moveDir moveTowards
   moveTowards = onlySensible $ onlyNoMs (towardsFoe moveFreely)
   moveAround =
