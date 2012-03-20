@@ -485,15 +485,19 @@ saveGameFile state diary = liftIO $ Save.saveGameFile state diary
 dumpCfg :: FilePath -> Config.CP -> Action ()
 dumpCfg fn config = liftIO $ Config.dump fn config
 
--- TODO: extend the type of squit, similarly as the satus of HighScore
--- and depending on it do things here. Also, print the message
--- (e.g., about discovered item) in case it sheds light on the cause of death.
+-- TODO: print the message, if any,
+-- (e.g., about discovered item) in case it sheds some light
+-- on the cause of death.
 -- | End the game, shutting down the frontend.
-shutGame :: Action ()
-shutGame = do
-  diary <- getDiary
-  fs <- getFrontendSession
+shutGame :: H.Status -> Action ()
+shutGame status = do
   s <- get
+  diary <- getDiary
+  case status of
+    H.Camping -> do
+      saveGameFile s diary
+    _ -> return ()
+  fs <- getFrontendSession
   liftIO $ do
     Save.rmBkpSaveDiary s diary
     shutdown fs

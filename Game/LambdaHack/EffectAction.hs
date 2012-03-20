@@ -359,7 +359,7 @@ fleeDungeon = do
         displayOverAbort winMsg io
         handleScores True H.Victor total
         void $ displayMore ColorFull "Can it be done better, though?"
-  modify (\ s -> s {squit = True})
+  modify (\ s -> s {squit = Just H.Victor})
 
 -- | The source actor affects the target actor, with a given item.
 -- If the event is seen, the item may get identified.
@@ -495,15 +495,15 @@ checkPartyDeath = do
 -- | End game, showing the ending screens, if requested.
 gameOver :: Bool -> Action ()
 gameOver showEndingScreens = do
+  Kind.COps{coitem} <- getCOps
+  state <- get
+  slid  <- gets slid
+  let (_, total) = calculateTotal coitem state
+      status = H.Killed slid
   when showEndingScreens $ do
-    Kind.COps{coitem} <- getCOps
-    state <- get
-    slid  <- gets slid
-    let (_, total) = calculateTotal coitem state
-        status = H.Killed slid
     handleScores True status total
     void $ displayMore ColorFull "Let's hope another party can save the day!"
-  modify (\ s -> s {squit = True})
+  modify (\ s -> s {squit = Just status})
 
 -- | Handle current score and display it with the high scores.
 -- False if display of the scores was void or interrupted by the user.

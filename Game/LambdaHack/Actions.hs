@@ -47,14 +47,12 @@ saveGame = do
       -- Save the game state
       Kind.COps{coitem} <- getCOps
       state <- get
-      diary <- getDiary
-      saveGameFile state diary
       let (_, total) = calculateTotal coitem state
           status = H.Camping
       tryIgnore $ do
         handleScores False status total
         void $ displayMore ColorFull "See you soon, stronger and braver!"
-      modify (\ s -> s {squit = True})
+      modify (\ s -> s {squit = Just status})
     else abortWith "Game resumed."
 
 quitGame :: Action ()
@@ -65,7 +63,8 @@ quitGame = do
   if b
     then do
       saveGameBkp state diary -- save the diary
-      modify (\ s -> s {squit = True})  -- no highscore display for quitters
+      -- No highscore display for quitters.
+      modify (\ s -> s {squit = Just $ H.Killed $ Dungeon.levelDefault 0})
     else abortWith "Game resumed."
 
 moveCursor :: Vector -> Int -> ActionFrame ()

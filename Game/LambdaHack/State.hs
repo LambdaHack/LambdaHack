@@ -28,6 +28,7 @@ import Game.LambdaHack.Item
 import Game.LambdaHack.Msg
 import Game.LambdaHack.FOV
 import Game.LambdaHack.Time
+import qualified Game.LambdaHack.HighScore as H
 
 -- | The diary contains all the player data
 -- that carries over from game to game.
@@ -53,7 +54,7 @@ data State = State
   , srandom  :: R.StdGen     -- ^ current random generator
   , sconfig  :: Config.CP    -- ^ game config
   , snoTime  :: Bool         -- ^ last command unexpectedly took no time
-  , squit    :: Bool         -- ^ last command requested game shutdown
+  , squit    :: Maybe H.Status  -- ^ cause of the request of game shutdown
   , sdebug   :: DebugMode    -- ^ debugging mode
   }
   deriving Show
@@ -115,7 +116,7 @@ defaultState config flavour dng lid ploc g =
     g
     config
     False
-    False
+    Nothing
     defaultDebugMode
 
 defaultDebugMode :: DebugMode
@@ -192,7 +193,7 @@ instance Binary State where
     snoTime <- get
     return
       (State player cursor flav disco dng lid ct
-         (read g) config snoTime False defaultDebugMode)
+         (read g) config snoTime Nothing defaultDebugMode)
 
 instance Binary Cursor where
   put (Cursor act cln loc rln eps) = do

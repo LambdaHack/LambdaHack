@@ -28,6 +28,7 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.Draw
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Time
+import qualified Game.LambdaHack.HighScore as H
 
 -- One clip proceeds through the following functions:
 --
@@ -71,9 +72,13 @@ handleTurn = do
   handleActors timeZero
   modify (updateTime (timeAdd timeClip))
   squit <- gets squit
-  if squit
-    then shutGame
-    else handleTurn
+  case squit of
+    Nothing -> handleTurn
+    Just status@H.Camping -> do
+      pl <- gets splayer
+      advanceTime False pl  -- rewind player time: his action was only Save
+      shutGame status
+    Just status -> shutGame status
 
 -- TODO: We should replace this structure using a priority search queue/tree.
 -- | Perform moves for individual actors not controlled
@@ -101,10 +106,10 @@ handleActors subclipStart = do
                       then Nothing  -- no actor is ready for another move
                       else Just (actor, m)
   case mnext of
-    _ | squit -> return ()
+    _ | isJust squit -> return ()
     Nothing -> when (subclipStart == timeZero) $ displayFramePush Nothing
     Just (actor, m) -> do
-      advanceTime actor  -- advance time while the actor still alive
+      advanceTime True actor  -- advance time while the actor still alive
       if actor == pl || bparty m == heroParty
         then
           -- Player moves always start a new subclip.
@@ -214,13 +219,15 @@ playerCommand msgRunAbort = do
               return ()
   loop kmPush
 
--- | Advance the move time for the given actor.
-advanceTime :: ActorId -> Action ()
-advanceTime actor = do
+-- | Advance (or rewind) the move time for the given actor.
+advanceTime :: Bool -> ActorId -> Action ()
+advanceTime forward actor = do
   Kind.COps{coactor} <- getCOps
   let upd m@Actor{btime} =
         let speed = actorSpeed coactor m
-            delta = ticksPerMeter speed
+            ticks = ticksPerMeter speed
+            delta | forward   = ticks
+                  | otherwise = timeNegate ticks
         in m {btime = timeAdd btime delta}
   updateAnyActor actor upd
   -- A hack to synchronize the whole party:

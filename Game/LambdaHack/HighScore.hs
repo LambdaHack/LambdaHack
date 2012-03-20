@@ -38,7 +38,7 @@ data Status =
     Killed !LevelId  -- ^ the player lost the game on the given level
   | Camping          -- ^ game is supended
   | Victor           -- ^ the player won
-  deriving (Eq, Ord)
+  deriving (Show, Eq, Ord)
 
 instance Binary Status where
   put (Killed ln) = putWord8 0 >> put ln
