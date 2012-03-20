@@ -66,6 +66,8 @@ timedCmd cmd = case cmd of
   TriggerTile{} -> True
   Pickup        -> True
   Drop          -> True
+  GameSave      -> True
+  GameQuit      -> True
   Wait          -> True
   _             -> False
 

@@ -53,6 +53,7 @@ data State = State
   , srandom  :: R.StdGen     -- ^ current random generator
   , sconfig  :: Config.CP    -- ^ game config
   , snoTime  :: Bool         -- ^ last command unexpectedly took no time
+  , squit    :: Bool         -- ^ last command requested game shutdown
   , sdebug   :: DebugMode    -- ^ debugging mode
   }
   deriving Show
@@ -114,6 +115,7 @@ defaultState config flavour dng lid ploc g =
     g
     config
     False
+    False
     defaultDebugMode
 
 defaultDebugMode :: DebugMode
@@ -166,7 +168,7 @@ instance Binary Diary where
 
 instance Binary State where
   put (State player cursor flav disco dng lid ct
-         g config snoTime _) = do
+         g config snoTime _ _) = do
     put player
     put cursor
     put flav
@@ -190,7 +192,7 @@ instance Binary State where
     snoTime <- get
     return
       (State player cursor flav disco dng lid ct
-         (read g) config snoTime defaultDebugMode)
+         (read g) config snoTime False defaultDebugMode)
 
 instance Binary Cursor where
   put (Cursor act cln loc rln eps) = do

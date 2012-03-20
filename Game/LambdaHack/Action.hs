@@ -3,7 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses, RankNTypes #-}
 module Game.LambdaHack.Action
   ( -- * Actions and basic operations
-    ActionFun, Action, handlerToIO, end, rndToAction
+    ActionFun, Action, handlerToIO, rndToAction
     -- * Actions returning frames
   , ActionFrame, returnNoFrame, whenFrame, inFrame
     -- * Game session and its accessors
@@ -25,7 +25,8 @@ module Game.LambdaHack.Action
     -- * Assorted operations
   , getPerception, updateAnyActor, updatePlayerBody
     -- * Assorted primitives
-  , currentDate, registerHS, saveGameBkp, saveGameFile, dumpCfg, debug
+  , currentDate, registerHS, saveGameBkp, saveGameFile, dumpCfg, shutGame
+  , debug
   ) where
 
 import Control.Monad
@@ -61,7 +62,6 @@ import Game.LambdaHack.Point
 -- (Separated from the @Action@ type to document each argument with haddock.)
 type ActionFun r a =
    Session                           -- ^ session setup data
-   -> (State -> Diary -> IO r)       -- ^ shutdown continuation
    -> DungeonPerception              -- ^ cached perception
    -> (State -> Diary -> a -> IO r)  -- ^ continuation
    -> (Msg -> IO r)                  -- ^ failure/reset continuation
@@ -84,49 +84,43 @@ instance Monad Action where
   (>>=)  = bindAction
 
 instance Functor Action where
-  fmap f (Action g) = Action (\ s e p k a st ms ->
+  fmap f (Action g) = Action (\ s p k a st ms ->
                                let k' st' ms' = k st' ms' . f
-                               in g s e p k' a st ms)
+                               in g s p k' a st ms)
 
 instance MonadState State Action where
-  get     = Action (\ _s _e _p k _a  st ms -> k st  ms st)
-  put nst = Action (\ _s _e _p k _a _st ms -> k nst ms ())
+  get     = Action (\ _s _p k _a  st ms -> k st  ms st)
+  put nst = Action (\ _s _p k _a _st ms -> k nst ms ())
 
 -- | Invokes the action continuation on the provided argument.
 returnAction :: a -> Action a
-returnAction x = Action (\ _s _e _p k _a st m -> k st m x)
+returnAction x = Action (\ _s _p k _a st m -> k st m x)
 
 -- | Distributes the session and shutdown continuation,
 -- threads the state and diary.
 bindAction :: Action a -> (a -> Action b) -> Action b
-bindAction m f = Action (\ s e p k a st ms ->
+bindAction m f = Action (\ s p k a st ms ->
                           let next nst nm x =
-                                runAction (f x) s e p k a nst nm
-                          in runAction m s e p next a st ms)
+                                runAction (f x) s p k a nst nm
+                          in runAction m s p next a st ms)
 
 -- Instance commented out and action hiden, so that outside of this module
 -- nobody can subvert Action by invoking arbitrary IO.
 --   instance MonadIO Action where
 liftIO :: IO a -> Action a
-liftIO x = Action (\ _s _e _p k _a st ms -> x >>= k st ms)
+liftIO x = Action (\ _s _p k _a st ms -> x >>= k st ms)
 
 -- | Run an action, with a given session, state and diary, in the @IO@ monad.
 handlerToIO :: Session -> State -> Diary -> Action () -> IO ()
-handlerToIO sess@Session{sfs, scops} state diary h =
+handlerToIO sess@Session{scops} state diary h =
   runAction h
     sess
-    (\ ns ndiary -> Save.rmBkpSaveDiary ns ndiary
-                 >> shutdown sfs)    -- get out of the game
     (dungeonPerception scops state)  -- create and cache perception
     (\ _ _ x -> return x)    -- final continuation returns result
     (\ msg ->
       ioError $ userError $ "unhandled abort  " ++ msg)  -- e.g., in AI code
     state
     diary
-
--- | End the game, i.e., invoke the shutdown continuation.
-end :: Action a
-end = Action (\ _s e _p _k _a s diary -> e s diary)
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: Rnd a -> Action a
@@ -162,15 +156,15 @@ data Session = Session
 
 -- | Get the frontend session.
 getFrontendSession :: Action FrontendSession
-getFrontendSession = Action (\ Session{sfs} _e _p k _a st ms -> k st ms sfs)
+getFrontendSession = Action (\ Session{sfs} _p k _a st ms -> k st ms sfs)
 
 -- | Get the content operations.
 getCOps :: Action Kind.COps
-getCOps = Action (\ Session{scops} _e _p k _a st ms -> k st ms scops)
+getCOps = Action (\ Session{scops} _p k _a st ms -> k st ms scops)
 
 -- | Get the key binding.
 getBinding :: Action (Binding (ActionFrame ()))
-getBinding = Action (\ Session{skeyb} _e _p k _a st ms -> k st ms skeyb)
+getBinding = Action (\ Session{skeyb} _p k _a st ms -> k st ms skeyb)
 
 -- | Reset the state and resume from the last backup point, i.e., invoke
 -- the failure continuation.
@@ -179,7 +173,7 @@ abort = abortWith ""
 
 -- | Abort with the given message.
 abortWith :: Msg -> Action a
-abortWith msg = Action (\ _s _e _p _k a _st _ms -> a msg)
+abortWith msg = Action (\ _s _p _k a _st _ms -> a msg)
 
 -- | Abort and print the given msg if the condition is true.
 abortIfWith :: Bool -> Msg -> Action a
@@ -193,9 +187,9 @@ neverMind b = abortIfWith b "never mind"
 -- | Set the current exception handler. First argument is the handler,
 -- second is the computation the handler scopes over.
 tryWith :: (Msg -> Action a) -> Action a -> Action a
-tryWith exc h = Action (\ s e p k a st ms ->
-                         let runA msg = runAction (exc msg) s e p k a st ms
-                         in runAction h s e p k runA st ms)
+tryWith exc h = Action (\ s p k a st ms ->
+                         let runA msg = runAction (exc msg) s p k a st ms
+                         in runAction h s p k runA st ms)
 
 -- | Set the current exception handler. Apart of executing it,
 -- draw and pass along a frame with the abort message, if any.
@@ -235,21 +229,21 @@ tryIgnoreFrame =
 
 -- | Get the current diary.
 getDiary :: Action Diary
-getDiary = Action (\ _s _e _p k _a st diary -> k st diary diary)
+getDiary = Action (\ _s _p k _a st diary -> k st diary diary)
 
 -- | Add a message to the current report.
 msgAdd :: Msg -> Action ()
-msgAdd nm = Action (\ _s _e _p k _a st ms ->
+msgAdd nm = Action (\ _s _p k _a st ms ->
                      k st ms{sreport = addMsg (sreport ms) nm} ())
 
 -- | Wipe out and set a new value for the history.
 historyReset :: History -> Action ()
-historyReset shistory = Action (\ _s _e _p k _a st Diary{sreport} ->
+historyReset shistory = Action (\ _s _p k _a st Diary{sreport} ->
                                  k st Diary{..} ())
 
 -- | Wipe out and set a new value for the current report.
 msgReset :: Msg -> Action ()
-msgReset nm = Action (\ _s _e _p k _a st ms ->
+msgReset nm = Action (\ _s _p k _a st ms ->
                        k st ms{sreport = singletonReport nm} ())
 
 -- | Store current report in the history and reset report.
@@ -444,12 +438,12 @@ rememberList vis = do
 -- | Update the cached perception for the given computation.
 withPerception :: Action () -> Action ()
 withPerception h =
-  Action (\ sess@Session{scops} e _ k a st ms ->
-           runAction h sess e (dungeonPerception scops st) k a st ms)
+  Action (\ sess@Session{scops} _ k a st ms ->
+           runAction h sess (dungeonPerception scops st) k a st ms)
 
 -- | Get the current perception.
 getPerception :: Action Perception
-getPerception = Action (\ _s _e per k _a s ms ->
+getPerception = Action (\ _s per k _a s ms ->
                          k s ms (fromJust $ L.lookup (slid s) per))
 
 -- | Update actor stats. Works for actors on other levels, too.
@@ -490,6 +484,19 @@ saveGameFile state diary = liftIO $ Save.saveGameFile state diary
 -- See 'Config.dump'.
 dumpCfg :: FilePath -> Config.CP -> Action ()
 dumpCfg fn config = liftIO $ Config.dump fn config
+
+-- TODO: extend the type of squit, similarly as the satus of HighScore
+-- and depending on it do things here. Also, print the message
+-- (e.g., about discovered item) in case it sheds light on the cause of death.
+-- | End the game, shutting down the frontend.
+shutGame :: Action ()
+shutGame = do
+  diary <- getDiary
+  fs <- getFrontendSession
+  s <- get
+  liftIO $ do
+    Save.rmBkpSaveDiary s diary
+    shutdown fs
 
 -- | Debugging.
 debug :: String -> Action ()

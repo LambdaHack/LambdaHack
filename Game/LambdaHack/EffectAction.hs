@@ -351,7 +351,6 @@ fleeDungeon = do
       go2 <- displayMore ColorFull
               "Next time try to grab some loot before escape!"
       when (not go2) $ abortWith "Here's your chance!"
-      end
     else do
       let winMsg = "Congratulations, you won! Your loot, worth " ++
                    show total ++ " gold, is:"  -- TODO: use the name of the '$' item instead
@@ -360,7 +359,7 @@ fleeDungeon = do
         displayOverAbort winMsg io
         handleScores True H.Victor total
         void $ displayMore ColorFull "Can it be done better, though?"
-      end
+  modify (\ s -> s {squit = True})
 
 -- | The source actor affects the target actor, with a given item.
 -- If the event is seen, the item may get identified.
@@ -494,7 +493,7 @@ checkPartyDeath = do
                -- At this place the invariant is restored again.
 
 -- | End game, showing the ending screens, if requested.
-gameOver :: Bool -> Action a
+gameOver :: Bool -> Action ()
 gameOver showEndingScreens = do
   when showEndingScreens $ do
     Kind.COps{coitem} <- getCOps
@@ -504,7 +503,7 @@ gameOver showEndingScreens = do
         status = H.Killed slid
     handleScores True status total
     void $ displayMore ColorFull "Let's hope another party can save the day!"
-  end
+  modify (\ s -> s {squit = True})
 
 -- | Handle current score and display it with the high scores.
 -- False if display of the scores was void or interrupted by the user.

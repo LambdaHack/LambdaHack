@@ -54,7 +54,7 @@ saveGame = do
       tryIgnore $ do
         handleScores False status total
         void $ displayMore ColorFull "See you soon, stronger and braver!"
-      end
+      modify (\ s -> s {squit = True})
     else abortWith "Game resumed."
 
 quitGame :: Action ()
@@ -65,7 +65,7 @@ quitGame = do
   if b
     then do
       saveGameBkp state diary -- save the diary
-      end -- no highscore display for quitters
+      modify (\ s -> s {squit = True})  -- no highscore display for quitters
     else abortWith "Game resumed."
 
 moveCursor :: Vector -> Int -> ActionFrame ()

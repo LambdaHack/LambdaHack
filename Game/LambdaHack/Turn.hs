@@ -70,7 +70,10 @@ handleTurn = do
           ++ show ptime ++ ", time = " ++ show time
   handleActors timeZero
   modify (updateTime (timeAdd timeClip))
-  handleTurn
+  squit <- gets squit
+  if squit
+    then shutGame
+    else handleTurn
 
 -- TODO: We should replace this structure using a priority search queue/tree.
 -- | Perform moves for individual actors not controlled
@@ -87,6 +90,7 @@ handleActors subclipStart = do
   time <- gets stime  -- the end time of this clip, inclusive
   lactor <- gets (lactor . slevel)
   pl <- gets splayer
+  squit <- gets squit
   let as = IM.toAscList lactor  -- older actors act first
       mnext = if null as  -- wait until any actor spawned
               then Nothing
@@ -97,6 +101,7 @@ handleActors subclipStart = do
                       then Nothing  -- no actor is ready for another move
                       else Just (actor, m)
   case mnext of
+    _ | squit -> return ()
     Nothing -> when (subclipStart == timeZero) $ displayFramePush Nothing
     Just (actor, m) -> do
       advanceTime actor  -- advance time while the actor still alive
