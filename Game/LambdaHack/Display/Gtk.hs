@@ -208,6 +208,10 @@ setTo tb defaultAttr lx (ly, attr:attrs) = do
 
 -- TODO: configure
 -- | Maximal frames per second.
+-- This is better low and fixed, to avoid jerkiness and delays
+-- that tell the player there are many intelligent enemies on the level.
+-- That's better than scaling AI sofistication down based on the FPS setting
+-- and machine speed.
 maxFps :: Int
 maxFps = 15
 

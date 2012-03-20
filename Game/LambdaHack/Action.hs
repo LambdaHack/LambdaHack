@@ -37,6 +37,8 @@ import qualified Data.Map as M
 import qualified Data.List as L
 import System.Time
 import Data.Maybe
+import Control.Concurrent
+import Control.Exception (finally)
 -- import System.IO (hPutStrLn, stderr) -- just for debugging
 
 import Game.LambdaHack.Utils.Assert
@@ -506,11 +508,13 @@ shutGame (showEndingScreens, status) = do
   let (_, total) = calculateTotal coitem s
   case status of
     H.Camping -> do
-      -- TODO: save an display in parallel
+      -- Save an display in parallel.
+      mv <- liftIO newEmptyMVar
+      liftIO $ void $ forkIO (Save.saveGameFile s `finally` putMVar mv ())
       tryIgnore $ do
         handleScores False status total
         void $ displayMore ColorFull "See you soon, stronger and braver!"
-      liftIO $ Save.saveGameFile s
+      liftIO $ takeMVar mv  -- wait until saved
     H.Killed _ | showEndingScreens->
       tryIgnore $ do
         handleScores True status total
