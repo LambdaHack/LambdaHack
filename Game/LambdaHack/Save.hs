@@ -32,12 +32,11 @@ saveDiary state diary = do
   dfile <- diaryFile (sconfig state)
   encodeEOF dfile diary
 
--- | Save a simple serialized version of the current state and diary.
-saveGameFile :: State -> Diary -> IO ()
-saveGameFile state diary = do
+-- | Save a simple serialized version of the current state.
+saveGameFile :: State -> IO ()
+saveGameFile state = do
   sfile <- saveFile (sconfig state)
   encodeEOF sfile state
-  saveDiary state diary  -- save the diary often in case of crashes
 
 -- | Try to create a directory. Hide errors due to,
 -- e.g., insufficient permissions, because the game can run
@@ -117,7 +116,8 @@ mvBkp config = do
 -- | Save the diary and a backup of the save game file, in case of crashes.
 saveGameBkp :: State -> Diary -> IO ()
 saveGameBkp state diary = do
-  saveGameFile state diary
+  saveDiary state diary  -- save the diary often in case of crashes
+  saveGameFile state
   mvBkp (sconfig state)
 
 -- | Remove the backup of the savegame and save the player diary.

@@ -36,35 +36,22 @@ import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Random
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Binding
-import Game.LambdaHack.Draw
 import Game.LambdaHack.Time
 
 saveGame :: Action ()
 saveGame = do
   b <- displayYesNo "Really save?"
   if b
-    then do
-      -- Save the game state
-      Kind.COps{coitem} <- getCOps
-      state <- get
-      let (_, total) = calculateTotal coitem state
-          status = H.Camping
-      tryIgnore $ do
-        handleScores False status total
-        void $ displayMore ColorFull "See you soon, stronger and braver!"
-      modify (\ s -> s {squit = Just status})
+    then modify (\ s -> s {squit = Just (True, H.Camping)})
     else abortWith "Game resumed."
 
 quitGame :: Action ()
 quitGame = do
   b <- displayYesNo "Really quit?"
-  state <- get
-  diary <- getDiary
   if b
-    then do
-      saveGameBkp state diary -- save the diary
-      -- No highscore display for quitters.
-      modify (\ s -> s {squit = Just $ H.Killed $ Dungeon.levelDefault 0})
+    then let status = H.Killed $ Dungeon.levelDefault 0
+         -- No highscore display for quitters.
+         in modify (\ s -> s {squit = Just (False, status)})
     else abortWith "Game resumed."
 
 moveCursor :: Vector -> Int -> ActionFrame ()

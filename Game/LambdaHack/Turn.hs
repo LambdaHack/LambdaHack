@@ -74,7 +74,7 @@ handleTurn = do
   squit <- gets squit
   case squit of
     Nothing -> handleTurn
-    Just status@H.Camping -> do
+    Just status@(_, H.Camping) -> do
       pl <- gets splayer
       advanceTime False pl  -- rewind player time: his action was only Save
       shutGame status

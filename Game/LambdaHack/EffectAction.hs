@@ -339,27 +339,24 @@ switchLevel nln = do
 fleeDungeon :: Action ()
 fleeDungeon = do
   Kind.COps{coitem} <- getCOps
-  state <- get
-  diary <- getDiary
-  saveGameBkp state diary -- save the diary
-  let (items, total) = calculateTotal coitem state
+  s <- get
+  let (items, total) = calculateTotal coitem s
+  modify (\ st -> st {squit = Just (False, H.Victor)})
   if total == 0
-    then do
-      -- The player can back off at each of these steps.
-      go1 <- displayMore ColorFull "Coward!"
-      when (not go1) $ abortWith "Brave soul!"
-      go2 <- displayMore ColorFull
-              "Next time try to grab some loot before escape!"
-      when (not go2) $ abortWith "Here's your chance!"
-    else do
-      let winMsg = "Congratulations, you won! Your loot, worth " ++
-                   show total ++ " gold, is:"  -- TODO: use the name of the '$' item instead
-      io <- itemOverlay True items
-      tryIgnore $ do
-        displayOverAbort winMsg io
-        handleScores True H.Victor total
-        void $ displayMore ColorFull "Can it be done better, though?"
-  modify (\ s -> s {squit = Just H.Victor})
+  then do
+     -- The player can back off at each of these steps.
+     go1 <- displayMore ColorFull "Coward!"
+     when (not go1) $ abortWith "Brave soul!"
+     go2 <- displayMore ColorFull
+             "Next time try to grab some loot before escape!"
+     when (not go2) $ abortWith "Here's your chance!"
+  else do
+    let winMsg = "Congratulations, you won! Your loot, worth " ++
+                 show total ++ " gold, is:"  -- TODO: use the name of the '$' item instead
+    io <- itemOverlay True items
+    tryIgnore $ do
+       displayOverAbort winMsg io
+       modify (\ st -> st {squit = Just (True, H.Victor)})
 
 -- | The source actor affects the target actor, with a given item.
 -- If the event is seen, the item may get identified.
@@ -495,34 +492,8 @@ checkPartyDeath = do
 -- | End game, showing the ending screens, if requested.
 gameOver :: Bool -> Action ()
 gameOver showEndingScreens = do
-  Kind.COps{coitem} <- getCOps
-  state <- get
-  slid  <- gets slid
-  let (_, total) = calculateTotal coitem state
-      status = H.Killed slid
-  when showEndingScreens $ do
-    handleScores True status total
-    void $ displayMore ColorFull "Let's hope another party can save the day!"
-  modify (\ s -> s {squit = Just status})
-
--- | Handle current score and display it with the high scores.
--- False if display of the scores was void or interrupted by the user.
---
--- Warning: scores are shown during the game,
--- so we should be careful not to leak secret information through them
--- (e.g., the nature of the items through the total worth of inventory).
-handleScores :: Bool -> H.Status -> Int -> Action ()
-handleScores write status total =
-  when (total /= 0) $ do
-    config  <- gets sconfig
-    time    <- gets stime
-    curDate <- currentDate
-    let points = case status of
-                   H.Killed _ -> (total + 1) `div` 2
-                   _ -> total
-    let score = H.ScoreRecord points (timeNegate time) curDate status
-    (placeMsg, slideshow) <- registerHS config write score
-    displayOverAbort placeMsg slideshow
+  slid <- gets slid
+  modify (\ s -> s {squit = Just (showEndingScreens, H.Killed slid)})
 
 -- | Create a list of item names, split into many overlays.
 itemOverlay ::Bool -> [Item] -> Action [Overlay]

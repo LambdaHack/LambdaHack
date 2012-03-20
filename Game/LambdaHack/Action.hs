@@ -25,7 +25,7 @@ module Game.LambdaHack.Action
     -- * Assorted operations
   , getPerception, updateAnyActor, updatePlayerBody
     -- * Assorted primitives
-  , currentDate, registerHS, saveGameBkp, saveGameFile, dumpCfg, shutGame
+  , currentDate, saveGameBkp, dumpCfg, shutGame
   , debug
   ) where
 
@@ -57,6 +57,7 @@ import qualified Game.LambdaHack.HighScore as H
 import qualified Game.LambdaHack.Config as Config
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Point
+import Game.LambdaHack.Time
 
 -- | The type of the function inside any action.
 -- (Separated from the @Action@ type to document each argument with haddock.)
@@ -460,24 +461,11 @@ updatePlayerBody f = do
 currentDate :: Action ClockTime
 currentDate = liftIO getClockTime
 
--- | Take care of saving a new score to the table
--- and return a list of messages to display.
---
--- See 'H.register'.
-registerHS :: Config.CP -> Bool -> H.ScoreRecord -> Action (String, [Overlay])
-registerHS config write s = liftIO $ H.register config write s
-
 -- | Save the diary and a backup of the save game file, in case of crashes.
 --
 -- See 'Save.saveGameBkp'.
 saveGameBkp :: State -> Diary -> Action ()
 saveGameBkp state diary = liftIO $ Save.saveGameBkp state diary
-
--- | Save a simple serialized version of the current state and diary.
---
--- See 'Save.saveGameFile'.
-saveGameFile :: State -> Diary -> Action ()
-saveGameFile state diary = liftIO $ Save.saveGameFile state diary
 
 -- | Dumps the current configuration to a file.
 --
@@ -485,21 +473,57 @@ saveGameFile state diary = liftIO $ Save.saveGameFile state diary
 dumpCfg :: FilePath -> Config.CP -> Action ()
 dumpCfg fn config = liftIO $ Config.dump fn config
 
+-- | Handle current score and display it with the high scores.
+-- False if display of the scores was void or interrupted by the user.
+--
+-- Warning: scores are shown during the game,
+-- so we should be careful not to leak secret information through them
+-- (e.g., the nature of the items through the total worth of inventory).
+handleScores :: Bool -> H.Status -> Int -> Action ()
+handleScores write status total =
+  when (total /= 0) $ do
+    config  <- gets sconfig
+    time    <- gets stime
+    curDate <- currentDate
+    let points = case status of
+                   H.Killed _ -> (total + 1) `div` 2
+                   _ -> total
+    let score = H.ScoreRecord points (timeNegate time) curDate status
+    (placeMsg, slideshow) <- liftIO $ H.register config write score
+    displayOverAbort placeMsg slideshow
+
 -- TODO: print the message, if any,
 -- (e.g., about discovered item) in case it sheds some light
 -- on the cause of death.
--- | End the game, shutting down the frontend.
-shutGame :: H.Status -> Action ()
-shutGame status = do
+-- | End the game, shutting down the frontend. The boolean argument
+-- tells if ending screens should be shown, the other arguments describes
+-- the cause of shutdown.
+shutGame :: (Bool, H.Status) -> Action ()
+shutGame (showEndingScreens, status) = do
+  Kind.COps{coitem} <- getCOps
   s <- get
   diary <- getDiary
+  let (_, total) = calculateTotal coitem s
   case status of
     H.Camping -> do
-      saveGameFile s diary
+      -- TODO: save an display in parallel
+      tryIgnore $ do
+        handleScores False status total
+        void $ displayMore ColorFull "See you soon, stronger and braver!"
+      liftIO $ Save.saveGameFile s
+    H.Killed _ | showEndingScreens->
+      tryIgnore $ do
+        handleScores True status total
+        void $ displayMore ColorFull
+          "Let's hope another party can save the day!"
+    H.Victor | showEndingScreens -> do
+      tryIgnore $ do
+        handleScores True status total
+        void $ displayMore ColorFull "Can it be done better, though?"
     _ -> return ()
   fs <- getFrontendSession
   liftIO $ do
-    Save.rmBkpSaveDiary s diary
+    Save.rmBkpSaveDiary s diary  -- save the diary often in case of crashes
     shutdown fs
 
 -- | Debugging.

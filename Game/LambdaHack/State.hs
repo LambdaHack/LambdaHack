@@ -54,7 +54,7 @@ data State = State
   , srandom  :: R.StdGen     -- ^ current random generator
   , sconfig  :: Config.CP    -- ^ game config
   , snoTime  :: Bool         -- ^ last command unexpectedly took no time
-  , squit    :: Maybe H.Status  -- ^ cause of the request of game shutdown
+  , squit    :: Maybe (Bool, H.Status)  -- ^ cause of game shutdown
   , sdebug   :: DebugMode    -- ^ debugging mode
   }
   deriving Show
