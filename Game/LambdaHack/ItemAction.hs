@@ -240,9 +240,12 @@ setCursor tgtMode = assert (tgtMode /= TgtOff) $ do
 
 -- | Tweak the @eps@ parameter of the targeting digital line.
 epsIncr :: Bool -> Action ()
-epsIncr b =
-  modify $ updateCursor $
-    \ c@Cursor{ceps} -> c {ceps = ceps + if b then 1 else -1}
+epsIncr b = do
+  targeting <- gets (ctargeting . scursor)
+  if targeting /= TgtOff
+    then modify $ updateCursor $
+           \ c@Cursor{ceps} -> c {ceps = ceps + if b then 1 else -1}
+    else neverMind True  -- no visual feedback, so no sense
 
 -- | End targeting mode, accepting the current location or not.
 endTargeting :: Bool -> Action ()
