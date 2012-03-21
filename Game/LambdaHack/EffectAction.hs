@@ -61,7 +61,7 @@ effectToAction effect verbosity source target power = do
   (b, msg) <- eff effect verbosity source target power
   s <- get
   -- If the target killed outright by the effect (e.g., in a recursive call),
-  -- there's nothing left to do. TODO: hacky
+  -- there's nothing left to do. TODO: hacky; aren't messages lost?
   if not (memActor target s)
    then return (b, False)
    else do
@@ -225,7 +225,10 @@ eff Effect.Ascend _ source target power = do
     else effLvlGoUp (power + 1)
   -- TODO: The following message too late if a monster squashed by going up,
   -- unless it's ironic. ;) The same below.
-  return (True, actorVerbExtra coactor tm "find" "a way upstairs")
+  s2 <- get
+  return $ if maybe H.Camping snd (squit s2) == H.Victor
+    then (True, "")
+    else (True, actorVerbExtra coactor tm "find" "a way upstairs")
 eff Effect.Descend _ source target power = do
   tm <- gets (getActor target)
   s  <- get
@@ -234,7 +237,10 @@ eff Effect.Descend _ source target power = do
   if not $ isAHero s target
     then squashActor source target
     else effLvlGoUp (- (power + 1))
-  return (True, actorVerbExtra coactor tm "find" "a way downstairs")
+  s2 <- get
+  return $ if maybe H.Camping snd (squit s2) == H.Victor
+    then (True, "")
+    else (True, actorVerbExtra coactor tm "find" "a way downstairs")
 
 nullEffect :: Action (Bool, String)
 nullEffect = return (False, "Nothing happens.")
@@ -266,11 +272,7 @@ effLvlGoUp k = do
   cops      <- getCOps
   lvl <- gets slevel
   case whereTo st k of
-    Nothing -> do -- we are at the "end" of the dungeon
-      b <- displayYesNo "Really escape the dungeon?"
-      if b
-        then fleeDungeon
-        else abortWith "Game resumed."
+    Nothing -> fleeDungeon -- we are at the "end" of the dungeon
     Just (nln, nloc) ->
       assert (nln /= slid `blame` (nln, "stairs looped")) $ do
         bitems <- gets getPlayerItem
@@ -340,6 +342,9 @@ fleeDungeon :: Action ()
 fleeDungeon = do
   Kind.COps{coitem} <- getCOps
   s <- get
+  go <- displayYesNo "This is the way out. Really leave now?"
+  recordHistory  -- Prevent repeating the ending msgs.
+  when (not go) $ abortWith "Game resumed."
   let (items, total) = calculateTotal coitem s
   modify (\ st -> st {squit = Just (False, H.Victor)})
   if total == 0

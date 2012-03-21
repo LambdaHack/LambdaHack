@@ -494,9 +494,6 @@ handleScores write status total =
     (placeMsg, slideshow) <- liftIO $ H.register config write score
     displayOverAbort placeMsg slideshow
 
--- TODO: print the message, if any,
--- (e.g., about discovered item) in case it sheds some light
--- on the cause of death.
 -- | End the game, shutting down the frontend. The boolean argument
 -- tells if ending screens should be shown, the other arguments describes
 -- the cause of shutdown.
@@ -515,12 +512,22 @@ shutGame (showEndingScreens, status) = do
         handleScores False status total
         void $ displayMore ColorFull "See you soon, stronger and braver!"
       liftIO $ takeMVar mv  -- wait until saved
-    H.Killed _ | showEndingScreens->
+    H.Killed _ | showEndingScreens -> do
+      Diary{sreport} <- getDiary
+      unless (nullReport sreport) $ do
+        -- Sisplay any leftover report. Suggest it could be the cause of death.
+        void $ displayMore ColorFull "Who would have thought?"
+        recordHistory  -- prevent repeating the report
       tryIgnore $ do
         handleScores True status total
         void $ displayMore ColorFull
           "Let's hope another party can save the day!"
     H.Victor | showEndingScreens -> do
+      Diary{sreport} <- getDiary
+      unless (nullReport sreport) $ do
+        -- Sisplay any leftover report. Suggest it could be the master move.
+        void $ displayMore ColorFull "Brilliant, isn't it?"
+        recordHistory  -- prevent repeating the report
       tryIgnore $ do
         handleScores True status total
         void $ displayMore ColorFull "Can it be done better, though?"
