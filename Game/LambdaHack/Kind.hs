@@ -2,7 +2,7 @@
 {-# LANGUAGE RankNTypes, ScopedTypeVariables, TypeFamilies #-}
 module Game.LambdaHack.Kind
   ( -- * General content types
-    Id, Speedup(..), Ops(..), COps(..), createOps
+    Id, Speedup(..), Ops(..), COps(..), createOps, stdRuleset
     -- * Arrays of content identifiers
   , Array, (!), (//), listArray, array, bounds
   ) where
@@ -105,6 +105,10 @@ data COps = COps
   , corule  :: !(Ops RuleKind)
   , cotile  :: !(Ops TileKind)
   }
+
+-- | The standard ruleset used for level operations.
+stdRuleset :: Ops RuleKind -> RuleKind
+stdRuleset Ops{ouniqGroup, okind} = okind $ ouniqGroup "standard"
 
 instance Show COps where
   show _ = "Game content."

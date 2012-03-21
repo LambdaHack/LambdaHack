@@ -25,6 +25,7 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
 import Game.LambdaHack.ItemAction
 import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Effect as Effect
 import qualified Game.LambdaHack.Tile as Tile
@@ -71,6 +72,7 @@ strategy cops actor oldState@State{splayer = pl} per =
   Kind.COps{ cotile
            , coactor=coactor@Kind.Ops{okind}
            , coitem=coitem@Kind.Ops{okind=iokind}
+           , corule
            } = cops
   lvl@Level{lsmell, lxsize, lysize, ltime} = slevel oldState
   actorBody@Actor { bkind = ak, bloc = me, bdir = ad, btarget, bhp } =
@@ -203,7 +205,7 @@ strategy cops actor oldState@State{splayer = pl} per =
       benefit > 0,
       -- Wasting weapons and armour would be too cruel to the player.
       -- TODO: specify in content
-      isymbol ik `notElem` "/|\\([])"]
+      isymbol ik `elem` (ritemProject $ Kind.stdRuleset corule)]
   towardsFreq = map (scaleFreq 30) $ runStrategy $ moveDir moveTowards
   moveTowards = onlySensible $ onlyNoMs (towardsFoe moveFreely)
   moveAround =

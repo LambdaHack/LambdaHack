@@ -8,7 +8,7 @@ module Game.LambdaHack.Level
   , updateSmell, updateIMap, updateLMap, updateLRMap, dropItemsAt
     -- * Level query
   , at, rememberAt, atI, rememberAtI
-  , stdRuleset, accessible, openable, findLoc, findLocTry
+  , accessible, openable, findLoc, findLocTry
   ) where
 
 import Data.Binary
@@ -140,16 +140,12 @@ atI, rememberAtI :: Level -> Point -> [Item]
 atI         Level{litem} p = fst $ IM.findWithDefault ([], []) p litem
 rememberAtI Level{litem} p = snd $ IM.findWithDefault ([], []) p litem
 
--- | The standard ruleset used for level operations.
-stdRuleset :: Kind.Ops RuleKind -> RuleKind
-stdRuleset Kind.Ops{ouniqGroup, okind} = okind $ ouniqGroup "standard"
-
 -- | Check whether one location is accessible from another,
 -- using the formula from the standard ruleset.
 accessible :: Kind.COps -> Level -> Point -> Point -> Bool
 accessible Kind.COps{ cotile=Kind.Ops{okind=okind}, corule}
            lvl@Level{lxsize} sloc tloc =
-  let check = raccessible $ stdRuleset corule
+  let check = raccessible $ Kind.stdRuleset corule
       src = okind $ lvl `at` sloc
       tgt = okind $ lvl `at` tloc
   in check lxsize sloc src tloc tgt

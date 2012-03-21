@@ -560,7 +560,7 @@ doLook = do
 gameVersion :: Action ()
 gameVersion = do
   Kind.COps{corule} <- getCOps
-  let pathsVersion = rpathsVersion $ stdRuleset corule
+  let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
       msg = "Version " ++ showVersion pathsVersion
             ++ " (frontend: " ++ frontendName
             ++ ", engine: LambdaHack " ++ showVersion Self.version ++ ")"

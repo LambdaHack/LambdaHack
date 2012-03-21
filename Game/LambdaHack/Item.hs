@@ -32,6 +32,7 @@ import Control.Monad
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Random
 import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Flavour
 import qualified Game.LambdaHack.Kind as Kind
@@ -239,9 +240,10 @@ strongestSearch Kind.Ops{okind} bitems =
   strongestItem bitems $ \ i -> (ieffect $ okind $ jkind i) == Searching
 
 -- TODO: generalise, in particular take base damage into account
-strongestSword :: Kind.Ops ItemKind -> [Item] -> Maybe Item
-strongestSword Kind.Ops{osymbol} bitems =
-  strongestItem bitems $ \ i -> (osymbol $ jkind i) == ')'
+strongestSword :: Kind.COps -> [Item] -> Maybe Item
+strongestSword Kind.COps{coitem=Kind.Ops{osymbol}, corule} bitems =
+  strongestItem bitems $ \ i -> (osymbol $ jkind i)
+                                `elem` (ritemMelee $ Kind.stdRuleset corule)
 
 strongestRegen :: Kind.Ops ItemKind -> [Item] -> Maybe Item
 strongestRegen Kind.Ops{okind} bitems =

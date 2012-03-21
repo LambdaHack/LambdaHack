@@ -16,7 +16,6 @@ import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Tile
-import Game.LambdaHack.Level
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Msg
 
@@ -47,8 +46,8 @@ speedupCops sess@Session{scops = cops@Kind.COps{cotile=tile}} =
 start :: Config.CP -> Session -> IO ()
 start config1 slowSess = do
   let sess@Session{scops = cops@Kind.COps{corule}} = speedupCops slowSess
-      title = rtitle $ stdRuleset corule
-      pathsDataFile = rpathsDataFile $ stdRuleset corule
+      title = rtitle $ Kind.stdRuleset corule
+      pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
   restored <- Save.restoreGame pathsDataFile config1 title
   case restored of
     Right (msg, diary) -> do  -- Starting a new game.

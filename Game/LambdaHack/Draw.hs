@@ -69,7 +69,7 @@ draw dm cops per s@State{ scursor=Cursor{..}
                                       else Color.defBG
                else \ _vis _rea -> Color.defBG
       (_, wealth)  = calculateTotal coitem s
-      damage  = case Item.strongestSword coitem bitems of
+      damage  = case Item.strongestSword cops bitems of
                   Just sw -> case ieffect $ iokind $ Item.jkind sw of
                     Wound dice -> show dice ++ "+" ++ show (Item.jpower sw)
                     _ -> show (Item.jpower sw)

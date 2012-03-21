@@ -348,7 +348,7 @@ actorAttackActor source target = do
       -- Mark that unexpectedly it does not take time.
       modify (\ s -> s {snoTime = True})
     else do
-      Kind.COps{coactor, coitem=coitem@Kind.Ops{opick, okind}} <- getCOps
+      cops@Kind.COps{coactor, coitem=coitem@Kind.Ops{opick, okind}} <- getCOps
       state <- get
       per   <- getPerception
       bitems <- gets (getActorItem source)
@@ -359,7 +359,7 @@ actorAttackActor source target = do
           h2h = if bhp sm == 0 && not (L.null bitems)
                 then head bitems  -- TODO: hack for projectiles
                 else Item h2hKind 0 Nothing 1
-          str = strongestSword coitem bitems
+          str = strongestSword cops bitems
           stack = fromMaybe h2h str
           single = stack { jcount = 1 }
           (verbosity, verb) =
