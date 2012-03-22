@@ -77,19 +77,15 @@ effectToAction effect verbosity source target power = do
         isAHero s target ||
         pl == source ||
         pl == target ||
-        (tloc `IS.member` totalVisible per &&
-         sloc `IS.member` totalVisible per)
+        -- Target part of message shown below, so target visibility checked.
+        tloc `IS.member` totalVisible per
      then do
       -- Party sees the effect or is affected by it.
       msgAdd msg
       -- Try to show an animation.
-      lxsize <- gets (lxsize . slevel)
       cops <- getCOps
-      Diary{sreport} <- getDiary
-      let over = renderReport sreport
-          topLineOnly = padMsg lxsize over
-          basicFrame = draw ColorFull cops per s [topLineOnly]
-          locs = tloc : if tloc == sloc then [] else [sloc]
+      diary <- getDiary
+      let locs = tloc : if tloc == sloc then [] else [sloc]
           twirlSplash c1 c2 = map (IM.fromList . zip locs)
             [ [Color.AttrChar (Color.Attr Color.BrWhite Color.defBG) '*']
             , [Color.AttrChar (Color.Attr c1 Color.defBG) '/',
@@ -109,10 +105,10 @@ effectToAction effect verbosity source target power = do
                Color.AttrChar (Color.Attr Color.BrWhite Color.defBG) '^']
             , []
             ]
-          anim  | newHP >  oldHP = twirlSplash Color.BrBlue Color.Blue
-                | newHP <  oldHP = twirlSplash Color.BrRed  Color.Red
-                | otherwise      = []
-          animFrs = animate s basicFrame anim
+          anim  | newHP > oldHP = twirlSplash Color.BrBlue Color.Blue
+                | newHP < oldHP = twirlSplash Color.BrRed  Color.Red
+                | otherwise     = []
+          animFrs = animate s diary cops per anim
       mapM_ displayFramePush $ Nothing : animFrs
       return (b, True)
      else do

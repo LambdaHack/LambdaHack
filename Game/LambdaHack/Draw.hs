@@ -148,10 +148,20 @@ draw dm cops per s@State{ scursor=Cursor{..}
       sfBottom = toWidth lxsize status
   in Color.SingleFrame{..}
 
--- | Render animations on top of a screen frame.
-animate :: State -> Color.SingleFrame -> Color.Animation
+-- | Render animations on top of the current screen frame.
+animate :: State -> Diary -> Kind.COps -> Perception -> Color.Animation
         -> [Maybe Color.SingleFrame]
-animate s basicFrame anim =
+animate s Diary{sreport} cops per anim =
+  let xsize = lxsize $ slevel s
+      over = renderReport sreport
+      topLineOnly = padMsg xsize over
+      basicFrame = draw ColorFull cops per s [topLineOnly]
+  in rederAnim s basicFrame anim
+
+-- | Render animations on top of a screen frame.
+rederAnim :: State -> Color.SingleFrame -> Color.Animation
+          -> [Maybe Color.SingleFrame]
+rederAnim s basicFrame anim =
   let Level{lxsize, lysize} = slevel s
       modifyFrame Color.SingleFrame{sfLevel = levelOld, ..} am =
         let fLine y lineOld =
