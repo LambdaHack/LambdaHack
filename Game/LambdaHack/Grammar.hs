@@ -7,8 +7,7 @@ module Game.LambdaHack.Grammar
     -- * Objects from content
   , objectItem, objectActor, capActor
     -- * Sentences
-  , actorVerb, actorVerbExtra, actorVerbItemExtra
-  , actorVerbActorExtra, actorVerbExtraItemExtra
+  , actorVerb, actorVerbItem, actorVerbActor, actorVerbExtraItem
     -- * Scenery description
   , lookAt
   ) where
@@ -18,6 +17,7 @@ import qualified Data.Set as S
 import qualified Data.List as L
 import Data.Maybe
 
+import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Point
 import Game.LambdaHack.Item
 import Game.LambdaHack.Actor
@@ -105,38 +105,42 @@ objectActor Kind.Ops{oname} a =
 capActor :: Kind.Ops ActorKind -> Actor -> Object
 capActor coactor x = capitalize $ objectActor coactor x
 
--- | Sentences such as \"Dog barks.\"
-actorVerb :: Kind.Ops ActorKind -> Actor -> Verb -> String
-actorVerb coactor a v =
+-- | Sentences such as \"Dog barks loudly.\"
+actorVerb :: Kind.Ops ActorKind -> Actor -> Verb  -> String-> String
+actorVerb coactor a v extra =
   let cactor = capActor coactor a
       verb = conjugate cactor v
-  in cactor ++ " " ++ verb ++ "."
-
--- | Sentences such as \"Dog barks loudly.\"
-actorVerbExtra :: Kind.Ops ActorKind -> Actor -> Verb  -> String-> String
-actorVerbExtra coactor a v extra =
-  L.init (actorVerb coactor a v) ++ " " ++ extra ++ "."
+      ending | null extra = "."
+             | otherwise  = " " ++ extra ++ "."
+  in cactor ++ " " ++ verb ++ ending
 
 -- | Sentences such as \"Dog quaffs a red potion fast.\"
-actorVerbItemExtra :: Kind.COps -> State -> Actor -> Verb -> Item -> String
+actorVerbItem :: Kind.COps -> State -> Actor -> Verb -> Item -> String
                    -> String
-actorVerbItemExtra Kind.COps{coactor, coitem} state a v i extra =
-  actorVerbExtra coactor a v $
-    objectItem coitem state i ++ extra
+actorVerbItem Kind.COps{coactor, coitem} state a v i extra =
+  let ending | null extra = ""
+             | otherwise  = " " ++ extra
+  in actorVerb coactor a v $
+       objectItem coitem state i ++ ending
 
 -- | Sentences such as \"Dog bites goblin furiously.\"
-actorVerbActorExtra :: Kind.Ops ActorKind -> Actor -> Verb -> Actor -> String
+actorVerbActor :: Kind.Ops ActorKind -> Actor -> Verb -> Actor -> String
                     -> String
-actorVerbActorExtra coactor a v b extra =
-  actorVerbExtra coactor a v $
-    objectActor coactor b ++ extra
+actorVerbActor coactor a v b extra =
+  let ending | null extra = ""
+             | otherwise  = " " ++ extra
+  in actorVerb coactor a v $
+       objectActor coactor b ++ ending
 
 -- | Sentences such as \"Dog gulps down a red potion fast.\"
-actorVerbExtraItemExtra :: Kind.COps -> State -> Actor -> Verb -> String
+actorVerbExtraItem :: Kind.COps -> State -> Actor -> Verb -> String
                         -> Item -> String -> String
-actorVerbExtraItemExtra Kind.COps{coactor, coitem} state a v extra1 i extra2 =
-  actorVerbExtra coactor a v $
-    extra1 ++ " " ++ objectItem coitem state i ++ extra2
+actorVerbExtraItem Kind.COps{coactor, coitem} state a v extra1 i extra2 =
+  assert (not $ null extra1) $
+  let ending | null extra2 = ""
+             | otherwise   = " " ++ extra2
+  in actorVerb coactor a v $
+       extra1 ++ " " ++ objectItem coitem state i ++ ending
 
 -- | Produces a textual description of the terrain and items at an already
 -- explored location. Mute for unknown locations.

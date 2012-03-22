@@ -64,7 +64,7 @@ applyGroupItem actor verb item = do
   per   <- getPerception
   -- only one item consumed, even if several in inventory
   let consumed = item { jcount = 1 }
-      msg = actorVerbItemExtra cops state body verb consumed ""
+      msg = actorVerbItem cops state body verb consumed ""
       loc = bloc body
   removeFromInventory actor consumed loc
   when (loc `IS.member` totalVisible per) $ msgAdd msg
@@ -106,7 +106,7 @@ projectGroupItem source tloc _verb item = do
       -- When projecting, the first turn is spent aiming.
       -- The projectile is seen one tile from the actor, giving a hint
       -- about the aim and letting the target evade.
-      msg = actorVerbItemExtra cops state subject "aim" consumed ""
+      msg = actorVerbItem cops state subject "aim" consumed ""
       -- TODO: AI should choose the best eps.
       eps = if source == pl then ceps else 0
       -- Setting monster's projectiles time to player time ensures
@@ -292,7 +292,7 @@ endTargetingMsg = do
                     TLoc loc -> "location " ++ showPoint lxsize loc
                     TPath _ -> "a path"
                     TCursor  -> "current cursor position continuously"
-  msgAdd $ actorVerbExtra coactor pbody verb targetMsg
+  msgAdd $ actorVerb coactor pbody verb targetMsg
 
 -- | Cancel something, e.g., targeting mode, resetting the cursor
 -- to the position of the player. Chosen target is not invalidated.
@@ -325,7 +325,7 @@ dropItem = do
   stack <- getAnyItem "What to drop?" ims "in inventory"
   let item = stack { jcount = 1 }
   removeOnlyFromInventory pl item (bloc pbody)
-  msgAdd (actorVerbItemExtra cops state pbody "drop" item "")
+  msgAdd (actorVerbItem cops state pbody "drop" item "")
   modify (updateLevel (dropItemsAt [item] ploc))
 
 -- TODO: this is a hack for dropItem, because removeFromInventory
@@ -389,7 +389,7 @@ actorPickupItem actor = do
                          ++ objectItem coitem state ni)
             else when perceived $
                    msgAdd $
-                   actorVerbExtraItemExtra cops state body "pick" "up" i ""
+                   actorVerbExtraItem cops state body "pick" "up" i ""
           removeFromLoc i loc
             >>= assert `trueM` (i, is, loc, "item is stuck")
           -- add item to actor's inventory:

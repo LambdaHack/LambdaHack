@@ -370,9 +370,9 @@ actorAttackActor source target = do
           -- TODO: right now it also describes the victim and weapon;
           -- perhaps, when a weapon is equipped, just say "you hit"
           -- or "you miss" and then "nose dies" or "nose yells in pain".
-          msg = actorVerbActorExtra coactor sm verb tm $
+          msg = actorVerbActor coactor sm verb tm $
                   if isJust str
-                  then " with " ++ objectItem coitem state single
+                  then "with " ++ objectItem coitem state single
                   else ""
           visible = sloc `IS.member` totalVisible per
       when visible $ msgAdd msg
@@ -383,15 +383,23 @@ actorAttackActor source target = do
 -- This involves switching positions of the two actors.
 actorRunActor :: ActorId -> ActorId -> Action ()
 actorRunActor source target = do
-  s    <- get
-  pl   <- gets splayer
-  sloc <- gets (bloc . getActor source)  -- source location
-  tloc <- gets (bloc . getActor target)  -- target location
+  pl <- gets splayer
+  sm <- gets (getActor source)
+  tm <- gets (getActor target)
+  let sloc = bloc sm
+      tloc = bloc tm
   updateAnyActor source $ \ m -> m { bloc = tloc }
   updateAnyActor target $ \ m -> m { bloc = sloc }
   if source == pl
     then stopRunning  -- do not switch positions repeatedly
-    else when (not $ isAHero s source) $ void $ focusIfOurs target
+    else do
+      Kind.COps{coactor} <- getCOps
+      per <- getPerception
+      let visible = sloc `IS.member` totalVisible per ||
+                    tloc `IS.member` totalVisible per
+          msg = actorVerbActor coactor sm "displace" tm ""
+      when visible $ msgAdd msg
+      void $ focusIfOurs target
 
 -- | Create a new monster in the level, at a random position.
 rollMonster :: Kind.COps -> Perception -> State -> Rnd State

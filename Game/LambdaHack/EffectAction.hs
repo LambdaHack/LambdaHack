@@ -148,7 +148,7 @@ eff Effect.Heal _ _source target power = do
     else do
       void $ focusIfOurs target
       updateAnyActor target (addHp coactor power)
-      return (True, actorVerbExtra coactor tm "feel" "better")
+      return (True, actorVerb coactor tm "feel" "better")
 eff (Effect.Wound nDm) verbosity source target power = do
   Kind.COps{coactor} <- getCOps
   n  <- rndToAction $ rollDice nDm
@@ -164,15 +164,15 @@ eff (Effect.Wound nDm) verbosity source target power = do
             else -- Not as important, so let the player read the message
                  -- about monster death while he watches the combat animation.
               if bhp tm == 0
-              then actorVerbExtra coactor tm "drop" "down"  -- TODO: hack:
-              else actorVerb coactor tm "die"  -- for projectiles
+              then actorVerb coactor tm "drop" "down"  -- TODO: hack:
+              else actorVerb coactor tm "die" "" -- for projectiles
           | source == target =  -- a potion of wounding, etc.
-            actorVerbExtra coactor tm "feel" "wounded"
+            actorVerb coactor tm "feel" "wounded"
           | verbosity <= 0 = ""
           | target == pl =
-            actorVerbExtra coactor tm "lose" $
+            actorVerb coactor tm "lose" $
               show (n + power) ++ "HP"
-          | otherwise = actorVerbExtra coactor tm "hiss" "in pain"
+          | otherwise = actorVerb coactor tm "hiss" "in pain"
     updateAnyActor target $ \ m -> m { bhp = newHP }  -- Damage the target.
     return (True, msg)
 eff Effect.Dominate _ source target _power = do
@@ -237,7 +237,7 @@ eff Effect.Ascend _ source target power = do
   s2 <- get
   return $ if maybe H.Camping snd (squit s2) == H.Victor
     then (True, "")
-    else (True, actorVerbExtra coactor tm "find" "a way upstairs")
+    else (True, actorVerb coactor tm "find" "a way upstairs")
 eff Effect.Descend _ source target power = do
   tm <- gets (getActor target)
   s  <- get
@@ -249,7 +249,7 @@ eff Effect.Descend _ source target power = do
   s2 <- get
   return $ if maybe H.Camping snd (squit s2) == H.Victor
     then (True, "")
-    else (True, actorVerbExtra coactor tm "find" "a way downstairs")
+    else (True, actorVerb coactor tm "find" "a way downstairs")
 
 nullEffect :: Action (Bool, String)
 nullEffect = return (False, "Nothing happens.")
@@ -264,7 +264,7 @@ squashActor source target = do
       power = maxDeep $ ipower $ okind h2hKind
       h2h = Item h2hKind power Nothing 1
       verb = iverbApply $ okind h2hKind
-      msg = actorVerbActorExtra coactor sm verb tm " in a staircase accident"
+      msg = actorVerbActor coactor sm verb tm "in a staircase accident"
   msgAdd msg
   itemEffectAction 0 source target h2h
   s <- get
@@ -480,7 +480,7 @@ checkPartyDeath = do
   pbody  <- gets getPlayerBody
   config <- gets sconfig
   when (bhp pbody <= 0) $ do
-    msgAdd $ actorVerb coactor pbody "die"
+    msgAdd $ actorVerb coactor pbody "die" ""
     go <- displayMore ColorBW ""
     recordHistory  -- Prevent repeating the "die" msgs.
     let firstDeathEnds = Config.get config "heroes" "firstDeathEnds"
@@ -543,7 +543,7 @@ doLook = do
         monsterMsg =
           if canSee
           then case L.find (\ m -> bloc m == loc) (IM.elems hms) of
-                 Just m  -> actorVerbExtra coactor m "be" "here" ++ " "
+                 Just m  -> actorVerb coactor m "be" "here" ++ " "
                  Nothing -> ""
           else ""
         vis | not $ loc `IS.member` totalVisible per =
