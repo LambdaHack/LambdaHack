@@ -386,7 +386,7 @@ actorPickupItem actor = do
           -- msg depends on who picks up and if a hero can perceive it
           if isPlayer
             then msgAdd (letterLabel (jletter ni)
-                         ++ objectItem coitem state ni)
+                         ++ objectItem coitem state ni ++ ".")
             else when perceived $
                    msgAdd $
                    actorVerbExtraItem cops state body "pick" "up" i ""
