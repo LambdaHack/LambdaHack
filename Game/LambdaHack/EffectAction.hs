@@ -363,7 +363,7 @@ fleeDungeon = do
   else do
     let winMsg = "Congratulations, you won! Your loot, worth " ++
                  show total ++ " gold, is:"  -- TODO: use the name of the '$' item instead
-    io <- itemOverlay True items
+    io <- itemOverlay True True items
     tryIgnore $ do
        displayOverAbort winMsg io
        modify (\ st -> st {squit = Just (True, H.Victor)})
@@ -506,13 +506,13 @@ gameOver showEndingScreens = do
   modify (\ s -> s {squit = Just (showEndingScreens, H.Killed slid)})
 
 -- | Create a list of item names, split into many overlays.
-itemOverlay ::Bool -> [Item] -> Action [Overlay]
-itemOverlay sorted is = do
+itemOverlay ::Bool -> Bool -> [Item] -> Action [Overlay]
+itemOverlay sorted cheat is = do
   Kind.COps{coitem} <- getCOps
   state <- get
   lysize <- gets (lysize . slevel)
   let inv = L.map (\ i -> letterLabel (jletter i)
-                          ++ objectItem coitem state i ++ " ")
+                          ++ objectItemCheat coitem cheat state i ++ " ")
               ((if sorted
                 then L.sortBy (cmpLetterMaybe `on` jletter)
                 else id) is)
@@ -555,7 +555,7 @@ doLook = do
         lookMsg = mode ++ lookAt cops True canSee state lvl loc monsterMsg
         -- check if there's something lying around at current loc
         is = lvl `rememberAtI` loc
-    io <- itemOverlay False is
+    io <- itemOverlay False False is
     if length is > 2
       then displayOverlays lookMsg io
       else do

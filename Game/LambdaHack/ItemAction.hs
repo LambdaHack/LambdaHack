@@ -35,7 +35,7 @@ inventory = do
   if L.null items
     then abortWith "Not carrying anything."
     else do
-      io <- itemOverlay True items
+      io <- itemOverlay True False items
       displayOverlays "Carrying:" io
 
 -- | Let the player choose any item with a given group name.
@@ -474,7 +474,7 @@ getItem prompt p ptext is0 isn = do
               INone     -> (isp, [], prompt ++ " ")
               ISuitable -> (isp, isp, ptext ++ " " ++ isn ++ ". ")
               IAll      -> (is0, is0, allObjectsName ++ " " ++ isn ++ ". ")
-        io <- itemOverlay True imsOver
+        io <- itemOverlay True False imsOver
         (command, modifier) <-
           displayChoiceUI (msg ++ choice ims) io (keys ims)
         assert (modifier == K.NoModifier) $

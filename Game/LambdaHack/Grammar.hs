@@ -5,7 +5,7 @@ module Game.LambdaHack.Grammar
     -- * General operations
   , capitalize, suffixS, addIndefinite
     -- * Objects from content
-  , objectItem, objectActor, capActor
+  , objectItemCheat, objectItem, objectActor, capActor
     -- * Sentences
   , actorVerb, actorVerbItem, actorVerbActor, actorVerbExtraItem
     -- * Scenery description
@@ -81,8 +81,10 @@ makeObject n f obj = show n ++ " " ++ f (suffixS obj)
 -- TODO: when there's more of the above, split and move to Utils/
 
 -- | How to refer to an item in object position of a sentence.
-objectItem :: Kind.Ops ItemKind -> State -> Item -> Object
-objectItem coitem@Kind.Ops{okind} state i =
+-- If cheating is allowed, full identity of the object is revealed
+-- together with its flavour (e.g. at game over screen).
+objectItemCheat :: Kind.Ops ItemKind -> Bool -> State -> Item -> Object
+objectItemCheat coitem@Kind.Ops{okind} cheat state i =
   let ik = jkind i
       kind = okind ik
       identified = L.length (iflavour kind) == 1 ||
@@ -90,11 +92,20 @@ objectItem coitem@Kind.Ops{okind} state i =
       addSpace s = if s == "" then "" else " " ++ s
       eff = effectToSuffix (ieffect kind)
       pwr = if jpower i == 0 then "" else "(+" ++ show (jpower i) ++ ")"
-      adj name = if identified
-                 then name ++ addSpace eff ++ addSpace pwr
-                 else let flavour = getFlavour coitem (sflavour state) ik
-                      in flavourToName flavour ++ " " ++ name
+      adj name =
+        let known = name ++ addSpace eff ++ addSpace pwr
+            flavour = getFlavour coitem (sflavour state) ik
+            obscured = flavourToName flavour ++ " " ++ name
+        in if identified
+           then known
+           else if cheat
+                then flavourToName flavour ++ " " ++ known
+                else obscured
   in makeObject (jcount i) adj (iname kind)
+
+-- | How to refer to an item in object position of a sentence.
+objectItem :: Kind.Ops ItemKind -> State -> Item -> Object
+objectItem coitem = objectItemCheat coitem False
 
 -- | How to refer to an actor in object position of a sentence.
 objectActor :: Kind.Ops ActorKind -> Actor -> Object
