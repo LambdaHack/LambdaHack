@@ -37,6 +37,8 @@ import Game.LambdaHack.Random
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Binding
 import Game.LambdaHack.Time
+import qualified Game.LambdaHack.Color as Color
+import Game.LambdaHack.Draw
 
 saveGame :: Action ()
 saveGame = do
@@ -390,16 +392,30 @@ actorRunActor source target = do
       tloc = bloc tm
   updateAnyActor source $ \ m -> m { bloc = tloc }
   updateAnyActor target $ \ m -> m { bloc = sloc }
+  cops@Kind.COps{coactor} <- getCOps
+  per <- getPerception
+  let visible = sloc `IS.member` totalVisible per ||
+                tloc `IS.member` totalVisible per
+      msg = actorVerbActor coactor sm "displace" tm ""
+  when visible $ msgAdd msg
+  diary <- getDiary  -- here diary possibly contains the new msg
+  s <- get
+  let locs = [tloc, sloc]
+      anim = map (IM.fromList . zip locs)
+        [ [Color.AttrChar (Color.Attr Color.BrMagenta Color.defBG) '.',
+           Color.AttrChar (Color.Attr Color.Magenta Color.defBG) 'o']
+        , [Color.AttrChar (Color.Attr Color.BrMagenta Color.defBG) 'd',
+           Color.AttrChar (Color.Attr Color.Magenta Color.defBG) 'p']
+        , [Color.AttrChar (Color.Attr Color.Magenta Color.defBG) 'p',
+           Color.AttrChar (Color.Attr Color.BrMagenta Color.defBG) 'd']
+        , [Color.AttrChar (Color.Attr Color.Magenta Color.defBG) 'o']
+        , []
+        ]
+      animFrs = animate s diary cops per anim
+  when visible $ mapM_ displayFramePush $ Nothing : animFrs
   if source == pl
-    then stopRunning  -- do not switch positions repeatedly
-    else do
-      Kind.COps{coactor} <- getCOps
-      per <- getPerception
-      let visible = sloc `IS.member` totalVisible per ||
-                    tloc `IS.member` totalVisible per
-          msg = actorVerbActor coactor sm "displace" tm ""
-      when visible $ msgAdd msg
-      void $ focusIfOurs target
+   then stopRunning  -- do not switch positions repeatedly
+   else void $ focusIfOurs target
 
 -- | Create a new monster in the level, at a random position.
 rollMonster :: Kind.COps -> Perception -> State -> Rnd State
