@@ -354,19 +354,19 @@ fleeDungeon = do
   modify (\ st -> st {squit = Just (False, H.Victor)})
   if total == 0
   then do
-     -- The player can back off at each of these steps.
-     go1 <- displayMore ColorFull "Coward!"
-     when (not go1) $ abortWith "Brave soul!"
-     go2 <- displayMore ColorFull
-             "Next time try to grab some loot before escape!"
-     when (not go2) $ abortWith "Here's your chance!"
+    -- The player can back off at each of these steps.
+    go1 <- displayMore ColorFull "Coward!"
+    when (not go1) $ abortWith "Brave soul!"
+    go2 <- displayMore ColorFull
+            "Next time try to grab some loot before escape!"
+    when (not go2) $ abortWith "Here's your chance!"
   else do
     let winMsg = "Congratulations, you won! Your loot, worth " ++
                  show total ++ " gold, is:"  -- TODO: use the name of the '$' item instead
     io <- itemOverlay True True items
     tryIgnore $ do
-       displayOverAbort winMsg io
-       modify (\ st -> st {squit = Just (True, H.Victor)})
+      displayOverAbort winMsg io
+      modify (\ st -> st {squit = Just (True, H.Victor)})
 
 -- | The source actor affects the target actor, with a given item.
 -- If the event is seen, the item may get identified.
@@ -503,7 +503,36 @@ checkPartyDeath = do
 gameOver :: Bool -> Action ()
 gameOver showEndingScreens = do
   slid <- gets slid
-  modify (\ s -> s {squit = Just (showEndingScreens, H.Killed slid)})
+  modify (\ st -> st {squit = Just (False, H.Killed slid)})
+  when showEndingScreens $ do
+    Kind.COps{coitem} <- getCOps
+    s <- get
+    dng <- gets sdungeon
+    time <- gets stime
+    let (items, total) = calculateTotal coitem s
+        deepest = Dungeon.levelNumber slid  -- use deepest visited instead of level of death
+        depth = Dungeon.depth dng
+        failMsg | timeFit time timeTurn < 300 =
+          "That song shall be short."
+                | total < 100 =
+          "Born poor, dies poor."
+                | deepest < 4 && total < 500 =
+          "This should end differently."
+                | deepest < depth - 1 =
+          "This defeat brings no dishonour."
+                | deepest < depth =
+          "That is your name. 'Almost'."
+                | otherwise =
+          "Dead heroes make better legends."
+        loseMsg = failMsg ++ " Killing you nets " ++
+                  show total ++ " gold and some rubbish:"  -- TODO: use the name of the '$' item instead
+    if null items
+      then modify (\ st -> st {squit = Just (True, H.Killed slid)})
+      else do
+        io <- itemOverlay True True items
+        tryIgnore $ do
+          displayOverAbort loseMsg io
+          modify (\ st -> st {squit = Just (True, H.Killed slid)})
 
 -- | Create a list of item names, split into many overlays.
 itemOverlay ::Bool -> Bool -> [Item] -> Action [Overlay]

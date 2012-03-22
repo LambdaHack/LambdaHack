@@ -526,7 +526,7 @@ shutGame (showEndingScreens, status) = do
       Diary{sreport} <- getDiary
       unless (nullReport sreport) $ do
         -- Sisplay any leftover report. Suggest it could be the master move.
-        void $ displayMore ColorFull "Brilliant, isn't it?"
+        void $ displayMore ColorFull "Brilliant, wasn't it?"
         recordHistory  -- prevent repeating the report
       tryIgnore $ do
         handleScores True status total
