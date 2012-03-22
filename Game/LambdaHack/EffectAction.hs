@@ -70,6 +70,7 @@ effectToAction effect verbosity source target power = do
     per <- getPerception
     pl  <- gets splayer
     let tloc = bloc tm
+        sloc = bloc sm
         newHP = bhp $ getActor target s
     bb <-
      if isAHero s source ||
@@ -77,7 +78,7 @@ effectToAction effect verbosity source target power = do
         pl == source ||
         pl == target ||
         (tloc `IS.member` totalVisible per &&
-         bloc sm `IS.member` totalVisible per)
+         sloc `IS.member` totalVisible per)
      then do
       -- Party sees the effect or is affected by it.
       msgAdd msg
@@ -88,23 +89,31 @@ effectToAction effect verbosity source target power = do
       let over = renderReport sreport
           topLineOnly = padMsg lxsize over
           basicFrame = draw ColorFull cops per s [topLineOnly]
-          twirlSplash c1 c2 = map (IM.singleton tloc)
-            [ Color.AttrChar (Color.Attr Color.BrWhite Color.defBG) '*'
-            , Color.AttrChar (Color.Attr c1 Color.defBG) '/'
-            , Color.AttrChar (Color.Attr c1 Color.defBG) '-'
-            , Color.AttrChar (Color.Attr c1 Color.defBG) '\\'
-            , Color.AttrChar (Color.Attr c1 Color.defBG) '|'
-            , Color.AttrChar (Color.Attr c1 Color.defBG) '/'
-            , Color.AttrChar (Color.Attr c1 Color.defBG) '-'
-            , Color.AttrChar (Color.Attr c2 Color.defBG) '\\'
-            , Color.AttrChar (Color.Attr c2 Color.defBG) '%'
-            , Color.AttrChar (Color.Attr c2 Color.defBG) '%'
+          locs = tloc : if tloc == sloc then [] else [sloc]
+          twirlSplash c1 c2 = map (IM.fromList . zip locs)
+            [ [Color.AttrChar (Color.Attr Color.BrWhite Color.defBG) '*']
+            , [Color.AttrChar (Color.Attr c1 Color.defBG) '/',
+               Color.AttrChar (Color.Attr Color.BrWhite Color.defBG) '^']
+            , [Color.AttrChar (Color.Attr c1 Color.defBG) '-',
+               Color.AttrChar (Color.Attr Color.BrWhite Color.defBG) '^']
+            , [Color.AttrChar (Color.Attr c1 Color.defBG) '\\',
+               Color.AttrChar (Color.Attr Color.BrWhite Color.defBG) '^']
+            , [Color.AttrChar (Color.Attr c1 Color.defBG) '|']
+            , [Color.AttrChar (Color.Attr c1 Color.defBG) '/']
+            , [Color.AttrChar (Color.Attr c1 Color.defBG) '-']
+            , [Color.AttrChar (Color.Attr c2 Color.defBG) '\\',
+               Color.AttrChar (Color.Attr Color.BrWhite Color.defBG) '^']
+            , [Color.AttrChar (Color.Attr c2 Color.defBG) '%',
+               Color.AttrChar (Color.Attr Color.BrWhite Color.defBG) '^']
+            , [Color.AttrChar (Color.Attr c2 Color.defBG) '%',
+               Color.AttrChar (Color.Attr Color.BrWhite Color.defBG) '^']
+            , []
             ]
           anim  | newHP >  oldHP = twirlSplash Color.BrBlue Color.Blue
                 | newHP <  oldHP = twirlSplash Color.BrRed  Color.Red
                 | otherwise      = []
           animFrs = animate s basicFrame anim
-      mapM_ displayFramePush animFrs
+      mapM_ displayFramePush $ Nothing : animFrs
       return (b, True)
      else do
       -- Hidden, but if interesting then heard.
@@ -115,7 +124,7 @@ effectToAction effect verbosity source target power = do
     when (newHP <= 0) $ do
       -- Place the actor's possessions on the map.
       bitems <- gets (getActorItem target)
-      modify (updateLevel (dropItemsAt bitems (bloc tm)))
+      modify (updateLevel (dropItemsAt bitems tloc))
       -- Clean bodies up.
       if target == pl
         then  -- Kill the player and check game over.
