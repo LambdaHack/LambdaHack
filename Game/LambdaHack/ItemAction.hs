@@ -142,7 +142,8 @@ playerProjectGroupItem verb object syms = do
   ms     <- gets hostileList
   lxsize <- gets (lxsize . slevel)
   ploc   <- gets (bloc . getPlayerBody)
-  if L.any (adjacent lxsize ploc) $ L.map bloc $ L.filter ((> 0) . bhp) ms
+  if L.any (adjacent lxsize ploc) $ L.map bloc $
+       L.filter (\ m -> bparty m `notElem` allProjectiles) ms
     then abortWith "You can't aim in melee."
     else playerProjectGI verb object syms
 

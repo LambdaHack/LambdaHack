@@ -152,16 +152,16 @@ eff (Effect.Wound nDm) verbosity source target power = do
     void $ focusIfOurs target
     pl <- gets splayer
     tm <- gets (getActor target)
-    let newHP  = bhp tm - n - power
+    let newHP = bhp tm - n - power
         msg
           | newHP <= 0 =
             if target == pl
             then ""  -- Handled later on in checkPartyDeath. Suspense.
             else -- Not as important, so let the player read the message
                  -- about monster death while he watches the combat animation.
-              if bhp tm == 0
-              then actorVerb coactor tm "drop" "down"  -- TODO: hack:
-              else actorVerb coactor tm "die" "" -- for projectiles
+              if bparty tm `elem` allProjectiles
+              then actorVerb coactor tm "drop" "down"
+              else actorVerb coactor tm "die" ""
           | source == target =  -- a potion of wounding, etc.
             actorVerb coactor tm "feel" "wounded"
           | verbosity <= 0 = ""
@@ -384,7 +384,7 @@ itemEffectAction verbosity source target item = do
   -- Destroys attacking actor and its items: a hack for projectiles.
   slidNew <- gets slid
   modify (\ s -> s {slid = slidOld})
-  when (bhp sm <= 0) $
+  when (bparty sm `elem` allProjectiles) $
     modify (deleteActor source)
   modify (\ s -> s {slid = slidNew})
 

@@ -75,7 +75,7 @@ strategy cops actor oldState@State{splayer = pl} per =
            , corule
            } = cops
   lvl@Level{lsmell, lxsize, lysize, ltime} = slevel oldState
-  actorBody@Actor { bkind = ak, bloc = me, bdir = ad, btarget, bhp } =
+  actorBody@Actor{ bkind = ak, bloc = me, bdir = ad, btarget, bparty } =
     getActor actor oldState
   bitems = getActorItem actor oldState
   mk = okind ak
@@ -167,7 +167,7 @@ strategy cops actor oldState@State{splayer = pl} per =
          .| lootHere me .=> actionPickup
          .| moveDir moveTowards  -- go to last known foe location
          .| attackDir moveAround
-  dieOrSleep | bhp <= 0  = dieNow actor
+  dieOrSleep | bparty `elem` allProjectiles = dieNow actor
              | otherwise = wait
   actionPickup = return $ actorPickupItem actor
   tis = lvl `atI` me

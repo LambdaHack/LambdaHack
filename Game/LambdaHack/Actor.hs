@@ -5,7 +5,7 @@ module Game.LambdaHack.Actor
     ActorId, findHeroName, monsterGenChance
     -- * Party identifiers
   , PartyId, heroParty, enemyParty, animalParty
-  , heroProjectiles, enemyProjectiles, animalProjectiles
+  , heroProjectiles, enemyProjectiles, animalProjectiles, allProjectiles
     -- * The@ Acto@r type
   , Actor(..), template, addHp, unoccupied, heroKindId
   , projectileKindId, actorSpeed
@@ -43,6 +43,10 @@ animalParty = PartyId 2
 heroProjectiles = PartyId 3
 enemyProjectiles = PartyId 4
 animalProjectiles = PartyId 5
+
+-- | The list of parties that represent projectiles.
+allProjectiles :: [PartyId]
+allProjectiles = [heroProjectiles, enemyProjectiles, animalProjectiles]
 
 instance Binary PartyId where
   put (PartyId n) = put n

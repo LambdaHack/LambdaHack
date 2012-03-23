@@ -356,24 +356,24 @@ actorAttackActor source target = do
       bitems <- gets (getActorItem source)
       let h2hGroup = if isAHero state source then "unarmed" else "monstrous"
       h2hKind <- rndToAction $ opick h2hGroup (const True)
-      let sloc = bloc sm
-          -- The picked bodily "weapon".
-          h2h = if bhp sm == 0 && not (L.null bitems)
-                then head bitems  -- TODO: hack for projectiles
-                else Item h2hKind 0 Nothing 1
-          str = strongestSword cops bitems
-          stack = fromMaybe h2h str
+      let h2hItem = Item h2hKind 0 Nothing 1
+          sloc = bloc sm
+          (stack, tell, verbosity, verb) =
+            if bparty sm `elem` allProjectiles
+            then assert (length bitems == 1) $
+                   (head bitems, False, 10, "hit")       -- projectile
+            else case strongestSword cops bitems of
+              Nothing -> (h2hItem, False, 0,
+                          iverbApply $ okind $ h2hKind)  -- hand-to-hand
+              Just w  -> (w, True, 0,
+                          iverbApply $ okind $ jkind w)  -- weapon
           single = stack { jcount = 1 }
-          (verbosity, verb) =
-            if bhp sm == 0 && not (L.null bitems)
-            then (10, "hit")  -- TODO: hack for projectiles
-            else (0, iverbApply $ okind $ jkind single)
           -- The msg describes the source part of the action.
           -- TODO: right now it also describes the victim and weapon;
           -- perhaps, when a weapon is equipped, just say "you hit"
           -- or "you miss" and then "nose dies" or "nose yells in pain".
           msg = actorVerbActor coactor sm verb tm $
-                  if isJust str
+                  if tell
                   then "with " ++ objectItem coitem state single
                   else ""
           visible = sloc `IS.member` totalVisible per
