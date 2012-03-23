@@ -153,7 +153,7 @@ deletePlayer :: State -> State
 deletePlayer s@State{splayer} = deleteActor splayer s
 
 -- TODO: unify
-heroAssocs, hostileAssocs, dangerousAssocs, friendlyAssocs
+heroAssocs, hostileAssocs, dangerousAssocs, friendlyAssocs, allButHeroesAssocs
   :: Level -> [(ActorId, Actor)]
 heroAssocs lvl =
   filter (\ (_, m) -> bparty m == heroParty) $ IM.toList $ lactor lvl
@@ -167,6 +167,11 @@ dangerousAssocs lvl =
   IM.toList $ lactor lvl
 friendlyAssocs lvl =
   filter (\ (_, m) -> bparty m `elem` [heroParty, heroProjectiles]) $
+  IM.toList $ lactor lvl
+allButHeroesAssocs lvl =
+    filter (\ (_, m) -> bparty m `elem`
+                        [heroProjectiles, enemyParty, animalParty,
+                         enemyProjectiles, animalProjectiles]) $
   IM.toList $ lactor lvl
 
 heroList, hostileList, dangerousList, friendlyList :: State -> [Actor]

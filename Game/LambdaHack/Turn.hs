@@ -93,10 +93,11 @@ handleActors subclipStart = do
   debug "handleActors"
   Kind.COps{coactor} <- getCOps
   time <- gets stime  -- the end time of this clip, inclusive
-  lactor <- gets (lactor . slevel)
+  lactor <- gets (allButHeroesAssocs . slevel)
   pl <- gets splayer
+  pbody <- gets getPlayerBody
   squit <- gets squit
-  let as = IM.toAscList lactor  -- older actors act first
+  let as = (pl, pbody) : lactor  -- older actors act first
       mnext = if null as  -- wait until any actor spawned
               then Nothing
               else let -- Heroes move first then monsters, then the rest.
@@ -223,6 +224,7 @@ playerCommand msgRunAbort = do
 advanceTime :: Bool -> ActorId -> Action ()
 advanceTime forward actor = do
   Kind.COps{coactor} <- getCOps
+  pl <- gets splayer
   let upd m@Actor{btime} =
         let speed = actorSpeed coactor m
             ticks = ticksPerMeter speed
@@ -232,7 +234,7 @@ advanceTime forward actor = do
   updateAnyActor actor upd
   -- A hack to synchronize the whole party:
   body <- gets (getActor actor)
-  when (bparty body == heroParty) $ do
+  when (actor == pl) $ do
     let updParty m = if bparty m == heroParty
                      then m {btime = btime body}
                      else m
