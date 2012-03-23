@@ -3,7 +3,7 @@ module Game.LambdaHack.Grammar
   ( -- * Grammar types
     Verb, Object
     -- * General operations
-  , capitalize, suffixS, addIndefinite
+  , capitalize, pluralise, addIndefinite
     -- * Objects from content
   , objectItemCheat, objectItem, objectActor, capActor
     -- * Sentences
@@ -14,6 +14,7 @@ module Game.LambdaHack.Grammar
 
 import Data.Char
 import qualified Data.Set as S
+import qualified Data.Map as M
 import qualified Data.List as L
 import Data.Maybe
 
@@ -35,24 +36,89 @@ type Verb = String
 -- | The grammatical object type.
 type Object = String
 
+-- | Nouns with irregular plural spelling.
+-- See http://en.wikipedia.org/wiki/English_plural.
+irregularPlural :: M.Map String String
+irregularPlural = M.fromList
+  [ ("canto"  , "cantos")
+  , ("homo "  , "homos")
+  , ("photo"  , "photos")
+  , ("zero"   , "zeros")
+  , ("piano"  , "pianos")
+  , ("portico", "porticos")
+  , ("pro"    , "pros")
+  , ("quarto" , "quartos")
+  , ("kimono" , "kimonos")
+  , ("calf"   , "calves")
+  , ("leaf"   , "leaves")
+  , ("knife"  , "knives")
+  , ("life"   , "lives")
+  , ("dwarf"  , "dwarves")
+  , ("hoof"   , "hooves")
+  , ("elf"    , "elves")
+  , ("staff"  , "staves")
+  , ("child"  , "children")
+  , ("foot"   , "feet")
+  , ("goose"  , "geese")
+  , ("louse"  , "lice")
+  , ("man"    , "men")
+  , ("mouse"  , "mice")
+  , ("tooth"  , "teeth")
+  , ("woman"  , "women")
+  ]
+
+-- | The list of words with identical singular and plural form.
+-- See http://en.wikipedia.org/wiki/English_plural.
+noPlural :: S.Set String
+noPlural = S.fromList
+  [ "buffalo"
+  , "deer"
+  , "moose"
+  , "sheep"
+  , "bison"
+  , "salmon"
+  , "pike"
+  , "trout"
+  , "swine"
+  , "aircraft"
+  , "watercraft"
+  , "spacecraft"
+  , "hovercraft"
+  , "information"
+  ]
+
 -- | Tests if a character is a vowel (@u@ is too hard, so is @eu@).
 vowel :: Char -> Bool
 vowel l = l `elem` "aeio"
 
 -- | Adds the plural (@s@, @es@, @ies@) suffix to a word.
+-- Used also for conjugation.
 -- See http://en.wikipedia.org/wiki/English_plural.
 suffixS :: String -> String
 suffixS word = case L.reverse word of
-                'h' : 'c' : _ -> word ++ "es"
-                'h' : 's' : _ -> word ++ "es"
-                'i' : 's' : _ -> word ++ "es"
-                's' : _ -> word ++ "es"
-                'z' : _ -> word ++ "es"
-                'x' : _ -> word ++ "es"
-                'j' : _ -> word ++ "es"
-                'o' : l : _ | not (vowel l) -> init word ++ "es"
-                'y' : l : _ | not (vowel l) -> init word ++ "ies"
-                _ -> word ++ "s"
+                 'h' : 'c' : _ -> word ++ "es"
+                 'h' : 's' : _ -> word ++ "es"
+                 'i' : 's' : _ -> word ++ "es"
+                 's' : _ -> word ++ "es"
+                 'z' : _ -> word ++ "es"
+                 'x' : _ -> word ++ "es"
+                 'j' : _ -> word ++ "es"
+                 'o' : l : _ | not (vowel l) -> init word ++ "es"
+                 'y' : l : _ | not (vowel l) -> init word ++ "ies"
+                 _ -> word ++ "s"
+
+-- TODO: a suffix tree would be best, to catch ableman, seaman, etc.
+pluralise :: Object -> Object
+pluralise phrase =
+  case reverse $ words phrase of
+    [] -> assert `failure` "pluralise: no words"
+    word : rest ->
+      let pl = if word `S.member` noPlural
+               then word
+               else case M.lookup word irregularPlural of
+                 Just plural -> plural
+                 Nothing -> suffixS word
+      in unwords $ reverse $ pl : rest
 
 conjugate :: String -> Verb -> Verb
 conjugate "you" "be" = "are"
@@ -76,7 +142,7 @@ addIndefinite b = case b of
 -- | Transform an object, adding a count and a plural suffix.
 makeObject :: Int -> (Object -> Object) -> Object -> Object
 makeObject 1 f obj = addIndefinite $ f obj
-makeObject n f obj = show n ++ " " ++ f (suffixS obj)
+makeObject n f obj = show n ++ " " ++ f (pluralise obj)
 
 -- TODO: when there's more of the above, split and move to Utils/
 

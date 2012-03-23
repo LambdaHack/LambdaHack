@@ -525,7 +525,7 @@ gameOver showEndingScreens = do
                 | otherwise =
           "Dead heroes make better legends."
         loseMsg = failMsg ++ " Killing you nets " ++
-                  show total ++ " gold and some rubbish:"  -- TODO: use the name of the '$' item instead
+                  show total ++ " gold and some junk:"  -- TODO: use the name of the '$' item instead
     if null items
       then modify (\ st -> st {squit = Just (True, H.Killed slid)})
       else do

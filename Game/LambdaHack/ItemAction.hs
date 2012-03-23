@@ -50,7 +50,7 @@ getGroupItem :: [Item]  -- ^ all objects in question
 getGroupItem is object syms prompt packName = do
   Kind.COps{coitem=Kind.Ops{osymbol}} <- getCOps
   let choice i = osymbol (jkind i) `elem` syms
-      header = capitalize $ suffixS object
+      header = capitalize $ pluralise object
   getItem prompt choice header is packName
 
 applyGroupItem :: ActorId  -- ^ actor applying the item (is on current level)
