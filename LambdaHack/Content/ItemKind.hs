@@ -63,13 +63,13 @@ gem = ItemKind
   , itoThrow = 0
   }
 gem1 = gem
-  { icount   = (RollDice 1 1, RollDice 1 1)  -- appears on lvl 1
+  { icount   = (RollDice 0 0, RollDice 1 1)  -- appears on lvl 1
   }
 gem2 = gem
   { icount   = (RollDice 0 0, RollDice 1 2)  -- appears halfway
   }
 gem3 = gem
-  { icount   = (RollDice 0 0, RollDice 1 1)  -- appears on max depth
+  { icount   = (RollDice 0 0, RollDice 1 3)  -- appears on max depth
   }
 gold = ItemKind
   { isymbol  = '$'

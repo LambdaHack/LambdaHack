@@ -305,7 +305,7 @@ effLvlGoUp k = do
 --            -- Bail out if a party member blocks the staircase.
 --            abortWith "somebody blocks the staircase"
           Just m ->
-            -- Somewhat of a workaround: squash monster blocking the staircase.
+            -- Aquash an actor blocking the staircase.
             -- This is not a duplication with the other calls to squashActor,
             -- because here an inactive actor is squashed.
             squashActor pl m
