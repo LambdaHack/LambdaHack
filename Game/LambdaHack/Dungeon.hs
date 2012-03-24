@@ -4,7 +4,7 @@ module Game.LambdaHack.Dungeon
   ( -- * Level identifier
     LevelId, levelNumber, levelDefault
     -- * Dungeon
-  , Dungeon, fromList, currentFirst, adjust, (!), lookup, depth
+  , Dungeon, fromList, currentFirst, adjust, mapDungeon, (!), lookup, depth
   ) where
 
 import Prelude hiding (lookup)
@@ -67,6 +67,10 @@ currentFirst lid (Dungeon m _) =
 -- | Adjust the level at a given id.
 adjust :: (Level -> Level) -> LevelId -> Dungeon -> Dungeon
 adjust f lid (Dungeon m d) = Dungeon (M.adjust f lid m) d
+
+-- | Adjust the level at a given id.
+mapDungeon :: (Level -> Level) -> Dungeon -> Dungeon
+mapDungeon f (Dungeon m d) = Dungeon (M.map f m) d
 
 -- | Find a level with the given id.
 (!) :: Dungeon -> LevelId -> Level

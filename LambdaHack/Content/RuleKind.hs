@@ -37,4 +37,6 @@ standard = RuleKind
   , rtitle         = "LambdaHack"
   , rpathsDataFile = Self.getDataFileName
   , rpathsVersion  = Self.version
+  , ritemMelee     = ")"
+  , ritemProject   = "!?|/"
   }

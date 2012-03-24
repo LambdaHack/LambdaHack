@@ -10,33 +10,28 @@
 -- to try to compress their representation and/or recompute them.
 -- Instead, of defining a @Tile@ type, we express various properties
 -- of concrete tiles by arrays or sparse IntMaps, as appropriate.
+--
+-- Actors at normal speed (2 m/s) take one turn to move one tile (1 m by 1 m).
 module Game.LambdaHack.Tile
-  ( SecretStrength(..), SmellTime(..)
+  (SecretTime, SmellTime
   , kindHasFeature, kindHas, hasFeature
   , isClear, isLit, similar, canBeHidden
   ) where
 
 import qualified Data.List as L
-import Data.Binary
 
 import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Feature as F
 import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Misc
+import Game.LambdaHack.Time
 
--- | The type of secrecy strength of hidden terrain tiles (e.g., doors).
-newtype SecretStrength = SecretStrength{secretStrength :: Time}
-  deriving (Show, Eq, Ord)
-instance Binary SecretStrength where
-  put = put . secretStrength
-  get = fmap SecretStrength get
+-- | The time interval needed to discover a given secret,
+-- e.g., a hidden terrain tile, e.g., a hidden door.
+type SecretTime = Time
 
 -- | The last time a hero left a smell in a given tile. To be used
 -- by monsters that hunt by smell.
-newtype SmellTime = SmellTime{smelltime :: Time} deriving Show
-instance Binary SmellTime where
-  put = put . smelltime
-  get = fmap SmellTime get
+type SmellTime = Time
 
 -- | Whether a tile kind has the given feature.
 kindHasFeature :: F.Feature -> TileKind -> Bool

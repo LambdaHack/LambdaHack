@@ -24,8 +24,6 @@ import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Perception
 import Game.LambdaHack.State
-import qualified Game.LambdaHack.Config as Config
-import qualified Game.LambdaHack.Save as Save
 import qualified Game.LambdaHack.Effect as Effect
 import Game.LambdaHack.EffectAction
 import qualified Game.LambdaHack.Tile as Tile
@@ -36,45 +34,29 @@ import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Random
-
-displayHistory :: Action ()
-displayHistory = do
-  diary <- currentDiary
-  msgOverlaysConfirm "History:" [unlines $ shistory diary]
-  abort
-
-dumpConfig :: Action ()
-dumpConfig = do
-  config <- gets sconfig
-  let fn = "config.dump"
-  liftIO $ Config.dump fn config
-  abortWith $ "Current configuration dumped to file " ++ fn ++ "."
+import Game.LambdaHack.Msg
+import Game.LambdaHack.Binding
+import Game.LambdaHack.Time
+import qualified Game.LambdaHack.Color as Color
+import Game.LambdaHack.Draw
 
 saveGame :: Action ()
 saveGame = do
-  b <- msgYesNo "Really save?"
+  b <- displayYesNo "Really save?"
   if b
-    then do
-      -- Save the game state
-      cops <- contentf Kind.coitem
-      state <- get
-      diary <- currentDiary
-      liftIO $ Save.saveGame state diary
-      let total = calculateTotal cops state
-          status = H.Camping
-      go <- handleScores False status total
-      when go $ msgMore "See you soon, stronger and braver!"
-      end
+    then modify (\ s -> s {squit = Just (True, H.Camping)})
     else abortWith "Game resumed."
 
 quitGame :: Action ()
 quitGame = do
-  b <- msgYesNo "Really quit?"
+  b <- displayYesNo "Really quit?"
   if b
-    then end -- no highscore display for quitters
+    then let status = H.Killed $ Dungeon.levelDefault 0
+         -- No highscore display for quitters.
+         in modify (\ s -> s {squit = Just (False, status)})
     else abortWith "Game resumed."
 
-moveCursor :: Vector -> Int -> Action ()
+moveCursor :: Vector -> Int -> ActionFrame ()
 moveCursor dir n = do
   lxsize <- gets (lxsize . slevel)
   lysize <- gets (lysize . slevel)
@@ -89,11 +71,18 @@ moveCursor dir n = do
 -- TODO: Think about doing the mode dispatch elsewhere, especially if over
 -- time more and more commands need to do the dispatch inside their code
 -- (currently only a couple do).
-move :: Vector -> Action ()
+move :: Vector -> ActionFrame ()
 move dir = do
   pl <- gets splayer
   targeting <- gets (ctargeting . scursor)
-  if targeting /= TgtOff then moveCursor dir 1 else moveOrAttack True pl dir
+  if targeting /= TgtOff
+    then do
+      frs <- moveCursor dir 1
+      -- Mark that unexpectedly it does not take time.
+      modify (\ s -> s {snoTime = True})
+      return frs
+    else
+      inFrame $ moveOrAttack True pl dir
 
 ifRunning :: ((Vector, Int) -> Action a) -> Action a -> Action a
 ifRunning t e = do
@@ -123,43 +112,41 @@ guessBump _ _ _ = neverMind True
 -- | Player tries to trigger a tile using a feature.
 bumpTile :: Point -> F.Feature -> Action ()
 bumpTile dloc feat = do
-  cotile <- contentf Kind.cotile
+  Kind.COps{cotile} <- getCOps
   lvl    <- gets slevel
   let t = lvl `at` dloc
   if Tile.hasFeature cotile feat t
     then triggerTile dloc
     else guessBump cotile feat t
-  playerAdvanceTime
 
 -- | Perform the action specified for the tile in case it's triggered.
 triggerTile :: Point -> Action ()
 triggerTile dloc = do
-  Kind.Ops{okind, opick} <- contentf Kind.cotile
+  Kind.COps{cotile=Kind.Ops{okind, opick}} <- getCOps
   lvl <- gets slevel
   let f (F.Cause effect) = do
         pl <- gets splayer
-        (_b, _msg) <- effectToAction effect 0 pl pl 0
+        void $ effectToAction effect 0 pl pl 0
         return ()
       f (F.ChangeTo group) = do
-        state <- get
-        let hms = levelHeroList state ++ levelMonsterList state
+        Level{lactor} <- gets slevel
         case lvl `atI` dloc of
-          [] -> if unoccupied hms dloc
+          [] -> if unoccupied (IM.elems lactor) dloc
                 then do
                   newTileId <- rndToAction $ opick group (const True)
                   let adj = (Kind.// [(dloc, newTileId)])
                   modify (updateLevel (updateLMap adj))
+-- TODO: take care of AI using this function (aborts, etc.).
                 else abortWith "blocked"  -- by monsters or heroes
           _ : _ -> abortWith "jammed"  -- by items
       f _ = return ()
   mapM_ f $ TileKind.tfeature $ okind $ lvl `at` dloc
 
 -- | Ask for a direction and trigger a tile, if possible.
-playerTriggerDir :: F.Feature -> Action ()
-playerTriggerDir feat = do
-  msgReset "direction?"
-  displayAll
-  e <- session nextCommand
+playerTriggerDir :: F.Feature -> Verb -> Action ()
+playerTriggerDir feat verb = do
+  let keys = zip K.dirAllMoveKey $ repeat K.NoModifier
+  e <- displayChoiceUI ("What to " ++ verb ++ "? [movement key") [] keys
   lxsize <- gets (lxsize . slevel)
   K.handleDir lxsize e (playerBumpDir feat) (neverMind True)
 
@@ -177,13 +164,13 @@ playerTriggerTile feat = do
   ploc <- gets (bloc . getPlayerBody)
   bumpTile ploc feat
 
--- | An actor opens a door. Player (hero or controlled monster) or enemy.
+-- | An actor opens a door: player (hero or controlled monster) or enemy.
 actorOpenDoor :: ActorId -> Vector -> Action ()
 actorOpenDoor actor dir = do
   Kind.COps{ cotile
            , coitem
            , coactor=Kind.Ops{okind}
-           } <- contentOps
+           } <- getCOps
   lvl  <- gets slevel
   pl   <- gets splayer
   body <- gets (getActor actor)
@@ -193,9 +180,9 @@ actorOpenDoor actor dir = do
       isPlayer = actor == pl
       isVerbose = isPlayer  -- don't report, unless it's player-controlled
       iq = aiq $ okind $ bkind body
-      openPower = Tile.SecretStrength $
+      openPower = timeScale timeTurn $
         if isPlayer
-        then 1  -- player can't open hidden doors
+        then 0  -- player can't open hidden doors
         else case strongestSearch coitem bitems of
                Just i  -> iq + jpower i
                Nothing -> iq
@@ -207,13 +194,12 @@ actorOpenDoor actor dir = do
                  Tile.hasFeature cotile F.Hidden t)
          then neverMind isVerbose  -- not doors at all
          else triggerTile dloc
-  advanceTime actor
 
 -- | Change the displayed level in targeting mode to (at most)
 -- k levels shallower. Enters targeting mode, if not already in one.
-tgtAscend :: Int -> Action ()
+tgtAscend :: Int -> ActionFrame ()
 tgtAscend k = do
-  cotile    <- contentf Kind.cotile
+  Kind.COps{cotile} <- getCOps
   cursor    <- gets scursor
   targeting <- gets (ctargeting . scursor)
   slid      <- gets slid
@@ -231,7 +217,11 @@ tgtAscend k = do
         abortWith "no more levels in this direction"
       Just (nln, nloc) ->
         assert (nln /= slid `blame` (nln, "stairs looped")) $ do
-          modify (\ state -> state {slid = nln})
+          -- We only look at the level, but we have to keep current
+          -- time somewhere, e.g., for when we change the player
+          -- to a hero on this level and then end targeting.
+          -- If that's too slow, we could keep current time in the @Cursor@.
+          switchLevel nln
           -- do not freely reveal the other end of the stairs
           lvl2 <- gets slevel
           let upd cur =
@@ -246,7 +236,7 @@ tgtAscend k = do
           depth = Dungeon.depth dungeon
           nln = Dungeon.levelDefault $ min depth $ max 1 $ n - k
       when (nln == slid) $ abortWith "no more levels in this direction"
-      modify (\ state -> state {slid = nln})
+      switchLevel nln  -- see comment above
       let upd cur = cur {clocLn = nln}
       modify (updateCursor upd)
   when (targeting == TgtOff) $ do
@@ -255,36 +245,40 @@ tgtAscend k = do
   doLook
 
 -- | Switches current hero to the next hero on the level, if any, wrapping.
+-- We cycle through at most 10 heroes (\@, 0--9).
 cycleHero :: Action ()
 cycleHero = do
   pl <- gets splayer
-  hs <- gets (lheroes . slevel)
-  let i        = case pl of AHero n -> n ; _ -> -1
-      (lt, gt) = IM.split i hs
-  case IM.keys gt ++ IM.keys lt of
+  s  <- get
+  let hs = map (tryFindHeroK s) [0..9]
+      i = fromMaybe (-1) $ L.findIndex (== Just pl) hs
+      (lt, gt) = (take i hs, drop (i + 1) hs)
+  case L.filter (flip memActor s) $ catMaybes gt ++ catMaybes lt of
     [] -> abortWith "Cannot select any other hero on this level."
-    ni : _ -> selectPlayer (AHero ni)
-              >>= assert `trueM` (pl, ni, "hero duplicated")
+    ni : _ -> selectPlayer ni
+                >>= assert `trueM` (pl, ni, "hero duplicated")
 
 -- | Search for hidden doors.
 search :: Action ()
 search = do
-  Kind.COps{coitem, cotile} <- contentOps
+  Kind.COps{coitem, cotile} <- getCOps
   lvl    <- gets slevel
   le     <- gets (lsecret . slevel)
   lxsize <- gets (lxsize . slevel)
   ploc   <- gets (bloc . getPlayerBody)
   pitems <- gets getPlayerItem
-  let delta = case strongestSearch coitem pitems of
-                Just i  -> 1 + jpower i
-                Nothing -> 1
+  let delta = timeScale timeTurn $
+                case strongestSearch coitem pitems of
+                  Just i  -> 1 + jpower i
+                  Nothing -> 1
       searchTile sle mv =
         let loc = shift ploc mv
             t = lvl `at` loc
-            k = Tile.secretStrength (le IM.! loc) - delta
+            -- TODO: assert or cope elsewhere with the IM.! below
+            k = timeAdd (le IM.! loc) $ timeNegate delta
         in if Tile.hasFeature cotile F.Hidden t
-           then if k > 0
-                then IM.insert loc (Tile.SecretStrength k) sle
+           then if k > timeZero
+                then IM.insert loc k sle
                 else IM.delete loc sle
            else sle
       leNew = L.foldl' searchTile le (moves lxsize)
@@ -296,7 +290,6 @@ search = do
         when (Tile.hasFeature cotile F.Hidden t && IM.notMember dloc leNew) $
           triggerTile dloc
   mapM_ triggerHidden (moves lxsize)
-  playerAdvanceTime
 
 -- | This function performs a move (or attack) by any actor,
 -- i.e., it can handle monsters, heroes and both.
@@ -306,7 +299,7 @@ moveOrAttack :: Bool       -- ^ allow attacks?
              -> Action ()
 moveOrAttack allowAttacks actor dir = do
   -- We start by looking at the target position.
-  cops@Kind.COps{cotile = cotile@Kind.Ops{okind}} <- contentOps
+  cops@Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getCOps
   state  <- get
   pl     <- gets splayer
   lvl    <- gets slevel
@@ -321,22 +314,22 @@ moveOrAttack allowAttacks actor dir = do
           actorAttackActor actor target
       | accessible cops lvl sloc tloc -> do
           -- Switching positions requires full access.
-          actorRunActor actor target
           when (actor == pl) $
             msgAdd $ lookAt cops False True state lvl tloc ""
-      | otherwise -> abortWith ""
+          actorRunActor actor target
+      | otherwise -> abortWith "blocked"
     Nothing
       | accessible cops lvl sloc tloc -> do
-          -- perform the move
+          -- Perform the move.
           updateAnyActor actor $ \ body -> body {bloc = tloc}
           when (actor == pl) $
             msgAdd $ lookAt cops False True state lvl tloc ""
-          advanceTime actor
       | allowAttacks && actor == pl
         && Tile.canBeHidden cotile (okind $ lvl `rememberAt` tloc) -> do
           msgAdd "You search your surroundings."  -- TODO: proper msg
           search
-      | otherwise -> actorOpenDoor actor dir  -- try to open a door, TODO: playerBumpDir instead: TriggerDir { verb = "open", object = "door", feature = Openable }
+      | otherwise ->
+          actorOpenDoor actor dir  -- try to open a door, TODO: bumpTile tloc F.Openable
 
 -- | Resolves the result of an actor moving into another. Usually this
 -- involves melee attack, but with two heroes it just changes focus.
@@ -346,60 +339,90 @@ moveOrAttack allowAttacks actor dir = do
 -- This function is analogous to projectGroupItem, but for melee
 -- and not using up the weapon.
 actorAttackActor :: ActorId -> ActorId -> Action ()
-actorAttackActor source@(AHero _) target@(AHero _) =
-  -- Select adjacent hero by bumping into him. Takes no time.
-  selectPlayer target
-  >>= assert `trueM` (source, target, "player bumps into himself")
 actorAttackActor source target = do
-  Kind.COps{coactor, coitem=coitem@Kind.Ops{opick, okind}} <- contentOps
-  state <- get
-  sm    <- gets (getActor source)
-  tm    <- gets (getActor target)
-  per   <- currentPerception
-  bitems <- gets (getActorItem source)
-  let h2hGroup = if isAHero source then "unarmed" else "monstrous"
-  h2hKind <- rndToAction $ opick h2hGroup (const True)
-  let sloc = bloc sm
-      -- The picked bodily "weapon".
-      h2h = Item h2hKind 0 Nothing 1
-      str = strongestSword coitem bitems
-      stack  = fromMaybe h2h str
-      single = stack { jcount = 1 }
-      verb = iverbApply $ okind $ jkind single
-      -- The msg describes the source part of the action.
-      -- TODO: right now it also describes the victim and weapon;
-      -- perhaps, when a weapon is equipped, just say "you hit" or "you miss"
-      -- and then "nose dies" or "nose yells in pain".
-      msg = actorVerbActorExtra coactor sm verb tm $
-              if isJust str
-              then " with " ++ objectItem coitem state single
-              else ""
-      visible = sloc `IS.member` totalVisible per
-  when visible $ msgAdd msg
-  -- Msgs inside itemEffectAction describe the target part.
-  itemEffectAction 0 source target single
-  advanceTime source
+  sm <- gets (getActor source)
+  tm <- gets (getActor target)
+  if bparty sm == heroParty && bparty tm == heroParty
+    then do
+      -- Select adjacent hero by bumping into him. Takes no time, so rewind.
+      selectPlayer target
+        >>= assert `trueM` (source, target, "player bumps into himself")
+      -- Mark that unexpectedly it does not take time.
+      modify (\ s -> s {snoTime = True})
+    else do
+      cops@Kind.COps{coactor, coitem=coitem@Kind.Ops{opick, okind}} <- getCOps
+      state <- get
+      per   <- getPerception
+      bitems <- gets (getActorItem source)
+      let h2hGroup = if isAHero state source then "unarmed" else "monstrous"
+      h2hKind <- rndToAction $ opick h2hGroup (const True)
+      let h2hItem = Item h2hKind 0 Nothing 1
+          sloc = bloc sm
+          (stack, tell, verbosity, verb) =
+            if bparty sm `elem` allProjectiles
+            then assert (length bitems == 1) $
+                   (head bitems, False, 10, "hit")       -- projectile
+            else case strongestSword cops bitems of
+              Nothing -> (h2hItem, False, 0,
+                          iverbApply $ okind $ h2hKind)  -- hand-to-hand
+              Just w  -> (w, True, 0,
+                          iverbApply $ okind $ jkind w)  -- weapon
+          single = stack { jcount = 1 }
+          -- The msg describes the source part of the action.
+          -- TODO: right now it also describes the victim and weapon;
+          -- perhaps, when a weapon is equipped, just say "you hit"
+          -- or "you miss" and then "nose dies" or "nose yells in pain".
+          msg = actorVerbActor coactor sm verb tm $
+                  if tell
+                  then "with " ++ objectItem coitem state single
+                  else ""
+          visible = sloc `IS.member` totalVisible per
+      when visible $ msgAdd msg
+      -- Msgs inside itemEffectAction describe the target part.
+      itemEffectAction verbosity source target single
 
 -- | Resolves the result of an actor running (not walking) into another.
 -- This involves switching positions of the two actors.
 actorRunActor :: ActorId -> ActorId -> Action ()
 actorRunActor source target = do
-  pl   <- gets splayer
-  sloc <- gets (bloc . getActor source)  -- source location
-  tloc <- gets (bloc . getActor target)  -- target location
+  pl <- gets splayer
+  sm <- gets (getActor source)
+  tm <- gets (getActor target)
+  let sloc = bloc sm
+      tloc = bloc tm
   updateAnyActor source $ \ m -> m { bloc = tloc }
   updateAnyActor target $ \ m -> m { bloc = sloc }
+  cops@Kind.COps{coactor} <- getCOps
+  per <- getPerception
+  let visible = sloc `IS.member` totalVisible per ||
+                tloc `IS.member` totalVisible per
+      msg = actorVerbActor coactor sm "displace" tm ""
+  when visible $ msgAdd msg
+  diary <- getDiary  -- here diary possibly contains the new msg
+  s <- get
+  let locs = [tloc, sloc]
+      anim = map (IM.fromList . zip locs)
+        [ [Color.AttrChar (Color.Attr Color.BrMagenta Color.defBG) '.',
+           Color.AttrChar (Color.Attr Color.Magenta Color.defBG) 'o']
+        , [Color.AttrChar (Color.Attr Color.BrMagenta Color.defBG) 'd',
+           Color.AttrChar (Color.Attr Color.Magenta Color.defBG) 'p']
+        , [Color.AttrChar (Color.Attr Color.Magenta Color.defBG) 'p',
+           Color.AttrChar (Color.Attr Color.BrMagenta Color.defBG) 'd']
+        , [Color.AttrChar (Color.Attr Color.Magenta Color.defBG) 'o']
+        , []
+        ]
+      animFrs = animate s diary cops per anim
+  when visible $ mapM_ displayFramePush $ Nothing : animFrs
   if source == pl
-    then stopRunning  -- do not switch positions repeatedly
-    else when (isAMonster source) $ focusIfAHero target
-  advanceTime source
+   then stopRunning  -- do not switch positions repeatedly
+   else void $ focusIfOurs target
 
 -- | Create a new monster in the level, at a random position.
 rollMonster :: Kind.COps -> Perception -> State -> Rnd State
 rollMonster Kind.COps{cotile, coactor=Kind.Ops{opick, okind}} per state = do
-  let lvl = slevel state
-      hs = levelHeroList state
-      ms = levelMonsterList state
+  let lvl@Level{lactor} = slevel state
+      ms = hostileList state
+      hs = heroList state
       isLit = Tile.isLit cotile
   rc <- monsterGenChance (Dungeon.levelNumber $ slid state) (L.length ms)
   if not rc
@@ -417,7 +440,7 @@ rollMonster Kind.COps{cotile, coactor=Kind.Ops{opick, okind}} per state = do
           , \ l _ -> not $ l `IS.member` totalVisible per
           , distantAtLeast 5
           , \ l t -> Tile.hasFeature cotile F.Walkable t
-                     && l `notElem` L.map bloc (hs ++ ms)
+                     && unoccupied (IM.elems lactor) l
           ]
       mk <- opick "monster" (const True)
       hp <- rollDice $ ahp $ okind mk
@@ -426,9 +449,9 @@ rollMonster Kind.COps{cotile, coactor=Kind.Ops{opick, okind}} per state = do
 -- | Generate a monster, possibly.
 generateMonster :: Action ()
 generateMonster = do
-  cops    <- contentOps
+  cops    <- getCOps
   state   <- get
-  per     <- currentPerception
+  per     <- getPerception
   nstate  <- rndToAction $ rollMonster cops per state
   srandom <- gets srandom
   put $ nstate {srandom}
@@ -438,17 +461,17 @@ regenerateLevelHP :: Action ()
 regenerateLevelHP = do
   Kind.COps{ coitem
            , coactor=coactor@Kind.Ops{okind}
-           } <- contentOps
+           } <- getCOps
   time <- gets stime
   let upd itemIM a m =
         let ak = okind $ bkind m
             bitems = fromMaybe [] $ IM.lookup a itemIM
-            regen = max 10 $
+            regen = max 1 $
                       aregen ak `div`
                       case strongestRegen coitem bitems of
                         Just i  -> 5 * jpower i
                         Nothing -> 1
-        in if time `mod` regen /= 0
+        in if (time `timeFit` timeTurn) `mod` regen /= 0
            then m
            else addHp coactor 1 m
   -- We really want hero selection to be a purely UI distinction,
@@ -456,7 +479,43 @@ regenerateLevelHP = do
   -- Only the heroes on the current level regenerate (others are frozen
   -- in time together with their level). This prevents cheating
   -- via sending one hero to a safe level and waiting there.
-  hi  <- gets (lheroItem . slevel)
-  modify (updateLevel (updateHeroes   (IM.mapWithKey (upd hi))))
-  mi  <- gets (lmonItem . slevel)
-  modify (updateLevel (updateMonsters (IM.mapWithKey (upd mi))))
+  hi <- gets (linv . slevel)
+  modify (updateLevel (updateActorDict (IM.mapWithKey (upd hi))))
+
+-- | Display command help.
+displayHelp :: ActionFrame ()
+displayHelp = do
+  keyb <- getBinding
+  displayOverlays "Basic keys. [press SPACE or ESC]" $ keyHelp keyb
+
+displayHistory :: ActionFrame ()
+displayHistory = do
+  Diary{shistory} <- getDiary
+  time <- gets stime
+  lysize <- gets (lysize . slevel)
+  let turn = show $ time `timeFit` timeTurn
+      msg = "Your adventuring lasts " ++ turn
+            ++ " half-second turns. Past messages:"
+  displayOverlays msg $ splitOverlay lysize $ renderHistory shistory
+
+dumpConfig :: Action ()
+dumpConfig = do
+  config <- gets sconfig
+  let fn = "config.dump"
+      msg = "Current configuration dumped to file " ++ fn ++ "."
+  dumpCfg fn config
+  abortWith msg
+
+redraw :: Action ()
+redraw = return ()
+
+-- | Add new smell traces to the level. Only humans leave a strong scent.
+addSmell :: Action ()
+addSmell = do
+  s  <- get
+  pl <- gets splayer
+  let time = stime s
+      ploc = bloc (getPlayerBody s)
+      upd = IM.insert ploc $ timeAdd time $ smellTimeout s
+  when (isAHero s pl) $
+    modify $ updateLevel $ updateSmell upd

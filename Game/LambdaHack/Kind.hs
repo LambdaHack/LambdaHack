@@ -2,7 +2,7 @@
 {-# LANGUAGE RankNTypes, ScopedTypeVariables, TypeFamilies #-}
 module Game.LambdaHack.Kind
   ( -- * General content types
-    Id, Speedup(..), Ops(..), COps(..), createOps
+    Id, Speedup(..), Ops(..), COps(..), createOps, stdRuleset
     -- * Arrays of content identifiers
   , Array, (!), (//), listArray, array, bounds
   ) where
@@ -69,13 +69,14 @@ createOps CDefs{getSymbol, getName, getFreq, content, validate} =
       groupFreq group k = fromMaybe 0 (L.lookup group $ getFreq k)
       kindFreq :: String -> Frequency (Id a, a)
       kindFreq group =
-        toFreq [ (n, (Id i, k))
+        toFreq ("kindFreq ('" ++ group ++ "')")
+               [ (n, (Id i, k))
                | (i, k) <- kindAssocs, let n = groupFreq group k, n > 0 ]
       okind (Id i) = kindMap IM.! fromEnum i
       correct a = not (L.null (getName a)) && L.all ((> 0) . snd) (getFreq a)
       offenders = validate content
   in assert (allB correct content) $
-     assert (L.null offenders `blame` offenders) $
+     assert (L.null offenders `blame` ("content not validated:", offenders)) $
      Ops
        { osymbol = getSymbol . okind
        , oname = getName . okind
@@ -104,6 +105,10 @@ data COps = COps
   , corule  :: !(Ops RuleKind)
   , cotile  :: !(Ops TileKind)
   }
+
+-- | The standard ruleset used for level operations.
+stdRuleset :: Ops RuleKind -> RuleKind
+stdRuleset Ops{ouniqGroup, okind} = okind $ ouniqGroup "standard"
 
 instance Show COps where
   show _ = "Game content."

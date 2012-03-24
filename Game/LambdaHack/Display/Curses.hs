@@ -3,7 +3,7 @@ module Game.LambdaHack.Display.Curses
   ( -- * Session data type for the frontend
     FrontendSession
     -- * The output and input operations
-  , display, nextEvent
+  , display, nextEvent, promptGetKey
     -- * Frontend administration tools
   , frontendName, startup, shutdown
   ) where
@@ -14,9 +14,7 @@ import qualified Data.List as L
 import qualified Data.Map as M
 import Control.Monad
 
-import Game.LambdaHack.Area
-import Game.LambdaHack.PointXY
-import qualified Game.LambdaHack.Key as K (Key(..))
+import qualified Game.LambdaHack.Key as K (Key(..),  Modifier(..))
 import qualified Game.LambdaHack.Color as Color
 
 -- | Session data maintained by the frontend.
@@ -34,7 +32,8 @@ frontendName = "curses"
 startup :: String -> (FrontendSession -> IO ()) -> IO ()
 startup _ k = do
   C.start
-  C.cursSet C.CursorInvisible
+--  C.keypad C.stdScr False  -- TODO: may help to fix xterm keypad on Ubuntu
+  void $ C.cursSet C.CursorInvisible
   let s = [ (Color.Attr{fg, bg}, C.Style (toFColor fg) (toBColor bg))
           | fg <- [minBound..maxBound],
             -- No more color combinations possible: 16*4, 64 is max.
@@ -53,38 +52,49 @@ shutdown :: FrontendSession -> IO ()
 shutdown _ = C.end
 
 -- | Output to the screen via the frontend.
-display :: Area             -- ^ the size of the drawn area
-        -> FrontendSession  -- ^ current session data
-        -> (PointXY -> (Color.Attr, Char))
-                            -- ^ the content of the screen
-        -> String           -- ^ an extra line to show at the top
-        -> String           -- ^ an extra line to show at the bottom
+display :: FrontendSession          -- ^ frontend session data
+        -> Bool
+        -> Bool
+        -> Maybe Color.SingleFrame  -- ^ the screen frame to draw
         -> IO ()
-display (x0, y0, x1, y1) FrontendSession{..} f msg status = do
+display _ _ _ Nothing = return ()
+display FrontendSession{..}  _ _ (Just Color.SingleFrame{..}) = do
   -- let defaultStyle = C.defaultCursesStyle
   -- Terminals with white background require this:
   let defaultStyle = sstyles M.! Color.defaultAttr
   C.erase
   C.setStyle defaultStyle
-  C.mvWAddStr swin 0 0 msg
-  C.mvWAddStr swin (y1 + 2) 0 (L.init status)
-  -- TODO: we need to remove the last character from the status line,
+  C.mvWAddStr swin 0 0 sfTop
+  -- We need to remove the last character from the status line,
   -- because otherwise it would overflow a standard size xterm window,
   -- due to the curses historical limitations.
-  sequence_ [ C.setStyle (M.findWithDefault defaultStyle a sstyles)
-              >> C.mvWAddStr swin (y + 1) x [c]
-            | x <- [x0..x1], y <- [y0..y1],
-              let (a, c) = f (PointXY (x, y)) ]
+  C.mvWAddStr swin (L.length sfLevel + 1) 0 (L.init sfBottom)
+  let nm = L.zip [0..] $ L.map (L.zip [0..]) sfLevel
+  sequence_ [ C.setStyle (M.findWithDefault defaultStyle acAttr sstyles)
+              >> C.mvWAddStr swin (y + 1) x [acChar]
+            | (y, line) <- nm, (x, Color.AttrChar{..}) <- line ]
   C.refresh
 
 -- | Input key via the frontend.
-nextEvent :: FrontendSession -> IO K.Key
-nextEvent _sess = do
+nextEvent :: FrontendSession -> Maybe Bool -> IO (K.Key, K.Modifier)
+nextEvent _sess _ = do
   e <- C.getKey C.refresh
-  return (keyTranslate e)
---  case keyTranslate e of
---    Unknown _ -> nextEvent sess
---    k -> return k
+  return (keyTranslate e, K.NoModifier)
+
+-- | Display a prompt, wait for any of the specified keys (for any key,
+-- if the list is empty). Repeat if an unexpected key received.
+promptGetKey :: FrontendSession -> [(K.Key, K.Modifier)] -> Color.SingleFrame
+             -> IO (K.Key, K.Modifier)
+promptGetKey sess keys frame = do
+  display sess True True $ Just frame
+  km <- nextEvent sess Nothing
+  let loop km2 =
+        if null keys || km2 `elem` keys
+        then return km2
+        else do
+          km3 <- nextEvent sess Nothing
+          loop km3
+  loop km
 
 keyTranslate :: C.Key -> K.Key
 keyTranslate e =
@@ -110,7 +120,10 @@ keyTranslate e =
     C.KeyB2          -> K.Begin
     C.KeyClear       -> K.Begin
     -- No KP_ keys; see https://github.com/skogsbaer/hscurses/issues/10
-    -- Movement keys are more important than hero selection, so preferring them:
+    -- TODO: try to get the Control modifier from the escape gibberish
+    -- and use Control-keypad for KP_ movement.
+    -- Movement keys are more important than hero selection,
+    -- so disabling the latter and interpreting the keypad numbers as movement:
     C.KeyChar c
       | c `elem` ['1'..'9'] -> K.KP c
       | otherwise           -> K.Char c

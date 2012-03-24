@@ -3,7 +3,7 @@ module Game.LambdaHack.Display.Std
   ( -- * Session data type for the frontend
     FrontendSession
     -- * The output and input operations
-  , display, nextEvent
+  , display, nextEvent, promptGetKey
     -- * Frontend administration tools
   , frontendName, startup, shutdown
   ) where
@@ -12,9 +12,7 @@ import qualified Data.List as L
 import qualified Data.ByteString.Char8 as BS
 import qualified System.IO as SIO
 
-import Game.LambdaHack.Area
-import Game.LambdaHack.PointXY
-import qualified Game.LambdaHack.Key as K (Key(..))
+import qualified Game.LambdaHack.Key as K (Key(..),  Modifier(..))
 import qualified Game.LambdaHack.Color as Color
 
 -- | No session data needs to be maintained by this frontend.
@@ -33,31 +31,40 @@ shutdown :: FrontendSession -> IO ()
 shutdown _ = return ()
 
 -- | Output to the screen via the frontend.
-display :: Area             -- ^ the size of the drawn area
-        -> FrontendSession  -- ^ current session data
-        -> (PointXY -> (Color.Attr, Char))
-                            -- ^ the content of the screen
-        -> String           -- ^ an extra line to show at the top
-        -> String           -- ^ an extra line to show at the bottom
+display :: FrontendSession          -- ^ frontend session data
+        -> Bool
+        -> Bool
+        -> Maybe Color.SingleFrame  -- ^ the screen frame to draw
         -> IO ()
-display (x0, y0, x1, y1) _sess f msg status =
-  let xsize  = x1 - x0 + 1
-      g y x  = if x > x1
-               then Nothing
-               else Just (snd (f (PointXY (x, y))), x + 1)
-      fl y   = fst $ BS.unfoldrN xsize (g y) x0
-      level  = L.map fl [y0..y1]
-      screen = [BS.pack msg] ++ level ++ [BS.pack status, BS.empty]
-  in mapM_ BS.putStrLn screen
+display _ _ _ Nothing = return ()
+display _ _ _ (Just Color.SingleFrame{..}) =
+  let chars = L.map (BS.pack . L.map Color.acChar) sfLevel
+      bs = [BS.pack sfTop, BS.empty] ++ chars ++ [BS.pack sfBottom, BS.empty]
+  in mapM_ BS.putStrLn bs
 
 -- | Input key via the frontend.
-nextEvent :: FrontendSession -> IO K.Key
-nextEvent sess = do
+nextEvent :: FrontendSession -> Maybe Bool -> IO (K.Key, K.Modifier)
+nextEvent sess mb = do
   e <- BS.hGet SIO.stdin 1
   let c = BS.head e
   if c == '\n'  -- let \n mark the end of input, for human players
-    then nextEvent sess
-    else return $ keyTranslate c
+    then nextEvent sess mb
+    else return (keyTranslate c, K.NoModifier)
+
+-- | Display a prompt, wait for any of the specified keys (for any key,
+-- if the list is empty). Repeat if an unexpected key received.
+promptGetKey :: FrontendSession -> [(K.Key, K.Modifier)] -> Color.SingleFrame
+             -> IO (K.Key, K.Modifier)
+promptGetKey sess keys frame = do
+  display sess True True $ Just frame
+  km <- nextEvent sess Nothing
+  let loop km2 =
+        if null keys || km2 `elem` keys
+        then return km2
+        else do
+          km3 <- nextEvent sess Nothing
+          loop km3
+  loop km
 
 -- HACK: Special translation that block commands the bots should not use
 -- and multiplies some other commands.

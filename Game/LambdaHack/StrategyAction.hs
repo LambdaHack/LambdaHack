@@ -7,8 +7,10 @@ import qualified Data.List as L
 import qualified Data.IntMap as IM
 import Data.Maybe
 import Control.Monad
+import Control.Monad.State hiding (State, state)
 import Control.Arrow
 
+import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Point
 import Game.LambdaHack.Vector
 import Game.LambdaHack.Level
@@ -23,11 +25,14 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
 import Game.LambdaHack.ItemAction
 import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Effect as Effect
 import qualified Game.LambdaHack.Tile as Tile
 import qualified Game.LambdaHack.Kind as Kind
 import qualified Game.LambdaHack.Feature as F
+import Game.LambdaHack.Time
+import qualified Game.LambdaHack.Color as Color
 
 {-
 Monster movement
@@ -61,53 +66,47 @@ and moves into the approximate direction of the hero.
 -- TODO: improve, split up, etc.
 -- | Monster AI strategy based on monster sight, smell, intelligence, etc.
 strategy :: Kind.COps -> ActorId -> State -> Perception -> Strategy (Action ())
-strategy cops actor oldState@State{splayer = pl, stime = time} per =
+strategy cops actor oldState@State{splayer = pl} per =
   strat
  where
   Kind.COps{ cotile
-           , coactor=Kind.Ops{okind}
+           , coactor=coactor@Kind.Ops{okind}
            , coitem=coitem@Kind.Ops{okind=iokind}
+           , corule
            } = cops
-  lvl@Level{lsmell = nsmap, lxsize, lysize} = slevel oldState
-  Actor { bkind = ak, bloc = me, bdir = ad, btarget = tgt } =
+  lvl@Level{lsmell, lxsize, lysize, ltime} = slevel oldState
+  actorBody@Actor{ bkind = ak, bloc = me, bdir = ad, btarget, bparty } =
     getActor actor oldState
-  items = getActorItem actor oldState
+  bitems = getActorItem actor oldState
   mk = okind ak
   delState = deleteActor actor oldState
   enemyVisible a l =
-    asight mk && monsterSeesHero cotile per lvl actor a me l ||
-    -- Any enemy can be flet if adjacent (e. g., a monster player).
+    asight mk &&
+    isAHero delState a &&
+    monsterSeesHero cotile per lvl actor a me l
+    -- Enemy can be felt if adjacent (e. g., a player-controlled monster).
     -- TODO: can this be replaced by setting 'lights' to [me]?
-    adjacent lxsize me l
-  -- If no heroes on the level, monsters go at each other. TODO: let them
-  -- earn XP by killing each other to make this dangerous to the player.
-  -- TODO: with some commands blocked, this can't happen now. Find a way
-  -- to test it, nevertheless. Have a scroll of monster fury?
-  hs = L.map (AHero *** bloc) $
-         IM.assocs $ lheroes $ slevel delState
-  ms = L.map (AMonster *** bloc) $
-         IM.assocs $ lmonsters $ slevel delState
+    || (asmell mk || asight mk)
+       && adjacent lxsize me l
   -- Below, "foe" is the hero (or a monster, or loc) chased by the actor.
-  (newTgt, floc, foeVisible) =
+  chase tgt =
     case tgt of
-      TEnemy a ll | focusedMonster ->
-        if memActor a delState
-        then let l = bloc $ getActor a delState
-             in if enemyVisible a l
-                then (TEnemy a l, Just l, True)
-                else if isJust (case closest of (_, m, _) -> m) || me == ll
-                     then closest                -- prefer visible foes
-                     else (tgt, Just ll, False)  -- last known loc of enemy
-        else closest  -- enemy not on the level, temporarily chase others
-      TLoc loc -> if me == loc
-                  then closest
-                  else (tgt, Just loc, False)  -- ignore all and go to loc
+      TEnemy a ll | focusedMonster && memActor a delState ->
+        let l = bloc $ getActor a delState
+        in if enemyVisible a l
+           then (TEnemy a l, Just l, True)
+           else if isJust (case closest of (_, m, _) -> m) || me == ll
+                then closest                -- prefer visible foes
+                else (tgt, Just ll, False)  -- last known loc of enemy
+      TLoc loc | me == loc -> closest
+      TLoc loc -> (tgt, Just loc, False)  -- ignore all and go to loc
       _  -> closest
+  (newTgt, floc, foeVisible) = chase btarget
   closest =
-    let hsAndTraitor = if isAMonster pl && memActor pl delState
-                       then (pl, bloc $ getPlayerBody delState) : hs
-                       else hs
-        foes = if L.null hsAndTraitor then ms else hsAndTraitor
+    let hs = L.map (second bloc) $ heroAssocs $ slevel delState
+        foes = if not (isAHero delState pl) && memActor pl delState
+               then (pl, bloc $ getPlayerBody delState) : hs
+               else hs
         visible = L.filter (uncurry enemyVisible) foes
         foeDist = L.map (\ (a, l) -> (chessDist lxsize me l, l, a)) visible
     in case foeDist of
@@ -132,51 +131,71 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   onlyKeepsDir k =
     only (\ x -> maybe True (\ (d, _) -> euclidDistSq lxsize d x <= k) ad)
   onlyKeepsDir_9 = only (\ x -> maybe True (\ (d, _) -> neg x /= d) ad)
-  onlyNoMs       = onlyMoves (unoccupied (levelMonsterList delState)) me
+  onlyNoMs       = onlyMoves (unoccupied (dangerousList delState)) me
   -- Monsters don't see doors more secret than that. Enforced when actually
   -- opening doors, too, so that monsters don't cheat. TODO: remove the code
   -- duplication, though.
-  openPower      = Tile.SecretStrength $
-                   case strongestSearch coitem items of
+  openPower      = timeScale timeTurn $
+                   case strongestSearch coitem bitems of
                      Just i  -> aiq mk + jpower i
                      Nothing -> aiq mk
   openableHere   = openable cotile lvl openPower
   onlyOpenable   = onlyMoves openableHere me
   accessibleHere = accessible cops lvl me
   onlySensible   = onlyMoves (\ l -> accessibleHere l || openableHere l) me
-  focusedMonster = aspeed mk >= 10
+  focusedMonster = actorSpeed coactor actorBody <= speedNormal
   movesNotBack   = maybe id (\ (d, _) -> L.filter (/= neg d)) ad $ moves lxsize
   smells         =
     L.map fst $
     L.sortBy (\ (_, s1) (_, s2) -> compare s2 s1) $
-    L.filter (\ (_, s) -> s > 0) $
-    L.map (\ x -> let sm = Tile.smelltime $ IM.findWithDefault
-                             (Tile.SmellTime 0) (me `shift` x) nsmap
-                  in (x, (sm - time) `max` 0)) movesNotBack
+    L.filter (\ (_, s) -> s > timeZero) $
+    L.map (\ x -> let sm = IM.findWithDefault timeZero (me `shift` x) lsmell
+                  in (x, max timeZero (sm `timeAdd` timeNegate ltime)))
+      movesNotBack
   attackDir d = dirToAction actor newTgt True  `liftM` d
   moveDir d   = dirToAction actor newTgt False `liftM` d
+  darkenActor = updateAnyActor actor $ \ m -> m {bcolor = Just Color.BrBlack}
 
-  strat =
-    foeVisible .=> attackDir (onlyFoe moveFreely)
-    .| foeVisible .=> liftFrequency (msum seenFreqs)
-    .| lootHere me .=> actionPickup
-    .| moveDir moveTowards  -- go to last known foe location
-    .| attackDir moveAround
+  strat = case btarget of
+    TPath [] -> dieOrSleep
+    TPath (d : _) | not $ accessible cops lvl me (shift me d) -> dieOrSleep
+    -- TODO: perhaps colour differently the whole second turn of movement?
+    TPath [d] -> return $ darkenActor >> dirToAction actor (TPath []) True d
+    TPath (d : lv) -> return $ dirToAction actor (TPath lv) True d
+    _ -> foeVisible .=> attackDir (onlyFoe moveFreely)
+         .| foeVisible .=> liftFrequency (msum seenFreqs)
+         .| lootHere me .=> actionPickup
+         .| moveDir moveTowards  -- go to last known foe location
+         .| attackDir moveAround
+  dieOrSleep | bparty `elem` allProjectiles = dieNow actor
+             | otherwise = wait
   actionPickup = return $ actorPickupItem actor
   tis = lvl `atI` me
-  seenFreqs = [applyFreq items 1, applyFreq tis 2,
-               throwFreq items 3, throwFreq tis 6] ++ towardsFreq
-  applyFreq is multi = toFreq
-    [ (benefit * multi,
-       applyGroupItem actor (iverbApply ik) i)
+  seenFreqs = [applyFreq bitems 1, applyFreq tis 2,
+               throwFreq bitems 3, throwFreq tis 6] ++ towardsFreq
+  applyFreq is multi = toFreq "applyFreq"
+    [ (benefit * multi, applyGroupItem actor (iverbApply ik) i)
     | i <- is,
       let ik = iokind (jkind i),
       let benefit = (1 + jpower i) * Effect.effectToBenefit (ieffect ik),
       benefit > 0,
       asight mk || isymbol ik == '!']
-  throwFreq is multi = if adjacent lxsize me (fromJust floc) || not (asight mk)
+  foeAdjacent = maybe False (adjacent lxsize me) floc
+  -- TODO: also don't throw if any loc on path is visibly not accessible
+  -- from previous (and tweak eps in bla to make it accessible).
+  -- Also don't throw if target not in range.
+  eps = 0
+  bl = bla lxsize lysize eps me (fromJust floc)
+  loc1 = case bl of
+    Nothing -> me
+    Just [] -> me
+    Just (lbl:_) -> lbl
+  throwFreq is multi = if foeAdjacent
+                          || not (asight mk)
+                          || not (accessible cops lvl me loc1)
+                          || isJust (locToActor loc1 oldState)
                        then mzero
-                       else toFreq
+                       else toFreq "throwFreq"
     [ (benefit * multi,
        projectGroupItem actor (fromJust floc) (iverbProject ik) i)
     | i <- is,
@@ -184,8 +203,9 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
       let benefit =
             - (1 + jpower i) * Effect.effectToBenefit (ieffect ik),
       benefit > 0,
-      -- Wasting swords would be too cruel to the player.
-      isymbol ik /= ')']
+      -- Wasting weapons and armour would be too cruel to the player.
+      -- TODO: specify in content
+      isymbol ik `elem` (ritemProject $ Kind.stdRuleset corule)]
   towardsFreq = map (scaleFreq 30) $ runStrategy $ moveDir moveTowards
   moveTowards = onlySensible $ onlyNoMs (towardsFoe moveFreely)
   moveAround =
@@ -210,18 +230,29 @@ strategy cops actor oldState@State{splayer = pl, stime = time} per =
   onlyMoves :: (Point -> Bool) -> Point -> Strategy Vector -> Strategy Vector
   onlyMoves p l = only (\ x -> p (l `shift` x))
   moveRandomly :: Strategy Vector
-  moveRandomly = liftFrequency $ uniformFreq (moves lxsize)
+  moveRandomly = liftFrequency $ uniformFreq "moveRandomly" (moves lxsize)
 
 dirToAction :: ActorId -> Target -> Bool -> Vector -> Action ()
-dirToAction actor tgt allowAttacks dir = do
+dirToAction actor btarget allowAttacks dir = do
   -- set new direction
-  updateAnyActor actor $ \ m -> m { bdir = Just (dir, 0), btarget = tgt }
+  updateAnyActor actor $ \ m -> m { bdir = Just (dir, 0), btarget }
   -- perform action
-  tryWith (advanceTime actor) $
-    -- if the following action aborts, we just advance the time and continue
+  tryWith (\ msg -> if null msg
+                    then return ()
+                    else assert `failure` (msg, "in AI")) $ do
+    -- If the following action aborts, we just advance the time and continue.
     -- TODO: ensure time is taken for other aborted actions in this file
+    -- TODO: or just fail at each abort in AI code? or use tryWithFrame?
     moveOrAttack allowAttacks actor dir
 
 -- | A strategy to always just wait.
-wait :: ActorId -> Strategy (Action ())
-wait actor = return $ advanceTime actor
+wait :: Strategy (Action ())
+wait = return $ return ()
+
+-- | A strategy to always just die.
+dieNow :: ActorId -> Strategy (Action ())
+dieNow actor = return $ do  -- TODO: explode if a potion
+  bitems <- gets (getActorItem actor)
+  Actor{bloc} <- gets (getActor actor)
+  modify (updateLevel (dropItemsAt bitems bloc))
+  modify (deleteActor actor)

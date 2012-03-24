@@ -22,6 +22,7 @@ blame condition blamed
             "  " ++ show blamed
     in trace s False
 
+infix 1 `failure`
 -- | Like 'Prelude.undefined', but shows the source location
 -- and also the value to blame for the failure. To be used as in:
 --

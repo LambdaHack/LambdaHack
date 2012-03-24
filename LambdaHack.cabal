@@ -1,9 +1,9 @@
 cabal-version: >= 1.10
 name:          LambdaHack
-version:       0.2.0
+version:       0.2.1
 license:       BSD3
 license-file:  LICENSE
-tested-with:   GHC == 7.2.2, GHC == 7.4
+tested-with:   GHC == 7.2.2, GHC == 7.4.1
 data-files:    LICENSE, CREDITS, PLAYING.md, README.md,
                config.default, config.bot, scores
 author:        Andres Loeh, Mikolaj Konarski
@@ -22,15 +22,17 @@ description:   This is an alpha release of LambdaHack,
                but the fundamental source of flexibility lies
                in the strict and type-safe separation of code and content.
                .
-               Upcoming new features: improved squad combat,
-               player action undo/redo, ranged combat animations,
-               completely redesigned UI. Long term goals are focused
-               around procedural content generation and include
-               the improvement of the AI monad EDSL, so that rules
+               New in this release are missiles flying for three turns
+               (by an old kosmikus' idea), visual feedback for targeting
+               and animations of combat and individual monster moves.
+               Upcoming new features: improved squad combat, player action
+               undo/redo, completely redesigned UI. Long term goals
+               are focused around procedural content generation and include
+               in-game content creation, auto-balancing, persistent
+               content modification based on player behaviour
+               and the improvement of the AI monad EDSL, so that rules
                for synthesising monster behaviour from game content
-               are extensible, readable and easy to debug,
-               in-game content creation, auto-balancing and persistent
-               content modification based on player behaviour.
+               are extensible, readable and easy to debug.
                .
                A larger game that depends on the LambdaHack library
                is Allure of the Stars, available from
@@ -78,6 +80,7 @@ library
                    Game.LambdaHack.Content.RuleKind,
                    Game.LambdaHack.Content.TileKind,
                    Game.LambdaHack.Display,
+                   Game.LambdaHack.Draw,
                    Game.LambdaHack.Dungeon,
                    Game.LambdaHack.DungeonState,
                    Game.LambdaHack.Effect,
@@ -110,10 +113,12 @@ library
                    Game.LambdaHack.Strategy,
                    Game.LambdaHack.StrategyAction,
                    Game.LambdaHack.Tile,
+                   Game.LambdaHack.Time,
                    Game.LambdaHack.Turn,
                    Game.LambdaHack.Utils.Assert,
                    Game.LambdaHack.Utils.File,
                    Game.LambdaHack.Utils.Frequency,
+                   Game.LambdaHack.Utils.LQueue,
                    Game.LambdaHack.Vector
                    Game.LambdaHack.VectorXY
   other-modules:   Paths_LambdaHack
@@ -135,7 +140,7 @@ library
   other-extensions: MultiParamTypeClasses, RankNTypes, ScopedTypeVariables,
                     TypeFamilies, CPP
   ghc-options:     -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-monomorphism-restriction -fwarn-unrecognised-pragmas
-  ghc-options:     -fno-warn-auto-orphans -fno-warn-implicit-prelude -fno-warn-unused-do-bind
+  ghc-options:     -fno-warn-auto-orphans -fno-warn-implicit-prelude
   ghc-options:     -fno-ignore-asserts -funbox-strict-fields
 
   if flag(curses) {
@@ -166,7 +171,7 @@ executable LambdaHack
                    ConfigDefault
   hs-source-dirs:  LambdaHack
   other-modules:   Paths_LambdaHack
-  build-depends:   LambdaHack >= 0.2.0   && < 0.2.1,
+  build-depends:   LambdaHack >= 0.2.1   && < 0.2.2,
                    template-haskell >= 2.6 && < 3,
 
                    ConfigFile >= 1.1.1   && < 2,
@@ -186,9 +191,9 @@ executable LambdaHack
                       BangPatterns, RecordWildCards, NamedFieldPuns
   other-extensions: CPP, QuasiQuotes
   ghc-options:     -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-monomorphism-restriction -fwarn-unrecognised-pragmas
-  ghc-options:     -fno-warn-auto-orphans -fno-warn-implicit-prelude -fno-warn-unused-do-bind
+  ghc-options:     -fno-warn-auto-orphans -fno-warn-implicit-prelude
   ghc-options:     -fno-ignore-asserts -funbox-strict-fields
-  ghc-options:     -threaded
+  ghc-options:     -threaded -with-rtsopts=-C0.005
 
 executable DumbBot
   main-is:         Main.hs
@@ -199,5 +204,5 @@ executable DumbBot
   default-extensions: MonoLocalBinds,
                       BangPatterns, RecordWildCards, NamedFieldPuns
   ghc-options:     -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-monomorphism-restriction -fwarn-unrecognised-pragmas
-  ghc-options:     -fno-warn-auto-orphans -fno-warn-implicit-prelude -fno-warn-unused-do-bind
+  ghc-options:     -fno-warn-auto-orphans -fno-warn-implicit-prelude
   ghc-options:     -fno-ignore-asserts -funbox-strict-fields

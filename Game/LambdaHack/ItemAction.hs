@@ -9,6 +9,7 @@ import Control.Monad.State hiding (State, state)
 import qualified Data.List as L
 import qualified Data.IntMap as IM
 import Data.Maybe
+import Data.Ord
 import qualified Data.IntSet as IS
 
 import Game.LambdaHack.Utils.Assert
@@ -25,18 +26,17 @@ import Game.LambdaHack.State
 import Game.LambdaHack.EffectAction
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Content.ItemKind
-import qualified Game.LambdaHack.Feature as F
-import qualified Game.LambdaHack.Tile as Tile
+import Game.LambdaHack.Time
 
 -- | Display inventory
-inventory :: Action ()
+inventory :: ActionFrame ()
 inventory = do
   items <- gets getPlayerItem
   if L.null items
     then abortWith "Not carrying anything."
     else do
-      displayItems "Carrying:" True items
-      abort
+      io <- itemOverlay True False items
+      displayOverlays "Carrying:" io
 
 -- | Let the player choose any item with a given group name.
 -- Note that this does not guarantee the chosen item belongs to the group,
@@ -46,11 +46,11 @@ getGroupItem :: [Item]  -- ^ all objects in question
              -> [Char]  -- ^ accepted item symbols
              -> String  -- ^ prompt
              -> String  -- ^ how to refer to the collection of objects
-             -> Action (Maybe Item)
+             -> Action Item
 getGroupItem is object syms prompt packName = do
-  Kind.Ops{osymbol} <- contentf Kind.coitem
+  Kind.COps{coitem=Kind.Ops{osymbol}} <- getCOps
   let choice i = osymbol (jkind i) `elem` syms
-      header = capitalize $ suffixS object
+      header = capitalize $ pluralise object
   getItem prompt choice header is packName
 
 applyGroupItem :: ActorId  -- ^ actor applying the item (is on current level)
@@ -58,124 +58,144 @@ applyGroupItem :: ActorId  -- ^ actor applying the item (is on current level)
                -> Item     -- ^ the item to be applied
                -> Action ()
 applyGroupItem actor verb item = do
-  cops  <- contentOps
+  cops  <- getCOps
   state <- get
   body  <- gets (getActor actor)
-  per   <- currentPerception
+  per   <- getPerception
   -- only one item consumed, even if several in inventory
   let consumed = item { jcount = 1 }
-      msg = actorVerbItemExtra cops state body verb consumed ""
+      msg = actorVerbItem cops state body verb consumed ""
       loc = bloc body
   removeFromInventory actor consumed loc
   when (loc `IS.member` totalVisible per) $ msgAdd msg
   itemEffectAction 5 actor actor consumed
-  advanceTime actor
 
 playerApplyGroupItem :: Verb -> Object -> [Char] -> Action ()
 playerApplyGroupItem verb object syms = do
-  Kind.Ops{okind} <- contentf Kind.coitem
+  Kind.COps{coitem=Kind.Ops{okind}} <- getCOps
   is   <- gets getPlayerItem
-  iOpt <- getGroupItem is object syms
+  item <- getGroupItem is object syms
             ("What to " ++ verb ++ "?") "in inventory"
   pl   <- gets splayer
-  case iOpt of
-    Just i  -> applyGroupItem pl (iverbApply $ okind $ jkind i) i
-    Nothing -> neverMind True
+  applyGroupItem pl (iverbApply $ okind $ jkind item) item
 
 projectGroupItem :: ActorId  -- ^ actor projecting the item (is on current lvl)
-                 -> Point    -- ^ target location for the projecting
+                 -> Point    -- ^ target location of the projectile
                  -> Verb     -- ^ how the projecting is called
                  -> Item     -- ^ the item to be projected
                  -> Action ()
-projectGroupItem source loc verb item = do
-  cops@Kind.COps{coactor, cotile} <- contentOps
+projectGroupItem source tloc _verb item = do
+  cops@Kind.COps{coactor} <- getCOps
   state <- get
   sm    <- gets (getActor source)
-  per   <- currentPerception
+  per   <- getPerception
+  pl    <- gets splayer
+  Actor{btime}  <- gets getPlayerBody
   lvl   <- gets slevel
-  let -- TODO: refine for, e.g., wands of digging that are aimed into walls.
-      locWalkable = Tile.hasFeature cotile F.Walkable (lvl `at` loc)
-      consumed = item { jcount = 1 }
+  ceps  <- gets (ceps . scursor)
+  lxsize <- gets (lxsize . slevel)
+  lysize <- gets (lysize . slevel)
+  let consumed = item { jcount = 1 }
       sloc = bloc sm
+      sourceVis = sloc `IS.member` totalVisible per
       subject =
-        if sloc `IS.member` totalVisible per
+        if sourceVis
         then sm
         else template (heroKindId coactor)
-               Nothing (Just "somebody") 99 sloc
-      msg = actorVerbItemExtra cops state subject verb consumed ""
-  removeFromInventory source consumed sloc
-  case locToActor loc state of
-    Just ta -> do
-      -- The msg describes the source part of the action.
-      when (sloc `IS.member` totalVisible per || isAHero ta) $ msgAdd msg
-      -- Msgs inside itemEffectAction describe the target part.
-      b <- itemEffectAction 10 source ta consumed
-      unless b $ modify (updateLevel (dropItemsAt [consumed] loc))
-    Nothing | locWalkable -> do
-      when (sloc `IS.member` totalVisible per) $ msgAdd msg
-      modify (updateLevel (dropItemsAt [consumed] loc))
-    _ -> abortWith "blocked"
-  advanceTime source
+               Nothing (Just "somebody") 99 sloc timeZero animalParty
+      -- When projecting, the first turn is spent aiming.
+      -- The projectile is seen one tile from the actor, giving a hint
+      -- about the aim and letting the target evade.
+      msg = actorVerbItem cops state subject "aim" consumed ""
+      -- TODO: AI should choose the best eps.
+      eps = if source == pl then ceps else 0
+      -- Setting monster's projectiles time to player time ensures
+      -- the projectile covers the whole normal distance already the first
+      -- turn that the player observes it moving. This removes
+      -- the possibility of micromanagement by, e.g.,  waiting until
+      -- the first distance is short.
+      -- If and when monster all move at once, player's projectiles
+      -- should be set to the time of the opposite party as well.
+      -- Both parties would see their own projectiles move part of the way
+      -- and the opposite party's projectiles waiting one turn.
+      (party, time) =
+        if bparty sm == heroParty || source == pl
+        then (heroProjectiles, timeAdd btime (timeNegate timeClip))
+        else (enemyProjectiles, btime)
+      bl = bla lxsize lysize eps sloc tloc
+  case bl of
+    Nothing -> abortWith "cannot zap oneself"
+    Just [] -> assert `failure` (sloc, tloc, "project from the edge of level")
+    Just path@(loc:_) -> do
+      let projVis = loc `IS.member` totalVisible per
+      removeFromInventory source consumed sloc
+      inhabitants <- gets (locToActor loc)
+      if accessible cops lvl sloc loc && isNothing inhabitants
+        then
+          modify $ addProjectile cops consumed loc party path time
+        else
+          abortWith "blocked"
+      when (sourceVis || projVis) $ msgAdd msg
 
-playerProjectGroupItem :: Verb -> Object -> [Char] -> Action ()
+playerProjectGroupItem :: Verb -> Object -> [Char] -> ActionFrame ()
 playerProjectGroupItem verb object syms = do
-  ms     <- gets (lmonsters . slevel)
+  ms     <- gets hostileList
   lxsize <- gets (lxsize . slevel)
   ploc   <- gets (bloc . getPlayerBody)
-  if L.any (adjacent lxsize ploc) (L.map bloc $ IM.elems ms)
+  if L.any (adjacent lxsize ploc) $ L.map bloc $
+       L.filter (\ m -> bparty m `notElem` allProjectiles) ms
     then abortWith "You can't aim in melee."
     else playerProjectGI verb object syms
 
-playerProjectGI :: Verb -> Object -> [Char] -> Action ()
+playerProjectGI :: Verb -> Object -> [Char] -> ActionFrame ()
 playerProjectGI verb object syms = do
   state <- get
   pl    <- gets splayer
   ploc  <- gets (bloc . getPlayerBody)
-  per   <- currentPerception
+  per   <- getPerception
   let retarget msg = do
         msgAdd msg
-        updatePlayerBody (\ p -> p { btarget = TCursor })
-        let upd cursor = cursor {clocation=ploc}
+        let upd cursor = cursor {clocation=ploc, ceps=0}
         modify (updateCursor upd)
-        targetMonster TgtAuto
-  -- TODO: draw digital line and see if obstacles prevent firing
-  -- TODO: don't tell the player if the tiles he can't see are reachable,
-  -- but let him throw there and let them land closer, if not reachable
-  -- TODO: similarly let him throw at walls and land in front (digital line)
-  case targetToLoc (totalVisible per) state of
-    Just loc | actorReachesLoc pl loc per (Just pl) -> do
-      Kind.Ops{okind} <- contentf Kind.coitem
+        frs <- targetMonster TgtAuto
+        -- Mark that unexpectedly it does not take time.
+        modify (\ s -> s {snoTime = True})
+        return frs
+  case targetToLoc (totalVisible per) state ploc of
+    Just loc -> do
+      Kind.COps{coitem=Kind.Ops{okind}} <- getCOps
       is   <- gets getPlayerItem
-      iOpt <- getGroupItem is object syms
+      item <- getGroupItem is object syms
                 ("What to " ++ verb ++ "?") "in inventory"
       targeting <- gets (ctargeting . scursor)
       when (targeting == TgtAuto) $ endTargeting True
-      case iOpt of
-        Just i -> projectGroupItem pl loc (iverbProject $ okind $ jkind i) i
-        Nothing -> neverMind True
-    Just _  -> retarget "Last target unreachable."
+      projectGroupItem pl loc (iverbProject $ okind $ jkind item) item
+      returnNoFrame ()
     Nothing -> retarget "Last target invalid."
 
--- TODO: also target a monster by moving the cursor, if in target monster mode.
--- TODO: sort monsters by distance to the player.
-
 -- | Start the monster targeting mode. Cycle between monster targets.
-targetMonster :: TgtMode -> Action ()
+targetMonster :: TgtMode -> ActionFrame ()
 targetMonster tgtMode = do
   pl        <- gets splayer
-  ms        <- gets (lmonsters . slevel)
-  per       <- currentPerception
+  ploc      <- gets (bloc . getPlayerBody)
+  ms        <- gets (hostileAssocs . slevel)
+  per       <- getPerception
+  lxsize    <- gets (lxsize . slevel)
   target    <- gets (btarget . getPlayerBody)
   targeting <- gets (ctargeting . scursor)
-  let i = case target of
-            TEnemy (AMonster n) _ | targeting /= TgtOff -> n  -- next monster
-            TEnemy (AMonster n) _ -> n - 1  -- try to retarget old monster
-            _ -> -1  -- try to target first monster (e.g., number 0)
-      dms = case pl of
-              AMonster n -> IM.delete n ms  -- don't target yourself
-              AHero _ -> ms
-      (lt, gt) = IM.split i dms
-      gtlt     = IM.assocs gt ++ IM.assocs lt
+      -- TODO: sort monsters by distance to the player.
+  let plms = L.filter ((/= pl) . fst) ms  -- don't target yourself
+      ordLoc (_, m) = (chessDist lxsize ploc $ bloc m, bloc m)
+      dms = L.sortBy (comparing ordLoc) plms
+      (lt, gt) = case target of
+            TEnemy n _ | targeting /= TgtOff ->  -- pick the next monster
+              let i = fromMaybe (-1) $ L.findIndex ((== n) . fst) dms
+              in L.splitAt (i + 1) dms
+            TEnemy n _ ->  -- try to retarget the old monster
+              let i = fromMaybe (-1) $ L.findIndex ((== n) . fst) dms
+              in L.splitAt i dms
+            _ -> (dms, [])  -- target first monster (e.g., number 0)
+      gtlt     = gt ++ lt
       seen (_, m) =
         let mloc = bloc m
         in mloc `IS.member` totalVisible per         -- visible by any
@@ -183,66 +203,84 @@ targetMonster tgtMode = do
       lf = L.filter seen gtlt
       tgt = case lf of
               [] -> target  -- no monsters in sight, stick to last target
-              (na, nm) : _ -> TEnemy (AMonster na) (bloc nm)  -- pick the next
+              (na, nm) : _ -> TEnemy na (bloc nm)  -- pick the next
+  -- Register the chosen monster, to pick another on next invocation.
   updatePlayerBody (\ p -> p { btarget = tgt })
   setCursor tgtMode
 
 -- | Start the floor targeting mode or reset the cursor location to the player.
-targetFloor :: TgtMode -> Action ()
+targetFloor :: TgtMode -> ActionFrame ()
 targetFloor tgtMode = do
   ploc      <- gets (bloc . getPlayerBody)
   target    <- gets (btarget . getPlayerBody)
   targeting <- gets (ctargeting . scursor)
   let tgt = case target of
-        _ | targeting /= TgtOff -> TLoc ploc  -- double key press: reset cursor
         TEnemy _ _ -> TCursor  -- forget enemy target, keep the cursor
+        _ | targeting /= TgtOff -> TLoc ploc  -- double key press: reset cursor
+        TPath _ -> TCursor
         t -> t  -- keep the target from previous targeting session
+  -- Register that we want to target only locations.
   updatePlayerBody (\ p -> p { btarget = tgt })
   setCursor tgtMode
 
 -- | Set, activate and display cursor information.
-setCursor :: TgtMode -> Action ()
+setCursor :: TgtMode -> ActionFrame ()
 setCursor tgtMode = assert (tgtMode /= TgtOff) $ do
   state  <- get
-  per    <- currentPerception
+  per    <- getPerception
   ploc   <- gets (bloc . getPlayerBody)
   clocLn <- gets slid
-  let upd cursor@Cursor{ctargeting} =
-        let clocation = fromMaybe ploc (targetToLoc (totalVisible per) state)
+  let upd cursor@Cursor{ctargeting, clocation=clocationOld, ceps=cepsOld} =
+        let clocation =
+              fromMaybe ploc (targetToLoc (totalVisible per) state ploc)
+            ceps = if clocation == clocationOld then cepsOld else 0
             newTgtMode = if ctargeting == TgtOff then tgtMode else ctargeting
-        in cursor { ctargeting = newTgtMode, clocation, clocLn }
+        in cursor { ctargeting = newTgtMode, clocation, clocLn, ceps }
   modify (updateCursor upd)
   doLook
+
+-- | Tweak the @eps@ parameter of the targeting digital line.
+epsIncr :: Bool -> Action ()
+epsIncr b = do
+  targeting <- gets (ctargeting . scursor)
+  if targeting /= TgtOff
+    then modify $ updateCursor $
+           \ c@Cursor{ceps} -> c {ceps = ceps + if b then 1 else -1}
+    else neverMind True  -- no visual feedback, so no sense
 
 -- | End targeting mode, accepting the current location or not.
 endTargeting :: Bool -> Action ()
 endTargeting accept = do
   returnLn <- gets (creturnLn . scursor)
   target   <- gets (btarget . getPlayerBody)
-  per      <- currentPerception
+  per      <- getPerception
   cloc     <- gets (clocation . scursor)
-  ms       <- gets (lmonsters . slevel)
-  -- return to the original level of the player
-  modify (\ state -> state {slid = returnLn})
+  ms       <- gets (hostileAssocs . slevel)
+  -- Return to the original level of the player. Note that this can be
+  -- a different level than the one we started targeting at,
+  -- if the player was changed while targeting.
+  switchLevel returnLn
   modify (updateCursor (\ c -> c { ctargeting = TgtOff }))
-  case target of
-    TEnemy _ _ -> do
-      let canSee = IS.member cloc (totalVisible per)
-      when (accept && canSee) $
-        case L.find (\ (_im, m) -> bloc m == cloc) (IM.assocs ms) of
-          Just (im, m)  ->
-            let tgt = TEnemy (AMonster im) (bloc m)
-            in updatePlayerBody (\ p -> p { btarget = tgt })
-          Nothing -> return ()
-    _ ->
-      if accept
-      then updatePlayerBody (\ p -> p { btarget = TLoc cloc })
-      else updatePlayerBody (\ p -> p { btarget = TCursor })
-  endTargetingMsg
+  when accept $ do
+    case target of
+      TEnemy _ _ -> do
+        -- If in monster targeting mode, switch to the monster under
+        -- the current cursor location, if any.
+        let canSee = IS.member cloc (totalVisible per)
+        when (accept && canSee) $
+          case L.find (\ (_im, m) -> bloc m == cloc) ms of
+            Just (im, m)  ->
+              let tgt = TEnemy im (bloc m)
+              in updatePlayerBody (\ p -> p { btarget = tgt })
+            Nothing -> return ()
+      _ -> updatePlayerBody (\ p -> p { btarget = TLoc cloc })
+  if accept
+    then endTargetingMsg
+    else msgAdd "targeting canceled"
 
 endTargetingMsg :: Action ()
 endTargetingMsg = do
-  cops   <- contentf Kind.coactor
+  Kind.COps{coactor} <- getCOps
   pbody  <- gets getPlayerBody
   state  <- get
   lxsize <- gets (lxsize . slevel)
@@ -250,11 +288,12 @@ endTargetingMsg = do
       targetMsg = case btarget pbody of
                     TEnemy a _ll ->
                       if memActor a state
-                      then objectActor cops $ getActor a state
+                      then objectActor coactor $ getActor a state
                       else "a fear of the past"
                     TLoc loc -> "location " ++ showPoint lxsize loc
+                    TPath _ -> "a path"
                     TCursor  -> "current cursor position continuously"
-  msgAdd $ actorVerbExtra cops pbody verb targetMsg
+  msgAdd $ actorVerb coactor pbody verb targetMsg
 
 -- | Cancel something, e.g., targeting mode, resetting the cursor
 -- to the position of the player. Chosen target is not invalidated.
@@ -267,32 +306,28 @@ cancelCurrent = do
 
 -- | Accept something, e.g., targeting mode, keeping cursor where it was.
 -- Or perform the default action, if nothing needs accepting.
-acceptCurrent :: Action () -> Action ()
+acceptCurrent :: ActionFrame () -> ActionFrame ()
 acceptCurrent h = do
   targeting <- gets (ctargeting . scursor)
   if targeting /= TgtOff
-    then endTargeting True
+    then inFrame $ endTargeting True
     else h  -- nothing to accept right now
 
 -- | Drop a single item.
 dropItem :: Action ()
 dropItem = do
   -- TODO: allow dropping a given number of identical items.
-  cops  <- contentOps
+  cops  <- getCOps
   pl    <- gets splayer
   state <- get
   pbody <- gets getPlayerBody
   ploc  <- gets (bloc . getPlayerBody)
-  items <- gets getPlayerItem
-  iOpt  <- getAnyItem "What to drop?" items "inventory"
-  case iOpt of
-    Just stack -> do
-      let i = stack { jcount = 1 }
-      removeOnlyFromInventory pl i (bloc pbody)
-      msgAdd (actorVerbItemExtra cops state pbody "drop" i "")
-      modify (updateLevel (dropItemsAt [i] ploc))
-    Nothing -> neverMind True
-  playerAdvanceTime
+  ims   <- gets getPlayerItem
+  stack <- getAnyItem "What to drop?" ims "in inventory"
+  let item = stack { jcount = 1 }
+  removeOnlyFromInventory pl item (bloc pbody)
+  msgAdd (actorVerbItem cops state pbody "drop" item "")
+  modify (updateLevel (dropItemsAt [item] ploc))
 
 -- TODO: this is a hack for dropItem, because removeFromInventory
 -- makes it impossible to drop items if the floor not empty.
@@ -332,10 +367,10 @@ removeFromLoc i loc = do
 
 actorPickupItem :: ActorId -> Action ()
 actorPickupItem actor = do
-  cops@Kind.COps{coitem} <- contentOps
+  cops@Kind.COps{coitem} <- getCOps
   state <- get
   pl    <- gets splayer
-  per   <- currentPerception
+  per   <- getPerception
   lvl   <- gets slevel
   body  <- gets (getActor actor)
   bitems <- gets (getActorItem actor)
@@ -344,7 +379,7 @@ actorPickupItem actor = do
       isPlayer  = actor == pl
   -- check if something is here to pick up
   case lvl `atI` loc of
-    []   -> abortIfWith isPlayer "nothing here"
+    []   -> abortWith "nothing here"
     i:is -> -- pick up first item; TODO: let pl select item; not for monsters
       case assignLetter (jletter i) (bletter body) bitems of
         Just l -> do
@@ -352,18 +387,17 @@ actorPickupItem actor = do
           -- msg depends on who picks up and if a hero can perceive it
           if isPlayer
             then msgAdd (letterLabel (jletter ni)
-                         ++ objectItem coitem state ni)
+                         ++ objectItem coitem state ni ++ ".")
             else when perceived $
                    msgAdd $
-                   actorVerbExtraItemExtra cops state body "pick" "up" i ""
+                   actorVerbExtraItem cops state body "pick" "up" i ""
           removeFromLoc i loc
             >>= assert `trueM` (i, is, loc, "item is stuck")
           -- add item to actor's inventory:
           updateAnyActor actor $ \ m ->
             m { bletter = maxLetter l (bletter body) }
           modify (updateAnyActorItem actor (const nitems))
-        Nothing -> abortIfWith isPlayer "cannot carry any more"
-  advanceTime actor
+        Nothing -> abortWith "cannot carry any more"
 
 pickupItem :: Action ()
 pickupItem = do
@@ -381,18 +415,19 @@ pickupItem = do
 -- known. In actor handlers we should make sure
 -- that messages are printed to the player only if the
 -- hero can perceive the action.
--- Perhaps this means half of this code should be split and moved
--- to ItemState, to be independent of any IO code from Action/Display. Actually, not, since the message display depends on Display. Unless we return a string to be displayed.
 
 -- TODO: you can drop an item already the floor, which works correctly,
 -- but is weird and useless.
+
+allObjectsName :: String
+allObjectsName = "Objects"
 
 -- | Let the player choose any item from a list of items.
 getAnyItem :: String  -- ^ prompt
            -> [Item]  -- ^ all items in question
            -> String  -- ^ how to refer to the collection of items
-           -> Action (Maybe Item)
-getAnyItem prompt = getItem prompt (const True) "Objects"
+           -> Action Item
+getAnyItem prompt = getItem prompt (const True) allObjectsName
 
 data ItemDialogState = INone | ISuitable | IAll deriving Eq
 
@@ -403,58 +438,59 @@ getItem :: String               -- ^ prompt message
         -> String               -- ^ how to describe suitable items
         -> [Item]               -- ^ all items in question
         -> String               -- ^ how to refer to the collection of items
-        -> Action (Maybe Item)
+        -> Action Item
 getItem prompt p ptext is0 isn = do
   lvl  <- gets slevel
   body <- gets getPlayerBody
   let loc = bloc body
       tis = lvl `atI` loc
-      floorMsg = if L.null tis then "" else " -,"
-      is = L.filter p is0
+      floorFull = not $ null tis
+      (floorMsg, floorKey) | floorFull = (", -", [K.Char '-'])
+                           | otherwise = ("", [])
+      isp = L.filter p is0
+      bestFull = not $ null isp
+      (bestMsg, bestKey)
+        | bestFull =
+          let bestLetter = maybe "" (\ l -> ['(', l, ')']) $
+                             jletter $ L.maximumBy cmpItemLM isp
+          in (", RET" ++ bestLetter, [K.Return])
+        | otherwise = ("", [])
       cmpItemLM i1 i2 = cmpLetterMaybe (jletter i1) (jletter i2)
+      keys ims =
+        let mls = mapMaybe jletter ims
+            ks = bestKey ++ floorKey ++ [K.Char '?'] ++ map K.Char mls
+        in zip ks $ repeat K.NoModifier
       choice ims =
-        if L.null ims
-        then "[?," ++ floorMsg ++ " ESC]"
+        if null ims
+        then "[?" ++ floorMsg
         else let mls = mapMaybe jletter ims
                  r = letterRange mls
-                 ret = maybe "" (\ l -> ['(', l, ')']) $
-                         jletter $ L.maximumBy cmpItemLM ims
-             in "[" ++ r ++ ", ?," ++ floorMsg ++ " RET" ++ ret ++ ", ESC]"
+             in "[" ++ r ++ ", ?" ++ floorMsg ++ bestMsg
       ask = do
         when (L.null is0 && L.null tis) $
           abortWith "Not carrying anything."
-        msgReset (prompt ++ " " ++ choice is)
-        displayAll
-        session nextCommand >>= perform ISuitable
-      perform itemDialogState command = do
-        let ims = if itemDialogState == INone then is0 else is
-        msgClear
-        case command of
-          K.Char '?' | itemDialogState == ISuitable -> do
-            -- filter for suitable items
-            b <- displayItems
-                   (ptext ++ " " ++ isn ++ ". " ++ choice is) True is
-            if b then session (getOptionalConfirm (const ask)
-                                 (perform IAll))
-                 else ask
-          K.Char '?' | itemDialogState == IAll -> do
-            -- show all items
-            b <- displayItems
-                   ("Objects " ++ isn ++ ". " ++ choice is0) True is0
-            if b then session (getOptionalConfirm (const ask)
-                                 (perform INone))
-                 else ask
-          K.Char '?' | itemDialogState == INone -> ask
-          K.Char '-' ->
-            case tis of
-              []   -> return Nothing
-              i:_rs -> -- use first item; TODO: let player select item
-                      return $ Just i
-          K.Char l ->
-            return (L.find (maybe False (== l) . jletter) ims)
-          K.Return ->
-            if L.null ims
-            then return Nothing
-            else return $ Just $ L.maximumBy cmpItemLM ims
-          _ -> return Nothing
+        perform INone
+      perform itemDialogState = do
+        let (ims, imsOver, msg) = case itemDialogState of
+              INone     -> (isp, [], prompt ++ " ")
+              ISuitable -> (isp, isp, ptext ++ " " ++ isn ++ ". ")
+              IAll      -> (is0, is0, allObjectsName ++ " " ++ isn ++ ". ")
+        io <- itemOverlay True False imsOver
+        (command, modifier) <-
+          displayChoiceUI (msg ++ choice ims) io (keys ims)
+        assert (modifier == K.NoModifier) $
+          case command of
+            K.Char '?' -> case itemDialogState of
+              INone -> perform ISuitable
+              ISuitable | ptext /= allObjectsName -> perform IAll
+              _ -> perform INone
+            K.Char '-' | floorFull ->
+              -- TODO: let player select item
+              return $ L.maximumBy cmpItemLM tis
+            K.Char l | l `elem` mapMaybe jletter ims ->
+              let mitem = L.find (maybe False (== l) . jletter) ims
+              in return $ fromJust mitem
+            K.Return | bestFull ->
+              return $ L.maximumBy cmpItemLM isp
+            k -> assert `failure` "perform: unexpected key: " ++ show k
   ask

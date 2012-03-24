@@ -14,16 +14,20 @@ import qualified Game.LambdaHack.Feature as F
 -- | Abstract syntax of player commands. The type is abstract, but the values
 -- are created outside this module via the Read class (from config file) .
 data Cmd =
+    -- These take time:
     Apply       { verb :: Verb, object :: Object, syms :: [Char] }
   | Project     { verb :: Verb, object :: Object, syms :: [Char] }
   | TriggerDir  { verb :: Verb, object :: Object, feature :: F.Feature }
   | TriggerTile { verb :: Verb, object :: Object, feature :: F.Feature }
   | Pickup
   | Drop
+  | Wait
+    -- These do not take time:
   | Inventory
   | TgtFloor
   | TgtEnemy
   | TgtAscend Int
+  | EpsIncr Bool
   | GameSave
   | GameQuit
   | Cancel
@@ -33,7 +37,6 @@ data Cmd =
   | HeroCycle
   | Version
   | Help
-  | Wait
   | Redraw
   deriving (Show, Read)
 
@@ -52,9 +55,6 @@ majorCmd cmd = case cmd of
   Help          -> True
   _             -> False
 
--- TODO: Advance time automatically for these, but somehow advance
--- time for monsters, too. Perhaps wait until monsters use commands, too
--- (or rather the micro-commands to be added in the future).
 -- | Time cosuming commands are marked as such in help and cannot be
 -- invoked in targeting mode on a remote level (level different than
 -- the level of the selected hero).
@@ -66,33 +66,37 @@ timedCmd cmd = case cmd of
   TriggerTile{} -> True
   Pickup        -> True
   Drop          -> True
+  GameSave      -> True
+  GameQuit      -> True
   Wait          -> True
   _             -> False
 
 -- | The semantics of player commands in terms of the @Action@ monad.
-cmdSemantics :: Cmd -> Action ()
+cmdSemantics :: Cmd -> ActionFrame ()
 cmdSemantics cmd = case cmd of
-  Apply{..}       -> playerApplyGroupItem verb object syms
+  Apply{..}       -> inFrame $ playerApplyGroupItem verb object syms
   Project{..}     -> playerProjectGroupItem verb object syms
-  TriggerDir{..}  -> playerTriggerDir feature
-  TriggerTile{..} -> playerTriggerTile feature
-  Pickup ->    pickupItem
-  Drop ->      dropItem
+  TriggerDir{..}  -> inFrame $ playerTriggerDir feature verb
+  TriggerTile{..} -> inFrame $ playerTriggerTile feature
+  Pickup ->    inFrame $ pickupItem
+  Drop ->      inFrame $ dropItem
+  Wait ->      inFrame $ return ()
+
   Inventory -> inventory
   TgtFloor ->  targetFloor   TgtExplicit
   TgtEnemy ->  targetMonster TgtExplicit
   TgtAscend k -> tgtAscend k
-  GameSave ->  saveGame
-  GameQuit ->  quitGame
-  Cancel ->    cancelCurrent
+  EpsIncr b -> inFrame $ epsIncr b
+  GameSave ->  inFrame $ saveGame
+  GameQuit ->  inFrame $ quitGame
+  Cancel ->    inFrame $ cancelCurrent
   Accept ->    acceptCurrent displayHelp
   History ->   displayHistory
-  CfgDump ->   dumpConfig
-  HeroCycle -> cycleHero
-  Version ->   gameVersion
+  CfgDump ->   inFrame $ dumpConfig
+  HeroCycle -> inFrame $ cycleHero
+  Version ->   inFrame $ gameVersion
   Help ->      displayHelp
-  Wait ->      playerAdvanceTime
-  Redraw ->    return ()
+  Redraw ->    inFrame $ redraw
 
 -- | Description of player commands.
 cmdDescription :: Cmd -> String
@@ -103,6 +107,8 @@ cmdDescription cmd = case cmd of
   TriggerTile{..} -> verb ++ " " ++ addIndefinite object
   Pickup ->    "get an object"
   Drop ->      "drop an object"
+  Wait ->      ""
+
   Inventory -> "display inventory"
   TgtFloor ->  "target location"
   TgtEnemy ->  "target monster"
@@ -111,6 +117,8 @@ cmdDescription cmd = case cmd of
   TgtAscend k | k == -1 -> "target next deeper level"
   TgtAscend k | k <= -2 -> "target " ++ show (-k) ++ " levels deeper"
   TgtAscend _ -> error "void level change in targeting mode in config file"
+  EpsIncr True  -> "swerve targeting line"
+  EpsIncr False -> "unswerve targeting line"
   GameSave ->  "save and exit the game"
   GameQuit ->  "quit without saving"
   Cancel ->    "cancel action"
@@ -120,5 +128,4 @@ cmdDescription cmd = case cmd of
   HeroCycle -> "cycle among heroes on level"
   Version ->   "display game version"
   Help ->      "display help"
-  Wait ->      ""
   Redraw ->    "clear messages"

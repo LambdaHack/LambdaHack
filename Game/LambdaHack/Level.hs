@@ -2,13 +2,13 @@
 -- as the game progresses.
 module Game.LambdaHack.Level
   ( -- * The @Level@ type and its components
-    Party, PartyItem, SmellMap, SecretMap, ItemMap, TileMap, Level(..)
+    ActorDict, InvDict, SmellMap, SecretMap, ItemMap, TileMap, Level(..)
     -- * Level update
-  , updateHeroes, updateMonsters, updateHeroItem, updateMonItem
+  , updateActorDict, updateInv
   , updateSmell, updateIMap, updateLMap, updateLRMap, dropItemsAt
     -- * Level query
   , at, rememberAt, atI, rememberAtI
-  , stdRuleset, accessible, openable, findLoc, findLocTry
+  , accessible, openable, findLoc, findLocTry
   ) where
 
 import Data.Binary
@@ -26,18 +26,19 @@ import Game.LambdaHack.Random
 import Game.LambdaHack.Tile
 import qualified Game.LambdaHack.Feature as F
 import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Time
 
--- | All actors of a given side on the level.
-type Party = IM.IntMap Actor
+-- | All actors on the level, indexed by actor identifier.
+type ActorDict = IM.IntMap Actor
 
--- | Items carried by each party member.
-type PartyItem = IM.IntMap [Item]
+-- | Items carried by actors, indexed by actor identifier.
+type InvDict = IM.IntMap [Item]
 
 -- | Current smell on map tiles.
 type SmellMap = IM.IntMap SmellTime
 
 -- | Current secrecy value on map tiles.
-type SecretMap = IM.IntMap SecretStrength
+type SecretMap = IM.IntMap SecretTime
 
 -- | Actual and remembered item lists on map tiles.
 type ItemMap = IM.IntMap ([Item], [Item])
@@ -47,12 +48,10 @@ type TileMap = Kind.Array Point TileKind
 
 -- | A single, inhabited dungeon level.
 data Level = Level
-  { lheroes   :: Party           -- ^ all heroes on the level
-  , lheroItem :: PartyItem       -- ^ hero items
+  { lactor    :: ActorDict       -- ^ all actors on the level
+  , linv      :: InvDict         -- ^ items belonging to actors
   , lxsize    :: X               -- ^ width of the level
   , lysize    :: Y               -- ^ height of the level
-  , lmonsters :: Party           -- ^ all monsters on the level
-  , lmonItem  :: PartyItem       -- ^ monster items
   , lsmell    :: SmellMap        -- ^ smells
   , lsecret   :: SecretMap       -- ^ secrecy values
   , litem     :: ItemMap         -- ^ items on the ground
@@ -61,18 +60,17 @@ data Level = Level
   , ldesc     :: String          -- ^ level description for the player
   , lmeta     :: String          -- ^ debug information from cave generation
   , lstairs   :: (Point, Point)  -- ^ destination of the (up, down) stairs
+  , ltime     :: Time            -- ^ date of the last activity on the level
   }
   deriving Show
 
 -- | Update the hero and monster maps.
-updateHeroes, updateMonsters :: (Party -> Party) -> Level -> Level
-updateHeroes f lvl = lvl { lheroes = f (lheroes lvl) }
-updateMonsters f lvl = lvl { lmonsters = f (lmonsters lvl) }
+updateActorDict :: (ActorDict -> ActorDict) -> Level -> Level
+updateActorDict f lvl = lvl { lactor = f (lactor lvl) }
 
 -- | Update the hero items and monster items maps.
-updateHeroItem, updateMonItem :: (PartyItem -> PartyItem) -> Level -> Level
-updateHeroItem f lvl = lvl { lheroItem = f (lheroItem lvl) }
-updateMonItem f lvl = lvl { lmonItem = f (lmonItem lvl) }
+updateInv :: (InvDict -> InvDict) -> Level -> Level
+updateInv f lvl = lvl { linv = f (linv lvl) }
 
 -- | Update the smell map.
 updateSmell :: (SmellMap -> SmellMap) -> Level -> Level
@@ -98,13 +96,11 @@ dropItemsAt items loc =
   in  updateIMap (IM.alter adj loc)
 
 instance Binary Level where
-  put (Level hs hi sx sy ms mi ls le li lm lrm ld lme lstairs) = do
-    put hs
-    put hi
+  put (Level ad ia sx sy ls le li lm lrm ld lme lstairs ltime) = do
+    put ad
+    put ia
     put sx
     put sy
-    put ms
-    put mi
     put ls
     put le
     put (assert
@@ -116,13 +112,12 @@ instance Binary Level where
     put ld
     put lme
     put lstairs
+    put ltime
   get = do
-    hs <- get
-    hi <- get
+    ad <- get
+    ia <- get
     sx <- get
     sy <- get
-    ms <- get
-    mi <- get
     ls <- get
     le <- get
     li <- get
@@ -131,7 +126,8 @@ instance Binary Level where
     ld <- get
     lme <- get
     lstairs <- get
-    return (Level hs hi sx sy ms mi ls le li lm lrm ld lme lstairs)
+    ltime <- get
+    return (Level ad ia sx sy ls le li lm lrm ld lme lstairs ltime)
 
 -- | Query for actual and remembered tile kinds on the map.
 at, rememberAt :: Level -> Point -> Kind.Id TileKind
@@ -144,28 +140,24 @@ atI, rememberAtI :: Level -> Point -> [Item]
 atI         Level{litem} p = fst $ IM.findWithDefault ([], []) p litem
 rememberAtI Level{litem} p = snd $ IM.findWithDefault ([], []) p litem
 
--- | The standard ruleset used for level operations.
-stdRuleset :: Kind.Ops RuleKind -> RuleKind
-stdRuleset Kind.Ops{ouniqGroup, okind} = okind $ ouniqGroup "standard"
-
 -- | Check whether one location is accessible from another,
 -- using the formula from the standard ruleset.
 accessible :: Kind.COps -> Level -> Point -> Point -> Bool
 accessible Kind.COps{ cotile=Kind.Ops{okind=okind}, corule}
            lvl@Level{lxsize} sloc tloc =
-  let check = raccessible $ stdRuleset corule
+  let check = raccessible $ Kind.stdRuleset corule
       src = okind $ lvl `at` sloc
       tgt = okind $ lvl `at` tloc
   in check lxsize sloc src tloc tgt
 
 -- | Check whether the location contains a door of secrecy lower than @k@
 -- and that can be opened according to the standard ruleset.
-openable :: Kind.Ops TileKind -> Level -> SecretStrength -> Point -> Bool
+openable :: Kind.Ops TileKind -> Level -> SecretTime -> Point -> Bool
 openable cops lvl@Level{lsecret} k target =
   let tgt = lvl `at` target
   in hasFeature cops F.Openable tgt ||
      (hasFeature cops F.Hidden tgt &&
-      lsecret IM.! target < k)
+      lsecret IM.! target <= k)
 
 -- | Find a random location on the map satisfying a predicate.
 findLoc :: TileMap -> (Point -> Kind.Id TileKind -> Bool) -> Rnd Point

@@ -15,15 +15,15 @@ newtype Strategy a = Strategy { runStrategy :: [Frequency a] }
 
 -- | Strategy is a monad. TODO: Can we write this as a monad transformer?
 instance Monad Strategy where
-  return x = Strategy $ return $ uniformFreq [x]
+  return x = Strategy $ return $ uniformFreq "Strategy_return" [x]
   m >>= f  = Strategy $
-               filter (not . nullFreq)
-               [ toFreq [ (p * q, b)
-                        | (p, a) <- runFrequency x
-                        , y <- runStrategy (f a)
-                        , (q, b) <- runFrequency y
-                        ]
-               | x <- runStrategy m ]
+    filter (not . nullFreq)
+    [ toFreq "Strategy_bind" [ (p * q, b)
+                             | (p, a) <- runFrequency x
+                             , y <- runStrategy (f a)
+                             , (q, b) <- runFrequency y
+                             ]
+    | x <- runStrategy m ]
 
 instance MonadPlus Strategy where
   mzero = Strategy []

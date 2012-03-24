@@ -2,11 +2,12 @@
 module Game.LambdaHack.Color
   ( -- * Colours
     Color(..), defBG, defFG, isBright, legalBG, colorToRGB
-    -- * Text attributes
-  , Attr(..), defaultAttr
+    -- * Text attributes and the screen
+  , Attr(..), defaultAttr, AttrChar(..), SingleFrame(..), Animation
   ) where
 
-import qualified Data.Binary as Binary
+import Data.Binary
+import qualified Data.IntMap as IM
 
 -- TODO: since this type may be essential to speed, consider implementing
 -- it as an Int, with color numbered as they are on terminals, see
@@ -33,9 +34,9 @@ data Color =
   | BrWhite
   deriving (Show, Eq, Ord, Enum, Bounded)
 
-instance Binary.Binary Color where
-  put = Binary.putWord8 . toEnum . fromEnum
-  get = fmap (toEnum . fromEnum) Binary.getWord8
+instance Binary Color where
+  put = putWord8 . toEnum . fromEnum
+  get = fmap (toEnum . fromEnum) getWord8
 
 -- | The default colours, to optimize attribute setting.
 defBG, defFG :: Color
@@ -49,9 +50,45 @@ data Attr = Attr
   }
   deriving (Show, Eq, Ord)
 
+instance Binary Attr where
+  put Attr{..} = do
+    put fg
+    put bg
+  get = do
+    fg <- get
+    bg <- get
+    return Attr{..}
+
 -- | The default attribute, to optimize attribute setting.
 defaultAttr :: Attr
 defaultAttr = Attr defFG defBG
+
+data AttrChar = AttrChar
+  { acAttr :: !Attr
+  , acChar :: !Char
+  }
+  deriving (Show, Eq)
+
+instance Binary AttrChar where
+  put AttrChar{..} = do
+    put acAttr
+    put acChar
+  get = do
+    acAttr <- get
+    acChar <- get
+    return AttrChar{..}
+
+-- | The data sufficent to draw a single game screen frame.
+data SingleFrame = SingleFrame
+  { sfLevel  :: ![[AttrChar]]  -- ^ content of the screen, line by line
+  , sfTop    :: String         -- ^ an extra line to show at the top
+  , sfBottom :: String         -- ^ an extra line to show at the bottom
+  }
+  deriving Eq
+
+-- | Animation is a list of frame modifications to play one by one,
+-- where each modification if a map from locations to level map symbols.
+type Animation = [IM.IntMap AttrChar]
 
 -- | A helper for the terminal frontends that display bright via bold.
 isBright :: Color -> Bool

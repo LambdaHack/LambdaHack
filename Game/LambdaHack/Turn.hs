@@ -1,172 +1,250 @@
 -- | The main loop of the game, processing player and AI moves turn by turn.
-module Game.LambdaHack.Turn ( handle ) where
+module Game.LambdaHack.Turn ( handleTurn ) where
 
 import Control.Monad
 import Control.Monad.State hiding (State, state)
+import Control.Arrow ((&&&))
 import qualified Data.List as L
 import qualified Data.Ord as Ord
-import qualified Data.IntMap as IM
 import qualified Data.Map as M
+import qualified Data.IntMap as IM
+import Data.Maybe
 
+import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
-import qualified Game.LambdaHack.Config as Config
 import Game.LambdaHack.EffectAction
 import qualified Game.LambdaHack.Binding as Binding
-import Game.LambdaHack.Level
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
+import Game.LambdaHack.Level
 import Game.LambdaHack.Random
 import Game.LambdaHack.State
 import Game.LambdaHack.Strategy
 import Game.LambdaHack.StrategyAction
 import Game.LambdaHack.Running
-import qualified Game.LambdaHack.Tile as Tile
+import qualified Game.LambdaHack.Key as K
+import Game.LambdaHack.Msg
+import Game.LambdaHack.Draw
+import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Time
+import qualified Game.LambdaHack.HighScore as H
 
--- One turn proceeds through the following functions:
+-- One clip proceeds through the following functions:
 --
--- handle
--- handleAI, handleMonster
--- nextMove
--- handle (again)
---
--- OR:
---
--- handle
--- handlePlayer, playerCommand
--- handleAI, handleMonster
--- nextMove
--- handle (again)
---
+-- handleTurn
+-- handleActors
+-- handleMonster or handlePlayer
+-- handleActors
+-- handleMonster or handlePlayer
+-- ...
+-- handleTurn (again)
+
 -- What's happening where:
 --
--- handle: determine who moves next,
---   dispatch to handleAI or handlePlayer
+-- handleTurn: HP regeneration, monster generation, determine who moves next,
+--   dispatch to handlePlayer and handleActors, advance global game time
 --
--- handlePlayer: remember, display, get and process commmand(s),
---   update smell map, update perception
+-- handleActors: find an actor that can move, advance actor time,
+--   update perception, remember, push frame, repeat
 --
--- handleAI: find monsters that can move
+-- handlePlayer: update perception, remember, display frames,
+--   get and process commmands (zero or more), update smell map
 --
--- handleMonster: determine and process monster action, advance monster time
---
--- nextMove: advance global game time, HP regeneration, monster generation
---
--- This is rather convoluted, and the functions aren't named very aptly, so we
--- should clean this up later. TODO.
+-- handleMonster: determine and process monster action
 
--- | Decide if the hero is ready for another move.
--- If yes, run a player move, if not, run an AI move.
--- In either case, eventually the next turn is started or the game ends.
-handle :: Action ()
-handle = do
-  debug "handle"
-  state <- get
-  let ptime = btime (getPlayerBody state)  -- time of player's next move
-  let time  = stime state                  -- current game time
-  debug $ "handle: time check. ptime = "
+-- | Start a clip (a part of a turn for which one or more frames
+-- will be generated). Do whatever has to be done
+-- every fixed number of time units, e.g., monster generation.
+-- Run the player and other actors moves.
+-- Eventually advance the time and repeat.
+handleTurn :: Action ()
+handleTurn = do
+  debug "handleTurn"
+  time <- gets stime  -- the end time of this clip, inclusive
+  let clipN = (time `timeFit` timeClip) `mod` (timeTurn `timeFit` timeClip)
+  -- Regenerate HP and add monsters each turn, not each clip.
+  when (clipN == 1) regenerateLevelHP
+  when (clipN == 3) generateMonster
+  ptime <- gets (btime . getPlayerBody)  -- time of player's next move
+  debug $ "handleTurn: time check. ptime = "
           ++ show ptime ++ ", time = " ++ show time
-  if ptime > time
-    then handleAI  -- the hero can't make a move yet; monsters first
-    else handlePlayer    -- it's the hero's turn!
-
-    -- TODO: readd this, but only for the turns when anything moved
-    -- and only after a rendering delay is added, so that the move is visible
-    -- on modern computers. Use the same delay for running (not disabled now).
-    -- We redraw the map even between player moves so that the movements of fast
-    -- monsters can be traced on the map.
-    -- displayGeneric ColorFull (const "")
+  handleActors timeZero
+  modify (updateTime (timeAdd timeClip))
+  squit <- gets squit
+  case squit of
+    Nothing -> handleTurn
+    Just status@(_, H.Camping) -> do
+      pl <- gets splayer
+      advanceTime False pl  -- rewind player time: his action was only Save
+      shutGame status
+    Just status -> shutGame status
 
 -- TODO: We should replace this structure using a priority search queue/tree.
--- | Handle monster moves. Perform moves for individual monsters as long as
--- there are monsters that have a move time which is less than or equal to
--- the current time.
-handleAI :: Action ()
-handleAI = do
-  debug "handleAI"
-  time <- gets stime
-  ms   <- gets (lmonsters . slevel)
-  pl   <- gets splayer
-  if IM.null ms
-    then nextMove
-    else let order  = Ord.comparing (btime . snd)
-             (i, m) = L.minimumBy order (IM.assocs ms)
-             actor = AMonster i
-         in if btime m > time || actor == pl
-            then nextMove  -- no monster is ready for another move
-            else handleMonster actor
+-- | Perform moves for individual actors not controlled
+-- by the player, as long as there are actors
+-- with the next move time less than or equal to the current time.
+-- Some very fast actors may move many times a clip and then
+-- we introduce subclips and produce many frames per clip to avoid
+-- jerky movement. Otherwise we push exactly one frame or frame delay.
+handleActors :: Time       -- ^ the start time of current subclip, exclusive
+             -> Action ()
+handleActors subclipStart = do
+  debug "handleActors"
+  Kind.COps{coactor} <- getCOps
+  time <- gets stime  -- the end time of this clip, inclusive
+  lactor <- gets (allButHeroesAssocs . slevel)
+  pl <- gets splayer
+  pbody <- gets getPlayerBody
+  squit <- gets squit
+  let as = (pl, pbody) : lactor  -- older actors act first
+      mnext = if null as  -- wait until any actor spawned
+              then Nothing
+              else let -- Heroes move first then monsters, then the rest.
+                       order = Ord.comparing (btime . snd &&& bparty . snd)
+                       (actor, m) = L.minimumBy order as
+                   in if btime m > time
+                      then Nothing  -- no actor is ready for another move
+                      else Just (actor, m)
+  case mnext of
+    _ | isJust squit -> return ()
+    Nothing -> when (subclipStart == timeZero) $ displayFramePush Nothing
+    Just (actor, m) -> do
+      advanceTime True actor  -- advance time while the actor still alive
+      if actor == pl || bparty m == heroParty
+        then
+          -- Player moves always start a new subclip.
+          startClip $ do
+            handlePlayer
+            handleActors $ btime m
+        else
+          let speed = actorSpeed coactor m
+              delta = ticksPerMeter speed
+          in if subclipStart == timeZero
+                || btime m > timeAdd subclipStart delta
+             then
+               -- That's the first move this clip
+               -- or the monster has already moved this subclip.
+               -- I either case, start a new subclip.
+               startClip $ do
+                 handleMonster actor
+                 handleActors $ btime m
+             else do
+               -- The monster didn't yet move this subclip.
+               handleMonster actor
+               handleActors subclipStart
 
 -- | Handle the move of a single monster.
 handleMonster :: ActorId -> Action ()
 handleMonster actor = do
   debug "handleMonster"
-  cops  <- contentOps
+  cops  <- getCOps
   state <- get
-  -- Simplification: this is the perception after the last player command
-  -- and does not take into account, e.g., other monsters opening doors.
-  per <- currentPerception
+  per <- getPerception
   -- Run the AI: choses an action from those given by the AI strategy.
   join $ rndToAction $
            frequency (head (runStrategy (strategy cops actor state per
-                                         .| wait actor)))
-  handleAI
-
--- TODO: nextMove may not be a good name. It's part of the problem of the
--- current design that all of the top-level functions directly call each
--- other, rather than being called by a driver function.
--- | After everything has been handled for the current game time, we can
--- advance the time. Here is the place to do whatever has to be done for
--- every time unit, e.g., monster generation.
-nextMove :: Action ()
-nextMove = do
-  debug "nextMove"
-  modify (updateTime (+1))
-  regenerateLevelHP
-  generateMonster
-  handle
+                                         .| wait)))
 
 -- | Handle the move of the hero.
 handlePlayer :: Action ()
 handlePlayer = do
   debug "handlePlayer"
-  -- Determine perception before running player command, in case monsters
-  -- have opened doors, etc.
-  withPerception $ do
-    remember  -- The hero notices his surroundings, before they get displayed.
-    oldPlayerTime <- gets (btime . getPlayerBody)
-    playerCommand
-    -- At this point, the command was successful and possibly took some time.
-    newPlayerTime <- gets (btime . getPlayerBody)
-    if newPlayerTime == oldPlayerTime
-      then handlePlayer  -- no time taken, repeat
-      else do
-        state <- get
-        pl    <- gets splayer
-        let time = stime state
-            ploc = bloc (getPlayerBody state)
-            sTimeout = Config.get (sconfig state) "monsters" "smellTimeout"
-        -- Update smell. Only humans leave a strong scent.
-        when (isAHero pl) $
-          modify (updateLevel (updateSmell (IM.insert ploc
-                                             (Tile.SmellTime
-                                                (time + sTimeout)))))
-        -- Determine perception to let monsters target heroes.
-        withPerception handleAI
+  -- When running, stop if aborted by a disturbance.
+  -- Otherwise let the player issue commands, until any of them takes time.
+  -- First time, just after pushing frames, ask for commands in Push mode.
+  tryWith (\ msg -> stopRunning >> playerCommand msg) $
+    ifRunning continueRun abort
+  addSmell
 
--- | Determine and process the next player command.
-playerCommand :: Action ()
-playerCommand = do
-  displayAll -- draw the current surroundings
-  history    -- update the message history and reset current message
-  tryRepeatedlyWith stopRunning $  -- on abort, just ask for a new command
-    ifRunning continueRun $ do
-      k <- session nextCommand
-      session (\ Session{skeyb} ->
-                case M.lookup k (Binding.kcmd skeyb) of
-                  Just (_, c)  -> c
-                  Nothing ->
-                    abortWith $ "unknown command <" ++ show k ++ ">")
+-- | Determine and process the next player command. The argument is the last
+-- abort message due to running, if any.
+playerCommand :: Msg -> Action ()
+playerCommand msgRunAbort = do
+  -- The frame state is now Push.
+  Binding.Binding{kcmd} <- getBinding
+  kmPush <- case msgRunAbort of
+    "" -> getKeyCommand (Just True)
+    _  -> drawPrompt ColorFull msgRunAbort >>= getKeyChoice []
+  -- The frame state is now None and remains so between each pair
+  -- of lines of @loop@ (but can change within called actions).
+  let loop :: (K.Key, K.Modifier) -> Action ()
+      loop km = do
+        -- Messages shown, so update history and reset current report.
+        recordHistory
+        -- On abort, just reset state and call loop again below.
+        (timed, frames) <- tryWithFrame (return False) $ do
+          -- Look up the key.
+          case M.lookup km kcmd of
+            Just (_, declaredTimed, c) -> do
+              ((), frs) <- c
+              -- Targeting cursor movement and a few other subcommands
+              -- are wrongly marked as timed. This is indicated in their
+              -- definitions by setting @snoTime@ flag and used and reset here.
+              snoTime <- gets snoTime
+              let timed = declaredTimed && not snoTime
+              modify (\ s -> s {snoTime = False})
+              -- Ensure at least one frame, if the command takes no time.
+              -- No frames for @abort@, so the code is here, not below.
+              if not timed && null (catMaybes frs)
+                then do
+                  fr <- drawPrompt ColorFull ""
+                  return (timed, [Just fr])
+                else return (timed, frs)
+            Nothing -> let msgKey = "unknown command <" ++ K.showKM km ++ ">"
+                       in abortWith msgKey
+        -- The command was aborted or successful and if the latter,
+        -- possibly took some time.
+        if not timed
+          then do
+            -- If no time taken, rinse and repeat.
+            -- Analyse the obtained frames.
+            let (mfr, frs) = case reverse $ catMaybes frames of
+                  []     -> (Nothing, [])
+                  f : fs -> (Just f, reverse fs)
+            -- Show, one by one, all but the last frame.
+            -- Note: the code that generates the frames is responsible
+            -- for inserting the @more@ prompt.
+            b <- getOverConfirm frs
+            -- Display the last frame while waiting for the next key or,
+            -- if there is no next frame, just get the key.
+            kmNext <- case mfr of
+              Just fr | b -> getKeyChoice [] fr
+              _           -> getKeyCommand Nothing
+            -- Look up and perform the next command.
+            loop kmNext
+          else do
+            -- Exit the loop and let other actors act. No next key needed
+            -- and no frames could have been generated.
+            assert (null frames `blame` length frames) $
+              return ()
+  loop kmPush
 
+-- | Advance (or rewind) the move time for the given actor.
+advanceTime :: Bool -> ActorId -> Action ()
+advanceTime forward actor = do
+  Kind.COps{coactor} <- getCOps
+  pl <- gets splayer
+  let upd m@Actor{btime} =
+        let speed = actorSpeed coactor m
+            ticks = ticksPerMeter speed
+            delta | forward   = ticks
+                  | otherwise = timeNegate ticks
+        in m {btime = timeAdd btime delta}
+  updateAnyActor actor upd
+  -- A hack to synchronize the whole party:
+  body <- gets (getActor actor)
+  when (actor == pl) $ do
+    let updParty m = if bparty m == heroParty
+                     then m {btime = btime body}
+                     else m
+    modify (updateLevel (updateActorDict (IM.map updParty)))
+
+
+-- The issues below are now complicated (?) by the fact that we now generate
+-- a game screen frame at least once every clip and a jointed pair
+-- of frame+key input for each command that does not take time.
+--
 -- Design thoughts (in order to get rid or partially rid of the somewhat
 -- convoluted design we have): We have three kinds of commands.
 --
