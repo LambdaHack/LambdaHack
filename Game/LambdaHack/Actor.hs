@@ -2,10 +2,13 @@
 -- involves the 'State' or 'Action' type.
 module Game.LambdaHack.Actor
   ( -- * Actor identifiers and related operations
-    ActorId(..), isAHero, isAMonster, invalidActorId
-  , findHeroName, monsterGenChance
+    ActorId, findHeroName, monsterGenChance
+    -- * Party identifiers
+  , PartyId, heroParty, enemyParty, animalParty
+  , heroProjectiles, enemyProjectiles, animalProjectiles, allProjectiles
     -- * The@ Acto@r type
   , Actor(..), template, addHp, unoccupied, heroKindId
+  , projectileKindId, actorSpeed
     -- * Type of na actor target
   , Target(..)
   ) where
@@ -16,13 +19,38 @@ import Data.Maybe
 import Data.Ratio
 
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Misc
 import Game.LambdaHack.Vector
 import Game.LambdaHack.Point
 import Game.LambdaHack.Content.ActorKind
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Config as Config
+import Game.LambdaHack.Time
+import qualified Game.LambdaHack.Color as Color
+
+-- | The type of party identifiers.
+newtype PartyId = PartyId Int
+  deriving (Show, Eq, Ord)
+
+-- | All supported party identifiers. Animals and projectiles move every turn.
+-- Projectiles don't recognize friends and foes, animals turn friedly
+-- or hostile, depending on various factors.
+heroParty, enemyParty, animalParty,
+  heroProjectiles, enemyProjectiles, animalProjectiles :: PartyId
+heroParty = PartyId 0
+enemyParty = PartyId 1
+animalParty = PartyId 2
+heroProjectiles = PartyId 3
+enemyProjectiles = PartyId 4
+animalProjectiles = PartyId 5
+
+-- | The list of parties that represent projectiles.
+allProjectiles :: [PartyId]
+allProjectiles = [heroProjectiles, enemyProjectiles, animalProjectiles]
+
+instance Binary PartyId where
+  put (PartyId n) = put n
+  get = fmap PartyId get
 
 -- | Actor properties that are changing throughout the game.
 -- If they are dublets of properties from @ActorKind@,
@@ -32,67 +60,51 @@ data Actor = Actor
   { bkind   :: !(Kind.Id ActorKind)    -- ^ the kind of the actor
   , bsymbol :: !(Maybe Char)           -- ^ individual map symbol
   , bname   :: !(Maybe String)         -- ^ individual name
+  , bcolor  :: !(Maybe Color.Color)    -- ^ individual map color
+  , bspeed  :: !(Maybe Speed)          -- ^ individual speed
   , bhp     :: !Int                    -- ^ current hit points
   , bdir    :: !(Maybe (Vector, Int))  -- ^ direction and distance of running
   , btarget :: Target                  -- ^ target for ranged attacks and AI
   , bloc    :: !Point                  -- ^ current location
   , bletter :: !Char                   -- ^ next inventory letter
-  , btime   :: !Time                   -- ^ time of next action
+  , btime   :: !Time                   -- ^ absolute time of next action
+  , bparty  :: !PartyId                -- ^ to which party the actor belongs
   }
   deriving Show
 
 instance Binary Actor where
-  put (Actor ak an as ah ad at al ale ati) = do
-    put ak
-    put an
-    put as
-    put ah
-    put ad
-    put at
-    put al
-    put ale
-    put ati
+  put Actor{..} = do
+    put bkind
+    put bsymbol
+    put bname
+    put bcolor
+    put bspeed
+    put bhp
+    put bdir
+    put btarget
+    put bloc
+    put bletter
+    put btime
+    put bparty
   get = do
-    ak  <- get
-    an  <- get
-    as  <- get
-    ah  <- get
-    ad  <- get
-    at  <- get
-    al  <- get
-    ale <- get
-    ati <- get
-    return (Actor ak an as ah ad at al ale ati)
+    bkind   <- get
+    bsymbol <- get
+    bname   <- get
+    bcolor  <- get
+    bspeed  <- get
+    bhp     <- get
+    bdir    <- get
+    btarget <- get
+    bloc    <- get
+    bletter <- get
+    btime   <- get
+    bparty  <- get
+    return Actor{..}
 
 -- ActorId operations
 
 -- | A unique identifier of an actor in a dungeon.
-data ActorId = AHero    !Int  -- ^ hero index (on the lheroes intmap)
-             | AMonster !Int  -- ^ monster index (on the lmonsters intmap)
-  deriving (Show, Eq, Ord)
-
-instance Binary ActorId where
-  put (AHero n)    = putWord8 0 >> put n
-  put (AMonster n) = putWord8 1 >> put n
-  get = do
-    tag <- getWord8
-    case tag of
-      0 -> liftM AHero get
-      1 -> liftM AMonster get
-      _ -> fail "no parse (ActorId)"
-
--- | Checks whether an actor identifier represents a hero.
-isAHero :: ActorId -> Bool
-isAHero (AHero _) = True
-isAHero (AMonster _) = False
-
--- | Checks whether an actor identifier represents a monster.
-isAMonster :: ActorId -> Bool
-isAMonster = not . isAHero
-
--- | An actor that is not on any level.
-invalidActorId :: ActorId
-invalidActorId = AMonster (-1)
+type ActorId = Int
 
 -- | Find a hero name in the config file, or create a stock name.
 findHeroName :: Config.CP -> Int -> String
@@ -107,8 +119,8 @@ findHeroName config n =
 -- which monster is generated. How many and which monsters are generated
 -- will also depend on the cave kind used to build the level.
 monsterGenChance :: Int -> Int -> Rnd Bool
-monsterGenChance d numMonsters =
-  chance $ 1%(fromIntegral (250 + 200 * (numMonsters - d)) `max` 50)
+monsterGenChance depth numMonsters =
+  chance $ 1%(fromIntegral (25 + 20 * (numMonsters - depth)) `max` 5)
 
 -- Actor operations
 
@@ -119,10 +131,14 @@ monsterGenChance d numMonsters =
 -- | A template for a new actor. The initial target is invalid
 -- to force a reset ASAP.
 template :: Kind.Id ActorKind -> Maybe Char -> Maybe String -> Int -> Point
-         -> Actor
-template mk mc ms hp loc =
-  let invalidTarget = TEnemy invalidActorId loc
-  in Actor mk mc ms hp Nothing invalidTarget loc 'a' 0
+         -> Time -> PartyId -> Actor
+template bkind bsymbol bname bhp bloc btime bparty =
+  let bcolor  = Nothing
+      bspeed  = Nothing
+      btarget = invalidTarget
+      bdir    = Nothing
+      bletter = 'a'
+  in Actor{..}
 
 -- | Increment current hit points of an actor.
 addHp :: Kind.Ops ActorKind -> Int -> Actor -> Actor
@@ -144,23 +160,42 @@ unoccupied actors loc =
 heroKindId :: Kind.Ops ActorKind -> Kind.Id ActorKind
 heroKindId Kind.Ops{ouniqGroup} = ouniqGroup "hero"
 
+-- | The unique kind of projectiles.
+projectileKindId :: Kind.Ops ActorKind -> Kind.Id ActorKind
+projectileKindId Kind.Ops{ouniqGroup} = ouniqGroup "projectile"
+
+-- | Access actor speed, individual or, otherwise, stock.
+actorSpeed :: Kind.Ops ActorKind -> Actor -> Speed
+actorSpeed Kind.Ops{okind} m =
+  let stockSpeed = aspeed $ okind $ bkind m
+  in fromMaybe stockSpeed $ bspeed m
+
 -- Target
 
 -- | The type of na actor target.
 data Target =
     TEnemy ActorId Point  -- ^ target an actor with its last seen location
   | TLoc Point            -- ^ target a given location
+  | TPath [Vector]        -- ^ target the list of locations one after another
   | TCursor               -- ^ target current position of the cursor; default
   deriving (Show, Eq)
+
+-- | An invalid target, with an actor that is not on any level.
+invalidTarget :: Target
+invalidTarget =
+  let invalidActorId = -1
+  in TEnemy invalidActorId origin
 
 instance Binary Target where
   put (TEnemy a ll) = putWord8 0 >> put a >> put ll
   put (TLoc loc) = putWord8 1 >> put loc
-  put TCursor    = putWord8 2
+  put (TPath ls) = putWord8 2 >> put ls
+  put TCursor    = putWord8 3
   get = do
     tag <- getWord8
     case tag of
       0 -> liftM2 TEnemy get get
       1 -> liftM TLoc get
-      2 -> return TCursor
+      2 -> liftM TPath get
+      3 -> return TCursor
       _ -> fail "no parse (Target)"

@@ -16,8 +16,8 @@ import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Tile
-import Game.LambdaHack.Level
 import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Msg
 
 speedup :: Kind.Ops TileKind -> Kind.Speedup TileKind
 speedup Kind.Ops{ofoldrWithKey, obounds} =
@@ -46,8 +46,8 @@ speedupCops sess@Session{scops = cops@Kind.COps{cotile=tile}} =
 start :: Config.CP -> Session -> IO ()
 start config1 slowSess = do
   let sess@Session{scops = cops@Kind.COps{corule}} = speedupCops slowSess
-      title = rtitle $ stdRuleset corule
-      pathsDataFile = rpathsDataFile $ stdRuleset corule
+      title = rtitle $ Kind.stdRuleset corule
+      pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
   restored <- Save.restoreGame pathsDataFile config1 title
   case restored of
     Right (msg, diary) -> do  -- Starting a new game.
@@ -59,8 +59,9 @@ start config1 slowSess = do
       let state = defaultState
                     config3 sflavour freshDungeon entryLevel entryLoc g3
           hstate = initialHeroes cops entryLoc state
-      handlerToIO sess hstate diary{smsg = msg} handle
+      handlerToIO sess hstate diary{sreport = singletonReport msg} handleTurn
     Left (state, diary) ->  -- Running a restored a game.
       handlerToIO sess state
-        diary{smsg = "Welcome back to " ++ title ++ "."}  -- TODO:save old msg?
-        handle
+        -- This overwrites the "Really save/quit?" messages.
+        diary{sreport = singletonReport $ "Welcome back to " ++ title ++ "."}
+        handleTurn

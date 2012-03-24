@@ -2,8 +2,10 @@
 module Game.LambdaHack.Point
   ( Point, toPoint, showPoint
   , origin, chessDist, adjacent, vicinity, vicinityCardinal
-  , inside, displacement
+  , inside, displacementXYZ, bla
   ) where
+
+import qualified Data.List as L
 
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.VectorXY
@@ -77,9 +79,22 @@ vicinityCardinal lxsize lysize loc =
 inside :: X -> Point -> Area -> Bool
 inside lxsize loc = insideXY $ fromPoint lxsize loc
 
--- | Calculate the displacement vector of a location wrt another location.
-displacement :: X -> Point -> Point -> VectorXY
-displacement lxsize loc0 loc1
+-- | Calculate the displacement vector from a location to another.
+displacementXYZ :: X -> Point -> Point -> VectorXY
+displacementXYZ lxsize loc0 loc1
   | PointXY (x0, y0) <- fromPoint lxsize loc0
   , PointXY (x1, y1) <- fromPoint lxsize loc1 =
   VectorXY (x1 - x0, y1 - y0)
+
+-- | Bresenham's line algorithm generalized to arbitrary starting @eps@
+-- (@eps@ value of 0 gives the standard BLA).
+-- Skips the source point and goes through the second point
+-- to the edge of the level. GIves @Nothing@ if the points are equal.
+bla :: X -> Y -> Int -> Point -> Point -> Maybe [Point]
+bla _ _ _ source target | source == target = Nothing
+bla lxsize lysize eps source target = Just $
+  let s = fromPoint lxsize source
+      e = fromPoint lxsize target
+      inBounds p@(PointXY (x, y)) =
+        lxsize > x && x >= 0 && lysize > y && y >= 0 && p /= s
+  in L.map (toPoint lxsize) $ L.takeWhile inBounds $ L.tail $ blaXY eps s e

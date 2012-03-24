@@ -3,7 +3,7 @@ module Game.LambdaHack.State
   ( -- * Game state
     State(..), TgtMode(..), Cursor(..)
     -- * Accessor
-  , slevel
+  , slevel, stime
     -- * Constructor
   , defaultState
     -- * State update
@@ -15,20 +15,20 @@ module Game.LambdaHack.State
   ) where
 
 import qualified Data.Set as S
-import qualified Data.IntSet as IS
 import Data.Binary
 import qualified Game.LambdaHack.Config as Config
 import qualified System.Random as R
 import System.Time
 
 import Game.LambdaHack.Actor
-import Game.LambdaHack.Misc
 import Game.LambdaHack.Point
 import Game.LambdaHack.Level
 import qualified Game.LambdaHack.Dungeon as Dungeon
 import Game.LambdaHack.Item
 import Game.LambdaHack.Msg
 import Game.LambdaHack.FOV
+import Game.LambdaHack.Time
+import qualified Game.LambdaHack.HighScore as H
 
 -- | The diary contains all the player data
 -- that carries over from game to game.
@@ -36,8 +36,8 @@ import Game.LambdaHack.FOV
 -- history of past games. This can be used for calculating player
 -- achievements, unlocking advanced game features and general data mining.
 data Diary = Diary
-  { smsg         :: Msg
-  , shistory     :: [Msg]
+  { sreport     :: Report
+  , shistory :: History
   }
 
 -- | The state of a single game that can be save and restored.
@@ -46,15 +46,15 @@ data Diary = Diary
 data State = State
   { splayer  :: ActorId      -- ^ represents the player-controlled actor
   , scursor  :: Cursor       -- ^ cursor location and level to return to
-  , stime    :: Time         -- ^ current in-game time
   , sflavour :: FlavourMap   -- ^ association of flavour to items
   , sdisco   :: Discoveries  -- ^ items (kinds) that have been discovered
   , sdungeon :: Dungeon.Dungeon  -- ^ all dungeon levels
   , slid     :: Dungeon.LevelId  -- ^ identifier of the current level
-  , scounter :: (Int, Int)   -- ^ stores next hero index and monster index
-  , sparty   :: IS.IntSet    -- ^ heroes in the party
+  , scounter :: Int          -- ^ stores next actor index
   , srandom  :: R.StdGen     -- ^ current random generator
   , sconfig  :: Config.CP    -- ^ game config
+  , snoTime  :: Bool         -- ^ last command unexpectedly took no time
+  , squit    :: Maybe (Bool, H.Status)  -- ^ cause of game shutdown
   , sdebug   :: DebugMode    -- ^ debugging mode
   }
   deriving Show
@@ -72,6 +72,7 @@ data Cursor = Cursor
   , clocLn     :: Dungeon.LevelId  -- ^ cursor level
   , clocation  :: Point            -- ^ cursor coordinates
   , creturnLn  :: Dungeon.LevelId  -- ^ the level current player resides on
+  , ceps       :: Int              -- ^ a parameter of the tgt digital line
   }
   deriving Show
 
@@ -85,15 +86,19 @@ data DebugMode = DebugMode
 slevel :: State -> Level
 slevel State{slid, sdungeon} = sdungeon Dungeon.! slid
 
--- TODO: add date.
+-- | Get current time from the dungeon data.
+stime :: State -> Time
+stime State{slid, sdungeon} = ltime $ sdungeon Dungeon.! slid
+
 -- | Initial player diary.
 defaultDiary :: IO Diary
 defaultDiary = do
-  curDate <- getClockTime
-  let time = calendarTimeToString $ toUTCTime curDate
+  dateTime <- getClockTime
+  let curDate = calendarTimeToString $ toUTCTime dateTime
   return Diary
-    { smsg = ""
-    , shistory = ["Player diary started on " ++ time ++ "."]
+    { sreport = emptyReport
+    , shistory = singletonHistory $ singletonReport $
+                   "Player diary started on " ++ curDate ++ "."
     }
 
 -- | Initial game state.
@@ -101,17 +106,17 @@ defaultState :: Config.CP -> FlavourMap -> Dungeon.Dungeon -> Dungeon.LevelId
              -> Point -> R.StdGen -> State
 defaultState config flavour dng lid ploc g =
   State
-    (AHero 0)  -- hack: the hero is not yet alive
-    (Cursor TgtOff lid ploc lid)
-    0
+    0  -- hack: the hero is not yet alive
+    (Cursor TgtOff lid ploc lid 0)
     flavour
     S.empty
     dng
     lid
-    (0, 0)
-    IS.empty
+    0
     g
     config
+    False
+    Nothing
     defaultDebugMode
 
 defaultDebugMode :: DebugMode
@@ -126,7 +131,7 @@ updateCursor f s = s { scursor = f (scursor s) }
 
 -- | Update time within state.
 updateTime :: (Time -> Time) -> State -> State
-updateTime f s = s { stime = f (stime s) }
+updateTime f s = updateLevel (\ lvl@Level{ltime} -> lvl {ltime = f ltime}) s
 
 -- | Update item discoveries within state.
 updateDiscoveries :: (Discoveries -> Discoveries) -> State -> State
@@ -155,55 +160,55 @@ toggleOmniscient s@State{sdebug = sdebug@DebugMode{somniscient}} =
 
 instance Binary Diary where
   put Diary{..} = do
-    put smsg
+    put sreport
     put shistory
   get = do
-    smsg     <- get
+    sreport  <- get
     shistory <- get
     return Diary{..}
 
 instance Binary State where
-  put (State player cursor time flav disco dng lid ct
-         party g config _) = do
+  put (State player cursor flav disco dng lid ct
+         g config snoTime _ _) = do
     put player
     put cursor
-    put time
     put flav
     put disco
     put dng
     put lid
     put ct
-    put party
     put (show g)
     put config
+    put snoTime
   get = do
     player <- get
     cursor <- get
-    time   <- get
     flav   <- get
     disco  <- get
     dng    <- get
     lid    <- get
     ct     <- get
-    party  <- get
     g      <- get
-    config <- get
+    config  <- get
+    snoTime <- get
     return
-      (State player cursor time flav disco dng lid ct
-         party (read g) config defaultDebugMode)
+      (State player cursor flav disco dng lid ct
+         (read g) config snoTime Nothing defaultDebugMode)
 
 instance Binary Cursor where
-  put (Cursor act cln loc rln) = do
+  put (Cursor act cln loc rln eps) = do
     put act
     put cln
     put loc
     put rln
+    put eps
   get = do
     act <- get
     cln <- get
     loc <- get
     rln <- get
-    return (Cursor act cln loc rln)
+    eps <- get
+    return (Cursor act cln loc rln eps)
 
 instance Binary TgtMode where
   put TgtOff      = putWord8 0

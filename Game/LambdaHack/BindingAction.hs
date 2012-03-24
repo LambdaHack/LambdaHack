@@ -18,7 +18,7 @@ import Game.LambdaHack.Running
 import Game.LambdaHack.EffectAction
 import Game.LambdaHack.Binding
 import qualified Game.LambdaHack.Key as K
-import Game.LambdaHack.Actor
+import Game.LambdaHack.ActorState
 import Game.LambdaHack.Command
 
 configCmd :: Config.CP -> [(K.Key, Cmd)]
@@ -33,21 +33,21 @@ configCmd config =
   in L.map mkCommand section
 
 semanticsCmd :: [(K.Key, Cmd)]
-             -> (Cmd -> Action ())
+             -> (Cmd -> ActionFrame ())
              -> (Cmd -> String)
-             -> [(K.Key, (String, Action ()))]
+             -> [((K.Key, K.Modifier), (String, Bool, ActionFrame ()))]
 semanticsCmd cmdList cmdS cmdD =
   let mkDescribed cmd =
         let semantics = if timedCmd cmd
                         then checkCursor $ cmdS cmd
                         else cmdS cmd
-        in (cmdD cmd, semantics)
-      mkCommand (key, def) = (key, mkDescribed def)
+        in (cmdD cmd, timedCmd cmd, semantics)
+      mkCommand (key, def) = ((key, K.NoModifier), mkDescribed def)
   in L.map mkCommand cmdList
 
 -- | If in targeting mode, check if the current level is the same
 -- as player level and refuse performing the action otherwise.
-checkCursor :: Action () -> Action ()
+checkCursor :: ActionFrame () -> ActionFrame ()
 checkCursor h = do
   cursor <- gets scursor
   slid <- gets slid
@@ -55,18 +55,24 @@ checkCursor h = do
     then h
     else abortWith "this command does not work on remote levels"
 
-heroSelection :: [(K.Key, (String, Action ()))]
+heroSelection :: [((K.Key, K.Modifier), (String, Bool, ActionFrame ()))]
 heroSelection =
-  let heroSelect k = (K.Char (Char.intToDigit k),
-                      ("", void $ selectPlayer $ AHero k))
+  let select k = do
+        s <- get
+        case tryFindHeroK s k of
+          Nothing -> abortWith "No such member of the party."
+          Just aid -> selectPlayer aid >> returnNoFrame ()
+      heroSelect k = ( (K.Char (Char.intToDigit k), K.NoModifier)
+                     , ("", False, select k)
+                     )
   in fmap heroSelect [0..9]
 
 -- | Binding of keys to movement and other standard commands,
 -- as well as commands defined in the config file.
-stdBinding :: Config.CP            -- ^ game config
-           -> (Cmd -> Action ())   -- ^ semantics of abstract commands
-           -> (Cmd -> String)      -- ^ description of abstract commands
-           -> Binding (Action ())  -- ^ concrete binding
+stdBinding :: Config.CP                 -- ^ game config
+           -> (Cmd -> ActionFrame ())   -- ^ semantics of abstract commands
+           -> (Cmd -> String)           -- ^ description of abstract commands
+           -> Binding (ActionFrame ())  -- ^ concrete binding
 stdBinding config cmdS cmdD =
   let section = Config.getItems config "macros"
       !kmacro = macroKey section
@@ -78,17 +84,23 @@ stdBinding config cmdS cmdD =
       runWidth f = do
         lxsize <- gets (lxsize . slevel)
         run (f lxsize, 0)
+      -- Targeting cursor movement and others are wrongly marked as timed;
+      -- fixed in their definitions by rewinding time.
+      cmdDir = K.moveBinding moveWidth runWidth
   in Binding
   { kcmd   = M.fromList $
-             K.moveBinding moveWidth runWidth ++
+             cmdDir ++
              heroSelection ++
              semList ++
-             [ -- debug commands, TODO:access them from a common menu or prefix
-               (K.Char 'R', ("", modify cycleMarkVision)),
-               (K.Char 'O', ("", modify toggleOmniscient)),
-               (K.Char 'I', ("", gets (lmeta . slevel) >>= abortWith))
+             [ -- Debug commands.
+               ((K.Char 'r', K.Control), ("", False, modify cycleMarkVision
+                                                     >> returnNoFrame ())),
+               ((K.Char 'o', K.Control), ("", False, modify toggleOmniscient
+                                                     >> returnNoFrame ())),
+               ((K.Char 'i', K.Control), ("", False, gets (lmeta . slevel)
+                                                     >>= abortWith))
              ]
   , kmacro
   , kmajor = L.map fst $ L.filter (majorCmd . snd) cmdList
-  , ktimed = L.map fst $ L.filter (timedCmd . snd) cmdList
+  , kdir   = L.map fst cmdDir
   }

@@ -17,6 +17,7 @@ import Game.LambdaHack.PointXY
 import Game.LambdaHack.Misc
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Random
+import Game.LambdaHack.Content.CaveKind
 
 -- TODO: use more, rewrite as needed, document each field.
 -- | The parameters of a place. Most are immutable and set
@@ -50,7 +51,7 @@ instance Binary Place where
 
 -- | The map of tile kinds in a place (and generally anywhere in a cave).
 -- The map is sparse. The default tile that eventually fills the empty spaces
--- is specified in the cave kind specification with @cdefTile@.
+-- is specified in the cave kind specification with @cdefaultTile@.
 type TileMapXY = M.Map PointXY (Kind.Id TileKind)
 
 -- | For @CAlternate@ tiling, require the place be comprised
@@ -85,20 +86,21 @@ expandFence fence r = case fence of
 -- | Given a few parameters, roll and construct a 'Place' datastructure
 -- and fill a cave section acccording to it.
 buildPlace :: Kind.COps         -- ^ the game content
-           -> Kind.Id TileKind  -- ^ fence tile, if fence solid
+           -> CaveKind          -- ^ current cave kind
            -> Kind.Id TileKind  -- ^ fence tile, if fence hollow
-           -> RollDeep          -- ^ the chance of a dark place
            -> Int               -- ^ current level depth
            -> Int               -- ^ maximum depth
            -> Area              -- ^ interior area of the place
            -> Rnd (TileMapXY, Place)
-buildPlace Kind.COps{cotile, coplace=Kind.Ops{okind=pokind, opick=popick}}
-           qsolidFence qhollowFence cdarkChance lvl depth
-           r = assert (not (trivialArea r) `blame` r) $ do
-  dark <- chanceDeep lvl depth cdarkChance
+buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
+                    , coplace=Kind.Ops{okind=pokind, opick=popick} }
+           CaveKind{..} qhollowFence ln depth r
+           = assert (not (trivialArea r) `blame` r) $ do
+  qsolidFence <- opick cfillerTile (const True)
+  dark <- chanceDeep ln depth cdarkChance
   qkind <- popick "rogue" (placeValid r)
   let kr = pokind qkind
-      qlegend = if dark then "darkLegend" else "litLegend"
+      qlegend = if dark then cdarkLegendTile else clitLegendTile
       qseen = False
       qarea = expandFence (pfence kr) r
       place = assert (validArea qarea `blame` qarea) $

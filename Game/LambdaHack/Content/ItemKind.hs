@@ -27,6 +27,8 @@ data ItemKind = ItemKind
   , ipower   :: !RollDeep    -- ^ created with that power
   , iverbApply   :: !String  -- ^ the verb for applying and possibly combat
   , iverbProject :: !String  -- ^ the verb for projecting
+  , iweight  :: !Int         -- ^ weight in grams
+  , itoThrow :: !Int         -- ^ percentage bonus or malus to throw speed
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 

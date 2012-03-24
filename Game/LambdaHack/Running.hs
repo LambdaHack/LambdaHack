@@ -5,7 +5,6 @@ module Game.LambdaHack.Running
 
 import Control.Monad.State hiding (State, state)
 import qualified Data.List as L
-import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 
 import Game.LambdaHack.Utils.Assert
@@ -25,26 +24,30 @@ import qualified Game.LambdaHack.Kind as Kind
 import qualified Game.LambdaHack.Feature as F
 
 -- | Start running in the given direction and with the given number
--- of tiles already traversed (usually 0). The first step of running
--- succeeds much more often than subsequent steps, because most
+-- of tiles already traversed (usually 0). The first turn of running
+-- succeeds much more often than subsequent turns, because most
 -- of the disturbances are ignored, since the player is aware of them
 -- and still explicitly requests a run.
-run :: (Vector, Int) -> Action ()
+run :: (Vector, Int) -> ActionFrame ()
 run (dir, dist) = do
-  cops <- contentOps
+  cops <- getCOps
   pl <- gets splayer
   locHere <- gets (bloc . getPlayerBody)
   lvl <- gets slevel
   targeting <- gets (ctargeting . scursor)
   if targeting /= TgtOff
-    then moveCursor dir 10
+    then do
+      frs <- moveCursor dir 10
+      -- Mark that unexpectedly it does not take time.
+      modify (\ s -> s {snoTime = True})
+      return frs
     else do
       let accessibleDir loc d = accessible cops lvl loc (loc `shift` d)
           -- Do not count distance if we just open a door.
           distNew = if accessibleDir locHere dir then dist + 1 else dist
       updatePlayerBody (\ p -> p { bdir = Just (dir, distNew) })
-      -- attacks and opening doors disallowed while running
-      moveOrAttack False pl dir
+      -- Attacks and opening doors disallowed when continuing to run.
+      inFrame $ moveOrAttack False pl dir
 
 -- | Player running mode, determined from the nearby cave layout.
 data RunMode =
@@ -85,19 +88,20 @@ runMode loc dir dirEnterable lxsize =
           RunCorridor (if diagonal lxsize d1 then d2 else d1, True)
         _ -> RunHub  -- a hub of many separate corridors
 
--- | Check for disturbances to running such newly visible items, monsters, etc.
-runDisturbance :: Point -> Int -> Msg -> Party -> Party -> Perception -> Point
+-- | Check for disturbances to running such as newly visible items, monsters.
+runDisturbance :: Point -> Int -> Report
+               -> [Actor] -> [Actor] -> Perception -> Point
                -> (F.Feature -> Point -> Bool) -> (Point -> Bool) -> X -> Y
                -> (Vector, Int) -> Maybe (Vector, Int)
 runDisturbance locLast distLast msg hs ms per locHere
                locHasFeature locHasItems lxsize lysize (dirNew, distNew) =
-  let msgShown  = not (L.null msg)
-      mslocs    = IS.delete locHere $ IS.fromList (L.map bloc (IM.elems ms))
+  let msgShown  = not $ nullReport msg
+      mslocs    = IS.delete locHere $ IS.fromList (L.map bloc ms)
       enemySeen = not (IS.null (mslocs `IS.intersection` totalVisible per))
       surrLast  = locLast : vicinity lxsize lysize locLast
       surrHere  = locHere : vicinity lxsize lysize locHere
       locThere  = locHere `shift` dirNew
-      heroThere = locThere `elem` L.map bloc (IM.elems hs)
+      heroThere = locThere `elem` L.map bloc hs
       -- Stop if you touch any individual tile with these propereties
       -- first time, unless you enter it next move, in which case stop then.
       touchList = [ locHasFeature F.Exit
@@ -151,12 +155,12 @@ runDisturbance locLast distLast msg hs ms per locHere
 -- and it increments the counter of traversed tiles.
 continueRun :: (Vector, Int) -> Action ()
 continueRun (dirLast, distLast) = do
-  cops@Kind.COps{cotile} <- contentOps
+  cops@Kind.COps{cotile} <- getCOps
   locHere <- gets (bloc . getPlayerBody)
-  per <- currentPerception
-  msg <- currentMsg
-  ms  <- gets (lmonsters . slevel)
-  hs  <- gets (lheroes . slevel)
+  per <- getPerception
+  Diary{sreport} <- getDiary
+  ms  <- gets dangerousList
+  hs  <- gets friendlyList
   lvl@Level{lxsize, lysize} <- gets slevel
   let locHasFeature f loc = Tile.hasFeature cotile f (lvl `at` loc)
       locHasItems loc = not $ L.null $ lvl `atI` loc
@@ -164,7 +168,7 @@ continueRun (dirLast, distLast) = do
       tryRunDist (dir, distNew)
         | accessibleDir locHere dir =
           maybe abort run $
-            runDisturbance locLast distLast msg hs ms per locHere
+            runDisturbance locLast distLast sreport hs ms per locHere
               locHasFeature locHasItems lxsize lysize (dir, distNew)
         | otherwise = abort  -- do not open doors in the middle of a run
       tryRun dir = tryRunDist (dir, distLast)
@@ -173,7 +177,7 @@ continueRun (dirLast, distLast) = do
       openableDir loc dir   = Tile.hasFeature cotile F.Openable
                                 (lvl `at` (loc `shift` dir))
       dirEnterable loc d = accessibleDir loc d || openableDir loc d
-  case runMode locHere dirLast dirEnterable lxsize of
+  ((), frames) <- case runMode locHere dirLast dirEnterable lxsize of
     RunDeadEnd -> abort                   -- we don't run backwards
     RunOpen    -> tryRun dirLast          -- run forward into the open space
     RunHub     -> abort                   -- stop and decide where to go
@@ -185,3 +189,4 @@ continueRun (dirLast, distLast) = do
         RunHub  | turn -> abort           -- stop and decide when to turn
         RunOpen -> tryRunAndStop dirNext  -- no turn, get closer and stop
         RunHub  -> tryRunAndStop dirNext  -- no turn, get closer and stop
+  when (not $ null frames) abort  -- something serious happened, stop running

@@ -15,9 +15,9 @@ cdefs = Content.CDefs
   , getFreq = ifreq
   , validate = ivalidate
   , content =
-      [amulet, dart, gem1, gem2, gem3, gold, javelin, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand, fist, foot, tentacle, weight]
+      [amulet, dart, gem1, gem2, gem3, gold, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand, fist, foot, tentacle, weight]
   }
-amulet,        dart, gem1, gem2, gem3, gold, javelin, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand, fist, foot, tentacle, weight :: ItemKind
+amulet,        dart, gem1, gem2, gem3, gold, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand, fist, foot, tentacle, weight :: ItemKind
 
 gem, potion, scroll :: ItemKind  -- generic templates
 
@@ -32,7 +32,9 @@ amulet = ItemKind
   , icount   = intToDeep 1
   , ipower   = (RollDice 2 3, RollDice 1 10)
   , iverbApply   = "tear down"
-  , iverbProject = "throw"
+  , iverbProject = "cast"
+  , iweight  = 30
+  , itoThrow = -50  -- not dense enough
   }
 dart = ItemKind
   { isymbol  = '|'
@@ -43,7 +45,9 @@ dart = ItemKind
   , icount   = (RollDice 3 3, RollDice 0 0)
   , ipower   = intToDeep 0
   , iverbApply   = "snap"
-  , iverbProject = "throw"
+  , iverbProject = "hurl"
+  , iweight  = 50
+  , itoThrow = 0  -- a cheap dart
   }
 gem = ItemKind
   { isymbol  = '*'
@@ -54,16 +58,18 @@ gem = ItemKind
   , icount   = intToDeep 0
   , ipower   = intToDeep 0
   , iverbApply   = "crush"
-  , iverbProject = "throw"
+  , iverbProject = "toss"
+  , iweight  = 50
+  , itoThrow = 0
   }
 gem1 = gem
-  { icount   = (RollDice 1 1, RollDice 1 1)  -- appears on lvl 1
+  { icount   = (RollDice 0 0, RollDice 1 1)  -- appears on lvl 1
   }
 gem2 = gem
   { icount   = (RollDice 0 0, RollDice 1 2)  -- appears halfway
   }
 gem3 = gem
-  { icount   = (RollDice 0 0, RollDice 1 1)  -- appears on max depth
+  { icount   = (RollDice 0 0, RollDice 1 3)  -- appears on max depth
   }
 gold = ItemKind
   { isymbol  = '$'
@@ -74,18 +80,22 @@ gold = ItemKind
   , icount   = (RollDice 0 0, RollDice 10 10)
   , ipower   = intToDeep 0
   , iverbApply   = "grind"
-  , iverbProject = "throw"
+  , iverbProject = "toss"
+  , iweight  = 31
+  , itoThrow = 0
   }
-javelin = ItemKind
+harpoon = ItemKind
   { isymbol  = '|'
-  , iname    = "javelin"
+  , iname    = "harpoon"
   , ifreq    = [("dng", 30)]
   , iflavour = zipPlain [Brown]
   , ieffect  = Wound (RollDice 1 2)
   , icount   = (RollDice 0 0, RollDice 2 2)
   , ipower   = (RollDice 1 1, RollDice 2 2)
   , iverbApply   = "break up"
-  , iverbProject = "throw"
+  , iverbProject = "hurl"
+  , iweight  = 4000
+  , itoThrow = 0  -- cheap but deadly
   }
 potion = ItemKind
   { isymbol  = '!'
@@ -97,6 +107,8 @@ potion = ItemKind
   , ipower   = intToDeep 0
   , iverbApply   = "gulp down"
   , iverbProject = "lob"
+  , iweight  = 200
+  , itoThrow = -50  -- oily, bad grip
   }
 potion1 = potion
   { ifreq    = [("dng", 5)]
@@ -120,7 +132,9 @@ ring = ItemKind
   , icount   = intToDeep 1
   , ipower   = (RollDice 1 6, RollDice 3 2)
   , iverbApply   = "squeeze down"
-  , iverbProject = "throw"
+  , iverbProject = "toss"
+  , iweight  = 15
+  , itoThrow = 0
   }
 scroll = ItemKind
   { isymbol  = '?'
@@ -131,7 +145,9 @@ scroll = ItemKind
   , icount   = intToDeep 1
   , ipower   = intToDeep 0
   , iverbApply   = "decipher"
-  , iverbProject = "throw"
+  , iverbProject = "lob"
+  , iweight  = 50
+  , itoThrow = -75  -- bad shape, even rolled up
   }
 scroll1 = scroll
   { ieffect  = SummonFriend
@@ -153,6 +169,8 @@ sword = ItemKind
   , ipower   = (RollDice 1 2, RollDice 4 2)
   , iverbApply   = "hit"
   , iverbProject = "heave"
+  , iweight  = 2000
+  , itoThrow = -50  -- ensuring it hits with the tip costs speed
   }
 wand = ItemKind
   { isymbol  = '/'
@@ -164,6 +182,8 @@ wand = ItemKind
   , ipower   = intToDeep 0
   , iverbApply   = "snap"
   , iverbProject = "zap"
+  , iweight  = 300
+  , itoThrow = 25  -- magic
   }
 fist = sword
   { isymbol  = '@'

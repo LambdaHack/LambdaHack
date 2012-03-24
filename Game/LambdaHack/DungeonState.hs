@@ -33,13 +33,14 @@ import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Place
 import qualified Game.LambdaHack.Effect as Effect
 import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Time
 
 convertTileMaps :: Rnd (Kind.Id TileKind) -> Int -> Int -> TileMapXY
                 -> Rnd TileMap
-convertTileMaps cdefTile cxsize cysize lmap = do
+convertTileMaps cdefaultTile cxsize cysize lmap = do
   let bounds = (origin, toPoint cxsize $ PointXY (cxsize - 1, cysize - 1))
       assocs = map (\ (xy, t) -> (toPoint cxsize xy, t)) (M.assocs lmap)
-  pickedTiles <- replicateM (cxsize * cysize) cdefTile
+  pickedTiles <- replicateM (cxsize * cysize) cdefaultTile
   return $ Kind.listArray bounds pickedTiles Kind.// assocs
 
 unknownTileMap :: Kind.Id TileKind -> Int -> Int -> TileMap
@@ -54,10 +55,10 @@ mapToIMap cxsize m =
 rollItems :: Kind.COps -> Int -> Int -> CaveKind -> TileMap -> Point
           -> Rnd [(Point, Item)]
 rollItems Kind.COps{cotile, coitem=coitem@Kind.Ops{okind}}
-          lvl depth CaveKind{cxsize, citemNum, cminStairDist} lmap ploc = do
+          ln depth CaveKind{cxsize, citemNum, cminStairDist} lmap ploc = do
   nri <- rollDice citemNum
   replicateM nri $ do
-    item <- newItem coitem lvl depth
+    item <- newItem coitem ln depth
     let ik = okind (jkind item)
     l <- case ieffect ik of
            Effect.Wound dice | maxDice dice > 0  -- a weapon
@@ -73,9 +74,9 @@ rollItems Kind.COps{cotile, coitem=coitem@Kind.Ops{okind}}
            _ -> findLoc lmap (const (Tile.hasFeature cotile F.Boring))
     return (l, item)
 
-placeStairs :: Kind.Ops TileKind -> TileMap -> X -> Int -> [Place]
+placeStairs :: Kind.Ops TileKind -> TileMap -> CaveKind -> [Place]
             -> Rnd (Point, Kind.Id TileKind, Point, Kind.Id TileKind)
-placeStairs cotile@Kind.Ops{opick} cmap cxsize cminStairDist dplaces = do
+placeStairs cotile@Kind.Ops{opick} cmap CaveKind{..} dplaces = do
   su <- findLoc cmap (const (Tile.hasFeature cotile F.Boring))
   sd <- findLocTry 1000 cmap
           [ \ l _ -> chessDist cxsize su l >= cminStairDist
@@ -83,7 +84,8 @@ placeStairs cotile@Kind.Ops{opick} cmap cxsize cminStairDist dplaces = do
           , \ l t -> l /= su && Tile.hasFeature cotile F.Boring t
           ]
   let fitArea loc = inside cxsize loc . qarea
-      findLegend loc = maybe "litLegend" qlegend $ L.find (fitArea loc) dplaces
+      findLegend loc =
+        maybe clitLegendTile qlegend $ L.find (fitArea loc) dplaces
   upId   <- opick (findLegend su) $ Tile.kindHasFeature F.Ascendable
   downId <- opick (findLegend sd) $ Tile.kindHasFeature F.Descendable
   return (su, upId, sd, downId)
@@ -92,25 +94,23 @@ placeStairs cotile@Kind.Ops{opick} cmap cxsize cminStairDist dplaces = do
 buildLevel :: Kind.COps -> Cave -> Int -> Int -> Rnd Level
 buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, ouniqGroup}
                          , cocave=Kind.Ops{okind} }
-           Cave{..} lvl depth = do
-  let cfg@CaveKind{..} = okind dkind
-  cmap <- convertTileMaps (opick cdefTile (const True)) cxsize cysize dmap
+           Cave{..} ln depth = do
+  let kc@CaveKind{..} = okind dkind
+  cmap <- convertTileMaps (opick cdefaultTile (const True)) cxsize cysize dmap
   (su, upId, sd, downId) <-
-    placeStairs cotile cmap cxsize cminStairDist dplaces
-  let stairs = (su, upId) : if lvl == depth then [] else [(sd, downId)]
+    placeStairs cotile cmap kc dplaces
+  let stairs = (su, upId) : if ln == depth then [] else [(sd, downId)]
       lmap = cmap Kind.// stairs
-  is <- rollItems cops lvl depth cfg lmap su
+  is <- rollItems cops ln depth kc lmap su
   -- TODO: split this into Level.defaultLevel
   let itemMap = mapToIMap cxsize ditem `IM.union` IM.fromList is
       litem = IM.map (\ i -> ([i], [])) itemMap
       unknownId = ouniqGroup "unknown space"
       level = Level
-        { lheroes = IM.empty
-        , lheroItem = IM.empty
+        { lactor = IM.empty
+        , linv = IM.empty
         , lxsize = cxsize
         , lysize = cysize
-        , lmonsters = IM.empty
-        , lmonItem = IM.empty
         , lsmell = IM.empty
         , lsecret = mapToIMap cxsize dsecret
         , litem
@@ -119,6 +119,7 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, ouniqGroup}
         , ldesc = cname
         , lmeta = dmeta
         , lstairs = (su, sd)
+        , ltime = timeAdd timeTurn timeTurn  -- just stepped into the dungeon
         }
   return level
 

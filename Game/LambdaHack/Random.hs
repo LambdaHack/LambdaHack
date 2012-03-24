@@ -110,7 +110,7 @@ rollDeep n depth (d1, d2) =
   assert (n > 0 && n <= depth `blame` (n, depth)) $ do
   r1 <- rollDice d1
   r2 <- rollDice d2
-  return $ r1 + ((n - 1) * r2) `div` (depth - 1)
+  return $ r1 + ((n - 1) * r2) `div` max 1 (depth - 1)
 
 -- | Roll dice scaled with current level depth and return @True@
 -- if the results if greater than 50.

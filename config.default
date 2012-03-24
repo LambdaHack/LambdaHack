@@ -18,6 +18,8 @@
 ; braceright:   TgtAscend (-10)
 ; slash: TgtFloor
 ; asterisk: TgtEnemy
+; plus: EpsIncr True
+; minus: EpsIncr False
 ; Tab: HeroCycle
 ; ;
 ; ; Items.
@@ -27,7 +29,7 @@
 ; q: Apply { verb = "quaff", object = "potion", syms = "!" }
 ; r: Apply { verb = "read", object = "scroll", syms = "?" }
 ; z: Project { verb = "zap", object = "wand", syms = "/" }
-; t: Project { verb = "throw", object = "dart", syms = "|" }
+; t: Project { verb = "throw", object = "missile", syms = "|" }
 ; ;
 ; ; Saving or ending the game.
 ; X: GameSave
@@ -84,7 +86,7 @@
 ; period: KP_Begin
 
 ; [monsters]
-; smellTimeout: 1000
+; smellTimeout: 100
 
 ; [ui]
 ; font: Terminus,Monospace normal normal normal normal 12

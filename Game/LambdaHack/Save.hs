@@ -1,12 +1,14 @@
 -- | Saving and restoring games and player diaries.
 module Game.LambdaHack.Save
-  ( saveGame, restoreGame, rmBkpSaveDiary, saveGameBkp
+  ( saveGameFile, restoreGame, rmBkpSaveDiary, saveGameBkp
   ) where
 
 import System.Directory
 import System.FilePath
 import qualified Control.Exception as E hiding (handle)
 import Control.Monad
+import Control.Concurrent
+import System.IO.Unsafe (unsafePerformIO)  -- horrors
 
 import Game.LambdaHack.Utils.File
 import Game.LambdaHack.State
@@ -32,12 +34,17 @@ saveDiary state diary = do
   dfile <- diaryFile (sconfig state)
   encodeEOF dfile diary
 
--- | Save a simple serialized version of the current state and diary.
-saveGame :: State -> Diary -> IO ()
-saveGame state diary = do
+saveLock :: MVar ()
+saveLock = unsafePerformIO newEmptyMVar
+
+-- | Save a simple serialized version of the current state.
+-- Protected by a lock to avoid corrupting the file.
+saveGameFile :: State -> IO ()
+saveGameFile state = do
+  putMVar saveLock ()
   sfile <- saveFile (sconfig state)
   encodeEOF sfile state
-  saveDiary state diary  -- save the diary often in case of crashes
+  takeMVar saveLock
 
 -- | Try to create a directory. Hide errors due to,
 -- e.g., insufficient permissions, because the game can run
@@ -78,6 +85,7 @@ restoreGame pathsDataFile config title = do
     -- Possibly copy over data files. No problem if it fails.
     tryCopyDataFiles pathsDataFile appData
   -- If the diary file does not exist, create an empty diary.
+  -- TODO: when diary gets corrupted, start a new one, too.
   diary <-
     do dfile <- diaryFile config
        db <- doesFileExist dfile
@@ -114,19 +122,31 @@ mvBkp config = do
   renameFile sfile bfile
 
 -- | Save the diary and a backup of the save game file, in case of crashes.
+-- This is only a backup, so no problem is the game is shut down
+-- before saving finishes, so we don't wait on the mvar. However,
+-- if a previous save is already in progress, we skip this save.
 saveGameBkp :: State -> Diary -> IO ()
 saveGameBkp state diary = do
-  saveGame state diary
-  mvBkp (sconfig state)
+  b <- tryPutMVar saveLock ()
+  when b $
+    void $ forkIO $ do
+      saveDiary state diary  -- save the diary often in case of crashes
+      sfile <- saveFile (sconfig state)
+      encodeEOF sfile state
+      mvBkp (sconfig state)
+      takeMVar saveLock
 
 -- | Remove the backup of the savegame and save the player diary.
 -- Should be called before any non-error exit from the game.
 -- Sometimes the backup file does not exist and it's OK.
 -- We don't bother reporting any other removal exceptions, either,
 -- because the backup file is relatively unimportant.
+-- We wait on the mvar, because saving the diary at game shutdown is important.
 rmBkpSaveDiary :: State -> Diary -> IO ()
 rmBkpSaveDiary state diary = do
+  putMVar saveLock ()
   saveDiary state diary  -- save the diary often in case of crashes
   bfile <- bkpFile (sconfig state)
   bb <- doesFileExist bfile
   when bb $ removeFile bfile
+  takeMVar saveLock

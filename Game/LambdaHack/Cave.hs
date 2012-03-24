@@ -6,7 +6,9 @@ module Game.LambdaHack.Cave
 import Control.Monad
 import qualified Data.Map as M
 import qualified Data.List as L
+import Data.Maybe
 
+import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Area
 import Game.LambdaHack.AreaRnd
@@ -20,15 +22,16 @@ import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Place hiding (TileMapXY)
 import qualified Game.LambdaHack.Place as Place
 import Game.LambdaHack.Misc
+import Game.LambdaHack.Time
 
 -- | The map of tile kinds in a cave.
 -- The map is sparse. The default tile that eventually fills the empty spaces
--- is specified in the cave kind specification with @cdefTile@.
+-- is specified in the cave kind specification with @cdefaultTile@.
 type TileMapXY = Place.TileMapXY
 
 -- | The map of starting secrecy strength of tiles in a cave.
 -- The map is sparse. Unspecified tiles have secrecy strength of 0.
-type SecretMapXY = M.Map PointXY Tile.SecretStrength
+type SecretMapXY = M.Map PointXY Tile.SecretTime
 
 -- | The map of starting items in tiles of a cave. The map is sparse.
 -- Unspecified tiles have no starting items.
@@ -76,8 +79,8 @@ buildCave :: Kind.COps         -- ^ content definitions
           -> Rnd Cave
 buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick}
                         , cocave=Kind.Ops{okind} }
-          lvl depth ci = do
-  let CaveKind{..} = okind ci
+          ln depth ci = do
+  let kc@CaveKind{..} = okind ci
   lgrid@(gx, gy) <- rollDiceXY cgrid
   lminplace <- rollDiceXY cminPlaceSize
   let gs = grid lgrid (0, 0, cxsize - 1, cysize - 1)
@@ -103,18 +106,17 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick}
                  let r0 = places M.! p0
                      r1 = places M.! p1
                  connectPlaces r0 r1) allConnects
-  wallId <- opick "fillerWall" (const True)
+  wallId <- opick cfillerTile (const True)
   let fenceBounds = (1, 1, cxsize - 2, cysize - 2)
       fence = buildFence wallId fenceBounds
-  pickedCorTile <- opick ccorTile (const True)
+  pickedCorTile <- opick ccorridorTile (const True)
   let addPl (m, pls) (_, (x0, _, x1, _)) | x0 == x1 = return (m, pls)
       addPl (m, pls) (_, r) = do
-        (tmap, place) <-
-          buildPlace cops wallId pickedCorTile cdarkChance lvl depth r
+        (tmap, place) <- buildPlace cops kc pickedCorTile ln depth r
         return (M.union tmap m, place : pls)
   (lplaces, dplaces) <- foldM addPl (fence, []) places0
   let lcorridors = M.unions (L.map (digCorridors pickedCorTile) cs)
-  hiddenMap <- mapToHidden cotile
+  hiddenMap <- mapToHidden cotile chiddenTile
   let lm = M.unionWith (mergeCorridor cotile hiddenMap) lcorridors lplaces
   -- Convert openings into doors, possibly.
   (dmap, secretMap) <-
@@ -152,14 +154,14 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick}
         }
   return cave
 
-rollSecret :: TileKind -> Rnd Tile.SecretStrength
+rollSecret :: TileKind -> Rnd Tile.SecretTime
 rollSecret t = do
   let getDice (F.Secret dice) _ = dice
       getDice _ acc = acc
       defaultDice = RollDice 5 2
       d = foldr getDice defaultDice (tfeature t)
-  secret <- rollDice d
-  return $ Tile.SecretStrength secret
+  secretTurns <- rollDice d
+  return $ timeScale timeTurn secretTurns
 
 trigger :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
 trigger Kind.Ops{okind, opick} t =
@@ -180,14 +182,14 @@ digCorridors _ _ = M.empty
 passable :: [F.Feature]
 passable = [F.Walkable, F.Openable, F.Hidden]
 
-mapToHidden :: Kind.Ops TileKind
+mapToHidden :: Kind.Ops TileKind -> String
             -> Rnd (M.Map (Kind.Id TileKind) (Kind.Id TileKind))
-mapToHidden cotile@Kind.Ops{ofoldrWithKey, opick} =
+mapToHidden cotile@Kind.Ops{ofoldrWithKey, opick} chiddenTile =
   let getHidden ti tk acc =
         if Tile.canBeHidden cotile tk
         then do
-          ti2 <- opick "hidden" $ \ k -> Tile.kindHasFeature F.Hidden k
-                                         && Tile.similar k tk
+          ti2 <- opick chiddenTile $ \ k -> Tile.kindHasFeature F.Hidden k
+                                            && Tile.similar k tk
           fmap (M.insert ti ti2) acc
         else acc
   in ofoldrWithKey getHidden (return M.empty)
@@ -197,4 +199,6 @@ mergeCorridor :: Kind.Ops TileKind
               -> Kind.Id TileKind -> Kind.Id TileKind -> Kind.Id TileKind
 mergeCorridor cotile _    _ t
   | L.any (\ f -> Tile.hasFeature cotile f t) passable = t
-mergeCorridor _ hiddenMap _ t = hiddenMap M.! t
+mergeCorridor _ hiddenMap u t =
+  fromMaybe (assert `failure` (u, hiddenMap, t)) $
+    M.lookup t hiddenMap

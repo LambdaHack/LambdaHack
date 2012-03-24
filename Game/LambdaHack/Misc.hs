@@ -1,14 +1,11 @@
 -- | Hacks that haven't found their home yet.
 module Game.LambdaHack.Misc
-  ( normalLevelBound, Time, divUp, Freqs
+  ( normalLevelBound, divUp, Freqs
   ) where
 
 -- | Level bounds. TODO: query terminal size instead and scroll view.
 normalLevelBound :: (Int, Int)
 normalLevelBound = (79, 21)
-
--- | Game time in turns. The time dimension.
-type Time = Int
 
 -- | Integer division, rounding up.
 divUp :: Int -> Int -> Int

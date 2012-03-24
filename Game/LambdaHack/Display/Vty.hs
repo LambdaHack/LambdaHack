@@ -3,7 +3,7 @@ module Game.LambdaHack.Display.Vty
   ( -- * Session data type for the frontend
     FrontendSession
     -- * The output and input operations
-  , display, nextEvent
+  , display, nextEvent, promptGetKey
     -- * Frontend administration tools
   , frontendName, startup, shutdown
   ) where
@@ -13,9 +13,7 @@ import qualified Graphics.Vty as Vty
 import qualified Data.List as L
 import qualified Data.ByteString.Char8 as BS
 
-import Game.LambdaHack.Area
-import Game.LambdaHack.PointXY
-import qualified Game.LambdaHack.Key as K (Key(..))
+import qualified Game.LambdaHack.Key as K (Key(..), Modifier(..))
 import qualified Game.LambdaHack.Color as Color
 
 -- | Session data maintained by the frontend.
@@ -34,53 +32,73 @@ shutdown :: FrontendSession -> IO ()
 shutdown = Vty.shutdown
 
 -- | Output to the screen via the frontend.
-display :: Area             -- ^ the size of the drawn area
-        -> FrontendSession  -- ^ current session data
-        -> (PointXY -> (Color.Attr, Char))
-                            -- ^ the content of the screen
-        -> String           -- ^ an extra line to show at the top
-        -> String           -- ^ an extra line to show at bottom
+display :: FrontendSession          -- ^ frontend session data
+        -> Bool
+        -> Bool
+        -> Maybe Color.SingleFrame  -- ^ the screen frame to draw
         -> IO ()
-display (x0, y0, x1, y1) vty f msg status =
-  let img = (foldr (<->) empty_image .
-             L.map (foldr (<|>) empty_image .
-                    L.map (\ (x, y) -> let (a, c) = f (PointXY (x, y))
-                                       in char (setAttr a) c)))
-            [ [ (x, y) | x <- [x0..x1] ] | y <- [y0..y1] ]
+display _ _ _ Nothing = return ()
+display vty _ _ (Just Color.SingleFrame{..}) =
+  let img = (foldr (<->) empty_image
+             . L.map (foldr (<|>) empty_image
+                      . L.map (\ Color.AttrChar{..} ->
+                                char (setAttr acAttr) acChar)))
+            sfLevel
       pic = pic_for_image $
-              utf8_bytestring (setAttr Color.defaultAttr) (BS.pack msg)
+              utf8_bytestring (setAttr Color.defaultAttr) (BS.pack sfTop)
               <-> img <->
-              utf8_bytestring (setAttr Color.defaultAttr) (BS.pack status)
+              utf8_bytestring (setAttr Color.defaultAttr) (BS.pack sfBottom)
   in update vty pic
 
 -- | Input key via the frontend.
-nextEvent :: FrontendSession -> IO K.Key
-nextEvent sess = do
+nextEvent :: FrontendSession -> Maybe Bool -> IO (K.Key, K.Modifier)
+nextEvent sess mb = do
   e <- next_event sess
-  return (keyTranslate e)
-
-keyTranslate :: Event -> K.Key
-keyTranslate e =
   case e of
-    EvKey KEsc []          -> K.Esc
-    EvKey KEnter []        -> K.Return
-    EvKey (KASCII ' ') []  -> K.Space
-    EvKey (KASCII '\t') [] -> K.Tab
-    EvKey KUp []           -> K.Up
-    EvKey KDown []         -> K.Down
-    EvKey KLeft []         -> K.Left
-    EvKey KRight []        -> K.Right
-    EvKey KHome []         -> K.Home
-    EvKey KPageUp []       -> K.PgUp
-    EvKey KEnd []          -> K.End
-    EvKey KPageDown []     -> K.PgDn
-    EvKey KBegin []        -> K.Begin
-    -- No KP_ keys in vty; see https://github.com/coreyoconnor/vty/issues/8
-    -- For now, movement keys are more important than hero selection:
-    EvKey (KASCII c) []
-      | c `elem` ['1'..'9']  -> K.KP c
-      | otherwise            -> K.Char c
-    _                        -> K.Unknown (show e)
+    EvKey n mods -> do
+      let key = keyTranslate n
+          modifier = modifierTranslate mods
+      return (key, modifier)
+    _ -> nextEvent sess mb
+
+-- | Display a prompt, wait for any of the specified keys (for any key,
+-- if the list is empty). Repeat if an unexpected key received.
+promptGetKey :: FrontendSession -> [(K.Key, K.Modifier)] -> Color.SingleFrame
+             -> IO (K.Key, K.Modifier)
+promptGetKey sess keys frame = do
+  display sess True True $ Just frame
+  km <- nextEvent sess Nothing
+  let loop km2 =
+        if null keys || km2 `elem` keys
+        then return km2
+        else do
+          km3 <- nextEvent sess Nothing
+          loop km3
+  loop km
+
+keyTranslate :: Key -> K.Key
+keyTranslate n =
+  case n of
+    KEsc          -> K.Esc
+    KEnter        -> K.Return
+    (KASCII ' ')  -> K.Space
+    (KASCII '\t') -> K.Tab
+    KUp           -> K.Up
+    KDown         -> K.Down
+    KLeft         -> K.Left
+    KRight        -> K.Right
+    KHome         -> K.Home
+    KPageUp       -> K.PgUp
+    KEnd          -> K.End
+    KPageDown     -> K.PgDn
+    KBegin        -> K.Begin
+    (KASCII c)    -> K.Char c
+    _             -> K.Unknown (show n)
+
+-- | Translates modifiers to our own encoding.
+modifierTranslate :: [Modifier] -> K.Modifier
+modifierTranslate mods =
+  if MCtrl `elem` mods then K.Control else K.NoModifier
 
 -- A hack to get bright colors via the bold attribute. Depending on terminal
 -- settings this is needed or not and the characters really get bold or not.

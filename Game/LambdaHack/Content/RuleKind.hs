@@ -33,6 +33,8 @@ data RuleKind = RuleKind
   , rtitle            :: String   -- ^ the title of the game
   , rpathsDataFile    :: FilePath -> IO FilePath  -- ^ the path to data files
   , rpathsVersion     :: Version  -- ^ the version of the game
+  , ritemMelee        :: [Char]   -- ^ symbols of melee weapons
+  , ritemProject      :: [Char]   -- ^ symbols of items AI can project
   }
 
 -- | A dummy instance of the 'Show' class, to satisfy general requirments

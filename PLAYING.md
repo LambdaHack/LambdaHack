@@ -57,32 +57,29 @@ the vi text editor keys (also known as "Rogue-like keys").
                 /|\       /|\
                1 2 3     b j n
 
-Shift and a movement key make the hero run in the indicated direction,
-until anything of interest is spotted. '5' and '.' skip a turn.
-(Note that If you are using the curses or vty frontends,
-numerical keypad may not work correctly depending on the versions
-of curses, terminfo and terminal emulators. Vi keys should work regardless.)
+SHIFT (or CTRL) and a movement key make the hero run in the indicated
+direction, until anything of interest is spotted. '5' and '.' skip a turn.
 Melee, searching for secret doors and opening closed doors can be done
 by bumping into a monster, a wall and a door, respectively.
 
 Below are the default keys for major commands. Those of them that take
 hero time are marked with a *.
 
-               key    command
-               <      ascend a level*
-               >      descend a level*
-               ?      display help
-               Q      quit without saving
-               X      save and exit the game
-               c      close a door*
-               d      drop an object*
-               g      get an object*
-               i      display inventory
-               o      open a door*
-               q      quaff a potion*
-               r      read a scroll*
-               t      throw a dart*
-               z      zap a wand*
+               key     command
+               <       ascend a level*
+               >       descend a level*
+               ?       display help
+               Q       quit without saving
+               X       save and exit the game
+               c       close a door*
+               d       drop an object*
+               g       get an object*
+               i       display inventory
+               o       open a door*
+               q       quaff a potion*
+               r       read a scroll*
+               t       throw a dart*
+               z       zap a wand*
 
 To make a ranged attack, you need to set your target first, using
 targeting mode. Note that the target, for the few commands that require any,
@@ -95,28 +92,29 @@ at a remote level (when the cursor is on a different level
 than the selected hero). The targeting commands and all the less used
 commands are listed below. None of them takes hero time.
 
-               key    command
-               ESC    cancel action
-               RET    accept choice
-               SPACE  clear messages
-               TAB    cycle among heroes on level
-               *      target monster
-               /      target location
-               D      dump current configuration
-               P      display previous messages
-               V      display game version
-               [      target next shallower level
-               ]      target next deeper level
-               {      target 10 levels shallower
-               }      target 10 levels deeper
-               0--9   select a hero anywhere in the dungeon (gtk only)
+               key     command
+               ESC     cancel action
+               RET     accept choice
+               SPACE   clear messages
+               TAB     cycle among heroes on level
+               *       target monster
+               /       target location
+               D       dump current configuration
+               P       display previous messages
+               V       display game version
+               [       target next shallower level
+               ]       target next deeper level
+               {       target 10 levels shallower
+               }       target 10 levels deeper
+               0--9    select a hero anywhere in the dungeon
 
-There are also some debug and cheat keys. Use at your own peril!
+There are also some debug and cheat keys, all entered with the CTRL
+key modifier. Use at your own peril!
 
-               key    command
-               O      toggle "omniscience"
-               I      inform about level meta-data
-               R      rotate display modes
+               key     command
+               CTRL-o  toggle "omniscience"
+               CTRL-i  inform about level meta-data
+               CTRL-r  rotate vision modes (effective next turn)
 
 
 Monsters

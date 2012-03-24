@@ -1,46 +1,73 @@
--- TODO: Add an export list, with sections, after the file is rewritten
--- according to #17. Perhaps make some types abstract.
 -- | Game action monad and basic building blocks
 -- for player and monster actions.
 {-# LANGUAGE MultiParamTypeClasses, RankNTypes #-}
-module Game.LambdaHack.Action where
+module Game.LambdaHack.Action
+  ( -- * Actions and basic operations
+    ActionFun, Action, handlerToIO, rndToAction
+    -- * Actions returning frames
+  , ActionFrame, returnNoFrame, whenFrame, inFrame
+    -- * Game session and its accessors
+  , Session(..), getCOps, getBinding
+    -- * Various ways to abort action
+  , abort, abortWith, abortIfWith, neverMind
+    -- * Abort exception handlers
+  , tryWith, tryWithFrame, tryRepeatedlyWith, tryIgnore, tryIgnoreFrame
+    -- * Diary and report
+  , getDiary, msgAdd, recordHistory
+    -- * Key input
+  , getKeyCommand, getKeyChoice, getOverConfirm
+    -- * Display each frame and confirm
+  , displayMore, displayYesNo, displayOverAbort
+    -- * Assorted frame operations
+  , displayOverlays, displayChoiceUI, displayFramePush, drawPrompt
+    -- * Clip init operations
+  , startClip, remember, rememberList
+    -- * Assorted operations
+  , getPerception, updateAnyActor, updatePlayerBody
+    -- * Assorted primitives
+  , currentDate, saveGameBkp, dumpCfg, shutGame
+  , debug
+  ) where
 
 import Control.Monad
-import Control.Monad.State hiding (State, state)
+import Control.Monad.State hiding (State, state, liftIO)
 import qualified Data.IntMap as IM
+import qualified Data.IntSet as IS
 import qualified Data.Map as M
+import qualified Data.List as L
+import System.Time
 import Data.Maybe
+import Control.Concurrent
+import Control.Exception (finally)
 -- import System.IO (hPutStrLn, stderr) -- just for debugging
 
+import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Display
+import Game.LambdaHack.Draw
 import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 import Game.LambdaHack.Level
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Content.ActorKind
 import qualified Game.LambdaHack.Save as Save
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Key as K
 import Game.LambdaHack.Binding
-
--- | The constant session information, not saved to the game save file.
-data Session = Session
-  { sfs   :: FrontendSession         -- ^ frontend session information
-  , scops :: Kind.COps               -- ^ game content
-  , skeyb :: Binding (Action ())     -- ^ binding of keys to commands
-  }
+import qualified Game.LambdaHack.HighScore as H
+import qualified Game.LambdaHack.Config as Config
+import qualified Game.LambdaHack.Color as Color
+import Game.LambdaHack.Point
+import Game.LambdaHack.Time
 
 -- | The type of the function inside any action.
 -- (Separated from the @Action@ type to document each argument with haddock.)
 type ActionFun r a =
    Session                           -- ^ session setup data
-   -> (State -> Diary -> IO r)       -- ^ shutdown continuation
-   -> Perception                     -- ^ cached perception
+   -> DungeonPerception              -- ^ cached perception
    -> (State -> Diary -> a -> IO r)  -- ^ continuation
-   -> IO r                           -- ^ failure/reset continuation
+   -> (Msg -> IO r)                  -- ^ failure/reset continuation
    -> State                          -- ^ current state
    -> Diary                          -- ^ current diary
    -> IO r
@@ -60,39 +87,41 @@ instance Monad Action where
   (>>=)  = bindAction
 
 instance Functor Action where
-  fmap f (Action g) = Action (\ s e p k a st ms ->
+  fmap f (Action g) = Action (\ s p k a st ms ->
                                let k' st' ms' = k st' ms' . f
-                               in g s e p k' a st ms)
+                               in g s p k' a st ms)
+
+instance MonadState State Action where
+  get     = Action (\ _s _p k _a  st ms -> k st  ms st)
+  put nst = Action (\ _s _p k _a _st ms -> k nst ms ())
 
 -- | Invokes the action continuation on the provided argument.
 returnAction :: a -> Action a
-returnAction x = Action (\ _s _e _p k _a st m -> k st m x)
+returnAction x = Action (\ _s _p k _a st m -> k st m x)
 
 -- | Distributes the session and shutdown continuation,
 -- threads the state and diary.
 bindAction :: Action a -> (a -> Action b) -> Action b
-bindAction m f = Action (\ s e p k a st ms ->
+bindAction m f = Action (\ s p k a st ms ->
                           let next nst nm x =
-                                runAction (f x) s e p k a nst nm
-                          in runAction m s e p next a st ms)
+                                runAction (f x) s p k a nst nm
+                          in runAction m s p next a st ms)
 
-instance MonadIO Action where
-  liftIO x = Action (\ _s _e _p k _a st ms -> x >>= k st ms)
-
-instance MonadState State Action where
-  get     = Action (\ _s _e _p k _a  st ms -> k st  ms st)
-  put nst = Action (\ _s _e _p k _a _st ms -> k nst ms ())
+-- Instance commented out and action hiden, so that outside of this module
+-- nobody can subvert Action by invoking arbitrary IO.
+--   instance MonadIO Action where
+liftIO :: IO a -> Action a
+liftIO x = Action (\ _s _p k _a st ms -> x >>= k st ms)
 
 -- | Run an action, with a given session, state and diary, in the @IO@ monad.
 handlerToIO :: Session -> State -> Diary -> Action () -> IO ()
-handlerToIO sess@Session{sfs, scops} state diary h =
+handlerToIO sess@Session{scops} state diary h =
   runAction h
     sess
-    (\ ns ndiary -> Save.rmBkpSaveDiary ns ndiary
-                 >> shutdown sfs)  -- get out of the game
-    (perception scops state)  -- create and cache perception
+    (dungeonPerception scops state)  -- create and cache perception
     (\ _ _ x -> return x)    -- final continuation returns result
-    (ioError $ userError "unhandled abort")
+    (\ msg ->
+      ioError $ userError $ "unhandled abort  " ++ msg)  -- e.g., in AI code
     state
     diary
 
@@ -104,203 +133,321 @@ rndToAction r = do
   modify (\ state -> state {srandom = ng})
   return a
 
--- | Invoke a session command.
-session :: (Session -> Action a) -> Action a
-session f = Action (\ sess e p k a st ms ->
-                     runAction (f sess) sess e p k a st ms)
+-- | Actions and screen frames, including delays, resulting
+-- from performing the actions.
+type ActionFrame a = Action (a, [Maybe Color.SingleFrame])
 
--- | Invoke a session @IO@ command.
-sessionIO :: (Session -> IO a) -> Action a
-sessionIO f = Action (\ sess _e _p k _a st ms -> f sess >>= k st ms)
+-- | Return the value with an empty set of screen frames.
+returnNoFrame :: a -> ActionFrame a
+returnNoFrame a = return (a, [])
 
--- | Display the current level with modified current msg.
-displayGeneric :: ColorMode -> (Msg -> Msg) -> Action Bool
-displayGeneric dm f =
-  Action (\ Session{sfs, scops} _e p k _a st ms ->
-           displayLevel dm sfs scops p st (f (smsg ms)) Nothing
-           >>= k st ms)
+-- | As the @when@ monad operation, but on type @ActionFrame ()@.
+whenFrame :: Bool -> ActionFrame () -> ActionFrame ()
+whenFrame True x  = x
+whenFrame False _ = returnNoFrame ()
 
--- | Display the current level, with the current msg and color.
-displayAll :: Action Bool
-displayAll = displayGeneric ColorFull id
+-- | Inject action into actions with screen frames.
+inFrame :: Action () -> ActionFrame ()
+inFrame act = act >> returnNoFrame ()
 
--- | Display an overlay on top of the current screen.
-overlay :: String -> Action Bool
-overlay txt =
-  Action (\ Session{sfs, scops} _e p k _a st ms ->
-           displayLevel ColorFull sfs scops p st (smsg ms) (Just txt)
-           >>= k st ms)
+-- | The constant session information, not saved to the game save file.
+data Session = Session
+  { sfs   :: FrontendSession           -- ^ frontend session information
+  , scops :: Kind.COps                 -- ^ game content
+  , skeyb :: Binding (ActionFrame ())  -- ^ binding of keys to commands
+  }
 
--- | Get the current diary.
-currentDiary :: Action Diary
-currentDiary = Action (\ _s _e _p k _a st diary -> k st diary diary)
-
--- | Wipe out and set a new value for the current diary.
-diaryReset :: Diary -> Action ()
-diaryReset ndiary = Action (\ _s _e _p k _a st _diary -> k st ndiary ())
-
--- | Get the current msg.
-currentMsg :: Action Msg
-currentMsg = Action (\ _s _e _p k _a st ms -> k st ms (smsg ms))
-
--- | Wipe out and set a new value for the current msg.
-msgReset :: Msg -> Action ()
-msgReset nm = Action (\ _s _e _p k _a st ms -> k st ms{smsg = nm} ())
-
--- | Add to the current msg.
-msgAdd :: Msg -> Action ()
-msgAdd nm = Action (\ _s _e _p k _a st ms ->
-                     k st ms{smsg = addMsg (smsg ms) nm} ())
-
--- | Clear the current msg.
-msgClear :: Action ()
-msgClear = Action (\ _s _e _p k _a st ms -> k st ms{smsg = ""} ())
+-- | Get the frontend session.
+getFrontendSession :: Action FrontendSession
+getFrontendSession = Action (\ Session{sfs} _p k _a st ms -> k st ms sfs)
 
 -- | Get the content operations.
-contentOps :: Action Kind.COps
-contentOps = Action (\ Session{scops} _e _p k _a st ms -> k st ms scops)
+getCOps :: Action Kind.COps
+getCOps = Action (\ Session{scops} _p k _a st ms -> k st ms scops)
 
--- | Get the content operations modified by a function (usually a selector).
-contentf :: (Kind.COps -> a) -> Action a
-contentf f = Action (\ Session{scops} _e _p k _a st ms -> k st ms (f scops))
-
--- | End the game, i.e., invoke the shutdown continuation.
-end :: Action ()
-end = Action (\ _s e _p _k _a s diary -> e s diary)
+-- | Get the key binding.
+getBinding :: Action (Binding (ActionFrame ()))
+getBinding = Action (\ Session{skeyb} _p k _a st ms -> k st ms skeyb)
 
 -- | Reset the state and resume from the last backup point, i.e., invoke
 -- the failure continuation.
 abort :: Action a
-abort = Action (\ _s _e _p _k a _st _ms -> a)
+abort = abortWith ""
 
--- | Set the current exception handler. First argument is the handler,
--- second is the computation the handler scopes over.
-tryWith :: Action () -> Action () -> Action ()
-tryWith exc h = Action (\ s e p k a st ms ->
-                         let runA = runAction exc s e p k a st ms
-                         in runAction h s e p k runA st ms)
-
--- | Take a handler and a computation. If the computation fails, the
--- handler is invoked and then the computation is retried.
-tryRepeatedlyWith :: Action () -> Action () -> Action ()
-tryRepeatedlyWith exc h = tryWith (exc >> tryRepeatedlyWith exc h) h
-
--- | Try the given computation and silently catch failure.
-try :: Action () -> Action ()
-try = tryWith (return ())
-
--- | Try the given computation until it succeeds without failure.
-tryRepeatedly :: Action () -> Action ()
-tryRepeatedly = tryRepeatedlyWith (return ())
-
--- | Debugging.
-debug :: String -> Action ()
-debug _x = return () -- liftIO $ hPutStrLn stderr _x
-
--- | Print the given msg, then abort.
+-- | Abort with the given message.
 abortWith :: Msg -> Action a
-abortWith msg = do
-  msgReset msg
-  displayAll
-  abort
+abortWith msg = Action (\ _s _p _k a _st _ms -> a msg)
 
--- | Abort, and print the given msg if the condition is true.
+-- | Abort and print the given msg if the condition is true.
 abortIfWith :: Bool -> Msg -> Action a
 abortIfWith True msg = abortWith msg
 abortIfWith False _  = abortWith ""
 
--- | Abort conditionally, with a fixed message.
+-- | Abort and conditionally print the fixed message.
 neverMind :: Bool -> Action a
 neverMind b = abortIfWith b "never mind"
 
+-- | Set the current exception handler. First argument is the handler,
+-- second is the computation the handler scopes over.
+tryWith :: (Msg -> Action a) -> Action a -> Action a
+tryWith exc h = Action (\ s p k a st ms ->
+                         let runA msg = runAction (exc msg) s p k a st ms
+                         in runAction h s p k runA st ms)
+
+-- | Set the current exception handler. Apart of executing it,
+-- draw and pass along a frame with the abort message, if any.
+tryWithFrame :: Action a -> ActionFrame a -> ActionFrame a
+tryWithFrame exc h =
+  let msgToFrames ""  = returnNoFrame ()
+      msgToFrames msg = do
+        msgReset ""
+        fr <- drawPrompt ColorFull msg
+        return ((), [Just fr])
+      excMsg msg = do
+        ((), frames) <- msgToFrames msg
+        a <- exc
+        return (a, frames)
+  in tryWith excMsg h
+
+-- | Take a handler and a computation. If the computation fails, the
+-- handler is invoked and then the computation is retried.
+tryRepeatedlyWith :: (Msg -> Action ()) -> Action () -> Action ()
+tryRepeatedlyWith exc h =
+  tryWith (\ msg -> exc msg >> tryRepeatedlyWith exc h) h
+
+-- | Try the given computation and silently catch failure.
+tryIgnore :: Action () -> Action ()
+tryIgnore =
+  tryWith (\ msg -> if null msg
+                    then return ()
+                    else assert `failure` (msg, "in tryIgnore"))
+
+-- | Try the given computation and silently catch failure,
+-- returning empty set of screen frames.
+tryIgnoreFrame :: ActionFrame () -> ActionFrame ()
+tryIgnoreFrame =
+  tryWith (\ msg -> if null msg
+                    then returnNoFrame ()
+                    else assert `failure` (msg, "in tryIgnoreFrame"))
+
+-- | Get the current diary.
+getDiary :: Action Diary
+getDiary = Action (\ _s _p k _a st diary -> k st diary diary)
+
+-- | Add a message to the current report.
+msgAdd :: Msg -> Action ()
+msgAdd nm = Action (\ _s _p k _a st ms ->
+                     k st ms{sreport = addMsg (sreport ms) nm} ())
+
+-- | Wipe out and set a new value for the history.
+historyReset :: History -> Action ()
+historyReset shistory = Action (\ _s _p k _a st Diary{sreport} ->
+                                 k st Diary{..} ())
+
+-- | Wipe out and set a new value for the current report.
+msgReset :: Msg -> Action ()
+msgReset nm = Action (\ _s _p k _a st ms ->
+                       k st ms{sreport = singletonReport nm} ())
+
+-- | Store current report in the history and reset report.
+recordHistory :: Action ()
+recordHistory = do
+  Diary{sreport, shistory} <- getDiary
+  unless (nullReport sreport) $ do
+    config <- gets sconfig
+    let historyMax = Config.get config "ui" "historyMax"
+    msgReset ""
+    historyReset $ takeHistory historyMax $ addReport sreport shistory
+
+-- | Wait for a player command.
+getKeyCommand :: Maybe Bool -> Action (K.Key, K.Modifier)
+getKeyCommand doPush = do
+  fs <- getFrontendSession
+  keyb <- getBinding
+  (nc, modifier) <- liftIO $ nextEvent fs doPush
+  return $ case modifier of
+    K.NoModifier -> (fromMaybe nc $ M.lookup nc $ kmacro keyb, modifier)
+    _ -> (nc, modifier)
+
 -- | Wait for a player keypress.
-nextCommand :: Session -> Action K.Key
-nextCommand Session{sfs, skeyb} = do
-  nc <- liftIO $ nextEvent sfs
-  return $ fromMaybe nc $ M.lookup nc $ kmacro skeyb
-
--- | A yes-no confirmation.
-getYesNo :: Session -> Action Bool
-getYesNo sess@Session{sfs} = do
-  e <- liftIO $ nextEvent sfs
-  case e of
-    K.Char 'y' -> return True
-    K.Char 'n' -> return False
-    K.Esc      -> return False
-    _          -> getYesNo sess
-
--- | Waits for a SPACE or ESC. Passes along any other key, including RET,
--- to an argument function.
-getOptionalConfirm :: (Bool -> Action a)
-                    -> (K.Key -> Action a)
-                    -> Session
-                    -> Action a
-getOptionalConfirm h k Session{sfs} = do
-  e <- liftIO $ nextEvent sfs
-  case e of
-    K.Space    -> h True
-    K.Esc      -> h False
-    _          -> k e
+getKeyChoice :: [(K.Key, K.Modifier)] -> Color.SingleFrame
+          -> Action (K.Key, K.Modifier)
+getKeyChoice keys frame = do
+  fs <- getFrontendSession
+  liftIO $ promptGetKey fs keys frame
 
 -- | Ignore unexpected kestrokes until a SPACE or ESC is pressed.
-getConfirm :: Session -> Action Bool
-getConfirm Session{sfs} = liftIO $ getConfirmD sfs
+getConfirm :: Color.SingleFrame -> Action Bool
+getConfirm frame = do
+  fs <- getFrontendSession
+  let keys = [ (K.Space, K.NoModifier), (K.Esc, K.NoModifier)]
+  (k, _) <- liftIO $ promptGetKey fs keys frame
+  case k of
+    K.Space -> return True
+    _       -> return False
 
--- | Print msg, await confirmation. Return value indicates
--- if the player tried to abort/escape.
-msgMoreConfirm :: ColorMode -> Msg -> Action Bool
-msgMoreConfirm dm msg = do
-  msgAdd (msg ++ more)
-  displayGeneric dm id
-  session getConfirm
+-- | A series of confirmations for all overlays.
+getOverConfirm :: [Color.SingleFrame] -> Action Bool
+getOverConfirm []     = return True
+getOverConfirm (x:xs) = do
+  b <- getConfirm x
+  if b
+    then getOverConfirm xs
+    else return False
 
--- | Print msg, await confirmation, ignore confirmation.
-msgMore :: Msg -> Action ()
-msgMore msg = msgClear >> msgMoreConfirm ColorFull msg >> return ()
+-- | A yes-no confirmation.
+getYesNo :: Color.SingleFrame -> Action Bool
+getYesNo frame = do
+  fs <- getFrontendSession
+  let keys = [ (K.Char 'y', K.NoModifier)
+             , (K.Char 'n', K.NoModifier)
+             , (K.Esc, K.NoModifier)
+             ]
+  (k, _) <- liftIO $ promptGetKey fs keys frame
+  case k of
+    K.Char 'y' -> return True
+    _          -> return False
 
--- | Print a yes/no question and return the player's answer.
-msgYesNo :: Msg -> Action Bool
-msgYesNo msg = do
-  msgReset (msg ++ yesno)
-  displayGeneric ColorBW id  -- turn player's attention to the choice
-  session getYesNo
+-- | Display a msg with a @more@ prompt. Return value indicates if the player
+-- tried to cancel/escape.
+displayMore :: ColorMode -> Msg -> Action Bool
+displayMore dm prompt = do
+  frame <- drawPrompt dm (prompt ++ moreMsg)
+  getConfirm frame
 
--- | Clear message and overlay.
-clearDisplay :: Action Bool
-clearDisplay = do
-  msgClear
-  displayAll
-  return False
+-- | Print a yes/no question and return the player's answer. Use black
+-- and white colours to turn player's attention to the choice.
+displayYesNo :: Msg -> Action Bool
+displayYesNo prompt = do
+  frame <- drawPrompt ColorBW (prompt ++ yesnoMsg)
+  getYesNo frame
 
--- | Print a msg and several overlays, one per page, and await confirmation.
--- The return value indicates if the player tried to abort/escape.
-msgOverlaysConfirm :: Msg -> [String] -> Action Bool
-msgOverlaysConfirm _msg [] = return True
-msgOverlaysConfirm msg [x] = do
-  msgReset msg
-  b0 <- overlay (x ++ msgEnd)
-  if b0
-    then return True
-    else clearDisplay
-msgOverlaysConfirm msg (x:xs) = do
-  msgReset msg
-  b0 <- overlay (x ++ more)
-  if b0
-    then do
-      b <- session getConfirm
-      if b
-        then msgOverlaysConfirm msg xs
-        else clearDisplay
-    else clearDisplay
+-- | Print a msg and several overlays, one per page.
+-- All frames require confirmations. Raise @abort@ if the players presses ESC.
+displayOverAbort :: Msg -> [Overlay] -> Action ()
+displayOverAbort prompt xs = do
+  let f x = drawOverlay ColorFull prompt (x ++ [moreMsg])
+  frames <- mapM f xs
+  b <- getOverConfirm frames
+  when (not b) abort
+
+-- | Print a msg and several overlays, one per page.
+-- The last frame does not expect a confirmation.
+displayOverlays :: Msg -> [Overlay] -> ActionFrame ()
+displayOverlays _      []     = returnNoFrame ()
+displayOverlays prompt [x]    = do
+  frame <- drawOverlay ColorFull prompt x
+  return $ ((), [Just frame])
+displayOverlays prompt (x:xs) = do
+  frame <- drawOverlay ColorFull prompt (x ++ [moreMsg])
+  b <- getConfirm frame
+  if b
+    then displayOverlays prompt xs
+    else returnNoFrame ()
+
+-- | Print a prompt and an overlay and wait for a player keypress.
+-- If many overlays, scroll screenfuls with SPACE. Do not wrap screenfuls
+-- (in some menus @?@ cycles views, so the user can restart from the top).
+displayChoiceUI :: Msg -> [Overlay] -> [(K.Key, K.Modifier)]
+              -> Action (K.Key, K.Modifier)
+displayChoiceUI prompt ovs keys = do
+  let (over, rest, spc, more, keysS) = case ovs of
+        [] -> ([], [], "", [], keys)
+        [x] -> (x, [], "", [], keys)
+        x:xs -> (x, xs, ", SPACE", [moreMsg], (K.Space, K.NoModifier) : keys)
+  frame <- drawOverlay ColorFull (prompt ++ spc ++ ", ESC]") (over ++ more)
+  (key, modifier) <- getKeyChoice ((K.Esc, K.NoModifier) : keysS) frame
+  case key of
+    K.Esc -> neverMind True
+    K.Space | not (null rest) -> displayChoiceUI prompt rest keys
+    _ -> return (key, modifier)
+
+-- | Push a frame or a single frame's worth of delay to the frame queue.
+displayFramePush :: Maybe Color.SingleFrame -> Action ()
+displayFramePush mframe = do
+  fs <- getFrontendSession
+  liftIO $ displayFrame fs False mframe
+
+-- | Draw the current level. The prompt is displayed, but not added
+-- to history. The prompt is appended to the current message
+-- and only the first screenful of the resulting overlay is displayed.
+drawPrompt :: ColorMode -> Msg -> Action Color.SingleFrame
+drawPrompt dm prompt = do
+  cops <- getCOps
+  per <- getPerception
+  s <- get
+  Diary{sreport} <- getDiary
+  let over = splitReport $ addMsg sreport prompt
+  return $ draw dm cops per s over
+
+-- | Draw the current level. The prompt and the overlay are displayed,
+-- but not added to history. The prompt is appended to the current message
+-- and only the first line of the result is displayed.
+-- The overlay starts on the second line.
+drawOverlay :: ColorMode -> Msg -> Overlay -> Action Color.SingleFrame
+drawOverlay dm prompt overlay = do
+  cops <- getCOps
+  per <- getPerception
+  s <- get
+  Diary{sreport} <- getDiary
+  let xsize = lxsize $ slevel s
+      msgPrompt = renderReport $ addMsg sreport prompt
+      over = padMsg xsize msgPrompt : overlay
+  return $ draw dm cops per s over
+
+-- | Initialize perception, etc., display level and run the action.
+startClip :: Action () -> Action ()
+startClip action =
+  -- Determine perception before running player command, in case monsters
+  -- have opened doors, etc.
+  withPerception $ do
+    remember  -- heroes notice their surroundings, before they get displayed
+    displayPush  -- draw the current surroundings
+    action  -- let the actor act
+
+-- | Push the frame depicting the current level to the frame queue.
+-- Only one screenful of the report is shown, the rest is ignored.
+displayPush :: Action ()
+displayPush = do
+  fs <- getFrontendSession
+  s  <- get
+  pl <- gets splayer
+  frame <- drawPrompt ColorFull ""
+  -- Visually speed up (by remving all empty frames) the show of the sequence
+  -- of the move frames if the player is running.
+  let (_, Actor{bdir}, _) = findActorAnyLevel pl s
+      isRunning = isJust bdir
+  liftIO $ displayFrame fs isRunning $ Just frame
+
+-- | Update player memory.
+remember :: Action ()
+remember = do
+  per <- getPerception
+  let vis = IS.toList (totalVisible per)
+  rememberList vis
+
+-- | Update player at the given list of locations..
+rememberList :: [Point] -> Action ()
+rememberList vis = do
+  lvl <- gets slevel
+  let rememberTile = [(loc, lvl `at` loc) | loc <- vis]
+  modify (updateLevel (updateLRMap (Kind.// rememberTile)))
+  let alt Nothing      = Nothing
+      alt (Just ([], _)) = Nothing
+      alt (Just (t, _))  = Just (t, t)
+      rememberItem = IM.alter alt
+  modify (updateLevel (updateIMap (\ m -> foldr rememberItem m vis)))
 
 -- | Update the cached perception for the given computation.
 withPerception :: Action () -> Action ()
-withPerception h = Action (\ sess@Session{scops} e _ k a st ms ->
-                            runAction h sess e (perception scops st) k a st ms)
+withPerception h =
+  Action (\ sess@Session{scops} _ k a st ms ->
+           runAction h sess (dungeonPerception scops st) k a st ms)
 
 -- | Get the current perception.
-currentPerception :: Action Perception
-currentPerception = Action (\ _s _e p k _a st ms -> k st ms p)
+getPerception :: Action Perception
+getPerception = Action (\ _s per k _a s ms ->
+                         k s ms (fromJust $ L.lookup (slid s) per))
 
 -- | Update actor stats. Works for actors on other levels, too.
 updateAnyActor :: ActorId -> (Actor -> Actor) -> Action ()
@@ -312,33 +459,84 @@ updatePlayerBody f = do
   pl <- gets splayer
   updateAnyActor pl f
 
--- | Advance the move time for the given actor.
-advanceTime :: ActorId -> Action ()
-advanceTime actor = do
-  Kind.Ops{okind} <- contentf Kind.coactor
-  time <- gets stime
-  let upd m = m { btime = time + aspeed (okind (bkind m)) }
-  -- A hack to synchronize the whole party:
-  pl <- gets splayer
-  if actor == pl || isAHero actor
-    then do
-      modify (updateLevel (updateHeroes (IM.map upd)))
-      unless (isAHero pl) $ updatePlayerBody upd
-    else do
-      s <- get
-      -- If actor dead or not on current level, don't bother.
-      when (memActor actor s) $ updateAnyActor actor upd
+-- | Obtains the current date and time.
+currentDate :: Action ClockTime
+currentDate = liftIO getClockTime
 
--- | Add a turn to the player time counter.
-playerAdvanceTime :: Action ()
-playerAdvanceTime = do
-  pl <- gets splayer
-  advanceTime pl
+-- | Save the diary and a backup of the save game file, in case of crashes.
+--
+-- See 'Save.saveGameBkp'.
+saveGameBkp :: State -> Diary -> Action ()
+saveGameBkp state diary = liftIO $ Save.saveGameBkp state diary
 
--- | Display command help.
-displayHelp :: Action ()
-displayHelp = do
-  let disp Session{skeyb} =
-        msgOverlaysConfirm "Basic keys. [press SPACE or ESC]" $ keyHelp skeyb
-  session disp
-  abort
+-- | Dumps the current configuration to a file.
+--
+-- See 'Config.dump'.
+dumpCfg :: FilePath -> Config.CP -> Action ()
+dumpCfg fn config = liftIO $ Config.dump fn config
+
+-- | Handle current score and display it with the high scores.
+-- False if display of the scores was void or interrupted by the user.
+--
+-- Warning: scores are shown during the game,
+-- so we should be careful not to leak secret information through them
+-- (e.g., the nature of the items through the total worth of inventory).
+handleScores :: Bool -> H.Status -> Int -> Action ()
+handleScores write status total =
+  when (total /= 0) $ do
+    config  <- gets sconfig
+    time    <- gets stime
+    curDate <- currentDate
+    let points = case status of
+                   H.Killed _ -> (total + 1) `div` 2
+                   _ -> total
+    let score = H.ScoreRecord points (timeNegate time) curDate status
+    (placeMsg, slideshow) <- liftIO $ H.register config write score
+    displayOverAbort placeMsg slideshow
+
+-- | End the game, shutting down the frontend. The boolean argument
+-- tells if ending screens should be shown, the other arguments describes
+-- the cause of shutdown.
+shutGame :: (Bool, H.Status) -> Action ()
+shutGame (showEndingScreens, status) = do
+  Kind.COps{coitem} <- getCOps
+  s <- get
+  diary <- getDiary
+  let (_, total) = calculateTotal coitem s
+  case status of
+    H.Camping -> do
+      -- Save an display in parallel.
+      mv <- liftIO newEmptyMVar
+      liftIO $ void $ forkIO (Save.saveGameFile s `finally` putMVar mv ())
+      tryIgnore $ do
+        handleScores False status total
+        void $ displayMore ColorFull "See you soon, stronger and braver!"
+      liftIO $ takeMVar mv  -- wait until saved
+    H.Killed _ | showEndingScreens -> do
+      Diary{sreport} <- getDiary
+      unless (nullReport sreport) $ do
+        -- Sisplay any leftover report. Suggest it could be the cause of death.
+        void $ displayMore ColorFull "Who would have thought?"
+        recordHistory  -- prevent repeating the report
+      tryIgnore $ do
+        handleScores True status total
+        void $ displayMore ColorFull
+          "Let's hope another party can save the day!"
+    H.Victor | showEndingScreens -> do
+      Diary{sreport} <- getDiary
+      unless (nullReport sreport) $ do
+        -- Sisplay any leftover report. Suggest it could be the master move.
+        void $ displayMore ColorFull "Brilliant, wasn't it?"
+        recordHistory  -- prevent repeating the report
+      tryIgnore $ do
+        handleScores True status total
+        void $ displayMore ColorFull "Can it be done better, though?"
+    _ -> return ()
+  fs <- getFrontendSession
+  liftIO $ do
+    Save.rmBkpSaveDiary s diary  -- save the diary often in case of crashes
+    shutdown fs
+
+-- | Debugging.
+debug :: String -> Action ()
+debug _x = return () -- liftIO $ hPutStrLn stderr _x

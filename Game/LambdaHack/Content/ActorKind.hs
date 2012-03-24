@@ -9,19 +9,22 @@ import qualified Data.Ord as Ord
 import Game.LambdaHack.Color
 import qualified Game.LambdaHack.Random as Random
 import Game.LambdaHack.Misc
+import Game.LambdaHack.Time
 
+-- TODO: make all but a few fields optional in some way, so that, a.g.,
+-- a game content with no regeneration does not ever need to mention aregen.
 -- | Actor properties that are fixed for a given kind of actors.
 data ActorKind = ActorKind
   { asymbol :: !Char             -- ^ map symbol
   , aname   :: !String           -- ^ short description
   , afreq   :: !Freqs            -- ^ frequency within groups
   , acolor  :: !Color            -- ^ map color
-  , aspeed  :: !Time             -- ^ natural speed
+  , aspeed  :: !Speed            -- ^ natural speed in m/s
   , ahp     :: !Random.RollDice  -- ^ encodes initial and maximal hp
   , asight  :: !Bool             -- ^ can it see?
   , asmell  :: !Bool             -- ^ can it smell?
   , aiq     :: !Int              -- ^ intelligence
-  , aregen  :: !Int              -- ^ regeneration interval
+  , aregen  :: !Int              -- ^ number of turns to regenerate 1 HP
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 
