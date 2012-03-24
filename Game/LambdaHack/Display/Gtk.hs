@@ -353,7 +353,7 @@ setFrame sess@FrontendSession{slastFull, sframeState} rawFrame = do
   -- Store the frame. Release the lock.
   putMVar sframeState FSet{..}
 
--- | Set key via the frontend. Fail if there is no frame to show
+-- | Input key via the frontend. Fail if there is no frame to show
 -- to the player as a prompt for the keypress.
 nextEvent :: FrontendSession -> Maybe Bool -> IO (K.Key, K.Modifier)
 nextEvent FrontendSession{schanKey, sframeState} Nothing = do
@@ -411,7 +411,7 @@ nextEvent sess@FrontendSession{schanKey, sframeState} (Just True) = do
 
 -- | Display a prompt, wait for any of the specified keys (for any key,
 -- if the list is empty). Repeat if an unexpected key received.
--- Starts in Push or None, stop in the None mode.
+-- Starts in Push or None mode, stop in None mode.
 -- Spends most time waiting for a key, so not performance critical,
 -- so does not need optimization.
 promptGetKey :: FrontendSession -> [(K.Key, K.Modifier)] -> Color.SingleFrame

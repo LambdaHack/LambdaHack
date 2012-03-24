@@ -23,8 +23,8 @@ description:   This is an alpha release of LambdaHack,
                in the strict and type-safe separation of code and content.
                .
                New in this release are missiles flying for three turns
-               (by an old kosmikus' idea), visual feedback when targeting
-               and combat and individual monster moves animations.
+               (by an old kosmikus' idea), visual feedback for targeting
+               and animations of combat and individual monster moves.
                Upcoming new features: improved squad combat, player action
                undo/redo, completely redesigned UI. Long term goals
                are focused around procedural content generation and include
