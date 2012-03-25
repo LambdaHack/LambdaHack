@@ -75,6 +75,7 @@ library
                    Game.LambdaHack.Content,
                    Game.LambdaHack.Content.ActorKind,
                    Game.LambdaHack.Content.CaveKind,
+                   Game.LambdaHack.Content.FactionKind,
                    Game.LambdaHack.Content.ItemKind,
                    Game.LambdaHack.Content.PlaceKind,
                    Game.LambdaHack.Content.RuleKind,
@@ -163,6 +164,7 @@ executable LambdaHack
   main-is:         Main.hs
   other-modules:   Content.ActorKind,
                    Content.CaveKind,
+                   Content.FactionKind,
                    Content.ItemKind,
                    Content.PlaceKind,
                    Content.RuleKind,

@@ -19,6 +19,7 @@ import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.Frequency
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.CaveKind
+import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.RuleKind
@@ -100,6 +101,7 @@ createOps CDefs{getSymbol, getName, getFreq, content, validate} =
 data COps = COps
   { coactor :: !(Ops ActorKind)
   , cocave  :: !(Ops CaveKind)
+  , cofact  :: !(Ops FactionKind)
   , coitem  :: !(Ops ItemKind)
   , coplace :: !(Ops PlaceKind)
   , corule  :: !(Ops RuleKind)
