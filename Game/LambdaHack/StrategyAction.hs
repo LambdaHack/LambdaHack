@@ -1,6 +1,6 @@
 -- | AI strategy operations implemented with the 'Action' monad.
 module Game.LambdaHack.StrategyAction
-  ( strategy, wait
+  ( strategyDefender, strategyProjectile
   ) where
 
 import qualified Data.List as L
@@ -65,8 +65,9 @@ and moves into the approximate direction of the hero.
 
 -- TODO: improve, split up, etc.
 -- | Monster AI strategy based on monster sight, smell, intelligence, etc.
-strategy :: Kind.COps -> ActorId -> State -> Perception -> Strategy (Action ())
-strategy cops actor oldState@State{splayer = pl} per =
+strategyDefender :: Kind.COps -> ActorId -> State -> Perception
+                 -> Strategy (Action ())
+strategyDefender cops actor oldState@State{splayer = pl} per =
   strat
  where
   Kind.COps{ cotile
@@ -75,7 +76,7 @@ strategy cops actor oldState@State{splayer = pl} per =
            , corule
            } = cops
   lvl@Level{lsmell, lxsize, lysize, ltime} = slevel oldState
-  actorBody@Actor{ bkind = ak, bloc = me, bdir = ad, btarget, bparty } =
+  actorBody@Actor{ bkind = ak, bloc = me, bdir = ad, btarget } =
     getActor actor oldState
   bitems = getActorItem actor oldState
   mk = okind ak
@@ -154,21 +155,14 @@ strategy cops actor oldState@State{splayer = pl} per =
       movesNotBack
   attackDir d = dirToAction actor newTgt True  `liftM` d
   moveDir d   = dirToAction actor newTgt False `liftM` d
-  darkenActor = updateAnyActor actor $ \ m -> m {bcolor = Just Color.BrBlack}
 
-  strat = case btarget of
-    TPath [] -> dieOrSleep
-    TPath (d : _) | not $ accessible cops lvl me (shift me d) -> dieOrSleep
-    -- TODO: perhaps colour differently the whole second turn of movement?
-    TPath [d] -> return $ darkenActor >> dirToAction actor (TPath []) True d
-    TPath (d : lv) -> return $ dirToAction actor (TPath lv) True d
-    _ -> foeVisible .=> attackDir (onlyFoe moveFreely)
-         .| foeVisible .=> liftFrequency (msum seenFreqs)
-         .| lootHere me .=> actionPickup
-         .| moveDir moveTowards  -- go to last known foe location
-         .| attackDir moveAround
-  dieOrSleep | bparty `elem` allProjectiles = dieNow actor
-             | otherwise = wait
+  strat =
+    foeVisible .=> attackDir (onlyFoe moveFreely)
+    .| foeVisible .=> liftFrequency (msum seenFreqs)
+    .| lootHere me .=> actionPickup
+    .| moveDir moveTowards  -- go to last known foe location
+    .| attackDir moveAround
+    .| wait
   actionPickup = return $ actorPickupItem actor
   tis = lvl `atI` me
   seenFreqs = [applyFreq bitems 1, applyFreq tis 2,
@@ -232,6 +226,23 @@ strategy cops actor oldState@State{splayer = pl} per =
   moveRandomly :: Strategy Vector
   moveRandomly = liftFrequency $ uniformFreq "moveRandomly" (moves lxsize)
 
+-- | Strategy for dumb missiles.
+strategyProjectile :: Kind.COps -> ActorId -> State -> Perception
+                   -> Strategy (Action ())
+strategyProjectile cops actor oldState _per =
+  assert (not (nullStrat strat)) $ strat
+ where
+  lvl = slevel oldState
+  Actor{ bloc = me, btarget } = getActor actor oldState
+  darkenActor = updateAnyActor actor $ \ m -> m {bcolor = Just Color.BrBlack}
+  strat = case btarget of
+    TPath [] -> dieNow actor
+    TPath (d : _) | not $ accessible cops lvl me (shift me d) -> dieNow actor
+    -- TODO: perhaps colour differently the whole second turn of movement?
+    TPath [d] -> return $ darkenActor >> dirToAction actor (TPath []) True d
+    TPath (d : lv) -> return $ dirToAction actor (TPath lv) True d
+    _ -> assert `failure` ("strategyProjectile: no path", actor, btarget)
+
 dirToAction :: ActorId -> Target -> Bool -> Vector -> Action ()
 dirToAction actor btarget allowAttacks dir = do
   -- set new direction
@@ -245,10 +256,6 @@ dirToAction actor btarget allowAttacks dir = do
     -- TODO: or just fail at each abort in AI code? or use tryWithFrame?
     moveOrAttack allowAttacks actor dir
 
--- | A strategy to always just wait.
-wait :: Strategy (Action ())
-wait = return $ return ()
-
 -- | A strategy to always just die.
 dieNow :: ActorId -> Strategy (Action ())
 dieNow actor = return $ do  -- TODO: explode if a potion
@@ -256,3 +263,7 @@ dieNow actor = return $ do  -- TODO: explode if a potion
   Actor{bloc} <- gets (getActor actor)
   modify (updateLevel (dropItemsAt bitems bloc))
   modify (deleteActor actor)
+
+-- | A strategy to always just wait.
+wait :: Strategy (Action ())
+wait = return $ return ()

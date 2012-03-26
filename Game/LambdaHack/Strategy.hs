@@ -1,7 +1,7 @@
 -- | AI strategies to direct actors not controlled by the player.
 -- No operation in this module involves the 'State' or 'Action' type.
 module Game.LambdaHack.Strategy
-  ( Strategy(..), liftFrequency, (.|), reject, (.=>), only
+  ( Strategy(..), nullStrat, liftFrequency, (.|), reject, (.=>), only
   ) where
 
 import Control.Monad
@@ -28,6 +28,9 @@ instance Monad Strategy where
 instance MonadPlus Strategy where
   mzero = Strategy []
   mplus (Strategy xs) (Strategy ys) = Strategy (xs ++ ys)
+
+nullStrat :: Strategy a -> Bool
+nullStrat strat = null $ runStrategy strat
 
 -- | Strategy where only the actions from the given single frequency table
 -- can be picked.

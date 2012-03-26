@@ -287,6 +287,7 @@ addProjectile Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}}
         , bletter = 'a'
         , btime
         , bparty
+        , bai     = Just AIProjectile
         }
       cstate = state { scounter = scounter + 1 }
       upd = updateActorDict (IM.insert scounter m)

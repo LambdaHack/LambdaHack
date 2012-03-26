@@ -141,10 +141,14 @@ handleMonster actor = do
   cops  <- getCOps
   state <- get
   per <- getPerception
+  body <- gets (getActor actor)
+  let strategy = case bai body of
+        Nothing -> assert `failure` ("handleMonster: not AI controlled", actor)
+        Just AIDefender   -> strategyDefender
+        Just AIProjectile -> strategyProjectile
   -- Run the AI: choses an action from those given by the AI strategy.
   join $ rndToAction $
-           frequency (head (runStrategy (strategy cops actor state per
-                                         .| wait)))
+           frequency (head (runStrategy (strategy cops actor state per)))
 
 -- | Handle the move of the hero.
 handlePlayer :: Action ()

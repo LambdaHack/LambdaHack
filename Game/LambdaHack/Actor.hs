@@ -4,7 +4,7 @@ module Game.LambdaHack.Actor
   ( -- * Actor identifiers and related operations
     ActorId, findHeroName, monsterGenChance
     -- * Party identifiers
-  , PartyId, heroParty, enemyParty, animalParty
+  , AIAlgo(..), PartyId, heroParty, enemyParty, animalParty
   , heroProjectiles, enemyProjectiles, animalProjectiles, allProjectiles
     -- * The@ Acto@r type
   , Actor(..), template, addHp, unoccupied, heroKindId
@@ -52,6 +52,20 @@ instance Binary PartyId where
   put (PartyId n) = put n
   get = fmap PartyId get
 
+-- | Kinds of AI algorithms.
+data AIAlgo = AIDefender | AIProjectile
+  deriving (Show, Eq, Ord)
+
+instance Binary AIAlgo where
+  put AIDefender   = putWord8 0
+  put AIProjectile = putWord8 1
+  get = do
+    tag <- getWord8
+    case tag of
+      0 -> return AIDefender
+      1 -> return AIProjectile
+      _ -> fail "no parse (AIAlgo)"
+
 -- | Actor properties that are changing throughout the game.
 -- If they are dublets of properties from @ActorKind@,
 -- they are usually modified temporarily, but tend to return
@@ -69,6 +83,7 @@ data Actor = Actor
   , bletter :: !Char                   -- ^ next inventory letter
   , btime   :: !Time                   -- ^ absolute time of next action
   , bparty  :: !PartyId                -- ^ to which party the actor belongs
+  , bai     :: !(Maybe AIAlgo)         -- ^ under control of this AI algorithm
   }
   deriving Show
 
@@ -86,6 +101,7 @@ instance Binary Actor where
     put bletter
     put btime
     put bparty
+    put bai
   get = do
     bkind   <- get
     bsymbol <- get
@@ -99,6 +115,7 @@ instance Binary Actor where
     bletter <- get
     btime   <- get
     bparty  <- get
+    bai     <- get
     return Actor{..}
 
 -- ActorId operations
@@ -128,7 +145,7 @@ monsterGenChance depth numMonsters =
 -- move immediately after generation. This does not seem like
 -- a bad idea, but it would certainly be "more correct" to set
 -- the time to the creation time instead.
--- | A template for a new actor. The initial target is invalid
+-- | A template for a new non-projectile actor. The initial target is invalid
 -- to force a reset ASAP.
 template :: Kind.Id ActorKind -> Maybe Char -> Maybe String -> Int -> Point
          -> Time -> PartyId -> Actor
@@ -138,6 +155,7 @@ template bkind bsymbol bname bhp bloc btime bparty =
       btarget = invalidTarget
       bdir    = Nothing
       bletter = 'a'
+      bai = if bparty == heroParty then Nothing else Just AIDefender
   in Actor{..}
 
 -- | Increment current hit points of an actor.
