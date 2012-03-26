@@ -28,6 +28,12 @@ import qualified Game.LambdaHack.Kind as Kind
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Time
 
+-- | Checks whether an actor identifier represents a hero.
+isProjectile :: State -> ActorId -> Bool
+isProjectile s a =
+  let (_, actor, _) = findActorAnyLevel a s
+  in bai actor == Just AIProjectile
+
 -- TODO: currently it's false for player-controlled monsters.
 -- When it's no longer, rewrite the places where it matters.
 -- | Checks whether an actor identifier represents a hero.
@@ -152,42 +158,42 @@ insertActor a m = updateLevel (updateActorDict (IM.insert a m))
 deletePlayer :: State -> State
 deletePlayer s@State{splayer} = deleteActor splayer s
 
--- TODO: unify
+-- TODO: unify, rename
 heroAssocs, hostileAssocs, dangerousAssocs, friendlyAssocs, allButHeroesAssocs
   :: Level -> [(ActorId, Actor)]
 heroAssocs lvl =
-  filter (\ (_, m) -> bparty m == heroParty) $ IM.toList $ lactor lvl
+  filter (\ (_, m) -> bparty m == heroParty
+                      && bai m /= Just AIProjectile) $
+    IM.toList $ lactor lvl
 hostileAssocs lvl =
-  filter (\ (_, m) -> bparty m `elem` [enemyParty, animalParty]) $
-  IM.toList $ lactor lvl
+  filter (\ (_, m) -> bparty m /= heroParty
+                      && bai m /= Just AIProjectile) $
+    IM.toList $ lactor lvl
 dangerousAssocs lvl =
-  filter (\ (_, m) -> bparty m `elem`
-                        [enemyParty, animalParty,
-                         enemyProjectiles, animalProjectiles]) $
-  IM.toList $ lactor lvl
+  filter (\ (_, m) -> bparty m /= heroParty) $
+    IM.toList $ lactor lvl
 friendlyAssocs lvl =
-  filter (\ (_, m) -> bparty m `elem` [heroParty, heroProjectiles]) $
-  IM.toList $ lactor lvl
+  filter (\ (_, m) -> bparty m == heroParty) $
+    IM.toList $ lactor lvl
 allButHeroesAssocs lvl =
-    filter (\ (_, m) -> bparty m `elem`
-                        [heroProjectiles, enemyParty, animalParty,
-                         enemyProjectiles, animalProjectiles]) $
-  IM.toList $ lactor lvl
+  filter (\ (_, m) -> bparty m /= heroParty || bai m == Just AIProjectile) $
+    IM.toList $ lactor lvl
 
 heroList, hostileList, dangerousList, friendlyList :: State -> [Actor]
 heroList state =
-  filter (\ m -> bparty m == heroParty) $ IM.elems $ lactor $ slevel state
+  filter (\ m -> bparty m == heroParty
+                 && bai m /= Just AIProjectile) $
+    IM.elems $ lactor $ slevel state
 hostileList state =
-  filter (\ m -> bparty m `elem` [enemyParty, animalParty]) $
-  IM.elems $ lactor $ slevel state
+  filter (\ m -> bparty m /= heroParty
+                 && bai m /= Just AIProjectile) $
+    IM.elems $ lactor $ slevel state
 dangerousList state =
-  filter (\ m -> bparty m `elem`
-                   [enemyParty, animalParty,
-                    enemyProjectiles, animalProjectiles]) $
-  IM.elems $ lactor $ slevel state
+  filter (\ m -> bparty m /= heroParty) $
+    IM.elems $ lactor $ slevel state
 friendlyList state =
-  filter (\ m -> bparty m `elem` [heroParty, heroProjectiles]) $
-  IM.elems $ lactor $ slevel state
+  filter (\ m -> bparty m == heroParty) $
+    IM.elems $ lactor $ slevel state
 
 -- | Finds an actor at a location on the current level. Perception irrelevant.
 locToActor :: Point -> State -> Maybe ActorId

@@ -118,10 +118,10 @@ projectGroupItem source tloc _verb item = do
       -- should be set to the time of the opposite party as well.
       -- Both parties would see their own projectiles move part of the way
       -- and the opposite party's projectiles waiting one turn.
-      (party, time) =
+      time =
         if bparty sm == heroParty || source == pl
-        then (heroProjectiles, timeAdd btime (timeNegate timeClip))
-        else (enemyProjectiles, btime)
+        then timeAdd btime (timeNegate timeClip)
+        else btime
       bl = bla lxsize lysize eps sloc tloc
   case bl of
     Nothing -> abortWith "cannot zap oneself"
@@ -132,7 +132,7 @@ projectGroupItem source tloc _verb item = do
       inhabitants <- gets (locToActor loc)
       if accessible cops lvl sloc loc && isNothing inhabitants
         then
-          modify $ addProjectile cops consumed loc party path time
+          modify $ addProjectile cops consumed loc (bparty sm) path time
         else
           abortWith "blocked"
       when (sourceVis || projVis) $ msgAdd msg
@@ -143,7 +143,7 @@ playerProjectGroupItem verb object syms = do
   lxsize <- gets (lxsize . slevel)
   ploc   <- gets (bloc . getPlayerBody)
   if L.any (adjacent lxsize ploc) $ L.map bloc $
-       L.filter (\ m -> bparty m `notElem` allProjectiles) ms
+       L.filter (\ m -> bai m /= Just AIProjectile) ms
     then abortWith "You can't aim in melee."
     else playerProjectGI verb object syms
 

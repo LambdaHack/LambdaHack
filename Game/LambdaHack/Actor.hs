@@ -5,7 +5,6 @@ module Game.LambdaHack.Actor
     ActorId, findHeroName, monsterGenChance
     -- * Party identifiers
   , AIAlgo(..), PartyId, heroParty, enemyParty, animalParty
-  , heroProjectiles, enemyProjectiles, animalProjectiles, allProjectiles
     -- * The@ Acto@r type
   , Actor(..), template, addHp, unoccupied, heroKindId
   , projectileKindId, actorSpeed
@@ -35,18 +34,10 @@ newtype PartyId = PartyId Int
 -- | All supported party identifiers. Animals and projectiles move every turn.
 -- Projectiles don't recognize friends and foes, animals turn friedly
 -- or hostile, depending on various factors.
-heroParty, enemyParty, animalParty,
-  heroProjectiles, enemyProjectiles, animalProjectiles :: PartyId
+heroParty, enemyParty, animalParty :: PartyId
 heroParty = PartyId 0
 enemyParty = PartyId 1
 animalParty = PartyId 2
-heroProjectiles = PartyId 3
-enemyProjectiles = PartyId 4
-animalProjectiles = PartyId 5
-
--- | The list of parties that represent projectiles.
-allProjectiles :: [PartyId]
-allProjectiles = [heroProjectiles, enemyProjectiles, animalProjectiles]
 
 instance Binary PartyId where
   put (PartyId n) = put n

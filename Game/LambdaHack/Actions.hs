@@ -359,7 +359,7 @@ actorAttackActor source target = do
       let h2hItem = Item h2hKind 0 Nothing 1
           sloc = bloc sm
           (stack, tell, verbosity, verb) =
-            if bparty sm `elem` allProjectiles
+            if isProjectile state source
             then assert (length bitems == 1) $
                    (head bitems, False, 10, "hit")       -- projectile
             else case strongestSword cops bitems of

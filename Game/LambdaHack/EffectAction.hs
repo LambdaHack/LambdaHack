@@ -147,7 +147,8 @@ eff Effect.Heal _ _source target power = do
       return (True, actorVerb coactor tm "feel" "better")
 eff (Effect.Wound nDm) verbosity source target power = do
   Kind.COps{coactor} <- getCOps
-  n  <- rndToAction $ rollDice nDm
+  s <- get
+  n <- rndToAction $ rollDice nDm
   if n + power <= 0 then nullEffect else do
     void $ focusIfOurs target
     pl <- gets splayer
@@ -159,7 +160,7 @@ eff (Effect.Wound nDm) verbosity source target power = do
             then ""  -- Handled later on in checkPartyDeath. Suspense.
             else -- Not as important, so let the player read the message
                  -- about monster death while he watches the combat animation.
-              if bparty tm `elem` allProjectiles
+              if isProjectile s target
               then actorVerb coactor tm "drop" "down"
               else actorVerb coactor tm "die" ""
           | source == target =  -- a potion of wounding, etc.
@@ -373,7 +374,7 @@ fleeDungeon = do
 itemEffectAction :: Int -> ActorId -> ActorId -> Item -> Action ()
 itemEffectAction verbosity source target item = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getCOps
-  sm <- gets (getActor source)
+  st <- get
   slidOld <- gets slid
   let effect = ieffect $ okind $ jkind item
   -- The msg describes the target part of the action.
@@ -384,7 +385,7 @@ itemEffectAction verbosity source target item = do
   -- Destroys attacking actor and its items: a hack for projectiles.
   slidNew <- gets slid
   modify (\ s -> s {slid = slidOld})
-  when (bparty sm `elem` allProjectiles) $
+  when (isProjectile st source) $
     modify (deleteActor source)
   modify (\ s -> s {slid = slidNew})
 
