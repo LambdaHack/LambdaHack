@@ -423,7 +423,7 @@ actorRunActor source target = do
 rollMonster :: Kind.COps -> Perception -> State -> Rnd State
 rollMonster Kind.COps{ cotile
                      , coactor=Kind.Ops{opick, okind}
-                     , cofact=Kind.Ops{opick=fopick}
+                     , cofact=Kind.Ops{opick=fopick, oname=foname}
                      } per state = do
   let lvl@Level{lactor} = slevel state
       ms = hostileList state
@@ -447,9 +447,9 @@ rollMonster Kind.COps{ cotile
           , \ l t -> Tile.hasFeature cotile F.Walkable t
                      && unoccupied (IM.elems lactor) l
           ]
-      mk <- opick "monster" (const True)
+      bfaction <- fopick "spawn" (const True)
+      mk <- opick (foname bfaction) (const True)
       hp <- rollDice $ ahp $ okind mk
-      bfaction <- fopick "monster" (const True)  -- TODO
       return $ addMonster cotile mk hp loc bfaction (Just AIDefender) state
 
 -- | Generate a monster, possibly.

@@ -461,10 +461,13 @@ summonMonsters :: Int -> Point -> Action ()
 summonMonsters n loc = do
   Kind.COps{ cotile
            , coactor=Kind.Ops{opick, okind}
-           , cofact=Kind.Ops{opick=fopick}} <- getCOps
-  mk <- rndToAction $ opick "summon" (const True)
+           , cofact=Kind.Ops{opick=fopick, oname=foname}} <- getCOps
+  bfaction <- rndToAction $ fopick "spawn" (const True)
+  -- Spawn frequency required greater than zero, but otherwise ignored.
+  let inFaction m = isJust $ lookup (foname bfaction) (afreq m)
+  -- Summon frequency used for picking the actor.
+  mk <- rndToAction $ opick "summon" inFaction
   hp <- rndToAction $ rollDice $ ahp $ okind mk
-  bfaction <- rndToAction $ fopick "monster" (const True)  -- TODO
   modify (\ s -> iterate (addMonster cotile mk hp loc
                             bfaction (Just AIDefender)) s !! n)
 

@@ -27,8 +27,8 @@ hero = FactionKind
 monster = FactionKind
   { fsymbol  = 'm'
   , fname    = "monster"
-  , ffreq    = [("monster", 1), ("playable", 50)]
-  , fmoveAll = False
+  , ffreq    = [("monster", 1), ("playable", 50), ("spawn", 1)]
+  , fmoveAll = True
   , fenemy   = ["hero"]
   , fally    = []
   }

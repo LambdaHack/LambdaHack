@@ -49,10 +49,10 @@ data Ops a = Ops
   , oname :: Id a -> String       -- ^ the name of a content element at id
   , okind :: Id a -> a            -- ^ the content element at given id
   , ouniqGroup :: String -> Id a  -- ^ the id of the unique member of
-                                  -- a singleton content group
+                                  --   a singleton content group
   , opick :: String -> (a -> Bool) -> Rnd (Id a)
                                   -- ^ pick a random id belonging to a group
-                                  -- and satisfying a predicate
+                                  --   and satisfying a predicate
   , ofoldrWithKey :: forall b. (Id a -> a -> b -> b) -> b -> b
                                   -- ^ fold over all content elements of @a@
   , obounds :: (Id a, Id a)       -- ^ bounds of identifiers of content @a@
