@@ -3,6 +3,7 @@ module Game.LambdaHack.Start ( start ) where
 
 import qualified Control.Monad.State as MState
 import qualified Data.Array.Unboxed as A
+import Data.Maybe
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.State
@@ -45,7 +46,10 @@ speedupCops sess@Session{scops = cops@Kind.COps{cotile=tile}} =
 -- Then call the main game loop.
 start :: Config.CP -> Session -> IO ()
 start config1 slowSess = do
-  let sess@Session{scops = cops@Kind.COps{corule}} = speedupCops slowSess
+  let sess@Session{scops = cops@Kind.COps{ corule
+                                         , coitem
+                                         , cofact=Kind.Ops{opick}}} =
+        speedupCops slowSess
       title = rtitle $ Kind.stdRuleset corule
       pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
   restored <- Save.restoreGame pathsDataFile config1 title
@@ -54,10 +58,15 @@ start config1 slowSess = do
       (g2, config2) <- Config.getSetGen config1 "dungeonRandomGenerator"
       let (DungeonState.FreshDungeon{..}, ag) =
             MState.runState (DungeonState.generate cops config2) g2
-          sflavour = MState.evalState (dungeonFlavourMap (Kind.coitem cops)) ag
+          (sflavour, ag2) = MState.runState (dungeonFlavourMap coitem) ag
+          factionName = Config.getOption config2 "heroes" "faction"
+          sfaction =
+            MState.evalState
+              (opick (fromMaybe "playable" factionName) (const True)) ag2
       (g3, config3) <- Config.getSetGen config2 "startingRandomGenerator"
-      let state = defaultState
-                    config3 sflavour freshDungeon entryLevel entryLoc g3
+      let state =
+            defaultState
+              config3 sfaction sflavour freshDungeon entryLevel entryLoc g3
           hstate = initialHeroes cops entryLoc state
       handlerToIO sess hstate diary{sreport = singletonReport msg} handleTurn
     Left (state, diary) ->  -- Running a restored a game.

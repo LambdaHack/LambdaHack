@@ -92,8 +92,9 @@ handleActors :: Time       -- ^ the start time of current subclip, exclusive
 handleActors subclipStart = do
   debug "handleActors"
   Kind.COps{coactor} <- getCOps
+  sfaction <- gets sfaction
   time <- gets stime  -- the end time of this clip, inclusive
-  lactor <- gets (allButHeroesAssocs . slevel)
+  lactor <- gets (allButHeroesAssocs sfaction . slevel)
   pl <- gets splayer
   pbody <- gets getPlayerBody
   squit <- gets squit
@@ -101,7 +102,7 @@ handleActors subclipStart = do
       mnext = if null as  -- wait until any actor spawned
               then Nothing
               else let -- Heroes move first then monsters, then the rest.
-                       order = Ord.comparing (btime . snd &&& bparty . snd)
+                       order = Ord.comparing (btime . snd &&& bfaction . snd)
                        (actor, m) = L.minimumBy order as
                    in if btime m > time
                       then Nothing  -- no actor is ready for another move
@@ -111,7 +112,7 @@ handleActors subclipStart = do
     Nothing -> when (subclipStart == timeZero) $ displayFramePush Nothing
     Just (actor, m) -> do
       advanceTime True actor  -- advance time while the actor still alive
-      if actor == pl || bparty m == heroParty
+      if actor == pl || bfaction m == sfaction && bai m == Nothing
         then
           -- Player moves always start a new subclip.
           startClip $ do
@@ -229,6 +230,7 @@ advanceTime :: Bool -> ActorId -> Action ()
 advanceTime forward actor = do
   Kind.COps{coactor} <- getCOps
   pl <- gets splayer
+  sfaction <- gets sfaction
   let upd m@Actor{btime} =
         let speed = actorSpeed coactor m
             ticks = ticksPerMeter speed
@@ -239,7 +241,7 @@ advanceTime forward actor = do
   -- A hack to synchronize the whole party:
   body <- gets (getActor actor)
   when (actor == pl) $ do
-    let updParty m = if bparty m == heroParty
+    let updParty m = if bfaction m == sfaction && bai m == Nothing
                      then m {btime = btime body}
                      else m
     modify (updateLevel (updateActorDict (IM.map updParty)))

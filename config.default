@@ -79,6 +79,7 @@
 ; baseHP: 50
 ; extraHeroes: 0
 ; firstDeathEnds: False
+; faction: hero
 
 ; [macros]
 ; ; Handy with Vi keys:

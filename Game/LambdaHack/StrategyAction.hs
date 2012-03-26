@@ -67,7 +67,7 @@ and moves into the approximate direction of the hero.
 -- | Monster AI strategy based on monster sight, smell, intelligence, etc.
 strategyDefender :: Kind.COps -> ActorId -> State -> Perception
                  -> Strategy (Action ())
-strategyDefender cops actor oldState@State{splayer = pl} per =
+strategyDefender cops actor oldState@State{splayer = pl, sfaction} per =
   strat
  where
   Kind.COps{ cotile
@@ -104,7 +104,7 @@ strategyDefender cops actor oldState@State{splayer = pl} per =
       _  -> closest
   (newTgt, floc, foeVisible) = chase btarget
   closest =
-    let hs = L.map (second bloc) $ heroAssocs $ slevel delState
+    let hs = L.map (second bloc) $ heroAssocs sfaction $ slevel delState
         foes = if not (isAHero delState pl) && memActor pl delState
                then (pl, bloc $ getPlayerBody delState) : hs
                else hs

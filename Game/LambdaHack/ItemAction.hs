@@ -95,6 +95,7 @@ projectGroupItem source tloc _verb item = do
   ceps  <- gets (ceps . scursor)
   lxsize <- gets (lxsize . slevel)
   lysize <- gets (lysize . slevel)
+  sfaction <- gets sfaction
   let consumed = item { jcount = 1 }
       sloc = bloc sm
       sourceVis = sloc `IS.member` totalVisible per
@@ -102,7 +103,7 @@ projectGroupItem source tloc _verb item = do
         if sourceVis
         then sm
         else template (heroKindId coactor)
-               Nothing (Just "somebody") 99 sloc timeZero animalParty
+               Nothing (Just "somebody") 99 sloc timeZero sfaction Nothing
       -- When projecting, the first turn is spent aiming.
       -- The projectile is seen one tile from the actor, giving a hint
       -- about the aim and letting the target evade.
@@ -119,7 +120,7 @@ projectGroupItem source tloc _verb item = do
       -- Both parties would see their own projectiles move part of the way
       -- and the opposite party's projectiles waiting one turn.
       time =
-        if bparty sm == heroParty || source == pl
+        if bfaction sm == sfaction || source == pl
         then timeAdd btime (timeNegate timeClip)
         else btime
       bl = bla lxsize lysize eps sloc tloc
@@ -132,7 +133,7 @@ projectGroupItem source tloc _verb item = do
       inhabitants <- gets (locToActor loc)
       if accessible cops lvl sloc loc && isNothing inhabitants
         then
-          modify $ addProjectile cops consumed loc (bparty sm) path time
+          modify $ addProjectile cops consumed loc (bfaction sm) path time
         else
           abortWith "blocked"
       when (sourceVis || projVis) $ msgAdd msg
@@ -178,7 +179,8 @@ targetMonster :: TgtMode -> ActionFrame ()
 targetMonster tgtMode = do
   pl        <- gets splayer
   ploc      <- gets (bloc . getPlayerBody)
-  ms        <- gets (hostileAssocs . slevel)
+  sfaction <- gets sfaction
+  ms        <- gets (hostileAssocs sfaction . slevel)
   per       <- getPerception
   lxsize    <- gets (lxsize . slevel)
   target    <- gets (btarget . getPlayerBody)
@@ -255,7 +257,8 @@ endTargeting accept = do
   target   <- gets (btarget . getPlayerBody)
   per      <- getPerception
   cloc     <- gets (clocation . scursor)
-  ms       <- gets (hostileAssocs . slevel)
+  sfaction <- gets sfaction
+  ms       <- gets (hostileAssocs sfaction . slevel)
   -- Return to the original level of the player. Note that this can be
   -- a different level than the one we started targeting at,
   -- if the player was changed while targeting.

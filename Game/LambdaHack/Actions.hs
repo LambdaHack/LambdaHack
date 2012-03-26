@@ -342,7 +342,9 @@ actorAttackActor :: ActorId -> ActorId -> Action ()
 actorAttackActor source target = do
   sm <- gets (getActor source)
   tm <- gets (getActor target)
-  if bparty sm == heroParty && bparty tm == heroParty
+  sfaction <- gets sfaction
+  if bfaction sm == sfaction && bai sm == Nothing &&
+     bfaction tm == sfaction && bai tm == Nothing
     then do
       -- Select adjacent hero by bumping into him. Takes no time, so rewind.
       selectPlayer target
@@ -419,7 +421,10 @@ actorRunActor source target = do
 
 -- | Create a new monster in the level, at a random position.
 rollMonster :: Kind.COps -> Perception -> State -> Rnd State
-rollMonster Kind.COps{cotile, coactor=Kind.Ops{opick, okind}} per state = do
+rollMonster Kind.COps{ cotile
+                     , coactor=Kind.Ops{opick, okind}
+                     , cofact=Kind.Ops{opick=fopick}
+                     } per state = do
   let lvl@Level{lactor} = slevel state
       ms = hostileList state
       hs = heroList state
@@ -444,7 +449,8 @@ rollMonster Kind.COps{cotile, coactor=Kind.Ops{opick, okind}} per state = do
           ]
       mk <- opick "monster" (const True)
       hp <- rollDice $ ahp $ okind mk
-      return $ addMonster cotile mk hp loc state
+      bfaction <- fopick "monster" (const True)  -- TODO
+      return $ addMonster cotile mk hp loc bfaction (Just AIDefender) state
 
 -- | Generate a monster, possibly.
 generateMonster :: Action ()

@@ -459,11 +459,14 @@ summonHeroes n loc =
 
 summonMonsters :: Int -> Point -> Action ()
 summonMonsters n loc = do
-  Kind.COps{cotile, coactor=Kind.Ops{opick, okind}} <- getCOps
+  Kind.COps{ cotile
+           , coactor=Kind.Ops{opick, okind}
+           , cofact=Kind.Ops{opick=fopick}} <- getCOps
   mk <- rndToAction $ opick "summon" (const True)
   hp <- rndToAction $ rollDice $ ahp $ okind mk
-  modify (\ state ->
-           iterate (addMonster cotile mk hp loc) state !! n)
+  bfaction <- rndToAction $ fopick "monster" (const True)  -- TODO
+  modify (\ s -> iterate (addMonster cotile mk hp loc
+                            bfaction (Just AIDefender)) s !! n)
 
 -- | Remove dead heroes (or dead dominated monsters). Check if game is over.
 -- For now we only check the selected hero and at current level,

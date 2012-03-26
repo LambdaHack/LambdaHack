@@ -29,6 +29,8 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.FOV
 import Game.LambdaHack.Time
 import qualified Game.LambdaHack.HighScore as H
+import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Content.FactionKind
 
 -- | The diary contains all the player data
 -- that carries over from game to game.
@@ -55,6 +57,7 @@ data State = State
   , sconfig  :: Config.CP    -- ^ game config
   , snoTime  :: Bool         -- ^ last command unexpectedly took no time
   , squit    :: Maybe (Bool, H.Status)  -- ^ cause of game shutdown
+  , sfaction :: Kind.Id FactionKind     -- ^ our faction
   , sdebug   :: DebugMode    -- ^ debugging mode
   }
   deriving Show
@@ -102,9 +105,10 @@ defaultDiary = do
     }
 
 -- | Initial game state.
-defaultState :: Config.CP -> FlavourMap -> Dungeon.Dungeon -> Dungeon.LevelId
-             -> Point -> R.StdGen -> State
-defaultState config flavour dng lid ploc g =
+defaultState :: Config.CP -> Kind.Id FactionKind -> FlavourMap
+             -> Dungeon.Dungeon -> Dungeon.LevelId -> Point -> R.StdGen
+             -> State
+defaultState config sfaction flavour dng lid ploc g =
   State
     0  -- hack: the hero is not yet alive
     (Cursor TgtOff lid ploc lid 0)
@@ -117,6 +121,7 @@ defaultState config flavour dng lid ploc g =
     config
     False
     Nothing
+    sfaction
     defaultDebugMode
 
 defaultDebugMode :: DebugMode
@@ -169,7 +174,7 @@ instance Binary Diary where
 
 instance Binary State where
   put (State player cursor flav disco dng lid ct
-         g config snoTime _ _) = do
+         g config snoTime _ sfaction _) = do
     put player
     put cursor
     put flav
@@ -180,6 +185,7 @@ instance Binary State where
     put (show g)
     put config
     put snoTime
+    put sfaction
   get = do
     player <- get
     cursor <- get
@@ -189,11 +195,12 @@ instance Binary State where
     lid    <- get
     ct     <- get
     g      <- get
-    config  <- get
-    snoTime <- get
+    config   <- get
+    snoTime  <- get
+    sfaction <- get
     return
-      (State player cursor flav disco dng lid ct
-         (read g) config snoTime Nothing defaultDebugMode)
+      (State player cursor flav disco dng lid ct (read g) config snoTime
+         Nothing sfaction defaultDebugMode)
 
 instance Binary Cursor where
   put (Cursor act cln loc rln eps) = do

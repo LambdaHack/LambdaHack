@@ -3,10 +3,8 @@
 module Game.LambdaHack.Actor
   ( -- * Actor identifiers and related operations
     ActorId, findHeroName, monsterGenChance
-    -- * Party identifiers
-  , AIAlgo(..), PartyId, heroParty, enemyParty, animalParty
     -- * The@ Acto@r type
-  , Actor(..), template, addHp, unoccupied, heroKindId
+  , Actor(..), AIAlgo(..), template, addHp, unoccupied, heroKindId
   , projectileKindId, actorSpeed
     -- * Type of na actor target
   , Target(..)
@@ -21,27 +19,12 @@ import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 import Game.LambdaHack.Point
 import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.Content.FactionKind
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Config as Config
 import Game.LambdaHack.Time
 import qualified Game.LambdaHack.Color as Color
-
--- | The type of party identifiers.
-newtype PartyId = PartyId Int
-  deriving (Show, Eq, Ord)
-
--- | All supported party identifiers. Animals and projectiles move every turn.
--- Projectiles don't recognize friends and foes, animals turn friedly
--- or hostile, depending on various factors.
-heroParty, enemyParty, animalParty :: PartyId
-heroParty = PartyId 0
-enemyParty = PartyId 1
-animalParty = PartyId 2
-
-instance Binary PartyId where
-  put (PartyId n) = put n
-  get = fmap PartyId get
 
 -- | Kinds of AI algorithms.
 data AIAlgo = AIDefender | AIProjectile
@@ -62,19 +45,19 @@ instance Binary AIAlgo where
 -- they are usually modified temporarily, but tend to return
 -- to the original value from @ActorKind@ over time. E.g., HP.
 data Actor = Actor
-  { bkind   :: !(Kind.Id ActorKind)    -- ^ the kind of the actor
-  , bsymbol :: !(Maybe Char)           -- ^ individual map symbol
-  , bname   :: !(Maybe String)         -- ^ individual name
-  , bcolor  :: !(Maybe Color.Color)    -- ^ individual map color
-  , bspeed  :: !(Maybe Speed)          -- ^ individual speed
-  , bhp     :: !Int                    -- ^ current hit points
-  , bdir    :: !(Maybe (Vector, Int))  -- ^ direction and distance of running
-  , btarget :: Target                  -- ^ target for ranged attacks and AI
-  , bloc    :: !Point                  -- ^ current location
-  , bletter :: !Char                   -- ^ next inventory letter
-  , btime   :: !Time                   -- ^ absolute time of next action
-  , bparty  :: !PartyId                -- ^ to which party the actor belongs
-  , bai     :: !(Maybe AIAlgo)         -- ^ under control of this AI algorithm
+  { bkind    :: !(Kind.Id ActorKind)    -- ^ the kind of the actor
+  , bsymbol  :: !(Maybe Char)           -- ^ individual map symbol
+  , bname    :: !(Maybe String)         -- ^ individual name
+  , bcolor   :: !(Maybe Color.Color)    -- ^ individual map color
+  , bspeed   :: !(Maybe Speed)          -- ^ individual speed
+  , bhp      :: !Int                    -- ^ current hit points
+  , bdir     :: !(Maybe (Vector, Int))  -- ^ direction and distance of running
+  , btarget  :: Target                  -- ^ target for ranged attacks and AI
+  , bloc     :: !Point                  -- ^ current location
+  , bletter  :: !Char                   -- ^ next inventory letter
+  , btime    :: !Time                   -- ^ absolute time of next action
+  , bfaction :: !(Kind.Id FactionKind)  -- ^ to which faction the actor belongs
+  , bai      :: !(Maybe AIAlgo)         -- ^ under control of this AI algorithm
   }
   deriving Show
 
@@ -91,7 +74,7 @@ instance Binary Actor where
     put bloc
     put bletter
     put btime
-    put bparty
+    put bfaction
     put bai
   get = do
     bkind   <- get
@@ -105,7 +88,7 @@ instance Binary Actor where
     bloc    <- get
     bletter <- get
     btime   <- get
-    bparty  <- get
+    bfaction <- get
     bai     <- get
     return Actor{..}
 
@@ -139,14 +122,13 @@ monsterGenChance depth numMonsters =
 -- | A template for a new non-projectile actor. The initial target is invalid
 -- to force a reset ASAP.
 template :: Kind.Id ActorKind -> Maybe Char -> Maybe String -> Int -> Point
-         -> Time -> PartyId -> Actor
-template bkind bsymbol bname bhp bloc btime bparty =
+         -> Time -> Kind.Id FactionKind -> Maybe AIAlgo -> Actor
+template bkind bsymbol bname bhp bloc btime bfaction bai =
   let bcolor  = Nothing
       bspeed  = Nothing
       btarget = invalidTarget
       bdir    = Nothing
       bletter = 'a'
-      bai = if bparty == heroParty then Nothing else Just AIDefender
   in Actor{..}
 
 -- | Increment current hit points of an actor.

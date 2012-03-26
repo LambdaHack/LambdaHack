@@ -109,6 +109,7 @@ levelPerception :: Kind.COps -> State -> Level -> Perception
 levelPerception cops@Kind.COps{cotile}
                        state@State{ splayer
                                   , sconfig
+                                  , sfaction
                                   , sdebug = DebugMode{smarkVision}
                                   }
                        lvl@Level{lactor} =
@@ -125,7 +126,8 @@ levelPerception cops@Kind.COps{cotile}
                       computeReachable cops radius mode smarkVision m lvl)
         else Nothing
       (mLoc, mPer) = (fmap fst mLocPer, fmap snd mLocPer)
-      hs = IM.filter (\ m -> bparty m == heroParty) lactor
+      hs = IM.filter (\ m -> bfaction m == sfaction
+                             && bai m == Nothing) lactor
       pers = IM.map (\ h ->
                       computeReachable cops radius mode smarkVision h lvl) hs
       locs = map bloc $ IM.elems hs

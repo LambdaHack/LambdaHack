@@ -160,7 +160,8 @@ continueRun (dirLast, distLast) = do
   per <- getPerception
   Diary{sreport} <- getDiary
   ms  <- gets dangerousList
-  hs  <- gets friendlyList
+  sfaction <- gets sfaction
+  hs <- gets (factionList [sfaction])
   lvl@Level{lxsize, lysize} <- gets slevel
   let locHasFeature f loc = Tile.hasFeature cotile f (lvl `at` loc)
       locHasItems loc = not $ L.null $ lvl `atI` loc

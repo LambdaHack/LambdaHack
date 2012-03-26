@@ -20,6 +20,7 @@ import Game.LambdaHack.State
 import Game.LambdaHack.Grammar
 import Game.LambdaHack.Item
 import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Content.ItemKind
 import qualified Game.LambdaHack.Config as Config
@@ -40,13 +41,13 @@ isProjectile s a =
 isAHero :: State -> ActorId -> Bool
 isAHero s a =
   let (_, actor, _) = findActorAnyLevel a s
-  in bparty actor == heroParty
+  in bfaction actor == sfaction s && bai actor /= Just AIProjectile
 
 -- | Checks whether an actor identifier represents a monster.
 isAMonster :: State -> ActorId -> Bool
 isAMonster s a =
   let (_, actor, _) = findActorAnyLevel a s
-  in bparty actor == enemyParty
+  in bfaction actor /= sfaction s && bai actor /= Just AIProjectile
 
 -- TODO: move to TileState if ever created.
 -- | How long until an actor's smell vanishes from a tile.
@@ -90,8 +91,8 @@ getPlayerItem s@State{splayer} =
 
 -- | The list of actors and their levels for all heroes in the dungeon.
 allHeroesAnyLevel :: State -> [ActorId]
-allHeroesAnyLevel State{slid, sdungeon} =
-  let one (_, lvl) = L.map fst (heroAssocs lvl)
+allHeroesAnyLevel State{slid, sdungeon, sfaction} =
+  let one (_, lvl) = L.map fst (heroAssocs sfaction lvl)
   in L.concatMap one (currentFirst slid sdungeon)
 
 updateAnyActorBody :: ActorId -> (Actor -> Actor) -> State -> State
@@ -159,41 +160,44 @@ deletePlayer :: State -> State
 deletePlayer s@State{splayer} = deleteActor splayer s
 
 -- TODO: unify, rename
-heroAssocs, hostileAssocs, dangerousAssocs, friendlyAssocs, allButHeroesAssocs
-  :: Level -> [(ActorId, Actor)]
-heroAssocs lvl =
-  filter (\ (_, m) -> bparty m == heroParty
+heroAssocs, hostileAssocs, dangerousAssocs, allButHeroesAssocs
+  :: Kind.Id FactionKind -> Level -> [(ActorId, Actor)]
+heroAssocs sfaction lvl =
+  filter (\ (_, m) -> bfaction m == sfaction
                       && bai m /= Just AIProjectile) $
     IM.toList $ lactor lvl
-hostileAssocs lvl =
-  filter (\ (_, m) -> bparty m /= heroParty
+hostileAssocs sfaction lvl =
+  filter (\ (_, m) -> bfaction m /= sfaction
                       && bai m /= Just AIProjectile) $
     IM.toList $ lactor lvl
-dangerousAssocs lvl =
-  filter (\ (_, m) -> bparty m /= heroParty) $
+dangerousAssocs sfaction lvl =
+  filter (\ (_, m) -> bfaction m /= sfaction) $
     IM.toList $ lactor lvl
-friendlyAssocs lvl =
-  filter (\ (_, m) -> bparty m == heroParty) $
-    IM.toList $ lactor lvl
-allButHeroesAssocs lvl =
-  filter (\ (_, m) -> bparty m /= heroParty || bai m == Just AIProjectile) $
+allButHeroesAssocs sfaction lvl =
+  filter (\ (_, m) -> bfaction m /= sfaction
+                      || bai m == Just AIProjectile) $
     IM.toList $ lactor lvl
 
-heroList, hostileList, dangerousList, friendlyList :: State -> [Actor]
-heroList state =
-  filter (\ m -> bparty m == heroParty
+heroList, hostileList, dangerousList :: State -> [Actor]
+heroList state@State{sfaction} =
+  filter (\ m -> bfaction m == sfaction
                  && bai m /= Just AIProjectile) $
     IM.elems $ lactor $ slevel state
-hostileList state =
-  filter (\ m -> bparty m /= heroParty
+hostileList state@State{sfaction} =
+  filter (\ m -> bfaction m /= sfaction
                  && bai m /= Just AIProjectile) $
     IM.elems $ lactor $ slevel state
-dangerousList state =
-  filter (\ m -> bparty m /= heroParty) $
+dangerousList state@State{sfaction} =
+  filter (\ m -> bfaction m /= sfaction) $
     IM.elems $ lactor $ slevel state
-friendlyList state =
-  filter (\ m -> bparty m == heroParty) $
-    IM.elems $ lactor $ slevel state
+
+factionAssocs :: [Kind.Id FactionKind] -> Level -> [(ActorId, Actor)]
+factionAssocs l lvl =
+  filter (\ (_, m) -> bfaction m `elem` l) $ IM.toList $ lactor lvl
+
+factionList :: [Kind.Id FactionKind] -> State -> [Actor]
+factionList l s =
+  filter (\ m -> bfaction m `elem` l) $ IM.elems $ lactor $ slevel s
 
 -- | Finds an actor at a location on the current level. Perception irrelevant.
 locToActor :: Point -> State -> Maybe ActorId
@@ -219,7 +223,7 @@ nearbyFreeLoc cotile start state =
 -- | Calculate loot's worth for heroes on the current level.
 calculateTotal :: Kind.Ops ItemKind -> State -> ([Item], Int)
 calculateTotal coitem s =
-  let ha = heroAssocs $ slevel s
+  let ha = factionAssocs [sfaction s] $ slevel s
       heroInv = L.concat $ catMaybes $
                   L.map ( \ (k, _) -> IM.lookup k $ linv $ slevel s) ha
   in (heroInv, L.sum $ L.map (itemPrice coitem) heroInv)
@@ -235,7 +239,7 @@ tryFindHeroK s k =
 
 -- | Create a new hero on the current level, close to the given location.
 addHero :: Kind.COps -> Point -> State -> State
-addHero Kind.COps{coactor, cotile} ploc state@State{scounter} =
+addHero Kind.COps{coactor, cotile} ploc state@State{scounter, sfaction} =
   let config = sconfig state
       bHP = Config.get config "heroes" "baseHP"
       loc = nearbyFreeLoc cotile ploc state
@@ -245,7 +249,7 @@ addHero Kind.COps{coactor, cotile} ploc state@State{scounter} =
       name = findHeroName config n
       startHP = bHP `div` min 5 (n + 1)
       m = template (heroKindId coactor) (Just symbol) (Just name)
-                   startHP loc (stime state) heroParty
+                   startHP loc (stime state) sfaction Nothing
       cstate = state { scounter = scounter + 1 }
   in updateLevel (updateActorDict (IM.insert scounter m)) cstate
 
@@ -259,21 +263,21 @@ initialHeroes cops ploc state =
 
 -- | Create a new monster in the level, at a given position
 -- and with a given actor kind and HP.
-addMonster :: Kind.Ops TileKind -> Kind.Id ActorKind -> Int -> Point -> State
-           -> State
-addMonster cotile mk hp ploc state@State{scounter} = do
+addMonster :: Kind.Ops TileKind -> Kind.Id ActorKind -> Int -> Point
+           -> Kind.Id FactionKind -> Maybe AIAlgo -> State -> State
+addMonster cotile mk hp ploc bfaction bai state@State{scounter} = do
   let loc = nearbyFreeLoc cotile ploc state
-      m = template mk Nothing Nothing hp loc (stime state) enemyParty
+      m = template mk Nothing Nothing hp loc (stime state) bfaction bai
       cstate = state {scounter = scounter + 1}
   updateLevel (updateActorDict (IM.insert scounter m)) cstate
 
 -- Adding projectiles
 
 -- | Create a projectile actor containing the given missile.
-addProjectile :: Kind.COps -> Item -> Point -> PartyId -> [Point] -> Time
-              -> State -> State
+addProjectile :: Kind.COps -> Item -> Point -> Kind.Id FactionKind
+              -> [Point] -> Time -> State -> State
 addProjectile Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}}
-              item loc bparty path btime state@State{scounter} =
+              item loc bfaction path btime state@State{scounter} =
   let ik = okind (jkind item)
       object = objectItem coitem state item
       name = "a flying " ++ unwords (tail (words object))
@@ -292,7 +296,7 @@ addProjectile Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}}
         , bloc    = loc
         , bletter = 'a'
         , btime
-        , bparty
+        , bfaction
         , bai     = Just AIProjectile
         }
       cstate = state { scounter = scounter + 1 }
