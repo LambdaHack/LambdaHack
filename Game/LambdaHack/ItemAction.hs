@@ -142,9 +142,9 @@ playerProjectGroupItem :: Verb -> Object -> [Char] -> ActionFrame ()
 playerProjectGroupItem verb object syms = do
   ms     <- gets hostileList
   lxsize <- gets (lxsize . slevel)
+  lysize <- gets (lysize . slevel)
   ploc   <- gets (bloc . getPlayerBody)
-  if L.any (adjacent lxsize ploc) $ L.map bloc $
-       L.filter (\ m -> bai m /= Just AIProjectile) ms
+  if foesAdjacent lxsize lysize ploc ms
     then abortWith "You can't aim in melee."
     else playerProjectGI verb object syms
 

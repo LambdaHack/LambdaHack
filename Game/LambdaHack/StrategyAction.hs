@@ -103,12 +103,12 @@ strategyDefender cops actor oldState@State{splayer = pl, sfaction} per =
       TLoc loc -> (tgt, Just loc, False)  -- ignore all and go to loc
       _  -> closest
   (newTgt, floc, foeVisible) = chase btarget
+  hs = heroAssocs sfaction $ slevel delState
+  foes = if not (isAHero delState pl) && memActor pl delState
+         then (pl, getPlayerBody delState) : hs
+         else hs
   closest =
-    let hs = L.map (second bloc) $ heroAssocs sfaction $ slevel delState
-        foes = if not (isAHero delState pl) && memActor pl delState
-               then (pl, bloc $ getPlayerBody delState) : hs
-               else hs
-        visible = L.filter (uncurry enemyVisible) foes
+    let visible = L.filter (uncurry enemyVisible) (L.map (second bloc) foes)
         foeDist = L.map (\ (a, l) -> (chessDist lxsize me l, l, a)) visible
     in case foeDist of
          [] -> (TCursor, Nothing, False)
@@ -174,7 +174,7 @@ strategyDefender cops actor oldState@State{splayer = pl, sfaction} per =
       let benefit = (1 + jpower i) * Effect.effectToBenefit (ieffect ik),
       benefit > 0,
       asight mk || isymbol ik == '!']
-  foeAdjacent = maybe False (adjacent lxsize me) floc
+  foesAdj = foesAdjacent lxsize lysize me (map snd foes)
   -- TODO: also don't throw if any loc on path is visibly not accessible
   -- from previous (and tweak eps in bla to make it accessible).
   -- Also don't throw if target not in range.
@@ -184,7 +184,7 @@ strategyDefender cops actor oldState@State{splayer = pl, sfaction} per =
     Nothing -> me
     Just [] -> me
     Just (lbl:_) -> lbl
-  throwFreq is multi = if foeAdjacent
+  throwFreq is multi = if foesAdj
                           || not (asight mk)
                           || not (accessible cops lvl me loc1)
                           || isJust (locToActor loc1 oldState)

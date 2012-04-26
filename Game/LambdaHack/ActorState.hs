@@ -12,6 +12,7 @@ import qualified Data.Char as Char
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Point
+import Game.LambdaHack.PointXY
 import Game.LambdaHack.Vector
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Level
@@ -227,6 +228,12 @@ calculateTotal coitem s =
       heroInv = L.concat $ catMaybes $
                   L.map ( \ (k, _) -> IM.lookup k $ linv $ slevel s) ha
   in (heroInv, L.sum $ L.map (itemPrice coitem) heroInv)
+
+foesAdjacent :: X -> Y -> Point -> [Actor] -> Bool
+foesAdjacent lxsize lysize loc foes =
+  let vic = IS.fromList $ vicinity lxsize lysize loc
+      lfs = IS.fromList $ L.map bloc foes
+  in not $ IS.null $ IS.intersection vic lfs
 
 -- Adding heroes
 
