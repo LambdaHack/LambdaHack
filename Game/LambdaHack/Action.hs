@@ -15,7 +15,7 @@ module Game.LambdaHack.Action
     -- * Diary and report
   , getDiary, msgAdd, recordHistory
     -- * Key input
-  , getKeyCommand, getKeyChoice, getOverConfirm
+  , getKeyCommand, getKeyFrameCommand, getOverConfirm
     -- * Display each frame and confirm
   , displayMore, displayYesNo, displayOverAbort
     -- * Assorted frame operations
@@ -269,12 +269,15 @@ getKeyCommand doPush = do
     K.NoModifier -> (fromMaybe nc $ M.lookup nc $ kmacro keyb, modifier)
     _ -> (nc, modifier)
 
--- | Wait for a player keypress.
-getKeyChoice :: [(K.Key, K.Modifier)] -> Color.SingleFrame
-          -> Action (K.Key, K.Modifier)
-getKeyChoice keys frame = do
+-- | Display frame and wait for a player command.
+getKeyFrameCommand :: Color.SingleFrame -> Action (K.Key, K.Modifier)
+getKeyFrameCommand frame = do
   fs <- getFrontendSession
-  liftIO $ promptGetKey fs keys frame
+  keyb <- getBinding
+  (nc, modifier) <- liftIO $ promptGetKey fs [] frame
+  return $ case modifier of
+    K.NoModifier -> (fromMaybe nc $ M.lookup nc $ kmacro keyb, modifier)
+    _ -> (nc, modifier)
 
 -- | Ignore unexpected kestrokes until a SPACE or ESC is pressed.
 getConfirm :: Color.SingleFrame -> Action Bool
@@ -355,8 +358,10 @@ displayChoiceUI prompt ovs keys = do
         [] -> ([], [], "", [], keys)
         [x] -> (x, [], "", [], keys)
         x:xs -> (x, xs, ", SPACE", [moreMsg], (K.Space, K.NoModifier) : keys)
+      legalKeys =  (K.Esc, K.NoModifier) : keysS
   frame <- drawOverlay ColorFull (prompt ++ spc ++ ", ESC]") (over ++ more)
-  (key, modifier) <- getKeyChoice ((K.Esc, K.NoModifier) : keysS) frame
+  fs <- getFrontendSession
+  (key, modifier) <- liftIO $ promptGetKey fs legalKeys frame
   case key of
     K.Esc -> neverMind True
     K.Space | not (null rest) -> displayChoiceUI prompt rest keys

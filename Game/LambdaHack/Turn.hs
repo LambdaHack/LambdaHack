@@ -170,7 +170,7 @@ playerCommand msgRunAbort = do
   Binding.Binding{kcmd} <- getBinding
   kmPush <- case msgRunAbort of
     "" -> getKeyCommand (Just True)
-    _  -> drawPrompt ColorFull msgRunAbort >>= getKeyChoice []
+    _  -> drawPrompt ColorFull msgRunAbort >>= getKeyFrameCommand
   -- The frame state is now None and remains so between each pair
   -- of lines of @loop@ (but can change within called actions).
   let loop :: (K.Key, K.Modifier) -> Action ()
@@ -214,7 +214,7 @@ playerCommand msgRunAbort = do
             -- Display the last frame while waiting for the next key or,
             -- if there is no next frame, just get the key.
             kmNext <- case mfr of
-              Just fr | b -> getKeyChoice [] fr
+              Just fr | b -> getKeyFrameCommand fr
               _           -> getKeyCommand Nothing
             -- Look up and perform the next command.
             loop kmNext
