@@ -37,7 +37,7 @@ description:   This is an alpha release of LambdaHack,
                A larger game that depends on the LambdaHack library
                is Allure of the Stars, available from
                <http://hackage.haskell.org/package/Allure>.
-synopsis:      A roguelike game engine in early and very active development
+synopsis:      A roguelike game engine in early and active development
 homepage:      http://github.com/kosmikus/LambdaHack
 bug-reports:   http://github.com/kosmikus/LambdaHack/issues
 category:      Game Engine
