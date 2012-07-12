@@ -35,6 +35,7 @@ saveDiary state diary = do
   encodeEOF dfile diary
 
 saveLock :: MVar ()
+{-# NOINLINE saveLock #-}
 saveLock = unsafePerformIO newEmptyMVar
 
 -- | Save a simple serialized version of the current state.
