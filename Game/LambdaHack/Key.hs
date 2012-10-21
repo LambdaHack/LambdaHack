@@ -41,7 +41,7 @@ data Modifier =
 
 showKey :: Key -> String
 showKey (Char c) = [c]
-showKey Esc      = "ESC"  -- these three are common and terse abbreviations
+showKey Esc      = "ESC"  -- these are common and terse abbreviations
 showKey Return   = "RET"
 showKey Space    = "SPACE"
 showKey Tab      = "TAB"

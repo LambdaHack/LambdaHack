@@ -26,7 +26,7 @@ configCmd config =
   let section = Config.getItems config "commands"
       mkKey s =
         case K.keyTranslate s of
-          K.Unknown _ -> assert `failure` ("unknown command key " ++ s)
+          K.Unknown _ -> assert `failure` ("unknown command key <" ++ s ++ ">")
           key -> key
       mkCmd s = read s :: Cmd
       mkCommand (key, def) = (mkKey key, mkCmd def)

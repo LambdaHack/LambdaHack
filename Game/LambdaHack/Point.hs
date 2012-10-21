@@ -24,7 +24,7 @@ import Game.LambdaHack.Utils.Assert
 -- mainly as keys and not constructed often, so the performance will improve
 -- due to smaller save files, the use of @IntMap@ and cheaper array indexing,
 -- including cheaper bounds checks.
--- We don't defin @Point@ as a newtype to avoid the trouble
+-- We don't define @Point@ as a newtype to avoid the trouble
 -- with using @EnumMap@ in place of @IntMap@, etc.
 type Point = Int
 

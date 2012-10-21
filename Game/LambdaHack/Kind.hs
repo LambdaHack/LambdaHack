@@ -115,9 +115,10 @@ stdRuleset Ops{ouniqGroup, okind} = okind $ ouniqGroup "standard"
 instance Show COps where
   show _ = "Game content."
 
--- | Arrays, indexed by type @i@ of content identifiers pointing to
--- content type @c@, where the identifiers are represented as @Word8@
+-- | Arrays of content identifiers pointing to the content type @c@,
+-- where the identifiers are represented as @Word8@
 -- (and so content of type @c@ can have at most 256 elements).
+-- The arrays are indexed by type @i@, e.g., a dungeon tile location.
 newtype Array i c = Array (A.UArray i Word.Word8) deriving Show
 
 -- TODO: save/restore is still too slow, but we are already past

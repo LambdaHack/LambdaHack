@@ -326,7 +326,7 @@ displayYesNo prompt = do
   getYesNo frame
 
 -- | Print a msg and several overlays, one per page.
--- All frames require confirmations. Raise @abort@ if the players presses ESC.
+-- All frames require confirmations. Raise @abort@ if the player presses ESC.
 displayOverAbort :: Msg -> [Overlay] -> Action ()
 displayOverAbort prompt xs = do
   let f x = drawOverlay ColorFull prompt (x ++ [moreMsg])

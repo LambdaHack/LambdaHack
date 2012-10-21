@@ -138,7 +138,7 @@ towards lxsize loc0 loc1 =
 displacement :: Point -> Point -> Vector
 displacement loc1 loc2 = Vector $ loc2 - loc1
 
--- | A vector from a point to another. W have
+-- | A vector from a point to another.
 displacePath :: [Point] -> [Vector]
 displacePath []  = []
 displacePath lp1@(_ : lp2) =
