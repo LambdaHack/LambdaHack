@@ -46,14 +46,14 @@ start config slowSess = do
       pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
   restored <- Save.restoreGame pathsDataFile config title
   case restored of
-    Right (msg, diary) -> do  -- Starting a new game.
+    Right (diary, msg) -> do  -- Starting a new game.
       state <- gameReset config cops
       handlerToIO sess state
         diary{sreport = singletonReport msg}
         -- TODO: gameReset >> handleTurn or defaultState {squit=Reset}
         handleTurn
-    Left (state, diary) ->  -- Running a restored a game.
+    Left (state, diary, msg) ->  -- Running a restored a game.
       handlerToIO sess state
         -- This overwrites the "Really save/quit?" messages.
-        diary{sreport = singletonReport $ "Welcome back to " ++ title ++ "."}
+        diary{sreport = singletonReport msg}
         handleTurn

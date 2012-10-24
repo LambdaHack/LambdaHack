@@ -13,6 +13,7 @@ import System.IO.Unsafe (unsafePerformIO)  -- horrors
 import Game.LambdaHack.Utils.File
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Config as Config
+import Game.LambdaHack.Msg
 
 -- | Name of the save game.
 saveFile :: Config.CP -> IO FilePath
@@ -76,7 +77,7 @@ tryCopyDataFiles pathsDataFile dirNew = do
 -- | Restore a saved game, if it exists. Initialize directory structure,
 -- if needed.
 restoreGame :: (FilePath -> IO FilePath) -> Config.CP -> String
-            -> IO (Either (State, Diary) (String, Diary))
+            -> IO (Either (State, Diary, Msg) (Diary, Msg))
 restoreGame pathsDataFile config title = do
   appData <- Config.appDataDir
   ab <- doesDirectoryExist appData
@@ -100,20 +101,28 @@ restoreGame pathsDataFile config title = do
   -- the other functions will most probably also throw exceptions,
   -- this time without trying to fix it up.
   sfile <- saveFile config
+  bfile <- bkpFile config
   sb <- doesFileExist sfile
-  if sb
-    then E.catch
-      (do mvBkp config
-          bfile <- bkpFile config
-          state <- strictDecodeEOF bfile
-          return $ Left (state, diary))
-      (\ e -> case e :: E.SomeException of
-                _ -> let msg = "Starting a new game, because restore failed. "
-                               ++ "The error message was: "
-                               ++ (unwords . lines) (show e)
-                     in return $ Right (msg, diary))
-    else
-      return $ Right ("Welcome to " ++ title ++ "!", diary)
+  bb <- doesFileExist bfile
+  E.catch
+    (if sb
+       then do
+         mvBkp config
+         state <- strictDecodeEOF bfile
+         let msg = "Welcome back to " ++ title ++ "."
+         return $ Left (state, diary, msg)
+       else
+         if bb
+           then do
+             state <- strictDecodeEOF bfile
+             let msg = "No savefile found. Restoring from a backup savefile."
+             return $ Left (state, diary, msg)
+           else return $ Right (diary, "Welcome to " ++ title ++ "!"))
+    (\ e -> case e :: E.SomeException of
+              _ -> let msg = "Starting a new game, because restore failed. "
+                             ++ "The error message was: "
+                             ++ (unwords . lines) (show e)
+                   in return $ Right (diary, msg))
 
 -- | Move the savegame file to a backup slot.
 mvBkp :: Config.CP -> IO ()
