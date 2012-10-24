@@ -300,12 +300,12 @@ endTargetingMsg = do
 
 -- | Cancel something, e.g., targeting mode, resetting the cursor
 -- to the position of the player. Chosen target is not invalidated.
-cancelCurrent :: Action ()
-cancelCurrent = do
+cancelCurrent :: ActionFrame () -> ActionFrame ()
+cancelCurrent h = do
   targeting <- gets (ctargeting . scursor)
   if targeting /= TgtOff
-    then endTargeting False
-    else abortWith "Press Q to quit."
+    then inFrame $ endTargeting False
+    else h  -- nothing to cancel right now, treat this as a command invocation
 
 -- | Accept something, e.g., targeting mode, keeping cursor where it was.
 -- Or perform the default action, if nothing needs accepting.
@@ -314,7 +314,7 @@ acceptCurrent h = do
   targeting <- gets (ctargeting . scursor)
   if targeting /= TgtOff
     then inFrame $ endTargeting True
-    else h  -- nothing to accept right now
+    else h  -- nothing to accept right now, treat this as a command invocation
 
 -- | Drop a single item.
 dropItem :: Action ()

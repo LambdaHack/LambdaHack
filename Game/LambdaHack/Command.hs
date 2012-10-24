@@ -89,12 +89,12 @@ cmdSemantics cmd = case cmd of
   EpsIncr b -> inFrame $ epsIncr b
   GameSave ->  inFrame $ saveGame
   GameQuit ->  inFrame $ quitGame
-  Cancel ->    inFrame $ cancelCurrent
+  Cancel ->    cancelCurrent $ displayMainMenu
   Accept ->    acceptCurrent displayHelp
   History ->   displayHistory
   CfgDump ->   inFrame $ dumpConfig
   HeroCycle -> inFrame $ cycleHero
-  Version ->   inFrame $ gameVersion
+  Version ->   inFrame $ gameVersion2
   Help ->      displayHelp
   Redraw ->    inFrame $ redraw
 

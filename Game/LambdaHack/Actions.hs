@@ -492,7 +492,51 @@ regenerateLevelHP = do
 displayHelp :: ActionFrame ()
 displayHelp = do
   keyb <- getBinding
-  displayOverlays "Basic keys. [press SPACE or ESC]" $ keyHelp keyb
+  displayOverlays "Basic keys. [press SPACE]" $ keyHelp keyb
+
+-- | Display the main menu.
+displayMainMenu :: ActionFrame ()
+displayMainMenu = do
+  version <- gameVersion
+  let
+    menuOverlay =
+      [ fmts ""
+      , fmts ""
+      , fmts ""
+      , fmts ""
+      , fmts ""
+      , fmts ""
+      , fmt "N" "start new game"
+      , fmts ""
+      , fmt "S" "save game"
+      , fmts ""
+      , fmt "X" "save and exit"
+      , fmts ""
+      , fmt "?" "display help"
+      , fmts ""
+      , fmts ""
+      , fmts ""
+      , fmts ""
+      , fmts ""
+      , fmts ""
+      , fmts ""
+      , fmts version
+      , fmts ""
+      ]
+    fmt k h = replicate 21 ' ' ++ k ++ replicate ((5 - length k) `max` 1) ' '
+                               ++ h ++ replicate ((53 - length h) `max` 1) ' '
+    fmts s = replicate ((79 - length s) `max` 1) ' ' ++ s
+  let ks = ['N', 'S', 'X', '?']
+      keys = zip (map K.Char ks) $ repeat K.NoModifier
+      prompt =  "What will it be? [N, S, X, ?"
+  (command, modifier) <- displayChoiceUI prompt [menuOverlay] keys
+  assert (modifier == K.NoModifier) $
+    case command of
+      K.Char 'N' -> inFrame $ saveGame --TODO
+      K.Char 'S' -> inFrame $ saveGame --TODO
+      K.Char 'X' -> inFrame $ saveGame
+      K.Char '?' -> displayHelp
+      k -> assert `failure` "displayMainMenu: unexpected key: " ++ show k
 
 displayHistory :: ActionFrame ()
 displayHistory = do

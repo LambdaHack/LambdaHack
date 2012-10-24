@@ -598,11 +598,20 @@ doLook = do
         fr <- drawPrompt ColorFull lookMsg
         return ((), [Just fr])
 
-gameVersion :: Action ()
-gameVersion = do
+gameVersion2 :: Action ()
+gameVersion2 = do
   Kind.COps{corule} <- getCOps
   let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
       msg = "Version " ++ showVersion pathsVersion
             ++ " (frontend: " ++ frontendName
             ++ ", engine: LambdaHack " ++ showVersion Self.version ++ ")"
   abortWith msg
+
+gameVersion :: Action String
+gameVersion = do
+  Kind.COps{corule} <- getCOps
+  let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
+      msg = "Version " ++ showVersion pathsVersion
+            ++ " (frontend: " ++ frontendName
+            ++ ", engine: LambdaHack " ++ showVersion Self.version ++ ")"
+  return msg
