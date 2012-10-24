@@ -51,9 +51,9 @@ start config slowSess = do
       handlerToIO sess state
         diary{sreport = singletonReport msg}
         -- TODO: gameReset >> handleTurn or defaultState {squit=Reset}
-        handleTurn
+        handleGame
     Left (state, diary, msg) ->  -- Running a restored a game.
       handlerToIO sess state
         -- This overwrites the "Really save/quit?" messages.
         diary{sreport = singletonReport msg}
-        handleTurn
+        handleGame

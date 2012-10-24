@@ -25,7 +25,8 @@ module Game.LambdaHack.Action
     -- * Assorted operations
   , getPerception, updateAnyActor, updatePlayerBody
     -- * Assorted primitives
-  , currentDate, saveGameBkp, dumpCfg, endOrLoop, gameReset, gameResetAction
+  , currentDate, saveGameBkp, dumpCfg, endOrLoop, rmBkpSaveDiary
+  , gameReset, gameResetAction
   , debug
   ) where
 
@@ -527,7 +528,6 @@ endOrLoop handleTurn = do
         handleScores False status total
         void $ displayMore ColorFull "See you soon, stronger and braver!"
       liftIO $ takeMVar mv  -- wait until saved
-      exitGame
     Just (screens, status@H.Killed{}) | screens -> do
       Diary{sreport} <- getDiary
       unless (nullReport sreport) $ do
@@ -538,7 +538,6 @@ endOrLoop handleTurn = do
         handleScores True status total
         void $ displayMore ColorFull
           "Let's hope another party can save the day!"
-      exitGame
     Just (screens, status@H.Victor) | screens -> do
       Diary{sreport} <- getDiary
       unless (nullReport sreport) $ do
@@ -548,7 +547,6 @@ endOrLoop handleTurn = do
       tryIgnore $ do
         handleScores True status total
         void $ displayMore ColorFull "Can it be done better, though?"
-      exitGame
     Just (_, H.Restart) -> do
       cops <- getCOps
       -- Take the config from config file, to reroll RNG, if needed.
@@ -558,10 +556,10 @@ endOrLoop handleTurn = do
       modify $ const state
       saveGameBkp state diary
       handleTurn
-    _ -> exitGame
+    _ -> return ()
 
-exitGame :: Action ()
-exitGame  = do
+rmBkpSaveDiary :: Action ()
+rmBkpSaveDiary  = do
   config <- gets sconfig
   diary <- getDiary
   -- Save diary often in case of crashes.

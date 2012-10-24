@@ -1,5 +1,5 @@
 -- | The main loop of the game, processing player and AI moves turn by turn.
-module Game.LambdaHack.Turn ( handleTurn ) where
+module Game.LambdaHack.Turn ( handleGame ) where
 
 import Control.Monad
 import Control.Monad.State hiding (State, state)
@@ -56,8 +56,12 @@ import qualified Game.LambdaHack.HighScore as H
 -- | Start a clip (a part of a turn for which one or more frames
 -- will be generated). Do whatever has to be done
 -- every fixed number of time units, e.g., monster generation.
--- Run the player and other actors moves.
--- Eventually advance the time and repeat.
+-- Run the player and other actors moves. Eventually advance the time
+-- and repeat, and if the game ends or exits, handle the diary
+-- and backup savefile.
+handleGame :: Action ()
+handleGame = handleTurn >> rmBkpSaveDiary
+
 handleTurn :: Action ()
 handleTurn = do
   debug "handleTurn"
@@ -79,6 +83,8 @@ handleTurn = do
       advanceTime False pl  -- rewind player time: this is just Save&Exit
     _ -> return ()
   endOrLoop handleTurn
+
+
 
 -- TODO: We should replace this structure using a priority search queue/tree.
 -- | Perform moves for individual actors not controlled
