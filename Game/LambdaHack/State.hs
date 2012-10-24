@@ -55,7 +55,7 @@ data State = State
   , scounter :: Int          -- ^ stores next actor index
   , srandom  :: R.StdGen     -- ^ current random generator
   , sconfig  :: Config.CP    -- ^ game config
-  , snoTime  :: Bool         -- ^ last command unexpectedly took no time
+  , stakeTime :: Maybe Bool   -- ^ last command unexpectedly took some time
   , squit    :: Maybe (Bool, H.Status)  -- ^ cause of game shutdown
   , sfaction :: Kind.Id FactionKind     -- ^ our faction
   , sdebug   :: DebugMode    -- ^ debugging mode
@@ -119,7 +119,7 @@ defaultState config sfaction flavour dng lid ploc g =
     0
     g
     config
-    False
+    Nothing
     Nothing
     sfaction
     defaultDebugMode
@@ -174,7 +174,7 @@ instance Binary Diary where
 
 instance Binary State where
   put (State player cursor flav disco dng lid ct
-         g config snoTime _ sfaction _) = do
+         g config stakeTime _ sfaction _) = do
     put player
     put cursor
     put flav
@@ -184,7 +184,7 @@ instance Binary State where
     put ct
     put (show g)
     put config
-    put snoTime
+    put stakeTime
     put sfaction
   get = do
     player <- get
@@ -196,10 +196,10 @@ instance Binary State where
     ct     <- get
     g      <- get
     config   <- get
-    snoTime  <- get
+    stakeTime  <- get
     sfaction <- get
     return
-      (State player cursor flav disco dng lid ct (read g) config snoTime
+      (State player cursor flav disco dng lid ct (read g) config stakeTime
          Nothing sfaction defaultDebugMode)
 
 instance Binary Cursor where

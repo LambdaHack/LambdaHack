@@ -79,7 +79,7 @@ move dir = do
     then do
       frs <- moveCursor dir 1
       -- Mark that unexpectedly it does not take time.
-      modify (\ s -> s {snoTime = True})
+      modify (\ s -> s {stakeTime = Just False})
       return frs
     else
       inFrame $ moveOrAttack True pl dir
@@ -350,7 +350,7 @@ actorAttackActor source target = do
       selectPlayer target
         >>= assert `trueM` (source, target, "player bumps into himself")
       -- Mark that unexpectedly it does not take time.
-      modify (\ s -> s {snoTime = True})
+      modify (\ s -> s {stakeTime = Just False})
     else do
       cops@Kind.COps{coactor, coitem=coitem@Kind.Ops{opick, okind}} <- getCOps
       state <- get

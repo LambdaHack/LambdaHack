@@ -160,7 +160,7 @@ playerProjectGI verb object syms = do
         modify (updateCursor upd)
         frs <- targetMonster TgtAuto
         -- Mark that unexpectedly it does not take time.
-        modify (\ s -> s {snoTime = True})
+        modify (\ s -> s {stakeTime = Just False})
         return frs
   case targetToLoc (totalVisible per) state ploc of
     Just loc -> do

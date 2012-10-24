@@ -39,7 +39,7 @@ run (dir, dist) = do
     then do
       frs <- moveCursor dir 10
       -- Mark that unexpectedly it does not take time.
-      modify (\ s -> s {snoTime = True})
+      modify (\ s -> s {stakeTime = Just False})
       return frs
     else do
       let accessibleDir loc d = accessible cops lvl loc (loc `shift` d)

@@ -186,9 +186,9 @@ playerCommand msgRunAbort = do
               -- Targeting cursor movement and a few other subcommands
               -- are wrongly marked as timed. This is indicated in their
               -- definitions by setting @snoTime@ flag and used and reset here.
-              snoTime <- gets snoTime
-              let timed = declaredTimed && not snoTime
-              modify (\ s -> s {snoTime = False})
+              stakeTime <- gets stakeTime
+              let timed = fromMaybe declaredTimed stakeTime
+              modify (\ s -> s {stakeTime = Nothing})
               -- Ensure at least one frame, if the command takes no time.
               -- No frames for @abort@, so the code is here, not below.
               if not timed && null (catMaybes frs)
