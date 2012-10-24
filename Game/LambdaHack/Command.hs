@@ -17,13 +17,13 @@ data Cmd =
   | Pickup
   | Drop
   | Wait
+  | GameSave
     -- These do not take time, or not quite.
   | Inventory
   | TgtFloor
   | TgtEnemy
   | TgtAscend Int
   | EpsIncr Bool
-  | GameSave
   | GameExit
   | GameRestart
   | Cancel
@@ -63,10 +63,8 @@ timedCmd cmd = case cmd of
   Pickup        -> True
   Drop          -> True
   Wait          -> True
-  -- Take time, but not quite, see elsewhere.
-  GameSave      -> True
-  GameExit      -> True
-  GameRestart   -> True
+  GameExit      -> True  -- takes time, then rewinds time
+  GameRestart   -> True  -- takes time, then resets state
   _             -> False
 
 -- | Description of player commands.
@@ -79,6 +77,7 @@ cmdDescription cmd = case cmd of
   Pickup    -> "get an object"
   Drop      -> "drop an object"
   Wait      -> ""
+  GameSave  -> "save game"
 
   Inventory -> "display inventory"
   TgtFloor  -> "target location"
@@ -90,7 +89,6 @@ cmdDescription cmd = case cmd of
   TgtAscend _ -> error "void level change in targeting mode in config file"
   EpsIncr True  -> "swerve targeting line"
   EpsIncr False -> "unswerve targeting line"
-  GameSave  -> "save game"
   GameExit  -> "save and exit"
   GameRestart -> "restart game"
   Cancel    -> "cancel action"
