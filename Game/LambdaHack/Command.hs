@@ -87,9 +87,9 @@ cmdSemantics cmd = case cmd of
   TgtEnemy ->  targetMonster TgtExplicit
   TgtAscend k -> tgtAscend k
   EpsIncr b -> inFrame $ epsIncr b
-  GameSave ->  inFrame $ saveGame
+  GameSave ->  inFrame $ saveExit
   GameQuit ->  inFrame $ quitGame
-  Cancel ->    cancelCurrent $ displayMainMenu
+  Cancel ->    cancelCurrent displayMainMenu
   Accept ->    acceptCurrent displayHelp
   History ->   displayHistory
   CfgDump ->   inFrame $ dumpConfig

@@ -40,12 +40,19 @@ import Game.LambdaHack.Time
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Draw
 
-saveGame :: Action ()
-saveGame = do
-  b <- displayYesNo "Really save?"
+saveExit :: Action ()
+saveExit = do
+  b <- displayYesNo "Really save and exit?"
   if b
     then modify (\ s -> s {squit = Just (True, H.Camping)})
     else abortWith "Game resumed."
+
+saveGame :: Action ()
+saveGame = do
+  state <- get
+  diary <- getDiary
+  saveGameBkp state diary
+  msgAdd "Game progress saved to a backup file."
 
 quitGame :: Action ()
 quitGame = do
@@ -532,9 +539,12 @@ displayMainMenu = do
   (command, modifier) <- displayChoiceUI prompt [menuOverlay] keys
   assert (modifier == K.NoModifier) $
     case command of
-      K.Char 'N' -> inFrame $ saveGame --TODO
-      K.Char 'S' -> inFrame $ saveGame --TODO
-      K.Char 'X' -> inFrame $ saveGame
+      K.Char 'N' -> inFrame $ saveExit --TODO
+      K.Char 'S' -> inFrame $ saveGame
+      K.Char 'X' -> do
+        -- Mark that unexpectedly it does take time.
+        modify (\ s -> s {stakeTime = Just True})
+        inFrame $ saveExit
       K.Char '?' -> displayHelp
       k -> assert `failure` "displayMainMenu: unexpected key: " ++ show k
 
