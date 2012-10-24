@@ -12,6 +12,7 @@ import qualified Data.Set as S
 import Game.LambdaHack.Utils.Assert
 import qualified Game.LambdaHack.Key as K
 import Game.LambdaHack.Msg
+import qualified Game.LambdaHack.Command as Command
 
 -- | Bindings and other information about player commands.
 data Binding a = Binding
@@ -20,6 +21,8 @@ data Binding a = Binding
   , kmacro :: M.Map K.Key K.Key      -- ^ macro map
   , kmajor :: [K.Key]                -- ^ major, most often used, commands
   , kdir   :: [(K.Key, K.Modifier)]  -- ^ direction keys for moving and running
+  , krevMap :: M.Map Command.Cmd K.Key
+                                     -- ^ map from cmds to their main keys
   }
 
 -- | Produce the macro map from a macro association list

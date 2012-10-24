@@ -10,6 +10,7 @@ import Control.Monad
 import Control.Monad.State hiding (State, state)
 import qualified Data.List as L
 import qualified Data.IntMap as IM
+import qualified Data.Map as M
 import Data.Maybe
 import Data.Version
 import qualified Data.IntSet as IS
@@ -45,6 +46,7 @@ import Game.LambdaHack.Time
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Draw
 import Game.LambdaHack.Display
+import qualified Game.LambdaHack.Command as Command
 
 gameSave :: Action ()
 gameSave = do
@@ -503,17 +505,25 @@ regenerateLevelHP = do
 displayHelp :: ActionFrame ()
 displayHelp = do
   keyb <- getBinding
-  displayOverlays "Basic keys. [press SPACE]" $ keyHelp keyb
+  displayOverlays "Basic keys. [press SPACE to advance]" $ keyHelp keyb
 
 -- | Display the main menu.
 displayMainMenu :: ActionFrame ()
 displayMainMenu = do
   Kind.COps{corule} <- getCOps
+  Binding{krevMap} <- getBinding
   let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
       version = "Version " ++ showVersion pathsVersion
                 ++ " (frontend: " ++ frontendName
                 ++ ", engine: LambdaHack " ++ showVersion Self.version ++ ")"
       title = rtitle $ Kind.stdRuleset corule
+      showKD cmd key = (show key, Command.cmdDescription cmd)
+      revLookup cmd = maybe ("", "") (showKD cmd) $ M.lookup cmd krevMap
+      (saveKey, saveDesc) = revLookup Command.GameSave
+      (exitKey, exitDesc) = revLookup Command.GameExit
+      (rsrtKey, rsrtDesc) = revLookup Command.GameRestart
+      (helpKey, helpDesc) = revLookup Command.Help
+      (clearKey, _)       = revLookup Command.Clear
       menuOverlay =
         [ fmts ""
         , fmts ""
@@ -521,15 +531,15 @@ displayMainMenu = do
         , fmts ""
         , fmts ""
         , fmts ""
-        , fmt "S" "save game"
+        , fmt saveKey saveDesc
         , fmts ""
-        , fmt "X" "save and exit"
+        , fmt exitKey exitDesc
         , fmts ""
-        , fmt "R" "restart game"
+        , fmt rsrtKey rsrtDesc
         , fmts ""
-        , fmt "?" "display help"
+        , fmt helpKey helpDesc
         , fmts ""
-        , fmt "SPACE" "continue"
+        , fmt clearKey "continue"
         , fmts ""
         , fmts ""
         , fmts ""

@@ -1,19 +1,15 @@
--- | Abstract syntax of player commands and their semantics.
+-- | Abstract syntax of player commands.
 module Game.LambdaHack.Command
-  ( Cmd, majorCmd, timedCmd, cmdSemantics, cmdDescription
+  ( Cmd(..), majorCmd, timedCmd, cmdDescription
   ) where
 
-import Game.LambdaHack.Action
-import Game.LambdaHack.Actions
-import Game.LambdaHack.ItemAction
 import Game.LambdaHack.Grammar
-import Game.LambdaHack.State
 import qualified Game.LambdaHack.Feature as F
 
 -- | Abstract syntax of player commands. The type is abstract, but the values
 -- are created outside this module via the Read class (from config file) .
 data Cmd =
-    -- These take time:
+    -- These take time.
     Apply       { verb :: Verb, object :: Object, syms :: [Char] }
   | Project     { verb :: Verb, object :: Object, syms :: [Char] }
   | TriggerDir  { verb :: Verb, object :: Object, feature :: F.Feature }
@@ -21,7 +17,7 @@ data Cmd =
   | Pickup
   | Drop
   | Wait
-    -- These do not take time:
+    -- These do not take time, or not quite.
   | Inventory
   | TgtFloor
   | TgtEnemy
@@ -37,7 +33,7 @@ data Cmd =
   | CfgDump
   | HeroCycle
   | Help
-  deriving (Show, Read)
+  deriving (Show, Read, Eq, Ord)
 
 -- | Major commands land on the first page of command help.
 majorCmd :: Cmd -> Bool
@@ -66,38 +62,12 @@ timedCmd cmd = case cmd of
   TriggerTile{} -> True
   Pickup        -> True
   Drop          -> True
+  Wait          -> True
+  -- Take time, but not quite, see elsewhere.
   GameSave      -> True
   GameExit      -> True
   GameRestart   -> True
-  Wait          -> True
   _             -> False
-
--- | The semantics of player commands in terms of the @Action@ monad.
-cmdSemantics :: Cmd -> ActionFrame ()
-cmdSemantics cmd = case cmd of
-  Apply{..}       -> inFrame $ playerApplyGroupItem verb object syms
-  Project{..}     -> playerProjectGroupItem verb object syms
-  TriggerDir{..}  -> inFrame $ playerTriggerDir feature verb
-  TriggerTile{..} -> inFrame $ playerTriggerTile feature
-  Pickup    -> inFrame $ pickupItem
-  Drop      -> inFrame $ dropItem
-  Wait      -> inFrame $ return ()
-
-  Inventory -> inventory
-  TgtFloor  -> targetFloor   TgtExplicit
-  TgtEnemy  -> targetMonster TgtExplicit
-  TgtAscend k -> tgtAscend k
-  EpsIncr b -> inFrame $ epsIncr b
-  GameSave  -> inFrame $ gameSave
-  GameExit  -> inFrame $ gameExit
-  GameRestart -> inFrame $ gameRestart
-  Cancel    -> cancelCurrent displayMainMenu
-  Accept    -> acceptCurrent displayHelp
-  Clear     -> inFrame $ clearCurrent
-  History   -> displayHistory
-  CfgDump   -> inFrame $ dumpConfig
-  HeroCycle -> inFrame $ cycleHero
-  Help      -> displayHelp
 
 -- | Description of player commands.
 cmdDescription :: Cmd -> String

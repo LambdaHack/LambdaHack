@@ -156,8 +156,9 @@ inFrame act = act >> returnNoFrame ()
 data Session = Session
   { sfs   :: FrontendSession           -- ^ frontend session information
   , scops :: Kind.COps                 -- ^ game content
-  , sbinding    :: Binding (ActionFrame ())  -- ^ binding of keys to commands
-  , sorigConfig :: Config.CP                 -- ^ config from the config file
+  , sbinding    :: Binding (ActionFrame ())
+                                       -- ^ binding of keys to commands
+  , sorigConfig :: Config.CP           -- ^ config from the config file
   }
 
 -- | Get the frontend session.

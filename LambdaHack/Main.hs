@@ -15,7 +15,6 @@ import qualified Content.PlaceKind
 import qualified Content.RuleKind
 import qualified Content.TileKind
 import qualified Game.LambdaHack.Start as Start
-import Game.LambdaHack.Command
 import Game.LambdaHack.Display
 import qualified Game.LambdaHack.Config as Config
 import Game.LambdaHack.Action
@@ -39,7 +38,7 @@ cops = Kind.COps
 -- to form the starting game session. Evaluate to check for errors.
 sess :: Config.CP -> FrontendSession -> Session
 sess config sfs =
-  let !sbinding = BindingAction.stdBinding config cmdSemantics cmdDescription
+  let !sbinding = BindingAction.stdBinding config
       !scops = cops
       !sorigConfig = config
   in Session{..}
