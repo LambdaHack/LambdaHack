@@ -6,7 +6,7 @@ module Game.LambdaHack.Display.Gtk
     -- * The output and input operations
   , display, nextEvent, promptGetKey
     -- * Frontend administration tools
-  , frontendName, startup, shutdown
+  , frontendName, startup
   ) where
 
 import Control.Monad
@@ -81,6 +81,7 @@ startup :: String -> (FrontendSession -> IO ()) -> IO ()
 startup configFont k = do
   mv <- newEmptyMVar
   -- Fork the gtk input and output thread.
+  -- TODO: when GHC changes, make sure GTK is still faster on its own thread.
   void $ forkIO (runGtk configFont k `finally` putMVar mv ())
   takeMVar mv
 
@@ -113,8 +114,9 @@ runGtk configFont k = do
   sframeState <- newMVar frameState
   slastFull <- newIORef (dummyFrame, False)
   let sess = FrontendSession{..}
-  -- Fork the game logic thread.
-  forkIO $ k sess
+  -- Fork the game logic thread. When logic ends, game exits.
+  -- TODO: is postGUIAsync needed here?
+  forkIO $ k sess >> postGUIAsync mainQuit
   -- Fork the thread that periodically draws a frame from a queue, if any.
   forkIO $ pollFrames sess Nothing
   -- Fill the keyboard channel.
@@ -169,10 +171,6 @@ runGtk configFont k = do
   -- Wait until the other thread draws something and show the window.
   yield
   mainGUI
-
--- | Shuts down the frontend cleanly.
-shutdown :: FrontendSession -> IO ()
-shutdown _ = mainQuit
 
 -- | Output to the screen via the frontend.
 output :: FrontendSession  -- ^ frontend session data

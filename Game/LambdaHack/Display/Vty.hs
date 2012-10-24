@@ -5,10 +5,10 @@ module Game.LambdaHack.Display.Vty
     -- * The output and input operations
   , display, nextEvent, promptGetKey
     -- * Frontend administration tools
-  , frontendName, startup, shutdown
+  , frontendName, startup
   ) where
 
-import Graphics.Vty hiding (shutdown)
+import Graphics.Vty
 import qualified Graphics.Vty as Vty
 import qualified Data.List as L
 import qualified Data.ByteString.Char8 as BS
@@ -25,11 +25,7 @@ frontendName = "vty"
 
 -- | Starts the main program loop using the frontend input and output.
 startup :: String -> (FrontendSession -> IO ()) -> IO ()
-startup _ k = mkVty >>= k
-
--- | Shuts down the frontend cleanly.
-shutdown :: FrontendSession -> IO ()
-shutdown = Vty.shutdown
+startup _ k = mkVty >>= k >> Vty.shutdown
 
 -- | Output to the screen via the frontend.
 display :: FrontendSession          -- ^ frontend session data

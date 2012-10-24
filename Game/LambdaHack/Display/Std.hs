@@ -5,7 +5,7 @@ module Game.LambdaHack.Display.Std
     -- * The output and input operations
   , display, nextEvent, promptGetKey
     -- * Frontend administration tools
-  , frontendName, startup, shutdown
+  , frontendName, startup
   ) where
 
 import qualified Data.List as L
@@ -25,10 +25,6 @@ frontendName = "std"
 -- | Starts the main program loop using the frontend input and output.
 startup :: String -> (FrontendSession -> IO ()) -> IO ()
 startup _ k = k ()
-
--- | Shuts down the frontend cleanly. Nothing to be done in this case.
-shutdown :: FrontendSession -> IO ()
-shutdown _ = return ()
 
 -- | Output to the screen via the frontend.
 display :: FrontendSession          -- ^ frontend session data

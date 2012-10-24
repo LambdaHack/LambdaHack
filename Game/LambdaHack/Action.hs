@@ -564,10 +564,8 @@ exitGame :: Action ()
 exitGame  = do
   config <- gets sconfig
   diary <- getDiary
-  fs <- getFrontendSession
-  liftIO $ do
-    Save.rmBkpSaveDiary config diary  -- save diary often in case of crashes
-    shutdown fs
+  -- Save diary often in case of crashes.
+  liftIO $ Save.rmBkpSaveDiary config diary
 
 -- TODO: do this inside Action ()
 gameReset :: Config.CP -> Kind.COps -> IO State

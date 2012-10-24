@@ -3,7 +3,7 @@
 {-# LANGUAGE CPP #-}
 module Game.LambdaHack.Display
   ( -- * Re-exported frontend
-    FrontendSession, startup, shutdown, frontendName, nextEvent, promptGetKey
+    FrontendSession, startup, frontendName, nextEvent, promptGetKey
     -- * Derived operations
   , displayFrame
   ) where

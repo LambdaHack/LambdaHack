@@ -5,7 +5,7 @@ module Game.LambdaHack.Display.Curses
     -- * The output and input operations
   , display, nextEvent, promptGetKey
     -- * Frontend administration tools
-  , frontendName, startup, shutdown
+  , frontendName, startup
   ) where
 
 import qualified UI.HSCurses.Curses as C
@@ -46,10 +46,7 @@ startup _ k = do
   ws <- C.convertStyles vs
   let styleMap = M.fromList (zip ks ws)
   k (FrontendSession C.stdScr styleMap)
-
--- | Shuts down the frontend cleanly.
-shutdown :: FrontendSession -> IO ()
-shutdown _ = C.end
+  C.end
 
 -- | Output to the screen via the frontend.
 display :: FrontendSession          -- ^ frontend session data
