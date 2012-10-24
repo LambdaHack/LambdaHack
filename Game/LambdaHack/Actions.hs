@@ -3,11 +3,15 @@
 -- TODO: Add an export list and document after it's rewritten according to #17.
 module Game.LambdaHack.Actions where
 
+-- Cabal
+import qualified Paths_LambdaHack as Self (version)
+
 import Control.Monad
 import Control.Monad.State hiding (State, state)
 import qualified Data.List as L
 import qualified Data.IntMap as IM
 import Data.Maybe
+import Data.Version
 import qualified Data.IntSet as IS
 
 import Game.LambdaHack.Utils.Assert
@@ -33,41 +37,34 @@ import Game.LambdaHack.DungeonState
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Random
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Binding
 import Game.LambdaHack.Time
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Draw
+import Game.LambdaHack.Display
 
-gameNew :: Action ()
-gameNew = do
-  b <- displayYesNo "Current progress will be lost! Really start a new game?"
-  if b
-    then modify (\ s -> s {squit = Just (False, H.Restart)})
-    else abortWith "Game resumed."
-
-saveExit :: Action ()
-saveExit = do
-  b <- displayYesNo "Really save and exit?"
-  if b
-    then modify (\ s -> s {squit = Just (True, H.Camping)})
-    else abortWith "Game resumed."
-
-saveGame :: Action ()
-saveGame = do
+gameSave :: Action ()
+gameSave = do
   state <- get
   diary <- getDiary
   saveGameBkp state diary
   msgAdd "Game progress saved to a backup file."
 
-quitGame :: Action ()
-quitGame = do
-  b <- displayYesNo "Really quit?"
+gameExit :: Action ()
+gameExit = do
+  b <- displayYesNo "Really save and exit?"
   if b
-    then let status = H.Killed $ Dungeon.levelDefault 0
-         -- No highscore display for quitters.
-         in modify (\ s -> s {squit = Just (False, status)})
+    then modify (\ s -> s {squit = Just (True, H.Camping)})
+    else abortWith "Game resumed."
+
+gameRestart :: Action ()
+gameRestart = do
+  b <- displayYesNo "Current progress will be lost! Really restart the game?"
+  if b
+    then modify (\ s -> s {squit = Just (False, H.Restart)})
     else abortWith "Game resumed."
 
 moveCursor :: Vector -> Int -> ActionFrame ()
@@ -511,18 +508,22 @@ displayHelp = do
 -- | Display the main menu.
 displayMainMenu :: ActionFrame ()
 displayMainMenu = do
-  version <- gameVersion
-  let menuOverlay =
+  Kind.COps{corule} <- getCOps
+  let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
+      version = "Version " ++ showVersion pathsVersion
+                ++ " (frontend: " ++ frontendName
+                ++ ", engine: LambdaHack " ++ showVersion Self.version ++ ")"
+      menuOverlay =
         [ fmts ""
         , fmts ""
         , fmts ""
         , fmts ""
         , fmts ""
-        , fmt "N" "start new game"
-        , fmts ""
         , fmt "S" "save game"
         , fmts ""
         , fmt "X" "save and exit"
+        , fmts ""
+        , fmt "R" "restart game"
         , fmts ""
         , fmt "?" "display help"
         , fmts ""
@@ -537,10 +538,10 @@ displayMainMenu = do
         , fmts ""
         ]
       fmt k h = replicate 21 ' '
-                  ++ k ++ replicate ((8 - length k) `max` 1) ' '
-                  ++ h ++ replicate ((50 - length h) `max` 1) ' '
+                ++ k ++ replicate ((8 - length k) `max` 1) ' '
+                ++ h ++ replicate ((50 - length h) `max` 1) ' '
       fmts s = replicate ((79 - length s) `max` 1) ' ' ++ s
-      prompt =  "What will it be? [N, S, X, ?, SPACE]"
+      prompt =  "What will it be? [R, S, X, ?, SPACE]"
   displayOverlays prompt [menuOverlay]
 
 displayHistory :: ActionFrame ()

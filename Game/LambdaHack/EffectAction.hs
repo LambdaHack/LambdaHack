@@ -3,13 +3,9 @@
 -- TODO: Add an export list and document after it's rewritten according to #17.
 module Game.LambdaHack.EffectAction where
 
--- Cabal
-import qualified Paths_LambdaHack as Self (version)
-
 import Control.Monad
 import Control.Monad.State hiding (State, state)
 import Data.Function
-import Data.Version
 import Data.Maybe
 import qualified Data.List as L
 import qualified Data.IntMap as IM
@@ -21,8 +17,6 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Display
 import Game.LambdaHack.Draw
 import Game.LambdaHack.Grammar
 import Game.LambdaHack.Point
@@ -597,21 +591,3 @@ doLook = do
       else do
         fr <- drawPrompt ColorFull lookMsg
         return ((), [Just fr])
-
-gameVersion2 :: Action ()
-gameVersion2 = do
-  Kind.COps{corule} <- getCOps
-  let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
-      msg = "Version " ++ showVersion pathsVersion
-            ++ " (frontend: " ++ frontendName
-            ++ ", engine: LambdaHack " ++ showVersion Self.version ++ ")"
-  abortWith msg
-
-gameVersion :: Action String
-gameVersion = do
-  Kind.COps{corule} <- getCOps
-  let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
-      msg = "Version " ++ showVersion pathsVersion
-            ++ " (frontend: " ++ frontendName
-            ++ ", engine: LambdaHack " ++ showVersion Self.version ++ ")"
-  return msg

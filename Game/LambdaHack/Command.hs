@@ -7,7 +7,6 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
 import Game.LambdaHack.ItemAction
 import Game.LambdaHack.Grammar
-import Game.LambdaHack.EffectAction
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Feature as F
 
@@ -28,15 +27,14 @@ data Cmd =
   | TgtEnemy
   | TgtAscend Int
   | EpsIncr Bool
-  | GameNew
   | GameSave
-  | GameQuit
+  | GameExit
+  | GameRestart
   | Cancel
   | Accept
   | History
   | CfgDump
   | HeroCycle
-  | Version
   | Help
   | Redraw
   deriving (Show, Read)
@@ -51,9 +49,9 @@ majorCmd cmd = case cmd of
   Pickup        -> True
   Drop          -> True
   Inventory     -> True
-  GameNew       -> True
   GameSave      -> True
-  GameQuit      -> True
+  GameExit      -> True
+  GameRestart   -> True
   Help          -> True
   _             -> False
 
@@ -68,9 +66,9 @@ timedCmd cmd = case cmd of
   TriggerTile{} -> True
   Pickup        -> True
   Drop          -> True
-  GameNew       -> True
   GameSave      -> True
-  GameQuit      -> True
+  GameExit      -> True
+  GameRestart   -> True
   Wait          -> True
   _             -> False
 
@@ -90,15 +88,14 @@ cmdSemantics cmd = case cmd of
   TgtEnemy ->  targetMonster TgtExplicit
   TgtAscend k -> tgtAscend k
   EpsIncr b -> inFrame $ epsIncr b
-  GameNew ->   inFrame $ gameNew
-  GameSave ->  inFrame $ saveExit
-  GameQuit ->  inFrame $ quitGame
+  GameSave -> inFrame $ gameSave
+  GameExit -> inFrame $ gameExit
+  GameRestart -> inFrame $ gameRestart
   Cancel ->    cancelCurrent displayMainMenu
   Accept ->    acceptCurrent displayHelp
   History ->   displayHistory
   CfgDump ->   inFrame $ dumpConfig
   HeroCycle -> inFrame $ cycleHero
-  Version ->   inFrame $ gameVersion2
   Help ->      displayHelp
   Redraw ->    inFrame $ redraw
 
@@ -123,14 +120,13 @@ cmdDescription cmd = case cmd of
   TgtAscend _ -> error "void level change in targeting mode in config file"
   EpsIncr True  -> "swerve targeting line"
   EpsIncr False -> "unswerve targeting line"
-  GameNew ->   "start new game"
-  GameSave ->  "save and exit"
-  GameQuit ->  "quit without saving"
+  GameSave ->  "save game"
+  GameExit ->  "save and exit"
+  GameRestart -> "restart game"
   Cancel ->    "cancel action"
   Accept ->    "accept choice"
   History ->   "display previous messages"
   CfgDump ->   "dump current configuration"
   HeroCycle -> "cycle among heroes on level"
-  Version ->   "display game version"
   Help ->      "display help"
   Redraw ->    "clear messages"

@@ -31,13 +31,13 @@
 ; z: Project { verb = "zap", object = "wand", syms = "/" }
 ; t: Project { verb = "throw", object = "missile", syms = "|" }
 ; ;
-; ; Saving or ending the game.
-; X: GameSave
-; Q: GameQuit
+; ; Saving, exiting and restarting the game.
+; S: GameSave
+; X: GameExit
+; R: GameRestart
 ; ;
 ; ; Information for the player.
 ; P: History
-; V: Version
 ; question: Help
 ; D: CfgDump
 ; ;
