@@ -76,8 +76,17 @@ handleTurn = do
     Nothing -> handleTurn
     Just status@(_, H.Camping) -> do
       pl <- gets splayer
-      advanceTime False pl  -- rewind player time: his action was only Save
+      advanceTime False pl  -- rewind player time: this is just Save&Exit
       shutGame status
+    Just (_, H.Restart) -> do
+      cops <- getCOps
+      -- Take the config from config file, to reroll RNG, if needed.
+      config <- getOrigConfig
+      diary <- getDiary
+      state <- gameResetAction config cops
+      modify $ const state
+      saveGameBkp state diary
+      handleTurn
     Just status -> shutGame status
 
 -- TODO: We should replace this structure using a priority search queue/tree.

@@ -7,7 +7,7 @@ module Game.LambdaHack.Action
     -- * Actions returning frames
   , ActionFrame, returnNoFrame, whenFrame, inFrame
     -- * Game session and its accessors
-  , Session(..), getCOps, getBinding
+  , Session(..), getCOps, getBinding, getOrigConfig
     -- * Various ways to abort action
   , abort, abortWith, abortIfWith, neverMind
     -- * Abort exception handlers
@@ -25,7 +25,7 @@ module Game.LambdaHack.Action
     -- * Assorted operations
   , getPerception, updateAnyActor, updatePlayerBody
     -- * Assorted primitives
-  , currentDate, saveGameBkp, dumpCfg, shutGame
+  , currentDate, saveGameBkp, dumpCfg, shutGame, gameReset, gameResetAction
   , debug
   ) where
 
@@ -60,6 +60,8 @@ import qualified Game.LambdaHack.Config as Config
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Point
 import Game.LambdaHack.Time
+import qualified Game.LambdaHack.DungeonState as DungeonState
+import Game.LambdaHack.Item
 
 -- | The type of the function inside any action.
 -- (Separated from the @Action@ type to document each argument with haddock.)
@@ -154,7 +156,8 @@ inFrame act = act >> returnNoFrame ()
 data Session = Session
   { sfs   :: FrontendSession           -- ^ frontend session information
   , scops :: Kind.COps                 -- ^ game content
-  , skeyb :: Binding (ActionFrame ())  -- ^ binding of keys to commands
+  , sbinding    :: Binding (ActionFrame ())  -- ^ binding of keys to commands
+  , sorigConfig :: Config.CP                 -- ^ config from the config file
   }
 
 -- | Get the frontend session.
@@ -167,7 +170,12 @@ getCOps = Action (\ Session{scops} _p k _a st ms -> k st ms scops)
 
 -- | Get the key binding.
 getBinding :: Action (Binding (ActionFrame ()))
-getBinding = Action (\ Session{skeyb} _p k _a st ms -> k st ms skeyb)
+getBinding = Action (\ Session{sbinding} _p k _a st ms -> k st ms sbinding)
+
+-- | Get the config from the config file.
+getOrigConfig :: Action (Config.CP)
+getOrigConfig =
+  Action (\ Session{sorigConfig} _p k _a st ms -> k st ms sorigConfig)
 
 -- | Reset the state and resume from the last backup point, i.e., invoke
 -- the failure continuation.
@@ -499,14 +507,13 @@ handleScores write status total =
     (placeMsg, slideshow) <- liftIO $ H.register config write score
     displayOverAbort placeMsg slideshow
 
--- | End the game, shutting down the frontend. The boolean argument
+-- | Exit the game, shutting down the frontend. The boolean argument
 -- tells if ending screens should be shown, the other arguments describes
--- the cause of shutdown.
+-- the cause of the shutdown.
 shutGame :: (Bool, H.Status) -> Action ()
 shutGame (showEndingScreens, status) = do
   Kind.COps{coitem} <- getCOps
   s <- get
-  diary <- getDiary
   let (_, total) = calculateTotal coitem s
   case status of
     H.Camping -> do
@@ -517,6 +524,7 @@ shutGame (showEndingScreens, status) = do
         handleScores False status total
         void $ displayMore ColorFull "See you soon, stronger and braver!"
       liftIO $ takeMVar mv  -- wait until saved
+      exitGame
     H.Killed _ | showEndingScreens -> do
       Diary{sreport} <- getDiary
       unless (nullReport sreport) $ do
@@ -527,6 +535,7 @@ shutGame (showEndingScreens, status) = do
         handleScores True status total
         void $ displayMore ColorFull
           "Let's hope another party can save the day!"
+      exitGame
     H.Victor | showEndingScreens -> do
       Diary{sreport} <- getDiary
       unless (nullReport sreport) $ do
@@ -536,11 +545,38 @@ shutGame (showEndingScreens, status) = do
       tryIgnore $ do
         handleScores True status total
         void $ displayMore ColorFull "Can it be done better, though?"
-    _ -> return ()
+      exitGame
+    _ -> exitGame
+
+exitGame :: Action ()
+exitGame  = do
+  config <- gets sconfig
+  diary <- getDiary
   fs <- getFrontendSession
   liftIO $ do
-    Save.rmBkpSaveDiary s diary  -- save the diary often in case of crashes
+    Save.rmBkpSaveDiary config diary  -- save diary often in case of crashes
     shutdown fs
+
+-- TODO: do this inside Action ()
+gameReset :: Config.CP -> Kind.COps -> IO State
+gameReset config1 cops@Kind.COps{ coitem
+                                , cofact=Kind.Ops{opick}} = do
+  (g2, config2) <- Config.getSetGen config1 "dungeonRandomGenerator"
+  let (DungeonState.FreshDungeon{..}, ag) =
+        runState (DungeonState.generate cops config2) g2
+      (sflavour, ag2) = runState (dungeonFlavourMap coitem) ag
+      factionName = Config.getOption config2 "heroes" "faction"
+      sfaction =
+        evalState
+          (opick (fromMaybe "playable" factionName) (const True)) ag2
+  (g3, config3) <- Config.getSetGen config2 "startingRandomGenerator"
+  let state =
+        defaultState
+          config3 sfaction sflavour freshDungeon entryLevel entryLoc g3
+      hstate = initialHeroes cops entryLoc state
+  return hstate
+gameResetAction :: Config.CP -> Kind.COps -> Action State
+gameResetAction config cops = liftIO $ gameReset config cops
 
 -- | Debugging.
 debug :: String -> Action ()

@@ -55,8 +55,8 @@ data State = State
   , scounter :: Int          -- ^ stores next actor index
   , srandom  :: R.StdGen     -- ^ current random generator
   , sconfig  :: Config.CP    -- ^ game config
-  , stakeTime :: Maybe Bool   -- ^ last command unexpectedly took some time
-  , squit    :: Maybe (Bool, H.Status)  -- ^ cause of game shutdown
+  , stakeTime :: Maybe Bool  -- ^ last command unexpectedly took some time
+  , squit    :: Maybe (Bool, H.Status)  -- ^ cause of game shutdown/reset
   , sfaction :: Kind.Id FactionKind     -- ^ our faction
   , sdebug   :: DebugMode    -- ^ debugging mode
   }

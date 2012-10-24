@@ -131,8 +131,8 @@ set (CP conf) s o v =
 
 -- | Gets a random generator from the config or,
 -- if not present, generates one and updates the config with it.
-getSetGen :: CP  -- ^ config
-          -> String     -- ^ name of the generator
+getSetGen :: CP      -- ^ config
+          -> String  -- ^ name of the generator
           -> IO (R.StdGen, CP)
 getSetGen config option =
   case getOption config "engine" option of

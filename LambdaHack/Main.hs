@@ -39,8 +39,9 @@ cops = Kind.COps
 -- to form the starting game session. Evaluate to check for errors.
 sess :: Config.CP -> FrontendSession -> Session
 sess config sfs =
-  let !skeyb = BindingAction.stdBinding config cmdSemantics cmdDescription
+  let !sbinding = BindingAction.stdBinding config cmdSemantics cmdDescription
       !scops = cops
+      !sorigConfig = config
   in Session{..}
 
 -- | Create the starting game config from the default config file
@@ -48,7 +49,7 @@ sess config sfs =
 start :: IO (String, FrontendSession -> IO ())
 start = do
   config <- Config.mkConfig ConfigDefault.configDefault
-  -- The only option taken not from conif in savegame, but from fresh config.
+  -- The only option taken not from config in savegame, but from fresh config.
   let configFont = fromMaybe "" $ Config.getOption config "ui" "font"
   return (configFont, Start.start config . sess config)
 

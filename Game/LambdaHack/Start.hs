@@ -1,18 +1,13 @@
 -- | Setting up game data and restoring or starting a game.
 module Game.LambdaHack.Start ( start ) where
 
-import qualified Control.Monad.State as MState
 import qualified Data.Array.Unboxed as A
-import Data.Maybe
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.State
-import qualified Game.LambdaHack.DungeonState as DungeonState
 import qualified Game.LambdaHack.Save as Save
 import Game.LambdaHack.Turn
 import qualified Game.LambdaHack.Config as Config
-import Game.LambdaHack.ActorState
-import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Content.RuleKind
@@ -45,30 +40,18 @@ speedupCops sess@Session{scops = cops@Kind.COps{cotile=tile}} =
 -- | Either restore a saved game, or setup a new game.
 -- Then call the main game loop.
 start :: Config.CP -> Session -> IO ()
-start config1 slowSess = do
-  let sess@Session{scops = cops@Kind.COps{ corule
-                                         , coitem
-                                         , cofact=Kind.Ops{opick}}} =
-        speedupCops slowSess
+start config slowSess = do
+  let sess@Session{scops = cops@Kind.COps{ corule }} = speedupCops slowSess
       title = rtitle $ Kind.stdRuleset corule
       pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
-  restored <- Save.restoreGame pathsDataFile config1 title
+  restored <- Save.restoreGame pathsDataFile config title
   case restored of
     Right (msg, diary) -> do  -- Starting a new game.
-      (g2, config2) <- Config.getSetGen config1 "dungeonRandomGenerator"
-      let (DungeonState.FreshDungeon{..}, ag) =
-            MState.runState (DungeonState.generate cops config2) g2
-          (sflavour, ag2) = MState.runState (dungeonFlavourMap coitem) ag
-          factionName = Config.getOption config2 "heroes" "faction"
-          sfaction =
-            MState.evalState
-              (opick (fromMaybe "playable" factionName) (const True)) ag2
-      (g3, config3) <- Config.getSetGen config2 "startingRandomGenerator"
-      let state =
-            defaultState
-              config3 sfaction sflavour freshDungeon entryLevel entryLoc g3
-          hstate = initialHeroes cops entryLoc state
-      handlerToIO sess hstate diary{sreport = singletonReport msg} handleTurn
+      state <- gameReset config cops
+      handlerToIO sess state
+        diary{sreport = singletonReport msg}
+        -- TODO: gameReset >> handleTurn or defaultState {squit=Reset}
+        handleTurn
     Left (state, diary) ->  -- Running a restored a game.
       handlerToIO sess state
         -- This overwrites the "Really save/quit?" messages.

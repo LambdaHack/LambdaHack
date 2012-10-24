@@ -29,9 +29,9 @@ diaryFile :: Config.CP -> IO FilePath
 diaryFile config = Config.getFile config "files" "diaryFile"
 
 -- | Save a simple serialized version of the current player diary.
-saveDiary :: State -> Diary -> IO ()
-saveDiary state diary = do
-  dfile <- diaryFile (sconfig state)
+saveDiary :: Config.CP -> Diary -> IO ()
+saveDiary config diary = do
+  dfile <- diaryFile config
   encodeEOF dfile diary
 
 saveLock :: MVar ()
@@ -129,10 +129,11 @@ mvBkp config = do
 saveGameBkp :: State -> Diary -> IO ()
 saveGameBkp state diary = do
   b <- tryPutMVar saveLock ()
+  let config = sconfig state
   when b $
     void $ forkIO $ do
-      saveDiary state diary  -- save the diary often in case of crashes
-      sfile <- saveFile (sconfig state)
+      saveDiary config diary  -- save the diary often in case of crashes
+      sfile <- saveFile config
       encodeEOF sfile state
       mvBkp (sconfig state)
       takeMVar saveLock
@@ -143,11 +144,11 @@ saveGameBkp state diary = do
 -- We don't bother reporting any other removal exceptions, either,
 -- because the backup file is relatively unimportant.
 -- We wait on the mvar, because saving the diary at game shutdown is important.
-rmBkpSaveDiary :: State -> Diary -> IO ()
-rmBkpSaveDiary state diary = do
+rmBkpSaveDiary :: Config.CP -> Diary -> IO ()
+rmBkpSaveDiary config diary = do
   putMVar saveLock ()
-  saveDiary state diary  -- save the diary often in case of crashes
-  bfile <- bkpFile (sconfig state)
+  saveDiary config diary  -- save the diary often in case of crashes
+  bfile <- bkpFile config
   bb <- doesFileExist bfile
   when bb $ removeFile bfile
   takeMVar saveLock

@@ -38,18 +38,21 @@ data Status =
     Killed !LevelId  -- ^ the player lost the game on the given level
   | Camping          -- ^ game is supended
   | Victor           -- ^ the player won
+  | Restart          -- ^ the player quits and starts a new game
   deriving (Show, Eq, Ord)
 
 instance Binary Status where
   put (Killed ln) = putWord8 0 >> put ln
   put Camping     = putWord8 1
   put Victor      = putWord8 2
+  put Restart     = putWord8 3
   get = do
     tag <- getWord8
     case tag of
       0 -> liftM Killed  get
       1 -> return Camping
       2 -> return Victor
+      3 -> return Restart
       _ -> fail "no parse (Status)"
 
 instance Binary ScoreRecord where
@@ -74,6 +77,7 @@ showScore (pos, score) =
         Killed lvl -> "perished on level " ++ show (levelNumber lvl) ++ ","
         Camping -> "is camping somewhere,"
         Victor -> "emerged victorious"
+        Restart -> "resigned prematurely"
       curDate = calendarTimeToString . toUTCTime . date $ score
       big   = "                                                 "
       lil   = "              "
@@ -149,13 +153,14 @@ register config write s = do
       height = nlines `div` 3
       (msgCurrent, msgUnless) =
         case status s of
-          Killed _ -> (" short-lived", " (score halved)")
-          Camping  -> (" current", " (unless you are slain)")
-          Victor   -> (" glorious",
+          Killed _ -> ("short-lived", " (score halved)")
+          Camping  -> ("current", " (unless you are slain)")
+          Victor   -> ("glorious",
                         if pos <= height
                         then " among the greatest heroes"
                         else "")
-      msg = printf "Your%s exploits award you place >> %d <<%s."
+          Restart  -> ("abortive", " (score halved)")
+      msg = printf "Your %s exploits award you place >> %d <<%s."
               msgCurrent pos msgUnless
   when write $ save config h'
   return (msg, slideshow pos h' height)

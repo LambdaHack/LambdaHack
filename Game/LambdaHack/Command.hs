@@ -28,6 +28,7 @@ data Cmd =
   | TgtEnemy
   | TgtAscend Int
   | EpsIncr Bool
+  | GameNew
   | GameSave
   | GameQuit
   | Cancel
@@ -50,6 +51,7 @@ majorCmd cmd = case cmd of
   Pickup        -> True
   Drop          -> True
   Inventory     -> True
+  GameNew       -> True
   GameSave      -> True
   GameQuit      -> True
   Help          -> True
@@ -66,6 +68,7 @@ timedCmd cmd = case cmd of
   TriggerTile{} -> True
   Pickup        -> True
   Drop          -> True
+  GameNew       -> True
   GameSave      -> True
   GameQuit      -> True
   Wait          -> True
@@ -87,6 +90,7 @@ cmdSemantics cmd = case cmd of
   TgtEnemy ->  targetMonster TgtExplicit
   TgtAscend k -> tgtAscend k
   EpsIncr b -> inFrame $ epsIncr b
+  GameNew ->   inFrame $ gameNew
   GameSave ->  inFrame $ saveExit
   GameQuit ->  inFrame $ quitGame
   Cancel ->    cancelCurrent displayMainMenu
@@ -119,7 +123,8 @@ cmdDescription cmd = case cmd of
   TgtAscend _ -> error "void level change in targeting mode in config file"
   EpsIncr True  -> "swerve targeting line"
   EpsIncr False -> "unswerve targeting line"
-  GameSave ->  "save and exit the game"
+  GameNew ->   "start new game"
+  GameSave ->  "save and exit"
   GameQuit ->  "quit without saving"
   Cancel ->    "cancel action"
   Accept ->    "accept choice"

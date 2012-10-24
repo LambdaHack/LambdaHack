@@ -40,6 +40,13 @@ import Game.LambdaHack.Time
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Draw
 
+gameNew :: Action ()
+gameNew = do
+  b <- displayYesNo "Current progress will be lost! Really start a new game?"
+  if b
+    then modify (\ s -> s {squit = Just (False, H.Restart)})
+    else abortWith "Game resumed."
+
 saveExit :: Action ()
 saveExit = do
   b <- displayYesNo "Really save and exit?"
