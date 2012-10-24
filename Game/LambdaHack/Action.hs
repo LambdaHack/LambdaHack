@@ -25,7 +25,7 @@ module Game.LambdaHack.Action
     -- * Assorted operations
   , getPerception, updateAnyActor, updatePlayerBody
     -- * Assorted primitives
-  , currentDate, saveGameBkp, dumpCfg, shutGame, gameReset, gameResetAction
+  , currentDate, saveGameBkp, dumpCfg, endOrLoop, gameReset, gameResetAction
   , debug
   ) where
 
@@ -511,14 +511,16 @@ handleScores write status total =
 -- | Exit the game, shutting down the frontend. The boolean argument
 -- tells if ending screens should be shown, the other arguments describes
 -- the cause of the shutdown.
-shutGame :: (Bool, H.Status) -> Action ()
-shutGame (showEndingScreens, status) = do
+endOrLoop :: Action () -> Action ()
+endOrLoop handleTurn = do
+  squit <- gets squit
   Kind.COps{coitem} <- getCOps
   s <- get
   let (_, total) = calculateTotal coitem s
-  case status of
-    H.Camping -> do
-      -- Save an display in parallel.
+  case squit of
+    Nothing -> handleTurn
+    Just (_, status@H.Camping) -> do
+      -- Save and display in parallel.
       mv <- liftIO newEmptyMVar
       liftIO $ void $ forkIO (Save.saveGameFile s `finally` putMVar mv ())
       tryIgnore $ do
@@ -526,7 +528,7 @@ shutGame (showEndingScreens, status) = do
         void $ displayMore ColorFull "See you soon, stronger and braver!"
       liftIO $ takeMVar mv  -- wait until saved
       exitGame
-    H.Killed _ | showEndingScreens -> do
+    Just (screens, status@H.Killed{}) | screens -> do
       Diary{sreport} <- getDiary
       unless (nullReport sreport) $ do
         -- Sisplay any leftover report. Suggest it could be the cause of death.
@@ -537,7 +539,7 @@ shutGame (showEndingScreens, status) = do
         void $ displayMore ColorFull
           "Let's hope another party can save the day!"
       exitGame
-    H.Victor | showEndingScreens -> do
+    Just (screens, status@H.Victor) | screens -> do
       Diary{sreport} <- getDiary
       unless (nullReport sreport) $ do
         -- Sisplay any leftover report. Suggest it could be the master move.
@@ -547,6 +549,15 @@ shutGame (showEndingScreens, status) = do
         handleScores True status total
         void $ displayMore ColorFull "Can it be done better, though?"
       exitGame
+    Just (_, H.Restart) -> do
+      cops <- getCOps
+      -- Take the config from config file, to reroll RNG, if needed.
+      config <- getOrigConfig
+      diary <- getDiary
+      state <- gameResetAction config cops
+      modify $ const state
+      saveGameBkp state diary
+      handleTurn
     _ -> exitGame
 
 exitGame :: Action ()
