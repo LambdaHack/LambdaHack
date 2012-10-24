@@ -32,11 +32,11 @@ data Cmd =
   | GameRestart
   | Cancel
   | Accept
+  | Clear
   | History
   | CfgDump
   | HeroCycle
   | Help
-  | Redraw
   deriving (Show, Read)
 
 -- | Major commands land on the first page of command help.
@@ -79,25 +79,25 @@ cmdSemantics cmd = case cmd of
   Project{..}     -> playerProjectGroupItem verb object syms
   TriggerDir{..}  -> inFrame $ playerTriggerDir feature verb
   TriggerTile{..} -> inFrame $ playerTriggerTile feature
-  Pickup ->    inFrame $ pickupItem
-  Drop ->      inFrame $ dropItem
-  Wait ->      inFrame $ return ()
+  Pickup    -> inFrame $ pickupItem
+  Drop      -> inFrame $ dropItem
+  Wait      -> inFrame $ return ()
 
   Inventory -> inventory
-  TgtFloor ->  targetFloor   TgtExplicit
-  TgtEnemy ->  targetMonster TgtExplicit
+  TgtFloor  -> targetFloor   TgtExplicit
+  TgtEnemy  -> targetMonster TgtExplicit
   TgtAscend k -> tgtAscend k
   EpsIncr b -> inFrame $ epsIncr b
-  GameSave -> inFrame $ gameSave
-  GameExit -> inFrame $ gameExit
+  GameSave  -> inFrame $ gameSave
+  GameExit  -> inFrame $ gameExit
   GameRestart -> inFrame $ gameRestart
-  Cancel ->    cancelCurrent displayMainMenu
-  Accept ->    acceptCurrent displayHelp
-  History ->   displayHistory
-  CfgDump ->   inFrame $ dumpConfig
+  Cancel    -> cancelCurrent displayMainMenu
+  Accept    -> acceptCurrent displayHelp
+  Clear     -> inFrame $ clearCurrent
+  History   -> displayHistory
+  CfgDump   -> inFrame $ dumpConfig
   HeroCycle -> inFrame $ cycleHero
-  Help ->      displayHelp
-  Redraw ->    inFrame $ redraw
+  Help      -> displayHelp
 
 -- | Description of player commands.
 cmdDescription :: Cmd -> String
@@ -106,13 +106,13 @@ cmdDescription cmd = case cmd of
   Project{..}     -> verb ++ " " ++ addIndefinite object
   TriggerDir{..}  -> verb ++ " " ++ addIndefinite object
   TriggerTile{..} -> verb ++ " " ++ addIndefinite object
-  Pickup ->    "get an object"
-  Drop ->      "drop an object"
-  Wait ->      ""
+  Pickup    -> "get an object"
+  Drop      -> "drop an object"
+  Wait      -> ""
 
   Inventory -> "display inventory"
-  TgtFloor ->  "target location"
-  TgtEnemy ->  "target monster"
+  TgtFloor  -> "target location"
+  TgtEnemy  -> "target monster"
   TgtAscend k | k == 1  -> "target next shallower level"
   TgtAscend k | k >= 2  -> "target " ++ show k    ++ " levels shallower"
   TgtAscend k | k == -1 -> "target next deeper level"
@@ -120,13 +120,13 @@ cmdDescription cmd = case cmd of
   TgtAscend _ -> error "void level change in targeting mode in config file"
   EpsIncr True  -> "swerve targeting line"
   EpsIncr False -> "unswerve targeting line"
-  GameSave ->  "save game"
-  GameExit ->  "save and exit"
+  GameSave  -> "save game"
+  GameExit  -> "save and exit"
   GameRestart -> "restart game"
-  Cancel ->    "cancel action"
-  Accept ->    "accept choice"
-  History ->   "display previous messages"
-  CfgDump ->   "dump current configuration"
+  Cancel    -> "cancel action"
+  Accept    -> "accept choice"
+  Clear     -> "clear messages"
+  History   -> "display previous messages"
+  CfgDump   -> "dump current configuration"
   HeroCycle -> "cycle among heroes on level"
-  Help ->      "display help"
-  Redraw ->    "clear messages"
+  Help      -> "display help"

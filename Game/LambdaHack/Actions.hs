@@ -565,9 +565,6 @@ dumpConfig = do
   dumpCfg fn config
   abortWith msg
 
-redraw :: Action ()
-redraw = return ()
-
 -- | Add new smell traces to the level. Only humans leave a strong scent.
 addSmell :: Action ()
 addSmell = do

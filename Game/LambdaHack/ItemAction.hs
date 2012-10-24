@@ -316,6 +316,10 @@ acceptCurrent h = do
     then inFrame $ endTargeting True
     else h  -- nothing to accept right now, treat this as a command invocation
 
+-- | Clear current messages, show the next screen if any.
+clearCurrent :: Action ()
+clearCurrent = return ()
+
 -- | Drop a single item.
 dropItem :: Action ()
 dropItem = do
