@@ -153,13 +153,18 @@ splitOverlay lysize ls = let (pre, post) = splitAt (lysize - 1) ls
                          in pre : splitOverlay lysize post
 
 -- | Returns a function that looks up the characters in the
--- string by location. Takes the height of the display plus
--- the string. Returns also the message to print at the top
--- and number of screens required to display all of the string.
-stringByLocation :: X -> Y -> Overlay -> (String, PointXY -> Maybe Char)
-stringByLocation _ _ [] = ("", const Nothing)
+-- string by location. Takes the width and height of the display plus
+-- the string. Returns also the message to print at the top and bottom.
+stringByLocation :: X -> Y -> Overlay
+                 -> (String, PointXY -> Maybe Char, Maybe String)
+stringByLocation _ _ [] = ("", const Nothing, Nothing)
 stringByLocation lxsize lysize (msgTop : ls) =
   let over = map (padMsg lxsize) $ take lysize ls
       m  = IM.fromDistinctAscList $
              zip [0..] (L.map (IM.fromList . zip [0..]) over)
-  in (msgTop, \ (PointXY (x, y)) -> IM.lookup y m >>= \ n -> IM.lookup x n)
+      msgBottom = case drop lysize ls of
+                  [] -> Nothing
+                  s : _ -> Just s
+  in (msgTop,
+      \ (PointXY (x, y)) -> IM.lookup y m >>= \ n -> IM.lookup x n,
+      msgBottom)

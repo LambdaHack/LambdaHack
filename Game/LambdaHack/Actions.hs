@@ -513,9 +513,11 @@ displayMainMenu = do
       version = "Version " ++ showVersion pathsVersion
                 ++ " (frontend: " ++ frontendName
                 ++ ", engine: LambdaHack " ++ showVersion Self.version ++ ")"
+      title = rtitle $ Kind.stdRuleset corule
       menuOverlay =
         [ fmts ""
         , fmts ""
+        , fmt (">> " ++ title ++ " <<") ""
         , fmts ""
         , fmts ""
         , fmts ""
@@ -534,15 +536,16 @@ displayMainMenu = do
         , fmts ""
         , fmts ""
         , fmts ""
-        , fmts version
         , fmts ""
+        , fmts version
         ]
-      fmt k h = replicate 21 ' '
-                ++ k ++ replicate ((8 - length k) `max` 1) ' '
-                ++ h ++ replicate ((50 - length h) `max` 1) ' '
+      fmt k h = replicate 23 ' '
+                ++ k
+                ++ replicate ((8 - length k) `max` 1) ' '
+                ++ h
+                ++ replicate ((56 - length h - max 8 (length k)) `max` 1) ' '
       fmts s = replicate ((79 - length s) `max` 1) ' ' ++ s
-      prompt =  "What will it be? [R, S, X, ?, SPACE]"
-  displayOverlays prompt [menuOverlay]
+  displayOverlays "" [menuOverlay]
 
 displayHistory :: ActionFrame ()
 displayHistory = do

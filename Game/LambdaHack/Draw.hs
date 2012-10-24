@@ -53,7 +53,7 @@ draw dm cops per s@State{ scursor=Cursor{..}
       ActorKind{ahp, asmell} = okind bkind
       reachable = debugTotalReachable per
       visible   = totalVisible per
-      (msgTop, over) = stringByLocation lxsize lysize overlay
+      (msgTop, over, msgBottom) = stringByLocation lxsize lysize overlay
       (sSml, sVis) = case smarkVision of
         Just Blind -> (True, True)
         Just _  -> (False, True)
@@ -145,7 +145,7 @@ draw dm cops per s@State{ scursor=Cursor{..}
         let f l y = let !line = fLine y in line : l
         in L.foldl' f [] [lysize-1,lysize-2..0]
       sfTop = toWidth lxsize msgTop
-      sfBottom = toWidth lxsize status
+      sfBottom = toWidth lxsize $ fromMaybe status msgBottom
   in Color.SingleFrame{..}
 
 -- | Render animations on top of the current screen frame.
