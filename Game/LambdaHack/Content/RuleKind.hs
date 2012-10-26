@@ -35,6 +35,7 @@ data RuleKind = RuleKind
   , rpathsVersion     :: Version  -- ^ the version of the game
   , ritemMelee        :: [Char]   -- ^ symbols of melee weapons
   , ritemProject      :: [Char]   -- ^ symbols of items AI can project
+  , rmainMenuArt      :: String   -- ^ the ASCII art for the Main Menu
   }
 
 -- | A dummy instance of the 'Show' class, to satisfy general requirments
@@ -43,7 +44,6 @@ data RuleKind = RuleKind
 instance Show RuleKind where
   show _ = "The game ruleset specification."
 
--- | No specific possible problems for the content of this kind, so far,
--- so the validation function always returns the empty list of offending kinds.
+-- | Validates the ASCII art format (TODO).
 ruvalidate :: [RuleKind] -> [RuleKind]
 ruvalidate _ = []
