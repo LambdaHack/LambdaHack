@@ -512,50 +512,43 @@ displayMainMenu :: ActionFrame ()
 displayMainMenu = do
   Kind.COps{corule} <- getCOps
   Binding{krevMap} <- getBinding
-  let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
-      version = "Version " ++ showVersion pathsVersion
-                ++ " (frontend: " ++ frontendName
-                ++ ", engine: LambdaHack " ++ showVersion Self.version ++ ")"
-      title = rtitle $ Kind.stdRuleset corule
-      showKD cmd key = (show key, Command.cmdDescription cmd)
-      revLookup cmd = maybe ("", "") (showKD cmd) $ M.lookup cmd krevMap
-      (saveKey, saveDesc) = revLookup Command.GameSave
-      (exitKey, exitDesc) = revLookup Command.GameExit
-      (rsrtKey, rsrtDesc) = revLookup Command.GameRestart
-      (helpKey, helpDesc) = revLookup Command.Help
-      (clearKey, _)       = revLookup Command.Clear
-      menuOverlay =
-        [ fmts ""
-        , fmts ""
-        , fmt (">> " ++ title ++ " <<") ""
-        , fmts ""
-        , fmts ""
-        , fmts ""
-        , fmt saveKey saveDesc
-        , fmts ""
-        , fmt exitKey exitDesc
-        , fmts ""
-        , fmt rsrtKey rsrtDesc
-        , fmts ""
-        , fmt helpKey helpDesc
-        , fmts ""
-        , fmt clearKey "continue"
-        , fmts ""
-        , fmts ""
-        , fmts ""
-        , fmts ""
-        , fmts ""
-        , fmts ""
-        , fmts ""
-        , fmts version
-        ]
-      fmt k h = replicate 23 ' '
-                ++ k
-                ++ replicate ((8 - length k) `max` 1) ' '
-                ++ h
-                ++ replicate ((56 - length h - max 8 (length k)) `max` 1) ' '
-      fmts s = replicate ((79 - length s) `max` 1) ' ' ++ s
-  displayOverlays "" [menuOverlay]
+  let stripFrame ('\n' : art) =
+        let interior = tail . init
+        in map interior $ interior $ lines art
+      stripFrame art = assert `failure` "displayMainMenu: " ++ art
+      pasteVersion art =
+        let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
+            version = " Version " ++ showVersion pathsVersion
+                      ++ " (frontend: " ++ frontendName
+                      ++ ", engine: LambdaHack " ++ showVersion Self.version
+                      ++ ") "
+            versionLen = length version
+        in init art ++ [take (80 - versionLen) (last art) ++ version]
+      kds =  -- key-description pairs
+        let showKD cmd key = (show key, Command.cmdDescription cmd)
+            revLookup cmd = maybe ("", "") (showKD cmd) $ M.lookup cmd krevMap
+            cmds = [Command.GameSave, Command.GameExit,
+                   Command.GameRestart, Command.Help]
+        in map revLookup cmds ++ [(fst (revLookup Command.Clear), "continue")]
+      bindings =  -- key bindings to display
+        let bindingLen = 25
+            fmt (k, d) =
+              let gapLen = (8 - length k) `max` 1
+                  padLen = bindingLen - length k - gapLen - length d
+              in k ++ replicate gapLen ' ' ++ d ++ replicate padLen ' '
+        in map fmt kds
+      overwrite =  -- overwrite the art with key bindings
+        let over [] line = ([], line)
+            over bs@(binding : bsRest) line =
+              let (prefix, lineRest) = break (=='{') line
+                  (braces, suffix)   = span  (=='{') lineRest
+              in if length braces == 25
+                 then (bsRest, prefix ++ binding ++ suffix)
+                 else (bs, line)
+        in snd . L.mapAccumL over bindings
+      mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule
+      menuOverlay = overwrite $ pasteVersion $ stripFrame mainMenuArt
+  displayOverlays (head menuOverlay) [tail menuOverlay]
 
 displayHistory :: ActionFrame ()
 displayHistory = do
