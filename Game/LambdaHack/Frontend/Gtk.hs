@@ -1,10 +1,10 @@
 -- | Text frontend based on Gtk.
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
-module Game.LambdaHack.Display.Gtk
+module Game.LambdaHack.Frontend.Gtk
   ( -- * Session data type for the frontend
     FrontendSession
     -- * The output and input operations
-  , display, nextEvent, promptGetKey
+  , display, nextEvent, promptGetAnyKey
     -- * Frontend administration tools
   , frontendName, startup
   ) where
@@ -407,14 +407,13 @@ nextEvent sess@FrontendSession{schanKey, sframeState} (Just True) = do
   putMVar sframeState FNone
   return km
 
--- | Display a prompt, wait for any of the specified keys (for any key,
--- if the list is empty). Repeat if an unexpected key received.
+-- | Display a prompt, wait for any key.
 -- Starts in Push or None mode, stop in None mode.
 -- Spends most time waiting for a key, so not performance critical,
 -- so does not need optimization.
-promptGetKey :: FrontendSession -> [(K.Key, K.Modifier)] -> Color.SingleFrame
-             -> IO (K.Key, K.Modifier)
-promptGetKey sess@FrontendSession{sframeState} keys frame = do
+promptGetAnyKey :: FrontendSession -> Color.SingleFrame
+                -> IO (K.Key, K.Modifier)
+promptGetAnyKey sess@FrontendSession{sframeState} frame = do
   -- Assumption: no other thread changes the main constructor in sframeState.
   fs <- readMVar sframeState
   yield  -- drawing has priority
@@ -424,14 +423,7 @@ promptGetKey sess@FrontendSession{sframeState} keys frame = do
           assert `failure` "promptGetKey: FSet, expecting FPushed or FNone"
         FNone     -> False
   display sess doPush True $ Just frame
-  km <- nextEvent sess (Just doPush)
-  let loop km2 =
-        if null keys || km2 `elem` keys
-        then return km2
-        else do
-          km3 <- nextEvent sess Nothing
-          loop km3
-  loop km
+  nextEvent sess (Just doPush)
 
 -- | Tells a dead key.
 deadKey :: String -> Bool

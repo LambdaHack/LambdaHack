@@ -1,9 +1,9 @@
 -- | Text frontend based on Vty.
-module Game.LambdaHack.Display.Vty
+module Game.LambdaHack.Frontend.Vty
   ( -- * Session data type for the frontend
     FrontendSession
     -- * The output and input operations
-  , display, nextEvent, promptGetKey
+  , display, nextEvent, promptGetAnyKey
     -- * Frontend administration tools
   , frontendName, startup
   ) where
@@ -57,20 +57,12 @@ nextEvent sess mb = do
       return (key, modifier)
     _ -> nextEvent sess mb
 
--- | Display a prompt, wait for any of the specified keys (for any key,
--- if the list is empty). Repeat if an unexpected key received.
-promptGetKey :: FrontendSession -> [(K.Key, K.Modifier)] -> Color.SingleFrame
+-- | Display a prompt, wait for any key.
+promptGetAnyKey :: FrontendSession -> Color.SingleFrame
              -> IO (K.Key, K.Modifier)
-promptGetKey sess keys frame = do
+promptGetAnyKey sess frame = do
   display sess True True $ Just frame
-  km <- nextEvent sess Nothing
-  let loop km2 =
-        if null keys || km2 `elem` keys
-        then return km2
-        else do
-          km3 <- nextEvent sess Nothing
-          loop km3
-  loop km
+  nextEvent sess Nothing
 
 keyTranslate :: Key -> K.Key
 keyTranslate n =

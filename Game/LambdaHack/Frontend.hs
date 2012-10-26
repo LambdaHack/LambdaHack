@@ -3,7 +3,7 @@
 {-# LANGUAGE CPP #-}
 module Game.LambdaHack.Frontend
   ( -- * Re-exported frontend
-    FrontendSession, startup, frontendName, nextEvent, promptGetKey, display
+    FrontendSession, startup, frontendName, nextEvent, promptGetAnyKey, display
   ) where
 
 -- Wrapper for selected Display frontend.
