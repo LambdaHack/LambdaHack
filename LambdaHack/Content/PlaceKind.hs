@@ -1,11 +1,11 @@
 -- | Rooms, halls and passages for LambdaHack.
 module Content.PlaceKind ( cdefs ) where
 
-import qualified Game.LambdaHack.Content as Content
+import Game.LambdaHack.CDefs
 import Game.LambdaHack.Content.PlaceKind
 
-cdefs :: Content.CDefs PlaceKind
-cdefs = Content.CDefs
+cdefs :: CDefs PlaceKind
+cdefs = CDefs
   { getSymbol = psymbol
   , getName = pname
   , getFreq = pfreq

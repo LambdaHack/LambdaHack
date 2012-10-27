@@ -7,7 +7,7 @@
 -- directory. On the other hand, game content, that is all elements
 -- of @CDefs@ instances, are defined in a directory
 -- of the game code proper, with names corresponding to their kinds.
-module Game.LambdaHack.Content (CDefs(..)) where
+module Game.LambdaHack.CDefs (CDefs(..)) where
 
 import Game.LambdaHack.Misc
 

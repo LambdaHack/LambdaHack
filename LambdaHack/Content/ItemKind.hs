@@ -2,14 +2,14 @@
 module Content.ItemKind ( cdefs ) where
 
 import Game.LambdaHack.Color
-import qualified Game.LambdaHack.Content as Content
+import Game.LambdaHack.CDefs
 import Game.LambdaHack.Effect
 import Game.LambdaHack.Flavour
 import Game.LambdaHack.Random
 import Game.LambdaHack.Content.ItemKind
 
-cdefs :: Content.CDefs ItemKind
-cdefs = Content.CDefs
+cdefs :: CDefs ItemKind
+cdefs = CDefs
   { getSymbol = isymbol
   , getName = iname
   , getFreq = ifreq

@@ -24,7 +24,7 @@ import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.Content
+import Game.LambdaHack.CDefs
 import Game.LambdaHack.Random
 
 -- | Content identifiers for the content type @c@.

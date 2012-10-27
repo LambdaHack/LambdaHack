@@ -3,7 +3,7 @@ name:          LambdaHack
 version:       0.2.3
 license:       BSD3
 license-file:  LICENSE
-tested-with:   GHC == 7.2.2, GHC == 7.4.1
+tested-with:   GHC == 7.2.2, GHC == 7.4.1, GHC == 7.6.1
 data-files:    LICENSE, CREDITS, PLAYING.md, README.md,
                config.default, config.bot, scores
 author:        Andres Loeh, Mikolaj Konarski
@@ -37,6 +37,15 @@ description:   This is an alpha release of LambdaHack,
                A larger game that depends on the LambdaHack library
                is Allure of the Stars, available from
                <http://hackage.haskell.org/package/Allure>.
+               .
+               Note: All modules in the library are kept visible,
+               to let games overwrite each, but reuse as many as possible.
+               OTOH, to reflect that some modules are implementation details
+               relative to others, the source code adheres to the following
+               convention. If a module has the same name as a directory,
+               the module is the exclusive interface to the directory.
+               No references to the modules in the directory are allowed
+               except from the interface module.
 synopsis:      A roguelike game engine in early and active development
 homepage:      http://github.com/kosmikus/LambdaHack
 bug-reports:   http://github.com/kosmikus/LambdaHack/issues
@@ -68,12 +77,12 @@ library
                    Game.LambdaHack.AreaRnd,
                    Game.LambdaHack.Binding,
                    Game.LambdaHack.BindingAction,
+                   Game.LambdaHack.CDefs,
                    Game.LambdaHack.Cave,
                    Game.LambdaHack.Color,
                    Game.LambdaHack.Command,
                    Game.LambdaHack.CommandAction,
                    Game.LambdaHack.Config,
-                   Game.LambdaHack.Content,
                    Game.LambdaHack.Content.ActorKind,
                    Game.LambdaHack.Content.CaveKind,
                    Game.LambdaHack.Content.FactionKind,
@@ -163,6 +172,7 @@ library
   } } }
 
 executable LambdaHack
+  hs-source-dirs:  LambdaHack
   main-is:         Main.hs
   other-modules:   Content.ActorKind,
                    Content.CaveKind,
@@ -172,10 +182,9 @@ executable LambdaHack
                    Content.RuleKind,
                    Content.TileKind,
                    Multiline,
-                   ConfigDefault
-  hs-source-dirs:  LambdaHack
-  other-modules:   Paths_LambdaHack
-  build-depends:   LambdaHack >= 0.2.3   && < 0.2.4,
+                   ConfigDefault,
+                   Paths_LambdaHack
+  build-depends:   LambdaHack >= 0.2.3 && < 0.2.4,
                    template-haskell >= 2.6 && < 3,
 
                    ConfigFile >= 1.1.1   && < 2,
@@ -200,8 +209,8 @@ executable LambdaHack
   ghc-options:     -threaded -with-rtsopts=-C0.005
 
 executable DumbBot
-  main-is:         Main.hs
   hs-source-dirs:  DumbBot
+  main-is:         Main.hs
   build-depends:   base       >= 4       && < 5,
                    random     >= 1.0.1   && < 2
   default-language: Haskell2010

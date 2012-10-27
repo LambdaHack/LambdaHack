@@ -1,11 +1,11 @@
 -- | The type of kinds of game factions (heroes, enemies, NPCs, etc.).
 module Content.FactionKind ( cdefs ) where
 
-import qualified Game.LambdaHack.Content as Content
+import Game.LambdaHack.CDefs
 import Game.LambdaHack.Content.FactionKind
 
-cdefs :: Content.CDefs FactionKind
-cdefs = Content.CDefs
+cdefs :: CDefs FactionKind
+cdefs = CDefs
   { getSymbol = fsymbol
   , getName = fname
   , getFreq = ffreq

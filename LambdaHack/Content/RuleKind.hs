@@ -11,10 +11,10 @@ import Game.LambdaHack.Vector
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Feature as F
-import qualified Game.LambdaHack.Content as Content
+import Game.LambdaHack.CDefs
 
-cdefs :: Content.CDefs RuleKind
-cdefs = Content.CDefs
+cdefs :: CDefs RuleKind
+cdefs = CDefs
   { getSymbol = rsymbol
   , getName = rname
   , getFreq = rfreq
