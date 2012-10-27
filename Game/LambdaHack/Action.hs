@@ -26,7 +26,7 @@ module Game.LambdaHack.Action
   , getPerception, updateAnyActor, updatePlayerBody
     -- * Assorted primitives
   , currentDate, saveGameBkp, dumpCfg, endOrLoop, rmBkpSaveDiary
-  , gameReset, gameResetAction
+  , gameReset
   , debug
   ) where
 
@@ -341,8 +341,8 @@ displayOverAbort :: Msg -> [Overlay] -> Action ()
 displayOverAbort prompt xs = do
   let f x = drawOverlay ColorFull prompt (x ++ [moreMsg])
   frames <- mapM f xs
-  b <- getOverConfirm frames
-  when (not b) abort
+  go <- getOverConfirm frames
+  when (not go) abort
 
 -- | Print a msg and several overlays, one per page.
 -- The last frame does not expect a confirmation.
@@ -509,54 +509,71 @@ handleScores write status total =
     (placeMsg, slideshow) <- liftIO $ H.register config write score
     displayOverAbort placeMsg slideshow
 
--- | Exit the game, shutting down the frontend. The boolean argument
--- tells if ending screens should be shown, the other arguments describes
--- the cause of the shutdown.
+-- | Continue or restart or exit the game.
 endOrLoop :: Action () -> Action ()
 endOrLoop handleTurn = do
   squit <- gets squit
   Kind.COps{coitem} <- getCOps
   s <- get
   let (_, total) = calculateTotal coitem s
+  -- The first, boolean component of squit determines
+  -- if ending screens should be shown, the other argument describes
+  -- the cause of the disruption of game flow.
   case squit of
-    Nothing -> handleTurn
+    Nothing -> handleTurn  -- just continue
     Just (_, status@H.Camping) -> do
       -- Save and display in parallel.
       mv <- liftIO newEmptyMVar
       liftIO $ void $ forkIO (Save.saveGameFile s `finally` putMVar mv ())
-      tryIgnore $ do
-        handleScores False status total
-        void $ displayMore ColorFull "See you soon, stronger and braver!"
+      tryIgnore $ handleScores False status total
+      void $ displayMore ColorFull "See you soon, stronger and braver!"
       liftIO $ takeMVar mv  -- wait until saved
-    Just (screens, status@H.Killed{}) | screens -> do
+      -- Do nothing, that is, quit the game loop.
+    Just (showScreens, status@H.Killed{}) | showScreens -> do
       Diary{sreport} <- getDiary
       unless (nullReport sreport) $ do
         -- Sisplay any leftover report. Suggest it could be the cause of death.
         void $ displayMore ColorFull "Who would have thought?"
         recordHistory  -- prevent repeating the report
-      tryIgnore $ do
-        handleScores True status total
-        void $ displayMore ColorFull
-          "Let's hope another party can save the day!"
-    Just (screens, status@H.Victor) | screens -> do
+      tryWith
+        (\ finalMsg ->
+          let highScoreMsg = "Let's hope another party can save the day!"
+              msg = if null finalMsg then highScoreMsg else finalMsg
+          in void $ displayMore ColorFull msg
+          -- Do nothing, that is, quit the game loop.
+        )
+        (do handleScores True status total
+            go <- displayMore ColorFull "This time will be different."
+            when (not go) $ abortWith "You could really win this time."
+            restartGame
+            handleTurn
+        )
+    Just (showScreens, status@H.Victor) | showScreens -> do
       Diary{sreport} <- getDiary
       unless (nullReport sreport) $ do
         -- Sisplay any leftover report. Suggest it could be the master move.
         void $ displayMore ColorFull "Brilliant, wasn't it?"
         recordHistory  -- prevent repeating the report
-      tryIgnore $ do
-        handleScores True status total
-        void $ displayMore ColorFull "Can it be done better, though?"
+      tryIgnore $ handleScores True status total
+      void $ displayMore ColorFull "Can it be done better, though?"
+      restartGame
+      handleTurn
     Just (_, H.Restart) -> do
-      cops <- getCOps
-      -- Take the config from config file, to reroll RNG, if needed.
-      config <- getOrigConfig
-      diary <- getDiary
-      state <- gameResetAction config cops
-      modify $ const state
-      saveGameBkp state diary
+      void $ displayMore ColorFull "This time for real."
+      restartGame
       handleTurn
     _ -> return ()
+
+restartGame :: Action ()
+restartGame = do
+  -- Take the original config from config file, to reroll RNG, if needed
+  -- (the current config file has the RNG rolled for the previous game).
+  config <- getOrigConfig
+  cops <- getCOps
+  diary <- getDiary
+  state <- gameResetAction config cops
+  modify $ const state
+  saveGameBkp state diary
 
 rmBkpSaveDiary :: Action ()
 rmBkpSaveDiary  = do
