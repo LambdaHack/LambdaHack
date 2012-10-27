@@ -50,8 +50,8 @@ standard = RuleKind
   -- it's overwritten with the game version string and keybinding strings.
   -- The game version string begins and ends with a space and is placed
   -- in the very bottom right corner. The keybindings overwrite places
-  -- marked with 25 starting brace signs '{' in a row. The sign is forbidden
-  -- everywhere else. Exactly five such places with 25 starting braces
+  -- marked with 25 left curly brace signs '{' in a row. The sign is forbidden
+  -- everywhere else. Exactly five such places with 25 left braces
   -- are required, at most one per row, and all are overwritten
   -- with text that is flushed left and padded with spaces.
   -- The Main Menu is displayed dull white on black.
