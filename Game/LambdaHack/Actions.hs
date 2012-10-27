@@ -505,7 +505,7 @@ regenerateLevelHP = do
 displayHelp :: ActionFrame ()
 displayHelp = do
   keyb <- getBinding
-  displayOverlays "Basic keys. [press SPACE to advance]" $ keyHelp keyb
+  displayOverlays "Basic keys." "[press SPACE to advance]" $ keyHelp keyb
 
 -- | Display the main menu.
 displayMainMenu :: ActionFrame ()
@@ -548,7 +548,7 @@ displayMainMenu = do
         in snd . L.mapAccumL over bindings
       mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule
       menuOverlay = overwrite $ pasteVersion $ stripFrame mainMenuArt
-  displayOverlays (head menuOverlay) [tail menuOverlay]
+  displayOverlays (head menuOverlay) "" [tail menuOverlay]
 
 displayHistory :: ActionFrame ()
 displayHistory = do
@@ -556,9 +556,10 @@ displayHistory = do
   time <- gets stime
   lysize <- gets (lysize . slevel)
   let turn = show $ time `timeFit` timeTurn
-      msg = "Your adventuring lasts " ++ turn
-            ++ " half-second turns. Past messages:"
-  displayOverlays msg $ splitOverlay lysize $ renderHistory shistory
+      msg = "Surviving for " ++ turn
+            ++ " half-second turns, as recorded below."
+  displayOverlays msg "[SPACE, ESC]" $
+    splitOverlay lysize $ renderHistory shistory
 
 dumpConfig :: Action ()
 dumpConfig = do

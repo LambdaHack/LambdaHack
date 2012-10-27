@@ -5,7 +5,7 @@ module Game.LambdaHack.Action
   ( -- * Actions and basic operations
     ActionFun, Action, handlerToIO, rndToAction
     -- * Actions returning frames
-  , ActionFrame, returnNoFrame, whenFrame, inFrame
+  , ActionFrame, returnNoFrame, returnFrame, whenFrame, inFrame
     -- * Game session and its accessors
   , Session(..), getCOps, getBinding, getOrigConfig
     -- * Various ways to abort action
@@ -144,6 +144,10 @@ type ActionFrame a = Action (a, [Maybe Color.SingleFrame])
 returnNoFrame :: a -> ActionFrame a
 returnNoFrame a = return (a, [])
 
+-- | Return the trivial value with a single frame to show.
+returnFrame :: Color.SingleFrame -> ActionFrame ()
+returnFrame fr = return ((), [Just fr])
+
 -- | As the @when@ monad operation, but on type @ActionFrame ()@.
 whenFrame :: Bool -> ActionFrame () -> ActionFrame ()
 whenFrame True x  = x
@@ -212,7 +216,7 @@ tryWithFrame exc h =
       msgToFrames msg = do
         msgReset ""
         fr <- drawPrompt ColorFull msg
-        return ((), [Just fr])
+        returnFrame fr
       excMsg msg = do
         ((), frames) <- msgToFrames msg
         a <- exc
@@ -339,23 +343,24 @@ displayYesNo prompt = do
 -- All frames require confirmations. Raise @abort@ if the player presses ESC.
 displayOverAbort :: Msg -> [Overlay] -> Action ()
 displayOverAbort prompt xs = do
-  let f x = drawOverlay ColorFull prompt (x ++ [moreMsg])
+  let f x = drawOverlay ColorFull (prompt ++ " [SPACE, ESC]") (x ++ [moreMsg])
   frames <- mapM f xs
   go <- getOverConfirm frames
   when (not go) abort
 
 -- | Print a msg and several overlays, one per page.
--- The last frame does not expect a confirmation.
-displayOverlays :: Msg -> [Overlay] -> ActionFrame ()
-displayOverlays _      []     = returnNoFrame ()
-displayOverlays prompt [x]    = do
+-- The last frame does not expect a confirmation and so does not show
+-- the invitation to press some keys.
+displayOverlays :: Msg -> Msg -> [Overlay] -> ActionFrame ()
+displayOverlays _      _ []  = returnNoFrame ()
+displayOverlays prompt _ [x] = do
   frame <- drawOverlay ColorFull prompt x
-  return $ ((), [Just frame])
-displayOverlays prompt (x:xs) = do
-  frame <- drawOverlay ColorFull prompt (x ++ [moreMsg])
+  returnFrame frame
+displayOverlays prompt pressKeys (x:xs) = do
+  frame <- drawOverlay ColorFull (prompt ++ " " ++ pressKeys) (x ++ [moreMsg])
   b <- getConfirm frame
   if b
-    then displayOverlays prompt xs
+    then displayOverlays prompt pressKeys xs
     else returnNoFrame ()
 
 -- | Print a prompt and an overlay and wait for a player keypress.

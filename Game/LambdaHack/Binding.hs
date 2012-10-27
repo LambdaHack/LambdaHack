@@ -77,7 +77,7 @@ keyHelp Binding{kcmd, kmacro, kmajor} =
     minorBlurb =
       [ ""
       , "For more playing instructions see file PLAYING.md."
-      , "Press SPACE to clear the messages and go back to the game."
+      , "Press SPACE to clear the messages and see the map again."
       ]
     fmt k h = replicate 16 ' ' ++ k ++ replicate ((15 - length k) `max` 1) ' '
                                ++ h ++ replicate ((41 - length h) `max` 1) ' '

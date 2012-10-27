@@ -356,8 +356,8 @@ fleeDungeon = do
             "Next time try to grab some loot before escape!"
     when (not go2) $ abortWith "Here's your chance!"
   else do
-    let winMsg = "Congratulations, you won! Your loot, worth " ++
-                 show total ++ " gold, is:"  -- TODO: use the name of the '$' item instead
+    let winMsg = "Congratulations, you won! Here's your loot, worth " ++
+                 show total ++ " gold."  -- TODO: use the name of the '$' item instead
     io <- itemOverlay True True items
     tryIgnore $ do
       displayOverAbort winMsg io
@@ -525,8 +525,8 @@ gameOver showEndingScreens = do
           "That is your name. 'Almost'."
                 | otherwise =
           "Dead heroes make better legends."
-        loseMsg = failMsg ++ " Killing you nets " ++
-                  show total ++ " gold and some junk:"  -- TODO: use the name of the '$' item instead
+        loseMsg = failMsg ++ " Killing you was worth " ++
+                  show total ++ " gold and some junk."  -- TODO: use the name of the '$' item instead
     if null items
       then modify (\ st -> st {squit = Just (True, H.Killed slid)})
       else do
@@ -587,7 +587,7 @@ doLook = do
         is = lvl `rememberAtI` loc
     io <- itemOverlay False False is
     if length is > 2
-      then displayOverlays lookMsg io
+      then displayOverlays lookMsg "[SPACE, ESC]" io
       else do
         fr <- drawPrompt ColorFull lookMsg
-        return ((), [Just fr])
+        returnFrame fr
