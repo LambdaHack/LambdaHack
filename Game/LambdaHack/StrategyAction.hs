@@ -22,6 +22,7 @@ import Game.LambdaHack.Perception
 import Game.LambdaHack.Strategy
 import Game.LambdaHack.State
 import Game.LambdaHack.Action
+import Game.LambdaHack.EffectAction
 import Game.LambdaHack.Actions
 import Game.LambdaHack.ItemAction
 import Game.LambdaHack.Content.ItemKind

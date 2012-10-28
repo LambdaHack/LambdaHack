@@ -9,6 +9,7 @@ import qualified Data.IntSet as IS
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
+import Game.LambdaHack.EffectAction
 import Game.LambdaHack.Actions
 import Game.LambdaHack.Point
 import Game.LambdaHack.Vector

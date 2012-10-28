@@ -5,8 +5,7 @@
 {-# LANGUAGE MultiParamTypeClasses, RankNTypes #-}
 module Game.LambdaHack.Action.ActionLift
   ( -- * Actions and basic operations
-    ActionFun, Action, liftIO, handlerToIO, rndToAction
-  , withPerception, getPerception
+    ActionFun, Action, liftIO, handlerToIO, withPerception, getPerception
     -- * Actions returning frames
   , ActionFrame, returnNoFrame, returnFrame, whenFrame, inFrame
     -- * Game session and assessors to its components
@@ -14,7 +13,7 @@ module Game.LambdaHack.Action.ActionLift
     -- * Various ways to abort action
   , abort, abortWith, abortIfWith, neverMind
     -- * Abort exception handlers
-  , tryWith, tryRepeatedlyWith, tryIgnore, tryIgnoreFrame
+  , tryWith, tryRepeatedlyWith, tryIgnore
     -- * Diary and report
   , getDiary, msgAdd, historyReset, msgReset
   ) where
@@ -29,7 +28,6 @@ import Game.LambdaHack.Action.Frontend
 import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Random
 import Game.LambdaHack.Binding
 import qualified Game.LambdaHack.Config as Config
 import qualified Game.LambdaHack.Color as Color
@@ -97,14 +95,6 @@ handlerToIO sess@Session{scops} state diary h =
       ioError $ userError $ "unhandled abort  " ++ msg)  -- e.g., in AI code
     state
     diary
-
--- | Invoke pseudo-random computation with the generator kept in the state.
-rndToAction :: Rnd a -> Action a
-rndToAction r = do
-  g <- gets srandom
-  let (a, ng) = runState r g
-  modify (\ state -> state {srandom = ng})
-  return a
 
 -- | Update the cached perception for the given computation.
 withPerception :: Action () -> Action ()
@@ -201,14 +191,6 @@ tryIgnore =
   tryWith (\ msg -> if null msg
                     then return ()
                     else assert `failure` (msg, "in tryIgnore"))
-
--- | Try the given computation and silently catch failure,
--- returning empty set of screen frames.
-tryIgnoreFrame :: ActionFrame () -> ActionFrame ()
-tryIgnoreFrame =
-  tryWith (\ msg -> if null msg
-                    then returnNoFrame ()
-                    else assert `failure` (msg, "in tryIgnoreFrame"))
 
 -- | Get the current diary.
 getDiary :: Action Diary

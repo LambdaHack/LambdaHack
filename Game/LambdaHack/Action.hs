@@ -2,16 +2,14 @@
 -- actions. Uses @liftIO@ of the @Action@ monad, but does not export it.
 -- Has no direct access to the Action monad implementation.
 module Game.LambdaHack.Action
-  ( -- * Actions and basic operations
-    Action, rndToAction, getPerception
+  ( -- * Actions and accessors
+    Action, getPerception, getCOps, getBinding
     -- * Actions returning frames
   , ActionFrame, returnNoFrame, returnFrame, whenFrame, inFrame, tryWithFrame
-    -- * Assessors to game session and its components
-  , getCOps, getBinding
     -- * Various ways to abort action
   , abort, abortWith, abortIfWith, neverMind
     -- * Abort exception handlers
-  , tryWith, tryRepeatedlyWith, tryIgnore, tryIgnoreFrame
+  , tryWith, tryRepeatedlyWith, tryIgnore
     -- * Diary and report
   , getDiary, msgAdd, recordHistory
     -- * Key input
@@ -22,11 +20,8 @@ module Game.LambdaHack.Action
   , displayOverlays, displayChoiceUI, displayFramePush, drawPrompt
     -- * Clip init operations
   , startClip, remember, rememberList
-    -- * Assorted operations
-  , updateAnyActor, updatePlayerBody
     -- * Assorted primitives
-  , currentDate, saveGameBkp, dumpCfg, endOrLoop, rmBkpSaveDiary
-  , gameReset, frontendName, startFrontend, mkConfig
+  , saveGameBkp, dumpCfg, endOrLoop, frontendName, startFrontend, mkConfig
   , debug
   ) where
 
@@ -274,25 +269,14 @@ rememberList vis = do
       rememberItem = IM.alter alt
   modify (updateLevel (updateIMap (\ m -> foldr rememberItem m vis)))
 
--- | Update actor stats. Works for actors on other levels, too.
-updateAnyActor :: ActorId -> (Actor -> Actor) -> Action ()
-updateAnyActor actor f = modify (updateAnyActorBody actor f)
-
--- | Update player-controlled actor stats.
-updatePlayerBody :: (Actor -> Actor) -> Action ()
-updatePlayerBody f = do
-  pl <- gets splayer
-  updateAnyActor pl f
-
--- | Obtains the current date and time.
-currentDate :: Action ClockTime
-currentDate = liftIO getClockTime
-
 -- | Save the diary and a backup of the save game file, in case of crashes.
 --
 -- See 'Save.saveGameBkp'.
-saveGameBkp :: State -> Diary -> Action ()
-saveGameBkp state diary = liftIO $ Save.saveGameBkp state diary
+saveGameBkp :: Action ()
+saveGameBkp = do
+  state <- get
+  diary <- getDiary
+  liftIO $ Save.saveGameBkp state diary
 
 -- | Dumps the current configuration to a file.
 --
@@ -311,7 +295,7 @@ handleScores write status total =
   when (total /= 0) $ do
     config  <- gets sconfig
     time    <- gets stime
-    curDate <- currentDate
+    curDate <- liftIO getClockTime
     let score = register config write total time curDate status
     (placeMsg, slideshow) <- liftIO score
     displayOverAbort placeMsg slideshow
@@ -377,17 +361,9 @@ restartGame = do
   -- (the current config file has the RNG rolled for the previous game).
   config <- getOrigConfig
   cops <- getCOps
-  diary <- getDiary
   state <- gameResetAction config cops
   modify $ const state
-  saveGameBkp state diary
-
-rmBkpSaveDiary :: Action ()
-rmBkpSaveDiary  = do
-  config <- gets sconfig
-  diary <- getDiary
-  -- Save diary often in case of crashes.
-  liftIO $ Save.rmBkpSaveDiary config diary
+  saveGameBkp
 
 -- TODO: do this inside Action ()
 gameReset :: Config.CP -> Kind.COps -> IO State
@@ -418,10 +394,17 @@ gameResetAction config cops = liftIO $ gameReset config cops
 -- and initialize the engine with the starting session.
 startFrontend :: Kind.COps -> Binding (ActionFrame ()) -> Config.CP
               -> Action () -> IO ()
-startFrontend !scops !sbinding !sconfig handleGame = do
+startFrontend !scops !sbinding !sconfig handleTurn = do
   -- The only option taken not from config in savegame, but from fresh config.
   let sorigConfig = sconfig
       configFont = fromMaybe "" $ Config.getOption sconfig "ui" "font"
+      -- In addition to handling th eturn, if the game ends or exits,
+      -- handle the diary and backup savefile.
+      handleGame = do
+        handleTurn
+        diary <- getDiary
+        -- Save diary often in case of crashes.
+        liftIO $ Save.rmBkpSaveDiary sconfig diary
       loop sfs = start sconfig Session{..} handleGame
   startup configFont loop
 

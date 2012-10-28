@@ -48,9 +48,7 @@ import qualified Game.LambdaHack.Command as Command
 
 gameSave :: Action ()
 gameSave = do
-  state <- get
-  diary <- getDiary
-  saveGameBkp state diary
+  saveGameBkp
   msgAdd "Game progress saved to a backup file."
 
 gameExit :: Action ()

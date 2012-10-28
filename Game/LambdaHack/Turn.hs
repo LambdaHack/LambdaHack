@@ -1,5 +1,5 @@
 -- | The main loop of the game, processing player and AI moves turn by turn.
-module Game.LambdaHack.Turn ( handleGame ) where
+module Game.LambdaHack.Turn ( handleTurn ) where
 
 import Control.Monad
 import Control.Monad.State hiding (State, state)
@@ -56,11 +56,7 @@ import Game.LambdaHack.Time
 -- will be generated). Do whatever has to be done
 -- every fixed number of time units, e.g., monster generation.
 -- Run the player and other actors moves. Eventually advance the time
--- and repeat, and if the game ends or exits, handle the diary
--- and backup savefile.
-handleGame :: Action ()
-handleGame = handleTurn >> rmBkpSaveDiary
-
+-- and repeat.
 handleTurn :: Action ()
 handleTurn = do
   debug "handleTurn"

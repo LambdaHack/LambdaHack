@@ -33,4 +33,4 @@ main = do
         , cotile  = Kind.createOps Content.TileKind.cdefs
         }
       binding = BindingAction.stdBinding config
-  startFrontend cops binding config handleGame
+  startFrontend cops binding config handleTurn

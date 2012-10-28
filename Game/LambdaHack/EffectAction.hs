@@ -35,6 +35,24 @@ import Game.LambdaHack.DungeonState
 import qualified Game.LambdaHack.Color as Color
 import qualified Game.LambdaHack.Dungeon as Dungeon
 
+-- | Invoke pseudo-random computation with the generator kept in the state.
+rndToAction :: Rnd a -> Action a
+rndToAction r = do
+  g <- gets srandom
+  let (a, ng) = runState r g
+  modify (\ state -> state {srandom = ng})
+  return a
+
+-- | Update actor stats. Works for actors on other levels, too.
+updateAnyActor :: ActorId -> (Actor -> Actor) -> Action ()
+updateAnyActor actor f = modify (updateAnyActorBody actor f)
+
+-- | Update player-controlled actor stats.
+updatePlayerBody :: (Actor -> Actor) -> Action ()
+updatePlayerBody f = do
+  pl <- gets splayer
+  updateAnyActor pl f
+
 -- TODO: instead of verbosity return msg components and tailor them outside?
 -- TODO: separately define messages for the case when source == target
 -- and for the other case; then use the messages outside of effectToAction,
@@ -312,9 +330,8 @@ effLvlGoUp k = do
         modify (updateCursor (\ c -> c { creturnLn = nln }))
         -- The invariant "at most one actor on a tile" restored.
         -- Create a backup of the savegame.
+        saveGameBkp
         state <- get
-        diary <- getDiary
-        saveGameBkp state diary
         msgAdd $ lookAt cops False True state lvl nloc ""
 
 -- | Change level and reset it's time and update the times of all actors.
