@@ -3,11 +3,11 @@
 {-# LANGUAGE MultiParamTypeClasses, RankNTypes #-}
 module Game.LambdaHack.Action
   ( -- * Actions and basic operations
-    ActionFun, Action, handlerToIO, rndToAction
+    ActionFun, Action, rndToAction
     -- * Actions returning frames
   , ActionFrame, returnNoFrame, returnFrame, whenFrame, inFrame
-    -- * Game session and its accessors
-  , Session(..), getCOps, getBinding, getOrigConfig
+    -- * Assessors to game session components
+  , getCOps, getBinding, getOrigConfig
     -- * Various ways to abort action
   , abort, abortWith, abortIfWith, neverMind
     -- * Abort exception handlers
@@ -63,6 +63,8 @@ import Game.LambdaHack.Point
 import Game.LambdaHack.Time
 import qualified Game.LambdaHack.DungeonState as DungeonState
 import Game.LambdaHack.Item
+import Game.LambdaHack.Content.RuleKind
+import qualified Game.LambdaHack.Tile as Tile
 
 -- | The type of the function inside any action.
 -- (Separated from the @Action@ type to document each argument with haddock.)
@@ -615,13 +617,43 @@ gameResetAction config cops = liftIO $ gameReset config cops
 -- Then create the starting game config from the default config file
 -- and initialize the engine with the starting session.
 startFrontend :: Kind.COps -> Binding (ActionFrame ()) -> Config.CP
-              -> (Config.CP -> Session -> IO ()) -> IO ()
-startFrontend !scops !sbinding !sconfig start = do
+              -> Action () -> IO ()
+startFrontend !scops !sbinding !sconfig handleGame = do
   -- The only option taken not from config in savegame, but from fresh config.
   let sorigConfig = sconfig
       configFont = fromMaybe "" $ Config.getOption sconfig "ui" "font"
-      loop sfs = start sconfig Session{..}
+      loop sfs = start sconfig Session{..} handleGame
   startup configFont loop
+
+-- | Compute and insert auxiliary optimized components into game content,
+-- to be used in time-critical sections of the code.
+speedupCops :: Session -> Session
+speedupCops sess@Session{scops = cops@Kind.COps{cotile=tile}} =
+  let ospeedup = Tile.speedup tile
+      cotile = tile {Kind.ospeedup}
+      scops = cops {Kind.cotile}
+  in sess {scops}
+
+-- | Either restore a saved game, or setup a new game.
+-- Then call the main game loop.
+start :: Config.CP -> Session -> Action () -> IO ()
+start config slowSess handleGame = do
+  let sess@Session{scops = cops@Kind.COps{ corule }} = speedupCops slowSess
+      title = rtitle $ Kind.stdRuleset corule
+      pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
+  restored <- Save.restoreGame pathsDataFile config title
+  case restored of
+    Right (diary, msg) -> do  -- Starting a new game.
+      state <- gameReset config cops
+      handlerToIO sess state
+        diary{sreport = singletonReport msg}
+        -- TODO: gameReset >> handleTurn or defaultState {squit=Reset}
+        handleGame
+    Left (state, diary, msg) ->  -- Running a restored a game.
+      handlerToIO sess state
+        -- This overwrites the "Really save/quit?" messages.
+        diary{sreport = singletonReport msg}
+        handleGame
 
 -- | Debugging.
 debug :: String -> Action ()

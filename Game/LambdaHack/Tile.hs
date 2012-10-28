@@ -15,10 +15,11 @@
 module Game.LambdaHack.Tile
   (SecretTime, SmellTime
   , kindHasFeature, kindHas, hasFeature
-  , isClear, isLit, similar, canBeHidden
+  , isClear, isLit, similar, canBeHidden, speedup
   ) where
 
 import qualified Data.List as L
+import qualified Data.Array.Unboxed as A
 
 import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Feature as F
@@ -71,3 +72,16 @@ canBeHidden :: Kind.Ops TileKind -> TileKind -> Bool
 canBeHidden Kind.Ops{ofoldrWithKey} t =
   let sim _ s acc = acc || kindHasFeature F.Hidden s && similar t s
   in ofoldrWithKey sim False
+
+speedup :: Kind.Ops TileKind -> Kind.Speedup TileKind
+speedup Kind.Ops{ofoldrWithKey, obounds} =
+  let createTab :: (TileKind -> Bool) -> A.UArray (Kind.Id TileKind) Bool
+      createTab p =
+        let f _ k acc = p k : acc
+            clearAssocs = ofoldrWithKey f []
+        in A.listArray obounds clearAssocs
+      tabulate :: (TileKind -> Bool) -> Kind.Id TileKind -> Bool
+      tabulate p = (createTab p A.!)
+      isClearTab = tabulate $ kindHasFeature F.Clear
+      isLitTab   = tabulate $ kindHasFeature F.Lit
+  in Kind.TileSpeedup {isClearTab, isLitTab}

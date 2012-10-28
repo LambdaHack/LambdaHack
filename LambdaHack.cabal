@@ -120,7 +120,6 @@ library
                    Game.LambdaHack.Random,
                    Game.LambdaHack.Running,
                    Game.LambdaHack.Save,
-                   Game.LambdaHack.Start,
                    Game.LambdaHack.State,
                    Game.LambdaHack.Strategy,
                    Game.LambdaHack.StrategyAction,

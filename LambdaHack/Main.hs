@@ -11,7 +11,7 @@ import qualified Content.ItemKind
 import qualified Content.PlaceKind
 import qualified Content.RuleKind
 import qualified Content.TileKind
-import qualified Game.LambdaHack.Start as Start
+import Game.LambdaHack.Turn
 import qualified Game.LambdaHack.Config as Config
 import Game.LambdaHack.Action
 import qualified Game.LambdaHack.BindingAction as BindingAction
@@ -34,4 +34,4 @@ main = do
         , cotile  = Kind.createOps Content.TileKind.cdefs
         }
       binding = BindingAction.stdBinding config
-  startFrontend cops binding config Start.start
+  startFrontend cops binding config handleGame
