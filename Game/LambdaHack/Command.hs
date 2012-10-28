@@ -3,6 +3,7 @@ module Game.LambdaHack.Command
   ( Cmd(..), majorCmd, timedCmd, cmdDescription
   ) where
 
+import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Grammar
 import qualified Game.LambdaHack.Feature as F
 
@@ -86,7 +87,8 @@ cmdDescription cmd = case cmd of
   TgtAscend k | k >= 2  -> "target " ++ show k    ++ " levels shallower"
   TgtAscend k | k == -1 -> "target next deeper level"
   TgtAscend k | k <= -2 -> "target " ++ show (-k) ++ " levels deeper"
-  TgtAscend _ -> error "void level change in targeting mode in config file"
+  TgtAscend _ ->
+    assert `failure` "void level change in targeting mode in config file"
   EpsIncr True  -> "swerve targeting line"
   EpsIncr False -> "unswerve targeting line"
   GameExit  -> "save and exit"

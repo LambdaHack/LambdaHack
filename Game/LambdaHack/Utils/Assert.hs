@@ -33,7 +33,8 @@ failure asrt blamed =
   let s = "Internal failure occured and the following is to blame:\n" ++
           "  " ++ show blamed
   in trace s $
-     asrt False (error "Assert.failure: no error location (upgrade to GHC 7.4)")
+     asrt False
+       (error "Assert.failure: no error location (upgrade to GHC >= 7.4)")
 
 -- | Like 'List.all', but if the predicate fails, blame all the list elements
 -- and especially those for which it fails. To be used as in:
@@ -56,7 +57,7 @@ checkM asrt predicate blamed value
             "  " ++ show blamed
     in trace s $
        asrt False
-         (error "Assert.checkM: no error location (upgrade to GHC 7.4)")
+         (error "Assert.checkM: no error location (upgrade to GHC >= 7.4)")
 
 -- | Verifies that the returned value is true (respectively, false). Used as in:
 --

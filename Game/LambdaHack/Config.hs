@@ -13,6 +13,8 @@ import qualified Data.Char as Char
 import qualified Data.List as L
 import qualified System.Random as R
 
+import Game.LambdaHack.Utils.Assert
+
 -- | The content of the configuration file. It's parsed
 -- in a case sensitive way (unlike by default in ConfigFile).
 newtype CP = CP CF.ConfigParser
@@ -29,7 +31,7 @@ instance Show CP where
 
 -- | In case of corruption, just fail.
 forceEither :: Show a => Either a b -> b
-forceEither (Left a)  = error (show a)
+forceEither (Left a)  = assert `failure` a
 forceEither (Right b) = b
 
 -- | Switches all names to case sensitive (unlike by default in
@@ -91,14 +93,14 @@ get :: CF.Get_C a => CP -> CF.SectionSpec -> CF.OptionSpec -> a
 get (CP conf) s o =
   if CF.has_option conf s o
   then forceEither $ CF.get conf s o
-  else error $ "Unknown config option: " ++ s ++ "." ++ o
+  else assert `failure` "Unknown config option: " ++ s ++ "." ++ o
 
 -- | An association list corresponding to a section. Fails if no such section.
 getItems :: CP -> CF.SectionSpec -> [(String, String)]
 getItems (CP conf) s =
   if CF.has_section conf s
   then forceEither $ CF.items conf s
-  else error $ "Unknown config section: " ++ s
+  else assert `failure` "Unknown config section: " ++ s
 
 -- | Looks up a file path in the config file and makes it absolute.
 -- If the game's configuration directory exists,
@@ -126,7 +128,7 @@ dump fn (CP conf) = do
 set :: CP -> CF.SectionSpec -> CF.OptionSpec -> String -> CP
 set (CP conf) s o v =
   if CF.has_option conf s o
-  then error $ "Overwritten config option: " ++ s ++ "." ++ o
+  then assert `failure`"Overwritten config option: " ++ s ++ "." ++ o
   else CP $ forceEither $ CF.set conf s o v
 
 -- | Gets a random generator from the config or,

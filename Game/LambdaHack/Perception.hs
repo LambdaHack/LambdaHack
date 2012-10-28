@@ -11,6 +11,7 @@ import qualified Data.IntMap as IM
 import Data.Maybe
 import Control.Monad
 
+import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Point
 import Game.LambdaHack.State
 import Game.LambdaHack.Level
@@ -116,7 +117,8 @@ levelPerception cops@Kind.COps{cotile}
   let mode   = Config.get sconfig "engine" "fovMode"
       radius = let r = Config.get sconfig "engine" "fovRadius"
                in if r < 1
-                  then error $ "FOV radius is " ++ show r ++ ", should be >= 1"
+                  then assert `failure`
+                         "FOV radius is " ++ show r ++ ", should be >= 1"
                   else r
       -- Perception for a player-controlled monster on the current level.
       mLocPer =
@@ -187,7 +189,7 @@ computeReachable Kind.COps{cotile, coactor=Kind.Ops{okind}}
             "shadow"     -> Shadow
             "permissive" -> Permissive
             "digital"    -> Digital radius
-            _            -> error $ "Unknown FOV mode: " ++ show mode
+            _            -> assert `failure` "Unknown FOV mode: " ++ show mode
       ploc = bloc actor
   in PerceptionReachable $
        IS.insert ploc $ IS.fromList $ fullscan cotile (fovMode actor) ploc lvl

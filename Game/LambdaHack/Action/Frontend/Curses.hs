@@ -14,6 +14,7 @@ import qualified Data.List as L
 import qualified Data.Map as M
 import Control.Monad
 
+import Game.LambdaHack.Utils.Assert
 import qualified Game.LambdaHack.Key as K (Key(..),  Modifier(..))
 import qualified Game.LambdaHack.Color as Color
 
@@ -41,7 +42,8 @@ startup _ k = do
   nr <- C.colorPairs
   when (nr < L.length s) $
     C.end >>
-    error ("Terminal has too few color pairs (" ++ show nr ++ "). Giving up.")
+    assert `failure`
+      "Terminal has too few color pairs (" ++ show nr ++ "). Giving up."
   let (ks, vs) = unzip s
   ws <- C.convertStyles vs
   let styleMap = M.fromList (zip ks ws)
