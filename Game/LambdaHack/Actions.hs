@@ -45,7 +45,6 @@ import Game.LambdaHack.Binding
 import Game.LambdaHack.Time
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Draw
-import Game.LambdaHack.Frontend
 import qualified Game.LambdaHack.Command as Command
 
 gameSave :: Action ()

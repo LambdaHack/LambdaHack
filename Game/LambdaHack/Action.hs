@@ -26,7 +26,7 @@ module Game.LambdaHack.Action
   , getPerception, updateAnyActor, updatePlayerBody
     -- * Assorted primitives
   , currentDate, saveGameBkp, dumpCfg, endOrLoop, rmBkpSaveDiary
-  , gameReset
+  , gameReset, frontendName, startFrontend
   , debug
   ) where
 
@@ -607,6 +607,21 @@ gameReset config1 cops@Kind.COps{ coitem
   return hstate
 gameResetAction :: Config.CP -> Kind.COps -> Action State
 gameResetAction config cops = liftIO $ gameReset config cops
+
+-- | Wire together content, the definitions of game commands,
+-- config and a high-level startup function
+-- to form the starting game session. Evaluate to check for errors,
+-- in particular verify content consistency.
+-- Then create the starting game config from the default config file
+-- and initialize the engine with the starting session.
+startFrontend :: Kind.COps -> Binding (ActionFrame ()) -> Config.CP
+              -> (Config.CP -> Session -> IO ()) -> IO ()
+startFrontend !scops !sbinding !sconfig start = do
+  -- The only option taken not from config in savegame, but from fresh config.
+  let sorigConfig = sconfig
+      configFont = fromMaybe "" $ Config.getOption sconfig "ui" "font"
+      loop sfs = start sconfig Session{..}
+  startup configFont loop
 
 -- | Debugging.
 debug :: String -> Action ()
