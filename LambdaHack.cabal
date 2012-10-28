@@ -70,6 +70,7 @@ flag std
 
 library
   exposed-modules: Game.LambdaHack.Action,
+                   Game.LambdaHack.Action.ConfigIO
                    Game.LambdaHack.Action.Frontend,
                    Game.LambdaHack.Action.Frontend.Chosen,
                    Game.LambdaHack.Action.HighScore,

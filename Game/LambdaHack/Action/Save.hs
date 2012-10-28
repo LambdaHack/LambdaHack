@@ -13,11 +13,12 @@ import System.IO.Unsafe (unsafePerformIO)  -- horrors
 import Game.LambdaHack.Utils.File
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Config as Config
+import qualified Game.LambdaHack.Action.ConfigIO as ConfigIO
 import Game.LambdaHack.Msg
 
 -- | Name of the save game.
 saveFile :: Config.CP -> IO FilePath
-saveFile config = Config.getFile config "files" "saveFile"
+saveFile config = ConfigIO.getFile config "files" "saveFile"
 
 -- | Name of the backup of the save game.
 bkpFile :: Config.CP -> IO FilePath
@@ -27,7 +28,7 @@ bkpFile config = do
 
 -- | Name of the persistent player diary.
 diaryFile :: Config.CP -> IO FilePath
-diaryFile config = Config.getFile config "files" "diaryFile"
+diaryFile config = ConfigIO.getFile config "files" "diaryFile"
 
 -- | Save a simple serialized version of the current player diary.
 saveDiary :: Config.CP -> Diary -> IO ()
@@ -81,7 +82,7 @@ tryCopyDataFiles pathsDataFile dirNew = do
 restoreGame :: (FilePath -> IO FilePath) -> Config.CP -> String
             -> IO (Either (State, Diary, Msg) (Diary, Msg))
 restoreGame pathsDataFile config title = do
-  appData <- Config.appDataDir
+  appData <- ConfigIO.appDataDir
   ab <- doesDirectoryExist appData
   -- If the directory can't be created, the current directory will be used.
   unless ab $ do

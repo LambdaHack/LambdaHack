@@ -12,6 +12,7 @@ import qualified Data.List as L
 
 import Game.LambdaHack.Utils.File
 import qualified Game.LambdaHack.Config as Config
+import qualified Game.LambdaHack.Action.ConfigIO as ConfigIO
 import Game.LambdaHack.Dungeon
 import Game.LambdaHack.Misc
 import Game.LambdaHack.Time
@@ -83,7 +84,7 @@ empty = []
 
 -- | Name of the high scores file.
 scoresFile :: Config.CP -> IO String
-scoresFile config = Config.getFile config "files" "scoresFile"
+scoresFile config = ConfigIO.getFile config "files" "scoresFile"
 
 -- | Save a simple serialized version of the high scores table.
 save :: Config.CP -> ScoreTable -> IO ()

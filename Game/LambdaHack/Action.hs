@@ -26,7 +26,7 @@ module Game.LambdaHack.Action
   , getPerception, updateAnyActor, updatePlayerBody
     -- * Assorted primitives
   , currentDate, saveGameBkp, dumpCfg, endOrLoop, rmBkpSaveDiary
-  , gameReset, frontendName, startFrontend
+  , gameReset, frontendName, startFrontend, mkConfig
   , debug
   ) where
 
@@ -58,6 +58,7 @@ import qualified Game.LambdaHack.Key as K
 import Game.LambdaHack.Binding
 import Game.LambdaHack.Action.HighScore (register)
 import qualified Game.LambdaHack.Config as Config
+import qualified Game.LambdaHack.Action.ConfigIO as ConfigIO
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Point
 import qualified Game.LambdaHack.DungeonState as DungeonState
@@ -494,7 +495,7 @@ saveGameBkp state diary = liftIO $ Save.saveGameBkp state diary
 --
 -- See 'Config.dump'.
 dumpCfg :: FilePath -> Config.CP -> Action ()
-dumpCfg fn config = liftIO $ Config.dump fn config
+dumpCfg fn config = liftIO $ ConfigIO.dump fn config
 
 -- | Handle current score and display it with the high scores.
 -- Aborts if display of the scores was interrupted by the user.
@@ -589,7 +590,7 @@ rmBkpSaveDiary  = do
 gameReset :: Config.CP -> Kind.COps -> IO State
 gameReset config1 cops@Kind.COps{ coitem
                                 , cofact=Kind.Ops{opick}} = do
-  (g2, config2) <- Config.getSetGen config1 "dungeonRandomGenerator"
+  (g2, config2) <- ConfigIO.getSetGen config1 "dungeonRandomGenerator"
   let (DungeonState.FreshDungeon{..}, ag) =
         runState (DungeonState.generate cops config2) g2
       (sflavour, ag2) = runState (dungeonFlavourMap coitem) ag
@@ -597,7 +598,7 @@ gameReset config1 cops@Kind.COps{ coitem
       sfaction =
         evalState
           (opick (fromMaybe "playable" factionName) (const True)) ag2
-  (g3, config3) <- Config.getSetGen config2 "startingRandomGenerator"
+  (g3, config3) <- ConfigIO.getSetGen config2 "startingRandomGenerator"
   let state =
         defaultState
           config3 sfaction sflavour freshDungeon entryLevel entryLoc g3
@@ -650,6 +651,10 @@ start config slowSess handleGame = do
         -- This overwrites the "Really save/quit?" messages.
         diary{sreport = singletonReport msg}
         handleGame
+
+-- TODO: remove that
+mkConfig :: String -> IO Config.CP
+mkConfig = ConfigIO.mkConfig
 
 -- | Debugging.
 debug :: String -> Action ()

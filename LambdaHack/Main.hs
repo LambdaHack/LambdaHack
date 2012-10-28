@@ -12,7 +12,6 @@ import qualified Content.PlaceKind
 import qualified Content.RuleKind
 import qualified Content.TileKind
 import Game.LambdaHack.Turn
-import qualified Game.LambdaHack.Config as Config
 import Game.LambdaHack.Action
 import qualified Game.LambdaHack.BindingAction as BindingAction
 
@@ -23,7 +22,7 @@ import qualified ConfigDefault
 -- when compiling the engine library.
 main :: IO ()
 main = do
-  config <- Config.mkConfig ConfigDefault.configDefault
+  config <- mkConfig ConfigDefault.configDefault
   let cops = Kind.COps
         { coactor = Kind.createOps Content.ActorKind.cdefs
         , cocave  = Kind.createOps Content.CaveKind.cdefs
