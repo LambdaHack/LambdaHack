@@ -51,7 +51,7 @@ import Game.LambdaHack.State
 import Game.LambdaHack.Level
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import qualified Game.LambdaHack.Save as Save
+import qualified Game.LambdaHack.Action.Save as Save
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Key as K
