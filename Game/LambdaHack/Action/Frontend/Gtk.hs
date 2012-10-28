@@ -1,6 +1,6 @@
 -- | Text frontend based on Gtk.
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
-module Game.LambdaHack.Frontend.Gtk
+module Game.LambdaHack.Action.Frontend.Gtk
   ( -- * Session data type for the frontend
     FrontendSession
     -- * The output and input operations

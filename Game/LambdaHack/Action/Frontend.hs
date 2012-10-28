@@ -1,13 +1,13 @@
 -- | Display game data on the screen and receive user input
 -- using one of the available raw frontends and derived  operations.
-module Game.LambdaHack.Frontend
+module Game.LambdaHack.Action.Frontend
   ( -- * Re-exported part of the raw frontend
     FrontendSession, startup, frontendName, nextEvent
     -- * Derived operations
   , displayFrame, promptGetKey
   ) where
 
-import Game.LambdaHack.Frontend.Chosen
+import Game.LambdaHack.Action.Frontend.Chosen
 import qualified Game.LambdaHack.Color as Color
 import qualified Game.LambdaHack.Key as K (Key, Modifier)
 

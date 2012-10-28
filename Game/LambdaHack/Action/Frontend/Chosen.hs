@@ -1,7 +1,7 @@
 -- | Re-export the operations of the chosen raw frontend
 -- (determined at compile time with cabal flags).
 {-# LANGUAGE CPP #-}
-module Game.LambdaHack.Frontend.Chosen
+module Game.LambdaHack.Action.Frontend.Chosen
   ( -- * Re-exported raw frontend
     FrontendSession, startup, frontendName, nextEvent, promptGetAnyKey, display
   ) where
@@ -9,11 +9,11 @@ module Game.LambdaHack.Frontend.Chosen
 -- Wrapper for selected Display frontend.
 
 #ifdef CURSES
-import Game.LambdaHack.Frontend.Curses as D
+import Game.LambdaHack.Action.Frontend.Curses as D
 #elif VTY
-import Game.LambdaHack.Frontend.Vty as D
+import Game.LambdaHack.Action.Frontend.Vty as D
 #elif STD
-import Game.LambdaHack.Frontend.Std as D
+import Game.LambdaHack.Action.Frontend.Std as D
 #else
-import Game.LambdaHack.Frontend.Gtk as D
+import Game.LambdaHack.Action.Frontend.Gtk as D
 #endif

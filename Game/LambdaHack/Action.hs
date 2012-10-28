@@ -44,7 +44,7 @@ import Control.Exception (finally)
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Perception
-import Game.LambdaHack.Frontend
+import Game.LambdaHack.Action.Frontend
 import Game.LambdaHack.Draw
 import Game.LambdaHack.Msg
 import Game.LambdaHack.State

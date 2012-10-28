@@ -90,8 +90,8 @@ library
                    Game.LambdaHack.Content.PlaceKind,
                    Game.LambdaHack.Content.RuleKind,
                    Game.LambdaHack.Content.TileKind,
-                   Game.LambdaHack.Frontend,
-                   Game.LambdaHack.Frontend.Chosen,
+                   Game.LambdaHack.Action.Frontend,
+                   Game.LambdaHack.Action.Frontend.Chosen,
                    Game.LambdaHack.Draw,
                    Game.LambdaHack.Dungeon,
                    Game.LambdaHack.DungeonState,
@@ -156,18 +156,18 @@ library
   ghc-options:     -fno-ignore-asserts -funbox-strict-fields
 
   if flag(curses) {
-    other-modules: Game.LambdaHack.Frontend.Curses
+    other-modules: Game.LambdaHack.Action.Frontend.Curses
     build-depends: hscurses >= 1.4.1 && < 2
     cpp-options:   -DCURSES
   } else { if flag(vty) {
-    other-modules: Game.LambdaHack.Frontend.Vty
+    other-modules: Game.LambdaHack.Action.Frontend.Vty
     build-depends: vty >= 4.7.0.6
     cpp-options:   -DVTY
   } else { if flag(std) {
-    other-modules: Game.LambdaHack.Frontend.Std
+    other-modules: Game.LambdaHack.Action.Frontend.Std
     cpp-options:   -DSTD
   } else {
-    other-modules: Game.LambdaHack.Frontend.Gtk
+    other-modules: Game.LambdaHack.Action.Frontend.Gtk
     build-depends: gtk >= 0.12.1 && < 0.13
   } } }
 
