@@ -1,19 +1,33 @@
--- | Re-export the display operations of the chosen frontend
--- (determined at compile time with cabal flags).
-{-# LANGUAGE CPP #-}
+-- | Display game data on the screen and receive user input
+-- using one of the available raw frontends and derived  operations.
 module Game.LambdaHack.Frontend
-  ( -- * Re-exported frontend
-    FrontendSession, startup, frontendName, nextEvent, promptGetAnyKey, display
+  ( -- * Re-exported part of the raw frontend
+    FrontendSession, startup, frontendName, nextEvent
+    -- * Derived operations
+  , displayFrame, promptGetKey
   ) where
 
--- Wrapper for selected Display frontend.
+import Game.LambdaHack.Frontend.Chosen
+import qualified Game.LambdaHack.Color as Color
+import qualified Game.LambdaHack.Key as K (Key, Modifier)
 
-#ifdef CURSES
-import Game.LambdaHack.Frontend.Curses as D
-#elif VTY
-import Game.LambdaHack.Frontend.Vty as D
-#elif STD
-import Game.LambdaHack.Frontend.Std as D
-#else
-import Game.LambdaHack.Frontend.Gtk as D
-#endif
+-- | Push a frame or a single frame's worth of delay to the frame queue.
+displayFrame :: FrontendSession -> Bool -> Maybe Color.SingleFrame -> IO ()
+displayFrame fs isRunning = display fs True isRunning
+
+-- TODO: move promptGetKey here and then change its type to
+-- promptGetKey :: FrontendSession
+--              -> [((K.Key, K.Modifier), a)]
+--              -> ((K.Key, K.Modifier) -> a)  -- ^ handle unexpected key
+--              -> Color.SingleFrame
+--              -> IO a
+-- Then see if it can be used instead of the dangerous, low level nextEvent.
+-- | Display a prompt, wait for any of the specified keys (for any key,
+-- if the list is empty). Repeat if an unexpected key received.
+promptGetKey :: FrontendSession -> [(K.Key, K.Modifier)] -> Color.SingleFrame
+             -> IO (K.Key, K.Modifier)
+promptGetKey sess keys frame = do
+  km <- promptGetAnyKey sess frame
+  if null keys || km `elem` keys
+    then return km
+    else promptGetKey sess keys frame

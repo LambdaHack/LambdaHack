@@ -5,7 +5,6 @@ module Main ( main ) where
 
 import Data.Maybe
 
-import qualified Game.LambdaHack.Display as Display
 import qualified Game.LambdaHack.Kind as Kind
 import qualified Content.ActorKind
 import qualified Content.CaveKind
@@ -15,7 +14,7 @@ import qualified Content.PlaceKind
 import qualified Content.RuleKind
 import qualified Content.TileKind
 import qualified Game.LambdaHack.Start as Start
-import Game.LambdaHack.Display
+import Game.LambdaHack.Frontend
 import qualified Game.LambdaHack.Config as Config
 import Game.LambdaHack.Action
 import qualified Game.LambdaHack.BindingAction as BindingAction
@@ -58,4 +57,4 @@ start = do
 main :: IO ()
 main = do
   (configFont, loop) <- start
-  Display.startup configFont loop
+  startup configFont loop

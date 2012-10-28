@@ -91,7 +91,7 @@ library
                    Game.LambdaHack.Content.RuleKind,
                    Game.LambdaHack.Content.TileKind,
                    Game.LambdaHack.Frontend,
-                   Game.LambdaHack.Display,
+                   Game.LambdaHack.Frontend.Chosen,
                    Game.LambdaHack.Draw,
                    Game.LambdaHack.Dungeon,
                    Game.LambdaHack.DungeonState,
