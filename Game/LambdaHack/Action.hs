@@ -56,11 +56,10 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Key as K
 import Game.LambdaHack.Binding
-import qualified Game.LambdaHack.HighScore as H
+import Game.LambdaHack.Action.HighScore (register)
 import qualified Game.LambdaHack.Config as Config
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Point
-import Game.LambdaHack.Time
 import qualified Game.LambdaHack.DungeonState as DungeonState
 import Game.LambdaHack.Item
 import Game.LambdaHack.Content.RuleKind
@@ -498,22 +497,19 @@ dumpCfg :: FilePath -> Config.CP -> Action ()
 dumpCfg fn config = liftIO $ Config.dump fn config
 
 -- | Handle current score and display it with the high scores.
--- False if display of the scores was void or interrupted by the user.
+-- Aborts if display of the scores was interrupted by the user.
 --
 -- Warning: scores are shown during the game,
 -- so we should be careful not to leak secret information through them
 -- (e.g., the nature of the items through the total worth of inventory).
-handleScores :: Bool -> H.Status -> Int -> Action ()
+handleScores :: Bool -> Status -> Int -> Action ()
 handleScores write status total =
   when (total /= 0) $ do
     config  <- gets sconfig
     time    <- gets stime
     curDate <- currentDate
-    let points = case status of
-                   H.Killed _ -> (total + 1) `div` 2
-                   _ -> total
-    let score = H.ScoreRecord points (timeNegate time) curDate status
-    (placeMsg, slideshow) <- liftIO $ H.register config write score
+    let score = register config write total time curDate status
+    (placeMsg, slideshow) <- liftIO score
     displayOverAbort placeMsg slideshow
 
 -- | Continue or restart or exit the game.
@@ -528,7 +524,7 @@ endOrLoop handleTurn = do
   -- the cause of the disruption of game flow.
   case squit of
     Nothing -> handleTurn  -- just continue
-    Just (_, status@H.Camping) -> do
+    Just (_, status@Camping) -> do
       -- Save and display in parallel.
       mv <- liftIO newEmptyMVar
       liftIO $ void $ forkIO (Save.saveGameFile s `finally` putMVar mv ())
@@ -536,7 +532,7 @@ endOrLoop handleTurn = do
       void $ displayMore ColorFull "See you soon, stronger and braver!"
       liftIO $ takeMVar mv  -- wait until saved
       -- Do nothing, that is, quit the game loop.
-    Just (showScreens, status@H.Killed{}) | showScreens -> do
+    Just (showScreens, status@Killed{}) | showScreens -> do
       Diary{sreport} <- getDiary
       unless (nullReport sreport) $ do
         -- Sisplay any leftover report. Suggest it could be the cause of death.
@@ -555,7 +551,7 @@ endOrLoop handleTurn = do
             restartGame
             handleTurn
         )
-    Just (showScreens, status@H.Victor) | showScreens -> do
+    Just (showScreens, status@Victor) | showScreens -> do
       Diary{sreport} <- getDiary
       unless (nullReport sreport) $ do
         -- Sisplay any leftover report. Suggest it could be the master move.
@@ -565,7 +561,7 @@ endOrLoop handleTurn = do
       void $ displayMore ColorFull "Can it be done better, though?"
       restartGame
       handleTurn
-    Just (_, H.Restart) -> do
+    Just (_, Restart) -> do
       void $ displayMore ColorFull "This time for real."
       restartGame
       handleTurn

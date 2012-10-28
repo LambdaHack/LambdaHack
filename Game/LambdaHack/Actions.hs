@@ -21,7 +21,6 @@ import Game.LambdaHack.Point
 import Game.LambdaHack.Vector
 import Game.LambdaHack.Grammar
 import qualified Game.LambdaHack.Dungeon as Dungeon
-import qualified Game.LambdaHack.HighScore as H
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Key as K
 import Game.LambdaHack.Level
@@ -58,14 +57,14 @@ gameExit :: Action ()
 gameExit = do
   b <- displayYesNo "Really save and exit?"
   if b
-    then modify (\ s -> s {squit = Just (True, H.Camping)})
+    then modify (\ s -> s {squit = Just (True, Camping)})
     else abortWith "Game resumed."
 
 gameRestart :: Action ()
 gameRestart = do
   b <- displayYesNo "Current progress will be lost! Really restart the game?"
   if b
-    then modify (\ s -> s {squit = Just (False, H.Restart)})
+    then modify (\ s -> s {squit = Just (False, Restart)})
     else abortWith "Game resumed."
 
 moveCursor :: Vector -> Int -> ActionFrame ()

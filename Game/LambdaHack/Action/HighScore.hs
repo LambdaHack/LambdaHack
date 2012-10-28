@@ -1,6 +1,6 @@
 -- | High score table operations.
-module Game.LambdaHack.HighScore
-  ( Status(..), ScoreRecord(..), register
+module Game.LambdaHack.Action.HighScore
+  ( register
   ) where
 
 import System.Directory
@@ -16,6 +16,7 @@ import Game.LambdaHack.Dungeon
 import Game.LambdaHack.Misc
 import Game.LambdaHack.Time
 import Game.LambdaHack.Msg
+import Game.LambdaHack.State
 
 -- TODO: add heroes' names, exp and level, cause of death, user number/name.
 -- Note: I tried using Date.Time, but got all kinds of problems,
@@ -32,28 +33,6 @@ data ScoreRecord = ScoreRecord
   , status  :: !Status     -- ^ reason of the game interruption
   }
   deriving (Eq, Ord)
-
--- | Current result of the game.
-data Status =
-    Killed !LevelId  -- ^ the player lost the game on the given level
-  | Camping          -- ^ game is supended
-  | Victor           -- ^ the player won
-  | Restart          -- ^ the player quits and starts a new game
-  deriving (Show, Eq, Ord)
-
-instance Binary Status where
-  put (Killed ln) = putWord8 0 >> put ln
-  put Camping     = putWord8 1
-  put Victor      = putWord8 2
-  put Restart     = putWord8 3
-  get = do
-    tag <- getWord8
-    case tag of
-      0 -> liftM Killed  get
-      1 -> return Camping
-      2 -> return Victor
-      3 -> return Restart
-      _ -> fail "no parse (Status)"
 
 instance Binary ScoreRecord where
   put (ScoreRecord p n (TOD cs cp) s) = do
@@ -145,14 +124,25 @@ slideshow pos h height =
 
 -- | Take care of saving a new score to the table
 -- and return a list of messages to display.
-register :: Config.CP -> Bool -> ScoreRecord -> IO (String, [Overlay])
-register config write s = do
+register :: Config.CP  -- ^ the config file
+         -> Bool       -- ^ whether to write or only render
+         -> Int        -- ^ the total score. not halved yet
+         -> Time       -- ^ game time spent
+         -> ClockTime  -- ^ date of the last game interruption
+         -> Status     -- ^ reason of the game interruption
+         -> IO (String, [Overlay])
+register config write total time date status = do
   h <- restore config
-  let (h', pos) = insertPos s h
+  let points = case status of
+                 Killed _ -> (total + 1) `div` 2
+                 _        -> total
+      negTime = timeNegate time
+      score = ScoreRecord{..}
+      (h', pos) = insertPos score h
       (_, nlines) = normalLevelBound  -- TODO: query terminal size instead
       height = nlines `div` 3
       (msgCurrent, msgUnless) =
-        case status s of
+        case status of
           Killed _ -> ("short-lived", " (score halved)")
           Camping  -> ("current", " (unless you are slain)")
           Victor   -> ("glorious",

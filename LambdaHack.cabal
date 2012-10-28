@@ -105,7 +105,7 @@ library
                    Game.LambdaHack.FOV.Permissive,
                    Game.LambdaHack.FOV.Shadow,
                    Game.LambdaHack.Grammar,
-                   Game.LambdaHack.HighScore,
+                   Game.LambdaHack.Action.HighScore,
                    Game.LambdaHack.Item,
                    Game.LambdaHack.ItemAction,
                    Game.LambdaHack.Key,

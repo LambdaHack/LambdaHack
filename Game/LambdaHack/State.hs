@@ -1,7 +1,7 @@
 -- | Game state and persistent player diary types and operations.
 module Game.LambdaHack.State
   ( -- * Game state
-    State(..), TgtMode(..), Cursor(..)
+    State(..), TgtMode(..), Cursor(..), Status(..)
     -- * Accessor
   , slevel, stime
     -- * Constructor
@@ -28,7 +28,6 @@ import Game.LambdaHack.Item
 import Game.LambdaHack.Msg
 import Game.LambdaHack.FOV
 import Game.LambdaHack.Time
-import qualified Game.LambdaHack.HighScore as H
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Content.FactionKind
 
@@ -56,7 +55,7 @@ data State = State
   , srandom  :: R.StdGen     -- ^ current random generator
   , sconfig  :: Config.CP    -- ^ game config
   , stakeTime :: Maybe Bool  -- ^ last command unexpectedly took some time
-  , squit    :: Maybe (Bool, H.Status)  -- ^ cause of game shutdown/reset
+  , squit    :: Maybe (Bool, Status)  -- ^ cause of game shutdown/reset
   , sfaction :: Kind.Id FactionKind     -- ^ our faction
   , sdebug   :: DebugMode    -- ^ debugging mode
   }
@@ -78,6 +77,14 @@ data Cursor = Cursor
   , ceps       :: Int              -- ^ a parameter of the tgt digital line
   }
   deriving Show
+
+-- | Current result of the game.
+data Status =
+    Killed !Dungeon.LevelId  -- ^ the player lost the game on the given level
+  | Camping                  -- ^ game is supended
+  | Victor                   -- ^ the player won
+  | Restart                  -- ^ the player quits and starts a new game
+  deriving (Show, Eq, Ord)
 
 data DebugMode = DebugMode
   { smarkVision :: Maybe FovMode
@@ -202,6 +209,18 @@ instance Binary State where
       (State player cursor flav disco dng lid ct (read g) config stakeTime
          Nothing sfaction defaultDebugMode)
 
+instance Binary TgtMode where
+  put TgtOff      = putWord8 0
+  put TgtExplicit = putWord8 1
+  put TgtAuto     = putWord8 2
+  get = do
+    tag <- getWord8
+    case tag of
+      0 -> return TgtOff
+      1 -> return TgtExplicit
+      2 -> return TgtAuto
+      _ -> fail "no parse (TgtMode)"
+
 instance Binary Cursor where
   put (Cursor act cln loc rln eps) = do
     put act
@@ -217,14 +236,16 @@ instance Binary Cursor where
     eps <- get
     return (Cursor act cln loc rln eps)
 
-instance Binary TgtMode where
-  put TgtOff      = putWord8 0
-  put TgtExplicit = putWord8 1
-  put TgtAuto     = putWord8 2
+instance Binary Status where
+  put (Killed ln) = putWord8 0 >> put ln
+  put Camping     = putWord8 1
+  put Victor      = putWord8 2
+  put Restart     = putWord8 3
   get = do
     tag <- getWord8
     case tag of
-      0 -> return TgtOff
-      1 -> return TgtExplicit
-      2 -> return TgtAuto
-      _ -> fail "no parse (TgtMode)"
+      0 -> fmap Killed get
+      1 -> return Camping
+      2 -> return Victor
+      3 -> return Restart
+      _ -> fail "no parse (Status)"

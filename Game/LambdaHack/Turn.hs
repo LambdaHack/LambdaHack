@@ -28,7 +28,6 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.Draw
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Time
-import qualified Game.LambdaHack.HighScore as H
 
 -- One clip proceeds through the following functions:
 --
@@ -78,7 +77,7 @@ handleTurn = do
   -- FIXME: a hack
   squit <- gets squit
   case squit of
-    Just (_, H.Camping) -> do
+    Just (_, Camping) -> do
       pl <- gets splayer
       advanceTime False pl  -- rewind player time: this is just Save&Exit
     _ -> return ()

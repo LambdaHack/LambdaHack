@@ -20,7 +20,6 @@ import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Draw
 import Game.LambdaHack.Grammar
 import Game.LambdaHack.Point
-import qualified Game.LambdaHack.HighScore as H
 import Game.LambdaHack.Item
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Level
@@ -226,7 +225,7 @@ eff Effect.Ascend _ source target power = do
   -- TODO: The following message too late if a monster squashed by going up,
   -- unless it's ironic. ;) The same below.
   s2 <- get
-  return $ if maybe H.Camping snd (squit s2) == H.Victor
+  return $ if maybe Camping snd (squit s2) == Victor
     then (True, "")
     else (True, actorVerb coactor tm "find" "a way upstairs")
 eff Effect.Descend _ source target power = do
@@ -238,7 +237,7 @@ eff Effect.Descend _ source target power = do
     then squashActor source target
     else effLvlGoUp (- (power + 1))
   s2 <- get
-  return $ if maybe H.Camping snd (squit s2) == H.Victor
+  return $ if maybe Camping snd (squit s2) == Victor
     then (True, "")
     else (True, actorVerb coactor tm "find" "a way downstairs")
 
@@ -346,7 +345,7 @@ fleeDungeon = do
   recordHistory  -- Prevent repeating the ending msgs.
   when (not go) $ abortWith "Game resumed."
   let (items, total) = calculateTotal coitem s
-  modify (\ st -> st {squit = Just (False, H.Victor)})
+  modify (\ st -> st {squit = Just (False, Victor)})
   if total == 0
   then do
     -- The player can back off at each of these steps.
@@ -361,7 +360,7 @@ fleeDungeon = do
     io <- itemOverlay True True items
     tryIgnore $ do
       displayOverAbort winMsg io
-      modify (\ st -> st {squit = Just (True, H.Victor)})
+      modify (\ st -> st {squit = Just (True, Victor)})
 
 -- | The source actor affects the target actor, with a given item.
 -- If the event is seen, the item may get identified.
@@ -504,7 +503,7 @@ checkPartyDeath = do
 gameOver :: Bool -> Action ()
 gameOver showEndingScreens = do
   slid <- gets slid
-  modify (\ st -> st {squit = Just (False, H.Killed slid)})
+  modify (\ st -> st {squit = Just (False, Killed slid)})
   when showEndingScreens $ do
     Kind.COps{coitem} <- getCOps
     s <- get
@@ -528,12 +527,12 @@ gameOver showEndingScreens = do
         loseMsg = failMsg ++ " Killing you was worth " ++
                   show total ++ " gold and some junk."  -- TODO: use the name of the '$' item instead
     if null items
-      then modify (\ st -> st {squit = Just (True, H.Killed slid)})
+      then modify (\ st -> st {squit = Just (True, Killed slid)})
       else do
         io <- itemOverlay True True items
         tryIgnore $ do
           displayOverAbort loseMsg io
-          modify (\ st -> st {squit = Just (True, H.Killed slid)})
+          modify (\ st -> st {squit = Just (True, Killed slid)})
 
 -- | Create a list of item names, split into many overlays.
 itemOverlay ::Bool -> Bool -> [Item] -> Action [Overlay]
