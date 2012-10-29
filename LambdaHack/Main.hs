@@ -13,14 +13,13 @@ import qualified Content.RuleKind
 import qualified Content.TileKind
 import Game.LambdaHack.Turn
 import Game.LambdaHack.Action
-import qualified Game.LambdaHack.BindingAction as BindingAction
-import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.BindingAction
 
--- | Fire up the frontend with the engine fueled by content and config.
+-- | Fire up the frontend with the engine fueled by content.
 -- Which of the frontends is run depends on the flags supplied
 -- when compiling the engine library.
 main :: IO ()
-main = do
+main =
   let cops = Kind.COps
         { coactor = Kind.createOps Content.ActorKind.cdefs
         , cocave  = Kind.createOps Content.CaveKind.cdefs
@@ -30,7 +29,4 @@ main = do
         , corule  = Kind.createOps Content.RuleKind.cdefs
         , cotile  = Kind.createOps Content.TileKind.cdefs
         }
-      configDefault = rconfigDefault $ Kind.stdRuleset (Kind.corule cops)
-  config <- mkConfig $ configDefault
-  let binding = BindingAction.stdBinding config
-  startFrontend cops binding config handleTurn
+  in startFrontend cops stdBinding handleTurn

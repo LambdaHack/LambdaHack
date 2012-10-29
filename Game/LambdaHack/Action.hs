@@ -21,7 +21,7 @@ module Game.LambdaHack.Action
     -- * Clip init operations
   , startClip, remember, rememberList
     -- * Assorted primitives
-  , saveGameBkp, dumpCfg, endOrLoop, frontendName, startFrontend, mkConfig
+  , saveGameBkp, dumpCfg, endOrLoop, frontendName, startFrontend
   , debug
   ) where
 
@@ -392,18 +392,22 @@ gameResetAction config cops = liftIO $ gameReset config cops
 -- in particular verify content consistency.
 -- Then create the starting game config from the default config file
 -- and initialize the engine with the starting session.
-startFrontend :: Kind.COps -> Binding (ActionFrame ()) -> Config.CP
+startFrontend :: Kind.COps -> (Config.CP -> Binding (ActionFrame ()))
               -> Action () -> IO ()
-startFrontend !scops !sbinding !sconfig handleTurn = do
-  -- The only option taken not from config in savegame, but from fresh config.
-  let sorigConfig = sconfig
+startFrontend !scops@Kind.COps{corule} stdBinding handleTurn = do
+  let configDefault = rconfigDefault $ Kind.stdRuleset corule
+  sconfig <- ConfigIO.mkConfig configDefault
+  let !sbinding = stdBinding sconfig
+      !sorigConfig = sconfig
+      -- The only option taken not from config in savegame,
+      -- but from current config file, possibly from user directory.
       configFont = fromMaybe "" $ Config.getOption sconfig "ui" "font"
-      -- In addition to handling th eturn, if the game ends or exits,
+      -- In addition to handling the turn, if the game ends or exits,
       -- handle the diary and backup savefile.
       handleGame = do
         handleTurn
         diary <- getDiary
-        -- Save diary often in case of crashes.
+        -- Save diary often, at each game exit, in case of crashes.
         liftIO $ Save.rmBkpSaveDiary sconfig diary
       loop sfs = start sconfig Session{..} handleGame
   startup configFont loop
@@ -437,10 +441,6 @@ start config slowSess handleGame = do
         -- This overwrites the "Really save/quit?" messages.
         diary{sreport = singletonReport msg}
         handleGame
-
--- TODO: remove that
-mkConfig :: String -> IO Config.CP
-mkConfig = ConfigIO.mkConfig
 
 -- | Debugging.
 debug :: String -> Action ()
