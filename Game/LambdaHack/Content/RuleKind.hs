@@ -35,6 +35,7 @@ data RuleKind = RuleKind
   , rpathsVersion     :: Version  -- ^ the version of the game
   , ritemMelee        :: [Char]   -- ^ symbols of melee weapons
   , ritemProject      :: [Char]   -- ^ symbols of items AI can project
+  , rconfigDefault    :: String   -- ^ the default config file of the game
   , rmainMenuArt      :: String   -- ^ the ASCII art for the Main Menu
   }
 

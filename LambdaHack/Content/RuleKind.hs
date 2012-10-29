@@ -1,8 +1,6 @@
-{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE CPP, QuasiQuotes #-}
 -- | Game rules and assorted data for LambdaHack.
 module Content.RuleKind ( cdefs ) where
-
-import Multiline
 
 -- Cabal
 import qualified Paths_LambdaHack as Self (getDataFileName, version)
@@ -12,6 +10,7 @@ import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.CDefs
+import Multiline
 
 cdefs :: CDefs RuleKind
 cdefs = CDefs
@@ -42,6 +41,15 @@ standard = RuleKind
   , rpathsVersion  = Self.version
   , ritemMelee     = ")"
   , ritemProject   = "!?|/"
+  -- The string containing the default configuration
+  -- included from file config.default.
+  -- Warning: cabal does not detect that the default config is changed,
+  -- so touching this file is needed to reinclude config and recompile.
+  -- Note: consider code.haskell.org/~dons/code/compiled-constants
+  -- as soon as the config file grows very big.
+  , rconfigDefault = [multiline|
+#include "../../config.default"
+|]
   -- ASCII art for the Main Menu. Only pure 7-bit ASCII characters are
   -- allowed. The picture should be exactly 24 rows by 80 columns,
   -- plus an extra frame of any charecters that is ignored for all purposes.
