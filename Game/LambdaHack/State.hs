@@ -31,19 +31,24 @@ import Game.LambdaHack.Time
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Content.FactionKind
 
--- | The diary contains all the player data
--- that carries over from game to game.
--- That includes the last message, previous messages and otherwise recorded
--- history of past games. This can be used for calculating player
--- achievements, unlocking advanced game features and general data mining.
+-- | The diary contains all the player data that carries over
+-- from game to game, even across playing sessions. That includes
+-- the last message, previous messages and otherwise recorded
+-- history of past games. This can be extended with other data and used for
+-- calculating player achievements, unlocking advanced game features and
+-- for general data mining, e.g., augmenting AI or procedural content
+-- generation.
 data Diary = Diary
-  { sreport     :: Report
+  { sreport  :: Report
   , shistory :: History
   }
 
--- | The state of a single game that can be save and restored.
--- In practice, we maintain some extra state, but it's
--- temporary for a single turn or relevant only to the current session.
+-- TODO: stakeTime and squit are also temporary, move them to
+-- DungeonPerception and rename it to TurnCache, if more appear, e.g. AI stuff.
+-- | The state of a single game that can be saved and restored.
+-- It's completely disregarded and reset when a new game is started.
+-- In practice, we maintain some extra state (DungeonPerception),
+-- but it's only temporary, existing for a single turn and then invalidated.
 data State = State
   { splayer  :: ActorId      -- ^ represents the player-controlled actor
   , scursor  :: Cursor       -- ^ cursor location and level to return to
@@ -53,10 +58,10 @@ data State = State
   , slid     :: Dungeon.LevelId  -- ^ identifier of the current level
   , scounter :: Int          -- ^ stores next actor index
   , srandom  :: R.StdGen     -- ^ current random generator
-  , sconfig  :: Config.CP    -- ^ game config
+  , sconfig  :: Config.CP    -- ^ this game's config (including initial RNG)
   , stakeTime :: Maybe Bool  -- ^ last command unexpectedly took some time
-  , squit    :: Maybe (Bool, Status)  -- ^ cause of game shutdown/reset
-  , sfaction :: Kind.Id FactionKind     -- ^ our faction
+  , squit    :: Maybe (Bool, Status)  -- ^ cause of game end/exit
+  , sfaction :: Kind.Id FactionKind   -- ^ our faction
   , sdebug   :: DebugMode    -- ^ debugging mode
   }
   deriving Show

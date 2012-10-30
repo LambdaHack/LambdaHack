@@ -128,7 +128,9 @@ whenFrame False _ = returnNoFrame ()
 inFrame :: Action () -> ActionFrame ()
 inFrame act = act >> returnNoFrame ()
 
--- | The constant session information, not saved to the game save file.
+-- | The information that is constant across a playing session,
+-- including many consecutive games in a single session,
+-- but is completely disregarded and reset when a new playing session starts.
 data Session = Session
   { sfs   :: FrontendSession           -- ^ frontend session information
   , scops :: Kind.COps                 -- ^ game content
