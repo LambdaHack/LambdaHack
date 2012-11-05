@@ -479,7 +479,7 @@ summonMonsters n loc = do
   mk <- rndToAction $ opick "summon" inFaction
   hp <- rndToAction $ rollDice $ ahp $ okind mk
   modify (\ s -> iterate (addMonster cotile mk hp loc
-                            bfaction (Just AIDefender)) s !! n)
+                            bfaction False) s !! n)
 
 -- | Remove dead heroes (or dead dominated monsters). Check if game is over.
 -- For now we only check the selected hero and at current level,

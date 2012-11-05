@@ -113,7 +113,7 @@ handleActors subclipStart = do
     Nothing -> when (subclipStart == timeZero) $ displayFramePush Nothing
     Just (actor, m) -> do
       advanceTime True actor  -- advance time while the actor still alive
-      if actor == pl || bfaction m == sfaction && bai m == Nothing
+      if actor == pl || bfaction m == sfaction && not (bproj m)
         then
           -- Player moves always start a new subclip.
           startClip $ do
@@ -140,14 +140,9 @@ handleActors subclipStart = do
 handleMonster :: ActorId -> Action ()
 handleMonster actor = do
   debug "handleMonster"
-  cops  <- getCOps
+  cops <- getCOps
   state <- get
   per <- getPerception
-  body <- gets (getActor actor)
-  let strategy = case bai body of
-        Nothing -> assert `failure` ("handleMonster: not AI controlled", actor)
-        Just AIDefender   -> strategyDefender
-        Just AIProjectile -> strategyProjectile
   -- Run the AI: choses an action from those given by the AI strategy.
   join $ rndToAction $
            frequency (head (runStrategy (strategy cops actor state per)))
@@ -242,7 +237,7 @@ advanceTime forward actor = do
   -- A hack to synchronize the whole party:
   body <- gets (getActor actor)
   when (actor == pl) $ do
-    let updParty m = if bfaction m == sfaction && bai m == Nothing
+    let updParty m = if bfaction m == sfaction && not (bproj m)
                      then m {btime = btime body}
                      else m
     modify (updateLevel (updateActorDict (IM.map updParty)))

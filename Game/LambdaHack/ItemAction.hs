@@ -103,7 +103,7 @@ projectGroupItem source tloc _verb item = do
         if sourceVis
         then sm
         else template (heroKindId coactor)
-               Nothing (Just "somebody") 99 sloc timeZero sfaction Nothing
+               Nothing (Just "somebody") 99 sloc timeZero sfaction False
       -- When projecting, the first turn is spent aiming.
       -- The projectile is seen one tile from the actor, giving a hint
       -- about the aim and letting the target evade.

@@ -6,6 +6,7 @@ module Game.LambdaHack.Content.ActorKind
 import qualified Data.List as L
 import qualified Data.Ord as Ord
 
+import Game.LambdaHack.Ability
 import Game.LambdaHack.Color
 import qualified Game.LambdaHack.Random as Random
 import Game.LambdaHack.Misc
@@ -25,6 +26,7 @@ data ActorKind = ActorKind
   , asmell  :: !Bool             -- ^ can it smell?
   , aiq     :: !Int              -- ^ intelligence
   , aregen  :: !Int              -- ^ number of turns to regenerate 1 HP
+  , acanDo  :: ![Ability]        -- ^ the set of supported abilities
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 

@@ -1,6 +1,7 @@
 -- | Monsters and heroes for LambdaHack.
 module Content.ActorKind ( cdefs ) where
 
+import Game.LambdaHack.Ability
 import Game.LambdaHack.Color
 import Game.LambdaHack.CDefs
 import Game.LambdaHack.Content.ActorKind
@@ -29,6 +30,7 @@ hero = ActorKind
   , asmell  = False
   , aiq     = 13  -- Can see hidden doors, when he is under alien control.
   , aregen  = 500
+  , acanDo  = [minBound..maxBound]
   }
 
 projectile = ActorKind  -- includes homing missiles
@@ -42,6 +44,7 @@ projectile = ActorKind  -- includes homing missiles
   , asmell  = False
   , aiq     = 0
   , aregen  = maxBound
+  , acanDo  = [Continue]
   }
 
 eye = ActorKind
@@ -55,6 +58,7 @@ eye = ActorKind
   , asmell  = False
   , aiq     = 8
   , aregen  = 100
+  , acanDo  = [minBound..maxBound]
   }
 fastEye = ActorKind
   { asymbol = 'e'
@@ -67,6 +71,7 @@ fastEye = ActorKind
   , asmell  = False
   , aiq     = 12
   , aregen  = 5  -- Regenerates fast (at max HP most of the time!).
+  , acanDo  = [minBound..maxBound]
   }
 nose = ActorKind
   { asymbol = 'n'
@@ -79,4 +84,5 @@ nose = ActorKind
   , asmell  = True
   , aiq     = 0
   , aregen  = 100
+  , acanDo  = [minBound..maxBound]
   }

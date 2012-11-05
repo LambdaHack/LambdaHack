@@ -1,6 +1,6 @@
 -- | AI strategy operations implemented with the 'Action' monad.
 module Game.LambdaHack.StrategyAction
-  ( strategyDefender, strategyProjectile
+  ( strategy
   ) where
 
 import qualified Data.List as L
@@ -11,6 +11,7 @@ import Control.Monad.State hiding (State, state)
 import Control.Arrow
 
 import Game.LambdaHack.Utils.Assert
+import qualified Game.LambdaHack.Ability as Ability
 import Game.LambdaHack.Point
 import Game.LambdaHack.Vector
 import Game.LambdaHack.Level
@@ -66,10 +67,12 @@ and moves into the approximate direction of the hero.
 
 -- TODO: improve, split up, etc.
 -- | Monster AI strategy based on monster sight, smell, intelligence, etc.
-strategyDefender :: Kind.COps -> ActorId -> State -> Perception
-                 -> Strategy (Action ())
-strategyDefender cops actor oldState@State{splayer = pl, sfaction} per =
-  strat
+strategy :: Kind.COps -> ActorId -> State -> Perception
+         -> Strategy (Action ())
+strategy cops actor oldState@State{splayer = pl, sfaction} per =
+  case acanDo mk of
+    [Ability.Continue] -> strategyProjectile cops actor oldState per -- TODO: a hack
+    _ -> strat
  where
   Kind.COps{ cotile
            , coactor=coactor@Kind.Ops{okind}

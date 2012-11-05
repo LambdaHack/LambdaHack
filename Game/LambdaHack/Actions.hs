@@ -352,8 +352,8 @@ actorAttackActor source target = do
   sm <- gets (getActor source)
   tm <- gets (getActor target)
   sfaction <- gets sfaction
-  if bfaction sm == sfaction && bai sm == Nothing &&
-     bfaction tm == sfaction && bai tm == Nothing
+  if bfaction sm == sfaction && not (bproj sm) &&
+     bfaction tm == sfaction && not (bproj tm)
     then do
       -- Select adjacent hero by bumping into him. Takes no time, so rewind.
       selectPlayer target
@@ -459,7 +459,7 @@ rollMonster Kind.COps{ cotile
       bfaction <- fopick "spawn" (const True)
       mk <- opick (foname bfaction) (const True)
       hp <- rollDice $ ahp $ okind mk
-      return $ addMonster cotile mk hp loc bfaction (Just AIDefender) state
+      return $ addMonster cotile mk hp loc bfaction False state
 
 -- | Generate a monster, possibly.
 generateMonster :: Action ()

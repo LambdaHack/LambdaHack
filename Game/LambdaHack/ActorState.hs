@@ -34,7 +34,7 @@ import Game.LambdaHack.Time
 isProjectile :: State -> ActorId -> Bool
 isProjectile s a =
   let (_, actor, _) = findActorAnyLevel a s
-  in bai actor == Just AIProjectile
+  in bproj actor
 
 -- TODO: currently it's false for player-controlled monsters.
 -- When it's no longer, rewrite the places where it matters.
@@ -42,13 +42,13 @@ isProjectile s a =
 isAHero :: State -> ActorId -> Bool
 isAHero s a =
   let (_, actor, _) = findActorAnyLevel a s
-  in bfaction actor == sfaction s && bai actor /= Just AIProjectile
+  in bfaction actor == sfaction s && not (bproj actor)
 
 -- | Checks whether an actor identifier represents a monster.
 isAMonster :: State -> ActorId -> Bool
 isAMonster s a =
   let (_, actor, _) = findActorAnyLevel a s
-  in bfaction actor /= sfaction s && bai actor /= Just AIProjectile
+  in bfaction actor /= sfaction s && not (bproj actor)
 
 -- TODO: move to TileState if ever created.
 -- | How long until an actor's smell vanishes from a tile.
@@ -164,29 +164,24 @@ deletePlayer s@State{splayer} = deleteActor splayer s
 heroAssocs, hostileAssocs, dangerousAssocs, allButHeroesAssocs
   :: Kind.Id FactionKind -> Level -> [(ActorId, Actor)]
 heroAssocs sfaction lvl =
-  filter (\ (_, m) -> bfaction m == sfaction
-                      && bai m /= Just AIProjectile) $
+  filter (\ (_, m) -> bfaction m == sfaction && not (bproj m)) $
     IM.toList $ lactor lvl
 hostileAssocs sfaction lvl =
-  filter (\ (_, m) -> bfaction m /= sfaction
-                      && bai m /= Just AIProjectile) $
+  filter (\ (_, m) -> bfaction m /= sfaction && not (bproj m)) $
     IM.toList $ lactor lvl
 dangerousAssocs sfaction lvl =
   filter (\ (_, m) -> bfaction m /= sfaction) $
     IM.toList $ lactor lvl
 allButHeroesAssocs sfaction lvl =
-  filter (\ (_, m) -> bfaction m /= sfaction
-                      || bai m == Just AIProjectile) $
+  filter (\ (_, m) -> bfaction m /= sfaction || bproj m) $
     IM.toList $ lactor lvl
 
 heroList, hostileList, dangerousList :: State -> [Actor]
 heroList state@State{sfaction} =
-  filter (\ m -> bfaction m == sfaction
-                 && bai m /= Just AIProjectile) $
+  filter (\ m -> bfaction m == sfaction && not (bproj m)) $
     IM.elems $ lactor $ slevel state
 hostileList state@State{sfaction} =
-  filter (\ m -> bfaction m /= sfaction
-                 && bai m /= Just AIProjectile) $
+  filter (\ m -> bfaction m /= sfaction && not (bproj m)) $
     IM.elems $ lactor $ slevel state
 dangerousList state@State{sfaction} =
   filter (\ m -> bfaction m /= sfaction) $
@@ -256,7 +251,7 @@ addHero Kind.COps{coactor, cotile} ploc state@State{scounter, sfaction} =
       name = findHeroName config n
       startHP = bHP `div` min 5 (n + 1)
       m = template (heroKindId coactor) (Just symbol) (Just name)
-                   startHP loc (stime state) sfaction Nothing
+                   startHP loc (stime state) sfaction False
       cstate = state { scounter = scounter + 1 }
   in updateLevel (updateActorDict (IM.insert scounter m)) cstate
 
@@ -271,10 +266,10 @@ initialHeroes cops ploc state =
 -- | Create a new monster in the level, at a given position
 -- and with a given actor kind and HP.
 addMonster :: Kind.Ops TileKind -> Kind.Id ActorKind -> Int -> Point
-           -> Kind.Id FactionKind -> Maybe AIAlgo -> State -> State
-addMonster cotile mk hp ploc bfaction bai state@State{scounter} = do
+           -> Kind.Id FactionKind -> Bool -> State -> State
+addMonster cotile mk hp ploc bfaction bproj state@State{scounter} = do
   let loc = nearbyFreeLoc cotile ploc state
-      m = template mk Nothing Nothing hp loc (stime state) bfaction bai
+      m = template mk Nothing Nothing hp loc (stime state) bfaction bproj
       cstate = state {scounter = scounter + 1}
   updateLevel (updateActorDict (IM.insert scounter m)) cstate
 
@@ -304,7 +299,7 @@ addProjectile Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}}
         , bletter = 'a'
         , btime
         , bfaction
-        , bai     = Just AIProjectile
+        , bproj   = True
         }
       cstate = state { scounter = scounter + 1 }
       upd = updateActorDict (IM.insert scounter m)

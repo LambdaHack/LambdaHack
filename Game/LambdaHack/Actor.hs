@@ -4,7 +4,7 @@ module Game.LambdaHack.Actor
   ( -- * Actor identifiers and related operations
     ActorId, findHeroName, monsterGenChance
     -- * The@ Acto@r type
-  , Actor(..), AIAlgo(..), template, addHp, unoccupied, heroKindId
+  , Actor(..), template, addHp, unoccupied, heroKindId
   , projectileKindId, actorSpeed
     -- * Type of na actor target
   , Target(..)
@@ -26,20 +26,6 @@ import qualified Game.LambdaHack.Config as Config
 import Game.LambdaHack.Time
 import qualified Game.LambdaHack.Color as Color
 
--- | Kinds of AI algorithms.
-data AIAlgo = AIDefender | AIProjectile
-  deriving (Show, Eq, Ord)
-
-instance Binary AIAlgo where
-  put AIDefender   = putWord8 0
-  put AIProjectile = putWord8 1
-  get = do
-    tag <- getWord8
-    case tag of
-      0 -> return AIDefender
-      1 -> return AIProjectile
-      _ -> fail "no parse (AIAlgo)"
-
 -- | Actor properties that are changing throughout the game.
 -- If they are dublets of properties from @ActorKind@,
 -- they are usually modified temporarily, but tend to return
@@ -57,7 +43,8 @@ data Actor = Actor
   , bletter  :: !Char                   -- ^ next inventory letter
   , btime    :: !Time                   -- ^ absolute time of next action
   , bfaction :: !(Kind.Id FactionKind)  -- ^ to which faction the actor belongs
-  , bai      :: !(Maybe AIAlgo)         -- ^ under control of this AI algorithm
+  , bproj    :: !Bool                   -- ^ is a projectile? (shorthand only,
+                                        -- ^ this can be deduced from bkind)
   }
   deriving Show
 
@@ -75,7 +62,7 @@ instance Binary Actor where
     put bletter
     put btime
     put bfaction
-    put bai
+    put bproj
   get = do
     bkind   <- get
     bsymbol <- get
@@ -89,7 +76,7 @@ instance Binary Actor where
     bletter <- get
     btime   <- get
     bfaction <- get
-    bai     <- get
+    bproj    <- get
     return Actor{..}
 
 -- ActorId operations
@@ -122,8 +109,8 @@ monsterGenChance depth numMonsters =
 -- | A template for a new non-projectile actor. The initial target is invalid
 -- to force a reset ASAP.
 template :: Kind.Id ActorKind -> Maybe Char -> Maybe String -> Int -> Point
-         -> Time -> Kind.Id FactionKind -> Maybe AIAlgo -> Actor
-template bkind bsymbol bname bhp bloc btime bfaction bai =
+         -> Time -> Kind.Id FactionKind -> Bool -> Actor
+template bkind bsymbol bname bhp bloc btime bfaction bproj =
   let bcolor  = Nothing
       bspeed  = Nothing
       btarget = invalidTarget

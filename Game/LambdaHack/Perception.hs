@@ -128,8 +128,7 @@ levelPerception cops@Kind.COps{cotile}
                       computeReachable cops radius mode smarkVision m lvl)
         else Nothing
       (mLoc, mPer) = (fmap fst mLocPer, fmap snd mLocPer)
-      hs = IM.filter (\ m -> bfaction m == sfaction
-                             && bai m == Nothing) lactor
+      hs = IM.filter (\ m -> bfaction m == sfaction && not (bproj m)) lactor
       pers = IM.map (\ h ->
                       computeReachable cops radius mode smarkVision h lvl) hs
       locs = map bloc $ IM.elems hs
