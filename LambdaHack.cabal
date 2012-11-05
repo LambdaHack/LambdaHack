@@ -69,7 +69,8 @@ flag std
   default:         False
 
 library
-  exposed-modules: Game.LambdaHack.Action,
+  exposed-modules: Game.LambdaHack.Ability,
+                   Game.LambdaHack.Action,
                    Game.LambdaHack.Action.ActionLift
                    Game.LambdaHack.Action.ConfigIO
                    Game.LambdaHack.Action.Frontend,
@@ -95,6 +96,7 @@ library
                    Game.LambdaHack.Content.ItemKind,
                    Game.LambdaHack.Content.PlaceKind,
                    Game.LambdaHack.Content.RuleKind,
+                   Game.LambdaHack.Content.StrategyKind,
                    Game.LambdaHack.Content.TileKind,
                    Game.LambdaHack.Draw,
                    Game.LambdaHack.Dungeon,
@@ -181,6 +183,7 @@ executable LambdaHack
                    Content.ItemKind,
                    Content.PlaceKind,
                    Content.RuleKind,
+                   Content.StrategyKind,
                    Content.TileKind,
                    Multiline,
                    Paths_LambdaHack

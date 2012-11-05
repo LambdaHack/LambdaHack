@@ -1,5 +1,5 @@
 {-# LANGUAGE CPP, QuasiQuotes #-}
--- | Game rules and assorted data for LambdaHack.
+-- | Game rules and assorted game setup data for LambdaHack.
 module Content.RuleKind ( cdefs ) where
 
 -- Cabal
