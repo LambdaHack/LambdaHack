@@ -143,11 +143,11 @@ handleMonster actor = do
   state <- get
   per <- getPerception
   -- Choose a target from those proposed by AI for the actor.
-  btarget <- rndToAction $ rollStrategy (pickTarget cops actor state per)
+  btarget <- rndToAction $ rollStrategy (targetStrategy cops actor state per)
   updateAnyActor actor $ \ m -> m { btarget }
   stateNew <- get
   -- Run the AI: choses an action from those given by the AI strategy.
-  join $ rndToAction $ rollStrategy (strategy cops actor stateNew per)
+  join $ rndToAction $ rollStrategy (strategy cops actor stateNew)
 
 -- | Handle the move of the hero.
 handlePlayer :: Action ()
