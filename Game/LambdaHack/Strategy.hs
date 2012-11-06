@@ -1,11 +1,13 @@
 -- | AI strategies to direct actors not controlled by the player.
 -- No operation in this module involves the 'State' or 'Action' type.
 module Game.LambdaHack.Strategy
-  ( Strategy(..), nullStrat, liftFrequency, (.|), reject, (.=>), only
+  ( Strategy(..){- TODO: make abstract-}, nullStrat, liftFrequency
+  , (.|), reject, (.=>), only, rollStrategy
   ) where
 
 import Control.Monad
 
+import Game.LambdaHack.Random
 import Game.LambdaHack.Utils.Frequency
 
 -- | A strategy is a choice of (non-empty) frequency tables
@@ -62,3 +64,7 @@ only :: (a -> Bool) -> Strategy a -> Strategy a
 only p s = do
   x <- s
   p x .=> return x
+
+-- | Roll an element from a strategy. Fails if the strategy is empty.
+rollStrategy :: Show a => Strategy a -> Rnd a
+rollStrategy = frequency . head . runStrategy

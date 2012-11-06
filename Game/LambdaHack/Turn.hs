@@ -18,7 +18,6 @@ import qualified Game.LambdaHack.Binding as Binding
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Level
-import Game.LambdaHack.Random
 import Game.LambdaHack.State
 import Game.LambdaHack.Strategy
 import Game.LambdaHack.StrategyAction
@@ -143,9 +142,12 @@ handleMonster actor = do
   cops <- getCOps
   state <- get
   per <- getPerception
+  -- Choose a target from those proposed by AI for the actor.
+  btarget <- rndToAction $ rollStrategy (pickTarget cops actor state per)
+  updateAnyActor actor $ \ m -> m { btarget }
+  stateNew <- get
   -- Run the AI: choses an action from those given by the AI strategy.
-  join $ rndToAction $
-           frequency (head (runStrategy (strategy cops actor state per)))
+  join $ rndToAction $ rollStrategy (strategy cops actor stateNew per)
 
 -- | Handle the move of the hero.
 handlePlayer :: Action ()
