@@ -6,11 +6,13 @@ module Game.LambdaHack.StrategyAction
 import qualified Data.List as L
 import qualified Data.IntMap as IM
 import Data.Maybe
+import Data.Function
 import Control.Monad
 import Control.Monad.State hiding (State, state)
 import Control.Arrow
 
 import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Ability (Ability)
 import qualified Game.LambdaHack.Ability as Ability
 import Game.LambdaHack.Point
 import Game.LambdaHack.Vector
@@ -97,26 +99,38 @@ targetStrategy cops actor oldState@State{splayer = pl, sfaction} per =
 -- | Monster AI strategy based on monster sight, smell, intelligence, etc.
 strategy :: Kind.COps -> ActorId -> State -> Strategy (Action ())
 strategy cops actor oldState =
-  strat
+  sumS prefix .| combineDistant distant .| sumS suffix
+  .| waitNow  -- wait until friends move out of the way
  where
-  Actor{ bloc, btarget } = getActor actor oldState
+  Kind.COps{coactor=Kind.Ops{okind}} = cops
+  Actor{ bkind, bloc, btarget } = getActor actor oldState
   (floc, foeVisible) = case btarget of
      TEnemy _ l -> (l, True)
      TLoc l     -> (l, False)
      TPath _    -> (bloc, False)  -- a missile
      TCursor    -> (bloc, False)  -- an actor blocked by friends
-  strat =
-    track cops actor oldState
-    .| foeVisible .=> melee actor oldState floc
-    .| foeVisible .=> liftFrequency seenFreqs
-    .| pickup actor oldState
-    .| wander cops actor oldState
-    .| waitNow  -- wait until friends move out of the way
-  seenFreqs = rangedFreq cops actor oldState floc
-              `mplus` toolsFreq cops actor oldState
-              `mplus` chaseFreq
+  combineDistant as = foeVisible .=> liftFrequency (sumF as)
+  aFrequency :: Ability -> Frequency (Action ())
+  aFrequency Ability.Ranged = rangedFreq cops actor oldState floc
+  aFrequency Ability.Tools  = toolsFreq cops actor oldState
+  aFrequency Ability.Chase  = chaseFreq
+  aFrequency _              = assert `failure` distant
   chaseFreq = scaleFreq 30 $ head $ runStrategy $
                 chase cops actor oldState
+  aStrategy :: Ability -> Strategy (Action ())
+  aStrategy Ability.Track  = track cops actor oldState
+  aStrategy Ability.Heal   = mzero  -- TODO
+  aStrategy Ability.Flee   = mzero  -- TODO
+  aStrategy Ability.Melee  = foeVisible .=> melee actor oldState floc
+  aStrategy Ability.Pickup = pickup actor oldState
+  aStrategy Ability.Wander = wander cops actor oldState
+  aStrategy _              = assert `failure` actorAbilities
+  actorAbilities = acanDo $ okind bkind
+  isDistant = (`elem` [Ability.Ranged, Ability.Tools, Ability.Chase])
+  (prefix, rest)    = L.break isDistant actorAbilities
+  (distant, suffix) = L.partition isDistant rest
+  sumS = msum . map aStrategy
+  sumF = msum . map aFrequency
 
 dirToAction :: ActorId -> Bool -> Vector -> Action ()
 dirToAction actor allowAttacks dir = do
@@ -256,11 +270,10 @@ moveStrategy cops actor oldState newTargetSet =
   else
    let movesNotBack =
          maybe id (\ (d, _) -> L.filter (/= neg d)) ad $ sensible
-       byFst f (_, s1) (_, s2) = f s1 s2
        smells =
          map (map fst)
-         $ L.groupBy (byFst (==))
-         $ L.sortBy (byFst (flip compare))
+         $ L.groupBy ((==) `on` snd)
+         $ L.sortBy (flip compare `on` snd)
          $ L.filter (\ (_, s) -> s > timeZero)
          $ L.map (\ x ->
                    let sm = IM.findWithDefault timeZero (bloc `shift` x) lsmell
