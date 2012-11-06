@@ -50,13 +50,13 @@ targetStrategy cops actor oldState@State{splayer = pl, sfaction} per =
   mk = okind ak
   delState = deleteActor actor oldState
   enemyVisible a l =
-    asight mk &&
-    isAHero delState a &&
-    monsterSeesHero cotile per lvl actor a me l
+    asight mk
+    && isAHero delState a
+    && monsterSeesHero cotile per lvl actor a me l
     -- Enemy can be felt if adjacent (e. g., a player-controlled monster).
     -- TODO: can this be replaced by setting 'lights' to [me]?
-    || (asmell mk || asight mk)
-       && adjacent lxsize me l
+    || adjacent lxsize me l
+       && (asmell mk || asight mk)
   focusedMonster = actorSpeed coactor actorBody <= speedNormal
   retarget :: Target -> Strategy Target
   retarget tgt =
@@ -89,77 +89,10 @@ targetStrategy cops actor oldState@State{splayer = pl, sfaction} per =
         minTargets = map (\ (a, l) -> TEnemy a l) minFoes
         minTgtS = liftFrequency $ uniformFreq "closest" minTargets
     in minTgtS .| noFoes .| return TCursor
+  -- TODO: set distant targets so that monsters behave as if they have
+  -- a plan. We need pathfinding for that.
   noFoes :: Strategy Target
-  noFoes = liftM (TLoc . (me `shift`)) $ moveAround cops actor oldState
-
--- | AI finds interesting moves in the absense of visible foes.
--- This strategy can be null (e.g., if the actor is blocked by friends).
-moveAround :: Kind.COps -> ActorId -> State -> Strategy Vector
-moveAround cops actor oldState =
-  onlySensible $
-  (if asight mk then onlyNoMs else id) $
-    asmell mk .=> L.foldr ((.|) . return) reject smells
-    .| onlyOpenable moveFreely
-    .| moveFreely
- where
-  Kind.COps{ cotile
-           , coactor=Kind.Ops{okind}
-           , coitem
-           } = cops
-  lvl@Level{lsmell, lxsize, lysize, ltime} = slevel oldState
-  Actor{ bkind = ak, bloc, bdir = ad } = getActor actor oldState
-  bitems = getActorItem actor oldState
-  mk = okind ak
-  delState = deleteActor actor oldState
-  lootHere x     = not $ L.null $ lvl `atI` x
-  onlyLoot       = onlyMoves lootHere bloc
-  interestHere x = let t = lvl `at` x
-                       ts = map (lvl `at`) $ vicinity lxsize lysize x
-                   in Tile.hasFeature cotile F.Exit t ||
-                      -- Lit indirectly. E.g., a room entrance.
-                      (not (Tile.hasFeature cotile F.Lit t) &&
-                       L.any (Tile.hasFeature cotile F.Lit) ts)
-  onlyInterest   = onlyMoves interestHere bloc
-  onlyKeepsDir k =
-    only (\ x -> maybe True (\ (d, _) -> euclidDistSq lxsize d x <= k) ad)
-  onlyKeepsDir_9 = only (\ x -> maybe True (\ (d, _) -> neg x /= d) ad)
-  onlyNoMs       = onlyMoves (unoccupied (dangerousList delState)) bloc
-  -- Monsters don't see doors more secret than that. Enforced when actually
-  -- opening doors, too, so that monsters don't cheat. TODO: remove the code
-  -- duplication, though.
-  openPower      = timeScale timeTurn $
-                   case strongestSearch coitem bitems of
-                     Just i  -> aiq mk + jpower i
-                     Nothing -> aiq mk
-  openableHere   = openable cotile lvl openPower
-  onlyOpenable   = onlyMoves openableHere bloc
-  accessibleHere = accessible cops lvl bloc
-  onlySensible   = onlyMoves (\ l -> accessibleHere l || openableHere l) bloc
-  movesNotBack   = maybe id (\ (d, _) -> L.filter (/= neg d)) ad $ moves lxsize
-  smells         =
-    L.map fst $
-    L.sortBy (\ (_, s1) (_, s2) -> compare s2 s1) $
-    L.filter (\ (_, s) -> s > timeZero) $
-    L.map (\ x -> let sm = IM.findWithDefault timeZero (bloc `shift` x) lsmell
-                  in (x, max timeZero (sm `timeAdd` timeNegate ltime)))
-      movesNotBack
-  moveIQ = aiq mk > 15 .=> onlyKeepsDir 0 moveRandomly
-        .| aiq mk > 10 .=> onlyKeepsDir 1 moveRandomly
-        .| aiq mk > 5  .=> onlyKeepsDir 2 moveRandomly
-        .| onlyKeepsDir_9 moveRandomly
-  interestFreq =  -- don't detour towards an interest if already on one
-    if interestHere bloc
-    then []
-    else map (scaleFreq 3)
-           (runStrategy $ onlyInterest (onlyKeepsDir 2 moveRandomly))
-  interestIQFreq = interestFreq ++ runStrategy moveIQ
-  moveFreely = onlyLoot moveRandomly
-               .| liftFrequency (msum interestIQFreq)
-               .| moveRandomly
-  onlyMoves :: (Point -> Bool) -> Point -> Strategy Vector -> Strategy Vector
-  onlyMoves p l = only (\ x -> p (l `shift` x))
-  moveRandomly :: Strategy Vector
-  moveRandomly = liftFrequency $ uniformFreq "moveRandomly" (moves lxsize)
+  noFoes = liftM (TLoc . (me `shift`)) $ moveStrategy cops actor oldState False
 
 -- | Monster AI strategy based on monster sight, smell, intelligence, etc.
 strategy :: Kind.COps -> ActorId -> State -> Strategy (Action ())
@@ -300,40 +233,84 @@ toolsFreq cops actor oldState =
       let benefit = (1 + jpower i) * Effect.effectToBenefit (ieffect ik),
       benefit > 0, isymbol ik == '!']
 
-moveStrategy :: Kind.COps -> ActorId -> State -> Strategy Vector
-moveStrategy cops actor oldState =
-  if floc == bloc
-  then reject
-  else onlySensible $ onlyNoMs (towardsFoe moveFreely)
+-- | AI finds interesting moves in the absense of visible foes.
+-- This strategy can be null (e.g., if the actor is blocked by friends).
+moveStrategy :: Kind.COps -> ActorId -> State -> Bool -> Strategy Vector
+moveStrategy cops actor oldState newTargetSet =
+  if newTargetSet
+  then
+    let towardsFoe = let foeDir = towards lxsize bloc floc
+                     in only (\ x -> euclidDistSq lxsize foeDir x <= 1)
+        (floc, foeVisible) = case btarget of
+          TEnemy _ l -> (l, True)
+          TLoc l     -> (l, False)
+          _          -> (bloc, False)  -- we won't move
+    in if floc == bloc
+       then reject
+       else towardsFoe
+            $ if foeVisible
+              then moveClear -- enemies in sight, don't waste time for doors
+                   .| moveOpenable
+              else moveOpenable  -- no enemy in sight, explore doors
+                   .| moveClear
+  else
+   let movesNotBack =
+         maybe id (\ (d, _) -> L.filter (/= neg d)) ad $ sensible
+       byFst f (_, s1) (_, s2) = f s1 s2
+       smells =
+         map (map fst)
+         $ L.groupBy (byFst (==))
+         $ L.sortBy (byFst (flip compare))
+         $ L.filter (\ (_, s) -> s > timeZero)
+         $ L.map (\ x ->
+                   let sm = IM.findWithDefault timeZero (bloc `shift` x) lsmell
+                   in (x, sm `timeAdd` timeNegate ltime))
+             movesNotBack
+   in asmell mk .=> L.foldr ((.|) . liftFrequency
+                             . uniformFreq "smell k") reject smells
+      .| moveOpenable  -- no enemy in sight, explore doors
+      .| moveClear
  where
   Kind.COps{ cotile
            , coactor=Kind.Ops{okind}
            , coitem
            } = cops
-  lvl@Level{lxsize, lysize} = slevel oldState
+  lvl@Level{lsmell, lxsize, lysize, ltime} = slevel oldState
   Actor{ bkind = ak, bloc, bdir = ad, btarget } = getActor actor oldState
-  (floc, _foeVisible) = case btarget of
-   TEnemy _ l -> (l, True)
-   TLoc l     -> (l, False)
-   _          -> (bloc, False)  -- we won't move
   bitems = getActorItem actor oldState
   mk = okind ak
   delState = deleteActor actor oldState
-  towardsFoe     = let foeDir = towards lxsize bloc floc
-                   in only (\ x -> euclidDistSq lxsize foeDir x <= 1)
   lootHere x     = not $ L.null $ lvl `atI` x
   onlyLoot       = onlyMoves lootHere bloc
   interestHere x = let t = lvl `at` x
                        ts = map (lvl `at`) $ vicinity lxsize lysize x
-                   in Tile.hasFeature cotile F.Exit t ||
+                   in Tile.hasFeature cotile F.Exit t
                       -- Lit indirectly. E.g., a room entrance.
-                      (not (Tile.hasFeature cotile F.Lit t) &&
-                       L.any (Tile.hasFeature cotile F.Lit) ts)
+                      || (not (Tile.hasFeature cotile F.Lit t)
+                          && L.any (Tile.hasFeature cotile F.Lit) ts)
   onlyInterest   = onlyMoves interestHere bloc
   onlyKeepsDir k =
     only (\ x -> maybe True (\ (d, _) -> euclidDistSq lxsize d x <= k) ad)
   onlyKeepsDir_9 = only (\ x -> maybe True (\ (d, _) -> neg x /= d) ad)
-  onlyNoMs       = onlyMoves (unoccupied (dangerousList delState)) bloc
+  moveIQ = aiq mk > 15 .=> onlyKeepsDir 0 moveRandomly
+        .| aiq mk > 10 .=> onlyKeepsDir 1 moveRandomly
+        .| aiq mk > 5  .=> onlyKeepsDir 2 moveRandomly
+        .| onlyKeepsDir_9 moveRandomly
+  interestFreq | interestHere bloc =
+    []  -- don't detour towards an interest if already on one
+               | otherwise =
+    map (scaleFreq 7)
+      (runStrategy $ onlyInterest (onlyKeepsDir 2 moveRandomly))
+  interestIQFreq = interestFreq ++ runStrategy moveIQ
+  moveClear    = onlyMoves (not . openableHere) bloc moveFreely
+  moveOpenable = onlyMoves openableHere bloc moveFreely
+  moveFreely = onlyLoot moveRandomly
+               .| liftFrequency (msum interestIQFreq)
+               .| moveRandomly
+  onlyMoves :: (Point -> Bool) -> Point -> Strategy Vector -> Strategy Vector
+  onlyMoves p l = only (\ x -> p (l `shift` x))
+  moveRandomly :: Strategy Vector
+  moveRandomly = liftFrequency $ uniformFreq "moveRandomly" sensible
   -- Monsters don't see doors more secret than that. Enforced when actually
   -- opening doors, too, so that monsters don't cheat. TODO: remove the code
   -- duplication, though.
@@ -343,28 +320,14 @@ moveStrategy cops actor oldState =
                      Nothing -> aiq mk
   openableHere   = openable cotile lvl openPower
   accessibleHere = accessible cops lvl bloc
-  onlySensible   = onlyMoves (\ l -> accessibleHere l || openableHere l) bloc
-  moveIQ = aiq mk > 15 .=> onlyKeepsDir 0 moveRandomly
-        .| aiq mk > 10 .=> onlyKeepsDir 1 moveRandomly
-        .| aiq mk > 5  .=> onlyKeepsDir 2 moveRandomly
-        .| onlyKeepsDir_9 moveRandomly
-  interestFreq =  -- don't detour towards an interest if already on one
-    if interestHere bloc
-    then []
-    else map (scaleFreq 3)
-           (runStrategy $ onlyInterest (onlyKeepsDir 2 moveRandomly))
-  interestIQFreq = interestFreq ++ runStrategy moveIQ
-  moveFreely = onlyLoot moveRandomly
-               .| liftFrequency (msum interestIQFreq)
-               .| moveRandomly
-  onlyMoves :: (Point -> Bool) -> Point -> Strategy Vector -> Strategy Vector
-  onlyMoves p l = only (\ x -> p (l `shift` x))
-  moveRandomly :: Strategy Vector
-  moveRandomly = liftFrequency $ uniformFreq "moveRandomly" (moves lxsize)
+  noFriends | asight mk = unoccupied (dangerousList delState)
+            | otherwise = const True
+  isSensible l = noFriends l && (accessibleHere l || openableHere l)
+  sensible = filter (isSensible . (bloc `shift`)) (moves lxsize)
 
 chase :: Kind.COps -> ActorId -> State -> Strategy (Action ())
 chase cops actor oldState =
-  dirToAction actor False `liftM` moveStrategy cops actor oldState
+  dirToAction actor False `liftM` moveStrategy cops actor oldState True
 
 pickup :: ActorId -> State -> Strategy (Action ())
 pickup actor oldState =
@@ -377,4 +340,4 @@ pickup actor oldState =
 
 wander :: Kind.COps -> ActorId -> State -> Strategy (Action ())
 wander cops actor oldState =
-  dirToAction actor True `liftM` moveStrategy cops actor oldState
+  dirToAction actor True `liftM` moveStrategy cops actor oldState True
