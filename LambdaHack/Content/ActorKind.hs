@@ -44,7 +44,7 @@ projectile = ActorKind  -- includes homing missiles
   , asmell  = False
   , aiq     = 0
   , aregen  = maxBound
-  , acanDo  = [Continue]
+  , acanDo  = [Track]
   }
 
 eye = ActorKind

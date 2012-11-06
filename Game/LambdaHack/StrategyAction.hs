@@ -71,7 +71,7 @@ strategy :: Kind.COps -> ActorId -> State -> Perception
          -> Strategy (Action ())
 strategy cops actor oldState@State{splayer = pl, sfaction} per =
   case acanDo mk of
-    [Ability.Continue] -> strategyProjectile cops actor oldState per -- TODO: a hack
+    [Ability.Track] -> strategyProjectile cops actor oldState per -- TODO: a hack
     _ -> strat
  where
   Kind.COps{ cotile
@@ -93,14 +93,14 @@ strategy cops actor oldState@State{splayer = pl, sfaction} per =
     -- TODO: can this be replaced by setting 'lights' to [me]?
     || (asmell mk || asight mk)
        && adjacent lxsize me l
-  -- Below, "foe" is the hero (or a monster, or loc) chased by the actor.
+  -- Below, "foe" is the opponent chased by the actor.
   chase tgt =
     case tgt of
       TEnemy a ll | focusedMonster && memActor a delState ->
         let l = bloc $ getActor a delState
         in if enemyVisible a l
            then (TEnemy a l, Just l, True)
-           else if isJust (case closest of (_, m, _) -> m) || me == ll
+           else if (case closest of (_, _, v) -> v) || me == ll
                 then closest                -- prefer visible foes
                 else (tgt, Just ll, False)  -- last known loc of enemy
       TLoc loc | me == loc -> closest
@@ -118,12 +118,6 @@ strategy cops actor oldState@State{splayer = pl, sfaction} per =
          [] -> (TCursor, Nothing, False)
          _  -> let (_, l, a) = L.minimum foeDist
                in (TEnemy a l, Just l, True)
-  onlyFoe        = onlyMoves (maybe (const False) (==) floc) me
-  towardsFoe     = case floc of
-                     Nothing -> const mzero
-                     Just loc ->
-                       let foeDir = towards lxsize me loc
-                       in only (\ x -> euclidDistSq lxsize foeDir x <= 1)
   lootHere x     = not $ L.null $ lvl `atI` x
   onlyLoot       = onlyMoves lootHere me
   interestHere x = let t = lvl `at` x
@@ -158,16 +152,14 @@ strategy cops actor oldState@State{splayer = pl, sfaction} per =
                   in (x, max timeZero (sm `timeAdd` timeNegate ltime)))
       movesNotBack
   attackDir d = dirToAction actor newTgt True  `liftM` d
-  moveDir d   = dirToAction actor newTgt False `liftM` d
 
   strat =
-    foeVisible .=> attackDir (onlyFoe moveFreely)
+    meleeNow actor oldState newTgt floc
     .| foeVisible .=> liftFrequency (msum seenFreqs)
-    .| lootHere me .=> actionPickup
-    .| moveDir moveTowards  -- go to last known foe location
+    .| pickupNow actor oldState
+    .| wanderNow cops actor oldState newTgt floc
     .| attackDir moveAround
-    .| wait
-  actionPickup = return $ actorPickupItem actor
+    .| waitNow
   tis = lvl `atI` me
   seenFreqs = [applyFreq bitems 1, applyFreq tis 2,
                throwFreq bitems 3, throwFreq tis 6] ++ towardsFreq
@@ -204,8 +196,8 @@ strategy cops actor oldState@State{splayer = pl, sfaction} per =
       -- Wasting weapons and armour would be too cruel to the player.
       -- TODO: specify in content
       isymbol ik `elem` (ritemProject $ Kind.stdRuleset corule)]
-  towardsFreq = map (scaleFreq 30) $ runStrategy $ moveDir moveTowards
-  moveTowards = onlySensible $ onlyNoMs (towardsFoe moveFreely)
+  towardsFreq = map (scaleFreq 30) $ runStrategy $
+                  wanderNow cops actor oldState newTgt floc
   moveAround =
     onlySensible $
       (if asight mk then onlyNoMs else id) $
@@ -268,6 +260,88 @@ dieNow actor = return $ do  -- TODO: explode if a potion
   modify (updateLevel (dropItemsAt bitems bloc))
   modify (deleteActor actor)
 
+meleeNow :: ActorId -> State -> Target -> Maybe Point -> Strategy (Action ())
+meleeNow _     _        _      Nothing = mzero
+meleeNow actor oldState newTgt (Just floc) =
+  foeAdjacent .=> (return $ dirToAction actor newTgt True dir)
+ where
+  Level{lxsize} = slevel oldState
+  me = bloc $ getActor actor oldState
+  foeAdjacent = adjacent lxsize me floc
+  dir = displacement me floc
+
+wanderNow :: Kind.COps -> ActorId -> State -> Target -> Maybe Point
+          -> Strategy (Action ())
+wanderNow cops actor oldState newTgt floc =
+  moveDir moveTowards
+ where
+  Kind.COps{ cotile
+           , coactor=Kind.Ops{okind}
+           , coitem
+           } = cops
+  lvl@Level{lxsize, lysize} = slevel oldState
+  Actor{ bkind = ak, bloc = me, bdir = ad } =
+    getActor actor oldState
+  bitems = getActorItem actor oldState
+  mk = okind ak
+  delState = deleteActor actor oldState
+  towardsFoe     = case floc of
+                     Nothing -> const mzero
+                     Just loc ->
+                       let foeDir = towards lxsize me loc
+                       in only (\ x -> euclidDistSq lxsize foeDir x <= 1)
+  lootHere x     = not $ L.null $ lvl `atI` x
+  onlyLoot       = onlyMoves lootHere me
+  interestHere x = let t = lvl `at` x
+                       ts = map (lvl `at`) $ vicinity lxsize lysize x
+                   in Tile.hasFeature cotile F.Exit t ||
+                      -- Lit indirectly. E.g., a room entrance.
+                      (not (Tile.hasFeature cotile F.Lit t) &&
+                       L.any (Tile.hasFeature cotile F.Lit) ts)
+  onlyInterest   = onlyMoves interestHere me
+  onlyKeepsDir k =
+    only (\ x -> maybe True (\ (d, _) -> euclidDistSq lxsize d x <= k) ad)
+  onlyKeepsDir_9 = only (\ x -> maybe True (\ (d, _) -> neg x /= d) ad)
+  onlyNoMs       = onlyMoves (unoccupied (dangerousList delState)) me
+  -- Monsters don't see doors more secret than that. Enforced when actually
+  -- opening doors, too, so that monsters don't cheat. TODO: remove the code
+  -- duplication, though.
+  openPower      = timeScale timeTurn $
+                   case strongestSearch coitem bitems of
+                     Just i  -> aiq mk + jpower i
+                     Nothing -> aiq mk
+  openableHere   = openable cotile lvl openPower
+  accessibleHere = accessible cops lvl me
+  onlySensible   = onlyMoves (\ l -> accessibleHere l || openableHere l) me
+  moveDir d   = dirToAction actor newTgt False `liftM` d
+  moveTowards = onlySensible $ onlyNoMs (towardsFoe moveFreely)
+  moveIQ = aiq mk > 15 .=> onlyKeepsDir 0 moveRandomly
+        .| aiq mk > 10 .=> onlyKeepsDir 1 moveRandomly
+        .| aiq mk > 5  .=> onlyKeepsDir 2 moveRandomly
+        .| onlyKeepsDir_9 moveRandomly
+  interestFreq =  -- don't detour towards an interest if already on one
+    if interestHere me
+    then []
+    else map (scaleFreq 3)
+           (runStrategy $ onlyInterest (onlyKeepsDir 2 moveRandomly))
+  interestIQFreq = interestFreq ++ runStrategy moveIQ
+  moveFreely = onlyLoot moveRandomly
+               .| liftFrequency (msum interestIQFreq)
+               .| moveRandomly
+  onlyMoves :: (Point -> Bool) -> Point -> Strategy Vector -> Strategy Vector
+  onlyMoves p l = only (\ x -> p (l `shift` x))
+  moveRandomly :: Strategy Vector
+  moveRandomly = liftFrequency $ uniformFreq "moveRandomly" (moves lxsize)
+
+pickupNow :: ActorId -> State -> Strategy (Action ())
+pickupNow actor oldState =
+  lootHere me .=> actionPickup
+ where
+  lvl = slevel oldState
+  me = bloc $ getActor actor oldState
+  lootHere x = not $ L.null $ lvl `atI` x
+  actionPickup = return $ actorPickupItem actor
+
 -- | A strategy to always just wait.
-wait :: Strategy (Action ())
-wait = return $ return ()
+waitNow :: Strategy (Action ())
+waitNow = return $ return ()
