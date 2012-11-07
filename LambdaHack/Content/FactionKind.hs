@@ -16,19 +16,21 @@ cdefs = CDefs
 hero,        monster :: FactionKind
 
 hero = FactionKind
-  { fsymbol  = '@'
-  , fname    = "hero"
-  , ffreq    = [("hero", 1), ("playable", 50)]
-  , fmoveAll = False
-  , fenemy   = ["monster"]
-  , fally    = []
+  { fsymbol     = '@'
+  , fname       = "hero"
+  , ffreq       = [("hero", 1), ("playable", 50)]
+  , fAiSelected = "noAbility"  -- no AI, fully manual control
+  , fAiIdle     = "onlyMissile"
+  , fenemy      = ["monster"]
+  , fally       = []
   }
 
 monster = FactionKind
-  { fsymbol  = 'm'
-  , fname    = "monster"
-  , ffreq    = [("monster", 1), ("playable", 50), ("spawn", 1)]
-  , fmoveAll = True
-  , fenemy   = ["hero"]
-  , fally    = []
+  { fsymbol     = 'm'
+  , fname       = "monster"
+  , ffreq       = [("monster", 1), ("playable", 50), ("spawn", 1)]
+  , fAiSelected = "fullAbility"
+  , fAiIdle     = "fullAbility"
+  , fenemy      = ["hero"]
+  , fally       = []
   }

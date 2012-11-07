@@ -48,8 +48,8 @@ targetStrategy cops actor oldState@State{splayer = pl, sfaction} per =
            , coactor=coactor@Kind.Ops{okind}
            } = cops
   lvl@Level{lxsize} = slevel oldState
-  actorBody@Actor{ bkind = ak, bloc = me, btarget } = getActor actor oldState
-  mk = okind ak
+  actorBody@Actor{ bkind, bloc = me, btarget } = getActor actor oldState
+  mk = okind bkind
   delState = deleteActor actor oldState
   enemyVisible a l =
     asight mk
@@ -97,8 +97,8 @@ targetStrategy cops actor oldState@State{splayer = pl, sfaction} per =
   noFoes = liftM (TLoc . (me `shift`)) $ moveStrategy cops actor oldState False
 
 -- | Monster AI strategy based on monster sight, smell, intelligence, etc.
-strategy :: Kind.COps -> ActorId -> State -> Strategy (Action ())
-strategy cops actor oldState =
+strategy :: Kind.COps -> ActorId -> State -> [Ability] -> Strategy (Action ())
+strategy cops actor oldState factionAbilities =
   sumS prefix .| combineDistant distant .| sumS suffix
   .| waitNow  -- wait until friends move out of the way
  where
@@ -125,7 +125,7 @@ strategy cops actor oldState =
   aStrategy Ability.Pickup = pickup actor oldState
   aStrategy Ability.Wander = wander cops actor oldState
   aStrategy _              = assert `failure` actorAbilities
-  actorAbilities = acanDo $ okind bkind
+  actorAbilities = acanDo (okind bkind) `L.intersect` factionAbilities
   isDistant = (`elem` [Ability.Ranged, Ability.Tools, Ability.Chase])
   (prefix, rest)    = L.break isDistant actorAbilities
   (distant, suffix) = L.partition isDistant rest
@@ -203,9 +203,9 @@ rangedFreq cops actor oldState@State{splayer = pl, sfaction} floc =
            , corule
            } = cops
   lvl@Level{lxsize, lysize} = slevel oldState
-  Actor{ bkind = ak, bloc } = getActor actor oldState
+  Actor{ bkind, bloc } = getActor actor oldState
   bitems = getActorItem actor oldState
-  mk = okind ak
+  mk = okind bkind
   delState = deleteActor actor oldState
   tis = lvl `atI` bloc
   hs = heroAssocs sfaction $ slevel delState
@@ -269,7 +269,7 @@ moveStrategy cops actor oldState newTargetSet =
                    .| moveClear
   else
    let movesNotBack =
-         maybe id (\ (d, _) -> L.filter (/= neg d)) ad $ sensible
+         maybe id (\ (d, _) -> L.filter (/= neg d)) bdir $ sensible
        smells =
          map (map fst)
          $ L.groupBy ((==) `on` snd)
@@ -289,9 +289,9 @@ moveStrategy cops actor oldState newTargetSet =
            , coitem
            } = cops
   lvl@Level{lsmell, lxsize, lysize, ltime} = slevel oldState
-  Actor{ bkind = ak, bloc, bdir = ad, btarget } = getActor actor oldState
+  Actor{ bkind, bloc, bdir, btarget } = getActor actor oldState
   bitems = getActorItem actor oldState
-  mk = okind ak
+  mk = okind bkind
   delState = deleteActor actor oldState
   lootHere x     = not $ L.null $ lvl `atI` x
   onlyLoot       = onlyMoves lootHere bloc
@@ -303,8 +303,8 @@ moveStrategy cops actor oldState newTargetSet =
                           && L.any (Tile.hasFeature cotile F.Lit) ts)
   onlyInterest   = onlyMoves interestHere bloc
   onlyKeepsDir k =
-    only (\ x -> maybe True (\ (d, _) -> euclidDistSq lxsize d x <= k) ad)
-  onlyKeepsDir_9 = only (\ x -> maybe True (\ (d, _) -> neg x /= d) ad)
+    only (\ x -> maybe True (\ (d, _) -> euclidDistSq lxsize d x <= k) bdir)
+  onlyKeepsDir_9 = only (\ x -> maybe True (\ (d, _) -> neg x /= d) bdir)
   moveIQ = aiq mk > 15 .=> onlyKeepsDir 0 moveRandomly
         .| aiq mk > 10 .=> onlyKeepsDir 1 moveRandomly
         .| aiq mk > 5  .=> onlyKeepsDir 2 moveRandomly

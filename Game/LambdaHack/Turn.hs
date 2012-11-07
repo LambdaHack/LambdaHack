@@ -27,6 +27,8 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.Draw
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Time
+import Game.LambdaHack.Content.FactionKind
+import Game.LambdaHack.Content.StrategyKind
 
 -- One clip proceeds through the following functions:
 --
@@ -139,15 +141,21 @@ handleActors subclipStart = do
 handleMonster :: ActorId -> Action ()
 handleMonster actor = do
   debug "handleMonster"
-  cops <- getCOps
+  cops@Kind.COps{ cofact=Kind.Ops{okind}
+                , costrat=Kind.Ops{opick, okind=sokind}
+                } <- getCOps
   state <- get
   per <- getPerception
   -- Choose a target from those proposed by AI for the actor.
   btarget <- rndToAction $ rollStrategy (targetStrategy cops actor state per)
   updateAnyActor actor $ \ m -> m { btarget }
   stateNew <- get
+  let Actor{bfaction} = getActor actor stateNew
+  factionAi <- rndToAction $ opick (fAiIdle (okind bfaction)) (const True)
+  let factionAbilities = sabilities (sokind factionAi)
   -- Run the AI: choses an action from those given by the AI strategy.
-  join $ rndToAction $ rollStrategy (strategy cops actor stateNew)
+  join $ rndToAction
+       $ rollStrategy (strategy cops actor stateNew factionAbilities)
 
 -- | Handle the move of the hero.
 handlePlayer :: Action ()

@@ -23,6 +23,7 @@ import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.Content.StrategyKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.CDefs
 import Game.LambdaHack.Random
@@ -105,6 +106,7 @@ data COps = COps
   , coitem  :: !(Ops ItemKind)
   , coplace :: !(Ops PlaceKind)
   , corule  :: !(Ops RuleKind)
+  , costrat :: !(Ops StrategyKind)
   , cotile  :: !(Ops TileKind)
   }
 

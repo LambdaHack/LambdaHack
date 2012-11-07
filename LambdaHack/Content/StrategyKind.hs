@@ -12,9 +12,9 @@ cdefs = CDefs
   , getFreq = sfreq
   , validate = svalidate
   , content =
-      [noAbility, onlyMelee, fullAbility]
+      [noAbility, onlyMissile, meleeAndMissile, fullAbility]
   }
-noAbility,        onlyMelee, fullAbility :: StrategyKind
+noAbility,        onlyMissile, meleeAndMissile, fullAbility :: StrategyKind
 
 noAbility = StrategyKind
   { ssymbol    = '@'
@@ -23,11 +23,18 @@ noAbility = StrategyKind
   , sabilities = []
   }
 
-onlyMelee = StrategyKind
+onlyMissile = StrategyKind
   { ssymbol    = '@'
-  , sname      = "onlyMelee"
-  , sfreq      = [("onlyMelee", 1)]
-  , sabilities = [Melee]
+  , sname      = "onlyMissile"
+  , sfreq      = [("onlyMissile", 1)]
+  , sabilities = [Track]
+  }
+
+meleeAndMissile = StrategyKind
+  { ssymbol    = '@'
+  , sname      = "meleeAndMissile"
+  , sfreq      = [("meleeAndMissile", 1)]
+  , sabilities = [Melee, Track]
   }
 
 fullAbility = StrategyKind

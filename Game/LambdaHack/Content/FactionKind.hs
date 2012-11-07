@@ -7,12 +7,13 @@ import Game.LambdaHack.Misc
 
 -- | Faction properties that are fixed for a given kind of factions.
 data FactionKind = FactionKind
-  { fsymbol  :: !Char            -- ^ a symbol
-  , fname    :: !String          -- ^ short description
-  , ffreq    :: !Freqs           -- ^ frequency within groups
-  , fmoveAll :: !Bool            -- ^ whether members move one after another
-  , fenemy   :: ![String]        -- ^ initially in war with these factions
-  , fally    :: ![String]        -- ^ initially allied with these factions
+  { fsymbol     :: !Char      -- ^ a symbol
+  , fname       :: !String    -- ^ short description
+  , ffreq       :: !Freqs     -- ^ frequency within groups
+  , fAiSelected :: !String    -- ^ Ai to use for the selected actor
+  , fAiIdle     :: !String    -- ^ Ai to use for idle actors
+  , fenemy      :: ![String]  -- ^ initially in war with these factions
+  , fally       :: ![String]  -- ^ initially allied with these factions
   }
   deriving Show
 

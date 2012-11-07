@@ -10,6 +10,7 @@ import qualified Content.FactionKind
 import qualified Content.ItemKind
 import qualified Content.PlaceKind
 import qualified Content.RuleKind
+import qualified Content.StrategyKind
 import qualified Content.TileKind
 import Game.LambdaHack.Turn
 import Game.LambdaHack.Action
@@ -27,6 +28,7 @@ main =
         , coitem  = Kind.createOps Content.ItemKind.cdefs
         , coplace = Kind.createOps Content.PlaceKind.cdefs
         , corule  = Kind.createOps Content.RuleKind.cdefs
+        , costrat = Kind.createOps Content.StrategyKind.cdefs
         , cotile  = Kind.createOps Content.TileKind.cdefs
         }
   in startFrontend cops stdBinding handleTurn
