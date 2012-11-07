@@ -60,10 +60,11 @@ gameExit = do
 
 gameRestart :: Action ()
 gameRestart = do
-  b <- displayYesNo "Current progress will be lost! Really restart the game?"
-  if b
-    then modify (\ s -> s {squit = Just (False, Restart)})
-    else abortWith "Game resumed."
+  b1 <- displayMore ColorFull "You just requested a new game."
+  when (not b1) $ abortWith "Game resumed."
+  b2 <- displayYesNo "Current progress will be lost! Really restart the game?"
+  when (not b2) $ abortWith "Game resumed."
+  modify (\ s -> s {squit = Just (False, Restart)})
 
 moveCursor :: Vector -> Int -> ActionFrame ()
 moveCursor dir n = do
