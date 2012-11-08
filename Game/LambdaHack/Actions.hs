@@ -358,7 +358,7 @@ actorAttackActor source target = do
     then do
       -- Select adjacent hero by bumping into him. Takes no time, so rewind.
       selectPlayer target
-        >>= assert `trueM` (source, target, "player bumps into himself")
+        >>= assert `trueM` (source, target, "heroes attack each other")
       -- Mark that unexpectedly it does not take time.
       modify (\ s -> s {stakeTime = Just False})
     else do

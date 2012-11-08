@@ -2,7 +2,7 @@
 module Game.LambdaHack.Perception
   ( DungeonPerception, Perception
   , totalVisible, debugTotalReachable, dungeonPerception
-  , actorReachesLoc, actorReachesActor, monsterSeesHero
+  , actorReachesLoc, actorReachesActor, actorSeesActor
   ) where
 
 import qualified Data.IntSet as IS
@@ -98,6 +98,15 @@ monsterSeesHero cotile per lvl _source target sloc tloc =
         fromMaybe rempty $ IM.lookup target $ pheroes per
   in sloc `IS.member` preachable
      && isVisible cotile reachable lvl IS.empty tloc
+
+-- | Whether an actor can see another. An approximation.
+actorSeesActor :: Kind.Ops TileKind -> Perception -> Level
+               -> ActorId -> ActorId -> Point -> Point -> ActorId -> Bool
+actorSeesActor cotile per lvl source target sloc tloc pl =
+  let heroReaches = actorReachesLoc source tloc per (Just pl)
+      visByHeroes = tloc `IS.member` totalVisible per
+      monsterSees = monsterSeesHero cotile per lvl source target sloc tloc
+  in  heroReaches && visByHeroes || monsterSees
 
 -- | Calculate the perception of all actors on the level.
 dungeonPerception :: Kind.COps -> State -> DungeonPerception

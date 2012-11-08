@@ -41,20 +41,21 @@ import qualified Game.LambdaHack.Color as Color
 -- | AI proposes possible targets for the actor. Never empty.
 targetStrategy :: Kind.COps -> ActorId -> State -> Perception
                -> Strategy Target
-targetStrategy cops actor oldState@State{splayer = pl, sfaction} per =
+targetStrategy cops actor oldState@State{splayer = pl} per =
   retarget btarget
  where
   Kind.COps{ cotile
            , coactor=coactor@Kind.Ops{okind}
            } = cops
   lvl@Level{lxsize} = slevel oldState
-  actorBody@Actor{ bkind, bloc = me, btarget } = getActor actor oldState
+  actorBody@Actor{ bkind, bloc = me, btarget, bfaction } =
+    getActor actor oldState
   mk = okind bkind
   delState = deleteActor actor oldState
   enemyVisible a l =
     asight mk
     && isAHero delState a
-    && monsterSeesHero cotile per lvl actor a me l
+    && actorSeesActor cotile per lvl actor a me l pl
     -- Enemy can be felt if adjacent (e. g., a player-controlled monster).
     -- TODO: can this be replaced by setting 'lights' to [me]?
     || adjacent lxsize me l
@@ -77,7 +78,7 @@ targetStrategy cops actor oldState@State{splayer = pl, sfaction} per =
       TLoc _ | null visibleFoes -> return tgt  -- nothing visible, go to loc
       TLoc _ -> closest                -- prefer visible foes
       TCursor  -> closest
-  hs = heroAssocs sfaction $ slevel delState
+  hs = hostileAssocs bfaction $ slevel delState
   foes = if not (isAHero delState pl) && memActor pl delState
          then (pl, getPlayerBody delState) : hs
          else hs
@@ -206,7 +207,7 @@ melee actor oldState floc =
   dir = displacement bloc floc
 
 rangedFreq :: Kind.COps -> ActorId -> State -> Point -> Frequency (Action ())
-rangedFreq cops actor oldState@State{splayer = pl, sfaction} floc =
+rangedFreq cops actor oldState@State{splayer = pl} floc =
   toFreq "throwFreq" $
     if not foesAdj
        && asight mk
@@ -220,12 +221,12 @@ rangedFreq cops actor oldState@State{splayer = pl, sfaction} floc =
            , corule
            } = cops
   lvl@Level{lxsize, lysize} = slevel oldState
-  Actor{ bkind, bloc } = getActor actor oldState
+  Actor{ bkind, bloc, bfaction } = getActor actor oldState
   bitems = getActorItem actor oldState
   mk = okind bkind
   delState = deleteActor actor oldState
   tis = lvl `atI` bloc
-  hs = heroAssocs sfaction $ slevel delState
+  hs = hostileAssocs bfaction $ slevel delState
   foes = if not (isAHero delState pl) && memActor pl delState
          then (pl, getPlayerBody delState) : hs
          else hs
