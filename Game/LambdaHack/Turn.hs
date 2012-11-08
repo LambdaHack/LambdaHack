@@ -82,8 +82,6 @@ handleTurn = do
     _ -> return ()
   endOrLoop handleTurn
 
-
-
 -- TODO: We should replace this structure using a priority search queue/tree.
 -- | Perform moves for individual actors not controlled
 -- by the player, as long as there are actors
@@ -98,16 +96,16 @@ handleActors subclipStart = do
   Kind.COps{coactor} <- getCOps
   sfaction <- gets sfaction
   time <- gets stime  -- the end time of this clip, inclusive
-  lactor <- gets (allButHeroesAssocs sfaction . slevel)
   pl <- gets splayer
   pbody <- gets getPlayerBody
+  -- Older actors act earlier, the player acts first.
+  lactor <- gets (((pl, pbody) :) . IM.toList . IM.delete pl . lactor . slevel)
   squit <- gets squit
-  let as = (pl, pbody) : lactor  -- older actors act first
-      mnext = if null as  -- wait until any actor spawned
+  let mnext = if null lactor  -- wait until any actor spawned
               then Nothing
               else let -- Heroes move first then monsters, then the rest.
                        order = Ord.comparing (btime . snd &&& bfaction . snd)
-                       (actor, m) = L.minimumBy order as
+                       (actor, m) = L.minimumBy order lactor
                    in if btime m > time
                       then Nothing  -- no actor is ready for another move
                       else Just (actor, m)
@@ -115,29 +113,32 @@ handleActors subclipStart = do
     _ | isJust squit -> return ()
     Nothing -> when (subclipStart == timeZero) $ displayFramePush Nothing
     Just (actor, m) -> do
-      advanceTime True actor  -- advance time while the actor still alive
-      if actor == pl || bfaction m == sfaction && not (bproj m)
+      if actor == pl
         then
           -- Player moves always start a new subclip.
           startClip $ do
             handlePlayer
+            plNew <- gets splayer
+            advanceTime True plNew  -- advance time after the player switched
             handleActors $ btime m
-        else
+        else do
+          advanceTime True actor  -- advance time while the actor still alive
           let speed = actorSpeed coactor m
               delta = ticksPerMeter speed
-          in if subclipStart == timeZero
+          if subclipStart == timeZero
                 || btime m > timeAdd subclipStart delta
-             then
-               -- That's the first move this clip
-               -- or the monster has already moved this subclip.
-               -- I either case, start a new subclip.
-               startClip $ do
-                 handleMonster actor
-                 handleActors $ btime m
-             else do
-               -- The monster didn't yet move this subclip.
-               handleMonster actor
-               handleActors subclipStart
+                || bfaction m == sfaction && not (bproj m)
+            then
+              -- That's the first move this clip
+              -- or the actor has already moved this subclip
+              -- or it's a hero. In either case, start a new subclip.
+              startClip $ do
+                handleMonster actor
+                handleActors $ btime m
+            else do
+              -- The monster didn't yet move this subclip.
+              handleMonster actor
+              handleActors subclipStart
 
 -- | Handle the move of a single monster.
 handleMonster :: ActorId -> Action ()
@@ -238,8 +239,6 @@ playerCommand msgRunAbort = do
 advanceTime :: Bool -> ActorId -> Action ()
 advanceTime forward actor = do
   Kind.COps{coactor} <- getCOps
-  pl <- gets splayer
-  sfaction <- gets sfaction
   let upd m@Actor{btime} =
         let speed = actorSpeed coactor m
             ticks = ticksPerMeter speed
@@ -247,13 +246,6 @@ advanceTime forward actor = do
                   | otherwise = timeNegate ticks
         in m {btime = timeAdd btime delta}
   updateAnyActor actor upd
-  -- A hack to synchronize the whole party:
-  body <- gets (getActor actor)
-  when (actor == pl) $ do
-    let updParty m = if bfaction m == sfaction && not (bproj m)
-                     then m {btime = btime body}
-                     else m
-    modify (updateLevel (updateActorDict (IM.map updParty)))
 
 
 -- The issues below are now complicated (?) by the fact that we now generate

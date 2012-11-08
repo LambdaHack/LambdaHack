@@ -161,7 +161,7 @@ deletePlayer :: State -> State
 deletePlayer s@State{splayer} = deleteActor splayer s
 
 -- TODO: unify, rename
-heroAssocs, hostileAssocs, dangerousAssocs, allButHeroesAssocs
+heroAssocs, hostileAssocs, dangerousAssocs
   :: Kind.Id FactionKind -> Level -> [(ActorId, Actor)]
 heroAssocs sfaction lvl =
   filter (\ (_, m) -> bfaction m == sfaction && not (bproj m)) $
@@ -171,9 +171,6 @@ hostileAssocs sfaction lvl =
     IM.toList $ lactor lvl
 dangerousAssocs sfaction lvl =
   filter (\ (_, m) -> bfaction m /= sfaction) $
-    IM.toList $ lactor lvl
-allButHeroesAssocs sfaction lvl =
-  filter (\ (_, m) -> bfaction m /= sfaction || bproj m) $
     IM.toList $ lactor lvl
 
 heroList, hostileList, dangerousList :: State -> [Actor]
