@@ -416,8 +416,9 @@ discover i = do
     state2 <- get
     msgAdd $ msg ++ objectItem coitem state2 i ++ "."
 
--- | Make the actor controlled by the player.
--- Focus on the actor if level changes. False, if nothing to do.
+-- | Make the actor controlled by the player. Switch level, if needed.
+-- False, if nothing to do. Should only be invoked as a direct result
+-- of a player action or the selected player actor death.
 selectPlayer :: ActorId -> Action Bool
 selectPlayer actor = do
   Kind.COps{coactor} <- getCOps
@@ -442,20 +443,14 @@ selectPlayer actor = do
       msgAdd $ lookAt cops False True state lvl (bloc pbody) ""
       return True
 
+-- TODO: center screen, flash the background, etc. Perhaps wait for SPACE.
+-- | Focus on the hero being wounded/displaced/etc.
 focusIfOurs :: ActorId -> Action Bool
 focusIfOurs target = do
   s  <- get
   pl <- gets splayer
   if isAHero s target || target == pl
-    then do
-      -- Focus on the hero being wounded/displaced/etc.
-      b <- selectPlayer target
-      -- Display status line for the new hero.
-      when b $ do
-        -- Display status line and FOV for the new hero.
-        fr <- drawPrompt ColorFull ""
-        mapM_ displayFramePush [Nothing, Just fr, Nothing]
-      return b
+    then return True
     else return False
 
 summonHeroes :: Int -> Point -> Action ()
