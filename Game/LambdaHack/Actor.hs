@@ -98,7 +98,7 @@ findHeroName config n =
 -- will also depend on the cave kind used to build the level.
 monsterGenChance :: Int -> Int -> Rnd Bool
 monsterGenChance depth numMonsters =
-  chance $ 1%(fromIntegral (25 + 20 * (numMonsters - depth)) `max` 5)
+  chance $ 1%(fromIntegral (30 * (numMonsters - depth)) `max` 5)
 
 -- Actor operations
 

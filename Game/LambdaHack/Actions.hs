@@ -449,9 +449,8 @@ rollMonster Kind.COps{ cotile
       loc <-
         findLocTry 20 (lmap lvl)  -- 20 only, for unpredictability
           [ \ _ t -> not (isLit t)
-          , distantAtLeast 30
-          , distantAtLeast 20
-          , \ l t -> not (isLit t) || distantAtLeast 20 l t
+          , distantAtLeast 15
+          , \ l t -> not (isLit t) || distantAtLeast 15 l t
           , distantAtLeast 10
           , \ l _ -> not $ l `IS.member` totalVisible per
           , distantAtLeast 5
