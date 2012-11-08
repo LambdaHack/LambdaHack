@@ -20,7 +20,7 @@ hero = FactionKind
   , fname       = "hero"
   , ffreq       = [("hero", 1), ("playable", 50)]
   , fAiSelected = "noAbility"  -- no AI, fully manual control
-  , fAiIdle     = "onlyMissile"
+  , fAiIdle     = "meleeAndMissile"
   , fenemy      = ["monster"]
   , fally       = []
   }
