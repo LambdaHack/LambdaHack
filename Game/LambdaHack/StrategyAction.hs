@@ -358,11 +358,12 @@ moveStrategy cops actor oldState mFoe =
   sensible = filter (isSensible . (bloc `shift`)) (moves lxsize)
 
 chase :: Kind.COps -> ActorId -> State -> (Point, Bool) -> Strategy (Action ())
-chase cops actor oldState foe =
+chase cops actor oldState foe@(_, foeVisible) =
   -- Target set and we chase the foe or offer null strategy if we can't.
   -- The foe is visible, or we remember his last position.
   let mFoe = Just foe
-  in dirToAction actor False `liftM` moveStrategy cops actor oldState mFoe
+      fight = not foeVisible  -- don't pick fights if the real foe is close
+  in dirToAction actor fight `liftM` moveStrategy cops actor oldState mFoe
 
 wander :: Kind.COps -> ActorId -> State -> Strategy (Action ())
 wander cops actor oldState =
