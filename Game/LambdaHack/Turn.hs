@@ -73,13 +73,6 @@ handleTurn = do
           ++ show ptime ++ ", time = " ++ show time
   handleActors timeZero
   modify (updateTime (timeAdd timeClip))
-  -- FIXME: a hack
-  squit <- gets squit
-  case squit of
-    Just (_, Camping) -> do
-      pl <- gets splayer
-      advanceTime False pl  -- rewind player time: this is just Save&Exit
-    _ -> return ()
   endOrLoop handleTurn
 
 -- TODO: We should replace this structure using a priority search queue/tree.
@@ -100,7 +93,7 @@ handleActors subclipStart = do
   pbody <- gets getPlayerBody
   -- Older actors act earlier, the player acts first.
   lactor <- gets (((pl, pbody) :) . IM.toList . IM.delete pl . lactor . slevel)
-  squit <- gets squit
+  squitOld <- gets squit
   let mnext = if null lactor  -- wait until any actor spawned
               then Nothing
               else let -- Heroes move first then monsters, then the rest.
@@ -110,7 +103,7 @@ handleActors subclipStart = do
                       then Nothing  -- no actor is ready for another move
                       else Just (actor, m)
   case mnext of
-    _ | isJust squit -> return ()
+    _ | isJust squitOld -> return ()
     Nothing -> when (subclipStart == timeZero) $ displayFramePush Nothing
     Just (actor, m) -> do
       if actor == pl
@@ -118,11 +111,23 @@ handleActors subclipStart = do
           -- Player moves always start a new subclip.
           startClip $ do
             handlePlayer
+            squitNew <- gets squit
             plNew <- gets splayer
-            advanceTime True plNew  -- advance time after the player switched
+            -- Advance time once, after the player switched perhaps many times.
+            -- Ending and especially saving does not take time.
+            -- TODO: this is correct only when all heroes have the same
+            -- speed and can't switch players by, e.g., aiming a wand
+            -- of domination. We need to generalize by displaying
+            -- "(next move in .3s [RET]" when switching players.
+            -- RET waits .3s and gives back control,
+            -- Any other key does the .3s wait and the action form the key
+            -- at once. This requires quite a bit of refactoring
+            -- and is perhaps better done when the other factions have
+            -- selected players as well.
+            unless (isJust squitNew) $ advanceTime plNew
             handleActors $ btime m
         else do
-          advanceTime True actor  -- advance time while the actor still alive
+          advanceTime actor  -- advance time while the actor still alive
           let speed = actorSpeed coactor m
               delta = ticksPerMeter speed
           if subclipStart == timeZero
@@ -130,7 +135,7 @@ handleActors subclipStart = do
                 || bfaction m == sfaction && not (bproj m)
             then
               -- That's the first move this clip
-              -- or the actor has already moved this subclip
+              -- or the actor has already moved during this subclip
               -- or it's a hero. In either case, start a new subclip.
               startClip $ do
                 handleMonster actor
@@ -236,14 +241,12 @@ playerCommand msgRunAbort = do
   loop kmPush
 
 -- | Advance (or rewind) the move time for the given actor.
-advanceTime :: Bool -> ActorId -> Action ()
-advanceTime forward actor = do
+advanceTime :: ActorId -> Action ()
+advanceTime actor = do
   Kind.COps{coactor} <- getCOps
   let upd m@Actor{btime} =
         let speed = actorSpeed coactor m
-            ticks = ticksPerMeter speed
-            delta | forward   = ticks
-                  | otherwise = timeNegate ticks
+            delta = ticksPerMeter speed
         in m {btime = timeAdd btime delta}
   updateAnyActor actor upd
 

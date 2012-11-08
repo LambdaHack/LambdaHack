@@ -190,7 +190,8 @@ eff Effect.Dominate _ source target _power = do
       -- Can't use @focusIfOurs@, because the actor is specifically not ours.
       selectPlayer target
         >>= assert `trueM` (source, target, "player dominates himself")
-      -- Prevent AI from getting a few free moves until new player ready.
+      -- Sync the monster with the hero move time for better display
+      -- of missiles and for the domination to actually take one player's turn.
       updatePlayerBody (\ m -> m { btime = stime s})
       -- Display status line and FOV for the newly controlled actor.
       fr <- drawPrompt ColorBW ""

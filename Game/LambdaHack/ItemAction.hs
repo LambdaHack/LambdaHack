@@ -115,14 +115,16 @@ projectGroupItem source tloc _verb item = do
       -- turn that the player observes it moving. This removes
       -- the possibility of micromanagement by, e.g.,  waiting until
       -- the first distance is short.
-      -- If and when monster all move at once, player's projectiles
-      -- should be set to the time of the opposite party as well.
+      -- When the monster faction has its selected player, hero player's
+      -- projectiles should be set to the time of the opposite party as well.
       -- Both parties would see their own projectiles move part of the way
       -- and the opposite party's projectiles waiting one turn.
+      speed = actorSpeed coactor sm
+      delta = ticksPerMeter speed
       time =
         if bfaction sm == sfaction || source == pl
-        then timeAdd btime (timeNegate timeClip)
-        else btime
+        then btime `timeAdd` delta `timeAdd` timeNegate timeClip
+        else btime `timeAdd` delta
       bl = bla lxsize lysize eps sloc tloc
   case bl of
     Nothing -> abortWith "cannot zap oneself"
