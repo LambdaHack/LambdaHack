@@ -29,6 +29,8 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Time
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.StrategyKind
+import Game.LambdaHack.Random
+
 
 -- One clip proceeds through the following functions:
 --
@@ -147,15 +149,16 @@ handleMonster actor = do
   state <- get
   per <- getPerception
   -- Choose a target from those proposed by AI for the actor.
-  btarget <- rndToAction $ rollStrategy (targetStrategy cops actor state per)
+  btarget <- rndToAction $ frequency
+             $ bestVariant $ targetStrategy cops actor state per
   updateAnyActor actor $ \ m -> m { btarget }
   stateNew <- get
   let Actor{bfaction} = getActor actor stateNew
   factionAi <- rndToAction $ opick (fAiIdle (okind bfaction)) (const True)
   let factionAbilities = sabilities (sokind factionAi)
   -- Run the AI: choses an action from those given by the AI strategy.
-  join $ rndToAction
-       $ rollStrategy (strategy cops actor stateNew factionAbilities)
+  join $ rndToAction $ frequency
+       $ bestVariant $ strategy cops actor stateNew factionAbilities
 
 -- | Handle the move of the hero.
 handlePlayer :: Action ()

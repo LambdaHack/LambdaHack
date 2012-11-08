@@ -1,14 +1,12 @@
 -- | AI strategies to direct actors not controlled by the player.
 -- No operation in this module involves the 'State' or 'Action' type.
 module Game.LambdaHack.Strategy
-  ( Strategy(..){- TODO: make abstract-}, nullStrat, liftFrequency
-  , (.|), reject, (.=>), only, rollStrategy
+  ( Strategy, nullStrategy, liftFrequency
+  , (.|), reject, (.=>), only, bestVariant
   ) where
 
 import Control.Monad
 
-import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Random
 import Game.LambdaHack.Utils.Frequency
 
 -- | A strategy is a choice of (non-empty) frequency tables
@@ -32,8 +30,8 @@ instance MonadPlus Strategy where
   mzero = Strategy []
   mplus (Strategy xs) (Strategy ys) = Strategy (xs ++ ys)
 
-nullStrat :: Strategy a -> Bool
-nullStrat strat = null $ runStrategy strat
+nullStrategy :: Strategy a -> Bool
+nullStrategy strat = null $ runStrategy strat
 
 -- | Strategy where only the actions from the given single frequency table
 -- can be picked.
@@ -66,9 +64,8 @@ only p s = do
   x <- s
   p x .=> return x
 
--- | Roll an element from a strategy. Fails if the strategy is empty.
-rollStrategy :: Show a => Strategy a -> Rnd a
-rollStrategy s =
-  case runStrategy s of
-    [] -> assert `failure` "rolling empty strategy"
-    f : _ -> frequency f
+-- | When better choices are towards the start of the list,
+-- this is the best frequency of the strategy.
+bestVariant :: Strategy a -> Frequency a
+bestVariant (Strategy []) = mzero
+bestVariant (Strategy (f : _)) = f

@@ -94,7 +94,8 @@ targetStrategy cops actor oldState@State{splayer = pl, sfaction} per =
   -- TODO: set distant targets so that monsters behave as if they have
   -- a plan. We need pathfinding for that.
   noFoes :: Strategy Target
-  noFoes = liftM (TLoc . (me `shift`)) $ moveStrategy cops actor oldState False
+  noFoes =
+    liftM (TLoc . (me `shift`)) $ moveStrategy cops actor oldState Nothing
 
 -- | Monster AI strategy based on monster sight, smell, intelligence, etc.
 -- Never empty.
@@ -110,15 +111,14 @@ strategy cops actor oldState factionAbilities =
      TLoc l     -> (l, False)
      TPath _    -> (bloc, False)  -- a missile
      TCursor    -> (bloc, False)  -- an actor blocked by friends
-  combineDistant as = foeVisible .=> liftFrequency (sumF as)
+  combineDistant as = (floc /= bloc) .=> liftFrequency (sumF as)
   aFrequency :: Ability -> Frequency (Action ())
   aFrequency Ability.Ranged = rangedFreq cops actor oldState floc
   aFrequency Ability.Tools  = toolsFreq cops actor oldState
   aFrequency Ability.Chase  = chaseFreq
   aFrequency _              = assert `failure` distant
-  chaseFreq = case runStrategy $ chase cops actor oldState of
-    [] -> mzero
-    f : _ -> scaleFreq 30 f
+  chaseFreq =
+    scaleFreq 30 $ bestVariant $ chase cops actor oldState (floc, foeVisible)
   aStrategy :: Ability -> Strategy (Action ())
   aStrategy Ability.Track  = track cops actor oldState
   aStrategy Ability.Heal   = mzero  -- TODO
@@ -251,47 +251,46 @@ toolsFreq cops actor oldState =
 
 -- | AI finds interesting moves in the absense of visible foes.
 -- This strategy can be null (e.g., if the actor is blocked by friends).
-moveStrategy :: Kind.COps -> ActorId -> State -> Bool -> Strategy Vector
-moveStrategy cops actor oldState newTargetSet =
-  if newTargetSet
-  then
-    let towardsFoe = let foeDir = towards lxsize bloc floc
-                     in only (\ x -> euclidDistSq lxsize foeDir x <= 1)
-        (floc, foeVisible) = case btarget of
-          TEnemy _ l -> (l, True)
-          TLoc l     -> (l, False)
-          _          -> (bloc, False)  -- we won't move
-    in if floc == bloc
-       then reject
-       else towardsFoe
-            $ if foeVisible
-              then moveClear -- enemies in sight, don't waste time for doors
-                   .| moveOpenable
-              else moveOpenable  -- no enemy in sight, explore doors
-                   .| moveClear
-  else
-   let movesNotBack =
-         maybe id (\ (d, _) -> L.filter (/= neg d)) bdir $ sensible
-       smells =
-         map (map fst)
-         $ L.groupBy ((==) `on` snd)
-         $ L.sortBy (flip compare `on` snd)
-         $ L.filter (\ (_, s) -> s > timeZero)
-         $ L.map (\ x ->
-                   let sm = IM.findWithDefault timeZero (bloc `shift` x) lsmell
-                   in (x, sm `timeAdd` timeNegate ltime))
-             movesNotBack
-   in asmell mk .=> L.foldr ((.|) . liftFrequency
-                             . uniformFreq "smell k") reject smells
-      .| moveOpenable  -- no enemy in sight, explore doors
-      .| moveClear
+moveStrategy :: Kind.COps -> ActorId -> State -> Maybe (Point, Bool)
+             -> Strategy Vector
+moveStrategy cops actor oldState mFoe =
+  case mFoe of
+    -- Target set and we chase the foe or his last position.
+    Just (floc, foeVisible) ->
+      let towardsFoe = let foeDir = towards lxsize bloc floc
+                       in only (\ x -> euclidDistSq lxsize foeDir x <= 1)
+      in if floc == bloc
+         then reject
+         else towardsFoe
+              $ if foeVisible
+                then moveClear -- enemies in sight, don't waste time for doors
+                     .| moveOpenable
+                else moveOpenable  -- no enemy in sight, explore doors
+                     .| moveClear
+    Nothing ->
+      let movesNotBack =
+            maybe id (\ (d, _) -> L.filter (/= neg d)) bdir $ sensible
+          smells =
+            map (map fst)
+            $ L.groupBy ((==) `on` snd)
+            $ L.sortBy (flip compare `on` snd)
+            $ L.filter (\ (_, s) -> s > timeZero)
+            $ L.map (\ x ->
+                      let sm =
+                            IM.findWithDefault timeZero (bloc `shift` x) lsmell
+                      in (x, sm `timeAdd` timeNegate ltime))
+                movesNotBack
+      in asmell mk .=> L.foldr ((.|) . liftFrequency
+                                . uniformFreq "smell k") reject smells
+         .| moveOpenable  -- no enemy in sight, explore doors
+         .| moveClear
  where
   Kind.COps{ cotile
            , coactor=Kind.Ops{okind}
            , coitem
            } = cops
   lvl@Level{lsmell, lxsize, lysize, ltime} = slevel oldState
-  Actor{ bkind, bloc, bdir, btarget } = getActor actor oldState
+  Actor{ bkind, bloc, bdir } = getActor actor oldState
   bitems = getActorItem actor oldState
   mk = okind bkind
   delState = deleteActor actor oldState
@@ -312,15 +311,17 @@ moveStrategy cops actor oldState newTargetSet =
         .| aiq mk > 5  .=> onlyKeepsDir 2 moveRandomly
         .| onlyKeepsDir_9 moveRandomly
   interestFreq | interestHere bloc =
-    []  -- don't detour towards an interest if already on one
+    -- Don't detour towards an interest if already on one.
+    mzero
                | otherwise =
-    map (scaleFreq 7)
-      (runStrategy $ onlyInterest (onlyKeepsDir 2 moveRandomly))
-  interestIQFreq = interestFreq ++ runStrategy moveIQ
+    -- Prefer interests, but don't exclude other focused moves.
+    scaleFreq 5 $ bestVariant $ onlyInterest $ onlyKeepsDir 2 moveRandomly
+  interestIQFreq = interestFreq `mplus` bestVariant moveIQ
   moveClear    = onlyMoves (not . openableHere) bloc moveFreely
   moveOpenable = onlyMoves openableHere bloc moveFreely
   moveFreely = onlyLoot moveRandomly
-               .| liftFrequency (msum interestIQFreq)
+               .| liftFrequency interestIQFreq
+               .| moveIQ  -- sometimes interestIQFreq is excluded later on
                .| moveRandomly
   onlyMoves :: (Point -> Bool) -> Point -> Strategy Vector -> Strategy Vector
   onlyMoves p l = only (\ x -> p (l `shift` x))
@@ -340,9 +341,12 @@ moveStrategy cops actor oldState newTargetSet =
   isSensible l = noFriends l && (accessibleHere l || openableHere l)
   sensible = filter (isSensible . (bloc `shift`)) (moves lxsize)
 
-chase :: Kind.COps -> ActorId -> State -> Strategy (Action ())
-chase cops actor oldState =
-  dirToAction actor False `liftM` moveStrategy cops actor oldState True
+chase :: Kind.COps -> ActorId -> State -> (Point, Bool) -> Strategy (Action ())
+chase cops actor oldState foe =
+  -- Target set and we chase the foe or offer null strategy if we can't.
+  -- THe foe is visible, or we remember his last position.
+  let mFoe = Just foe
+  in dirToAction actor False `liftM` moveStrategy cops actor oldState mFoe
 
 pickup :: ActorId -> State -> Strategy (Action ())
 pickup actor oldState =
@@ -355,4 +359,6 @@ pickup actor oldState =
 
 wander :: Kind.COps -> ActorId -> State -> Strategy (Action ())
 wander cops actor oldState =
-  dirToAction actor True `liftM` moveStrategy cops actor oldState True
+  -- Target set, but we don't chase the foe, e.g., because we are blocked.
+  let mFoe = Nothing
+  in dirToAction actor True `liftM` moveStrategy cops actor oldState mFoe
