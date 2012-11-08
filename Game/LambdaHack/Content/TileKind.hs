@@ -6,6 +6,7 @@ module Game.LambdaHack.Content.TileKind
 import qualified Data.List as L
 import qualified Data.Map as M
 
+import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Color
 import Game.LambdaHack.Feature
 import Game.LambdaHack.Misc
@@ -37,8 +38,10 @@ tvalidate lt =
   let listFov f = L.map (\ kt -> ((tsymbol kt, f kt), [kt])) lt
       mapFov :: (TileKind -> Color) -> M.Map (Char, Color) [TileKind]
       mapFov f = M.fromListWith (++) $ listFov f
-      namesUnequal l = let name = tname (L.head l)
-                       in L.any (/= name) (L.map tname l)
+      namesUnequal [] = assert `failure` lt
+      namesUnequal (hd : tl) = let name = tname hd
+                               -- Check that at least one is different.
+                               in L.any (/= name) (L.map tname tl)
       confusions f = L.filter namesUnequal $ M.elems $ mapFov f
   in case confusions tcolor ++ confusions tcolor2 of
     [] -> []

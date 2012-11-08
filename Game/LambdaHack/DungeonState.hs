@@ -152,7 +152,7 @@ generate cops config =
             res = MState.evalState (findGenerator cops config k depth) g1
         in (g2, (Dungeon.levelDefault k, res))
       con :: R.StdGen -> (FreshDungeon, R.StdGen)
-      con g =
+      con g = assert (depth >= 1 `blame` depth) $
         let (gd, levels) = L.mapAccumL gen g [1..depth]
             entryLevel = Dungeon.levelDefault 1
             entryLoc = fst (lstairs (snd (head levels)))

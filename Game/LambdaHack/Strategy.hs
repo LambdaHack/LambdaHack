@@ -7,6 +7,7 @@ module Game.LambdaHack.Strategy
 
 import Control.Monad
 
+import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Random
 import Game.LambdaHack.Utils.Frequency
 
@@ -67,4 +68,7 @@ only p s = do
 
 -- | Roll an element from a strategy. Fails if the strategy is empty.
 rollStrategy :: Show a => Strategy a -> Rnd a
-rollStrategy = frequency . head . runStrategy
+rollStrategy s =
+  case runStrategy s of
+    [] -> assert `failure` "rolling empty strategy"
+    f : _ -> frequency f

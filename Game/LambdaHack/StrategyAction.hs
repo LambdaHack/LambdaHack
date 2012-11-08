@@ -38,7 +38,7 @@ import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Time
 import qualified Game.LambdaHack.Color as Color
 
--- | AI proposes possible targets for the actor.
+-- | AI proposes possible targets for the actor. Never empty.
 targetStrategy :: Kind.COps -> ActorId -> State -> Perception
                -> Strategy Target
 targetStrategy cops actor oldState@State{splayer = pl, sfaction} per =
@@ -90,17 +90,18 @@ targetStrategy cops actor oldState@State{splayer = pl, sfaction} per =
           L.filter (\ (_, l) -> chessDist lxsize me l == minDist) visibleFoes
         minTargets = map (\ (a, l) -> TEnemy a l) minFoes
         minTgtS = liftFrequency $ uniformFreq "closest" minTargets
-    in minTgtS .| noFoes .| return TCursor
+    in minTgtS .| noFoes .| return TCursor  -- never empty
   -- TODO: set distant targets so that monsters behave as if they have
   -- a plan. We need pathfinding for that.
   noFoes :: Strategy Target
   noFoes = liftM (TLoc . (me `shift`)) $ moveStrategy cops actor oldState False
 
 -- | Monster AI strategy based on monster sight, smell, intelligence, etc.
+-- Never empty.
 strategy :: Kind.COps -> ActorId -> State -> [Ability] -> Strategy (Action ())
 strategy cops actor oldState factionAbilities =
   sumS prefix .| combineDistant distant .| sumS suffix
-  .| waitNow  -- wait until friends move out of the way
+  .| waitNow  -- wait until friends move out of the way, ensures never empty
  where
   Kind.COps{coactor=Kind.Ops{okind}} = cops
   Actor{ bkind, bloc, btarget } = getActor actor oldState
@@ -115,8 +116,9 @@ strategy cops actor oldState factionAbilities =
   aFrequency Ability.Tools  = toolsFreq cops actor oldState
   aFrequency Ability.Chase  = chaseFreq
   aFrequency _              = assert `failure` distant
-  chaseFreq = scaleFreq 30 $ head $ runStrategy $
-                chase cops actor oldState
+  chaseFreq = case runStrategy $ chase cops actor oldState of
+    [] -> mzero
+    f : _ -> scaleFreq 30 f
   aStrategy :: Ability -> Strategy (Action ())
   aStrategy Ability.Track  = track cops actor oldState
   aStrategy Ability.Heal   = mzero  -- TODO

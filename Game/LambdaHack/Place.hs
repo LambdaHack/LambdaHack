@@ -147,7 +147,7 @@ digPlace Place{..} kr legend =
 tilePlace :: Area                           -- ^ the area to fill
           -> PlaceKind                      -- ^ the place kind to construct
           -> M.Map PointXY Char
-tilePlace (x0, y0, x1, y1) PlaceKind{..} =
+tilePlace (x0, y0, x1, y1) pl@PlaceKind{..} =
   let dx = x1 - x0 + 1
       dy = y1 - y0 + 1
       fromX (x, y) = L.map PointXY $ L.zip [x..] (repeat y)
@@ -164,11 +164,13 @@ tilePlace (x0, y0, x1, y1) PlaceKind{..} =
       interior = case pcover of
         CAlternate ->
           let tile :: Int -> [a] -> [a]
+              tile _ []  = assert `failure` pl
               tile d pat =
                 L.take d (L.cycle $ L.init pat ++ L.init (L.reverse pat))
           in fillInterior tile
         CStretch ->
           let stretch :: Int -> [a] -> [a]
+              stretch _ []  = assert `failure` pl
               stretch d pat = tileReflect d (pat ++ L.repeat (L.last pat))
           in fillInterior stretch
         CReflect ->

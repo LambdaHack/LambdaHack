@@ -372,8 +372,9 @@ actorAttackActor source target = do
           sloc = bloc sm
           (stack, tell, verbosity, verb) =
             if isProjectile state source
-            then assert (length bitems == 1) $
-                   (head bitems, False, 10, "hit")       -- projectile
+            then case bitems of
+              [bitem] -> (bitem, False, 10, "hit")       -- projectile
+              _ -> assert `failure` bitems
             else case strongestSword cops bitems of
               Nothing -> (h2hItem, False, 0,
                           iverbApply $ okind $ h2hKind)  -- hand-to-hand
@@ -545,7 +546,9 @@ displayMainMenu = do
         in snd . L.mapAccumL over bindings
       mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule
       menuOverlay = overwrite $ pasteVersion $ stripFrame mainMenuArt
-  displayOverlays (head menuOverlay) "" [tail menuOverlay]
+  case menuOverlay of
+    [] -> assert `failure` "empty Main Menu overlay"
+    hd : tl -> displayOverlays hd "" [tl]
 
 displayHistory :: ActionFrame ()
 displayHistory = do

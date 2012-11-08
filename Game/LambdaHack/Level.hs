@@ -180,9 +180,10 @@ findLocTry :: Int                                  -- ^ the number of tries
            -> TileMap                              -- ^ look up in this map
            -> [Point -> Kind.Id TileKind -> Bool]  -- ^ predicates to satisfy
            -> Rnd Point
-findLocTry _        lmap [p] = findLoc lmap p
-findLocTry numTries lmap l   = assert (numTries > 0) $
-  let search 0 = findLocTry numTries lmap (L.tail l)
+findLocTry _        lmap []        = findLoc lmap (const (const True))
+findLocTry _        lmap [p]       = findLoc lmap p
+findLocTry numTries lmap l@(_ : tl) = assert (numTries > 0) $
+  let search 0 = findLocTry numTries lmap tl
       search k = do
         loc <- randomR $ Kind.bounds lmap
         let tile = lmap Kind.! loc
