@@ -28,11 +28,8 @@ description:   This is an alpha release of LambdaHack,
                Upcoming new features: improved squad combat, player action
                undo/redo, completely redesigned UI. Long term goals
                are focused around procedural content generation and include
-               in-game content creation, auto-balancing, persistent
-               content modification based on player behaviour
-               and the improvement of the AI monad EDSL, so that rules
-               for synthesising monster behaviour from game content
-               are extensible, readable and easy to debug.
+               in-game content creation, auto-balancing and persistent
+               content modification based on player behaviour.
                .
                A larger game that depends on the LambdaHack library
                is Allure of the Stars, available from

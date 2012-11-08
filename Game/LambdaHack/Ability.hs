@@ -12,9 +12,9 @@ data Ability =
   | Heal    -- ^ heal if almost dead
   | Flee    -- ^ flee if almost dead
   | Melee   -- ^ melee target
-  | Ranged  -- ^ attack target from a distance, some of the time
+  | Pickup  -- ^ gather items, if no foes visible
+  | Ranged  -- ^ attack the visible target opponent at range, some of the time
   | Tools   -- ^ use items, if target opponent visible, some of the time
-  | Chase   -- ^ chase the visible target opponent, ignoring others actors
-  | Pickup  -- ^ gather items
+  | Chase   -- ^ chase the target, ignoring any actors on the way
   | Wander  -- ^ go to a non-actor target, meleeing any opponents on the way
   deriving (Show, Eq, Ord, Enum, Bounded)

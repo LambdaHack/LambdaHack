@@ -64,9 +64,8 @@ e.g., by helping it play longer, as in the supplied config.bot.
 Compatibility notes
 -------------------
 
-The current code was tested with GHC 7.2.2 and several pre-release versions
-of GHC 7.4. A [few tweaks] [6] are needed to compile with 7.0
-and some more are needed for 6.12.
+The current code was tested with GHC 7.6.1, but probably works with GHC > 7.2.
+A [few tweaks] [7] are needed to compile with 7.0.
 
 If you are using the curses or vty frontends,
 numerical keypad may not work correctly depending on the versions

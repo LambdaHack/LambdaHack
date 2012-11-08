@@ -111,11 +111,17 @@ strategy cops actor oldState factionAbilities =
      TLoc l     -> (l, False)
      TPath _    -> (bloc, False)  -- a missile
      TCursor    -> (bloc, False)  -- an actor blocked by friends
-  combineDistant as = (floc /= bloc) .=> liftFrequency (sumF as)
+  combineDistant as = liftFrequency (sumF as)
   aFrequency :: Ability -> Frequency (Action ())
-  aFrequency Ability.Ranged = rangedFreq cops actor oldState floc
-  aFrequency Ability.Tools  = toolsFreq cops actor oldState
-  aFrequency Ability.Chase  = chaseFreq
+  aFrequency Ability.Ranged = if foeVisible
+                              then rangedFreq cops actor oldState floc
+                              else mzero
+  aFrequency Ability.Tools  = if foeVisible
+                              then toolsFreq cops actor oldState
+                              else mzero
+  aFrequency Ability.Chase  = if (floc /= bloc)
+                              then chaseFreq
+                              else mzero
   aFrequency _              = assert `failure` distant
   chaseFreq =
     scaleFreq 30 $ bestVariant $ chase cops actor oldState (floc, foeVisible)
@@ -124,7 +130,7 @@ strategy cops actor oldState factionAbilities =
   aStrategy Ability.Heal   = mzero  -- TODO
   aStrategy Ability.Flee   = mzero  -- TODO
   aStrategy Ability.Melee  = foeVisible .=> melee actor oldState floc
-  aStrategy Ability.Pickup = pickup actor oldState
+  aStrategy Ability.Pickup = not foeVisible .=> pickup actor oldState
   aStrategy Ability.Wander = wander cops actor oldState
   aStrategy _              = assert `failure` actorAbilities
   actorAbilities = acanDo (okind bkind) `L.intersect` factionAbilities
@@ -181,6 +187,15 @@ track cops actor oldState =
       dirToAction actor True d
     _ -> reject
 
+pickup :: ActorId -> State -> Strategy (Action ())
+pickup actor oldState =
+  lootHere bloc .=> actionPickup
+ where
+  lvl = slevel oldState
+  Actor{bloc} = getActor actor oldState
+  lootHere x = not $ L.null $ lvl `atI` x
+  actionPickup = return $ actorPickupItem actor
+
 melee :: ActorId -> State -> Point -> Strategy (Action ())
 melee actor oldState floc =
   foeAdjacent .=> (return $ dirToAction actor True dir)
@@ -195,7 +210,7 @@ rangedFreq cops actor oldState@State{splayer = pl, sfaction} floc =
   toFreq "throwFreq" $
     if not foesAdj
        && asight mk
-       && accessible cops lvl bloc loc1           -- first accessible
+       && accessible cops lvl bloc loc1         -- first accessible
        && isNothing (locToActor loc1 oldState)  -- no friends on first
     then throwFreq bitems 3 ++ throwFreq tis 6
     else []
@@ -263,7 +278,7 @@ moveStrategy cops actor oldState mFoe =
          then reject
          else towardsFoe
               $ if foeVisible
-                then moveClear -- enemies in sight, don't waste time for doors
+                then moveClear  -- enemies in sight, don't waste time for doors
                      .| moveOpenable
                 else moveOpenable  -- no enemy in sight, explore doors
                      .| moveClear
@@ -344,21 +359,13 @@ moveStrategy cops actor oldState mFoe =
 chase :: Kind.COps -> ActorId -> State -> (Point, Bool) -> Strategy (Action ())
 chase cops actor oldState foe =
   -- Target set and we chase the foe or offer null strategy if we can't.
-  -- THe foe is visible, or we remember his last position.
+  -- The foe is visible, or we remember his last position.
   let mFoe = Just foe
   in dirToAction actor False `liftM` moveStrategy cops actor oldState mFoe
 
-pickup :: ActorId -> State -> Strategy (Action ())
-pickup actor oldState =
-  lootHere bloc .=> actionPickup
- where
-  lvl = slevel oldState
-  Actor{bloc} = getActor actor oldState
-  lootHere x = not $ L.null $ lvl `atI` x
-  actionPickup = return $ actorPickupItem actor
-
 wander :: Kind.COps -> ActorId -> State -> Strategy (Action ())
 wander cops actor oldState =
-  -- Target set, but we don't chase the foe, e.g., because we are blocked.
+  -- Target set, but we don't chase the foe, e.g., because we are blocked
+  -- or we cannot chase at all.
   let mFoe = Nothing
   in dirToAction actor True `liftM` moveStrategy cops actor oldState mFoe
