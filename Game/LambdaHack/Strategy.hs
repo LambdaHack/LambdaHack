@@ -17,8 +17,7 @@ newtype Strategy a = Strategy { runStrategy :: [Frequency a] }
 -- | Strategy is a monad. TODO: Can we write this as a monad transformer?
 instance Monad Strategy where
   return x = Strategy $ return $ uniformFreq "Strategy_return" [x]
-  m >>= f  = Strategy $
-    filter (not . nullFreq)
+  m >>= f  = normalizeStrategy $ Strategy $
     [ toFreq "Strategy_bind" [ (p * q, b)
                              | (p, a) <- runFrequency x
                              , y <- runStrategy (f a)
@@ -30,14 +29,16 @@ instance MonadPlus Strategy where
   mzero = Strategy []
   mplus (Strategy xs) (Strategy ys) = Strategy (xs ++ ys)
 
+normalizeStrategy :: Strategy a -> Strategy a
+normalizeStrategy (Strategy fs) = Strategy $ filter (not . nullFreq) fs
+
 nullStrategy :: Strategy a -> Bool
 nullStrategy strat = null $ runStrategy strat
 
 -- | Strategy where only the actions from the given single frequency table
 -- can be picked.
 liftFrequency :: Frequency a -> Strategy a
-liftFrequency f =
-  Strategy $ filter (not . nullFreq) $ return f
+liftFrequency f = normalizeStrategy $ Strategy $ return f
 
 infixr 2 .|
 
@@ -58,9 +59,9 @@ p .=> m | p          =  m
         | otherwise  =  mzero
 
 -- | Strategy with all actions not satisfying the predicate removed.
--- The remaining action keep their original relative frequency values.
+-- The remaining actions keep their original relative frequency values.
 only :: (a -> Bool) -> Strategy a -> Strategy a
-only p s = do
+only p s = normalizeStrategy $ do
   x <- s
   p x .=> return x
 

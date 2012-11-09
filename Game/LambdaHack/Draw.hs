@@ -80,8 +80,8 @@ draw dm cops per s@State{ scursor=Cursor{..}
             tile = lvl `lAt` loc0
             tk = tokind tile
             items = lvl `liAt` loc0
-            sm = IM.findWithDefault timeZero loc0 lsmell
-            sml = sm `timeAdd` timeNegate ltime
+            sml = IM.findWithDefault timeZero loc0 lsmell
+            smlt = sml `timeAdd` timeNegate ltime
             viewActor loc Actor{bkind = bkind2, bsymbol, bcolor}
               | loc == bloc && slid == creturnLn =
                   (symbol, Color.defBG)  -- highlight player
@@ -104,8 +104,8 @@ draw dm cops per s@State{ scursor=Cursor{..}
                                  (False, True)  -> Color.Green
                                  (False, False) -> Color.Red)
                 Just m | somniscient || vis -> viewActor loc0 m
-                _ | sSml && timeScale sml 10 >= smellTimeout s ->
-                  (timeToDigit (smellTimeout s) sml, rainbow loc0)
+                _ | sSml && smlt > timeZero ->
+                  (timeToDigit (smellTimeout s) smlt, rainbow loc0)
                   | otherwise ->
                   case items of
                     [] -> (tsymbol tk, if vis then tcolor tk else tcolor2 tk)

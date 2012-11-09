@@ -51,10 +51,10 @@ targetStrategy cops actor oldState@State{splayer = pl} per =
   actorBody@Actor{ bkind, bloc = me, btarget, bfaction } =
     getActor actor oldState
   mk = okind bkind
-  delState = deleteActor actor oldState
+  delState = deleteActor actor oldState  -- TODO: try to remove
   enemyVisible a l =
     asight mk
-    && isAHero delState a
+    && isAHero oldState a
     && actorSeesActor cotile per lvl actor a me l pl
     -- Enemy can be felt if adjacent (e. g., a player-controlled monster).
     -- TODO: can this be replaced by setting 'lights' to [me]?
@@ -65,8 +65,8 @@ targetStrategy cops actor oldState@State{splayer = pl} per =
   retarget tgt =
     case tgt of
       TPath _ -> return tgt            -- don't animate missiles
-      TEnemy a ll | focusedMonster && memActor a delState ->
-        let l = bloc $ getActor a delState
+      TEnemy a ll | focusedMonster && memActor a oldState ->
+        let l = bloc $ getActor a oldState
         in if enemyVisible a l         -- prefer visible foes
            then return $ TEnemy a l
            else if null visibleFoes    -- prefer visible foes
@@ -79,8 +79,8 @@ targetStrategy cops actor oldState@State{splayer = pl} per =
       TLoc _ -> closest                -- prefer visible foes
       TCursor  -> closest
   hs = hostileAssocs bfaction $ slevel delState
-  foes = if not (isAHero delState pl) && memActor pl delState
-         then (pl, getPlayerBody delState) : hs
+  foes = if not (isAHero oldState pl) && memActor pl oldState
+         then (pl, getPlayerBody oldState) : hs
          else hs
   visibleFoes = L.filter (uncurry enemyVisible) (L.map (second bloc) foes)
   closest :: Strategy Target
@@ -112,7 +112,7 @@ strategy cops actor oldState factionAbilities =
      TLoc l     -> (l, False)
      TPath _    -> (bloc, False)  -- a missile
      TCursor    -> (bloc, False)  -- an actor blocked by friends
-  combineDistant as = liftFrequency (sumF as)
+  combineDistant = liftFrequency . sumF
   aFrequency :: Ability -> Frequency (Action ())
   aFrequency Ability.Ranged = if foeVisible
                               then rangedFreq cops actor oldState floc
@@ -224,11 +224,11 @@ rangedFreq cops actor oldState@State{splayer = pl} floc =
   Actor{ bkind, bloc, bfaction } = getActor actor oldState
   bitems = getActorItem actor oldState
   mk = okind bkind
-  delState = deleteActor actor oldState
+  delState = deleteActor actor oldState  -- TODO: try to remove
   tis = lvl `atI` bloc
   hs = hostileAssocs bfaction $ slevel delState
-  foes = if not (isAHero delState pl) && memActor pl delState
-         then (pl, getPlayerBody delState) : hs
+  foes = if not (isAHero oldState pl) && memActor pl oldState
+         then (pl, getPlayerBody oldState) : hs
          else hs
   foesAdj = foesAdjacent lxsize lysize bloc (map snd foes)
   -- TODO: also don't throw if any loc on path is visibly not accessible
@@ -271,10 +271,13 @@ moveStrategy :: Kind.COps -> ActorId -> State -> Maybe (Point, Bool)
              -> Strategy Vector
 moveStrategy cops actor oldState mFoe =
   case mFoe of
-    -- Target set and we chase the foe or his last position.
+    -- Target set and we chase the foe or his last position or another target.
     Just (floc, foeVisible) ->
-      let towardsFoe = let foeDir = towards lxsize bloc floc
-                       in only (\ x -> euclidDistSq lxsize foeDir x <= 1)
+      let towardsFoe =
+            let foeDir = towards lxsize bloc floc
+                tolerance | isUnit lxsize foeDir = 0
+                          | otherwise = 1
+            in only (\ x -> euclidDistSq lxsize foeDir x <= tolerance)
       in if floc == bloc
          then reject
          else towardsFoe
@@ -284,19 +287,18 @@ moveStrategy cops actor oldState mFoe =
                 else moveOpenable  -- no enemy in sight, explore doors
                      .| moveClear
     Nothing ->
-      let movesNotBack =
-            maybe id (\ (d, _) -> L.filter (/= neg d)) bdir $ sensible
-          smells =
+      let smells =
             map (map fst)
             $ L.groupBy ((==) `on` snd)
             $ L.sortBy (flip compare `on` snd)
             $ L.filter (\ (_, s) -> s > timeZero)
             $ L.map (\ x ->
-                      let sm =
-                            IM.findWithDefault timeZero (bloc `shift` x) lsmell
-                      in (x, sm `timeAdd` timeNegate ltime))
-                movesNotBack
-      in asmell mk .=> L.foldr ((.|) . liftFrequency
+                      let sml = IM.findWithDefault
+                                  timeZero (bloc `shift` x) lsmell
+                      in (x, sml `timeAdd` timeNegate ltime))
+                sensible
+      in asmell mk .=> L.foldr ((.|)
+                                . liftFrequency
                                 . uniformFreq "smell k") reject smells
          .| moveOpenable  -- no enemy in sight, explore doors
          .| moveClear
@@ -309,7 +311,7 @@ moveStrategy cops actor oldState mFoe =
   Actor{ bkind, bloc, bdir } = getActor actor oldState
   bitems = getActorItem actor oldState
   mk = okind bkind
-  delState = deleteActor actor oldState
+  delState = deleteActor actor oldState  -- TODO: try to remove
   lootHere x     = not $ L.null $ lvl `atI` x
   onlyLoot       = onlyMoves lootHere bloc
   interestHere x = let t = lvl `at` x

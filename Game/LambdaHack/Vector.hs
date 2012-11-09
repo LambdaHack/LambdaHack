@@ -2,7 +2,7 @@
 -- but not unique, way.
 module Game.LambdaHack.Vector
   ( Vector, toVector, shift, shiftBounded, moves, movesWidth
-  , euclidDistSq, diagonal, neg, towards, displacement, displacePath
+  , isUnit, euclidDistSq, diagonal, neg, towards, displacement, displacePath
   ) where
 
 import Data.Binary
@@ -18,7 +18,7 @@ import Game.LambdaHack.Utils.Assert
 --
 -- A newtype is used to prevent mixing up the type with @Point@ itself.
 -- Note that the offset representations of a vector is usually not unique.
--- E.g., for vectors of lenth 1 in the chessboard metric, used to denote
+-- E.g., for vectors of length 1 in the chessboard metric, used to denote
 -- geographical directions, the representations are pairwise distinct
 -- if and only if the level width and height are at least 3.
 newtype Vector = Vector Int
@@ -33,10 +33,17 @@ toVector :: X -> VectorXY -> Vector
 toVector lxsize (VectorXY (x, y)) =
   Vector $ x + y * lxsize
 
+isUnitXY :: VectorXY -> Bool
+isUnitXY v = chessDistXY v == 1
+
+-- | Tells if a vector has length 1 in the chessboard metric.
+isUnit ::  X -> Vector -> Bool
+isUnit lxsize = isUnitXY . fromDir lxsize
+
 -- | Converts a unit vector in cartesian representation into @Vector@.
 toDir :: X -> VectorXY -> Vector
 toDir lxsize v@(VectorXY (x, y)) =
-  assert (lxsize >= 3 && chessDistXY v == 1 `blame` (lxsize, v)) $
+  assert (lxsize >= 3 && isUnitXY v `blame` (lxsize, v)) $
   Vector $ x + y * lxsize
 
 -- | Converts a unit vector in the offset representation
@@ -44,7 +51,7 @@ toDir lxsize v@(VectorXY (x, y)) =
 -- converted uniquely.
 fromDir :: X -> Vector -> VectorXY
 fromDir lxsize (Vector dir) =
-  assert (lxsize >= 3 && chessDistXY res == 1 &&
+  assert (lxsize >= 3 && isUnitXY res &&
           fst len1 + snd len1 * lxsize == dir
           `blame` (lxsize, dir, res)) $
   res
@@ -82,7 +89,7 @@ euclidDistSq :: X -> Vector -> Vector -> Int
 euclidDistSq lxsize dir0 dir1
   | VectorXY (x0, y0) <- fromDir lxsize dir0
   , VectorXY (x1, y1) <- fromDir lxsize dir1 =
-  euclidDistSqXY $ VectorXY (y1 - y0, x1 - x0)
+  euclidDistSqXY $ VectorXY (x1 - x0, y1 - y0)
 
 -- | Checks whether a unit vector is a diagonal direction,
 -- as opposed to cardinal.
@@ -100,7 +107,7 @@ neg (Vector dir) = Vector (-dir)
 -- Of several equally good directions it picks one of those that visually
 -- (in the euclidean metric) maximally align with the original vector.
 normalize :: X -> VectorXY -> Vector
-normalize lxsize (VectorXY (dx, dy)) =
+normalize lxsize v@(VectorXY (dx, dy)) =
   assert (dx /= 0 || dy /= 0 `blame` (dx, dy)) $
   let angle :: Double
       angle = atan (fromIntegral dy / fromIntegral dx) / (pi / 2)
@@ -110,9 +117,12 @@ normalize lxsize (VectorXY (dx, dy)) =
           | angle <= 0.75  = (1, 1)
           | angle <= 1.25  = (0, 1)
           | otherwise = assert `failure` (lxsize, dx, dy, angle)
-  in if dx >= 0
-     then toDir lxsize $ VectorXY dxy
-     else neg (toDir lxsize $ VectorXY dxy)
+      rxy = if dx >= 0
+            then VectorXY dxy
+            else negXY $ VectorXY dxy
+  in assert ((if isUnitXY v then v == rxy else True)
+             `blame` (v, rxy))
+     $ toDir lxsize rxy
 
 -- TODO: Perhaps produce all acceptable directions and let AI choose.
 -- That would also eliminate the Doubles. Or only directions from bla?
@@ -138,7 +148,7 @@ towards lxsize loc0 loc1 =
 displacement :: Point -> Point -> Vector
 displacement loc1 loc2 = Vector $ loc2 - loc1
 
--- | A vector from a point to another.
+-- | A list of vectors between a list of points.
 displacePath :: [Point] -> [Vector]
 displacePath []  = []
 displacePath lp1@(_ : lp2) =
