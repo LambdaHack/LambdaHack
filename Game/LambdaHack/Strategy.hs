@@ -18,12 +18,13 @@ newtype Strategy a = Strategy { runStrategy :: [Frequency a] }
 instance Monad Strategy where
   return x = Strategy $ return $ uniformFreq "Strategy_return" [x]
   m >>= f  = normalizeStrategy $ Strategy $
-    [ toFreq "Strategy_bind" [ (p * q, b)
-                             | (p, a) <- runFrequency x
-                             , y <- runStrategy (f a)
-                             , (q, b) <- runFrequency y
-                             ]
-    | x <- runStrategy m ]
+    [ toFreq name [ (p * q, b)
+                  | (p, a) <- runFrequency x
+                  , y <- runStrategy (f a)
+                  , (q, b) <- runFrequency y
+                  ]
+    | x <- runStrategy m
+    , let name = "Strategy_bind (" ++ nameFrequency x ++ ")"]
 
 instance MonadPlus Strategy where
   mzero = Strategy []

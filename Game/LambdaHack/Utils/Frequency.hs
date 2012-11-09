@@ -5,9 +5,9 @@ module Game.LambdaHack.Utils.Frequency
     -- * Construction
   , uniformFreq, toFreq
     -- * Transformation
-  , scaleFreq, filterFreq
+  , scaleFreq
     -- * Consumption
-  , rollFreq, nullFreq, runFrequency
+  , rollFreq, nullFreq, runFrequency, nameFrequency
   ) where
 
 import Control.Monad
@@ -18,8 +18,8 @@ import Game.LambdaHack.Utils.Assert
 -- TODO: do not expose runFrequency
 -- | The frequency distribution type.
 data Frequency a = Frequency
-  { _name        :: String      -- ^ short description for debug, etc.
-  , runFrequency :: [(Int, a)]  -- ^ give acces to raw frequency values
+  { nameFrequency :: String      -- ^ short description for debug, etc.
+  , runFrequency  :: [(Int, a)]  -- ^ give acces to raw frequency values
   }
   deriving Show
 
@@ -27,8 +27,8 @@ instance Monad Frequency where
   return x = Frequency "return" [(1, x)]
   Frequency name xs >>= f =
     Frequency ("bind (" ++ name ++ ")")
-              [(p * q, y) | (p, x) <- xs,
-                            (q, y) <- runFrequency (f x) ]
+              [(p * q, y) | (p, x) <- xs
+                          , (q, y) <- runFrequency (f x) ]
 
 instance MonadPlus Frequency where
   mplus (Frequency xname xs) (Frequency yname ys) =
@@ -52,14 +52,8 @@ toFreq = Frequency
 -- by a positive integer constant.
 scaleFreq :: Show a => Int -> Frequency a -> Frequency a
 scaleFreq n (Frequency name xs) =
-  assert (n > 0 `blame` ("negative scale for " ++ name, n, xs)) $
+  assert (n > 0 `blame` ("non-positive scale for " ++ name, n, xs)) $
   Frequency name (map (\ (p, x) -> (n * p, x)) xs)
-
--- | Leave only items that satisfy a predicate.
-filterFreq :: (a -> Bool) -> Frequency a -> Frequency a
-filterFreq p (Frequency name l) =
-  Frequency ("filterFreq (" ++ name ++ ")")
-            (filter (p . snd) l)
 
 -- | Randomly choose an item according to the distribution.
 rollFreq :: Show a => Frequency a -> R.StdGen -> (a, R.StdGen)
@@ -81,4 +75,4 @@ rollFreq (Frequency name fs) g =
 
 -- | Test if the frequency distribution is empty.
 nullFreq :: Frequency a -> Bool
-nullFreq fr = null $ runFrequency fr
+nullFreq = null . runFrequency

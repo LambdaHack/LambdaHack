@@ -16,5 +16,5 @@ data Ability =
   | Ranged  -- ^ attack the visible target opponent at range, some of the time
   | Tools   -- ^ use items, if target opponent visible, some of the time
   | Chase   -- ^ chase the target, ignoring any actors on the way
-  | Wander  -- ^ go to a non-actor target, meleeing any opponents on the way
+  | Wander  -- ^ wander around, meleeing any opponents on the way
   deriving (Show, Eq, Ord, Enum, Bounded)

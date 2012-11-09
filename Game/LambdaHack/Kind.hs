@@ -1,5 +1,6 @@
 -- | General content types and operations.
-{-# LANGUAGE RankNTypes, ScopedTypeVariables, TypeFamilies #-}
+{-# LANGUAGE
+      RankNTypes, ScopedTypeVariables, TypeFamilies, MonadComprehensions #-}
 module Game.LambdaHack.Kind
   ( -- * General content types
     Id, Speedup(..), Ops(..), COps(..), createOps, stdRuleset
@@ -10,10 +11,10 @@ module Game.LambdaHack.Kind
 import Data.Binary
 import qualified Data.List as L
 import qualified Data.IntMap as IM
+import qualified Data.Map as M
 import qualified Data.Word as Word
 import qualified Data.Array.Unboxed as A
 import qualified Data.Ix as Ix
-import Data.Maybe
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.Frequency
@@ -68,12 +69,15 @@ createOps CDefs{getSymbol, getName, getFreq, content, validate} =
       kindAssocs = L.zip [0..] content
       kindMap :: IM.IntMap a
       kindMap = IM.fromDistinctAscList $ L.zip [0..] content
-      groupFreq group k = fromMaybe 0 (L.lookup group $ getFreq k)
-      kindFreq :: String -> Frequency (Id a, a)
-      kindFreq group =
-        toFreq ("kindFreq ('" ++ group ++ "')")
-               [ (n, (Id i, k))
-               | (i, k) <- kindAssocs, let n = groupFreq group k, n > 0 ]
+      kindFreq :: M.Map String (Frequency (Id a, a))
+      kindFreq =
+        let tuples = [ (group, (n, (Id i, k)))
+                     | (i, k) <- kindAssocs
+                     , (group, n) <- getFreq k, n > 0 ]
+            f m (group, nik) = M.insertWith (++) group [nik] m
+            lists =  L.foldl' f M.empty tuples
+            nameFreq group = toFreq $ "opick ('" ++ group ++ "')"
+        in M.mapWithKey nameFreq lists
       okind (Id i) = kindMap IM.! fromEnum i
       correct a = not (L.null (getName a)) && L.all ((> 0) . snd) (getFreq a)
       offenders = validate content
@@ -84,11 +88,11 @@ createOps CDefs{getSymbol, getName, getFreq, content, validate} =
        , oname = getName . okind
        , okind = okind
        , ouniqGroup = \ group ->
-           case [Id i | (i, k) <- kindAssocs, groupFreq group k > 0] of
-             [i] -> i
+           case runFrequency $ kindFreq M.! group of
+             [(n, (i, _))] | n > 0 -> i
              l -> assert `failure` l
        , opick = \ group p ->
-           fmap fst $ frequency $ filterFreq (p . snd) $ kindFreq group
+           frequency [ i | (i, k) <- kindFreq M.! group, p k ]
        , ofoldrWithKey = \ f z -> L.foldr (\ (i, a) -> f (Id i) a) z kindAssocs
        , obounds =
          let limits = let (i1, a1) = IM.findMin kindMap

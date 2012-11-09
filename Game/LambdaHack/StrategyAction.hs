@@ -96,7 +96,7 @@ targetStrategy cops actor oldState@State{splayer = pl} per =
   -- a plan. We need pathfinding for that.
   noFoes :: Strategy Target
   noFoes =
-    liftM (TLoc . (me `shift`)) $ moveStrategy cops actor oldState Nothing
+    (TLoc . (me `shift`)) `liftM` moveStrategy cops actor oldState Nothing
 
 -- | Monster AI strategy based on monster sight, smell, intelligence, etc.
 -- Never empty.
@@ -312,8 +312,8 @@ moveStrategy cops actor oldState mFoe =
   bitems = getActorItem actor oldState
   mk = okind bkind
   delState = deleteActor actor oldState  -- TODO: try to remove
-  lootHere x     = not $ L.null $ lvl `atI` x
-  onlyLoot       = onlyMoves lootHere bloc
+  lootHere x = not $ L.null $ lvl `atI` x
+  onlyLoot   = onlyMoves lootHere bloc
   interestHere x = let t = lvl `at` x
                        ts = map (lvl `at`) $ vicinity lxsize lysize x
                    in Tile.hasFeature cotile F.Exit t
