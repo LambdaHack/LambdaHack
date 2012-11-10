@@ -12,29 +12,36 @@ cdefs = CDefs
   , getFreq = sfreq
   , validate = svalidate
   , content =
-      [noAbility, onlyMissile, meleeAndMissile, fullAbility]
+      [noAbility, onlyFollowTrack, meleeAdjacent, meleeAndRanged, fullAbility]
   }
-noAbility,        onlyMissile, meleeAndMissile, fullAbility :: StrategyKind
+noAbility,        onlyFollowTrack, meleeAdjacent, meleeAndRanged, fullAbility :: StrategyKind
 
-noAbility = StrategyKind
+noAbility = StrategyKind  -- not even projectiles will fly
   { ssymbol    = '@'
   , sname      = "noAbility"
   , sfreq      = [("noAbility", 1)]
   , sabilities = []
   }
 
-onlyMissile = StrategyKind
+onlyFollowTrack = StrategyKind  -- projectiles enabled
   { ssymbol    = '@'
-  , sname      = "onlyMissile"
-  , sfreq      = [("onlyMissile", 1)]
+  , sname      = "onlyFollowTrack"
+  , sfreq      = [("onlyFollowTrack", 1)]
   , sabilities = [Track]
   }
 
-meleeAndMissile = StrategyKind
+meleeAdjacent = StrategyKind
   { ssymbol    = '@'
-  , sname      = "meleeAndMissile"
-  , sfreq      = [("meleeAndMissile", 1)]
+  , sname      = "meleeAdjacent"
+  , sfreq      = [("meleeAdjacent", 1)]
   , sabilities = [Melee, Track]
+  }
+
+meleeAndRanged = StrategyKind  -- melee and reaction fire
+  { ssymbol    = '@'
+  , sname      = "meleeAndRanged"
+  , sfreq      = [("meleeAndRanged", 1)]
+  , sabilities = [Melee, Ranged, Track]
   }
 
 fullAbility = StrategyKind
