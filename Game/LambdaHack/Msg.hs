@@ -26,7 +26,7 @@ moreMsg = " --more--  "
 
 -- | The confirmation request message.
 yesnoMsg :: Msg
-yesnoMsg = " [yn]"
+yesnoMsg = "[yn]"
 
 -- | Add spaces at the message end, for display overlayed over the level map.
 -- Also trims (does not wrap!) too long lines.

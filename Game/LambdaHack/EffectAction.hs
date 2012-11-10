@@ -366,18 +366,17 @@ fleeDungeon = do
   if total == 0
   then do
     -- The player can back off at each of these steps.
-    go1 <- displayMore ColorFull "Coward!"
+    go1 <- displayMore ColorBW "Coward!"
     when (not go1) $ abortWith "Brave soul!"
-    go2 <- displayMore ColorFull
-            "Next time try to grab some loot before escape!"
+    go2 <- displayMore ColorBW
+            "This time try to grab some loot before escape!"
     when (not go2) $ abortWith "Here's your chance!"
   else do
     let winMsg = "Congratulations, you won! Here's your loot, worth " ++
                  show total ++ " gold."  -- TODO: use the name of the '$' item instead
     io <- itemOverlay True True items
-    tryIgnore $ do
-      displayOverAbort winMsg io
-      modify (\ st -> st {squit = Just (True, Victor)})
+    tryIgnore $ displayOverAbort winMsg io
+    modify (\ st -> st {squit = Just (True, Victor)})
 
 -- | The source actor affects the target actor, with a given item.
 -- If the event is seen, the item may get identified.
@@ -536,7 +535,7 @@ gameOver showEndingScreens = do
           "That is your name. 'Almost'."
                 | otherwise =
           "Dead heroes make better legends."
-        loseMsg = failMsg ++ " Killing you was worth " ++
+        loseMsg = failMsg ++ " You left " ++
                   show total ++ " gold and some junk."  -- TODO: use the name of the '$' item instead
     if null items
       then modify (\ st -> st {squit = Just (True, Killed slid)})

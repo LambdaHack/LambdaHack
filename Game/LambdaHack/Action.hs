@@ -136,25 +136,32 @@ getYesNo frame = do
     K.Char 'y' -> return True
     _          -> return False
 
+-- TODO: perhaps add prompt to Report instead?
+promptAdd :: Msg -> Msg -> Msg
+promptAdd "" msg = msg
+promptAdd prompt msg = prompt ++ " " ++ msg
+
 -- | Display a msg with a @more@ prompt. Return value indicates if the player
 -- tried to cancel/escape.
 displayMore :: ColorMode -> Msg -> Action Bool
 displayMore dm prompt = do
-  frame <- drawPrompt dm (prompt ++ moreMsg)
+  let newPrompt = promptAdd prompt "[SPACE]"  -- ESC is a secret bailout
+  frame <- drawPrompt dm newPrompt
   getConfirm frame
 
 -- | Print a yes/no question and return the player's answer. Use black
 -- and white colours to turn player's attention to the choice.
 displayYesNo :: Msg -> Action Bool
 displayYesNo prompt = do
-  frame <- drawPrompt ColorBW (prompt ++ yesnoMsg)
+  frame <- drawPrompt ColorBW (promptAdd prompt yesnoMsg)
   getYesNo frame
 
 -- | Print a msg and several overlays, one per page.
 -- All frames require confirmations. Raise @abort@ if the player presses ESC.
 displayOverAbort :: Msg -> [Overlay] -> Action ()
 displayOverAbort prompt xs = do
-  let f x = drawOverlay ColorFull (prompt ++ " [SPACE, ESC]") (x ++ [moreMsg])
+  let newPrompt = promptAdd prompt "[SPACE, ESC]"
+  let f x = drawOverlay ColorFull newPrompt (x ++ [moreMsg])
   frames <- mapM f xs
   go <- getOverConfirm frames
   when (not go) abort
@@ -168,7 +175,7 @@ displayOverlays prompt _ [x] = do
   frame <- drawOverlay ColorFull prompt x
   returnFrame frame
 displayOverlays prompt pressKeys (x:xs) = do
-  frame <- drawOverlay ColorFull (prompt ++ " " ++ pressKeys) (x ++ [moreMsg])
+  frame <- drawOverlay ColorFull (promptAdd prompt pressKeys) (x ++ [moreMsg])
   b <- getConfirm frame
   if b
     then displayOverlays prompt pressKeys xs
@@ -320,43 +327,41 @@ endOrLoop handleTurn = do
       void $ displayMore ColorFull "See you soon, stronger and braver!"
       liftIO $ takeMVar mv  -- wait until saved
       -- Do nothing, that is, quit the game loop.
-    Just (showScreens, status@Killed{}) | showScreens -> do
+    Just (showScreens, status@Killed{}) -> do
       Diary{sreport} <- getDiary
       unless (nullReport sreport) $ do
         -- Sisplay any leftover report. Suggest it could be the cause of death.
-        void $ displayMore ColorFull "Who would have thought?"
+        void $ displayMore ColorBW "Who would have thought?"
         recordHistory  -- prevent repeating the report
       tryWith
         (\ finalMsg ->
           let highScoreMsg = "Let's hope another party can save the day!"
               msg = if null finalMsg then highScoreMsg else finalMsg
-          in void $ displayMore ColorFull msg
+          in void $ displayMore ColorBW msg
           -- Do nothing, that is, quit the game loop.
         )
-        (do handleScores True status total
-            go <- displayMore ColorFull "This time will be different."
-            when (not go) $ abortWith "You could really win this time."
-            restartGame
-            handleTurn
+        (do
+           when showScreens $ handleScores True status total
+           go <- displayMore ColorBW "Next time will be different."
+           when (not go) $ abortWith "You could really win this time."
+           restartGame handleTurn
         )
-    Just (showScreens, status@Victor) | showScreens -> do
+    Just (showScreens, status@Victor) -> do
       Diary{sreport} <- getDiary
       unless (nullReport sreport) $ do
         -- Sisplay any leftover report. Suggest it could be the master move.
         void $ displayMore ColorFull "Brilliant, wasn't it?"
         recordHistory  -- prevent repeating the report
-      tryIgnore $ handleScores True status total
-      void $ displayMore ColorFull "Can it be done better, though?"
-      restartGame
-      handleTurn
+      when showScreens $ do
+        tryIgnore $ handleScores True status total
+        void $ displayMore ColorFull "Can it be done better, though?"
+      restartGame handleTurn
     Just (_, Restart) -> do
-      void $ displayMore ColorFull "This time for real."
-      restartGame
-      handleTurn
-    _ -> return ()
+      void $ displayMore ColorBW "This time for real."
+      restartGame handleTurn
 
-restartGame :: Action ()
-restartGame = do
+restartGame :: Action () -> Action ()
+restartGame handleTurn = do
   -- Take the original config from config file, to reroll RNG, if needed
   -- (the current config file has the RNG rolled for the previous game).
   config <- getOrigConfig
@@ -364,6 +369,7 @@ restartGame = do
   state <- gameResetAction config cops
   modify $ const state
   saveGameBkp
+  handleTurn
 
 -- TODO: do this inside Action ()
 gameReset :: Config.CP -> Kind.COps -> IO State
