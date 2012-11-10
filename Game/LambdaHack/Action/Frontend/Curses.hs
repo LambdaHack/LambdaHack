@@ -42,8 +42,8 @@ startup _ k = do
   nr <- C.colorPairs
   when (nr < L.length s) $
     C.end >>
-    assert `failure`
-      "Terminal has too few color pairs (" ++ show nr ++ "). Giving up."
+    (assert `failure`
+       "Terminal has too few color pairs (" ++ show nr ++ "). Giving up.")
   let (ks, vs) = unzip s
   ws <- C.convertStyles vs
   let styleMap = M.fromList (zip ks ws)
