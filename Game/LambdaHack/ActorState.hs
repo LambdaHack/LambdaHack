@@ -1,7 +1,14 @@
 -- | Operations on the 'Actor' type that need the 'State' type,
 -- but not the 'Action' type.
--- TODO: Add an export list and document after it's rewritten according to #17.
-module Game.LambdaHack.ActorState where
+-- TODO: Document an export list after it's rewritten according to #17.
+module Game.LambdaHack.ActorState
+  ( isProjectile, isAHero, getPlayerBody, findActorAnyLevel, calculateTotal
+  , smellTimeout, initialHeroes, deletePlayer, allHeroesAnyLevel
+  , locToActor, deleteActor, addHero, addMonster, updateAnyActorItem
+  , insertActor, heroList, memActor, getActor, updateAnyActorBody
+  , hostileList, getActorItem, getPlayerItem, tryFindHeroK, dangerousList
+  , factionList, addProjectile, foesAdjacent, targetToLoc, hostileAssocs
+  ) where
 
 import Control.Monad
 import qualified Data.List as L
@@ -43,12 +50,6 @@ isAHero :: State -> ActorId -> Bool
 isAHero s a =
   let (_, actor, _) = findActorAnyLevel a s
   in bfaction actor == sfaction s && not (bproj actor)
-
--- | Checks whether an actor identifier represents a monster.
-isAMonster :: State -> ActorId -> Bool
-isAMonster s a =
-  let (_, actor, _) = findActorAnyLevel a s
-  in bfaction actor /= sfaction s && not (bproj actor)
 
 -- TODO: move to TileState if ever created.
 -- | How long until an actor's smell vanishes from a tile.
@@ -93,7 +94,9 @@ getPlayerItem s@State{splayer} =
 -- | The list of actors and their levels for all heroes in the dungeon.
 allHeroesAnyLevel :: State -> [ActorId]
 allHeroesAnyLevel State{slid, sdungeon, sfaction} =
-  let one (_, lvl) = L.map fst (heroAssocs sfaction lvl)
+  let one (_, lvl) =
+        [ a | (a, m) <- IM.toList $ lactor lvl
+            , bfaction m == sfaction && not (bproj m) ]
   in L.concatMap one (currentFirst slid sdungeon)
 
 updateAnyActorBody :: ActorId -> (Actor -> Actor) -> State -> State
@@ -161,18 +164,10 @@ deletePlayer :: State -> State
 deletePlayer s@State{splayer} = deleteActor splayer s
 
 -- TODO: unify, rename
-heroAssocs, hostileAssocs, dangerousAssocs
-  :: Kind.Id FactionKind -> Level -> [(ActorId, Actor)]
-heroAssocs sfaction lvl =
-  filter (\ (_, m) -> bfaction m == sfaction && not (bproj m)) $
+hostileAssocs :: Kind.Id FactionKind -> Level -> [(ActorId, Actor)]
+hostileAssocs faction lvl =
+  filter (\ (_, m) -> bfaction m /= faction && not (bproj m)) $
     IM.toList $ lactor lvl
-hostileAssocs sfaction lvl =
-  filter (\ (_, m) -> bfaction m /= sfaction && not (bproj m)) $
-    IM.toList $ lactor lvl
-dangerousAssocs sfaction lvl =
-  filter (\ (_, m) -> bfaction m /= sfaction) $
-    IM.toList $ lactor lvl
-
 heroList, hostileList, dangerousList :: State -> [Actor]
 heroList state@State{sfaction} =
   filter (\ m -> bfaction m == sfaction && not (bproj m)) $

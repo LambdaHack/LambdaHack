@@ -41,32 +41,33 @@ import qualified Game.LambdaHack.Color as Color
 -- | AI proposes possible targets for the actor. Never empty.
 targetStrategy :: Kind.COps -> ActorId -> State -> Perception
                -> Strategy Target
-targetStrategy cops actor oldState@State{splayer = pl} per =
+targetStrategy cops actor state@State{splayer = pl} per =
   retarget btarget
  where
   Kind.COps{ cotile
            , coactor=coactor@Kind.Ops{okind}
            } = cops
-  lvl@Level{lxsize} = slevel oldState
+  lvl@Level{lxsize} = slevel state
   actorBody@Actor{ bkind, bloc = me, btarget, bfaction } =
-    getActor actor oldState
+    getActor actor state
   mk = okind bkind
-  delState = deleteActor actor oldState  -- TODO: try to remove
   enemyVisible a l =
     asight mk
-    && isAHero oldState a
     && actorSeesActor cotile per lvl actor a me l pl
     -- Enemy can be felt if adjacent (e. g., a player-controlled monster).
     -- TODO: can this be replaced by setting 'lights' to [me]?
     || adjacent lxsize me l
        && (asmell mk || asight mk)
-  focusedMonster = actorSpeed coactor actorBody <= speedNormal
+  focused = actorSpeed coactor actorBody <= speedNormal
   retarget :: Target -> Strategy Target
   retarget tgt =
     case tgt of
       TPath _ -> return tgt            -- don't animate missiles
-      TEnemy a ll | focusedMonster && memActor a oldState ->
-        let l = bloc $ getActor a oldState
+      TEnemy a ll | focused
+                    && memActor a state  -- present on this level
+                    -- Don't hit a new player-controlled monster.
+                    && not (isAHero state actor && a == pl) ->
+        let l = bloc $ getActor a state
         in if enemyVisible a l         -- prefer visible foes
            then return $ TEnemy a l
            else if null visibleFoes    -- prefer visible foes
@@ -78,10 +79,12 @@ targetStrategy cops actor oldState@State{splayer = pl} per =
       TLoc _ | null visibleFoes -> return tgt  -- nothing visible, go to loc
       TLoc _ -> closest                -- prefer visible foes
       TCursor  -> closest
-  hs = hostileAssocs bfaction $ slevel delState
-  foes = if not (isAHero oldState pl) && memActor pl oldState
-         then (pl, getPlayerBody oldState) : hs
-         else hs
+  hs = hostileAssocs bfaction lvl
+  foes = if isAHero state actor
+         then L.filter ((pl /=) . fst) hs  -- ignore player-controlled
+         else if not (isAHero state pl) && memActor pl state
+              then (pl, getPlayerBody state) : hs
+              else hs  -- no player-controlled monster to add
   visibleFoes = L.filter (uncurry enemyVisible) (L.map (second bloc) foes)
   closest :: Strategy Target
   closest =
@@ -96,17 +99,16 @@ targetStrategy cops actor oldState@State{splayer = pl} per =
   -- a plan. We need pathfinding for that.
   noFoes :: Strategy Target
   noFoes =
-    (TLoc . (me `shift`)) `liftM` moveStrategy cops actor oldState Nothing
+    (TLoc . (me `shift`)) `liftM` moveStrategy cops actor state Nothing
 
--- | Monster AI strategy based on monster sight, smell, intelligence, etc.
--- Never empty.
+-- | AI strategy based on actor's sight, smell, intelligence, etc. Never empty.
 strategy :: Kind.COps -> ActorId -> State -> [Ability] -> Strategy (Action ())
-strategy cops actor oldState factionAbilities =
+strategy cops actor state factionAbilities =
   sumS prefix .| combineDistant distant .| sumS suffix
   .| waitNow  -- wait until friends move out of the way, ensures never empty
  where
   Kind.COps{coactor=Kind.Ops{okind}} = cops
-  Actor{ bkind, bloc, btarget } = getActor actor oldState
+  Actor{ bkind, bloc, btarget } = getActor actor state
   (floc, foeVisible) = case btarget of
      TEnemy _ l -> (l, True)
      TLoc l     -> (l, False)
@@ -115,24 +117,24 @@ strategy cops actor oldState factionAbilities =
   combineDistant = liftFrequency . sumF
   aFrequency :: Ability -> Frequency (Action ())
   aFrequency Ability.Ranged = if foeVisible
-                              then rangedFreq cops actor oldState floc
+                              then rangedFreq cops actor state floc
                               else mzero
   aFrequency Ability.Tools  = if foeVisible
-                              then toolsFreq cops actor oldState
+                              then toolsFreq cops actor state
                               else mzero
   aFrequency Ability.Chase  = if (floc /= bloc)
                               then chaseFreq
                               else mzero
   aFrequency _              = assert `failure` distant
   chaseFreq =
-    scaleFreq 30 $ bestVariant $ chase cops actor oldState (floc, foeVisible)
+    scaleFreq 30 $ bestVariant $ chase cops actor state (floc, foeVisible)
   aStrategy :: Ability -> Strategy (Action ())
-  aStrategy Ability.Track  = track cops actor oldState
+  aStrategy Ability.Track  = track cops actor state
   aStrategy Ability.Heal   = mzero  -- TODO
   aStrategy Ability.Flee   = mzero  -- TODO
-  aStrategy Ability.Melee  = foeVisible .=> melee actor oldState floc
-  aStrategy Ability.Pickup = not foeVisible .=> pickup actor oldState
-  aStrategy Ability.Wander = wander cops actor oldState
+  aStrategy Ability.Melee  = foeVisible .=> melee actor state floc
+  aStrategy Ability.Pickup = not foeVisible .=> pickup actor state
+  aStrategy Ability.Wander = wander cops actor state
   aStrategy _              = assert `failure` actorAbilities
   actorAbilities = acanDo (okind bkind) `L.intersect` factionAbilities
   isDistant = (`elem` [Ability.Ranged, Ability.Tools, Ability.Chase])
@@ -168,11 +170,11 @@ dieNow actor = return $ do  -- TODO: explode if a potion
 
 -- | Strategy for dumb missiles.
 track :: Kind.COps -> ActorId -> State -> Strategy (Action ())
-track cops actor oldState =
+track cops actor state =
   strat
  where
-  lvl = slevel oldState
-  Actor{ bloc, btarget } = getActor actor oldState
+  lvl = slevel state
+  Actor{ bloc, btarget } = getActor actor state
   darkenActor = updateAnyActor actor $ \ m -> m {bcolor = Just Color.BrBlack}
   strat = case btarget of
     TPath [] -> dieNow actor
@@ -189,30 +191,30 @@ track cops actor oldState =
     _ -> reject
 
 pickup :: ActorId -> State -> Strategy (Action ())
-pickup actor oldState =
+pickup actor state =
   lootHere bloc .=> actionPickup
  where
-  lvl = slevel oldState
-  Actor{bloc} = getActor actor oldState
+  lvl = slevel state
+  Actor{bloc} = getActor actor state
   lootHere x = not $ L.null $ lvl `atI` x
   actionPickup = return $ actorPickupItem actor
 
 melee :: ActorId -> State -> Point -> Strategy (Action ())
-melee actor oldState floc =
+melee actor state floc =
   foeAdjacent .=> (return $ dirToAction actor True dir)
  where
-  Level{lxsize} = slevel oldState
-  Actor{bloc} = getActor actor oldState
+  Level{lxsize} = slevel state
+  Actor{bloc} = getActor actor state
   foeAdjacent = adjacent lxsize bloc floc
   dir = displacement bloc floc
 
 rangedFreq :: Kind.COps -> ActorId -> State -> Point -> Frequency (Action ())
-rangedFreq cops actor oldState@State{splayer = pl} floc =
+rangedFreq cops actor state@State{splayer = pl} floc =
   toFreq "throwFreq" $
     if not foesAdj
        && asight mk
-       && accessible cops lvl bloc loc1         -- first accessible
-       && isNothing (locToActor loc1 oldState)  -- no friends on first
+       && accessible cops lvl bloc loc1      -- first accessible
+       && isNothing (locToActor loc1 state)  -- no friends on first
     then throwFreq bitems 3 ++ throwFreq tis 6
     else []
  where
@@ -220,16 +222,17 @@ rangedFreq cops actor oldState@State{splayer = pl} floc =
            , coitem=Kind.Ops{okind=iokind}
            , corule
            } = cops
-  lvl@Level{lxsize, lysize} = slevel oldState
-  Actor{ bkind, bloc, bfaction } = getActor actor oldState
-  bitems = getActorItem actor oldState
+  lvl@Level{lxsize, lysize} = slevel state
+  Actor{ bkind, bloc, bfaction } = getActor actor state
+  bitems = getActorItem actor state
   mk = okind bkind
-  delState = deleteActor actor oldState  -- TODO: try to remove
   tis = lvl `atI` bloc
-  hs = hostileAssocs bfaction $ slevel delState
-  foes = if not (isAHero oldState pl) && memActor pl oldState
-         then (pl, getPlayerBody oldState) : hs
-         else hs
+  hs = hostileAssocs bfaction lvl
+  foes = if isAHero state actor
+         then L.filter ((pl /=) . fst) hs  -- ignore player-controlled
+         else if not (isAHero state pl) && memActor pl state
+              then (pl, getPlayerBody state) : hs
+              else hs  -- no player-controlled monster to add
   foesAdj = foesAdjacent lxsize lysize bloc (map snd foes)
   -- TODO: also don't throw if any loc on path is visibly not accessible
   -- from previous (and tweak eps in bla to make it accessible).
@@ -237,8 +240,8 @@ rangedFreq cops actor oldState@State{splayer = pl} floc =
   eps = 0
   bl = bla lxsize lysize eps bloc floc  -- TODO:make an arg of projectGroupItem
   loc1 = case bl of
-    Nothing -> bloc  -- XXX
-    Just [] -> bloc  -- XXX
+    Nothing -> bloc  -- TODO
+    Just [] -> bloc  -- TODO
     Just (lbl:_) -> lbl
   throwFreq is multi =
     [ (benefit * multi, projectGroupItem actor floc (iverbProject ik) i)
@@ -250,13 +253,13 @@ rangedFreq cops actor oldState@State{splayer = pl} floc =
       isymbol ik `elem` (ritemProject $ Kind.stdRuleset corule)]
 
 toolsFreq :: Kind.COps -> ActorId -> State -> Frequency (Action ())
-toolsFreq cops actor oldState =
+toolsFreq cops actor state =
   toFreq "quaffFreq" $ quaffFreq bitems 1 ++ quaffFreq tis 2
  where
   Kind.COps{coitem=Kind.Ops{okind=iokind}} = cops
-  lvl = slevel oldState
-  Actor{bloc} = getActor actor oldState
-  bitems = getActorItem actor oldState
+  lvl = slevel state
+  Actor{bloc} = getActor actor state
+  bitems = getActorItem actor state
   tis = lvl `atI` bloc
   quaffFreq is multi =
     [ (benefit * multi, applyGroupItem actor (iverbApply ik) i)
@@ -269,7 +272,7 @@ toolsFreq cops actor oldState =
 -- This strategy can be null (e.g., if the actor is blocked by friends).
 moveStrategy :: Kind.COps -> ActorId -> State -> Maybe (Point, Bool)
              -> Strategy Vector
-moveStrategy cops actor oldState mFoe =
+moveStrategy cops actor state mFoe =
   case mFoe of
     -- Target set and we chase the foe or his last position or another target.
     Just (floc, foeVisible) ->
@@ -307,11 +310,10 @@ moveStrategy cops actor oldState mFoe =
            , coactor=Kind.Ops{okind}
            , coitem
            } = cops
-  lvl@Level{lsmell, lxsize, lysize, ltime} = slevel oldState
-  Actor{ bkind, bloc, bdir } = getActor actor oldState
-  bitems = getActorItem actor oldState
+  lvl@Level{lsmell, lxsize, lysize, ltime} = slevel state
+  Actor{ bkind, bloc, bdir, bfaction } = getActor actor state
+  bitems = getActorItem actor state
   mk = okind bkind
-  delState = deleteActor actor oldState  -- TODO: try to remove
   lootHere x = not $ L.null $ lvl `atI` x
   onlyLoot   = onlyMoves lootHere bloc
   interestHere x = let t = lvl `at` x
@@ -347,29 +349,29 @@ moveStrategy cops actor oldState mFoe =
   moveRandomly = liftFrequency $ uniformFreq "moveRandomly" sensible
   -- Monsters don't see doors more secret than that. Enforced when actually
   -- opening doors, too, so that monsters don't cheat. TODO: remove the code
-  -- duplication, though.
+  -- duplication, though. TODO: make symmetric for playable monster faction?
   openPower      = timeScale timeTurn $
                    case strongestSearch coitem bitems of
                      Just i  -> aiq mk + jpower i
                      Nothing -> aiq mk
   openableHere   = openable cotile lvl openPower
   accessibleHere = accessible cops lvl bloc
-  noFriends | asight mk = unoccupied (dangerousList delState)
+  noFriends | asight mk = unoccupied (factionList [bfaction] state)
             | otherwise = const True
   isSensible l = noFriends l && (accessibleHere l || openableHere l)
   sensible = filter (isSensible . (bloc `shift`)) (moves lxsize)
 
 chase :: Kind.COps -> ActorId -> State -> (Point, Bool) -> Strategy (Action ())
-chase cops actor oldState foe@(_, foeVisible) =
+chase cops actor state foe@(_, foeVisible) =
   -- Target set and we chase the foe or offer null strategy if we can't.
   -- The foe is visible, or we remember his last position.
   let mFoe = Just foe
       fight = not foeVisible  -- don't pick fights if the real foe is close
-  in dirToAction actor fight `liftM` moveStrategy cops actor oldState mFoe
+  in dirToAction actor fight `liftM` moveStrategy cops actor state mFoe
 
 wander :: Kind.COps -> ActorId -> State -> Strategy (Action ())
-wander cops actor oldState =
+wander cops actor state =
   -- Target set, but we don't chase the foe, e.g., because we are blocked
   -- or we cannot chase at all.
   let mFoe = Nothing
-  in dirToAction actor True `liftM` moveStrategy cops actor oldState mFoe
+  in dirToAction actor True `liftM` moveStrategy cops actor state mFoe

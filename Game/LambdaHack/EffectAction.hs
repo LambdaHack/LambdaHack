@@ -187,7 +187,6 @@ eff Effect.Dominate _ source target _power = do
   s <- get
   if not $ isAHero s target
     then do  -- Monsters have weaker will than heroes.
-      -- Can't use @focusIfOurs@, because the actor is specifically not ours.
       selectPlayer target
         >>= assert `trueM` (source, target, "player dominates himself")
       -- Sync the monster with the hero move time for better display
@@ -210,7 +209,7 @@ eff Effect.Dominate _ source target _power = do
 eff Effect.SummonFriend _ source target power = do
   tm <- gets (getActor target)
   s <- get
-  if not $ isAMonster s source
+  if isAHero s source
     then summonHeroes (1 + power) (bloc tm)
     else summonMonsters (1 + power) (bloc tm)
   return (True, "")
@@ -218,9 +217,9 @@ eff Effect.SummonEnemy _ source target power = do
   tm <- gets (getActor target)
   s  <- get
   -- A trick: monster player summons a hero.
-  if isAMonster s source
-    then summonHeroes (1 + power) (bloc tm)
-    else summonMonsters (1 + power) (bloc tm)
+  if isAHero s source
+    then summonMonsters (1 + power) (bloc tm)
+    else summonHeroes (1 + power) (bloc tm)
   return (True, "")
 eff Effect.ApplyPerfume _ source target _ =
   if source == target
