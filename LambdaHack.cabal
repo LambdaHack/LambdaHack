@@ -12,7 +12,7 @@ description:   This is an alpha release of LambdaHack,
                a game engine library for roguelike games
                of arbitrary theme, size and complexity,
                packaged together with a small example dungeon crawler.
-               When completed, it will let you specify content
+               When completed, the engine will let you specify content
                to be procedurally generated, define the AI behaviour
                on top of the generic content-independent rules
                and compile a ready-to-play game binary, using either
@@ -22,21 +22,20 @@ description:   This is an alpha release of LambdaHack,
                but the fundamental source of flexibility lies
                in the strict and type-safe separation of code and content.
                .
-               New in this release are missiles flying for three turns
-               (by an old kosmikus' idea), visual feedback for targeting
-               and animations of combat and individual monster moves.
-               Upcoming new features: improved squad combat, player action
-               undo/redo, completely redesigned UI. Long term goals
-               are focused around procedural content generation and include
-               in-game content creation, auto-balancing and persistent
-               content modification based on player behaviour.
+               New in this release are the Main Menu and the improved
+               and configurable mode of squad combat.
+               Upcoming new features: playable monsters faction, AIvAI, PvP,
+               player action undo/redo, completely redesigned UI. Long term
+               goals are focused around procedural content generation
+               and include in-game content creation, auto-balancing
+               and persistent content modification based on player behaviour.
                .
                A larger game that depends on the LambdaHack library
                is Allure of the Stars, available from
                <http://hackage.haskell.org/package/Allure>.
                .
                Note: All modules in the library are kept visible,
-               to let games overwrite each, but reuse as many as possible.
+               to let games override each, but reuse as many as possible.
                OTOH, to reflect that some modules are implementation details
                relative to others, the source code adheres to the following
                convention. If a module has the same name as a directory,

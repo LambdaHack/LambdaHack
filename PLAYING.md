@@ -19,7 +19,8 @@ for this simple game, but it's playable and winnable.
 Dungeon
 -------
 
-The goal of the hero is to explore the dungeon, battle the horrors within,
+The heroes are marked on the map with symbol '@' and with '1', '2', ..., '9'.
+Their goal is to explore the dungeon, battle the horrors within,
 gather as much gold and gems as possible, and escape to tell the tale.
 The dungeon consists of 10 levels and each level consists of 80 by 21 tiles.
 The basic tiles are as follows.
@@ -57,7 +58,7 @@ the vi text editor keys (also known as "Rogue-like keys").
                 /|\       /|\
                1 2 3     b j n
 
-SHIFT (or CTRL) and a movement key make the hero run in the indicated
+SHIFT (or CTRL) and a movement key make the selected hero run in the indicated
 direction, until anything of interest is spotted. '5' and '.' skip a turn.
 Melee, searching for secret doors and opening closed doors can be done
 by bumping into a monster, a wall and a door, respectively.
@@ -69,8 +70,9 @@ hero time are marked with a *.
                <       ascend a level*
                >       descend a level*
                ?       display help
-               Q       quit without saving
-               X       save and exit the game
+               R       restart game*
+               S       save game
+               X       save and exit*
                c       close a door*
                d       drop an object*
                g       get an object*
@@ -98,10 +100,11 @@ commands are listed below. None of them takes hero time.
                SPACE   clear messages
                TAB     cycle among heroes on level
                *       target monster
+               +       swerve targeting line
+               -       unswerve targeting line
                /       target location
                D       dump current configuration
                P       display previous messages
-               V       display game version
                [       target next shallower level
                ]       target next deeper level
                {       target 10 levels shallower
@@ -120,9 +123,9 @@ key modifier. Use at your own peril!
 Monsters
 --------
 
-The hero is not alone in the dungeon. Monsters roam the dark caves
+Heroes are not alone in the dungeon. Monsters roam the dark caves
 and crawl from damp holes day and night. While heroes pay attention
-to all other party members and take moves sequentially, one after another,
+to all other party members and take care to move one at a time,
 monsters don't care about each other and all move at once,
 sometimes brutally colliding by accident.
 
@@ -156,4 +159,4 @@ counts (the rest of the party is considered MIA).
 If all heroes die, your score is halved and only the treasure carried
 by the last standing hero counts. You are free to start again
 from a different entrance to the dungeon, but all your previous wealth
-is gone and fresh, fearless enemies bar your way.
+is gone and fresh, undaunted enemies bar your way.
