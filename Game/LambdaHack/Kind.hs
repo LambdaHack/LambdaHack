@@ -1,6 +1,5 @@
 -- | General content types and operations.
-{-# LANGUAGE
-      RankNTypes, ScopedTypeVariables, TypeFamilies, MonadComprehensions #-}
+{-# LANGUAGE RankNTypes, ScopedTypeVariables, TypeFamilies #-}
 module Game.LambdaHack.Kind
   ( -- * General content types
     Id, Speedup(..), Ops(..), COps(..), createOps, stdRuleset
@@ -15,6 +14,7 @@ import qualified Data.Map as M
 import qualified Data.Word as Word
 import qualified Data.Array.Unboxed as A
 import qualified Data.Ix as Ix
+import Control.Monad
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.Frequency
@@ -91,8 +91,12 @@ createOps CDefs{getSymbol, getName, getFreq, content, validate} =
            case runFrequency $ kindFreq M.! group of
              [(n, (i, _))] | n > 0 -> i
              l -> assert `failure` l
-       , opick = \ group p ->
+       , opick = \ group p -> frequency $ do
+           (i, k) <- kindFreq M.! group
+           if p k then return i else mzero
+           {- with MonadComprehensions:
            frequency [ i | (i, k) <- kindFreq M.! group, p k ]
+           -}
        , ofoldrWithKey = \ f z -> L.foldr (\ (i, a) -> f (Id i) a) z kindAssocs
        , obounds =
          let limits = let (i1, a1) = IM.findMin kindMap
