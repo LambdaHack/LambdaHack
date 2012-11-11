@@ -24,7 +24,9 @@ description:   This is an alpha release of LambdaHack,
                .
                New in this release are the Main Menu and the improved
                and configurable mode of squad combat.
-               Upcoming new features: playable monsters faction, AIvAI, PvP,
+               Upcoming new features: playable monsters faction, more than
+               two factions inhabiting the dungeon, AIvAI, PvP, improved
+               ranged combat AI, dynamic light sources, explosions
                player action undo/redo, completely redesigned UI. Long term
                goals are focused around procedural content generation
                and include in-game content creation, auto-balancing
