@@ -88,9 +88,9 @@ itemPrice Kind.Ops{osymbol} i =
 -- | The type of already discovered items.
 type Discoveries = S.Set (Kind.Id ItemKind)
 
+-- TODO: rewrite and move elsewhere
 -- Could be optimized to IntMap and IntSet, but won't ever be a bottleneck,
 -- unless we have thousands of item kinds.
--- TODO: rewrite and move elsewhere
 -- | Flavours assigned to items in this game.
 type FlavourMap = M.Map (Kind.Id ItemKind) Flavour
 

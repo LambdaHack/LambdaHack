@@ -561,7 +561,6 @@ itemOverlay sorted cheat is = do
 stopRunning :: Action ()
 stopRunning = updatePlayerBody (\ p -> p { bdir = Nothing })
 
--- TODO: depending on tgt, show extra info about tile or monster or both
 -- | Perform look around in the current location of the cursor.
 doLook :: ActionFrame ()
 doLook = do

@@ -19,12 +19,6 @@ import Game.LambdaHack.Time
 import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 
--- TODO: add heroes' names, exp and level, cause of death, user number/name.
--- Note: I tried using Date.Time, but got all kinds of problems,
--- including build problems and opaque types that make serialization difficult,
--- and I couldn't use Datetime because it needs old base (and is under GPL).
--- TODO: When we finally move to Date.Time, let's take timezone into account,
--- at least while displaying.
 -- | A single score record. Records are ordered in the highscore table,
 -- from the best to the worst, in lexicographic ordering wrt the fields below.
 data ScoreRecord = ScoreRecord

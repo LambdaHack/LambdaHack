@@ -40,8 +40,6 @@ saveLock :: MVar ()
 {-# NOINLINE saveLock #-}
 saveLock = unsafePerformIO newEmptyMVar
 
--- TODO: add similar locks to all saved files and save all files
--- in the background, just as savefile sometimes is.
 -- | Save a simple serialized version of the current state.
 -- Protected by a lock to avoid corrupting the file.
 saveGameFile :: State -> IO ()
