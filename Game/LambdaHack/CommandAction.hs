@@ -25,6 +25,8 @@ cmdAction cmd = case cmd of
   Pickup    -> inFrame $ pickupItem
   Drop      -> inFrame $ dropItem
   Wait      -> inFrame $ return ()
+  GameExit  -> inFrame $ gameExit
+  GameRestart -> inFrame $ gameRestart
   GameSave  -> inFrame $ gameSave
 
   Inventory -> inventory
@@ -32,8 +34,6 @@ cmdAction cmd = case cmd of
   TgtEnemy  -> targetMonster TgtExplicit
   TgtAscend k -> tgtAscend k
   EpsIncr b -> inFrame $ epsIncr b
-  GameExit  -> inFrame $ gameExit
-  GameRestart -> inFrame $ gameRestart
   Cancel    -> cancelCurrent displayMainMenu
   Accept    -> acceptCurrent displayHelp
   Clear     -> inFrame $ clearCurrent

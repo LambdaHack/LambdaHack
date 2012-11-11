@@ -18,15 +18,15 @@ data Cmd =
   | Pickup
   | Drop
   | Wait
-  | GameSave
+  | GameExit
+  | GameRestart
     -- These do not take time, or not quite.
+  | GameSave
   | Inventory
   | TgtFloor
   | TgtEnemy
   | TgtAscend Int
   | EpsIncr Bool
-  | GameExit
-  | GameRestart
   | Cancel
   | Accept
   | Clear
@@ -45,10 +45,10 @@ majorCmd cmd = case cmd of
   TriggerTile{} -> True
   Pickup        -> True
   Drop          -> True
-  Inventory     -> True
-  GameSave      -> True
   GameExit      -> True
   GameRestart   -> True
+  GameSave      -> True
+  Inventory     -> True
   Help          -> True
   _             -> False
 
@@ -78,6 +78,8 @@ cmdDescription cmd = case cmd of
   Pickup    -> "get an object"
   Drop      -> "drop an object"
   Wait      -> ""
+  GameExit  -> "save and exit"
+  GameRestart -> "restart game"
   GameSave  -> "save game"
 
   Inventory -> "display inventory"
@@ -91,8 +93,6 @@ cmdDescription cmd = case cmd of
     assert `failure` "void level change in targeting mode in config file"
   EpsIncr True  -> "swerve targeting line"
   EpsIncr False -> "unswerve targeting line"
-  GameExit  -> "save and exit"
-  GameRestart -> "restart game"
   Cancel    -> "cancel action"
   Accept    -> "accept choice"
   Clear     -> "clear messages"

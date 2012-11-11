@@ -32,9 +32,9 @@
 ; t: Project { verb = "throw", object = "missile", syms = "|" }
 ; ;
 ; ; Saving, exiting and restarting the game.
-; S: GameSave
 ; X: GameExit
 ; R: GameRestart
+; S: GameSave
 ; ;
 ; ; Information for the player.
 ; P: History
