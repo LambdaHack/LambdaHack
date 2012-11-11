@@ -139,7 +139,7 @@ ring = ItemKind
 scroll = ItemKind
   { isymbol  = '?'
   , iname    = "scroll"
-  , ifreq    = [("dng", 6)]
+  , ifreq    = [("dng", 4)]
   , iflavour = zipFancy darkCol  -- arcane and old
   , ieffect  = NoEffect
   , icount   = intToDeep 1
@@ -153,8 +153,7 @@ scroll1 = scroll
   { ieffect  = SummonFriend
   }
 scroll2 = scroll
-  { ifreq    = [("dng", 3)]
-  , ieffect  = SummonEnemy
+  { ieffect  = SummonEnemy
   }
 scroll3 = scroll
   { ieffect  = Descend

@@ -241,7 +241,7 @@ addHero Kind.COps{coactor, cotile} ploc state@State{scounter, sfaction} =
       n = fromMaybe 10 freeHeroK
       symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
       name = findHeroName config n
-      startHP = bHP `div` min 5 (n + 1)
+      startHP = bHP - (bHP `div` 5) * min 3 n
       m = template (heroKindId coactor) (Just symbol) (Just name)
                    startHP loc (stime state) sfaction False
       cstate = state { scounter = scounter + 1 }
