@@ -575,12 +575,10 @@ doLook = do
   targeting <- gets (ctargeting . scursor)
   assert (targeting /= TgtOff) $ do
     let canSee = IS.member loc (totalVisible per)
+        ihabitant | canSee = L.find (\ m -> bloc m == loc) (IM.elems hms)
+                  | otherwise = Nothing
         monsterMsg =
-          if canSee
-          then case L.find (\ m -> bloc m == loc) (IM.elems hms) of
-                 Just m  -> actorVerb coactor m "be" "here" ++ " "
-                 Nothing -> ""
-          else ""
+          maybe "" (\ m -> actorVerb coactor m "be" "here" ++ " ") ihabitant
         vis | not $ loc `IS.member` totalVisible per =
                 " (not visible)"  -- by party
             | actorReachesLoc pl loc per (Just pl) = ""
@@ -590,9 +588,9 @@ doLook = do
                  TLoc _     -> "[targeting location" ++ vis ++ "] "
                  TPath _    -> "[targeting path" ++ vis ++ "] "
                  TCursor    -> "[targeting current" ++ vis ++ "] "
-        -- general info about current loc
+        -- Show general info about current loc.
         lookMsg = mode ++ lookAt cops True canSee state lvl loc monsterMsg
-        -- check if there's something lying around at current loc
+        -- Check if there's something lying around at current loc.
         is = lvl `rememberAtI` loc
     io <- itemOverlay False False is
     if length is > 2

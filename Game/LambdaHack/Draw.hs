@@ -15,6 +15,7 @@ import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.State
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Point
+import Game.LambdaHack.Vector
 import Game.LambdaHack.Level
 import Game.LambdaHack.Effect
 import Game.LambdaHack.Perception
@@ -91,11 +92,19 @@ draw dm cops per s@State{ scursor=Cursor{..}
               color  = fromMaybe acolor  bcolor
               symbol = fromMaybe asymbol bsymbol
             rainbow loc = toEnum $ loc `rem` 14 + 1
+            actorsHere = IM.elems lactor
             (char, fg0) =
-              case L.find (\ m -> loc0 == Actor.bloc m) (IM.elems lactor) of
-                _ | ctargeting /= TgtOff
-                    && slid == creturnLn
-                    && L.elem loc0 bl ->
+              case ( L.find (\ m -> loc0 == Actor.bloc m) actorsHere
+                   , L.find (\ m -> clocation == Actor.bloc m) actorsHere ) of
+                (_, actorTgt) | ctargeting /= TgtOff
+                                && (slid == creturnLn
+                                    && L.elem loc0 bl
+                                    || (case actorTgt of
+                                           Just (Actor{ btarget=TPath p
+                                                      , bloc=prLoc }) ->
+                                             L.elem loc0 $ shiftPath prLoc p
+                                           _ -> False))
+                    ->
                       let unknownId = ouniqGroup "unknown space"
                       in ('*', case (vis, F.Walkable `elem` tfeature tk) of
                                  _ | tile == unknownId -> Color.BrBlack
@@ -103,7 +112,7 @@ draw dm cops per s@State{ scursor=Cursor{..}
                                  (True, False)  -> Color.BrRed
                                  (False, True)  -> Color.Green
                                  (False, False) -> Color.Red)
-                Just m | somniscient || vis -> viewActor loc0 m
+                (Just m, _) | somniscient || vis -> viewActor loc0 m
                 _ | sSml && smlt > timeZero ->
                   (timeToDigit (smellTimeout s) smlt, rainbow loc0)
                   | otherwise ->

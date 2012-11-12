@@ -2,7 +2,8 @@
 -- but not unique, way.
 module Game.LambdaHack.Vector
   ( Vector, toVector, shift, shiftBounded, moves, movesWidth
-  , isUnit, euclidDistSq, diagonal, neg, towards, displacement, displacePath
+  , isUnit, euclidDistSq, diagonal, neg, towards, displacement
+  , displacePath, shiftPath
   ) where
 
 import Data.Binary
@@ -153,3 +154,10 @@ displacePath :: [Point] -> [Vector]
 displacePath []  = []
 displacePath lp1@(_ : lp2) =
   map (uncurry displacement) $ zip lp1 lp2
+
+-- | A list of points that a list of vectors leads to.
+shiftPath :: Point -> [Vector] -> [Point]
+shiftPath _     [] = []
+shiftPath start (v : vs) =
+  let next = shift start v
+  in next : shiftPath next vs
