@@ -174,12 +174,14 @@ track cops actor state =
   strat
  where
   lvl = slevel state
-  Actor{ bloc, btarget } = getActor actor state
+  Actor{ bloc, btarget, bhp } = getActor actor state
   darkenActor = updateAnyActor actor $ \ m -> m {bcolor = Just Color.BrBlack}
+  dieOrReset | bhp <= 0  = dieNow actor
+             | otherwise =
+                 return $ updateAnyActor actor $ \ m -> m {btarget = TCursor}
   strat = case btarget of
-    TPath [] -> dieNow actor
-    TPath (d : _) | not $ accessible cops lvl bloc (shift bloc d) ->
-      dieNow actor
+    TPath [] -> dieOrReset
+    TPath (d : _) | not $ accessible cops lvl bloc (shift bloc d) -> dieOrReset
     -- TODO: perhaps colour differently the whole second turn of movement?
     TPath [d] -> return $ do
       darkenActor

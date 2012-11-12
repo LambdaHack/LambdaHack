@@ -124,7 +124,7 @@ projectGroupItem source tloc _verb item = do
       time =
         if bfaction sm == sfaction || source == pl
         then btime `timeAdd` delta `timeAdd` timeNegate timeClip
-        else btime `timeAdd` delta
+        else btime
       bl = bla lxsize lysize eps sloc tloc
   case bl of
     Nothing -> abortWith "cannot zap oneself"
