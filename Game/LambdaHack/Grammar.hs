@@ -3,7 +3,7 @@ module Game.LambdaHack.Grammar
   ( -- * Grammar types
     Verb, Object
     -- * General operations
-  , capitalize, pluralise, addIndefinite
+  , capitalize, pluralise, addIndefinite, conjugate
     -- * Objects from content
   , objectItemCheat, objectItem, objectActor, capActor
     -- * Sentences
@@ -91,17 +91,19 @@ noPlural = S.fromList
 vowel :: Char -> Bool
 vowel l = l `elem` "aeio"
 
-compound :: (String -> String) -> String -> String
-compound f phrase =
-  case reverse $ words phrase of
-    [] -> assert `failure` "compound: no words"
-    word : rest -> unwords $ reverse $ f word : rest
+compound :: Bool -> (String -> String) -> String -> String
+compound modifyFirst f phrase =
+  let rev | modifyFirst = reverse
+          | otherwise   = id
+  in case rev $ words phrase of
+       [] -> assert `failure` "compound: no words"
+       word : rest -> unwords $ rev $ f word : rest
 
 -- | Adds the plural (@s@, @es@, @ies@) suffix to a word.
 -- Used also for conjugation.
 -- See http://en.wikipedia.org/wiki/English_plural.
 suffixS :: String -> String
-suffixS = compound singleSuffixS
+suffixS = compound False singleSuffixS
 
 singleSuffixS :: String -> String
 singleSuffixS word = case L.reverse word of
@@ -117,7 +119,7 @@ singleSuffixS word = case L.reverse word of
   _ -> word ++ "s"
 
 pluralise :: Object -> Object
-pluralise = compound singlePluralise
+pluralise = compound True singlePluralise
 
 -- TODO: a suffix tree would be best, to catch ableman, seaman, etc.
 singlePluralise :: Object -> Object

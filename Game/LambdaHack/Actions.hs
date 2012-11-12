@@ -14,6 +14,7 @@ import qualified Data.Map as M
 import Data.Maybe
 import Data.Version
 import qualified Data.IntSet as IS
+import Data.Ratio
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
@@ -389,10 +390,20 @@ actorAttackActor source target = do
                   if tell
                   then "with " ++ objectItem coitem state single
                   else ""
+          msgMiss = init (actorVerb coactor sm ("try to " ++ verb) "")
+                    ++ ", but "
+                    ++ let tmSubject = objectActor coactor tm
+                       in tmSubject ++ " "
+                          ++ conjugate tmSubject "block" ++ "."
           visible = sloc `IS.member` totalVisible per
-      when visible $ msgAdd msg
-      -- Msgs inside itemEffectAction describe the target part.
-      itemEffectAction verbosity source target single
+      blocked <- rndToAction $ chance $ 1%2
+      if bwait tm >= 1 || not blocked
+        then do
+          when visible $ msgAdd msg
+          -- Msgs inside itemEffectAction describe the target part.
+          itemEffectAction verbosity source target single
+        else
+          when visible $ msgAdd msgMiss
 
 -- | Resolves the result of an actor running (not walking) into another.
 -- This involves switching positions of the two actors.

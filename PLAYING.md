@@ -59,7 +59,8 @@ the vi text editor keys (also known as "Rogue-like keys").
                1 2 3     b j n
 
 SHIFT (or CTRL) and a movement key make the selected hero run in the indicated
-direction, until anything of interest is spotted. '5' and '.' skip a turn.
+direction, until anything of interest is spotted. '5' and '.' use a turn
+to brace for combat, which gives a chance to block blows next turn.
 Melee, searching for secret doors and opening closed doors can be done
 by bumping into a monster, a wall and a door, respectively.
 
