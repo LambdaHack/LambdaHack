@@ -290,6 +290,7 @@ addProjectile Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}}
         , bloc    = loc
         , bletter = 'a'
         , btime
+        , bwait   = 100
         , bfaction
         , bproj   = True
         }

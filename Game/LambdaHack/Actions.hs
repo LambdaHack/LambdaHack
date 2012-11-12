@@ -578,3 +578,14 @@ addSmell = do
       upd = IM.insert ploc $ timeAdd time $ smellTimeout s
   when (isAHero s pl) $
     modify $ updateLevel $ updateSmell upd
+
+-- | Update the wait/block count.
+updateWaitBlock :: ActorId -> (Int -> Int) -> Action ()
+updateWaitBlock actor f =
+  updateAnyActor actor $ \ m@Actor{bwait} -> m {bwait = f bwait}
+
+-- | Player waits a turn (and blocks, etc.).
+waitBlock :: Action ()
+waitBlock = do
+  pl <- gets splayer
+  updateWaitBlock pl (const 0)

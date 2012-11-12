@@ -42,6 +42,7 @@ data Actor = Actor
   , bloc     :: !Point                  -- ^ current location
   , bletter  :: !Char                   -- ^ next inventory letter
   , btime    :: !Time                   -- ^ absolute time of next action
+  , bwait    :: !Int                    -- ^ last wait was this many steps ago
   , bfaction :: !(Kind.Id FactionKind)  -- ^ to which faction the actor belongs
   , bproj    :: !Bool                   -- ^ is a projectile? (shorthand only,
                                         -- ^ this can be deduced from bkind)
@@ -61,6 +62,7 @@ instance Binary Actor where
     put bloc
     put bletter
     put btime
+    put bwait
     put bfaction
     put bproj
   get = do
@@ -75,6 +77,7 @@ instance Binary Actor where
     bloc    <- get
     bletter <- get
     btime   <- get
+    bwait   <- get
     bfaction <- get
     bproj    <- get
     return Actor{..}
@@ -112,6 +115,7 @@ template bkind bsymbol bname bhp bloc btime bfaction bproj =
       btarget = invalidTarget
       bdir    = Nothing
       bletter = 'a'
+      bwait   = 100
   in Actor{..}
 
 -- | Increment current hit points of an actor.

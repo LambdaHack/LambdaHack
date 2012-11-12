@@ -105,7 +105,7 @@ targetStrategy cops actor state@State{splayer = pl} per =
 strategy :: Kind.COps -> ActorId -> State -> [Ability] -> Strategy (Action ())
 strategy cops actor state factionAbilities =
   sumS prefix .| combineDistant distant .| sumS suffix
-  .| waitNow  -- wait until friends move out of the way, ensures never empty
+  .| waitBlockNow actor  -- wait until friends sidestep, ensures never empty
  where
   Kind.COps{coactor=Kind.Ops{okind}} = cops
   Actor{ bkind, bloc, btarget } = getActor actor state
@@ -157,8 +157,8 @@ dirToAction actor allowAttacks dir = do
     moveOrAttack allowAttacks actor dir
 
 -- | A strategy to always just wait.
-waitNow :: Strategy (Action ())
-waitNow = return $ return ()
+waitBlockNow :: ActorId -> Strategy (Action ())
+waitBlockNow actor = return $ updateWaitBlock actor (const 0)
 
 -- | A strategy to always just die.
 dieNow :: ActorId -> Strategy (Action ())

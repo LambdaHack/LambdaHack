@@ -106,6 +106,7 @@ handleActors subclipStart = do
     _ | isJust squitOld -> return ()
     Nothing -> when (subclipStart == timeZero) $ displayFramePush Nothing
     Just (actor, m) -> do
+      updateWaitBlock actor (+ 1)
       if actor == pl
         then
           -- Player moves always start a new subclip.

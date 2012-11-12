@@ -24,7 +24,7 @@ cmdAction cmd = case cmd of
   TriggerTile{..} -> inFrame $ playerTriggerTile feature
   Pickup    -> inFrame $ pickupItem
   Drop      -> inFrame $ dropItem
-  Wait      -> inFrame $ return ()
+  Wait      -> inFrame $ waitBlock
   GameExit  -> inFrame $ gameExit
   GameRestart -> inFrame $ gameRestart
   GameSave  -> inFrame $ gameSave
