@@ -91,34 +91,42 @@ noPlural = S.fromList
 vowel :: Char -> Bool
 vowel l = l `elem` "aeio"
 
+compound :: (String -> String) -> String -> String
+compound f phrase =
+  case reverse $ words phrase of
+    [] -> assert `failure` "compound: no words"
+    word : rest -> unwords $ reverse $ f word : rest
+
 -- | Adds the plural (@s@, @es@, @ies@) suffix to a word.
 -- Used also for conjugation.
 -- See http://en.wikipedia.org/wiki/English_plural.
 suffixS :: String -> String
-suffixS word = case L.reverse word of
-                 'h' : 'c' : _ -> word ++ "es"
-                 'h' : 's' : _ -> word ++ "es"
-                 'i' : 's' : _ -> word ++ "es"
-                 's' : _ -> word ++ "es"
-                 'z' : _ -> word ++ "es"
-                 'x' : _ -> word ++ "es"
-                 'j' : _ -> word ++ "es"
-                 'o' : l : _ | not (vowel l) -> init word ++ "es"
-                 'y' : l : _ | not (vowel l) -> init word ++ "ies"
-                 _ -> word ++ "s"
+suffixS = compound singleSuffixS
+
+singleSuffixS :: String -> String
+singleSuffixS word = case L.reverse word of
+  'h' : 'c' : _ -> word ++ "es"
+  'h' : 's' : _ -> word ++ "es"
+  'i' : 's' : _ -> word ++ "es"
+  's' : _ -> word ++ "es"
+  'z' : _ -> word ++ "es"
+  'x' : _ -> word ++ "es"
+  'j' : _ -> word ++ "es"
+  'o' : l : _ | not (vowel l) -> init word ++ "es"
+  'y' : l : _ | not (vowel l) -> init word ++ "ies"
+  _ -> word ++ "s"
+
+pluralise :: Object -> Object
+pluralise = compound singlePluralise
 
 -- TODO: a suffix tree would be best, to catch ableman, seaman, etc.
-pluralise :: Object -> Object
-pluralise phrase =
-  case reverse $ words phrase of
-    [] -> assert `failure` "pluralise: no words"
-    word : rest ->
-      let pl = if word `S.member` noPlural
-               then word
-               else case M.lookup word irregularPlural of
-                 Just plural -> plural
-                 Nothing -> suffixS word
-      in unwords $ reverse $ pl : rest
+singlePluralise :: Object -> Object
+singlePluralise word =
+  if word `S.member` noPlural
+  then word
+  else case M.lookup word irregularPlural of
+    Just plural -> plural
+    Nothing -> suffixS word
 
 conjugate :: String -> Verb -> Verb
 conjugate "you" "be" = "are"
@@ -183,7 +191,7 @@ capActor :: Kind.Ops ActorKind -> Actor -> Object
 capActor coactor x = capitalize $ objectActor coactor x
 
 -- | Sentences such as \"Dog barks loudly.\"
-actorVerb :: Kind.Ops ActorKind -> Actor -> Verb  -> String-> String
+actorVerb :: Kind.Ops ActorKind -> Actor -> Verb -> String -> String
 actorVerb coactor a v extra =
   let cactor = capActor coactor a
       verb = conjugate cactor v
