@@ -145,7 +145,7 @@ promptAdd prompt msg = prompt ++ " " ++ msg
 -- tried to cancel/escape.
 displayMore :: ColorMode -> Msg -> Action Bool
 displayMore dm prompt = do
-  let newPrompt = promptAdd prompt "[SPACE]"  -- ESC is a secret bailout
+  let newPrompt = promptAdd prompt moreMsg
   frame <- drawPrompt dm newPrompt
   getConfirm frame
 
@@ -160,7 +160,7 @@ displayYesNo prompt = do
 -- All frames require confirmations. Raise @abort@ if the player presses ESC.
 displayOverAbort :: Msg -> [Overlay] -> Action ()
 displayOverAbort prompt xs = do
-  let newPrompt = promptAdd prompt "[SPACE, ESC]"
+  let newPrompt = promptAdd prompt ""
   let f x = drawOverlay ColorFull newPrompt (x ++ [moreMsg])
   frames <- mapM f xs
   go <- getOverConfirm frames

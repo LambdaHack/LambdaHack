@@ -555,9 +555,9 @@ displayHistory = do
   time <- gets stime
   lysize <- gets (lysize . slevel)
   let turn = show $ time `timeFit` timeTurn
-      msg = "Surviving for " ++ turn
-            ++ " half-second turns, as recorded below."
-  displayOverlays msg "[SPACE, ESC]" $
+      msg = "You survived for " ++ turn
+            ++ " half-second turns. Past messages:"
+  displayOverlays msg "" $
     splitOverlay lysize $ renderHistory shistory
 
 dumpConfig :: Action ()

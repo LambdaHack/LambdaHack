@@ -22,7 +22,7 @@ type Msg  = String
 
 -- | The \"press something to see more\" mark.
 moreMsg :: Msg
-moreMsg = " --more--  "
+moreMsg = "--more--  "
 
 -- | The confirmation request message.
 yesnoMsg :: Msg

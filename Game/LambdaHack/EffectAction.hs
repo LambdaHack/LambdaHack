@@ -596,7 +596,7 @@ doLook = do
         is = lvl `rememberAtI` loc
     io <- itemOverlay False False is
     if length is > 2
-      then displayOverlays lookMsg "[SPACE, ESC]" io
+      then displayOverlays lookMsg "" io
       else do
         fr <- drawPrompt ColorFull lookMsg
         returnFrame fr
