@@ -337,7 +337,7 @@ moveOrAttack allowAttacks actor dir = do
             msgAdd $ lookAt cops False True state lvl tloc ""
       | allowAttacks && actor == pl
         && Tile.canBeHidden cotile (okind $ lvl `rememberAt` tloc) -> do
-          msgAdd "You search your surroundings."  -- TODO: proper msg
+          msgAdd "You search all adjacent walls for half a second."
           search
       | otherwise ->
           actorOpenDoor actor dir  -- try to open a door, TODO: bumpTile tloc F.Openable

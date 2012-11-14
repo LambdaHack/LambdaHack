@@ -366,7 +366,8 @@ fleeDungeon = do
   if total == 0
   then do
     -- The player can back off at each of these steps.
-    go1 <- displayMore ColorBW "Coward!"
+    go1 <- displayMore ColorBW
+             "Afraid of the challenge? Leaving so soon and empty-handed?"
     when (not go1) $ abortWith "Brave soul!"
     go2 <- displayMore ColorBW
             "This time try to grab some loot before escape!"
