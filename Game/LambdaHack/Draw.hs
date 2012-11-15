@@ -49,7 +49,8 @@ draw dm cops per s@State{ scursor=Cursor{..}
                , coitem=coitem@Kind.Ops{okind=iokind}
                , cotile=Kind.Ops{okind=tokind, ouniqGroup} } = cops
       DebugMode{smarkVision, somniscient} = sdebug
-      lvl@Level{lxsize, lysize, lsmell, ldesc, lactor, ltime} = slevel s
+      lvl@Level{lxsize, lysize, lsmell, ldesc, lactor, ltime, lclear, lseen} =
+        slevel s
       (_, Actor{bkind, bhp, bloc}, bitems) = findActorAnyLevel splayer s
       ActorKind{ahp, asmell} = okind bkind
       reachable = debugTotalReachable per
@@ -138,12 +139,15 @@ draw dm cops per s@State{ scursor=Cursor{..}
         in case over pxy of
              Just c -> Color.AttrChar Color.defaultAttr c
              _      -> Color.AttrChar a char
+      seenN = 100 * lseen `div` lclear
+      seenTxt = reverse $ take 2 $ reverse $ " " ++ show seenN
       status =
-        take 28 (ldesc ++ repeat ' ') ++
-        take 9 ("L: " ++ show (Dungeon.levelNumber slid) ++ repeat ' ') ++
-        take 11 ("$: " ++ show wealth ++ repeat ' ') ++
-        take 14 ("Dmg: " ++ damage ++ repeat ' ') ++
-        take 32 ("HP: " ++ show bhp ++
+        take 31 (show (Dungeon.levelNumber slid) ++ ": "
+                 ++ ldesc ++ repeat ' ') ++
+        take 12 ("[" ++ seenTxt ++ "% seen]  ") ++
+        take 10 ("$: " ++ show wealth ++ repeat ' ') ++
+        take 13 ("Dmg: " ++ damage ++ repeat ' ') ++
+        take 13 ("HP: " ++ show bhp ++
                  " (" ++ show (maxDice ahp) ++ ")" ++ repeat ' ')
       toWidth :: Int -> String -> String
       toWidth n x = take n (x ++ repeat ' ')
