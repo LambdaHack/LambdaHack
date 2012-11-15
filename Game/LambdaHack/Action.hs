@@ -257,19 +257,25 @@ displayPush = do
       isRunning = isJust bdir
   liftIO $ displayFrame fs isRunning $ Just frame
 
--- | Update player memory.
+-- | Update heroes memory.
 remember :: Action ()
 remember = do
   per <- getPerception
   let vis = IS.toList (totalVisible per)
   rememberList vis
 
--- | Update player at the given list of locations..
+-- | Update heroes memory at the given list of locations.
 rememberList :: [Point] -> Action ()
 rememberList vis = do
+  Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getCOps
   lvl <- gets slevel
   let rememberTile = [(loc, lvl `at` loc) | loc <- vis]
+      unknownId = ouniqGroup "unknown space"
+      newClear (loc, tk) = lvl `rememberAt` loc == unknownId
+                           && Tile.isClear cotile tk
+      clearN = length $ filter newClear rememberTile
   modify (updateLevel (updateLRMap (Kind.// rememberTile)))
+  modify (updateLevel (\ l@Level{lseen} -> l {lseen = lseen + clearN}))
   let alt Nothing      = Nothing
       alt (Just ([], _)) = Nothing
       alt (Just (t, _))  = Just (t, t)

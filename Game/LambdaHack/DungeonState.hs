@@ -101,6 +101,9 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, ouniqGroup}
     placeStairs cotile cmap kc dplaces
   let stairs = (su, upId) : if ln == depth then [] else [(sd, downId)]
       lmap = cmap Kind.// stairs
+      f n tk | Tile.isClear cotile tk = n + 1
+             | otherwise = n
+      lclear = Kind.foldlArray f 0 lmap
   is <- rollItems cops ln depth kc lmap su
   -- TODO: split this into Level.defaultLevel
   let itemMap = mapToIMap cxsize ditem `IM.union` IM.fromList is
@@ -120,6 +123,8 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, ouniqGroup}
         , lmeta = dmeta
         , lstairs = (su, sd)
         , ltime = timeAdd timeTurn timeTurn  -- just stepped into the dungeon
+        , lclear
+        , lseen = 0
         }
   return level
 

@@ -61,6 +61,8 @@ data Level = Level
   , lmeta     :: String          -- ^ debug information from cave generation
   , lstairs   :: (Point, Point)  -- ^ destination of the (up, down) stairs
   , ltime     :: Time            -- ^ date of the last activity on the level
+  , lclear    :: Int             -- ^ total number of clear tiles
+  , lseen     :: Int             -- ^ number of clear tiles already seen
   }
   deriving Show
 
@@ -96,7 +98,8 @@ dropItemsAt items loc =
   in  updateIMap (IM.alter adj loc)
 
 instance Binary Level where
-  put (Level ad ia sx sy ls le li lm lrm ld lme lstairs ltime) = do
+  put (Level ad ia sx sy ls le li lm lrm ld
+             lme lstairs ltime lclear lseen) = do
     put ad
     put ia
     put sx
@@ -113,6 +116,8 @@ instance Binary Level where
     put lme
     put lstairs
     put ltime
+    put lclear
+    put lseen
   get = do
     ad <- get
     ia <- get
@@ -127,7 +132,10 @@ instance Binary Level where
     lme <- get
     lstairs <- get
     ltime <- get
-    return (Level ad ia sx sy ls le li lm lrm ld lme lstairs ltime)
+    lclear <- get
+    lseen <- get
+    return (Level ad ia sx sy ls le li lm lrm ld
+                  lme lstairs ltime lclear lseen)
 
 -- | Query for actual and remembered tile kinds on the map.
 at, rememberAt :: Level -> Point -> Kind.Id TileKind

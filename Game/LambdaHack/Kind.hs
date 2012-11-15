@@ -4,7 +4,7 @@ module Game.LambdaHack.Kind
   ( -- * General content types
     Id, Speedup(..), Ops(..), COps(..), createOps, stdRuleset
     -- * Arrays of content identifiers
-  , Array, (!), (//), listArray, array, bounds
+  , Array, (!), (//), listArray, array, bounds, foldlArray
   ) where
 
 import Data.Binary
@@ -157,3 +157,9 @@ array bds l = Array $ A.array bds [(i, e) | (i, Id e) <- l]
 -- | Content identifiers array bounds.
 bounds :: Ix.Ix i => Array i c -> (i, i)
 bounds (Array a) = A.bounds a
+
+-- | Fold left strictly over an array.
+foldlArray :: Ix.Ix i => (a -> Id c -> a) -> a -> Array i c -> a
+foldlArray f z0 (Array a) = lgo z0 $ A.elems a
+ where lgo z []       = z
+       lgo z (x : xs) = let fzx = f z (Id x) in fzx `seq` lgo fzx xs
