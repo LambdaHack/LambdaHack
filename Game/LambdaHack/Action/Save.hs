@@ -5,7 +5,7 @@ module Game.LambdaHack.Action.Save
 
 import System.Directory
 import System.FilePath
-import qualified Control.Exception as E hiding (handle)
+import qualified Control.Exception as Ex hiding (handle)
 import Control.Monad
 import Control.Concurrent
 import System.IO.Unsafe (unsafePerformIO)  -- horrors
@@ -54,9 +54,9 @@ saveGameFile state = do
 -- in the current directory just as well.
 tryCreateDir :: FilePath -> IO ()
 tryCreateDir dir =
-  E.catch
+  Ex.catch
     (createDirectory dir)
-    (\ e -> case e :: E.IOException of _ -> return ())
+    (\ e -> case e :: Ex.IOException of _ -> return ())
 
 -- TODO: perhaps take the target "scores" file name from config.
 -- TODO: perhaps source and "config", too, to be able to change all
@@ -70,10 +70,10 @@ tryCopyDataFiles pathsDataFile dirNew = do
   scoresFile <- pathsDataFile "scores"
   let configNew = combine dirNew "config"
       scoresNew = combine dirNew "scores"
-  E.catch
+  Ex.catch
     (copyFile configFile configNew >>
      copyFile scoresFile scoresNew)
-    (\ e -> case e :: E.IOException of _ -> return ())
+    (\ e -> case e :: Ex.IOException of _ -> return ())
 
 -- | Restore a saved game, if it exists. Initialize directory structure,
 -- if needed.
@@ -105,7 +105,7 @@ restoreGame pathsDataFile config title = do
   bfile <- bkpFile config
   sb <- doesFileExist sfile
   bb <- doesFileExist bfile
-  E.catch
+  Ex.catch
     (if sb
        then do
          mvBkp config
@@ -119,7 +119,7 @@ restoreGame pathsDataFile config title = do
              let msg = "No savefile found. Restoring from a backup savefile."
              return $ Left (state, diary, msg)
            else return $ Right (diary, "Welcome to " ++ title ++ "!"))
-    (\ e -> case e :: E.SomeException of
+    (\ e -> case e :: Ex.SomeException of
               _ -> let msg = "Starting a new game, because restore failed. "
                              ++ "The error message was: "
                              ++ (unwords . lines) (show e)

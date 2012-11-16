@@ -329,8 +329,9 @@ endOrLoop handleTurn = do
       -- Save and display in parallel.
       mv <- liftIO newEmptyMVar
       liftIO $ void $ forkIO (Save.saveGameFile s `finally` putMVar mv ())
-      tryIgnore $ handleScores False status total
-      void $ displayMore ColorFull "See you soon, stronger and braver!"
+      tryIgnore $ do
+        handleScores False status total
+        void $ displayMore ColorFull "See you soon, stronger and braver!"
       liftIO $ takeMVar mv  -- wait until saved
       -- Do nothing, that is, quit the game loop.
     Just (showScreens, status@Killed{}) -> do
