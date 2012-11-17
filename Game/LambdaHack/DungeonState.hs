@@ -101,8 +101,8 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, ouniqGroup}
     placeStairs cotile cmap kc dplaces
   let stairs = (su, upId) : if ln == depth then [] else [(sd, downId)]
       lmap = cmap Kind.// stairs
-      f n tk | Tile.isClear cotile tk = n + 1
-             | otherwise = n
+      f !n !tk | Tile.isExplorable cotile tk = n + 1
+               | otherwise = n
       lclear = Kind.foldlArray f 0 lmap
   is <- rollItems cops ln depth kc lmap su
   -- TODO: split this into Level.defaultLevel

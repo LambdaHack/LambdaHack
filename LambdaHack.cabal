@@ -208,6 +208,7 @@ executable LambdaHack
   ghc-options:     -fno-warn-auto-orphans -fno-warn-implicit-prelude
   ghc-options:     -fno-ignore-asserts -funbox-strict-fields
   ghc-options:     -threaded -with-rtsopts=-C0.005
+-- ghc-options:     -with-rtsopts=-N  -- eats all cores
 
 executable DumbBot
   hs-source-dirs:  DumbBot

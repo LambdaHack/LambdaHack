@@ -272,7 +272,7 @@ rememberList vis = do
   let rememberTile = [(loc, lvl `at` loc) | loc <- vis]
       unknownId = ouniqGroup "unknown space"
       newClear (loc, tk) = lvl `rememberAt` loc == unknownId
-                           && Tile.isClear cotile tk
+                           && Tile.isExplorable cotile tk
       clearN = length $ filter newClear rememberTile
   modify (updateLevel (updateLRMap (Kind.// rememberTile)))
   modify (updateLevel (\ l@Level{lseen} -> l {lseen = lseen + clearN}))

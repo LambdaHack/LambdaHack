@@ -25,6 +25,6 @@ data Feature =
 
   | Boring             -- ^ items and stairs can be generated there
   | Exit               -- ^ is a (not hidden) door, stair, etc.
-  | Path               -- ^ used for distinct paths throughout the level
+  | Path               -- ^ used for visible paths throughout the level
   | Secret !RollDice   -- ^ discovering the secret will require this many turns
   deriving (Show, Read, Eq, Ord)

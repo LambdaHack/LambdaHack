@@ -140,11 +140,13 @@ draw dm cops per s@State{ scursor=Cursor{..}
              Just c -> Color.AttrChar Color.defaultAttr c
              _      -> Color.AttrChar a char
       seenN = 100 * lseen `div` lclear
-      seenTxt = reverse $ take 2 $ reverse $ " " ++ show seenN
+      seenTxt | seenN == 100 = "all"
+              | otherwise = (reverse $ take 2 $ reverse $ " " ++ show seenN)
+                            ++ "%"
       status =
         take 31 (show (Dungeon.levelNumber slid) ++ ": "
                  ++ ldesc ++ repeat ' ') ++
-        take 12 ("[" ++ seenTxt ++ "% seen]  ") ++
+        take 12 ("[" ++ seenTxt ++ " seen]  ") ++
         take 10 ("$: " ++ show wealth ++ repeat ' ') ++
         take 13 ("Dmg: " ++ damage ++ repeat ' ') ++
         take 13 ("HP: " ++ show bhp ++

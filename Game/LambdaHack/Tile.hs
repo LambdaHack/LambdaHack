@@ -15,7 +15,7 @@
 module Game.LambdaHack.Tile
   (SecretTime, SmellTime
   , kindHasFeature, kindHas, hasFeature
-  , isClear, isLit, similar, canBeHidden, speedup
+  , isClear, isLit, isExplorable, similar, canBeHidden, speedup
   ) where
 
 import qualified Data.List as L
@@ -58,6 +58,15 @@ isClear Kind.Ops{ospeedup = Kind.TileSpeedup{isClearTab}} = isClearTab
 -- Essential for efficiency of "Perception", hence tabulated.
 isLit :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 isLit Kind.Ops{ospeedup = Kind.TileSpeedup{isLitTab}} = isLitTab
+
+-- | Whether a tile can be explored, possibly yielding a treasure
+-- or a hidden message. We exclude doors and hidden features
+-- (TODO: and features created by actors, e.g., dug out).
+isExplorable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+isExplorable cops tk =
+  not (hasFeature cops F.Closable tk)
+  && (isClear cops tk
+      || hasFeature cops F.Walkable tk)
 
 -- | The player can't tell one tile from the other.
 similar :: TileKind -> TileKind -> Bool
