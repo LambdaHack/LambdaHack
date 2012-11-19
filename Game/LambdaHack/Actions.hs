@@ -597,12 +597,8 @@ addSmell = do
 setWaitBlock :: ActorId -> Action ()
 setWaitBlock actor = do
   Kind.COps{coactor} <- getCOps
-  am <- gets (getActor actor)
   time <- gets stime
-  let speed = actorSpeed coactor am
-      delta = ticksPerMeter speed
-      timeEnd = timeAdd time delta
-  updateAnyActor actor $ \ m -> m {bwait = timeEnd}
+  updateAnyActor actor $ \ m -> m {bwait = timeAddFromSpeed coactor m time}
 
 -- | Player waits a turn (and blocks, etc.).
 waitBlock :: Action ()

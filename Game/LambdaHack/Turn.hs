@@ -129,10 +129,9 @@ handleActors subclipStart = do
             handleActors $ btime m
         else do
           advanceTime actor  -- advance time while the actor still alive
-          let speed = actorSpeed coactor m
-              delta = ticksPerMeter speed
+          let subclipStartDelta = timeAddFromSpeed coactor m subclipStart
           if subclipStart == timeZero
-                || btime m > timeAdd subclipStart delta
+                || btime m > subclipStartDelta
                 || bfaction m == sfaction && not (bproj m)
             then
               -- That's the first move this clip
@@ -245,10 +244,7 @@ playerCommand msgRunAbort = do
 advanceTime :: ActorId -> Action ()
 advanceTime actor = do
   Kind.COps{coactor} <- getCOps
-  let upd m@Actor{btime} =
-        let speed = actorSpeed coactor m
-            delta = ticksPerMeter speed
-        in m {btime = timeAdd btime delta}
+  let upd m@Actor{btime} = m {btime = timeAddFromSpeed coactor m btime}
   updateAnyActor actor upd
 
 

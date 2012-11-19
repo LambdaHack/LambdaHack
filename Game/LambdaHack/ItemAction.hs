@@ -119,11 +119,10 @@ projectGroupItem source tloc _verb item = do
       -- projectiles should be set to the time of the opposite party as well.
       -- Both parties would see their own projectiles move part of the way
       -- and the opposite party's projectiles waiting one turn.
-      speed = actorSpeed coactor sm
-      delta = ticksPerMeter speed
+      btimeDelta = timeAddFromSpeed coactor sm btime
       time =
         if bfaction sm == sfaction || source == pl
-        then btime `timeAdd` delta `timeAdd` timeNegate timeClip
+        then btimeDelta `timeAdd` timeNegate timeClip
         else btime
       bl = bla lxsize lysize eps sloc tloc
   case bl of

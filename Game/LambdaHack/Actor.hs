@@ -4,8 +4,8 @@ module Game.LambdaHack.Actor
   ( -- * Actor identifiers and related operations
     ActorId, findHeroName, monsterGenChance
     -- * The@ Acto@r type
-  , Actor(..), template, addHp, braced, unoccupied, heroKindId
-  , projectileKindId, actorSpeed
+  , Actor(..), template, addHp, timeAddFromSpeed, braced
+  , unoccupied, heroKindId, projectileKindId, actorSpeed
     -- * Type of na actor target
   , Target(..)
   ) where
@@ -128,6 +128,19 @@ addHp Kind.Ops{okind} extra m =
      then m
      else m {bhp = min maxHP (currentHP + extra)}
 
+-- | Access actor speed, individual or, otherwise, stock.
+actorSpeed :: Kind.Ops ActorKind -> Actor -> Speed
+actorSpeed Kind.Ops{okind} m =
+  let stockSpeed = aspeed $ okind $ bkind m
+  in fromMaybe stockSpeed $ bspeed m
+
+-- | Add time taken by a single step at the actor's current speed.
+timeAddFromSpeed :: Kind.Ops ActorKind -> Actor -> Time -> Time
+timeAddFromSpeed coactor m time =
+  let speed = actorSpeed coactor m
+      delta = ticksPerMeter speed
+  in timeAdd time delta
+
 -- | Whether an actor is braced for combat this turn.
 braced :: Actor -> Time -> Bool
 braced m time = time < bwait m
@@ -145,12 +158,6 @@ heroKindId Kind.Ops{ouniqGroup} = ouniqGroup "hero"
 -- | The unique kind of projectiles.
 projectileKindId :: Kind.Ops ActorKind -> Kind.Id ActorKind
 projectileKindId Kind.Ops{ouniqGroup} = ouniqGroup "projectile"
-
--- | Access actor speed, individual or, otherwise, stock.
-actorSpeed :: Kind.Ops ActorKind -> Actor -> Speed
-actorSpeed Kind.Ops{okind} m =
-  let stockSpeed = aspeed $ okind $ bkind m
-  in fromMaybe stockSpeed $ bspeed m
 
 -- Target
 

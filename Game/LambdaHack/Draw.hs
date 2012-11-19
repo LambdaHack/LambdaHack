@@ -51,7 +51,7 @@ draw dm cops per s@State{ scursor=Cursor{..}
       DebugMode{smarkVision, somniscient} = sdebug
       lvl@Level{lxsize, lysize, lsmell, ldesc, lactor, ltime, lclear, lseen} =
         slevel s
-      (_, Actor{bkind, bhp, bloc}, bitems) = findActorAnyLevel splayer s
+      (_, mpl@Actor{bkind, bhp, bloc}, bitems) = findActorAnyLevel splayer s
       ActorKind{ahp, asmell} = okind bkind
       reachable = debugTotalReachable per
       visible   = totalVisible per
@@ -143,13 +143,18 @@ draw dm cops per s@State{ scursor=Cursor{..}
       seenTxt | seenN == 100 = "all"
               | otherwise = (reverse $ take 2 $ reverse $ " " ++ show seenN)
                             ++ "%"
+      -- Indicate the actor is braced (was waiting last move).
+      -- It's a useful feedback for the otherwise hard to observe
+      -- 'wait' command.
+      braceSign | braced mpl ltime = "{"
+                | otherwise = " "
       status =
         take 31 (show (Dungeon.levelNumber slid) ++ ": "
                  ++ ldesc ++ repeat ' ') ++
         take 12 ("[" ++ seenTxt ++ " seen]  ") ++
         take 10 ("$: " ++ show wealth ++ repeat ' ') ++
-        take 13 ("Dmg: " ++ damage ++ repeat ' ') ++
-        take 13 ("HP: " ++ show bhp ++
+        take 12 ("Dmg: " ++ damage ++ repeat ' ') ++
+        take 14 (braceSign ++ "HP: " ++ show bhp ++
                  " (" ++ show (maxDice ahp) ++ ")" ++ repeat ' ')
       toWidth :: Int -> String -> String
       toWidth n x = take n (x ++ repeat ' ')
