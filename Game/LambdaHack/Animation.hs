@@ -1,7 +1,7 @@
 -- | Screen frames and animations.
 module Game.LambdaHack.Animation
   ( Attr(..), defaultAttr, AttrChar(..)
-  , SingleFrame(..), Animation, rederAnim
+  , SingleFrame(..), Animation, rederAnim, emptyAnimation
   , twirlSplash, swapPlaces
   ) where
 
@@ -23,12 +23,12 @@ data SingleFrame = SingleFrame
 
 -- | Animation is a list of frame modifications to play one by one,
 -- where each modification if a map from locations to level map symbols.
-type Animation = [IM.IntMap AttrChar]
+newtype Animation = Animation [IM.IntMap AttrChar]
 
 -- | Render animations on top of a screen frame.
 rederAnim :: X -> Y -> SingleFrame -> Animation
           -> [Maybe SingleFrame]
-rederAnim lxsize lysize basicFrame anim =
+rederAnim lxsize lysize basicFrame (Animation anim) =
   let modifyFrame SingleFrame{sfLevel = levelOld, ..} am =
         let fLine y lineOld =
               let f l (x, acOld) =
@@ -42,9 +42,12 @@ rederAnim lxsize lysize basicFrame anim =
         in Just SingleFrame{..}
   in map (modifyFrame basicFrame) anim
 
+emptyAnimation :: Animation
+emptyAnimation = Animation []
+
 -- | Attack animation. A part of it also reused for self-damage and healing.
 twirlSplash :: [Point] -> Color -> Color -> Animation
-twirlSplash locs c1 c2 = map (IM.fromList . zip locs)
+twirlSplash locs c1 c2 = Animation $ map (IM.fromList . zip locs)
   [ [AttrChar (Attr BrWhite defBG) '*']
   , [AttrChar (Attr c1 defBG) '/',
      AttrChar (Attr BrWhite defBG) '^']
@@ -66,7 +69,7 @@ twirlSplash locs c1 c2 = map (IM.fromList . zip locs)
 
 -- | Swap-places animation, both hostile and friendly.
 swapPlaces :: [Point] -> Animation
-swapPlaces locs = map (IM.fromList . zip locs)
+swapPlaces locs = Animation $ map (IM.fromList . zip locs)
   [ [AttrChar (Attr BrMagenta defBG) '.',
      AttrChar (Attr Magenta defBG) 'o']
   , [AttrChar (Attr BrMagenta defBG) 'd',

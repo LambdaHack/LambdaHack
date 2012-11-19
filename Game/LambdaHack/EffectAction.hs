@@ -33,7 +33,7 @@ import qualified Game.LambdaHack.Effect as Effect
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.DungeonState
 import qualified Game.LambdaHack.Color as Color
-import Game.LambdaHack.Animation (twirlSplash)
+import Game.LambdaHack.Animation (emptyAnimation, twirlSplash)
 import qualified Game.LambdaHack.Dungeon as Dungeon
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
@@ -101,7 +101,7 @@ effectToAction effect verbosity source target power = do
       let locs = tloc : if tloc == sloc then [] else [sloc]
           anim | newHP > oldHP = twirlSplash locs Color.BrBlue Color.Blue
                | newHP < oldHP = twirlSplash locs Color.BrRed  Color.Red
-               | otherwise     = []
+               | otherwise     = emptyAnimation
           animFrs = animate s diary cops per anim
       mapM_ displayFramePush $ Nothing : animFrs
       return (b, True)
