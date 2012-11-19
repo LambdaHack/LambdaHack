@@ -12,6 +12,7 @@ import Data.Maybe
 
 import Game.LambdaHack.Msg
 import qualified Game.LambdaHack.Color as Color
+import Game.LambdaHack.Animation (SingleFrame(..), Animation, rederAnim)
 import Game.LambdaHack.State
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Point
@@ -41,7 +42,7 @@ data ColorMode =
 -- | Draw the whole screen: level map, status area and, at most,
 -- a single page overlay of text divided into lines.
 draw :: ColorMode -> Kind.COps -> Perception -> State -> Overlay
-     -> Color.SingleFrame
+     -> SingleFrame
 draw dm cops per s@State{ scursor=Cursor{..}
                         , sflavour, slid, splayer, sdebug
                         } overlay =
@@ -166,32 +167,14 @@ draw dm cops per s@State{ scursor=Cursor{..}
         in L.foldl' f [] [lysize-1,lysize-2..0]
       sfTop = toWidth lxsize msgTop
       sfBottom = toWidth lxsize $ fromMaybe status msgBottom
-  in Color.SingleFrame{..}
+  in SingleFrame{..}
 
 -- | Render animations on top of the current screen frame.
-animate :: State -> Diary -> Kind.COps -> Perception -> Color.Animation
-        -> [Maybe Color.SingleFrame]
+animate :: State -> Diary -> Kind.COps -> Perception -> Animation
+        -> [Maybe SingleFrame]
 animate s Diary{sreport} cops per anim =
-  let xsize = lxsize $ slevel s
-      over = renderReport sreport
-      topLineOnly = padMsg xsize over
-      basicFrame = draw ColorFull cops per s [topLineOnly]
-  in rederAnim s basicFrame anim
-
--- | Render animations on top of a screen frame.
-rederAnim :: State -> Color.SingleFrame -> Color.Animation
-          -> [Maybe Color.SingleFrame]
-rederAnim s basicFrame anim =
   let Level{lxsize, lysize} = slevel s
-      modifyFrame Color.SingleFrame{sfLevel = levelOld, ..} am =
-        let fLine y lineOld =
-              let f l (x, acOld) =
-                    let loc = toPoint lxsize (PointXY (x, y))
-                        !ac = fromMaybe acOld $ IM.lookup loc am
-                    in ac : l
-              in L.foldl' f [] (zip [lxsize-1,lxsize-2..0] (reverse lineOld))
-            sfLevel =  -- Fully evaluated.
-              let f l (y, lineOld) = let !line = fLine y lineOld in line : l
-              in L.foldl' f [] (zip [lysize-1,lysize-2..0] (reverse levelOld))
-        in Just Color.SingleFrame{..}
-  in map (modifyFrame basicFrame) anim
+      over = renderReport sreport
+      topLineOnly = padMsg lxsize over
+      basicFrame = draw ColorFull cops per s [topLineOnly]
+  in rederAnim lxsize lysize  basicFrame anim

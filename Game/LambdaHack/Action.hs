@@ -52,7 +52,7 @@ import Game.LambdaHack.Binding
 import Game.LambdaHack.Action.HighScore (register)
 import qualified Game.LambdaHack.Config as Config
 import qualified Game.LambdaHack.Action.ConfigIO as ConfigIO
-import qualified Game.LambdaHack.Color as Color
+import Game.LambdaHack.Animation (SingleFrame(..))
 import Game.LambdaHack.Point
 import qualified Game.LambdaHack.DungeonState as DungeonState
 import Game.LambdaHack.Item
@@ -95,7 +95,7 @@ getKeyCommand doPush = do
     _ -> (nc, modifier)
 
 -- | Display frame and wait for a player command.
-getKeyFrameCommand :: Color.SingleFrame -> Action (K.Key, K.Modifier)
+getKeyFrameCommand :: SingleFrame -> Action (K.Key, K.Modifier)
 getKeyFrameCommand frame = do
   fs <- getFrontendSession
   keyb <- getBinding
@@ -105,7 +105,7 @@ getKeyFrameCommand frame = do
     _ -> (nc, modifier)
 
 -- | Ignore unexpected kestrokes until a SPACE or ESC is pressed.
-getConfirm :: Color.SingleFrame -> Action Bool
+getConfirm :: SingleFrame -> Action Bool
 getConfirm frame = do
   fs <- getFrontendSession
   let keys = [ (K.Space, K.NoModifier), (K.Esc, K.NoModifier)]
@@ -115,7 +115,7 @@ getConfirm frame = do
     _       -> return False
 
 -- | A series of confirmations for all overlays.
-getOverConfirm :: [Color.SingleFrame] -> Action Bool
+getOverConfirm :: [SingleFrame] -> Action Bool
 getOverConfirm []     = return True
 getOverConfirm (x:xs) = do
   b <- getConfirm x
@@ -124,7 +124,7 @@ getOverConfirm (x:xs) = do
     else return False
 
 -- | A yes-no confirmation.
-getYesNo :: Color.SingleFrame -> Action Bool
+getYesNo :: SingleFrame -> Action Bool
 getYesNo frame = do
   fs <- getFrontendSession
   let keys = [ (K.Char 'y', K.NoModifier)
@@ -201,7 +201,7 @@ displayChoiceUI prompt ovs keys = do
     _ -> return (key, modifier)
 
 -- | Push a frame or a single frame's worth of delay to the frame queue.
-displayFramePush :: Maybe Color.SingleFrame -> Action ()
+displayFramePush :: Maybe SingleFrame -> Action ()
 displayFramePush mframe = do
   fs <- getFrontendSession
   liftIO $ displayFrame fs False mframe
@@ -209,7 +209,7 @@ displayFramePush mframe = do
 -- | Draw the current level. The prompt is displayed, but not added
 -- to history. The prompt is appended to the current message
 -- and only the first screenful of the resulting overlay is displayed.
-drawPrompt :: ColorMode -> Msg -> Action Color.SingleFrame
+drawPrompt :: ColorMode -> Msg -> Action SingleFrame
 drawPrompt dm prompt = do
   cops <- getCOps
   per <- getPerception
@@ -222,7 +222,7 @@ drawPrompt dm prompt = do
 -- but not added to history. The prompt is appended to the current message
 -- and only the first line of the result is displayed.
 -- The overlay starts on the second line.
-drawOverlay :: ColorMode -> Msg -> Overlay -> Action Color.SingleFrame
+drawOverlay :: ColorMode -> Msg -> Overlay -> Action SingleFrame
 drawOverlay dm prompt overlay = do
   cops <- getCOps
   per <- getPerception

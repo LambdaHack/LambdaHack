@@ -14,6 +14,7 @@ import qualified System.IO as SIO
 
 import qualified Game.LambdaHack.Key as K (Key(..),  Modifier(..))
 import qualified Game.LambdaHack.Color as Color
+import Game.LambdaHack.Animation (SingleFrame(..))
 
 -- | No session data needs to be maintained by this frontend.
 type FrontendSession = ()
@@ -30,10 +31,10 @@ startup _ k = k ()
 display :: FrontendSession          -- ^ frontend session data
         -> Bool
         -> Bool
-        -> Maybe Color.SingleFrame  -- ^ the screen frame to draw
+        -> Maybe SingleFrame  -- ^ the screen frame to draw
         -> IO ()
 display _ _ _ Nothing = return ()
-display _ _ _ (Just Color.SingleFrame{..}) =
+display _ _ _ (Just SingleFrame{..}) =
   let chars = L.map (BS.pack . L.map Color.acChar) sfLevel
       bs = [BS.pack sfTop, BS.empty] ++ chars ++ [BS.pack sfBottom, BS.empty]
   in mapM_ BS.putStrLn bs
@@ -48,7 +49,7 @@ nextEvent sess mb = do
     else return (keyTranslate c, K.NoModifier)
 
 -- | Display a prompt, wait for any key.
-promptGetAnyKey :: FrontendSession -> Color.SingleFrame
+promptGetAnyKey :: FrontendSession -> SingleFrame
              -> IO (K.Key, K.Modifier)
 promptGetAnyKey sess frame = do
   display sess True True $ Just frame

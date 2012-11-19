@@ -17,6 +17,7 @@ import Control.Monad
 import Game.LambdaHack.Utils.Assert
 import qualified Game.LambdaHack.Key as K (Key(..),  Modifier(..))
 import qualified Game.LambdaHack.Color as Color
+import Game.LambdaHack.Animation (SingleFrame(..))
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
@@ -54,10 +55,10 @@ startup _ k = do
 display :: FrontendSession          -- ^ frontend session data
         -> Bool
         -> Bool
-        -> Maybe Color.SingleFrame  -- ^ the screen frame to draw
+        -> Maybe SingleFrame  -- ^ the screen frame to draw
         -> IO ()
 display _ _ _ Nothing = return ()
-display FrontendSession{..}  _ _ (Just Color.SingleFrame{..}) = do
+display FrontendSession{..}  _ _ (Just SingleFrame{..}) = do
   -- let defaultStyle = C.defaultCursesStyle
   -- Terminals with white background require this:
   let defaultStyle = sstyles M.! Color.defaultAttr
@@ -81,7 +82,7 @@ nextEvent _sess _ = do
   return (keyTranslate e, K.NoModifier)
 
 -- | Display a prompt, wait for any key.
-promptGetAnyKey :: FrontendSession -> Color.SingleFrame
+promptGetAnyKey :: FrontendSession -> SingleFrame
              -> IO (K.Key, K.Modifier)
 promptGetAnyKey sess frame = do
   display sess True True $ Just frame

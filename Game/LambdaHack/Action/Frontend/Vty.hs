@@ -15,6 +15,7 @@ import qualified Data.ByteString.Char8 as BS
 
 import qualified Game.LambdaHack.Key as K (Key(..), Modifier(..))
 import qualified Game.LambdaHack.Color as Color
+import Game.LambdaHack.Animation (SingleFrame(..))
 
 -- | Session data maintained by the frontend.
 type FrontendSession = Vty
@@ -34,10 +35,10 @@ startup _ k = do
 display :: FrontendSession          -- ^ frontend session data
         -> Bool
         -> Bool
-        -> Maybe Color.SingleFrame  -- ^ the screen frame to draw
+        -> Maybe SingleFrame  -- ^ the screen frame to draw
         -> IO ()
 display _ _ _ Nothing = return ()
-display vty _ _ (Just Color.SingleFrame{..}) =
+display vty _ _ (Just SingleFrame{..}) =
   let img = (foldr (<->) empty_image
              . L.map (foldr (<|>) empty_image
                       . L.map (\ Color.AttrChar{..} ->
@@ -61,7 +62,7 @@ nextEvent sess mb = do
     _ -> nextEvent sess mb
 
 -- | Display a prompt, wait for any key.
-promptGetAnyKey :: FrontendSession -> Color.SingleFrame
+promptGetAnyKey :: FrontendSession -> SingleFrame
              -> IO (K.Key, K.Modifier)
 promptGetAnyKey sess frame = do
   display sess True True $ Just frame

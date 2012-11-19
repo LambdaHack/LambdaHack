@@ -78,6 +78,7 @@ library
                    Game.LambdaHack.Actions,
                    Game.LambdaHack.Actor,
                    Game.LambdaHack.ActorState,
+                   Game.LambdaHack.Animation,
                    Game.LambdaHack.Area,
                    Game.LambdaHack.AreaRnd,
                    Game.LambdaHack.Binding,

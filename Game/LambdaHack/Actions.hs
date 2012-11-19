@@ -43,7 +43,7 @@ import Game.LambdaHack.Random
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Binding
 import Game.LambdaHack.Time
-import qualified Game.LambdaHack.Color as Color
+import Game.LambdaHack.Animation (swapPlaces)
 import Game.LambdaHack.Draw
 import qualified Game.LambdaHack.Command as Command
 
@@ -397,16 +397,20 @@ actorAttackActor source target = do
                        in tmSubject ++ " "
                           ++ conjugate tmSubject "block" ++ "."
           visible = sloc `IS.member` totalVisible per
+      let performHit = do
+            when visible $ msgAdd msg
+            -- Msgs inside itemEffectAction describe the target part.
+            itemEffectAction verbosity source target single
       -- Projectiles can't be blocked, can be sidestepped.
-      blocked <- rndToAction $ chance $ 1%2
-      if braced tm time && not (bproj sm) && blocked
-        then
-          when visible $ msgAdd msgMiss
-          -- TODO: add a very short animation plus another one when block pierced through
-        else do
-          when visible $ msgAdd msg
-          -- Msgs inside itemEffectAction describe the target part.
-          itemEffectAction verbosity source target single
+      if braced tm time && not (bproj sm)
+        then do
+          blocked <- rndToAction $ chance $ 1%2
+          if blocked
+            then  -- TODO: anim {}{}
+              when visible $ msgAdd msgMiss
+            else  -- TODO: modified hit anim {}{}
+              performHit
+        else performHit
 
 -- | Resolves the result of an actor running (not walking) into another.
 -- This involves switching positions of the two actors.
@@ -428,17 +432,7 @@ actorRunActor source target = do
   diary <- getDiary  -- here diary possibly contains the new msg
   s <- get
   let locs = [tloc, sloc]
-      anim = map (IM.fromList . zip locs)
-        [ [Color.AttrChar (Color.Attr Color.BrMagenta Color.defBG) '.',
-           Color.AttrChar (Color.Attr Color.Magenta Color.defBG) 'o']
-        , [Color.AttrChar (Color.Attr Color.BrMagenta Color.defBG) 'd',
-           Color.AttrChar (Color.Attr Color.Magenta Color.defBG) 'p']
-        , [Color.AttrChar (Color.Attr Color.Magenta Color.defBG) 'p',
-           Color.AttrChar (Color.Attr Color.BrMagenta Color.defBG) 'd']
-        , [Color.AttrChar (Color.Attr Color.Magenta Color.defBG) 'o']
-        , []
-        ]
-      animFrs = animate s diary cops per anim
+      animFrs = animate s diary cops per $ swapPlaces locs
   when visible $ mapM_ displayFramePush $ Nothing : animFrs
   if source == pl
    then stopRunning  -- do not switch positions repeatedly

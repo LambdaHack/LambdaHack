@@ -3,11 +3,10 @@ module Game.LambdaHack.Color
   ( -- * Colours
     Color(..), defBG, defFG, isBright, legalBG, colorToRGB
     -- * Text attributes and the screen
-  , Attr(..), defaultAttr, AttrChar(..), SingleFrame(..), Animation
+  , Attr(..), defaultAttr, AttrChar(..)
   ) where
 
 import Data.Binary
-import qualified Data.IntMap as IM
 
 -- TODO: since this type may be essential to speed, consider implementing
 -- it as an Int, with color numbered as they are on terminals, see
@@ -77,18 +76,6 @@ instance Binary AttrChar where
     acAttr <- get
     acChar <- get
     return AttrChar{..}
-
--- | The data sufficent to draw a single game screen frame.
-data SingleFrame = SingleFrame
-  { sfLevel  :: ![[AttrChar]]  -- ^ content of the screen, line by line
-  , sfTop    :: String         -- ^ an extra line to show at the top
-  , sfBottom :: String         -- ^ an extra line to show at the bottom
-  }
-  deriving Eq
-
--- | Animation is a list of frame modifications to play one by one,
--- where each modification if a map from locations to level map symbols.
-type Animation = [IM.IntMap AttrChar]
 
 -- | A helper for the terminal frontends that display bright via bold.
 isBright :: Color -> Bool

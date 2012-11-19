@@ -26,6 +26,7 @@ import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.LQueue
 import qualified Game.LambdaHack.Key as K (Key(..), keyTranslate, Modifier(..))
 import qualified Game.LambdaHack.Color as Color
+import Game.LambdaHack.Animation (SingleFrame(..))
 
 data FrameState =
     FPushed  -- frames stored in a queue, to be drawn in equal time intervals
@@ -280,13 +281,13 @@ pollFrames sess@FrontendSession{sframeState} Nothing = do
       pollFrames sess Nothing
 
 -- | Add a frame to be drawn.
-display :: FrontendSession -> Bool -> Bool -> Maybe Color.SingleFrame -> IO ()
+display :: FrontendSession -> Bool -> Bool -> Maybe SingleFrame -> IO ()
 display sess True noDelay rawFrame = pushFrame sess noDelay rawFrame
 display sess False _ (Just rawFrame) = setFrame sess rawFrame
 display _ _ _ _ = assert `failure` "display: empty frame to be set"
 
 -- | Add a game screen frame to the frame drawing channel.
-pushFrame :: FrontendSession -> Bool -> Maybe Color.SingleFrame -> IO ()
+pushFrame :: FrontendSession -> Bool -> Maybe SingleFrame -> IO ()
 pushFrame sess@FrontendSession{sframeState, slastFull} noDelay rawFrame = do
   -- Full evaluation and comparison is done outside the mvar lock.
   (lastFrame, anyFollowed) <- readIORef slastFull
@@ -316,8 +317,8 @@ pushFrame sess@FrontendSession{sframeState, slastFull} noDelay rawFrame = do
     Nothing -> writeIORef slastFull (lastFrame, True)
     Just f  -> writeIORef slastFull (f, noDelay)
 
-evalFrame :: FrontendSession -> Color.SingleFrame -> GtkFrame
-evalFrame FrontendSession{stags} Color.SingleFrame{..} =
+evalFrame :: FrontendSession -> SingleFrame -> GtkFrame
+evalFrame FrontendSession{stags} SingleFrame{..} =
   let levelChar = L.map (L.map Color.acChar) sfLevel
       gfChar = BS.pack $ L.intercalate "\n" $ sfTop : levelChar ++ [sfBottom]
       -- Strict version of @L.map (L.map ((stags M.!) . fst)) sfLevel@.
@@ -329,7 +330,7 @@ evalFrame FrontendSession{stags} Color.SingleFrame{..} =
 -- | Set the frame to be drawn at the next invocation of @nextEvent@.
 -- Fail if there is already a frame pushed or set.
 -- Don't show the frame if it's unchanged vs the previous.
-setFrame :: FrontendSession -> Color.SingleFrame -> IO ()
+setFrame :: FrontendSession -> SingleFrame -> IO ()
 setFrame sess@FrontendSession{slastFull, sframeState} rawFrame = do
   -- Full evaluation and comparison is done outside the mvar lock.
   (lastFrame, _) <- readIORef slastFull
@@ -411,7 +412,7 @@ nextEvent sess@FrontendSession{schanKey, sframeState} (Just True) = do
 -- Starts in Push or None mode, stop in None mode.
 -- Spends most time waiting for a key, so not performance critical,
 -- so does not need optimization.
-promptGetAnyKey :: FrontendSession -> Color.SingleFrame
+promptGetAnyKey :: FrontendSession -> SingleFrame
                 -> IO (K.Key, K.Modifier)
 promptGetAnyKey sess@FrontendSession{sframeState} frame = do
   -- Assumption: no other thread changes the main constructor in sframeState.

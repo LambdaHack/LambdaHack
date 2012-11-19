@@ -30,7 +30,7 @@ import Game.LambdaHack.State
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Binding
 import qualified Game.LambdaHack.Config as Config
-import qualified Game.LambdaHack.Color as Color
+import Game.LambdaHack.Animation (SingleFrame(..))
 
 -- | The type of the function inside any action.
 -- (Separated from the @Action@ type to document each argument with haddock.)
@@ -109,14 +109,14 @@ getPerception = Action (\ _s per k _a s ms ->
 
 -- | Actions and screen frames, including delays, resulting
 -- from performing the actions.
-type ActionFrame a = Action (a, [Maybe Color.SingleFrame])
+type ActionFrame a = Action (a, [Maybe SingleFrame])
 
 -- | Return the value with an empty set of screen frames.
 returnNoFrame :: a -> ActionFrame a
 returnNoFrame a = return (a, [])
 
 -- | Return the trivial value with a single frame to show.
-returnFrame :: Color.SingleFrame -> ActionFrame ()
+returnFrame :: SingleFrame -> ActionFrame ()
 returnFrame fr = return ((), [Just fr])
 
 -- | As the @when@ monad operation, but on type @ActionFrame ()@.

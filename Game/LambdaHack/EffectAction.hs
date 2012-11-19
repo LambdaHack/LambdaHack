@@ -33,6 +33,7 @@ import qualified Game.LambdaHack.Effect as Effect
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.DungeonState
 import qualified Game.LambdaHack.Color as Color
+import Game.LambdaHack.Animation (twirlSplash)
 import qualified Game.LambdaHack.Dungeon as Dungeon
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
@@ -93,32 +94,14 @@ effectToAction effect verbosity source target power = do
      then do
       -- Party sees the effect or is affected by it.
       msgAdd msg
-      -- Try to show an animation.
+      -- Try to show an animation. Sometimes, e.g., when HP is unchaged,
+      -- the animation will not be shown.
       cops <- getCOps
       diary <- getDiary
       let locs = tloc : if tloc == sloc then [] else [sloc]
-          twirlSplash c1 c2 = map (IM.fromList . zip locs)
-            [ [Color.AttrChar (Color.Attr Color.BrWhite Color.defBG) '*']
-            , [Color.AttrChar (Color.Attr c1 Color.defBG) '/',
-               Color.AttrChar (Color.Attr Color.BrWhite Color.defBG) '^']
-            , [Color.AttrChar (Color.Attr c1 Color.defBG) '-',
-               Color.AttrChar (Color.Attr Color.BrWhite Color.defBG) '^']
-            , [Color.AttrChar (Color.Attr c1 Color.defBG) '\\',
-               Color.AttrChar (Color.Attr Color.BrWhite Color.defBG) '^']
-            , [Color.AttrChar (Color.Attr c1 Color.defBG) '|']
-            , [Color.AttrChar (Color.Attr c1 Color.defBG) '/']
-            , [Color.AttrChar (Color.Attr c1 Color.defBG) '-']
-            , [Color.AttrChar (Color.Attr c2 Color.defBG) '\\',
-               Color.AttrChar (Color.Attr Color.BrWhite Color.defBG) '^']
-            , [Color.AttrChar (Color.Attr c2 Color.defBG) '%',
-               Color.AttrChar (Color.Attr Color.BrWhite Color.defBG) '^']
-            , [Color.AttrChar (Color.Attr c2 Color.defBG) '%',
-               Color.AttrChar (Color.Attr Color.BrWhite Color.defBG) '^']
-            , []
-            ]
-          anim  | newHP > oldHP = twirlSplash Color.BrBlue Color.Blue
-                | newHP < oldHP = twirlSplash Color.BrRed  Color.Red
-                | otherwise     = []
+          anim | newHP > oldHP = twirlSplash locs Color.BrBlue Color.Blue
+               | newHP < oldHP = twirlSplash locs Color.BrRed  Color.Red
+               | otherwise     = []
           animFrs = animate s diary cops per anim
       mapM_ displayFramePush $ Nothing : animFrs
       return (b, True)
