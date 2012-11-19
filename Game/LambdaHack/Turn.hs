@@ -106,7 +106,6 @@ handleActors subclipStart = do
     _ | isJust squitOld -> return ()
     Nothing -> when (subclipStart == timeZero) $ displayFramePush Nothing
     Just (actor, _) -> do
-      updateWaitBlock actor (+ 1)
       m <- gets (getActor actor)
       if actor == pl
         then

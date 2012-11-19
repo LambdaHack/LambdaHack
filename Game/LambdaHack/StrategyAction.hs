@@ -158,7 +158,7 @@ dirToAction actor allowAttacks dir = do
 
 -- | A strategy to always just wait.
 waitBlockNow :: ActorId -> Strategy (Action ())
-waitBlockNow actor = return $ updateWaitBlock actor (const 0)
+waitBlockNow actor = return $ setWaitBlock actor
 
 -- | A strategy to always just die.
 dieNow :: ActorId -> Strategy (Action ())

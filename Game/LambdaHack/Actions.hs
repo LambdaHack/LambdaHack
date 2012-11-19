@@ -353,6 +353,7 @@ actorAttackActor :: ActorId -> ActorId -> Action ()
 actorAttackActor source target = do
   sm <- gets (getActor source)
   tm <- gets (getActor target)
+  time <- gets stime
   sfaction <- gets sfaction
   if bfaction sm == sfaction && not (bproj sm) &&
      bfaction tm == sfaction && not (bproj tm)
@@ -396,14 +397,16 @@ actorAttackActor source target = do
                        in tmSubject ++ " "
                           ++ conjugate tmSubject "block" ++ "."
           visible = sloc `IS.member` totalVisible per
+      -- Projectiles can't be blocked, can be sidestepped.
       blocked <- rndToAction $ chance $ 1%2
-      if bwait tm >= 1 || not blocked
-        then do
+      if braced tm time && not (bproj sm) && blocked
+        then
+          when visible $ msgAdd msgMiss
+          -- TODO: add a very short animation plus another one when block pierced through
+        else do
           when visible $ msgAdd msg
           -- Msgs inside itemEffectAction describe the target part.
           itemEffectAction verbosity source target single
-        else
-          when visible $ msgAdd msgMiss
 
 -- | Resolves the result of an actor running (not walking) into another.
 -- This involves switching positions of the two actors.
@@ -591,12 +594,18 @@ addSmell = do
     modify $ updateLevel $ updateSmell upd
 
 -- | Update the wait/block count.
-updateWaitBlock :: ActorId -> (Int -> Int) -> Action ()
-updateWaitBlock actor f =
-  updateAnyActor actor $ \ m@Actor{bwait} -> m {bwait = f bwait}
+setWaitBlock :: ActorId -> Action ()
+setWaitBlock actor = do
+  Kind.COps{coactor} <- getCOps
+  am <- gets (getActor actor)
+  time <- gets stime
+  let speed = actorSpeed coactor am
+      delta = ticksPerMeter speed
+      timeEnd = timeAdd time delta
+  updateAnyActor actor $ \ m -> m {bwait = timeEnd}
 
 -- | Player waits a turn (and blocks, etc.).
 waitBlock :: Action ()
 waitBlock = do
   pl <- gets splayer
-  updateWaitBlock pl (const 0)
+  setWaitBlock pl

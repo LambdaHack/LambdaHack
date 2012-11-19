@@ -4,7 +4,7 @@ module Game.LambdaHack.Actor
   ( -- * Actor identifiers and related operations
     ActorId, findHeroName, monsterGenChance
     -- * The@ Acto@r type
-  , Actor(..), template, addHp, unoccupied, heroKindId
+  , Actor(..), template, addHp, braced, unoccupied, heroKindId
   , projectileKindId, actorSpeed
     -- * Type of na actor target
   , Target(..)
@@ -42,7 +42,7 @@ data Actor = Actor
   , bloc     :: !Point                  -- ^ current location
   , bletter  :: !Char                   -- ^ next inventory letter
   , btime    :: !Time                   -- ^ absolute time of next action
-  , bwait    :: !Int                    -- ^ last wait was this many steps ago
+  , bwait    :: !Time                   -- ^ last bracing expires at this time
   , bfaction :: !(Kind.Id FactionKind)  -- ^ to which faction the actor belongs
   , bproj    :: !Bool                   -- ^ is a projectile? (shorthand only,
                                         -- ^ this can be deduced from bkind)
@@ -115,7 +115,7 @@ template bkind bsymbol bname bhp bloc btime bfaction bproj =
       btarget = invalidTarget
       bdir    = Nothing
       bletter = 'a'
-      bwait   = 100
+      bwait   = timeZero
   in Actor{..}
 
 -- | Increment current hit points of an actor.
@@ -127,6 +127,10 @@ addHp Kind.Ops{okind} extra m =
   in if currentHP > maxHP
      then m
      else m {bhp = min maxHP (currentHP + extra)}
+
+-- | Whether an actor is braced for combat this turn.
+braced :: Actor -> Time -> Bool
+braced m time = time < bwait m
 
 -- | Checks for the presence of actors in a location.
 -- Does not check if the tile is walkable.
