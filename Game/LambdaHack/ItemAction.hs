@@ -68,7 +68,7 @@ applyGroupItem actor verb item = do
       loc = bloc body
   removeFromInventory actor consumed loc
   when (loc `IS.member` totalVisible per) $ msgAdd msg
-  itemEffectAction 5 actor actor consumed
+  itemEffectAction 5 actor actor consumed False
 
 playerApplyGroupItem :: Verb -> Object -> [Char] -> Action ()
 playerApplyGroupItem verb object syms = do

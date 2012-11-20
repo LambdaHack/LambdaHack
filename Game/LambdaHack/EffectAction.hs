@@ -33,7 +33,7 @@ import qualified Game.LambdaHack.Effect as Effect
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.DungeonState
 import qualified Game.LambdaHack.Color as Color
-import Game.LambdaHack.Animation (emptyAnimation, twirlSplash)
+import Game.LambdaHack.Animation (emptyAnimation, twirlSplash, blockHit)
 import qualified Game.LambdaHack.Dungeon as Dungeon
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
@@ -65,9 +65,9 @@ updatePlayerBody f = do
 -- The first bool result indicates if the effect was spectacular enough
 -- for the actors to identify it (and the item that caused it, if any).
 -- The second bool tells if the effect was seen by or affected the party.
-effectToAction :: Effect.Effect -> Int -> ActorId -> ActorId -> Int
+effectToAction :: Effect.Effect -> Int -> ActorId -> ActorId -> Int -> Bool
                -> Action (Bool, Bool)
-effectToAction effect verbosity source target power = do
+effectToAction effect verbosity source target power block = do
   oldTm <- gets (getActor target)
   let oldHP = bhp oldTm
   (b, msg) <- eff effect verbosity source target power
@@ -99,9 +99,13 @@ effectToAction effect verbosity source target power = do
       cops <- getCOps
       diary <- getDiary
       let locs = tloc : if tloc == sloc then [] else [sloc]
-          anim | newHP > oldHP = twirlSplash locs Color.BrBlue Color.Blue
-               | newHP < oldHP = twirlSplash locs Color.BrRed  Color.Red
-               | otherwise     = emptyAnimation
+          anim | newHP > oldHP =
+            twirlSplash locs Color.BrBlue Color.Blue
+               | newHP < oldHP && block =
+            blockHit    locs Color.BrRed  Color.Red
+               | newHP < oldHP && not block =
+            twirlSplash locs Color.BrRed  Color.Red
+              | otherwise = emptyAnimation
           animFrs = animate s diary cops per anim
       mapM_ displayFramePush $ Nothing : animFrs
       return (b, True)
@@ -257,7 +261,7 @@ squashActor source target = do
       verb = iverbApply $ okind h2hKind
       msg = actorVerbActor coactor sm verb tm "in a staircase accident"
   msgAdd msg
-  itemEffectAction 0 source target h2h
+  itemEffectAction 0 source target h2h False
   s <- get
   -- The monster has to be killed first, before we step there (same turn!).
   assert (not (memActor target s) `blame` (source, target, "not killed")) $
@@ -364,14 +368,14 @@ fleeDungeon = do
 
 -- | The source actor affects the target actor, with a given item.
 -- If the event is seen, the item may get identified.
-itemEffectAction :: Int -> ActorId -> ActorId -> Item -> Action ()
-itemEffectAction verbosity source target item = do
+itemEffectAction :: Int -> ActorId -> ActorId -> Item -> Bool -> Action ()
+itemEffectAction verbosity source target item block = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getCOps
   st <- get
   slidOld <- gets slid
   let effect = ieffect $ okind $ jkind item
   -- The msg describes the target part of the action.
-  (b1, b2) <- effectToAction effect verbosity source target (jpower item)
+  (b1, b2) <- effectToAction effect verbosity source target (jpower item) block
   -- Party sees or affected, and the effect interesting,
   -- so the item gets identified.
   when (b1 && b2) $ discover item

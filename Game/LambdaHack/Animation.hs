@@ -2,7 +2,7 @@
 module Game.LambdaHack.Animation
   ( Attr(..), defaultAttr, AttrChar(..)
   , SingleFrame(..), Animation, rederAnim, emptyAnimation
-  , twirlSplash, swapPlaces
+  , twirlSplash, blockHit, blockMiss, swapPlaces
   ) where
 
 import qualified Data.IntMap as IM
@@ -49,21 +49,47 @@ emptyAnimation = Animation []
 twirlSplash :: [Point] -> Color -> Color -> Animation
 twirlSplash locs c1 c2 = Animation $ map (IM.fromList . zip locs)
   [ [AttrChar (Attr BrWhite defBG) '*']
-  , [AttrChar (Attr c1 defBG) '/',
-     AttrChar (Attr BrWhite defBG) '^']
-  , [AttrChar (Attr c1 defBG) '-',
-     AttrChar (Attr BrWhite defBG) '^']
-  , [AttrChar (Attr c1 defBG) '\\',
-     AttrChar (Attr BrWhite defBG) '^']
-  , [AttrChar (Attr c1 defBG) '|']
-  , [AttrChar (Attr c1 defBG) '/']
-  , [AttrChar (Attr c1 defBG) '-']
-  , [AttrChar (Attr c2 defBG) '\\',
-     AttrChar (Attr BrWhite defBG) '^']
-  , [AttrChar (Attr c2 defBG) '%',
-     AttrChar (Attr BrWhite defBG) '^']
-  , [AttrChar (Attr c2 defBG) '%',
-     AttrChar (Attr BrWhite defBG) '^']
+  , [ AttrChar (Attr c1 defBG) '/'
+    , AttrChar (Attr BrWhite defBG) '^' ]
+  , [ AttrChar (Attr c1 defBG) '-'
+    , AttrChar (Attr BrWhite defBG) '^' ]
+  , [ AttrChar (Attr c1 defBG) '\\'
+    , AttrChar (Attr BrWhite defBG) '^' ]
+  , [ AttrChar (Attr c1 defBG) '|'
+    , AttrChar (Attr BrWhite defBG) '^' ]
+  , [AttrChar (Attr c2 defBG) '/']
+  , [AttrChar (Attr c2 defBG) '%']
+  , [ AttrChar (Attr c2 defBG) '%'
+    , AttrChar (Attr BrWhite defBG) '^' ]
+  , []
+  ]
+
+-- | Attack that hits through a block.
+blockHit :: [Point] -> Color -> Color -> Animation
+blockHit locs c1 c2 = Animation $ map (IM.fromList . zip locs)
+  [ [AttrChar (Attr BrWhite defBG) '*']
+  , [ AttrChar (Attr BrBlue defBG) '{'
+    , AttrChar (Attr BrWhite defBG) '^' ]
+  , [AttrChar (Attr BrBlue defBG) '{']
+  , [AttrChar (Attr BrBlue defBG) '}']
+  , [ AttrChar (Attr c1 defBG) '}'
+    , AttrChar (Attr BrWhite defBG) '^' ]
+  , [ AttrChar (Attr c2 defBG) '/'
+    , AttrChar (Attr BrWhite defBG) '^' ]
+  , [ AttrChar (Attr c2 defBG) '%'
+    , AttrChar (Attr BrWhite defBG) '^' ]
+  , [ AttrChar (Attr c2 defBG) '%'
+    , AttrChar (Attr BrWhite defBG) '^' ]
+  , []
+  ]
+
+-- | Attack that is blocked.
+blockMiss :: [Point] -> Animation
+blockMiss locs = Animation $ map (IM.fromList . zip locs)
+  [ [AttrChar (Attr BrWhite defBG) '*']
+  , [ AttrChar (Attr BrBlue defBG) '{'
+    , AttrChar (Attr BrWhite defBG) '^' ]
+  , [AttrChar (Attr BrBlue defBG) '}']
   , []
   ]
 

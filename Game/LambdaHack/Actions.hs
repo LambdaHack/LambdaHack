@@ -43,7 +43,7 @@ import Game.LambdaHack.Random
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Binding
 import Game.LambdaHack.Time
-import Game.LambdaHack.Animation (swapPlaces)
+import Game.LambdaHack.Animation (swapPlaces, blockMiss)
 import Game.LambdaHack.Draw
 import qualified Game.LambdaHack.Command as Command
 
@@ -137,7 +137,7 @@ triggerTile dloc = do
   lvl <- gets slevel
   let f (F.Cause effect) = do
         pl <- gets splayer
-        void $ effectToAction effect 0 pl pl 0
+        void $ effectToAction effect 0 pl pl 0 False  -- no block against tile
         return ()
       f (F.ChangeTo group) = do
         Level{lactor} <- gets slevel
@@ -372,6 +372,7 @@ actorAttackActor source target = do
       h2hKind <- rndToAction $ opick h2hGroup (const True)
       let h2hItem = Item h2hKind 0 Nothing 1
           sloc = bloc sm
+          tloc = bloc tm
           (stack, tell, verbosity, verb) =
             if isProjectile state source
             then case bitems of
@@ -396,21 +397,27 @@ actorAttackActor source target = do
                     ++ let tmSubject = objectActor coactor tm
                        in tmSubject ++ " "
                           ++ conjugate tmSubject "block" ++ "."
-          visible = sloc `IS.member` totalVisible per
-      let performHit = do
-            when visible $ msgAdd msg
+          visibleS = sloc `IS.member` totalVisible per
+          visibleT = tloc `IS.member` totalVisible per
+      let performHit block = do
+            when visibleS $ msgAdd msg
             -- Msgs inside itemEffectAction describe the target part.
-            itemEffectAction verbosity source target single
+            itemEffectAction verbosity source target single block
       -- Projectiles can't be blocked, can be sidestepped.
       if braced tm time && not (bproj sm)
         then do
           blocked <- rndToAction $ chance $ 1%2
           if blocked
-            then  -- TODO: anim {}{}
-              when visible $ msgAdd msgMiss
-            else  -- TODO: modified hit anim {}{}
-              performHit
-        else performHit
+            then do
+              when visibleS $ msgAdd msgMiss
+              when visibleT $ do  -- animation played if target visible
+                diary <- getDiary
+                let locs = tloc : if tloc == sloc then [] else [sloc]
+                    anim = blockMiss locs
+                    animFrs = animate state diary cops per anim
+                mapM_ displayFramePush $ Nothing : animFrs
+            else performHit True
+        else performHit False
 
 -- | Resolves the result of an actor running (not walking) into another.
 -- This involves switching positions of the two actors.
