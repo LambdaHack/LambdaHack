@@ -11,6 +11,7 @@ import qualified Data.List as L
 import qualified Data.IntMap as IM
 import qualified Data.Set as S
 import qualified Data.IntSet as IS
+import Data.Monoid
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
@@ -33,7 +34,7 @@ import qualified Game.LambdaHack.Effect as Effect
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.DungeonState
 import qualified Game.LambdaHack.Color as Color
-import Game.LambdaHack.Animation (emptyAnimation, twirlSplash, blockHit)
+import Game.LambdaHack.Animation (twirlSplash, blockHit, deathBody)
 import qualified Game.LambdaHack.Dungeon as Dungeon
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
@@ -105,7 +106,7 @@ effectToAction effect verbosity source target power block = do
             blockHit    locs Color.BrRed  Color.Red
                | newHP < oldHP && not block =
             twirlSplash locs Color.BrRed  Color.Red
-              | otherwise = emptyAnimation
+               | otherwise = mempty
           animFrs = animate s diary cops per anim
       mapM_ displayFramePush $ Nothing : animFrs
       return (b, True)
@@ -114,7 +115,7 @@ effectToAction effect verbosity source target power block = do
       when b $ msgAdd "You hear some noises."
       return (b, False)
     -- Now kill the actor, if needed. For monsters, no "die" message
-    -- is shown below. It should have been showsn in @eff@.
+    -- is shown below. It should have been shown in @eff@.
     when (newHP <= 0) $ do
       -- Place the actor's possessions on the map.
       bitems <- gets (getActorItem target)
@@ -469,7 +470,8 @@ summonMonsters n loc = do
 -- on any level.
 checkPartyDeath :: Action ()
 checkPartyDeath = do
-  Kind.COps{coactor} <- getCOps
+  cops@Kind.COps{coactor} <- getCOps
+  per    <- getPerception
   ahs    <- gets allHeroesAnyLevel
   pl     <- gets splayer
   pbody  <- gets getPlayerBody
@@ -479,12 +481,21 @@ checkPartyDeath = do
     go <- displayMore ColorBW ""
     recordHistory  -- Prevent repeating the "die" msgs.
     let firstDeathEnds = Config.get config "heroes" "firstDeathEnds"
+        animateDeath = do
+          diary  <- getDiary
+          s <- get
+          let animFrs = animate s diary cops per $ deathBody [bloc pbody]
+          mapM_ displayFramePush $ animFrs
+        animateGameOver = do
+          animateDeath
+          gameOver go
     if firstDeathEnds
-      then gameOver go
+      then animateGameOver
       else case L.filter (/= pl) ahs of
-             [] -> gameOver go
+             [] -> animateGameOver
              actor : _ -> do
                msgAdd "The survivors carry on."
+               animateDeath
                -- One last look at the beautiful world.
                remember
                -- Remove the dead player.

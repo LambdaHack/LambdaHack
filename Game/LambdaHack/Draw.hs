@@ -177,4 +177,4 @@ animate s Diary{sreport} cops per anim =
       over = renderReport sreport
       topLineOnly = padMsg lxsize over
       basicFrame = draw ColorFull cops per s [topLineOnly]
-  in rederAnim lxsize lysize  basicFrame anim
+  in rederAnim lxsize lysize basicFrame anim

@@ -1,13 +1,14 @@
 -- | Screen frames and animations.
 module Game.LambdaHack.Animation
   ( Attr(..), defaultAttr, AttrChar(..)
-  , SingleFrame(..), Animation, rederAnim, emptyAnimation
-  , twirlSplash, blockHit, blockMiss, swapPlaces
+  , SingleFrame(..), Animation, rederAnim
+  , twirlSplash, blockHit, blockMiss, deathBody, swapPlaces
   ) where
 
 import qualified Data.IntMap as IM
 import Data.Maybe
 import qualified Data.List as L
+import Data.Monoid
 
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Point
@@ -25,6 +26,10 @@ data SingleFrame = SingleFrame
 -- where each modification if a map from locations to level map symbols.
 newtype Animation = Animation [IM.IntMap AttrChar]
 
+instance Monoid Animation where
+  mempty = Animation []
+  mappend (Animation a1) (Animation a2) = Animation (a1 ++ a2)
+
 -- | Render animations on top of a screen frame.
 rederAnim :: X -> Y -> SingleFrame -> Animation
           -> [Maybe SingleFrame]
@@ -41,9 +46,6 @@ rederAnim lxsize lysize basicFrame (Animation anim) =
               in L.foldl' f [] (zip [lysize-1,lysize-2..0] (reverse levelOld))
         in Just SingleFrame{..}
   in map (modifyFrame basicFrame) anim
-
-emptyAnimation :: Animation
-emptyAnimation = Animation []
 
 -- | Attack animation. A part of it also reused for self-damage and healing.
 twirlSplash :: [Point] -> Color -> Color -> Animation
@@ -71,7 +73,7 @@ blockHit locs c1 c2 = Animation $ map (IM.fromList . zip locs)
   , [ AttrChar (Attr BrBlue defBG) '{'
     , AttrChar (Attr BrWhite defBG) '^' ]
   , [AttrChar (Attr BrBlue defBG) '{']
-  , [AttrChar (Attr BrBlue defBG) '}']
+  , [AttrChar (Attr c1 defBG) '}']
   , [ AttrChar (Attr c1 defBG) '}'
     , AttrChar (Attr BrWhite defBG) '^' ]
   , [ AttrChar (Attr c2 defBG) '/'
@@ -90,7 +92,24 @@ blockMiss locs = Animation $ map (IM.fromList . zip locs)
   , [ AttrChar (Attr BrBlue defBG) '{'
     , AttrChar (Attr BrWhite defBG) '^' ]
   , [AttrChar (Attr BrBlue defBG) '}']
+  , [AttrChar (Attr BrBlue defBG) '}']
   , []
+  ]
+
+-- | Death animation for an organic body.
+deathBody :: [Point] -> Animation
+deathBody locs = Animation $ map (IM.fromList . zip locs)
+  [ [AttrChar (Attr BrRed defBG) '\\']
+  , [AttrChar (Attr BrRed defBG) '\\']
+  , [AttrChar (Attr BrRed defBG) '|']
+  , [AttrChar (Attr BrRed defBG) '|']
+  , [AttrChar (Attr BrRed defBG) '%']
+  , [AttrChar (Attr BrRed defBG) '%']
+  , [AttrChar (Attr Red defBG) '%']
+  , [AttrChar (Attr Red defBG) '%']
+  , [AttrChar (Attr Red defBG) ';']
+  , [AttrChar (Attr Red defBG) ';']
+  , [AttrChar (Attr Red defBG) ',']
   ]
 
 -- | Swap-places animation, both hostile and friendly.
@@ -103,5 +122,4 @@ swapPlaces locs = Animation $ map (IM.fromList . zip locs)
   , [AttrChar (Attr Magenta defBG) 'p',
      AttrChar (Attr BrMagenta defBG) 'd']
   , [AttrChar (Attr Magenta defBG) 'o']
-  , []
   ]
