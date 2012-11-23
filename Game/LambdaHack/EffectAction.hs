@@ -484,7 +484,7 @@ checkPartyDeath = do
         animateDeath = do
           diary  <- getDiary
           s <- get
-          let animFrs = animate s diary cops per $ deathBody [bloc pbody]
+          let animFrs = animate s diary cops per $ deathBody (bloc pbody)
           mapM_ displayFramePush $ animFrs
         animateGameOver = do
           animateDeath

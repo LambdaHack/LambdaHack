@@ -351,10 +351,19 @@ moveOrAttack allowAttacks actor dir = do
 -- and not using up the weapon.
 actorAttackActor :: ActorId -> ActorId -> Action ()
 actorAttackActor source target = do
-  sm <- gets (getActor source)
-  tm <- gets (getActor target)
-  time <- gets stime
+  smRaw <- gets (getActor source)
+  tmRaw <- gets (getActor target)
+  per   <- getPerception
+  time  <- gets stime
   sfaction <- gets sfaction
+  let sloc = bloc smRaw
+      tloc = bloc tmRaw
+      svisible = sloc `IS.member` totalVisible per
+      tvisible = tloc `IS.member` totalVisible per
+      sm | svisible  = smRaw
+         | otherwise = smRaw {bname = Just "somebody"}
+      tm | tvisible  = tmRaw
+         | otherwise = tmRaw {bname = Just "somebody"}
   if bfaction sm == sfaction && not (bproj sm) &&
      bfaction tm == sfaction && not (bproj tm)
     then do
@@ -366,13 +375,10 @@ actorAttackActor source target = do
     else do
       cops@Kind.COps{coactor, coitem=coitem@Kind.Ops{opick, okind}} <- getCOps
       state <- get
-      per   <- getPerception
       bitems <- gets (getActorItem source)
       let h2hGroup = if isAHero state source then "unarmed" else "monstrous"
       h2hKind <- rndToAction $ opick h2hGroup (const True)
       let h2hItem = Item h2hKind 0 Nothing 1
-          sloc = bloc sm
-          tloc = bloc tm
           (stack, tell, verbosity, verb) =
             if isProjectile state source
             then case bitems of
@@ -397,10 +403,8 @@ actorAttackActor source target = do
                     ++ let tmSubject = objectActor coactor tm
                        in tmSubject ++ " "
                           ++ conjugate tmSubject "block" ++ "."
-          visibleS = sloc `IS.member` totalVisible per
-          visibleT = tloc `IS.member` totalVisible per
       let performHit block = do
-            when visibleS $ msgAdd msg
+            when (svisible || tvisible) $ msgAdd msg
             -- Msgs inside itemEffectAction describe the target part.
             itemEffectAction verbosity source target single block
       -- Projectiles can't be blocked, can be sidestepped.
@@ -409,13 +413,17 @@ actorAttackActor source target = do
           blocked <- rndToAction $ chance $ 1%2
           if blocked
             then do
-              when visibleS $ msgAdd msgMiss
-              when visibleT $ do  -- animation played if target visible
-                diary <- getDiary
-                let locs = tloc : if tloc == sloc then [] else [sloc]
-                    anim = blockMiss locs
-                    animFrs = animate state diary cops per anim
-                mapM_ displayFramePush $ Nothing : animFrs
+              when (svisible || tvisible) $ msgAdd msgMiss
+              diary <- getDiary
+              let -- mreturn b a = [a | b]
+                  mreturn :: MonadPlus m => Bool -> a -> m a
+                  mreturn True a  = return a
+                  mreturn False _ = mzero
+                  locs = (mreturn tvisible tloc,
+                          mreturn svisible sloc)
+                  anim = blockMiss locs
+                  animFrs = animate state diary cops per anim
+              mapM_ displayFramePush $ Nothing : animFrs
             else performHit True
         else performHit False
 

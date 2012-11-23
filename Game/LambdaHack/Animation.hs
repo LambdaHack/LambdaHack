@@ -47,6 +47,14 @@ rederAnim lxsize lysize basicFrame (Animation anim) =
         in Just SingleFrame{..}
   in map (modifyFrame basicFrame) anim
 
+-- TODO: convert all list size 2 anims to this
+mzipPairs :: (Maybe Point, Maybe Point) -> (Maybe AttrChar, Maybe AttrChar)
+          -> [(Point, AttrChar)]
+mzipPairs (mloc1, mloc2) (mattr1, mattr2) =
+  let mzip (Just loc, Just attr) = Just (loc, attr)
+      mzip _ = Nothing
+  in catMaybes [mzip (mloc1, mattr1), mzip (mloc2, mattr2)]
+
 -- | Attack animation. A part of it also reused for self-damage and healing.
 twirlSplash :: [Point] -> Color -> Color -> Animation
 twirlSplash locs c1 c2 = Animation $ map (IM.fromList . zip locs)
@@ -86,30 +94,33 @@ blockHit locs c1 c2 = Animation $ map (IM.fromList . zip locs)
   ]
 
 -- | Attack that is blocked.
-blockMiss :: [Point] -> Animation
-blockMiss locs = Animation $ map (IM.fromList . zip locs)
-  [ [AttrChar (Attr BrWhite defBG) '*']
-  , [ AttrChar (Attr BrBlue defBG) '{'
-    , AttrChar (Attr BrWhite defBG) '^' ]
-  , [AttrChar (Attr BrBlue defBG) '}']
-  , [AttrChar (Attr BrBlue defBG) '}']
-  , []
+blockMiss :: (Maybe Point, Maybe Point) -> Animation
+blockMiss locs = Animation $ map (IM.fromList . mzipPairs locs)
+  [ ( Just (AttrChar (Attr BrWhite defBG) '*')
+    , Nothing)
+  , ( Just (AttrChar (Attr BrBlue defBG) '{')
+    , Just (AttrChar (Attr BrWhite defBG) '^'))
+  , ( Just (AttrChar (Attr BrBlue defBG) '}')
+    , Nothing)
+  , ( Just (AttrChar (Attr BrBlue defBG) '}')
+    , Nothing)
+  , ( Nothing, Nothing )
   ]
 
 -- | Death animation for an organic body.
-deathBody :: [Point] -> Animation
-deathBody locs = Animation $ map (IM.fromList . zip locs)
-  [ [AttrChar (Attr BrRed defBG) '\\']
-  , [AttrChar (Attr BrRed defBG) '\\']
-  , [AttrChar (Attr BrRed defBG) '|']
-  , [AttrChar (Attr BrRed defBG) '|']
-  , [AttrChar (Attr BrRed defBG) '%']
-  , [AttrChar (Attr BrRed defBG) '%']
-  , [AttrChar (Attr Red defBG) '%']
-  , [AttrChar (Attr Red defBG) '%']
-  , [AttrChar (Attr Red defBG) ';']
-  , [AttrChar (Attr Red defBG) ';']
-  , [AttrChar (Attr Red defBG) ',']
+deathBody :: Point -> Animation
+deathBody loc = Animation $ map (IM.singleton loc)
+  [ AttrChar (Attr BrRed defBG) '\\'
+  , AttrChar (Attr BrRed defBG) '\\'
+  , AttrChar (Attr BrRed defBG) '|'
+  , AttrChar (Attr BrRed defBG) '|'
+  , AttrChar (Attr BrRed defBG) '%'
+  , AttrChar (Attr BrRed defBG) '%'
+  , AttrChar (Attr Red defBG) '%'
+  , AttrChar (Attr Red defBG) '%'
+  , AttrChar (Attr Red defBG) ';'
+  , AttrChar (Attr Red defBG) ';'
+  , AttrChar (Attr Red defBG) ','
   ]
 
 -- | Swap-places animation, both hostile and friendly.

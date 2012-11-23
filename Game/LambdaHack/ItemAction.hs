@@ -98,12 +98,11 @@ projectGroupItem source tloc _verb item = do
   sfaction <- gets sfaction
   let consumed = item { jcount = 1 }
       sloc = bloc sm
-      sourceVis = sloc `IS.member` totalVisible per
+      svisible = sloc `IS.member` totalVisible per
       subject =
-        if sourceVis
+        if svisible
         then sm
-        else template (heroKindId coactor)
-               Nothing (Just "somebody") 99 sloc timeZero sfaction False
+        else sm {bname = Just "somebody"}
       -- When projecting, the first turn is spent aiming.
       -- The projectile is seen one tile from the actor, giving a hint
       -- about the aim and letting the target evade.
@@ -137,7 +136,7 @@ projectGroupItem source tloc _verb item = do
           modify $ addProjectile cops consumed loc (bfaction sm) path time
         else
           abortWith "blocked"
-      when (sourceVis || projVis) $ msgAdd msg
+      when (svisible || projVis) $ msgAdd msg
 
 playerProjectGroupItem :: Verb -> Object -> [Char] -> ActionFrame ()
 playerProjectGroupItem verb object syms = do
