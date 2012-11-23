@@ -40,6 +40,7 @@ import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Random
+import Game.LambdaHack.Misc
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Binding
 import Game.LambdaHack.Time
@@ -415,12 +416,8 @@ actorAttackActor source target = do
             then do
               when (svisible || tvisible) $ msgAdd msgMiss
               diary <- getDiary
-              let -- mreturn b a = [a | b]
-                  mreturn :: MonadPlus m => Bool -> a -> m a
-                  mreturn True a  = return a
-                  mreturn False _ = mzero
-                  locs = (mreturn tvisible tloc,
-                          mreturn svisible sloc)
+              let locs = (breturn tvisible tloc,
+                          breturn svisible sloc)
                   anim = blockMiss locs
                   animFrs = animate state diary cops per anim
               mapM_ displayFramePush $ Nothing : animFrs
@@ -446,7 +443,7 @@ actorRunActor source target = do
   when visible $ msgAdd msg
   diary <- getDiary  -- here diary possibly contains the new msg
   s <- get
-  let locs = [tloc, sloc]
+  let locs = (Just tloc, Just sloc)
       animFrs = animate s diary cops per $ swapPlaces locs
   when visible $ mapM_ displayFramePush $ Nothing : animFrs
   if source == pl

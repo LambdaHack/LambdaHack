@@ -1,7 +1,9 @@
 -- | Hacks that haven't found their home yet.
 module Game.LambdaHack.Misc
-  ( normalLevelBound, divUp, Freqs
+  ( normalLevelBound, divUp, Freqs, breturn
   ) where
+
+import Control.Monad
 
 -- | Level bounds. TODO: query terminal size instead and scroll view.
 normalLevelBound :: (Int, Int)
@@ -15,3 +17,8 @@ divUp n k = (n + k - 1) `div` k
 -- in the first component of a pair, the second component of a pair shows
 -- how common the kind is within the group.
 type Freqs = [(String, Int)]
+
+-- | @breturn b a = [a | b]@
+breturn :: MonadPlus m => Bool -> a -> m a
+breturn True a  = return a
+breturn False _ = mzero

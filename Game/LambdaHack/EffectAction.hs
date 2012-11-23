@@ -24,6 +24,7 @@ import Game.LambdaHack.Point
 import Game.LambdaHack.Item
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Level
+import Game.LambdaHack.Misc
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Random
@@ -82,8 +83,10 @@ effectToAction effect verbosity source target power block = do
     tm  <- gets (getActor target)
     per <- getPerception
     pl  <- gets splayer
-    let tloc = bloc tm
-        sloc = bloc sm
+    let sloc = bloc sm
+        tloc = bloc tm
+        svisible = sloc `IS.member` totalVisible per
+        tvisible = tloc `IS.member` totalVisible per
         newHP = bhp $ getActor target s
     bb <-
      if isAHero s source ||
@@ -91,7 +94,7 @@ effectToAction effect verbosity source target power block = do
         pl == source ||
         pl == target ||
         -- Target part of message shown below, so target visibility checked.
-        tloc `IS.member` totalVisible per
+        tvisible
      then do
       -- Party sees the effect or is affected by it.
       msgAdd msg
@@ -99,7 +102,8 @@ effectToAction effect verbosity source target power block = do
       -- the animation will not be shown.
       cops <- getCOps
       diary <- getDiary
-      let locs = tloc : if tloc == sloc then [] else [sloc]
+      let locs = (breturn tvisible tloc,
+                  breturn svisible sloc)
           anim | newHP > oldHP =
             twirlSplash locs Color.BrBlue Color.Blue
                | newHP < oldHP && block =

@@ -14,7 +14,6 @@ import qualified Data.Map as M
 import qualified Data.Word as Word
 import qualified Data.Array.Unboxed as A
 import qualified Data.Ix as Ix
-import Control.Monad
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.Frequency
@@ -28,6 +27,7 @@ import Game.LambdaHack.Content.StrategyKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.CDefs
 import Game.LambdaHack.Random
+import Game.LambdaHack.Misc
 
 -- | Content identifiers for the content type @c@.
 newtype Id c = Id Word8 deriving (Show, Eq, Ord, Ix.Ix)
@@ -93,7 +93,7 @@ createOps CDefs{getSymbol, getName, getFreq, content, validate} =
              l -> assert `failure` l
        , opick = \ group p -> frequency $ do
            (i, k) <- kindFreq M.! group
-           if p k then return i else mzero
+           breturn (p k) i
            {- with MonadComprehensions:
            frequency [ i | (i, k) <- kindFreq M.! group, p k ]
            -}

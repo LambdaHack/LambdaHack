@@ -53,60 +53,52 @@ blank = Nothing
 coloredSymbol :: Color -> Char -> Maybe AttrChar
 coloredSymbol color symbol = Just $ AttrChar (Attr color defBG) symbol
 
--- TODO: convert all list size 2 anims to this
 mzipPairs :: (Maybe Point, Maybe Point) -> (Maybe AttrChar, Maybe AttrChar)
           -> [(Point, AttrChar)]
 mzipPairs (mloc1, mloc2) (mattr1, mattr2) =
   let mzip (Just loc, Just attr) = Just (loc, attr)
       mzip _ = Nothing
-  in catMaybes [mzip (mloc1, mattr1), mzip (mloc2, mattr2)]
+  in if mloc1 /= mloc2
+     then catMaybes [mzip (mloc1, mattr1), mzip (mloc2, mattr2)]
+     else -- If actor affects himself, show only the effect, not the action.
+          catMaybes [mzip (mloc1, mattr1)]
 
 -- | Attack animation. A part of it also reused for self-damage and healing.
-twirlSplash :: [Point] -> Color -> Color -> Animation
-twirlSplash locs c1 c2 = Animation $ map (IM.fromList . zip locs)
-  [ [AttrChar (Attr BrWhite defBG) '*']
-  , [ AttrChar (Attr c1 defBG) '/'
-    , AttrChar (Attr BrWhite defBG) '^' ]
-  , [ AttrChar (Attr c1 defBG) '-'
-    , AttrChar (Attr BrWhite defBG) '^' ]
-  , [ AttrChar (Attr c1 defBG) '\\'
-    , AttrChar (Attr BrWhite defBG) '^' ]
-  , [ AttrChar (Attr c1 defBG) '|'
-    , AttrChar (Attr BrWhite defBG) '^' ]
-  , [AttrChar (Attr c2 defBG) '/']
-  , [AttrChar (Attr c2 defBG) '%']
-  , [ AttrChar (Attr c2 defBG) '%'
-    , AttrChar (Attr BrWhite defBG) '^' ]
-  , []
+twirlSplash :: (Maybe Point, Maybe Point) -> Color -> Color -> Animation
+twirlSplash locs c1 c2 = Animation $ map (IM.fromList . mzipPairs locs)
+  [ (coloredSymbol BrWhite '*', blank)
+  , (coloredSymbol c1      '/', coloredSymbol BrWhite '^' )
+  , (coloredSymbol c1      '-', coloredSymbol BrWhite '^' )
+  , (coloredSymbol c1      '\\',coloredSymbol BrWhite '^' )
+  , (coloredSymbol c1      '|', coloredSymbol BrWhite '^' )
+  , (coloredSymbol c2      '/', blank)
+  , (coloredSymbol c2      '%', blank)
+  , (coloredSymbol c2      '%', coloredSymbol BrWhite '^' )
+  , (blank                    , blank)
   ]
 
 -- | Attack that hits through a block.
-blockHit :: [Point] -> Color -> Color -> Animation
-blockHit locs c1 c2 = Animation $ map (IM.fromList . zip locs)
-  [ [AttrChar (Attr BrWhite defBG) '*']
-  , [ AttrChar (Attr BrBlue defBG) '{'
-    , AttrChar (Attr BrWhite defBG) '^' ]
-  , [AttrChar (Attr BrBlue defBG) '{']
-  , [AttrChar (Attr c1 defBG) '}']
-  , [ AttrChar (Attr c1 defBG) '}'
-    , AttrChar (Attr BrWhite defBG) '^' ]
-  , [ AttrChar (Attr c2 defBG) '/'
-    , AttrChar (Attr BrWhite defBG) '^' ]
-  , [ AttrChar (Attr c2 defBG) '%'
-    , AttrChar (Attr BrWhite defBG) '^' ]
-  , [ AttrChar (Attr c2 defBG) '%'
-    , AttrChar (Attr BrWhite defBG) '^' ]
-  , []
+blockHit :: (Maybe Point, Maybe Point) -> Color -> Color -> Animation
+blockHit locs c1 c2 = Animation $ map (IM.fromList . mzipPairs locs)
+  [ (coloredSymbol BrWhite '*', blank)
+  , (coloredSymbol BrBlue  '{', coloredSymbol BrWhite '^' )
+  , (coloredSymbol BrBlue  '{', blank)
+  , (coloredSymbol c1      '}', blank)
+  , (coloredSymbol c1      '}', coloredSymbol BrWhite '^' )
+  , (coloredSymbol c2      '/', coloredSymbol BrWhite '^' )
+  , (coloredSymbol c2      '%', coloredSymbol BrWhite '^' )
+  , (coloredSymbol c2      '%', coloredSymbol BrWhite '^' )
+  , (blank                    , blank)
   ]
 
 -- | Attack that is blocked.
 blockMiss :: (Maybe Point, Maybe Point) -> Animation
 blockMiss locs = Animation $ map (IM.fromList . mzipPairs locs)
-  [ ( coloredSymbol BrWhite '*', blank)
-  , ( coloredSymbol BrBlue  '{', coloredSymbol BrWhite '^')
-  , ( coloredSymbol BrBlue  '}', blank)
-  , ( coloredSymbol BrBlue  '}', blank)
-  , ( blank                    , blank)
+  [ (coloredSymbol BrWhite '*', blank)
+  , (coloredSymbol BrBlue  '{', coloredSymbol BrWhite '^')
+  , (coloredSymbol BrBlue  '}', blank)
+  , (coloredSymbol BrBlue  '}', blank)
+  , (blank                    , blank)
   ]
 
 -- | Death animation for an organic body.
@@ -126,13 +118,10 @@ deathBody loc = Animation $ map (maybe IM.empty (IM.singleton loc))
   ]
 
 -- | Swap-places animation, both hostile and friendly.
-swapPlaces :: [Point] -> Animation
-swapPlaces locs = Animation $ map (IM.fromList . zip locs)
-  [ [AttrChar (Attr BrMagenta defBG) '.',
-     AttrChar (Attr Magenta defBG) 'o']
-  , [AttrChar (Attr BrMagenta defBG) 'd',
-     AttrChar (Attr Magenta defBG) 'p']
-  , [AttrChar (Attr Magenta defBG) 'p',
-     AttrChar (Attr BrMagenta defBG) 'd']
-  , [AttrChar (Attr Magenta defBG) 'o']
+swapPlaces :: (Maybe Point, Maybe Point) -> Animation
+swapPlaces locs = Animation $ map (IM.fromList . mzipPairs locs)
+  [ (coloredSymbol BrMagenta '.', coloredSymbol Magenta   'o')
+  , (coloredSymbol BrMagenta 'd', coloredSymbol Magenta   'p')
+  , (coloredSymbol Magenta   'p', coloredSymbol BrMagenta 'd')
+  , (coloredSymbol Magenta   'o', blank)
   ]
