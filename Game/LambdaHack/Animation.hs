@@ -47,6 +47,12 @@ rederAnim lxsize lysize basicFrame (Animation anim) =
         in Just SingleFrame{..}
   in map (modifyFrame basicFrame) anim
 
+blank :: Maybe AttrChar
+blank = Nothing
+
+coloredSymbol :: Color -> Char -> Maybe AttrChar
+coloredSymbol color symbol = Just $ AttrChar (Attr color defBG) symbol
+
 -- TODO: convert all list size 2 anims to this
 mzipPairs :: (Maybe Point, Maybe Point) -> (Maybe AttrChar, Maybe AttrChar)
           -> [(Point, AttrChar)]
@@ -96,31 +102,27 @@ blockHit locs c1 c2 = Animation $ map (IM.fromList . zip locs)
 -- | Attack that is blocked.
 blockMiss :: (Maybe Point, Maybe Point) -> Animation
 blockMiss locs = Animation $ map (IM.fromList . mzipPairs locs)
-  [ ( Just (AttrChar (Attr BrWhite defBG) '*')
-    , Nothing)
-  , ( Just (AttrChar (Attr BrBlue defBG) '{')
-    , Just (AttrChar (Attr BrWhite defBG) '^'))
-  , ( Just (AttrChar (Attr BrBlue defBG) '}')
-    , Nothing)
-  , ( Just (AttrChar (Attr BrBlue defBG) '}')
-    , Nothing)
-  , ( Nothing, Nothing )
+  [ ( coloredSymbol BrWhite '*', blank)
+  , ( coloredSymbol BrBlue  '{', coloredSymbol BrWhite '^')
+  , ( coloredSymbol BrBlue  '}', blank)
+  , ( coloredSymbol BrBlue  '}', blank)
+  , ( blank                    , blank)
   ]
 
 -- | Death animation for an organic body.
 deathBody :: Point -> Animation
-deathBody loc = Animation $ map (IM.singleton loc)
-  [ AttrChar (Attr BrRed defBG) '\\'
-  , AttrChar (Attr BrRed defBG) '\\'
-  , AttrChar (Attr BrRed defBG) '|'
-  , AttrChar (Attr BrRed defBG) '|'
-  , AttrChar (Attr BrRed defBG) '%'
-  , AttrChar (Attr BrRed defBG) '%'
-  , AttrChar (Attr Red defBG) '%'
-  , AttrChar (Attr Red defBG) '%'
-  , AttrChar (Attr Red defBG) ';'
-  , AttrChar (Attr Red defBG) ';'
-  , AttrChar (Attr Red defBG) ','
+deathBody loc = Animation $ map (maybe IM.empty (IM.singleton loc))
+  [ coloredSymbol BrRed '\\'
+  , coloredSymbol BrRed '\\'
+  , coloredSymbol BrRed '|'
+  , coloredSymbol BrRed '|'
+  , coloredSymbol BrRed '%'
+  , coloredSymbol BrRed '%'
+  , coloredSymbol Red   '%'
+  , coloredSymbol Red   '%'
+  , coloredSymbol Red   ';'
+  , coloredSymbol Red   ';'
+  , coloredSymbol Red   ','
   ]
 
 -- | Swap-places animation, both hostile and friendly.
