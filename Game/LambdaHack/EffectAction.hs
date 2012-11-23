@@ -481,6 +481,7 @@ checkPartyDeath = do
     go <- displayMore ColorBW ""
     recordHistory  -- Prevent repeating the "die" msgs.
     let firstDeathEnds = Config.get config "heroes" "firstDeathEnds"
+        bodyToCorpse = updateAnyActor pl $ \ body -> body {bsymbol = Just '%'}
         animateDeath = do
           diary  <- getDiary
           s <- get
@@ -488,6 +489,7 @@ checkPartyDeath = do
           mapM_ displayFramePush $ animFrs
         animateGameOver = do
           animateDeath
+          bodyToCorpse
           gameOver go
     if firstDeathEnds
       then animateGameOver
