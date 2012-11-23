@@ -28,15 +28,19 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Time
 
+-- TODO: When inventory is displayed, let TAB switch the player (without
+-- announcing that) and show the inventory of the new player.
 -- | Display inventory
 inventory :: ActionFrame ()
 inventory = do
+  Kind.COps{coactor} <- getCOps
+  pbody <- gets getPlayerBody
   items <- gets getPlayerItem
   if L.null items
-    then abortWith "Not carrying anything."
+    then abortWith $ actorVerb coactor pbody "be" "not carrying anything"
     else do
       io <- itemOverlay True False items
-      displayOverlays "Carrying:" "" io
+      displayOverlays (init $ actorVerb coactor pbody "be" "carrying:") "" io
 
 -- | Let the player choose any item with a given group name.
 -- Note that this does not guarantee the chosen item belongs to the group,
