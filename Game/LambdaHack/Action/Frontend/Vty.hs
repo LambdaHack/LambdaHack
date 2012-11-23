@@ -75,6 +75,7 @@ keyTranslate n =
     KEnter        -> K.Return
     (KASCII ' ')  -> K.Space
     (KASCII '\t') -> K.Tab
+    KBackTab      -> K.BackTab
     KUp           -> K.Up
     KDown         -> K.Down
     KLeft         -> K.Left

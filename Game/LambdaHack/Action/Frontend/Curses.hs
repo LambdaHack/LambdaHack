@@ -98,6 +98,7 @@ keyTranslate e =
     C.KeyEnter       -> K.Return
     C.KeyChar ' '    -> K.Space
     C.KeyChar '\t'   -> K.Tab
+    C.KeyBTab        -> K.BackTab
     C.KeyUp          -> K.Up
     C.KeyDown        -> K.Down
     C.KeyLeft        -> K.Left

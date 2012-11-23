@@ -19,6 +19,7 @@ data Key =
   | Return
   | Space
   | Tab
+  | BackTab
   | PgUp
   | PgDn
   | Left
@@ -39,22 +40,24 @@ data Modifier =
   | NoModifier
   deriving (Ord, Eq)
 
+-- Common and terse names for keys.
 showKey :: Key -> String
 showKey (Char c) = [c]
-showKey Esc      = "ESC"  -- these are common and terse abbreviations
+showKey Esc      = "ESC"
 showKey Return   = "RET"
 showKey Space    = "SPACE"
 showKey Tab      = "TAB"
-showKey PgUp     = "<page-up>"
-showKey PgDn     = "<page-down>"
-showKey Left     = "<left>"
-showKey Right    = "<right>"
-showKey Up       = "<up>"
-showKey Down     = "<down>"
-showKey End      = "<end>"
-showKey Begin    = "<begin>"
-showKey Home     = "<home>"
-showKey (KP c)   = "<KeyPad " ++ [c] ++ ">"
+showKey BackTab  = "SHIFT-TAB"
+showKey PgUp     = "PGUP"
+showKey PgDn     = "PGDOWN"
+showKey Left     = "LEFT"
+showKey Right    = "RIGHT"
+showKey Up       = "UP"
+showKey Down     = "DOWN"
+showKey End      = "END"
+showKey Begin    = "BEGIN"
+showKey Home     = "HOME"
+showKey (KP c)   = "KEYPAD(" ++ [c] ++ ")"
 showKey (Unknown s) = s
 
 -- | Show a key with a modifier, if any.
@@ -145,6 +148,7 @@ keyTranslate "Escape"        = Esc
 keyTranslate "Return"        = Return
 keyTranslate "space"         = Space
 keyTranslate "Tab"           = Tab
+keyTranslate "ISO_Left_Tab"  = BackTab
 keyTranslate "KP_Up"         = Up
 keyTranslate "KP_Down"       = Down
 keyTranslate "KP_Left"       = Left
