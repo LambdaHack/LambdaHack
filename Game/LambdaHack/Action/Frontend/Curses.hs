@@ -13,6 +13,7 @@ import qualified UI.HSCurses.CursesHelper as C
 import qualified Data.List as L
 import qualified Data.Map as M
 import Control.Monad
+import Data.Char (ord, chr)
 
 import Game.LambdaHack.Utils.Assert
 import qualified Game.LambdaHack.Key as K (Key(..),  Modifier(..))
@@ -77,9 +78,7 @@ display FrontendSession{..}  _ _ (Just SingleFrame{..}) = do
 
 -- | Input key via the frontend.
 nextEvent :: FrontendSession -> Maybe Bool -> IO (K.Key, K.Modifier)
-nextEvent _sess _ = do
-  e <- C.getKey C.refresh
-  return (keyTranslate e, K.NoModifier)
+nextEvent _sess _ = keyTranslate `fmap` C.getKey C.refresh
 
 -- | Display a prompt, wait for any key.
 promptGetAnyKey :: FrontendSession -> SingleFrame
@@ -88,39 +87,45 @@ promptGetAnyKey sess frame = do
   display sess True True $ Just frame
   nextEvent sess Nothing
 
-keyTranslate :: C.Key -> K.Key
+keyTranslate :: C.Key -> (K.Key, K.Modifier)
 keyTranslate e =
   case e of
-    C.KeyChar '\ESC' -> K.Esc
-    C.KeyExit        -> K.Esc
-    C.KeyChar '\n'   -> K.Return
-    C.KeyChar '\r'   -> K.Return
-    C.KeyEnter       -> K.Return
-    C.KeyChar ' '    -> K.Space
-    C.KeyChar '\t'   -> K.Tab
-    C.KeyBTab        -> K.BackTab
-    C.KeyUp          -> K.Up
-    C.KeyDown        -> K.Down
-    C.KeyLeft        -> K.Left
-    C.KeySLeft       -> K.Left
-    C.KeyRight       -> K.Right
-    C.KeySRight      -> K.Right
-    C.KeyHome        -> K.Home
-    C.KeyPPage       -> K.PgUp
-    C.KeyEnd         -> K.End
-    C.KeyNPage       -> K.PgDn
-    C.KeyBeg         -> K.Begin
-    C.KeyB2          -> K.Begin
-    C.KeyClear       -> K.Begin
+    C.KeyChar '\ESC' -> (K.Esc,     K.NoModifier)
+    C.KeyExit        -> (K.Esc,     K.NoModifier)
+    C.KeyChar '\n'   -> (K.Return,  K.NoModifier)
+    C.KeyChar '\r'   -> (K.Return,  K.NoModifier)
+    C.KeyEnter       -> (K.Return,  K.NoModifier)
+    C.KeyChar ' '    -> (K.Space,   K.NoModifier)
+    C.KeyChar '\t'   -> (K.Tab,     K.NoModifier)
+    C.KeyBTab        -> (K.BackTab, K.NoModifier)
+    C.KeyUp          -> (K.Up,      K.NoModifier)
+    C.KeyDown        -> (K.Down,    K.NoModifier)
+    C.KeyLeft        -> (K.Left,    K.NoModifier)
+    C.KeySLeft       -> (K.Left,    K.NoModifier)
+    C.KeyRight       -> (K.Right,   K.NoModifier)
+    C.KeySRight      -> (K.Right,   K.NoModifier)
+    C.KeyHome        -> (K.Home,    K.NoModifier)
+    C.KeyPPage       -> (K.PgUp,    K.NoModifier)
+    C.KeyEnd         -> (K.End,     K.NoModifier)
+    C.KeyNPage       -> (K.PgDn,    K.NoModifier)
+    C.KeyBeg         -> (K.Begin,   K.NoModifier)
+    C.KeyB2          -> (K.Begin,   K.NoModifier)
+    C.KeyClear       -> (K.Begin,   K.NoModifier)
     -- No KP_ keys; see https://github.com/skogsbaer/hscurses/issues/10
-    -- TODO: try to get the Control modifier from the escape gibberish
-    -- and use Control-keypad for KP_ movement.
-    -- Movement keys are more important than hero selection,
-    -- so disabling the latter and interpreting the keypad numbers as movement:
+    -- TODO: try to get the Control modifier for keypad keys from the escape
+    -- gibberish and use Control-keypad for KP_ movement.
     C.KeyChar c
-      | c `elem` ['1'..'9'] -> K.KP c
-      | otherwise           -> K.Char c
-    _                       -> K.Unknown (show e)
+      -- This case needs to be considered after Tab, since, apparently,
+      -- on some terminals ^i == Tab and Tab is more important for us.
+      | ord '\^A' <= ord c && ord c <= ord '\^Z' ->
+        -- Alas, only lower-case letters.
+        (K.Char $ chr $ ord c - ord '\^A' + ord 'a', K.Control)
+        -- Movement keys are more important than hero selection,
+        -- so disabling the latter and interpreting the keypad numbers
+        -- as movement:
+      | c `elem` ['1'..'9'] -> (K.KP c,              K.NoModifier)
+      | otherwise           -> (K.Char c,            K.NoModifier)
+    _                       -> (K.Unknown (show e),  K.NoModifier)
 
 toFColor :: Color.Color -> C.ForegroundColor
 toFColor Color.Black     = C.BlackF
