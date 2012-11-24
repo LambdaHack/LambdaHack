@@ -150,7 +150,7 @@ draw dm cops per s@State{ scursor=Cursor{..}
       braceSign | braced mpl ltime = "{"
                 | otherwise = " "
       status =
-        take 31 (show (Dungeon.levelNumber slid) ++ ": "
+        take 31 (take 3 (show (Dungeon.levelNumber slid) ++ "  ")
                  ++ ldesc ++ repeat ' ') ++
         take 12 ("[" ++ seenTxt ++ " seen]  ") ++
         take 10 ("$: " ++ show wealth ++ repeat ' ') ++
