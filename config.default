@@ -21,6 +21,7 @@
 ; plus: EpsIncr True
 ; minus: EpsIncr False
 ; Tab: HeroCycle
+; ISO_Left_Tab: HeroBack
 ; ;
 ; ; Items.
 ; g: Pickup

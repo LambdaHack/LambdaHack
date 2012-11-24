@@ -40,6 +40,7 @@ cmdAction cmd = case cmd of
   History   -> displayHistory
   CfgDump   -> inFrame $ dumpConfig
   HeroCycle -> inFrame $ cycleHero
+  HeroBack  -> inFrame $ backCycleHero
   Help      -> displayHelp
 
 -- | The associaction of commands to keys defined in config.

@@ -95,22 +95,23 @@ at a remote level (when the cursor is on a different level
 than the selected hero). The targeting commands and all the less used
 commands are listed below. None of them takes hero time.
 
-               key     command
-               ESC     cancel action
-               RET     accept choice
-               SPACE   clear messages
-               TAB     cycle among heroes on level
-               *       target monster
-               +       swerve targeting line
-               -       unswerve targeting line
-               /       target location
-               D       dump current configuration
-               P       display previous messages
-               [       target next shallower level
-               ]       target next deeper level
-               {       target 10 levels shallower
-               }       target 10 levels deeper
-               0--9    select a hero anywhere in the dungeon
+               key       command
+               ESC       cancel action
+               RET       accept choice
+               SPACE     clear messages
+               TAB       cycle among heroes on level
+               SHIFT-TAB cycle among heroes in the dungeon
+               *         target monster
+               +         swerve targeting line
+               -         unswerve targeting line
+               /         target location
+               D         dump current configuration
+               P         display previous messages
+               [         target next shallower level
+               ]         target next deeper level
+               {         target 10 levels shallower
+               }         target 10 levels deeper
+               0--9      select a hero anywhere in the dungeon
 
 There are also some debug and cheat keys, all entered with the CTRL
 key modifier. Use at your own peril!

@@ -33,6 +33,7 @@ data Cmd =
   | History
   | CfgDump
   | HeroCycle
+  | HeroBack
   | Help
   deriving (Show, Read, Eq, Ord)
 
@@ -99,4 +100,5 @@ cmdDescription cmd = case cmd of
   History   -> "display previous messages"
   CfgDump   -> "dump current configuration"
   HeroCycle -> "cycle among heroes on level"
+  HeroBack  -> "cycle among heroes in the dungeon"
   Help      -> "display help"
