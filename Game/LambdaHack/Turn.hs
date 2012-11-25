@@ -153,16 +153,16 @@ handleAI actor = do
                 } <- getCOps
   state <- get
   per <- getPerception
-  -- Choose a target from those proposed by AI for the actor.
-  let stratTarget = targetStrategy cops actor state per
-  btarget <- rndToAction $ frequency $ bestVariant $ stratTarget
-  updateAnyActor actor $ \ m -> m { btarget }
-  stateNew <- get
-  let Actor{bfaction, bloc, bsymbol} = getActor actor stateNew
+  let Actor{bfaction, bloc, bsymbol} = getActor actor state
       faction = okind bfaction
   factionAi <- rndToAction $ opick (fAiIdle faction) (const True)
   let factionAbilities = sabilities (sokind factionAi)
-      stratMove = strategy cops actor stateNew factionAbilities
+      stratTarget = targetStrategy cops actor state per factionAbilities
+  -- Choose a target from those proposed by AI for the actor.
+  btarget <- rndToAction $ frequency $ bestVariant $ stratTarget
+  updateAnyActor actor $ \ m -> m { btarget }
+  stateNew <- get
+  let stratMove = strategy cops actor stateNew factionAbilities
   debug $ "handleAI faction: " ++ fname faction
      ++          ", symbol: "  ++ show bsymbol
      ++          ", loc: "     ++ show bloc

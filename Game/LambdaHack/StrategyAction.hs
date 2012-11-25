@@ -39,9 +39,9 @@ import Game.LambdaHack.Time
 import qualified Game.LambdaHack.Color as Color
 
 -- | AI proposes possible targets for the actor. Never empty.
-targetStrategy :: Kind.COps -> ActorId -> State -> Perception
+targetStrategy :: Kind.COps -> ActorId -> State -> Perception -> [Ability]
                -> Strategy Target
-targetStrategy cops actor state@State{splayer = pl} per =
+targetStrategy cops actor state@State{splayer = pl} per factionAbilities =
   retarget btarget
  where
   Kind.COps{ cotile
@@ -58,7 +58,11 @@ targetStrategy cops actor state@State{splayer = pl} per =
     -- TODO: can this be replaced by setting 'lights' to [me]?
     || adjacent lxsize me l
        && (asmell mk || asight mk)
+  actorAbilities = acanDo (okind bkind) `L.intersect` factionAbilities
   focused = actorSpeed coactor actorBody <= speedNormal
+            -- Don't focus on a distant enemy, when you can't chase him.
+            -- TODO: or only if another enemy adjacent? consider Flee?
+            && Ability.Chase `elem` actorAbilities
   retarget :: Target -> Strategy Target
   retarget tgt =
     case tgt of
