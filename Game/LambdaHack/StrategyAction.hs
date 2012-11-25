@@ -62,21 +62,23 @@ targetStrategy cops actor state@State{splayer = pl} per =
   retarget :: Target -> Strategy Target
   retarget tgt =
     case tgt of
-      TPath _ -> return tgt            -- don't animate missiles
+      TPath _ -> returN "TPath" tgt            -- don't animate missiles
       TEnemy a ll | focused
                     && memActor a state  -- present on this level
                     -- Don't hit a new player-controlled monster.
                     && not (isAHero state actor && a == pl) ->
         let l = bloc $ getActor a state
         in if enemyVisible a l         -- prefer visible foes
-           then return $ TEnemy a l
+           then returN "TEnemy" $ TEnemy a l
            else if null visibleFoes    -- prefer visible foes
                    && me /= ll         -- not yet reached the last enemy loc
-                then return $ TLoc ll  -- chase the last known loc
+                then returN "last known" $ TLoc ll
+                                       -- chase the last known loc
                 else closest
       TEnemy _ _ -> closest            -- foe is gone and we forget
       TLoc loc | me == loc -> closest  -- already reached the loc
-      TLoc _ | null visibleFoes -> return tgt  -- nothing visible, go to loc
+      TLoc _ | null visibleFoes -> returN "TLoc" tgt
+                                       -- nothing visible, go to loc
       TLoc _ -> closest                -- prefer visible foes
       TCursor  -> closest
   hs = hostileAssocs bfaction lvl
@@ -94,7 +96,7 @@ targetStrategy cops actor state@State{splayer = pl} per =
           L.filter (\ (_, l) -> chessDist lxsize me l == minDist) visibleFoes
         minTargets = map (\ (a, l) -> TEnemy a l) minFoes
         minTgtS = liftFrequency $ uniformFreq "closest" minTargets
-    in minTgtS .| noFoes .| return TCursor  -- never empty
+    in minTgtS .| noFoes .| returN "TCursor" TCursor  -- never empty
   -- TODO: set distant targets so that monsters behave as if they have
   -- a plan. We need pathfinding for that.
   noFoes :: Strategy Target
@@ -158,11 +160,11 @@ dirToAction actor allowAttacks dir = do
 
 -- | A strategy to always just wait.
 waitBlockNow :: ActorId -> Strategy (Action ())
-waitBlockNow actor = return $ setWaitBlock actor
+waitBlockNow actor = returN "wait" $ setWaitBlock actor
 
 -- | A strategy to always just die.
 dieNow :: ActorId -> Strategy (Action ())
-dieNow actor = return $ do  -- TODO: explode if a potion
+dieNow actor = returN "die" $ do  -- TODO: explode if a potion
   bitems <- gets (getActorItem actor)
   Actor{bloc} <- gets (getActor actor)
   modify (updateLevel (dropItemsAt bitems bloc))
@@ -178,16 +180,17 @@ track cops actor state =
   darkenActor = updateAnyActor actor $ \ m -> m {bcolor = Just Color.BrBlack}
   dieOrReset | bhp <= 0  = dieNow actor
              | otherwise =
-                 return $ updateAnyActor actor $ \ m -> m {btarget = TCursor}
+                 returN "reset TPath" $ updateAnyActor actor
+                 $ \ m -> m {btarget = TCursor}
   strat = case btarget of
     TPath [] -> dieOrReset
     TPath (d : _) | not $ accessible cops lvl bloc (shift bloc d) -> dieOrReset
     -- TODO: perhaps colour differently the whole second turn of movement?
-    TPath [d] -> return $ do
+    TPath [d] -> returN "last TPath" $ do
       darkenActor
       updateAnyActor actor $ \ m -> m { btarget = TPath [] }
       dirToAction actor True d
-    TPath (d : lv) -> return $ do
+    TPath (d : lv) -> returN "follow TPath" $ do
       updateAnyActor actor $ \ m -> m { btarget = TPath lv }
       dirToAction actor True d
     _ -> reject
@@ -199,11 +202,11 @@ pickup actor state =
   lvl = slevel state
   Actor{bloc} = getActor actor state
   lootHere x = not $ L.null $ lvl `atI` x
-  actionPickup = return $ actorPickupItem actor
+  actionPickup = returN "pickup" $ actorPickupItem actor
 
 melee :: ActorId -> State -> Point -> Strategy (Action ())
 melee actor state floc =
-  foeAdjacent .=> (return $ dirToAction actor True dir)
+  foeAdjacent .=> (returN "melee" $ dirToAction actor True dir)
  where
   Level{lxsize} = slevel state
   Actor{bloc} = getActor actor state

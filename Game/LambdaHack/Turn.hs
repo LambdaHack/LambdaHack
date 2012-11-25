@@ -36,9 +36,9 @@ import Game.LambdaHack.Random
 --
 -- handleTurn
 -- handleActors
--- handleMonster or handlePlayer
+-- handleAI or handlePlayer
 -- handleActors
--- handleMonster or handlePlayer
+-- handleAI or handlePlayer
 -- ...
 -- handleTurn (again)
 
@@ -53,7 +53,7 @@ import Game.LambdaHack.Random
 -- handlePlayer: update perception, remember, display frames,
 --   get and process commmands (zero or more), update smell map
 --
--- handleMonster: determine and process monster action
+-- handleAI: determine and process actor's action
 
 -- | Start a clip (a part of a turn for which one or more frames
 -- will be generated). Do whatever has to be done
@@ -138,33 +138,38 @@ handleActors subclipStart = do
               -- or the actor has already moved during this subclip
               -- or it's a hero. In either case, start a new subclip.
               startClip $ do
-                handleMonster actor
+                handleAI actor
                 handleActors $ btime m
             else do
               -- The monster didn't yet move this subclip.
-              handleMonster actor
+              handleAI actor
               handleActors subclipStart
 
 -- | Handle the move of a single monster.
-handleMonster :: ActorId -> Action ()
-handleMonster actor = do
-  debug "handleMonster"
+handleAI :: ActorId -> Action ()
+handleAI actor = do
   cops@Kind.COps{ cofact=Kind.Ops{okind}
                 , costrat=Kind.Ops{opick, okind=sokind}
                 } <- getCOps
   state <- get
   per <- getPerception
   -- Choose a target from those proposed by AI for the actor.
-  btarget <- rndToAction $ frequency
-             $ bestVariant $ targetStrategy cops actor state per
+  let stratTarget = targetStrategy cops actor state per
+  btarget <- rndToAction $ frequency $ bestVariant $ stratTarget
   updateAnyActor actor $ \ m -> m { btarget }
   stateNew <- get
-  let Actor{bfaction} = getActor actor stateNew
-  factionAi <- rndToAction $ opick (fAiIdle (okind bfaction)) (const True)
+  let Actor{bfaction, bloc, bsymbol} = getActor actor stateNew
+      faction = okind bfaction
+  factionAi <- rndToAction $ opick (fAiIdle faction) (const True)
   let factionAbilities = sabilities (sokind factionAi)
+      stratMove = strategy cops actor stateNew factionAbilities
+  debug $ "handleAI faction: " ++ fname faction
+     ++          ", symbol: "  ++ show bsymbol
+     ++          ", loc: "     ++ show bloc
+     ++ "\nhandleAI target: "  ++ show stratTarget
+     ++ "\nhandleAI move: "    ++ show stratMove
   -- Run the AI: choses an action from those given by the AI strategy.
-  join $ rndToAction $ frequency
-       $ bestVariant $ strategy cops actor stateNew factionAbilities
+  join $ rndToAction $ frequency $ bestVariant $ stratMove
 
 -- | Handle the move of the hero.
 handlePlayer :: Action ()

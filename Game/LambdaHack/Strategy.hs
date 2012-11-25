@@ -2,7 +2,7 @@
 -- No operation in this module involves the 'State' or 'Action' type.
 module Game.LambdaHack.Strategy
   ( Strategy, nullStrategy, liftFrequency
-  , (.|), reject, (.=>), only, bestVariant
+  , (.|), reject, (.=>), only, bestVariant, renameStrategy, returN
   ) where
 
 import Control.Monad
@@ -71,3 +71,11 @@ only p s = normalizeStrategy $ do
 bestVariant :: Strategy a -> Frequency a
 bestVariant (Strategy []) = mzero
 bestVariant (Strategy (f : _)) = f
+
+-- | Overwrite the description of all frequencies within the strategy.
+renameStrategy :: String -> Strategy a -> Strategy a
+renameStrategy newName (Strategy fs) = Strategy $ map (renameFreq newName) fs
+
+-- | Like 'return', but pick a name of the single frequency.
+returN :: String -> a -> Strategy a
+returN name x = Strategy $ return $ uniformFreq name [x]

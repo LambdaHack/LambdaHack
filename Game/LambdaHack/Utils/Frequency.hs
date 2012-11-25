@@ -5,7 +5,7 @@ module Game.LambdaHack.Utils.Frequency
     -- * Construction
   , uniformFreq, toFreq
     -- * Transformation
-  , scaleFreq
+  , scaleFreq, renameFreq
     -- * Consumption
   , rollFreq, nullFreq, runFrequency, nameFrequency
   ) where
@@ -32,9 +32,13 @@ instance Monad Frequency where
 
 instance MonadPlus Frequency where
   mplus (Frequency xname xs) (Frequency yname ys) =
-    Frequency ("mplus (" ++ xname ++ ") (" ++ yname ++ ")")
-              (xs ++ ys)
-  mzero = Frequency "mzero" []
+    let name = case (xs, ys) of
+          ([], []) -> []
+          ([], _ ) -> yname
+          (_,  []) -> xname
+          _ -> "(" ++ xname ++ ") ++ (" ++ yname ++ ")"
+    in Frequency name (xs ++ ys)
+  mzero = Frequency "[]" []
 
 instance Functor Frequency where
   fmap f (Frequency name xs) = Frequency name (map (\ (p, x) -> (p, f x)) xs)
@@ -54,6 +58,10 @@ scaleFreq :: Show a => Int -> Frequency a -> Frequency a
 scaleFreq n (Frequency name xs) =
   assert (n > 0 `blame` ("non-positive scale for " ++ name, n, xs)) $
   Frequency name (map (\ (p, x) -> (n * p, x)) xs)
+
+-- | Change the description of the frequency.
+renameFreq :: String -> Frequency a -> Frequency a
+renameFreq newName fr = fr {nameFrequency = newName}
 
 -- | Randomly choose an item according to the distribution.
 rollFreq :: Show a => Frequency a -> R.StdGen -> (a, R.StdGen)
