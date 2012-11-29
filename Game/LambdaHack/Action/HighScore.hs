@@ -1,3 +1,4 @@
+{-# LANGUAGE NoOverloadedStrings #-}
 -- | High score table operations.
 module Game.LambdaHack.Action.HighScore
   ( register

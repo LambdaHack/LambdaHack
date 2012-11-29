@@ -144,20 +144,22 @@ library
                       containers >= 0.4.1   && < 1,
                       directory  >= 1.1.0.1 && < 2,
                       filepath   >= 1.2.0.1 && < 2,
+                      miniutter  >= 0       && < 2,
                       mtl        >= 2.0.1   && < 3,
                       old-time   >= 1.0.0.7 && < 2,
                       random     >= 1.0.1   && < 2,
+                      text       >= 0.11.2.3 && < 1,
                       zlib       >= 0.5.3.1 && < 1
 
   default-language:   Haskell2010
   default-extensions: MonoLocalBinds,
                       BangPatterns, RecordWildCards, NamedFieldPuns
+  other-extensions:   CPP, MultiParamTypeClasses, RankNTypes,
+                      ScopedTypeVariables, TypeFamilies,
+                      OverloadedStrings, ExtendedDefaultRules
   ghc-options:        -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-monomorphism-restriction -fwarn-unrecognised-pragmas
   ghc-options:        -fno-warn-auto-orphans -fno-warn-implicit-prelude
   ghc-options:        -fno-ignore-asserts -funbox-strict-fields
-
-  other-extensions:   MultiParamTypeClasses, RankNTypes, ScopedTypeVariables,
-                      TypeFamilies, CPP
 
   if flag(curses) {
     other-modules:    Game.LambdaHack.Action.Frontend.Curses
@@ -199,19 +201,20 @@ executable LambdaHack
                       containers >= 0.4.1   && < 1,
                       directory  >= 1.1.0.1 && < 2,
                       filepath   >= 1.2.0.1 && < 2,
+                      miniutter  >= 0       && < 2,
                       mtl        >= 2.0.1   && < 3,
                       old-time   >= 1.0.0.7 && < 2,
                       random     >= 1.0.1   && < 2,
+                      text       >= 0.11.2.3 && < 1,
                       zlib       >= 0.5.3.1 && < 1
 
   default-language:   Haskell2010
   default-extensions: MonoLocalBinds,
                       BangPatterns, RecordWildCards, NamedFieldPuns
+  other-extensions:   CPP, QuasiQuotes, OverloadedStrings, ExtendedDefaultRules
   ghc-options:        -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-monomorphism-restriction -fwarn-unrecognised-pragmas
   ghc-options:        -fno-warn-auto-orphans -fno-warn-implicit-prelude
   ghc-options:        -fno-ignore-asserts -funbox-strict-fields
-
-  other-extensions:   CPP, QuasiQuotes
   ghc-options:        -threaded -with-rtsopts=-C0.005
 -- ghc-options:       -with-rtsopts=-N  -- eats all cores
 
