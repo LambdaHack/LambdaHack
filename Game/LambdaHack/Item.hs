@@ -28,6 +28,8 @@ import Data.Char
 import Data.Function
 import Data.Ord
 import Control.Monad
+import Data.Text (Text)
+import qualified Data.Text as T
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Random
@@ -37,6 +39,7 @@ import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Flavour
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Effect
+import Game.LambdaHack.Msg
 
 -- TODO: see the TODO about ipower in ItemKind.
 -- TODO: define type InvSymbol = Char and move all ops to another file.
@@ -163,26 +166,26 @@ maxLetter = maxBy cmpLetter
 mergeLetter :: Maybe Char -> Maybe Char -> Maybe Char
 mergeLetter = mplus
 
-letterRange :: [Char] -> String
+letterRange :: [Char] -> Text
 letterRange ls =
   sectionBy (L.sortBy cmpLetter ls) Nothing
  where
   succLetter c d = ord d - ord c == 1
 
-  sectionBy []     Nothing      = ""
+  sectionBy []     Nothing      = T.empty
   sectionBy []     (Just (c,d)) = finish (c,d)
   sectionBy (x:xs) Nothing      = sectionBy xs (Just (x,x))
   sectionBy (x:xs) (Just (c,d))
     | succLetter d x            = sectionBy xs (Just (c,x))
-    | otherwise                 = finish (c,d) ++ sectionBy xs (Just (x,x))
+    | otherwise                 = finish (c,d) <> sectionBy xs (Just (x,x))
 
-  finish (c,d) | c == d         = [c]
-               | succLetter c d = [c,d]
-               | otherwise      = [c,'-',d]
+  finish (c,d) | c == d         = T.pack [c]
+               | succLetter c d = T.pack $ [c, d]
+               | otherwise      = T.pack $ [c, '-', d]
 
-letterLabel :: Maybe Char -> String
-letterLabel Nothing  = "    "
-letterLabel (Just c) = c : " - "
+letterLabel :: Maybe Char -> Text
+letterLabel Nothing  = T.pack "    "
+letterLabel (Just c) = T.pack $ c : " - "
 
 -- | Adds an item to a list of items, joining equal items.
 -- Also returns the joined item.

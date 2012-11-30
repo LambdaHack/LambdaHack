@@ -16,6 +16,7 @@ import qualified Data.IntSet as IS
 import qualified Data.IntMap as IM
 import Data.Maybe
 import qualified Data.Char as Char
+import qualified Data.Text as T
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Point
@@ -273,7 +274,7 @@ addProjectile :: Kind.COps -> Item -> Point -> Kind.Id FactionKind
 addProjectile Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}}
               item loc bfaction path btime state@State{scounter} =
   let ik = okind (jkind item)
-      object = objectItem coitem state item
+      object = T.unpack $ objectItem coitem state item
       name = "a flying " ++ unwords (tail (words object))
       speed = speedFromWeight (iweight ik) (itoThrow ik)
       range = rangeFromSpeed speed

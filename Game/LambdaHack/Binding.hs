@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | Generic binding of keys to commands, procesing macros,
 -- printing command help. No operation in this module
 -- involves the 'State' or 'Action' type.
@@ -8,6 +9,8 @@ module Game.LambdaHack.Binding
 import qualified Data.Map as M
 import qualified Data.List as L
 import qualified Data.Set as S
+import Data.Text (Text)
+import qualified Data.Text as T
 
 import Game.LambdaHack.Utils.Assert
 import qualified Game.LambdaHack.Key as K
@@ -16,7 +19,7 @@ import qualified Game.LambdaHack.Command as Command
 
 -- | Bindings and other information about player commands.
 data Binding a = Binding
-  { kcmd   :: M.Map (K.Key, K.Modifier) (String, Bool, a)
+  { kcmd   :: M.Map (K.Key, K.Modifier) (Text, Bool, a)
                                      -- ^ binding keys to commands
   , kmacro :: M.Map K.Key K.Key      -- ^ macro map
   , kmajor :: [K.Key]                -- ^ major, most often used, commands
@@ -31,13 +34,14 @@ data Binding a = Binding
 macroKey :: [(String, String)] -> M.Map K.Key K.Key
 macroKey section =
   let trans k = case K.keyTranslate k of
-                  K.Unknown s -> assert `failure` ("unknown macro key " ++ s)
+                  K.Unknown s -> assert `failure` "unknown macro key: " ++ s
                   kt -> kt
-      trMacro (from, to) = let !fromTr = trans from
-                               !toTr  = trans to
-                           in if fromTr == toTr
-                              then assert `failure` ("degenerate alias", toTr)
-                              else (fromTr, toTr)
+      trMacro (from, to) =
+        let !fromTr = trans from
+            !toTr  = trans to
+        in if fromTr == toTr
+           then assert `failure` "degenerate alias: " ++ show toTr
+           else (fromTr, toTr)
   in M.fromList $ L.map trMacro section
 
 coImage :: M.Map K.Key K.Key -> K.Key -> [K.Key]
@@ -79,16 +83,18 @@ keyHelp Binding{kcmd, kmacro, kmajor} =
       , "For more playing instructions see file PLAYING.md."
       , "Press SPACE to clear the messages and see the map again."
       ]
-    fmt k h = replicate 16 ' ' ++ k ++ replicate ((15 - length k) `max` 1) ' '
-                               ++ h ++ replicate ((41 - length h) `max` 1) ' '
-    fmts s  = replicate 1  ' ' ++ s ++ replicate ((71 - length s) `max` 1) ' '
+    fmt k h = T.replicate 16 " "
+              <> k <> T.replicate ((15 - T.length k) `max` 1) " "
+              <> h <> T.replicate ((41 - T.length h) `max` 1) " "
+    fmts s  = T.replicate 1  " "
+              <> s <> T.replicate ((71 - T.length s) `max` 1) " "
     blank   = fmt "" ""
     mov     = map fmts movBlurb
     major   = map fmts majorBlurb
     minor   = map fmts minorBlurb
     keyCaption = fmt "keys" "command"
-    disp k  = L.concatMap show $ coImage kmacro k
-    keys l  = [ fmt (disp k) (h ++ if timed then "*" else "")
+    disp k  = T.concat $ map showT $ coImage kmacro k
+    keys l  = [ fmt (disp k) (h <> if timed then "*" else "")
               | ((k, _), (h, timed, _)) <- l, h /= "" ]
     (kcMajor, kcMinor) =
       L.partition ((`elem` kmajor) . fst . fst) (M.toAscList kcmd)

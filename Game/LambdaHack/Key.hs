@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | Frontend-independent keyboard input operations.
 module Game.LambdaHack.Key
   ( Key(..), handleDir, dirAllMoveKey
@@ -7,9 +8,12 @@ module Game.LambdaHack.Key
 import Prelude hiding (Left, Right)
 import qualified Data.List as L
 import qualified Data.Char as Char
+import Data.Text (Text)
+import qualified Data.Text as T
 
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Vector
+import Game.LambdaHack.Msg
 
 -- TODO: if the file grows much larger, split it and move a part to Utils/
 
@@ -41,8 +45,8 @@ data Modifier =
   deriving (Ord, Eq)
 
 -- Common and terse names for keys.
-showKey :: Key -> String
-showKey (Char c) = [c]
+showKey :: Key -> Text
+showKey (Char c) = T.singleton c
 showKey Esc      = "ESC"
 showKey Return   = "RET"
 showKey Space    = "SPACE"
@@ -57,16 +61,16 @@ showKey Down     = "DOWN"
 showKey End      = "END"
 showKey Begin    = "BEGIN"
 showKey Home     = "HOME"
-showKey (KP c)   = "KEYPAD(" ++ [c] ++ ")"
-showKey (Unknown s) = s
+showKey (KP c)   = "KEYPAD(" <> T.singleton c <> ")"
+showKey (Unknown s) = T.pack s
 
 -- | Show a key with a modifier, if any.
-showKM :: (Key, Modifier) -> String
-showKM (key, Control) = "CTRL-" ++ showKey key
+showKM :: (Key, Modifier) -> Text
+showKM (key, Control) = "CTRL-" <> showKey key
 showKM (key, NoModifier) = showKey key
 
 instance Show Key where
-  show = showKey
+  show = T.unpack . showKey
 
 dirViChar :: [Char]
 dirViChar = ['y', 'k', 'u', 'l', 'n', 'j', 'b', 'h']
@@ -107,9 +111,9 @@ handleDir _lxsize _ _h k = k
 -- TODO: deduplicate
 -- | Binding of both sets of movement keys.
 moveBinding :: ((X -> Vector) -> a) -> ((X -> Vector) -> a)
-            -> [((Key, Modifier), (String, Bool, a))]
+            -> [((Key, Modifier), (Text, Bool, a))]
 moveBinding move run =
-  let assign f (km, dir) = (km, ("", True, f dir))
+  let assign f (km, dir) = (km, (T.empty, True, f dir))
       rNoModifier = repeat NoModifier
       rControl = repeat Control
   in map (assign move) (zip (zip dirViMoveKey rNoModifier) movesWidth) ++

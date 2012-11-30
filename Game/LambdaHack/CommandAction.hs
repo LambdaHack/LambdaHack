@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | Semantics of player commands.
 module Game.LambdaHack.CommandAction
   ( configCmds, semanticsCmds
@@ -5,6 +6,7 @@ module Game.LambdaHack.CommandAction
 
 import Control.Monad.State hiding (State, state)
 import qualified Data.List as L
+import Data.Text (Text)
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
@@ -57,7 +59,7 @@ configCmds config =
 
 -- | The list of semantics and other info for all commands from config.
 semanticsCmds :: [(K.Key, Cmd)]
-              -> [((K.Key, K.Modifier), (String, Bool, ActionFrame ()))]
+              -> [((K.Key, K.Modifier), (Text, Bool, ActionFrame ()))]
 semanticsCmds cmdList =
   let mkDescribed cmd =
         let semantics = if timedCmd cmd

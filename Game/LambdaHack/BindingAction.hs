@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | Binding of keys to commands implemented with the 'Action' monad.
 module Game.LambdaHack.BindingAction
   ( stdBinding
@@ -8,6 +9,8 @@ import qualified Data.List as L
 import qualified Data.Map as M
 import qualified Data.Char as Char
 import Data.Tuple (swap)
+import Data.Text (Text)
+import qualified Data.Text as T
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.State
@@ -22,7 +25,7 @@ import Game.LambdaHack.ActorState
 import Game.LambdaHack.Command
 import Game.LambdaHack.CommandAction
 
-heroSelection :: [((K.Key, K.Modifier), (String, Bool, ActionFrame ()))]
+heroSelection :: [((K.Key, K.Modifier), (Text, Bool, ActionFrame ()))]
 heroSelection =
   let select k = do
         s <- get
@@ -62,7 +65,8 @@ stdBinding config =
                                                      >> returnNoFrame ())),
                ((K.Char 'o', K.Control), ("", False, modify toggleOmniscient
                                                      >> returnNoFrame ())),
-               ((K.Char 'i', K.Control), ("", False, gets (lmeta . slevel)
+               ((K.Char 'i', K.Control), ("", False, gets (T.pack
+                                                           . lmeta . slevel)
                                                      >>= abortWith))
              ]
   , kmacro

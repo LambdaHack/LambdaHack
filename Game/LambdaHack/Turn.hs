@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | The main loop of the game, processing player and AI moves turn by turn.
 module Game.LambdaHack.Turn ( handleTurn ) where
 
@@ -216,7 +217,7 @@ playerCommand msgRunAbort = do
                   fr <- drawPrompt ColorFull ""
                   return (timed, [Just fr])
                 else return (timed, frs)
-            Nothing -> let msgKey = "unknown command <" ++ K.showKM km ++ ">"
+            Nothing -> let msgKey = "unknown command <" <> K.showKM km <> ">"
                        in abortWith msgKey
         -- The command was aborted or successful and if the latter,
         -- possibly took some time.

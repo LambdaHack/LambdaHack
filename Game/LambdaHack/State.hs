@@ -19,6 +19,7 @@ import Data.Binary
 import qualified Game.LambdaHack.Config as Config
 import qualified System.Random as R
 import System.Time
+import qualified Data.Text as T
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Point
@@ -113,7 +114,7 @@ defaultDiary = do
   return Diary
     { sreport = emptyReport
     , shistory = singletonHistory $ singletonReport $
-                   "Player diary started on " ++ curDate ++ "."
+                   T.pack $ "Player diary started on " ++ curDate ++ "."
     }
 
 -- | Initial game state.

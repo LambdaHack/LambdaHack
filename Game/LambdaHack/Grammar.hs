@@ -1,10 +1,10 @@
-{-# LANGUAGE OverloadedStrings, ExtendedDefaultRules #-}
+{-# LANGUAGE OverloadedStrings #-}
 -- | Construct English sentences from content.
 module Game.LambdaHack.Grammar
-  (-- * Grammar types
+  ( -- * Grammar types
     Verb, Object
     -- * General operations
-  , capitalize, pluralise, addIndefinite, conjugate, (<>), (<+>), showT
+  , capitalize, pluralise, addIndefinite, conjugate
     -- * Objects from content
   , objectItemCheat, objectItem, objectActor, capActor
     -- * Sentences
@@ -24,6 +24,7 @@ import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Point
+import Game.LambdaHack.Msg
 import Game.LambdaHack.Item
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Level
@@ -34,30 +35,11 @@ import Game.LambdaHack.Effect
 import Game.LambdaHack.Flavour
 import qualified Game.LambdaHack.Kind as Kind
 
-default (Text)
-
 -- | The type of verbs.
 type Verb = Text
 
 -- | The type of sentence objects.
 type Object = Text
-
--- These two stolen from Eric:
-
--- | Identical to 'T.append'
-(<>) :: Text -> Text -> Text
-t1 <> t2 = t1 `T.append` t2
-
--- | Separated by space unless one of them is empty (in which case just
---   the non-empty one)
-(<+>) :: Text -> Text -> Text
-t1 <+> t2 | T.null t1 = t2
-          | T.null t2 = t1
-          | otherwise = t1 `T.append` " " `T.append` t2
-
--- | Show a value in Text format.
-showT :: Show a => a -> Text
-showT = T.pack . show
 
 -- | Nouns with irregular plural spelling.
 -- See http://en.wikipedia.org/wiki/English_plural.
@@ -119,7 +101,7 @@ compound modifyFirst f phrase =
   let rev | modifyFirst = reverse
           | otherwise   = id
   in case rev $ T.words phrase of
-       [] -> assert `failure` ("compound: no words" :: String)
+       [] -> assert `failure` ("compound: no words" :: Text)
        word : rest -> T.unwords $ rev $ f word : rest
 
 -- | Adds the plural (@s@, @es@, @ies@) suffix to a word.
@@ -164,13 +146,13 @@ conjugate _     verb = suffixS verb
 -- | Add the indefinite article (@a@, @an@) to a word (@h@ is too hard).
 addIndefinite :: Text -> Text
 addIndefinite b = case T.uncons b of
-                    Just (c, _) | vowel c -> "an " <> b
-                    _                     -> "a "  <> b
+                    Just (c, _) | vowel c -> "an" <+> b
+                    _                     -> "a"  <+> b
 
 -- | Transform an object, adding a count and a plural suffix.
 makeObject :: Int -> (Text -> Text) -> Text -> Text
 makeObject 1 f obj = addIndefinite $ f obj
-makeObject n f obj = showT n <> " " <> f (pluralise obj)
+makeObject n f obj = showT n <+> f (pluralise obj)
 
 -- TODO: when there's more of the above, split and move to Utils/
 
@@ -191,11 +173,11 @@ objectItemCheat coitem@Kind.Ops{okind} cheat state i =
       adj name =
         let known = name <> addSpace eff <> addSpace pwr
             flavour = getFlavour coitem (sflavour state) ik
-            obscured = T.pack (flavourToName flavour) <> " " <> name
+            obscured = T.pack (flavourToName flavour) <+> name
         in if identified
            then known
            else if cheat
-                then T.pack (flavourToName flavour) <> " " <> known
+                then T.pack (flavourToName flavour) <+> known
                 else obscured
   in makeObject (jcount i) adj (T.pack $ iname kind)
 
@@ -219,7 +201,7 @@ actorVerb coactor a v extra =
       verb = conjugate cactor v
       ending | T.null extra = "."
              | otherwise  = " " <> extra <> "."
-  in cactor <> " " <> verb <> ending
+  in cactor <+> verb <> ending
 
 -- | Sentences such as \"Dog quaffs a red potion fast.\"
 actorVerbItem :: Kind.COps -> State -> Actor -> Text -> Item -> Text
@@ -247,7 +229,7 @@ actorVerbExtraItem Kind.COps{coactor, coitem} state a v extra1 i extra2 =
   let ending | T.null extra2 = ""
              | otherwise   = " " <> extra2
   in actorVerb coactor a v $
-       extra1 <> " " <> objectItem coitem state i <> ending
+       extra1 <+> objectItem coitem state i <> ending
 
 -- | Produces a textual description of the terrain and items at an already
 -- explored location. Mute for unknown locations.
@@ -264,7 +246,7 @@ lookAt Kind.COps{coitem, cotile=Kind.Ops{oname}} detailed canSee s lvl loc msg
   | detailed  =
     let tile = lvl `rememberAt` loc
         name = capitalize $ T.pack $ oname tile
-    in name <> ". " <> msg <> isd
+    in name <> "." <+> msg <> isd
   | otherwise = msg <> isd
  where
   is  = lvl `rememberAtI` loc
@@ -272,7 +254,7 @@ lookAt Kind.COps{coitem, cotile=Kind.Ops{oname}} detailed canSee s lvl loc msg
   isd = case is of
           []    -> ""
           [i]   -> prefixSee <> objectItem coitem s i <> "."
-          [i,j] -> prefixSee <> objectItem coitem s i <> " and "
+          [i,j] -> prefixSee <> objectItem coitem s i <+> "and "
                              <> objectItem coitem s j <> "."
           _ | detailed -> "Objects:"
           _ -> "Objects here."

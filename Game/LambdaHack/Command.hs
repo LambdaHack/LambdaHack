@@ -1,11 +1,15 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | Abstract syntax of player commands.
 module Game.LambdaHack.Command
   ( Cmd(..), majorCmd, timedCmd, cmdDescription
   ) where
 
+import Data.Text (Text)
+
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Grammar
 import qualified Game.LambdaHack.Feature as F
+import Game.LambdaHack.Msg
 
 -- | Abstract syntax of player commands. The type is abstract, but the values
 -- are created outside this module via the Read class (from config file) .
@@ -70,12 +74,12 @@ timedCmd cmd = case cmd of
   _             -> False
 
 -- | Description of player commands.
-cmdDescription :: Cmd -> String
+cmdDescription :: Cmd -> Text
 cmdDescription cmd = case cmd of
-  Apply{..}       -> verb ++ " " ++ addIndefinite object
-  Project{..}     -> verb ++ " " ++ addIndefinite object
-  TriggerDir{..}  -> verb ++ " " ++ addIndefinite object
-  TriggerTile{..} -> verb ++ " " ++ addIndefinite object
+  Apply{..}       -> verb <+> addIndefinite object
+  Project{..}     -> verb <+> addIndefinite object
+  TriggerDir{..}  -> verb <+> addIndefinite object
+  TriggerTile{..} -> verb <+> addIndefinite object
   Pickup    -> "get an object"
   Drop      -> "drop an object"
   Wait      -> ""
@@ -87,11 +91,11 @@ cmdDescription cmd = case cmd of
   TgtFloor  -> "target location"
   TgtEnemy  -> "target monster"
   TgtAscend k | k == 1  -> "target next shallower level"
-  TgtAscend k | k >= 2  -> "target " ++ show k    ++ " levels shallower"
+  TgtAscend k | k >= 2  -> "target" <+> showT k    <+> "levels shallower"
   TgtAscend k | k == -1 -> "target next deeper level"
-  TgtAscend k | k <= -2 -> "target " ++ show (-k) ++ " levels deeper"
+  TgtAscend k | k <= -2 -> "target" <+> showT (-k) <+> "levels deeper"
   TgtAscend _ ->
-    assert `failure` "void level change in targeting mode in config file"
+    assert `failure` ("void level change in targeting in config file" :: Text)
   EpsIncr True  -> "swerve targeting line"
   EpsIncr False -> "unswerve targeting line"
   Cancel    -> "cancel action"

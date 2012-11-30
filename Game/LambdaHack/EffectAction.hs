@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings, ExtendedDefaultRules #-}
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 -- | The effectToAction function and all it depends on.
 -- This file should not depend on Actions.hs nor ItemAction.hs.
 -- TODO: Add an export list and document after it's rewritten according to #17.
@@ -11,7 +13,9 @@ import qualified Data.List as L
 import qualified Data.IntMap as IM
 import qualified Data.Set as S
 import qualified Data.IntSet as IS
-import Data.Monoid
+import Data.Monoid (mempty)
+import Data.Text (Text)
+import qualified Data.Text as T
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
@@ -37,6 +41,8 @@ import Game.LambdaHack.DungeonState
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Animation (twirlSplash, blockHit, deathBody)
 import qualified Game.LambdaHack.Dungeon as Dungeon
+
+default (Text)
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: Rnd a -> Action a
@@ -136,7 +142,7 @@ effectToAction effect verbosity source target power block = do
 -- and the string part describes how the target reacted
 -- (not what the source did).
 eff :: Effect.Effect -> Int -> ActorId -> ActorId -> Int
-    -> Action (Bool, String)
+    -> Action (Bool, Text)
 eff Effect.NoEffect _ _ _ _ = nullEffect
 eff Effect.Heal _ _source target power = do
   Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getCOps
@@ -171,7 +177,7 @@ eff (Effect.Wound nDm) verbosity source target power = do
           | verbosity <= 0 = ""
           | target == pl =
             actorVerb coactor tm "lose" $
-              show (n + power) ++ "HP"
+              showT (n + power) <> "HP"
           | otherwise = actorVerb coactor tm "hiss" "in pain"
     updateAnyActor target $ \ m -> m { bhp = newHP }  -- Damage the target.
     return (True, msg)
@@ -251,7 +257,7 @@ eff Effect.Descend _ source target power = do
     then (True, "")
     else (True, actorVerb coactor tm "find" "a way downstairs")
 
-nullEffect :: Action (Bool, String)
+nullEffect :: Action (Bool, Text)
 nullEffect = return (False, "Nothing happens.")
 
 -- TODO: refactor with actorAttackActor.
@@ -263,7 +269,7 @@ squashActor source target = do
   let h2hKind = ouniqGroup "weight"
       power = maxDeep $ ipower $ okind h2hKind
       h2h = Item h2hKind power Nothing 1
-      verb = iverbApply $ okind h2hKind
+      verb = T.pack $ iverbApply $ okind h2hKind
       msg = actorVerbActor coactor sm verb tm "in a staircase accident"
   msgAdd msg
   itemEffectAction 0 source target h2h False
@@ -365,8 +371,8 @@ fleeDungeon = do
             "This time try to grab some loot before escape!"
     when (not go2) $ abortWith "Here's your chance!"
   else do
-    let winMsg = "Congratulations, you won! Here's your loot, worth " ++
-                 show total ++ " gold."  -- TODO: use the name of the '$' item instead
+    let winMsg = "Congratulations, you won! Here's your loot, worth" <+>
+                 showT total <+> "gold."  -- TODO: use the name of the '$' item instead
     io <- itemOverlay True True items
     tryIgnore $ displayOverAbort winMsg io
     modify (\ st -> st {squit = Just (True, Victor)})
@@ -397,15 +403,15 @@ discover i = do
   Kind.COps{coitem=coitem@Kind.Ops{okind}} <- getCOps
   state <- get
   let ik = jkind i
-      obj = unwords $ tail $ words $ objectItem coitem state i
-      msg = "The " ++ obj ++ " turns out to be "
+      obj = T.unwords $ tail $ T.words $ objectItem coitem state i
+      msg = "The" <+> obj <+> "turns out to be "
       kind = okind ik
       alreadyIdentified = L.length (iflavour kind) == 1
                           || ik `S.member` sdisco state
   unless alreadyIdentified $ do
     modify (updateDiscoveries (S.insert ik))
     state2 <- get
-    msgAdd $ msg ++ objectItem coitem state2 i ++ "."
+    msgAdd $ msg <> objectItem coitem state2 i <> "."
 
 -- | Make the actor controlled by the player. Switch level, if needed.
 -- False, if nothing to do. Should only be invoked as a direct result
@@ -430,7 +436,7 @@ selectPlayer actor = do
       -- Don't continue an old run, if any.
       stopRunning
       -- Announce.
-      msgAdd $ capActor coactor pbody ++ " selected."
+      msgAdd $ capActor coactor pbody <+> "selected."
       msgAdd $ lookAt cops False True state lvl (bloc pbody) ""
       return True
 
@@ -540,8 +546,8 @@ gameOver showEndingScreens = do
           "That is your name. 'Almost'."
                 | otherwise =
           "Dead heroes make better legends."
-        loseMsg = failMsg ++ " You left " ++
-                  show total ++ " gold and some junk."  -- TODO: use the name of the '$' item instead
+        loseMsg = failMsg <+> "You left" <+>
+                  showT total <+> "gold and some junk."  -- TODO: use the name of the '$' item instead
     if null items
       then modify (\ st -> st {squit = Just (True, Killed slid)})
       else do
@@ -557,7 +563,7 @@ itemOverlay sorted cheat is = do
   state <- get
   lysize <- gets (lysize . slevel)
   let inv = L.map (\ i -> letterLabel (jletter i)
-                          ++ objectItemCheat coitem cheat state i ++ " ")
+                          <> objectItemCheat coitem cheat state i <> " ")
               ((if sorted
                 then L.sortBy (cmpLetterMaybe `on` jletter)
                 else id) is)
@@ -583,18 +589,18 @@ doLook = do
         ihabitant | canSee = L.find (\ m -> bloc m == loc) (IM.elems hms)
                   | otherwise = Nothing
         monsterMsg =
-          maybe "" (\ m -> actorVerb coactor m "be" "here" ++ " ") ihabitant
+          maybe "" (\ m -> actorVerb coactor m "be" "here" <> " ") ihabitant
         vis | not $ loc `IS.member` totalVisible per =
                 " (not visible)"  -- by party
             | actorReachesLoc pl loc per (Just pl) = ""
             | otherwise = " (not reachable)"  -- by hero
         mode = case target of
-                 TEnemy _ _ -> "[targeting monster" ++ vis ++ "] "
-                 TLoc _     -> "[targeting location" ++ vis ++ "] "
-                 TPath _    -> "[targeting path" ++ vis ++ "] "
-                 TCursor    -> "[targeting current" ++ vis ++ "] "
+                 TEnemy _ _ -> "[targeting monster" <> vis <> "] "
+                 TLoc _     -> "[targeting location" <> vis <> "] "
+                 TPath _    -> "[targeting path" <> vis <> "] "
+                 TCursor    -> "[targeting current" <> vis <> "] "
         -- Show general info about current loc.
-        lookMsg = mode ++ lookAt cops True canSee state lvl loc monsterMsg
+        lookMsg = mode <> lookAt cops True canSee state lvl loc monsterMsg
         -- Check if there's something lying around at current loc.
         is = lvl `rememberAtI` loc
     io <- itemOverlay False False is

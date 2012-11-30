@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | Game action monad and basic building blocks for player and monster
 -- actions. Exports 'liftIO' for injecting 'IO' into the 'Action' monad,
 -- but does not export the implementation of the Action monad.
@@ -21,6 +22,7 @@ module Game.LambdaHack.Action.ActionLift
 import Control.Monad.State hiding (State, state, liftIO)
 import qualified Data.List as L
 import Data.Maybe
+import qualified Data.Text as T
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Perception
@@ -91,8 +93,8 @@ handlerToIO sess@Session{scops} state diary h =
     sess
     (dungeonPerception scops state)  -- create and cache perception
     (\ _ _ x -> return x)    -- final continuation returns result
-    (\ msg ->
-      ioError $ userError $ "unhandled abort  " ++ msg)  -- e.g., in AI code
+    (\ msg ->  -- e.g., in AI code
+      ioError $ userError $ T.unpack $ "unhandled abort:" <+> msg)
     state
     diary
 
@@ -190,9 +192,9 @@ tryRepeatedlyWith exc h =
 -- | Try the given computation and silently catch failure.
 tryIgnore :: Action () -> Action ()
 tryIgnore =
-  tryWith (\ msg -> if null msg
+  tryWith (\ msg -> if T.null msg
                     then return ()
-                    else assert `failure` (msg, "in tryIgnore"))
+                    else assert `failure` msg <+> "in tryIgnore")
 
 -- | Get the current diary.
 getDiary :: Action Diary

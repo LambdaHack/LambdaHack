@@ -1,4 +1,4 @@
-{-# LANGUAGE NoOverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
 -- | High score table operations.
 module Game.LambdaHack.Action.HighScore
   ( register
@@ -10,6 +10,8 @@ import Text.Printf
 import System.Time
 import Data.Binary
 import qualified Data.List as L
+import Data.Text (Text)
+import qualified Data.Text as T
 
 import Game.LambdaHack.Utils.File
 import qualified Game.LambdaHack.Config as Config
@@ -46,7 +48,7 @@ instance Binary ScoreRecord where
     return (ScoreRecord p n (TOD cs cp) s)
 
 -- | Show a single high score, from the given ranking in the high score table.
-showScore :: (Int, ScoreRecord) -> [String]
+showScore :: (Int, ScoreRecord) -> [Text]
 showScore (pos, score) =
   let died = case status score of
         Killed lvl -> "perished on level " ++ show (levelNumber lvl) ++ ","
@@ -54,21 +56,22 @@ showScore (pos, score) =
         Victor -> "emerged victorious"
         Restart -> "resigned prematurely"
       curDate = calendarTimeToString . toUTCTime . date $ score
-      big   = "                                                 "
-      lil   = "              "
+      big   = "                                                 " :: String
+      lil   = "              " :: String
       turns = - (negTime score `timeFit` timeTurn)
      -- TODO: the spaces at the end are hand-crafted. Remove when display
      -- of overlays adds such spaces automatically.
-  in [ printf
-         "%s"
-         big
-     , printf
-         "%4d. %6d  This adventuring party %s after %d turns  "
-         pos (points score) died turns
-     , printf
-         "%son %s.  "
-         lil curDate
-     ]
+  in map T.pack
+       [ printf
+           "%s"
+           big
+       , printf
+           "%4d. %6d  This adventuring party %s after %d turns  "
+           pos (points score) died turns
+       , printf
+           "%son %s.  "
+           lil curDate
+       ]
 
 -- | The list of scores, in decreasing order.
 type ScoreTable = [ScoreRecord]
@@ -78,7 +81,7 @@ empty :: ScoreTable
 empty = []
 
 -- | Name of the high scores file.
-scoresFile :: Config.CP -> IO String
+scoresFile :: Config.CP -> IO FilePath
 scoresFile config = ConfigIO.getFile config "files" "scoresFile"
 
 -- | Save a simple serialized version of the high scores table.
@@ -126,7 +129,7 @@ register :: Config.CP  -- ^ the config file
          -> Time       -- ^ game time spent
          -> ClockTime  -- ^ date of the last game interruption
          -> Status     -- ^ reason of the game interruption
-         -> IO (String, [Overlay])
+         -> IO (Msg, [Overlay])
 register config write total time date status = do
   h <- restore config
   let points = case status of
@@ -139,14 +142,14 @@ register config write total time date status = do
       height = nlines `div` 3
       (msgCurrent, msgUnless) =
         case status of
-          Killed _ -> ("short-lived", " (score halved)")
-          Camping  -> ("current", " (unless you are slain)")
+          Killed _ -> ("short-lived", "(score halved)")
+          Camping  -> ("current", "(unless you are slain)")
           Victor   -> ("glorious",
                         if pos <= height
-                        then " among the greatest heroes"
+                        then "among the greatest heroes"
                         else "")
           Restart  -> ("abortive", " (score halved)")
-      msg = printf "Your %s exploits award you place >> %d <<%s."
-              msgCurrent pos msgUnless
+      msg = "Your" <+> msgCurrent <+> "exploits award you place >>"
+            <+> showT pos <+> "<<" <+> msgUnless
   when write $ save config h'
   return (msg, slideshow pos h' height)

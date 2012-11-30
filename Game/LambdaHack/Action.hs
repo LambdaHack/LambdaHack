@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | Game action monad and basic building blocks for player and monster
 -- actions. Uses @liftIO@ of the @Action@ monad, but does not export it.
 -- Has no direct access to the Action monad implementation.
@@ -34,6 +35,7 @@ import System.Time
 import Data.Maybe
 import Control.Concurrent
 import Control.Exception (finally)
+import qualified Data.Text as T
 -- import System.IO (hPutStrLn, stderr) -- just for debugging
 
 import Game.LambdaHack.Action.ActionLift
@@ -138,8 +140,7 @@ getYesNo frame = do
 
 -- TODO: perhaps add prompt to Report instead?
 promptAdd :: Msg -> Msg -> Msg
-promptAdd "" msg = msg
-promptAdd prompt msg = prompt ++ " " ++ msg
+promptAdd prompt msg = prompt <+> msg
 
 -- | Display a msg with a @more@ prompt. Return value indicates if the player
 -- tried to cancel/escape.
@@ -192,7 +193,7 @@ displayChoiceUI prompt ovs keys = do
         [x] -> (x, [], "", [], keys)
         x:xs -> (x, xs, ", SPACE", [moreMsg], (K.Space, K.NoModifier) : keys)
       legalKeys =  (K.Esc, K.NoModifier) : keysS
-  frame <- drawOverlay ColorFull (prompt ++ spc ++ ", ESC]") (over ++ more)
+  frame <- drawOverlay ColorFull (prompt <> spc <> ", ESC]") (over ++ more)
   fs <- getFrontendSession
   (key, modifier) <- liftIO $ promptGetKey fs legalKeys frame
   case key of
@@ -343,7 +344,7 @@ endOrLoop handleTurn = do
       tryWith
         (\ finalMsg ->
           let highScoreMsg = "Let's hope another party can save the day!"
-              msg = if null finalMsg then highScoreMsg else finalMsg
+              msg = if T.null finalMsg then highScoreMsg else finalMsg
           in void $ displayMore ColorBW msg
           -- Do nothing, that is, quit the game loop.
         )

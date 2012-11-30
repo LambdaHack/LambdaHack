@@ -1,6 +1,6 @@
 -- | Game messages displayed on top of the screen for the player to read.
 module Game.LambdaHack.Msg
-  ( Msg, moreMsg, yesnoMsg, padMsg
+  ( Msg, (<>), (<+>), showT, moreMsg, yesnoMsg, padMsg
   , Report, emptyReport, nullReport, singletonReport, addMsg
   , splitReport, renderReport
   , History, emptyHistory, singletonHistory, addReport, renderHistory
@@ -13,34 +13,51 @@ import Data.Char
 import Data.Binary
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.IntMap as IM
+import Data.Text (Text)
+import qualified Data.Text as T
+import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 
 import Game.LambdaHack.Misc
 import Game.LambdaHack.PointXY
 
 -- | The type of a single message.
-type Msg  = String
+type Msg  = Text
+
+-- These two stolen from Eric:
+-- | Identical to 'T.append'
+(<>) :: Msg -> Msg -> Msg
+t1 <> t2 = t1 `T.append` t2
+
+-- | Separated by space unless one of them is empty (in which case just
+--   the non-empty one)
+(<+>) :: Msg -> Msg -> Msg
+t1 <+> t2 | T.null t1 = t2
+          | T.null t2 = t1
+          | otherwise = t1 <> T.singleton ' ' <> t2
+
+-- | Show a value in Msg format.
+showT :: Show a => a -> Msg
+showT = T.pack . show
 
 -- | The \"press something to see more\" mark.
 moreMsg :: Msg
-moreMsg = "--more--  "
+moreMsg = T.pack "--more--  "
 
 -- | The confirmation request message.
 yesnoMsg :: Msg
-yesnoMsg = "[yn]"
+yesnoMsg = T.pack "[yn]"
 
 -- | Add spaces at the message end, for display overlayed over the level map.
 -- Also trims (does not wrap!) too long lines.
-padMsg :: X -> String -> String
+padMsg :: X -> Text -> Text
 padMsg w xs =
-  let len = length xs
-      rev = reverse xs
+  let len = T.length xs
   in case compare w len of
-       LT -> reverse $ '$' : drop (len - w + 1) rev
+       LT -> T.snoc (T.take w xs) '$'
        EQ -> xs
-       GT -> case rev of
-         [] -> xs
-         ' ' : _ -> xs
-         _ -> reverse $ ' ' : rev
+       GT -> if T.null xs || T.last xs == ' '
+             then xs
+             else T.snoc xs ' '
 
 -- | The type of a set of messages to show at the screen at once.
 newtype Report = Report [(BS.ByteString, Int)]
@@ -64,47 +81,46 @@ singletonReport m = addMsg emptyReport m
 
 -- | Add message to the end of report.
 addMsg :: Report -> Msg -> Report
-addMsg r "" = r
+addMsg r m | T.null m = r
 addMsg (Report ((x, n) : xns)) y' | x == y =
   Report $ (y, n + 1) : xns
- where y = BS.pack y'
-addMsg (Report xns) y = Report $ (BS.pack y, 1) : xns
+ where y = encodeUtf8 y'
+addMsg (Report xns) y = Report $ (encodeUtf8 y, 1) : xns
 
 -- | Split a messages into chunks that fit in one line.
 -- We assume the width of the messages line is the same as of level map.
-splitReport :: Report -> [String]
+splitReport :: Report -> [Text]
 splitReport r =
   let w = fst normalLevelBound + 1
-  in splitString w $ renderReport r
+  in splitText w $ renderReport r
 
 -- | Render a report as a (possibly very long) string.
-renderReport ::Report  -> String
-renderReport (Report []) = ""
-renderReport (Report [xn]) = renderRepetition xn
+renderReport ::Report  -> Text
+renderReport (Report []) = T.empty
 renderReport (Report (xn : xs)) =
-  renderReport (Report xs) ++ " " ++ renderRepetition xn
+  renderReport (Report xs) <+> renderRepetition xn
 
-renderRepetition :: (BS.ByteString, Int) -> String
-renderRepetition (s, 1) = BS.unpack s
-renderRepetition (s, n) = BS.unpack s ++ "<x" ++ show n ++ ">"
+renderRepetition :: (BS.ByteString, Int) -> Text
+renderRepetition (s, 1) = decodeUtf8 s
+renderRepetition (s, n) = decodeUtf8 s <> T.pack "<x" <> showT n <> T.pack ">"
 
 -- | Split a string into lines. Avoids ending the line with a character
 -- other than whitespace or punctuation. Space characters are removed
 -- from hte start, but never from the end of lines.
-splitString :: X -> String -> [String]
-splitString w xs = splitString' w $ dropWhile isSpace xs
+splitText :: X -> Text -> [Text]
+splitText w xs = splitText' w $ T.dropWhile isSpace xs
 
-splitString' :: X -> String -> [String]
-splitString' w xs
+splitText' :: X -> Text -> [Text]
+splitText' w xs
   | w <= 0 = [xs]  -- border case, we cannot make progress
-  | w >= length xs = [xs]  -- no problem, everything fits
+  | w >= T.length xs = [xs]  -- no problem, everything fits
   | otherwise =
-      let (pre, post) = splitAt w xs
-          (ppre, ppost) = break (`elem` " .,:;!?") $ reverse pre
-          testPost = dropWhile isSpace ppost
-      in if L.null testPost
-         then pre : splitString w post
-         else reverse ppost : splitString w (reverse ppre ++ post)
+      let (pre, post) = T.splitAt w xs
+          (ppre, ppost) = T.break (`elem` " .,:;!?") $ T.reverse pre
+          testPost = T.dropWhile isSpace ppost
+      in if T.null testPost
+         then pre : splitText w post
+         else T.reverse ppost : splitText w (T.reverse ppre <> post)
 
 -- | The history of reports.
 newtype History = History [Report]
@@ -143,7 +159,7 @@ takeHistory k (History h) = History $ take k h
 
 -- | A screenful of text lines. When displayed, they are trimmed, not wrapped
 -- and any lines below the lower screen edge are not visible.
-type Overlay = [String]
+type Overlay = [Text]
 
 -- | Split an overlay into overlays that fit on the screen.
 splitOverlay :: Y -> Overlay -> [Overlay]
@@ -156,12 +172,12 @@ splitOverlay lysize ls = let (pre, post) = splitAt (lysize - 1) ls
 -- string by location. Takes the width and height of the display plus
 -- the string. Returns also the message to print at the top and bottom.
 stringByLocation :: X -> Y -> Overlay
-                 -> (String, PointXY -> Maybe Char, Maybe String)
-stringByLocation _ _ [] = ("", const Nothing, Nothing)
+                 -> (Text, PointXY -> Maybe Char, Maybe Text)
+stringByLocation _ _ [] = (T.empty, const Nothing, Nothing)
 stringByLocation lxsize lysize (msgTop : ls) =
   let over = map (padMsg lxsize) $ take lysize ls
       m  = IM.fromDistinctAscList $
-             zip [0..] (L.map (IM.fromList . zip [0..]) over)
+             zip [0..] (L.map (IM.fromList . zip [0..] . T.unpack) over)
       msgBottom = case drop lysize ls of
                   [] -> Nothing
                   s : _ -> Just s

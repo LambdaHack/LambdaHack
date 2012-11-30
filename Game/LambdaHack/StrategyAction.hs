@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | AI strategy operations implemented with the 'Action' monad.
 module Game.LambdaHack.StrategyAction
   ( targetStrategy, strategy
@@ -10,6 +11,7 @@ import Data.Function
 import Control.Monad
 import Control.Monad.State hiding (State, state)
 import Control.Arrow
+import qualified Data.Text as T
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Ability (Ability)
@@ -25,6 +27,7 @@ import Game.LambdaHack.Perception
 import Game.LambdaHack.Strategy
 import Game.LambdaHack.State
 import Game.LambdaHack.Action
+import Game.LambdaHack.Msg
 import Game.LambdaHack.EffectAction
 import Game.LambdaHack.Actions
 import Game.LambdaHack.ItemAction
@@ -154,9 +157,9 @@ dirToAction actor allowAttacks dir = do
   -- set new direction
   updateAnyActor actor $ \ m -> m { bdir = Just (dir, 0) }
   -- perform action
-  tryWith (\ msg -> if null msg
+  tryWith (\ msg -> if T.null msg
                     then return ()
-                    else assert `failure` (msg, "in AI")) $ do
+                    else assert `failure` msg <> "in AI") $ do
     -- If the following action aborts, we just advance the time and continue.
     -- TODO: ensure time is taken for other aborted actions in this file
     -- TODO: or just fail at each abort in AI code? or use tryWithFrame?
@@ -253,7 +256,8 @@ rangedFreq cops actor state@State{splayer = pl} floc =
     Just [] -> bloc  -- TODO
     Just (lbl:_) -> lbl
   throwFreq is multi =
-    [ (benefit * multi, projectGroupItem actor floc (iverbProject ik) i)
+    [ (benefit * multi,
+       projectGroupItem actor floc (T.pack $ iverbProject ik) i)
     | i <- is,
       let ik = iokind (jkind i),
       let benefit = - (1 + jpower i) * Effect.effectToBenefit (ieffect ik),
@@ -271,7 +275,7 @@ toolsFreq cops actor state =
   bitems = getActorItem actor state
   tis = lvl `atI` bloc
   quaffFreq is multi =
-    [ (benefit * multi, applyGroupItem actor (iverbApply ik) i)
+    [ (benefit * multi, applyGroupItem actor (T.pack $ iverbApply ik) i)
     | i <- is,
       let ik = iokind (jkind i),
       let benefit = (1 + jpower i) * Effect.effectToBenefit (ieffect ik),

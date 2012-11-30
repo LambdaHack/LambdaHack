@@ -9,6 +9,7 @@ import qualified Data.IntSet as IS
 import qualified Data.List as L
 import qualified Data.IntMap as IM
 import Data.Maybe
+import qualified Data.Text as T
 
 import Game.LambdaHack.Msg
 import qualified Game.LambdaHack.Color as Color
@@ -165,8 +166,8 @@ draw dm cops per s@State{ scursor=Cursor{..}
       sfLevel =  -- Fully evaluated.
         let f l y = let !line = fLine y in line : l
         in L.foldl' f [] [lysize-1,lysize-2..0]
-      sfTop = toWidth lxsize msgTop
-      sfBottom = toWidth lxsize $ fromMaybe status msgBottom
+      sfTop = toWidth lxsize $ T.unpack msgTop
+      sfBottom = toWidth lxsize $ fromMaybe status $ T.unpack `fmap` msgBottom
   in SingleFrame{..}
 
 -- | Render animations on top of the current screen frame.

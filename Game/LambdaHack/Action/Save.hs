@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | Saving and restoring games and player diaries.
 module Game.LambdaHack.Action.Save
   ( saveGameFile, restoreGame, rmBkpSaveDiary, saveGameBkp
@@ -9,6 +10,7 @@ import qualified Control.Exception as Ex hiding (handle)
 import Control.Monad
 import Control.Concurrent
 import System.IO.Unsafe (unsafePerformIO)  -- horrors
+import qualified Data.Text as T
 
 import Game.LambdaHack.Utils.File
 import Game.LambdaHack.State
@@ -110,7 +112,7 @@ restoreGame pathsDataFile config title = do
        then do
          mvBkp config
          state <- strictDecodeEOF bfile
-         let msg = "Welcome back to " ++ title ++ "."
+         let msg = "Welcome back to" <+> T.pack title <> "."
          return $ Left (state, diary, msg)
        else
          if bb
@@ -118,11 +120,11 @@ restoreGame pathsDataFile config title = do
              state <- strictDecodeEOF bfile
              let msg = "No savefile found. Restoring from a backup savefile."
              return $ Left (state, diary, msg)
-           else return $ Right (diary, "Welcome to " ++ title ++ "!"))
+           else return $ Right (diary, "Welcome to" <+> T.pack title <> "!"))
     (\ e -> case e :: Ex.SomeException of
-              _ -> let msg = "Starting a new game, because restore failed. "
-                             ++ "The error message was: "
-                             ++ (unwords . lines) (show e)
+              _ -> let msg = "Starting a new game, because restore failed."
+                             <+> "The error message was:"
+                             <+> (T.unwords . T.lines) (showT e)
                    in return $ Right (diary, msg))
 
 -- | Move the savegame file to a backup slot.

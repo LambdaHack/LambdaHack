@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings, ExtendedDefaultRules #-}
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 -- | The game action stuff that is independent from ItemAction.hs
 -- (both depend on EffectAction.hs).
 -- TODO: Add an export list and document after it's rewritten according to #17.
@@ -15,6 +17,8 @@ import Data.Maybe
 import Data.Version
 import qualified Data.IntSet as IS
 import Data.Ratio
+import Data.Text (Text)
+import qualified Data.Text as T
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
@@ -47,6 +51,8 @@ import Game.LambdaHack.Time
 import Game.LambdaHack.Animation (swapPlaces, blockMiss)
 import Game.LambdaHack.Draw
 import qualified Game.LambdaHack.Command as Command
+
+default (Text)
 
 gameSave :: Action ()
 gameSave = do
@@ -158,7 +164,7 @@ triggerTile dloc = do
 playerTriggerDir :: F.Feature -> Verb -> Action ()
 playerTriggerDir feat verb = do
   let keys = zip K.dirAllMoveKey $ repeat K.NoModifier
-  e <- displayChoiceUI ("What to " ++ verb ++ "? [movement key") [] keys
+  e <- displayChoiceUI ("What to" <+> verb <> "? [movement key") [] keys
   lxsize <- gets (lxsize . slevel)
   K.handleDir lxsize e (playerBumpDir feat) (neverMind True)
 
@@ -405,23 +411,22 @@ actorAttackActor source target = do
               _ -> assert `failure` bitems
             else case strongestSword cops bitems of
               Nothing -> (h2hItem, False, 0,
-                          iverbApply $ okind $ h2hKind)  -- hand-to-hand
+                          T.pack $ iverbApply $ okind $ h2hKind)  -- hand2hand
               Just w  -> (w, True, 0,
-                          iverbApply $ okind $ jkind w)  -- weapon
+                          T.pack $ iverbApply $ okind $ jkind w)  -- weapon
           single = stack { jcount = 1 }
           -- The msg describes the source part of the action.
           -- TODO: right now it also describes the victim and weapon;
           -- perhaps, when a weapon is equipped, just say "you hit"
           -- or "you miss" and then "nose dies" or "nose yells in pain".
-          msg = actorVerbActor coactor sm verb tm $
+          msg = actorVerbActor coactor sm (verb) tm $
                   if tell
-                  then "with " ++ objectItem coitem state single
+                  then "with" <+> objectItem coitem state single
                   else ""
-          msgMiss = init (actorVerb coactor sm ("try to " ++ verb) "")
-                    ++ ", but "
-                    ++ let tmSubject = objectActor coactor tm
-                       in tmSubject ++ " "
-                          ++ conjugate tmSubject "block" ++ "."
+          msgMiss = T.init (actorVerb coactor sm ("try to" <+> verb) "")
+                    <> ", but"
+                    <+> let tmSubject = objectActor coactor tm
+                        in tmSubject <+> conjugate tmSubject "block" <> "."
       let performHit block = do
             when (svisible || tvisible) $ msgAdd msg
             -- Msgs inside itemEffectAction describe the target part.
@@ -560,7 +565,7 @@ displayMainMenu = do
             versionLen = length version
         in init art ++ [take (80 - versionLen) (last art) ++ version]
       kds =  -- key-description pairs
-        let showKD cmd key = (show key, Command.cmdDescription cmd)
+        let showKD cmd key = (showT key, Command.cmdDescription cmd)
             revLookup cmd = maybe ("", "") (showKD cmd) $ M.lookup cmd krevMap
             cmds = [Command.GameSave, Command.GameExit,
                    Command.GameRestart, Command.Help]
@@ -568,18 +573,18 @@ displayMainMenu = do
       bindings =  -- key bindings to display
         let bindingLen = 25
             fmt (k, d) =
-              let gapLen = (8 - length k) `max` 1
-                  padLen = bindingLen - length k - gapLen - length d
-              in k ++ replicate gapLen ' ' ++ d ++ replicate padLen ' '
+              let gapLen = (8 - T.length k) `max` 1
+                  padLen = bindingLen - T.length k - gapLen - T.length d
+              in k <> T.replicate gapLen " " <> d <> T.replicate padLen " "
         in map fmt kds
       overwrite =  -- overwrite the art with key bindings
-        let over [] line = ([], line)
+        let over [] line = ([], T.pack $ line)
             over bs@(binding : bsRest) line =
               let (prefix, lineRest) = break (=='{') line
                   (braces, suffix)   = span  (=='{') lineRest
               in if length braces == 25
-                 then (bsRest, prefix ++ binding ++ suffix)
-                 else (bs, line)
+                 then (bsRest, T.pack $ prefix ++ T.unpack binding ++ suffix)
+                 else (bs, T.pack $ line)
         in snd . L.mapAccumL over bindings
       mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule
       menuOverlay = overwrite $ pasteVersion $ stripFrame mainMenuArt
@@ -592,9 +597,9 @@ displayHistory = do
   Diary{shistory} <- getDiary
   time <- gets stime
   lysize <- gets (lysize . slevel)
-  let turn = show $ time `timeFit` timeTurn
-      msg = "You survived for " ++ turn
-            ++ " half-second turns. Past messages:"
+  let turn = showT $ time `timeFit` timeTurn
+      msg = "You survived for" <+> turn
+            <+> "half-second turns. Past messages:"
   displayOverlays msg "" $
     splitOverlay lysize $ renderHistory shistory
 
@@ -602,7 +607,7 @@ dumpConfig :: Action ()
 dumpConfig = do
   config <- gets sconfig
   let fn = "config.dump"
-      msg = "Current configuration dumped to file " ++ fn ++ "."
+      msg = "Current configuration dumped to file" <+> T.pack fn <> "."
   dumpCfg fn config
   abortWith msg
 
