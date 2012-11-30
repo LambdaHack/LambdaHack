@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | Game factions (heroes, enemies, NPCs, etc.) for LambdaHack.
 module Content.FactionKind ( cdefs ) where
 

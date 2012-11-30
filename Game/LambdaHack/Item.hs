@@ -65,7 +65,7 @@ instance Binary Item where
 -- | Generate an item.
 newItem :: Kind.Ops ItemKind -> Int -> Int -> Rnd Item
 newItem cops@Kind.Ops{opick, okind} lvl depth = do
-  ikChosen <- opick "dng" (const True)
+  ikChosen <- opick (T.pack "dng") (const True)
   let kind = okind ikChosen
   count <- rollDeep lvl depth (icount kind)
   if count == 0

@@ -14,6 +14,8 @@ import qualified Data.Map as M
 import qualified Data.IntMap as IM
 import Data.Maybe
 import Control.Monad
+import Data.Text (Text)
+import qualified Data.Text as T
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Point
@@ -108,7 +110,7 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, ouniqGroup}
   -- TODO: split this into Level.defaultLevel
   let itemMap = mapToIMap cxsize ditem `IM.union` IM.fromList is
       litem = IM.map (\ i -> ([i], [])) itemMap
-      unknownId = ouniqGroup "unknown space"
+      unknownId = ouniqGroup (T.pack "unknown space")
       level = Level
         { lactor = IM.empty
         , linv = IM.empty
@@ -128,15 +130,15 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, ouniqGroup}
         }
   return level
 
-matchGenerator :: Kind.Ops CaveKind -> Maybe String -> Rnd (Kind.Id CaveKind)
+matchGenerator :: Kind.Ops CaveKind -> Maybe Text -> Rnd (Kind.Id CaveKind)
 matchGenerator Kind.Ops{opick} mname =
-  opick (fromMaybe "dng" mname) (const True)
+  opick (fromMaybe (T.pack "dng") mname) (const True)
 
 findGenerator :: Kind.COps -> Config.CP -> Int -> Int -> Rnd Level
 findGenerator cops config k depth = do
   let ln = "LambdaCave_" ++ show k
       genName = Config.getOption config "dungeon" ln
-  ci <- matchGenerator (Kind.cocave cops) genName
+  ci <- matchGenerator (Kind.cocave cops) $ T.pack `fmap` genName
   cave <- buildCave cops k depth ci
   buildLevel cops cave k depth
 

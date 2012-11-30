@@ -387,7 +387,7 @@ gameReset config1 cops@Kind.COps{ coitem
   let (DungeonState.FreshDungeon{..}, ag) =
         runState (DungeonState.generate cops config2) g2
       (sflavour, ag2) = runState (dungeonFlavourMap coitem) ag
-      factionName = Config.getOption config2 "heroes" "faction"
+      factionName = T.pack `fmap` Config.getOption config2 "heroes" "faction"
       sfaction =
         evalState
           (opick (fromMaybe "playable" factionName) (const True)) ag2
@@ -410,7 +410,7 @@ startFrontend :: Kind.COps -> (Config.CP -> Binding (ActionFrame ()))
               -> Action () -> IO ()
 startFrontend !scops@Kind.COps{corule} stdBinding handleTurn = do
   let configDefault = rconfigDefault $ Kind.stdRuleset corule
-  sconfig <- ConfigIO.mkConfig configDefault
+  sconfig <- ConfigIO.mkConfig (T.unpack configDefault)
   let !sbinding = stdBinding sconfig
       !sorigConfig = sconfig
       -- The only option taken not from config in savegame,

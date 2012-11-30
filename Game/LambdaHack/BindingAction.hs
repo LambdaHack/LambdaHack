@@ -10,7 +10,6 @@ import qualified Data.Map as M
 import qualified Data.Char as Char
 import Data.Tuple (swap)
 import Data.Text (Text)
-import qualified Data.Text as T
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.State
@@ -65,8 +64,7 @@ stdBinding config =
                                                      >> returnNoFrame ())),
                ((K.Char 'o', K.Control), ("", False, modify toggleOmniscient
                                                      >> returnNoFrame ())),
-               ((K.Char 'i', K.Control), ("", False, gets (T.pack
-                                                           . lmeta . slevel)
+               ((K.Char 'i', K.Control), ("", False, gets (lmeta . slevel)
                                                      >>= abortWith))
              ]
   , kmacro

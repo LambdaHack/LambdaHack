@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | Actors in the game: monsters and heroes. No operation in this module
 -- involves the 'State' or 'Action' type.
 module Game.LambdaHack.Actor
@@ -14,6 +15,8 @@ import Control.Monad
 import Data.Binary
 import Data.Maybe
 import Data.Ratio
+import Data.Text (Text)
+import qualified Data.Text as T
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
@@ -21,6 +24,7 @@ import Game.LambdaHack.Point
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
 import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Msg
 import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Config as Config
 import Game.LambdaHack.Time
@@ -33,7 +37,7 @@ import qualified Game.LambdaHack.Color as Color
 data Actor = Actor
   { bkind    :: !(Kind.Id ActorKind)    -- ^ the kind of the actor
   , bsymbol  :: !(Maybe Char)           -- ^ individual map symbol
-  , bname    :: !(Maybe String)         -- ^ individual name
+  , bname    :: !(Maybe Text)           -- ^ individual name
   , bcolor   :: !(Maybe Color.Color)    -- ^ individual map color
   , bspeed   :: !(Maybe Speed)          -- ^ individual speed
   , bhp      :: !Int                    -- ^ current hit points
@@ -88,10 +92,10 @@ instance Binary Actor where
 type ActorId = Int
 
 -- | Find a hero name in the config file, or create a stock name.
-findHeroName :: Config.CP -> Int -> String
+findHeroName :: Config.CP -> Int -> Text
 findHeroName config n =
   let heroName = Config.getOption config "heroes" ("HeroName_" ++ show n)
-  in fromMaybe ("hero number " ++ show n) heroName
+  in fromMaybe ("hero number" <+> showT n) $ T.pack `fmap` heroName
 
 -- | Chance that a new monster is generated. Currently depends on the
 -- number of monsters already present, and on the level. In the future,
@@ -107,7 +111,7 @@ monsterGenChance depth numMonsters =
 
 -- | A template for a new non-projectile actor. The initial target is invalid
 -- to force a reset ASAP.
-template :: Kind.Id ActorKind -> Maybe Char -> Maybe String -> Int -> Point
+template :: Kind.Id ActorKind -> Maybe Char -> Maybe Text -> Int -> Point
          -> Time -> Kind.Id FactionKind -> Bool -> Actor
 template bkind bsymbol bname bhp bloc btime bfaction bproj =
   let bcolor  = Nothing

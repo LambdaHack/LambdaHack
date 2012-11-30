@@ -5,6 +5,7 @@ module Game.LambdaHack.Content.TileKind
 
 import qualified Data.List as L
 import qualified Data.Map as M
+import Data.Text (Text)
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Color
@@ -16,7 +17,7 @@ import Game.LambdaHack.Misc
 -- particular concrete tiles in the dungeon.
 data TileKind = TileKind
   { tsymbol  :: !Char       -- ^ map symbol
-  , tname    :: !String     -- ^ short description
+  , tname    :: !Text       -- ^ short description
   , tfreq    :: !Freqs      -- ^ frequency within groups
   , tcolor   :: !Color      -- ^ map color
   , tcolor2  :: !Color      -- ^ map color when not in FOV

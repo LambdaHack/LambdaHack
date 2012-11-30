@@ -4,6 +4,7 @@ module Game.LambdaHack.Content.RuleKind
   ) where
 
 import Data.Version
+import Data.Text (Text)
 
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Content.TileKind
@@ -27,16 +28,16 @@ import Game.LambdaHack.Misc
 -- Precondition: the two locations are next to each other.
 data RuleKind = RuleKind
   { rsymbol           :: Char     -- ^ a symbol
-  , rname             :: String   -- ^ short description
+  , rname             :: Text     -- ^ short description
   , rfreq             :: Freqs    -- ^ frequency within groups
   , raccessible       :: X -> Point -> TileKind -> Point -> TileKind -> Bool
-  , rtitle            :: String   -- ^ the title of the game
+  , rtitle            :: Text     -- ^ the title of the game
   , rpathsDataFile    :: FilePath -> IO FilePath  -- ^ the path to data files
   , rpathsVersion     :: Version  -- ^ the version of the game
   , ritemMelee        :: [Char]   -- ^ symbols of melee weapons
   , ritemProject      :: [Char]   -- ^ symbols of items AI can project
-  , rconfigDefault    :: String   -- ^ the default config file of the game
-  , rmainMenuArt      :: String   -- ^ the ASCII art for the Main Menu
+  , rconfigDefault    :: Text     -- ^ the default config file of the game
+  , rmainMenuArt      :: Text     -- ^ the ASCII art for the Main Menu
   }
 
 -- | A dummy instance of the 'Show' class, to satisfy general requirments

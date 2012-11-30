@@ -9,6 +9,7 @@ import qualified Data.IntSet as IS
 import qualified Data.List as L
 import qualified Data.IntMap as IM
 import Data.Maybe
+import Data.Text (Text)
 import qualified Data.Text as T
 
 import Game.LambdaHack.Msg
@@ -108,7 +109,7 @@ draw dm cops per s@State{ scursor=Cursor{..}
                                              L.elem loc0 $ shiftPath prLoc p
                                            _ -> False))
                     ->
-                      let unknownId = ouniqGroup "unknown space"
+                      let unknownId = ouniqGroup (T.pack "unknown space")
                       in ('*', case (vis, F.Walkable `elem` tfeature tk) of
                                  _ | tile == unknownId -> Color.BrBlack
                                  (True, True)   -> Color.BrGreen
@@ -150,24 +151,24 @@ draw dm cops per s@State{ scursor=Cursor{..}
       -- 'wait' command.
       braceSign | braced mpl ltime = "{"
                 | otherwise = " "
-      status =
+      status = T.pack $
         take 31 (take 3 (show (Dungeon.levelNumber slid) ++ "  ")
-                 ++ ldesc ++ repeat ' ') ++
+                 ++ T.unpack ldesc ++ repeat ' ') ++
         take 12 ("[" ++ seenTxt ++ " seen]  ") ++
         take 10 ("$: " ++ show wealth ++ repeat ' ') ++
         take 12 ("Dmg: " ++ damage ++ repeat ' ') ++
         take 14 (braceSign ++ "HP: " ++ show bhp ++
                  " (" ++ show (maxDice ahp) ++ ")" ++ repeat ' ')
-      toWidth :: Int -> String -> String
-      toWidth n x = take n (x ++ repeat ' ')
+      toWidth :: Int -> Text -> Text
+      toWidth n x = T.take n (x <> T.replicate 1000 (T.singleton ' '))
       fLine y =
         let f l x = let !ac = dis (PointXY (x, y)) in ac : l
         in L.foldl' f [] [lxsize-1,lxsize-2..0]
       sfLevel =  -- Fully evaluated.
         let f l y = let !line = fLine y in line : l
         in L.foldl' f [] [lysize-1,lysize-2..0]
-      sfTop = toWidth lxsize $ T.unpack msgTop
-      sfBottom = toWidth lxsize $ fromMaybe status $ T.unpack `fmap` msgBottom
+      sfTop = T.unpack $ toWidth lxsize $ msgTop
+      sfBottom = T.unpack $ toWidth lxsize $ fromMaybe status $ msgBottom
   in SingleFrame{..}
 
 -- | Render animations on top of the current screen frame.

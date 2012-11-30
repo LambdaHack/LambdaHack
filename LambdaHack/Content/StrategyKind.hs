@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | AI strategies for LambdaHack.
 module Content.StrategyKind ( cdefs ) where
 

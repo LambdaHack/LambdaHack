@@ -9,12 +9,14 @@
 -- of the game code proper, with names corresponding to their kinds.
 module Game.LambdaHack.CDefs (CDefs(..)) where
 
+import Data.Text (Text)
+
 import Game.LambdaHack.Misc
 
 -- | The general type of a particular game content, e.g., item kinds.
 data CDefs a = CDefs
   { getSymbol :: a -> Char    -- ^ symbol, e.g., to print on the map
-  , getName   :: a -> String  -- ^ name, e.g., to show to the player
+  , getName   :: a -> Text    -- ^ name, e.g., to show to the player
   , getFreq   :: a -> Freqs   -- ^ frequency within groups
   , validate  :: [a] -> [a]   -- ^ validate and catch some offenders, if any
   , content   :: [a]          -- ^ all the defined content of this type

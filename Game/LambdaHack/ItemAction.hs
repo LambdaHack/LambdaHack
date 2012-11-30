@@ -88,7 +88,7 @@ playerApplyGroupItem verb object syms = do
   item <- getGroupItem is object syms
             ("What to" <+> verb <> "?") "in inventory"
   pl   <- gets splayer
-  applyGroupItem pl (T.pack $ iverbApply $ okind $ jkind item) item
+  applyGroupItem pl (iverbApply $ okind $ jkind item) item
 
 projectGroupItem :: ActorId  -- ^ actor projecting the item (is on current lvl)
                  -> Point    -- ^ target location of the projectile
@@ -181,7 +181,7 @@ playerProjectGI verb object syms = do
                 ("What to" <+> verb <> "?") "in inventory"
       targeting <- gets (ctargeting . scursor)
       when (targeting == TgtAuto) $ endTargeting True
-      projectGroupItem pl loc (T.pack $ iverbProject $ okind $ jkind item) item
+      projectGroupItem pl loc (iverbProject $ okind $ jkind item) item
       returnNoFrame ()
     Nothing -> retarget "Last target invalid."
 

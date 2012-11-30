@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE CPP, QuasiQuotes #-}
 -- | Game rules and assorted game setup data for LambdaHack.
 module Content.RuleKind ( cdefs ) where

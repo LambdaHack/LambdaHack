@@ -7,6 +7,7 @@ import Control.Monad
 import qualified Data.Map as M
 import qualified Data.List as L
 import Data.Maybe
+import Data.Text (Text)
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.PointXY
@@ -23,6 +24,7 @@ import Game.LambdaHack.Place hiding (TileMapXY)
 import qualified Game.LambdaHack.Place as Place
 import Game.LambdaHack.Misc
 import Game.LambdaHack.Time
+import Game.LambdaHack.Msg
 
 -- | The map of tile kinds in a cave.
 -- The map is sparse. The default tile that eventually fills the empty spaces
@@ -43,7 +45,7 @@ data Cave = Cave
   , dmap      :: TileMapXY            -- ^ tile kinds in the cave
   , dsecret   :: SecretMapXY          -- ^ secrecy strength of cave tiles
   , ditem     :: ItemMapXY            -- ^ starting items in the cave
-  , dmeta     :: String               -- ^ debug information about the cave
+  , dmeta     :: Text                 -- ^ debug information about the cave
   , dplaces   :: [Place]              -- ^ places generated in the cave
   }
   deriving Show
@@ -149,7 +151,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick}
         , dsecret = secretMap
         , ditem = M.empty
         , dmap
-        , dmeta = show allConnects
+        , dmeta = showT allConnects
         , dplaces
         }
   return cave
@@ -182,7 +184,7 @@ digCorridors _ _ = M.empty
 passable :: [F.Feature]
 passable = [F.Walkable, F.Openable, F.Hidden]
 
-mapToHidden :: Kind.Ops TileKind -> String
+mapToHidden :: Kind.Ops TileKind -> Text
             -> Rnd (M.Map (Kind.Id TileKind) (Kind.Id TileKind))
 mapToHidden cotile@Kind.Ops{ofoldrWithKey, opick} chiddenTile =
   let getHidden ti tk acc =

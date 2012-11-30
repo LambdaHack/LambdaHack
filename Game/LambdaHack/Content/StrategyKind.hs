@@ -3,13 +3,15 @@ module Game.LambdaHack.Content.StrategyKind
   ( StrategyKind(..), svalidate
   ) where
 
+import Data.Text (Text)
+
 import Game.LambdaHack.Ability
 import Game.LambdaHack.Misc
 
 -- | Strategy properties that are fixed for a given kind of strategies.
 data StrategyKind = StrategyKind
   { ssymbol    :: !Char       -- ^ a symbol
-  , sname      :: !String     -- ^ short description
+  , sname      :: !Text       -- ^ short description
   , sfreq      :: !Freqs      -- ^ frequency within groups
   , sabilities :: ![Ability]  -- ^ abilities to pick from in roughly that order
   }

@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | AI strategies to direct actors not controlled by the player.
 -- No operation in this module involves the 'State' or 'Action' type.
 module Game.LambdaHack.Strategy
@@ -6,8 +7,10 @@ module Game.LambdaHack.Strategy
   ) where
 
 import Control.Monad
+import Data.Text (Text)
 
 import Game.LambdaHack.Utils.Frequency
+import Game.LambdaHack.Msg
 
 -- | A strategy is a choice of (non-empty) frequency tables
 -- of possible actions.
@@ -24,7 +27,7 @@ instance Monad Strategy where
                   , (q, b) <- runFrequency y
                   ]
     | x <- runStrategy m
-    , let name = "Strategy_bind (" ++ nameFrequency x ++ ")"]
+    , let name = "Strategy_bind (" <> nameFrequency x <> ")"]
 
 instance MonadPlus Strategy where
   mzero = Strategy []
@@ -73,9 +76,9 @@ bestVariant (Strategy []) = mzero
 bestVariant (Strategy (f : _)) = f
 
 -- | Overwrite the description of all frequencies within the strategy.
-renameStrategy :: String -> Strategy a -> Strategy a
+renameStrategy :: Text -> Strategy a -> Strategy a
 renameStrategy newName (Strategy fs) = Strategy $ map (renameFreq newName) fs
 
 -- | Like 'return', but pick a name of the single frequency.
-returN :: String -> a -> Strategy a
+returN :: Text -> a -> Strategy a
 returN name x = Strategy $ return $ uniformFreq name [x]

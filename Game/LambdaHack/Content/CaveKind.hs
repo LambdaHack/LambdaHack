@@ -4,6 +4,8 @@ module Game.LambdaHack.Content.CaveKind
   ) where
 
 import qualified Data.List as L
+import Data.Text (Text)
+import qualified Data.Text as T
 
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Random
@@ -12,7 +14,7 @@ import Game.LambdaHack.Misc
 -- | Parameters for the generation of dungeon levels.
 data CaveKind = CaveKind
   { csymbol       :: Char        -- ^ a symbol
-  , cname         :: String      -- ^ short description
+  , cname         :: Text        -- ^ short description
   , cfreq         :: Freqs       -- ^ frequency within groups
   , cxsize        :: X           -- ^ X size of the whole cave
   , cysize        :: Y           -- ^ Y size of the whole cave
@@ -27,12 +29,12 @@ data CaveKind = CaveKind
   , copenChance   :: Chance      -- ^ if there's a door, is it open?
   , chiddenChance :: Chance      -- ^ if not open, is it hidden?
   , citemNum      :: RollDice    -- ^ the number of items in the cave
-  , cdefaultTile    :: String    -- ^ the default cave tile group name
-  , ccorridorTile   :: String    -- ^ the cave corridor tile group name
-  , cfillerTile     :: String    -- ^ the filler wall group name
-  , cdarkLegendTile :: String    -- ^ the dark place plan legend ground name
-  , clitLegendTile  :: String    -- ^ the lit place plan legend ground name
-  , chiddenTile     :: String    -- ^ the hidden tiles ground name
+  , cdefaultTile    :: Text      -- ^ the default cave tile group name
+  , ccorridorTile   :: Text      -- ^ the cave corridor tile group name
+  , cfillerTile     :: Text      -- ^ the filler wall group name
+  , cdarkLegendTile :: Text      -- ^ the dark place plan legend ground name
+  , clitLegendTile  :: Text      -- ^ the lit place plan legend ground name
+  , chiddenTile     :: Text      -- ^ the hidden tiles ground name
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 
@@ -49,6 +51,6 @@ cvalidate = L.filter (\ CaveKind{ cgrid = RollDiceXY (gx, gy)
       (maxPlaceSizeX, maxPlaceSizeY) = (maxDice mx,  maxDice my)
       xborder = if maxGridX == 1 then 5 else 3
       yborder = if maxGridX == 1 then 5 else 3
-  in length cname <= 25
+  in T.length cname <= 25
      && (maxGridX * (xborder + maxPlaceSizeX) + 1 > cxsize ||
          maxGridY * (yborder + maxPlaceSizeY) + 1 > cysize))

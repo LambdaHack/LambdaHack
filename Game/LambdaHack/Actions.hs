@@ -411,9 +411,9 @@ actorAttackActor source target = do
               _ -> assert `failure` bitems
             else case strongestSword cops bitems of
               Nothing -> (h2hItem, False, 0,
-                          T.pack $ iverbApply $ okind $ h2hKind)  -- hand2hand
+                          iverbApply $ okind $ h2hKind)  -- hand to hand combat
               Just w  -> (w, True, 0,
-                          T.pack $ iverbApply $ okind $ jkind w)  -- weapon
+                          iverbApply $ okind $ jkind w)  -- weapon
           single = stack { jcount = 1 }
           -- The msg describes the source part of the action.
           -- TODO: right now it also describes the victim and weapon;
@@ -587,7 +587,8 @@ displayMainMenu = do
                  else (bs, T.pack $ line)
         in snd . L.mapAccumL over bindings
       mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule
-      menuOverlay = overwrite $ pasteVersion $ stripFrame mainMenuArt
+      menuOverlay =
+        overwrite $ pasteVersion $ stripFrame $ T.unpack mainMenuArt
   case menuOverlay of
     [] -> assert `failure` "empty Main Menu overlay"
     hd : tl -> displayOverlays hd "" [tl]

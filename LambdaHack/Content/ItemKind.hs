@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | Weapons and treasure for LambdaHack.
 module Content.ItemKind ( cdefs ) where
 

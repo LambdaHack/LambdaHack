@@ -4,16 +4,19 @@ module Game.LambdaHack.Content.PlaceKind
   ) where
 
 import qualified Data.List as L
+import Data.Text (Text)
+import qualified Data.Text as T
+
 import Game.LambdaHack.Misc
 
 -- | Parameters for the generation of small areas within a dungeon level.
 data PlaceKind = PlaceKind
   { psymbol  :: Char      -- ^ a symbol
-  , pname    :: String    -- ^ short description
+  , pname    :: Text      -- ^ short description
   , pfreq    :: Freqs     -- ^ frequency within groups
   , pcover   :: Cover     -- ^ how to fill whole place based on the corner
   , pfence   :: Fence     -- ^ whether to fence the place with solid border
-  , ptopLeft :: [String]  -- ^ plan of the top-left corner of the place
+  , ptopLeft :: [Text]    -- ^ plan of the top-left corner of the place
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 
@@ -42,5 +45,7 @@ data Fence =
 -- Verify that the top-left corner map is rectangular and not empty.
 pvalidate :: [PlaceKind] -> [PlaceKind]
 pvalidate = L.filter (\ PlaceKind{..} ->
-  let dxcorner = case ptopLeft of [] -> 0 ; l : _ -> L.length l
-  in dxcorner /= 0 && L.any (/= dxcorner) (L.map L.length ptopLeft))
+  let dxcorner = case ptopLeft of
+        [] -> 0
+        l : _ -> T.length l
+  in dxcorner /= 0 && L.any (/= dxcorner) (L.map T.length ptopLeft))

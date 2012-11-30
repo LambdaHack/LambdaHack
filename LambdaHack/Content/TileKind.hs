@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | Terrain tiles for LambdaHack.
 module Content.TileKind ( cdefs ) where
 

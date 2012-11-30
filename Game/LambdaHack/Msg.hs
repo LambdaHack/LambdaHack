@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | Game messages displayed on top of the screen for the player to read.
 module Game.LambdaHack.Msg
   ( Msg, (<>), (<+>), showT, moreMsg, yesnoMsg, padMsg
@@ -21,7 +22,11 @@ import Game.LambdaHack.Misc
 import Game.LambdaHack.PointXY
 
 -- | The type of a single message.
-type Msg  = Text
+type Msg = Text
+
+instance Binary Text where
+   put = put . encodeUtf8
+   get = decodeUtf8 `fmap` get
 
 -- These two stolen from Eric:
 -- | Identical to 'T.append'

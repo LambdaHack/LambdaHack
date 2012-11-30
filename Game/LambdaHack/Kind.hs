@@ -1,5 +1,6 @@
--- | General content types and operations.
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes, ScopedTypeVariables, TypeFamilies #-}
+-- | General content types and operations.
 module Game.LambdaHack.Kind
   ( -- * General content types
     Id, Speedup(..), Ops(..), COps(..), createOps, stdRuleset
@@ -14,6 +15,9 @@ import qualified Data.Map as M
 import qualified Data.Word as Word
 import qualified Data.Array.Unboxed as A
 import qualified Data.Ix as Ix
+import Data.Text (Text)
+import qualified Data.Text as T
+import Game.LambdaHack.Msg
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.Frequency
@@ -48,11 +52,11 @@ data instance Speedup TileKind = TileSpeedup
 -- | Content operations for the content of type @a@.
 data Ops a = Ops
   { osymbol :: Id a -> Char       -- ^ the symbol of a content element at id
-  , oname :: Id a -> String       -- ^ the name of a content element at id
+  , oname :: Id a -> Text         -- ^ the name of a content element at id
   , okind :: Id a -> a            -- ^ the content element at given id
-  , ouniqGroup :: String -> Id a  -- ^ the id of the unique member of
+  , ouniqGroup :: Text -> Id a    -- ^ the id of the unique member of
                                   --   a singleton content group
-  , opick :: String -> (a -> Bool) -> Rnd (Id a)
+  , opick :: Text -> (a -> Bool) -> Rnd (Id a)
                                   -- ^ pick a random id belonging to a group
                                   --   and satisfying a predicate
   , ofoldrWithKey :: forall b. (Id a -> a -> b -> b) -> b -> b
@@ -69,20 +73,21 @@ createOps CDefs{getSymbol, getName, getFreq, content, validate} =
       kindAssocs = L.zip [0..] content
       kindMap :: IM.IntMap a
       kindMap = IM.fromDistinctAscList $ L.zip [0..] content
-      kindFreq :: M.Map String (Frequency (Id a, a))
+      kindFreq :: M.Map Text (Frequency (Id a, a))
       kindFreq =
         let tuples = [ (group, (n, (Id i, k)))
                      | (i, k) <- kindAssocs
                      , (group, n) <- getFreq k, n > 0 ]
             f m (group, nik) = M.insertWith (++) group [nik] m
-            lists =  L.foldl' f M.empty tuples
-            nameFreq group = toFreq $ "opick ('" ++ group ++ "')"
+            lists = L.foldl' f M.empty tuples
+            nameFreq group = toFreq $ "opick ('" <> group <> "')"
         in M.mapWithKey nameFreq lists
       okind (Id i) = kindMap IM.! fromEnum i
-      correct a = not (L.null (getName a)) && L.all ((> 0) . snd) (getFreq a)
+      correct a = not (T.null (getName a)) && L.all ((> 0) . snd) (getFreq a)
       offenders = validate content
   in assert (allB correct content) $
-     assert (L.null offenders `blame` ("content not validated:", offenders)) $
+     assert (L.null offenders `blame` ("content not validated: " :: Text,
+                                       offenders)) $
      Ops
        { osymbol = getSymbol . okind
        , oname = getName . okind

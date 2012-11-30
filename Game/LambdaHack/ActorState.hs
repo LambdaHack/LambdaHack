@@ -27,6 +27,7 @@ import Game.LambdaHack.Level
 import Game.LambdaHack.Dungeon
 import Game.LambdaHack.State
 import Game.LambdaHack.Grammar
+import Game.LambdaHack.Msg
 import Game.LambdaHack.Item
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
@@ -274,8 +275,8 @@ addProjectile :: Kind.COps -> Item -> Point -> Kind.Id FactionKind
 addProjectile Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}}
               item loc bfaction path btime state@State{scounter} =
   let ik = okind (jkind item)
-      object = T.unpack $ objectItem coitem state item
-      name = "a flying " ++ unwords (tail (words object))
+      object = objectItem coitem state item
+      name = T.pack "a flying" <+> T.unwords (tail (T.words object))
       speed = speedFromWeight (iweight ik) (itoThrow ik)
       range = rangeFromSpeed speed
       dirPath = take range $ displacePath path

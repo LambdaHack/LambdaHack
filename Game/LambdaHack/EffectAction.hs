@@ -269,7 +269,7 @@ squashActor source target = do
   let h2hKind = ouniqGroup "weight"
       power = maxDeep $ ipower $ okind h2hKind
       h2h = Item h2hKind power Nothing 1
-      verb = T.pack $ iverbApply $ okind h2hKind
+      verb = iverbApply $ okind h2hKind
       msg = actorVerbActor coactor sm verb tm "in a staircase accident"
   msgAdd msg
   itemEffectAction 0 source target h2h False

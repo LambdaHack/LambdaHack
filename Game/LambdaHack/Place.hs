@@ -8,6 +8,8 @@ import Data.Binary
 import qualified Data.Map as M
 import qualified Data.List as L
 import qualified Data.Set as S
+import Data.Text (Text)
+import qualified Data.Text as T
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Content.PlaceKind
@@ -15,6 +17,7 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Area
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Misc
+import Game.LambdaHack.Msg()
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Random
 import Game.LambdaHack.Content.CaveKind
@@ -26,7 +29,7 @@ data Place = Place
   { qkind        :: !(Kind.Id PlaceKind)
   , qarea        :: !Area
   , qseen        :: !Bool
-  , qlegend      :: !String
+  , qlegend      :: !Text
   , qsolidFence  :: !(Kind.Id TileKind)
   , qhollowFence :: !(Kind.Id TileKind)
   }
@@ -66,7 +69,7 @@ placeValid r PlaceKind{..} =
   let (x0, y0, x1, y1) = expandFence pfence r
       dx = x1 - x0 + 1
       dy = y1 - y0 + 1
-      dxcorner = case ptopLeft of [] -> 0 ; l : _ -> L.length l
+      dxcorner = case ptopLeft of [] -> 0 ; l : _ -> T.length l
       dycorner = L.length ptopLeft
       wholeOverlapped d dcorner = d > 1 && dcorner > 1 &&
                                   (d - 1) `mod` (2 * (dcorner - 1)) == 0
@@ -98,7 +101,7 @@ buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
            = assert (not (trivialArea r) `blame` r) $ do
   qsolidFence <- opick cfillerTile (const True)
   dark <- chanceDeep ln depth cdarkChance
-  qkind <- popick "rogue" (placeValid r)
+  qkind <- popick (T.pack "rogue") (placeValid r)
   let kr = pokind qkind
       qlegend = if dark then cdarkLegendTile else clitLegendTile
       qseen = False
@@ -110,7 +113,7 @@ buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
   return (digPlace place kr xlegend, place)
 
 -- | Roll a legend of a place plan: a map from plan symbols to tile kinds.
-olegend :: Kind.Ops TileKind -> String -> Rnd (M.Map Char (Kind.Id TileKind))
+olegend :: Kind.Ops TileKind -> Text -> Rnd (M.Map Char (Kind.Id TileKind))
 olegend Kind.Ops{ofoldrWithKey, opick} group =
   let getSymbols _ tk acc =
         maybe acc (const $ S.insert (tsymbol tk) acc)
@@ -154,7 +157,7 @@ tilePlace (x0, y0, x1, y1) pl@PlaceKind{..} =
       fillInterior :: (forall a. Int -> [a] -> [a]) -> [(PointXY, Char)]
       fillInterior f =
         let tileInterior (y, row) = L.zip (fromX (x0, y)) $ f dx row
-            reflected = L.zip [y0..] $ f dy ptopLeft
+            reflected = L.zip [y0..] $ f dy $ map T.unpack ptopLeft
         in L.concatMap tileInterior reflected
       tileReflect :: Int -> [a] -> [a]
       tileReflect d pat =

@@ -5,6 +5,7 @@ module Game.LambdaHack.Content.ActorKind
 
 import qualified Data.List as L
 import qualified Data.Ord as Ord
+import Data.Text (Text)
 
 import Game.LambdaHack.Ability
 import Game.LambdaHack.Color
@@ -17,7 +18,7 @@ import Game.LambdaHack.Time
 -- | Actor properties that are fixed for a given kind of actors.
 data ActorKind = ActorKind
   { asymbol :: !Char             -- ^ map symbol
-  , aname   :: !String           -- ^ short description
+  , aname   :: !Text             -- ^ short description
   , afreq   :: !Freqs            -- ^ frequency within groups
   , acolor  :: !Color            -- ^ map color
   , aspeed  :: !Speed            -- ^ natural speed in m/s

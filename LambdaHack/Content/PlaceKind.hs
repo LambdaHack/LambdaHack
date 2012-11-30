@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | Rooms, halls and passages for LambdaHack.
 module Content.PlaceKind ( cdefs ) where
 

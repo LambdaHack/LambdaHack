@@ -10,6 +10,7 @@ import qualified Data.Ord as Ord
 import qualified Data.Map as M
 import qualified Data.IntMap as IM
 import Data.Maybe
+import qualified Data.Text as T
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
@@ -164,7 +165,7 @@ handleAI actor = do
   updateAnyActor actor $ \ m -> m { btarget }
   stateNew <- get
   let stratMove = strategy cops actor stateNew factionAbilities
-  debug $ "handleAI faction: " ++ fname faction
+  debug $ "handleAI faction: " ++ T.unpack (fname faction)
      ++          ", symbol: "  ++ show bsymbol
      ++          ", loc: "     ++ show bloc
      ++ "\nhandleAI target: "  ++ show stratTarget

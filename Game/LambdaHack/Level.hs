@@ -14,6 +14,7 @@ module Game.LambdaHack.Level
 import Data.Binary
 import qualified Data.List as L
 import qualified Data.IntMap as IM
+import Data.Text (Text)
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.PointXY
@@ -57,8 +58,8 @@ data Level = Level
   , litem     :: ItemMap         -- ^ items on the ground
   , lmap      :: TileMap         -- ^ map tiles
   , lrmap     :: TileMap         -- ^ remembered map tiles
-  , ldesc     :: String          -- ^ level description for the player
-  , lmeta     :: String          -- ^ debug information from cave generation
+  , ldesc     :: Text            -- ^ level description for the player
+  , lmeta     :: Text            -- ^ debug information from cave generation
   , lstairs   :: (Point, Point)  -- ^ destination of the (up, down) stairs
   , ltime     :: Time            -- ^ date of the last activity on the level
   , lclear    :: Int             -- ^ total number of clear tiles

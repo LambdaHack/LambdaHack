@@ -257,7 +257,7 @@ rangedFreq cops actor state@State{splayer = pl} floc =
     Just (lbl:_) -> lbl
   throwFreq is multi =
     [ (benefit * multi,
-       projectGroupItem actor floc (T.pack $ iverbProject ik) i)
+       projectGroupItem actor floc (iverbProject ik) i)
     | i <- is,
       let ik = iokind (jkind i),
       let benefit = - (1 + jpower i) * Effect.effectToBenefit (ieffect ik),
@@ -275,7 +275,7 @@ toolsFreq cops actor state =
   bitems = getActorItem actor state
   tis = lvl `atI` bloc
   quaffFreq is multi =
-    [ (benefit * multi, applyGroupItem actor (T.pack $ iverbApply ik) i)
+    [ (benefit * multi, applyGroupItem actor (iverbApply ik) i)
     | i <- is,
       let ik = iokind (jkind i),
       let benefit = (1 + jpower i) * Effect.effectToBenefit (ieffect ik),

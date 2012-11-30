@@ -179,7 +179,7 @@ objectItemCheat coitem@Kind.Ops{okind} cheat state i =
            else if cheat
                 then T.pack (flavourToName flavour) <+> known
                 else obscured
-  in makeObject (jcount i) adj (T.pack $ iname kind)
+  in makeObject (jcount i) adj (iname kind)
 
 -- | How to refer to an item in object position of a sentence.
 objectItem :: Kind.Ops ItemKind -> State -> Item -> Text
@@ -188,7 +188,7 @@ objectItem coitem = objectItemCheat coitem False
 -- | How to refer to an actor in object position of a sentence.
 objectActor :: Kind.Ops ActorKind -> Actor -> Text
 objectActor Kind.Ops{oname} a =
-  fromMaybe (T.pack $ oname $ bkind a) (T.pack `fmap` bname a)
+  fromMaybe (oname $ bkind a) (bname a)
 
 -- | Capitalized actor object.
 capActor :: Kind.Ops ActorKind -> Actor -> Text
@@ -245,7 +245,7 @@ lookAt :: Kind.COps  -- ^ game content
 lookAt Kind.COps{coitem, cotile=Kind.Ops{oname}} detailed canSee s lvl loc msg
   | detailed  =
     let tile = lvl `rememberAt` loc
-        name = capitalize $ T.pack $ oname tile
+        name = capitalize $ oname tile
     in name <> "." <+> msg <> isd
   | otherwise = msg <> isd
  where

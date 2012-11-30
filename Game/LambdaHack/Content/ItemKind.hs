@@ -3,6 +3,8 @@ module Game.LambdaHack.Content.ItemKind
   ( ItemKind(..), ivalidate
   ) where
 
+import Data.Text (Text)
+
 import Game.LambdaHack.Effect
 import Game.LambdaHack.Flavour
 import Game.LambdaHack.Random
@@ -19,14 +21,14 @@ import Game.LambdaHack.Misc
 -- | Item properties that are fixed for a given kind of items.
 data ItemKind = ItemKind
   { isymbol  :: !Char        -- ^ map symbol
-  , iname    :: !String      -- ^ generic name
+  , iname    :: !Text        -- ^ generic name
   , ifreq    :: !Freqs       -- ^ frequency within groups
   , iflavour :: ![Flavour]   -- ^ possible flavours
   , ieffect  :: !Effect      -- ^ the effect when activated
   , icount   :: !RollDeep    -- ^ created in that quantify
   , ipower   :: !RollDeep    -- ^ created with that power
-  , iverbApply   :: !String  -- ^ the verb for applying and possibly combat
-  , iverbProject :: !String  -- ^ the verb for projecting
+  , iverbApply   :: !Text    -- ^ the verb for applying and possibly combat
+  , iverbProject :: !Text    -- ^ the verb for projecting
   , iweight  :: !Int         -- ^ weight in grams
   , itoThrow :: !Int         -- ^ percentage bonus or malus to throw speed
   }

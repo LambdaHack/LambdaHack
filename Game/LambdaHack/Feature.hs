@@ -3,6 +3,8 @@ module Game.LambdaHack.Feature
   ( Feature(..)
   ) where
 
+import Data.Text (Text)
+
 import Game.LambdaHack.Effect
 import Game.LambdaHack.Random
 
@@ -16,7 +18,7 @@ data Feature =
   | Hidden             -- ^ triggered when the tile's secrecy becomes zero
 
   | Cause !Effect      -- ^ causes the effect when triggered
-  | ChangeTo !String   -- ^ transitions to any tile of the group when triggered
+  | ChangeTo !Text     -- ^ transitions to any tile of the group when triggered
 
   | Walkable           -- ^ actors can walk through
   | Clear              -- ^ actors can see through

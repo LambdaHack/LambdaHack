@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | Cave layouts for LambdaHack.
 module Content.CaveKind ( cdefs ) where
 
