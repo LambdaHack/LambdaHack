@@ -11,7 +11,7 @@ module Game.LambdaHack.Action.Frontend.Vty
 import Graphics.Vty
 import qualified Graphics.Vty as Vty
 import qualified Data.List as L
-import qualified Data.ByteString.Char8 as BS
+import Data.Text.Encoding (encodeUtf8)
 
 import qualified Game.LambdaHack.Key as K (Key(..), Modifier(..))
 import qualified Game.LambdaHack.Color as Color
@@ -45,9 +45,9 @@ display vty _ _ (Just SingleFrame{..}) =
                                 char (setAttr acAttr) acChar)))
             sfLevel
       pic = pic_for_image $
-              utf8_bytestring (setAttr Color.defaultAttr) (BS.pack sfTop)
+              utf8_bytestring (setAttr Color.defaultAttr) (encodeUtf8 sfTop)
               <-> img <->
-              utf8_bytestring (setAttr Color.defaultAttr) (BS.pack sfBottom)
+              utf8_bytestring (setAttr Color.defaultAttr) (encodeUtf8 sfBottom)
   in update vty pic
 
 -- | Input key via the frontend.

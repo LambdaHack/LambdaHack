@@ -583,7 +583,7 @@ displayMainMenu = do
               let (prefix, lineRest) = break (=='{') line
                   (braces, suffix)   = span  (=='{') lineRest
               in if length braces == 25
-                 then (bsRest, T.pack $ prefix ++ T.unpack binding ++ suffix)
+                 then (bsRest, T.pack prefix <> binding <> T.pack suffix)
                  else (bs, T.pack $ line)
         in snd . L.mapAccumL over bindings
       mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule

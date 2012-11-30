@@ -21,6 +21,8 @@ import Data.Maybe
 import qualified Data.Map as M
 import qualified Data.ByteString.Char8 as BS
 import System.Time
+import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.LQueue
@@ -319,8 +321,9 @@ pushFrame sess@FrontendSession{sframeState, slastFull} noDelay rawFrame = do
 
 evalFrame :: FrontendSession -> SingleFrame -> GtkFrame
 evalFrame FrontendSession{stags} SingleFrame{..} =
-  let levelChar = L.map (L.map Color.acChar) sfLevel
-      gfChar = BS.pack $ L.intercalate "\n" $ sfTop : levelChar ++ [sfBottom]
+  let levelChar = L.map (T.pack . L.map Color.acChar) sfLevel
+      gfChar = encodeUtf8 $ T.intercalate (T.singleton '\n')
+               $ sfTop : levelChar ++ [sfBottom]
       -- Strict version of @L.map (L.map ((stags M.!) . fst)) sfLevel@.
       gfAttr  = L.reverse $ L.foldl' ff [] sfLevel
       ff ll l = (L.reverse $ L.foldl' f [] l) : ll

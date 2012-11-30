@@ -11,6 +11,7 @@ module Game.LambdaHack.Action.Frontend.Std
 import qualified Data.List as L
 import qualified Data.ByteString.Char8 as BS
 import qualified System.IO as SIO
+import Data.Text.Encoding (encodeUtf8)
 
 import qualified Game.LambdaHack.Key as K (Key(..),  Modifier(..))
 import qualified Game.LambdaHack.Color as Color
@@ -36,7 +37,7 @@ display :: FrontendSession          -- ^ frontend session data
 display _ _ _ Nothing = return ()
 display _ _ _ (Just SingleFrame{..}) =
   let chars = L.map (BS.pack . L.map Color.acChar) sfLevel
-      bs = [BS.pack sfTop, BS.empty] ++ chars ++ [BS.pack sfBottom, BS.empty]
+      bs = [encodeUtf8 sfTop, BS.empty] ++ chars ++ [encodeUtf8 sfBottom, BS.empty]
   in mapM_ BS.putStrLn bs
 
 -- | Input key via the frontend.

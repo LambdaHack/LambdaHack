@@ -14,6 +14,7 @@ import qualified Data.List as L
 import qualified Data.Map as M
 import Control.Monad
 import Data.Char (ord, chr)
+import qualified Data.Text as T
 
 import Game.LambdaHack.Utils.Assert
 import qualified Game.LambdaHack.Key as K (Key(..),  Modifier(..))
@@ -65,11 +66,11 @@ display FrontendSession{..}  _ _ (Just SingleFrame{..}) = do
   let defaultStyle = sstyles M.! Color.defaultAttr
   C.erase
   C.setStyle defaultStyle
-  C.mvWAddStr swin 0 0 sfTop
+  C.mvWAddStr swin 0 0 (T.unpack sfTop)
   -- We need to remove the last character from the status line,
   -- because otherwise it would overflow a standard size xterm window,
   -- due to the curses historical limitations.
-  C.mvWAddStr swin (L.length sfLevel + 1) 0 (L.init sfBottom)
+  C.mvWAddStr swin (L.length sfLevel + 1) 0 (L.init $ T.unpack sfBottom)
   let nm = L.zip [0..] $ L.map (L.zip [0..]) sfLevel
   sequence_ [ C.setStyle (M.findWithDefault defaultStyle acAttr sstyles)
               >> C.mvWAddStr swin (y + 1) x [acChar]

@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | Display game data on the screen using one of the available frontends
 -- (determined at compile time with cabal flags).
 {-# LANGUAGE CPP #-}
@@ -76,8 +77,8 @@ draw dm cops per s@State{ scursor=Cursor{..}
       (_, wealth)  = calculateTotal coitem s
       damage  = case Item.strongestSword cops bitems of
                   Just sw -> case ieffect $ iokind $ Item.jkind sw of
-                    Wound dice -> show dice ++ "+" ++ show (Item.jpower sw)
-                    _ -> show (Item.jpower sw)
+                    Wound dice -> showT dice <> "+" <> showT (Item.jpower sw)
+                    _ -> showT (Item.jpower sw)
                   Nothing -> "3d1"  -- TODO; use the item 'fist'
       bl = fromMaybe [] $ bla lxsize lysize ceps bloc clocation
       dis pxy =
@@ -109,7 +110,7 @@ draw dm cops per s@State{ scursor=Cursor{..}
                                              L.elem loc0 $ shiftPath prLoc p
                                            _ -> False))
                     ->
-                      let unknownId = ouniqGroup (T.pack "unknown space")
+                      let unknownId = ouniqGroup "unknown space"
                       in ('*', case (vis, F.Walkable `elem` tfeature tk) of
                                  _ | tile == unknownId -> Color.BrBlack
                                  (True, True)   -> Color.BrGreen
@@ -144,21 +145,21 @@ draw dm cops per s@State{ scursor=Cursor{..}
              _      -> Color.AttrChar a char
       seenN = 100 * lseen `div` lclear
       seenTxt | seenN == 100 = "all"
-              | otherwise = (reverse $ take 2 $ reverse $ " " ++ show seenN)
-                            ++ "%"
+              | otherwise = T.justifyRight 2 ' ' (showT seenN) <> "%"
       -- Indicate the actor is braced (was waiting last move).
       -- It's a useful feedback for the otherwise hard to observe
       -- 'wait' command.
       braceSign | braced mpl ltime = "{"
                 | otherwise = " "
-      status = T.pack $
-        take 31 (take 3 (show (Dungeon.levelNumber slid) ++ "  ")
-                 ++ T.unpack ldesc ++ repeat ' ') ++
-        take 12 ("[" ++ seenTxt ++ " seen]  ") ++
-        take 10 ("$: " ++ show wealth ++ repeat ' ') ++
-        take 12 ("Dmg: " ++ damage ++ repeat ' ') ++
-        take 14 (braceSign ++ "HP: " ++ show bhp ++
-                 " (" ++ show (maxDice ahp) ++ ")" ++ repeat ' ')
+      lvlN = T.justifyLeft 2 ' ' (showT $ Dungeon.levelNumber slid)
+      stats =
+        T.justifyLeft 11 ' ' ("[" <> seenTxt <+> "seen]") <+>
+        T.justifyLeft 9 ' ' ("$:" <+> showT wealth) <+>
+        T.justifyLeft 11 ' ' ("Dmg:" <+> damage) <+>
+        T.justifyLeft 13 ' ' (braceSign <> "HP:" <+> showT bhp
+                              <+> "(" <> showT (maxDice ahp) <> ")")
+      widthForDesc = lxsize - T.length stats - T.length lvlN - 3
+      status = lvlN <+> T.justifyLeft widthForDesc ' ' ldesc <+> stats
       toWidth :: Int -> Text -> Text
       toWidth n x = T.take n (x <> T.replicate 1000 (T.singleton ' '))
       fLine y =
@@ -167,8 +168,8 @@ draw dm cops per s@State{ scursor=Cursor{..}
       sfLevel =  -- Fully evaluated.
         let f l y = let !line = fLine y in line : l
         in L.foldl' f [] [lysize-1,lysize-2..0]
-      sfTop = T.unpack $ toWidth lxsize $ msgTop
-      sfBottom = T.unpack $ toWidth lxsize $ fromMaybe status $ msgBottom
+      sfTop = toWidth lxsize $ msgTop
+      sfBottom = toWidth lxsize $ fromMaybe status $ msgBottom
   in SingleFrame{..}
 
 -- | Render animations on top of the current screen frame.

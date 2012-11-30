@@ -9,6 +9,7 @@ import qualified Data.IntMap as IM
 import Data.Maybe
 import qualified Data.List as L
 import Data.Monoid
+import Data.Text (Text)
 
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Point
@@ -17,8 +18,8 @@ import Game.LambdaHack.Color
 -- | The data sufficent to draw a single game screen frame.
 data SingleFrame = SingleFrame
   { sfLevel  :: ![[AttrChar]]  -- ^ content of the screen, line by line
-  , sfTop    :: String         -- ^ an extra line to show at the top
-  , sfBottom :: String         -- ^ an extra line to show at the bottom
+  , sfTop    :: Text           -- ^ an extra line to show at the top
+  , sfBottom :: Text           -- ^ an extra line to show at the bottom
   }
   deriving Eq
 
