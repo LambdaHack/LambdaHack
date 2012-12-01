@@ -77,4 +77,4 @@ checkCursor h = do
   slid <- gets slid
   if creturnLn cursor == slid
     then h
-    else abortWith "this command does not work on remote levels"
+    else abortWith "[targeting] you inspect a remote level, press ESC to switch back"
