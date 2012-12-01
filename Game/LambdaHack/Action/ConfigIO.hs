@@ -10,6 +10,8 @@ import qualified Data.ConfigFile as CF
 import qualified Data.Char as Char
 import qualified Data.List as L
 import qualified System.Random as R
+import Data.Text (Text)
+import qualified Data.Text as T
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Config
@@ -25,10 +27,10 @@ overrideCP (CP defCF) cfile = do
 -- The default config, passed in argument @configDefault@,
 -- is expected to come from the default configuration file included via CPP
 -- in file @ConfigDefault.hs@.
-mkConfig :: String -> IO CP
+mkConfig :: Text -> IO CP
 mkConfig configDefault = do
-  let delFileMarker = L.init $ L.drop 3 $ lines configDefault
-      delComment = L.map (L.drop 2) delFileMarker
+  let delFileMarker = L.init $ L.drop 3 $ T.lines configDefault
+      delComment = L.map (L.drop 2 . T.unpack) delFileMarker
       unConfig = unlines delComment
       -- Evaluate, to catch config errors ASAP.
       !defCF = forceEither $ CF.readstring CF.emptyCP unConfig

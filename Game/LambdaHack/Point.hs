@@ -10,9 +10,9 @@ import qualified Data.List as L
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.VectorXY
 import Game.LambdaHack.Area
+import Game.LambdaHack.Msg
 import Game.LambdaHack.Utils.Assert
 import Data.Text (Text)
-import qualified Data.Text as T
 
 -- | The type of locations on the 2D level map, heavily optimized.
 --
@@ -32,7 +32,7 @@ type Point = Int
 
 -- | Print a point as a tuple of cartesian coordinates.
 showPoint :: X -> Point -> Text
-showPoint lxsize = T.pack . show . fromPoint lxsize
+showPoint lxsize = showT . fromPoint lxsize
 
 -- | Conversion from cartesian coordinates to @Point@.
 toPoint :: X -> PointXY -> Point

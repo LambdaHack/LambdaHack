@@ -35,6 +35,7 @@ import System.Time
 import Data.Maybe
 import Control.Concurrent
 import Control.Exception (finally)
+import Data.Text (Text)
 import qualified Data.Text as T
 -- import System.IO (hPutStrLn, stderr) -- just for debugging
 
@@ -410,7 +411,7 @@ startFrontend :: Kind.COps -> (Config.CP -> Binding (ActionFrame ()))
               -> Action () -> IO ()
 startFrontend !scops@Kind.COps{corule} stdBinding handleTurn = do
   let configDefault = rconfigDefault $ Kind.stdRuleset corule
-  sconfig <- ConfigIO.mkConfig (T.unpack configDefault)
+  sconfig <- ConfigIO.mkConfig configDefault
   let !sbinding = stdBinding sconfig
       !sorigConfig = sconfig
       -- The only option taken not from config in savegame,
@@ -457,5 +458,5 @@ start config slowSess handleGame = do
         handleGame
 
 -- | Debugging.
-debug :: String -> Action ()
+debug :: Text -> Action ()
 debug _x = return () -- liftIO $ hPutStrLn stderr _x

@@ -56,21 +56,17 @@ showScore (pos, score) =
         Victor -> "emerged victorious"
         Restart -> "resigned prematurely"
       curDate = calendarTimeToString . toUTCTime . date $ score
-      big   = "                                                 " :: String
-      lil   = "              " :: String
+      big, lil :: String
+      big = "                                                 "
+      lil = "              "
       turns = - (negTime score `timeFit` timeTurn)
      -- TODO: the spaces at the end are hand-crafted. Remove when display
      -- of overlays adds such spaces automatically.
   in map T.pack
-       [ printf
-           "%s"
-           big
-       , printf
-           "%4d. %6d  This adventuring party %s after %d turns  "
-           pos (points score) died turns
-       , printf
-           "%son %s.  "
-           lil curDate
+       [ big
+       , printf "%4d. %6d  This adventuring party %s after %d turns  "
+                pos (points score) died turns
+       , lil ++ printf "on %s.  " curDate
        ]
 
 -- | The list of scores, in decreasing order.

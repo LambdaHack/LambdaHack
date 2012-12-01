@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | Game messages displayed on top of the screen for the player to read.
 module Game.LambdaHack.Msg
@@ -46,11 +47,11 @@ showT = T.pack . show
 
 -- | The \"press something to see more\" mark.
 moreMsg :: Msg
-moreMsg = T.pack "--more--  "
+moreMsg = "--more--  "
 
 -- | The confirmation request message.
 yesnoMsg :: Msg
-yesnoMsg = T.pack "[yn]"
+yesnoMsg = "[yn]"
 
 -- | Add spaces at the message end, for display overlayed over the level map.
 -- Also trims (does not wrap!) too long lines.
@@ -107,7 +108,7 @@ renderReport (Report (xn : xs)) =
 
 renderRepetition :: (BS.ByteString, Int) -> Text
 renderRepetition (s, 1) = decodeUtf8 s
-renderRepetition (s, n) = decodeUtf8 s <> T.pack "<x" <> showT n <> T.pack ">"
+renderRepetition (s, n) = decodeUtf8 s <> "<x" <> showT n <> ">"
 
 -- | Split a string into lines. Avoids ending the line with a character
 -- other than whitespace or punctuation. Space characters are removed

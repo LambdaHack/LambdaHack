@@ -578,13 +578,13 @@ displayMainMenu = do
               in k <> T.replicate gapLen " " <> d <> T.replicate padLen " "
         in map fmt kds
       overwrite =  -- overwrite the art with key bindings
-        let over [] line = ([], T.pack $ line)
+        let over [] line = ([], T.pack line)
             over bs@(binding : bsRest) line =
               let (prefix, lineRest) = break (=='{') line
                   (braces, suffix)   = span  (=='{') lineRest
               in if length braces == 25
                  then (bsRest, T.pack prefix <> binding <> T.pack suffix)
-                 else (bs, T.pack $ line)
+                 else (bs, T.pack line)
         in snd . L.mapAccumL over bindings
       mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule
       menuOverlay =

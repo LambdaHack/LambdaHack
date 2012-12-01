@@ -1,10 +1,14 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | Effects of content on other content. No operation in this module
 -- involves the 'State' or 'Action' type.
 module Game.LambdaHack.Effect
   ( Effect(..), effectToSuffix, effectToBenefit
   ) where
 
+import Data.Text (Text)
+
 import Game.LambdaHack.Random
+import Game.LambdaHack.Msg
 
 -- TODO: document each constructor
 -- | All possible effects, some of them parameterized or dependent
@@ -24,13 +28,13 @@ data Effect =
   deriving (Show, Read, Eq, Ord)
 
 -- | Suffix to append to a basic content name, if the content causes the effect.
-effectToSuffix :: Effect -> String
+effectToSuffix :: Effect -> Text
 effectToSuffix NoEffect = ""
 effectToSuffix Heal = "of healing"
 effectToSuffix (Wound dice@(RollDice a b)) =
   if a == 0 && b == 0
   then "of wounding"
-  else "(" ++ show dice ++ ")"
+  else "(" <> showT dice <> ")"
 effectToSuffix Dominate = "of domination"
 effectToSuffix SummonFriend = "of aid calling"
 effectToSuffix SummonEnemy = "of summoning"

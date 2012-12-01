@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | Dungeon operations that require 'State', 'Kind.COps'
 -- or 'Config.Config' type.
 module Game.LambdaHack.DungeonState
@@ -110,7 +111,7 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, ouniqGroup}
   -- TODO: split this into Level.defaultLevel
   let itemMap = mapToIMap cxsize ditem `IM.union` IM.fromList is
       litem = IM.map (\ i -> ([i], [])) itemMap
-      unknownId = ouniqGroup (T.pack "unknown space")
+      unknownId = ouniqGroup "unknown space"
       level = Level
         { lactor = IM.empty
         , linv = IM.empty
@@ -132,7 +133,7 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, ouniqGroup}
 
 matchGenerator :: Kind.Ops CaveKind -> Maybe Text -> Rnd (Kind.Id CaveKind)
 matchGenerator Kind.Ops{opick} mname =
-  opick (fromMaybe (T.pack "dng") mname) (const True)
+  opick (fromMaybe "dng" mname) (const True)
 
 findGenerator :: Kind.COps -> Config.CP -> Int -> Int -> Rnd Level
 findGenerator cops config k depth = do

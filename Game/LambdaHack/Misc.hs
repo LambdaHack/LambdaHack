@@ -14,7 +14,7 @@ normalLevelBound = (79, 21)
 divUp :: Int -> Int -> Int
 divUp n k = (n + k - 1) `div` k
 
--- | For each group that the kind belongs to, denoted by a @String@ name
+-- | For each group that the kind belongs to, denoted by a @Text@ name
 -- in the first component of a pair, the second component of a pair shows
 -- how common the kind is within the group.
 type Freqs = [(Text, Int)]

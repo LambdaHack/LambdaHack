@@ -10,7 +10,6 @@ import qualified Data.Ord as Ord
 import qualified Data.Map as M
 import qualified Data.IntMap as IM
 import Data.Maybe
-import qualified Data.Text as T
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
@@ -71,8 +70,8 @@ handleTurn = do
   when (clipN == 1) regenerateLevelHP
   when (clipN == 3) generateMonster
   ptime <- gets (btime . getPlayerBody)  -- time of player's next move
-  debug $ "handleTurn: time check. ptime = "
-          ++ show ptime ++ ", time = " ++ show time
+  debug $ "handleTurn: time check. ptime ="
+          <+> showT ptime <> ", time =" <+> showT time
   handleActors timeZero
   modify (updateTime (timeAdd timeClip))
   endOrLoop handleTurn
@@ -165,11 +164,11 @@ handleAI actor = do
   updateAnyActor actor $ \ m -> m { btarget }
   stateNew <- get
   let stratMove = strategy cops actor stateNew factionAbilities
-  debug $ "handleAI faction: " ++ T.unpack (fname faction)
-     ++          ", symbol: "  ++ show bsymbol
-     ++          ", loc: "     ++ show bloc
-     ++ "\nhandleAI target: "  ++ show stratTarget
-     ++ "\nhandleAI move: "    ++ show stratMove
+  debug $ "handleAI faction:" <+> fname faction
+     <>          ", symbol:"  <+> showT bsymbol
+     <>          ", loc:"     <+> showT bloc
+     <> "\nhandleAI target:"  <+> showT stratTarget
+     <> "\nhandleAI move:"    <+> showT stratMove
   -- Run the AI: choses an action from those given by the AI strategy.
   join $ rndToAction $ frequency $ bestVariant $ stratMove
 

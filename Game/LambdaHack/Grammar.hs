@@ -166,18 +166,18 @@ objectItemCheat coitem@Kind.Ops{okind} cheat state i =
       identified = L.length (iflavour kind) == 1 ||
                    ik `S.member` sdisco state
       addSpace s = if s == "" then "" else " " <> s
-      eff = T.pack $ effectToSuffix (ieffect kind)
+      eff = effectToSuffix (ieffect kind)
       pwr = if jpower i == 0
             then ""
             else "(+" <> showT (jpower i) <> ")"
       adj name =
         let known = name <> addSpace eff <> addSpace pwr
             flavour = getFlavour coitem (sflavour state) ik
-            obscured = T.pack (flavourToName flavour) <+> name
+            obscured = flavourToName flavour <+> name
         in if identified
            then known
            else if cheat
-                then T.pack (flavourToName flavour) <+> known
+                then flavourToName flavour <+> known
                 else obscured
   in makeObject (jcount i) adj (iname kind)
 

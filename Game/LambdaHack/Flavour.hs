@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | The appearance of in-game items, as communicated to the player.
 module Game.LambdaHack.Flavour
   ( -- * The @Flavour@ type
@@ -10,6 +11,7 @@ module Game.LambdaHack.Flavour
 
 import qualified Data.List as L
 import Data.Binary
+import Data.Text (Text)
 
 import Game.LambdaHack.Color
 
@@ -50,12 +52,12 @@ flavourToColor :: Flavour -> Color
 flavourToColor Flavour{baseColor} = baseColor
 
 -- | Construct the full name of a flavour.
-flavourToName :: Flavour -> String
+flavourToName :: Flavour -> Text
 flavourToName Flavour{..} | fancyName = colorToFancyName baseColor
 flavourToName Flavour{..}             = colorToPlainName baseColor
 
 -- | Human-readable names, for item colors. The simple set.
-colorToPlainName :: Color -> String
+colorToPlainName :: Color -> Text
 colorToPlainName Black     = "black"
 colorToPlainName Red       = "red"
 colorToPlainName Green     = "green"
@@ -74,7 +76,7 @@ colorToPlainName BrCyan    = "aquamarine"
 colorToPlainName BrWhite   = "white"
 
 -- | Human-readable names, for item colors. The fancy set.
-colorToFancyName :: Color -> String
+colorToFancyName :: Color -> Text
 colorToFancyName Black     = "smoky black"
 colorToFancyName Red       = "apple red"
 colorToFancyName Green     = "forest green"
