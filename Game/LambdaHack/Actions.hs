@@ -552,10 +552,9 @@ displayMainMenu :: ActionFrame ()
 displayMainMenu = do
   Kind.COps{corule} <- getCOps
   Binding{krevMap} <- getBinding
-  let stripFrame ('\n' : art) =
-        let interior = tail . init
-        in map interior $ interior $ lines art
-      stripFrame art = assert `failure` "displayMainMenu: " ++ art
+  let stripFrame t = case T.uncons t of
+        Just ('\n', art) -> map (T.tail . T.init) $ tail . init $ T.lines art
+        _ -> assert `failure` "displayMainMenu:" <+> t
       pasteVersion art =
         let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
             version = " Version " ++ showVersion pathsVersion
@@ -588,7 +587,7 @@ displayMainMenu = do
         in snd . L.mapAccumL over bindings
       mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule
       menuOverlay =
-        overwrite $ pasteVersion $ stripFrame $ T.unpack mainMenuArt
+        overwrite $ pasteVersion $ map T.unpack $ stripFrame $ mainMenuArt
   case menuOverlay of
     [] -> assert `failure` "empty Main Menu overlay"
     hd : tl -> displayOverlays hd "" [tl]
