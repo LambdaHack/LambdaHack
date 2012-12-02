@@ -10,6 +10,7 @@ import qualified Data.List as L
 import qualified Data.Char as Char
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Binary
 
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Vector
@@ -37,6 +38,46 @@ data Key =
   | Char !Char      -- ^ a single printable character
   | Unknown !String -- ^ an unknown key, registered to warn the user
   deriving (Ord, Eq)
+
+instance Binary Key where
+  put Esc         = putWord8 0
+  put Return      = putWord8 1
+  put Space       = putWord8 2
+  put Tab         = putWord8 3
+  put BackTab     = putWord8 4
+  put PgUp        = putWord8 5
+  put PgDn        = putWord8 6
+  put Left        = putWord8 7
+  put Right       = putWord8 8
+  put Up          = putWord8 9
+  put Down        = putWord8 10
+  put End         = putWord8 11
+  put Begin       = putWord8 12
+  put Home        = putWord8 13
+  put (KP c)      = putWord8 14 >> put c
+  put (Char c)    = putWord8 15 >> put c
+  put (Unknown s) = putWord8 16 >> put s
+  get = do
+    tag <- getWord8
+    case tag of
+      0  -> return Esc
+      1  -> return Return
+      2  -> return Space
+      3  -> return Tab
+      4  -> return BackTab
+      5  -> return PgUp
+      6  -> return PgDn
+      7  -> return Left
+      8  -> return Right
+      9  -> return Up
+      10 -> return Down
+      11 -> return End
+      12 -> return Begin
+      13 -> return Home
+      14 -> fmap KP get
+      15 -> fmap Char get
+      16 -> fmap Unknown get
+      _ -> fail "no parse (Key)"
 
 -- | Our own encoding of modifiers. Incomplete.
 data Modifier =

@@ -3,7 +3,7 @@
 -- printing command help. No operation in this module
 -- involves the 'State' or 'Action' type.
 module Game.LambdaHack.Binding
-  ( Binding(..), macroKey, keyHelp,
+  ( Binding(..), keyHelp,
   ) where
 
 import qualified Data.Map as M
@@ -12,7 +12,6 @@ import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import Game.LambdaHack.Utils.Assert
 import qualified Game.LambdaHack.Key as K
 import Game.LambdaHack.Msg
 import qualified Game.LambdaHack.Command as Command
@@ -27,22 +26,6 @@ data Binding a = Binding
   , krevMap :: M.Map Command.Cmd K.Key
                                      -- ^ map from cmds to their main keys
   }
-
--- | Produce the macro map from a macro association list
--- taken from the config file. Macros cannot depend on each other.
--- The map is fully evaluated to catch errors in macro definitions early.
-macroKey :: [(String, String)] -> M.Map K.Key K.Key
-macroKey section =
-  let trans k = case K.keyTranslate k of
-                  K.Unknown s -> assert `failure` "unknown macro key: " ++ s
-                  kt -> kt
-      trMacro (from, to) =
-        let !fromTr = trans from
-            !toTr  = trans to
-        in if fromTr == toTr
-           then assert `failure` "degenerate alias: " ++ show toTr
-           else (fromTr, toTr)
-  in M.fromList $ L.map trMacro section
 
 coImage :: M.Map K.Key K.Key -> K.Key -> [K.Key]
 coImage kmacro k =

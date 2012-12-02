@@ -16,7 +16,6 @@ import Data.Binary
 import Data.Maybe
 import Data.Ratio
 import Data.Text (Text)
-import qualified Data.Text as T
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
@@ -26,7 +25,7 @@ import Game.LambdaHack.Content.FactionKind
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Random
-import qualified Game.LambdaHack.Config as Config
+import Game.LambdaHack.Config
 import Game.LambdaHack.Time
 import qualified Game.LambdaHack.Color as Color
 
@@ -92,10 +91,10 @@ instance Binary Actor where
 type ActorId = Int
 
 -- | Find a hero name in the config file, or create a stock name.
-findHeroName :: Config.CP -> Int -> Text
-findHeroName config n =
-  let heroName = Config.getOption config "heroes" ("HeroName_" ++ show n)
-  in fromMaybe ("hero number" <+> showT n) $ T.pack `fmap` heroName
+findHeroName :: Config -> Int -> Text
+findHeroName Config{configHeroNames} n =
+  let heroName = lookup n configHeroNames
+  in fromMaybe ("hero number" <+> showT n) heroName
 
 -- | Chance that a new monster is generated. Currently depends on the
 -- number of monsters already present, and on the level. In the future,

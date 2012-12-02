@@ -33,7 +33,7 @@ import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Content.ItemKind
-import qualified Game.LambdaHack.Config as Config
+import Game.LambdaHack.Config
 import qualified Game.LambdaHack.Tile as Tile
 import qualified Game.LambdaHack.Kind as Kind
 import qualified Game.LambdaHack.Feature as F
@@ -57,8 +57,8 @@ isAHero s a =
 -- | How long until an actor's smell vanishes from a tile.
 smellTimeout :: State -> Time
 smellTimeout s =
-  let smellTurns = Config.get (sconfig s) "monsters" "smellTimeout"
-  in timeScale timeTurn smellTurns
+  let Config{configSmellTimeout} = sconfig s
+  in timeScale timeTurn configSmellTimeout
 
 -- The operations with "Any", and those that use them,
 -- consider all the dungeon.
@@ -236,14 +236,13 @@ tryFindHeroK s k =
 -- | Create a new hero on the current level, close to the given location.
 addHero :: Kind.COps -> Point -> State -> State
 addHero Kind.COps{coactor, cotile} ploc state@State{scounter, sfaction} =
-  let config = sconfig state
-      bHP = Config.get config "heroes" "baseHP"
+  let config@Config{configBaseHP} = sconfig state
       loc = nearbyFreeLoc cotile ploc state
       freeHeroK = L.elemIndex Nothing $ map (tryFindHeroK state) [0..9]
       n = fromMaybe 100 freeHeroK
       symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
       name = findHeroName config n
-      startHP = bHP - (bHP `div` 5) * min 3 n
+      startHP = configBaseHP - (configBaseHP `div` 5) * min 3 n
       m = template (heroKindId coactor) (Just symbol) (Just name)
                    startHP loc (stime state) sfaction False
       cstate = state { scounter = scounter + 1 }
@@ -252,7 +251,8 @@ addHero Kind.COps{coactor, cotile} ploc state@State{scounter, sfaction} =
 -- | Create a set of initial heroes on the current level, at location ploc.
 initialHeroes :: Kind.COps -> Point -> State -> State
 initialHeroes cops ploc state =
-  let k = 1 + Config.get (sconfig state) "heroes" "extraHeroes"
+  let Config{configExtraHeroes} = sconfig state
+      k = 1 + configExtraHeroes
   in iterate (addHero cops ploc) state !! k
 
 -- Adding monsters

@@ -23,8 +23,8 @@ blame condition blamed
     in trace s False
 
 infix 1 `failure`
--- | Like 'Prelude.undefined', but shows the source location
--- and also the value to blame for the failure. To be used as in:
+-- | Like 'error', but shows the source location and also
+-- the value to blame for the failure. To be used as in:
 --
 -- > assert `failure` ((x1, y1), (x2, y2), "designate a vertical line")
 failure :: Show a => (Bool -> b -> b) -> a -> b

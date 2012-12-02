@@ -13,7 +13,7 @@ import Data.Text (Text)
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.State
-import qualified Game.LambdaHack.Config as Config
+import Game.LambdaHack.Config
 import Game.LambdaHack.Level
 import Game.LambdaHack.Actions
 import Game.LambdaHack.Running
@@ -38,11 +38,10 @@ heroSelection =
 
 -- | Binding of keys to movement and other standard commands,
 -- as well as commands defined in the config file.
-stdBinding :: Config.CP                 -- ^ game config
+stdBinding :: Config                    -- ^ game config
            -> Binding (ActionFrame ())  -- ^ concrete binding
-stdBinding config =
-  let section = Config.getItems config "macros"
-      !kmacro = macroKey section
+stdBinding config@Config{configMacros} =
+  let kmacro = M.fromList $ configMacros
       cmdList = configCmds config
       semList = semanticsCmds cmdList
       moveWidth f = do

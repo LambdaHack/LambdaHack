@@ -13,9 +13,8 @@ import Game.LambdaHack.Actions
 import Game.LambdaHack.ItemAction
 import Game.LambdaHack.State
 import Game.LambdaHack.Command
-import qualified Game.LambdaHack.Config as Config
+import Game.LambdaHack.Config
 import qualified Game.LambdaHack.Key as K
-import Game.LambdaHack.Utils.Assert
 
 -- | The semantics of player commands in terms of the @Action@ monad.
 cmdAction :: Cmd -> ActionFrame ()
@@ -46,16 +45,10 @@ cmdAction cmd = case cmd of
   Help      -> displayHelp
 
 -- | The associaction of commands to keys defined in config.
-configCmds :: Config.CP -> [(K.Key, Cmd)]
-configCmds config =
-  let section = Config.getItems config "commands"
-      mkKey s =
-        case K.keyTranslate s of
-          K.Unknown _ -> assert `failure` ("unknown command key <" ++ s ++ ">")
-          key -> key
-      mkCmd s = read s :: Cmd
-      mkCommand (key, def) = (mkKey key, mkCmd def)
-  in L.map mkCommand section
+configCmds :: Config -> [(K.Key, Cmd)]
+configCmds Config{configCommands} =
+  let mkCommand (key, def) = (key, read def :: Cmd)
+  in L.map mkCommand configCommands
 
 -- | The list of semantics and other info for all commands from config.
 semanticsCmds :: [(K.Key, Cmd)]

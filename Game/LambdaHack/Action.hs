@@ -53,7 +53,7 @@ import qualified Game.LambdaHack.Kind as Kind
 import qualified Game.LambdaHack.Key as K
 import Game.LambdaHack.Binding
 import Game.LambdaHack.Action.HighScore (register)
-import qualified Game.LambdaHack.Config as Config
+import Game.LambdaHack.Config
 import qualified Game.LambdaHack.Action.ConfigIO as ConfigIO
 import Game.LambdaHack.Animation (SingleFrame(..))
 import Game.LambdaHack.Point
@@ -82,10 +82,9 @@ recordHistory :: Action ()
 recordHistory = do
   Diary{sreport, shistory} <- getDiary
   unless (nullReport sreport) $ do
-    config <- gets sconfig
-    let historyMax = Config.get config "ui" "historyMax"
+    Config{configHistoryMax} <- gets sconfig
     msgReset ""
-    historyReset $ takeHistory historyMax $ addReport sreport shistory
+    historyReset $ takeHistory configHistoryMax $ addReport sreport shistory
 
 -- | Wait for a player command.
 getKeyCommand :: Maybe Bool -> Action (K.Key, K.Modifier)
@@ -296,8 +295,10 @@ saveGameBkp = do
 -- | Dumps the current configuration to a file.
 --
 -- See 'Config.dump'.
-dumpCfg :: FilePath -> Config.CP -> Action ()
-dumpCfg fn config = liftIO $ ConfigIO.dump fn config
+dumpCfg :: FilePath -> Action ()
+dumpCfg fn = do
+  cp <- getOrigCP  -- TODO
+  liftIO $ ConfigIO.dump fn cp
 
 -- | Handle current score and display it with the high scores.
 -- Aborts if display of the scores was interrupted by the user.
@@ -373,33 +374,33 @@ restartGame :: Action () -> Action ()
 restartGame handleTurn = do
   -- Take the original config from config file, to reroll RNG, if needed
   -- (the current config file has the RNG rolled for the previous game).
-  config <- getOrigConfig
+  cp <- getOrigCP
   cops <- getCOps
-  state <- gameResetAction config cops
+  state <- gameResetAction cp cops
   modify $ const state
   saveGameBkp
   handleTurn
 
 -- TODO: do this inside Action ()
-gameReset :: Config.CP -> Kind.COps -> IO State
-gameReset config1 cops@Kind.COps{ coitem
+gameReset :: ConfigIO.CP -> Kind.COps -> IO State
+gameReset cp1 cops@Kind.COps{ coitem
                                 , cofact=Kind.Ops{opick}} = do
-  (g2, config2) <- ConfigIO.getSetGen config1 "dungeonRandomGenerator"
-  let (DungeonState.FreshDungeon{..}, ag) =
-        runState (DungeonState.generate cops config2) g2
+  (g2, cp2) <- ConfigIO.getSetGen cp1 "dungeonRandomGenerator"
+  (g3, cp3) <- ConfigIO.getSetGen cp2 "startingRandomGenerator"
+  dataDir <- ConfigIO.appDataDir
+  let config3 = ConfigIO.parseConfig dataDir cp3
+      (DungeonState.FreshDungeon{..}, ag) =
+        runState (DungeonState.generate cops config3) g2
       (sflavour, ag2) = runState (dungeonFlavourMap coitem) ag
-      factionName = T.pack `fmap` Config.getOption config2 "heroes" "faction"
-      sfaction =
-        evalState
-          (opick (fromMaybe "playable" factionName) (const True)) ag2
-  (g3, config3) <- ConfigIO.getSetGen config2 "startingRandomGenerator"
+      factionName = configFaction config3
+      sfaction = evalState (opick factionName (const True)) ag2
   let state =
         defaultState
           config3 sfaction sflavour freshDungeon entryLevel entryLoc g3
       hstate = initialHeroes cops entryLoc state
   return hstate
-gameResetAction :: Config.CP -> Kind.COps -> Action State
-gameResetAction config cops = liftIO $ gameReset config cops
+gameResetAction :: ConfigIO.CP -> Kind.COps -> Action State
+gameResetAction cp cops = liftIO $ gameReset cp cops
 
 -- | Wire together content, the definitions of game commands,
 -- config and a high-level startup function
@@ -407,16 +408,18 @@ gameResetAction config cops = liftIO $ gameReset config cops
 -- in particular verify content consistency.
 -- Then create the starting game config from the default config file
 -- and initialize the engine with the starting session.
-startFrontend :: Kind.COps -> (Config.CP -> Binding (ActionFrame ()))
+startFrontend :: Kind.COps -> (Config -> Binding (ActionFrame ()))
               -> Action () -> IO ()
 startFrontend !scops@Kind.COps{corule} stdBinding handleTurn = do
-  let configDefault = rconfigDefault $ Kind.stdRuleset corule
-  sconfig <- ConfigIO.mkConfig configDefault
-  let !sbinding = stdBinding sconfig
-      !sorigConfig = sconfig
+  let cpDefault = rconfigDefault $ Kind.stdRuleset corule
+  cp <- ConfigIO.mkConfig cpDefault
+  dataDir <- ConfigIO.appDataDir
+  let sconfig = ConfigIO.parseConfig dataDir cp
+      !sbinding = stdBinding sconfig
+      !sorigConfig = cp
       -- The only option taken not from config in savegame,
       -- but from current config file, possibly from user directory.
-      configFont = fromMaybe "" $ Config.getOption sconfig "ui" "font"
+      font = configFont sconfig
       -- In addition to handling the turn, if the game ends or exits,
       -- handle the diary and backup savefile.
       handleGame = do
@@ -424,8 +427,8 @@ startFrontend !scops@Kind.COps{corule} stdBinding handleTurn = do
         diary <- getDiary
         -- Save diary often, at each game exit, in case of crashes.
         liftIO $ Save.rmBkpSaveDiary sconfig diary
-      loop sfs = start sconfig Session{..} handleGame
-  startup configFont loop
+      loop sfs = start cp sconfig Session{..} handleGame
+  startup font loop
 
 -- | Compute and insert auxiliary optimized components into game content,
 -- to be used in time-critical sections of the code.
@@ -438,15 +441,15 @@ speedupCops sess@Session{scops = cops@Kind.COps{cotile=tile}} =
 
 -- | Either restore a saved game, or setup a new game.
 -- Then call the main game loop.
-start :: Config.CP -> Session -> Action () -> IO ()
-start config slowSess handleGame = do
+start :: ConfigIO.CP -> Config -> Session -> Action () -> IO ()
+start cp config slowSess handleGame = do
   let sess@Session{scops = cops@Kind.COps{ corule }} = speedupCops slowSess
       title = rtitle $ Kind.stdRuleset corule
       pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
   restored <- Save.restoreGame pathsDataFile config title
   case restored of
     Right (diary, msg) -> do  -- Starting a new game.
-      state <- gameReset config cops
+      state <- gameReset cp cops
       handlerToIO sess state
         diary{sreport = singletonReport msg}
         -- TODO: gameReset >> handleTurn or defaultState {squit=Reset}

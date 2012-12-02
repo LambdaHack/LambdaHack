@@ -1,6 +1,6 @@
 -- | Personal game configuration file support.
 module Game.LambdaHack.Action.ConfigIO
-  (  mkConfig, appDataDir, getFile, dump, getSetGen
+  ( CP, mkConfig, dump, getSetGen, parseConfig, appDataDir
   ) where
 
 import System.Directory
@@ -8,13 +8,14 @@ import System.FilePath
 import System.Environment
 import qualified Data.ConfigFile as CF
 import qualified Data.Char as Char
-import qualified Data.List as L
+import Data.List
 import qualified System.Random as R
 import Data.Text (Text)
 import qualified Data.Text as T
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Config
+import qualified Game.LambdaHack.Key as K
 
 overrideCP :: CP -> FilePath -> IO CP
 overrideCP (CP defCF) cfile = do
@@ -29,8 +30,8 @@ overrideCP (CP defCF) cfile = do
 -- in file @ConfigDefault.hs@.
 mkConfig :: Text -> IO CP
 mkConfig configDefault = do
-  let delFileMarker = L.init $ L.drop 3 $ T.lines configDefault
-      delComment = L.map (L.drop 2 . T.unpack) delFileMarker
+  let delFileMarker = init $ drop 3 $ T.lines configDefault
+      delComment = map (drop 2 . T.unpack) delFileMarker
       unConfig = unlines delComment
       -- Evaluate, to catch config errors ASAP.
       !defCF = forceEither $ CF.readstring CF.emptyCP unConfig
@@ -46,7 +47,7 @@ mkConfig configDefault = do
 appDataDir :: IO FilePath
 appDataDir = do
   progName <- getProgName
-  let name = L.takeWhile Char.isAlphaNum progName
+  let name = takeWhile Char.isAlphaNum progName
   getAppUserDataDirectory name
 
 -- | Path to the user configuration file in the personal data directory.
@@ -54,20 +55,6 @@ configFile :: IO FilePath
 configFile = do
   appData <- appDataDir
   return $ combine appData "config"
-
--- | Looks up a file path in the config file and makes it absolute.
--- If the game's configuration directory exists,
--- the file path is appended to it; otherwise, it's appended
--- to the current directory.
-getFile :: CP -> CF.SectionSpec -> CF.OptionSpec -> IO FilePath
-getFile conf s o = do
-  current <- getCurrentDirectory
-  appData <- appDataDir
-  let path    = get conf s o
-      appPath = combine appData path
-      curPath = combine current path
-  b <- doesDirectoryExist appData
-  return $ if b then appPath else curPath
 
 -- | Dumps the current configuration to a file.
 dump :: FilePath -> CP -> IO ()
@@ -99,3 +86,89 @@ getSetGen config option =
       let gs = show g
           c = set config "engine" option gs
       return (g, c)
+
+-- | The content of the configuration file. It's parsed
+-- in a case sensitive way (unlike by default in ConfigFile).
+newtype CP = CP CF.ConfigParser
+
+instance Show CP where
+  show (CP conf) = show $ CF.to_string conf
+
+-- | Switches all names to case sensitive (unlike by default in
+-- the "ConfigFile" library) and wraps in the constructor.
+toCP :: CF.ConfigParser -> CP
+toCP cf = CP $ cf {CF.optionxform = id}
+
+-- | In case of corruption, just fail.
+forceEither :: Show a => Either a b -> b
+forceEither (Left a)  = assert `failure` a
+forceEither (Right b) = b
+
+-- | A simplified access to an option in a given section,
+-- with simple error reporting (no internal errors are caught nor hidden).
+-- If there is no such option, gives Nothing.
+getOption :: CF.Get_C a => CP -> CF.SectionSpec -> CF.OptionSpec -> Maybe a
+getOption (CP conf) s o =
+  if CF.has_option conf s o
+  then Just $ forceEither $ CF.get conf s o
+  else Nothing
+
+-- | Simplified access to an option in a given section.
+-- Fails if the option is not present.
+get :: CF.Get_C a => CP -> CF.SectionSpec -> CF.OptionSpec -> a
+get (CP conf) s o =
+  if CF.has_option conf s o
+  then forceEither $ CF.get conf s o
+  else assert `failure` "Unknown config option: " ++ s ++ "." ++ o
+
+-- | An association list corresponding to a section. Fails if no such section.
+getItems :: CP -> CF.SectionSpec -> [(String, String)]
+getItems (CP conf) s =
+  if CF.has_section conf s
+  then forceEither $ CF.items conf s
+  else assert `failure` "Unknown config section: " ++ s
+
+parseConfig :: FilePath -> CP -> Config
+parseConfig dataDir cp =
+  let mkKey s =
+        case K.keyTranslate s of
+          K.Unknown _ ->
+            assert `failure` ("unknown config file key <" ++ s ++ ">")
+          key -> key
+      configCommands =
+        let mkCommand (key, def) = (mkKey key, def)
+            section = getItems cp "commands"
+        in map mkCommand section
+      configDepth = get cp "dungeon" "depth"
+      configCaves = map (\(n, t) -> (T.pack n, T.pack t)) $ getItems cp "caves"
+      configFovMode = T.pack $ get cp "engine" "fovMode"
+      configFovRadius = get cp "engine" "fovRadius"
+      configBaseHP = get cp "heroes" "baseHP"
+      configExtraHeroes = get cp "heroes" "extraHeroes"
+      configFirstDeathEnds = get cp "heroes" "firstDeathEnds"
+      configFaction = T.pack $ get cp "heroes" "faction"
+      configHeroNames =
+        let toNumber (ident, name) =
+              case stripPrefix "HeroName_" ident of
+                Just n -> (read n, T.pack name)
+                Nothing -> assert `failure` ("wrong hero name id " ++ ident)
+            section = getItems cp "heroNames"
+        in map toNumber section
+      configMacros =
+        let trMacro (from, to) =
+              let !fromTr = mkKey from
+                  !toTr  = mkKey to
+              in if fromTr == toTr
+                 then assert `failure` "degenerate alias: " ++ show toTr
+                 else (fromTr, toTr)
+            section = getItems cp "macros"
+        in map trMacro section
+      configSmellTimeout = get cp "monsters" "smellTimeout"
+      configFont = get cp "ui" "font"
+      configHistoryMax = get cp "ui" "historyMax"
+      configAppDataDir = dataDir
+      configDiaryFile = combine dataDir $ get cp "files" "diaryFile"
+      configSaveFile = combine dataDir $ get cp "files" "saveFile"
+      configBkpFile = combine dataDir $ get cp "files" "saveFile" ++ ".bkp"
+      configScoresFile = combine dataDir $ get cp "files" "scoresFile"
+  in Config{..}

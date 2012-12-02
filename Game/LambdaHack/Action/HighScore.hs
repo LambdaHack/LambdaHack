@@ -14,8 +14,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 import Game.LambdaHack.Utils.File
-import qualified Game.LambdaHack.Config as Config
-import qualified Game.LambdaHack.Action.ConfigIO as ConfigIO
+import Game.LambdaHack.Config
 import Game.LambdaHack.Dungeon
 import Game.LambdaHack.Misc
 import Game.LambdaHack.Time
@@ -76,24 +75,17 @@ type ScoreTable = [ScoreRecord]
 empty :: ScoreTable
 empty = []
 
--- | Name of the high scores file.
-scoresFile :: Config.CP -> IO FilePath
-scoresFile config = ConfigIO.getFile config "files" "scoresFile"
-
 -- | Save a simple serialized version of the high scores table.
-save :: Config.CP -> ScoreTable -> IO ()
-save config scores = do
-  f <- scoresFile config
-  encodeEOF f scores
+save :: Config -> ScoreTable -> IO ()
+save Config{configScoresFile} scores = encodeEOF configScoresFile scores
 
 -- | Read the high scores table. Return the empty table if no file.
-restore :: Config.CP -> IO ScoreTable
-restore config = do
-  f <- scoresFile config
-  b <- doesFileExist f
+restore :: Config -> IO ScoreTable
+restore Config{configScoresFile} = do
+  b <- doesFileExist configScoresFile
   if not b
     then return empty
-    else strictDecodeEOF f
+    else strictDecodeEOF configScoresFile
 
 -- | Insert a new score into the table, Return new table and the ranking.
 insertPos :: ScoreRecord -> ScoreTable -> (ScoreTable, Int)
@@ -119,7 +111,7 @@ slideshow pos h height =
 
 -- | Take care of saving a new score to the table
 -- and return a list of messages to display.
-register :: Config.CP  -- ^ the config file
+register :: Config     -- ^ the config file
          -> Bool       -- ^ whether to write or only render
          -> Int        -- ^ the total score. not halved yet
          -> Time       -- ^ game time spent

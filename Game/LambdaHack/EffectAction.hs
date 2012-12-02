@@ -34,7 +34,7 @@ import Game.LambdaHack.Perception
 import Game.LambdaHack.Random
 import Game.LambdaHack.State
 import Game.LambdaHack.Time
-import qualified Game.LambdaHack.Config as Config
+import Game.LambdaHack.Config
 import qualified Game.LambdaHack.Effect as Effect
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.DungeonState
@@ -485,13 +485,12 @@ checkPartyDeath = do
   ahs    <- gets allHeroesAnyLevel
   pl     <- gets splayer
   pbody  <- gets getPlayerBody
-  config <- gets sconfig
+  Config{configFirstDeathEnds} <- gets sconfig
   when (bhp pbody <= 0) $ do
     msgAdd $ actorVerb coactor pbody "die" ""
     go <- displayMore ColorBW ""
     recordHistory  -- Prevent repeating the "die" msgs.
-    let firstDeathEnds = Config.get config "heroes" "firstDeathEnds"
-        bodyToCorpse = updateAnyActor pl $ \ body -> body {bsymbol = Just '%'}
+    let bodyToCorpse = updateAnyActor pl $ \ body -> body {bsymbol = Just '%'}
         animateDeath = do
           diary  <- getDiary
           s <- get
@@ -501,7 +500,7 @@ checkPartyDeath = do
           animateDeath
           bodyToCorpse
           gameOver go
-    if firstDeathEnds
+    if configFirstDeathEnds
       then animateGameOver
       else case L.filter (/= pl) ahs of
              [] -> animateGameOver

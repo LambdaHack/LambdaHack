@@ -606,10 +606,9 @@ displayHistory = do
 
 dumpConfig :: Action ()
 dumpConfig = do
-  config <- gets sconfig
   let fn = "config.dump"
       msg = "Current configuration dumped to file" <+> T.pack fn <> "."
-  dumpCfg fn config
+  dumpCfg fn
   abortWith msg
 
 -- | Add new smell traces to the level. Only humans leave a strong scent.

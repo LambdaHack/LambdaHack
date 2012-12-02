@@ -16,14 +16,13 @@ import qualified Data.IntMap as IM
 import Data.Maybe
 import Control.Monad
 import Data.Text (Text)
-import qualified Data.Text as T
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Point
 import Game.LambdaHack.Level
 import qualified Game.LambdaHack.Dungeon as Dungeon
 import Game.LambdaHack.Random
-import qualified Game.LambdaHack.Config as Config
+import Game.LambdaHack.Config
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Feature as F
 import qualified Game.LambdaHack.Tile as Tile
@@ -37,6 +36,7 @@ import Game.LambdaHack.Place
 import qualified Game.LambdaHack.Effect as Effect
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Time
+import Game.LambdaHack.Msg
 
 convertTileMaps :: Rnd (Kind.Id TileKind) -> Int -> Int -> TileMapXY
                 -> Rnd TileMap
@@ -135,11 +135,11 @@ matchGenerator :: Kind.Ops CaveKind -> Maybe Text -> Rnd (Kind.Id CaveKind)
 matchGenerator Kind.Ops{opick} mname =
   opick (fromMaybe "dng" mname) (const True)
 
-findGenerator :: Kind.COps -> Config.CP -> Int -> Int -> Rnd Level
-findGenerator cops config k depth = do
-  let ln = "LambdaCave_" ++ show k
-      genName = Config.getOption config "dungeon" ln
-  ci <- matchGenerator (Kind.cocave cops) $ T.pack `fmap` genName
+findGenerator :: Kind.COps -> Config -> Int -> Int -> Rnd Level
+findGenerator cops Config{configCaves} k depth = do
+  let ln = "LambdaCave_" <> showT k
+      genName = L.lookup ln configCaves
+  ci <- matchGenerator (Kind.cocave cops) genName
   cave <- buildCave cops k depth ci
   buildLevel cops cave k depth
 
@@ -151,20 +151,19 @@ data FreshDungeon = FreshDungeon
   }
 
 -- | Generate the dungeon for a new game.
-generate :: Kind.COps -> Config.CP -> Rnd FreshDungeon
-generate cops config =
-  let depth = Config.get config "dungeon" "depth"
-      gen :: R.StdGen -> Int -> (R.StdGen, (Dungeon.LevelId, Level))
+generate :: Kind.COps -> Config -> Rnd FreshDungeon
+generate cops config@Config{configDepth}  =
+  let gen :: R.StdGen -> Int -> (R.StdGen, (Dungeon.LevelId, Level))
       gen g k =
         let (g1, g2) = R.split g
-            res = MState.evalState (findGenerator cops config k depth) g1
+            res = MState.evalState (findGenerator cops config k configDepth) g1
         in (g2, (Dungeon.levelDefault k, res))
       con :: R.StdGen -> (FreshDungeon, R.StdGen)
-      con g = assert (depth >= 1 `blame` depth) $
-        let (gd, levels) = L.mapAccumL gen g [1..depth]
+      con g = assert (configDepth >= 1 `blame` configDepth) $
+        let (gd, levels) = L.mapAccumL gen g [1..configDepth]
             entryLevel = Dungeon.levelDefault 1
             entryLoc = fst (lstairs (snd (head levels)))
-            freshDungeon = Dungeon.fromList levels depth
+            freshDungeon = Dungeon.fromList levels configDepth
         in (FreshDungeon{..}, gd)
   in MState.state con
 

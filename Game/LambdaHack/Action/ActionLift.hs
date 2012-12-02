@@ -10,7 +10,7 @@ module Game.LambdaHack.Action.ActionLift
     -- * Actions returning frames
   , ActionFrame, returnNoFrame, returnFrame, whenFrame, inFrame
     -- * Game session and assessors to its components
-  , Session(..), getFrontendSession, getCOps, getBinding, getOrigConfig
+  , Session(..), getFrontendSession, getCOps, getBinding, getOrigCP
     -- * Various ways to abort action
   , abort, abortWith, abortIfWith, neverMind
     -- * Abort exception handlers
@@ -31,7 +31,7 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Binding
-import qualified Game.LambdaHack.Config as Config
+import qualified Game.LambdaHack.Action.ConfigIO as ConfigIO
 import Game.LambdaHack.Animation (SingleFrame(..))
 
 -- | The type of the function inside any action.
@@ -138,7 +138,7 @@ data Session = Session
   , scops :: Kind.COps                 -- ^ game content
   , sbinding    :: Binding (ActionFrame ())
                                        -- ^ binding of keys to commands
-  , sorigConfig :: Config.CP           -- ^ config from the config file
+  , sorigConfig :: ConfigIO.CP         -- ^ config from the config file
   }
 
 -- | Get the frontend session.
@@ -154,8 +154,8 @@ getBinding :: Action (Binding (ActionFrame ()))
 getBinding = Action (\ Session{sbinding} _p k _a st ms -> k st ms sbinding)
 
 -- | Get the config from the config file.
-getOrigConfig :: Action (Config.CP)
-getOrigConfig =
+getOrigCP :: Action (ConfigIO.CP)
+getOrigCP =
   Action (\ Session{sorigConfig} _p k _a st ms -> k st ms sorigConfig)
 
 -- | Reset the state and resume from the last backup point, i.e., invoke

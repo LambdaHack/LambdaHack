@@ -49,12 +49,14 @@
 ; space: Clear
 
 ; [dungeon]
+; depth: 10
+
+; [caves]
 ; ; Fixed caves for the first levels, then randomly picked caves.
 ; LambdaCave_1: caveRogue
 ; LambdaCave_2: caveRogue
 ; LambdaCave_3: caveEmpty
 ; LambdaCave_10: caveNoise
-; depth: 10
 
 ; [engine]
 ; fovMode: digital
@@ -71,16 +73,19 @@
 ; diaryFile : diary
 
 ; [heroes]
+; baseHP: 50
+; extraHeroes: 2
+; firstDeathEnds: False
+; ; faction "playable" means a random choice
+; faction: hero
+
+; [heroNames]
 ; HeroName_0: you
 ; HeroName_1: Haskell Alvin
 ; HeroName_2: Alonzo Barkley
 ; HeroName_3: Ernst Abraham
 ; HeroName_4: Samuel Saunders
 ; HeroName_5: Roger Robin
-; baseHP: 50
-; extraHeroes: 2
-; firstDeathEnds: False
-; faction: hero
 
 ; [macros]
 ; ; Handy with Vi keys:

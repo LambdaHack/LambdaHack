@@ -16,7 +16,7 @@ module Game.LambdaHack.State
 
 import qualified Data.Set as S
 import Data.Binary
-import qualified Game.LambdaHack.Config as Config
+import Game.LambdaHack.Config
 import qualified System.Random as R
 import System.Time
 import qualified Data.Text as T
@@ -59,7 +59,7 @@ data State = State
   , slid     :: Dungeon.LevelId  -- ^ identifier of the current level
   , scounter :: Int          -- ^ stores next actor index
   , srandom  :: R.StdGen     -- ^ current random generator
-  , sconfig  :: Config.CP    -- ^ this game's config (including initial RNG)
+  , sconfig  :: Config       -- ^ this game's config (including initial RNG)
   , stakeTime :: Maybe Bool  -- ^ last command unexpectedly took some time
   , squit    :: Maybe (Bool, Status)  -- ^ cause of game end/exit
   , sfaction :: Kind.Id FactionKind   -- ^ our faction
@@ -118,7 +118,7 @@ defaultDiary = do
     }
 
 -- | Initial game state.
-defaultState :: Config.CP -> Kind.Id FactionKind -> FlavourMap
+defaultState :: Config -> Kind.Id FactionKind -> FlavourMap
              -> Dungeon.Dungeon -> Dungeon.LevelId -> Point -> R.StdGen
              -> State
 defaultState config sfaction flavour dng lid ploc g =
