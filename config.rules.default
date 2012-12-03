@@ -1,0 +1,31 @@
+; ; This is a commented out copy of the default game rules config file
+; ; that is embedded in the binary.
+; ; A user config file can overrides these options. The game looks for it at
+; ; ~/.LambdaHack/config.rules.ini (or a similar path, depending on the OS).
+; ; Warning: options are case-sensitive and only ';' for comments is permitted.
+
+; [dungeon]
+; depth: 10
+
+; [caves]
+; ; Fixed caves for the first levels, then randomly picked caves.
+; LambdaCave_1: caveRogue
+; LambdaCave_2: caveRogue
+; LambdaCave_3: caveEmpty
+; LambdaCave_10: caveNoise
+
+; [engine]
+; fovMode: digital
+; ;fovMode: permissive
+; ;fovMode: shadow
+; fovRadius: 12
+; ;startingRandomGenerator: 42
+; ;dungeonRandomGenerator: 42
+; smellTimeout: 100
+
+; [heroes]
+; baseHP: 50
+; extraHeroes: 2
+; firstDeathEnds: False
+; ; faction "playable" means a random choice
+; faction: hero

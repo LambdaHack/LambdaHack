@@ -45,8 +45,8 @@ cmdAction cmd = case cmd of
   Help      -> displayHelp
 
 -- | The associaction of commands to keys defined in config.
-configCmds :: Config -> [(K.Key, Cmd)]
-configCmds Config{configCommands} =
+configCmds :: ConfigUI -> [(K.Key, Cmd)]
+configCmds ConfigUI{configCommands} =
   let mkCommand (key, def) = (key, read def :: Cmd)
   in L.map mkCommand configCommands
 

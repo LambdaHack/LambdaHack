@@ -76,12 +76,12 @@ empty :: ScoreTable
 empty = []
 
 -- | Save a simple serialized version of the high scores table.
-save :: Config -> ScoreTable -> IO ()
-save Config{configScoresFile} scores = encodeEOF configScoresFile scores
+save :: ConfigUI -> ScoreTable -> IO ()
+save ConfigUI{configScoresFile} scores = encodeEOF configScoresFile scores
 
 -- | Read the high scores table. Return the empty table if no file.
-restore :: Config -> IO ScoreTable
-restore Config{configScoresFile} = do
+restore :: ConfigUI -> IO ScoreTable
+restore ConfigUI{configScoresFile} = do
   b <- doesFileExist configScoresFile
   if not b
     then return empty
@@ -111,15 +111,15 @@ slideshow pos h height =
 
 -- | Take care of saving a new score to the table
 -- and return a list of messages to display.
-register :: Config     -- ^ the config file
+register :: ConfigUI   -- ^ the config file
          -> Bool       -- ^ whether to write or only render
          -> Int        -- ^ the total score. not halved yet
          -> Time       -- ^ game time spent
          -> ClockTime  -- ^ date of the last game interruption
          -> Status     -- ^ reason of the game interruption
          -> IO (Msg, [Overlay])
-register config write total time date status = do
-  h <- restore config
+register configUI write total time date status = do
+  h <- restore configUI
   let points = case status of
                  Killed _ -> (total + 1) `div` 2
                  _        -> total
@@ -139,5 +139,5 @@ register config write total time date status = do
           Restart  -> ("abortive", " (score halved)")
       msg = "Your" <+> msgCurrent <+> "exploits award you place >>"
             <+> showT pos <+> "<<" <+> msgUnless
-  when write $ save config h'
+  when write $ save configUI h'
   return (msg, slideshow pos h' height)

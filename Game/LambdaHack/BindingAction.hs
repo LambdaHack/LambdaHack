@@ -38,9 +38,9 @@ heroSelection =
 
 -- | Binding of keys to movement and other standard commands,
 -- as well as commands defined in the config file.
-stdBinding :: Config                    -- ^ game config
+stdBinding :: ConfigUI                  -- ^ game config
            -> Binding (ActionFrame ())  -- ^ concrete binding
-stdBinding config@Config{configMacros} =
+stdBinding !config@ConfigUI{configMacros} =
   let kmacro = M.fromList $ configMacros
       cmdList = configCmds config
       semList = semanticsCmds cmdList

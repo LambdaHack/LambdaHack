@@ -43,7 +43,8 @@ license:       BSD3
 license-file:  LICENSE
 tested-with:   GHC == 7.2.2, GHC == 7.4.1, GHC == 7.6.1
 data-files:    LICENSE, CREDITS, PLAYING.md, README.md,
-               config.default, config.bot, scores
+               config.rules.default, config.ui.default, config.rules.bot,
+               scores
 author:        Andres Loeh, Mikolaj Konarski
 maintainer:    Mikolaj Konarski <mikolaj.konarski@funktory.com>
 category:      Game Engine

@@ -58,7 +58,7 @@ and run the bot, for instance storing the output in a log
     DumbBot 42 20000000 | LambdaHack > /tmp/log
 
 You may wish to tweak the game configuration file for the bot,
-e.g., by helping it play longer, as in the supplied config.bot.
+e.g., by helping it play longer, as in the supplied config.rules.bot.
 
 
 Compatibility notes

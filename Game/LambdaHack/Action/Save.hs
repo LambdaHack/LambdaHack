@@ -28,10 +28,9 @@ saveLock = unsafePerformIO newEmptyMVar
 
 -- | Save a simple serialized version of the current state.
 -- Protected by a lock to avoid corrupting the file.
-saveGameFile :: State -> IO ()
-saveGameFile state = do
+saveGameFile :: ConfigUI -> State -> IO ()
+saveGameFile ConfigUI{configSaveFile} state = do
   putMVar saveLock ()
-  let Config{configSaveFile} = sconfig state
   encodeEOF configSaveFile state
   takeMVar saveLock
 
@@ -44,37 +43,39 @@ tryCreateDir dir =
     (createDirectory dir)
     (\ e -> case e :: Ex.IOException of _ -> return ())
 
--- TODO: perhaps take the target "scores" file name from config.
--- TODO: perhaps source and "config", too, to be able to change all
--- in one place.
 -- | Try to copy over data files. Hide errors due to,
 -- e.g., insufficient permissions, because the game can run
 -- without data files just as well.
-tryCopyDataFiles :: (FilePath -> IO FilePath) -> FilePath -> IO ()
-tryCopyDataFiles pathsDataFile dirNew = do
-  configFile <- pathsDataFile "config.default"
-  scoresFile <- pathsDataFile "scores"
-  let configNew = combine dirNew "config"
-      scoresNew = combine dirNew "scores"
+tryCopyDataFiles :: ConfigUI -> (FilePath -> IO FilePath) -> IO ()
+tryCopyDataFiles ConfigUI{ configScoresFile
+                         , configRulesCfgFile
+                         , configUICfgFile } pathsDataFile = do
+  rulesFile  <- pathsDataFile $ takeFileName configRulesCfgFile <.> ".default"
+  uiFile     <- pathsDataFile $ takeFileName configUICfgFile    <.> ".default"
+  scoresFile <- pathsDataFile $ takeFileName configScoresFile
+  let newRulesFile  = configRulesCfgFile <.> ".ini"
+      newUIFile     = configUICfgFile    <.> ".ini"
+      newScoresFile = configScoresFile
   Ex.catch
-    (copyFile configFile configNew >>
-     copyFile scoresFile scoresNew)
+    (copyFile rulesFile newRulesFile >>
+     copyFile uiFile newUIFile >>
+     copyFile scoresFile newScoresFile)
     (\ e -> case e :: Ex.IOException of _ -> return ())
 
 -- | Restore a saved game, if it exists. Initialize directory structure,
 -- if needed.
-restoreGame :: (FilePath -> IO FilePath) -> Config -> Text
+restoreGame :: ConfigUI -> (FilePath -> IO FilePath) -> Text
             -> IO (Either (State, Diary, Msg) (Diary, Msg))
-restoreGame pathsDataFile Config{ configAppDataDir
-                                , configDiaryFile
-                                , configSaveFile
-                                , configBkpFile } title = do
+restoreGame config@ConfigUI{ configAppDataDir
+                           , configDiaryFile
+                           , configSaveFile
+                           , configBkpFile } pathsDataFile title = do
   ab <- doesDirectoryExist configAppDataDir
   -- If the directory can't be created, the current directory will be used.
   unless ab $ do
     tryCreateDir configAppDataDir
     -- Possibly copy over data files. No problem if it fails.
-    tryCopyDataFiles pathsDataFile configAppDataDir
+    tryCopyDataFiles config pathsDataFile
   -- If the diary file does not exist, create an empty diary.
   -- TODO: when diary gets corrupted, start a new one, too.
   diary <-
@@ -114,12 +115,11 @@ restoreGame pathsDataFile Config{ configAppDataDir
 -- This is only a backup, so no problem is the game is shut down
 -- before saving finishes, so we don't wait on the mvar. However,
 -- if a previous save is already in progress, we skip this save.
-saveGameBkp :: State -> Diary -> IO ()
-saveGameBkp state diary = do
+saveGameBkp :: ConfigUI -> State -> Diary -> IO ()
+saveGameBkp ConfigUI{ configDiaryFile
+                    , configSaveFile
+                    , configBkpFile } state diary = do
   b <- tryPutMVar saveLock ()
-  let Config{ configDiaryFile
-            , configSaveFile
-            , configBkpFile } = sconfig state
   when b $
     void $ forkIO $ do
       saveDiary configDiaryFile diary  -- save diary often in case of crashes
@@ -133,9 +133,9 @@ saveGameBkp state diary = do
 -- We don't bother reporting any other removal exceptions, either,
 -- because the backup file is relatively unimportant.
 -- We wait on the mvar, because saving the diary at game shutdown is important.
-rmBkpSaveDiary :: Config -> Diary -> IO ()
-rmBkpSaveDiary Config{ configDiaryFile
-                     , configBkpFile } diary = do
+rmBkpSaveDiary :: ConfigUI -> Diary -> IO ()
+rmBkpSaveDiary ConfigUI{ configDiaryFile
+                       , configBkpFile } diary = do
   putMVar saveLock ()
   saveDiary configDiaryFile diary  -- save diary often in case of crashes
   bb <- doesFileExist configBkpFile

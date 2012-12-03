@@ -1,6 +1,6 @@
 -- | Personal game configuration file support.
 module Game.LambdaHack.Action.ConfigIO
-  ( CP, mkConfig, dump, getSetGen, parseConfig, appDataDir
+  ( mkConfigRules, mkConfigUI, dump
   ) where
 
 import System.Directory
@@ -15,30 +15,31 @@ import qualified Data.Text as T
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Config
 import qualified Game.LambdaHack.Key as K
+import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Content.RuleKind
 
 overrideCP :: CP -> FilePath -> IO CP
-overrideCP (CP defCF) cfile = do
-  c <- CF.readfile defCF cfile
-  return $ toCP $ forceEither c
+overrideCP cp@(CP defCF) cfile = do
+  b <- doesFileExist cfile
+  if not b
+    then return cp
+    else do
+      c <- CF.readfile defCF cfile
+      return $ toCP $ forceEither c
 
--- | Read the player configuration file and use it to override
--- any default config options. Currently we can't unset options, only override.
---
--- The default config, passed in argument @configDefault@,
--- is expected to come from the default configuration file included via CPP
--- in file @ConfigDefault.hs@.
-mkConfig :: String -> IO CP
-mkConfig configDefault = do
+-- | Read a player configuration file and use it to override
+-- options from a default config. Currently we can't unset options,
+-- only override. The default config, passed in argument @configDefault@,
+-- is expected to come from a default configuration file included via CPP.
+-- The player configuration comes from file @cfile@.
+mkConfig :: String -> FilePath -> IO CP
+mkConfig configDefault cfile = do
   let delComment = map (drop 2) $ lines configDefault
       unConfig = unlines delComment
       -- Evaluate, to catch config errors ASAP.
       !defCF = forceEither $ CF.readstring CF.emptyCP unConfig
-      !defConfig = toCP defCF
-  cfile <- configFile
-  b <- doesFileExist cfile
-  if not b
-    then return defConfig
-    else overrideCP defConfig cfile
+      !defCP = toCP defCF
+  overrideCP defCP cfile
 
 -- | Personal data directory for the game. Depends on the OS and the game,
 -- e.g., for LambdaHack under Linux it's @~\/.LambdaHack\/@.
@@ -48,19 +49,12 @@ appDataDir = do
   let name = takeWhile Char.isAlphaNum progName
   getAppUserDataDirectory name
 
--- | Path to the user configuration file in the personal data directory.
-configFile :: IO FilePath
-configFile = do
-  appData <- appDataDir
-  return $ combine appData "config"
-
 -- | Dumps the current configuration to a file.
-dump :: FilePath -> CP -> IO ()
-dump fn (CP conf) = do
+dump :: Config -> FilePath -> IO ()
+dump Config{configSelfString} fn = do
   current <- getCurrentDirectory
-  let path  = combine current fn
-      sdump = CF.to_string conf
-  writeFile path sdump
+  let path = current </> fn
+  writeFile path configSelfString
 
 -- | Simplified setting of an option in a given section. Overwriting forbidden.
 set :: CP -> CF.SectionSpec -> CF.OptionSpec -> String -> CP
@@ -126,8 +120,22 @@ getItems (CP conf) s =
   then forceEither $ CF.items conf s
   else assert `failure` "Unknown config section: " ++ s
 
-parseConfig :: FilePath -> CP -> Config
-parseConfig dataDir cp =
+parseConfigRules :: CP -> Config
+parseConfigRules cp =
+  let configSelfString = let CP conf = cp in CF.to_string conf
+      configCaves = map (\(n, t) -> (T.pack n, T.pack t)) $ getItems cp "caves"
+      configDepth = get cp "dungeon" "depth"
+      configFovMode = T.pack $ get cp "engine" "fovMode"
+      configFovRadius = get cp "engine" "fovRadius"
+      configSmellTimeout = get cp "engine" "smellTimeout"
+      configBaseHP = get cp "heroes" "baseHP"
+      configExtraHeroes = get cp "heroes" "extraHeroes"
+      configFirstDeathEnds = get cp "heroes" "firstDeathEnds"
+      configFaction = T.pack $ get cp "heroes" "faction"
+  in Config{..}
+
+parseConfigUI :: FilePath -> CP -> ConfigUI
+parseConfigUI dataDir cp =
   let mkKey s =
         case K.keyTranslate s of
           K.Unknown _ ->
@@ -137,14 +145,13 @@ parseConfig dataDir cp =
         let mkCommand (key, def) = (mkKey key, def)
             section = getItems cp "commands"
         in map mkCommand section
-      configDepth = get cp "dungeon" "depth"
-      configCaves = map (\(n, t) -> (T.pack n, T.pack t)) $ getItems cp "caves"
-      configFovMode = T.pack $ get cp "engine" "fovMode"
-      configFovRadius = get cp "engine" "fovRadius"
-      configBaseHP = get cp "heroes" "baseHP"
-      configExtraHeroes = get cp "heroes" "extraHeroes"
-      configFirstDeathEnds = get cp "heroes" "firstDeathEnds"
-      configFaction = T.pack $ get cp "heroes" "faction"
+      configAppDataDir = dataDir
+      configDiaryFile = dataDir </> get cp "files" "diaryFile"
+      configSaveFile = dataDir </> get cp "files" "saveFile"
+      configBkpFile = dataDir </> get cp "files" "saveFile" <.> ".bkp"
+      configScoresFile = dataDir </> get cp "files" "scoresFile"
+      configRulesCfgFile = dataDir </> "config.rules"
+      configUICfgFile = dataDir </> "config.ui"
       configHeroNames =
         let toNumber (ident, name) =
               case stripPrefix "HeroName_" ident of
@@ -161,12 +168,24 @@ parseConfig dataDir cp =
                  else (fromTr, toTr)
             section = getItems cp "macros"
         in map trMacro section
-      configSmellTimeout = get cp "monsters" "smellTimeout"
       configFont = get cp "ui" "font"
       configHistoryMax = get cp "ui" "historyMax"
-      configAppDataDir = dataDir
-      configDiaryFile = combine dataDir $ get cp "files" "diaryFile"
-      configSaveFile = combine dataDir $ get cp "files" "saveFile"
-      configBkpFile = combine dataDir $ get cp "files" "saveFile" ++ ".bkp"
-      configScoresFile = combine dataDir $ get cp "files" "scoresFile"
-  in Config{..}
+  in ConfigUI{..}
+
+-- | Read and parse rules config file and supplement it with random seeds.
+mkConfigRules :: Kind.Ops RuleKind -> IO (Config, R.StdGen, R.StdGen)
+mkConfigRules corule = do
+  let cpRulesDefault = rcfgRulesDefault $ Kind.stdRuleset corule
+  appData <- appDataDir
+  cpRules <- mkConfig cpRulesDefault $ appData </> "config.rules.ini"
+  (dungeonGen,  cp2) <- getSetGen cpRules "dungeonRandomGenerator"
+  (startingGen, cp3) <- getSetGen cp2     "startingRandomGenerator"
+  return (parseConfigRules cp3, dungeonGen, startingGen)
+
+-- | Read and parse UI config file.
+mkConfigUI :: Kind.Ops RuleKind -> IO ConfigUI
+mkConfigUI corule = do
+  let cpUIDefault = rcfgUIDefault $ Kind.stdRuleset corule
+  appData <- appDataDir
+  cpUI <- mkConfig cpUIDefault $ appData </> "config.ui.ini"
+  return $ parseConfigUI appData cpUI

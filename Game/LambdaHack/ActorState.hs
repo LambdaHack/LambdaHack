@@ -234,14 +234,15 @@ tryFindHeroK s k =
   in fmap fst $ tryFindActor s ((== Just c) . bsymbol)
 
 -- | Create a new hero on the current level, close to the given location.
-addHero :: Kind.COps -> Point -> State -> State
-addHero Kind.COps{coactor, cotile} ploc state@State{scounter, sfaction} =
-  let config@Config{configBaseHP} = sconfig state
+addHero :: Kind.COps -> Point -> ConfigUI -> State -> State
+addHero Kind.COps{coactor, cotile} ploc configUI
+        state@State{scounter, sfaction} =
+  let Config{configBaseHP} = sconfig state
       loc = nearbyFreeLoc cotile ploc state
       freeHeroK = L.elemIndex Nothing $ map (tryFindHeroK state) [0..9]
       n = fromMaybe 100 freeHeroK
       symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
-      name = findHeroName config n
+      name = findHeroName configUI n
       startHP = configBaseHP - (configBaseHP `div` 5) * min 3 n
       m = template (heroKindId coactor) (Just symbol) (Just name)
                    startHP loc (stime state) sfaction False
@@ -249,11 +250,11 @@ addHero Kind.COps{coactor, cotile} ploc state@State{scounter, sfaction} =
   in updateLevel (updateActorDict (IM.insert scounter m)) cstate
 
 -- | Create a set of initial heroes on the current level, at location ploc.
-initialHeroes :: Kind.COps -> Point -> State -> State
-initialHeroes cops ploc state =
+initialHeroes :: Kind.COps -> Point -> ConfigUI -> State -> State
+initialHeroes cops ploc configUI state =
   let Config{configExtraHeroes} = sconfig state
       k = 1 + configExtraHeroes
-  in iterate (addHero cops ploc) state !! k
+  in iterate (addHero cops ploc configUI) state !! k
 
 -- Adding monsters
 

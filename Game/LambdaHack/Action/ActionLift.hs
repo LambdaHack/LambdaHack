@@ -10,7 +10,7 @@ module Game.LambdaHack.Action.ActionLift
     -- * Actions returning frames
   , ActionFrame, returnNoFrame, returnFrame, whenFrame, inFrame
     -- * Game session and assessors to its components
-  , Session(..), getFrontendSession, getCOps, getBinding, getOrigCP
+  , Session(..), getFrontendSession, getCOps, getBinding, getConfigUI
     -- * Various ways to abort action
   , abort, abortWith, abortIfWith, neverMind
     -- * Abort exception handlers
@@ -31,7 +31,7 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Binding
-import qualified Game.LambdaHack.Action.ConfigIO as ConfigIO
+import Game.LambdaHack.Config
 import Game.LambdaHack.Animation (SingleFrame(..))
 
 -- | The type of the function inside any action.
@@ -134,11 +134,10 @@ inFrame act = act >> returnNoFrame ()
 -- including many consecutive games in a single session,
 -- but is completely disregarded and reset when a new playing session starts.
 data Session = Session
-  { sfs   :: FrontendSession           -- ^ frontend session information
-  , scops :: Kind.COps                 -- ^ game content
-  , sbinding    :: Binding (ActionFrame ())
-                                       -- ^ binding of keys to commands
-  , sorigConfig :: ConfigIO.CP         -- ^ config from the config file
+  { sfs       :: FrontendSession           -- ^ frontend session information
+  , scops     :: Kind.COps                 -- ^ game content
+  , sbinding  :: Binding (ActionFrame ())  -- ^ binding of keys to commands
+  , sconfigUI :: ConfigUI                  -- ^ the UI config for this session
   }
 
 -- | Get the frontend session.
@@ -154,9 +153,8 @@ getBinding :: Action (Binding (ActionFrame ()))
 getBinding = Action (\ Session{sbinding} _p k _a st ms -> k st ms sbinding)
 
 -- | Get the config from the config file.
-getOrigCP :: Action (ConfigIO.CP)
-getOrigCP =
-  Action (\ Session{sorigConfig} _p k _a st ms -> k st ms sorigConfig)
+getConfigUI :: Action ConfigUI
+getConfigUI = Action (\ Session{sconfigUI} _p k _a st ms -> k st ms sconfigUI)
 
 -- | Reset the state and resume from the last backup point, i.e., invoke
 -- the failure continuation.

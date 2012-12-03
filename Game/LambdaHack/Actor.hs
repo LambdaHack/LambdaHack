@@ -91,8 +91,8 @@ instance Binary Actor where
 type ActorId = Int
 
 -- | Find a hero name in the config file, or create a stock name.
-findHeroName :: Config -> Int -> Text
-findHeroName Config{configHeroNames} n =
+findHeroName :: ConfigUI -> Int -> Text
+findHeroName ConfigUI{configHeroNames} n =
   let heroName = lookup n configHeroNames
   in fromMaybe ("hero number" <+> showT n) heroName
 

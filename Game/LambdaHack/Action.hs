@@ -4,7 +4,7 @@
 -- Has no direct access to the Action monad implementation.
 module Game.LambdaHack.Action
   ( -- * Actions and accessors
-    Action, getPerception, getCOps, getBinding
+    Action, getPerception, getCOps, getBinding, getConfigUI
     -- * Actions returning frames
   , ActionFrame, returnNoFrame, returnFrame, whenFrame, inFrame, tryWithFrame
     -- * Various ways to abort action
@@ -82,7 +82,7 @@ recordHistory :: Action ()
 recordHistory = do
   Diary{sreport, shistory} <- getDiary
   unless (nullReport sreport) $ do
-    Config{configHistoryMax} <- gets sconfig
+    ConfigUI{configHistoryMax} <- getConfigUI
     msgReset ""
     historyReset $ takeHistory configHistoryMax $ addReport sreport shistory
 
@@ -290,15 +290,14 @@ saveGameBkp :: Action ()
 saveGameBkp = do
   state <- get
   diary <- getDiary
-  liftIO $ Save.saveGameBkp state diary
+  configUI <- getConfigUI
+  liftIO $ Save.saveGameBkp configUI state diary
 
--- | Dumps the current configuration to a file.
---
--- See 'Config.dump'.
+-- | Dumps the current game rules configuration to a file.
 dumpCfg :: FilePath -> Action ()
 dumpCfg fn = do
-  cp <- getOrigCP  -- TODO
-  liftIO $ ConfigIO.dump fn cp
+  config <- gets sconfig
+  liftIO $ ConfigIO.dump config fn
 
 -- | Handle current score and display it with the high scores.
 -- Aborts if display of the scores was interrupted by the user.
@@ -309,10 +308,10 @@ dumpCfg fn = do
 handleScores :: Bool -> Status -> Int -> Action ()
 handleScores write status total =
   when (total /= 0) $ do
-    config  <- gets sconfig
-    time    <- gets stime
+    configUI <- getConfigUI
+    time <- gets stime
     curDate <- liftIO getClockTime
-    let score = register config write total time curDate status
+    let score = register configUI write total time curDate status
     (placeMsg, slideshow) <- liftIO score
     displayOverAbort placeMsg slideshow
 
@@ -322,6 +321,7 @@ endOrLoop handleTurn = do
   squit <- gets squit
   Kind.COps{coitem} <- getCOps
   s <- get
+  configUI <- getConfigUI
   let (_, total) = calculateTotal coitem s
   -- The first, boolean component of squit determines
   -- if ending screens should be shown, the other argument describes
@@ -331,7 +331,8 @@ endOrLoop handleTurn = do
     Just (_, status@Camping) -> do
       -- Save and display in parallel.
       mv <- liftIO newEmptyMVar
-      liftIO $ void $ forkIO (Save.saveGameFile s `finally` putMVar mv ())
+      liftIO $ void $ forkIO (Save.saveGameFile configUI s
+                              `finally` putMVar mv ())
       tryIgnore $ do
         handleScores False status total
         void $ displayMore ColorFull "See you soon, stronger and braver!"
@@ -374,33 +375,31 @@ restartGame :: Action () -> Action ()
 restartGame handleTurn = do
   -- Take the original config from config file, to reroll RNG, if needed
   -- (the current config file has the RNG rolled for the previous game).
-  cp <- getOrigCP
+  configUI <- getConfigUI
   cops <- getCOps
-  state <- gameResetAction cp cops
+  state <- gameResetAction configUI cops
   modify $ const state
   saveGameBkp
   handleTurn
 
 -- TODO: do this inside Action ()
-gameReset :: ConfigIO.CP -> Kind.COps -> IO State
-gameReset cp1 cops@Kind.COps{ coitem
-                                , cofact=Kind.Ops{opick}} = do
-  (g2, cp2) <- ConfigIO.getSetGen cp1 "dungeonRandomGenerator"
-  (g3, cp3) <- ConfigIO.getSetGen cp2 "startingRandomGenerator"
-  dataDir <- ConfigIO.appDataDir
-  let config3 = ConfigIO.parseConfig dataDir cp3
-      (DungeonState.FreshDungeon{..}, ag) =
-        runState (DungeonState.generate cops config3) g2
-      (sflavour, ag2) = runState (dungeonFlavourMap coitem) ag
-      factionName = configFaction config3
-      sfaction = evalState (opick factionName (const True)) ag2
-  let state =
-        defaultState
-          config3 sfaction sflavour freshDungeon entryLevel entryLoc g3
-      hstate = initialHeroes cops entryLoc state
+gameReset :: ConfigUI -> Kind.COps -> IO State
+gameReset configUI cops@Kind.COps{ coitem
+                                 , corule
+                                 , cofact=Kind.Ops{opick}} = do
+  -- Rules config reloaded at each new game start.
+  (configRules, dungeonGen, startingGen) <- ConfigIO.mkConfigRules corule
+  let (DungeonState.FreshDungeon{..}, gen2) =
+        runState (DungeonState.generate cops configRules) dungeonGen
+      (sflavour, gen3) = runState (dungeonFlavourMap coitem) gen2
+      factionName = configFaction configRules
+      sfaction = evalState (opick factionName (const True)) gen3
+  let state = defaultState configRules sfaction sflavour freshDungeon
+                           entryLevel entryLoc startingGen
+      hstate = initialHeroes cops entryLoc configUI state
   return hstate
-gameResetAction :: ConfigIO.CP -> Kind.COps -> Action State
-gameResetAction cp cops = liftIO $ gameReset cp cops
+gameResetAction :: ConfigUI -> Kind.COps -> Action State
+gameResetAction configUI cops = liftIO $ gameReset configUI cops
 
 -- | Wire together content, the definitions of game commands,
 -- config and a high-level startup function
@@ -408,26 +407,21 @@ gameResetAction cp cops = liftIO $ gameReset cp cops
 -- in particular verify content consistency.
 -- Then create the starting game config from the default config file
 -- and initialize the engine with the starting session.
-startFrontend :: Kind.COps -> (Config -> Binding (ActionFrame ()))
+startFrontend :: Kind.COps -> (ConfigUI -> Binding (ActionFrame ()))
               -> Action () -> IO ()
 startFrontend !scops@Kind.COps{corule} stdBinding handleTurn = do
-  let cpDefault = rconfigDefault $ Kind.stdRuleset corule
-  cp <- ConfigIO.mkConfig cpDefault
-  dataDir <- ConfigIO.appDataDir
-  let sconfig = ConfigIO.parseConfig dataDir cp
-      !sbinding = stdBinding sconfig
-      !sorigConfig = cp
-      -- The only option taken not from config in savegame,
-      -- but from current config file, possibly from user directory.
-      font = configFont sconfig
+  -- UI config reloaded at each client start.
+  sconfigUI <- ConfigIO.mkConfigUI corule
+  let !sbinding = stdBinding sconfigUI
+      font = configFont sconfigUI
       -- In addition to handling the turn, if the game ends or exits,
       -- handle the diary and backup savefile.
       handleGame = do
         handleTurn
         diary <- getDiary
         -- Save diary often, at each game exit, in case of crashes.
-        liftIO $ Save.rmBkpSaveDiary sconfig diary
-      loop sfs = start cp sconfig Session{..} handleGame
+        liftIO $ Save.rmBkpSaveDiary sconfigUI diary
+      loop sfs = start Session{..} handleGame
   startup font loop
 
 -- | Compute and insert auxiliary optimized components into game content,
@@ -441,20 +435,21 @@ speedupCops sess@Session{scops = cops@Kind.COps{cotile=tile}} =
 
 -- | Either restore a saved game, or setup a new game.
 -- Then call the main game loop.
-start :: ConfigIO.CP -> Config -> Session -> Action () -> IO ()
-start cp config slowSess handleGame = do
-  let sess@Session{scops = cops@Kind.COps{ corule }} = speedupCops slowSess
+start :: Session -> Action () -> IO ()
+start slowSess handleGame = do
+  let sess@Session{scops = cops@Kind.COps{corule}, sconfigUI} =
+        speedupCops slowSess
       title = rtitle $ Kind.stdRuleset corule
       pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
-  restored <- Save.restoreGame pathsDataFile config title
+  restored <- Save.restoreGame sconfigUI pathsDataFile title
   case restored of
     Right (diary, msg) -> do  -- Starting a new game.
-      state <- gameReset cp cops
+      state <- gameReset sconfigUI cops
       handlerToIO sess state
         diary{sreport = singletonReport msg}
         -- TODO: gameReset >> handleTurn or defaultState {squit=Reset}
         handleGame
-    Left (state, diary, msg) ->  -- Running a restored a game.
+    Left (state, diary, msg) ->  -- Running a restored game.
       handlerToIO sess state
         -- This overwrites the "Really save/quit?" messages.
         diary{sreport = singletonReport msg}

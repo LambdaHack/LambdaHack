@@ -455,7 +455,8 @@ summonHeroes n loc =
   assert (n > 0) $ do
   cops <- getCOps
   newHeroId <- gets scounter
-  modify (\ state -> iterate (addHero cops loc) state !! n)
+  configUI <- getConfigUI
+  modify (\ state -> iterate (addHero cops loc configUI) state !! n)
   b <- focusIfOurs newHeroId
   assert (b `blame` (newHeroId, "player summons himself")) $
     return ()

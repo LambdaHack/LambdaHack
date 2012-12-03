@@ -51,6 +51,7 @@ import Game.LambdaHack.Time
 import Game.LambdaHack.Animation (swapPlaces, blockMiss)
 import Game.LambdaHack.Draw
 import qualified Game.LambdaHack.Command as Command
+import Game.LambdaHack.Config
 
 default (Text)
 
@@ -605,8 +606,10 @@ displayHistory = do
 
 dumpConfig :: Action ()
 dumpConfig = do
-  let fn = "config.dump"
-      msg = "Current configuration dumped to file" <+> T.pack fn <> "."
+  ConfigUI{configRulesCfgFile} <- getConfigUI
+  let fn = configRulesCfgFile ++ ".dump"
+      msg = "Current game rules configuration dumped to file"
+            <+> T.pack fn <> "."
   dumpCfg fn
   abortWith msg
 

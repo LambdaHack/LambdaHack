@@ -42,14 +42,17 @@ standard = RuleKind
   , rpathsVersion  = Self.version
   , ritemMelee     = ")"
   , ritemProject   = "!?|/"
-  -- The string containing the default configuration
-  -- included from file config.default.
-  -- Warning: cabal does not detect that the default config is changed,
-  -- so touching this file is needed to reinclude config and recompile.
+  -- The strings containing the default configuration files,
+  -- included from files config.game.default and config.ui.default.
+  -- Warning: cabal does not detect that the config files are changed,
+  -- so touching them is needed to reinclude configs and recompile.
   -- Note: consider code.haskell.org/~dons/code/compiled-constants
   -- as soon as the config file grows very big.
-  , rconfigDefault = [multiline|
-#include "../../config.default"
+  , rcfgRulesDefault = [multiline|
+#include "../../config.rules.default"
+|]
+  , rcfgUIDefault = [multiline|
+#include "../../config.ui.default"
 |]
   -- ASCII art for the Main Menu. Only pure 7-bit ASCII characters are
   -- allowed. The picture should be exactly 24 rows by 80 columns,
@@ -66,7 +69,7 @@ standard = RuleKind
   -- The Main Menu is displayed dull white on black.
   -- TODO: Highlighted keybinding is in inverse video or bright white on grey
   -- background. The spaces that pad keybindings are not highlighted.
-  , rmainMenuArt   = [multiline|
+  , rmainMenuArt = [multiline|
 ----------------------------------------------------------------------------------
 |                                                                                |
 |                                                                                |

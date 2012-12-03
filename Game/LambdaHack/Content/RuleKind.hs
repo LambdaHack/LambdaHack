@@ -27,17 +27,18 @@ import Game.LambdaHack.Misc
 -- whether one location is accessible from another.
 -- Precondition: the two locations are next to each other.
 data RuleKind = RuleKind
-  { rsymbol           :: Char     -- ^ a symbol
-  , rname             :: Text     -- ^ short description
-  , rfreq             :: Freqs    -- ^ frequency within groups
-  , raccessible       :: X -> Point -> TileKind -> Point -> TileKind -> Bool
-  , rtitle            :: Text     -- ^ the title of the game
-  , rpathsDataFile    :: FilePath -> IO FilePath  -- ^ the path to data files
-  , rpathsVersion     :: Version  -- ^ the version of the game
-  , ritemMelee        :: [Char]   -- ^ symbols of melee weapons
-  , ritemProject      :: [Char]   -- ^ symbols of items AI can project
-  , rconfigDefault    :: String   -- ^ the default config file of the game
-  , rmainMenuArt      :: Text     -- ^ the ASCII art for the Main Menu
+  { rsymbol          :: Char     -- ^ a symbol
+  , rname            :: Text     -- ^ short description
+  , rfreq            :: Freqs    -- ^ frequency within groups
+  , raccessible      :: X -> Point -> TileKind -> Point -> TileKind -> Bool
+  , rtitle           :: Text     -- ^ the title of the game
+  , rpathsDataFile   :: FilePath -> IO FilePath  -- ^ the path to data files
+  , rpathsVersion    :: Version  -- ^ the version of the game
+  , ritemMelee       :: [Char]   -- ^ symbols of melee weapons
+  , ritemProject     :: [Char]   -- ^ symbols of items AI can project
+  , rcfgRulesDefault :: String   -- ^ the default game rules config file
+  , rcfgUIDefault    :: String   -- ^ the default UI settings config file
+  , rmainMenuArt     :: Text     -- ^ the ASCII art for the Main Menu
   }
 
 -- | A dummy instance of the 'Show' class, to satisfy general requirments
