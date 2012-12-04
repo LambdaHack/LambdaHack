@@ -15,6 +15,7 @@ import Data.Ord
 import qualified Data.IntSet as IS
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
@@ -61,7 +62,7 @@ getGroupItem :: [Item]  -- ^ all objects in question
 getGroupItem is object syms prompt packName = do
   Kind.COps{coitem=Kind.Ops{osymbol}} <- getCOps
   let choice i = osymbol (jkind i) `elem` syms
-      header = capitalize $ pluralise object
+      header = makePhrase [MU.Capitalize (MU.Ws (MU.Text object))]
   getItem prompt choice header is packName
 
 applyGroupItem :: ActorId  -- ^ actor applying the item (is on current level)
@@ -385,7 +386,7 @@ removeFromLoc i loc = do
 
 actorPickupItem :: ActorId -> Action ()
 actorPickupItem actor = do
-  cops@Kind.COps{coitem} <- getCOps
+  Kind.COps{coactor, coitem} <- getCOps
   state <- get
   pl    <- gets splayer
   per   <- getPerception
@@ -407,8 +408,10 @@ actorPickupItem actor = do
             then msgAdd (letterLabel (jletter ni)
                          <> objectItem coitem state ni <> ".")
             else when perceived $
-                   msgAdd $
-                   actorVerbExtraItem cops state body "pick" "up" i ""
+                   msgAdd $ makePhrase
+                     [ MU.SubjectVerb (MU.Text $ objectActor coactor body)
+                                      (MU.Text "pick up")
+                     , MU.Text $ objectItem coitem state i ]
           removeFromLoc i loc
             >>= assert `trueM` (i, is, loc, "item is stuck")
           -- add item to actor's inventory:

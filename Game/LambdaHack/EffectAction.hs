@@ -16,6 +16,7 @@ import qualified Data.IntSet as IS
 import Data.Monoid (mempty)
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
@@ -436,7 +437,8 @@ selectPlayer actor = do
       -- Don't continue an old run, if any.
       stopRunning
       -- Announce.
-      msgAdd $ capActor coactor pbody <+> "selected."
+      msgAdd $ makeClause [ MU.Text $ objectActor coactor pbody
+                          , MU.Text "selected" ]
       msgAdd $ lookAt cops False True state lvl (bloc pbody) ""
       return True
 

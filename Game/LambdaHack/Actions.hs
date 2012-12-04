@@ -19,6 +19,7 @@ import qualified Data.IntSet as IS
 import Data.Ratio
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
@@ -424,10 +425,13 @@ actorAttackActor source target = do
                   if tell
                   then "with" <+> objectItem coitem state single
                   else ""
-          msgMiss = T.init (actorVerb coactor sm ("try to" <+> verb) "")
-                    <> ", but"
-                    <+> let tmSubject = objectActor coactor tm
-                        in tmSubject <+> conjugate tmSubject "block" <> "."
+          msgMiss = makeClause
+            [ MU.SubjectVerb (MU.Text $ objectActor coactor sm)
+                             (MU.Text $ "try to" <+> verb)
+              MU.:> ", but"
+            , MU.SubjectVerb (MU.Text $ objectActor coactor tm)
+                             (MU.Text "block")
+            ]
       let performHit block = do
             when (svisible || tvisible) $ msgAdd msg
             -- Msgs inside itemEffectAction describe the target part.

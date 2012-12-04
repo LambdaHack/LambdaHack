@@ -28,10 +28,10 @@ standard = RuleKind
   { rsymbol        = 's'
   , rname          = "standard LambdaHack ruleset"
   , rfreq          = [("standard", 100)]
-    -- Check whether one location is accessible from another.
-    -- Precondition: the two locations are next to each other.
-    -- Apart of checking the target tile, we forbid diagonal movement
-    -- to and from doors.
+  -- Check whether one location is accessible from another.
+  -- Precondition: the two locations are next to each other.
+  -- Apart of checking the target tile, we forbid diagonal movement
+  -- to and from doors.
   , raccessible    = \ lxsize sloc src tloc tgt ->
       F.Walkable `elem` tfeature tgt
       && not ((F.Closable `elem` tfeature src ||

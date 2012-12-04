@@ -5,6 +5,7 @@ module Game.LambdaHack.Command
   ) where
 
 import Data.Text (Text)
+import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Grammar
@@ -76,10 +77,10 @@ timedCmd cmd = case cmd of
 -- | Description of player commands.
 cmdDescription :: Cmd -> Text
 cmdDescription cmd = case cmd of
-  Apply{..}       -> verb <+> addIndefinite object
-  Project{..}     -> verb <+> addIndefinite object
-  TriggerDir{..}  -> verb <+> addIndefinite object
-  TriggerTile{..} -> verb <+> addIndefinite object
+  Apply{..}       -> makePhrase [MU.Text verb, MU.AW (MU.Text object)]
+  Project{..}     -> makePhrase [MU.Text verb, MU.AW (MU.Text object)]
+  TriggerDir{..}  -> makePhrase [MU.Text verb, MU.AW (MU.Text object)]
+  TriggerTile{..} -> makePhrase [MU.Text verb, MU.AW (MU.Text object)]
   Pickup    -> "get an object"
   Drop      -> "drop an object"
   Wait      -> ""

@@ -1,28 +1,23 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Construct English sentences from content.
 module Game.LambdaHack.Grammar
-  ( -- * Grammar types
-    Verb, Object
-    -- * General operations
-  , capitalize, pluralise, addIndefinite, conjugate
+  ( -- * Grammar types and the main operations
+    Verb, Object, makePhrase, makeClause
     -- * Objects from content
-  , objectItemCheat, objectItem, objectActor, capActor
+  , objectItemCheat, objectItem, objectActor
     -- * Sentences
-  , actorVerb, actorVerbItem, actorVerbActor, actorVerbExtraItem
+  , actorVerb, actorVerbItem, actorVerbActor
     -- * Scenery description
   , lookAt
   ) where
 
 import qualified Data.Set as S
-import qualified Data.Map as M
 import qualified Data.List as L
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
-import NLP.Miniutter.English (capitalize)
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Point
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Item
@@ -41,120 +36,15 @@ type Verb = Text
 -- | The type of sentence objects.
 type Object = Text
 
--- | Nouns with irregular plural spelling.
--- See http://en.wikipedia.org/wiki/English_plural.
-irregularPlural :: M.Map Text Text
-irregularPlural = M.fromList
-  [ ("canto"  , "cantos")
-  , ("homo "  , "homos")
-  , ("photo"  , "photos")
-  , ("zero"   , "zeros")
-  , ("piano"  , "pianos")
-  , ("portico", "porticos")
-  , ("pro"    , "pros")
-  , ("quarto" , "quartos")
-  , ("kimono" , "kimonos")
-  , ("calf"   , "calves")
-  , ("leaf"   , "leaves")
-  , ("knife"  , "knives")
-  , ("life"   , "lives")
-  , ("dwarf"  , "dwarves")
-  , ("hoof"   , "hooves")
-  , ("elf"    , "elves")
-  , ("staff"  , "staves")
-  , ("child"  , "children")
-  , ("foot"   , "feet")
-  , ("goose"  , "geese")
-  , ("louse"  , "lice")
-  , ("man"    , "men")
-  , ("mouse"  , "mice")
-  , ("tooth"  , "teeth")
-  , ("woman"  , "women")
-  ]
-
--- | The list of words with identical singular and plural form.
--- See http://en.wikipedia.org/wiki/English_plural.
-noPlural :: S.Set Text
-noPlural = S.fromList
-  [ "buffalo"
-  , "deer"
-  , "moose"
-  , "sheep"
-  , "bison"
-  , "salmon"
-  , "pike"
-  , "trout"
-  , "swine"
-  , "aircraft"
-  , "watercraft"
-  , "spacecraft"
-  , "hovercraft"
-  , "information"
-  ]
-
--- | Tests if a character is a vowel (@u@ is too hard, so is @eu@).
-vowel :: Char -> Bool
-vowel l = l `elem` "aeio"
-
-compound :: Bool -> (Text -> Text) -> Text -> Text
-compound modifyFirst f phrase =
-  let rev | modifyFirst = reverse
-          | otherwise   = id
-  in case rev $ T.words phrase of
-       [] -> assert `failure` ("compound: no words" :: Text)
-       word : rest -> T.unwords $ rev $ f word : rest
-
--- | Adds the plural (@s@, @es@, @ies@) suffix to a word.
--- Used also for conjugation.
--- See http://en.wikipedia.org/wiki/English_plural.
-suffixS :: Text -> Text
-suffixS = compound False singleSuffixS
-
-singleSuffixS :: Text -> Text
-singleSuffixS word = case L.reverse (T.unpack word) of
-  'h' : 'c' : _ -> word <> "es"
-  'h' : 's' : _ -> word <> "es"
-  'i' : 's' : _ -> word <> "es"
-  's' : _ -> word <> "es"
-  'z' : _ -> word <> "es"
-  'x' : _ -> word <> "es"
-  'j' : _ -> word <> "es"
-  'o' : l : _ | not (vowel l) -> T.init word <> "es"
-  'y' : l : _ | not (vowel l) -> T.init word <> "ies"
-  _ -> word <> "s"
-
-pluralise :: Text -> Text
-pluralise = compound True singlePluralise
-
--- TODO: a suffix tree would be best, to catch ableman, seaman, etc.
-singlePluralise :: Text -> Text
-singlePluralise word =
-  if word `S.member` noPlural
-  then word
-  else case M.lookup word irregularPlural of
-    Just plural -> plural
-    Nothing -> suffixS word
-
-conjugate :: Text -> Text -> Text
-conjugate "you" "be" = "are"
-conjugate "You" "be" = "are"
-conjugate _     "be" = "is"
-conjugate "you" verb = verb
-conjugate "You" verb = verb
-conjugate _     verb = suffixS verb
-
--- | Add the indefinite article (@a@, @an@) to a word (@h@ is too hard).
-addIndefinite :: Text -> Text
-addIndefinite b = case T.uncons b of
-                    Just (c, _) | vowel c -> "an" <+> b
-                    _                     -> "a"  <+> b
+-- | Re-exported English phrase creation functions, applied to default
+-- irregular word sets.
+makePhrase, makeClause :: [MU.Part] -> Text
+makePhrase = MU.makePhrase MU.defIrrp
+makeClause = MU.makeClause MU.defIrrp
 
 -- | Transform an object, adding a count and a plural suffix.
 makeObject :: Int -> (Text -> Text) -> Text -> Text
-makeObject 1 f obj = addIndefinite $ f obj
-makeObject n f obj = showT n <+> f (pluralise obj)
-
--- TODO: when there's more of the above, split and move to Utils/
+makeObject n f obj = makePhrase [MU.NWs n $ MU.Text $ f obj]
 
 -- | How to refer to an item in object position of a sentence.
 -- If cheating is allowed, full identity of the object is revealed
@@ -190,22 +80,15 @@ objectActor :: Kind.Ops ActorKind -> Actor -> Text
 objectActor Kind.Ops{oname} a =
   fromMaybe (oname $ bkind a) (bname a)
 
--- | Capitalized actor object.
-capActor :: Kind.Ops ActorKind -> Actor -> Text
-capActor coactor x = capitalize $ objectActor coactor x
-
 -- | Sentences such as \"Dog barks loudly.\"
 actorVerb :: Kind.Ops ActorKind -> Actor -> Text -> Text -> Text
-actorVerb coactor a v extra =
-  let cactor = capActor coactor a
-      verb = conjugate cactor v
-      ending | T.null extra = "."
-             | otherwise  = " " <> extra <> "."
-  in cactor <+> verb <> ending
+actorVerb coactor a v extra = makeClause
+  [ MU.SubjectVerb (MU.Text $ objectActor coactor a) (MU.Text v)
+  , MU.Text extra ]
 
 -- | Sentences such as \"Dog quaffs a red potion fast.\"
 actorVerbItem :: Kind.COps -> State -> Actor -> Text -> Item -> Text
-                   -> Text
+              -> Text
 actorVerbItem Kind.COps{coactor, coitem} state a v i extra =
   let ending | T.null extra = ""
              | otherwise  = " " <> extra
@@ -221,16 +104,6 @@ actorVerbActor coactor a v b extra =
   in actorVerb coactor a v $
        objectActor coactor b <> ending
 
--- | Sentences such as \"Dog gulps down a red potion fast.\"
-actorVerbExtraItem :: Kind.COps -> State -> Actor -> Text -> Text
-                        -> Item -> Text -> Text
-actorVerbExtraItem Kind.COps{coactor, coitem} state a v extra1 i extra2 =
-  assert (not $ T.null extra1) $
-  let ending | T.null extra2 = ""
-             | otherwise   = " " <> extra2
-  in actorVerb coactor a v $
-       extra1 <+> objectItem coitem state i <> ending
-
 -- | Produces a textual description of the terrain and items at an already
 -- explored location. Mute for unknown locations.
 -- The detailed variant is for use in the targeting mode.
@@ -245,7 +118,7 @@ lookAt :: Kind.COps  -- ^ game content
 lookAt Kind.COps{coitem, cotile=Kind.Ops{oname}} detailed canSee s lvl loc msg
   | detailed  =
     let tile = lvl `rememberAt` loc
-        name = capitalize $ oname tile
+        name = makePhrase [MU.Capitalize (MU.Text $ oname tile)]
     in name <> "." <+> msg <> isd
   | otherwise = msg <> isd
  where
