@@ -110,7 +110,6 @@ library
                       Game.LambdaHack.FOV.Digital,
                       Game.LambdaHack.FOV.Permissive,
                       Game.LambdaHack.FOV.Shadow,
-                      Game.LambdaHack.Grammar,
                       Game.LambdaHack.Item,
                       Game.LambdaHack.ItemAction,
                       Game.LambdaHack.Key,

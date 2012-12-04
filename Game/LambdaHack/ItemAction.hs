@@ -20,7 +20,6 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
 import Game.LambdaHack.Point
-import Game.LambdaHack.Grammar
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Key as K
 import Game.LambdaHack.Level
@@ -45,16 +44,20 @@ inventory = do
   pbody <- gets getPlayerBody
   items <- gets getPlayerItem
   if L.null items
-    then abortWith $ actorVerb coactor pbody "be" "not carrying anything"
+    then abortWith $ makeClause
+      [ MU.SubjectVerb (nounActor coactor pbody) (MU.Text "be")
+      , MU.Text "not carrying anything" ]
     else do
       io <- itemOverlay True False items
-      displayOverlays (T.init $ actorVerb coactor pbody "be" "carrying:") "" io
+      let blurb = makePhrase [MU.Capitalize $
+            MU.SubjectVerb (nounActor coactor pbody) (MU.Text "be carrying:")]
+      displayOverlays blurb "" io
 
 -- | Let the player choose any item with a given group name.
 -- Note that this does not guarantee the chosen item belongs to the group,
 -- as the player can override the choice.
 getGroupItem :: [Item]  -- ^ all objects in question
-             -> Object  -- ^ name of the group
+             -> Text    -- ^ name of the group
              -> [Char]  -- ^ accepted item symbols
              -> Text  -- ^ prompt
              -> Text  -- ^ how to refer to the collection of objects
@@ -66,23 +69,25 @@ getGroupItem is object syms prompt packName = do
   getItem prompt choice header is packName
 
 applyGroupItem :: ActorId  -- ^ actor applying the item (is on current level)
-               -> Verb     -- ^ how the applying is called
+               -> Text     -- ^ how the applying is called
                -> Item     -- ^ the item to be applied
                -> Action ()
 applyGroupItem actor verb item = do
-  cops  <- getCOps
+  Kind.COps{coactor, coitem} <- getCOps
   state <- get
   body  <- gets (getActor actor)
   per   <- getPerception
   -- only one item consumed, even if several in inventory
   let consumed = item { jcount = 1 }
-      msg = actorVerbItem cops state body verb consumed ""
+      msg = makeClause
+        [ MU.SubjectVerb (nounActor coactor body) (MU.Text verb)
+        , MU.Text $ objectItem coitem state consumed ]
       loc = bloc body
   removeFromInventory actor consumed loc
   when (loc `IS.member` totalVisible per) $ msgAdd msg
   itemEffectAction 5 actor actor consumed False
 
-playerApplyGroupItem :: Verb -> Object -> [Char] -> Action ()
+playerApplyGroupItem :: Text -> Text -> [Char] -> Action ()
 playerApplyGroupItem verb object syms = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getCOps
   is   <- gets getPlayerItem
@@ -93,11 +98,11 @@ playerApplyGroupItem verb object syms = do
 
 projectGroupItem :: ActorId  -- ^ actor projecting the item (is on current lvl)
                  -> Point    -- ^ target location of the projectile
-                 -> Verb     -- ^ how the projecting is called
+                 -> Text     -- ^ how the projecting is called
                  -> Item     -- ^ the item to be projected
                  -> Action ()
 projectGroupItem source tloc _verb item = do
-  cops@Kind.COps{coactor} <- getCOps
+  cops@Kind.COps{coactor, coitem} <- getCOps
   state <- get
   sm    <- gets (getActor source)
   per   <- getPerception
@@ -118,7 +123,9 @@ projectGroupItem source tloc _verb item = do
       -- When projecting, the first turn is spent aiming.
       -- The projectile is seen one tile from the actor, giving a hint
       -- about the aim and letting the target evade.
-      msg = actorVerbItem cops state subject "aim" consumed ""
+      msg = makeClause
+        [ MU.SubjectVerb (nounActor coactor subject) (MU.Text "aim")
+        , MU.Text $ objectItem coitem state consumed ]
       -- TODO: AI should choose the best eps.
       eps = if source == pl then ceps else 0
       -- Setting monster's projectiles time to player time ensures
@@ -150,7 +157,7 @@ projectGroupItem source tloc _verb item = do
           abortWith "blocked"
       when (svisible || projVis) $ msgAdd msg
 
-playerProjectGroupItem :: Verb -> Object -> [Char] -> ActionFrame ()
+playerProjectGroupItem :: Text -> Text -> [Char] -> ActionFrame ()
 playerProjectGroupItem verb object syms = do
   ms     <- gets hostileList
   lxsize <- gets (lxsize . slevel)
@@ -160,7 +167,7 @@ playerProjectGroupItem verb object syms = do
     then abortWith "You can't aim in melee."
     else playerProjectGI verb object syms
 
-playerProjectGI :: Verb -> Object -> [Char] -> ActionFrame ()
+playerProjectGI :: Text -> Text -> [Char] -> ActionFrame ()
 playerProjectGI verb object syms = do
   state <- get
   pl    <- gets splayer
@@ -299,16 +306,16 @@ endTargetingMsg = do
   pbody  <- gets getPlayerBody
   state  <- get
   lxsize <- gets (lxsize . slevel)
-  let verb = "target"
-      targetMsg = case btarget pbody of
+  let targetMsg = case btarget pbody of
                     TEnemy a _ll ->
                       if memActor a state
-                      then objectActor coactor $ getActor a state
-                      else "a fear of the past"
-                    TLoc loc -> "location" <+> showPoint lxsize loc
-                    TPath _ -> "a path"
-                    TCursor  -> "current cursor position continuously"
-  msgAdd $ actorVerb coactor pbody verb targetMsg
+                      then nounActor coactor $ getActor a state
+                      else MU.Text "a fear of the past"
+                    TLoc loc -> MU.Text $ "location" <+> showPoint lxsize loc
+                    TPath _ -> MU.Text "a path"
+                    TCursor  -> MU.Text "current cursor position continuously"
+  msgAdd $ makeClause
+      [MU.SubjectVerb (nounActor coactor pbody) (MU.Text "target"), targetMsg]
 
 -- | Cancel something, e.g., targeting mode, resetting the cursor
 -- to the position of the player. Chosen target is not invalidated.
@@ -336,7 +343,7 @@ clearCurrent = return ()
 dropItem :: Action ()
 dropItem = do
   -- TODO: allow dropping a given number of identical items.
-  cops  <- getCOps
+  Kind.COps{coactor, coitem} <- getCOps
   pl    <- gets splayer
   state <- get
   pbody <- gets getPlayerBody
@@ -345,7 +352,9 @@ dropItem = do
   stack <- getAnyItem "What to drop?" ims "in inventory"
   let item = stack { jcount = 1 }
   removeOnlyFromInventory pl item (bloc pbody)
-  msgAdd (actorVerbItem cops state pbody "drop" item "")
+  msgAdd $ makeClause
+    [ MU.SubjectVerb (nounActor coactor pbody) (MU.Text "drop")
+    , MU.Text $ objectItem coitem state item ]
   modify (updateLevel (dropItemsAt [item] ploc))
 
 -- TODO: this is a hack for dropItem, because removeFromInventory
@@ -408,8 +417,8 @@ actorPickupItem actor = do
             then msgAdd (letterLabel (jletter ni)
                          <> objectItem coitem state ni <> ".")
             else when perceived $
-                   msgAdd $ makePhrase
-                     [ MU.SubjectVerb (MU.Text $ objectActor coactor body)
+                   msgAdd $ makeClause
+                     [ MU.SubjectVerb (nounActor coactor body)
                                       (MU.Text "pick up")
                      , MU.Text $ objectItem coitem state i ]
           removeFromLoc i loc

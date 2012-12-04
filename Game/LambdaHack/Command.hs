@@ -8,7 +8,6 @@ import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Grammar
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Msg
 
@@ -16,10 +15,10 @@ import Game.LambdaHack.Msg
 -- are created outside this module via the Read class (from config file) .
 data Cmd =
     -- These take time.
-    Apply       { verb :: Verb, object :: Object, syms :: [Char] }
-  | Project     { verb :: Verb, object :: Object, syms :: [Char] }
-  | TriggerDir  { verb :: Verb, object :: Object, feature :: F.Feature }
-  | TriggerTile { verb :: Verb, object :: Object, feature :: F.Feature }
+    Apply       { verb :: Text, object :: Text, syms :: [Char] }
+  | Project     { verb :: Text, object :: Text, syms :: [Char] }
+  | TriggerDir  { verb :: Text, object :: Text, feature :: F.Feature }
+  | TriggerTile { verb :: Text, object :: Text, feature :: F.Feature }
   | Pickup
   | Drop
   | Wait

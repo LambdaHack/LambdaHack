@@ -26,7 +26,6 @@ import Game.LambdaHack.Actor
 import Game.LambdaHack.Level
 import Game.LambdaHack.Dungeon
 import Game.LambdaHack.State
-import Game.LambdaHack.Grammar
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Item
 import Game.LambdaHack.Content.ActorKind

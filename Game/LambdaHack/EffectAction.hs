@@ -24,7 +24,6 @@ import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Draw
-import Game.LambdaHack.Grammar
 import Game.LambdaHack.Point
 import Game.LambdaHack.Item
 import Game.LambdaHack.Content.ItemKind
@@ -44,6 +43,11 @@ import Game.LambdaHack.Animation (twirlSplash, blockHit, deathBody)
 import qualified Game.LambdaHack.Dungeon as Dungeon
 
 default (Text)
+
+-- | Sentences such as \"Dog barks loudly.\"
+actorVerb :: Kind.Ops ActorKind -> Actor -> Text -> Text
+actorVerb coactor a v =
+  makeClause [MU.SubjectVerb (nounActor coactor a) (MU.Text v)]
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: Rnd a -> Action a
@@ -154,7 +158,7 @@ eff Effect.Heal _ _source target power = do
     else do
       void $ focusIfOurs target
       updateAnyActor target (addHp coactor power)
-      return (True, actorVerb coactor tm "feel" "better")
+      return (True, actorVerb coactor tm "feel better")
 eff (Effect.Wound nDm) verbosity source target power = do
   Kind.COps{coactor} <- getCOps
   s <- get
@@ -171,15 +175,14 @@ eff (Effect.Wound nDm) verbosity source target power = do
             else -- Not as important, so let the player read the message
                  -- about monster death while he watches the combat animation.
               if isProjectile s target
-              then actorVerb coactor tm "drop" "down"
-              else actorVerb coactor tm "die" ""
+              then actorVerb coactor tm "drop down"
+              else actorVerb coactor tm "die"
           | source == target =  -- a potion of wounding, etc.
-            actorVerb coactor tm "feel" "wounded"
+            actorVerb coactor tm "feel wounded"
           | verbosity <= 0 = ""
           | target == pl =
-            actorVerb coactor tm "lose" $
-              showT (n + power) <> "HP"
-          | otherwise = actorVerb coactor tm "hiss" "in pain"
+            actorVerb coactor tm $ "lose" <+> showT (n + power) <> "HP"
+          | otherwise = actorVerb coactor tm "hiss in pain"
     updateAnyActor target $ \ m -> m { bhp = newHP }  -- Damage the target.
     return (True, msg)
 eff Effect.Dominate _ source target _power = do
@@ -244,7 +247,7 @@ eff Effect.Ascend _ source target power = do
   s2 <- get
   return $ if maybe Camping snd (squit s2) == Victor
     then (True, "")
-    else (True, actorVerb coactor tm "find" "a way upstairs")
+    else (True, actorVerb coactor tm "find a way upstairs")
 eff Effect.Descend _ source target power = do
   tm <- gets (getActor target)
   s  <- get
@@ -256,7 +259,7 @@ eff Effect.Descend _ source target power = do
   s2 <- get
   return $ if maybe Camping snd (squit s2) == Victor
     then (True, "")
-    else (True, actorVerb coactor tm "find" "a way downstairs")
+    else (True, actorVerb coactor tm "find a way downstairs")
 
 nullEffect :: Action (Bool, Text)
 nullEffect = return (False, "Nothing happens.")
@@ -271,7 +274,10 @@ squashActor source target = do
       power = maxDeep $ ipower $ okind h2hKind
       h2h = Item h2hKind power Nothing 1
       verb = iverbApply $ okind h2hKind
-      msg = actorVerbActor coactor sm verb tm "in a staircase accident"
+      msg = makeClause
+        [ MU.SubjectVerb (nounActor coactor sm) (MU.Text verb)
+        , nounActor coactor tm
+        , MU.Text "in a staircase accident" ]
   msgAdd msg
   itemEffectAction 0 source target h2h False
   s <- get
@@ -437,8 +443,7 @@ selectPlayer actor = do
       -- Don't continue an old run, if any.
       stopRunning
       -- Announce.
-      msgAdd $ makeClause [ MU.Text $ objectActor coactor pbody
-                          , MU.Text "selected" ]
+      msgAdd $ makeClause [nounActor coactor pbody, MU.Text "selected"]
       msgAdd $ lookAt cops False True state lvl (bloc pbody) ""
       return True
 
@@ -490,7 +495,7 @@ checkPartyDeath = do
   pbody  <- gets getPlayerBody
   Config{configFirstDeathEnds} <- gets sconfig
   when (bhp pbody <= 0) $ do
-    msgAdd $ actorVerb coactor pbody "die" ""
+    msgAdd $ actorVerb coactor pbody "die"
     go <- displayMore ColorBW ""
     recordHistory  -- Prevent repeating the "die" msgs.
     let bodyToCorpse = updateAnyActor pl $ \ body -> body {bsymbol = Just '%'}
@@ -590,8 +595,7 @@ doLook = do
     let canSee = IS.member loc (totalVisible per)
         ihabitant | canSee = L.find (\ m -> bloc m == loc) (IM.elems hms)
                   | otherwise = Nothing
-        monsterMsg =
-          maybe "" (\ m -> actorVerb coactor m "be" "here" <> " ") ihabitant
+        monsterMsg = maybe "" (\ m -> actorVerb coactor m "be here") ihabitant
         vis | not $ loc `IS.member` totalVisible per =
                 " (not visible)"  -- by party
             | actorReachesLoc pl loc per (Just pl) = ""

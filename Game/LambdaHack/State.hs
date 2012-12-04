@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | Game state and persistent player diary types and operations.
 module Game.LambdaHack.State
   ( -- * Game state
@@ -10,6 +11,8 @@ module Game.LambdaHack.State
   , updateCursor, updateTime, updateDiscoveries, updateLevel, updateDungeon
     -- * Player diary
   , Diary(..), defaultDiary
+    -- * Textia; descriptions
+  , lookAt, objectItemCheat, objectItem
     -- * Debug flags
   , DebugMode(..), cycleMarkVision, toggleOmniscient
   ) where
@@ -19,7 +22,10 @@ import Data.Binary
 import Game.LambdaHack.Config
 import qualified System.Random as R
 import System.Time
+import Data.Text (Text)
 import qualified Data.Text as T
+import qualified NLP.Miniutter.English as MU
+import qualified Data.List as L
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Point
@@ -31,6 +37,9 @@ import Game.LambdaHack.FOV
 import Game.LambdaHack.Time
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Content.FactionKind
+import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Effect
+import Game.LambdaHack.Flavour
 
 -- | The diary contains all the player data that carries over
 -- from game to game, even across playing sessions. That includes
@@ -255,3 +264,59 @@ instance Binary Status where
       2 -> return Victor
       3 -> return Restart
       _ -> fail "no parse (Status)"
+
+-- TODO: probably move these somewhere
+
+-- | How to refer to an item in object position of a sentence.
+-- If cheating is allowed, full identity of the object is revealed
+-- together with its flavour (e.g. at game over screen).
+objectItemCheat :: Kind.Ops ItemKind -> Bool -> State -> Item -> Text
+objectItemCheat coitem@Kind.Ops{okind} cheat state i =
+  let ik = jkind i
+      kind = okind ik
+      identified = L.length (iflavour kind) == 1 ||
+                   ik `S.member` sdisco state
+      eff = effectToSuffix (ieffect kind)
+      pwr = if jpower i == 0
+            then ""
+            else "(+" <> showT (jpower i) <> ")"
+      genericName = iname kind
+      name = let fullName = genericName <+> eff <+> pwr
+                 flavour = getFlavour coitem (sflavour state) ik
+             in if identified
+                then fullName
+                else flavourToName flavour
+                     <+> if cheat then fullName else genericName
+  in makePhrase [MU.NWs (jcount i) (MU.Text name)]
+
+-- | How to refer to an item in object position of a sentence.
+objectItem :: Kind.Ops ItemKind -> State -> Item -> Text
+objectItem coitem = objectItemCheat coitem False
+
+-- | Produces a textual description of the terrain and items at an already
+-- explored location. Mute for unknown locations.
+-- The detailed variant is for use in the targeting mode.
+lookAt :: Kind.COps  -- ^ game content
+       -> Bool       -- ^ detailed?
+       -> Bool       -- ^ can be seen right now?
+       -> State      -- ^ game state
+       -> Level      -- ^ current level
+       -> Point      -- ^ location to describe
+       -> Text       -- ^ an extra sentence to print
+       -> Text
+lookAt Kind.COps{coitem, cotile=Kind.Ops{oname}} detailed canSee s lvl loc msg
+  | detailed  =
+    let tile = lvl `rememberAt` loc
+        name = makePhrase [MU.Capitalize (MU.Text $ oname tile)]
+    in name <> "." <+> msg <+> isd
+  | otherwise = msg <+> isd
+ where
+  is  = lvl `rememberAtI` loc
+  prefixSee = if canSee then "You see" else "You remember"
+  isd = case is of
+          []    -> ""
+          [i]   -> prefixSee <+> objectItem coitem s i <> "."
+          [i,j] -> prefixSee <+> objectItem coitem s i <+> "and"
+                             <+> objectItem coitem s j <> "."
+          _ | detailed -> "Objects:"
+          _ -> "Objects here."

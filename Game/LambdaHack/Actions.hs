@@ -25,7 +25,6 @@ import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
 import Game.LambdaHack.Point
 import Game.LambdaHack.Vector
-import Game.LambdaHack.Grammar
 import qualified Game.LambdaHack.Dungeon as Dungeon
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Key as K
@@ -163,7 +162,7 @@ triggerTile dloc = do
   mapM_ f $ TileKind.tfeature $ okind $ lvl `at` dloc
 
 -- | Ask for a direction and trigger a tile, if possible.
-playerTriggerDir :: F.Feature -> Verb -> Action ()
+playerTriggerDir :: F.Feature -> Text -> Action ()
 playerTriggerDir feat verb = do
   let keys = zip K.dirAllMoveKey $ repeat K.NoModifier
   e <- displayChoiceUI ("What to" <+> verb <> "? [movement key") [] keys
@@ -421,15 +420,18 @@ actorAttackActor source target = do
           -- TODO: right now it also describes the victim and weapon;
           -- perhaps, when a weapon is equipped, just say "you hit"
           -- or "you miss" and then "nose dies" or "nose yells in pain".
-          msg = actorVerbActor coactor sm (verb) tm $
-                  if tell
-                  then "with" <+> objectItem coitem state single
-                  else ""
+          objItem = if tell
+                    then "with" <+> objectItem coitem state single
+                    else ""
+          msg = makeClause
+            [ MU.SubjectVerb (nounActor coactor sm) (MU.Text verb)
+            , nounActor coactor tm
+            , MU.Text objItem ]
           msgMiss = makeClause
-            [ MU.SubjectVerb (MU.Text $ objectActor coactor sm)
+            [ MU.SubjectVerb (nounActor coactor sm)
                              (MU.Text $ "try to" <+> verb)
               MU.:> ", but"
-            , MU.SubjectVerb (MU.Text $ objectActor coactor tm)
+            , MU.SubjectVerb (nounActor coactor tm)
                              (MU.Text "block")
             ]
       let performHit block = do
@@ -467,7 +469,9 @@ actorRunActor source target = do
   per <- getPerception
   let visible = sloc `IS.member` totalVisible per ||
                 tloc `IS.member` totalVisible per
-      msg = actorVerbActor coactor sm "displace" tm ""
+      msg = makeClause
+        [ MU.SubjectVerb (nounActor coactor sm) (MU.Text "displace")
+        , nounActor coactor tm ]
   when visible $ msgAdd msg
   diary <- getDiary  -- here diary possibly contains the new msg
   s <- get
