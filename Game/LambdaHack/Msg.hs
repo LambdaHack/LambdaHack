@@ -19,6 +19,7 @@ import qualified Data.IntMap as IM
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
+import NLP.Miniutter.English ((<>), (<+>), showT)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Misc
@@ -36,22 +37,6 @@ type Msg = Text
 instance Binary Text where
    put = put . encodeUtf8
    get = decodeUtf8 `fmap` get
-
--- These two stolen from Eric:
--- | Identical to 'T.append'
-(<>) :: Msg -> Msg -> Msg
-t1 <> t2 = t1 `T.append` t2
-
--- | Separated by space unless one of them is empty (in which case just
---   the non-empty one)
-(<+>) :: Msg -> Msg -> Msg
-t1 <+> t2 | T.null t1 = t2
-          | T.null t2 = t1
-          | otherwise = t1 <> T.singleton ' ' <> t2
-
--- | Show a value in Msg format.
-showT :: Show a => a -> Msg
-showT = T.pack . show
 
 -- | The \"press something to see more\" mark.
 moreMsg :: Msg
