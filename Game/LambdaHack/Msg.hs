@@ -28,8 +28,8 @@ import Game.LambdaHack.PointXY
 -- | Re-exported English phrase creation functions, applied to default
 -- irregular word sets.
 makePhrase, makeClause :: [MU.Part] -> Text
-makePhrase = MU.makePhrase MU.defIrrp
-makeClause = MU.makeClause MU.defIrrp
+makePhrase = MU.makePhrase MU.defIrregular
+makeClause = MU.makeClause MU.defIrregular
 
 -- | The type of a single message.
 type Msg = Text
