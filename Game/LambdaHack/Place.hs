@@ -146,6 +146,7 @@ digPlace Place{..} kr legend =
         FNone  -> M.empty
   in M.union (M.map (legend M.!) $ tilePlace qarea kr) fence
 
+-- TODO: use Text more instead of [Char]?
 -- | Create a place by tiling patterns.
 tilePlace :: Area                           -- ^ the area to fill
           -> PlaceKind                      -- ^ the place kind to construct

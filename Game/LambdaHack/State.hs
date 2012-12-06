@@ -119,11 +119,11 @@ stime State{slid, sdungeon} = ltime $ sdungeon Dungeon.! slid
 defaultDiary :: IO Diary
 defaultDiary = do
   dateTime <- getClockTime
-  let curDate = calendarTimeToString $ toUTCTime dateTime
+  let curDate = MU.Text $ T.pack $ calendarTimeToString $ toUTCTime dateTime
   return Diary
     { sreport = emptyReport
     , shistory = singletonHistory $ singletonReport $
-                   T.pack $ "Player diary started on " ++ curDate ++ "."
+                   makeClause ["Player diary started on", curDate]
     }
 
 -- | Initial game state.

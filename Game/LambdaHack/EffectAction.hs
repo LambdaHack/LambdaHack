@@ -276,7 +276,7 @@ squashActor source target = do
       msg = makeClause
         [ MU.SubjectVerb (partActor coactor sm) verb
         , partActor coactor tm
-        , MU.Text "in a staircase accident" ]
+        , "in a staircase accident" ]
   msgAdd msg
   itemEffectAction 0 source target h2h False
   s <- get
@@ -378,7 +378,7 @@ fleeDungeon = do
     when (not go2) $ abortWith "Here's your chance!"
   else do
     let winMsg = "Congratulations, you won! Here's your loot, worth" <+>
-                 showT total <+> "gold."  -- TODO: use the name of the '$' item instead
+                 showT total <+> "gold."  -- TODO: use the name of the '$' item instead and pluralise correctly
     io <- itemOverlay True True items
     tryIgnore $ displayOverAbort winMsg io
     modify (\ st -> st {squit = Just (True, Victor)})
@@ -415,10 +415,10 @@ discover i = do
   unless alreadyIdentified $ do
     modify (updateDiscoveries (S.insert ik))
     state2 <- get
-    let msg = makeClause [ MU.Text "the"
-                         , MU.SubjectVerb (partItem coitem state i)
-                                          (MU.Text "turn out to be")
-                         , partItem coitem state2 i ]
+    let msg = makeClause
+          [ "the"
+          , MU.SubjectVerb (partItem coitem state i) "turn out to be"
+          , partItem coitem state2 i ]
     msgAdd msg
 
 -- | Make the actor controlled by the player. Switch level, if needed.
@@ -444,7 +444,7 @@ selectPlayer actor = do
       -- Don't continue an old run, if any.
       stopRunning
       -- Announce.
-      msgAdd $ makeClause [partActor coactor pbody, MU.Text "selected"]
+      msgAdd $ makeClause [partActor coactor pbody, "selected"]
       msgAdd $ lookAt cops False True state lvl (bloc pbody) ""
       return True
 
@@ -555,7 +555,7 @@ gameOver showEndingScreens = do
                 | otherwise =
           "Dead heroes make better legends."
         loseMsg = failMsg <+> "You left" <+>
-                  showT total <+> "gold and some junk."  -- TODO: use the name of the '$' item instead
+                  showT total <+> "gold and some junk."  -- TODO: use the name of the '$' item instead and pluralise correctly
     if null items
       then modify (\ st -> st {squit = Just (True, Killed slid)})
       else do
@@ -572,7 +572,7 @@ itemOverlay sorted cheat is = do
   lysize <- gets (lysize . slevel)
   let items | sorted = L.sortBy (cmpLetterMaybe `on` jletter) is
             | otherwise = is
-      pr i = makePhrase [ MU.Text $ letterLabel (jletter i)
+      pr i = makePhrase [ letterLabel (jletter i)
                         , MU.NWs (jcount i) $ partItemCheat cheat coitem s i ]
              <> " "
   return $ splitOverlay lysize $ L.map pr items
@@ -602,12 +602,12 @@ doLook = do
             | actorReachesLoc pl loc per (Just pl) = ""
             | otherwise = " (not reachable)"  -- by hero
         mode = case target of
-                 TEnemy _ _ -> "[targeting monster" <> vis <> "] "
-                 TLoc _     -> "[targeting location" <> vis <> "] "
-                 TPath _    -> "[targeting path" <> vis <> "] "
-                 TCursor    -> "[targeting current" <> vis <> "] "
+                 TEnemy _ _ -> "[targeting monster" <> vis <> "]"
+                 TLoc _     -> "[targeting location" <> vis <> "]"
+                 TPath _    -> "[targeting path" <> vis <> "]"
+                 TCursor    -> "[targeting current" <> vis <> "]"
         -- Show general info about current loc.
-        lookMsg = mode <> lookAt cops True canSee state lvl loc monsterMsg
+        lookMsg = mode <+> lookAt cops True canSee state lvl loc monsterMsg
         -- Check if there's something lying around at current loc.
         is = lvl `rememberAtI` loc
     io <- itemOverlay False False is

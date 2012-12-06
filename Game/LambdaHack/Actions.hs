@@ -165,7 +165,7 @@ triggerTile dloc = do
 playerTriggerDir :: F.Feature -> MU.Part -> Action ()
 playerTriggerDir feat verb = do
   let keys = zip K.dirAllMoveKey $ repeat K.NoModifier
-      prompt = makePhrase [MU.Text "What to", verb MU.:> "? [movement key"]
+      prompt = makePhrase ["What to", verb MU.:> "? [movement key"]
   e <- displayChoiceUI prompt [] keys
   lxsize <- gets (lxsize . slevel)
   K.handleDir lxsize e (playerBumpDir feat) (neverMind True)
@@ -424,12 +424,12 @@ actorAttackActor source target = do
             [ MU.SubjectVerb (partActor coactor sm) verb
             , partActor coactor tm ]
             ++ if tell
-               then [MU.Text "with", partItem coitem state stack]
+               then ["with", partItem coitem state stack]
                else []
           msgMiss = makeClause
-            [ MU.SubjectVerb (partActor coactor sm) (MU.Text "try to")
+            [ MU.SubjectVerb (partActor coactor sm) "try to"
             , verb MU.:> ", but"
-            , MU.SubjectVerb (partActor coactor tm) (MU.Text "block")
+            , MU.SubjectVerb (partActor coactor tm) "block"
             ]
       let performHit block = do
             when (svisible || tvisible) $ msgAdd msg
@@ -467,7 +467,7 @@ actorRunActor source target = do
   let visible = sloc `IS.member` totalVisible per ||
                 tloc `IS.member` totalVisible per
       msg = makeClause
-        [ MU.SubjectVerb (partActor coactor sm) (MU.Text "displace")
+        [ MU.SubjectVerb (partActor coactor sm) "displace"
         , partActor coactor tm ]
   when visible $ msgAdd msg
   diary <- getDiary  -- here diary possibly contains the new msg
@@ -592,7 +592,7 @@ displayMainMenu = do
                  else (bs, T.pack line)
         in snd . L.mapAccumL over bindings
       mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule
-      menuOverlay =
+      menuOverlay =  -- TODO: switch to Text and use T.justifyLeft
         overwrite $ pasteVersion $ map T.unpack $ stripFrame $ mainMenuArt
   case menuOverlay of
     [] -> assert `failure` "empty Main Menu overlay"

@@ -45,12 +45,12 @@ inventory = do
   items <- gets getPlayerItem
   if L.null items
     then abortWith $ makeClause
-      [ MU.SubjectVerb (partActor coactor pbody) (MU.Text "be")
-      , MU.Text "not carrying anything" ]
+      [ MU.SubjectVerb (partActor coactor pbody) "be"
+      , "not carrying anything" ]
     else do
       io <- itemOverlay True False items
       let blurb = makePhrase [MU.Capitalize $
-            MU.SubjectVerb (partActor coactor pbody) (MU.Text "be carrying:")]
+            MU.SubjectVerb (partActor coactor pbody) "be carrying:"]
       displayOverlays blurb "" io
 
 -- | Let the player choose any item with a given group name.
@@ -92,7 +92,7 @@ playerApplyGroupItem verb object syms = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getCOps
   is   <- gets getPlayerItem
   item <- getGroupItem is object syms
-            (makePhrase [MU.Text "What to", verb MU.:> "?"]) "in inventory"
+            (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
   pl   <- gets splayer
   applyGroupItem pl (iverbApply $ okind $ jkind item) item
 
@@ -124,7 +124,7 @@ projectGroupItem source tloc _verb item = do
       -- The projectile is seen one tile from the actor, giving a hint
       -- about the aim and letting the target evade.
       msg = makeClause
-        [ MU.SubjectVerb (partActor coactor subject) (MU.Text "aim")
+        [ MU.SubjectVerb (partActor coactor subject) "aim"
         , partItemNWs coitem state consumed ]
       -- TODO: AI should choose the best eps.
       eps = if source == pl then ceps else 0
@@ -186,7 +186,7 @@ playerProjectGI verb object syms = do
       Kind.COps{coitem=Kind.Ops{okind}} <- getCOps
       is   <- gets getPlayerItem
       item <- getGroupItem is object syms
-                (makePhrase [MU.Text "What to", verb MU.:> "?"]) "in inventory"
+                (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
       targeting <- gets (ctargeting . scursor)
       when (targeting == TgtAuto) $ endTargeting True
       projectGroupItem pl loc (iverbProject $ okind $ jkind item) item
@@ -310,12 +310,12 @@ endTargetingMsg = do
                     TEnemy a _ll ->
                       if memActor a state
                       then partActor coactor $ getActor a state
-                      else MU.Text "a fear of the past"
+                      else "a fear of the past"
                     TLoc loc -> MU.Text $ "location" <+> showPoint lxsize loc
-                    TPath _ -> MU.Text "a path"
-                    TCursor  -> MU.Text "current cursor position continuously"
+                    TPath _ -> "a path"
+                    TCursor  -> "current cursor position continuously"
   msgAdd $ makeClause
-      [MU.SubjectVerb (partActor coactor pbody) (MU.Text "target"), targetMsg]
+      [MU.SubjectVerb (partActor coactor pbody) "target", targetMsg]
 
 -- | Cancel something, e.g., targeting mode, resetting the cursor
 -- to the position of the player. Chosen target is not invalidated.
@@ -353,7 +353,7 @@ dropItem = do
   let item = stack { jcount = 1 }
   removeOnlyFromInventory pl item (bloc pbody)
   msgAdd $ makeClause
-    [ MU.SubjectVerb (partActor coactor pbody) (MU.Text "drop")
+    [ MU.SubjectVerb (partActor coactor pbody) "drop"
     , partItemNWs coitem state item ]
   modify (updateLevel (dropItemsAt [item] ploc))
 
@@ -414,12 +414,11 @@ actorPickupItem actor = do
           let (ni, nitems) = joinItem (i { jletter = Just l }) bitems
           -- msg depends on who picks up and if a hero can perceive it
           if isPlayer
-            then msgAdd (letterLabel (jletter ni)
-                         <> makeClause [partItemNWs coitem state ni])
+            then msgAdd $ makePhrase [ letterLabel (jletter ni)
+                                     , partItemNWs coitem state ni ]
             else when perceived $
                    msgAdd $ makeClause
-                     [ MU.SubjectVerb (partActor coactor body)
-                                      (MU.Text "pick up")
+                     [ MU.SubjectVerb (partActor coactor body) "pick up"
                      , partItemNWs coitem state i ]
           removeFromLoc i loc
             >>= assert `trueM` (i, is, loc, "item is stuck")
@@ -453,9 +452,9 @@ allObjectsName :: Text
 allObjectsName = "Objects"
 
 -- | Let the player choose any item from a list of items.
-getAnyItem :: Text  -- ^ prompt
+getAnyItem :: Text    -- ^ prompt
            -> [Item]  -- ^ all items in question
-           -> Text  -- ^ how to refer to the collection of items
+           -> Text    -- ^ how to refer to the collection of items
            -> Action Item
 getAnyItem prompt = getItem prompt (const True) allObjectsName
 
@@ -463,11 +462,11 @@ data ItemDialogState = INone | ISuitable | IAll deriving Eq
 
 -- | Let the player choose a single, preferably suitable,
 -- item from a list of items.
-getItem :: Text               -- ^ prompt message
-        -> (Item -> Bool)       -- ^ which items to consider suitable
-        -> Text               -- ^ how to describe suitable items
-        -> [Item]               -- ^ all items in question
-        -> Text               -- ^ how to refer to the collection of items
+getItem :: Text            -- ^ prompt message
+        -> (Item -> Bool)  -- ^ which items to consider suitable
+        -> Text            -- ^ how to describe suitable items
+        -> [Item]          -- ^ all items in question
+        -> Text            -- ^ how to refer to the collection of items
         -> Action Item
 getItem prompt p ptext is0 isn = do
   lvl  <- gets slevel
@@ -502,12 +501,12 @@ getItem prompt p ptext is0 isn = do
         perform INone
       perform itemDialogState = do
         let (ims, imsOver, msg) = case itemDialogState of
-              INone     -> (isp, [], prompt <> " ")
-              ISuitable -> (isp, isp, ptext <+> isn <> ". ")
-              IAll      -> (is0, is0, allObjectsName <+> isn <> ". ")
+              INone     -> (isp, [], prompt)
+              ISuitable -> (isp, isp, ptext <+> isn <> ".")
+              IAll      -> (is0, is0, allObjectsName <+> isn <> ".")
         io <- itemOverlay True False imsOver
         (command, modifier) <-
-          displayChoiceUI (msg <> choice ims) io (keys ims)
+          displayChoiceUI (msg <+> choice ims) io (keys ims)
         assert (modifier == K.NoModifier) $
           case command of
             K.Char '?' -> case itemDialogState of

@@ -204,7 +204,7 @@ computeReachable Kind.COps{cotile, coactor=Kind.Ops{okind}}
             "shadow"     -> Shadow
             "permissive" -> Permissive
             "digital"    -> Digital radius
-            _            -> assert `failure` "Unknown FOV mode: " ++ show mode
+            _            -> assert `failure` "Unknown FOV mode:" <+> showT mode
       ploc = bloc actor
   in PerceptionReachable $
        IS.insert ploc $ IS.fromList $ fullscan cotile (fovMode actor) ploc lvl

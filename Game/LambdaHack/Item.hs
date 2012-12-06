@@ -30,6 +30,7 @@ import Data.Ord
 import Control.Monad
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Random
@@ -183,9 +184,9 @@ letterRange ls =
                | succLetter c d = T.pack $ [c, d]
                | otherwise      = T.pack $ [c, '-', d]
 
-letterLabel :: Maybe Char -> Text
-letterLabel Nothing  = T.pack "    "
-letterLabel (Just c) = T.pack $ c : " - "
+letterLabel :: Maybe Char -> MU.Part
+letterLabel Nothing  = MU.Text $ T.pack "   "
+letterLabel (Just c) = MU.Text $ T.pack $ c : " -"
 
 -- | Adds an item to a list of items, joining equal items.
 -- Also returns the joined item.
