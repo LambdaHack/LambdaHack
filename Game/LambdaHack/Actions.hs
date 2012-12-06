@@ -415,29 +415,27 @@ actorAttackActor source target = do
                           iverbApply $ okind $ h2hKind)  -- hand to hand combat
               Just w  -> (w, True, 0,
                           iverbApply $ okind $ jkind w)  -- weapon
-          single = stack { jcount = 1 }
           -- The msg describes the source part of the action.
           -- TODO: right now it also describes the victim and weapon;
           -- perhaps, when a weapon is equipped, just say "you hit"
           -- or "you miss" and then "nose dies" or "nose yells in pain".
-          objItem = if tell
-                    then "with" <+> objectItem coitem state single
-                    else ""
-          msg = makeClause
-            [ MU.SubjectVerb (nounActor coactor sm) (MU.Text verb)
-            , nounActor coactor tm
-            , MU.Text objItem ]
+          msg = makeClause $
+            [ MU.SubjectVerb (partActor coactor sm) (MU.Text verb)
+            , partActor coactor tm ]
+            ++ if tell
+               then [MU.Text "with", partItem coitem state stack]
+               else []
           msgMiss = makeClause
-            [ MU.SubjectVerb (nounActor coactor sm)
+            [ MU.SubjectVerb (partActor coactor sm)
                              (MU.Text $ "try to" <+> verb)
               MU.:> ", but"
-            , MU.SubjectVerb (nounActor coactor tm)
+            , MU.SubjectVerb (partActor coactor tm)
                              (MU.Text "block")
             ]
       let performHit block = do
             when (svisible || tvisible) $ msgAdd msg
             -- Msgs inside itemEffectAction describe the target part.
-            itemEffectAction verbosity source target single block
+            itemEffectAction verbosity source target stack block
       -- Projectiles can't be blocked, can be sidestepped.
       if braced tm time && not (bproj sm)
         then do
@@ -470,8 +468,8 @@ actorRunActor source target = do
   let visible = sloc `IS.member` totalVisible per ||
                 tloc `IS.member` totalVisible per
       msg = makeClause
-        [ MU.SubjectVerb (nounActor coactor sm) (MU.Text "displace")
-        , nounActor coactor tm ]
+        [ MU.SubjectVerb (partActor coactor sm) (MU.Text "displace")
+        , partActor coactor tm ]
   when visible $ msgAdd msg
   diary <- getDiary  -- here diary possibly contains the new msg
   s <- get

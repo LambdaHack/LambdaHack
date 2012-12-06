@@ -15,7 +15,6 @@ import qualified Data.Set as S
 import qualified Data.IntSet as IS
 import Data.Monoid (mempty)
 import Data.Text (Text)
-import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Utils.Assert
@@ -47,7 +46,7 @@ default (Text)
 -- | Sentences such as \"Dog barks loudly.\"
 actorVerb :: Kind.Ops ActorKind -> Actor -> Text -> Text
 actorVerb coactor a v =
-  makeClause [MU.SubjectVerb (nounActor coactor a) (MU.Text v)]
+  makeClause [MU.SubjectVerb (partActor coactor a) (MU.Text v)]
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: Rnd a -> Action a
@@ -275,8 +274,8 @@ squashActor source target = do
       h2h = Item h2hKind power Nothing 1
       verb = iverbApply $ okind h2hKind
       msg = makeClause
-        [ MU.SubjectVerb (nounActor coactor sm) (MU.Text verb)
-        , nounActor coactor tm
+        [ MU.SubjectVerb (partActor coactor sm) (MU.Text verb)
+        , partActor coactor tm
         , MU.Text "in a staircase accident" ]
   msgAdd msg
   itemEffectAction 0 source target h2h False
@@ -410,15 +409,17 @@ discover i = do
   Kind.COps{coitem=coitem@Kind.Ops{okind}} <- getCOps
   state <- get
   let ik = jkind i
-      obj = T.unwords $ tail $ T.words $ objectItem coitem state i
-      msg = "The" <+> obj <+> "turns out to be "
       kind = okind ik
       alreadyIdentified = L.length (iflavour kind) == 1
                           || ik `S.member` sdisco state
   unless alreadyIdentified $ do
     modify (updateDiscoveries (S.insert ik))
     state2 <- get
-    msgAdd $ msg <> objectItem coitem state2 i <> "."
+    let msg = makeClause [ MU.Text "the"
+                         , MU.SubjectVerb (partItem coitem state i)
+                                          (MU.Text "turn out to be")
+                         , partItem coitem state2 i ]
+    msgAdd msg
 
 -- | Make the actor controlled by the player. Switch level, if needed.
 -- False, if nothing to do. Should only be invoked as a direct result
@@ -443,7 +444,7 @@ selectPlayer actor = do
       -- Don't continue an old run, if any.
       stopRunning
       -- Announce.
-      msgAdd $ makeClause [nounActor coactor pbody, MU.Text "selected"]
+      msgAdd $ makeClause [partActor coactor pbody, MU.Text "selected"]
       msgAdd $ lookAt cops False True state lvl (bloc pbody) ""
       return True
 
@@ -567,14 +568,14 @@ gameOver showEndingScreens = do
 itemOverlay ::Bool -> Bool -> [Item] -> Action [Overlay]
 itemOverlay sorted cheat is = do
   Kind.COps{coitem} <- getCOps
-  state <- get
+  s <- get
   lysize <- gets (lysize . slevel)
-  let inv = L.map (\ i -> letterLabel (jletter i)
-                          <> objectItemCheat coitem cheat state i <> " ")
-              ((if sorted
-                then L.sortBy (cmpLetterMaybe `on` jletter)
-                else id) is)
-  return $ splitOverlay lysize inv
+  let items | sorted = L.sortBy (cmpLetterMaybe `on` jletter) is
+            | otherwise = is
+      pr i = makePhrase [ MU.Text $ letterLabel (jletter i)
+                        , MU.NWs (jcount i) $ partItemCheat cheat coitem s i ]
+             <> " "
+  return $ splitOverlay lysize $ L.map pr items
 
 stopRunning :: Action ()
 stopRunning = updatePlayerBody (\ p -> p { bdir = Nothing })

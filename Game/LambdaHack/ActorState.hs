@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | Operations on the 'Actor' type that need the 'State' type,
 -- but not the 'Action' type.
 -- TODO: Document an export list after it's rewritten according to #17.
@@ -16,7 +17,8 @@ import qualified Data.IntSet as IS
 import qualified Data.IntMap as IM
 import Data.Maybe
 import qualified Data.Char as Char
-import qualified Data.Text as T
+import Data.Text (Text)
+import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Point
@@ -207,7 +209,8 @@ nearbyFreeLoc cotile start state =
       locs = start : L.nub (concatMap (vicinity lxsize lysize) locs)
       good loc = Tile.hasFeature cotile F.Walkable (lvl `at` loc)
                  && unoccupied (IM.elems lactor) loc
-  in fromMaybe (assert `failure` "too crowded map") $ L.find good locs
+  in fromMaybe (assert `failure` ("too crowded map" :: Text))
+     $ L.find good locs
 
 -- | Calculate loot's worth for heroes on the current level.
 calculateTotal :: Kind.Ops ItemKind -> State -> ([Item], Int)
@@ -275,10 +278,12 @@ addProjectile :: Kind.COps -> Item -> Point -> Kind.Id FactionKind
 addProjectile Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}}
               item loc bfaction path btime state@State{scounter} =
   let ik = okind (jkind item)
-      object = objectItem coitem state item
-      name = T.pack "a flying" <+> T.unwords (tail (T.words object))
       speed = speedFromWeight (iweight ik) (itoThrow ik)
       range = rangeFromSpeed speed
+      adj | range < 3 = "falling"
+          | otherwise = "flying"
+      object = partItem coitem state item
+      name = makePhrase [MU.AW $ MU.Text adj, object]
       dirPath = take range $ displacePath path
       m = Actor
         { bkind   = projectileKindId coactor

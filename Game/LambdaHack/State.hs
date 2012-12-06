@@ -12,7 +12,7 @@ module Game.LambdaHack.State
     -- * Player diary
   , Diary(..), defaultDiary
     -- * Textia; descriptions
-  , lookAt, objectItemCheat, objectItem
+  , lookAt, partItemCheat, partItem, partItemNWs
     -- * Debug flags
   , DebugMode(..), cycleMarkVision, toggleOmniscient
   ) where
@@ -267,11 +267,11 @@ instance Binary Status where
 
 -- TODO: probably move these somewhere
 
--- | How to refer to an item in object position of a sentence.
--- If cheating is allowed, full identity of the object is revealed
--- together with its flavour (e.g. at game over screen).
-objectItemCheat :: Kind.Ops ItemKind -> Bool -> State -> Item -> Text
-objectItemCheat coitem@Kind.Ops{okind} cheat state i =
+-- | The part of speech describing the item.
+-- If cheating is allowed, full identity of the item is revealed
+-- together with its flavour (e.g. at the game over screen).
+partItemCheat :: Bool -> Kind.Ops ItemKind -> State -> Item -> MU.Part
+partItemCheat cheat coitem@Kind.Ops{okind} state i =
   let ik = jkind i
       kind = okind ik
       identified = L.length (iflavour kind) == 1 ||
@@ -287,11 +287,14 @@ objectItemCheat coitem@Kind.Ops{okind} cheat state i =
                 then fullName
                 else flavourToName flavour
                      <+> if cheat then fullName else genericName
-  in makePhrase [MU.NWs (jcount i) (MU.Text name)]
+  in MU.Text name
 
--- | How to refer to an item in object position of a sentence.
-objectItem :: Kind.Ops ItemKind -> State -> Item -> Text
-objectItem coitem = objectItemCheat coitem False
+-- | The part of speech describing the item.
+partItem :: Kind.Ops ItemKind -> State -> Item -> MU.Part
+partItem = partItemCheat False
+
+partItemNWs :: Kind.Ops ItemKind -> State -> Item -> MU.Part
+partItemNWs coitem s i = MU.NWs (jcount i) $ partItem coitem s i
 
 -- | Produces a textual description of the terrain and items at an already
 -- explored location. Mute for unknown locations.
@@ -305,18 +308,14 @@ lookAt :: Kind.COps  -- ^ game content
        -> Text       -- ^ an extra sentence to print
        -> Text
 lookAt Kind.COps{coitem, cotile=Kind.Ops{oname}} detailed canSee s lvl loc msg
-  | detailed  =
+  | detailed =
     let tile = lvl `rememberAt` loc
-        name = makePhrase [MU.Capitalize (MU.Text $ oname tile)]
-    in name <> "." <+> msg <+> isd
+    in makeClause [MU.Text $ oname tile] <+> msg <+> isd
   | otherwise = msg <+> isd
  where
   is  = lvl `rememberAtI` loc
-  prefixSee = if canSee then "You see" else "You remember"
-  isd = case is of
-          []    -> ""
-          [i]   -> prefixSee <+> objectItem coitem s i <> "."
-          [i,j] -> prefixSee <+> objectItem coitem s i <+> "and"
-                             <+> objectItem coitem s j <> "."
-          _ | detailed -> "Objects:"
-          _ -> "Objects here."
+  prefixSee = MU.Text $ if canSee then "you see" else "you remember"
+  isd | detailed       = "Objects:"
+      | length is <= 3 =
+          makeClause [prefixSee, MU.WWandW $ map (partItemNWs coitem s) is]
+      | otherwise      = "Objects here."

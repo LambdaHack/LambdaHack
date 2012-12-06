@@ -3,7 +3,7 @@
 -- involves the 'State' or 'Action' type.
 module Game.LambdaHack.Actor
   ( -- * Actor identifiers and related operations
-    ActorId, findHeroName, monsterGenChance, nounActor
+    ActorId, findHeroName, monsterGenChance, partActor
     -- * The@ Acto@r type
   , Actor(..), template, addHp, timeAddFromSpeed, braced
   , unoccupied, heroKindId, projectileKindId, actorSpeed
@@ -107,9 +107,9 @@ monsterGenChance :: Int -> Int -> Rnd Bool
 monsterGenChance depth numMonsters =
   chance $ 1%(fromIntegral (30 * (numMonsters - depth)) `max` 5)
 
--- | How to refer to an actor in object position of a sentence.
-nounActor :: Kind.Ops ActorKind -> Actor -> MU.Part
-nounActor Kind.Ops{oname} a = MU.Text $ fromMaybe (oname $ bkind a) (bname a)
+-- | The part of speech describing the actor.
+partActor :: Kind.Ops ActorKind -> Actor -> MU.Part
+partActor Kind.Ops{oname} a = MU.Text $ fromMaybe (oname $ bkind a) (bname a)
 
 -- Actor operations
 
