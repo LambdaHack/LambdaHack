@@ -162,10 +162,11 @@ triggerTile dloc = do
   mapM_ f $ TileKind.tfeature $ okind $ lvl `at` dloc
 
 -- | Ask for a direction and trigger a tile, if possible.
-playerTriggerDir :: F.Feature -> Text -> Action ()
+playerTriggerDir :: F.Feature -> MU.Part -> Action ()
 playerTriggerDir feat verb = do
   let keys = zip K.dirAllMoveKey $ repeat K.NoModifier
-  e <- displayChoiceUI ("What to" <+> verb <> "? [movement key") [] keys
+      prompt = makePhrase [MU.Text "What to", verb MU.:> "? [movement key"]
+  e <- displayChoiceUI prompt [] keys
   lxsize <- gets (lxsize . slevel)
   K.handleDir lxsize e (playerBumpDir feat) (neverMind True)
 
@@ -420,17 +421,15 @@ actorAttackActor source target = do
           -- perhaps, when a weapon is equipped, just say "you hit"
           -- or "you miss" and then "nose dies" or "nose yells in pain".
           msg = makeClause $
-            [ MU.SubjectVerb (partActor coactor sm) (MU.Text verb)
+            [ MU.SubjectVerb (partActor coactor sm) verb
             , partActor coactor tm ]
             ++ if tell
                then [MU.Text "with", partItem coitem state stack]
                else []
           msgMiss = makeClause
-            [ MU.SubjectVerb (partActor coactor sm)
-                             (MU.Text $ "try to" <+> verb)
-              MU.:> ", but"
-            , MU.SubjectVerb (partActor coactor tm)
-                             (MU.Text "block")
+            [ MU.SubjectVerb (partActor coactor sm) (MU.Text "try to")
+            , verb MU.:> ", but"
+            , MU.SubjectVerb (partActor coactor tm) (MU.Text "block")
             ]
       let performHit block = do
             when (svisible || tvisible) $ msgAdd msg

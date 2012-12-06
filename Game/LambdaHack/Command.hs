@@ -15,10 +15,10 @@ import Game.LambdaHack.Msg
 -- are created outside this module via the Read class (from config file) .
 data Cmd =
     -- These take time.
-    Apply       { verb :: Text, object :: Text, syms :: [Char] }
-  | Project     { verb :: Text, object :: Text, syms :: [Char] }
-  | TriggerDir  { verb :: Text, object :: Text, feature :: F.Feature }
-  | TriggerTile { verb :: Text, object :: Text, feature :: F.Feature }
+    Apply       { verb :: MU.Part, object :: MU.Part, syms :: [Char] }
+  | Project     { verb :: MU.Part, object :: MU.Part, syms :: [Char] }
+  | TriggerDir  { verb :: MU.Part, object :: MU.Part, feature :: F.Feature }
+  | TriggerTile { verb :: MU.Part, object :: MU.Part, feature :: F.Feature }
   | Pickup
   | Drop
   | Wait
@@ -76,10 +76,10 @@ timedCmd cmd = case cmd of
 -- | Description of player commands.
 cmdDescription :: Cmd -> Text
 cmdDescription cmd = case cmd of
-  Apply{..}       -> makePhrase [MU.Text verb, MU.AW (MU.Text object)]
-  Project{..}     -> makePhrase [MU.Text verb, MU.AW (MU.Text object)]
-  TriggerDir{..}  -> makePhrase [MU.Text verb, MU.AW (MU.Text object)]
-  TriggerTile{..} -> makePhrase [MU.Text verb, MU.AW (MU.Text object)]
+  Apply{..}       -> makePhrase [verb, MU.AW object]
+  Project{..}     -> makePhrase [verb, MU.AW object]
+  TriggerDir{..}  -> makePhrase [verb, MU.AW object]
+  TriggerTile{..} -> makePhrase [verb, MU.AW object]
   Pickup    -> "get an object"
   Drop      -> "drop an object"
   Wait      -> ""

@@ -56,20 +56,20 @@ inventory = do
 -- | Let the player choose any item with a given group name.
 -- Note that this does not guarantee the chosen item belongs to the group,
 -- as the player can override the choice.
-getGroupItem :: [Item]  -- ^ all objects in question
-             -> Text    -- ^ name of the group
-             -> [Char]  -- ^ accepted item symbols
-             -> Text  -- ^ prompt
-             -> Text  -- ^ how to refer to the collection of objects
+getGroupItem :: [Item]   -- ^ all objects in question
+             -> MU.Part  -- ^ name of the group
+             -> [Char]   -- ^ accepted item symbols
+             -> Text     -- ^ prompt
+             -> Text     -- ^ how to refer to the collection of objects
              -> Action Item
 getGroupItem is object syms prompt packName = do
   Kind.COps{coitem=Kind.Ops{osymbol}} <- getCOps
   let choice i = osymbol (jkind i) `elem` syms
-      header = makePhrase [MU.Capitalize (MU.Ws (MU.Text object))]
+      header = makePhrase [MU.Capitalize (MU.Ws object)]
   getItem prompt choice header is packName
 
 applyGroupItem :: ActorId  -- ^ actor applying the item (is on current level)
-               -> Text     -- ^ how the applying is called
+               -> MU.Part  -- ^ how the applying is called
                -> Item     -- ^ the item to be applied
                -> Action ()
 applyGroupItem actor verb item = do
@@ -80,25 +80,25 @@ applyGroupItem actor verb item = do
   -- only one item consumed, even if several in inventory
   let consumed = item { jcount = 1 }
       msg = makeClause
-        [ MU.SubjectVerb (partActor coactor body) (MU.Text verb)
+        [ MU.SubjectVerb (partActor coactor body) verb
         , partItemNWs coitem state consumed ]
       loc = bloc body
   removeFromInventory actor consumed loc
   when (loc `IS.member` totalVisible per) $ msgAdd msg
   itemEffectAction 5 actor actor consumed False
 
-playerApplyGroupItem :: Text -> Text -> [Char] -> Action ()
+playerApplyGroupItem :: MU.Part -> MU.Part -> [Char] -> Action ()
 playerApplyGroupItem verb object syms = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getCOps
   is   <- gets getPlayerItem
   item <- getGroupItem is object syms
-            ("What to" <+> verb <> "?") "in inventory"
+            (makePhrase [MU.Text "What to", verb MU.:> "?"]) "in inventory"
   pl   <- gets splayer
   applyGroupItem pl (iverbApply $ okind $ jkind item) item
 
 projectGroupItem :: ActorId  -- ^ actor projecting the item (is on current lvl)
                  -> Point    -- ^ target location of the projectile
-                 -> Text     -- ^ how the projecting is called
+                 -> MU.Part  -- ^ how the projecting is called
                  -> Item     -- ^ the item to be projected
                  -> Action ()
 projectGroupItem source tloc _verb item = do
@@ -157,7 +157,7 @@ projectGroupItem source tloc _verb item = do
           abortWith "blocked"
       when (svisible || projVis) $ msgAdd msg
 
-playerProjectGroupItem :: Text -> Text -> [Char] -> ActionFrame ()
+playerProjectGroupItem :: MU.Part -> MU.Part -> [Char] -> ActionFrame ()
 playerProjectGroupItem verb object syms = do
   ms     <- gets hostileList
   lxsize <- gets (lxsize . slevel)
@@ -167,7 +167,7 @@ playerProjectGroupItem verb object syms = do
     then abortWith "You can't aim in melee."
     else playerProjectGI verb object syms
 
-playerProjectGI :: Text -> Text -> [Char] -> ActionFrame ()
+playerProjectGI :: MU.Part -> MU.Part -> [Char] -> ActionFrame ()
 playerProjectGI verb object syms = do
   state <- get
   pl    <- gets splayer
@@ -186,7 +186,7 @@ playerProjectGI verb object syms = do
       Kind.COps{coitem=Kind.Ops{okind}} <- getCOps
       is   <- gets getPlayerItem
       item <- getGroupItem is object syms
-                ("What to" <+> verb <> "?") "in inventory"
+                (makePhrase [MU.Text "What to", verb MU.:> "?"]) "in inventory"
       targeting <- gets (ctargeting . scursor)
       when (targeting == TgtAuto) $ endTargeting True
       projectGroupItem pl loc (iverbProject $ okind $ jkind item) item

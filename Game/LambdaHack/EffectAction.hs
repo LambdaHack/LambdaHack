@@ -274,7 +274,7 @@ squashActor source target = do
       h2h = Item h2hKind power Nothing 1
       verb = iverbApply $ okind h2hKind
       msg = makeClause
-        [ MU.SubjectVerb (partActor coactor sm) (MU.Text verb)
+        [ MU.SubjectVerb (partActor coactor sm) verb
         , partActor coactor tm
         , MU.Text "in a staircase accident" ]
   msgAdd msg
