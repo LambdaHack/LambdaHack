@@ -315,7 +315,9 @@ lookAt Kind.COps{coitem, cotile=Kind.Ops{oname}} detailed canSee s lvl loc msg
  where
   is  = lvl `rememberAtI` loc
   prefixSee = MU.Text $ if canSee then "you see" else "you remember"
-  isd | detailed       = "Objects:"
-      | length is <= 3 =
-          makeClause [prefixSee, MU.WWandW $ map (partItemNWs coitem s) is]
-      | otherwise      = "Objects here."
+  isd = case is of
+          [] -> ""
+          _ | length is <= 3 ->
+            makeClause [prefixSee, MU.WWandW $ map (partItemNWs coitem s) is]
+          _ | detailed -> "Objects:"
+          _ -> "Objects here."

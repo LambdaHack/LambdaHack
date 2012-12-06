@@ -52,7 +52,7 @@ padMsg :: X -> Text -> Text
 padMsg w xs =
   let len = T.length xs
   in case compare w len of
-       LT -> T.snoc (T.take w xs) '$'
+       LT -> T.snoc (T.take (w - 1) xs) '$'
        EQ -> xs
        GT -> if T.null xs || T.last xs == ' '
              then xs

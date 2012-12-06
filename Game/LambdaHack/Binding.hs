@@ -67,10 +67,9 @@ keyHelp Binding{kcmd, kmacro, kmajor} =
       , "Press SPACE to clear the messages and see the map again."
       ]
     fmt k h = T.replicate 16 " "
-              <> k <> T.replicate ((15 - T.length k) `max` 1) " "
-              <> h <> T.replicate ((41 - T.length h) `max` 1) " "
-    fmts s  = T.replicate 1  " "
-              <> s <> T.replicate ((71 - T.length s) `max` 1) " "
+              <> T.justifyLeft 15 ' ' k
+              <> T.justifyLeft 41 ' ' h
+    fmts s  = " " <> T.justifyLeft 71 ' ' s
     blank   = fmt "" ""
     mov     = map fmts movBlurb
     major   = map fmts majorBlurb

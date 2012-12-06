@@ -125,7 +125,7 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, ouniqGroup}
         , ldesc = cname
         , lmeta = dmeta
         , lstairs = (su, sd)
-        , ltime = timeAdd timeTurn timeTurn  -- just stepped into the dungeon
+        , ltime = timeTurn
         , lclear
         , lseen = 0
         }

@@ -161,7 +161,7 @@ draw dm cops per s@State{ scursor=Cursor{..}
       widthForDesc = lxsize - T.length stats - T.length lvlN - 3
       status = lvlN <+> T.justifyLeft widthForDesc ' ' ldesc <+> stats
       toWidth :: Int -> Text -> Text
-      toWidth n x = T.take n (x <> T.replicate 1000 (T.singleton ' '))
+      toWidth n x = T.take n (T.justifyLeft n ' ' x)
       fLine y =
         let f l x = let !ac = dis (PointXY (x, y)) in ac : l
         in L.foldl' f [] [lxsize-1,lxsize-2..0]
@@ -169,7 +169,7 @@ draw dm cops per s@State{ scursor=Cursor{..}
         let f l y = let !line = fLine y in line : l
         in L.foldl' f [] [lysize-1,lysize-2..0]
       sfTop = toWidth lxsize $ msgTop
-      sfBottom = toWidth lxsize $ fromMaybe status $ msgBottom
+      sfBottom = toWidth (lxsize - 1) $ fromMaybe status $ msgBottom
   in SingleFrame{..}
 
 -- | Render animations on top of the current screen frame.

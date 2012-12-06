@@ -603,9 +603,10 @@ displayHistory = do
   Diary{shistory} <- getDiary
   time <- gets stime
   lysize <- gets (lysize . slevel)
-  let turn = showT $ time `timeFit` timeTurn
-      msg = "You survived for" <+> turn
-            <+> "half-second turns. Past messages:"
+  let turn = time `timeFit` timeTurn
+      msg = makeClause [ "You survived for"
+                       , MU.NWs turn "half-second turn" ]
+            <+> "Past messages:"
   displayOverlays msg "" $
     splitOverlay lysize $ renderHistory shistory
 
