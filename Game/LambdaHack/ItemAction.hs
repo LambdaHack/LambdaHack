@@ -44,13 +44,13 @@ inventory = do
   pbody <- gets getPlayerBody
   items <- gets getPlayerItem
   if L.null items
-    then abortWith $ makeClause
-      [ MU.SubjectVerb (partActor coactor pbody) "be"
+    then abortWith $ makeSentence
+      [ MU.SubjectVerbSg (partActor coactor pbody) "be"
       , "not carrying anything" ]
     else do
       io <- itemOverlay True False items
       let blurb = makePhrase [MU.Capitalize $
-            MU.SubjectVerb (partActor coactor pbody) "be carrying:"]
+            MU.SubjectVerbSg (partActor coactor pbody) "be carrying:"]
       displayOverlays blurb "" io
 
 -- | Let the player choose any item with a given group name.
@@ -79,8 +79,8 @@ applyGroupItem actor verb item = do
   per   <- getPerception
   -- only one item consumed, even if several in inventory
   let consumed = item { jcount = 1 }
-      msg = makeClause
-        [ MU.SubjectVerb (partActor coactor body) verb
+      msg = makeSentence
+        [ MU.SubjectVerbSg (partActor coactor body) verb
         , partItemNWs coitem state consumed ]
       loc = bloc body
   removeFromInventory actor consumed loc
@@ -123,8 +123,8 @@ projectGroupItem source tloc _verb item = do
       -- When projecting, the first turn is spent aiming.
       -- The projectile is seen one tile from the actor, giving a hint
       -- about the aim and letting the target evade.
-      msg = makeClause
-        [ MU.SubjectVerb (partActor coactor subject) "aim"
+      msg = makeSentence
+        [ MU.SubjectVerbSg (partActor coactor subject) "aim"
         , partItemNWs coitem state consumed ]
       -- TODO: AI should choose the best eps.
       eps = if source == pl then ceps else 0
@@ -314,8 +314,8 @@ endTargetingMsg = do
                     TLoc loc -> MU.Text $ "location" <+> showPoint lxsize loc
                     TPath _ -> "a path"
                     TCursor  -> "current cursor position continuously"
-  msgAdd $ makeClause
-      [MU.SubjectVerb (partActor coactor pbody) "target", targetMsg]
+  msgAdd $ makeSentence
+      [MU.SubjectVerbSg (partActor coactor pbody) "target", targetMsg]
 
 -- | Cancel something, e.g., targeting mode, resetting the cursor
 -- to the position of the player. Chosen target is not invalidated.
@@ -352,8 +352,8 @@ dropItem = do
   stack <- getAnyItem "What to drop?" ims "in inventory"
   let item = stack { jcount = 1 }
   removeOnlyFromInventory pl item (bloc pbody)
-  msgAdd $ makeClause
-    [ MU.SubjectVerb (partActor coactor pbody) "drop"
+  msgAdd $ makeSentence
+    [ MU.SubjectVerbSg (partActor coactor pbody) "drop"
     , partItemNWs coitem state item ]
   modify (updateLevel (dropItemsAt [item] ploc))
 
@@ -417,8 +417,8 @@ actorPickupItem actor = do
             then msgAdd $ makePhrase [ letterLabel (jletter ni)
                                      , partItemNWs coitem state ni ]
             else when perceived $
-                   msgAdd $ makeClause
-                     [ MU.SubjectVerb (partActor coactor body) "pick up"
+                   msgAdd $ makeSentence
+                     [ MU.SubjectVerbSg (partActor coactor body) "pick up"
                      , partItemNWs coitem state i ]
           removeFromLoc i loc
             >>= assert `trueM` (i, is, loc, "item is stuck")

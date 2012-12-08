@@ -46,7 +46,7 @@ default (Text)
 -- | Sentences such as \"Dog barks loudly.\"
 actorVerb :: Kind.Ops ActorKind -> Actor -> Text -> Text
 actorVerb coactor a v =
-  makeClause [MU.SubjectVerb (partActor coactor a) (MU.Text v)]
+  makeSentence [MU.SubjectVerbSg (partActor coactor a) (MU.Text v)]
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: Rnd a -> Action a
@@ -273,8 +273,8 @@ squashActor source target = do
       power = maxDeep $ ipower $ okind h2hKind
       h2h = Item h2hKind power Nothing 1
       verb = iverbApply $ okind h2hKind
-      msg = makeClause
-        [ MU.SubjectVerb (partActor coactor sm) verb
+      msg = makeSentence
+        [ MU.SubjectVerbSg (partActor coactor sm) verb
         , partActor coactor tm
         , "in a staircase accident" ]
   msgAdd msg
@@ -415,9 +415,9 @@ discover i = do
   unless alreadyIdentified $ do
     modify (updateDiscoveries (S.insert ik))
     state2 <- get
-    let msg = makeClause
+    let msg = makeSentence
           [ "the"
-          , MU.SubjectVerb (partItem coitem state i) "turn out to be"
+          , MU.SubjectVerbSg (partItem coitem state i) "turn out to be"
           , partItem coitem state2 i ]
     msgAdd msg
 
@@ -444,7 +444,7 @@ selectPlayer actor = do
       -- Don't continue an old run, if any.
       stopRunning
       -- Announce.
-      msgAdd $ makeClause [partActor coactor pbody, "selected"]
+      msgAdd $ makeSentence [partActor coactor pbody, "selected"]
       msgAdd $ lookAt cops False True state lvl (bloc pbody) ""
       return True
 

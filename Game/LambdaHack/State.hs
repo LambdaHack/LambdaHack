@@ -123,7 +123,7 @@ defaultDiary = do
   return Diary
     { sreport = emptyReport
     , shistory = singletonHistory $ singletonReport $
-                   makeClause ["Player diary started on", curDate]
+                   makeSentence ["Player diary started on", curDate]
     }
 
 -- | Initial game state.
@@ -310,7 +310,7 @@ lookAt :: Kind.COps  -- ^ game content
 lookAt Kind.COps{coitem, cotile=Kind.Ops{oname}} detailed canSee s lvl loc msg
   | detailed =
     let tile = lvl `rememberAt` loc
-    in makeClause [MU.Text $ oname tile] <+> msg <+> isd
+    in makeSentence [MU.Text $ oname tile] <+> msg <+> isd
   | otherwise = msg <+> isd
  where
   is  = lvl `rememberAtI` loc
@@ -318,6 +318,6 @@ lookAt Kind.COps{coitem, cotile=Kind.Ops{oname}} detailed canSee s lvl loc msg
   isd = case is of
           [] -> ""
           _ | length is <= 3 ->
-            makeClause [prefixSee, MU.WWandW $ map (partItemNWs coitem s) is]
+            makeSentence [prefixSee, MU.WWandW $ map (partItemNWs coitem s) is]
           _ | detailed -> "Objects:"
           _ -> "Objects here."

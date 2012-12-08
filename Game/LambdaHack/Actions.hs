@@ -420,16 +420,16 @@ actorAttackActor source target = do
           -- TODO: right now it also describes the victim and weapon;
           -- perhaps, when a weapon is equipped, just say "you hit"
           -- or "you miss" and then "nose dies" or "nose yells in pain".
-          msg = makeClause $
-            [ MU.SubjectVerb (partActor coactor sm) verb
+          msg = makeSentence $
+            [ MU.SubjectVerbSg (partActor coactor sm) verb
             , partActor coactor tm ]
             ++ if tell
                then ["with", partItem coitem state stack]
                else []
-          msgMiss = makeClause
-            [ MU.SubjectVerb (partActor coactor sm) "try to"
+          msgMiss = makeSentence
+            [ MU.SubjectVerbSg (partActor coactor sm) "try to"
             , verb MU.:> ", but"
-            , MU.SubjectVerb (partActor coactor tm) "block"
+            , MU.SubjectVerbSg (partActor coactor tm) "block"
             ]
       let performHit block = do
             when (svisible || tvisible) $ msgAdd msg
@@ -466,8 +466,8 @@ actorRunActor source target = do
   per <- getPerception
   let visible = sloc `IS.member` totalVisible per ||
                 tloc `IS.member` totalVisible per
-      msg = makeClause
-        [ MU.SubjectVerb (partActor coactor sm) "displace"
+      msg = makeSentence
+        [ MU.SubjectVerbSg (partActor coactor sm) "displace"
         , partActor coactor tm ]
   when visible $ msgAdd msg
   diary <- getDiary  -- here diary possibly contains the new msg
@@ -604,7 +604,7 @@ displayHistory = do
   time <- gets stime
   lysize <- gets (lysize . slevel)
   let turn = time `timeFit` timeTurn
-      msg = makeClause [ "You survived for"
+      msg = makeSentence [ "You survived for"
                        , MU.NWs turn "half-second turn" ]
             <+> "Past messages:"
   displayOverlays msg "" $

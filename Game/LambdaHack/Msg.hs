@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | Game messages displayed on top of the screen for the player to read.
 module Game.LambdaHack.Msg
-  ( makePhrase, makeClause
+  ( makePhrase, makeSentence
   , Msg, (<>), (<+>), showT, moreMsg, yesnoMsg, padMsg
   , Report, emptyReport, nullReport, singletonReport, addMsg
   , splitReport, renderReport
@@ -27,9 +27,9 @@ import Game.LambdaHack.PointXY
 
 -- | Re-exported English phrase creation functions, applied to default
 -- irregular word sets.
-makePhrase, makeClause :: [MU.Part] -> Text
+makePhrase, makeSentence :: [MU.Part] -> Text
 makePhrase = MU.makePhrase MU.defIrregular
-makeClause = MU.makeClause MU.defIrregular
+makeSentence = MU.makeSentence MU.defIrregular
 
 -- | The type of a single message.
 type Msg = Text
