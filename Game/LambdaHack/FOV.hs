@@ -2,7 +2,7 @@
 -- See <https://github.com/kosmikus/LambdaHack/wiki/Fov-and-los>
 -- for discussion.
 module Game.LambdaHack.FOV
-  ( FovMode(..), fullscan
+  ( fullscan
   ) where
 
 import qualified Data.List as L
@@ -18,16 +18,7 @@ import Game.LambdaHack.Level
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Tile as Tile
-
--- TODO: should Blind really be a FovMode, or a modifier? Let's decide
--- when other similar modifiers are added.
--- | Field Of View scanning mode.
-data FovMode =
-    Shadow       -- ^ restrictive shadow casting
-  | Permissive   -- ^ permissive FOV
-  | Digital Int  -- ^ digital FOV with the given radius
-  | Blind        -- ^ only feeling out adjacent tiles by touch
-  deriving Show
+import Game.LambdaHack.Config
 
 -- | Perform a full scan for a given location. Returns the locations
 -- that are currently in the field of view. The Field of View

@@ -15,10 +15,9 @@
 ; LambdaCave_10: caveNoise
 
 ; [engine]
-; fovMode: digital
-; ;fovMode: permissive
-; ;fovMode: shadow
-; fovRadius: 12
+; fovMode: Digital 12
+; ;fovMode: Permissive
+; ;fovMode: Shadow
 ; ;startingRandomGenerator: 42
 ; ;dungeonRandomGenerator: 42
 ; smellTimeout: 100

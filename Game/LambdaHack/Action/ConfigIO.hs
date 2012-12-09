@@ -125,8 +125,7 @@ parseConfigRules cp =
   let configSelfString = let CP conf = cp in CF.to_string conf
       configCaves = map (\(n, t) -> (T.pack n, T.pack t)) $ getItems cp "caves"
       configDepth = get cp "dungeon" "depth"
-      configFovMode = T.pack $ get cp "engine" "fovMode"
-      configFovRadius = get cp "engine" "fovRadius"
+      configFovMode = get cp "engine" "fovMode"
       configSmellTimeout = get cp "engine" "smellTimeout"
       configBaseHP = get cp "heroes" "baseHP"
       configExtraHeroes = get cp "heroes" "extraHeroes"

@@ -19,7 +19,6 @@ module Game.LambdaHack.State
 
 import qualified Data.Set as S
 import Data.Binary
-import Game.LambdaHack.Config
 import qualified System.Random as R
 import System.Time
 import Data.Text (Text)
@@ -33,13 +32,13 @@ import Game.LambdaHack.Level
 import qualified Game.LambdaHack.Dungeon as Dungeon
 import Game.LambdaHack.Item
 import Game.LambdaHack.Msg
-import Game.LambdaHack.FOV
 import Game.LambdaHack.Time
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Effect
 import Game.LambdaHack.Flavour
+import Game.LambdaHack.Config
 
 -- | The diary contains all the player data that carries over
 -- from game to game, even across playing sessions. That includes

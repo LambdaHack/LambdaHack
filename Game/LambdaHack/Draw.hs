@@ -32,9 +32,9 @@ import Game.LambdaHack.Content.ItemKind
 import qualified Game.LambdaHack.Item as Item
 import Game.LambdaHack.Random
 import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.FOV
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Time
+import Game.LambdaHack.Config
 
 -- | Color mode for the display.
 data ColorMode =

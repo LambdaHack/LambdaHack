@@ -11,9 +11,7 @@ import qualified Data.List as L
 import qualified Data.IntMap as IM
 import Data.Maybe
 import Control.Monad
-import Data.Text (Text)
 
-import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Point
 import Game.LambdaHack.State
 import Game.LambdaHack.Level
@@ -26,7 +24,6 @@ import Game.LambdaHack.Config
 import qualified Game.LambdaHack.Tile as Tile
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.Msg
 
 newtype PerceptionReachable = PerceptionReachable
   { preachable :: IS.IntSet
@@ -126,27 +123,18 @@ levelPerception cops@Kind.COps{cotile}
                                   , sdebug = DebugMode{smarkVision}
                                   }
                        lvl@Level{lactor} =
-  let Config{ configFovMode
-            , configFovRadius } = sconfig
-      radius = if configFovRadius < 1
-               then assert `failure`
-                      "FOV radius is"
-                      <+> showT configFovRadius
-                      <> ", should be >= 1"
-               else configFovRadius
+  let Config{configFovMode} = sconfig
       -- Perception for a player-controlled monster on the current level.
       mLocPer =
         if not (isAHero state splayer) && IM.member splayer lactor
         then let m = getPlayerBody state
              in Just (bloc m,
-                      computeReachable cops radius configFovMode
-                                       smarkVision m lvl)
+                      computeReachable cops configFovMode smarkVision m lvl)
         else Nothing
       (mLoc, mPer) = (fmap fst mLocPer, fmap snd mLocPer)
       hs = IM.filter (\ m -> bfaction m == sfaction && not (bproj m)) lactor
       pers = IM.map (\ h ->
-                      computeReachable cops radius configFovMode
-                                       smarkVision h lvl) hs
+                      computeReachable cops configFovMode smarkVision h lvl) hs
       locs = map bloc $ IM.elems hs
       lpers = maybeToList mPer ++ IM.elems pers
       reachable = PerceptionReachable $ IS.unions (map preachable lpers)
@@ -191,20 +179,16 @@ isVisible cotile PerceptionReachable{preachable}
 
 -- | Reachable are all fields on an unblocked path from the hero position.
 -- The player's own position is considred reachable by him.
-computeReachable :: Kind.COps -> Int -> Text -> Maybe FovMode
+computeReachable :: Kind.COps -> FovMode -> Maybe FovMode
                  -> Actor -> Level -> PerceptionReachable
 computeReachable Kind.COps{cotile, coactor=Kind.Ops{okind}}
-                 radius mode smarkVision actor lvl =
+                 configFovMode smarkVision actor lvl =
   let fovMode m =
         if not $ asight $ okind $ bkind m
         then Blind
         else case smarkVision of
           Just fm -> fm
-          Nothing -> case mode of
-            "shadow"     -> Shadow
-            "permissive" -> Permissive
-            "digital"    -> Digital radius
-            _            -> assert `failure` "Unknown FOV mode:" <+> showT mode
+          Nothing -> configFovMode
       ploc = bloc actor
   in PerceptionReachable $
        IS.insert ploc $ IS.fromList $ fullscan cotile (fovMode actor) ploc lvl
