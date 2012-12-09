@@ -16,9 +16,9 @@ cdefs = CDefs
   , getFreq = ifreq
   , validate = ivalidate
   , content =
-      [amulet, dart, gem1, gem2, gem3, gold, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand, fist, foot, tentacle, weight]
+      [amulet, dart, gem1, gem2, gem3, currency, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand, fist, foot, tentacle, weight]
   }
-amulet,        dart, gem1, gem2, gem3, gold, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand, fist, foot, tentacle, weight :: ItemKind
+amulet,        dart, gem1, gem2, gem3, currency, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand, fist, foot, tentacle, weight :: ItemKind
 
 gem, potion, scroll :: ItemKind  -- generic templates
 
@@ -72,10 +72,10 @@ gem2 = gem
 gem3 = gem
   { icount   = (RollDice 0 0, RollDice 1 3)  -- appears on max depth
   }
-gold = ItemKind
+currency = ItemKind
   { isymbol  = '$'
   , iname    = "gold piece"
-  , ifreq    = [("dng", 80)]
+  , ifreq    = [("dng", 80), ("currency", 1)]
   , iflavour = zipPlain [BrYellow]
   , ieffect  = NoEffect
   , icount   = (RollDice 0 0, RollDice 10 10)

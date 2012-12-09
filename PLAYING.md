@@ -154,7 +154,7 @@ On Winning and Dying
 --------------------
 
 You win the game if you escape the dungeon alive. Your score is
-the sum of all gold you've plundered plus 100gp for each gem.
+the sum of all gold you've plundered plus 100 gold pieces for each gem.
 Only the loot in possession of the party members on the current level
 counts (the rest of the party is considered MIA).
 

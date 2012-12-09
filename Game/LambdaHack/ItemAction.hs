@@ -445,7 +445,7 @@ pickupItem = do
 -- that messages are printed to the player only if the
 -- hero can perceive the action.
 
--- TODO: you can drop an item already the floor, which works correctly,
+-- TODO: you can drop an item already on the floor, which works correctly,
 -- but is weird and useless.
 
 allObjectsName :: Text

@@ -360,7 +360,7 @@ switchLevel nln = do
 -- | The player leaves the dungeon.
 fleeDungeon :: Action ()
 fleeDungeon = do
-  Kind.COps{coitem} <- getCOps
+  Kind.COps{coitem=coitem@Kind.Ops{oname, ouniqGroup}} <- getCOps
   s <- get
   go <- displayYesNo "This is the way out. Really leave now?"
   recordHistory  -- Prevent repeating the ending msgs.
@@ -377,8 +377,12 @@ fleeDungeon = do
             "This time try to grab some loot before escape!"
     when (not go2) $ abortWith "Here's your chance!"
   else do
-    let winMsg = "Congratulations, you won! Here's your loot, worth" <+>
-                 showT total <+> "gold."  -- TODO: use the name of the '$' item instead and pluralise correctly
+    let currencyName = MU.Text $ oname $ ouniqGroup "currency"
+        winMsg = makePhrase
+          [ "Congratulations, you won!"
+          , "Here's your loot, worth"
+          , MU.NWs total currencyName
+          , "." ]
     io <- itemOverlay True True items
     tryIgnore $ displayOverAbort winMsg io
     modify (\ st -> st {squit = Just (True, Victor)})
@@ -535,7 +539,7 @@ gameOver showEndingScreens = do
   slid <- gets slid
   modify (\ st -> st {squit = Just (False, Killed slid)})
   when showEndingScreens $ do
-    Kind.COps{coitem} <- getCOps
+    Kind.COps{coitem=coitem@Kind.Ops{oname, ouniqGroup}} <- getCOps
     s <- get
     dng <- gets sdungeon
     time <- gets stime
@@ -554,8 +558,12 @@ gameOver showEndingScreens = do
           "That is your name. 'Almost'."
                 | otherwise =
           "Dead heroes make better legends."
-        loseMsg = failMsg <+> "You left" <+>
-                  showT total <+> "gold and some junk."  -- TODO: use the name of the '$' item instead and pluralise correctly
+        currencyName = MU.Text $ oname $ ouniqGroup "currency"
+        loseMsg = makePhrase
+          [ failMsg
+          , "You left"
+          , MU.NWs total currencyName
+          , "and some junk." ]
     if null items
       then modify (\ st -> st {squit = Just (True, Killed slid)})
       else do
