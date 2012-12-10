@@ -12,6 +12,7 @@ import Data.Binary
 import qualified Data.List as L
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Utils.File
 import Game.LambdaHack.Config
@@ -128,16 +129,24 @@ register configUI write total time date status = do
       (h', pos) = insertPos score h
       (_, nlines) = normalLevelBound  -- TODO: query terminal size instead
       height = nlines `div` 3
-      (msgCurrent, msgUnless) =
+      (subject, person, msgUnless) =
         case status of
-          Killed _ -> ("short-lived", "(score halved)")
-          Camping  -> ("current", "(unless you are slain)")
-          Victor   -> ("glorious",
-                        if pos <= height
-                        then "among the greatest heroes"
-                        else "")
-          Restart  -> ("abortive", " (score halved)")
-      msg = "Your" <+> msgCurrent <+> "exploits award you place >>"
-            <+> showT pos <+> "<<" <+> msgUnless <> "."
+          Killed lvl | levelNumber lvl <= 1 ->
+            ("your short-lived struggle", MU.Sg3rd, "(score halved)")
+          Killed _ ->
+            ("your heroic deeds", MU.PlEtc, "(score halved)")
+          Camping ->
+            ("your valiant exploits", MU.PlEtc, "(unless you are slain)")
+          Victor ->
+            ("your glorious victory", MU.Sg3rd,
+             if pos <= height
+             then "among the greatest heroes"
+             else "")
+          Restart ->
+            ("your abortive attempt", MU.Sg3rd, "(score halved)")
+      msg = makeSentence
+        [ MU.SubjectVerb person MU.Yes subject "award you"
+        , MU.Ordinal pos, "place"
+        , msgUnless ]
   when write $ save configUI h'
   return (msg, slideshow pos h' height)
