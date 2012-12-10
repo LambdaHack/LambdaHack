@@ -1,5 +1,5 @@
 name:          LambdaHack
-version:       0.2.6.5
+version:       0.2.7
 synopsis:      A roguelike game engine in early and active development
 description:   This is an alpha release of LambdaHack,
                a game engine library for roguelike games
@@ -15,16 +15,7 @@ description:   This is an alpha release of LambdaHack,
                but the fundamental source of flexibility lies
                in the strict and type-safe separation of code and content.
                .
-               This is a minor release, primarily intended to fix broken
-               haddock documentation on Hackage by disabling gtk2hs dependency
-               under GHC 7.6.1 (if you use GHC 7.6.1 and gtk2hs compiles
-               for you, please run 'cabal install -fgtk --reinstall').
-               Changes since 0.2.6 are mostly unrelated to gameplay:
-               strictly typed config files split into UI and rules;
-               a switch from Text to String throughout the codebase;
-               use of the external library 'miniutter' for English sentence
-               generation.
-               .
+               New in this release are ...
                Upcoming new features: playable monsters faction, more than
                two factions inhabiting the dungeon, AIvAI, PvP, improved
                ranged combat AI, dynamic light sources, explosions
@@ -185,8 +176,7 @@ library
     other-modules:    Game.LambdaHack.Action.Frontend.Curses
     build-depends:    hscurses >= 1.4.1 && < 2
     cpp-options:      -DCURSES
--- a hack to work around gtk2hs problems on Hackage under GHC 7.6.1:
-  } else { if flag(std) || impl(ghc == 7.6.1) {
+  } else { if flag(std) {
     other-modules:    Game.LambdaHack.Action.Frontend.Std
     cpp-options:      -DSTD
   } else {
