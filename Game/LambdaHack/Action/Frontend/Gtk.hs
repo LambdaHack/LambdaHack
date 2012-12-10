@@ -85,7 +85,7 @@ startup configFont k = do
   mv <- newEmptyMVar
   -- Fork the gtk input and output thread.
   -- TODO: when GHC changes, make sure GTK is still faster on its own thread.
-  void $ forkIO (runGtk configFont k `finally` putMVar mv ())
+  void $ forkOS (runGtk configFont k `finally` putMVar mv ())
   takeMVar mv
 
 -- | Sets up and starts the main GTK loop providing input and output.
