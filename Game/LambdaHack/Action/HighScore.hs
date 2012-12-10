@@ -138,6 +138,6 @@ register configUI write total time date status = do
                         else "")
           Restart  -> ("abortive", " (score halved)")
       msg = "Your" <+> msgCurrent <+> "exploits award you place >>"
-            <+> showT pos <+> "<<" <+> msgUnless
+            <+> showT pos <+> "<<" <+> msgUnless <> "."
   when write $ save configUI h'
   return (msg, slideshow pos h' height)

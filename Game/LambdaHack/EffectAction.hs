@@ -420,9 +420,8 @@ discover i = do
     modify (updateDiscoveries (S.insert ik))
     state2 <- get
     let msg = makeSentence
-          [ "the"
-          , MU.SubjectVerbSg (partItem coitem state i) "turn out to be"
-          , partItem coitem state2 i ]
+          [ "the", MU.SubjectVerbSg (partItem coitem state i) "turn out to be"
+          , MU.AW $ partItem coitem state2 i ]
     msgAdd msg
 
 -- | Make the actor controlled by the player. Switch level, if needed.
