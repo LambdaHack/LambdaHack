@@ -18,6 +18,7 @@ import qualified Data.Ix as Ix
 import Data.Text (Text)
 import qualified Data.Text as T
 import Game.LambdaHack.Msg
+import Data.Maybe (fromMaybe)
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.Frequency
@@ -82,7 +83,8 @@ createOps CDefs{getSymbol, getName, getFreq, content, validate} =
             lists = L.foldl' f M.empty tuples
             nameFreq group = toFreq $ "opick ('" <> group <> "')"
         in M.mapWithKey nameFreq lists
-      okind (Id i) = kindMap IM.! fromEnum i
+      okind (Id i) = fromMaybe (assert `failure` (i, fromEnum i, kindMap))
+                     $ IM.lookup (fromEnum i) kindMap
       correct a = not (T.null (getName a)) && L.all ((> 0) . snd) (getFreq a)
       offenders = validate content
   in assert (allB correct content) $
@@ -93,15 +95,20 @@ createOps CDefs{getSymbol, getName, getFreq, content, validate} =
        , oname = getName . okind
        , okind = okind
        , ouniqGroup = \ group ->
-           case runFrequency $ kindFreq M.! group of
+           let freq = fromMaybe (assert `failure` (group, kindFreq))
+                      $ M.lookup group kindFreq
+           in case runFrequency freq of
              [(n, (i, _))] | n > 0 -> i
              l -> assert `failure` l
-       , opick = \ group p -> frequency $ do
-           (i, k) <- kindFreq M.! group
-           breturn (p k) i
-           {- with MonadComprehensions:
-           frequency [ i | (i, k) <- kindFreq M.! group, p k ]
-           -}
+       , opick = \ group p ->
+           let freq = fromMaybe (assert `failure` (group, kindFreq))
+                      $ M.lookup group kindFreq
+           in frequency $ do
+             (i, k) <- freq
+             breturn (p k) i
+             {- with MonadComprehensions:
+             frequency [ i | (i, k) <- kindFreq M.! group, p k ]
+             -}
        , ofoldrWithKey = \ f z -> L.foldr (\ (i, a) -> f (Id i) a) z kindAssocs
        , obounds =
          let limits = let (i1, a1) = IM.findMin kindMap
