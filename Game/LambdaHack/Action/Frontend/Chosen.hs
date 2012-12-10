@@ -8,10 +8,12 @@ module Game.LambdaHack.Action.Frontend.Chosen
 
 -- Wrapper for selected Display frontend.
 
-#ifdef CURSES
-import Game.LambdaHack.Action.Frontend.Curses as D
+#ifdef GTK
+import Game.LambdaHack.Action.Frontend.Gtk as D
 #elif VTY
 import Game.LambdaHack.Action.Frontend.Vty as D
+#elif CURSES
+import Game.LambdaHack.Action.Frontend.Curses as D
 #elif STD
 import Game.LambdaHack.Action.Frontend.Std as D
 #else

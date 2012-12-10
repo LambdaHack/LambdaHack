@@ -1,5 +1,5 @@
 name:          LambdaHack
-version:       0.2.7
+version:       0.2.6.5
 synopsis:      A roguelike game engine in early and active development
 description:   This is an alpha release of LambdaHack,
                a game engine library for roguelike games
@@ -15,8 +15,16 @@ description:   This is an alpha release of LambdaHack,
                but the fundamental source of flexibility lies
                in the strict and type-safe separation of code and content.
                .
-               New in this release are the Main Menu and the improved
-               and configurable mode of squad combat.
+               This is a minor release, primarily intended to fix broken
+               haddock documentation on Hackage by disabling gtk2hs dependency
+               under GHC 7.6.1 (if you use GHC 7.6.1 and gtk2hs compiles
+               for you, please run 'cabal install -fgtk --reinstall').
+               Changes since 0.2.6 are mostly unrelated to gameplay:
+               strictly typed config files split into UI and rules;
+               a switch from Text to String throughout the codebase;
+               use of the external library 'miniutter' for English sentence
+               generation.
+               .
                Upcoming new features: playable monsters faction, more than
                two factions inhabiting the dungeon, AIvAI, PvP, improved
                ranged combat AI, dynamic light sources, explosions
@@ -55,16 +63,20 @@ source-repository head
   type:               git
   location:           git://github.com/kosmikus/LambdaHack.git
 
-flag curses
-  description:        pick the curses frontend
+flag gtk
+  description:        enable the gtk frontend
   default:            False
 
 flag vty
-  description:        pick the vty frontend
+  description:        enable the vty frontend
+  default:            False
+
+flag curses
+  description:        enable the curses frontend
   default:            False
 
 flag std
-  description:        pick the stdin/stdout frontend
+  description:        enable the stdin/stdout frontend
   default:            False
 
 library
@@ -161,21 +173,26 @@ library
   ghc-options:        -fno-warn-auto-orphans -fno-warn-implicit-prelude
   ghc-options:        -fno-ignore-asserts -funbox-strict-fields
 
-  if flag(curses) {
-    other-modules:    Game.LambdaHack.Action.Frontend.Curses
-    build-depends:    hscurses >= 1.4.1 && < 2
-    cpp-options:      -DCURSES
+  if flag(gtk) {
+    other-modules:    Game.LambdaHack.Action.Frontend.Gtk
+    build-depends:    gtk >= 0.12.1 && < 0.13
+    cpp-options:      -DGTK
   } else { if flag(vty) {
     other-modules:    Game.LambdaHack.Action.Frontend.Vty
     build-depends:    vty >= 4.7.0.6
     cpp-options:      -DVTY
-  } else { if flag(std) {
+  } else { if flag(curses) {
+    other-modules:    Game.LambdaHack.Action.Frontend.Curses
+    build-depends:    hscurses >= 1.4.1 && < 2
+    cpp-options:      -DCURSES
+-- a hack to work around gtk2hs problems on Hackage under GHC 7.6.1:
+  } else { if flag(std) || impl(ghc == 7.6.1) {
     other-modules:    Game.LambdaHack.Action.Frontend.Std
     cpp-options:      -DSTD
   } else {
     other-modules:    Game.LambdaHack.Action.Frontend.Gtk
     build-depends:    gtk >= 0.12.1 && < 0.13
-  } } }
+  } } } }
 
 executable LambdaHack
   hs-source-dirs:     LambdaHack
