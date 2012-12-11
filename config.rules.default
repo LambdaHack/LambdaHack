@@ -4,9 +4,6 @@
 ; ; ~/.LambdaHack/config.rules.ini (or a similar path, depending on the OS).
 ; ; Warning: options are case-sensitive and only ';' for comments is permitted.
 
-; [dungeon]
-; depth: 10
-
 ; [caves]
 ; ; Fixed caves for the first levels, then randomly picked caves.
 ; LambdaCave_1: caveRogue
@@ -14,17 +11,20 @@
 ; LambdaCave_3: caveEmpty
 ; LambdaCave_10: caveNoise
 
+; [dungeon]
+; depth: 10
+
 ; [engine]
+; ;dungeonRandomGenerator: 42
 ; fovMode: Digital 12
 ; ;fovMode: Permissive
 ; ;fovMode: Shadow
-; ;startingRandomGenerator: 42
-; ;dungeonRandomGenerator: 42
 ; smellTimeout: 100
+; ;startingRandomGenerator: 42
 
 ; [heroes]
 ; baseHP: 50
 ; extraHeroes: 2
-; firstDeathEnds: False
 ; ; faction "playable" means a random choice
 ; faction: hero
+; firstDeathEnds: False

@@ -34,7 +34,7 @@ overrideCP cp@(CP defCF) cfile = do
 -- The player configuration comes from file @cfile@.
 mkConfig :: String -> FilePath -> IO CP
 mkConfig configDefault cfile = do
-  let delComment = map (drop 2) $ lines configDefault
+  let delComment = map (drop 2) $ init . drop 3 $ lines configDefault
       unConfig = unlines delComment
       -- Evaluate, to catch config errors ASAP.
       !defCF = forceEither $ CF.readstring CF.emptyCP unConfig
