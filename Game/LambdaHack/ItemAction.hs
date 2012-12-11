@@ -40,7 +40,7 @@ default (Text)
 -- | Display inventory
 inventory :: ActionFrame ()
 inventory = do
-  Kind.COps{coactor} <- getCOps
+  Kind.COps{coactor} <- askCOps
   pbody <- gets getPlayerBody
   items <- gets getPlayerItem
   if L.null items
@@ -63,7 +63,7 @@ getGroupItem :: [Item]   -- ^ all objects in question
              -> Text     -- ^ how to refer to the collection of objects
              -> Action Item
 getGroupItem is object syms prompt packName = do
-  Kind.COps{coitem=Kind.Ops{osymbol}} <- getCOps
+  Kind.COps{coitem=Kind.Ops{osymbol}} <- askCOps
   let choice i = osymbol (jkind i) `elem` syms
       header = makePhrase [MU.Capitalize (MU.Ws object)]
   getItem prompt choice header is packName
@@ -73,7 +73,7 @@ applyGroupItem :: ActorId  -- ^ actor applying the item (is on current level)
                -> Item     -- ^ the item to be applied
                -> Action ()
 applyGroupItem actor verb item = do
-  Kind.COps{coactor, coitem} <- getCOps
+  Kind.COps{coactor, coitem} <- askCOps
   state <- get
   body  <- gets (getActor actor)
   per   <- getPerception
@@ -89,7 +89,7 @@ applyGroupItem actor verb item = do
 
 playerApplyGroupItem :: MU.Part -> MU.Part -> [Char] -> Action ()
 playerApplyGroupItem verb object syms = do
-  Kind.COps{coitem=Kind.Ops{okind}} <- getCOps
+  Kind.COps{coitem=Kind.Ops{okind}} <- askCOps
   is   <- gets getPlayerItem
   item <- getGroupItem is object syms
             (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
@@ -102,7 +102,7 @@ projectGroupItem :: ActorId  -- ^ actor projecting the item (is on current lvl)
                  -> Item     -- ^ the item to be projected
                  -> Action ()
 projectGroupItem source tloc _verb item = do
-  cops@Kind.COps{coactor, coitem} <- getCOps
+  cops@Kind.COps{coactor, coitem} <- askCOps
   state <- get
   sm    <- gets (getActor source)
   per   <- getPerception
@@ -183,7 +183,7 @@ playerProjectGI verb object syms = do
         return frs
   case targetToLoc (totalVisible per) state ploc of
     Just loc -> do
-      Kind.COps{coitem=Kind.Ops{okind}} <- getCOps
+      Kind.COps{coitem=Kind.Ops{okind}} <- askCOps
       is   <- gets getPlayerItem
       item <- getGroupItem is object syms
                 (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
@@ -302,7 +302,7 @@ endTargeting accept = do
 
 endTargetingMsg :: Action ()
 endTargetingMsg = do
-  Kind.COps{coactor} <- getCOps
+  Kind.COps{coactor} <- askCOps
   pbody  <- gets getPlayerBody
   state  <- get
   lxsize <- gets (lxsize . slevel)
@@ -343,7 +343,7 @@ clearCurrent = return ()
 dropItem :: Action ()
 dropItem = do
   -- TODO: allow dropping a given number of identical items.
-  Kind.COps{coactor, coitem} <- getCOps
+  Kind.COps{coactor, coitem} <- askCOps
   pl    <- gets splayer
   state <- get
   pbody <- gets getPlayerBody
@@ -395,7 +395,7 @@ removeFromLoc i loc = do
 
 actorPickupItem :: ActorId -> Action ()
 actorPickupItem actor = do
-  Kind.COps{coactor, coitem} <- getCOps
+  Kind.COps{coactor, coitem} <- askCOps
   state <- get
   pl    <- gets splayer
   per   <- getPerception

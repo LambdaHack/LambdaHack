@@ -131,7 +131,7 @@ guessBump _ _ _ = neverMind True
 -- | Player tries to trigger a tile using a feature.
 bumpTile :: Point -> F.Feature -> Action ()
 bumpTile dloc feat = do
-  Kind.COps{cotile} <- getCOps
+  Kind.COps{cotile} <- askCOps
   lvl    <- gets slevel
   let t = lvl `at` dloc
   if Tile.hasFeature cotile feat t
@@ -141,7 +141,7 @@ bumpTile dloc feat = do
 -- | Perform the action specified for the tile in case it's triggered.
 triggerTile :: Point -> Action ()
 triggerTile dloc = do
-  Kind.COps{cotile=Kind.Ops{okind, opick}} <- getCOps
+  Kind.COps{cotile=Kind.Ops{okind, opick}} <- askCOps
   lvl <- gets slevel
   let f (F.Cause effect) = do
         pl <- gets splayer
@@ -190,7 +190,7 @@ actorOpenDoor actor dir = do
   Kind.COps{ cotile
            , coitem
            , coactor=Kind.Ops{okind}
-           } <- getCOps
+           } <- askCOps
   lvl  <- gets slevel
   pl   <- gets splayer
   body <- gets (getActor actor)
@@ -219,7 +219,7 @@ actorOpenDoor actor dir = do
 -- k levels shallower. Enters targeting mode, if not already in one.
 tgtAscend :: Int -> ActionFrame ()
 tgtAscend k = do
-  Kind.COps{cotile} <- getCOps
+  Kind.COps{cotile} <- askCOps
   cursor    <- gets scursor
   targeting <- gets (ctargeting . scursor)
   slid      <- gets slid
@@ -299,7 +299,7 @@ backCycleHero = do
 -- | Search for hidden doors.
 search :: Action ()
 search = do
-  Kind.COps{coitem, cotile} <- getCOps
+  Kind.COps{coitem, cotile} <- askCOps
   lvl    <- gets slevel
   le     <- gets (lsecret . slevel)
   lxsize <- gets (lxsize . slevel)
@@ -337,7 +337,7 @@ moveOrAttack :: Bool       -- ^ allow attacks?
              -> Action ()
 moveOrAttack allowAttacks actor dir = do
   -- We start by looking at the target position.
-  cops@Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getCOps
+  cops@Kind.COps{cotile = cotile@Kind.Ops{okind}} <- askCOps
   state  <- get
   pl     <- gets splayer
   lvl    <- gets slevel
@@ -400,7 +400,7 @@ actorAttackActor source target = do
       -- Mark that unexpectedly it does not take time.
       modify (\ s -> s {stakeTime = Just False})
     else do
-      cops@Kind.COps{coactor, coitem=coitem@Kind.Ops{opick, okind}} <- getCOps
+      cops@Kind.COps{coactor, coitem=coitem@Kind.Ops{opick, okind}} <- askCOps
       state <- get
       bitems <- gets (getActorItem source)
       let h2hGroup = if isAHero state source then "unarmed" else "monstrous"
@@ -462,7 +462,7 @@ actorRunActor source target = do
       tloc = bloc tm
   updateAnyActor source $ \ m -> m { bloc = tloc }
   updateAnyActor target $ \ m -> m { bloc = sloc }
-  cops@Kind.COps{coactor} <- getCOps
+  cops@Kind.COps{coactor} <- askCOps
   per <- getPerception
   let visible = sloc `IS.member` totalVisible per ||
                 tloc `IS.member` totalVisible per
@@ -514,7 +514,7 @@ rollMonster Kind.COps{ cotile
 -- | Generate a monster, possibly.
 generateMonster :: Action ()
 generateMonster = do
-  cops    <- getCOps
+  cops    <- askCOps
   state   <- get
   per     <- getPerception
   nstate  <- rndToAction $ rollMonster cops per state
@@ -526,7 +526,7 @@ regenerateLevelHP :: Action ()
 regenerateLevelHP = do
   Kind.COps{ coitem
            , coactor=coactor@Kind.Ops{okind}
-           } <- getCOps
+           } <- askCOps
   time <- gets stime
   let upd itemIM a m =
         let ak = okind $ bkind m
@@ -550,14 +550,14 @@ regenerateLevelHP = do
 -- | Display command help.
 displayHelp :: ActionFrame ()
 displayHelp = do
-  keyb <- getBinding
+  keyb <- askBinding
   displayOverlays "Basic keys." "[press SPACE to advance]" $ keyHelp keyb
 
 -- | Display the main menu.
 displayMainMenu :: ActionFrame ()
 displayMainMenu = do
-  Kind.COps{corule} <- getCOps
-  Binding{krevMap} <- getBinding
+  Kind.COps{corule} <- askCOps
+  Binding{krevMap} <- askBinding
   let stripFrame t = case T.uncons t of
         Just ('\n', art) -> map (T.tail . T.init) $ tail . init $ T.lines art
         _ -> assert `failure` "displayMainMenu:" <+> t
@@ -612,7 +612,7 @@ displayHistory = do
 
 dumpConfig :: Action ()
 dumpConfig = do
-  ConfigUI{configRulesCfgFile} <- getConfigUI
+  ConfigUI{configRulesCfgFile} <- askConfigUI
   let fn = configRulesCfgFile ++ ".dump"
       msg = "Current game rules configuration dumped to file"
             <+> T.pack fn <> "."
@@ -633,7 +633,7 @@ addSmell = do
 -- | Update the wait/block count.
 setWaitBlock :: ActorId -> Action ()
 setWaitBlock actor = do
-  Kind.COps{coactor} <- getCOps
+  Kind.COps{coactor} <- askCOps
   time <- gets stime
   updateAnyActor actor $ \ m -> m {bwait = timeAddFromSpeed coactor m time}
 

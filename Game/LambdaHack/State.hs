@@ -46,17 +46,20 @@ import Game.LambdaHack.Config
 -- history of past games. This can be extended with other data and used for
 -- calculating player achievements, unlocking advanced game features and
 -- for general data mining, e.g., augmenting AI or procedural content
--- generation.
+-- generation. @Diary@, even the @shistory@ part, is more than a WriterMonad
+-- because it can be displayed and saved at any time.
 data Diary = Diary
   { sreport  :: Report
   , shistory :: History
   }
 
 -- TODO: stakeTime and squit are also temporary, move them to
--- DungeonPerception and rename it to TurnCache, if more appear, e.g. AI stuff.
+-- DungeonPerception and rename it to TurnCache, if more appear,
+-- e.g. AI stuff. The cache would probably act as a ReaderMonad,
+-- that is, it would be modified only for local function calls.
 -- | The state of a single game that can be saved and restored.
 -- It's completely disregarded and reset when a new game is started.
--- In practice, we maintain some extra state (DungeonPerception),
+-- In practice, we maintain some extra state (DungeonPerception) elsewhere,
 -- but it's only temporary, existing for a single turn and then invalidated.
 data State = State
   { splayer  :: ActorId      -- ^ represents the player-controlled actor

@@ -4,7 +4,7 @@
 -- Has no direct access to the Action monad implementation.
 module Game.LambdaHack.Action
   ( -- * Actions and accessors
-    Action, getPerception, getCOps, getBinding, getConfigUI
+    Action, getPerception, askCOps, askBinding, askConfigUI
     -- * Actions returning frames
   , ActionFrame, returnNoFrame, returnFrame, whenFrame, inFrame, tryWithFrame
     -- * Various ways to abort action
@@ -82,15 +82,15 @@ recordHistory :: Action ()
 recordHistory = do
   Diary{sreport, shistory} <- getDiary
   unless (nullReport sreport) $ do
-    ConfigUI{configHistoryMax} <- getConfigUI
+    ConfigUI{configHistoryMax} <- askConfigUI
     msgReset ""
     historyReset $ takeHistory configHistoryMax $ addReport sreport shistory
 
 -- | Wait for a player command.
 getKeyCommand :: Maybe Bool -> Action (K.Key, K.Modifier)
 getKeyCommand doPush = do
-  fs <- getFrontendSession
-  keyb <- getBinding
+  fs <- askFrontendSession
+  keyb <- askBinding
   (nc, modifier) <- liftIO $ nextEvent fs doPush
   return $ case modifier of
     K.NoModifier -> (fromMaybe nc $ M.lookup nc $ kmacro keyb, modifier)
@@ -99,8 +99,8 @@ getKeyCommand doPush = do
 -- | Display frame and wait for a player command.
 getKeyFrameCommand :: SingleFrame -> Action (K.Key, K.Modifier)
 getKeyFrameCommand frame = do
-  fs <- getFrontendSession
-  keyb <- getBinding
+  fs <- askFrontendSession
+  keyb <- askBinding
   (nc, modifier) <- liftIO $ promptGetKey fs [] frame
   return $ case modifier of
     K.NoModifier -> (fromMaybe nc $ M.lookup nc $ kmacro keyb, modifier)
@@ -109,7 +109,7 @@ getKeyFrameCommand frame = do
 -- | Ignore unexpected kestrokes until a SPACE or ESC is pressed.
 getConfirm :: SingleFrame -> Action Bool
 getConfirm frame = do
-  fs <- getFrontendSession
+  fs <- askFrontendSession
   let keys = [ (K.Space, K.NoModifier), (K.Esc, K.NoModifier)]
   (k, _) <- liftIO $ promptGetKey fs keys frame
   case k of
@@ -128,7 +128,7 @@ getOverConfirm (x:xs) = do
 -- | A yes-no confirmation.
 getYesNo :: SingleFrame -> Action Bool
 getYesNo frame = do
-  fs <- getFrontendSession
+  fs <- askFrontendSession
   let keys = [ (K.Char 'y', K.NoModifier)
              , (K.Char 'n', K.NoModifier)
              , (K.Esc, K.NoModifier)
@@ -194,7 +194,7 @@ displayChoiceUI prompt ovs keys = do
         x:xs -> (x, xs, ", SPACE", [moreMsg], (K.Space, K.NoModifier) : keys)
       legalKeys =  (K.Esc, K.NoModifier) : keysS
   frame <- drawOverlay ColorFull (prompt <> spc <> ", ESC]") (over ++ more)
-  fs <- getFrontendSession
+  fs <- askFrontendSession
   (key, modifier) <- liftIO $ promptGetKey fs legalKeys frame
   case key of
     K.Esc -> neverMind True
@@ -204,7 +204,7 @@ displayChoiceUI prompt ovs keys = do
 -- | Push a frame or a single frame's worth of delay to the frame queue.
 displayFramePush :: Maybe SingleFrame -> Action ()
 displayFramePush mframe = do
-  fs <- getFrontendSession
+  fs <- askFrontendSession
   liftIO $ displayFrame fs False mframe
 
 -- | Draw the current level. The prompt is displayed, but not added
@@ -212,7 +212,7 @@ displayFramePush mframe = do
 -- and only the first screenful of the resulting overlay is displayed.
 drawPrompt :: ColorMode -> Msg -> Action SingleFrame
 drawPrompt dm prompt = do
-  cops <- getCOps
+  cops <- askCOps
   per <- getPerception
   s <- get
   Diary{sreport} <- getDiary
@@ -225,7 +225,7 @@ drawPrompt dm prompt = do
 -- The overlay starts on the second line.
 drawOverlay :: ColorMode -> Msg -> Overlay -> Action SingleFrame
 drawOverlay dm prompt overlay = do
-  cops <- getCOps
+  cops <- askCOps
   per <- getPerception
   s <- get
   Diary{sreport} <- getDiary
@@ -248,7 +248,7 @@ startClip action =
 -- Only one screenful of the report is shown, the rest is ignored.
 displayPush :: Action ()
 displayPush = do
-  fs <- getFrontendSession
+  fs <- askFrontendSession
   s  <- get
   pl <- gets splayer
   frame <- drawPrompt ColorFull ""
@@ -268,7 +268,7 @@ remember = do
 -- | Update heroes memory at the given list of locations.
 rememberList :: [Point] -> Action ()
 rememberList vis = do
-  Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getCOps
+  Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- askCOps
   lvl <- gets slevel
   let rememberTile = [(loc, lvl `at` loc) | loc <- vis]
       unknownId = ouniqGroup "unknown space"
@@ -290,7 +290,7 @@ saveGameBkp :: Action ()
 saveGameBkp = do
   state <- get
   diary <- getDiary
-  configUI <- getConfigUI
+  configUI <- askConfigUI
   liftIO $ Save.saveGameBkp configUI state diary
 
 -- | Dumps the current game rules configuration to a file.
@@ -308,7 +308,7 @@ dumpCfg fn = do
 handleScores :: Bool -> Status -> Int -> Action ()
 handleScores write status total =
   when (total /= 0) $ do
-    configUI <- getConfigUI
+    configUI <- askConfigUI
     time <- gets stime
     curDate <- liftIO getClockTime
     let score = register configUI write total time curDate status
@@ -319,9 +319,9 @@ handleScores write status total =
 endOrLoop :: Action () -> Action ()
 endOrLoop handleTurn = do
   squit <- gets squit
-  Kind.COps{coitem} <- getCOps
+  Kind.COps{coitem} <- askCOps
   s <- get
-  configUI <- getConfigUI
+  configUI <- askConfigUI
   let (_, total) = calculateTotal coitem s
   -- The first, boolean component of squit determines
   -- if ending screens should be shown, the other argument describes
@@ -375,8 +375,8 @@ restartGame :: Action () -> Action ()
 restartGame handleTurn = do
   -- Take the original config from config file, to reroll RNG, if needed
   -- (the current config file has the RNG rolled for the previous game).
-  configUI <- getConfigUI
-  cops <- getCOps
+  configUI <- askConfigUI
+  cops <- askCOps
   state <- gameResetAction configUI cops
   modify $ const state
   saveGameBkp

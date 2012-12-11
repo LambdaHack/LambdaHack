@@ -10,7 +10,7 @@ module Game.LambdaHack.Action.ActionLift
     -- * Actions returning frames
   , ActionFrame, returnNoFrame, returnFrame, whenFrame, inFrame
     -- * Game session and assessors to its components
-  , Session(..), getFrontendSession, getCOps, getBinding, getConfigUI
+  , Session(..), askFrontendSession, askCOps, askBinding, askConfigUI
     -- * Various ways to abort action
   , abort, abortWith, abortIfWith, neverMind
     -- * Abort exception handlers
@@ -141,20 +141,20 @@ data Session = Session
   }
 
 -- | Get the frontend session.
-getFrontendSession :: Action FrontendSession
-getFrontendSession = Action (\ Session{sfs} _p k _a st ms -> k st ms sfs)
+askFrontendSession :: Action FrontendSession
+askFrontendSession = Action (\ Session{sfs} _p k _a st ms -> k st ms sfs)
 
 -- | Get the content operations.
-getCOps :: Action Kind.COps
-getCOps = Action (\ Session{scops} _p k _a st ms -> k st ms scops)
+askCOps :: Action Kind.COps
+askCOps = Action (\ Session{scops} _p k _a st ms -> k st ms scops)
 
 -- | Get the key binding.
-getBinding :: Action (Binding (ActionFrame ()))
-getBinding = Action (\ Session{sbinding} _p k _a st ms -> k st ms sbinding)
+askBinding :: Action (Binding (ActionFrame ()))
+askBinding = Action (\ Session{sbinding} _p k _a st ms -> k st ms sbinding)
 
 -- | Get the config from the config file.
-getConfigUI :: Action ConfigUI
-getConfigUI = Action (\ Session{sconfigUI} _p k _a st ms -> k st ms sconfigUI)
+askConfigUI :: Action ConfigUI
+askConfigUI = Action (\ Session{sconfigUI} _p k _a st ms -> k st ms sconfigUI)
 
 -- | Reset the state and resume from the last backup point, i.e., invoke
 -- the failure continuation.

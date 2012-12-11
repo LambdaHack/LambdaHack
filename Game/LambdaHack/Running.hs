@@ -31,7 +31,7 @@ import qualified Game.LambdaHack.Feature as F
 -- and still explicitly requests a run.
 run :: (Vector, Int) -> ActionFrame ()
 run (dir, dist) = do
-  cops <- getCOps
+  cops <- askCOps
   pl <- gets splayer
   locHere <- gets (bloc . getPlayerBody)
   lvl <- gets slevel
@@ -156,7 +156,7 @@ runDisturbance locLast distLast msg hs ms per locHere
 -- and it increments the counter of traversed tiles.
 continueRun :: (Vector, Int) -> Action ()
 continueRun (dirLast, distLast) = do
-  cops@Kind.COps{cotile} <- getCOps
+  cops@Kind.COps{cotile} <- askCOps
   locHere <- gets (bloc . getPlayerBody)
   per <- getPerception
   Diary{sreport} <- getDiary

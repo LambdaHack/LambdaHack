@@ -87,7 +87,7 @@ handleActors :: Time       -- ^ the start time of current subclip, exclusive
              -> Action ()
 handleActors subclipStart = do
   debug "handleActors"
-  Kind.COps{coactor} <- getCOps
+  Kind.COps{coactor} <- askCOps
   sfaction <- gets sfaction
   time <- gets stime  -- the end time of this clip, inclusive
   pl <- gets splayer
@@ -151,7 +151,7 @@ handleAI :: ActorId -> Action ()
 handleAI actor = do
   cops@Kind.COps{ cofact=Kind.Ops{okind}
                 , costrat=Kind.Ops{opick, okind=sokind}
-                } <- getCOps
+                } <- askCOps
   state <- get
   per <- getPerception
   let Actor{bfaction, bloc, bsymbol} = getActor actor state
@@ -188,7 +188,7 @@ handlePlayer = do
 playerCommand :: Msg -> Action ()
 playerCommand msgRunAbort = do
   -- The frame state is now Push.
-  Binding.Binding{kcmd} <- getBinding
+  Binding.Binding{kcmd} <- askBinding
   kmPush <- case msgRunAbort of
     "" -> getKeyCommand (Just True)
     _  -> drawPrompt ColorFull msgRunAbort >>= getKeyFrameCommand
@@ -249,7 +249,7 @@ playerCommand msgRunAbort = do
 -- | Advance (or rewind) the move time for the given actor.
 advanceTime :: ActorId -> Action ()
 advanceTime actor = do
-  Kind.COps{coactor} <- getCOps
+  Kind.COps{coactor} <- askCOps
   let upd m@Actor{btime} = m {btime = timeAddFromSpeed coactor m btime}
   updateAnyActor actor upd
 
