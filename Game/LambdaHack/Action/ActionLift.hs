@@ -3,7 +3,7 @@
 -- actions. Exports 'liftIO' for injecting 'IO' into the 'Action' monad,
 -- but does not export the implementation of the Action monad.
 -- The 'liftIO' and 'handlerToIO' operations are used only in Action.hs.
-{-# LANGUAGE MultiParamTypeClasses, RankNTypes #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 module Game.LambdaHack.Action.ActionLift
   ( -- * Actions and basic operations
     ActionFun, Action, liftIO, handlerToIO, withPerception, getPerception
@@ -36,19 +36,17 @@ import Game.LambdaHack.Animation (SingleFrame(..))
 
 -- | The type of the function inside any action.
 -- (Separated from the @Action@ type to document each argument with haddock.)
-type ActionFun r a =
-   Session                           -- ^ session setup data
-   -> DungeonPerception              -- ^ cached perception
-   -> (State -> Diary -> a -> IO r)  -- ^ continuation
-   -> (Msg -> IO r)                  -- ^ failure/reset continuation
-   -> State                          -- ^ current state
-   -> Diary                          -- ^ current diary
-   -> IO r
+type ActionFun a =
+   Session                            -- ^ session setup data
+   -> DungeonPerception               -- ^ cached perception
+   -> (State -> Diary -> a -> IO ())  -- ^ continuation
+   -> (Msg -> IO ())                  -- ^ failure/reset continuation
+   -> State                           -- ^ current state
+   -> Diary                           -- ^ current diary
+   -> IO ()
 
 -- | Actions of player-controlled characters and of any other actors.
-newtype Action a = Action
-  { runAction :: forall r . ActionFun r a
-  }
+newtype Action a = Action {runAction :: ActionFun a}
 
 instance Show (Action a) where
   show _ = "an action"
