@@ -152,6 +152,7 @@ library
                       old-time   >= 1.0.0.7 && < 2,
                       random     >= 1.0.1   && < 2,
                       text       >= 0.11.2.3 && < 1,
+                      transformers >= 0.3   && < 1,
                       zlib       >= 0.5.3.1 && < 1
 
   default-language:   Haskell2010
@@ -213,6 +214,7 @@ executable LambdaHack
                       old-time   >= 1.0.0.7 && < 2,
                       random     >= 1.0.1   && < 2,
                       text       >= 0.11.2.3 && < 1,
+                      transformers >= 0.3   && < 1,
                       zlib       >= 0.5.3.1 && < 1
 
   default-language:   Haskell2010
