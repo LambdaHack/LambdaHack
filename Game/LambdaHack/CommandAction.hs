@@ -4,17 +4,16 @@ module Game.LambdaHack.CommandAction
   ( configCmds, semanticsCmds
   ) where
 
-import Control.Monad.State hiding (State, state)
 import qualified Data.List as L
 import Data.Text (Text)
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
-import Game.LambdaHack.ItemAction
-import Game.LambdaHack.State
 import Game.LambdaHack.Command
 import Game.LambdaHack.Config
+import Game.LambdaHack.ItemAction
 import qualified Game.LambdaHack.Key as K
+import Game.LambdaHack.State
 
 -- | The semantics of player commands in terms of the @Action@ monad.
 cmdAction :: Cmd -> ActionFrame ()

@@ -6,7 +6,7 @@
 module Game.LambdaHack.EffectAction where
 
 import Control.Monad
-import Control.Monad.State hiding (State, state)
+import Control.Monad.State hiding (State, state, get, gets)
 import Data.Function
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
@@ -49,7 +49,7 @@ actorVerb coactor a v =
   makeSentence [MU.SubjectVerbSg (partActor coactor a) (MU.Text v)]
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
-rndToAction :: Rnd a -> Action a
+rndToAction :: MonadAction m => Rnd a -> m a
 rndToAction r = do
   g <- gets srandom
   let (a, ng) = runState r g
@@ -57,11 +57,11 @@ rndToAction r = do
   return a
 
 -- | Update actor stats. Works for actors on other levels, too.
-updateAnyActor :: ActorId -> (Actor -> Actor) -> Action ()
+updateAnyActor :: MonadAction m => ActorId -> (Actor -> Actor) -> m ()
 updateAnyActor actor f = modify (updateAnyActorBody actor f)
 
 -- | Update player-controlled actor stats.
-updatePlayerBody :: (Actor -> Actor) -> Action ()
+updatePlayerBody :: MonadAction m => (Actor -> Actor) -> m ()
 updatePlayerBody f = do
   pl <- gets splayer
   updateAnyActor pl f
@@ -77,8 +77,8 @@ updatePlayerBody f = do
 -- The first bool result indicates if the effect was spectacular enough
 -- for the actors to identify it (and the item that caused it, if any).
 -- The second bool tells if the effect was seen by or affected the party.
-effectToAction :: Effect.Effect -> Int -> ActorId -> ActorId -> Int -> Bool
-               -> Action (Bool, Bool)
+effectToAction :: (MonadIO m, MonadAction m) => Effect.Effect -> Int -> ActorId -> ActorId -> Int -> Bool
+               -> m (Bool, Bool)
 effectToAction effect verbosity source target power block = do
   oldTm <- gets (getActor target)
   let oldHP = bhp oldTm
@@ -145,8 +145,8 @@ effectToAction effect verbosity source target power block = do
 -- | The boolean part of the result says if the ation was interesting
 -- and the string part describes how the target reacted
 -- (not what the source did).
-eff :: Effect.Effect -> Int -> ActorId -> ActorId -> Int
-    -> Action (Bool, Text)
+eff :: (MonadIO m, MonadAction m) => Effect.Effect -> Int -> ActorId -> ActorId -> Int
+    -> m (Bool, Text)
 eff Effect.NoEffect _ _ _ _ = nullEffect
 eff Effect.Heal _ _source target power = do
   Kind.COps{coactor=coactor@Kind.Ops{okind}} <- askCOps
@@ -260,11 +260,11 @@ eff Effect.Descend _ source target power = do
     then (True, "")
     else (True, actorVerb coactor tm "find a way downstairs")
 
-nullEffect :: Action (Bool, Text)
+nullEffect :: MonadActionRO m => m (Bool, Text)
 nullEffect = return (False, "Nothing happens.")
 
 -- TODO: refactor with actorAttackActor.
-squashActor :: ActorId -> ActorId -> Action ()
+squashActor :: (MonadIO m, MonadAction m) => ActorId -> ActorId -> m ()
 squashActor source target = do
   Kind.COps{coactor, coitem=Kind.Ops{okind, ouniqGroup}} <- askCOps
   sm <- gets (getActor source)
@@ -284,7 +284,7 @@ squashActor source target = do
   assert (not (memActor target s) `blame` (source, target, "not killed")) $
     return ()
 
-effLvlGoUp :: Int -> Action ()
+effLvlGoUp :: (MonadIO m, MonadAction m) => Int -> m ()
 effLvlGoUp k = do
   pbody     <- gets getPlayerBody
   pl        <- gets splayer
@@ -341,7 +341,7 @@ effLvlGoUp k = do
 -- | Change level and reset it's time and update the times of all actors.
 -- The player may be added to @lactor@ of the new level only after
 -- this operation is executed.
-switchLevel :: Dungeon.LevelId -> Action ()
+switchLevel :: MonadAction m => Dungeon.LevelId -> m ()
 switchLevel nln = do
   timeCurrent <- gets stime
   slid <- gets slid
@@ -358,7 +358,7 @@ switchLevel nln = do
       modify (updateLevel (updateActorDict (IM.map upd)))
 
 -- | The player leaves the dungeon.
-fleeDungeon :: Action ()
+fleeDungeon :: (MonadIO m, MonadAction m) => m ()
 fleeDungeon = do
   Kind.COps{coitem=coitem@Kind.Ops{oname, ouniqGroup}} <- askCOps
   s <- get
@@ -389,7 +389,7 @@ fleeDungeon = do
 
 -- | The source actor affects the target actor, with a given item.
 -- If the event is seen, the item may get identified.
-itemEffectAction :: Int -> ActorId -> ActorId -> Item -> Bool -> Action ()
+itemEffectAction :: (MonadIO m, MonadAction m) => Int -> ActorId -> ActorId -> Item -> Bool -> m ()
 itemEffectAction verbosity source target item block = do
   Kind.COps{coitem=Kind.Ops{okind}} <- askCOps
   st <- get
@@ -408,7 +408,7 @@ itemEffectAction verbosity source target item block = do
   modify (\ s -> s {slid = slidNew})
 
 -- | Make the item known to the player.
-discover :: Item -> Action ()
+discover :: MonadAction m => Item -> m ()
 discover i = do
   Kind.COps{coitem=coitem@Kind.Ops{okind}} <- askCOps
   state <- get
@@ -427,7 +427,7 @@ discover i = do
 -- | Make the actor controlled by the player. Switch level, if needed.
 -- False, if nothing to do. Should only be invoked as a direct result
 -- of a player action or the selected player actor death.
-selectPlayer :: ActorId -> Action Bool
+selectPlayer :: MonadAction m => ActorId -> m Bool
 selectPlayer actor = do
   Kind.COps{coactor} <- askCOps
   pl    <- gets splayer
@@ -453,7 +453,7 @@ selectPlayer actor = do
 
 -- TODO: center screen, flash the background, etc. Perhaps wait for SPACE.
 -- | Focus on the hero being wounded/displaced/etc.
-focusIfOurs :: ActorId -> Action Bool
+focusIfOurs :: MonadActionRO m => ActorId -> m Bool
 focusIfOurs target = do
   s  <- get
   pl <- gets splayer
@@ -461,7 +461,7 @@ focusIfOurs target = do
     then return True
     else return False
 
-summonHeroes :: Int -> Point -> Action ()
+summonHeroes :: MonadAction m => Int -> Point -> m ()
 summonHeroes n loc =
   assert (n > 0) $ do
   cops <- askCOps
@@ -472,7 +472,7 @@ summonHeroes n loc =
   assert (b `blame` (newHeroId, "player summons himself")) $
     return ()
 
-summonMonsters :: Int -> Point -> Action ()
+summonMonsters :: MonadAction m => Int -> Point -> m ()
 summonMonsters n loc = do
   Kind.COps{ cotile
            , coactor=Kind.Ops{opick, okind}
@@ -490,7 +490,7 @@ summonMonsters n loc = do
 -- For now we only check the selected hero and at current level,
 -- but if poison, etc. is implemented, we'd need to check all heroes
 -- on any level.
-checkPartyDeath :: Action ()
+checkPartyDeath :: (MonadIO m, MonadAction m) => m ()
 checkPartyDeath = do
   cops@Kind.COps{coactor} <- askCOps
   per    <- getPerception
@@ -533,7 +533,7 @@ checkPartyDeath = do
                -- At this place the invariant is restored again.
 
 -- | End game, showing the ending screens, if requested.
-gameOver :: Bool -> Action ()
+gameOver :: (MonadIO m, MonadAction m )=> Bool -> m ()
 gameOver showEndingScreens = do
   slid <- gets slid
   modify (\ st -> st {squit = Just (False, Killed slid)})
@@ -572,7 +572,7 @@ gameOver showEndingScreens = do
           modify (\ st -> st {squit = Just (True, Killed slid)})
 
 -- | Create a list of item names, split into many overlays.
-itemOverlay ::Bool -> Bool -> [Item] -> Action [Overlay]
+itemOverlay :: MonadActionRO m => Bool -> Bool -> [Item] -> m [Overlay]
 itemOverlay sorted cheat is = do
   Kind.COps{coitem} <- askCOps
   s <- get
@@ -584,7 +584,7 @@ itemOverlay sorted cheat is = do
              <> " "
   return $ splitOverlay lysize $ L.map pr items
 
-stopRunning :: Action ()
+stopRunning :: MonadAction m => m ()
 stopRunning = updatePlayerBody (\ p -> p { bdir = Nothing })
 
 -- | Perform look around in the current location of the cursor.

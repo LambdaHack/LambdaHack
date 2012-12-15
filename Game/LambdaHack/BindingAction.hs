@@ -4,25 +4,25 @@ module Game.LambdaHack.BindingAction
   ( stdBinding
   ) where
 
-import Control.Monad.State hiding (State, state)
+import Control.Monad.State hiding (State, get, gets, state)
+import qualified Data.Char as Char
 import qualified Data.List as L
 import qualified Data.Map as M
-import qualified Data.Char as Char
-import Data.Tuple (swap)
 import Data.Text (Text)
+import Data.Tuple (swap)
 
 import Game.LambdaHack.Action
-import Game.LambdaHack.State
-import Game.LambdaHack.Config
-import Game.LambdaHack.Level
 import Game.LambdaHack.Actions
-import Game.LambdaHack.Running
-import Game.LambdaHack.EffectAction
-import Game.LambdaHack.Binding
-import qualified Game.LambdaHack.Key as K
 import Game.LambdaHack.ActorState
+import Game.LambdaHack.Binding
 import Game.LambdaHack.Command
 import Game.LambdaHack.CommandAction
+import Game.LambdaHack.Config
+import Game.LambdaHack.EffectAction
+import qualified Game.LambdaHack.Key as K
+import Game.LambdaHack.Level
+import Game.LambdaHack.Running
+import Game.LambdaHack.State
 
 heroSelection :: [((K.Key, K.Modifier), (Text, Bool, ActionFrame ()))]
 heroSelection =

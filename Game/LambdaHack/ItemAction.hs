@@ -7,7 +7,7 @@
 module Game.LambdaHack.ItemAction where
 
 import Control.Monad
-import Control.Monad.State hiding (State, state)
+import Control.Monad.State hiding (State, get, gets, state)
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import qualified Data.List as L
@@ -56,22 +56,22 @@ inventory = do
 -- | Let the player choose any item with a given group name.
 -- Note that this does not guarantee the chosen item belongs to the group,
 -- as the player can override the choice.
-getGroupItem :: [Item]   -- ^ all objects in question
+getGroupItem :: (MonadIO m, MonadActionRO m) => [Item]   -- ^ all objects in question
              -> MU.Part  -- ^ name of the group
              -> [Char]   -- ^ accepted item symbols
              -> Text     -- ^ prompt
              -> Text     -- ^ how to refer to the collection of objects
-             -> Action Item
+             -> m Item
 getGroupItem is object syms prompt packName = do
   Kind.COps{coitem=Kind.Ops{osymbol}} <- askCOps
   let choice i = osymbol (jkind i) `elem` syms
       header = makePhrase [MU.Capitalize (MU.Ws object)]
   getItem prompt choice header is packName
 
-applyGroupItem :: ActorId  -- ^ actor applying the item (is on current level)
+applyGroupItem :: (MonadIO m, MonadAction m) => ActorId  -- ^ actor applying the item (is on current level)
                -> MU.Part  -- ^ how the applying is called
                -> Item     -- ^ the item to be applied
-               -> Action ()
+               -> m ()
 applyGroupItem actor verb item = do
   Kind.COps{coactor, coitem} <- askCOps
   state <- get
@@ -87,7 +87,7 @@ applyGroupItem actor verb item = do
   when (loc `IS.member` totalVisible per) $ msgAdd msg
   itemEffectAction 5 actor actor consumed False
 
-playerApplyGroupItem :: MU.Part -> MU.Part -> [Char] -> Action ()
+playerApplyGroupItem :: (MonadIO m, MonadAction m) => MU.Part -> MU.Part -> [Char] -> m ()
 playerApplyGroupItem verb object syms = do
   Kind.COps{coitem=Kind.Ops{okind}} <- askCOps
   is   <- gets getPlayerItem
@@ -96,11 +96,11 @@ playerApplyGroupItem verb object syms = do
   pl   <- gets splayer
   applyGroupItem pl (iverbApply $ okind $ jkind item) item
 
-projectGroupItem :: ActorId  -- ^ actor projecting the item (is on current lvl)
+projectGroupItem :: MonadAction m => ActorId  -- ^ actor projecting the item (is on current lvl)
                  -> Point    -- ^ target location of the projectile
                  -> MU.Part  -- ^ how the projecting is called
                  -> Item     -- ^ the item to be projected
-                 -> Action ()
+                 -> m ()
 projectGroupItem source tloc _verb item = do
   cops@Kind.COps{coactor, coitem} <- askCOps
   state <- get
@@ -261,7 +261,7 @@ setCursor tgtMode = assert (tgtMode /= TgtOff) $ do
   doLook
 
 -- | Tweak the @eps@ parameter of the targeting digital line.
-epsIncr :: Bool -> Action ()
+epsIncr :: MonadAction m => Bool -> m ()
 epsIncr b = do
   targeting <- gets (ctargeting . scursor)
   if targeting /= TgtOff
@@ -270,7 +270,7 @@ epsIncr b = do
     else neverMind True  -- no visual feedback, so no sense
 
 -- | End targeting mode, accepting the current location or not.
-endTargeting :: Bool -> Action ()
+endTargeting :: MonadAction m => Bool -> m ()
 endTargeting accept = do
   returnLn <- gets (creturnLn . scursor)
   target   <- gets (btarget . getPlayerBody)
@@ -300,7 +300,7 @@ endTargeting accept = do
     then endTargetingMsg
     else msgAdd "targeting canceled"
 
-endTargetingMsg :: Action ()
+endTargetingMsg :: MonadAction m => m ()
 endTargetingMsg = do
   Kind.COps{coactor} <- askCOps
   pbody  <- gets getPlayerBody
@@ -336,11 +336,11 @@ acceptCurrent h = do
     else h  -- nothing to accept right now, treat this as a command invocation
 
 -- | Clear current messages, show the next screen if any.
-clearCurrent :: Action ()
+clearCurrent :: MonadActionRO m => m ()
 clearCurrent = return ()
 
 -- | Drop a single item.
-dropItem :: Action ()
+dropItem :: (MonadIO m, MonadAction m) => m ()
 dropItem = do
   -- TODO: allow dropping a given number of identical items.
   Kind.COps{coactor, coitem} <- askCOps
@@ -359,7 +359,7 @@ dropItem = do
 
 -- TODO: this is a hack for dropItem, because removeFromInventory
 -- makes it impossible to drop items if the floor not empty.
-removeOnlyFromInventory :: ActorId -> Item -> Point -> Action ()
+removeOnlyFromInventory :: MonadAction m => ActorId -> Item -> Point -> m ()
 removeOnlyFromInventory actor i _loc =
   modify (updateAnyActorItem actor (removeItemByLetter i))
 
@@ -370,14 +370,14 @@ removeOnlyFromInventory actor i _loc =
 -- of dead heros/monsters. The subtle incorrectness helps here a lot,
 -- because items of dead heroes land on the floor, so we use them up
 -- in inventory, but remove them after use from the floor.
-removeFromInventory :: ActorId -> Item -> Point -> Action ()
+removeFromInventory :: MonadAction m => ActorId -> Item -> Point -> m ()
 removeFromInventory actor i loc = do
   b <- removeFromLoc i loc
   unless b $
     modify (updateAnyActorItem actor (removeItemByLetter i))
 
 -- | Remove given item from the given location. Tell if successful.
-removeFromLoc :: Item -> Point -> Action Bool
+removeFromLoc :: MonadAction m => Item -> Point -> m Bool
 removeFromLoc i loc = do
   lvl <- gets slevel
   if not $ L.any (equalItemIdentity i) (lvl `atI` loc)
@@ -393,7 +393,7 @@ removeFromLoc i loc = do
           iss -> Just iss
       adj = IM.alter rib loc
 
-actorPickupItem :: ActorId -> Action ()
+actorPickupItem :: MonadAction m => ActorId -> m ()
 actorPickupItem actor = do
   Kind.COps{coactor, coitem} <- askCOps
   state <- get
@@ -428,7 +428,7 @@ actorPickupItem actor = do
           modify (updateAnyActorItem actor (const nitems))
         Nothing -> abortWith "cannot carry any more"
 
-pickupItem :: Action ()
+pickupItem :: MonadAction m => m ()
 pickupItem = do
   pl <- gets splayer
   actorPickupItem pl
@@ -452,22 +452,22 @@ allObjectsName :: Text
 allObjectsName = "Objects"
 
 -- | Let the player choose any item from a list of items.
-getAnyItem :: Text    -- ^ prompt
+getAnyItem :: (MonadIO m, MonadActionRO m) => Text    -- ^ prompt
            -> [Item]  -- ^ all items in question
            -> Text    -- ^ how to refer to the collection of items
-           -> Action Item
+           -> m Item
 getAnyItem prompt = getItem prompt (const True) allObjectsName
 
 data ItemDialogState = INone | ISuitable | IAll deriving Eq
 
 -- | Let the player choose a single, preferably suitable,
 -- item from a list of items.
-getItem :: Text            -- ^ prompt message
+getItem :: (MonadIO m, MonadActionRO m) => Text            -- ^ prompt message
         -> (Item -> Bool)  -- ^ which items to consider suitable
         -> Text            -- ^ how to describe suitable items
         -> [Item]          -- ^ all items in question
         -> Text            -- ^ how to refer to the collection of items
-        -> Action Item
+        -> m Item
 getItem prompt p ptext is0 isn = do
   lvl  <- gets slevel
   body <- gets getPlayerBody

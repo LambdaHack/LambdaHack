@@ -4,8 +4,7 @@
 -- Has no direct access to the Action monad implementation.
 module Game.LambdaHack.Action
   ( -- * Actions and accessors
---    MonadAction, MonadActionRO(get, gets), Action
-    Action
+    MonadAction, MonadActionRO(get, gets), Action
   , getPerception, askCOps, askBinding, askConfigUI
     -- * Actions returning frames
   , ActionFrame, returnNoFrame, returnFrame, whenFrame, inFrame, tryWithFrame

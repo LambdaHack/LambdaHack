@@ -3,26 +3,26 @@ module Game.LambdaHack.Running
   ( run, continueRun
   ) where
 
-import Control.Monad.State hiding (State, state)
-import qualified Data.List as L
+import Control.Monad.State hiding (State, get, gets, state)
 import qualified Data.IntSet as IS
+import qualified Data.List as L
 
-import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
-import Game.LambdaHack.EffectAction
 import Game.LambdaHack.Actions
-import Game.LambdaHack.Point
-import Game.LambdaHack.Vector
-import Game.LambdaHack.PointXY
-import Game.LambdaHack.Level
-import Game.LambdaHack.Msg
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
+import Game.LambdaHack.EffectAction
+import qualified Game.LambdaHack.Feature as F
+import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Level
+import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
+import Game.LambdaHack.Point
+import Game.LambdaHack.PointXY
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
-import qualified Game.LambdaHack.Kind as Kind
-import qualified Game.LambdaHack.Feature as F
+import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Vector
 
 -- | Start running in the given direction and with the given number
 -- of tiles already traversed (usually 0). The first turn of running

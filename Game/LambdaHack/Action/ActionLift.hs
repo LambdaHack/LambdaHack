@@ -80,7 +80,7 @@ instance Monad Action where
 instance Show (Action a) where
   show _ = "an action"
 
-class (Monad m, Functor m) => MonadActionRO m where
+class (Monad m, Functor m, Show (m ())) => MonadActionRO m where
   action2fun   :: m a -> ActionFun a
   -- | Set the current exception handler. First argument is the handler,
   -- second is the computation the handler scopes over.

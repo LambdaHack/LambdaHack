@@ -4,42 +4,42 @@ module Game.LambdaHack.StrategyAction
   ( targetStrategy, strategy
   ) where
 
-import qualified Data.List as L
-import qualified Data.IntMap as IM
-import Data.Maybe
-import Data.Function
-import Control.Monad
-import Control.Monad.State hiding (State, state)
 import Control.Arrow
+import Control.Monad
+import Control.Monad.State hiding (State, get, gets, state)
+import Data.Function
+import qualified Data.IntMap as IM
+import qualified Data.List as L
+import Data.Maybe
 import qualified Data.Text as T
 
-import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Ability (Ability)
 import qualified Game.LambdaHack.Ability as Ability
-import Game.LambdaHack.Point
-import Game.LambdaHack.Vector
-import Game.LambdaHack.Level
+import Game.LambdaHack.Action
+import Game.LambdaHack.Actions
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
+import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Utils.Frequency
-import Game.LambdaHack.Perception
-import Game.LambdaHack.Strategy
-import Game.LambdaHack.State
-import Game.LambdaHack.Action
-import Game.LambdaHack.Msg
-import Game.LambdaHack.EffectAction
-import Game.LambdaHack.Actions
-import Game.LambdaHack.ItemAction
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Effect as Effect
-import qualified Game.LambdaHack.Tile as Tile
-import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.EffectAction
 import qualified Game.LambdaHack.Feature as F
+import Game.LambdaHack.Item
+import Game.LambdaHack.ItemAction
+import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Level
+import Game.LambdaHack.Msg
+import Game.LambdaHack.Perception
+import Game.LambdaHack.Point
+import Game.LambdaHack.State
+import Game.LambdaHack.Strategy
+import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Time
-import qualified Game.LambdaHack.Color as Color
+import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Utils.Frequency
+import Game.LambdaHack.Vector
 
 -- | AI proposes possible targets for the actor. Never empty.
 targetStrategy :: Kind.COps -> ActorId -> State -> Perception -> [Ability]
@@ -111,7 +111,7 @@ targetStrategy cops actor state@State{splayer = pl} per factionAbilities =
     (TLoc . (me `shift`)) `liftM` moveStrategy cops actor state Nothing
 
 -- | AI strategy based on actor's sight, smell, intelligence, etc. Never empty.
-strategy :: Kind.COps -> ActorId -> State -> [Ability] -> Strategy (Action ())
+strategy :: forall m. (MonadIO m, MonadAction m) => Kind.COps -> ActorId -> State -> [Ability] -> Strategy (m ())
 strategy cops actor state factionAbilities =
   sumS prefix .| combineDistant distant .| sumS suffix
   .| waitBlockNow actor  -- wait until friends sidestep, ensures never empty
@@ -124,7 +124,7 @@ strategy cops actor state factionAbilities =
      TPath _    -> (bloc, False)  -- a missile
      TCursor    -> (bloc, False)  -- an actor blocked by friends
   combineDistant = liftFrequency . sumF
-  aFrequency :: Ability -> Frequency (Action ())
+  aFrequency :: Ability -> Frequency (m ())
   aFrequency Ability.Ranged = if foeVisible
                               then rangedFreq cops actor state floc
                               else mzero
@@ -137,7 +137,7 @@ strategy cops actor state factionAbilities =
   aFrequency _              = assert `failure` distant
   chaseFreq =
     scaleFreq 30 $ bestVariant $ chase cops actor state (floc, foeVisible)
-  aStrategy :: Ability -> Strategy (Action ())
+  aStrategy :: Ability -> Strategy (m ())
   aStrategy Ability.Track  = track cops actor state
   aStrategy Ability.Heal   = mzero  -- TODO
   aStrategy Ability.Flee   = mzero  -- TODO
@@ -152,7 +152,7 @@ strategy cops actor state factionAbilities =
   sumS = msum . map aStrategy
   sumF = msum . map aFrequency
 
-dirToAction :: ActorId -> Bool -> Vector -> Action ()
+dirToAction :: (MonadIO m, MonadAction m) => ActorId -> Bool -> Vector -> m ()
 dirToAction actor allowAttacks dir = do
   -- set new direction
   updateAnyActor actor $ \ m -> m { bdir = Just (dir, 0) }
@@ -166,11 +166,11 @@ dirToAction actor allowAttacks dir = do
     moveOrAttack allowAttacks actor dir
 
 -- | A strategy to always just wait.
-waitBlockNow :: ActorId -> Strategy (Action ())
+waitBlockNow :: MonadAction m => ActorId -> Strategy (m ())
 waitBlockNow actor = returN "wait" $ setWaitBlock actor
 
 -- | A strategy to always just die.
-dieNow :: ActorId -> Strategy (Action ())
+dieNow :: MonadAction m => ActorId -> Strategy (m ())
 dieNow actor = returN "die" $ do  -- TODO: explode if a potion
   bitems <- gets (getActorItem actor)
   Actor{bloc} <- gets (getActor actor)
@@ -178,7 +178,7 @@ dieNow actor = returN "die" $ do  -- TODO: explode if a potion
   modify (deleteActor actor)
 
 -- | Strategy for dumb missiles.
-track :: Kind.COps -> ActorId -> State -> Strategy (Action ())
+track :: (MonadIO m, MonadAction m) => Kind.COps -> ActorId -> State -> Strategy (m ())
 track cops actor state =
   strat
  where
@@ -202,7 +202,7 @@ track cops actor state =
       dirToAction actor True d
     _ -> reject
 
-pickup :: ActorId -> State -> Strategy (Action ())
+pickup :: MonadAction m => ActorId -> State -> Strategy (m ())
 pickup actor state =
   lootHere bloc .=> actionPickup
  where
@@ -211,7 +211,7 @@ pickup actor state =
   lootHere x = not $ L.null $ lvl `atI` x
   actionPickup = returN "pickup" $ actorPickupItem actor
 
-melee :: ActorId -> State -> Point -> Strategy (Action ())
+melee :: (MonadIO m, MonadAction m) => ActorId -> State -> Point -> Strategy (m ())
 melee actor state floc =
   foeAdjacent .=> (returN "melee" $ dirToAction actor True dir)
  where
@@ -220,7 +220,7 @@ melee actor state floc =
   foeAdjacent = adjacent lxsize bloc floc
   dir = displacement bloc floc
 
-rangedFreq :: Kind.COps -> ActorId -> State -> Point -> Frequency (Action ())
+rangedFreq :: MonadAction m => Kind.COps -> ActorId -> State -> Point -> Frequency (m ())
 rangedFreq cops actor state@State{splayer = pl} floc =
   toFreq "throwFreq" $
     if not foesAdj
@@ -265,7 +265,7 @@ rangedFreq cops actor state@State{splayer = pl} floc =
       -- Wasting weapons and armour would be too cruel to the player.
       isymbol ik `elem` (ritemProject $ Kind.stdRuleset corule)]
 
-toolsFreq :: Kind.COps -> ActorId -> State -> Frequency (Action ())
+toolsFreq :: (MonadIO m, MonadAction m) => Kind.COps -> ActorId -> State -> Frequency (m ())
 toolsFreq cops actor state =
   toFreq "quaffFreq" $ quaffFreq bitems 1 ++ quaffFreq tis 2
  where
@@ -374,7 +374,7 @@ moveStrategy cops actor state mFoe =
   isSensible l = noFriends l && (accessibleHere l || openableHere l)
   sensible = filter (isSensible . (bloc `shift`)) (moves lxsize)
 
-chase :: Kind.COps -> ActorId -> State -> (Point, Bool) -> Strategy (Action ())
+chase :: (MonadIO m, MonadAction m) => Kind.COps -> ActorId -> State -> (Point, Bool) -> Strategy (m ())
 chase cops actor state foe@(_, foeVisible) =
   -- Target set and we chase the foe or offer null strategy if we can't.
   -- The foe is visible, or we remember his last position.
@@ -382,7 +382,7 @@ chase cops actor state foe@(_, foeVisible) =
       fight = not foeVisible  -- don't pick fights if the real foe is close
   in dirToAction actor fight `liftM` moveStrategy cops actor state mFoe
 
-wander :: Kind.COps -> ActorId -> State -> Strategy (Action ())
+wander :: (MonadIO m, MonadAction m) => Kind.COps -> ActorId -> State -> Strategy (m ())
 wander cops actor state =
   -- Target set, but we don't chase the foe, e.g., because we are blocked
   -- or we cannot chase at all.

@@ -9,7 +9,7 @@ module Game.LambdaHack.Actions where
 import qualified Paths_LambdaHack as Self (version)
 
 import Control.Monad
-import Control.Monad.State hiding (State, state)
+import Control.Monad.State hiding (State, get, gets, state)
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import qualified Data.List as L
@@ -55,19 +55,19 @@ import Game.LambdaHack.Vector
 
 default (Text)
 
-gameSave :: Action ()
+gameSave :: (MonadIO m, MonadAction m) => m ()
 gameSave = do
   saveGameBkp
   msgAdd "Game progress saved to a backup file."
 
-gameExit :: Action ()
+gameExit :: (MonadIO m, MonadAction m) => m ()
 gameExit = do
   b <- displayYesNo "Really save and exit?"
   if b
     then modify (\ s -> s {squit = Just (True, Camping)})
     else abortWith "Game resumed."
 
-gameRestart :: Action ()
+gameRestart :: (MonadIO m, MonadAction m) => m ()
 gameRestart = do
   b1 <- displayMore ColorFull "You just requested a new game."
   when (not b1) $ neverMind True
@@ -103,13 +103,13 @@ move dir = do
     else
       inFrame $ moveOrAttack True pl dir
 
-ifRunning :: ((Vector, Int) -> Action a) -> Action a -> Action a
+ifRunning :: MonadActionRO m => ((Vector, Int) -> m a) -> m a -> m a
 ifRunning t e = do
   ad <- gets (bdir . getPlayerBody)
   maybe e t ad
 
 -- | Guess and report why the bump command failed.
-guessBump :: Kind.Ops TileKind -> F.Feature -> Kind.Id TileKind -> Action ()
+guessBump :: MonadActionRO m => Kind.Ops TileKind -> F.Feature -> Kind.Id TileKind -> m ()
 guessBump cotile F.Openable t | Tile.hasFeature cotile F.Closable t =
   abortWith "already open"
 guessBump _ F.Openable _ =
@@ -129,7 +129,7 @@ guessBump _ F.Descendable _ =
 guessBump _ _ _ = neverMind True
 
 -- | Player tries to trigger a tile using a feature.
-bumpTile :: Point -> F.Feature -> Action ()
+bumpTile :: (MonadIO m, MonadAction m) => Point -> F.Feature -> m ()
 bumpTile dloc feat = do
   Kind.COps{cotile} <- askCOps
   lvl    <- gets slevel
@@ -139,7 +139,7 @@ bumpTile dloc feat = do
     else guessBump cotile feat t
 
 -- | Perform the action specified for the tile in case it's triggered.
-triggerTile :: Point -> Action ()
+triggerTile :: (MonadIO m, MonadAction m) => Point -> m ()
 triggerTile dloc = do
   Kind.COps{cotile=Kind.Ops{okind, opick}} <- askCOps
   lvl <- gets slevel
@@ -162,7 +162,7 @@ triggerTile dloc = do
   mapM_ f $ TileKind.tfeature $ okind $ lvl `at` dloc
 
 -- | Ask for a direction and trigger a tile, if possible.
-playerTriggerDir :: F.Feature -> MU.Part -> Action ()
+playerTriggerDir :: (MonadIO m, MonadAction m) => F.Feature -> MU.Part -> m ()
 playerTriggerDir feat verb = do
   let keys = zip K.dirAllMoveKey $ repeat K.NoModifier
       prompt = makePhrase ["What to", verb MU.:> "? [movement key"]
@@ -171,7 +171,7 @@ playerTriggerDir feat verb = do
   K.handleDir lxsize e (playerBumpDir feat) (neverMind True)
 
 -- | Player tries to trigger a tile in a given direction.
-playerBumpDir :: F.Feature -> Vector -> Action ()
+playerBumpDir :: (MonadIO m, MonadAction m) => F.Feature -> Vector -> m ()
 playerBumpDir feat dir = do
   pl    <- gets splayer
   body  <- gets (getActor pl)
@@ -179,13 +179,13 @@ playerBumpDir feat dir = do
   bumpTile dloc feat
 
 -- | Player tries to trigger the tile he's standing on.
-playerTriggerTile :: F.Feature -> Action ()
+playerTriggerTile :: (MonadIO m, MonadAction m) => F.Feature -> m ()
 playerTriggerTile feat = do
   ploc <- gets (bloc . getPlayerBody)
   bumpTile ploc feat
 
 -- | An actor opens a door: player (hero or controlled monster) or enemy.
-actorOpenDoor :: ActorId -> Vector -> Action ()
+actorOpenDoor :: (MonadIO m, MonadAction m) => ActorId -> Vector -> m ()
 actorOpenDoor actor dir = do
   Kind.COps{ cotile
            , coitem
@@ -264,7 +264,7 @@ tgtAscend k = do
     modify (updateCursor upd)
   doLook
 
-heroesAfterPl :: Action [ActorId]
+heroesAfterPl :: MonadActionRO m => m [ActorId]
 heroesAfterPl = do
   pl <- gets splayer
   s  <- get
@@ -275,7 +275,7 @@ heroesAfterPl = do
 
 -- | Switches current hero to the next hero on the level, if any, wrapping.
 -- We cycle through at most 10 heroes (\@, 1--9).
-cycleHero :: Action ()
+cycleHero :: MonadAction m => m ()
 cycleHero = do
   pl <- gets splayer
   s  <- get
@@ -287,7 +287,7 @@ cycleHero = do
 
 -- | Switches current hero to the previous hero in the whole dungeon,
 -- if any, wrapping. We cycle through at most 10 heroes (\@, 1--9).
-backCycleHero :: Action ()
+backCycleHero :: MonadAction m => m ()
 backCycleHero = do
   pl <- gets splayer
   hs <- heroesAfterPl
@@ -297,7 +297,7 @@ backCycleHero = do
                 >>= assert `trueM` (pl, ni, "hero duplicated")
 
 -- | Search for hidden doors.
-search :: Action ()
+search :: (MonadIO m, MonadAction m) => m ()
 search = do
   Kind.COps{coitem, cotile} <- askCOps
   lvl    <- gets slevel
@@ -331,10 +331,11 @@ search = do
 
 -- | This function performs a move (or attack) by any actor,
 -- i.e., it can handle monsters, heroes and both.
-moveOrAttack :: Bool       -- ^ allow attacks?
+moveOrAttack :: (MonadIO m, MonadAction m)
+             => Bool       -- ^ allow attacks?
              -> ActorId    -- ^ who's moving?
              -> Vector     -- ^ in which direction?
-             -> Action ()
+             -> m ()
 moveOrAttack allowAttacks actor dir = do
   -- We start by looking at the target position.
   cops@Kind.COps{cotile = cotile@Kind.Ops{okind}} <- askCOps
@@ -376,7 +377,7 @@ moveOrAttack allowAttacks actor dir = do
 -- can be attacked from an adjacent position.
 -- This function is analogous to projectGroupItem, but for melee
 -- and not using up the weapon.
-actorAttackActor :: ActorId -> ActorId -> Action ()
+actorAttackActor :: (MonadIO m, MonadAction m) => ActorId -> ActorId -> m ()
 actorAttackActor source target = do
   smRaw <- gets (getActor source)
   tmRaw <- gets (getActor target)
@@ -453,7 +454,7 @@ actorAttackActor source target = do
 
 -- | Resolves the result of an actor running (not walking) into another.
 -- This involves switching positions of the two actors.
-actorRunActor :: ActorId -> ActorId -> Action ()
+actorRunActor :: (MonadIO m, MonadAction m) => ActorId -> ActorId -> m ()
 actorRunActor source target = do
   pl <- gets splayer
   sm <- gets (getActor source)
@@ -512,7 +513,7 @@ rollMonster Kind.COps{ cotile
       return $ addMonster cotile mk hp loc bfaction False state
 
 -- | Generate a monster, possibly.
-generateMonster :: Action ()
+generateMonster :: MonadAction m => m ()
 generateMonster = do
   cops    <- askCOps
   state   <- get
@@ -522,7 +523,7 @@ generateMonster = do
   put $ nstate {srandom}
 
 -- | Possibly regenerate HP for all actors on the current level.
-regenerateLevelHP :: Action ()
+regenerateLevelHP :: MonadAction m => m ()
 regenerateLevelHP = do
   Kind.COps{ coitem
            , coactor=coactor@Kind.Ops{okind}
@@ -610,7 +611,7 @@ displayHistory = do
   displayOverlays msg "" $
     splitOverlay lysize $ renderHistory shistory
 
-dumpConfig :: Action ()
+dumpConfig :: (MonadIO m, MonadActionRO m) => m ()
 dumpConfig = do
   ConfigUI{configRulesCfgFile} <- askConfigUI
   let fn = configRulesCfgFile ++ ".dump"
@@ -620,7 +621,7 @@ dumpConfig = do
   abortWith msg
 
 -- | Add new smell traces to the level. Only humans leave a strong scent.
-addSmell :: Action ()
+addSmell :: MonadAction m => m ()
 addSmell = do
   s  <- get
   pl <- gets splayer
@@ -631,14 +632,14 @@ addSmell = do
     modify $ updateLevel $ updateSmell upd
 
 -- | Update the wait/block count.
-setWaitBlock :: ActorId -> Action ()
+setWaitBlock :: MonadAction m => ActorId -> m ()
 setWaitBlock actor = do
   Kind.COps{coactor} <- askCOps
   time <- gets stime
   updateAnyActor actor $ \ m -> m {bwait = timeAddFromSpeed coactor m time}
 
 -- | Player waits a turn (and blocks, etc.).
-waitBlock :: Action ()
+waitBlock :: (MonadIO m, MonadAction m) => m ()
 waitBlock = do
   pl <- gets splayer
   setWaitBlock pl

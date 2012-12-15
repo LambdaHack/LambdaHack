@@ -2,35 +2,35 @@
 -- | The main loop of the game, processing player and AI moves turn by turn.
 module Game.LambdaHack.Turn ( handleTurn ) where
 
-import Control.Monad
-import Control.Monad.State hiding (State, state)
 import Control.Arrow ((&&&))
-import qualified Data.List as L
-import qualified Data.Ord as Ord
-import qualified Data.Map as M
+import Control.Monad
+import Control.Monad.State hiding (State, get, gets, state)
 import qualified Data.IntMap as IM
+import qualified Data.List as L
+import qualified Data.Map as M
 import Data.Maybe
+import qualified Data.Ord as Ord
 
-import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
-import Game.LambdaHack.EffectAction
-import qualified Game.LambdaHack.Binding as Binding
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
+import qualified Game.LambdaHack.Binding as Binding
+import Game.LambdaHack.Content.FactionKind
+import Game.LambdaHack.Content.StrategyKind
+import Game.LambdaHack.Draw
+import Game.LambdaHack.EffectAction
+import qualified Game.LambdaHack.Key as K
+import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
+import Game.LambdaHack.Msg
+import Game.LambdaHack.Random
+import Game.LambdaHack.Running
 import Game.LambdaHack.State
 import Game.LambdaHack.Strategy
 import Game.LambdaHack.StrategyAction
-import Game.LambdaHack.Running
-import qualified Game.LambdaHack.Key as K
-import Game.LambdaHack.Msg
-import Game.LambdaHack.Draw
-import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Time
-import Game.LambdaHack.Content.FactionKind
-import Game.LambdaHack.Content.StrategyKind
-import Game.LambdaHack.Random
+import Game.LambdaHack.Utils.Assert
 
 
 -- One clip proceeds through the following functions:
@@ -147,7 +147,7 @@ handleActors subclipStart = do
               handleActors subclipStart
 
 -- | Handle the move of a single monster.
-handleAI :: ActorId -> Action ()
+handleAI :: (MonadIO m, MonadAction m) => ActorId -> m ()
 handleAI actor = do
   cops@Kind.COps{ cofact=Kind.Ops{okind}
                 , costrat=Kind.Ops{opick, okind=sokind}
@@ -247,7 +247,7 @@ playerCommand msgRunAbort = do
   loop kmPush
 
 -- | Advance (or rewind) the move time for the given actor.
-advanceTime :: ActorId -> Action ()
+advanceTime :: MonadAction m => ActorId -> m ()
 advanceTime actor = do
   Kind.COps{coactor} <- askCOps
   let upd m@Actor{btime} = m {btime = timeAddFromSpeed coactor m btime}
