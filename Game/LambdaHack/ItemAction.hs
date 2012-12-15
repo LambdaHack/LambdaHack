@@ -8,30 +8,30 @@ module Game.LambdaHack.ItemAction where
 
 import Control.Monad
 import Control.Monad.State hiding (State, state)
-import qualified Data.List as L
 import qualified Data.IntMap as IM
+import qualified Data.IntSet as IS
+import qualified Data.List as L
 import Data.Maybe
 import Data.Ord
-import qualified Data.IntSet as IS
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
-import Game.LambdaHack.Point
-import Game.LambdaHack.Item
-import qualified Game.LambdaHack.Key as K
-import Game.LambdaHack.Level
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Perception
-import Game.LambdaHack.State
-import Game.LambdaHack.EffectAction
-import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Content.ItemKind
-import Game.LambdaHack.Time
+import Game.LambdaHack.EffectAction
+import Game.LambdaHack.Item
+import qualified Game.LambdaHack.Key as K
+import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
+import Game.LambdaHack.Perception
+import Game.LambdaHack.Point
+import Game.LambdaHack.State
+import Game.LambdaHack.Time
+import Game.LambdaHack.Utils.Assert
 
 default (Text)
 

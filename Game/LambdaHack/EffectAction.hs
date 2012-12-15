@@ -8,38 +8,38 @@ module Game.LambdaHack.EffectAction where
 import Control.Monad
 import Control.Monad.State hiding (State, state)
 import Data.Function
-import Data.Maybe
-import qualified Data.List as L
 import qualified Data.IntMap as IM
-import qualified Data.Set as S
 import qualified Data.IntSet as IS
+import qualified Data.List as L
+import Data.Maybe
 import Data.Monoid (mempty)
+import qualified Data.Set as S
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
+import Game.LambdaHack.Animation (twirlSplash, blockHit, deathBody)
+import qualified Game.LambdaHack.Color as Color
+import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Draw
-import Game.LambdaHack.Point
-import Game.LambdaHack.Item
 import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Draw
+import qualified Game.LambdaHack.Dungeon as Dungeon
+import Game.LambdaHack.DungeonState
+import qualified Game.LambdaHack.Effect as Effect
+import Game.LambdaHack.Item
+import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Misc
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
+import Game.LambdaHack.Point
 import Game.LambdaHack.Random
 import Game.LambdaHack.State
 import Game.LambdaHack.Time
-import Game.LambdaHack.Config
-import qualified Game.LambdaHack.Effect as Effect
-import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.DungeonState
-import qualified Game.LambdaHack.Color as Color
-import Game.LambdaHack.Animation (twirlSplash, blockHit, deathBody)
-import qualified Game.LambdaHack.Dungeon as Dungeon
+import Game.LambdaHack.Utils.Assert
 
 default (Text)
 

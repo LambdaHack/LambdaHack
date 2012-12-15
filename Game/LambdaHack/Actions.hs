@@ -10,48 +10,48 @@ import qualified Paths_LambdaHack as Self (version)
 
 import Control.Monad
 import Control.Monad.State hiding (State, state)
-import qualified Data.List as L
 import qualified Data.IntMap as IM
+import qualified Data.IntSet as IS
+import qualified Data.List as L
 import qualified Data.Map as M
 import Data.Maybe
-import Data.Version
-import qualified Data.IntSet as IS
 import Data.Ratio
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Version
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Action
-import Game.LambdaHack.Point
-import Game.LambdaHack.Vector
-import qualified Game.LambdaHack.Dungeon as Dungeon
-import Game.LambdaHack.Item
-import qualified Game.LambdaHack.Key as K
-import Game.LambdaHack.Level
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Perception
-import Game.LambdaHack.State
-import qualified Game.LambdaHack.Effect as Effect
-import Game.LambdaHack.EffectAction
-import qualified Game.LambdaHack.Tile as Tile
-import qualified Game.LambdaHack.Kind as Kind
-import qualified Game.LambdaHack.Feature as F
-import Game.LambdaHack.DungeonState
-import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Content.TileKind as TileKind
-import Game.LambdaHack.Content.ItemKind
-import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Random
-import Game.LambdaHack.Misc
-import Game.LambdaHack.Msg
+import Game.LambdaHack.Animation (blockMiss, swapPlaces)
 import Game.LambdaHack.Binding
-import Game.LambdaHack.Time
-import Game.LambdaHack.Animation (swapPlaces, blockMiss)
-import Game.LambdaHack.Draw
 import qualified Game.LambdaHack.Command as Command
 import Game.LambdaHack.Config
+import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.Content.TileKind as TileKind
+import Game.LambdaHack.Draw
+import qualified Game.LambdaHack.Dungeon as Dungeon
+import Game.LambdaHack.DungeonState
+import qualified Game.LambdaHack.Effect as Effect
+import Game.LambdaHack.EffectAction
+import qualified Game.LambdaHack.Feature as F
+import Game.LambdaHack.Item
+import qualified Game.LambdaHack.Key as K
+import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Level
+import Game.LambdaHack.Misc
+import Game.LambdaHack.Msg
+import Game.LambdaHack.Perception
+import Game.LambdaHack.Point
+import Game.LambdaHack.Random
+import Game.LambdaHack.State
+import qualified Game.LambdaHack.Tile as Tile
+import Game.LambdaHack.Time
+import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Vector
 
 default (Text)
 

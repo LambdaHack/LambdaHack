@@ -28,41 +28,41 @@ module Game.LambdaHack.Action
   , debug
   ) where
 
+import Control.Concurrent
+import Control.Exception (finally)
 import Control.Monad
+import Control.Monad.IO.Class
 import Control.Monad.State hiding (State, state, liftIO, get, gets)
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import qualified Data.Map as M
-import System.Time
 import Data.Maybe
-import Control.Concurrent
-import Control.Exception (finally)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Control.Monad.IO.Class
+import System.Time
 -- import System.IO (hPutStrLn, stderr) -- just for debugging
 
 import Game.LambdaHack.Action.ActionLift
-import Game.LambdaHack.Perception
+import qualified Game.LambdaHack.Action.ConfigIO as ConfigIO
 import Game.LambdaHack.Action.Frontend
-import Game.LambdaHack.Draw
-import Game.LambdaHack.Msg
-import Game.LambdaHack.State
-import Game.LambdaHack.Level
+import Game.LambdaHack.Action.HighScore (register)
+import qualified Game.LambdaHack.Action.Save as Save
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import qualified Game.LambdaHack.Action.Save as Save
-import qualified Game.LambdaHack.Kind as Kind
-import qualified Game.LambdaHack.Key as K
-import Game.LambdaHack.Binding
-import Game.LambdaHack.Action.HighScore (register)
-import Game.LambdaHack.Config
-import qualified Game.LambdaHack.Action.ConfigIO as ConfigIO
 import Game.LambdaHack.Animation (SingleFrame(..))
-import Game.LambdaHack.Point
+import Game.LambdaHack.Binding
+import Game.LambdaHack.Config
+import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.Draw
 import qualified Game.LambdaHack.DungeonState as DungeonState
 import Game.LambdaHack.Item
-import Game.LambdaHack.Content.RuleKind
+import qualified Game.LambdaHack.Key as K
+import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Level
+import Game.LambdaHack.Msg
+import Game.LambdaHack.Perception
+import Game.LambdaHack.Point
+import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 
 -- | Set the current exception handler. Apart of executing it,

@@ -20,21 +20,21 @@ module Game.LambdaHack.Action.ActionLift
   , getDiary, msgAdd, historyReset, msgReset
   ) where
 
-import Control.Monad.State hiding (State, state, liftIO)
+import Control.Monad.IO.Class
+import Control.Monad.State hiding (State, liftIO, state)
 import qualified Data.List as L
 import Data.Maybe
 import qualified Data.Text as T
-import Control.Monad.IO.Class
 
-import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Perception
 import Game.LambdaHack.Action.Frontend
-import Game.LambdaHack.Msg
-import Game.LambdaHack.State
-import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Animation (SingleFrame (..))
 import Game.LambdaHack.Binding
 import Game.LambdaHack.Config
-import Game.LambdaHack.Animation (SingleFrame(..))
+import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Msg
+import Game.LambdaHack.Perception
+import Game.LambdaHack.State
+import Game.LambdaHack.Utils.Assert
 
 -- | The type of the function inside any action.
 type ActionFun a =
