@@ -92,7 +92,7 @@ effectToAction effect verbosity source target power block = do
    else do
     sm  <- gets (getActor source)
     tm  <- gets (getActor target)
-    per <- getPerception
+    per <- askPerception
     pl  <- gets splayer
     let sloc = bloc sm
         tloc = bloc tm
@@ -494,7 +494,7 @@ summonMonsters n loc = do
 checkPartyDeath :: (MonadIO m, MonadAction m) => m ()
 checkPartyDeath = do
   cops@Kind.COps{coactor} <- askCOps
-  per    <- getPerception
+  per    <- askPerception
   ahs    <- gets allHeroesAnyLevel
   pl     <- gets splayer
   pbody  <- gets getPlayerBody
@@ -596,7 +596,7 @@ doLook = do
   state  <- get
   lvl    <- gets slevel
   hms    <- gets (lactor . slevel)
-  per    <- getPerception
+  per    <- askPerception
   target <- gets (btarget . getPlayerBody)
   pl     <- gets splayer
   targeting <- gets (ctargeting . scursor)

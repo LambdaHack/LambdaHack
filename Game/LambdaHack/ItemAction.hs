@@ -77,7 +77,7 @@ applyGroupItem actor verb item = do
   Kind.COps{coactor, coitem} <- askCOps
   state <- get
   body  <- gets (getActor actor)
-  per   <- getPerception
+  per   <- askPerception
   -- only one item consumed, even if several in inventory
   let consumed = item { jcount = 1 }
       msg = makeSentence
@@ -106,7 +106,7 @@ projectGroupItem source tloc _verb item = do
   cops@Kind.COps{coactor, coitem} <- askCOps
   state <- get
   sm    <- gets (getActor source)
-  per   <- getPerception
+  per   <- askPerception
   pl    <- gets splayer
   Actor{btime}  <- gets getPlayerBody
   lvl   <- gets slevel
@@ -173,7 +173,7 @@ playerProjectGI verb object syms = do
   state <- get
   pl    <- gets splayer
   ploc  <- gets (bloc . getPlayerBody)
-  per   <- getPerception
+  per   <- askPerception
   let retarget msg = do
         msgAdd msg
         let upd cursor = cursor {clocation=ploc, ceps=0}
@@ -201,7 +201,7 @@ targetMonster tgtMode = do
   ploc      <- gets (bloc . getPlayerBody)
   sfaction <- gets sfaction
   ms        <- gets (hostileAssocs sfaction . slevel)
-  per       <- getPerception
+  per       <- askPerception
   lxsize    <- gets (lxsize . slevel)
   target    <- gets (btarget . getPlayerBody)
   targeting <- gets (ctargeting . scursor)
@@ -249,7 +249,7 @@ targetFloor tgtMode = do
 setCursor :: (MonadIO m, MonadAction m) => TgtMode -> WriterT Frames m ()
 setCursor tgtMode = assert (tgtMode /= TgtOff) $ do
   state  <- get
-  per    <- getPerception
+  per    <- askPerception
   ploc   <- gets (bloc . getPlayerBody)
   clocLn <- gets slid
   let upd cursor@Cursor{ctargeting, clocation=clocationOld, ceps=cepsOld} =
@@ -275,7 +275,7 @@ endTargeting :: MonadAction m => Bool -> m ()
 endTargeting accept = do
   returnLn <- gets (creturnLn . scursor)
   target   <- gets (btarget . getPlayerBody)
-  per      <- getPerception
+  per      <- askPerception
   cloc     <- gets (clocation . scursor)
   sfaction <- gets sfaction
   ms       <- gets (hostileAssocs sfaction . slevel)
@@ -399,7 +399,7 @@ actorPickupItem actor = do
   Kind.COps{coactor, coitem} <- askCOps
   state <- get
   pl    <- gets splayer
-  per   <- getPerception
+  per   <- askPerception
   lvl   <- gets slevel
   body  <- gets (getActor actor)
   bitems <- gets (getActorItem actor)

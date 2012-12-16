@@ -159,7 +159,7 @@ continueRun :: (MonadIO m, MonadAction m) => (Vector, Int) -> m ()
 continueRun (dirLast, distLast) = do
   cops@Kind.COps{cotile} <- askCOps
   locHere <- gets (bloc . getPlayerBody)
-  per <- getPerception
+  per <- askPerception
   Diary{sreport} <- getDiary
   ms  <- gets dangerousList
   sfaction <- gets sfaction

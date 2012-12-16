@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Actors perceiving other actors and the dungeon level.
 module Game.LambdaHack.Perception
-  ( DungeonPerception, Perception
+  ( Pers, Perception
   , totalVisible, debugTotalReachable, dungeonPerception
   , actorReachesLoc, actorReachesActor, actorSeesActor
   ) where
@@ -34,7 +34,7 @@ newtype PerceptionVisible = PerceptionVisible
   }
 
 -- | The type representing the perception for all levels in the dungeon.
-type DungeonPerception = [(LevelId, Perception)]
+type Pers = [(LevelId, Perception)]
 
 -- | The type representing the perception of all actors on the level.
 --
@@ -109,7 +109,7 @@ actorSeesActor cotile per lvl source target sloc tloc pl =
   in  heroReaches && visByHeroes || monsterSees
 
 -- | Calculate the perception of all actors on the level.
-dungeonPerception :: Kind.COps -> State -> DungeonPerception
+dungeonPerception :: Kind.COps -> State -> Pers
 dungeonPerception cops s@State{slid, sdungeon} =
   let lvlPer (ln, lvl) = (ln, levelPerception cops s lvl)
   in map lvlPer $ currentFirst slid sdungeon

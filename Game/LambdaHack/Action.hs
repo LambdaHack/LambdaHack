@@ -5,7 +5,7 @@
 module Game.LambdaHack.Action
   ( -- * Actions and accessors
     MonadAction, MonadActionRO(get, gets), Action, Frames
-  , getPerception, askCOps, askBinding, askConfigUI
+  , askPerception, askCOps, askBinding, askConfigUI
     -- * Actions returning frames
   , tryWithFrame
     -- * Various ways to abort action
@@ -215,7 +215,7 @@ displayFramePush mframe = do
 drawPrompt :: MonadActionRO m => ColorMode -> Msg -> m SingleFrame
 drawPrompt dm prompt = do
   cops <- askCOps
-  per <- getPerception
+  per <- askPerception
   s <- get
   Diary{sreport} <- getDiary
   let over = splitReport $ addMsg sreport prompt
@@ -228,7 +228,7 @@ drawPrompt dm prompt = do
 drawOverlay :: MonadActionRO m => ColorMode -> Msg -> Overlay -> m SingleFrame
 drawOverlay dm prompt overlay = do
   cops <- askCOps
-  per <- getPerception
+  per <- askPerception
   s <- get
   Diary{sreport} <- getDiary
   let xsize = lxsize $ slevel s
@@ -263,7 +263,7 @@ displayPush = do
 -- | Update heroes memory.
 remember :: MonadAction m => m ()
 remember = do
-  per <- getPerception
+  per <- askPerception
   let vis = IS.toList (totalVisible per)
   rememberList vis
 

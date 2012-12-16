@@ -8,7 +8,7 @@
 module Game.LambdaHack.Action.ActionLift
   ( -- * Actions and basic operations
     ActionFun, MonadAction, MonadActionRO(get, gets), Action, Frames
-  , handlerToIO, withPerception, getPerception
+  , handlerToIO, withPerception, askPerception
     -- * Game session and assessors to its components
   , Session(..), askFrontendSession, askCOps, askBinding, askConfigUI
     -- * Various ways to abort action
@@ -19,6 +19,7 @@ module Game.LambdaHack.Action.ActionLift
   , getDiary, msgAdd, historyReset, msgReset
   ) where
 
+import Control.Monad.Reader.Class
 import Control.Monad.IO.Class
 import qualified Control.Monad.State as St
 import Control.Monad.Writer.Strict
@@ -39,7 +40,7 @@ import Game.LambdaHack.Utils.Assert
 -- | The type of the function inside any action.
 type ActionFun a =
    Session                            -- ^ client session setup data
-   -> DungeonPerception               -- ^ cached perception
+   -> Pers                            -- ^ cached perception
    -> (State -> Diary -> a -> IO ())  -- ^ continuation
    -> (Msg -> IO ())                  -- ^ failure/reset continuation
    -> State                           -- ^ current state
@@ -49,7 +50,7 @@ type ActionFun a =
 -- | The type of the function inside any read-only action.
 type ActionFunRO a =
    Session                            -- ^ client session setup data
-   -> DungeonPerception               -- ^ cached perception
+   -> Pers                            -- ^ cached perception
    -> (a -> IO ())                    -- ^ continuation
    -> (Msg -> IO ())                  -- ^ failure/reset continuation
    -> State                           -- ^ current state
@@ -80,11 +81,12 @@ instance Monad Action where
 instance Show (Action a) where
   show _ = "an action"
 
-class (Monad m, Functor m, Show (m ())) => MonadActionRO m where
+class (Monad m, Functor m, MonadReader Pers m, Show (m ()))
+      => MonadActionRO m where
   fun2actionRO :: ActionFunRO a -> m a
   -- | Set the current exception handler. First argument is the handler,
   -- second is the computation the handler scopes over.
-  tryWith      :: (Msg -> m a) -> m a -> m a
+  tryWith :: (Msg -> m a) -> m a -> m a
   get :: m State
   get = fun2actionRO (\_c _p k _a s _d -> k s)
   gets :: (State -> a) -> m a
@@ -93,6 +95,8 @@ class (Monad m, Functor m, Show (m ())) => MonadActionRO m where
 -- The following seems to trigger a GHC bug (Overlapping instances for Show):
 -- instance MonadActionRO m => Show (m a) where
 --   show _ = "an action"
+-- TODO: try again, but not sooner than in a few years, so that users
+-- with old compilers don't have compilation problems.
 
 -- | Sequences of screen frames, including delays.
 type Frames = [Maybe SingleFrame]
@@ -130,6 +134,10 @@ instance St.MonadState State Action where
   get    = get
   put ns = fun2action (\_c _p k _a _s d -> k ns d ())
 
+instance MonadReader Pers Action where
+  ask = fun2actionRO (\_c p k _a _s _d -> k p)
+  local f m = fun2action (\c p k a s d -> runAction m c (f p) k a s d)
+
 instance MonadIO Action where
   liftIO x = fun2actionRO (\_c _p k _a _s _d -> x >>= k)
 
@@ -144,21 +152,20 @@ handlerToIO sess@Session{scops} state diary m =
     state
     diary
 
--- TODO: RO
 -- | Update the cached perception for the given computation.
-withPerception :: MonadAction m => m () -> m ()
+withPerception :: MonadActionRO m => m () -> m ()
 withPerception m = do
   cops <- askCOps
   s <- get
   let per = dungeonPerception cops s
-  return undefined
---  fun2action (\c@Session{scops} _ k a s d ->
---           action2fun m c per k a s d)
+  local (const per) m
 
 -- | Get the current perception.
-getPerception :: MonadActionRO m => m Perception
-getPerception = fun2actionRO (\_c per k _a s _d ->
-                         k (fromJust $ L.lookup (slid s) per))
+askPerception :: MonadActionRO m => m Perception
+askPerception = do
+  lid <- gets slid
+  pers <- ask
+  return $ fromJust $ L.lookup lid pers
 
 -- | The information that is constant across a client playing session,
 -- including many consecutive games in a single session,

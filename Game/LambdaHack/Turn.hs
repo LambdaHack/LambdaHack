@@ -153,7 +153,7 @@ handleAI actor = do
                 , costrat=Kind.Ops{opick, okind=sokind}
                 } <- askCOps
   state <- get
-  per <- getPerception
+  per <- askPerception
   let Actor{bfaction, bloc, bsymbol} = getActor actor state
       faction = okind bfaction
   factionAi <- rndToAction $ opick (fAiIdle faction) (const True)

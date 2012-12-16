@@ -382,7 +382,7 @@ actorAttackActor :: (MonadIO m, MonadAction m) => ActorId -> ActorId -> m ()
 actorAttackActor source target = do
   smRaw <- gets (getActor source)
   tmRaw <- gets (getActor target)
-  per   <- getPerception
+  per   <- askPerception
   time  <- gets stime
   sfaction <- gets sfaction
   let sloc = bloc smRaw
@@ -465,7 +465,7 @@ actorRunActor source target = do
   updateAnyActor source $ \ m -> m { bloc = tloc }
   updateAnyActor target $ \ m -> m { bloc = sloc }
   cops@Kind.COps{coactor} <- askCOps
-  per <- getPerception
+  per <- askPerception
   let visible = sloc `IS.member` totalVisible per ||
                 tloc `IS.member` totalVisible per
       msg = makeSentence
@@ -518,7 +518,7 @@ generateMonster :: MonadAction m => m ()
 generateMonster = do
   cops    <- askCOps
   state   <- get
-  per     <- getPerception
+  per     <- askPerception
   nstate  <- rndToAction $ rollMonster cops per state
   srandom <- gets srandom
   put $ nstate {srandom}
