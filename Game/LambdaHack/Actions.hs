@@ -56,19 +56,19 @@ import Game.LambdaHack.Vector
 
 default (Text)
 
-gameSave :: (MonadIO m, MonadAction m) => m ()
+gameSave :: MonadAction m => m ()
 gameSave = do
   saveGameBkp
   msgAdd "Game progress saved to a backup file."
 
-gameExit :: (MonadIO m, MonadAction m) => m ()
+gameExit :: MonadAction m => m ()
 gameExit = do
   b <- displayYesNo "Really save and exit?"
   if b
     then modify (\ s -> s {squit = Just (True, Camping)})
     else abortWith "Game resumed."
 
-gameRestart :: (MonadIO m, MonadAction m) => m ()
+gameRestart :: MonadAction m => m ()
 gameRestart = do
   b1 <- displayMore ColorFull "You just requested a new game."
   when (not b1) $ neverMind True
@@ -76,7 +76,7 @@ gameRestart = do
   when (not b2) $ abortWith "Yea, so much still to do."
   modify (\ s -> s {squit = Just (False, Restart)})
 
-moveCursor :: (MonadIO m, MonadAction m) => Vector -> Int -> WriterT Frames m ()
+moveCursor :: MonadAction m => Vector -> Int -> WriterT Frames m ()
 moveCursor dir n = do
   lxsize <- gets (lxsize . slevel)
   lysize <- gets (lysize . slevel)
@@ -91,7 +91,7 @@ moveCursor dir n = do
 -- TODO: Think about doing the mode dispatch elsewhere, especially if over
 -- time more and more commands need to do the dispatch inside their code
 -- (currently only a couple do).
-move :: (MonadIO m, MonadAction m) => Vector -> WriterT Frames m ()
+move :: MonadAction m => Vector -> WriterT Frames m ()
 move dir = do
   pl <- gets splayer
   targeting <- gets (ctargeting . scursor)
@@ -130,7 +130,7 @@ guessBump _ F.Descendable _ =
 guessBump _ _ _ = neverMind True
 
 -- | Player tries to trigger a tile using a feature.
-bumpTile :: (MonadIO m, MonadAction m) => Point -> F.Feature -> m ()
+bumpTile :: MonadAction m => Point -> F.Feature -> m ()
 bumpTile dloc feat = do
   Kind.COps{cotile} <- askCOps
   lvl    <- gets slevel
@@ -140,7 +140,7 @@ bumpTile dloc feat = do
     else guessBump cotile feat t
 
 -- | Perform the action specified for the tile in case it's triggered.
-triggerTile :: (MonadIO m, MonadAction m) => Point -> m ()
+triggerTile :: MonadAction m => Point -> m ()
 triggerTile dloc = do
   Kind.COps{cotile=Kind.Ops{okind, opick}} <- askCOps
   lvl <- gets slevel
@@ -163,7 +163,7 @@ triggerTile dloc = do
   mapM_ f $ TileKind.tfeature $ okind $ lvl `at` dloc
 
 -- | Ask for a direction and trigger a tile, if possible.
-playerTriggerDir :: (MonadIO m, MonadAction m) => F.Feature -> MU.Part -> m ()
+playerTriggerDir :: MonadAction m => F.Feature -> MU.Part -> m ()
 playerTriggerDir feat verb = do
   let keys = zip K.dirAllMoveKey $ repeat K.NoModifier
       prompt = makePhrase ["What to", verb MU.:> "? [movement key"]
@@ -172,7 +172,7 @@ playerTriggerDir feat verb = do
   K.handleDir lxsize e (playerBumpDir feat) (neverMind True)
 
 -- | Player tries to trigger a tile in a given direction.
-playerBumpDir :: (MonadIO m, MonadAction m) => F.Feature -> Vector -> m ()
+playerBumpDir :: MonadAction m => F.Feature -> Vector -> m ()
 playerBumpDir feat dir = do
   pl    <- gets splayer
   body  <- gets (getActor pl)
@@ -180,13 +180,13 @@ playerBumpDir feat dir = do
   bumpTile dloc feat
 
 -- | Player tries to trigger the tile he's standing on.
-playerTriggerTile :: (MonadIO m, MonadAction m) => F.Feature -> m ()
+playerTriggerTile :: MonadAction m => F.Feature -> m ()
 playerTriggerTile feat = do
   ploc <- gets (bloc . getPlayerBody)
   bumpTile ploc feat
 
 -- | An actor opens a door: player (hero or controlled monster) or enemy.
-actorOpenDoor :: (MonadIO m, MonadAction m) => ActorId -> Vector -> m ()
+actorOpenDoor :: MonadAction m => ActorId -> Vector -> m ()
 actorOpenDoor actor dir = do
   Kind.COps{ cotile
            , coitem
@@ -218,7 +218,7 @@ actorOpenDoor actor dir = do
 
 -- | Change the displayed level in targeting mode to (at most)
 -- k levels shallower. Enters targeting mode, if not already in one.
-tgtAscend :: (MonadIO m, MonadAction m) => Int -> WriterT Frames m ()
+tgtAscend :: MonadAction m => Int -> WriterT Frames m ()
 tgtAscend k = do
   Kind.COps{cotile} <- askCOps
   cursor    <- gets scursor
@@ -298,7 +298,7 @@ backCycleHero = do
                 >>= assert `trueM` (pl, ni, "hero duplicated")
 
 -- | Search for hidden doors.
-search :: (MonadIO m, MonadAction m) => m ()
+search :: MonadAction m => m ()
 search = do
   Kind.COps{coitem, cotile} <- askCOps
   lvl    <- gets slevel
@@ -332,7 +332,7 @@ search = do
 
 -- | This function performs a move (or attack) by any actor,
 -- i.e., it can handle monsters, heroes and both.
-moveOrAttack :: (MonadIO m, MonadAction m)
+moveOrAttack :: MonadAction m
              => Bool       -- ^ allow attacks?
              -> ActorId    -- ^ who's moving?
              -> Vector     -- ^ in which direction?
@@ -378,7 +378,7 @@ moveOrAttack allowAttacks actor dir = do
 -- can be attacked from an adjacent position.
 -- This function is analogous to projectGroupItem, but for melee
 -- and not using up the weapon.
-actorAttackActor :: (MonadIO m, MonadAction m) => ActorId -> ActorId -> m ()
+actorAttackActor :: MonadAction m => ActorId -> ActorId -> m ()
 actorAttackActor source target = do
   smRaw <- gets (getActor source)
   tmRaw <- gets (getActor target)
@@ -455,7 +455,7 @@ actorAttackActor source target = do
 
 -- | Resolves the result of an actor running (not walking) into another.
 -- This involves switching positions of the two actors.
-actorRunActor :: (MonadIO m, MonadAction m) => ActorId -> ActorId -> m ()
+actorRunActor :: MonadAction m => ActorId -> ActorId -> m ()
 actorRunActor source target = do
   pl <- gets splayer
   sm <- gets (getActor source)
@@ -550,13 +550,13 @@ regenerateLevelHP = do
   modify (updateLevel (updateActorDict (IM.mapWithKey (upd hi))))
 
 -- | Display command help.
-displayHelp :: (MonadIO m, MonadActionRO m) => WriterT Frames m ()
+displayHelp :: MonadActionRO m => WriterT Frames m ()
 displayHelp = do
   keyb <- askBinding
   displayOverlays "Basic keys." "[press SPACE to advance]" $ keyHelp keyb
 
 -- | Display the main menu.
-displayMainMenu :: (MonadIO m, MonadActionRO m) => WriterT Frames m ()
+displayMainMenu :: MonadActionRO m => WriterT Frames m ()
 displayMainMenu = do
   Kind.COps{corule} <- askCOps
   Binding{krevMap} <- askBinding
@@ -600,7 +600,7 @@ displayMainMenu = do
     [] -> assert `failure` "empty Main Menu overlay"
     hd : tl -> displayOverlays hd "" [tl]
 
-displayHistory :: (MonadIO m, MonadActionRO m) =>  WriterT Frames m ()
+displayHistory :: MonadActionRO m =>  WriterT Frames m ()
 displayHistory = do
   Diary{shistory} <- getDiary
   time <- gets stime
@@ -612,7 +612,7 @@ displayHistory = do
   displayOverlays msg "" $
     splitOverlay lysize $ renderHistory shistory
 
-dumpConfig :: (MonadIO m, MonadActionRO m) => m ()
+dumpConfig :: MonadActionRO m => m ()
 dumpConfig = do
   ConfigUI{configRulesCfgFile} <- askConfigUI
   let fn = configRulesCfgFile ++ ".dump"
@@ -640,7 +640,7 @@ setWaitBlock actor = do
   updateAnyActor actor $ \ m -> m {bwait = timeAddFromSpeed coactor m time}
 
 -- | Player waits a turn (and blocks, etc.).
-waitBlock :: (MonadIO m, MonadAction m) => m ()
+waitBlock :: MonadAction m => m ()
 waitBlock = do
   pl <- gets splayer
   setWaitBlock pl

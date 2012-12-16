@@ -111,7 +111,7 @@ targetStrategy cops actor state@State{splayer = pl} per factionAbilities =
     (TLoc . (me `shift`)) `liftM` moveStrategy cops actor state Nothing
 
 -- | AI strategy based on actor's sight, smell, intelligence, etc. Never empty.
-strategy :: forall m. (MonadIO m, MonadAction m) => Kind.COps -> ActorId -> State -> [Ability] -> Strategy (m ())
+strategy :: forall m. MonadAction m => Kind.COps -> ActorId -> State -> [Ability] -> Strategy (m ())
 strategy cops actor state factionAbilities =
   sumS prefix .| combineDistant distant .| sumS suffix
   .| waitBlockNow actor  -- wait until friends sidestep, ensures never empty
@@ -152,7 +152,7 @@ strategy cops actor state factionAbilities =
   sumS = msum . map aStrategy
   sumF = msum . map aFrequency
 
-dirToAction :: (MonadIO m, MonadAction m) => ActorId -> Bool -> Vector -> m ()
+dirToAction :: MonadAction m => ActorId -> Bool -> Vector -> m ()
 dirToAction actor allowAttacks dir = do
   -- set new direction
   updateAnyActor actor $ \ m -> m { bdir = Just (dir, 0) }
@@ -178,7 +178,7 @@ dieNow actor = returN "die" $ do  -- TODO: explode if a potion
   modify (deleteActor actor)
 
 -- | Strategy for dumb missiles.
-track :: (MonadIO m, MonadAction m) => Kind.COps -> ActorId -> State -> Strategy (m ())
+track :: MonadAction m => Kind.COps -> ActorId -> State -> Strategy (m ())
 track cops actor state =
   strat
  where
@@ -211,7 +211,7 @@ pickup actor state =
   lootHere x = not $ L.null $ lvl `atI` x
   actionPickup = returN "pickup" $ actorPickupItem actor
 
-melee :: (MonadIO m, MonadAction m) => ActorId -> State -> Point -> Strategy (m ())
+melee :: MonadAction m => ActorId -> State -> Point -> Strategy (m ())
 melee actor state floc =
   foeAdjacent .=> (returN "melee" $ dirToAction actor True dir)
  where
@@ -265,7 +265,7 @@ rangedFreq cops actor state@State{splayer = pl} floc =
       -- Wasting weapons and armour would be too cruel to the player.
       isymbol ik `elem` (ritemProject $ Kind.stdRuleset corule)]
 
-toolsFreq :: (MonadIO m, MonadAction m) => Kind.COps -> ActorId -> State -> Frequency (m ())
+toolsFreq :: MonadAction m => Kind.COps -> ActorId -> State -> Frequency (m ())
 toolsFreq cops actor state =
   toFreq "quaffFreq" $ quaffFreq bitems 1 ++ quaffFreq tis 2
  where
@@ -374,7 +374,7 @@ moveStrategy cops actor state mFoe =
   isSensible l = noFriends l && (accessibleHere l || openableHere l)
   sensible = filter (isSensible . (bloc `shift`)) (moves lxsize)
 
-chase :: (MonadIO m, MonadAction m) => Kind.COps -> ActorId -> State -> (Point, Bool) -> Strategy (m ())
+chase :: MonadAction m => Kind.COps -> ActorId -> State -> (Point, Bool) -> Strategy (m ())
 chase cops actor state foe@(_, foeVisible) =
   -- Target set and we chase the foe or offer null strategy if we can't.
   -- The foe is visible, or we remember his last position.
@@ -382,7 +382,7 @@ chase cops actor state foe@(_, foeVisible) =
       fight = not foeVisible  -- don't pick fights if the real foe is close
   in dirToAction actor fight `liftM` moveStrategy cops actor state mFoe
 
-wander :: (MonadIO m, MonadAction m) => Kind.COps -> ActorId -> State -> Strategy (m ())
+wander :: MonadAction m => Kind.COps -> ActorId -> State -> Strategy (m ())
 wander cops actor state =
   -- Target set, but we don't chase the foe, e.g., because we are blocked
   -- or we cannot chase at all.

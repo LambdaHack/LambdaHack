@@ -61,7 +61,7 @@ import Game.LambdaHack.Utils.Assert
 -- every fixed number of time units, e.g., monster generation.
 -- Run the player and other actors moves. Eventually advance the time
 -- and repeat.
-handleTurn :: (MonadIO m, MonadAction m) => m ()
+handleTurn :: MonadAction m => m ()
 handleTurn = do
   debug "handleTurn"
   time <- gets stime  -- the end time of this clip, inclusive
@@ -83,7 +83,7 @@ handleTurn = do
 -- Some very fast actors may move many times a clip and then
 -- we introduce subclips and produce many frames per clip to avoid
 -- jerky movement. Otherwise we push exactly one frame or frame delay.
-handleActors :: (MonadIO m, MonadAction m) => Time       -- ^ the start time of current subclip, exclusive
+handleActors :: MonadAction m => Time       -- ^ the start time of current subclip, exclusive
              -> m ()
 handleActors subclipStart = do
   debug "handleActors"
@@ -147,7 +147,7 @@ handleActors subclipStart = do
               handleActors subclipStart
 
 -- | Handle the move of a single monster.
-handleAI :: (MonadIO m, MonadAction m) => ActorId -> m ()
+handleAI :: MonadAction m => ActorId -> m ()
 handleAI actor = do
   cops@Kind.COps{ cofact=Kind.Ops{okind}
                 , costrat=Kind.Ops{opick, okind=sokind}
@@ -173,7 +173,7 @@ handleAI actor = do
   join $ rndToAction $ frequency $ bestVariant $ stratMove
 
 -- | Handle the move of the hero.
-handlePlayer :: (MonadIO m, MonadAction m) => m ()
+handlePlayer :: MonadAction m => m ()
 handlePlayer = do
   debug "handlePlayer"
   -- When running, stop if aborted by a disturbance.
@@ -185,7 +185,7 @@ handlePlayer = do
 
 -- | Determine and process the next player command. The argument is the last
 -- abort message due to running, if any.
-playerCommand :: forall m. (MonadIO m, MonadAction m) => Msg -> m ()
+playerCommand :: forall m. MonadAction m => Msg -> m ()
 playerCommand msgRunAbort = do
   -- The frame state is now Push.
   kmPush <- case msgRunAbort of

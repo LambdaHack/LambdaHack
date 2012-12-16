@@ -34,7 +34,6 @@ module Game.LambdaHack.Action
 import Control.Concurrent
 import Control.Exception (finally)
 import Control.Monad
-import Control.Monad.IO.Class
 import Control.Monad.State hiding (State, state, liftIO, get, gets)
 import Control.Monad.Writer.Strict (WriterT, tell)
 import qualified Data.IntMap as IM
@@ -123,7 +122,7 @@ recordHistory = do
     historyReset $ takeHistory configHistoryMax $ addReport sreport shistory
 
 -- | Wait for a player command.
-getKeyCommand :: (MonadIO m, MonadActionRO m)
+getKeyCommand :: MonadActionRO m
               => Maybe Bool -> m (K.Key, K.Modifier)
 getKeyCommand doPush = do
   fs <- askFrontendSession
@@ -134,7 +133,7 @@ getKeyCommand doPush = do
     _ -> (nc, modifier)
 
 -- | Display frame and wait for a player command.
-getKeyFrameCommand :: (MonadIO m, MonadActionRO m)
+getKeyFrameCommand :: MonadActionRO m
                    => SingleFrame -> m (K.Key, K.Modifier)
 getKeyFrameCommand frame = do
   fs <- askFrontendSession
@@ -145,7 +144,7 @@ getKeyFrameCommand frame = do
     _ -> (nc, modifier)
 
 -- | Ignore unexpected kestrokes until a SPACE or ESC is pressed.
-getConfirm :: (MonadIO m, MonadActionRO m) => SingleFrame -> m Bool
+getConfirm :: MonadActionRO m => SingleFrame -> m Bool
 getConfirm frame = do
   fs <- askFrontendSession
   let keys = [ (K.Space, K.NoModifier), (K.Esc, K.NoModifier)]
@@ -155,7 +154,7 @@ getConfirm frame = do
     _       -> return False
 
 -- | A series of confirmations for all overlays.
-getOverConfirm :: (MonadIO m, MonadActionRO m) => [SingleFrame] -> m Bool
+getOverConfirm :: MonadActionRO m => [SingleFrame] -> m Bool
 getOverConfirm []     = return True
 getOverConfirm (x:xs) = do
   b <- getConfirm x
@@ -164,7 +163,7 @@ getOverConfirm (x:xs) = do
     else return False
 
 -- | A yes-no confirmation.
-getYesNo :: (MonadIO m, MonadActionRO m) => SingleFrame -> m Bool
+getYesNo :: MonadActionRO m => SingleFrame -> m Bool
 getYesNo frame = do
   fs <- askFrontendSession
   let keys = [ (K.Char 'y', K.NoModifier)
@@ -182,7 +181,7 @@ promptAdd prompt msg = prompt <+> msg
 
 -- | Display a msg with a @more@ prompt. Return value indicates if the player
 -- tried to cancel/escape.
-displayMore :: (MonadIO m, MonadActionRO m) => ColorMode -> Msg -> m Bool
+displayMore :: MonadActionRO m => ColorMode -> Msg -> m Bool
 displayMore dm prompt = do
   let newPrompt = promptAdd prompt moreMsg
   frame <- drawPrompt dm newPrompt
@@ -190,14 +189,14 @@ displayMore dm prompt = do
 
 -- | Print a yes/no question and return the player's answer. Use black
 -- and white colours to turn player's attention to the choice.
-displayYesNo :: (MonadIO m, MonadActionRO m) => Msg -> m Bool
+displayYesNo :: MonadActionRO m => Msg -> m Bool
 displayYesNo prompt = do
   frame <- drawPrompt ColorBW (promptAdd prompt yesnoMsg)
   getYesNo frame
 
 -- | Print a msg and several overlays, one per page.
 -- All frames require confirmations. Raise @abort@ if the player presses ESC.
-displayOverAbort :: (MonadIO m, MonadActionRO m) => Msg -> [Overlay] -> m ()
+displayOverAbort :: MonadActionRO m => Msg -> [Overlay] -> m ()
 displayOverAbort prompt xs = do
   let newPrompt = promptAdd prompt ""
   let f x = drawOverlay ColorFull newPrompt (x ++ [moreMsg])
@@ -208,7 +207,7 @@ displayOverAbort prompt xs = do
 -- | Print a msg and several overlays, one per page.
 -- The last frame does not expect a confirmation and so does not show
 -- the invitation to press some keys.
-displayOverlays :: (MonadIO m, MonadActionRO m)
+displayOverlays :: MonadActionRO m
                 => Msg -> Msg -> [Overlay] -> WriterT Frames m ()
 displayOverlays _      _ []  = return ()
 displayOverlays prompt _ [x] = do
@@ -224,7 +223,7 @@ displayOverlays prompt pressKeys (x:xs) = do
 -- | Print a prompt and an overlay and wait for a player keypress.
 -- If many overlays, scroll screenfuls with SPACE. Do not wrap screenfuls
 -- (in some menus @?@ cycles views, so the user can restart from the top).
-displayChoiceUI :: (MonadIO m, MonadActionRO m)
+displayChoiceUI :: MonadActionRO m
                 => Msg -> [Overlay] -> [(K.Key, K.Modifier)]
               -> m (K.Key, K.Modifier)
 displayChoiceUI prompt ovs keys = do
@@ -242,7 +241,7 @@ displayChoiceUI prompt ovs keys = do
     _ -> return (key, modifier)
 
 -- | Push a frame or a single frame's worth of delay to the frame queue.
-displayFramePush :: (MonadIO m, MonadActionRO m) => Maybe SingleFrame -> m ()
+displayFramePush :: MonadActionRO m => Maybe SingleFrame -> m ()
 displayFramePush mframe = do
   fs <- askFrontendSession
   liftIO $ displayFrame fs False mframe
@@ -275,7 +274,7 @@ drawOverlay dm prompt overlay = do
   return $ draw dm cops per s over
 
 -- | Initialize perception, etc., display level and run the action.
-startClip :: (MonadIO m, MonadAction m) => m () -> m ()
+startClip :: MonadAction m => m () -> m ()
 startClip action =
   -- Determine perception before running player command, in case monsters
   -- have opened doors, etc.
@@ -286,7 +285,7 @@ startClip action =
 
 -- | Push the frame depicting the current level to the frame queue.
 -- Only one screenful of the report is shown, the rest is ignored.
-displayPush :: (MonadIO m, MonadActionRO m) => m ()
+displayPush :: MonadActionRO m => m ()
 displayPush = do
   fs <- askFrontendSession
   s  <- get
@@ -326,7 +325,7 @@ rememberList vis = do
 -- | Save the diary and a backup of the save game file, in case of crashes.
 --
 -- See 'Save.saveGameBkp'.
-saveGameBkp :: (MonadIO m, MonadActionRO m) => m ()
+saveGameBkp :: MonadActionRO m => m ()
 saveGameBkp = do
   state <- get
   diary <- getDiary
@@ -334,7 +333,7 @@ saveGameBkp = do
   liftIO $ Save.saveGameBkp configUI state diary
 
 -- | Dumps the current game rules configuration to a file.
-dumpCfg :: (MonadIO m, MonadActionRO m) => FilePath -> m ()
+dumpCfg :: MonadActionRO m => FilePath -> m ()
 dumpCfg fn = do
   config <- gets sconfig
   liftIO $ ConfigIO.dump config fn
@@ -345,7 +344,7 @@ dumpCfg fn = do
 -- Warning: scores are shown during the game,
 -- so we should be careful not to leak secret information through them
 -- (e.g., the nature of the items through the total worth of inventory).
-handleScores :: (MonadIO m, MonadActionRO m) => Bool -> Status -> Int -> m ()
+handleScores :: MonadActionRO m => Bool -> Status -> Int -> m ()
 handleScores write status total =
   when (total /= 0) $ do
     configUI <- askConfigUI
@@ -356,7 +355,7 @@ handleScores write status total =
     displayOverAbort placeMsg slideshow
 
 -- | Continue or restart or exit the game.
-endOrLoop :: (MonadIO m, MonadAction m) => m () -> m ()
+endOrLoop :: MonadAction m => m () -> m ()
 endOrLoop handleTurn = do
   squit <- gets squit
   Kind.COps{coitem} <- askCOps
@@ -411,7 +410,7 @@ endOrLoop handleTurn = do
       void $ displayMore ColorBW "This time for real."
       restartGame handleTurn
 
-restartGame :: (MonadIO m, MonadAction m) => m () -> m ()
+restartGame :: MonadAction m => m () -> m ()
 restartGame handleTurn = do
   -- Take the original config from config file, to reroll RNG, if needed
   -- (the current config file has the RNG rolled for the previous game).
@@ -438,7 +437,7 @@ gameReset configUI cops@Kind.COps{ coitem
                            entryLevel entryLoc startingGen
       hstate = initialHeroes cops entryLoc configUI state
   return hstate
-gameResetAction :: (MonadIO m, MonadActionRO m)
+gameResetAction :: MonadActionRO m
                 => ConfigUI -> Kind.COps -> m State
 gameResetAction configUI cops = liftIO $ gameReset configUI cops
 
@@ -448,7 +447,7 @@ gameResetAction configUI cops = liftIO $ gameReset configUI cops
 -- in particular verify content consistency.
 -- Then create the starting game config from the default config file
 -- and initialize the engine with the starting session.
-startFrontend :: (MonadIO m, MonadActionRO m)
+startFrontend :: MonadActionRO m
               => (m () -> FrontendSession -> Kind.COps -> Binding -> ConfigUI
                   -> State -> Diary -> IO ())
               -> Kind.COps -> m () -> IO ()

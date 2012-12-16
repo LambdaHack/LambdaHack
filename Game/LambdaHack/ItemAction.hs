@@ -40,7 +40,7 @@ default (Text)
 -- TODO: When inventory is displayed, let TAB switch the player (without
 -- announcing that) and show the inventory of the new player.
 -- | Display inventory
-inventory :: (MonadIO m, MonadActionRO m) => WriterT Frames m ()
+inventory :: MonadActionRO m => WriterT Frames m ()
 inventory = do
   Kind.COps{coactor} <- askCOps
   pbody <- gets getPlayerBody
@@ -58,7 +58,7 @@ inventory = do
 -- | Let the player choose any item with a given group name.
 -- Note that this does not guarantee the chosen item belongs to the group,
 -- as the player can override the choice.
-getGroupItem :: (MonadIO m, MonadActionRO m) => [Item]   -- ^ all objects in question
+getGroupItem :: MonadActionRO m => [Item]   -- ^ all objects in question
              -> MU.Part  -- ^ name of the group
              -> [Char]   -- ^ accepted item symbols
              -> Text     -- ^ prompt
@@ -70,7 +70,7 @@ getGroupItem is object syms prompt packName = do
       header = makePhrase [MU.Capitalize (MU.Ws object)]
   getItem prompt choice header is packName
 
-applyGroupItem :: (MonadIO m, MonadAction m) => ActorId  -- ^ actor applying the item (is on current level)
+applyGroupItem :: MonadAction m => ActorId  -- ^ actor applying the item (is on current level)
                -> MU.Part  -- ^ how the applying is called
                -> Item     -- ^ the item to be applied
                -> m ()
@@ -89,7 +89,7 @@ applyGroupItem actor verb item = do
   when (loc `IS.member` totalVisible per) $ msgAdd msg
   itemEffectAction 5 actor actor consumed False
 
-playerApplyGroupItem :: (MonadIO m, MonadAction m) => MU.Part -> MU.Part -> [Char] -> m ()
+playerApplyGroupItem :: MonadAction m => MU.Part -> MU.Part -> [Char] -> m ()
 playerApplyGroupItem verb object syms = do
   Kind.COps{coitem=Kind.Ops{okind}} <- askCOps
   is   <- gets getPlayerItem
@@ -159,7 +159,7 @@ projectGroupItem source tloc _verb item = do
           abortWith "blocked"
       when (svisible || projVis) $ msgAdd msg
 
-playerProjectGroupItem :: (MonadIO m, MonadAction m) => MU.Part -> MU.Part -> [Char] -> WriterT Frames m ()
+playerProjectGroupItem :: MonadAction m => MU.Part -> MU.Part -> [Char] -> WriterT Frames m ()
 playerProjectGroupItem verb object syms = do
   ms     <- gets hostileList
   lxsize <- gets (lxsize . slevel)
@@ -169,7 +169,7 @@ playerProjectGroupItem verb object syms = do
     then abortWith "You can't aim in melee."
     else playerProjectGI verb object syms
 
-playerProjectGI :: (MonadIO m, MonadAction m) => MU.Part -> MU.Part -> [Char] -> WriterT Frames m ()
+playerProjectGI :: MonadAction m => MU.Part -> MU.Part -> [Char] -> WriterT Frames m ()
 playerProjectGI verb object syms = do
   state <- get
   pl    <- gets splayer
@@ -196,7 +196,7 @@ playerProjectGI verb object syms = do
     Nothing -> retarget "Last target invalid."
 
 -- | Start the monster targeting mode. Cycle between monster targets.
-targetMonster :: (MonadIO m, MonadAction m) => TgtMode -> WriterT Frames m ()
+targetMonster :: MonadAction m => TgtMode -> WriterT Frames m ()
 targetMonster tgtMode = do
   pl        <- gets splayer
   ploc      <- gets (bloc . getPlayerBody)
@@ -232,7 +232,7 @@ targetMonster tgtMode = do
   setCursor tgtMode
 
 -- | Start the floor targeting mode or reset the cursor location to the player.
-targetFloor :: (MonadIO m, MonadAction m) => TgtMode -> WriterT Frames m ()
+targetFloor :: MonadAction m => TgtMode -> WriterT Frames m ()
 targetFloor tgtMode = do
   ploc      <- gets (bloc . getPlayerBody)
   target    <- gets (btarget . getPlayerBody)
@@ -247,7 +247,7 @@ targetFloor tgtMode = do
   setCursor tgtMode
 
 -- | Set, activate and display cursor information.
-setCursor :: (MonadIO m, MonadAction m) => TgtMode -> WriterT Frames m ()
+setCursor :: MonadAction m => TgtMode -> WriterT Frames m ()
 setCursor tgtMode = assert (tgtMode /= TgtOff) $ do
   state  <- get
   per    <- askPerception
@@ -342,7 +342,7 @@ clearCurrent :: MonadActionRO m => m ()
 clearCurrent = return ()
 
 -- | Drop a single item.
-dropItem :: (MonadIO m, MonadAction m) => m ()
+dropItem :: MonadAction m => m ()
 dropItem = do
   -- TODO: allow dropping a given number of identical items.
   Kind.COps{coactor, coitem} <- askCOps
@@ -454,7 +454,7 @@ allObjectsName :: Text
 allObjectsName = "Objects"
 
 -- | Let the player choose any item from a list of items.
-getAnyItem :: (MonadIO m, MonadActionRO m) => Text    -- ^ prompt
+getAnyItem :: MonadActionRO m => Text    -- ^ prompt
            -> [Item]  -- ^ all items in question
            -> Text    -- ^ how to refer to the collection of items
            -> m Item
@@ -464,7 +464,7 @@ data ItemDialogState = INone | ISuitable | IAll deriving Eq
 
 -- | Let the player choose a single, preferably suitable,
 -- item from a list of items.
-getItem :: (MonadIO m, MonadActionRO m) => Text            -- ^ prompt message
+getItem :: MonadActionRO m => Text            -- ^ prompt message
         -> (Item -> Bool)  -- ^ which items to consider suitable
         -> Text            -- ^ how to describe suitable items
         -> [Item]          -- ^ all items in question

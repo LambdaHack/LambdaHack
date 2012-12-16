@@ -31,7 +31,7 @@ import Game.LambdaHack.Animation (Frames)
 -- succeeds much more often than subsequent turns, because most
 -- of the disturbances are ignored, since the player is aware of them
 -- and still explicitly requests a run.
-run :: (MonadIO m, MonadAction m) => (Vector, Int) -> WriterT Frames m ()
+run :: MonadAction m => (Vector, Int) -> WriterT Frames m ()
 run (dir, dist) = do
   cops <- askCOps
   pl <- gets splayer
@@ -156,7 +156,7 @@ runDisturbance locLast distLast msg hs ms per locHere
 -- it ajusts the direction given by the vector if we reached
 -- a corridor's corner (we never change direction except in corridors)
 -- and it increments the counter of traversed tiles.
-continueRun :: (MonadIO m, MonadAction m) => (Vector, Int) -> m ()
+continueRun :: MonadAction m => (Vector, Int) -> m ()
 continueRun (dirLast, distLast) = do
   cops@Kind.COps{cotile} <- askCOps
   locHere <- gets (bloc . getPlayerBody)

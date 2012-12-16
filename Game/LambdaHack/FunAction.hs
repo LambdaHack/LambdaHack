@@ -61,6 +61,10 @@ class (Monad m, Functor m, MonadReader Pers m, Show (m ()))
   get = fun2actionRO (\_c _p k _a s _d -> k s)
   gets :: (State -> a) -> m a
   gets = (`fmap` get)
+  -- We do not provide a MonadIO instance, so that outside of Action/
+  -- nobody can subvert the action monads by invoking arbitrary IO.
+  liftIO :: IO a -> m a
+  liftIO x = fun2actionRO (\_c _p k _a _s _d -> x >>= k)
 
 -- The following seems to trigger a GHC bug (Overlapping instances for Show):
 -- instance MonadActionRO m => Show (m a) where

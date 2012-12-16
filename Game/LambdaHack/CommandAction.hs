@@ -5,7 +5,6 @@ module Game.LambdaHack.CommandAction
   ) where
 
 import Control.Monad
-import Control.Monad.IO.Class
 import Control.Monad.State hiding (State, get, gets, state)
 import Control.Monad.Writer.Strict (WriterT)
 import qualified Data.Char as Char
@@ -27,7 +26,7 @@ import Game.LambdaHack.Running
 import Game.LambdaHack.State
 
 -- | The semantics of player commands in terms of the @Action@ monad.
-cmdAction ::  (MonadIO m, MonadAction m) => Cmd -> WriterT Frames m ()
+cmdAction ::  MonadAction m => Cmd -> WriterT Frames m ()
 cmdAction cmd = case cmd of
   Apply{..}       -> lift $ playerApplyGroupItem verb object syms
   Project{..}     -> playerProjectGroupItem verb object syms
@@ -55,7 +54,7 @@ cmdAction cmd = case cmd of
   Help      -> displayHelp
 
 -- | The list of semantics and other info for all commands from config.
-semanticsCmds :: (MonadIO m, MonadAction m) => [(K.Key, Cmd)]
+semanticsCmds :: MonadAction m => [(K.Key, Cmd)]
               -> [((K.Key, K.Modifier), (Text, Bool, WriterT Frames m ()))]
 semanticsCmds cmdList =
   let mkDescribed cmd =
@@ -80,7 +79,7 @@ checkCursor h = do
 
 -- TODO: clean up: probably add Command.Cmd for each operation
 
-actionBinding :: (MonadIO m, MonadAction m)
+actionBinding :: MonadAction m
               => ConfigUI   -- ^ game config
               -> M.Map (K.Key, K.Modifier) (Text, Bool, WriterT Frames m ())
 actionBinding !config =

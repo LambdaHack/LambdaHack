@@ -6,7 +6,6 @@ module Game.LambdaHack.TypeAction
   ( Action, executor
   ) where
 
-import Control.Monad.IO.Class
 import Control.Monad.Reader.Class
 import qualified Control.Monad.State as St
 import qualified Data.Text as T
@@ -67,9 +66,6 @@ instance St.MonadState State Action where
 instance MonadReader Pers Action where
   ask = fun2actionRO (\_c p k _a _s _d -> k p)
   local f m = fun2action (\c p k a s d -> runAction m c (f p) k a s d)
-
-instance MonadIO Action where
-  liftIO x = fun2actionRO (\_c _p k _a _s _d -> x >>= k)
 
 -- | Run an action, with a given session, state and diary, in the @IO@ monad.
 executor :: Action ()

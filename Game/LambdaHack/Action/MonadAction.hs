@@ -3,7 +3,7 @@
 -- (as opposed to implementing them).
 module Game.LambdaHack.Action.MonadAction
   ( -- * Types and type classes to do with actions
-    MonadActionRO(get, gets), MonadAction
+    MonadActionRO(get, gets, liftIO), MonadAction
     -- * The Perception Reader
   , withPerception, askPerception
     -- * Accessors to the game session Reader
