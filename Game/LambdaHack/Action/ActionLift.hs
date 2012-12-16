@@ -166,7 +166,7 @@ getPerception = fun2actionRO (\_c per k _a s _d ->
 data Session = Session
   { sfs       :: FrontendSession           -- ^ frontend session information
   , scops     :: Kind.COps                 -- ^ game content
-  , sbinding  :: Binding (WriterT Frames Action ())  -- ^ binding of keys to commands
+  , sbinding  :: Binding                   -- ^ binding of keys to commands
   , sconfigUI :: ConfigUI                  -- ^ the UI config for this session
   }
 
@@ -179,7 +179,7 @@ askCOps :: MonadActionRO m => m Kind.COps
 askCOps = fun2actionRO (\Session{scops} _p k _a _s _d -> k scops)
 
 -- | Get the key binding.
-askBinding :: MonadActionRO m => m (Binding (WriterT Frames Action ()))
+askBinding :: MonadActionRO m => m Binding
 askBinding = fun2actionRO (\Session{sbinding} _p k _a _s _d -> k sbinding)
 
 -- | Get the config from the config file.

@@ -16,7 +16,7 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import qualified Game.LambdaHack.Binding as Binding
+import Game.LambdaHack.BindingAction
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.StrategyKind
 import Game.LambdaHack.Draw
@@ -32,7 +32,6 @@ import Game.LambdaHack.Strategy
 import Game.LambdaHack.StrategyAction
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
-
 
 -- One clip proceeds through the following functions:
 --
@@ -189,7 +188,6 @@ handlePlayer = do
 playerCommand :: forall m. (MonadIO m, MonadAction m) => Msg -> m ()
 playerCommand msgRunAbort = do
   -- The frame state is now Push.
-  Binding.Binding{kcmd} <- askBinding
   kmPush <- case msgRunAbort of
     "" -> getKeyCommand (Just True)
     _  -> drawPrompt ColorFull msgRunAbort >>= getKeyFrameCommand
@@ -202,9 +200,11 @@ playerCommand msgRunAbort = do
         -- On abort, just reset state and call loop again below.
         (timed, frames) <- runWriterT $ tryWithFrame (return False) $ do
           -- Look up the key.
-          case M.lookup km kcmd of
+          -- TODO
+          configUI <- askConfigUI
+          case M.lookup km (actionBinding configUI) of
             Just (_, declaredTimed, c) -> do
-              frs <- execWriterT undefined -- c
+              frs <- execWriterT c
               -- Targeting cursor movement and a few other subcommands
               -- are wrongly marked as timed. This is indicated in their
               -- definitions by setting @snoTime@ flag and used and reset here.

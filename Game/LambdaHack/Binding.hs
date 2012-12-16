@@ -6,23 +6,23 @@ module Game.LambdaHack.Binding
   ( Binding(..), keyHelp,
   ) where
 
-import qualified Data.Map as M
 import qualified Data.List as L
+import qualified Data.Map as M
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 
+import qualified Game.LambdaHack.Command as Command
 import qualified Game.LambdaHack.Key as K
 import Game.LambdaHack.Msg
-import qualified Game.LambdaHack.Command as Command
 
 -- | Bindings and other information about player commands.
-data Binding a = Binding
-  { kcmd   :: M.Map (K.Key, K.Modifier) (Text, Bool, a)
+data Binding = Binding
+  { kcmd    :: M.Map (K.Key, K.Modifier) (Text, Bool, Command.Cmd)
                                      -- ^ binding keys to commands
-  , kmacro :: M.Map K.Key K.Key      -- ^ macro map
-  , kmajor :: [K.Key]                -- ^ major, most often used, commands
-  , kdir   :: [(K.Key, K.Modifier)]  -- ^ direction keys for moving and running
+  , kmacro  :: M.Map K.Key K.Key      -- ^ macro map
+  , kmajor  :: [K.Key]                -- ^ major, most often used, commands
+  , kdir    :: [(K.Key, K.Modifier)]  -- ^ direction keys for moving and running
   , krevMap :: M.Map Command.Cmd K.Key
                                      -- ^ map from cmds to their main keys
   }
@@ -35,7 +35,7 @@ coImage kmacro k =
      else k : [ from | (from, to) <- M.assocs kmacro, to == k ]
 
 -- | Produce a set of help screens from the key bindings.
-keyHelp :: Binding a -> [Overlay]
+keyHelp :: Binding -> [Overlay]
 keyHelp Binding{kcmd, kmacro, kmajor} =
   let
     movBlurb =

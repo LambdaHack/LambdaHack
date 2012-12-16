@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Binding of keys to commands implemented with the 'Action' monad.
 module Game.LambdaHack.BindingAction
-  ( stdBinding
+  ( stdBinding, actionBinding
   ) where
 
 import Control.Monad.State hiding (State, get, gets, state)
@@ -38,14 +38,40 @@ heroSelection =
                      )
   in fmap heroSelect [0..9]
 
+-- TODO: clean up: probably add Command.Cmd for each operation
+
+semanticsCmds' :: [(K.Key, Cmd)]
+               -> [((K.Key, K.Modifier), (Text, Bool, Cmd))]
+semanticsCmds' cmdList =
+  let mkDescribed cmd = (cmdDescription cmd, timedCmd cmd, cmd)
+      mkCommand (key, def) = ((key, K.NoModifier), mkDescribed def)
+  in L.map mkCommand cmdList
+
 -- | Binding of keys to movement and other standard commands,
 -- as well as commands defined in the config file.
-stdBinding :: (MonadIO m, MonadAction m)
-           => ConfigUI                  -- ^ game config
-           -> Binding (WriterT Frames m ())  -- ^ concrete binding
+stdBinding :: ConfigUI  -- ^ game config
+           -> Binding   -- ^ concrete binding
 stdBinding !config@ConfigUI{configMacros} =
   let kmacro = M.fromList $ configMacros
       cmdList = configCmds config
+      semList = semanticsCmds' cmdList
+      -- TODO
+      -- Targeting cursor movement and others are wrongly marked as timed;
+      -- fixed in their definitions by rewinding time.
+      cmdDir = K.moveBinding (const True) (const True)
+  in Binding
+  { kcmd   = M.fromList semList
+  , kmacro
+  , kmajor = L.map fst $ L.filter (majorCmd . snd) cmdList
+  , kdir   = L.map fst cmdDir
+  , krevMap = M.fromList $ map swap cmdList
+  }
+
+actionBinding :: (MonadIO m, MonadAction m)
+              => ConfigUI   -- ^ game config
+              -> M.Map (K.Key, K.Modifier) (Text, Bool, WriterT Frames m ())
+actionBinding !config =
+  let cmdList = configCmds config
       semList = semanticsCmds cmdList
       moveWidth f = do
         lxsize <- gets (lxsize . slevel)
@@ -56,19 +82,13 @@ stdBinding !config@ConfigUI{configMacros} =
       -- Targeting cursor movement and others are wrongly marked as timed;
       -- fixed in their definitions by rewinding time.
       cmdDir = K.moveBinding moveWidth runWidth
-  in Binding
-  { kcmd   = M.fromList $
-             cmdDir ++
-             heroSelection ++
-             semList ++
-             [ -- Debug commands.
-               ((K.Char 'r', K.Control), ("", False, modify cycleMarkVision)),
-               ((K.Char 'o', K.Control), ("", False, modify toggleOmniscient)),
-               ((K.Char 'i', K.Control), ("", False, gets (lmeta . slevel)
-                                                     >>= abortWith))
-             ]
-  , kmacro
-  , kmajor = L.map fst $ L.filter (majorCmd . snd) cmdList
-  , kdir   = L.map fst cmdDir
-  , krevMap = M.fromList $ map swap cmdList
-  }
+  in M.fromList $
+       cmdDir ++
+       heroSelection ++
+       semList ++
+       [ -- Debug commands.
+         ((K.Char 'r', K.Control), ("", False, modify cycleMarkVision)),
+         ((K.Char 'o', K.Control), ("", False, modify toggleOmniscient)),
+         ((K.Char 'i', K.Control), ("", False, gets (lmeta . slevel)
+                                               >>= abortWith))
+       ]

@@ -409,7 +409,7 @@ gameResetAction configUI cops = liftIO $ gameReset configUI cops
 -- in particular verify content consistency.
 -- Then create the starting game config from the default config file
 -- and initialize the engine with the starting session.
-startFrontend :: Kind.COps -> (ConfigUI -> Binding (WriterT Frames Action ()))
+startFrontend :: Kind.COps -> (ConfigUI -> Binding)
               -> Action () -> IO ()
 startFrontend !scops@Kind.COps{corule} stdBinding handleTurn = do
   -- UI config reloaded at each client start.
