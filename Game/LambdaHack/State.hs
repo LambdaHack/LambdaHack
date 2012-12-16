@@ -49,32 +49,31 @@ import Game.LambdaHack.Config
 -- generation. @Diary@, even the @shistory@ part, is more than a WriterMonad
 -- because it can be displayed and saved at any time.
 data Diary = Diary
-  { sreport  :: Report
-  , shistory :: History
+  { sreport  :: !Report
+  , shistory :: !History
   }
 
 -- TODO: stakeTime and squit are also temporary, move them to
 -- DungeonPerception and rename it to TurnCache, if more appear,
--- e.g. AI stuff. The cache would probably act as a ReaderMonad,
--- that is, it would be modified only for local function calls.
+-- e.g. AI stuff.
 -- | The state of a single game that can be saved and restored.
 -- It's completely disregarded and reset when a new game is started.
 -- In practice, we maintain some extra state (DungeonPerception) elsewhere,
 -- but it's only temporary, existing for a single turn and then invalidated.
 data State = State
-  { splayer  :: ActorId      -- ^ represents the player-controlled actor
-  , scursor  :: Cursor       -- ^ cursor location and level to return to
-  , sflavour :: FlavourMap   -- ^ association of flavour to items
-  , sdisco   :: Discoveries  -- ^ items (kinds) that have been discovered
-  , sdungeon :: Dungeon.Dungeon  -- ^ all dungeon levels
-  , slid     :: Dungeon.LevelId  -- ^ identifier of the current level
-  , scounter :: Int          -- ^ stores next actor index
-  , srandom  :: R.StdGen     -- ^ current random generator
-  , sconfig  :: Config       -- ^ this game's config (including initial RNG)
-  , stakeTime :: Maybe Bool  -- ^ last command unexpectedly took some time
-  , squit    :: Maybe (Bool, Status)  -- ^ cause of game end/exit
-  , sfaction :: Kind.Id FactionKind   -- ^ our faction
-  , sdebug   :: DebugMode    -- ^ debugging mode
+  { splayer   :: !ActorId       -- ^ represents the player-controlled actor
+  , scursor   :: !Cursor        -- ^ cursor location and level to return to
+  , sflavour  :: !FlavourMap    -- ^ association of flavour to items
+  , sdisco    :: !Discoveries   -- ^ items (kinds) that have been discovered
+  , sdungeon  :: !Dungeon.Dungeon  -- ^ all dungeon levels
+  , slid      :: !Dungeon.LevelId  -- ^ identifier of the current level
+  , scounter  :: !Int           -- ^ stores next actor index
+  , srandom   :: !R.StdGen      -- ^ current random generator
+  , sconfig   :: !Config        -- ^ this game's config (including initial RNG)
+  , stakeTime :: !(Maybe Bool)  -- ^ last command unexpectedly took some time
+  , squit     :: !(Maybe (Bool, Status))  -- ^ cause of game end/exit
+  , sfaction  :: !(Kind.Id FactionKind)   -- ^ our faction
+  , sdebug    :: !DebugMode     -- ^ debugging mode
   }
   deriving Show
 
@@ -87,11 +86,11 @@ data TgtMode =
 
 -- | Current targeting cursor parameters.
 data Cursor = Cursor
-  { ctargeting :: TgtMode          -- ^ targeting mode
-  , clocLn     :: Dungeon.LevelId  -- ^ cursor level
-  , clocation  :: Point            -- ^ cursor coordinates
-  , creturnLn  :: Dungeon.LevelId  -- ^ the level current player resides on
-  , ceps       :: Int              -- ^ a parameter of the tgt digital line
+  { ctargeting :: !TgtMode          -- ^ targeting mode
+  , clocLn     :: !Dungeon.LevelId  -- ^ cursor level
+  , clocation  :: !Point            -- ^ cursor coordinates
+  , creturnLn  :: !Dungeon.LevelId  -- ^ the level current player resides on
+  , ceps       :: !Int              -- ^ a parameter of the tgt digital line
   }
   deriving Show
 
@@ -104,8 +103,8 @@ data Status =
   deriving (Show, Eq, Ord)
 
 data DebugMode = DebugMode
-  { smarkVision :: Maybe FovMode
-  , somniscient :: Bool
+  { smarkVision :: !(Maybe FovMode)
+  , somniscient :: !Bool
   }
   deriving Show
 
@@ -198,7 +197,7 @@ instance Binary Diary where
 
 instance Binary State where
   put (State player cursor flav disco dng lid ct
-         g config stakeTime _ sfaction _) = do
+             g config stakeTime _ sfaction _) = do
     put player
     put cursor
     put flav
@@ -224,7 +223,7 @@ instance Binary State where
     sfaction <- get
     return
       (State player cursor flav disco dng lid ct (read g) config stakeTime
-         Nothing sfaction defaultDebugMode)
+             Nothing sfaction defaultDebugMode)
 
 instance Binary TgtMode where
   put TgtOff      = putWord8 0

@@ -179,10 +179,9 @@ playerProjectGI verb object syms = do
         msgAdd msg
         let upd cursor = cursor {clocation=ploc, ceps=0}
         modify (updateCursor upd)
-        frs <- targetMonster TgtAuto
+        targetMonster TgtAuto
         -- Mark that unexpectedly it does not take time.
         modify (\ s -> s {stakeTime = Just False})
-        return frs
   case targetToLoc (totalVisible per) state ploc of
     Just loc -> do
       Kind.COps{coitem=Kind.Ops{okind}} <- askCOps

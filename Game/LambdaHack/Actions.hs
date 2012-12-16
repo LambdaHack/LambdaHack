@@ -97,10 +97,9 @@ move dir = do
   targeting <- gets (ctargeting . scursor)
   if targeting /= TgtOff
     then do
-      frs <- moveCursor dir 1
+      moveCursor dir 1
       -- Mark that unexpectedly it does not take time.
       modify (\ s -> s {stakeTime = Just False})
-      return frs
     else
       lift $ moveOrAttack True pl dir
 

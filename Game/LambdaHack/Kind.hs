@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes, ScopedTypeVariables, TypeFamilies #-}
+{-# LANGUAGE RankNTypes, TypeFamilies #-}
 -- | General content types and operations.
 module Game.LambdaHack.Kind
   ( -- * General content types

@@ -49,21 +49,21 @@ type TileMap = Kind.Array Point TileKind
 
 -- | A single, inhabited dungeon level.
 data Level = Level
-  { lactor    :: ActorDict       -- ^ all actors on the level
-  , linv      :: InvDict         -- ^ items belonging to actors
-  , lxsize    :: X               -- ^ width of the level
-  , lysize    :: Y               -- ^ height of the level
-  , lsmell    :: SmellMap        -- ^ smells
-  , lsecret   :: SecretMap       -- ^ secrecy values
-  , litem     :: ItemMap         -- ^ items on the ground
-  , lmap      :: TileMap         -- ^ map tiles
-  , lrmap     :: TileMap         -- ^ remembered map tiles
-  , ldesc     :: Text            -- ^ level description for the player
-  , lmeta     :: Text            -- ^ debug information from cave generation
-  , lstairs   :: (Point, Point)  -- ^ destination of the (up, down) stairs
-  , ltime     :: Time            -- ^ date of the last activity on the level
-  , lclear    :: Int             -- ^ total number of clear tiles
-  , lseen     :: Int             -- ^ number of clear tiles already seen
+  { lactor    :: !ActorDict       -- ^ all actors on the level
+  , linv      :: !InvDict         -- ^ items belonging to actors
+  , lxsize    :: !X               -- ^ width of the level
+  , lysize    :: !Y               -- ^ height of the level
+  , lsmell    :: !SmellMap        -- ^ smells
+  , lsecret   :: !SecretMap       -- ^ secrecy values
+  , litem     :: !ItemMap         -- ^ items on the ground
+  , lmap      :: !TileMap         -- ^ map tiles
+  , lrmap     :: !TileMap         -- ^ remembered map tiles
+  , ldesc     :: !Text            -- ^ level description for the player
+  , lmeta     :: !Text            -- ^ debug information from cave generation
+  , lstairs   :: !(Point, Point)  -- ^ destination of the (up, down) stairs
+  , ltime     :: !Time            -- ^ date of the last activity on the level
+  , lclear    :: !Int             -- ^ total number of clear tiles
+  , lseen     :: !Int             -- ^ number of clear tiles already seen
   }
   deriving Show
 

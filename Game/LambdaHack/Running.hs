@@ -40,10 +40,9 @@ run (dir, dist) = do
   targeting <- gets (ctargeting . scursor)
   if targeting /= TgtOff
     then do
-      frs <- moveCursor dir 10
+      moveCursor dir 10
       -- Mark that unexpectedly it does not take time.
       modify (\ s -> s {stakeTime = Just False})
-      return frs
     else do
       let accessibleDir loc d = accessible cops lvl loc (loc `shift` d)
           -- Do not count distance if we just open a door.

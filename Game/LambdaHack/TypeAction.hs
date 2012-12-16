@@ -35,8 +35,6 @@ bindAction m f = Action (\c p k a s d ->
                                 runAction (f x) c p k a ns nd
                           in runAction m c p next a s d)
 
--- TODO: check if it's strict enough, if we don't keep old states for too long,
--- Perhaps make state type fields strict for that, too?
 instance Monad Action where
   return = returnAction
   (>>=)  = bindAction
@@ -58,7 +56,6 @@ instance Functor Action where
   fmap f m = fun2actionRO (\c p k a s d ->
                             runAction m c p (\_ _ -> k . f) a s d)
 
---instance MonadAction m => MonadState State m where
 instance St.MonadState State Action where
   get    = get
   put ns = fun2action (\_c _p k _a _s d -> k ns d ())

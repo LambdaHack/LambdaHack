@@ -1,6 +1,10 @@
 -- | Game action monads and their basic operations.
 -- This is a restricted view, sufficient for all the code that uses the monads
 -- (as opposed to implementing them).
+-- Exports 'liftIO' for injecting @IO@ into the action monads,
+-- but does not export the implementation of the monad types.
+-- The 'liftIO' operation is used only in Action.hs and not re-exported
+-- further.
 module Game.LambdaHack.Action.MonadAction
   ( -- * Types and type classes to do with actions
     MonadActionRO(get, gets, liftIO), MonadAction

@@ -25,10 +25,10 @@ import Game.LambdaHack.State
 -- including many consecutive games in a single session,
 -- but is completely disregarded and reset when a new playing session starts.
 data Session = Session
-  { sfs       :: FrontendSession           -- ^ frontend session information
-  , scops     :: Kind.COps                 -- ^ game content
-  , sbinding  :: Binding                   -- ^ binding of keys to commands
-  , sconfigUI :: ConfigUI                  -- ^ the UI config for this session
+  { sfs       :: !FrontendSession  -- ^ frontend session information
+  , scops     :: !Kind.COps        -- ^ game content
+  , sbinding  :: !Binding          -- ^ binding of keys to commands
+  , sconfigUI :: !ConfigUI         -- ^ the UI config for this session
   }
 
 -- | The type of the function inside any action.
@@ -54,7 +54,7 @@ type FunActionRO a =
 class (Monad m, Functor m, MonadReader Pers m, Show (m ()))
       => MonadActionRO m where
   fun2actionRO :: FunActionRO a -> m a
-  -- | Set the current exception handler. First argument is the handler,
+  -- Set the current exception handler. First argument is the handler,
   -- second is the computation the handler scopes over.
   tryWith :: (Msg -> m a) -> m a -> m a
   get :: m State
@@ -66,11 +66,15 @@ class (Monad m, Functor m, MonadReader Pers m, Show (m ()))
   liftIO :: IO a -> m a
   liftIO x = fun2actionRO (\_c _p k _a _s _d -> x >>= k)
 
--- The following seems to trigger a GHC bug (Overlapping instances for Show):
+-- The following triggers a GHC limitation (Overlapping instances for Show):
 -- instance MonadActionRO m => Show (m a) where
 --   show _ = "an action"
 -- TODO: try again, but not sooner than in a few years, so that users
--- with old compilers don't have compilation problems.
+-- with old compilers don't have compilation problems. The same with
+--  instance MonadAction m => St.MonadState State m where
+--  get    = get
+--  put ns = fun2action (\_c _p k _a _s d -> k ns d ())
+-- and with MonadReader Pers m
 instance MonadActionRO m => Show (WriterT Frames m a) where
   show _ = "an action"
 

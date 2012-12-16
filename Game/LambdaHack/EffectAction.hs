@@ -430,9 +430,8 @@ discover i = do
 -- of a player action or the selected player actor death.
 selectPlayer :: MonadAction m => ActorId -> m Bool
 selectPlayer actor = do
-  Kind.COps{coactor} <- askCOps
+  cops@Kind.COps{coactor} <- askCOps
   pl    <- gets splayer
-  cops  <- askCOps
   lvl   <- gets slevel
   if actor == pl
     then return False -- already selected
