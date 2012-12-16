@@ -4,6 +4,8 @@ module Game.LambdaHack.CommandAction
   ( configCmds, semanticsCmds
   ) where
 
+import Control.Monad.IO.Class
+import Control.Monad.Writer.Strict (WriterT, lift)
 import qualified Data.List as L
 import Data.Text (Text)
 
@@ -16,31 +18,31 @@ import qualified Game.LambdaHack.Key as K
 import Game.LambdaHack.State
 
 -- | The semantics of player commands in terms of the @Action@ monad.
-cmdAction :: Cmd -> ActionFrame ()
+cmdAction ::  (MonadIO m, MonadAction m) => Cmd -> WriterT Frames m ()
 cmdAction cmd = case cmd of
-  Apply{..}       -> inFrame $ playerApplyGroupItem verb object syms
+  Apply{..}       -> lift $ playerApplyGroupItem verb object syms
   Project{..}     -> playerProjectGroupItem verb object syms
-  TriggerDir{..}  -> inFrame $ playerTriggerDir feature verb
-  TriggerTile{..} -> inFrame $ playerTriggerTile feature
-  Pickup    -> inFrame $ pickupItem
-  Drop      -> inFrame $ dropItem
-  Wait      -> inFrame $ waitBlock
-  GameExit  -> inFrame $ gameExit
-  GameRestart -> inFrame $ gameRestart
-  GameSave  -> inFrame $ gameSave
+  TriggerDir{..}  -> lift $ playerTriggerDir feature verb
+  TriggerTile{..} -> lift $ playerTriggerTile feature
+  Pickup    -> lift $ pickupItem
+  Drop      -> lift $ dropItem
+  Wait      -> lift $ waitBlock
+  GameExit  -> lift $ gameExit
+  GameRestart -> lift $ gameRestart
+  GameSave  -> lift $ gameSave
 
   Inventory -> inventory
   TgtFloor  -> targetFloor   TgtExplicit
   TgtEnemy  -> targetMonster TgtExplicit
   TgtAscend k -> tgtAscend k
-  EpsIncr b -> inFrame $ epsIncr b
+  EpsIncr b -> lift $ epsIncr b
   Cancel    -> cancelCurrent displayMainMenu
   Accept    -> acceptCurrent displayHelp
-  Clear     -> inFrame $ clearCurrent
+  Clear     -> lift $ clearCurrent
   History   -> displayHistory
-  CfgDump   -> inFrame $ dumpConfig
-  HeroCycle -> inFrame $ cycleHero
-  HeroBack  -> inFrame $ backCycleHero
+  CfgDump   -> lift $ dumpConfig
+  HeroCycle -> lift $ cycleHero
+  HeroBack  -> lift $ backCycleHero
   Help      -> displayHelp
 
 -- | The associaction of commands to keys defined in config.
@@ -50,8 +52,8 @@ configCmds ConfigUI{configCommands} =
   in L.map mkCommand configCommands
 
 -- | The list of semantics and other info for all commands from config.
-semanticsCmds :: [(K.Key, Cmd)]
-              -> [((K.Key, K.Modifier), (Text, Bool, ActionFrame ()))]
+semanticsCmds :: (MonadIO m, MonadAction m) => [(K.Key, Cmd)]
+              -> [((K.Key, K.Modifier), (Text, Bool, WriterT Frames m ()))]
 semanticsCmds cmdList =
   let mkDescribed cmd =
         let semantics = if timedCmd cmd
@@ -63,7 +65,7 @@ semanticsCmds cmdList =
 
 -- | If in targeting mode, check if the current level is the same
 -- as player level and refuse performing the action otherwise.
-checkCursor :: ActionFrame () -> ActionFrame ()
+checkCursor :: MonadActionRO m => WriterT Frames m () -> WriterT Frames m ()
 checkCursor h = do
   cursor <- gets scursor
   slid <- gets slid

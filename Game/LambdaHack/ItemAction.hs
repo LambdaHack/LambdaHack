@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, ExtendedDefaultRules #-}
+{-# LANGUAGE ExtendedDefaultRules, OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 -- | Item UI code with the 'Action' type and everything it depends on
 -- that is not already in Action.hs and EffectAction.hs.
@@ -8,6 +8,7 @@ module Game.LambdaHack.ItemAction where
 
 import Control.Monad
 import Control.Monad.State hiding (State, get, gets, state)
+import Control.Monad.Writer.Strict (WriterT)
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import qualified Data.List as L
@@ -38,7 +39,7 @@ default (Text)
 -- TODO: When inventory is displayed, let TAB switch the player (without
 -- announcing that) and show the inventory of the new player.
 -- | Display inventory
-inventory :: ActionFrame ()
+inventory :: (MonadIO m, MonadActionRO m) => WriterT Frames m ()
 inventory = do
   Kind.COps{coactor} <- askCOps
   pbody <- gets getPlayerBody
@@ -157,7 +158,7 @@ projectGroupItem source tloc _verb item = do
           abortWith "blocked"
       when (svisible || projVis) $ msgAdd msg
 
-playerProjectGroupItem :: MU.Part -> MU.Part -> [Char] -> ActionFrame ()
+playerProjectGroupItem :: (MonadIO m, MonadAction m) => MU.Part -> MU.Part -> [Char] -> WriterT Frames m ()
 playerProjectGroupItem verb object syms = do
   ms     <- gets hostileList
   lxsize <- gets (lxsize . slevel)
@@ -167,7 +168,7 @@ playerProjectGroupItem verb object syms = do
     then abortWith "You can't aim in melee."
     else playerProjectGI verb object syms
 
-playerProjectGI :: MU.Part -> MU.Part -> [Char] -> ActionFrame ()
+playerProjectGI :: (MonadIO m, MonadAction m) => MU.Part -> MU.Part -> [Char] -> WriterT Frames m ()
 playerProjectGI verb object syms = do
   state <- get
   pl    <- gets splayer
@@ -190,11 +191,11 @@ playerProjectGI verb object syms = do
       targeting <- gets (ctargeting . scursor)
       when (targeting == TgtAuto) $ endTargeting True
       projectGroupItem pl loc (iverbProject $ okind $ jkind item) item
-      returnNoFrame ()
+      return ()
     Nothing -> retarget "Last target invalid."
 
 -- | Start the monster targeting mode. Cycle between monster targets.
-targetMonster :: TgtMode -> ActionFrame ()
+targetMonster :: (MonadIO m, MonadAction m) => TgtMode -> WriterT Frames m ()
 targetMonster tgtMode = do
   pl        <- gets splayer
   ploc      <- gets (bloc . getPlayerBody)
@@ -230,7 +231,7 @@ targetMonster tgtMode = do
   setCursor tgtMode
 
 -- | Start the floor targeting mode or reset the cursor location to the player.
-targetFloor :: TgtMode -> ActionFrame ()
+targetFloor :: (MonadIO m, MonadAction m) => TgtMode -> WriterT Frames m ()
 targetFloor tgtMode = do
   ploc      <- gets (bloc . getPlayerBody)
   target    <- gets (btarget . getPlayerBody)
@@ -245,7 +246,7 @@ targetFloor tgtMode = do
   setCursor tgtMode
 
 -- | Set, activate and display cursor information.
-setCursor :: TgtMode -> ActionFrame ()
+setCursor :: (MonadIO m, MonadAction m) => TgtMode -> WriterT Frames m ()
 setCursor tgtMode = assert (tgtMode /= TgtOff) $ do
   state  <- get
   per    <- getPerception
@@ -319,20 +320,20 @@ endTargetingMsg = do
 
 -- | Cancel something, e.g., targeting mode, resetting the cursor
 -- to the position of the player. Chosen target is not invalidated.
-cancelCurrent :: ActionFrame () -> ActionFrame ()
+cancelCurrent :: MonadAction m => WriterT Frames m () -> WriterT Frames m ()
 cancelCurrent h = do
   targeting <- gets (ctargeting . scursor)
   if targeting /= TgtOff
-    then inFrame $ endTargeting False
+    then lift $ endTargeting False
     else h  -- nothing to cancel right now, treat this as a command invocation
 
 -- | Accept something, e.g., targeting mode, keeping cursor where it was.
 -- Or perform the default action, if nothing needs accepting.
-acceptCurrent :: ActionFrame () -> ActionFrame ()
+acceptCurrent :: MonadAction m => WriterT Frames m () -> WriterT Frames m ()
 acceptCurrent h = do
   targeting <- gets (ctargeting . scursor)
   if targeting /= TgtOff
-    then inFrame $ endTargeting True
+    then lift $ endTargeting True
     else h  -- nothing to accept right now, treat this as a command invocation
 
 -- | Clear current messages, show the next screen if any.

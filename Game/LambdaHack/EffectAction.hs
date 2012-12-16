@@ -7,6 +7,7 @@ module Game.LambdaHack.EffectAction where
 
 import Control.Monad
 import Control.Monad.State hiding (State, state, get, gets)
+import Control.Monad.Writer.Strict (WriterT, tell)
 import Data.Function
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
@@ -588,7 +589,7 @@ stopRunning :: MonadAction m => m ()
 stopRunning = updatePlayerBody (\ p -> p { bdir = Nothing })
 
 -- | Perform look around in the current location of the cursor.
-doLook :: ActionFrame ()
+doLook :: (MonadIO m, MonadActionRO m) => WriterT Frames m ()
 doLook = do
   cops@Kind.COps{coactor} <- askCOps
   loc    <- gets (clocation . scursor)
@@ -622,4 +623,4 @@ doLook = do
       then displayOverlays lookMsg "" io
       else do
         fr <- drawPrompt ColorFull lookMsg
-        returnFrame fr
+        tell [Just fr]

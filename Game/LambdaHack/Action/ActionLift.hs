@@ -1,15 +1,14 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS -fno-warn-orphans #-}
+{-# LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses,
+             OverloadedStrings #-}
 -- | Game action monad and basic building blocks for player and monster
 -- actions. Exports 'liftIO' for injecting 'IO' into the 'Action' monad,
 -- but does not export the implementation of the Action monad.
 -- The 'liftIO' and 'handlerToIO' operations are used only in Action.hs.
-{-# LANGUAGE MultiParamTypeClasses, FlexibleContexts #-}
 module Game.LambdaHack.Action.ActionLift
   ( -- * Actions and basic operations
-    ActionFun, MonadAction, MonadActionRO(get, gets), Action
+    ActionFun, MonadAction, MonadActionRO(get, gets), Action, Frames
   , handlerToIO, withPerception, getPerception
-    -- * Actions returning frames
-  , ActionFrame, returnNoFrame, returnFrame, whenFrame, inFrame
     -- * Game session and assessors to its components
   , Session(..), askFrontendSession, askCOps, askBinding, askConfigUI
     -- * Various ways to abort action
@@ -21,7 +20,8 @@ module Game.LambdaHack.Action.ActionLift
   ) where
 
 import Control.Monad.IO.Class
-import Control.Monad.State hiding (State, liftIO, state)
+import qualified Control.Monad.State as St
+import Control.Monad.Writer.Strict
 import qualified Data.List as L
 import Data.Maybe
 import qualified Data.Text as T
@@ -81,49 +81,62 @@ instance Show (Action a) where
   show _ = "an action"
 
 class (Monad m, Functor m, Show (m ())) => MonadActionRO m where
-  action2fun   :: m a -> ActionFun a
+  fun2actionRO :: ActionFunRO a -> m a
   -- | Set the current exception handler. First argument is the handler,
   -- second is the computation the handler scopes over.
   tryWith      :: (Msg -> m a) -> m a -> m a
-  fun2actionRO :: ActionFunRO a -> m a
-  get          :: m State
-  gets         :: (State -> a) -> m a
+  get :: m State
+  get = fun2actionRO (\_c _p k _a s _d -> k s)
+  gets :: (State -> a) -> m a
+  gets = (`fmap` get)
 
-class (MonadActionRO m, MonadState State m) => MonadAction m where
+-- The following seems to trigger a GHC bug (Overlapping instances for Show):
+-- instance MonadActionRO m => Show (m a) where
+--   show _ = "an action"
+
+-- | Sequences of screen frames, including delays.
+type Frames = [Maybe SingleFrame]
+
+instance MonadActionRO m => Show (WriterT Frames m a) where
+  show _ = "an action"
+
+instance MonadActionRO m => MonadActionRO (WriterT Frames m) where
+  fun2actionRO = lift . fun2actionRO
+  tryWith exc m =
+    WriterT $ tryWith (\msg -> runWriterT (exc msg)) (runWriterT m)
+
+class (MonadActionRO m, St.MonadState State m) => MonadAction m where
   fun2action :: ActionFun a -> m a
 
-actionGet :: Action State
-actionGet = fun2actionRO (\_c _p k _a s _d -> k s)
+instance MonadAction m => MonadAction (WriterT Frames m) where
+  fun2action = lift . fun2action
 
 instance MonadActionRO Action where
-  action2fun = runAction
-  tryWith exc m =
-    fun2action (\c p k a s d ->
-                 let runA msg = action2fun (exc msg) c p k a s d
-                 in action2fun m c p k runA s d)
   fun2actionRO f = Action (\c p k a s d -> f c p (k s d) a s d)
-  get            = actionGet
-  gets f         = fmap f actionGet
+  tryWith exc m =
+    Action (\c p k a s d ->
+             let runA msg = runAction (exc msg) c p k a s d
+             in runAction m c p k runA s d)
 
 instance MonadAction Action where
   fun2action = Action
 
 instance Functor Action where
   fmap f m = fun2actionRO (\c p k a s d ->
-                            action2fun m c p (\_ _ -> k . f) a s d)
+                            runAction m c p (\_ _ -> k . f) a s d)
 
 --instance MonadAction m => MonadState State m where
-instance MonadState State Action where
-  get    = actionGet
+instance St.MonadState State Action where
+  get    = get
   put ns = fun2action (\_c _p k _a _s d -> k ns d ())
 
 instance MonadIO Action where
   liftIO x = fun2actionRO (\_c _p k _a _s _d -> x >>= k)
 
 -- | Run an action, with a given session, state and diary, in the @IO@ monad.
-handlerToIO :: MonadActionRO m => Session -> State -> Diary -> m () -> IO ()
+handlerToIO :: Session -> State -> Diary -> Action () -> IO ()
 handlerToIO sess@Session{scops} state diary m =
-  action2fun m
+  runAction m
     sess
     (dungeonPerception scops state)  -- create and cache perception
     (\_ _ _ -> return ())  -- final continuation returns result
@@ -134,35 +147,18 @@ handlerToIO sess@Session{scops} state diary m =
 -- TODO: RO
 -- | Update the cached perception for the given computation.
 withPerception :: MonadAction m => m () -> m ()
-withPerception m =
-  fun2action (\c@Session{scops} _ k a s d ->
-           action2fun m c (dungeonPerception scops s) k a s d)
+withPerception m = do
+  cops <- askCOps
+  s <- get
+  let per = dungeonPerception cops s
+  return undefined
+--  fun2action (\c@Session{scops} _ k a s d ->
+--           action2fun m c per k a s d)
 
 -- | Get the current perception.
 getPerception :: MonadActionRO m => m Perception
 getPerception = fun2actionRO (\_c per k _a s _d ->
                          k (fromJust $ L.lookup (slid s) per))
-
--- | Actions and screen frames, including delays, resulting
--- from performing the actions.
-type ActionFrame a = Action (a, [Maybe SingleFrame])
-
--- | Return the value with an empty set of screen frames.
-returnNoFrame :: a -> ActionFrame a
-returnNoFrame x = return (x, [])
-
--- | Return the trivial value with a single frame to show.
-returnFrame :: SingleFrame -> ActionFrame ()
-returnFrame fr = return ((), [Just fr])
-
--- | As the @when@ monad operation, but on type @ActionFrame ()@.
-whenFrame :: Bool -> ActionFrame () -> ActionFrame ()
-whenFrame True x  = x
-whenFrame False _ = returnNoFrame ()
-
--- | Inject action into actions with screen frames.
-inFrame :: Action () -> ActionFrame ()
-inFrame m = m >> returnNoFrame ()
 
 -- | The information that is constant across a client playing session,
 -- including many consecutive games in a single session,
@@ -170,7 +166,7 @@ inFrame m = m >> returnNoFrame ()
 data Session = Session
   { sfs       :: FrontendSession           -- ^ frontend session information
   , scops     :: Kind.COps                 -- ^ game content
-  , sbinding  :: Binding (ActionFrame ())  -- ^ binding of keys to commands
+  , sbinding  :: Binding (WriterT Frames Action ())  -- ^ binding of keys to commands
   , sconfigUI :: ConfigUI                  -- ^ the UI config for this session
   }
 
@@ -183,7 +179,7 @@ askCOps :: MonadActionRO m => m Kind.COps
 askCOps = fun2actionRO (\Session{scops} _p k _a _s _d -> k scops)
 
 -- | Get the key binding.
-askBinding :: MonadActionRO m => m (Binding (ActionFrame ()))
+askBinding :: MonadActionRO m => m (Binding (WriterT Frames Action ()))
 askBinding = fun2actionRO (\Session{sbinding} _p k _a _s _d -> k sbinding)
 
 -- | Get the config from the config file.

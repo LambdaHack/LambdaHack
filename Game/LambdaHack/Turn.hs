@@ -5,6 +5,7 @@ module Game.LambdaHack.Turn ( handleTurn ) where
 import Control.Arrow ((&&&))
 import Control.Monad
 import Control.Monad.State hiding (State, get, gets, state)
+import Control.Monad.Writer.Strict (WriterT (runWriterT), execWriterT, tell)
 import qualified Data.IntMap as IM
 import qualified Data.List as L
 import qualified Data.Map as M
@@ -61,7 +62,7 @@ import Game.LambdaHack.Utils.Assert
 -- every fixed number of time units, e.g., monster generation.
 -- Run the player and other actors moves. Eventually advance the time
 -- and repeat.
-handleTurn :: Action ()
+handleTurn :: (MonadIO m, MonadAction m) => m ()
 handleTurn = do
   debug "handleTurn"
   time <- gets stime  -- the end time of this clip, inclusive
@@ -83,8 +84,8 @@ handleTurn = do
 -- Some very fast actors may move many times a clip and then
 -- we introduce subclips and produce many frames per clip to avoid
 -- jerky movement. Otherwise we push exactly one frame or frame delay.
-handleActors :: Time       -- ^ the start time of current subclip, exclusive
-             -> Action ()
+handleActors :: (MonadIO m, MonadAction m) => Time       -- ^ the start time of current subclip, exclusive
+             -> m ()
 handleActors subclipStart = do
   debug "handleActors"
   Kind.COps{coactor} <- askCOps
@@ -173,7 +174,7 @@ handleAI actor = do
   join $ rndToAction $ frequency $ bestVariant $ stratMove
 
 -- | Handle the move of the hero.
-handlePlayer :: Action ()
+handlePlayer :: (MonadIO m, MonadAction m) => m ()
 handlePlayer = do
   debug "handlePlayer"
   -- When running, stop if aborted by a disturbance.
@@ -185,7 +186,7 @@ handlePlayer = do
 
 -- | Determine and process the next player command. The argument is the last
 -- abort message due to running, if any.
-playerCommand :: Msg -> Action ()
+playerCommand :: forall m. (MonadIO m, MonadAction m) => Msg -> m ()
 playerCommand msgRunAbort = do
   -- The frame state is now Push.
   Binding.Binding{kcmd} <- askBinding
@@ -194,16 +195,16 @@ playerCommand msgRunAbort = do
     _  -> drawPrompt ColorFull msgRunAbort >>= getKeyFrameCommand
   -- The frame state is now None and remains so between each pair
   -- of lines of @loop@ (but can change within called actions).
-  let loop :: (K.Key, K.Modifier) -> Action ()
+  let loop :: (K.Key, K.Modifier) -> m ()
       loop km = do
         -- Messages shown, so update history and reset current report.
         recordHistory
         -- On abort, just reset state and call loop again below.
-        (timed, frames) <- tryWithFrame (return False) $ do
+        (timed, frames) <- runWriterT $ tryWithFrame (return False) $ do
           -- Look up the key.
           case M.lookup km kcmd of
             Just (_, declaredTimed, c) -> do
-              ((), frs) <- c
+              frs <- execWriterT undefined -- c
               -- Targeting cursor movement and a few other subcommands
               -- are wrongly marked as timed. This is indicated in their
               -- definitions by setting @snoTime@ flag and used and reset here.
@@ -215,8 +216,9 @@ playerCommand msgRunAbort = do
               if not timed && null (catMaybes frs)
                 then do
                   fr <- drawPrompt ColorFull ""
-                  return (timed, [Just fr])
-                else return (timed, frs)
+                  tell [Just fr]
+                else tell frs
+              return timed
             Nothing -> let msgKey = "unknown command <" <> K.showKM km <> ">"
                        in abortWith msgKey
         -- The command was aborted or successful and if the latter,

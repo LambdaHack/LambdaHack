@@ -4,6 +4,7 @@ module Game.LambdaHack.Running
   ) where
 
 import Control.Monad.State hiding (State, get, gets, state)
+import Control.Monad.Writer.Strict (WriterT, execWriterT)
 import qualified Data.IntSet as IS
 import qualified Data.List as L
 
@@ -29,7 +30,7 @@ import Game.LambdaHack.Vector
 -- succeeds much more often than subsequent turns, because most
 -- of the disturbances are ignored, since the player is aware of them
 -- and still explicitly requests a run.
-run :: (Vector, Int) -> ActionFrame ()
+run :: (MonadIO m, MonadAction m) => (Vector, Int) -> WriterT Frames m ()
 run (dir, dist) = do
   cops <- askCOps
   pl <- gets splayer
@@ -48,7 +49,7 @@ run (dir, dist) = do
           distNew = if accessibleDir locHere dir then dist + 1 else dist
       updatePlayerBody (\ p -> p { bdir = Just (dir, distNew) })
       -- Attacks and opening doors disallowed when continuing to run.
-      inFrame $ moveOrAttack False pl dir
+      lift $ moveOrAttack False pl dir
 
 -- | Player running mode, determined from the nearby cave layout.
 data RunMode =
@@ -154,7 +155,7 @@ runDisturbance locLast distLast msg hs ms per locHere
 -- it ajusts the direction given by the vector if we reached
 -- a corridor's corner (we never change direction except in corridors)
 -- and it increments the counter of traversed tiles.
-continueRun :: (Vector, Int) -> Action ()
+continueRun :: (MonadIO m, MonadAction m) => (Vector, Int) -> m ()
 continueRun (dirLast, distLast) = do
   cops@Kind.COps{cotile} <- askCOps
   locHere <- gets (bloc . getPlayerBody)
@@ -179,7 +180,7 @@ continueRun (dirLast, distLast) = do
       openableDir loc dir   = Tile.hasFeature cotile F.Openable
                                 (lvl `at` (loc `shift` dir))
       dirEnterable loc d = accessibleDir loc d || openableDir loc d
-  ((), frames) <- case runMode locHere dirLast dirEnterable lxsize of
+  frs <- execWriterT $ case runMode locHere dirLast dirEnterable lxsize of
     RunDeadEnd -> abort                   -- we don't run backwards
     RunOpen    -> tryRun dirLast          -- run forward into the open space
     RunHub     -> abort                   -- stop and decide where to go
@@ -191,4 +192,4 @@ continueRun (dirLast, distLast) = do
         RunHub  | turn -> abort           -- stop and decide when to turn
         RunOpen -> tryRunAndStop dirNext  -- no turn, get closer and stop
         RunHub  -> tryRunAndStop dirNext  -- no turn, get closer and stop
-  when (not $ null frames) abort  -- something serious happened, stop running
+  when (not $ null frs) abort  -- something serious happened, stop running

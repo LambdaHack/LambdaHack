@@ -4,10 +4,10 @@
 -- Has no direct access to the Action monad implementation.
 module Game.LambdaHack.Action
   ( -- * Actions and accessors
-    MonadAction, MonadActionRO(get, gets), Action
+    MonadAction, MonadActionRO(get, gets), Action, Frames
   , getPerception, askCOps, askBinding, askConfigUI
     -- * Actions returning frames
-  , ActionFrame, returnNoFrame, returnFrame, whenFrame, inFrame, tryWithFrame
+  , tryWithFrame
     -- * Various ways to abort action
   , abort, abortWith, abortIfWith, neverMind
     -- * Abort exception handlers
@@ -32,6 +32,7 @@ import Control.Exception (finally)
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.State hiding (State, state, liftIO, get, gets)
+import Control.Monad.Writer.Strict (WriterT, tell)
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import qualified Data.Map as M
@@ -66,17 +67,16 @@ import qualified Game.LambdaHack.Tile as Tile
 
 -- | Set the current exception handler. Apart of executing it,
 -- draw and pass along a frame with the abort message, if any.
-tryWithFrame :: Action a -> ActionFrame a -> ActionFrame a
+tryWithFrame :: MonadAction m => m a -> WriterT Frames m a -> WriterT Frames m a
 tryWithFrame exc h =
-  let msgToFrames ""  = returnNoFrame ()
+  let msgToFrames ""  = return ()
       msgToFrames msg = do
         msgReset ""
         fr <- drawPrompt ColorFull msg
-        returnFrame fr
+        tell [Just fr]
       excMsg msg = do
-        ((), frames) <- msgToFrames msg
-        a <- exc
-        return (a, frames)
+        msgToFrames msg
+        lift exc
   in tryWith excMsg h
 
 -- | Store current report in the history and reset report.
@@ -172,17 +172,17 @@ displayOverAbort prompt xs = do
 -- | Print a msg and several overlays, one per page.
 -- The last frame does not expect a confirmation and so does not show
 -- the invitation to press some keys.
-displayOverlays :: Msg -> Msg -> [Overlay] -> ActionFrame ()
-displayOverlays _      _ []  = returnNoFrame ()
+displayOverlays :: (MonadIO m, MonadActionRO m) => Msg -> Msg -> [Overlay] -> WriterT Frames m ()
+displayOverlays _      _ []  = return ()
 displayOverlays prompt _ [x] = do
   frame <- drawOverlay ColorFull prompt x
-  returnFrame frame
+  tell [Just frame]
 displayOverlays prompt pressKeys (x:xs) = do
   frame <- drawOverlay ColorFull (promptAdd prompt pressKeys) (x ++ [moreMsg])
   b <- getConfirm frame
   if b
     then displayOverlays prompt pressKeys xs
-    else returnNoFrame ()
+    else return ()
 
 -- | Print a prompt and an overlay and wait for a player keypress.
 -- If many overlays, scroll screenfuls with SPACE. Do not wrap screenfuls
@@ -409,8 +409,8 @@ gameResetAction configUI cops = liftIO $ gameReset configUI cops
 -- in particular verify content consistency.
 -- Then create the starting game config from the default config file
 -- and initialize the engine with the starting session.
-startFrontend :: (MonadIO m, MonadActionRO m) => Kind.COps -> (ConfigUI -> Binding (ActionFrame ()))
-              -> m () -> IO ()
+startFrontend :: Kind.COps -> (ConfigUI -> Binding (WriterT Frames Action ()))
+              -> Action () -> IO ()
 startFrontend !scops@Kind.COps{corule} stdBinding handleTurn = do
   -- UI config reloaded at each client start.
   sconfigUI <- ConfigIO.mkConfigUI corule
@@ -437,7 +437,7 @@ speedupCops sess@Session{scops = cops@Kind.COps{cotile=tile}} =
 
 -- | Either restore a saved game, or setup a new game.
 -- Then call the main game loop.
-start :: MonadActionRO m => Session -> m () -> IO ()
+start :: Session -> Action () -> IO ()
 start slowSess handleGame = do
   let sess@Session{scops = cops@Kind.COps{corule}, sconfigUI} =
         speedupCops slowSess

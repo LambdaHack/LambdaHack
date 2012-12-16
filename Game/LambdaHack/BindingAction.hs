@@ -5,6 +5,7 @@ module Game.LambdaHack.BindingAction
   ) where
 
 import Control.Monad.State hiding (State, get, gets, state)
+import Control.Monad.Writer.Strict (WriterT)
 import qualified Data.Char as Char
 import qualified Data.List as L
 import qualified Data.Map as M
@@ -24,13 +25,14 @@ import Game.LambdaHack.Level
 import Game.LambdaHack.Running
 import Game.LambdaHack.State
 
-heroSelection :: [((K.Key, K.Modifier), (Text, Bool, ActionFrame ()))]
+heroSelection :: MonadAction m
+              => [((K.Key, K.Modifier), (Text, Bool, WriterT Frames m ()))]
 heroSelection =
   let select k = do
         s <- get
         case tryFindHeroK s k of
-          Nothing -> abortWith "No such member of the party."
-          Just aid -> selectPlayer aid >> returnNoFrame ()
+          Nothing  -> abortWith "No such member of the party."
+          Just aid -> void $ selectPlayer aid
       heroSelect k = ( (K.Char (Char.intToDigit k), K.NoModifier)
                      , ("", False, select k)
                      )
@@ -38,8 +40,9 @@ heroSelection =
 
 -- | Binding of keys to movement and other standard commands,
 -- as well as commands defined in the config file.
-stdBinding :: ConfigUI                  -- ^ game config
-           -> Binding (ActionFrame ())  -- ^ concrete binding
+stdBinding :: (MonadIO m, MonadAction m)
+           => ConfigUI                  -- ^ game config
+           -> Binding (WriterT Frames m ())  -- ^ concrete binding
 stdBinding !config@ConfigUI{configMacros} =
   let kmacro = M.fromList $ configMacros
       cmdList = configCmds config
@@ -59,10 +62,8 @@ stdBinding !config@ConfigUI{configMacros} =
              heroSelection ++
              semList ++
              [ -- Debug commands.
-               ((K.Char 'r', K.Control), ("", False, modify cycleMarkVision
-                                                     >> returnNoFrame ())),
-               ((K.Char 'o', K.Control), ("", False, modify toggleOmniscient
-                                                     >> returnNoFrame ())),
+               ((K.Char 'r', K.Control), ("", False, modify cycleMarkVision)),
+               ((K.Char 'o', K.Control), ("", False, modify toggleOmniscient)),
                ((K.Char 'i', K.Control), ("", False, gets (lmeta . slevel)
                                                      >>= abortWith))
              ]

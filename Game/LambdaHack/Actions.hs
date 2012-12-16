@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, ExtendedDefaultRules #-}
+{-# LANGUAGE ExtendedDefaultRules, OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 -- | The game action stuff that is independent from ItemAction.hs
 -- (both depend on EffectAction.hs).
@@ -10,6 +10,7 @@ import qualified Paths_LambdaHack as Self (version)
 
 import Control.Monad
 import Control.Monad.State hiding (State, get, gets, state)
+import Control.Monad.Writer.Strict (WriterT)
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import qualified Data.List as L
@@ -75,7 +76,7 @@ gameRestart = do
   when (not b2) $ abortWith "Yea, so much still to do."
   modify (\ s -> s {squit = Just (False, Restart)})
 
-moveCursor :: Vector -> Int -> ActionFrame ()
+moveCursor :: (MonadIO m, MonadAction m) => Vector -> Int -> WriterT Frames m ()
 moveCursor dir n = do
   lxsize <- gets (lxsize . slevel)
   lysize <- gets (lysize . slevel)
@@ -90,7 +91,7 @@ moveCursor dir n = do
 -- TODO: Think about doing the mode dispatch elsewhere, especially if over
 -- time more and more commands need to do the dispatch inside their code
 -- (currently only a couple do).
-move :: Vector -> ActionFrame ()
+move :: (MonadIO m, MonadAction m) => Vector -> WriterT Frames m ()
 move dir = do
   pl <- gets splayer
   targeting <- gets (ctargeting . scursor)
@@ -101,7 +102,7 @@ move dir = do
       modify (\ s -> s {stakeTime = Just False})
       return frs
     else
-      inFrame $ moveOrAttack True pl dir
+      lift $ moveOrAttack True pl dir
 
 ifRunning :: MonadActionRO m => ((Vector, Int) -> m a) -> m a -> m a
 ifRunning t e = do
@@ -217,7 +218,7 @@ actorOpenDoor actor dir = do
 
 -- | Change the displayed level in targeting mode to (at most)
 -- k levels shallower. Enters targeting mode, if not already in one.
-tgtAscend :: Int -> ActionFrame ()
+tgtAscend :: (MonadIO m, MonadAction m) => Int -> WriterT Frames m ()
 tgtAscend k = do
   Kind.COps{cotile} <- askCOps
   cursor    <- gets scursor
@@ -407,7 +408,7 @@ actorAttackActor source target = do
       let h2hGroup = if isAHero state source then "unarmed" else "monstrous"
       h2hKind <- rndToAction $ opick h2hGroup (const True)
       let h2hItem = Item h2hKind 0 Nothing 1
-          (stack, tell, verbosity, verb) =
+          (stack, say, verbosity, verb) =
             if isProjectile state source
             then case bitems of
               [bitem] -> (bitem, False, 10, "hit")       -- projectile
@@ -424,7 +425,7 @@ actorAttackActor source target = do
           msg = makeSentence $
             [ MU.SubjectVerbSg (partActor coactor sm) verb
             , partActor coactor tm ]
-            ++ if tell
+            ++ if say
                then ["with", MU.AW $ partItem coitem state stack]
                else []
           msgMiss = makeSentence
@@ -549,13 +550,13 @@ regenerateLevelHP = do
   modify (updateLevel (updateActorDict (IM.mapWithKey (upd hi))))
 
 -- | Display command help.
-displayHelp :: ActionFrame ()
+displayHelp :: (MonadIO m, MonadActionRO m) => WriterT Frames m ()
 displayHelp = do
   keyb <- askBinding
   displayOverlays "Basic keys." "[press SPACE to advance]" $ keyHelp keyb
 
 -- | Display the main menu.
-displayMainMenu :: ActionFrame ()
+displayMainMenu :: (MonadIO m, MonadActionRO m) => WriterT Frames m ()
 displayMainMenu = do
   Kind.COps{corule} <- askCOps
   Binding{krevMap} <- askBinding
@@ -599,7 +600,7 @@ displayMainMenu = do
     [] -> assert `failure` "empty Main Menu overlay"
     hd : tl -> displayOverlays hd "" [tl]
 
-displayHistory :: ActionFrame ()
+displayHistory :: (MonadIO m, MonadActionRO m) =>  WriterT Frames m ()
 displayHistory = do
   Diary{shistory} <- getDiary
   time <- gets stime
