@@ -1,7 +1,7 @@
 -- | Screen frames and animations.
 module Game.LambdaHack.Animation
   ( Attr(..), defaultAttr, AttrChar(..)
-  , SingleFrame(..), Animation, rederAnim
+  , SingleFrame(..), Animation, Frames, rederAnim
   , twirlSplash, blockHit, blockMiss, deathBody, swapPlaces
   ) where
 
@@ -31,9 +31,12 @@ instance Monoid Animation where
   mempty = Animation []
   mappend (Animation a1) (Animation a2) = Animation (a1 ++ a2)
 
+-- | Sequences of screen frames, including delays.
+type Frames = [Maybe SingleFrame]
+
 -- | Render animations on top of a screen frame.
 rederAnim :: X -> Y -> SingleFrame -> Animation
-          -> [Maybe SingleFrame]
+          -> Frames
 rederAnim lxsize lysize basicFrame (Animation anim) =
   let modifyFrame SingleFrame{sfLevel = levelOld, ..} am =
         let fLine y lineOld =

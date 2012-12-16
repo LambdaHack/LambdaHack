@@ -1,15 +1,17 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Abstract syntax of player commands.
 module Game.LambdaHack.Command
-  ( Cmd(..), majorCmd, timedCmd, cmdDescription
+  ( Cmd(..), majorCmd, timedCmd, cmdDescription, configCmds
   ) where
 
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Config
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Msg
+import Game.LambdaHack.Utils.Assert
+import qualified Game.LambdaHack.Key as K
 
 -- | Abstract syntax of player commands. The type is abstract, but the values
 -- are created outside this module via the Read class (from config file) .
@@ -106,3 +108,9 @@ cmdDescription cmd = case cmd of
   HeroCycle -> "cycle among heroes on level"
   HeroBack  -> "cycle among heroes in the dungeon"
   Help      -> "display help"
+
+-- | The associaction of commands to keys defined in config.
+configCmds :: ConfigUI -> [(K.Key, Cmd)]
+configCmds ConfigUI{configCommands} =
+  let mkCommand (key, def) = (key, read def :: Cmd)
+  in map mkCommand configCommands

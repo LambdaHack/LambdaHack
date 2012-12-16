@@ -1,20 +1,29 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Semantics of player commands.
 module Game.LambdaHack.CommandAction
-  ( configCmds, semanticsCmds
+  ( semanticsCmds, actionBinding
   ) where
 
+import Control.Monad
 import Control.Monad.IO.Class
-import Control.Monad.Writer.Strict (WriterT, lift)
+import Control.Monad.State hiding (State, get, gets, state)
+import Control.Monad.Writer.Strict (WriterT)
+import qualified Data.Char as Char
 import qualified Data.List as L
+import qualified Data.Map as M
 import Data.Text (Text)
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
+import Game.LambdaHack.ActorState
+import Game.LambdaHack.Animation (Frames)
 import Game.LambdaHack.Command
 import Game.LambdaHack.Config
+import Game.LambdaHack.EffectAction
 import Game.LambdaHack.ItemAction
 import qualified Game.LambdaHack.Key as K
+import Game.LambdaHack.Level
+import Game.LambdaHack.Running
 import Game.LambdaHack.State
 
 -- | The semantics of player commands in terms of the @Action@ monad.
@@ -45,12 +54,6 @@ cmdAction cmd = case cmd of
   HeroBack  -> lift $ backCycleHero
   Help      -> displayHelp
 
--- | The associaction of commands to keys defined in config.
-configCmds :: ConfigUI -> [(K.Key, Cmd)]
-configCmds ConfigUI{configCommands} =
-  let mkCommand (key, def) = (key, read def :: Cmd)
-  in L.map mkCommand configCommands
-
 -- | The list of semantics and other info for all commands from config.
 semanticsCmds :: (MonadIO m, MonadAction m) => [(K.Key, Cmd)]
               -> [((K.Key, K.Modifier), (Text, Bool, WriterT Frames m ()))]
@@ -72,3 +75,46 @@ checkCursor h = do
   if creturnLn cursor == slid
     then h
     else abortWith "[targeting] you inspect a remote level, press ESC to switch back"
+
+
+
+-- TODO: clean up: probably add Command.Cmd for each operation
+
+actionBinding :: (MonadIO m, MonadAction m)
+              => ConfigUI   -- ^ game config
+              -> M.Map (K.Key, K.Modifier) (Text, Bool, WriterT Frames m ())
+actionBinding !config =
+  let cmdList = configCmds config
+      semList = semanticsCmds cmdList
+      moveWidth f = do
+        lxsize <- gets (lxsize . slevel)
+        move $ f lxsize
+      runWidth f = do
+        lxsize <- gets (lxsize . slevel)
+        run (f lxsize, 0)
+      -- Targeting cursor movement and others are wrongly marked as timed;
+      -- fixed in their definitions by rewinding time.
+      cmdDir = K.moveBinding moveWidth runWidth
+  in M.fromList $
+       cmdDir ++
+       heroSelection ++
+       semList ++
+       [ -- Debug commands.
+         ((K.Char 'r', K.Control), ("", False, modify cycleMarkVision)),
+         ((K.Char 'o', K.Control), ("", False, modify toggleOmniscient)),
+         ((K.Char 'i', K.Control), ("", False, gets (lmeta . slevel)
+                                               >>= abortWith))
+       ]
+
+heroSelection :: MonadAction m
+              => [((K.Key, K.Modifier), (Text, Bool, WriterT Frames m ()))]
+heroSelection =
+  let select k = do
+        s <- get
+        case tryFindHeroK s k of
+          Nothing  -> abortWith "No such member of the party."
+          Just aid -> void $ selectPlayer aid
+      heroSelect k = ( (K.Char (Char.intToDigit k), K.NoModifier)
+                     , ("", False, select k)
+                     )
+  in fmap heroSelect [0..9]

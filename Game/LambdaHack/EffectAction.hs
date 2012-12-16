@@ -21,7 +21,7 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Animation (twirlSplash, blockHit, deathBody)
+import Game.LambdaHack.Animation (Frames, twirlSplash, blockHit, deathBody)
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind

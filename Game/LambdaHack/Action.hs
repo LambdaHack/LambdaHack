@@ -1,11 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
--- | Game action monad and basic building blocks for player and monster
--- actions. Uses @liftIO@ of the @Action@ monad, but does not export it.
--- Has no direct access to the Action monad implementation.
+-- | Game action monads and basic building blocks for player and monster
+-- actions. Has no access to the the main action type @Action@ nor
+-- to the implementation details of the action monads @MonadActionRO@
+-- and @MonadAction@.
 module Game.LambdaHack.Action
-  ( -- * Actions and accessors
-    MonadAction, MonadActionRO(get, gets), Action, Frames
-  , askPerception, askCOps, askBinding, askConfigUI
+  ( -- * Action monads
+    MonadActionRO(get, gets), MonadAction
+    -- * The Perception Reader
+  , withPerception, askPerception
+    -- * Accessors to the game session Reader
+  , askFrontendSession, askCOps, askBinding, askConfigUI
     -- * Actions returning frames
   , tryWithFrame
     -- * Various ways to abort action
@@ -42,15 +46,16 @@ import qualified Data.Text as T
 import System.Time
 -- import System.IO (hPutStrLn, stderr) -- just for debugging
 
-import Game.LambdaHack.Action.ActionLift
 import qualified Game.LambdaHack.Action.ConfigIO as ConfigIO
 import Game.LambdaHack.Action.Frontend
 import Game.LambdaHack.Action.HighScore (register)
+import Game.LambdaHack.Action.MonadAction
 import qualified Game.LambdaHack.Action.Save as Save
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Animation (SingleFrame(..))
+import Game.LambdaHack.Animation (SingleFrame(..), Frames)
 import Game.LambdaHack.Binding
+import Game.LambdaHack.BindingAction
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Draw
@@ -64,10 +69,39 @@ import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
+import Game.LambdaHack.Utils.Assert
+
+-- | Reset the state and resume from the last backup point, i.e., invoke
+-- the failure continuation.
+abort :: MonadActionRO m => m a
+abort = abortWith ""
+
+-- | Abort and print the given msg if the condition is true.
+abortIfWith :: MonadActionRO m => Bool -> Msg -> m a
+abortIfWith True msg = abortWith msg
+abortIfWith False _  = abortWith ""
+
+-- | Abort and conditionally print the fixed message.
+neverMind :: MonadActionRO m => Bool -> m a
+neverMind b = abortIfWith b "never mind"
+
+-- | Take a handler and a computation. If the computation fails, the
+-- handler is invoked and then the computation is retried.
+tryRepeatedlyWith :: MonadActionRO m => (Msg -> m ()) -> m () -> m ()
+tryRepeatedlyWith exc m =
+  tryWith (\msg -> exc msg >> tryRepeatedlyWith exc m) m
+
+-- | Try the given computation and silently catch failure.
+tryIgnore :: MonadActionRO m => m () -> m ()
+tryIgnore =
+  tryWith (\msg -> if T.null msg
+                   then return ()
+                   else assert `failure` msg <+> "in tryIgnore")
 
 -- | Set the current exception handler. Apart of executing it,
 -- draw and pass along a frame with the abort message, if any.
-tryWithFrame :: MonadAction m => m a -> WriterT Frames m a -> WriterT Frames m a
+tryWithFrame :: MonadAction m
+             => m a -> WriterT Frames m a -> WriterT Frames m a
 tryWithFrame exc h =
   let msgToFrames ""  = return ()
       msgToFrames msg = do
@@ -89,7 +123,8 @@ recordHistory = do
     historyReset $ takeHistory configHistoryMax $ addReport sreport shistory
 
 -- | Wait for a player command.
-getKeyCommand :: (MonadIO m, MonadActionRO m) => Maybe Bool -> m (K.Key, K.Modifier)
+getKeyCommand :: (MonadIO m, MonadActionRO m)
+              => Maybe Bool -> m (K.Key, K.Modifier)
 getKeyCommand doPush = do
   fs <- askFrontendSession
   keyb <- askBinding
@@ -99,7 +134,8 @@ getKeyCommand doPush = do
     _ -> (nc, modifier)
 
 -- | Display frame and wait for a player command.
-getKeyFrameCommand :: (MonadIO m, MonadActionRO m) => SingleFrame -> m (K.Key, K.Modifier)
+getKeyFrameCommand :: (MonadIO m, MonadActionRO m)
+                   => SingleFrame -> m (K.Key, K.Modifier)
 getKeyFrameCommand frame = do
   fs <- askFrontendSession
   keyb <- askBinding
@@ -172,7 +208,8 @@ displayOverAbort prompt xs = do
 -- | Print a msg and several overlays, one per page.
 -- The last frame does not expect a confirmation and so does not show
 -- the invitation to press some keys.
-displayOverlays :: (MonadIO m, MonadActionRO m) => Msg -> Msg -> [Overlay] -> WriterT Frames m ()
+displayOverlays :: (MonadIO m, MonadActionRO m)
+                => Msg -> Msg -> [Overlay] -> WriterT Frames m ()
 displayOverlays _      _ []  = return ()
 displayOverlays prompt _ [x] = do
   frame <- drawOverlay ColorFull prompt x
@@ -187,7 +224,8 @@ displayOverlays prompt pressKeys (x:xs) = do
 -- | Print a prompt and an overlay and wait for a player keypress.
 -- If many overlays, scroll screenfuls with SPACE. Do not wrap screenfuls
 -- (in some menus @?@ cycles views, so the user can restart from the top).
-displayChoiceUI :: (MonadIO m, MonadActionRO m) => Msg -> [Overlay] -> [(K.Key, K.Modifier)]
+displayChoiceUI :: (MonadIO m, MonadActionRO m)
+                => Msg -> [Overlay] -> [(K.Key, K.Modifier)]
               -> m (K.Key, K.Modifier)
 displayChoiceUI prompt ovs keys = do
   let (over, rest, spc, more, keysS) = case ovs of
@@ -400,7 +438,8 @@ gameReset configUI cops@Kind.COps{ coitem
                            entryLevel entryLoc startingGen
       hstate = initialHeroes cops entryLoc configUI state
   return hstate
-gameResetAction :: (MonadIO m, MonadActionRO m) => ConfigUI -> Kind.COps -> m State
+gameResetAction :: (MonadIO m, MonadActionRO m)
+                => ConfigUI -> Kind.COps -> m State
 gameResetAction configUI cops = liftIO $ gameReset configUI cops
 
 -- | Wire together content, the definitions of game commands,
@@ -409,9 +448,16 @@ gameResetAction configUI cops = liftIO $ gameReset configUI cops
 -- in particular verify content consistency.
 -- Then create the starting game config from the default config file
 -- and initialize the engine with the starting session.
-startFrontend :: Kind.COps -> (ConfigUI -> Binding)
-              -> Action () -> IO ()
-startFrontend !scops@Kind.COps{corule} stdBinding handleTurn = do
+startFrontend :: (MonadIO m, MonadActionRO m)
+              => (m () -> FrontendSession -> Kind.COps -> Binding -> ConfigUI
+                  -> State -> Diary -> IO ())
+              -> Kind.COps -> m () -> IO ()
+startFrontend executor !cops@Kind.COps{corule, cotile=tile} handleTurn = do
+  -- Compute and insert auxiliary optimized components into game content,
+  -- to be used in time-critical sections of the code.
+  let ospeedup = Tile.speedup tile
+      cotile = tile {Kind.ospeedup}
+      scops = cops {Kind.cotile}
   -- UI config reloaded at each client start.
   sconfigUI <- ConfigIO.mkConfigUI corule
   let !sbinding = stdBinding sconfigUI
@@ -423,39 +469,32 @@ startFrontend !scops@Kind.COps{corule} stdBinding handleTurn = do
         diary <- getDiary
         -- Save diary often, at each game exit, in case of crashes.
         liftIO $ Save.rmBkpSaveDiary sconfigUI diary
-      loop sfs = start Session{..} handleGame
+      loop sfs = start executor sfs scops sbinding sconfigUI handleGame
   startup font loop
-
--- | Compute and insert auxiliary optimized components into game content,
--- to be used in time-critical sections of the code.
-speedupCops :: Session -> Session
-speedupCops sess@Session{scops = cops@Kind.COps{cotile=tile}} =
-  let ospeedup = Tile.speedup tile
-      cotile = tile {Kind.ospeedup}
-      scops = cops {Kind.cotile}
-  in sess {scops}
 
 -- | Either restore a saved game, or setup a new game.
 -- Then call the main game loop.
-start :: Session -> Action () -> IO ()
-start slowSess handleGame = do
-  let sess@Session{scops = cops@Kind.COps{corule}, sconfigUI} =
-        speedupCops slowSess
-      title = rtitle $ Kind.stdRuleset corule
+start :: MonadActionRO m
+      => (m () -> FrontendSession -> Kind.COps -> Binding -> ConfigUI
+          -> State -> Diary -> IO ())
+      -> FrontendSession -> Kind.COps -> Binding -> ConfigUI
+      -> m () -> IO ()
+start executor sfs scops@Kind.COps{corule} sbinding sconfigUI handleGame = do
+  let title = rtitle $ Kind.stdRuleset corule
       pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
   restored <- Save.restoreGame sconfigUI pathsDataFile title
   case restored of
     Right (diary, msg) -> do  -- Starting a new game.
-      state <- gameReset sconfigUI cops
-      handlerToIO sess state
+      state <- gameReset sconfigUI scops
+      executor handleGame sfs scops sbinding sconfigUI
+        state
         diary{sreport = singletonReport msg}
         -- TODO: gameReset >> handleTurn or defaultState {squit=Reset}
-        handleGame
     Left (state, diary, msg) ->  -- Running a restored game.
-      handlerToIO sess state
+      executor handleGame sfs scops sbinding sconfigUI
+        state
         -- This overwrites the "Really save/quit?" messages.
         diary{sreport = singletonReport msg}
-        handleGame
 
 -- | Debugging.
 debug :: MonadActionRO m => Text -> m ()

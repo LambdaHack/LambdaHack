@@ -6,35 +6,35 @@ module Game.LambdaHack.Draw
   ( ColorMode(..), draw, animate
   ) where
 
+import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import qualified Data.List as L
-import qualified Data.IntMap as IM
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import Game.LambdaHack.Msg
-import qualified Game.LambdaHack.Color as Color
-import Game.LambdaHack.Animation (SingleFrame(..), Animation, rederAnim)
-import Game.LambdaHack.State
-import Game.LambdaHack.PointXY
-import Game.LambdaHack.Point
-import Game.LambdaHack.Vector
-import Game.LambdaHack.Level
-import Game.LambdaHack.Effect
-import Game.LambdaHack.Perception
 import Game.LambdaHack.Actor as Actor
 import Game.LambdaHack.ActorState
-import qualified Game.LambdaHack.Dungeon as Dungeon
-import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.Content.ItemKind
-import qualified Game.LambdaHack.Item as Item
-import Game.LambdaHack.Random
-import qualified Game.LambdaHack.Kind as Kind
-import qualified Game.LambdaHack.Feature as F
-import Game.LambdaHack.Time
+import Game.LambdaHack.Animation (Animation, SingleFrame (..), Frames, rederAnim)
+import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Config
+import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.TileKind
+import qualified Game.LambdaHack.Dungeon as Dungeon
+import Game.LambdaHack.Effect
+import qualified Game.LambdaHack.Feature as F
+import qualified Game.LambdaHack.Item as Item
+import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Level
+import Game.LambdaHack.Msg
+import Game.LambdaHack.Perception
+import Game.LambdaHack.Point
+import Game.LambdaHack.PointXY
+import Game.LambdaHack.Random
+import Game.LambdaHack.State
+import Game.LambdaHack.Time
+import Game.LambdaHack.Vector
 
 -- | Color mode for the display.
 data ColorMode =
@@ -174,7 +174,7 @@ draw dm cops per s@State{ scursor=Cursor{..}
 
 -- | Render animations on top of the current screen frame.
 animate :: State -> Diary -> Kind.COps -> Perception -> Animation
-        -> [Maybe SingleFrame]
+        -> Frames
 animate s Diary{sreport} cops per anim =
   let Level{lxsize, lysize} = slevel s
       over = renderReport sreport

@@ -16,7 +16,7 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.BindingAction
+import Game.LambdaHack.CommandAction
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.StrategyKind
 import Game.LambdaHack.Draw

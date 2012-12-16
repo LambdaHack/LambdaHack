@@ -25,7 +25,7 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Animation (blockMiss, swapPlaces)
+import Game.LambdaHack.Animation (Frames, blockMiss, swapPlaces)
 import Game.LambdaHack.Binding
 import qualified Game.LambdaHack.Command as Command
 import Game.LambdaHack.Config

@@ -73,11 +73,11 @@ flag std
 library
   exposed-modules:    Game.LambdaHack.Ability,
                       Game.LambdaHack.Action,
-                      Game.LambdaHack.Action.ActionLift
                       Game.LambdaHack.Action.ConfigIO
                       Game.LambdaHack.Action.Frontend,
                       Game.LambdaHack.Action.Frontend.Chosen,
                       Game.LambdaHack.Action.HighScore,
+                      Game.LambdaHack.Action.MonadAction,
                       Game.LambdaHack.Action.Save,
                       Game.LambdaHack.Actions,
                       Game.LambdaHack.Actor,
@@ -113,6 +113,7 @@ library
                       Game.LambdaHack.FOV.Digital,
                       Game.LambdaHack.FOV.Permissive,
                       Game.LambdaHack.FOV.Shadow,
+                      Game.LambdaHack.FunAction,
                       Game.LambdaHack.Item,
                       Game.LambdaHack.ItemAction,
                       Game.LambdaHack.Key,
@@ -132,6 +133,7 @@ library
                       Game.LambdaHack.Tile,
                       Game.LambdaHack.Time,
                       Game.LambdaHack.Turn,
+                      Game.LambdaHack.TypeAction,
                       Game.LambdaHack.Utils.Assert,
                       Game.LambdaHack.Utils.File,
                       Game.LambdaHack.Utils.Frequency,
