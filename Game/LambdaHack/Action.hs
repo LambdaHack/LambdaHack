@@ -42,13 +42,14 @@ import qualified Data.Map as M
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
+import Control.Monad.Reader.Class
 import System.Time
 -- import System.IO (hPutStrLn, stderr) -- just for debugging
 
 import qualified Game.LambdaHack.Action.ConfigIO as ConfigIO
 import Game.LambdaHack.Action.Frontend
 import Game.LambdaHack.Action.HighScore (register)
-import Game.LambdaHack.Action.MonadAction
+import Game.LambdaHack.Action.OpsMonadAction
 import qualified Game.LambdaHack.Action.Save as Save
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
@@ -69,6 +70,21 @@ import Game.LambdaHack.Point
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert
+
+-- | Update the cached perception for the given computation.
+withPerception :: MonadActionRO m => m () -> m ()
+withPerception m = do
+  cops <- askCOps
+  s <- get
+  let per = dungeonPerception cops s
+  local (const per) m
+
+-- | Get the current perception.
+askPerception :: MonadActionRO m => m Perception
+askPerception = do
+  lid <- gets slid
+  pers <- ask
+  return $ fromJust $ lookup lid pers
 
 -- | Reset the state and resume from the last backup point, i.e., invoke
 -- the failure continuation.

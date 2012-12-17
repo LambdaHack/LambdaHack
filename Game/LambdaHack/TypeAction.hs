@@ -14,7 +14,7 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Action.Frontend
 import Game.LambdaHack.Binding
 import Game.LambdaHack.Config
-import Game.LambdaHack.FunAction
+import Game.LambdaHack.FunMonadAction
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception

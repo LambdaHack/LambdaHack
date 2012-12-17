@@ -4,7 +4,7 @@
 -- define their own variants of the main action type @Action@.
 -- This module should not be imported anywhere except in MonadAction
 -- and TypeAction.
-module Game.LambdaHack.FunAction
+module Game.LambdaHack.FunMonadAction
   ( Session(..), FunActionRO, FunAction, MonadActionRO(..), MonadAction(..)
   ) where
 

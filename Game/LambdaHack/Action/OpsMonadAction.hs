@@ -5,11 +5,9 @@
 -- but does not export the implementation of the monad types.
 -- The 'liftIO' operation is used only in Action.hs and not re-exported
 -- further.
-module Game.LambdaHack.Action.MonadAction
+module Game.LambdaHack.Action.OpsMonadAction
   ( -- * Types and type classes to do with actions
     MonadActionRO(get, gets, liftIO), MonadAction
-    -- * The Perception Reader
-  , withPerception, askPerception
     -- * Accessors to the game session Reader
   , askFrontendSession, askCOps, askBinding, askConfigUI
     -- * Abort exception and its handler
@@ -18,32 +16,13 @@ module Game.LambdaHack.Action.MonadAction
   , getDiary, msgAdd, historyReset, msgReset
   ) where
 
-import Control.Monad.Reader.Class
-import Data.Maybe
-
 import Game.LambdaHack.Action.Frontend
 import Game.LambdaHack.Binding
 import Game.LambdaHack.Config
-import Game.LambdaHack.FunAction
+import Game.LambdaHack.FunMonadAction
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Msg
-import Game.LambdaHack.Perception
 import Game.LambdaHack.State
-
--- | Update the cached perception for the given computation.
-withPerception :: MonadActionRO m => m () -> m ()
-withPerception m = do
-  cops <- askCOps
-  s <- get
-  let per = dungeonPerception cops s
-  local (const per) m
-
--- | Get the current perception.
-askPerception :: MonadActionRO m => m Perception
-askPerception = do
-  lid <- gets slid
-  pers <- ask
-  return $ fromJust $ lookup lid pers
 
 -- | Get the frontend session.
 askFrontendSession :: MonadActionRO m => m FrontendSession
