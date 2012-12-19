@@ -84,7 +84,7 @@ askPerception :: MonadActionRO m => m Perception
 askPerception = do
   lid <- gets slid
   pers <- ask
-  return $ fromJust $ lookup lid pers
+  return $! fromJust $! lookup lid pers
 
 -- | Reset the state and resume from the last backup point, i.e., invoke
 -- the failure continuation.
@@ -135,7 +135,7 @@ recordHistory = do
   unless (nullReport sreport) $ do
     ConfigUI{configHistoryMax} <- askConfigUI
     msgReset ""
-    historyReset $ takeHistory configHistoryMax $ addReport sreport shistory
+    historyReset $! takeHistory configHistoryMax $! addReport sreport shistory
 
 -- | Wait for a player command.
 getKeyCommand :: MonadActionRO m
@@ -144,7 +144,7 @@ getKeyCommand doPush = do
   fs <- askFrontendSession
   keyb <- askBinding
   (nc, modifier) <- liftIO $ nextEvent fs doPush
-  return $ case modifier of
+  return $! case modifier of
     K.NoModifier -> (fromMaybe nc $ M.lookup nc $ kmacro keyb, modifier)
     _ -> (nc, modifier)
 
@@ -155,7 +155,7 @@ getKeyFrameCommand frame = do
   fs <- askFrontendSession
   keyb <- askBinding
   (nc, modifier) <- liftIO $ promptGetKey fs [] frame
-  return $ case modifier of
+  return $! case modifier of
     K.NoModifier -> (fromMaybe nc $ M.lookup nc $ kmacro keyb, modifier)
     _ -> (nc, modifier)
 
@@ -163,7 +163,7 @@ getKeyFrameCommand frame = do
 getConfirm :: MonadActionRO m => SingleFrame -> m Bool
 getConfirm frame = do
   fs <- askFrontendSession
-  let keys = [ (K.Space, K.NoModifier), (K.Esc, K.NoModifier)]
+  let keys = [(K.Space, K.NoModifier), (K.Esc, K.NoModifier)]
   (k, _) <- liftIO $ promptGetKey fs keys frame
   case k of
     K.Space -> return True
@@ -272,7 +272,7 @@ drawPrompt dm prompt = do
   s <- get
   Diary{sreport} <- getDiary
   let over = splitReport $ addMsg sreport prompt
-  return $ draw dm cops per s over
+  return $! draw dm cops per s over
 
 -- | Draw the current level. The prompt and the overlay are displayed,
 -- but not added to history. The prompt is appended to the current message
@@ -287,14 +287,14 @@ drawOverlay dm prompt overlay = do
   let xsize = lxsize $ slevel s
       msgPrompt = renderReport $ addMsg sreport prompt
       over = padMsg xsize msgPrompt : overlay
-  return $ draw dm cops per s over
+  return $! draw dm cops per s over
 
 -- | Initialize perception, etc., display level and run the action.
 startClip :: MonadAction m => m () -> m ()
 startClip action =
   -- Determine perception before running player command, in case monsters
   -- have opened doors, etc.
-  withPerception $ do
+  withPerception $! do
     remember  -- heroes notice their surroundings, before they get displayed
     displayPush  -- draw the current surroundings
     action  -- let the actor act
