@@ -54,7 +54,7 @@ instance MonadAction Action where
 
 instance Functor Action where
   fmap f m = Action (\c p k a s d ->
-                      runAction m c p (\s d -> k s d . f) a s d)
+                      runAction m c p (\s' d' -> k s' d' . f) a s d)
 
 instance St.MonadState State Action where
   get    = get

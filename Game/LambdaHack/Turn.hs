@@ -8,7 +8,6 @@ import Control.Monad.State hiding (State, get, gets, state)
 import Control.Monad.Writer.Strict (WriterT (runWriterT), execWriterT, tell)
 import qualified Data.IntMap as IM
 import qualified Data.List as L
-import qualified Data.Map as M
 import Data.Maybe
 import qualified Data.Ord as Ord
 
@@ -201,16 +200,17 @@ playerCommand msgRunAbort = do
         (timed, frames) <- runWriterT $ tryWithFrame (return False) $ do
           -- Look up the key.
           -- TODO
+          s <- get
           configUI <- askConfigUI
-          case M.lookup km (actionBinding configUI) of
-            Just (_, declaredTimed, c) -> do
+          case actionBinding s configUI km of
+            Just (declaredTimed, c) -> do
               frs <- execWriterT c
               -- Targeting cursor movement and a few other subcommands
               -- are wrongly marked as timed. This is indicated in their
               -- definitions by setting @snoTime@ flag and used and reset here.
               stakeTime <- gets stakeTime
               let timed = fromMaybe declaredTimed stakeTime
-              modify (\ s -> s {stakeTime = Nothing})
+              modify (\ st -> st {stakeTime = Nothing})
               -- Ensure at least one frame, if the command takes no time.
               -- No frames for @abort@, so the code is here, not below.
               if not timed && null (catMaybes frs)

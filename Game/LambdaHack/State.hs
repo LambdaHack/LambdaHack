@@ -17,28 +17,28 @@ module Game.LambdaHack.State
   , DebugMode(..), cycleMarkVision, toggleOmniscient
   ) where
 
-import qualified Data.Set as S
 import Data.Binary
-import qualified System.Random as R
-import System.Time
+import qualified Data.List as L
+import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
-import qualified Data.List as L
+import qualified System.Random as R
+import System.Time
 
 import Game.LambdaHack.Actor
-import Game.LambdaHack.Point
-import Game.LambdaHack.Level
-import qualified Game.LambdaHack.Dungeon as Dungeon
-import Game.LambdaHack.Item
-import Game.LambdaHack.Msg
-import Game.LambdaHack.Time
-import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Config
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
+import qualified Game.LambdaHack.Dungeon as Dungeon
 import Game.LambdaHack.Effect
 import Game.LambdaHack.Flavour
-import Game.LambdaHack.Config
+import Game.LambdaHack.Item
+import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Level
+import Game.LambdaHack.Msg
+import Game.LambdaHack.Point
+import Game.LambdaHack.Time
 
 -- | The diary contains all the player data that carries over
 -- from game to game, even across playing sessions. That includes
@@ -53,9 +53,6 @@ data Diary = Diary
   , shistory :: !History
   }
 
--- TODO: stakeTime and squit are also temporary, move them to
--- DungeonPerception and rename it to TurnCache, if more appear,
--- e.g. AI stuff.
 -- | The state of a single game that can be saved and restored.
 -- It's completely disregarded and reset when a new game is started.
 -- In practice, we maintain some extra state (DungeonPerception) elsewhere,

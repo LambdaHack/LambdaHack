@@ -10,7 +10,6 @@ import Control.Monad.Writer.Strict (WriterT)
 import qualified Data.Char as Char
 import qualified Data.List as L
 import qualified Data.Map as M
-import Data.Text (Text)
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
@@ -26,43 +25,48 @@ import Game.LambdaHack.Running
 import Game.LambdaHack.State
 
 -- | The semantics of player commands in terms of the @Action@ monad.
-cmdAction ::  MonadAction m => Cmd -> WriterT Frames m ()
-cmdAction cmd = case cmd of
-  Apply{..}       -> lift $ playerApplyGroupItem verb object syms
-  Project{..}     -> playerProjectGroupItem verb object syms
-  TriggerDir{..}  -> lift $ playerTriggerDir feature verb
-  TriggerTile{..} -> lift $ playerTriggerTile feature
-  Pickup    -> lift $ pickupItem
-  Drop      -> lift $ dropItem
-  Wait      -> lift $ waitBlock
-  GameExit  -> lift $ gameExit
-  GameRestart -> lift $ gameRestart
-  GameSave  -> lift $ gameSave
+-- Decides if the action takes time and what action to perform.
+-- Time cosuming commands are marked as such in help and cannot be
+-- invoked in targeting mode on a remote level (level different than
+-- the level of the selected hero).
+cmdAction ::  MonadAction m => State -> Cmd -> (Bool, WriterT Frames m ())
+cmdAction s cmd = case cmd of
+  Apply{..}       -> (True, lift $ playerApplyGroupItem verb object syms)
+  Project{..}     -> (True, playerProjectGroupItem verb object syms)
+  TriggerDir{..}  -> (True, lift $ playerTriggerDir feature verb)
+  TriggerTile{..} -> (True, lift $ playerTriggerTile feature)
+  Pickup      -> (True, lift $ pickupItem)
+  Drop        -> (True, lift $ dropItem)
+  Wait        -> (True, lift $ waitBlock)
+  GameExit    -> (True, lift $ gameExit)     -- takes time, then rewinds time
+  GameRestart -> (True, lift $ gameRestart)  -- takes time, then resets state
 
-  Inventory -> inventory
-  TgtFloor  -> targetFloor   TgtExplicit
-  TgtEnemy  -> targetMonster TgtExplicit
-  TgtAscend k -> tgtAscend k
-  EpsIncr b -> lift $ epsIncr b
-  Cancel    -> cancelCurrent displayMainMenu
-  Accept    -> acceptCurrent displayHelp
-  Clear     -> lift $ clearCurrent
-  History   -> displayHistory
-  CfgDump   -> lift $ dumpConfig
-  HeroCycle -> lift $ cycleHero
-  HeroBack  -> lift $ backCycleHero
-  Help      -> displayHelp
+  GameSave    -> (False, lift $ gameSave)
+  Inventory   -> (False, inventory)
+  TgtFloor    -> (False, targetFloor   TgtExplicit)
+  TgtEnemy    -> (False, targetMonster TgtExplicit)
+  TgtAscend k -> (False, tgtAscend k)
+  EpsIncr b   -> (False, lift $ epsIncr b)
+  Cancel      -> (False, cancelCurrent displayMainMenu)
+  Accept      -> (False, acceptCurrent displayHelp)
+  Clear       -> (False, lift $ clearCurrent)
+  History     -> (False, displayHistory)
+  CfgDump     -> (False, lift $ dumpConfig)
+  HeroCycle   -> (False, lift $ cycleHero)
+  HeroBack    -> (False, lift $ backCycleHero)
+  Help        -> (False, displayHelp)
 
 -- | The list of semantics and other info for all commands from config.
-semanticsCmds :: MonadAction m => [(K.Key, Cmd)]
-              -> [((K.Key, K.Modifier), (Text, Bool, WriterT Frames m ()))]
-semanticsCmds cmdList =
-  let mkDescribed cmd =
-        let semantics = if timedCmd cmd
-                        then checkCursor $ cmdAction cmd
-                        else cmdAction cmd
-        in (cmdDescription cmd, timedCmd cmd, semantics)
-      mkCommand (key, def) = ((key, K.NoModifier), mkDescribed def)
+semanticsCmds :: MonadAction m => State -> [(K.Key, Cmd)]
+              -> [((K.Key, K.Modifier), (Bool, WriterT Frames m ()))]
+semanticsCmds s cmdList =
+  let mkSem cmd =
+        let (timed, sem) = cmdAction s cmd
+            semantics = if timed
+                        then checkCursor sem
+                        else sem
+        in (timed, semantics)
+      mkCommand (key, def) = ((key, K.NoModifier), mkSem def)
   in L.map mkCommand cmdList
 
 -- | If in targeting mode, check if the current level is the same
@@ -80,11 +84,11 @@ checkCursor h = do
 -- TODO: clean up: probably add Command.Cmd for each operation
 
 actionBinding :: MonadAction m
-              => ConfigUI   -- ^ game config
-              -> M.Map (K.Key, K.Modifier) (Text, Bool, WriterT Frames m ())
-actionBinding !config =
+              => State -> ConfigUI -> (K.Key, K.Modifier)
+              -> Maybe (Bool, WriterT Frames m ())
+actionBinding s !config km =
   let cmdList = configCmds config
-      semList = semanticsCmds cmdList
+      semList = semanticsCmds s cmdList
       moveWidth f = do
         lxsize <- gets (lxsize . slevel)
         move $ f lxsize
@@ -94,19 +98,19 @@ actionBinding !config =
       -- Targeting cursor movement and others are wrongly marked as timed;
       -- fixed in their definitions by rewinding time.
       cmdDir = K.moveBinding moveWidth runWidth
-  in M.fromList $
+  in M.lookup km $ M.fromList $
        cmdDir ++
        heroSelection ++
        semList ++
        [ -- Debug commands.
-         ((K.Char 'r', K.Control), ("", False, modify cycleMarkVision)),
-         ((K.Char 'o', K.Control), ("", False, modify toggleOmniscient)),
-         ((K.Char 'i', K.Control), ("", False, gets (lmeta . slevel)
+         ((K.Char 'r', K.Control), (False, modify cycleMarkVision)),
+         ((K.Char 'o', K.Control), (False, modify toggleOmniscient)),
+         ((K.Char 'i', K.Control), (False, gets (lmeta . slevel)
                                                >>= abortWith))
        ]
 
 heroSelection :: MonadAction m
-              => [((K.Key, K.Modifier), (Text, Bool, WriterT Frames m ()))]
+              => [((K.Key, K.Modifier), (Bool, WriterT Frames m ()))]
 heroSelection =
   let select k = do
         s <- get
@@ -114,6 +118,6 @@ heroSelection =
           Nothing  -> abortWith "No such member of the party."
           Just aid -> void $ selectPlayer aid
       heroSelect k = ( (K.Char (Char.intToDigit k), K.NoModifier)
-                     , ("", False, select k)
+                     , (False, select k)
                      )
   in fmap heroSelect [0..9]

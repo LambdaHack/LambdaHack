@@ -9,9 +9,9 @@ import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Config
 import qualified Game.LambdaHack.Feature as F
+import qualified Game.LambdaHack.Key as K
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Utils.Assert
-import qualified Game.LambdaHack.Key as K
 
 -- | Abstract syntax of player commands. The type is abstract, but the values
 -- are created outside this module via the Read class (from config file) .
@@ -59,9 +59,9 @@ majorCmd cmd = case cmd of
   Help          -> True
   _             -> False
 
--- | Time cosuming commands are marked as such in help and cannot be
--- invoked in targeting mode on a remote level (level different than
--- the level of the selected hero).
+-- | Commands that usually take time are marked as such in help.
+-- Whether they take time in a particular situation is decided
+-- each time in 'cmdAction'.
 timedCmd :: Cmd -> Bool
 timedCmd cmd = case cmd of
   Apply{}       -> True

@@ -152,9 +152,9 @@ handleDir _lxsize _ _h k = k
 -- TODO: deduplicate
 -- | Binding of both sets of movement keys.
 moveBinding :: ((X -> Vector) -> a) -> ((X -> Vector) -> a)
-            -> [((Key, Modifier), (Text, Bool, a))]
+            -> [((Key, Modifier), (Bool, a))]
 moveBinding move run =
-  let assign f (km, dir) = (km, (T.empty, True, f dir))
+  let assign f (km, dir) = (km, (True, f dir))
       rNoModifier = repeat NoModifier
       rControl = repeat Control
   in map (assign move) (zip (zip dirViMoveKey rNoModifier) movesWidth) ++
