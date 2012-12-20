@@ -45,7 +45,7 @@ import Game.LambdaHack.Vector
 targetStrategy :: Kind.COps -> ActorId -> State -> Perception -> [Ability]
                -> Strategy Target
 targetStrategy cops actor state@State{splayer = pl} per factionAbilities =
-  retarget btarget
+  reacquire btarget
  where
   Kind.COps{ cotile
            , coactor=coactor@Kind.Ops{okind}
@@ -66,8 +66,8 @@ targetStrategy cops actor state@State{splayer = pl} per factionAbilities =
             -- Don't focus on a distant enemy, when you can't chase him.
             -- TODO: or only if another enemy adjacent? consider Flee?
             && Ability.Chase `elem` actorAbilities
-  retarget :: Target -> Strategy Target
-  retarget tgt =
+  reacquire :: Target -> Strategy Target
+  reacquire tgt =
     case tgt of
       TPath _ -> returN "TPath" tgt            -- don't animate missiles
       TEnemy a ll | focused

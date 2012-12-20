@@ -88,21 +88,6 @@ moveCursor dir n = do
   modify (updateCursor upd)
   doLook
 
--- TODO: Think about doing the mode dispatch elsewhere, especially if over
--- time more and more commands need to do the dispatch inside their code
--- (currently only a couple do).
-move :: MonadAction m => Vector -> WriterT Frames m ()
-move dir = do
-  pl <- gets splayer
-  targeting <- gets (ctargeting . scursor)
-  if targeting /= TgtOff
-    then do
-      moveCursor dir 1
-      -- Mark that unexpectedly it does not take time.
-      modify (\ s -> s {stakeTime = Just False})
-    else
-      lift $ moveOrAttack True pl dir
-
 ifRunning :: MonadActionRO m => ((Vector, Int) -> m a) -> m a -> m a
 ifRunning t e = do
   ad <- gets (bdir . getPlayerBody)
@@ -394,12 +379,7 @@ actorAttackActor source target = do
          | otherwise = tmRaw {bname = Just "somebody"}
   if bfaction sm == sfaction && not (bproj sm) &&
      bfaction tm == sfaction && not (bproj tm)
-    then do
-      -- Select adjacent hero by bumping into him. Takes no time, so rewind.
-      selectPlayer target
-        >>= assert `trueM` (source, target, "heroes attack each other")
-      -- Mark that unexpectedly it does not take time.
-      modify (\ s -> s {stakeTime = Just False})
+    then assert `failure` (source, target, "player AI bumps into friendlies")
     else do
       cops@Kind.COps{coactor, coitem=coitem@Kind.Ops{opick, okind}} <- askCOps
       state <- get

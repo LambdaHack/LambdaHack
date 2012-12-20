@@ -203,10 +203,11 @@ playerCommand msgRunAbort = do
           -- Look up the key.
           -- TODO
           s <- get
+          per <- askPerception
           Binding{kcmd} <- askBinding
           case M.lookup km kcmd of
             Just (_, _, cmd) -> do
-              let (timed, c) = cmdSemantics s cmd
+              let (timed, c) = cmdSemantics s per cmd
               frs <- execWriterT c
               -- Ensure at least one frame, if the command takes no time.
               -- No frames for @abort@, so the code is here, not below.

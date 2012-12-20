@@ -18,10 +18,10 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Animation (Frames)
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
+import Game.LambdaHack.Animation (Frames)
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.EffectAction
 import Game.LambdaHack.Item
@@ -159,7 +159,7 @@ projectGroupItem source tloc _verb item = do
           abortWith "blocked"
       when (svisible || projVis) $ msgAdd msg
 
-playerProjectGroupItem :: MonadAction m => MU.Part -> MU.Part -> [Char] -> WriterT Frames m ()
+playerProjectGroupItem :: MonadAction m => MU.Part -> MU.Part -> [Char] -> m ()
 playerProjectGroupItem verb object syms = do
   ms     <- gets hostileList
   lxsize <- gets (lxsize . slevel)
@@ -169,19 +169,12 @@ playerProjectGroupItem verb object syms = do
     then abortWith "You can't aim in melee."
     else playerProjectGI verb object syms
 
-playerProjectGI :: MonadAction m => MU.Part -> MU.Part -> [Char] -> WriterT Frames m ()
+playerProjectGI :: MonadAction m => MU.Part -> MU.Part -> [Char] -> m ()
 playerProjectGI verb object syms = do
   state <- get
   pl    <- gets splayer
   ploc  <- gets (bloc . getPlayerBody)
   per   <- askPerception
-  let retarget msg = do
-        msgAdd msg
-        let upd cursor = cursor {clocation=ploc, ceps=0}
-        modify (updateCursor upd)
-        targetMonster TgtAuto
-        -- Mark that unexpectedly it does not take time.
-        modify (\ s -> s {stakeTime = Just False})
   case targetToLoc (totalVisible per) state ploc of
     Just loc -> do
       Kind.COps{coitem=Kind.Ops{okind}} <- askCOps
@@ -191,8 +184,15 @@ playerProjectGI verb object syms = do
       targeting <- gets (ctargeting . scursor)
       when (targeting == TgtAuto) $ endTargeting True
       projectGroupItem pl loc (iverbProject $ okind $ jkind item) item
-      return ()
-    Nothing -> retarget "Last target invalid."
+    Nothing -> assert `failure` (state, pl, "target unexpectedly invalid")
+
+retarget :: MonadAction m => WriterT Frames m ()
+retarget = do
+  ploc <- gets (bloc . getPlayerBody)
+  msgAdd "Last target invalid."
+  let upd cursor = cursor {clocation=ploc, ceps=0}
+  modify (updateCursor upd)
+  targetMonster TgtAuto
 
 -- | Start the monster targeting mode. Cycle between monster targets.
 targetMonster :: MonadAction m => TgtMode -> WriterT Frames m ()
