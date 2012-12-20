@@ -5,16 +5,17 @@ module Game.LambdaHack.Key
   , moveBinding, keyTranslate, Modifier(..), showKM
   ) where
 
-import Prelude hiding (Left, Right)
-import qualified Data.List as L
+import Data.Binary
 import qualified Data.Char as Char
+import qualified Data.List as L
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Binary
+import Prelude hiding (Left, Right)
 
-import Game.LambdaHack.PointXY
-import Game.LambdaHack.Vector
 import Game.LambdaHack.Msg
+import Game.LambdaHack.PointXY
+import Game.LambdaHack.VectorXY
+import Game.LambdaHack.Vector
 
 -- TODO: if the file grows much larger, split it and move a part to Utils/
 
@@ -151,19 +152,19 @@ handleDir _lxsize _ _h k = k
 
 -- TODO: deduplicate
 -- | Binding of both sets of movement keys.
-moveBinding :: ((X -> Vector) -> a) -> ((X -> Vector) -> a)
-            -> [((Key, Modifier), (Bool, a))]
+moveBinding :: (VectorXY -> a) -> (VectorXY -> a)
+            -> [((Key, Modifier), a)]
 moveBinding move run =
-  let assign f (km, dir) = (km, (True, f dir))
+  let assign f (km, dir) = (km, f dir)
       rNoModifier = repeat NoModifier
       rControl = repeat Control
-  in map (assign move) (zip (zip dirViMoveKey rNoModifier) movesWidth) ++
-     map (assign move) (zip (zip dirMoveKey rNoModifier) movesWidth) ++
-     map (assign run)  (zip (zip dirViRunKey rNoModifier) movesWidth) ++
-     map (assign run)  (zip (zip dirRunKey rNoModifier) movesWidth) ++
-     map (assign run)  (zip (zip dirMoveKey rControl) movesWidth) ++
-     map (assign run)  (zip (zip dirRunKey rControl) movesWidth) ++
-     map (assign run)  (zip (zip dirHeroKey rControl) movesWidth)
+  in map (assign move) (zip (zip dirViMoveKey rNoModifier) movesXY) ++
+     map (assign move) (zip (zip dirMoveKey rNoModifier) movesXY) ++
+     map (assign run)  (zip (zip dirViRunKey rNoModifier) movesXY) ++
+     map (assign run)  (zip (zip dirRunKey rNoModifier) movesXY) ++
+     map (assign run)  (zip (zip dirMoveKey rControl) movesXY) ++
+     map (assign run)  (zip (zip dirRunKey rControl) movesXY) ++
+     map (assign run)  (zip (zip dirHeroKey rControl) movesXY)
 
 -- | Translate key from a GTK string description to our internal key type.
 -- To be used, in particular, for the command bindings and macros

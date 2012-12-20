@@ -572,7 +572,8 @@ displayMainMenu = do
         in init art ++ [take (80 - versionLen) (last art) ++ version]
       kds =  -- key-description pairs
         let showKD cmd key = (showT key, Command.cmdDescription cmd)
-            revLookup cmd = maybe ("", "") (showKD cmd) $ M.lookup cmd krevMap
+            revLookup cmd =
+              maybe ("", "") (showKD cmd . fst) $ M.lookup cmd krevMap
             cmds = [Command.GameSave, Command.GameExit,
                    Command.GameRestart, Command.Help]
         in map revLookup cmds ++ [(fst (revLookup Command.Clear), "continue")]

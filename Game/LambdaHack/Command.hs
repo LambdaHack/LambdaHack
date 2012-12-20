@@ -1,22 +1,21 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Abstract syntax of player commands.
 module Game.LambdaHack.Command
-  ( Cmd(..), majorCmd, timedCmd, cmdDescription, configCmds
+  ( Cmd(..), majorCmd, timedCmd, cmdDescription
   ) where
 
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Config
 import qualified Game.LambdaHack.Feature as F
-import qualified Game.LambdaHack.Key as K
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.VectorXY
 
 -- | Abstract syntax of player commands. The type is abstract, but the values
 -- are created outside this module via the Read class (from config file) .
 data Cmd =
-    -- These take time.
+    -- These usually take time.
     Apply       { verb :: MU.Part, object :: MU.Part, syms :: [Char] }
   | Project     { verb :: MU.Part, object :: MU.Part, syms :: [Char] }
   | TriggerDir  { verb :: MU.Part, object :: MU.Part, feature :: F.Feature }
@@ -24,6 +23,8 @@ data Cmd =
   | Pickup
   | Drop
   | Wait
+  | Move VectorXY
+  | Run VectorXY
   | GameExit
   | GameRestart
     -- These do not take time, or not quite.
@@ -41,6 +42,10 @@ data Cmd =
   | HeroCycle
   | HeroBack
   | Help
+  | SelectHero Int
+  | DebugVision
+  | DebugOmni
+  | DebugCave
   deriving (Show, Read, Eq, Ord)
 
 -- | Major commands land on the first page of command help.
@@ -71,6 +76,8 @@ timedCmd cmd = case cmd of
   Pickup        -> True
   Drop          -> True
   Wait          -> True
+  Move{}        -> True
+  Run{}         -> True
   GameExit      -> True  -- takes time, then rewinds time
   GameRestart   -> True  -- takes time, then resets state
   _             -> False
@@ -82,16 +89,18 @@ cmdDescription cmd = case cmd of
   Project{..}     -> makePhrase [verb, MU.AW object]
   TriggerDir{..}  -> makePhrase [verb, MU.AW object]
   TriggerTile{..} -> makePhrase [verb, MU.AW object]
-  Pickup    -> "get an object"
-  Drop      -> "drop an object"
-  Wait      -> ""
-  GameExit  -> "save and exit"
+  Pickup      -> "get an object"
+  Drop        -> "drop an object"
+  Move{}      -> "move"
+  Run{}       -> "run"
+  Wait        -> ""
+  GameExit    -> "save and exit"
   GameRestart -> "restart game"
-  GameSave  -> "save game"
+  GameSave    -> "save game"
 
-  Inventory -> "display inventory"
-  TgtFloor  -> "target location"
-  TgtEnemy  -> "target monster"
+  Inventory   -> "display inventory"
+  TgtFloor    -> "target location"
+  TgtEnemy    -> "target monster"
   TgtAscend k | k == 1  -> "target next shallower level"
   TgtAscend k | k >= 2  -> "target" <+> showT k    <+> "levels shallower"
   TgtAscend k | k == -1 -> "target next deeper level"
@@ -108,9 +117,7 @@ cmdDescription cmd = case cmd of
   HeroCycle -> "cycle among heroes on level"
   HeroBack  -> "cycle among heroes in the dungeon"
   Help      -> "display help"
-
--- | The associaction of commands to keys defined in config.
-configCmds :: ConfigUI -> [(K.Key, Cmd)]
-configCmds ConfigUI{configCommands} =
-  let mkCommand (key, def) = (key, read def :: Cmd)
-  in map mkCommand configCommands
+  SelectHero{} -> "select hero"
+  DebugVision  -> "debug vision"
+  DebugOmni    -> "debug omniscience"
+  DebugCave    -> "debug cave"

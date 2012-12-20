@@ -55,7 +55,6 @@ import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Animation (SingleFrame(..), Frames)
 import Game.LambdaHack.Binding
-import Game.LambdaHack.BindingAction
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Draw

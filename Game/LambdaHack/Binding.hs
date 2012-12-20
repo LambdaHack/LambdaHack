@@ -3,7 +3,7 @@
 -- printing command help. No operation in this module
 -- involves the 'State' or 'Action' type.
 module Game.LambdaHack.Binding
-  ( Binding(..), keyHelp,
+  ( Binding(..), stdBinding, keyHelp,
   ) where
 
 import qualified Data.List as L
@@ -11,20 +11,53 @@ import qualified Data.Map as M
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Tuple (swap)
+import qualified Data.Char as Char
 
-import qualified Game.LambdaHack.Command as Command
+import Game.LambdaHack.Command
+import Game.LambdaHack.Config
 import qualified Game.LambdaHack.Key as K
 import Game.LambdaHack.Msg
 
 -- | Bindings and other information about player commands.
 data Binding = Binding
-  { kcmd    :: M.Map (K.Key, K.Modifier) (Text, Bool, Command.Cmd)
-                                     -- ^ binding keys to commands
+  { kcmd    :: M.Map (K.Key, K.Modifier) (Text, Bool, Cmd)
+                                      -- ^ binding keys to commands
   , kmacro  :: M.Map K.Key K.Key      -- ^ macro map
   , kmajor  :: [K.Key]                -- ^ major, most often used, commands
-  , kdir    :: [(K.Key, K.Modifier)]  -- ^ direction keys for moving and running
-  , krevMap :: M.Map Command.Cmd K.Key
-                                     -- ^ map from cmds to their main keys
+  , krevMap :: M.Map Cmd (K.Key, K.Modifier)
+                                      -- ^ map from cmds to their main keys
+  }
+
+-- | The associaction of commands to keys defined in config.
+configCmds :: ConfigUI -> [((K.Key, K.Modifier), Cmd)]
+configCmds ConfigUI{configCommands} =
+  let mkCommand (key, def) = ((key, K.NoModifier), read def :: Cmd)
+  in map mkCommand configCommands
+
+-- | Binding of keys to movement and other standard commands,
+-- as well as commands defined in the config file.
+stdBinding :: ConfigUI  -- ^ game config
+           -> Binding   -- ^ concrete binding
+stdBinding !config@ConfigUI{configMacros} =
+  let kmacro = M.fromList $ configMacros
+      heroSelect k = ((K.Char (Char.intToDigit k), K.NoModifier), SelectHero k)
+      cmdList =
+        configCmds config
+        ++ K.moveBinding Move Run
+        ++ fmap heroSelect [0..9]
+        ++ [ ((K.Char 'r', K.Control), DebugVision),
+             ((K.Char 'o', K.Control), DebugOmni),
+             ((K.Char 'i', K.Control), DebugCave)
+           ]
+      mkDescribed cmd = (cmdDescription cmd, timedCmd cmd, cmd)
+      mkCommand (km, def) = (km, mkDescribed def)
+      semList = L.map mkCommand cmdList
+  in Binding
+  { kcmd = M.fromList semList
+  , kmacro
+  , kmajor = L.map (fst . fst) $ L.filter (majorCmd . snd) cmdList
+  , krevMap = M.fromList $ map swap cmdList
   }
 
 coImage :: M.Map K.Key K.Key -> K.Key -> [K.Key]

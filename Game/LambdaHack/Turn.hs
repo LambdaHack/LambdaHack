@@ -8,6 +8,7 @@ import Control.Monad.State hiding (State, get, gets, state)
 import Control.Monad.Writer.Strict (WriterT (runWriterT), execWriterT, tell)
 import qualified Data.IntMap as IM
 import qualified Data.List as L
+import qualified Data.Map as M
 import Data.Maybe
 import qualified Data.Ord as Ord
 
@@ -15,6 +16,7 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
+import Game.LambdaHack.Binding
 import Game.LambdaHack.CommandAction
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.StrategyKind
@@ -201,16 +203,11 @@ playerCommand msgRunAbort = do
           -- Look up the key.
           -- TODO
           s <- get
-          configUI <- askConfigUI
-          case actionBinding s configUI km of
-            Just (declaredTimed, c) -> do
+          Binding{kcmd} <- askBinding
+          case M.lookup km kcmd of
+            Just (_, _, cmd) -> do
+              let (timed, c) = cmdSemantics s cmd
               frs <- execWriterT c
-              -- Targeting cursor movement and a few other subcommands
-              -- are wrongly marked as timed. This is indicated in their
-              -- definitions by setting @snoTime@ flag and used and reset here.
-              stakeTime <- gets stakeTime
-              let timed = fromMaybe declaredTimed stakeTime
-              modify (\ st -> st {stakeTime = Nothing})
               -- Ensure at least one frame, if the command takes no time.
               -- No frames for @abort@, so the code is here, not below.
               if not timed && null (catMaybes frs)

@@ -8,7 +8,7 @@ import Game.LambdaHack.PointXY
 
 -- | 2D vectors in cartesian representation.
 newtype VectorXY = VectorXY (X, Y)
-  deriving (Show, Eq)
+  deriving (Eq, Ord, Show, Read)
 
 -- | Shift a point by a vector.
 shiftXY :: PointXY -> VectorXY -> PointXY

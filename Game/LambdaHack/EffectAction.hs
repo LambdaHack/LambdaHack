@@ -451,6 +451,13 @@ selectPlayer actor = do
       msgAdd $ lookAt cops False True state lvl (bloc pbody) ""
       return True
 
+selectHero :: MonadAction m => Int -> m ()
+selectHero k = do
+  s <- get
+  case tryFindHeroK s k of
+    Nothing  -> abortWith "No such member of the party."
+    Just aid -> void $ selectPlayer aid
+
 -- TODO: center screen, flash the background, etc. Perhaps wait for SPACE.
 -- | Focus on the hero being wounded/displaced/etc.
 focusIfOurs :: MonadActionRO m => ActorId -> m Bool

@@ -1,7 +1,7 @@
 -- | Basic operations on 2D vectors represented in an efficient,
 -- but not unique, way.
 module Game.LambdaHack.Vector
-  ( Vector, toVector, shift, shiftBounded, moves, movesWidth
+  ( Vector, toVector, toDir, shift, shiftBounded, moves
   , isUnit, euclidDistSq, diagonal, neg, towards, displacement
   , displacePath, shiftPath
   ) where
@@ -23,7 +23,7 @@ import Game.LambdaHack.Utils.Assert
 -- geographical directions, the representations are pairwise distinct
 -- if and only if the level width and height are at least 3.
 newtype Vector = Vector Int
-  deriving (Show, Eq)
+  deriving (Eq, Ord, Show, Read)
 
 instance Binary Vector where
   put (Vector dir) = put dir
@@ -79,11 +79,6 @@ shiftBounded lxsize area loc dir =
 -- | Vectors of all unit moves, clockwise, starting north-west.
 moves :: X -> [Vector]
 moves lxsize = map (toDir lxsize) movesXY
-
--- | Vectors of all unit moves, clockwise, starting north-west,
--- parameterized by level width.
-movesWidth :: [X -> Vector]
-movesWidth = map (flip toDir) movesXY
 
 -- | Squared euclidean distance between two unit vectors.
 euclidDistSq :: X -> Vector -> Vector -> Int
