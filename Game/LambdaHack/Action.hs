@@ -5,8 +5,9 @@
 -- and @MonadAction@.
 module Game.LambdaHack.Action
   ( -- * Action monads
-    MonadState(put), modify, MonadStateGet(..)
-  , MonadActionPure, MonadActionRO, MonadAction
+    MonadActionPure(getServer, getsServer)
+  , MonadActionRO
+  , MonadAction(putServer, modifyServer)
     -- * The Perception Reader
   , withPerception, askPerception
     -- * Accessors to the game session Reader
@@ -36,7 +37,6 @@ import Control.Concurrent
 import Control.Exception (finally)
 import Control.Monad
 import Control.Monad.Reader.Class
-import Control.Monad.State (MonadState, modify)
 import qualified Control.Monad.State as St
 import Control.Monad.Writer.Strict (WriterT, tell, lift)
 import qualified Data.IntMap as IM
@@ -76,14 +76,14 @@ import Game.LambdaHack.Utils.Assert
 withPerception :: MonadActionPure m => m () -> m ()
 withPerception m = do
   cops <- askCOps
-  s <- get
+  s <- getServer
   let per = dungeonPerception cops s
   local (const per) m
 
 -- | Get the current perception.
 askPerception :: MonadActionPure m => m Perception
 askPerception = do
-  lid <- gets slid
+  lid <- getsServer slid
   pers <- ask
   return $! fromJust $! lookup lid pers
 
@@ -270,7 +270,7 @@ drawPrompt :: MonadActionPure m => ColorMode -> Msg -> m SingleFrame
 drawPrompt dm prompt = do
   cops <- askCOps
   per <- askPerception
-  s <- get
+  s <- getServer
   Diary{sreport} <- getDiary
   let over = splitReport $ addMsg sreport prompt
   return $! draw dm cops per s over
@@ -283,7 +283,7 @@ drawOverlay :: MonadActionPure m => ColorMode -> Msg -> Overlay -> m SingleFrame
 drawOverlay dm prompt overlay = do
   cops <- askCOps
   per <- askPerception
-  s <- get
+  s <- getServer
   Diary{sreport} <- getDiary
   let xsize = lxsize $ slevel s
       msgPrompt = renderReport $ addMsg sreport prompt
@@ -305,8 +305,8 @@ startClip action =
 displayPush :: MonadActionRO m => m ()
 displayPush = do
   fs <- askFrontendSession
-  s  <- get
-  pl <- gets splayer
+  s  <- getServer
+  pl <- getsServer splayer
   frame <- drawPrompt ColorFull ""
   -- Visually speed up (by remving all empty frames) the show of the sequence
   -- of the move frames if the player is running.
@@ -325,26 +325,26 @@ remember = do
 rememberList :: MonadAction m => [Point] -> m ()
 rememberList vis = do
   Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- askCOps
-  lvl <- gets slevel
+  lvl <- getsServer slevel
   let rememberTile = [(loc, lvl `at` loc) | loc <- vis]
       unknownId = ouniqGroup "unknown space"
       newClear (loc, tk) = lvl `rememberAt` loc == unknownId
                            && Tile.isExplorable cotile tk
       clearN = length $ filter newClear rememberTile
-  modify (updateLevel (updateLRMap (Kind.// rememberTile)))
-  modify (updateLevel (\ l@Level{lseen} -> l {lseen = lseen + clearN}))
+  modifyServer (updateLevel (updateLRMap (Kind.// rememberTile)))
+  modifyServer (updateLevel (\ l@Level{lseen} -> l {lseen = lseen + clearN}))
   let alt Nothing      = Nothing
       alt (Just ([], _)) = Nothing
       alt (Just (t, _))  = Just (t, t)
       rememberItem = IM.alter alt
-  modify (updateLevel (updateIMap (\ m -> foldr rememberItem m vis)))
+  modifyServer (updateLevel (updateIMap (\ m -> foldr rememberItem m vis)))
 
 -- | Save the diary and a backup of the save game file, in case of crashes.
 --
 -- See 'Save.saveGameBkp'.
 saveGameBkp :: MonadActionRO m => m ()
 saveGameBkp = do
-  state <- get
+  state <- getServer
   diary <- getDiary
   configUI <- askConfigUI
   liftIO $ Save.saveGameBkp configUI state diary
@@ -352,7 +352,7 @@ saveGameBkp = do
 -- | Dumps the current game rules configuration to a file.
 dumpCfg :: MonadActionRO m => FilePath -> m ()
 dumpCfg fn = do
-  config <- gets sconfig
+  config <- getsServer sconfig
   liftIO $ ConfigIO.dump config fn
 
 -- | Handle current score and display it with the high scores.
@@ -365,7 +365,7 @@ handleScores :: MonadActionRO m => Bool -> Status -> Int -> m ()
 handleScores write status total =
   when (total /= 0) $ do
     configUI <- askConfigUI
-    time <- gets stime
+    time <- getsServer stime
     curDate <- liftIO getClockTime
     let score = register configUI write total time curDate status
     (placeMsg, slideshow) <- liftIO score
@@ -374,9 +374,9 @@ handleScores write status total =
 -- | Continue or restart or exit the game.
 endOrLoop :: MonadAction m => m () -> m ()
 endOrLoop handleTurn = do
-  squit <- gets squit
+  squit <- getsServer squit
   Kind.COps{coitem} <- askCOps
-  s <- get
+  s <- getServer
   configUI <- askConfigUI
   let (_, total) = calculateTotal coitem s
   -- The first, boolean component of squit determines
@@ -434,7 +434,7 @@ restartGame handleTurn = do
   configUI <- askConfigUI
   cops <- askCOps
   state <- gameResetAction configUI cops
-  modify $ const state
+  modifyServer $ const state
   saveGameBkp
   handleTurn
 

@@ -8,18 +8,18 @@ module Game.LambdaHack.Action.Frontend.Curses
   , frontendName, startup
   ) where
 
-import qualified UI.HSCurses.Curses as C
-import qualified UI.HSCurses.CursesHelper as C
+import Control.Monad
+import Data.Char (chr, ord)
 import qualified Data.List as L
 import qualified Data.Map as M
-import Control.Monad
-import Data.Char (ord, chr)
 import qualified Data.Text as T
+import qualified UI.HSCurses.Curses as C
+import qualified UI.HSCurses.CursesHelper as C
 
-import Game.LambdaHack.Utils.Assert
-import qualified Game.LambdaHack.Key as K (Key(..),  Modifier(..))
+import Game.LambdaHack.Animation (SingleFrame (..))
 import qualified Game.LambdaHack.Color as Color
-import Game.LambdaHack.Animation (SingleFrame(..))
+import qualified Game.LambdaHack.Key as K (Key (..), Modifier (..))
+import Game.LambdaHack.Utils.Assert
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession

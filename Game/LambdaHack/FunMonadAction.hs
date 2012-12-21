@@ -7,11 +7,10 @@
 -- and TypeAction.
 module Game.LambdaHack.FunMonadAction
   ( Session(..), FunActionPure, FunAction
-  , MonadStateGet(..), MonadActionPure(..), MonadActionRO(..), MonadAction(..)
+  , MonadActionPure(..), MonadActionRO(..), MonadAction(..)
   ) where
 
 import Control.Monad.Reader.Class
-import qualified Control.Monad.State as St
 import Control.Monad.Writer.Strict
 
 import Game.LambdaHack.Action.Frontend
@@ -33,21 +32,21 @@ data Session = Session
   , sconfigUI :: !ConfigUI         -- ^ the UI config for this session
   }
 
--- | The type of the function inside any action.
-type FunAction a =
+-- | The type of the function inside any pure action.
+type FunActionPure a =
    Session                            -- ^ client session setup data
    -> Pers                            -- ^ cached perception
-   -> (State -> Diary -> a -> IO ())  -- ^ continuation
+   -> (a -> IO ())                    -- ^ continuation
    -> (Msg -> IO ())                  -- ^ failure/reset continuation
    -> State                           -- ^ current state
    -> Diary                           -- ^ current diary
    -> IO ()
 
--- | The type of the function inside any read-only action.
-type FunActionPure a =
+-- | The type of the function inside any full-power action.
+type FunAction a =
    Session                            -- ^ client session setup data
    -> Pers                            -- ^ cached perception
-   -> (a -> IO ())                    -- ^ continuation
+   -> (State -> Diary -> a -> IO ())  -- ^ continuation
    -> (Msg -> IO ())                  -- ^ failure/reset continuation
    -> State                           -- ^ current state
    -> Diary                           -- ^ current diary
@@ -59,14 +58,10 @@ class (Monad m, Functor m, MonadReader Pers m, Show (m ()))
   -- Set the current exception handler. First argument is the handler,
   -- second is the computation the handler scopes over.
   tryWith :: (Msg -> m a) -> m a -> m a
-
-class Monad m => MonadStateGet s m | m -> s where
-  get :: m s
-  gets :: (s -> a) -> m a
-
-instance MonadActionPure m => MonadStateGet State m where
-  get = fun2actionPure (\_c _p k _a s _d -> k s)
-  gets = (`fmap` get)
+  getServer :: m State
+  getServer = fun2actionPure (\_c _p k _a s _d -> k s)
+  getsServer :: (State -> a) -> m a
+  getsServer = (`fmap` getServer)
 
 instance MonadActionPure m => MonadActionPure (WriterT Frames m) where
   fun2actionPure = lift . fun2actionPure
@@ -88,14 +83,18 @@ class MonadActionPure m => MonadActionRO m where
 -- TODO: try again, but not sooner than in a few years, so that users
 -- with old compilers don't have compilation problems. The same with
 --  instance MonadAction m => St.MonadState State m where
---  get    = get
+--  get = get
 --  put ns = fun2action (\_c _p k _a _s d -> k ns d ())
 -- and with MonadReader Pers m
 
 instance MonadActionRO m => MonadActionRO (WriterT Frames m) where
 
-class (MonadActionRO m, St.MonadState State m) => MonadAction m where
+class MonadActionRO m => MonadAction m where
   fun2action :: FunAction a -> m a
+  putServer :: State -> m ()
+  putServer ns = fun2action (\_c _p k _a _s d -> k ns d ())
+  modifyServer :: (State -> State) -> m ()
+  modifyServer f = fun2action (\_c _p k _a s d -> k (f s) d ())
 
 instance MonadAction m => MonadAction (WriterT Frames m) where
   fun2action = lift . fun2action

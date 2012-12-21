@@ -3,13 +3,13 @@ module Game.LambdaHack.Content.RuleKind
   ( RuleKind(..), ruvalidate
   ) where
 
-import Data.Version
 import Data.Text (Text)
+import Data.Version
 
-import Game.LambdaHack.PointXY
 import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.Point
 import Game.LambdaHack.Misc
+import Game.LambdaHack.Point
+import Game.LambdaHack.PointXY
 
 -- TODO: very few rules are configurable yet, extend as needed.
 

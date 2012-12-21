@@ -11,15 +11,15 @@ module Game.LambdaHack.Msg
   , Overlay, splitOverlay, stringByLocation
   ) where
 
-import qualified Data.List as L
-import Data.Char
 import Data.Binary
 import qualified Data.ByteString.Char8 as BS
+import Data.Char
 import qualified Data.IntMap as IM
+import qualified Data.List as L
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
-import NLP.Miniutter.English ((<>), (<+>), showT)
+import NLP.Miniutter.English (showT, (<+>), (<>))
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Misc

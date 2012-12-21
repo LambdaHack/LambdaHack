@@ -3,8 +3,8 @@ module Game.LambdaHack.Config
   ( Config(..), ConfigUI(..), FovMode(..)
   ) where
 
-import Data.Text (Text)
 import Data.Binary
+import Data.Text (Text)
 
 import qualified Game.LambdaHack.Key as K
 

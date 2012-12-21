@@ -7,7 +7,6 @@ module Game.LambdaHack.TypeAction
   ) where
 
 import Control.Monad.Reader.Class
-import qualified Control.Monad.State as St
 import qualified Data.Text as T
 
 import Game.LambdaHack.Action
@@ -57,10 +56,6 @@ instance MonadAction Action where
 instance Functor Action where
   fmap f m = Action (\c p k a s d ->
                       runAction m c p (\s' d' -> k s' d' . f) a s d)
-
-instance St.MonadState State Action where
-  get    = get
-  put ns = fun2action (\_c _p k _a _s d -> k ns d ())
 
 instance MonadReader Pers Action where
   ask = fun2actionPure (\_c p k _a _s _d -> k p)

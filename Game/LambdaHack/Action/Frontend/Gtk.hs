@@ -9,26 +9,26 @@ module Game.LambdaHack.Action.Frontend.Gtk
   , frontendName, startup
   ) where
 
-import Control.Monad
-import Control.Monad.Reader
 import Control.Concurrent
 import Control.Exception (finally)
-import Graphics.UI.Gtk.Gdk.EventM
-import Graphics.UI.Gtk hiding (Point)
-import qualified Data.List as L
-import Data.IORef
-import Data.Maybe
-import qualified Data.Map as M
+import Control.Monad
+import Control.Monad.Reader
 import qualified Data.ByteString.Char8 as BS
-import System.Time
+import Data.IORef
+import qualified Data.List as L
+import qualified Data.Map as M
+import Data.Maybe
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
+import Graphics.UI.Gtk hiding (Point)
+import System.Time
 
+import Game.LambdaHack.Animation (SingleFrame (..))
+import qualified Game.LambdaHack.Color as Color
+import qualified Game.LambdaHack.Key as K (Key (..), Modifier (..),
+                                           keyTranslate)
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.LQueue
-import qualified Game.LambdaHack.Key as K (Key(..), keyTranslate, Modifier(..))
-import qualified Game.LambdaHack.Color as Color
-import Game.LambdaHack.Animation (SingleFrame(..))
 
 data FrameState =
     FPushed  -- frames stored in a queue, to be drawn in equal time intervals

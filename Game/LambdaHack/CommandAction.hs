@@ -80,9 +80,9 @@ cmdAction s per cmd =
     HeroBack    -> (False, lift $ backCycleHero)
     Help        -> (False, displayHelp)
     SelectHero k -> (False, lift $ selectHero k)
-    DebugVision -> (False, modify cycleMarkVision)
-    DebugOmni   -> (False, modify toggleOmniscient)
-    DebugCave   -> (False, gets (lmeta . slevel) >>= abortWith)
+    DebugVision -> (False, modifyServer cycleMarkVision)
+    DebugOmni   -> (False, modifyServer toggleOmniscient)
+    DebugCave   -> (False, getsServer (lmeta . slevel) >>= abortWith)
 
 -- | The semantics of player commands in terms of the @Action@ monad.
 -- Decides if the action takes time and what action to perform.
@@ -101,8 +101,8 @@ cmdSemantics s per cmd =
 -- as player level and refuse performing the action otherwise.
 checkCursor :: MonadActionPure m => WriterT Frames m () -> WriterT Frames m ()
 checkCursor h = do
-  cursor <- gets scursor
-  slid <- gets slid
+  cursor <- getsServer scursor
+  slid <- getsServer slid
   if creturnLn cursor == slid
     then h
     else abortWith "[targeting] you inspect a remote level, press ESC to switch back"

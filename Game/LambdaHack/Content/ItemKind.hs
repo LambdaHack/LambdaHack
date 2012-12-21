@@ -9,8 +9,8 @@ import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Effect
 import Game.LambdaHack.Flavour
-import Game.LambdaHack.Random
 import Game.LambdaHack.Misc
+import Game.LambdaHack.Random
 
 -- TODO: ipower is out of place here. It doesn't make sense for all items,
 -- and will mean different things for different items. Perhaps it should
@@ -22,17 +22,17 @@ import Game.LambdaHack.Misc
 -- etc., so if we make ipower complex, the value computation gets complex too.
 -- | Item properties that are fixed for a given kind of items.
 data ItemKind = ItemKind
-  { isymbol  :: !Char         -- ^ map symbol
-  , iname    :: !Text         -- ^ generic name
-  , ifreq    :: !Freqs        -- ^ frequency within groups
-  , iflavour :: ![Flavour]    -- ^ possible flavours
-  , ieffect  :: !Effect       -- ^ the effect when activated
-  , icount   :: !RollDeep     -- ^ created in that quantify
-  , ipower   :: !RollDeep     -- ^ created with that power
+  { isymbol      :: !Char         -- ^ map symbol
+  , iname        :: !Text         -- ^ generic name
+  , ifreq        :: !Freqs        -- ^ frequency within groups
+  , iflavour     :: ![Flavour]    -- ^ possible flavours
+  , ieffect      :: !Effect       -- ^ the effect when activated
+  , icount       :: !RollDeep     -- ^ created in that quantify
+  , ipower       :: !RollDeep     -- ^ created with that power
   , iverbApply   :: !MU.Part  -- ^ the verb for applying and possibly combat
   , iverbProject :: !MU.Part  -- ^ the verb for projecting
-  , iweight  :: !Int          -- ^ weight in grams
-  , itoThrow :: !Int          -- ^ percentage bonus or malus to throw speed
+  , iweight      :: !Int          -- ^ weight in grams
+  , itoThrow     :: !Int          -- ^ percentage bonus or malus to throw speed
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 

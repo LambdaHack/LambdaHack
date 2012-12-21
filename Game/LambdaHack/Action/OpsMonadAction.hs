@@ -7,7 +7,9 @@
 -- further.
 module Game.LambdaHack.Action.OpsMonadAction
   ( -- * Types and type classes to do with actions
-    MonadStateGet(..), MonadActionPure, MonadActionRO(liftIO), MonadAction
+    MonadActionPure(getServer, getsServer)
+  , MonadActionRO(liftIO)
+  , MonadAction(putServer, modifyServer)
     -- * Accessors to the game session Reader
   , askFrontendSession, askCOps, askBinding, askConfigUI
     -- * Abort exception and its handler

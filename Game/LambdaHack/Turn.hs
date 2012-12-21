@@ -64,16 +64,16 @@ import Game.LambdaHack.Utils.Assert
 handleTurn :: MonadAction m => m ()
 handleTurn = do
   debug "handleTurn"
-  time <- gets stime  -- the end time of this clip, inclusive
+  time <- getsServer stime  -- the end time of this clip, inclusive
   let clipN = (time `timeFit` timeClip) `mod` (timeTurn `timeFit` timeClip)
   -- Regenerate HP and add monsters each turn, not each clip.
   when (clipN == 1) regenerateLevelHP
   when (clipN == 3) generateMonster
-  ptime <- gets (btime . getPlayerBody)  -- time of player's next move
+  ptime <- getsServer (btime . getPlayerBody)  -- time of player's next move
   debug $ "handleTurn: time check. ptime ="
           <+> showT ptime <> ", time =" <+> showT time
   handleActors timeZero
-  modify (updateTime (timeAdd timeClip))
+  modifyServer (updateTime (timeAdd timeClip))
   endOrLoop handleTurn
 
 -- TODO: We should replace this structure using a priority search queue/tree.
@@ -88,13 +88,13 @@ handleActors :: MonadAction m => Time       -- ^ the start time of current subcl
 handleActors subclipStart = do
   debug "handleActors"
   Kind.COps{coactor} <- askCOps
-  sfaction <- gets sfaction
-  time <- gets stime  -- the end time of this clip, inclusive
-  pl <- gets splayer
-  pbody <- gets getPlayerBody
+  sfaction <- getsServer sfaction
+  time <- getsServer stime  -- the end time of this clip, inclusive
+  pl <- getsServer splayer
+  pbody <- getsServer getPlayerBody
   -- Older actors act earlier, the player acts first.
-  lactor <- gets (((pl, pbody) :) . IM.toList . IM.delete pl . lactor . slevel)
-  squitOld <- gets squit
+  lactor <- getsServer (((pl, pbody) :) . IM.toList . IM.delete pl . lactor . slevel)
+  squitOld <- getsServer squit
   let mnext = if null lactor  -- wait until any actor spawned
               then Nothing
               else let -- Heroes move first then monsters, then the rest.
@@ -107,14 +107,14 @@ handleActors subclipStart = do
     _ | isJust squitOld -> return ()
     Nothing -> when (subclipStart == timeZero) $ displayFramePush Nothing
     Just (actor, _) -> do
-      m <- gets (getActor actor)
+      m <- getsServer (getActor actor)
       if actor == pl
         then
           -- Player moves always start a new subclip.
           startClip $ do
             handlePlayer
-            squitNew <- gets squit
-            plNew <- gets splayer
+            squitNew <- getsServer squit
+            plNew <- getsServer splayer
             -- Advance time once, after the player switched perhaps many times.
             -- Ending and especially saving does not take time.
             -- TODO: this is correct only when all heroes have the same
@@ -152,7 +152,7 @@ handleAI actor = do
   cops@Kind.COps{ cofact=Kind.Ops{okind}
                 , costrat=Kind.Ops{opick, okind=sokind}
                 } <- askCOps
-  state <- get
+  state <- getServer
   per <- askPerception
   let Actor{bfaction, bloc, bsymbol} = getActor actor state
       faction = okind bfaction
@@ -162,7 +162,7 @@ handleAI actor = do
   -- Choose a target from those proposed by AI for the actor.
   btarget <- rndToAction $ frequency $ bestVariant $ stratTarget
   updateAnyActor actor $ \ m -> m { btarget }
-  stateNew <- get
+  stateNew <- getServer
   let stratMove = strategy cops actor stateNew factionAbilities
   debug $ "handleAI faction:" <+> fname faction
      <>          ", symbol:"  <+> showT bsymbol
@@ -201,7 +201,7 @@ playerCommand msgRunAbort = do
         (timed, frames) <- runWriterT $ tryWithFrame (return False) $ do
           -- Look up the key.
           -- TODO
-          s <- get
+          s <- getServer
           per <- askPerception
           Binding{kcmd} <- askBinding
           case M.lookup km kcmd of

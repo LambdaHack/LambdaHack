@@ -6,8 +6,8 @@ module Game.LambdaHack.FOV.Shadow (SBump, Interval, scan) where
 
 import Data.Ratio
 
-import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.FOV.Common
+import Game.LambdaHack.Utils.Assert
 
 {-
 Field Of View

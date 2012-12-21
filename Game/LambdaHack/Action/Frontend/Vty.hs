@@ -8,14 +8,14 @@ module Game.LambdaHack.Action.Frontend.Vty
   , frontendName, startup
   ) where
 
-import Graphics.Vty
-import qualified Graphics.Vty as Vty
 import qualified Data.List as L
 import Data.Text.Encoding (encodeUtf8)
+import Graphics.Vty
+import qualified Graphics.Vty as Vty
 
-import qualified Game.LambdaHack.Key as K (Key(..), Modifier(..))
+import Game.LambdaHack.Animation (SingleFrame (..))
 import qualified Game.LambdaHack.Color as Color
-import Game.LambdaHack.Animation (SingleFrame(..))
+import qualified Game.LambdaHack.Key as K (Key (..), Modifier (..))
 
 -- | Session data maintained by the frontend.
 type FrontendSession = Vty

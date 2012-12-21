@@ -18,17 +18,17 @@ import Data.Ratio
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Vector
-import Game.LambdaHack.Point
+import qualified Game.LambdaHack.Color as Color
+import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Msg
+import Game.LambdaHack.Point
 import Game.LambdaHack.Random
-import Game.LambdaHack.Config
 import Game.LambdaHack.Time
-import qualified Game.LambdaHack.Color as Color
+import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Vector
 
 -- | Actor properties that are changing throughout the game.
 -- If they are dublets of properties from @ActorKind@,

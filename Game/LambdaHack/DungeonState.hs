@@ -177,6 +177,6 @@ whereTo State{slid, sdungeon} k = assert (k /= 0) $
   let n = Dungeon.levelNumber slid
       nln = n - k
       ln = Dungeon.levelDefault nln
-  in case Dungeon.lookup ln sdungeon of
+  in case Dungeon.lookupLevel ln sdungeon of
     Nothing     -> Nothing
     Just lvlTrg -> Just (ln, (if k < 0 then fst else snd) (lstairs lvlTrg))

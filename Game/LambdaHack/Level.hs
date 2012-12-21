@@ -12,22 +12,22 @@ module Game.LambdaHack.Level
   ) where
 
 import Data.Binary
-import qualified Data.List as L
 import qualified Data.IntMap as IM
+import qualified Data.List as L
 import Data.Text (Text)
 
-import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.PointXY
-import Game.LambdaHack.Point
 import Game.LambdaHack.Actor
-import Game.LambdaHack.Item
-import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.Content.TileKind
+import qualified Game.LambdaHack.Feature as F
+import Game.LambdaHack.Item
+import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Point
+import Game.LambdaHack.PointXY
 import Game.LambdaHack.Random
 import Game.LambdaHack.Tile
-import qualified Game.LambdaHack.Feature as F
-import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Time
+import Game.LambdaHack.Utils.Assert
 
 -- | All actors on the level, indexed by actor identifier.
 type ActorDict = IM.IntMap Actor
@@ -49,21 +49,21 @@ type TileMap = Kind.Array Point TileKind
 
 -- | A single, inhabited dungeon level.
 data Level = Level
-  { lactor    :: !ActorDict       -- ^ all actors on the level
-  , linv      :: !InvDict         -- ^ items belonging to actors
-  , lxsize    :: !X               -- ^ width of the level
-  , lysize    :: !Y               -- ^ height of the level
-  , lsmell    :: !SmellMap        -- ^ smells
-  , lsecret   :: !SecretMap       -- ^ secrecy values
-  , litem     :: !ItemMap         -- ^ items on the ground
-  , lmap      :: !TileMap         -- ^ map tiles
-  , lrmap     :: !TileMap         -- ^ remembered map tiles
-  , ldesc     :: !Text            -- ^ level description for the player
-  , lmeta     :: !Text            -- ^ debug information from cave generation
-  , lstairs   :: !(Point, Point)  -- ^ destination of the (up, down) stairs
-  , ltime     :: !Time            -- ^ date of the last activity on the level
-  , lclear    :: !Int             -- ^ total number of clear tiles
-  , lseen     :: !Int             -- ^ number of clear tiles already seen
+  { lactor  :: !ActorDict       -- ^ all actors on the level
+  , linv    :: !InvDict         -- ^ items belonging to actors
+  , lxsize  :: !X               -- ^ width of the level
+  , lysize  :: !Y               -- ^ height of the level
+  , lsmell  :: !SmellMap        -- ^ smells
+  , lsecret :: !SecretMap       -- ^ secrecy values
+  , litem   :: !ItemMap         -- ^ items on the ground
+  , lmap    :: !TileMap         -- ^ map tiles
+  , lrmap   :: !TileMap         -- ^ remembered map tiles
+  , ldesc   :: !Text            -- ^ level description for the player
+  , lmeta   :: !Text            -- ^ debug information from cave generation
+  , lstairs :: !(Point, Point)  -- ^ destination of the (up, down) stairs
+  , ltime   :: !Time            -- ^ date of the last activity on the level
+  , lclear  :: !Int             -- ^ total number of clear tiles
+  , lseen   :: !Int             -- ^ number of clear tiles already seen
   }
   deriving Show
 

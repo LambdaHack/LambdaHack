@@ -31,10 +31,10 @@ import Game.LambdaHack.Vector
 run :: MonadAction m => (Vector, Int) -> m ()
 run (dir, dist) = do
   cops <- askCOps
-  pl <- gets splayer
-  locHere <- gets (bloc . getPlayerBody)
-  lvl <- gets slevel
-  targeting <- gets (ctargeting . scursor)
+  pl <- getsServer splayer
+  locHere <- getsServer (bloc . getPlayerBody)
+  lvl <- getsServer slevel
+  targeting <- getsServer (ctargeting . scursor)
   assert (targeting == TgtOff `blame` (dir, dist, targeting, "/= TgtOff")) $ do
     let accessibleDir loc d = accessible cops lvl loc (loc `shift` d)
         -- Do not count distance if we just open a door.
@@ -150,13 +150,13 @@ runDisturbance locLast distLast msg hs ms per locHere
 continueRun :: MonadAction m => (Vector, Int) -> m ()
 continueRun (dirLast, distLast) = do
   cops@Kind.COps{cotile} <- askCOps
-  locHere <- gets (bloc . getPlayerBody)
+  locHere <- getsServer (bloc . getPlayerBody)
   per <- askPerception
   Diary{sreport} <- getDiary
-  ms  <- gets dangerousList
-  sfaction <- gets sfaction
-  hs <- gets (factionList [sfaction])
-  lvl@Level{lxsize, lysize} <- gets slevel
+  ms  <- getsServer dangerousList
+  sfaction <- getsServer sfaction
+  hs <- getsServer (factionList [sfaction])
+  lvl@Level{lxsize, lysize} <- getsServer slevel
   let locHasFeature f loc = Tile.hasFeature cotile f (lvl `at` loc)
       locHasItems loc = not $ L.null $ lvl `atI` loc
       locLast = if distLast == 0 then locHere else locHere `shift` neg dirLast

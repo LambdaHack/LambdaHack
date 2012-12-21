@@ -8,8 +8,8 @@ module Game.LambdaHack.Time
   ) where
 
 import Data.Binary
-import Data.Int (Int64)
 import qualified Data.Char as Char
+import Data.Int (Int64)
 
 -- | Game time in ticks. The time dimension.
 -- One tick is 1 microsecond (one millionth of a second),

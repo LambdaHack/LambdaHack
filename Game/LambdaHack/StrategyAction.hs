@@ -171,10 +171,10 @@ waitBlockNow actor = returN "wait" $ setWaitBlock actor
 -- | A strategy to always just die.
 dieNow :: MonadAction m => ActorId -> Strategy (m ())
 dieNow actor = returN "die" $ do  -- TODO: explode if a potion
-  bitems <- gets (getActorItem actor)
-  Actor{bloc} <- gets (getActor actor)
-  modify (updateLevel (dropItemsAt bitems bloc))
-  modify (deleteActor actor)
+  bitems <- getsServer (getActorItem actor)
+  Actor{bloc} <- getsServer (getActor actor)
+  modifyServer (updateLevel (dropItemsAt bitems bloc))
+  modifyServer (deleteActor actor)
 
 -- | Strategy for dumb missiles.
 track :: MonadAction m => Kind.COps -> ActorId -> State -> Strategy (m ())

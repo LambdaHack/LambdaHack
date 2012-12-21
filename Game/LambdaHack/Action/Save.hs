@@ -4,19 +4,19 @@ module Game.LambdaHack.Action.Save
   ( saveGameFile, restoreGame, rmBkpSaveDiary, saveGameBkp
   ) where
 
-import System.Directory
-import System.FilePath
+import Control.Concurrent
 import qualified Control.Exception as Ex hiding (handle)
 import Control.Monad
-import Control.Concurrent
-import System.IO.Unsafe (unsafePerformIO)  -- horrors
 import Data.Text (Text)
 import qualified Data.Text as T
+import System.Directory
+import System.FilePath
+import System.IO.Unsafe (unsafePerformIO)
 
-import Game.LambdaHack.Utils.File
-import Game.LambdaHack.State
-import Game.LambdaHack.Msg
 import Game.LambdaHack.Config
+import Game.LambdaHack.Msg
+import Game.LambdaHack.State
+import Game.LambdaHack.Utils.File
 
 -- | Save a simple serialized version of the current player diary.
 saveDiary :: FilePath -> Diary -> IO ()

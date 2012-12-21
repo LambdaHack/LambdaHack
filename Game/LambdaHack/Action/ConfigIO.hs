@@ -3,20 +3,20 @@ module Game.LambdaHack.Action.ConfigIO
   ( mkConfigRules, mkConfigUI, dump
   ) where
 
-import System.Directory
-import System.FilePath
-import System.Environment
-import qualified Data.ConfigFile as CF
 import qualified Data.Char as Char
+import qualified Data.ConfigFile as CF
 import Data.List
-import qualified System.Random as R
 import qualified Data.Text as T
+import System.Directory
+import System.Environment
+import System.FilePath
+import qualified System.Random as R
 
-import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Config
+import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Key as K
 import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.Utils.Assert
 
 overrideCP :: CP -> FilePath -> IO CP
 overrideCP cp@(CP defCF) cfile = do

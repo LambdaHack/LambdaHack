@@ -4,16 +4,16 @@ module Game.LambdaHack.Dungeon
   ( -- * Level identifier
     LevelId, levelNumber, levelDefault
     -- * Dungeon
-  , Dungeon, fromList, currentFirst, adjust, mapDungeon, (!), lookup, depth
+  , Dungeon, fromList, currentFirst
+  , adjust, mapDungeon, (!), lookupLevel, depth
   ) where
 
-import Prelude hiding (lookup)
 import Data.Binary
-import qualified Data.Map as M
 import qualified Data.List as L
+import qualified Data.Map as M
 
-import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Level
+import Game.LambdaHack.Utils.Assert
 
 -- | Level ids are, for now, ordered linearly by depth.
 newtype LevelId = LambdaCave Int
@@ -34,7 +34,7 @@ levelDefault = LambdaCave
 -- | The complete dungeon is a map from level names to levels.
 data Dungeon = Dungeon
   { dungeonLevelMap :: M.Map LevelId Level
-  , dungeonDepth :: Int  -- can be different than the number of levels
+  , dungeonDepth    :: Int  -- can be different than the number of levels
   }
   deriving Show
 
@@ -77,8 +77,8 @@ mapDungeon f (Dungeon m d) = Dungeon (M.map f m) d
 (!) (Dungeon m _) lid = m M.! lid
 
 -- | Try to look up a level with the given id.
-lookup :: LevelId -> Dungeon -> Maybe Level
-lookup lid (Dungeon m _) = M.lookup lid m
+lookupLevel :: LevelId -> Dungeon -> Maybe Level
+lookupLevel lid (Dungeon m _) = M.lookup lid m
 
 -- | Maximum depth of the dungeon.
 depth :: Dungeon -> Int
