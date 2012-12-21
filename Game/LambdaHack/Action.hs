@@ -50,7 +50,7 @@ import System.Time
 
 import qualified Game.LambdaHack.Action.ConfigIO as ConfigIO
 import Game.LambdaHack.Action.Frontend
-import Game.LambdaHack.FunMonadAction
+import Game.LambdaHack.MonadAction
   ( MonadActionPure( tryWith, abortWith, getsSession
                    , getServer, getsServer, getClient, getsClient )
   , MonadActionRO(liftIO, putClient, modifyClient)
