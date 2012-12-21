@@ -6,7 +6,6 @@ module Game.LambdaHack.StrategyAction
 
 import Control.Arrow
 import Control.Monad
-import Control.Monad.State hiding (State, get, gets, state)
 import Data.Function
 import qualified Data.IntMap as IM
 import qualified Data.List as L

@@ -4,8 +4,7 @@ module Game.LambdaHack.CommandAction
   ( cmdSemantics
   ) where
 
-import Control.Monad.State hiding (State, get, gets, state)
-import Control.Monad.Writer.Strict (WriterT)
+import Control.Monad.Writer.Strict (WriterT, lift)
 import Data.Maybe
 import Data.Text (Text)
 

@@ -6,7 +6,7 @@
 module Game.LambdaHack.EffectAction where
 
 import Control.Monad
-import Control.Monad.State hiding (State, state, get, gets)
+import qualified Control.Monad.State as St
 import Control.Monad.Writer.Strict (WriterT, tell)
 import Data.Function
 import qualified Data.IntMap as IM
@@ -53,7 +53,7 @@ actorVerb coactor a v =
 rndToAction :: MonadAction m => Rnd a -> m a
 rndToAction r = do
   g <- gets srandom
-  let (a, ng) = runState r g
+  let (a, ng) = St.runState r g
   modify (\ state -> state {srandom = ng})
   return a
 

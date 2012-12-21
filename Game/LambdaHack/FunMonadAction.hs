@@ -1,11 +1,13 @@
 {-# OPTIONS -fno-warn-orphans #-}
-{-# LANGUAGE FlexibleContexts, FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts, FlexibleInstances, FunctionalDependencies,
+             MultiParamTypeClasses, FunctionalDependencies #-}
 -- | Basic types and classes for game action. Exposed to let library users
 -- define their own variants of the main action type @Action@.
 -- This module should not be imported anywhere except in MonadAction
 -- and TypeAction.
 module Game.LambdaHack.FunMonadAction
-  ( Session(..), FunActionRO, FunAction, MonadActionRO(..), MonadAction(..)
+  ( Session(..), FunActionRO, FunAction
+  , MonadStateGet(..), MonadActionRO(..), MonadAction(..)
   ) where
 
 import Control.Monad.Reader.Class
@@ -57,14 +59,18 @@ class (Monad m, Functor m, MonadReader Pers m, Show (m ()))
   -- Set the current exception handler. First argument is the handler,
   -- second is the computation the handler scopes over.
   tryWith :: (Msg -> m a) -> m a -> m a
-  get :: m State
-  get = fun2actionRO (\_c _p k _a s _d -> k s)
-  gets :: (State -> a) -> m a
-  gets = (`fmap` get)
   -- We do not provide a MonadIO instance, so that outside of Action/
   -- nobody can subvert the action monads by invoking arbitrary IO.
   liftIO :: IO a -> m a
   liftIO x = fun2actionRO (\_c _p k _a _s _d -> x >>= k)
+
+class Monad m => MonadStateGet s m | m -> s where
+  get :: m s
+  gets :: (s -> a) -> m a
+
+instance MonadActionRO m => MonadStateGet State m where
+  get = fun2actionRO (\_c _p k _a s _d -> k s)
+  gets = (`fmap` get)
 
 -- The following triggers a GHC limitation (Overlapping instances for Show):
 -- instance MonadActionRO m => Show (m a) where

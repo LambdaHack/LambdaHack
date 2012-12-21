@@ -9,7 +9,6 @@ module Game.LambdaHack.Actions where
 import qualified Paths_LambdaHack as Self (version)
 
 import Control.Monad
-import Control.Monad.State hiding (State, get, gets, state)
 import Control.Monad.Writer.Strict (WriterT)
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS

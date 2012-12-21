@@ -7,8 +7,7 @@
 module Game.LambdaHack.ItemAction where
 
 import Control.Monad
-import Control.Monad.State hiding (State, get, gets, state)
-import Control.Monad.Writer.Strict (WriterT)
+import Control.Monad.Writer.Strict (WriterT, lift)
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import qualified Data.List as L

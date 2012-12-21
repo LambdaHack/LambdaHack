@@ -5,7 +5,8 @@
 -- and @MonadAction@.
 module Game.LambdaHack.Action
   ( -- * Action monads
-    MonadActionRO(get, gets), MonadAction
+    MonadState(put), modify, MonadStateGet(..)
+  , MonadActionRO, MonadAction
     -- * The Perception Reader
   , withPerception, askPerception
     -- * Accessors to the game session Reader
@@ -34,15 +35,16 @@ module Game.LambdaHack.Action
 import Control.Concurrent
 import Control.Exception (finally)
 import Control.Monad
-import Control.Monad.State hiding (State, state, liftIO, get, gets)
-import Control.Monad.Writer.Strict (WriterT, tell)
+import Control.Monad.Reader.Class
+import Control.Monad.State (MonadState, modify)
+import qualified Control.Monad.State as St
+import Control.Monad.Writer.Strict (WriterT, tell, lift)
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import qualified Data.Map as M
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
-import Control.Monad.Reader.Class
 import System.Time
 -- import System.IO (hPutStrLn, stderr) -- just for debugging
 
@@ -444,10 +446,10 @@ gameReset configUI cops@Kind.COps{ coitem
   -- Rules config reloaded at each new game start.
   (configRules, dungeonGen, startingGen) <- ConfigIO.mkConfigRules corule
   let (DungeonState.FreshDungeon{..}, gen2) =
-        runState (DungeonState.generate cops configRules) dungeonGen
-      (sflavour, gen3) = runState (dungeonFlavourMap coitem) gen2
+        St.runState (DungeonState.generate cops configRules) dungeonGen
+      (sflavour, gen3) = St.runState (dungeonFlavourMap coitem) gen2
       factionName = configFaction configRules
-      sfaction = evalState (opick factionName (const True)) gen3
+      sfaction = St.evalState (opick factionName (const True)) gen3
   let state = defaultState configRules sfaction sflavour freshDungeon
                            entryLevel entryLoc startingGen
       hstate = initialHeroes cops entryLoc configUI state

@@ -19,17 +19,17 @@ import Data.Ratio
 import qualified System.Random as R
 import Control.Monad
 import qualified Data.List as L
-import qualified Control.Monad.State as MState
+import qualified Control.Monad.State as St
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.Frequency
 
 -- | The monad of computations with random generator state.
-type Rnd a = MState.State R.StdGen a
+type Rnd a = St.State R.StdGen a
 
 -- | Get a random object within a range with a uniform distribution.
 randomR :: (R.Random a) => (a, a) -> Rnd a
-randomR range = MState.state $ R.randomR range
+randomR range = St.state $ R.randomR range
 
 -- | Get any element of a list with equal probability.
 oneOf :: [a] -> Rnd a
@@ -39,7 +39,7 @@ oneOf xs = do
 
 -- | Gen an element according to a frequency distribution.
 frequency :: Show a => Frequency a -> Rnd a
-frequency fr = MState.state $ rollFreq fr
+frequency fr = St.state $ rollFreq fr
 
 -- | Roll a single die.
 roll :: Int -> Rnd Int

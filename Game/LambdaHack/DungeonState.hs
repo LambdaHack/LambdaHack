@@ -10,7 +10,7 @@ module Game.LambdaHack.DungeonState
 
 import qualified System.Random as R
 import qualified Data.List as L
-import qualified Control.Monad.State as MState
+import qualified Control.Monad.State as St
 import qualified Data.Map as M
 import qualified Data.IntMap as IM
 import Data.Maybe
@@ -156,7 +156,7 @@ generate cops config@Config{configDepth}  =
   let gen :: R.StdGen -> Int -> (R.StdGen, (Dungeon.LevelId, Level))
       gen g k =
         let (g1, g2) = R.split g
-            res = MState.evalState (findGenerator cops config k configDepth) g1
+            res = St.evalState (findGenerator cops config k configDepth) g1
         in (g2, (Dungeon.levelDefault k, res))
       con :: R.StdGen -> (FreshDungeon, R.StdGen)
       con g = assert (configDepth >= 1 `blame` configDepth) $
@@ -165,7 +165,7 @@ generate cops config@Config{configDepth}  =
             entryLoc = fst (lstairs (snd (head levels)))
             freshDungeon = Dungeon.fromList levels configDepth
         in (FreshDungeon{..}, gd)
-  in MState.state con
+  in St.state con
 
 -- | Compute the level identifier and starting location on the level,
 -- after a level change.

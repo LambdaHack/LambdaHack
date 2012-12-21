@@ -7,8 +7,8 @@ module Game.LambdaHack.TypeAction
   ) where
 
 import Control.Monad.Reader.Class
-import qualified Control.Monad.State as St
 import qualified Data.Text as T
+import qualified Control.Monad.State as St
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Action.Frontend
