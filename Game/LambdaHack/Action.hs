@@ -6,7 +6,7 @@
 module Game.LambdaHack.Action
   ( -- * Action monads
     MonadState(put), modify, MonadStateGet(..)
-  , MonadActionRO, MonadAction
+  , MonadActionPure, MonadActionRO, MonadAction
     -- * The Perception Reader
   , withPerception, askPerception
     -- * Accessors to the game session Reader
@@ -73,7 +73,7 @@ import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert
 
 -- | Update the cached perception for the given computation.
-withPerception :: MonadActionRO m => m () -> m ()
+withPerception :: MonadActionPure m => m () -> m ()
 withPerception m = do
   cops <- askCOps
   s <- get
@@ -81,7 +81,7 @@ withPerception m = do
   local (const per) m
 
 -- | Get the current perception.
-askPerception :: MonadActionRO m => m Perception
+askPerception :: MonadActionPure m => m Perception
 askPerception = do
   lid <- gets slid
   pers <- ask
@@ -89,26 +89,26 @@ askPerception = do
 
 -- | Reset the state and resume from the last backup point, i.e., invoke
 -- the failure continuation.
-abort :: MonadActionRO m => m a
+abort :: MonadActionPure m => m a
 abort = abortWith ""
 
 -- | Abort and print the given msg if the condition is true.
-abortIfWith :: MonadActionRO m => Bool -> Msg -> m a
+abortIfWith :: MonadActionPure m => Bool -> Msg -> m a
 abortIfWith True msg = abortWith msg
 abortIfWith False _  = abortWith ""
 
 -- | Abort and conditionally print the fixed message.
-neverMind :: MonadActionRO m => Bool -> m a
+neverMind :: MonadActionPure m => Bool -> m a
 neverMind b = abortIfWith b "never mind"
 
 -- | Take a handler and a computation. If the computation fails, the
 -- handler is invoked and then the computation is retried.
-tryRepeatedlyWith :: MonadActionRO m => (Msg -> m ()) -> m () -> m ()
+tryRepeatedlyWith :: MonadActionPure m => (Msg -> m ()) -> m () -> m ()
 tryRepeatedlyWith exc m =
   tryWith (\msg -> exc msg >> tryRepeatedlyWith exc m) m
 
 -- | Try the given computation and silently catch failure.
-tryIgnore :: MonadActionRO m => m () -> m ()
+tryIgnore :: MonadActionPure m => m () -> m ()
 tryIgnore =
   tryWith (\msg -> if T.null msg
                    then return ()
@@ -266,7 +266,7 @@ displayFramePush mframe = do
 -- | Draw the current level. The prompt is displayed, but not added
 -- to history. The prompt is appended to the current message
 -- and only the first screenful of the resulting overlay is displayed.
-drawPrompt :: MonadActionRO m => ColorMode -> Msg -> m SingleFrame
+drawPrompt :: MonadActionPure m => ColorMode -> Msg -> m SingleFrame
 drawPrompt dm prompt = do
   cops <- askCOps
   per <- askPerception
@@ -279,7 +279,7 @@ drawPrompt dm prompt = do
 -- but not added to history. The prompt is appended to the current message
 -- and only the first line of the result is displayed.
 -- The overlay starts on the second line.
-drawOverlay :: MonadActionRO m => ColorMode -> Msg -> Overlay -> m SingleFrame
+drawOverlay :: MonadActionPure m => ColorMode -> Msg -> Overlay -> m SingleFrame
 drawOverlay dm prompt overlay = do
   cops <- askCOps
   per <- askPerception

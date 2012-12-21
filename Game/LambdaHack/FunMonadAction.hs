@@ -1,13 +1,13 @@
 {-# OPTIONS -fno-warn-orphans #-}
 {-# LANGUAGE FlexibleContexts, FlexibleInstances, FunctionalDependencies,
-             MultiParamTypeClasses, FunctionalDependencies #-}
+             MultiParamTypeClasses #-}
 -- | Basic types and classes for game action. Exposed to let library users
 -- define their own variants of the main action type @Action@.
 -- This module should not be imported anywhere except in MonadAction
 -- and TypeAction.
 module Game.LambdaHack.FunMonadAction
-  ( Session(..), FunActionRO, FunAction
-  , MonadStateGet(..), MonadActionRO(..), MonadAction(..)
+  ( Session(..), FunActionPure, FunAction
+  , MonadStateGet(..), MonadActionPure(..), MonadActionRO(..), MonadAction(..)
   ) where
 
 import Control.Monad.Reader.Class
@@ -44,7 +44,7 @@ type FunAction a =
    -> IO ()
 
 -- | The type of the function inside any read-only action.
-type FunActionRO a =
+type FunActionPure a =
    Session                            -- ^ client session setup data
    -> Pers                            -- ^ cached perception
    -> (a -> IO ())                    -- ^ continuation
@@ -54,26 +54,36 @@ type FunActionRO a =
    -> IO ()
 
 class (Monad m, Functor m, MonadReader Pers m, Show (m ()))
-      => MonadActionRO m where
-  fun2actionRO :: FunActionRO a -> m a
+      => MonadActionPure m where
+  fun2actionPure :: FunActionPure a -> m a
   -- Set the current exception handler. First argument is the handler,
   -- second is the computation the handler scopes over.
   tryWith :: (Msg -> m a) -> m a -> m a
-  -- We do not provide a MonadIO instance, so that outside of Action/
-  -- nobody can subvert the action monads by invoking arbitrary IO.
-  liftIO :: IO a -> m a
-  liftIO x = fun2actionRO (\_c _p k _a _s _d -> x >>= k)
 
 class Monad m => MonadStateGet s m | m -> s where
   get :: m s
   gets :: (s -> a) -> m a
 
-instance MonadActionRO m => MonadStateGet State m where
-  get = fun2actionRO (\_c _p k _a s _d -> k s)
+instance MonadActionPure m => MonadStateGet State m where
+  get = fun2actionPure (\_c _p k _a s _d -> k s)
   gets = (`fmap` get)
 
+instance MonadActionPure m => MonadActionPure (WriterT Frames m) where
+  fun2actionPure = lift . fun2actionPure
+  tryWith exc m =
+    WriterT $ tryWith (\msg -> runWriterT (exc msg)) (runWriterT m)
+
+instance MonadActionPure m => Show (WriterT Frames m a) where
+  show _ = "an action"
+
+class MonadActionPure m => MonadActionRO m where
+  -- We do not provide a MonadIO instance, so that outside of Action/
+  -- nobody can subvert the action monads by invoking arbitrary IO.
+  liftIO :: IO a -> m a
+  liftIO x = fun2actionPure (\_c _p k _a _s _d -> x >>= k)
+
 -- The following triggers a GHC limitation (Overlapping instances for Show):
--- instance MonadActionRO m => Show (m a) where
+-- instance MonadActionPure m => Show (m a) where
 --   show _ = "an action"
 -- TODO: try again, but not sooner than in a few years, so that users
 -- with old compilers don't have compilation problems. The same with
@@ -81,13 +91,8 @@ instance MonadActionRO m => MonadStateGet State m where
 --  get    = get
 --  put ns = fun2action (\_c _p k _a _s d -> k ns d ())
 -- and with MonadReader Pers m
-instance MonadActionRO m => Show (WriterT Frames m a) where
-  show _ = "an action"
 
 instance MonadActionRO m => MonadActionRO (WriterT Frames m) where
-  fun2actionRO = lift . fun2actionRO
-  tryWith exc m =
-    WriterT $ tryWith (\msg -> runWriterT (exc msg)) (runWriterT m)
 
 class (MonadActionRO m, St.MonadState State m) => MonadAction m where
   fun2action :: FunAction a -> m a

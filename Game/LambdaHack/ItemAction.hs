@@ -57,7 +57,8 @@ inventory = do
 -- | Let the player choose any item with a given group name.
 -- Note that this does not guarantee the chosen item belongs to the group,
 -- as the player can override the choice.
-getGroupItem :: MonadActionRO m => [Item]   -- ^ all objects in question
+getGroupItem :: MonadActionRO m
+             => [Item]   -- ^ all objects in question
              -> MU.Part  -- ^ name of the group
              -> [Char]   -- ^ accepted item symbols
              -> Text     -- ^ prompt
@@ -336,7 +337,7 @@ acceptCurrent h = do
     else h  -- nothing to accept right now, treat this as a command invocation
 
 -- | Clear current messages, show the next screen if any.
-clearCurrent :: MonadActionRO m => m ()
+clearCurrent :: MonadActionPure m => m ()
 clearCurrent = return ()
 
 -- | Drop a single item.
@@ -452,7 +453,8 @@ allObjectsName :: Text
 allObjectsName = "Objects"
 
 -- | Let the player choose any item from a list of items.
-getAnyItem :: MonadActionRO m => Text    -- ^ prompt
+getAnyItem :: MonadActionRO m
+           => Text    -- ^ prompt
            -> [Item]  -- ^ all items in question
            -> Text    -- ^ how to refer to the collection of items
            -> m Item
@@ -462,7 +464,8 @@ data ItemDialogState = INone | ISuitable | IAll deriving Eq
 
 -- | Let the player choose a single, preferably suitable,
 -- item from a list of items.
-getItem :: MonadActionRO m => Text            -- ^ prompt message
+getItem :: MonadActionRO m
+        => Text            -- ^ prompt message
         -> (Item -> Bool)  -- ^ which items to consider suitable
         -> Text            -- ^ how to describe suitable items
         -> [Item]          -- ^ all items in question

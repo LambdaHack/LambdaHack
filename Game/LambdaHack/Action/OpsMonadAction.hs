@@ -7,7 +7,7 @@
 -- further.
 module Game.LambdaHack.Action.OpsMonadAction
   ( -- * Types and type classes to do with actions
-    MonadStateGet(..), MonadActionRO(liftIO), MonadAction
+    MonadStateGet(..), MonadActionPure, MonadActionRO(liftIO), MonadAction
     -- * Accessors to the game session Reader
   , askFrontendSession, askCOps, askBinding, askConfigUI
     -- * Abort exception and its handler
@@ -25,28 +25,28 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 
 -- | Get the frontend session.
-askFrontendSession :: MonadActionRO m => m FrontendSession
-askFrontendSession = fun2actionRO (\Session{sfs} _p k _a _s _d -> k sfs)
+askFrontendSession :: MonadActionPure m => m FrontendSession
+askFrontendSession = fun2actionPure (\Session{sfs} _p k _a _s _d -> k sfs)
 
 -- | Get the content operations.
-askCOps :: MonadActionRO m => m Kind.COps
-askCOps = fun2actionRO (\Session{scops} _p k _a _s _d -> k scops)
+askCOps :: MonadActionPure m => m Kind.COps
+askCOps = fun2actionPure (\Session{scops} _p k _a _s _d -> k scops)
 
 -- | Get the key binding.
-askBinding :: MonadActionRO m => m Binding
-askBinding = fun2actionRO (\Session{sbinding} _p k _a _s _d -> k sbinding)
+askBinding :: MonadActionPure m => m Binding
+askBinding = fun2actionPure (\Session{sbinding} _p k _a _s _d -> k sbinding)
 
 -- | Get the config from the config file.
-askConfigUI :: MonadActionRO m => m ConfigUI
-askConfigUI = fun2actionRO (\Session{sconfigUI} _p k _a _s _d -> k sconfigUI)
+askConfigUI :: MonadActionPure m => m ConfigUI
+askConfigUI = fun2actionPure (\Session{sconfigUI} _p k _a _s _d -> k sconfigUI)
 
 -- | Abort with the given message.
-abortWith :: MonadActionRO m => Msg -> m a
-abortWith msg = fun2actionRO (\_c _p _k a _s _d -> a msg)
+abortWith :: MonadActionPure m => Msg -> m a
+abortWith msg = fun2actionPure (\_c _p _k a _s _d -> a msg)
 
 -- | Get the current diary.
-getDiary :: MonadActionRO m => m Diary
-getDiary = fun2actionRO (\_c _p k _a _s d -> k d)
+getDiary :: MonadActionPure m => m Diary
+getDiary = fun2actionPure (\_c _p k _a _s d -> k d)
 
 -- | Add a message to the current report.
 msgAdd :: MonadAction m => Msg -> m ()

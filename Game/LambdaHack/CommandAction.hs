@@ -99,7 +99,7 @@ cmdSemantics s per cmd =
 
 -- | If in targeting mode, check if the current level is the same
 -- as player level and refuse performing the action otherwise.
-checkCursor :: MonadActionRO m => WriterT Frames m () -> WriterT Frames m ()
+checkCursor :: MonadActionPure m => WriterT Frames m () -> WriterT Frames m ()
 checkCursor h = do
   cursor <- gets scursor
   slid <- gets slid

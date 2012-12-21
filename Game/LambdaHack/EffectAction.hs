@@ -261,7 +261,7 @@ eff Effect.Descend _ source target power = do
     then (True, "")
     else (True, actorVerb coactor tm "find a way downstairs")
 
-nullEffect :: MonadActionRO m => m (Bool, Text)
+nullEffect :: MonadActionPure m => m (Bool, Text)
 nullEffect = return (False, "Nothing happens.")
 
 -- TODO: refactor with actorAttackActor.
@@ -460,7 +460,7 @@ selectHero k = do
 
 -- TODO: center screen, flash the background, etc. Perhaps wait for SPACE.
 -- | Focus on the hero being wounded/displaced/etc.
-focusIfOurs :: MonadActionRO m => ActorId -> m Bool
+focusIfOurs :: MonadActionPure m => ActorId -> m Bool
 focusIfOurs target = do
   s  <- get
   pl <- gets splayer
@@ -579,7 +579,7 @@ gameOver showEndingScreens = do
           modify (\ st -> st {squit = Just (True, Killed slid)})
 
 -- | Create a list of item names, split into many overlays.
-itemOverlay :: MonadActionRO m => Bool -> Bool -> [Item] -> m [Overlay]
+itemOverlay :: MonadActionPure m => Bool -> Bool -> [Item] -> m [Overlay]
 itemOverlay sorted cheat is = do
   Kind.COps{coitem} <- askCOps
   s <- get

@@ -7,8 +7,8 @@ module Game.LambdaHack.TypeAction
   ) where
 
 import Control.Monad.Reader.Class
-import qualified Data.Text as T
 import qualified Control.Monad.State as St
+import qualified Data.Text as T
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Action.Frontend
@@ -42,12 +42,14 @@ instance Monad Action where
 instance Show (Action a) where
   show _ = "an action"
 
-instance MonadActionRO Action where
-  fun2actionRO f = Action (\c p k a s d -> f c p (k s d) a s d)
+instance MonadActionPure Action where
+  fun2actionPure f = Action (\c p k a s d -> f c p (k s d) a s d)
   tryWith exc m =
     Action (\c p k a s d ->
              let runA msg = runAction (exc msg) c p k a s d
              in runAction m c p k runA s d)
+
+instance MonadActionRO Action where
 
 instance MonadAction Action where
   fun2action = Action
@@ -61,7 +63,7 @@ instance St.MonadState State Action where
   put ns = fun2action (\_c _p k _a _s d -> k ns d ())
 
 instance MonadReader Pers Action where
-  ask = fun2actionRO (\_c p k _a _s _d -> k p)
+  ask = fun2actionPure (\_c p k _a _s _d -> k p)
   local f m = fun2action (\c p k a s d -> runAction m c (f p) k a s d)
 
 -- | Run an action, with a given session, state and diary, in the @IO@ monad.
