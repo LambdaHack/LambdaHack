@@ -5,8 +5,8 @@
 -- and @MonadAction@.
 module Game.LambdaHack.Action
   ( -- * Action monads
-    MonadActionPure(getServer, getsServer)
-  , MonadActionRO
+    MonadActionPure(getServer, getsServer, getClient, getsClient)
+  , MonadActionRO(putClient, modifyClient)
   , MonadAction(putServer, modifyServer)
     -- * The Perception Reader
   , withPerception, askPerception
@@ -50,8 +50,13 @@ import System.Time
 
 import qualified Game.LambdaHack.Action.ConfigIO as ConfigIO
 import Game.LambdaHack.Action.Frontend
+import Game.LambdaHack.FunMonadAction
+  ( MonadActionPure( tryWith, abortWith, getsSession
+                   , getServer, getsServer, getClient, getsClient )
+  , MonadActionRO(liftIO, putClient, modifyClient)
+  , MonadAction(putServer, modifyServer)
+  , Session (..))
 import Game.LambdaHack.Action.HighScore (register)
-import Game.LambdaHack.Action.OpsMonadAction
 import qualified Game.LambdaHack.Action.Save as Save
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
@@ -71,6 +76,38 @@ import Game.LambdaHack.Point
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert
+
+-- | Get the frontend session.
+askFrontendSession :: MonadActionPure m => m FrontendSession
+askFrontendSession = getsSession sfs
+
+-- | Get the content operations.
+askCOps :: MonadActionPure m => m Kind.COps
+askCOps = getsSession scops
+
+-- | Get the key binding.
+askBinding :: MonadActionPure m => m Binding
+askBinding = getsSession sbinding
+
+-- | Get the config from the config file.
+askConfigUI :: MonadActionPure m => m ConfigUI
+askConfigUI = getsSession sconfigUI
+
+-- | Get the current diary.
+getDiary :: MonadActionPure m => m Diary
+getDiary = getClient
+
+-- | Add a message to the current report.
+msgAdd :: MonadAction m => Msg -> m ()
+msgAdd msg = modifyClient $ \d -> d {sreport = addMsg (sreport d) msg}
+
+-- | Wipe out and set a new value for the history.
+historyReset :: MonadAction m => History -> m ()
+historyReset shistory = modifyClient $ \Diary{sreport} -> Diary{..}
+
+-- | Wipe out and set a new value for the current report.
+msgReset :: MonadAction m => Msg -> m ()
+msgReset msg = modifyClient $ \d -> d {sreport = singletonReport msg}
 
 -- | Update the cached perception for the given computation.
 withPerception :: MonadActionPure m => m () -> m ()

@@ -77,7 +77,6 @@ library
                       Game.LambdaHack.Action.Frontend,
                       Game.LambdaHack.Action.Frontend.Chosen,
                       Game.LambdaHack.Action.HighScore,
-                      Game.LambdaHack.Action.OpsMonadAction,
                       Game.LambdaHack.Action.Save,
                       Game.LambdaHack.Actions,
                       Game.LambdaHack.Actor,

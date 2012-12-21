@@ -49,6 +49,7 @@ instance MonadActionPure Action where
              in runAction m c p k runA s d)
 
 instance MonadActionRO Action where
+  fun2actionRO f = Action (\c p k a s d -> f c p (k s) a s d)
 
 instance MonadAction Action where
   fun2action = Action
