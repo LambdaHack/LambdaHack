@@ -55,7 +55,7 @@ import Game.LambdaHack.Vector
 
 default (Text)
 
-gameSave :: MonadAction m => m ()
+gameSave :: MonadActionRO m => m ()
 gameSave = do
   saveGameBkp
   msgAdd "Game progress saved to a backup file."

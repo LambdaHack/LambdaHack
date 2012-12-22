@@ -301,7 +301,7 @@ endTargeting accept = do
     then endTargetingMsg
     else msgAdd "targeting canceled"
 
-endTargetingMsg :: MonadAction m => m ()
+endTargetingMsg :: MonadActionRO m => m ()
 endTargetingMsg = do
   Kind.COps{coactor} <- askCOps
   pbody  <- getsServer getPlayerBody

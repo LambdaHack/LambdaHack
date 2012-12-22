@@ -98,15 +98,15 @@ getDiary :: MonadActionPure m => m Diary
 getDiary = getClient
 
 -- | Add a message to the current report.
-msgAdd :: MonadAction m => Msg -> m ()
+msgAdd :: MonadActionRO m => Msg -> m ()
 msgAdd msg = modifyClient $ \d -> d {sreport = addMsg (sreport d) msg}
 
 -- | Wipe out and set a new value for the history.
-historyReset :: MonadAction m => History -> m ()
+historyReset :: MonadActionRO m => History -> m ()
 historyReset shistory = modifyClient $ \Diary{sreport} -> Diary{..}
 
 -- | Wipe out and set a new value for the current report.
-msgReset :: MonadAction m => Msg -> m ()
+msgReset :: MonadActionRO m => Msg -> m ()
 msgReset msg = modifyClient $ \d -> d {sreport = singletonReport msg}
 
 -- | Update the cached perception for the given computation.
@@ -153,7 +153,7 @@ tryIgnore =
 
 -- | Set the current exception handler. Apart of executing it,
 -- draw and pass along a frame with the abort message, if any.
-tryWithFrame :: MonadAction m
+tryWithFrame :: MonadActionRO m
              => m a -> WriterT Frames m a -> WriterT Frames m a
 tryWithFrame exc h =
   let msgToFrames ""  = return ()
@@ -167,7 +167,7 @@ tryWithFrame exc h =
   in tryWith excMsg h
 
 -- | Store current report in the history and reset report.
-recordHistory :: MonadAction m => m ()
+recordHistory :: MonadActionRO m => m ()
 recordHistory = do
   Diary{sreport, shistory} <- getDiary
   unless (nullReport sreport) $ do
