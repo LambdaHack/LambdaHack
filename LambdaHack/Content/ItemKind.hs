@@ -2,12 +2,12 @@
 -- | Weapons and treasure for LambdaHack.
 module Content.ItemKind ( cdefs ) where
 
-import Game.LambdaHack.Color
 import Game.LambdaHack.CDefs
+import Game.LambdaHack.Color
+import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Effect
 import Game.LambdaHack.Flavour
 import Game.LambdaHack.Random
-import Game.LambdaHack.Content.ItemKind
 
 cdefs :: CDefs ItemKind
 cdefs = CDefs
@@ -16,11 +16,11 @@ cdefs = CDefs
   , getFreq = ifreq
   , validate = ivalidate
   , content =
-      [amulet, dart, gem1, gem2, gem3, currency, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand, fist, foot, tentacle, weight]
+      [amulet, dart, gem1, gem2, gem3, currency, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand1, wand2, fist, foot, tentacle, weight]
   }
-amulet,        dart, gem1, gem2, gem3, currency, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand, fist, foot, tentacle, weight :: ItemKind
+amulet,        dart, gem1, gem2, gem3, currency, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand1, wand2, fist, foot, tentacle, weight :: ItemKind
 
-gem, potion, scroll :: ItemKind  -- generic templates
+gem, potion, scroll, wand :: ItemKind  -- generic templates
 
 -- rollDeep (aDb, xDy) = rollDice aDb + lvl * rollDice xDy / depth
 
@@ -176,14 +176,22 @@ wand = ItemKind
   { isymbol  = '/'
   , iname    = "wand"
   , ifreq    = [("dng", 15)]
-  , iflavour = zipFancy [BrRed]
-  , ieffect  = Dominate
+  , iflavour = zipFancy brightCol
+  , ieffect  = NoEffect
   , icount   = intToDeep 1
   , ipower   = intToDeep 0
   , iverbApply   = "snap"
   , iverbProject = "zap"
   , iweight  = 300
   , itoThrow = 25  -- magic
+  }
+wand1 = wand
+  { ieffect  = Dominate
+  }
+wand2 = wand
+  { ifreq    = [("dng", 3)]
+  , ieffect  = Wound (RollDice 0 0)
+  , ipower   = intToDeep 25
   }
 fist = sword
   { isymbol  = '@'

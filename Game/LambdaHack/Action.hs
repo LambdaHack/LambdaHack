@@ -485,7 +485,8 @@ gameReset configUI cops@Kind.COps{ coitem=coitem@Kind.Ops{okind}
   let rnd = do
         sflavour <- dungeonFlavourMap coitem
         (discoS, discoRev) <- serverDiscos coitem
-        let f ik = length (iflavour (okind ik)) == 1
+        let f ik = isymbol (okind ik)
+                   `notElem` (ritemProject $ Kind.stdRuleset corule)
             disco = M.filter f discoS
         DungeonState.FreshDungeon{..} <-
           DungeonState.generate cops sflavour discoRev sconfig
