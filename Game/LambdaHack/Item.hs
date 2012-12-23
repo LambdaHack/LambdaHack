@@ -19,7 +19,7 @@ module Game.LambdaHack.Item
     -- * The @FlavourMap@ type
   , FlavourMap, dungeonFlavourMap
     -- * Textual description
-  , partItem, partItemNWs
+  , partItem, partItemNWs, partItemAW
   ) where
 
 import Control.Monad
@@ -328,21 +328,26 @@ strongestRegen Kind.Ops{okind} disco bitems =
       Just ik -> ieffect (okind ik) == Regeneration
 
 -- | The part of speech describing the item.
-partItem :: Kind.Ops ItemKind -> Discoveries -> Item -> MU.Part
+partItem :: Kind.Ops ItemKind -> Discoveries -> Item -> (MU.Part, MU.Part)
 partItem Kind.Ops{okind} disco i =
   let genericName = jname i
       flav = flavourToName $ jflavour i
   in case jkind disco i of
-    Nothing -> MU.Text $ flav <+> genericName
+    Nothing -> (MU.Text $ flav <+> genericName, "")
     Just ik ->
       let kind = okind ik
           eff = effectToSuffix (ieffect kind)
           pwr = if jpower i == 0
                 then ""
                 else "(+" <> showT (jpower i) <> ")"
-      in MU.Text $ genericName <+> eff <+> pwr
+      in (MU.Text genericName, MU.Text $ eff <+> pwr)
 
-partItemNWs :: Kind.Ops ItemKind -> Discoveries -> Item
-            -> MU.Part
+partItemNWs :: Kind.Ops ItemKind -> Discoveries -> Item -> MU.Part
 partItemNWs coitem disco i =
-  MU.NWs (jcount i) $ partItem coitem disco i
+  let (name, stats) = partItem coitem disco i
+  in MU.Phrase [MU.NWs (jcount i) name, stats]
+
+partItemAW :: Kind.Ops ItemKind -> Discoveries -> Item -> MU.Part
+partItemAW coitem disco i =
+  let (name, stats) = partItem coitem disco i
+  in MU.AW $ MU.Phrase [name, stats]

@@ -424,10 +424,11 @@ discover i = do
   unless (ix `M.member` oldDisco) $ do
     modifyServer (updateDiscoveries (M.insert ix ik))
     disco <- getsServer sdisco
-    let msg = makeSentence
-          [ "the", MU.SubjectVerbSg (partItem coitem oldDisco i)
+    let (object1, object2) = partItem coitem oldDisco i
+        msg = makeSentence
+          [ "the", MU.SubjectVerbSg (MU.Phrase [object1, object2])
                                     "turn out to be"
-          , MU.AW $ partItem coitem disco i ]
+          , partItemAW coitem disco i ]
     msgAdd msg
 
 -- | Make the actor controlled by the player. Switch level, if needed.
@@ -592,7 +593,7 @@ itemOverlay disco sorted is = do
   let items | sorted = L.sortBy (cmpLetterMaybe `on` jletter) is
             | otherwise = is
       pr i = makePhrase [ letterLabel (jletter i)
-                        , MU.NWs (jcount i) $ partItem coitem disco i ]
+                        , partItemNWs coitem disco i ]
              <> " "
   return $ splitOverlay lysize $ L.map pr items
 

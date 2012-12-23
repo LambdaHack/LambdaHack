@@ -412,7 +412,7 @@ actorAttackActor source target = do
             [ MU.SubjectVerbSg (partActor coactor sm) verb
             , partActor coactor tm ]
             ++ if say
-               then ["with", MU.AW $ partItem coitem disco stack]
+               then ["with", partItemAW coitem disco stack]
                else []
           msgMiss = makeSentence
             [ MU.SubjectVerbSg (partActor coactor sm) "try to"
