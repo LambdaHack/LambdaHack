@@ -11,15 +11,13 @@ module Game.LambdaHack.State
   , updateCursor, updateTime, updateDiscoveries, updateLevel, updateDungeon
     -- * Player diary
   , Diary(..), defaultDiary
-    -- * Textia; descriptions
-  , lookAt, partItemCheat, partItem, partItemNWs
+    -- * Textual description
+  , lookAt
     -- * Debug flags
   , DebugMode(..), cycleMarkVision, toggleOmniscient
   ) where
 
 import Data.Binary
-import qualified Data.List as L
-import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
@@ -29,10 +27,7 @@ import System.Time
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.FactionKind
-import Game.LambdaHack.Content.ItemKind
 import qualified Game.LambdaHack.Dungeon as Dungeon
-import Game.LambdaHack.Effect
-import Game.LambdaHack.Flavour
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
@@ -62,6 +57,8 @@ data State = State
   , scursor   :: !Cursor        -- ^ cursor location and level to return to
   , sflavour  :: !FlavourMap    -- ^ association of flavour to items
   , sdisco    :: !Discoveries   -- ^ items (kinds) that have been discovered
+  , sdiscoS   :: !Discoveries   -- ^ all item kinds, as known by the server
+  , sdiscoRev :: !DiscoRev   -- ^ reverse map, used for item creation
   , sdungeon  :: !Dungeon.Dungeon  -- ^ all dungeon levels
   , slid      :: !Dungeon.LevelId  -- ^ identifier of the current level
   , scounter  :: !Int           -- ^ stores next actor index
@@ -124,23 +121,20 @@ defaultDiary = do
     }
 
 -- | Initial game state.
-defaultState :: Config -> Kind.Id FactionKind -> FlavourMap
-             -> Dungeon.Dungeon -> Dungeon.LevelId -> Point -> R.StdGen
-             -> State
-defaultState config sfaction flavour dng lid ploc g =
+defaultState :: FlavourMap -> Discoveries -> Discoveries -> DiscoRev
+             -> Dungeon.Dungeon -> Dungeon.LevelId -> R.StdGen
+             -> Config -> Kind.Id FactionKind -> Point -> State
+defaultState sflavour sdisco sdiscoS sdiscoRev
+             sdungeon slid srandom
+             sconfig sfaction ploc =
   State
-    0  -- hack: the hero is not yet alive
-    (Cursor TgtOff lid ploc lid 0)
-    flavour
-    S.empty
-    dng
-    lid
-    0
-    g
-    config
-    Nothing
-    sfaction
-    defaultDebugMode
+    { splayer  = 0 -- hack: the hero is not yet alive
+    , scursor  = (Cursor TgtOff slid ploc slid 0)
+    , scounter = 0
+    , squit    = Nothing
+    , sdebug   = defaultDebugMode
+    , ..
+    }
 
 defaultDebugMode :: DebugMode
 defaultDebugMode = DebugMode
@@ -191,32 +185,36 @@ instance Binary Diary where
     return Diary{..}
 
 instance Binary State where
-  put (State player cursor flav disco dng lid ct
-             g config _ sfaction _) = do
-    put player
-    put cursor
-    put flav
-    put disco
-    put dng
-    put lid
-    put ct
-    put (show g)
-    put config
+  put State{..} = do
+    put splayer
+    put scursor
+    put sflavour
+    put sdisco
+    put sdiscoS
+    put sdiscoRev
+    put sdungeon
+    put slid
+    put scounter
+    put (show srandom)
+    put sconfig
     put sfaction
   get = do
-    player <- get
-    cursor <- get
-    flav   <- get
-    disco  <- get
-    dng    <- get
-    lid    <- get
-    ct     <- get
-    g      <- get
-    config   <- get
+    splayer <- get
+    scursor <- get
+    sflavour <- get
+    sdisco <- get
+    sdiscoS <- get
+    sdiscoRev <- get
+    sdungeon <- get
+    slid <- get
+    scounter <- get
+    g <- get
+    sconfig <- get
     sfaction <- get
-    return
-      (State player cursor flav disco dng lid ct (read g) config
-             Nothing sfaction defaultDebugMode)
+    let squit = Nothing
+        sdebug = defaultDebugMode
+        srandom = read g
+    return State{..}
 
 instance Binary TgtMode where
   put TgtOff      = putWord8 0
@@ -259,37 +257,7 @@ instance Binary Status where
       3 -> return Restart
       _ -> fail "no parse (Status)"
 
--- TODO: probably move these somewhere
-
--- | The part of speech describing the item.
--- If cheating is allowed, full identity of the item is revealed
--- together with its flavour (e.g. at the game over screen).
-partItemCheat :: Bool -> Kind.Ops ItemKind -> State -> Item -> MU.Part
-partItemCheat cheat coitem@Kind.Ops{okind} state i =
-  let ik = jkind i
-      kind = okind ik
-      identified = L.length (iflavour kind) == 1 ||
-                   ik `S.member` sdisco state
-      eff = effectToSuffix (ieffect kind)
-      pwr = if jpower i == 0
-            then ""
-            else "(+" <> showT (jpower i) <> ")"
-      genericName = iname kind
-      name = let fullName = genericName <+> eff <+> pwr
-                 flavour = getFlavour coitem (sflavour state) ik
-             in if identified
-                then fullName
-                else flavourToName flavour
-                     <+> if cheat then fullName else genericName
-  in MU.Text name
-
--- | The part of speech describing the item.
-partItem :: Kind.Ops ItemKind -> State -> Item -> MU.Part
-partItem = partItemCheat False
-
-partItemNWs :: Kind.Ops ItemKind -> State -> Item -> MU.Part
-partItemNWs coitem s i = MU.NWs (jcount i) $ partItem coitem s i
-
+-- TODO: probably move somewhere (Level?)
 -- | Produces a textual description of the terrain and items at an already
 -- explored location. Mute for unknown locations.
 -- The detailed variant is for use in the targeting mode.
@@ -309,9 +277,10 @@ lookAt Kind.COps{coitem, cotile=Kind.Ops{oname}} detailed canSee s lvl loc msg
  where
   is  = lvl `rememberAtI` loc
   prefixSee = MU.Text $ if canSee then "you see" else "you remember"
+  nWs = partItemNWs coitem (sdisco s)
   isd = case is of
           [] -> ""
           _ | length is <= 3 ->
-            makeSentence [prefixSee, MU.WWandW $ map (partItemNWs coitem s) is]
+            makeSentence [prefixSee, MU.WWandW $ map nWs is]
           _ | detailed -> "Objects:"
           _ -> "Objects here."

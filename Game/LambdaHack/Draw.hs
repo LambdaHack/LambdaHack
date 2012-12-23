@@ -15,7 +15,8 @@ import qualified Data.Text as T
 
 import Game.LambdaHack.Actor as Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Animation (Animation, SingleFrame (..), Frames, rederAnim)
+import Game.LambdaHack.Animation (Animation, Frames, SingleFrame (..),
+                                  rederAnim)
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
@@ -47,10 +48,10 @@ data ColorMode =
 draw :: ColorMode -> Kind.COps -> Perception -> State -> Overlay
      -> SingleFrame
 draw dm cops per s@State{ scursor=Cursor{..}
-                        , sflavour, slid, splayer, sdebug
+                        , sdisco, slid, splayer, sdebug
                         } overlay =
   let Kind.COps{ coactor=Kind.Ops{okind}
-               , coitem=coitem@Kind.Ops{okind=iokind}
+               , coitem=Kind.Ops{okind=iokind}
                , cotile=Kind.Ops{okind=tokind, ouniqGroup} } = cops
       DebugMode{smarkVision, somniscient} = sdebug
       lvl@Level{lxsize, lysize, lsmell, ldesc, lactor, ltime, lclear, lseen} =
@@ -74,11 +75,16 @@ draw dm cops per s@State{ scursor=Cursor{..}
                                       then Color.Magenta
                                       else Color.defBG
                else \ _vis _rea -> Color.defBG
-      (_, wealth)  = calculateTotal coitem s
+      (_, wealth)  = calculateTotal s
       damage  = case Item.strongestSword cops bitems of
-                  Just sw -> case ieffect $ iokind $ Item.jkind sw of
-                    Wound dice -> showT dice <> "+" <> showT (Item.jpower sw)
-                    _ -> showT (Item.jpower sw)
+                  Just sw ->
+                    case Item.jkind sdisco sw of
+                      Just swk ->
+                        case ieffect $ iokind swk of
+                          Wound dice ->
+                            showT dice <> "+" <> showT (Item.jpower sw)
+                          _ -> showT (Item.jpower sw)
+                      Nothing -> "3d1"  -- TODO: ?
                   Nothing -> "3d1"  -- TODO; use the item 'fist'
       bl = fromMaybe [] $ bla lxsize lysize ceps bloc clocation
       dis pxy =
@@ -123,7 +129,7 @@ draw dm cops per s@State{ scursor=Cursor{..}
                   | otherwise ->
                   case items of
                     [] -> (tsymbol tk, if vis then tcolor tk else tcolor2 tk)
-                    i : _ -> Item.viewItem coitem (Item.jkind i) sflavour
+                    i : _ -> Item.viewItem i
             vis = IS.member loc0 visible
             rea = IS.member loc0 reachable
             bg0 = if ctargeting /= TgtOff && loc0 == clocation

@@ -8,35 +8,35 @@ module Game.LambdaHack.DungeonState
   , whereTo
   ) where
 
-import qualified System.Random as R
-import qualified Data.List as L
-import qualified Control.Monad.State as St
-import qualified Data.Map as M
-import qualified Data.IntMap as IM
-import Data.Maybe
 import Control.Monad
+import qualified Control.Monad.State as St
+import qualified Data.IntMap as IM
+import qualified Data.List as L
+import qualified Data.Map as M
+import Data.Maybe
 import Data.Text (Text)
+import qualified System.Random as R
 
-import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Point
-import Game.LambdaHack.Level
-import qualified Game.LambdaHack.Dungeon as Dungeon
-import Game.LambdaHack.Random
-import Game.LambdaHack.Config
-import Game.LambdaHack.State
-import qualified Game.LambdaHack.Feature as F
-import qualified Game.LambdaHack.Tile as Tile
-import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Cave hiding (TileMapXY)
-import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Item
-import Game.LambdaHack.PointXY
-import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.Place
-import qualified Game.LambdaHack.Effect as Effect
+import Game.LambdaHack.Config
+import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.ItemKind
-import Game.LambdaHack.Time
+import Game.LambdaHack.Content.TileKind
+import qualified Game.LambdaHack.Dungeon as Dungeon
+import qualified Game.LambdaHack.Effect as Effect
+import qualified Game.LambdaHack.Feature as F
+import Game.LambdaHack.Item
+import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
+import Game.LambdaHack.Place
+import Game.LambdaHack.Point
+import Game.LambdaHack.PointXY
+import Game.LambdaHack.Random
+import Game.LambdaHack.State
+import qualified Game.LambdaHack.Tile as Tile
+import Game.LambdaHack.Time
+import Game.LambdaHack.Utils.Assert
 
 convertTileMaps :: Rnd (Kind.Id TileKind) -> Int -> Int -> TileMapXY
                 -> Rnd TileMap
@@ -55,14 +55,14 @@ mapToIMap :: X -> M.Map PointXY a -> IM.IntMap a
 mapToIMap cxsize m =
   IM.fromList $ map (\ (xy, a) -> (toPoint cxsize xy, a)) (M.assocs m)
 
-rollItems :: Kind.COps -> Int -> Int -> CaveKind -> TileMap -> Point
+rollItems :: Kind.COps -> FlavourMap -> DiscoRev -> Int -> Int
+          -> CaveKind -> TileMap -> Point
           -> Rnd [(Point, Item)]
-rollItems Kind.COps{cotile, coitem=coitem@Kind.Ops{okind}}
+rollItems Kind.COps{cotile, coitem=coitem} flavour discoRev
           ln depth CaveKind{cxsize, citemNum, cminStairDist} lmap ploc = do
   nri <- rollDice citemNum
   replicateM nri $ do
-    item <- newItem coitem ln depth
-    let ik = okind (jkind item)
+    (item, ik) <- newItem coitem flavour discoRev ln depth
     l <- case ieffect ik of
            Effect.Wound dice | maxDice dice > 0  -- a weapon
                                && maxDice dice + maxDeep (ipower ik) > 3 ->
@@ -94,10 +94,11 @@ placeStairs cotile@Kind.Ops{opick} cmap CaveKind{..} dplaces = do
   return (su, upId, sd, downId)
 
 -- | Create a level from a cave, from a cave kind.
-buildLevel :: Kind.COps -> Cave -> Int -> Int -> Rnd Level
+buildLevel :: Kind.COps -> FlavourMap -> DiscoRev -> Cave -> Int -> Int
+           -> Rnd Level
 buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, ouniqGroup}
                          , cocave=Kind.Ops{okind} }
-           Cave{..} ln depth = do
+           flavour discoRev Cave{..} ln depth = do
   let kc@CaveKind{..} = okind dkind
   cmap <- convertTileMaps (opick cdefaultTile (const True)) cxsize cysize dmap
   (su, upId, sd, downId) <-
@@ -107,7 +108,7 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, ouniqGroup}
       f !n !tk | Tile.isExplorable cotile tk = n + 1
                | otherwise = n
       lclear = Kind.foldlArray f 0 lmap
-  is <- rollItems cops ln depth kc lmap su
+  is <- rollItems cops flavour discoRev ln depth kc lmap su
   -- TODO: split this into Level.defaultLevel
   let itemMap = mapToIMap cxsize ditem `IM.union` IM.fromList is
       litem = IM.map (\ i -> ([i], [])) itemMap
@@ -135,13 +136,14 @@ matchGenerator :: Kind.Ops CaveKind -> Maybe Text -> Rnd (Kind.Id CaveKind)
 matchGenerator Kind.Ops{opick} mname =
   opick (fromMaybe "dng" mname) (const True)
 
-findGenerator :: Kind.COps -> Config -> Int -> Int -> Rnd Level
-findGenerator cops Config{configCaves} k depth = do
+findGenerator :: Kind.COps -> FlavourMap -> DiscoRev -> Config -> Int -> Int
+              -> Rnd Level
+findGenerator cops flavour discoRev Config{configCaves} k depth = do
   let ln = "LambdaCave_" <> showT k
       genName = L.lookup ln configCaves
   ci <- matchGenerator (Kind.cocave cops) genName
   cave <- buildCave cops k depth ci
-  buildLevel cops cave k depth
+  buildLevel cops flavour discoRev cave k depth
 
 -- | Freshly generated and not yet populated dungeon.
 data FreshDungeon = FreshDungeon
@@ -151,12 +153,13 @@ data FreshDungeon = FreshDungeon
   }
 
 -- | Generate the dungeon for a new game.
-generate :: Kind.COps -> Config -> Rnd FreshDungeon
-generate cops config@Config{configDepth}  =
+generate :: Kind.COps -> FlavourMap -> DiscoRev -> Config -> Rnd FreshDungeon
+generate cops flavour discoRev config@Config{configDepth}  =
   let gen :: R.StdGen -> Int -> (R.StdGen, (Dungeon.LevelId, Level))
       gen g k =
         let (g1, g2) = R.split g
-            res = St.evalState (findGenerator cops config k configDepth) g1
+            res = St.evalState (findGenerator cops flavour discoRev
+                                              config k configDepth) g1
         in (g2, (Dungeon.levelDefault k, res))
       con :: R.StdGen -> (FreshDungeon, R.StdGen)
       con g = assert (configDepth >= 1 `blame` configDepth) $

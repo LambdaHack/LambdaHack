@@ -1,27 +1,25 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes, TypeFamilies #-}
+{-# LANGUAGE OverloadedStrings, RankNTypes, TypeFamilies #-}
 -- | General content types and operations.
 module Game.LambdaHack.Kind
   ( -- * General content types
-    Id, Speedup(..), Ops(..), COps(..), createOps, stdRuleset
+    Id, sentinelId, Speedup(..), Ops(..), COps(..), createOps, stdRuleset
     -- * Arrays of content identifiers
   , Array, (!), (//), listArray, array, bounds, foldlArray
   ) where
 
-import Data.Binary
-import qualified Data.List as L
-import qualified Data.IntMap as IM
-import qualified Data.Map as M
-import qualified Data.Word as Word
 import qualified Data.Array.Unboxed as A
+import Data.Binary
+import qualified Data.IntMap as IM
 import qualified Data.Ix as Ix
+import qualified Data.List as L
+import qualified Data.Map as M
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Word as Word
 import Game.LambdaHack.Msg
-import Data.Maybe (fromMaybe)
 
-import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Utils.Frequency
+import Game.LambdaHack.CDefs
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.FactionKind
@@ -30,16 +28,21 @@ import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.StrategyKind
 import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.CDefs
-import Game.LambdaHack.Random
 import Game.LambdaHack.Misc
+import Game.LambdaHack.Random
+import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Utils.Frequency
 
 -- | Content identifiers for the content type @c@.
-newtype Id c = Id Word8 deriving (Show, Eq, Ord, Ix.Ix)
+newtype Id c = Id Word8
+  deriving (Show, Eq, Ord, Ix.Ix)
 
 instance Binary (Id c) where
   put (Id i) = put i
   get = fmap Id get
+
+sentinelId :: Id c
+sentinelId = Id 255
 
 -- | Type family for auxiliary data structures for speeding up
 -- content operations.
@@ -52,24 +55,25 @@ data instance Speedup TileKind = TileSpeedup
 
 -- | Content operations for the content of type @a@.
 data Ops a = Ops
-  { osymbol :: Id a -> Char       -- ^ the symbol of a content element at id
-  , oname :: Id a -> Text         -- ^ the name of a content element at id
-  , okind :: Id a -> a            -- ^ the content element at given id
-  , ouniqGroup :: Text -> Id a    -- ^ the id of the unique member of
-                                  --   a singleton content group
-  , opick :: Text -> (a -> Bool) -> Rnd (Id a)
-                                  -- ^ pick a random id belonging to a group
-                                  --   and satisfying a predicate
+  { osymbol       :: Id a -> Char  -- ^ the symbol of a content element at id
+  , oname         :: Id a -> Text  -- ^ the name of a content element at id
+  , okind         :: Id a -> a     -- ^ the content element at given id
+  , ouniqGroup    :: Text -> Id a  -- ^ the id of the unique member of
+                                   --   a singleton content group
+  , opick         :: Text -> (a -> Bool) -> Rnd (Id a)
+                                   -- ^ pick a random id belonging to a group
+                                   --   and satisfying a predicate
   , ofoldrWithKey :: forall b. (Id a -> a -> b -> b) -> b -> b
-                                  -- ^ fold over all content elements of @a@
-  , obounds :: (Id a, Id a)       -- ^ bounds of identifiers of content @a@
-  , ospeedup :: Speedup a         -- ^ auxiliary speedup components
+                                   -- ^ fold over all content elements of @a@
+  , obounds       :: (Id a, Id a)  -- ^ bounds of identifiers of content @a@
+  , ospeedup      :: Speedup a     -- ^ auxiliary speedup components
   }
 
 -- | Create content operations for type @a@ from definition of content
 -- of type @a@.
 createOps :: forall a. Show a => CDefs a -> Ops a
 createOps CDefs{getSymbol, getName, getFreq, content, validate} =
+  assert (Id (fromIntegral $ length content) < sentinelId) $
   let kindAssocs :: [(Word.Word8, a)]
       kindAssocs = L.zip [0..] content
       kindMap :: IM.IntMap a
@@ -110,11 +114,7 @@ createOps CDefs{getSymbol, getName, getFreq, content, validate} =
              frequency [ i | (i, k) <- kindFreq M.! group, p k ]
              -}
        , ofoldrWithKey = \ f z -> L.foldr (\ (i, a) -> f (Id i) a) z kindAssocs
-       , obounds =
-         let limits = let (i1, a1) = IM.findMin kindMap
-                          (i2, a2) = IM.findMax kindMap
-                      in ((Id (toEnum i1), a1), (Id (toEnum i2), a2))
-         in (Id 0, (fst . snd) limits)
+       , obounds = (Id 0, Id $ toEnum $ fst $ IM.findMax kindMap)
        , ospeedup = undefined  -- define elsewhere
        }
 

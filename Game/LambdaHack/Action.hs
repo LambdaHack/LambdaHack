@@ -63,6 +63,7 @@ import Game.LambdaHack.ActorState
 import Game.LambdaHack.Animation (SingleFrame(..), Frames)
 import Game.LambdaHack.Binding
 import Game.LambdaHack.Config
+import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Draw
 import qualified Game.LambdaHack.DungeonState as DungeonState
@@ -412,10 +413,9 @@ handleScores write status total =
 endOrLoop :: MonadAction m => m () -> m ()
 endOrLoop handleTurn = do
   squit <- getsServer squit
-  Kind.COps{coitem} <- askCOps
   s <- getServer
   configUI <- askConfigUI
-  let (_, total) = calculateTotal coitem s
+  let (_, total) = calculateTotal s
   -- The first, boolean component of squit determines
   -- if ending screens should be shown, the other argument describes
   -- the cause of the disruption of game flow.
@@ -477,20 +477,27 @@ restartGame handleTurn = do
 
 -- TODO: do this inside Action ()
 gameReset :: ConfigUI -> Kind.COps -> IO State
-gameReset configUI cops@Kind.COps{ coitem
+gameReset configUI cops@Kind.COps{ coitem=coitem@Kind.Ops{okind}
                                  , corule
                                  , cofact=Kind.Ops{opick}} = do
   -- Rules config reloaded at each new game start.
-  (configRules, dungeonGen, startingGen) <- ConfigIO.mkConfigRules corule
-  let (DungeonState.FreshDungeon{..}, gen2) =
-        St.runState (DungeonState.generate cops configRules) dungeonGen
-      (sflavour, gen3) = St.runState (dungeonFlavourMap coitem) gen2
-      factionName = configFaction configRules
-      sfaction = St.evalState (opick factionName (const True)) gen3
-  let state = defaultState configRules sfaction sflavour freshDungeon
-                           entryLevel entryLoc startingGen
-      hstate = initialHeroes cops entryLoc configUI state
-  return hstate
+  (sconfig, dungeonGen, srandom) <- ConfigIO.mkConfigRules corule
+  let rnd = do
+        sflavour <- dungeonFlavourMap coitem
+        (discoS, discoRev) <- serverDiscos coitem
+        let f ik = length (iflavour (okind ik)) == 1
+            disco = M.filter f discoS
+        DungeonState.FreshDungeon{..} <-
+          DungeonState.generate cops sflavour discoRev sconfig
+        let factionName = configFaction sconfig
+        sfaction <- opick factionName (const True)
+        let state = defaultState sflavour
+                                 disco discoS discoRev
+                                 freshDungeon entryLevel srandom
+                                 sconfig sfaction entryLoc
+        return $ initialHeroes cops entryLoc configUI state
+  return $! St.evalState rnd dungeonGen
+
 gameResetAction :: MonadActionRO m
                 => ConfigUI -> Kind.COps -> m State
 gameResetAction configUI cops = liftIO $ gameReset configUI cops

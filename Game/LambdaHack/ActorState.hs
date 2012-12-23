@@ -12,33 +12,33 @@ module Game.LambdaHack.ActorState
   ) where
 
 import Control.Monad
-import qualified Data.List as L
-import qualified Data.IntSet as IS
-import qualified Data.IntMap as IM
-import Data.Maybe
 import qualified Data.Char as Char
+import qualified Data.IntMap as IM
+import qualified Data.IntSet as IS
+import qualified Data.List as L
+import Data.Maybe
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Point
-import Game.LambdaHack.PointXY
-import Game.LambdaHack.Vector
 import Game.LambdaHack.Actor
-import Game.LambdaHack.Level
-import Game.LambdaHack.Dungeon
-import Game.LambdaHack.State
-import Game.LambdaHack.Msg
-import Game.LambdaHack.Item
+import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
-import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Content.ItemKind
-import Game.LambdaHack.Config
-import qualified Game.LambdaHack.Tile as Tile
-import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Content.TileKind
+import Game.LambdaHack.Dungeon
 import qualified Game.LambdaHack.Feature as F
+import Game.LambdaHack.Item
+import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Level
+import Game.LambdaHack.Msg
+import Game.LambdaHack.Point
+import Game.LambdaHack.PointXY
+import Game.LambdaHack.State
+import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Time
+import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Vector
 
 -- | Checks whether an actor identifier represents a hero.
 isProjectile :: State -> ActorId -> Bool
@@ -213,12 +213,12 @@ nearbyFreeLoc cotile start state =
      $ L.find good locs
 
 -- | Calculate loot's worth for heroes on the current level.
-calculateTotal :: Kind.Ops ItemKind -> State -> ([Item], Int)
-calculateTotal coitem s =
+calculateTotal :: State -> ([Item], Int)
+calculateTotal s =
   let ha = factionAssocs [sfaction s] $ slevel s
       heroInv = L.concat $ catMaybes $
                   L.map ( \ (k, _) -> IM.lookup k $ linv $ slevel s) ha
-  in (heroInv, L.sum $ L.map (itemPrice coitem) heroInv)
+  in (heroInv, L.sum $ L.map itemPrice heroInv)
 
 foesAdjacent :: X -> Y -> Point -> [Actor] -> Bool
 foesAdjacent lxsize lysize loc foes =
@@ -276,13 +276,14 @@ addMonster cotile mk hp ploc bfaction bproj state@State{scounter} = do
 addProjectile :: Kind.COps -> Item -> Point -> Kind.Id FactionKind
               -> [Point] -> Time -> State -> State
 addProjectile Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}}
-              item loc bfaction path btime state@State{scounter} =
-  let ik = okind (jkind item)
+              item loc bfaction path btime
+              state@State{scounter, sdisco, sdiscoS} =
+  let ik = okind (fromJust $ jkind sdiscoS item)
       speed = speedFromWeight (iweight ik) (itoThrow ik)
       range = rangeFromSpeed speed
       adj | range < 5 = "falling"
           | otherwise = "flying"
-      object = partItem coitem state item
+      object = partItem coitem sdisco item
       name = makePhrase [MU.AW $ MU.Text adj, object]
       dirPath = take range $ displacePath path
       m = Actor

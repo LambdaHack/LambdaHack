@@ -258,7 +258,7 @@ rangedFreq cops actor state@State{splayer = pl} floc =
     [ (benefit * multi,
        projectGroupItem actor floc (iverbProject ik) i)
     | i <- is,
-      let ik = iokind (jkind i),
+      let ik = iokind (fromJust (jkind (sdiscoS state) i)),
       let benefit = - (1 + jpower i) * Effect.effectToBenefit (ieffect ik),
       benefit > 0,
       -- Wasting weapons and armour would be too cruel to the player.
@@ -276,7 +276,7 @@ toolsFreq cops actor state =
   quaffFreq is multi =
     [ (benefit * multi, applyGroupItem actor (iverbApply ik) i)
     | i <- is,
-      let ik = iokind (jkind i),
+      let ik = iokind (fromJust (jkind (sdiscoS state) i)),
       let benefit = (1 + jpower i) * Effect.effectToBenefit (ieffect ik),
       benefit > 0, isymbol ik == '!']
 
@@ -363,7 +363,7 @@ moveStrategy cops actor state mFoe =
   -- opening doors, too, so that monsters don't cheat. TODO: remove the code
   -- duplication, though. TODO: make symmetric for playable monster faction?
   openPower      = timeScale timeTurn $
-                   case strongestSearch coitem bitems of
+                   case strongestSearch coitem (sdiscoS state) bitems of
                      Just i  -> aiq mk + jpower i
                      Nothing -> aiq mk
   openableHere   = openable cotile lvl openPower

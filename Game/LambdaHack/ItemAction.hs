@@ -44,12 +44,13 @@ inventory = do
   Kind.COps{coactor} <- askCOps
   pbody <- getsServer getPlayerBody
   items <- getsServer getPlayerItem
+  disco <- getsServer sdisco
   if L.null items
     then abortWith $ makeSentence
       [ MU.SubjectVerbSg (partActor coactor pbody) "be"
       , "not carrying anything" ]
     else do
-      io <- itemOverlay True False items
+      io <- itemOverlay disco True items
       let blurb = makePhrase [MU.Capitalize $
             MU.SubjectVerbSg (partActor coactor pbody) "be carrying:"]
       displayOverlays blurb "" io
@@ -65,8 +66,7 @@ getGroupItem :: MonadActionRO m
              -> Text     -- ^ how to refer to the collection of objects
              -> m Item
 getGroupItem is object syms prompt packName = do
-  Kind.COps{coitem=Kind.Ops{osymbol}} <- askCOps
-  let choice i = osymbol (jkind i) `elem` syms
+  let choice i = jsymbol i `elem` syms
       header = makePhrase [MU.Capitalize (MU.Ws object)]
   getItem prompt choice header is packName
 
@@ -76,14 +76,14 @@ applyGroupItem :: MonadAction m => ActorId  -- ^ actor applying the item (is on 
                -> m ()
 applyGroupItem actor verb item = do
   Kind.COps{coactor, coitem} <- askCOps
-  state <- getServer
   body  <- getsServer (getActor actor)
   per   <- askPerception
+  disco <- getsServer sdisco
   -- only one item consumed, even if several in inventory
   let consumed = item { jcount = 1 }
       msg = makeSentence
         [ MU.SubjectVerbSg (partActor coactor body) verb
-        , partItemNWs coitem state consumed ]
+        , partItemNWs coitem disco consumed ]
       loc = bloc body
   removeFromInventory actor consumed loc
   when (loc `IS.member` totalVisible per) $ msgAdd msg
@@ -96,7 +96,11 @@ playerApplyGroupItem verb object syms = do
   item <- getGroupItem is object syms
             (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
   pl   <- getsServer splayer
-  applyGroupItem pl (iverbApply $ okind $ jkind item) item
+  disco <- getsServer sdisco
+  let verbApply = case jkind disco item of
+        Nothing -> verb
+        Just ik -> iverbApply $ okind ik
+  applyGroupItem pl verbApply item
 
 projectGroupItem :: MonadAction m => ActorId  -- ^ actor projecting the item (is on current lvl)
                  -> Point    -- ^ target location of the projectile
@@ -105,7 +109,6 @@ projectGroupItem :: MonadAction m => ActorId  -- ^ actor projecting the item (is
                  -> m ()
 projectGroupItem source tloc _verb item = do
   cops@Kind.COps{coactor, coitem} <- askCOps
-  state <- getServer
   sm    <- getsServer (getActor source)
   per   <- askPerception
   pl    <- getsServer splayer
@@ -115,6 +118,7 @@ projectGroupItem source tloc _verb item = do
   lxsize <- getsServer (lxsize . slevel)
   lysize <- getsServer (lysize . slevel)
   sfaction <- getsServer sfaction
+  disco <- getsServer sdisco
   let consumed = item { jcount = 1 }
       sloc = bloc sm
       svisible = sloc `IS.member` totalVisible per
@@ -127,7 +131,7 @@ projectGroupItem source tloc _verb item = do
       -- about the aim and letting the target evade.
       msg = makeSentence
         [ MU.SubjectVerbSg (partActor coactor subject) "aim"
-        , partItemNWs coitem state consumed ]
+        , partItemNWs coitem disco consumed ]
       -- TODO: AI should choose the best eps.
       eps = if source == pl then ceps else 0
       -- Setting monster's projectiles time to player time ensures
@@ -183,7 +187,11 @@ playerProjectGI verb object syms = do
                 (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
       targeting <- getsServer (ctargeting . scursor)
       when (targeting == TgtAuto) $ endTargeting True
-      projectGroupItem pl loc (iverbProject $ okind $ jkind item) item
+      disco <- getsServer sdisco
+      let verbProject = case jkind disco item of
+            Nothing -> verb
+            Just ik -> iverbProject $ okind ik
+      projectGroupItem pl loc verbProject item
     Nothing -> assert `failure` (state, pl, "target unexpectedly invalid")
 
 retarget :: MonadAction m => WriterT Frames m ()
@@ -346,16 +354,16 @@ dropItem = do
   -- TODO: allow dropping a given number of identical items.
   Kind.COps{coactor, coitem} <- askCOps
   pl    <- getsServer splayer
-  state <- getServer
   pbody <- getsServer getPlayerBody
   ploc  <- getsServer (bloc . getPlayerBody)
   ims   <- getsServer getPlayerItem
   stack <- getAnyItem "What to drop?" ims "in inventory"
+  disco <- getsServer sdisco
   let item = stack { jcount = 1 }
   removeOnlyFromInventory pl item (bloc pbody)
   msgAdd $ makeSentence
     [ MU.SubjectVerbSg (partActor coactor pbody) "drop"
-    , partItemNWs coitem state item ]
+    , partItemNWs coitem disco item ]
   modifyServer (updateLevel (dropItemsAt [item] ploc))
 
 -- TODO: this is a hack for dropItem, because removeFromInventory
@@ -397,12 +405,12 @@ removeFromLoc i loc = do
 actorPickupItem :: MonadAction m => ActorId -> m ()
 actorPickupItem actor = do
   Kind.COps{coactor, coitem} <- askCOps
-  state <- getServer
   pl    <- getsServer splayer
   per   <- askPerception
   lvl   <- getsServer slevel
   body  <- getsServer (getActor actor)
   bitems <- getsServer (getActorItem actor)
+  disco <- getsServer sdisco
   let loc       = bloc body
       perceived = loc `IS.member` totalVisible per
       isPlayer  = actor == pl
@@ -416,11 +424,11 @@ actorPickupItem actor = do
           -- msg depends on who picks up and if a hero can perceive it
           if isPlayer
             then msgAdd $ makePhrase [ letterLabel (jletter ni)
-                                     , partItemNWs coitem state ni ]
+                                     , partItemNWs coitem disco ni ]
             else when perceived $
                    msgAdd $ makeSentence
                      [ MU.SubjectVerbSg (partActor coactor body) "pick up"
-                     , partItemNWs coitem state i ]
+                     , partItemNWs coitem disco i ]
           removeFromLoc i loc
             >>= assert `trueM` (i, is, loc, "item is stuck")
           -- add item to actor's inventory:
@@ -507,7 +515,8 @@ getItem prompt p ptext is0 isn = do
               INone     -> (isp, [], prompt)
               ISuitable -> (isp, isp, ptext <+> isn <> ".")
               IAll      -> (is0, is0, allObjectsName <+> isn <> ".")
-        io <- itemOverlay True False imsOver
+        disco <- getsServer sdisco
+        io <- itemOverlay disco True imsOver
         (command, modifier) <-
           displayChoiceUI (msg <+> choice ims) io (keys ims)
         assert (modifier == K.NoModifier) $

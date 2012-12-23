@@ -179,6 +179,7 @@ actorOpenDoor actor dir = do
   pl   <- getsServer splayer
   body <- getsServer (getActor actor)
   bitems <- getsServer (getActorItem actor)
+  discoS <- getsServer sdiscoS
   let dloc = shift (bloc body) dir  -- the location we act upon
       t = lvl `at` dloc
       isPlayer = actor == pl
@@ -187,7 +188,7 @@ actorOpenDoor actor dir = do
       openPower = timeScale timeTurn $
         if isPlayer
         then 0  -- player can't open hidden doors
-        else case strongestSearch coitem bitems of
+        else case strongestSearch coitem discoS bitems of
                Just i  -> iq + jpower i
                Nothing -> iq
   unless (openable cotile lvl openPower dloc) $ neverMind isVerbose
@@ -289,8 +290,9 @@ search = do
   lxsize <- getsServer (lxsize . slevel)
   ploc   <- getsServer (bloc . getPlayerBody)
   pitems <- getsServer getPlayerItem
+  discoS <- getsServer sdiscoS
   let delta = timeScale timeTurn $
-                case strongestSearch coitem pitems of
+                case strongestSearch coitem discoS pitems of
                   Just i  -> 1 + jpower i
                   Nothing -> 1
       searchTile sle mv =
@@ -385,17 +387,23 @@ actorAttackActor source target = do
       bitems <- getsServer (getActorItem source)
       let h2hGroup = if isAHero state source then "unarmed" else "monstrous"
       h2hKind <- rndToAction $ opick h2hGroup (const True)
-      let h2hItem = Item h2hKind 0 Nothing 1
+      flavour <- getsServer sflavour
+      discoRev <- getsServer sdiscoRev
+      disco <- getsServer sdisco
+      let h2hItem = buildItem flavour discoRev h2hKind (okind h2hKind) 1 0
           (stack, say, verbosity, verb) =
             if isProjectile state source
             then case bitems of
-              [bitem] -> (bitem, False, 10, "hit")       -- projectile
+              [bitem] -> (bitem, False, 10, "hit")     -- projectile
               _ -> assert `failure` bitems
             else case strongestSword cops bitems of
               Nothing -> (h2hItem, False, 0,
-                          iverbApply $ okind $ h2hKind)  -- hand to hand combat
-              Just w  -> (w, True, 0,
-                          iverbApply $ okind $ jkind w)  -- weapon
+                          iverbApply $ okind h2hKind)  -- hand to hand combat
+              Just w  ->
+                let verbApply = case jkind disco w of
+                      Nothing -> "hit"
+                      Just ik -> iverbApply $ okind ik
+                in (w, True, 0, verbApply)
           -- The msg describes the source part of the action.
           -- TODO: right now it also describes the victim and weapon;
           -- perhaps, when a weapon is equipped, just say "you hit"
@@ -404,7 +412,7 @@ actorAttackActor source target = do
             [ MU.SubjectVerbSg (partActor coactor sm) verb
             , partActor coactor tm ]
             ++ if say
-               then ["with", MU.AW $ partItem coitem state stack]
+               then ["with", MU.AW $ partItem coitem disco stack]
                else []
           msgMiss = makeSentence
             [ MU.SubjectVerbSg (partActor coactor sm) "try to"
@@ -508,12 +516,13 @@ regenerateLevelHP = do
            , coactor=coactor@Kind.Ops{okind}
            } <- askCOps
   time <- getsServer stime
+  discoS <- getsServer sdiscoS
   let upd itemIM a m =
         let ak = okind $ bkind m
             bitems = fromMaybe [] $ IM.lookup a itemIM
             regen = max 1 $
                       aregen ak `div`
-                      case strongestRegen coitem bitems of
+                      case strongestRegen coitem discoS bitems of
                         Just i  -> 5 * jpower i
                         Nothing -> 1
         in if (time `timeFit` timeTurn) `mod` regen /= 0

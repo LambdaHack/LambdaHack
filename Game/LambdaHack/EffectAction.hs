@@ -12,9 +12,9 @@ import Data.Function
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import qualified Data.List as L
+import qualified Data.Map as M
 import Data.Maybe
 import Data.Monoid (mempty)
-import qualified Data.Set as S
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
@@ -270,10 +270,13 @@ squashActor source target = do
   Kind.COps{coactor, coitem=Kind.Ops{okind, ouniqGroup}} <- askCOps
   sm <- getsServer (getActor source)
   tm <- getsServer (getActor target)
+  flavour <- getsServer sflavour
+  discoRev <- getsServer sdiscoRev
   let h2hKind = ouniqGroup "weight"
-      power = maxDeep $ ipower $ okind h2hKind
-      h2h = Item h2hKind power Nothing 1
-      verb = iverbApply $ okind h2hKind
+      kind = okind h2hKind
+      power = maxDeep $ ipower kind
+      h2h = buildItem flavour discoRev h2hKind kind 1 power
+      verb = iverbApply kind
       msg = makeSentence
         [ MU.SubjectVerbSg (partActor coactor sm) verb
         , partActor coactor tm
@@ -361,12 +364,12 @@ switchLevel nln = do
 -- | The player leaves the dungeon.
 fleeDungeon :: MonadAction m => m ()
 fleeDungeon = do
-  Kind.COps{coitem=coitem@Kind.Ops{oname, ouniqGroup}} <- askCOps
+  Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- askCOps
   s <- getServer
   go <- displayYesNo "This is the way out. Really leave now?"
   recordHistory  -- Prevent repeating the ending msgs.
   when (not go) $ abortWith "Game resumed."
-  let (items, total) = calculateTotal coitem s
+  let (items, total) = calculateTotal s
   modifyServer (\ st -> st {squit = Just (False, Victor)})
   if total == 0
   then do
@@ -384,7 +387,8 @@ fleeDungeon = do
           , "Here's your loot, worth"
           , MU.NWs total currencyName
           , "." ]
-    io <- itemOverlay True True items
+    discoS <- getsServer sdiscoS
+    io <- itemOverlay discoS True items
     tryIgnore $ displayOverAbort winMsg io
     modifyServer (\ st -> st {squit = Just (True, Victor)})
 
@@ -395,7 +399,8 @@ itemEffectAction verbosity source target item block = do
   Kind.COps{coitem=Kind.Ops{okind}} <- askCOps
   st <- getServer
   slidOld <- getsServer slid
-  let effect = ieffect $ okind $ jkind item
+  discoS <- getsServer sdiscoS
+  let effect = ieffect $ okind $ fromJust $ jkind discoS item
   -- The msg describes the target part of the action.
   (b1, b2) <- effectToAction effect verbosity source target (jpower item) block
   -- Party sees or affected, and the effect interesting,
@@ -411,18 +416,18 @@ itemEffectAction verbosity source target item block = do
 -- | Make the item known to the player.
 discover :: MonadAction m => Item -> m ()
 discover i = do
-  Kind.COps{coitem=coitem@Kind.Ops{okind}} <- askCOps
-  state <- getServer
-  let ik = jkind i
-      kind = okind ik
-      alreadyIdentified = L.length (iflavour kind) == 1
-                          || ik `S.member` sdisco state
-  unless alreadyIdentified $ do
-    modifyServer (updateDiscoveries (S.insert ik))
-    state2 <- getServer
+  Kind.COps{coitem} <- askCOps
+  oldDisco <- getsServer sdisco
+  discoS <- getsServer sdiscoS
+  let ix = jkindIx i
+      ik = discoS M.! ix
+  unless (ix `M.member` oldDisco) $ do
+    modifyServer (updateDiscoveries (M.insert ix ik))
+    disco <- getsServer sdisco
     let msg = makeSentence
-          [ "the", MU.SubjectVerbSg (partItem coitem state i) "turn out to be"
-          , MU.AW $ partItem coitem state2 i ]
+          [ "the", MU.SubjectVerbSg (partItem coitem oldDisco i)
+                                    "turn out to be"
+          , MU.AW $ partItem coitem disco i ]
     msgAdd msg
 
 -- | Make the actor controlled by the player. Switch level, if needed.
@@ -545,11 +550,11 @@ gameOver showEndingScreens = do
   slid <- getsServer slid
   modifyServer (\ st -> st {squit = Just (False, Killed slid)})
   when showEndingScreens $ do
-    Kind.COps{coitem=coitem@Kind.Ops{oname, ouniqGroup}} <- askCOps
+    Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- askCOps
     s <- getServer
     dng <- getsServer sdungeon
     time <- getsServer stime
-    let (items, total) = calculateTotal coitem s
+    let (items, total) = calculateTotal s
         deepest = Dungeon.levelNumber slid  -- use deepest visited instead of level of death
         depth = Dungeon.depth dng
         failMsg | timeFit time timeTurn < 300 =
@@ -573,21 +578,21 @@ gameOver showEndingScreens = do
     if null items
       then modifyServer (\ st -> st {squit = Just (True, Killed slid)})
       else do
-        io <- itemOverlay True True items
+        discoS <- getsServer sdiscoS
+        io <- itemOverlay discoS True items
         tryIgnore $ do
           displayOverAbort loseMsg io
           modifyServer (\ st -> st {squit = Just (True, Killed slid)})
 
 -- | Create a list of item names, split into many overlays.
-itemOverlay :: MonadActionPure m => Bool -> Bool -> [Item] -> m [Overlay]
-itemOverlay sorted cheat is = do
+itemOverlay :: MonadActionPure m => Discoveries -> Bool -> [Item] -> m [Overlay]
+itemOverlay disco sorted is = do
   Kind.COps{coitem} <- askCOps
-  s <- getServer
   lysize <- getsServer (lysize . slevel)
   let items | sorted = L.sortBy (cmpLetterMaybe `on` jletter) is
             | otherwise = is
       pr i = makePhrase [ letterLabel (jletter i)
-                        , MU.NWs (jcount i) $ partItemCheat cheat coitem s i ]
+                        , MU.NWs (jcount i) $ partItem coitem disco i ]
              <> " "
   return $ splitOverlay lysize $ L.map pr items
 
@@ -624,7 +629,8 @@ doLook = do
         lookMsg = mode <+> lookAt cops True canSee state lvl loc monsterMsg
         -- Check if there's something lying around at current loc.
         is = lvl `rememberAtI` loc
-    io <- itemOverlay False False is
+    disco <- getsServer sdisco
+    io <- itemOverlay disco False is
     if length is > 2
       then displayOverlays lookMsg "" io
       else do
