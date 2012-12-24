@@ -67,7 +67,7 @@ data State = State
   , sconfig   :: !Config        -- ^ this game's config (including initial RNG)
   , squit     :: !(Maybe (Bool, Status))       -- ^ cause of game end/exit
   , sfaction  :: !(Kind.Id FactionKind)        -- ^ our faction
-  , slastKey  :: !(Maybe (K.Key, K.Modifier))  -- ^ last command key pressed
+  , slastKey  :: !(Maybe K.KM)  -- ^ last command key pressed
   , sdebug    :: !DebugMode     -- ^ debugging mode
   }
   deriving Show

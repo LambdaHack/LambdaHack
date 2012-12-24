@@ -194,7 +194,7 @@ playerCommand msgRunAbort = do
     _  -> drawPrompt ColorFull msgRunAbort >>= getKeyFrameCommand
   -- The frame state is now None and remains so between each pair
   -- of lines of @loop@ (but can change within called actions).
-  let loop :: (K.Key, K.Modifier) -> m ()
+  let loop :: K.KM -> m ()
       loop km = do
         -- Query and clear the last command key.
         lastKey <- getsServer slastKey

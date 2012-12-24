@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Abstract syntax of player commands.
 module Game.LambdaHack.Command
-  ( Cmd(..), majorCmd, timedCmd, cmdDescription
+  ( Cmd(..), majorCmd, minorCmd, timedCmd, cmdDescription
   ) where
 
 import Data.Text (Text)
@@ -64,6 +64,22 @@ majorCmd cmd = case cmd of
   Help          -> True
   _             -> False
 
+-- | Minor commands land on the second page of command help.
+minorCmd :: Cmd -> Bool
+minorCmd cmd = case cmd of
+  TgtFloor    -> True
+  TgtEnemy    -> True
+  TgtAscend{} -> True
+  EpsIncr{}   -> True
+  Cancel      -> True
+  Accept      -> True
+  Clear       -> True
+  History     -> True
+  CfgDump     -> True
+  HeroCycle   -> True
+  HeroBack    -> True
+  _           -> False
+
 -- | Commands that usually take time are marked as such in help.
 -- Whether they take time in a particular situation is decided
 -- each time in 'cmdAction'.
@@ -93,7 +109,7 @@ cmdDescription cmd = case cmd of
   Drop        -> "drop an object"
   Move{}      -> "move"
   Run{}       -> "run"
-  Wait        -> ""
+  Wait        -> "wait"
   GameExit    -> "save and exit"
   GameRestart -> "restart game"
   GameSave    -> "save game"

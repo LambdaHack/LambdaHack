@@ -2,7 +2,7 @@
 -- | Frontend-independent keyboard input operations.
 module Game.LambdaHack.Key
   ( Key(..), handleDir, dirAllMoveKey
-  , moveBinding, keyTranslate, Modifier(..), showKM
+  , moveBinding, keyTranslate, Modifier(..), KM, showKM
   ) where
 
 import Data.Binary
@@ -86,6 +86,8 @@ data Modifier =
   | NoModifier
   deriving (Ord, Eq, Show)
 
+type KM = (Key, Modifier)
+
 -- Common and terse names for keys.
 showKey :: Key -> Text
 showKey (Char c) = T.singleton c
@@ -107,7 +109,7 @@ showKey (KP c)   = "KEYPAD(" <> T.singleton c <> ")"
 showKey (Unknown s) = T.pack s
 
 -- | Show a key with a modifier, if any.
-showKM :: (Key, Modifier) -> Text
+showKM :: KM -> Text
 showKM (key, Control) = "CTRL-" <> showKey key
 showKM (key, NoModifier) = showKey key
 
@@ -143,7 +145,7 @@ dirHeroKey = map Char dirNums
 
 -- | Configurable event handler for the direction keys.
 -- Used for directed commands such as close door.
-handleDir :: X -> (Key, Modifier) -> (Vector -> a) -> a -> a
+handleDir :: X -> KM -> (Vector -> a) -> a -> a
 handleDir lxsize (key, NoModifier) h k =
   let mvs = moves lxsize
       assocs = zip dirAllMoveKey $ mvs ++ mvs
@@ -153,7 +155,7 @@ handleDir _lxsize _ _h k = k
 -- TODO: deduplicate
 -- | Binding of both sets of movement keys.
 moveBinding :: (VectorXY -> a) -> (VectorXY -> a)
-            -> [((Key, Modifier), a)]
+            -> [(KM, a)]
 moveBinding move run =
   let assign f (km, dir) = (km, f dir)
       rNoModifier = repeat NoModifier

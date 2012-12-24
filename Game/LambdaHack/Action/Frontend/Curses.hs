@@ -18,7 +18,7 @@ import qualified UI.HSCurses.CursesHelper as C
 
 import Game.LambdaHack.Animation (SingleFrame (..))
 import qualified Game.LambdaHack.Color as Color
-import qualified Game.LambdaHack.Key as K (Key (..), Modifier (..))
+import qualified Game.LambdaHack.Key as K (Key (..), Modifier (..), KM)
 import Game.LambdaHack.Utils.Assert
 
 -- | Session data maintained by the frontend.
@@ -78,17 +78,17 @@ display FrontendSession{..}  _ _ (Just SingleFrame{..}) = do
   C.refresh
 
 -- | Input key via the frontend.
-nextEvent :: FrontendSession -> Maybe Bool -> IO (K.Key, K.Modifier)
+nextEvent :: FrontendSession -> Maybe Bool -> IO K.KM
 nextEvent _sess _ = keyTranslate `fmap` C.getKey C.refresh
 
 -- | Display a prompt, wait for any key.
 promptGetAnyKey :: FrontendSession -> SingleFrame
-             -> IO (K.Key, K.Modifier)
+             -> IO K.KM
 promptGetAnyKey sess frame = do
   display sess True True $ Just frame
   nextEvent sess Nothing
 
-keyTranslate :: C.Key -> (K.Key, K.Modifier)
+keyTranslate :: C.Key -> K.KM
 keyTranslate e =
   case e of
     C.KeyChar '\ESC' -> (K.Esc,     K.NoModifier)

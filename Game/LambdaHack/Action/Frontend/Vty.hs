@@ -15,7 +15,7 @@ import qualified Graphics.Vty as Vty
 
 import Game.LambdaHack.Animation (SingleFrame (..))
 import qualified Game.LambdaHack.Color as Color
-import qualified Game.LambdaHack.Key as K (Key (..), Modifier (..))
+import qualified Game.LambdaHack.Key as K (Key (..), Modifier (..), KM)
 
 -- | Session data maintained by the frontend.
 type FrontendSession = Vty
@@ -51,7 +51,7 @@ display vty _ _ (Just SingleFrame{..}) =
   in update vty pic
 
 -- | Input key via the frontend.
-nextEvent :: FrontendSession -> Maybe Bool -> IO (K.Key, K.Modifier)
+nextEvent :: FrontendSession -> Maybe Bool -> IO K.KM
 nextEvent sess mb = do
   e <- next_event sess
   case e of
@@ -63,7 +63,7 @@ nextEvent sess mb = do
 
 -- | Display a prompt, wait for any key.
 promptGetAnyKey :: FrontendSession -> SingleFrame
-             -> IO (K.Key, K.Modifier)
+             -> IO K.KM
 promptGetAnyKey sess frame = do
   display sess True True $ Just frame
   nextEvent sess Nothing

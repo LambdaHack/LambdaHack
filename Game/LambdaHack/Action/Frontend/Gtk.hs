@@ -25,7 +25,7 @@ import System.Time
 
 import Game.LambdaHack.Animation (SingleFrame (..))
 import qualified Game.LambdaHack.Color as Color
-import qualified Game.LambdaHack.Key as K (Key (..), Modifier (..),
+import qualified Game.LambdaHack.Key as K (KM, Modifier (..),
                                            keyTranslate)
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.LQueue
@@ -44,7 +44,7 @@ data FrameState =
 data FrontendSession = FrontendSession
   { sview       :: !TextView                    -- ^ the widget to draw to
   , stags       :: !(M.Map Color.Attr TextTag)  -- ^ text color tags for fg/bg
-  , schanKey    :: !(Chan (K.Key, K.Modifier))  -- ^ channel for keyboard input
+  , schanKey    :: !(Chan K.KM)  -- ^ channel for keyboard input
   , sframeState :: !(MVar FrameState)           -- ^ state of the frame machine
   , slastFull   :: !(IORef (GtkFrame, Bool))
        -- ^ most recent full (not empty, not repeated) frame received
@@ -357,7 +357,7 @@ setFrame sess@FrontendSession{slastFull, sframeState} rawFrame = do
 
 -- | Input key via the frontend. Fail if there is no frame to show
 -- to the player as a prompt for the keypress.
-nextEvent :: FrontendSession -> Maybe Bool -> IO (K.Key, K.Modifier)
+nextEvent :: FrontendSession -> Maybe Bool -> IO K.KM
 nextEvent FrontendSession{schanKey, sframeState} Nothing = do
   -- Verify the state.
   -- Assumption: no other thread changes the main constructor in sframeState.
@@ -416,7 +416,7 @@ nextEvent sess@FrontendSession{schanKey, sframeState} (Just True) = do
 -- Spends most time waiting for a key, so not performance critical,
 -- so does not need optimization.
 promptGetAnyKey :: FrontendSession -> SingleFrame
-                -> IO (K.Key, K.Modifier)
+                -> IO K.KM
 promptGetAnyKey sess@FrontendSession{sframeState} frame = do
   -- Assumption: no other thread changes the main constructor in sframeState.
   fs <- readMVar sframeState

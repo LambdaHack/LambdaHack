@@ -6,13 +6,13 @@ module Game.LambdaHack.Binding
   ( Binding(..), stdBinding, keyHelp,
   ) where
 
+import qualified Data.Char as Char
 import qualified Data.List as L
 import qualified Data.Map as M
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Tuple (swap)
-import qualified Data.Char as Char
 
 import Game.LambdaHack.Command
 import Game.LambdaHack.Config
@@ -21,16 +21,15 @@ import Game.LambdaHack.Msg
 
 -- | Bindings and other information about player commands.
 data Binding = Binding
-  { kcmd    :: M.Map (K.Key, K.Modifier) (Text, Bool, Cmd)
-                                      -- ^ binding keys to commands
-  , kmacro  :: M.Map K.Key K.Key      -- ^ macro map
-  , kmajor  :: [K.Key]                -- ^ major, most often used, commands
-  , krevMap :: M.Map Cmd (K.Key, K.Modifier)
-                                      -- ^ map from cmds to their main keys
+  { kcmd    :: M.Map K.KM (Text, Bool, Cmd)  -- ^ binding keys to commands
+  , kmacro  :: M.Map K.Key K.Key             -- ^ macro map
+  , kmajor  :: [K.KM]                        -- ^ major commands
+  , kminor  :: [K.KM]                        -- ^ minor commands
+  , krevMap :: M.Map Cmd K.KM                -- ^ from cmds to their main keys
   }
 
 -- | The associaction of commands to keys defined in config.
-configCmds :: ConfigUI -> [((K.Key, K.Modifier), Cmd)]
+configCmds :: ConfigUI -> [(K.KM, Cmd)]
 configCmds ConfigUI{configCommands} =
   let mkCommand (key, def) = ((key, K.NoModifier), read def :: Cmd)
   in map mkCommand configCommands
@@ -56,7 +55,8 @@ stdBinding !config@ConfigUI{configMacros} =
   in Binding
   { kcmd = M.fromList semList
   , kmacro
-  , kmajor = L.map (fst . fst) $ L.filter (majorCmd . snd) cmdList
+  , kmajor = L.map fst $ L.filter (majorCmd . snd) cmdList
+  , kminor = L.map fst $ L.filter (minorCmd . snd) cmdList
   , krevMap = M.fromList $ map swap cmdList
   }
 
@@ -69,7 +69,7 @@ coImage kmacro k =
 
 -- | Produce a set of help screens from the key bindings.
 keyHelp :: Binding -> [Overlay]
-keyHelp Binding{kcmd, kmacro, kmajor} =
+keyHelp Binding{kcmd, kmacro, kmajor, kminor} =
   let
     movBlurb =
       [ "Move throughout the level with numerical keypad or"
@@ -110,9 +110,11 @@ keyHelp Binding{kcmd, kmacro, kmajor} =
     keyCaption = fmt "keys" "command"
     disp k  = T.concat $ map showT $ coImage kmacro k
     keys l  = [ fmt (disp k) (h <> if timed then "*" else "")
-              | ((k, _), (h, timed, _)) <- l, h /= "" ]
-    (kcMajor, kcMinor) =
-      L.partition ((`elem` kmajor) . fst . fst) (M.toAscList kcmd)
+              | ((k, K.NoModifier), (h, timed, _)) <- l, h /= "" ]
+    (kcMajor, kcRest) =
+      L.partition ((`elem` kmajor) . fst) (M.toAscList kcmd)
+    (kcMinor, _) =
+      L.partition ((`elem` kminor) . fst) kcRest
   in
     [ [blank] ++ mov
     , [blank] ++ [keyCaption] ++ keys kcMajor ++ major

@@ -13,7 +13,7 @@ import qualified Data.ByteString.Char8 as BS
 import qualified System.IO as SIO
 import Data.Text.Encoding (encodeUtf8)
 
-import qualified Game.LambdaHack.Key as K (Key(..),  Modifier(..))
+import qualified Game.LambdaHack.Key as K (Key(..), Modifier(..), KM)
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Animation (SingleFrame(..))
 
@@ -41,7 +41,7 @@ display _ _ _ (Just SingleFrame{..}) =
   in mapM_ BS.putStrLn bs
 
 -- | Input key via the frontend.
-nextEvent :: FrontendSession -> Maybe Bool -> IO (K.Key, K.Modifier)
+nextEvent :: FrontendSession -> Maybe Bool -> IO K.KM
 nextEvent sess mb = do
   e <- BS.hGet SIO.stdin 1
   let c = BS.head e
@@ -51,7 +51,7 @@ nextEvent sess mb = do
 
 -- | Display a prompt, wait for any key.
 promptGetAnyKey :: FrontendSession -> SingleFrame
-             -> IO (K.Key, K.Modifier)
+             -> IO K.KM
 promptGetAnyKey sess frame = do
   display sess True True $ Just frame
   nextEvent sess Nothing

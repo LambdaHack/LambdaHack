@@ -178,7 +178,7 @@ recordHistory = do
 
 -- | Wait for a player command.
 getKeyCommand :: MonadActionRO m
-              => Maybe Bool -> m (K.Key, K.Modifier)
+              => Maybe Bool -> m K.KM
 getKeyCommand doPush = do
   fs <- askFrontendSession
   keyb <- askBinding
@@ -189,7 +189,7 @@ getKeyCommand doPush = do
 
 -- | Display frame and wait for a player command.
 getKeyFrameCommand :: MonadActionRO m
-                   => SingleFrame -> m (K.Key, K.Modifier)
+                   => SingleFrame -> m K.KM
 getKeyFrameCommand frame = do
   fs <- askFrontendSession
   keyb <- askBinding
@@ -199,7 +199,7 @@ getKeyFrameCommand frame = do
     _ -> (nc, modifier)
 
 -- | Ignore unexpected kestrokes until a SPACE or ESC is pressed.
-getConfirm :: MonadActionRO m => [(K.Key, K.Modifier)] -> SingleFrame -> m Bool
+getConfirm :: MonadActionRO m => [K.KM] -> SingleFrame -> m Bool
 getConfirm clearKeys frame = do
   fs <- askFrontendSession
   let keys = [(K.Space, K.NoModifier), (K.Esc, K.NoModifier)] ++ clearKeys
@@ -210,7 +210,7 @@ getConfirm clearKeys frame = do
     _ -> return False
 
 -- | A series of confirmations for all overlays.
-getOverConfirm :: MonadActionRO m => [(K.Key, K.Modifier)] -> [SingleFrame] -> m Bool
+getOverConfirm :: MonadActionRO m => [K.KM] -> [SingleFrame] -> m Bool
 getOverConfirm _ [] = return True
 getOverConfirm clearKeys (x:xs) = do
   b <- getConfirm clearKeys x
@@ -280,8 +280,8 @@ displayOverlays prompt pressKeys (x:xs) = do
 -- If many overlays, scroll screenfuls with SPACE. Do not wrap screenfuls
 -- (in some menus @?@ cycles views, so the user can restart from the top).
 displayChoiceUI :: MonadActionRO m
-                => Msg -> [Overlay] -> [(K.Key, K.Modifier)]
-              -> m (K.Key, K.Modifier)
+                => Msg -> [Overlay] -> [K.KM]
+              -> m K.KM
 displayChoiceUI prompt ovs keys = do
   let (over, rest, spc, more, keysS) = case ovs of
         [] -> ([], [], "", [], keys)
