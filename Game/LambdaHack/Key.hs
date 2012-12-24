@@ -14,8 +14,8 @@ import Prelude hiding (Left, Right)
 
 import Game.LambdaHack.Msg
 import Game.LambdaHack.PointXY
-import Game.LambdaHack.VectorXY
 import Game.LambdaHack.Vector
+import Game.LambdaHack.VectorXY
 
 -- TODO: if the file grows much larger, split it and move a part to Utils/
 
@@ -84,7 +84,7 @@ instance Binary Key where
 data Modifier =
     Control
   | NoModifier
-  deriving (Ord, Eq)
+  deriving (Ord, Eq, Show)
 
 -- Common and terse names for keys.
 showKey :: Key -> Text

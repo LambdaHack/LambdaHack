@@ -16,6 +16,7 @@ import Game.LambdaHack.Actions
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Binding
+import qualified Game.LambdaHack.Command as Command
 import Game.LambdaHack.CommandAction
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.StrategyKind
@@ -195,18 +196,22 @@ playerCommand msgRunAbort = do
   -- of lines of @loop@ (but can change within called actions).
   let loop :: (K.Key, K.Modifier) -> m ()
       loop km = do
+        -- Query and clear the last command key.
+        lastKey <- getsServer slastKey
+        modifyServer (\st -> st {slastKey = Nothing})
         -- Messages shown, so update history and reset current report.
         recordHistory
         -- On abort, just reset state and call loop again below.
         (timed, frames) <- runWriterT $ tryWithFrame (return False) $ do
           -- Look up the key.
-          -- TODO
-          s <- getServer
-          per <- askPerception
           Binding{kcmd} <- askBinding
           case M.lookup km kcmd of
             Just (_, _, cmd) -> do
-              let (timed, c) = cmdSemantics s per cmd
+              s <- getServer
+              per <- askPerception
+              let (timed, c)
+                    | Just km == lastKey = cmdSemantics s per Command.Clear
+                    | otherwise = cmdSemantics s per cmd
               frs <- execWriterT c
               -- Ensure at least one frame, if the command takes no time.
               -- No frames for @abort@, so the code is here, not below.
@@ -214,7 +219,9 @@ playerCommand msgRunAbort = do
                 then do
                   fr <- drawPrompt ColorFull ""
                   tell [Just fr]
-                else tell frs
+                else do
+                  unless timed $ modifyServer (\st -> st {slastKey = Just km})
+                  tell frs
               return timed
             Nothing -> let msgKey = "unknown command <" <> K.showKM km <> ">"
                        in abortWith msgKey
@@ -230,7 +237,7 @@ playerCommand msgRunAbort = do
             -- Show, one by one, all but the last frame.
             -- Note: the code that generates the frames is responsible
             -- for inserting the @more@ prompt.
-            b <- getOverConfirm frs
+            b <- getOverConfirm (maybeToList lastKey) frs
             -- Display the last frame while waiting for the next key or,
             -- if there is no next frame, just get the key.
             kmNext <- case mfr of

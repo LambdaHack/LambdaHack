@@ -199,22 +199,23 @@ getKeyFrameCommand frame = do
     _ -> (nc, modifier)
 
 -- | Ignore unexpected kestrokes until a SPACE or ESC is pressed.
-getConfirm :: MonadActionRO m => SingleFrame -> m Bool
-getConfirm frame = do
+getConfirm :: MonadActionRO m => [(K.Key, K.Modifier)] -> SingleFrame -> m Bool
+getConfirm clearKeys frame = do
   fs <- askFrontendSession
-  let keys = [(K.Space, K.NoModifier), (K.Esc, K.NoModifier)]
-  (k, _) <- liftIO $ promptGetKey fs keys frame
-  case k of
-    K.Space -> return True
-    _       -> return False
+  let keys = [(K.Space, K.NoModifier), (K.Esc, K.NoModifier)] ++ clearKeys
+  km <- liftIO $ promptGetKey fs keys frame
+  case km of
+    (K.Space, K.NoModifier) -> return True
+    _ | km `elem` clearKeys -> return True
+    _ -> return False
 
 -- | A series of confirmations for all overlays.
-getOverConfirm :: MonadActionRO m => [SingleFrame] -> m Bool
-getOverConfirm []     = return True
-getOverConfirm (x:xs) = do
-  b <- getConfirm x
+getOverConfirm :: MonadActionRO m => [(K.Key, K.Modifier)] -> [SingleFrame] -> m Bool
+getOverConfirm _ [] = return True
+getOverConfirm clearKeys (x:xs) = do
+  b <- getConfirm clearKeys x
   if b
-    then getOverConfirm xs
+    then getOverConfirm clearKeys xs
     else return False
 
 -- | A yes-no confirmation.
@@ -240,7 +241,7 @@ displayMore :: MonadActionRO m => ColorMode -> Msg -> m Bool
 displayMore dm prompt = do
   let newPrompt = promptAdd prompt moreMsg
   frame <- drawPrompt dm newPrompt
-  getConfirm frame
+  getConfirm [] frame
 
 -- | Print a yes/no question and return the player's answer. Use black
 -- and white colours to turn player's attention to the choice.
@@ -256,7 +257,7 @@ displayOverAbort prompt xs = do
   let newPrompt = promptAdd prompt ""
   let f x = drawOverlay ColorFull newPrompt (x ++ [moreMsg])
   frames <- mapM f xs
-  go <- getOverConfirm frames
+  go <- getOverConfirm [] frames
   when (not go) abort
 
 -- | Print a msg and several overlays, one per page.
@@ -270,7 +271,7 @@ displayOverlays prompt _ [x] = do
   tell [Just frame]
 displayOverlays prompt pressKeys (x:xs) = do
   frame <- drawOverlay ColorFull (promptAdd prompt pressKeys) (x ++ [moreMsg])
-  b <- getConfirm frame
+  b <- getConfirm [] frame
   if b
     then displayOverlays prompt pressKeys xs
     else return ()

@@ -29,6 +29,7 @@ import Game.LambdaHack.Config
 import Game.LambdaHack.Content.FactionKind
 import qualified Game.LambdaHack.Dungeon as Dungeon
 import Game.LambdaHack.Item
+import qualified Game.LambdaHack.Key as K
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
@@ -64,8 +65,9 @@ data State = State
   , scounter  :: !Int           -- ^ stores next actor index
   , srandom   :: !R.StdGen      -- ^ current random generator
   , sconfig   :: !Config        -- ^ this game's config (including initial RNG)
-  , squit     :: !(Maybe (Bool, Status))  -- ^ cause of game end/exit
-  , sfaction  :: !(Kind.Id FactionKind)   -- ^ our faction
+  , squit     :: !(Maybe (Bool, Status))       -- ^ cause of game end/exit
+  , sfaction  :: !(Kind.Id FactionKind)        -- ^ our faction
+  , slastKey  :: !(Maybe (K.Key, K.Modifier))  -- ^ last command key pressed
   , sdebug    :: !DebugMode     -- ^ debugging mode
   }
   deriving Show
@@ -132,6 +134,7 @@ defaultState sflavour sdisco sdiscoS sdiscoRev
     , scursor  = (Cursor TgtOff slid ploc slid 0)
     , scounter = 0
     , squit    = Nothing
+    , slastKey = Nothing
     , sdebug   = defaultDebugMode
     , ..
     }
@@ -213,6 +216,7 @@ instance Binary State where
     sfaction <- get
     let squit = Nothing
         sdebug = defaultDebugMode
+        slastKey = Nothing
         srandom = read g
     return State{..}
 
