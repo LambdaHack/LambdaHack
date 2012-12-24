@@ -21,11 +21,11 @@ module Game.LambdaHack.Action
     -- * Diary and report
   , getDiary, msgAdd, recordHistory
     -- * Key input
-  , getKeyCommand, getKeyFrameCommand, getOverConfirm
+  , getKeyCommand, getKeyFrameCommand, getManyConfirms
     -- * Display each frame and confirm
-  , displayMore, displayYesNo, displayOverAbort
+  , displayMore, displayYesNo, displaySlideshowAbort
     -- * Assorted frame operations
-  , displayOverlays, displayChoiceUI, displayFramePush, drawPrompt
+  , displaySlideshow, displayChoiceUI, displayFramePush, drawPrompt
     -- * Clip init operations
   , startClip, remember, rememberList
     -- * Assorted primitives
@@ -209,13 +209,13 @@ getConfirm clearKeys frame = do
     _ | km `elem` clearKeys -> return True
     _ -> return False
 
--- | A series of confirmations for all overlays.
-getOverConfirm :: MonadActionRO m => [K.KM] -> [SingleFrame] -> m Bool
-getOverConfirm _ [] = return True
-getOverConfirm clearKeys (x:xs) = do
+-- | Display a series of frames, awaiting confirmation for each.
+getManyConfirms :: MonadActionRO m => [K.KM] -> [SingleFrame] -> m Bool
+getManyConfirms _ [] = return True
+getManyConfirms clearKeys (x:xs) = do
   b <- getConfirm clearKeys x
   if b
-    then getOverConfirm clearKeys xs
+    then getManyConfirms clearKeys xs
     else return False
 
 -- | A yes-no confirmation.
@@ -252,35 +252,35 @@ displayYesNo prompt = do
 
 -- | Print a msg and several overlays, one per page.
 -- All frames require confirmations. Raise @abort@ if the player presses ESC.
-displayOverAbort :: MonadActionRO m => Msg -> [Overlay] -> m ()
-displayOverAbort prompt xs = do
+displaySlideshowAbort :: MonadActionRO m => Msg -> Slideshow -> m ()
+displaySlideshowAbort prompt xs = do
   let newPrompt = promptAdd prompt ""
   let f x = drawOverlay ColorFull newPrompt (x ++ [moreMsg])
   frames <- mapM f xs
-  go <- getOverConfirm [] frames
+  go <- getManyConfirms [] frames
   when (not go) abort
 
 -- | Print a msg and several overlays, one per page.
 -- The last frame does not expect a confirmation and so does not show
 -- the invitation to press some keys.
-displayOverlays :: MonadActionRO m
-                => Msg -> Msg -> [Overlay] -> WriterT Frames m ()
-displayOverlays _      _ []  = return ()
-displayOverlays prompt _ [x] = do
+displaySlideshow :: MonadActionRO m
+                => Msg -> Msg -> Slideshow -> WriterT Frames m ()
+displaySlideshow _      _ []  = return ()
+displaySlideshow prompt _ [x] = do
   frame <- drawOverlay ColorFull prompt x
   tell [Just frame]
-displayOverlays prompt pressKeys (x:xs) = do
+displaySlideshow prompt pressKeys (x:xs) = do
   frame <- drawOverlay ColorFull (promptAdd prompt pressKeys) (x ++ [moreMsg])
   b <- getConfirm [] frame
   if b
-    then displayOverlays prompt pressKeys xs
+    then displaySlideshow prompt pressKeys xs
     else return ()
 
 -- | Print a prompt and an overlay and wait for a player keypress.
 -- If many overlays, scroll screenfuls with SPACE. Do not wrap screenfuls
 -- (in some menus @?@ cycles views, so the user can restart from the top).
 displayChoiceUI :: MonadActionRO m
-                => Msg -> [Overlay] -> [K.KM]
+                => Msg -> Slideshow -> [K.KM]
               -> m K.KM
 displayChoiceUI prompt ovs keys = do
   let (over, rest, spc, more, keysS) = case ovs of
@@ -408,7 +408,7 @@ handleScores write status total =
     curDate <- liftIO getClockTime
     let score = register configUI write total time curDate status
     (placeMsg, slideshow) <- liftIO score
-    displayOverAbort placeMsg slideshow
+    displaySlideshowAbort placeMsg slideshow
 
 -- | Continue or restart or exit the game.
 endOrLoop :: MonadAction m => m () -> m ()

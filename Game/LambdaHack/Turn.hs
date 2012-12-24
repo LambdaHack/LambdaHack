@@ -237,7 +237,7 @@ playerCommand msgRunAbort = do
             -- Show, one by one, all but the last frame.
             -- Note: the code that generates the frames is responsible
             -- for inserting the @more@ prompt.
-            b <- getOverConfirm (maybeToList lastKey) frs
+            b <- getManyConfirms (maybeToList lastKey) frs
             -- Display the last frame while waiting for the next key or,
             -- if there is no next frame, just get the key.
             kmNext <- case mfr of

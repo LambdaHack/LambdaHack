@@ -103,7 +103,7 @@ showTable h start height =
   in concatMap showScore screenful
 
 -- | Produce a couple of renderings of the high scores table.
-slideshow :: Int -> ScoreTable -> Int -> [Overlay]
+slideshow :: Int -> ScoreTable -> Int -> Slideshow
 slideshow pos h height =
   if pos <= height
   then [showTable h 1 height]
@@ -118,7 +118,7 @@ register :: ConfigUI   -- ^ the config file
          -> Time       -- ^ game time spent
          -> ClockTime  -- ^ date of the last game interruption
          -> Status     -- ^ reason of the game interruption
-         -> IO (Msg, [Overlay])
+         -> IO (Msg, Slideshow)
 register configUI write total time date status = do
   h <- restore configUI
   let points = case status of

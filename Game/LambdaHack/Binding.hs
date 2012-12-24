@@ -68,7 +68,7 @@ coImage kmacro k =
      else k : [ from | (from, to) <- M.assocs kmacro, to == k ]
 
 -- | Produce a set of help screens from the key bindings.
-keyHelp :: Binding -> [Overlay]
+keyHelp :: Binding -> Slideshow
 keyHelp Binding{kcmd, kmacro, kmajor, kminor} =
   let
     movBlurb =

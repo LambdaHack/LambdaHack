@@ -389,7 +389,7 @@ fleeDungeon = do
           , "." ]
     discoS <- getsServer sdiscoS
     io <- itemOverlay discoS True items
-    tryIgnore $ displayOverAbort winMsg io
+    tryIgnore $ displaySlideshowAbort winMsg io
     modifyServer (\ st -> st {squit = Just (True, Victor)})
 
 -- | The source actor affects the target actor, with a given item.
@@ -582,11 +582,11 @@ gameOver showEndingScreens = do
         discoS <- getsServer sdiscoS
         io <- itemOverlay discoS True items
         tryIgnore $ do
-          displayOverAbort loseMsg io
+          displaySlideshowAbort loseMsg io
           modifyServer (\ st -> st {squit = Just (True, Killed slid)})
 
 -- | Create a list of item names, split into many overlays.
-itemOverlay :: MonadActionPure m => Discoveries -> Bool -> [Item] -> m [Overlay]
+itemOverlay :: MonadActionPure m => Discoveries -> Bool -> [Item] -> m Slideshow
 itemOverlay disco sorted is = do
   Kind.COps{coitem} <- askCOps
   lysize <- getsServer (lysize . slevel)
@@ -633,7 +633,7 @@ doLook = do
     disco <- getsServer sdisco
     io <- itemOverlay disco False is
     if length is > 2
-      then displayOverlays lookMsg "" io
+      then displaySlideshow lookMsg "" io
       else do
         fr <- drawPrompt ColorFull lookMsg
         tell [Just fr]
