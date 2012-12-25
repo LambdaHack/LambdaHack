@@ -12,11 +12,11 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Animation (Frames)
 import Game.LambdaHack.Command
 import Game.LambdaHack.EffectAction
 import Game.LambdaHack.ItemAction
 import Game.LambdaHack.Level
+import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Running
 import Game.LambdaHack.State
@@ -25,7 +25,7 @@ import Game.LambdaHack.Vector
 
 -- | The basic action for a command and whether it takes time.
 cmdAction :: MonadAction m => State -> Perception -> Cmd
-          -> (Bool, WriterT Frames m ())
+          -> (Bool, WriterT Slideshow m ())
 cmdAction s per cmd =
   let targeting = ctargeting (scursor s)
       pl = splayer s
@@ -90,7 +90,7 @@ cmdAction s per cmd =
 -- invoked in targeting mode on a remote level (level different than
 -- the level of the selected hero).
 cmdSemantics :: MonadAction m => State -> Perception -> Cmd
-             -> WriterT Frames m Bool
+             -> WriterT Slideshow m Bool
 cmdSemantics s per cmd = do
   let (timed, sem) = cmdAction s per cmd
   if timed
@@ -100,7 +100,7 @@ cmdSemantics s per cmd = do
 
 -- | If in targeting mode, check if the current level is the same
 -- as player level and refuse performing the action otherwise.
-checkCursor :: MonadActionPure m => WriterT Frames m () -> WriterT Frames m ()
+checkCursor :: MonadActionPure m => WriterT Slideshow m () -> WriterT Slideshow m ()
 checkCursor h = do
   cursor <- getsServer scursor
   slid <- getsServer slid

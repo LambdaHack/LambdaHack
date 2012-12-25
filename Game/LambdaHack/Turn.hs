@@ -200,7 +200,7 @@ playerCommand msgRunAbort = do
         recordHistory
         -- On abort, just reset state and call loop again below.
         -- Each abort that gets this far generates a frame to be shown.
-        (timed, frames) <- runWriterT $ tryWithFrame (return False) $ do
+        (timed, slides) <- runWriterT $ tryWithSlide (return False) $ do
           -- Look up the key.
           Binding{kcmd} <- askBinding
           case M.lookup km kcmd of
@@ -223,29 +223,31 @@ playerCommand msgRunAbort = do
         -- The command was aborted or successful and if the latter,
         -- possibly took some time.
         if timed
-          then assert (null frames `blame` frames) $ do
+          then assert (null slides `blame` slides) $ do
             -- Exit the loop and let other actors act. No next key needed
-            -- and no frames could have been generated.
+            -- and no slides could have been generated.
             modifyServer (\st -> st {slastKey = Nothing})
           else
             -- If no time taken, rinse and repeat.
-            -- Analyse the obtained frames.
-            case reverse $ catMaybes frames of
+            -- Analyse the obtained slides.
+            case reverse slides of
               [] -> do
                 -- Nothing special to be shown; by default draw current state.
                 modifyServer (\st -> st {slastKey = Nothing})
                 fCurrent <- drawPrompt ColorFull ""
                 kmNext <- getKeyFrameCommand fCurrent
                 loop kmNext
-              fLast : fs -> do
+              sLast : sls -> do
                 -- Show, one by one, all but the last frame.
-                -- Note: the code that generates the frames is responsible
+                -- Note: the code that generates the slides is responsible
                 -- for inserting the @more@ prompt.
-                b <- getManyConfirms [km] $ reverse fs
+                b <- getManyConfirms [km] $ reverse sls
                 -- Display the last frame while waiting for the next key,
                 -- or display current state if slideshow interrupted.
                 kmNext <- if b
-                          then getKeyFrameCommand fLast
+                          then do
+                            frame <- drawBareOverlay sLast
+                            getKeyFrameCommand frame
                           else do
                             modifyServer (\st -> st {slastKey = Nothing})
                             fCurrent <- drawPrompt ColorFull ""

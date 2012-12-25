@@ -12,7 +12,6 @@ import Control.Monad.Reader.Class
 import Control.Monad.Writer.Strict (WriterT (WriterT, runWriterT), lift)
 
 import Game.LambdaHack.Action.Frontend
-import Game.LambdaHack.Animation (Frames)
 import Game.LambdaHack.Binding
 import Game.LambdaHack.Config
 import qualified Game.LambdaHack.Kind as Kind
@@ -43,7 +42,7 @@ class (Monad m, Functor m, MonadReader Pers m, Show (m ()))
   getsClient  :: (Diary -> a) -> m a
   getsSession :: (Session -> a) -> m a
 
-instance MonadActionPure m => MonadActionPure (WriterT Frames m) where
+instance MonadActionPure m => MonadActionPure (WriterT Slideshow m) where
   tryWith exc m =
     WriterT $ tryWith (\msg -> runWriterT (exc msg)) (runWriterT m)
   abortWith   = lift . abortWith
@@ -53,7 +52,7 @@ instance MonadActionPure m => MonadActionPure (WriterT Frames m) where
   getsClient  = lift . getsClient
   getsSession = lift . getsSession
 
-instance MonadActionPure m => Show (WriterT Frames m a) where
+instance MonadActionPure m => Show (WriterT Slideshow m a) where
   show _ = "an action"
 
 class MonadActionPure m => MonadActionRO m where
@@ -63,7 +62,7 @@ class MonadActionPure m => MonadActionRO m where
   -- nobody can subvert the action monads by invoking arbitrary IO.
   liftIO       :: IO a -> m a
 
-instance MonadActionRO m => MonadActionRO (WriterT Frames m) where
+instance MonadActionRO m => MonadActionRO (WriterT Slideshow m) where
   putClient    = lift . putClient
   modifyClient = lift . modifyClient
   liftIO       = lift . liftIO
@@ -72,6 +71,6 @@ class MonadActionRO m => MonadAction m where
   putServer    :: State -> m ()
   modifyServer :: (State -> State) -> m ()
 
-instance MonadAction m => MonadAction (WriterT Frames m) where
+instance MonadAction m => MonadAction (WriterT Slideshow m) where
   putServer    = lift . putServer
   modifyServer = lift . modifyServer

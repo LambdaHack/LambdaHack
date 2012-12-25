@@ -21,7 +21,7 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Animation (Frames, twirlSplash, blockHit, deathBody)
+import Game.LambdaHack.Animation (twirlSplash, blockHit, deathBody)
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
@@ -389,7 +389,8 @@ fleeDungeon = do
           , "." ]
     discoS <- getsServer sdiscoS
     io <- itemOverlay discoS True items
-    tryIgnore $ displaySlideshowAbort winMsg io
+    slides <- overlayToSlideshow winMsg io
+    void $ getManyConfirms [] slides
     modifyServer (\ st -> st {squit = Just (True, Victor)})
 
 -- | The source actor affects the target actor, with a given item.
@@ -549,7 +550,7 @@ checkPartyDeath = do
 gameOver :: MonadAction m => Bool -> m ()
 gameOver showEndingScreens = do
   slid <- getsServer slid
-  modifyServer (\ st -> st {squit = Just (False, Killed slid)})
+  modifyServer (\st -> st {squit = Just (False, Killed slid)})
   when showEndingScreens $ do
     Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- askCOps
     s <- getServer
@@ -577,31 +578,30 @@ gameOver showEndingScreens = do
           , MU.NWs total currencyName
           , "and some junk." ]
     if null items
-      then modifyServer (\ st -> st {squit = Just (True, Killed slid)})
+      then modifyServer (\st -> st {squit = Just (True, Killed slid)})
       else do
         discoS <- getsServer sdiscoS
         io <- itemOverlay discoS True items
-        tryIgnore $ do
-          displaySlideshowAbort loseMsg io
-          modifyServer (\ st -> st {squit = Just (True, Killed slid)})
+        slides <- overlayToSlideshow loseMsg io
+        go <- getManyConfirms [] slides
+        when go $ modifyServer (\st -> st {squit = Just (True, Killed slid)})
 
--- | Create a list of item names, split into many overlays.
-itemOverlay :: MonadActionPure m => Discoveries -> Bool -> [Item] -> m Slideshow
+-- | Create a list of item names.
+itemOverlay :: MonadActionPure m => Discoveries -> Bool -> [Item] -> m Overlay
 itemOverlay disco sorted is = do
   Kind.COps{coitem} <- askCOps
-  lysize <- getsServer (lysize . slevel)
   let items | sorted = L.sortBy (cmpLetterMaybe `on` jletter) is
             | otherwise = is
       pr i = makePhrase [ letterLabel (jletter i)
                         , partItemNWs coitem disco i ]
              <> " "
-  return $ splitOverlay lysize $ L.map pr items
+  return $ L.map pr items
 
 stopRunning :: MonadAction m => m ()
 stopRunning = updatePlayerBody (\ p -> p { bdir = Nothing })
 
 -- | Perform look around in the current location of the cursor.
-doLook :: MonadAction m => WriterT Frames m ()
+doLook :: MonadAction m => WriterT Slideshow m ()
 doLook = do
   cops@Kind.COps{coactor} <- askCOps
   loc    <- getsServer (clocation . scursor)
@@ -631,11 +631,12 @@ doLook = do
         -- Check if there's something lying around at current loc.
         is = lvl `rememberAtI` loc
     modifyServer (\st -> st {slastKey = Nothing})
-    disco <- getsServer sdisco
-    io <- itemOverlay disco False is
     if length is <= 2
       then do
-        fr <- drawPrompt ColorFull lookMsg
-        tell [Just fr]
-      else
-        submitSlideshow lookMsg "" io
+        slides <- promptToSlideshow lookMsg
+        tell slides
+      else do
+       disco <- getsServer sdisco
+       io <- itemOverlay disco False is
+       slides <- overlayToSlideshow lookMsg io
+       tell slides

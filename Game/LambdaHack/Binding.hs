@@ -116,7 +116,10 @@ keyHelp Binding{kcmd, kmacro, kmajor, kminor} =
     (kcMinor, _) =
       L.partition ((`elem` kminor) . fst) kcRest
   in
-    [ [blank] ++ mov
-    , [blank] ++ [keyCaption] ++ keys kcMajor ++ major
-    , [blank] ++ [keyCaption] ++ keys kcMinor ++ minor
+    [ ["Basic keys. [press SPACE to advance]"] ++ [blank]
+      ++ mov ++ [moreMsg]
+    , ["Basic keys. [press SPACE to advance]"] ++ [blank]
+      ++ [keyCaption] ++ keys kcMajor ++ major ++ [moreMsg]
+    , ["Basic keys."] ++ [blank]
+      ++ [keyCaption] ++ keys kcMinor ++ minor
     ]

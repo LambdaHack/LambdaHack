@@ -7,7 +7,7 @@
 module Game.LambdaHack.ItemAction where
 
 import Control.Monad
-import Control.Monad.Writer.Strict (WriterT, lift)
+import Control.Monad.Writer.Strict (WriterT, lift, tell)
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import qualified Data.List as L
@@ -20,7 +20,6 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Animation (Frames)
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.EffectAction
 import Game.LambdaHack.Item
@@ -39,7 +38,7 @@ default (Text)
 -- TODO: When inventory is displayed, let TAB switch the player (without
 -- announcing that) and show the inventory of the new player.
 -- | Display inventory
-inventory :: MonadActionRO m => WriterT Frames m ()
+inventory :: MonadActionRO m => WriterT Slideshow m ()
 inventory = do
   Kind.COps{coactor} <- askCOps
   pbody <- getsServer getPlayerBody
@@ -50,10 +49,11 @@ inventory = do
       [ MU.SubjectVerbSg (partActor coactor pbody) "be"
       , "not carrying anything" ]
     else do
-      io <- itemOverlay disco True items
       let blurb = makePhrase [MU.Capitalize $
             MU.SubjectVerbSg (partActor coactor pbody) "be carrying:"]
-      submitSlideshow blurb "" io
+      io <- itemOverlay disco True items
+      slides <- overlayToSlideshow blurb io
+      tell slides
 
 -- | Let the player choose any item with a given group name.
 -- Note that this does not guarantee the chosen item belongs to the group,
@@ -194,7 +194,7 @@ playerProjectGI verb object syms = do
       projectGroupItem pl loc verbProject item
     Nothing -> assert `failure` (state, pl, "target unexpectedly invalid")
 
-retarget :: MonadAction m => WriterT Frames m ()
+retarget :: MonadAction m => WriterT Slideshow m ()
 retarget = do
   ploc <- getsServer (bloc . getPlayerBody)
   msgAdd "Last target invalid."
@@ -203,7 +203,7 @@ retarget = do
   targetMonster TgtAuto
 
 -- | Start the monster targeting mode. Cycle between monster targets.
-targetMonster :: MonadAction m => TgtMode -> WriterT Frames m ()
+targetMonster :: MonadAction m => TgtMode -> WriterT Slideshow m ()
 targetMonster tgtMode = do
   pl        <- getsServer splayer
   ploc      <- getsServer (bloc . getPlayerBody)
@@ -239,7 +239,7 @@ targetMonster tgtMode = do
   setCursor tgtMode
 
 -- | Start the floor targeting mode or reset the cursor location to the player.
-targetFloor :: MonadAction m => TgtMode -> WriterT Frames m ()
+targetFloor :: MonadAction m => TgtMode -> WriterT Slideshow m ()
 targetFloor tgtMode = do
   ploc      <- getsServer (bloc . getPlayerBody)
   target    <- getsServer (btarget . getPlayerBody)
@@ -254,7 +254,7 @@ targetFloor tgtMode = do
   setCursor tgtMode
 
 -- | Set, activate and display cursor information.
-setCursor :: MonadAction m => TgtMode -> WriterT Frames m ()
+setCursor :: MonadAction m => TgtMode -> WriterT Slideshow m ()
 setCursor tgtMode = assert (tgtMode /= TgtOff) $ do
   state  <- getServer
   per    <- askPerception
@@ -328,7 +328,7 @@ endTargetingMsg = do
 
 -- | Cancel something, e.g., targeting mode, resetting the cursor
 -- to the position of the player. Chosen target is not invalidated.
-cancelCurrent :: MonadAction m => WriterT Frames m () -> WriterT Frames m ()
+cancelCurrent :: MonadAction m => WriterT Slideshow m () -> WriterT Slideshow m ()
 cancelCurrent h = do
   targeting <- getsServer (ctargeting . scursor)
   if targeting /= TgtOff
@@ -337,7 +337,7 @@ cancelCurrent h = do
 
 -- | Accept something, e.g., targeting mode, keeping cursor where it was.
 -- Or perform the default action, if nothing needs accepting.
-acceptCurrent :: MonadAction m => WriterT Frames m () -> WriterT Frames m ()
+acceptCurrent :: MonadAction m => WriterT Slideshow m () -> WriterT Slideshow m ()
 acceptCurrent h = do
   targeting <- getsServer (ctargeting . scursor)
   if targeting /= TgtOff

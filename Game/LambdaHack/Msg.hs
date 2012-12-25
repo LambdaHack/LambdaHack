@@ -8,7 +8,7 @@ module Game.LambdaHack.Msg
   , splitReport, renderReport
   , History, emptyHistory, singletonHistory, addReport, renderHistory
   , takeHistory
-  , Overlay, Slideshow, splitOverlay, stringByLocation
+  , Overlay, Slideshow, stringByLocation
   ) where
 
 import Data.Binary
@@ -162,14 +162,6 @@ type Overlay = [Text]
 
 -- | A few overlays, displayed one by one upon keypress.
 type Slideshow = [Overlay]
-
--- | Split an overlay into a slideshow in which each overlay
--- fits on the screen, not obscuring the top nor the bottom line.
-splitOverlay :: Y -> Overlay -> Slideshow
-splitOverlay _ [] = []  -- nothing to print over the level area
-splitOverlay lysize ls | length ls <= lysize = [ls]  -- all fits on one screen
-splitOverlay lysize ls = let (pre, post) = splitAt (lysize - 1) ls
-                         in pre : splitOverlay lysize post
 
 -- | Returns a function that looks up the characters in the
 -- string by location. Takes the width and height of the display plus

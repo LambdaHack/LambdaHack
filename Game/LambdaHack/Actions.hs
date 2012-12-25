@@ -9,7 +9,7 @@ module Game.LambdaHack.Actions where
 import qualified Paths_LambdaHack as Self (version)
 
 import Control.Monad
-import Control.Monad.Writer.Strict (WriterT)
+import Control.Monad.Writer.Strict (WriterT, tell)
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import qualified Data.List as L
@@ -24,7 +24,7 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Animation (Frames, blockMiss, swapPlaces)
+import Game.LambdaHack.Animation (blockMiss, swapPlaces)
 import Game.LambdaHack.Binding
 import qualified Game.LambdaHack.Command as Command
 import Game.LambdaHack.Config
@@ -75,7 +75,7 @@ gameRestart = do
   when (not b2) $ abortWith "Yea, so much still to do."
   modifyServer (\ s -> s {squit = Just (False, Restart)})
 
-moveCursor :: MonadAction m => Vector -> Int -> WriterT Frames m ()
+moveCursor :: MonadAction m => Vector -> Int -> WriterT Slideshow m ()
 moveCursor dir n = do
   lxsize <- getsServer (lxsize . slevel)
   lysize <- getsServer (lysize . slevel)
@@ -202,7 +202,7 @@ actorOpenDoor actor dir = do
 
 -- | Change the displayed level in targeting mode to (at most)
 -- k levels shallower. Enters targeting mode, if not already in one.
-tgtAscend :: MonadAction m => Int -> WriterT Frames m ()
+tgtAscend :: MonadAction m => Int -> WriterT Slideshow m ()
 tgtAscend k = do
   Kind.COps{cotile} <- askCOps
   cursor    <- getsServer scursor
@@ -537,13 +537,13 @@ regenerateLevelHP = do
   modifyServer (updateLevel (updateActorDict (IM.mapWithKey (upd hi))))
 
 -- | Display command help.
-displayHelp :: MonadActionRO m => WriterT Frames m ()
+displayHelp :: MonadActionRO m => WriterT Slideshow m ()
 displayHelp = do
   keyb <- askBinding
-  submitSlideshow "Basic keys." "[press SPACE to advance]" $ keyHelp keyb
+  tell $ keyHelp keyb
 
 -- | Display the main menu.
-displayMainMenu :: MonadActionRO m => WriterT Frames m ()
+displayMainMenu :: MonadActionRO m => WriterT Slideshow m ()
 displayMainMenu = do
   Kind.COps{corule} <- askCOps
   Binding{krevMap} <- askBinding
@@ -586,18 +586,20 @@ displayMainMenu = do
         overwrite $ pasteVersion $ map T.unpack $ stripFrame $ mainMenuArt
   case menuOverlay of
     [] -> assert `failure` "empty Main Menu overlay"
-    hd : tl -> submitSlideshow hd "" [tl]
+    hd : tl -> do
+      slides <- overlayToSlideshow hd tl
+      tell slides
 
-displayHistory :: MonadActionRO m =>  WriterT Frames m ()
+displayHistory :: MonadActionRO m => WriterT Slideshow m ()
 displayHistory = do
   Diary{shistory} <- getDiary
   time <- getsServer stime
-  lysize <- getsServer (lysize . slevel)
   let turn = time `timeFit` timeTurn
       msg = makeSentence [ "You survived for"
                        , MU.NWs turn "half-second turn" ]
             <+> "Past messages:"
-  submitSlideshow msg "" $ splitOverlay lysize $ renderHistory shistory
+  slides <- overlayToSlideshow msg $ renderHistory shistory
+  tell slides
 
 dumpConfig :: MonadActionRO m => m ()
 dumpConfig = do

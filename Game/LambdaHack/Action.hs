@@ -11,9 +11,9 @@ module Game.LambdaHack.Action
     -- * The Perception Reader
   , withPerception, askPerception
     -- * Accessors to the game session Reader
-  , askFrontendSession, askCOps, askBinding, askConfigUI
+  , askCOps, askBinding, askConfigUI
     -- * Actions returning frames
-  , tryWithFrame
+  , tryWithSlide
     -- * Various ways to abort action
   , abort, abortWith, abortIfWith, neverMind
     -- * Abort exception handlers
@@ -22,10 +22,12 @@ module Game.LambdaHack.Action
   , getDiary, msgAdd, recordHistory
     -- * Key input
   , getKeyCommand, getKeyFrameCommand, getManyConfirms
-    -- * Display each frame and confirm
-  , displayMore, displayYesNo, displaySlideshowAbort
-    -- * Assorted frame operations
-  , submitSlideshow, displayChoiceUI, displayFramePush, drawPrompt
+    -- * Display and key input
+  , displayFramePush, displayMore, displayYesNo, displayChoiceUI
+    -- * Generate slideshows
+  , promptToSlideshow, overlayToSlideshow
+    -- * Draw frames
+  , drawBareOverlay, drawPrompt
     -- * Clip init operations
   , startClip, remember, rememberList
     -- * Assorted primitives
@@ -60,7 +62,7 @@ import Game.LambdaHack.Action.HighScore (register)
 import qualified Game.LambdaHack.Action.Save as Save
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Animation (SingleFrame(..), Frames)
+import Game.LambdaHack.Animation (SingleFrame(..))
 import Game.LambdaHack.Binding
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ItemKind
@@ -153,14 +155,14 @@ tryIgnore =
                    else assert `failure` msg <+> "in tryIgnore")
 
 -- | Set the current exception handler. Apart of executing it,
--- draw and pass along a frame with the abort message (even if empty).
-tryWithFrame :: MonadActionRO m
-             => m a -> WriterT Frames m a -> WriterT Frames m a
-tryWithFrame exc h =
+-- draw and pass along a frame with the abort message (even if message empty).
+tryWithSlide :: MonadActionRO m
+             => m a -> WriterT Slideshow m a -> WriterT Slideshow m a
+tryWithSlide exc h =
   let excMsg msg = do
         msgReset ""
-        fr <- drawPrompt ColorFull msg
-        tell [Just fr]
+        slides <- promptToSlideshow msg
+        tell slides
         lift exc
   in tryWith excMsg h
 
@@ -207,13 +209,20 @@ getConfirm clearKeys frame = do
     _ -> return False
 
 -- | Display a series of frames, awaiting confirmation for each.
-getManyConfirms :: MonadActionRO m => [K.KM] -> [SingleFrame] -> m Bool
+getManyConfirms :: MonadActionRO m => [K.KM] -> Slideshow -> m Bool
 getManyConfirms _ [] = return True
 getManyConfirms clearKeys (x:xs) = do
-  b <- getConfirm clearKeys x
+  frame <- drawBareOverlay x
+  b <- getConfirm clearKeys frame
   if b
     then getManyConfirms clearKeys xs
     else return False
+
+-- | Push a frame or a single frame's worth of delay to the frame queue.
+displayFramePush :: MonadActionRO m => Maybe SingleFrame -> m ()
+displayFramePush mframe = do
+  fs <- askFrontendSession
+  liftIO $ displayFrame fs False mframe
 
 -- | A yes-no confirmation.
 getYesNo :: MonadActionRO m => SingleFrame -> m Bool
@@ -242,54 +251,55 @@ displayYesNo prompt = do
   frame <- drawPrompt ColorBW $ prompt <+> yesnoMsg
   getYesNo frame
 
--- | Print a msg and several overlays, one per page.
--- All frames require confirmations. Raise @abort@ if the player presses ESC.
-displaySlideshowAbort :: MonadActionRO m => Msg -> Slideshow -> m ()
-displaySlideshowAbort prompt xs = do
-  let f x = drawOverlay ColorFull prompt (x ++ [moreMsg])
-  frames <- mapM f xs
-  go <- getManyConfirms [] frames
-  when (not go) abort
-
--- | Submit frames for a msg and several overlays, one per page.
--- The last frame does not expect a confirmation and so does not show
--- the invitation to press some keys.
-submitSlideshow :: MonadActionRO m
-                => Msg -> Msg -> Slideshow -> WriterT Frames m ()
-submitSlideshow _      _ []  = return ()
-submitSlideshow prompt _ [x] = do
-  frame <- drawOverlay ColorFull prompt x
-  tell [Just frame]
-submitSlideshow prompt pressKeys (x : xs) = do
-  frame <- drawOverlay ColorFull (prompt <+> pressKeys) (x ++ [moreMsg])
-  tell [Just frame]
-  submitSlideshow prompt pressKeys xs
-
+-- TODO: generalize getManyConfirms and displayChoiceUI to a single op
 -- | Print a prompt and an overlay and wait for a player keypress.
 -- If many overlays, scroll screenfuls with SPACE. Do not wrap screenfuls
 -- (in some menus @?@ cycles views, so the user can restart from the top).
-displayChoiceUI :: MonadActionRO m
-                => Msg -> Slideshow -> [K.KM]
-              -> m K.KM
-displayChoiceUI prompt ovs keys = do
-  let (over, rest, spc, more, keysS) = case ovs of
-        [] -> ([], [], "", [], keys)
-        [x] -> (x, [], "", [], keys)
-        x:xs -> (x, xs, ", SPACE", [moreMsg], (K.Space, K.NoModifier) : keys)
-      legalKeys =  (K.Esc, K.NoModifier) : keysS
-  frame <- drawOverlay ColorFull (prompt <> spc <> ", ESC]") (over ++ more)
+displayChoiceUI :: MonadActionRO m => Msg -> Overlay -> [K.KM] -> m K.KM
+displayChoiceUI prompt ov keys = do
+  slides <- overlayToSlideshow (prompt <> ", ESC]") ov
   fs <- askFrontendSession
-  (key, modifier) <- liftIO $ promptGetKey fs legalKeys frame
-  case key of
-    K.Esc -> neverMind True
-    K.Space | not (null rest) -> displayChoiceUI prompt rest keys
-    _ -> return (key, modifier)
+  let legalKeys = (K.Space, K.NoModifier) : (K.Esc, K.NoModifier) : keys
+      loop [] = neverMind True
+      loop (x : xs) = do
+        frame <- drawBareOverlay x
+        (key, modifier) <- liftIO $ promptGetKey fs legalKeys frame
+        case key of
+          K.Esc -> neverMind True
+          K.Space | not (null xs) -> loop xs
+          _ -> return (key, modifier)
+  loop slides
 
--- | Push a frame or a single frame's worth of delay to the frame queue.
-displayFramePush :: MonadActionRO m => Maybe SingleFrame -> m ()
-displayFramePush mframe = do
-  fs <- askFrontendSession
-  liftIO $ displayFrame fs False mframe
+-- | The prompt is shown after the current message, but not added to history.
+-- This is useful, e.g., in targeting mode, not to spam history.
+promptToSlideshow :: MonadActionPure m => Msg -> m Slideshow
+promptToSlideshow prompt = overlayToSlideshow prompt []
+
+-- | The prompt is shown after the current message at the top of each slide.
+-- Together they may take more than one line. The prompt is not added
+-- to history. The portions of overlay that fit on the the rest
+-- of the screen are displayed below. As many slides as needed are shown.
+-- If the prompt plus messaga take more than a screenful, infinitely many
+-- slides are created.
+overlayToSlideshow :: MonadActionPure m => Msg -> Overlay -> m Slideshow
+overlayToSlideshow prompt overlay = do
+  lysize <- getsServer (lysize . slevel)
+  Diary{sreport} <- getDiary
+  let over = splitReport (addMsg sreport prompt) ++ overlay
+  if length over <= lysize + 2
+    then return [over]  -- all fits on one screen
+    else do
+      let (pre, post) = splitAt (lysize + 1) over
+      rest <- overlayToSlideshow prompt post
+      return $ (pre ++ [moreMsg]) : rest
+
+-- | Draw the current level with the overlay on top.
+drawBareOverlay :: MonadActionPure m => Overlay -> m SingleFrame
+drawBareOverlay over = do
+  cops <- askCOps
+  per <- askPerception
+  s <- getServer
+  return $! draw ColorFull cops per s over
 
 -- | Draw the current level. The prompt is displayed, but not added
 -- to history. The prompt is appended to the current message
@@ -302,31 +312,6 @@ drawPrompt dm prompt = do
   Diary{sreport} <- getDiary
   let over = splitReport $ addMsg sreport prompt
   return $! draw dm cops per s over
-
--- | Draw the current level. The prompt and the overlay are displayed,
--- but not added to history. The prompt is appended to the current message
--- and only the first line of the result is displayed.
--- The overlay starts on the second line.
-drawOverlay :: MonadActionPure m => ColorMode -> Msg -> Overlay -> m SingleFrame
-drawOverlay dm prompt overlay = do
-  cops <- askCOps
-  per <- askPerception
-  s <- getServer
-  Diary{sreport} <- getDiary
-  let xsize = lxsize $ slevel s
-      msgPrompt = renderReport $ addMsg sreport prompt
-      over = padMsg xsize msgPrompt : overlay
-  return $! draw dm cops per s over
-
--- | Initialize perception, etc., display level and run the action.
-startClip :: MonadAction m => m () -> m ()
-startClip action =
-  -- Determine perception before running player command, in case monsters
-  -- have opened doors, etc.
-  withPerception $! do
-    remember  -- heroes notice their surroundings, before they get displayed
-    displayPush  -- draw the current surroundings
-    action  -- let the actor act
 
 -- | Push the frame depicting the current level to the frame queue.
 -- Only one screenful of the report is shown, the rest is ignored.
@@ -341,6 +326,16 @@ displayPush = do
   let (_, Actor{bdir}, _) = findActorAnyLevel pl s
       isRunning = isJust bdir
   liftIO $ displayFrame fs isRunning $ Just frame
+
+-- | Initialize perception, etc., display level and run the action.
+startClip :: MonadAction m => m () -> m ()
+startClip action =
+  -- Determine perception before running player command, in case monsters
+  -- have opened doors, etc.
+  withPerception $! do
+    remember  -- heroes notice their surroundings, before they get displayed
+    displayPush  -- draw the current surroundings
+    action  -- let the actor act
 
 -- | Update heroes memory.
 remember :: MonadAction m => m ()
@@ -395,9 +390,12 @@ handleScores write status total =
     configUI <- askConfigUI
     time <- getsServer stime
     curDate <- liftIO getClockTime
-    let score = register configUI write total time curDate status
-    (placeMsg, slideshow) <- liftIO score
-    displaySlideshowAbort placeMsg slideshow
+    (placeMsg, slideshow) <-
+      liftIO $ register configUI write total time curDate status
+    let f x = overlayToSlideshow placeMsg (x ++ [moreMsg])
+    frames <- mapM f slideshow
+    go <- getManyConfirms [] $ concat frames
+    when (not go) abort
 
 -- | Continue or restart or exit the game.
 endOrLoop :: MonadAction m => m () -> m ()
