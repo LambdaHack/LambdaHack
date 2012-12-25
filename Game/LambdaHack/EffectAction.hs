@@ -601,7 +601,7 @@ stopRunning :: MonadAction m => m ()
 stopRunning = updatePlayerBody (\ p -> p { bdir = Nothing })
 
 -- | Perform look around in the current location of the cursor.
-doLook :: MonadActionRO m => WriterT Frames m ()
+doLook :: MonadAction m => WriterT Frames m ()
 doLook = do
   cops@Kind.COps{coactor} <- askCOps
   loc    <- getsServer (clocation . scursor)
@@ -630,10 +630,12 @@ doLook = do
         lookMsg = mode <+> lookAt cops True canSee state lvl loc monsterMsg
         -- Check if there's something lying around at current loc.
         is = lvl `rememberAtI` loc
+    modifyServer (\st -> st {slastKey = Nothing})
     disco <- getsServer sdisco
     io <- itemOverlay disco False is
-    if length is > 2
-      then displaySlideshow [] lookMsg "" io
-      else do
+    if length is <= 2
+      then do
         fr <- drawPrompt ColorFull lookMsg
         tell [Just fr]
+      else
+        submitSlideshow lookMsg "" io

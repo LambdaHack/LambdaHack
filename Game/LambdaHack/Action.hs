@@ -25,8 +25,7 @@ module Game.LambdaHack.Action
     -- * Display each frame and confirm
   , displayMore, displayYesNo, displaySlideshowAbort
     -- * Assorted frame operations
-  , submitSlideshow, displaySlideshow
-  , displayChoiceUI, displayFramePush, drawPrompt
+  , submitSlideshow, displayChoiceUI, displayFramePush, drawPrompt
     -- * Clip init operations
   , startClip, remember, rememberList
     -- * Assorted primitives
@@ -251,22 +250,6 @@ displaySlideshowAbort prompt xs = do
   frames <- mapM f xs
   go <- getManyConfirms [] frames
   when (not go) abort
-
--- | Print a msg and several overlays, one per page.
--- The last frame does not expect a confirmation and so does not show
--- the invitation to press some keys.
-displaySlideshow :: MonadActionRO m
-                => [K.KM] -> Msg -> Msg -> Slideshow -> WriterT Frames m ()
-displaySlideshow _ _      _ []  = return ()
-displaySlideshow _ prompt _ [x] = do
-  frame <- drawOverlay ColorFull prompt x
-  tell [Just frame]
-displaySlideshow clearKeys prompt pressKeys (x:xs) = do
-  frame <- drawOverlay ColorFull (prompt <+> pressKeys) (x ++ [moreMsg])
-  b <- getConfirm clearKeys frame
-  if b
-    then displaySlideshow clearKeys prompt pressKeys xs
-    else return ()
 
 -- | Submit frames for a msg and several overlays, one per page.
 -- The last frame does not expect a confirmation and so does not show

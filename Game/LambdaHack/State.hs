@@ -284,7 +284,7 @@ lookAt Kind.COps{coitem, cotile=Kind.Ops{oname}} detailed canSee s lvl loc msg
   nWs = partItemNWs coitem (sdisco s)
   isd = case is of
           [] -> ""
-          _ | length is <= 3 ->
+          _ | length is <= 2 ->
             makeSentence [prefixSee, MU.WWandW $ map nWs is]
           _ | detailed -> "Objects:"
           _ -> "Objects here."

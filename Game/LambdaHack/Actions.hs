@@ -586,7 +586,7 @@ displayMainMenu = do
         overwrite $ pasteVersion $ map T.unpack $ stripFrame $ mainMenuArt
   case menuOverlay of
     [] -> assert `failure` "empty Main Menu overlay"
-    hd : tl -> displaySlideshow [] hd "" [tl]
+    hd : tl -> submitSlideshow hd "" [tl]
 
 displayHistory :: MonadActionRO m =>  WriterT Frames m ()
 displayHistory = do
@@ -597,8 +597,7 @@ displayHistory = do
       msg = makeSentence [ "You survived for"
                        , MU.NWs turn "half-second turn" ]
             <+> "Past messages:"
-  displaySlideshow [] msg "" $
-    splitOverlay lysize $ renderHistory shistory
+  submitSlideshow msg "" $ splitOverlay lysize $ renderHistory shistory
 
 dumpConfig :: MonadActionRO m => m ()
 dumpConfig = do

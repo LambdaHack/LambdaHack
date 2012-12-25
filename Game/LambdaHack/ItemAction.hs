@@ -53,7 +53,7 @@ inventory = do
       io <- itemOverlay disco True items
       let blurb = makePhrase [MU.Capitalize $
             MU.SubjectVerbSg (partActor coactor pbody) "be carrying:"]
-      displaySlideshow [] blurb "" io
+      submitSlideshow blurb "" io
 
 -- | Let the player choose any item with a given group name.
 -- Note that this does not guarantee the chosen item belongs to the group,
