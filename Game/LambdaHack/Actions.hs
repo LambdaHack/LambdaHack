@@ -540,7 +540,7 @@ regenerateLevelHP = do
 displayHelp :: MonadActionRO m => WriterT Frames m ()
 displayHelp = do
   keyb <- askBinding
-  displaySlideshow "Basic keys." "[press SPACE to advance]" $ keyHelp keyb
+  submitSlideshow "Basic keys." "[press SPACE to advance]" $ keyHelp keyb
 
 -- | Display the main menu.
 displayMainMenu :: MonadActionRO m => WriterT Frames m ()
@@ -586,7 +586,7 @@ displayMainMenu = do
         overwrite $ pasteVersion $ map T.unpack $ stripFrame $ mainMenuArt
   case menuOverlay of
     [] -> assert `failure` "empty Main Menu overlay"
-    hd : tl -> displaySlideshow hd "" [tl]
+    hd : tl -> displaySlideshow [] hd "" [tl]
 
 displayHistory :: MonadActionRO m =>  WriterT Frames m ()
 displayHistory = do
@@ -597,7 +597,7 @@ displayHistory = do
       msg = makeSentence [ "You survived for"
                        , MU.NWs turn "half-second turn" ]
             <+> "Past messages:"
-  displaySlideshow msg "" $
+  displaySlideshow [] msg "" $
     splitOverlay lysize $ renderHistory shistory
 
 dumpConfig :: MonadActionRO m => m ()

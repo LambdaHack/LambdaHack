@@ -162,6 +162,7 @@ continueRun (dirLast, distLast) = do
       locLast = if distLast == 0 then locHere else locHere `shift` neg dirLast
       tryRunDist (dir, distNew)
         | accessibleDir locHere dir =
+          -- TODO: perhaps @abortWith report2?
           maybe abort run $
             runDisturbance locLast distLast sreport hs ms per locHere
               locHasFeature locHasItems lxsize lysize (dir, distNew)

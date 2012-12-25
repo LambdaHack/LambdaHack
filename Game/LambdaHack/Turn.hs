@@ -4,7 +4,7 @@ module Game.LambdaHack.Turn ( handleTurn ) where
 
 import Control.Arrow ((&&&))
 import Control.Monad
-import Control.Monad.Writer.Strict (WriterT (runWriterT), execWriterT, tell)
+import Control.Monad.Writer.Strict (WriterT (runWriterT))
 import qualified Data.IntMap as IM
 import qualified Data.List as L
 import qualified Data.Map as M
@@ -196,12 +196,10 @@ playerCommand msgRunAbort = do
   -- of lines of @loop@ (but can change within called actions).
   let loop :: K.KM -> m ()
       loop km = do
-        -- Query and clear the last command key.
-        lastKey <- getsServer slastKey
-        modifyServer (\st -> st {slastKey = Nothing})
         -- Messages shown, so update history and reset current report.
         recordHistory
         -- On abort, just reset state and call loop again below.
+        -- Each abort that gets this far generates a frame to be shown.
         (timed, frames) <- runWriterT $ tryWithFrame (return False) $ do
           -- Look up the key.
           Binding{kcmd} <- askBinding
@@ -209,47 +207,51 @@ playerCommand msgRunAbort = do
             Just (_, _, cmd) -> do
               s <- getServer
               per <- askPerception
-              let (timed, c)
-                    | Just km == lastKey = cmdSemantics s per Command.Clear
-                    | otherwise = cmdSemantics s per cmd
-              frs <- execWriterT c
-              -- Ensure at least one frame, if the command takes no time.
-              -- No frames for @abort@, so the code is here, not below.
-              if not timed && null (catMaybes frs)
-                then do
-                  fr <- drawPrompt ColorFull ""
-                  tell [Just fr]
-                else do
-                  unless timed $ modifyServer (\st -> st {slastKey = Just km})
-                  tell frs
-              return timed
+              -- Query and clear the last command key.
+              lastKey <- getsServer slastKey
+              -- TODO: perhaps replace slastKey
+              -- with test 'kmNext == km'
+              -- or an extra arg to 'loop'.
+              -- Depends on whether slastKey
+              -- is needed in other parts of code.
+              modifyServer (\st -> st {slastKey = Just km})
+              if (Just km == lastKey)
+                then cmdSemantics s per Command.Clear
+                else cmdSemantics s per cmd
             Nothing -> let msgKey = "unknown command <" <> K.showKM km <> ">"
                        in abortWith msgKey
         -- The command was aborted or successful and if the latter,
         -- possibly took some time.
-        if not timed
-          then do
-            -- If no time taken, rinse and repeat.
-            -- Analyse the obtained frames.
-            let (mfr, frs) = case reverse $ catMaybes frames of
-                  []     -> (Nothing, [])
-                  f : fs -> (Just f, reverse fs)
-            -- Show, one by one, all but the last frame.
-            -- Note: the code that generates the frames is responsible
-            -- for inserting the @more@ prompt.
-            b <- getManyConfirms (maybeToList lastKey) frs
-            -- Display the last frame while waiting for the next key or,
-            -- if there is no next frame, just get the key.
-            kmNext <- case mfr of
-              Just fr | b -> getKeyFrameCommand fr
-              _           -> getKeyCommand Nothing
-            -- Look up and perform the next command.
-            loop kmNext
-          else do
+        if timed
+          then assert (null frames `blame` frames) $ do
             -- Exit the loop and let other actors act. No next key needed
             -- and no frames could have been generated.
-            assert (null frames `blame` length frames) $
-              return ()
+            modifyServer (\st -> st {slastKey = Nothing})
+          else
+            -- If no time taken, rinse and repeat.
+            -- Analyse the obtained frames.
+            case reverse $ catMaybes frames of
+              [] -> do
+                -- Nothing special to be shown; by default draw current state.
+                modifyServer (\st -> st {slastKey = Nothing})
+                fCurrent <- drawPrompt ColorFull ""
+                kmNext <- getKeyFrameCommand fCurrent
+                loop kmNext
+              fLast : fs -> do
+                -- Show, one by one, all but the last frame.
+                -- Note: the code that generates the frames is responsible
+                -- for inserting the @more@ prompt.
+                b <- getManyConfirms [km] $ reverse fs
+                -- Display the last frame while waiting for the next key,
+                -- or display current state if slideshow interrupted.
+                kmNext <- if b
+                          then getKeyFrameCommand fLast
+                          else do
+                            modifyServer (\st -> st {slastKey = Nothing})
+                            fCurrent <- drawPrompt ColorFull ""
+                            getKeyFrameCommand fCurrent
+                -- Look up and perform the next command.
+                loop kmNext
   loop kmPush
 
 -- | Advance (or rewind) the move time for the given actor.

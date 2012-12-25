@@ -633,7 +633,7 @@ doLook = do
     disco <- getsServer sdisco
     io <- itemOverlay disco False is
     if length is > 2
-      then displaySlideshow lookMsg "" io
+      then displaySlideshow [] lookMsg "" io
       else do
         fr <- drawPrompt ColorFull lookMsg
         tell [Just fr]

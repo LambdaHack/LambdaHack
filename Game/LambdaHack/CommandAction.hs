@@ -90,12 +90,13 @@ cmdAction s per cmd =
 -- invoked in targeting mode on a remote level (level different than
 -- the level of the selected hero).
 cmdSemantics :: MonadAction m => State -> Perception -> Cmd
-             -> (Bool, WriterT Frames m ())
-cmdSemantics s per cmd =
+             -> WriterT Frames m Bool
+cmdSemantics s per cmd = do
   let (timed, sem) = cmdAction s per cmd
-  in if timed
-     then (timed, checkCursor sem)
-     else (timed, sem)
+  if timed
+    then checkCursor sem
+    else sem
+  return timed
 
 -- | If in targeting mode, check if the current level is the same
 -- as player level and refuse performing the action otherwise.

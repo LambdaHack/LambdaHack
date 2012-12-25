@@ -25,7 +25,8 @@ module Game.LambdaHack.Action
     -- * Display each frame and confirm
   , displayMore, displayYesNo, displaySlideshowAbort
     -- * Assorted frame operations
-  , displaySlideshow, displayChoiceUI, displayFramePush, drawPrompt
+  , submitSlideshow, displaySlideshow
+  , displayChoiceUI, displayFramePush, drawPrompt
     -- * Clip init operations
   , startClip, remember, rememberList
     -- * Assorted primitives
@@ -153,17 +154,14 @@ tryIgnore =
                    else assert `failure` msg <+> "in tryIgnore")
 
 -- | Set the current exception handler. Apart of executing it,
--- draw and pass along a frame with the abort message, if any.
+-- draw and pass along a frame with the abort message (even if empty).
 tryWithFrame :: MonadActionRO m
              => m a -> WriterT Frames m a -> WriterT Frames m a
 tryWithFrame exc h =
-  let msgToFrames ""  = return ()
-      msgToFrames msg = do
+  let excMsg msg = do
         msgReset ""
         fr <- drawPrompt ColorFull msg
         tell [Just fr]
-      excMsg msg = do
-        msgToFrames msg
         lift exc
   in tryWith excMsg h
 
@@ -231,31 +229,25 @@ getYesNo frame = do
     K.Char 'y' -> return True
     _          -> return False
 
--- TODO: perhaps add prompt to Report instead?
-promptAdd :: Msg -> Msg -> Msg
-promptAdd prompt msg = prompt <+> msg
-
 -- | Display a msg with a @more@ prompt. Return value indicates if the player
 -- tried to cancel/escape.
 displayMore :: MonadActionRO m => ColorMode -> Msg -> m Bool
 displayMore dm prompt = do
-  let newPrompt = promptAdd prompt moreMsg
-  frame <- drawPrompt dm newPrompt
+  frame <- drawPrompt dm $ prompt <+> moreMsg
   getConfirm [] frame
 
 -- | Print a yes/no question and return the player's answer. Use black
 -- and white colours to turn player's attention to the choice.
 displayYesNo :: MonadActionRO m => Msg -> m Bool
 displayYesNo prompt = do
-  frame <- drawPrompt ColorBW (promptAdd prompt yesnoMsg)
+  frame <- drawPrompt ColorBW $ prompt <+> yesnoMsg
   getYesNo frame
 
 -- | Print a msg and several overlays, one per page.
 -- All frames require confirmations. Raise @abort@ if the player presses ESC.
 displaySlideshowAbort :: MonadActionRO m => Msg -> Slideshow -> m ()
 displaySlideshowAbort prompt xs = do
-  let newPrompt = promptAdd prompt ""
-  let f x = drawOverlay ColorFull newPrompt (x ++ [moreMsg])
+  let f x = drawOverlay ColorFull prompt (x ++ [moreMsg])
   frames <- mapM f xs
   go <- getManyConfirms [] frames
   when (not go) abort
@@ -264,17 +256,31 @@ displaySlideshowAbort prompt xs = do
 -- The last frame does not expect a confirmation and so does not show
 -- the invitation to press some keys.
 displaySlideshow :: MonadActionRO m
-                => Msg -> Msg -> Slideshow -> WriterT Frames m ()
-displaySlideshow _      _ []  = return ()
-displaySlideshow prompt _ [x] = do
+                => [K.KM] -> Msg -> Msg -> Slideshow -> WriterT Frames m ()
+displaySlideshow _ _      _ []  = return ()
+displaySlideshow _ prompt _ [x] = do
   frame <- drawOverlay ColorFull prompt x
   tell [Just frame]
-displaySlideshow prompt pressKeys (x:xs) = do
-  frame <- drawOverlay ColorFull (promptAdd prompt pressKeys) (x ++ [moreMsg])
-  b <- getConfirm [] frame
+displaySlideshow clearKeys prompt pressKeys (x:xs) = do
+  frame <- drawOverlay ColorFull (prompt <+> pressKeys) (x ++ [moreMsg])
+  b <- getConfirm clearKeys frame
   if b
-    then displaySlideshow prompt pressKeys xs
+    then displaySlideshow clearKeys prompt pressKeys xs
     else return ()
+
+-- | Submit frames for a msg and several overlays, one per page.
+-- The last frame does not expect a confirmation and so does not show
+-- the invitation to press some keys.
+submitSlideshow :: MonadActionRO m
+                => Msg -> Msg -> Slideshow -> WriterT Frames m ()
+submitSlideshow _      _ []  = return ()
+submitSlideshow prompt _ [x] = do
+  frame <- drawOverlay ColorFull prompt x
+  tell [Just frame]
+submitSlideshow prompt pressKeys (x : xs) = do
+  frame <- drawOverlay ColorFull (prompt <+> pressKeys) (x ++ [moreMsg])
+  tell [Just frame]
+  submitSlideshow prompt pressKeys xs
 
 -- | Print a prompt and an overlay and wait for a player keypress.
 -- If many overlays, scroll screenfuls with SPACE. Do not wrap screenfuls

@@ -6,22 +6,22 @@ module Game.LambdaHack.Animation
   ) where
 
 import qualified Data.IntMap as IM
-import Data.Maybe
 import qualified Data.List as L
+import Data.Maybe
 import Data.Monoid
 import Data.Text (Text)
 
-import Game.LambdaHack.PointXY
-import Game.LambdaHack.Point
 import Game.LambdaHack.Color
+import Game.LambdaHack.Point
+import Game.LambdaHack.PointXY
 
 -- | The data sufficent to draw a single game screen frame.
 data SingleFrame = SingleFrame
-  { sfLevel  :: ![[AttrChar]]  -- ^ content of the screen, line by line
-  , sfTop    :: Text           -- ^ an extra line to show at the top
-  , sfBottom :: Text           -- ^ an extra line to show at the bottom
+  { sfLevel  :: [[AttrChar]]  -- ^ content of the screen, line by line
+  , sfTop    :: Text          -- ^ an extra line to show at the top
+  , sfBottom :: Text          -- ^ an extra line to show at the bottom
   }
-  deriving Eq
+  deriving (Eq, Show)
 
 -- | Animation is a list of frame modifications to play one by one,
 -- where each modification if a map from locations to level map symbols.
