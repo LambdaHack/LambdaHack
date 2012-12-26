@@ -4,23 +4,23 @@ module Game.LambdaHack.Action.HighScore
   ( register
   ) where
 
-import System.Directory
 import Control.Monad
-import Text.Printf
-import System.Time
 import Data.Binary
 import qualified Data.List as L
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
+import System.Directory
+import System.Time
+import Text.Printf
 
-import Game.LambdaHack.Utils.File
 import Game.LambdaHack.Config
 import Game.LambdaHack.Dungeon
 import Game.LambdaHack.Misc
-import Game.LambdaHack.Time
 import Game.LambdaHack.Msg
 import Game.LambdaHack.State
+import Game.LambdaHack.Time
+import Game.LambdaHack.Utils.File
 
 -- | A single score record. Records are ordered in the highscore table,
 -- from the best to the worst, in lexicographic ordering wrt the fields below.
@@ -103,8 +103,8 @@ showTable h start height =
   in concatMap showScore screenful
 
 -- | Produce a couple of renderings of the high scores table.
-slideshow :: Int -> ScoreTable -> Int -> Slideshow
-slideshow pos h height =
+showCloseScores :: Int -> ScoreTable -> Int -> [Overlay]
+showCloseScores pos h height =
   if pos <= height
   then [showTable h 1 height]
   else [showTable h 1 height,
@@ -118,7 +118,7 @@ register :: ConfigUI   -- ^ the config file
          -> Time       -- ^ game time spent
          -> ClockTime  -- ^ date of the last game interruption
          -> Status     -- ^ reason of the game interruption
-         -> IO (Msg, Slideshow)
+         -> IO Slideshow
 register configUI write total time date status = do
   h <- restore configUI
   let points = case status of
@@ -149,4 +149,4 @@ register configUI write total time date status = do
         , MU.Ordinal pos, "place"
         , msgUnless ]
   when write $ save configUI h'
-  return (msg, slideshow pos h' height)
+  return $! toSlideshow $ map ([msg] ++) $ showCloseScores pos h' height

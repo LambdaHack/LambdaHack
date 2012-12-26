@@ -210,13 +210,15 @@ getConfirm clearKeys frame = do
 
 -- | Display a series of frames, awaiting confirmation for each.
 getManyConfirms :: MonadActionRO m => [K.KM] -> Slideshow -> m Bool
-getManyConfirms _ [] = return True
-getManyConfirms clearKeys (x:xs) = do
-  frame <- drawBareOverlay x
-  b <- getConfirm clearKeys frame
-  if b
-    then getManyConfirms clearKeys xs
-    else return False
+getManyConfirms clearKeys slides =
+  case runSlideshow slides of
+    [] -> return True
+    x : xs -> do
+      frame <- drawBareOverlay x
+      b <- getConfirm clearKeys frame
+      if b
+        then getManyConfirms clearKeys (toSlideshow xs)
+        else return False
 
 -- | Push a frame or a single frame's worth of delay to the frame queue.
 displayFramePush :: MonadActionRO m => Maybe SingleFrame -> m ()
@@ -257,7 +259,7 @@ displayYesNo prompt = do
 -- (in some menus @?@ cycles views, so the user can restart from the top).
 displayChoiceUI :: MonadActionRO m => Msg -> Overlay -> [K.KM] -> m K.KM
 displayChoiceUI prompt ov keys = do
-  slides <- overlayToSlideshow (prompt <> ", ESC]") ov
+  slides <- fmap runSlideshow $ overlayToSlideshow (prompt <> ", ESC]") ov
   fs <- askFrontendSession
   let legalKeys = (K.Space, K.NoModifier) : (K.Esc, K.NoModifier) : keys
       loop [] = neverMind True
@@ -266,7 +268,7 @@ displayChoiceUI prompt ov keys = do
         (key, modifier) <- liftIO $ promptGetKey fs legalKeys frame
         case key of
           K.Esc -> neverMind True
-          K.Space | not (null xs) -> loop xs
+          K.Space -> loop xs
           _ -> return (key, modifier)
   loop slides
 
@@ -285,13 +287,8 @@ overlayToSlideshow :: MonadActionPure m => Msg -> Overlay -> m Slideshow
 overlayToSlideshow prompt overlay = do
   lysize <- getsServer (lysize . slevel)
   Diary{sreport} <- getDiary
-  let over = splitReport (addMsg sreport prompt) ++ overlay
-  if length over <= lysize + 2
-    then return [over]  -- all fits on one screen
-    else do
-      let (pre, post) = splitAt (lysize + 1) over
-      rest <- overlayToSlideshow prompt post
-      return $ (pre ++ [moreMsg]) : rest
+  let msg = splitReport (addMsg sreport prompt)
+  return $! splitOverlay lysize msg overlay
 
 -- | Draw the current level with the overlay on top.
 drawBareOverlay :: MonadActionPure m => Overlay -> m SingleFrame
@@ -390,11 +387,8 @@ handleScores write status total =
     configUI <- askConfigUI
     time <- getsServer stime
     curDate <- liftIO getClockTime
-    (placeMsg, slideshow) <-
-      liftIO $ register configUI write total time curDate status
-    let f x = overlayToSlideshow placeMsg (x ++ [moreMsg])
-    frames <- mapM f slideshow
-    go <- getManyConfirms [] $ concat frames
+    slides <- liftIO $ register configUI write total time curDate status
+    go <- getManyConfirms [] slides
     when (not go) abort
 
 -- | Continue or restart or exit the game.

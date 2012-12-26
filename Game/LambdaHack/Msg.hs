@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | Game messages displayed on top of the screen for the player to read.
 module Game.LambdaHack.Msg
@@ -8,17 +8,20 @@ module Game.LambdaHack.Msg
   , splitReport, renderReport
   , History, emptyHistory, singletonHistory, addReport, renderHistory
   , takeHistory
-  , Overlay, Slideshow, stringByLocation
-  ) where
+  , Overlay, stringByLocation
+  , Slideshow(runSlideshow), splitOverlay, toSlideshow)
+  where
 
 import Data.Binary
 import qualified Data.ByteString.Char8 as BS
 import Data.Char
 import qualified Data.IntMap as IM
 import qualified Data.List as L
+import Data.Monoid hiding ((<>))
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
+import Game.LambdaHack.Utils.Assert
 import NLP.Miniutter.English (showT, (<+>), (<>))
 import qualified NLP.Miniutter.English as MU
 
@@ -156,12 +159,10 @@ addReport (Report m) (History (Report h : hs)) =
 takeHistory :: Int -> History -> History
 takeHistory k (History h) = History $ take k h
 
--- | A screenful of text lines. When displayed, they are trimmed, not wrapped
--- and any lines below the lower screen edge are not visible.
+-- | A series of screen lines that may or may not fit the width nor height
+-- of the screen. An overlay may be transformed by adding the first line
+-- and/or by splitting into a slideshow of smaller overlays.
 type Overlay = [Text]
-
--- | A few overlays, displayed one by one upon keypress.
-type Slideshow = [Overlay]
 
 -- | Returns a function that looks up the characters in the
 -- string by location. Takes the width and height of the display plus
@@ -170,12 +171,38 @@ stringByLocation :: X -> Y -> Overlay
                  -> (Text, PointXY -> Maybe Char, Maybe Text)
 stringByLocation _ _ [] = (T.empty, const Nothing, Nothing)
 stringByLocation lxsize lysize (msgTop : ls) =
-  let over = map (padMsg lxsize) $ take lysize ls
-      m  = IM.fromDistinctAscList $
-             zip [0..] (L.map (IM.fromList . zip [0..] . T.unpack) over)
-      msgBottom = case drop lysize ls of
+  let (over, bottom) = splitAt lysize $ map (padMsg lxsize) ls
+      m = IM.fromDistinctAscList $
+            zip [0..] (L.map (IM.fromList . zip [0..] . T.unpack) over)
+      msgBottom = case bottom of
                   [] -> Nothing
-                  s : _ -> Just s
-  in (msgTop,
+                  [s] -> Just s
+                  _ -> Just "--a portion of the text trimmed--"
+  in (padMsg lxsize msgTop,
       \ (PointXY (x, y)) -> IM.lookup y m >>= \ n -> IM.lookup x n,
       msgBottom)
+
+-- | Split an overlay into a slideshow in which each overlay,
+-- prefixed by @msg@ and postfixed by @moreMsg@ except for the last one,
+-- fits on the screen wrt height (but lines may still be too wide).
+splitOverlay :: Y -> Overlay -> Overlay -> Slideshow
+splitOverlay lysize msg ls = assert (length msg <= lysize) $
+  let over = msg ++ ls
+  in if length over <= lysize + 2
+     then Slideshow [over]  -- all fits on one screen
+     else let (pre, post) = splitAt (lysize + 1) over
+              Slideshow slides = splitOverlay lysize msg post
+          in Slideshow $ (pre ++ [moreMsg]) : slides
+
+-- | A few overlays, displayed one by one upon keypress.
+-- When displayed, they are trimmed, not wrapped
+-- and any lines below the lower screen edge are not visible.
+newtype Slideshow = Slideshow {runSlideshow :: [Overlay]}
+  deriving (Monoid, Show)
+
+-- | Declare the list of overlays to be fit for display on the screen.
+-- In particular, current @Report@ is eiter empty or unimportant
+-- or contained in the overlays and if any vertical or horizontal
+-- trimming of the overlays happens, this is intended.
+toSlideshow :: [Overlay] -> Slideshow
+toSlideshow = Slideshow

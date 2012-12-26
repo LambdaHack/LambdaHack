@@ -223,14 +223,14 @@ playerCommand msgRunAbort = do
         -- The command was aborted or successful and if the latter,
         -- possibly took some time.
         if timed
-          then assert (null slides `blame` slides) $ do
+          then assert (null (runSlideshow slides) `blame` slides) $ do
             -- Exit the loop and let other actors act. No next key needed
             -- and no slides could have been generated.
             modifyServer (\st -> st {slastKey = Nothing})
           else
             -- If no time taken, rinse and repeat.
             -- Analyse the obtained slides.
-            case reverse slides of
+            case reverse (runSlideshow slides) of
               [] -> do
                 -- Nothing special to be shown; by default draw current state.
                 modifyServer (\st -> st {slastKey = Nothing})
@@ -241,7 +241,7 @@ playerCommand msgRunAbort = do
                 -- Show, one by one, all but the last frame.
                 -- Note: the code that generates the slides is responsible
                 -- for inserting the @more@ prompt.
-                b <- getManyConfirms [km] $ reverse sls
+                b <- getManyConfirms [km] $ toSlideshow $ reverse sls
                 -- Display the last frame while waiting for the next key,
                 -- or display current state if slideshow interrupted.
                 kmNext <- if b
