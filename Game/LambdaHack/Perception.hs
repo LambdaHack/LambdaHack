@@ -3,12 +3,13 @@
 module Game.LambdaHack.Perception
   ( Pers, Perception
   , totalVisible, debugTotalReachable, dungeonPerception
-  , actorReachesLoc, actorReachesActor, actorSeesActor
+  , actorReachesLoc, actorSeesLoc
   ) where
 
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import qualified Data.List as L
+import qualified Data.Map as M
 import Data.Maybe
 
 import Game.LambdaHack.Actor
@@ -16,6 +17,7 @@ import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Dungeon
+import Game.LambdaHack.Faction
 import Game.LambdaHack.FOV
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
@@ -31,14 +33,18 @@ newtype PerceptionVisible = PerceptionVisible
   { pvisible :: IS.IntSet
   }
 
--- | The type representing the perception for all levels in the dungeon.
-type Pers = [(LevelId, Perception)]
+-- | Perception indexed by faction identifier.
+type Pers = IM.IntMap FactionPerception
 
--- | The type representing the perception of all actors on the level.
--- Note: Heroes share visibility and only have separate reachability.
+-- | Perception of a single faction, indexed by level identifier.
+type FactionPerception = M.Map LevelId Perception
+
+-- | The type representing the perception of a faction on a level.
+-- Actors of the same faction share visibility and only have separate
+-- reachability.
 data Perception = Perception
-  { pheroes :: IM.IntMap PerceptionReachable
-  , ptotal  :: PerceptionVisible
+  { pactors :: IM.IntMap PerceptionReachable  -- ^ per actor
+  , ptotal  :: PerceptionVisible              -- ^ sum for all actors
   }
 
 -- | The set of tiles visible by at least one hero.
@@ -49,7 +55,7 @@ totalVisible = pvisible . ptotal
 -- (would be visible if lit) by at least one hero.
 debugTotalReachable :: Perception -> IS.IntSet
 debugTotalReachable per =
-  let lpers = IM.elems (pheroes per)
+  let lpers = IM.elems $ pactors per
   in IS.unions (map preachable lpers)
 
 -- | Check whether a location is within the visually reachable area
@@ -57,58 +63,38 @@ debugTotalReachable per =
 actorReachesLoc :: ActorId -> Point -> Perception -> Bool
 actorReachesLoc actor loc per =
   let tryHero = do
-        hper <- IM.lookup actor (pheroes per)
+        hper <- IM.lookup actor $ pactors per
         return $ loc `IS.member` preachable hper
   in fromMaybe False tryHero  -- assume not visible, if no perception found
 
--- | Check whether an actor is within the visually reachable area
--- of the given actor (disregarding lighting).
-actorReachesActor :: ActorId -> ActorId -> Point -> Point -> Perception
-                  -> Bool
-actorReachesActor actor1 actor2 loc1 loc2 per =
-  actorReachesLoc actor1 loc2 per ||
-  actorReachesLoc actor2 loc1 per
-
--- TODO: When the code for throwing, digital lines and lights is complete.
--- make this a special case of ActorSeesActor.
--- | Whether a monster can see a hero (@False@ if the target has
--- no perceptions, e.g., not a hero or a hero without perception, due
--- to being spawned on the same turn by a monster and then seen by another).
--- An approximation, to avoid computing FOV for the monster.
-monsterSeesHero :: Kind.Ops TileKind -> Perception -> Level
-                 -> ActorId -> ActorId -> Point -> Point -> Bool
-monsterSeesHero cotile per lvl _source target sloc tloc =
-  let rempty = PerceptionReachable IS.empty
-      reachable@PerceptionReachable{preachable} =
-        fromMaybe rempty $ IM.lookup target $ pheroes per
-  in sloc `IS.member` preachable
-     && isVisible cotile reachable lvl IS.empty tloc
-
--- | Whether an actor can see another. An approximation.
-actorSeesActor :: Kind.Ops TileKind -> Perception -> Level
-               -> ActorId -> ActorId -> Point -> Point -> Bool
-actorSeesActor cotile per lvl source target sloc tloc =
-  let heroReaches = actorReachesLoc source tloc per
-      visByHeroes = tloc `IS.member` totalVisible per
-      monsterSees = monsterSeesHero cotile per lvl source target sloc tloc
-  in  heroReaches && visByHeroes || monsterSees
+-- | Whether an actor can see a location.
+actorSeesLoc :: Perception -> ActorId -> Point -> Bool
+actorSeesLoc per source tloc =
+  let reachable = actorReachesLoc source tloc per
+      visible = tloc `IS.member` totalVisible per
+  in reachable && visible
 
 -- | Calculate the perception of all actors on the level.
 dungeonPerception :: Kind.COps -> State -> Pers
-dungeonPerception cops s@State{slid, sdungeon} =
-  let lvlPer (ln, lvl) = (ln, levelPerception cops s lvl)
-  in map lvlPer $ currentFirst slid sdungeon
+dungeonPerception cops s =
+  let f fid _ = factionPerception cops s fid
+  in IM.mapWithKey f $ sfactions s
 
--- | Calculate the perception of all actors on the level.
-levelPerception :: Kind.COps -> State -> Level -> Perception
+-- | Calculate perception of the faction.
+factionPerception :: Kind.COps -> State -> FactionId -> FactionPerception
+factionPerception cops s fid =
+  M.map (levelPerception cops s fid) $ dungeonLevelMap (sdungeon s)
+
+-- | Calculate perception of the level.
+levelPerception :: Kind.COps -> State -> FactionId -> Level -> Perception
 levelPerception cops@Kind.COps{cotile}
                 State{ sconfig
-                     , sfaction
                      , sdebug = DebugMode{smarkVision}
                      }
+                fid
                 lvl@Level{lactor} =
   let Config{configFovMode} = sconfig
-      hs = IM.filter (\ m -> bfaction m == sfaction && not (bproj m)) lactor
+      hs = IM.filter (\ m -> bfaction m == fid && not (bproj m)) lactor
       pers = IM.map (\ h ->
                       computeReachable cops configFovMode smarkVision h lvl) hs
       locs = map bloc $ IM.elems hs
@@ -117,7 +103,7 @@ levelPerception cops@Kind.COps{cotile}
       -- TODO: Instead of giving the monster a light source, alter vision.
       lights = IS.fromList locs
       visible = computeVisible cotile reachable lvl lights
-  in Perception { pheroes = pers
+  in Perception { pactors = pers
                 , ptotal  = visible
                 }
 

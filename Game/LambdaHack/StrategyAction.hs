@@ -46,16 +46,14 @@ targetStrategy :: Kind.COps -> ActorId -> State -> Perception -> [Ability]
 targetStrategy cops actor state per factionAbilities =
   reacquire btarget
  where
-  Kind.COps{ cotile
-           , coactor=coactor@Kind.Ops{okind}
-           } = cops
+  Kind.COps{coactor=coactor@Kind.Ops{okind}} = cops
   lvl@Level{lxsize} = slevel state
   actorBody@Actor{ bkind, bloc = me, btarget, bfaction } =
     getActor actor state
   mk = okind bkind
-  enemyVisible a l =
+  enemyVisible l =
     asight mk
-    && actorSeesActor cotile per lvl actor a me l
+    && actorSeesLoc per actor l
     -- Enemy can be felt if adjacent, even if invisible or disguise.
     -- TODO: can this be replaced by setting 'lights' to [me]?
     || adjacent lxsize me l
@@ -72,7 +70,7 @@ targetStrategy cops actor state per factionAbilities =
       TEnemy a ll | focused
                     && memActor a state ->  -- present on this level
         let l = bloc $ getActor a state
-        in if enemyVisible a l         -- prefer visible foes
+        in if enemyVisible l           -- prefer visible foes
            then returN "TEnemy" $ TEnemy a l
            else if null visibleFoes    -- prefer visible foes
                    && me /= ll         -- not yet reached the last enemy loc
@@ -86,7 +84,7 @@ targetStrategy cops actor state per factionAbilities =
       TLoc _ -> closest                -- prefer visible foes
       TCursor  -> closest
   foes = hostileAssocs bfaction lvl
-  visibleFoes = L.filter (uncurry enemyVisible) (L.map (second bloc) foes)
+  visibleFoes = L.filter (enemyVisible . snd) (L.map (second bloc) foes)
   closest :: Strategy Target
   closest =
     let foeDist = L.map (\ (_, l) -> chessDist lxsize me l) visibleFoes

@@ -4,7 +4,7 @@ module Game.LambdaHack.Dungeon
   ( -- * Level identifier
     LevelId, levelNumber, levelDefault
     -- * Dungeon
-  , Dungeon, fromList, currentFirst
+  , Dungeon, dungeonLevelMap, fromList, currentFirst
   , adjust, mapDungeon, (!), lookupLevel, depth
   ) where
 

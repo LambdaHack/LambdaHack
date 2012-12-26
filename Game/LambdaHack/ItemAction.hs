@@ -207,7 +207,7 @@ targetMonster :: MonadAction m => TgtMode -> WriterT Slideshow m ()
 targetMonster tgtMode = do
   pl        <- getsServer splayer
   ploc      <- getsServer (bloc . getPlayerBody)
-  sfaction <- getsServer sfaction
+  sfaction  <- getsServer sfaction
   ms        <- getsServer (hostileAssocs sfaction . slevel)
   per       <- askPerception
   lxsize    <- getsServer (lxsize . slevel)
@@ -262,7 +262,8 @@ setCursor tgtMode = assert (tgtMode /= TgtOff) $ do
   clocLn <- getsServer slid
   let upd cursor@Cursor{ctargeting, clocation=clocationOld, ceps=cepsOld} =
         let clocation =
-              fromMaybe ploc (targetToLoc (totalVisible per) state ploc)
+              fromMaybe ploc (targetToLoc (totalVisible per)
+                                          state ploc)
             ceps = if clocation == clocationOld then cepsOld else 0
             newTgtMode = if ctargeting == TgtOff then tgtMode else ctargeting
         in cursor { ctargeting = newTgtMode, clocation, clocLn, ceps }

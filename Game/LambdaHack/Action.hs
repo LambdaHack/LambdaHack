@@ -128,7 +128,8 @@ askPerception :: MonadActionPure m => m Perception
 askPerception = do
   lid <- getsServer slid
   pers <- ask
-  return $! fromJust $! lookup lid pers
+  sfaction <- getsServer sfaction
+  return $! pers IM.! sfaction M.! lid
 
 -- | Reset the state and resume from the last backup point, i.e., invoke
 -- the failure continuation.

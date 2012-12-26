@@ -10,6 +10,7 @@ import qualified Data.List as L
 import qualified Data.Map as M
 import Data.Maybe
 import qualified Data.Ord as Ord
+import Control.Monad.Reader.Class
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
@@ -151,10 +152,11 @@ handleAI :: MonadAction m => ActorId -> m ()
 handleAI actor = do
   cops@Kind.COps{costrat=Kind.Ops{oname, okind}} <- askCOps
   state <- getServer
-  per <- askPerception
+  pers <- ask
   let Actor{bfaction, bloc, bsymbol} = getActor actor state
       factionAI = gAiIdle $ sfactions state IM.! bfaction
       factionAbilities = sabilities (okind factionAI)
+      per = pers IM.! bfaction M.! (slid state)
       stratTarget = targetStrategy cops actor state per factionAbilities
   -- Choose a target from those proposed by AI for the actor.
   btarget <- rndToAction $ frequency $ bestVariant $ stratTarget

@@ -91,7 +91,8 @@ runDisturbance locLast distLast msg hs ms per locHere
                locHasFeature locHasItems lxsize lysize (dirNew, distNew) =
   let msgShown  = not $ nullReport msg
       mslocs    = IS.delete locHere $ IS.fromList (L.map bloc ms)
-      enemySeen = not (IS.null (mslocs `IS.intersection` totalVisible per))
+      enemySeen =
+        not (IS.null (mslocs `IS.intersection` totalVisible per))
       surrLast  = locLast : vicinity lxsize lysize locLast
       surrHere  = locHere : vicinity lxsize lysize locHere
       locThere  = locHere `shift` dirNew
