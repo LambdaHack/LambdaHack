@@ -43,6 +43,7 @@ import qualified Control.Monad.State as St
 import Control.Monad.Writer.Strict (WriterT, tell, lift)
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
+import Data.List
 import qualified Data.Map as M
 import Data.Maybe
 import Data.Text (Text)
@@ -65,10 +66,12 @@ import Game.LambdaHack.ActorState
 import Game.LambdaHack.Animation (Frames, SingleFrame(..))
 import Game.LambdaHack.Binding
 import Game.LambdaHack.Config
+import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Draw
 import qualified Game.LambdaHack.DungeonState as DungeonState
+import Game.LambdaHack.Faction
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Key as K
 import qualified Game.LambdaHack.Kind as Kind
@@ -447,9 +450,10 @@ restartGame handleTurn = do
 
 -- TODO: do this inside Action ()
 gameReset :: ConfigUI -> Kind.COps -> IO State
-gameReset configUI cops@Kind.COps{ coitem=coitem@Kind.Ops{okind}
+gameReset configUI cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
+                                 , coitem=coitem@Kind.Ops{okind}
                                  , corule
-                                 , cofact=Kind.Ops{opick}} = do
+                                 , costrat=Kind.Ops{opick=sopick} } = do
   -- Rules config reloaded at each new game start.
   (sconfig, dungeonGen, srandom) <- ConfigIO.mkConfigRules corule
   let rnd = do
@@ -461,11 +465,26 @@ gameReset configUI cops@Kind.COps{ coitem=coitem@Kind.Ops{okind}
         DungeonState.FreshDungeon{..} <-
           DungeonState.generate cops sflavour discoRev sconfig
         let factionName = configFaction sconfig
-        sfaction <- opick factionName (const True)
-        let state = defaultState sflavour
+        playerFactionKindId <- opick factionName (const True)
+        let g gkind fk mk = do
+              (m, k) <- mk
+              let gname = Nothing
+                  genemy = fenemy fk
+                  gally = fally fk
+              gAiSelected <-
+                if gkind == playerFactionKindId
+                then return Nothing
+                else fmap Just $ sopick (fAiSelected fk) (const True)
+              gAiIdle <- sopick (fAiIdle fk) (const True)
+              return (IM.insert k Faction{..} m, k + 1)
+        sfactions <- fmap fst $ ofoldrWithKey g (return (IM.empty, 0))
+        let sfaction = fst $ fromJust
+                       $ find (\(_, fa) -> isNothing (gAiSelected fa))
+                       $ IM.toList sfactions
+            state = defaultState sflavour
                                  disco discoS discoRev
                                  freshDungeon entryLevel srandom
-                                 sconfig sfaction entryLoc
+                                 sconfig sfaction sfactions entryLoc
         return $ initialHeroes cops entryLoc configUI state
   return $! St.evalState rnd dungeonGen
 

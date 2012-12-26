@@ -12,7 +12,7 @@ import Control.Monad
 import Control.Monad.Writer.Strict (WriterT, tell)
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
-import qualified Data.List as L
+import Data.List
 import qualified Data.Map as M
 import Data.Maybe
 import Data.Ratio
@@ -37,6 +37,7 @@ import qualified Game.LambdaHack.Dungeon as Dungeon
 import Game.LambdaHack.DungeonState
 import qualified Game.LambdaHack.Effect as Effect
 import Game.LambdaHack.EffectAction
+import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Key as K
@@ -131,12 +132,12 @@ triggerTile dloc = do
         pl <- getsServer splayer
         void $ effectToAction effect 0 pl pl 0 False  -- no block against tile
         return ()
-      f (F.ChangeTo group) = do
+      f (F.ChangeTo tgroup) = do
         Level{lactor} <- getsServer slevel
         case lvl `atI` dloc of
           [] -> if unoccupied (IM.elems lactor) dloc
                 then do
-                  newTileId <- rndToAction $ opick group (const True)
+                  newTileId <- rndToAction $ opick tgroup (const True)
                   let adj = (Kind.// [(dloc, newTileId)])
                   modifyServer (updateLevel (updateLMap adj))
 -- TODO: take care of AI using this function (aborts, etc.).
@@ -254,7 +255,7 @@ heroesAfterPl = do
   pl <- getsServer splayer
   s  <- getServer
   let hs = map (tryFindHeroK s) [0..9]
-      i = fromMaybe (-1) $ L.findIndex (== Just pl) hs
+      i = fromMaybe (-1) $ findIndex (== Just pl) hs
       (lt, gt) = (take i hs, drop (i + 1) hs)
   return $ catMaybes gt ++ catMaybes lt
 
@@ -265,7 +266,7 @@ cycleHero = do
   pl <- getsServer splayer
   s  <- getServer
   hs <- heroesAfterPl
-  case L.filter (flip memActor s) hs of
+  case filter (flip memActor s) hs of
     [] -> abortWith "Cannot select any other hero on this level."
     ni : _ -> selectPlayer ni
                 >>= assert `trueM` (pl, ni, "hero duplicated")
@@ -305,7 +306,7 @@ search = do
                 then IM.insert loc k sle
                 else IM.delete loc sle
            else sle
-      leNew = L.foldl' searchTile le (moves lxsize)
+      leNew = foldl' searchTile le (moves lxsize)
   modifyServer (updateLevel (\ l -> l {lsecret = leNew}))
   lvlNew <- getsServer slevel
   let triggerHidden mv = do
@@ -467,6 +468,9 @@ actorRunActor source target = do
    then stopRunning  -- do not switch positions repeatedly
    else void $ focusIfOurs target
 
+-- TODO: probably not the right semantics: for each kind of factions
+-- that spawn, only the first faction with that kind is every picked.
+-- TODO: merge partially with summonMonster?
 -- | Create a new monster in the level, at a random position.
 rollMonster :: Kind.COps -> Perception -> State -> Rnd State
 rollMonster Kind.COps{ cotile
@@ -477,12 +481,12 @@ rollMonster Kind.COps{ cotile
       ms = hostileList state
       hs = heroList state
       isLit = Tile.isLit cotile
-  rc <- monsterGenChance (Dungeon.levelNumber $ slid state) (L.length ms)
+  rc <- monsterGenChance (Dungeon.levelNumber $ slid state) (length ms)
   if not rc
     then return state
     else do
       let distantAtLeast d =
-            \ l _ -> L.all (\ h -> chessDist (lxsize lvl) (bloc h) l > d) hs
+            \ l _ -> all (\ h -> chessDist (lxsize lvl) (bloc h) l > d) hs
       loc <-
         findLocTry 20 (lmap lvl)  -- 20 only, for unpredictability
           [ \ _ t -> not (isLit t)
@@ -494,9 +498,12 @@ rollMonster Kind.COps{ cotile
           , \ l t -> Tile.hasFeature cotile F.Walkable t
                      && unoccupied (IM.elems lactor) l
           ]
-      bfaction <- fopick "spawn" (const True)
-      mk <- opick (foname bfaction) (const True)
+      spawnKindId <- fopick "spawn" (const True)
+      mk <- opick (foname spawnKindId) (const True)
       hp <- rollDice $ ahp $ okind mk
+      let bfaction = fst $ fromJust
+                     $ find (\(_, fa) -> gkind fa == spawnKindId)
+                     $ IM.toList $ sfactions state
       return $ addMonster cotile mk hp loc bfaction False state
 
 -- | Generate a monster, possibly.
@@ -580,7 +587,7 @@ displayMainMenu = do
               in if length braces == 25
                  then (bsRest, T.pack prefix <> binding <> T.pack suffix)
                  else (bs, T.pack line)
-        in snd . L.mapAccumL over bindings
+        in snd . mapAccumL over bindings
       mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule
       menuOverlay =  -- TODO: switch to Text and use T.justifyLeft
         overwrite $ pasteVersion $ map T.unpack $ stripFrame $ mainMenuArt

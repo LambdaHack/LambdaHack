@@ -18,9 +18,9 @@ import Game.LambdaHack.ActorState
 import Game.LambdaHack.Binding
 import qualified Game.LambdaHack.Command as Command
 import Game.LambdaHack.CommandAction
-import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.StrategyKind
 import Game.LambdaHack.EffectAction
+import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Key as K
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
@@ -149,26 +149,23 @@ handleActors subclipStart = do
 -- | Handle the move of a single monster.
 handleAI :: MonadAction m => ActorId -> m ()
 handleAI actor = do
-  cops@Kind.COps{ cofact=Kind.Ops{okind}
-                , costrat=Kind.Ops{opick, okind=sokind}
-                } <- askCOps
+  cops@Kind.COps{costrat=Kind.Ops{oname, okind}} <- askCOps
   state <- getServer
   per <- askPerception
   let Actor{bfaction, bloc, bsymbol} = getActor actor state
-      faction = okind bfaction
-  factionAi <- rndToAction $ opick (fAiIdle faction) (const True)
-  let factionAbilities = sabilities (sokind factionAi)
+      factionAI = gAiIdle $ sfactions state IM.! bfaction
+      factionAbilities = sabilities (okind factionAI)
       stratTarget = targetStrategy cops actor state per factionAbilities
   -- Choose a target from those proposed by AI for the actor.
   btarget <- rndToAction $ frequency $ bestVariant $ stratTarget
   updateAnyActor actor $ \ m -> m { btarget }
   stateNew <- getServer
   let stratMove = strategy cops actor stateNew factionAbilities
-  debug $ "handleAI faction:" <+> fname faction
-     <>          ", symbol:"  <+> showT bsymbol
-     <>          ", loc:"     <+> showT bloc
-     <> "\nhandleAI target:"  <+> showT stratTarget
-     <> "\nhandleAI move:"    <+> showT stratMove
+  debug $ "handleAI factionAI:" <+> oname factionAI
+     <>          ", symbol:"    <+> showT bsymbol
+     <>          ", loc:"       <+> showT bloc
+     <> "\nhandleAI target:"    <+> showT stratTarget
+     <> "\nhandleAI move:"      <+> showT stratMove
   -- Run the AI: choses an action from those given by the AI strategy.
   join $ rndToAction $ frequency $ bestVariant $ stratMove
 

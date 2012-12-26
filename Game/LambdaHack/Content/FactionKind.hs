@@ -3,18 +3,18 @@ module Game.LambdaHack.Content.FactionKind
   ( FactionKind(..), fvalidate
   ) where
 
-import Game.LambdaHack.Misc
 import Data.Text (Text)
+import Game.LambdaHack.Misc
 
 -- | Faction properties that are fixed for a given kind of factions.
 data FactionKind = FactionKind
   { fsymbol     :: !Char      -- ^ a symbol
   , fname       :: !Text      -- ^ short description
   , ffreq       :: !Freqs     -- ^ frequency within groups
-  , fAiSelected :: !Text      -- ^ Ai to use for the selected actor
-  , fAiIdle     :: !Text      -- ^ Ai to use for idle actors
-  , fenemy      :: ![Text]    -- ^ initially in war with these factions
-  , fally       :: ![Text]    -- ^ initially allied with these factions
+  , fAiSelected :: !Text      -- ^ AI to use for the selected actor
+  , fAiIdle     :: !Text      -- ^ AI to use for idle actors
+  , fenemy      :: ![Text]    -- ^ initially in war with such factions
+  , fally       :: ![Text]    -- ^ initially allied with such factions
   }
   deriving Show
 

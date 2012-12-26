@@ -21,7 +21,7 @@ import qualified NLP.Miniutter.English as MU
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Content.FactionKind
+import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Point
@@ -47,9 +47,9 @@ data Actor = Actor
   , bletter  :: !Char                   -- ^ next inventory letter
   , btime    :: !Time                   -- ^ absolute time of next action
   , bwait    :: !Time                   -- ^ last bracing expires at this time
-  , bfaction :: !(Kind.Id FactionKind)  -- ^ to which faction the actor belongs
+  , bfaction :: !FactionId              -- ^ to which faction the actor belongs
   , bproj    :: !Bool                   -- ^ is a projectile? (shorthand only,
-                                        --   this can be deduced from bkind)
+                                        -- this can be deduced from bkind)
   }
   deriving Show
 
@@ -116,7 +116,7 @@ partActor Kind.Ops{oname} a = MU.Text $ fromMaybe (oname $ bkind a) (bname a)
 -- | A template for a new non-projectile actor. The initial target is invalid
 -- to force a reset ASAP.
 template :: Kind.Id ActorKind -> Maybe Char -> Maybe Text -> Int -> Point
-         -> Time -> Kind.Id FactionKind -> Bool -> Actor
+         -> Time -> FactionId -> Bool -> Actor
 template bkind bsymbol bname bhp bloc btime bfaction bproj =
   let bcolor  = Nothing
       bspeed  = Nothing

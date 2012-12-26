@@ -104,6 +104,7 @@ library
                       Game.LambdaHack.DungeonState,
                       Game.LambdaHack.Effect,
                       Game.LambdaHack.EffectAction,
+                      Game.LambdaHack.Faction,
                       Game.LambdaHack.Feature,
                       Game.LambdaHack.Flavour,
                       Game.LambdaHack.FOV,

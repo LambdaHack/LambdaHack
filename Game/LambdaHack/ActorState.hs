@@ -23,10 +23,10 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Dungeon
+import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Kind as Kind
@@ -165,7 +165,7 @@ deletePlayer :: State -> State
 deletePlayer s@State{splayer} = deleteActor splayer s
 
 -- TODO: unify, rename
-hostileAssocs :: Kind.Id FactionKind -> Level -> [(ActorId, Actor)]
+hostileAssocs :: FactionId -> Level -> [(ActorId, Actor)]
 hostileAssocs faction lvl =
   filter (\ (_, m) -> bfaction m /= faction && not (bproj m)) $
     IM.toList $ lactor lvl
@@ -180,11 +180,11 @@ dangerousList state@State{sfaction} =
   filter (\ m -> bfaction m /= sfaction) $
     IM.elems $ lactor $ slevel state
 
-factionAssocs :: [Kind.Id FactionKind] -> Level -> [(ActorId, Actor)]
+factionAssocs :: [FactionId] -> Level -> [(ActorId, Actor)]
 factionAssocs l lvl =
   filter (\ (_, m) -> bfaction m `elem` l) $ IM.toList $ lactor lvl
 
-factionList :: [Kind.Id FactionKind] -> State -> [Actor]
+factionList :: [FactionId] -> State -> [Actor]
 factionList l s =
   filter (\ m -> bfaction m `elem` l) $ IM.elems $ lactor $ slevel s
 
@@ -261,7 +261,7 @@ initialHeroes cops ploc configUI state =
 -- | Create a new monster in the level, at a given position
 -- and with a given actor kind and HP.
 addMonster :: Kind.Ops TileKind -> Kind.Id ActorKind -> Int -> Point
-           -> Kind.Id FactionKind -> Bool -> State -> State
+           -> FactionId -> Bool -> State -> State
 addMonster cotile mk hp ploc bfaction bproj state@State{scounter} = do
   let loc = nearbyFreeLoc cotile ploc state
       m = template mk Nothing Nothing hp loc (stime state) bfaction bproj
@@ -271,7 +271,7 @@ addMonster cotile mk hp ploc bfaction bproj state@State{scounter} = do
 -- Adding projectiles
 
 -- | Create a projectile actor containing the given missile.
-addProjectile :: Kind.COps -> Item -> Point -> Kind.Id FactionKind
+addProjectile :: Kind.COps -> Item -> Point -> FactionId
               -> [Point] -> Time -> State -> State
 addProjectile Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}}
               item loc bfaction path btime

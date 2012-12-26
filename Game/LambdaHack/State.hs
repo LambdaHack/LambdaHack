@@ -18,6 +18,7 @@ module Game.LambdaHack.State
   ) where
 
 import Data.Binary
+import qualified Data.IntMap as IM
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
@@ -26,8 +27,8 @@ import System.Time
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Config
-import Game.LambdaHack.Content.FactionKind
 import qualified Game.LambdaHack.Dungeon as Dungeon
+import Game.LambdaHack.Faction
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Key as K
 import qualified Game.LambdaHack.Kind as Kind
@@ -59,18 +60,22 @@ data State = State
   , sflavour  :: !FlavourMap    -- ^ association of flavour to items
   , sdisco    :: !Discoveries   -- ^ items (kinds) that have been discovered
   , sdiscoS   :: !Discoveries   -- ^ all item kinds, as known by the server
-  , sdiscoRev :: !DiscoRev   -- ^ reverse map, used for item creation
+  , sdiscoRev :: !DiscoRev      -- ^ reverse map, used for item creation
   , sdungeon  :: !Dungeon.Dungeon  -- ^ all dungeon levels
   , slid      :: !Dungeon.LevelId  -- ^ identifier of the current level
   , scounter  :: !Int           -- ^ stores next actor index
   , srandom   :: !R.StdGen      -- ^ current random generator
   , sconfig   :: !Config        -- ^ this game's config (including initial RNG)
-  , squit     :: !(Maybe (Bool, Status))       -- ^ cause of game end/exit
-  , sfaction  :: !(Kind.Id FactionKind)        -- ^ our faction
+  , squit     :: !(Maybe (Bool, Status))  -- ^ cause of game end/exit
+  , sfactions :: !FactionDict   -- ^ all factions still in the game
+  , sfaction  :: !FactionId     -- ^ our faction
   , slastKey  :: !(Maybe K.KM)  -- ^ last command key pressed
   , sdebug    :: !DebugMode     -- ^ debugging mode
   }
   deriving Show
+
+-- | All factions in the game, indexed by faction identifier.
+type FactionDict = IM.IntMap Faction
 
 -- | Current targeting mode of the player.
 data TgtMode =
@@ -125,10 +130,11 @@ defaultDiary = do
 -- | Initial game state.
 defaultState :: FlavourMap -> Discoveries -> Discoveries -> DiscoRev
              -> Dungeon.Dungeon -> Dungeon.LevelId -> R.StdGen
-             -> Config -> Kind.Id FactionKind -> Point -> State
+             -> Config -> FactionId -> FactionDict -> Point
+             -> State
 defaultState sflavour sdisco sdiscoS sdiscoRev
              sdungeon slid srandom
-             sconfig sfaction ploc =
+             sconfig sfaction sfactions ploc =
   State
     { splayer  = 0 -- hack: the hero is not yet alive
     , scursor  = (Cursor TgtOff slid ploc slid 0)
@@ -201,6 +207,7 @@ instance Binary State where
     put (show srandom)
     put sconfig
     put sfaction
+    put sfactions
   get = do
     splayer <- get
     scursor <- get
@@ -214,6 +221,7 @@ instance Binary State where
     g <- get
     sconfig <- get
     sfaction <- get
+    sfactions <- get
     let squit = Nothing
         sdebug = defaultDebugMode
         slastKey = Nothing

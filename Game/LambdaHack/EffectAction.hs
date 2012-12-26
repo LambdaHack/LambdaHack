@@ -11,13 +11,13 @@ import Control.Monad.Writer.Strict (WriterT, tell)
 import Data.Function
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
-import qualified Data.List as L
+import Data.List
 import qualified Data.Map as M
 import Data.Maybe
 import Data.Monoid (mempty)
+import Data.Ratio ((%))
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
-import Data.Ratio ((%))
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -31,6 +31,7 @@ import Game.LambdaHack.Draw
 import qualified Game.LambdaHack.Dungeon as Dungeon
 import Game.LambdaHack.DungeonState
 import qualified Game.LambdaHack.Effect as Effect
+import Game.LambdaHack.Faction
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
@@ -212,7 +213,7 @@ eff Effect.Dominate _ source target _power = do
            lxsize <- getsServer (lxsize . slevel)
            lysize <- getsServer (lysize . slevel)
            let cross m = bloc m : vicinityCardinal lxsize lysize (bloc m)
-               vis = L.concatMap cross lm
+               vis = concatMap cross lm
            rememberList vis
            return (True, "A dozen voices yells in anger.")
          else nullEffect
@@ -313,7 +314,7 @@ effLvlGoUp k = do
         hs <- getsServer heroList
         -- Monsters hear that players not on the level. Cancel smell.
         -- Reduces memory load and savefile size.
-        when (L.null hs) $
+        when (null hs) $
           modifyServer (updateLevel (updateSmell (const IM.empty)))
         -- At this place the invariant that the player exists fails.
         -- Change to the new level (invariant not needed).
@@ -490,19 +491,25 @@ summonHeroes n loc =
   assert (b `blame` (newHeroId, "player summons himself")) $
     return ()
 
+-- TODO: probably not the right semantics: for each kind of factions
+-- that spawn, only the first faction with that kind is every picked.
 summonMonsters :: MonadAction m => Int -> Point -> m ()
 summonMonsters n loc = do
+  factions <- getsServer sfactions
   Kind.COps{ cotile
            , coactor=Kind.Ops{opick, okind}
            , cofact=Kind.Ops{opick=fopick, oname=foname}} <- askCOps
-  bfaction <- rndToAction $ fopick "spawn" (const True)
+  spawnKindId <- rndToAction $ fopick "spawn" (const True)
   -- Spawn frequency required greater than zero, but otherwise ignored.
-  let inFaction m = isJust $ lookup (foname bfaction) (afreq m)
+  let inFactionKind m = isJust $ lookup (foname spawnKindId) (afreq m)
   -- Summon frequency used for picking the actor.
-  mk <- rndToAction $ opick "summon" inFaction
+  mk <- rndToAction $ opick "summon" inFactionKind
   hp <- rndToAction $ rollDice $ ahp $ okind mk
+  let bfaction = fst $ fromJust
+                 $ find (\(_, fa) -> gkind fa == spawnKindId)
+                 $ IM.toList factions
   modifyServer (\ s -> iterate (addMonster cotile mk hp loc
-                            bfaction False) s !! n)
+                                           bfaction False) s !! n)
 
 -- | Remove dead heroes (or dead dominated monsters). Check if game is over.
 -- For now we only check the selected hero and at current level,
@@ -532,7 +539,7 @@ checkPartyDeath = do
           gameOver go
     if configFirstDeathEnds
       then animateGameOver
-      else case L.filter (/= pl) ahs of
+      else case filter (/= pl) ahs of
              [] -> animateGameOver
              actor : _ -> do
                msgAdd "The survivors carry on."
@@ -594,12 +601,12 @@ gameOver showEndingScreens = do
 itemOverlay :: MonadActionPure m => Discoveries -> Bool -> [Item] -> m Overlay
 itemOverlay disco sorted is = do
   Kind.COps{coitem} <- askCOps
-  let items | sorted = L.sortBy (cmpLetterMaybe `on` jletter) is
+  let items | sorted = sortBy (cmpLetterMaybe `on` jletter) is
             | otherwise = is
       pr i = makePhrase [ letterLabel (jletter i)
                         , partItemNWs coitem disco i ]
              <> " "
-  return $ L.map pr items
+  return $ map pr items
 
 stopRunning :: MonadAction m => m ()
 stopRunning = updatePlayerBody (\ p -> p { bdir = Nothing })
@@ -618,7 +625,7 @@ doLook = do
   targeting <- getsServer (ctargeting . scursor)
   assert (targeting /= TgtOff) $ do
     let canSee = IS.member loc (totalVisible per)
-        ihabitant | canSee = L.find (\ m -> bloc m == loc) (IM.elems hms)
+        ihabitant | canSee = find (\ m -> bloc m == loc) (IM.elems hms)
                   | otherwise = Nothing
         monsterMsg = maybe "" (\ m -> actorVerb coactor m "be here") ihabitant
         vis | not $ loc `IS.member` totalVisible per =
