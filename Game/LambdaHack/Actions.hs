@@ -435,7 +435,7 @@ actorAttackActor source target = do
                           breturn svisible sloc)
                   anim = blockMiss locs
                   animFrs = animate state diary cops per anim
-              mapM_ displayFramePush $ Nothing : animFrs
+              displayFramesPush $ Nothing : animFrs
             else performHit True
         else performHit False
 
@@ -462,7 +462,7 @@ actorRunActor source target = do
   s <- getServer
   let locs = (Just tloc, Just sloc)
       animFrs = animate s diary cops per $ swapPlaces locs
-  when visible $ mapM_ displayFramePush $ Nothing : animFrs
+  when visible $ displayFramesPush $ Nothing : animFrs
   if source == pl
    then stopRunning  -- do not switch positions repeatedly
    else void $ focusIfOurs target

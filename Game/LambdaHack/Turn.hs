@@ -20,7 +20,6 @@ import qualified Game.LambdaHack.Command as Command
 import Game.LambdaHack.CommandAction
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.StrategyKind
-import Game.LambdaHack.Draw
 import Game.LambdaHack.EffectAction
 import qualified Game.LambdaHack.Key as K
 import qualified Game.LambdaHack.Kind as Kind
@@ -106,7 +105,7 @@ handleActors subclipStart = do
                       else Just (actor, m)
   case mnext of
     _ | isJust squitOld -> return ()
-    Nothing -> when (subclipStart == timeZero) $ displayFramePush Nothing
+    Nothing -> when (subclipStart == timeZero) $ displayFramesPush [Nothing]
     Just (actor, _) -> do
       m <- getsServer (getActor actor)
       if actor == pl
@@ -191,7 +190,9 @@ playerCommand msgRunAbort = do
   -- The frame state is now Push.
   kmPush <- case msgRunAbort of
     "" -> getKeyCommand (Just True)
-    _  -> drawPrompt ColorFull msgRunAbort >>= getKeyFrameCommand
+    _  -> do
+      slides <- promptToSlideshow msgRunAbort
+      getKeyOverlayCommand $ head $ runSlideshow slides
   -- The frame state is now None and remains so between each pair
   -- of lines of @loop@ (but can change within called actions).
   let loop :: K.KM -> m ()
@@ -199,7 +200,7 @@ playerCommand msgRunAbort = do
         -- Messages shown, so update history and reset current report.
         recordHistory
         -- On abort, just reset state and call loop again below.
-        -- Each abort that gets this far generates a frame to be shown.
+        -- Each abort that gets this far generates a slide to be shown.
         (timed, slides) <- runWriterT $ tryWithSlide (return False) $ do
           -- Look up the key.
           Binding{kcmd} <- askBinding
@@ -234,24 +235,22 @@ playerCommand msgRunAbort = do
               [] -> do
                 -- Nothing special to be shown; by default draw current state.
                 modifyServer (\st -> st {slastKey = Nothing})
-                fCurrent <- drawPrompt ColorFull ""
-                kmNext <- getKeyFrameCommand fCurrent
+                sli <- promptToSlideshow ""
+                kmNext <- getKeyOverlayCommand $ head $ runSlideshow sli
                 loop kmNext
               sLast : sls -> do
-                -- Show, one by one, all but the last frame.
+                -- Show, one by one, all but the last slide.
                 -- Note: the code that generates the slides is responsible
                 -- for inserting the @more@ prompt.
                 b <- getManyConfirms [km] $ toSlideshow $ reverse sls
-                -- Display the last frame while waiting for the next key,
+                -- Display the last slide while waiting for the next key,
                 -- or display current state if slideshow interrupted.
                 kmNext <- if b
-                          then do
-                            frame <- drawBareOverlay sLast
-                            getKeyFrameCommand frame
+                          then getKeyOverlayCommand sLast
                           else do
                             modifyServer (\st -> st {slastKey = Nothing})
-                            fCurrent <- drawPrompt ColorFull ""
-                            getKeyFrameCommand fCurrent
+                            sli <- promptToSlideshow ""
+                            getKeyOverlayCommand $ head $ runSlideshow sli
                 -- Look up and perform the next command.
                 loop kmNext
   loop kmPush

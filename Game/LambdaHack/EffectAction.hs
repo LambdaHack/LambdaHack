@@ -123,7 +123,7 @@ effectToAction effect verbosity source target power block = do
             twirlSplash locs Color.BrRed  Color.Red
                | otherwise = mempty
           animFrs = animate s diary cops per anim
-      mapM_ displayFramePush $ Nothing : animFrs
+      displayFramesPush $ Nothing : animFrs
       return (b, True)
      else do
       -- Hidden, but if interesting then heard.
@@ -195,8 +195,9 @@ eff Effect.Dominate _ source target _power = do
       -- of missiles and for the domination to actually take one player's turn.
       updatePlayerBody (\ m -> m { btime = stime s})
       -- Display status line and FOV for the newly controlled actor.
-      fr <- drawPrompt ColorBW ""
-      mapM_ displayFramePush [Nothing, Just fr, Nothing]
+      sli <- promptToSlideshow ""
+      fr <- drawOverlay ColorBW $ head $ runSlideshow sli
+      displayFramesPush [Nothing, Just fr, Nothing]
       return (True, "")
     else if source == target
          then do
@@ -521,7 +522,7 @@ checkPartyDeath = do
           diary  <- getDiary
           s <- getServer
           let animFrs = animate s diary cops per $ deathBody (bloc pbody)
-          mapM_ displayFramePush $ animFrs
+          displayFramesPush animFrs
         animateGameOver = do
           animateDeath
           bodyToCorpse

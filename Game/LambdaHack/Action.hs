@@ -21,13 +21,13 @@ module Game.LambdaHack.Action
     -- * Diary and report
   , getDiary, msgAdd, recordHistory
     -- * Key input
-  , getKeyCommand, getKeyFrameCommand, getManyConfirms
+  , getKeyCommand, getKeyOverlayCommand, getManyConfirms
     -- * Display and key input
-  , displayFramePush, displayMore, displayYesNo, displayChoiceUI
+  , displayFramesPush, displayMore, displayYesNo, displayChoiceUI
     -- * Generate slideshows
   , promptToSlideshow, overlayToSlideshow
     -- * Draw frames
-  , drawBareOverlay, drawPrompt
+  , drawOverlay
     -- * Clip init operations
   , startClip, remember, rememberList
     -- * Assorted primitives
@@ -62,7 +62,7 @@ import Game.LambdaHack.Action.HighScore (register)
 import qualified Game.LambdaHack.Action.Save as Save
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Animation (SingleFrame(..))
+import Game.LambdaHack.Animation (Frames, SingleFrame(..))
 import Game.LambdaHack.Binding
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ItemKind
@@ -155,7 +155,7 @@ tryIgnore =
                    else assert `failure` msg <+> "in tryIgnore")
 
 -- | Set the current exception handler. Apart of executing it,
--- draw and pass along a frame with the abort message (even if message empty).
+-- draw and pass along a slide with the abort message (even if message empty).
 tryWithSlide :: MonadActionRO m
              => m a -> WriterT Slideshow m a -> WriterT Slideshow m a
 tryWithSlide exc h =
@@ -176,8 +176,7 @@ recordHistory = do
     historyReset $! takeHistory configHistoryMax $! addReport sreport shistory
 
 -- | Wait for a player command.
-getKeyCommand :: MonadActionRO m
-              => Maybe Bool -> m K.KM
+getKeyCommand :: MonadActionRO m => Maybe Bool -> m K.KM
 getKeyCommand doPush = do
   fs <- askFrontendSession
   keyb <- askBinding
@@ -186,10 +185,10 @@ getKeyCommand doPush = do
     K.NoModifier -> (fromMaybe nc $ M.lookup nc $ kmacro keyb, modifier)
     _ -> (nc, modifier)
 
--- | Display frame and wait for a player command.
-getKeyFrameCommand :: MonadActionRO m
-                   => SingleFrame -> m K.KM
-getKeyFrameCommand frame = do
+-- | Display an overlay and wait for a player command.
+getKeyOverlayCommand :: MonadActionRO m => Overlay -> m K.KM
+getKeyOverlayCommand overlay = do
+  frame <- drawOverlay ColorFull overlay
   fs <- askFrontendSession
   keyb <- askBinding
   (nc, modifier) <- liftIO $ promptGetKey fs [] frame
@@ -208,23 +207,23 @@ getConfirm clearKeys frame = do
     _ | km `elem` clearKeys -> return True
     _ -> return False
 
--- | Display a series of frames, awaiting confirmation for each.
+-- | Display a slideshow, awaiting confirmation for each slide.
 getManyConfirms :: MonadActionRO m => [K.KM] -> Slideshow -> m Bool
 getManyConfirms clearKeys slides =
   case runSlideshow slides of
     [] -> return True
     x : xs -> do
-      frame <- drawBareOverlay x
+      frame <- drawOverlay ColorFull x
       b <- getConfirm clearKeys frame
       if b
         then getManyConfirms clearKeys (toSlideshow xs)
         else return False
 
--- | Push a frame or a single frame's worth of delay to the frame queue.
-displayFramePush :: MonadActionRO m => Maybe SingleFrame -> m ()
-displayFramePush mframe = do
+-- | Push frames or frame's worth of delay to the frame queue.
+displayFramesPush :: MonadActionRO m => Frames -> m ()
+displayFramesPush frames = do
   fs <- askFrontendSession
-  liftIO $ displayFrame fs False mframe
+  liftIO $ mapM_ (displayFrame fs False) frames
 
 -- | A yes-no confirmation.
 getYesNo :: MonadActionRO m => SingleFrame -> m Bool
@@ -243,14 +242,16 @@ getYesNo frame = do
 -- tried to cancel/escape.
 displayMore :: MonadActionRO m => ColorMode -> Msg -> m Bool
 displayMore dm prompt = do
-  frame <- drawPrompt dm $ prompt <+> moreMsg
+  sli <- promptToSlideshow $ prompt <+> moreMsg
+  frame <- drawOverlay dm $ head $ runSlideshow sli
   getConfirm [] frame
 
 -- | Print a yes/no question and return the player's answer. Use black
 -- and white colours to turn player's attention to the choice.
 displayYesNo :: MonadActionRO m => Msg -> m Bool
 displayYesNo prompt = do
-  frame <- drawPrompt ColorBW $ prompt <+> yesnoMsg
+  sli <- promptToSlideshow $ prompt <+> yesnoMsg
+  frame <- drawOverlay ColorBW $ head $ runSlideshow sli
   getYesNo frame
 
 -- TODO: generalize getManyConfirms and displayChoiceUI to a single op
@@ -264,7 +265,7 @@ displayChoiceUI prompt ov keys = do
   let legalKeys = (K.Space, K.NoModifier) : (K.Esc, K.NoModifier) : keys
       loop [] = neverMind True
       loop (x : xs) = do
-        frame <- drawBareOverlay x
+        frame <- drawOverlay ColorFull x
         (key, modifier) <- liftIO $ promptGetKey fs legalKeys frame
         case key of
           K.Esc -> neverMind True
@@ -281,8 +282,6 @@ promptToSlideshow prompt = overlayToSlideshow prompt []
 -- Together they may take more than one line. The prompt is not added
 -- to history. The portions of overlay that fit on the the rest
 -- of the screen are displayed below. As many slides as needed are shown.
--- If the prompt plus messaga take more than a screenful, infinitely many
--- slides are created.
 overlayToSlideshow :: MonadActionPure m => Msg -> Overlay -> m Slideshow
 overlayToSlideshow prompt overlay = do
   lysize <- getsServer (lysize . slevel)
@@ -291,23 +290,11 @@ overlayToSlideshow prompt overlay = do
   return $! splitOverlay lysize msg overlay
 
 -- | Draw the current level with the overlay on top.
-drawBareOverlay :: MonadActionPure m => Overlay -> m SingleFrame
-drawBareOverlay over = do
+drawOverlay :: MonadActionPure m => ColorMode -> Overlay -> m SingleFrame
+drawOverlay dm over = do
   cops <- askCOps
   per <- askPerception
   s <- getServer
-  return $! draw ColorFull cops per s over
-
--- | Draw the current level. The prompt is displayed, but not added
--- to history. The prompt is appended to the current message
--- and only the first screenful of the resulting overlay is displayed.
-drawPrompt :: MonadActionPure m => ColorMode -> Msg -> m SingleFrame
-drawPrompt dm prompt = do
-  cops <- askCOps
-  per <- askPerception
-  s <- getServer
-  Diary{sreport} <- getDiary
-  let over = splitReport $ addMsg sreport prompt
   return $! draw dm cops per s over
 
 -- | Push the frame depicting the current level to the frame queue.
@@ -317,7 +304,8 @@ displayPush = do
   fs <- askFrontendSession
   s  <- getServer
   pl <- getsServer splayer
-  frame <- drawPrompt ColorFull ""
+  sli <- promptToSlideshow ""
+  frame <- drawOverlay ColorFull $ head $ runSlideshow sli
   -- Visually speed up (by remving all empty frames) the show of the sequence
   -- of the move frames if the player is running.
   let (_, Actor{bdir}, _) = findActorAnyLevel pl s
