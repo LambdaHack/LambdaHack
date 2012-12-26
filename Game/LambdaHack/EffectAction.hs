@@ -103,8 +103,6 @@ effectToAction effect verbosity source target power block = do
     bb <-
      if isAHero s source ||
         isAHero s target ||
-        pl == source ||
-        pl == target ||
         -- Target part of message shown below, so target visibility checked.
         tvisible
      then do
@@ -228,7 +226,6 @@ eff Effect.SummonFriend _ source target power = do
 eff Effect.SummonEnemy _ source target power = do
   tm <- getsServer (getActor target)
   s  <- getServer
-  -- A trick: monster player summons a hero.
   if isAHero s source
     then summonMonsters (1 + power) (bloc tm)
     else summonHeroes (1 + power) (bloc tm)
@@ -478,8 +475,7 @@ selectHero k = do
 focusIfOurs :: MonadActionPure m => ActorId -> m Bool
 focusIfOurs target = do
   s  <- getServer
-  pl <- getsServer splayer
-  if isAHero s target || target == pl
+  if isAHero s target
     then return True
     else return False
 
@@ -627,7 +623,7 @@ doLook = do
         monsterMsg = maybe "" (\ m -> actorVerb coactor m "be here") ihabitant
         vis | not $ loc `IS.member` totalVisible per =
                 " (not visible)"  -- by party
-            | actorReachesLoc pl loc per (Just pl) = ""
+            | actorReachesLoc pl loc per = ""
             | otherwise = " (not reachable)"  -- by hero
         mode = case target of
                  TEnemy _ _ -> "[targeting monster" <> vis <> "]"

@@ -168,7 +168,7 @@ playerTriggerTile feat = do
   ploc <- getsServer (bloc . getPlayerBody)
   bumpTile ploc feat
 
--- | An actor opens a door: player (hero or controlled monster) or enemy.
+-- | An actor opens a door.
 actorOpenDoor :: MonadAction m => ActorId -> Vector -> m ()
 actorOpenDoor actor dir = do
   Kind.COps{ cotile

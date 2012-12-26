@@ -49,7 +49,7 @@ data Actor = Actor
   , bwait    :: !Time                   -- ^ last bracing expires at this time
   , bfaction :: !(Kind.Id FactionKind)  -- ^ to which faction the actor belongs
   , bproj    :: !Bool                   -- ^ is a projectile? (shorthand only,
-                                        -- ^ this can be deduced from bkind)
+                                        --   this can be deduced from bkind)
   }
   deriving Show
 

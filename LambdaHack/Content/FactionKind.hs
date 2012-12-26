@@ -22,7 +22,7 @@ hero = FactionKind
   , ffreq       = [("hero", 1), ("playable", 50)]
   , fAiSelected = "noAbility"  -- no AI, fully manual control
   , fAiIdle     = "meleeAdjacent"
-  , fenemy      = ["monster"]
+  , fenemy      = ["hero", "monster"]
   , fally       = []
   }
 
@@ -32,6 +32,6 @@ monster = FactionKind
   , ffreq       = [("monster", 1), ("playable", 50), ("spawn", 1)]
   , fAiSelected = "fullAbility"
   , fAiIdle     = "fullAbility"
-  , fenemy      = ["hero"]
+  , fenemy      = ["hero", "monster"]
   , fally       = []
   }

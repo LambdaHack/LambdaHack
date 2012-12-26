@@ -46,8 +46,6 @@ isProjectile s a =
   let (_, actor, _) = findActorAnyLevel a s
   in bproj actor
 
--- TODO: currently it's false for player-controlled monsters.
--- When it's no longer, rewrite the places where it matters.
 -- | Checks whether an actor identifier represents a hero.
 isAHero :: State -> ActorId -> Bool
 isAHero s a =

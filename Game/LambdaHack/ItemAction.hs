@@ -228,8 +228,8 @@ targetMonster tgtMode = do
       gtlt     = gt ++ lt
       seen (_, m) =
         let mloc = bloc m
-        in mloc `IS.member` totalVisible per         -- visible by any
-           && actorReachesLoc pl mloc per (Just pl)  -- reachable by player
+        in mloc `IS.member` totalVisible per  -- visible by any
+           && actorReachesLoc pl mloc per     -- reachable by player
       lf = L.filter seen gtlt
       tgt = case lf of
               [] -> target  -- no monsters in sight, stick to last target

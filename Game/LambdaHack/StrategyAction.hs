@@ -43,7 +43,7 @@ import Game.LambdaHack.Vector
 -- | AI proposes possible targets for the actor. Never empty.
 targetStrategy :: Kind.COps -> ActorId -> State -> Perception -> [Ability]
                -> Strategy Target
-targetStrategy cops actor state@State{splayer = pl} per factionAbilities =
+targetStrategy cops actor state per factionAbilities =
   reacquire btarget
  where
   Kind.COps{ cotile
@@ -55,8 +55,8 @@ targetStrategy cops actor state@State{splayer = pl} per factionAbilities =
   mk = okind bkind
   enemyVisible a l =
     asight mk
-    && actorSeesActor cotile per lvl actor a me l pl
-    -- Enemy can be felt if adjacent (e. g., a player-controlled monster).
+    && actorSeesActor cotile per lvl actor a me l
+    -- Enemy can be felt if adjacent, even if invisible or disguise.
     -- TODO: can this be replaced by setting 'lights' to [me]?
     || adjacent lxsize me l
        && (asmell mk || asight mk)
@@ -68,11 +68,9 @@ targetStrategy cops actor state@State{splayer = pl} per factionAbilities =
   reacquire :: Target -> Strategy Target
   reacquire tgt =
     case tgt of
-      TPath _ -> returN "TPath" tgt            -- don't animate missiles
+      TPath _ -> returN "TPath" tgt         -- don't animate missiles
       TEnemy a ll | focused
-                    && memActor a state  -- present on this level
-                    -- Don't hit a new player-controlled monster.
-                    && not (isAHero state actor && a == pl) ->
+                    && memActor a state ->  -- present on this level
         let l = bloc $ getActor a state
         in if enemyVisible a l         -- prefer visible foes
            then returN "TEnemy" $ TEnemy a l
@@ -87,12 +85,7 @@ targetStrategy cops actor state@State{splayer = pl} per factionAbilities =
                                        -- nothing visible, go to loc
       TLoc _ -> closest                -- prefer visible foes
       TCursor  -> closest
-  hs = hostileAssocs bfaction lvl
-  foes = if isAHero state actor
-         then L.filter ((pl /=) . fst) hs  -- ignore player-controlled
-         else if not (isAHero state pl) && memActor pl state
-              then (pl, getPlayerBody state) : hs
-              else hs  -- no player-controlled monster to add
+  foes = hostileAssocs bfaction lvl
   visibleFoes = L.filter (uncurry enemyVisible) (L.map (second bloc) foes)
   closest :: Strategy Target
   closest =
@@ -220,7 +213,7 @@ melee actor state floc =
   dir = displacement bloc floc
 
 rangedFreq :: MonadAction m => Kind.COps -> ActorId -> State -> Point -> Frequency (m ())
-rangedFreq cops actor state@State{splayer = pl} floc =
+rangedFreq cops actor state floc =
   toFreq "throwFreq" $
     if not foesAdj
        && asight mk
@@ -238,12 +231,7 @@ rangedFreq cops actor state@State{splayer = pl} floc =
   bitems = getActorItem actor state
   mk = okind bkind
   tis = lvl `atI` bloc
-  hs = hostileAssocs bfaction lvl
-  foes = if isAHero state actor
-         then L.filter ((pl /=) . fst) hs  -- ignore player-controlled
-         else if not (isAHero state pl) && memActor pl state
-              then (pl, getPlayerBody state) : hs
-              else hs  -- no player-controlled monster to add
+  foes = hostileAssocs bfaction lvl
   foesAdj = foesAdjacent lxsize lysize bloc (map snd foes)
   -- TODO: also don't throw if any loc on path is visibly not accessible
   -- from previous (and tweak eps in bla to make it accessible).
