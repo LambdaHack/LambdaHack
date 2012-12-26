@@ -17,6 +17,7 @@ import Data.Maybe
 import Data.Monoid (mempty)
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
+import Data.Ratio ((%))
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -186,14 +187,22 @@ eff (Effect.Wound nDm) verbosity source target power = do
     updateAnyActor target $ \ m -> m { bhp = newHP }  -- Damage the target.
     return (True, msg)
 eff Effect.Dominate _ source target _power = do
+  Kind.COps{coactor=Kind.Ops{okind}} <- askCOps
   s <- getServer
   if not $ isAHero s target
     then do  -- Monsters have weaker will than heroes.
       selectPlayer target
         >>= assert `trueM` (source, target, "player dominates himself")
+      -- Halve the speed as a side-effect of domination.
+      let halfSpeed :: Actor -> Maybe Speed
+          halfSpeed Actor{bkind} =
+            let speed = aspeed $ okind bkind
+            in Just $ speedScale (1%2) speed
       -- Sync the monster with the hero move time for better display
       -- of missiles and for the domination to actually take one player's turn.
-      updatePlayerBody (\ m -> m { btime = stime s})
+      updatePlayerBody (\ m -> m { bfaction = sfaction s
+                                 , btime = stime s
+                                 , bspeed = halfSpeed m })
       -- Display status line and FOV for the newly controlled actor.
       sli <- promptToSlideshow ""
       fr <- drawOverlay ColorBW $ head $ runSlideshow sli
@@ -236,31 +245,29 @@ eff Effect.Regeneration verbosity source target power =
 eff Effect.Searching _ _source _target _power =
   return (True, "It gets lost and you search in vain.")
 eff Effect.Ascend _ source target power = do
+  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- askCOps
   tm <- getsServer (getActor target)
-  s  <- getServer
-  Kind.COps{coactor} <- askCOps
   void $ focusIfOurs target
-  if not $ isAHero s target  -- not target /= pl: to squash friendly monster
+  if aiq (okind (bkind tm)) < 13  -- monsters can't use stairs
     then squashActor source target
     else effLvlGoUp (power + 1)
   -- TODO: The following message too late if a monster squashed by going up,
   -- unless it's ironic. ;) The same below.
   s2 <- getServer
   return $ if maybe Camping snd (squit s2) == Victor
-    then (True, "")
-    else (True, actorVerb coactor tm "find a way upstairs")
+           then (True, "")
+           else (True, actorVerb coactor tm "find a way upstairs")
 eff Effect.Descend _ source target power = do
+  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- askCOps
   tm <- getsServer (getActor target)
-  s  <- getServer
-  Kind.COps{coactor} <- askCOps
   void $ focusIfOurs target
-  if not $ isAHero s target
+  if aiq (okind (bkind tm)) < 13  -- monsters can't use stairs
     then squashActor source target
     else effLvlGoUp (- (power + 1))
   s2 <- getServer
   return $ if maybe Camping snd (squit s2) == Victor
-    then (True, "")
-    else (True, actorVerb coactor tm "find a way downstairs")
+           then (True, "")
+           else (True, actorVerb coactor tm "find a way downstairs")
 
 nullEffect :: MonadActionPure m => m (Bool, Text)
 nullEffect = return (False, "Nothing happens.")

@@ -108,8 +108,8 @@ speedNormal :: Speed
 speedNormal = Speed $ 2 * sInMs
 
 -- | Scale speed by an @Int@ scalar value.
-speedScale :: Speed -> Int -> Speed
-speedScale (Speed v) s = Speed (v * fromIntegral s)
+speedScale :: Rational -> Speed -> Speed
+speedScale s (Speed v) = Speed (round $ fromIntegral v * s)
 
 -- | The number of time ticks it takes to walk 1 meter at the given speed.
 ticksPerMeter :: Speed -> Time
