@@ -229,10 +229,10 @@ tgtAscend k = do
           -- If that's too slow, we could keep current time in the @Cursor@.
           switchLevel nln
           -- do not freely reveal the other end of the stairs
-          lvl2 <- getsServer slevel
+          clvl <- getsServer slevelClient
           let upd cur =
                 let clocation =
-                      if Tile.hasFeature cotile F.Exit (lvl2 `rememberAt` nloc)
+                      if Tile.hasFeature cotile F.Exit (clvl `rememberAt` nloc)
                       then nloc  -- already know as an exit, focus on it
                       else loc   -- unknow, do not reveal the position
                 in cur { clocation, clocLn = nln }
@@ -329,6 +329,7 @@ moveOrAttack allowAttacks actor dir = do
   state  <- getServer
   pl     <- getsServer splayer
   lvl    <- getsServer slevel
+  clvl   <- getsServer slevelClient
   sm     <- getsServer (getActor actor)
   let sloc = bloc sm           -- source location
       tloc = sloc `shift` dir  -- target location
@@ -341,7 +342,7 @@ moveOrAttack allowAttacks actor dir = do
       | accessible cops lvl sloc tloc -> do
           -- Switching positions requires full access.
           when (actor == pl) $
-            msgAdd $ lookAt cops False True state lvl tloc ""
+            msgAdd $ lookAt cops False True state clvl tloc ""
           actorRunActor actor target
       | otherwise -> abortWith "blocked"
     Nothing
@@ -349,9 +350,9 @@ moveOrAttack allowAttacks actor dir = do
           -- Perform the move.
           updateAnyActor actor $ \ body -> body {bloc = tloc}
           when (actor == pl) $
-            msgAdd $ lookAt cops False True state lvl tloc ""
+            msgAdd $ lookAt cops False True state clvl tloc ""
       | allowAttacks && actor == pl
-        && Tile.canBeHidden cotile (okind $ lvl `rememberAt` tloc) -> do
+        && Tile.canBeHidden cotile (okind $ clvl `rememberAt` tloc) -> do
           msgAdd "You search all adjacent walls for half a second."
           search
       | otherwise ->
@@ -541,7 +542,7 @@ regenerateLevelHP = do
   -- in time together with their level). This prevents cheating
   -- via sending one hero to a safe level and waiting there.
   hi <- getsServer (linv . slevel)
-  modifyServer (updateLevel (updateActorDict (IM.mapWithKey (upd hi))))
+  modifyServer (updateLevel (updateActor (IM.mapWithKey (upd hi))))
 
 -- | Display command help.
 displayHelp :: MonadActionRO m => WriterT Slideshow m ()

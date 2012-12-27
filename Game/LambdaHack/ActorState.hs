@@ -103,7 +103,7 @@ allHeroesAnyLevel State{slid, sdungeon, sfaction} =
 updateAnyActorBody :: ActorId -> (Actor -> Actor) -> State -> State
 updateAnyActorBody actor f state =
   let (ln, _, _) = findActorAnyLevel actor state
-  in updateAnyLevel (updateActorDict $ IM.adjust f actor) ln state
+  in updateAnyLevel (updateActor $ IM.adjust f actor) ln state
 
 updateAnyActorItem :: ActorId -> ([Item] -> [Item]) -> State -> State
 updateAnyActorItem actor f state =
@@ -154,11 +154,11 @@ getActorItem a state = fromMaybe [] $ IM.lookup a (linv (slevel state))
 -- | Removes the actor, if present, from the current level.
 deleteActor :: ActorId -> State -> State
 deleteActor a =
-  updateLevel (updateActorDict (IM.delete a) . updateInv (IM.delete a))
+  updateLevel (updateActor (IM.delete a) . updateInv (IM.delete a))
 
 -- | Add actor to the current level.
 insertActor :: ActorId -> Actor -> State -> State
-insertActor a m = updateLevel (updateActorDict (IM.insert a m))
+insertActor a m = updateLevel (updateActor (IM.insert a m))
 
 -- | Removes a player from the current level.
 deletePlayer :: State -> State
@@ -247,7 +247,7 @@ addHero Kind.COps{coactor, cotile} ploc configUI
       m = template (heroKindId coactor) (Just symbol) (Just name)
                    startHP loc (stime state) sfaction False
       cstate = state { scounter = scounter + 1 }
-  in updateLevel (updateActorDict (IM.insert scounter m)) cstate
+  in updateLevel (updateActor (IM.insert scounter m)) cstate
 
 -- | Create a set of initial heroes on the current level, at location ploc.
 initialHeroes :: Kind.COps -> Point -> ConfigUI -> State -> State
@@ -266,7 +266,7 @@ addMonster cotile mk hp ploc bfaction bproj state@State{scounter} = do
   let loc = nearbyFreeLoc cotile ploc state
       m = template mk Nothing Nothing hp loc (stime state) bfaction bproj
       cstate = state {scounter = scounter + 1}
-  updateLevel (updateActorDict (IM.insert scounter m)) cstate
+  updateLevel (updateActor (IM.insert scounter m)) cstate
 
 -- Adding projectiles
 
@@ -301,6 +301,6 @@ addProjectile Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}}
         , bproj   = True
         }
       cstate = state { scounter = scounter + 1 }
-      upd = updateActorDict (IM.insert scounter m)
+      upd = updateActor (IM.insert scounter m)
             . updateInv (IM.insert scounter [item])
   in updateLevel upd cstate

@@ -4,11 +4,12 @@ module Game.LambdaHack.State
   ( -- * Game state
     State(..), TgtMode(..), Cursor(..), Status(..)
     -- * Accessor
-  , slevel, stime
+  , slevel, slevelClient, stime
     -- * Constructor
   , defaultState
     -- * State update
-  , updateCursor, updateTime, updateDiscoveries, updateLevel, updateDungeon
+  , updateCursor, updateTime, updateDiscoveries
+  , updateLevel, updateLevelClient, updateDungeon
     -- * Player diary
   , Diary(..), defaultDiary
     -- * Textual description
@@ -19,6 +20,7 @@ module Game.LambdaHack.State
 
 import Data.Binary
 import qualified Data.IntMap as IM
+import qualified Data.Map as M
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
@@ -27,6 +29,7 @@ import System.Time
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Config
+import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Dungeon as Dungeon
 import Game.LambdaHack.Faction
 import Game.LambdaHack.Item
@@ -35,6 +38,7 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Point
+import Game.LambdaHack.PointXY
 import Game.LambdaHack.Time
 
 -- | The diary contains all the player data that carries over
@@ -62,6 +66,8 @@ data State = State
   , sdiscoS   :: !Discoveries   -- ^ all item kinds, as known by the server
   , sdiscoRev :: !DiscoRev      -- ^ reverse map, used for item creation
   , sdungeon  :: !Dungeon.Dungeon  -- ^ all dungeon levels
+  , sdungeons :: !(M.Map Dungeon.LevelId LevelClient)
+                                -- ^ hero faction's dungeon view
   , slid      :: !Dungeon.LevelId  -- ^ identifier of the current level
   , scounter  :: !Int           -- ^ stores next actor index
   , srandom   :: !R.StdGen      -- ^ current random generator
@@ -112,6 +118,25 @@ data DebugMode = DebugMode
 slevel :: State -> Level
 slevel State{slid, sdungeon} = sdungeon Dungeon.! slid
 
+slevelClient :: State -> LevelClient
+slevelClient State{slid, sdungeons} = sdungeons M.! slid
+
+-- TODO: add a flag 'fresh' and when saving levels, don't save
+-- and when loading regenerate this level.
+emptyLevelClient :: Kind.Ops TileKind -> X -> Y -> LevelClient
+emptyLevelClient Kind.Ops{ouniqGroup} lxsize lysize =
+  let unknownId = ouniqGroup "unknown space"
+  in LevelClient { lcactor = IM.empty
+                 , lcinv = IM.empty
+                 , lcitem = IM.empty
+                 , lcmap = unknownTileMap unknownId lxsize lysize
+                 , lcseen = 0 }
+
+unknownTileMap :: Kind.Id TileKind -> Int -> Int -> TileMap
+unknownTileMap unknownId cxsize cysize =
+  let bounds = (origin, toPoint cxsize $ PointXY (cxsize - 1, cysize - 1))
+  in Kind.listArray bounds (repeat unknownId)
+
 -- | Get current time from the dungeon data.
 stime :: State -> Time
 stime State{slid, sdungeon} = ltime $ sdungeon Dungeon.! slid
@@ -128,11 +153,12 @@ defaultDiary = do
     }
 
 -- | Initial game state.
-defaultState :: FlavourMap -> Discoveries -> Discoveries -> DiscoRev
+defaultState :: Kind.Ops TileKind -> FlavourMap
+             -> Discoveries -> Discoveries -> DiscoRev
              -> Dungeon.Dungeon -> Dungeon.LevelId -> R.StdGen
              -> Config -> FactionId -> FactionDict -> Point
              -> State
-defaultState sflavour sdisco sdiscoS sdiscoRev
+defaultState coitem sflavour sdisco sdiscoS sdiscoRev
              sdungeon slid srandom
              sconfig sfaction sfactions ploc =
   State
@@ -142,6 +168,9 @@ defaultState sflavour sdisco sdiscoS sdiscoRev
     , squit    = Nothing
     , slastKey = Nothing
     , sdebug   = defaultDebugMode
+    , sdungeons =
+      M.map (\Level{lxsize, lysize} -> emptyLevelClient coitem lxsize lysize)
+            (Dungeon.dungeonLevelMap sdungeon)
     , ..
     }
 
@@ -167,9 +196,20 @@ updateDiscoveries f s = s { sdisco = f (sdisco s) }
 updateLevel :: (Level -> Level) -> State -> State
 updateLevel f s = updateDungeon (Dungeon.adjust f (slid s)) s
 
+-- | Update faction's level data within state.
+updateLevelClient :: (LevelClient -> LevelClient) -> State -> State
+updateLevelClient f s@State{slid} =
+  updateDungeons (M.adjust f slid) s
+
 -- | Update dungeon data within state.
 updateDungeon :: (Dungeon.Dungeon -> Dungeon.Dungeon) -> State -> State
 updateDungeon f s = s {sdungeon = f (sdungeon s)}
+
+-- | Update faction's dungeon data within state.
+updateDungeons :: (M.Map Dungeon.LevelId LevelClient
+                   -> M.Map Dungeon.LevelId LevelClient)
+               -> State -> State
+updateDungeons f s = s {sdungeons = f (sdungeons s)}
 
 cycleMarkVision :: State -> State
 cycleMarkVision s@State{sdebug = sdebug@DebugMode{smarkVision}} =
@@ -202,6 +242,7 @@ instance Binary State where
     put sdiscoS
     put sdiscoRev
     put sdungeon
+    put sdungeons
     put slid
     put scounter
     put (show srandom)
@@ -216,6 +257,7 @@ instance Binary State where
     sdiscoS <- get
     sdiscoRev <- get
     sdungeon <- get
+    sdungeons <- get
     slid <- get
     scounter <- get
     g <- get
@@ -277,7 +319,7 @@ lookAt :: Kind.COps  -- ^ game content
        -> Bool       -- ^ detailed?
        -> Bool       -- ^ can be seen right now?
        -> State      -- ^ game state
-       -> Level      -- ^ current level
+       -> LevelClient  -- ^ current level
        -> Point      -- ^ location to describe
        -> Text       -- ^ an extra sentence to print
        -> Text

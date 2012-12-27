@@ -54,8 +54,9 @@ draw dm cops per s@State{ scursor=Cursor{..}
                , coitem=Kind.Ops{okind=iokind}
                , cotile=Kind.Ops{okind=tokind, ouniqGroup} } = cops
       DebugMode{smarkVision, somniscient} = sdebug
-      lvl@Level{lxsize, lysize, lsmell, ldesc, lactor, ltime, lclear, lseen} =
+      lvl@Level{lxsize, lysize, lsmell, ldesc, lactor, ltime, lclear} =
         slevel s
+      clvl@LevelClient{lcseen} = slevelClient s
       (_, mpl@Actor{bkind, bhp, bloc}, bitems) = findActorAnyLevel splayer s
       ActorKind{ahp, asmell} = okind bkind
       reachable = debugTotalReachable per
@@ -66,8 +67,8 @@ draw dm cops per s@State{ scursor=Cursor{..}
         Just _  -> (False, True)
         Nothing | asmell -> (True, False)
         Nothing -> (False, False)
-      lAt    = if somniscient then at else rememberAt
-      liAt   = if somniscient then atI else rememberAtI
+      lAt    = if somniscient then at lvl else rememberAt clvl
+      liAt   = if somniscient then atI lvl else rememberAtI clvl
       sVisBG = if sVis
                then \ vis rea -> if vis
                                  then Color.Blue
@@ -89,9 +90,9 @@ draw dm cops per s@State{ scursor=Cursor{..}
       bl = fromMaybe [] $ bla lxsize lysize ceps bloc clocation
       dis pxy =
         let loc0 = toPoint lxsize pxy
-            tile = lvl `lAt` loc0
+            tile = lAt loc0
             tk = tokind tile
-            items = lvl `liAt` loc0
+            items = liAt loc0
             sml = IM.findWithDefault timeZero loc0 lsmell
             smlt = sml `timeAdd` timeNegate ltime
             viewActor loc Actor{bkind = bkind2, bsymbol, bcolor}
@@ -149,7 +150,7 @@ draw dm cops per s@State{ scursor=Cursor{..}
         in case over pxy of
              Just c -> Color.AttrChar Color.defaultAttr c
              _      -> Color.AttrChar a char
-      seenN = 100 * lseen `div` lclear
+      seenN = 100 * lcseen `div` lclear
       seenTxt | seenN == 100 = "all"
               | otherwise = T.justifyRight 2 ' ' (showT seenN) <> "%"
       -- Indicate the actor is braced (was waiting last move).

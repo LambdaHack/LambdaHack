@@ -213,7 +213,7 @@ eff Effect.Dominate _ source target _power = do
            lxsize <- getsServer (lxsize . slevel)
            lysize <- getsServer (lysize . slevel)
            let cross m = bloc m : vicinityCardinal lxsize lysize (bloc m)
-               vis = concatMap cross lm
+               vis = IS.fromList $ concatMap cross lm
            rememberList vis
            return (True, "A dozen voices yells in anger.")
          else nullEffect
@@ -300,8 +300,8 @@ effLvlGoUp k = do
   pl        <- getsServer splayer
   slid      <- getsServer slid
   st        <- getServer
-  cops      <- askCOps
-  lvl <- getsServer slevel
+  cops <- askCOps
+  clvl <- getsServer slevelClient
   case whereTo st k of
     Nothing -> fleeDungeon -- we are at the "end" of the dungeon
     Just (nln, nloc) ->
@@ -346,7 +346,7 @@ effLvlGoUp k = do
         -- Create a backup of the savegame.
         saveGameBkp
         state <- getServer
-        msgAdd $ lookAt cops False True state lvl nloc ""
+        msgAdd $ lookAt cops False True state clvl nloc ""
 
 -- | Change level and reset it's time and update the times of all actors.
 -- The player may be added to @lactor@ of the new level only after
@@ -365,7 +365,7 @@ switchLevel nln = do
       modifyServer $ updateTime $ const timeCurrent
       -- Update the times of all actors.
       let upd m@Actor{btime} = m {btime = timeAdd btime diff}
-      modifyServer (updateLevel (updateActorDict (IM.map upd)))
+      modifyServer (updateLevel (updateActor (IM.map upd)))
 
 -- | The player leaves the dungeon.
 fleeDungeon :: MonadAction m => m ()
@@ -445,7 +445,7 @@ selectPlayer :: MonadAction m => ActorId -> m Bool
 selectPlayer actor = do
   cops@Kind.COps{coactor} <- askCOps
   pl    <- getsServer splayer
-  lvl   <- getsServer slevel
+  clvl  <- getsServer slevelClient
   if actor == pl
     then return False -- already selected
     else do
@@ -461,7 +461,7 @@ selectPlayer actor = do
       stopRunning
       -- Announce.
       msgAdd $ makeSentence [partActor coactor pbody, "selected"]
-      msgAdd $ lookAt cops False True state lvl (bloc pbody) ""
+      msgAdd $ lookAt cops False True state clvl (bloc pbody) ""
       return True
 
 selectHero :: MonadAction m => Int -> m ()
@@ -617,7 +617,7 @@ doLook = do
   cops@Kind.COps{coactor} <- askCOps
   loc    <- getsServer (clocation . scursor)
   state  <- getServer
-  lvl    <- getsServer slevel
+  clvl   <- getsServer slevelClient
   hms    <- getsServer (lactor . slevel)
   per    <- askPerception
   target <- getsServer (btarget . getPlayerBody)
@@ -638,9 +638,9 @@ doLook = do
                  TPath _    -> "[targeting path" <> vis <> "]"
                  TCursor    -> "[targeting current" <> vis <> "]"
         -- Show general info about current loc.
-        lookMsg = mode <+> lookAt cops True canSee state lvl loc monsterMsg
+        lookMsg = mode <+> lookAt cops True canSee state clvl loc monsterMsg
         -- Check if there's something lying around at current loc.
-        is = lvl `rememberAtI` loc
+        is = clvl `rememberAtI` loc
     modifyServer (\st -> st {slastKey = Nothing})
     if length is <= 2
       then do

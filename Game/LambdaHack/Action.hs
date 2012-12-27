@@ -78,7 +78,6 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
-import Game.LambdaHack.Point
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert
@@ -330,26 +329,34 @@ startClip action =
 remember :: MonadAction m => m ()
 remember = do
   per <- askPerception
-  let vis = IS.toList (totalVisible per)
-  rememberList vis
+  rememberList $ totalVisible per
 
 -- | Update heroes memory at the given list of locations.
-rememberList :: MonadAction m => [Point] -> m ()
-rememberList vis = do
+rememberList :: MonadAction m => IS.IntSet -> m ()
+rememberList visible = do
+  let vis = IS.toList visible
   Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- askCOps
   lvl <- getsServer slevel
+  clvl <- getsServer slevelClient
   let rememberTile = [(loc, lvl `at` loc) | loc <- vis]
       unknownId = ouniqGroup "unknown space"
-      newClear (loc, tk) = lvl `rememberAt` loc == unknownId
+      newClear (loc, tk) = clvl `rememberAt` loc == unknownId
                            && Tile.isExplorable cotile tk
       clearN = length $ filter newClear rememberTile
-  modifyServer (updateLevel (updateLRMap (Kind.// rememberTile)))
-  modifyServer (updateLevel (\ l@Level{lseen} -> l {lseen = lseen + clearN}))
+  modifyServer (updateLevelClient (updateLRMap (Kind.// rememberTile)))
+  modifyServer (updateLevelClient
+                  (\ l@LevelClient{lcseen} -> l {lcseen = lcseen + clearN}))
   let alt Nothing   _ = Nothing
       alt (Just []) _ = assert `failure` lvl
       alt x         _ = x
       rememberItem p m = IM.alter (alt $ IM.lookup p $ litem lvl) p m
-  modifyServer (updateLevel (updateIRMap (\ m -> foldr rememberItem m vis)))
+  modifyServer (updateLevelClient
+                  (updateIRMap (\ m -> foldr rememberItem m vis)))
+  let cactor = IM.filter (\m -> bloc m `IS.member` visible) (lactor lvl)
+      cinv   = IM.filterWithKey (\p _ -> p `IM.member` cactor) (linv lvl)
+  modifyServer (updateLevelClient
+                  (updateCActor (const cactor)
+                  . updateCInv (const cinv)))
 
 -- | Save the diary and a backup of the save game file, in case of crashes.
 --
@@ -454,7 +461,8 @@ gameReset :: ConfigUI -> Kind.COps -> IO State
 gameReset configUI cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
                                  , coitem=coitem@Kind.Ops{okind}
                                  , corule
-                                 , costrat=Kind.Ops{opick=sopick} } = do
+                                 , costrat=Kind.Ops{opick=sopick}
+                                 , cotile} = do
   -- Rules config reloaded at each new game start.
   (sconfig, dungeonGen, srandom) <- ConfigIO.mkConfigRules corule
   let rnd = do
@@ -482,7 +490,7 @@ gameReset configUI cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
         let sfaction = fst $ fromJust
                        $ find (\(_, fa) -> isNothing (gAiSelected fa))
                        $ IM.toList sfactions
-            state = defaultState sflavour
+            state = defaultState cotile sflavour
                                  disco discoS discoRev
                                  freshDungeon entryLevel srandom
                                  sconfig sfaction sfactions entryLoc

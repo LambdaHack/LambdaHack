@@ -2,9 +2,10 @@
 -- as the game progresses.
 module Game.LambdaHack.Level
   ( -- * The @Level@ type and its components
-    ActorDict, InvDict, SmellMap, SecretMap, ItemMap, TileMap, Level(..)
+    ActorDict, InvDict, SmellMap, SecretMap, ItemMap, TileMap
+  , Level(..), LevelClient(..)
     -- * Level update
-  , updateActorDict, updateInv
+  , updateActor, updateInv, updateCActor, updateCInv
   , updateSmell, updateIMap, updateIRMap, updateLMap, updateLRMap, dropItemsAt
     -- * Level query
   , at, rememberAt, atI, rememberAtI
@@ -47,7 +48,7 @@ type ItemMap = IM.IntMap [Item]
 -- | Tile kinds on the map.
 type TileMap = Kind.Array Point TileKind
 
--- | A single, inhabited dungeon level.
+-- | A single, inhabited dungeon level, Server data.
 data Level = Level
   { lactor  :: !ActorDict       -- ^ all actors on the level
   , linv    :: !InvDict         -- ^ items belonging to actors
@@ -56,39 +57,60 @@ data Level = Level
   , lsmell  :: !SmellMap        -- ^ smells
   , lsecret :: !SecretMap       -- ^ secrecy values
   , litem   :: !ItemMap         -- ^ items on the ground
-  , lritem  :: !ItemMap         -- ^ remembered items on the ground
   , lmap    :: !TileMap         -- ^ map tiles
-  , lrmap   :: !TileMap         -- ^ remembered map tiles
   , ldesc   :: !Text            -- ^ level description for the player
   , lmeta   :: !Text            -- ^ debug information from cave generation
   , lstairs :: !(Point, Point)  -- ^ destination of the (up, down) stairs
   , ltime   :: !Time            -- ^ date of the last activity on the level
   , lclear  :: !Int             -- ^ total number of clear tiles
-  , lseen   :: !Int             -- ^ number of clear tiles already seen
+  }
+  deriving Show
+
+-- | A single, inhabited dungeon level. Per-faction data.
+data LevelClient = LevelClient
+  { lcactor :: !ActorDict       -- ^ all actors on the level
+  , lcinv   :: !InvDict         -- ^ items belonging to actors
+  , lcitem  :: !ItemMap         -- ^ remembered items on the ground
+  , lcmap   :: !TileMap         -- ^ remembered map tiles
+  , lcseen  :: !Int             -- ^ number of clear tiles already seen
   }
   deriving Show
 
 -- | Update the hero and monster maps.
-updateActorDict :: (ActorDict -> ActorDict) -> Level -> Level
-updateActorDict f lvl = lvl { lactor = f (lactor lvl) }
+updateActor :: (ActorDict -> ActorDict) -> Level -> Level
+updateActor f lvl = lvl { lactor = f (lactor lvl) }
+
+-- | Update the hero and monster maps.
+updateCActor :: (ActorDict -> ActorDict) -> LevelClient -> LevelClient
+updateCActor f lvl = lvl { lcactor = f (lcactor lvl) }
 
 -- | Update the hero items and monster items maps.
 updateInv :: (InvDict -> InvDict) -> Level -> Level
 updateInv f lvl = lvl { linv = f (linv lvl) }
+
+-- | Update the hero items and monster items maps.
+updateCInv :: (InvDict -> InvDict) -> LevelClient -> LevelClient
+updateCInv f lvl = lvl { lcinv = f (lcinv lvl) }
 
 -- | Update the smell map.
 updateSmell :: (SmellMap -> SmellMap) -> Level -> Level
 updateSmell f lvl = lvl { lsmell = f (lsmell lvl) }
 
 -- | Update the items on the ground map.
-updateIMap, updateIRMap:: (ItemMap -> ItemMap) -> Level -> Level
+updateIMap :: (ItemMap -> ItemMap) -> Level -> Level
 updateIMap f lvl = lvl { litem = f (litem lvl) }
-updateIRMap f lvl = lvl { lritem = f (lritem lvl) }
 
--- | Update the tile and remembered tile maps.
-updateLMap, updateLRMap :: (TileMap -> TileMap) -> Level -> Level
+-- | Update a faction's items on the ground map.
+updateIRMap :: (ItemMap -> ItemMap) -> LevelClient -> LevelClient
+updateIRMap f lvl = lvl { lcitem = f (lcitem lvl) }
+
+-- | Update the tile map.
+updateLMap :: (TileMap -> TileMap) -> Level -> Level
 updateLMap f lvl = lvl { lmap = f (lmap lvl) }
-updateLRMap f lvl = lvl { lrmap = f (lrmap lvl) }
+
+-- | Update a faction's remembered tile maps.
+updateLRMap :: (TileMap -> TileMap) -> LevelClient -> LevelClient
+updateLRMap f lvl = lvl { lcmap = f (lcmap lvl) }
 
 -- Note: do not scatter items around, it's too much work for the player.
 -- | Place all items on the list at a location on the level.
@@ -113,15 +135,12 @@ instance Binary Level where
     put lsmell
     put lsecret
     put (assertSparseItems litem)
-    put (assertSparseItems lritem)
     put lmap
-    put lrmap
     put ldesc
     put lmeta
     put lstairs
     put ltime
     put lclear
-    put lseen
   get = do
     lactor <- get
     linv <- get
@@ -130,27 +149,44 @@ instance Binary Level where
     lsmell <- get
     lsecret <- get
     litem <- get
-    lritem <- get
     lmap <- get
-    lrmap <- get
     ldesc <- get
     lmeta <- get
     lstairs <- get
     ltime <- get
     lclear <- get
-    lseen <- get
     return Level{..}
 
--- | Query for actual and remembered tile kinds on the map.
-at, rememberAt :: Level -> Point -> Kind.Id TileKind
-at         Level{lmap}  p = lmap Kind.! p
-rememberAt Level{lrmap} p = lrmap Kind.! p
+instance Binary LevelClient where
+  put LevelClient{..} = do
+    put lcactor
+    put lcinv
+    put (assertSparseItems lcitem)
+    put lcmap
+    put lcseen
+  get = do
+    lcactor <- get
+    lcinv <- get
+    lcitem <- get
+    lcmap <- get
+    lcseen <- get
+    return LevelClient{..}
 
--- Note: representations with 2 maps leads to longer code and slower 'remember'.
--- | Query for actual and remembered items on the ground.
-atI, rememberAtI :: Level -> Point -> [Item]
-atI         Level{litem}  p = IM.findWithDefault [] p litem
-rememberAtI Level{lritem} p = IM.findWithDefault [] p lritem
+-- | Query for tile kinds on the map.
+at :: Level -> Point -> Kind.Id TileKind
+at Level{lmap}  p = lmap Kind.! p
+
+-- | Query for remembered tile kinds on the map.
+rememberAt :: LevelClient -> Point -> Kind.Id TileKind
+rememberAt LevelClient{lcmap} p = lcmap Kind.! p
+
+-- | Query for items on the ground.
+atI :: Level -> Point -> [Item]
+atI Level{litem} p = IM.findWithDefault [] p litem
+
+-- | Query for remembered items on the ground.
+rememberAtI :: LevelClient -> Point -> [Item]
+rememberAtI LevelClient{lcitem} p = IM.findWithDefault [] p lcitem
 
 -- | Check whether one location is accessible from another,
 -- using the formula from the standard ruleset.
