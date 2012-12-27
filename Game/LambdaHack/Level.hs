@@ -5,7 +5,7 @@ module Game.LambdaHack.Level
     ActorDict, InvDict, SmellMap, SecretMap, ItemMap, TileMap, Level(..)
     -- * Level update
   , updateActorDict, updateInv
-  , updateSmell, updateIMap, updateLMap, updateLRMap, dropItemsAt
+  , updateSmell, updateIMap, updateIRMap, updateLMap, updateLRMap, dropItemsAt
     -- * Level query
   , at, rememberAt, atI, rememberAtI
   , accessible, openable, findLoc, findLocTry
@@ -41,8 +41,8 @@ type SmellMap = IM.IntMap SmellTime
 -- | Current secrecy value on map tiles.
 type SecretMap = IM.IntMap SecretTime
 
--- | Actual and remembered item lists on map tiles.
-type ItemMap = IM.IntMap ([Item], [Item])
+-- | Item lists on map tiles.
+type ItemMap = IM.IntMap [Item]
 
 -- | Tile kinds on the map.
 type TileMap = Kind.Array Point TileKind
@@ -56,6 +56,7 @@ data Level = Level
   , lsmell  :: !SmellMap        -- ^ smells
   , lsecret :: !SecretMap       -- ^ secrecy values
   , litem   :: !ItemMap         -- ^ items on the ground
+  , lritem  :: !ItemMap         -- ^ remembered items on the ground
   , lmap    :: !TileMap         -- ^ map tiles
   , lrmap   :: !TileMap         -- ^ remembered map tiles
   , ldesc   :: !Text            -- ^ level description for the player
@@ -80,8 +81,9 @@ updateSmell :: (SmellMap -> SmellMap) -> Level -> Level
 updateSmell f lvl = lvl { lsmell = f (lsmell lvl) }
 
 -- | Update the items on the ground map.
-updateIMap :: (ItemMap -> ItemMap) -> Level -> Level
+updateIMap, updateIRMap:: (ItemMap -> ItemMap) -> Level -> Level
 updateIMap f lvl = lvl { litem = f (litem lvl) }
+updateIRMap f lvl = lvl { lritem = f (lritem lvl) }
 
 -- | Update the tile and remembered tile maps.
 updateLMap, updateLRMap :: (TileMap -> TileMap) -> Level -> Level
@@ -94,49 +96,50 @@ dropItemsAt :: [Item] -> Point -> Level -> Level
 dropItemsAt [] _loc = id
 dropItemsAt items loc =
   let joinItems = L.foldl' (\ acc i -> snd (joinItem i acc))
-      adj Nothing = Just (items, [])
-      adj (Just (i, ri)) = Just (joinItems items i, ri)
+      adj Nothing = Just items
+      adj (Just i) = Just $ joinItems items i
   in  updateIMap (IM.alter adj loc)
 
+assertSparseItems :: ItemMap -> ItemMap
+assertSparseItems m =
+  assert (IM.null (IM.filter (\ is -> L.null is) m) `blame` m) m
+
 instance Binary Level where
-  put (Level ad ia sx sy ls le li lm lrm ld
-             lme lstairs ltime lclear lseen) = do
-    put ad
-    put ia
-    put sx
-    put sy
-    put ls
-    put le
-    put (assert
-           (IM.null (IM.filter (\ (is1, is2) ->
-                                 L.null is1 && L.null is2) li)
-           `blame` li) li)
-    put lm
-    put lrm
-    put ld
-    put lme
+  put Level{..} = do
+    put lactor
+    put linv
+    put lxsize
+    put lysize
+    put lsmell
+    put lsecret
+    put (assertSparseItems litem)
+    put (assertSparseItems lritem)
+    put lmap
+    put lrmap
+    put ldesc
+    put lmeta
     put lstairs
     put ltime
     put lclear
     put lseen
   get = do
-    ad <- get
-    ia <- get
-    sx <- get
-    sy <- get
-    ls <- get
-    le <- get
-    li <- get
-    lm <- get
-    lrm <- get
-    ld <- get
-    lme <- get
+    lactor <- get
+    linv <- get
+    lxsize <- get
+    lysize <- get
+    lsmell <- get
+    lsecret <- get
+    litem <- get
+    lritem <- get
+    lmap <- get
+    lrmap <- get
+    ldesc <- get
+    lmeta <- get
     lstairs <- get
     ltime <- get
     lclear <- get
     lseen <- get
-    return (Level ad ia sx sy ls le li lm lrm ld
-                  lme lstairs ltime lclear lseen)
+    return Level{..}
 
 -- | Query for actual and remembered tile kinds on the map.
 at, rememberAt :: Level -> Point -> Kind.Id TileKind
@@ -146,8 +149,8 @@ rememberAt Level{lrmap} p = lrmap Kind.! p
 -- Note: representations with 2 maps leads to longer code and slower 'remember'.
 -- | Query for actual and remembered items on the ground.
 atI, rememberAtI :: Level -> Point -> [Item]
-atI         Level{litem} p = fst $ IM.findWithDefault ([], []) p litem
-rememberAtI Level{litem} p = snd $ IM.findWithDefault ([], []) p litem
+atI         Level{litem}  p = IM.findWithDefault [] p litem
+rememberAtI Level{lritem} p = IM.findWithDefault [] p lritem
 
 -- | Check whether one location is accessible from another,
 -- using the formula from the standard ruleset.

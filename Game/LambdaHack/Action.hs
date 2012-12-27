@@ -345,11 +345,11 @@ rememberList vis = do
       clearN = length $ filter newClear rememberTile
   modifyServer (updateLevel (updateLRMap (Kind.// rememberTile)))
   modifyServer (updateLevel (\ l@Level{lseen} -> l {lseen = lseen + clearN}))
-  let alt Nothing      = Nothing
-      alt (Just ([], _)) = Nothing
-      alt (Just (t, _))  = Just (t, t)
-      rememberItem = IM.alter alt
-  modifyServer (updateLevel (updateIMap (\ m -> foldr rememberItem m vis)))
+  let alt Nothing   _ = Nothing
+      alt (Just []) _ = assert `failure` lvl
+      alt x         _ = x
+      rememberItem p m = IM.alter (alt $ IM.lookup p $ litem lvl) p m
+  modifyServer (updateLevel (updateIRMap (\ m -> foldr rememberItem m vis)))
 
 -- | Save the diary and a backup of the save game file, in case of crashes.
 --

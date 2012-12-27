@@ -11,7 +11,7 @@ module Game.LambdaHack.DungeonState
 import Control.Monad
 import qualified Control.Monad.State as St
 import qualified Data.IntMap as IM
-import qualified Data.List as L
+import Data.List
 import qualified Data.Map as M
 import Data.Maybe
 import Data.Text (Text)
@@ -88,7 +88,7 @@ placeStairs cotile@Kind.Ops{opick} cmap CaveKind{..} dplaces = do
           ]
   let fitArea loc = inside cxsize loc . qarea
       findLegend loc =
-        maybe clitLegendTile qlegend $ L.find (fitArea loc) dplaces
+        maybe clitLegendTile qlegend $ find (fitArea loc) dplaces
   upId   <- opick (findLegend su) $ Tile.kindHasFeature F.Ascendable
   downId <- opick (findLegend sd) $ Tile.kindHasFeature F.Descendable
   return (su, upId, sd, downId)
@@ -111,7 +111,7 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, ouniqGroup}
   is <- rollItems cops flavour discoRev ln depth kc lmap su
   -- TODO: split this into Level.defaultLevel
   let itemMap = mapToIMap cxsize ditem `IM.union` IM.fromList is
-      litem = IM.map (\ i -> ([i], [])) itemMap
+      litem = IM.map (: []) itemMap
       unknownId = ouniqGroup "unknown space"
       level = Level
         { lactor = IM.empty
@@ -121,6 +121,7 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, ouniqGroup}
         , lsmell = IM.empty
         , lsecret = mapToIMap cxsize dsecret
         , litem
+        , lritem = IM.empty
         , lmap
         , lrmap = unknownTileMap unknownId cxsize cysize
         , ldesc = cname
@@ -140,7 +141,7 @@ findGenerator :: Kind.COps -> FlavourMap -> DiscoRev -> Config -> Int -> Int
               -> Rnd Level
 findGenerator cops flavour discoRev Config{configCaves} k depth = do
   let ln = "LambdaCave_" <> showT k
-      genName = L.lookup ln configCaves
+      genName = lookup ln configCaves
   ci <- matchGenerator (Kind.cocave cops) genName
   cave <- buildCave cops k depth ci
   buildLevel cops flavour discoRev cave k depth
@@ -163,7 +164,7 @@ generate cops flavour discoRev config@Config{configDepth}  =
         in (g2, (Dungeon.levelDefault k, res))
       con :: R.StdGen -> (FreshDungeon, R.StdGen)
       con g = assert (configDepth >= 1 `blame` configDepth) $
-        let (gd, levels) = L.mapAccumL gen g [1..configDepth]
+        let (gd, levels) = mapAccumL gen g [1..configDepth]
             entryLevel = Dungeon.levelDefault 1
             entryLoc = fst (lstairs (snd (head levels)))
             freshDungeon = Dungeon.fromList levels configDepth

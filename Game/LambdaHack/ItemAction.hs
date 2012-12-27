@@ -397,10 +397,10 @@ removeFromLoc i loc = do
       return True
      where
       rib Nothing = assert `failure` (i, loc)
-      rib (Just (is, irs)) =
-        case (removeItemByIdentity i is, irs) of
-          ([], []) -> Nothing
-          iss -> Just iss
+      rib (Just is) =
+        case removeItemByIdentity i is of
+          [] -> Nothing
+          x  -> Just x
       adj = IM.alter rib loc
 
 actorPickupItem :: MonadAction m => ActorId -> m ()
