@@ -45,7 +45,6 @@ data Cmd =
   | SelectHero Int
   | DebugVision
   | DebugOmni
-  | DebugCave
   deriving (Show, Read, Eq, Ord)
 
 -- | Major commands land on the first page of command help.
@@ -136,4 +135,3 @@ cmdDescription cmd = case cmd of
   SelectHero{} -> "select hero"
   DebugVision  -> "debug vision"
   DebugOmni    -> "debug omniscience"
-  DebugCave    -> "debug cave"

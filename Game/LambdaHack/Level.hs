@@ -62,7 +62,6 @@ data Level = Level
   , litem   :: !ItemMap         -- ^ items on the ground
   , lmap    :: !TileMap         -- ^ map tiles
   , ldesc   :: !Text            -- ^ level description for the player
-  , lmeta   :: !Text            -- ^ debug information from cave generation
   , lstairs :: !(Point, Point)  -- ^ destination of the (up, down) stairs
   , ltime   :: !Time            -- ^ date of the last activity on the level
   , lclear  :: !Int             -- ^ total number of clear tiles
@@ -140,7 +139,6 @@ instance Binary Level where
     put (assertSparseItems litem)
     put lmap
     put ldesc
-    put lmeta
     put lstairs
     put ltime
     put lclear
@@ -154,7 +152,6 @@ instance Binary Level where
     litem <- get
     lmap <- get
     ldesc <- get
-    lmeta <- get
     lstairs <- get
     ltime <- get
     lclear <- get

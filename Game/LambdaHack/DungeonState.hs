@@ -116,7 +116,6 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
         , litem
         , lmap
         , ldesc = cname
-        , lmeta = dmeta
         , lstairs = (su, sd)
         , ltime = timeTurn
         , lclear

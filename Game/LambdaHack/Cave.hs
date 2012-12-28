@@ -4,27 +4,26 @@ module Game.LambdaHack.Cave
   ) where
 
 import Control.Monad
-import qualified Data.Map as M
 import qualified Data.List as L
+import qualified Data.Map as M
 import Data.Maybe
 import Data.Text (Text)
 
-import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.PointXY
 import Game.LambdaHack.Area
 import Game.LambdaHack.AreaRnd
-import Game.LambdaHack.Item
-import Game.LambdaHack.Random
-import qualified Game.LambdaHack.Tile as Tile
-import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Feature as F
+import Game.LambdaHack.Item
+import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Misc
 import Game.LambdaHack.Place hiding (TileMapXY)
 import qualified Game.LambdaHack.Place as Place
-import Game.LambdaHack.Misc
+import Game.LambdaHack.PointXY
+import Game.LambdaHack.Random
+import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Time
-import Game.LambdaHack.Msg
+import Game.LambdaHack.Utils.Assert
 
 -- | The map of tile kinds in a cave.
 -- The map is sparse. The default tile that eventually fills the empty spaces
@@ -41,12 +40,11 @@ type ItemMapXY = M.Map PointXY Item
 
 -- | The type of caves (not yet inhabited dungeon levels).
 data Cave = Cave
-  { dkind     :: !(Kind.Id CaveKind)  -- ^ the kind of the cave
-  , dmap      :: TileMapXY            -- ^ tile kinds in the cave
-  , dsecret   :: SecretMapXY          -- ^ secrecy strength of cave tiles
-  , ditem     :: ItemMapXY            -- ^ starting items in the cave
-  , dmeta     :: Text                 -- ^ debug information about the cave
-  , dplaces   :: [Place]              -- ^ places generated in the cave
+  { dkind   :: !(Kind.Id CaveKind)  -- ^ the kind of the cave
+  , dmap    :: TileMapXY            -- ^ tile kinds in the cave
+  , dsecret :: SecretMapXY          -- ^ secrecy strength of cave tiles
+  , ditem   :: ItemMapXY            -- ^ starting items in the cave
+  , dplaces :: [Place]              -- ^ places generated in the cave
   }
   deriving Show
 
@@ -151,7 +149,6 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick}
         , dsecret = secretMap
         , ditem = M.empty
         , dmap
-        , dmeta = showT allConnects
         , dplaces
         }
   return cave

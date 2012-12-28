@@ -118,7 +118,6 @@ key modifier. Use at your own peril!
 
                key     command
                CTRL-o  toggle "omniscience"
-               CTRL-i  inform about level meta-data
                CTRL-r  rotate vision modes (effective next turn)
 
 

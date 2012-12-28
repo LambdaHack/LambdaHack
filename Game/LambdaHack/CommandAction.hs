@@ -82,7 +82,6 @@ cmdAction s per cmd =
     SelectHero k -> (False, lift $ selectHero k)
     DebugVision -> (False, modifyGlobal cycleMarkVision)
     DebugOmni   -> (False, modifyGlobal toggleOmniscient)
-    DebugCave   -> (False, getsGlobal (lmeta . slevel) >>= abortWith)
 
 -- | The semantics of player commands in terms of the @Action@ monad.
 -- Decides if the action takes time and what action to perform.
