@@ -28,7 +28,6 @@ import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Draw
-import qualified Game.LambdaHack.Dungeon as Dungeon
 import Game.LambdaHack.DungeonState
 import qualified Game.LambdaHack.Effect as Effect
 import Game.LambdaHack.Faction
@@ -351,7 +350,7 @@ effLvlGoUp k = do
 -- | Change level and reset it's time and update the times of all actors.
 -- The player may be added to @lactor@ of the new level only after
 -- this operation is executed.
-switchLevel :: MonadAction m => Dungeon.LevelId -> m ()
+switchLevel :: MonadAction m => LevelId -> m ()
 switchLevel nln = do
   timeCurrent <- getsServer stime
   slid <- getsServer slid
@@ -565,20 +564,19 @@ gameOver showEndingScreens = do
   when showEndingScreens $ do
     Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- askCOps
     s <- getServer
-    dng <- getsServer sdungeon
+    sdepth <- getsServer sdepth
     time <- getsServer stime
     let (items, total) = calculateTotal s
-        deepest = Dungeon.levelNumber slid  -- use deepest visited instead of level of death
-        depth = Dungeon.depth dng
+        deepest = levelNumber slid  -- use deepest visited instead of level of death
         failMsg | timeFit time timeTurn < 300 =
           "That song shall be short."
                 | total < 100 =
           "Born poor, dies poor."
                 | deepest < 4 && total < 500 =
           "This should end differently."
-                | deepest < depth - 1 =
+                | deepest < sdepth - 1 =
           "This defeat brings no dishonour."
-                | deepest < depth =
+                | deepest < sdepth =
           "That is your name. 'Almost'."
                 | otherwise =
           "Dead heroes make better legends."

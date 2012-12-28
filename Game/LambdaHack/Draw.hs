@@ -22,7 +22,6 @@ import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind
-import qualified Game.LambdaHack.Dungeon as Dungeon
 import Game.LambdaHack.Effect
 import qualified Game.LambdaHack.Feature as F
 import qualified Game.LambdaHack.Item as Item
@@ -158,7 +157,7 @@ draw dm cops per s@State{ scursor=Cursor{..}
       -- 'wait' command.
       braceSign | braced mpl ltime = "{"
                 | otherwise = " "
-      lvlN = T.justifyLeft 2 ' ' (showT $ Dungeon.levelNumber slid)
+      lvlN = T.justifyLeft 2 ' ' (showT $ levelNumber slid)
       stats =
         T.justifyLeft 11 ' ' ("[" <> seenTxt <+> "seen]") <+>
         T.justifyLeft 9 ' ' ("$:" <+> showT wealth) <+>

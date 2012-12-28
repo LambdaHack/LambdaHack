@@ -16,7 +16,6 @@ import Game.LambdaHack.Actor
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.Dungeon
 import Game.LambdaHack.Faction
 import Game.LambdaHack.FOV
 import qualified Game.LambdaHack.Kind as Kind
@@ -83,7 +82,7 @@ dungeonPerception cops s =
 -- | Calculate perception of the faction.
 factionPerception :: Kind.COps -> State -> FactionId -> FactionPerception
 factionPerception cops s fid =
-  M.map (levelPerception cops s fid) $ dungeonLevelMap (sdungeon s)
+  M.map (levelPerception cops s fid) $ sdungeon s
 
 -- | Calculate perception of the level.
 levelPerception :: Kind.COps -> State -> FactionId -> Level -> Perception

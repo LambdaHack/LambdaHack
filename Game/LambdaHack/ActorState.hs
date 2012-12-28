@@ -16,6 +16,7 @@ import qualified Data.Char as Char
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import qualified Data.List as L
+import qualified Data.Map as M
 import Data.Maybe
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
@@ -25,7 +26,6 @@ import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.Dungeon
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Item
@@ -65,20 +65,20 @@ smellTimeout s =
 
 -- | Finds an actor body on any level. Fails if not found.
 findActorAnyLevel :: ActorId -> State -> (LevelId, Actor, [Item])
-findActorAnyLevel actor State{slid, sdungeon} =
+findActorAnyLevel actor State{sdungeon} =
   let chk (ln, lvl) =
         let (m, mi) = (IM.lookup actor (lactor lvl),
                        IM.lookup actor (linv lvl))
         in fmap (\ a -> (ln, a, fromMaybe [] mi)) m
-  in case mapMaybe chk (currentFirst slid sdungeon) of
+  in case mapMaybe chk (M.toList sdungeon) of
     []      -> assert `failure` actor
     res : _ -> res  -- checking if res is unique would break laziness
 
 -- | Tries to finds an actor body satisfying a predicate on any level.
 tryFindActor :: State -> (Actor -> Bool) -> Maybe (ActorId, Actor)
-tryFindActor State{slid, sdungeon} p =
+tryFindActor State{sdungeon} p =
   let chk (_ln, lvl) = L.find (p . snd) $ IM.assocs $ lactor lvl
-  in case mapMaybe chk (currentFirst slid sdungeon) of
+  in case mapMaybe chk (M.toList sdungeon) of
     []      -> Nothing
     res : _ -> Just res
 
@@ -94,11 +94,11 @@ getPlayerItem s@State{splayer} =
 
 -- | The list of actors and their levels for all heroes in the dungeon.
 allHeroesAnyLevel :: State -> [ActorId]
-allHeroesAnyLevel State{slid, sdungeon, sfaction} =
+allHeroesAnyLevel State{sdungeon, sfaction} =
   let one (_, lvl) =
         [ a | (a, m) <- IM.toList $ lactor lvl
             , bfaction m == sfaction && not (bproj m) ]
-  in L.concatMap one (currentFirst slid sdungeon)
+  in L.concatMap one (M.toList sdungeon)
 
 updateAnyActorBody :: ActorId -> (Actor -> Actor) -> State -> State
 updateAnyActorBody actor f state =
@@ -115,7 +115,7 @@ updateAnyActorItem actor f state =
 updateAnyLevel :: (Level -> Level) -> LevelId -> State -> State
 updateAnyLevel f ln s@State{slid, sdungeon}
   | ln == slid = updateLevel f s
-  | otherwise = updateDungeon (const $ adjust f ln sdungeon) s
+  | otherwise = updateDungeon (const $ M.adjust f ln sdungeon) s
 
 -- | Calculate the location of player's target.
 targetToLoc :: IS.IntSet -> State -> Point -> Maybe Point

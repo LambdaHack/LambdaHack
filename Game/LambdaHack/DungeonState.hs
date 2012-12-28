@@ -22,7 +22,6 @@ import Game.LambdaHack.Config
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind
-import qualified Game.LambdaHack.Dungeon as Dungeon
 import qualified Game.LambdaHack.Effect as Effect
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Item
@@ -139,26 +138,29 @@ findGenerator cops flavour discoRev Config{configCaves} k depth = do
 
 -- | Freshly generated and not yet populated dungeon.
 data FreshDungeon = FreshDungeon
-  { entryLevel   :: Dungeon.LevelId  -- ^ starting level for the party
-  , entryLoc     :: Point            -- ^ starting location for the party
-  , freshDungeon :: Dungeon.Dungeon  -- ^ level maps
+  { entryLevel   :: LevelId        -- ^ starting level for the party
+  , entryLoc     :: Point          -- ^ starting location for the party
+  , freshDungeon :: Dungeon Level  -- ^ level maps
+  , freshDepth   :: Int            -- ^ dungeon depth (can be different
+                                   -- than the number of levels)
   }
 
 -- | Generate the dungeon for a new game.
 generate :: Kind.COps -> FlavourMap -> DiscoRev -> Config -> Rnd FreshDungeon
 generate cops flavour discoRev config@Config{configDepth}  =
-  let gen :: R.StdGen -> Int -> (R.StdGen, (Dungeon.LevelId, Level))
+  let gen :: R.StdGen -> Int -> (R.StdGen, (LevelId, Level))
       gen g k =
         let (g1, g2) = R.split g
             res = St.evalState (findGenerator cops flavour discoRev
                                               config k configDepth) g1
-        in (g2, (Dungeon.levelDefault k, res))
+        in (g2, (levelDefault k, res))
       con :: R.StdGen -> (FreshDungeon, R.StdGen)
       con g = assert (configDepth >= 1 `blame` configDepth) $
         let (gd, levels) = mapAccumL gen g [1..configDepth]
-            entryLevel = Dungeon.levelDefault 1
+            entryLevel = levelDefault 1
             entryLoc = fst (lstairs (snd (head levels)))
-            freshDungeon = Dungeon.fromList levels configDepth
+            freshDungeon = M.fromList levels
+            freshDepth = configDepth
         in (FreshDungeon{..}, gd)
   in St.state con
 
@@ -166,12 +168,12 @@ generate cops flavour discoRev config@Config{configDepth}  =
 -- after a level change.
 whereTo :: State  -- ^ game state
         -> Int    -- ^ jump this many levels
-        -> Maybe (Dungeon.LevelId, Point)
+        -> Maybe (LevelId, Point)
              -- ^ target level and the location of its receiving stairs
 whereTo State{slid, sdungeon} k = assert (k /= 0) $
-  let n = Dungeon.levelNumber slid
+  let n = levelNumber slid
       nln = n - k
-      ln = Dungeon.levelDefault nln
-  in case Dungeon.lookupLevel ln sdungeon of
+      ln = levelDefault nln
+  in case M.lookup ln sdungeon of
     Nothing     -> Nothing
     Just lvlTrg -> Just (ln, (if k < 0 then fst else snd) (lstairs lvlTrg))

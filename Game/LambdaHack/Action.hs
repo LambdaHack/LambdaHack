@@ -492,7 +492,7 @@ gameReset configUI cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
                        $ IM.toList sfactions
             state = defaultState cotile sflavour
                                  disco discoS discoRev
-                                 freshDungeon entryLevel srandom
+                                 freshDungeon freshDepth entryLevel srandom
                                  sconfig sfaction sfactions entryLoc
         return $ initialHeroes cops entryLoc configUI state
   return $! St.evalState rnd dungeonGen

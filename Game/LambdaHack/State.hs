@@ -30,7 +30,6 @@ import System.Time
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.TileKind
-import qualified Game.LambdaHack.Dungeon as Dungeon
 import Game.LambdaHack.Faction
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Key as K
@@ -65,10 +64,10 @@ data State = State
   , sdisco    :: !Discoveries   -- ^ items (kinds) that have been discovered
   , sdiscoS   :: !Discoveries   -- ^ all item kinds, as known by the server
   , sdiscoRev :: !DiscoRev      -- ^ reverse map, used for item creation
-  , sdungeon  :: !Dungeon.Dungeon  -- ^ all dungeon levels
-  , sdungeons :: !(M.Map Dungeon.LevelId LevelClient)
-                                -- ^ hero faction's dungeon view
-  , slid      :: !Dungeon.LevelId  -- ^ identifier of the current level
+  , sdungeon  :: !(Dungeon Level)  -- ^ all dungeon levels
+  , sdungeons :: !(Dungeon LevelClient)  -- ^ hero faction's dungeon view
+  , sdepth    :: !Int           -- ^ dungeon depth
+  , slid      :: !LevelId       -- ^ identifier of the current level
   , scounter  :: !Int           -- ^ stores next actor index
   , srandom   :: !R.StdGen      -- ^ current random generator
   , sconfig   :: !Config        -- ^ this game's config (including initial RNG)
@@ -93,16 +92,16 @@ data TgtMode =
 -- | Current targeting cursor parameters.
 data Cursor = Cursor
   { ctargeting :: !TgtMode          -- ^ targeting mode
-  , clocLn     :: !Dungeon.LevelId  -- ^ cursor level
+  , clocLn     :: !LevelId  -- ^ cursor level
   , clocation  :: !Point            -- ^ cursor coordinates
-  , creturnLn  :: !Dungeon.LevelId  -- ^ the level current player resides on
+  , creturnLn  :: !LevelId  -- ^ the level current player resides on
   , ceps       :: !Int              -- ^ a parameter of the tgt digital line
   }
   deriving Show
 
 -- | Current result of the game.
 data Status =
-    Killed !Dungeon.LevelId  -- ^ the player lost the game on the given level
+    Killed !LevelId  -- ^ the player lost the game on the given level
   | Camping                  -- ^ game is supended
   | Victor                   -- ^ the player won
   | Restart                  -- ^ the player quits and starts a new game
@@ -116,7 +115,7 @@ data DebugMode = DebugMode
 
 -- | Get current level from the dungeon data.
 slevel :: State -> Level
-slevel State{slid, sdungeon} = sdungeon Dungeon.! slid
+slevel State{slid, sdungeon} = sdungeon M.! slid
 
 slevelClient :: State -> LevelClient
 slevelClient State{slid, sdungeons} = sdungeons M.! slid
@@ -139,7 +138,7 @@ unknownTileMap unknownId cxsize cysize =
 
 -- | Get current time from the dungeon data.
 stime :: State -> Time
-stime State{slid, sdungeon} = ltime $ sdungeon Dungeon.! slid
+stime State{slid, sdungeon} = ltime $ sdungeon M.! slid
 
 -- | Initial player diary.
 defaultDiary :: IO Diary
@@ -155,11 +154,11 @@ defaultDiary = do
 -- | Initial game state.
 defaultState :: Kind.Ops TileKind -> FlavourMap
              -> Discoveries -> Discoveries -> DiscoRev
-             -> Dungeon.Dungeon -> Dungeon.LevelId -> R.StdGen
+             -> Dungeon Level -> Int -> LevelId -> R.StdGen
              -> Config -> FactionId -> FactionDict -> Point
              -> State
 defaultState coitem sflavour sdisco sdiscoS sdiscoRev
-             sdungeon slid srandom
+             sdungeon sdepth slid srandom
              sconfig sfaction sfactions ploc =
   State
     { splayer  = 0 -- hack: the hero is not yet alive
@@ -170,7 +169,7 @@ defaultState coitem sflavour sdisco sdiscoS sdiscoRev
     , sdebug   = defaultDebugMode
     , sdungeons =
       M.map (\Level{lxsize, lysize} -> emptyLevelClient coitem lxsize lysize)
-            (Dungeon.dungeonLevelMap sdungeon)
+            sdungeon
     , ..
     }
 
@@ -194,7 +193,7 @@ updateDiscoveries f s = s { sdisco = f (sdisco s) }
 
 -- | Update level data within state.
 updateLevel :: (Level -> Level) -> State -> State
-updateLevel f s = updateDungeon (Dungeon.adjust f (slid s)) s
+updateLevel f s = updateDungeon (M.adjust f (slid s)) s
 
 -- | Update faction's level data within state.
 updateLevelClient :: (LevelClient -> LevelClient) -> State -> State
@@ -202,12 +201,11 @@ updateLevelClient f s@State{slid} =
   updateDungeons (M.adjust f slid) s
 
 -- | Update dungeon data within state.
-updateDungeon :: (Dungeon.Dungeon -> Dungeon.Dungeon) -> State -> State
+updateDungeon :: (Dungeon Level -> Dungeon Level) -> State -> State
 updateDungeon f s = s {sdungeon = f (sdungeon s)}
 
 -- | Update faction's dungeon data within state.
-updateDungeons :: (M.Map Dungeon.LevelId LevelClient
-                   -> M.Map Dungeon.LevelId LevelClient)
+updateDungeons :: (Dungeon LevelClient -> Dungeon LevelClient)
                -> State -> State
 updateDungeons f s = s {sdungeons = f (sdungeons s)}
 
@@ -243,6 +241,7 @@ instance Binary State where
     put sdiscoRev
     put sdungeon
     put sdungeons
+    put sdepth
     put slid
     put scounter
     put (show srandom)
@@ -258,6 +257,7 @@ instance Binary State where
     sdiscoRev <- get
     sdungeon <- get
     sdungeons <- get
+    sdepth <- get
     slid <- get
     scounter <- get
     g <- get

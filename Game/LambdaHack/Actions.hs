@@ -33,7 +33,6 @@ import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Draw
-import qualified Game.LambdaHack.Dungeon as Dungeon
 import Game.LambdaHack.DungeonState
 import qualified Game.LambdaHack.Effect as Effect
 import Game.LambdaHack.EffectAction
@@ -211,7 +210,7 @@ tgtAscend k = do
   slid      <- getsServer slid
   lvl       <- getsServer slevel
   st        <- getServer
-  dungeon   <- getsServer sdungeon
+  depth     <- getsServer sdepth
   let loc = clocation cursor
       tile = lvl `at` loc
       rightStairs =
@@ -238,9 +237,8 @@ tgtAscend k = do
                 in cur { clocation, clocLn = nln }
           modifyServer (updateCursor upd)
     else do  -- no stairs in the right direction
-      let n = Dungeon.levelNumber slid
-          depth = Dungeon.depth dungeon
-          nln = Dungeon.levelDefault $ min depth $ max 1 $ n - k
+      let n = levelNumber slid
+          nln = levelDefault $ min depth $ max 1 $ n - k
       when (nln == slid) $ abortWith "no more levels in this direction"
       switchLevel nln  -- see comment above
       let upd cur = cur {clocLn = nln}
@@ -482,7 +480,7 @@ rollMonster Kind.COps{ cotile
       ms = hostileList state
       hs = heroList state
       isLit = Tile.isLit cotile
-  rc <- monsterGenChance (Dungeon.levelNumber $ slid state) (length ms)
+  rc <- monsterGenChance (levelNumber $ slid state) (length ms)
   if not rc
     then return state
     else do

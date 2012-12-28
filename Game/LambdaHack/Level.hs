@@ -10,10 +10,13 @@ module Game.LambdaHack.Level
     -- * Level query
   , at, rememberAt, atI, rememberAtI
   , accessible, openable, findLoc, findLocTry
+    -- * Dungeon
+  , LevelId, levelNumber, levelDefault, Dungeon
   ) where
 
 import Data.Binary
 import qualified Data.IntMap as IM
+import qualified Data.Map as M
 import qualified Data.List as L
 import Data.Text (Text)
 
@@ -239,3 +242,22 @@ findLocTry numTries lmap l@(_ : tl) = assert (numTries > 0) $
           then return loc
           else search (k - 1)
   in search numTries
+
+-- | Level ids are, for now, ordered linearly by depth.
+newtype LevelId = LambdaCave Int
+  deriving (Show, Eq, Ord)
+
+instance Binary LevelId where
+  put (LambdaCave n) = put n
+  get = fmap LambdaCave get
+
+-- | Depth of a level.
+levelNumber :: LevelId -> Int
+levelNumber (LambdaCave n) = n
+
+-- | Default level for a given depth.
+levelDefault :: Int -> LevelId
+levelDefault = LambdaCave
+
+-- | The complete dungeon is a map from level names to levels.
+type Dungeon a = M.Map LevelId a

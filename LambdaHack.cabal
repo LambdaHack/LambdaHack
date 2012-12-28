@@ -100,7 +100,6 @@ library
                       Game.LambdaHack.Content.StrategyKind,
                       Game.LambdaHack.Content.TileKind,
                       Game.LambdaHack.Draw,
-                      Game.LambdaHack.Dungeon,
                       Game.LambdaHack.DungeonState,
                       Game.LambdaHack.Effect,
                       Game.LambdaHack.EffectAction,
