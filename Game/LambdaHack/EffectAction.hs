@@ -110,7 +110,7 @@ effectToAction effect verbosity source target power block = do
       msgAdd msg
       -- Try to show an animation. Sometimes, e.g., when HP is unchaged,
       -- the animation will not be shown.
-      cops <- askCOps
+      cops <- getsServer scops
       diary <- getDiary
       let locs = (breturn tvisible tloc,
                   breturn svisible sloc)
@@ -149,7 +149,7 @@ eff :: MonadAction m => Effect.Effect -> Int -> ActorId -> ActorId -> Int
     -> m (Bool, Text)
 eff Effect.NoEffect _ _ _ _ = nullEffect
 eff Effect.Heal _ _source target power = do
-  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- askCOps
+  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsServer scops
   let bhpMax m = maxDice (ahp $ okind $ bkind m)
   tm <- getsServer (getActor target)
   if bhp tm >= bhpMax tm || power <= 0
@@ -159,7 +159,7 @@ eff Effect.Heal _ _source target power = do
       updateAnyActor target (addHp coactor power)
       return (True, actorVerb coactor tm "feel better")
 eff (Effect.Wound nDm) verbosity source target power = do
-  Kind.COps{coactor} <- askCOps
+  Kind.COps{coactor} <- getsServer scops
   s <- getServer
   n <- rndToAction $ rollDice nDm
   if n + power <= 0 then nullEffect else do
@@ -185,7 +185,7 @@ eff (Effect.Wound nDm) verbosity source target power = do
     updateAnyActor target $ \ m -> m { bhp = newHP }  -- Damage the target.
     return (True, msg)
 eff Effect.Dominate _ source target _power = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- askCOps
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsServer scops
   s <- getServer
   if not $ isAHero s target
     then do  -- Monsters have weaker will than heroes.
@@ -242,7 +242,7 @@ eff Effect.Regeneration verbosity source target power =
 eff Effect.Searching _ _source _target _power =
   return (True, "It gets lost and you search in vain.")
 eff Effect.Ascend _ source target power = do
-  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- askCOps
+  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsServer scops
   tm <- getsServer (getActor target)
   void $ focusIfOurs target
   if aiq (okind (bkind tm)) < 13  -- monsters can't use stairs
@@ -255,7 +255,7 @@ eff Effect.Ascend _ source target power = do
            then (True, "")
            else (True, actorVerb coactor tm "find a way upstairs")
 eff Effect.Descend _ source target power = do
-  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- askCOps
+  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsServer scops
   tm <- getsServer (getActor target)
   void $ focusIfOurs target
   if aiq (okind (bkind tm)) < 13  -- monsters can't use stairs
@@ -272,7 +272,7 @@ nullEffect = return (False, "Nothing happens.")
 -- TODO: refactor with actorAttackActor.
 squashActor :: MonadAction m => ActorId -> ActorId -> m ()
 squashActor source target = do
-  Kind.COps{coactor, coitem=Kind.Ops{okind, ouniqGroup}} <- askCOps
+  Kind.COps{coactor, coitem=Kind.Ops{okind, ouniqGroup}} <- getsServer scops
   sm <- getsServer (getActor source)
   tm <- getsServer (getActor target)
   flavour <- getsServer sflavour
@@ -299,7 +299,7 @@ effLvlGoUp k = do
   pl        <- getsServer splayer
   slid      <- getsServer slid
   st        <- getServer
-  cops <- askCOps
+  cops <- getsServer scops
   clvl <- getsServer slevelClient
   case whereTo st k of
     Nothing -> fleeDungeon -- we are at the "end" of the dungeon
@@ -369,7 +369,7 @@ switchLevel nln = do
 -- | The player leaves the dungeon.
 fleeDungeon :: MonadAction m => m ()
 fleeDungeon = do
-  Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- askCOps
+  Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsServer scops
   s <- getServer
   go <- displayYesNo "This is the way out. Really leave now?"
   recordHistory  -- Prevent repeating the ending msgs.
@@ -402,7 +402,7 @@ fleeDungeon = do
 -- If the event is seen, the item may get identified.
 itemEffectAction :: MonadAction m => Int -> ActorId -> ActorId -> Item -> Bool -> m ()
 itemEffectAction verbosity source target item block = do
-  Kind.COps{coitem=Kind.Ops{okind}} <- askCOps
+  Kind.COps{coitem=Kind.Ops{okind}} <- getsServer scops
   st <- getServer
   slidOld <- getsServer slid
   discoS <- getsServer sdiscoS
@@ -422,7 +422,7 @@ itemEffectAction verbosity source target item block = do
 -- | Make the item known to the player.
 discover :: MonadAction m => Item -> m ()
 discover i = do
-  Kind.COps{coitem} <- askCOps
+  Kind.COps{coitem} <- getsServer scops
   oldDisco <- getsServer sdisco
   discoS <- getsServer sdiscoS
   let ix = jkindIx i
@@ -442,7 +442,7 @@ discover i = do
 -- of a player action or the selected player actor death.
 selectPlayer :: MonadAction m => ActorId -> m Bool
 selectPlayer actor = do
-  cops@Kind.COps{coactor} <- askCOps
+  cops@Kind.COps{coactor} <- getsServer scops
   pl    <- getsServer splayer
   clvl  <- getsServer slevelClient
   if actor == pl
@@ -482,7 +482,7 @@ focusIfOurs target = do
 summonHeroes :: MonadAction m => Int -> Point -> m ()
 summonHeroes n loc =
   assert (n > 0) $ do
-  cops <- askCOps
+  cops <- getsServer scops
   newHeroId <- getsServer scounter
   configUI <- askConfigUI
   modifyServer (\ state -> iterate (addHero cops loc configUI) state !! n)
@@ -497,7 +497,7 @@ summonMonsters n loc = do
   factions <- getsServer sfactions
   Kind.COps{ cotile
            , coactor=Kind.Ops{opick, okind}
-           , cofact=Kind.Ops{opick=fopick, oname=foname}} <- askCOps
+           , cofact=Kind.Ops{opick=fopick, oname=foname}} <- getsServer scops
   spawnKindId <- rndToAction $ fopick "spawn" (const True)
   -- Spawn frequency required greater than zero, but otherwise ignored.
   let inFactionKind m = isJust $ lookup (foname spawnKindId) (afreq m)
@@ -516,7 +516,7 @@ summonMonsters n loc = do
 -- on any level.
 checkPartyDeath :: MonadAction m => m ()
 checkPartyDeath = do
-  cops@Kind.COps{coactor} <- askCOps
+  cops@Kind.COps{coactor} <- getsServer scops
   per    <- askPerception
   ahs    <- getsServer allHeroesAnyLevel
   pl     <- getsServer splayer
@@ -562,7 +562,7 @@ gameOver showEndingScreens = do
   slid <- getsServer slid
   modifyServer (\st -> st {squit = Just (False, Killed slid)})
   when showEndingScreens $ do
-    Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- askCOps
+    Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsServer scops
     s <- getServer
     sdepth <- getsServer sdepth
     time <- getsServer stime
@@ -598,7 +598,7 @@ gameOver showEndingScreens = do
 -- | Create a list of item names.
 itemOverlay :: MonadActionPure m => Discoveries -> Bool -> [Item] -> m Overlay
 itemOverlay disco sorted is = do
-  Kind.COps{coitem} <- askCOps
+  Kind.COps{coitem} <- getsServer scops
   let items | sorted = sortBy (cmpLetterMaybe `on` jletter) is
             | otherwise = is
       pr i = makePhrase [ letterLabel (jletter i)
@@ -612,7 +612,7 @@ stopRunning = updatePlayerBody (\ p -> p { bdir = Nothing })
 -- | Perform look around in the current location of the cursor.
 doLook :: MonadAction m => WriterT Slideshow m ()
 doLook = do
-  cops@Kind.COps{coactor} <- askCOps
+  cops@Kind.COps{coactor} <- getsServer scops
   loc    <- getsServer (clocation . scursor)
   state  <- getServer
   clvl   <- getsServer slevelClient

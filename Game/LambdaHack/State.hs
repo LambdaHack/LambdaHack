@@ -76,6 +76,7 @@ data State = State
   , sfaction  :: !FactionId     -- ^ our faction
   , slastKey  :: !(Maybe K.KM)  -- ^ last command key pressed
   , sdebug    :: !DebugMode     -- ^ debugging mode
+  , scops     :: !Kind.COps     -- ^ game content
   }
   deriving Show
 
@@ -155,11 +156,11 @@ defaultDiary = do
 defaultState :: Kind.Ops TileKind -> FlavourMap
              -> Discoveries -> Discoveries -> DiscoRev
              -> Dungeon Level -> Int -> LevelId -> R.StdGen
-             -> Config -> FactionId -> FactionDict -> Point
+             -> Config -> FactionId -> FactionDict -> Kind.COps -> Point
              -> State
 defaultState coitem sflavour sdisco sdiscoS sdiscoRev
              sdungeon sdepth slid srandom
-             sconfig sfaction sfactions ploc =
+             sconfig sfaction sfactions scops ploc =
   State
     { splayer  = 0 -- hack: the hero is not yet alive
     , scursor  = (Cursor TgtOff slid ploc slid 0)
@@ -268,6 +269,7 @@ instance Binary State where
         sdebug = defaultDebugMode
         slastKey = Nothing
         srandom = read g
+        scops = undefined  -- overwritten by recreated cops
     return State{..}
 
 instance Binary TgtMode where

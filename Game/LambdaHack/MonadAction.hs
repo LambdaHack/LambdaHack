@@ -14,7 +14,6 @@ import Control.Monad.Writer.Strict (WriterT (WriterT, runWriterT), lift)
 import Game.LambdaHack.Action.Frontend
 import Game.LambdaHack.Binding
 import Game.LambdaHack.Config
-import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.State
@@ -24,7 +23,6 @@ import Game.LambdaHack.State
 -- but is completely disregarded and reset when a new playing session starts.
 data Session = Session
   { sfs       :: !FrontendSession  -- ^ frontend session information
-  , scops     :: !Kind.COps        -- ^ game content
   , sbinding  :: !Binding          -- ^ binding of keys to commands
   , sconfigUI :: !ConfigUI         -- ^ the UI config for this session
   }

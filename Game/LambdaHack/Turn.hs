@@ -88,7 +88,7 @@ handleActors :: MonadAction m => Time       -- ^ the start time of current subcl
              -> m ()
 handleActors subclipStart = do
   debug "handleActors"
-  Kind.COps{coactor} <- askCOps
+  Kind.COps{coactor} <- getsServer scops
   sfaction <- getsServer sfaction
   time <- getsServer stime  -- the end time of this clip, inclusive
   pl <- getsServer splayer
@@ -150,7 +150,7 @@ handleActors subclipStart = do
 -- | Handle the move of a single monster.
 handleAI :: MonadAction m => ActorId -> m ()
 handleAI actor = do
-  cops@Kind.COps{costrat=Kind.Ops{oname, okind}} <- askCOps
+  cops@Kind.COps{costrat=Kind.Ops{oname, okind}} <- getsServer scops
   state <- getServer
   pers <- ask
   let Actor{bfaction, bloc, bsymbol} = getActor actor state
@@ -257,7 +257,7 @@ playerCommand msgRunAbort = do
 -- | Advance (or rewind) the move time for the given actor.
 advanceTime :: MonadAction m => ActorId -> m ()
 advanceTime actor = do
-  Kind.COps{coactor} <- askCOps
+  Kind.COps{coactor} <- getsServer scops
   let upd m@Actor{btime} = m {btime = timeAddFromSpeed coactor m btime}
   updateAnyActor actor upd
 

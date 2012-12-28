@@ -11,7 +11,7 @@ module Game.LambdaHack.Action
     -- * The Perception Reader
   , withPerception, askPerception
     -- * Accessors to the game session Reader
-  , askCOps, askBinding, askConfigUI
+  , askBinding, askConfigUI
     -- * Actions returning frames
   , tryWithSlide
     -- * Various ways to abort action
@@ -86,10 +86,6 @@ import Game.LambdaHack.Utils.Assert
 askFrontendSession :: MonadActionPure m => m FrontendSession
 askFrontendSession = getsSession sfs
 
--- | Get the content operations.
-askCOps :: MonadActionPure m => m Kind.COps
-askCOps = getsSession scops
-
 -- | Get the key binding.
 askBinding :: MonadActionPure m => m Binding
 askBinding = getsSession sbinding
@@ -117,7 +113,7 @@ msgReset msg = modifyClient $ \d -> d {sreport = singletonReport msg}
 -- | Update the cached perception for the given computation.
 withPerception :: MonadActionPure m => m () -> m ()
 withPerception m = do
-  cops <- askCOps
+  cops <- getsServer scops
   s <- getServer
   let per = dungeonPerception cops s
   local (const per) m
@@ -295,7 +291,7 @@ overlayToSlideshow prompt overlay = do
 -- | Draw the current level with the overlay on top.
 drawOverlay :: MonadActionPure m => ColorMode -> Overlay -> m SingleFrame
 drawOverlay dm over = do
-  cops <- askCOps
+  cops <- getsServer scops
   per <- askPerception
   s <- getServer
   return $! draw dm cops per s over
@@ -335,7 +331,7 @@ remember = do
 rememberList :: MonadAction m => IS.IntSet -> m ()
 rememberList visible = do
   let vis = IS.toList visible
-  Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- askCOps
+  Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getsServer scops
   lvl <- getsServer slevel
   clvl <- getsServer slevelClient
   let rememberTile = [(loc, lvl `at` loc) | loc <- vis]
@@ -450,7 +446,7 @@ restartGame handleTurn = do
   -- Take the original config from config file, to reroll RNG, if needed
   -- (the current config file has the RNG rolled for the previous game).
   configUI <- askConfigUI
-  cops <- askCOps
+  cops <- getsServer scops
   state <- gameResetAction configUI cops
   modifyServer $ const state
   saveGameBkp
@@ -493,7 +489,7 @@ gameReset configUI cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
             state = defaultState cotile sflavour
                                  disco discoS discoRev
                                  freshDungeon freshDepth entryLevel srandom
-                                 sconfig sfaction sfactions entryLoc
+                                 sconfig sfaction sfactions cops entryLoc
         return $ initialHeroes cops entryLoc configUI state
   return $! St.evalState rnd dungeonGen
 
@@ -551,7 +547,7 @@ start executor sfs scops@Kind.COps{corule} sbinding sconfigUI handleGame = do
         -- TODO: gameReset >> handleTurn or defaultState {squit=Reset}
     Left (state, diary, msg) ->  -- Running a restored game.
       executor handleGame sfs scops sbinding sconfigUI
-        state
+        state{scops}  -- overwritten by recreated cops
         -- This overwrites the "Really save/quit?" messages.
         diary{sreport = singletonReport msg}
 

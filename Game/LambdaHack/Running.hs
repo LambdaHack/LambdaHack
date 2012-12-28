@@ -30,7 +30,7 @@ import Game.LambdaHack.Vector
 -- and still explicitly requests a run.
 run :: MonadAction m => (Vector, Int) -> m ()
 run (dir, dist) = do
-  cops <- askCOps
+  cops <- getsServer scops
   pl <- getsServer splayer
   locHere <- getsServer (bloc . getPlayerBody)
   lvl <- getsServer slevel
@@ -150,7 +150,7 @@ runDisturbance locLast distLast msg hs ms per locHere
 -- and it increments the counter of traversed tiles.
 continueRun :: MonadAction m => (Vector, Int) -> m ()
 continueRun (dirLast, distLast) = do
-  cops@Kind.COps{cotile} <- askCOps
+  cops@Kind.COps{cotile} <- getsServer scops
   locHere <- getsServer (bloc . getPlayerBody)
   per <- askPerception
   Diary{sreport} <- getDiary

@@ -115,7 +115,7 @@ guessBump _ _ _ = neverMind True
 -- | Player tries to trigger a tile using a feature.
 bumpTile :: MonadAction m => Point -> F.Feature -> m ()
 bumpTile dloc feat = do
-  Kind.COps{cotile} <- askCOps
+  Kind.COps{cotile} <- getsServer scops
   lvl    <- getsServer slevel
   let t = lvl `at` dloc
   if Tile.hasFeature cotile feat t
@@ -125,7 +125,7 @@ bumpTile dloc feat = do
 -- | Perform the action specified for the tile in case it's triggered.
 triggerTile :: MonadAction m => Point -> m ()
 triggerTile dloc = do
-  Kind.COps{cotile=Kind.Ops{okind, opick}} <- askCOps
+  Kind.COps{cotile=Kind.Ops{okind, opick}} <- getsServer scops
   lvl <- getsServer slevel
   let f (F.Cause effect) = do
         pl <- getsServer splayer
@@ -174,7 +174,7 @@ actorOpenDoor actor dir = do
   Kind.COps{ cotile
            , coitem
            , coactor=Kind.Ops{okind}
-           } <- askCOps
+           } <- getsServer scops
   lvl  <- getsServer slevel
   pl   <- getsServer splayer
   body <- getsServer (getActor actor)
@@ -204,7 +204,7 @@ actorOpenDoor actor dir = do
 -- k levels shallower. Enters targeting mode, if not already in one.
 tgtAscend :: MonadAction m => Int -> WriterT Slideshow m ()
 tgtAscend k = do
-  Kind.COps{cotile} <- askCOps
+  Kind.COps{cotile} <- getsServer scops
   cursor    <- getsServer scursor
   targeting <- getsServer (ctargeting . scursor)
   slid      <- getsServer slid
@@ -283,7 +283,7 @@ backCycleHero = do
 -- | Search for hidden doors.
 search :: MonadAction m => m ()
 search = do
-  Kind.COps{coitem, cotile} <- askCOps
+  Kind.COps{coitem, cotile} <- getsServer scops
   lvl    <- getsServer slevel
   le     <- getsServer (lsecret . slevel)
   lxsize <- getsServer (lxsize . slevel)
@@ -323,7 +323,7 @@ moveOrAttack :: MonadAction m
              -> m ()
 moveOrAttack allowAttacks actor dir = do
   -- We start by looking at the target position.
-  cops@Kind.COps{cotile = cotile@Kind.Ops{okind}} <- askCOps
+  cops@Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getsServer scops
   state  <- getServer
   pl     <- getsServer splayer
   lvl    <- getsServer slevel
@@ -382,7 +382,7 @@ actorAttackActor source target = do
      bfaction tm == sfaction && not (bproj tm)
     then assert `failure` (source, target, "player AI bumps into friendlies")
     else do
-      cops@Kind.COps{coactor, coitem=coitem@Kind.Ops{opick, okind}} <- askCOps
+      cops@Kind.COps{coactor, coitem=coitem@Kind.Ops{opick, okind}} <- getsServer scops
       state <- getServer
       bitems <- getsServer (getActorItem source)
       let h2hGroup = if isAHero state source then "unarmed" else "monstrous"
@@ -450,7 +450,7 @@ actorRunActor source target = do
       tloc = bloc tm
   updateAnyActor source $ \ m -> m { bloc = tloc }
   updateAnyActor target $ \ m -> m { bloc = sloc }
-  cops@Kind.COps{coactor} <- askCOps
+  cops@Kind.COps{coactor} <- getsServer scops
   per <- askPerception
   let visible = sloc `IS.member` totalVisible per ||
                 tloc `IS.member` totalVisible per
@@ -508,7 +508,7 @@ rollMonster Kind.COps{ cotile
 -- | Generate a monster, possibly.
 generateMonster :: MonadAction m => m ()
 generateMonster = do
-  cops    <- askCOps
+  cops    <- getsServer scops
   state   <- getServer
   per     <- askPerception
   nstate  <- rndToAction $ rollMonster cops per state
@@ -520,7 +520,7 @@ regenerateLevelHP :: MonadAction m => m ()
 regenerateLevelHP = do
   Kind.COps{ coitem
            , coactor=coactor@Kind.Ops{okind}
-           } <- askCOps
+           } <- getsServer scops
   time <- getsServer stime
   discoS <- getsServer sdiscoS
   let upd itemIM a m =
@@ -551,7 +551,7 @@ displayHelp = do
 -- | Display the main menu.
 displayMainMenu :: MonadActionRO m => WriterT Slideshow m ()
 displayMainMenu = do
-  Kind.COps{corule} <- askCOps
+  Kind.COps{corule} <- getsServer scops
   Binding{krevMap} <- askBinding
   let stripFrame t = case T.uncons t of
         Just ('\n', art) -> map (T.tail . T.init) $ tail . init $ T.lines art
@@ -630,7 +630,7 @@ addSmell = do
 -- | Update the wait/block count.
 setWaitBlock :: MonadAction m => ActorId -> m ()
 setWaitBlock actor = do
-  Kind.COps{coactor} <- askCOps
+  Kind.COps{coactor} <- getsServer scops
   time <- getsServer stime
   updateAnyActor actor $ \ m -> m {bwait = timeAddFromSpeed coactor m time}
 

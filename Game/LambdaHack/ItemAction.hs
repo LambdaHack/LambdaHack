@@ -40,7 +40,7 @@ default (Text)
 -- | Display inventory
 inventory :: MonadActionRO m => WriterT Slideshow m ()
 inventory = do
-  Kind.COps{coactor} <- askCOps
+  Kind.COps{coactor} <- getsServer scops
   pbody <- getsServer getPlayerBody
   items <- getsServer getPlayerItem
   disco <- getsServer sdisco
@@ -75,7 +75,7 @@ applyGroupItem :: MonadAction m => ActorId  -- ^ actor applying the item (is on 
                -> Item     -- ^ the item to be applied
                -> m ()
 applyGroupItem actor verb item = do
-  Kind.COps{coactor, coitem} <- askCOps
+  Kind.COps{coactor, coitem} <- getsServer scops
   body  <- getsServer (getActor actor)
   per   <- askPerception
   disco <- getsServer sdisco
@@ -91,7 +91,7 @@ applyGroupItem actor verb item = do
 
 playerApplyGroupItem :: MonadAction m => MU.Part -> MU.Part -> [Char] -> m ()
 playerApplyGroupItem verb object syms = do
-  Kind.COps{coitem=Kind.Ops{okind}} <- askCOps
+  Kind.COps{coitem=Kind.Ops{okind}} <- getsServer scops
   is   <- getsServer getPlayerItem
   item <- getGroupItem is object syms
             (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
@@ -108,7 +108,7 @@ projectGroupItem :: MonadAction m => ActorId  -- ^ actor projecting the item (is
                  -> Item     -- ^ the item to be projected
                  -> m ()
 projectGroupItem source tloc _verb item = do
-  cops@Kind.COps{coactor, coitem} <- askCOps
+  cops@Kind.COps{coactor, coitem} <- getsServer scops
   sm    <- getsServer (getActor source)
   per   <- askPerception
   pl    <- getsServer splayer
@@ -181,7 +181,7 @@ playerProjectGI verb object syms = do
   per   <- askPerception
   case targetToLoc (totalVisible per) state ploc of
     Just loc -> do
-      Kind.COps{coitem=Kind.Ops{okind}} <- askCOps
+      Kind.COps{coitem=Kind.Ops{okind}} <- getsServer scops
       is   <- getsServer getPlayerItem
       item <- getGroupItem is object syms
                 (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
@@ -312,7 +312,7 @@ endTargeting accept = do
 
 endTargetingMsg :: MonadActionRO m => m ()
 endTargetingMsg = do
-  Kind.COps{coactor} <- askCOps
+  Kind.COps{coactor} <- getsServer scops
   pbody  <- getsServer getPlayerBody
   state  <- getServer
   lxsize <- getsServer (lxsize . slevel)
@@ -353,7 +353,7 @@ clearCurrent = return ()
 dropItem :: MonadAction m => m ()
 dropItem = do
   -- TODO: allow dropping a given number of identical items.
-  Kind.COps{coactor, coitem} <- askCOps
+  Kind.COps{coactor, coitem} <- getsServer scops
   pl    <- getsServer splayer
   pbody <- getsServer getPlayerBody
   ploc  <- getsServer (bloc . getPlayerBody)
@@ -405,7 +405,7 @@ removeFromLoc i loc = do
 
 actorPickupItem :: MonadAction m => ActorId -> m ()
 actorPickupItem actor = do
-  Kind.COps{coactor, coitem} <- askCOps
+  Kind.COps{coactor, coitem} <- getsServer scops
   pl    <- getsServer splayer
   per   <- askPerception
   lvl   <- getsServer slevel
