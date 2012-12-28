@@ -64,7 +64,7 @@ gameExit :: MonadAction m => m ()
 gameExit = do
   b <- displayYesNo "Really save and exit?"
   if b
-    then modifyServer (\ s -> s {squit = Just (True, Camping)})
+    then modifyGlobal (\ s -> s {squit = Just (True, Camping)})
     else abortWith "Game resumed."
 
 gameRestart :: MonadAction m => m ()
@@ -73,23 +73,23 @@ gameRestart = do
   when (not b1) $ neverMind True
   b2 <- displayYesNo "Current progress will be lost! Really restart the game?"
   when (not b2) $ abortWith "Yea, so much still to do."
-  modifyServer (\ s -> s {squit = Just (False, Restart)})
+  modifyGlobal (\ s -> s {squit = Just (False, Restart)})
 
 moveCursor :: MonadAction m => Vector -> Int -> WriterT Slideshow m ()
 moveCursor dir n = do
-  lxsize <- getsServer (lxsize . slevel)
-  lysize <- getsServer (lysize . slevel)
+  lxsize <- getsGlobal (lxsize . slevel)
+  lysize <- getsGlobal (lysize . slevel)
   let upd cursor =
         let shiftB loc =
               shiftBounded lxsize (1, 1, lxsize - 2, lysize - 2) loc dir
             cloc = iterate shiftB (clocation cursor) !! n
         in cursor { clocation = cloc }
-  modifyServer (updateCursor upd)
+  modifyGlobal (updateCursor upd)
   doLook
 
 ifRunning :: MonadActionPure m => ((Vector, Int) -> m a) -> m a -> m a
 ifRunning t e = do
-  ad <- getsServer (bdir . getPlayerBody)
+  ad <- getsGlobal (bdir . getPlayerBody)
   maybe e t ad
 
 -- | Guess and report why the bump command failed.
@@ -115,8 +115,8 @@ guessBump _ _ _ = neverMind True
 -- | Player tries to trigger a tile using a feature.
 bumpTile :: MonadAction m => Point -> F.Feature -> m ()
 bumpTile dloc feat = do
-  Kind.COps{cotile} <- getsServer scops
-  lvl    <- getsServer slevel
+  Kind.COps{cotile} <- getsGlobal scops
+  lvl    <- getsGlobal slevel
   let t = lvl `at` dloc
   if Tile.hasFeature cotile feat t
     then triggerTile dloc
@@ -125,20 +125,20 @@ bumpTile dloc feat = do
 -- | Perform the action specified for the tile in case it's triggered.
 triggerTile :: MonadAction m => Point -> m ()
 triggerTile dloc = do
-  Kind.COps{cotile=Kind.Ops{okind, opick}} <- getsServer scops
-  lvl <- getsServer slevel
+  Kind.COps{cotile=Kind.Ops{okind, opick}} <- getsGlobal scops
+  lvl <- getsGlobal slevel
   let f (F.Cause effect) = do
-        pl <- getsServer splayer
+        pl <- getsGlobal splayer
         void $ effectToAction effect 0 pl pl 0 False  -- no block against tile
         return ()
       f (F.ChangeTo tgroup) = do
-        Level{lactor} <- getsServer slevel
+        Level{lactor} <- getsGlobal slevel
         case lvl `atI` dloc of
           [] -> if unoccupied (IM.elems lactor) dloc
                 then do
                   newTileId <- rndToAction $ opick tgroup (const True)
                   let adj = (Kind.// [(dloc, newTileId)])
-                  modifyServer (updateLevel (updateLMap adj))
+                  modifyGlobal (updateLevel (updateLMap adj))
 -- TODO: take care of AI using this function (aborts, etc.).
                 else abortWith "blocked"  -- by monsters or heroes
           _ : _ -> abortWith "jammed"  -- by items
@@ -151,21 +151,21 @@ playerTriggerDir feat verb = do
   let keys = zip K.dirAllMoveKey $ repeat K.NoModifier
       prompt = makePhrase ["What to", verb MU.:> "? [movement key"]
   e <- displayChoiceUI prompt [] keys
-  lxsize <- getsServer (lxsize . slevel)
+  lxsize <- getsGlobal (lxsize . slevel)
   K.handleDir lxsize e (playerBumpDir feat) (neverMind True)
 
 -- | Player tries to trigger a tile in a given direction.
 playerBumpDir :: MonadAction m => F.Feature -> Vector -> m ()
 playerBumpDir feat dir = do
-  pl    <- getsServer splayer
-  body  <- getsServer (getActor pl)
+  pl    <- getsGlobal splayer
+  body  <- getsGlobal (getActor pl)
   let dloc = bloc body `shift` dir
   bumpTile dloc feat
 
 -- | Player tries to trigger the tile he's standing on.
 playerTriggerTile :: MonadAction m => F.Feature -> m ()
 playerTriggerTile feat = do
-  ploc <- getsServer (bloc . getPlayerBody)
+  ploc <- getsGlobal (bloc . getPlayerBody)
   bumpTile ploc feat
 
 -- | An actor opens a door.
@@ -174,12 +174,12 @@ actorOpenDoor actor dir = do
   Kind.COps{ cotile
            , coitem
            , coactor=Kind.Ops{okind}
-           } <- getsServer scops
-  lvl  <- getsServer slevel
-  pl   <- getsServer splayer
-  body <- getsServer (getActor actor)
-  bitems <- getsServer (getActorItem actor)
-  discoS <- getsServer sdiscoS
+           } <- getsGlobal scops
+  lvl  <- getsGlobal slevel
+  pl   <- getsGlobal splayer
+  body <- getsGlobal (getActor actor)
+  bitems <- getsGlobal (getActorItem actor)
+  discoS <- getsGlobal sdiscoS
   let dloc = shift (bloc body) dir  -- the location we act upon
       t = lvl `at` dloc
       isPlayer = actor == pl
@@ -204,13 +204,13 @@ actorOpenDoor actor dir = do
 -- k levels shallower. Enters targeting mode, if not already in one.
 tgtAscend :: MonadAction m => Int -> WriterT Slideshow m ()
 tgtAscend k = do
-  Kind.COps{cotile} <- getsServer scops
-  cursor    <- getsServer scursor
-  targeting <- getsServer (ctargeting . scursor)
-  slid      <- getsServer slid
-  lvl       <- getsServer slevel
-  st        <- getServer
-  depth     <- getsServer sdepth
+  Kind.COps{cotile} <- getsGlobal scops
+  cursor    <- getsGlobal scursor
+  targeting <- getsGlobal (ctargeting . scursor)
+  slid      <- getsGlobal slid
+  lvl       <- getsGlobal slevel
+  st        <- getGlobal
+  depth     <- getsGlobal sdepth
   let loc = clocation cursor
       tile = lvl `at` loc
       rightStairs =
@@ -228,30 +228,30 @@ tgtAscend k = do
           -- If that's too slow, we could keep current time in the @Cursor@.
           switchLevel nln
           -- do not freely reveal the other end of the stairs
-          clvl <- getsServer slevelClient
+          clvl <- getsGlobal slevelClient
           let upd cur =
                 let clocation =
                       if Tile.hasFeature cotile F.Exit (clvl `rememberAt` nloc)
                       then nloc  -- already know as an exit, focus on it
                       else loc   -- unknow, do not reveal the position
                 in cur { clocation, clocLn = nln }
-          modifyServer (updateCursor upd)
+          modifyGlobal (updateCursor upd)
     else do  -- no stairs in the right direction
       let n = levelNumber slid
           nln = levelDefault $ min depth $ max 1 $ n - k
       when (nln == slid) $ abortWith "no more levels in this direction"
       switchLevel nln  -- see comment above
       let upd cur = cur {clocLn = nln}
-      modifyServer (updateCursor upd)
+      modifyGlobal (updateCursor upd)
   when (targeting == TgtOff) $ do
     let upd cur = cur {ctargeting = TgtExplicit}
-    modifyServer (updateCursor upd)
+    modifyGlobal (updateCursor upd)
   doLook
 
 heroesAfterPl :: MonadActionPure m => m [ActorId]
 heroesAfterPl = do
-  pl <- getsServer splayer
-  s  <- getServer
+  pl <- getsGlobal splayer
+  s  <- getGlobal
   let hs = map (tryFindHeroK s) [0..9]
       i = fromMaybe (-1) $ findIndex (== Just pl) hs
       (lt, gt) = (take i hs, drop (i + 1) hs)
@@ -261,8 +261,8 @@ heroesAfterPl = do
 -- We cycle through at most 10 heroes (\@, 1--9).
 cycleHero :: MonadAction m => m ()
 cycleHero = do
-  pl <- getsServer splayer
-  s  <- getServer
+  pl <- getsGlobal splayer
+  s  <- getGlobal
   hs <- heroesAfterPl
   case filter (flip memActor s) hs of
     [] -> abortWith "Cannot select any other hero on this level."
@@ -273,7 +273,7 @@ cycleHero = do
 -- if any, wrapping. We cycle through at most 10 heroes (\@, 1--9).
 backCycleHero :: MonadAction m => m ()
 backCycleHero = do
-  pl <- getsServer splayer
+  pl <- getsGlobal splayer
   hs <- heroesAfterPl
   case reverse hs of
     [] -> abortWith "No other hero in the party."
@@ -283,13 +283,13 @@ backCycleHero = do
 -- | Search for hidden doors.
 search :: MonadAction m => m ()
 search = do
-  Kind.COps{coitem, cotile} <- getsServer scops
-  lvl    <- getsServer slevel
-  le     <- getsServer (lsecret . slevel)
-  lxsize <- getsServer (lxsize . slevel)
-  ploc   <- getsServer (bloc . getPlayerBody)
-  pitems <- getsServer getPlayerItem
-  discoS <- getsServer sdiscoS
+  Kind.COps{coitem, cotile} <- getsGlobal scops
+  lvl    <- getsGlobal slevel
+  le     <- getsGlobal (lsecret . slevel)
+  lxsize <- getsGlobal (lxsize . slevel)
+  ploc   <- getsGlobal (bloc . getPlayerBody)
+  pitems <- getsGlobal getPlayerItem
+  discoS <- getsGlobal sdiscoS
   let delta = timeScale timeTurn $
                 case strongestSearch coitem discoS pitems of
                   Just i  -> 1 + jpower i
@@ -305,8 +305,8 @@ search = do
                 else IM.delete loc sle
            else sle
       leNew = foldl' searchTile le (moves lxsize)
-  modifyServer (updateLevel (\ l -> l {lsecret = leNew}))
-  lvlNew <- getsServer slevel
+  modifyGlobal (updateLevel (\ l -> l {lsecret = leNew}))
+  lvlNew <- getsGlobal slevel
   let triggerHidden mv = do
         let dloc = shift ploc mv
             t = lvlNew `at` dloc
@@ -323,15 +323,15 @@ moveOrAttack :: MonadAction m
              -> m ()
 moveOrAttack allowAttacks actor dir = do
   -- We start by looking at the target position.
-  cops@Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getsServer scops
-  state  <- getServer
-  pl     <- getsServer splayer
-  lvl    <- getsServer slevel
-  clvl   <- getsServer slevelClient
-  sm     <- getsServer (getActor actor)
+  cops@Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getsGlobal scops
+  state  <- getGlobal
+  pl     <- getsGlobal splayer
+  lvl    <- getsGlobal slevel
+  clvl   <- getsGlobal slevelClient
+  sm     <- getsGlobal (getActor actor)
   let sloc = bloc sm           -- source location
       tloc = sloc `shift` dir  -- target location
-  tgt <- getsServer (locToActor tloc)
+  tgt <- getsGlobal (locToActor tloc)
   case tgt of
     Just target
       | allowAttacks ->
@@ -365,11 +365,11 @@ moveOrAttack allowAttacks actor dir = do
 -- and not using up the weapon.
 actorAttackActor :: MonadAction m => ActorId -> ActorId -> m ()
 actorAttackActor source target = do
-  smRaw <- getsServer (getActor source)
-  tmRaw <- getsServer (getActor target)
+  smRaw <- getsGlobal (getActor source)
+  tmRaw <- getsGlobal (getActor target)
   per   <- askPerception
-  time  <- getsServer stime
-  sfaction <- getsServer sfaction
+  time  <- getsGlobal stime
+  sfaction <- getsGlobal sfaction
   let sloc = bloc smRaw
       tloc = bloc tmRaw
       svisible = sloc `IS.member` totalVisible per
@@ -382,14 +382,14 @@ actorAttackActor source target = do
      bfaction tm == sfaction && not (bproj tm)
     then assert `failure` (source, target, "player AI bumps into friendlies")
     else do
-      cops@Kind.COps{coactor, coitem=coitem@Kind.Ops{opick, okind}} <- getsServer scops
-      state <- getServer
-      bitems <- getsServer (getActorItem source)
+      cops@Kind.COps{coactor, coitem=coitem@Kind.Ops{opick, okind}} <- getsGlobal scops
+      state <- getGlobal
+      bitems <- getsGlobal (getActorItem source)
       let h2hGroup = if isAHero state source then "unarmed" else "monstrous"
       h2hKind <- rndToAction $ opick h2hGroup (const True)
-      flavour <- getsServer sflavour
-      discoRev <- getsServer sdiscoRev
-      disco <- getsServer sdisco
+      flavour <- getsGlobal sflavour
+      discoRev <- getsGlobal sdiscoRev
+      disco <- getsGlobal sdisco
       let h2hItem = buildItem flavour discoRev h2hKind (okind h2hKind) 1 0
           (stack, say, verbosity, verb) =
             if isProjectile state source
@@ -430,11 +430,11 @@ actorAttackActor source target = do
           if blocked
             then do
               when (svisible || tvisible) $ msgAdd msgMiss
-              diary <- getDiary
+              cli <- getClient
               let locs = (breturn tvisible tloc,
                           breturn svisible sloc)
                   anim = blockMiss locs
-                  animFrs = animate state diary cops per anim
+                  animFrs = animate state cli cops per anim
               displayFramesPush $ Nothing : animFrs
             else performHit True
         else performHit False
@@ -443,14 +443,14 @@ actorAttackActor source target = do
 -- This involves switching positions of the two actors.
 actorRunActor :: MonadAction m => ActorId -> ActorId -> m ()
 actorRunActor source target = do
-  pl <- getsServer splayer
-  sm <- getsServer (getActor source)
-  tm <- getsServer (getActor target)
+  pl <- getsGlobal splayer
+  sm <- getsGlobal (getActor source)
+  tm <- getsGlobal (getActor target)
   let sloc = bloc sm
       tloc = bloc tm
   updateAnyActor source $ \ m -> m { bloc = tloc }
   updateAnyActor target $ \ m -> m { bloc = sloc }
-  cops@Kind.COps{coactor} <- getsServer scops
+  cops@Kind.COps{coactor} <- getsGlobal scops
   per <- askPerception
   let visible = sloc `IS.member` totalVisible per ||
                 tloc `IS.member` totalVisible per
@@ -458,10 +458,10 @@ actorRunActor source target = do
         [ MU.SubjectVerbSg (partActor coactor sm) "displace"
         , partActor coactor tm ]
   when visible $ msgAdd msg
-  diary <- getDiary  -- here diary possibly contains the new msg
-  s <- getServer
+  cli <- getClient  -- here cli possibly contains the new msg
+  s <- getGlobal
   let locs = (Just tloc, Just sloc)
-      animFrs = animate s diary cops per $ swapPlaces locs
+      animFrs = animate s cli cops per $ swapPlaces locs
   when visible $ displayFramesPush $ Nothing : animFrs
   if source == pl
    then stopRunning  -- do not switch positions repeatedly
@@ -508,21 +508,21 @@ rollMonster Kind.COps{ cotile
 -- | Generate a monster, possibly.
 generateMonster :: MonadAction m => m ()
 generateMonster = do
-  cops    <- getsServer scops
-  state   <- getServer
+  cops    <- getsGlobal scops
+  state   <- getGlobal
   per     <- askPerception
   nstate  <- rndToAction $ rollMonster cops per state
-  srandom <- getsServer srandom
-  putServer $! nstate {srandom}
+  srandom <- getsGlobal srandom
+  putGlobal $! nstate {srandom}
 
 -- | Possibly regenerate HP for all actors on the current level.
 regenerateLevelHP :: MonadAction m => m ()
 regenerateLevelHP = do
   Kind.COps{ coitem
            , coactor=coactor@Kind.Ops{okind}
-           } <- getsServer scops
-  time <- getsServer stime
-  discoS <- getsServer sdiscoS
+           } <- getsGlobal scops
+  time <- getsGlobal stime
+  discoS <- getsGlobal sdiscoS
   let upd itemIM a m =
         let ak = okind $ bkind m
             bitems = fromMaybe [] $ IM.lookup a itemIM
@@ -539,8 +539,8 @@ regenerateLevelHP = do
   -- Only the heroes on the current level regenerate (others are frozen
   -- in time together with their level). This prevents cheating
   -- via sending one hero to a safe level and waiting there.
-  hi <- getsServer (linv . slevel)
-  modifyServer (updateLevel (updateActor (IM.mapWithKey (upd hi))))
+  hi <- getsGlobal (linv . slevel)
+  modifyGlobal (updateLevel (updateActor (IM.mapWithKey (upd hi))))
 
 -- | Display command help.
 displayHelp :: MonadActionRO m => WriterT Slideshow m ()
@@ -551,7 +551,7 @@ displayHelp = do
 -- | Display the main menu.
 displayMainMenu :: MonadActionRO m => WriterT Slideshow m ()
 displayMainMenu = do
-  Kind.COps{corule} <- getsServer scops
+  Kind.COps{corule} <- getsGlobal scops
   Binding{krevMap} <- askBinding
   let stripFrame t = case T.uncons t of
         Just ('\n', art) -> map (T.tail . T.init) $ tail . init $ T.lines art
@@ -598,8 +598,8 @@ displayMainMenu = do
 
 displayHistory :: MonadActionRO m => WriterT Slideshow m ()
 displayHistory = do
-  Diary{shistory} <- getDiary
-  time <- getsServer stime
+  StateClient{shistory} <- getClient
+  time <- getsGlobal stime
   let turn = time `timeFit` timeTurn
       msg = makeSentence [ "You survived for"
                        , MU.NWs turn "half-second turn" ]
@@ -619,23 +619,23 @@ dumpConfig = do
 -- | Add new smell traces to the level. Only humans leave a strong scent.
 addSmell :: MonadAction m => m ()
 addSmell = do
-  s  <- getServer
-  pl <- getsServer splayer
+  s  <- getGlobal
+  pl <- getsGlobal splayer
   let time = stime s
       ploc = bloc (getPlayerBody s)
       upd = IM.insert ploc $ timeAdd time $ smellTimeout s
   when (isAHero s pl) $
-    modifyServer $ updateLevel $ updateSmell upd
+    modifyGlobal $ updateLevel $ updateSmell upd
 
 -- | Update the wait/block count.
 setWaitBlock :: MonadAction m => ActorId -> m ()
 setWaitBlock actor = do
-  Kind.COps{coactor} <- getsServer scops
-  time <- getsServer stime
+  Kind.COps{coactor} <- getsGlobal scops
+  time <- getsGlobal stime
   updateAnyActor actor $ \ m -> m {bwait = timeAddFromSpeed coactor m time}
 
 -- | Player waits a turn (and blocks, etc.).
 waitBlock :: MonadAction m => m ()
 waitBlock = do
-  pl <- getsServer splayer
+  pl <- getsGlobal splayer
   setWaitBlock pl

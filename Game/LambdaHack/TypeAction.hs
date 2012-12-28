@@ -24,10 +24,10 @@ import Game.LambdaHack.State
 type FunAction a =
    Session                            -- ^ client session setup data
    -> Pers                            -- ^ cached perception
-   -> (State -> Diary -> a -> IO ())  -- ^ continuation
+   -> (State -> StateClient -> a -> IO ())  -- ^ continuation
    -> (Msg -> IO ())                  -- ^ failure/reset continuation
    -> State                           -- ^ current state
-   -> Diary                           -- ^ current diary
+   -> StateClient                           -- ^ current cli
    -> IO ()
 
 -- | Actions of player-controlled characters and of any other actors.
@@ -38,7 +38,7 @@ returnAction :: a -> Action a
 returnAction x = Action (\_c _p k _a s d -> k s d x)
 
 -- | Distributes the session and shutdown continuation,
--- threads the state and diary.
+-- threads the state and cli.
 bindAction :: Action a -> (a -> Action b) -> Action b
 bindAction m f = Action (\c p k a s d ->
                           let next ns nd x =
@@ -58,8 +58,8 @@ instance MonadActionPure Action where
              let runA msg = runAction (exc msg) c p k a s d
              in runAction m c p k runA s d)
   abortWith msg = Action (\_c _p _k a _s _d -> a msg)
-  getServer     = Action (\_c _p k _a s d -> k s d s)
-  getsServer    = (`fmap` getServer)
+  getGlobal     = Action (\_c _p k _a s d -> k s d s)
+  getsGlobal    = (`fmap` getGlobal)
   getClient     = Action (\_c _p k _a s d -> k s d d)
   getsClient    = (`fmap` getClient)
   getsSession f = Action (\c _p k _a s d -> k s d (f c))
@@ -70,8 +70,8 @@ instance MonadActionRO Action where
   liftIO x       = Action (\_c _p k _a s d -> x >>= k s d)
 
 instance MonadAction Action where
-  putServer ns   = Action (\_c _p k _a _s d -> k ns d ())
-  modifyServer f = Action (\_c _p k _a s d -> k (f s) d ())
+  putGlobal ns   = Action (\_c _p k _a _s d -> k ns d ())
+  modifyGlobal f = Action (\_c _p k _a s d -> k (f s) d ())
 
 instance Functor Action where
   fmap f m = Action (\c p k a s d ->
@@ -81,15 +81,15 @@ instance MonadReader Pers Action where
   ask       = Action (\_c p k _a s d -> k s d p)
   local f m = Action (\c p k a s d -> runAction m c (f p) k a s d)
 
--- | Run an action, with a given session, state and diary, in the @IO@ monad.
+-- | Run an action, with a given session, state and cli, in the @IO@ monad.
 executor :: Action ()
          -> FrontendSession -> Kind.COps -> Binding -> ConfigUI
-         -> State -> Diary -> IO ()
-executor m sfs scops sbinding sconfigUI state diary =
+         -> State -> StateClient -> IO ()
+executor m sfs scops sbinding sconfigUI state cli =
   runAction m
     Session{..}
     (dungeonPerception scops state)  -- create and cache perception
     (\_ _ _ -> return ())  -- final continuation returns result
     (\msg -> fail $ T.unpack $ "unhandled abort:" <+> msg)  -- e.g., in AI code
     state
-    diary
+    cli

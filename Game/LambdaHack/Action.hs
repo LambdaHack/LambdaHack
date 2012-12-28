@@ -5,9 +5,9 @@
 -- and @MonadAction@.
 module Game.LambdaHack.Action
   ( -- * Action monads
-    MonadActionPure(getServer, getsServer, getClient, getsClient)
+    MonadActionPure(getGlobal, getsGlobal, getClient, getsClient)
   , MonadActionRO(putClient, modifyClient)
-  , MonadAction(putServer, modifyServer)
+  , MonadAction(putGlobal, modifyGlobal)
     -- * The Perception Reader
   , withPerception, askPerception
     -- * Accessors to the game session Reader
@@ -18,8 +18,8 @@ module Game.LambdaHack.Action
   , abort, abortWith, abortIfWith, neverMind
     -- * Abort exception handlers
   , tryWith, tryRepeatedlyWith, tryIgnore
-    -- * Diary and report
-  , getDiary, msgAdd, recordHistory
+    -- * StateClient and report
+  , getClient, msgAdd, recordHistory
     -- * Key input
   , getKeyCommand, getKeyOverlayCommand, getManyConfirms
     -- * Display and key input
@@ -55,9 +55,9 @@ import qualified Game.LambdaHack.Action.ConfigIO as ConfigIO
 import Game.LambdaHack.Action.Frontend
 import Game.LambdaHack.MonadAction
   ( MonadActionPure( tryWith, abortWith, getsSession
-                   , getServer, getsServer, getClient, getsClient )
+                   , getGlobal, getsGlobal, getClient, getsClient )
   , MonadActionRO(liftIO, putClient, modifyClient)
-  , MonadAction(putServer, modifyServer)
+  , MonadAction(putGlobal, modifyGlobal)
   , Session (..))
 import Game.LambdaHack.Action.HighScore (register)
 import qualified Game.LambdaHack.Action.Save as Save
@@ -94,9 +94,9 @@ askBinding = getsSession sbinding
 askConfigUI :: MonadActionPure m => m ConfigUI
 askConfigUI = getsSession sconfigUI
 
--- | Get the current diary.
-getDiary :: MonadActionPure m => m Diary
-getDiary = getClient
+-- | Get the current cli.
+getClient :: MonadActionPure m => m StateClient
+getClient = getClient
 
 -- | Add a message to the current report.
 msgAdd :: MonadActionRO m => Msg -> m ()
@@ -104,7 +104,7 @@ msgAdd msg = modifyClient $ \d -> d {sreport = addMsg (sreport d) msg}
 
 -- | Wipe out and set a new value for the history.
 historyReset :: MonadActionRO m => History -> m ()
-historyReset shistory = modifyClient $ \Diary{sreport} -> Diary{..}
+historyReset shistory = modifyClient $ \StateClient{sreport} -> StateClient{..}
 
 -- | Wipe out and set a new value for the current report.
 msgReset :: MonadActionRO m => Msg -> m ()
@@ -113,17 +113,17 @@ msgReset msg = modifyClient $ \d -> d {sreport = singletonReport msg}
 -- | Update the cached perception for the given computation.
 withPerception :: MonadActionPure m => m () -> m ()
 withPerception m = do
-  cops <- getsServer scops
-  s <- getServer
+  cops <- getsGlobal scops
+  s <- getGlobal
   let per = dungeonPerception cops s
   local (const per) m
 
 -- | Get the current perception.
 askPerception :: MonadActionPure m => m Perception
 askPerception = do
-  lid <- getsServer slid
+  lid <- getsGlobal slid
   pers <- ask
-  sfaction <- getsServer sfaction
+  sfaction <- getsGlobal sfaction
   return $! pers IM.! sfaction M.! lid
 
 -- | Reset the state and resume from the last backup point, i.e., invoke
@@ -168,7 +168,7 @@ tryWithSlide exc h =
 -- | Store current report in the history and reset report.
 recordHistory :: MonadActionRO m => m ()
 recordHistory = do
-  Diary{sreport, shistory} <- getDiary
+  StateClient{sreport, shistory} <- getClient
   unless (nullReport sreport) $ do
     ConfigUI{configHistoryMax} <- askConfigUI
     msgReset ""
@@ -283,17 +283,17 @@ promptToSlideshow prompt = overlayToSlideshow prompt []
 -- of the screen are displayed below. As many slides as needed are shown.
 overlayToSlideshow :: MonadActionPure m => Msg -> Overlay -> m Slideshow
 overlayToSlideshow prompt overlay = do
-  lysize <- getsServer (lysize . slevel)
-  Diary{sreport} <- getDiary
+  lysize <- getsGlobal (lysize . slevel)
+  StateClient{sreport} <- getClient
   let msg = splitReport (addMsg sreport prompt)
   return $! splitOverlay lysize msg overlay
 
 -- | Draw the current level with the overlay on top.
 drawOverlay :: MonadActionPure m => ColorMode -> Overlay -> m SingleFrame
 drawOverlay dm over = do
-  cops <- getsServer scops
+  cops <- getsGlobal scops
   per <- askPerception
-  s <- getServer
+  s <- getGlobal
   return $! draw dm cops per s over
 
 -- | Push the frame depicting the current level to the frame queue.
@@ -301,8 +301,8 @@ drawOverlay dm over = do
 displayPush :: MonadActionRO m => m ()
 displayPush = do
   fs <- askFrontendSession
-  s  <- getServer
-  pl <- getsServer splayer
+  s  <- getGlobal
+  pl <- getsGlobal splayer
   sli <- promptToSlideshow ""
   frame <- drawOverlay ColorFull $ head $ runSlideshow sli
   -- Visually speed up (by remving all empty frames) the show of the sequence
@@ -331,43 +331,43 @@ remember = do
 rememberList :: MonadAction m => IS.IntSet -> m ()
 rememberList visible = do
   let vis = IS.toList visible
-  Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getsServer scops
-  lvl <- getsServer slevel
-  clvl <- getsServer slevelClient
+  Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getsGlobal scops
+  lvl <- getsGlobal slevel
+  clvl <- getsGlobal slevelClient
   let rememberTile = [(loc, lvl `at` loc) | loc <- vis]
       unknownId = ouniqGroup "unknown space"
       newClear (loc, tk) = clvl `rememberAt` loc == unknownId
                            && Tile.isExplorable cotile tk
       clearN = length $ filter newClear rememberTile
-  modifyServer (updateLevelClient (updateLRMap (Kind.// rememberTile)))
-  modifyServer (updateLevelClient
+  modifyGlobal (updateLevelClient (updateLRMap (Kind.// rememberTile)))
+  modifyGlobal (updateLevelClient
                   (\ l@LevelClient{lcseen} -> l {lcseen = lcseen + clearN}))
   let alt Nothing   _ = Nothing
       alt (Just []) _ = assert `failure` lvl
       alt x         _ = x
       rememberItem p m = IM.alter (alt $ IM.lookup p $ litem lvl) p m
-  modifyServer (updateLevelClient
+  modifyGlobal (updateLevelClient
                   (updateIRMap (\ m -> foldr rememberItem m vis)))
   let cactor = IM.filter (\m -> bloc m `IS.member` visible) (lactor lvl)
       cinv   = IM.filterWithKey (\p _ -> p `IM.member` cactor) (linv lvl)
-  modifyServer (updateLevelClient
+  modifyGlobal (updateLevelClient
                   (updateCActor (const cactor)
                   . updateCInv (const cinv)))
 
--- | Save the diary and a backup of the save game file, in case of crashes.
+-- | Save the cli and a backup of the save game file, in case of crashes.
 --
 -- See 'Save.saveGameBkp'.
 saveGameBkp :: MonadActionRO m => m ()
 saveGameBkp = do
-  state <- getServer
-  diary <- getDiary
+  state <- getGlobal
+  cli <- getClient
   configUI <- askConfigUI
-  liftIO $ Save.saveGameBkp configUI state diary
+  liftIO $ Save.saveGameBkp configUI state cli
 
 -- | Dumps the current game rules configuration to a file.
 dumpCfg :: MonadActionRO m => FilePath -> m ()
 dumpCfg fn = do
-  config <- getsServer sconfig
+  config <- getsGlobal sconfig
   liftIO $ ConfigIO.dump config fn
 
 -- | Handle current score and display it with the high scores.
@@ -380,7 +380,7 @@ handleScores :: MonadActionRO m => Bool -> Status -> Int -> m ()
 handleScores write status total =
   when (total /= 0) $ do
     configUI <- askConfigUI
-    time <- getsServer stime
+    time <- getsGlobal stime
     curDate <- liftIO getClockTime
     slides <- liftIO $ register configUI write total time curDate status
     go <- getManyConfirms [] slides
@@ -389,8 +389,8 @@ handleScores write status total =
 -- | Continue or restart or exit the game.
 endOrLoop :: MonadAction m => m () -> m ()
 endOrLoop handleTurn = do
-  squit <- getsServer squit
-  s <- getServer
+  squit <- getsGlobal squit
+  s <- getGlobal
   configUI <- askConfigUI
   let (_, total) = calculateTotal s
   -- The first, boolean component of squit determines
@@ -409,7 +409,7 @@ endOrLoop handleTurn = do
       liftIO $ takeMVar mv  -- wait until saved
       -- Do nothing, that is, quit the game loop.
     Just (showScreens, status@Killed{}) -> do
-      Diary{sreport} <- getDiary
+      StateClient{sreport} <- getClient
       unless (nullReport sreport) $ do
         -- Sisplay any leftover report. Suggest it could be the cause of death.
         void $ displayMore ColorBW "Who would have thought?"
@@ -428,7 +428,7 @@ endOrLoop handleTurn = do
            restartGame handleTurn
         )
     Just (showScreens, status@Victor) -> do
-      Diary{sreport} <- getDiary
+      StateClient{sreport} <- getClient
       unless (nullReport sreport) $ do
         -- Sisplay any leftover report. Suggest it could be the master move.
         void $ displayMore ColorFull "Brilliant, wasn't it?"
@@ -446,9 +446,9 @@ restartGame handleTurn = do
   -- Take the original config from config file, to reroll RNG, if needed
   -- (the current config file has the RNG rolled for the previous game).
   configUI <- askConfigUI
-  cops <- getsServer scops
+  cops <- getsGlobal scops
   state <- gameResetAction configUI cops
-  modifyServer $ const state
+  modifyGlobal $ const state
   saveGameBkp
   handleTurn
 
@@ -505,7 +505,7 @@ gameResetAction configUI cops = liftIO $ gameReset configUI cops
 -- and initialize the engine with the starting session.
 startFrontend :: MonadActionRO m
               => (m () -> FrontendSession -> Kind.COps -> Binding -> ConfigUI
-                  -> State -> Diary -> IO ())
+                  -> State -> StateClient -> IO ())
               -> Kind.COps -> m () -> IO ()
 startFrontend executor !cops@Kind.COps{corule, cotile=tile} handleTurn = do
   -- Compute and insert auxiliary optimized components into game content,
@@ -518,12 +518,12 @@ startFrontend executor !cops@Kind.COps{corule, cotile=tile} handleTurn = do
   let !sbinding = stdBinding sconfigUI
       font = configFont sconfigUI
       -- In addition to handling the turn, if the game ends or exits,
-      -- handle the diary and backup savefile.
+      -- handle the cli and backup savefile.
       handleGame = do
         handleTurn
-        diary <- getDiary
-        -- Save diary often, at each game exit, in case of crashes.
-        liftIO $ Save.rmBkpSaveDiary sconfigUI diary
+        cli <- getClient
+        -- Save cli often, at each game exit, in case of crashes.
+        liftIO $ Save.rmBkpSaveStateClient sconfigUI cli
       loop sfs = start executor sfs scops sbinding sconfigUI handleGame
   startup font loop
 
@@ -531,7 +531,7 @@ startFrontend executor !cops@Kind.COps{corule, cotile=tile} handleTurn = do
 -- Then call the main game loop.
 start :: MonadActionRO m
       => (m () -> FrontendSession -> Kind.COps -> Binding -> ConfigUI
-          -> State -> Diary -> IO ())
+          -> State -> StateClient -> IO ())
       -> FrontendSession -> Kind.COps -> Binding -> ConfigUI
       -> m () -> IO ()
 start executor sfs scops@Kind.COps{corule} sbinding sconfigUI handleGame = do
@@ -539,17 +539,17 @@ start executor sfs scops@Kind.COps{corule} sbinding sconfigUI handleGame = do
       pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
   restored <- Save.restoreGame sconfigUI pathsDataFile title
   case restored of
-    Right (diary, msg) -> do  -- Starting a new game.
+    Right (cli, msg) -> do  -- Starting a new game.
       state <- gameReset sconfigUI scops
       executor handleGame sfs scops sbinding sconfigUI
         state
-        diary{sreport = singletonReport msg}
+        cli{sreport = singletonReport msg}
         -- TODO: gameReset >> handleTurn or defaultState {squit=Reset}
-    Left (state, diary, msg) ->  -- Running a restored game.
+    Left (state, cli, msg) ->  -- Running a restored game.
       executor handleGame sfs scops sbinding sconfigUI
         state{scops}  -- overwritten by recreated cops
         -- This overwrites the "Really save/quit?" messages.
-        diary{sreport = singletonReport msg}
+        cli{sreport = singletonReport msg}
 
 -- | Debugging.
 debug :: MonadActionRO m => Text -> m ()

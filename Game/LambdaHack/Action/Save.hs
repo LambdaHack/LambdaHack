@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Saving and restoring games and player diaries.
 module Game.LambdaHack.Action.Save
-  ( saveGameFile, restoreGame, rmBkpSaveDiary, saveGameBkp
+  ( saveGameFile, restoreGame, rmBkpSaveStateClient, saveGameBkp
   ) where
 
 import Control.Concurrent
@@ -18,9 +18,9 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.File
 
--- | Save a simple serialized version of the current player diary.
-saveDiary :: FilePath -> Diary -> IO ()
-saveDiary configDiaryFile diary = encodeEOF configDiaryFile diary
+-- | Save a simple serialized version of the current player cli.
+saveStateClient :: FilePath -> StateClient -> IO ()
+saveStateClient configStateClientFile cli = encodeEOF configStateClientFile cli
 
 saveLock :: MVar ()
 {-# NOINLINE saveLock #-}
@@ -65,9 +65,9 @@ tryCopyDataFiles ConfigUI{ configScoresFile
 -- | Restore a saved game, if it exists. Initialize directory structure,
 -- if needed.
 restoreGame :: ConfigUI -> (FilePath -> IO FilePath) -> Text
-            -> IO (Either (State, Diary, Msg) (Diary, Msg))
+            -> IO (Either (State, StateClient, Msg) (StateClient, Msg))
 restoreGame config@ConfigUI{ configAppDataDir
-                           , configDiaryFile
+                           , configStateClientFile
                            , configSaveFile
                            , configBkpFile } pathsDataFile title = do
   ab <- doesDirectoryExist configAppDataDir
@@ -76,13 +76,13 @@ restoreGame config@ConfigUI{ configAppDataDir
     tryCreateDir configAppDataDir
     -- Possibly copy over data files. No problem if it fails.
     tryCopyDataFiles config pathsDataFile
-  -- If the diary file does not exist, create an empty diary.
-  -- TODO: when diary gets corrupted, start a new one, too.
-  diary <-
-    do db <- doesFileExist configDiaryFile
+  -- If the cli file does not exist, create an empty cli.
+  -- TODO: when cli gets corrupted, start a new one, too.
+  cli <-
+    do db <- doesFileExist configStateClientFile
        if db
-         then strictDecodeEOF configDiaryFile
-         else defaultDiary
+         then strictDecodeEOF configStateClientFile
+         else defaultStateClient
   -- If the savefile exists but we get IO errors, we show them,
   -- back up the savefile and move it out of the way and start a new game.
   -- If the savefile was randomly corrupted or made read-only,
@@ -97,47 +97,47 @@ restoreGame config@ConfigUI{ configAppDataDir
          renameFile configSaveFile configBkpFile
          state <- strictDecodeEOF configBkpFile
          let msg = "Welcome back to" <+> title <> "."
-         return $ Left (state, diary, msg)
+         return $ Left (state, cli, msg)
        else
          if bb
            then do
              state <- strictDecodeEOF configBkpFile
              let msg = "No savefile found. Restoring from a backup savefile."
-             return $ Left (state, diary, msg)
-           else return $ Right (diary, "Welcome to" <+> title <> "!"))
+             return $ Left (state, cli, msg)
+           else return $ Right (cli, "Welcome to" <+> title <> "!"))
     (\ e -> case e :: Ex.SomeException of
               _ -> let msg = "Starting a new game, because restore failed."
                              <+> "The error message was:"
                              <+> (T.unwords . T.lines) (showT e)
-                   in return $ Right (diary, msg))
+                   in return $ Right (cli, msg))
 
--- | Save the diary and a backup of the save game file, in case of crashes.
+-- | Save the cli and a backup of the save game file, in case of crashes.
 -- This is only a backup, so no problem is the game is shut down
 -- before saving finishes, so we don't wait on the mvar. However,
 -- if a previous save is already in progress, we skip this save.
-saveGameBkp :: ConfigUI -> State -> Diary -> IO ()
-saveGameBkp ConfigUI{ configDiaryFile
+saveGameBkp :: ConfigUI -> State -> StateClient -> IO ()
+saveGameBkp ConfigUI{ configStateClientFile
                     , configSaveFile
-                    , configBkpFile } state diary = do
+                    , configBkpFile } state cli = do
   b <- tryPutMVar saveLock ()
   when b $
     void $ forkIO $ do
-      saveDiary configDiaryFile diary  -- save diary often in case of crashes
+      saveStateClient configStateClientFile cli  -- save cli often in case of crashes
       encodeEOF configSaveFile state
       renameFile configSaveFile configBkpFile
       takeMVar saveLock
 
--- | Remove the backup of the savegame and save the player diary.
+-- | Remove the backup of the savegame and save the player cli.
 -- Should be called before any non-error exit from the game.
 -- Sometimes the backup file does not exist and it's OK.
 -- We don't bother reporting any other removal exceptions, either,
 -- because the backup file is relatively unimportant.
--- We wait on the mvar, because saving the diary at game shutdown is important.
-rmBkpSaveDiary :: ConfigUI -> Diary -> IO ()
-rmBkpSaveDiary ConfigUI{ configDiaryFile
-                       , configBkpFile } diary = do
+-- We wait on the mvar, because saving the cli at game shutdown is important.
+rmBkpSaveStateClient :: ConfigUI -> StateClient -> IO ()
+rmBkpSaveStateClient ConfigUI{ configStateClientFile
+                       , configBkpFile } cli = do
   putMVar saveLock ()
-  saveDiary configDiaryFile diary  -- save diary often in case of crashes
+  saveStateClient configStateClientFile cli  -- save cli often in case of crashes
   bb <- doesFileExist configBkpFile
   when bb $ removeFile configBkpFile
   takeMVar saveLock

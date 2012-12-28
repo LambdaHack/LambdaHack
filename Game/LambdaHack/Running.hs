@@ -30,11 +30,11 @@ import Game.LambdaHack.Vector
 -- and still explicitly requests a run.
 run :: MonadAction m => (Vector, Int) -> m ()
 run (dir, dist) = do
-  cops <- getsServer scops
-  pl <- getsServer splayer
-  locHere <- getsServer (bloc . getPlayerBody)
-  lvl <- getsServer slevel
-  targeting <- getsServer (ctargeting . scursor)
+  cops <- getsGlobal scops
+  pl <- getsGlobal splayer
+  locHere <- getsGlobal (bloc . getPlayerBody)
+  lvl <- getsGlobal slevel
+  targeting <- getsGlobal (ctargeting . scursor)
   assert (targeting == TgtOff `blame` (dir, dist, targeting, "/= TgtOff")) $ do
     let accessibleDir loc d = accessible cops lvl loc (loc `shift` d)
         -- Do not count distance if we just open a door.
@@ -150,14 +150,14 @@ runDisturbance locLast distLast msg hs ms per locHere
 -- and it increments the counter of traversed tiles.
 continueRun :: MonadAction m => (Vector, Int) -> m ()
 continueRun (dirLast, distLast) = do
-  cops@Kind.COps{cotile} <- getsServer scops
-  locHere <- getsServer (bloc . getPlayerBody)
+  cops@Kind.COps{cotile} <- getsGlobal scops
+  locHere <- getsGlobal (bloc . getPlayerBody)
   per <- askPerception
-  Diary{sreport} <- getDiary
-  ms  <- getsServer dangerousList
-  sfaction <- getsServer sfaction
-  hs <- getsServer (factionList [sfaction])
-  lvl@Level{lxsize, lysize} <- getsServer slevel
+  StateClient{sreport} <- getClient
+  ms  <- getsGlobal dangerousList
+  sfaction <- getsGlobal sfaction
+  hs <- getsGlobal (factionList [sfaction])
+  lvl@Level{lxsize, lysize} <- getsGlobal slevel
   let locHasFeature f loc = Tile.hasFeature cotile f (lvl `at` loc)
       locHasItems loc = not $ L.null $ lvl `atI` loc
       locLast = if distLast == 0 then locHere else locHere `shift` neg dirLast

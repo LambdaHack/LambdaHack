@@ -145,7 +145,7 @@ parseConfigUI dataDir cp =
             section = getItems cp "commands"
         in map mkCommand section
       configAppDataDir = dataDir
-      configDiaryFile = dataDir </> get cp "files" "diaryFile"
+      configStateClientFile = dataDir </> get cp "files" "cliFile"
       configSaveFile = dataDir </> get cp "files" "saveFile"
       configBkpFile = dataDir </> get cp "files" "saveFile" <.> ".bkp"
       configScoresFile = dataDir </> get cp "files" "scoresFile"

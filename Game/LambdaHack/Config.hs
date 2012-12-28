@@ -41,7 +41,7 @@ data ConfigUI = ConfigUI
     configCommands     :: ![(K.Key, String)]  -- TODO: define Binary Cmd
     -- files
   , configAppDataDir   :: !FilePath
-  , configDiaryFile    :: !FilePath
+  , configStateClientFile    :: !FilePath
   , configSaveFile     :: !FilePath
   , configBkpFile      :: !FilePath
   , configScoresFile   :: !FilePath
@@ -97,7 +97,7 @@ instance Binary ConfigUI where
   put ConfigUI{..} = do
     put configCommands
     put configAppDataDir
-    put configDiaryFile
+    put configStateClientFile
     put configSaveFile
     put configBkpFile
     put configRulesCfgFile
@@ -110,7 +110,7 @@ instance Binary ConfigUI where
   get = do
     configCommands     <- get
     configAppDataDir   <- get
-    configDiaryFile    <- get
+    configStateClientFile    <- get
     configSaveFile     <- get
     configBkpFile      <- get
     configScoresFile   <- get

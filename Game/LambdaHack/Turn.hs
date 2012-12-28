@@ -65,16 +65,16 @@ import Game.LambdaHack.Utils.Assert
 handleTurn :: MonadAction m => m ()
 handleTurn = do
   debug "handleTurn"
-  time <- getsServer stime  -- the end time of this clip, inclusive
+  time <- getsGlobal stime  -- the end time of this clip, inclusive
   let clipN = (time `timeFit` timeClip) `mod` (timeTurn `timeFit` timeClip)
   -- Regenerate HP and add monsters each turn, not each clip.
   when (clipN == 1) regenerateLevelHP
   when (clipN == 3) generateMonster
-  ptime <- getsServer (btime . getPlayerBody)  -- time of player's next move
+  ptime <- getsGlobal (btime . getPlayerBody)  -- time of player's next move
   debug $ "handleTurn: time check. ptime ="
           <+> showT ptime <> ", time =" <+> showT time
   handleActors timeZero
-  modifyServer (updateTime (timeAdd timeClip))
+  modifyGlobal (updateTime (timeAdd timeClip))
   endOrLoop handleTurn
 
 -- TODO: We should replace this structure using a priority search queue/tree.
@@ -88,14 +88,14 @@ handleActors :: MonadAction m => Time       -- ^ the start time of current subcl
              -> m ()
 handleActors subclipStart = do
   debug "handleActors"
-  Kind.COps{coactor} <- getsServer scops
-  sfaction <- getsServer sfaction
-  time <- getsServer stime  -- the end time of this clip, inclusive
-  pl <- getsServer splayer
-  pbody <- getsServer getPlayerBody
+  Kind.COps{coactor} <- getsGlobal scops
+  sfaction <- getsGlobal sfaction
+  time <- getsGlobal stime  -- the end time of this clip, inclusive
+  pl <- getsGlobal splayer
+  pbody <- getsGlobal getPlayerBody
   -- Older actors act earlier, the player acts first.
-  lactor <- getsServer (((pl, pbody) :) . IM.toList . IM.delete pl . lactor . slevel)
-  squitOld <- getsServer squit
+  lactor <- getsGlobal (((pl, pbody) :) . IM.toList . IM.delete pl . lactor . slevel)
+  squitOld <- getsGlobal squit
   let mnext = if null lactor  -- wait until any actor spawned
               then Nothing
               else let -- Heroes move first then monsters, then the rest.
@@ -108,14 +108,14 @@ handleActors subclipStart = do
     _ | isJust squitOld -> return ()
     Nothing -> when (subclipStart == timeZero) $ displayFramesPush [Nothing]
     Just (actor, _) -> do
-      m <- getsServer (getActor actor)
+      m <- getsGlobal (getActor actor)
       if actor == pl
         then
           -- Player moves always start a new subclip.
           startClip $ do
             handlePlayer
-            squitNew <- getsServer squit
-            plNew <- getsServer splayer
+            squitNew <- getsGlobal squit
+            plNew <- getsGlobal splayer
             -- Advance time once, after the player switched perhaps many times.
             -- Ending and especially saving does not take time.
             -- TODO: this is correct only when all heroes have the same
@@ -150,8 +150,8 @@ handleActors subclipStart = do
 -- | Handle the move of a single monster.
 handleAI :: MonadAction m => ActorId -> m ()
 handleAI actor = do
-  cops@Kind.COps{costrat=Kind.Ops{oname, okind}} <- getsServer scops
-  state <- getServer
+  cops@Kind.COps{costrat=Kind.Ops{oname, okind}} <- getsGlobal scops
+  state <- getGlobal
   pers <- ask
   let Actor{bfaction, bloc, bsymbol} = getActor actor state
       factionAI = gAiIdle $ sfactions state IM.! bfaction
@@ -161,7 +161,7 @@ handleAI actor = do
   -- Choose a target from those proposed by AI for the actor.
   btarget <- rndToAction $ frequency $ bestVariant $ stratTarget
   updateAnyActor actor $ \ m -> m { btarget }
-  stateNew <- getServer
+  stateNew <- getGlobal
   let stratMove = strategy cops actor stateNew factionAbilities
   debug $ "handleAI factionAI:" <+> oname factionAI
      <>          ", symbol:"    <+> showT bsymbol
@@ -205,16 +205,16 @@ playerCommand msgRunAbort = do
           Binding{kcmd} <- askBinding
           case M.lookup km kcmd of
             Just (_, _, cmd) -> do
-              s <- getServer
+              s <- getGlobal
               per <- askPerception
               -- Query and clear the last command key.
-              lastKey <- getsServer slastKey
+              lastKey <- getsGlobal slastKey
               -- TODO: perhaps replace slastKey
               -- with test 'kmNext == km'
               -- or an extra arg to 'loop'.
               -- Depends on whether slastKey
               -- is needed in other parts of code.
-              modifyServer (\st -> st {slastKey = Just km})
+              modifyGlobal (\st -> st {slastKey = Just km})
               if (Just km == lastKey)
                 then cmdSemantics s per Command.Clear
                 else cmdSemantics s per cmd
@@ -226,14 +226,14 @@ playerCommand msgRunAbort = do
           then assert (null (runSlideshow slides) `blame` slides) $ do
             -- Exit the loop and let other actors act. No next key needed
             -- and no slides could have been generated.
-            modifyServer (\st -> st {slastKey = Nothing})
+            modifyGlobal (\st -> st {slastKey = Nothing})
           else
             -- If no time taken, rinse and repeat.
             -- Analyse the obtained slides.
             case reverse (runSlideshow slides) of
               [] -> do
                 -- Nothing special to be shown; by default draw current state.
-                modifyServer (\st -> st {slastKey = Nothing})
+                modifyGlobal (\st -> st {slastKey = Nothing})
                 sli <- promptToSlideshow ""
                 kmNext <- getKeyOverlayCommand $ head $ runSlideshow sli
                 loop kmNext
@@ -247,7 +247,7 @@ playerCommand msgRunAbort = do
                 kmNext <- if b
                           then getKeyOverlayCommand sLast
                           else do
-                            modifyServer (\st -> st {slastKey = Nothing})
+                            modifyGlobal (\st -> st {slastKey = Nothing})
                             sli <- promptToSlideshow ""
                             getKeyOverlayCommand $ head $ runSlideshow sli
                 -- Look up and perform the next command.
@@ -257,7 +257,7 @@ playerCommand msgRunAbort = do
 -- | Advance (or rewind) the move time for the given actor.
 advanceTime :: MonadAction m => ActorId -> m ()
 advanceTime actor = do
-  Kind.COps{coactor} <- getsServer scops
+  Kind.COps{coactor} <- getsGlobal scops
   let upd m@Actor{btime} = m {btime = timeAddFromSpeed coactor m btime}
   updateAnyActor actor upd
 

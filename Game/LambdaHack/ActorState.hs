@@ -139,7 +139,7 @@ targetToLoc visible s@State{slid, scursor} aloc =
 -- | Checks if the actor is present on the current level.
 -- The order of argument here and in other functions is set to allow
 --
--- > b <- getsServer (memActor a)
+-- > b <- getsGlobal (memActor a)
 memActor :: ActorId -> State -> Bool
 memActor a state = IM.member a (lactor (slevel state))
 

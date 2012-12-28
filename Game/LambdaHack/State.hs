@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
--- | Game state and persistent player diary types and operations.
+-- | Game state and persistent player cli types and operations.
 module Game.LambdaHack.State
   ( -- * Game state
     State(..), TgtMode(..), Cursor(..), Status(..)
@@ -10,8 +10,8 @@ module Game.LambdaHack.State
     -- * State update
   , updateCursor, updateTime, updateDiscoveries
   , updateLevel, updateLevelClient, updateDungeon
-    -- * Player diary
-  , Diary(..), defaultDiary
+    -- * Player cli
+  , StateClient(..), defaultStateClient
     -- * Textual description
   , lookAt
     -- * Debug flags
@@ -40,15 +40,15 @@ import Game.LambdaHack.Point
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Time
 
--- | The diary contains all the player data that carries over
+-- | The cli contains all the player data that carries over
 -- from game to game, even across playing sessions. That includes
 -- the last message, previous messages and otherwise recorded
 -- history of past games. This can be extended with other data and used for
 -- calculating player achievements, unlocking advanced game features and
 -- for general data mining, e.g., augmenting AI or procedural content
--- generation. @Diary@, even the @shistory@ part, is more than a WriterMonad
+-- generation. @StateClient@, even the @shistory@ part, is more than a WriterMonad
 -- because it can be displayed and saved at any time.
-data Diary = Diary
+data StateClient = StateClient
   { sreport  :: !Report
   , shistory :: !History
   }
@@ -141,15 +141,15 @@ unknownTileMap unknownId cxsize cysize =
 stime :: State -> Time
 stime State{slid, sdungeon} = ltime $ sdungeon M.! slid
 
--- | Initial player diary.
-defaultDiary :: IO Diary
-defaultDiary = do
+-- | Initial player cli.
+defaultStateClient :: IO StateClient
+defaultStateClient = do
   dateTime <- getClockTime
   let curDate = MU.Text $ T.pack $ calendarTimeToString $ toUTCTime dateTime
-  return Diary
+  return StateClient
     { sreport = emptyReport
     , shistory = singletonHistory $ singletonReport $
-                   makeSentence ["Player diary started on", curDate]
+                   makeSentence ["Player cli started on", curDate]
     }
 
 -- | Initial game state.
@@ -223,14 +223,14 @@ toggleOmniscient :: State -> State
 toggleOmniscient s@State{sdebug = sdebug@DebugMode{somniscient}} =
   s {sdebug = sdebug {somniscient = not somniscient}}
 
-instance Binary Diary where
-  put Diary{..} = do
+instance Binary StateClient where
+  put StateClient{..} = do
     put sreport
     put shistory
   get = do
     sreport  <- get
     shistory <- get
-    return Diary{..}
+    return StateClient{..}
 
 instance Binary State where
   put State{..} = do

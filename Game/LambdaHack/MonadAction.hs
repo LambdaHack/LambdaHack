@@ -34,18 +34,18 @@ class (Monad m, Functor m, MonadReader Pers m, Show (m ()))
   tryWith     :: (Msg -> m a) -> m a -> m a
   -- Abort with the given message.
   abortWith   :: MonadActionPure m => Msg -> m a
-  getServer   :: m State
-  getsServer  :: (State -> a) -> m a
-  getClient   :: m Diary
-  getsClient  :: (Diary -> a) -> m a
+  getGlobal   :: m State
+  getsGlobal  :: (State -> a) -> m a
+  getClient   :: m StateClient
+  getsClient  :: (StateClient -> a) -> m a
   getsSession :: (Session -> a) -> m a
 
 instance MonadActionPure m => MonadActionPure (WriterT Slideshow m) where
   tryWith exc m =
     WriterT $ tryWith (\msg -> runWriterT (exc msg)) (runWriterT m)
   abortWith   = lift . abortWith
-  getServer   = lift getServer
-  getsServer  = lift . getsServer
+  getGlobal   = lift getGlobal
+  getsGlobal  = lift . getsGlobal
   getClient   = lift getClient
   getsClient  = lift . getsClient
   getsSession = lift . getsSession
@@ -54,8 +54,8 @@ instance MonadActionPure m => Show (WriterT Slideshow m a) where
   show _ = "an action"
 
 class MonadActionPure m => MonadActionRO m where
-  putClient    :: Diary -> m ()
-  modifyClient :: (Diary -> Diary) -> m ()
+  putClient    :: StateClient -> m ()
+  modifyClient :: (StateClient -> StateClient) -> m ()
   -- We do not provide a MonadIO instance, so that outside of Action/
   -- nobody can subvert the action monads by invoking arbitrary IO.
   liftIO       :: IO a -> m a
@@ -66,9 +66,9 @@ instance MonadActionRO m => MonadActionRO (WriterT Slideshow m) where
   liftIO       = lift . liftIO
 
 class MonadActionRO m => MonadAction m where
-  putServer    :: State -> m ()
-  modifyServer :: (State -> State) -> m ()
+  putGlobal    :: State -> m ()
+  modifyGlobal :: (State -> State) -> m ()
 
 instance MonadAction m => MonadAction (WriterT Slideshow m) where
-  putServer    = lift . putServer
-  modifyServer = lift . modifyServer
+  putGlobal    = lift . putGlobal
+  modifyGlobal = lift . modifyGlobal

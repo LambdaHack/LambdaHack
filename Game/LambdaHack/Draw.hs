@@ -179,9 +179,9 @@ draw dm cops per s@State{ scursor=Cursor{..}
   in SingleFrame{..}
 
 -- | Render animations on top of the current screen frame.
-animate :: State -> Diary -> Kind.COps -> Perception -> Animation
+animate :: State -> StateClient -> Kind.COps -> Perception -> Animation
         -> Frames
-animate s Diary{sreport} cops per anim =
+animate s StateClient{sreport} cops per anim =
   let Level{lxsize, lysize} = slevel s
       over = renderReport sreport
       topLineOnly = padMsg lxsize over

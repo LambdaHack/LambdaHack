@@ -53,19 +53,19 @@ actorVerb coactor a v =
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: MonadAction m => Rnd a -> m a
 rndToAction r = do
-  g <- getsServer srandom
+  g <- getsGlobal srandom
   let (a, ng) = St.runState r g
-  modifyServer (\ state -> state {srandom = ng})
+  modifyGlobal (\ state -> state {srandom = ng})
   return a
 
 -- | Update actor stats. Works for actors on other levels, too.
 updateAnyActor :: MonadAction m => ActorId -> (Actor -> Actor) -> m ()
-updateAnyActor actor f = modifyServer (updateAnyActorBody actor f)
+updateAnyActor actor f = modifyGlobal (updateAnyActorBody actor f)
 
 -- | Update player-controlled actor stats.
 updatePlayerBody :: MonadAction m => (Actor -> Actor) -> m ()
 updatePlayerBody f = do
-  pl <- getsServer splayer
+  pl <- getsGlobal splayer
   updateAnyActor pl f
 
 -- TODO: instead of verbosity return msg components and tailor them outside?
@@ -82,19 +82,19 @@ updatePlayerBody f = do
 effectToAction :: MonadAction m => Effect.Effect -> Int -> ActorId -> ActorId -> Int -> Bool
                -> m (Bool, Bool)
 effectToAction effect verbosity source target power block = do
-  oldTm <- getsServer (getActor target)
+  oldTm <- getsGlobal (getActor target)
   let oldHP = bhp oldTm
   (b, msg) <- eff effect verbosity source target power
-  s <- getServer
+  s <- getGlobal
   -- If the target killed outright by the effect (e.g., in a recursive call),
   -- there's nothing left to do. TODO: hacky; aren't messages lost?
   if not (memActor target s)
    then return (b, False)
    else do
-    sm  <- getsServer (getActor source)
-    tm  <- getsServer (getActor target)
+    sm  <- getsGlobal (getActor source)
+    tm  <- getsGlobal (getActor target)
     per <- askPerception
-    pl  <- getsServer splayer
+    pl  <- getsGlobal splayer
     let sloc = bloc sm
         tloc = bloc tm
         svisible = sloc `IS.member` totalVisible per
@@ -110,8 +110,8 @@ effectToAction effect verbosity source target power block = do
       msgAdd msg
       -- Try to show an animation. Sometimes, e.g., when HP is unchaged,
       -- the animation will not be shown.
-      cops <- getsServer scops
-      diary <- getDiary
+      cops <- getsGlobal scops
+      cli <- getClient
       let locs = (breturn tvisible tloc,
                   breturn svisible sloc)
           anim | newHP > oldHP =
@@ -121,7 +121,7 @@ effectToAction effect verbosity source target power block = do
                | newHP < oldHP && not block =
             twirlSplash locs Color.BrRed  Color.Red
                | otherwise = mempty
-          animFrs = animate s diary cops per anim
+          animFrs = animate s cli cops per anim
       displayFramesPush $ Nothing : animFrs
       return (b, True)
      else do
@@ -132,14 +132,14 @@ effectToAction effect verbosity source target power block = do
     -- is shown below. It should have been shown in @eff@.
     when (newHP <= 0) $ do
       -- Place the actor's possessions on the map.
-      bitems <- getsServer (getActorItem target)
-      modifyServer (updateLevel (dropItemsAt bitems tloc))
+      bitems <- getsGlobal (getActorItem target)
+      modifyGlobal (updateLevel (dropItemsAt bitems tloc))
       -- Clean bodies up.
       if target == pl
         then  -- Kill the player and check game over.
           checkPartyDeath
         else  -- Kill the enemy.
-          modifyServer (deleteActor target)
+          modifyGlobal (deleteActor target)
     return bb
 
 -- | The boolean part of the result says if the ation was interesting
@@ -149,9 +149,9 @@ eff :: MonadAction m => Effect.Effect -> Int -> ActorId -> ActorId -> Int
     -> m (Bool, Text)
 eff Effect.NoEffect _ _ _ _ = nullEffect
 eff Effect.Heal _ _source target power = do
-  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsServer scops
+  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsGlobal scops
   let bhpMax m = maxDice (ahp $ okind $ bkind m)
-  tm <- getsServer (getActor target)
+  tm <- getsGlobal (getActor target)
   if bhp tm >= bhpMax tm || power <= 0
     then nullEffect
     else do
@@ -159,13 +159,13 @@ eff Effect.Heal _ _source target power = do
       updateAnyActor target (addHp coactor power)
       return (True, actorVerb coactor tm "feel better")
 eff (Effect.Wound nDm) verbosity source target power = do
-  Kind.COps{coactor} <- getsServer scops
-  s <- getServer
+  Kind.COps{coactor} <- getsGlobal scops
+  s <- getGlobal
   n <- rndToAction $ rollDice nDm
   if n + power <= 0 then nullEffect else do
     void $ focusIfOurs target
-    pl <- getsServer splayer
-    tm <- getsServer (getActor target)
+    pl <- getsGlobal splayer
+    tm <- getsGlobal (getActor target)
     let newHP = bhp tm - n - power
         msg
           | newHP <= 0 =
@@ -185,8 +185,8 @@ eff (Effect.Wound nDm) verbosity source target power = do
     updateAnyActor target $ \ m -> m { bhp = newHP }  -- Damage the target.
     return (True, msg)
 eff Effect.Dominate _ source target _power = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsServer scops
-  s <- getServer
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsGlobal scops
+  s <- getGlobal
   if not $ isAHero s target
     then do  -- Monsters have weaker will than heroes.
       selectPlayer target
@@ -208,24 +208,24 @@ eff Effect.Dominate _ source target _power = do
       return (True, "")
     else if source == target
          then do
-           lm <- getsServer hostileList
-           lxsize <- getsServer (lxsize . slevel)
-           lysize <- getsServer (lysize . slevel)
+           lm <- getsGlobal hostileList
+           lxsize <- getsGlobal (lxsize . slevel)
+           lysize <- getsGlobal (lysize . slevel)
            let cross m = bloc m : vicinityCardinal lxsize lysize (bloc m)
                vis = IS.fromList $ concatMap cross lm
            rememberList vis
            return (True, "A dozen voices yells in anger.")
          else nullEffect
 eff Effect.SummonFriend _ source target power = do
-  tm <- getsServer (getActor target)
-  s <- getServer
+  tm <- getsGlobal (getActor target)
+  s <- getGlobal
   if isAHero s source
     then summonHeroes (1 + power) (bloc tm)
     else summonMonsters (1 + power) (bloc tm)
   return (True, "")
 eff Effect.SummonEnemy _ source target power = do
-  tm <- getsServer (getActor target)
-  s  <- getServer
+  tm <- getsGlobal (getActor target)
+  s  <- getGlobal
   if isAHero s source
     then summonMonsters (1 + power) (bloc tm)
     else summonHeroes (1 + power) (bloc tm)
@@ -235,33 +235,33 @@ eff Effect.ApplyPerfume _ source target _ =
   then return (True, "Tastes like water, but with a strong rose scent.")
   else do
     let upd lvl = lvl { lsmell = IM.empty }
-    modifyServer (updateLevel upd)
+    modifyGlobal (updateLevel upd)
     return (True, "The fragrance quells all scents in the vicinity.")
 eff Effect.Regeneration verbosity source target power =
   eff Effect.Heal verbosity source target power
 eff Effect.Searching _ _source _target _power =
   return (True, "It gets lost and you search in vain.")
 eff Effect.Ascend _ source target power = do
-  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsServer scops
-  tm <- getsServer (getActor target)
+  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsGlobal scops
+  tm <- getsGlobal (getActor target)
   void $ focusIfOurs target
   if aiq (okind (bkind tm)) < 13  -- monsters can't use stairs
     then squashActor source target
     else effLvlGoUp (power + 1)
   -- TODO: The following message too late if a monster squashed by going up,
   -- unless it's ironic. ;) The same below.
-  s2 <- getServer
+  s2 <- getGlobal
   return $ if maybe Camping snd (squit s2) == Victor
            then (True, "")
            else (True, actorVerb coactor tm "find a way upstairs")
 eff Effect.Descend _ source target power = do
-  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsServer scops
-  tm <- getsServer (getActor target)
+  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsGlobal scops
+  tm <- getsGlobal (getActor target)
   void $ focusIfOurs target
   if aiq (okind (bkind tm)) < 13  -- monsters can't use stairs
     then squashActor source target
     else effLvlGoUp (- (power + 1))
-  s2 <- getServer
+  s2 <- getGlobal
   return $ if maybe Camping snd (squit s2) == Victor
            then (True, "")
            else (True, actorVerb coactor tm "find a way downstairs")
@@ -272,11 +272,11 @@ nullEffect = return (False, "Nothing happens.")
 -- TODO: refactor with actorAttackActor.
 squashActor :: MonadAction m => ActorId -> ActorId -> m ()
 squashActor source target = do
-  Kind.COps{coactor, coitem=Kind.Ops{okind, ouniqGroup}} <- getsServer scops
-  sm <- getsServer (getActor source)
-  tm <- getsServer (getActor target)
-  flavour <- getsServer sflavour
-  discoRev <- getsServer sdiscoRev
+  Kind.COps{coactor, coitem=Kind.Ops{okind, ouniqGroup}} <- getsGlobal scops
+  sm <- getsGlobal (getActor source)
+  tm <- getsGlobal (getActor target)
+  flavour <- getsGlobal sflavour
+  discoRev <- getsGlobal sdiscoRev
   let h2hKind = ouniqGroup "weight"
       kind = okind h2hKind
       power = maxDeep $ ipower kind
@@ -288,41 +288,41 @@ squashActor source target = do
         , "in a staircase accident" ]
   msgAdd msg
   itemEffectAction 0 source target h2h False
-  s <- getServer
+  s <- getGlobal
   -- The monster has to be killed first, before we step there (same turn!).
   assert (not (memActor target s) `blame` (source, target, "not killed")) $
     return ()
 
 effLvlGoUp :: MonadAction m => Int -> m ()
 effLvlGoUp k = do
-  pbody     <- getsServer getPlayerBody
-  pl        <- getsServer splayer
-  slid      <- getsServer slid
-  st        <- getServer
-  cops <- getsServer scops
-  clvl <- getsServer slevelClient
+  pbody     <- getsGlobal getPlayerBody
+  pl        <- getsGlobal splayer
+  slid      <- getsGlobal slid
+  st        <- getGlobal
+  cops <- getsGlobal scops
+  clvl <- getsGlobal slevelClient
   case whereTo st k of
     Nothing -> fleeDungeon -- we are at the "end" of the dungeon
     Just (nln, nloc) ->
       assert (nln /= slid `blame` (nln, "stairs looped")) $ do
-        bitems <- getsServer getPlayerItem
+        bitems <- getsGlobal getPlayerItem
         -- Remember the level (e.g., for a teleport via scroll on the floor).
         remember
         -- Remove the player from the old level.
-        modifyServer (deleteActor pl)
-        hs <- getsServer heroList
+        modifyGlobal (deleteActor pl)
+        hs <- getsGlobal heroList
         -- Monsters hear that players not on the level. Cancel smell.
         -- Reduces memory load and savefile size.
         when (null hs) $
-          modifyServer (updateLevel (updateSmell (const IM.empty)))
+          modifyGlobal (updateLevel (updateSmell (const IM.empty)))
         -- At this place the invariant that the player exists fails.
         -- Change to the new level (invariant not needed).
         switchLevel nln
         -- The player can now be safely added to the new level.
-        modifyServer (insertActor pl pbody)
-        modifyServer (updateAnyActorItem pl (const bitems))
+        modifyGlobal (insertActor pl pbody)
+        modifyGlobal (updateAnyActorItem pl (const bitems))
         -- At this place the invariant is restored again.
-        inhabitants <- getsServer (locToActor nloc)
+        inhabitants <- getsGlobal (locToActor nloc)
         case inhabitants of
           Nothing -> return ()
 -- Broken if the effect happens, e.g. via a scroll and abort is not enough.
@@ -335,16 +335,16 @@ effLvlGoUp k = do
             -- because here an inactive actor is squashed.
             squashActor pl m
         -- Verify the monster on the staircase died.
-        inhabitants2 <- getsServer (locToActor nloc)
+        inhabitants2 <- getsGlobal (locToActor nloc)
         when (isJust inhabitants2) $ assert `failure` inhabitants2
         -- Land the player at the other end of the stairs.
         updatePlayerBody (\ p -> p { bloc = nloc })
         -- Change the level of the player recorded in cursor.
-        modifyServer (updateCursor (\ c -> c { creturnLn = nln }))
+        modifyGlobal (updateCursor (\ c -> c { creturnLn = nln }))
         -- The invariant "at most one actor on a tile" restored.
         -- Create a backup of the savegame.
         saveGameBkp
-        state <- getServer
+        state <- getGlobal
         msgAdd $ lookAt cops False True state clvl nloc ""
 
 -- | Change level and reset it's time and update the times of all actors.
@@ -352,30 +352,30 @@ effLvlGoUp k = do
 -- this operation is executed.
 switchLevel :: MonadAction m => LevelId -> m ()
 switchLevel nln = do
-  timeCurrent <- getsServer stime
-  slid <- getsServer slid
+  timeCurrent <- getsGlobal stime
+  slid <- getsGlobal slid
   when (slid /= nln) $ do
     -- Switch to the new level.
-    modifyServer (\ s -> s {slid = nln})
-    timeLastVisited <- getsServer stime
+    modifyGlobal (\ s -> s {slid = nln})
+    timeLastVisited <- getsGlobal stime
     let diff = timeAdd timeCurrent $ timeNegate timeLastVisited
     when (diff /= timeZero) $ do
       -- Reset the level time.
-      modifyServer $ updateTime $ const timeCurrent
+      modifyGlobal $ updateTime $ const timeCurrent
       -- Update the times of all actors.
       let upd m@Actor{btime} = m {btime = timeAdd btime diff}
-      modifyServer (updateLevel (updateActor (IM.map upd)))
+      modifyGlobal (updateLevel (updateActor (IM.map upd)))
 
 -- | The player leaves the dungeon.
 fleeDungeon :: MonadAction m => m ()
 fleeDungeon = do
-  Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsServer scops
-  s <- getServer
+  Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsGlobal scops
+  s <- getGlobal
   go <- displayYesNo "This is the way out. Really leave now?"
   recordHistory  -- Prevent repeating the ending msgs.
   when (not go) $ abortWith "Game resumed."
   let (items, total) = calculateTotal s
-  modifyServer (\ st -> st {squit = Just (False, Victor)})
+  modifyGlobal (\ st -> st {squit = Just (False, Victor)})
   if total == 0
   then do
     -- The player can back off at each of these steps.
@@ -392,20 +392,20 @@ fleeDungeon = do
           , "Here's your loot, worth"
           , MU.NWs total currencyName
           , "." ]
-    discoS <- getsServer sdiscoS
+    discoS <- getsGlobal sdiscoS
     io <- itemOverlay discoS True items
     slides <- overlayToSlideshow winMsg io
     void $ getManyConfirms [] slides
-    modifyServer (\ st -> st {squit = Just (True, Victor)})
+    modifyGlobal (\ st -> st {squit = Just (True, Victor)})
 
 -- | The source actor affects the target actor, with a given item.
 -- If the event is seen, the item may get identified.
 itemEffectAction :: MonadAction m => Int -> ActorId -> ActorId -> Item -> Bool -> m ()
 itemEffectAction verbosity source target item block = do
-  Kind.COps{coitem=Kind.Ops{okind}} <- getsServer scops
-  st <- getServer
-  slidOld <- getsServer slid
-  discoS <- getsServer sdiscoS
+  Kind.COps{coitem=Kind.Ops{okind}} <- getsGlobal scops
+  st <- getGlobal
+  slidOld <- getsGlobal slid
+  discoS <- getsGlobal sdiscoS
   let effect = ieffect $ okind $ fromJust $ jkind discoS item
   -- The msg describes the target part of the action.
   (b1, b2) <- effectToAction effect verbosity source target (jpower item) block
@@ -413,23 +413,23 @@ itemEffectAction verbosity source target item block = do
   -- so the item gets identified.
   when (b1 && b2) $ discover item
   -- Destroys attacking actor and its items: a hack for projectiles.
-  slidNew <- getsServer slid
-  modifyServer (\ s -> s {slid = slidOld})
+  slidNew <- getsGlobal slid
+  modifyGlobal (\ s -> s {slid = slidOld})
   when (isProjectile st source) $
-    modifyServer (deleteActor source)
-  modifyServer (\ s -> s {slid = slidNew})
+    modifyGlobal (deleteActor source)
+  modifyGlobal (\ s -> s {slid = slidNew})
 
 -- | Make the item known to the player.
 discover :: MonadAction m => Item -> m ()
 discover i = do
-  Kind.COps{coitem} <- getsServer scops
-  oldDisco <- getsServer sdisco
-  discoS <- getsServer sdiscoS
+  Kind.COps{coitem} <- getsGlobal scops
+  oldDisco <- getsGlobal sdisco
+  discoS <- getsGlobal sdiscoS
   let ix = jkindIx i
       ik = discoS M.! ix
   unless (ix `M.member` oldDisco) $ do
-    modifyServer (updateDiscoveries (M.insert ix ik))
-    disco <- getsServer sdisco
+    modifyGlobal (updateDiscoveries (M.insert ix ik))
+    disco <- getsGlobal sdisco
     let (object1, object2) = partItem coitem oldDisco i
         msg = makeSentence
           [ "the", MU.SubjectVerbSg (MU.Phrase [object1, object2])
@@ -442,20 +442,20 @@ discover i = do
 -- of a player action or the selected player actor death.
 selectPlayer :: MonadAction m => ActorId -> m Bool
 selectPlayer actor = do
-  cops@Kind.COps{coactor} <- getsServer scops
-  pl    <- getsServer splayer
-  clvl  <- getsServer slevelClient
+  cops@Kind.COps{coactor} <- getsGlobal scops
+  pl    <- getsGlobal splayer
+  clvl  <- getsGlobal slevelClient
   if actor == pl
     then return False -- already selected
     else do
-      state <- getServer
+      state <- getGlobal
       let (nln, pbody, _) = findActorAnyLevel actor state
       -- Switch to the new level.
       switchLevel nln
       -- Make the new actor the player-controlled actor.
-      modifyServer (\ s -> s {splayer = actor})
+      modifyGlobal (\ s -> s {splayer = actor})
       -- Record the original level of the new player.
-      modifyServer (updateCursor (\ c -> c {creturnLn = nln}))
+      modifyGlobal (updateCursor (\ c -> c {creturnLn = nln}))
       -- Don't continue an old run, if any.
       stopRunning
       -- Announce.
@@ -465,7 +465,7 @@ selectPlayer actor = do
 
 selectHero :: MonadAction m => Int -> m ()
 selectHero k = do
-  s <- getServer
+  s <- getGlobal
   case tryFindHeroK s k of
     Nothing  -> abortWith "No such member of the party."
     Just aid -> void $ selectPlayer aid
@@ -474,7 +474,7 @@ selectHero k = do
 -- | Focus on the hero being wounded/displaced/etc.
 focusIfOurs :: MonadActionPure m => ActorId -> m Bool
 focusIfOurs target = do
-  s  <- getServer
+  s  <- getGlobal
   if isAHero s target
     then return True
     else return False
@@ -482,10 +482,10 @@ focusIfOurs target = do
 summonHeroes :: MonadAction m => Int -> Point -> m ()
 summonHeroes n loc =
   assert (n > 0) $ do
-  cops <- getsServer scops
-  newHeroId <- getsServer scounter
+  cops <- getsGlobal scops
+  newHeroId <- getsGlobal scounter
   configUI <- askConfigUI
-  modifyServer (\ state -> iterate (addHero cops loc configUI) state !! n)
+  modifyGlobal (\ state -> iterate (addHero cops loc configUI) state !! n)
   b <- focusIfOurs newHeroId
   assert (b `blame` (newHeroId, "player summons himself")) $
     return ()
@@ -494,10 +494,10 @@ summonHeroes n loc =
 -- that spawn, only the first faction with that kind is every picked.
 summonMonsters :: MonadAction m => Int -> Point -> m ()
 summonMonsters n loc = do
-  factions <- getsServer sfactions
+  factions <- getsGlobal sfactions
   Kind.COps{ cotile
            , coactor=Kind.Ops{opick, okind}
-           , cofact=Kind.Ops{opick=fopick, oname=foname}} <- getsServer scops
+           , cofact=Kind.Ops{opick=fopick, oname=foname}} <- getsGlobal scops
   spawnKindId <- rndToAction $ fopick "spawn" (const True)
   -- Spawn frequency required greater than zero, but otherwise ignored.
   let inFactionKind m = isJust $ lookup (foname spawnKindId) (afreq m)
@@ -507,7 +507,7 @@ summonMonsters n loc = do
   let bfaction = fst $ fromJust
                  $ find (\(_, fa) -> gkind fa == spawnKindId)
                  $ IM.toList factions
-  modifyServer (\ s -> iterate (addMonster cotile mk hp loc
+  modifyGlobal (\ s -> iterate (addMonster cotile mk hp loc
                                            bfaction False) s !! n)
 
 -- | Remove dead heroes (or dead dominated monsters). Check if game is over.
@@ -516,21 +516,21 @@ summonMonsters n loc = do
 -- on any level.
 checkPartyDeath :: MonadAction m => m ()
 checkPartyDeath = do
-  cops@Kind.COps{coactor} <- getsServer scops
+  cops@Kind.COps{coactor} <- getsGlobal scops
   per    <- askPerception
-  ahs    <- getsServer allHeroesAnyLevel
-  pl     <- getsServer splayer
-  pbody  <- getsServer getPlayerBody
-  Config{configFirstDeathEnds} <- getsServer sconfig
+  ahs    <- getsGlobal allHeroesAnyLevel
+  pl     <- getsGlobal splayer
+  pbody  <- getsGlobal getPlayerBody
+  Config{configFirstDeathEnds} <- getsGlobal sconfig
   when (bhp pbody <= 0) $ do
     msgAdd $ actorVerb coactor pbody "die"
     go <- displayMore ColorBW ""
     recordHistory  -- Prevent repeating the "die" msgs.
     let bodyToCorpse = updateAnyActor pl $ \ body -> body {bsymbol = Just '%'}
         animateDeath = do
-          diary  <- getDiary
-          s <- getServer
-          let animFrs = animate s diary cops per $ deathBody (bloc pbody)
+          cli  <- getClient
+          s <- getGlobal
+          let animFrs = animate s cli cops per $ deathBody (bloc pbody)
           displayFramesPush animFrs
         animateGameOver = do
           animateDeath
@@ -546,7 +546,7 @@ checkPartyDeath = do
                -- One last look at the beautiful world.
                remember
                -- Remove the dead player.
-               modifyServer deletePlayer
+               modifyGlobal deletePlayer
                -- At this place the invariant that the player exists fails.
                -- Select the new player-controlled hero (invariant not needed),
                -- but don't draw a frame for him with focusIfOurs,
@@ -559,13 +559,13 @@ checkPartyDeath = do
 -- | End game, showing the ending screens, if requested.
 gameOver :: MonadAction m => Bool -> m ()
 gameOver showEndingScreens = do
-  slid <- getsServer slid
-  modifyServer (\st -> st {squit = Just (False, Killed slid)})
+  slid <- getsGlobal slid
+  modifyGlobal (\st -> st {squit = Just (False, Killed slid)})
   when showEndingScreens $ do
-    Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsServer scops
-    s <- getServer
-    sdepth <- getsServer sdepth
-    time <- getsServer stime
+    Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsGlobal scops
+    s <- getGlobal
+    sdepth <- getsGlobal sdepth
+    time <- getsGlobal stime
     let (items, total) = calculateTotal s
         deepest = levelNumber slid  -- use deepest visited instead of level of death
         failMsg | timeFit time timeTurn < 300 =
@@ -587,18 +587,18 @@ gameOver showEndingScreens = do
           , MU.NWs total currencyName
           , "and some junk." ]
     if null items
-      then modifyServer (\st -> st {squit = Just (True, Killed slid)})
+      then modifyGlobal (\st -> st {squit = Just (True, Killed slid)})
       else do
-        discoS <- getsServer sdiscoS
+        discoS <- getsGlobal sdiscoS
         io <- itemOverlay discoS True items
         slides <- overlayToSlideshow loseMsg io
         go <- getManyConfirms [] slides
-        when go $ modifyServer (\st -> st {squit = Just (True, Killed slid)})
+        when go $ modifyGlobal (\st -> st {squit = Just (True, Killed slid)})
 
 -- | Create a list of item names.
 itemOverlay :: MonadActionPure m => Discoveries -> Bool -> [Item] -> m Overlay
 itemOverlay disco sorted is = do
-  Kind.COps{coitem} <- getsServer scops
+  Kind.COps{coitem} <- getsGlobal scops
   let items | sorted = sortBy (cmpLetterMaybe `on` jletter) is
             | otherwise = is
       pr i = makePhrase [ letterLabel (jletter i)
@@ -612,15 +612,15 @@ stopRunning = updatePlayerBody (\ p -> p { bdir = Nothing })
 -- | Perform look around in the current location of the cursor.
 doLook :: MonadAction m => WriterT Slideshow m ()
 doLook = do
-  cops@Kind.COps{coactor} <- getsServer scops
-  loc    <- getsServer (clocation . scursor)
-  state  <- getServer
-  clvl   <- getsServer slevelClient
-  hms    <- getsServer (lactor . slevel)
+  cops@Kind.COps{coactor} <- getsGlobal scops
+  loc    <- getsGlobal (clocation . scursor)
+  state  <- getGlobal
+  clvl   <- getsGlobal slevelClient
+  hms    <- getsGlobal (lactor . slevel)
   per    <- askPerception
-  target <- getsServer (btarget . getPlayerBody)
-  pl     <- getsServer splayer
-  targeting <- getsServer (ctargeting . scursor)
+  target <- getsGlobal (btarget . getPlayerBody)
+  pl     <- getsGlobal splayer
+  targeting <- getsGlobal (ctargeting . scursor)
   assert (targeting /= TgtOff) $ do
     let canSee = IS.member loc (totalVisible per)
         ihabitant | canSee = find (\ m -> bloc m == loc) (IM.elems hms)
@@ -639,13 +639,13 @@ doLook = do
         lookMsg = mode <+> lookAt cops True canSee state clvl loc monsterMsg
         -- Check if there's something lying around at current loc.
         is = clvl `rememberAtI` loc
-    modifyServer (\st -> st {slastKey = Nothing})
+    modifyGlobal (\st -> st {slastKey = Nothing})
     if length is <= 2
       then do
         slides <- promptToSlideshow lookMsg
         tell slides
       else do
-       disco <- getsServer sdisco
+       disco <- getsGlobal sdisco
        io <- itemOverlay disco False is
        slides <- overlayToSlideshow lookMsg io
        tell slides
