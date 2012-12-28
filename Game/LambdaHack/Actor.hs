@@ -9,6 +9,8 @@ module Game.LambdaHack.Actor
   , unoccupied, heroKindId, projectileKindId, actorSpeed
     -- * Type of na actor target
   , Target(..)
+    -- * Assorted
+  , smellTimeout
   ) where
 
 import Control.Monad
@@ -196,3 +198,7 @@ instance Binary Target where
       2 -> liftM TPath get
       3 -> return TCursor
       _ -> fail "no parse (Target)"
+
+-- | How long until an actor's smell vanishes from a tile.
+smellTimeout :: Time
+smellTimeout = timeScale timeTurn 100

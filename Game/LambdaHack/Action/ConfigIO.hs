@@ -126,7 +126,6 @@ parseConfigRules cp =
       configCaves = map (\(n, t) -> (T.pack n, T.pack t)) $ getItems cp "caves"
       configDepth = get cp "dungeon" "depth"
       configFovMode = get cp "engine" "fovMode"
-      configSmellTimeout = get cp "engine" "smellTimeout"
       configBaseHP = get cp "heroes" "baseHP"
       configExtraHeroes = get cp "heroes" "extraHeroes"
       configFirstDeathEnds = get cp "heroes" "firstDeathEnds"
@@ -145,7 +144,7 @@ parseConfigUI dataDir cp =
             section = getItems cp "commands"
         in map mkCommand section
       configAppDataDir = dataDir
-      configStateClientFile = dataDir </> get cp "files" "cliFile"
+      configHistoryFile = dataDir </> get cp "files" "historyFile"
       configSaveFile = dataDir </> get cp "files" "saveFile"
       configBkpFile = dataDir </> get cp "files" "saveFile" <.> ".bkp"
       configScoresFile = dataDir </> get cp "files" "scoresFile"

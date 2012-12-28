@@ -623,7 +623,7 @@ addSmell = do
   pl <- getsGlobal splayer
   let time = stime s
       ploc = bloc (getPlayerBody s)
-      upd = IM.insert ploc $ timeAdd time $ smellTimeout s
+      upd = IM.insert ploc $ timeAdd time smellTimeout
   when (isAHero s pl) $
     modifyGlobal $ updateLevel $ updateSmell upd
 

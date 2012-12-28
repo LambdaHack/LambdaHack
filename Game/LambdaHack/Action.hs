@@ -19,7 +19,7 @@ module Game.LambdaHack.Action
     -- * Abort exception handlers
   , tryWith, tryRepeatedlyWith, tryIgnore
     -- * StateClient and report
-  , getClient, msgAdd, recordHistory
+  , msgAdd, recordHistory
     -- * Key input
   , getKeyCommand, getKeyOverlayCommand, getManyConfirms
     -- * Display and key input
@@ -93,10 +93,6 @@ askBinding = getsSession sbinding
 -- | Get the config from the config file.
 askConfigUI :: MonadActionPure m => m ConfigUI
 askConfigUI = getsSession sconfigUI
-
--- | Get the current cli.
-getClient :: MonadActionPure m => m StateClient
-getClient = getClient
 
 -- | Add a message to the current report.
 msgAdd :: MonadActionRO m => Msg -> m ()

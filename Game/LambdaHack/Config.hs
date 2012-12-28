@@ -27,7 +27,6 @@ data Config = Config
   , configDepth          :: !Int
     -- engine
   , configFovMode        :: !FovMode
-  , configSmellTimeout   :: !Int
     -- heroes
   , configBaseHP         :: !Int
   , configExtraHeroes    :: !Int
@@ -41,7 +40,7 @@ data ConfigUI = ConfigUI
     configCommands     :: ![(K.Key, String)]  -- TODO: define Binary Cmd
     -- files
   , configAppDataDir   :: !FilePath
-  , configStateClientFile    :: !FilePath
+  , configHistoryFile  :: !FilePath
   , configSaveFile     :: !FilePath
   , configBkpFile      :: !FilePath
   , configScoresFile   :: !FilePath
@@ -76,7 +75,6 @@ instance Binary Config where
     put configCaves
     put configDepth
     put configFovMode
-    put configSmellTimeout
     put configBaseHP
     put configExtraHeroes
     put configFirstDeathEnds
@@ -86,7 +84,6 @@ instance Binary Config where
     configCaves          <- get
     configDepth          <- get
     configFovMode        <- get
-    configSmellTimeout   <- get
     configBaseHP         <- get
     configExtraHeroes    <- get
     configFirstDeathEnds <- get
@@ -97,7 +94,7 @@ instance Binary ConfigUI where
   put ConfigUI{..} = do
     put configCommands
     put configAppDataDir
-    put configStateClientFile
+    put configHistoryFile
     put configSaveFile
     put configBkpFile
     put configRulesCfgFile
@@ -110,7 +107,7 @@ instance Binary ConfigUI where
   get = do
     configCommands     <- get
     configAppDataDir   <- get
-    configStateClientFile    <- get
+    configHistoryFile  <- get
     configSaveFile     <- get
     configBkpFile      <- get
     configScoresFile   <- get

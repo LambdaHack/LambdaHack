@@ -76,7 +76,7 @@ data State = State
   , sfaction  :: !FactionId     -- ^ our faction
   , slastKey  :: !(Maybe K.KM)  -- ^ last command key pressed
   , sdebug    :: !DebugMode     -- ^ debugging mode
-  , scops     :: !Kind.COps     -- ^ game content
+  , scops     :: Kind.COps     -- ^ game content
   }
   deriving Show
 

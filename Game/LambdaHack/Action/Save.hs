@@ -20,7 +20,7 @@ import Game.LambdaHack.Utils.File
 
 -- | Save a simple serialized version of the current player cli.
 saveStateClient :: FilePath -> StateClient -> IO ()
-saveStateClient configStateClientFile cli = encodeEOF configStateClientFile cli
+saveStateClient configHistoryFile cli = encodeEOF configHistoryFile cli
 
 saveLock :: MVar ()
 {-# NOINLINE saveLock #-}
@@ -67,7 +67,7 @@ tryCopyDataFiles ConfigUI{ configScoresFile
 restoreGame :: ConfigUI -> (FilePath -> IO FilePath) -> Text
             -> IO (Either (State, StateClient, Msg) (StateClient, Msg))
 restoreGame config@ConfigUI{ configAppDataDir
-                           , configStateClientFile
+                           , configHistoryFile
                            , configSaveFile
                            , configBkpFile } pathsDataFile title = do
   ab <- doesDirectoryExist configAppDataDir
@@ -79,9 +79,9 @@ restoreGame config@ConfigUI{ configAppDataDir
   -- If the cli file does not exist, create an empty cli.
   -- TODO: when cli gets corrupted, start a new one, too.
   cli <-
-    do db <- doesFileExist configStateClientFile
+    do db <- doesFileExist configHistoryFile
        if db
-         then strictDecodeEOF configStateClientFile
+         then strictDecodeEOF configHistoryFile
          else defaultStateClient
   -- If the savefile exists but we get IO errors, we show them,
   -- back up the savefile and move it out of the way and start a new game.
@@ -116,13 +116,13 @@ restoreGame config@ConfigUI{ configAppDataDir
 -- before saving finishes, so we don't wait on the mvar. However,
 -- if a previous save is already in progress, we skip this save.
 saveGameBkp :: ConfigUI -> State -> StateClient -> IO ()
-saveGameBkp ConfigUI{ configStateClientFile
+saveGameBkp ConfigUI{ configHistoryFile
                     , configSaveFile
                     , configBkpFile } state cli = do
   b <- tryPutMVar saveLock ()
   when b $
     void $ forkIO $ do
-      saveStateClient configStateClientFile cli  -- save cli often in case of crashes
+      saveStateClient configHistoryFile cli  -- save cli often in case of crashes
       encodeEOF configSaveFile state
       renameFile configSaveFile configBkpFile
       takeMVar saveLock
@@ -134,10 +134,10 @@ saveGameBkp ConfigUI{ configStateClientFile
 -- because the backup file is relatively unimportant.
 -- We wait on the mvar, because saving the cli at game shutdown is important.
 rmBkpSaveStateClient :: ConfigUI -> StateClient -> IO ()
-rmBkpSaveStateClient ConfigUI{ configStateClientFile
+rmBkpSaveStateClient ConfigUI{ configHistoryFile
                        , configBkpFile } cli = do
   putMVar saveLock ()
-  saveStateClient configStateClientFile cli  -- save cli often in case of crashes
+  saveStateClient configHistoryFile cli  -- save cli often in case of crashes
   bb <- doesFileExist configBkpFile
   when bb $ removeFile configBkpFile
   takeMVar saveLock

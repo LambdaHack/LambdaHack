@@ -4,7 +4,7 @@
 -- TODO: Document an export list after it's rewritten according to #17.
 module Game.LambdaHack.ActorState
   ( isProjectile, isAHero, getPlayerBody, findActorAnyLevel, calculateTotal
-  , smellTimeout, initialHeroes, deletePlayer, allHeroesAnyLevel
+  , initialHeroes, deletePlayer, allHeroesAnyLevel
   , locToActor, deleteActor, addHero, addMonster, updateAnyActorItem
   , insertActor, heroList, memActor, getActor, updateAnyActorBody
   , hostileList, getActorItem, getPlayerItem, tryFindHeroK, dangerousList
@@ -51,13 +51,6 @@ isAHero :: State -> ActorId -> Bool
 isAHero s a =
   let (_, actor, _) = findActorAnyLevel a s
   in bfaction actor == sfaction s && not (bproj actor)
-
--- TODO: move to TileState if ever created.
--- | How long until an actor's smell vanishes from a tile.
-smellTimeout :: State -> Time
-smellTimeout s =
-  let Config{configSmellTimeout} = sconfig s
-  in timeScale timeTurn configSmellTimeout
 
 -- The operations with "Any", and those that use them,
 -- consider all the dungeon.

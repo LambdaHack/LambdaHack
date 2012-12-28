@@ -19,7 +19,6 @@
 ; fovMode: Digital 12
 ; ;fovMode: Permissive
 ; ;fovMode: Shadow
-; smellTimeout: 100
 ; ;startingRandomGenerator: 42
 
 ; [heroes]
