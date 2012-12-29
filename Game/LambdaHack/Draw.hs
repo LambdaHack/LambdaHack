@@ -48,14 +48,14 @@ draw :: ColorMode -> Kind.COps -> Perception -> StateClient -> State -> Overlay
      -> SingleFrame
 draw dm cops per
      StateClient{ scursor=Cursor{..}, sdebug }
-     s@State{ sdisco, slid, splayer }
+     s@State{ sdisco, sarena, splayer }
      overlay =
   let Kind.COps{ coactor=Kind.Ops{okind}
                , coitem=Kind.Ops{okind=iokind}
                , cotile=Kind.Ops{okind=tokind, ouniqGroup} } = cops
       DebugMode{smarkVision} = sdebug
       lvl@Level{lxsize, lysize, lsmell, ldesc, lactor, ltime, lseen, lclear} =
-        slevel s
+        getArena s
       (_, mpl@Actor{bkind, bhp, bloc}, bitems) = findActorAnyLevel splayer s
       ActorKind{ahp, asmell} = okind bkind
       reachable = debugTotalReachable per
@@ -94,7 +94,7 @@ draw dm cops per
             sml = IM.findWithDefault timeZero loc0 lsmell
             smlt = sml `timeAdd` timeNegate ltime
             viewActor loc Actor{bkind = bkind2, bsymbol, bcolor}
-              | loc == bloc && slid == creturnLn =
+              | loc == bloc && sarena == creturnLn =
                   (symbol, Color.defBG)  -- highlight player
               | otherwise = (symbol, color)
              where
@@ -107,7 +107,7 @@ draw dm cops per
               case ( L.find (\ m -> loc0 == Actor.bloc m) actorsHere
                    , L.find (\ m -> clocation == Actor.bloc m) actorsHere ) of
                 (_, actorTgt) | ctargeting /= TgtOff
-                                && (slid == creturnLn
+                                && (sarena == creturnLn
                                     && L.elem loc0 bl
                                     || (case actorTgt of
                                            Just (Actor{ btarget=TPath p
@@ -134,8 +134,8 @@ draw dm cops per
             bg0 = if ctargeting /= TgtOff && loc0 == clocation
                   then Color.defFG     -- highlight target cursor
                   else sVisBG vis rea  -- FOV debug or standard bg
-            reverseVideo = Color.Attr{ fg = Color.bg Color.defaultAttr
-                                     , bg = Color.fg Color.defaultAttr
+            reverseVideo = Color.Attr{ fg = Color.bg Color.defAttr
+                                     , bg = Color.fg Color.defAttr
                                      }
             optVisually attr@Color.Attr{fg, bg} =
               if (fg == Color.defBG)
@@ -143,10 +143,10 @@ draw dm cops per
               then reverseVideo
               else attr
             a = case dm of
-                  ColorBW   -> Color.defaultAttr
+                  ColorBW   -> Color.defAttr
                   ColorFull -> optVisually Color.Attr{fg = fg0, bg = bg0}
         in case over pxy of
-             Just c -> Color.AttrChar Color.defaultAttr c
+             Just c -> Color.AttrChar Color.defAttr c
              _      -> Color.AttrChar a char
       seenN = 100 * lseen `div` lclear
       seenTxt | seenN == 100 = "all"
@@ -156,7 +156,7 @@ draw dm cops per
       -- 'wait' command.
       braceSign | braced mpl ltime = "{"
                 | otherwise = " "
-      lvlN = T.justifyLeft 2 ' ' (showT $ levelNumber slid)
+      lvlN = T.justifyLeft 2 ' ' (showT $ levelNumber sarena)
       stats =
         T.justifyLeft 11 ' ' ("[" <> seenTxt <+> "seen]") <+>
         T.justifyLeft 9 ' ' ("$:" <+> showT wealth) <+>
@@ -181,7 +181,7 @@ draw dm cops per
 animate :: StateClient -> State -> Kind.COps -> Perception -> Animation
         -> Frames
 animate cli@StateClient{sreport} loc cops per anim =
-  let Level{lxsize, lysize} = slevel loc
+  let Level{lxsize, lysize} = getArena loc
       over = renderReport sreport
       topLineOnly = padMsg lxsize over
       basicFrame = draw ColorFull cops per cli loc [topLineOnly]

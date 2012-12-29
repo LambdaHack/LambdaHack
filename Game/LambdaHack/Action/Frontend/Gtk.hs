@@ -182,26 +182,26 @@ output :: FrontendSession  -- ^ frontend session data
 output FrontendSession{sview, stags} GtkFrame{..} = do  -- new frame
   tb <- textViewGetBuffer sview
   let attrs = L.zip [0..] gfAttr
-      defaultAttr = stags M.! Color.defaultAttr
+      defAttr = stags M.! Color.defAttr
   textBufferSetByteString tb gfChar
-  mapM_ (setTo tb defaultAttr 0) attrs
+  mapM_ (setTo tb defAttr 0) attrs
 
 setTo :: TextBuffer -> TextTag -> Int -> (Int, [TextTag]) -> IO ()
 setTo _  _   _  (_,  [])         = return ()
-setTo tb defaultAttr lx (ly, attr:attrs) = do
+setTo tb defAttr lx (ly, attr:attrs) = do
   ib <- textBufferGetIterAtLineOffset tb (ly + 1) lx
   ie <- textIterCopy ib
   let setIter :: TextTag -> Int -> [TextTag] -> IO ()
       setIter previous repetitions [] = do
         textIterForwardChars ie repetitions
-        when (previous /= defaultAttr) $
+        when (previous /= defAttr) $
           textBufferApplyTag tb previous ib ie
       setIter previous repetitions (a:as)
         | a == previous =
             setIter a (repetitions + 1) as
         | otherwise = do
             textIterForwardChars ie repetitions
-            when (previous /= defaultAttr) $
+            when (previous /= defAttr) $
               textBufferApplyTag tb previous ib ie
             textIterForwardChars ib repetitions
             setIter a 1 as
@@ -456,7 +456,7 @@ modifierTranslate mods =
 
 doAttr :: TextTag -> Color.Attr -> IO ()
 doAttr tt attr@Color.Attr{fg, bg}
-  | attr == Color.defaultAttr = return ()
+  | attr == Color.defAttr = return ()
   | fg == Color.defFG = set tt [textTagBackground := Color.colorToRGB bg]
   | bg == Color.defBG = set tt [textTagForeground := Color.colorToRGB fg]
   | otherwise         = set tt [textTagForeground := Color.colorToRGB fg,

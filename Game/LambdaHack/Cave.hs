@@ -27,7 +27,7 @@ import Game.LambdaHack.Utils.Assert
 
 -- | The map of tile kinds in a cave.
 -- The map is sparse. The default tile that eventually fills the empty spaces
--- is specified in the cave kind specification with @cdefaultTile@.
+-- is specified in the cave kind specification with @cdefTile@.
 type TileMapXY = Place.TileMapXY
 
 -- | The map of starting secrecy strength of tiles in a cave.
@@ -157,8 +157,8 @@ rollSecret :: TileKind -> Rnd Tile.SecretTime
 rollSecret t = do
   let getDice (F.Secret dice) _ = dice
       getDice _ acc = acc
-      defaultDice = RollDice 5 2
-      d = foldr getDice defaultDice (tfeature t)
+      defDice = RollDice 5 2
+      d = foldr getDice defDice (tfeature t)
   secretTurns <- rollDice d
   return $ timeScale timeTurn secretTurns
 

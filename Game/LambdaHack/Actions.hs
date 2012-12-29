@@ -77,8 +77,8 @@ gameRestart = do
 
 moveCursor :: MonadAction m => Vector -> Int -> WriterT Slideshow m ()
 moveCursor dir n = do
-  lxsize <- getsLocal (lxsize . slevel)
-  lysize <- getsLocal (lysize . slevel)
+  lxsize <- getsLocal (lxsize . getArena)
+  lysize <- getsLocal (lysize . getArena)
   let upd cursor =
         let shiftB loc =
               shiftBounded lxsize (1, 1, lxsize - 2, lysize - 2) loc dir
@@ -116,7 +116,7 @@ guessBump _ _ _ = neverMind True
 bumpTile :: MonadAction m => Point -> F.Feature -> m ()
 bumpTile dloc feat = do
   Kind.COps{cotile} <- getsLocal scops
-  lvl    <- getsLocal slevel
+  lvl    <- getsLocal getArena
   let t = lvl `at` dloc
   if Tile.hasFeature cotile feat t
     then triggerTile dloc
@@ -126,19 +126,19 @@ bumpTile dloc feat = do
 triggerTile :: MonadAction m => Point -> m ()
 triggerTile dloc = do
   Kind.COps{cotile=Kind.Ops{okind, opick}} <- getsGlobal scops
-  lvl <- getsGlobal slevel
+  lvl <- getsGlobal getArena
   let f (F.Cause effect) = do
         pl <- getsGlobal splayer
         void $ effectToAction effect 0 pl pl 0 False  -- no block against tile
         return ()
       f (F.ChangeTo tgroup) = do
-        Level{lactor} <- getsGlobal slevel
+        Level{lactor} <- getsGlobal getArena
         case lvl `atI` dloc of
           [] -> if unoccupied (IM.elems lactor) dloc
                 then do
                   newTileId <- rndToAction $ opick tgroup (const True)
                   let adj = (Kind.// [(dloc, newTileId)])
-                  modifyGlobal (updateLevel (updateLMap adj))
+                  modifyGlobal (updateArena (updateLMap adj))
 -- TODO: take care of AI using this function (aborts, etc.).
                 else abortWith "blocked"  -- by monsters or heroes
           _ : _ -> abortWith "jammed"  -- by items
@@ -151,7 +151,7 @@ playerTriggerDir feat verb = do
   let keys = zip K.dirAllMoveKey $ repeat K.NoModifier
       prompt = makePhrase ["What to", verb MU.:> "? [movement key"]
   e <- displayChoiceUI prompt [] keys
-  lxsize <- getsLocal (lxsize . slevel)
+  lxsize <- getsLocal (lxsize . getArena)
   K.handleDir lxsize e (playerBumpDir feat) (neverMind True)
 
 -- | Player tries to trigger a tile in a given direction.
@@ -175,7 +175,7 @@ actorOpenDoor actor dir = do
            , coitem
            , coactor=Kind.Ops{okind}
            } <- getsGlobal scops
-  lvl  <- getsGlobal slevel
+  lvl  <- getsGlobal getArena
   pl   <- getsGlobal splayer
   body <- getsGlobal (getActor actor)
   bitems <- getsGlobal (getActorItem actor)
@@ -207,8 +207,8 @@ tgtAscend k = do
   Kind.COps{cotile} <- getsGlobal scops
   cursor    <- getsClient scursor
   targeting <- getsClient (ctargeting . scursor)
-  slid      <- getsGlobal slid
-  lvl       <- getsGlobal slevel
+  sarena      <- getsGlobal sarena
+  lvl       <- getsGlobal getArena
   st        <- getGlobal
   depth     <- getsGlobal sdepth
   let loc = clocation cursor
@@ -221,14 +221,14 @@ tgtAscend k = do
       Nothing ->  -- we are at the "end" of the dungeon
         abortWith "no more levels in this direction"
       Just (nln, nloc) ->
-        assert (nln /= slid `blame` (nln, "stairs looped")) $ do
+        assert (nln /= sarena `blame` (nln, "stairs looped")) $ do
           -- We only look at the level, but we have to keep current
           -- time somewhere, e.g., for when we change the player
           -- to a hero on this level and then end targeting.
           -- If that's too slow, we could keep current time in the @Cursor@.
           switchLevel nln
           -- do not freely reveal the other end of the stairs
-          clvl <- getsLocal slevel
+          clvl <- getsLocal getArena
           let upd cur =
                 let clocation =
                       if Tile.hasFeature cotile F.Exit (clvl `at` nloc)
@@ -237,9 +237,9 @@ tgtAscend k = do
                 in cur { clocation, clocLn = nln }
           modifyClient (updateCursor upd)
     else do  -- no stairs in the right direction
-      let n = levelNumber slid
+      let n = levelNumber sarena
           nln = levelDefault $ min depth $ max 1 $ n - k
-      when (nln == slid) $ abortWith "no more levels in this direction"
+      when (nln == sarena) $ abortWith "no more levels in this direction"
       switchLevel nln  -- see comment above
       let upd cur = cur {clocLn = nln}
       modifyClient (updateCursor upd)
@@ -284,9 +284,9 @@ backCycleHero = do
 search :: MonadAction m => m ()
 search = do
   Kind.COps{coitem, cotile} <- getsGlobal scops
-  lvl    <- getsGlobal slevel
-  le     <- getsGlobal (lsecret . slevel)
-  lxsize <- getsGlobal (lxsize . slevel)
+  lvl    <- getsGlobal getArena
+  le     <- getsGlobal (lsecret . getArena)
+  lxsize <- getsGlobal (lxsize . getArena)
   ploc   <- getsGlobal (bloc . getPlayerBody)
   pitems <- getsGlobal getPlayerItem
   discoS <- getsGlobal sdisco
@@ -305,8 +305,8 @@ search = do
                 else IM.delete loc sle
            else sle
       leNew = foldl' searchTile le (moves lxsize)
-  modifyGlobal (updateLevel (\ l -> l {lsecret = leNew}))
-  lvlNew <- getsGlobal slevel
+  modifyGlobal (updateArena (\ l -> l {lsecret = leNew}))
+  lvlNew <- getsGlobal getArena
   let triggerHidden mv = do
         let dloc = shift ploc mv
             t = lvlNew `at` dloc
@@ -326,8 +326,8 @@ moveOrAttack allowAttacks actor dir = do
   cops@Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getsGlobal scops
   loc <- getLocal
   pl     <- getsGlobal splayer
-  lvl    <- getsGlobal slevel
-  clvl   <- getsLocal slevel
+  lvl    <- getsGlobal getArena
+  clvl   <- getsLocal getArena
   sm     <- getsGlobal (getActor actor)
   let sloc = bloc sm           -- source location
       tloc = sloc `shift` dir  -- target location
@@ -368,7 +368,7 @@ actorAttackActor source target = do
   smRaw <- getsGlobal (getActor source)
   tmRaw <- getsGlobal (getActor target)
   per   <- askPerception
-  time  <- getsGlobal stime
+  time  <- getsGlobal getTime
   sside <- getsGlobal sside
   let sloc = bloc smRaw
       tloc = bloc tmRaw
@@ -478,18 +478,18 @@ rollMonster Kind.COps{ cotile
                      , coactor=Kind.Ops{opick, okind}
                      , cofact=Kind.Ops{opick=fopick, oname=foname}
                      } per state ser = do
-  let lvl@Level{lactor} = slevel state
+  let lvl@Level{lactor} = getArena state
       ms = hostileList state
       hs = heroList state
       isLit = Tile.isLit cotile
-  rc <- monsterGenChance (levelNumber $ slid state) (length ms)
+  rc <- monsterGenChance (levelNumber $ sarena state) (length ms)
   if not rc
     then return (state, ser)
     else do
       let distantAtLeast d =
             \ l _ -> all (\ h -> chessDist (lxsize lvl) (bloc h) l > d) hs
       loc <-
-        findLocTry 20 (lmap lvl)  -- 20 only, for unpredictability
+        findLocTry 20 (ltile lvl)  -- 20 only, for unpredictability
           [ \ _ t -> not (isLit t)
           , distantAtLeast 15
           , \ l t -> not (isLit t) || distantAtLeast 15 l t
@@ -525,7 +525,7 @@ regenerateLevelHP = do
   Kind.COps{ coitem
            , coactor=coactor@Kind.Ops{okind}
            } <- getsGlobal scops
-  time <- getsGlobal stime
+  time <- getsGlobal getTime
   discoS <- getsGlobal sdisco
   let upd itemIM a m =
         let ak = okind $ bkind m
@@ -543,8 +543,8 @@ regenerateLevelHP = do
   -- Only the heroes on the current level regenerate (others are frozen
   -- in time together with their level). This prevents cheating
   -- via sending one hero to a safe level and waiting there.
-  hi <- getsGlobal (linv . slevel)
-  modifyGlobal (updateLevel (updateActor (IM.mapWithKey (upd hi))))
+  hi <- getsGlobal (linv . getArena)
+  modifyGlobal (updateArena (updateActor (IM.mapWithKey (upd hi))))
 
 -- | Display command help.
 displayHelp :: MonadActionRO m => WriterT Slideshow m ()
@@ -597,19 +597,19 @@ displayMainMenu = do
   case menuOverlay of
     [] -> assert `failure` "empty Main Menu overlay"
     hd : tl -> do
-      slides <- overlayToSlideshow hd tl
-      tell slides
+      sarenaes <- overlayToSlideshow hd tl
+      tell sarenaes
 
 displayHistory :: MonadActionRO m => WriterT Slideshow m ()
 displayHistory = do
   StateClient{shistory} <- getClient
-  time <- getsLocal stime
+  time <- getsLocal getTime
   let turn = time `timeFit` timeTurn
       msg = makeSentence [ "You survived for"
                        , MU.NWs turn "half-second turn" ]
             <+> "Past messages:"
-  slides <- overlayToSlideshow msg $ renderHistory shistory
-  tell slides
+  sarenaes <- overlayToSlideshow msg $ renderHistory shistory
+  tell sarenaes
 
 dumpConfig :: MonadActionRO m => m ()
 dumpConfig = do
@@ -625,17 +625,17 @@ addSmell :: MonadAction m => m ()
 addSmell = do
   s  <- getGlobal
   pl <- getsGlobal splayer
-  let time = stime s
+  let time = getTime s
       ploc = bloc (getPlayerBody s)
       upd = IM.insert ploc $ timeAdd time smellTimeout
   when (isAHero s pl) $
-    modifyGlobal $ updateLevel $ updateSmell upd
+    modifyGlobal $ updateArena $ updateSmell upd
 
 -- | Update the wait/block count.
 setWaitBlock :: MonadAction m => ActorId -> m ()
 setWaitBlock actor = do
   Kind.COps{coactor} <- getsGlobal scops
-  time <- getsGlobal stime
+  time <- getsGlobal getTime
   updateAnyActor actor $ \ m -> m {bwait = timeAddFromSpeed coactor m time}
 
 -- | Player waits a turn (and blocks, etc.).

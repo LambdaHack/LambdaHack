@@ -45,9 +45,9 @@ display vty _ _ (Just SingleFrame{..}) =
                                 char (setAttr acAttr) acChar)))
             sfLevel
       pic = pic_for_image $
-              utf8_bytestring (setAttr Color.defaultAttr) (encodeUtf8 sfTop)
+              utf8_bytestring (setAttr Color.defAttr) (encodeUtf8 sfTop)
               <-> img <->
-              utf8_bytestring (setAttr Color.defaultAttr) (encodeUtf8 sfBottom)
+              utf8_bytestring (setAttr Color.defAttr) (encodeUtf8 sfBottom)
   in update vty pic
 
 -- | Input key via the frontend.
@@ -102,7 +102,7 @@ hack c a = if Color.isBright c then with_style a bold else a
 setAttr :: Color.Attr -> Attr
 setAttr Color.Attr{fg, bg} =
 -- This optimization breaks display for white background terminals:
---  if (fg, bg) == Color.defaultAttr
+--  if (fg, bg) == Color.defAttr
 --  then def_attr
 --  else
   hack fg $ hack bg $

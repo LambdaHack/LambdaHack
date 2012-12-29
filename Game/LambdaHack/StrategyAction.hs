@@ -47,7 +47,7 @@ targetStrategy cops actor state per factionAbilities =
   reacquire btarget
  where
   Kind.COps{coactor=coactor@Kind.Ops{okind}} = cops
-  lvl@Level{lxsize} = slevel state
+  lvl@Level{lxsize} = getArena state
   actorBody@Actor{ bkind, bloc = me, btarget, bfaction } =
     getActor actor state
   mk = okind bkind
@@ -164,7 +164,7 @@ dieNow :: MonadAction m => ActorId -> Strategy (m ())
 dieNow actor = returN "die" $ do  -- TODO: explode if a potion
   bitems <- getsGlobal (getActorItem actor)
   Actor{bloc} <- getsGlobal (getActor actor)
-  modifyGlobal (updateLevel (dropItemsAt bitems bloc))
+  modifyGlobal (updateArena (dropItemsAt bitems bloc))
   modifyGlobal (deleteActor actor)
 
 -- | Strategy for dumb missiles.
@@ -172,7 +172,7 @@ track :: MonadAction m => Kind.COps -> ActorId -> State -> Strategy (m ())
 track cops actor state =
   strat
  where
-  lvl = slevel state
+  lvl = getArena state
   Actor{ bloc, btarget, bhp } = getActor actor state
   darkenActor = updateAnyActor actor $ \ m -> m {bcolor = Just Color.BrBlack}
   dieOrReset | bhp <= 0  = dieNow actor
@@ -196,7 +196,7 @@ pickup :: MonadAction m => ActorId -> State -> Strategy (m ())
 pickup actor state =
   lootHere bloc .=> actionPickup
  where
-  lvl = slevel state
+  lvl = getArena state
   Actor{bloc} = getActor actor state
   lootHere x = not $ L.null $ lvl `atI` x
   actionPickup = returN "pickup" $ actorPickupItem actor
@@ -205,7 +205,7 @@ melee :: MonadAction m => ActorId -> State -> Point -> Strategy (m ())
 melee actor state floc =
   foeAdjacent .=> (returN "melee" $ dirToAction actor True dir)
  where
-  Level{lxsize} = slevel state
+  Level{lxsize} = getArena state
   Actor{bloc} = getActor actor state
   foeAdjacent = adjacent lxsize bloc floc
   dir = displacement bloc floc
@@ -224,7 +224,7 @@ rangedFreq cops actor state floc =
            , coitem=Kind.Ops{okind=iokind}
            , corule
            } = cops
-  lvl@Level{lxsize, lysize} = slevel state
+  lvl@Level{lxsize, lysize} = getArena state
   Actor{ bkind, bloc, bfaction } = getActor actor state
   bitems = getActorItem actor state
   mk = okind bkind
@@ -260,7 +260,7 @@ toolsFreq cops actor state =
   toFreq "quaffFreq" $ quaffFreq bitems 1 ++ quaffFreq tis 2
  where
   Kind.COps{coitem=Kind.Ops{okind=iokind}} = cops
-  lvl = slevel state
+  lvl = getArena state
   Actor{bloc} = getActor actor state
   bitems = getActorItem actor state
   tis = lvl `atI` bloc
@@ -318,7 +318,7 @@ moveStrategy cops actor state mFoe =
            , coactor=Kind.Ops{okind}
            , coitem
            } = cops
-  lvl@Level{lsmell, lxsize, lysize, ltime} = slevel state
+  lvl@Level{lsmell, lxsize, lysize, ltime} = getArena state
   Actor{ bkind, bloc, bdir, bfaction } = getActor actor state
   bitems = getActorItem actor state
   mk = okind bkind

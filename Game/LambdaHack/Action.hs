@@ -30,7 +30,7 @@ module Game.LambdaHack.Action
   , getKeyCommand, getKeyOverlayCommand, getManyConfirms
     -- * Display and key input
   , displayFramesPush, displayMore, displayYesNo, displayChoiceUI
-    -- * Generate slideshows
+    -- * Generate sarenaeshows
   , promptToSlideshow, overlayToSlideshow
     -- * Draw frames
   , drawOverlay
@@ -125,7 +125,7 @@ withPerception m = do
 -- | Get the current perception.
 askPerception :: MonadActionPure m => m Perception
 askPerception = do
-  lid <- getsLocal slid
+  lid <- getsLocal sarena
   pers <- ask
   sside <- getsLocal sside
   return $! pers IM.! sside M.! lid
@@ -158,14 +158,14 @@ tryIgnore =
                    else assert `failure` msg <+> "in tryIgnore")
 
 -- | Set the current exception handler. Apart of executing it,
--- draw and pass along a slide with the abort message (even if message empty).
+-- draw and pass along a sarenae with the abort message (even if message empty).
 tryWithSlide :: MonadActionRO m
              => m a -> WriterT Slideshow m a -> WriterT Slideshow m a
 tryWithSlide exc h =
   let excMsg msg = do
         msgReset ""
-        slides <- promptToSlideshow msg
-        tell slides
+        sarenaes <- promptToSlideshow msg
+        tell sarenaes
         lift exc
   in tryWith excMsg h
 
@@ -210,10 +210,10 @@ getConfirm clearKeys frame = do
     _ | km `elem` clearKeys -> return True
     _ -> return False
 
--- | Display a slideshow, awaiting confirmation for each slide.
+-- | Display a sarenaeshow, awaiting confirmation for each sarenae.
 getManyConfirms :: MonadActionRO m => [K.KM] -> Slideshow -> m Bool
-getManyConfirms clearKeys slides =
-  case runSlideshow slides of
+getManyConfirms clearKeys sarenaes =
+  case runSlideshow sarenaes of
     [] -> return True
     x : xs -> do
       frame <- drawOverlay ColorFull x
@@ -263,7 +263,7 @@ displayYesNo prompt = do
 -- (in some menus @?@ cycles views, so the user can restart from the top).
 displayChoiceUI :: MonadActionRO m => Msg -> Overlay -> [K.KM] -> m K.KM
 displayChoiceUI prompt ov keys = do
-  slides <- fmap runSlideshow $ overlayToSlideshow (prompt <> ", ESC]") ov
+  sarenaes <- fmap runSlideshow $ overlayToSlideshow (prompt <> ", ESC]") ov
   fs <- askFrontendSession
   let legalKeys = (K.Space, K.NoModifier) : (K.Esc, K.NoModifier) : keys
       loop [] = neverMind True
@@ -274,20 +274,20 @@ displayChoiceUI prompt ov keys = do
           K.Esc -> neverMind True
           K.Space -> loop xs
           _ -> return (key, modifier)
-  loop slides
+  loop sarenaes
 
 -- | The prompt is shown after the current message, but not added to history.
 -- This is useful, e.g., in targeting mode, not to spam history.
 promptToSlideshow :: MonadActionPure m => Msg -> m Slideshow
 promptToSlideshow prompt = overlayToSlideshow prompt []
 
--- | The prompt is shown after the current message at the top of each slide.
+-- | The prompt is shown after the current message at the top of each sarenae.
 -- Together they may take more than one line. The prompt is not added
 -- to history. The portions of overlay that fit on the the rest
--- of the screen are displayed below. As many slides as needed are shown.
+-- of the screen are displayed below. As many sarenaes as needed are shown.
 overlayToSlideshow :: MonadActionPure m => Msg -> Overlay -> m Slideshow
 overlayToSlideshow prompt overlay = do
-  lysize <- getsLocal (lysize . slevel)
+  lysize <- getsLocal (lysize . getArena)
   StateClient{sreport} <- getClient
   let msg = splitReport (addMsg sreport prompt)
   return $! splitOverlay lysize msg overlay
@@ -333,36 +333,36 @@ startClip action =
 remember :: MonadAction m => m ()
 remember = do
   per <- askPerception
-  lvl <- getsGlobal slevel
+  lvl <- getsGlobal getArena
   rememberList (totalVisible per) lvl
   splayer <- getsGlobal splayer
   modifyLocal (\loc -> loc {splayer})
-  slid <- getsGlobal slid
-  modifyLocal (\loc -> loc {slid})
+  sarena <- getsGlobal sarena
+  modifyLocal (\loc -> loc {sarena})
 
 -- | Update heroes memory at the given list of locations.
 rememberList :: MonadAction m => IS.IntSet -> Level -> m ()
 rememberList visible lvl = do
   let vis = IS.toList visible
   Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getsLocal scops
-  clvl <- getsLocal slevel
+  clvl <- getsLocal getArena
   let rememberTile = [(loc, lvl `at` loc) | loc <- vis]
       unknownId = ouniqGroup "unknown space"
       newClear (loc, tk) = clvl `at` loc == unknownId
                            && Tile.isExplorable cotile tk
       clearN = length $ filter newClear rememberTile
-  modifyLocal (updateLevel (updateLMap (Kind.// rememberTile)))
-  modifyLocal (updateLevel
+  modifyLocal (updateArena (updateLMap (Kind.// rememberTile)))
+  modifyLocal (updateArena
                   (\ l@Level{lseen} -> l {lseen = lseen + clearN}))
   let alt Nothing   _ = Nothing
       alt (Just []) _ = assert `failure` lvl
       alt x         _ = x
       rememberItem p m = IM.alter (alt $ IM.lookup p $ litem lvl) p m
-  modifyLocal (updateLevel
+  modifyLocal (updateArena
                  (updateIMap (\ m -> foldr rememberItem m vis)))
   let cactor = IM.filter (\m -> bloc m `IS.member` visible) (lactor lvl)
       cinv   = IM.filterWithKey (\p _ -> p `IM.member` cactor) (linv lvl)
-  modifyLocal (updateLevel
+  modifyLocal (updateArena
                  (updateActor (const cactor)
                   . updateInv (const cinv)))
   modifyLocal (updateTime (const $ ltime lvl))
@@ -396,10 +396,10 @@ handleScores :: MonadActionRO m => Bool -> Status -> Int -> m ()
 handleScores write status total =
   when (total /= 0) $ do
     configUI <- askConfigUI
-    time <- getsLocal stime
+    time <- getsLocal getTime
     curDate <- liftIO getClockTime
-    slides <- liftIO $ register configUI write total time curDate status
-    go <- getManyConfirms [] slides
+    sarenaes <- liftIO $ register configUI write total time curDate status
+    go <- getManyConfirms [] sarenaes
     when (not go) abort
 
 -- | Continue or restart or exit the game.
@@ -511,11 +511,11 @@ gameReset configUI scops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
                        $ find (\(_, fa) -> isNothing (gAiSelected fa))
                        $ IM.toList sfaction
             defState =
-              defaultStateGlobal freshDungeon freshDepth sdiscoS sfaction
+              defStateGlobal freshDungeon freshDepth sdiscoS sfaction
                                  scops sside entryLevel
-            defSer = defaultStateServer sdiscoRev sflavour srandom sconfig
-            cli = defaultStateClient entryLoc entryLevel shistory
-            loc = defaultStateLocal freshDungeon freshDepth
+            defSer = defStateServer sdiscoRev sflavour srandom sconfig
+            cli = defStateClient entryLoc entryLevel shistory
+            loc = defStateLocal freshDungeon freshDepth
                                     sdisco sfaction scops sside entryLevel
             (state, ser) =
               initialHeroes scops entryLoc configUI defState defSer
@@ -577,7 +577,7 @@ start executor sfs scops@Kind.COps{corule} sbinding sconfigUI handleGame = do
         ser
         cli{sreport = singletonReport msg}
         loc
-        -- TODO: gameReset >> handleTurn or defaultState {squit=Reset}
+        -- TODO: gameReset >> handleTurn or defState {squit=Reset}
     Left (state, ser, cli, loc, msg) ->  -- Running a restored game.
       executor handleGame sfs scops sbinding sconfigUI
         state {scops}  -- overwritten by recreated cops

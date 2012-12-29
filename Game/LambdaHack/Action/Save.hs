@@ -85,7 +85,7 @@ restoreGame config@ConfigUI{ configAppDataDir
     do db <- doesFileExist configHistoryFile
        if db
          then strictDecodeEOF configHistoryFile
-         else defaultHistory
+         else defHistory
   -- If the savefile exists but we get IO errors, we show them,
   -- back up the savefile and move it out of the way and start a new game.
   -- If the savefile was randomly corrupted or made read-only,

@@ -134,7 +134,7 @@ effectToAction effect verbosity source target power block = do
     when (newHP <= 0) $ do
       -- Place the actor's possessions on the map.
       bitems <- getsGlobal (getActorItem target)
-      modifyGlobal (updateLevel (dropItemsAt bitems tloc))
+      modifyGlobal (updateArena (dropItemsAt bitems tloc))
       -- Clean bodies up.
       if target == pl
         then  -- Kill the player and check game over.
@@ -200,7 +200,7 @@ eff Effect.Dominate _ source target _power = do
       -- Sync the monster with the hero move time for better display
       -- of missiles and for the domination to actually take one player's turn.
       updatePlayerBody (\ m -> m { bfaction = sside s
-                                 , btime = stime s
+                                 , btime = getTime s
                                  , bspeed = halfSpeed m })
       -- Display status line and FOV for the newly controlled actor.
       sli <- promptToSlideshow ""
@@ -210,11 +210,11 @@ eff Effect.Dominate _ source target _power = do
     else if source == target
          then do
            lm <- getsGlobal hostileList
-           lxsize <- getsGlobal (lxsize . slevel)
-           lysize <- getsGlobal (lysize . slevel)
+           lxsize <- getsGlobal (lxsize . getArena)
+           lysize <- getsGlobal (lysize . getArena)
            let cross m = bloc m : vicinityCardinal lxsize lysize (bloc m)
                vis = IS.fromList $ concatMap cross lm
-           lvl <- getsGlobal slevel
+           lvl <- getsGlobal getArena
            rememberList vis lvl
            return (True, "A dozen voices yells in anger.")
          else nullEffect
@@ -237,7 +237,7 @@ eff Effect.ApplyPerfume _ source target _ =
   then return (True, "Tastes like water, but with a strong rose scent.")
   else do
     let upd lvl = lvl { lsmell = IM.empty }
-    modifyGlobal (updateLevel upd)
+    modifyGlobal (updateArena upd)
     return (True, "The fragrance quells all scents in the vicinity.")
 eff Effect.Regeneration verbosity source target power =
   eff Effect.Heal verbosity source target power
@@ -299,13 +299,13 @@ effLvlGoUp :: MonadAction m => Int -> m ()
 effLvlGoUp k = do
   pbody     <- getsGlobal getPlayerBody
   pl        <- getsGlobal splayer
-  slid      <- getsGlobal slid
+  sarena      <- getsGlobal sarena
   st        <- getGlobal
   cops <- getsGlobal scops
   case whereTo st k of
     Nothing -> fleeDungeon -- we are at the "end" of the dungeon
     Just (nln, nloc) ->
-      assert (nln /= slid `blame` (nln, "stairs looped")) $ do
+      assert (nln /= sarena `blame` (nln, "stairs looped")) $ do
         bitems <- getsGlobal getPlayerItem
         -- Remember the level (e.g., for a teleport via scroll on the floor).
         remember
@@ -315,7 +315,7 @@ effLvlGoUp k = do
         -- Monsters hear that players not on the level. Cancel smell.
         -- Reduces memory load and savefile size.
         when (null hs) $
-          modifyGlobal (updateLevel (updateSmell (const IM.empty)))
+          modifyGlobal (updateArena (updateSmell (const IM.empty)))
         -- At this place the invariant that the player exists fails.
         -- Change to the new level (invariant not needed).
         switchLevel nln
@@ -354,13 +354,13 @@ effLvlGoUp k = do
 switchLevel :: MonadAction m => LevelId -> m ()
 switchLevel nln = do
   remember  -- record changes before the level is frozen; we could do that at the end of the functino as well, recording changes after the level is thawed
-  timeCurrent <- getsGlobal stime
-  slid <- getsGlobal slid
-  when (slid /= nln) $ do
+  timeCurrent <- getsGlobal getTime
+  sarena <- getsGlobal sarena
+  when (sarena /= nln) $ do
     -- Switch to the new level.
-    modifyGlobal (\ s -> s {slid = nln})
-    modifyLocal (\ s -> s {slid = nln})  -- hack
-    timeLastVisited <- getsGlobal stime
+    modifyGlobal (\ s -> s {sarena = nln})
+    modifyLocal (\ s -> s {sarena = nln})  -- hack
+    timeLastVisited <- getsGlobal getTime
     let diff = timeAdd timeCurrent $ timeNegate timeLastVisited
     when (diff /= timeZero) $ do
       -- Reset the level time.
@@ -368,7 +368,7 @@ switchLevel nln = do
       modifyLocal $ updateTime $ const timeCurrent  -- hack
       -- Update the times of all actors.
       let upd m@Actor{btime} = m {btime = timeAdd btime diff}
-      modifyGlobal (updateLevel (updateActor (IM.map upd)))
+      modifyGlobal (updateArena (updateActor (IM.map upd)))
 
 -- | The player leaves the dungeon.
 fleeDungeon :: MonadAction m => m ()
@@ -398,8 +398,8 @@ fleeDungeon = do
           , "." ]
     discoS <- getsGlobal sdisco
     io <- itemOverlay discoS True items
-    slides <- overlayToSlideshow winMsg io
-    void $ getManyConfirms [] slides
+    sarenaes <- overlayToSlideshow winMsg io
+    void $ getManyConfirms [] sarenaes
     modifyServer (\ st -> st {squit = Just (True, Victor)})
 
 -- | The source actor affects the target actor, with a given item.
@@ -408,7 +408,7 @@ itemEffectAction :: MonadAction m => Int -> ActorId -> ActorId -> Item -> Bool -
 itemEffectAction verbosity source target item block = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsGlobal scops
   st <- getGlobal
-  slidOld <- getsGlobal slid
+  sarenaOld <- getsGlobal sarena
   discoS <- getsGlobal sdisco
   let effect = ieffect $ okind $ fromJust $ jkind discoS item
   -- The msg describes the target part of the action.
@@ -417,11 +417,11 @@ itemEffectAction verbosity source target item block = do
   -- so the item gets identified.
   when (b1 && b2) $ discover item
   -- Destroys attacking actor and its items: a hack for projectiles.
-  slidNew <- getsGlobal slid
-  modifyGlobal (\ s -> s {slid = slidOld})
+  sarenaNew <- getsGlobal sarena
+  modifyGlobal (\ s -> s {sarena = sarenaOld})
   when (isProjectile st source) $
     modifyGlobal (deleteActor source)
-  modifyGlobal (\ s -> s {slid = slidNew})
+  modifyGlobal (\ s -> s {sarena = sarenaNew})
 
 -- | Make the item known to the player.
 discover :: MonadAction m => Item -> m ()
@@ -572,15 +572,15 @@ checkPartyDeath = do
 -- | End game, showing the ending screens, if requested.
 gameOver :: MonadAction m => Bool -> m ()
 gameOver showEndingScreens = do
-  slid <- getsGlobal slid
-  modifyServer (\st -> st {squit = Just (False, Killed slid)})
+  sarena <- getsGlobal sarena
+  modifyServer (\st -> st {squit = Just (False, Killed sarena)})
   when showEndingScreens $ do
     Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsGlobal scops
     s <- getGlobal
     sdepth <- getsGlobal sdepth
-    time <- getsGlobal stime
+    time <- getsGlobal getTime
     let (items, total) = calculateTotal s
-        deepest = levelNumber slid  -- use deepest visited instead of level of death
+        deepest = levelNumber sarena  -- use deepest visited instead of level of death
         failMsg | timeFit time timeTurn < 300 =
           "That song shall be short."
                 | total < 100 =
@@ -600,13 +600,13 @@ gameOver showEndingScreens = do
           , MU.NWs total currencyName
           , "and some junk." ]
     if null items
-      then modifyServer (\st -> st {squit = Just (True, Killed slid)})
+      then modifyServer (\st -> st {squit = Just (True, Killed sarena)})
       else do
         discoS <- getsGlobal sdisco
         io <- itemOverlay discoS True items
-        slides <- overlayToSlideshow loseMsg io
-        go <- getManyConfirms [] slides
-        when go $ modifyServer (\st -> st {squit = Just (True, Killed slid)})
+        sarenaes <- overlayToSlideshow loseMsg io
+        go <- getManyConfirms [] sarenaes
+        when go $ modifyServer (\st -> st {squit = Just (True, Killed sarena)})
 
 -- | Create a list of item names.
 itemOverlay :: MonadActionPure m => Discoveries -> Bool -> [Item] -> m Overlay
@@ -628,8 +628,8 @@ doLook = do
   cops@Kind.COps{coactor} <- getsLocal scops
   p    <- getsClient (clocation . scursor)
   loc  <- getLocal
-  clvl   <- getsLocal slevel
-  hms    <- getsLocal (lactor . slevel)
+  clvl   <- getsLocal getArena
+  hms    <- getsLocal (lactor . getArena)
   per    <- askPerception
   target <- getsLocal (btarget . getPlayerBody)
   pl     <- getsLocal splayer
@@ -655,10 +655,10 @@ doLook = do
     modifyClient (\st -> st {slastKey = Nothing})
     if length is <= 2
       then do
-        slides <- promptToSlideshow lookMsg
-        tell slides
+        sarenaes <- promptToSlideshow lookMsg
+        tell sarenaes
       else do
        disco <- getsLocal sdisco
        io <- itemOverlay disco False is
-       slides <- overlayToSlideshow lookMsg io
-       tell slides
+       sarenaes <- overlayToSlideshow lookMsg io
+       tell sarenaes

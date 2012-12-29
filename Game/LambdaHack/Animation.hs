@@ -1,6 +1,6 @@
 -- | Screen frames and animations.
 module Game.LambdaHack.Animation
-  ( Attr(..), defaultAttr, AttrChar(..)
+  ( Attr(..), defAttr, AttrChar(..)
   , SingleFrame(..), Animation, Frames, rederAnim
   , twirlSplash, blockHit, blockMiss, deathBody, swapPlaces
   ) where

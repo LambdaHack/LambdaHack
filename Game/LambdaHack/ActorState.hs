@@ -106,19 +106,19 @@ updateAnyActorItem actor f state =
   in updateAnyLevel (updateInv $ IM.alter g actor) ln state
 
 updateAnyLevel :: (Level -> Level) -> LevelId -> State -> State
-updateAnyLevel f ln s@State{slid, sdungeon}
-  | ln == slid = updateLevel f s
+updateAnyLevel f ln s@State{sarena, sdungeon}
+  | ln == sarena = updateArena f s
   | otherwise = updateDungeon (const $ M.adjust f ln sdungeon) s
 
 -- | Calculate the location of player's target.
 targetToLoc :: StateClient -> State -> Point -> Maybe Point
-targetToLoc StateClient{scursor} s@State{slid} aloc =
+targetToLoc StateClient{scursor} s@State{sarena} aloc =
   case btarget (getPlayerBody s) of
     TLoc loc -> Just loc
     TPath [] -> Nothing
     TPath (dir:_) -> Just $ shift aloc dir
     TCursor ->
-      if slid == clocLn scursor
+      if sarena == clocLn scursor
       then Just $ clocation scursor
       else Nothing  -- cursor invalid: set at a different level
     TEnemy a _ll -> do
@@ -133,24 +133,24 @@ targetToLoc StateClient{scursor} s@State{slid} aloc =
 --
 -- > b <- getsGlobal (memActor a)
 memActor :: ActorId -> State -> Bool
-memActor a state = IM.member a (lactor (slevel state))
+memActor a state = IM.member a (lactor (getArena state))
 
 -- | Gets actor body from the current level. Error if not found.
 getActor :: ActorId -> State -> Actor
-getActor a state = lactor (slevel state) IM.! a
+getActor a state = lactor (getArena state) IM.! a
 
 -- | Gets actor's items from the current level. Empty list, if not found.
 getActorItem :: ActorId -> State -> [Item]
-getActorItem a state = fromMaybe [] $ IM.lookup a (linv (slevel state))
+getActorItem a state = fromMaybe [] $ IM.lookup a (linv (getArena state))
 
 -- | Removes the actor, if present, from the current level.
 deleteActor :: ActorId -> State -> State
 deleteActor a =
-  updateLevel (updateActor (IM.delete a) . updateInv (IM.delete a))
+  updateArena (updateActor (IM.delete a) . updateInv (IM.delete a))
 
 -- | Add actor to the current level.
 insertActor :: ActorId -> Actor -> State -> State
-insertActor a m = updateLevel (updateActor (IM.insert a m))
+insertActor a m = updateArena (updateActor (IM.insert a m))
 
 -- | Removes a player from the current level.
 deletePlayer :: State -> State
@@ -164,13 +164,13 @@ hostileAssocs faction lvl =
 heroList, hostileList, dangerousList :: State -> [Actor]
 heroList state@State{sside} =
   filter (\ m -> bfaction m == sside && not (bproj m)) $
-    IM.elems $ lactor $ slevel state
+    IM.elems $ lactor $ getArena state
 hostileList state@State{sside} =
   filter (\ m -> bfaction m /= sside && not (bproj m)) $
-    IM.elems $ lactor $ slevel state
+    IM.elems $ lactor $ getArena state
 dangerousList state@State{sside} =
   filter (\ m -> bfaction m /= sside) $
-    IM.elems $ lactor $ slevel state
+    IM.elems $ lactor $ getArena state
 
 factionAssocs :: [FactionId] -> Level -> [(ActorId, Actor)]
 factionAssocs l lvl =
@@ -178,7 +178,7 @@ factionAssocs l lvl =
 
 factionList :: [FactionId] -> State -> [Actor]
 factionList l s =
-  filter (\ m -> bfaction m `elem` l) $ IM.elems $ lactor $ slevel s
+  filter (\ m -> bfaction m `elem` l) $ IM.elems $ lactor $ getArena s
 
 -- | Finds an actor at a location on the current level. Perception irrelevant.
 locToActor :: Point -> State -> Maybe ActorId
@@ -189,13 +189,13 @@ locToActor loc state =
 
 locToActors :: Point -> State -> [ActorId]
 locToActors loc state =
-    let l  = IM.assocs $ lactor $ slevel state
+    let l  = IM.assocs $ lactor $ getArena state
         im = L.filter (\ (_i, m) -> bloc m == loc) l
     in fmap fst im
 
 nearbyFreeLoc :: Kind.Ops TileKind -> Point -> State -> Point
 nearbyFreeLoc cotile start state =
-  let lvl@Level{lxsize, lysize, lactor} = slevel state
+  let lvl@Level{lxsize, lysize, lactor} = getArena state
       locs = start : L.nub (concatMap (vicinity lxsize lysize) locs)
       good loc = Tile.hasFeature cotile F.Walkable (lvl `at` loc)
                  && unoccupied (IM.elems lactor) loc
@@ -205,9 +205,9 @@ nearbyFreeLoc cotile start state =
 -- | Calculate loot's worth for heroes on the current level.
 calculateTotal :: State -> ([Item], Int)
 calculateTotal s =
-  let ha = factionAssocs [sside s] $ slevel s
+  let ha = factionAssocs [sside s] $ getArena s
       heroInv = L.concat $ catMaybes $
-                  L.map ( \ (k, _) -> IM.lookup k $ linv $ slevel s) ha
+                  L.map ( \ (k, _) -> IM.lookup k $ linv $ getArena s) ha
   in (heroInv, L.sum $ L.map itemPrice heroInv)
 
 foesAdjacent :: X -> Y -> Point -> [Actor] -> Bool
@@ -238,8 +238,8 @@ addHero Kind.COps{coactor, cotile} ploc configUI
       name = findHeroName configUI n
       startHP = configBaseHP - (configBaseHP `div` 5) * min 3 n
       m = template (heroKindId coactor) (Just symbol) (Just name)
-                   startHP loc (stime state) sside False
-  in ( updateLevel (updateActor (IM.insert scounter m)) state
+                   startHP loc (getTime state) sside False
+  in ( updateArena (updateActor (IM.insert scounter m)) state
      , ser { scounter = scounter + 1 } )
 
 -- | Create a set of initial heroes on the current level, at location ploc.
@@ -259,8 +259,8 @@ addMonster :: Kind.Ops TileKind -> Kind.Id ActorKind -> Int -> Point
            -> (State, StateServer)
 addMonster cotile mk hp ploc bfaction bproj state ser@StateServer{scounter} =
   let loc = nearbyFreeLoc cotile ploc state
-      m = template mk Nothing Nothing hp loc (stime state) bfaction bproj
-  in ( updateLevel (updateActor (IM.insert scounter m)) state
+      m = template mk Nothing Nothing hp loc (getTime state) bfaction bproj
+  in ( updateArena (updateActor (IM.insert scounter m)) state
      , ser {scounter = scounter + 1} )
 
 -- Adding projectiles
@@ -299,5 +299,5 @@ addProjectile Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}}
         }
       upd = updateActor (IM.insert scounter m)
             . updateInv (IM.insert scounter [item])
-  in ( updateLevel upd state
+  in ( updateArena upd state
      , ser {scounter = scounter + 1} )

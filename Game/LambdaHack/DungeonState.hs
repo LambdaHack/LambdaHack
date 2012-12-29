@@ -39,10 +39,10 @@ import Game.LambdaHack.Utils.Assert
 
 convertTileMaps :: Rnd (Kind.Id TileKind) -> Int -> Int -> TileMapXY
                 -> Rnd TileMap
-convertTileMaps cdefaultTile cxsize cysize lmap = do
+convertTileMaps cdefTile cxsize cysize ltile = do
   let bounds = (origin, toPoint cxsize $ PointXY (cxsize - 1, cysize - 1))
-      assocs = map (\ (xy, t) -> (toPoint cxsize xy, t)) (M.assocs lmap)
-  pickedTiles <- replicateM (cxsize * cysize) cdefaultTile
+      assocs = map (\ (xy, t) -> (toPoint cxsize xy, t)) (M.assocs ltile)
+  pickedTiles <- replicateM (cxsize * cysize) cdefTile
   return $ Kind.listArray bounds pickedTiles Kind.// assocs
 
 mapToIMap :: X -> M.Map PointXY a -> IM.IntMap a
@@ -53,7 +53,7 @@ rollItems :: Kind.COps -> FlavourMap -> DiscoRev -> Int -> Int
           -> CaveKind -> TileMap -> Point
           -> Rnd [(Point, Item)]
 rollItems Kind.COps{cotile, coitem=coitem} flavour discoRev
-          ln depth CaveKind{cxsize, citemNum, cminStairDist} lmap ploc = do
+          ln depth CaveKind{cxsize, citemNum, cminStairDist} ltile ploc = do
   nri <- rollDice citemNum
   replicateM nri $ do
     (item, ik) <- newItem coitem flavour discoRev ln depth
@@ -61,14 +61,14 @@ rollItems Kind.COps{cotile, coitem=coitem} flavour discoRev
            Effect.Wound dice | maxDice dice > 0  -- a weapon
                                && maxDice dice + maxDeep (ipower ik) > 3 ->
              -- Powerful weapons generated close to monsters, MUAHAHAHA.
-             findLocTry 20 lmap  -- 20 only, for unpredictability
+             findLocTry 20 ltile  -- 20 only, for unpredictability
                [ \ l _ -> chessDist cxsize ploc l > cminStairDist
                , \ l _ -> chessDist cxsize ploc l > 2 * cminStairDist `div` 3
                , \ l _ -> chessDist cxsize ploc l > cminStairDist `div` 2
                , \ l _ -> chessDist cxsize ploc l > cminStairDist `div` 3
                , const (Tile.hasFeature cotile F.Boring)
                ]
-           _ -> findLoc lmap (const (Tile.hasFeature cotile F.Boring))
+           _ -> findLoc ltile (const (Tile.hasFeature cotile F.Boring))
     return (l, item)
 
 placeStairs :: Kind.Ops TileKind -> TileMap -> CaveKind -> [Place]
@@ -94,15 +94,15 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                          , cocave=Kind.Ops{okind} }
            flavour discoRev Cave{..} ln depth = do
   let kc@CaveKind{..} = okind dkind
-  cmap <- convertTileMaps (opick cdefaultTile (const True)) cxsize cysize dmap
+  cmap <- convertTileMaps (opick cdefTile (const True)) cxsize cysize dmap
   (su, upId, sd, downId) <-
     placeStairs cotile cmap kc dplaces
   let stairs = (su, upId) : if ln == depth then [] else [(sd, downId)]
-      lmap = cmap Kind.// stairs
+      ltile = cmap Kind.// stairs
       f !n !tk | Tile.isExplorable cotile tk = n + 1
                | otherwise = n
-      lclear = Kind.foldlArray f 0 lmap
-  is <- rollItems cops flavour discoRev ln depth kc lmap su
+      lclear = Kind.foldlArray f 0 ltile
+  is <- rollItems cops flavour discoRev ln depth kc ltile su
   -- TODO: split this into Level.defaultLevel
   let itemMap = mapToIMap cxsize ditem `IM.union` IM.fromList is
       litem = IM.map (: []) itemMap
@@ -110,12 +110,12 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
         { lactor = IM.empty
         , linv = IM.empty
         , litem
-        , lmap
+        , ltile
         , lxsize = cxsize
         , lysize = cysize
         , lsmell = IM.empty
         , ldesc = cname
-        , lstairs = (su, sd)
+        , lstair = (su, sd)
         , lseen = 0
         , lclear
         , ltime = timeTurn
@@ -157,7 +157,7 @@ generate cops flavour discoRev config@Config{configDepth}  =
       con g = assert (configDepth >= 1 `blame` configDepth) $
         let (gd, levels) = mapAccumL gen g [1..configDepth]
             entryLevel = levelDefault 1
-            entryLoc = fst (lstairs (snd (head levels)))
+            entryLoc = fst (lstair (snd (head levels)))
             freshDungeon = M.fromList levels
             freshDepth = configDepth
         in (FreshDungeon{..}, gd)
@@ -169,10 +169,10 @@ whereTo :: State  -- ^ game state
         -> Int    -- ^ jump this many levels
         -> Maybe (LevelId, Point)
              -- ^ target level and the location of its receiving stairs
-whereTo State{slid, sdungeon} k = assert (k /= 0) $
-  let n = levelNumber slid
+whereTo State{sarena, sdungeon} k = assert (k /= 0) $
+  let n = levelNumber sarena
       nln = n - k
       ln = levelDefault nln
   in case M.lookup ln sdungeon of
     Nothing     -> Nothing
-    Just lvlTrg -> Just (ln, (if k < 0 then fst else snd) (lstairs lvlTrg))
+    Just lvlTrg -> Just (ln, (if k < 0 then fst else snd) (lstair lvlTrg))

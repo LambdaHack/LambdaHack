@@ -3,7 +3,7 @@ module Game.LambdaHack.Color
   ( -- * Colours
     Color(..), defBG, defFG, isBright, legalBG, colorToRGB
     -- * Text attributes and the screen
-  , Attr(..), defaultAttr, AttrChar(..)
+  , Attr(..), defAttr, AttrChar(..)
   ) where
 
 import Data.Binary
@@ -59,8 +59,8 @@ instance Binary Attr where
     return Attr{..}
 
 -- | The default attribute, to optimize attribute setting.
-defaultAttr :: Attr
-defaultAttr = Attr defFG defBG
+defAttr :: Attr
+defAttr = Attr defFG defBG
 
 data AttrChar = AttrChar
   { acAttr :: !Attr

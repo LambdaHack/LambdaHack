@@ -28,7 +28,7 @@ fullscan :: Kind.Ops TileKind  -- ^ tile content, determines clear tiles
          -> Point              -- ^ location of the spectacor
          -> Level              -- ^ the map that is scanned
          -> [Point]
-fullscan cotile fovMode loc Level{lxsize, lmap} =
+fullscan cotile fovMode loc Level{lxsize, ltile} =
   case fovMode of
     Shadow ->
       L.concatMap (\ tr -> map tr (Shadow.scan (isCl . tr) 1 (0, 1))) tr8
@@ -41,7 +41,7 @@ fullscan cotile fovMode loc Level{lxsize, lmap} =
       in L.concatMap (\ tr -> map tr (Digital.scan radiusOne (isCl . tr))) tr4
  where
   isCl :: Point -> Bool
-  isCl = Tile.isClear cotile . (lmap Kind.!)
+  isCl = Tile.isClear cotile . (ltile Kind.!)
 
   trV xy = shift loc $ toVector lxsize $ VectorXY xy
 

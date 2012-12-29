@@ -29,7 +29,7 @@ data CaveKind = CaveKind
   , copenChance   :: Chance      -- ^ if there's a door, is it open?
   , chiddenChance :: Chance      -- ^ if not open, is it hidden?
   , citemNum      :: RollDice    -- ^ the number of items in the cave
-  , cdefaultTile    :: Text      -- ^ the default cave tile group name
+  , cdefTile    :: Text      -- ^ the default cave tile group name
   , ccorridorTile   :: Text      -- ^ the cave corridor tile group name
   , cfillerTile     :: Text      -- ^ the filler wall group name
   , cdarkLegendTile :: Text      -- ^ the dark place plan legend ground name

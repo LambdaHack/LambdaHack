@@ -54,12 +54,12 @@ data Level = Level
   { lactor  :: !ActorDict       -- ^ remembered actors on the level
   , linv    :: !InvDict         -- ^ remembered actor inventories
   , litem   :: !ItemMap         -- ^ remembered items on the level
-  , lmap    :: !TileMap         -- ^ remembered level map
+  , ltile   :: !TileMap         -- ^ remembered level map
   , lxsize  :: !X               -- ^ width of the level
   , lysize  :: !Y               -- ^ height of the level
   , lsmell  :: !SmellMap        -- ^ remembered smells on the level
   , ldesc   :: !Text            -- ^ level description
-  , lstairs :: !(Point, Point)  -- ^ destination of (up, down) stairs
+  , lstair  :: !(Point, Point)  -- ^ destination of (up, down) stairs
   , lseen   :: !Int             -- ^ number of clear tiles already seen
   , lclear  :: !Int             -- ^ total number of clear tiles
   , ltime   :: !Time            -- ^ date of the last activity on the level
@@ -85,7 +85,7 @@ updateIMap f lvl = lvl { litem = f (litem lvl) }
 
 -- | Update the tile map.
 updateLMap :: (TileMap -> TileMap) -> Level -> Level
-updateLMap f lvl = lvl { lmap = f (lmap lvl) }
+updateLMap f lvl = lvl { ltile = f (ltile lvl) }
 
 -- Note: do not scatter items around, it's too much work for the player.
 -- | Place all items on the list at a location on the level.
@@ -106,12 +106,12 @@ instance Binary Level where
     put lactor
     put linv
     put (assertSparseItems litem)
-    put lmap
+    put ltile
     put lxsize
     put lysize
     put lsmell
     put ldesc
-    put lstairs
+    put lstair
     put lseen
     put lclear
     put ltime
@@ -120,12 +120,12 @@ instance Binary Level where
     lactor <- get
     linv <- get
     litem <- get
-    lmap <- get
+    ltile <- get
     lxsize <- get
     lysize <- get
     lsmell <- get
     ldesc <- get
-    lstairs <- get
+    lstair <- get
     lseen <- get
     lclear <- get
     ltime <- get
@@ -134,7 +134,7 @@ instance Binary Level where
 
 -- | Query for tile kinds on the map.
 at :: Level -> Point -> Kind.Id TileKind
-at Level{lmap}  p = lmap Kind.! p
+at Level{ltile}  p = ltile Kind.! p
 
 -- | Query for items on the ground.
 atI :: Level -> Point -> [Item]
@@ -161,10 +161,10 @@ openable cops lvl@Level{lsecret} k target =
 
 -- | Find a random location on the map satisfying a predicate.
 findLoc :: TileMap -> (Point -> Kind.Id TileKind -> Bool) -> Rnd Point
-findLoc lmap p =
+findLoc ltile p =
   let search = do
-        loc <- randomR $ Kind.bounds lmap
-        let tile = lmap Kind.! loc
+        loc <- randomR $ Kind.bounds ltile
+        let tile = ltile Kind.! loc
         if p loc tile
           then return loc
           else search
@@ -180,13 +180,13 @@ findLocTry :: Int                                  -- ^ the number of tries
            -> TileMap                              -- ^ look up in this map
            -> [Point -> Kind.Id TileKind -> Bool]  -- ^ predicates to satisfy
            -> Rnd Point
-findLocTry _        lmap []        = findLoc lmap (const (const True))
-findLocTry _        lmap [p]       = findLoc lmap p
-findLocTry numTries lmap l@(_ : tl) = assert (numTries > 0) $
-  let search 0 = findLocTry numTries lmap tl
+findLocTry _        ltile []        = findLoc ltile (const (const True))
+findLocTry _        ltile [p]       = findLoc ltile p
+findLocTry numTries ltile l@(_ : tl) = assert (numTries > 0) $
+  let search 0 = findLocTry numTries ltile tl
       search k = do
-        loc <- randomR $ Kind.bounds lmap
-        let tile = lmap Kind.! loc
+        loc <- randomR $ Kind.bounds ltile
+        let tile = ltile Kind.! loc
         if L.all (\ p -> p loc tile) l
           then return loc
           else search (k - 1)

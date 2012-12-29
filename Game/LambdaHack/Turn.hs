@@ -65,7 +65,7 @@ import Game.LambdaHack.Utils.Assert
 handleTurn :: MonadAction m => m ()
 handleTurn = do
   debug "handleTurn"
-  time <- getsGlobal stime  -- the end time of this clip, inclusive
+  time <- getsGlobal getTime  -- the end time of this clip, inclusive
   let clipN = (time `timeFit` timeClip) `mod` (timeTurn `timeFit` timeClip)
   -- Regenerate HP and add monsters each turn, not each clip.
   when (clipN == 1) regenerateLevelHP
@@ -90,11 +90,11 @@ handleActors subclipStart = do
   debug "handleActors"
   Kind.COps{coactor} <- getsGlobal scops
   sside <- getsGlobal sside
-  time <- getsGlobal stime  -- the end time of this clip, inclusive
+  time <- getsGlobal getTime  -- the end time of this clip, inclusive
   pl <- getsGlobal splayer
   pbody <- getsGlobal getPlayerBody
   -- Older actors act earlier, the player acts first.
-  lactor <- getsGlobal (((pl, pbody) :) . IM.toList . IM.delete pl . lactor . slevel)
+  lactor <- getsGlobal (((pl, pbody) :) . IM.toList . IM.delete pl . lactor . getArena)
   squitOld <- getsServer squit
   let mnext = if null lactor  -- wait until any actor spawned
               then Nothing
@@ -156,7 +156,7 @@ handleAI actor = do
   let Actor{bfaction, bloc, bsymbol} = getActor actor state
       factionAI = gAiIdle $ sfaction state IM.! bfaction
       factionAbilities = sabilities (okind factionAI)
-      per = pers IM.! bfaction M.! (slid state)
+      per = pers IM.! bfaction M.! (sarena state)
       stratTarget = targetStrategy cops actor state per factionAbilities
   -- Choose a target from those proposed by AI for the actor.
   btarget <- rndToAction $ frequency $ bestVariant $ stratTarget
@@ -190,8 +190,8 @@ playerCommand msgRunAbort = do
   kmPush <- case msgRunAbort of
     "" -> getKeyCommand (Just True)
     _  -> do
-      slides <- promptToSlideshow msgRunAbort
-      getKeyOverlayCommand $ head $ runSlideshow slides
+      sarenaes <- promptToSlideshow msgRunAbort
+      getKeyOverlayCommand $ head $ runSlideshow sarenaes
   -- The frame state is now None and remains so between each pair
   -- of lines of @loop@ (but can change within called actions).
   let loop :: K.KM -> m ()
@@ -199,8 +199,8 @@ playerCommand msgRunAbort = do
         -- Messages shown, so update history and reset current report.
         recordHistory
         -- On abort, just reset state and call loop again below.
-        -- Each abort that gets this far generates a slide to be shown.
-        (timed, slides) <- runWriterT $ tryWithSlide (return False) $ do
+        -- Each abort that gets this far generates a sarenae to be shown.
+        (timed, sarenaes) <- runWriterT $ tryWithSlide (return False) $ do
           -- Look up the key.
           Binding{kcmd} <- askBinding
           case M.lookup km kcmd of
@@ -223,14 +223,14 @@ playerCommand msgRunAbort = do
         -- The command was aborted or successful and if the latter,
         -- possibly took some time.
         if timed
-          then assert (null (runSlideshow slides) `blame` slides) $ do
+          then assert (null (runSlideshow sarenaes) `blame` sarenaes) $ do
             -- Exit the loop and let other actors act. No next key needed
-            -- and no slides could have been generated.
+            -- and no sarenaes could have been generated.
             modifyClient (\st -> st {slastKey = Nothing})
           else
             -- If no time taken, rinse and repeat.
-            -- Analyse the obtained slides.
-            case reverse (runSlideshow slides) of
+            -- Analyse the obtained sarenaes.
+            case reverse (runSlideshow sarenaes) of
               [] -> do
                 -- Nothing special to be shown; by default draw current state.
                 modifyClient (\st -> st {slastKey = Nothing})
@@ -238,12 +238,12 @@ playerCommand msgRunAbort = do
                 kmNext <- getKeyOverlayCommand $ head $ runSlideshow sli
                 loop kmNext
               sLast : sls -> do
-                -- Show, one by one, all but the last slide.
-                -- Note: the code that generates the slides is responsible
+                -- Show, one by one, all but the last sarenae.
+                -- Note: the code that generates the sarenaes is responsible
                 -- for inserting the @more@ prompt.
                 b <- getManyConfirms [km] $ toSlideshow $ reverse sls
-                -- Display the last slide while waiting for the next key,
-                -- or display current state if slideshow interrupted.
+                -- Display the last sarenae while waiting for the next key,
+                -- or display current state if sarenaeshow interrupted.
                 kmNext <- if b
                           then getKeyOverlayCommand sLast
                           else do

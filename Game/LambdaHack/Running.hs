@@ -35,7 +35,7 @@ run (dir, dist) = do
   cops <- getsGlobal scops
   pl <- getsGlobal splayer
   locHere <- getsGlobal (bloc . getPlayerBody)
-  lvl <- getsGlobal slevel
+  lvl <- getsGlobal getArena
   targeting <- getsClient (ctargeting . scursor)
   assert (targeting == TgtOff `blame` (dir, dist, targeting, "/= TgtOff")) $ do
     let accessibleDir loc d = accessible cops lvl loc (loc `shift` d)
@@ -159,7 +159,7 @@ continueRun (dirLast, distLast) = do
   ms  <- getsGlobal dangerousList
   sside <- getsGlobal sside
   hs <- getsGlobal (factionList [sside])
-  lvl@Level{lxsize, lysize} <- getsGlobal slevel
+  lvl@Level{lxsize, lysize} <- getsGlobal getArena
   let locHasFeature f loc = Tile.hasFeature cotile f (lvl `at` loc)
       locHasItems loc = not $ L.null $ lvl `atI` loc
       locLast = if distLast == 0 then locHere else locHere `shift` neg dirLast

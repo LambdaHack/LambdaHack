@@ -54,7 +54,7 @@ instance Binary Place where
 
 -- | The map of tile kinds in a place (and generally anywhere in a cave).
 -- The map is sparse. The default tile that eventually fills the empty spaces
--- is specified in the cave kind specification with @cdefaultTile@.
+-- is specified in the cave kind specification with @cdefTile@.
 type TileMapXY = M.Map PointXY (Kind.Id TileKind)
 
 -- | For @CAlternate@ tiling, require the place be comprised

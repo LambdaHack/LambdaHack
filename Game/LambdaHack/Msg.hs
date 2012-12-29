@@ -161,7 +161,7 @@ takeHistory k (History h) = History $ take k h
 
 -- | A series of screen lines that may or may not fit the width nor height
 -- of the screen. An overlay may be transformed by adding the first line
--- and/or by splitting into a slideshow of smaller overlays.
+-- and/or by splitting into a sarenaeshow of smaller overlays.
 type Overlay = [Text]
 
 -- | Returns a function that looks up the characters in the
@@ -182,7 +182,7 @@ stringByLocation lxsize lysize (msgTop : ls) =
       \ (PointXY (x, y)) -> IM.lookup y m >>= \ n -> IM.lookup x n,
       msgBottom)
 
--- | Split an overlay into a slideshow in which each overlay,
+-- | Split an overlay into a sarenaeshow in which each overlay,
 -- prefixed by @msg@ and postfixed by @moreMsg@ except for the last one,
 -- fits on the screen wrt height (but lines may still be too wide).
 splitOverlay :: Y -> Overlay -> Overlay -> Slideshow
@@ -191,8 +191,8 @@ splitOverlay lysize msg ls = assert (length msg <= lysize) $
   in if length over <= lysize + 2
      then Slideshow [over]  -- all fits on one screen
      else let (pre, post) = splitAt (lysize + 1) over
-              Slideshow slides = splitOverlay lysize msg post
-          in Slideshow $ (pre ++ [moreMsg]) : slides
+              Slideshow sarenaes = splitOverlay lysize msg post
+          in Slideshow $ (pre ++ [moreMsg]) : sarenaes
 
 -- | A few overlays, displayed one by one upon keypress.
 -- When displayed, they are trimmed, not wrapped

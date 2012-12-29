@@ -52,8 +52,8 @@ inventory = do
       let blurb = makePhrase [MU.Capitalize $
             MU.SubjectVerbSg (partActor coactor pbody) "be carrying:"]
       io <- itemOverlay disco True items
-      slides <- overlayToSlideshow blurb io
-      tell slides
+      sarenaes <- overlayToSlideshow blurb io
+      tell sarenaes
 
 -- | Let the player choose any item with a given group name.
 -- Note that this does not guarantee the chosen item belongs to the group,
@@ -115,10 +115,10 @@ projectGroupItem source tloc _verb item = do
   per   <- askPerception
   pl    <- getsGlobal splayer
   Actor{btime}  <- getsGlobal getPlayerBody
-  lvl   <- getsGlobal slevel
+  lvl   <- getsGlobal getArena
   ceps  <- getsClient (ceps . scursor)
-  lxsize <- getsGlobal (lxsize . slevel)
-  lysize <- getsGlobal (lysize . slevel)
+  lxsize <- getsGlobal (lxsize . getArena)
+  lysize <- getsGlobal (lysize . getArena)
   sside <- getsGlobal sside
   disco <- getsGlobal sdisco
   let consumed = item { jcount = 1 }
@@ -173,8 +173,8 @@ projectGroupItem source tloc _verb item = do
 playerProjectGroupItem :: MonadAction m => MU.Part -> MU.Part -> [Char] -> m ()
 playerProjectGroupItem verb object syms = do
   ms     <- getsLocal hostileList
-  lxsize <- getsLocal (lxsize . slevel)
-  lysize <- getsLocal (lysize . slevel)
+  lxsize <- getsLocal (lxsize . getArena)
+  lysize <- getsLocal (lysize . getArena)
   ploc   <- getsLocal (bloc . getPlayerBody)
   if foesAdjacent lxsize lysize ploc ms
     then abortWith "You can't aim in melee."
@@ -215,9 +215,9 @@ targetMonster tgtMode = do
   pl        <- getsLocal splayer
   ploc      <- getsLocal (bloc . getPlayerBody)
   sside  <- getsLocal sside
-  ms        <- getsLocal (hostileAssocs sside . slevel)
+  ms        <- getsLocal (hostileAssocs sside . getArena)
   per       <- askPerception
-  lxsize    <- getsLocal (lxsize . slevel)
+  lxsize    <- getsLocal (lxsize . getArena)
   target    <- getsLocal (btarget . getPlayerBody)
   targeting <- getsClient (ctargeting . scursor)
       -- TODO: sort monsters by distance to the player.
@@ -266,7 +266,7 @@ setCursor tgtMode = assert (tgtMode /= TgtOff) $ do
   loc  <- getLocal
   cli  <- getClient
   ploc   <- getsLocal (bloc . getPlayerBody)
-  clocLn <- getsLocal slid
+  clocLn <- getsLocal sarena
   let upd cursor@Cursor{ctargeting, clocation=clocationOld, ceps=cepsOld} =
         let clocation =
               fromMaybe ploc (targetToLoc cli loc ploc)
@@ -293,7 +293,7 @@ endTargeting accept = do
   per      <- askPerception
   cloc     <- getsClient (clocation . scursor)
   sside <- getsLocal sside
-  ms       <- getsLocal (hostileAssocs sside . slevel)
+  ms       <- getsLocal (hostileAssocs sside . getArena)
   -- Return to the original level of the player. Note that this can be
   -- a different level than the one we started targeting at,
   -- if the player was changed while targeting.
@@ -321,7 +321,7 @@ endTargetingMsg = do
   Kind.COps{coactor} <- getsLocal scops
   pbody  <- getsLocal getPlayerBody
   state  <- getLocal
-  lxsize <- getsLocal (lxsize . slevel)
+  lxsize <- getsLocal (lxsize . getArena)
   let targetMsg = case btarget pbody of
                     TEnemy a _ll ->
                       if memActor a state
@@ -371,8 +371,8 @@ dropItem = do
   msgAdd $ makeSentence
     [ MU.SubjectVerbSg (partActor coactor pbody) "drop"
     , partItemNWs coitem disco item ]
-  modifyLocal (updateLevel (dropItemsAt [item] ploc))
-  modifyGlobal (updateLevel (dropItemsAt [item] ploc))  -- a hack
+  modifyLocal (updateArena (dropItemsAt [item] ploc))
+  modifyGlobal (updateArena (dropItemsAt [item] ploc))  -- a hack
 
 -- TODO: this is a hack for dropItem, because removeFromInventory
 -- makes it impossible to drop items if the floor not empty.
@@ -398,11 +398,11 @@ removeFromInventory actor i loc = do
 -- | Remove given item from the given location. Tell if successful.
 removeFromLoc :: MonadAction m => Item -> Point -> m Bool
 removeFromLoc i loc = do
-  lvl <- getsGlobal slevel
+  lvl <- getsGlobal getArena
   if not $ L.any (equalItemIdentity i) (lvl `atI` loc)
     then return False
     else do
-      modifyGlobal (updateLevel (updateIMap adj))
+      modifyGlobal (updateArena (updateIMap adj))
       return True
      where
       rib Nothing = assert `failure` (i, loc)
@@ -417,7 +417,7 @@ actorPickupItem actor = do
   Kind.COps{coactor, coitem} <- getsGlobal scops
   pl    <- getsGlobal splayer
   per   <- askPerception
-  lvl   <- getsGlobal slevel
+  lvl   <- getsGlobal getArena
   body  <- getsGlobal (getActor actor)
   bitems <- getsGlobal (getActorItem actor)
   disco <- getsGlobal sdisco
@@ -490,7 +490,7 @@ getItem :: MonadActionRO m
         -> Text            -- ^ how to refer to the collection of items
         -> m Item
 getItem prompt p ptext is0 isn = do
-  lvl  <- getsLocal slevel
+  lvl  <- getsLocal getArena
   body <- getsLocal getPlayerBody
   let loc = bloc body
       tis = lvl `atI` loc

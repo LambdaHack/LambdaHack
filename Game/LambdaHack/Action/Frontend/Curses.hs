@@ -63,7 +63,7 @@ display _ _ _ Nothing = return ()
 display FrontendSession{..}  _ _ (Just SingleFrame{..}) = do
   -- let defaultStyle = C.defaultCursesStyle
   -- Terminals with white background require this:
-  let defaultStyle = sstyles M.! Color.defaultAttr
+  let defaultStyle = sstyles M.! Color.defAttr
   C.erase
   C.setStyle defaultStyle
   C.mvWAddStr swin 0 0 (T.unpack sfTop)

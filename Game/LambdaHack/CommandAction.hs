@@ -41,10 +41,10 @@ cmdAction cli s cmd =
     Drop   -> (True, lift $ dropItem)
     Wait   -> (True, lift $ waitBlock)
     Move v | targeting /= TgtOff ->
-      let dir = toDir (lxsize (slevel s)) v
+      let dir = toDir (lxsize (getArena s)) v
       in (False, moveCursor dir 1)
     Move v ->
-      let dir = toDir (lxsize (slevel s)) v
+      let dir = toDir (lxsize (getArena s)) v
           tloc = ploc `shift` dir
           tgt = locToActor tloc s
       in case tgt of
@@ -56,10 +56,10 @@ cmdAction cli s cmd =
            >>= assert `trueM` (pl, target, "player bumps himself" :: Text))
         _ -> (True, lift $ moveOrAttack True pl dir)
     Run v | targeting /= TgtOff ->
-      let dir = toDir (lxsize (slevel s)) v
+      let dir = toDir (lxsize (getArena s)) v
       in (False, moveCursor dir 10)
     Run v ->
-      let dir = toDir (lxsize (slevel s)) v
+      let dir = toDir (lxsize (getArena s)) v
       in (True, lift $ run (dir, 0))
     GameExit    -> (True, lift $ gameExit)     -- takes time, then rewinds time
     GameRestart -> (True, lift $ gameRestart)  -- takes time, then resets state
@@ -101,7 +101,7 @@ cmdSemantics cli s cmd = do
 checkCursor :: MonadActionPure m => WriterT Slideshow m () -> WriterT Slideshow m ()
 checkCursor h = do
   cursor <- getsClient scursor
-  slid <- getsLocal slid
-  if creturnLn cursor == slid
+  sarena <- getsLocal sarena
+  if creturnLn cursor == sarena
     then h
     else abortWith "[targeting] you inspect a remote level, press ESC to switch back"
