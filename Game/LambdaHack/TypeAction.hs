@@ -23,13 +23,12 @@ import Game.LambdaHack.State
 type FunAction a =
    Session                            -- ^ client session setup data
    -> Pers                            -- ^ cached perception
-   -> (State -> StateServer -> StateClient -> State -> a -> IO ())
+   -> (State -> StateServer -> StateDict -> a -> IO ())
                                       -- ^ continuation
    -> (Msg -> IO ())                  -- ^ failure/reset continuation
    -> State                           -- ^ current globalstate
    -> StateServer                     -- ^ current server state
-   -> StateClient                     -- ^ current client state
-   -> State                           -- ^ current local state
+   -> StateDict                       -- ^ current state of all factions
    -> IO ()
 
 -- | Actions of player-controlled characters and of any other actors.
@@ -37,15 +36,15 @@ newtype Action a = Action {runAction :: FunAction a}
 
 -- | Invokes the action continuation on the provided argument.
 returnAction :: a -> Action a
-returnAction x = Action (\_c _p k _a s ser cli loc -> k s ser cli loc x)
+returnAction x = Action (\_c _p k _a s ser d -> k s ser d x)
 
 -- | Distributes the session and shutdown continuation,
 -- threads the state and cli.
 bindAction :: Action a -> (a -> Action b) -> Action b
-bindAction m f = Action (\c p k a s ser cli loc ->
-                          let next ns nser ncli nloc x =
-                                runAction (f x) c p k a ns nser ncli nloc
-                          in runAction m c p next a s ser cli loc)
+bindAction m f = Action (\c p k a s ser d ->
+                          let next ns nser nd x =
+                                runAction (f x) c p k a ns nser nd
+                          in runAction m c p next a s ser d)
 
 instance Monad Action where
   return = returnAction
@@ -56,55 +55,46 @@ instance Show (Action a) where
 
 instance MonadActionPure Action where
   tryWith exc m =
-    Action (\c p k a s ser cli loc ->
-             let runA msg = runAction (exc msg) c p k a s ser cli loc
-             in runAction m c p k runA s ser cli loc )
-  abortWith msg = Action (\_c _p _k a _s _ser _cli _loc -> a msg)
-  getGlobal     = Action (\_c _p k _a s ser cli loc -> k s ser cli loc s)
-  getsGlobal    = (`fmap` getGlobal)
-  getServer     = Action (\_c _p k _a s ser cli loc -> k s ser cli loc ser)
-  getsServer    = (`fmap` getServer)
-  getClient     = Action (\_c _p k _a s ser cli loc -> k s ser cli loc cli)
-  getsClient    = (`fmap` getClient)
-  getLocal      = Action (\_c _p k _a s ser cli loc -> k s ser cli loc loc)
-  getsLocal     = (`fmap` getLocal)
-  getsSession f = Action (\c _p k _a s ser cli loc -> k s ser cli loc (f c))
+    Action (\c p k a s ser d ->
+             let runA msg = runAction (exc msg) c p k a s ser d
+             in runAction m c p k runA s ser d)
+  abortWith msg = Action (\_c _p _k a _s _ser _d -> a msg)
+  getGlobal     = Action (\_c _p k _a s ser d -> k s ser d s)
+  getServer     = Action (\_c _p k _a s ser d -> k s ser d ser)
+  getDict       = Action (\_c _p k _a s ser d -> k s ser d d)
+  getsSession f = Action (\c _p k _a s ser d -> k s ser d (f c))
 
+-- TODO: make sure id is inlinded in put*
 instance MonadActionRO Action where
-  putGlobal ns   = Action (\_c _p k _a _s ser cli loc -> k ns ser cli loc ())
-  modifyGlobal f = Action (\_c _p k _a s ser cli loc -> k (f s) ser cli loc ())
-  putServer nser = Action (\_c _p k _a s _ser cli loc -> k s nser cli loc ())
-  modifyServer f = Action (\_c _p k _a s ser cli loc -> k s (f ser) cli loc ())
-  putClient ncli = Action (\_c _p k _a s ser _cli loc -> k s ser ncli loc ())
-  modifyClient f = Action (\_c _p k _a s ser cli loc -> k s ser (f cli) loc ())
-  putLocal nloc  = Action (\_c _p k _a s ser cli _loc -> k s ser cli nloc ())
-  modifyLocal f  = Action (\_c _p k _a s ser cli loc -> k s ser cli (f loc) ())
-  liftIO x       = Action (\_c _p k _a s ser cli loc -> x >>= k s ser cli loc)
+  modifyGlobal f = Action (\_c _p k _a s ser d -> k (f s) ser d ())
+  modifyServer f = Action (\_c _p k _a s ser d -> k s (f ser) d ())
+  modifyDict f   = Action (\_c _p k _a s ser d -> k s ser (f d) ())
+  liftIO x       = Action (\_c _p k _a s ser d -> x >>= k s ser d)
 
 instance MonadAction Action where
 
+-- TODO: make sure fmap is inlinded
 instance Functor Action where
   fmap f m =
-    Action (\c p k a s ser cli loc ->
-               runAction m c p (\s' ser' cli' loc' ->
-                                   k s' ser' cli' loc'. f) a s ser cli loc)
+    Action (\c p k a s ser d ->
+               runAction m c p (\s' ser' d' ->
+                                   k s' ser' d'. f) a s ser d)
 
 instance MonadReader Pers Action where
-  ask       = Action (\_c p k _a s ser cli loc -> k s ser cli loc p)
-  local f m = Action (\c p k a s ser cli loc ->
-                         runAction m c (f p) k a s ser cli loc)
+  ask       = Action (\_c p k _a s ser d -> k s ser d p)
+  local f m = Action (\c p k a s ser d ->
+                         runAction m c (f p) k a s ser d)
 
 -- | Run an action, with a given session, state and cli, in the @IO@ monad.
 executor :: Action ()
          -> FrontendSession -> Kind.COps -> Binding -> ConfigUI
-         -> State -> StateServer -> StateClient -> State -> IO ()
-executor m sfs scops sbinding sconfigUI state ser cli loc =
+         -> State -> StateServer -> StateDict -> IO ()
+executor m sfs scops sbinding sconfigUI s ser d =
   runAction m
     Session{..}
-    (dungeonPerception scops (sconfig ser) (sdebug cli) state)  -- create and cache perception
-    (\_ _ _ _ _ -> return ())  -- final continuation returns result
+    (dungeonPerception scops (sconfig ser) defDebugMode {-TODO:(sdebug cli)-} s)  -- create and cache perception
+    (\_ _ _ _ -> return ())  -- final continuation returns result
     (\msg -> fail $ T.unpack $ "unhandled abort:" <+> msg)  -- e.g., in AI code
-    state
+    s
     ser
-    cli
-    loc
+    d

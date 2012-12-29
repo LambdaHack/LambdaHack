@@ -60,11 +60,6 @@ import System.Time
 import qualified Game.LambdaHack.Action.ConfigIO as ConfigIO
 import Game.LambdaHack.Action.Frontend
 import Game.LambdaHack.MonadAction
---  ( MonadActionPure( tryWith, abortWith, getsSession
---                   , getGlobal, getsGlobal, getClient, getsClient )
---  , MonadActionRO(liftIO, putClient, modifyClient)
---  , MonadAction(putGlobal, modifyGlobal)
---  , Session (..))
 import Game.LambdaHack.Action.HighScore (register)
 import qualified Game.LambdaHack.Action.Save as Save
 import Game.LambdaHack.Actor
@@ -467,22 +462,21 @@ restartGame handleTurn = do
   sconfigUI <- askConfigUI
   scops <- getsGlobal scops
   shistory <- getsClient shistory
-  (state, ser, cli, loc) <- gameResetAction sconfigUI scops shistory
+  (state, ser, d) <- gameResetAction sconfigUI scops shistory ""
   putGlobal state
   putServer ser
-  putClient cli
-  putLocal loc
+  putDict d
   saveGameBkp
   handleTurn
 
 -- TODO: do this inside Action ()
-gameReset :: ConfigUI -> Kind.COps -> History
-          -> IO (State, StateServer, StateClient, State)
+gameReset :: ConfigUI -> Kind.COps -> History -> Msg
+          -> IO (State, StateServer, StateDict)
 gameReset configUI scops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
                                   , coitem=coitem@Kind.Ops{okind}
                                   , corule
                                   , costrat=Kind.Ops{opick=sopick}}
-          shistory = do
+          shistory msg = do
   -- Rules config reloaded at each new game start.
   (sconfig, dungeonGen, srandom) <- ConfigIO.mkConfigRules corule
   let rnd = do
@@ -514,19 +508,22 @@ gameReset configUI scops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
               defStateGlobal freshDungeon freshDepth sdiscoS sfaction
                                  scops sside entryLevel
             defSer = defStateServer sdiscoRev sflavour srandom sconfig
-            cli = defStateClient entryLoc entryLevel shistory
+            defCli = defStateClient entryLoc entryLevel shistory
             loc = defStateLocal freshDungeon freshDepth
                                     sdisco sfaction scops sside entryLevel
             (state, ser) =
               initialHeroes scops entryLoc configUI defState defSer
-        return (state, ser, cli, loc)
+            -- This overwrites the "Really save/quit?" messages.
+            cli = defCli {sreport = singletonReport msg}
+            d = IM.singleton sside (cli, loc)
+        return (state, ser, d)
   return $! St.evalState rnd dungeonGen
 
 gameResetAction :: MonadActionRO m
-                => ConfigUI -> Kind.COps -> History
-                -> m (State, StateServer, StateClient, State)
-gameResetAction configUI cops shistory =
-  liftIO $ gameReset configUI cops shistory
+                => ConfigUI -> Kind.COps -> History -> Msg
+                -> m (State, StateServer, StateDict)
+gameResetAction configUI cops shistory msg =
+  liftIO $ gameReset configUI cops shistory msg
 
 -- | Wire together content, the definitions of game commands,
 -- config and a high-level startup function
@@ -536,7 +533,7 @@ gameResetAction configUI cops shistory =
 -- and initialize the engine with the starting session.
 startFrontend :: MonadActionRO m
               => (m () -> FrontendSession -> Kind.COps -> Binding -> ConfigUI
-                  -> State -> StateServer -> StateClient -> State -> IO ())
+                  -> State -> StateServer -> StateDict -> IO ())
               -> Kind.COps -> m () -> IO ()
 startFrontend executor !cops@Kind.COps{corule, cotile=tile} handleTurn = do
   -- Compute and insert auxiliary optimized components into game content,
@@ -562,7 +559,7 @@ startFrontend executor !cops@Kind.COps{corule, cotile=tile} handleTurn = do
 -- Then call the main game loop.
 start :: MonadActionRO m
       => (m () -> FrontendSession -> Kind.COps -> Binding -> ConfigUI
-          -> State -> StateServer -> StateClient -> State -> IO ())
+          -> State -> StateServer -> StateDict -> IO ())
       -> FrontendSession -> Kind.COps -> Binding -> ConfigUI
       -> m () -> IO ()
 start executor sfs scops@Kind.COps{corule} sbinding sconfigUI handleGame = do
@@ -571,20 +568,18 @@ start executor sfs scops@Kind.COps{corule} sbinding sconfigUI handleGame = do
   restored <- Save.restoreGame sconfigUI pathsDataFile title
   case restored of
     Right (shistory, msg) -> do  -- Starting a new game.
-      (state, ser, cli, loc) <- gameReset sconfigUI scops shistory
+      (state, ser, d) <- gameReset sconfigUI scops shistory msg
       executor handleGame sfs scops sbinding sconfigUI
         state
         ser
-        cli{sreport = singletonReport msg}
-        loc
+        d
         -- TODO: gameReset >> handleTurn or defState {squit=Reset}
     Left (state, ser, cli, loc, msg) ->  -- Running a restored game.
       executor handleGame sfs scops sbinding sconfigUI
         state {scops}  -- overwritten by recreated cops
         ser
-        -- This overwrites the "Really save/quit?" messages.
-        cli{sreport = singletonReport msg}
-        loc {scops}  -- overwritten by recreated cops
+        (IM.singleton (sside state) ( cli{sreport = singletonReport msg}
+                                    , loc {scops} ))
 
 -- | Debugging.
 debug :: MonadActionRO m => Text -> m ()

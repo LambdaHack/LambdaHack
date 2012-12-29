@@ -8,8 +8,10 @@ module Game.LambdaHack.MonadAction
   ( Session(..), MonadActionPure(..), MonadActionRO(..), MonadAction
   ) where
 
+import Control.Arrow (first, second)
 import Control.Monad.Reader.Class
 import Control.Monad.Writer.Strict (WriterT (WriterT, runWriterT), lift)
+import qualified Data.IntMap as IM
 
 import Game.LambdaHack.Action.Frontend
 import Game.LambdaHack.Binding
@@ -36,12 +38,27 @@ class (Monad m, Functor m, MonadReader Pers m, Show (m ()))
   abortWith   :: MonadActionPure m => Msg -> m a
   getGlobal   :: m State
   getsGlobal  :: (State -> a) -> m a
+  getsGlobal  = (`fmap` getGlobal)
   getServer   :: m StateServer
   getsServer  :: (StateServer -> a) -> m a
+  getsServer  = (`fmap` getServer)
+  getDict     :: m StateDict
+  getsDict    :: (StateDict -> a) -> m a
+  getsDict    = (`fmap` getDict)
   getClient   :: m StateClient
+  getClient   = do
+    State{sside} <- getGlobal
+    d <- getDict
+    return $! fst $! d IM.! sside
   getsClient  :: (StateClient -> a) -> m a
+  getsClient  = (`fmap` getClient)
   getLocal    :: m State
+  getLocal    = do
+    State{sside} <- getGlobal
+    d <- getDict
+    return $! snd $! d IM.! sside
   getsLocal   :: (State -> a) -> m a
+  getsLocal   = (`fmap` getLocal)
   getsSession :: (Session -> a) -> m a
 
 instance MonadActionPure m => MonadActionPure (WriterT Slideshow m) where
@@ -49,40 +66,43 @@ instance MonadActionPure m => MonadActionPure (WriterT Slideshow m) where
     WriterT $ tryWith (\msg -> runWriterT (exc msg)) (runWriterT m)
   abortWith   = lift . abortWith
   getGlobal   = lift getGlobal
-  getsGlobal  = lift . getsGlobal
   getServer   = lift getServer
-  getsServer  = lift . getsServer
-  getClient   = lift getClient
-  getsClient  = lift . getsClient
-  getLocal    = lift getLocal
-  getsLocal   = lift . getsLocal
+  getDict     = lift getDict
   getsSession = lift . getsSession
 
 instance MonadActionPure m => Show (WriterT Slideshow m a) where
   show _ = "an action"
 
 class MonadActionPure m => MonadActionRO m where
-  putGlobal    :: State -> m ()
   modifyGlobal :: (State -> State) -> m ()
-  putServer    :: StateServer -> m ()
+  putGlobal    :: State -> m ()
+  putGlobal    = modifyGlobal . const
   modifyServer :: (StateServer -> StateServer) -> m ()
-  putClient    :: StateClient -> m ()
+  putServer    :: StateServer -> m ()
+  putServer    = modifyServer . const
+  modifyDict   :: (StateDict -> StateDict) -> m ()
+  putDict      :: StateDict -> m ()
+  putDict      = modifyDict . const
   modifyClient :: (StateClient -> StateClient) -> m ()
-  putLocal     :: State -> m ()
+  modifyClient f = do
+    State{sside} <- getGlobal
+    modifyDict (IM.adjust (first f) sside)
+  putClient    :: StateClient -> m ()
+  putClient    = modifyClient . const
   modifyLocal  :: (State -> State) -> m ()
+  modifyLocal f = do
+    State{sside} <- getGlobal
+    modifyDict (IM.adjust (second f) sside)
+  putLocal     :: State -> m ()
+  putLocal     = modifyLocal . const
   -- We do not provide a MonadIO instance, so that outside of Action/
   -- nobody can subvert the action monads by invoking arbitrary IO.
   liftIO       :: IO a -> m a
 
 instance MonadActionRO m => MonadActionRO (WriterT Slideshow m) where
-  putGlobal    = lift . putGlobal
   modifyGlobal = lift . modifyGlobal
-  putServer    = lift . putServer
   modifyServer = lift . modifyServer
-  putClient    = lift . putClient
-  modifyClient = lift . modifyClient
-  putLocal     = lift . putLocal
-  modifyLocal  = lift . modifyLocal
+  modifyDict   = lift . modifyDict
   liftIO       = lift . liftIO
 
 class MonadActionRO m => MonadAction m where

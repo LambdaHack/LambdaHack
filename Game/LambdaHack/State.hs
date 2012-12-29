@@ -6,6 +6,7 @@ module Game.LambdaHack.State
   , State(..), defStateGlobal, defStateLocal
   , StateServer(..), defStateServer
   , StateClient(..), defStateClient, defHistory
+  , StateDict
     -- * Accessor
   , getArena, getTime
     -- * State update
@@ -13,7 +14,7 @@ module Game.LambdaHack.State
     -- * Textual description
   , lookAt
     -- * Debug flags
-  , DebugMode(..), cycleMarkVision, toggleOmniscient
+  , DebugMode(..), defDebugMode, cycleMarkVision, toggleOmniscient
   ) where
 
 import Data.Binary
@@ -72,6 +73,9 @@ data StateClient = StateClient
   , slastKey :: !(Maybe K.KM)  -- ^ last command key pressed
   , sdebug   :: !DebugMode     -- ^ debugging mode
   }
+
+-- | All client and local state, indexed by faction identifier.
+type StateDict = IM.IntMap (StateClient, State)
 
 -- | All factions in the game, indexed by faction identifier.
 type FactionDict = IM.IntMap Faction
