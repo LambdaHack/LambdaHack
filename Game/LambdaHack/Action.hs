@@ -5,9 +5,15 @@
 -- and @MonadAction@.
 module Game.LambdaHack.Action
   ( -- * Action monads
-    MonadActionPure(getGlobal, getsGlobal, getClient, getsClient)
-  , MonadActionRO(putClient, modifyClient)
-  , MonadAction(putGlobal, modifyGlobal)
+    MonadActionPure( getGlobal, getsGlobal
+                   , getServer, getsServer
+                   , getClient, getsClient
+                   , getLocal, getsLocal )
+  , MonadActionRO( putGlobal, modifyGlobal
+                 , putServer, modifyServer
+                 , putClient, modifyClient
+                 , putLocal, modifyLocal )
+  , MonadAction
     -- * The Perception Reader
   , withPerception, askPerception
     -- * Accessors to the game session Reader
@@ -18,7 +24,7 @@ module Game.LambdaHack.Action
   , abort, abortWith, abortIfWith, neverMind
     -- * Abort exception handlers
   , tryWith, tryRepeatedlyWith, tryIgnore
-    -- * StateClient and report
+    -- * History and report
   , msgAdd, recordHistory
     -- * Key input
   , getKeyCommand, getKeyOverlayCommand, getManyConfirms
@@ -54,11 +60,11 @@ import System.Time
 import qualified Game.LambdaHack.Action.ConfigIO as ConfigIO
 import Game.LambdaHack.Action.Frontend
 import Game.LambdaHack.MonadAction
-  ( MonadActionPure( tryWith, abortWith, getsSession
-                   , getGlobal, getsGlobal, getClient, getsClient )
-  , MonadActionRO(liftIO, putClient, modifyClient)
-  , MonadAction(putGlobal, modifyGlobal)
-  , Session (..))
+--  ( MonadActionPure( tryWith, abortWith, getsSession
+--                   , getGlobal, getsGlobal, getClient, getsClient )
+--  , MonadActionRO(liftIO, putClient, modifyClient)
+--  , MonadAction(putGlobal, modifyGlobal)
+--  , Session (..))
 import Game.LambdaHack.Action.HighScore (register)
 import qualified Game.LambdaHack.Action.Save as Save
 import Game.LambdaHack.Actor
@@ -100,7 +106,7 @@ msgAdd msg = modifyClient $ \d -> d {sreport = addMsg (sreport d) msg}
 
 -- | Wipe out and set a new value for the history.
 historyReset :: MonadActionRO m => History -> m ()
-historyReset shistory = modifyClient $ \StateClient{sreport} -> StateClient{..}
+historyReset shistory = modifyClient $ \cli -> cli {shistory}
 
 -- | Wipe out and set a new value for the current report.
 msgReset :: MonadActionRO m => Msg -> m ()
@@ -111,16 +117,18 @@ withPerception :: MonadActionPure m => m () -> m ()
 withPerception m = do
   cops <- getsGlobal scops
   s <- getGlobal
-  let per = dungeonPerception cops s
+  sconfig <- getsServer sconfig
+  sdebug <- getsClient sdebug
+  let per = dungeonPerception cops sconfig sdebug s
   local (const per) m
 
 -- | Get the current perception.
 askPerception :: MonadActionPure m => m Perception
 askPerception = do
-  lid <- getsGlobal slid
+  lid <- getsLocal slid
   pers <- ask
-  sfaction <- getsGlobal sfaction
-  return $! pers IM.! sfaction M.! lid
+  sside <- getsLocal sside
+  return $! pers IM.! sside M.! lid
 
 -- | Reset the state and resume from the last backup point, i.e., invoke
 -- the failure continuation.
@@ -279,7 +287,7 @@ promptToSlideshow prompt = overlayToSlideshow prompt []
 -- of the screen are displayed below. As many slides as needed are shown.
 overlayToSlideshow :: MonadActionPure m => Msg -> Overlay -> m Slideshow
 overlayToSlideshow prompt overlay = do
-  lysize <- getsGlobal (lysize . slevel)
+  lysize <- getsLocal (lysize . slevel)
   StateClient{sreport} <- getClient
   let msg = splitReport (addMsg sreport prompt)
   return $! splitOverlay lysize msg overlay
@@ -287,18 +295,22 @@ overlayToSlideshow prompt overlay = do
 -- | Draw the current level with the overlay on top.
 drawOverlay :: MonadActionPure m => ColorMode -> Overlay -> m SingleFrame
 drawOverlay dm over = do
-  cops <- getsGlobal scops
+  cops <- getsLocal scops
   per <- askPerception
-  s <- getGlobal
-  return $! draw dm cops per s over
+  glo <- getGlobal
+  cli <- getClient
+  loc <- getLocal
+  DebugMode{somniscient} <- getsClient sdebug
+  let state = if somniscient then glo else loc
+  return $! draw dm cops per cli state over
 
 -- | Push the frame depicting the current level to the frame queue.
 -- Only one screenful of the report is shown, the rest is ignored.
 displayPush :: MonadActionRO m => m ()
 displayPush = do
   fs <- askFrontendSession
-  s  <- getGlobal
-  pl <- getsGlobal splayer
+  s  <- getLocal
+  pl <- getsLocal splayer
   sli <- promptToSlideshow ""
   frame <- drawOverlay ColorFull $ head $ runSlideshow sli
   -- Visually speed up (by remving all empty frames) the show of the sequence
@@ -321,34 +333,40 @@ startClip action =
 remember :: MonadAction m => m ()
 remember = do
   per <- askPerception
-  rememberList $ totalVisible per
+  lvl <- getsGlobal slevel
+  rememberList (totalVisible per) lvl
+  splayer <- getsGlobal splayer
+  modifyLocal (\loc -> loc {splayer})
+  slid <- getsGlobal slid
+  modifyLocal (\loc -> loc {slid})
 
 -- | Update heroes memory at the given list of locations.
-rememberList :: MonadAction m => IS.IntSet -> m ()
-rememberList visible = do
+rememberList :: MonadAction m => IS.IntSet -> Level -> m ()
+rememberList visible lvl = do
   let vis = IS.toList visible
-  Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getsGlobal scops
-  lvl <- getsGlobal slevel
-  clvl <- getsGlobal slevelClient
+  Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getsLocal scops
+  clvl <- getsLocal slevel
   let rememberTile = [(loc, lvl `at` loc) | loc <- vis]
       unknownId = ouniqGroup "unknown space"
-      newClear (loc, tk) = clvl `rememberAt` loc == unknownId
+      newClear (loc, tk) = clvl `at` loc == unknownId
                            && Tile.isExplorable cotile tk
       clearN = length $ filter newClear rememberTile
-  modifyGlobal (updateLevelClient (updateLRMap (Kind.// rememberTile)))
-  modifyGlobal (updateLevelClient
-                  (\ l@LevelClient{lcseen} -> l {lcseen = lcseen + clearN}))
+  modifyLocal (updateLevel (updateLMap (Kind.// rememberTile)))
+  modifyLocal (updateLevel
+                  (\ l@Level{lseen} -> l {lseen = lseen + clearN}))
   let alt Nothing   _ = Nothing
       alt (Just []) _ = assert `failure` lvl
       alt x         _ = x
       rememberItem p m = IM.alter (alt $ IM.lookup p $ litem lvl) p m
-  modifyGlobal (updateLevelClient
-                  (updateIRMap (\ m -> foldr rememberItem m vis)))
+  modifyLocal (updateLevel
+                 (updateIMap (\ m -> foldr rememberItem m vis)))
   let cactor = IM.filter (\m -> bloc m `IS.member` visible) (lactor lvl)
       cinv   = IM.filterWithKey (\p _ -> p `IM.member` cactor) (linv lvl)
-  modifyGlobal (updateLevelClient
-                  (updateCActor (const cactor)
-                  . updateCInv (const cinv)))
+  modifyLocal (updateLevel
+                 (updateActor (const cactor)
+                  . updateInv (const cinv)))
+  modifyLocal (updateTime (const $ ltime lvl))
+-- TODO: update lcsmell too, probably only around a smelling party member
 
 -- | Save the cli and a backup of the save game file, in case of crashes.
 --
@@ -356,14 +374,16 @@ rememberList visible = do
 saveGameBkp :: MonadActionRO m => m ()
 saveGameBkp = do
   state <- getGlobal
+  ser <- getServer
   cli <- getClient
+  loc <- getLocal
   configUI <- askConfigUI
-  liftIO $ Save.saveGameBkp configUI state cli
+  liftIO $ Save.saveGameBkp configUI state ser cli loc
 
 -- | Dumps the current game rules configuration to a file.
 dumpCfg :: MonadActionRO m => FilePath -> m ()
 dumpCfg fn = do
-  config <- getsGlobal sconfig
+  config <- getsServer sconfig
   liftIO $ ConfigIO.dump config fn
 
 -- | Handle current score and display it with the high scores.
@@ -376,7 +396,7 @@ handleScores :: MonadActionRO m => Bool -> Status -> Int -> m ()
 handleScores write status total =
   when (total /= 0) $ do
     configUI <- askConfigUI
-    time <- getsGlobal stime
+    time <- getsLocal stime
     curDate <- liftIO getClockTime
     slides <- liftIO $ register configUI write total time curDate status
     go <- getManyConfirms [] slides
@@ -385,8 +405,11 @@ handleScores write status total =
 -- | Continue or restart or exit the game.
 endOrLoop :: MonadAction m => m () -> m ()
 endOrLoop handleTurn = do
-  squit <- getsGlobal squit
+  squit <- getsServer squit
   s <- getGlobal
+  ser <- getServer
+  cli <- getClient
+  loc <- getLocal
   configUI <- askConfigUI
   let (_, total) = calculateTotal s
   -- The first, boolean component of squit determines
@@ -397,7 +420,7 @@ endOrLoop handleTurn = do
     Just (_, status@Camping) -> do
       -- Save and display in parallel.
       mv <- liftIO newEmptyMVar
-      liftIO $ void $ forkIO (Save.saveGameFile configUI s
+      liftIO $ void $ forkIO (Save.saveGameFile configUI s ser cli loc
                               `finally` putMVar mv ())
       tryIgnore $ do
         handleScores False status total
@@ -441,30 +464,35 @@ restartGame :: MonadAction m => m () -> m ()
 restartGame handleTurn = do
   -- Take the original config from config file, to reroll RNG, if needed
   -- (the current config file has the RNG rolled for the previous game).
-  configUI <- askConfigUI
-  cops <- getsGlobal scops
-  state <- gameResetAction configUI cops
-  modifyGlobal $ const state
+  sconfigUI <- askConfigUI
+  scops <- getsGlobal scops
+  shistory <- getsClient shistory
+  (state, ser, cli, loc) <- gameResetAction sconfigUI scops shistory
+  putGlobal state
+  putServer ser
+  putClient cli
+  putLocal loc
   saveGameBkp
   handleTurn
 
 -- TODO: do this inside Action ()
-gameReset :: ConfigUI -> Kind.COps -> IO State
-gameReset configUI cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
-                                 , coitem=coitem@Kind.Ops{okind}
-                                 , corule
-                                 , costrat=Kind.Ops{opick=sopick}
-                                 , cotile} = do
+gameReset :: ConfigUI -> Kind.COps -> History
+          -> IO (State, StateServer, StateClient, State)
+gameReset configUI scops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
+                                  , coitem=coitem@Kind.Ops{okind}
+                                  , corule
+                                  , costrat=Kind.Ops{opick=sopick}}
+          shistory = do
   -- Rules config reloaded at each new game start.
   (sconfig, dungeonGen, srandom) <- ConfigIO.mkConfigRules corule
   let rnd = do
         sflavour <- dungeonFlavourMap coitem
-        (discoS, discoRev) <- serverDiscos coitem
+        (sdiscoS, sdiscoRev) <- serverDiscos coitem
         let f ik = isymbol (okind ik)
                    `notElem` (ritemProject $ Kind.stdRuleset corule)
-            disco = M.filter f discoS
+            sdisco = M.filter f sdiscoS
         DungeonState.FreshDungeon{..} <-
-          DungeonState.generate cops sflavour discoRev sconfig
+          DungeonState.generate scops sflavour sdiscoRev sconfig
         let factionName = configFaction sconfig
         playerFactionKindId <- opick factionName (const True)
         let g gkind fk mk = do
@@ -478,20 +506,27 @@ gameReset configUI cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
                 else fmap Just $ sopick (fAiSelected fk) (const True)
               gAiIdle <- sopick (fAiIdle fk) (const True)
               return (IM.insert k Faction{..} m, k + 1)
-        sfactions <- fmap fst $ ofoldrWithKey g (return (IM.empty, 0))
-        let sfaction = fst $ fromJust
+        sfaction <- fmap fst $ ofoldrWithKey g (return (IM.empty, 0))
+        let sside = fst $ fromJust
                        $ find (\(_, fa) -> isNothing (gAiSelected fa))
-                       $ IM.toList sfactions
-            state = defaultState cotile sflavour
-                                 disco discoS discoRev
-                                 freshDungeon freshDepth entryLevel srandom
-                                 sconfig sfaction sfactions cops entryLoc
-        return $ initialHeroes cops entryLoc configUI state
+                       $ IM.toList sfaction
+            defState =
+              defaultStateGlobal freshDungeon freshDepth sdiscoS sfaction
+                                 scops sside entryLevel
+            defSer = defaultStateServer sdiscoRev sflavour srandom sconfig
+            cli = defaultStateClient entryLoc entryLevel shistory
+            loc = defaultStateLocal freshDungeon freshDepth
+                                    sdisco sfaction scops sside entryLevel
+            (state, ser) =
+              initialHeroes scops entryLoc configUI defState defSer
+        return (state, ser, cli, loc)
   return $! St.evalState rnd dungeonGen
 
 gameResetAction :: MonadActionRO m
-                => ConfigUI -> Kind.COps -> m State
-gameResetAction configUI cops = liftIO $ gameReset configUI cops
+                => ConfigUI -> Kind.COps -> History
+                -> m (State, StateServer, StateClient, State)
+gameResetAction configUI cops shistory =
+  liftIO $ gameReset configUI cops shistory
 
 -- | Wire together content, the definitions of game commands,
 -- config and a high-level startup function
@@ -501,7 +536,7 @@ gameResetAction configUI cops = liftIO $ gameReset configUI cops
 -- and initialize the engine with the starting session.
 startFrontend :: MonadActionRO m
               => (m () -> FrontendSession -> Kind.COps -> Binding -> ConfigUI
-                  -> State -> StateClient -> IO ())
+                  -> State -> StateServer -> StateClient -> State -> IO ())
               -> Kind.COps -> m () -> IO ()
 startFrontend executor !cops@Kind.COps{corule, cotile=tile} handleTurn = do
   -- Compute and insert auxiliary optimized components into game content,
@@ -519,7 +554,7 @@ startFrontend executor !cops@Kind.COps{corule, cotile=tile} handleTurn = do
         handleTurn
         cli <- getClient
         -- Save cli often, at each game exit, in case of crashes.
-        liftIO $ Save.rmBkpSaveStateClient sconfigUI cli
+        liftIO $ Save.rmBkpSaveHistory sconfigUI cli
       loop sfs = start executor sfs scops sbinding sconfigUI handleGame
   startup font loop
 
@@ -527,7 +562,7 @@ startFrontend executor !cops@Kind.COps{corule, cotile=tile} handleTurn = do
 -- Then call the main game loop.
 start :: MonadActionRO m
       => (m () -> FrontendSession -> Kind.COps -> Binding -> ConfigUI
-          -> State -> StateClient -> IO ())
+          -> State -> StateServer -> StateClient -> State -> IO ())
       -> FrontendSession -> Kind.COps -> Binding -> ConfigUI
       -> m () -> IO ()
 start executor sfs scops@Kind.COps{corule} sbinding sconfigUI handleGame = do
@@ -535,17 +570,21 @@ start executor sfs scops@Kind.COps{corule} sbinding sconfigUI handleGame = do
       pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
   restored <- Save.restoreGame sconfigUI pathsDataFile title
   case restored of
-    Right (cli, msg) -> do  -- Starting a new game.
-      state <- gameReset sconfigUI scops
+    Right (shistory, msg) -> do  -- Starting a new game.
+      (state, ser, cli, loc) <- gameReset sconfigUI scops shistory
       executor handleGame sfs scops sbinding sconfigUI
         state
+        ser
         cli{sreport = singletonReport msg}
+        loc
         -- TODO: gameReset >> handleTurn or defaultState {squit=Reset}
-    Left (state, cli, msg) ->  -- Running a restored game.
+    Left (state, ser, cli, loc, msg) ->  -- Running a restored game.
       executor handleGame sfs scops sbinding sconfigUI
-        state{scops}  -- overwritten by recreated cops
+        state {scops}  -- overwritten by recreated cops
+        ser
         -- This overwrites the "Really save/quit?" messages.
         cli{sreport = singletonReport msg}
+        loc {scops}  -- overwritten by recreated cops
 
 -- | Debugging.
 debug :: MonadActionRO m => Text -> m ()

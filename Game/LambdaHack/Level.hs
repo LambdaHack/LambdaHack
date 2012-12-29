@@ -3,21 +3,19 @@
 module Game.LambdaHack.Level
   ( -- * The @Level@ type and its components
     ActorDict, InvDict, SmellMap, SecretMap, ItemMap, TileMap
-  , Level(..), LevelClient(..)
+  , Level(..)
     -- * Level update
-  , updateActor, updateInv, updateCActor, updateCInv
-  , updateSmell, updateIMap, updateIRMap, updateLMap, updateLRMap, dropItemsAt
+  , updateActor, updateInv, updateSmell, updateIMap, updateLMap, dropItemsAt
     -- * Level query
-  , at, rememberAt, atI, rememberAtI
-  , accessible, openable, findLoc, findLocTry
+  , at, atI, accessible, openable, findLoc, findLocTry
     -- * Dungeon
   , LevelId, levelNumber, levelDefault, Dungeon
   ) where
 
 import Data.Binary
 import qualified Data.IntMap as IM
-import qualified Data.Map as M
 import qualified Data.List as L
+import qualified Data.Map as M
 import Data.Text (Text)
 
 import Game.LambdaHack.Actor
@@ -51,30 +49,21 @@ type ItemMap = IM.IntMap [Item]
 -- | Tile kinds on the map.
 type TileMap = Kind.Array Point TileKind
 
--- | A single, inhabited dungeon level, Server data.
+-- | A view on single, inhabited dungeon level.
 data Level = Level
-  { lactor  :: !ActorDict       -- ^ all actors on the level
-  , linv    :: !InvDict         -- ^ items belonging to actors
+  { lactor  :: !ActorDict       -- ^ remembered actors on the level
+  , linv    :: !InvDict         -- ^ remembered actor inventories
+  , litem   :: !ItemMap         -- ^ remembered items on the level
+  , lmap    :: !TileMap         -- ^ remembered level map
   , lxsize  :: !X               -- ^ width of the level
   , lysize  :: !Y               -- ^ height of the level
-  , lsmell  :: !SmellMap        -- ^ smells
-  , lsecret :: !SecretMap       -- ^ secrecy values
-  , litem   :: !ItemMap         -- ^ items on the ground
-  , lmap    :: !TileMap         -- ^ map tiles
-  , ldesc   :: !Text            -- ^ level description for the player
-  , lstairs :: !(Point, Point)  -- ^ destination of the (up, down) stairs
-  , ltime   :: !Time            -- ^ date of the last activity on the level
+  , lsmell  :: !SmellMap        -- ^ remembered smells on the level
+  , ldesc   :: !Text            -- ^ level description
+  , lstairs :: !(Point, Point)  -- ^ destination of (up, down) stairs
+  , lseen   :: !Int             -- ^ number of clear tiles already seen
   , lclear  :: !Int             -- ^ total number of clear tiles
-  }
-  deriving Show
-
--- | A single, inhabited dungeon level. Per-faction data.
-data LevelClient = LevelClient
-  { lcactor :: !ActorDict       -- ^ all actors on the level
-  , lcinv   :: !InvDict         -- ^ items belonging to actors
-  , lcitem  :: !ItemMap         -- ^ remembered items on the ground
-  , lcmap   :: !TileMap         -- ^ remembered map tiles
-  , lcseen  :: !Int             -- ^ number of clear tiles already seen
+  , ltime   :: !Time            -- ^ date of the last activity on the level
+  , lsecret :: !SecretMap       -- ^ remembered secrecy values
   }
   deriving Show
 
@@ -82,17 +71,9 @@ data LevelClient = LevelClient
 updateActor :: (ActorDict -> ActorDict) -> Level -> Level
 updateActor f lvl = lvl { lactor = f (lactor lvl) }
 
--- | Update the hero and monster maps.
-updateCActor :: (ActorDict -> ActorDict) -> LevelClient -> LevelClient
-updateCActor f lvl = lvl { lcactor = f (lcactor lvl) }
-
 -- | Update the hero items and monster items maps.
 updateInv :: (InvDict -> InvDict) -> Level -> Level
 updateInv f lvl = lvl { linv = f (linv lvl) }
-
--- | Update the hero items and monster items maps.
-updateCInv :: (InvDict -> InvDict) -> LevelClient -> LevelClient
-updateCInv f lvl = lvl { lcinv = f (lcinv lvl) }
 
 -- | Update the smell map.
 updateSmell :: (SmellMap -> SmellMap) -> Level -> Level
@@ -102,17 +83,9 @@ updateSmell f lvl = lvl { lsmell = f (lsmell lvl) }
 updateIMap :: (ItemMap -> ItemMap) -> Level -> Level
 updateIMap f lvl = lvl { litem = f (litem lvl) }
 
--- | Update a faction's items on the ground map.
-updateIRMap :: (ItemMap -> ItemMap) -> LevelClient -> LevelClient
-updateIRMap f lvl = lvl { lcitem = f (lcitem lvl) }
-
 -- | Update the tile map.
 updateLMap :: (TileMap -> TileMap) -> Level -> Level
 updateLMap f lvl = lvl { lmap = f (lmap lvl) }
-
--- | Update a faction's remembered tile maps.
-updateLRMap :: (TileMap -> TileMap) -> LevelClient -> LevelClient
-updateLRMap f lvl = lvl { lcmap = f (lcmap lvl) }
 
 -- Note: do not scatter items around, it's too much work for the player.
 -- | Place all items on the list at a location on the level.
@@ -132,61 +105,40 @@ instance Binary Level where
   put Level{..} = do
     put lactor
     put linv
+    put (assertSparseItems litem)
+    put lmap
     put lxsize
     put lysize
     put lsmell
-    put lsecret
-    put (assertSparseItems litem)
-    put lmap
     put ldesc
     put lstairs
-    put ltime
+    put lseen
     put lclear
+    put ltime
+    put lsecret
   get = do
     lactor <- get
     linv <- get
+    litem <- get
+    lmap <- get
     lxsize <- get
     lysize <- get
     lsmell <- get
-    lsecret <- get
-    litem <- get
-    lmap <- get
     ldesc <- get
     lstairs <- get
-    ltime <- get
+    lseen <- get
     lclear <- get
+    ltime <- get
+    lsecret <- get
     return Level{..}
-
-instance Binary LevelClient where
-  put LevelClient{..} = do
-    put lcactor
-    put lcinv
-    put (assertSparseItems lcitem)
-    put lcmap
-    put lcseen
-  get = do
-    lcactor <- get
-    lcinv <- get
-    lcitem <- get
-    lcmap <- get
-    lcseen <- get
-    return LevelClient{..}
 
 -- | Query for tile kinds on the map.
 at :: Level -> Point -> Kind.Id TileKind
 at Level{lmap}  p = lmap Kind.! p
 
--- | Query for remembered tile kinds on the map.
-rememberAt :: LevelClient -> Point -> Kind.Id TileKind
-rememberAt LevelClient{lcmap} p = lcmap Kind.! p
-
 -- | Query for items on the ground.
 atI :: Level -> Point -> [Item]
 atI Level{litem} p = IM.findWithDefault [] p litem
-
--- | Query for remembered items on the ground.
-rememberAtI :: LevelClient -> Point -> [Item]
-rememberAtI LevelClient{lcitem} p = IM.findWithDefault [] p lcitem
 
 -- | Check whether one location is accessible from another,
 -- using the formula from the standard ruleset.
@@ -257,4 +209,4 @@ levelDefault :: Int -> LevelId
 levelDefault = LambdaCave
 
 -- | The complete dungeon is a map from level names to levels.
-type Dungeon a = M.Map LevelId a
+type Dungeon = M.Map LevelId Level

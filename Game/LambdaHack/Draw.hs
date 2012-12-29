@@ -44,18 +44,18 @@ data ColorMode =
 -- TODO: split up and generally rewrite.
 -- | Draw the whole screen: level map, status area and, at most,
 -- a single page overlay of text divided into lines.
-draw :: ColorMode -> Kind.COps -> Perception -> State -> Overlay
+draw :: ColorMode -> Kind.COps -> Perception -> StateClient -> State -> Overlay
      -> SingleFrame
-draw dm cops per s@State{ scursor=Cursor{..}
-                        , sdisco, slid, splayer, sdebug
-                        } overlay =
+draw dm cops per
+     StateClient{ scursor=Cursor{..}, sdebug }
+     s@State{ sdisco, slid, splayer }
+     overlay =
   let Kind.COps{ coactor=Kind.Ops{okind}
                , coitem=Kind.Ops{okind=iokind}
                , cotile=Kind.Ops{okind=tokind, ouniqGroup} } = cops
-      DebugMode{smarkVision, somniscient} = sdebug
-      lvl@Level{lxsize, lysize, lsmell, ldesc, lactor, ltime, lclear} =
+      DebugMode{smarkVision} = sdebug
+      lvl@Level{lxsize, lysize, lsmell, ldesc, lactor, ltime, lseen, lclear} =
         slevel s
-      clvl@LevelClient{lcseen} = slevelClient s
       (_, mpl@Actor{bkind, bhp, bloc}, bitems) = findActorAnyLevel splayer s
       ActorKind{ahp, asmell} = okind bkind
       reachable = debugTotalReachable per
@@ -66,8 +66,7 @@ draw dm cops per s@State{ scursor=Cursor{..}
         Just _  -> (False, True)
         Nothing | asmell -> (True, False)
         Nothing -> (False, False)
-      lAt    = if somniscient then at lvl else rememberAt clvl
-      liAt   = if somniscient then atI lvl else rememberAtI clvl
+      -- TODO:
       sVisBG = if sVis
                then \ vis rea -> if vis
                                  then Color.Blue
@@ -89,9 +88,9 @@ draw dm cops per s@State{ scursor=Cursor{..}
       bl = fromMaybe [] $ bla lxsize lysize ceps bloc clocation
       dis pxy =
         let loc0 = toPoint lxsize pxy
-            tile = lAt loc0
+            tile = lvl `at` loc0
             tk = tokind tile
-            items = liAt loc0
+            items = lvl `atI` loc0
             sml = IM.findWithDefault timeZero loc0 lsmell
             smlt = sml `timeAdd` timeNegate ltime
             viewActor loc Actor{bkind = bkind2, bsymbol, bcolor}
@@ -123,7 +122,7 @@ draw dm cops per s@State{ scursor=Cursor{..}
                                  (True, False)  -> Color.BrRed
                                  (False, True)  -> Color.Green
                                  (False, False) -> Color.Red)
-                (Just m, _) | somniscient || vis -> viewActor loc0 m
+                (Just m, _) -> viewActor loc0 m
                 _ | sSml && smlt > timeZero ->
                   (timeToDigit smellTimeout smlt, rainbow loc0)
                   | otherwise ->
@@ -149,7 +148,7 @@ draw dm cops per s@State{ scursor=Cursor{..}
         in case over pxy of
              Just c -> Color.AttrChar Color.defaultAttr c
              _      -> Color.AttrChar a char
-      seenN = 100 * lcseen `div` lclear
+      seenN = 100 * lseen `div` lclear
       seenTxt | seenN == 100 = "all"
               | otherwise = T.justifyRight 2 ' ' (showT seenN) <> "%"
       -- Indicate the actor is braced (was waiting last move).
@@ -179,11 +178,11 @@ draw dm cops per s@State{ scursor=Cursor{..}
   in SingleFrame{..}
 
 -- | Render animations on top of the current screen frame.
-animate :: State -> StateClient -> Kind.COps -> Perception -> Animation
+animate :: StateClient -> State -> Kind.COps -> Perception -> Animation
         -> Frames
-animate s StateClient{sreport} cops per anim =
-  let Level{lxsize, lysize} = slevel s
+animate cli@StateClient{sreport} loc cops per anim =
+  let Level{lxsize, lysize} = slevel loc
       over = renderReport sreport
       topLineOnly = padMsg lxsize over
-      basicFrame = draw ColorFull cops per s [topLineOnly]
+      basicFrame = draw ColorFull cops per cli loc [topLineOnly]
   in rederAnim lxsize lysize basicFrame anim

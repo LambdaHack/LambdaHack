@@ -23,6 +23,8 @@ import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 
+-- TODO: check all Global to Local
+
 -- | Start running in the given direction and with the given number
 -- of tiles already traversed (usually 0). The first turn of running
 -- succeeds much more often than subsequent turns, because most
@@ -34,7 +36,7 @@ run (dir, dist) = do
   pl <- getsGlobal splayer
   locHere <- getsGlobal (bloc . getPlayerBody)
   lvl <- getsGlobal slevel
-  targeting <- getsGlobal (ctargeting . scursor)
+  targeting <- getsClient (ctargeting . scursor)
   assert (targeting == TgtOff `blame` (dir, dist, targeting, "/= TgtOff")) $ do
     let accessibleDir loc d = accessible cops lvl loc (loc `shift` d)
         -- Do not count distance if we just open a door.
@@ -155,8 +157,8 @@ continueRun (dirLast, distLast) = do
   per <- askPerception
   StateClient{sreport} <- getClient
   ms  <- getsGlobal dangerousList
-  sfaction <- getsGlobal sfaction
-  hs <- getsGlobal (factionList [sfaction])
+  sside <- getsGlobal sside
+  hs <- getsGlobal (factionList [sside])
   lvl@Level{lxsize, lysize} <- getsGlobal slevel
   let locHasFeature f loc = Tile.hasFeature cotile f (lvl `at` loc)
       locHasItems loc = not $ L.null $ lvl `atI` loc

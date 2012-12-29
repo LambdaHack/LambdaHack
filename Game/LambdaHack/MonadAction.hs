@@ -5,7 +5,7 @@
 -- This module should not be imported anywhere except in Action
 -- and TypeAction.
 module Game.LambdaHack.MonadAction
-  ( Session(..), MonadActionPure(..), MonadActionRO(..), MonadAction(..)
+  ( Session(..), MonadActionPure(..), MonadActionRO(..), MonadAction
   ) where
 
 import Control.Monad.Reader.Class
@@ -36,8 +36,12 @@ class (Monad m, Functor m, MonadReader Pers m, Show (m ()))
   abortWith   :: MonadActionPure m => Msg -> m a
   getGlobal   :: m State
   getsGlobal  :: (State -> a) -> m a
+  getServer   :: m StateServer
+  getsServer  :: (StateServer -> a) -> m a
   getClient   :: m StateClient
   getsClient  :: (StateClient -> a) -> m a
+  getLocal    :: m State
+  getsLocal   :: (State -> a) -> m a
   getsSession :: (Session -> a) -> m a
 
 instance MonadActionPure m => MonadActionPure (WriterT Slideshow m) where
@@ -46,29 +50,41 @@ instance MonadActionPure m => MonadActionPure (WriterT Slideshow m) where
   abortWith   = lift . abortWith
   getGlobal   = lift getGlobal
   getsGlobal  = lift . getsGlobal
+  getServer   = lift getServer
+  getsServer  = lift . getsServer
   getClient   = lift getClient
   getsClient  = lift . getsClient
+  getLocal    = lift getLocal
+  getsLocal   = lift . getsLocal
   getsSession = lift . getsSession
 
 instance MonadActionPure m => Show (WriterT Slideshow m a) where
   show _ = "an action"
 
 class MonadActionPure m => MonadActionRO m where
+  putGlobal    :: State -> m ()
+  modifyGlobal :: (State -> State) -> m ()
+  putServer    :: StateServer -> m ()
+  modifyServer :: (StateServer -> StateServer) -> m ()
   putClient    :: StateClient -> m ()
   modifyClient :: (StateClient -> StateClient) -> m ()
+  putLocal     :: State -> m ()
+  modifyLocal  :: (State -> State) -> m ()
   -- We do not provide a MonadIO instance, so that outside of Action/
   -- nobody can subvert the action monads by invoking arbitrary IO.
   liftIO       :: IO a -> m a
 
 instance MonadActionRO m => MonadActionRO (WriterT Slideshow m) where
+  putGlobal    = lift . putGlobal
+  modifyGlobal = lift . modifyGlobal
+  putServer    = lift . putServer
+  modifyServer = lift . modifyServer
   putClient    = lift . putClient
   modifyClient = lift . modifyClient
+  putLocal     = lift . putLocal
+  modifyLocal  = lift . modifyLocal
   liftIO       = lift . liftIO
 
 class MonadActionRO m => MonadAction m where
-  putGlobal    :: State -> m ()
-  modifyGlobal :: (State -> State) -> m ()
 
 instance MonadAction m => MonadAction (WriterT Slideshow m) where
-  putGlobal    = lift . putGlobal
-  modifyGlobal = lift . modifyGlobal

@@ -244,8 +244,13 @@ rangedFreq cops actor state floc =
     [ (benefit * multi,
        projectGroupItem actor floc (iverbProject ik) i)
     | i <- is,
-      let ik = iokind (fromJust (jkind (sdiscoS state) i)),
-      let benefit = - (1 + jpower i) * Effect.effectToBenefit (ieffect ik),
+      let (ik, benefit) =
+            case jkind (sdisco state) i of
+              Nothing -> (undefined, 0)
+              Just ki ->
+                let kik = iokind ki
+                in (kik,
+                    - (1 + jpower i) * Effect.effectToBenefit (ieffect kik)),
       benefit > 0,
       -- Wasting weapons and armour would be too cruel to the player.
       isymbol ik `elem` (ritemProject $ Kind.stdRuleset corule)]
@@ -262,8 +267,13 @@ toolsFreq cops actor state =
   quaffFreq is multi =
     [ (benefit * multi, applyGroupItem actor (iverbApply ik) i)
     | i <- is,
-      let ik = iokind (fromJust (jkind (sdiscoS state) i)),
-      let benefit = (1 + jpower i) * Effect.effectToBenefit (ieffect ik),
+      let (ik, benefit) =
+            case jkind (sdisco state) i of
+              Nothing -> (undefined, 0)
+              Just ki ->
+                let kik = iokind ki
+                in (kik,
+                    - (1 + jpower i) * Effect.effectToBenefit (ieffect kik)),
       benefit > 0, isymbol ik == '!']
 
 -- | AI finds interesting moves in the absense of visible foes.
@@ -348,8 +358,9 @@ moveStrategy cops actor state mFoe =
   -- Monsters don't see doors more secret than that. Enforced when actually
   -- opening doors, too, so that monsters don't cheat. TODO: remove the code
   -- duplication, though. TODO: make symmetric for playable monster faction?
+  -- TODO: unidentified items don't contribute bonuses; is it OK?
   openPower      = timeScale timeTurn $
-                   case strongestSearch coitem (sdiscoS state) bitems of
+                   case strongestSearch coitem (sdisco state) bitems of
                      Just i  -> aiq mk + jpower i
                      Nothing -> aiq mk
   openableHere   = openable cotile lvl openPower

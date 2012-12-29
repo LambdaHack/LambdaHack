@@ -17,21 +17,20 @@ import Game.LambdaHack.EffectAction
 import Game.LambdaHack.ItemAction
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
-import Game.LambdaHack.Perception
 import Game.LambdaHack.Running
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 
 -- | The basic action for a command and whether it takes time.
-cmdAction :: MonadAction m => State -> Perception -> Cmd
+cmdAction :: MonadAction m => StateClient -> State -> Cmd
           -> (Bool, WriterT Slideshow m ())
-cmdAction s per cmd =
-  let targeting = ctargeting (scursor s)
+cmdAction cli s cmd =
+  let targeting = ctargeting (scursor cli)
       pl = splayer s
       sm = getActor pl s
       ploc = bloc sm
-      tgtLoc = targetToLoc (totalVisible per) s ploc
+      tgtLoc = targetToLoc cli s ploc
   in case cmd of
     Apply{..} -> (True, lift $ playerApplyGroupItem verb object syms)
     Project{} | isNothing tgtLoc -> (False, retarget)
@@ -49,7 +48,7 @@ cmdAction s per cmd =
           tloc = ploc `shift` dir
           tgt = locToActor tloc s
       in case tgt of
-        Just target | bfaction (getActor target s) == sfaction s
+        Just target | bfaction (getActor target s) == sside s
                       && not (bproj (getActor target s)) ->
           -- Select adjacent hero by bumping into him. Takes no time.
           (False,
@@ -80,18 +79,18 @@ cmdAction s per cmd =
     HeroBack    -> (False, lift $ backCycleHero)
     Help        -> (False, displayHelp)
     SelectHero k -> (False, lift $ selectHero k)
-    DebugVision -> (False, modifyGlobal cycleMarkVision)
-    DebugOmni   -> (False, modifyGlobal toggleOmniscient)
+    DebugVision -> (False, modifyClient cycleMarkVision)
+    DebugOmni   -> (False, modifyClient toggleOmniscient)
 
 -- | The semantics of player commands in terms of the @Action@ monad.
 -- Decides if the action takes time and what action to perform.
 -- Time cosuming commands are marked as such in help and cannot be
 -- invoked in targeting mode on a remote level (level different than
 -- the level of the selected hero).
-cmdSemantics :: MonadAction m => State -> Perception -> Cmd
+cmdSemantics :: MonadAction m => StateClient -> State -> Cmd
              -> WriterT Slideshow m Bool
-cmdSemantics s per cmd = do
-  let (timed, sem) = cmdAction s per cmd
+cmdSemantics cli s cmd = do
+  let (timed, sem) = cmdAction cli s cmd
   if timed
     then checkCursor sem
     else sem
@@ -101,8 +100,8 @@ cmdSemantics s per cmd = do
 -- as player level and refuse performing the action otherwise.
 checkCursor :: MonadActionPure m => WriterT Slideshow m () -> WriterT Slideshow m ()
 checkCursor h = do
-  cursor <- getsGlobal scursor
-  slid <- getsGlobal slid
+  cursor <- getsClient scursor
+  slid <- getsLocal slid
   if creturnLn cursor == slid
     then h
     else abortWith "[targeting] you inspect a remote level, press ESC to switch back"

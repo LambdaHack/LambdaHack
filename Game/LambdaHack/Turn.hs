@@ -4,13 +4,13 @@ module Game.LambdaHack.Turn ( handleTurn ) where
 
 import Control.Arrow ((&&&))
 import Control.Monad
+import Control.Monad.Reader.Class
 import Control.Monad.Writer.Strict (WriterT (runWriterT))
 import qualified Data.IntMap as IM
 import qualified Data.List as L
 import qualified Data.Map as M
 import Data.Maybe
 import qualified Data.Ord as Ord
-import Control.Monad.Reader.Class
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
@@ -89,13 +89,13 @@ handleActors :: MonadAction m => Time       -- ^ the start time of current subcl
 handleActors subclipStart = do
   debug "handleActors"
   Kind.COps{coactor} <- getsGlobal scops
-  sfaction <- getsGlobal sfaction
+  sside <- getsGlobal sside
   time <- getsGlobal stime  -- the end time of this clip, inclusive
   pl <- getsGlobal splayer
   pbody <- getsGlobal getPlayerBody
   -- Older actors act earlier, the player acts first.
   lactor <- getsGlobal (((pl, pbody) :) . IM.toList . IM.delete pl . lactor . slevel)
-  squitOld <- getsGlobal squit
+  squitOld <- getsServer squit
   let mnext = if null lactor  -- wait until any actor spawned
               then Nothing
               else let -- Heroes move first then monsters, then the rest.
@@ -114,7 +114,7 @@ handleActors subclipStart = do
           -- Player moves always start a new subclip.
           startClip $ do
             handlePlayer
-            squitNew <- getsGlobal squit
+            squitNew <- getsServer squit
             plNew <- getsGlobal splayer
             -- Advance time once, after the player switched perhaps many times.
             -- Ending and especially saving does not take time.
@@ -134,7 +134,7 @@ handleActors subclipStart = do
           let subclipStartDelta = timeAddFromSpeed coactor m subclipStart
           if subclipStart == timeZero
                 || btime m > subclipStartDelta
-                || bfaction m == sfaction && not (bproj m)
+                || bfaction m == sside && not (bproj m)
             then
               -- That's the first move this clip
               -- or the actor has already moved during this subclip
@@ -154,7 +154,7 @@ handleAI actor = do
   state <- getGlobal
   pers <- ask
   let Actor{bfaction, bloc, bsymbol} = getActor actor state
-      factionAI = gAiIdle $ sfactions state IM.! bfaction
+      factionAI = gAiIdle $ sfaction state IM.! bfaction
       factionAbilities = sabilities (okind factionAI)
       per = pers IM.! bfaction M.! (slid state)
       stratTarget = targetStrategy cops actor state per factionAbilities
@@ -205,19 +205,19 @@ playerCommand msgRunAbort = do
           Binding{kcmd} <- askBinding
           case M.lookup km kcmd of
             Just (_, _, cmd) -> do
-              s <- getGlobal
-              per <- askPerception
+              loc <- getLocal
               -- Query and clear the last command key.
-              lastKey <- getsGlobal slastKey
+              lastKey <- getsClient slastKey
               -- TODO: perhaps replace slastKey
               -- with test 'kmNext == km'
               -- or an extra arg to 'loop'.
               -- Depends on whether slastKey
               -- is needed in other parts of code.
-              modifyGlobal (\st -> st {slastKey = Just km})
+              modifyClient (\st -> st {slastKey = Just km})
+              cli <- getClient
               if (Just km == lastKey)
-                then cmdSemantics s per Command.Clear
-                else cmdSemantics s per cmd
+                then cmdSemantics cli loc Command.Clear
+                else cmdSemantics cli loc cmd
             Nothing -> let msgKey = "unknown command <" <> K.showKM km <> ">"
                        in abortWith msgKey
         -- The command was aborted or successful and if the latter,
@@ -226,14 +226,14 @@ playerCommand msgRunAbort = do
           then assert (null (runSlideshow slides) `blame` slides) $ do
             -- Exit the loop and let other actors act. No next key needed
             -- and no slides could have been generated.
-            modifyGlobal (\st -> st {slastKey = Nothing})
+            modifyClient (\st -> st {slastKey = Nothing})
           else
             -- If no time taken, rinse and repeat.
             -- Analyse the obtained slides.
             case reverse (runSlideshow slides) of
               [] -> do
                 -- Nothing special to be shown; by default draw current state.
-                modifyGlobal (\st -> st {slastKey = Nothing})
+                modifyClient (\st -> st {slastKey = Nothing})
                 sli <- promptToSlideshow ""
                 kmNext <- getKeyOverlayCommand $ head $ runSlideshow sli
                 loop kmNext
@@ -247,7 +247,7 @@ playerCommand msgRunAbort = do
                 kmNext <- if b
                           then getKeyOverlayCommand sLast
                           else do
-                            modifyGlobal (\st -> st {slastKey = Nothing})
+                            modifyClient (\st -> st {slastKey = Nothing})
                             sli <- promptToSlideshow ""
                             getKeyOverlayCommand $ head $ runSlideshow sli
                 -- Look up and perform the next command.

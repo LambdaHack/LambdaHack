@@ -50,7 +50,7 @@ isProjectile s a =
 isAHero :: State -> ActorId -> Bool
 isAHero s a =
   let (_, actor, _) = findActorAnyLevel a s
-  in bfaction actor == sfaction s && not (bproj actor)
+  in bfaction actor == sside s && not (bproj actor)
 
 -- The operations with "Any", and those that use them,
 -- consider all the dungeon.
@@ -87,10 +87,10 @@ getPlayerItem s@State{splayer} =
 
 -- | The list of actors and their levels for all heroes in the dungeon.
 allHeroesAnyLevel :: State -> [ActorId]
-allHeroesAnyLevel State{sdungeon, sfaction} =
+allHeroesAnyLevel State{sdungeon, sside} =
   let one (_, lvl) =
         [ a | (a, m) <- IM.toList $ lactor lvl
-            , bfaction m == sfaction && not (bproj m) ]
+            , bfaction m == sside && not (bproj m) ]
   in L.concatMap one (M.toList sdungeon)
 
 updateAnyActorBody :: ActorId -> (Actor -> Actor) -> State -> State
@@ -111,8 +111,8 @@ updateAnyLevel f ln s@State{slid, sdungeon}
   | otherwise = updateDungeon (const $ M.adjust f ln sdungeon) s
 
 -- | Calculate the location of player's target.
-targetToLoc :: IS.IntSet -> State -> Point -> Maybe Point
-targetToLoc visible s@State{slid, scursor} aloc =
+targetToLoc :: StateClient -> State -> Point -> Maybe Point
+targetToLoc StateClient{scursor} s@State{slid} aloc =
   case btarget (getPlayerBody s) of
     TLoc loc -> Just loc
     TPath [] -> Nothing
@@ -122,9 +122,8 @@ targetToLoc visible s@State{slid, scursor} aloc =
       then Just $ clocation scursor
       else Nothing  -- cursor invalid: set at a different level
     TEnemy a _ll -> do
-      guard $ memActor a s           -- alive and on the current level?
+      guard $ memActor a s           -- alive and visible?
       let loc = bloc (getActor a s)
-      guard $ IS.member loc visible  -- visible?
       return loc
 
 -- The operations below disregard levels other than the current.
@@ -163,14 +162,14 @@ hostileAssocs faction lvl =
   filter (\ (_, m) -> bfaction m /= faction && not (bproj m)) $
     IM.toList $ lactor lvl
 heroList, hostileList, dangerousList :: State -> [Actor]
-heroList state@State{sfaction} =
-  filter (\ m -> bfaction m == sfaction && not (bproj m)) $
+heroList state@State{sside} =
+  filter (\ m -> bfaction m == sside && not (bproj m)) $
     IM.elems $ lactor $ slevel state
-hostileList state@State{sfaction} =
-  filter (\ m -> bfaction m /= sfaction && not (bproj m)) $
+hostileList state@State{sside} =
+  filter (\ m -> bfaction m /= sside && not (bproj m)) $
     IM.elems $ lactor $ slevel state
-dangerousList state@State{sfaction} =
-  filter (\ m -> bfaction m /= sfaction) $
+dangerousList state@State{sside} =
+  filter (\ m -> bfaction m /= sside) $
     IM.elems $ lactor $ slevel state
 
 factionAssocs :: [FactionId] -> Level -> [(ActorId, Actor)]
@@ -206,7 +205,7 @@ nearbyFreeLoc cotile start state =
 -- | Calculate loot's worth for heroes on the current level.
 calculateTotal :: State -> ([Item], Int)
 calculateTotal s =
-  let ha = factionAssocs [sfaction s] $ slevel s
+  let ha = factionAssocs [sside s] $ slevel s
       heroInv = L.concat $ catMaybes $
                   L.map ( \ (k, _) -> IM.lookup k $ linv $ slevel s) ha
   in (heroInv, L.sum $ L.map itemPrice heroInv)
@@ -227,10 +226,11 @@ tryFindHeroK s k =
   in fmap fst $ tryFindActor s ((== Just c) . bsymbol)
 
 -- | Create a new hero on the current level, close to the given location.
-addHero :: Kind.COps -> Point -> ConfigUI -> State -> State
+addHero :: Kind.COps -> Point -> ConfigUI -> State -> StateServer
+        -> (State, StateServer)
 addHero Kind.COps{coactor, cotile} ploc configUI
-        state@State{scounter, sfaction} =
-  let Config{configBaseHP} = sconfig state
+        state@State{sside} ser@StateServer{scounter} =
+  let Config{configBaseHP} = sconfig ser
       loc = nearbyFreeLoc cotile ploc state
       freeHeroK = L.elemIndex Nothing $ map (tryFindHeroK state) [0..9]
       n = fromMaybe 100 freeHeroK
@@ -238,43 +238,47 @@ addHero Kind.COps{coactor, cotile} ploc configUI
       name = findHeroName configUI n
       startHP = configBaseHP - (configBaseHP `div` 5) * min 3 n
       m = template (heroKindId coactor) (Just symbol) (Just name)
-                   startHP loc (stime state) sfaction False
-      cstate = state { scounter = scounter + 1 }
-  in updateLevel (updateActor (IM.insert scounter m)) cstate
+                   startHP loc (stime state) sside False
+  in ( updateLevel (updateActor (IM.insert scounter m)) state
+     , ser { scounter = scounter + 1 } )
 
 -- | Create a set of initial heroes on the current level, at location ploc.
-initialHeroes :: Kind.COps -> Point -> ConfigUI -> State -> State
-initialHeroes cops ploc configUI state =
-  let Config{configExtraHeroes} = sconfig state
+initialHeroes :: Kind.COps -> Point -> ConfigUI -> State-> StateServer
+              -> (State, StateServer)
+initialHeroes cops ploc configUI state ser =
+  let Config{configExtraHeroes} = sconfig ser
       k = 1 + configExtraHeroes
-  in iterate (addHero cops ploc configUI) state !! k
+  in iterate (uncurry $ addHero cops ploc configUI) (state, ser) !! k
 
 -- Adding monsters
 
 -- | Create a new monster in the level, at a given position
 -- and with a given actor kind and HP.
 addMonster :: Kind.Ops TileKind -> Kind.Id ActorKind -> Int -> Point
-           -> FactionId -> Bool -> State -> State
-addMonster cotile mk hp ploc bfaction bproj state@State{scounter} = do
+           -> FactionId -> Bool -> State -> StateServer
+           -> (State, StateServer)
+addMonster cotile mk hp ploc bfaction bproj state ser@StateServer{scounter} =
   let loc = nearbyFreeLoc cotile ploc state
       m = template mk Nothing Nothing hp loc (stime state) bfaction bproj
-      cstate = state {scounter = scounter + 1}
-  updateLevel (updateActor (IM.insert scounter m)) cstate
+  in ( updateLevel (updateActor (IM.insert scounter m)) state
+     , ser {scounter = scounter + 1} )
 
 -- Adding projectiles
 
 -- | Create a projectile actor containing the given missile.
 addProjectile :: Kind.COps -> Item -> Point -> FactionId
-              -> [Point] -> Time -> State -> State
+              -> [Point] -> Time -> State -> StateServer
+              -> (State, StateServer)
 addProjectile Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}}
               item loc bfaction path btime
-              state@State{scounter, sdisco, sdiscoS} =
-  let ik = okind (fromJust $ jkind sdiscoS item)
+              state@State{sdisco} ser@StateServer{scounter} =
+  let ik = okind (fromJust $ jkind sdisco item)
       speed = speedFromWeight (iweight ik) (itoThrow ik)
       range = rangeFromSpeed speed
       adj | range < 5 = "falling"
           | otherwise = "flying"
-      (object1, object2) = partItem coitem sdisco item
+      -- Not much details about a fast flying object.
+      (object1, object2) = partItem coitem M.empty item
       name = makePhrase [MU.AW $ MU.Text adj, object1, object2]
       dirPath = take range $ displacePath path
       m = Actor
@@ -293,7 +297,7 @@ addProjectile Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}}
         , bfaction
         , bproj   = True
         }
-      cstate = state { scounter = scounter + 1 }
       upd = updateActor (IM.insert scounter m)
             . updateInv (IM.insert scounter [item])
-  in updateLevel upd cstate
+  in ( updateLevel upd state
+     , ser {scounter = scounter + 1} )

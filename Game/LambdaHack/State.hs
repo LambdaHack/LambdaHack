@@ -2,16 +2,14 @@
 -- | Game state and persistent player cli types and operations.
 module Game.LambdaHack.State
   ( -- * Game state
-    State(..), TgtMode(..), Cursor(..), Status(..)
+    TgtMode(..), Cursor(..), Status(..)
+  , State(..), defaultStateGlobal, defaultStateLocal
+  , StateServer(..), defaultStateServer
+  , StateClient(..), defaultStateClient, defaultHistory
     -- * Accessor
-  , slevel, slevelClient, stime
-    -- * Constructor
-  , defaultState
+  , slevel, stime
     -- * State update
-  , updateCursor, updateTime, updateDiscoveries
-  , updateLevel, updateLevelClient, updateDungeon
-    -- * Player cli
-  , StateClient(..), defaultStateClient
+  , updateCursor, updateTime, updateDiscoveries, updateLevel, updateDungeon
     -- * Textual description
   , lookAt
     -- * Debug flags
@@ -40,45 +38,40 @@ import Game.LambdaHack.Point
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Time
 
--- | The cli contains all the player data that carries over
--- from game to game, even across playing sessions. That includes
--- the last message, previous messages and otherwise recorded
--- history of past games. This can be extended with other data and used for
--- calculating player achievements, unlocking advanced game features and
--- for general data mining, e.g., augmenting AI or procedural content
--- generation. @StateClient@, even the @shistory@ part, is more than a WriterMonad
--- because it can be displayed and saved at any time.
-data StateClient = StateClient
-  { sreport  :: !Report
-  , shistory :: !History
-  }
-
--- | The state of a single game that can be saved and restored.
--- It's completely disregarded and reset when a new game is started.
--- In practice, we maintain some extra state (DungeonPerception) elsewhere,
--- but it's only temporary, existing for a single turn and then invalidated.
+-- | View on game state.
 data State = State
-  { splayer   :: !ActorId       -- ^ represents the player-controlled actor
-  , scursor   :: !Cursor        -- ^ cursor location and level to return to
-  , sflavour  :: !FlavourMap    -- ^ association of flavour to items
-  , sdisco    :: !Discoveries   -- ^ items (kinds) that have been discovered
-  , sdiscoS   :: !Discoveries   -- ^ all item kinds, as known by the server
-  , sdiscoRev :: !DiscoRev      -- ^ reverse map, used for item creation
-  , sdungeon  :: !(Dungeon Level)  -- ^ all dungeon levels
-  , sdungeons :: !(Dungeon LevelClient)  -- ^ hero faction's dungeon view
-  , sdepth    :: !Int           -- ^ dungeon depth
-  , slid      :: !LevelId       -- ^ identifier of the current level
-  , scounter  :: !Int           -- ^ stores next actor index
-  , srandom   :: !R.StdGen      -- ^ current random generator
-  , sconfig   :: !Config        -- ^ this game's config (including initial RNG)
-  , squit     :: !(Maybe (Bool, Status))  -- ^ cause of game end/exit
-  , sfactions :: !FactionDict   -- ^ all factions still in the game
-  , sfaction  :: !FactionId     -- ^ our faction
-  , slastKey  :: !(Maybe K.KM)  -- ^ last command key pressed
-  , sdebug    :: !DebugMode     -- ^ debugging mode
-  , scops     :: Kind.COps     -- ^ game content
+  { sdungeon :: !Dungeon      -- ^ remembered dungeon
+  , sdepth   :: !Int          -- ^ remembered dungeon depth
+  , sdisco   :: !Discoveries  -- ^ remembered item discoveries
+  , sfaction   :: !FactionDict  -- ^ remembered sides still in game
+  , scops    :: Kind.COps     -- ^ remembered content
+  , splayer  :: !ActorId      -- ^ selected actor
+  , sside :: !FactionId    -- ^ selected faction
+  , slid     :: !LevelId      -- ^ selected level
   }
   deriving Show
+
+-- | Global, server state.
+data StateServer = StateServer
+  { sdiscoRev :: !DiscoRev    -- ^ reverse map, used for item creation
+  , sflavour  :: !FlavourMap  -- ^ association of flavour to items
+  , scounter  :: !Int         -- ^ stores next actor index
+  , srandom   :: !R.StdGen    -- ^ current random generator
+  , sconfig   :: !Config      -- ^ this game's config (including initial RNG)
+  , squit     :: !(Maybe (Bool, Status))  -- ^ cause of game end/exit
+  }
+  deriving Show
+
+-- | Client state, belonging to a single faction.
+-- Some of the data, e.g, the history, carries over
+-- from game to game, even across playing sessions.
+data StateClient = StateClient
+  { scursor  :: !Cursor        -- ^ cursor location and level to return to
+  , sreport  :: !Report        -- ^ current messages
+  , shistory :: !History       -- ^ history of messages
+  , slastKey :: !(Maybe K.KM)  -- ^ last command key pressed
+  , sdebug   :: !DebugMode     -- ^ debugging mode
+  }
 
 -- | All factions in the game, indexed by faction identifier.
 type FactionDict = IM.IntMap Faction
@@ -118,19 +111,27 @@ data DebugMode = DebugMode
 slevel :: State -> Level
 slevel State{slid, sdungeon} = sdungeon M.! slid
 
-slevelClient :: State -> LevelClient
-slevelClient State{slid, sdungeons} = sdungeons M.! slid
-
 -- TODO: add a flag 'fresh' and when saving levels, don't save
 -- and when loading regenerate this level.
-emptyLevelClient :: Kind.Ops TileKind -> X -> Y -> LevelClient
-emptyLevelClient Kind.Ops{ouniqGroup} lxsize lysize =
+unknownLevel :: Kind.Ops TileKind -> X -> Y
+             -> Text -> (Point, Point) -> Int
+             -> Level
+unknownLevel Kind.Ops{ouniqGroup} lxsize lysize ldesc lstairs lclear =
   let unknownId = ouniqGroup "unknown space"
-  in LevelClient { lcactor = IM.empty
-                 , lcinv = IM.empty
-                 , lcitem = IM.empty
-                 , lcmap = unknownTileMap unknownId lxsize lysize
-                 , lcseen = 0 }
+  in Level { lactor = IM.empty
+           , linv = IM.empty
+           , litem = IM.empty
+           , lmap = unknownTileMap unknownId lxsize lysize
+           , lxsize = lxsize
+           , lysize = lysize
+           , lsmell = IM.empty
+           , ldesc
+           , lstairs
+           , lseen = 0
+           , lclear
+           , ltime = timeZero
+           , lsecret = IM.empty
+           }
 
 unknownTileMap :: Kind.Id TileKind -> Int -> Int -> TileMap
 unknownTileMap unknownId cxsize cysize =
@@ -141,37 +142,59 @@ unknownTileMap unknownId cxsize cysize =
 stime :: State -> Time
 stime State{slid, sdungeon} = ltime $ sdungeon M.! slid
 
--- | Initial player cli.
-defaultStateClient :: IO StateClient
-defaultStateClient = do
+defaultHistory :: IO History
+defaultHistory = do
   dateTime <- getClockTime
   let curDate = MU.Text $ T.pack $ calendarTimeToString $ toUTCTime dateTime
-  return StateClient
-    { sreport = emptyReport
-    , shistory = singletonHistory $ singletonReport $
-                   makeSentence ["Player cli started on", curDate]
+  return $ singletonHistory $ singletonReport
+         $ makeSentence ["Player cli started on", curDate]
+
+-- | Initial complete global game state.
+defaultStateGlobal :: Dungeon -> Int -> Discoveries
+                   -> FactionDict -> Kind.COps -> FactionId -> LevelId
+                   -> State
+defaultStateGlobal sdungeon sdepth sdisco sfaction scops sside slid =
+  State
+    { splayer = 0 -- hack: the hero is not yet alive
+    , ..
     }
 
--- | Initial game state.
-defaultState :: Kind.Ops TileKind -> FlavourMap
-             -> Discoveries -> Discoveries -> DiscoRev
-             -> Dungeon Level -> Int -> LevelId -> R.StdGen
-             -> Config -> FactionId -> FactionDict -> Kind.COps -> Point
-             -> State
-defaultState coitem sflavour sdisco sdiscoS sdiscoRev
-             sdungeon sdepth slid srandom
-             sconfig sfaction sfactions scops ploc =
+-- | Initial per-faction local game state.
+defaultStateLocal :: Dungeon
+                  -> Int -> Discoveries -> FactionDict
+                  -> Kind.COps -> FactionId -> LevelId
+                  -> State
+defaultStateLocal globalDungeon
+                  sdepth sdisco sfaction
+                  scops@Kind.COps{cotile} sside slid = do
   State
     { splayer  = 0 -- hack: the hero is not yet alive
-    , scursor  = (Cursor TgtOff slid ploc slid 0)
-    , scounter = 0
+    , sdungeon =
+      M.map (\Level{lxsize, lysize, ldesc, lstairs, lclear} ->
+              unknownLevel cotile lxsize lysize ldesc lstairs lclear)
+            globalDungeon
+    , ..
+    }
+
+-- | Initial game server state.
+defaultStateServer :: DiscoRev -> FlavourMap -> R.StdGen -> Config
+                   -> StateServer
+defaultStateServer sdiscoRev sflavour srandom sconfig =
+  StateServer
+    { scounter = 0
     , squit    = Nothing
+    , ..
+    }
+
+-- | Initial game client state.
+defaultStateClient :: Point -> LevelId -> History -> StateClient
+defaultStateClient ploc slid shistory = do
+  StateClient
+    { scursor  = (Cursor TgtOff slid ploc slid 0)
+    , sreport  = emptyReport
+    , shistory
     , slastKey = Nothing
     , sdebug   = defaultDebugMode
-    , sdungeons =
-      M.map (\Level{lxsize, lysize} -> emptyLevelClient coitem lxsize lysize)
-            sdungeon
-    , ..
     }
 
 defaultDebugMode :: DebugMode
@@ -181,12 +204,12 @@ defaultDebugMode = DebugMode
   }
 
 -- | Update cursor parameters within state.
-updateCursor :: (Cursor -> Cursor) -> State -> State
+updateCursor :: (Cursor -> Cursor) -> StateClient -> StateClient
 updateCursor f s = s { scursor = f (scursor s) }
 
 -- | Update time within state.
 updateTime :: (Time -> Time) -> State -> State
-updateTime f s = updateLevel (\ lvl@Level{ltime} -> lvl {ltime = f ltime}) s
+updateTime f s = updateLevel (\lvl@Level{ltime} -> lvl {ltime = f ltime}) s
 
 -- | Update item discoveries within state.
 updateDiscoveries :: (Discoveries -> Discoveries) -> State -> State
@@ -196,22 +219,12 @@ updateDiscoveries f s = s { sdisco = f (sdisco s) }
 updateLevel :: (Level -> Level) -> State -> State
 updateLevel f s = updateDungeon (M.adjust f (slid s)) s
 
--- | Update faction's level data within state.
-updateLevelClient :: (LevelClient -> LevelClient) -> State -> State
-updateLevelClient f s@State{slid} =
-  updateDungeons (M.adjust f slid) s
-
 -- | Update dungeon data within state.
-updateDungeon :: (Dungeon Level -> Dungeon Level) -> State -> State
+updateDungeon :: (Dungeon -> Dungeon) -> State -> State
 updateDungeon f s = s {sdungeon = f (sdungeon s)}
 
--- | Update faction's dungeon data within state.
-updateDungeons :: (Dungeon LevelClient -> Dungeon LevelClient)
-               -> State -> State
-updateDungeons f s = s {sdungeons = f (sdungeons s)}
-
-cycleMarkVision :: State -> State
-cycleMarkVision s@State{sdebug = sdebug@DebugMode{smarkVision}} =
+cycleMarkVision :: StateClient -> StateClient
+cycleMarkVision s@StateClient{sdebug=sdebug@DebugMode{smarkVision}} =
   s {sdebug = sdebug {smarkVision = case smarkVision of
                         Nothing          -> Just (Digital 100)
                         Just (Digital _) -> Just Permissive
@@ -219,58 +232,59 @@ cycleMarkVision s@State{sdebug = sdebug@DebugMode{smarkVision}} =
                         Just Shadow      -> Just Blind
                         Just Blind       -> Nothing }}
 
-toggleOmniscient :: State -> State
-toggleOmniscient s@State{sdebug = sdebug@DebugMode{somniscient}} =
+toggleOmniscient :: StateClient -> StateClient
+toggleOmniscient s@StateClient{sdebug=sdebug@DebugMode{somniscient}} =
   s {sdebug = sdebug {somniscient = not somniscient}}
-
-instance Binary StateClient where
-  put StateClient{..} = do
-    put sreport
-    put shistory
-  get = do
-    sreport  <- get
-    shistory <- get
-    return StateClient{..}
 
 instance Binary State where
   put State{..} = do
-    put splayer
-    put scursor
-    put sflavour
-    put sdisco
-    put sdiscoS
-    put sdiscoRev
     put sdungeon
-    put sdungeons
     put sdepth
+    put sdisco
+    put sfaction
+    put splayer
+    put sside
     put slid
+  get = do
+    sdungeon <- get
+    sdepth <- get
+    sdisco <- get
+    sfaction <- get
+    splayer <- get
+    sside <- get
+    slid <- get
+    let scops = undefined  -- overwritten by recreated cops
+    return State{..}
+
+instance Binary StateClient where
+  put StateClient{..} = do
+    put scursor
+    put sreport
+    put shistory
+  get = do
+    scursor <- get
+    sreport  <- get
+    shistory <- get
+    let slastKey = Nothing
+        sdebug = defaultDebugMode
+    return StateClient{..}
+
+instance Binary StateServer where
+  put StateServer{..} = do
+    put sdiscoRev
+    put sflavour
     put scounter
     put (show srandom)
     put sconfig
-    put sfaction
-    put sfactions
   get = do
-    splayer <- get
-    scursor <- get
-    sflavour <- get
-    sdisco <- get
-    sdiscoS <- get
     sdiscoRev <- get
-    sdungeon <- get
-    sdungeons <- get
-    sdepth <- get
-    slid <- get
+    sflavour <- get
     scounter <- get
     g <- get
     sconfig <- get
-    sfaction <- get
-    sfactions <- get
     let squit = Nothing
-        sdebug = defaultDebugMode
-        slastKey = Nothing
         srandom = read g
-        scops = undefined  -- overwritten by recreated cops
-    return State{..}
+    return StateServer{..}
 
 instance Binary TgtMode where
   put TgtOff      = putWord8 0
@@ -321,17 +335,17 @@ lookAt :: Kind.COps  -- ^ game content
        -> Bool       -- ^ detailed?
        -> Bool       -- ^ can be seen right now?
        -> State      -- ^ game state
-       -> LevelClient  -- ^ current level
        -> Point      -- ^ location to describe
        -> Text       -- ^ an extra sentence to print
        -> Text
-lookAt Kind.COps{coitem, cotile=Kind.Ops{oname}} detailed canSee s lvl loc msg
+lookAt Kind.COps{coitem, cotile=Kind.Ops{oname}} detailed canSee s loc msg
   | detailed =
-    let tile = lvl `rememberAt` loc
+    let tile = lvl `at` loc
     in makeSentence [MU.Text $ oname tile] <+> msg <+> isd
   | otherwise = msg <+> isd
  where
-  is  = lvl `rememberAtI` loc
+  lvl = slevel s
+  is  = lvl `atI` loc
   prefixSee = MU.Text $ if canSee then "you see" else "you remember"
   nWs = partItemNWs coitem (sdisco s)
   isd = case is of

@@ -109,16 +109,17 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
       level = Level
         { lactor = IM.empty
         , linv = IM.empty
+        , litem
+        , lmap
         , lxsize = cxsize
         , lysize = cysize
         , lsmell = IM.empty
-        , lsecret = mapToIMap cxsize dsecret
-        , litem
-        , lmap
         , ldesc = cname
         , lstairs = (su, sd)
-        , ltime = timeTurn
+        , lseen = 0
         , lclear
+        , ltime = timeTurn
+        , lsecret = mapToIMap cxsize dsecret
         }
   return level
 
@@ -137,11 +138,10 @@ findGenerator cops flavour discoRev Config{configCaves} k depth = do
 
 -- | Freshly generated and not yet populated dungeon.
 data FreshDungeon = FreshDungeon
-  { entryLevel   :: LevelId        -- ^ starting level for the party
-  , entryLoc     :: Point          -- ^ starting location for the party
-  , freshDungeon :: Dungeon Level  -- ^ level maps
-  , freshDepth   :: Int            -- ^ dungeon depth (can be different
-                                   -- than the number of levels)
+  { entryLevel   :: LevelId  -- ^ starting level for the party
+  , entryLoc     :: Point    -- ^ starting location for the party
+  , freshDungeon :: Dungeon  -- ^ level maps
+  , freshDepth   :: Int      -- ^ dungeon depth (can be different than size)
   }
 
 -- | Generate the dungeon for a new game.
