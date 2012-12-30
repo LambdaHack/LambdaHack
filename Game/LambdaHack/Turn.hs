@@ -89,12 +89,9 @@ handleActors :: MonadAction m => Time       -- ^ the start time of current subcl
 handleActors subclipStart = do
   debug "handleActors"
   Kind.COps{coactor} <- getsGlobal scops
-  sside <- getsGlobal sside
   time <- getsGlobal getTime  -- the end time of this clip, inclusive
-  pl <- getsGlobal splayer
-  pbody <- getsGlobal getPlayerBody
-  -- Older actors act earlier, the player acts first.
-  lactor <- getsGlobal (((pl, pbody) :) . IM.toList . IM.delete pl . lactor . getArena)
+   -- Older actors act earlier.
+  lactor <- getsGlobal (IM.toList . lactor . getArena)
   squitOld <- getsServer squit
   let mnext = if null lactor  -- wait until any actor spawned
               then Nothing
@@ -107,9 +104,15 @@ handleActors subclipStart = do
   case mnext of
     _ | isJust squitOld -> return ()
     Nothing -> when (subclipStart == timeZero) $ displayFramesPush [Nothing]
-    Just (actor, _) -> do
-      m <- getsGlobal (getActor actor)
-      if actor == pl
+    Just (actor, m) -> do
+      modifyGlobal (\s -> s {sside=bfaction m})
+      locPl <- getsLocal splayer
+      -- TODO: hack
+      when (locPl == -1) $
+        modifyLocal (\s -> s {splayer=actor})
+      loc <- getLocal
+      modifyGlobal (\s -> s {splayer=splayer loc, sarena=sarena loc})
+      if actor == splayer loc && isHumanFaction loc (bfaction m)
         then
           -- Player moves always start a new subclip.
           startClip $ do
@@ -130,11 +133,12 @@ handleActors subclipStart = do
             unless (isJust squitNew) $ advanceTime plNew
             handleActors $ btime m
         else do
+          recordHistory
           advanceTime actor  -- advance time while the actor still alive
           let subclipStartDelta = timeAddFromSpeed coactor m subclipStart
           if subclipStart == timeZero
                 || btime m > subclipStartDelta
-                || bfaction m == sside && not (bproj m)
+                || isHumanFaction loc (bfaction m) && not (bproj m)
             then
               -- That's the first move this clip
               -- or the actor has already moved during this subclip

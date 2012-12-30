@@ -8,7 +8,7 @@ module Game.LambdaHack.State
   , StateClient(..), defStateClient, defHistory
   , StateDict
     -- * Accessor
-  , getArena, getTime
+  , getArena, getTime, isHumanFaction
     -- * State update
   , updateCursor, updateTime, updateDiscoveries, updateArena, updateDungeon
     -- * Textual description
@@ -25,6 +25,7 @@ import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 import qualified System.Random as R
 import System.Time
+import Data.Maybe (isNothing)
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Config
@@ -151,7 +152,7 @@ defStateGlobal :: Dungeon -> Int -> Discoveries
                    -> State
 defStateGlobal sdungeon sdepth sdisco sfaction scops sside sarena =
   State
-    { splayer = 0 -- hack: the hero is not yet alive
+    { splayer = -1 -- hack: the hero is not yet alive
     , ..
     }
 
@@ -161,10 +162,10 @@ defStateLocal :: Dungeon
                   -> Kind.COps -> FactionId -> LevelId
                   -> State
 defStateLocal globalDungeon
-                  sdepth sdisco sfaction
-                  scops@Kind.COps{cotile} sside sarena = do
+              sdepth sdisco sfaction
+              scops@Kind.COps{cotile} sside sarena = do
   State
-    { splayer  = 0 -- hack: the hero is not yet alive
+    { splayer  = -1 -- hack: the hero is not yet alive
     , sdungeon =
       M.map (\Level{lxsize, lysize, ldesc, lstair, lclear} ->
               unknownLevel cotile lxsize lysize ldesc lstair lclear)
@@ -183,12 +184,12 @@ defStateServer sdiscoRev sflavour srandom sconfig =
     }
 
 -- | Initial game client state.
-defStateClient :: Point -> LevelId -> History -> StateClient
-defStateClient ploc sarena shistory = do
+defStateClient :: Point -> LevelId -> StateClient
+defStateClient ploc sarena = do
   StateClient
     { scursor  = (Cursor TgtOff sarena ploc sarena 0)
     , sreport  = emptyReport
-    , shistory
+    , shistory = emptyHistory
     , slastKey = Nothing
     , sdebug   = defDebugMode
     }
@@ -198,6 +199,10 @@ defDebugMode = DebugMode
   { smarkVision = Nothing
   , somniscient = False
   }
+
+-- | Tell whether the faction is human-controlled.
+isHumanFaction :: State -> FactionId -> Bool
+isHumanFaction s fid = isNothing $ gAiSelected $ sfaction s IM.! fid
 
 -- | Update cursor parameters within state.
 updateCursor :: (Cursor -> Cursor) -> StateClient -> StateClient

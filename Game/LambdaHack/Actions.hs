@@ -369,7 +369,7 @@ actorAttackActor source target = do
   tmRaw <- getsGlobal (getActor target)
   per   <- askPerception
   time  <- getsGlobal getTime
-  sside <- getsGlobal sside
+  s <- getGlobal
   let sloc = bloc smRaw
       tloc = bloc tmRaw
       svisible = sloc `IS.member` totalVisible per
@@ -378,8 +378,8 @@ actorAttackActor source target = do
          | otherwise = smRaw {bname = Just "somebody"}
       tm | tvisible  = tmRaw
          | otherwise = tmRaw {bname = Just "somebody"}
-  if bfaction sm == sside && not (bproj sm) &&
-     bfaction tm == sside && not (bproj tm)
+  if bfaction sm == bfaction tm && isHumanFaction s (bfaction sm)
+     && not (bproj sm) && not (bproj tm)
     then assert `failure` (source, target, "player AI bumps into friendlies")
     else do
       cops@Kind.COps{coactor, coitem=coitem@Kind.Ops{opick, okind}} <- getsGlobal scops

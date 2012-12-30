@@ -6,8 +6,8 @@ module Game.LambdaHack.Msg
   , Msg, (<>), (<+>), showT, moreMsg, yesnoMsg, padMsg
   , Report, emptyReport, nullReport, singletonReport, addMsg
   , splitReport, renderReport
-  , History, emptyHistory, singletonHistory, addReport, renderHistory
-  , takeHistory
+  , History, emptyHistory, singletonHistory, mergeHistory
+  , addReport, renderHistory, takeHistory
   , Overlay, stringByLocation
   , Slideshow(runSlideshow), splitOverlay, toSlideshow)
   where
@@ -139,6 +139,12 @@ emptyHistory = History []
 -- | Construct a singleton history of reports.
 singletonHistory :: Report -> History
 singletonHistory r = addReport r emptyHistory
+
+mergeHistory :: [(Msg, History)] -> History
+mergeHistory l =
+  let unhist (History x) = x
+      f (msg, h) = singletonReport msg : unhist h
+  in History $ concatMap f l
 
 -- | Render history as many lines of text, wrapping if necessary.
 renderHistory :: History -> Overlay

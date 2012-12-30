@@ -370,10 +370,9 @@ saveGameBkp :: MonadActionRO m => m ()
 saveGameBkp = do
   state <- getGlobal
   ser <- getServer
-  cli <- getClient
-  loc <- getLocal
+  d <- getDict
   configUI <- askConfigUI
-  liftIO $ Save.saveGameBkp configUI state ser cli loc
+  liftIO $ Save.saveGameBkp configUI state ser d
 
 -- | Dumps the current game rules configuration to a file.
 dumpCfg :: MonadActionRO m => FilePath -> m ()
@@ -403,8 +402,7 @@ endOrLoop handleTurn = do
   squit <- getsServer squit
   s <- getGlobal
   ser <- getServer
-  cli <- getClient
-  loc <- getLocal
+  d <- getDict
   configUI <- askConfigUI
   let (_, total) = calculateTotal s
   -- The first, boolean component of squit determines
@@ -415,7 +413,7 @@ endOrLoop handleTurn = do
     Just (_, status@Camping) -> do
       -- Save and display in parallel.
       mv <- liftIO newEmptyMVar
-      liftIO $ void $ forkIO (Save.saveGameFile configUI s ser cli loc
+      liftIO $ void $ forkIO (Save.saveGameFile configUI s ser d
                               `finally` putMVar mv ())
       tryIgnore $ do
         handleScores False status total
@@ -461,8 +459,7 @@ restartGame handleTurn = do
   -- (the current config file has the RNG rolled for the previous game).
   sconfigUI <- askConfigUI
   scops <- getsGlobal scops
-  shistory <- getsClient shistory
-  (state, ser, d) <- gameResetAction sconfigUI scops shistory ""
+  (state, ser, d) <- gameResetAction sconfigUI scops
   putGlobal state
   putServer ser
   putDict d
@@ -470,13 +467,12 @@ restartGame handleTurn = do
   handleTurn
 
 -- TODO: do this inside Action ()
-gameReset :: ConfigUI -> Kind.COps -> History -> Msg
+gameReset :: ConfigUI -> Kind.COps
           -> IO (State, StateServer, StateDict)
 gameReset configUI scops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
                                   , coitem=coitem@Kind.Ops{okind}
                                   , corule
-                                  , costrat=Kind.Ops{opick=sopick}}
-          shistory msg = do
+                                  , costrat=Kind.Ops{opick=sopick}} = do
   -- Rules config reloaded at each new game start.
   (sconfig, dungeonGen, srandom) <- ConfigIO.mkConfigRules corule
   let rnd = do
@@ -491,7 +487,7 @@ gameReset configUI scops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
         playerFactionKindId <- opick factionName (const True)
         let g gkind fk mk = do
               (m, k) <- mk
-              let gname = Nothing
+              let gname = fname fk
                   genemy = fenemy fk
                   gally = fally fk
               gAiSelected <-
@@ -501,29 +497,26 @@ gameReset configUI scops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
               gAiIdle <- sopick (fAiIdle fk) (const True)
               return (IM.insert k Faction{..} m, k + 1)
         sfaction <- fmap fst $ ofoldrWithKey g (return (IM.empty, 0))
-        let sside = fst $ fromJust
-                       $ find (\(_, fa) -> isNothing (gAiSelected fa))
-                       $ IM.toList sfaction
+        let sside = 0
             defState =
               defStateGlobal freshDungeon freshDepth sdiscoS sfaction
-                                 scops sside entryLevel
+                             scops sside entryLevel
             defSer = defStateServer sdiscoRev sflavour srandom sconfig
-            defCli = defStateClient entryLoc entryLevel shistory
-            loc = defStateLocal freshDungeon freshDepth
-                                    sdisco sfaction scops sside entryLevel
             (state, ser) =
               initialHeroes scops entryLoc configUI defState defSer
+            cli = defStateClient entryLoc entryLevel
             -- This overwrites the "Really save/quit?" messages.
-            cli = defCli {sreport = singletonReport msg}
-            d = IM.singleton sside (cli, loc)
+            loc = defStateLocal freshDungeon freshDepth
+                                sdisco sfaction scops sside entryLevel
+            d = IM.mapWithKey (\side _ -> (cli, loc {sside=side})) sfaction
         return (state, ser, d)
   return $! St.evalState rnd dungeonGen
 
 gameResetAction :: MonadActionRO m
-                => ConfigUI -> Kind.COps -> History -> Msg
+                => ConfigUI -> Kind.COps
                 -> m (State, StateServer, StateDict)
-gameResetAction configUI cops shistory msg =
-  liftIO $ gameReset configUI cops shistory msg
+gameResetAction configUI cops =
+  liftIO $ gameReset configUI cops
 
 -- | Wire together content, the definitions of game commands,
 -- config and a high-level startup function
@@ -549,9 +542,9 @@ startFrontend executor !cops@Kind.COps{corule, cotile=tile} handleTurn = do
       -- handle the cli and backup savefile.
       handleGame = do
         handleTurn
-        cli <- getClient
+        d <- getDict
         -- Save cli often, at each game exit, in case of crashes.
-        liftIO $ Save.rmBkpSaveHistory sconfigUI cli
+        liftIO $ Save.rmBkpSaveHistory sconfigUI d
       loop sfs = start executor sfs scops sbinding sconfigUI handleGame
   startup font loop
 
@@ -566,20 +559,20 @@ start executor sfs scops@Kind.COps{corule} sbinding sconfigUI handleGame = do
   let title = rtitle $ Kind.stdRuleset corule
       pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
   restored <- Save.restoreGame sconfigUI pathsDataFile title
-  case restored of
+  (state, ser, dBare, shistory, msg) <- case restored of
     Right (shistory, msg) -> do  -- Starting a new game.
-      (state, ser, d) <- gameReset sconfigUI scops shistory msg
-      executor handleGame sfs scops sbinding sconfigUI
-        state
-        ser
-        d
-        -- TODO: gameReset >> handleTurn or defState {squit=Reset}
-    Left (state, ser, cli, loc, msg) ->  -- Running a restored game.
-      executor handleGame sfs scops sbinding sconfigUI
-        state {scops}  -- overwritten by recreated cops
-        ser
-        (IM.singleton (sside state) ( cli{sreport = singletonReport msg}
-                                    , loc {scops} ))
+      (stateR, serR, dR) <- gameReset sconfigUI scops
+      return (stateR, serR, dR, shistory, msg)
+    Left (stateL, serL, dL, shistory, msg) -> do  -- Running a restored game.
+      let stateCops = stateL {scops}
+          dCops = IM.map (\(cli, loc) -> (cli, loc {scops})) dL
+      return (stateCops, serL, dCops, shistory, msg)
+  let singMsg (cli, loc) = (cli {sreport = singletonReport msg}, loc)
+      dMsg = IM.map singMsg dBare
+      d = case filter (isHumanFaction state) $ IM.keys dMsg of
+        [] -> dMsg  -- only robots play
+        k : _ -> IM.adjust (\(cli, loc) -> (cli {shistory}, loc)) k dMsg
+  executor handleGame sfs scops sbinding sconfigUI state ser d
 
 -- | Debugging.
 debug :: MonadActionRO m => Text -> m ()

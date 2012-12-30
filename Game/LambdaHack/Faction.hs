@@ -13,7 +13,7 @@ import qualified Game.LambdaHack.Kind as Kind
 
 data Faction = Faction
   { gkind       :: !(Kind.Id FactionKind)   -- ^ the kind of the faction
-  , gname       :: !(Maybe Text)            -- ^ individual name
+  , gname       :: !Text                    -- ^ individual name
   , gAiSelected :: !(Maybe (Kind.Id StrategyKind))
                                             -- ^ AI for the selected actor;
                                             -- human-controlled, if Nothing
