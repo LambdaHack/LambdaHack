@@ -3,7 +3,7 @@
 -- involves the 'State' or 'Action' type.
 module Game.LambdaHack.Actor
   ( -- * Actor identifiers and related operations
-    ActorId, findHeroName, monsterGenChance, partActor
+    ActorId, findHeroName, monsterGenChance, partActor, invalidActorId
     -- * The@ Acto@r type
   , Actor(..), template, addHp, timeAddFromSpeed, braced
   , unoccupied, heroKindId, projectileKindId, actorSpeed
@@ -179,11 +179,12 @@ data Target =
   | TCursor               -- ^ target current position of the cursor; default
   deriving (Show, Eq)
 
+invalidActorId :: ActorId
+invalidActorId = -1
+
 -- | An invalid target, with an actor that is not on any level.
 invalidTarget :: Target
-invalidTarget =
-  let invalidActorId = -1
-  in TEnemy invalidActorId origin
+invalidTarget = TEnemy invalidActorId origin
 
 instance Binary Target where
   put (TEnemy a ll) = putWord8 0 >> put a >> put ll

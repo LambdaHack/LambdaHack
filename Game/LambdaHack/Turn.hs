@@ -105,20 +105,23 @@ handleActors subclipStart = do
     _ | isJust squitOld -> return ()
     Nothing -> when (subclipStart == timeZero) $ displayFramesPush [Nothing]
     Just (actor, m) -> do
-      modifyGlobal (\s -> s {sside=bfaction m})
-      locPl <- getsLocal splayer
-      -- TODO: hack
-      when (locPl == -1) $
+      let sside = bfaction m
+      modifyGlobal (\s -> s {sside})
+      glo <- getGlobal
+      modifyLocal (\s -> s {sarena=sarena glo})
+      splayerOld <- getsLocal splayer
+      when (not $ memActor splayerOld glo) $
         modifyLocal (\s -> s {splayer=actor})
+      splayerNew <- getsLocal splayer
+      modifyGlobal (\s -> s {splayer=splayerNew})
       loc <- getLocal
-      modifyGlobal (\s -> s {splayer=splayer loc, sarena=sarena loc})
-      if actor == splayer loc && isHumanFaction loc (bfaction m)
+      if actor == splayerNew && isControlledFaction loc sside
         then
           -- Player moves always start a new subclip.
           startClip $ do
             handlePlayer
             squitNew <- getsServer squit
-            plNew <- getsGlobal splayer
+            splayerNewer <- getsGlobal splayer
             -- Advance time once, after the player switched perhaps many times.
             -- Ending and especially saving does not take time.
             -- TODO: this is correct only when all heroes have the same
@@ -130,15 +133,15 @@ handleActors subclipStart = do
             -- at once. This requires quite a bit of refactoring
             -- and is perhaps better done when the other factions have
             -- selected players as well.
-            unless (isJust squitNew) $ advanceTime plNew
+            unless (isJust squitNew) $ advanceTime splayerNewer
             handleActors $ btime m
         else do
           recordHistory
           advanceTime actor  -- advance time while the actor still alive
           let subclipStartDelta = timeAddFromSpeed coactor m subclipStart
           if subclipStart == timeZero
-                || btime m > subclipStartDelta
-                || isHumanFaction loc (bfaction m) && not (bproj m)
+             || btime m > subclipStartDelta
+             || isControlledFaction loc sside && not (bproj m)
             then
               -- That's the first move this clip
               -- or the actor has already moved during this subclip

@@ -49,7 +49,6 @@ import qualified Control.Monad.State as St
 import Control.Monad.Writer.Strict (WriterT, tell, lift)
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
-import Data.List
 import qualified Data.Map as M
 import Data.Maybe
 import Data.Text (Text)
@@ -459,7 +458,11 @@ restartGame handleTurn = do
   -- (the current config file has the RNG rolled for the previous game).
   sconfigUI <- askConfigUI
   scops <- getsGlobal scops
-  (state, ser, d) <- gameResetAction sconfigUI scops
+  shistory <- getsClient shistory
+  (state, ser, dMsg) <- gameResetAction sconfigUI scops
+  let d = case filter (isControlledFaction state) $ IM.keys dMsg of
+        [] -> dMsg  -- only robots play
+        k : _ -> IM.adjust (\(cli, loc) -> (cli {shistory}, loc)) k dMsg
   putGlobal state
   putServer ser
   putDict d
@@ -497,7 +500,7 @@ gameReset configUI scops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
               gAiIdle <- sopick (fAiIdle fk) (const True)
               return (IM.insert k Faction{..} m, k + 1)
         sfaction <- fmap fst $ ofoldrWithKey g (return (IM.empty, 0))
-        let sside = 0
+        let sside = 1
             defState =
               defStateGlobal freshDungeon freshDepth sdiscoS sfaction
                              scops sside entryLevel
@@ -569,7 +572,7 @@ start executor sfs scops@Kind.COps{corule} sbinding sconfigUI handleGame = do
       return (stateCops, serL, dCops, shistory, msg)
   let singMsg (cli, loc) = (cli {sreport = singletonReport msg}, loc)
       dMsg = IM.map singMsg dBare
-      d = case filter (isHumanFaction state) $ IM.keys dMsg of
+      d = case filter (isControlledFaction state) $ IM.keys dMsg of
         [] -> dMsg  -- only robots play
         k : _ -> IM.adjust (\(cli, loc) -> (cli {shistory}, loc)) k dMsg
   executor handleGame sfs scops sbinding sconfigUI state ser d

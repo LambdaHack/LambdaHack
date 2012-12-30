@@ -244,10 +244,14 @@ eff Effect.Regeneration verbosity source target power =
 eff Effect.Searching _ _source _target _power =
   return (True, "It gets lost and you search in vain.")
 eff Effect.Ascend _ source target power = do
-  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsGlobal scops
+  Kind.COps{coactor} <- getsGlobal scops
   tm <- getsGlobal (getActor target)
   void $ focusIfOurs target
-  if aiq (okind (bkind tm)) < 13  -- monsters can't use stairs
+  -- A faction that spawns cannot switch levels (nor move between levels).
+  -- Otherwise it would constantly go to a distant level, spawn actors there
+  -- and swarm any opponent arriving on the level.
+  glo <- getGlobal
+  if isSpawningFaction glo (bfaction tm)
     then squashActor source target
     else effLvlGoUp (power + 1)
   -- TODO: The following message too late if a monster squashed by going up,
@@ -257,10 +261,11 @@ eff Effect.Ascend _ source target power = do
            then (True, "")
            else (True, actorVerb coactor tm "find a way upstairs")
 eff Effect.Descend _ source target power = do
-  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsGlobal scops
+  Kind.COps{coactor} <- getsGlobal scops
   tm <- getsGlobal (getActor target)
   void $ focusIfOurs target
-  if aiq (okind (bkind tm)) < 13  -- monsters can't use stairs
+  glo <- getGlobal
+  if isSpawningFaction glo (bfaction tm)
     then squashActor source target
     else effLvlGoUp (- (power + 1))
   ser <- getServer
@@ -499,8 +504,8 @@ summonHeroes n loc =
   assert (b `blame` (newHeroId, "player summons himself")) $
     return ()
 
--- TODO: probably not the right semantics: for each kind of factions
--- that spawn, only the first faction with that kind is every picked.
+-- TODO: merge with summonHeroes; disregard "spawn" factions and "spawn"
+-- flags for monsters; only check 'summon"
 summonMonsters :: MonadAction m => Int -> Point -> m ()
 summonMonsters n loc = do
   sfaction <- getsGlobal sfaction

@@ -8,7 +8,7 @@ module Game.LambdaHack.State
   , StateClient(..), defStateClient, defHistory
   , StateDict
     -- * Accessor
-  , getArena, getTime, isHumanFaction
+  , getArena, getTime, isControlledFaction, isSpawningFaction
     -- * State update
   , updateCursor, updateTime, updateDiscoveries, updateArena, updateDungeon
     -- * Textual description
@@ -20,15 +20,16 @@ module Game.LambdaHack.State
 import Data.Binary
 import qualified Data.IntMap as IM
 import qualified Data.Map as M
+import Data.Maybe (isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 import qualified System.Random as R
 import System.Time
-import Data.Maybe (isNothing)
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Config
+import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Faction
 import Game.LambdaHack.Item
@@ -144,7 +145,7 @@ defHistory = do
   dateTime <- getClockTime
   let curDate = MU.Text $ T.pack $ calendarTimeToString $ toUTCTime dateTime
   return $ singletonHistory $ singletonReport
-         $ makeSentence ["Player cli started on", curDate]
+         $ makeSentence ["Player history log started on", curDate]
 
 -- | Initial complete global game state.
 defStateGlobal :: Dungeon -> Int -> Discoveries
@@ -152,7 +153,7 @@ defStateGlobal :: Dungeon -> Int -> Discoveries
                    -> State
 defStateGlobal sdungeon sdepth sdisco sfaction scops sside sarena =
   State
-    { splayer = -1 -- hack: the hero is not yet alive
+    { splayer = invalidActorId  -- no heroes yet alive
     , ..
     }
 
@@ -165,7 +166,7 @@ defStateLocal globalDungeon
               sdepth sdisco sfaction
               scops@Kind.COps{cotile} sside sarena = do
   State
-    { splayer  = -1 -- hack: the hero is not yet alive
+    { splayer  = invalidActorId  -- no heroes yet alive
     , sdungeon =
       M.map (\Level{lxsize, lysize, ldesc, lstair, lclear} ->
               unknownLevel cotile lxsize lysize ldesc lstair lclear)
@@ -201,8 +202,15 @@ defDebugMode = DebugMode
   }
 
 -- | Tell whether the faction is human-controlled.
-isHumanFaction :: State -> FactionId -> Bool
-isHumanFaction s fid = isNothing $ gAiSelected $ sfaction s IM.! fid
+isControlledFaction :: State -> FactionId -> Bool
+isControlledFaction s fid = isNothing $ gAiSelected $ sfaction s IM.! fid
+
+-- | Tell whether the faction is human-controlled.
+isSpawningFaction :: State -> FactionId -> Bool
+isSpawningFaction s fid =
+  let Kind.Ops{okind} = Kind.cofact (scops s)
+      kind = okind $ gkind $ sfaction s IM.! fid
+  in fspawn kind > 0
 
 -- | Update cursor parameters within state.
 updateCursor :: (Cursor -> Cursor) -> StateClient -> StateClient

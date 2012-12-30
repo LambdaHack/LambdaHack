@@ -8,7 +8,6 @@ import Control.Concurrent
 import qualified Control.Exception as Ex hiding (handle)
 import Control.Monad
 import qualified Data.IntMap as IM
-
 import Data.Maybe (catMaybes)
 import Data.Text (Text)
 import qualified Data.Text as T

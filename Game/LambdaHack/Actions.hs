@@ -29,6 +29,7 @@ import Game.LambdaHack.Binding
 import qualified Game.LambdaHack.Command as Command
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind as TileKind
@@ -51,6 +52,7 @@ import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Utils.Frequency
 import Game.LambdaHack.Vector
 
 default (Text)
@@ -378,7 +380,7 @@ actorAttackActor source target = do
          | otherwise = smRaw {bname = Just "somebody"}
       tm | tvisible  = tmRaw
          | otherwise = tmRaw {bname = Just "somebody"}
-  if bfaction sm == bfaction tm && isHumanFaction s (bfaction sm)
+  if bfaction sm == bfaction tm && isControlledFaction s (bfaction sm)
      && not (bproj sm) && not (bproj tm)
     then assert `failure` (source, target, "player AI bumps into friendlies")
     else do
@@ -468,15 +470,12 @@ actorRunActor source target = do
    then stopRunning  -- do not switch positions repeatedly
    else void $ focusIfOurs target
 
--- TODO: probably not the right semantics: for each kind of factions
--- that spawn, only the first faction with that kind is every picked.
--- TODO: merge partially with summonMonster?
 -- | Create a new monster in the level, at a random position.
 rollMonster :: Kind.COps -> Perception -> State -> StateServer
             -> Rnd (State, StateServer)
 rollMonster Kind.COps{ cotile
                      , coactor=Kind.Ops{opick, okind}
-                     , cofact=Kind.Ops{opick=fopick, oname=foname}
+                     , cofact=Kind.Ops{okind=fokind}
                      } per state ser = do
   let lvl@Level{lactor} = getArena state
       ms = hostileList state
@@ -499,22 +498,28 @@ rollMonster Kind.COps{ cotile
           , \ l t -> Tile.hasFeature cotile F.Walkable t
                      && unoccupied (IM.elems lactor) l
           ]
-      spawnKindId <- fopick "spawn" (const True)
-      mk <- opick (foname spawnKindId) (const True)
-      hp <- rollDice $ ahp $ okind mk
-      let bfaction = fst $ fromJust
-                     $ find (\(_, fa) -> gkind fa == spawnKindId)
-                     $ IM.toList $ sfaction state
-      return $ addMonster cotile mk hp loc bfaction False state ser
+      let f (fid, fa) =
+            let kind = fokind (gkind fa)
+            in if fspawn kind <= 0
+               then Nothing
+               else Just (fspawn kind, (kind, fid))
+      case catMaybes $ map f $ IM.toList $ sfaction state of
+        [] -> return (state, ser)
+        spawnList -> do
+          let freq = toFreq "spawn" spawnList
+          (spawnKind, bfaction) <- frequency freq
+          mk <- opick (fname spawnKind) (const True)
+          hp <- rollDice $ ahp $ okind mk
+          return $ addMonster cotile mk hp loc bfaction False state ser
 
 -- | Generate a monster, possibly.
 generateMonster :: MonadAction m => m ()
 generateMonster = do
-  cops    <- getsGlobal scops
-  state   <- getGlobal
-  ser   <- getServer
-  per     <- askPerception
-  (nstate, nser)  <- rndToAction $ rollMonster cops per state ser
+  cops <- getsGlobal scops
+  state <- getGlobal
+  ser <- getServer
+  per <- askPerception
+  (nstate, nser) <- rndToAction $ rollMonster cops per state ser
   putGlobal nstate
   srandom <- getsServer srandom
   putServer $! nser {srandom}

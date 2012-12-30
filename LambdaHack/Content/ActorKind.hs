@@ -23,7 +23,7 @@ hero,        projectile, eye, fastEye, nose :: ActorKind
 hero = ActorKind
   { asymbol = '@'
   , aname   = "hero"
-  , afreq   = [("hero", 1)]  -- Does not appear randomly in the dungeon.
+  , afreq   = [("hero", 1), ("summon", 50)]  -- Does not appear randomly.
   , acolor  = BrWhite  -- Heroes white, monsters colorful.
   , ahp     = RollDice 60 1
   , aspeed  = toSpeed 2

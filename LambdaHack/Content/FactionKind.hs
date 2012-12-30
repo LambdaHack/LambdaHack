@@ -22,16 +22,18 @@ hero = FactionKind
   , ffreq       = [("hero", 1), ("playable", 50)]
   , fAiSelected = "fullAbility"
   , fAiIdle     = "meleeAdjacent"
-  , fenemy      = ["hero", "monster"]
+  , fenemy      = ["monster"]
   , fally       = []
+  , fspawn      = 0
   }
 
 monster = FactionKind
   { fsymbol     = 'm'
   , fname       = "monster"
-  , ffreq       = [("monster", 1), ("playable", 50), ("spawn", 1)]
+  , ffreq       = [("monster", 1), ("playable", 50)]
   , fAiSelected = "fullAbility"
   , fAiIdle     = "fullAbility"
-  , fenemy      = ["hero", "monster"]
+  , fenemy      = ["hero"]
   , fally       = []
+  , fspawn      = 50
   }
