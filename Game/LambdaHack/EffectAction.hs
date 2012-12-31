@@ -273,7 +273,7 @@ eff Effect.Descend _ source target power = do
            then (True, "")
            else (True, actorVerb coactor tm "find a way downstairs")
 
-nullEffect :: MonadActionPure m => m (Bool, Text)
+nullEffect :: MonadActionRO m => m (Bool, Text)
 nullEffect = return (False, "Nothing happens.")
 
 -- TODO: refactor with actorAttackActor.
@@ -482,7 +482,7 @@ selectHero k = do
 
 -- TODO: center screen, flash the background, etc. Perhaps wait for SPACE.
 -- | Focus on the hero being wounded/displaced/etc.
-focusIfOurs :: MonadActionPure m => ActorId -> m Bool
+focusIfOurs :: MonadActionRO m => ActorId -> m Bool
 focusIfOurs target = do
   s  <- getLocal
   if isAHero s target
@@ -614,7 +614,7 @@ gameOver showEndingScreens = do
         when go $ modifyServer (\st -> st {squit = Just (True, Killed sarena)})
 
 -- | Create a list of item names.
-itemOverlay :: MonadActionPure m => Discoveries -> Bool -> [Item] -> m Overlay
+itemOverlay :: MonadActionRO m => Discoveries -> Bool -> [Item] -> m Overlay
 itemOverlay disco sorted is = do
   Kind.COps{coitem} <- getsLocal scops
   let items | sorted = sortBy (cmpLetterMaybe `on` jletter) is

@@ -38,7 +38,7 @@ default (Text)
 -- TODO: When inventory is displayed, let TAB switch the player (without
 -- announcing that) and show the inventory of the new player.
 -- | Display inventory
-inventory :: MonadActionPure m => WriterT Slideshow m ()
+inventory :: MonadActionRO m => WriterT Slideshow m ()
 inventory = do
   Kind.COps{coactor} <- getsLocal scops
   pbody <- getsLocal getPlayerBody
@@ -352,7 +352,7 @@ acceptCurrent h = do
     else h  -- nothing to accept right now, treat this as a command invocation
 
 -- | Clear current messages, show the next screen if any.
-clearCurrent :: MonadActionPure m => m ()
+clearCurrent :: MonadActionRO m => m ()
 clearCurrent = return ()
 
 -- | Drop a single item.

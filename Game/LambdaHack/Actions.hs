@@ -89,13 +89,13 @@ moveCursor dir n = do
   modifyClient (updateCursor upd)
   doLook
 
-ifRunning :: MonadActionPure m => ((Vector, Int) -> m a) -> m a -> m a
+ifRunning :: MonadActionRO m => ((Vector, Int) -> m a) -> m a -> m a
 ifRunning t e = do
   ad <- getsLocal (bdir . getPlayerBody)
   maybe e t ad
 
 -- | Guess and report why the bump command failed.
-guessBump :: MonadActionPure m => Kind.Ops TileKind -> F.Feature -> Kind.Id TileKind -> m ()
+guessBump :: MonadActionRO m => Kind.Ops TileKind -> F.Feature -> Kind.Id TileKind -> m ()
 guessBump cotile F.Openable t | Tile.hasFeature cotile F.Closable t =
   abortWith "already open"
 guessBump _ F.Openable _ =
@@ -250,7 +250,7 @@ tgtAscend k = do
     modifyClient (updateCursor upd)
   doLook
 
-heroesAfterPl :: MonadActionPure m => m [ActorId]
+heroesAfterPl :: MonadActionRO m => m [ActorId]
 heroesAfterPl = do
   pl <- getsLocal splayer
   s  <- getLocal
