@@ -179,7 +179,9 @@ getKeyCommand doPush = do
     _ -> (nc, modifier)
 
 -- | Display an overlay and wait for a player command.
-getKeyOverlayCommand :: MonadClientServerRO m => Overlay -> m K.KM
+getKeyOverlayCommand :: (MonadActionIO m, MonadClientServerPure m)
+                     => Overlay
+                     -> m K.KM
 getKeyOverlayCommand overlay = do
   frame <- drawOverlay ColorFull overlay
   fs <- askFrontendSession
@@ -201,7 +203,9 @@ getConfirm clearKeys frame = do
     _ -> return False
 
 -- | Display a sarenaeshow, awaiting confirmation for each sarenae.
-getManyConfirms :: MonadClientServerRO m => [K.KM] -> Slideshow -> m Bool
+getManyConfirms :: (MonadActionIO m, MonadClientServerPure m)
+                => [K.KM] -> Slideshow
+                -> m Bool
 getManyConfirms clearKeys sarenaes =
   case runSlideshow sarenaes of
     [] -> return True
@@ -233,7 +237,7 @@ getYesNo frame = do
 
 -- | Display a msg with a @more@ prompt. Return value indicates if the player
 -- tried to cancel/escape.
-displayMore :: MonadClientServerRO m => ColorMode -> Msg -> m Bool
+displayMore :: (MonadActionIO m, MonadClientServerPure m) => ColorMode -> Msg -> m Bool
 displayMore dm prompt = do
   sli <- promptToSlideshow $ prompt <+> moreMsg
   frame <- drawOverlay dm $ head $ runSlideshow sli
@@ -241,7 +245,7 @@ displayMore dm prompt = do
 
 -- | Print a yes/no question and return the player's answer. Use black
 -- and white colours to turn player's attention to the choice.
-displayYesNo :: MonadClientServerRO m => Msg -> m Bool
+displayYesNo :: (MonadActionIO m, MonadClientServerPure m) => Msg -> m Bool
 displayYesNo prompt = do
   sli <- promptToSlideshow $ prompt <+> yesnoMsg
   frame <- drawOverlay ColorBW $ head $ runSlideshow sli
@@ -251,7 +255,9 @@ displayYesNo prompt = do
 -- | Print a prompt and an overlay and wait for a player keypress.
 -- If many overlays, scroll screenfuls with SPACE. Do not wrap screenfuls
 -- (in some menus @?@ cycles views, so the user can restart from the top).
-displayChoiceUI :: MonadClientServerRO m => Msg -> Overlay -> [K.KM] -> m K.KM
+displayChoiceUI :: (MonadActionIO m, MonadClientServerPure m)
+                => Msg -> Overlay -> [K.KM]
+                -> m K.KM
 displayChoiceUI prompt ov keys = do
   sarenaes <- fmap runSlideshow $ overlayToSlideshow (prompt <> ", ESC]") ov
   fs <- askFrontendSession
@@ -296,7 +302,7 @@ drawOverlay dm over = do
 
 -- | Push the frame depicting the current level to the frame queue.
 -- Only one screenful of the report is shown, the rest is ignored.
-displayPush :: MonadClientServerRO m => m ()
+displayPush :: (MonadActionIO m, MonadClientServerPure m) => m ()
 displayPush = do
   fs <- askFrontendSession
   s  <- getLocal
@@ -361,7 +367,7 @@ rememberList visible lvl = do
 -- | Save the cli and a backup of the save game file, in case of crashes.
 --
 -- See 'Save.saveGameBkp'.
-saveGameBkp :: MonadActionRO m => m ()
+saveGameBkp :: (MonadActionIO m, MonadActionPure m) => m ()
 saveGameBkp = do
   state <- getGlobal
   ser <- getServer
@@ -370,7 +376,7 @@ saveGameBkp = do
   liftIO $ Save.saveGameBkp configUI state ser d
 
 -- | Dumps the current game rules configuration to a file.
-dumpCfg :: MonadServerRO m => FilePath -> m ()
+dumpCfg :: (MonadActionIO m, MonadServerPure m) => FilePath -> m ()
 dumpCfg fn = do
   config <- getsServer sconfig
   liftIO $ ConfigIO.dump config fn
@@ -381,7 +387,9 @@ dumpCfg fn = do
 -- Warning: scores are shown during the game,
 -- so we should be careful not to leak secret information through them
 -- (e.g., the nature of the items through the total worth of inventory).
-handleScores :: MonadClientServerRO m => Bool -> Status -> Int -> m ()
+handleScores :: (MonadActionIO m, MonadClientServerPure m)
+             => Bool -> Status -> Int
+             -> m ()
 handleScores write status total =
   when (total /= 0) $ do
     configUI <- askConfigUI
@@ -526,7 +534,7 @@ gameResetAction configUI cops =
 -- in particular verify content consistency.
 -- Then create the starting game config from the default config file
 -- and initialize the engine with the starting session.
-startFrontend :: MonadActionRO m
+startFrontend :: (MonadActionIO m, MonadActionPure m)
               => (m () -> FrontendSession -> Kind.COps -> Binding -> ConfigUI
                   -> State -> StateServer -> StateDict -> IO ())
               -> Kind.COps -> m () -> IO ()

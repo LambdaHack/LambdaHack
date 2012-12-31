@@ -102,14 +102,6 @@ instance MonadActionPure Action where
 instance MonadActionIO Action where
   liftIO x = Action (\_c _p k _a s ser d -> x >>= k s ser d)
 
-instance MonadServerRO Action where
-
-instance MonadClientRO Action where
-
-instance MonadClientServerRO Action where
-
-instance MonadActionRO Action where
-
 instance MonadServer Action where
   modifyGlobal f = Action (\_c _p k _a s ser d -> k (f s) ser d ())
   putGlobal      = modifyGlobal . const

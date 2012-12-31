@@ -69,7 +69,7 @@ instance MonadClientPure m => MonadClientPure (WriterT Slideshow m) where
 class (MonadServerPure m, MonadClientPure m) => MonadClientServerPure m where
 
 instance MonadClientServerPure m
-  => MonadClientServerPure (WriterT Slideshow m) where
+         => MonadClientServerPure (WriterT Slideshow m) where
 
 class MonadClientServerPure m => MonadActionPure m where
   getDict     :: m StateDict
@@ -87,27 +87,7 @@ class MonadActionBase m => MonadActionIO m where
 instance MonadActionIO m => MonadActionIO (WriterT Slideshow m) where
   liftIO = lift . liftIO
 
-class (MonadActionIO m, MonadServerPure m) => MonadServerRO m where
-
-instance MonadServerRO m => MonadServerRO (WriterT Slideshow m) where
-
-class (MonadActionIO m, MonadClientPure m) => MonadClientRO m where
-
-instance MonadClientRO m => MonadClientRO (WriterT Slideshow m) where
-
-class
-  (MonadActionIO m, MonadClientServerPure m, MonadServerRO m, MonadClientRO m)
-  => MonadClientServerRO m where
-
-instance MonadClientServerRO m
-  => MonadClientServerRO (WriterT Slideshow m) where
-
-class (MonadActionIO m, MonadActionPure m, MonadClientServerRO m)
-      => MonadActionRO m where
-
-instance MonadActionRO m => MonadActionRO (WriterT Slideshow m) where
-
-class MonadServerRO m => MonadServer m where
+class (MonadActionIO m, MonadServerPure m) => MonadServer m where
   modifyGlobal :: (State -> State) -> m ()
   putGlobal    :: State -> m ()
   modifyServer :: (StateServer -> StateServer) -> m ()
@@ -119,7 +99,7 @@ instance MonadServer m => MonadServer (WriterT Slideshow m) where
   modifyServer = lift . modifyServer
   putServer    = lift . putServer
 
-class MonadClientRO m => MonadClient m where
+class (MonadActionIO m, MonadClientPure m) => MonadClient m where
   modifyClient :: (StateClient -> StateClient) -> m ()
   putClient    :: StateClient -> m ()
   modifyLocal  :: (State -> State) -> m ()
@@ -131,12 +111,13 @@ instance MonadClient m => MonadClient (WriterT Slideshow m) where
   modifyLocal  = lift . modifyLocal
   putLocal     = lift . putLocal
 
-class (MonadClientServerRO m, MonadServer m, MonadClient m)
-  => MonadClientServer m where
+class (MonadActionIO m, MonadClientServerPure m, MonadServer m, MonadClient m)
+      => MonadClientServer m where
 
 instance MonadClientServer m => MonadClientServer (WriterT Slideshow m) where
 
-class (MonadActionRO m, MonadClientServer m) => MonadAction m where
+class (MonadActionIO m, MonadActionPure m, MonadClientServer m)
+      => MonadAction m where
   modifyDict   :: (StateDict -> StateDict) -> m ()
   putDict      :: StateDict -> m ()
 
