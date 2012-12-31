@@ -57,7 +57,7 @@ import Game.LambdaHack.Vector
 
 default (Text)
 
-gameSave :: MonadActionRO m => m ()
+gameSave :: MonadAction m => m ()
 gameSave = do
   saveGameBkp
   msgAdd "Game progress saved to a backup file."
@@ -552,13 +552,13 @@ regenerateLevelHP = do
   modifyGlobal (updateArena (updateActor (IM.mapWithKey (upd hi))))
 
 -- | Display command help.
-displayHelp :: MonadActionRO m => WriterT Slideshow m ()
+displayHelp :: MonadClient m => WriterT Slideshow m ()
 displayHelp = do
   keyb <- askBinding
   tell $ keyHelp keyb
 
 -- | Display the main menu.
-displayMainMenu :: MonadActionRO m => WriterT Slideshow m ()
+displayMainMenu :: MonadClient m => WriterT Slideshow m ()
 displayMainMenu = do
   Kind.COps{corule} <- getsLocal scops
   Binding{krevMap} <- askBinding
@@ -605,7 +605,7 @@ displayMainMenu = do
       sarenaes <- overlayToSlideshow hd tl
       tell sarenaes
 
-displayHistory :: MonadActionRO m => WriterT Slideshow m ()
+displayHistory :: MonadClient m => WriterT Slideshow m ()
 displayHistory = do
   StateClient{shistory} <- getClient
   time <- getsLocal getTime
@@ -616,7 +616,7 @@ displayHistory = do
   sarenaes <- overlayToSlideshow msg $ renderHistory shistory
   tell sarenaes
 
-dumpConfig :: MonadActionRO m => m ()
+dumpConfig :: MonadServer m => m ()
 dumpConfig = do
   ConfigUI{configRulesCfgFile} <- askConfigUI
   let fn = configRulesCfgFile ++ ".dump"

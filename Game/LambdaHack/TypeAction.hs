@@ -6,7 +6,9 @@ module Game.LambdaHack.TypeAction
   ( FunAction, Action, executor
   ) where
 
+import Control.Arrow (first, second)
 import Control.Monad.Reader.Class
+import qualified Data.IntMap as IM
 import qualified Data.Text as T
 
 import Game.LambdaHack.Action
@@ -50,30 +52,7 @@ instance Monad Action where
   return = returnAction
   (>>=)  = bindAction
 
-instance Show (Action a) where
-  show _ = "an action"
-
-instance MonadActionPure Action where
-  tryWith exc m =
-    Action (\c p k a s ser d ->
-             let runA msg = runAction (exc msg) c p k a s ser d
-             in runAction m c p k runA s ser d)
-  abortWith msg = Action (\_c _p _k a _s _ser _d -> a msg)
-  getGlobal     = Action (\_c _p k _a s ser d -> k s ser d s)
-  getServer     = Action (\_c _p k _a s ser d -> k s ser d ser)
-  getDict       = Action (\_c _p k _a s ser d -> k s ser d d)
-  getsSession f = Action (\c _p k _a s ser d -> k s ser d (f c))
-
--- TODO: make sure id is inlinded in put*
-instance MonadActionRO Action where
-  modifyGlobal f = Action (\_c _p k _a s ser d -> k (f s) ser d ())
-  modifyServer f = Action (\_c _p k _a s ser d -> k s (f ser) d ())
-  modifyDict f   = Action (\_c _p k _a s ser d -> k s ser (f d) ())
-  liftIO x       = Action (\_c _p k _a s ser d -> x >>= k s ser d)
-
-instance MonadAction Action where
-
--- TODO: make sure fmap is inlinded
+-- TODO: make sure fmap is inlinded and all else is inlined in this file
 instance Functor Action where
   fmap f m =
     Action (\c p k a s ser d ->
@@ -84,6 +63,74 @@ instance MonadReader Pers Action where
   ask       = Action (\_c p k _a s ser d -> k s ser d p)
   local f m = Action (\c p k a s ser d ->
                          runAction m c (f p) k a s ser d)
+
+instance Show (Action a) where
+  show _ = "an action"
+
+instance MonadActionBase Action where
+  tryWith exc m =
+    Action (\c p k a s ser d ->
+             let runA msg = runAction (exc msg) c p k a s ser d
+             in runAction m c p k runA s ser d)
+  abortWith msg = Action (\_c _p _k a _s _ser _d -> a msg)
+  getsSession f = Action (\c _p k _a s ser d -> k s ser d (f c))
+
+instance MonadServerPure Action where
+  getGlobal  = Action (\_c _p k _a s ser d -> k s ser d s)
+  getsGlobal = (`fmap` getGlobal)
+  getServer  = Action (\_c _p k _a s ser d -> k s ser d ser)
+  getsServer = (`fmap` getServer)
+
+instance MonadClientPure Action where
+  getClient  = do
+    State{sside} <- getGlobal
+    d <- getDict
+    return $! fst $! d IM.! sside
+  getsClient = (`fmap` getClient)
+  getLocal   = do
+    State{sside} <- getGlobal
+    d <- getDict
+    return $! snd $! d IM.! sside
+  getsLocal  = (`fmap` getLocal)
+
+instance MonadClientServerPure Action where
+
+instance MonadActionPure Action where
+  getDict  = Action (\_c _p k _a s ser d -> k s ser d d)
+  getsDict = (`fmap` getDict)
+
+instance MonadActionIO Action where
+  liftIO x = Action (\_c _p k _a s ser d -> x >>= k s ser d)
+
+instance MonadServerRO Action where
+
+instance MonadClientRO Action where
+
+instance MonadClientServerRO Action where
+
+instance MonadActionRO Action where
+
+instance MonadServer Action where
+  modifyGlobal f = Action (\_c _p k _a s ser d -> k (f s) ser d ())
+  putGlobal      = modifyGlobal . const
+  modifyServer f = Action (\_c _p k _a s ser d -> k s (f ser) d ())
+  putServer      = modifyServer . const
+
+instance MonadClient Action where
+  modifyClient f = do
+    State{sside} <- getGlobal
+    modifyDict (IM.adjust (first f) sside)
+  putClient      = modifyClient . const
+  modifyLocal f  = do
+    State{sside} <- getGlobal
+    modifyDict (IM.adjust (second f) sside)
+  putLocal       = modifyLocal . const
+
+instance MonadClientServer Action where
+
+instance MonadAction Action where
+  modifyDict f   = Action (\_c _p k _a s ser d -> k s ser (f d) ())
+  putDict      = modifyDict . const
 
 -- | Run an action, with a given session, state and cli, in the @IO@ monad.
 executor :: Action ()

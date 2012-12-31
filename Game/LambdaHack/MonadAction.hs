@@ -1,17 +1,12 @@
 {-# OPTIONS -fno-warn-orphans #-}
 {-# LANGUAGE FlexibleContexts, FlexibleInstances #-}
--- | Basic type classes for game actions. Exposed to let library users
--- define their own variants of the main action type @Action@.
--- This module should not be imported anywhere except in Action
--- and TypeAction.
-module Game.LambdaHack.MonadAction
-  ( Session(..), MonadActionPure(..), MonadActionRO(..), MonadAction
-  ) where
+-- | Basic type classes for game actions.
+-- This module should not be imported anywhere except in 'Action'
+-- and 'TypeAction'.
+module Game.LambdaHack.MonadAction where
 
-import Control.Arrow (first, second)
 import Control.Monad.Reader.Class
 import Control.Monad.Writer.Strict (WriterT (WriterT, runWriterT), lift)
-import qualified Data.IntMap as IM
 
 import Game.LambdaHack.Action.Frontend
 import Game.LambdaHack.Binding
@@ -30,81 +25,121 @@ data Session = Session
   }
 
 class (Monad m, Functor m, MonadReader Pers m, Show (m ()))
-      => MonadActionPure m where
+      => MonadActionBase m where
   -- Set the current exception handler. First argument is the handler,
   -- second is the computation the handler scopes over.
   tryWith     :: (Msg -> m a) -> m a -> m a
   -- Abort with the given message.
-  abortWith   :: MonadActionPure m => Msg -> m a
-  getGlobal   :: m State
-  getsGlobal  :: (State -> a) -> m a
-  getsGlobal  = (`fmap` getGlobal)
-  getServer   :: m StateServer
-  getsServer  :: (StateServer -> a) -> m a
-  getsServer  = (`fmap` getServer)
-  getDict     :: m StateDict
-  getsDict    :: (StateDict -> a) -> m a
-  getsDict    = (`fmap` getDict)
-  getClient   :: m StateClient
-  getClient   = do
-    State{sside} <- getGlobal
-    d <- getDict
-    return $! fst $! d IM.! sside
-  getsClient  :: (StateClient -> a) -> m a
-  getsClient  = (`fmap` getClient)
-  getLocal    :: m State
-  getLocal    = do
-    State{sside} <- getGlobal
-    d <- getDict
-    return $! snd $! d IM.! sside
-  getsLocal   :: (State -> a) -> m a
-  getsLocal   = (`fmap` getLocal)
+  abortWith   :: Msg -> m a
   getsSession :: (Session -> a) -> m a
 
-instance MonadActionPure m => MonadActionPure (WriterT Slideshow m) where
+instance MonadActionBase m => MonadActionBase (WriterT Slideshow m) where
   tryWith exc m =
     WriterT $ tryWith (\msg -> runWriterT (exc msg)) (runWriterT m)
   abortWith   = lift . abortWith
-  getGlobal   = lift getGlobal
-  getServer   = lift getServer
-  getDict     = lift getDict
   getsSession = lift . getsSession
 
-instance MonadActionPure m => Show (WriterT Slideshow m a) where
+instance MonadActionBase m => Show (WriterT Slideshow m a) where
   show _ = "an action"
 
-class MonadActionPure m => MonadActionRO m where
-  modifyGlobal :: (State -> State) -> m ()
-  putGlobal    :: State -> m ()
-  putGlobal    = modifyGlobal . const
-  modifyServer :: (StateServer -> StateServer) -> m ()
-  putServer    :: StateServer -> m ()
-  putServer    = modifyServer . const
-  modifyDict   :: (StateDict -> StateDict) -> m ()
-  putDict      :: StateDict -> m ()
-  putDict      = modifyDict . const
-  modifyClient :: (StateClient -> StateClient) -> m ()
-  modifyClient f = do
-    State{sside} <- getGlobal
-    modifyDict (IM.adjust (first f) sside)
-  putClient    :: StateClient -> m ()
-  putClient    = modifyClient . const
-  modifyLocal  :: (State -> State) -> m ()
-  modifyLocal f = do
-    State{sside} <- getGlobal
-    modifyDict (IM.adjust (second f) sside)
-  putLocal     :: State -> m ()
-  putLocal     = modifyLocal . const
+class MonadActionBase m => MonadServerPure m where
+  getGlobal   :: m State
+  getsGlobal  :: (State -> a) -> m a
+  getServer   :: m StateServer
+  getsServer  :: (StateServer -> a) -> m a
+
+instance MonadServerPure m => MonadServerPure (WriterT Slideshow m) where
+  getGlobal   = lift getGlobal
+  getsGlobal  = lift . getsGlobal
+  getServer   = lift getServer
+  getsServer  = lift . getsServer
+
+class MonadActionBase m => MonadClientPure m where
+  getClient   :: m StateClient
+  getsClient  :: (StateClient -> a) -> m a
+  getLocal    :: m State
+  getsLocal   :: (State -> a) -> m a
+
+instance MonadClientPure m => MonadClientPure (WriterT Slideshow m) where
+  getClient   = lift getClient
+  getsClient  = lift . getsClient
+  getLocal    = lift getLocal
+  getsLocal   = lift . getsLocal
+
+class (MonadServerPure m, MonadClientPure m) => MonadClientServerPure m where
+
+instance MonadClientServerPure m
+  => MonadClientServerPure (WriterT Slideshow m) where
+
+class MonadClientServerPure m => MonadActionPure m where
+  getDict     :: m StateDict
+  getsDict    :: (StateDict -> a) -> m a
+
+instance MonadActionPure m => MonadActionPure (WriterT Slideshow m) where
+  getDict     = lift getDict
+  getsDict    = lift . getsDict
+
+class MonadActionBase m => MonadActionIO m where
   -- We do not provide a MonadIO instance, so that outside of Action/
   -- nobody can subvert the action monads by invoking arbitrary IO.
-  liftIO       :: IO a -> m a
+  liftIO :: IO a -> m a
+
+instance MonadActionIO m => MonadActionIO (WriterT Slideshow m) where
+  liftIO = lift . liftIO
+
+class (MonadActionIO m, MonadServerPure m) => MonadServerRO m where
+
+instance MonadServerRO m => MonadServerRO (WriterT Slideshow m) where
+
+class (MonadActionIO m, MonadClientPure m) => MonadClientRO m where
+
+instance MonadClientRO m => MonadClientRO (WriterT Slideshow m) where
+
+class
+  (MonadActionIO m, MonadClientServerPure m, MonadServerRO m, MonadClientRO m)
+  => MonadClientServerRO m where
+
+instance MonadClientServerRO m
+  => MonadClientServerRO (WriterT Slideshow m) where
+
+class (MonadActionIO m, MonadActionPure m, MonadClientServerRO m)
+      => MonadActionRO m where
 
 instance MonadActionRO m => MonadActionRO (WriterT Slideshow m) where
-  modifyGlobal = lift . modifyGlobal
-  modifyServer = lift . modifyServer
-  modifyDict   = lift . modifyDict
-  liftIO       = lift . liftIO
 
-class MonadActionRO m => MonadAction m where
+class MonadServerRO m => MonadServer m where
+  modifyGlobal :: (State -> State) -> m ()
+  putGlobal    :: State -> m ()
+  modifyServer :: (StateServer -> StateServer) -> m ()
+  putServer    :: StateServer -> m ()
+
+instance MonadServer m => MonadServer (WriterT Slideshow m) where
+  modifyGlobal = lift . modifyGlobal
+  putGlobal    = lift . putGlobal
+  modifyServer = lift . modifyServer
+  putServer    = lift . putServer
+
+class MonadClientRO m => MonadClient m where
+  modifyClient :: (StateClient -> StateClient) -> m ()
+  putClient    :: StateClient -> m ()
+  modifyLocal  :: (State -> State) -> m ()
+  putLocal     :: State -> m ()
+
+instance MonadClient m => MonadClient (WriterT Slideshow m) where
+  modifyClient = lift . modifyClient
+  putClient    = lift . putClient
+  modifyLocal  = lift . modifyLocal
+  putLocal     = lift . putLocal
+
+class (MonadClientServerRO m, MonadServer m, MonadClient m)
+  => MonadClientServer m where
+
+instance MonadClientServer m => MonadClientServer (WriterT Slideshow m) where
+
+class (MonadActionRO m, MonadClientServer m) => MonadAction m where
+  modifyDict   :: (StateDict -> StateDict) -> m ()
+  putDict      :: StateDict -> m ()
 
 instance MonadAction m => MonadAction (WriterT Slideshow m) where
+  modifyDict   = lift . modifyDict
+  putDict      = lift . putDict

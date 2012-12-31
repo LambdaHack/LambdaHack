@@ -1,18 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Game action monads and basic building blocks for player and monster
 -- actions. Has no access to the the main action type @Action@ nor
--- to the implementation details of the action monads @MonadActionRO@
--- and @MonadAction@.
+-- to the implementation details of the action monads.
 module Game.LambdaHack.Action
   ( -- * Action monads
-    MonadActionPure( getGlobal, getsGlobal
-                   , getServer, getsServer
-                   , getClient, getsClient
-                   , getLocal, getsLocal )
-  , MonadActionRO( putGlobal, modifyGlobal
-                 , putServer, modifyServer
-                 , putClient, modifyClient
-                 , putLocal, modifyLocal )
+    MonadServerPure( getGlobal, getsGlobal, getServer, getsServer )
+  , MonadClientPure( getClient, getsClient, getLocal, getsLocal )
+  , MonadActionPure
+  , MonadServer( putGlobal, modifyGlobal, putServer, modifyServer )
+  , MonadClient( putClient, modifyClient, putLocal, modifyLocal )
   , MonadAction
     -- * The Perception Reader
   , withPerception, askPerception
@@ -83,31 +79,31 @@ import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert
 
 -- | Get the frontend session.
-askFrontendSession :: MonadActionPure m => m FrontendSession
+askFrontendSession :: MonadActionBase m => m FrontendSession
 askFrontendSession = getsSession sfs
 
 -- | Get the key binding.
-askBinding :: MonadActionPure m => m Binding
+askBinding :: MonadActionBase m => m Binding
 askBinding = getsSession sbinding
 
 -- | Get the config from the config file.
-askConfigUI :: MonadActionPure m => m ConfigUI
+askConfigUI :: MonadActionBase m => m ConfigUI
 askConfigUI = getsSession sconfigUI
 
 -- | Add a message to the current report.
-msgAdd :: MonadActionRO m => Msg -> m ()
+msgAdd :: MonadClient m => Msg -> m ()
 msgAdd msg = modifyClient $ \d -> d {sreport = addMsg (sreport d) msg}
 
 -- | Wipe out and set a new value for the history.
-historyReset :: MonadActionRO m => History -> m ()
+historyReset :: MonadClient m => History -> m ()
 historyReset shistory = modifyClient $ \cli -> cli {shistory}
 
 -- | Wipe out and set a new value for the current report.
-msgReset :: MonadActionRO m => Msg -> m ()
+msgReset :: MonadClient m => Msg -> m ()
 msgReset msg = modifyClient $ \d -> d {sreport = singletonReport msg}
 
 -- | Update the cached perception for the given computation.
-withPerception :: MonadActionPure m => m () -> m ()
+withPerception :: MonadClientServerPure m => m () -> m ()
 withPerception m = do
   cops <- getsGlobal scops
   s <- getGlobal
@@ -117,7 +113,7 @@ withPerception m = do
   local (const per) m
 
 -- | Get the current perception.
-askPerception :: MonadActionPure m => m Perception
+askPerception :: MonadClientPure m => m Perception
 askPerception = do
   lid <- getsLocal sarena
   pers <- ask
@@ -126,26 +122,26 @@ askPerception = do
 
 -- | Reset the state and resume from the last backup point, i.e., invoke
 -- the failure continuation.
-abort :: MonadActionPure m => m a
+abort :: MonadActionBase m => m a
 abort = abortWith ""
 
 -- | Abort and print the given msg if the condition is true.
-abortIfWith :: MonadActionPure m => Bool -> Msg -> m a
+abortIfWith :: MonadActionBase m => Bool -> Msg -> m a
 abortIfWith True msg = abortWith msg
 abortIfWith False _  = abortWith ""
 
 -- | Abort and conditionally print the fixed message.
-neverMind :: MonadActionPure m => Bool -> m a
+neverMind :: MonadActionBase m => Bool -> m a
 neverMind b = abortIfWith b "never mind"
 
 -- | Take a handler and a computation. If the computation fails, the
 -- handler is invoked and then the computation is retried.
-tryRepeatedlyWith :: MonadActionPure m => (Msg -> m ()) -> m () -> m ()
+tryRepeatedlyWith :: MonadActionBase m => (Msg -> m ()) -> m () -> m ()
 tryRepeatedlyWith exc m =
   tryWith (\msg -> exc msg >> tryRepeatedlyWith exc m) m
 
 -- | Try the given computation and silently catch failure.
-tryIgnore :: MonadActionPure m => m () -> m ()
+tryIgnore :: MonadActionBase m => m () -> m ()
 tryIgnore =
   tryWith (\msg -> if T.null msg
                    then return ()
@@ -153,7 +149,7 @@ tryIgnore =
 
 -- | Set the current exception handler. Apart of executing it,
 -- draw and pass along a sarenae with the abort message (even if message empty).
-tryWithSlide :: MonadActionRO m
+tryWithSlide :: MonadClient m
              => m a -> WriterT Slideshow m a -> WriterT Slideshow m a
 tryWithSlide exc h =
   let excMsg msg = do
@@ -164,7 +160,7 @@ tryWithSlide exc h =
   in tryWith excMsg h
 
 -- | Store current report in the history and reset report.
-recordHistory :: MonadActionRO m => m ()
+recordHistory :: MonadClient m => m ()
 recordHistory = do
   StateClient{sreport, shistory} <- getClient
   unless (nullReport sreport) $ do
@@ -173,7 +169,7 @@ recordHistory = do
     historyReset $! takeHistory configHistoryMax $! addReport sreport shistory
 
 -- | Wait for a player command.
-getKeyCommand :: MonadActionRO m => Maybe Bool -> m K.KM
+getKeyCommand :: MonadActionIO m => Maybe Bool -> m K.KM
 getKeyCommand doPush = do
   fs <- askFrontendSession
   keyb <- askBinding
@@ -183,7 +179,7 @@ getKeyCommand doPush = do
     _ -> (nc, modifier)
 
 -- | Display an overlay and wait for a player command.
-getKeyOverlayCommand :: MonadActionRO m => Overlay -> m K.KM
+getKeyOverlayCommand :: MonadClientServerRO m => Overlay -> m K.KM
 getKeyOverlayCommand overlay = do
   frame <- drawOverlay ColorFull overlay
   fs <- askFrontendSession
@@ -194,7 +190,7 @@ getKeyOverlayCommand overlay = do
     _ -> (nc, modifier)
 
 -- | Ignore unexpected kestrokes until a SPACE or ESC is pressed.
-getConfirm :: MonadActionRO m => [K.KM] -> SingleFrame -> m Bool
+getConfirm :: MonadActionIO m => [K.KM] -> SingleFrame -> m Bool
 getConfirm clearKeys frame = do
   fs <- askFrontendSession
   let keys = [(K.Space, K.NoModifier), (K.Esc, K.NoModifier)] ++ clearKeys
@@ -205,7 +201,7 @@ getConfirm clearKeys frame = do
     _ -> return False
 
 -- | Display a sarenaeshow, awaiting confirmation for each sarenae.
-getManyConfirms :: MonadActionRO m => [K.KM] -> Slideshow -> m Bool
+getManyConfirms :: MonadClientServerRO m => [K.KM] -> Slideshow -> m Bool
 getManyConfirms clearKeys sarenaes =
   case runSlideshow sarenaes of
     [] -> return True
@@ -217,13 +213,13 @@ getManyConfirms clearKeys sarenaes =
         else return False
 
 -- | Push frames or frame's worth of delay to the frame queue.
-displayFramesPush :: MonadActionRO m => Frames -> m ()
+displayFramesPush :: MonadActionIO m => Frames -> m ()
 displayFramesPush frames = do
   fs <- askFrontendSession
   liftIO $ mapM_ (displayFrame fs False) frames
 
 -- | A yes-no confirmation.
-getYesNo :: MonadActionRO m => SingleFrame -> m Bool
+getYesNo :: MonadActionIO m => SingleFrame -> m Bool
 getYesNo frame = do
   fs <- askFrontendSession
   let keys = [ (K.Char 'y', K.NoModifier)
@@ -237,7 +233,7 @@ getYesNo frame = do
 
 -- | Display a msg with a @more@ prompt. Return value indicates if the player
 -- tried to cancel/escape.
-displayMore :: MonadActionRO m => ColorMode -> Msg -> m Bool
+displayMore :: MonadClientServerRO m => ColorMode -> Msg -> m Bool
 displayMore dm prompt = do
   sli <- promptToSlideshow $ prompt <+> moreMsg
   frame <- drawOverlay dm $ head $ runSlideshow sli
@@ -245,7 +241,7 @@ displayMore dm prompt = do
 
 -- | Print a yes/no question and return the player's answer. Use black
 -- and white colours to turn player's attention to the choice.
-displayYesNo :: MonadActionRO m => Msg -> m Bool
+displayYesNo :: MonadClientServerRO m => Msg -> m Bool
 displayYesNo prompt = do
   sli <- promptToSlideshow $ prompt <+> yesnoMsg
   frame <- drawOverlay ColorBW $ head $ runSlideshow sli
@@ -255,7 +251,7 @@ displayYesNo prompt = do
 -- | Print a prompt and an overlay and wait for a player keypress.
 -- If many overlays, scroll screenfuls with SPACE. Do not wrap screenfuls
 -- (in some menus @?@ cycles views, so the user can restart from the top).
-displayChoiceUI :: MonadActionRO m => Msg -> Overlay -> [K.KM] -> m K.KM
+displayChoiceUI :: MonadClientServerRO m => Msg -> Overlay -> [K.KM] -> m K.KM
 displayChoiceUI prompt ov keys = do
   sarenaes <- fmap runSlideshow $ overlayToSlideshow (prompt <> ", ESC]") ov
   fs <- askFrontendSession
@@ -272,14 +268,14 @@ displayChoiceUI prompt ov keys = do
 
 -- | The prompt is shown after the current message, but not added to history.
 -- This is useful, e.g., in targeting mode, not to spam history.
-promptToSlideshow :: MonadActionPure m => Msg -> m Slideshow
+promptToSlideshow :: MonadClientPure m => Msg -> m Slideshow
 promptToSlideshow prompt = overlayToSlideshow prompt []
 
 -- | The prompt is shown after the current message at the top of each sarenae.
 -- Together they may take more than one line. The prompt is not added
 -- to history. The portions of overlay that fit on the the rest
 -- of the screen are displayed below. As many sarenaes as needed are shown.
-overlayToSlideshow :: MonadActionPure m => Msg -> Overlay -> m Slideshow
+overlayToSlideshow :: MonadClientPure m => Msg -> Overlay -> m Slideshow
 overlayToSlideshow prompt overlay = do
   lysize <- getsLocal (lysize . getArena)
   StateClient{sreport} <- getClient
@@ -287,7 +283,7 @@ overlayToSlideshow prompt overlay = do
   return $! splitOverlay lysize msg overlay
 
 -- | Draw the current level with the overlay on top.
-drawOverlay :: MonadActionPure m => ColorMode -> Overlay -> m SingleFrame
+drawOverlay :: MonadClientServerPure m => ColorMode -> Overlay -> m SingleFrame
 drawOverlay dm over = do
   cops <- getsLocal scops
   per <- askPerception
@@ -300,7 +296,7 @@ drawOverlay dm over = do
 
 -- | Push the frame depicting the current level to the frame queue.
 -- Only one screenful of the report is shown, the rest is ignored.
-displayPush :: MonadActionRO m => m ()
+displayPush :: MonadClientServerRO m => m ()
 displayPush = do
   fs <- askFrontendSession
   s  <- getLocal
@@ -314,7 +310,7 @@ displayPush = do
   liftIO $ displayFrame fs isRunning $ Just frame
 
 -- | Initialize perception, etc., display level and run the action.
-startClip :: MonadAction m => m () -> m ()
+startClip :: MonadClientServer m => m () -> m ()
 startClip action =
   -- Determine perception before running player command, in case monsters
   -- have opened doors, etc.
@@ -324,7 +320,7 @@ startClip action =
     action  -- let the actor act
 
 -- | Update heroes memory.
-remember :: MonadAction m => m ()
+remember :: MonadClientServer m => m ()
 remember = do
   per <- askPerception
   lvl <- getsGlobal getArena
@@ -335,7 +331,7 @@ remember = do
   modifyLocal (\loc -> loc {sarena})
 
 -- | Update heroes memory at the given list of locations.
-rememberList :: MonadAction m => IS.IntSet -> Level -> m ()
+rememberList :: MonadClient m => IS.IntSet -> Level -> m ()
 rememberList visible lvl = do
   let vis = IS.toList visible
   Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getsLocal scops
@@ -374,7 +370,7 @@ saveGameBkp = do
   liftIO $ Save.saveGameBkp configUI state ser d
 
 -- | Dumps the current game rules configuration to a file.
-dumpCfg :: MonadActionRO m => FilePath -> m ()
+dumpCfg :: MonadServerRO m => FilePath -> m ()
 dumpCfg fn = do
   config <- getsServer sconfig
   liftIO $ ConfigIO.dump config fn
@@ -385,7 +381,7 @@ dumpCfg fn = do
 -- Warning: scores are shown during the game,
 -- so we should be careful not to leak secret information through them
 -- (e.g., the nature of the items through the total worth of inventory).
-handleScores :: MonadActionRO m => Bool -> Status -> Int -> m ()
+handleScores :: MonadClientServerRO m => Bool -> Status -> Int -> m ()
 handleScores write status total =
   when (total /= 0) $ do
     configUI <- askConfigUI
@@ -515,7 +511,7 @@ gameReset configUI scops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
         return (state, ser, d)
   return $! St.evalState rnd dungeonGen
 
-gameResetAction :: MonadActionRO m
+gameResetAction :: MonadActionIO m
                 => ConfigUI -> Kind.COps
                 -> m (State, StateServer, StateDict)
 gameResetAction configUI cops =
@@ -553,7 +549,7 @@ startFrontend executor !cops@Kind.COps{corule, cotile=tile} handleTurn = do
 
 -- | Either restore a saved game, or setup a new game.
 -- Then call the main game loop.
-start :: MonadActionRO m
+start :: MonadActionBase m
       => (m () -> FrontendSession -> Kind.COps -> Binding -> ConfigUI
           -> State -> StateServer -> StateDict -> IO ())
       -> FrontendSession -> Kind.COps -> Binding -> ConfigUI
@@ -578,5 +574,5 @@ start executor sfs scops@Kind.COps{corule} sbinding sconfigUI handleGame = do
   executor handleGame sfs scops sbinding sconfigUI state ser d
 
 -- | Debugging.
-debug :: MonadActionRO m => Text -> m ()
+debug :: MonadActionBase m => Text -> m ()
 debug _x = return () -- liftIO $ hPutStrLn stderr _x

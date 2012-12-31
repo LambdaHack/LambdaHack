@@ -38,7 +38,7 @@ default (Text)
 -- TODO: When inventory is displayed, let TAB switch the player (without
 -- announcing that) and show the inventory of the new player.
 -- | Display inventory
-inventory :: MonadActionRO m => WriterT Slideshow m ()
+inventory :: MonadActionPure m => WriterT Slideshow m ()
 inventory = do
   Kind.COps{coactor} <- getsLocal scops
   pbody <- getsLocal getPlayerBody
@@ -58,7 +58,7 @@ inventory = do
 -- | Let the player choose any item with a given group name.
 -- Note that this does not guarantee the chosen item belongs to the group,
 -- as the player can override the choice.
-getGroupItem :: MonadActionRO m
+getGroupItem :: MonadAction m
              => [Item]   -- ^ all objects in question
              -> MU.Part  -- ^ name of the group
              -> [Char]   -- ^ accepted item symbols
@@ -316,7 +316,7 @@ endTargeting accept = do
     then endTargetingMsg
     else msgAdd "targeting canceled"
 
-endTargetingMsg :: MonadActionRO m => m ()
+endTargetingMsg :: MonadClient m => m ()
 endTargetingMsg = do
   Kind.COps{coactor} <- getsLocal scops
   pbody  <- getsLocal getPlayerBody
@@ -471,7 +471,7 @@ allObjectsName :: Text
 allObjectsName = "Objects"
 
 -- | Let the player choose any item from a list of items.
-getAnyItem :: MonadActionRO m
+getAnyItem :: MonadAction m
            => Text    -- ^ prompt
            -> [Item]  -- ^ all items in question
            -> Text    -- ^ how to refer to the collection of items
@@ -482,7 +482,7 @@ data ItemDialogState = INone | ISuitable | IAll deriving Eq
 
 -- | Let the player choose a single, preferably suitable,
 -- item from a list of items.
-getItem :: MonadActionRO m
+getItem :: MonadAction m
         => Text            -- ^ prompt message
         -> (Item -> Bool)  -- ^ which items to consider suitable
         -> Text            -- ^ how to describe suitable items
