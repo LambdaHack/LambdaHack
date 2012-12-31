@@ -373,7 +373,8 @@ saveGameBkp = do
   ser <- getServer
   d <- getDict
   configUI <- askConfigUI
-  liftIO $ Save.saveGameBkp configUI state ser d
+  config <- getsServer sconfig
+  liftIO $ Save.saveGameBkp config configUI state ser d
 
 -- | Dumps the current game rules configuration to a file.
 dumpCfg :: (MonadActionIO m, MonadServerPure m) => FilePath -> m ()
@@ -393,9 +394,11 @@ handleScores :: (MonadActionIO m, MonadClientServerPure m)
 handleScores write status total =
   when (total /= 0) $ do
     configUI <- askConfigUI
+    config <- getsServer sconfig
     time <- getsLocal getTime
     curDate <- liftIO getClockTime
-    sarenaes <- liftIO $ register configUI write total time curDate status
+    sarenaes <-
+      liftIO $ register config write total time curDate status
     go <- getManyConfirms [] sarenaes
     when (not go) abort
 
@@ -407,6 +410,7 @@ endOrLoop handleTurn = do
   ser <- getServer
   d <- getDict
   configUI <- askConfigUI
+  config <- getsServer sconfig
   let (_, total) = calculateTotal s
   -- The first, boolean component of squit determines
   -- if ending screens should be shown, the other argument describes
@@ -416,7 +420,7 @@ endOrLoop handleTurn = do
     Just (_, status@Camping) -> do
       -- Save and display in parallel.
       mv <- liftIO newEmptyMVar
-      liftIO $ void $ forkIO (Save.saveGameFile configUI s ser d
+      liftIO $ void $ forkIO (Save.saveGameFile config s ser d
                               `finally` putMVar mv ())
       tryIgnore $ do
         handleScores False status total
@@ -546,6 +550,9 @@ startFrontend executor !cops@Kind.COps{corule, cotile=tile} handleTurn = do
       scops = cops {Kind.cotile}
   -- UI config reloaded at each client start.
   sconfigUI <- ConfigIO.mkConfigUI corule
+  -- A throw-away copy of rules config reloaded at client start, too,
+  -- until an old version of the config can be read from the savefile.
+  (sconfig, _, _) <- ConfigIO.mkConfigRules corule
   let !sbinding = stdBinding sconfigUI
       font = configFont sconfigUI
       -- In addition to handling the turn, if the game ends or exits,
@@ -554,8 +561,8 @@ startFrontend executor !cops@Kind.COps{corule, cotile=tile} handleTurn = do
         handleTurn
         d <- getDict
         -- Save cli often, at each game exit, in case of crashes.
-        liftIO $ Save.rmBkpSaveHistory sconfigUI d
-      loop sfs = start executor sfs scops sbinding sconfigUI handleGame
+        liftIO $ Save.rmBkpSaveHistory sconfig sconfigUI d
+      loop sfs = start executor sfs scops sbinding sconfig sconfigUI handleGame
   startup font loop
 
 -- | Either restore a saved game, or setup a new game.
@@ -563,12 +570,13 @@ startFrontend executor !cops@Kind.COps{corule, cotile=tile} handleTurn = do
 start :: MonadActionBase m
       => (m () -> FrontendSession -> Kind.COps -> Binding -> ConfigUI
           -> State -> StateServer -> StateDict -> IO ())
-      -> FrontendSession -> Kind.COps -> Binding -> ConfigUI
+      -> FrontendSession -> Kind.COps -> Binding -> Config -> ConfigUI
       -> m () -> IO ()
-start executor sfs scops@Kind.COps{corule} sbinding sconfigUI handleGame = do
+start executor sfs scops@Kind.COps{corule}
+      sbinding sconfig sconfigUI handleGame = do
   let title = rtitle $ Kind.stdRuleset corule
       pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
-  restored <- Save.restoreGame sconfigUI pathsDataFile title
+  restored <- Save.restoreGame sconfig sconfigUI pathsDataFile title
   (state, ser, dBare, shistory, msg) <- case restored of
     Right (shistory, msg) -> do  -- Starting a new game.
       (stateR, serR, dR) <- gameReset sconfigUI scops

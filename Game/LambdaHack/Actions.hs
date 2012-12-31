@@ -618,7 +618,7 @@ displayHistory = do
 
 dumpConfig :: MonadServer m => m ()
 dumpConfig = do
-  ConfigUI{configRulesCfgFile} <- askConfigUI
+  Config{configRulesCfgFile} <- getsServer sconfig
   let fn = configRulesCfgFile ++ ".dump"
       msg = "Current game rules configuration dumped to file"
             <+> T.pack fn <> "."

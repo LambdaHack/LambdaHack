@@ -50,8 +50,6 @@
 
 ; [files]
 ; ; Names of various game files. They reside in ~/.LambdaHack or similar.
-; scoresFile: scores
-; saveFile: save
 ; historyFile : history
 
 ; [heroNames]

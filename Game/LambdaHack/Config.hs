@@ -18,7 +18,8 @@ data FovMode =
   | Blind        -- ^ only feeling out adjacent tiles by touch
   deriving (Show, Read)
 
--- | Fully typed contents of the rules config file.
+-- | Fully typed contents of the rules config file. This config
+-- is a part of the game server.
 data Config = Config
   { configSelfString     :: !String
     -- caves
@@ -27,6 +28,12 @@ data Config = Config
   , configDepth          :: !Int
     -- engine
   , configFovMode        :: !FovMode
+    -- files
+  , configAppDataDir     :: !FilePath
+  , configSaveFile       :: !FilePath
+  , configBkpFile        :: !FilePath
+  , configScoresFile     :: !FilePath
+  , configRulesCfgFile   :: !FilePath
     -- heroes
   , configBaseHP         :: !Int
   , configExtraHeroes    :: !Int
@@ -34,17 +41,14 @@ data Config = Config
   , configFaction        :: !Text
   } deriving Show
 
--- | Fully typed contents of the UI config file.
+-- | Fully typed contents of the UI config file. This config
+-- is a part of a game client.
 data ConfigUI = ConfigUI
   { -- commands
     configCommands     :: ![(K.Key, String)]  -- TODO: define Binary Cmd
     -- files
-  , configAppDataDir   :: !FilePath
+  , configAppDataDirUI :: !FilePath
   , configHistoryFile  :: !FilePath
-  , configSaveFile     :: !FilePath
-  , configBkpFile      :: !FilePath
-  , configScoresFile   :: !FilePath
-  , configRulesCfgFile :: !FilePath
   , configUICfgFile    :: !FilePath
     -- heroNames
   , configHeroNames    :: ![(Int, Text)]
@@ -75,6 +79,11 @@ instance Binary Config where
     put configCaves
     put configDepth
     put configFovMode
+    put configAppDataDir
+    put configSaveFile
+    put configBkpFile
+    put configScoresFile
+    put configRulesCfgFile
     put configBaseHP
     put configExtraHeroes
     put configFirstDeathEnds
@@ -84,6 +93,11 @@ instance Binary Config where
     configCaves          <- get
     configDepth          <- get
     configFovMode        <- get
+    configAppDataDir     <- get
+    configSaveFile       <- get
+    configBkpFile        <- get
+    configScoresFile     <- get
+    configRulesCfgFile   <- get
     configBaseHP         <- get
     configExtraHeroes    <- get
     configFirstDeathEnds <- get
@@ -93,25 +107,17 @@ instance Binary Config where
 instance Binary ConfigUI where
   put ConfigUI{..} = do
     put configCommands
-    put configAppDataDir
+    put configAppDataDirUI
     put configHistoryFile
-    put configSaveFile
-    put configBkpFile
-    put configRulesCfgFile
     put configUICfgFile
-    put configScoresFile
     put configHeroNames
     put configMacros
     put configFont
     put configHistoryMax
   get = do
     configCommands     <- get
-    configAppDataDir   <- get
+    configAppDataDirUI <- get
     configHistoryFile  <- get
-    configSaveFile     <- get
-    configBkpFile      <- get
-    configScoresFile   <- get
-    configRulesCfgFile <- get
     configUICfgFile    <- get
     configHeroNames    <- get
     configMacros       <- get

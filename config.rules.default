@@ -21,6 +21,11 @@
 ; ;fovMode: Shadow
 ; ;startingRandomGenerator: 42
 
+; [files]
+; ; Names of various game files. They reside in ~/.LambdaHack or similar.
+; scoresFile: scores
+; saveFile: save
+
 ; [heroes]
 ; baseHP: 50
 ; extraHeroes: 2

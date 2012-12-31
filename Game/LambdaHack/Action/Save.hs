@@ -41,9 +41,9 @@ saveLock = unsafePerformIO newEmptyMVar
 
 -- | Save a simple serialized version of the current state.
 -- Protected by a lock to avoid corrupting the file.
-saveGameFile :: ConfigUI -> State -> StateServer -> StateDict
+saveGameFile :: Config -> State -> StateServer -> StateDict
              -> IO ()
-saveGameFile ConfigUI{configSaveFile} state ser d = do
+saveGameFile Config{configSaveFile} state ser d = do
   putMVar saveLock ()
   encodeEOF configSaveFile (state, ser, d)
   takeMVar saveLock
@@ -60,10 +60,10 @@ tryCreateDir dir =
 -- | Try to copy over data files. Hide errors due to,
 -- e.g., insufficient permissions, because the game can run
 -- without data files just as well.
-tryCopyDataFiles :: ConfigUI -> (FilePath -> IO FilePath) -> IO ()
-tryCopyDataFiles ConfigUI{ configScoresFile
-                         , configRulesCfgFile
-                         , configUICfgFile } pathsDataFile = do
+tryCopyDataFiles :: Config -> ConfigUI -> (FilePath -> IO FilePath) -> IO ()
+tryCopyDataFiles Config{ configScoresFile
+                       , configRulesCfgFile }
+                 ConfigUI{ configUICfgFile } pathsDataFile = do
   rulesFile  <- pathsDataFile $ takeFileName configRulesCfgFile <.> ".default"
   uiFile     <- pathsDataFile $ takeFileName configUICfgFile    <.> ".default"
   scoresFile <- pathsDataFile $ takeFileName configScoresFile
@@ -78,19 +78,20 @@ tryCopyDataFiles ConfigUI{ configScoresFile
 
 -- | Restore a saved game, if it exists. Initialize directory structure,
 -- if needed.
-restoreGame :: ConfigUI -> (FilePath -> IO FilePath) -> Text
+restoreGame :: Config -> ConfigUI -> (FilePath -> IO FilePath) -> Text
             -> IO (Either (State, StateServer, StateDict, History, Msg)
                           (History, Msg))
-restoreGame config@ConfigUI{ configAppDataDir
-                           , configHistoryFile
-                           , configSaveFile
-                           , configBkpFile } pathsDataFile title = do
+restoreGame config@Config{ configAppDataDir
+                         , configSaveFile
+                         , configBkpFile }
+            configUI@ConfigUI{ configHistoryFile }
+            pathsDataFile title = do
   ab <- doesDirectoryExist configAppDataDir
   -- If the directory can't be created, the current directory will be used.
   unless ab $ do
     tryCreateDir configAppDataDir
     -- Possibly copy over data files. No problem if it fails.
-    tryCopyDataFiles config pathsDataFile
+    tryCopyDataFiles config configUI pathsDataFile
   -- If the cli file does not exist, create an empty cli.
   -- TODO: when cli gets corrupted, start a new one, too.
   shistory <- do
@@ -134,11 +135,12 @@ restoreGame config@ConfigUI{ configAppDataDir
 -- This is only a backup, so no problem is the game is shut down
 -- before saving finishes, so we don't wait on the mvar. However,
 -- if a previous save is already in progress, we skip this save.
-saveGameBkp :: ConfigUI -> State -> StateServer -> StateDict
+saveGameBkp :: Config -> ConfigUI -> State -> StateServer -> StateDict
             -> IO ()
-saveGameBkp ConfigUI{ configHistoryFile
-                    , configSaveFile
-                    , configBkpFile } state ser d = do
+saveGameBkp Config{ configSaveFile
+                  , configBkpFile }
+            ConfigUI{ configHistoryFile }
+            state ser d = do
   b <- tryPutMVar saveLock ()
   when b $
     void $ forkIO $ do
@@ -153,9 +155,9 @@ saveGameBkp ConfigUI{ configHistoryFile
 -- We don't bother reporting any other removal exceptions, either,
 -- because the backup file is relatively unimportant.
 -- We wait on the mvar, because saving the cli at game shutdown is important.
-rmBkpSaveHistory :: ConfigUI -> StateDict -> IO ()
-rmBkpSaveHistory ConfigUI{ configHistoryFile
-                         , configBkpFile } d = do
+rmBkpSaveHistory :: Config -> ConfigUI -> StateDict -> IO ()
+rmBkpSaveHistory Config{configBkpFile}
+                 ConfigUI{configHistoryFile} d = do
   putMVar saveLock ()
   saveHistory configHistoryFile d  -- save often in case of crashes
   bb <- doesFileExist configBkpFile

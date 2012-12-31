@@ -120,12 +120,17 @@ getItems (CP conf) s =
   then forceEither $ CF.items conf s
   else assert `failure` "Unknown config section: " ++ s
 
-parseConfigRules :: CP -> Config
-parseConfigRules cp =
+parseConfigRules :: FilePath -> CP -> Config
+parseConfigRules dataDir cp =
   let configSelfString = let CP conf = cp in CF.to_string conf
       configCaves = map (\(n, t) -> (T.pack n, T.pack t)) $ getItems cp "caves"
       configDepth = get cp "dungeon" "depth"
       configFovMode = get cp "engine" "fovMode"
+      configAppDataDir = dataDir
+      configSaveFile = dataDir </> get cp "files" "saveFile"
+      configBkpFile = dataDir </> get cp "files" "saveFile" <.> ".bkp"
+      configScoresFile = dataDir </> get cp "files" "scoresFile"
+      configRulesCfgFile = dataDir </> "config.rules"
       configBaseHP = get cp "heroes" "baseHP"
       configExtraHeroes = get cp "heroes" "extraHeroes"
       configFirstDeathEnds = get cp "heroes" "firstDeathEnds"
@@ -143,12 +148,8 @@ parseConfigUI dataDir cp =
         let mkCommand (key, def) = (mkKey key, def)
             section = getItems cp "commands"
         in map mkCommand section
-      configAppDataDir = dataDir
+      configAppDataDirUI = dataDir
       configHistoryFile = dataDir </> get cp "files" "historyFile"
-      configSaveFile = dataDir </> get cp "files" "saveFile"
-      configBkpFile = dataDir </> get cp "files" "saveFile" <.> ".bkp"
-      configScoresFile = dataDir </> get cp "files" "scoresFile"
-      configRulesCfgFile = dataDir </> "config.rules"
       configUICfgFile = dataDir </> "config.ui"
       configHeroNames =
         let toNumber (ident, name) =
@@ -178,7 +179,7 @@ mkConfigRules corule = do
   cpRules <- mkConfig cpRulesDefault $ appData </> "config.rules.ini"
   (dungeonGen,  cp2) <- getSetGen cpRules "dungeonRandomGenerator"
   (startingGen, cp3) <- getSetGen cp2     "startingRandomGenerator"
-  return (parseConfigRules cp3, dungeonGen, startingGen)
+  return (parseConfigRules appData cp3, dungeonGen, startingGen)
 
 -- | Read and parse UI config file.
 mkConfigUI :: Kind.Ops RuleKind -> IO ConfigUI
