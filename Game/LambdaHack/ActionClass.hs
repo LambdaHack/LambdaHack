@@ -3,7 +3,7 @@
 -- | Basic type classes for game actions.
 -- This module should not be imported anywhere except in 'Action'
 -- and 'TypeAction'.
-module Game.LambdaHack.MonadAction where
+module Game.LambdaHack.ActionClass where
 
 import Control.Monad.Reader.Class
 import Control.Monad.Writer.Strict (WriterT (WriterT, runWriterT), lift)

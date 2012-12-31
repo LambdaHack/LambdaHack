@@ -14,7 +14,7 @@ import qualified Content.TileKind
 import Game.LambdaHack.Action
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Turn
-import qualified Game.LambdaHack.TypeAction as TypeAction
+import qualified Game.LambdaHack.ActionType as ActionType
 
 -- | Fire up the frontend with the engine fueled by content.
 -- The @Action@ type to be used is decided by the second argument
@@ -33,4 +33,4 @@ main =
         , costrat = Kind.createOps Content.StrategyKind.cdefs
         , cotile  = Kind.createOps Content.TileKind.cdefs
         }
-  in startFrontend TypeAction.executor cops handleTurn
+  in startFrontend ActionType.executor cops handleTurn

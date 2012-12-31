@@ -55,7 +55,7 @@ import System.Time
 
 import qualified Game.LambdaHack.Action.ConfigIO as ConfigIO
 import Game.LambdaHack.Action.Frontend
-import Game.LambdaHack.MonadAction
+import Game.LambdaHack.ActionClass
 import Game.LambdaHack.Action.HighScore (register)
 import qualified Game.LambdaHack.Action.Save as Save
 import Game.LambdaHack.Actor

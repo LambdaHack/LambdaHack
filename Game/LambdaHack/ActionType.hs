@@ -2,7 +2,7 @@
 -- | The main game action monad type implementation. Just as any other
 -- component of the library, this implementation can be substituted.
 -- This module should not be imported anywhere in the library.
-module Game.LambdaHack.TypeAction
+module Game.LambdaHack.ActionType
   ( FunAction, Action, executor
   ) where
 
@@ -14,9 +14,9 @@ import qualified Data.Text as T
 import Game.LambdaHack.Action
 import Game.LambdaHack.Action.Frontend
 import Game.LambdaHack.Binding
+import Game.LambdaHack.ActionClass
 import Game.LambdaHack.Config
 import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.MonadAction
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.State
