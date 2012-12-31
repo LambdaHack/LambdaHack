@@ -79,15 +79,15 @@ import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert
 
 -- | Get the frontend session.
-askFrontendSession :: MonadActionBase m => m FrontendSession
+askFrontendSession :: MonadClientPure m => m FrontendSession
 askFrontendSession = getsSession sfs
 
 -- | Get the key binding.
-askBinding :: MonadActionBase m => m Binding
+askBinding :: MonadClientPure m => m Binding
 askBinding = getsSession sbinding
 
 -- | Get the config from the config file.
-askConfigUI :: MonadActionBase m => m ConfigUI
+askConfigUI :: MonadClientPure m => m ConfigUI
 askConfigUI = getsSession sconfigUI
 
 -- | Add a message to the current report.
@@ -169,7 +169,7 @@ recordHistory = do
     historyReset $! takeHistory configHistoryMax $! addReport sreport shistory
 
 -- | Wait for a player command.
-getKeyCommand :: MonadActionIO m => Maybe Bool -> m K.KM
+getKeyCommand :: (MonadActionIO m, MonadClientPure m) => Maybe Bool -> m K.KM
 getKeyCommand doPush = do
   fs <- askFrontendSession
   keyb <- askBinding
@@ -192,7 +192,9 @@ getKeyOverlayCommand overlay = do
     _ -> (nc, modifier)
 
 -- | Ignore unexpected kestrokes until a SPACE or ESC is pressed.
-getConfirm :: MonadActionIO m => [K.KM] -> SingleFrame -> m Bool
+getConfirm :: (MonadActionIO m, MonadClientPure m)
+           => [K.KM] -> SingleFrame
+           -> m Bool
 getConfirm clearKeys frame = do
   fs <- askFrontendSession
   let keys = [(K.Space, K.NoModifier), (K.Esc, K.NoModifier)] ++ clearKeys
@@ -217,13 +219,13 @@ getManyConfirms clearKeys sarenaes =
         else return False
 
 -- | Push frames or frame's worth of delay to the frame queue.
-displayFramesPush :: MonadActionIO m => Frames -> m ()
+displayFramesPush :: (MonadActionIO m, MonadClientPure m) => Frames -> m ()
 displayFramesPush frames = do
   fs <- askFrontendSession
   liftIO $ mapM_ (displayFrame fs False) frames
 
 -- | A yes-no confirmation.
-getYesNo :: MonadActionIO m => SingleFrame -> m Bool
+getYesNo :: (MonadActionIO m, MonadClientPure m) => SingleFrame -> m Bool
 getYesNo frame = do
   fs <- askFrontendSession
   let keys = [ (K.Char 'y', K.NoModifier)
@@ -393,7 +395,6 @@ handleScores :: (MonadActionIO m, MonadClientServerPure m)
              -> m ()
 handleScores write status total =
   when (total /= 0) $ do
-    configUI <- askConfigUI
     config <- getsServer sconfig
     time <- getsLocal getTime
     curDate <- liftIO getClockTime
@@ -409,7 +410,6 @@ endOrLoop handleTurn = do
   s <- getGlobal
   ser <- getServer
   d <- getDict
-  configUI <- askConfigUI
   config <- getsServer sconfig
   let (_, total) = calculateTotal s
   -- The first, boolean component of squit determines

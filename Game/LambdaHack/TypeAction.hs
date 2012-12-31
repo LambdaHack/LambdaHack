@@ -73,7 +73,6 @@ instance MonadActionBase Action where
              let runA msg = runAction (exc msg) c p k a s ser d
              in runAction m c p k runA s ser d)
   abortWith msg = Action (\_c _p _k a _s _ser _d -> a msg)
-  getsSession f = Action (\c _p k _a s ser d -> k s ser d (f c))
 
 instance MonadServerPure Action where
   getGlobal  = Action (\_c _p k _a s ser d -> k s ser d s)
@@ -82,6 +81,7 @@ instance MonadServerPure Action where
   getsServer = (`fmap` getServer)
 
 instance MonadClientPure Action where
+  getsSession f = Action (\c _p k _a s ser d -> k s ser d (f c))
   getClient  = do
     State{sside} <- getGlobal
     d <- getDict

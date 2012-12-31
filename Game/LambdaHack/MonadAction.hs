@@ -31,13 +31,11 @@ class (Monad m, Functor m, MonadReader Pers m, Show (m ()))
   tryWith     :: (Msg -> m a) -> m a -> m a
   -- Abort with the given message.
   abortWith   :: Msg -> m a
-  getsSession :: (Session -> a) -> m a
 
 instance MonadActionBase m => MonadActionBase (WriterT Slideshow m) where
   tryWith exc m =
     WriterT $ tryWith (\msg -> runWriterT (exc msg)) (runWriterT m)
   abortWith   = lift . abortWith
-  getsSession = lift . getsSession
 
 instance MonadActionBase m => Show (WriterT Slideshow m a) where
   show _ = "an action"
@@ -55,12 +53,14 @@ instance MonadServerPure m => MonadServerPure (WriterT Slideshow m) where
   getsServer  = lift . getsServer
 
 class MonadActionBase m => MonadClientPure m where
+  getsSession :: (Session -> a) -> m a
   getClient   :: m StateClient
   getsClient  :: (StateClient -> a) -> m a
   getLocal    :: m State
   getsLocal   :: (State -> a) -> m a
 
 instance MonadClientPure m => MonadClientPure (WriterT Slideshow m) where
+  getsSession = lift . getsSession
   getClient   = lift getClient
   getsClient  = lift . getsClient
   getLocal    = lift getLocal
