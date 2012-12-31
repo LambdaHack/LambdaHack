@@ -74,25 +74,25 @@ actorSeesLoc per source tloc =
   in reachable && visible
 
 -- | Calculate the perception of all actors on the level.
-dungeonPerception :: Kind.COps -> Config -> DebugMode -> State -> Pers
+dungeonPerception :: Kind.COps -> Config -> DebugModeSer -> State -> Pers
 dungeonPerception cops sconfig sdebug s =
   let f fid _ = factionPerception cops sconfig sdebug s fid
   in IM.mapWithKey f $ sfaction s
 
 -- | Calculate perception of the faction.
-factionPerception :: Kind.COps -> Config -> DebugMode -> State -> FactionId
+factionPerception :: Kind.COps -> Config -> DebugModeSer -> State -> FactionId
                   -> FactionPerception
 factionPerception cops sconfig sdebug s fid =
   M.map (levelPerception cops sconfig sdebug fid) $ sdungeon s
 
 -- | Calculate perception of the level.
-levelPerception :: Kind.COps -> Config -> DebugMode -> FactionId -> Level -> Perception
-levelPerception cops@Kind.COps{cotile} sconfig DebugMode{smarkVision} fid
+levelPerception :: Kind.COps -> Config -> DebugModeSer -> FactionId -> Level -> Perception
+levelPerception cops@Kind.COps{cotile} sconfig DebugModeSer{stryFov} fid
                 lvl@Level{lactor} =
   let Config{configFovMode} = sconfig
       hs = IM.filter (\ m -> bfaction m == fid && not (bproj m)) lactor
       pers = IM.map (\ h ->
-                      computeReachable cops configFovMode smarkVision h lvl) hs
+                      computeReachable cops configFovMode stryFov h lvl) hs
       locs = map bloc $ IM.elems hs
       lpers = IM.elems pers
       reachable = PerceptionReachable $ IS.unions (map preachable lpers)

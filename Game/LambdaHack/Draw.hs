@@ -18,7 +18,6 @@ import Game.LambdaHack.ActorState
 import Game.LambdaHack.Animation (Animation, Frames, SingleFrame (..),
                                   rederAnim)
 import qualified Game.LambdaHack.Color as Color
-import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind
@@ -47,13 +46,13 @@ data ColorMode =
 draw :: ColorMode -> Kind.COps -> Perception -> StateClient -> State -> Overlay
      -> SingleFrame
 draw dm cops per
-     StateClient{ scursor=Cursor{..}, sdebug }
+     StateClient{ scursor=Cursor{..}, sdebugCli }
      s@State{ sdisco, sarena, splayer }
      overlay =
   let Kind.COps{ coactor=Kind.Ops{okind}
                , coitem=Kind.Ops{okind=iokind}
                , cotile=Kind.Ops{okind=tokind, ouniqGroup} } = cops
-      DebugMode{smarkVision} = sdebug
+      DebugModeCli{smarkVision, smarkSmell} = sdebugCli
       lvl@Level{lxsize, lysize, lsmell, ldesc, lactor, ltime, lseen, lclear} =
         getArena s
       (_, mpl@Actor{bkind, bhp, bloc}, bitems) = findActorAnyLevel splayer s
@@ -61,13 +60,8 @@ draw dm cops per
       reachable = debugTotalReachable per
       visible   = totalVisible per
       (msgTop, over, msgBottom) = stringByLocation lxsize lysize overlay
-      (sSml, sVis) = case smarkVision of
-        Just Blind -> (True, True)
-        Just _  -> (False, True)
-        Nothing | asmell -> (True, False)
-        Nothing -> (False, False)
       -- TODO:
-      sVisBG = if sVis
+      sVisBG = if smarkVision
                then \ vis rea -> if vis
                                  then Color.Blue
                                  else if rea
@@ -123,7 +117,7 @@ draw dm cops per
                                  (False, True)  -> Color.Green
                                  (False, False) -> Color.Red)
                 (Just m, _) -> viewActor loc0 m
-                _ | sSml && smlt > timeZero ->
+                _ | (smarkSmell || asmell) && smlt > timeZero ->
                   (timeToDigit smellTimeout smlt, rainbow loc0)
                   | otherwise ->
                   case items of

@@ -117,8 +117,10 @@ There are also some debug and cheat keys, all entered with the CTRL
 key modifier. Use at your own peril!
 
                key     command
+               CTRL-a  toggle visible area display
                CTRL-o  toggle "omniscience"
-               CTRL-r  rotate vision modes (effective next turn)
+               CTRL-s  toggle smell display
+               CTRL-v  cycle vision modes (effective next turn)
 
 
 Monsters

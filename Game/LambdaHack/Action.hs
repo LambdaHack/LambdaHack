@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Game action monads and basic building blocks for player and monster
--- actions. Has no access to the the main action type @Action@ nor
--- to the implementation details of the action monads.
+-- actions. Has no access to the the main action type @Action@.
+-- Does not export the @liftIO@ operation nor a few other implementation
+-- details.
 module Game.LambdaHack.Action
   ( -- * Action monads
     MonadServerRO( getGlobal, getsGlobal, getServer, getsServer )
@@ -108,8 +109,8 @@ withPerception m = do
   cops <- getsGlobal scops
   s <- getGlobal
   sconfig <- getsServer sconfig
-  sdebug <- getsClient sdebug
-  let per = dungeonPerception cops sconfig sdebug s
+  sdebugSer <- getsServer sdebugSer
+  let per = dungeonPerception cops sconfig sdebugSer s
   local (const per) m
 
 -- | Get the current perception.
@@ -298,7 +299,7 @@ drawOverlay dm over = do
   glo <- getGlobal
   cli <- getClient
   loc <- getLocal
-  DebugMode{somniscient} <- getsClient sdebug
+  DebugModeCli{somniscient} <- getsClient sdebugCli
   let state = if somniscient then glo else loc
   return $! draw dm cops per cli state over
 

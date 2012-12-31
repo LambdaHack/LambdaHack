@@ -14,7 +14,9 @@ module Game.LambdaHack.State
     -- * Textual description
   , lookAt
     -- * Debug flags
-  , DebugMode(..), defDebugMode, cycleMarkVision, toggleOmniscient
+  , DebugModeSer(..), defDebugModeSer, cycleTryFov
+  , DebugModeCli(..), defDebugModeCli, toggleMarkVision, toggleMarkSmell
+  , toggleOmniscient
   ) where
 
 import Data.Binary
@@ -56,12 +58,13 @@ data State = State
 
 -- | Global, server state.
 data StateServer = StateServer
-  { sdiscoRev :: !DiscoRev    -- ^ reverse map, used for item creation
-  , sflavour  :: !FlavourMap  -- ^ association of flavour to items
-  , scounter  :: !Int         -- ^ stores next actor index
-  , srandom   :: !R.StdGen    -- ^ current random generator
-  , sconfig   :: !Config      -- ^ this game's config (including initial RNG)
+  { sdiscoRev :: !DiscoRev      -- ^ reverse map, used for item creation
+  , sflavour  :: !FlavourMap    -- ^ association of flavour to items
+  , scounter  :: !Int           -- ^ stores next actor index
+  , srandom   :: !R.StdGen      -- ^ current random generator
+  , sconfig   :: !Config        -- ^ this game's config (including initial RNG)
   , squit     :: !(Maybe (Bool, Status))  -- ^ cause of game end/exit
+  , sdebugSer :: !DebugModeSer  -- ^ debugging mode
   }
   deriving Show
 
@@ -69,11 +72,11 @@ data StateServer = StateServer
 -- Some of the data, e.g, the history, carries over
 -- from game to game, even across playing sessions.
 data StateClient = StateClient
-  { scursor  :: !Cursor        -- ^ cursor location and level to return to
-  , sreport  :: !Report        -- ^ current messages
-  , shistory :: !History       -- ^ history of messages
-  , slastKey :: !(Maybe K.KM)  -- ^ last command key pressed
-  , sdebug   :: !DebugMode     -- ^ debugging mode
+  { scursor   :: !Cursor        -- ^ cursor location and level to return to
+  , sreport   :: !Report        -- ^ current messages
+  , shistory  :: !History       -- ^ history of messages
+  , slastKey  :: !(Maybe K.KM)  -- ^ last command key pressed
+  , sdebugCli :: !DebugModeCli  -- ^ debugging mode
   }
 
 -- | All client and local state, indexed by faction identifier.
@@ -107,8 +110,13 @@ data Status =
   | Restart          -- ^ the player quits and starts a new game
   deriving (Show, Eq, Ord)
 
-data DebugMode = DebugMode
-  { smarkVision :: !(Maybe FovMode)
+data DebugModeSer = DebugModeSer
+  { stryFov :: !(Maybe FovMode) }
+  deriving Show
+
+data DebugModeCli = DebugModeCli
+  { smarkVision :: !Bool
+  , smarkSmell  :: !Bool
   , somniscient :: !Bool
   }
   deriving Show
@@ -179,8 +187,9 @@ defStateServer :: DiscoRev -> FlavourMap -> R.StdGen -> Config
                    -> StateServer
 defStateServer sdiscoRev sflavour srandom sconfig =
   StateServer
-    { scounter = 0
-    , squit    = Nothing
+    { scounter  = 0
+    , squit     = Nothing
+    , sdebugSer = defDebugModeSer
     , ..
     }
 
@@ -188,16 +197,21 @@ defStateServer sdiscoRev sflavour srandom sconfig =
 defStateClient :: Point -> LevelId -> StateClient
 defStateClient ploc sarena = do
   StateClient
-    { scursor  = (Cursor TgtOff sarena ploc sarena 0)
-    , sreport  = emptyReport
-    , shistory = emptyHistory
-    , slastKey = Nothing
-    , sdebug   = defDebugMode
+    { scursor   = (Cursor TgtOff sarena ploc sarena 0)
+    , sreport   = emptyReport
+    , shistory  = emptyHistory
+    , slastKey  = Nothing
+    , sdebugCli = defDebugModeCli
     }
 
-defDebugMode :: DebugMode
-defDebugMode = DebugMode
-  { smarkVision = Nothing
+defDebugModeSer :: DebugModeSer
+defDebugModeSer = DebugModeSer
+  { stryFov = Nothing }
+
+defDebugModeCli :: DebugModeCli
+defDebugModeCli = DebugModeCli
+  { smarkVision = False
+  , smarkSmell  = False
   , somniscient = False
   }
 
@@ -240,18 +254,26 @@ getTime State{sarena, sdungeon} = ltime $ sdungeon M.! sarena
 updateTime :: (Time -> Time) -> State -> State
 updateTime f s = updateArena (\lvl@Level{ltime} -> lvl {ltime = f ltime}) s
 
-cycleMarkVision :: StateClient -> StateClient
-cycleMarkVision s@StateClient{sdebug=sdebug@DebugMode{smarkVision}} =
-  s {sdebug = sdebug {smarkVision = case smarkVision of
-                        Nothing          -> Just (Digital 100)
-                        Just (Digital _) -> Just Permissive
-                        Just Permissive  -> Just Shadow
-                        Just Shadow      -> Just Blind
-                        Just Blind       -> Nothing }}
+cycleTryFov :: StateServer -> StateServer
+cycleTryFov s@StateServer{sdebugSer=sdebugSer@DebugModeSer{stryFov}} =
+  s {sdebugSer = sdebugSer {stryFov = case stryFov of
+                               Nothing          -> Just (Digital 100)
+                               Just (Digital _) -> Just Permissive
+                               Just Permissive  -> Just Shadow
+                               Just Shadow      -> Just Blind
+                               Just Blind       -> Nothing }}
+
+toggleMarkVision :: StateClient -> StateClient
+toggleMarkVision s@StateClient{sdebugCli=sdebugCli@DebugModeCli{smarkVision}} =
+  s {sdebugCli = sdebugCli {smarkVision = not smarkVision}}
+
+toggleMarkSmell :: StateClient -> StateClient
+toggleMarkSmell s@StateClient{sdebugCli=sdebugCli@DebugModeCli{smarkSmell}} =
+  s {sdebugCli = sdebugCli {smarkSmell = not smarkSmell}}
 
 toggleOmniscient :: StateClient -> StateClient
-toggleOmniscient s@StateClient{sdebug=sdebug@DebugMode{somniscient}} =
-  s {sdebug = sdebug {somniscient = not somniscient}}
+toggleOmniscient s@StateClient{sdebugCli=sdebugCli@DebugModeCli{somniscient}} =
+  s {sdebugCli = sdebugCli {somniscient = not somniscient}}
 
 instance Binary State where
   put State{..} = do
@@ -273,19 +295,6 @@ instance Binary State where
     let scops = undefined  -- overwritten by recreated cops
     return State{..}
 
-instance Binary StateClient where
-  put StateClient{..} = do
-    put scursor
-    put sreport
-    put shistory
-  get = do
-    scursor <- get
-    sreport  <- get
-    shistory <- get
-    let slastKey = Nothing
-        sdebug = defDebugMode
-    return StateClient{..}
-
 instance Binary StateServer where
   put StateServer{..} = do
     put sdiscoRev
@@ -301,7 +310,21 @@ instance Binary StateServer where
     sconfig <- get
     let squit = Nothing
         srandom = read g
+        sdebugSer = defDebugModeSer
     return StateServer{..}
+
+instance Binary StateClient where
+  put StateClient{..} = do
+    put scursor
+    put sreport
+    put shistory
+  get = do
+    scursor <- get
+    sreport  <- get
+    shistory <- get
+    let slastKey = Nothing
+        sdebugCli = defDebugModeCli
+    return StateClient{..}
 
 instance Binary TgtMode where
   put TgtOff      = putWord8 0

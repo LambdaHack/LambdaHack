@@ -79,8 +79,10 @@ cmdAction cli s cmd =
     HeroBack    -> (False, lift $ backCycleHero)
     Help        -> (False, displayHelp)
     SelectHero k -> (False, lift $ selectHero k)
-    DebugVision -> (False, modifyClient cycleMarkVision)
+    DebugArea   -> (False, modifyClient toggleMarkVision)
     DebugOmni   -> (False, modifyClient toggleOmniscient)
+    DebugSmell  -> (False, modifyClient toggleMarkSmell)
+    DebugVision -> (False, modifyServer cycleTryFov)
 
 -- | The semantics of player commands in terms of the @Action@ monad.
 -- Decides if the action takes time and what action to perform.

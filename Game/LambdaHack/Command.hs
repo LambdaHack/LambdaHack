@@ -43,8 +43,10 @@ data Cmd =
   | HeroBack
   | Help
   | SelectHero Int
-  | DebugVision
+  | DebugArea
   | DebugOmni
+  | DebugSmell
+  | DebugVision
   deriving (Show, Read, Eq, Ord)
 
 -- | Major commands land on the first page of command help.
@@ -133,5 +135,7 @@ cmdDescription cmd = case cmd of
   HeroBack  -> "cycle among heroes in the dungeon"
   Help      -> "display help"
   SelectHero{} -> "select hero"
-  DebugVision  -> "debug vision"
+  DebugArea    -> "debug visible area"
   DebugOmni    -> "debug omniscience"
+  DebugSmell   -> "debug smell"
+  DebugVision  -> "debug vision modes"
