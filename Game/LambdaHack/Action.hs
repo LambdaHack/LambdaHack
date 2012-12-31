@@ -496,13 +496,16 @@ gameReset configUI scops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
               gAiIdle <- sopick (fAiIdle fk) (const True)
               return (IM.insert k Faction{..} m, k + 1)
         sfaction <- fmap fst $ ofoldrWithKey g (return (IM.empty, 0))
-        let sside = 1
+        let sside = 0  -- doesn't matter
             defState =
               defStateGlobal freshDungeon freshDepth sdiscoS sfaction
                              scops sside entryLevel
             defSer = defStateServer sdiscoRev sflavour srandom sconfig
-            (state, ser) =
-              initialHeroes scops entryLoc configUI defState defSer
+            needInitialCrew =
+              filter (not . isSpawningFaction defState) $ IM.keys sfaction
+            fo fid (stateF, serF) =
+              initialHeroes scops entryLoc configUI stateF{sside=fid} serF
+            (state, ser) = foldr fo (defState, defSer) needInitialCrew
             cli = defStateClient entryLoc entryLevel
             -- This overwrites the "Really save/quit?" messages.
             loc = defStateLocal freshDungeon freshDepth
