@@ -602,8 +602,8 @@ displayMainMenu = do
   case menuOverlay of
     [] -> assert `failure` "empty Main Menu overlay"
     hd : tl -> do
-      sarenaes <- overlayToSlideshow hd tl
-      tell sarenaes
+      slides <- overlayToSlideshow hd tl
+      tell slides
 
 displayHistory :: MonadClient m => WriterT Slideshow m ()
 displayHistory = do
@@ -613,8 +613,8 @@ displayHistory = do
       msg = makeSentence [ "You survived for"
                        , MU.NWs turn "half-second turn" ]
             <+> "Past messages:"
-  sarenaes <- overlayToSlideshow msg $ renderHistory shistory
-  tell sarenaes
+  slides <- overlayToSlideshow msg $ renderHistory shistory
+  tell slides
 
 dumpConfig :: MonadServer m => m ()
 dumpConfig = do

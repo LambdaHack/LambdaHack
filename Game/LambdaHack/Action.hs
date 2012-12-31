@@ -27,7 +27,7 @@ module Game.LambdaHack.Action
   , getKeyCommand, getKeyOverlayCommand, getManyConfirms
     -- * Display and key input
   , displayFramesPush, displayMore, displayYesNo, displayChoiceUI
-    -- * Generate sarenaeshows
+    -- * Generate slideshows
   , promptToSlideshow, overlayToSlideshow
     -- * Draw frames
   , drawOverlay
@@ -149,14 +149,14 @@ tryIgnore =
                    else assert `failure` msg <+> "in tryIgnore")
 
 -- | Set the current exception handler. Apart of executing it,
--- draw and pass along a sarenae with the abort message (even if message empty).
+-- draw and pass along a slide with the abort message (even if message empty).
 tryWithSlide :: MonadClient m
              => m a -> WriterT Slideshow m a -> WriterT Slideshow m a
 tryWithSlide exc h =
   let excMsg msg = do
         msgReset ""
-        sarenaes <- promptToSlideshow msg
-        tell sarenaes
+        slides <- promptToSlideshow msg
+        tell slides
         lift exc
   in tryWith excMsg h
 
@@ -205,12 +205,12 @@ getConfirm clearKeys frame = do
     _ | km `elem` clearKeys -> return True
     _ -> return False
 
--- | Display a sarenaeshow, awaiting confirmation for each sarenae.
+-- | Display a slideshow, awaiting confirmation for each slide.
 getManyConfirms :: (MonadActionIO m, MonadClientServerRO m)
                 => [K.KM] -> Slideshow
                 -> m Bool
-getManyConfirms clearKeys sarenaes =
-  case runSlideshow sarenaes of
+getManyConfirms clearKeys slides =
+  case runSlideshow slides of
     [] -> return True
     x : xs -> do
       frame <- drawOverlay ColorFull x
@@ -262,7 +262,7 @@ displayChoiceUI :: (MonadActionIO m, MonadClientServerRO m)
                 => Msg -> Overlay -> [K.KM]
                 -> m K.KM
 displayChoiceUI prompt ov keys = do
-  sarenaes <- fmap runSlideshow $ overlayToSlideshow (prompt <> ", ESC]") ov
+  slides <- fmap runSlideshow $ overlayToSlideshow (prompt <> ", ESC]") ov
   fs <- askFrontendSession
   let legalKeys = (K.Space, K.NoModifier) : (K.Esc, K.NoModifier) : keys
       loop [] = neverMind True
@@ -273,17 +273,17 @@ displayChoiceUI prompt ov keys = do
           K.Esc -> neverMind True
           K.Space -> loop xs
           _ -> return (key, modifier)
-  loop sarenaes
+  loop slides
 
 -- | The prompt is shown after the current message, but not added to history.
 -- This is useful, e.g., in targeting mode, not to spam history.
 promptToSlideshow :: MonadClientRO m => Msg -> m Slideshow
 promptToSlideshow prompt = overlayToSlideshow prompt []
 
--- | The prompt is shown after the current message at the top of each sarenae.
+-- | The prompt is shown after the current message at the top of each slide.
 -- Together they may take more than one line. The prompt is not added
 -- to history. The portions of overlay that fit on the the rest
--- of the screen are displayed below. As many sarenaes as needed are shown.
+-- of the screen are displayed below. As many slides as needed are shown.
 overlayToSlideshow :: MonadClientRO m => Msg -> Overlay -> m Slideshow
 overlayToSlideshow prompt overlay = do
   lysize <- getsLocal (lysize . getArena)
@@ -399,9 +399,9 @@ handleScores write status total =
     config <- getsServer sconfig
     time <- getsLocal getTime
     curDate <- liftIO getClockTime
-    sarenaes <-
+    slides <-
       liftIO $ register config write total time curDate status
-    go <- getManyConfirms [] sarenaes
+    go <- getManyConfirms [] slides
     when (not go) abort
 
 -- | Continue or restart or exit the game.

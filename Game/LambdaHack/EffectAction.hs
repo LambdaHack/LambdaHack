@@ -403,8 +403,8 @@ fleeDungeon = do
           , "." ]
     discoS <- getsGlobal sdisco
     io <- itemOverlay discoS True items
-    sarenaes <- overlayToSlideshow winMsg io
-    void $ getManyConfirms [] sarenaes
+    slides <- overlayToSlideshow winMsg io
+    void $ getManyConfirms [] slides
     modifyServer (\ st -> st {squit = Just (True, Victor)})
 
 -- | The source actor affects the target actor, with a given item.
@@ -609,8 +609,8 @@ gameOver showEndingScreens = do
       else do
         discoS <- getsGlobal sdisco
         io <- itemOverlay discoS True items
-        sarenaes <- overlayToSlideshow loseMsg io
-        go <- getManyConfirms [] sarenaes
+        slides <- overlayToSlideshow loseMsg io
+        go <- getManyConfirms [] slides
         when go $ modifyServer (\st -> st {squit = Just (True, Killed sarena)})
 
 -- | Create a list of item names.
@@ -660,10 +660,10 @@ doLook = do
     modifyClient (\st -> st {slastKey = Nothing})
     if length is <= 2
       then do
-        sarenaes <- promptToSlideshow lookMsg
-        tell sarenaes
+        slides <- promptToSlideshow lookMsg
+        tell slides
       else do
        disco <- getsLocal sdisco
        io <- itemOverlay disco False is
-       sarenaes <- overlayToSlideshow lookMsg io
-       tell sarenaes
+       slides <- overlayToSlideshow lookMsg io
+       tell slides

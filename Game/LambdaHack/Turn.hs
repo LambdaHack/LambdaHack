@@ -197,8 +197,8 @@ playerCommand msgRunAbort = do
   kmPush <- case msgRunAbort of
     "" -> getKeyCommand (Just True)
     _  -> do
-      sarenaes <- promptToSlideshow msgRunAbort
-      getKeyOverlayCommand $ head $ runSlideshow sarenaes
+      slides <- promptToSlideshow msgRunAbort
+      getKeyOverlayCommand $ head $ runSlideshow slides
   -- The frame state is now None and remains so between each pair
   -- of lines of @loop@ (but can change within called actions).
   let loop :: K.KM -> m ()
@@ -206,8 +206,8 @@ playerCommand msgRunAbort = do
         -- Messages shown, so update history and reset current report.
         recordHistory
         -- On abort, just reset state and call loop again below.
-        -- Each abort that gets this far generates a sarenae to be shown.
-        (timed, sarenaes) <- runWriterT $ tryWithSlide (return False) $ do
+        -- Each abort that gets this far generates a slide to be shown.
+        (timed, slides) <- runWriterT $ tryWithSlide (return False) $ do
           -- Look up the key.
           Binding{kcmd} <- askBinding
           case M.lookup km kcmd of
@@ -230,14 +230,14 @@ playerCommand msgRunAbort = do
         -- The command was aborted or successful and if the latter,
         -- possibly took some time.
         if timed
-          then assert (null (runSlideshow sarenaes) `blame` sarenaes) $ do
+          then assert (null (runSlideshow slides) `blame` slides) $ do
             -- Exit the loop and let other actors act. No next key needed
-            -- and no sarenaes could have been generated.
+            -- and no slides could have been generated.
             modifyClient (\st -> st {slastKey = Nothing})
           else
             -- If no time taken, rinse and repeat.
-            -- Analyse the obtained sarenaes.
-            case reverse (runSlideshow sarenaes) of
+            -- Analyse the obtained slides.
+            case reverse (runSlideshow slides) of
               [] -> do
                 -- Nothing special to be shown; by default draw current state.
                 modifyClient (\st -> st {slastKey = Nothing})
@@ -245,12 +245,12 @@ playerCommand msgRunAbort = do
                 kmNext <- getKeyOverlayCommand $ head $ runSlideshow sli
                 loop kmNext
               sLast : sls -> do
-                -- Show, one by one, all but the last sarenae.
-                -- Note: the code that generates the sarenaes is responsible
+                -- Show, one by one, all but the last slide.
+                -- Note: the code that generates the slides is responsible
                 -- for inserting the @more@ prompt.
                 b <- getManyConfirms [km] $ toSlideshow $ reverse sls
-                -- Display the last sarenae while waiting for the next key,
-                -- or display current state if sarenaeshow interrupted.
+                -- Display the last slide while waiting for the next key,
+                -- or display current state if slideshow interrupted.
                 kmNext <- if b
                           then getKeyOverlayCommand sLast
                           else do
