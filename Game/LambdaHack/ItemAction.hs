@@ -38,7 +38,7 @@ default (Text)
 -- TODO: When inventory is displayed, let TAB switch the player (without
 -- announcing that) and show the inventory of the new player.
 -- | Display inventory
-inventory :: MonadActionRO m => WriterT Slideshow m ()
+inventory :: MonadClientRO m => WriterT Slideshow m ()
 inventory = do
   Kind.COps{coactor} <- getsLocal scops
   pbody <- getsLocal getPlayerBody
@@ -58,7 +58,7 @@ inventory = do
 -- | Let the player choose any item with a given group name.
 -- Note that this does not guarantee the chosen item belongs to the group,
 -- as the player can override the choice.
-getGroupItem :: MonadAction m
+getGroupItem :: MonadClient m
              => [Item]   -- ^ all objects in question
              -> MU.Part  -- ^ name of the group
              -> [Char]   -- ^ accepted item symbols
@@ -71,14 +71,15 @@ getGroupItem is object syms prompt packName = do
   getItem prompt choice header is packName
 
 -- TODO: Change to Local when all faction have their local state
-applyGroupItem :: MonadAction m => ActorId  -- ^ actor applying the item (is on current level)
+applyGroupItem :: MonadAction m
+               => ActorId  -- ^ actor applying the item (is on current level)
                -> MU.Part  -- ^ how the applying is called
                -> Item     -- ^ the item to be applied
                -> m ()
 applyGroupItem actor verb item = do
   Kind.COps{coactor, coitem} <- getsGlobal scops
   body  <- getsGlobal (getActor actor)
-  per   <- askPerception
+  per   <- askPerceptionSer
   disco <- getsGlobal sdisco
   -- only one item consumed, even if several in inventory
   let consumed = item { jcount = 1 }
@@ -112,7 +113,7 @@ projectGroupItem :: MonadAction m => ActorId  -- ^ actor projecting the item (is
 projectGroupItem source tloc _verb item = do
   cops@Kind.COps{coactor, coitem} <- getsGlobal scops
   sm    <- getsGlobal (getActor source)
-  per   <- askPerception
+  per   <- askPerceptionSer
   pl    <- getsGlobal splayer
   Actor{btime}  <- getsGlobal getPlayerBody
   lvl   <- getsGlobal getArena
@@ -261,7 +262,7 @@ targetFloor tgtMode = do
   setCursor tgtMode
 
 -- | Set, activate and display cursor information.
-setCursor :: MonadAction m => TgtMode -> WriterT Slideshow m ()
+setCursor :: MonadClient m => TgtMode -> WriterT Slideshow m ()
 setCursor tgtMode = assert (tgtMode /= TgtOff) $ do
   loc  <- getLocal
   cli  <- getClient
@@ -277,7 +278,7 @@ setCursor tgtMode = assert (tgtMode /= TgtOff) $ do
   doLook
 
 -- | Tweak the @eps@ parameter of the targeting digital line.
-epsIncr :: MonadAction m => Bool -> m ()
+epsIncr :: MonadClient m => Bool -> m ()
 epsIncr b = do
   targeting <- getsClient (ctargeting . scursor)
   if targeting /= TgtOff
@@ -352,7 +353,7 @@ acceptCurrent h = do
     else h  -- nothing to accept right now, treat this as a command invocation
 
 -- | Clear current messages, show the next screen if any.
-clearCurrent :: MonadActionRO m => m ()
+clearCurrent :: MonadActionRoot m => m ()
 clearCurrent = return ()
 
 -- | Drop a single item.
@@ -396,7 +397,7 @@ removeFromInventory actor i loc = do
     modifyGlobal (updateAnyActorItem actor (removeItemByLetter i))  -- a hack
 
 -- | Remove given item from the given location. Tell if successful.
-removeFromLoc :: MonadAction m => Item -> Point -> m Bool
+removeFromLoc :: MonadServer m => Item -> Point -> m Bool
 removeFromLoc i loc = do
   lvl <- getsGlobal getArena
   if not $ L.any (equalItemIdentity i) (lvl `atI` loc)
@@ -471,7 +472,7 @@ allObjectsName :: Text
 allObjectsName = "Objects"
 
 -- | Let the player choose any item from a list of items.
-getAnyItem :: MonadAction m
+getAnyItem :: MonadClient m
            => Text    -- ^ prompt
            -> [Item]  -- ^ all items in question
            -> Text    -- ^ how to refer to the collection of items
@@ -482,7 +483,7 @@ data ItemDialogState = INone | ISuitable | IAll deriving Eq
 
 -- | Let the player choose a single, preferably suitable,
 -- item from a list of items.
-getItem :: MonadAction m
+getItem :: MonadClient m
         => Text            -- ^ prompt message
         -> (Item -> Bool)  -- ^ which items to consider suitable
         -> Text            -- ^ how to describe suitable items

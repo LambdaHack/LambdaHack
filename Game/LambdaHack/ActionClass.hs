@@ -24,23 +24,24 @@ data Session = Session
   , sconfigUI :: !ConfigUI         -- ^ the UI config for this session
   }
 
+-- | The bottom of the action monads class lattice.
 class (Monad m, Functor m, MonadReader Pers m, Show (m ()))
-      => MonadActionBase m where
+      => MonadActionRoot m where
   -- Set the current exception handler. First argument is the handler,
   -- second is the computation the handler scopes over.
   tryWith     :: (Msg -> m a) -> m a -> m a
   -- Abort with the given message.
   abortWith   :: Msg -> m a
 
-instance MonadActionBase m => MonadActionBase (WriterT Slideshow m) where
+instance MonadActionRoot m => MonadActionRoot (WriterT Slideshow m) where
   tryWith exc m =
     WriterT $ tryWith (\msg -> runWriterT (exc msg)) (runWriterT m)
   abortWith   = lift . abortWith
 
-instance MonadActionBase m => Show (WriterT Slideshow m a) where
+instance MonadActionRoot m => Show (WriterT Slideshow m a) where
   show _ = "an action"
 
-class MonadActionBase m => MonadServerRO m where
+class MonadActionRoot m => MonadServerRO m where
   getGlobal   :: m State
   getsGlobal  :: (State -> a) -> m a
   getServer   :: m StateServer
@@ -52,7 +53,7 @@ instance MonadServerRO m => MonadServerRO (WriterT Slideshow m) where
   getServer   = lift getServer
   getsServer  = lift . getsServer
 
-class MonadActionBase m => MonadClientRO m where
+class MonadActionRoot m => MonadClientRO m where
   getsSession :: (Session -> a) -> m a
   getClient   :: m StateClient
   getsClient  :: (StateClient -> a) -> m a
@@ -79,7 +80,7 @@ instance MonadActionRO m => MonadActionRO (WriterT Slideshow m) where
   getDict     = lift getDict
   getsDict    = lift . getsDict
 
-class MonadActionBase m => MonadActionIO m where
+class MonadActionRoot m => MonadActionIO m where
   -- We do not provide a MonadIO instance, so that outside of Action/
   -- nobody can subvert the action monads by invoking arbitrary IO.
   liftIO :: IO a -> m a
@@ -116,6 +117,7 @@ class (MonadActionIO m, MonadClientServerRO m, MonadServer m, MonadClient m)
 
 instance MonadClientServer m => MonadClientServer (WriterT Slideshow m) where
 
+-- | The top of the action monads class lattice.
 class (MonadActionIO m, MonadActionRO m, MonadClientServer m)
       => MonadAction m where
   modifyDict   :: (StateDict -> StateDict) -> m ()

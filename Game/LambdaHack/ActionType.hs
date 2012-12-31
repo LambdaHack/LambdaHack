@@ -67,7 +67,7 @@ instance MonadReader Pers Action where
 instance Show (Action a) where
   show _ = "an action"
 
-instance MonadActionBase Action where
+instance MonadActionRoot Action where
   tryWith exc m =
     Action (\c p k a s ser d ->
              let runA msg = runAction (exc msg) c p k a s ser d

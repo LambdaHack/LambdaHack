@@ -18,7 +18,7 @@ import qualified Game.LambdaHack.ActionType as ActionType
 
 -- | Fire up the frontend with the engine fueled by content.
 -- The @Action@ type to be used is decided by the second argument
--- to @startFrontend@. It neededn't be @TypeAction.Action@.
+-- to @startFrontend@. It neededn't be @ActionType.Action@.
 -- Which of the frontends is run depends on the flags supplied
 -- when compiling the engine library.
 main :: IO ()

@@ -77,7 +77,7 @@ gameRestart = do
   when (not b2) $ abortWith "Yea, so much still to do."
   modifyServer (\ s -> s {squit = Just (False, Restart)})
 
-moveCursor :: MonadAction m => Vector -> Int -> WriterT Slideshow m ()
+moveCursor :: MonadClient m => Vector -> Int -> WriterT Slideshow m ()
 moveCursor dir n = do
   lxsize <- getsLocal (lxsize . getArena)
   lysize <- getsLocal (lysize . getArena)
@@ -89,13 +89,13 @@ moveCursor dir n = do
   modifyClient (updateCursor upd)
   doLook
 
-ifRunning :: MonadActionRO m => ((Vector, Int) -> m a) -> m a -> m a
+ifRunning :: MonadClientRO m => ((Vector, Int) -> m a) -> m a -> m a
 ifRunning t e = do
   ad <- getsLocal (bdir . getPlayerBody)
   maybe e t ad
 
 -- | Guess and report why the bump command failed.
-guessBump :: MonadActionRO m => Kind.Ops TileKind -> F.Feature -> Kind.Id TileKind -> m ()
+guessBump :: MonadActionRoot m => Kind.Ops TileKind -> F.Feature -> Kind.Id TileKind -> m ()
 guessBump cotile F.Openable t | Tile.hasFeature cotile F.Closable t =
   abortWith "already open"
 guessBump _ F.Openable _ =
@@ -206,10 +206,10 @@ actorOpenDoor actor dir = do
 -- k levels shallower. Enters targeting mode, if not already in one.
 tgtAscend :: MonadAction m => Int -> WriterT Slideshow m ()
 tgtAscend k = do
-  Kind.COps{cotile} <- getsGlobal scops
-  cursor    <- getsClient scursor
+  Kind.COps{cotile} <- getsLocal scops
+  cursor <- getsClient scursor
   targeting <- getsClient (ctargeting . scursor)
-  sarena      <- getsGlobal sarena
+  sarena <- getsGlobal sarena
   lvl       <- getsGlobal getArena
   st        <- getGlobal
   depth     <- getsGlobal sdepth
@@ -250,7 +250,7 @@ tgtAscend k = do
     modifyClient (updateCursor upd)
   doLook
 
-heroesAfterPl :: MonadActionRO m => m [ActorId]
+heroesAfterPl :: MonadClient m => m [ActorId]
 heroesAfterPl = do
   pl <- getsLocal splayer
   s  <- getLocal
@@ -513,19 +513,19 @@ rollMonster Kind.COps{ cotile
           return $ addMonster cotile mk hp loc bfaction False state ser
 
 -- | Generate a monster, possibly.
-generateMonster :: MonadAction m => m ()
+generateMonster :: MonadServer m => m ()
 generateMonster = do
   cops <- getsGlobal scops
   state <- getGlobal
   ser <- getServer
-  per <- askPerception
+  per <- askPerceptionSer
   (nstate, nser) <- rndToAction $ rollMonster cops per state ser
   putGlobal nstate
   srandom <- getsServer srandom
   putServer $! nser {srandom}
 
 -- | Possibly regenerate HP for all actors on the current level.
-regenerateLevelHP :: MonadAction m => m ()
+regenerateLevelHP :: MonadServer m => m ()
 regenerateLevelHP = do
   Kind.COps{ coitem
            , coactor=coactor@Kind.Ops{okind}
@@ -626,7 +626,7 @@ dumpConfig = do
   abortWith msg
 
 -- | Add new smell traces to the level. Only humans leave a strong scent.
-addSmell :: MonadAction m => m ()
+addSmell :: MonadServer m => m ()
 addSmell = do
   s  <- getGlobal
   pl <- getsGlobal splayer
@@ -637,14 +637,14 @@ addSmell = do
     modifyGlobal $ updateArena $ updateSmell upd
 
 -- | Update the wait/block count.
-setWaitBlock :: MonadAction m => ActorId -> m ()
+setWaitBlock :: MonadServer m => ActorId -> m ()
 setWaitBlock actor = do
   Kind.COps{coactor} <- getsGlobal scops
   time <- getsGlobal getTime
   updateAnyActor actor $ \ m -> m {bwait = timeAddFromSpeed coactor m time}
 
 -- | Player waits a turn (and blocks, etc.).
-waitBlock :: MonadAction m => m ()
+waitBlock :: MonadServer m => m ()
 waitBlock = do
-  pl <- getsLocal splayer
+  pl <- getsGlobal splayer
   setWaitBlock pl

@@ -45,13 +45,13 @@ import Game.LambdaHack.Utils.Assert
 
 default (Text)
 
--- | Sentences such as \"Dog barks loudly.\"
+-- | Sentences such as \"Dog barks loudly.\".
 actorVerb :: Kind.Ops ActorKind -> Actor -> Text -> Text
 actorVerb coactor a v =
   makeSentence [MU.SubjectVerbSg (partActor coactor a) (MU.Text v)]
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
-rndToAction :: MonadAction m => Rnd a -> m a
+rndToAction :: MonadServer m => Rnd a -> m a
 rndToAction r = do
   g <- getsServer srandom
   let (a, ng) = St.runState r g
@@ -59,11 +59,11 @@ rndToAction r = do
   return a
 
 -- | Update actor stats. Works for actors on other levels, too.
-updateAnyActor :: MonadAction m => ActorId -> (Actor -> Actor) -> m ()
+updateAnyActor :: MonadServer m => ActorId -> (Actor -> Actor) -> m ()
 updateAnyActor actor f = modifyGlobal (updateAnyActorBody actor f)
 
 -- | Update player-controlled actor stats.
-updatePlayerBody :: MonadAction m => (Actor -> Actor) -> m ()
+updatePlayerBody :: MonadServer m => (Actor -> Actor) -> m ()
 updatePlayerBody f = do
   pl <- getsGlobal splayer
   updateAnyActor pl f
@@ -273,7 +273,7 @@ eff Effect.Descend _ source target power = do
            then (True, "")
            else (True, actorVerb coactor tm "find a way downstairs")
 
-nullEffect :: MonadActionRO m => m (Bool, Text)
+nullEffect :: MonadActionRoot m => m (Bool, Text)
 nullEffect = return (False, "Nothing happens.")
 
 -- TODO: refactor with actorAttackActor.
@@ -302,10 +302,10 @@ squashActor source target = do
 
 effLvlGoUp :: MonadAction m => Int -> m ()
 effLvlGoUp k = do
-  pbody     <- getsGlobal getPlayerBody
-  pl        <- getsGlobal splayer
-  sarena      <- getsGlobal sarena
-  st        <- getGlobal
+  pbody <- getsGlobal getPlayerBody
+  pl <- getsGlobal splayer
+  sarena <- getsGlobal sarena
+  st <- getGlobal
   cops <- getsGlobal scops
   case whereTo st k of
     Nothing -> fleeDungeon -- we are at the "end" of the dungeon
@@ -409,7 +409,8 @@ fleeDungeon = do
 
 -- | The source actor affects the target actor, with a given item.
 -- If the event is seen, the item may get identified.
-itemEffectAction :: MonadAction m => Int -> ActorId -> ActorId -> Item -> Bool -> m ()
+itemEffectAction :: MonadAction m
+                 => Int -> ActorId -> ActorId -> Item -> Bool -> m ()
 itemEffectAction verbosity source target item block = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsGlobal scops
   st <- getGlobal
@@ -420,7 +421,7 @@ itemEffectAction verbosity source target item block = do
   (b1, b2) <- effectToAction effect verbosity source target (jpower item) block
   -- Party sees or affected, and the effect interesting,
   -- so the item gets identified.
-  when (b1 && b2) $ discover item
+  when (b1 && b2) $ discover discoS item
   -- Destroys attacking actor and its items: a hack for projectiles.
   sarenaNew <- getsGlobal sarena
   modifyGlobal (\ s -> s {sarena = sarenaOld})
@@ -429,11 +430,10 @@ itemEffectAction verbosity source target item block = do
   modifyGlobal (\ s -> s {sarena = sarenaNew})
 
 -- | Make the item known to the player.
-discover :: MonadAction m => Item -> m ()
-discover i = do
-  Kind.COps{coitem} <- getsGlobal scops
+discover :: MonadClient m => Discoveries -> Item -> m ()
+discover discoS i = do
+  Kind.COps{coitem} <- getsLocal scops
   oldDisco <- getsLocal sdisco
-  discoS <- getsGlobal sdisco
   let ix = jkindIx i
       ik = discoS M.! ix
   unless (ix `M.member` oldDisco) $ do
@@ -448,11 +448,11 @@ discover i = do
 
 -- | Make the actor controlled by the player. Switch level, if needed.
 -- False, if nothing to do. Should only be invoked as a direct result
--- of a player action or the selected player actor death.
+-- of a player action (selected player actor death just sets splayer to -1).
 selectPlayer :: MonadAction m => ActorId -> m Bool
 selectPlayer actor = do
   cops@Kind.COps{coactor} <- getsLocal scops
-  pl    <- getsLocal splayer
+  pl <- getsLocal splayer
   if actor == pl
     then return False -- already selected
     else do
@@ -482,7 +482,7 @@ selectHero k = do
 
 -- TODO: center screen, flash the background, etc. Perhaps wait for SPACE.
 -- | Focus on the hero being wounded/displaced/etc.
-focusIfOurs :: MonadActionRO m => ActorId -> m Bool
+focusIfOurs :: MonadClientRO m => ActorId -> m Bool
 focusIfOurs target = do
   s  <- getLocal
   if isAHero s target
@@ -506,7 +506,7 @@ summonHeroes n loc =
 
 -- TODO: merge with summonHeroes; disregard "spawn" factions and "spawn"
 -- flags for monsters; only check 'summon"
-summonMonsters :: MonadAction m => Int -> Point -> m ()
+summonMonsters :: MonadServer m => Int -> Point -> m ()
 summonMonsters n loc = do
   sfaction <- getsGlobal sfaction
   Kind.COps{ cotile
@@ -614,7 +614,8 @@ gameOver showEndingScreens = do
         when go $ modifyServer (\st -> st {squit = Just (True, Killed sarena)})
 
 -- | Create a list of item names.
-itemOverlay :: MonadActionRO m => Discoveries -> Bool -> [Item] -> m Overlay
+itemOverlay :: MonadClientRO m
+            => Discoveries -> Bool -> [Item] -> m Overlay
 itemOverlay disco sorted is = do
   Kind.COps{coitem} <- getsLocal scops
   let items | sorted = sortBy (cmpLetterMaybe `on` jletter) is
@@ -624,11 +625,11 @@ itemOverlay disco sorted is = do
              <> " "
   return $ map pr items
 
-stopRunning :: MonadAction m => m ()
+stopRunning :: MonadServer m => m ()
 stopRunning = updatePlayerBody (\ p -> p { bdir = Nothing })
 
 -- | Perform look around in the current location of the cursor.
-doLook :: MonadAction m => WriterT Slideshow m ()
+doLook :: MonadClient m => WriterT Slideshow m ()
 doLook = do
   cops@Kind.COps{coactor} <- getsLocal scops
   p    <- getsClient (clocation . scursor)
