@@ -40,7 +40,7 @@ grid (nx, ny) (x0, y0, x1, y1) =
   let xd = x1 - x0
       yd = y1 - y0
       -- Make sure that in caves not filled with rock, there is a passage
-      -- across the cave, even if a single room bposks most of the cave.
+      -- across the cave, even if a single room blocks most of the cave.
       xborder = if nx == 1 then 3 else 2
       yborder = if ny == 1 then 3 else 2
   in [ (PointXY (x, y), (x0 + (xd * x `div` nx) + xborder,

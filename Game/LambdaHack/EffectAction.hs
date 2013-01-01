@@ -22,7 +22,7 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Animation (twirlSplash, bposkHit, deathBody)
+import Game.LambdaHack.Animation (twirlSplash, blockHit, deathBody)
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
@@ -81,7 +81,7 @@ updatePlayerBody f = do
 -- The second bool tells if the effect was seen by or affected the party.
 effectToAction :: MonadAction m => Effect.Effect -> Int -> ActorId -> ActorId -> Int -> Bool
                -> m (Bool, Bool)
-effectToAction effect verbosity source target power bposk = do
+effectToAction effect verbosity source target power block = do
   oldTm <- getsGlobal (getActor target)
   let oldHP = bhp oldTm
   (b, msg) <- eff effect verbosity source target power
@@ -117,9 +117,9 @@ effectToAction effect verbosity source target power bposk = do
                   breturn svisible spos)
           anim | newHP > oldHP =
             twirlSplash poss Color.BrBlue Color.Blue
-               | newHP < oldHP && bposk =
-            bposkHit    poss Color.BrRed  Color.Red
-               | newHP < oldHP && not bposk =
+               | newHP < oldHP && block =
+            blockHit    poss Color.BrRed  Color.Red
+               | newHP < oldHP && not block =
             twirlSplash poss Color.BrRed  Color.Red
                | otherwise = mempty
           animFrs = animate cli loc cops per anim
@@ -334,10 +334,10 @@ effLvlGoUp k = do
           Nothing -> return ()
 -- Broken if the effect happens, e.g. via a scroll and abort is not enough.
 --          Just h | isAHero st h ->
---            -- Bail out if a party member bposks the staircase.
---            abortWith "somebody bposks the staircase"
+--            -- Bail out if a party member blocks the staircase.
+--            abortWith "somebody blocks the staircase"
           Just m ->
-            -- Aquash an actor bposking the staircase.
+            -- Aquash an actor blocking the staircase.
             -- This is not a duplication with the other calls to squashActor,
             -- because here an inactive actor is squashed.
             squashActor pl m
@@ -411,14 +411,14 @@ fleeDungeon = do
 -- If the event is seen, the item may get identified.
 itemEffectAction :: MonadAction m
                  => Int -> ActorId -> ActorId -> Item -> Bool -> m ()
-itemEffectAction verbosity source target item bposk = do
+itemEffectAction verbosity source target item block = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsGlobal scops
   st <- getGlobal
   sarenaOld <- getsGlobal sarena
   discoS <- getsGlobal sdisco
   let effect = ieffect $ okind $ fromJust $ jkind discoS item
   -- The msg describes the target part of the action.
-  (b1, b2) <- effectToAction effect verbosity source target (jpower item) bposk
+  (b1, b2) <- effectToAction effect verbosity source target (jpower item) block
   -- Party sees or affected, and the effect interesting,
   -- so the item gets identified.
   when (b1 && b2) $ discover discoS item

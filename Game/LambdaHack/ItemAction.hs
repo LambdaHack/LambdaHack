@@ -166,7 +166,7 @@ projectGroupItem source tpos _verb item = do
           putGlobal nglo
           putServer nser
         else
-          abortWith "bposked"
+          abortWith "blocked"
       when (svisible || projVis) $ msgAdd msg
 
 playerProjectGroupItem :: MonadAction m => MU.Part -> MU.Part -> [Char] -> m ()

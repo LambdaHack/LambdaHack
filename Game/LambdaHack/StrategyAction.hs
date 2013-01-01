@@ -143,7 +143,7 @@ proposeAction cops actor cli loc factionAbilities =
     case btarget of
       Just (TEnemy _ l) -> (l, True)
       Just (TPos l) -> (l, False)
-      Nothing -> (bpos, False)  -- an actor bposked by friends
+      Nothing -> (bpos, False)  -- an actor blocked by friends
   combineDistant = liftFrequency . sumF
   aFrequency :: Ability -> Frequency (m ())
   aFrequency Ability.Ranged = if foeVisible
@@ -309,7 +309,7 @@ toolsFreq cops actor loc =
       benefit > 0, isymbol ik == '!']
 
 -- | AI finds interesting moves in the absense of visible foes.
--- This strategy can be null (e.g., if the actor is bposked by friends).
+-- This strategy can be null (e.g., if the actor is blocked by friends).
 moveStrategy :: Kind.COps -> ActorId -> State -> Maybe (Point, Bool)
              -> Strategy Vector
 moveStrategy cops actor loc mFoe =
@@ -402,7 +402,7 @@ chase cops actor loc foe@(_, foeVisible) =
 
 wander :: MonadAction m => Kind.COps -> ActorId -> State -> Strategy (m ())
 wander cops actor loc =
-  -- Target set, but we don't chase the foe, e.g., because we are bposked
+  -- Target set, but we don't chase the foe, e.g., because we are blocked
   -- or we cannot chase at all.
   let mFoe = Nothing
   in dirToAction actor True `liftM` moveStrategy cops actor loc mFoe

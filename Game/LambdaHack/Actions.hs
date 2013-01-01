@@ -24,7 +24,7 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Animation (bposkMiss, swapPlaces)
+import Game.LambdaHack.Animation (blockMiss, swapPlaces)
 import Game.LambdaHack.Binding
 import qualified Game.LambdaHack.Command as Command
 import Game.LambdaHack.Config
@@ -131,7 +131,7 @@ triggerTile dpos = do
   lvl <- getsGlobal getArena
   let f (F.Cause effect) = do
         pl <- getsGlobal splayer
-        void $ effectToAction effect 0 pl pl 0 False  -- no bposk against tile
+        void $ effectToAction effect 0 pl pl 0 False  -- no block against tile
         return ()
       f (F.ChangeTo tgroup) = do
         Level{lactor} <- getsGlobal getArena
@@ -142,7 +142,7 @@ triggerTile dpos = do
                   let adj = (Kind.// [(dpos, newTileId)])
                   modifyGlobal (updateArena (updateLMap adj))
 -- TODO: take care of AI using this function (aborts, etc.).
-                else abortWith "bposked"  -- by monsters or heroes
+                else abortWith "blocked"  -- by monsters or heroes
           _ : _ -> abortWith "jammed"  -- by items
       f _ = return ()
   mapM_ f $ TileKind.tfeature $ okind $ lvl `at` dpos
@@ -333,7 +333,7 @@ moveOrAttack allowAttacks actor dir = do
           when (actor == pl) $
             msgAdd $ lookAt cops False True loc tpos ""
           actorRunActor actor target
-      | otherwise -> abortWith "bposked"
+      | otherwise -> abortWith "blocked"
     Nothing
       | accessible cops lvl spos tpos -> do
           -- Perform the move.
@@ -349,7 +349,7 @@ moveOrAttack allowAttacks actor dir = do
 
 -- | Resolves the result of an actor moving into another. Usually this
 -- involves melee attack, but with two heroes it just changes focus.
--- Actors on bposked positions can be attacked without any restrictions.
+-- Actors on blocked positions can be attacked without any restrictions.
 -- For instance, an actor embedded in a wall
 -- can be attacked from an adjacent position.
 -- This function is analogous to projectGroupItem, but for melee
@@ -408,24 +408,24 @@ actorAttackActor source target = do
           msgMiss = makeSentence
             [ MU.SubjectVerbSg (partActor coactor sm) "try to"
             , verb MU.:> ", but"
-            , MU.SubjectVerbSg (partActor coactor tm) "bposk"
+            , MU.SubjectVerbSg (partActor coactor tm) "block"
             ]
-      let performHit bposk = do
+      let performHit block = do
             when (svisible || tvisible) $ msgAdd msg
             -- Msgs inside itemEffectAction describe the target part.
-            itemEffectAction verbosity source target stack bposk
-      -- Projectiles can't be bposked, can be sidestepped.
+            itemEffectAction verbosity source target stack block
+      -- Projectiles can't be blocked, can be sidestepped.
       if braced tm time && not (bproj sm)
         then do
-          bposked <- rndToAction $ chance $ 1%2
-          if bposked
+          blocked <- rndToAction $ chance $ 1%2
+          if blocked
             then do
               when (svisible || tvisible) $ msgAdd msgMiss
               cli <- getClient
               loc <- getLocal
               let poss = (breturn tvisible tpos,
                           breturn svisible spos)
-                  anim = bposkMiss poss
+                  anim = blockMiss poss
                   animFrs = animate cli loc cops per anim
               displayFramesPush $ Nothing : animFrs
             else performHit True
@@ -625,14 +625,14 @@ addSmell = do
   when (isAHero s pl) $
     modifyGlobal $ updateArena $ updateSmell upd
 
--- | Update the wait/bposk count.
+-- | Update the wait/block count.
 setWaitBlock :: MonadServer m => ActorId -> m ()
 setWaitBlock actor = do
   Kind.COps{coactor} <- getsGlobal scops
   time <- getsGlobal getTime
   updateAnyActor actor $ \ m -> m {bwait = timeAddFromSpeed coactor m time}
 
--- | Player waits a turn (and bposks, etc.).
+-- | Player waits a turn (and blocks, etc.).
 waitBlock :: MonadServer m => m ()
 waitBlock = do
   pl <- getsGlobal splayer

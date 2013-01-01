@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
--- | Game action monads and basic building bposks for player and monster
+-- | Game action monads and basic building blocks for player and monster
 -- actions. Has no access to the the main action type @Action@.
 -- Does not export the @liftIO@ operation nor a few other implementation
 -- details.

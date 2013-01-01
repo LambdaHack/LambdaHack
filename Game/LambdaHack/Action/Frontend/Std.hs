@@ -56,7 +56,7 @@ promptGetAnyKey sess frame = do
   display sess True True $ Just frame
   nextEvent sess Nothing
 
--- HACK: Special translation that bposk commands the bots should not use
+-- HACK: Special translation that block commands the bots should not use
 -- and multiplies some other commands.
 keyTranslate :: Char -> K.Key
 keyTranslate e =

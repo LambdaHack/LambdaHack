@@ -2,7 +2,7 @@
 module Game.LambdaHack.Animation
   ( Attr(..), defAttr, AttrChar(..)
   , SingleFrame(..), Animation, Frames, rederAnim
-  , twirlSplash, bposkHit, bposkMiss, deathBody, swapPlaces
+  , twirlSplash, blockHit, blockMiss, deathBody, swapPlaces
   ) where
 
 import qualified Data.IntMap as IM
@@ -81,9 +81,9 @@ twirlSplash poss c1 c2 = Animation $ map (IM.fromList . mzipPairs poss)
   , (blank                    , blank)
   ]
 
--- | Attack that hits through a bposk.
-bposkHit :: (Maybe Point, Maybe Point) -> Color -> Color -> Animation
-bposkHit poss c1 c2 = Animation $ map (IM.fromList . mzipPairs poss)
+-- | Attack that hits through a block.
+blockHit :: (Maybe Point, Maybe Point) -> Color -> Color -> Animation
+blockHit poss c1 c2 = Animation $ map (IM.fromList . mzipPairs poss)
   [ (coloredSymbol BrWhite '*', blank)
   , (coloredSymbol BrBlue  '{', coloredSymbol BrCyan '^')
   , (coloredSymbol BrBlue  '{', blank)
@@ -95,9 +95,9 @@ bposkHit poss c1 c2 = Animation $ map (IM.fromList . mzipPairs poss)
   , (blank                    , blank)
   ]
 
--- | Attack that is bposked.
-bposkMiss :: (Maybe Point, Maybe Point) -> Animation
-bposkMiss poss = Animation $ map (IM.fromList . mzipPairs poss)
+-- | Attack that is blocked.
+blockMiss :: (Maybe Point, Maybe Point) -> Animation
+blockMiss poss = Animation $ map (IM.fromList . mzipPairs poss)
   [ (coloredSymbol BrWhite '*', blank)
   , (coloredSymbol BrBlue  '{', coloredSymbol BrCyan '^')
   , (coloredSymbol BrBlue  '}', blank)
