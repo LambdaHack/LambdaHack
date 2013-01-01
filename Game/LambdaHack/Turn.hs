@@ -18,7 +18,6 @@ import Game.LambdaHack.ActorState
 import Game.LambdaHack.Binding
 import qualified Game.LambdaHack.Command as Command
 import Game.LambdaHack.CommandAction
-import Game.LambdaHack.Content.StrategyKind
 import Game.LambdaHack.EffectAction
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Key as K
@@ -160,21 +159,18 @@ handleAI actor = do
   stratTarget <- targetStrategy actor
   -- Choose a target from those proposed by AI for the actor.
   btarget <- rndToAction $ frequency $ bestVariant stratTarget
-  loc <- getLocal
-  cli <- getClient
   modifyClient $ updateTarget actor (const btarget)
-  cops@Kind.COps{costrat=Kind.Ops{okind}} <- getsGlobal scops
-  let Actor{bfaction} = getActor actor loc
-      factionAI = gAiIdle $ sfaction loc IM.! bfaction
-      factionAbilities = sabilities (okind factionAI)
-  let stratMove = strategy cops actor cli loc factionAbilities
-  debug $ "handleAI factionAI:" <+> showT factionAI
+  stratAction <- actionStrategy actor
+  -- debug
+  loc <- getLocal
+  debug $ "handleAI factionAI:"
+     <+> showT (gAiIdle $ sfaction loc IM.! bfaction (getActor actor loc))
      <>          ", symbol:"    <+> showT (bsymbol (getActor actor loc))
      <>          ", loc:"       <+> showT (bpos (getActor actor loc))
      <> "\nhandleAI target:"    <+> showT stratTarget
-     <> "\nhandleAI move:"      <+> showT stratMove
+     <> "\nhandleAI move:"      <+> showT stratAction
   -- Run the AI: choses an action from those given by the AI strategy.
-  join $ rndToAction $ frequency $ bestVariant $ stratMove
+  join $ rndToAction $ frequency $ bestVariant $ stratAction
 
 -- | Continue running in the given direction.
 continueRun :: MonadAction m => (Vector, Int) -> m ()

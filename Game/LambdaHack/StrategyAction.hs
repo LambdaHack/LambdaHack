@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | AI strategy operations implemented with the 'Action' monad.
 module Game.LambdaHack.StrategyAction
-  ( targetStrategy, strategy
+  ( targetStrategy, actionStrategy
   ) where
 
 import Control.Arrow
@@ -54,7 +54,6 @@ targetStrategy actor = do
       factionAbilities = sabilities (okind factionAI)
   return $! reacquireTgt cops actor cli loc per factionAbilities
 
--- | AI proposes possible targets for the actor. Never empty.
 reacquireTgt :: Kind.COps -> ActorId -> StateClient -> State
                -> Perception -> [Ability]
                -> Strategy (Maybe Target)
@@ -117,10 +116,22 @@ reacquireTgt cops actor cli loc per factionAbilities =
     (Just . TPos . (me `shift`)) `liftM` moveStrategy cops actor loc Nothing
 
 -- | AI strategy based on actor's sight, smell, intelligence, etc. Never empty.
-strategy :: forall m. MonadAction m => Kind.COps -> ActorId
-         -> StateClient -> State -> [Ability]
-         -> Strategy (m ())
-strategy cops actor cli loc factionAbilities =
+actionStrategy :: (MonadClientRO n, MonadAction m)
+               => ActorId
+               -> n (Strategy (m ()))
+actionStrategy actor = do
+  cops@Kind.COps{costrat=Kind.Ops{okind}} <- getsLocal scops
+  loc <- getLocal
+  cli <- getClient
+  let Actor{bfaction} = getActor actor loc
+      factionAI = gAiIdle $ sfaction loc IM.! bfaction
+      factionAbilities = sabilities (okind factionAI)
+  return $! proposeAction cops actor cli loc factionAbilities
+
+proposeAction :: forall m. MonadAction m => Kind.COps -> ActorId
+              -> StateClient -> State -> [Ability]
+              -> Strategy (m ())
+proposeAction cops actor cli loc factionAbilities =
   sumS prefix .| combineDistant distant .| sumS suffix
   .| waitBlockNow actor  -- wait until friends sidestep, ensures never empty
  where
