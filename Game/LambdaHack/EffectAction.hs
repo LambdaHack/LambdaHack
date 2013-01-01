@@ -186,7 +186,7 @@ eff (Effect.Wound nDm) verbosity source target power = do
     updateAnyActor target $ \ m -> m { bhp = newHP }  -- Damage the target.
     return (True, msg)
 eff Effect.Dominate _ source target _power = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsGlobal scops
+  scops@Kind.COps{coactor=Kind.Ops{okind}} <- getsGlobal scops
   s <- getGlobal
   if not $ isAHero s target
     then do  -- Monsters have weaker will than heroes.
@@ -215,7 +215,7 @@ eff Effect.Dominate _ source target _power = do
            let cross m = bpos m : vicinityCardinal lxsize lysize (bpos m)
                vis = IS.fromList $ concatMap cross lm
            lvl <- getsGlobal getArena
-           rememberList vis lvl
+           modifyLocal $ updateArena $ rememberLevel scops vis lvl
            return (True, "A dozen voices yells in anger.")
          else nullEffect
 eff Effect.SummonFriend _ source target power = do
@@ -312,7 +312,8 @@ effLvlGoUp k = do
     Just (nln, npos) ->
       assert (nln /= sarena `blame` (nln, "stairs looped")) $ do
         bitems <- getsGlobal getPlayerItem
-        -- Remember the level (e.g., for a teleport via scroll on the floor).
+        -- Remember the level (e.g., when teleporting via scroll on the floor,
+        -- register that the scroll vanished).
         remember
         -- Remove the player from the old level.
         modifyGlobal (deleteActor pl)
@@ -358,7 +359,6 @@ effLvlGoUp k = do
 -- this operation is executed.
 switchLevel :: MonadAction m => LevelId -> m ()
 switchLevel nln = do
-  remember  -- record changes before the level is frozen; we could do that at the end of the functino as well, recording changes after the level is thawed
   timeCurrent <- getsGlobal getTime
   sarena <- getsGlobal sarena
   when (sarena /= nln) $ do
@@ -561,7 +561,8 @@ checkPartyDeath = do
              actor : _ -> do
                msgAdd "The survivors carry on."
                animateDeath
-               -- One last look at the beautiful world.
+               -- One last look at the beautiful world (e.g., to register
+               -- that the lethal potion on the floor is used up).
                remember
                -- Remove the dead player.
                modifyGlobal deletePlayer

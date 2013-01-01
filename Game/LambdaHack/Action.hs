@@ -29,7 +29,7 @@ module Game.LambdaHack.Action
     -- * Draw frames
   , drawOverlay
     -- * Clip init operations
-  , startClip, remember, rememberList
+  , startClip, remember, rememberLevel
     -- * Assorted primitives
   , saveGameBkp, dumpCfg, endOrLoop, frontendName, startFrontend
   , debug
@@ -342,45 +342,44 @@ startClip action =
     displayPush  -- draw the current surroundings
     action  -- let the actor act
 
--- | Update heroes memory.
+-- TODO: make sure it's lazy enough and fast enough.
+-- | Update faction memory for the whole perception of the current level.
 remember :: MonadClientServer m => m ()
 remember = do
+  scops <- getsGlobal scops
   lvl <- getsGlobal getArena
   per <- askPerception
-  rememberList (totalVisible per) lvl
+  modifyLocal $ updateArena $ rememberLevel scops (totalVisible per) lvl
 
--- | Update heroes memory at the given list of positions.
-rememberList :: MonadClient m => IS.IntSet -> Level -> m ()
-rememberList visible lvl = do
-  let vis = IS.toList visible
-  Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getsLocal scops
-  clvl <- getsLocal getArena
-  -- TODO: let factions that spawn see hidden features and open all hidden
-  -- doors (they built and hid them).
-  -- TODO: hide the Hidden feature. Wait with all that until the semantics
-  -- of (repeated) searching is resolved.
-  let rememberTile = [(loc, lvl `at` loc) | loc <- vis]
-      unknownId = ouniqGroup "unknown space"
-      newClear (loc, tk) = clvl `at` loc == unknownId
-                           && Tile.isExplorable cotile tk
-      clearN = length $ filter newClear rememberTile
-  modifyLocal (updateArena (updateLMap (Kind.// rememberTile)))
-  modifyLocal (updateArena
-                  (\ l@Level{lseen} -> l {lseen = lseen + clearN}))
-  let alt Nothing   _ = Nothing
+-- | Update faction memory at the given set of positions.
+rememberLevel :: Kind.COps -> IS.IntSet -> Level -> Level -> Level
+rememberLevel Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} visible lvl clvl =
+  let nactor = IM.filter (\m -> bpos m `IS.member` visible) (lactor lvl)
+      ninv   = IM.filterWithKey (\p _ -> p `IM.member` nactor) (linv lvl)
+      alt Nothing   _ = Nothing
       alt (Just []) _ = assert `failure` lvl
       alt x         _ = x
       rememberItem p m = IM.alter (alt $ IM.lookup p $ litem lvl) p m
-  modifyLocal (updateArena
-                 (updateIMap (\ m -> foldr rememberItem m vis)))
-  let cactor = IM.filter (\m -> bpos m `IS.member` visible) (lactor lvl)
-      cinv   = IM.filterWithKey (\p _ -> p `IM.member` cactor) (linv lvl)
-  modifyLocal (updateArena
-                 (updateActor (const cactor)
-                  . updateInv (const cinv)))
-  modifyLocal (updateTime (const $ ltime lvl))
+      vis = IS.toList visible
+      rememberTile = [(pos, lvl `at` pos) | pos <- vis]
+      unknownId = ouniqGroup "unknown space"
+      eClear (pos, tk) = clvl `at` pos == unknownId
+                         && Tile.isExplorable cotile tk
+      extraClear = length $ filter eClear rememberTile
+  in clvl { lactor = nactor
+          , linv = ninv
+          , litem = foldr rememberItem (litem clvl) vis
+          , ltile = ltile clvl Kind.// rememberTile
   -- TODO: update enemy smell probably only around a sniffing party member
-  modifyLocal $ updateArena $ updateSmell (const $ lsmell lvl)
+          , lsmell = lsmell lvl
+          , lseen = lseen clvl + extraClear
+          , ltime = ltime lvl
+  -- TODO: let factions that spawn see hidden features and open all hidden
+  -- doors (they built and hid them). Hide the Hidden feature in ltile.
+  -- Wait with all that until the semantics of (repeated) searching
+  -- is changed.
+          , lsecret = IM.empty
+          }
 
 -- | Save the cli and a backup of the save game file, in case of crashes.
 --
