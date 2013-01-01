@@ -5,9 +5,9 @@ module Content.CaveKind ( cdefs ) where
 import Data.Ratio
 
 import Game.LambdaHack.CDefs
-import Game.LambdaHack.Random as Random
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Misc
+import Game.LambdaHack.Random as Random
 
 cdefs :: CDefs CaveKind
 cdefs = CDefs
@@ -35,7 +35,7 @@ rogue = CaveKind
   , cminStairDist = 30
   , cdoorChance   = 1%2
   , copenChance   = 1%10
-  , chiddenChance = 1%5
+  , chiddenChance = 1%25
   , citemNum      = RollDice 7 2
   , cdefTile    = "fillerWall"
   , ccorridorTile   = "darkCorridor"

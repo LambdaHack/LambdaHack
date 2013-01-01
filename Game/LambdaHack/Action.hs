@@ -343,7 +343,8 @@ rememberList visible lvl = do
   clvl <- getsLocal getArena
   -- TODO: let factions that spawn see hidden features and open all hidden
   -- doors (they built and hid them).
-  -- TODO: hide the Hidden feature
+  -- TODO: hide the Hidden feature. Wait with all that until the semantics
+  -- of (repeated) searching is resolved.
   let rememberTile = [(loc, lvl `at` loc) | loc <- vis]
       unknownId = ouniqGroup "unknown space"
       newClear (loc, tk) = clvl `at` loc == unknownId
