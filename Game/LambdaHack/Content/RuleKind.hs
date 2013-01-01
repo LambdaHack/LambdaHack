@@ -24,8 +24,8 @@ import Game.LambdaHack.PointXY
 -- as for the other content.
 --
 -- The @raccessible@ field holds a predicate that tells
--- whether one location is accessible from another.
--- Precondition: the two locations are next to each other.
+-- whether one position is accessible from another.
+-- Precondition: the two positions are next to each other.
 data RuleKind = RuleKind
   { rsymbol          :: Char     -- ^ a symbol
   , rname            :: Text     -- ^ short description

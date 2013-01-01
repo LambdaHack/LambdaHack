@@ -30,13 +30,13 @@ import Game.LambdaHack.Vector
 runDir :: MonadClient m => (Vector, Int) -> m Vector
 runDir (dir, dist) = do
   cops <- getsLocal scops
-  locHere <- getsLocal (bloc . getPlayerBody)
+  posHere <- getsLocal (bpos . getPlayerBody)
   lvl <- getsLocal getArena
   targeting <- getsClient (ctargeting . scursor)
   assert (targeting == TgtOff `blame` (dir, dist, targeting, "/= TgtOff")) $ do
     let accessibleDir loc d = accessible cops lvl loc (loc `shift` d)
         -- Do not count distance if we just open a door.
-        distNew = if accessibleDir locHere dir then dist + 1 else dist
+        distNew = if accessibleDir posHere dir then dist + 1 else dist
     modifyClient $ \cli -> cli {srunning = Just (dir, distNew)}
     return dir
 
@@ -84,30 +84,30 @@ runDisturbance :: Point -> Int -> Report
                -> [Actor] -> [Actor] -> Perception -> Point
                -> (F.Feature -> Point -> Bool) -> (Point -> Bool) -> X -> Y
                -> (Vector, Int) -> Maybe (Vector, Int)
-runDisturbance locLast distLast msg hs ms per locHere
-               locHasFeature locHasItems lxsize lysize (dirNew, distNew) =
+runDisturbance locLast distLast msg hs ms per posHere
+               posHasFeature posHasItems lxsize lysize (dirNew, distNew) =
   let msgShown  = not $ nullReport msg
-      mslocs    = IS.delete locHere $ IS.fromList (L.map bloc ms)
+      msposs    = IS.delete posHere $ IS.fromList (L.map bpos ms)
       enemySeen =
-        not (IS.null (mslocs `IS.intersection` totalVisible per))
+        not (IS.null (msposs `IS.intersection` totalVisible per))
       surrLast  = locLast : vicinity lxsize lysize locLast
-      surrHere  = locHere : vicinity lxsize lysize locHere
-      locThere  = locHere `shift` dirNew
-      heroThere = locThere `elem` L.map bloc hs
+      surrHere  = posHere : vicinity lxsize lysize posHere
+      posThere  = posHere `shift` dirNew
+      heroThere = posThere `elem` L.map bpos hs
       -- Stop if you touch any individual tile with these propereties
       -- first time, unless you enter it next move, in which case stop then.
-      touchList = [ locHasFeature F.Exit
-                  , locHasItems
+      touchList = [ posHasFeature F.Exit
+                  , posHasItems
                   ]
       -- Here additionally ignore a tile property if you stand on such tile.
-      standList = [ locHasFeature F.Path
-                  , not . locHasFeature F.Lit
+      standList = [ posHasFeature F.Path
+                  , not . posHasFeature F.Lit
                   ]
       -- Here stop only if you touch any such tile for the first time.
       -- TODO: stop when running along a path and it ends (or turns).
       -- TODO: perhaps in open areas change direction to follow lit and paths.
-      firstList = [ locHasFeature F.Lit
-                  , not . locHasFeature F.Path
+      firstList = [ posHasFeature F.Lit
+                  , not . posHasFeature F.Path
                   ]
       -- TODO: stop when walls vanish from cardinal directions or when any
       -- walls re-appear again. Actually stop one tile before that happens.
@@ -117,16 +117,16 @@ runDisturbance locLast distLast msg hs ms per locHere
         let touchLast = L.filter fun surrLast
             touchHere = L.filter fun surrHere
         in touchHere L.\\ touchLast
-      touchExplore fun = touchNew fun == [locThere]
+      touchExplore fun = touchNew fun == [posThere]
       touchStop fun = touchNew fun /= []
-      standNew fun = L.filter (\ loc -> locHasFeature F.Walkable loc ||
-                                        locHasFeature F.Openable loc)
+      standNew fun = L.filter (\ loc -> posHasFeature F.Walkable loc ||
+                                        posHasFeature F.Openable loc)
                        (touchNew fun)
-      standExplore fun = not (fun locHere) && standNew fun == [locThere]
-      standStop fun = not (fun locHere) && standNew fun /= []
+      standExplore fun = not (fun posHere) && standNew fun == [posThere]
+      standStop fun = not (fun posHere) && standNew fun /= []
       firstNew fun = L.all (not . fun) surrLast &&
                      L.any fun surrHere
-      firstExplore fun = firstNew fun && fun locThere
+      firstExplore fun = firstNew fun && fun posThere
       firstStop = firstNew
       tryRunMaybe
         | msgShown || enemySeen
@@ -148,22 +148,22 @@ runDisturbance locLast distLast msg hs ms per locHere
 continueRunDir :: MonadClient m => (Vector, Int) -> m Vector
 continueRunDir (dirLast, distLast) = do
   cops@Kind.COps{cotile} <- getsLocal scops
-  locHere <- getsLocal (bloc . getPlayerBody)
+  posHere <- getsLocal (bpos . getPlayerBody)
   per <- askPerception
   StateClient{sreport} <- getClient
   ms  <- getsLocal dangerousList
   sside <- getsLocal sside
   hs <- getsLocal (factionList [sside])
   lvl@Level{lxsize, lysize} <- getsLocal getArena
-  let locHasFeature f loc = Tile.hasFeature cotile f (lvl `at` loc)
-      locHasItems loc = not $ L.null $ lvl `atI` loc
-      locLast = if distLast == 0 then locHere else locHere `shift` neg dirLast
+  let posHasFeature f loc = Tile.hasFeature cotile f (lvl `at` loc)
+      posHasItems loc = not $ L.null $ lvl `atI` loc
+      locLast = if distLast == 0 then posHere else posHere `shift` neg dirLast
       tryRunDist (dir, distNew)
-        | accessibleDir locHere dir =
+        | accessibleDir posHere dir =
           -- TODO: perhaps @abortWith report2?
           maybe abort runDir $
-            runDisturbance locLast distLast sreport hs ms per locHere
-              locHasFeature locHasItems lxsize lysize (dir, distNew)
+            runDisturbance locLast distLast sreport hs ms per posHere
+              posHasFeature posHasItems lxsize lysize (dir, distNew)
         | otherwise = abort  -- do not open doors in the middle of a run
       tryRun dir = tryRunDist (dir, distLast)
       tryRunAndStop dir = tryRunDist (dir, 1000)
@@ -171,12 +171,12 @@ continueRunDir (dirLast, distLast) = do
       openableDir loc dir   = Tile.hasFeature cotile F.Openable
                                 (lvl `at` (loc `shift` dir))
       dirEnterable loc d = accessibleDir loc d || openableDir loc d
-  case runMode locHere dirLast dirEnterable lxsize of
+  case runMode posHere dirLast dirEnterable lxsize of
     RunDeadEnd -> abort                   -- we don't run backwards
     RunOpen    -> tryRun dirLast          -- run forward into the open space
     RunHub     -> abort                   -- stop and decide where to go
     RunCorridor (dirNext, turn) ->        -- look ahead
-      case runMode (locHere `shift` dirNext) dirNext dirEnterable lxsize of
+      case runMode (posHere `shift` dirNext) dirNext dirEnterable lxsize of
         RunDeadEnd     -> tryRun dirNext  -- explore the dead end
         RunCorridor _  -> tryRun dirNext  -- follow the corridor
         RunOpen | turn -> abort           -- stop and decide when to turn

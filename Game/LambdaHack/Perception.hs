@@ -57,7 +57,7 @@ debugTotalReachable per =
   let lpers = IM.elems $ pactors per
   in IS.unions (map preachable lpers)
 
--- | Check whether a location is within the visually reachable area
+-- | Check whether a position is within the visually reachable area
 -- of the given actor (disregarding lighting).
 actorReachesLoc :: ActorId -> Point -> Perception -> Bool
 actorReachesLoc actor loc per =
@@ -66,11 +66,11 @@ actorReachesLoc actor loc per =
         return $ loc `IS.member` preachable hper
   in fromMaybe False tryHero  -- assume not visible, if no perception found
 
--- | Whether an actor can see a location.
+-- | Whether an actor can see a position.
 actorSeesLoc :: Perception -> ActorId -> Point -> Bool
-actorSeesLoc per source tloc =
-  let reachable = actorReachesLoc source tloc per
-      visible = tloc `IS.member` totalVisible per
+actorSeesLoc per source tpos =
+  let reachable = actorReachesLoc source tpos per
+      visible = tpos `IS.member` totalVisible per
   in reachable && visible
 
 -- | Calculate the perception of all actors on the level.
@@ -93,22 +93,22 @@ levelPerception cops@Kind.COps{cotile} sconfig DebugModeSer{stryFov} fid
       hs = IM.filter (\ m -> bfaction m == fid && not (bproj m)) lactor
       pers = IM.map (\ h ->
                       computeReachable cops configFovMode stryFov h lvl) hs
-      locs = map bloc $ IM.elems hs
+      poss = map bpos $ IM.elems hs
       lpers = IM.elems pers
       reachable = PerceptionReachable $ IS.unions (map preachable lpers)
       -- TODO: Instead of giving the monster a light source, alter vision.
-      lights = IS.fromList locs
+      lights = IS.fromList poss
       visible = computeVisible cotile reachable lvl lights
   in Perception { pactors = pers
                 , ptotal  = visible
                 }
 
--- | A location can be directly lit by an ambient shine or a weak, portable
+-- | A position can be directly lit by an ambient shine or a weak, portable
 -- light source, e.g,, carried by a hero. (Only lights of radius 0
 -- are considered for now and it's assumed they do not reveal hero's position.
 -- TODO: change this to be radius 1 noctovision and introduce stronger
 -- light sources that show more but make the hero visible.)
--- A location is visible if it's reachable and either directly lit
+-- A position is visible if it's reachable and either directly lit
 -- or adjacent to one that is at once directly lit and reachable.
 -- The last condition approximates being
 -- on the same side of obstacles as the light source.
@@ -127,13 +127,13 @@ computeVisible cops reachable@PerceptionReachable{preachable} lvl lights' =
 isVisible :: Kind.Ops TileKind -> PerceptionReachable
           -> Level -> IS.IntSet -> Point -> Bool
 isVisible cotile PerceptionReachable{preachable}
-               lvl@Level{lxsize, lysize} lights loc0 =
+               lvl@Level{lxsize, lysize} lights pos0 =
   let litDirectly loc = Tile.isLit cotile (lvl `at` loc)
                         || loc `IS.member` lights
       l_and_R loc = litDirectly loc && loc `IS.member` preachable
-  in litDirectly loc0 || L.any l_and_R (vicinity lxsize lysize loc0)
+  in litDirectly pos0 || L.any l_and_R (vicinity lxsize lysize pos0)
 
--- | Reachable are all fields on an unblocked path from the hero position.
+-- | Reachable are all fields on an unbposked path from the hero position.
 -- The player's own position is considred reachable by him.
 computeReachable :: Kind.COps -> FovMode -> Maybe FovMode
                  -> Actor -> Level -> PerceptionReachable
@@ -145,6 +145,6 @@ computeReachable Kind.COps{cotile, coactor=Kind.Ops{okind}}
         else case smarkVision of
           Just fm -> fm
           Nothing -> configFovMode
-      ploc = bloc actor
+      ppos = bpos actor
   in PerceptionReachable $
-       IS.insert ploc $ IS.fromList $ fullscan cotile (fovMode actor) ploc lvl
+       IS.insert ppos $ IS.fromList $ fullscan cotile (fovMode actor) ppos lvl

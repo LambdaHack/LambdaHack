@@ -7,7 +7,7 @@ module Game.LambdaHack.Level
     -- * Level update
   , updateActor, updateInv, updateSmell, updateIMap, updateLMap, dropItemsAt
     -- * Level query
-  , at, atI, accessible, openable, findLoc, findLocTry
+  , at, atI, accessible, openable, findPos, findPosTry
     -- * Dungeon
   , LevelId, levelNumber, levelDefault, Dungeon
   ) where
@@ -88,9 +88,9 @@ updateLMap :: (TileMap -> TileMap) -> Level -> Level
 updateLMap f lvl = lvl { ltile = f (ltile lvl) }
 
 -- Note: do not scatter items around, it's too much work for the player.
--- | Place all items on the list at a location on the level.
+-- | Place all items on the list at a position on the level.
 dropItemsAt :: [Item] -> Point -> Level -> Level
-dropItemsAt [] _loc = id
+dropItemsAt [] _pos = id
 dropItemsAt items loc =
   let joinItems = L.foldl' (\ acc i -> snd (joinItem i acc))
       adj Nothing = Just items
@@ -140,17 +140,17 @@ at Level{ltile}  p = ltile Kind.! p
 atI :: Level -> Point -> [Item]
 atI Level{litem} p = IM.findWithDefault [] p litem
 
--- | Check whether one location is accessible from another,
+-- | Check whether one position is accessible from another,
 -- using the formula from the standard ruleset.
 accessible :: Kind.COps -> Level -> Point -> Point -> Bool
 accessible Kind.COps{ cotile=Kind.Ops{okind=okind}, corule}
-           lvl@Level{lxsize} sloc tloc =
+           lvl@Level{lxsize} spos tpos =
   let check = raccessible $ Kind.stdRuleset corule
-      src = okind $ lvl `at` sloc
-      tgt = okind $ lvl `at` tloc
-  in check lxsize sloc src tloc tgt
+      src = okind $ lvl `at` spos
+      tgt = okind $ lvl `at` tpos
+  in check lxsize spos src tpos tgt
 
--- | Check whether the location contains a door of secrecy lower than @k@
+-- | Check whether the position contains a door of secrecy lower than @k@
 -- and that can be opened according to the standard ruleset.
 openable :: Kind.Ops TileKind -> Level -> SecretTime -> Point -> Bool
 openable cops lvl@Level{lsecret} k target =
@@ -159,9 +159,9 @@ openable cops lvl@Level{lsecret} k target =
      (hasFeature cops F.Hidden tgt &&
       lsecret IM.! target <= k)
 
--- | Find a random location on the map satisfying a predicate.
-findLoc :: TileMap -> (Point -> Kind.Id TileKind -> Bool) -> Rnd Point
-findLoc ltile p =
+-- | Find a random position on the map satisfying a predicate.
+findPos :: TileMap -> (Point -> Kind.Id TileKind -> Bool) -> Rnd Point
+findPos ltile p =
   let search = do
         loc <- randomR $ Kind.bounds ltile
         let tile = ltile Kind.! loc
@@ -170,20 +170,20 @@ findLoc ltile p =
           else search
   in search
 
--- | Try to find a random location on the map satisfying
+-- | Try to find a random position on the map satisfying
 -- the conjunction of the list of predicates.
 -- If the premitted number of attempts is not enough,
 -- try again the same number of times without the first predicate,
 -- then without the first two, etc., until only one predicate remains,
 -- at which point try as many times, as needed.
-findLocTry :: Int                                  -- ^ the number of tries
+findPosTry :: Int                                  -- ^ the number of tries
            -> TileMap                              -- ^ look up in this map
            -> [Point -> Kind.Id TileKind -> Bool]  -- ^ predicates to satisfy
            -> Rnd Point
-findLocTry _        ltile []        = findLoc ltile (const (const True))
-findLocTry _        ltile [p]       = findLoc ltile p
-findLocTry numTries ltile l@(_ : tl) = assert (numTries > 0) $
-  let search 0 = findLocTry numTries ltile tl
+findPosTry _        ltile []        = findPos ltile (const (const True))
+findPosTry _        ltile [p]       = findPos ltile p
+findPosTry numTries ltile l@(_ : tl) = assert (numTries > 0) $
+  let search 0 = findPosTry numTries ltile tl
       search k = do
         loc <- randomR $ Kind.bounds ltile
         let tile = ltile Kind.! loc

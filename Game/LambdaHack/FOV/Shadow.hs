@@ -1,6 +1,6 @@
 -- | A restrictive variant of Recursive Shadow Casting FOV with infinite range.
 -- It's not designed for dungeons with diagonal walls and so here
--- they block visibility, though they don't block movement.
+-- they bposk visibility, though they don't bposk movement.
 -- The main advantage of the algorithm is that it's very simple and fast.
 module Game.LambdaHack.FOV.Shadow (SBump, Interval, scan) where
 
@@ -19,21 +19,21 @@ position. Later, in Perception.hs, from this information we compute
 the fields that are visible (not hidden in darkness, etc.).
 
 As input to the algorithm, we require information about fields that
-block light. As output, we get information on the reachability of all fields.
+bposk light. As output, we get information on the reachability of all fields.
 We assume that the hero is located at position (0, 0)
 and we only consider fields (line, row) where line >= 0 and 0 <= row <= line.
 This is just about one eighth of the whole hero's surroundings,
 but the other parts can be computed in the same fashion by mirroring
 or rotating the given algorithm accordingly.
 
-      fov (blocks, maxline) =
+      fov (bposks, maxline) =
          shadow := \empty_set
          reachable (0, 0) := True
          for l \in [ 1 .. maxline ] do
             for r \in [ 0 .. l ] do
               reachable (l, r) := ( \exists a. a \in interval (l, r) \and
                                     a \not_in shadow)
-              if blocks (l, r) then
+              if bposks (l, r) then
                  shadow := shadow \union interval (l, r)
               end if
             end for
@@ -50,13 +50,13 @@ measured by their angle. A square is reachable when any point
 in it is not in shadow --- the algorithm is permissive in this respect.
 We could also require that a certain fraction of the field is reachable,
 or a specific point. Our choice has certain consequences. For instance,
-a single blocking field throws a shadow, but the fields immediately behind
-the blocking field are still visible.
+a single bposking field throws a shadow, but the fields immediately behind
+the bposking field are still visible.
 
 We can compute the interval of angles corresponding to one square field
 by computing the angle of the line passing the upper left corner
 and the angle of the line passing the lower right corner.
-This is what interval and angle do. If a field is blocking, the interval
+This is what interval and angle do. If a field is bposking, the interval
 for the square is added to the shadow set.
 -}
 

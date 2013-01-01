@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
--- | Game action monads and basic building blocks for player and monster
+-- | Game action monads and basic building bposks for player and monster
 -- actions. Has no access to the the main action type @Action@.
 -- Does not export the @liftIO@ operation nor a few other implementation
 -- details.
@@ -335,7 +335,7 @@ remember = do
   per <- askPerception
   rememberList (totalVisible per) lvl
 
--- | Update heroes memory at the given list of locations.
+-- | Update heroes memory at the given list of positions.
 rememberList :: MonadClient m => IS.IntSet -> Level -> m ()
 rememberList visible lvl = do
   let vis = IS.toList visible
@@ -355,7 +355,7 @@ rememberList visible lvl = do
       rememberItem p m = IM.alter (alt $ IM.lookup p $ litem lvl) p m
   modifyLocal (updateArena
                  (updateIMap (\ m -> foldr rememberItem m vis)))
-  let cactor = IM.filter (\m -> bloc m `IS.member` visible) (lactor lvl)
+  let cactor = IM.filter (\m -> bpos m `IS.member` visible) (lactor lvl)
       cinv   = IM.filterWithKey (\p _ -> p `IM.member` cactor) (linv lvl)
   modifyLocal (updateArena
                  (updateActor (const cactor)

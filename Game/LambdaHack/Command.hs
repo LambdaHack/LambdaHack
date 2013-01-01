@@ -116,7 +116,7 @@ cmdDescription cmd = case cmd of
   GameSave    -> "save game"
 
   Inventory   -> "display inventory"
-  TgtFloor    -> "target location"
+  TgtFloor    -> "target position"
   TgtEnemy    -> "target monster"
   TgtAscend k | k == 1  -> "target next shallower level"
   TgtAscend k | k >= 2  -> "target" <+> showT k    <+> "levels shallower"

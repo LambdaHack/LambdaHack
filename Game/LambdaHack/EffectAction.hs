@@ -22,7 +22,7 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Animation (twirlSplash, blockHit, deathBody)
+import Game.LambdaHack.Animation (twirlSplash, bposkHit, deathBody)
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
@@ -81,7 +81,7 @@ updatePlayerBody f = do
 -- The second bool tells if the effect was seen by or affected the party.
 effectToAction :: MonadAction m => Effect.Effect -> Int -> ActorId -> ActorId -> Int -> Bool
                -> m (Bool, Bool)
-effectToAction effect verbosity source target power block = do
+effectToAction effect verbosity source target power bposk = do
   oldTm <- getsGlobal (getActor target)
   let oldHP = bhp oldTm
   (b, msg) <- eff effect verbosity source target power
@@ -95,10 +95,10 @@ effectToAction effect verbosity source target power block = do
     tm  <- getsGlobal (getActor target)
     per <- askPerception
     pl  <- getsGlobal splayer
-    let sloc = bloc sm
-        tloc = bloc tm
-        svisible = sloc `IS.member` totalVisible per
-        tvisible = tloc `IS.member` totalVisible per
+    let spos = bpos sm
+        tpos = bpos tm
+        svisible = spos `IS.member` totalVisible per
+        tvisible = tpos `IS.member` totalVisible per
         newHP = bhp $ getActor target s
     bb <-
      if isAHero s source ||
@@ -113,14 +113,14 @@ effectToAction effect verbosity source target power block = do
       cops <- getsGlobal scops
       cli <- getClient
       loc <- getLocal
-      let locs = (breturn tvisible tloc,
-                  breturn svisible sloc)
+      let poss = (breturn tvisible tpos,
+                  breturn svisible spos)
           anim | newHP > oldHP =
-            twirlSplash locs Color.BrBlue Color.Blue
-               | newHP < oldHP && block =
-            blockHit    locs Color.BrRed  Color.Red
-               | newHP < oldHP && not block =
-            twirlSplash locs Color.BrRed  Color.Red
+            twirlSplash poss Color.BrBlue Color.Blue
+               | newHP < oldHP && bposk =
+            bposkHit    poss Color.BrRed  Color.Red
+               | newHP < oldHP && not bposk =
+            twirlSplash poss Color.BrRed  Color.Red
                | otherwise = mempty
           animFrs = animate cli loc cops per anim
       displayFramesPush $ Nothing : animFrs
@@ -134,7 +134,7 @@ effectToAction effect verbosity source target power block = do
     when (newHP <= 0) $ do
       -- Place the actor's possessions on the map.
       bitems <- getsGlobal (getActorItem target)
-      modifyGlobal (updateArena (dropItemsAt bitems tloc))
+      modifyGlobal (updateArena (dropItemsAt bitems tpos))
       -- Clean bodies up.
       if target == pl
         then  -- Kill the player and check game over.
@@ -212,7 +212,7 @@ eff Effect.Dominate _ source target _power = do
            lm <- getsGlobal hostileList
            lxsize <- getsGlobal (lxsize . getArena)
            lysize <- getsGlobal (lysize . getArena)
-           let cross m = bloc m : vicinityCardinal lxsize lysize (bloc m)
+           let cross m = bpos m : vicinityCardinal lxsize lysize (bpos m)
                vis = IS.fromList $ concatMap cross lm
            lvl <- getsGlobal getArena
            rememberList vis lvl
@@ -222,15 +222,15 @@ eff Effect.SummonFriend _ source target power = do
   tm <- getsGlobal (getActor target)
   s <- getGlobal
   if isAHero s source
-    then summonHeroes (1 + power) (bloc tm)
-    else summonMonsters (1 + power) (bloc tm)
+    then summonHeroes (1 + power) (bpos tm)
+    else summonMonsters (1 + power) (bpos tm)
   return (True, "")
 eff Effect.SummonEnemy _ source target power = do
   tm <- getsGlobal (getActor target)
   s  <- getGlobal
   if isAHero s source
-    then summonMonsters (1 + power) (bloc tm)
-    else summonHeroes (1 + power) (bloc tm)
+    then summonMonsters (1 + power) (bpos tm)
+    else summonHeroes (1 + power) (bpos tm)
   return (True, "")
 eff Effect.ApplyPerfume _ source target _ =
   if source == target
@@ -309,7 +309,7 @@ effLvlGoUp k = do
   cops <- getsGlobal scops
   case whereTo st k of
     Nothing -> fleeDungeon -- we are at the "end" of the dungeon
-    Just (nln, nloc) ->
+    Just (nln, npos) ->
       assert (nln /= sarena `blame` (nln, "stairs looped")) $ do
         bitems <- getsGlobal getPlayerItem
         -- Remember the level (e.g., for a teleport via scroll on the floor).
@@ -328,30 +328,30 @@ effLvlGoUp k = do
         modifyGlobal (insertActor pl pbody)
         modifyGlobal (updateAnyActorItem pl (const bitems))
         -- At this place the invariant is restored again.
-        inhabitants <- getsGlobal (locToActor nloc)
+        inhabitants <- getsGlobal (posToActor npos)
         case inhabitants of
           Nothing -> return ()
 -- Broken if the effect happens, e.g. via a scroll and abort is not enough.
 --          Just h | isAHero st h ->
---            -- Bail out if a party member blocks the staircase.
---            abortWith "somebody blocks the staircase"
+--            -- Bail out if a party member bposks the staircase.
+--            abortWith "somebody bposks the staircase"
           Just m ->
-            -- Aquash an actor blocking the staircase.
+            -- Aquash an actor bposking the staircase.
             -- This is not a duplication with the other calls to squashActor,
             -- because here an inactive actor is squashed.
             squashActor pl m
         -- Verify the monster on the staircase died.
-        inhabitants2 <- getsGlobal (locToActor nloc)
+        inhabitants2 <- getsGlobal (posToActor npos)
         when (isJust inhabitants2) $ assert `failure` inhabitants2
         -- Land the player at the other end of the stairs.
-        updatePlayerBody (\ p -> p { bloc = nloc })
+        updatePlayerBody (\ p -> p { bpos = npos })
         -- Change the level of the player recorded in cursor.
         modifyClient (updateCursor (\ c -> c { creturnLn = nln }))
         -- The invariant "at most one actor on a tile" restored.
         -- Create a backup of the savegame.
         saveGameBkp
         loc <- getLocal
-        msgAdd $ lookAt cops False True loc nloc ""
+        msgAdd $ lookAt cops False True loc npos ""
 
 -- | Change level and reset it's time and update the times of all actors.
 -- The player may be added to @lactor@ of the new level only after
@@ -411,14 +411,14 @@ fleeDungeon = do
 -- If the event is seen, the item may get identified.
 itemEffectAction :: MonadAction m
                  => Int -> ActorId -> ActorId -> Item -> Bool -> m ()
-itemEffectAction verbosity source target item block = do
+itemEffectAction verbosity source target item bposk = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsGlobal scops
   st <- getGlobal
   sarenaOld <- getsGlobal sarena
   discoS <- getsGlobal sdisco
   let effect = ieffect $ okind $ fromJust $ jkind discoS item
   -- The msg describes the target part of the action.
-  (b1, b2) <- effectToAction effect verbosity source target (jpower item) block
+  (b1, b2) <- effectToAction effect verbosity source target (jpower item) bposk
   -- Party sees or affected, and the effect interesting,
   -- so the item gets identified.
   when (b1 && b2) $ discover discoS item
@@ -470,7 +470,7 @@ selectPlayer actor = do
       -- Announce.
       msgAdd $ makeSentence [partActor coactor pbody, "selected"]
       loc <- getLocal
-      msgAdd $ lookAt cops False True loc (bloc pbody) ""
+      msgAdd $ lookAt cops False True loc (bpos pbody) ""
       return True
 
 selectHero :: MonadAction m => Int -> m ()
@@ -548,7 +548,7 @@ checkPartyDeath = do
         animateDeath = do
           cli  <- getClient
           loc <- getLocal
-          let animFrs = animate cli loc cops per $ deathBody (bloc pbody)
+          let animFrs = animate cli loc cops per $ deathBody (bpos pbody)
           displayFramesPush animFrs
         animateGameOver = do
           animateDeath
@@ -628,11 +628,11 @@ itemOverlay disco sorted is = do
 stopRunning :: MonadClient m => m ()
 stopRunning = modifyClient (\ cli -> cli { srunning = Nothing })
 
--- | Perform look around in the current location of the cursor.
+-- | Perform look around in the current position of the cursor.
 doLook :: MonadClient m => WriterT Slideshow m ()
 doLook = do
   cops@Kind.COps{coactor} <- getsLocal scops
-  p    <- getsClient (clocation . scursor)
+  p    <- getsClient (cposition . scursor)
   loc  <- getLocal
   clvl   <- getsLocal getArena
   hms    <- getsLocal (lactor . getArena)
@@ -642,7 +642,7 @@ doLook = do
   targeting <- getsClient (ctargeting . scursor)
   assert (targeting /= TgtOff) $ do
     let canSee = IS.member p (totalVisible per)
-        ihabitant | canSee = find (\ m -> bloc m == p) (IM.elems hms)
+        ihabitant | canSee = find (\ m -> bpos m == p) (IM.elems hms)
                   | otherwise = Nothing
         monsterMsg = maybe "" (\ m -> actorVerb coactor m "be here") ihabitant
         vis | not $ p `IS.member` totalVisible per =
@@ -651,7 +651,7 @@ doLook = do
             | otherwise = " (not reachable)"  -- by hero
         mode = case target of
                  Just TEnemy{} -> "[targeting monster" <> vis <> "]"
-                 Just TLoc{}   -> "[targeting location" <> vis <> "]"
+                 Just TPos{}   -> "[targeting position" <> vis <> "]"
                  Nothing       -> "[targeting current" <> vis <> "]"
         -- Show general info about current p.
         lookMsg = mode <+> lookAt cops True canSee loc p monsterMsg

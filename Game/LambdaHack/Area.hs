@@ -12,14 +12,14 @@ type Area = (X, Y, X, Y)
 
 -- | All (8 at most) closest neighbours of a point within an area.
 vicinityXY :: Area       -- ^ limit the search to this area
-           -> PointXY    -- ^ location to find neighbours of
+           -> PointXY    -- ^ position to find neighbours of
            -> [PointXY]
 vicinityXY area xy =
   [ res | dxy <- movesXY, let res = shiftXY xy dxy, insideXY res area ]
 
 -- | All (4 at most) cardinal direction neighbours of a point within an area.
 vicinityCardinalXY :: Area       -- ^ limit the search to this area
-                   -> PointXY    -- ^ location to find neighbours of
+                   -> PointXY    -- ^ position to find neighbours of
                    -> [PointXY]
 vicinityCardinalXY area xy =
   [ res
@@ -40,7 +40,7 @@ grid (nx, ny) (x0, y0, x1, y1) =
   let xd = x1 - x0
       yd = y1 - y0
       -- Make sure that in caves not filled with rock, there is a passage
-      -- across the cave, even if a single room blocks most of the cave.
+      -- across the cave, even if a single room bposks most of the cave.
       xborder = if nx == 1 then 3 else 2
       yborder = if ny == 1 then 3 else 2
   in [ (PointXY (x, y), (x0 + (xd * x `div` nx) + xborder,

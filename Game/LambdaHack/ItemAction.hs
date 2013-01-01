@@ -85,7 +85,7 @@ applyGroupItem actor verb item = do
       msg = makeSentence
         [ MU.SubjectVerbSg (partActor coactor body) verb
         , partItemNWs coitem disco consumed ]
-      loc = bloc body
+      loc = bpos body
   removeFromInventory actor consumed loc
   when (loc `IS.member` totalVisible per) $ msgAdd msg
   itemEffectAction 5 actor actor consumed False
@@ -104,11 +104,11 @@ playerApplyGroupItem verb object syms = do
   applyGroupItem pl verbApply item
 
 projectGroupItem :: MonadAction m => ActorId  -- ^ actor projecting the item (is on current lvl)
-                 -> Point    -- ^ target location of the projectile
+                 -> Point    -- ^ target position of the projectile
                  -> MU.Part  -- ^ how the projecting is called
                  -> Item     -- ^ the item to be projected
                  -> m ()
-projectGroupItem source tloc _verb item = do
+projectGroupItem source tpos _verb item = do
   cops@Kind.COps{coactor, coitem} <- getsLocal scops
   sm    <- getsLocal (getActor source)
   per   <- askPerceptionSer
@@ -121,8 +121,8 @@ projectGroupItem source tloc _verb item = do
   sside <- getsLocal sside
   disco <- getsLocal sdisco
   let consumed = item { jcount = 1 }
-      sloc = bloc sm
-      svisible = sloc `IS.member` totalVisible per
+      spos = bpos sm
+      svisible = spos `IS.member` totalVisible per
       subject =
         if svisible
         then sm
@@ -149,24 +149,24 @@ projectGroupItem source tloc _verb item = do
         if bfaction sm == sside || source == pl
         then btimeDelta `timeAdd` timeNegate timeClip
         else btime
-      bl = bla lxsize lysize eps sloc tloc
+      bl = bla lxsize lysize eps spos tpos
   case bl of
     Nothing -> abortWith "cannot zap oneself"
-    Just [] -> assert `failure` (sloc, tloc, "project from the edge of level")
-    Just path@(loc:_) -> do
-      let projVis = loc `IS.member` totalVisible per
-      removeFromInventory source consumed sloc
-      inhabitants <- getsGlobal (locToActor loc)
-      if accessible cops lvl sloc loc && isNothing inhabitants
+    Just [] -> assert `failure` (spos, tpos, "project from the edge of level")
+    Just path@(pos:_) -> do
+      let projVis = pos `IS.member` totalVisible per
+      removeFromInventory source consumed spos
+      inhabitants <- getsGlobal (posToActor pos)
+      if accessible cops lvl spos pos && isNothing inhabitants
         then do
           glo <- getGlobal
           ser <- getServer
           let (nglo, nser) =
-                addProjectile cops consumed loc (bfaction sm) path time glo ser
+                addProjectile cops consumed pos (bfaction sm) path time glo ser
           putGlobal nglo
           putServer nser
         else
-          abortWith "blocked"
+          abortWith "bposked"
       when (svisible || projVis) $ msgAdd msg
 
 playerProjectGroupItem :: MonadAction m => MU.Part -> MU.Part -> [Char] -> m ()
@@ -174,17 +174,17 @@ playerProjectGroupItem verb object syms = do
   ms     <- getsLocal hostileList
   lxsize <- getsLocal (lxsize . getArena)
   lysize <- getsLocal (lysize . getArena)
-  ploc   <- getsLocal (bloc . getPlayerBody)
-  if foesAdjacent lxsize lysize ploc ms
+  ppos   <- getsLocal (bpos . getPlayerBody)
+  if foesAdjacent lxsize lysize ppos ms
     then abortWith "You can't aim in melee."
     else playerProjectGI verb object syms
 
 playerProjectGI :: MonadAction m => MU.Part -> MU.Part -> [Char] -> m ()
 playerProjectGI verb object syms = do
   cli <- getClient
-  loc <- getLocal
+  pos <- getLocal
   pl    <- getsLocal splayer
-  case targetToLoc cli loc of
+  case targetToPos cli pos of
     Just p -> do
       Kind.COps{coitem=Kind.Ops{okind}} <- getsLocal scops
       is   <- getsLocal getPlayerItem
@@ -197,13 +197,13 @@ playerProjectGI verb object syms = do
             Nothing -> verb
             Just ik -> iverbProject $ okind ik
       projectGroupItem pl p verbProject item
-    Nothing -> assert `failure` (loc, pl, "target unexpectedly invalid")
+    Nothing -> assert `failure` (pos, pl, "target unexpectedly invalid")
 
 retarget :: MonadAction m => WriterT Slideshow m ()
 retarget = do
-  ploc <- getsLocal (bloc . getPlayerBody)
+  ppos <- getsLocal (bpos . getPlayerBody)
   msgAdd "Last target invalid."
-  let upd cursor = cursor {clocation=ploc, ceps=0}
+  let upd cursor = cursor {cposition=ppos, ceps=0}
   modifyClient (updateCursor upd)
   targetMonster TgtAuto
 
@@ -211,7 +211,7 @@ retarget = do
 targetMonster :: MonadAction m => TgtMode -> WriterT Slideshow m ()
 targetMonster tgtMode = do
   pl        <- getsLocal splayer
-  ploc      <- getsLocal (bloc . getPlayerBody)
+  ppos      <- getsLocal (bpos . getPlayerBody)
   sside  <- getsLocal sside
   ms        <- getsLocal (hostileAssocs sside . getArena)
   per       <- askPerception
@@ -220,8 +220,8 @@ targetMonster tgtMode = do
   targeting <- getsClient (ctargeting . scursor)
       -- TODO: sort monsters by distance to the player.
   let plms = L.filter ((/= pl) . fst) ms  -- don't target yourself
-      ordLoc (_, m) = (chessDist lxsize ploc $ bloc m, bloc m)
-      dms = L.sortBy (comparing ordLoc) plms
+      ordPos (_, m) = (chessDist lxsize ppos $ bpos m, bpos m)
+      dms = L.sortBy (comparing ordPos) plms
       (lt, gt) = case target of
             Just (TEnemy n _) | targeting /= TgtOff ->  -- pick the next monster
               let i = fromMaybe (-1) $ L.findIndex ((== n) . fst) dms
@@ -232,45 +232,45 @@ targetMonster tgtMode = do
             _ -> (dms, [])  -- target first monster (e.g., number 0)
       gtlt     = gt ++ lt
       seen (_, m) =
-        let mloc = bloc m
-        in mloc `IS.member` totalVisible per  -- visible by any
-           && actorReachesLoc pl mloc per     -- reachable by player
+        let mpos = bpos m
+        in mpos `IS.member` totalVisible per  -- visible by any
+           && actorReachesLoc pl mpos per     -- reachable by player
       lf = L.filter seen gtlt
       tgt = case lf of
               [] -> target  -- no monsters in sight, stick to last target
-              (na, nm) : _ -> Just (TEnemy na (bloc nm))  -- pick the next
+              (na, nm) : _ -> Just (TEnemy na (bpos nm))  -- pick the next
   -- Register the chosen monster, to pick another on next invocation.
   modifyClient $ updateTarget pl (const tgt)
   setCursor tgtMode
 
--- | Start the floor targeting mode or reset the cursor location to the player.
+-- | Start the floor targeting mode or reset the cursor position to the player.
 targetFloor :: MonadAction m => TgtMode -> WriterT Slideshow m ()
 targetFloor tgtMode = do
-  ploc      <- getsLocal (bloc . getPlayerBody)
+  ppos      <- getsLocal (bpos . getPlayerBody)
   pl        <- getsLocal splayer
   target <- getsClient (IM.lookup pl . starget)
   targeting <- getsClient (ctargeting . scursor)
   let tgt = case target of
         Just (TEnemy _ _) -> Nothing  -- forget enemy target, keep the cursor
-        _ | targeting /= TgtOff -> Just (TLoc ploc)  -- double key press: reset cursor
+        _ | targeting /= TgtOff -> Just (TPos ppos)  -- double key press: reset cursor
         t -> t  -- keep the target from previous targeting session
-  -- Register that we want to target only locations.
+  -- Register that we want to target only positions.
   modifyClient $ updateTarget pl (const tgt)
   setCursor tgtMode
 
 -- | Set, activate and display cursor information.
 setCursor :: MonadClient m => TgtMode -> WriterT Slideshow m ()
 setCursor tgtMode = assert (tgtMode /= TgtOff) $ do
-  loc  <- getLocal
+  pos  <- getLocal
   cli  <- getClient
-  ploc   <- getsLocal (bloc . getPlayerBody)
-  clocLn <- getsLocal sarena
-  let upd cursor@Cursor{ctargeting, clocation=clocationOld, ceps=cepsOld} =
-        let clocation =
-              fromMaybe ploc (targetToLoc cli loc)
-            ceps = if clocation == clocationOld then cepsOld else 0
+  ppos   <- getsLocal (bpos . getPlayerBody)
+  cposLn <- getsLocal sarena
+  let upd cursor@Cursor{ctargeting, cposition=cpositionOld, ceps=cepsOld} =
+        let cposition =
+              fromMaybe ppos (targetToPos cli pos)
+            ceps = if cposition == cpositionOld then cepsOld else 0
             newTgtMode = if ctargeting == TgtOff then tgtMode else ctargeting
-        in cursor { ctargeting = newTgtMode, clocation, clocLn, ceps }
+        in cursor { ctargeting = newTgtMode, cposition, cposLn, ceps }
   modifyClient (updateCursor upd)
   doLook
 
@@ -283,14 +283,14 @@ epsIncr b = do
            \ c@Cursor{ceps} -> c {ceps = ceps + if b then 1 else -1}
     else neverMind True  -- no visual feedback, so no sense
 
--- | End targeting mode, accepting the current location or not.
+-- | End targeting mode, accepting the current position or not.
 endTargeting :: MonadAction m => Bool -> m ()
 endTargeting accept = do
   returnLn <- getsClient (creturnLn . scursor)
   pl <- getsLocal splayer
   target <- getsClient (IM.lookup pl . starget)
   per      <- askPerception
-  cloc     <- getsClient (clocation . scursor)
+  cpos     <- getsClient (cposition . scursor)
   sside <- getsLocal sside
   ms       <- getsLocal (hostileAssocs sside . getArena)
   -- Return to the original level of the player. Note that this can be
@@ -302,15 +302,15 @@ endTargeting accept = do
     case target of
       Just TEnemy{} -> do
         -- If in monster targeting mode, switch to the monster under
-        -- the current cursor location, if any.
-        let canSee = IS.member cloc (totalVisible per)
+        -- the current cursor position, if any.
+        let canSee = IS.member cpos (totalVisible per)
         when (accept && canSee) $
-          case L.find (\ (_im, m) -> bloc m == cloc) ms of
+          case L.find (\ (_im, m) -> bpos m == cpos) ms of
             Just (im, m)  ->
-              let tgt = Just $ TEnemy im (bloc m)
+              let tgt = Just $ TEnemy im (bpos m)
               in modifyClient $ updateTarget pl (const $ tgt)
             Nothing -> return ()
-      _ -> modifyClient $ updateTarget pl (const $ Just $ TLoc cloc)
+      _ -> modifyClient $ updateTarget pl (const $ Just $ TPos cpos)
   if accept
     then endTargetingMsg
     else msgAdd "targeting canceled"
@@ -328,8 +328,8 @@ endTargetingMsg = do
                       if memActor a state
                       then partActor coactor $ getActor a state
                       else "a fear of the past"
-                    Just (TLoc loc) ->
-                      MU.Text $ "location" <+> showPoint lxsize loc
+                    Just (TPos pos) ->
+                      MU.Text $ "position" <+> showPoint lxsize pos
                     Nothing -> "current cursor position continuously"
   msgAdd $ makeSentence
       [MU.SubjectVerbSg (partActor coactor pbody) "target", targetMsg]
@@ -363,55 +363,55 @@ dropItem = do
   Kind.COps{coactor, coitem} <- getsLocal scops
   pl    <- getsLocal splayer
   pbody <- getsLocal getPlayerBody
-  ploc  <- getsLocal (bloc . getPlayerBody)
+  ppos  <- getsLocal (bpos . getPlayerBody)
   ims   <- getsLocal getPlayerItem
   stack <- getAnyItem "What to drop?" ims "in inventory"
   disco <- getsLocal sdisco
   let item = stack { jcount = 1 }
-  removeOnlyFromInventory pl item (bloc pbody)
+  removeOnlyFromInventory pl item (bpos pbody)
   msgAdd $ makeSentence
     [ MU.SubjectVerbSg (partActor coactor pbody) "drop"
     , partItemNWs coitem disco item ]
-  modifyLocal (updateArena (dropItemsAt [item] ploc))
-  modifyGlobal (updateArena (dropItemsAt [item] ploc))  -- a hack
+  modifyLocal (updateArena (dropItemsAt [item] ppos))
+  modifyGlobal (updateArena (dropItemsAt [item] ppos))  -- a hack
 
 -- TODO: this is a hack for dropItem, because removeFromInventory
 -- makes it impossible to drop items if the floor not empty.
 removeOnlyFromInventory :: MonadAction m => ActorId -> Item -> Point -> m ()
-removeOnlyFromInventory actor i _loc = do
+removeOnlyFromInventory actor i _pos = do
   modifyLocal (updateAnyActorItem actor (removeItemByLetter i))
   modifyGlobal (updateAnyActorItem actor (removeItemByLetter i))  -- a hack
 
 -- | Remove given item from an actor's inventory or floor.
 -- TODO: this is subtly wrong: if identical items are on the floor and in
 -- inventory, the floor one will be chosen, regardless of player intention.
--- TODO: right now it ugly hacks (with the ploc) around removing items
+-- TODO: right now it ugly hacks (with the ppos) around removing items
 -- of dead heros/monsters. The subtle incorrectness helps here a lot,
 -- because items of dead heroes land on the floor, so we use them up
 -- in inventory, but remove them after use from the floor.
 removeFromInventory :: MonadAction m => ActorId -> Item -> Point -> m ()
-removeFromInventory actor i loc = do
-  b <- removeFromLoc i loc
+removeFromInventory actor i pos = do
+  b <- removeFromPos i pos
   unless b $ do
     modifyLocal (updateAnyActorItem actor (removeItemByLetter i))
     modifyGlobal (updateAnyActorItem actor (removeItemByLetter i))  -- a hack
 
--- | Remove given item from the given location. Tell if successful.
-removeFromLoc :: MonadServer m => Item -> Point -> m Bool
-removeFromLoc i loc = do
+-- | Remove given item from the given position. Tell if successful.
+removeFromPos :: MonadServer m => Item -> Point -> m Bool
+removeFromPos i pos = do
   lvl <- getsGlobal getArena
-  if not $ L.any (equalItemIdentity i) (lvl `atI` loc)
+  if not $ L.any (equalItemIdentity i) (lvl `atI` pos)
     then return False
     else do
       modifyGlobal (updateArena (updateIMap adj))
       return True
      where
-      rib Nothing = assert `failure` (i, loc)
+      rib Nothing = assert `failure` (i, pos)
       rib (Just is) =
         case removeItemByIdentity i is of
           [] -> Nothing
           x  -> Just x
-      adj = IM.alter rib loc
+      adj = IM.alter rib pos
 
 actorPickupItem :: MonadAction m => ActorId -> m ()
 actorPickupItem actor = do
@@ -422,7 +422,7 @@ actorPickupItem actor = do
   body <- getsGlobal (getActor actor)
   bitems <- getsGlobal (getActorItem actor)
   disco <- getsLocal sdisco
-  let p       = bloc body
+  let p       = bpos body
       perceived = p `IS.member` totalVisible per
       isPlayer  = actor == pl
   -- check if something is here to pick up
@@ -440,7 +440,7 @@ actorPickupItem actor = do
                    msgAdd $ makeSentence
                      [ MU.SubjectVerbSg (partActor coactor body) "pick up"
                      , partItemNWs coitem disco i ]
-          removeFromLoc i p
+          removeFromPos i p
             >>= assert `trueM` (i, is, p, "item is stuck")
           -- add item to actor's inventory:
           updateAnyActor actor $ \ m ->
@@ -493,8 +493,8 @@ getItem :: MonadClient m
 getItem prompt p ptext is0 isn = do
   lvl  <- getsLocal getArena
   body <- getsLocal getPlayerBody
-  let loc = bloc body
-      tis = lvl `atI` loc
+  let pos = bpos body
+      tis = lvl `atI` pos
       floorFull = not $ null tis
       (floorMsg, floorKey) | floorFull = (", -", [K.Char '-'])
                            | otherwise = ("", [])

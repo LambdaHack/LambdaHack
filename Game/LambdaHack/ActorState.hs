@@ -5,10 +5,10 @@
 module Game.LambdaHack.ActorState
   ( isProjectile, isAHero, getPlayerBody, findActorAnyLevel, calculateTotal
   , initialHeroes, deletePlayer, allHeroesAnyLevel
-  , locToActor, deleteActor, addHero, addMonster, updateAnyActorItem
+  , posToActor, deleteActor, addHero, addMonster, updateAnyActorItem
   , insertActor, heroList, memActor, getActor, updateAnyActorBody
   , hostileList, getActorItem, getPlayerItem, tryFindHeroK, dangerousList
-  , factionList, addProjectile, foesAdjacent, targetToLoc, hostileAssocs
+  , factionList, addProjectile, foesAdjacent, targetToPos, hostileAssocs
   ) where
 
 import Control.Monad
@@ -110,18 +110,18 @@ updateAnyLevel f ln s@State{sarena, sdungeon}
   | ln == sarena = updateArena f s
   | otherwise = updateDungeon (const $ M.adjust f ln sdungeon) s
 
--- | Calculate the location of player's target.
-targetToLoc :: StateClient -> State -> Maybe Point
-targetToLoc StateClient{scursor, starget} s@State{sarena, splayer} =
+-- | Calculate the position of player's target.
+targetToPos :: StateClient -> State -> Maybe Point
+targetToPos StateClient{scursor, starget} s@State{sarena, splayer} =
   case IM.lookup splayer starget of
-    Just (TLoc loc) -> Just loc
+    Just (TPos pos) -> Just pos
     Nothing ->
-      if sarena == clocLn scursor
-      then Just $ clocation scursor
+      if sarena == cposLn scursor
+      then Just $ cposition scursor
       else Nothing  -- cursor invalid: set at a different level
     Just (TEnemy a _ll) -> do
       guard $ memActor a s           -- alive and visible?
-      let loc = bloc (getActor a s)
+      let loc = bpos (getActor a s)
       return loc
 
 -- The operations below disregard levels other than the current.
@@ -178,27 +178,27 @@ factionList :: [FactionId] -> State -> [Actor]
 factionList l s =
   filter (\ m -> bfaction m `elem` l) $ IM.elems $ lactor $ getArena s
 
--- | Finds an actor at a location on the current level. Perception irrelevant.
-locToActor :: Point -> State -> Maybe ActorId
-locToActor loc state =
-  let l = locToActors loc state
+-- | Finds an actor at a position on the current level. Perception irrelevant.
+posToActor :: Point -> State -> Maybe ActorId
+posToActor loc state =
+  let l = posToActors loc state
   in assert (L.length l <= 1 `blame` l) $
      listToMaybe l
 
-locToActors :: Point -> State -> [ActorId]
-locToActors loc state =
+posToActors :: Point -> State -> [ActorId]
+posToActors loc state =
     let l  = IM.assocs $ lactor $ getArena state
-        im = L.filter (\ (_i, m) -> bloc m == loc) l
+        im = L.filter (\ (_i, m) -> bpos m == loc) l
     in fmap fst im
 
-nearbyFreeLoc :: Kind.Ops TileKind -> Point -> State -> Point
-nearbyFreeLoc cotile start state =
+nearbyFreePos :: Kind.Ops TileKind -> Point -> State -> Point
+nearbyFreePos cotile start state =
   let lvl@Level{lxsize, lysize, lactor} = getArena state
-      locs = start : L.nub (concatMap (vicinity lxsize lysize) locs)
+      poss = start : L.nub (concatMap (vicinity lxsize lysize) poss)
       good loc = Tile.hasFeature cotile F.Walkable (lvl `at` loc)
                  && unoccupied (IM.elems lactor) loc
   in fromMaybe (assert `failure` ("too crowded map" :: Text))
-     $ L.find good locs
+     $ L.find good poss
 
 -- | Calculate loot's worth for heroes on the current level.
 calculateTotal :: State -> ([Item], Int)
@@ -211,7 +211,7 @@ calculateTotal s =
 foesAdjacent :: X -> Y -> Point -> [Actor] -> Bool
 foesAdjacent lxsize lysize loc foes =
   let vic = IS.fromList $ vicinity lxsize lysize loc
-      lfs = IS.fromList $ L.map bloc foes
+      lfs = IS.fromList $ L.map bpos foes
   in not $ IS.null $ IS.intersection vic lfs
 
 -- Adding heroes
@@ -223,13 +223,13 @@ tryFindHeroK s k =
         | otherwise       = assert `failure` k
   in fmap fst $ tryFindActor s ((== Just c) . bsymbol)
 
--- | Create a new hero on the current level, close to the given location.
+-- | Create a new hero on the current level, close to the given position.
 addHero :: Kind.COps -> Point -> ConfigUI -> State -> StateServer
         -> (State, StateServer)
-addHero Kind.COps{coactor, cotile} ploc configUI
+addHero Kind.COps{coactor, cotile} ppos configUI
         state@State{sside} ser@StateServer{scounter} =
   let Config{configBaseHP} = sconfig ser
-      loc = nearbyFreeLoc cotile ploc state
+      loc = nearbyFreePos cotile ppos state
       freeHeroK = L.elemIndex Nothing $ map (tryFindHeroK state) [0..9]
       n = fromMaybe 100 freeHeroK
       symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
@@ -240,13 +240,13 @@ addHero Kind.COps{coactor, cotile} ploc configUI
   in ( updateArena (updateActor (IM.insert scounter m)) state
      , ser { scounter = scounter + 1 } )
 
--- | Create a set of initial heroes on the current level, at location ploc.
+-- | Create a set of initial heroes on the current level, at position ploc.
 initialHeroes :: Kind.COps -> Point -> ConfigUI -> State-> StateServer
               -> (State, StateServer)
-initialHeroes cops ploc configUI state ser =
+initialHeroes cops ppos configUI state ser =
   let Config{configExtraHeroes} = sconfig ser
       k = 1 + configExtraHeroes
-  in iterate (uncurry $ addHero cops ploc configUI) (state, ser) !! k
+  in iterate (uncurry $ addHero cops ppos configUI) (state, ser) !! k
 
 -- Adding monsters
 
@@ -255,8 +255,8 @@ initialHeroes cops ploc configUI state ser =
 addMonster :: Kind.Ops TileKind -> Kind.Id ActorKind -> Int -> Point
            -> FactionId -> Bool -> State -> StateServer
            -> (State, StateServer)
-addMonster cotile mk hp ploc bfaction bproj state ser@StateServer{scounter} =
-  let loc = nearbyFreeLoc cotile ploc state
+addMonster cotile mk hp ppos bfaction bproj state ser@StateServer{scounter} =
+  let loc = nearbyFreePos cotile ppos state
       m = template mk Nothing Nothing hp loc (getTime state) bfaction bproj
   in ( updateArena (updateActor (IM.insert scounter m)) state
      , ser {scounter = scounter + 1} )
@@ -288,7 +288,7 @@ addProjectile Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}}
         , bhp     = 0
         , bdirAI  = Nothing
         , bpath   = Just dirPath
-        , bloc    = loc
+        , bpos    = loc
         , bletter = 'a'
         , btime
         , bwait   = timeZero

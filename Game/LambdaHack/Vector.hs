@@ -124,25 +124,25 @@ normalize lxsize v@(VectorXY (dx, dy)) =
 -- That would also eliminate the Doubles. Or only directions from bla?
 -- Smart monster could really use all dirs to be less predictable,
 -- but it wouldn't look as natural as bla, so for less smart bla is better.
--- | Given two distinct locations, determine the direction (a unit vector)
+-- | Given two distinct positions, determine the direction (a unit vector)
 -- in which one should move from the first in order to get closer
 -- to the second. Ignores obstacles. Of several equally good directions
 -- (in the chessboard metric) it picks one of those that visually
 -- (in the euclidean metric) maximally align with the vector between
 -- the two points..
 towards :: X -> Point -> Point -> Vector
-towards lxsize loc0 loc1 =
-  assert (loc0 /= loc1 `blame` (loc0, loc1)) $
-  let v = displacementXYZ lxsize loc0 loc1
+towards lxsize pos0 pos1 =
+  assert (pos0 /= pos1 `blame` (pos0, pos1)) $
+  let v = displacementXYZ lxsize pos0 pos1
   in normalize lxsize v
 
 -- | A vector from a point to another. We have
 --
--- > shift loc1 (displacement loc1 loc2) == loc2
+-- > shift pos1 (displacement pos1 pos2) == pos2
 --
 -- Particularly simple and fast implementation in the linear representation.
 displacement :: Point -> Point -> Vector
-displacement loc1 loc2 = Vector $ loc2 - loc1
+displacement pos1 pos2 = Vector $ pos2 - pos1
 
 -- | A list of vectors between a list of points.
 displacePath :: [Point] -> [Vector]

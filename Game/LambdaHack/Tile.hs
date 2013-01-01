@@ -49,7 +49,7 @@ hasFeature :: Kind.Ops TileKind -> F.Feature -> Kind.Id TileKind -> Bool
 hasFeature Kind.Ops{okind} f t =
   kindHasFeature f (okind t)
 
--- | Whether a tile does not block vision.
+-- | Whether a tile does not bposk vision.
 -- Essential for efficiency of "FOV", hence tabulated.
 isClear :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 isClear Kind.Ops{ospeedup = Kind.TileSpeedup{isClearTab}} = isClearTab

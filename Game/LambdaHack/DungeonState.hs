@@ -53,7 +53,7 @@ rollItems :: Kind.COps -> FlavourMap -> DiscoRev -> Int -> Int
           -> CaveKind -> TileMap -> Point
           -> Rnd [(Point, Item)]
 rollItems Kind.COps{cotile, coitem=coitem} flavour discoRev
-          ln depth CaveKind{cxsize, citemNum, cminStairDist} ltile ploc = do
+          ln depth CaveKind{cxsize, citemNum, cminStairDist} ltile ppos = do
   nri <- rollDice citemNum
   replicateM nri $ do
     (item, ik) <- newItem coitem flavour discoRev ln depth
@@ -61,21 +61,21 @@ rollItems Kind.COps{cotile, coitem=coitem} flavour discoRev
            Effect.Wound dice | maxDice dice > 0  -- a weapon
                                && maxDice dice + maxDeep (ipower ik) > 3 ->
              -- Powerful weapons generated close to monsters, MUAHAHAHA.
-             findLocTry 20 ltile  -- 20 only, for unpredictability
-               [ \ l _ -> chessDist cxsize ploc l > cminStairDist
-               , \ l _ -> chessDist cxsize ploc l > 2 * cminStairDist `div` 3
-               , \ l _ -> chessDist cxsize ploc l > cminStairDist `div` 2
-               , \ l _ -> chessDist cxsize ploc l > cminStairDist `div` 3
+             findPosTry 20 ltile  -- 20 only, for unpredictability
+               [ \ l _ -> chessDist cxsize ppos l > cminStairDist
+               , \ l _ -> chessDist cxsize ppos l > 2 * cminStairDist `div` 3
+               , \ l _ -> chessDist cxsize ppos l > cminStairDist `div` 2
+               , \ l _ -> chessDist cxsize ppos l > cminStairDist `div` 3
                , const (Tile.hasFeature cotile F.Boring)
                ]
-           _ -> findLoc ltile (const (Tile.hasFeature cotile F.Boring))
+           _ -> findPos ltile (const (Tile.hasFeature cotile F.Boring))
     return (l, item)
 
 placeStairs :: Kind.Ops TileKind -> TileMap -> CaveKind -> [Place]
             -> Rnd (Point, Kind.Id TileKind, Point, Kind.Id TileKind)
 placeStairs cotile@Kind.Ops{opick} cmap CaveKind{..} dplaces = do
-  su <- findLoc cmap (const (Tile.hasFeature cotile F.Boring))
-  sd <- findLocTry 1000 cmap
+  su <- findPos cmap (const (Tile.hasFeature cotile F.Boring))
+  sd <- findPosTry 1000 cmap
           [ \ l _ -> chessDist cxsize su l >= cminStairDist
           , \ l _ -> chessDist cxsize su l >= cminStairDist `div` 2
           , \ l t -> l /= su && Tile.hasFeature cotile F.Boring t
@@ -139,7 +139,7 @@ findGenerator cops flavour discoRev Config{configCaves} k depth = do
 -- | Freshly generated and not yet populated dungeon.
 data FreshDungeon = FreshDungeon
   { entryLevel   :: LevelId  -- ^ starting level for the party
-  , entryLoc     :: Point    -- ^ starting location for the party
+  , entryLoc     :: Point    -- ^ starting position for the party
   , freshDungeon :: Dungeon  -- ^ level maps
   , freshDepth   :: Int      -- ^ dungeon depth (can be different than size)
   }
@@ -163,12 +163,12 @@ generate cops flavour discoRev config@Config{configDepth}  =
         in (FreshDungeon{..}, gd)
   in St.state con
 
--- | Compute the level identifier and starting location on the level,
+-- | Compute the level identifier and starting position on the level,
 -- after a level change.
 whereTo :: State  -- ^ game state
         -> Int    -- ^ jump this many levels
         -> Maybe (LevelId, Point)
-             -- ^ target level and the location of its receiving stairs
+             -- ^ target level and the position of its receiving stairs
 whereTo State{sarena, sdungeon} k = assert (k /= 0) $
   let n = levelNumber sarena
       nln = n - k

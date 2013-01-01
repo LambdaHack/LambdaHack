@@ -77,7 +77,7 @@ data StateServer = StateServer
 -- Some of the data, e.g, the history, carries over
 -- from game to game, even across playing sessions.
 data StateClient = StateClient
-  { scursor   :: !Cursor        -- ^ cursor location and level to return to
+  { scursor   :: !Cursor        -- ^ cursor position and level to return to
   , starget   :: !(IM.IntMap Target)  -- ^ targets of all actors in the dungeon
   , srunning  :: !(Maybe (Vector, Int))  -- ^ direction and distance of running
   , sreport   :: !Report        -- ^ current messages
@@ -102,8 +102,8 @@ data TgtMode =
 -- | Current targeting cursor parameters.
 data Cursor = Cursor
   { ctargeting :: !TgtMode  -- ^ targeting mode
-  , clocLn     :: !LevelId  -- ^ cursor level
-  , clocation  :: !Point    -- ^ cursor coordinates
+  , cposLn     :: !LevelId  -- ^ cursor level
+  , cposition  :: !Point    -- ^ cursor coordinates
   , creturnLn  :: !LevelId  -- ^ the level current player resides on
   , ceps       :: !Int      -- ^ a parameter of the tgt digital line
   }
@@ -202,9 +202,9 @@ defStateServer sdiscoRev sflavour srandom sconfig =
 
 -- | Initial game client state.
 defStateClient :: Point -> LevelId -> StateClient
-defStateClient ploc sarena = do
+defStateClient ppos sarena = do
   StateClient
-    { scursor   = (Cursor TgtOff sarena ploc sarena 0)
+    { scursor   = (Cursor TgtOff sarena ppos sarena 0)
     , starget   = IM.empty
     , srunning  = Nothing
     , sreport   = emptyReport
@@ -373,18 +373,18 @@ instance Binary Cursor where
 
 -- | The type of na actor target.
 data Target =
-    TEnemy ActorId Point  -- ^ target an actor with its last seen location
-  | TLoc Point            -- ^ target a given location
+    TEnemy ActorId Point  -- ^ target an actor with its last seen position
+  | TPos Point            -- ^ target a given position
   deriving (Show, Eq)
 
 instance Binary Target where
   put (TEnemy a ll) = putWord8 0 >> put a >> put ll
-  put (TLoc loc) = putWord8 1 >> put loc
+  put (TPos pos) = putWord8 1 >> put pos
   get = do
     tag <- getWord8
     case tag of
       0 -> liftM2 TEnemy get get
-      1 -> liftM TLoc get
+      1 -> liftM TPos get
       _ -> fail "no parse (Target)"
 
 instance Binary Status where
@@ -403,13 +403,13 @@ instance Binary Status where
 
 -- TODO: probably move somewhere (Level?)
 -- | Produces a textual description of the terrain and items at an already
--- explored location. Mute for unknown locations.
+-- explored position. Mute for unknown positions.
 -- The detailed variant is for use in the targeting mode.
 lookAt :: Kind.COps  -- ^ game content
        -> Bool       -- ^ detailed?
        -> Bool       -- ^ can be seen right now?
        -> State      -- ^ game state
-       -> Point      -- ^ location to describe
+       -> Point      -- ^ position to describe
        -> Text       -- ^ an extra sentence to print
        -> Text
 lookAt Kind.COps{coitem, cotile=Kind.Ops{oname}} detailed canSee s loc msg

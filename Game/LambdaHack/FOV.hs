@@ -20,12 +20,12 @@ import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Config
 
--- | Perform a full scan for a given location. Returns the locations
+-- | Perform a full scan for a given position. Returns the positions
 -- that are currently in the field of view. The Field of View
 -- algorithm to use, passed in the second argument, is set in the config file.
 fullscan :: Kind.Ops TileKind  -- ^ tile content, determines clear tiles
          -> FovMode            -- ^ scanning mode
-         -> Point              -- ^ location of the spectacor
+         -> Point              -- ^ position of the spectacor
          -> Level              -- ^ the map that is scanned
          -> [Point]
 fullscan cotile fovMode loc Level{lxsize, ltile} =

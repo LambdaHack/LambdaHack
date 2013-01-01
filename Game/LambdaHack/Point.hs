@@ -14,7 +14,7 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.Utils.Assert
 import Data.Text (Text)
 
--- | The type of locations on the 2D level map, heavily optimized.
+-- | The type of positions on the 2D level map, heavily optimized.
 --
 -- We represent the (level map on the) screen as a linear framebuffer,
 -- where @Point@ is an @Int@ offset counted from the first cell.
@@ -46,15 +46,15 @@ fromPoint lxsize loc =
   assert (loc >= 0 `blame` (lxsize, loc)) $
   PointXY (loc `rem` lxsize, loc `quot` lxsize)
 
--- | The top-left corner location of the level.
+-- | The top-left corner position of the level.
 origin :: Point
 origin = 0
 
 -- | The distance between two points in the chessboard metric.
 chessDist :: X -> Point -> Point -> Int
-chessDist lxsize loc0 loc1
-  | PointXY (x0, y0) <- fromPoint lxsize loc0
-  , PointXY (x1, y1) <- fromPoint lxsize loc1 =
+chessDist lxsize pos0 pos1
+  | PointXY (x0, y0) <- fromPoint lxsize pos0
+  , PointXY (x1, y1) <- fromPoint lxsize pos1 =
   chessDistXY $ VectorXY (x1 - x0, y1 - y0)
 
 -- | Checks whether two points are adjacent on the map
@@ -62,15 +62,15 @@ chessDist lxsize loc0 loc1
 adjacent :: X -> Point -> Point -> Bool
 adjacent lxsize s t = chessDist lxsize s t == 1
 
--- | Returns the 8, or less, surrounding locations of a given location.
+-- | Returns the 8, or less, surrounding positions of a given position.
 vicinity :: X -> Y -> Point -> [Point]
 vicinity lxsize lysize loc =
   map (toPoint lxsize) $
     vicinityXY (0, 0, lxsize - 1, lysize - 1) $
       fromPoint lxsize loc
 
--- | Returns the 4, or less, surrounding locations in cardinal directions
--- from a given location.
+-- | Returns the 4, or less, surrounding positions in cardinal directions
+-- from a given position.
 vicinityCardinal :: X -> Y -> Point -> [Point]
 vicinityCardinal lxsize lysize loc =
   map (toPoint lxsize) $
@@ -81,11 +81,11 @@ vicinityCardinal lxsize lysize loc =
 inside :: X -> Point -> Area -> Bool
 inside lxsize loc = insideXY $ fromPoint lxsize loc
 
--- | Calculate the displacement vector from a location to another.
+-- | Calculate the displacement vector from a position to another.
 displacementXYZ :: X -> Point -> Point -> VectorXY
-displacementXYZ lxsize loc0 loc1
-  | PointXY (x0, y0) <- fromPoint lxsize loc0
-  , PointXY (x1, y1) <- fromPoint lxsize loc1 =
+displacementXYZ lxsize pos0 pos1
+  | PointXY (x0, y0) <- fromPoint lxsize pos0
+  , PointXY (x1, y1) <- fromPoint lxsize pos1 =
   VectorXY (x1 - x0, y1 - y0)
 
 -- | Bresenham's line algorithm generalized to arbitrary starting @eps@

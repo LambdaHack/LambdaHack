@@ -55,7 +55,7 @@ draw dm cops per
       DebugModeCli{smarkVision, smarkSmell} = sdebugCli
       lvl@Level{lxsize, lysize, lsmell, ldesc, lactor, ltime, lseen, lclear} =
         getArena s
-      (_, mpl@Actor{bkind, bhp, bloc}, bitems) = findActorAnyLevel splayer s
+      (_, mpl@Actor{bkind, bhp, bpos}, bitems) = findActorAnyLevel splayer s
       ActorKind{ahp, asmell} = okind bkind
       reachable = debugTotalReachable per
       visible   = totalVisible per
@@ -79,16 +79,16 @@ draw dm cops per
                           _ -> showT (Item.jpower sw)
                       Nothing -> "3d1"  -- TODO: ?
                   Nothing -> "3d1"  -- TODO; use the item 'fist'
-      bl = fromMaybe [] $ bla lxsize lysize ceps bloc clocation
+      bl = fromMaybe [] $ bla lxsize lysize ceps bpos cposition
       dis pxy =
-        let loc0 = toPoint lxsize pxy
-            tile = lvl `at` loc0
+        let pos0 = toPoint lxsize pxy
+            tile = lvl `at` pos0
             tk = tokind tile
-            items = lvl `atI` loc0
-            sml = IM.findWithDefault timeZero loc0 lsmell
+            items = lvl `atI` pos0
+            sml = IM.findWithDefault timeZero pos0 lsmell
             smlt = sml `timeAdd` timeNegate ltime
             viewActor loc Actor{bkind = bkind2, bsymbol, bcolor}
-              | loc == bloc && sarena == creturnLn =
+              | loc == bpos && sarena == creturnLn =
                   (symbol, Color.defBG)  -- highlight player
               | otherwise = (symbol, color)
              where
@@ -98,15 +98,15 @@ draw dm cops per
             rainbow loc = toEnum $ loc `rem` 14 + 1
             actorsHere = IM.elems lactor
             (char, fg0) =
-              case ( L.find (\ m -> loc0 == Actor.bloc m) actorsHere
-                   , L.find (\ m -> clocation == Actor.bloc m) actorsHere ) of
+              case ( L.find (\ m -> pos0 == Actor.bpos m) actorsHere
+                   , L.find (\ m -> cposition == Actor.bpos m) actorsHere ) of
                 (_, actorTgt) | ctargeting /= TgtOff
                                 && (sarena == creturnLn
-                                    && L.elem loc0 bl
+                                    && L.elem pos0 bl
                                     || (case actorTgt of
                                            Just (Actor{ bpath=Just p
-                                                      , bloc=prLoc }) ->
-                                             L.elem loc0 $ shiftPath prLoc p
+                                                      , bpos=prPos }) ->
+                                             L.elem pos0 $ shiftPath prPos p
                                            _ -> False))
                     ->
                       let unknownId = ouniqGroup "unknown space"
@@ -116,16 +116,16 @@ draw dm cops per
                                  (True, False)  -> Color.BrRed
                                  (False, True)  -> Color.Green
                                  (False, False) -> Color.Red)
-                (Just m, _) -> viewActor loc0 m
+                (Just m, _) -> viewActor pos0 m
                 _ | (smarkSmell || asmell) && smlt > timeZero ->
-                  (timeToDigit smellTimeout smlt, rainbow loc0)
+                  (timeToDigit smellTimeout smlt, rainbow pos0)
                   | otherwise ->
                   case items of
                     [] -> (tsymbol tk, if vis then tcolor tk else tcolor2 tk)
                     i : _ -> Item.viewItem i
-            vis = IS.member loc0 visible
-            rea = IS.member loc0 reachable
-            bg0 = if ctargeting /= TgtOff && loc0 == clocation
+            vis = IS.member pos0 visible
+            rea = IS.member pos0 reachable
+            bg0 = if ctargeting /= TgtOff && pos0 == cposition
                   then Color.defFG     -- highlight target cursor
                   else sVisBG vis rea  -- FOV debug or standard bg
             reverseVideo = Color.Attr{ fg = Color.bg Color.defAttr

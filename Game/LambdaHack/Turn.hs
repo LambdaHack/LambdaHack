@@ -162,7 +162,7 @@ handleAI actor = do
   state <- getGlobal
   pers <- ask
   cli <- getClient
-  let Actor{bfaction, bloc, bsymbol} = getActor actor state
+  let Actor{bfaction, bpos, bsymbol} = getActor actor state
       factionAI = gAiIdle $ sfaction state IM.! bfaction
       factionAbilities = sabilities (okind factionAI)
       per = pers IM.! bfaction M.! (sarena state)
@@ -175,7 +175,7 @@ handleAI actor = do
   let stratMove = strategy cops actor cliNew stateNew factionAbilities
   debug $ "handleAI factionAI:" <+> oname factionAI
      <>          ", symbol:"    <+> showT bsymbol
-     <>          ", loc:"       <+> showT bloc
+     <>          ", loc:"       <+> showT bpos
      <> "\nhandleAI target:"    <+> showT stratTarget
      <> "\nhandleAI move:"      <+> showT stratMove
   -- Run the AI: choses an action from those given by the AI strategy.

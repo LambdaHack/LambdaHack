@@ -55,7 +55,7 @@ as follows:
   * The available area is divided into a grid, e.g, 3 by 3,
     where each of the 9 grid cells has approximately the same size.
 
-  * In each of the 9 grid cells one room is placed at a random location
+  * In each of the 9 grid cells one room is placed at a random position
     and with a random size, but larger than The minimum size,
     e.g, 2 by 2 floor tiles.
 

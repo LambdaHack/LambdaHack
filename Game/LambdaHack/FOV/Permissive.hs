@@ -2,7 +2,7 @@
 -- though the general structure is more influenced by recursive shadow casting,
 -- as implemented in Shadow.hs. In the result, this algorithm is much faster
 -- than the original algorithm on dense maps, since it does not scan
--- areas blocked by shadows.
+-- areas bposked by shadows.
 module Game.LambdaHack.FOV.Permissive
   ( scan, dline, dsteeper, intersect, debugSteeper, debugLine
   ) where

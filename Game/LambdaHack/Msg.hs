@@ -171,7 +171,7 @@ takeHistory k (History h) = History $ take k h
 type Overlay = [Text]
 
 -- | Returns a function that looks up the characters in the
--- string by location. Takes the width and height of the display plus
+-- string by position. Takes the width and height of the display plus
 -- the string. Returns also the message to print at the top and bottom.
 stringByLocation :: X -> Y -> Overlay
                  -> (Text, PointXY -> Maybe Char, Maybe Text)

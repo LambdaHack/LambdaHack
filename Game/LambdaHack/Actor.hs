@@ -45,7 +45,7 @@ data Actor = Actor
   , bhp      :: !Int                    -- ^ current hit points
   , bdirAI   :: !(Maybe (Vector, Int))  -- ^ direction and distance of running
   , bpath    :: !(Maybe [Vector])       -- ^ path the actor is forced to travel
-  , bloc     :: !Point                  -- ^ current location
+  , bpos     :: !Point                  -- ^ current position
   , bletter  :: !Char                   -- ^ next inventory letter
   , btime    :: !Time                   -- ^ absolute time of next action
   , bwait    :: !Time                   -- ^ last bracing expires at this time
@@ -65,7 +65,7 @@ instance Binary Actor where
     put bhp
     put bdirAI
     put bpath
-    put bloc
+    put bpos
     put bletter
     put btime
     put bwait
@@ -80,7 +80,7 @@ instance Binary Actor where
     bhp     <- get
     bdirAI    <- get
     bpath   <- get
-    bloc    <- get
+    bpos    <- get
     bletter <- get
     btime   <- get
     bwait   <- get
@@ -122,7 +122,7 @@ partActor Kind.Ops{oname} a = MU.Text $ fromMaybe (oname $ bkind a) (bname a)
 -- | A template for a new non-projectile actor.
 template :: Kind.Id ActorKind -> Maybe Char -> Maybe Text -> Int -> Point
          -> Time -> FactionId -> Bool -> Actor
-template bkind bsymbol bname bhp bloc btime bfaction bproj =
+template bkind bsymbol bname bhp bpos btime bfaction bproj =
   let bcolor  = Nothing
       bspeed  = Nothing
       bpath   = Nothing
@@ -158,11 +158,11 @@ timeAddFromSpeed coactor m time =
 braced :: Actor -> Time -> Bool
 braced m time = time < bwait m
 
--- | Checks for the presence of actors in a location.
+-- | Checks for the presence of actors in a position.
 -- Does not check if the tile is walkable.
 unoccupied :: [Actor] -> Point -> Bool
 unoccupied actors loc =
-  all (\ body -> bloc body /= loc) actors
+  all (\ body -> bpos body /= loc) actors
 
 -- | The unique kind of heroes.
 heroKindId :: Kind.Ops ActorKind -> Kind.Id ActorKind

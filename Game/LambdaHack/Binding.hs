@@ -92,7 +92,7 @@ keyHelp Binding{kcmd, kmacro, kmajor, kminor} =
       ]
     majorBlurb =
       [ ""
-      , "Commands marked with * take time and are blocked on remote levels."
+      , "Commands marked with * take time and are bposked on remote levels."
       , "Press SPACE to see the next page, with the list of minor commands."
       ]
     minorBlurb =

@@ -24,7 +24,7 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Animation (blockMiss, swapPlaces)
+import Game.LambdaHack.Animation (bposkMiss, swapPlaces)
 import Game.LambdaHack.Binding
 import qualified Game.LambdaHack.Command as Command
 import Game.LambdaHack.Config
@@ -84,8 +84,8 @@ moveCursor dir n = do
   let upd cursor =
         let shiftB loc =
               shiftBounded lxsize (1, 1, lxsize - 2, lysize - 2) loc dir
-            cloc = iterate shiftB (clocation cursor) !! n
-        in cursor { clocation = cloc }
+            cpos = iterate shiftB (cposition cursor) !! n
+        in cursor { cposition = cpos }
   modifyClient (updateCursor upd)
   doLook
 
@@ -116,36 +116,36 @@ guessBump _ _ _ = neverMind True
 
 -- | Player tries to trigger a tile using a feature.
 bumpTile :: MonadAction m => Point -> F.Feature -> m ()
-bumpTile dloc feat = do
+bumpTile dpos feat = do
   Kind.COps{cotile} <- getsLocal scops
   lvl    <- getsLocal getArena
-  let t = lvl `at` dloc
+  let t = lvl `at` dpos
   if Tile.hasFeature cotile feat t
-    then triggerTile dloc
+    then triggerTile dpos
     else guessBump cotile feat t
 
 -- | Perform the action specified for the tile in case it's triggered.
 triggerTile :: MonadAction m => Point -> m ()
-triggerTile dloc = do
+triggerTile dpos = do
   Kind.COps{cotile=Kind.Ops{okind, opick}} <- getsGlobal scops
   lvl <- getsGlobal getArena
   let f (F.Cause effect) = do
         pl <- getsGlobal splayer
-        void $ effectToAction effect 0 pl pl 0 False  -- no block against tile
+        void $ effectToAction effect 0 pl pl 0 False  -- no bposk against tile
         return ()
       f (F.ChangeTo tgroup) = do
         Level{lactor} <- getsGlobal getArena
-        case lvl `atI` dloc of
-          [] -> if unoccupied (IM.elems lactor) dloc
+        case lvl `atI` dpos of
+          [] -> if unoccupied (IM.elems lactor) dpos
                 then do
                   newTileId <- rndToAction $ opick tgroup (const True)
-                  let adj = (Kind.// [(dloc, newTileId)])
+                  let adj = (Kind.// [(dpos, newTileId)])
                   modifyGlobal (updateArena (updateLMap adj))
 -- TODO: take care of AI using this function (aborts, etc.).
-                else abortWith "blocked"  -- by monsters or heroes
+                else abortWith "bposked"  -- by monsters or heroes
           _ : _ -> abortWith "jammed"  -- by items
       f _ = return ()
-  mapM_ f $ TileKind.tfeature $ okind $ lvl `at` dloc
+  mapM_ f $ TileKind.tfeature $ okind $ lvl `at` dpos
 
 -- | Ask for a direction and trigger a tile, if possible.
 playerTriggerDir :: MonadAction m => F.Feature -> MU.Part -> m ()
@@ -161,14 +161,14 @@ playerBumpDir :: MonadAction m => F.Feature -> Vector -> m ()
 playerBumpDir feat dir = do
   pl    <- getsLocal splayer
   body  <- getsLocal (getActor pl)
-  let dloc = bloc body `shift` dir
-  bumpTile dloc feat
+  let dpos = bpos body `shift` dir
+  bumpTile dpos feat
 
 -- | Player tries to trigger the tile he's standing on.
 playerTriggerTile :: MonadAction m => F.Feature -> m ()
 playerTriggerTile feat = do
-  ploc <- getsLocal (bloc . getPlayerBody)
-  bumpTile ploc feat
+  ppos <- getsLocal (bpos . getPlayerBody)
+  bumpTile ppos feat
 
 -- | An actor opens a door.
 actorOpenDoor :: MonadAction m => ActorId -> Vector -> m ()
@@ -182,8 +182,8 @@ actorOpenDoor actor dir = do
   body <- getsGlobal (getActor actor)
   bitems <- getsGlobal (getActorItem actor)
   discoS <- getsGlobal sdisco
-  let dloc = shift (bloc body) dir  -- the location we act upon
-      t = lvl `at` dloc
+  let dpos = shift (bpos body) dir  -- the position we act upon
+      t = lvl `at` dpos
       isPlayer = actor == pl
       isVerbose = isPlayer  -- don't report, unless it's player-controlled
       iq = aiq $ okind $ bkind body
@@ -193,14 +193,14 @@ actorOpenDoor actor dir = do
         else case strongestSearch coitem discoS bitems of
                Just i  -> iq + jpower i
                Nothing -> iq
-  unless (openable cotile lvl openPower dloc) $ neverMind isVerbose
+  unless (openable cotile lvl openPower dpos) $ neverMind isVerbose
   if Tile.hasFeature cotile F.Closable t
     then abortIfWith isVerbose "already open"
     else if not (Tile.hasFeature cotile F.Closable t ||
                  Tile.hasFeature cotile F.Openable t ||
                  Tile.hasFeature cotile F.Hidden t)
          then neverMind isVerbose  -- not doors at all
-         else triggerTile dloc
+         else triggerTile dpos
 
 -- | Change the displayed level in targeting mode to (at most)
 -- k levels shallower. Enters targeting mode, if not already in one.
@@ -213,7 +213,7 @@ tgtAscend k = do
   lvl       <- getsGlobal getArena
   st        <- getGlobal
   depth     <- getsGlobal sdepth
-  let loc = clocation cursor
+  let loc = cposition cursor
       tile = lvl `at` loc
       rightStairs =
         k ==  1 && Tile.hasFeature cotile (F.Cause Effect.Ascend)  tile ||
@@ -222,7 +222,7 @@ tgtAscend k = do
     then case whereTo st k of
       Nothing ->  -- we are at the "end" of the dungeon
         abortWith "no more levels in this direction"
-      Just (nln, nloc) ->
+      Just (nln, npos) ->
         assert (nln /= sarena `blame` (nln, "stairs looped")) $ do
           -- We only look at the level, but we have to keep current
           -- time somewhere, e.g., for when we change the player
@@ -232,18 +232,18 @@ tgtAscend k = do
           -- do not freely reveal the other end of the stairs
           clvl <- getsLocal getArena
           let upd cur =
-                let clocation =
-                      if Tile.hasFeature cotile F.Exit (clvl `at` nloc)
-                      then nloc  -- already know as an exit, focus on it
+                let cposition =
+                      if Tile.hasFeature cotile F.Exit (clvl `at` npos)
+                      then npos  -- already know as an exit, focus on it
                       else loc   -- unknow, do not reveal the position
-                in cur { clocation, clocLn = nln }
+                in cur { cposition, cposLn = nln }
           modifyClient (updateCursor upd)
     else do  -- no stairs in the right direction
       let n = levelNumber sarena
           nln = levelDefault $ min depth $ max 1 $ n - k
       when (nln == sarena) $ abortWith "no more levels in this direction"
       switchLevel nln  -- see comment above
-      let upd cur = cur {clocLn = nln}
+      let upd cur = cur {cposLn = nln}
       modifyClient (updateCursor upd)
   when (targeting == TgtOff) $ do
     let upd cur = cur {ctargeting = TgtExplicit}
@@ -289,7 +289,7 @@ search = do
   lvl    <- getsGlobal getArena
   le     <- getsGlobal (lsecret . getArena)
   lxsize <- getsGlobal (lxsize . getArena)
-  ploc   <- getsGlobal (bloc . getPlayerBody)
+  ppos   <- getsGlobal (bpos . getPlayerBody)
   pitems <- getsGlobal getPlayerItem
   discoS <- getsGlobal sdisco
   let delta = timeScale timeTurn $
@@ -297,7 +297,7 @@ search = do
                   Just i  -> 1 + jpower i
                   Nothing -> 1
       searchTile sle mv =
-        let loc = shift ploc mv
+        let loc = shift ppos mv
             t = lvl `at` loc
             -- TODO: assert or cope elsewhere with the IM.! below
             k = timeAdd (le IM.! loc) $ timeNegate delta
@@ -310,10 +310,10 @@ search = do
   modifyGlobal (updateArena (\ l -> l {lsecret = leNew}))
   lvlNew <- getsGlobal getArena
   let triggerHidden mv = do
-        let dloc = shift ploc mv
-            t = lvlNew `at` dloc
-        when (Tile.hasFeature cotile F.Hidden t && IM.notMember dloc leNew) $
-          triggerTile dloc
+        let dpos = shift ppos mv
+            t = lvlNew `at` dpos
+        when (Tile.hasFeature cotile F.Hidden t && IM.notMember dpos leNew) $
+          triggerTile dpos
   mapM_ triggerHidden (moves lxsize)
 
 -- | This function performs a move (or attack) by any actor,
@@ -331,36 +331,36 @@ moveOrAttack allowAttacks actor dir = do
   lvl    <- getsGlobal getArena
   clvl   <- getsLocal getArena
   sm     <- getsGlobal (getActor actor)
-  let sloc = bloc sm           -- source location
-      tloc = sloc `shift` dir  -- target location
-  tgt <- getsGlobal (locToActor tloc)
+  let spos = bpos sm           -- source position
+      tpos = spos `shift` dir  -- target position
+  tgt <- getsGlobal (posToActor tpos)
   case tgt of
     Just target
       | allowAttacks ->
           -- Attacking does not require full access, adjacency is enough.
           actorAttackActor actor target
-      | accessible cops lvl sloc tloc -> do
+      | accessible cops lvl spos tpos -> do
           -- Switching positions requires full access.
           when (actor == pl) $
-            msgAdd $ lookAt cops False True loc tloc ""
+            msgAdd $ lookAt cops False True loc tpos ""
           actorRunActor actor target
-      | otherwise -> abortWith "blocked"
+      | otherwise -> abortWith "bposked"
     Nothing
-      | accessible cops lvl sloc tloc -> do
+      | accessible cops lvl spos tpos -> do
           -- Perform the move.
-          updateAnyActor actor $ \ body -> body {bloc = tloc}
+          updateAnyActor actor $ \ body -> body {bpos = tpos}
           when (actor == pl) $
-            msgAdd $ lookAt cops False True loc tloc ""
+            msgAdd $ lookAt cops False True loc tpos ""
       | allowAttacks && actor == pl
-        && Tile.canBeHidden cotile (okind $ clvl `at` tloc) -> do
+        && Tile.canBeHidden cotile (okind $ clvl `at` tpos) -> do
           msgAdd "You search all adjacent walls for half a second."
           search
       | otherwise ->
-          actorOpenDoor actor dir  -- try to open a door, TODO: bumpTile tloc F.Openable
+          actorOpenDoor actor dir  -- try to open a door, TODO: bumpTile tpos F.Openable
 
 -- | Resolves the result of an actor moving into another. Usually this
 -- involves melee attack, but with two heroes it just changes focus.
--- Actors on blocked locations can be attacked without any restrictions.
+-- Actors on bposked positions can be attacked without any restrictions.
 -- For instance, an actor embedded in a wall
 -- can be attacked from an adjacent position.
 -- This function is analogous to projectGroupItem, but for melee
@@ -372,10 +372,10 @@ actorAttackActor source target = do
   per   <- askPerception
   time  <- getsGlobal getTime
   s <- getGlobal
-  let sloc = bloc smRaw
-      tloc = bloc tmRaw
-      svisible = sloc `IS.member` totalVisible per
-      tvisible = tloc `IS.member` totalVisible per
+  let spos = bpos smRaw
+      tpos = bpos tmRaw
+      svisible = spos `IS.member` totalVisible per
+      tvisible = tpos `IS.member` totalVisible per
       sm | svisible  = smRaw
          | otherwise = smRaw {bname = Just "somebody"}
       tm | tvisible  = tmRaw
@@ -419,24 +419,24 @@ actorAttackActor source target = do
           msgMiss = makeSentence
             [ MU.SubjectVerbSg (partActor coactor sm) "try to"
             , verb MU.:> ", but"
-            , MU.SubjectVerbSg (partActor coactor tm) "block"
+            , MU.SubjectVerbSg (partActor coactor tm) "bposk"
             ]
-      let performHit block = do
+      let performHit bposk = do
             when (svisible || tvisible) $ msgAdd msg
             -- Msgs inside itemEffectAction describe the target part.
-            itemEffectAction verbosity source target stack block
-      -- Projectiles can't be blocked, can be sidestepped.
+            itemEffectAction verbosity source target stack bposk
+      -- Projectiles can't be bposked, can be sidestepped.
       if braced tm time && not (bproj sm)
         then do
-          blocked <- rndToAction $ chance $ 1%2
-          if blocked
+          bposked <- rndToAction $ chance $ 1%2
+          if bposked
             then do
               when (svisible || tvisible) $ msgAdd msgMiss
               cli <- getClient
               loc <- getLocal
-              let locs = (breturn tvisible tloc,
-                          breturn svisible sloc)
-                  anim = blockMiss locs
+              let poss = (breturn tvisible tpos,
+                          breturn svisible spos)
+                  anim = bposkMiss poss
                   animFrs = animate cli loc cops per anim
               displayFramesPush $ Nothing : animFrs
             else performHit True
@@ -449,22 +449,22 @@ actorRunActor source target = do
   pl <- getsGlobal splayer
   sm <- getsGlobal (getActor source)
   tm <- getsGlobal (getActor target)
-  let sloc = bloc sm
-      tloc = bloc tm
-  updateAnyActor source $ \ m -> m { bloc = tloc }
-  updateAnyActor target $ \ m -> m { bloc = sloc }
+  let spos = bpos sm
+      tpos = bpos tm
+  updateAnyActor source $ \ m -> m { bpos = tpos }
+  updateAnyActor target $ \ m -> m { bpos = spos }
   cops@Kind.COps{coactor} <- getsGlobal scops
   per <- askPerception
-  let visible = sloc `IS.member` totalVisible per ||
-                tloc `IS.member` totalVisible per
+  let visible = spos `IS.member` totalVisible per ||
+                tpos `IS.member` totalVisible per
       msg = makeSentence
         [ MU.SubjectVerbSg (partActor coactor sm) "displace"
         , partActor coactor tm ]
   when visible $ msgAdd msg
   cli <- getClient  -- here cli possibly contains the new msg
   loc <- getLocal
-  let locs = (Just tloc, Just sloc)
-      animFrs = animate cli loc cops per $ swapPlaces locs
+  let poss = (Just tpos, Just spos)
+      animFrs = animate cli loc cops per $ swapPlaces poss
   when visible $ displayFramesPush $ Nothing : animFrs
   if source == pl
    then stopRunning  -- do not switch positions repeatedly
@@ -486,9 +486,9 @@ rollMonster Kind.COps{ cotile
     then return (state, ser)
     else do
       let distantAtLeast d =
-            \ l _ -> all (\ h -> chessDist (lxsize lvl) (bloc h) l > d) hs
+            \ l _ -> all (\ h -> chessDist (lxsize lvl) (bpos h) l > d) hs
       loc <-
-        findLocTry 20 (ltile lvl)  -- 20 only, for unpredictability
+        findPosTry 20 (ltile lvl)  -- 20 only, for unpredictability
           [ \ _ t -> not (isLit t)
           , distantAtLeast 15
           , \ l t -> not (isLit t) || distantAtLeast 15 l t
@@ -631,19 +631,19 @@ addSmell = do
   s  <- getGlobal
   pl <- getsGlobal splayer
   let time = getTime s
-      ploc = bloc (getPlayerBody s)
-      upd = IM.insert ploc $ timeAdd time smellTimeout
+      ppos = bpos (getPlayerBody s)
+      upd = IM.insert ppos $ timeAdd time smellTimeout
   when (isAHero s pl) $
     modifyGlobal $ updateArena $ updateSmell upd
 
--- | Update the wait/block count.
+-- | Update the wait/bposk count.
 setWaitBlock :: MonadServer m => ActorId -> m ()
 setWaitBlock actor = do
   Kind.COps{coactor} <- getsGlobal scops
   time <- getsGlobal getTime
   updateAnyActor actor $ \ m -> m {bwait = timeAddFromSpeed coactor m time}
 
--- | Player waits a turn (and blocks, etc.).
+-- | Player waits a turn (and bposks, etc.).
 waitBlock :: MonadServer m => m ()
 waitBlock = do
   pl <- getsGlobal splayer

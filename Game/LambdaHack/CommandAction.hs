@@ -29,8 +29,8 @@ cmdAction cli s cmd =
   let targeting = ctargeting (scursor cli)
       pl = splayer s
       sm = getActor pl s
-      ploc = bloc sm
-      tgtLoc = targetToLoc cli s
+      ppos = bpos sm
+      tgtLoc = targetToPos cli s
   in case cmd of
     Apply{..} -> (True, lift $ playerApplyGroupItem verb object syms)
     Project{} | isNothing tgtLoc -> (False, retarget)
@@ -45,8 +45,8 @@ cmdAction cli s cmd =
       in (False, moveCursor dir 1)
     Move v ->
       let dir = toDir (lxsize (getArena s)) v
-          tloc = ploc `shift` dir
-          tgt = locToActor tloc s
+          tpos = ppos `shift` dir
+          tgt = posToActor tpos s
       in case tgt of
         Just target | bfaction (getActor target s) == sside s
                       && not (bproj (getActor target s)) ->

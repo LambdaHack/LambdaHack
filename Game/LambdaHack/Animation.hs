@@ -2,7 +2,7 @@
 module Game.LambdaHack.Animation
   ( Attr(..), defAttr, AttrChar(..)
   , SingleFrame(..), Animation, Frames, rederAnim
-  , twirlSplash, blockHit, blockMiss, deathBody, swapPlaces
+  , twirlSplash, bposkHit, bposkMiss, deathBody, swapPlaces
   ) where
 
 import qualified Data.IntMap as IM
@@ -24,7 +24,7 @@ data SingleFrame = SingleFrame
   deriving (Eq, Show)
 
 -- | Animation is a list of frame modifications to play one by one,
--- where each modification if a map from locations to level map symbols.
+-- where each modification if a map from positions to level map symbols.
 newtype Animation = Animation [IM.IntMap AttrChar]
 
 instance Monoid Animation where
@@ -59,17 +59,17 @@ coloredSymbol color symbol = Just $ AttrChar (Attr color defBG) symbol
 
 mzipPairs :: (Maybe Point, Maybe Point) -> (Maybe AttrChar, Maybe AttrChar)
           -> [(Point, AttrChar)]
-mzipPairs (mloc1, mloc2) (mattr1, mattr2) =
+mzipPairs (mpos1, mpos2) (mattr1, mattr2) =
   let mzip (Just loc, Just attr) = Just (loc, attr)
       mzip _ = Nothing
-  in if mloc1 /= mloc2
-     then catMaybes [mzip (mloc1, mattr1), mzip (mloc2, mattr2)]
+  in if mpos1 /= mpos2
+     then catMaybes [mzip (mpos1, mattr1), mzip (mpos2, mattr2)]
      else -- If actor affects himself, show only the effect, not the action.
-          catMaybes [mzip (mloc1, mattr1)]
+          catMaybes [mzip (mpos1, mattr1)]
 
 -- | Attack animation. A part of it also reused for self-damage and healing.
 twirlSplash :: (Maybe Point, Maybe Point) -> Color -> Color -> Animation
-twirlSplash locs c1 c2 = Animation $ map (IM.fromList . mzipPairs locs)
+twirlSplash poss c1 c2 = Animation $ map (IM.fromList . mzipPairs poss)
   [ (coloredSymbol BrWhite '*', blank)
   , (coloredSymbol c1      '/', coloredSymbol BrCyan '^')
   , (coloredSymbol c1      '-', blank)
@@ -81,9 +81,9 @@ twirlSplash locs c1 c2 = Animation $ map (IM.fromList . mzipPairs locs)
   , (blank                    , blank)
   ]
 
--- | Attack that hits through a block.
-blockHit :: (Maybe Point, Maybe Point) -> Color -> Color -> Animation
-blockHit locs c1 c2 = Animation $ map (IM.fromList . mzipPairs locs)
+-- | Attack that hits through a bposk.
+bposkHit :: (Maybe Point, Maybe Point) -> Color -> Color -> Animation
+bposkHit poss c1 c2 = Animation $ map (IM.fromList . mzipPairs poss)
   [ (coloredSymbol BrWhite '*', blank)
   , (coloredSymbol BrBlue  '{', coloredSymbol BrCyan '^')
   , (coloredSymbol BrBlue  '{', blank)
@@ -95,9 +95,9 @@ blockHit locs c1 c2 = Animation $ map (IM.fromList . mzipPairs locs)
   , (blank                    , blank)
   ]
 
--- | Attack that is blocked.
-blockMiss :: (Maybe Point, Maybe Point) -> Animation
-blockMiss locs = Animation $ map (IM.fromList . mzipPairs locs)
+-- | Attack that is bposked.
+bposkMiss :: (Maybe Point, Maybe Point) -> Animation
+bposkMiss poss = Animation $ map (IM.fromList . mzipPairs poss)
   [ (coloredSymbol BrWhite '*', blank)
   , (coloredSymbol BrBlue  '{', coloredSymbol BrCyan '^')
   , (coloredSymbol BrBlue  '}', blank)
@@ -123,7 +123,7 @@ deathBody loc = Animation $ map (maybe IM.empty (IM.singleton loc))
 
 -- | Swap-places animation, both hostile and friendly.
 swapPlaces :: (Maybe Point, Maybe Point) -> Animation
-swapPlaces locs = Animation $ map (IM.fromList . mzipPairs locs)
+swapPlaces poss = Animation $ map (IM.fromList . mzipPairs poss)
   [ (coloredSymbol BrMagenta '.', coloredSymbol Magenta   'o')
   , (coloredSymbol BrMagenta 'd', coloredSymbol Magenta   'p')
   , (coloredSymbol Magenta   'p', coloredSymbol BrMagenta 'd')
