@@ -91,8 +91,8 @@ moveCursor dir n = do
 
 ifRunning :: MonadClientRO m => ((Vector, Int) -> m a) -> m a -> m a
 ifRunning t e = do
-  ad <- getsLocal (bdir . getPlayerBody)
-  maybe e t ad
+  srunning <- getsClient srunning
+  maybe e t srunning
 
 -- | Guess and report why the bump command failed.
 guessBump :: MonadActionRoot m => Kind.Ops TileKind -> F.Feature -> Kind.Id TileKind -> m ()

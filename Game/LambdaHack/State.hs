@@ -31,6 +31,7 @@ import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 import qualified System.Random as R
 import System.Time
+import Game.LambdaHack.Vector
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Config
@@ -78,6 +79,7 @@ data StateServer = StateServer
 data StateClient = StateClient
   { scursor   :: !Cursor        -- ^ cursor location and level to return to
   , starget   :: !(IM.IntMap Target)  -- ^ targets of all actors in the dungeon
+  , srunning  :: !(Maybe (Vector, Int))  -- ^ direction and distance of running
   , sreport   :: !Report        -- ^ current messages
   , shistory  :: !History       -- ^ history of messages
   , slastKey  :: !(Maybe K.KM)  -- ^ last command key pressed
@@ -204,6 +206,7 @@ defStateClient ploc sarena = do
   StateClient
     { scursor   = (Cursor TgtOff sarena ploc sarena 0)
     , starget   = IM.empty
+    , srunning  = Nothing
     , sreport   = emptyReport
     , shistory  = emptyHistory
     , slastKey  = Nothing
@@ -328,11 +331,13 @@ instance Binary StateClient where
   put StateClient{..} = do
     put scursor
     put starget
+    put srunning
     put sreport
     put shistory
   get = do
     scursor <- get
     starget <- get
+    srunning <- get
     sreport <- get
     shistory <- get
     let slastKey = Nothing

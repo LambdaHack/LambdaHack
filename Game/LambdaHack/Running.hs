@@ -10,7 +10,6 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actions
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.EffectAction
 import qualified Game.LambdaHack.Feature as F
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
@@ -41,7 +40,7 @@ run (dir, dist) = do
     let accessibleDir loc d = accessible cops lvl loc (loc `shift` d)
         -- Do not count distance if we just open a door.
         distNew = if accessibleDir locHere dir then dist + 1 else dist
-    updatePlayerBody (\ p -> p { bdir = Just (dir, distNew) })
+    modifyClient $ \cli -> cli {srunning = Just (dir, distNew)}
     -- Attacks and opening doors disallowed when continuing to run.
     moveOrAttack False pl dir
 

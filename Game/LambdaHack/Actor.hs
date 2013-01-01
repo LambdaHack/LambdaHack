@@ -29,9 +29,9 @@ import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 
--- TODO: use target (in ClientState) instead of bdir to determine goal,
+-- TODO: use target (in ClientState) instead of bdirAI to determine goal,
 -- even for silly monsters just introduce more randomness,
--- but try to attain the goal. Then remove bdir.
+-- but try to attain the goal. Then remove bdirAI.
 -- | Actor properties that are changing throughout the game.
 -- If they are dublets of properties from @ActorKind@,
 -- they are usually modified temporarily, but tend to return
@@ -43,7 +43,7 @@ data Actor = Actor
   , bcolor   :: !(Maybe Color.Color)    -- ^ individual map color
   , bspeed   :: !(Maybe Speed)          -- ^ individual speed
   , bhp      :: !Int                    -- ^ current hit points
-  , bdir     :: !(Maybe (Vector, Int))  -- ^ direction and distance of running
+  , bdirAI   :: !(Maybe (Vector, Int))  -- ^ direction and distance of running
   , bpath    :: !(Maybe [Vector])       -- ^ path the actor is forced to travel
   , bloc     :: !Point                  -- ^ current location
   , bletter  :: !Char                   -- ^ next inventory letter
@@ -63,7 +63,7 @@ instance Binary Actor where
     put bcolor
     put bspeed
     put bhp
-    put bdir
+    put bdirAI
     put bpath
     put bloc
     put bletter
@@ -78,7 +78,7 @@ instance Binary Actor where
     bcolor  <- get
     bspeed  <- get
     bhp     <- get
-    bdir    <- get
+    bdirAI    <- get
     bpath   <- get
     bloc    <- get
     bletter <- get
@@ -126,7 +126,7 @@ template bkind bsymbol bname bhp bloc btime bfaction bproj =
   let bcolor  = Nothing
       bspeed  = Nothing
       bpath   = Nothing
-      bdir    = Nothing
+      bdirAI  = Nothing
       bletter = 'a'
       bwait   = timeZero
   in Actor{..}

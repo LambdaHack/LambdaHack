@@ -311,15 +311,12 @@ drawOverlay dm over = do
 displayPush :: (MonadActionIO m, MonadClientRO m) => m ()
 displayPush = do
   fs <- askFrontendSession
-  s  <- getLocal
-  pl <- getsLocal splayer
   sli <- promptToSlideshow ""
   frame <- drawOverlay ColorFull $ head $ runSlideshow sli
   -- Visually speed up (by remving all empty frames) the show of the sequence
   -- of the move frames if the player is running.
-  let (_, Actor{bdir}, _) = findActorAnyLevel pl s
-      isRunning = isJust bdir
-  liftIO $ displayFrame fs isRunning $ Just frame
+  srunning <- getsClient srunning
+  liftIO $ displayFrame fs (isJust srunning) $ Just frame
 
 -- | Initialize perception, etc., display level and run the action.
 startClip :: MonadClientServer m => m () -> m ()

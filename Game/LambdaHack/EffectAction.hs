@@ -625,8 +625,8 @@ itemOverlay disco sorted is = do
              <> " "
   return $ map pr items
 
-stopRunning :: MonadServer m => m ()
-stopRunning = updatePlayerBody (\ p -> p { bdir = Nothing })
+stopRunning :: MonadClient m => m ()
+stopRunning = modifyClient (\ cli -> cli { srunning = Nothing })
 
 -- | Perform look around in the current location of the cursor.
 doLook :: MonadClient m => WriterT Slideshow m ()

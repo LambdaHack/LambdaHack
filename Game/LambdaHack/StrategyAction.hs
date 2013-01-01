@@ -151,7 +151,7 @@ strategy cops actor cli state factionAbilities =
 dirToAction :: MonadAction m => ActorId -> Bool -> Vector -> m ()
 dirToAction actor allowAttacks dir = do
   -- set new direction
-  updateAnyActor actor $ \ m -> m { bdir = Just (dir, 0) }
+  updateAnyActor actor $ \ m -> m { bdirAI = Just (dir, 0) }
   -- perform action
   tryWith (\ msg -> if T.null msg
                     then return ()
@@ -326,7 +326,7 @@ moveStrategy cops actor state mFoe =
            , coitem
            } = cops
   lvl@Level{lsmell, lxsize, lysize, ltime} = getArena state
-  Actor{ bkind, bloc, bdir, bfaction } = getActor actor state
+  Actor{ bkind, bloc, bdirAI, bfaction } = getActor actor state
   bitems = getActorItem actor state
   mk = okind bkind
   lootHere x = not $ L.null $ lvl `atI` x
@@ -339,8 +339,8 @@ moveStrategy cops actor state mFoe =
                           && L.any (Tile.hasFeature cotile F.Lit) ts)
   onlyInterest   = onlyMoves interestHere bloc
   onlyKeepsDir k =
-    only (\ x -> maybe True (\ (d, _) -> euclidDistSq lxsize d x <= k) bdir)
-  onlyKeepsDir_9 = only (\ x -> maybe True (\ (d, _) -> neg x /= d) bdir)
+    only (\ x -> maybe True (\ (d, _) -> euclidDistSq lxsize d x <= k) bdirAI)
+  onlyKeepsDir_9 = only (\ x -> maybe True (\ (d, _) -> neg x /= d) bdirAI)
   moveIQ = aiq mk > 15 .=> onlyKeepsDir 0 moveRandomly
         .| aiq mk > 10 .=> onlyKeepsDir 1 moveRandomly
         .| aiq mk > 5  .=> onlyKeepsDir 2 moveRandomly
