@@ -28,10 +28,10 @@ import qualified Data.Map as M
 import Data.Maybe (isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Game.LambdaHack.Vector
 import qualified NLP.Miniutter.English as MU
 import qualified System.Random as R
 import System.Time
-import Game.LambdaHack.Vector
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Config

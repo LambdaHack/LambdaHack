@@ -341,6 +341,9 @@ rememberList visible lvl = do
   let vis = IS.toList visible
   Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getsLocal scops
   clvl <- getsLocal getArena
+  -- TODO: let factions that spawn see hidden features and open all hidden
+  -- doors (they built and hid them).
+  -- TODO: hide the Hidden feature
   let rememberTile = [(loc, lvl `at` loc) | loc <- vis]
       unknownId = ouniqGroup "unknown space"
       newClear (loc, tk) = clvl `at` loc == unknownId
@@ -361,7 +364,8 @@ rememberList visible lvl = do
                  (updateActor (const cactor)
                   . updateInv (const cinv)))
   modifyLocal (updateTime (const $ ltime lvl))
--- TODO: update lcsmell too, probably only around a smelling party member
+  -- TODO: update enemy smell probably only around a sniffing party member
+  modifyLocal $ updateArena $ updateSmell (const $ lsmell lvl)
 
 -- | Save the cli and a backup of the save game file, in case of crashes.
 --

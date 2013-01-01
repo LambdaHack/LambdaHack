@@ -150,14 +150,11 @@ accessible Kind.COps{ cotile=Kind.Ops{okind=okind}, corule}
       tgt = okind $ lvl `at` tpos
   in check lxsize spos src tpos tgt
 
--- | Check whether the position contains a door of secrecy lower than @k@
--- and that can be opened according to the standard ruleset.
-openable :: Kind.Ops TileKind -> Level -> SecretTime -> Point -> Bool
-openable cops lvl@Level{lsecret} k target =
-  let tgt = lvl `at` target
-  in hasFeature cops F.Openable tgt ||
-     (hasFeature cops F.Hidden tgt &&
-      lsecret IM.! target <= k)
+-- | Check whether the position contains an openable tile.
+openable :: Kind.Ops TileKind -> Level ->  Point -> Bool
+openable cops lvl tpos =
+  let tgt = lvl `at` tpos
+  in hasFeature cops F.Openable tgt
 
 -- | Find a random position on the map satisfying a predicate.
 findPos :: TileMap -> (Point -> Kind.Id TileKind -> Bool) -> Rnd Point

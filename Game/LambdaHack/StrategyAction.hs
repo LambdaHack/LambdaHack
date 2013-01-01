@@ -22,8 +22,10 @@ import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.Content.StrategyKind
 import qualified Game.LambdaHack.Effect as Effect
 import Game.LambdaHack.EffectAction
+import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Item
 import Game.LambdaHack.ItemAction
@@ -41,10 +43,22 @@ import Game.LambdaHack.Utils.Frequency
 import Game.LambdaHack.Vector
 
 -- | AI proposes possible targets for the actor. Never empty.
-targetStrategy :: Kind.COps -> ActorId -> StateClient -> State
+targetStrategy :: MonadClientRO m => ActorId -> m (Strategy (Maybe Target))
+targetStrategy actor = do
+  cops@Kind.COps{costrat=Kind.Ops{okind}} <- getsLocal scops
+  per <- askPerception
+  loc <- getLocal
+  cli <- getClient
+  let Actor{bfaction} = getActor actor loc
+      factionAI = gAiIdle $ sfaction loc IM.! bfaction
+      factionAbilities = sabilities (okind factionAI)
+  return $! reacquireTgt cops actor cli loc per factionAbilities
+
+-- | AI proposes possible targets for the actor. Never empty.
+reacquireTgt :: Kind.COps -> ActorId -> StateClient -> State
                -> Perception -> [Ability]
                -> Strategy (Maybe Target)
-targetStrategy cops actor cli loc per factionAbilities =
+reacquireTgt cops actor cli loc per factionAbilities =
   reacquire btarget
  where
   Kind.COps{coactor=coactor@Kind.Ops{okind}} = cops
@@ -323,11 +337,9 @@ moveStrategy cops actor loc mFoe =
  where
   Kind.COps{ cotile
            , coactor=Kind.Ops{okind}
-           , coitem
            } = cops
   lvl@Level{lsmell, lxsize, lysize, ltime} = getArena loc
   Actor{ bkind, bpos, bdirAI, bfaction } = getActor actor loc
-  bitems = getActorItem actor loc
   mk = okind bkind
   lootHere x = not $ L.null $ lvl `atI` x
   onlyLoot   = onlyMoves lootHere bpos
@@ -362,15 +374,7 @@ moveStrategy cops actor loc mFoe =
   onlyMoves p l = only (\ x -> p (l `shift` x))
   moveRandomly :: Strategy Vector
   moveRandomly = liftFrequency $ uniformFreq "moveRandomly" sensible
-  -- Monsters don't see doors more secret than that. Enforced when actually
-  -- opening doors, too, so that monsters don't cheat. TODO: remove the code
-  -- duplication, though. TODO: make symmetric for playable monster faction?
-  -- TODO: unidentified items don't contribute bonuses; is it OK?
-  openPower      = timeScale timeTurn $
-                   case strongestSearch coitem (sdisco loc) bitems of
-                     Just i  -> aiq mk + jpower i
-                     Nothing -> aiq mk
-  openableHere   = openable cotile lvl openPower
+  openableHere   = openable cotile lvl
   accessibleHere = accessible cops lvl bpos
   noFriends | asight mk = unoccupied (factionList [bfaction] loc)
             | otherwise = const True

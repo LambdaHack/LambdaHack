@@ -4,7 +4,6 @@ module Game.LambdaHack.Turn ( handleTurn ) where
 
 import Control.Arrow ((&&&))
 import Control.Monad
-import Control.Monad.Reader.Class
 import Control.Monad.Writer.Strict (WriterT (runWriterT))
 import qualified Data.IntMap as IM
 import qualified Data.List as L
@@ -158,24 +157,20 @@ handleActors subclipStart = do
 -- | Handle the move of a single monster.
 handleAI :: MonadAction m => ActorId -> m ()
 handleAI actor = do
-  cops@Kind.COps{costrat=Kind.Ops{oname, okind}} <- getsGlobal scops
-  state <- getGlobal
-  pers <- ask
-  cli <- getClient
-  let Actor{bfaction, bpos, bsymbol} = getActor actor state
-      factionAI = gAiIdle $ sfaction state IM.! bfaction
-      factionAbilities = sabilities (okind factionAI)
-      per = pers IM.! bfaction M.! (sarena state)
-      stratTarget = targetStrategy cops actor cli state per factionAbilities
+  stratTarget <- targetStrategy actor
   -- Choose a target from those proposed by AI for the actor.
-  btarget <- rndToAction $ frequency $ bestVariant $ stratTarget
+  btarget <- rndToAction $ frequency $ bestVariant stratTarget
+  loc <- getLocal
+  cli <- getClient
   modifyClient $ updateTarget actor (const btarget)
-  stateNew <- getGlobal
-  cliNew <- getClient
-  let stratMove = strategy cops actor cliNew stateNew factionAbilities
-  debug $ "handleAI factionAI:" <+> oname factionAI
-     <>          ", symbol:"    <+> showT bsymbol
-     <>          ", loc:"       <+> showT bpos
+  cops@Kind.COps{costrat=Kind.Ops{okind}} <- getsGlobal scops
+  let Actor{bfaction} = getActor actor loc
+      factionAI = gAiIdle $ sfaction loc IM.! bfaction
+      factionAbilities = sabilities (okind factionAI)
+  let stratMove = strategy cops actor cli loc factionAbilities
+  debug $ "handleAI factionAI:" <+> showT factionAI
+     <>          ", symbol:"    <+> showT (bsymbol (getActor actor loc))
+     <>          ", loc:"       <+> showT (bpos (getActor actor loc))
      <> "\nhandleAI target:"    <+> showT stratTarget
      <> "\nhandleAI move:"      <+> showT stratMove
   -- Run the AI: choses an action from those given by the AI strategy.

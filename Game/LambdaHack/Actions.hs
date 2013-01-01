@@ -173,27 +173,15 @@ playerTriggerTile feat = do
 -- | An actor opens a door.
 actorOpenDoor :: MonadAction m => ActorId -> Vector -> m ()
 actorOpenDoor actor dir = do
-  Kind.COps{ cotile
-           , coitem
-           , coactor=Kind.Ops{okind}
-           } <- getsGlobal scops
+  Kind.COps{cotile} <- getsGlobal scops
   lvl  <- getsGlobal getArena
   pl   <- getsGlobal splayer
   body <- getsGlobal (getActor actor)
-  bitems <- getsGlobal (getActorItem actor)
-  discoS <- getsGlobal sdisco
   let dpos = shift (bpos body) dir  -- the position we act upon
       t = lvl `at` dpos
       isPlayer = actor == pl
       isVerbose = isPlayer  -- don't report, unless it's player-controlled
-      iq = aiq $ okind $ bkind body
-      openPower = timeScale timeTurn $
-        if isPlayer
-        then 0  -- player can't open hidden doors
-        else case strongestSearch coitem discoS bitems of
-               Just i  -> iq + jpower i
-               Nothing -> iq
-  unless (openable cotile lvl openPower dpos) $ neverMind isVerbose
+  unless (openable cotile lvl dpos) $ neverMind isVerbose
   if Tile.hasFeature cotile F.Closable t
     then abortIfWith isVerbose "already open"
     else if not (Tile.hasFeature cotile F.Closable t ||
@@ -287,7 +275,7 @@ search :: MonadAction m => m ()
 search = do
   Kind.COps{coitem, cotile} <- getsGlobal scops
   lvl    <- getsGlobal getArena
-  le     <- getsGlobal (lsecret . getArena)
+  lsecret <- getsGlobal (lsecret . getArena)
   lxsize <- getsGlobal (lxsize . getArena)
   ppos   <- getsGlobal (bpos . getPlayerBody)
   pitems <- getsGlobal getPlayerItem
@@ -299,14 +287,15 @@ search = do
       searchTile sle mv =
         let loc = shift ppos mv
             t = lvl `at` loc
-            -- TODO: assert or cope elsewhere with the IM.! below
-            k = timeAdd (le IM.! loc) $ timeNegate delta
+            k = case IM.lookup loc lsecret of
+              Nothing -> assert `failure` (loc, lsecret)
+              Just st -> timeAdd st $ timeNegate delta
         in if Tile.hasFeature cotile F.Hidden t
            then if k > timeZero
                 then IM.insert loc k sle
                 else IM.delete loc sle
            else sle
-      leNew = foldl' searchTile le (moves lxsize)
+      leNew = foldl' searchTile lsecret (moves lxsize)
   modifyGlobal (updateArena (\ l -> l {lsecret = leNew}))
   lvlNew <- getsGlobal getArena
   let triggerHidden mv = do
