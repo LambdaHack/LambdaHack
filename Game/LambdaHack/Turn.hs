@@ -160,16 +160,18 @@ handleAI actor = do
   cops@Kind.COps{costrat=Kind.Ops{oname, okind}} <- getsGlobal scops
   state <- getGlobal
   pers <- ask
+  cli <- getClient
   let Actor{bfaction, bloc, bsymbol} = getActor actor state
       factionAI = gAiIdle $ sfaction state IM.! bfaction
       factionAbilities = sabilities (okind factionAI)
       per = pers IM.! bfaction M.! (sarena state)
-      stratTarget = targetStrategy cops actor state per factionAbilities
+      stratTarget = targetStrategy cops actor cli state per factionAbilities
   -- Choose a target from those proposed by AI for the actor.
   btarget <- rndToAction $ frequency $ bestVariant $ stratTarget
-  updateAnyActor actor $ \ m -> m { btarget }
+  modifyClient $ updateTarget actor (const btarget)
   stateNew <- getGlobal
-  let stratMove = strategy cops actor stateNew factionAbilities
+  cliNew <- getClient
+  let stratMove = strategy cops actor cliNew stateNew factionAbilities
   debug $ "handleAI factionAI:" <+> oname factionAI
      <>          ", symbol:"    <+> showT bsymbol
      <>          ", loc:"       <+> showT bloc

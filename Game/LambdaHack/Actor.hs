@@ -7,13 +7,10 @@ module Game.LambdaHack.Actor
     -- * The@ Acto@r type
   , Actor(..), template, addHp, timeAddFromSpeed, braced
   , unoccupied, heroKindId, projectileKindId, actorSpeed
-    -- * Type of na actor target
-  , Target(..)
     -- * Assorted
   , smellTimeout
   ) where
 
-import Control.Monad
 import Data.Binary
 import Data.Maybe
 import Data.Ratio
@@ -32,6 +29,9 @@ import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 
+-- TODO: use target (in ClientState) instead of bdir to determine goal,
+-- even for silly monsters just introduce more randomness,
+-- but try to attain the goal. Then remove bdir.
 -- | Actor properties that are changing throughout the game.
 -- If they are dublets of properties from @ActorKind@,
 -- they are usually modified temporarily, but tend to return
@@ -44,7 +44,7 @@ data Actor = Actor
   , bspeed   :: !(Maybe Speed)          -- ^ individual speed
   , bhp      :: !Int                    -- ^ current hit points
   , bdir     :: !(Maybe (Vector, Int))  -- ^ direction and distance of running
-  , btarget  :: Target                  -- ^ target for ranged attacks and AI
+  , bpath    :: !(Maybe [Vector])       -- ^ path the actor is forced to travel
   , bloc     :: !Point                  -- ^ current location
   , bletter  :: !Char                   -- ^ next inventory letter
   , btime    :: !Time                   -- ^ absolute time of next action
@@ -64,7 +64,7 @@ instance Binary Actor where
     put bspeed
     put bhp
     put bdir
-    put btarget
+    put bpath
     put bloc
     put bletter
     put btime
@@ -79,7 +79,7 @@ instance Binary Actor where
     bspeed  <- get
     bhp     <- get
     bdir    <- get
-    btarget <- get
+    bpath   <- get
     bloc    <- get
     bletter <- get
     btime   <- get
@@ -92,6 +92,10 @@ instance Binary Actor where
 
 -- | A unique identifier of an actor in a dungeon.
 type ActorId = Int
+
+-- | Identifier that denotes no actor.
+invalidActorId :: ActorId
+invalidActorId = -1
 
 -- | Find a hero name in the config file, or create a stock name.
 findHeroName :: ConfigUI -> Int -> Text
@@ -115,14 +119,13 @@ partActor Kind.Ops{oname} a = MU.Text $ fromMaybe (oname $ bkind a) (bname a)
 
 -- Actor operations
 
--- | A template for a new non-projectile actor. The initial target is invalid
--- to force a reset ASAP.
+-- | A template for a new non-projectile actor.
 template :: Kind.Id ActorKind -> Maybe Char -> Maybe Text -> Int -> Point
          -> Time -> FactionId -> Bool -> Actor
 template bkind bsymbol bname bhp bloc btime bfaction bproj =
   let bcolor  = Nothing
       bspeed  = Nothing
-      btarget = invalidTarget
+      bpath   = Nothing
       bdir    = Nothing
       bletter = 'a'
       bwait   = timeZero
@@ -168,37 +171,6 @@ heroKindId Kind.Ops{ouniqGroup} = ouniqGroup "hero"
 -- | The unique kind of projectiles.
 projectileKindId :: Kind.Ops ActorKind -> Kind.Id ActorKind
 projectileKindId Kind.Ops{ouniqGroup} = ouniqGroup "projectile"
-
--- Target
-
--- | The type of na actor target.
-data Target =
-    TEnemy ActorId Point  -- ^ target an actor with its last seen location
-  | TLoc Point            -- ^ target a given location
-  | TPath [Vector]        -- ^ target the list of locations one after another
-  | TCursor               -- ^ target current position of the cursor; default
-  deriving (Show, Eq)
-
-invalidActorId :: ActorId
-invalidActorId = -1
-
--- | An invalid target, with an actor that is not on any level.
-invalidTarget :: Target
-invalidTarget = TEnemy invalidActorId origin
-
-instance Binary Target where
-  put (TEnemy a ll) = putWord8 0 >> put a >> put ll
-  put (TLoc loc) = putWord8 1 >> put loc
-  put (TPath ls) = putWord8 2 >> put ls
-  put TCursor    = putWord8 3
-  get = do
-    tag <- getWord8
-    case tag of
-      0 -> liftM2 TEnemy get get
-      1 -> liftM TLoc get
-      2 -> liftM TPath get
-      3 -> return TCursor
-      _ -> fail "no parse (Target)"
 
 -- | How long until an actor's smell vanishes from a tile.
 smellTimeout :: Time

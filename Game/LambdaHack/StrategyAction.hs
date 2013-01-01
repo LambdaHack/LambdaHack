@@ -41,15 +41,17 @@ import Game.LambdaHack.Utils.Frequency
 import Game.LambdaHack.Vector
 
 -- | AI proposes possible targets for the actor. Never empty.
-targetStrategy :: Kind.COps -> ActorId -> State -> Perception -> [Ability]
-               -> Strategy Target
-targetStrategy cops actor state per factionAbilities =
+targetStrategy :: Kind.COps -> ActorId -> StateClient -> State
+               -> Perception -> [Ability]
+               -> Strategy (Maybe Target)
+targetStrategy cops actor cli state per factionAbilities =
   reacquire btarget
  where
   Kind.COps{coactor=coactor@Kind.Ops{okind}} = cops
   lvl@Level{lxsize} = getArena state
-  actorBody@Actor{ bkind, bloc = me, btarget, bfaction } =
+  actorBody@Actor{ bkind, bloc = me, bfaction, bpath } =
     getActor actor state
+  btarget = IM.lookup actor . starget $ cli
   mk = okind bkind
   enemyVisible l =
     asight mk
@@ -63,56 +65,60 @@ targetStrategy cops actor state per factionAbilities =
             -- Don't focus on a distant enemy, when you can't chase him.
             -- TODO: or only if another enemy adjacent? consider Flee?
             && Ability.Chase `elem` actorAbilities
-  reacquire :: Target -> Strategy Target
+  reacquire :: Maybe Target -> Strategy (Maybe Target)
+  reacquire tgt | isJust bpath = returN "TPath" tgt  -- don't animate missiles
   reacquire tgt =
     case tgt of
-      TPath _ -> returN "TPath" tgt         -- don't animate missiles
-      TEnemy a ll | focused
+      Just (TEnemy a ll) | focused
                     && memActor a state ->  -- present on this level
         let l = bloc $ getActor a state
         in if enemyVisible l           -- prefer visible foes
-           then returN "TEnemy" $ TEnemy a l
+           then returN "TEnemy" $ Just $ TEnemy a l
            else if null visibleFoes    -- prefer visible foes
                    && me /= ll         -- not yet reached the last enemy loc
-                then returN "last known" $ TLoc ll
+                then returN "last known" $ Just $ TLoc ll
                                        -- chase the last known loc
                 else closest
-      TEnemy _ _ -> closest            -- foe is gone and we forget
-      TLoc loc | me == loc -> closest  -- already reached the loc
-      TLoc _ | null visibleFoes -> returN "TLoc" tgt
+      Just TEnemy{} -> closest            -- foe is gone and we forget
+      Just (TLoc loc) | me == loc -> closest  -- already reached the loc
+      Just TLoc{} | null visibleFoes -> returN "TLoc" tgt
                                        -- nothing visible, go to loc
-      TLoc _ -> closest                -- prefer visible foes
-      TCursor  -> closest
+      Just TLoc{} -> closest                -- prefer visible foes
+      Nothing -> closest
   foes = hostileAssocs bfaction lvl
   visibleFoes = L.filter (enemyVisible . snd) (L.map (second bloc) foes)
-  closest :: Strategy Target
+  closest :: Strategy (Maybe Target)
   closest =
     let foeDist = L.map (\ (_, l) -> chessDist lxsize me l) visibleFoes
         minDist = L.minimum foeDist
         minFoes =
           L.filter (\ (_, l) -> chessDist lxsize me l == minDist) visibleFoes
-        minTargets = map (\ (a, l) -> TEnemy a l) minFoes
+        minTargets = map (\ (a, l) -> Just $ TEnemy a l) minFoes
         minTgtS = liftFrequency $ uniformFreq "closest" minTargets
-    in minTgtS .| noFoes .| returN "TCursor" TCursor  -- never empty
+    in minTgtS .| noFoes .| returN "TCursor" Nothing  -- never empty
   -- TODO: set distant targets so that monsters behave as if they have
   -- a plan. We need pathfinding for that.
-  noFoes :: Strategy Target
+  noFoes :: Strategy (Maybe Target)
   noFoes =
-    (TLoc . (me `shift`)) `liftM` moveStrategy cops actor state Nothing
+    (Just . TLoc . (me `shift`)) `liftM` moveStrategy cops actor state Nothing
 
 -- | AI strategy based on actor's sight, smell, intelligence, etc. Never empty.
-strategy :: forall m. MonadAction m => Kind.COps -> ActorId -> State -> [Ability] -> Strategy (m ())
-strategy cops actor state factionAbilities =
+strategy :: forall m. MonadAction m => Kind.COps -> ActorId
+         -> StateClient -> State -> [Ability]
+         -> Strategy (m ())
+strategy cops actor cli state factionAbilities =
   sumS prefix .| combineDistant distant .| sumS suffix
   .| waitBlockNow actor  -- wait until friends sidestep, ensures never empty
  where
   Kind.COps{coactor=Kind.Ops{okind}} = cops
-  Actor{ bkind, bloc, btarget } = getActor actor state
-  (floc, foeVisible) = case btarget of
-     TEnemy _ l -> (l, True)
-     TLoc l     -> (l, False)
-     TPath _    -> (bloc, False)  -- a missile
-     TCursor    -> (bloc, False)  -- an actor blocked by friends
+  Actor{ bkind, bloc, bpath } = getActor actor state
+  btarget = IM.lookup actor . starget $ cli
+  (floc, foeVisible) | isJust bpath = (bloc, False)  -- a missile
+                     | otherwise =
+    case btarget of
+      Just (TEnemy _ l) -> (l, True)
+      Just (TLoc l) -> (l, False)
+      Nothing -> (bloc, False)  -- an actor blocked by friends
   combineDistant = liftFrequency . sumF
   aFrequency :: Ability -> Frequency (m ())
   aFrequency Ability.Ranged = if foeVisible
@@ -167,30 +173,31 @@ dieNow actor = returN "die" $ do  -- TODO: explode if a potion
   modifyGlobal (updateArena (dropItemsAt bitems bloc))
   modifyGlobal (deleteActor actor)
 
+-- TODO: move to server; the client and his AI does not have a say in that
 -- | Strategy for dumb missiles.
 track :: MonadAction m => Kind.COps -> ActorId -> State -> Strategy (m ())
 track cops actor state =
   strat
  where
   lvl = getArena state
-  Actor{ bloc, btarget, bhp } = getActor actor state
+  Actor{ bloc, bpath, bhp } = getActor actor state
   darkenActor = updateAnyActor actor $ \ m -> m {bcolor = Just Color.BrBlack}
   dieOrReset | bhp <= 0  = dieNow actor
              | otherwise =
                  returN "reset TPath" $ updateAnyActor actor
-                 $ \ m -> m {btarget = TCursor}
-  strat = case btarget of
-    TPath [] -> dieOrReset
-    TPath (d : _) | not $ accessible cops lvl bloc (shift bloc d) -> dieOrReset
+                 $ \ m -> m {bpath = Nothing}
+  strat = case bpath of
+    Just [] -> dieOrReset
+    Just (d : _) | not $ accessible cops lvl bloc (shift bloc d) -> dieOrReset
     -- TODO: perhaps colour differently the whole second turn of movement?
-    TPath [d] -> returN "last TPath" $ do
+    Just [d] -> returN "last TPath" $ do
       darkenActor
-      updateAnyActor actor $ \ m -> m { btarget = TPath [] }
+      updateAnyActor actor $ \ m -> m { bpath = Just [] }
       dirToAction actor True d
-    TPath (d : lv) -> returN "follow TPath" $ do
-      updateAnyActor actor $ \ m -> m { btarget = TPath lv }
+    Just (d : lv) -> returN "follow TPath" $ do
+      updateAnyActor actor $ \ m -> m { bpath = Just lv }
       dirToAction actor True d
-    _ -> reject
+    Nothing -> reject
 
 pickup :: MonadAction m => ActorId -> State -> Strategy (m ())
 pickup actor state =

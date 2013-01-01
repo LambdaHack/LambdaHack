@@ -637,8 +637,8 @@ doLook = do
   clvl   <- getsLocal getArena
   hms    <- getsLocal (lactor . getArena)
   per    <- askPerception
-  target <- getsLocal (btarget . getPlayerBody)
   pl     <- getsLocal splayer
+  target <- getsClient (IM.lookup pl . starget)
   targeting <- getsClient (ctargeting . scursor)
   assert (targeting /= TgtOff) $ do
     let canSee = IS.member p (totalVisible per)
@@ -650,10 +650,9 @@ doLook = do
             | actorReachesLoc pl p per = ""
             | otherwise = " (not reachable)"  -- by hero
         mode = case target of
-                 TEnemy _ _ -> "[targeting monster" <> vis <> "]"
-                 TLoc _     -> "[targeting location" <> vis <> "]"
-                 TPath _    -> "[targeting path" <> vis <> "]"
-                 TCursor    -> "[targeting current" <> vis <> "]"
+                 Just TEnemy{} -> "[targeting monster" <> vis <> "]"
+                 Just TLoc{}   -> "[targeting location" <> vis <> "]"
+                 Nothing       -> "[targeting current" <> vis <> "]"
         -- Show general info about current p.
         lookMsg = mode <+> lookAt cops True canSee loc p monsterMsg
         -- Check if there's something lying around at current p.

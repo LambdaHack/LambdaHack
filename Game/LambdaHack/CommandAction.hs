@@ -30,7 +30,7 @@ cmdAction cli s cmd =
       pl = splayer s
       sm = getActor pl s
       ploc = bloc sm
-      tgtLoc = targetToLoc cli s ploc
+      tgtLoc = targetToLoc cli s
   in case cmd of
     Apply{..} -> (True, lift $ playerApplyGroupItem verb object syms)
     Project{} | isNothing tgtLoc -> (False, retarget)

@@ -7,6 +7,8 @@ module Game.LambdaHack.State
   , StateServer(..), defStateServer
   , StateClient(..), defStateClient, defHistory
   , StateDict
+    -- * Type of na actor target
+  , Target(..), updateTarget
     -- * Accessor
   , getArena, getTime, isControlledFaction, isSpawningFaction
     -- * State update
@@ -19,6 +21,7 @@ module Game.LambdaHack.State
   , toggleOmniscient
   ) where
 
+import Control.Monad
 import Data.Binary
 import qualified Data.IntMap as IM
 import qualified Data.Map as M
@@ -43,7 +46,8 @@ import Game.LambdaHack.Point
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Time
 
--- | View on game state.
+-- | View on game state. Clients never update @sdungeon@ and @sfaction@,
+-- but the server updates it for them depending on client exploration.
 data State = State
   { sdungeon :: !Dungeon      -- ^ remembered dungeon
   , sdepth   :: !Int          -- ^ remembered dungeon depth
@@ -73,6 +77,7 @@ data StateServer = StateServer
 -- from game to game, even across playing sessions.
 data StateClient = StateClient
   { scursor   :: !Cursor        -- ^ cursor location and level to return to
+  , starget   :: !(IM.IntMap Target)  -- ^ targets of all actors in the dungeon
   , sreport   :: !Report        -- ^ current messages
   , shistory  :: !History       -- ^ history of messages
   , slastKey  :: !(Maybe K.KM)  -- ^ last command key pressed
@@ -198,6 +203,7 @@ defStateClient :: Point -> LevelId -> StateClient
 defStateClient ploc sarena = do
   StateClient
     { scursor   = (Cursor TgtOff sarena ploc sarena 0)
+    , starget   = IM.empty
     , sreport   = emptyReport
     , shistory  = emptyHistory
     , slastKey  = Nothing
@@ -229,6 +235,11 @@ isSpawningFaction s fid =
 -- | Update cursor parameters within state.
 updateCursor :: (Cursor -> Cursor) -> StateClient -> StateClient
 updateCursor f s = s { scursor = f (scursor s) }
+
+-- | Update cursor parameters within state.
+updateTarget :: ActorId -> (Maybe Target -> Maybe Target) -> StateClient
+             -> StateClient
+updateTarget actor f s = s { starget = IM.alter f actor (starget s) }
 
 -- | Update item discoveries within state.
 updateDiscoveries :: (Discoveries -> Discoveries) -> State -> State
@@ -316,11 +327,13 @@ instance Binary StateServer where
 instance Binary StateClient where
   put StateClient{..} = do
     put scursor
+    put starget
     put sreport
     put shistory
   get = do
     scursor <- get
-    sreport  <- get
+    starget <- get
+    sreport <- get
     shistory <- get
     let slastKey = Nothing
         sdebugCli = defDebugModeCli
@@ -352,6 +365,22 @@ instance Binary Cursor where
     rln <- get
     eps <- get
     return (Cursor act cln loc rln eps)
+
+-- | The type of na actor target.
+data Target =
+    TEnemy ActorId Point  -- ^ target an actor with its last seen location
+  | TLoc Point            -- ^ target a given location
+  deriving (Show, Eq)
+
+instance Binary Target where
+  put (TEnemy a ll) = putWord8 0 >> put a >> put ll
+  put (TLoc loc) = putWord8 1 >> put loc
+  get = do
+    tag <- getWord8
+    case tag of
+      0 -> liftM2 TEnemy get get
+      1 -> liftM TLoc get
+      _ -> fail "no parse (Target)"
 
 instance Binary Status where
   put (Killed ln) = putWord8 0 >> put ln

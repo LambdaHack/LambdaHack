@@ -104,7 +104,7 @@ draw dm cops per
                                 && (sarena == creturnLn
                                     && L.elem loc0 bl
                                     || (case actorTgt of
-                                           Just (Actor{ btarget=TPath p
+                                           Just (Actor{ bpath=Just p
                                                       , bloc=prLoc }) ->
                                              L.elem loc0 $ shiftPath prLoc p
                                            _ -> False))

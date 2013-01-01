@@ -111,17 +111,15 @@ updateAnyLevel f ln s@State{sarena, sdungeon}
   | otherwise = updateDungeon (const $ M.adjust f ln sdungeon) s
 
 -- | Calculate the location of player's target.
-targetToLoc :: StateClient -> State -> Point -> Maybe Point
-targetToLoc StateClient{scursor} s@State{sarena} aloc =
-  case btarget (getPlayerBody s) of
-    TLoc loc -> Just loc
-    TPath [] -> Nothing
-    TPath (dir:_) -> Just $ shift aloc dir
-    TCursor ->
+targetToLoc :: StateClient -> State -> Maybe Point
+targetToLoc StateClient{scursor, starget} s@State{sarena, splayer} =
+  case IM.lookup splayer starget of
+    Just (TLoc loc) -> Just loc
+    Nothing ->
       if sarena == clocLn scursor
       then Just $ clocation scursor
       else Nothing  -- cursor invalid: set at a different level
-    TEnemy a _ll -> do
+    Just (TEnemy a _ll) -> do
       guard $ memActor a s           -- alive and visible?
       let loc = bloc (getActor a s)
       return loc
@@ -289,7 +287,7 @@ addProjectile Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}}
         , bspeed  = Just speed
         , bhp     = 0
         , bdir    = Nothing
-        , btarget = TPath dirPath
+        , bpath   = Just dirPath
         , bloc    = loc
         , bletter = 'a'
         , btime

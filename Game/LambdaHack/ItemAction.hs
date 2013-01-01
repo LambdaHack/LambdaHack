@@ -186,8 +186,7 @@ playerProjectGI verb object syms = do
   cli <- getClient
   loc <- getLocal
   pl    <- getsLocal splayer
-  ploc  <- getsLocal (bloc . getPlayerBody)
-  case targetToLoc cli loc ploc of
+  case targetToLoc cli loc of
     Just p -> do
       Kind.COps{coitem=Kind.Ops{okind}} <- getsLocal scops
       is   <- getsLocal getPlayerItem
@@ -219,17 +218,17 @@ targetMonster tgtMode = do
   ms        <- getsLocal (hostileAssocs sside . getArena)
   per       <- askPerception
   lxsize    <- getsLocal (lxsize . getArena)
-  target    <- getsLocal (btarget . getPlayerBody)
+  target <- getsClient (IM.lookup pl . starget)
   targeting <- getsClient (ctargeting . scursor)
       -- TODO: sort monsters by distance to the player.
   let plms = L.filter ((/= pl) . fst) ms  -- don't target yourself
       ordLoc (_, m) = (chessDist lxsize ploc $ bloc m, bloc m)
       dms = L.sortBy (comparing ordLoc) plms
       (lt, gt) = case target of
-            TEnemy n _ | targeting /= TgtOff ->  -- pick the next monster
+            Just (TEnemy n _) | targeting /= TgtOff ->  -- pick the next monster
               let i = fromMaybe (-1) $ L.findIndex ((== n) . fst) dms
               in L.splitAt (i + 1) dms
-            TEnemy n _ ->  -- try to retarget the old monster
+            Just (TEnemy n _) ->  -- try to retarget the old monster
               let i = fromMaybe (-1) $ L.findIndex ((== n) . fst) dms
               in L.splitAt i dms
             _ -> (dms, [])  -- target first monster (e.g., number 0)
@@ -241,24 +240,24 @@ targetMonster tgtMode = do
       lf = L.filter seen gtlt
       tgt = case lf of
               [] -> target  -- no monsters in sight, stick to last target
-              (na, nm) : _ -> TEnemy na (bloc nm)  -- pick the next
+              (na, nm) : _ -> Just (TEnemy na (bloc nm))  -- pick the next
   -- Register the chosen monster, to pick another on next invocation.
-  updatePlayerBody (\ p -> p { btarget = tgt })
+  modifyClient $ updateTarget pl (const tgt)
   setCursor tgtMode
 
 -- | Start the floor targeting mode or reset the cursor location to the player.
 targetFloor :: MonadAction m => TgtMode -> WriterT Slideshow m ()
 targetFloor tgtMode = do
   ploc      <- getsLocal (bloc . getPlayerBody)
-  target    <- getsLocal (btarget . getPlayerBody)
+  pl        <- getsLocal splayer
+  target <- getsClient (IM.lookup pl . starget)
   targeting <- getsClient (ctargeting . scursor)
   let tgt = case target of
-        TEnemy _ _ -> TCursor  -- forget enemy target, keep the cursor
-        _ | targeting /= TgtOff -> TLoc ploc  -- double key press: reset cursor
-        TPath _ -> TCursor
+        Just (TEnemy _ _) -> Nothing  -- forget enemy target, keep the cursor
+        _ | targeting /= TgtOff -> Just (TLoc ploc)  -- double key press: reset cursor
         t -> t  -- keep the target from previous targeting session
   -- Register that we want to target only locations.
-  updatePlayerBody (\ p -> p { btarget = tgt })
+  modifyClient $ updateTarget pl (const tgt)
   setCursor tgtMode
 
 -- | Set, activate and display cursor information.
@@ -270,7 +269,7 @@ setCursor tgtMode = assert (tgtMode /= TgtOff) $ do
   clocLn <- getsLocal sarena
   let upd cursor@Cursor{ctargeting, clocation=clocationOld, ceps=cepsOld} =
         let clocation =
-              fromMaybe ploc (targetToLoc cli loc ploc)
+              fromMaybe ploc (targetToLoc cli loc)
             ceps = if clocation == clocationOld then cepsOld else 0
             newTgtMode = if ctargeting == TgtOff then tgtMode else ctargeting
         in cursor { ctargeting = newTgtMode, clocation, clocLn, ceps }
@@ -290,7 +289,8 @@ epsIncr b = do
 endTargeting :: MonadAction m => Bool -> m ()
 endTargeting accept = do
   returnLn <- getsClient (creturnLn . scursor)
-  target   <- getsLocal (btarget . getPlayerBody)
+  pl <- getsLocal splayer
+  target <- getsClient (IM.lookup pl . starget)
   per      <- askPerception
   cloc     <- getsClient (clocation . scursor)
   sside <- getsLocal sside
@@ -302,17 +302,17 @@ endTargeting accept = do
   modifyClient (updateCursor (\ c -> c { ctargeting = TgtOff }))
   when accept $ do
     case target of
-      TEnemy _ _ -> do
+      Just TEnemy{} -> do
         -- If in monster targeting mode, switch to the monster under
         -- the current cursor location, if any.
         let canSee = IS.member cloc (totalVisible per)
         when (accept && canSee) $
           case L.find (\ (_im, m) -> bloc m == cloc) ms of
             Just (im, m)  ->
-              let tgt = TEnemy im (bloc m)
-              in updatePlayerBody (\ p -> p { btarget = tgt })
+              let tgt = Just $ TEnemy im (bloc m)
+              in modifyClient $ updateTarget pl (const $ tgt)
             Nothing -> return ()
-      _ -> updatePlayerBody (\ p -> p { btarget = TLoc cloc })
+      _ -> modifyClient $ updateTarget pl (const $ Just $ TLoc cloc)
   if accept
     then endTargetingMsg
     else msgAdd "targeting canceled"
@@ -321,16 +321,18 @@ endTargetingMsg :: MonadClient m => m ()
 endTargetingMsg = do
   Kind.COps{coactor} <- getsLocal scops
   pbody  <- getsLocal getPlayerBody
+  pl <- getsLocal splayer
+  target <- getsClient (IM.lookup pl . starget)
   state  <- getLocal
   lxsize <- getsLocal (lxsize . getArena)
-  let targetMsg = case btarget pbody of
-                    TEnemy a _ll ->
+  let targetMsg = case target of
+                    Just (TEnemy a _ll) ->
                       if memActor a state
                       then partActor coactor $ getActor a state
                       else "a fear of the past"
-                    TLoc loc -> MU.Text $ "location" <+> showPoint lxsize loc
-                    TPath _ -> "a path"
-                    TCursor  -> "current cursor position continuously"
+                    Just (TLoc loc) ->
+                      MU.Text $ "location" <+> showPoint lxsize loc
+                    Nothing -> "current cursor position continuously"
   msgAdd $ makeSentence
       [MU.SubjectVerbSg (partActor coactor pbody) "target", targetMsg]
 
