@@ -70,17 +70,16 @@ getGroupItem is object syms prompt packName = do
       header = makePhrase [MU.Capitalize (MU.Ws object)]
   getItem prompt choice header is packName
 
--- TODO: Change to Local when all faction have their local state
 applyGroupItem :: MonadAction m
                => ActorId  -- ^ actor applying the item (is on current level)
                -> MU.Part  -- ^ how the applying is called
                -> Item     -- ^ the item to be applied
                -> m ()
 applyGroupItem actor verb item = do
-  Kind.COps{coactor, coitem} <- getsGlobal scops
-  body  <- getsGlobal (getActor actor)
-  per   <- askPerceptionSer
-  disco <- getsGlobal sdisco
+  Kind.COps{coactor, coitem} <- getsLocal scops
+  body  <- getsLocal (getActor actor)
+  per   <- askPerception
+  disco <- getsLocal sdisco
   -- only one item consumed, even if several in inventory
   let consumed = item { jcount = 1 }
       msg = makeSentence
@@ -104,24 +103,23 @@ playerApplyGroupItem verb object syms = do
         Just ik -> iverbApply $ okind ik
   applyGroupItem pl verbApply item
 
--- TODO: Change to Local when all faction have their local state
 projectGroupItem :: MonadAction m => ActorId  -- ^ actor projecting the item (is on current lvl)
                  -> Point    -- ^ target location of the projectile
                  -> MU.Part  -- ^ how the projecting is called
                  -> Item     -- ^ the item to be projected
                  -> m ()
 projectGroupItem source tloc _verb item = do
-  cops@Kind.COps{coactor, coitem} <- getsGlobal scops
-  sm    <- getsGlobal (getActor source)
+  cops@Kind.COps{coactor, coitem} <- getsLocal scops
+  sm    <- getsLocal (getActor source)
   per   <- askPerceptionSer
-  pl    <- getsGlobal splayer
-  Actor{btime}  <- getsGlobal getPlayerBody
-  lvl   <- getsGlobal getArena
+  pl    <- getsLocal splayer
+  Actor{btime}  <- getsLocal getPlayerBody
+  lvl   <- getsLocal getArena
   ceps  <- getsClient (ceps . scursor)
-  lxsize <- getsGlobal (lxsize . getArena)
-  lysize <- getsGlobal (lysize . getArena)
-  sside <- getsGlobal sside
-  disco <- getsGlobal sdisco
+  lxsize <- getsLocal (lxsize . getArena)
+  lysize <- getsLocal (lysize . getArena)
+  sside <- getsLocal sside
+  disco <- getsLocal sdisco
   let consumed = item { jcount = 1 }
       sloc = bloc sm
       svisible = sloc `IS.member` totalVisible per
@@ -418,12 +416,12 @@ removeFromLoc i loc = do
 actorPickupItem :: MonadAction m => ActorId -> m ()
 actorPickupItem actor = do
   Kind.COps{coactor, coitem} <- getsGlobal scops
-  pl    <- getsGlobal splayer
-  per   <- askPerception
-  lvl   <- getsGlobal getArena
-  body  <- getsGlobal (getActor actor)
+  pl <- getsGlobal splayer
+  per <- askPerception
+  lvl <- getsGlobal getArena
+  body <- getsGlobal (getActor actor)
   bitems <- getsGlobal (getActorItem actor)
-  disco <- getsGlobal sdisco
+  disco <- getsLocal sdisco
   let p       = bloc body
       perceived = p `IS.member` totalVisible per
       isPlayer  = actor == pl
