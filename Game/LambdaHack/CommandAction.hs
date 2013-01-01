@@ -60,7 +60,10 @@ cmdAction cli s cmd =
       in (False, moveCursor dir 10)
     Run v ->
       let dir = toDir (lxsize (getArena s)) v
-      in (True, lift $ run (dir, 0))
+          run = do
+            dirR <- runDir (dir, 0)
+            moveOrAttack False pl dirR
+      in (True, lift run)
     GameExit    -> (True, lift $ gameExit)     -- takes time, then rewinds time
     GameRestart -> (True, lift $ gameRestart)  -- takes time, then resets state
 

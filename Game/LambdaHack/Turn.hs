@@ -33,6 +33,7 @@ import Game.LambdaHack.Strategy
 import Game.LambdaHack.StrategyAction
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Vector
 
 -- One clip proceeds through the following functions:
 --
@@ -180,10 +181,19 @@ handleAI actor = do
   -- Run the AI: choses an action from those given by the AI strategy.
   join $ rndToAction $ frequency $ bestVariant $ stratMove
 
+-- | Continue running in the given direction.
+continueRun :: MonadAction m => (Vector, Int) -> m ()
+continueRun dd = do
+  pl <- getsLocal splayer
+  dir <- continueRunDir dd
+  -- Attacks and opening doors disallowed when continuing to run.
+  moveOrAttack False pl dir
+
 -- | Handle the move of the hero.
 handlePlayer :: MonadAction m => m ()
 handlePlayer = do
   debug "handlePlayer"
+
   -- When running, stop if aborted by a disturbance.
   -- Otherwise let the player issue commands, until any of them takes time.
   -- First time, just after pushing frames, ask for commands in Push mode.

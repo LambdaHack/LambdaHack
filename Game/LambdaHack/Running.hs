@@ -1,13 +1,13 @@
 -- | Running and disturbance.
 module Game.LambdaHack.Running
-  ( run, continueRun
+  ( runDir, continueRunDir
   ) where
 
 import qualified Data.IntSet as IS
 import qualified Data.List as L
 
-import Game.LambdaHack.Action
-import Game.LambdaHack.Actions
+import Game.LambdaHack.Action hiding (MonadAction, MonadActionRO, MonadServer,
+                                 MonadServerRO)
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import qualified Game.LambdaHack.Feature as F
@@ -22,27 +22,23 @@ import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 
--- TODO: check all Global to Local
-
 -- | Start running in the given direction and with the given number
 -- of tiles already traversed (usually 0). The first turn of running
 -- succeeds much more often than subsequent turns, because most
 -- of the disturbances are ignored, since the player is aware of them
 -- and still explicitly requests a run.
-run :: MonadAction m => (Vector, Int) -> m ()
-run (dir, dist) = do
-  cops <- getsGlobal scops
-  pl <- getsGlobal splayer
-  locHere <- getsGlobal (bloc . getPlayerBody)
-  lvl <- getsGlobal getArena
+runDir :: MonadClient m => (Vector, Int) -> m Vector
+runDir (dir, dist) = do
+  cops <- getsLocal scops
+  locHere <- getsLocal (bloc . getPlayerBody)
+  lvl <- getsLocal getArena
   targeting <- getsClient (ctargeting . scursor)
   assert (targeting == TgtOff `blame` (dir, dist, targeting, "/= TgtOff")) $ do
     let accessibleDir loc d = accessible cops lvl loc (loc `shift` d)
         -- Do not count distance if we just open a door.
         distNew = if accessibleDir locHere dir then dist + 1 else dist
     modifyClient $ \cli -> cli {srunning = Just (dir, distNew)}
-    -- Attacks and opening doors disallowed when continuing to run.
-    moveOrAttack False pl dir
+    return dir
 
 -- | Player running mode, determined from the nearby cave layout.
 data RunMode =
@@ -149,23 +145,23 @@ runDisturbance locLast distLast msg hs ms per locHere
 -- it ajusts the direction given by the vector if we reached
 -- a corridor's corner (we never change direction except in corridors)
 -- and it increments the counter of traversed tiles.
-continueRun :: MonadAction m => (Vector, Int) -> m ()
-continueRun (dirLast, distLast) = do
-  cops@Kind.COps{cotile} <- getsGlobal scops
-  locHere <- getsGlobal (bloc . getPlayerBody)
+continueRunDir :: MonadClient m => (Vector, Int) -> m Vector
+continueRunDir (dirLast, distLast) = do
+  cops@Kind.COps{cotile} <- getsLocal scops
+  locHere <- getsLocal (bloc . getPlayerBody)
   per <- askPerception
   StateClient{sreport} <- getClient
-  ms  <- getsGlobal dangerousList
-  sside <- getsGlobal sside
-  hs <- getsGlobal (factionList [sside])
-  lvl@Level{lxsize, lysize} <- getsGlobal getArena
+  ms  <- getsLocal dangerousList
+  sside <- getsLocal sside
+  hs <- getsLocal (factionList [sside])
+  lvl@Level{lxsize, lysize} <- getsLocal getArena
   let locHasFeature f loc = Tile.hasFeature cotile f (lvl `at` loc)
       locHasItems loc = not $ L.null $ lvl `atI` loc
       locLast = if distLast == 0 then locHere else locHere `shift` neg dirLast
       tryRunDist (dir, distNew)
         | accessibleDir locHere dir =
           -- TODO: perhaps @abortWith report2?
-          maybe abort run $
+          maybe abort runDir $
             runDisturbance locLast distLast sreport hs ms per locHere
               locHasFeature locHasItems lxsize lysize (dir, distNew)
         | otherwise = abort  -- do not open doors in the middle of a run
