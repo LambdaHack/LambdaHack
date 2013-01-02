@@ -1,8 +1,7 @@
 {-# LANGUAGE OverloadedStrings, ExtendedDefaultRules #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
--- | The effectToAction function and all it depends on.
--- This file should not depend on Actions.hs nor ItemAction.hs.
--- TODO: Add an export list and document after it's rewritten according to #17.
+-- | The effectToAction function and related operations.
+-- TODO: document
 module Game.LambdaHack.EffectAction where
 
 import Control.Monad
@@ -20,6 +19,7 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Animation (twirlSplash, blockHit, deathBody)
+import Game.LambdaHack.ClientAction
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
@@ -29,7 +29,6 @@ import Game.LambdaHack.DungeonState
 import qualified Game.LambdaHack.Effect as Effect
 import Game.LambdaHack.Faction
 import Game.LambdaHack.Item
-import Game.LambdaHack.ItemAction
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Misc

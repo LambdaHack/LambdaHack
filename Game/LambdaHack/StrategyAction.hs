@@ -15,7 +15,7 @@ import qualified Data.Text as T
 import Game.LambdaHack.Ability (Ability)
 import qualified Game.LambdaHack.Ability as Ability
 import Game.LambdaHack.Action
-import Game.LambdaHack.Actions
+import Game.LambdaHack.ServerAction
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import qualified Game.LambdaHack.Color as Color

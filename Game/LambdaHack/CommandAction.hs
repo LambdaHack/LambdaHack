@@ -9,12 +9,12 @@ import Data.Maybe
 import Data.Text (Text)
 
 import Game.LambdaHack.Action
-import Game.LambdaHack.Actions
+import Game.LambdaHack.ServerAction
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Command
 import Game.LambdaHack.EffectAction
-import Game.LambdaHack.ItemAction
+import Game.LambdaHack.ClientAction
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Running

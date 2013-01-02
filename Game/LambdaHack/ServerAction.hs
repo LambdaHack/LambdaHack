@@ -1,9 +1,9 @@
 {-# LANGUAGE ExtendedDefaultRules, OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
--- | The game action stuff that is independent from ItemAction.hs
--- (both depend on EffectAction.hs).
--- TODO: Add an export list and document after it's rewritten according to #17.
-module Game.LambdaHack.Actions where
+-- | Actions carried out by the server (and possibly also the client
+-- until the code is fixed further.
+-- TODO: document
+module Game.LambdaHack.ServerAction where
 
 import Control.Monad
 import qualified Data.IntMap as IM
@@ -19,6 +19,7 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Animation (blockMiss, swapPlaces)
+import Game.LambdaHack.ClientAction
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
@@ -29,7 +30,6 @@ import Game.LambdaHack.EffectAction
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Item
-import Game.LambdaHack.ItemAction
 import qualified Game.LambdaHack.Key as K
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level

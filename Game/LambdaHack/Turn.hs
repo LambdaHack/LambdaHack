@@ -12,13 +12,13 @@ import Data.Maybe
 import qualified Data.Ord as Ord
 
 import Game.LambdaHack.Action
-import Game.LambdaHack.Actions
+import Game.LambdaHack.ServerAction
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Binding
 import qualified Game.LambdaHack.Command as Command
 import Game.LambdaHack.CommandAction
-import Game.LambdaHack.ItemAction
+import Game.LambdaHack.ClientAction
 import Game.LambdaHack.EffectAction
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Key as K
