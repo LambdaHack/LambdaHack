@@ -113,6 +113,7 @@ handleActors subclipStart = do
       when (not $ memActor splayerOld glo) $
         modifyLocal (\s -> s {splayer=actor})
       splayerNew <- getsLocal splayer
+      -- TODO: verify the player belongs to the faction
       modifyGlobal (\s -> s {splayer=splayerNew})
       loc <- getLocal
       if actor == splayerNew && isControlledFaction loc sside
@@ -191,8 +192,9 @@ handlePlayer = do
   -- When running, stop if aborted by a disturbance.
   -- Otherwise let the player issue commands, until any of them takes time.
   -- First time, just after pushing frames, ask for commands in Push mode.
-  tryWith (\ msg -> stopRunning >> playerCommand msg) $
-    ifRunning continueRun abort
+  tryWith (\ msg -> stopRunning >> playerCommand msg) $ do
+    srunning <- getsClient srunning
+    maybe abort continueRun srunning
   addSmell
 
 -- | Determine and process the next player command. The argument is the last
@@ -232,6 +234,7 @@ playerCommand msgRunAbort = do
                 then cmdSemantics cli loc Command.Clear
                 else cmdSemantics cli loc cmd
               State{splayer, sarena} <- getLocal
+              -- TODO: verify the player belongs to the faction
               modifyGlobal (\s -> s {splayer})
               modifyGlobal (\s -> s {sarena})
               return b

@@ -176,6 +176,8 @@ playerProjectGI verb object syms = do
       projectGroupItem pl p verbProject item
     Nothing -> assert `failure` (pos, pl, "target unexpectedly invalid")
 
+-- TODO: you can drop an item already on the floor, which works correctly,
+-- but is weird and useless.
 -- | Drop a single item.
 dropItem :: MonadAction m => m ()
 dropItem = do

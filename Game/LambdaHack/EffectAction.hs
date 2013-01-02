@@ -65,6 +65,15 @@ updatePlayerBody f = do
   pl <- getsGlobal splayer
   updateAnyActor pl f
 
+-- TODO: center screen, flash the background, etc. Perhaps wait for SPACE.
+-- | Focus on the hero being wounded/displaced/etc.
+focusIfOurs :: MonadClientRO m => ActorId -> m Bool
+focusIfOurs target = do
+  s  <- getLocal
+  if isAHero s target
+    then return True
+    else return False
+
 -- TODO: instead of verbosity return msg components and tailor them outside?
 -- TODO: separately define messages for the case when source == target
 -- and for the other case; then use the messages outside of effectToAction,

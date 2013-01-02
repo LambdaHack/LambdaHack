@@ -46,6 +46,79 @@ import Game.LambdaHack.Vector
 
 default (Text)
 
+-- + Semantics of "Command" commands that do not take time
+
+-- ** Project
+
+retarget :: MonadClient m => WriterT Slideshow m ()
+retarget = do
+  ppos <- getsLocal (bpos . getPlayerBody)
+  msgAdd "Last target invalid."
+  let upd cursor = cursor {cposition=ppos, ceps=0}
+  modifyClient (updateCursor upd)
+  targetMonster TgtAuto
+
+-- ** Move and Run
+
+moveCursor :: MonadClient m => Vector -> Int -> WriterT Slideshow m ()
+moveCursor dir n = do
+  lxsize <- getsLocal (lxsize . getArena)
+  lysize <- getsLocal (lysize . getArena)
+  let upd cursor =
+        let shiftB loc =
+              shiftBounded lxsize (1, 1, lxsize - 2, lysize - 2) loc dir
+            cpos = iterate shiftB (cposition cursor) !! n
+        in cursor { cposition = cpos }
+  modifyClient (updateCursor upd)
+  doLook
+
+-- | Perform look around in the current position of the cursor.
+doLook :: MonadClient m => WriterT Slideshow m ()
+doLook = do
+  cops@Kind.COps{coactor} <- getsLocal scops
+  p    <- getsClient (cposition . scursor)
+  loc  <- getLocal
+  clvl   <- getsLocal getArena
+  hms    <- getsLocal (lactor . getArena)
+  per    <- askPerception
+  pl     <- getsLocal splayer
+  target <- getsClient (IM.lookup pl . starget)
+  targeting <- getsClient (ctargeting . scursor)
+  assert (targeting /= TgtOff) $ do
+    let canSee = IS.member p (totalVisible per)
+        ihabitant | canSee = find (\ m -> bpos m == p) (IM.elems hms)
+                  | otherwise = Nothing
+        monsterMsg =
+          maybe "" (\ m -> makeSentence
+                           [MU.SubjectVerbSg (partActor coactor m) "be here"])
+                   ihabitant
+        vis | not $ p `IS.member` totalVisible per =
+                " (not visible)"  -- by party
+            | actorReachesLoc pl p per = ""
+            | otherwise = " (not reachable)"  -- by hero
+        mode = case target of
+                 Just TEnemy{} -> "[targeting monster" <> vis <> "]"
+                 Just TPos{}   -> "[targeting position" <> vis <> "]"
+                 Nothing       -> "[targeting current" <> vis <> "]"
+        -- Show general info about current p.
+        lookMsg = mode <+> lookAt cops True canSee loc p monsterMsg
+        -- Check if there's something lying around at current p.
+        is = clvl `atI` p
+    modifyClient (\st -> st {slastKey = Nothing})
+    if length is <= 2
+      then do
+        slides <- promptToSlideshow lookMsg
+        tell slides
+      else do
+       disco <- getsLocal sdisco
+       io <- itemOverlay disco False is
+       slides <- overlayToSlideshow lookMsg io
+       tell slides
+
+-- GameSave doesn't take time, but needs the server, so it's defined elsewhere.
+
+-- ** Inventory
+
 -- TODO: When inventory is displayed, let TAB switch the player (without
 -- announcing that) and show the inventory of the new player.
 -- | Display inventory
@@ -66,28 +139,52 @@ inventory = do
       slides <- overlayToSlideshow blurb io
       tell slides
 
--- | Let the player choose any item with a given group name.
--- Note that this does not guarantee the chosen item belongs to the group,
--- as the player can override the choice.
-getGroupItem :: MonadClient m
-             => [Item]   -- ^ all objects in question
-             -> MU.Part  -- ^ name of the group
-             -> [Char]   -- ^ accepted item symbols
-             -> Text     -- ^ prompt
-             -> Text     -- ^ how to refer to the collection of objects
-             -> m Item
-getGroupItem is object syms prompt packName = do
-  let choice i = jsymbol i `elem` syms
-      header = makePhrase [MU.Capitalize (MU.Ws object)]
-  getItem prompt choice header is packName
+-- | Create a list of item names.
+itemOverlay :: MonadClientRO m
+            => Discoveries -> Bool -> [Item] -> m Overlay
+itemOverlay disco sorted is = do
+  Kind.COps{coitem} <- getsLocal scops
+  let items | sorted = sortBy (cmpLetterMaybe `on` jletter) is
+            | otherwise = is
+      pr i = makePhrase [ letterLabel (jletter i)
+                        , partItemNWs coitem disco i ]
+             <> " "
+  return $ map pr items
 
-retarget :: MonadClient m => WriterT Slideshow m ()
-retarget = do
-  ppos <- getsLocal (bpos . getPlayerBody)
-  msgAdd "Last target invalid."
-  let upd cursor = cursor {cposition=ppos, ceps=0}
+-- ** TgtFloor
+
+-- | Start the floor targeting mode or reset the cursor position to the player.
+targetFloor :: MonadClient m => TgtMode -> WriterT Slideshow m ()
+targetFloor tgtMode = do
+  ppos      <- getsLocal (bpos . getPlayerBody)
+  pl        <- getsLocal splayer
+  target <- getsClient (IM.lookup pl . starget)
+  targeting <- getsClient (ctargeting . scursor)
+  let tgt = case target of
+        Just (TEnemy _ _) -> Nothing  -- forget enemy target, keep the cursor
+        _ | targeting /= TgtOff -> Just (TPos ppos)  -- double key press: reset cursor
+        t -> t  -- keep the target from previous targeting session
+  -- Register that we want to target only positions.
+  modifyClient $ updateTarget pl (const tgt)
+  setCursor tgtMode
+
+-- | Set, activate and display cursor information.
+setCursor :: MonadClient m => TgtMode -> WriterT Slideshow m ()
+setCursor tgtMode = assert (tgtMode /= TgtOff) $ do
+  pos  <- getLocal
+  cli  <- getClient
+  ppos   <- getsLocal (bpos . getPlayerBody)
+  cposLn <- getsLocal sarena
+  let upd cursor@Cursor{ctargeting, cposition=cpositionOld, ceps=cepsOld} =
+        let cposition =
+              fromMaybe ppos (targetToPos cli pos)
+            ceps = if cposition == cpositionOld then cepsOld else 0
+            newTgtMode = if ctargeting == TgtOff then tgtMode else ctargeting
+        in cursor { ctargeting = newTgtMode, cposition, cposLn, ceps }
   modifyClient (updateCursor upd)
-  targetMonster TgtAuto
+  doLook
+
+-- ** TgtEnemy
 
 -- | Start the monster targeting mode. Cycle between monster targets.
 targetMonster :: MonadClient m => TgtMode -> WriterT Slideshow m ()
@@ -125,36 +222,53 @@ targetMonster tgtMode = do
   modifyClient $ updateTarget pl (const tgt)
   setCursor tgtMode
 
--- | Start the floor targeting mode or reset the cursor position to the player.
-targetFloor :: MonadClient m => TgtMode -> WriterT Slideshow m ()
-targetFloor tgtMode = do
-  ppos      <- getsLocal (bpos . getPlayerBody)
-  pl        <- getsLocal splayer
-  target <- getsClient (IM.lookup pl . starget)
-  targeting <- getsClient (ctargeting . scursor)
-  let tgt = case target of
-        Just (TEnemy _ _) -> Nothing  -- forget enemy target, keep the cursor
-        _ | targeting /= TgtOff -> Just (TPos ppos)  -- double key press: reset cursor
-        t -> t  -- keep the target from previous targeting session
-  -- Register that we want to target only positions.
-  modifyClient $ updateTarget pl (const tgt)
-  setCursor tgtMode
+-- ** TgtAscend
 
--- | Set, activate and display cursor information.
-setCursor :: MonadClient m => TgtMode -> WriterT Slideshow m ()
-setCursor tgtMode = assert (tgtMode /= TgtOff) $ do
-  pos  <- getLocal
-  cli  <- getClient
-  ppos   <- getsLocal (bpos . getPlayerBody)
-  cposLn <- getsLocal sarena
-  let upd cursor@Cursor{ctargeting, cposition=cpositionOld, ceps=cepsOld} =
-        let cposition =
-              fromMaybe ppos (targetToPos cli pos)
-            ceps = if cposition == cpositionOld then cepsOld else 0
-            newTgtMode = if ctargeting == TgtOff then tgtMode else ctargeting
-        in cursor { ctargeting = newTgtMode, cposition, cposLn, ceps }
-  modifyClient (updateCursor upd)
+-- | Change the displayed level in targeting mode to (at most)
+-- k levels shallower. Enters targeting mode, if not already in one.
+tgtAscend :: MonadClient m => Int -> WriterT Slideshow m ()
+tgtAscend k = do
+  Kind.COps{cotile} <- getsLocal scops
+  cursor <- getsClient scursor
+  targeting <- getsClient (ctargeting . scursor)
+  sarena <- getsLocal sarena
+  lvl       <- getsLocal getArena
+  st        <- getLocal
+  depth     <- getsLocal sdepth
+  let loc = cposition cursor
+      tile = lvl `at` loc
+      rightStairs =
+        k ==  1 && Tile.hasFeature cotile (F.Cause Effect.Ascend)  tile ||
+        k == -1 && Tile.hasFeature cotile (F.Cause Effect.Descend) tile
+  if rightStairs  -- stairs, in the right direction
+    then case whereTo st k of
+      Nothing ->  -- we are at the "end" of the dungeon
+        abortWith "no more levels in this direction"
+      Just (nln, npos) ->
+        assert (nln /= sarena `blame` (nln, "stairs looped")) $ do
+          modifyLocal $ \ s -> s {sarena = nln}
+          -- Do not freely reveal the other end of the stairs.
+          clvl <- getsLocal getArena
+          let upd cur =
+                let cposition =
+                      if Tile.hasFeature cotile F.Exit (clvl `at` npos)
+                      then npos  -- already know as an exit, focus on it
+                      else loc   -- unknow, do not reveal the position
+                in cur { cposition, cposLn = nln }
+          modifyClient (updateCursor upd)
+    else do  -- no stairs in the right direction
+      let n = levelNumber sarena
+          nln = levelDefault $ min depth $ max 1 $ n - k
+      when (nln == sarena) $ abortWith "no more levels in this direction"
+      modifyLocal $ \ s -> s {sarena = nln}
+      let upd cur = cur {cposLn = nln}
+      modifyClient (updateCursor upd)
+  when (targeting == TgtOff) $ do
+    let upd cur = cur {ctargeting = TgtExplicit}
+    modifyClient (updateCursor upd)
   doLook
+
+-- ** EpsIncr
 
 -- | Tweak the @eps@ parameter of the targeting digital line.
 epsIncr :: MonadClient m => Bool -> m ()
@@ -164,6 +278,76 @@ epsIncr b = do
     then modifyClient $ updateCursor $
            \ c@Cursor{ceps} -> c {ceps = ceps + if b then 1 else -1}
     else neverMind True  -- no visual feedback, so no sense
+
+-- ** Cancel
+
+-- | Cancel something, e.g., targeting mode, resetting the cursor
+-- to the position of the player. Chosen target is not invalidated.
+cancelCurrent :: MonadClient m => WriterT Slideshow m () -> WriterT Slideshow m ()
+cancelCurrent h = do
+  targeting <- getsClient (ctargeting . scursor)
+  if targeting /= TgtOff
+    then lift $ endTargeting False
+    else h  -- nothing to cancel right now, treat this as a command invocation
+
+-- | Display the main menu.
+displayMainMenu :: MonadClient m => WriterT Slideshow m ()
+displayMainMenu = do
+  Kind.COps{corule} <- getsLocal scops
+  Binding{krevMap} <- askBinding
+  let stripFrame t = case T.uncons t of
+        Just ('\n', art) -> map (T.tail . T.init) $ tail . init $ T.lines art
+        _ -> assert `failure` "displayMainMenu:" <+> t
+      pasteVersion art =
+        let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
+            version = " Version " ++ showVersion pathsVersion
+                      ++ " (frontend: " ++ frontendName
+                      ++ ", engine: LambdaHack " ++ showVersion Self.version
+                      ++ ") "
+            versionLen = length version
+        in init art ++ [take (80 - versionLen) (last art) ++ version]
+      kds =  -- key-description pairs
+        let showKD cmd key = (showT key, Command.cmdDescription cmd)
+            revLookup cmd =
+              maybe ("", "") (showKD cmd . fst) $ M.lookup cmd krevMap
+            cmds = [Command.GameSave, Command.GameExit,
+                   Command.GameRestart, Command.Help]
+        in map revLookup cmds ++ [(fst (revLookup Command.Clear), "continue")]
+      bindings =  -- key bindings to display
+        let bindingLen = 25
+            fmt (k, d) =
+              let gapLen = (8 - T.length k) `max` 1
+                  padLen = bindingLen - T.length k - gapLen - T.length d
+              in k <> T.replicate gapLen " " <> d <> T.replicate padLen " "
+        in map fmt kds
+      overwrite =  -- overwrite the art with key bindings
+        let over [] line = ([], T.pack line)
+            over bs@(binding : bsRest) line =
+              let (prefix, lineRest) = break (=='{') line
+                  (braces, suffix)   = span  (=='{') lineRest
+              in if length braces == 25
+                 then (bsRest, T.pack prefix <> binding <> T.pack suffix)
+                 else (bs, T.pack line)
+        in snd . mapAccumL over bindings
+      mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule
+      menuOverlay =  -- TODO: switch to Text and use T.justifyLeft
+        overwrite $ pasteVersion $ map T.unpack $ stripFrame $ mainMenuArt
+  case menuOverlay of
+    [] -> assert `failure` "empty Main Menu overlay"
+    hd : tl -> do
+      slides <- overlayToSlideshow hd tl
+      tell slides
+
+-- ** Accept
+
+-- | Accept something, e.g., targeting mode, keeping cursor where it was.
+-- Or perform the default action, if nothing needs accepting.
+acceptCurrent :: MonadClient m => WriterT Slideshow m () -> WriterT Slideshow m ()
+acceptCurrent h = do
+  targeting <- getsClient (ctargeting . scursor)
+  if targeting /= TgtOff
+    then lift $ endTargeting True
+    else h  -- nothing to accept right now, treat this as a command invocation
 
 -- | End targeting mode, accepting the current position or not.
 endTargeting :: MonadClient m => Bool -> m ()
@@ -216,42 +400,127 @@ endTargetingMsg = do
   msgAdd $ makeSentence
       [MU.SubjectVerbSg (partActor coactor pbody) "target", targetMsg]
 
--- | Cancel something, e.g., targeting mode, resetting the cursor
--- to the position of the player. Chosen target is not invalidated.
-cancelCurrent :: MonadClient m => WriterT Slideshow m () -> WriterT Slideshow m ()
-cancelCurrent h = do
-  targeting <- getsClient (ctargeting . scursor)
-  if targeting /= TgtOff
-    then lift $ endTargeting False
-    else h  -- nothing to cancel right now, treat this as a command invocation
-
--- | Accept something, e.g., targeting mode, keeping cursor where it was.
--- Or perform the default action, if nothing needs accepting.
-acceptCurrent :: MonadClient m => WriterT Slideshow m () -> WriterT Slideshow m ()
-acceptCurrent h = do
-  targeting <- getsClient (ctargeting . scursor)
-  if targeting /= TgtOff
-    then lift $ endTargeting True
-    else h  -- nothing to accept right now, treat this as a command invocation
+-- ** Clear
 
 -- | Clear current messages, show the next screen if any.
 clearCurrent :: MonadActionRoot m => m ()
 clearCurrent = return ()
 
--- TODO: I think that player handlers should be wrappers
--- around more general actor handlers, but
--- the actor handlers should be performing
--- specific actions, i.e., already specify the item to be
--- picked up. It doesn't make sense to invoke dialogues
--- for arbitrary actors, and most likely the
--- decision for a monster is based on perceiving
--- a particular item to be present, so it's already
--- known. In actor handlers we should make sure
--- that messages are printed to the player only if the
--- hero can perceive the action.
+-- ** History
 
--- TODO: you can drop an item already on the floor, which works correctly,
--- but is weird and useless.
+-- TODO: add times from all levels. Also, show time spend on this level alone.
+-- "You survived for x turns (y turns on this level)"
+displayHistory :: MonadClient m => WriterT Slideshow m ()
+displayHistory = do
+  StateClient{shistory} <- getClient
+  time <- getsLocal getTime
+  let turn = time `timeFit` timeTurn
+      msg = makeSentence [ "You spent on this level"
+                         , MU.NWs turn "half-second turn" ]
+            <+> "Past messages:"
+  slides <- overlayToSlideshow msg $ renderHistory shistory
+  tell slides
+
+-- CfgDump doesn't take time, but needs the server, so it's defined elsewhere.
+
+-- ** HeroCycle
+
+-- | Switches current hero to the next hero on the level, if any, wrapping.
+-- We cycle through at most 10 heroes (\@, 1--9).
+cycleHero :: MonadClient m => m ()
+cycleHero = do
+  pl <- getsLocal splayer
+  s  <- getLocal
+  hs <- heroesAfterPl
+  case filter (flip memActor s) hs of
+    [] -> abortWith "Cannot select any other hero on this level."
+    ni : _ -> selectPlayer ni
+                >>= assert `trueM` (pl, ni, "hero duplicated")
+
+-- | Make the actor controlled by the player. Switch level, if needed.
+-- False, if nothing to do. Should only be invoked as a direct result
+-- of a player action (selected player actor death just sets splayer to -1).
+selectPlayer :: MonadClient m => ActorId -> m Bool
+selectPlayer actor = do
+  cops@Kind.COps{coactor} <- getsLocal scops
+  pl <- getsLocal splayer
+  if actor == pl
+    then return False -- already selected
+    else do
+      loc <- getLocal
+      let (nln, pbody, _) = findActorAnyLevel actor loc
+      -- Switch to the new level.
+      modifyLocal (\ s -> s {sarena = nln})
+      -- Make the new actor the player-controlled actor.
+      modifyLocal (\ s -> s {splayer = actor})
+      -- Record the original level of the new player.
+      modifyClient (updateCursor (\ c -> c {creturnLn = nln}))
+      -- Don't continue an old run, if any.
+      stopRunning
+      -- Announce.
+      msgAdd $ makeSentence [partActor coactor pbody, "selected"]
+      locNew <- getLocal
+      msgAdd $ lookAt cops False True locNew (bpos pbody) ""
+      return True
+
+stopRunning :: MonadClient m => m ()
+stopRunning = modifyClient (\ cli -> cli { srunning = Nothing })
+
+heroesAfterPl :: MonadClient m => m [ActorId]
+heroesAfterPl = do
+  pl <- getsLocal splayer
+  s  <- getLocal
+  let hs = map (tryFindHeroK s) [0..9]
+      i = fromMaybe (-1) $ findIndex (== Just pl) hs
+      (lt, gt) = (take i hs, drop (i + 1) hs)
+  return $ catMaybes gt ++ catMaybes lt
+
+-- ** HeroBack
+
+-- | Switches current hero to the previous hero in the whole dungeon,
+-- if any, wrapping. We cycle through at most 10 heroes (\@, 1--9).
+backCycleHero :: MonadClient m => m ()
+backCycleHero = do
+  pl <- getsLocal splayer
+  hs <- heroesAfterPl
+  case reverse hs of
+    [] -> abortWith "No other hero in the party."
+    ni : _ -> selectPlayer ni
+                >>= assert `trueM` (pl, ni, "hero duplicated")
+
+-- ** Help
+
+-- | Display command help.
+displayHelp :: MonadClient m => WriterT Slideshow m ()
+displayHelp = do
+  keyb <- askBinding
+  tell $ keyHelp keyb
+
+-- ** SelectHero
+
+selectHero :: MonadClient m => Int -> m ()
+selectHero k = do
+  s <- getLocal
+  case tryFindHeroK s k of
+    Nothing  -> abortWith "No such member of the party."
+    Just aid -> void $ selectPlayer aid
+
+-- * Assorted helper client functions, e.g. callbacks from server commands.
+
+-- | Let the player choose any item with a given group name.
+-- Note that this does not guarantee the chosen item belongs to the group,
+-- as the player can override the choice.
+getGroupItem :: MonadClient m
+             => [Item]   -- ^ all objects in question
+             -> MU.Part  -- ^ name of the group
+             -> [Char]   -- ^ accepted item symbols
+             -> Text     -- ^ prompt
+             -> Text     -- ^ how to refer to the collection of objects
+             -> m Item
+getGroupItem is object syms prompt packName = do
+  let choice i = jsymbol i `elem` syms
+      header = makePhrase [MU.Capitalize (MU.Ws object)]
+  getItem prompt choice header is packName
 
 allObjectsName :: Text
 allObjectsName = "Objects"
@@ -332,134 +601,6 @@ getItem prompt p ptext is0 isn = do
             k -> assert `failure` "perform: unexpected key:" <+> showT k
   ask
 
-moveCursor :: MonadClient m => Vector -> Int -> WriterT Slideshow m ()
-moveCursor dir n = do
-  lxsize <- getsLocal (lxsize . getArena)
-  lysize <- getsLocal (lysize . getArena)
-  let upd cursor =
-        let shiftB loc =
-              shiftBounded lxsize (1, 1, lxsize - 2, lysize - 2) loc dir
-            cpos = iterate shiftB (cposition cursor) !! n
-        in cursor { cposition = cpos }
-  modifyClient (updateCursor upd)
-  doLook
-
-ifRunning :: MonadClientRO m => ((Vector, Int) -> m a) -> m a -> m a
-ifRunning t e = do
-  srunning <- getsClient srunning
-  maybe e t srunning
-
--- | Change the displayed level in targeting mode to (at most)
--- k levels shallower. Enters targeting mode, if not already in one.
-tgtAscend :: MonadClient m => Int -> WriterT Slideshow m ()
-tgtAscend k = do
-  Kind.COps{cotile} <- getsLocal scops
-  cursor <- getsClient scursor
-  targeting <- getsClient (ctargeting . scursor)
-  sarena <- getsLocal sarena
-  lvl       <- getsLocal getArena
-  st        <- getLocal
-  depth     <- getsLocal sdepth
-  let loc = cposition cursor
-      tile = lvl `at` loc
-      rightStairs =
-        k ==  1 && Tile.hasFeature cotile (F.Cause Effect.Ascend)  tile ||
-        k == -1 && Tile.hasFeature cotile (F.Cause Effect.Descend) tile
-  if rightStairs  -- stairs, in the right direction
-    then case whereTo st k of
-      Nothing ->  -- we are at the "end" of the dungeon
-        abortWith "no more levels in this direction"
-      Just (nln, npos) ->
-        assert (nln /= sarena `blame` (nln, "stairs looped")) $ do
-          modifyLocal $ \ s -> s {sarena = nln}
-          -- Do not freely reveal the other end of the stairs.
-          clvl <- getsLocal getArena
-          let upd cur =
-                let cposition =
-                      if Tile.hasFeature cotile F.Exit (clvl `at` npos)
-                      then npos  -- already know as an exit, focus on it
-                      else loc   -- unknow, do not reveal the position
-                in cur { cposition, cposLn = nln }
-          modifyClient (updateCursor upd)
-    else do  -- no stairs in the right direction
-      let n = levelNumber sarena
-          nln = levelDefault $ min depth $ max 1 $ n - k
-      when (nln == sarena) $ abortWith "no more levels in this direction"
-      modifyLocal $ \ s -> s {sarena = nln}
-      let upd cur = cur {cposLn = nln}
-      modifyClient (updateCursor upd)
-  when (targeting == TgtOff) $ do
-    let upd cur = cur {ctargeting = TgtExplicit}
-    modifyClient (updateCursor upd)
-  doLook
-
--- | Display command help.
-displayHelp :: MonadClient m => WriterT Slideshow m ()
-displayHelp = do
-  keyb <- askBinding
-  tell $ keyHelp keyb
-
--- | Display the main menu.
-displayMainMenu :: MonadClient m => WriterT Slideshow m ()
-displayMainMenu = do
-  Kind.COps{corule} <- getsLocal scops
-  Binding{krevMap} <- askBinding
-  let stripFrame t = case T.uncons t of
-        Just ('\n', art) -> map (T.tail . T.init) $ tail . init $ T.lines art
-        _ -> assert `failure` "displayMainMenu:" <+> t
-      pasteVersion art =
-        let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
-            version = " Version " ++ showVersion pathsVersion
-                      ++ " (frontend: " ++ frontendName
-                      ++ ", engine: LambdaHack " ++ showVersion Self.version
-                      ++ ") "
-            versionLen = length version
-        in init art ++ [take (80 - versionLen) (last art) ++ version]
-      kds =  -- key-description pairs
-        let showKD cmd key = (showT key, Command.cmdDescription cmd)
-            revLookup cmd =
-              maybe ("", "") (showKD cmd . fst) $ M.lookup cmd krevMap
-            cmds = [Command.GameSave, Command.GameExit,
-                   Command.GameRestart, Command.Help]
-        in map revLookup cmds ++ [(fst (revLookup Command.Clear), "continue")]
-      bindings =  -- key bindings to display
-        let bindingLen = 25
-            fmt (k, d) =
-              let gapLen = (8 - T.length k) `max` 1
-                  padLen = bindingLen - T.length k - gapLen - T.length d
-              in k <> T.replicate gapLen " " <> d <> T.replicate padLen " "
-        in map fmt kds
-      overwrite =  -- overwrite the art with key bindings
-        let over [] line = ([], T.pack line)
-            over bs@(binding : bsRest) line =
-              let (prefix, lineRest) = break (=='{') line
-                  (braces, suffix)   = span  (=='{') lineRest
-              in if length braces == 25
-                 then (bsRest, T.pack prefix <> binding <> T.pack suffix)
-                 else (bs, T.pack line)
-        in snd . mapAccumL over bindings
-      mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule
-      menuOverlay =  -- TODO: switch to Text and use T.justifyLeft
-        overwrite $ pasteVersion $ map T.unpack $ stripFrame $ mainMenuArt
-  case menuOverlay of
-    [] -> assert `failure` "empty Main Menu overlay"
-    hd : tl -> do
-      slides <- overlayToSlideshow hd tl
-      tell slides
-
--- TODO: add times from all levels. Also, show time spend on this level alone.
--- "You survived for x turns (y turns on this level)"
-displayHistory :: MonadClient m => WriterT Slideshow m ()
-displayHistory = do
-  StateClient{shistory} <- getClient
-  time <- getsLocal getTime
-  let turn = time `timeFit` timeTurn
-      msg = makeSentence [ "You spent on this level"
-                         , MU.NWs turn "half-second turn" ]
-            <+> "Past messages:"
-  slides <- overlayToSlideshow msg $ renderHistory shistory
-  tell slides
-
 -- | Make the item known to the player.
 discover :: MonadClient m => Discoveries -> Item -> m ()
 discover discoS i = do
@@ -476,135 +617,3 @@ discover discoS i = do
                                     "turn out to be"
           , partItemAW coitem disco i ]
     msgAdd msg
-
--- | Create a list of item names.
-itemOverlay :: MonadClientRO m
-            => Discoveries -> Bool -> [Item] -> m Overlay
-itemOverlay disco sorted is = do
-  Kind.COps{coitem} <- getsLocal scops
-  let items | sorted = sortBy (cmpLetterMaybe `on` jletter) is
-            | otherwise = is
-      pr i = makePhrase [ letterLabel (jletter i)
-                        , partItemNWs coitem disco i ]
-             <> " "
-  return $ map pr items
-
-stopRunning :: MonadClient m => m ()
-stopRunning = modifyClient (\ cli -> cli { srunning = Nothing })
-
--- | Perform look around in the current position of the cursor.
-doLook :: MonadClient m => WriterT Slideshow m ()
-doLook = do
-  cops@Kind.COps{coactor} <- getsLocal scops
-  p    <- getsClient (cposition . scursor)
-  loc  <- getLocal
-  clvl   <- getsLocal getArena
-  hms    <- getsLocal (lactor . getArena)
-  per    <- askPerception
-  pl     <- getsLocal splayer
-  target <- getsClient (IM.lookup pl . starget)
-  targeting <- getsClient (ctargeting . scursor)
-  assert (targeting /= TgtOff) $ do
-    let canSee = IS.member p (totalVisible per)
-        ihabitant | canSee = find (\ m -> bpos m == p) (IM.elems hms)
-                  | otherwise = Nothing
-        monsterMsg =
-          maybe "" (\ m -> makeSentence
-                           [MU.SubjectVerbSg (partActor coactor m) "be here"])
-                   ihabitant
-        vis | not $ p `IS.member` totalVisible per =
-                " (not visible)"  -- by party
-            | actorReachesLoc pl p per = ""
-            | otherwise = " (not reachable)"  -- by hero
-        mode = case target of
-                 Just TEnemy{} -> "[targeting monster" <> vis <> "]"
-                 Just TPos{}   -> "[targeting position" <> vis <> "]"
-                 Nothing       -> "[targeting current" <> vis <> "]"
-        -- Show general info about current p.
-        lookMsg = mode <+> lookAt cops True canSee loc p monsterMsg
-        -- Check if there's something lying around at current p.
-        is = clvl `atI` p
-    modifyClient (\st -> st {slastKey = Nothing})
-    if length is <= 2
-      then do
-        slides <- promptToSlideshow lookMsg
-        tell slides
-      else do
-       disco <- getsLocal sdisco
-       io <- itemOverlay disco False is
-       slides <- overlayToSlideshow lookMsg io
-       tell slides
-
--- | Make the actor controlled by the player. Switch level, if needed.
--- False, if nothing to do. Should only be invoked as a direct result
--- of a player action (selected player actor death just sets splayer to -1).
-selectPlayer :: MonadClient m => ActorId -> m Bool
-selectPlayer actor = do
-  cops@Kind.COps{coactor} <- getsLocal scops
-  pl <- getsLocal splayer
-  if actor == pl
-    then return False -- already selected
-    else do
-      loc <- getLocal
-      let (nln, pbody, _) = findActorAnyLevel actor loc
-      -- Switch to the new level.
-      modifyLocal (\ s -> s {sarena = nln})
-      -- Make the new actor the player-controlled actor.
-      modifyLocal (\ s -> s {splayer = actor})
-      -- Record the original level of the new player.
-      modifyClient (updateCursor (\ c -> c {creturnLn = nln}))
-      -- Don't continue an old run, if any.
-      stopRunning
-      -- Announce.
-      msgAdd $ makeSentence [partActor coactor pbody, "selected"]
-      locNew <- getLocal
-      msgAdd $ lookAt cops False True locNew (bpos pbody) ""
-      return True
-
-selectHero :: MonadClient m => Int -> m ()
-selectHero k = do
-  s <- getLocal
-  case tryFindHeroK s k of
-    Nothing  -> abortWith "No such member of the party."
-    Just aid -> void $ selectPlayer aid
-
--- TODO: center screen, flash the background, etc. Perhaps wait for SPACE.
--- | Focus on the hero being wounded/displaced/etc.
-focusIfOurs :: MonadClientRO m => ActorId -> m Bool
-focusIfOurs target = do
-  s  <- getLocal
-  if isAHero s target
-    then return True
-    else return False
-
-heroesAfterPl :: MonadClient m => m [ActorId]
-heroesAfterPl = do
-  pl <- getsLocal splayer
-  s  <- getLocal
-  let hs = map (tryFindHeroK s) [0..9]
-      i = fromMaybe (-1) $ findIndex (== Just pl) hs
-      (lt, gt) = (take i hs, drop (i + 1) hs)
-  return $ catMaybes gt ++ catMaybes lt
-
--- | Switches current hero to the next hero on the level, if any, wrapping.
--- We cycle through at most 10 heroes (\@, 1--9).
-cycleHero :: MonadClient m => m ()
-cycleHero = do
-  pl <- getsLocal splayer
-  s  <- getLocal
-  hs <- heroesAfterPl
-  case filter (flip memActor s) hs of
-    [] -> abortWith "Cannot select any other hero on this level."
-    ni : _ -> selectPlayer ni
-                >>= assert `trueM` (pl, ni, "hero duplicated")
-
--- | Switches current hero to the previous hero in the whole dungeon,
--- if any, wrapping. We cycle through at most 10 heroes (\@, 1--9).
-backCycleHero :: MonadClient m => m ()
-backCycleHero = do
-  pl <- getsLocal splayer
-  hs <- heroesAfterPl
-  case reverse hs of
-    [] -> abortWith "No other hero in the party."
-    ni : _ -> selectPlayer ni
-                >>= assert `trueM` (pl, ni, "hero duplicated")
