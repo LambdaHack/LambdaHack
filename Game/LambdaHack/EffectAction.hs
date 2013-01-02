@@ -187,7 +187,7 @@ eff Effect.Dominate _ source target _power = do
   s <- getGlobal
   if not $ isAHero s target
     then do  -- Monsters have weaker will than heroes.
-      selectPlayer target
+      selectPlayerSer target
         >>= assert `trueM` (source, target, "player dominates himself")
       -- Halve the speed as a side-effect of domination.
       let halfSpeed :: Actor -> Maybe Speed
@@ -322,7 +322,11 @@ effLvlGoUp k = do
         -- At this place the invariant that the player exists fails.
         -- Change to the new level (invariant not needed).
         timeCurrent <- getsGlobal getTime
-        switchLevel nln
+        -- | Change level, both in faction and global state,
+        -- to ensure the actions performed afterwards, but before
+        -- the end of the turn, read and modify updated and consistent states.
+        modifyLocal (\ s -> s {sarena = nln})
+        modifyGlobal (\ s -> s {sarena = nln})
         -- Sync the actor time with the level time.
         timeLastVisited <- getsGlobal getTime
         let diff = timeAdd (btime pbodyCurrent) (timeNegate timeCurrent)
@@ -355,15 +359,6 @@ effLvlGoUp k = do
         saveGameBkp
         loc <- getLocal
         msgAdd $ lookAt cops False True loc npos ""
-
--- | Change level, both in faction and global state, to ensure the actions
--- performed afterwards, but before the end of the turn, read and modify
--- updated and consistent states (they don't refer only to global state,
--- e.g., they add messages).
-switchLevel :: MonadAction m => LevelId -> m ()
-switchLevel nln = do
-  modifyGlobal (\ s -> s {sarena = nln})
-  modifyLocal (\ s -> s {sarena = nln})
 
 -- | The player leaves the dungeon.
 fleeDungeon :: MonadAction m => m ()
@@ -422,7 +417,7 @@ itemEffectAction verbosity source target item block = do
 -- | Make the actor controlled by the player. Switch level, if needed.
 -- False, if nothing to do. Should only be invoked as a direct result
 -- of a player action (selected player actor death just sets splayer to -1).
-selectPlayer :: MonadAction m => ActorId -> m Bool
+selectPlayer :: MonadClient m => ActorId -> m Bool
 selectPlayer actor = do
   cops@Kind.COps{coactor} <- getsLocal scops
   pl <- getsLocal splayer
@@ -432,9 +427,8 @@ selectPlayer actor = do
       loc <- getLocal
       let (nln, pbody, _) = findActorAnyLevel actor loc
       -- Switch to the new level.
-      switchLevel nln
+      modifyLocal (\ s -> s {sarena = nln})
       -- Make the new actor the player-controlled actor.
-      modifyGlobal (\ s -> s {splayer = actor})
       modifyLocal (\ s -> s {splayer = actor})
       -- Record the original level of the new player.
       modifyClient (updateCursor (\ c -> c {creturnLn = nln}))
@@ -446,7 +440,15 @@ selectPlayer actor = do
       msgAdd $ lookAt cops False True locNew (bpos pbody) ""
       return True
 
-selectHero :: MonadAction m => Int -> m ()
+selectPlayerSer :: MonadAction m => ActorId -> m Bool
+selectPlayerSer actor = do
+  b <- selectPlayer actor
+  State{splayer, sarena} <- getLocal
+  modifyGlobal (\s -> s {splayer})
+  modifyGlobal (\s -> s {sarena})
+  return b
+
+selectHero :: MonadClient m => Int -> m ()
 selectHero k = do
   s <- getLocal
   case tryFindHeroK s k of
@@ -544,7 +546,7 @@ checkPartyDeath = do
                -- but don't draw a frame for him with focusIfOurs,
                -- in case the focus changes again during the same turn.
                -- He's just a random next guy in the line.
-               selectPlayer actor
+               selectPlayerSer actor
                  >>= assert `trueM` (pl, actor, "player resurrects")
                -- At this place the invariant is restored again.
 

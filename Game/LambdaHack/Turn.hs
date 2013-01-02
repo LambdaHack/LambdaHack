@@ -12,13 +12,12 @@ import Data.Maybe
 import qualified Data.Ord as Ord
 
 import Game.LambdaHack.Action
-import Game.LambdaHack.ServerAction
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Binding
+import Game.LambdaHack.ClientAction
 import qualified Game.LambdaHack.Command as Command
 import Game.LambdaHack.CommandAction
-import Game.LambdaHack.ClientAction
 import Game.LambdaHack.EffectAction
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Key as K
@@ -27,6 +26,7 @@ import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Random
 import Game.LambdaHack.Running
+import Game.LambdaHack.ServerAction
 import Game.LambdaHack.State
 import Game.LambdaHack.Strategy
 import Game.LambdaHack.StrategyAction
@@ -228,9 +228,13 @@ playerCommand msgRunAbort = do
               -- is needed in other parts of code.
               modifyClient (\st -> st {slastKey = Just km})
               cli <- getClient
-              if (Just km == lastKey)
+              b <- if (Just km == lastKey)
                 then cmdSemantics cli loc Command.Clear
                 else cmdSemantics cli loc cmd
+              State{splayer, sarena} <- getLocal
+              modifyGlobal (\s -> s {splayer})
+              modifyGlobal (\s -> s {sarena})
+              return b
             Nothing -> let msgKey = "unknown command <" <> K.showKM km <> ">"
                        in abortWith msgKey
         -- The command was aborted or successful and if the latter,

@@ -1,7 +1,7 @@
 {-# LANGUAGE ExtendedDefaultRules, OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 -- | Actions carried out by the server (and possibly also the client
--- until the code is fixed further.
+-- until the code is fixed further).
 -- TODO: document
 module Game.LambdaHack.ServerAction where
 
@@ -400,7 +400,7 @@ heroesAfterPl = do
 
 -- | Switches current hero to the next hero on the level, if any, wrapping.
 -- We cycle through at most 10 heroes (\@, 1--9).
-cycleHero :: MonadAction m => m ()
+cycleHero :: MonadClient m => m ()
 cycleHero = do
   pl <- getsLocal splayer
   s  <- getLocal
@@ -412,7 +412,7 @@ cycleHero = do
 
 -- | Switches current hero to the previous hero in the whole dungeon,
 -- if any, wrapping. We cycle through at most 10 heroes (\@, 1--9).
-backCycleHero :: MonadAction m => m ()
+backCycleHero :: MonadClient m => m ()
 backCycleHero = do
   pl <- getsLocal splayer
   hs <- heroesAfterPl
