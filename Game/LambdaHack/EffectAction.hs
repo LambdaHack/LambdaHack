@@ -414,32 +414,6 @@ itemEffectAction verbosity source target item block = do
     modifyGlobal (deleteActor source)
   modifyGlobal (\ s -> s {sarena = sarenaNew})
 
--- | Make the actor controlled by the player. Switch level, if needed.
--- False, if nothing to do. Should only be invoked as a direct result
--- of a player action (selected player actor death just sets splayer to -1).
-selectPlayer :: MonadClient m => ActorId -> m Bool
-selectPlayer actor = do
-  cops@Kind.COps{coactor} <- getsLocal scops
-  pl <- getsLocal splayer
-  if actor == pl
-    then return False -- already selected
-    else do
-      loc <- getLocal
-      let (nln, pbody, _) = findActorAnyLevel actor loc
-      -- Switch to the new level.
-      modifyLocal (\ s -> s {sarena = nln})
-      -- Make the new actor the player-controlled actor.
-      modifyLocal (\ s -> s {splayer = actor})
-      -- Record the original level of the new player.
-      modifyClient (updateCursor (\ c -> c {creturnLn = nln}))
-      -- Don't continue an old run, if any.
-      stopRunning
-      -- Announce.
-      msgAdd $ makeSentence [partActor coactor pbody, "selected"]
-      locNew <- getLocal
-      msgAdd $ lookAt cops False True locNew (bpos pbody) ""
-      return True
-
 selectPlayerSer :: MonadAction m => ActorId -> m Bool
 selectPlayerSer actor = do
   b <- selectPlayer actor
@@ -447,22 +421,6 @@ selectPlayerSer actor = do
   modifyGlobal (\s -> s {splayer})
   modifyGlobal (\s -> s {sarena})
   return b
-
-selectHero :: MonadClient m => Int -> m ()
-selectHero k = do
-  s <- getLocal
-  case tryFindHeroK s k of
-    Nothing  -> abortWith "No such member of the party."
-    Just aid -> void $ selectPlayer aid
-
--- TODO: center screen, flash the background, etc. Perhaps wait for SPACE.
--- | Focus on the hero being wounded/displaced/etc.
-focusIfOurs :: MonadClientRO m => ActorId -> m Bool
-focusIfOurs target = do
-  s  <- getLocal
-  if isAHero s target
-    then return True
-    else return False
 
 summonHeroes :: MonadAction m => Int -> Point -> m ()
 summonHeroes n loc =

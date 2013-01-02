@@ -389,38 +389,6 @@ actorOpenDoor actor dir = do
          then neverMind isVerbose  -- not doors at all
          else triggerTile dpos
 
-heroesAfterPl :: MonadClient m => m [ActorId]
-heroesAfterPl = do
-  pl <- getsLocal splayer
-  s  <- getLocal
-  let hs = map (tryFindHeroK s) [0..9]
-      i = fromMaybe (-1) $ findIndex (== Just pl) hs
-      (lt, gt) = (take i hs, drop (i + 1) hs)
-  return $ catMaybes gt ++ catMaybes lt
-
--- | Switches current hero to the next hero on the level, if any, wrapping.
--- We cycle through at most 10 heroes (\@, 1--9).
-cycleHero :: MonadClient m => m ()
-cycleHero = do
-  pl <- getsLocal splayer
-  s  <- getLocal
-  hs <- heroesAfterPl
-  case filter (flip memActor s) hs of
-    [] -> abortWith "Cannot select any other hero on this level."
-    ni : _ -> selectPlayer ni
-                >>= assert `trueM` (pl, ni, "hero duplicated")
-
--- | Switches current hero to the previous hero in the whole dungeon,
--- if any, wrapping. We cycle through at most 10 heroes (\@, 1--9).
-backCycleHero :: MonadClient m => m ()
-backCycleHero = do
-  pl <- getsLocal splayer
-  hs <- heroesAfterPl
-  case reverse hs of
-    [] -> abortWith "No other hero in the party."
-    ni : _ -> selectPlayer ni
-                >>= assert `trueM` (pl, ni, "hero duplicated")
-
 -- | Search for hidden doors.
 search :: MonadAction m => m ()
 search = do

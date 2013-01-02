@@ -534,3 +534,77 @@ doLook = do
        io <- itemOverlay disco False is
        slides <- overlayToSlideshow lookMsg io
        tell slides
+
+-- | Make the actor controlled by the player. Switch level, if needed.
+-- False, if nothing to do. Should only be invoked as a direct result
+-- of a player action (selected player actor death just sets splayer to -1).
+selectPlayer :: MonadClient m => ActorId -> m Bool
+selectPlayer actor = do
+  cops@Kind.COps{coactor} <- getsLocal scops
+  pl <- getsLocal splayer
+  if actor == pl
+    then return False -- already selected
+    else do
+      loc <- getLocal
+      let (nln, pbody, _) = findActorAnyLevel actor loc
+      -- Switch to the new level.
+      modifyLocal (\ s -> s {sarena = nln})
+      -- Make the new actor the player-controlled actor.
+      modifyLocal (\ s -> s {splayer = actor})
+      -- Record the original level of the new player.
+      modifyClient (updateCursor (\ c -> c {creturnLn = nln}))
+      -- Don't continue an old run, if any.
+      stopRunning
+      -- Announce.
+      msgAdd $ makeSentence [partActor coactor pbody, "selected"]
+      locNew <- getLocal
+      msgAdd $ lookAt cops False True locNew (bpos pbody) ""
+      return True
+
+selectHero :: MonadClient m => Int -> m ()
+selectHero k = do
+  s <- getLocal
+  case tryFindHeroK s k of
+    Nothing  -> abortWith "No such member of the party."
+    Just aid -> void $ selectPlayer aid
+
+-- TODO: center screen, flash the background, etc. Perhaps wait for SPACE.
+-- | Focus on the hero being wounded/displaced/etc.
+focusIfOurs :: MonadClientRO m => ActorId -> m Bool
+focusIfOurs target = do
+  s  <- getLocal
+  if isAHero s target
+    then return True
+    else return False
+
+heroesAfterPl :: MonadClient m => m [ActorId]
+heroesAfterPl = do
+  pl <- getsLocal splayer
+  s  <- getLocal
+  let hs = map (tryFindHeroK s) [0..9]
+      i = fromMaybe (-1) $ findIndex (== Just pl) hs
+      (lt, gt) = (take i hs, drop (i + 1) hs)
+  return $ catMaybes gt ++ catMaybes lt
+
+-- | Switches current hero to the next hero on the level, if any, wrapping.
+-- We cycle through at most 10 heroes (\@, 1--9).
+cycleHero :: MonadClient m => m ()
+cycleHero = do
+  pl <- getsLocal splayer
+  s  <- getLocal
+  hs <- heroesAfterPl
+  case filter (flip memActor s) hs of
+    [] -> abortWith "Cannot select any other hero on this level."
+    ni : _ -> selectPlayer ni
+                >>= assert `trueM` (pl, ni, "hero duplicated")
+
+-- | Switches current hero to the previous hero in the whole dungeon,
+-- if any, wrapping. We cycle through at most 10 heroes (\@, 1--9).
+backCycleHero :: MonadClient m => m ()
+backCycleHero = do
+  pl <- getsLocal splayer
+  hs <- heroesAfterPl
+  case reverse hs of
+    [] -> abortWith "No other hero in the party."
+    ni : _ -> selectPlayer ni
+                >>= assert `trueM` (pl, ni, "hero duplicated")
