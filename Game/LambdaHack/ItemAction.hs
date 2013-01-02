@@ -296,7 +296,7 @@ endTargeting accept = do
   -- Return to the original level of the player. Note that this can be
   -- a different level than the one we started targeting at,
   -- if the player was changed while targeting.
-  switchLevel returnLn
+  modifyLocal $ \ s -> s {sarena = returnLn}
   modifyClient (updateCursor (\ c -> c { ctargeting = TgtOff }))
   when accept $ do
     case target of

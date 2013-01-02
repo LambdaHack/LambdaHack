@@ -302,7 +302,7 @@ squashActor source target = do
 
 effLvlGoUp :: MonadAction m => Int -> m ()
 effLvlGoUp k = do
-  pbody <- getsGlobal getPlayerBody
+  pbodyCurrent <- getsGlobal getPlayerBody
   pl <- getsGlobal splayer
   sarena <- getsGlobal sarena
   st <- getGlobal
@@ -312,11 +312,11 @@ effLvlGoUp k = do
     Just (nln, npos) ->
       assert (nln /= sarena `blame` (nln, "stairs looped")) $ do
         bitems <- getsGlobal getPlayerItem
-        -- Remember the level (e.g., when teleporting via scroll on the floor,
-        -- register that the scroll vanished).
-        remember
         -- Remove the player from the old level.
         modifyGlobal (deleteActor pl)
+        -- Remember the level (e.g., when teleporting via scroll on the floor,
+        -- register the scroll vanished, also register the actor vanished).
+        remember
         hs <- getsGlobal heroList
         -- Monsters hear that players not on the level. Cancel smell.
         -- Reduces memory load and savefile size.
@@ -324,7 +324,12 @@ effLvlGoUp k = do
           modifyGlobal (updateArena (updateSmell (const IM.empty)))
         -- At this place the invariant that the player exists fails.
         -- Change to the new level (invariant not needed).
+        timeCurrent <- getsGlobal getTime
         switchLevel nln
+        -- Sync the actor time with the level time.
+        timeLastVisited <- getsGlobal getTime
+        let diff = timeAdd (btime pbodyCurrent) (timeNegate timeCurrent)
+            pbody = pbodyCurrent {btime = timeAdd timeLastVisited diff}
         -- The player can now be safely added to the new level.
         modifyGlobal (insertActor pl pbody)
         modifyGlobal (updateAnyActorItem pl (const bitems))
@@ -354,26 +359,14 @@ effLvlGoUp k = do
         loc <- getLocal
         msgAdd $ lookAt cops False True loc npos ""
 
--- | Change level and reset it's time and update the times of all actors.
--- The player may be added to @lactor@ of the new level only after
--- this operation is executed.
+-- | Change level, both in faction and global state, to ensure the actions
+-- performed afterwards, but before the end of the turn, read and modify
+-- updated and consistent states (they don't refer only to global state,
+-- e.g., they add messages).
 switchLevel :: MonadAction m => LevelId -> m ()
 switchLevel nln = do
-  timeCurrent <- getsGlobal getTime
-  sarena <- getsGlobal sarena
-  when (sarena /= nln) $ do
-    -- Switch to the new level.
-    modifyGlobal (\ s -> s {sarena = nln})
-    modifyLocal (\ s -> s {sarena = nln})  -- hack
-    timeLastVisited <- getsGlobal getTime
-    let diff = timeAdd timeCurrent $ timeNegate timeLastVisited
-    when (diff /= timeZero) $ do
-      -- Reset the level time.
-      modifyGlobal $ updateTime $ const timeCurrent
-      modifyLocal $ updateTime $ const timeCurrent  -- hack
-      -- Update the times of all actors.
-      let upd m@Actor{btime} = m {btime = timeAdd btime diff}
-      modifyGlobal (updateArena (updateActor (IM.map upd)))
+  modifyGlobal (\ s -> s {sarena = nln})
+  modifyLocal (\ s -> s {sarena = nln})
 
 -- | The player leaves the dungeon.
 fleeDungeon :: MonadAction m => m ()
@@ -456,12 +449,12 @@ selectPlayer actor = do
   if actor == pl
     then return False -- already selected
     else do
-      state <- getLocal
-      let (nln, pbody, _) = findActorAnyLevel actor state
+      loc <- getLocal
+      let (nln, pbody, _) = findActorAnyLevel actor loc
       -- Switch to the new level.
       switchLevel nln
       -- Make the new actor the player-controlled actor.
-      modifyGlobal (\ s -> s {splayer = actor})  -- a hack
+      modifyGlobal (\ s -> s {splayer = actor})
       modifyLocal (\ s -> s {splayer = actor})
       -- Record the original level of the new player.
       modifyClient (updateCursor (\ c -> c {creturnLn = nln}))
@@ -469,8 +462,8 @@ selectPlayer actor = do
       stopRunning
       -- Announce.
       msgAdd $ makeSentence [partActor coactor pbody, "selected"]
-      loc <- getLocal
-      msgAdd $ lookAt cops False True loc (bpos pbody) ""
+      locNew <- getLocal
+      msgAdd $ lookAt cops False True locNew (bpos pbody) ""
       return True
 
 selectHero :: MonadAction m => Int -> m ()

@@ -197,10 +197,10 @@ tgtAscend k = do
   Kind.COps{cotile} <- getsLocal scops
   cursor <- getsClient scursor
   targeting <- getsClient (ctargeting . scursor)
-  sarena <- getsGlobal sarena
-  lvl       <- getsGlobal getArena
-  st        <- getGlobal
-  depth     <- getsGlobal sdepth
+  sarena <- getsLocal sarena
+  lvl       <- getsLocal getArena
+  st        <- getLocal
+  depth     <- getsLocal sdepth
   let loc = cposition cursor
       tile = lvl `at` loc
       rightStairs =
@@ -212,12 +212,8 @@ tgtAscend k = do
         abortWith "no more levels in this direction"
       Just (nln, npos) ->
         assert (nln /= sarena `blame` (nln, "stairs looped")) $ do
-          -- We only look at the level, but we have to keep current
-          -- time somewhere, e.g., for when we change the player
-          -- to a hero on this level and then end targeting.
-          -- If that's too slow, we could keep current time in the @Cursor@.
-          switchLevel nln
-          -- do not freely reveal the other end of the stairs
+          modifyLocal $ \ s -> s {sarena = nln}
+          -- Do not freely reveal the other end of the stairs.
           clvl <- getsLocal getArena
           let upd cur =
                 let cposition =
@@ -230,7 +226,7 @@ tgtAscend k = do
       let n = levelNumber sarena
           nln = levelDefault $ min depth $ max 1 $ n - k
       when (nln == sarena) $ abortWith "no more levels in this direction"
-      switchLevel nln  -- see comment above
+      modifyLocal $ \ s -> s {sarena = nln}
       let upd cur = cur {cposLn = nln}
       modifyClient (updateCursor upd)
   when (targeting == TgtOff) $ do
@@ -594,13 +590,15 @@ displayMainMenu = do
       slides <- overlayToSlideshow hd tl
       tell slides
 
+-- TODO: add times from all levels. Also, show time spend on this level alone.
+-- "You survived for x turns (y turns on this level)"
 displayHistory :: MonadClient m => WriterT Slideshow m ()
 displayHistory = do
   StateClient{shistory} <- getClient
   time <- getsLocal getTime
   let turn = time `timeFit` timeTurn
-      msg = makeSentence [ "You survived for"
-                       , MU.NWs turn "half-second turn" ]
+      msg = makeSentence [ "You spent on this level"
+                         , MU.NWs turn "half-second turn" ]
             <+> "Past messages:"
   slides <- overlayToSlideshow msg $ renderHistory shistory
   tell slides

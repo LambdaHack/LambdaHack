@@ -116,7 +116,7 @@ handleActors subclipStart = do
       loc <- getLocal
       if actor == splayerNew && isControlledFaction loc sside
         then
-          -- Player moves always start a new subclip.
+          -- Selected player moves always start a new subclip.
           startClip $ do
             handlePlayer
             squitNew <- getsServer squit
@@ -138,18 +138,20 @@ handleActors subclipStart = do
           recordHistory
           advanceTime actor  -- advance time while the actor still alive
           let subclipStartDelta = timeAddFromSpeed coactor m subclipStart
-          if subclipStart == timeZero
+          if isControlledFaction loc sside && not (bproj m)
+             || subclipStart == timeZero
              || btime m > subclipStartDelta
-             || isControlledFaction loc sside && not (bproj m)
             then
-              -- That's the first move this clip
-              -- or the actor has already moved during this subclip
-              -- or it's a hero. In either case, start a new subclip.
+              -- Start a new subclip if its our own faction moving
+              -- or it's another faction, but it's the first move of
+              -- this whole clip or the actor has already moved during
+              -- this subclip, so his multiple moves would be collapsed.
+              -- TODO: store frames somewhere for each faction and display
+              -- the frames only after a "Faction X taking over..." prompt.
               startClip $ do
                 handleAI actor
                 handleActors $ btime m
             else do
-              -- The monster didn't yet move this subclip.
               handleAI actor
               handleActors subclipStart
 
