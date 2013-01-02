@@ -5,41 +5,31 @@
 -- TODO: Add an export list and document after it's rewritten according to #17.
 module Game.LambdaHack.Actions where
 
--- Cabal
-import qualified Paths_LambdaHack as Self (version)
-
 import Control.Monad
-import Control.Monad.Writer.Strict (WriterT, tell)
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import Data.List
-import qualified Data.Map as M
 import Data.Maybe
 import Data.Ratio
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Version
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Animation (blockMiss, swapPlaces)
-import Game.LambdaHack.Binding
-import qualified Game.LambdaHack.Command as Command
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
-import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Draw
-import Game.LambdaHack.DungeonState
-import qualified Game.LambdaHack.Effect as Effect
 import Game.LambdaHack.EffectAction
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Item
+import Game.LambdaHack.ItemAction
 import qualified Game.LambdaHack.Key as K
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
@@ -56,6 +46,232 @@ import Game.LambdaHack.Utils.Frequency
 import Game.LambdaHack.Vector
 
 default (Text)
+
+applyGroupItem :: MonadAction m
+               => ActorId  -- ^ actor applying the item (is on current level)
+               -> MU.Part  -- ^ how the applying is called
+               -> Item     -- ^ the item to be applied
+               -> m ()
+applyGroupItem actor verb item = do
+  Kind.COps{coactor, coitem} <- getsLocal scops
+  body  <- getsLocal (getActor actor)
+  per   <- askPerception
+  disco <- getsLocal sdisco
+  -- only one item consumed, even if several in inventory
+  let consumed = item { jcount = 1 }
+      msg = makeSentence
+        [ MU.SubjectVerbSg (partActor coactor body) verb
+        , partItemNWs coitem disco consumed ]
+      loc = bpos body
+  removeFromInventory actor consumed loc
+  when (loc `IS.member` totalVisible per) $ msgAdd msg
+  itemEffectAction 5 actor actor consumed False
+
+playerApplyGroupItem :: MonadAction m => MU.Part -> MU.Part -> [Char] -> m ()
+playerApplyGroupItem verb object syms = do
+  Kind.COps{coitem=Kind.Ops{okind}} <- getsLocal scops
+  is   <- getsLocal getPlayerItem
+  item <- getGroupItem is object syms
+            (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
+  pl   <- getsLocal splayer
+  disco <- getsLocal sdisco
+  let verbApply = case jkind disco item of
+        Nothing -> verb
+        Just ik -> iverbApply $ okind ik
+  applyGroupItem pl verbApply item
+
+projectGroupItem :: MonadAction m => ActorId  -- ^ actor projecting the item (is on current lvl)
+                 -> Point    -- ^ target position of the projectile
+                 -> MU.Part  -- ^ how the projecting is called
+                 -> Item     -- ^ the item to be projected
+                 -> m ()
+projectGroupItem source tpos _verb item = do
+  cops@Kind.COps{coactor, coitem} <- getsLocal scops
+  sm    <- getsLocal (getActor source)
+  per   <- askPerceptionSer
+  pl    <- getsLocal splayer
+  Actor{btime}  <- getsLocal getPlayerBody
+  lvl   <- getsLocal getArena
+  ceps  <- getsClient (ceps . scursor)
+  lxsize <- getsLocal (lxsize . getArena)
+  lysize <- getsLocal (lysize . getArena)
+  sside <- getsLocal sside
+  disco <- getsLocal sdisco
+  let consumed = item { jcount = 1 }
+      spos = bpos sm
+      svisible = spos `IS.member` totalVisible per
+      subject =
+        if svisible
+        then sm
+        else sm {bname = Just "somebody"}
+      -- When projecting, the first turn is spent aiming.
+      -- The projectile is seen one tile from the actor, giving a hint
+      -- about the aim and letting the target evade.
+      msg = makeSentence
+        [ MU.SubjectVerbSg (partActor coactor subject) "aim"
+        , partItemNWs coitem disco consumed ]
+      -- TODO: AI should choose the best eps.
+      eps = if source == pl then ceps else 0
+      -- Setting monster's projectiles time to player time ensures
+      -- the projectile covers the whole normal distance already the first
+      -- turn that the player observes it moving. This removes
+      -- the possibility of micromanagement by, e.g.,  waiting until
+      -- the first distance is short.
+      -- When the monster faction has its selected player, hero player's
+      -- projectiles should be set to the time of the opposite party as well.
+      -- Both parties would see their own projectiles move part of the way
+      -- and the opposite party's projectiles waiting one turn.
+      btimeDelta = timeAddFromSpeed coactor sm btime
+      time =
+        if bfaction sm == sside || source == pl
+        then btimeDelta `timeAdd` timeNegate timeClip
+        else btime
+      bl = bla lxsize lysize eps spos tpos
+  case bl of
+    Nothing -> abortWith "cannot zap oneself"
+    Just [] -> assert `failure` (spos, tpos, "project from the edge of level")
+    Just path@(pos:_) -> do
+      let projVis = pos `IS.member` totalVisible per
+      removeFromInventory source consumed spos
+      inhabitants <- getsGlobal (posToActor pos)
+      if accessible cops lvl spos pos && isNothing inhabitants
+        then do
+          glo <- getGlobal
+          ser <- getServer
+          let (nglo, nser) =
+                addProjectile cops consumed pos (bfaction sm) path time glo ser
+          putGlobal nglo
+          putServer nser
+        else
+          abortWith "blocked"
+      when (svisible || projVis) $ msgAdd msg
+
+playerProjectGroupItem :: MonadAction m => MU.Part -> MU.Part -> [Char] -> m ()
+playerProjectGroupItem verb object syms = do
+  ms     <- getsLocal hostileList
+  lxsize <- getsLocal (lxsize . getArena)
+  lysize <- getsLocal (lysize . getArena)
+  ppos   <- getsLocal (bpos . getPlayerBody)
+  if foesAdjacent lxsize lysize ppos ms
+    then abortWith "You can't aim in melee."
+    else playerProjectGI verb object syms
+
+playerProjectGI :: MonadAction m => MU.Part -> MU.Part -> [Char] -> m ()
+playerProjectGI verb object syms = do
+  cli <- getClient
+  pos <- getLocal
+  pl    <- getsLocal splayer
+  case targetToPos cli pos of
+    Just p -> do
+      Kind.COps{coitem=Kind.Ops{okind}} <- getsLocal scops
+      is   <- getsLocal getPlayerItem
+      item <- getGroupItem is object syms
+                (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
+      targeting <- getsClient (ctargeting . scursor)
+      when (targeting == TgtAuto) $ endTargeting True
+      disco <- getsLocal sdisco
+      let verbProject = case jkind disco item of
+            Nothing -> verb
+            Just ik -> iverbProject $ okind ik
+      projectGroupItem pl p verbProject item
+    Nothing -> assert `failure` (pos, pl, "target unexpectedly invalid")
+
+-- | Drop a single item.
+dropItem :: MonadAction m => m ()
+dropItem = do
+  -- TODO: allow dropping a given number of identical items.
+  Kind.COps{coactor, coitem} <- getsLocal scops
+  pl    <- getsLocal splayer
+  pbody <- getsLocal getPlayerBody
+  ppos  <- getsLocal (bpos . getPlayerBody)
+  ims   <- getsLocal getPlayerItem
+  stack <- getAnyItem "What to drop?" ims "in inventory"
+  disco <- getsLocal sdisco
+  let item = stack { jcount = 1 }
+  removeOnlyFromInventory pl item (bpos pbody)
+  msgAdd $ makeSentence
+    [ MU.SubjectVerbSg (partActor coactor pbody) "drop"
+    , partItemNWs coitem disco item ]
+  modifyLocal (updateArena (dropItemsAt [item] ppos))
+  modifyGlobal (updateArena (dropItemsAt [item] ppos))  -- a hack
+
+-- TODO: this is a hack for dropItem, because removeFromInventory
+-- makes it impossible to drop items if the floor not empty.
+removeOnlyFromInventory :: MonadAction m => ActorId -> Item -> Point -> m ()
+removeOnlyFromInventory actor i _pos = do
+  modifyLocal (updateAnyActorItem actor (removeItemByLetter i))
+  modifyGlobal (updateAnyActorItem actor (removeItemByLetter i))  -- a hack
+
+-- | Remove given item from an actor's inventory or floor.
+-- TODO: this is subtly wrong: if identical items are on the floor and in
+-- inventory, the floor one will be chosen, regardless of player intention.
+-- TODO: right now it ugly hacks (with the ppos) around removing items
+-- of dead heros/monsters. The subtle incorrectness helps here a lot,
+-- because items of dead heroes land on the floor, so we use them up
+-- in inventory, but remove them after use from the floor.
+removeFromInventory :: MonadAction m => ActorId -> Item -> Point -> m ()
+removeFromInventory actor i pos = do
+  b <- removeFromPos i pos
+  unless b $ do
+    modifyLocal (updateAnyActorItem actor (removeItemByLetter i))
+    modifyGlobal (updateAnyActorItem actor (removeItemByLetter i))  -- a hack
+
+-- | Remove given item from the given position. Tell if successful.
+removeFromPos :: MonadServer m => Item -> Point -> m Bool
+removeFromPos i pos = do
+  lvl <- getsGlobal getArena
+  if not $ any (equalItemIdentity i) (lvl `atI` pos)
+    then return False
+    else do
+      modifyGlobal (updateArena (updateIMap adj))
+      return True
+     where
+      rib Nothing = assert `failure` (i, pos)
+      rib (Just is) =
+        case removeItemByIdentity i is of
+          [] -> Nothing
+          x  -> Just x
+      adj = IM.alter rib pos
+
+actorPickupItem :: MonadAction m => ActorId -> m ()
+actorPickupItem actor = do
+  Kind.COps{coactor, coitem} <- getsGlobal scops
+  pl <- getsGlobal splayer
+  per <- askPerception
+  lvl <- getsGlobal getArena
+  body <- getsGlobal (getActor actor)
+  bitems <- getsGlobal (getActorItem actor)
+  disco <- getsLocal sdisco
+  let p       = bpos body
+      perceived = p `IS.member` totalVisible per
+      isPlayer  = actor == pl
+  -- check if something is here to pick up
+  case lvl `atI` p of
+    []   -> abortWith "nothing here"
+    i:is -> -- pick up first item; TODO: let pl select item; not for monsters
+      case assignLetter (jletter i) (bletter body) bitems of
+        Just l -> do
+          let (ni, nitems) = joinItem (i { jletter = Just l }) bitems
+          -- msg depends on who picks up and if a hero can perceive it
+          if isPlayer
+            then msgAdd $ makePhrase [ letterLabel (jletter ni)
+                                     , partItemNWs coitem disco ni ]
+            else when perceived $
+                   msgAdd $ makeSentence
+                     [ MU.SubjectVerbSg (partActor coactor body) "pick up"
+                     , partItemNWs coitem disco i ]
+          removeFromPos i p
+            >>= assert `trueM` (i, is, p, "item is stuck")
+          -- add item to actor's inventory:
+          updateAnyActor actor $ \ m ->
+            m { bletter = maxLetter l (bletter body) }
+          modifyGlobal (updateAnyActorItem actor (const nitems))
+        Nothing -> abortWith "cannot carry any more"
+
+pickupItem :: MonadAction m => m ()
+pickupItem = do
+  pl <- getsLocal splayer
+  actorPickupItem pl
 
 gameSave :: MonadAction m => m ()
 gameSave = do
@@ -76,23 +292,6 @@ gameRestart = do
   b2 <- displayYesNo "Current progress will be lost! Really restart the game?"
   when (not b2) $ abortWith "Yea, so much still to do."
   modifyServer (\ s -> s {squit = Just (False, Restart)})
-
-moveCursor :: MonadClient m => Vector -> Int -> WriterT Slideshow m ()
-moveCursor dir n = do
-  lxsize <- getsLocal (lxsize . getArena)
-  lysize <- getsLocal (lysize . getArena)
-  let upd cursor =
-        let shiftB loc =
-              shiftBounded lxsize (1, 1, lxsize - 2, lysize - 2) loc dir
-            cpos = iterate shiftB (cposition cursor) !! n
-        in cursor { cposition = cpos }
-  modifyClient (updateCursor upd)
-  doLook
-
-ifRunning :: MonadClientRO m => ((Vector, Int) -> m a) -> m a -> m a
-ifRunning t e = do
-  srunning <- getsClient srunning
-  maybe e t srunning
 
 -- | Guess and report why the bump command failed.
 guessBump :: MonadActionRoot m => Kind.Ops TileKind -> F.Feature -> Kind.Id TileKind -> m ()
@@ -189,50 +388,6 @@ actorOpenDoor actor dir = do
                  Tile.hasFeature cotile F.Hidden t)
          then neverMind isVerbose  -- not doors at all
          else triggerTile dpos
-
--- | Change the displayed level in targeting mode to (at most)
--- k levels shallower. Enters targeting mode, if not already in one.
-tgtAscend :: MonadAction m => Int -> WriterT Slideshow m ()
-tgtAscend k = do
-  Kind.COps{cotile} <- getsLocal scops
-  cursor <- getsClient scursor
-  targeting <- getsClient (ctargeting . scursor)
-  sarena <- getsLocal sarena
-  lvl       <- getsLocal getArena
-  st        <- getLocal
-  depth     <- getsLocal sdepth
-  let loc = cposition cursor
-      tile = lvl `at` loc
-      rightStairs =
-        k ==  1 && Tile.hasFeature cotile (F.Cause Effect.Ascend)  tile ||
-        k == -1 && Tile.hasFeature cotile (F.Cause Effect.Descend) tile
-  if rightStairs  -- stairs, in the right direction
-    then case whereTo st k of
-      Nothing ->  -- we are at the "end" of the dungeon
-        abortWith "no more levels in this direction"
-      Just (nln, npos) ->
-        assert (nln /= sarena `blame` (nln, "stairs looped")) $ do
-          modifyLocal $ \ s -> s {sarena = nln}
-          -- Do not freely reveal the other end of the stairs.
-          clvl <- getsLocal getArena
-          let upd cur =
-                let cposition =
-                      if Tile.hasFeature cotile F.Exit (clvl `at` npos)
-                      then npos  -- already know as an exit, focus on it
-                      else loc   -- unknow, do not reveal the position
-                in cur { cposition, cposLn = nln }
-          modifyClient (updateCursor upd)
-    else do  -- no stairs in the right direction
-      let n = levelNumber sarena
-          nln = levelDefault $ min depth $ max 1 $ n - k
-      when (nln == sarena) $ abortWith "no more levels in this direction"
-      modifyLocal $ \ s -> s {sarena = nln}
-      let upd cur = cur {cposLn = nln}
-      modifyClient (updateCursor upd)
-  when (targeting == TgtOff) $ do
-    let upd cur = cur {ctargeting = TgtExplicit}
-    modifyClient (updateCursor upd)
-  doLook
 
 heroesAfterPl :: MonadClient m => m [ActorId]
 heroesAfterPl = do
@@ -535,73 +690,6 @@ regenerateLevelHP = do
   -- via sending one hero to a safe level and waiting there.
   hi <- getsGlobal (linv . getArena)
   modifyGlobal (updateArena (updateActor (IM.mapWithKey (upd hi))))
-
--- | Display command help.
-displayHelp :: MonadClient m => WriterT Slideshow m ()
-displayHelp = do
-  keyb <- askBinding
-  tell $ keyHelp keyb
-
--- | Display the main menu.
-displayMainMenu :: MonadClient m => WriterT Slideshow m ()
-displayMainMenu = do
-  Kind.COps{corule} <- getsLocal scops
-  Binding{krevMap} <- askBinding
-  let stripFrame t = case T.uncons t of
-        Just ('\n', art) -> map (T.tail . T.init) $ tail . init $ T.lines art
-        _ -> assert `failure` "displayMainMenu:" <+> t
-      pasteVersion art =
-        let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
-            version = " Version " ++ showVersion pathsVersion
-                      ++ " (frontend: " ++ frontendName
-                      ++ ", engine: LambdaHack " ++ showVersion Self.version
-                      ++ ") "
-            versionLen = length version
-        in init art ++ [take (80 - versionLen) (last art) ++ version]
-      kds =  -- key-description pairs
-        let showKD cmd key = (showT key, Command.cmdDescription cmd)
-            revLookup cmd =
-              maybe ("", "") (showKD cmd . fst) $ M.lookup cmd krevMap
-            cmds = [Command.GameSave, Command.GameExit,
-                   Command.GameRestart, Command.Help]
-        in map revLookup cmds ++ [(fst (revLookup Command.Clear), "continue")]
-      bindings =  -- key bindings to display
-        let bindingLen = 25
-            fmt (k, d) =
-              let gapLen = (8 - T.length k) `max` 1
-                  padLen = bindingLen - T.length k - gapLen - T.length d
-              in k <> T.replicate gapLen " " <> d <> T.replicate padLen " "
-        in map fmt kds
-      overwrite =  -- overwrite the art with key bindings
-        let over [] line = ([], T.pack line)
-            over bs@(binding : bsRest) line =
-              let (prefix, lineRest) = break (=='{') line
-                  (braces, suffix)   = span  (=='{') lineRest
-              in if length braces == 25
-                 then (bsRest, T.pack prefix <> binding <> T.pack suffix)
-                 else (bs, T.pack line)
-        in snd . mapAccumL over bindings
-      mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule
-      menuOverlay =  -- TODO: switch to Text and use T.justifyLeft
-        overwrite $ pasteVersion $ map T.unpack $ stripFrame $ mainMenuArt
-  case menuOverlay of
-    [] -> assert `failure` "empty Main Menu overlay"
-    hd : tl -> do
-      slides <- overlayToSlideshow hd tl
-      tell slides
-
--- TODO: add times from all levels. Also, show time spend on this level alone.
--- "You survived for x turns (y turns on this level)"
-displayHistory :: MonadClient m => WriterT Slideshow m ()
-displayHistory = do
-  StateClient{shistory} <- getClient
-  time <- getsLocal getTime
-  let turn = time `timeFit` timeTurn
-      msg = makeSentence [ "You spent on this level"
-                         , MU.NWs turn "half-second turn" ]
-            <+> "Past messages:"
-  slides <- overlayToSlideshow msg $ renderHistory shistory
-  tell slides
 
 dumpConfig :: MonadServer m => m ()
 dumpConfig = do

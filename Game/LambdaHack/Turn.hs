@@ -18,6 +18,7 @@ import Game.LambdaHack.ActorState
 import Game.LambdaHack.Binding
 import qualified Game.LambdaHack.Command as Command
 import Game.LambdaHack.CommandAction
+import Game.LambdaHack.ItemAction
 import Game.LambdaHack.EffectAction
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Key as K

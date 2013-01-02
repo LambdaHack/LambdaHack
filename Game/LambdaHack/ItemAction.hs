@@ -6,22 +6,33 @@
 -- TODO: Add an export list and document after it's rewritten according to #17.
 module Game.LambdaHack.ItemAction where
 
+-- Cabal
+import qualified Paths_LambdaHack as Self (version)
+
 import Control.Monad
 import Control.Monad.Writer.Strict (WriterT, lift, tell)
+import Data.Function
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
-import qualified Data.List as L
+import Data.List
+import qualified Data.Map as M
 import Data.Maybe
 import Data.Ord
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Version
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Action
+import Game.LambdaHack.Action hiding (MonadAction, MonadActionRO, MonadServer,
+                               MonadServerRO)
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Content.ItemKind
-import Game.LambdaHack.EffectAction
+import Game.LambdaHack.Binding
+import qualified Game.LambdaHack.Command as Command
+import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.DungeonState
+import qualified Game.LambdaHack.Effect as Effect
+import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Key as K
 import qualified Game.LambdaHack.Kind as Kind
@@ -30,8 +41,10 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import Game.LambdaHack.State
+import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Vector
 
 default (Text)
 
@@ -44,7 +57,7 @@ inventory = do
   pbody <- getsLocal getPlayerBody
   items <- getsLocal getPlayerItem
   disco <- getsLocal sdisco
-  if L.null items
+  if null items
     then abortWith $ makeSentence
       [ MU.SubjectVerbSg (partActor coactor pbody) "be"
       , "not carrying anything" ]
@@ -70,136 +83,7 @@ getGroupItem is object syms prompt packName = do
       header = makePhrase [MU.Capitalize (MU.Ws object)]
   getItem prompt choice header is packName
 
-applyGroupItem :: MonadAction m
-               => ActorId  -- ^ actor applying the item (is on current level)
-               -> MU.Part  -- ^ how the applying is called
-               -> Item     -- ^ the item to be applied
-               -> m ()
-applyGroupItem actor verb item = do
-  Kind.COps{coactor, coitem} <- getsLocal scops
-  body  <- getsLocal (getActor actor)
-  per   <- askPerception
-  disco <- getsLocal sdisco
-  -- only one item consumed, even if several in inventory
-  let consumed = item { jcount = 1 }
-      msg = makeSentence
-        [ MU.SubjectVerbSg (partActor coactor body) verb
-        , partItemNWs coitem disco consumed ]
-      loc = bpos body
-  removeFromInventory actor consumed loc
-  when (loc `IS.member` totalVisible per) $ msgAdd msg
-  itemEffectAction 5 actor actor consumed False
-
-playerApplyGroupItem :: MonadAction m => MU.Part -> MU.Part -> [Char] -> m ()
-playerApplyGroupItem verb object syms = do
-  Kind.COps{coitem=Kind.Ops{okind}} <- getsLocal scops
-  is   <- getsLocal getPlayerItem
-  item <- getGroupItem is object syms
-            (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
-  pl   <- getsLocal splayer
-  disco <- getsLocal sdisco
-  let verbApply = case jkind disco item of
-        Nothing -> verb
-        Just ik -> iverbApply $ okind ik
-  applyGroupItem pl verbApply item
-
-projectGroupItem :: MonadAction m => ActorId  -- ^ actor projecting the item (is on current lvl)
-                 -> Point    -- ^ target position of the projectile
-                 -> MU.Part  -- ^ how the projecting is called
-                 -> Item     -- ^ the item to be projected
-                 -> m ()
-projectGroupItem source tpos _verb item = do
-  cops@Kind.COps{coactor, coitem} <- getsLocal scops
-  sm    <- getsLocal (getActor source)
-  per   <- askPerceptionSer
-  pl    <- getsLocal splayer
-  Actor{btime}  <- getsLocal getPlayerBody
-  lvl   <- getsLocal getArena
-  ceps  <- getsClient (ceps . scursor)
-  lxsize <- getsLocal (lxsize . getArena)
-  lysize <- getsLocal (lysize . getArena)
-  sside <- getsLocal sside
-  disco <- getsLocal sdisco
-  let consumed = item { jcount = 1 }
-      spos = bpos sm
-      svisible = spos `IS.member` totalVisible per
-      subject =
-        if svisible
-        then sm
-        else sm {bname = Just "somebody"}
-      -- When projecting, the first turn is spent aiming.
-      -- The projectile is seen one tile from the actor, giving a hint
-      -- about the aim and letting the target evade.
-      msg = makeSentence
-        [ MU.SubjectVerbSg (partActor coactor subject) "aim"
-        , partItemNWs coitem disco consumed ]
-      -- TODO: AI should choose the best eps.
-      eps = if source == pl then ceps else 0
-      -- Setting monster's projectiles time to player time ensures
-      -- the projectile covers the whole normal distance already the first
-      -- turn that the player observes it moving. This removes
-      -- the possibility of micromanagement by, e.g.,  waiting until
-      -- the first distance is short.
-      -- When the monster faction has its selected player, hero player's
-      -- projectiles should be set to the time of the opposite party as well.
-      -- Both parties would see their own projectiles move part of the way
-      -- and the opposite party's projectiles waiting one turn.
-      btimeDelta = timeAddFromSpeed coactor sm btime
-      time =
-        if bfaction sm == sside || source == pl
-        then btimeDelta `timeAdd` timeNegate timeClip
-        else btime
-      bl = bla lxsize lysize eps spos tpos
-  case bl of
-    Nothing -> abortWith "cannot zap oneself"
-    Just [] -> assert `failure` (spos, tpos, "project from the edge of level")
-    Just path@(pos:_) -> do
-      let projVis = pos `IS.member` totalVisible per
-      removeFromInventory source consumed spos
-      inhabitants <- getsGlobal (posToActor pos)
-      if accessible cops lvl spos pos && isNothing inhabitants
-        then do
-          glo <- getGlobal
-          ser <- getServer
-          let (nglo, nser) =
-                addProjectile cops consumed pos (bfaction sm) path time glo ser
-          putGlobal nglo
-          putServer nser
-        else
-          abortWith "blocked"
-      when (svisible || projVis) $ msgAdd msg
-
-playerProjectGroupItem :: MonadAction m => MU.Part -> MU.Part -> [Char] -> m ()
-playerProjectGroupItem verb object syms = do
-  ms     <- getsLocal hostileList
-  lxsize <- getsLocal (lxsize . getArena)
-  lysize <- getsLocal (lysize . getArena)
-  ppos   <- getsLocal (bpos . getPlayerBody)
-  if foesAdjacent lxsize lysize ppos ms
-    then abortWith "You can't aim in melee."
-    else playerProjectGI verb object syms
-
-playerProjectGI :: MonadAction m => MU.Part -> MU.Part -> [Char] -> m ()
-playerProjectGI verb object syms = do
-  cli <- getClient
-  pos <- getLocal
-  pl    <- getsLocal splayer
-  case targetToPos cli pos of
-    Just p -> do
-      Kind.COps{coitem=Kind.Ops{okind}} <- getsLocal scops
-      is   <- getsLocal getPlayerItem
-      item <- getGroupItem is object syms
-                (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
-      targeting <- getsClient (ctargeting . scursor)
-      when (targeting == TgtAuto) $ endTargeting True
-      disco <- getsLocal sdisco
-      let verbProject = case jkind disco item of
-            Nothing -> verb
-            Just ik -> iverbProject $ okind ik
-      projectGroupItem pl p verbProject item
-    Nothing -> assert `failure` (pos, pl, "target unexpectedly invalid")
-
-retarget :: MonadAction m => WriterT Slideshow m ()
+retarget :: MonadClient m => WriterT Slideshow m ()
 retarget = do
   ppos <- getsLocal (bpos . getPlayerBody)
   msgAdd "Last target invalid."
@@ -208,7 +92,7 @@ retarget = do
   targetMonster TgtAuto
 
 -- | Start the monster targeting mode. Cycle between monster targets.
-targetMonster :: MonadAction m => TgtMode -> WriterT Slideshow m ()
+targetMonster :: MonadClient m => TgtMode -> WriterT Slideshow m ()
 targetMonster tgtMode = do
   pl        <- getsLocal splayer
   ppos      <- getsLocal (bpos . getPlayerBody)
@@ -219,23 +103,23 @@ targetMonster tgtMode = do
   target <- getsClient (IM.lookup pl . starget)
   targeting <- getsClient (ctargeting . scursor)
       -- TODO: sort monsters by distance to the player.
-  let plms = L.filter ((/= pl) . fst) ms  -- don't target yourself
+  let plms = filter ((/= pl) . fst) ms  -- don't target yourself
       ordPos (_, m) = (chessDist lxsize ppos $ bpos m, bpos m)
-      dms = L.sortBy (comparing ordPos) plms
+      dms = sortBy (comparing ordPos) plms
       (lt, gt) = case target of
             Just (TEnemy n _) | targeting /= TgtOff ->  -- pick the next monster
-              let i = fromMaybe (-1) $ L.findIndex ((== n) . fst) dms
-              in L.splitAt (i + 1) dms
+              let i = fromMaybe (-1) $ findIndex ((== n) . fst) dms
+              in splitAt (i + 1) dms
             Just (TEnemy n _) ->  -- try to retarget the old monster
-              let i = fromMaybe (-1) $ L.findIndex ((== n) . fst) dms
-              in L.splitAt i dms
+              let i = fromMaybe (-1) $ findIndex ((== n) . fst) dms
+              in splitAt i dms
             _ -> (dms, [])  -- target first monster (e.g., number 0)
       gtlt     = gt ++ lt
       seen (_, m) =
         let mpos = bpos m
         in mpos `IS.member` totalVisible per  -- visible by any
            && actorReachesLoc pl mpos per     -- reachable by player
-      lf = L.filter seen gtlt
+      lf = filter seen gtlt
       tgt = case lf of
               [] -> target  -- no monsters in sight, stick to last target
               (na, nm) : _ -> Just (TEnemy na (bpos nm))  -- pick the next
@@ -244,7 +128,7 @@ targetMonster tgtMode = do
   setCursor tgtMode
 
 -- | Start the floor targeting mode or reset the cursor position to the player.
-targetFloor :: MonadAction m => TgtMode -> WriterT Slideshow m ()
+targetFloor :: MonadClient m => TgtMode -> WriterT Slideshow m ()
 targetFloor tgtMode = do
   ppos      <- getsLocal (bpos . getPlayerBody)
   pl        <- getsLocal splayer
@@ -284,7 +168,7 @@ epsIncr b = do
     else neverMind True  -- no visual feedback, so no sense
 
 -- | End targeting mode, accepting the current position or not.
-endTargeting :: MonadAction m => Bool -> m ()
+endTargeting :: MonadClient m => Bool -> m ()
 endTargeting accept = do
   returnLn <- getsClient (creturnLn . scursor)
   pl <- getsLocal splayer
@@ -305,7 +189,7 @@ endTargeting accept = do
         -- the current cursor position, if any.
         let canSee = IS.member cpos (totalVisible per)
         when (accept && canSee) $
-          case L.find (\ (_im, m) -> bpos m == cpos) ms of
+          case find (\ (_im, m) -> bpos m == cpos) ms of
             Just (im, m)  ->
               let tgt = Just $ TEnemy im (bpos m)
               in modifyClient $ updateTarget pl (const $ tgt)
@@ -336,7 +220,7 @@ endTargetingMsg = do
 
 -- | Cancel something, e.g., targeting mode, resetting the cursor
 -- to the position of the player. Chosen target is not invalidated.
-cancelCurrent :: MonadAction m => WriterT Slideshow m () -> WriterT Slideshow m ()
+cancelCurrent :: MonadClient m => WriterT Slideshow m () -> WriterT Slideshow m ()
 cancelCurrent h = do
   targeting <- getsClient (ctargeting . scursor)
   if targeting /= TgtOff
@@ -345,7 +229,7 @@ cancelCurrent h = do
 
 -- | Accept something, e.g., targeting mode, keeping cursor where it was.
 -- Or perform the default action, if nothing needs accepting.
-acceptCurrent :: MonadAction m => WriterT Slideshow m () -> WriterT Slideshow m ()
+acceptCurrent :: MonadClient m => WriterT Slideshow m () -> WriterT Slideshow m ()
 acceptCurrent h = do
   targeting <- getsClient (ctargeting . scursor)
   if targeting /= TgtOff
@@ -355,103 +239,6 @@ acceptCurrent h = do
 -- | Clear current messages, show the next screen if any.
 clearCurrent :: MonadActionRoot m => m ()
 clearCurrent = return ()
-
--- | Drop a single item.
-dropItem :: MonadAction m => m ()
-dropItem = do
-  -- TODO: allow dropping a given number of identical items.
-  Kind.COps{coactor, coitem} <- getsLocal scops
-  pl    <- getsLocal splayer
-  pbody <- getsLocal getPlayerBody
-  ppos  <- getsLocal (bpos . getPlayerBody)
-  ims   <- getsLocal getPlayerItem
-  stack <- getAnyItem "What to drop?" ims "in inventory"
-  disco <- getsLocal sdisco
-  let item = stack { jcount = 1 }
-  removeOnlyFromInventory pl item (bpos pbody)
-  msgAdd $ makeSentence
-    [ MU.SubjectVerbSg (partActor coactor pbody) "drop"
-    , partItemNWs coitem disco item ]
-  modifyLocal (updateArena (dropItemsAt [item] ppos))
-  modifyGlobal (updateArena (dropItemsAt [item] ppos))  -- a hack
-
--- TODO: this is a hack for dropItem, because removeFromInventory
--- makes it impossible to drop items if the floor not empty.
-removeOnlyFromInventory :: MonadAction m => ActorId -> Item -> Point -> m ()
-removeOnlyFromInventory actor i _pos = do
-  modifyLocal (updateAnyActorItem actor (removeItemByLetter i))
-  modifyGlobal (updateAnyActorItem actor (removeItemByLetter i))  -- a hack
-
--- | Remove given item from an actor's inventory or floor.
--- TODO: this is subtly wrong: if identical items are on the floor and in
--- inventory, the floor one will be chosen, regardless of player intention.
--- TODO: right now it ugly hacks (with the ppos) around removing items
--- of dead heros/monsters. The subtle incorrectness helps here a lot,
--- because items of dead heroes land on the floor, so we use them up
--- in inventory, but remove them after use from the floor.
-removeFromInventory :: MonadAction m => ActorId -> Item -> Point -> m ()
-removeFromInventory actor i pos = do
-  b <- removeFromPos i pos
-  unless b $ do
-    modifyLocal (updateAnyActorItem actor (removeItemByLetter i))
-    modifyGlobal (updateAnyActorItem actor (removeItemByLetter i))  -- a hack
-
--- | Remove given item from the given position. Tell if successful.
-removeFromPos :: MonadServer m => Item -> Point -> m Bool
-removeFromPos i pos = do
-  lvl <- getsGlobal getArena
-  if not $ L.any (equalItemIdentity i) (lvl `atI` pos)
-    then return False
-    else do
-      modifyGlobal (updateArena (updateIMap adj))
-      return True
-     where
-      rib Nothing = assert `failure` (i, pos)
-      rib (Just is) =
-        case removeItemByIdentity i is of
-          [] -> Nothing
-          x  -> Just x
-      adj = IM.alter rib pos
-
-actorPickupItem :: MonadAction m => ActorId -> m ()
-actorPickupItem actor = do
-  Kind.COps{coactor, coitem} <- getsGlobal scops
-  pl <- getsGlobal splayer
-  per <- askPerception
-  lvl <- getsGlobal getArena
-  body <- getsGlobal (getActor actor)
-  bitems <- getsGlobal (getActorItem actor)
-  disco <- getsLocal sdisco
-  let p       = bpos body
-      perceived = p `IS.member` totalVisible per
-      isPlayer  = actor == pl
-  -- check if something is here to pick up
-  case lvl `atI` p of
-    []   -> abortWith "nothing here"
-    i:is -> -- pick up first item; TODO: let pl select item; not for monsters
-      case assignLetter (jletter i) (bletter body) bitems of
-        Just l -> do
-          let (ni, nitems) = joinItem (i { jletter = Just l }) bitems
-          -- msg depends on who picks up and if a hero can perceive it
-          if isPlayer
-            then msgAdd $ makePhrase [ letterLabel (jletter ni)
-                                     , partItemNWs coitem disco ni ]
-            else when perceived $
-                   msgAdd $ makeSentence
-                     [ MU.SubjectVerbSg (partActor coactor body) "pick up"
-                     , partItemNWs coitem disco i ]
-          removeFromPos i p
-            >>= assert `trueM` (i, is, p, "item is stuck")
-          -- add item to actor's inventory:
-          updateAnyActor actor $ \ m ->
-            m { bletter = maxLetter l (bletter body) }
-          modifyGlobal (updateAnyActorItem actor (const nitems))
-        Nothing -> abortWith "cannot carry any more"
-
-pickupItem :: MonadAction m => m ()
-pickupItem = do
-  pl <- getsLocal splayer
-  actorPickupItem pl
 
 -- TODO: I think that player handlers should be wrappers
 -- around more general actor handlers, but
@@ -498,12 +285,12 @@ getItem prompt p ptext is0 isn = do
       floorFull = not $ null tis
       (floorMsg, floorKey) | floorFull = (", -", [K.Char '-'])
                            | otherwise = ("", [])
-      isp = L.filter p is0
+      isp = filter p is0
       bestFull = not $ null isp
       (bestMsg, bestKey)
         | bestFull =
           let bestLetter = maybe "" (\ l -> "(" <> T.singleton l <> ")") $
-                             jletter $ L.maximumBy cmpItemLM isp
+                             jletter $ maximumBy cmpItemLM isp
           in (", RET" <> bestLetter, [K.Return])
         | otherwise = ("", [])
       cmpItemLM i1 i2 = cmpLetterMaybe (jletter i1) (jletter i2)
@@ -518,7 +305,7 @@ getItem prompt p ptext is0 isn = do
                  r = letterRange mls
              in "[" <> r <> ", ?" <> floorMsg <> bestMsg
       ask = do
-        when (L.null is0 && L.null tis) $
+        when (null is0 && null tis) $
           abortWith "Not carrying anything."
         perform INone
       perform itemDialogState = do
@@ -538,11 +325,214 @@ getItem prompt p ptext is0 isn = do
               _ -> perform INone
             K.Char '-' | floorFull ->
               -- TODO: let player select item
-              return $ L.maximumBy cmpItemLM tis
+              return $ maximumBy cmpItemLM tis
             K.Char l | l `elem` mapMaybe jletter ims ->
-              let mitem = L.find (maybe False (== l) . jletter) ims
+              let mitem = find (maybe False (== l) . jletter) ims
               in return $ fromJust mitem
             K.Return | bestFull ->
-              return $ L.maximumBy cmpItemLM isp
+              return $ maximumBy cmpItemLM isp
             k -> assert `failure` "perform: unexpected key:" <+> showT k
   ask
+
+moveCursor :: MonadClient m => Vector -> Int -> WriterT Slideshow m ()
+moveCursor dir n = do
+  lxsize <- getsLocal (lxsize . getArena)
+  lysize <- getsLocal (lysize . getArena)
+  let upd cursor =
+        let shiftB loc =
+              shiftBounded lxsize (1, 1, lxsize - 2, lysize - 2) loc dir
+            cpos = iterate shiftB (cposition cursor) !! n
+        in cursor { cposition = cpos }
+  modifyClient (updateCursor upd)
+  doLook
+
+ifRunning :: MonadClientRO m => ((Vector, Int) -> m a) -> m a -> m a
+ifRunning t e = do
+  srunning <- getsClient srunning
+  maybe e t srunning
+
+-- | Change the displayed level in targeting mode to (at most)
+-- k levels shallower. Enters targeting mode, if not already in one.
+tgtAscend :: MonadClient m => Int -> WriterT Slideshow m ()
+tgtAscend k = do
+  Kind.COps{cotile} <- getsLocal scops
+  cursor <- getsClient scursor
+  targeting <- getsClient (ctargeting . scursor)
+  sarena <- getsLocal sarena
+  lvl       <- getsLocal getArena
+  st        <- getLocal
+  depth     <- getsLocal sdepth
+  let loc = cposition cursor
+      tile = lvl `at` loc
+      rightStairs =
+        k ==  1 && Tile.hasFeature cotile (F.Cause Effect.Ascend)  tile ||
+        k == -1 && Tile.hasFeature cotile (F.Cause Effect.Descend) tile
+  if rightStairs  -- stairs, in the right direction
+    then case whereTo st k of
+      Nothing ->  -- we are at the "end" of the dungeon
+        abortWith "no more levels in this direction"
+      Just (nln, npos) ->
+        assert (nln /= sarena `blame` (nln, "stairs looped")) $ do
+          modifyLocal $ \ s -> s {sarena = nln}
+          -- Do not freely reveal the other end of the stairs.
+          clvl <- getsLocal getArena
+          let upd cur =
+                let cposition =
+                      if Tile.hasFeature cotile F.Exit (clvl `at` npos)
+                      then npos  -- already know as an exit, focus on it
+                      else loc   -- unknow, do not reveal the position
+                in cur { cposition, cposLn = nln }
+          modifyClient (updateCursor upd)
+    else do  -- no stairs in the right direction
+      let n = levelNumber sarena
+          nln = levelDefault $ min depth $ max 1 $ n - k
+      when (nln == sarena) $ abortWith "no more levels in this direction"
+      modifyLocal $ \ s -> s {sarena = nln}
+      let upd cur = cur {cposLn = nln}
+      modifyClient (updateCursor upd)
+  when (targeting == TgtOff) $ do
+    let upd cur = cur {ctargeting = TgtExplicit}
+    modifyClient (updateCursor upd)
+  doLook
+
+-- | Display command help.
+displayHelp :: MonadClient m => WriterT Slideshow m ()
+displayHelp = do
+  keyb <- askBinding
+  tell $ keyHelp keyb
+
+-- | Display the main menu.
+displayMainMenu :: MonadClient m => WriterT Slideshow m ()
+displayMainMenu = do
+  Kind.COps{corule} <- getsLocal scops
+  Binding{krevMap} <- askBinding
+  let stripFrame t = case T.uncons t of
+        Just ('\n', art) -> map (T.tail . T.init) $ tail . init $ T.lines art
+        _ -> assert `failure` "displayMainMenu:" <+> t
+      pasteVersion art =
+        let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
+            version = " Version " ++ showVersion pathsVersion
+                      ++ " (frontend: " ++ frontendName
+                      ++ ", engine: LambdaHack " ++ showVersion Self.version
+                      ++ ") "
+            versionLen = length version
+        in init art ++ [take (80 - versionLen) (last art) ++ version]
+      kds =  -- key-description pairs
+        let showKD cmd key = (showT key, Command.cmdDescription cmd)
+            revLookup cmd =
+              maybe ("", "") (showKD cmd . fst) $ M.lookup cmd krevMap
+            cmds = [Command.GameSave, Command.GameExit,
+                   Command.GameRestart, Command.Help]
+        in map revLookup cmds ++ [(fst (revLookup Command.Clear), "continue")]
+      bindings =  -- key bindings to display
+        let bindingLen = 25
+            fmt (k, d) =
+              let gapLen = (8 - T.length k) `max` 1
+                  padLen = bindingLen - T.length k - gapLen - T.length d
+              in k <> T.replicate gapLen " " <> d <> T.replicate padLen " "
+        in map fmt kds
+      overwrite =  -- overwrite the art with key bindings
+        let over [] line = ([], T.pack line)
+            over bs@(binding : bsRest) line =
+              let (prefix, lineRest) = break (=='{') line
+                  (braces, suffix)   = span  (=='{') lineRest
+              in if length braces == 25
+                 then (bsRest, T.pack prefix <> binding <> T.pack suffix)
+                 else (bs, T.pack line)
+        in snd . mapAccumL over bindings
+      mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule
+      menuOverlay =  -- TODO: switch to Text and use T.justifyLeft
+        overwrite $ pasteVersion $ map T.unpack $ stripFrame $ mainMenuArt
+  case menuOverlay of
+    [] -> assert `failure` "empty Main Menu overlay"
+    hd : tl -> do
+      slides <- overlayToSlideshow hd tl
+      tell slides
+
+-- TODO: add times from all levels. Also, show time spend on this level alone.
+-- "You survived for x turns (y turns on this level)"
+displayHistory :: MonadClient m => WriterT Slideshow m ()
+displayHistory = do
+  StateClient{shistory} <- getClient
+  time <- getsLocal getTime
+  let turn = time `timeFit` timeTurn
+      msg = makeSentence [ "You spent on this level"
+                         , MU.NWs turn "half-second turn" ]
+            <+> "Past messages:"
+  slides <- overlayToSlideshow msg $ renderHistory shistory
+  tell slides
+
+-- | Make the item known to the player.
+discover :: MonadClient m => Discoveries -> Item -> m ()
+discover discoS i = do
+  Kind.COps{coitem} <- getsLocal scops
+  oldDisco <- getsLocal sdisco
+  let ix = jkindIx i
+      ik = discoS M.! ix
+  unless (ix `M.member` oldDisco) $ do
+    modifyLocal (updateDiscoveries (M.insert ix ik))
+    disco <- getsLocal sdisco
+    let (object1, object2) = partItem coitem oldDisco i
+        msg = makeSentence
+          [ "the", MU.SubjectVerbSg (MU.Phrase [object1, object2])
+                                    "turn out to be"
+          , partItemAW coitem disco i ]
+    msgAdd msg
+
+-- | Create a list of item names.
+itemOverlay :: MonadClientRO m
+            => Discoveries -> Bool -> [Item] -> m Overlay
+itemOverlay disco sorted is = do
+  Kind.COps{coitem} <- getsLocal scops
+  let items | sorted = sortBy (cmpLetterMaybe `on` jletter) is
+            | otherwise = is
+      pr i = makePhrase [ letterLabel (jletter i)
+                        , partItemNWs coitem disco i ]
+             <> " "
+  return $ map pr items
+
+stopRunning :: MonadClient m => m ()
+stopRunning = modifyClient (\ cli -> cli { srunning = Nothing })
+
+-- | Perform look around in the current position of the cursor.
+doLook :: MonadClient m => WriterT Slideshow m ()
+doLook = do
+  cops@Kind.COps{coactor} <- getsLocal scops
+  p    <- getsClient (cposition . scursor)
+  loc  <- getLocal
+  clvl   <- getsLocal getArena
+  hms    <- getsLocal (lactor . getArena)
+  per    <- askPerception
+  pl     <- getsLocal splayer
+  target <- getsClient (IM.lookup pl . starget)
+  targeting <- getsClient (ctargeting . scursor)
+  assert (targeting /= TgtOff) $ do
+    let canSee = IS.member p (totalVisible per)
+        ihabitant | canSee = find (\ m -> bpos m == p) (IM.elems hms)
+                  | otherwise = Nothing
+        monsterMsg =
+          maybe "" (\ m -> makeSentence
+                           [MU.SubjectVerbSg (partActor coactor m) "be here"])
+                   ihabitant
+        vis | not $ p `IS.member` totalVisible per =
+                " (not visible)"  -- by party
+            | actorReachesLoc pl p per = ""
+            | otherwise = " (not reachable)"  -- by hero
+        mode = case target of
+                 Just TEnemy{} -> "[targeting monster" <> vis <> "]"
+                 Just TPos{}   -> "[targeting position" <> vis <> "]"
+                 Nothing       -> "[targeting current" <> vis <> "]"
+        -- Show general info about current p.
+        lookMsg = mode <+> lookAt cops True canSee loc p monsterMsg
+        -- Check if there's something lying around at current p.
+        is = clvl `atI` p
+    modifyClient (\st -> st {slastKey = Nothing})
+    if length is <= 2
+      then do
+        slides <- promptToSlideshow lookMsg
+        tell slides
+      else do
+       disco <- getsLocal sdisco
+       io <- itemOverlay disco False is
+       slides <- overlayToSlideshow lookMsg io
+       tell slides

@@ -7,12 +7,9 @@ module Game.LambdaHack.EffectAction where
 
 import Control.Monad
 import qualified Control.Monad.State as St
-import Control.Monad.Writer.Strict (WriterT, tell)
-import Data.Function
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import Data.List
-import qualified Data.Map as M
 import Data.Maybe
 import Data.Monoid (mempty)
 import Data.Ratio ((%))
@@ -32,6 +29,7 @@ import Game.LambdaHack.DungeonState
 import qualified Game.LambdaHack.Effect as Effect
 import Game.LambdaHack.Faction
 import Game.LambdaHack.Item
+import Game.LambdaHack.ItemAction
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Misc
@@ -422,23 +420,6 @@ itemEffectAction verbosity source target item block = do
     modifyGlobal (deleteActor source)
   modifyGlobal (\ s -> s {sarena = sarenaNew})
 
--- | Make the item known to the player.
-discover :: MonadClient m => Discoveries -> Item -> m ()
-discover discoS i = do
-  Kind.COps{coitem} <- getsLocal scops
-  oldDisco <- getsLocal sdisco
-  let ix = jkindIx i
-      ik = discoS M.! ix
-  unless (ix `M.member` oldDisco) $ do
-    modifyLocal (updateDiscoveries (M.insert ix ik))
-    disco <- getsLocal sdisco
-    let (object1, object2) = partItem coitem oldDisco i
-        msg = makeSentence
-          [ "the", MU.SubjectVerbSg (MU.Phrase [object1, object2])
-                                    "turn out to be"
-          , partItemAW coitem disco i ]
-    msgAdd msg
-
 -- | Make the actor controlled by the player. Switch level, if needed.
 -- False, if nothing to do. Should only be invoked as a direct result
 -- of a player action (selected player actor death just sets splayer to -1).
@@ -606,58 +587,3 @@ gameOver showEndingScreens = do
         slides <- overlayToSlideshow loseMsg io
         go <- getManyConfirms [] slides
         when go $ modifyServer (\st -> st {squit = Just (True, Killed sarena)})
-
--- | Create a list of item names.
-itemOverlay :: MonadClientRO m
-            => Discoveries -> Bool -> [Item] -> m Overlay
-itemOverlay disco sorted is = do
-  Kind.COps{coitem} <- getsLocal scops
-  let items | sorted = sortBy (cmpLetterMaybe `on` jletter) is
-            | otherwise = is
-      pr i = makePhrase [ letterLabel (jletter i)
-                        , partItemNWs coitem disco i ]
-             <> " "
-  return $ map pr items
-
-stopRunning :: MonadClient m => m ()
-stopRunning = modifyClient (\ cli -> cli { srunning = Nothing })
-
--- | Perform look around in the current position of the cursor.
-doLook :: MonadClient m => WriterT Slideshow m ()
-doLook = do
-  cops@Kind.COps{coactor} <- getsLocal scops
-  p    <- getsClient (cposition . scursor)
-  loc  <- getLocal
-  clvl   <- getsLocal getArena
-  hms    <- getsLocal (lactor . getArena)
-  per    <- askPerception
-  pl     <- getsLocal splayer
-  target <- getsClient (IM.lookup pl . starget)
-  targeting <- getsClient (ctargeting . scursor)
-  assert (targeting /= TgtOff) $ do
-    let canSee = IS.member p (totalVisible per)
-        ihabitant | canSee = find (\ m -> bpos m == p) (IM.elems hms)
-                  | otherwise = Nothing
-        monsterMsg = maybe "" (\ m -> actorVerb coactor m "be here") ihabitant
-        vis | not $ p `IS.member` totalVisible per =
-                " (not visible)"  -- by party
-            | actorReachesLoc pl p per = ""
-            | otherwise = " (not reachable)"  -- by hero
-        mode = case target of
-                 Just TEnemy{} -> "[targeting monster" <> vis <> "]"
-                 Just TPos{}   -> "[targeting position" <> vis <> "]"
-                 Nothing       -> "[targeting current" <> vis <> "]"
-        -- Show general info about current p.
-        lookMsg = mode <+> lookAt cops True canSee loc p monsterMsg
-        -- Check if there's something lying around at current p.
-        is = clvl `atI` p
-    modifyClient (\st -> st {slastKey = Nothing})
-    if length is <= 2
-      then do
-        slides <- promptToSlideshow lookMsg
-        tell slides
-      else do
-       disco <- getsLocal sdisco
-       io <- itemOverlay disco False is
-       slides <- overlayToSlideshow lookMsg io
-       tell slides

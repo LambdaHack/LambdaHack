@@ -28,7 +28,6 @@ import Game.LambdaHack.EffectAction
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Item
-import Game.LambdaHack.ItemAction
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
