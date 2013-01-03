@@ -116,13 +116,56 @@ removeFromPos i pos = do
           x  -> Just x
       adj = IM.alter rib pos
 
--- ** dropSer
+-- ** DropSer
 
 dropSer :: MonadServer m => ActorId -> Item -> m ()
 dropSer aid item = do
   pos  <- getsGlobal (bpos . getActor aid)
   modifyGlobal (updateAnyActorItem aid (removeItemByLetter item))
   modifyGlobal (updateArena (dropItemsAt [item] pos))
+
+-- ** MoveSer
+
+-- | Actor moves or swaps position with others or opens doors.
+moveSer :: MonadAction m  -- MonadServer m
+        => ActorId    -- ^ who's moving?
+        -> Vector     -- ^ in which direction?
+        -> m ()
+moveSer actor dir = do
+  -- We start by looking at the target position.
+  cops <- getsGlobal scops
+  loc <- getLocal
+  pl <- getsGlobal splayer
+  lvl <- getsGlobal getArena
+  sm <- getsGlobal (getActor actor)
+  let spos = bpos sm           -- source position
+      tpos = spos `shift` dir  -- target position
+  tgt <- getsGlobal (posToActor tpos)
+  case tgt of
+    Just target
+      | accessible cops lvl spos tpos -> do
+          -- Switching positions requires full access.
+          when (actor == pl) $
+            msgAdd $ lookAt cops False True loc tpos ""
+          actorRunActor actor target
+      | otherwise -> abortWith "blocked"
+    Nothing
+      | accessible cops lvl spos tpos -> do
+          -- Perform the move.
+          updateAnyActor actor $ \ body -> body {bpos = tpos}
+          when (actor == pl) $
+            msgAdd $ lookAt cops False True loc tpos ""
+      | otherwise ->
+          actorOpenDoor actor dir  -- try to open a door, TODO: bumpTile tpos F.Openable
+
+
+
+
+
+
+
+
+
 
 
 
@@ -413,14 +456,12 @@ search = do
           triggerTile dpos
   mapM_ triggerHidden (moves lxsize)
 
--- | This function performs a move (or attack) by any actor,
--- i.e., it can handle monsters, heroes and both.
-moveOrAttack :: MonadAction m
-             => Bool       -- ^ allow attacks?
-             -> ActorId    -- ^ who's moving?
-             -> Vector     -- ^ in which direction?
-             -> m ()
-moveOrAttack allowAttacks actor dir = do
+-- | Actor moves or attacks or searches or opens doors.
+actorAttack :: MonadAction m
+            => ActorId    -- ^ who's moving?
+            -> Vector     -- ^ in which direction?
+            -> m ()
+actorAttack actor dir = do
   -- We start by looking at the target position.
   cops@Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getsGlobal scops
   loc <- getLocal
@@ -432,24 +473,16 @@ moveOrAttack allowAttacks actor dir = do
       tpos = spos `shift` dir  -- target position
   tgt <- getsGlobal (posToActor tpos)
   case tgt of
-    Just target
-      | allowAttacks ->
-          -- Attacking does not require full access, adjacency is enough.
-          actorAttackActor actor target
-      | accessible cops lvl spos tpos -> do
-          -- Switching positions requires full access.
-          when (actor == pl) $
-            msgAdd $ lookAt cops False True loc tpos ""
-          actorRunActor actor target
-      | otherwise -> abortWith "blocked"
+    Just target ->
+      -- Attacking does not require full access, adjacency is enough.
+      actorAttackActor actor target
     Nothing
       | accessible cops lvl spos tpos -> do
           -- Perform the move.
           updateAnyActor actor $ \ body -> body {bpos = tpos}
           when (actor == pl) $
             msgAdd $ lookAt cops False True loc tpos ""
-      | allowAttacks && actor == pl
-        && Tile.canBeHidden cotile (okind $ clvl `at` tpos) -> do
+      | Tile.canBeHidden cotile (okind $ clvl `at` tpos) -> do
           msgAdd "You search all adjacent walls for half a second."
           search
       | otherwise ->

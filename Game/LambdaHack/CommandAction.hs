@@ -16,7 +16,6 @@ import Game.LambdaHack.Command
 import Game.LambdaHack.Level
 import Game.LambdaHack.MixedAction
 import Game.LambdaHack.Msg
-import Game.LambdaHack.Running
 import Game.LambdaHack.ServerAction
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
@@ -54,16 +53,13 @@ cmdAction cli s cmd =
           (False,
            selectPlayer target
            >>= assert `trueM` (pl, target, "player bumps himself" :: Text))
-        _ -> (True, lift $ moveOrAttack True pl dir)
+        _ -> (True, lift $ actorAttack pl dir)
     Run v | targeting /= TgtOff ->
       let dir = toDir (lxsize (getArena s)) v
       in (False, moveCursor dir 10)
     Run v ->
       let dir = toDir (lxsize (getArena s)) v
-          run = do
-            dirR <- runDir (dir, 0)
-            moveOrAttack False pl dirR
-      in (True, lift run)
+      in (True, cmdSerAction $ runPl dir)
     GameExit    -> (True, lift $ gameExit)     -- takes time, then rewinds time
     GameRestart -> (True, lift $ gameRestart)  -- takes time, then resets state
 
@@ -122,7 +118,7 @@ cmdSer cmd = case cmd of
   PickupSer -> undefined
   DropSer aid item -> dropSer aid item
   WaitSer -> undefined
-  MoveSer -> undefined
+  MoveSer aid dir -> moveSer aid dir
   RunSer -> undefined
   GameExitSer -> undefined
   GameRestartSer -> undefined

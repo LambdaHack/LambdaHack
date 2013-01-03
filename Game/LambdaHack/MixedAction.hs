@@ -41,6 +41,7 @@ import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
+import Game.LambdaHack.Running
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Time
@@ -133,9 +134,15 @@ dropItem = do
 -- ** Wait
 --waitBlock
 -- ** Move
---moveOrAttack
+--actorMove
 -- ** Run
---run
+
+runPl :: MonadClient m => Vector -> m CmdSer
+runPl dir = do
+  pl <- getsLocal splayer
+  dirR <- runDir (dir, 0)
+  return $! MoveSer pl dirR
+
 -- ** GameExit
 --gameExit
 -- ** GameRestart

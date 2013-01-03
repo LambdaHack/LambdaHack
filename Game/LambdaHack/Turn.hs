@@ -182,7 +182,7 @@ continueRun dd = do
   pl <- getsLocal splayer
   dir <- continueRunDir dd
   -- Attacks and opening doors disallowed when continuing to run.
-  moveOrAttack False pl dir
+  moveSer pl dir
 
 -- | Handle the move of the hero.
 handlePlayer :: MonadAction m => m ()

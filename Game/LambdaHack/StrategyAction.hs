@@ -185,7 +185,9 @@ dirToAction actor allowAttacks dir = do
     -- If the following action aborts, we just advance the time and continue.
     -- TODO: ensure time is taken for other aborted actions in this file
     -- TODO: or just fail at each abort in AI code? or use tryWithFrame?
-    moveOrAttack allowAttacks actor dir
+    if allowAttacks
+      then actorAttack actor dir
+      else moveSer actor dir
 
 -- | A strategy to always just wait.
 waitBlockNow :: MonadAction m => ActorId -> Strategy (m ())
