@@ -7,6 +7,7 @@ module Game.LambdaHack.ActionClass where
 
 import Control.Monad.Reader.Class
 import Control.Monad.Writer.Strict (WriterT (WriterT, runWriterT), lift)
+import Data.Monoid
 
 import Game.LambdaHack.Action.Frontend
 import Game.LambdaHack.Binding
@@ -33,12 +34,12 @@ class (Monad m, Functor m, MonadReader Pers m, Show (m ()))
   -- Abort with the given message.
   abortWith   :: Msg -> m a
 
-instance MonadActionRoot m => MonadActionRoot (WriterT Slideshow m) where
+instance (Monoid a, MonadActionRoot m) => MonadActionRoot (WriterT a m) where
   tryWith exc m =
     WriterT $ tryWith (\msg -> runWriterT (exc msg)) (runWriterT m)
   abortWith   = lift . abortWith
 
-instance MonadActionRoot m => Show (WriterT Slideshow m a) where
+instance MonadActionRoot m => Show (WriterT a m b) where
   show _ = "an action"
 
 class MonadActionRoot m => MonadServerRO m where
@@ -47,7 +48,7 @@ class MonadActionRoot m => MonadServerRO m where
   getServer   :: m StateServer
   getsServer  :: (StateServer -> a) -> m a
 
-instance MonadServerRO m => MonadServerRO (WriterT Slideshow m) where
+instance (Monoid a, MonadServerRO m) => MonadServerRO (WriterT a m) where
   getGlobal   = lift getGlobal
   getsGlobal  = lift . getsGlobal
   getServer   = lift getServer
@@ -60,7 +61,7 @@ class MonadActionRoot m => MonadClientRO m where
   getLocal    :: m State
   getsLocal   :: (State -> a) -> m a
 
-instance MonadClientRO m => MonadClientRO (WriterT Slideshow m) where
+instance (Monoid a, MonadClientRO m) => MonadClientRO (WriterT a m) where
   getsSession = lift . getsSession
   getClient   = lift getClient
   getsClient  = lift . getsClient
@@ -69,14 +70,14 @@ instance MonadClientRO m => MonadClientRO (WriterT Slideshow m) where
 
 class (MonadServerRO m, MonadClientRO m) => MonadClientServerRO m where
 
-instance MonadClientServerRO m
-         => MonadClientServerRO (WriterT Slideshow m) where
+instance (Monoid a, MonadClientServerRO m)
+         => MonadClientServerRO (WriterT a m) where
 
 class MonadClientServerRO m => MonadActionRO m where
   getDict     :: m StateDict
   getsDict    :: (StateDict -> a) -> m a
 
-instance MonadActionRO m => MonadActionRO (WriterT Slideshow m) where
+instance (Monoid a, MonadActionRO m) => MonadActionRO (WriterT a m) where
   getDict     = lift getDict
   getsDict    = lift . getsDict
 
@@ -85,7 +86,7 @@ class MonadActionRoot m => MonadActionIO m where
   -- nobody can subvert the action monads by invoking arbitrary IO.
   liftIO :: IO a -> m a
 
-instance MonadActionIO m => MonadActionIO (WriterT Slideshow m) where
+instance (Monoid a, MonadActionIO m) => MonadActionIO (WriterT a m) where
   liftIO = lift . liftIO
 
 class (MonadActionIO m, MonadServerRO m) => MonadServer m where
@@ -94,7 +95,7 @@ class (MonadActionIO m, MonadServerRO m) => MonadServer m where
   modifyServer :: (StateServer -> StateServer) -> m ()
   putServer    :: StateServer -> m ()
 
-instance MonadServer m => MonadServer (WriterT Slideshow m) where
+instance (Monoid a, MonadServer m) => MonadServer (WriterT a m) where
   modifyGlobal = lift . modifyGlobal
   putGlobal    = lift . putGlobal
   modifyServer = lift . modifyServer
@@ -106,7 +107,7 @@ class (MonadActionIO m, MonadClientRO m) => MonadClient m where
   modifyLocal  :: (State -> State) -> m ()
   putLocal     :: State -> m ()
 
-instance MonadClient m => MonadClient (WriterT Slideshow m) where
+instance (Monoid a, MonadClient m) => MonadClient (WriterT a m) where
   modifyClient = lift . modifyClient
   putClient    = lift . putClient
   modifyLocal  = lift . modifyLocal
@@ -115,7 +116,8 @@ instance MonadClient m => MonadClient (WriterT Slideshow m) where
 class (MonadActionIO m, MonadClientServerRO m, MonadServer m, MonadClient m)
       => MonadClientServer m where
 
-instance MonadClientServer m => MonadClientServer (WriterT Slideshow m) where
+instance (Monoid a, MonadClientServer m)
+          => MonadClientServer (WriterT a m) where
 
 -- | The top of the action monads class lattice.
 class (MonadActionIO m, MonadActionRO m, MonadClientServer m)
@@ -123,6 +125,6 @@ class (MonadActionIO m, MonadActionRO m, MonadClientServer m)
   modifyDict   :: (StateDict -> StateDict) -> m ()
   putDict      :: StateDict -> m ()
 
-instance MonadAction m => MonadAction (WriterT Slideshow m) where
+instance (Monoid a, MonadAction m) => MonadAction (WriterT a m) where
   modifyDict   = lift . modifyDict
   putDict      = lift . putDict
