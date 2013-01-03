@@ -1,7 +1,7 @@
 {-# LANGUAGE ExtendedDefaultRules, OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
--- | Actions carried out by the server (and possibly also the client
--- until the code is fixed further).
+-- | Semantics of 'Command.CmdSer' server commands.
+-- A couple of them do not take time, the rest does.
 -- TODO: document
 module Game.LambdaHack.ServerAction where
 
@@ -16,6 +16,8 @@ import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Action
+-- import Game.LambdaHack.Action hiding (MonadAction, MonadActionRO, MonadClient,
+--                               MonadClientRO)
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Animation (blockMiss, swapPlaces)
@@ -47,38 +49,87 @@ import Game.LambdaHack.Vector
 
 default (Text)
 
-applyGroupItem :: MonadAction m
-               => ActorId  -- ^ actor applying the item (is on current level)
-               -> MU.Part  -- ^ how the applying is called
-               -> Item     -- ^ the item to be applied
-               -> m ()
-applyGroupItem actor verb item = do
-  Kind.COps{coactor, coitem} <- getsLocal scops
-  body  <- getsLocal (getActor actor)
-  per   <- askPerception
-  disco <- getsLocal sdisco
-  -- only one item consumed, even if several in inventory
+-- + Semantics of server commands
+
+-- ** GameSaveSer
+
+-- TODO: it has to be in MonadAction; how to handle this?
+gameSaveSer :: MonadAction m => m ()
+gameSaveSer = saveGameBkp
+
+-- ** CfgDumpSer
+
+cfgDumpSer :: MonadServer m => m ()
+cfgDumpSer = do
+  Config{configRulesCfgFile} <- getsServer sconfig
+  let fn = configRulesCfgFile ++ ".dump"
+      msg = "Current game rules configuration dumped to file"
+            <+> T.pack fn <> "."
+  dumpCfg fn
+  -- Wait with confirmation until saved; tell where the file is.
+  -- TODO: show abort message to the current client, not all clients
+  abortWith msg
+
+-- ** ApplySer
+
+-- TODO: plit into ApplyInvSer and ApplyFloorSer
+applySer :: MonadAction m   -- MonadServer m
+         => ActorId  -- ^ actor applying the item (is on current level)
+         -> Item     -- ^ the item to be applied
+         -> Point    -- ^ position of the actor in case applying from the floor
+         -> m ()
+applySer actor item pos = do
+  -- Only one item consumed, even if several in inventory.
   let consumed = item { jcount = 1 }
-      msg = makeSentence
-        [ MU.SubjectVerbSg (partActor coactor body) verb
-        , partItemNWs coitem disco consumed ]
-      loc = bpos body
-  removeFromInventory actor consumed loc
-  when (loc `IS.member` totalVisible per) $ msgAdd msg
+  removeFromInventory actor consumed pos
+  -- TODO: local state is not updated here and itemEffectAction uses it
   itemEffectAction 5 actor actor consumed False
 
-playerApplyGroupItem :: MonadAction m => MU.Part -> MU.Part -> [Char] -> m ()
-playerApplyGroupItem verb object syms = do
-  Kind.COps{coitem=Kind.Ops{okind}} <- getsLocal scops
-  is   <- getsLocal getPlayerItem
-  item <- getGroupItem is object syms
-            (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
-  pl   <- getsLocal splayer
-  disco <- getsLocal sdisco
-  let verbApply = case jkind disco item of
-        Nothing -> verb
-        Just ik -> iverbApply $ okind ik
-  applyGroupItem pl verbApply item
+-- TODO: this is subtly wrong: if identical items are on the floor and in
+-- inventory, the floor one will be chosen, regardless of player intention.
+-- TODO: right now it natily hacks (with the ppos) around removing items
+-- of actors that die when applying items. The subtle incorrectness
+-- helps here a lot, because items of dead actors land on the floor,
+-- so we use them up in inventory, but remove them after use from the floor.
+-- TODO: How can this happen considering we remove them before use?
+-- | Remove given item from an actor's inventory or floor.
+removeFromInventory :: MonadServer m => ActorId -> Item -> Point -> m ()
+removeFromInventory actor i pos = do
+  b <- removeFromPos i pos
+  unless b $
+    modifyGlobal (updateAnyActorItem actor (removeItemByLetter i))
+
+-- | Remove given item from the given position. Tell if successful.
+removeFromPos :: MonadServer m => Item -> Point -> m Bool
+removeFromPos i pos = do
+  lvl <- getsGlobal getArena
+  if not $ any (equalItemIdentity i) (lvl `atI` pos)
+    then return False
+    else do
+      modifyGlobal (updateArena (updateIMap adj))
+      return True
+     where
+      rib Nothing = assert `failure` (i, pos)
+      rib (Just is) =
+        case removeItemByIdentity i is of
+          [] -> Nothing
+          x  -> Just x
+      adj = IM.alter rib pos
+
+-- ** dropSer
+
+dropSer :: MonadServer m => ActorId -> Item -> m ()
+dropSer aid item = do
+  pos  <- getsGlobal (bpos . getActor aid)
+  modifyGlobal (updateAnyActorItem aid (removeItemByLetter item))
+  modifyGlobal (updateArena (dropItemsAt [item] pos))
+
+
+
+
+
+
+
 
 projectGroupItem :: MonadAction m => ActorId  -- ^ actor projecting the item (is on current lvl)
                  -> Point    -- ^ target position of the projectile
@@ -176,65 +227,6 @@ playerProjectGI verb object syms = do
       projectGroupItem pl p verbProject item
     Nothing -> assert `failure` (pos, pl, "target unexpectedly invalid")
 
--- TODO: you can drop an item already on the floor, which works correctly,
--- but is weird and useless.
--- | Drop a single item.
-dropItem :: MonadAction m => m ()
-dropItem = do
-  -- TODO: allow dropping a given number of identical items.
-  Kind.COps{coactor, coitem} <- getsLocal scops
-  pl    <- getsLocal splayer
-  pbody <- getsLocal getPlayerBody
-  ppos  <- getsLocal (bpos . getPlayerBody)
-  ims   <- getsLocal getPlayerItem
-  stack <- getAnyItem "What to drop?" ims "in inventory"
-  disco <- getsLocal sdisco
-  let item = stack { jcount = 1 }
-  removeOnlyFromInventory pl item (bpos pbody)
-  msgAdd $ makeSentence
-    [ MU.SubjectVerbSg (partActor coactor pbody) "drop"
-    , partItemNWs coitem disco item ]
-  modifyLocal (updateArena (dropItemsAt [item] ppos))
-  modifyGlobal (updateArena (dropItemsAt [item] ppos))  -- a hack
-
--- TODO: this is a hack for dropItem, because removeFromInventory
--- makes it impossible to drop items if the floor not empty.
-removeOnlyFromInventory :: MonadAction m => ActorId -> Item -> Point -> m ()
-removeOnlyFromInventory actor i _pos = do
-  modifyLocal (updateAnyActorItem actor (removeItemByLetter i))
-  modifyGlobal (updateAnyActorItem actor (removeItemByLetter i))  -- a hack
-
--- | Remove given item from an actor's inventory or floor.
--- TODO: this is subtly wrong: if identical items are on the floor and in
--- inventory, the floor one will be chosen, regardless of player intention.
--- TODO: right now it ugly hacks (with the ppos) around removing items
--- of dead heros/monsters. The subtle incorrectness helps here a lot,
--- because items of dead heroes land on the floor, so we use them up
--- in inventory, but remove them after use from the floor.
-removeFromInventory :: MonadAction m => ActorId -> Item -> Point -> m ()
-removeFromInventory actor i pos = do
-  b <- removeFromPos i pos
-  unless b $ do
-    modifyLocal (updateAnyActorItem actor (removeItemByLetter i))
-    modifyGlobal (updateAnyActorItem actor (removeItemByLetter i))  -- a hack
-
--- | Remove given item from the given position. Tell if successful.
-removeFromPos :: MonadServer m => Item -> Point -> m Bool
-removeFromPos i pos = do
-  lvl <- getsGlobal getArena
-  if not $ any (equalItemIdentity i) (lvl `atI` pos)
-    then return False
-    else do
-      modifyGlobal (updateArena (updateIMap adj))
-      return True
-     where
-      rib Nothing = assert `failure` (i, pos)
-      rib (Just is) =
-        case removeItemByIdentity i is of
-          [] -> Nothing
-          x  -> Just x
-      adj = IM.alter rib pos
-
 actorPickupItem :: MonadAction m => ActorId -> m ()
 actorPickupItem actor = do
   Kind.COps{coactor, coitem} <- getsGlobal scops
@@ -274,11 +266,6 @@ pickupItem :: MonadAction m => m ()
 pickupItem = do
   pl <- getsLocal splayer
   actorPickupItem pl
-
-gameSave :: MonadAction m => m ()
-gameSave = do
-  saveGameBkp
-  msgAdd "Game progress saved to a backup file."
 
 gameExit :: MonadAction m => m ()
 gameExit = do
@@ -660,15 +647,6 @@ regenerateLevelHP = do
   -- via sending one hero to a safe level and waiting there.
   hi <- getsGlobal (linv . getArena)
   modifyGlobal (updateArena (updateActor (IM.mapWithKey (upd hi))))
-
-dumpConfig :: MonadServer m => m ()
-dumpConfig = do
-  Config{configRulesCfgFile} <- getsServer sconfig
-  let fn = configRulesCfgFile ++ ".dump"
-      msg = "Current game rules configuration dumped to file"
-            <+> T.pack fn <> "."
-  dumpCfg fn
-  abortWith msg
 
 -- | Add new smell traces to the level. Only humans leave a strong scent.
 addSmell :: MonadServer m => m ()

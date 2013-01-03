@@ -1,19 +1,38 @@
 {-# LANGUAGE OverloadedStrings #-}
--- | Abstract syntax of player commands.
+-- | Abstract syntax of server and client commands.
 module Game.LambdaHack.Command
-  ( Cmd(..), majorCmd, minorCmd, timedCmd, cmdDescription
+  ( CmdSer(..), Cmd(..), majorCmd, minorCmd, timedCmd, cmdDescription
   ) where
 
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
+import Game.LambdaHack.Actor
 import qualified Game.LambdaHack.Feature as F
+import Game.LambdaHack.Item
 import Game.LambdaHack.Msg
+import Game.LambdaHack.Point
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.VectorXY
 
--- | Abstract syntax of player commands. The type is abstract, but the values
--- are created outside this module via the Read class (from config file) .
+-- | Abstract syntax of server commands.
+data CmdSer =
+    ApplySer ActorId Item Point
+  | ProjectSer
+  | TriggerDirSer
+  | TriggerTileSer
+  | PickupSer
+  | DropSer ActorId Item
+  | WaitSer
+  | MoveSer
+  | RunSer
+  | GameExitSer
+  | GameRestartSer
+  | GameSaveSer
+  | CfgDumpSer
+  deriving Show
+
+-- | Abstract syntax of client commands.
 data Cmd =
     -- These usually take time.
     Apply       { verb :: MU.Part, object :: MU.Part, syms :: [Char] }

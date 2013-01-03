@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Semantics of player commands.
 module Game.LambdaHack.CommandAction
-  ( cmdSemantics
+  ( cmdSemantics, cmdSer
   ) where
 
 import Control.Monad.Writer.Strict (WriterT, lift)
@@ -9,14 +9,15 @@ import Data.Maybe
 import Data.Text (Text)
 
 import Game.LambdaHack.Action
-import Game.LambdaHack.ServerAction
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Command
 import Game.LambdaHack.ClientAction
+import Game.LambdaHack.Command
 import Game.LambdaHack.Level
+import Game.LambdaHack.MixedAction
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Running
+import Game.LambdaHack.ServerAction
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
@@ -31,13 +32,13 @@ cmdAction cli s cmd =
       ppos = bpos sm
       tgtLoc = targetToPos cli s
   in case cmd of
-    Apply{..} -> (True, lift $ playerApplyGroupItem verb object syms)
+    Apply{..} -> (True, cmdSerAction $ playerApplyGroupItem verb object syms)
     Project{} | isNothing tgtLoc -> (False, retarget)
     Project{..} -> (True, lift $ playerProjectGroupItem verb object syms)
     TriggerDir{..} -> (True, lift $ playerTriggerDir feature verb)
     TriggerTile{..} -> (True, lift $ playerTriggerTile feature)
     Pickup -> (True, lift $ pickupItem)
-    Drop   -> (True, lift $ dropItem)
+    Drop   -> (True, cmdSerAction $ dropItem)
     Wait   -> (True, lift $ waitBlock)
     Move v | targeting /= TgtOff ->
       let dir = toDir (lxsize (getArena s)) v
@@ -66,7 +67,7 @@ cmdAction cli s cmd =
     GameExit    -> (True, lift $ gameExit)     -- takes time, then rewinds time
     GameRestart -> (True, lift $ gameRestart)  -- takes time, then resets state
 
-    GameSave    -> (False, lift $ gameSave)
+    GameSave    -> (False, cmdSerAction $ gameSave)
     Inventory   -> (False, inventory)
     TgtFloor    -> (False, targetFloor   TgtExplicit)
     TgtEnemy    -> (False, targetMonster TgtExplicit)
@@ -76,13 +77,13 @@ cmdAction cli s cmd =
     Accept      -> (False, acceptCurrent displayHelp)
     Clear       -> (False, lift $ clearCurrent)
     History     -> (False, displayHistory)
-    CfgDump     -> (False, lift $ dumpConfig)
+    CfgDump     -> (False, cmdSerAction $ dumpConfig)
     HeroCycle   -> (False, lift $ cycleHero)
     HeroBack    -> (False, lift $ backCycleHero)
     Help        -> (False, displayHelp)
     SelectHero k -> (False, lift $ selectHero k)
     DebugArea   -> (False, modifyClient toggleMarkVision)
-    DebugOmni   -> (False, modifyClient toggleOmniscient)
+    DebugOmni   -> (False, modifyClient toggleOmniscient)  -- TODO: Server
     DebugSmell  -> (False, modifyClient toggleMarkSmell)
     DebugVision -> (False, modifyServer cycleTryFov)
 
@@ -109,3 +110,24 @@ checkCursor h = do
   if creturnLn cursor == sarena
     then h
     else abortWith "[targeting] you inspect a remote level, press ESC to switch back"
+
+-- TODO: make it MonadServer
+-- | The semantics of server commands.
+cmdSer :: MonadAction m => CmdSer -> m ()
+cmdSer cmd = case cmd of
+  ApplySer aid item pos -> applySer aid item pos
+  ProjectSer -> undefined
+  TriggerDirSer -> undefined
+  TriggerTileSer -> undefined
+  PickupSer -> undefined
+  DropSer aid item -> dropSer aid item
+  WaitSer -> undefined
+  MoveSer -> undefined
+  RunSer -> undefined
+  GameExitSer -> undefined
+  GameRestartSer -> undefined
+  GameSaveSer -> gameSaveSer
+  CfgDumpSer -> cfgDumpSer
+
+cmdSerAction :: MonadAction m => m CmdSer -> WriterT Slideshow m ()
+cmdSerAction m = lift $ m >>= cmdSer

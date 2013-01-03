@@ -118,6 +118,7 @@ library
                       Game.LambdaHack.Kind,
                       Game.LambdaHack.Level,
                       Game.LambdaHack.Misc,
+                      Game.LambdaHack.MixedAction,
                       Game.LambdaHack.Msg,
                       Game.LambdaHack.Perception,
                       Game.LambdaHack.Place,

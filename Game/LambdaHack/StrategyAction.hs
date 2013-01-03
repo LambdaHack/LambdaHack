@@ -15,10 +15,10 @@ import qualified Data.Text as T
 import Game.LambdaHack.Ability (Ability)
 import qualified Game.LambdaHack.Ability as Ability
 import Game.LambdaHack.Action
-import Game.LambdaHack.ServerAction
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import qualified Game.LambdaHack.Color as Color
+import Game.LambdaHack.CommandAction
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
@@ -30,9 +30,11 @@ import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
+import Game.LambdaHack.MixedAction
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
+import Game.LambdaHack.ServerAction
 import Game.LambdaHack.State
 import Game.LambdaHack.Strategy
 import qualified Game.LambdaHack.Tile as Tile
@@ -296,7 +298,7 @@ toolsFreq cops actor loc =
   bitems = getActorItem actor loc
   tis = lvl `atI` bpos
   quaffFreq is multi =
-    [ (benefit * multi, applyGroupItem actor (iverbApply ik) i)
+    [ (benefit * multi, applyGroupItem actor (iverbApply ik) i >>= cmdSer)
     | i <- is,
       let (ik, benefit) =
             case jkind (sdisco loc) i of

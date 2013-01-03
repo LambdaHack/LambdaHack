@@ -1,6 +1,7 @@
 {-# LANGUAGE ExtendedDefaultRules, OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
--- | Actions carried out by the client.
+-- | Semantics of 'Command.Cmd' client commands that do not return
+-- server commands. None of such commands takes game time.
 -- TODO: document
 module Game.LambdaHack.ClientAction where
 
@@ -26,7 +27,7 @@ import Game.LambdaHack.Action hiding (MonadAction, MonadActionRO, MonadServer,
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Binding
-import qualified Game.LambdaHack.Command as Command
+import qualified Game.LambdaHack.Command as Command hiding (CmdSer)
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.DungeonState
 import qualified Game.LambdaHack.Effect as Effect
@@ -46,7 +47,7 @@ import Game.LambdaHack.Vector
 
 default (Text)
 
--- + Semantics of "Command" commands that do not take time
+-- + Semantics of client commands that do not return server commands
 
 -- ** Project
 
