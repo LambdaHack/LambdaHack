@@ -12,6 +12,7 @@ module Game.LambdaHack.Action
   , MonadServer( putGlobal, modifyGlobal, putServer, modifyServer )
   , MonadClient( putClient, modifyClient, putLocal, modifyLocal )
   , MonadAction
+  , MsgOrAnim
     -- * Various ways to abort action
   , abort, abortWith, abortIfWith, neverMind
     -- * Abort exception handlers
@@ -52,12 +53,12 @@ import System.Time
 
 import qualified Game.LambdaHack.Action.ConfigIO as ConfigIO
 import Game.LambdaHack.Action.Frontend
-import Game.LambdaHack.ActionClass
 import Game.LambdaHack.Action.HighScore (register)
 import qualified Game.LambdaHack.Action.Save as Save
+import Game.LambdaHack.ActionClass
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Animation (Frames, SingleFrame(..))
+import Game.LambdaHack.Animation (Frames, SingleFrame(..), Animation)
 import Game.LambdaHack.Binding
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.FactionKind
@@ -72,9 +73,16 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
+import Game.LambdaHack.Point
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert
+
+-- | Information passed by the server to all clients after a server action.
+-- If any of the positions related to the message are visible, the client
+-- sees the message. The animation is restricted to client's visible positions.
+-- The bool determines if invisible event is important enough to be heard.
+type MsgOrAnim = (Bool, [Either ([Point], Msg) Animation])
 
 -- | Reset the state and resume from the last backup point, i.e., invoke
 -- the failure continuation.
@@ -479,10 +487,9 @@ restartGame :: MonadAction m => m () -> m ()
 restartGame handleTurn = do
   -- Take the original config from config file, to reroll RNG, if needed
   -- (the current config file has the RNG rolled for the previous game).
-  sconfigUI <- askConfigUI
   scops <- getsGlobal scops
   shistory <- getsClient shistory
-  (state, ser, dMsg) <- gameResetAction sconfigUI scops
+  (state, ser, dMsg) <- gameResetAction scops
   let d = case filter (isControlledFaction state) $ IM.keys dMsg of
         [] -> dMsg  -- only robots play
         k : _ -> IM.adjust (\(cli, loc) -> (cli {shistory}, loc)) k dMsg
@@ -493,9 +500,8 @@ restartGame handleTurn = do
   handleTurn
 
 -- TODO: do this inside Action ()
-gameReset :: ConfigUI -> Kind.COps
-          -> IO (State, StateServer, StateDict)
-gameReset configUI scops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
+gameReset :: Kind.COps -> IO (State, StateServer, StateDict)
+gameReset scops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
                                   , coitem=coitem@Kind.Ops{okind}
                                   , corule
                                   , costrat=Kind.Ops{opick=sopick}} = do
@@ -531,7 +537,7 @@ gameReset configUI scops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
             needInitialCrew =
               filter (not . isSpawningFaction defState) $ IM.keys sfaction
             fo fid (stateF, serF) =
-              initialHeroes scops entryLoc configUI stateF{sside=fid} serF
+              initialHeroes scops entryLoc stateF{sside=fid} serF
             (state, ser) = foldr fo (defState, defSer) needInitialCrew
             cli = defStateClient entryLoc entryLevel
             -- This overwrites the "Really save/quit?" messages.
@@ -542,10 +548,9 @@ gameReset configUI scops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
   return $! St.evalState rnd dungeonGen
 
 gameResetAction :: MonadActionIO m
-                => ConfigUI -> Kind.COps
+                => Kind.COps
                 -> m (State, StateServer, StateDict)
-gameResetAction configUI cops =
-  liftIO $ gameReset configUI cops
+gameResetAction = liftIO . gameReset
 
 -- | Wire together content, the definitions of game commands,
 -- config and a high-level startup function
@@ -594,7 +599,7 @@ start executor sfs scops@Kind.COps{corule}
   restored <- Save.restoreGame sconfig sconfigUI pathsDataFile title
   (state, ser, dBare, shistory, msg) <- case restored of
     Right (shistory, msg) -> do  -- Starting a new game.
-      (stateR, serR, dR) <- gameReset sconfigUI scops
+      (stateR, serR, dR) <- gameReset scops
       return (stateR, serR, dR, shistory, msg)
     Left (stateL, serL, dL, shistory, msg) -> do  -- Running a restored game.
       let stateCops = stateL {scops}

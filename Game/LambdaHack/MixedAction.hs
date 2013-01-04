@@ -118,7 +118,6 @@ dropItem = do
   Kind.COps{coactor, coitem} <- getsLocal scops
   pl    <- getsLocal splayer
   pbody <- getsLocal getPlayerBody
-  ppos  <- getsLocal (bpos . getPlayerBody)
   ims   <- getsLocal getPlayerItem
   stack <- getAnyItem "What to drop?" ims "in inventory"
   disco <- getsLocal sdisco

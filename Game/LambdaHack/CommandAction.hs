@@ -116,7 +116,7 @@ checkCursor h = do
   sarena <- getsLocal sarena
   if creturnLn cursor == sarena
     then h
-    else abortWith "[targeting] you inspect a remote level, press ESC to switch back"
+    else abortWith "[targeting] command disabled on remote levels, press ESC to switch back"
 
 -- TODO: make it MonadServer
 -- | The semantics of server commands.

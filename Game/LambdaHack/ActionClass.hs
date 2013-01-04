@@ -6,7 +6,7 @@
 module Game.LambdaHack.ActionClass where
 
 import Control.Monad.Reader.Class
-import Control.Monad.Writer.Strict (WriterT (WriterT, runWriterT), lift)
+import Control.Monad.Writer.Strict (WriterT (WriterT), runWriterT, lift)
 import Data.Monoid
 
 import Game.LambdaHack.Action.Frontend

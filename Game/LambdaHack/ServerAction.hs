@@ -35,7 +35,6 @@ import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Key as K
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
-import Game.LambdaHack.Misc
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
@@ -556,10 +555,9 @@ actorAttackActor source target = do
               when (svisible || tvisible) $ msgAdd msgMiss
               cli <- getClient
               loc <- getLocal
-              let poss = (breturn tvisible tpos,
-                          breturn svisible spos)
+              let poss = (tpos, spos)
                   anim = blockMiss poss
-                  animFrs = animate cli loc cops per anim
+                  animFrs = animate cli loc per anim
               displayFramesPush $ Nothing : animFrs
             else performHit True
         else performHit False
@@ -575,7 +573,7 @@ actorRunActor source target = do
       tpos = bpos tm
   updateAnyActor source $ \ m -> m { bpos = tpos }
   updateAnyActor target $ \ m -> m { bpos = spos }
-  cops@Kind.COps{coactor} <- getsGlobal scops
+  Kind.COps{coactor} <- getsGlobal scops
   per <- askPerception
   let visible = spos `IS.member` totalVisible per ||
                 tpos `IS.member` totalVisible per
@@ -585,10 +583,12 @@ actorRunActor source target = do
   when visible $ msgAdd msg
   cli <- getClient  -- here cli possibly contains the new msg
   loc <- getLocal
-  let poss = (Just tpos, Just spos)
-      animFrs = animate cli loc cops per $ swapPlaces poss
+  let poss = (tpos, spos)
+      animFrs = animate cli loc per $ swapPlaces poss
   when visible $ displayFramesPush $ Nothing : animFrs
   if source == pl
+-- TODO: The actor will stop running due to the message as soon as running
+-- is fixed to check the message before it goes into history.
    then stopRunning  -- do not switch positions repeatedly
    else void $ focusIfOurs target
 

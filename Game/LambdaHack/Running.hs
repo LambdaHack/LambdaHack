@@ -150,7 +150,7 @@ continueRunDir (dirLast, distLast) = do
   cops@Kind.COps{cotile} <- getsLocal scops
   posHere <- getsLocal (bpos . getPlayerBody)
   per <- askPerception
-  StateClient{sreport} <- getClient
+  StateClient{sreport} <- getClient  -- TODO: check the message before it goes into history
   ms  <- getsLocal dangerousList
   sside <- getsLocal sside
   hs <- getsLocal (factionList [sside])

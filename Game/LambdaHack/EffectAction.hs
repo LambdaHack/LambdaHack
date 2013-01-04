@@ -31,7 +31,6 @@ import Game.LambdaHack.Faction
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
-import Game.LambdaHack.Misc
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
@@ -67,10 +66,10 @@ updatePlayerBody f = do
 
 -- TODO: center screen, flash the background, etc. Perhaps wait for SPACE.
 -- | Focus on the hero being wounded/displaced/etc.
-focusIfOurs :: MonadClientRO m => ActorId -> m Bool
-focusIfOurs target = do
-  s  <- getLocal
-  if isAHero s target
+focusIfOurs :: MonadActionRoot m => ActorId -> m Bool
+focusIfOurs _target = do
+--  s  <- getLocal
+  if True -- isAHero s target
     then return True
     else return False
 
@@ -103,7 +102,6 @@ effectToAction effect verbosity source target power block = do
     pl  <- getsGlobal splayer
     let spos = bpos sm
         tpos = bpos tm
-        svisible = spos `IS.member` totalVisible per
         tvisible = tpos `IS.member` totalVisible per
         newHP = bhp $ getActor target s
     bb <-
@@ -116,11 +114,9 @@ effectToAction effect verbosity source target power block = do
       msgAdd msg
       -- Try to show an animation. Sometimes, e.g., when HP is unchaged,
       -- the animation will not be shown.
-      cops <- getsGlobal scops
       cli <- getClient
       loc <- getLocal
-      let poss = (breturn tvisible tpos,
-                  breturn svisible spos)
+      let poss = (tpos, spos)
           anim | newHP > oldHP =
             twirlSplash poss Color.BrBlue Color.Blue
                | newHP < oldHP && block =
@@ -128,7 +124,7 @@ effectToAction effect verbosity source target power block = do
                | newHP < oldHP && not block =
             twirlSplash poss Color.BrRed  Color.Red
                | otherwise = mempty
-          animFrs = animate cli loc cops per anim
+          animFrs = animate cli loc per anim
       displayFramesPush $ Nothing : animFrs
       return (b, True)
      else do
@@ -429,14 +425,13 @@ selectPlayerSer actor = do
   return b
 
 summonHeroes :: MonadAction m => Int -> Point -> m ()
-summonHeroes n loc =
+summonHeroes n pos =
   assert (n > 0) $ do
   cops <- getsGlobal scops
   newHeroId <- getsServer scounter
-  configUI <- askConfigUI
   s <- getGlobal
   ser <- getServer
-  let (sN, serN) = iterate (uncurry $ addHero cops loc configUI) (s, ser) !! n
+  let (sN, serN) = iterate (uncurry $ addHero cops pos) (s, ser) !! n
   putGlobal sN
   putServer serN
   b <- focusIfOurs newHeroId
@@ -473,7 +468,7 @@ summonMonsters n loc = do
 -- on any level.
 checkPartyDeath :: MonadAction m => m ()
 checkPartyDeath = do
-  cops@Kind.COps{coactor} <- getsGlobal scops
+  Kind.COps{coactor} <- getsGlobal scops
   per    <- askPerception
   ahs    <- getsGlobal allHeroesAnyLevel
   pl     <- getsGlobal splayer
@@ -487,7 +482,7 @@ checkPartyDeath = do
         animateDeath = do
           cli  <- getClient
           loc <- getLocal
-          let animFrs = animate cli loc cops per $ deathBody (bpos pbody)
+          let animFrs = animate cli loc per $ deathBody (bpos pbody)
           displayFramesPush animFrs
         animateGameOver = do
           animateDeath

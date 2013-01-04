@@ -172,6 +172,9 @@ defStateGlobal sdungeon sdepth sdisco sfaction scops sside sarena =
     , ..
     }
 
+-- TODO: make lstair secret until discovered; use this later on for
+-- goUp in targeting mode (land on stairs of on the same location up a level
+-- if this set of stsirs is unknown).
 -- | Initial per-faction local game state.
 defStateLocal :: Dungeon
                   -> Int -> Discoveries -> FactionDict

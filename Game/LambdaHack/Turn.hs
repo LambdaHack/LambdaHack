@@ -4,7 +4,7 @@ module Game.LambdaHack.Turn ( handleTurn ) where
 
 import Control.Arrow ((&&&))
 import Control.Monad
-import Control.Monad.Writer.Strict (WriterT (runWriterT))
+import Control.Monad.Writer.Strict (WriterT, runWriterT)
 import qualified Data.IntMap as IM
 import qualified Data.List as L
 import qualified Data.Map as M

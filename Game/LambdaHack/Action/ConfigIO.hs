@@ -135,6 +135,13 @@ parseConfigRules dataDir cp =
       configExtraHeroes = get cp "heroes" "extraHeroes"
       configFirstDeathEnds = get cp "heroes" "firstDeathEnds"
       configFaction = T.pack $ get cp "heroes" "faction"
+      configHeroNames =
+        let toNumber (ident, name) =
+              case stripPrefix "HeroName_" ident of
+                Just n -> (read n, T.pack name)
+                Nothing -> assert `failure` ("wrong hero name id " ++ ident)
+            section = getItems cp "heroNames"
+        in map toNumber section
   in Config{..}
 
 parseConfigUI :: FilePath -> CP -> ConfigUI
@@ -151,13 +158,6 @@ parseConfigUI dataDir cp =
       configAppDataDirUI = dataDir
       configHistoryFile = dataDir </> get cp "files" "historyFile"
       configUICfgFile = dataDir </> "config.ui"
-      configHeroNames =
-        let toNumber (ident, name) =
-              case stripPrefix "HeroName_" ident of
-                Just n -> (read n, T.pack name)
-                Nothing -> assert `failure` ("wrong hero name id " ++ ident)
-            section = getItems cp "heroNames"
-        in map toNumber section
       configMacros =
         let trMacro (from, to) =
               let !fromTr = mkKey from

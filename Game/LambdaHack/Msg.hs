@@ -81,6 +81,7 @@ nullReport (Report l) = null l
 singletonReport :: Msg -> Report
 singletonReport m = addMsg emptyReport m
 
+-- TODO: Differentiate from msgAdd. Generally, invent more informative names.
 -- | Add message to the end of report.
 addMsg :: Report -> Msg -> Report
 addMsg r m | T.null m = r

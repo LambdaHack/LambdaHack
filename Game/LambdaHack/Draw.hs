@@ -16,7 +16,7 @@ import qualified Data.Text as T
 import Game.LambdaHack.Actor as Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Animation (Animation, Frames, SingleFrame (..),
-                                  rederAnim)
+                                  renderAnim)
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
@@ -171,12 +171,13 @@ draw dm cops per
       sfBottom = toWidth (lxsize - 1) $ fromMaybe status $ msgBottom
   in SingleFrame{..}
 
+-- TODO: restrict the animation to 'per' before drawing.
 -- | Render animations on top of the current screen frame.
-animate :: StateClient -> State -> Kind.COps -> Perception -> Animation
+animate :: StateClient -> State -> Perception -> Animation
         -> Frames
-animate cli@StateClient{sreport} loc cops per anim =
+animate cli@StateClient{sreport} loc per anim =
   let Level{lxsize, lysize} = getArena loc
       over = renderReport sreport
       topLineOnly = padMsg lxsize over
-      basicFrame = draw ColorFull cops per cli loc [topLineOnly]
-  in rederAnim lxsize lysize basicFrame anim
+      basicFrame = draw ColorFull (scops loc) per cli loc [topLineOnly]
+  in renderAnim lxsize lysize basicFrame anim

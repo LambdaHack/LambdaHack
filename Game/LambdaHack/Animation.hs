@@ -1,11 +1,13 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Screen frames and animations.
 module Game.LambdaHack.Animation
   ( Attr(..), defAttr, AttrChar(..)
-  , SingleFrame(..), Animation, Frames, rederAnim
+  , SingleFrame(..), Animation, Frames, renderAnim, restrictAnim
   , twirlSplash, blockHit, blockMiss, deathBody, swapPlaces
   ) where
 
 import qualified Data.IntMap as IM
+import qualified Data.IntSet as IS
 import qualified Data.List as L
 import Data.Maybe
 import Data.Monoid
@@ -26,18 +28,15 @@ data SingleFrame = SingleFrame
 -- | Animation is a list of frame modifications to play one by one,
 -- where each modification if a map from positions to level map symbols.
 newtype Animation = Animation [IM.IntMap AttrChar]
-
-instance Monoid Animation where
-  mempty = Animation []
-  mappend (Animation a1) (Animation a2) = Animation (a1 ++ a2)
+  deriving (Eq, Show, Monoid)
 
 -- | Sequences of screen frames, including delays.
 type Frames = [Maybe SingleFrame]
 
 -- | Render animations on top of a screen frame.
-rederAnim :: X -> Y -> SingleFrame -> Animation
+renderAnim :: X -> Y -> SingleFrame -> Animation
           -> Frames
-rederAnim lxsize lysize basicFrame (Animation anim) =
+renderAnim lxsize lysize basicFrame (Animation anim) =
   let modifyFrame SingleFrame{sfLevel = levelOld, ..} am =
         let fLine y lineOld =
               let f l (x, acOld) =
@@ -57,18 +56,27 @@ blank = Nothing
 coloredSymbol :: Color -> Char -> Maybe AttrChar
 coloredSymbol color symbol = Just $ AttrChar (Attr color defBG) symbol
 
-mzipPairs :: (Maybe Point, Maybe Point) -> (Maybe AttrChar, Maybe AttrChar)
+mzipPairs :: (Point, Point) -> (Maybe AttrChar, Maybe AttrChar)
           -> [(Point, AttrChar)]
-mzipPairs (mpos1, mpos2) (mattr1, mattr2) =
-  let mzip (Just loc, Just attr) = Just (loc, attr)
-      mzip _ = Nothing
-  in if mpos1 /= mpos2
-     then catMaybes [mzip (mpos1, mattr1), mzip (mpos2, mattr2)]
+mzipPairs (p1, p2) (mattr1, mattr2) =
+  let mzip (pos, mattr) = fmap (\x -> (pos, x)) mattr
+  in if p1 /= p2
+     then catMaybes [mzip (p1, mattr1), mzip (p2, mattr2)]
      else -- If actor affects himself, show only the effect, not the action.
-          catMaybes [mzip (mpos1, mattr1)]
+          catMaybes [mzip (p1, mattr1)]
+
+restrictAnim :: IS.IntSet -> Animation -> Animation
+restrictAnim vis (Animation as) =
+  let f imap =
+-- TODO readd when we switch to containers 5.0
+--      let common = IM.intersection imap $ IM.fromSet (const ()) vis
+        let common = IM.intersection imap $ IM.fromDistinctAscList
+                     $ map (\x -> (x, ())) $ IS.toAscList vis
+        in if IM.null common then Nothing else Just common
+  in Animation $ catMaybes $ map f as
 
 -- | Attack animation. A part of it also reused for self-damage and healing.
-twirlSplash :: (Maybe Point, Maybe Point) -> Color -> Color -> Animation
+twirlSplash :: (Point, Point) -> Color -> Color -> Animation
 twirlSplash poss c1 c2 = Animation $ map (IM.fromList . mzipPairs poss)
   [ (coloredSymbol BrWhite '*', blank)
   , (coloredSymbol c1      '/', coloredSymbol BrCyan '^')
@@ -82,7 +90,7 @@ twirlSplash poss c1 c2 = Animation $ map (IM.fromList . mzipPairs poss)
   ]
 
 -- | Attack that hits through a block.
-blockHit :: (Maybe Point, Maybe Point) -> Color -> Color -> Animation
+blockHit :: (Point, Point) -> Color -> Color -> Animation
 blockHit poss c1 c2 = Animation $ map (IM.fromList . mzipPairs poss)
   [ (coloredSymbol BrWhite '*', blank)
   , (coloredSymbol BrBlue  '{', coloredSymbol BrCyan '^')
@@ -96,7 +104,7 @@ blockHit poss c1 c2 = Animation $ map (IM.fromList . mzipPairs poss)
   ]
 
 -- | Attack that is blocked.
-blockMiss :: (Maybe Point, Maybe Point) -> Animation
+blockMiss :: (Point, Point) -> Animation
 blockMiss poss = Animation $ map (IM.fromList . mzipPairs poss)
   [ (coloredSymbol BrWhite '*', blank)
   , (coloredSymbol BrBlue  '{', coloredSymbol BrCyan '^')
@@ -122,7 +130,7 @@ deathBody loc = Animation $ map (maybe IM.empty (IM.singleton loc))
   ]
 
 -- | Swap-places animation, both hostile and friendly.
-swapPlaces :: (Maybe Point, Maybe Point) -> Animation
+swapPlaces :: (Point, Point) -> Animation
 swapPlaces poss = Animation $ map (IM.fromList . mzipPairs poss)
   [ (coloredSymbol BrMagenta '.', coloredSymbol Magenta   'o')
   , (coloredSymbol BrMagenta 'd', coloredSymbol Magenta   'p')

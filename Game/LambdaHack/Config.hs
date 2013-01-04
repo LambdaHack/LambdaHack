@@ -39,6 +39,8 @@ data Config = Config
   , configExtraHeroes    :: !Int
   , configFirstDeathEnds :: !Bool
   , configFaction        :: !Text
+    -- heroNames
+  , configHeroNames    :: ![(Int, Text)]
   } deriving Show
 
 -- | Fully typed contents of the UI config file. This config
@@ -50,8 +52,6 @@ data ConfigUI = ConfigUI
   , configAppDataDirUI :: !FilePath
   , configHistoryFile  :: !FilePath
   , configUICfgFile    :: !FilePath
-    -- heroNames
-  , configHeroNames    :: ![(Int, Text)]
     -- macros
   , configMacros       :: ![(K.Key, K.Key)]
     -- ui
@@ -88,6 +88,7 @@ instance Binary Config where
     put configExtraHeroes
     put configFirstDeathEnds
     put configFaction
+    put configHeroNames
   get = do
     configSelfString     <- get
     configCaves          <- get
@@ -102,6 +103,7 @@ instance Binary Config where
     configExtraHeroes    <- get
     configFirstDeathEnds <- get
     configFaction        <- get
+    configHeroNames      <- get
     return Config{..}
 
 instance Binary ConfigUI where
@@ -110,7 +112,6 @@ instance Binary ConfigUI where
     put configAppDataDirUI
     put configHistoryFile
     put configUICfgFile
-    put configHeroNames
     put configMacros
     put configFont
     put configHistoryMax
@@ -119,7 +120,6 @@ instance Binary ConfigUI where
     configAppDataDirUI <- get
     configHistoryFile  <- get
     configUICfgFile    <- get
-    configHeroNames    <- get
     configMacros       <- get
     configFont         <- get
     configHistoryMax   <- get

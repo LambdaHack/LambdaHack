@@ -52,14 +52,6 @@
 ; ; Names of various game files. They reside in ~/.LambdaHack or similar.
 ; historyFile : history
 
-; [heroNames]
-; HeroName_0: you
-; HeroName_1: Haskell Alvin
-; HeroName_2: Alonzo Barkley
-; HeroName_3: Ernst Abraham
-; HeroName_4: Samuel Saunders
-; HeroName_5: Roger Robin
-
 ; [macros]
 ; ; Handy with Vi keys:
 ; comma: g
