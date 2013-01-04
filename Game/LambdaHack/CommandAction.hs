@@ -4,6 +4,7 @@ module Game.LambdaHack.CommandAction
   ( cmdSemantics, cmdSer
   ) where
 
+import Control.Monad
 import Control.Monad.Writer.Strict (WriterT, lift)
 import Data.Maybe
 import Data.Text (Text)
@@ -88,10 +89,20 @@ cmdAction cli s cmd =
 -- Time cosuming commands are marked as such in help and cannot be
 -- invoked in targeting mode on a remote level (level different than
 -- the level of the selected hero).
-cmdSemantics :: MonadAction m => StateClient -> State -> Cmd
-             -> WriterT Slideshow m Bool
-cmdSemantics cli s cmd = do
-  let (timed, sem) = cmdAction cli s cmd
+cmdSemantics :: MonadAction m => Cmd -> WriterT Slideshow m Bool
+cmdSemantics cmd = do
+  cli <- getClient
+  loc <- getLocal
+  posOld <- getsLocal (bpos . getPlayerBody)
+  let (timed, sem) = cmdAction cli loc cmd
+  posNew <- getsLocal (bpos . getPlayerBody)
+  when (posOld /= posNew) $ do
+    locNew <- getLocal
+    msgAdd $ lookAt False True locNew posNew ""
+  -- TODO: verify the player belongs to the faction
+  State{splayer, sarena} <- getLocal
+  modifyGlobal (\s -> s {splayer})
+  modifyGlobal (\s -> s {sarena})
   if timed
     then checkCursor sem
     else sem

@@ -127,6 +127,8 @@ dropSer aid item = do
 -- ** MoveSer
 
 -- | Actor moves or swaps position with others or opens doors.
+-- Note that client can't determine which of these actions is chosen,
+-- because foes can be invisible, etc.
 moveSer :: MonadAction m  -- MonadServer m
         => ActorId    -- ^ who's moving?
         -> Vector     -- ^ in which direction?
@@ -134,8 +136,6 @@ moveSer :: MonadAction m  -- MonadServer m
 moveSer actor dir = do
   -- We start by looking at the target position.
   cops <- getsGlobal scops
-  loc <- getLocal
-  pl <- getsGlobal splayer
   lvl <- getsGlobal getArena
   sm <- getsGlobal (getActor actor)
   let spos = bpos sm           -- source position
@@ -143,18 +143,14 @@ moveSer actor dir = do
   tgt <- getsGlobal (posToActor tpos)
   case tgt of
     Just target
-      | accessible cops lvl spos tpos -> do
+      | accessible cops lvl spos tpos ->
           -- Switching positions requires full access.
-          when (actor == pl) $
-            msgAdd $ lookAt cops False True loc tpos ""
           actorRunActor actor target
       | otherwise -> abortWith "blocked"
     Nothing
-      | accessible cops lvl spos tpos -> do
-          -- Perform the move.
+      | accessible cops lvl spos tpos ->
+          -- Perform the actual move.
           updateAnyActor actor $ \ body -> body {bpos = tpos}
-          when (actor == pl) $
-            msgAdd $ lookAt cops False True loc tpos ""
       | otherwise ->
           actorOpenDoor actor dir  -- try to open a door, TODO: bumpTile tpos F.Openable
 
@@ -464,8 +460,6 @@ actorAttack :: MonadAction m
 actorAttack actor dir = do
   -- We start by looking at the target position.
   cops@Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getsGlobal scops
-  loc <- getLocal
-  pl     <- getsGlobal splayer
   lvl    <- getsGlobal getArena
   clvl   <- getsLocal getArena
   sm     <- getsGlobal (getActor actor)
@@ -478,10 +472,8 @@ actorAttack actor dir = do
       actorAttackActor actor target
     Nothing
       | accessible cops lvl spos tpos -> do
-          -- Perform the move.
+          -- Perform the actual move.
           updateAnyActor actor $ \ body -> body {bpos = tpos}
-          when (actor == pl) $
-            msgAdd $ lookAt cops False True loc tpos ""
       | Tile.canBeHidden cotile (okind $ clvl `at` tpos) -> do
           msgAdd "You search all adjacent walls for half a second."
           search

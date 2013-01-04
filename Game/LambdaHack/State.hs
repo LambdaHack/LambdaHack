@@ -405,23 +405,23 @@ instance Binary Status where
 -- | Produces a textual description of the terrain and items at an already
 -- explored position. Mute for unknown positions.
 -- The detailed variant is for use in the targeting mode.
-lookAt :: Kind.COps  -- ^ game content
-       -> Bool       -- ^ detailed?
+lookAt :: Bool       -- ^ detailed?
        -> Bool       -- ^ can be seen right now?
        -> State      -- ^ game state
        -> Point      -- ^ position to describe
        -> Text       -- ^ an extra sentence to print
        -> Text
-lookAt Kind.COps{coitem, cotile=Kind.Ops{oname}} detailed canSee s loc msg
+lookAt detailed canSee loc pos msg
   | detailed =
-    let tile = lvl `at` loc
+    let tile = lvl `at` pos
     in makeSentence [MU.Text $ oname tile] <+> msg <+> isd
   | otherwise = msg <+> isd
  where
-  lvl = getArena s
-  is  = lvl `atI` loc
+  Kind.COps{coitem, cotile=Kind.Ops{oname}} = scops loc
+  lvl = getArena loc
+  is  = lvl `atI` pos
   prefixSee = MU.Text $ if canSee then "you see" else "you remember"
-  nWs = partItemNWs coitem (sdisco s)
+  nWs = partItemNWs coitem (sdisco loc)
   isd = case is of
           [] -> ""
           _ | length is <= 2 ->

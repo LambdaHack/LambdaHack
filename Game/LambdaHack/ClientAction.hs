@@ -76,7 +76,7 @@ moveCursor dir n = do
 -- | Perform look around in the current position of the cursor.
 doLook :: MonadClient m => WriterT Slideshow m ()
 doLook = do
-  cops@Kind.COps{coactor} <- getsLocal scops
+  Kind.COps{coactor} <- getsLocal scops
   p    <- getsClient (cposition . scursor)
   loc  <- getLocal
   clvl   <- getsLocal getArena
@@ -102,7 +102,7 @@ doLook = do
                  Just TPos{}   -> "[targeting position" <> vis <> "]"
                  Nothing       -> "[targeting current" <> vis <> "]"
         -- Show general info about current p.
-        lookMsg = mode <+> lookAt cops True canSee loc p monsterMsg
+        lookMsg = mode <+> lookAt True canSee loc p monsterMsg
         -- Check if there's something lying around at current p.
         is = clvl `atI` p
     modifyClient (\st -> st {slastKey = Nothing})
@@ -443,7 +443,7 @@ cycleHero = do
 -- of a player action (selected player actor death just sets splayer to -1).
 selectPlayer :: MonadClient m => ActorId -> m Bool
 selectPlayer actor = do
-  cops@Kind.COps{coactor} <- getsLocal scops
+  Kind.COps{coactor} <- getsLocal scops
   pl <- getsLocal splayer
   if actor == pl
     then return False -- already selected
@@ -460,8 +460,6 @@ selectPlayer actor = do
       stopRunning
       -- Announce.
       msgAdd $ makeSentence [partActor coactor pbody, "selected"]
-      locNew <- getLocal
-      msgAdd $ lookAt cops False True locNew (bpos pbody) ""
       return True
 
 stopRunning :: MonadClient m => m ()

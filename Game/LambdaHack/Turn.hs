@@ -220,7 +220,6 @@ playerCommand msgRunAbort = do
           Binding{kcmd} <- askBinding
           case M.lookup km kcmd of
             Just (_, _, cmd) -> do
-              loc <- getLocal
               -- Query and clear the last command key.
               lastKey <- getsClient slastKey
               -- TODO: perhaps replace slastKey
@@ -229,15 +228,9 @@ playerCommand msgRunAbort = do
               -- Depends on whether slastKey
               -- is needed in other parts of code.
               modifyClient (\st -> st {slastKey = Just km})
-              cli <- getClient
-              b <- if (Just km == lastKey)
-                then cmdSemantics cli loc Command.Clear
-                else cmdSemantics cli loc cmd
-              State{splayer, sarena} <- getLocal
-              -- TODO: verify the player belongs to the faction
-              modifyGlobal (\s -> s {splayer})
-              modifyGlobal (\s -> s {sarena})
-              return b
+              if (Just km == lastKey)
+                then cmdSemantics Command.Clear
+                else cmdSemantics cmd
             Nothing -> let msgKey = "unknown command <" <> K.showKM km <> ">"
                        in abortWith msgKey
         -- The command was aborted or successful and if the latter,

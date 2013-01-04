@@ -5,9 +5,6 @@
 -- TODO: document
 module Game.LambdaHack.MixedAction where
 
--- Cabal
-import qualified Paths_LambdaHack as Self (version)
-
 import Control.Monad
 import Control.Monad.Writer.Strict (WriterT, lift, tell)
 import Data.Function

@@ -312,7 +312,6 @@ effLvlGoUp k = do
   pl <- getsGlobal splayer
   sarena <- getsGlobal sarena
   st <- getGlobal
-  cops <- getsGlobal scops
   case whereTo st k of
     Nothing -> fleeDungeon -- we are at the "end" of the dungeon
     Just (nln, npos) ->
@@ -366,8 +365,6 @@ effLvlGoUp k = do
         -- The invariant "at most one actor on a tile" restored.
         -- Create a backup of the savegame.
         saveGameBkp
-        loc <- getLocal
-        msgAdd $ lookAt cops False True loc npos ""
 
 -- | The player leaves the dungeon.
 fleeDungeon :: MonadAction m => m ()
