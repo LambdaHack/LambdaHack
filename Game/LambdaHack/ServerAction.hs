@@ -32,7 +32,6 @@ import Game.LambdaHack.EffectAction
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Item
-import qualified Game.LambdaHack.Key as K
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
@@ -70,7 +69,7 @@ cfgDumpSer = do
 
 -- ** ApplySer
 
--- TODO: plit into ApplyInvSer and ApplyFloorSer
+-- TODO: split into ApplyInvSer and ApplyFloorSer
 applySer :: MonadAction m   -- MonadServer m
          => ActorId  -- ^ actor applying the item (is on current level)
          -> Item     -- ^ the item to be applied
@@ -85,7 +84,7 @@ applySer actor item pos = do
 
 -- TODO: this is subtly wrong: if identical items are on the floor and in
 -- inventory, the floor one will be chosen, regardless of player intention.
--- TODO: right now it natily hacks (with the ppos) around removing items
+-- TODO: right now it nastily hacks (with the ppos) around removing items
 -- of actors that die when applying items. The subtle incorrectness
 -- helps here a lot, because items of dead actors land on the floor,
 -- so we use them up in inventory, but remove them after use from the floor.
@@ -114,66 +113,15 @@ removeFromPos i pos = do
           x  -> Just x
       adj = IM.alter rib pos
 
--- ** DropSer
+-- ** ProjectSer
 
-dropSer :: MonadServer m => ActorId -> Item -> m ()
-dropSer aid item = do
-  pos  <- getsGlobal (bpos . getActor aid)
-  modifyGlobal (updateAnyActorItem aid (removeItemByLetter item))
-  modifyGlobal (updateArena (dropItemsAt [item] pos))
-
--- ** MoveSer
-
--- | Actor moves or swaps position with others or opens doors.
--- Note that client can't determine which of these actions is chosen,
--- because foes can be invisible, etc.
-moveSer :: MonadAction m  -- MonadServer m
-        => ActorId    -- ^ who's moving?
-        -> Vector     -- ^ in which direction?
-        -> m ()
-moveSer actor dir = do
-  -- We start by looking at the target position.
-  cops <- getsGlobal scops
-  lvl <- getsGlobal getArena
-  sm <- getsGlobal (getActor actor)
-  let spos = bpos sm           -- source position
-      tpos = spos `shift` dir  -- target position
-  tgt <- getsGlobal (posToActor tpos)
-  case tgt of
-    Just target
-      | accessible cops lvl spos tpos ->
-          -- Switching positions requires full access.
-          actorRunActor actor target
-      | otherwise -> abortWith "blocked"
-    Nothing
-      | accessible cops lvl spos tpos ->
-          -- Perform the actual move.
-          updateAnyActor actor $ \ body -> body {bpos = tpos}
-      | otherwise ->
-          actorOpenDoor actor dir  -- try to open a door, TODO: bumpTile tpos F.Openable
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-projectGroupItem :: MonadAction m => ActorId  -- ^ actor projecting the item (is on current lvl)
-                 -> Point    -- ^ target position of the projectile
-                 -> MU.Part  -- ^ how the projecting is called
-                 -> Item     -- ^ the item to be projected
-                 -> m ()
-projectGroupItem source tpos _verb item = do
+projectSer :: MonadAction m
+           => ActorId  -- ^ actor projecting the item (is on current lvl)
+           -> Point    -- ^ target position of the projectile
+           -> MU.Part  -- ^ how the projecting is called
+           -> Item     -- ^ the item to be projected
+           -> m ()
+projectSer source tpos _verb item = do
   cops@Kind.COps{coactor, coitem} <- getsLocal scops
   sm    <- getsLocal (getActor source)
   per   <- askPerceptionSer
@@ -234,125 +182,11 @@ projectGroupItem source tpos _verb item = do
           abortWith "blocked"
       when (svisible || projVis) $ msgAdd msg
 
-playerProjectGroupItem :: MonadAction m => MU.Part -> MU.Part -> [Char] -> m ()
-playerProjectGroupItem verb object syms = do
-  ms     <- getsLocal hostileList
-  lxsize <- getsLocal (lxsize . getArena)
-  lysize <- getsLocal (lysize . getArena)
-  ppos   <- getsLocal (bpos . getPlayerBody)
-  if foesAdjacent lxsize lysize ppos ms
-    then abortWith "You can't aim in melee."
-    else playerProjectGI verb object syms
-
-playerProjectGI :: MonadAction m => MU.Part -> MU.Part -> [Char] -> m ()
-playerProjectGI verb object syms = do
-  cli <- getClient
-  pos <- getLocal
-  pl    <- getsLocal splayer
-  case targetToPos cli pos of
-    Just p -> do
-      Kind.COps{coitem=Kind.Ops{okind}} <- getsLocal scops
-      is   <- getsLocal getPlayerItem
-      item <- getGroupItem is object syms
-                (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
-      targeting <- getsClient (ctargeting . scursor)
-      when (targeting == TgtAuto) $ endTargeting True
-      disco <- getsLocal sdisco
-      let verbProject = case jkind disco item of
-            Nothing -> verb
-            Just ik -> iverbProject $ okind ik
-      projectGroupItem pl p verbProject item
-    Nothing -> assert `failure` (pos, pl, "target unexpectedly invalid")
-
-actorPickupItem :: MonadAction m => ActorId -> m ()
-actorPickupItem actor = do
-  Kind.COps{coactor, coitem} <- getsGlobal scops
-  pl <- getsGlobal splayer
-  per <- askPerception
-  lvl <- getsGlobal getArena
-  body <- getsGlobal (getActor actor)
-  bitems <- getsGlobal (getActorItem actor)
-  disco <- getsLocal sdisco
-  let p       = bpos body
-      perceived = p `IS.member` totalVisible per
-      isPlayer  = actor == pl
-  -- check if something is here to pick up
-  case lvl `atI` p of
-    []   -> abortWith "nothing here"
-    i:is -> -- pick up first item; TODO: let pl select item; not for monsters
-      case assignLetter (jletter i) (bletter body) bitems of
-        Just l -> do
-          let (ni, nitems) = joinItem (i { jletter = Just l }) bitems
-          -- msg depends on who picks up and if a hero can perceive it
-          if isPlayer
-            then msgAdd $ makePhrase [ letterLabel (jletter ni)
-                                     , partItemNWs coitem disco ni ]
-            else when perceived $
-                   msgAdd $ makeSentence
-                     [ MU.SubjectVerbSg (partActor coactor body) "pick up"
-                     , partItemNWs coitem disco i ]
-          removeFromPos i p
-            >>= assert `trueM` (i, is, p, "item is stuck")
-          -- add item to actor's inventory:
-          updateAnyActor actor $ \ m ->
-            m { bletter = maxLetter l (bletter body) }
-          modifyGlobal (updateAnyActorItem actor (const nitems))
-        Nothing -> abortWith "cannot carry any more"
-
-pickupItem :: MonadAction m => m ()
-pickupItem = do
-  pl <- getsLocal splayer
-  actorPickupItem pl
-
-gameExit :: MonadAction m => m ()
-gameExit = do
-  b <- displayYesNo "Really save and exit?"
-  if b
-    then modifyServer (\ s -> s {squit = Just True})
-    else abortWith "Game resumed."
-
-gameRestart :: MonadAction m => m ()
-gameRestart = do
-  b1 <- displayMore ColorFull "You just requested a new game."
-  when (not b1) $ neverMind True
-  b2 <- displayYesNo "Current progress will be lost! Really restart the game?"
-  when (not b2) $ abortWith "Yea, would be a pity to leave them to die."
-  let upd f = f {gquit = Just (False, Restart)}
-  modifyGlobal $ updateSide upd
-
--- | Guess and report why the bump command failed.
-guessBump :: MonadActionRoot m => Kind.Ops TileKind -> F.Feature -> Kind.Id TileKind -> m ()
-guessBump cotile F.Openable t | Tile.hasFeature cotile F.Closable t =
-  abortWith "already open"
-guessBump _ F.Openable _ =
-  abortWith "not a door"
-guessBump cotile F.Closable t | Tile.hasFeature cotile F.Openable t =
-  abortWith "already closed"
-guessBump _ F.Closable _ =
-  abortWith "not a door"
-guessBump cotile F.Ascendable t | Tile.hasFeature cotile F.Descendable t =
-  abortWith "the way goes down, not up"
-guessBump _ F.Ascendable _ =
-  abortWith "no stairs up"
-guessBump cotile F.Descendable t | Tile.hasFeature cotile F.Ascendable t =
-  abortWith "the way goes up, not down"
-guessBump _ F.Descendable _ =
-  abortWith "no stairs down"
-guessBump _ _ _ = neverMind True
-
--- | Player tries to trigger a tile using a feature.
-bumpTile :: MonadAction m => Point -> F.Feature -> m ()
-bumpTile dpos feat = do
-  Kind.COps{cotile} <- getsLocal scops
-  lvl    <- getsLocal getArena
-  let t = lvl `at` dpos
-  if Tile.hasFeature cotile feat t
-    then triggerTile dpos
-    else guessBump cotile feat t
+-- ** TriggerSer
 
 -- | Perform the action specified for the tile in case it's triggered.
-triggerTile :: MonadAction m => Point -> m ()
-triggerTile dpos = do
+triggerSer :: MonadAction m => Point -> m ()
+triggerSer dpos = do
   Kind.COps{cotile=Kind.Ops{okind, opick}} <- getsGlobal scops
   lvl <- getsGlobal getArena
   let f (F.Cause effect) = do
@@ -373,119 +207,73 @@ triggerTile dpos = do
       f _ = return ()
   mapM_ f $ TileKind.tfeature $ okind $ lvl `at` dpos
 
--- | Ask for a direction and trigger a tile, if possible.
-playerTriggerDir :: MonadAction m => F.Feature -> MU.Part -> m ()
-playerTriggerDir feat verb = do
-  let keys = zip K.dirAllMoveKey $ repeat K.NoModifier
-      prompt = makePhrase ["What to", verb MU.:> "? [movement key"]
-  e <- displayChoiceUI prompt [] keys
-  lxsize <- getsLocal (lxsize . getArena)
-  K.handleDir lxsize e (playerBumpDir feat) (neverMind True)
+-- * PickupSer
 
--- | Player tries to trigger a tile in a given direction.
-playerBumpDir :: MonadAction m => F.Feature -> Vector -> m ()
-playerBumpDir feat dir = do
-  pl    <- getsLocal splayer
-  body  <- getsLocal (getActor pl)
-  let dpos = bpos body `shift` dir
-  bumpTile dpos feat
+pickupSer :: MonadServer m => ActorId -> Item -> Char -> m ()
+pickupSer aid i l = do
+  p <- getsGlobal (bpos . getActor aid)
+  bitems <- getsGlobal (getActorItem aid)
+  removeFromPos i p
+    >>= assert `trueM` (aid, i, p, "item is stuck")
+  let (ni, nitems) = joinItem (i { jletter = Just l }) bitems
+  updateAnyActor aid $ \ m ->
+    m { bletter = maxLetter (fromJust $ jletter ni) (bletter m) }
+  modifyGlobal (updateAnyActorItem aid (const nitems))
 
--- | Player tries to trigger the tile he's standing on.
-playerTriggerTile :: MonadAction m => F.Feature -> m ()
-playerTriggerTile feat = do
-  ppos <- getsLocal (bpos . getPlayerBody)
-  bumpTile ppos feat
+-- ** DropSer
 
--- | An actor opens a door.
-actorOpenDoor :: MonadAction m => ActorId -> Vector -> m ()
-actorOpenDoor actor dir = do
-  Kind.COps{cotile} <- getsGlobal scops
-  lvl  <- getsGlobal getArena
-  pl   <- getsGlobal splayer
-  body <- getsGlobal (getActor actor)
-  let dpos = shift (bpos body) dir  -- the position we act upon
-      t = lvl `at` dpos
-      isPlayer = actor == pl
-      isVerbose = isPlayer  -- don't report, unless it's player-controlled
-  unless (openable cotile lvl dpos) $ neverMind isVerbose
-  if Tile.hasFeature cotile F.Closable t
-    then abortIfWith isVerbose "already open"
-    else if not (Tile.hasFeature cotile F.Closable t ||
-                 Tile.hasFeature cotile F.Openable t ||
-                 Tile.hasFeature cotile F.Hidden t)
-         then neverMind isVerbose  -- not doors at all
-         else triggerTile dpos
+dropSer :: MonadServer m => ActorId -> Item -> m ()
+dropSer aid item = do
+  pos  <- getsGlobal (bpos . getActor aid)
+  modifyGlobal (updateAnyActorItem aid (removeItemByLetter item))
+  modifyGlobal (updateArena (dropItemsAt [item] pos))
 
--- | Search for hidden doors.
-search :: MonadAction m => m ()
-search = do
-  Kind.COps{coitem, cotile} <- getsGlobal scops
-  lvl    <- getsGlobal getArena
-  lsecret <- getsGlobal (lsecret . getArena)
-  lxsize <- getsGlobal (lxsize . getArena)
-  ppos   <- getsGlobal (bpos . getPlayerBody)
-  pitems <- getsGlobal getPlayerItem
-  discoS <- getsGlobal sdisco
-  let delta = timeScale timeTurn $
-                case strongestSearch coitem discoS pitems of
-                  Just i  -> 1 + jpower i
-                  Nothing -> 1
-      searchTile sle mv =
-        let loc = shift ppos mv
-            t = lvl `at` loc
-            k = case IM.lookup loc lsecret of
-              Nothing -> assert `failure` (loc, lsecret)
-              Just st -> timeAdd st $ timeNegate delta
-        in if Tile.hasFeature cotile F.Hidden t
-           then if k > timeZero
-                then IM.insert loc k sle
-                else IM.delete loc sle
-           else sle
-      leNew = foldl' searchTile lsecret (moves lxsize)
-  modifyGlobal (updateArena (\ l -> l {lsecret = leNew}))
-  lvlNew <- getsGlobal getArena
-  let triggerHidden mv = do
-        let dpos = shift ppos mv
-            t = lvlNew `at` dpos
-        when (Tile.hasFeature cotile F.Hidden t && IM.notMember dpos leNew) $
-          triggerTile dpos
-  mapM_ triggerHidden (moves lxsize)
+-- * WaitSer
+
+-- | Update the wait/block count.
+waitSer :: MonadServer m => ActorId -> m ()
+waitSer actor = do
+  Kind.COps{coactor} <- getsGlobal scops
+  time <- getsGlobal getTime
+  updateAnyActor actor $ \ m -> m {bwait = timeAddFromSpeed coactor m time}
+
+-- ** MoveSer
 
 -- | Actor moves or attacks or searches or opens doors.
-actorAttack :: MonadAction m
-            => ActorId    -- ^ who's moving?
-            -> Vector     -- ^ in which direction?
-            -> m ()
-actorAttack actor dir = do
-  -- We start by looking at the target position.
+-- Note that client can't determine which of these actions is chosen,
+-- because foes can be invisible, doors hidden, clients can move
+-- simultaneously during the same turn, etc. Also, only the server
+-- is authorized to check if a move is legal and it needs full context
+-- for that, e.g., the initial actor position to check if melee attack
+-- does not try to reach to a distant tile.
+moveSer :: MonadAction m => ActorId -> Vector -> m ()
+moveSer actor dir = do
   cops@Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getsGlobal scops
-  lvl    <- getsGlobal getArena
-  clvl   <- getsLocal getArena
-  sm     <- getsGlobal (getActor actor)
+  lvl <- getsGlobal getArena
+  sm <- getsGlobal (getActor actor)
   let spos = bpos sm           -- source position
       tpos = spos `shift` dir  -- target position
+  -- We start by looking at the target position.
   tgt <- getsGlobal (posToActor tpos)
   case tgt of
     Just target ->
       -- Attacking does not require full access, adjacency is enough.
       actorAttackActor actor target
     Nothing
-      | accessible cops lvl spos tpos -> do
+      | accessible cops lvl spos tpos ->
           -- Perform the actual move.
           updateAnyActor actor $ \ body -> body {bpos = tpos}
-      | Tile.canBeHidden cotile (okind $ clvl `at` tpos) -> do
+      | Tile.canBeHidden cotile (okind $ lvl `at` tpos) -> do
           msgAdd "You search all adjacent walls for half a second."
-          search
+          search actor
       | otherwise ->
-          actorOpenDoor actor dir  -- try to open a door, TODO: bumpTile tpos F.Openable
+          actorOpenDoor actor dir
 
--- | Resolves the result of an actor moving into another. Usually this
--- involves melee attack, but with two heroes it just changes focus.
+-- | Resolves the result of an actor moving into another.
 -- Actors on blocked positions can be attacked without any restrictions.
--- For instance, an actor embedded in a wall
--- can be attacked from an adjacent position.
--- This function is analogous to projectGroupItem, but for melee
--- and not using up the weapon.
+-- For instance, an actor embedded in a wall can be attacked from
+-- an adjacent position. This function is analogous to projectGroupItem,
+-- but for melee and not using up the weapon.
 actorAttackActor :: MonadAction m => ActorId -> ActorId -> m ()
 actorAttackActor source target = do
   smRaw <- getsGlobal (getActor source)
@@ -505,7 +293,8 @@ actorAttackActor source target = do
      && not (bproj sm) && not (bproj tm)
     then assert `failure` (source, target, "player AI bumps into friendlies")
     else do
-      cops@Kind.COps{coactor, coitem=coitem@Kind.Ops{opick, okind}} <- getsGlobal scops
+      cops@Kind.COps{ coactor
+                    , coitem=coitem@Kind.Ops{opick, okind}} <- getsGlobal scops
       state <- getGlobal
       bitems <- getsGlobal (getActorItem source)
       let h2hGroup = if isAHero state source then "unarmed" else "monstrous"
@@ -562,10 +351,90 @@ actorAttackActor source target = do
             else performHit True
         else performHit False
 
--- | Resolves the result of an actor running (not walking) into another.
--- This involves switching positions of the two actors.
-actorRunActor :: MonadAction m => ActorId -> ActorId -> m ()
-actorRunActor source target = do
+-- | Search for hidden doors.
+search :: MonadAction m => ActorId -> m ()
+search aid = do
+  Kind.COps{coitem, cotile} <- getsGlobal scops
+  lvl <- getsGlobal getArena
+  lsecret <- getsGlobal (lsecret . getArena)
+  lxsize <- getsGlobal (lxsize . getArena)
+  ppos <- getsGlobal (bpos . getActor aid)
+  pitems <- getsGlobal (getActorItem aid)
+  discoS <- getsGlobal sdisco
+  let delta = timeScale timeTurn $
+                case strongestSearch coitem discoS pitems of
+                  Just i  -> 1 + jpower i
+                  Nothing -> 1
+      searchTile sle mv =
+        let loc = shift ppos mv
+            t = lvl `at` loc
+            k = case IM.lookup loc lsecret of
+              Nothing -> assert `failure` (loc, lsecret)
+              Just st -> timeAdd st $ timeNegate delta
+        in if Tile.hasFeature cotile F.Hidden t
+           then if k > timeZero
+                then IM.insert loc k sle
+                else IM.delete loc sle
+           else sle
+      leNew = foldl' searchTile lsecret (moves lxsize)
+  modifyGlobal (updateArena (\ l -> l {lsecret = leNew}))
+  lvlNew <- getsGlobal getArena
+  let triggerHidden mv = do
+        let dpos = shift ppos mv
+            t = lvlNew `at` dpos
+        when (Tile.hasFeature cotile F.Hidden t && IM.notMember dpos leNew) $
+          triggerSer dpos
+  mapM_ triggerHidden (moves lxsize)
+
+-- TODO: bumpTile tpos F.Openable
+-- | An actor opens a door.
+actorOpenDoor :: MonadAction m => ActorId -> Vector -> m ()
+actorOpenDoor actor dir = do
+  Kind.COps{cotile} <- getsGlobal scops
+  lvl<- getsGlobal getArena
+  pl <- getsGlobal splayer
+  body <- getsGlobal (getActor actor)
+  let dpos = shift (bpos body) dir  -- the position we act upon
+      t = lvl `at` dpos
+      isPlayer = actor == pl
+      isVerbose = isPlayer  -- don't report, unless it's player-controlled
+  unless (openable cotile lvl dpos) $ neverMind isVerbose
+  if Tile.hasFeature cotile F.Closable t
+    then abortIfWith isVerbose "already open"
+    else if not (Tile.hasFeature cotile F.Closable t ||
+                 Tile.hasFeature cotile F.Openable t ||
+                 Tile.hasFeature cotile F.Hidden t)
+         then neverMind isVerbose  -- not doors at all
+         else triggerSer dpos
+
+-- ** RunSer
+
+-- | Actor moves or swaps position with others or opens doors.
+runSer :: MonadAction m => ActorId -> Vector -> m ()
+runSer actor dir = do
+  cops <- getsGlobal scops
+  lvl <- getsGlobal getArena
+  sm <- getsGlobal (getActor actor)
+  let spos = bpos sm           -- source position
+      tpos = spos `shift` dir  -- target position
+  -- We start by looking at the target position.
+  tgt <- getsGlobal (posToActor tpos)
+  case tgt of
+    Just target
+      | accessible cops lvl spos tpos ->
+          -- Switching positions requires full access.
+          displaceActor actor target
+      | otherwise -> abortWith "blocked"
+    Nothing
+      | accessible cops lvl spos tpos ->
+          -- Perform the actual move.
+          updateAnyActor actor $ \ body -> body {bpos = tpos}
+      | otherwise ->
+          actorOpenDoor actor dir
+
+-- | When an actor runs (not walks) into another, they switch positions.
+displaceActor :: MonadAction m => ActorId -> ActorId -> m ()
+displaceActor source target = do
   pl <- getsGlobal splayer
   sm <- getsGlobal (getActor source)
   tm <- getsGlobal (getActor target)
@@ -592,7 +461,22 @@ actorRunActor source target = do
    then stopRunning  -- do not switch positions repeatedly
    else void $ focusIfOurs target
 
--- | Create a new monster in the level, at a random position.
+-- ** GameExit
+
+gameExitSer :: MonadServer m => m ()
+gameExitSer =
+  modifyServer (\ s -> s {squit = Just True})
+
+-- ** GameRestart
+
+gameRestartSer :: MonadServer m => m ()
+gameRestartSer = do
+  let upd f = f {gquit = Just (False, Restart)}
+  modifyGlobal $ updateSide upd
+
+-- * Assorted helper server functions.
+
+-- | Create a new monster on the level, at a random position.
 rollMonster :: Kind.COps -> Perception -> State -> StateServer
             -> Rnd (State, StateServer)
 rollMonster Kind.COps{ cotile
@@ -683,16 +567,3 @@ addSmell = do
       upd = IM.insert ppos $ timeAdd time smellTimeout
   when (isAHero s pl) $
     modifyGlobal $ updateArena $ updateSmell upd
-
--- | Update the wait/block count.
-setWaitBlock :: MonadServer m => ActorId -> m ()
-setWaitBlock actor = do
-  Kind.COps{coactor} <- getsGlobal scops
-  time <- getsGlobal getTime
-  updateAnyActor actor $ \ m -> m {bwait = timeAddFromSpeed coactor m time}
-
--- | Player waits a turn (and blocks, etc.).
-waitBlock :: MonadServer m => m ()
-waitBlock = do
-  pl <- getsGlobal splayer
-  setWaitBlock pl

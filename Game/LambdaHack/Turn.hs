@@ -113,7 +113,7 @@ handleActors subclipStart = do
       when (not $ memActor splayerOld glo) $
         modifyLocal (\s -> s {splayer=actor})
       splayerNew <- getsLocal splayer
-      -- TODO: verify the player belongs to the faction
+      -- TODO: verify the player belongs to the faction and is on sarena
       modifyGlobal (\s -> s {splayer=splayerNew})
       loc <- getLocal
       if actor == splayerNew && isControlledFaction loc sside
@@ -182,7 +182,7 @@ continueRun dd = do
   pl <- getsLocal splayer
   dir <- continueRunDir dd
   -- Attacks and opening doors disallowed when continuing to run.
-  moveSer pl dir
+  runSer pl dir
 
 -- | Handle the move of the hero.
 handlePlayer :: MonadAction m => m ()

@@ -13,20 +13,19 @@ import Game.LambdaHack.Item
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Point
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.VectorXY
 import Game.LambdaHack.Vector
+import Game.LambdaHack.VectorXY
 
 -- | Abstract syntax of server commands.
 data CmdSer =
     ApplySer ActorId Item Point
-  | ProjectSer
-  | TriggerDirSer
-  | TriggerTileSer
-  | PickupSer
+  | ProjectSer ActorId Point MU.Part Item
+  | TriggerSer Point
+  | PickupSer ActorId Item Char
   | DropSer ActorId Item
-  | WaitSer
+  | WaitSer ActorId
   | MoveSer ActorId Vector
-  | RunSer
+  | RunSer ActorId Vector
   | GameExitSer
   | GameRestartSer
   | GameSaveSer

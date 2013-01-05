@@ -34,12 +34,13 @@ cmdAction cli s cmd =
   in case cmd of
     Apply{..} -> (True, cmdSerAction $ playerApplyGroupItem verb object syms)
     Project{} | isNothing tgtLoc -> (False, retarget)
-    Project{..} -> (True, lift $ playerProjectGroupItem verb object syms)
-    TriggerDir{..} -> (True, lift $ playerTriggerDir feature verb)
-    TriggerTile{..} -> (True, lift $ playerTriggerTile feature)
-    Pickup -> (True, lift $ pickupItem)
+    Project{..} ->
+      (True, cmdSerAction $ playerProjectGroupItem verb object syms)
+    TriggerDir{..} -> (True, cmdSerAction $ playerTriggerDir feature verb)
+    TriggerTile{..} -> (True, cmdSerAction $ playerTriggerTile feature)
+    Pickup -> (True, cmdSerAction $ pickupItem)
     Drop   -> (True, cmdSerAction $ dropItem)
-    Wait   -> (True, lift $ waitBlock)
+    Wait   -> (True, cmdSerAction $ waitBlock)
     Move v | targeting /= TgtOff ->
       let dir = toDir (lxsize (getArena s)) v
       in (False, moveCursor dir 1)
@@ -54,15 +55,15 @@ cmdAction cli s cmd =
           (False,
            selectPlayer target
            >>= assert `trueM` (pl, target, "player bumps himself" :: Text))
-        _ -> (True, lift $ actorAttack pl dir)
+        _ -> (True, cmdSerAction $ movePl dir)
     Run v | targeting /= TgtOff ->
       let dir = toDir (lxsize (getArena s)) v
       in (False, moveCursor dir 10)
     Run v ->
       let dir = toDir (lxsize (getArena s)) v
       in (True, cmdSerAction $ runPl dir)
-    GameExit    -> (True, lift $ gameExit)     -- takes time, then rewinds time
-    GameRestart -> (True, lift $ gameRestart)  -- takes time, then resets state
+    GameExit    -> (True, cmdSerAction $ gameExit)     -- rewinds time
+    GameRestart -> (True, cmdSerAction $ gameRestart)  -- resets state
 
     GameSave    -> (False, cmdSerAction $ gameSave)
     Inventory   -> (False, inventory)
@@ -99,7 +100,9 @@ cmdSemantics cmd = do
   when (posOld /= posNew) $ do
     locNew <- getLocal
     msgAdd $ lookAt False True locNew posNew ""
-  -- TODO: verify the player belongs to the faction
+  -- Data invariant for Global state: player belongs to the sside faction
+  -- and resides on sarena level.
+  -- TODO: verify
   State{splayer, sarena} <- getLocal
   modifyGlobal (\s -> s {splayer})
   modifyGlobal (\s -> s {sarena})
@@ -124,16 +127,15 @@ checkCursor h = do
 cmdSer :: MonadAction m => CmdSer -> m ()
 cmdSer cmd = case cmd of
   ApplySer aid item pos -> applySer aid item pos
-  ProjectSer -> undefined
-  TriggerDirSer -> undefined
-  TriggerTileSer -> undefined
-  PickupSer -> undefined
+  ProjectSer aid p v i -> projectSer aid p v i
+  TriggerSer p -> triggerSer p
+  PickupSer aid i l -> pickupSer aid i l
   DropSer aid item -> dropSer aid item
-  WaitSer -> undefined
+  WaitSer aid -> waitSer aid
   MoveSer aid dir -> moveSer aid dir
-  RunSer -> undefined
-  GameExitSer -> undefined
-  GameRestartSer -> undefined
+  RunSer aid dir -> runSer aid dir
+  GameExitSer -> gameExitSer
+  GameRestartSer -> gameRestartSer
   GameSaveSer -> gameSaveSer
   CfgDumpSer -> cfgDumpSer
 

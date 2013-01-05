@@ -186,12 +186,12 @@ dirToAction actor allowAttacks dir = do
     -- TODO: ensure time is taken for other aborted actions in this file
     -- TODO: or just fail at each abort in AI code? or use tryWithFrame?
     if allowAttacks
-      then actorAttack actor dir
-      else moveSer actor dir
+      then moveSer actor dir
+      else runSer actor dir
 
 -- | A strategy to always just wait.
 waitBlockNow :: MonadAction m => ActorId -> Strategy (m ())
-waitBlockNow actor = returN "wait" $ setWaitBlock actor
+waitBlockNow actor = returN "wait" $ waitSer actor
 
 -- | A strategy to always just die.
 dieNow :: MonadAction m => ActorId -> Strategy (m ())
@@ -234,7 +234,7 @@ pickup actor loc =
   lvl = getArena loc
   Actor{bpos} = getActor actor loc
   lootHere x = not $ L.null $ lvl `atI` x
-  actionPickup = returN "pickup" $ actorPickupItem actor
+  actionPickup = returN "pickup" $ actorPickupItem actor >>= cmdSer
 
 melee :: MonadAction m => ActorId -> State -> Point -> Strategy (m ())
 melee actor loc fpos =
@@ -277,7 +277,7 @@ rangedFreq cops actor loc fpos =
     Just (lbl:_) -> lbl
   throwFreq is multi =
     [ (benefit * multi,
-       projectGroupItem actor fpos (iverbProject ik) i)
+       projectSer actor fpos (iverbProject ik) i)
     | i <- is,
       let (ik, benefit) =
             case jkind (sdisco loc) i of

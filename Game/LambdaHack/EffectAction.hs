@@ -9,6 +9,7 @@ import qualified Control.Monad.State as St
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import Data.List
+import qualified Data.Map as M
 import Data.Maybe
 import Data.Monoid (mempty)
 import Data.Ratio ((%))
@@ -23,8 +24,8 @@ import Game.LambdaHack.ClientAction
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.FactionKind
+import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Draw
 import Game.LambdaHack.DungeonState
 import qualified Game.LambdaHack.Effect as Effect
@@ -554,3 +555,20 @@ gameOver showEndingScreens = do
         when go $ do
           let upd2 f = f {gquit = Just (True, Killed sarena)}
           modifyGlobal $ updateSide upd2
+
+-- | Make the item known to the player.
+discover :: MonadClient m => Discoveries -> Item -> m ()
+discover discoS i = do
+  Kind.COps{coitem} <- getsLocal scops
+  oldDisco <- getsLocal sdisco
+  let ix = jkindIx i
+      ik = discoS M.! ix
+  unless (ix `M.member` oldDisco) $ do
+    modifyLocal (updateDiscoveries (M.insert ix ik))
+    disco <- getsLocal sdisco
+    let (object1, object2) = partItem coitem oldDisco i
+        msg = makeSentence
+          [ "the", MU.SubjectVerbSg (MU.Phrase [object1, object2])
+                                    "turn out to be"
+          , partItemAW coitem disco i ]
+    msgAdd msg
