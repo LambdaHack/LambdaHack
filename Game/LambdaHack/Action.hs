@@ -356,8 +356,10 @@ remember :: MonadClientServer m => m ()
 remember = do
   scops <- getsGlobal scops
   lvl <- getsGlobal getArena
+  sfaction <- getsGlobal sfaction
   per <- askPerception
   modifyLocal $ updateArena $ rememberLevel scops (totalVisible per) lvl
+  modifyLocal $ \loc -> loc {sfaction}
 
 -- | Update faction memory at the given set of positions.
 rememberLevel :: Kind.COps -> IS.IntSet -> Level -> Level -> Level
@@ -430,6 +432,8 @@ handleScores write status total =
 endOrLoop :: MonadAction m => m () -> m ()
 endOrLoop handleTurn = do
   squit <- getsServer squit
+  sside <- getsGlobal sside
+  gquit <- getsGlobal $ gquit . (IM.! sside) . sfaction
   s <- getGlobal
   ser <- getServer
   d <- getDict
@@ -438,19 +442,18 @@ endOrLoop handleTurn = do
   -- The first, boolean component of squit determines
   -- if ending screens should be shown, the other argument describes
   -- the cause of the disruption of game flow.
-  case squit of
-    Nothing -> handleTurn  -- just continue
-    Just (_, status@Camping) -> do
+  case (squit, gquit) of
+    (Just _, _) -> do
       -- Save and display in parallel.
       mv <- liftIO newEmptyMVar
       liftIO $ void $ forkIO (Save.saveGameFile config s ser d
                               `finally` putMVar mv ())
       tryIgnore $ do
-        handleScores False status total
+        handleScores False Camping total
         void $ displayMore ColorFull "See you soon, stronger and braver!"
       liftIO $ takeMVar mv  -- wait until saved
       -- Do nothing, that is, quit the game loop.
-    Just (showScreens, status@Killed{}) -> do
+    (Nothing, Just (showScreens, status@Killed{})) -> do
       StateClient{sreport} <- getClient
       unless (nullReport sreport) $ do
         -- Sisplay any leftover report. Suggest it could be the cause of death.
@@ -469,7 +472,7 @@ endOrLoop handleTurn = do
            when (not go) $ abortWith "You could really win this time."
            restartGame handleTurn
         )
-    Just (showScreens, status@Victor) -> do
+    (Nothing, Just (showScreens, status@Victor)) -> do
       StateClient{sreport} <- getClient
       unless (nullReport sreport) $ do
         -- Sisplay any leftover report. Suggest it could be the master move.
@@ -479,9 +482,10 @@ endOrLoop handleTurn = do
         tryIgnore $ handleScores True status total
         void $ displayMore ColorFull "Can it be done better, though?"
       restartGame handleTurn
-    Just (_, Restart) -> do
+    (Nothing, Just (_, Restart)) -> do
       void $ displayMore ColorBW "This time for real."
       restartGame handleTurn
+    (Nothing, _) -> handleTurn  -- just continue
 
 restartGame :: MonadAction m => m () -> m ()
 restartGame handleTurn = do
@@ -527,6 +531,7 @@ gameReset scops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
                 then return Nothing
                 else fmap Just $ sopick (fAiSelected fk) (const True)
               gAiIdle <- sopick (fAiIdle fk) (const True)
+              let gquit = Nothing
               return (IM.insert k Faction{..} m, k + 1)
         sfaction <- fmap fst $ ofoldrWithKey g (return (IM.empty, 0))
         let sside = 0  -- doesn't matter

@@ -15,10 +15,10 @@ import System.Time
 import Text.Printf
 
 import Game.LambdaHack.Config
+import Game.LambdaHack.Faction
 import Game.LambdaHack.Level
 import Game.LambdaHack.Misc
 import Game.LambdaHack.Msg
-import Game.LambdaHack.State
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.File
 

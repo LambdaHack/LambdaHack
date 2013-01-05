@@ -19,6 +19,7 @@ import qualified Data.Map as M
 import Data.Text (Text)
 
 import Game.LambdaHack.Actor
+import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Feature as F
@@ -188,14 +189,6 @@ findPosTry numTries ltile l@(_ : tl) = assert (numTries > 0) $
           then return loc
           else search (k - 1)
   in search numTries
-
--- | Level ids are, for now, ordered linearly by depth.
-newtype LevelId = LambdaCave Int
-  deriving (Show, Eq, Ord)
-
-instance Binary LevelId where
-  put (LambdaCave n) = put n
-  get = fmap LambdaCave get
 
 -- | Depth of a level.
 levelNumber :: LevelId -> Int

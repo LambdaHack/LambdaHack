@@ -308,7 +308,7 @@ gameExit :: MonadAction m => m ()
 gameExit = do
   b <- displayYesNo "Really save and exit?"
   if b
-    then modifyServer (\ s -> s {squit = Just (True, Camping)})
+    then modifyServer (\ s -> s {squit = Just True})
     else abortWith "Game resumed."
 
 gameRestart :: MonadAction m => m ()
@@ -316,8 +316,9 @@ gameRestart = do
   b1 <- displayMore ColorFull "You just requested a new game."
   when (not b1) $ neverMind True
   b2 <- displayYesNo "Current progress will be lost! Really restart the game?"
-  when (not b2) $ abortWith "Yea, so much still to do."
-  modifyServer (\ s -> s {squit = Just (False, Restart)})
+  when (not b2) $ abortWith "Yea, would be a pity to leave them to die."
+  let upd f = f {gquit = Just (False, Restart)}
+  modifyGlobal $ updateSide upd
 
 -- | Guess and report why the bump command failed.
 guessBump :: MonadActionRoot m => Kind.Ops TileKind -> F.Feature -> Kind.Id TileKind -> m ()

@@ -2,7 +2,7 @@
 -- | Game state and persistent player cli types and operations.
 module Game.LambdaHack.State
   ( -- * Game state
-    TgtMode(..), Cursor(..), Status(..)
+    TgtMode(..), Cursor(..)
   , State(..), defStateGlobal, defStateLocal
   , StateServer(..), defStateServer
   , StateClient(..), defStateClient, defHistory
@@ -12,7 +12,8 @@ module Game.LambdaHack.State
     -- * Accessor
   , getArena, getTime, isControlledFaction, isSpawningFaction
     -- * State update
-  , updateCursor, updateTime, updateDiscoveries, updateArena, updateDungeon
+  , updateCursor, updateDungeon, updateDiscoveries
+  , updateTime, updateArena, updateSide
     -- * Textual description
   , lookAt
     -- * Debug flags
@@ -68,7 +69,7 @@ data StateServer = StateServer
   , scounter  :: !Int           -- ^ stores next actor index
   , srandom   :: !R.StdGen      -- ^ current random generator
   , sconfig   :: !Config        -- ^ this game's config (including initial RNG)
-  , squit     :: !(Maybe (Bool, Status))  -- ^ cause of game end/exit
+  , squit     :: !(Maybe Bool)  -- ^ just going to save the game
   , sdebugSer :: !DebugModeSer  -- ^ debugging mode
   }
   deriving Show
@@ -107,14 +108,6 @@ data Cursor = Cursor
   , ceps       :: !Int      -- ^ a parameter of the tgt digital line
   }
   deriving Show
-
--- | Current result of the game.
-data Status =
-    Killed !LevelId  -- ^ the player lost the game on the given level
-  | Camping          -- ^ game is supended
-  | Victor           -- ^ the player won
-  | Restart          -- ^ the player quits and starts a new game
-  deriving (Show, Eq, Ord)
 
 data DebugModeSer = DebugModeSer
   { stryFov :: !(Maybe FovMode) }
@@ -258,9 +251,13 @@ updateDungeon f s = s {sdungeon = f (sdungeon s)}
 getArena :: State -> Level
 getArena State{sarena, sdungeon} = sdungeon M.! sarena
 
--- | Update level data within state.
+-- | Update current arena data within state.
 updateArena :: (Level -> Level) -> State -> State
 updateArena f s = updateDungeon (M.adjust f (sarena s)) s
+
+-- | Update current side data within state.
+updateSide :: (Faction -> Faction) -> State -> State
+updateSide f s = s {sfaction = IM.adjust f (sside s) (sfaction s)}
 
 -- | Get current time from the dungeon data.
 getTime :: State -> Time
@@ -386,20 +383,6 @@ instance Binary Target where
       0 -> liftM2 TEnemy get get
       1 -> liftM TPos get
       _ -> fail "no parse (Target)"
-
-instance Binary Status where
-  put (Killed ln) = putWord8 0 >> put ln
-  put Camping     = putWord8 1
-  put Victor      = putWord8 2
-  put Restart     = putWord8 3
-  get = do
-    tag <- getWord8
-    case tag of
-      0 -> fmap Killed get
-      1 -> return Camping
-      2 -> return Victor
-      3 -> return Restart
-      _ -> fail "no parse (Status)"
 
 -- TODO: probably move somewhere (Level?)
 -- | Produces a textual description of the terrain and items at an already

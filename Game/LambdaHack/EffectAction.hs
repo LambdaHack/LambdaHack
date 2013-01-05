@@ -24,6 +24,7 @@ import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Draw
 import Game.LambdaHack.DungeonState
 import qualified Game.LambdaHack.Effect as Effect
@@ -258,8 +259,9 @@ eff Effect.Ascend _ source target power = do
     else effLvlGoUp (power + 1)
   -- TODO: The following message too late if a monster squashed by going up,
   -- unless it's ironic. ;) The same below.
-  ser <- getServer
-  return $ if maybe Camping snd (squit ser) == Victor
+  sside <- getsGlobal sside
+  gquit <- getsGlobal $ gquit . (IM.! sside) . sfaction
+  return $ if maybe Camping snd gquit == Victor
            then (True, "")
            else (True, actorVerb coactor tm "find a way upstairs")
 eff Effect.Descend _ source target power = do
@@ -270,8 +272,9 @@ eff Effect.Descend _ source target power = do
   if isSpawningFaction glo (bfaction tm)
     then squashActor source target
     else effLvlGoUp (- (power + 1))
-  ser <- getServer
-  return $ if maybe Camping snd (squit ser) == Victor
+  sside <- getsGlobal sside
+  gquit <- getsGlobal $ gquit . (IM.! sside) . sfaction
+  return $ if maybe Camping snd gquit == Victor
            then (True, "")
            else (True, actorVerb coactor tm "find a way downstairs")
 
@@ -364,12 +367,13 @@ effLvlGoUp k = do
 fleeDungeon :: MonadAction m => m ()
 fleeDungeon = do
   Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsGlobal scops
-  s <- getGlobal
+  glo <- getGlobal
   go <- displayYesNo "This is the way out. Really leave now?"
   recordHistory  -- Prevent repeating the ending msgs.
   when (not go) $ abortWith "Game resumed."
-  let (items, total) = calculateTotal s
-  modifyServer (\ st -> st {squit = Just (False, Victor)})
+  let (items, total) = calculateTotal glo
+      upd f = f {gquit = Just (False, Victor)}
+  modifyGlobal $ updateSide upd
   if total == 0
   then do
     -- The player can back off at each of these steps.
@@ -390,7 +394,8 @@ fleeDungeon = do
     io <- itemOverlay discoS True items
     slides <- overlayToSlideshow winMsg io
     void $ getManyConfirms [] slides
-    modifyServer (\ st -> st {squit = Just (True, Victor)})
+    let upd2 f = f {gquit = Just (True, Victor)}
+    modifyGlobal $ updateSide upd2
 
 -- | The source actor affects the target actor, with a given item.
 -- If the event is seen, the item may get identified.
@@ -436,15 +441,14 @@ summonHeroes n pos =
   assert (b `blame` (newHeroId, "player summons himself")) $
     return ()
 
--- TODO: merge with summonHeroes; disregard "spawn" factions and "spawn"
--- flags for monsters; only check 'summon"
+-- TODO: merge with summonHeroes; disregard "spawn" and "playable" factions and "spawn" flags for monsters; only check 'summon"
 summonMonsters :: MonadServer m => Int -> Point -> m ()
-summonMonsters n loc = do
+summonMonsters n pos = do
   sfaction <- getsGlobal sfaction
   Kind.COps{ cotile
            , coactor=Kind.Ops{opick, okind}
            , cofact=Kind.Ops{opick=fopick, oname=foname}} <- getsGlobal scops
-  spawnKindId <- rndToAction $ fopick "spawn" (const True)
+  spawnKindId <- rndToAction $ fopick "playable" (\k -> fspawn k > 0)
   -- Spawn frequency required greater than zero, but otherwise ignored.
   let inFactionKind m = isJust $ lookup (foname spawnKindId) (afreq m)
   -- Summon frequency used for picking the actor.
@@ -455,7 +459,7 @@ summonMonsters n loc = do
                  $ IM.toList sfaction
   s <- getGlobal
   ser <- getServer
-  let (sN, serN) = iterate (uncurry $ addMonster cotile mk hp loc
+  let (sN, serN) = iterate (uncurry $ addMonster cotile mk hp pos
                                                  bfaction False) (s, ser) !! n
   putGlobal sN
   putServer serN
@@ -511,7 +515,8 @@ checkPartyDeath = do
 gameOver :: MonadAction m => Bool -> m ()
 gameOver showEndingScreens = do
   sarena <- getsGlobal sarena
-  modifyServer (\st -> st {squit = Just (False, Killed sarena)})
+  let upd f = f {gquit = Just (False, Killed sarena)}
+  modifyGlobal $ updateSide upd
   when showEndingScreens $ do
     Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsGlobal scops
     s <- getGlobal
@@ -538,10 +543,14 @@ gameOver showEndingScreens = do
           , MU.NWs total currencyName
           , "and some junk." ]
     if null items
-      then modifyServer (\st -> st {squit = Just (True, Killed sarena)})
+      then do
+        let upd2 f = f {gquit = Just (True, Killed sarena)}
+        modifyGlobal $ updateSide upd2
       else do
         discoS <- getsGlobal sdisco
         io <- itemOverlay discoS True items
         slides <- overlayToSlideshow loseMsg io
         go <- getManyConfirms [] slides
-        when go $ modifyServer (\st -> st {squit = Just (True, Killed sarena)})
+        when go $ do
+          let upd2 f = f {gquit = Just (True, Killed sarena)}
+          modifyGlobal $ updateSide upd2
