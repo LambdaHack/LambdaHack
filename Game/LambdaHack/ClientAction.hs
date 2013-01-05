@@ -353,8 +353,8 @@ acceptCurrent h = do
 -- | End targeting mode, accepting the current position or not.
 endTargeting :: MonadClient m => Bool -> m ()
 endTargeting accept = do
-  returnLn <- getsClient (creturnLn . scursor)
   pl <- getsLocal splayer
+  (creturnLn, _, _) <- getsLocal (findActorAnyLevel pl)
   target <- getsClient (IM.lookup pl . starget)
   per      <- askPerception
   cpos     <- getsClient (cposition . scursor)
@@ -363,7 +363,7 @@ endTargeting accept = do
   -- Return to the original level of the player. Note that this can be
   -- a different level than the one we started targeting at,
   -- if the player was changed while targeting.
-  modifyLocal $ \ s -> s {sarena = returnLn}
+  modifyLocal $ \ s -> s {sarena = creturnLn}
   modifyClient (updateCursor (\ c -> c { ctargeting = TgtOff }))
   when accept $ do
     case target of
@@ -454,8 +454,6 @@ selectPlayer actor = do
       modifyLocal (\ s -> s {sarena = nln})
       -- Make the new actor the player-controlled actor.
       modifyLocal (\ s -> s {splayer = actor})
-      -- Record the original level of the new player.
-      modifyClient (updateCursor (\ c -> c {creturnLn = nln}))
       -- Don't continue an old run, if any.
       stopRunning
       -- Announce.

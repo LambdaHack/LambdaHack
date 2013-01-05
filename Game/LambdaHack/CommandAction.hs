@@ -112,11 +112,12 @@ cmdSemantics cmd = do
 -- as player level and refuse performing the action otherwise.
 checkCursor :: MonadActionRO m => WriterT Slideshow m () -> WriterT Slideshow m ()
 checkCursor h = do
-  cursor <- getsClient scursor
+  pl <- getsLocal splayer
+  (creturnLn, _, _) <- getsLocal (findActorAnyLevel pl)
   sarena <- getsLocal sarena
-  if creturnLn cursor == sarena
+  if creturnLn == sarena
     then h
-    else abortWith "[targeting] command disabled on remote levels, press ESC to switch back"
+    else abortWith "[targeting] command disabled on a remote level, press ESC to switch back"
 
 -- TODO: make it MonadServer
 -- | The semantics of server commands.

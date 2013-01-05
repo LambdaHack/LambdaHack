@@ -55,7 +55,8 @@ draw dm cops per
       DebugModeCli{smarkVision, smarkSmell} = sdebugCli
       lvl@Level{lxsize, lysize, lsmell, ldesc, lactor, ltime, lseen, lclear} =
         getArena s
-      (_, mpl@Actor{bkind, bhp, bpos}, bitems) = findActorAnyLevel splayer s
+      (creturnLn, mpl@Actor{bkind, bhp, bpos}, bitems) =
+        findActorAnyLevel splayer s
       ActorKind{ahp, asmell} = okind bkind
       reachable = debugTotalReachable per
       visible   = totalVisible per

@@ -356,8 +356,6 @@ effLvlGoUp k = do
         when (isJust inhabitants2) $ assert `failure` inhabitants2
         -- Land the player at the other end of the stairs.
         updatePlayerBody (\ p -> p { bpos = npos })
-        -- Change the level of the player recorded in cursor.
-        modifyClient (updateCursor (\ c -> c { creturnLn = nln }))
         -- The invariant "at most one actor on a tile" restored.
         -- Create a backup of the savegame.
         saveGameBkp

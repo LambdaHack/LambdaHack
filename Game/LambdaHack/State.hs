@@ -104,7 +104,6 @@ data Cursor = Cursor
   { ctargeting :: !TgtMode  -- ^ targeting mode
   , cposLn     :: !LevelId  -- ^ cursor level
   , cposition  :: !Point    -- ^ cursor coordinates
-  , creturnLn  :: !LevelId  -- ^ the level current player resides on
   , ceps       :: !Int      -- ^ a parameter of the tgt digital line
   }
   deriving Show
@@ -207,7 +206,7 @@ defStateServer sdiscoRev sflavour srandom sconfig =
 defStateClient :: Point -> LevelId -> StateClient
 defStateClient ppos sarena = do
   StateClient
-    { scursor   = (Cursor TgtOff sarena ppos sarena 0)
+    { scursor   = Cursor TgtOff sarena ppos 0
     , starget   = IM.empty
     , srunning  = Nothing
     , sreport   = emptyReport
@@ -360,19 +359,17 @@ instance Binary TgtMode where
       _ -> fail "no parse (TgtMode)"
 
 instance Binary Cursor where
-  put (Cursor act cln loc rln eps) = do
-    put act
-    put cln
-    put loc
-    put rln
-    put eps
+  put Cursor{..} = do
+    put ctargeting
+    put cposLn
+    put cposition
+    put ceps
   get = do
-    act <- get
-    cln <- get
-    loc <- get
-    rln <- get
-    eps <- get
-    return (Cursor act cln loc rln eps)
+    ctargeting <- get
+    cposLn     <- get
+    cposition  <- get
+    ceps       <- get
+    return Cursor{..}
 
 -- | The type of na actor target.
 data Target =
