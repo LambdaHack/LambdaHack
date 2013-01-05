@@ -94,12 +94,15 @@ class (MonadActionIO m, MonadServerRO m) => MonadServer m where
   putGlobal    :: State -> m ()
   modifyServer :: (StateServer -> StateServer) -> m ()
   putServer    :: StateServer -> m ()
+  -- Temporary hook until all clients save their local state separately.
+  getForSaveGame :: m StateDict
 
 instance (Monoid a, MonadServer m) => MonadServer (WriterT a m) where
   modifyGlobal = lift . modifyGlobal
   putGlobal    = lift . putGlobal
   modifyServer = lift . modifyServer
   putServer    = lift . putServer
+  getForSaveGame = lift getForSaveGame
 
 class (MonadActionIO m, MonadClientRO m) => MonadClient m where
   modifyClient :: (StateClient -> StateClient) -> m ()

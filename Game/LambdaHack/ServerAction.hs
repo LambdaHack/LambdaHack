@@ -52,8 +52,7 @@ default (Text)
 
 -- ** GameSaveSer
 
--- TODO: it has to be in MonadAction; how to handle this?
-gameSaveSer :: MonadAction m => m ()
+gameSaveSer :: MonadServer m => m ()
 gameSaveSer = saveGameBkp
 
 -- ** CfgDumpSer

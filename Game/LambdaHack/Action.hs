@@ -392,14 +392,14 @@ rememberLevel Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} visible lvl clvl =
 -- | Save the cli and a backup of the save game file, in case of crashes.
 --
 -- See 'Save.saveGameBkp'.
-saveGameBkp :: (MonadActionIO m, MonadActionRO m) => m ()
+saveGameBkp :: MonadServer m => m ()
 saveGameBkp = do
   state <- getGlobal
   ser <- getServer
-  d <- getDict
-  configUI <- askConfigUI
+  d <- getForSaveGame
+--  configUI <- askConfigUI
   config <- getsServer sconfig
-  liftIO $ Save.saveGameBkp config configUI state ser d
+  liftIO $ Save.saveGameBkp config state ser d
 
 -- | Dumps the current game rules configuration to a file.
 dumpCfg :: (MonadActionIO m, MonadServerRO m) => FilePath -> m ()

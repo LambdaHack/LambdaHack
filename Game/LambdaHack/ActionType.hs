@@ -107,6 +107,8 @@ instance MonadServer Action where
   putGlobal      = modifyGlobal . const
   modifyServer f = Action (\_c _p k _a s ser d -> k s (f ser) d ())
   putServer      = modifyServer . const
+  -- Temporary hook until all clients save their local state separately.
+  getForSaveGame = Action (\_c _p k _a s ser d -> k s ser d d)
 
 instance MonadClient Action where
   modifyClient f = do

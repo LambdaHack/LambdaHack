@@ -131,6 +131,7 @@ parseConfigRules dataDir cp =
       configBkpFile = dataDir </> get cp "files" "saveFile" <.> ".bkp"
       configScoresFile = dataDir </> get cp "files" "scoresFile"
       configRulesCfgFile = dataDir </> "config.rules"
+      configHistoryFile = dataDir </> get cp "files" "historyFile"
       configBaseHP = get cp "heroes" "baseHP"
       configExtraHeroes = get cp "heroes" "extraHeroes"
       configFirstDeathEnds = get cp "heroes" "firstDeathEnds"
@@ -156,7 +157,7 @@ parseConfigUI dataDir cp =
             section = getItems cp "commands"
         in map mkCommand section
       configAppDataDirUI = dataDir
-      configHistoryFile = dataDir </> get cp "files" "historyFile"
+      _configHistoryFile = dataDir </> get cp "files" "historyFile"
       configUICfgFile = dataDir </> "config.ui"
       configMacros =
         let trMacro (from, to) =

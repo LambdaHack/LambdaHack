@@ -83,8 +83,9 @@ restoreGame :: Config -> ConfigUI -> (FilePath -> IO FilePath) -> Text
                           (History, Msg))
 restoreGame config@Config{ configAppDataDir
                          , configSaveFile
-                         , configBkpFile }
-            configUI@ConfigUI{ configHistoryFile }
+                         , configBkpFile
+                         , configHistoryFile}
+            configUI -- @ConfigUI{ configHistoryFile }
             pathsDataFile title = do
   ab <- doesDirectoryExist configAppDataDir
   -- If the directory can't be created, the current directory will be used.
@@ -135,11 +136,12 @@ restoreGame config@Config{ configAppDataDir
 -- This is only a backup, so no problem is the game is shut down
 -- before saving finishes, so we don't wait on the mvar. However,
 -- if a previous save is already in progress, we skip this save.
-saveGameBkp :: Config -> ConfigUI -> State -> StateServer -> StateDict
+saveGameBkp :: Config -> State -> StateServer -> StateDict
             -> IO ()
 saveGameBkp Config{ configSaveFile
-                  , configBkpFile }
-            ConfigUI{ configHistoryFile }
+                  , configBkpFile
+                  , configHistoryFile}
+            -- ConfigUI{ configHistoryFile }
             state ser d = do
   b <- tryPutMVar saveLock ()
   when b $
@@ -156,8 +158,9 @@ saveGameBkp Config{ configSaveFile
 -- because the backup file is relatively unimportant.
 -- We wait on the mvar, because saving the cli at game shutdown is important.
 rmBkpSaveHistory :: Config -> ConfigUI -> StateDict -> IO ()
-rmBkpSaveHistory Config{configBkpFile}
-                 ConfigUI{configHistoryFile} d = do
+rmBkpSaveHistory Config{configBkpFile, configHistoryFile}
+                 _ -- ConfigUI{configHistoryFile}
+                 d = do
   putMVar saveLock ()
   saveHistory configHistoryFile d  -- save often in case of crashes
   bb <- doesFileExist configBkpFile
