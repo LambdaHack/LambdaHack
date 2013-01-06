@@ -1,25 +1,18 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Game state and persistent player cli types and operations.
 module Game.LambdaHack.State
-  ( -- * Game state
-    TgtMode(..), Cursor(..)
-  , State(..), defStateGlobal, defStateLocal
+  ( State(..), defStateGlobal, defStateLocal
+  , updateDungeon, updateArena, updateTime, updateDiscoveries, updateSide
+  , getArena, getTime
+  , isControlledFaction, isSpawningFaction
+  , lookAt
   , StateServer(..), defStateServer
   , StateClient(..), defStateClient, defHistory
+  , updateCursor, updateTarget
   , StateDict
-    -- * Type of na actor target
-  , Target(..), updateTarget
-    -- * Accessor
-  , getArena, getTime, isControlledFaction, isSpawningFaction
-    -- * State update
-  , updateCursor, updateDungeon, updateDiscoveries
-  , updateTime, updateArena, updateSide
-    -- * Textual description
-  , lookAt
-    -- * Debug flags
-  , DebugModeSer(..), defDebugModeSer, cycleTryFov
-  , DebugModeCli(..), defDebugModeCli, toggleMarkVision, toggleMarkSmell
-  , toggleOmniscient
+  , TgtMode(..), Cursor(..), Target(..)
+  , DebugModeSer(..), cycleTryFov
+  , DebugModeCli(..), toggleMarkVision, toggleMarkSmell, toggleOmniscient
   ) where
 
 import Control.Monad
@@ -47,6 +40,8 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.Point
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Time
+
+-- * Types
 
 -- TODO: check the invariant each time splayer, sarena and sside is modified.
 -- More specifically: if splayer is on sarena, check he belongs to sside,
@@ -119,6 +114,12 @@ data Cursor = Cursor
   }
   deriving Show
 
+-- | The type of na actor target.
+data Target =
+    TEnemy ActorId Point  -- ^ target an actor with its last seen position
+  | TPos Point            -- ^ target a given position
+  deriving (Show, Eq)
+
 data DebugModeSer = DebugModeSer
   { stryFov :: !(Maybe FovMode) }
   deriving Show
@@ -129,6 +130,8 @@ data DebugModeCli = DebugModeCli
   , somniscient :: !Bool
   }
   deriving Show
+
+-- * State operations
 
 -- TODO: add a flag 'fresh' and when saving levels, don't save
 -- and when loading regenerate this level.
@@ -157,17 +160,10 @@ unknownTileMap unknownId cxsize cysize =
   let bounds = (origin, toPoint cxsize $ PointXY (cxsize - 1, cysize - 1))
   in Kind.listArray bounds (repeat unknownId)
 
-defHistory :: IO History
-defHistory = do
-  dateTime <- getClockTime
-  let curDate = MU.Text $ T.pack $ calendarTimeToString $ toUTCTime dateTime
-  return $ singletonHistory $ singletonReport
-         $ makeSentence ["Player history log started on", curDate]
-
 -- | Initial complete global game state.
 defStateGlobal :: Dungeon -> Int -> Discoveries
-                   -> FactionDict -> Kind.COps -> FactionId -> LevelId
-                   -> State
+               -> FactionDict -> Kind.COps -> FactionId -> LevelId
+               -> State
 defStateGlobal sdungeon sdepth sdisco sfaction scops sside sarena =
   State
     { splayer = invalidActorId  -- no heroes yet alive
@@ -179,9 +175,9 @@ defStateGlobal sdungeon sdepth sdisco sfaction scops sside sarena =
 -- if this set of stsirs is unknown).
 -- | Initial per-faction local game state.
 defStateLocal :: Dungeon
-                  -> Int -> Discoveries -> FactionDict
-                  -> Kind.COps -> FactionId -> LevelId
-                  -> State
+              -> Int -> Discoveries -> FactionDict
+              -> Kind.COps -> FactionId -> LevelId
+              -> State
 defStateLocal globalDungeon
               sdepth sdisco sfaction
               scops@Kind.COps{cotile} sside sarena = do
@@ -194,6 +190,76 @@ defStateLocal globalDungeon
     , ..
     }
 
+-- | Update dungeon data within state.
+updateDungeon :: (Dungeon -> Dungeon) -> State -> State
+updateDungeon f s = s {sdungeon = f (sdungeon s)}
+
+-- | Update current arena data within state.
+updateArena :: (Level -> Level) -> State -> State
+updateArena f s = updateDungeon (M.adjust f (sarena s)) s
+
+-- | Update time within state.
+updateTime :: (Time -> Time) -> State -> State
+updateTime f s = updateArena (\lvl@Level{ltime} -> lvl {ltime = f ltime}) s
+
+-- | Update item discoveries within state.
+updateDiscoveries :: (Discoveries -> Discoveries) -> State -> State
+updateDiscoveries f s = s { sdisco = f (sdisco s) }
+
+-- | Update current side data within state.
+updateSide :: (Faction -> Faction) -> State -> State
+updateSide f s = s {sfaction = IM.adjust f (sside s) (sfaction s)}
+
+-- | Get current level from the dungeon data.
+getArena :: State -> Level
+getArena State{sarena, sdungeon} = sdungeon M.! sarena
+
+-- | Get current time from the dungeon data.
+getTime :: State -> Time
+getTime State{sarena, sdungeon} = ltime $ sdungeon M.! sarena
+
+-- | Tell whether the faction is human-controlled.
+isControlledFaction :: State -> FactionId -> Bool
+isControlledFaction s fid = isNothing $ gAiSelected $ sfaction s IM.! fid
+
+-- | Tell whether the faction is human-controlled.
+isSpawningFaction :: State -> FactionId -> Bool
+isSpawningFaction s fid =
+  let Kind.Ops{okind} = Kind.cofact (scops s)
+      kind = okind $ gkind $ sfaction s IM.! fid
+  in fspawn kind > 0
+
+-- TODO: fix lvl, which is wrong in tgt mode on remote level
+-- TODO: probably move somewhere (Level?)
+-- | Produces a textual description of the terrain and items at an already
+-- explored position. Mute for unknown positions.
+-- The detailed variant is for use in the targeting mode.
+lookAt :: Bool       -- ^ detailed?
+       -> Bool       -- ^ can be seen right now?
+       -> State      -- ^ game state
+       -> Point      -- ^ position to describe
+       -> Text       -- ^ an extra sentence to print
+       -> Text
+lookAt detailed canSee loc pos msg
+  | detailed =
+    let tile = lvl `at` pos
+    in makeSentence [MU.Text $ oname tile] <+> msg <+> isd
+  | otherwise = msg <+> isd
+ where
+  Kind.COps{coitem, cotile=Kind.Ops{oname}} = scops loc
+  lvl = getArena loc
+  is  = lvl `atI` pos
+  prefixSee = MU.Text $ if canSee then "you see" else "you remember"
+  nWs = partItemNWs coitem (sdisco loc)
+  isd = case is of
+          [] -> ""
+          _ | length is <= 2 ->
+            makeSentence [prefixSee, MU.WWandW $ map nWs is]
+          _ | detailed -> "Objects:"
+          _ -> "Objects here."
+
+-- * StateServer operations
+
 -- | Initial game server state.
 defStateServer :: DiscoRev -> FlavourMap -> R.StdGen -> Config
                    -> StateServer
@@ -204,6 +270,21 @@ defStateServer sdiscoRev sflavour srandom sconfig =
     , sdebugSer = defDebugModeSer
     , ..
     }
+
+defDebugModeSer :: DebugModeSer
+defDebugModeSer = DebugModeSer
+  { stryFov = Nothing }
+
+cycleTryFov :: StateServer -> StateServer
+cycleTryFov s@StateServer{sdebugSer=sdebugSer@DebugModeSer{stryFov}} =
+  s {sdebugSer = sdebugSer {stryFov = case stryFov of
+                               Nothing          -> Just (Digital 100)
+                               Just (Digital _) -> Just Permissive
+                               Just Permissive  -> Just Shadow
+                               Just Shadow      -> Just Blind
+                               Just Blind       -> Nothing }}
+
+-- * StateClient operations
 
 -- | Initial game client state.
 defStateClient :: Point -> StateClient
@@ -218,10 +299,6 @@ defStateClient ppos = do
     , sdebugCli = defDebugModeCli
     }
 
-defDebugModeSer :: DebugModeSer
-defDebugModeSer = DebugModeSer
-  { stryFov = Nothing }
-
 defDebugModeCli :: DebugModeCli
 defDebugModeCli = DebugModeCli
   { smarkVision = False
@@ -229,16 +306,12 @@ defDebugModeCli = DebugModeCli
   , somniscient = False
   }
 
--- | Tell whether the faction is human-controlled.
-isControlledFaction :: State -> FactionId -> Bool
-isControlledFaction s fid = isNothing $ gAiSelected $ sfaction s IM.! fid
-
--- | Tell whether the faction is human-controlled.
-isSpawningFaction :: State -> FactionId -> Bool
-isSpawningFaction s fid =
-  let Kind.Ops{okind} = Kind.cofact (scops s)
-      kind = okind $ gkind $ sfaction s IM.! fid
-  in fspawn kind > 0
+defHistory :: IO History
+defHistory = do
+  dateTime <- getClockTime
+  let curDate = MU.Text $ T.pack $ calendarTimeToString $ toUTCTime dateTime
+  return $ singletonHistory $ singletonReport
+         $ makeSentence ["Player history log started on", curDate]
 
 -- | Update cursor parameters within state.
 updateCursor :: (Cursor -> Cursor) -> StateClient -> StateClient
@@ -248,43 +321,6 @@ updateCursor f s = s { scursor = f (scursor s) }
 updateTarget :: ActorId -> (Maybe Target -> Maybe Target) -> StateClient
              -> StateClient
 updateTarget actor f s = s { starget = IM.alter f actor (starget s) }
-
--- | Update item discoveries within state.
-updateDiscoveries :: (Discoveries -> Discoveries) -> State -> State
-updateDiscoveries f s = s { sdisco = f (sdisco s) }
-
--- | Update dungeon data within state.
-updateDungeon :: (Dungeon -> Dungeon) -> State -> State
-updateDungeon f s = s {sdungeon = f (sdungeon s)}
-
--- | Get current level from the dungeon data.
-getArena :: State -> Level
-getArena State{sarena, sdungeon} = sdungeon M.! sarena
-
--- | Update current arena data within state.
-updateArena :: (Level -> Level) -> State -> State
-updateArena f s = updateDungeon (M.adjust f (sarena s)) s
-
--- | Update current side data within state.
-updateSide :: (Faction -> Faction) -> State -> State
-updateSide f s = s {sfaction = IM.adjust f (sside s) (sfaction s)}
-
--- | Get current time from the dungeon data.
-getTime :: State -> Time
-getTime State{sarena, sdungeon} = ltime $ sdungeon M.! sarena
-
--- | Update time within state.
-updateTime :: (Time -> Time) -> State -> State
-updateTime f s = updateArena (\lvl@Level{ltime} -> lvl {ltime = f ltime}) s
-
-cycleTryFov :: StateServer -> StateServer
-cycleTryFov s@StateServer{sdebugSer=sdebugSer@DebugModeSer{stryFov}} =
-  s {sdebugSer = sdebugSer {stryFov = case stryFov of
-                               Nothing          -> Just (Digital 100)
-                               Just (Digital _) -> Just Permissive
-                               Just Permissive  -> Just Shadow
-                               Just Shadow      -> Just Blind
-                               Just Blind       -> Nothing }}
 
 toggleMarkVision :: StateClient -> StateClient
 toggleMarkVision s@StateClient{sdebugCli=sdebugCli@DebugModeCli{smarkVision}} =
@@ -297,6 +333,8 @@ toggleMarkSmell s@StateClient{sdebugCli=sdebugCli@DebugModeCli{smarkSmell}} =
 toggleOmniscient :: StateClient -> StateClient
 toggleOmniscient s@StateClient{sdebugCli=sdebugCli@DebugModeCli{somniscient}} =
   s {sdebugCli = sdebugCli {somniscient = not somniscient}}
+
+-- * Binary instances
 
 instance Binary State where
   put State{..} = do
@@ -376,12 +414,6 @@ instance Binary Cursor where
     ceps       <- get
     return Cursor{..}
 
--- | The type of na actor target.
-data Target =
-    TEnemy ActorId Point  -- ^ target an actor with its last seen position
-  | TPos Point            -- ^ target a given position
-  deriving (Show, Eq)
-
 instance Binary Target where
   put (TEnemy a ll) = putWord8 0 >> put a >> put ll
   put (TPos pos) = putWord8 1 >> put pos
@@ -391,31 +423,3 @@ instance Binary Target where
       0 -> liftM2 TEnemy get get
       1 -> liftM TPos get
       _ -> fail "no parse (Target)"
-
--- TODO: probably move somewhere (Level?)
--- | Produces a textual description of the terrain and items at an already
--- explored position. Mute for unknown positions.
--- The detailed variant is for use in the targeting mode.
-lookAt :: Bool       -- ^ detailed?
-       -> Bool       -- ^ can be seen right now?
-       -> State      -- ^ game state
-       -> Point      -- ^ position to describe
-       -> Text       -- ^ an extra sentence to print
-       -> Text
-lookAt detailed canSee loc pos msg
-  | detailed =
-    let tile = lvl `at` pos
-    in makeSentence [MU.Text $ oname tile] <+> msg <+> isd
-  | otherwise = msg <+> isd
- where
-  Kind.COps{coitem, cotile=Kind.Ops{oname}} = scops loc
-  lvl = getArena loc
-  is  = lvl `atI` pos
-  prefixSee = MU.Text $ if canSee then "you see" else "you remember"
-  nWs = partItemNWs coitem (sdisco loc)
-  isd = case is of
-          [] -> ""
-          _ | length is <= 2 ->
-            makeSentence [prefixSee, MU.WWandW $ map nWs is]
-          _ | detailed -> "Objects:"
-          _ -> "Objects here."
