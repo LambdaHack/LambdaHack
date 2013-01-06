@@ -166,22 +166,25 @@ withPerception m = do
   let per = dungeonPerception cops sconfig sdebugSer s
   local (const per) m
 
--- | Get the current perception or a client.
+-- | Get the current perception of a client.
 askPerception :: MonadClientRO m => m Perception
 askPerception = do
-  lid <- getsLocal sarena
+  ctargeting <- getsClient (ctargeting . scursor)
+  sarena <- getsLocal sarena
+  let lid = case ctargeting of
+        TgtOff -> sarena
+        _ -> tgtLevelId ctargeting
   pers <- ask
   sside <- getsLocal sside
   return $! pers IM.! sside M.! lid
 
--- | Get the current perception or the server.
+-- | Get the current perception of the server.
 askPerceptionSer :: MonadServerRO m => m Perception
 askPerceptionSer = do
   lid <- getsGlobal sarena
   pers <- ask
   sside <- getsGlobal sside
   return $! pers IM.! sside M.! lid
-
 
 -- | Wait for a player command.
 getKeyCommand :: (MonadActionIO m, MonadClientRO m) => Maybe Bool -> m K.KM
@@ -544,7 +547,7 @@ gameReset scops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
             fo fid (stateF, serF) =
               initialHeroes scops entryLoc stateF{sside=fid} serF
             (state, ser) = foldr fo (defState, defSer) needInitialCrew
-            cli = defStateClient entryLoc entryLevel
+            cli = defStateClient entryLoc
             -- This overwrites the "Really save/quit?" messages.
             loc = defStateLocal freshDungeon freshDepth
                                 sdisco sfaction scops sside entryLevel

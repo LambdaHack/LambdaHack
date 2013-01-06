@@ -9,6 +9,7 @@ module Game.LambdaHack.Draw
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import qualified Data.List as L
+import qualified Data.Map as M
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -46,15 +47,18 @@ data ColorMode =
 draw :: ColorMode -> Kind.COps -> Perception -> StateClient -> State -> Overlay
      -> SingleFrame
 draw dm cops per
-     StateClient{ scursor=Cursor{..}, sdebugCli }
-     s@State{ sdisco, sarena, splayer }
+     StateClient{scursor=Cursor{..}, sdebugCli}
+     s@State{sdisco, sarena, splayer, sdungeon}
      overlay =
   let Kind.COps{ coactor=Kind.Ops{okind}
                , coitem=Kind.Ops{okind=iokind}
                , cotile=Kind.Ops{okind=tokind, ouniqGroup} } = cops
       DebugModeCli{smarkVision, smarkSmell} = sdebugCli
-      lvl@Level{lxsize, lysize, lsmell, ldesc, lactor, ltime, lseen, lclear} =
-        getArena s
+      (drawnLevelId, lvl@Level{lxsize, lysize, lsmell,
+                               ldesc, lactor, ltime, lseen, lclear}) =
+        case ctargeting of
+          TgtOff -> (sarena, getArena s)
+          _ -> (tgtLevelId ctargeting, sdungeon M.! tgtLevelId ctargeting)
       (creturnLn, mpl@Actor{bkind, bhp, bpos}, bitems) =
         findActorAnyLevel splayer s
       ActorKind{ahp, asmell} = okind bkind
@@ -89,7 +93,7 @@ draw dm cops per
             sml = IM.findWithDefault timeZero pos0 lsmell
             smlt = sml `timeAdd` timeNegate ltime
             viewActor loc Actor{bkind = bkind2, bsymbol, bcolor}
-              | loc == bpos && sarena == creturnLn =
+              | loc == bpos && drawnLevelId == creturnLn =
                   (symbol, Color.defBG)  -- highlight player
               | otherwise = (symbol, color)
              where
@@ -102,7 +106,7 @@ draw dm cops per
               case ( L.find (\ m -> pos0 == Actor.bpos m) actorsHere
                    , L.find (\ m -> cposition == Actor.bpos m) actorsHere ) of
                 (_, actorTgt) | ctargeting /= TgtOff
-                                && (sarena == creturnLn
+                                && (drawnLevelId == creturnLn
                                     && L.elem pos0 bl
                                     || (case actorTgt of
                                            Just (Actor{ bpath=Just p
@@ -151,7 +155,7 @@ draw dm cops per
       -- 'wait' command.
       braceSign | braced mpl ltime = "{"
                 | otherwise = " "
-      lvlN = T.justifyLeft 2 ' ' (showT $ levelNumber sarena)
+      lvlN = T.justifyLeft 2 ' ' (showT $ levelNumber drawnLevelId)
       stats =
         T.justifyLeft 11 ' ' ("[" <> seenTxt <+> "seen]") <+>
         T.justifyLeft 9 ' ' ("$:" <+> showT wealth) <+>

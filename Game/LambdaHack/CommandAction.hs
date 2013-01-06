@@ -67,8 +67,8 @@ cmdAction cli s cmd =
 
     GameSave    -> (False, cmdSerAction $ gameSave)
     Inventory   -> (False, inventory)
-    TgtFloor    -> (False, targetFloor   TgtExplicit)
-    TgtEnemy    -> (False, targetMonster TgtExplicit)
+    TgtFloor    -> (False, targetFloor   $ TgtExplicit (sarena s))
+    TgtEnemy    -> (False, targetMonster $ TgtExplicit (sarena s))
     TgtAscend k -> (False, tgtAscend k)
     EpsIncr b   -> (False, lift $ epsIncr b)
     Cancel      -> (False, cancelCurrent displayMainMenu)
@@ -100,9 +100,7 @@ cmdSemantics cmd = do
   when (posOld /= posNew) $ do
     locNew <- getLocal
     msgAdd $ lookAt False True locNew posNew ""
-  -- Data invariant for Global state: player belongs to the sside faction
-  -- and resides on sarena level.
-  -- TODO: verify
+  -- TODO: verify the invariant
   State{splayer, sarena} <- getLocal
   modifyGlobal (\s -> s {splayer})
   modifyGlobal (\s -> s {sarena})

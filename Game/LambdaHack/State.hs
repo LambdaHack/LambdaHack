@@ -48,8 +48,17 @@ import Game.LambdaHack.Point
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Time
 
+-- TODO: check the invariant each time splayer, sarena and sside is modified.
+-- More specifically: if splayer is on sarena, check he belongs to sside,
+-- and if not, which is rare, check he's not on any other level.
+-- TODO: perhaps we'd be safer if splayer was set to invalidActor
+-- whenever he's not in the dungeon?
+-- TDDO: perhpas update some of the 3 fields together to keep the invariant?
 -- | View on game state. Clients never update @sdungeon@ and @sfaction@,
 -- but the server updates it for them depending on client exploration.
+-- Data invariant: no actor belongs to more than one sdungeon level.
+-- Actor splayer is not on any other sdungeon level than sarena.
+-- If splayer is on sarena, he belongs to sside.
 data State = State
   { sdungeon :: !Dungeon      -- ^ remembered dungeon
   , sdepth   :: !Int          -- ^ remembered dungeon depth
@@ -95,15 +104,16 @@ type FactionDict = IM.IntMap Faction
 
 -- | Current targeting mode of the player.
 data TgtMode =
-    TgtOff       -- ^ not in targeting mode
-  | TgtExplicit  -- ^ the player requested targeting mode explicitly
-  | TgtAuto      -- ^ the mode was entered (and will be exited) automatically
+    TgtOff  -- ^ not in targeting mode
+  | TgtExplicit { tgtLevelId :: !LevelId }
+            -- ^ the player requested targeting mode explicitly
+  | TgtAuto     { tgtLevelId :: !LevelId }
+            -- ^ the mode was entered (and will be exited) automatically
   deriving (Show, Eq)
 
 -- | Current targeting cursor parameters.
 data Cursor = Cursor
   { ctargeting :: !TgtMode  -- ^ targeting mode
-  , cposLn     :: !LevelId  -- ^ cursor level
   , cposition  :: !Point    -- ^ cursor coordinates
   , ceps       :: !Int      -- ^ a parameter of the tgt digital line
   }
@@ -196,10 +206,10 @@ defStateServer sdiscoRev sflavour srandom sconfig =
     }
 
 -- | Initial game client state.
-defStateClient :: Point -> LevelId -> StateClient
-defStateClient ppos sarena = do
+defStateClient :: Point -> StateClient
+defStateClient ppos = do
   StateClient
-    { scursor   = Cursor TgtOff sarena ppos 0
+    { scursor   = Cursor TgtOff ppos 0
     , starget   = IM.empty
     , srunning  = Nothing
     , sreport   = emptyReport
@@ -345,25 +355,23 @@ instance Binary StateClient where
 
 instance Binary TgtMode where
   put TgtOff      = putWord8 0
-  put TgtExplicit = putWord8 1
-  put TgtAuto     = putWord8 2
+  put (TgtExplicit l) = putWord8 1 >> put l
+  put (TgtAuto     l) = putWord8 2 >> put l
   get = do
     tag <- getWord8
     case tag of
       0 -> return TgtOff
-      1 -> return TgtExplicit
-      2 -> return TgtAuto
+      1 -> liftM TgtExplicit get
+      2 -> liftM TgtAuto get
       _ -> fail "no parse (TgtMode)"
 
 instance Binary Cursor where
   put Cursor{..} = do
     put ctargeting
-    put cposLn
     put cposition
     put ceps
   get = do
     ctargeting <- get
-    cposLn     <- get
     cposition  <- get
     ceps       <- get
     return Cursor{..}

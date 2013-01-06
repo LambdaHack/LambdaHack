@@ -113,7 +113,7 @@ handleActors subclipStart = do
       when (not $ memActor splayerOld glo) $
         modifyLocal (\s -> s {splayer=actor})
       splayerNew <- getsLocal splayer
-      -- TODO: verify the player belongs to the faction and is on sarena
+      -- TODO: verify the invariant
       modifyGlobal (\s -> s {splayer=splayerNew})
       loc <- getLocal
       if actor == splayerNew && isControlledFaction loc sside

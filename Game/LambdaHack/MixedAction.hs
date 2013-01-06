@@ -142,7 +142,9 @@ playerProjectGI verb object syms = do
       item <- getGroupItem is object syms
                 (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
       targeting <- getsClient (ctargeting . scursor)
-      when (targeting == TgtAuto) $ endTargeting True
+      case targeting of
+        TgtAuto _ -> endTargeting True
+        _ -> return ()
       disco <- getsLocal sdisco
       let verbProject = case jkind disco item of
             Nothing -> verb

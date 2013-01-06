@@ -112,17 +112,14 @@ updateAnyLevel f ln s@State{sarena, sdungeon}
 
 -- | Calculate the position of player's target.
 targetToPos :: StateClient -> State -> Maybe Point
-targetToPos StateClient{scursor, starget} s@State{sarena, splayer} =
+targetToPos StateClient{scursor, starget} s@State{splayer} =
   case IM.lookup splayer starget of
     Just (TPos pos) -> Just pos
-    Nothing ->
-      if sarena == cposLn scursor
-      then Just $ cposition scursor
-      else Nothing  -- cursor invalid: set at a different level
     Just (TEnemy a _ll) -> do
       guard $ memActor a s           -- alive and visible?
       let loc = bpos (getActor a s)
       return loc
+    Nothing -> Just $ cposition scursor
 
 -- The operations below disregard levels other than the current.
 
