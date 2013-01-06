@@ -98,8 +98,8 @@ cmdSemantics cmd = do
   let (timed, sem) = cmdAction cli loc cmd
   posNew <- getsLocal (bpos . getPlayerBody)
   when (posOld /= posNew) $ do
-    locNew <- getLocal
-    msgAdd $ lookAt False True locNew posNew ""
+    lookMsg <- lookAt False True posNew ""
+    msgAdd lookMsg
   -- TODO: verify the invariant
   State{splayer, sarena} <- getLocal
   modifyGlobal (\s -> s {splayer})

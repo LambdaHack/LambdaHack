@@ -5,7 +5,6 @@ module Game.LambdaHack.State
   , updateDungeon, updateArena, updateTime, updateDiscoveries, updateSide
   , getArena, getTime
   , isControlledFaction, isSpawningFaction
-  , lookAt
   , StateServer(..), defStateServer
   , StateClient(..), defStateClient, defHistory
   , updateCursor, updateTarget
@@ -228,35 +227,6 @@ isSpawningFaction s fid =
   let Kind.Ops{okind} = Kind.cofact (scops s)
       kind = okind $ gkind $ sfaction s IM.! fid
   in fspawn kind > 0
-
--- TODO: fix lvl, which is wrong in tgt mode on remote level
--- TODO: probably move somewhere (Level?)
--- | Produces a textual description of the terrain and items at an already
--- explored position. Mute for unknown positions.
--- The detailed variant is for use in the targeting mode.
-lookAt :: Bool       -- ^ detailed?
-       -> Bool       -- ^ can be seen right now?
-       -> State      -- ^ game state
-       -> Point      -- ^ position to describe
-       -> Text       -- ^ an extra sentence to print
-       -> Text
-lookAt detailed canSee loc pos msg
-  | detailed =
-    let tile = lvl `at` pos
-    in makeSentence [MU.Text $ oname tile] <+> msg <+> isd
-  | otherwise = msg <+> isd
- where
-  Kind.COps{coitem, cotile=Kind.Ops{oname}} = scops loc
-  lvl = getArena loc
-  is  = lvl `atI` pos
-  prefixSee = MU.Text $ if canSee then "you see" else "you remember"
-  nWs = partItemNWs coitem (sdisco loc)
-  isd = case is of
-          [] -> ""
-          _ | length is <= 2 ->
-            makeSentence [prefixSee, MU.WWandW $ map nWs is]
-          _ | detailed -> "Objects:"
-          _ -> "Objects here."
 
 -- * StateServer operations
 

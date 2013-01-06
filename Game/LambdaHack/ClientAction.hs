@@ -80,13 +80,46 @@ cursorLevel = do
         _ -> tgtLevelId ctargeting
   return $! sdungeon M.! tgtId
 
+-- TODO: probably move somewhere (Level?)
+-- | Produces a textual description of the terrain and items at an already
+-- explored position. Mute for unknown positions.
+-- The detailed variant is for use in the targeting mode.
+lookAt :: MonadClient m
+       => Bool       -- ^ detailed?
+       -> Bool       -- ^ can be seen right now?
+       -> Point      -- ^ position to describe
+       -> Text       -- ^ an extra sentence to print
+       -> m Text
+lookAt detailed canSee pos msg = do
+  Kind.COps{coitem, cotile=Kind.Ops{oname}} <- getsLocal scops
+  sarena <- getsLocal sarena
+  sdungeon <- getsLocal sdungeon
+  ctargeting <- getsClient (ctargeting . scursor)
+  let tgtId = case ctargeting of
+        TgtOff -> sarena
+        _ -> tgtLevelId ctargeting
+      lvl = sdungeon M.! tgtId
+      is = lvl `atI` pos
+      prefixSee = MU.Text $ if canSee then "you see" else "you remember"
+  sdisco <- getsLocal sdisco
+  let nWs = partItemNWs coitem sdisco
+      isd = case is of
+              [] -> ""
+              _ | length is <= 2 ->
+                makeSentence [prefixSee, MU.WWandW $ map nWs is]
+              _ | detailed -> "Objects:"
+              _ -> "Objects here."
+  if detailed
+    then let tile = lvl `at` pos
+         in return $! makeSentence [MU.Text $ oname tile] <+> msg <+> isd
+    else return $! msg <+> isd
+
 -- | Perform look around in the current position of the cursor.
 -- Assumes targeting mode.
 doLook :: MonadClient m => WriterT Slideshow m ()
 doLook = do
   Kind.COps{coactor} <- getsLocal scops
   p <- getsClient (cposition . scursor)
-  loc <- getLocal
   per <- askPerception
   pl <- getsLocal splayer
   target <- getsClient (IM.lookup pl . starget)
@@ -107,19 +140,19 @@ doLook = do
                Just TEnemy{} -> "[targeting monster" <> vis <> "]"
                Just TPos{}   -> "[targeting position" <> vis <> "]"
                Nothing       -> "[targeting current" <> vis <> "]"
-      -- Show general info about current p.
-      lookMsg = mode <+> lookAt True canSee loc p monsterMsg
       -- Check if there's something lying around at current p.
       is = lvl `atI` p
+  -- Show general info about current p.
+  lookMsg <- lookAt True canSee p monsterMsg
   modifyClient (\st -> st {slastKey = Nothing})
   if length is <= 2
     then do
-      slides <- promptToSlideshow lookMsg
+      slides <- promptToSlideshow (mode <+> lookMsg)
       tell slides
     else do
      disco <- getsLocal sdisco
      io <- itemOverlay disco False is
-     slides <- overlayToSlideshow lookMsg io
+     slides <- overlayToSlideshow (mode <+> lookMsg) io
      tell slides
 
 -- GameSave doesn't take time, but needs the server, so it's defined elsewhere.
@@ -179,13 +212,13 @@ targetFloor tgtMode = do
 -- | Set, activate and display cursor information.
 setCursor :: MonadClient m => TgtMode -> WriterT Slideshow m ()
 setCursor tgtMode = assert (tgtMode /= TgtOff) $ do
-  pos <- getLocal
+  loc <- getLocal
   cli <- getClient
   ppos <- getsLocal (bpos . getPlayerBody)
   let upd Cursor{ ctargeting=ctargetingOld
                 , cposition=cpositionOld
                 , ceps=cepsOld} =
-        let cposition = fromMaybe ppos (targetToPos cli pos)
+        let cposition = fromMaybe ppos (targetToPos cli loc)
             ceps = if cposition == cpositionOld then cepsOld else 0
             ctargeting = if ctargetingOld == TgtOff
                          then tgtMode

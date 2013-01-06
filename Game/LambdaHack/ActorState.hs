@@ -117,8 +117,7 @@ targetToPos StateClient{scursor, starget} s@State{splayer} =
     Just (TPos pos) -> Just pos
     Just (TEnemy a _ll) -> do
       guard $ memActor a s           -- alive and visible?
-      let loc = bpos (getActor a s)
-      return loc
+      return $! bpos (getActor a s)
     Nothing -> Just $ cposition scursor
 
 -- The operations below disregard levels other than the current.
