@@ -305,7 +305,7 @@ effLvlGoUp k = do
   pl <- getsGlobal splayer
   sarena <- getsGlobal sarena
   st <- getGlobal
-  case whereTo st k of
+  case whereTo st sarena k of
     Nothing -> fleeDungeon -- we are at the "end" of the dungeon
     Just (nln, npos) ->
       assert (nln /= sarena `blame` (nln, "stairs looped")) $ do

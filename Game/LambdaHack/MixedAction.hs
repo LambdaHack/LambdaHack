@@ -141,8 +141,8 @@ playerProjectGI verb object syms = do
       is <- getsLocal getPlayerItem
       item <- getGroupItem is object syms
                 (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
-      targeting <- getsClient stgtMode
-      case targeting of
+      stgtMode <- getsClient stgtMode
+      case stgtMode of
         TgtAuto _ -> endTargeting True
         _ -> return ()
       disco <- getsLocal sdisco

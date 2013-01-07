@@ -78,6 +78,16 @@ cursorLevel = do
         _ -> tgtLevelId stgtMode
   return $! sdungeon M.! tgtId
 
+viewedLevel :: MonadClientRO m => m (LevelId, Level)
+viewedLevel = do
+  sarena <- getsLocal sarena
+  sdungeon <- getsLocal sdungeon
+  stgtMode <- getsClient stgtMode
+  let tgtId = case stgtMode of
+        TgtOff -> sarena
+        _ -> tgtLevelId stgtMode
+  return $! (tgtId, sdungeon M.! tgtId)
+
 -- TODO: probably move somewhere (Level?)
 -- | Produces a textual description of the terrain and items at an already
 -- explored position. Mute for unknown positions.
@@ -90,14 +100,8 @@ lookAt :: MonadClient m
        -> m Text
 lookAt detailed canSee pos msg = do
   Kind.COps{coitem, cotile=Kind.Ops{oname}} <- getsLocal scops
-  sarena <- getsLocal sarena
-  sdungeon <- getsLocal sdungeon
-  stgtMode <- getsClient stgtMode
-  let tgtId = case stgtMode of
-        TgtOff -> sarena
-        _ -> tgtLevelId stgtMode
-      lvl = sdungeon M.! tgtId
-      is = lvl `atI` pos
+  (_, lvl) <- viewedLevel
+  let is = lvl `atI` pos
       prefixSee = MU.Text $ if canSee then "you see" else "you remember"
   sdisco <- getsLocal sdisco
   let nWs = partItemNWs coitem sdisco
@@ -197,10 +201,10 @@ targetFloor stgtModeNew = do
   ppos <- getsLocal (bpos . getPlayerBody)
   pl <- getsLocal splayer
   target <- getsClient (IM.lookup pl . starget)
-  targeting <- getsClient stgtMode
+  stgtMode <- getsClient stgtMode
   let tgt = case target of
         Just (TEnemy _ _) -> Nothing  -- forget enemy target, keep the cursor
-        _ | targeting /= TgtOff ->
+        _ | stgtMode /= TgtOff ->
           Just (TPos ppos)  -- double key press: reset cursor
         t -> t  -- keep the target from previous targeting session
   -- Register that we want to target only positions.
@@ -235,14 +239,9 @@ targetMonster stgtModeNew = do
   per <- askPerception
   target <- getsClient (IM.lookup pl . starget)
   -- TODO: sort monsters by distance to the player.
-  sarena <- getsLocal sarena
-  sdungeon <- getsLocal sdungeon
   stgtMode <- getsClient stgtMode
-  let tgtId = case stgtMode of
-        TgtOff -> sarena
-        _ -> tgtLevelId stgtMode
-      lvl@Level{lxsize} = sdungeon M.! tgtId
-      ms = hostileAssocs sside lvl
+  (_, lvl@Level{lxsize}) <- viewedLevel
+  let ms = hostileAssocs sside lvl
       plms = filter ((/= pl) . fst) ms  -- don't target yourself
       ordPos (_, m) = (chessDist lxsize ppos $ bpos m, bpos m)
       dms = sortBy (comparing ordPos) plms
@@ -277,19 +276,13 @@ tgtAscend k = do
   loc <- getLocal
   depth <- getsLocal sdepth
   cpos <- getsClient scursor
-  sarena <- getsLocal sarena
-  sdungeon <- getsLocal sdungeon
-  stgtMode <- getsClient stgtMode
-  let tgtId = case stgtMode of
-        TgtOff -> sarena
-        _ -> tgtLevelId stgtMode
-      lvl = sdungeon M.! tgtId
-      tile = lvl `at` cpos
+  (tgtId, lvl) <- viewedLevel
+  let tile = lvl `at` cpos
       rightStairs =
         k ==  1 && Tile.hasFeature cotile (F.Cause Effect.Ascend)  tile ||
         k == -1 && Tile.hasFeature cotile (F.Cause Effect.Descend) tile
   if rightStairs  -- stairs, in the right direction
-    then case whereTo loc k of
+    then case whereTo loc tgtId k of
       Nothing ->  -- we are at the "end" of the dungeon
         abortWith "no more levels in this direction"
       Just (nln, npos) ->
@@ -320,8 +313,8 @@ setTgtId nln = do
 -- | Tweak the @eps@ parameter of the targeting digital line.
 epsIncr :: MonadClient m => Bool -> m ()
 epsIncr b = do
-  targeting <- getsClient stgtMode
-  if targeting /= TgtOff
+  stgtMode <- getsClient stgtMode
+  if stgtMode /= TgtOff
     then modifyClient $ \cli -> cli {seps = seps cli + if b then 1 else -1}
     else neverMind True  -- no visual feedback, so no sense
 
@@ -331,8 +324,8 @@ epsIncr b = do
 -- to the position of the player. Chosen target is not invalidated.
 cancelCurrent :: MonadClient m => WriterT Slideshow m () -> WriterT Slideshow m ()
 cancelCurrent h = do
-  targeting <- getsClient stgtMode
-  if targeting /= TgtOff
+  stgtMode <- getsClient stgtMode
+  if stgtMode /= TgtOff
     then lift $ endTargeting False
     else h  -- nothing to cancel right now, treat this as a command invocation
 
@@ -390,8 +383,8 @@ displayMainMenu = do
 -- Or perform the default action, if nothing needs accepting.
 acceptCurrent :: MonadClient m => WriterT Slideshow m () -> WriterT Slideshow m ()
 acceptCurrent h = do
-  targeting <- getsClient stgtMode
-  if targeting /= TgtOff
+  stgtMode <- getsClient stgtMode
+  if stgtMode /= TgtOff
     then lift $ endTargeting True
     else h  -- nothing to accept right now, treat this as a command invocation
 

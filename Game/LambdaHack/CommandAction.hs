@@ -8,6 +8,7 @@ import Control.Monad
 import Control.Monad.Writer.Strict (WriterT, lift)
 import Data.Maybe
 import Data.Text (Text)
+import qualified Data.Map as M
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -26,12 +27,16 @@ import Game.LambdaHack.Vector
 cmdAction :: MonadAction m => StateClient -> State -> Cmd
           -> (Bool, WriterT Slideshow m ())
 cmdAction cli s cmd =
-  let targeting = stgtMode cli
+  let tgtMode = stgtMode cli
       pl = splayer s
       arena = sarena s
       sm = getPlayerBody s
       ppos = bpos sm
       tgtLoc = targetToPos cli s
+      Level{lxsize} =
+        case tgtMode of
+          TgtOff -> getArena s
+          _ -> (sdungeon s M.! tgtLevelId tgtMode)
   in case cmd of
     Apply{..} -> (True, cmdSerAction $ playerApplyGroupItem verb object syms)
     Project{} | isNothing tgtLoc -> (False, retarget)
@@ -42,11 +47,11 @@ cmdAction cli s cmd =
     Pickup -> (True, cmdSerAction $ pickupItem)
     Drop   -> (True, cmdSerAction $ dropItem)
     Wait   -> (True, cmdSerAction $ waitBlock)
-    Move v | targeting /= TgtOff ->
-      let dir = toDir (lxsize (getArena s)) v
+    Move v | tgtMode /= TgtOff ->
+      let dir = toDir lxsize v
       in (False, moveCursor dir 1)
     Move v ->
-      let dir = toDir (lxsize (getArena s)) v
+      let dir = toDir lxsize v
           tpos = ppos `shift` dir
           tgt = posToActor tpos s
       in case tgt of
@@ -57,11 +62,11 @@ cmdAction cli s cmd =
            selectPlayer arena target
              >>= assert `trueM` (pl, target, "player bumps himself" :: Text))
         _ -> (True, cmdSerAction $ movePl dir)
-    Run v | targeting /= TgtOff ->
-      let dir = toDir (lxsize (getArena s)) v
+    Run v | tgtMode /= TgtOff ->
+      let dir = toDir lxsize v
       in (False, moveCursor dir 10)
     Run v ->
-      let dir = toDir (lxsize (getArena s)) v
+      let dir = toDir lxsize v
       in (True, cmdSerAction $ runPl dir)
     GameExit    -> (True, cmdSerAction $ gameExit)     -- rewinds time
     GameRestart -> (True, cmdSerAction $ gameRestart)  -- resets state
@@ -115,7 +120,8 @@ cmdSemantics cmd = do
 checkCursor :: MonadActionRO m => WriterT Slideshow m () -> WriterT Slideshow m ()
 checkCursor h = do
   sarena <- getsLocal sarena
-  if sarena == sarena  -- TODO: use the Tgt level
+  (lid, _) <- viewedLevel
+  if sarena == lid
     then h
     else abortWith "[targeting] command disabled on a remote level, press ESC to switch back"
 

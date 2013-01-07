@@ -55,8 +55,8 @@ targetStrategy actor = do
   return $! reacquireTgt cops actor cli loc per factionAbilities
 
 reacquireTgt :: Kind.COps -> ActorId -> StateClient -> State
-               -> Perception -> [Ability]
-               -> Strategy (Maybe Target)
+             -> Perception -> [Ability]
+             -> Strategy (Maybe Target)
 reacquireTgt cops actor cli loc per factionAbilities =
   reacquire btarget
  where
