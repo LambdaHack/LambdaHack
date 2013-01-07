@@ -357,12 +357,12 @@ startClip action =
 -- | Update faction memory for the whole perception of the current level.
 remember :: MonadClientServer m => m ()
 remember = do
-  scops <- getsGlobal scops
+  cops <- getsGlobal scops
   lvl <- getsGlobal getArena
-  sfaction <- getsGlobal sfaction
+  faction <- getsGlobal sfaction
   per <- askPerception
-  modifyLocal $ updateArena $ rememberLevel scops (totalVisible per) lvl
-  modifyLocal $ \loc -> loc {sfaction}
+  modifyLocal $ updateArena $ rememberLevel cops (totalVisible per) lvl
+  modifyLocal $ updateFaction (const faction)
 
 -- | Update faction memory at the given set of positions.
 rememberLevel :: Kind.COps -> IS.IntSet -> Level -> Level -> Level
@@ -494,9 +494,9 @@ restartGame :: MonadAction m => m () -> m ()
 restartGame handleTurn = do
   -- Take the original config from config file, to reroll RNG, if needed
   -- (the current config file has the RNG rolled for the previous game).
-  scops <- getsGlobal scops
+  cops <- getsGlobal scops
   shistory <- getsClient shistory
-  (state, ser, dMsg) <- gameResetAction scops
+  (state, ser, dMsg) <- gameResetAction cops
   let d = case filter (isControlledFaction state) $ IM.keys dMsg of
         [] -> dMsg  -- only robots play
         k : _ -> IM.adjust (\(cli, loc) -> (cli {shistory}, loc)) k dMsg
@@ -508,7 +508,7 @@ restartGame handleTurn = do
 
 -- TODO: do this inside Action ()
 gameReset :: Kind.COps -> IO (State, StateServer, StateDict)
-gameReset scops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
+gameReset cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
                                   , coitem=coitem@Kind.Ops{okind}
                                   , corule
                                   , costrat=Kind.Ops{opick=sopick}} = do
@@ -519,9 +519,9 @@ gameReset scops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
         (sdiscoS, sdiscoRev) <- serverDiscos coitem
         let f ik = isymbol (okind ik)
                    `notElem` (ritemProject $ Kind.stdRuleset corule)
-            sdisco = M.filter f sdiscoS
+            disco = M.filter f sdiscoS
         DungeonState.FreshDungeon{..} <-
-          DungeonState.generate scops sflavour sdiscoRev sconfig
+          DungeonState.generate cops sflavour sdiscoRev sconfig
         let factionName = configFaction sconfig
         playerFactionKindId <- opick factionName (const True)
         let g gkind fk mk = do
@@ -536,22 +536,22 @@ gameReset scops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
               gAiIdle <- sopick (fAiIdle fk) (const True)
               let gquit = Nothing
               return (IM.insert k Faction{..} m, k + 1)
-        sfaction <- fmap fst $ ofoldrWithKey g (return (IM.empty, 0))
+        faction <- fmap fst $ ofoldrWithKey g (return (IM.empty, 0))
         let sside = 0  -- doesn't matter
             defState =
-              defStateGlobal freshDungeon freshDepth sdiscoS sfaction
-                             scops sside entryLevel
+              defStateGlobal freshDungeon freshDepth sdiscoS faction
+                             cops sside entryLevel
             defSer = defStateServer sdiscoRev sflavour srandom sconfig
             needInitialCrew =
-              filter (not . isSpawningFaction defState) $ IM.keys sfaction
+              filter (not . isSpawningFaction defState) $ IM.keys faction
             fo fid (stateF, serF) =
-              initialHeroes scops entryLoc stateF{sside=fid} serF
+              initialHeroes cops entryLoc stateF{sside=fid} serF
             (state, ser) = foldr fo (defState, defSer) needInitialCrew
             cli = defStateClient entryLoc
             -- This overwrites the "Really save/quit?" messages.
             loc = defStateLocal freshDungeon freshDepth
-                                sdisco sfaction scops sside entryLevel
-            d = IM.mapWithKey (\side _ -> (cli, loc {sside=side})) sfaction
+                                disco faction cops sside entryLevel
+            d = IM.mapWithKey (\side _ -> (cli, loc {sside=side})) faction
         return (state, ser, d)
   return $! St.evalState rnd dungeonGen
 
@@ -570,12 +570,12 @@ startFrontend :: (MonadActionIO m, MonadActionRO m)
               => (m () -> FrontendSession -> Kind.COps -> Binding -> ConfigUI
                   -> State -> StateServer -> StateDict -> IO ())
               -> Kind.COps -> m () -> IO ()
-startFrontend executor !cops@Kind.COps{corule, cotile=tile} handleTurn = do
+startFrontend executor !copsSlow@Kind.COps{corule, cotile=tile} handleTurn = do
   -- Compute and insert auxiliary optimized components into game content,
   -- to be used in time-critical sections of the code.
   let ospeedup = Tile.speedup tile
       cotile = tile {Kind.ospeedup}
-      scops = cops {Kind.cotile}
+      cops = copsSlow {Kind.cotile}
   -- UI config reloaded at each client start.
   sconfigUI <- ConfigIO.mkConfigUI corule
   -- A throw-away copy of rules config reloaded at client start, too,
@@ -590,7 +590,7 @@ startFrontend executor !cops@Kind.COps{corule, cotile=tile} handleTurn = do
         d <- getDict
         -- Save cli often, at each game exit, in case of crashes.
         liftIO $ Save.rmBkpSaveHistory sconfig sconfigUI d
-      loop sfs = start executor sfs scops sbinding sconfig sconfigUI handleGame
+      loop sfs = start executor sfs cops sbinding sconfig sconfigUI handleGame
   startup font loop
 
 -- | Either restore a saved game, or setup a new game.
@@ -600,25 +600,25 @@ start :: MonadActionRoot m
           -> State -> StateServer -> StateDict -> IO ())
       -> FrontendSession -> Kind.COps -> Binding -> Config -> ConfigUI
       -> m () -> IO ()
-start executor sfs scops@Kind.COps{corule}
+start executor sfs cops@Kind.COps{corule}
       sbinding sconfig sconfigUI handleGame = do
   let title = rtitle $ Kind.stdRuleset corule
       pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
   restored <- Save.restoreGame sconfig sconfigUI pathsDataFile title
   (state, ser, dBare, shistory, msg) <- case restored of
     Right (shistory, msg) -> do  -- Starting a new game.
-      (stateR, serR, dR) <- gameReset scops
+      (stateR, serR, dR) <- gameReset cops
       return (stateR, serR, dR, shistory, msg)
     Left (stateL, serL, dL, shistory, msg) -> do  -- Running a restored game.
-      let stateCops = stateL {scops}
-          dCops = IM.map (\(cli, loc) -> (cli, loc {scops})) dL
+      let stateCops = updateCOps (const cops) stateL
+          dCops = IM.map (\(cli, loc) -> (cli, updateCOps (const cops) loc)) dL
       return (stateCops, serL, dCops, shistory, msg)
   let singMsg (cli, loc) = (cli {sreport = singletonReport msg}, loc)
       dMsg = IM.map singMsg dBare
       d = case filter (isControlledFaction state) $ IM.keys dMsg of
         [] -> dMsg  -- only robots play
         k : _ -> IM.adjust (\(cli, loc) -> (cli {shistory}, loc)) k dMsg
-  executor handleGame sfs scops sbinding sconfigUI state ser d
+  executor handleGame sfs cops sbinding sconfigUI state ser d
 
 -- | Debugging.
 debug :: MonadActionRoot m => Text -> m ()

@@ -71,22 +71,22 @@ moveCursor dir n = do
 
 cursorLevel :: MonadClientRO m => m Level
 cursorLevel = do
-  sdungeon <- getsLocal sdungeon
+  dungeon <- getsLocal sdungeon
   stgtMode <- getsClient stgtMode
   let tgtId = case stgtMode of
         TgtOff -> assert `failure` "not targetting right now"
         _ -> tgtLevelId stgtMode
-  return $! sdungeon M.! tgtId
+  return $! dungeon M.! tgtId
 
 viewedLevel :: MonadClientRO m => m (LevelId, Level)
 viewedLevel = do
   sarena <- getsLocal sarena
-  sdungeon <- getsLocal sdungeon
+  dungeon <- getsLocal sdungeon
   stgtMode <- getsClient stgtMode
   let tgtId = case stgtMode of
         TgtOff -> sarena
         _ -> tgtLevelId stgtMode
-  return $! (tgtId, sdungeon M.! tgtId)
+  return $! (tgtId, dungeon M.! tgtId)
 
 -- TODO: probably move somewhere (Level?)
 -- | Produces a textual description of the terrain and items at an already
@@ -103,8 +103,8 @@ lookAt detailed canSee pos msg = do
   (_, lvl) <- viewedLevel
   let is = lvl `atI` pos
       prefixSee = MU.Text $ if canSee then "you see" else "you remember"
-  sdisco <- getsLocal sdisco
-  let nWs = partItemNWs coitem sdisco
+  disco <- getsLocal sdisco
+  let nWs = partItemNWs coitem disco
       isd = case is of
               [] -> ""
               _ | length is <= 2 ->
@@ -124,7 +124,7 @@ doLook = do
   p <- getsClient scursor
   per <- askPerception
   pl <- getsLocal splayer
-  target <- getsClient (IM.lookup pl . starget)
+  target <- getsClient $ getTarget pl
   lvl <- cursorLevel
   let hms = lactor lvl
       canSee = IS.member p (totalVisible per)
@@ -200,7 +200,7 @@ targetFloor :: MonadClient m => TgtMode -> WriterT Slideshow m ()
 targetFloor stgtModeNew = do
   ppos <- getsLocal (bpos . getPlayerBody)
   pl <- getsLocal splayer
-  target <- getsClient (IM.lookup pl . starget)
+  target <- getsClient $ getTarget pl
   stgtMode <- getsClient stgtMode
   let tgt = case target of
         Just (TEnemy _ _) -> Nothing  -- forget enemy target, keep the cursor
@@ -237,7 +237,7 @@ targetMonster stgtModeNew = do
   ppos <- getsLocal (bpos . getPlayerBody)
   sside <- getsLocal sside
   per <- askPerception
-  target <- getsClient (IM.lookup pl . starget)
+  target <- getsClient $ getTarget pl
   -- TODO: sort monsters by distance to the player.
   stgtMode <- getsClient stgtMode
   (_, lvl@Level{lxsize}) <- viewedLevel
@@ -393,7 +393,7 @@ endTargeting :: MonadClient m => Bool -> m ()
 endTargeting accept = do
   when accept $ do
     pl <- getsLocal splayer
-    target <- getsClient (IM.lookup pl . starget)
+    target <- getsClient $ getTarget pl
     per <- askPerception
     cpos <- getsClient scursor
     sside <- getsLocal sside
@@ -421,7 +421,7 @@ endTargetingMsg = do
   Kind.COps{coactor} <- getsLocal scops
   pbody <- getsLocal getPlayerBody
   pl <- getsLocal splayer
-  target <- getsClient (IM.lookup pl . starget)
+  target <- getsClient $ getTarget pl
   loc <- getLocal
   Level{lxsize} <- cursorLevel
   let targetMsg = case target of

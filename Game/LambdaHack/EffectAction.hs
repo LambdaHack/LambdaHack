@@ -181,7 +181,7 @@ eff (Effect.Wound nDm) verbosity source target power = do
     modifyGlobal $ updateActorBody target $ \ m -> m { bhp = newHP }
     return (True, msg)
 eff Effect.Dominate _ source target _power = do
-  scops@Kind.COps{coactor=Kind.Ops{okind}} <- getsGlobal scops
+  cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsGlobal scops
   s <- getGlobal
   sarena <- getsGlobal sarena
   if not $ isAHero s target
@@ -212,7 +212,7 @@ eff Effect.Dominate _ source target _power = do
            let cross m = bpos m : vicinityCardinal lxsize lysize (bpos m)
                vis = IS.fromList $ concatMap cross lm
            lvl <- getsGlobal getArena
-           modifyLocal $ updateArena $ rememberLevel scops vis lvl
+           modifyLocal $ updateArena $ rememberLevel cops vis lvl
            return (True, "A dozen voices yells in anger.")
          else nullEffect
 eff Effect.SummonFriend _ source target power = do
@@ -439,7 +439,7 @@ summonHeroes n pos =
 -- TODO: merge with summonHeroes; disregard "spawn" and "playable" factions and "spawn" flags for monsters; only check 'summon"
 summonMonsters :: MonadServer m => Int -> Point -> m ()
 summonMonsters n pos = do
-  sfaction <- getsGlobal sfaction
+  faction <- getsGlobal sfaction
   Kind.COps{ cotile
            , coactor=Kind.Ops{opick, okind}
            , cofact=Kind.Ops{opick=fopick, oname=foname}} <- getsGlobal scops
@@ -451,7 +451,7 @@ summonMonsters n pos = do
   hp <- rndToAction $ rollDice $ ahp $ okind mk
   let bfaction = fst $ fromJust
                  $ find (\(_, fa) -> gkind fa == spawnKindId)
-                 $ IM.toList sfaction
+                 $ IM.toList faction
   s <- getGlobal
   ser <- getServer
   let (sN, serN) = iterate (uncurry $ addMonster cotile mk hp pos
@@ -514,7 +514,7 @@ gameOver showEndingScreens = do
   when showEndingScreens $ do
     Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsGlobal scops
     s <- getGlobal
-    sdepth <- getsGlobal sdepth
+    depth <- getsGlobal sdepth
     time <- getsGlobal getTime
     let (items, total) = calculateTotal s
         deepest = levelNumber sarena  -- use deepest visited instead of level of death
@@ -524,9 +524,9 @@ gameOver showEndingScreens = do
           "Born poor, dies poor."
                 | deepest < 4 && total < 500 =
           "This should end differently."
-                | deepest < sdepth - 1 =
+                | deepest < depth - 1 =
           "This defeat brings no dishonour."
-                | deepest < sdepth =
+                | deepest < depth =
           "That is your name. 'Almost'."
                 | otherwise =
           "Dead heroes make better legends."
@@ -557,7 +557,7 @@ discover discoS i = do
   let ix = jkindIx i
       ik = discoS M.! ix
   unless (ix `M.member` oldDisco) $ do
-    modifyLocal (updateDiscoveries (M.insert ix ik))
+    modifyLocal (updateDisco (M.insert ix ik))
     disco <- getsLocal sdisco
     let (object1, object2) = partItem coitem oldDisco i
         msg = makeSentence

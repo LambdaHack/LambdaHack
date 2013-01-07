@@ -4,11 +4,12 @@ module Game.LambdaHack.State
   ( State
   , sdungeon, sdepth, sdisco, sfaction, scops, splayer, sside, sarena
   , defStateGlobal, defStateLocal
-  , updateDungeon, updateArena, updateTime, updateDiscoveries, updateSide
-  , getArena, getTime
+  , updateDungeon, updateDisco, updateFaction, updateCOps
+  , updateArena, updateTime, updateSide
+  , getArena, getTime, getSide
   , isControlledFaction, isSpawningFaction
   , StateServer(..), defStateServer
-  , StateClient(..), defStateClient, defHistory, updateTarget
+  , StateClient(..), defStateClient, defHistory, updateTarget, getTarget
   , StateDict
   , TgtMode(..), Target(..)
   , DebugModeSer(..), cycleTryFov
@@ -55,14 +56,14 @@ import Game.LambdaHack.Time
 -- Actor splayer is not on any other sdungeon level than sarena.
 -- If splayer is on sarena, he belongs to sside.
 data State = State
-  { sdungeon :: !Dungeon      -- ^ remembered dungeon
-  , sdepth   :: !Int          -- ^ remembered dungeon depth
-  , sdisco   :: !Discoveries  -- ^ remembered item discoveries
-  , sfaction :: !FactionDict  -- ^ remembered sides still in game
-  , scops    :: Kind.COps     -- ^ remembered content
-  , splayer  :: !ActorId      -- ^ selected actor
-  , sside    :: !FactionId    -- ^ faction of the selected actor
-  , sarena   :: !LevelId      -- ^ level of the selected actor
+  { _sdungeon :: !Dungeon      -- ^ remembered dungeon
+  , _sdepth   :: !Int          -- ^ remembered dungeon depth
+  , _sdisco   :: !Discoveries  -- ^ remembered item discoveries
+  , _sfaction :: !FactionDict  -- ^ remembered sides still in game
+  , _scops    :: Kind.COps     -- ^ remembered content
+  , splayer   :: !ActorId      -- ^ selected actor
+  , sside     :: !FactionId    -- ^ faction of the selected actor
+  , sarena    :: !LevelId      -- ^ level of the selected actor
   }
   deriving Show
 
@@ -158,7 +159,7 @@ unknownTileMap unknownId cxsize cysize =
 defStateGlobal :: Dungeon -> Int -> Discoveries
                -> FactionDict -> Kind.COps -> FactionId -> LevelId
                -> State
-defStateGlobal sdungeon sdepth sdisco sfaction scops sside sarena =
+defStateGlobal _sdungeon _sdepth _sdisco _sfaction _scops sside sarena =
   State
     { splayer = invalidActorId  -- no heroes yet alive
     , ..
@@ -173,11 +174,11 @@ defStateLocal :: Dungeon
               -> Kind.COps -> FactionId -> LevelId
               -> State
 defStateLocal globalDungeon
-              sdepth sdisco sfaction
-              scops@Kind.COps{cotile} sside sarena = do
+              _sdepth _sdisco _sfaction
+              _scops@Kind.COps{cotile} sside sarena = do
   State
     { splayer  = invalidActorId  -- no heroes yet alive
-    , sdungeon =
+    , _sdungeon =
       M.map (\Level{lxsize, lysize, ldesc, lstair, lclear} ->
               unknownLevel cotile lxsize lysize ldesc lstair lclear)
             globalDungeon
@@ -186,7 +187,19 @@ defStateLocal globalDungeon
 
 -- | Update dungeon data within state.
 updateDungeon :: (Dungeon -> Dungeon) -> State -> State
-updateDungeon f s = s {sdungeon = f (sdungeon s)}
+updateDungeon f s = s {_sdungeon = f (_sdungeon s)}
+
+-- | Update item discoveries within state.
+updateDisco :: (Discoveries -> Discoveries) -> State -> State
+updateDisco f s = s { _sdisco = f (_sdisco s) }
+
+-- | Update faction data within state.
+updateFaction :: (FactionDict -> FactionDict) -> State -> State
+updateFaction f s = s { _sfaction = f (_sfaction s) }
+
+-- | Update content data within state.
+updateCOps :: (Kind.COps -> Kind.COps) -> State -> State
+updateCOps f s = s { _scops = f (_scops s) }
 
 -- | Update current arena data within state.
 updateArena :: (Level -> Level) -> State -> State
@@ -196,32 +209,47 @@ updateArena f s = updateDungeon (M.adjust f (sarena s)) s
 updateTime :: (Time -> Time) -> State -> State
 updateTime f s = updateArena (\lvl@Level{ltime} -> lvl {ltime = f ltime}) s
 
--- | Update item discoveries within state.
-updateDiscoveries :: (Discoveries -> Discoveries) -> State -> State
-updateDiscoveries f s = s { sdisco = f (sdisco s) }
-
 -- | Update current side data within state.
 updateSide :: (Faction -> Faction) -> State -> State
-updateSide f s = s {sfaction = IM.adjust f (sside s) (sfaction s)}
+updateSide f s = updateFaction (IM.adjust f (sside s)) s
 
 -- | Get current level from the dungeon data.
 getArena :: State -> Level
-getArena State{sarena, sdungeon} = sdungeon M.! sarena
+getArena State{sarena, _sdungeon} = _sdungeon M.! sarena
 
 -- | Get current time from the dungeon data.
 getTime :: State -> Time
-getTime State{sarena, sdungeon} = ltime $ sdungeon M.! sarena
+getTime State{sarena, _sdungeon} = ltime $ _sdungeon M.! sarena
+
+-- | Get current faction from state.
+getSide :: State -> Faction
+getSide State{_sfaction, sside} = _sfaction IM.! sside
 
 -- | Tell whether the faction is human-controlled.
 isControlledFaction :: State -> FactionId -> Bool
-isControlledFaction s fid = isNothing $ gAiSelected $ sfaction s IM.! fid
+isControlledFaction s fid = isNothing $ gAiSelected $ _sfaction s IM.! fid
 
 -- | Tell whether the faction is human-controlled.
 isSpawningFaction :: State -> FactionId -> Bool
 isSpawningFaction s fid =
-  let Kind.Ops{okind} = Kind.cofact (scops s)
-      kind = okind $ gkind $ sfaction s IM.! fid
+  let Kind.Ops{okind} = Kind.cofact (_scops s)
+      kind = okind $ gkind $ _sfaction s IM.! fid
   in fspawn kind > 0
+
+sdungeon :: State -> Dungeon
+sdungeon = _sdungeon
+
+sdepth :: State -> Int
+sdepth = _sdepth
+
+sdisco :: State -> Discoveries
+sdisco = _sdisco
+
+sfaction :: State -> FactionDict
+sfaction = _sfaction
+
+scops :: State -> Kind.COps
+scops = _scops
 
 -- * StateServer operations
 
@@ -280,10 +308,14 @@ defHistory = do
   return $ singletonHistory $ singletonReport
          $ makeSentence ["Player history log started on", curDate]
 
--- | Update target parameters within state.
+-- | Update target parameters within client state.
 updateTarget :: ActorId -> (Maybe Target -> Maybe Target) -> StateClient
              -> StateClient
-updateTarget actor f s = s { starget = IM.alter f actor (starget s) }
+updateTarget aid f cli = cli { starget = IM.alter f aid (starget cli) }
+
+-- | Get target parameters from client state.
+getTarget :: ActorId -> StateClient -> Maybe Target
+getTarget aid cli = IM.lookup aid (starget cli)
 
 toggleMarkVision :: StateClient -> StateClient
 toggleMarkVision s@StateClient{sdebugCli=sdebugCli@DebugModeCli{smarkVision}} =
@@ -301,22 +333,22 @@ toggleOmniscient s@StateClient{sdebugCli=sdebugCli@DebugModeCli{somniscient}} =
 
 instance Binary State where
   put State{..} = do
-    put sdungeon
-    put sdepth
-    put sdisco
-    put sfaction
+    put _sdungeon
+    put _sdepth
+    put _sdisco
+    put _sfaction
     put splayer
     put sside
     put sarena
   get = do
-    sdungeon <- get
-    sdepth <- get
-    sdisco <- get
-    sfaction <- get
+    _sdungeon <- get
+    _sdepth <- get
+    _sdisco <- get
+    _sfaction <- get
     splayer <- get
     sside <- get
     sarena <- get
-    let scops = undefined  -- overwritten by recreated cops
+    let _scops = undefined  -- overwritten by recreated cops
     return State{..}
 
 instance Binary StateServer where

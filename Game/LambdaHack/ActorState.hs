@@ -76,8 +76,8 @@ factionList l s =
 
 -- | Calculate the position of player's target.
 targetToPos :: StateClient -> State -> Maybe Point
-targetToPos StateClient{scursor, starget} s =
-  case IM.lookup (splayer s) starget of
+targetToPos cli@StateClient{scursor} s =
+  case getTarget (splayer s) cli of
     Just (TPos pos) -> Just pos
     Just (TEnemy a _ll) -> do
       guard $ memActor a s           -- alive and visible?

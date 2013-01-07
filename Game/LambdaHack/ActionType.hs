@@ -130,10 +130,10 @@ instance MonadAction Action where
 executor :: Action ()
          -> FrontendSession -> Kind.COps -> Binding -> ConfigUI
          -> State -> StateServer -> StateDict -> IO ()
-executor m sfs scops sbinding sconfigUI s ser d =
+executor m sfs cops sbinding sconfigUI s ser d =
   runAction m
     Session{..}
-    (dungeonPerception scops (sconfig ser) (sdebugSer ser) s)
+    (dungeonPerception cops (sconfig ser) (sdebugSer ser) s)
     (\_ _ _ _ -> return ())  -- final continuation returns result
     (\msg -> fail $ T.unpack $ "unhandled abort:" <+> msg)  -- e.g., in AI code
     s

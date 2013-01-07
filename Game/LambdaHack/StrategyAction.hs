@@ -64,7 +64,7 @@ reacquireTgt cops actor cli loc per factionAbilities =
   lvl@Level{lxsize} = getArena loc
   actorBody@Actor{ bkind, bpos = me, bfaction, bpath } =
     getActorBody actor loc
-  btarget = IM.lookup actor . starget $ cli
+  btarget = getTarget actor cli
   mk = okind bkind
   enemyVisible l =
     asight mk
@@ -137,7 +137,7 @@ proposeAction cops actor cli loc factionAbilities =
  where
   Kind.COps{coactor=Kind.Ops{okind}} = cops
   Actor{ bkind, bpos, bpath } = getActorBody actor loc
-  btarget = IM.lookup actor . starget $ cli
+  btarget = getTarget actor cli
   (fpos, foeVisible) | isJust bpath = (bpos, False)  -- a missile
                      | otherwise =
     case btarget of
