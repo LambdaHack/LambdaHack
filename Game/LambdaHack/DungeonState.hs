@@ -170,10 +170,10 @@ whereTo :: State    -- ^ game state
         -> Int      -- ^ jump this many levels
         -> Maybe (LevelId, Point)
                     -- ^ target level and the position of its receiving stairs
-whereTo State{sdungeon} lid k = assert (k /= 0) $
+whereTo s lid k = assert (k /= 0) $
   let n = levelNumber lid
       nln = n - k
       ln = levelDefault nln
-  in case M.lookup ln sdungeon of
+  in case M.lookup ln (sdungeon s) of
     Nothing     -> Nothing
     Just lvlTrg -> Just (ln, (if k < 0 then fst else snd) (lstair lvlTrg))

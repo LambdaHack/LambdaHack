@@ -13,8 +13,8 @@ import qualified Data.Text as T
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Action.Frontend
-import Game.LambdaHack.Binding
 import Game.LambdaHack.ActionClass
+import Game.LambdaHack.Binding
 import Game.LambdaHack.Config
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Msg
@@ -83,12 +83,12 @@ instance MonadServerRO Action where
 instance MonadClientRO Action where
   getsSession f = Action (\c _p k _a s ser d -> k s ser d (f c))
   getClient  = do
-    State{sside} <- getGlobal
+    sside <- getsGlobal sside
     d <- getDict
     return $! fst $! d IM.! sside
   getsClient = (`fmap` getClient)
   getLocal   = do
-    State{sside} <- getGlobal
+    sside <- getsGlobal sside
     d <- getDict
     return $! snd $! d IM.! sside
   getsLocal  = (`fmap` getLocal)
@@ -112,11 +112,11 @@ instance MonadServer Action where
 
 instance MonadClient Action where
   modifyClient f = do
-    State{sside} <- getGlobal
+    sside <- getsGlobal sside
     modifyDict (IM.adjust (first f) sside)
   putClient      = modifyClient . const
   modifyLocal f  = do
-    State{sside} <- getGlobal
+    sside <- getsGlobal sside
     modifyDict (IM.adjust (second f) sside)
   putLocal       = modifyLocal . const
 

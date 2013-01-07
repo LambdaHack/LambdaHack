@@ -48,8 +48,7 @@ draw :: ColorMode -> Kind.COps -> Perception -> StateClient -> State -> Overlay
      -> SingleFrame
 draw dm cops per
      StateClient{stgtMode, scursor, seps, sdebugCli}
-     s@State{sdisco, sarena, sdungeon}
-     overlay =
+     s overlay =
   let Kind.COps{ coactor=Kind.Ops{okind}
                , coitem=Kind.Ops{okind=iokind}
                , cotile=Kind.Ops{okind=tokind, ouniqGroup} } = cops
@@ -57,8 +56,8 @@ draw dm cops per
       (drawnLevelId, lvl@Level{lxsize, lysize, lsmell,
                                ldesc, lactor, ltime, lseen, lclear}) =
         case stgtMode of
-          TgtOff -> (sarena, getArena s)
-          _ -> (tgtLevelId stgtMode, sdungeon M.! tgtLevelId stgtMode)
+          TgtOff -> (sarena s, getArena s)
+          _ -> (tgtLevelId stgtMode, sdungeon s M.! tgtLevelId stgtMode)
       mpl@Actor{bkind, bhp, bpos} = getPlayerBody s
       bitems = getPlayerItem s
       ActorKind{ahp, asmell} = okind bkind
@@ -76,7 +75,7 @@ draw dm cops per
       (_, wealth)  = calculateTotal s
       damage  = case Item.strongestSword cops bitems of
                   Just sw ->
-                    case Item.jkind sdisco sw of
+                    case Item.jkind (sdisco s) sw of
                       Just swk ->
                         case ieffect $ iokind swk of
                           Wound dice ->
@@ -93,7 +92,7 @@ draw dm cops per
             sml = IM.findWithDefault timeZero pos0 lsmell
             smlt = sml `timeAdd` timeNegate ltime
             viewActor loc Actor{bkind = bkind2, bsymbol, bcolor}
-              | loc == bpos && drawnLevelId == sarena =
+              | loc == bpos && drawnLevelId == sarena s =
                   (symbol, Color.defBG)  -- highlight player
               | otherwise = (symbol, color)
              where
@@ -106,7 +105,7 @@ draw dm cops per
               case ( L.find (\ m -> pos0 == Actor.bpos m) actorsHere
                    , L.find (\ m -> scursor == Actor.bpos m) actorsHere ) of
                 (_, actorTgt) | stgtMode /= TgtOff
-                                && (drawnLevelId == sarena
+                                && (drawnLevelId == sarena s
                                     && L.elem pos0 bl
                                     || (case actorTgt of
                                            Just (Actor{ bpath=Just p

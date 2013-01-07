@@ -1,7 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Game state and persistent player cli types and operations.
 module Game.LambdaHack.State
-  ( State(..), defStateGlobal, defStateLocal
+  ( State
+  , sdungeon, sdepth, sdisco, sfaction, scops, splayer, sside, sarena
+  , defStateGlobal, defStateLocal
   , updateDungeon, updateArena, updateTime, updateDiscoveries, updateSide
   , getArena, getTime
   , isControlledFaction, isSpawningFaction

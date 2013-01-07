@@ -416,7 +416,8 @@ itemEffectAction verbosity source target item block = do
 selectPlayerSer :: MonadAction m => LevelId -> ActorId -> m Bool
 selectPlayerSer lid actor = do
   b <- selectPlayer lid actor
-  State{splayer, sarena} <- getLocal
+  splayer <- getsLocal splayer
+  sarena <- getsLocal sarena
   modifyGlobal (\s -> s {splayer})
   modifyGlobal (\s -> s {sarena})
   return b

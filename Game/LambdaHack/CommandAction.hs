@@ -107,7 +107,8 @@ cmdSemantics cmd = do
     lookMsg <- lookAt False True posNew ""
     msgAdd lookMsg
   -- TODO: verify the invariant
-  State{splayer, sarena} <- getLocal
+  splayer <- getsLocal splayer
+  sarena <- getsLocal sarena
   modifyGlobal (\s -> s {splayer})
   modifyGlobal (\s -> s {sarena})
   if timed
