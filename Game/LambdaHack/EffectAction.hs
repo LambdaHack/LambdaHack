@@ -183,11 +183,11 @@ eff (Effect.Wound nDm) verbosity source target power = do
 eff Effect.Dominate _ source target _power = do
   cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsGlobal scops
   s <- getGlobal
-  sarena <- getsGlobal sarena
+  arena <- getsGlobal sarena
   if not $ isAHero s target
     then do  -- Monsters have weaker will than heroes.
-      selectPlayerSer sarena target
-        >>= assert `trueM` (source, sarena, target, "player dominates himself")
+      selectPlayerSer arena target
+        >>= assert `trueM` (source, arena, target, "player dominates himself")
       -- Halve the speed as a side-effect of domination.
       let halfSpeed :: Actor -> Maybe Speed
           halfSpeed Actor{bkind} =
@@ -253,8 +253,8 @@ eff Effect.Ascend _ source target power = do
     else effLvlGoUp (power + 1)
   -- TODO: The following message too late if a monster squashed by going up,
   -- unless it's ironic. ;) The same below.
-  sside <- getsGlobal sside
-  gquit <- getsGlobal $ gquit . (IM.! sside) . sfaction
+  side <- getsGlobal sside
+  gquit <- getsGlobal $ gquit . (IM.! side) . sfaction
   return $ if maybe Camping snd gquit == Victor
            then (True, "")
            else (True, actorVerb coactor tm "find a way upstairs")
@@ -266,8 +266,8 @@ eff Effect.Descend _ source target power = do
   if isSpawningFaction glo (bfaction tm)
     then squashActor source target
     else effLvlGoUp (- (power + 1))
-  sside <- getsGlobal sside
-  gquit <- getsGlobal $ gquit . (IM.! sside) . sfaction
+  side <- getsGlobal sside
+  gquit <- getsGlobal $ gquit . (IM.! side) . sfaction
   return $ if maybe Camping snd gquit == Victor
            then (True, "")
            else (True, actorVerb coactor tm "find a way downstairs")
@@ -302,14 +302,14 @@ squashActor source target = do
 effLvlGoUp :: MonadAction m => Int -> m ()
 effLvlGoUp k = do
   pbodyCurrent <- getsGlobal getPlayerBody
+  bitems <- getsGlobal getPlayerItem
   pl <- getsGlobal splayer
-  sarena <- getsGlobal sarena
+  arena <- getsGlobal sarena
   st <- getGlobal
-  case whereTo st sarena k of
+  case whereTo st arena k of
     Nothing -> fleeDungeon -- we are at the "end" of the dungeon
     Just (nln, npos) ->
-      assert (nln /= sarena `blame` (nln, "stairs looped")) $ do
-        bitems <- getsGlobal getPlayerItem
+      assert (nln /= arena `blame` (nln, "stairs looped")) $ do
         -- Remove the player from the old level.
         modifyGlobal (deleteActor pl)
         -- Remember the level (e.g., when teleporting via scroll on the floor,
@@ -323,11 +323,11 @@ effLvlGoUp k = do
         -- At this place the invariant that the player exists fails.
         -- Change to the new level (invariant not needed).
         timeCurrent <- getsGlobal getTime
-        -- | Change level, both in faction and global state,
+        -- Change level. TODO: for now both in faction and global state,
         -- to ensure the actions performed afterwards, but before
         -- the end of the turn, read and modify updated and consistent states.
-        modifyLocal (\ s -> s {sarena = nln})
-        modifyGlobal (\ s -> s {sarena = nln})
+        modifyLocal $ updateSelected pl nln
+        modifyGlobal $ updateSelected pl nln
         -- Sync the actor time with the level time.
         timeLastVisited <- getsGlobal getTime
         let diff = timeAdd (btime pbodyCurrent) (timeNegate timeCurrent)
@@ -398,7 +398,9 @@ itemEffectAction :: MonadAction m
 itemEffectAction verbosity source target item block = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsGlobal scops
   st <- getGlobal
-  sarenaOld <- getsGlobal sarena
+  -- Destroys attacking actor and its items: a hack for projectiles.
+  when (isProjectile st source) $
+    modifyGlobal (deleteActor source)
   discoS <- getsGlobal sdisco
   let effect = ieffect $ okind $ fromJust $ jkind discoS item
   -- The msg describes the target part of the action.
@@ -406,20 +408,13 @@ itemEffectAction verbosity source target item block = do
   -- Party sees or affected, and the effect interesting,
   -- so the item gets identified.
   when (b1 && b2) $ discover discoS item
-  -- Destroys attacking actor and its items: a hack for projectiles.
-  sarenaNew <- getsGlobal sarena
-  modifyGlobal (\ s -> s {sarena = sarenaOld})
-  when (isProjectile st source) $
-    modifyGlobal (deleteActor source)
-  modifyGlobal (\ s -> s {sarena = sarenaNew})
 
 selectPlayerSer :: MonadAction m => LevelId -> ActorId -> m Bool
 selectPlayerSer lid actor = do
   b <- selectPlayer lid actor
-  splayer <- getsLocal splayer
-  sarena <- getsLocal sarena
-  modifyGlobal (\s -> s {splayer})
-  modifyGlobal (\s -> s {sarena})
+  player <- getsLocal splayer
+  arena <- getsLocal sarena
+  modifyGlobal $ updateSelected player arena
   return b
 
 summonHeroes :: MonadAction m => Int -> Point -> m ()
@@ -429,7 +424,8 @@ summonHeroes n pos =
   newHeroId <- getsServer scounter
   s <- getGlobal
   ser <- getServer
-  let (sN, serN) = iterate (uncurry $ addHero cops pos) (s, ser) !! n
+  side <- getsGlobal sside
+  let (sN, serN) = iterate (uncurry $ addHero cops pos side) (s, ser) !! n
   putGlobal sN
   putServer serN
   b <- focusIfOurs newHeroId
@@ -508,8 +504,8 @@ checkPartyDeath = do
 -- | End game, showing the ending screens, if requested.
 gameOver :: MonadAction m => Bool -> m ()
 gameOver showEndingScreens = do
-  sarena <- getsGlobal sarena
-  let upd f = f {gquit = Just (False, Killed sarena)}
+  arena <- getsGlobal sarena
+  let upd f = f {gquit = Just (False, Killed arena)}
   modifyGlobal $ updateSide upd
   when showEndingScreens $ do
     Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsGlobal scops
@@ -517,7 +513,7 @@ gameOver showEndingScreens = do
     depth <- getsGlobal sdepth
     time <- getsGlobal getTime
     let (items, total) = calculateTotal s
-        deepest = levelNumber sarena  -- use deepest visited instead of level of death
+        deepest = levelNumber arena  -- use deepest visited instead of level of death
         failMsg | timeFit time timeTurn < 300 =
           "That song shall be short."
                 | total < 100 =
@@ -538,7 +534,7 @@ gameOver showEndingScreens = do
           , "and some junk." ]
     if null items
       then do
-        let upd2 f = f {gquit = Just (True, Killed sarena)}
+        let upd2 f = f {gquit = Just (True, Killed arena)}
         modifyGlobal $ updateSide upd2
       else do
         discoS <- getsGlobal sdisco
@@ -546,7 +542,7 @@ gameOver showEndingScreens = do
         slides <- overlayToSlideshow loseMsg io
         go <- getManyConfirms [] slides
         when go $ do
-          let upd2 f = f {gquit = Just (True, Killed sarena)}
+          let upd2 f = f {gquit = Just (True, Killed arena)}
           modifyGlobal $ updateSide upd2
 
 -- | Make the item known to the player.

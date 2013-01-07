@@ -131,7 +131,7 @@ projectSer source tpos _verb item = do
   seps  <- getsClient seps
   lxsize <- getsLocal (lxsize . getArena)
   lysize <- getsLocal (lysize . getArena)
-  sside <- getsLocal sside
+  side <- getsLocal sside
   disco <- getsLocal sdisco
   let consumed = item { jcount = 1 }
       spos = bpos sm
@@ -159,7 +159,7 @@ projectSer source tpos _verb item = do
       -- and the opposite party's projectiles waiting one turn.
       btimeDelta = timeAddFromSpeed coactor sm btime
       time =
-        if bfaction sm == sside || source == pl
+        if bfaction sm == side || source == pl
         then btimeDelta `timeAdd` timeNegate timeClip
         else btime
       bl = bla lxsize lysize eps spos tpos

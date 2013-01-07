@@ -152,8 +152,8 @@ continueRunDir (dirLast, distLast) = do
   per <- askPerception
   StateClient{sreport} <- getClient  -- TODO: check the message before it goes into history
   ms  <- getsLocal dangerousList
-  sside <- getsLocal sside
-  hs <- getsLocal (factionList [sside])
+  side <- getsLocal sside
+  hs <- getsLocal (factionList [side])
   lvl@Level{lxsize, lysize} <- getsLocal getArena
   let posHasFeature f loc = Tile.hasFeature cotile f (lvl `at` loc)
       posHasItems loc = not $ L.null $ lvl `atI` loc

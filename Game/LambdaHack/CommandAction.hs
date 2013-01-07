@@ -6,9 +6,9 @@ module Game.LambdaHack.CommandAction
 
 import Control.Monad
 import Control.Monad.Writer.Strict (WriterT, lift)
+import qualified Data.Map as M
 import Data.Maybe
 import Data.Text (Text)
-import qualified Data.Map as M
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -98,31 +98,33 @@ cmdAction cli s cmd =
 -- the level of the selected hero).
 cmdSemantics :: MonadAction m => Cmd -> WriterT Slideshow m Bool
 cmdSemantics cmd = do
+  arenaOld <- getsGlobal sarena
+  posOld <- getsGlobal (bpos . getPlayerBody)
   cli <- getClient
   loc <- getLocal
-  posOld <- getsLocal (bpos . getPlayerBody)
   let (timed, sem) = cmdAction cli loc cmd
-  posNew <- getsLocal (bpos . getPlayerBody)
-  when (posOld /= posNew) $ do
-    lookMsg <- lookAt False True posNew ""
-    msgAdd lookMsg
-  -- TODO: verify the invariant
-  splayer <- getsLocal splayer
-  sarena <- getsLocal sarena
-  modifyGlobal (\s -> s {splayer})
-  modifyGlobal (\s -> s {sarena})
   if timed
     then checkCursor sem
     else sem
+  player <- getsLocal splayer
+  arena <- getsLocal sarena
+  modifyGlobal $ updateSelected player arena
+  pos <- getsGlobal (bpos . getPlayerBody)
+  tgtMode <- getsClient stgtMode
+  when (tgtMode == TgtOff  -- targeting performs it's own, more extensive look
+        && (posOld /= pos
+            || arenaOld /= arena)) $ do
+    lookMsg <- lookAt False True pos ""
+    msgAdd lookMsg
   return timed
 
 -- | If in targeting mode, check if the current level is the same
 -- as player level and refuse performing the action otherwise.
 checkCursor :: MonadActionRO m => WriterT Slideshow m () -> WriterT Slideshow m ()
 checkCursor h = do
-  sarena <- getsLocal sarena
+  arena <- getsLocal sarena
   (lid, _) <- viewedLevel
-  if sarena == lid
+  if arena == lid
     then h
     else abortWith "[targeting] command disabled on a remote level, press ESC to switch back"
 

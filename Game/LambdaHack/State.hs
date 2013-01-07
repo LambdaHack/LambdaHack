@@ -3,9 +3,9 @@
 module Game.LambdaHack.State
   ( State
   , sdungeon, sdepth, sdisco, sfaction, scops, splayer, sside, sarena
-  , defStateGlobal, defStateLocal
+  , defStateGlobal, defStateLocal, switchGlobalSelectedSideOnlyForGlobalState
   , updateDungeon, updateDisco, updateFaction, updateCOps
-  , updateArena, updateTime, updateSide
+  , updateArena, updateTime, updateSide, updateSelected
   , getArena, getTime, getSide
   , isControlledFaction, isSpawningFaction
   , StateServer(..), defStateServer
@@ -61,9 +61,9 @@ data State = State
   , _sdisco   :: !Discoveries  -- ^ remembered item discoveries
   , _sfaction :: !FactionDict  -- ^ remembered sides still in game
   , _scops    :: Kind.COps     -- ^ remembered content
-  , splayer   :: !ActorId      -- ^ selected actor
-  , sside     :: !FactionId    -- ^ faction of the selected actor
-  , sarena    :: !LevelId      -- ^ level of the selected actor
+  , _splayer  :: !ActorId      -- ^ selected actor
+  , _sside    :: !FactionId    -- ^ faction of the selected actor
+  , _sarena   :: !LevelId      -- ^ level of the selected actor
   }
   deriving Show
 
@@ -157,11 +157,12 @@ unknownTileMap unknownId cxsize cysize =
 
 -- | Initial complete global game state.
 defStateGlobal :: Dungeon -> Int -> Discoveries
-               -> FactionDict -> Kind.COps -> FactionId -> LevelId
+               -> FactionDict -> Kind.COps -> LevelId
                -> State
-defStateGlobal _sdungeon _sdepth _sdisco _sfaction _scops sside sarena =
+defStateGlobal _sdungeon _sdepth _sdisco _sfaction _scops _sarena =
   State
-    { splayer = invalidActorId  -- no heroes yet alive
+    { _splayer = invalidActorId  -- no heroes yet alive
+    , _sside = -1  -- no side yet selected
     , ..
     }
 
@@ -171,19 +172,24 @@ defStateGlobal _sdungeon _sdepth _sdisco _sfaction _scops sside sarena =
 -- | Initial per-faction local game state.
 defStateLocal :: Dungeon
               -> Int -> Discoveries -> FactionDict
-              -> Kind.COps -> FactionId -> LevelId
+              -> Kind.COps -> LevelId -> FactionId
               -> State
 defStateLocal globalDungeon
               _sdepth _sdisco _sfaction
-              _scops@Kind.COps{cotile} sside sarena = do
+              _scops@Kind.COps{cotile} _sarena _sside = do
   State
-    { splayer  = invalidActorId  -- no heroes yet alive
+    { _splayer  = invalidActorId  -- no heroes yet alive
     , _sdungeon =
       M.map (\Level{lxsize, lysize, ldesc, lstair, lclear} ->
               unknownLevel cotile lxsize lysize ldesc lstair lclear)
             globalDungeon
     , ..
     }
+
+-- | Switch selected faction within the global state. Local state side
+-- is set at default level creation and never changes.
+switchGlobalSelectedSideOnlyForGlobalState :: FactionId -> State -> State
+switchGlobalSelectedSideOnlyForGlobalState fid s = s {_sside = fid}
 
 -- | Update dungeon data within state.
 updateDungeon :: (Dungeon -> Dungeon) -> State -> State
@@ -203,7 +209,7 @@ updateCOps f s = s { _scops = f (_scops s) }
 
 -- | Update current arena data within state.
 updateArena :: (Level -> Level) -> State -> State
-updateArena f s = updateDungeon (M.adjust f (sarena s)) s
+updateArena f s = updateDungeon (M.adjust f (_sarena s)) s
 
 -- | Update time within state.
 updateTime :: (Time -> Time) -> State -> State
@@ -211,19 +217,23 @@ updateTime f s = updateArena (\lvl@Level{ltime} -> lvl {ltime = f ltime}) s
 
 -- | Update current side data within state.
 updateSide :: (Faction -> Faction) -> State -> State
-updateSide f s = updateFaction (IM.adjust f (sside s)) s
+updateSide f s = updateFaction (IM.adjust f (_sside s)) s
+
+-- | Update current side data within state.
+updateSelected :: ActorId -> LevelId -> State -> State
+updateSelected _splayer _sarena s = s {_splayer, _sarena}
 
 -- | Get current level from the dungeon data.
 getArena :: State -> Level
-getArena State{sarena, _sdungeon} = _sdungeon M.! sarena
+getArena State{_sarena, _sdungeon} = _sdungeon M.! _sarena
 
 -- | Get current time from the dungeon data.
 getTime :: State -> Time
-getTime State{sarena, _sdungeon} = ltime $ _sdungeon M.! sarena
+getTime State{_sarena, _sdungeon} = ltime $ _sdungeon M.! _sarena
 
 -- | Get current faction from state.
 getSide :: State -> Faction
-getSide State{_sfaction, sside} = _sfaction IM.! sside
+getSide State{_sfaction, _sside} = _sfaction IM.! _sside
 
 -- | Tell whether the faction is human-controlled.
 isControlledFaction :: State -> FactionId -> Bool
@@ -250,6 +260,15 @@ sfaction = _sfaction
 
 scops :: State -> Kind.COps
 scops = _scops
+
+splayer :: State -> ActorId
+splayer = _splayer
+
+sside :: State -> FactionId
+sside = _sside
+
+sarena :: State -> LevelId
+sarena = _sarena
 
 -- * StateServer operations
 
@@ -337,17 +356,17 @@ instance Binary State where
     put _sdepth
     put _sdisco
     put _sfaction
-    put splayer
-    put sside
-    put sarena
+    put _splayer
+    put _sside
+    put _sarena
   get = do
     _sdungeon <- get
     _sdepth <- get
     _sdisco <- get
     _sfaction <- get
-    splayer <- get
-    sside <- get
-    sarena <- get
+    _splayer <- get
+    _sside <- get
+    _sarena <- get
     let _scops = undefined  -- overwritten by recreated cops
     return State{..}
 

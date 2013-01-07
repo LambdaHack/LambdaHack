@@ -33,6 +33,7 @@ module Game.LambdaHack.Action
   , startClip, remember, rememberLevel
     -- * Assorted primitives
   , saveGameBkp, dumpCfg, endOrLoop, frontendName, startFrontend
+  , switchGlobalSelectedSide
   , debug
   ) where
 
@@ -170,21 +171,21 @@ withPerception m = do
 askPerception :: MonadClientRO m => m Perception
 askPerception = do
   stgtMode <- getsClient stgtMode
-  sarena <- getsLocal sarena
+  arena <- getsLocal sarena
   let lid = case stgtMode of
-        TgtOff -> sarena
+        TgtOff -> arena
         _ -> tgtLevelId stgtMode
   pers <- ask
-  sside <- getsLocal sside
-  return $! pers IM.! sside M.! lid
+  side <- getsLocal sside
+  return $! pers IM.! side M.! lid
 
 -- | Get the current perception of the server.
 askPerceptionSer :: MonadServerRO m => m Perception
 askPerceptionSer = do
   lid <- getsGlobal sarena
   pers <- ask
-  sside <- getsGlobal sside
-  return $! pers IM.! sside M.! lid
+  side <- getsGlobal sside
+  return $! pers IM.! side M.! lid
 
 -- | Wait for a player command.
 getKeyCommand :: (MonadActionIO m, MonadClientRO m) => Maybe Bool -> m K.KM
@@ -376,16 +377,16 @@ rememberLevel Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} visible lvl clvl =
       vis = IS.toList visible
       rememberTile = [(pos, lvl `at` pos) | pos <- vis]
       unknownId = ouniqGroup "unknown space"
-      eClear (pos, tk) = clvl `at` pos == unknownId
-                         && Tile.isExplorable cotile tk
-      extraClear = length $ filter eClear rememberTile
+      eSeen (pos, tk) = clvl `at` pos == unknownId
+                        && Tile.isExplorable cotile tk
+      extraSeen = length $ filter eSeen rememberTile
   in clvl { lactor = nactor
           , linv = ninv
           , litem = foldr rememberItem (litem clvl) vis
           , ltile = ltile clvl Kind.// rememberTile
   -- TODO: update enemy smell probably only around a sniffing party member
           , lsmell = lsmell lvl
-          , lseen = lseen clvl + extraClear
+          , lseen = lseen clvl + extraSeen
           , ltime = ltime lvl
   -- TODO: let factions that spawn see hidden features and open all hidden
   -- doors (they built and hid them). Hide the Hidden feature in ltile.
@@ -435,8 +436,8 @@ handleScores write status total =
 endOrLoop :: MonadAction m => m () -> m ()
 endOrLoop handleTurn = do
   squit <- getsServer squit
-  sside <- getsGlobal sside
-  gquit <- getsGlobal $ gquit . (IM.! sside) . sfaction
+  side <- getsGlobal sside
+  gquit <- getsGlobal $ gquit . (IM.! side) . sfaction
   s <- getGlobal
   ser <- getServer
   d <- getDict
@@ -537,21 +538,20 @@ gameReset cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
               let gquit = Nothing
               return (IM.insert k Faction{..} m, k + 1)
         faction <- fmap fst $ ofoldrWithKey g (return (IM.empty, 0))
-        let sside = 0  -- doesn't matter
-            defState =
+        let defState =
               defStateGlobal freshDungeon freshDepth sdiscoS faction
-                             cops sside entryLevel
+                             cops entryLevel
             defSer = defStateServer sdiscoRev sflavour srandom sconfig
             needInitialCrew =
               filter (not . isSpawningFaction defState) $ IM.keys faction
             fo fid (stateF, serF) =
-              initialHeroes cops entryLoc stateF{sside=fid} serF
+              initialHeroes cops entryLoc fid stateF serF
             (state, ser) = foldr fo (defState, defSer) needInitialCrew
             cli = defStateClient entryLoc
             -- This overwrites the "Really save/quit?" messages.
-            loc = defStateLocal freshDungeon freshDepth
-                                disco faction cops sside entryLevel
-            d = IM.mapWithKey (\side _ -> (cli, loc {sside=side})) faction
+            defLoc = defStateLocal freshDungeon freshDepth
+                                   disco faction cops entryLevel
+            d = IM.mapWithKey (\fid _ -> (cli, defLoc fid)) faction
         return (state, ser, d)
   return $! St.evalState rnd dungeonGen
 
@@ -619,6 +619,10 @@ start executor sfs cops@Kind.COps{corule}
         [] -> dMsg  -- only robots play
         k : _ -> IM.adjust (\(cli, loc) -> (cli {shistory}, loc)) k dMsg
   executor handleGame sfs cops sbinding sconfigUI state ser d
+
+switchGlobalSelectedSide :: MonadServer m => FactionId -> m ()
+switchGlobalSelectedSide =
+  modifyGlobal . switchGlobalSelectedSideOnlyForGlobalState
 
 -- | Debugging.
 debug :: MonadActionRoot m => Text -> m ()

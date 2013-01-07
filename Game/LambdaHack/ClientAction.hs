@@ -54,11 +54,11 @@ retarget :: MonadClient m => WriterT Slideshow m ()
 retarget = do
   stgtMode <- getsClient stgtMode
   assert (stgtMode == TgtOff) $ do
-    sarena <- getsLocal sarena
+    arena <- getsLocal sarena
     ppos <- getsLocal (bpos . getPlayerBody)
     msgAdd "Last target invalid."
     modifyClient $ \cli -> cli {scursor = ppos, seps = 0}
-    targetMonster $ TgtAuto sarena
+    targetMonster $ TgtAuto arena
 
 -- ** Move and Run
 
@@ -80,11 +80,11 @@ cursorLevel = do
 
 viewedLevel :: MonadClientRO m => m (LevelId, Level)
 viewedLevel = do
-  sarena <- getsLocal sarena
+  arena <- getsLocal sarena
   dungeon <- getsLocal sdungeon
   stgtMode <- getsClient stgtMode
   let tgtId = case stgtMode of
-        TgtOff -> sarena
+        TgtOff -> arena
         _ -> tgtLevelId stgtMode
   return $! (tgtId, dungeon M.! tgtId)
 
@@ -235,13 +235,13 @@ targetMonster :: MonadClient m => TgtMode -> WriterT Slideshow m ()
 targetMonster stgtModeNew = do
   pl <- getsLocal splayer
   ppos <- getsLocal (bpos . getPlayerBody)
-  sside <- getsLocal sside
+  side <- getsLocal sside
   per <- askPerception
   target <- getsClient $ getTarget pl
   -- TODO: sort monsters by distance to the player.
   stgtMode <- getsClient stgtMode
   (_, lvl@Level{lxsize}) <- viewedLevel
-  let ms = hostileAssocs sside lvl
+  let ms = hostileAssocs side lvl
       plms = filter ((/= pl) . fst) ms  -- don't target yourself
       ordPos (_, m) = (chessDist lxsize ppos $ bpos m, bpos m)
       dms = sortBy (comparing ordPos) plms
@@ -396,9 +396,9 @@ endTargeting accept = do
     target <- getsClient $ getTarget pl
     per <- askPerception
     cpos <- getsClient scursor
-    sside <- getsLocal sside
+    side <- getsLocal sside
     lvl <- cursorLevel
-    let ms = hostileAssocs sside lvl
+    let ms = hostileAssocs side lvl
     case target of
       Just TEnemy{} -> do
         -- If in monster targeting mode, switch to the monster under
@@ -483,12 +483,10 @@ selectPlayer nln actor = do
   if actor == pl
     then return False -- already selected
     else do
-      -- Switch to the new level.
-      modifyLocal (\ s -> s {sarena = nln})
+      -- Make the new actor the player-controlled actor.
+      modifyLocal $ updateSelected actor nln
       -- Move the cursor, if active, to the new level.
       when (stgtMode /= TgtOff) $ setTgtId nln
-      -- Make the new actor the player-controlled actor.
-      modifyLocal (\ s -> s {splayer = actor})
       -- Don't continue an old run, if any.
       stopRunning
       -- Announce.

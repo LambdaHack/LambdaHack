@@ -123,9 +123,9 @@ foesAdjacent lxsize lysize loc foes =
 -- Adding heroes
 
 -- | Create a new hero on the current level, close to the given position.
-addHero :: Kind.COps -> Point -> State -> StateServer
+addHero :: Kind.COps -> Point -> FactionId -> State -> StateServer
         -> (State, StateServer)
-addHero Kind.COps{coactor, cotile} ppos
+addHero Kind.COps{coactor, cotile} ppos side
         s ser@StateServer{scounter} =
   let config@Config{configBaseHP} = sconfig ser
       loc = nearbyFreePos cotile ppos s
@@ -135,17 +135,17 @@ addHero Kind.COps{coactor, cotile} ppos
       name = findHeroName config n
       startHP = configBaseHP - (configBaseHP `div` 5) * min 3 n
       m = template (heroKindId coactor) (Just symbol) (Just name)
-                   startHP loc (getTime s) (sside s) False
+                   startHP loc (getTime s) side False
   in ( updateArena (updateActor (IM.insert scounter m)) s
      , ser { scounter = scounter + 1 } )
 
 -- | Create a set of initial heroes on the current level, at position ploc.
-initialHeroes :: Kind.COps -> Point -> State -> StateServer
+initialHeroes :: Kind.COps -> Point -> FactionId -> State -> StateServer
               -> (State, StateServer)
-initialHeroes cops ppos s ser =
+initialHeroes cops ppos side s ser =
   let Config{configExtraHeroes} = sconfig ser
       k = 1 + configExtraHeroes
-  in iterate (uncurry $ addHero cops ppos) (s, ser) !! k
+  in iterate (uncurry $ addHero cops ppos side) (s, ser) !! k
 
 -- Adding monsters
 

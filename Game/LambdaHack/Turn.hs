@@ -105,24 +105,24 @@ handleActors subclipStart = do
     _ | isJust squitOld -> return ()
     Nothing -> when (subclipStart == timeZero) $ displayFramesPush [Nothing]
     Just (actor, m) -> do
-      let sside = bfaction m
-      modifyGlobal (\s -> s {sside})
-      glo <- getGlobal
-      modifyLocal (\s -> s {sarena=sarena glo})
-      splayerOld <- getsLocal splayer
-      when (not $ memActor splayerOld glo) $
-        modifyLocal (\s -> s {splayer=actor})
-      splayerNew <- getsLocal splayer
-      -- TODO: verify the invariant
-      modifyGlobal (\s -> s {splayer=splayerNew})
-      loc <- getLocal
-      if actor == splayerNew && isControlledFaction loc sside
+      let side = bfaction m
+      switchGlobalSelectedSide side
+      arena <- getsGlobal sarena
+      playerOld <- getsLocal splayer
+      -- Old player may have been killed by enemies since @side@ last moved.
+      memOld <- getsGlobal $ memActor playerOld
+      let player | memOld = playerOld
+                 | otherwise = actor
+      modifyLocal $ updateSelected player arena
+      modifyGlobal $ updateSelected player arena
+      isControlled <- getsLocal $ flip isControlledFaction side
+      if actor == player && isControlled
         then
           -- Selected player moves always start a new subclip.
           startClip $ do
             handlePlayer
             squitNew <- getsServer squit
-            splayerNewer <- getsGlobal splayer
+            splayerNew <- getsGlobal splayer
             -- Advance time once, after the player switched perhaps many times.
             -- Ending and especially saving does not take time.
             -- TODO: this is correct only when all heroes have the same
@@ -134,13 +134,13 @@ handleActors subclipStart = do
             -- at once. This requires quite a bit of refactoring
             -- and is perhaps better done when the other factions have
             -- selected players as well.
-            unless (isJust squitNew) $ advanceTime splayerNewer
+            unless (isJust squitNew) $ advanceTime splayerNew
             handleActors $ btime m
         else do
           recordHistory
           advanceTime actor  -- advance time while the actor still alive
           let subclipStartDelta = timeAddFromSpeed coactor m subclipStart
-          if isControlledFaction loc sside && not (bproj m)
+          if isControlled && not (bproj m)
              || subclipStart == timeZero
              || btime m > subclipStartDelta
             then

@@ -83,14 +83,14 @@ instance MonadServerRO Action where
 instance MonadClientRO Action where
   getsSession f = Action (\c _p k _a s ser d -> k s ser d (f c))
   getClient  = do
-    sside <- getsGlobal sside
+    side <- getsGlobal sside
     d <- getDict
-    return $! fst $! d IM.! sside
+    return $! fst $! d IM.! side
   getsClient = (`fmap` getClient)
   getLocal   = do
-    sside <- getsGlobal sside
+    side <- getsGlobal sside
     d <- getDict
-    return $! snd $! d IM.! sside
+    return $! snd $! d IM.! side
   getsLocal  = (`fmap` getLocal)
 
 instance MonadClientServerRO Action where
@@ -112,12 +112,12 @@ instance MonadServer Action where
 
 instance MonadClient Action where
   modifyClient f = do
-    sside <- getsGlobal sside
-    modifyDict (IM.adjust (first f) sside)
+    side <- getsGlobal sside
+    modifyDict (IM.adjust (first f) side)
   putClient      = modifyClient . const
   modifyLocal f  = do
-    sside <- getsGlobal sside
-    modifyDict (IM.adjust (second f) sside)
+    side <- getsGlobal sside
+    modifyDict (IM.adjust (second f) side)
   putLocal       = modifyLocal . const
 
 instance MonadClientServer Action where
