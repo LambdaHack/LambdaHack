@@ -28,7 +28,8 @@ cmdAction :: MonadAction m => StateClient -> State -> Cmd
 cmdAction cli s cmd =
   let targeting = stgtMode cli
       pl = splayer s
-      sm = getActor pl s
+      arena = sarena s
+      sm = getPlayerBody s
       ppos = bpos sm
       tgtLoc = targetToPos cli s
   in case cmd of
@@ -49,12 +50,12 @@ cmdAction cli s cmd =
           tpos = ppos `shift` dir
           tgt = posToActor tpos s
       in case tgt of
-        Just target | bfaction (getActor target s) == sside s
-                      && not (bproj (getActor target s)) ->
+        Just target | bfaction (getActorBody target s) == sside s
+                      && not (bproj (getActorBody target s)) ->
           -- Select adjacent hero by bumping into him. Takes no time.
           (False,
-           selectPlayer target
-           >>= assert `trueM` (pl, target, "player bumps himself" :: Text))
+           selectPlayer arena target
+             >>= assert `trueM` (pl, target, "player bumps himself" :: Text))
         _ -> (True, cmdSerAction $ movePl dir)
     Run v | targeting /= TgtOff ->
       let dir = toDir (lxsize (getArena s)) v
@@ -67,8 +68,8 @@ cmdAction cli s cmd =
 
     GameSave    -> (False, cmdSerAction $ gameSave)
     Inventory   -> (False, inventory)
-    TgtFloor    -> (False, targetFloor   $ TgtExplicit (sarena s))
-    TgtEnemy    -> (False, targetMonster $ TgtExplicit (sarena s))
+    TgtFloor    -> (False, targetFloor   $ TgtExplicit arena)
+    TgtEnemy    -> (False, targetMonster $ TgtExplicit arena)
     TgtAscend k -> (False, tgtAscend k)
     EpsIncr b   -> (False, lift $ epsIncr b)
     Cancel      -> (False, cancelCurrent displayMainMenu)
@@ -113,10 +114,8 @@ cmdSemantics cmd = do
 -- as player level and refuse performing the action otherwise.
 checkCursor :: MonadActionRO m => WriterT Slideshow m () -> WriterT Slideshow m ()
 checkCursor h = do
-  pl <- getsLocal splayer
-  (creturnLn, _, _) <- getsLocal (findActorAnyLevel pl)
   sarena <- getsLocal sarena
-  if creturnLn == sarena
+  if sarena == sarena  -- TODO: use the Tgt level
     then h
     else abortWith "[targeting] command disabled on a remote level, press ESC to switch back"
 

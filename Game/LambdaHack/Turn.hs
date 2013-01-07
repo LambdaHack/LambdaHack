@@ -168,9 +168,9 @@ handleAI actor = do
   -- debug
   loc <- getLocal
   debug $ "handleAI factionAI:"
-     <+> showT (gAiIdle $ sfaction loc IM.! bfaction (getActor actor loc))
-     <>          ", symbol:"    <+> showT (bsymbol (getActor actor loc))
-     <>          ", loc:"       <+> showT (bpos (getActor actor loc))
+     <+> showT (gAiIdle $ sfaction loc IM.! bfaction (getActorBody actor loc))
+     <>          ", symbol:"    <+> showT (bsymbol (getActorBody actor loc))
+     <>          ", loc:"       <+> showT (bpos (getActorBody actor loc))
      <> "\nhandleAI target:"    <+> showT stratTarget
      <> "\nhandleAI move:"      <+> showT stratAction
   -- Run the AI: choses an action from those given by the AI strategy.
@@ -272,7 +272,7 @@ advanceTime :: MonadAction m => ActorId -> m ()
 advanceTime actor = do
   Kind.COps{coactor} <- getsGlobal scops
   let upd m@Actor{btime} = m {btime = timeAddFromSpeed coactor m btime}
-  updateAnyActor actor upd
+  modifyGlobal $ updateActorBody actor upd
 
 
 -- The issues below are now complicated (?) by the fact that we now generate

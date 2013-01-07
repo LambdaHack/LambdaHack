@@ -89,7 +89,7 @@ applyGroupItem :: MonadClient m
                -> m CmdSer
 applyGroupItem actor verb item = do
   Kind.COps{coactor, coitem} <- getsLocal scops
-  body <- getsLocal (getActor actor)
+  body <- getsLocal (getActorBody actor)
   per <- askPerception
   disco <- getsLocal sdisco
   -- Only one item consumed, even if several in inventory.
@@ -166,8 +166,7 @@ playerTriggerDir feat verb = do
 -- | Player tries to trigger a tile in a given direction.
 playerBumpDir :: MonadClient m => F.Feature -> Vector -> m CmdSer
 playerBumpDir feat dir = do
-  pl    <- getsLocal splayer
-  body  <- getsLocal (getActor pl)
+  body  <- getsLocal getPlayerBody
   let dpos = bpos body `shift` dir
   bumpTile dpos feat
 
@@ -222,7 +221,7 @@ actorPickupItem actor = do
   pl <- getsLocal splayer
   per <- askPerception
   lvl <- getsLocal getArena
-  body <- getsLocal (getActor actor)
+  body <- getsLocal (getActorBody actor)
   bitems <- getsLocal (getActorItem actor)
   disco <- getsLocal sdisco
   let p = bpos body

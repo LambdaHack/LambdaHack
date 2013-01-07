@@ -48,7 +48,7 @@ draw :: ColorMode -> Kind.COps -> Perception -> StateClient -> State -> Overlay
      -> SingleFrame
 draw dm cops per
      StateClient{stgtMode, scursor, seps, sdebugCli}
-     s@State{sdisco, sarena, splayer, sdungeon}
+     s@State{sdisco, sarena, sdungeon}
      overlay =
   let Kind.COps{ coactor=Kind.Ops{okind}
                , coitem=Kind.Ops{okind=iokind}
@@ -59,8 +59,8 @@ draw dm cops per
         case stgtMode of
           TgtOff -> (sarena, getArena s)
           _ -> (tgtLevelId stgtMode, sdungeon M.! tgtLevelId stgtMode)
-      (creturnLn, mpl@Actor{bkind, bhp, bpos}, bitems) =
-        findActorAnyLevel splayer s
+      mpl@Actor{bkind, bhp, bpos} = getPlayerBody s
+      bitems = getPlayerItem s
       ActorKind{ahp, asmell} = okind bkind
       reachable = debugTotalReachable per
       visible   = totalVisible per
@@ -93,7 +93,7 @@ draw dm cops per
             sml = IM.findWithDefault timeZero pos0 lsmell
             smlt = sml `timeAdd` timeNegate ltime
             viewActor loc Actor{bkind = bkind2, bsymbol, bcolor}
-              | loc == bpos && drawnLevelId == creturnLn =
+              | loc == bpos && drawnLevelId == sarena =
                   (symbol, Color.defBG)  -- highlight player
               | otherwise = (symbol, color)
              where
@@ -106,7 +106,7 @@ draw dm cops per
               case ( L.find (\ m -> pos0 == Actor.bpos m) actorsHere
                    , L.find (\ m -> scursor == Actor.bpos m) actorsHere ) of
                 (_, actorTgt) | stgtMode /= TgtOff
-                                && (drawnLevelId == creturnLn
+                                && (drawnLevelId == sarena
                                     && L.elem pos0 bl
                                     || (case actorTgt of
                                            Just (Actor{ bpath=Just p

@@ -434,7 +434,7 @@ endTargetingMsg = do
   let targetMsg = case target of
                     Just (TEnemy a _ll) ->
                       if memActor a loc
-                      then partActor coactor $ getActor a loc
+                      then partActor coactor $ getActorBody a loc
                       else "a fear of the past"
                     Just (TPos pos) ->
                       MU.Text $ "position" <+> showPoint lxsize pos
@@ -474,24 +474,22 @@ cycleHero = do
   pl <- getsLocal splayer
   s  <- getLocal
   hs <- heroesAfterPl
-  case filter (flip memActor s) hs of
+  case filter (flip memActor s . snd) hs of
     [] -> abortWith "Cannot select any other hero on this level."
-    ni : _ -> selectPlayer ni
-                >>= assert `trueM` (pl, ni, "hero duplicated")
+    (nl, np) : _ -> selectPlayer nl np
+                      >>= assert `trueM` (pl, nl, np, "hero duplicated")
 
 -- | Make the actor controlled by the player. Switch level, if needed.
 -- False, if nothing to do. Should only be invoked as a direct result
 -- of a player action (selected player actor death just sets splayer to -1).
-selectPlayer :: MonadClient m => ActorId -> m Bool
-selectPlayer actor = do
+selectPlayer :: MonadClient m => LevelId -> ActorId -> m Bool
+selectPlayer nln actor = do
   Kind.COps{coactor} <- getsLocal scops
   pl <- getsLocal splayer
   stgtMode <- getsClient stgtMode
   if actor == pl
     then return False -- already selected
     else do
-      loc <- getLocal
-      let (nln, pbody, _) = findActorAnyLevel actor loc
       -- Switch to the new level.
       modifyLocal (\ s -> s {sarena = nln})
       -- Move the cursor, if active, to the new level.
@@ -501,18 +499,19 @@ selectPlayer actor = do
       -- Don't continue an old run, if any.
       stopRunning
       -- Announce.
+      pbody <- getsLocal getPlayerBody
       msgAdd $ makeSentence [partActor coactor pbody, "selected"]
       return True
 
 stopRunning :: MonadClient m => m ()
 stopRunning = modifyClient (\ cli -> cli { srunning = Nothing })
 
-heroesAfterPl :: MonadClient m => m [ActorId]
+heroesAfterPl :: MonadClient m => m [(LevelId, ActorId)]
 heroesAfterPl = do
   pl <- getsLocal splayer
   s  <- getLocal
   let hs = map (tryFindHeroK s) [0..9]
-      i = fromMaybe (-1) $ findIndex (== Just pl) hs
+      i = fromMaybe (-1) $ findIndex ((== Just pl) . fmap snd) hs
       (lt, gt) = (take i hs, drop (i + 1) hs)
   return $ catMaybes gt ++ catMaybes lt
 
@@ -526,8 +525,8 @@ backCycleHero = do
   hs <- heroesAfterPl
   case reverse hs of
     [] -> abortWith "No other hero in the party."
-    ni : _ -> selectPlayer ni
-                >>= assert `trueM` (pl, ni, "hero duplicated")
+    (nl, np) : _ -> selectPlayer nl np
+                      >>= assert `trueM` (pl, nl, np, "hero duplicated")
 
 -- ** Help
 
@@ -544,4 +543,4 @@ selectHero k = do
   loc <- getLocal
   case tryFindHeroK loc k of
     Nothing  -> abortWith "No such member of the party."
-    Just aid -> void $ selectPlayer aid
+    Just (lid, aid) -> void $ selectPlayer lid aid

@@ -56,16 +56,6 @@ rndToAction r = do
   modifyServer (\ ser -> ser {srandom = ng})
   return a
 
--- | Update actor stats. Works for actors on other levels, too.
-updateAnyActor :: MonadServer m => ActorId -> (Actor -> Actor) -> m ()
-updateAnyActor actor f = modifyGlobal (updateAnyActorBody actor f)
-
--- | Update player-controlled actor stats.
-updatePlayerBody :: MonadServer m => (Actor -> Actor) -> m ()
-updatePlayerBody f = do
-  pl <- getsGlobal splayer
-  updateAnyActor pl f
-
 -- TODO: center screen, flash the background, etc. Perhaps wait for SPACE.
 -- | Focus on the hero being wounded/displaced/etc.
 focusIfOurs :: MonadActionRoot m => ActorId -> m Bool
@@ -89,7 +79,7 @@ focusIfOurs _target = do
 effectToAction :: MonadAction m => Effect.Effect -> Int -> ActorId -> ActorId -> Int -> Bool
                -> m (Bool, Bool)
 effectToAction effect verbosity source target power block = do
-  oldTm <- getsGlobal (getActor target)
+  oldTm <- getsGlobal (getActorBody target)
   let oldHP = bhp oldTm
   (b, msg) <- eff effect verbosity source target power
   s <- getGlobal
@@ -98,14 +88,14 @@ effectToAction effect verbosity source target power block = do
   if not (memActor target s)
    then return (b, False)
    else do
-    sm  <- getsGlobal (getActor source)
-    tm  <- getsGlobal (getActor target)
+    sm  <- getsGlobal (getActorBody source)
+    tm  <- getsGlobal (getActorBody target)
     per <- askPerception
     pl  <- getsGlobal splayer
     let spos = bpos sm
         tpos = bpos tm
         tvisible = tpos `IS.member` totalVisible per
-        newHP = bhp $ getActor target s
+        newHP = bhp $ getActorBody target s
     bb <-
      if isAHero s source ||
         isAHero s target ||
@@ -156,12 +146,12 @@ eff Effect.NoEffect _ _ _ _ = nullEffect
 eff Effect.Heal _ _source target power = do
   Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsGlobal scops
   let bhpMax m = maxDice (ahp $ okind $ bkind m)
-  tm <- getsGlobal (getActor target)
+  tm <- getsGlobal (getActorBody target)
   if bhp tm >= bhpMax tm || power <= 0
     then nullEffect
     else do
       void $ focusIfOurs target
-      updateAnyActor target (addHp coactor power)
+      modifyGlobal $ updateActorBody target (addHp coactor power)
       return (True, actorVerb coactor tm "feel better")
 eff (Effect.Wound nDm) verbosity source target power = do
   Kind.COps{coactor} <- getsGlobal scops
@@ -170,7 +160,7 @@ eff (Effect.Wound nDm) verbosity source target power = do
   if n + power <= 0 then nullEffect else do
     void $ focusIfOurs target
     pl <- getsGlobal splayer
-    tm <- getsGlobal (getActor target)
+    tm <- getsGlobal (getActorBody target)
     let newHP = bhp tm - n - power
         msg
           | newHP <= 0 =
@@ -187,15 +177,17 @@ eff (Effect.Wound nDm) verbosity source target power = do
           | target == pl =
             actorVerb coactor tm $ "lose" <+> showT (n + power) <> "HP"
           | otherwise = actorVerb coactor tm "hiss in pain"
-    updateAnyActor target $ \ m -> m { bhp = newHP }  -- Damage the target.
+    -- Damage the target.
+    modifyGlobal $ updateActorBody target $ \ m -> m { bhp = newHP }
     return (True, msg)
 eff Effect.Dominate _ source target _power = do
   scops@Kind.COps{coactor=Kind.Ops{okind}} <- getsGlobal scops
   s <- getGlobal
+  sarena <- getsGlobal sarena
   if not $ isAHero s target
     then do  -- Monsters have weaker will than heroes.
-      selectPlayerSer target
-        >>= assert `trueM` (source, target, "player dominates himself")
+      selectPlayerSer sarena target
+        >>= assert `trueM` (source, sarena, target, "player dominates himself")
       -- Halve the speed as a side-effect of domination.
       let halfSpeed :: Actor -> Maybe Speed
           halfSpeed Actor{bkind} =
@@ -203,9 +195,10 @@ eff Effect.Dominate _ source target _power = do
             in Just $ speedScale (1%2) speed
       -- Sync the monster with the hero move time for better display
       -- of missiles and for the domination to actually take one player's turn.
-      updatePlayerBody (\ m -> m { bfaction = sside s
-                                 , btime = getTime s
-                                 , bspeed = halfSpeed m })
+      pl <- getsGlobal splayer
+      modifyGlobal $ updateActorBody pl $ \ b -> b { bfaction = sside s
+                                                   , btime = getTime s
+                                                   , bspeed = halfSpeed b }
       -- Display status line and FOV for the newly controlled actor.
       sli <- promptToSlideshow ""
       fr <- drawOverlay ColorBW $ head $ runSlideshow sli
@@ -223,14 +216,14 @@ eff Effect.Dominate _ source target _power = do
            return (True, "A dozen voices yells in anger.")
          else nullEffect
 eff Effect.SummonFriend _ source target power = do
-  tm <- getsGlobal (getActor target)
+  tm <- getsGlobal (getActorBody target)
   s <- getGlobal
   if isAHero s source
     then summonHeroes (1 + power) (bpos tm)
     else summonMonsters (1 + power) (bpos tm)
   return (True, "")
 eff Effect.SummonEnemy _ source target power = do
-  tm <- getsGlobal (getActor target)
+  tm <- getsGlobal (getActorBody target)
   s  <- getGlobal
   if isAHero s source
     then summonMonsters (1 + power) (bpos tm)
@@ -249,7 +242,7 @@ eff Effect.Searching _ _source _target _power =
   return (True, "It gets lost and you search in vain.")
 eff Effect.Ascend _ source target power = do
   Kind.COps{coactor} <- getsGlobal scops
-  tm <- getsGlobal (getActor target)
+  tm <- getsGlobal (getActorBody target)
   void $ focusIfOurs target
   -- A faction that spawns cannot switch levels (nor move between levels).
   -- Otherwise it would constantly go to a distant level, spawn actors there
@@ -267,7 +260,7 @@ eff Effect.Ascend _ source target power = do
            else (True, actorVerb coactor tm "find a way upstairs")
 eff Effect.Descend _ source target power = do
   Kind.COps{coactor} <- getsGlobal scops
-  tm <- getsGlobal (getActor target)
+  tm <- getsGlobal (getActorBody target)
   void $ focusIfOurs target
   glo <- getGlobal
   if isSpawningFaction glo (bfaction tm)
@@ -286,8 +279,8 @@ nullEffect = return (False, "Nothing happens.")
 squashActor :: MonadAction m => ActorId -> ActorId -> m ()
 squashActor source target = do
   Kind.COps{coactor, coitem=Kind.Ops{okind, ouniqGroup}} <- getsGlobal scops
-  sm <- getsGlobal (getActor source)
-  tm <- getsGlobal (getActor target)
+  sm <- getsGlobal (getActorBody source)
+  tm <- getsGlobal (getActorBody target)
   flavour <- getsServer sflavour
   discoRev <- getsServer sdiscoRev
   let h2hKind = ouniqGroup "weight"
@@ -341,7 +334,7 @@ effLvlGoUp k = do
             pbody = pbodyCurrent {btime = timeAdd timeLastVisited diff}
         -- The player can now be safely added to the new level.
         modifyGlobal (insertActor pl pbody)
-        modifyGlobal (updateAnyActorItem pl (const bitems))
+        modifyGlobal (updateActorItem pl (const bitems))
         -- At this place the invariant is restored again.
         inhabitants <- getsGlobal (posToActor npos)
         case inhabitants of
@@ -359,7 +352,7 @@ effLvlGoUp k = do
         inhabitants2 <- getsGlobal (posToActor npos)
         when (isJust inhabitants2) $ assert `failure` inhabitants2
         -- Land the player at the other end of the stairs.
-        updatePlayerBody (\ p -> p { bpos = npos })
+        modifyGlobal $ updateActorBody pl $ \b -> b { bpos = npos }
         -- The invariant "at most one actor on a tile" restored.
         -- Create a backup of the savegame.
         saveGameBkp
@@ -420,9 +413,9 @@ itemEffectAction verbosity source target item block = do
     modifyGlobal (deleteActor source)
   modifyGlobal (\ s -> s {sarena = sarenaNew})
 
-selectPlayerSer :: MonadAction m => ActorId -> m Bool
-selectPlayerSer actor = do
-  b <- selectPlayer actor
+selectPlayerSer :: MonadAction m => LevelId -> ActorId -> m Bool
+selectPlayerSer lid actor = do
+  b <- selectPlayer lid actor
   State{splayer, sarena} <- getLocal
   modifyGlobal (\s -> s {splayer})
   modifyGlobal (\s -> s {sarena})
@@ -481,35 +474,34 @@ checkPartyDeath = do
     msgAdd $ actorVerb coactor pbody "die"
     go <- displayMore ColorBW ""
     recordHistory  -- Prevent repeating the "die" msgs.
-    let bodyToCorpse = updateAnyActor pl $ \ body -> body {bsymbol = Just '%'}
-        animateDeath = do
+    let animateDeath = do
           cli  <- getClient
           loc <- getLocal
           let animFrs = animate cli loc per $ deathBody (bpos pbody)
           displayFramesPush animFrs
         animateGameOver = do
           animateDeath
-          bodyToCorpse
+          modifyGlobal $ updateActorBody pl $ \b -> b {bsymbol = Just '%'}
           gameOver go
     if configFirstDeathEnds
       then animateGameOver
-      else case filter (/= pl) ahs of
+      else case filter ((/= pl) . snd) ahs of
              [] -> animateGameOver
-             actor : _ -> do
+             (lid, actor) : _ -> do
                msgAdd "The survivors carry on."
                animateDeath
                -- One last look at the beautiful world (e.g., to register
                -- that the lethal potion on the floor is used up).
                remember
                -- Remove the dead player.
-               modifyGlobal deletePlayer
+               modifyGlobal $ deleteActor pl
                -- At this place the invariant that the player exists fails.
                -- Select the new player-controlled hero (invariant not needed),
                -- but don't draw a frame for him with focusIfOurs,
                -- in case the focus changes again during the same turn.
                -- He's just a random next guy in the line.
-               selectPlayerSer actor
-                 >>= assert `trueM` (pl, actor, "player resurrects")
+               selectPlayerSer lid actor
+                 >>= assert `trueM` (pl, lid, actor, "player resurrects")
                -- At this place the invariant is restored again.
 
 -- | End game, showing the ending screens, if requested.

@@ -3,10 +3,10 @@
 -- but not the 'Action' type.
 -- TODO: Document an export list after it's rewritten according to #17.
 module Game.LambdaHack.ActorState
-  ( isProjectile, isAHero, getPlayerBody, findActorAnyLevel, calculateTotal
-  , initialHeroes, deletePlayer, allHeroesAnyLevel
-  , posToActor, deleteActor, addHero, addMonster, updateAnyActorItem
-  , insertActor, heroList, memActor, getActor, updateAnyActorBody
+  ( isProjectile, isAHero, getPlayerBody, calculateTotal
+  , initialHeroes, allHeroesAnyLevel
+  , posToActor, deleteActor, addHero, addMonster, updateActorItem
+  , insertActor, heroList, memActor, getActorBody, updateActorBody
   , hostileList, getActorItem, getPlayerItem, tryFindHeroK, dangerousList
   , factionList, addProjectile, foesAdjacent, targetToPos, hostileAssocs
   ) where
@@ -42,113 +42,13 @@ import Game.LambdaHack.Vector
 
 -- | Checks whether an actor identifier represents a hero.
 isProjectile :: State -> ActorId -> Bool
-isProjectile s a =
-  let (_, actor, _) = findActorAnyLevel a s
-  in bproj actor
+isProjectile s aid = bproj $ getActorBody aid s
 
 -- | Checks whether an actor identifier represents a hero.
 isAHero :: State -> ActorId -> Bool
 isAHero s a =
-  let (_, actor, _) = findActorAnyLevel a s
+  let actor = getActorBody a s
   in bfaction actor == sside s && not (bproj actor)
-
--- The operations with "Any", and those that use them,
--- consider all the dungeon.
--- All the other actor and level operations only consider the current level.
-
--- | Finds an actor body on any level. Fails if not found.
-findActorAnyLevel :: ActorId -> State -> (LevelId, Actor, [Item])
-findActorAnyLevel actor State{sdungeon} =
-  let chk (ln, lvl) =
-        let (m, mi) = (IM.lookup actor (lactor lvl),
-                       IM.lookup actor (linv lvl))
-        in fmap (\ a -> (ln, a, fromMaybe [] mi)) m
-  in case mapMaybe chk (M.toList sdungeon) of
-    []      -> assert `failure` actor
-    res : _ -> res  -- checking if res is unique would break laziness
-
--- | Tries to finds an actor body satisfying a predicate on any level.
-tryFindActor :: State -> (Actor -> Bool) -> Maybe (ActorId, Actor)
-tryFindActor State{sdungeon} p =
-  let chk (_ln, lvl) = L.find (p . snd) $ IM.assocs $ lactor lvl
-  in case mapMaybe chk (M.toList sdungeon) of
-    []      -> Nothing
-    res : _ -> Just res
-
-getPlayerBody :: State -> Actor
-getPlayerBody s@State{splayer} =
-  let (_, actor, _) = findActorAnyLevel splayer s
-  in actor
-
-getPlayerItem :: State -> [Item]
-getPlayerItem s@State{splayer} =
-  let (_, _, items) = findActorAnyLevel splayer s
-  in items
-
--- | The list of actors and their levels for all heroes in the dungeon.
-allHeroesAnyLevel :: State -> [ActorId]
-allHeroesAnyLevel State{sdungeon, sside} =
-  let one (_, lvl) =
-        [ a | (a, m) <- IM.toList $ lactor lvl
-            , bfaction m == sside && not (bproj m) ]
-  in L.concatMap one (M.toList sdungeon)
-
-updateAnyActorBody :: ActorId -> (Actor -> Actor) -> State -> State
-updateAnyActorBody actor f state =
-  let (ln, _, _) = findActorAnyLevel actor state
-  in updateAnyLevel (updateActor $ IM.adjust f actor) ln state
-
-updateAnyActorItem :: ActorId -> ([Item] -> [Item]) -> State -> State
-updateAnyActorItem actor f state =
-  let (ln, _, _) = findActorAnyLevel actor state
-      g Nothing   = Just $ f []
-      g (Just is) = Just $ f is
-  in updateAnyLevel (updateInv $ IM.alter g actor) ln state
-
-updateAnyLevel :: (Level -> Level) -> LevelId -> State -> State
-updateAnyLevel f ln s@State{sarena, sdungeon}
-  | ln == sarena = updateArena f s
-  | otherwise = updateDungeon (const $ M.adjust f ln sdungeon) s
-
--- | Calculate the position of player's target.
-targetToPos :: StateClient -> State -> Maybe Point
-targetToPos StateClient{scursor, starget} s@State{splayer} =
-  case IM.lookup splayer starget of
-    Just (TPos pos) -> Just pos
-    Just (TEnemy a _ll) -> do
-      guard $ memActor a s           -- alive and visible?
-      return $! bpos (getActor a s)
-    Nothing -> Just scursor
-
--- The operations below disregard levels other than the current.
-
--- | Checks if the actor is present on the current level.
--- The order of argument here and in other functions is set to allow
---
--- > b <- getsGlobal (memActor a)
-memActor :: ActorId -> State -> Bool
-memActor a state = IM.member a (lactor (getArena state))
-
--- | Gets actor body from the current level. Error if not found.
-getActor :: ActorId -> State -> Actor
-getActor a state = lactor (getArena state) IM.! a
-
--- | Gets actor's items from the current level. Empty list, if not found.
-getActorItem :: ActorId -> State -> [Item]
-getActorItem a state = fromMaybe [] $ IM.lookup a (linv (getArena state))
-
--- | Removes the actor, if present, from the current level.
-deleteActor :: ActorId -> State -> State
-deleteActor a =
-  updateArena (updateActor (IM.delete a) . updateInv (IM.delete a))
-
--- | Add actor to the current level.
-insertActor :: ActorId -> Actor -> State -> State
-insertActor a m = updateArena (updateActor (IM.insert a m))
-
--- | Removes a player from the current level.
-deletePlayer :: State -> State
-deletePlayer s@State{splayer} = deleteActor splayer s
 
 -- TODO: unify, rename
 hostileAssocs :: FactionId -> Level -> [(ActorId, Actor)]
@@ -173,6 +73,16 @@ factionAssocs l lvl =
 factionList :: [FactionId] -> State -> [Actor]
 factionList l s =
   filter (\ m -> bfaction m `elem` l) $ IM.elems $ lactor $ getArena s
+
+-- | Calculate the position of player's target.
+targetToPos :: StateClient -> State -> Maybe Point
+targetToPos StateClient{scursor, starget} s@State{splayer} =
+  case IM.lookup splayer starget of
+    Just (TPos pos) -> Just pos
+    Just (TEnemy a _ll) -> do
+      guard $ memActor a s           -- alive and visible?
+      return $! bpos (getActorBody a s)
+    Nothing -> Just scursor
 
 -- | Finds an actor at a position on the current level. Perception irrelevant.
 posToActor :: Point -> State -> Maybe ActorId
@@ -211,13 +121,6 @@ foesAdjacent lxsize lysize loc foes =
   in not $ IS.null $ IS.intersection vic lfs
 
 -- Adding heroes
-
-tryFindHeroK :: State -> Int -> Maybe ActorId
-tryFindHeroK s k =
-  let c | k == 0          = '@'
-        | k > 0 && k < 10 = Char.intToDigit k
-        | otherwise       = assert `failure` k
-  in fmap fst $ tryFindActor s ((== Just c) . bsymbol)
 
 -- | Create a new hero on the current level, close to the given position.
 addHero :: Kind.COps -> Point -> State -> StateServer
@@ -295,3 +198,72 @@ addProjectile Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}}
             . updateInv (IM.insert scounter [item])
   in ( updateArena upd state
      , ser {scounter = scounter + 1} )
+
+-- * These few operations look at all levels of the dungeon.
+
+-- | The list of actors and their levels for all heroes in the dungeon.
+allHeroesAnyLevel :: State -> [(LevelId, ActorId)]
+allHeroesAnyLevel State{sdungeon, sside} =
+  let one (ln, lvl) =
+        [ (ln, a) | (a, m) <- IM.toList $ lactor lvl
+            , bfaction m == sside && not (bproj m) ]
+  in L.concatMap one (M.toList sdungeon)
+
+-- | Tries to finds an actor body satisfying a predicate on any level.
+tryFindActor :: State -> (Actor -> Bool) -> Maybe (LevelId, ActorId)
+tryFindActor State{sdungeon} p =
+  let chk (ln, lvl) =
+        fmap (\a -> (ln, a)) $ L.find (p . snd) $ IM.assocs $ lactor lvl
+  in case mapMaybe chk (M.toList sdungeon) of
+    [] -> Nothing
+    (ln, (aid, _)) : _ -> Just (ln, aid)
+
+tryFindHeroK :: State -> Int -> Maybe (LevelId, ActorId)
+tryFindHeroK s k =
+  let c | k == 0          = '@'
+        | k > 0 && k < 10 = Char.intToDigit k
+        | otherwise       = assert `failure` k
+  in tryFindActor s ((== Just c) . bsymbol)
+
+-- * The operations below disregard levels other than the current.
+
+-- | Gets actor body from the current level. Error if not found.
+getActorBody :: ActorId -> State -> Actor
+getActorBody a state = lactor (getArena state) IM.! a
+
+getPlayerBody :: State -> Actor
+getPlayerBody s@State{splayer} = getActorBody splayer s
+
+updateActorBody :: ActorId -> (Actor -> Actor) -> State -> State
+updateActorBody actor f s = updateArena (updateActor $ IM.adjust f actor) s
+
+-- | Gets actor's items from the current level. Empty list, if not found.
+getActorItem :: ActorId -> State -> [Item]
+getActorItem a state = fromMaybe [] $ IM.lookup a (linv (getArena state))
+
+getPlayerItem :: State -> [Item]
+getPlayerItem s@State{splayer} = getActorItem splayer s
+
+updateActorItem :: ActorId -> ([Item] -> [Item]) -> State -> State
+updateActorItem actor f s =
+  let g Nothing   = pack $ f []
+      g (Just is) = pack $ f is
+      pack [] = Nothing
+      pack x  = Just x
+  in updateArena (updateInv $ IM.alter g actor) s
+
+-- | Checks if the actor is present on the current level.
+-- The order of argument here and in other functions is set to allow
+--
+-- > b <- getsGlobal (memActor a)
+memActor :: ActorId -> State -> Bool
+memActor a state = IM.member a (lactor (getArena state))
+
+-- | Add actor to the current level.
+insertActor :: ActorId -> Actor -> State -> State
+insertActor a m = updateArena (updateActor (IM.insert a m))
+
+-- | Removes the actor, if present, from the current level.
+deleteActor :: ActorId -> State -> State
+deleteActor a =
+  updateArena (updateActor (IM.delete a) . updateInv (IM.delete a))

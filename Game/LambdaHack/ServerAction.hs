@@ -94,7 +94,7 @@ removeFromInventory :: MonadServer m => ActorId -> Item -> Point -> m ()
 removeFromInventory actor i pos = do
   b <- removeFromPos i pos
   unless b $
-    modifyGlobal (updateAnyActorItem actor (removeItemByLetter i))
+    modifyGlobal (updateActorItem actor (removeItemByLetter i))
 
 -- | Remove given item from the given position. Tell if successful.
 removeFromPos :: MonadServer m => Item -> Point -> m Bool
@@ -123,7 +123,7 @@ projectSer :: MonadAction m
            -> m ()
 projectSer source tpos _verb item = do
   cops@Kind.COps{coactor, coitem} <- getsLocal scops
-  sm    <- getsLocal (getActor source)
+  sm    <- getsLocal (getActorBody source)
   per   <- askPerceptionSer
   pl    <- getsLocal splayer
   Actor{btime}  <- getsLocal getPlayerBody
@@ -211,21 +211,21 @@ triggerSer dpos = do
 
 pickupSer :: MonadServer m => ActorId -> Item -> Char -> m ()
 pickupSer aid i l = do
-  p <- getsGlobal (bpos . getActor aid)
+  p <- getsGlobal (bpos . getActorBody aid)
   bitems <- getsGlobal (getActorItem aid)
   removeFromPos i p
     >>= assert `trueM` (aid, i, p, "item is stuck")
   let (ni, nitems) = joinItem (i { jletter = Just l }) bitems
-  updateAnyActor aid $ \ m ->
+  modifyGlobal $ updateActorBody aid $ \m ->
     m { bletter = maxLetter (fromJust $ jletter ni) (bletter m) }
-  modifyGlobal (updateAnyActorItem aid (const nitems))
+  modifyGlobal (updateActorItem aid (const nitems))
 
 -- ** DropSer
 
 dropSer :: MonadServer m => ActorId -> Item -> m ()
 dropSer aid item = do
-  pos  <- getsGlobal (bpos . getActor aid)
-  modifyGlobal (updateAnyActorItem aid (removeItemByLetter item))
+  pos  <- getsGlobal (bpos . getActorBody aid)
+  modifyGlobal (updateActorItem aid (removeItemByLetter item))
   modifyGlobal (updateArena (dropItemsAt [item] pos))
 
 -- * WaitSer
@@ -235,7 +235,8 @@ waitSer :: MonadServer m => ActorId -> m ()
 waitSer actor = do
   Kind.COps{coactor} <- getsGlobal scops
   time <- getsGlobal getTime
-  updateAnyActor actor $ \ m -> m {bwait = timeAddFromSpeed coactor m time}
+  modifyGlobal $ updateActorBody actor $ \ m ->
+    m {bwait = timeAddFromSpeed coactor m time}
 
 -- ** MoveSer
 
@@ -250,7 +251,7 @@ moveSer :: MonadAction m => ActorId -> Vector -> m ()
 moveSer actor dir = do
   cops@Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getsGlobal scops
   lvl <- getsGlobal getArena
-  sm <- getsGlobal (getActor actor)
+  sm <- getsGlobal (getActorBody actor)
   let spos = bpos sm           -- source position
       tpos = spos `shift` dir  -- target position
   -- We start by looking at the target position.
@@ -262,7 +263,7 @@ moveSer actor dir = do
     Nothing
       | accessible cops lvl spos tpos ->
           -- Perform the actual move.
-          updateAnyActor actor $ \ body -> body {bpos = tpos}
+          modifyGlobal $ updateActorBody actor $ \ body -> body {bpos = tpos}
       | Tile.canBeHidden cotile (okind $ lvl `at` tpos) -> do
           msgAdd "You search all adjacent walls for half a second."
           search actor
@@ -276,8 +277,8 @@ moveSer actor dir = do
 -- but for melee and not using up the weapon.
 actorAttackActor :: MonadAction m => ActorId -> ActorId -> m ()
 actorAttackActor source target = do
-  smRaw <- getsGlobal (getActor source)
-  tmRaw <- getsGlobal (getActor target)
+  smRaw <- getsGlobal (getActorBody source)
+  tmRaw <- getsGlobal (getActorBody target)
   per   <- askPerception
   time  <- getsGlobal getTime
   s <- getGlobal
@@ -358,7 +359,7 @@ search aid = do
   lvl <- getsGlobal getArena
   lsecret <- getsGlobal (lsecret . getArena)
   lxsize <- getsGlobal (lxsize . getArena)
-  ppos <- getsGlobal (bpos . getActor aid)
+  ppos <- getsGlobal (bpos . getActorBody aid)
   pitems <- getsGlobal (getActorItem aid)
   discoS <- getsGlobal sdisco
   let delta = timeScale timeTurn $
@@ -393,7 +394,7 @@ actorOpenDoor actor dir = do
   Kind.COps{cotile} <- getsGlobal scops
   lvl<- getsGlobal getArena
   pl <- getsGlobal splayer
-  body <- getsGlobal (getActor actor)
+  body <- getsGlobal (getActorBody actor)
   let dpos = shift (bpos body) dir  -- the position we act upon
       t = lvl `at` dpos
       isPlayer = actor == pl
@@ -414,7 +415,7 @@ runSer :: MonadAction m => ActorId -> Vector -> m ()
 runSer actor dir = do
   cops <- getsGlobal scops
   lvl <- getsGlobal getArena
-  sm <- getsGlobal (getActor actor)
+  sm <- getsGlobal (getActorBody actor)
   let spos = bpos sm           -- source position
       tpos = spos `shift` dir  -- target position
   -- We start by looking at the target position.
@@ -428,7 +429,7 @@ runSer actor dir = do
     Nothing
       | accessible cops lvl spos tpos ->
           -- Perform the actual move.
-          updateAnyActor actor $ \ body -> body {bpos = tpos}
+          modifyGlobal $ updateActorBody actor $ \ body -> body {bpos = tpos}
       | otherwise ->
           actorOpenDoor actor dir
 
@@ -436,12 +437,12 @@ runSer actor dir = do
 displaceActor :: MonadAction m => ActorId -> ActorId -> m ()
 displaceActor source target = do
   pl <- getsGlobal splayer
-  sm <- getsGlobal (getActor source)
-  tm <- getsGlobal (getActor target)
+  sm <- getsGlobal (getActorBody source)
+  tm <- getsGlobal (getActorBody target)
   let spos = bpos sm
       tpos = bpos tm
-  updateAnyActor source $ \ m -> m { bpos = tpos }
-  updateAnyActor target $ \ m -> m { bpos = spos }
+  modifyGlobal $ updateActorBody source $ \ m -> m { bpos = tpos }
+  modifyGlobal $  updateActorBody target $ \ m -> m { bpos = spos }
   Kind.COps{coactor} <- getsGlobal scops
   per <- askPerception
   let visible = spos `IS.member` totalVisible per ||

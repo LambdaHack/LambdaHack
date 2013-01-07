@@ -24,7 +24,6 @@ import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.StrategyKind
 import qualified Game.LambdaHack.Effect as Effect
-import Game.LambdaHack.EffectAction
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Item
@@ -50,7 +49,7 @@ targetStrategy actor = do
   per <- askPerception
   loc <- getLocal
   cli <- getClient
-  let Actor{bfaction} = getActor actor loc
+  let Actor{bfaction} = getActorBody actor loc
       factionAI = gAiIdle $ sfaction loc IM.! bfaction
       factionAbilities = sabilities (okind factionAI)
   return $! reacquireTgt cops actor cli loc per factionAbilities
@@ -64,7 +63,7 @@ reacquireTgt cops actor cli loc per factionAbilities =
   Kind.COps{coactor=coactor@Kind.Ops{okind}} = cops
   lvl@Level{lxsize} = getArena loc
   actorBody@Actor{ bkind, bpos = me, bfaction, bpath } =
-    getActor actor loc
+    getActorBody actor loc
   btarget = IM.lookup actor . starget $ cli
   mk = okind bkind
   enemyVisible l =
@@ -85,7 +84,7 @@ reacquireTgt cops actor cli loc per factionAbilities =
     case tgt of
       Just (TEnemy a ll) | focused
                     && memActor a loc ->  -- present on this level
-        let l = bpos $ getActor a loc
+        let l = bpos $ getActorBody a loc
         in if enemyVisible l           -- prefer visible foes
            then returN "TEnemy" $ Just $ TEnemy a l
            else if null visibleFoes    -- prefer visible foes
@@ -124,7 +123,7 @@ actionStrategy actor = do
   cops@Kind.COps{costrat=Kind.Ops{okind}} <- getsLocal scops
   loc <- getLocal
   cli <- getClient
-  let Actor{bfaction} = getActor actor loc
+  let Actor{bfaction} = getActorBody actor loc
       factionAI = gAiIdle $ sfaction loc IM.! bfaction
       factionAbilities = sabilities (okind factionAI)
   return $! proposeAction cops actor cli loc factionAbilities
@@ -137,7 +136,7 @@ proposeAction cops actor cli loc factionAbilities =
   .| waitBlockNow actor  -- wait until friends sidestep, ensures never empty
  where
   Kind.COps{coactor=Kind.Ops{okind}} = cops
-  Actor{ bkind, bpos, bpath } = getActor actor loc
+  Actor{ bkind, bpos, bpath } = getActorBody actor loc
   btarget = IM.lookup actor . starget $ cli
   (fpos, foeVisible) | isJust bpath = (bpos, False)  -- a missile
                      | otherwise =
@@ -177,7 +176,7 @@ proposeAction cops actor cli loc factionAbilities =
 dirToAction :: MonadAction m => ActorId -> Bool -> Vector -> m ()
 dirToAction actor allowAttacks dir = do
   -- set new direction
-  updateAnyActor actor $ \ m -> m { bdirAI = Just (dir, 0) }
+  modifyGlobal $ updateActorBody actor $ \ m -> m { bdirAI = Just (dir, 0) }
   -- perform action
   tryWith (\ msg -> if T.null msg
                     then return ()
@@ -197,7 +196,7 @@ waitBlockNow actor = returN "wait" $ waitSer actor
 dieNow :: MonadAction m => ActorId -> Strategy (m ())
 dieNow actor = returN "die" $ do  -- TODO: explode if a potion
   bitems <- getsGlobal (getActorItem actor)
-  Actor{bpos} <- getsGlobal (getActor actor)
+  Actor{bpos} <- getsGlobal (getActorBody actor)
   modifyGlobal (updateArena (dropItemsAt bitems bpos))
   modifyGlobal (deleteActor actor)
 
@@ -208,11 +207,12 @@ track cops actor loc =
   strat
  where
   lvl = getArena loc
-  Actor{ bpos, bpath, bhp } = getActor actor loc
-  darkenActor = updateAnyActor actor $ \ m -> m {bcolor = Just Color.BrBlack}
+  Actor{ bpos, bpath, bhp } = getActorBody actor loc
+  darkenActor = modifyGlobal $ updateActorBody actor $ \ m ->
+    m {bcolor = Just Color.BrBlack}
   dieOrReset | bhp <= 0  = dieNow actor
              | otherwise =
-                 returN "reset TPath" $ updateAnyActor actor
+                 returN "reset TPath" $ modifyGlobal $ updateActorBody actor
                  $ \ m -> m {bpath = Nothing}
   strat = case bpath of
     Just [] -> dieOrReset
@@ -220,10 +220,10 @@ track cops actor loc =
     -- TODO: perhaps colour differently the whole second turn of movement?
     Just [d] -> returN "last TPath" $ do
       darkenActor
-      updateAnyActor actor $ \ m -> m { bpath = Just [] }
+      modifyGlobal $ updateActorBody actor $ \ m -> m { bpath = Just [] }
       dirToAction actor True d
     Just (d : lv) -> returN "follow TPath" $ do
-      updateAnyActor actor $ \ m -> m { bpath = Just lv }
+      modifyGlobal $ updateActorBody actor $ \ m -> m { bpath = Just lv }
       dirToAction actor True d
     Nothing -> reject
 
@@ -232,7 +232,7 @@ pickup actor loc =
   lootHere bpos .=> actionPickup
  where
   lvl = getArena loc
-  Actor{bpos} = getActor actor loc
+  Actor{bpos} = getActorBody actor loc
   lootHere x = not $ L.null $ lvl `atI` x
   actionPickup = returN "pickup" $ actorPickupItem actor >>= cmdSer
 
@@ -241,7 +241,7 @@ melee actor loc fpos =
   foeAdjacent .=> (returN "melee" $ dirToAction actor True dir)
  where
   Level{lxsize} = getArena loc
-  Actor{bpos} = getActor actor loc
+  Actor{bpos} = getActorBody actor loc
   foeAdjacent = adjacent lxsize bpos fpos
   dir = displacement bpos fpos
 
@@ -260,7 +260,7 @@ rangedFreq cops actor loc fpos =
            , corule
            } = cops
   lvl@Level{lxsize, lysize} = getArena loc
-  Actor{ bkind, bpos, bfaction } = getActor actor loc
+  Actor{ bkind, bpos, bfaction } = getActorBody actor loc
   bitems = getActorItem actor loc
   mk = okind bkind
   tis = lvl `atI` bpos
@@ -296,7 +296,7 @@ toolsFreq cops actor loc =
  where
   Kind.COps{coitem=Kind.Ops{okind=iokind}} = cops
   lvl = getArena loc
-  Actor{bpos} = getActor actor loc
+  Actor{bpos} = getActorBody actor loc
   bitems = getActorItem actor loc
   tis = lvl `atI` bpos
   quaffFreq is multi =
@@ -353,7 +353,7 @@ moveStrategy cops actor loc mFoe =
            , coactor=Kind.Ops{okind}
            } = cops
   lvl@Level{lsmell, lxsize, lysize, ltime} = getArena loc
-  Actor{ bkind, bpos, bdirAI, bfaction } = getActor actor loc
+  Actor{ bkind, bpos, bdirAI, bfaction } = getActorBody actor loc
   mk = okind bkind
   lootHere x = not $ L.null $ lvl `atI` x
   onlyLoot   = onlyMoves lootHere bpos
