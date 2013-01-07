@@ -168,7 +168,7 @@ generate cops flavour discoRev config@Config{configDepth}  =
 whereTo :: State  -- ^ game state
         -> Int    -- ^ jump this many levels
         -> Maybe (LevelId, Point)
-             -- ^ target level and the position of its receiving stairs
+                  -- ^ target level and the position of its receiving stairs
 whereTo State{sarena, sdungeon} k = assert (k /= 0) $
   let n = levelNumber sarena
       nln = n - k

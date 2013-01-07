@@ -128,7 +128,7 @@ projectSer source tpos _verb item = do
   pl    <- getsLocal splayer
   Actor{btime}  <- getsLocal getPlayerBody
   lvl   <- getsLocal getArena
-  ceps  <- getsClient (ceps . scursor)
+  seps  <- getsClient seps
   lxsize <- getsLocal (lxsize . getArena)
   lysize <- getsLocal (lysize . getArena)
   sside <- getsLocal sside
@@ -147,7 +147,7 @@ projectSer source tpos _verb item = do
         [ MU.SubjectVerbSg (partActor coactor subject) "aim"
         , partItemNWs coitem disco consumed ]
       -- TODO: AI should choose the best eps.
-      eps = if source == pl then ceps else 0
+      eps = if source == pl then seps else 0
       -- Setting monster's projectiles time to player time ensures
       -- the projectile covers the whole normal distance already the first
       -- turn that the player observes it moving. This removes

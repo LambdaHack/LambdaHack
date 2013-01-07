@@ -26,7 +26,7 @@ import Game.LambdaHack.Vector
 cmdAction :: MonadAction m => StateClient -> State -> Cmd
           -> (Bool, WriterT Slideshow m ())
 cmdAction cli s cmd =
-  let targeting = ctargeting (scursor cli)
+  let targeting = stgtMode cli
       pl = splayer s
       sm = getActor pl s
       ppos = bpos sm

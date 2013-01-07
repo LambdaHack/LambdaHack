@@ -47,7 +47,7 @@ data ColorMode =
 draw :: ColorMode -> Kind.COps -> Perception -> StateClient -> State -> Overlay
      -> SingleFrame
 draw dm cops per
-     StateClient{scursor=Cursor{..}, sdebugCli}
+     StateClient{stgtMode, scursor, seps, sdebugCli}
      s@State{sdisco, sarena, splayer, sdungeon}
      overlay =
   let Kind.COps{ coactor=Kind.Ops{okind}
@@ -56,9 +56,9 @@ draw dm cops per
       DebugModeCli{smarkVision, smarkSmell} = sdebugCli
       (drawnLevelId, lvl@Level{lxsize, lysize, lsmell,
                                ldesc, lactor, ltime, lseen, lclear}) =
-        case ctargeting of
+        case stgtMode of
           TgtOff -> (sarena, getArena s)
-          _ -> (tgtLevelId ctargeting, sdungeon M.! tgtLevelId ctargeting)
+          _ -> (tgtLevelId stgtMode, sdungeon M.! tgtLevelId stgtMode)
       (creturnLn, mpl@Actor{bkind, bhp, bpos}, bitems) =
         findActorAnyLevel splayer s
       ActorKind{ahp, asmell} = okind bkind
@@ -84,7 +84,7 @@ draw dm cops per
                           _ -> showT (Item.jpower sw)
                       Nothing -> "3d1"  -- TODO: ?
                   Nothing -> "3d1"  -- TODO; use the item 'fist'
-      bl = fromMaybe [] $ bla lxsize lysize ceps bpos cposition
+      bl = fromMaybe [] $ bla lxsize lysize seps bpos scursor
       dis pxy =
         let pos0 = toPoint lxsize pxy
             tile = lvl `at` pos0
@@ -104,8 +104,8 @@ draw dm cops per
             actorsHere = IM.elems lactor
             (char, fg0) =
               case ( L.find (\ m -> pos0 == Actor.bpos m) actorsHere
-                   , L.find (\ m -> cposition == Actor.bpos m) actorsHere ) of
-                (_, actorTgt) | ctargeting /= TgtOff
+                   , L.find (\ m -> scursor == Actor.bpos m) actorsHere ) of
+                (_, actorTgt) | stgtMode /= TgtOff
                                 && (drawnLevelId == creturnLn
                                     && L.elem pos0 bl
                                     || (case actorTgt of
@@ -130,7 +130,7 @@ draw dm cops per
                     i : _ -> Item.viewItem i
             vis = IS.member pos0 visible
             rea = IS.member pos0 reachable
-            bg0 = if ctargeting /= TgtOff && pos0 == cposition
+            bg0 = if stgtMode /= TgtOff && pos0 == scursor
                   then Color.defFG     -- highlight target cursor
                   else sVisBG vis rea  -- FOV debug or standard bg
             reverseVideo = Color.Attr{ fg = Color.bg Color.defAttr

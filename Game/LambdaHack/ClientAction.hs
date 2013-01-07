@@ -52,13 +52,12 @@ default (Text)
 
 retarget :: MonadClient m => WriterT Slideshow m ()
 retarget = do
-  ctargeting <- getsClient (ctargeting . scursor)
-  assert (ctargeting == TgtOff) $ do
+  stgtMode <- getsClient stgtMode
+  assert (stgtMode == TgtOff) $ do
     sarena <- getsLocal sarena
     ppos <- getsLocal (bpos . getPlayerBody)
     msgAdd "Last target invalid."
-    let upd cursor = cursor {cposition = ppos, ceps = 0}
-    modifyClient (updateCursor upd)
+    modifyClient $ \cli -> cli {scursor = ppos, seps = 0}
     targetMonster $ TgtAuto sarena
 
 -- ** Move and Run
@@ -67,17 +66,16 @@ moveCursor :: MonadClient m => Vector -> Int -> WriterT Slideshow m ()
 moveCursor dir n = do
   Level{lxsize, lysize} <- cursorLevel
   let shiftB pos = shiftBounded lxsize (1, 1, lxsize - 2, lysize - 2) pos dir
-      upd cursor = cursor {cposition = iterate shiftB (cposition cursor) !! n}
-  modifyClient (updateCursor upd)
+  modifyClient $ \cli -> cli {scursor = iterate shiftB (scursor cli) !! n}
   doLook
 
 cursorLevel :: MonadClientRO m => m Level
 cursorLevel = do
   sdungeon <- getsLocal sdungeon
-  ctargeting <- getsClient (ctargeting . scursor)
-  let tgtId = case ctargeting of
+  stgtMode <- getsClient stgtMode
+  let tgtId = case stgtMode of
         TgtOff -> assert `failure` "not targetting right now"
-        _ -> tgtLevelId ctargeting
+        _ -> tgtLevelId stgtMode
   return $! sdungeon M.! tgtId
 
 -- TODO: probably move somewhere (Level?)
@@ -94,10 +92,10 @@ lookAt detailed canSee pos msg = do
   Kind.COps{coitem, cotile=Kind.Ops{oname}} <- getsLocal scops
   sarena <- getsLocal sarena
   sdungeon <- getsLocal sdungeon
-  ctargeting <- getsClient (ctargeting . scursor)
-  let tgtId = case ctargeting of
+  stgtMode <- getsClient stgtMode
+  let tgtId = case stgtMode of
         TgtOff -> sarena
-        _ -> tgtLevelId ctargeting
+        _ -> tgtLevelId stgtMode
       lvl = sdungeon M.! tgtId
       is = lvl `atI` pos
       prefixSee = MU.Text $ if canSee then "you see" else "you remember"
@@ -119,7 +117,7 @@ lookAt detailed canSee pos msg = do
 doLook :: MonadClient m => WriterT Slideshow m ()
 doLook = do
   Kind.COps{coactor} <- getsLocal scops
-  p <- getsClient (cposition . scursor)
+  p <- getsClient scursor
   per <- askPerception
   pl <- getsLocal splayer
   target <- getsClient (IM.lookup pl . starget)
@@ -195,11 +193,11 @@ itemOverlay disco sorted is = do
 
 -- | Start the floor targeting mode or reset the cursor position to the player.
 targetFloor :: MonadClient m => TgtMode -> WriterT Slideshow m ()
-targetFloor tgtMode = do
+targetFloor stgtModeNew = do
   ppos <- getsLocal (bpos . getPlayerBody)
   pl <- getsLocal splayer
   target <- getsClient (IM.lookup pl . starget)
-  targeting <- getsClient (ctargeting . scursor)
+  targeting <- getsClient stgtMode
   let tgt = case target of
         Just (TEnemy _ _) -> Nothing  -- forget enemy target, keep the cursor
         _ | targeting /= TgtOff ->
@@ -207,31 +205,30 @@ targetFloor tgtMode = do
         t -> t  -- keep the target from previous targeting session
   -- Register that we want to target only positions.
   modifyClient $ updateTarget pl (const tgt)
-  setCursor tgtMode
+  setCursor stgtModeNew
 
 -- | Set, activate and display cursor information.
 setCursor :: MonadClient m => TgtMode -> WriterT Slideshow m ()
-setCursor tgtMode = assert (tgtMode /= TgtOff) $ do
+setCursor stgtModeNew = assert (stgtModeNew /= TgtOff) $ do
   loc <- getLocal
   cli <- getClient
   ppos <- getsLocal (bpos . getPlayerBody)
-  let upd Cursor{ ctargeting=ctargetingOld
-                , cposition=cpositionOld
-                , ceps=cepsOld} =
-        let cposition = fromMaybe ppos (targetToPos cli loc)
-            ceps = if cposition == cpositionOld then cepsOld else 0
-            ctargeting = if ctargetingOld == TgtOff
-                         then tgtMode
-                         else ctargetingOld
-        in Cursor{..}
-  modifyClient (updateCursor upd)
+  stgtModeOld <- getsClient stgtMode
+  scursorOld <- getsClient scursor
+  sepsOld <- getsClient seps
+  let scursor = fromMaybe ppos (targetToPos cli loc)
+      seps = if scursor == scursorOld then sepsOld else 0
+      stgtMode = if stgtModeOld == TgtOff
+                   then stgtModeNew
+                   else stgtModeOld
+  modifyClient $ \cli2 -> cli2 {scursor, seps, stgtMode}
   doLook
 
 -- ** TgtEnemy
 
 -- | Start the monster targeting mode. Cycle between monster targets.
 targetMonster :: MonadClient m => TgtMode -> WriterT Slideshow m ()
-targetMonster tgtMode = do
+targetMonster stgtModeNew = do
   pl <- getsLocal splayer
   ppos <- getsLocal (bpos . getPlayerBody)
   sside <- getsLocal sside
@@ -240,17 +237,17 @@ targetMonster tgtMode = do
   -- TODO: sort monsters by distance to the player.
   sarena <- getsLocal sarena
   sdungeon <- getsLocal sdungeon
-  ctargeting <- getsClient (ctargeting . scursor)
-  let tgtId = case ctargeting of
+  stgtMode <- getsClient stgtMode
+  let tgtId = case stgtMode of
         TgtOff -> sarena
-        _ -> tgtLevelId ctargeting
+        _ -> tgtLevelId stgtMode
       lvl@Level{lxsize} = sdungeon M.! tgtId
       ms = hostileAssocs sside lvl
       plms = filter ((/= pl) . fst) ms  -- don't target yourself
       ordPos (_, m) = (chessDist lxsize ppos $ bpos m, bpos m)
       dms = sortBy (comparing ordPos) plms
       (lt, gt) = case target of
-            Just (TEnemy n _) | ctargeting /= TgtOff ->  -- pick next monster
+            Just (TEnemy n _) | stgtMode /= TgtOff ->  -- pick next monster
               let i = fromMaybe (-1) $ findIndex ((== n) . fst) dms
               in splitAt (i + 1) dms
             Just (TEnemy n _) ->  -- try to retarget the old monster
@@ -268,7 +265,7 @@ targetMonster tgtMode = do
               (na, nm) : _ -> Just (TEnemy na (bpos nm))  -- pick the next
   -- Register the chosen monster, to pick another on next invocation.
   modifyClient $ updateTarget pl (const tgt)
-  setCursor tgtMode
+  setCursor stgtModeNew
 
 -- ** TgtAscend
 
@@ -279,13 +276,13 @@ tgtAscend k = do
   Kind.COps{cotile} <- getsLocal scops
   loc <- getLocal
   depth <- getsLocal sdepth
-  cpos <- getsClient (cposition . scursor)
+  cpos <- getsClient scursor
   sarena <- getsLocal sarena
   sdungeon <- getsLocal sdungeon
-  ctargeting <- getsClient (ctargeting . scursor)
-  let tgtId = case ctargeting of
+  stgtMode <- getsClient stgtMode
+  let tgtId = case stgtMode of
         TgtOff -> sarena
-        _ -> tgtLevelId ctargeting
+        _ -> tgtLevelId stgtMode
       lvl = sdungeon M.! tgtId
       tile = lvl `at` cpos
       rightStairs =
@@ -298,13 +295,11 @@ tgtAscend k = do
       Just (nln, npos) ->
         assert (nln /= tgtId `blame` (nln, "stairs looped")) $ do
           -- Do not freely reveal the other end of the stairs.
-          let upd cur =
-                let cposition =
-                      if Tile.hasFeature cotile F.Exit (lvl `at` npos)
-                      then npos  -- already know as an exit, focus on it
-                      else cpos  -- unknown, do not reveal
-                in cur {cposition}
-          modifyClient (updateCursor upd)
+          let scursor =
+                if Tile.hasFeature cotile F.Exit (lvl `at` npos)
+                then npos  -- already know as an exit, focus on it
+                else cpos  -- unknown, do not reveal
+          modifyClient $ \cli -> cli {scursor}
           setTgtId nln
     else do  -- no stairs in the right direction
       let n = levelNumber tgtId
@@ -315,24 +310,19 @@ tgtAscend k = do
 
 setTgtId :: MonadClient m => LevelId -> m ()
 setTgtId nln = do
-  ctargeting <- getsClient (ctargeting . scursor)
-  case ctargeting of
-    TgtAuto _ -> do
-      let upd cur = cur {ctargeting = TgtAuto nln}
-      modifyClient (updateCursor upd)
-    _ -> do
-      let upd cur = cur {ctargeting = TgtExplicit nln}
-      modifyClient (updateCursor upd)
+  stgtMode <- getsClient stgtMode
+  case stgtMode of
+    TgtAuto _ -> modifyClient $ \cli -> cli {stgtMode = TgtAuto nln}
+    _ -> modifyClient $ \cli -> cli {stgtMode = TgtExplicit nln}
 
 -- ** EpsIncr
 
 -- | Tweak the @eps@ parameter of the targeting digital line.
 epsIncr :: MonadClient m => Bool -> m ()
 epsIncr b = do
-  targeting <- getsClient (ctargeting . scursor)
+  targeting <- getsClient stgtMode
   if targeting /= TgtOff
-    then modifyClient $ updateCursor $
-           \ c@Cursor{ceps} -> c {ceps = ceps + if b then 1 else -1}
+    then modifyClient $ \cli -> cli {seps = seps cli + if b then 1 else -1}
     else neverMind True  -- no visual feedback, so no sense
 
 -- ** Cancel
@@ -341,7 +331,7 @@ epsIncr b = do
 -- to the position of the player. Chosen target is not invalidated.
 cancelCurrent :: MonadClient m => WriterT Slideshow m () -> WriterT Slideshow m ()
 cancelCurrent h = do
-  targeting <- getsClient (ctargeting . scursor)
+  targeting <- getsClient stgtMode
   if targeting /= TgtOff
     then lift $ endTargeting False
     else h  -- nothing to cancel right now, treat this as a command invocation
@@ -400,7 +390,7 @@ displayMainMenu = do
 -- Or perform the default action, if nothing needs accepting.
 acceptCurrent :: MonadClient m => WriterT Slideshow m () -> WriterT Slideshow m ()
 acceptCurrent h = do
-  targeting <- getsClient (ctargeting . scursor)
+  targeting <- getsClient stgtMode
   if targeting /= TgtOff
     then lift $ endTargeting True
     else h  -- nothing to accept right now, treat this as a command invocation
@@ -412,7 +402,7 @@ endTargeting accept = do
     pl <- getsLocal splayer
     target <- getsClient (IM.lookup pl . starget)
     per <- askPerception
-    cpos <- getsClient (cposition . scursor)
+    cpos <- getsClient scursor
     sside <- getsLocal sside
     lvl <- cursorLevel
     let ms = hostileAssocs sside lvl
@@ -431,7 +421,7 @@ endTargeting accept = do
   if accept
     then endTargetingMsg
     else msgAdd "targeting canceled"
-  modifyClient (updateCursor (\ c -> c { ctargeting = TgtOff }))
+  modifyClient $ \cli -> cli { stgtMode = TgtOff }
 
 endTargetingMsg :: MonadClient m => m ()
 endTargetingMsg = do
@@ -496,7 +486,7 @@ selectPlayer :: MonadClient m => ActorId -> m Bool
 selectPlayer actor = do
   Kind.COps{coactor} <- getsLocal scops
   pl <- getsLocal splayer
-  ctargeting <- getsClient (ctargeting . scursor)
+  stgtMode <- getsClient stgtMode
   if actor == pl
     then return False -- already selected
     else do
@@ -505,7 +495,7 @@ selectPlayer actor = do
       -- Switch to the new level.
       modifyLocal (\ s -> s {sarena = nln})
       -- Move the cursor, if active, to the new level.
-      when (ctargeting /= TgtOff) $ setTgtId nln
+      when (stgtMode /= TgtOff) $ setTgtId nln
       -- Make the new actor the player-controlled actor.
       modifyLocal (\ s -> s {splayer = actor})
       -- Don't continue an old run, if any.
@@ -551,7 +541,7 @@ displayHelp = do
 
 selectHero :: MonadClient m => Int -> m ()
 selectHero k = do
-  s <- getLocal
-  case tryFindHeroK s k of
+  loc <- getLocal
+  case tryFindHeroK loc k of
     Nothing  -> abortWith "No such member of the party."
     Just aid -> void $ selectPlayer aid

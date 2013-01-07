@@ -32,7 +32,7 @@ runDir (dir, dist) = do
   cops <- getsLocal scops
   posHere <- getsLocal (bpos . getPlayerBody)
   lvl <- getsLocal getArena
-  targeting <- getsClient (ctargeting . scursor)
+  targeting <- getsClient stgtMode
   assert (targeting == TgtOff `blame` (dir, dist, targeting, "/= TgtOff")) $ do
     let accessibleDir loc d = accessible cops lvl loc (loc `shift` d)
         -- Do not count distance if we just open a door.

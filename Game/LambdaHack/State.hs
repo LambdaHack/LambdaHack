@@ -6,10 +6,9 @@ module Game.LambdaHack.State
   , getArena, getTime
   , isControlledFaction, isSpawningFaction
   , StateServer(..), defStateServer
-  , StateClient(..), defStateClient, defHistory
-  , updateCursor, updateTarget
+  , StateClient(..), defStateClient, defHistory, updateTarget
   , StateDict
-  , TgtMode(..), Cursor(..), Target(..)
+  , TgtMode(..), Target(..)
   , DebugModeSer(..), cycleTryFov
   , DebugModeCli(..), toggleMarkVision, toggleMarkSmell, toggleOmniscient
   ) where
@@ -60,8 +59,8 @@ data State = State
   , sfaction :: !FactionDict  -- ^ remembered sides still in game
   , scops    :: Kind.COps     -- ^ remembered content
   , splayer  :: !ActorId      -- ^ selected actor
-  , sside    :: !FactionId    -- ^ selected faction
-  , sarena   :: !LevelId      -- ^ selected level
+  , sside    :: !FactionId    -- ^ faction of the selected actor
+  , sarena   :: !LevelId      -- ^ level of the selected actor
   }
   deriving Show
 
@@ -81,7 +80,9 @@ data StateServer = StateServer
 -- Some of the data, e.g, the history, carries over
 -- from game to game, even across playing sessions.
 data StateClient = StateClient
-  { scursor   :: !Cursor        -- ^ cursor position and level to return to
+  { stgtMode  :: !TgtMode  -- ^ targeting mode
+  , scursor   :: !Point    -- ^ cursor coordinates
+  , seps      :: !Int      -- ^ a parameter of the tgt digital line
   , starget   :: !(IM.IntMap Target)  -- ^ targets of all actors in the dungeon
   , srunning  :: !(Maybe (Vector, Int))  -- ^ direction and distance of running
   , sreport   :: !Report        -- ^ current messages
@@ -104,14 +105,6 @@ data TgtMode =
   | TgtAuto     { tgtLevelId :: !LevelId }
             -- ^ the mode was entered (and will be exited) automatically
   deriving (Show, Eq)
-
--- | Current targeting cursor parameters.
-data Cursor = Cursor
-  { ctargeting :: !TgtMode  -- ^ targeting mode
-  , cposition  :: !Point    -- ^ cursor coordinates
-  , ceps       :: !Int      -- ^ a parameter of the tgt digital line
-  }
-  deriving Show
 
 -- | The type of na actor target.
 data Target =
@@ -260,7 +253,9 @@ cycleTryFov s@StateServer{sdebugSer=sdebugSer@DebugModeSer{stryFov}} =
 defStateClient :: Point -> StateClient
 defStateClient ppos = do
   StateClient
-    { scursor   = Cursor TgtOff ppos 0
+    { stgtMode = TgtOff
+    , scursor = ppos
+    , seps      = 0
     , starget   = IM.empty
     , srunning  = Nothing
     , sreport   = emptyReport
@@ -283,11 +278,7 @@ defHistory = do
   return $ singletonHistory $ singletonReport
          $ makeSentence ["Player history log started on", curDate]
 
--- | Update cursor parameters within state.
-updateCursor :: (Cursor -> Cursor) -> StateClient -> StateClient
-updateCursor f s = s { scursor = f (scursor s) }
-
--- | Update cursor parameters within state.
+-- | Update target parameters within state.
 updateTarget :: ActorId -> (Maybe Target -> Maybe Target) -> StateClient
              -> StateClient
 updateTarget actor f s = s { starget = IM.alter f actor (starget s) }
@@ -346,13 +337,17 @@ instance Binary StateServer where
 
 instance Binary StateClient where
   put StateClient{..} = do
+    put stgtMode
     put scursor
+    put seps
     put starget
     put srunning
     put sreport
     put shistory
   get = do
-    scursor <- get
+    stgtMode <- get
+    scursor  <- get
+    seps       <- get
     starget <- get
     srunning <- get
     sreport <- get
@@ -372,17 +367,6 @@ instance Binary TgtMode where
       1 -> liftM TgtExplicit get
       2 -> liftM TgtAuto get
       _ -> fail "no parse (TgtMode)"
-
-instance Binary Cursor where
-  put Cursor{..} = do
-    put ctargeting
-    put cposition
-    put ceps
-  get = do
-    ctargeting <- get
-    cposition  <- get
-    ceps       <- get
-    return Cursor{..}
 
 instance Binary Target where
   put (TEnemy a ll) = putWord8 0 >> put a >> put ll

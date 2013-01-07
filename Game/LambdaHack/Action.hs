@@ -169,11 +169,11 @@ withPerception m = do
 -- | Get the current perception of a client.
 askPerception :: MonadClientRO m => m Perception
 askPerception = do
-  ctargeting <- getsClient (ctargeting . scursor)
+  stgtMode <- getsClient stgtMode
   sarena <- getsLocal sarena
-  let lid = case ctargeting of
+  let lid = case stgtMode of
         TgtOff -> sarena
-        _ -> tgtLevelId ctargeting
+        _ -> tgtLevelId stgtMode
   pers <- ask
   sside <- getsLocal sside
   return $! pers IM.! sside M.! lid
