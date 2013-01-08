@@ -2,8 +2,7 @@
 -- | Actors perceiving other actors and the dungeon level.
 module Game.LambdaHack.Perception
   ( Pers, Perception
-  , totalVisible, debugTotalReachable, dungeonPerception
-  , actorReachesLoc, actorSeesLoc
+  , totalVisible, dungeonPerception, actorSeesLoc
   ) where
 
 import qualified Data.IntMap as IM
@@ -49,13 +48,6 @@ data Perception = Perception
 -- | The set of tiles visible by at least one hero.
 totalVisible :: Perception -> IS.IntSet
 totalVisible = pvisible . ptotal
-
--- | For debug only: the set of tiles reachable
--- (would be visible if lit) by at least one hero.
-debugTotalReachable :: Perception -> IS.IntSet
-debugTotalReachable per =
-  let lpers = IM.elems $ pactors per
-  in IS.unions (map preachable lpers)
 
 -- | Check whether a position is within the visually reachable area
 -- of the given actor (disregarding lighting).

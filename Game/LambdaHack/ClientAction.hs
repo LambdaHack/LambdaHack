@@ -134,10 +134,9 @@ doLook = do
         maybe "" (\ m -> makeSentence
                          [MU.SubjectVerbSg (partActor coactor m) "be here"])
                  ihabitant
-      vis | not $ p `IS.member` totalVisible per =
-              " (not visible)"  -- by party
-          | actorReachesLoc pl p per = ""
-          | otherwise = " (not reachable)"  -- by hero
+      vis | not $ p `IS.member` totalVisible per = " (not visible)"
+          | actorSeesLoc per pl p = ""
+          | otherwise = " (not visible by you)"
       mode = case target of
                Just TEnemy{} -> "[targeting monster" <> vis <> "]"
                Just TPos{}   -> "[targeting position" <> vis <> "]"
@@ -255,8 +254,8 @@ targetMonster stgtModeNew = do
             _ -> (dms, [])  -- target first monster (e.g., number 0)
       gtlt = gt ++ lt
       seen (_, m) =
-        let mpos = bpos m               -- it is visible by the faction
-        in actorReachesLoc pl mpos per  -- it is reachable by actor
+        let mpos = bpos m            -- it is remembered by faction
+        in actorSeesLoc per pl mpos  -- is it visible by actor?
       lf = filter seen gtlt
       tgt = case lf of
               [] -> target  -- no monsters in sight, stick to last target

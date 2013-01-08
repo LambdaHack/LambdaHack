@@ -61,17 +61,15 @@ draw dm cops per
       mpl@Actor{bkind, bhp, bpos} = getPlayerBody s
       bitems = getPlayerItem s
       ActorKind{ahp, asmell} = okind bkind
-      reachable = debugTotalReachable per
-      visible   = totalVisible per
       (msgTop, over, msgBottom) = stringByLocation lxsize lysize overlay
       -- TODO:
       sVisBG = if smarkVision
-               then \ vis rea -> if vis
-                                 then Color.Blue
-                                 else if rea
-                                      then Color.Magenta
-                                      else Color.defBG
-               else \ _vis _rea -> Color.defBG
+               then \ vis visPl -> if visPl
+                                   then Color.Magenta
+                                   else if vis
+                                        then Color.Blue
+                                        else Color.defBG
+               else \ _vis _visPl -> Color.defBG
       (_, wealth)  = calculateTotal s
       damage  = case Item.strongestSword cops bitems of
                   Just sw ->
@@ -127,11 +125,11 @@ draw dm cops per
                   case items of
                     [] -> (tsymbol tk, if vis then tcolor tk else tcolor2 tk)
                     i : _ -> Item.viewItem i
-            vis = IS.member pos0 visible
-            rea = IS.member pos0 reachable
+            vis = IS.member pos0 $ totalVisible per
+            visPl = actorSeesLoc per (splayer s) pos0
             bg0 = if stgtMode /= TgtOff && pos0 == scursor
-                  then Color.defFG     -- highlight target cursor
-                  else sVisBG vis rea  -- FOV debug or standard bg
+                  then Color.defFG       -- highlight target cursor
+                  else sVisBG vis visPl  -- FOV debug or standard bg
             reverseVideo = Color.Attr{ fg = Color.bg Color.defAttr
                                      , bg = Color.fg Color.defAttr
                                      }
