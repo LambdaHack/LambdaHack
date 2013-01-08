@@ -18,7 +18,7 @@ import Game.LambdaHack.VectorXY
 
 -- | Abstract syntax of server commands.
 data CmdSer =
-    ApplySer ActorId Item Point
+    ApplySer ActorId MU.Part Item
   | ProjectSer ActorId Point MU.Part Item
   | TriggerSer Point
   | PickupSer ActorId Item Char

@@ -142,6 +142,7 @@ handleActors subclipStart = do
             -- at once. This requires quite a bit of refactoring
             -- and is perhaps better done when the other factions have
             -- selected players as well.
+            -- TODO: if splayerNew == invalidActorId, no time advances
             unless (isJust squitNew) $ advanceTime splayerNew
             handleActors $ btime m
           else do

@@ -72,12 +72,21 @@ cfgDumpSer = do
 -- TODO: split into ApplyInvSer and ApplyFloorSer
 applySer :: MonadAction m   -- MonadServer m
          => ActorId  -- ^ actor applying the item (is on current level)
+         -> MU.Part  -- ^ how the applying is called
          -> Item     -- ^ the item to be applied
-         -> Point    -- ^ position of the actor in case applying from the floor
          -> m ()
-applySer actor item pos = do
+applySer actor verb item = do
+  Kind.COps{coactor, coitem} <- getsLocal scops
+  per <- askPerception
+  disco <- getsLocal sdisco
+  body <- getsLocal (getActorBody actor)
+  let pos = bpos body
   -- Only one item consumed, even if several in inventory.
-  let consumed = item { jcount = 1 }
+      consumed = item { jcount = 1 }
+      msg = makeSentence
+        [ MU.SubjectVerbSg (partActor coactor body) verb
+        , partItemNWs coitem disco consumed ]
+  when (pos `IS.member` totalVisible per) $ msgAdd msg
   removeFromInventory actor consumed pos
   -- TODO: local state is not updated here and itemEffectAction uses it
   itemEffectAction 5 actor actor consumed False
@@ -209,16 +218,32 @@ triggerSer dpos = do
 
 -- * PickupSer
 
-pickupSer :: MonadServer m => ActorId -> Item -> Char -> m ()
+pickupSer :: MonadAction m => ActorId -> Item -> Char -> m ()
 pickupSer aid i l = do
-  p <- getsGlobal (bpos . getActorBody aid)
-  bitems <- getsGlobal (getActorItem aid)
-  removeFromPos i p
-    >>= assert `trueM` (aid, i, p, "item is stuck")
-  let (ni, nitems) = joinItem (i { jletter = Just l }) bitems
-  modifyGlobal $ updateActorBody aid $ \m ->
-    m { bletter = maxLetter (fromJust $ jletter ni) (bletter m) }
-  modifyGlobal (updateActorItem aid (const nitems))
+  Kind.COps{coactor, coitem} <- getsGlobal scops
+  side <- getsGlobal sside
+  body <- getsLocal (getActorBody aid)
+  -- Nobody can be forced to pick up an item.
+  assert (bfaction body == side `blame` (body, side)) $ do
+    let p = bpos body
+    bitems <- getsGlobal (getActorItem aid)
+    disco <- getsLocal sdisco
+    per <- askPerception
+    removeFromPos i p
+      >>= assert `trueM` (aid, i, p, "item is stuck")
+    let perceived = p `IS.member` totalVisible per
+        (ni, nitems) = joinItem (i { jletter = Just l }) bitems
+    -- Other factions take notice.
+    if bfaction body == side
+      then msgAdd $ makePhrase [ letterLabel (jletter ni)
+                               , partItemNWs coitem disco ni ]
+      else when perceived $
+             msgAdd $ makeSentence
+               [ MU.SubjectVerbSg (partActor coactor body) "pick up"
+               , partItemNWs coitem disco i ]  -- single, not 'ni'
+    modifyGlobal $ updateActorBody aid $ \m ->
+      m { bletter = maxLetter (fromJust $ jletter ni) (bletter m) }
+    modifyGlobal (updateActorItem aid (const nitems))
 
 -- ** DropSer
 

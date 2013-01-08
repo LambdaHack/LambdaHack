@@ -6,44 +6,31 @@
 module Game.LambdaHack.MixedAction where
 
 import Control.Monad
-import Control.Monad.Writer.Strict (WriterT, lift, tell)
-import Data.Function
-import qualified Data.IntMap as IM
-import qualified Data.IntSet as IS
 import Data.List
-import qualified Data.Map as M
 import Data.Maybe
-import Data.Ord
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Version
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Action hiding (MonadAction, MonadActionRO, MonadServer,
                                MonadServerRO)
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Binding
 import Game.LambdaHack.ClientAction
 import Game.LambdaHack.Command
 import Game.LambdaHack.Content.ItemKind
-import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Draw
-import Game.LambdaHack.DungeonState
-import qualified Game.LambdaHack.Effect as Effect
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Key as K
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
-import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import Game.LambdaHack.Running
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
-import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 
@@ -63,12 +50,13 @@ gameSave = do
 
 -- *** CfgDump
 
-dumpConfig :: MonadClient m => m CmdSer
+dumpConfig :: MonadActionRoot m => m CmdSer
 dumpConfig = return CfgDumpSer
 
 -- ** Apply
 
-playerApplyGroupItem :: MonadClient m => MU.Part -> MU.Part -> [Char]
+playerApplyGroupItem :: MonadClient m
+                     => MU.Part -> MU.Part -> [Char]
                      -> m CmdSer
 playerApplyGroupItem verb object syms = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsLocal scops
@@ -80,26 +68,7 @@ playerApplyGroupItem verb object syms = do
   let verbApply = case jkind disco item of
         Nothing -> verb
         Just ik -> iverbApply $ okind ik
-  applyGroupItem pl verbApply item
-
-applyGroupItem :: MonadClient m
-               => ActorId  -- ^ actor applying the item (is on current level)
-               -> MU.Part  -- ^ how the applying is called
-               -> Item     -- ^ the item to be applied
-               -> m CmdSer
-applyGroupItem actor verb item = do
-  Kind.COps{coactor, coitem} <- getsLocal scops
-  body <- getsLocal (getActorBody actor)
-  per <- askPerception
-  disco <- getsLocal sdisco
-  -- Only one item consumed, even if several in inventory.
-  let consumed = item { jcount = 1 }
-      msg = makeSentence
-        [ MU.SubjectVerbSg (partActor coactor body) verb
-        , partItemNWs coitem disco consumed ]
-      pos = bpos body
-  when (pos `IS.member` totalVisible per) $ msgAdd msg
-  return $! ApplySer actor item pos
+  return $! ApplySer pl verbApply item
 
 -- | Let the player choose any item with a given group name.
 -- Note that this does not guarantee the chosen item belongs to the group,
@@ -164,18 +133,21 @@ playerTriggerDir feat verb = do
   K.handleDir lxsize e (playerBumpDir feat) (neverMind True)
 
 -- | Player tries to trigger a tile in a given direction.
-playerBumpDir :: MonadClient m => F.Feature -> Vector -> m CmdSer
+playerBumpDir :: MonadClientRO m => F.Feature -> Vector -> m CmdSer
 playerBumpDir feat dir = do
   body  <- getsLocal getPlayerBody
   let dpos = bpos body `shift` dir
   bumpTile dpos feat
 
 -- | Player tries to trigger a tile using a feature.
-bumpTile :: MonadClient m => Point -> F.Feature -> m CmdSer
+bumpTile :: MonadClientRO m => Point -> F.Feature -> m CmdSer
 bumpTile dpos feat = do
   Kind.COps{cotile} <- getsLocal scops
   lvl <- getsLocal getArena
   let t = lvl `at` dpos
+  -- Features are never invisible; visible tiles are identified accurately.
+  -- A tile can be triggered even if an invisible monster occupies it.
+  -- TODO: let the user choose whether to attack or activate.
   if Tile.hasFeature cotile feat t
     then return $ TriggerSer dpos
     else guessBump cotile feat t
@@ -203,46 +175,29 @@ guessBump _ _ _ = neverMind True
 -- ** TriggerTile
 
 -- | Player tries to trigger the tile he's standing on.
-playerTriggerTile :: MonadClient m => F.Feature -> m CmdSer
+playerTriggerTile :: MonadClientRO m => F.Feature -> m CmdSer
 playerTriggerTile feat = do
   ppos <- getsLocal (bpos . getPlayerBody)
   bumpTile ppos feat
 
 -- ** Pickup
 
-pickupItem :: MonadClient m => m CmdSer
+pickupItem :: MonadClientRO m => m CmdSer
 pickupItem = do
   pl <- getsLocal splayer
   actorPickupItem pl
 
-actorPickupItem :: MonadClient m => ActorId -> m CmdSer
+actorPickupItem :: MonadClientRO m => ActorId -> m CmdSer
 actorPickupItem actor = do
-  Kind.COps{coactor, coitem} <- getsLocal scops
-  pl <- getsLocal splayer
-  per <- askPerception
   lvl <- getsLocal getArena
   body <- getsLocal (getActorBody actor)
   bitems <- getsLocal (getActorItem actor)
-  disco <- getsLocal sdisco
-  let p = bpos body
-      perceived = p `IS.member` totalVisible per
-      isPlayer = actor == pl
-  -- Check if something is here to pick up.
-  case lvl `atI` p of
+  -- Check if something is here to pick up. Items are never invisible.
+  case lvl `atI` bpos body of
     [] -> abortWith "nothing here"
     i : _ ->  -- pick up first item; TODO: let pl select item; not for monsters
       case assignLetter (jletter i) (bletter body) bitems of
-        Just l -> do
-          let (ni, _) = joinItem (i { jletter = Just l }) bitems
-          -- msg depends on who picks up and if a hero can perceive it
-          if isPlayer
-            then msgAdd $ makePhrase [ letterLabel (jletter ni)
-                                     , partItemNWs coitem disco ni ]
-            else when perceived $
-                   msgAdd $ makeSentence
-                     [ MU.SubjectVerbSg (partActor coactor body) "pick up"
-                     , partItemNWs coitem disco i ]  -- single, not 'ni'
-          return $ PickupSer actor i l
+        Just l -> return $ PickupSer actor i l
         Nothing -> abortWith "cannot carry any more"
 
 -- ** Drop
@@ -260,11 +215,11 @@ dropItem = do
   stack <- getAnyItem "What to drop?" ims "in inventory"
   disco <- getsLocal sdisco
   let item = stack { jcount = 1 }
+  -- Do not advertise if an enemy drops an item. Probably junk.
   msgAdd $ makeSentence
     [ MU.SubjectVerbSg (partActor coactor pbody) "drop"
     , partItemNWs coitem disco item ]
   return $ DropSer pl item
-
 
 allObjectsName :: Text
 allObjectsName = "Objects"
@@ -349,14 +304,14 @@ getItem prompt p ptext is0 isn = do
 -- ** Wait
 
 -- | Player waits a turn (and blocks, etc.).
-waitBlock :: MonadClient m => m CmdSer
+waitBlock :: MonadClientRO m => m CmdSer
 waitBlock = do
   pl <- getsLocal splayer
   return $ WaitSer pl
 
 -- ** Move
 
-movePl :: MonadClient m => Vector -> m CmdSer
+movePl :: MonadClientRO m => Vector -> m CmdSer
 movePl dir = do
   pl <- getsLocal splayer
   return $! MoveSer pl dir

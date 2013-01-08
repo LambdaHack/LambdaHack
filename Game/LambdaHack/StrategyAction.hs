@@ -300,7 +300,7 @@ toolsFreq cops actor loc =
   bitems = getActorItem actor loc
   tis = lvl `atI` bpos
   quaffFreq is multi =
-    [ (benefit * multi, applyGroupItem actor (iverbApply ik) i >>= cmdSer)
+    [ (benefit * multi, applySer actor (iverbApply ik) i)
     | i <- is,
       let (ik, benefit) =
             case jkind (sdisco loc) i of

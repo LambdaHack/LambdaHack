@@ -130,7 +130,11 @@ effectToAction effect verbosity source target power block = do
       modifyGlobal (updateArena (dropItemsAt bitems tpos))
       -- Clean bodies up.
       isControlled <- getsGlobal $ flip isControlledFaction $ bfaction tm
-      if isControlled  -- TODO: check if spawns, etc.
+      -- TODO: check if spawns, etc.
+      -- A faction that spawns cannot switch levels (nor move between levels).
+      -- Otherwise it would constantly spawn on a distant level
+      -- and an swarm any opponent arriving there.
+      if isControlled
         then  -- Kill a controlled actor and check game over.
           checkPartyDeath target
         else  -- Kill the enemy.
@@ -502,6 +506,7 @@ checkPartyDeath target = do
                -- is still active at that point and hence @remember@ registers
                -- all that informations).
                side <- getsGlobal sside
+               -- TODO: perhaps switch for the whole function or more
                switchGlobalSelectedSide $ bfaction pbody
                remember
                -- TODO: HACK

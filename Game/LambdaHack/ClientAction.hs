@@ -255,9 +255,8 @@ targetMonster stgtModeNew = do
             _ -> (dms, [])  -- target first monster (e.g., number 0)
       gtlt = gt ++ lt
       seen (_, m) =
-        let mpos = bpos m
-        in mpos `IS.member` totalVisible per  -- visible by any
-           && actorReachesLoc pl mpos per     -- reachable by player
+        let mpos = bpos m               -- it is visible by the faction
+        in actorReachesLoc pl mpos per  -- it is reachable by actor
       lf = filter seen gtlt
       tgt = case lf of
               [] -> target  -- no monsters in sight, stick to last target
@@ -394,7 +393,6 @@ endTargeting accept = do
   when accept $ do
     pl <- getsLocal splayer
     target <- getsClient $ getTarget pl
-    per <- askPerception
     cpos <- getsClient scursor
     side <- getsLocal sside
     lvl <- cursorLevel
@@ -403,13 +401,11 @@ endTargeting accept = do
       Just TEnemy{} -> do
         -- If in monster targeting mode, switch to the monster under
         -- the current cursor position, if any.
-        let canSee = IS.member cpos (totalVisible per)
-        when canSee $
-          case find (\ (_im, m) -> bpos m == cpos) ms of
-            Just (im, m)  ->
-              let tgt = Just $ TEnemy im (bpos m)
-              in modifyClient $ updateTarget pl (const $ tgt)
-            Nothing -> return ()
+        case find (\ (_im, m) -> bpos m == cpos) ms of
+          Just (im, m)  ->
+            let tgt = Just $ TEnemy im (bpos m)
+            in modifyClient $ updateTarget pl (const $ tgt)
+          Nothing -> return ()
       _ -> modifyClient $ updateTarget pl (const $ Just $ TPos cpos)
   if accept
     then endTargetingMsg

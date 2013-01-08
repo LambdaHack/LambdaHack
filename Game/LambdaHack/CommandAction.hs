@@ -53,11 +53,12 @@ cmdAction cli s cmd =
     Move v ->
       let dir = toDir lxsize v
           tpos = ppos `shift` dir
+          -- We always see actors from our own faction.
           tgt = posToActor tpos s
       in case tgt of
         Just target | bfaction (getActorBody target s) == sside s
                       && not (bproj (getActorBody target s)) ->
-          -- Select adjacent hero by bumping into him. Takes no time.
+          -- Select adjacent actor by bumping into him. Takes no time.
           (False,
            selectPlayer arena target
              >>= assert `trueM` (pl, target, "player bumps himself" :: Text))
@@ -132,7 +133,7 @@ checkCursor h = do
 -- | The semantics of server commands.
 cmdSer :: MonadAction m => CmdSer -> m ()
 cmdSer cmd = case cmd of
-  ApplySer aid item pos -> applySer aid item pos
+  ApplySer aid v item -> applySer aid v item
   ProjectSer aid p v i -> projectSer aid p v i
   TriggerSer p -> triggerSer p
   PickupSer aid i l -> pickupSer aid i l
