@@ -93,8 +93,8 @@ restoreGame config@Config{ configAppDataDir
     tryCreateDir configAppDataDir
     -- Possibly copy over data files. No problem if it fails.
     tryCopyDataFiles config configUI pathsDataFile
-  -- If the cli file does not exist, create an empty cli.
-  -- TODO: when cli gets corrupted, start a new one, too.
+  -- If the history file does not exist, create an empty history.
+  -- TODO: when history gets corrupted, start a new one, too.
   shistory <- do
     db <- doesFileExist configHistoryFile
     if db
@@ -132,7 +132,7 @@ restoreGame config@Config{ configAppDataDir
                    in return $ Right (shistory, msg)
     )
 
--- | Save the cli and a backup of the save game file, in case of crashes.
+-- | Save the history and a backup of the save game file, in case of crashes.
 -- This is only a backup, so no problem is the game is shut down
 -- before saving finishes, so we don't wait on the mvar. However,
 -- if a previous save is already in progress, we skip this save.
@@ -151,12 +151,13 @@ saveGameBkp Config{ configSaveFile
       renameFile configSaveFile configBkpFile
       takeMVar saveLock
 
--- | Remove the backup of the savegame and save the player cli.
+-- | Remove the backup of the savegame and save the player state.
 -- Should be called before any non-error exit from the game.
 -- Sometimes the backup file does not exist and it's OK.
 -- We don't bother reporting any other removal exceptions, either,
 -- because the backup file is relatively unimportant.
--- We wait on the mvar, because saving the cli at game shutdown is important.
+-- We wait on the mvar, because saving the history at game shutdown
+-- is important.
 rmBkpSaveHistory :: Config -> ConfigUI -> StateDict -> IO ()
 rmBkpSaveHistory Config{configBkpFile, configHistoryFile}
                  _ -- ConfigUI{configHistoryFile}

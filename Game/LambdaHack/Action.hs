@@ -395,7 +395,7 @@ rememberLevel Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} visible lvl clvl =
           , lsecret = IM.empty
           }
 
--- | Save the cli and a backup of the save game file, in case of crashes.
+-- | Save the history and a backup of the save game file, in case of crashes.
 --
 -- See 'Save.saveGameBkp'.
 saveGameBkp :: MonadServer m => m ()
@@ -584,11 +584,11 @@ startFrontend executor !copsSlow@Kind.COps{corule, cotile=tile} handleTurn = do
   let !sbinding = stdBinding sconfigUI
       font = configFont sconfigUI
       -- In addition to handling the turn, if the game ends or exits,
-      -- handle the cli and backup savefile.
+      -- handle the history and backup savefile.
       handleGame = do
         handleTurn
         d <- getDict
-        -- Save cli often, at each game exit, in case of crashes.
+        -- Save history often, at each game exit, in case of crashes.
         liftIO $ Save.rmBkpSaveHistory sconfig sconfigUI d
       loop sfs = start executor sfs cops sbinding sconfig sconfigUI handleGame
   startup font loop

@@ -41,7 +41,7 @@ returnAction :: a -> Action a
 returnAction x = Action (\_c _p k _a s ser d -> k s ser d x)
 
 -- | Distributes the session and shutdown continuation,
--- threads the state and cli.
+-- threads the state and history.
 bindAction :: Action a -> (a -> Action b) -> Action b
 bindAction m f = Action (\c p k a s ser d ->
                           let next ns nser nd x =
@@ -126,7 +126,7 @@ instance MonadAction Action where
   modifyDict f   = Action (\_c _p k _a s ser d -> k s ser (f d) ())
   putDict      = modifyDict . const
 
--- | Run an action, with a given session, state and cli, in the @IO@ monad.
+-- | Run an action, with a given session, state and history, in the @IO@ monad.
 executor :: Action ()
          -> FrontendSession -> Kind.COps -> Binding -> ConfigUI
          -> State -> StateServer -> StateDict -> IO ()

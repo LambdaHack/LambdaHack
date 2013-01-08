@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
--- | Game state and persistent player cli types and operations.
+-- | Server and client game state types and operations.
 module Game.LambdaHack.State
   ( State
   , sdungeon, sdepth, sdisco, sfaction, scops, splayer, sside, sarena
