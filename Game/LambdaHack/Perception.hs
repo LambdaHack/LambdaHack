@@ -9,7 +9,6 @@ import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import qualified Data.List as L
 import qualified Data.Map as M
-import Data.Maybe
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Config
@@ -24,12 +23,10 @@ import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 
 newtype PerceptionReachable = PerceptionReachable
-  { preachable :: IS.IntSet
-  }
+  { preachable :: IS.IntSet }
 
 newtype PerceptionVisible = PerceptionVisible
-  { pvisible :: IS.IntSet
-  }
+  { pvisible :: IS.IntSet }
 
 -- | Perception indexed by faction identifier.
 type Pers = IM.IntMap FactionPerception
@@ -38,32 +35,20 @@ type Pers = IM.IntMap FactionPerception
 type FactionPerception = M.Map LevelId Perception
 
 -- | The type representing the perception of a faction on a level.
--- Actors of the same faction share visibility and only have separate
--- reachability.
+-- The total visibility holds the sum of FOVs of all actors
+-- of a given faction on the level and servers only as a speedup.
 data Perception = Perception
-  { pactors :: IM.IntMap PerceptionReachable  -- ^ per actor
-  , ptotal  :: PerceptionVisible              -- ^ sum for all actors
+  { pactors :: IM.IntMap PerceptionVisible  -- ^ per actor
+  , ptotal  :: PerceptionVisible            -- ^ sum for all actors
   }
 
 -- | The set of tiles visible by at least one hero.
 totalVisible :: Perception -> IS.IntSet
 totalVisible = pvisible . ptotal
 
--- | Check whether a position is within the visually reachable area
--- of the given actor (disregarding lighting).
-actorReachesLoc :: ActorId -> Point -> Perception -> Bool
-actorReachesLoc actor loc per =
-  let tryHero = do
-        hper <- IM.lookup actor $ pactors per
-        return $ loc `IS.member` preachable hper
-  in fromMaybe False tryHero  -- assume not visible, if no perception found
-
 -- | Whether an actor can see a position.
 actorSeesLoc :: Perception -> ActorId -> Point -> Bool
-actorSeesLoc per source tpos =
-  let reachable = actorReachesLoc source tpos per
-      visible = tpos `IS.member` totalVisible per
-  in reachable && visible
+actorSeesLoc per aid pos = pos `IS.member` pvisible (pactors per IM.! aid)
 
 -- | Calculate the perception of all actors on the level.
 dungeonPerception :: Kind.COps -> Config -> DebugModeSer -> State -> Pers
@@ -78,22 +63,22 @@ factionPerception cops sconfig sdebug s fid =
   M.map (levelPerception cops sconfig sdebug fid) $ sdungeon s
 
 -- | Calculate perception of the level.
-levelPerception :: Kind.COps -> Config -> DebugModeSer -> FactionId -> Level -> Perception
+levelPerception :: Kind.COps -> Config -> DebugModeSer -> FactionId -> Level
+                -> Perception
 levelPerception cops@Kind.COps{cotile} sconfig DebugModeSer{stryFov} fid
                 lvl@Level{lactor} =
   let Config{configFovMode} = sconfig
-      hs = IM.filter (\ m -> bfaction m == fid && not (bproj m)) lactor
-      pers = IM.map (\ h ->
-                      computeReachable cops configFovMode stryFov h lvl) hs
-      poss = map bpos $ IM.elems hs
-      lpers = IM.elems pers
-      reachable = PerceptionReachable $ IS.unions (map preachable lpers)
+      hs = IM.filter (\m -> bfaction m == fid && not (bproj m)) lactor
+      reas =
+        IM.map (\h -> computeReachable cops configFovMode stryFov h lvl) hs
+      lreas = map preachable $ IM.elems reas
+      totalRea = PerceptionReachable $ IS.unions lreas
       -- TODO: Instead of giving the monster a light source, alter vision.
-      lights = IS.fromList poss
-      visible = computeVisible cotile reachable lvl lights
-  in Perception { pactors = pers
-                , ptotal  = visible
-                }
+      lights = IS.fromList $ map bpos $ IM.elems hs
+      totalVis = computeVisible cotile totalRea lvl lights
+      f = PerceptionVisible . IS.intersection (pvisible totalVis) . preachable
+  in Perception { pactors = IM.map f reas
+                , ptotal  = totalVis }
 
 -- | A position can be directly lit by an ambient shine or a weak, portable
 -- light source, e.g,, carried by a hero. (Only lights of radius 0
@@ -111,15 +96,17 @@ levelPerception cops@Kind.COps{cotile} sconfig DebugModeSer{stryFov} fid
 -- moving shadows indicate monsters, etc.
 computeVisible :: Kind.Ops TileKind -> PerceptionReachable
                -> Level -> IS.IntSet -> PerceptionVisible
-computeVisible cops reachable@PerceptionReachable{preachable} lvl lights' =
-  let lights = IS.intersection lights' preachable  -- optimization
-      isV = isVisible cops reachable lvl lights
+computeVisible cops reachable@PerceptionReachable{preachable} lvl lights =
+  let isV = isVisible cops reachable lvl lights
   in PerceptionVisible $ IS.filter isV preachable
 
+-- TODO: this is calculated per-faction, not per-actor, but still optimize,
+-- e.g., by partitioning preachable wrt litDirectly and then running
+-- isVisible only over one of the parts, depending on which is smaller.
 isVisible :: Kind.Ops TileKind -> PerceptionReachable
           -> Level -> IS.IntSet -> Point -> Bool
 isVisible cotile PerceptionReachable{preachable}
-               lvl@Level{lxsize, lysize} lights pos0 =
+          lvl@Level{lxsize, lysize} lights pos0 =
   let litDirectly loc = Tile.isLit cotile (lvl `at` loc)
                         || loc `IS.member` lights
       l_and_R loc = litDirectly loc && loc `IS.member` preachable
