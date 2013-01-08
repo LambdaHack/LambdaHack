@@ -1,16 +1,23 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Server and client game state types and operations.
 module Game.LambdaHack.State
-  ( State
+  ( -- * Basic game state, local or global.
+    State
+    -- * State components
   , sdungeon, sdepth, sdisco, sfaction, scops, splayer, sside, sarena
+    -- * State operations
   , defStateGlobal, defStateLocal, switchGlobalSelectedSideOnlyForGlobalState
   , updateDungeon, updateDisco, updateFaction, updateCOps
   , updateArena, updateTime, updateSide, updateSelected
   , getArena, getTime, getSide
   , isControlledFaction, isSpawningFaction
+    -- * Server state and its operations
   , StateServer(..), defStateServer
+    -- * Client state and its operations
   , StateClient(..), defStateClient, defHistory, updateTarget, getTarget
+    -- * A dictionary of client states.
   , StateDict
+    -- * Components type and operations.
   , TgtMode(..), Target(..)
   , DebugModeSer(..), cycleTryFov
   , DebugModeCli(..), toggleMarkVision, toggleMarkSmell, toggleOmniscient
@@ -41,20 +48,15 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.Point
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Time
+import Game.LambdaHack.Utils.Assert
 
 -- * Types
 
--- TODO: check the invariant each time splayer, sarena and sside is modified.
--- More specifically: if splayer is on sarena, check he belongs to sside,
--- and if not, which is rare, check he's not on any other level.
--- TODO: perhaps we'd be safer if splayer was set to invalidActor
--- whenever he's not in the dungeon?
--- TDDO: perhpas update some of the 3 fields together to keep the invariant?
 -- | View on game state. Clients never update @sdungeon@ and @sfaction@,
 -- but the server updates it for them depending on client exploration.
--- Data invariant: no actor belongs to more than one sdungeon level.
--- Actor splayer is not on any other sdungeon level than sarena.
--- If splayer is on sarena, he belongs to sside.
+-- Data invariant: no actor belongs to more than one @sdungeon@ level.
+-- Actor @splayer@ is not on any other @sdungeon@ level than @sarena@.
+-- If @splayer@ is on @sarena@, he belongs to @sside@.
 data State = State
   { _sdungeon :: !Dungeon      -- ^ remembered dungeon
   , _sdepth   :: !Int          -- ^ remembered dungeon depth
@@ -219,9 +221,18 @@ updateTime f s = updateArena (\lvl@Level{ltime} -> lvl {ltime = f ltime}) s
 updateSide :: (Faction -> Faction) -> State -> State
 updateSide f s = updateFaction (IM.adjust f (_sside s)) s
 
--- | Update current side data within state.
+-- | Update selected actor and level within state. The actor is required
+-- to belong to the level and to the (previously) selected faction,
+-- unless the actor is invalid.
 updateSelected :: ActorId -> LevelId -> State -> State
-updateSelected _splayer _sarena s = s {_splayer, _sarena}
+updateSelected _splayer _sarena s
+  | _splayer == invalidActorId = s {_splayer, _sarena}
+updateSelected _splayer _sarena s =
+  let la = lactor $ _sdungeon s M.! _sarena
+      side1 = fmap bfaction $ IM.lookup _splayer la
+      side2 = Just $ _sside s
+  in assert (side1 == side2 `blame` (side1, side2, _splayer, _sarena, s))
+     $ s {_splayer, _sarena}
 
 -- | Get current level from the dungeon data.
 getArena :: State -> Level

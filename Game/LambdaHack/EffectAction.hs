@@ -310,32 +310,38 @@ effLvlGoUp k = do
     Nothing -> fleeDungeon -- we are at the "end" of the dungeon
     Just (nln, npos) ->
       assert (nln /= arena `blame` (nln, "stairs looped")) $ do
+        timeCurrent <- getsGlobal getTime
         -- Remove the player from the old level.
         modifyGlobal (deleteActor pl)
         -- Remember the level (e.g., when teleporting via scroll on the floor,
         -- register the scroll vanished, also register the actor vanished).
         remember
-        hs <- getsGlobal heroList
-        -- Monsters hear that players not on the level. Cancel smell.
+        -- Monsters hear no foe is left on the level. Cancel smell.
         -- Reduces memory load and savefile size.
+        hs <- getsGlobal heroList
         when (null hs) $
           modifyGlobal (updateArena (updateSmell (const IM.empty)))
-        -- At this place the invariant that the player exists fails.
-        -- Change to the new level (invariant not needed).
-        timeCurrent <- getsGlobal getTime
-        -- Change level. TODO: for now both in faction and global state,
-        -- to ensure the actions performed afterwards, but before
-        -- the end of the turn, read and modify updated and consistent states.
-        modifyLocal $ updateSelected pl nln
-        modifyGlobal $ updateSelected pl nln
+        -- Provisionally change level, even though the player
+        -- is not inserted there yet.
+        modifyGlobal $ updateSelected invalidActorId nln
         -- Sync the actor time with the level time.
         timeLastVisited <- getsGlobal getTime
         let diff = timeAdd (btime pbodyCurrent) (timeNegate timeCurrent)
             pbody = pbodyCurrent {btime = timeAdd timeLastVisited diff}
-        -- The player can now be safely added to the new level.
+        -- The player is added to the new level, but there can be other actors
+        -- at his old position or at his new position.
         modifyGlobal (insertActor pl pbody)
         modifyGlobal (updateActorItem pl (const bitems))
-        -- At this place the invariant is restored again.
+        -- Reset level and player.
+        modifyGlobal $ updateSelected pl nln
+        -- TODO: for now both in local and global state,
+        -- to ensure the actions performed afterwards, but before
+        -- the end of the turn, read and modify updated and consistent states.
+        modifyLocal $ updateSelected invalidActorId nln
+        modifyLocal (insertActor pl pbody)
+        modifyLocal (updateActorItem pl (const bitems))
+        modifyLocal $ updateSelected pl nln
+        -- Checking actors at the new posiiton of the player.
         inhabitants <- getsGlobal (posToActor npos)
         case inhabitants of
           Nothing -> return ()
@@ -351,9 +357,10 @@ effLvlGoUp k = do
         -- Verify the monster on the staircase died.
         inhabitants2 <- getsGlobal (posToActor npos)
         when (isJust inhabitants2) $ assert `failure` inhabitants2
-        -- Land the player at the other end of the stairs.
+        -- Land the player at the other end of the stairs, which is now
+        -- clear of other actors.
         modifyGlobal $ updateActorBody pl $ \b -> b { bpos = npos }
-        -- The invariant "at most one actor on a tile" restored.
+        -- The property of at most one actor on a tile is restored.
         -- Create a backup of the savegame.
         saveGameBkp
 
@@ -492,14 +499,11 @@ checkPartyDeath = do
                remember
                -- Remove the dead player.
                modifyGlobal $ deleteActor pl
-               -- At this place the invariant that the player exists fails.
-               -- Select the new player-controlled hero (invariant not needed),
-               -- but don't draw a frame for him with focusIfOurs,
-               -- in case the focus changes again during the same turn.
-               -- He's just a random next guy in the line.
+               -- Select the new player but don't draw a frame for him
+               -- with focusIfOurs, in case the focus changes again
+               -- during the same turn.
                selectPlayerSer lid actor
                  >>= assert `trueM` (pl, lid, actor, "player resurrects")
-               -- At this place the invariant is restored again.
 
 -- | End game, showing the ending screens, if requested.
 gameOver :: MonadAction m => Bool -> m ()
