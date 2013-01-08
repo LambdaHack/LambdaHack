@@ -29,8 +29,8 @@ module Game.LambdaHack.Action
   , promptToSlideshow, overlayToSlideshow
     -- * Draw frames
   , drawOverlay
-    -- * Clip init operations
-  , startClip, remember, rememberLevel
+    -- * Turn init operations
+  , withPerception, remember, rememberLevel, displayPush
     -- * Assorted primitives
   , saveGameBkp, dumpCfg, endOrLoop, frontendName, startFrontend
   , switchGlobalSelectedSide
@@ -343,16 +343,6 @@ displayPush = do
   -- of the move frames if the player is running.
   srunning <- getsClient srunning
   liftIO $ displayFrame fs (isJust srunning) $ Just frame
-
--- | Initialize perception, etc., display level and run the action.
-startClip :: MonadClientServer m => m () -> m ()
-startClip action =
-  -- Determine perception before running player command, in case monsters
-  -- have opened doors, etc.
-  withPerception $! do
-    remember -- heroes notice their surroundings, before they get displayed
-    displayPush  -- draw the current surroundings
-    action  -- let the actor act
 
 -- TODO: make sure it's lazy enough and fast enough.
 -- | Update faction memory for the whole perception of the current level.

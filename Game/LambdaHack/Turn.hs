@@ -84,7 +84,8 @@ handleTurn = do
 -- Some very fast actors may move many times a clip and then
 -- we introduce subclips and produce many frames per clip to avoid
 -- jerky movement. Otherwise we push exactly one frame or frame delay.
-handleActors :: MonadAction m => Time       -- ^ the start time of current subclip, exclusive
+handleActors :: MonadAction m
+             => Time  -- ^ start time of current subclip, exclusive
              -> m ()
 handleActors subclipStart = do
   debug "handleActors"
@@ -113,13 +114,20 @@ handleActors subclipStart = do
       memOld <- getsGlobal $ memActor playerOld
       let player | memOld = playerOld
                  | otherwise = actor
-      modifyLocal $ updateSelected player arena
       modifyGlobal $ updateSelected player arena
-      isControlled <- getsLocal $ flip isControlledFaction side
-      if actor == player && isControlled
-        then
-          -- Selected player moves always start a new subclip.
-          startClip $ do
+      withPerception $! do
+        -- Provisionally change level, to tell @remember@ what to update.
+        modifyLocal $ updateSelected invalidActorId arena
+        remember
+        -- If the player newly created, now it's been seen
+        -- by the client so it can be selected.
+        -- TODO: perhaps directly insert new actors into their faction loc?
+        modifyLocal $ updateSelected player arena
+        isControlled <- getsLocal $ flip isControlledFaction side
+        if actor == player && isControlled
+          then do
+            -- Selected player moves always start a new subclip.
+            displayPush
             handlePlayer
             squitNew <- getsServer squit
             splayerNew <- getsGlobal splayer
@@ -136,26 +144,27 @@ handleActors subclipStart = do
             -- selected players as well.
             unless (isJust squitNew) $ advanceTime splayerNew
             handleActors $ btime m
-        else do
-          recordHistory
-          advanceTime actor  -- advance time while the actor still alive
-          let subclipStartDelta = timeAddFromSpeed coactor m subclipStart
-          if isControlled && not (bproj m)
-             || subclipStart == timeZero
-             || btime m > subclipStartDelta
-            then
-              -- Start a new subclip if its our own faction moving
-              -- or it's another faction, but it's the first move of
-              -- this whole clip or the actor has already moved during
-              -- this subclip, so his multiple moves would be collapsed.
-              -- TODO: store frames somewhere for each faction and display
-              -- the frames only after a "Faction X taking over..." prompt.
-              startClip $ do
+          else do
+            recordHistory
+            advanceTime actor  -- advance time while the actor still alive
+            let subclipStartDelta = timeAddFromSpeed coactor m subclipStart
+            if isControlled && not (bproj m)
+               || subclipStart == timeZero
+               || btime m > subclipStartDelta
+              then do
+                -- Start a new subclip if its our own faction moving
+                -- or it's another faction, but it's the first move of
+                -- this whole clip or the actor has already moved during
+                -- this subclip, so his multiple moves would be collapsed.
+                -- TODO: store frames somewhere for each faction and display
+                -- the frames only after a "Faction X taking over..." prompt.
+                displayPush
                 handleAI actor
                 handleActors $ btime m
-            else do
-              handleAI actor
-              handleActors subclipStart
+              else do
+                -- No new subclip.
+                handleAI actor
+                handleActors subclipStart
 
 -- | Handle the move of a single monster.
 handleAI :: MonadAction m => ActorId -> m ()
