@@ -1,14 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Actors perceiving other actors and the dungeon level.
 module Game.LambdaHack.Perception
-  ( Pers, Perception
-  , totalVisible, dungeonPerception, actorSeesLoc
+  ( Perception, levelPerception, totalVisible, actorSeesLoc
   ) where
 
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import qualified Data.List as L
-import qualified Data.Map as M
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Config
@@ -19,20 +17,14 @@ import Game.LambdaHack.FOV
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Point
-import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 
 newtype PerceptionReachable = PerceptionReachable
   { preachable :: IS.IntSet }
 
+-- TOOD: if really needed, optimize by representing as a set of intervals.
 newtype PerceptionVisible = PerceptionVisible
   { pvisible :: IS.IntSet }
-
--- | Perception indexed by faction identifier.
-type Pers = IM.IntMap FactionPerception
-
--- | Perception of a single faction, indexed by level identifier.
-type FactionPerception = M.Map LevelId Perception
 
 -- | The type representing the perception of a faction on a level.
 -- The total visibility holds the sum of FOVs of all actors
@@ -50,25 +42,12 @@ totalVisible = pvisible . ptotal
 actorSeesLoc :: Perception -> ActorId -> Point -> Bool
 actorSeesLoc per aid pos = pos `IS.member` pvisible (pactors per IM.! aid)
 
--- | Calculate the perception of all actors on the level.
-dungeonPerception :: Kind.COps -> Config -> DebugModeSer -> State -> Pers
-dungeonPerception cops sconfig sdebug s =
-  let f fid _ = factionPerception cops sconfig sdebug s fid
-  in IM.mapWithKey f $ sfaction s
-
--- | Calculate perception of the faction.
-factionPerception :: Kind.COps -> Config -> DebugModeSer -> State -> FactionId
-                  -> FactionPerception
-factionPerception cops sconfig sdebug s fid =
-  M.map (levelPerception cops sconfig sdebug fid) $ sdungeon s
-
 -- | Calculate perception of the level.
-levelPerception :: Kind.COps -> Config -> DebugModeSer -> FactionId -> Level
+levelPerception :: Kind.COps -> Config -> Maybe FovMode -> FactionId -> Level
                 -> Perception
-levelPerception cops@Kind.COps{cotile} sconfig DebugModeSer{stryFov} fid
-                lvl@Level{lactor} =
-  let Config{configFovMode} = sconfig
-      hs = IM.filter (\m -> bfaction m == fid && not (bproj m)) lactor
+levelPerception cops@Kind.COps{cotile} Config{configFovMode} stryFov
+                fid lvl@Level{lactor} =
+  let hs = IM.filter (\m -> bfaction m == fid && not (bproj m)) lactor
       reas =
         IM.map (\h -> computeReachable cops configFovMode stryFov h lvl) hs
       lreas = map preachable $ IM.elems reas

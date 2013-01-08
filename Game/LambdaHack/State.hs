@@ -17,8 +17,9 @@ module Game.LambdaHack.State
   , StateClient(..), defStateClient, defHistory, updateTarget, getTarget
     -- * A dictionary of client states.
   , StateDict
-    -- * Components type and operations.
+    -- * Components types and operations.
   , TgtMode(..), Target(..)
+  , Pers, dungeonPerception
   , DebugModeSer(..), cycleTryFov
   , DebugModeCli(..), toggleMarkVision, toggleMarkSmell, toggleOmniscient
   ) where
@@ -45,6 +46,7 @@ import qualified Game.LambdaHack.Key as K
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
+import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Time
@@ -92,6 +94,7 @@ data StateClient = StateClient
   , srunning  :: !(Maybe (Vector, Int))  -- ^ direction and distance of running
   , sreport   :: !Report        -- ^ current messages
   , shistory  :: !History       -- ^ history of messages
+  , sper      :: !FactionPers   -- ^ faction perception indexed by levels
   , slastKey  :: !(Maybe K.KM)  -- ^ last command key pressed
   , sdebugCli :: !DebugModeCli  -- ^ debugging mode
   }
@@ -116,6 +119,12 @@ data Target =
     TEnemy ActorId Point  -- ^ target an actor with its last seen position
   | TPos Point            -- ^ target a given position
   deriving (Show, Eq)
+
+-- | Perception indexed by faction identifier.
+type Pers = IM.IntMap FactionPers
+
+-- | Perception of a single faction, indexed by level identifier.
+type FactionPers = M.Map LevelId Perception
 
 data DebugModeSer = DebugModeSer
   { stryFov :: !(Maybe FovMode) }
@@ -320,6 +329,7 @@ defStateClient ppos = do
     , srunning  = Nothing
     , sreport   = emptyReport
     , shistory  = emptyHistory
+    , sper      = M.empty
     , slastKey  = Nothing
     , sdebugCli = defDebugModeCli
     }
@@ -358,6 +368,18 @@ toggleMarkSmell s@StateClient{sdebugCli=sdebugCli@DebugModeCli{smarkSmell}} =
 toggleOmniscient :: StateClient -> StateClient
 toggleOmniscient s@StateClient{sdebugCli=sdebugCli@DebugModeCli{somniscient}} =
   s {sdebugCli = sdebugCli {somniscient = not somniscient}}
+
+-- | Calculate the perception of all actors on the level.
+dungeonPerception :: Kind.COps -> Config -> DebugModeSer -> State -> Pers
+dungeonPerception cops sconfig sdebug s =
+  let f fid _ = factionPerception cops sconfig sdebug s fid
+  in IM.mapWithKey f $ sfaction s
+
+-- | Calculate perception of the faction.
+factionPerception :: Kind.COps -> Config -> DebugModeSer -> State -> FactionId
+                  -> FactionPers
+factionPerception cops sconfig sdebug s fid =
+  M.map (levelPerception cops sconfig (stryFov sdebug) fid) $ sdungeon s
 
 -- * Binary instances
 
@@ -416,7 +438,8 @@ instance Binary StateClient where
     srunning <- get
     sreport <- get
     shistory <- get
-    let slastKey = Nothing
+    let sper = M.empty
+        slastKey = Nothing
         sdebugCli = defDebugModeCli
     return StateClient{..}
 
