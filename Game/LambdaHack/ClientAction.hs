@@ -497,7 +497,7 @@ selectPlayer nln actor = do
 stopRunning :: MonadClient m => m ()
 stopRunning = modifyClient (\ cli -> cli { srunning = Nothing })
 
-heroesAfterPl :: MonadClient m => m [(LevelId, ActorId)]
+heroesAfterPl :: MonadClientRO m => m [(LevelId, ActorId)]
 heroesAfterPl = do
   pl <- getsLocal splayer
   s  <- getLocal
@@ -522,7 +522,7 @@ backCycleHero = do
 -- ** Help
 
 -- | Display command help.
-displayHelp :: MonadClient m => WriterT Slideshow m ()
+displayHelp :: MonadClientRO m => WriterT Slideshow m ()
 displayHelp = do
   keyb <- askBinding
   tell $ keyHelp keyb

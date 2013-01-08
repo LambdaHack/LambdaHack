@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, ExtendedDefaultRules #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
--- | The effectToAction function and related operations.
+-- | The @effectToAction@ function and related operations.
 -- TODO: document
 module Game.LambdaHack.EffectAction where
 
@@ -91,7 +91,6 @@ effectToAction effect verbosity source target power block = do
     sm  <- getsGlobal (getActorBody source)
     tm  <- getsGlobal (getActorBody target)
     per <- askPerception
-    pl  <- getsGlobal splayer
     let spos = bpos sm
         tpos = bpos tm
         tvisible = tpos `IS.member` totalVisible per
@@ -130,9 +129,10 @@ effectToAction effect verbosity source target power block = do
       bitems <- getsGlobal (getActorItem target)
       modifyGlobal (updateArena (dropItemsAt bitems tpos))
       -- Clean bodies up.
-      if target == pl
-        then  -- Kill the player and check game over.
-          checkPartyDeath
+      isControlled <- getsGlobal $ flip isControlledFaction $ bfaction tm
+      if isControlled  -- TODO: check if spawns, etc.
+        then  -- Kill a controlled actor and check game over.
+          checkPartyDeath target
         else  -- Kill the enemy.
           modifyGlobal (deleteActor target)
     return bb
@@ -161,10 +161,11 @@ eff (Effect.Wound nDm) verbosity source target power = do
     void $ focusIfOurs target
     pl <- getsGlobal splayer
     tm <- getsGlobal (getActorBody target)
+    isControlled <- getsGlobal $ flip isControlledFaction $ bfaction tm
     let newHP = bhp tm - n - power
         msg
           | newHP <= 0 =
-            if target == pl
+            if isControlled
             then ""  -- Handled later on in checkPartyDeath. Suspense.
             else -- Not as important, so let the player read the message
                  -- about monster death while he watches the combat animation.
@@ -466,44 +467,52 @@ summonMonsters n pos = do
 -- For now we only check the selected hero and at current level,
 -- but if poison, etc. is implemented, we'd need to check all heroes
 -- on any level.
-checkPartyDeath :: MonadAction m => m ()
-checkPartyDeath = do
+checkPartyDeath :: MonadAction m => ActorId -> m ()
+checkPartyDeath target = do
   Kind.COps{coactor} <- getsGlobal scops
   per    <- askPerception
-  ahs    <- getsGlobal allHeroesAnyLevel
-  pl     <- getsGlobal splayer
-  pbody  <- getsGlobal getPlayerBody
+  pbody  <- getsGlobal $ getActorBody target
+  ahs    <- getsGlobal $ allPartyAnyLevel $ bfaction pbody
   Config{configFirstDeathEnds} <- getsServer sconfig
   when (bhp pbody <= 0) $ do
     msgAdd $ actorVerb coactor pbody "die"
     go <- displayMore ColorBW ""
     recordHistory  -- Prevent repeating the "die" msgs.
     let animateDeath = do
-          cli  <- getClient
+          cli <- getClient
           loc <- getLocal
           let animFrs = animate cli loc per $ deathBody (bpos pbody)
           displayFramesPush animFrs
         animateGameOver = do
           animateDeath
-          modifyGlobal $ updateActorBody pl $ \b -> b {bsymbol = Just '%'}
+          modifyGlobal $ updateActorBody target $ \b -> b {bsymbol = Just '%'}
           gameOver go
     if configFirstDeathEnds
       then animateGameOver
-      else case filter ((/= pl) . snd) ahs of
+      else case filter ((/= target) . snd) ahs of
              [] -> animateGameOver
-             (lid, actor) : _ -> do
+             (lid, _) : _ -> do
                msgAdd "The survivors carry on."
                animateDeath
-               -- One last look at the beautiful world (e.g., to register
-               -- that the lethal potion on the floor is used up).
-               remember
                -- Remove the dead player.
-               modifyGlobal $ deleteActor pl
-               -- Select the new player but don't draw a frame for him
-               -- with focusIfOurs, in case the focus changes again
-               -- during the same turn.
-               selectPlayerSer lid actor
-                 >>= assert `trueM` (pl, lid, actor, "player resurrects")
+               modifyGlobal $ deleteActor target
+               -- One last look at the beautiful world (e.g., to register
+               -- that the lethal potion on the floor is used up and that
+               -- the actor is no longer there (but perception of the player
+               -- is still active at that point and hence @remember@ registers
+               -- all that informations).
+               side <- getsGlobal sside
+               switchGlobalSelectedSide $ bfaction pbody
+               remember
+               -- TODO: HACK
+               modifyLocal $ updateSelected invalidActorId lid
+               switchGlobalSelectedSide side
+               -- The victim's faction does not spawn,
+               -- so it determines level changes,
+               -- so let's change the level to one that has the faction's
+               -- actors on it. A new player will be chosen next time this
+               -- faction acts (this will be the actor that moves first)..
+               modifyGlobal $ updateSelected invalidActorId lid
 
 -- | End game, showing the ending screens, if requested.
 gameOver :: MonadAction m => Bool -> m ()
