@@ -13,7 +13,6 @@ import Game.LambdaHack.Action.Frontend
 import Game.LambdaHack.Binding
 import Game.LambdaHack.Config
 import Game.LambdaHack.Msg
-import Game.LambdaHack.Perception
 import Game.LambdaHack.State
 
 -- | The information that is constant across a client playing session,
@@ -26,7 +25,7 @@ data Session = Session
   }
 
 -- | The bottom of the action monads class lattice.
-class (Monad m, Functor m, MonadReader Pers m, Show (m ()))
+class (Monad m, Functor m, Show (m ()))
       => MonadActionRoot m where
   -- Set the current exception handler. First argument is the handler,
   -- second is the computation the handler scopes over.
@@ -42,7 +41,7 @@ instance (Monoid a, MonadActionRoot m) => MonadActionRoot (WriterT a m) where
 instance MonadActionRoot m => Show (WriterT a m b) where
   show _ = "an action"
 
-class MonadActionRoot m => MonadServerRO m where
+class (MonadReader Pers m, MonadActionRoot m) => MonadServerRO m where
   getGlobal   :: m State
   getsGlobal  :: (State -> a) -> m a
   getServer   :: m StateServer

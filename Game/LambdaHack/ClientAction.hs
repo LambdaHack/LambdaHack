@@ -442,13 +442,13 @@ clearCurrent = return ()
 -- "You survived for x turns (y turns on this level)"
 displayHistory :: MonadClient m => WriterT Slideshow m ()
 displayHistory = do
-  StateClient{shistory} <- getClient
+  history <- getsClient shistory
   time <- getsLocal getTime
   let turn = time `timeFit` timeTurn
       msg = makeSentence [ "You spent on this level"
                          , MU.NWs turn "half-second turn" ]
             <+> "Past messages:"
-  slides <- overlayToSlideshow msg $ renderHistory shistory
+  slides <- overlayToSlideshow msg $ renderHistory history
   tell slides
 
 -- CfgDump doesn't take time, but needs the server, so it's defined elsewhere.

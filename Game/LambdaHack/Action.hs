@@ -175,9 +175,8 @@ askPerception = do
   let lid = case stgtMode of
         TgtOff -> arena
         _ -> tgtLevelId stgtMode
-  pers <- ask
-  side <- getsLocal sside
-  return $! pers IM.! side M.! lid
+  factionPers <- getsClient sper
+  return $! factionPers M.! lid
 
 -- | Get the current perception of the server.
 askPerceptionSer :: MonadServerRO m => m Perception
@@ -351,9 +350,13 @@ remember = do
   cops <- getsGlobal scops
   lvl <- getsGlobal getArena
   faction <- getsGlobal sfaction
-  per <- askPerception
+  per <- askPerceptionSer
+  side <- getsGlobal sside
+  pers <- ask
   modifyLocal $ updateArena $ rememberLevel cops (totalVisible per) lvl
   modifyLocal $ updateFaction (const faction)
+  let sper = pers IM.! side
+  modifyClient $ \cli -> cli {sper}
 
 -- | Update faction memory at the given set of positions.
 rememberLevel :: Kind.COps -> IS.IntSet -> Level -> Level -> Level

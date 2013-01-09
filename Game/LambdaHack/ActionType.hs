@@ -18,7 +18,6 @@ import Game.LambdaHack.Binding
 import Game.LambdaHack.Config
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Msg
-import Game.LambdaHack.Perception
 import Game.LambdaHack.State
 
 -- | The type of the function inside any full-power action.
@@ -59,11 +58,6 @@ instance Functor Action where
                runAction m c p (\s' ser' d' ->
                                    k s' ser' d'. f) a s ser d)
 
-instance MonadReader Pers Action where
-  ask       = Action (\_c p k _a s ser d -> k s ser d p)
-  local f m = Action (\c p k a s ser d ->
-                         runAction m c (f p) k a s ser d)
-
 instance Show (Action a) where
   show _ = "an action"
 
@@ -73,6 +67,11 @@ instance MonadActionRoot Action where
              let runA msg = runAction (exc msg) c p k a s ser d
              in runAction m c p k runA s ser d)
   abortWith msg = Action (\_c _p _k a _s _ser _d -> a msg)
+
+instance MonadReader Pers Action where
+  ask       = Action (\_c p k _a s ser d -> k s ser d p)
+  local f m = Action (\c p k a s ser d ->
+                         runAction m c (f p) k a s ser d)
 
 instance MonadServerRO Action where
   getGlobal  = Action (\_c _p k _a s ser d -> k s ser d s)
