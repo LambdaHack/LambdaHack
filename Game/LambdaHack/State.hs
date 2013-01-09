@@ -19,7 +19,7 @@ module Game.LambdaHack.State
   , StateDict
     -- * Components types and operations.
   , TgtMode(..), Target(..)
-  , Pers, dungeonPerception
+  , Pers, FactionPers, dungeonPerception
   , DebugModeSer(..), cycleTryFov
   , DebugModeCli(..), toggleMarkVision, toggleMarkSmell, toggleOmniscient
   ) where
@@ -369,13 +369,13 @@ toggleOmniscient :: StateClient -> StateClient
 toggleOmniscient s@StateClient{sdebugCli=sdebugCli@DebugModeCli{somniscient}} =
   s {sdebugCli = sdebugCli {somniscient = not somniscient}}
 
--- | Calculate the perception of all actors on the level.
+-- | Calculate the perception of the whole dungeon.
 dungeonPerception :: Kind.COps -> Config -> DebugModeSer -> State -> Pers
 dungeonPerception cops sconfig sdebug s =
   let f fid _ = factionPerception cops sconfig sdebug s fid
   in IM.mapWithKey f $ sfaction s
 
--- | Calculate perception of the faction.
+-- | Calculate perception of a faction.
 factionPerception :: Kind.COps -> Config -> DebugModeSer -> State -> FactionId
                   -> FactionPers
 factionPerception cops sconfig sdebug s fid =
@@ -429,16 +429,15 @@ instance Binary StateClient where
     put starget
     put srunning
     put sreport
-    put shistory
   get = do
     stgtMode <- get
-    scursor  <- get
-    seps       <- get
+    scursor <- get
+    seps <- get
     starget <- get
     srunning <- get
     sreport <- get
-    shistory <- get
-    let sper = M.empty
+    let shistory = emptyHistory
+        sper = M.empty
         slastKey = Nothing
         sdebugCli = defDebugModeCli
     return StateClient{..}

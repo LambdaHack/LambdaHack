@@ -140,10 +140,6 @@ askConfigUI = getsSession sconfigUI
 msgAdd :: MonadClient m => Msg -> m ()
 msgAdd msg = modifyClient $ \d -> d {sreport = addMsg (sreport d) msg}
 
--- | Wipe out and set a new value for the history.
-historyReset :: MonadClient m => History -> m ()
-historyReset shistory = modifyClient $ \cli -> cli {shistory}
-
 -- | Wipe out and set a new value for the current report.
 msgReset :: MonadClient m => Msg -> m ()
 msgReset msg = modifyClient $ \d -> d {sreport = singletonReport msg}
@@ -155,17 +151,21 @@ recordHistory = do
   unless (nullReport sreport) $ do
     ConfigUI{configHistoryMax} <- askConfigUI
     msgReset ""
-    historyReset $! takeHistory configHistoryMax $! addReport sreport shistory
+    let nhistory = takeHistory configHistoryMax $! addReport sreport shistory
+    modifyClient $ \cli -> cli {shistory = nhistory}
 
--- | Update the cached perception for the given computation.
+-- | Update the cached perception for the selected level, for all factions,
+-- for the given computation. The assumption is the level, and only the level,
+-- has changed since the previous perception calculation.
 withPerception :: MonadServerRO m => m () -> m ()
 withPerception m = do
   cops <- getsGlobal scops
-  s <- getGlobal
   sconfig <- getsServer sconfig
   sdebugSer <- getsServer sdebugSer
-  let per = dungeonPerception cops sconfig sdebugSer s
-  local (const per) m
+  lvl <- getsGlobal getArena
+  arena <- getsGlobal sarena
+  let per side = levelPerception cops sconfig (stryFov sdebugSer) side lvl
+  local (IM.mapWithKey (\side lp -> M.insert arena (per side) lp)) m
 
 -- | Get the current perception of a client.
 askPerception :: MonadClientRO m => m Perception
@@ -343,20 +343,32 @@ displayPush = do
   srunning <- getsClient srunning
   liftIO $ displayFrame fs (isJust srunning) $ Just frame
 
--- TODO: make sure it's lazy enough and fast enough.
--- | Update faction memory for the whole perception of the current level.
-remember :: MonadClientServer m => m ()
+-- | Update all factions memory of the current level.
+--
+-- This has to be strict wrt map operation sor we leak one perception
+-- per turn. This has to lazy wrt the perception sets or we compute them
+-- for factions that do not move, perceive or not even reside on the level.
+-- When clients and server communicate via network the communication
+-- has to be explicitely lazy and multiple updates have to collapsed
+-- when sending is forced by the server asking a client to perceive
+-- something or to act.
+remember :: MonadAction m => m ()
 remember = do
   cops <- getsGlobal scops
+  arena <- getsGlobal sarena
   lvl <- getsGlobal getArena
   faction <- getsGlobal sfaction
-  per <- askPerceptionSer
-  side <- getsGlobal sside
+  d <- getDict
   pers <- ask
-  modifyLocal $ updateArena $ rememberLevel cops (totalVisible per) lvl
-  modifyLocal $ updateFaction (const faction)
-  let sper = pers IM.! side
-  modifyClient $ \cli -> cli {sper}
+  let updArena per loc =
+        let clvl = sdungeon loc M.! arena
+            nlvl = rememberLevel cops (totalVisible per) lvl clvl
+        in updateDungeon (M.insert arena nlvl) loc
+      nd = IM.mapWithKey (\fid (cli, loc) ->
+             let per = pers IM.! fid M.! arena
+             in ( cli {sper = M.insert arena per (sper cli)}
+                , updArena per $ updateFaction (const faction) loc )) d
+  putDict nd
 
 -- | Update faction memory at the given set of positions.
 rememberLevel :: Kind.COps -> IS.IntSet -> Level -> Level -> Level
@@ -537,15 +549,19 @@ gameReset cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
             defSer = defStateServer sdiscoRev sflavour srandom sconfig
             needInitialCrew =
               filter (not . isSpawningFaction defState) $ IM.keys faction
-            fo fid (stateF, serF) =
-              initialHeroes cops entryLoc fid stateF serF
-            (state, ser) = foldr fo (defState, defSer) needInitialCrew
-            cli = defStateClient entryLoc
+            fo fid (gloF, serF) =
+              initialHeroes cops entryLoc fid gloF serF
+            (glo, ser) = foldr fo (defState, defSer) needInitialCrew
+            defCli = defStateClient entryLoc
             -- This overwrites the "Really save/quit?" messages.
             defLoc = defStateLocal freshDungeon freshDepth
                                    disco faction cops entryLevel
-            d = IM.mapWithKey (\fid _ -> (cli, defLoc fid)) faction
-        return (state, ser, d)
+            dHist = IM.mapWithKey (\fid _ -> (defCli, defLoc fid)) faction
+            pers = dungeonPerception cops sconfig (sdebugSer ser) glo
+            d = IM.mapWithKey (\side (cli, loc) ->
+                                  (cli {sper = pers IM.! side}, loc)) dHist
+
+        return (glo, ser, d)
   return $! St.evalState rnd dungeonGen
 
 gameResetAction :: MonadActionIO m
@@ -560,7 +576,7 @@ gameResetAction = liftIO . gameReset
 -- Then create the starting game config from the default config file
 -- and initialize the engine with the starting session.
 startFrontend :: (MonadActionIO m, MonadActionRO m)
-              => (m () -> FrontendSession -> Kind.COps -> Binding -> ConfigUI
+              => (m () -> FrontendSession -> Binding -> ConfigUI -> Pers
                   -> State -> StateServer -> StateDict -> IO ())
               -> Kind.COps -> m () -> IO ()
 startFrontend executor !copsSlow@Kind.COps{corule, cotile=tile} handleTurn = do
@@ -589,7 +605,7 @@ startFrontend executor !copsSlow@Kind.COps{corule, cotile=tile} handleTurn = do
 -- | Either restore a saved game, or setup a new game.
 -- Then call the main game loop.
 start :: MonadActionRoot m
-      => (m () -> FrontendSession -> Kind.COps -> Binding -> ConfigUI
+      => (m () -> FrontendSession -> Binding -> ConfigUI -> Pers
           -> State -> StateServer -> StateDict -> IO ())
       -> FrontendSession -> Kind.COps -> Binding -> Config -> ConfigUI
       -> m () -> IO ()
@@ -598,20 +614,23 @@ start executor sfs cops@Kind.COps{corule}
   let title = rtitle $ Kind.stdRuleset corule
       pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
   restored <- Save.restoreGame sconfig sconfigUI pathsDataFile title
-  (state, ser, dBare, shistory, msg) <- case restored of
+  (glo, ser, dBare, shistory, msg) <- case restored of
     Right (shistory, msg) -> do  -- Starting a new game.
-      (stateR, serR, dR) <- gameReset cops
-      return (stateR, serR, dR, shistory, msg)
-    Left (stateL, serL, dL, shistory, msg) -> do  -- Running a restored game.
-      let stateCops = updateCOps (const cops) stateL
+      (gloR, serR, dR) <- gameReset cops
+      return (gloR, serR, dR, shistory, msg)
+    Left (gloL, serL, dL, shistory, msg) -> do  -- Running a restored game.
+      let gloCops = updateCOps (const cops) gloL
           dCops = IM.map (\(cli, loc) -> (cli, updateCOps (const cops) loc)) dL
-      return (stateCops, serL, dCops, shistory, msg)
+      return (gloCops, serL, dCops, shistory, msg)
   let singMsg (cli, loc) = (cli {sreport = singletonReport msg}, loc)
       dMsg = IM.map singMsg dBare
-      d = case filter (isControlledFaction state) $ IM.keys dMsg of
+      dHist = case filter (isControlledFaction glo) $ IM.keys dMsg of
         [] -> dMsg  -- only robots play
         k : _ -> IM.adjust (\(cli, loc) -> (cli {shistory}, loc)) k dMsg
-  executor handleGame sfs cops sbinding sconfigUI state ser d
+      pers = dungeonPerception cops sconfig (sdebugSer ser) glo
+      d = IM.mapWithKey (\side (cli, loc) ->
+                            (cli {sper = pers IM.! side}, loc)) dHist
+  executor handleGame sfs sbinding sconfigUI pers glo ser d
 
 switchGlobalSelectedSide :: MonadServer m => FactionId -> m ()
 switchGlobalSelectedSide =

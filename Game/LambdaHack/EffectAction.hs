@@ -319,7 +319,10 @@ effLvlGoUp k = do
         -- Remove the player from the old level.
         modifyGlobal (deleteActor pl)
         -- Remember the level (e.g., when teleporting via scroll on the floor,
-        -- register the scroll vanished, also register the actor vanished).
+        -- register the scroll vanished, also let the other factions register
+        -- the actor vanished in case they switch to this level from another
+        -- level). Perception is unchanged, so for one turn (this level turn)
+        -- there will be visibility left on the old actor location.
         remember
         -- Monsters hear no foe is left on the level. Cancel smell.
         -- Reduces memory load and savefile size.

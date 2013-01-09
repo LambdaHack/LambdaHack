@@ -16,7 +16,6 @@ import Game.LambdaHack.Action.Frontend
 import Game.LambdaHack.ActionClass
 import Game.LambdaHack.Binding
 import Game.LambdaHack.Config
-import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 
@@ -127,12 +126,12 @@ instance MonadAction Action where
 
 -- | Run an action, with a given session, state and history, in the @IO@ monad.
 executor :: Action ()
-         -> FrontendSession -> Kind.COps -> Binding -> ConfigUI
+         -> FrontendSession -> Binding -> ConfigUI -> Pers
          -> State -> StateServer -> StateDict -> IO ()
-executor m sfs cops sbinding sconfigUI s ser d =
+executor m sfs sbinding sconfigUI pers s ser d =
   runAction m
     Session{..}
-    (dungeonPerception cops (sconfig ser) (sdebugSer ser) s)
+    pers
     (\_ _ _ _ -> return ())  -- final continuation returns result
     (\msg -> fail $ T.unpack $ "unhandled abort:" <+> msg)  -- e.g., in AI code
     s

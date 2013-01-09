@@ -84,16 +84,20 @@ handleTurn = do
 -- Some very fast actors may move many times a clip and then
 -- we introduce subclips and produce many frames per clip to avoid
 -- jerky movement. Otherwise we push exactly one frame or frame delay.
+-- We start by updating perception, because the selected level of dungeon
+-- has changed since last time (every change, whether by player or AI
+-- or @generateMonster@ is followd by a call to @handleActors@).
 handleActors :: MonadAction m
              => Time  -- ^ start time of current subclip, exclusive
              -> m ()
-handleActors subclipStart = do
+handleActors subclipStart = withPerception $ do
   debug "handleActors"
+  remember
   Kind.COps{coactor} <- getsGlobal scops
   time <- getsGlobal getTime  -- the end time of this clip, inclusive
    -- Older actors act earlier.
   lactor <- getsGlobal (IM.toList . lactor . getArena)
-  squitOld <- getsServer squit
+  quit <- getsServer squit
   let mnext = if null lactor  -- wait until any actor spawned
               then Nothing
               else let -- Heroes move first then monsters, then the rest.
@@ -103,7 +107,7 @@ handleActors subclipStart = do
                       then Nothing  -- no actor is ready for another move
                       else Just (actor, m)
   case mnext of
-    _ | isJust squitOld -> return ()
+    _ | isJust quit -> return ()
     Nothing -> when (subclipStart == timeZero) $ displayFramesPush [Nothing]
     Just (actor, m) -> do
       let side = bfaction m
@@ -115,57 +119,50 @@ handleActors subclipStart = do
       let player | memOld = playerOld
                  | otherwise = actor
       modifyGlobal $ updateSelected player arena
-      withPerception $! do
-        -- Provisionally change level, to tell @remember@ what to update.
-        modifyLocal $ updateSelected invalidActorId arena
-        remember
-        -- If the player newly created, now it's been seen
-        -- by the client so it can be selected.
-        -- TODO: perhaps directly insert new actors into their faction loc?
-        modifyLocal $ updateSelected player arena
-        isControlled <- getsLocal $ flip isControlledFaction side
-        if actor == player && isControlled
-          then do
-            -- Selected player moves always start a new subclip.
-            displayPush
-            handlePlayer
-            squitNew <- getsServer squit
-            splayerNew <- getsGlobal splayer
-            -- Advance time once, after the player switched perhaps many times.
-            -- Ending and especially saving does not take time.
-            -- TODO: this is correct only when all heroes have the same
-            -- speed and can't switch players by, e.g., aiming a wand
-            -- of domination. We need to generalize by displaying
-            -- "(next move in .3s [RET]" when switching players.
-            -- RET waits .3s and gives back control,
-            -- Any other key does the .3s wait and the action form the key
-            -- at once. This requires quite a bit of refactoring
-            -- and is perhaps better done when the other factions have
-            -- selected players as well.
-            -- TODO: if splayerNew == invalidActorId, no time advances
-            unless (isJust squitNew) $ advanceTime splayerNew
-            handleActors $ btime m
-          else do
-            recordHistory
-            advanceTime actor  -- advance time while the actor still alive
-            let subclipStartDelta = timeAddFromSpeed coactor m subclipStart
-            if isControlled && not (bproj m)
-               || subclipStart == timeZero
-               || btime m > subclipStartDelta
-              then do
-                -- Start a new subclip if its our own faction moving
-                -- or it's another faction, but it's the first move of
-                -- this whole clip or the actor has already moved during
-                -- this subclip, so his multiple moves would be collapsed.
-                -- TODO: store frames somewhere for each faction and display
-                -- the frames only after a "Faction X taking over..." prompt.
-                displayPush
-                handleAI actor
-                handleActors $ btime m
-              else do
-                -- No new subclip.
-                handleAI actor
-                handleActors subclipStart
+      modifyLocal $ updateSelected player arena
+      isControlled <- getsLocal $ flip isControlledFaction side
+      if actor == player && isControlled
+        then do
+          -- Selected player moves always start a new subclip.
+          displayPush
+          handlePlayer
+          squitNew <- getsServer squit
+          splayerNew <- getsGlobal splayer
+          -- Advance time once, after the player switched perhaps many times.
+          -- Ending and especially saving does not take time.
+          -- TODO: this is correct only when all heroes have the same
+          -- speed and can't switch players by, e.g., aiming a wand
+          -- of domination. We need to generalize by displaying
+          -- "(next move in .3s [RET]" when switching players.
+          -- RET waits .3s and gives back control,
+          -- Any other key does the .3s wait and the action form the key
+          -- at once. This requires quite a bit of refactoring
+          -- and is perhaps better done when the other factions have
+          -- selected players as well.
+          -- TODO: if splayerNew == invalidActorId, no time advances
+          unless (isJust squitNew) $ advanceTime splayerNew
+          handleActors $ btime m
+        else do
+          recordHistory
+          advanceTime actor  -- advance time while the actor still alive
+          let subclipStartDelta = timeAddFromSpeed coactor m subclipStart
+          if isControlled && not (bproj m)
+             || subclipStart == timeZero
+             || btime m > subclipStartDelta
+            then do
+              -- Start a new subclip if its our own faction moving
+              -- or it's another faction, but it's the first move of
+              -- this whole clip or the actor has already moved during
+              -- this subclip, so his multiple moves would be collapsed.
+              -- TODO: store frames somewhere for each faction and display
+              -- the frames only after a "Faction X taking over..." prompt.
+              displayPush
+              handleAI actor
+              handleActors $ btime m
+            else do
+              -- No new subclip.
+              handleAI actor
+              handleActors subclipStart
 
 -- | Handle the move of a single monster.
 handleAI :: MonadAction m => ActorId -> m ()
