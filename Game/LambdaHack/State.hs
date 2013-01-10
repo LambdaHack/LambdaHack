@@ -10,7 +10,7 @@ module Game.LambdaHack.State
   , updateDungeon, updateDisco, updateFaction, updateCOps
   , updateArena, updateTime, updateSide, updateSelected
   , getArena, getTime, getSide
-  , isControlledFaction, isSpawningFaction
+  , isPlayerFaction, isSpawningFaction
     -- * Server state and its operations
   , StateServer(..), defStateServer
     -- * Client state and its operations
@@ -255,11 +255,11 @@ getTime State{_sarena, _sdungeon} = ltime $ _sdungeon M.! _sarena
 getSide :: State -> Faction
 getSide State{_sfaction, _sside} = _sfaction IM.! _sside
 
--- | Tell whether the faction is human-controlled.
-isControlledFaction :: State -> FactionId -> Bool
-isControlledFaction s fid = isNothing $ gAiSelected $ _sfaction s IM.! fid
+-- | Tell whether the faction is player-controlled.
+isPlayerFaction :: State -> FactionId -> Bool
+isPlayerFaction s fid = isNothing $ gAiSelected $ _sfaction s IM.! fid
 
--- | Tell whether the faction is human-controlled.
+-- | Tell whether the faction can spawn actors.
 isSpawningFaction :: State -> FactionId -> Bool
 isSpawningFaction s fid =
   let Kind.Ops{okind} = Kind.cofact (_scops s)

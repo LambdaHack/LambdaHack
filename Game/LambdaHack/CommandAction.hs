@@ -165,7 +165,7 @@ sendToPlayers :: MonadAction m => (Point, CmdCli) -> m ()
 sendToPlayers (pos, cmd) = do
   arena <- getsGlobal sarena
   glo <- getGlobal
-  let f (fid, perF) = when (isControlledFaction glo fid) $ do
+  let f (fid, perF) = when (isPlayerFaction glo fid) $ do
         let perceived = pos `IS.member` totalVisible (perF M.! arena)
         when perceived $ sendToClient fid cmd
   pers <- ask

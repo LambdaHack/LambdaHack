@@ -76,7 +76,7 @@ handleTurn = do
   modifyGlobal (updateTime (timeAdd timeClip))
   endOrLoop handleTurn
 
--- TODO: switch levels alternating between controlled factions,
+-- TODO: switch levels alternating between player factions,
 -- if there are many and on distinct levels.
 -- TODO: If a faction has no actors left in the dungeon,
 -- announce game end for this faction. Not sure if here's the right place.
@@ -101,8 +101,7 @@ checkEndGame = do
       modifyGlobal $ updateSelected aid lid
 
 -- TODO: We should replace this structure using a priority search queue/tree.
--- | Perform moves for individual actors not controlled
--- by the player, as long as there are actors
+-- | Perform moves for individual actors, as long as there are actors
 -- with the next move time less than or equal to the current time.
 -- Some very fast actors may move many times a clip and then
 -- we introduce subclips and produce many frames per clip to avoid
@@ -143,8 +142,8 @@ handleActors subclipStart = withPerception $ do
                  | otherwise = actor
       modifyGlobal $ updateSelected leader arena
       modifyLocal $ updateSelected leader arena
-      isControlled <- getsLocal $ flip isControlledFaction side
-      if actor == leader && isControlled
+      isPlayer <- getsLocal $ flip isPlayerFaction side
+      if actor == leader && isPlayer
         then do
           -- Player moves always start a new subclip.
           displayPush
@@ -169,7 +168,7 @@ handleActors subclipStart = withPerception $ do
           recordHistory
           advanceTime actor  -- advance time while the actor still alive
           let subclipStartDelta = timeAddFromSpeed coactor m subclipStart
-          if isControlled && not (bproj m)
+          if isPlayer && not (bproj m)
              || subclipStart == timeZero
              || btime m > subclipStartDelta
             then do

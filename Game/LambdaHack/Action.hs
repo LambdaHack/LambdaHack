@@ -496,7 +496,7 @@ restartGame handleTurn = do
   cops <- getsGlobal scops
   shistory <- getsClient shistory
   (state, ser, dMsg) <- gameResetAction cops
-  let d = case filter (isControlledFaction state) $ IM.keys dMsg of
+  let d = case filter (isPlayerFaction state) $ IM.keys dMsg of
         [] -> dMsg  -- only robots play
         k : _ -> IM.adjust (\(cli, loc) -> (cli {shistory}, loc)) k dMsg
   putGlobal state
@@ -617,7 +617,7 @@ start executor sfs cops@Kind.COps{corule}
       return (gloCops, serL, dCops, shistory, msg)
   let singMsg (cli, loc) = (cli {sreport = singletonReport msg}, loc)
       dMsg = IM.map singMsg dBare
-      dHist = case filter (isControlledFaction glo) $ IM.keys dMsg of
+      dHist = case filter (isPlayerFaction glo) $ IM.keys dMsg of
         [] -> dMsg  -- only robots play
         k : _ -> IM.adjust (\(cli, loc) -> (cli {shistory}, loc)) k dMsg
       pers = dungeonPerception cops sconfig (sdebugSer ser) glo

@@ -129,13 +129,13 @@ effectToAction effect verbosity source target power block = do
       bitems <- getsGlobal (getActorItem target)
       modifyGlobal (updateArena (dropItemsAt bitems tpos))
       -- Clean bodies up.
-      isControlled <- getsGlobal $ flip isControlledFaction $ bfaction tm
+      isPlayer <- getsGlobal $ flip isPlayerFaction $ bfaction tm
       -- TODO: check if spawns, etc.
       -- A faction that spawns cannot switch levels (nor move between levels).
       -- Otherwise it would constantly spawn on a distant level
       -- and an swarm any opponent arriving there.
-      if isControlled
-        then  -- Kill a controlled actor and check game over.
+      if isPlayer
+        then  -- Kill a player actor and check game over.
           checkPartyDeath target
         else  -- Kill the enemy.
           modifyGlobal (deleteActor target)
@@ -165,11 +165,11 @@ eff (Effect.Wound nDm) verbosity source target power = do
     void $ focusIfOurs target
     leader <- getsGlobal sleader
     tm <- getsGlobal (getActorBody target)
-    isControlled <- getsGlobal $ flip isControlledFaction $ bfaction tm
+    isPlayer <- getsGlobal $ flip isPlayerFaction $ bfaction tm
     let newHP = bhp tm - n - power
         msg
           | newHP <= 0 =
-            if isControlled
+            if isPlayer
             then ""  -- Handled later on in checkPartyDeath. Suspense.
             else -- Not as important, so let the player read the message
                  -- about monster death while he watches the combat animation.
@@ -204,7 +204,7 @@ eff Effect.Dominate _ source target _power = do
       modifyGlobal $ updateActorBody leader $ \ b -> b { bfaction = sside s
                                                    , btime = getTime s
                                                    , bspeed = halfSpeed b }
-      -- Display status line and FOV for the newly controlled actor.
+      -- Display status line and FOV for the new actor.
       sli <- promptToSlideshow ""
       fr <- drawOverlay ColorBW $ head $ runSlideshow sli
       displayFramesPush [Nothing, Just fr, Nothing]

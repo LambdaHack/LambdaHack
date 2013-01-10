@@ -467,7 +467,7 @@ cycleHero = do
     (nl, np) : _ -> selectLeader nl np
                       >>= assert `trueM` (leader, nl, np, "hero duplicated")
 
--- | Make the actor controlled by the player. Switch level, if needed.
+-- | Select a faction leader. Switch level, if needed.
 -- False, if nothing to do. Should only be invoked as a direct result
 -- of a player action (leader death just sets sleader to -1).
 selectLeader :: MonadClient m => LevelId -> ActorId -> m Bool
@@ -478,7 +478,6 @@ selectLeader nln actor = do
   if actor == leader
     then return False -- already selected
     else do
-      -- Make the new actor the player-controlled actor.
       modifyLocal $ updateSelected actor nln
       -- Move the cursor, if active, to the new level.
       when (stgtMode /= TgtOff) $ setTgtId nln

@@ -305,7 +305,7 @@ actorAttackActor source target = do
          | otherwise = smRaw {bname = Just "somebody"}
       tm | tvisible  = tmRaw
          | otherwise = tmRaw {bname = Just "somebody"}
-  if bfaction sm == bfaction tm && isControlledFaction s (bfaction sm)
+  if bfaction sm == bfaction tm && isPlayerFaction s (bfaction sm)
      && not (bproj sm) && not (bproj tm)
     then assert `failure` (source, target, "player AI bumps into friendlies")
     else do

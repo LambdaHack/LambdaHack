@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
--- | AI strategies to direct actors not controlled by the player.
+-- | AI strategies to direct actors not controlled directly by human players.
 -- No operation in this module involves the 'State' or 'Action' type.
 module Game.LambdaHack.Strategy
   ( Strategy, nullStrategy, liftFrequency
@@ -9,8 +9,8 @@ module Game.LambdaHack.Strategy
 import Control.Monad
 import Data.Text (Text)
 
-import Game.LambdaHack.Utils.Frequency
 import Game.LambdaHack.Msg
+import Game.LambdaHack.Utils.Frequency
 
 -- | A strategy is a choice of (non-empty) frequency tables
 -- of possible actions.
