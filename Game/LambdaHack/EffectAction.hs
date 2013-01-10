@@ -479,7 +479,6 @@ checkPartyDeath target = do
   Kind.COps{coactor} <- getsGlobal scops
   per    <- askPerception
   pbody  <- getsGlobal $ getActorBody target
-  ahs    <- getsGlobal $ allPartyAnyLevel $ bfaction pbody
   Config{configFirstDeathEnds} <- getsServer sconfig
   when (bhp pbody <= 0) $ do
     msgAdd $ actorVerb coactor pbody "die"
@@ -494,33 +493,19 @@ checkPartyDeath target = do
           animateDeath
           modifyGlobal $ updateActorBody target $ \b -> b {bsymbol = Just '%'}
           gameOver go
-    if configFirstDeathEnds
+    if configFirstDeathEnds  -- TODO: only end game for target's faction.
       then animateGameOver
-      else case filter ((/= target) . snd) ahs of
-             [] -> animateGameOver
-             (lid, _) : _ -> do
-               msgAdd "The survivors carry on."
-               animateDeath
-               -- Remove the dead player.
-               modifyGlobal $ deleteActor target
-               -- One last look at the beautiful world (e.g., to register
-               -- that the lethal potion on the floor is used up and that
-               -- the actor is no longer there (but perception of the player
-               -- is still active at that point and hence @remember@ registers
-               -- all that informations).
-               side <- getsGlobal sside
-               -- TODO: perhaps switch for the whole function or more
-               switchGlobalSelectedSide $ bfaction pbody
-               remember
-               -- TODO: HACK
-               modifyLocal $ updateSelected invalidActorId lid
-               switchGlobalSelectedSide side
-               -- The victim's faction does not spawn,
-               -- so it determines level changes,
-               -- so let's change the level to one that has the faction's
-               -- actors on it. A new player will be chosen next time this
-               -- faction acts (this will be the actor that moves first)..
-               modifyGlobal $ updateSelected invalidActorId lid
+      else do
+        msgAdd "The survivors carry on."  -- TODO: add to the dead actor faction, not the attacker faction; then reset messages at game over not to display it if there are no survivors.
+        animateDeath
+        -- Remove the dead player.
+        modifyGlobal $ deleteActor target
+        -- We don't register that the lethal potion on the floor
+        -- is used up. If that's a problem, add a one turn delay
+        -- to the effect of all lethal objects (displaying an "agh! dying"
+        -- message). Other factions do register that the actor (and potion)
+        -- is gone, because the level is not switched and so perception
+        -- is recorded for this level.
 
 -- | End game, showing the ending screens, if requested.
 gameOver :: MonadAction m => Bool -> m ()

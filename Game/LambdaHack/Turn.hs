@@ -68,7 +68,8 @@ handleTurn = do
   time <- getsGlobal getTime  -- the end time of this clip, inclusive
   let clipN = (time `timeFit` timeClip) `mod` (timeTurn `timeFit` timeClip)
   -- Regenerate HP and add monsters each turn, not each clip.
-  when (clipN == 1) regenerateLevelHP
+  when (clipN == 1) checkEndGame
+  when (clipN == 2) regenerateLevelHP
   when (clipN == 3) generateMonster
   ptime <- getsGlobal (btime . getPlayerBody)  -- time of player's next move
   debug $ "handleTurn: time check. ptime ="
@@ -76,6 +77,30 @@ handleTurn = do
   handleActors timeZero
   modifyGlobal (updateTime (timeAdd timeClip))
   endOrLoop handleTurn
+
+-- TODO: switch levels alternating between controlled factions,
+-- if there are many and on distinct levels.
+-- TODO: If a faction has no actors left in the dungeon,
+-- announce game end for this faction. Not sure if here's the right place.
+-- TODO: Let the spawning factions that remain duke it out somehow,
+-- if the player requests to see it.
+-- | If no actor of a non-spawning faction on the level,
+-- switch levels. If no level to switch to, end game globally.
+checkEndGame :: MonadAction m => m ()
+checkEndGame = do
+  -- Actors on the current level go first so that we don't switch levels
+  -- unnecessarily.
+  as <- getsGlobal allActorsAnyLevel
+  loc <- getLocal
+  let aNotSp = filter (not . isSpawningFaction loc . bfaction . snd . snd) as
+  case aNotSp of
+    [] -> gameOver True
+    (lid, (aid, abody)) : _ -> do
+      -- Switch to the level (can be the currently selected level, too).
+      -- Pick a random representant of this level. This faction client's
+      -- selected actor may be different and will take precedence later on.
+      switchGlobalSelectedSide $ bfaction abody
+      modifyGlobal $ updateSelected aid lid
 
 -- TODO: We should replace this structure using a priority search queue/tree.
 -- | Perform moves for individual actors not controlled

@@ -4,7 +4,7 @@
 -- TODO: Document an export list after it's rewritten according to #17.
 module Game.LambdaHack.ActorState
   ( isProjectile, isAHero, getPlayerBody, calculateTotal
-  , initialHeroes, allPartyAnyLevel
+  , initialHeroes, allActorsAnyLevel
   , posToActor, deleteActor, addHero, addMonster, updateActorItem
   , insertActor, heroList, memActor, getActorBody, updateActorBody
   , hostileList, getActorItem, getPlayerItem, tryFindHeroK, dangerousList
@@ -201,13 +201,13 @@ addProjectile Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}}
 
 -- * These few operations look at all levels of the dungeon.
 
--- | The list of actors and their levels for all heroes in the dungeon
+-- | The list of all non-projectile actors and their levels in the dungeon,
 -- starting with the selected level.
-allPartyAnyLevel :: FactionId -> State -> [(LevelId, ActorId)]
-allPartyAnyLevel fid s =
+allActorsAnyLevel :: State -> [(LevelId, (ActorId, Actor))]
+allActorsAnyLevel s =
   let one (ln, lvl) =
-        [ (ln, a) | (a, m) <- IM.toList $ lactor lvl
-                  , bfaction m == fid && not (bproj m) ]
+        [ (ln, (a, m)) | (a, m) <- IM.toList $ lactor lvl
+                       , not (bproj m) ]
       butFrist = M.delete (sarena s) (sdungeon s)
       selectedFirst = (sarena s, sdungeon s M.! sarena s) : M.toList butFrist
   in L.concatMap one selectedFirst
