@@ -200,19 +200,6 @@ actorPickupItem actor = do
         Just l -> return $ PickupSer actor i l
         Nothing -> abortWith "cannot carry any more"
 
-pickupCli :: MonadClient m => ActorId -> Item -> Item -> m ()
-pickupCli aid i ni = do
-  Kind.COps{coactor, coitem} <- getsLocal scops
-  body <- getsLocal (getActorBody aid)
-  side <- getsLocal sside
-  disco <- getsLocal sdisco
-  if bfaction body == side
-    then msgAdd $ makePhrase [ letterLabel (jletter ni)
-                             , partItemNWs coitem disco ni ]
-    else msgAdd $ makeSentence
-           [ MU.SubjectVerbSg (partActor coactor body) "pick up"
-           , partItemNWs coitem disco i ]  -- single, not 'ni'
-
 -- ** Drop
 
 -- TODO: you can drop an item already on the floor, which works correctly,

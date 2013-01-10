@@ -529,3 +529,33 @@ selectHero k = do
   case tryFindHeroK loc k of
     Nothing  -> abortWith "No such member of the party."
     Just (lid, aid) -> void $ selectLeader lid aid
+
+-- TODO: move somewhere
+
+-- | Abstract syntax of client commands.
+data CmdCli =
+    PickupCli ActorId Item Item
+  | ShowItemsCli Discoveries Msg [Item]
+  deriving Show
+
+pickupCli :: MonadClient m => ActorId -> Item -> Item -> m ()
+pickupCli aid i ni = do
+  Kind.COps{coactor, coitem} <- getsLocal scops
+  body <- getsLocal (getActorBody aid)
+  side <- getsLocal sside
+  disco <- getsLocal sdisco
+  if bfaction body == side
+    then msgAdd $ makePhrase [ letterLabel (jletter ni)
+                             , partItemNWs coitem disco ni ]
+    else msgAdd $ makeSentence
+           [ MU.SubjectVerbSg (partActor coactor body) "pick up"
+           , partItemNWs coitem disco i ]  -- single, not 'ni'
+
+-- | The semantics of client commands.
+cmdCli :: MonadClient m => CmdCli -> m Bool
+cmdCli cmd = case cmd of
+  PickupCli aid i ni -> pickupCli aid i ni >> return True  -- TODO: GADT?
+  ShowItemsCli discoS loseMsg items -> do
+    io <- itemOverlay discoS True items
+    slides <- overlayToSlideshow loseMsg io
+    getManyConfirms [] slides

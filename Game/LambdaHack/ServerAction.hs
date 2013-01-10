@@ -22,7 +22,6 @@ import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Animation (blockMiss, swapPlaces)
 import Game.LambdaHack.ClientAction
-import Game.LambdaHack.Command
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
@@ -219,7 +218,7 @@ triggerSer dpos = do
 
 -- * PickupSer
 
-pickupSer :: MonadServer m => ActorId -> Item -> Char -> m (Point, CmdCli)
+pickupSer :: MonadAction m => ActorId -> Item -> Char -> m ()
 pickupSer aid i l = do
   side <- getsGlobal sside
   body <- getsGlobal (getActorBody aid)
@@ -231,15 +230,15 @@ pickupSer aid i l = do
       >>= assert `trueM` (aid, i, p, "item is stuck")
     let (ni, nitems) = joinItem (i {jletter = Just l}) bitems
     modifyGlobal $ updateActorBody aid $ \m ->
-      m { bletter = maxLetter (fromJust $ jletter ni) (bletter m) }
+      m {bletter = maxLetter (fromJust $ jletter ni) (bletter m)}
     modifyGlobal (updateActorItem aid (const nitems))
-    return (p, PickupCli aid i ni)
+    sendToPlayers p (PickupCli aid i ni)
 
 -- ** DropSer
 
 dropSer :: MonadServer m => ActorId -> Item -> m ()
 dropSer aid item = do
-  pos  <- getsGlobal (bpos . getActorBody aid)
+  pos <- getsGlobal (bpos . getActorBody aid)
   modifyGlobal (updateActorItem aid (removeItemByLetter item))
   modifyGlobal (updateArena (dropItemsAt [item] pos))
 

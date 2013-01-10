@@ -15,6 +15,7 @@ import Data.Monoid (mempty)
 import Data.Ratio ((%))
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
+import Control.Monad.Reader.Class
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -544,9 +545,8 @@ gameOver showEndingScreens = do
         modifyGlobal $ updateSide upd2
       else do
         discoS <- getsGlobal sdisco
-        io <- itemOverlay discoS True items
-        slides <- overlayToSlideshow loseMsg io
-        go <- getManyConfirms [] slides
+        side <- getsGlobal sside
+        go <- askClient side $ ShowItemsCli discoS loseMsg items
         when go $ do
           let upd2 f = f {gquit = Just (True, Killed arena)}
           modifyGlobal $ updateSide upd2
@@ -567,3 +567,23 @@ discover discoS i = do
                                     "turn out to be"
           , partItemAW coitem disco i ]
     msgAdd msg
+
+-- TODO: move somewhere
+
+sendToPlayers :: MonadAction m => Point -> CmdCli -> m ()
+sendToPlayers pos cmd = do
+  arena <- getsGlobal sarena
+  glo <- getGlobal
+  let f (fid, perF) = when (isPlayerFaction glo fid) $ do
+        let perceived = pos `IS.member` totalVisible (perF M.! arena)
+        when perceived $ void $ askClient fid cmd
+  pers <- ask
+  mapM_ f $ IM.toList pers
+
+askClient :: MonadAction m => FactionId -> CmdCli -> m Bool
+askClient fid cmd = do
+  side <- getsGlobal sside
+  switchGlobalSelectedSide fid
+  b <- cmdCli cmd
+  switchGlobalSelectedSide side
+  return b

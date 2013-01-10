@@ -5,10 +5,7 @@ module Game.LambdaHack.CommandAction
   ) where
 
 import Control.Monad
-import Control.Monad.Reader.Class
 import Control.Monad.Writer.Strict (WriterT, lift)
-import qualified Data.IntMap as IM
-import qualified Data.IntSet as IS
 import qualified Data.Map as M
 import Data.Maybe
 import Data.Text (Text)
@@ -18,12 +15,9 @@ import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.ClientAction
 import Game.LambdaHack.Command
-import Game.LambdaHack.Faction
 import Game.LambdaHack.Level
 import Game.LambdaHack.MixedAction
 import Game.LambdaHack.Msg
-import Game.LambdaHack.Perception
-import Game.LambdaHack.Point
 import Game.LambdaHack.ServerAction
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
@@ -143,7 +137,7 @@ cmdSer cmd = case cmd of
   ApplySer aid v item -> applySer aid v item
   ProjectSer aid p v i -> projectSer aid p v i
   TriggerSer p -> triggerSer p
-  PickupSer aid i l -> pickupSer aid i l >>= sendToPlayers
+  PickupSer aid i l -> pickupSer aid i l
   DropSer aid item -> dropSer aid item
   WaitSer aid -> waitSer aid
   MoveSer aid dir -> moveSer aid dir
@@ -153,27 +147,5 @@ cmdSer cmd = case cmd of
   GameSaveSer -> gameSaveSer
   CfgDumpSer -> cfgDumpSer
 
--- | The semantics of client commands.
-cmdCli :: MonadClient m => CmdCli -> m ()
-cmdCli cmd = case cmd of
-  PickupCli aid i ni -> pickupCli aid i ni
-
 cmdSerAction :: MonadAction m => m CmdSer -> WriterT Slideshow m ()
 cmdSerAction m = lift $ m >>= cmdSer
-
-sendToPlayers :: MonadAction m => (Point, CmdCli) -> m ()
-sendToPlayers (pos, cmd) = do
-  arena <- getsGlobal sarena
-  glo <- getGlobal
-  let f (fid, perF) = when (isPlayerFaction glo fid) $ do
-        let perceived = pos `IS.member` totalVisible (perF M.! arena)
-        when perceived $ sendToClient fid cmd
-  pers <- ask
-  mapM_ f $ IM.toList pers
-
-sendToClient :: MonadAction m => FactionId -> CmdCli -> m ()
-sendToClient fid cmd = do
-  side <- getsGlobal sside
-  switchGlobalSelectedSide fid
-  cmdCli cmd
-  switchGlobalSelectedSide side

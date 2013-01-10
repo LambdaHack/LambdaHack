@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Abstract syntax of server and client commands.
 module Game.LambdaHack.Command
-  ( CmdCli(..), CmdSer(..), Cmd(..)
+  ( CmdSer(..), Cmd(..)
   , majorCmd, minorCmd, timedCmd, cmdDescription
   ) where
 
@@ -16,11 +16,6 @@ import Game.LambdaHack.Point
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 import Game.LambdaHack.VectorXY
-
--- | Abstract syntax of client commands.
-data CmdCli =
-    PickupCli ActorId Item Item
-  deriving Show
 
 -- | Abstract syntax of server commands.
 data CmdSer =
