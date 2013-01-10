@@ -58,8 +58,8 @@ draw dm cops per
         case stgtMode of
           TgtOff -> (sarena s, getArena s)
           _ -> (tgtLevelId stgtMode, sdungeon s M.! tgtLevelId stgtMode)
-      mpl@Actor{bkind, bhp, bpos} = getPlayerBody s
-      bitems = getPlayerItem s
+      mpl@Actor{bkind, bhp, bpos} = getLeaderBody s
+      bitems = getLeaderItem s
       ActorKind{ahp, asmell} = okind bkind
       (msgTop, over, msgBottom) = stringByLocation lxsize lysize overlay
       -- TODO:
@@ -91,7 +91,7 @@ draw dm cops per
             smlt = sml `timeAdd` timeNegate ltime
             viewActor loc Actor{bkind = bkind2, bsymbol, bcolor}
               | loc == bpos && drawnLevelId == sarena s =
-                  (symbol, Color.defBG)  -- highlight player
+                  (symbol, Color.defBG)  -- highlight leader
               | otherwise = (symbol, color)
              where
               ActorKind{asymbol, acolor} = okind bkind2
@@ -126,7 +126,7 @@ draw dm cops per
                     [] -> (tsymbol tk, if vis then tcolor tk else tcolor2 tk)
                     i : _ -> Item.viewItem i
             vis = IS.member pos0 $ totalVisible per
-            visPl = actorSeesLoc per (splayer s) pos0
+            visPl = actorSeesLoc per (sleader s) pos0
             bg0 = if stgtMode /= TgtOff && pos0 == scursor
                   then Color.defFG       -- highlight target cursor
                   else sVisBG vis visPl  -- FOV debug or standard bg

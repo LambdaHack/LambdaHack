@@ -60,7 +60,7 @@ import Game.LambdaHack.Vector
 -- | Start a clip (a part of a turn for which one or more frames
 -- will be generated). Do whatever has to be done
 -- every fixed number of time units, e.g., monster generation.
--- Run the player and other actors moves. Eventually advance the time
+-- Run the leader and other actors moves. Eventually advance the time
 -- and repeat.
 handleTurn :: MonadAction m => m ()
 handleTurn = do
@@ -71,9 +71,7 @@ handleTurn = do
   when (clipN == 1) checkEndGame
   when (clipN == 2) regenerateLevelHP
   when (clipN == 3) generateMonster
-  ptime <- getsGlobal (btime . getPlayerBody)  -- time of player's next move
-  debug $ "handleTurn: time check. ptime ="
-          <+> showT ptime <> ", time =" <+> showT time
+  debug $ "handleTurn: time =" <+> showT time
   handleActors timeZero
   modifyGlobal (updateTime (timeAdd timeClip))
   endOrLoop handleTurn
@@ -138,34 +136,34 @@ handleActors subclipStart = withPerception $ do
       let side = bfaction m
       switchGlobalSelectedSide side
       arena <- getsGlobal sarena
-      playerOld <- getsLocal splayer
-      -- Old player may have been killed by enemies since @side@ last moved.
-      memOld <- getsGlobal $ memActor playerOld
-      let player | memOld = playerOld
+      leaderOld <- getsLocal sleader
+      -- Old leader may have been killed by enemies since @side@ last moved.
+      memOld <- getsGlobal $ memActor leaderOld
+      let leader | memOld = leaderOld
                  | otherwise = actor
-      modifyGlobal $ updateSelected player arena
-      modifyLocal $ updateSelected player arena
+      modifyGlobal $ updateSelected leader arena
+      modifyLocal $ updateSelected leader arena
       isControlled <- getsLocal $ flip isControlledFaction side
-      if actor == player && isControlled
+      if actor == leader && isControlled
         then do
-          -- Selected player moves always start a new subclip.
+          -- Player moves always start a new subclip.
           displayPush
           handlePlayer
           squitNew <- getsServer squit
-          splayerNew <- getsGlobal splayer
-          -- Advance time once, after the player switched perhaps many times.
+          sleaderNew <- getsGlobal sleader
+          -- Advance time once, after the leader switched perhaps many times.
           -- Ending and especially saving does not take time.
           -- TODO: this is correct only when all heroes have the same
-          -- speed and can't switch players by, e.g., aiming a wand
+          -- speed and can't switch leaders by, e.g., aiming a wand
           -- of domination. We need to generalize by displaying
-          -- "(next move in .3s [RET]" when switching players.
+          -- "(next move in .3s [RET]" when switching leaders.
           -- RET waits .3s and gives back control,
           -- Any other key does the .3s wait and the action form the key
           -- at once. This requires quite a bit of refactoring
           -- and is perhaps better done when the other factions have
-          -- selected players as well.
-          -- TODO: if splayerNew == invalidActorId, no time advances
-          unless (isJust squitNew) $ advanceTime splayerNew
+          -- selected leaders as well.
+          -- TODO: if sleaderNew == invalidActorId, no time advances
+          unless (isJust squitNew) $ advanceTime sleaderNew
           handleActors $ btime m
         else do
           recordHistory
@@ -211,10 +209,10 @@ handleAI actor = do
 -- | Continue running in the given direction.
 continueRun :: MonadAction m => (Vector, Int) -> m ()
 continueRun dd = do
-  pl <- getsLocal splayer
+  leader <- getsLocal sleader
   dir <- continueRunDir dd
   -- Attacks and opening doors disallowed when continuing to run.
-  runSer pl dir
+  runSer leader dir
 
 -- | Handle the move of the hero.
 handlePlayer :: MonadAction m => m ()

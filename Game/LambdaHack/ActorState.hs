@@ -3,11 +3,11 @@
 -- but not the 'Action' type.
 -- TODO: Document an export list after it's rewritten according to #17.
 module Game.LambdaHack.ActorState
-  ( isProjectile, isAHero, getPlayerBody, calculateTotal
+  ( isProjectile, isAHero, getLeaderBody, calculateTotal
   , initialHeroes, allActorsAnyLevel
   , posToActor, deleteActor, addHero, addMonster, updateActorItem
   , insertActor, heroList, memActor, getActorBody, updateActorBody
-  , hostileList, getActorItem, getPlayerItem, tryFindHeroK, dangerousList
+  , hostileList, getActorItem, getLeaderItem, tryFindHeroK, dangerousList
   , factionList, addProjectile, foesAdjacent, targetToPos, hostileAssocs
   ) where
 
@@ -74,10 +74,10 @@ factionList :: [FactionId] -> State -> [Actor]
 factionList l s =
   filter (\ m -> bfaction m `elem` l) $ IM.elems $ lactor $ getArena s
 
--- | Calculate the position of player's target.
+-- | Calculate the position of leader's target.
 targetToPos :: StateClient -> State -> Maybe Point
 targetToPos cli@StateClient{scursor} s =
-  case getTarget (splayer s) cli of
+  case getTarget (sleader s) cli of
     Just (TPos pos) -> Just pos
     Just (TEnemy a _ll) -> do
       guard $ memActor a s           -- alive and visible?
@@ -234,8 +234,8 @@ tryFindHeroK s k =
 getActorBody :: ActorId -> State -> Actor
 getActorBody a s = lactor (getArena s) IM.! a
 
-getPlayerBody :: State -> Actor
-getPlayerBody s = getActorBody (splayer s) s
+getLeaderBody :: State -> Actor
+getLeaderBody s = getActorBody (sleader s) s
 
 updateActorBody :: ActorId -> (Actor -> Actor) -> State -> State
 updateActorBody actor f s = updateArena (updateActor $ IM.adjust f actor) s
@@ -244,8 +244,8 @@ updateActorBody actor f s = updateArena (updateActor $ IM.adjust f actor) s
 getActorItem :: ActorId -> State -> [Item]
 getActorItem a s = fromMaybe [] $ IM.lookup a (linv (getArena s))
 
-getPlayerItem :: State -> [Item]
-getPlayerItem s = getActorItem (splayer s) s
+getLeaderItem :: State -> [Item]
+getLeaderItem s = getActorItem (sleader s) s
 
 updateActorItem :: ActorId -> ([Item] -> [Item]) -> State -> State
 updateActorItem actor f s =

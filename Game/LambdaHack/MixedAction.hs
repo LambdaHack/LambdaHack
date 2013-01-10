@@ -60,15 +60,15 @@ playerApplyGroupItem :: MonadClient m
                      -> m CmdSer
 playerApplyGroupItem verb object syms = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsLocal scops
-  is <- getsLocal getPlayerItem
+  is <- getsLocal getLeaderItem
   item <- getGroupItem is object syms
             (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
-  pl <- getsLocal splayer
+  leader <- getsLocal sleader
   disco <- getsLocal sdisco
   let verbApply = case jkind disco item of
         Nothing -> verb
         Just ik -> iverbApply $ okind ik
-  return $! ApplySer pl verbApply item
+  return $! ApplySer leader verbApply item
 
 -- | Let the player choose any item with a given group name.
 -- Note that this does not guarantee the chosen item belongs to the group,
@@ -94,7 +94,7 @@ playerProjectGroupItem verb object syms = do
   ms     <- getsLocal hostileList
   lxsize <- getsLocal (lxsize . getArena)
   lysize <- getsLocal (lysize . getArena)
-  ppos   <- getsLocal (bpos . getPlayerBody)
+  ppos   <- getsLocal (bpos . getLeaderBody)
   if foesAdjacent lxsize lysize ppos ms
     then abortWith "You can't aim in melee."
     else playerProjectGI verb object syms
@@ -103,11 +103,11 @@ playerProjectGI :: MonadClient m => MU.Part -> MU.Part -> [Char] -> m CmdSer
 playerProjectGI verb object syms = do
   cli <- getClient
   pos <- getLocal
-  pl <- getsLocal splayer
+  leader <- getsLocal sleader
   case targetToPos cli pos of
     Just p -> do
       Kind.COps{coitem=Kind.Ops{okind}} <- getsLocal scops
-      is <- getsLocal getPlayerItem
+      is <- getsLocal getLeaderItem
       item <- getGroupItem is object syms
                 (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
       stgtMode <- getsClient stgtMode
@@ -118,8 +118,8 @@ playerProjectGI verb object syms = do
       let verbProject = case jkind disco item of
             Nothing -> verb
             Just ik -> iverbProject $ okind ik
-      return $! ProjectSer pl p verbProject item
-    Nothing -> assert `failure` (pos, pl, "target unexpectedly invalid")
+      return $! ProjectSer leader p verbProject item
+    Nothing -> assert `failure` (pos, leader, "target unexpectedly invalid")
 
 -- ** TriggerDir
 
@@ -132,14 +132,14 @@ playerTriggerDir feat verb = do
   lxsize <- getsLocal (lxsize . getArena)
   K.handleDir lxsize e (playerBumpDir feat) (neverMind True)
 
--- | Player tries to trigger a tile in a given direction.
+-- | Leader tries to trigger a tile in a given direction.
 playerBumpDir :: MonadClientRO m => F.Feature -> Vector -> m CmdSer
 playerBumpDir feat dir = do
-  body  <- getsLocal getPlayerBody
+  body  <- getsLocal getLeaderBody
   let dpos = bpos body `shift` dir
   bumpTile dpos feat
 
--- | Player tries to trigger a tile using a feature.
+-- | Leader tries to trigger a tile using a feature.
 bumpTile :: MonadClientRO m => Point -> F.Feature -> m CmdSer
 bumpTile dpos feat = do
   Kind.COps{cotile} <- getsLocal scops
@@ -174,18 +174,18 @@ guessBump _ _ _ = neverMind True
 
 -- ** TriggerTile
 
--- | Player tries to trigger the tile he's standing on.
+-- | Leader tries to trigger the tile he's standing on.
 playerTriggerTile :: MonadClientRO m => F.Feature -> m CmdSer
 playerTriggerTile feat = do
-  ppos <- getsLocal (bpos . getPlayerBody)
+  ppos <- getsLocal (bpos . getLeaderBody)
   bumpTile ppos feat
 
 -- ** Pickup
 
 pickupItem :: MonadClientRO m => m CmdSer
 pickupItem = do
-  pl <- getsLocal splayer
-  actorPickupItem pl
+  leader <- getsLocal sleader
+  actorPickupItem leader
 
 actorPickupItem :: MonadClientRO m => ActorId -> m CmdSer
 actorPickupItem actor = do
@@ -222,9 +222,9 @@ dropItem :: MonadClient m => m CmdSer
 dropItem = do
   -- TODO: allow dropping a given number of identical items.
   Kind.COps{coactor, coitem} <- getsLocal scops
-  pl    <- getsLocal splayer
-  pbody <- getsLocal getPlayerBody
-  ims   <- getsLocal getPlayerItem
+  leader    <- getsLocal sleader
+  pbody <- getsLocal getLeaderBody
+  ims   <- getsLocal getLeaderItem
   stack <- getAnyItem "What to drop?" ims "in inventory"
   disco <- getsLocal sdisco
   let item = stack { jcount = 1 }
@@ -232,13 +232,12 @@ dropItem = do
   msgAdd $ makeSentence
     [ MU.SubjectVerbSg (partActor coactor pbody) "drop"
     , partItemNWs coitem disco item ]
-  return $ DropSer pl item
+  return $ DropSer leader item
 
 allObjectsName :: Text
 allObjectsName = "Objects"
 
 -- | Let the player choose any item from a list of items.
-
 getAnyItem :: MonadClient m
            => Text    -- ^ prompt
            -> [Item]  -- ^ all items in question
@@ -259,7 +258,7 @@ getItem :: MonadClient m
         -> m Item
 getItem prompt p ptext is0 isn = do
   lvl  <- getsLocal getArena
-  body <- getsLocal getPlayerBody
+  body <- getsLocal getLeaderBody
   let pos = bpos body
       tis = lvl `atI` pos
       floorFull = not $ null tis
@@ -316,26 +315,26 @@ getItem prompt p ptext is0 isn = do
 
 -- ** Wait
 
--- | Player waits a turn (and blocks, etc.).
+-- | Leader waits a turn (and blocks, etc.).
 waitBlock :: MonadClientRO m => m CmdSer
 waitBlock = do
-  pl <- getsLocal splayer
-  return $ WaitSer pl
+  leader <- getsLocal sleader
+  return $ WaitSer leader
 
 -- ** Move
 
 movePl :: MonadClientRO m => Vector -> m CmdSer
 movePl dir = do
-  pl <- getsLocal splayer
-  return $! MoveSer pl dir
+  leader <- getsLocal sleader
+  return $! MoveSer leader dir
 
 -- ** Run
 
 runPl :: MonadClient m => Vector -> m CmdSer
 runPl dir = do
-  pl <- getsLocal splayer
+  leader <- getsLocal sleader
   dirR <- runDir (dir, 0)
-  return $! RunSer pl dirR
+  return $! RunSer leader dirR
 
 -- ** GameExit
 

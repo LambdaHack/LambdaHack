@@ -4,7 +4,7 @@ module Game.LambdaHack.State
   ( -- * Basic game state, local or global.
     State
     -- * State components
-  , sdungeon, sdepth, sdisco, sfaction, scops, splayer, sside, sarena
+  , sdungeon, sdepth, sdisco, sfaction, scops, sleader, sside, sarena
     -- * State operations
   , defStateGlobal, defStateLocal, switchGlobalSelectedSideOnlyForGlobalState
   , updateDungeon, updateDisco, updateFaction, updateCOps
@@ -57,15 +57,15 @@ import Game.LambdaHack.Utils.Assert
 -- | View on game state. Clients never update @sdungeon@ and @sfaction@,
 -- but the server updates it for them depending on client exploration.
 -- Data invariant: no actor belongs to more than one @sdungeon@ level.
--- Actor @splayer@ is not on any other @sdungeon@ level than @sarena@.
--- If @splayer@ is on @sarena@, he belongs to @sside@.
+-- Actor @sleader@ is not on any other @sdungeon@ level than @sarena@.
+-- If @sleader@ is on @sarena@, he belongs to @sside@.
 data State = State
   { _sdungeon :: !Dungeon      -- ^ remembered dungeon
   , _sdepth   :: !Int          -- ^ remembered dungeon depth
   , _sdisco   :: !Discoveries  -- ^ remembered item discoveries
   , _sfaction :: !FactionDict  -- ^ remembered sides still in game
   , _scops    :: Kind.COps     -- ^ remembered content
-  , _splayer  :: !ActorId      -- ^ selected actor
+  , _sleader  :: !ActorId      -- ^ selected actor
   , _sside    :: !FactionId    -- ^ faction of the selected actor
   , _sarena   :: !LevelId      -- ^ level of the selected actor
   }
@@ -105,7 +105,7 @@ type StateDict = IM.IntMap (StateClient, State)
 -- | All factions in the game, indexed by faction identifier.
 type FactionDict = IM.IntMap Faction
 
--- | Current targeting mode of the player.
+-- | Current targeting mode of a client.
 data TgtMode =
     TgtOff  -- ^ not in targeting mode
   | TgtExplicit { tgtLevelId :: !LevelId }
@@ -172,7 +172,7 @@ defStateGlobal :: Dungeon -> Int -> Discoveries
                -> State
 defStateGlobal _sdungeon _sdepth _sdisco _sfaction _scops _sarena =
   State
-    { _splayer = invalidActorId  -- no heroes yet alive
+    { _sleader = invalidActorId  -- no heroes yet alive
     , _sside = -1  -- no side yet selected
     , ..
     }
@@ -189,7 +189,7 @@ defStateLocal globalDungeon
               _sdepth _sdisco _sfaction
               _scops@Kind.COps{cotile} _sarena _sside = do
   State
-    { _splayer  = invalidActorId  -- no heroes yet alive
+    { _sleader  = invalidActorId  -- no heroes yet alive
     , _sdungeon =
       M.map (\Level{lxsize, lysize, ldesc, lstair, lclear} ->
               unknownLevel cotile lxsize lysize ldesc lstair lclear)
@@ -234,14 +234,14 @@ updateSide f s = updateFaction (IM.adjust f (_sside s)) s
 -- to belong to the level and to the (previously) selected faction,
 -- unless the actor is invalid.
 updateSelected :: ActorId -> LevelId -> State -> State
-updateSelected _splayer _sarena s
-  | _splayer == invalidActorId = s {_splayer, _sarena}
-updateSelected _splayer _sarena s =
+updateSelected _sleader _sarena s
+  | _sleader == invalidActorId = s {_sleader, _sarena}
+updateSelected _sleader _sarena s =
   let la = lactor $ _sdungeon s M.! _sarena
-      side1 = fmap bfaction $ IM.lookup _splayer la
+      side1 = fmap bfaction $ IM.lookup _sleader la
       side2 = Just $ _sside s
-  in assert (side1 == side2 `blame` (side1, side2, _splayer, _sarena, s))
-     $ s {_splayer, _sarena}
+  in assert (side1 == side2 `blame` (side1, side2, _sleader, _sarena, s))
+     $ s {_sleader, _sarena}
 
 -- | Get current level from the dungeon data.
 getArena :: State -> Level
@@ -281,8 +281,8 @@ sfaction = _sfaction
 scops :: State -> Kind.COps
 scops = _scops
 
-splayer :: State -> ActorId
-splayer = _splayer
+sleader :: State -> ActorId
+sleader = _sleader
 
 sside :: State -> FactionId
 sside = _sside
@@ -389,7 +389,7 @@ instance Binary State where
     put _sdepth
     put _sdisco
     put _sfaction
-    put _splayer
+    put _sleader
     put _sside
     put _sarena
   get = do
@@ -397,7 +397,7 @@ instance Binary State where
     _sdepth <- get
     _sdisco <- get
     _sfaction <- get
-    _splayer <- get
+    _sleader <- get
     _sside <- get
     _sarena <- get
     let _scops = undefined  -- overwritten by recreated cops

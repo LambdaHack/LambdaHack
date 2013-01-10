@@ -34,9 +34,9 @@ cmdAction :: MonadAction m => StateClient -> State -> Cmd
           -> (Bool, WriterT Slideshow m ())
 cmdAction cli s cmd =
   let tgtMode = stgtMode cli
-      pl = splayer s
+      leader = sleader s
       arena = sarena s
-      sm = getPlayerBody s
+      sm = getLeaderBody s
       ppos = bpos sm
       tgtLoc = targetToPos cli s
       Level{lxsize} =
@@ -66,8 +66,9 @@ cmdAction cli s cmd =
                       && not (bproj (getActorBody target s)) ->
           -- Select adjacent actor by bumping into him. Takes no time.
           (False,
-           selectPlayer arena target
-             >>= assert `trueM` (pl, target, "player bumps himself" :: Text))
+           selectLeader arena target
+             >>= assert `trueM`
+                   (leader, target, "leader bumps into himself" :: Text))
         _ -> (True, cmdSerAction $ movePl dir)
     Run v | tgtMode /= TgtOff ->
       let dir = toDir lxsize v
@@ -106,17 +107,17 @@ cmdAction cli s cmd =
 cmdSemantics :: MonadAction m => Cmd -> WriterT Slideshow m Bool
 cmdSemantics cmd = do
   arenaOld <- getsGlobal sarena
-  posOld <- getsGlobal (bpos . getPlayerBody)
+  posOld <- getsGlobal (bpos . getLeaderBody)
   cli <- getClient
   loc <- getLocal
   let (timed, sem) = cmdAction cli loc cmd
   if timed
     then checkCursor sem
     else sem
-  player <- getsLocal splayer
+  leader <- getsLocal sleader
   arena <- getsLocal sarena
-  modifyGlobal $ updateSelected player arena
-  pos <- getsGlobal (bpos . getPlayerBody)
+  modifyGlobal $ updateSelected leader arena
+  pos <- getsGlobal (bpos . getLeaderBody)
   tgtMode <- getsClient stgtMode
   when (tgtMode == TgtOff  -- targeting performs it's own, more extensive look
         && (posOld /= pos

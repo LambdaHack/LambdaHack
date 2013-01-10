@@ -92,7 +92,7 @@ isVisible cotile PerceptionReachable{preachable}
   in litDirectly pos0 || L.any l_and_R (vicinity lxsize lysize pos0)
 
 -- | Reachable are all fields on an unblocked path from the hero position.
--- The player's own position is considred reachable by him.
+-- Actor's own position is considred reachable by him.
 computeReachable :: Kind.COps -> FovMode -> Maybe FovMode
                  -> Actor -> Level -> PerceptionReachable
 computeReachable Kind.COps{cotile, coactor=Kind.Ops{okind}}

@@ -135,8 +135,8 @@ projectSer source tpos _verb item = do
   cops@Kind.COps{coactor, coitem} <- getsLocal scops
   sm    <- getsLocal (getActorBody source)
   per   <- askPerceptionSer
-  pl    <- getsLocal splayer
-  Actor{btime}  <- getsLocal getPlayerBody
+  leader    <- getsLocal sleader
+  Actor{btime}  <- getsLocal getLeaderBody
   lvl   <- getsLocal getArena
   seps  <- getsClient seps
   lxsize <- getsLocal (lxsize . getArena)
@@ -157,19 +157,19 @@ projectSer source tpos _verb item = do
         [ MU.SubjectVerbSg (partActor coactor subject) "aim"
         , partItemNWs coitem disco consumed ]
       -- TODO: AI should choose the best eps.
-      eps = if source == pl then seps else 0
+      eps = if source == leader then seps else 0
       -- Setting monster's projectiles time to player time ensures
       -- the projectile covers the whole normal distance already the first
       -- turn that the player observes it moving. This removes
       -- the possibility of micromanagement by, e.g.,  waiting until
       -- the first distance is short.
-      -- When the monster faction has its selected player, hero player's
+      -- When the monster faction has its leader, player's
       -- projectiles should be set to the time of the opposite party as well.
       -- Both parties would see their own projectiles move part of the way
       -- and the opposite party's projectiles waiting one turn.
       btimeDelta = timeAddFromSpeed coactor sm btime
       time =
-        if bfaction sm == side || source == pl
+        if bfaction sm == side || source == leader
         then btimeDelta `timeAdd` timeNegate timeClip
         else btime
       bl = bla lxsize lysize eps spos tpos
@@ -200,8 +200,8 @@ triggerSer dpos = do
   Kind.COps{cotile=Kind.Ops{okind, opick}} <- getsGlobal scops
   lvl <- getsGlobal getArena
   let f (F.Cause effect) = do
-        pl <- getsGlobal splayer
-        void $ effectToAction effect 0 pl pl 0 False  -- no block against tile
+        leader <- getsGlobal sleader
+        void $ effectToAction effect 0 leader leader 0 False  -- no block against tile
         return ()
       f (F.ChangeTo tgroup) = do
         Level{lactor} <- getsGlobal getArena
@@ -408,12 +408,12 @@ actorOpenDoor :: MonadAction m => ActorId -> Vector -> m ()
 actorOpenDoor actor dir = do
   Kind.COps{cotile} <- getsGlobal scops
   lvl<- getsGlobal getArena
-  pl <- getsGlobal splayer
+  leader <- getsGlobal sleader
   body <- getsGlobal (getActorBody actor)
   let dpos = shift (bpos body) dir  -- the position we act upon
       t = lvl `at` dpos
-      isPlayer = actor == pl
-      isVerbose = isPlayer  -- don't report, unless it's player-controlled
+      isLeader = actor == leader  -- TODO: check faction
+      isVerbose = isLeader  -- don't report, unless it's player-controlled
   unless (openable cotile lvl dpos) $ neverMind isVerbose
   if Tile.hasFeature cotile F.Closable t
     then abortIfWith isVerbose "already open"
@@ -451,7 +451,7 @@ runSer actor dir = do
 -- | When an actor runs (not walks) into another, they switch positions.
 displaceActor :: MonadAction m => ActorId -> ActorId -> m ()
 displaceActor source target = do
-  pl <- getsGlobal splayer
+  leader <- getsGlobal sleader
   sm <- getsGlobal (getActorBody source)
   tm <- getsGlobal (getActorBody target)
   let spos = bpos sm
@@ -471,7 +471,7 @@ displaceActor source target = do
   let poss = (tpos, spos)
       animFrs = animate cli loc per $ swapPlaces poss
   when visible $ displayFramesPush $ Nothing : animFrs
-  if source == pl
+  if source == leader
 -- TODO: The actor will stop running due to the message as soon as running
 -- is fixed to check the message before it goes into history.
    then stopRunning  -- do not switch positions repeatedly
@@ -566,7 +566,7 @@ regenerateLevelHP = do
            then m
            else addHp coactor 1 m
   -- We really want hero selection to be a purely UI distinction,
-  -- so all heroes need to regenerate, not just the player.
+  -- so all heroes need to regenerate, not just the leader.
   -- Only the heroes on the current level regenerate (others are frozen
   -- in time together with their level). This prevents cheating
   -- via sending one hero to a safe level and waiting there.
@@ -577,9 +577,9 @@ regenerateLevelHP = do
 addSmell :: MonadServer m => m ()
 addSmell = do
   s  <- getGlobal
-  pl <- getsGlobal splayer
+  leader <- getsGlobal sleader
   let time = getTime s
-      ppos = bpos (getPlayerBody s)
+      ppos = bpos (getLeaderBody s)
       upd = IM.insert ppos $ timeAdd time smellTimeout
-  when (isAHero s pl) $
+  when (isAHero s leader) $
     modifyGlobal $ updateArena $ updateSmell upd

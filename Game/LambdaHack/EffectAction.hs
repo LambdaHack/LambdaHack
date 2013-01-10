@@ -163,7 +163,7 @@ eff (Effect.Wound nDm) verbosity source target power = do
   n <- rndToAction $ rollDice nDm
   if n + power <= 0 then nullEffect else do
     void $ focusIfOurs target
-    pl <- getsGlobal splayer
+    leader <- getsGlobal sleader
     tm <- getsGlobal (getActorBody target)
     isControlled <- getsGlobal $ flip isControlledFaction $ bfaction tm
     let newHP = bhp tm - n - power
@@ -179,7 +179,7 @@ eff (Effect.Wound nDm) verbosity source target power = do
           | source == target =  -- a potion of wounding, etc.
             actorVerb coactor tm "feel wounded"
           | verbosity <= 0 = ""
-          | target == pl =
+          | target == leader =
             actorVerb coactor tm $ "lose" <+> showT (n + power) <> "HP"
           | otherwise = actorVerb coactor tm "hiss in pain"
     -- Damage the target.
@@ -191,8 +191,8 @@ eff Effect.Dominate _ source target _power = do
   arena <- getsGlobal sarena
   if not $ isAHero s target
     then do  -- Monsters have weaker will than heroes.
-      selectPlayerSer arena target
-        >>= assert `trueM` (source, arena, target, "player dominates himself")
+      selectLeaderSer arena target
+        >>= assert `trueM` (source, arena, target, "leader dominates himself")
       -- Halve the speed as a side-effect of domination.
       let halfSpeed :: Actor -> Maybe Speed
           halfSpeed Actor{bkind} =
@@ -200,8 +200,8 @@ eff Effect.Dominate _ source target _power = do
             in Just $ speedScale (1%2) speed
       -- Sync the monster with the hero move time for better display
       -- of missiles and for the domination to actually take one player's turn.
-      pl <- getsGlobal splayer
-      modifyGlobal $ updateActorBody pl $ \ b -> b { bfaction = sside s
+      leader <- getsGlobal sleader
+      modifyGlobal $ updateActorBody leader $ \ b -> b { bfaction = sside s
                                                    , btime = getTime s
                                                    , bspeed = halfSpeed b }
       -- Display status line and FOV for the newly controlled actor.
@@ -306,9 +306,9 @@ squashActor source target = do
 
 effLvlGoUp :: MonadAction m => Int -> m ()
 effLvlGoUp k = do
-  pbodyCurrent <- getsGlobal getPlayerBody
-  bitems <- getsGlobal getPlayerItem
-  pl <- getsGlobal splayer
+  pbodyCurrent <- getsGlobal getLeaderBody
+  bitems <- getsGlobal getLeaderItem
+  leader <- getsGlobal sleader
   arena <- getsGlobal sarena
   st <- getGlobal
   case whereTo st arena k of
@@ -316,8 +316,8 @@ effLvlGoUp k = do
     Just (nln, npos) ->
       assert (nln /= arena `blame` (nln, "stairs looped")) $ do
         timeCurrent <- getsGlobal getTime
-        -- Remove the player from the old level.
-        modifyGlobal (deleteActor pl)
+        -- Remove the leader from the old level.
+        modifyGlobal (deleteActor leader)
         -- Remember the level (e.g., when teleporting via scroll on the floor,
         -- register the scroll vanished, also let the other factions register
         -- the actor vanished in case they switch to this level from another
@@ -329,27 +329,27 @@ effLvlGoUp k = do
         hs <- getsGlobal heroList
         when (null hs) $
           modifyGlobal (updateArena (updateSmell (const IM.empty)))
-        -- Provisionally change level, even though the player
+        -- Provisionally change level, even though the leader
         -- is not inserted there yet.
         modifyGlobal $ updateSelected invalidActorId nln
         -- Sync the actor time with the level time.
         timeLastVisited <- getsGlobal getTime
         let diff = timeAdd (btime pbodyCurrent) (timeNegate timeCurrent)
             pbody = pbodyCurrent {btime = timeAdd timeLastVisited diff}
-        -- The player is added to the new level, but there can be other actors
+        -- The leader is added to the new level, but there can be other actors
         -- at his old position or at his new position.
-        modifyGlobal (insertActor pl pbody)
-        modifyGlobal (updateActorItem pl (const bitems))
-        -- Reset level and player.
-        modifyGlobal $ updateSelected pl nln
+        modifyGlobal (insertActor leader pbody)
+        modifyGlobal (updateActorItem leader (const bitems))
+        -- Reset level and leader.
+        modifyGlobal $ updateSelected leader nln
         -- TODO: for now both in local and global state,
         -- to ensure the actions performed afterwards, but before
         -- the end of the turn, read and modify updated and consistent states.
         modifyLocal $ updateSelected invalidActorId nln
-        modifyLocal (insertActor pl pbody)
-        modifyLocal (updateActorItem pl (const bitems))
-        modifyLocal $ updateSelected pl nln
-        -- Checking actors at the new posiiton of the player.
+        modifyLocal (insertActor leader pbody)
+        modifyLocal (updateActorItem leader (const bitems))
+        modifyLocal $ updateSelected leader nln
+        -- Checking actors at the new posiiton of the leader.
         inhabitants <- getsGlobal (posToActor npos)
         case inhabitants of
           Nothing -> return ()
@@ -361,18 +361,18 @@ effLvlGoUp k = do
             -- Aquash an actor blocking the staircase.
             -- This is not a duplication with the other calls to squashActor,
             -- because here an inactive actor is squashed.
-            squashActor pl m
+            squashActor leader m
         -- Verify the monster on the staircase died.
         inhabitants2 <- getsGlobal (posToActor npos)
         when (isJust inhabitants2) $ assert `failure` inhabitants2
-        -- Land the player at the other end of the stairs, which is now
+        -- Land the leader at the other end of the stairs, which is now
         -- clear of other actors.
-        modifyGlobal $ updateActorBody pl $ \b -> b { bpos = npos }
+        modifyGlobal $ updateActorBody leader $ \b -> b { bpos = npos }
         -- The property of at most one actor on a tile is restored.
         -- Create a backup of the savegame.
         saveGameBkp
 
--- | The player leaves the dungeon.
+-- | The leader leaves the dungeon.
 fleeDungeon :: MonadAction m => m ()
 fleeDungeon = do
   Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsGlobal scops
@@ -424,12 +424,12 @@ itemEffectAction verbosity source target item block = do
   -- so the item gets identified.
   when (b1 && b2) $ discover discoS item
 
-selectPlayerSer :: MonadAction m => LevelId -> ActorId -> m Bool
-selectPlayerSer lid actor = do
-  b <- selectPlayer lid actor
-  player <- getsLocal splayer
+selectLeaderSer :: MonadAction m => LevelId -> ActorId -> m Bool
+selectLeaderSer lid actor = do
+  b <- selectLeader lid actor
+  leader <- getsLocal sleader
   arena <- getsLocal sarena
-  modifyGlobal $ updateSelected player arena
+  modifyGlobal $ updateSelected leader arena
   return b
 
 summonHeroes :: MonadAction m => Int -> Point -> m ()
@@ -444,7 +444,7 @@ summonHeroes n pos =
   putGlobal sN
   putServer serN
   b <- focusIfOurs newHeroId
-  assert (b `blame` (newHeroId, "player summons himself")) $
+  assert (b `blame` (newHeroId, "leader summons himself")) $
     return ()
 
 -- TODO: merge with summonHeroes; disregard "spawn" and "playable" factions and "spawn" flags for monsters; only check 'summon"
@@ -498,7 +498,7 @@ checkPartyDeath target = do
       else do
         msgAdd "The survivors carry on."  -- TODO: add to the dead actor faction, not the attacker faction; then reset messages at game over not to display it if there are no survivors.
         animateDeath
-        -- Remove the dead player.
+        -- Remove the dead leader.
         modifyGlobal $ deleteActor target
         -- We don't register that the lethal potion on the floor
         -- is used up. If that's a problem, add a one turn delay
@@ -551,7 +551,7 @@ gameOver showEndingScreens = do
           let upd2 f = f {gquit = Just (True, Killed arena)}
           modifyGlobal $ updateSide upd2
 
--- | Make the item known to the player.
+-- | Make the item known to the leader.
 discover :: MonadClient m => Discoveries -> Item -> m ()
 discover discoS i = do
   Kind.COps{coitem} <- getsLocal scops

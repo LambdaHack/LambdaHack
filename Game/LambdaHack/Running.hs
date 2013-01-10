@@ -30,7 +30,7 @@ import Game.LambdaHack.Vector
 runDir :: MonadClient m => (Vector, Int) -> m Vector
 runDir (dir, dist) = do
   cops <- getsLocal scops
-  posHere <- getsLocal (bpos . getPlayerBody)
+  posHere <- getsLocal (bpos . getLeaderBody)
   lvl <- getsLocal getArena
   stgtMode <- getsClient stgtMode
   assert (stgtMode == TgtOff `blame` (dir, dist, stgtMode, "/= TgtOff")) $ do
@@ -148,7 +148,7 @@ runDisturbance locLast distLast msg hs ms per posHere
 continueRunDir :: MonadClient m => (Vector, Int) -> m Vector
 continueRunDir (dirLast, distLast) = do
   cops@Kind.COps{cotile} <- getsLocal scops
-  posHere <- getsLocal (bpos . getPlayerBody)
+  posHere <- getsLocal (bpos . getLeaderBody)
   per <- askPerception
   StateClient{sreport} <- getClient  -- TODO: check the message before it goes into history
   ms  <- getsLocal dangerousList

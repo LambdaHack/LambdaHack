@@ -55,7 +55,7 @@ retarget = do
   stgtMode <- getsClient stgtMode
   assert (stgtMode == TgtOff) $ do
     arena <- getsLocal sarena
-    ppos <- getsLocal (bpos . getPlayerBody)
+    ppos <- getsLocal (bpos . getLeaderBody)
     msgAdd "Last target invalid."
     modifyClient $ \cli -> cli {scursor = ppos, seps = 0}
     targetMonster $ TgtAuto arena
@@ -123,8 +123,8 @@ doLook = do
   Kind.COps{coactor} <- getsLocal scops
   p <- getsClient scursor
   per <- askPerception
-  pl <- getsLocal splayer
-  target <- getsClient $ getTarget pl
+  leader <- getsLocal sleader
+  target <- getsClient $ getTarget leader
   lvl <- cursorLevel
   let hms = lactor lvl
       canSee = IS.member p (totalVisible per)
@@ -135,7 +135,7 @@ doLook = do
                          [MU.SubjectVerbSg (partActor coactor m) "be here"])
                  ihabitant
       vis | not $ p `IS.member` totalVisible per = " (not visible)"
-          | actorSeesLoc per pl p = ""
+          | actorSeesLoc per leader p = ""
           | otherwise = " (not visible by you)"
       mode = case target of
                Just TEnemy{} -> "[targeting monster" <> vis <> "]"
@@ -160,14 +160,14 @@ doLook = do
 
 -- ** Inventory
 
--- TODO: When inventory is displayed, let TAB switch the player (without
--- announcing that) and show the inventory of the new player.
+-- TODO: When inventory is displayed, let TAB switch the leader (without
+-- announcing that) and show the inventory of the new leader.
 -- | Display inventory
 inventory :: MonadClientRO m => WriterT Slideshow m ()
 inventory = do
   Kind.COps{coactor} <- getsLocal scops
-  pbody <- getsLocal getPlayerBody
-  items <- getsLocal getPlayerItem
+  pbody <- getsLocal getLeaderBody
+  items <- getsLocal getLeaderItem
   disco <- getsLocal sdisco
   if null items
     then abortWith $ makeSentence
@@ -194,12 +194,12 @@ itemOverlay disco sorted is = do
 
 -- ** TgtFloor
 
--- | Start the floor targeting mode or reset the cursor position to the player.
+-- | Start the floor targeting mode or reset the cursor position to the leader.
 targetFloor :: MonadClient m => TgtMode -> WriterT Slideshow m ()
 targetFloor stgtModeNew = do
-  ppos <- getsLocal (bpos . getPlayerBody)
-  pl <- getsLocal splayer
-  target <- getsClient $ getTarget pl
+  ppos <- getsLocal (bpos . getLeaderBody)
+  leader <- getsLocal sleader
+  target <- getsClient $ getTarget leader
   stgtMode <- getsClient stgtMode
   let tgt = case target of
         Just (TEnemy _ _) -> Nothing  -- forget enemy target, keep the cursor
@@ -207,7 +207,7 @@ targetFloor stgtModeNew = do
           Just (TPos ppos)  -- double key press: reset cursor
         t -> t  -- keep the target from previous targeting session
   -- Register that we want to target only positions.
-  modifyClient $ updateTarget pl (const tgt)
+  modifyClient $ updateTarget leader (const tgt)
   setCursor stgtModeNew
 
 -- | Set, activate and display cursor information.
@@ -215,7 +215,7 @@ setCursor :: MonadClient m => TgtMode -> WriterT Slideshow m ()
 setCursor stgtModeNew = assert (stgtModeNew /= TgtOff) $ do
   loc <- getLocal
   cli <- getClient
-  ppos <- getsLocal (bpos . getPlayerBody)
+  ppos <- getsLocal (bpos . getLeaderBody)
   stgtModeOld <- getsClient stgtMode
   scursorOld <- getsClient scursor
   sepsOld <- getsClient seps
@@ -232,16 +232,16 @@ setCursor stgtModeNew = assert (stgtModeNew /= TgtOff) $ do
 -- | Start the monster targeting mode. Cycle between monster targets.
 targetMonster :: MonadClient m => TgtMode -> WriterT Slideshow m ()
 targetMonster stgtModeNew = do
-  pl <- getsLocal splayer
-  ppos <- getsLocal (bpos . getPlayerBody)
+  leader <- getsLocal sleader
+  ppos <- getsLocal (bpos . getLeaderBody)
   side <- getsLocal sside
   per <- askPerception
-  target <- getsClient $ getTarget pl
-  -- TODO: sort monsters by distance to the player.
+  target <- getsClient $ getTarget leader
+  -- TODO: sort monsters by distance to the leader.
   stgtMode <- getsClient stgtMode
   (_, lvl@Level{lxsize}) <- viewedLevel
   let ms = hostileAssocs side lvl
-      plms = filter ((/= pl) . fst) ms  -- don't target yourself
+      plms = filter ((/= leader) . fst) ms  -- don't target yourself
       ordPos (_, m) = (chessDist lxsize ppos $ bpos m, bpos m)
       dms = sortBy (comparing ordPos) plms
       (lt, gt) = case target of
@@ -255,13 +255,13 @@ targetMonster stgtModeNew = do
       gtlt = gt ++ lt
       seen (_, m) =
         let mpos = bpos m            -- it is remembered by faction
-        in actorSeesLoc per pl mpos  -- is it visible by actor?
+        in actorSeesLoc per leader mpos  -- is it visible by actor?
       lf = filter seen gtlt
       tgt = case lf of
               [] -> target  -- no monsters in sight, stick to last target
               (na, nm) : _ -> Just (TEnemy na (bpos nm))  -- pick the next
   -- Register the chosen monster, to pick another on next invocation.
-  modifyClient $ updateTarget pl (const tgt)
+  modifyClient $ updateTarget leader (const tgt)
   setCursor stgtModeNew
 
 -- ** TgtAscend
@@ -319,7 +319,7 @@ epsIncr b = do
 -- ** Cancel
 
 -- | Cancel something, e.g., targeting mode, resetting the cursor
--- to the position of the player. Chosen target is not invalidated.
+-- to the position of the leader. Chosen target is not invalidated.
 cancelCurrent :: MonadClient m => WriterT Slideshow m () -> WriterT Slideshow m ()
 cancelCurrent h = do
   stgtMode <- getsClient stgtMode
@@ -390,8 +390,8 @@ acceptCurrent h = do
 endTargeting :: MonadClient m => Bool -> m ()
 endTargeting accept = do
   when accept $ do
-    pl <- getsLocal splayer
-    target <- getsClient $ getTarget pl
+    leader <- getsLocal sleader
+    target <- getsClient $ getTarget leader
     cpos <- getsClient scursor
     side <- getsLocal sside
     lvl <- cursorLevel
@@ -403,9 +403,9 @@ endTargeting accept = do
         case find (\ (_im, m) -> bpos m == cpos) ms of
           Just (im, m)  ->
             let tgt = Just $ TEnemy im (bpos m)
-            in modifyClient $ updateTarget pl (const $ tgt)
+            in modifyClient $ updateTarget leader (const $ tgt)
           Nothing -> return ()
-      _ -> modifyClient $ updateTarget pl (const $ Just $ TPos cpos)
+      _ -> modifyClient $ updateTarget leader (const $ Just $ TPos cpos)
   if accept
     then endTargetingMsg
     else msgAdd "targeting canceled"
@@ -414,9 +414,9 @@ endTargeting accept = do
 endTargetingMsg :: MonadClient m => m ()
 endTargetingMsg = do
   Kind.COps{coactor} <- getsLocal scops
-  pbody <- getsLocal getPlayerBody
-  pl <- getsLocal splayer
-  target <- getsClient $ getTarget pl
+  pbody <- getsLocal getLeaderBody
+  leader <- getsLocal sleader
+  target <- getsClient $ getTarget leader
   loc <- getLocal
   Level{lxsize} <- cursorLevel
   let targetMsg = case target of
@@ -459,23 +459,23 @@ displayHistory = do
 -- We cycle through at most 10 heroes (\@, 1--9).
 cycleHero :: MonadClient m => m ()
 cycleHero = do
-  pl <- getsLocal splayer
+  leader <- getsLocal sleader
   s  <- getLocal
   hs <- heroesAfterPl
   case filter (flip memActor s . snd) hs of
     [] -> abortWith "Cannot select any other hero on this level."
-    (nl, np) : _ -> selectPlayer nl np
-                      >>= assert `trueM` (pl, nl, np, "hero duplicated")
+    (nl, np) : _ -> selectLeader nl np
+                      >>= assert `trueM` (leader, nl, np, "hero duplicated")
 
 -- | Make the actor controlled by the player. Switch level, if needed.
 -- False, if nothing to do. Should only be invoked as a direct result
--- of a player action (selected player actor death just sets splayer to -1).
-selectPlayer :: MonadClient m => LevelId -> ActorId -> m Bool
-selectPlayer nln actor = do
+-- of a player action (leader death just sets sleader to -1).
+selectLeader :: MonadClient m => LevelId -> ActorId -> m Bool
+selectLeader nln actor = do
   Kind.COps{coactor} <- getsLocal scops
-  pl <- getsLocal splayer
+  leader <- getsLocal sleader
   stgtMode <- getsClient stgtMode
-  if actor == pl
+  if actor == leader
     then return False -- already selected
     else do
       -- Make the new actor the player-controlled actor.
@@ -485,7 +485,7 @@ selectPlayer nln actor = do
       -- Don't continue an old run, if any.
       stopRunning
       -- Announce.
-      pbody <- getsLocal getPlayerBody
+      pbody <- getsLocal getLeaderBody
       msgAdd $ makeSentence [partActor coactor pbody, "selected"]
       return True
 
@@ -494,10 +494,10 @@ stopRunning = modifyClient (\ cli -> cli { srunning = Nothing })
 
 heroesAfterPl :: MonadClientRO m => m [(LevelId, ActorId)]
 heroesAfterPl = do
-  pl <- getsLocal splayer
+  leader <- getsLocal sleader
   s  <- getLocal
   let hs = map (tryFindHeroK s) [0..9]
-      i = fromMaybe (-1) $ findIndex ((== Just pl) . fmap snd) hs
+      i = fromMaybe (-1) $ findIndex ((== Just leader) . fmap snd) hs
       (lt, gt) = (take i hs, drop (i + 1) hs)
   return $ catMaybes gt ++ catMaybes lt
 
@@ -507,12 +507,12 @@ heroesAfterPl = do
 -- if any, wrapping. We cycle through at most 10 heroes (\@, 1--9).
 backCycleHero :: MonadClient m => m ()
 backCycleHero = do
-  pl <- getsLocal splayer
+  leader <- getsLocal sleader
   hs <- heroesAfterPl
   case reverse hs of
     [] -> abortWith "No other hero in the party."
-    (nl, np) : _ -> selectPlayer nl np
-                      >>= assert `trueM` (pl, nl, np, "hero duplicated")
+    (nl, np) : _ -> selectLeader nl np
+                      >>= assert `trueM` (leader, nl, np, "hero duplicated")
 
 -- ** Help
 
@@ -529,4 +529,4 @@ selectHero k = do
   loc <- getLocal
   case tryFindHeroK loc k of
     Nothing  -> abortWith "No such member of the party."
-    Just (lid, aid) -> void $ selectPlayer lid aid
+    Just (lid, aid) -> void $ selectLeader lid aid
