@@ -12,7 +12,6 @@ module Game.LambdaHack.Action
   , MonadServer( putGlobal, modifyGlobal, putServer, modifyServer )
   , MonadClient( putClient, modifyClient, putLocal, modifyLocal )
   , MonadAction
-  , MsgOrAnim
     -- * Various ways to abort action
   , abort, abortWith, abortIfWith, neverMind
     -- * Abort exception handlers
@@ -59,7 +58,7 @@ import qualified Game.LambdaHack.Action.Save as Save
 import Game.LambdaHack.ActionClass
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Animation (Frames, SingleFrame(..), Animation)
+import Game.LambdaHack.Animation (Frames, SingleFrame(..))
 import Game.LambdaHack.Binding
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.FactionKind
@@ -74,16 +73,9 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
-import Game.LambdaHack.Point
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert
-
--- | Information passed by the server to all clients after a server action.
--- If any of the positions related to the message are visible, the client
--- sees the message. The animation is restricted to client's visible positions.
--- The bool determines if invisible event is important enough to be heard.
-type MsgOrAnim = (Bool, [Either ([Point], Msg) Animation])
 
 -- | Reset the state and resume from the last backup point, i.e., invoke
 -- the failure continuation.
@@ -373,6 +365,7 @@ remember = do
 -- | Update faction memory at the given set of positions.
 rememberLevel :: Kind.COps -> IS.IntSet -> Level -> Level -> Level
 rememberLevel Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} visible lvl clvl =
+  -- TODO: handle invisible actors, but then change also sendToPlayers, etc.
   let nactor = IM.filter (\m -> bpos m `IS.member` visible) (lactor lvl)
       ninv   = IM.filterWithKey (\p _ -> p `IM.member` nactor) (linv lvl)
       alt Nothing   _ = Nothing

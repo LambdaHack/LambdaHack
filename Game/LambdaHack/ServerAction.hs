@@ -22,6 +22,7 @@ import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Animation (blockMiss, swapPlaces)
 import Game.LambdaHack.ClientAction
+import Game.LambdaHack.Command
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
@@ -218,32 +219,21 @@ triggerSer dpos = do
 
 -- * PickupSer
 
-pickupSer :: MonadAction m => ActorId -> Item -> Char -> m ()
+pickupSer :: MonadServer m => ActorId -> Item -> Char -> m (Point, CmdCli)
 pickupSer aid i l = do
-  Kind.COps{coactor, coitem} <- getsGlobal scops
   side <- getsGlobal sside
-  body <- getsLocal (getActorBody aid)
+  body <- getsGlobal (getActorBody aid)
   -- Nobody can be forced to pick up an item.
   assert (bfaction body == side `blame` (body, side)) $ do
     let p = bpos body
     bitems <- getsGlobal (getActorItem aid)
-    disco <- getsLocal sdisco
-    per <- askPerception
     removeFromPos i p
       >>= assert `trueM` (aid, i, p, "item is stuck")
-    let perceived = p `IS.member` totalVisible per
-        (ni, nitems) = joinItem (i { jletter = Just l }) bitems
-    -- Other factions take notice.
-    if bfaction body == side
-      then msgAdd $ makePhrase [ letterLabel (jletter ni)
-                               , partItemNWs coitem disco ni ]
-      else when perceived $
-             msgAdd $ makeSentence
-               [ MU.SubjectVerbSg (partActor coactor body) "pick up"
-               , partItemNWs coitem disco i ]  -- single, not 'ni'
+    let (ni, nitems) = joinItem (i {jletter = Just l}) bitems
     modifyGlobal $ updateActorBody aid $ \m ->
       m { bletter = maxLetter (fromJust $ jletter ni) (bletter m) }
     modifyGlobal (updateActorItem aid (const nitems))
+    return (p, PickupCli aid i ni)
 
 -- ** DropSer
 

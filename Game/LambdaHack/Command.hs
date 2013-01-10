@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Abstract syntax of server and client commands.
 module Game.LambdaHack.Command
-  ( CmdSer(..), Cmd(..), majorCmd, minorCmd, timedCmd, cmdDescription
+  ( CmdCli(..), CmdSer(..), Cmd(..)
+  , majorCmd, minorCmd, timedCmd, cmdDescription
   ) where
 
 import Data.Text (Text)
@@ -15,6 +16,11 @@ import Game.LambdaHack.Point
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 import Game.LambdaHack.VectorXY
+
+-- | Abstract syntax of client commands.
+data CmdCli =
+    PickupCli ActorId Item Item
+  deriving Show
 
 -- | Abstract syntax of server commands.
 data CmdSer =
@@ -32,7 +38,7 @@ data CmdSer =
   | CfgDumpSer
   deriving Show
 
--- | Abstract syntax of client commands.
+-- | Abstract syntax of player commands.
 data Cmd =
     -- These usually take time.
     Apply       { verb :: MU.Part, object :: MU.Part, syms :: [Char] }
