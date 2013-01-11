@@ -8,7 +8,8 @@ module Game.LambdaHack.State
     -- * State operations
   , defStateGlobal, defStateLocal, switchGlobalSelectedSideOnlyForGlobalState
   , updateDungeon, updateDisco, updateFaction, updateCOps
-  , updateArena, updateTime, updateSide, updateSelected
+  , updateArena, updateTime, updateSide
+  , updateSelectedLeader, updateSelectedArena
   , getArena, getTime, getSide
   , isPlayerFaction, isSpawningFaction
     -- * Server state and its operations
@@ -230,18 +231,19 @@ updateTime f s = updateArena (\lvl@Level{ltime} -> lvl {ltime = f ltime}) s
 updateSide :: (Faction -> Faction) -> State -> State
 updateSide f s = updateFaction (IM.adjust f (_sside s)) s
 
--- | Update selected actor and level within state. The actor is required
--- to belong to the level and to the (previously) selected faction,
--- unless the actor is invalid.
-updateSelected :: ActorId -> LevelId -> State -> State
-updateSelected _sleader _sarena s
-  | _sleader == invalidActorId = s {_sleader, _sarena}
-updateSelected _sleader _sarena s =
-  let la = lactor $ _sdungeon s M.! _sarena
+-- | Update selected actor within state. The actor is required
+-- to belong to the selected level and selected faction.
+updateSelectedLeader :: ActorId -> State -> State
+updateSelectedLeader _sleader s =
+  let la = lactor $ _sdungeon s M.! _sarena s
       side1 = fmap bfaction $ IM.lookup _sleader la
       side2 = Just $ _sside s
-  in assert (side1 == side2 `blame` (side1, side2, _sleader, _sarena, s))
-     $ s {_sleader, _sarena}
+  in assert (side1 == side2 `blame` (side1, side2, _sleader, _sarena s, s))
+     $ s {_sleader}
+
+-- | Update selected level within state.
+updateSelectedArena :: LevelId -> State -> State
+updateSelectedArena _sarena s = s {_sarena}
 
 -- | Get current level from the dungeon data.
 getArena :: State -> Level

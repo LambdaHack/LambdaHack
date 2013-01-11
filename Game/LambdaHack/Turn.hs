@@ -92,12 +92,9 @@ checkEndGame = do
   let aNotSp = filter (not . isSpawningFaction loc . bfaction . snd . snd) as
   case aNotSp of
     [] -> gameOver True
-    (lid, (aid, abody)) : _ -> do
+    (lid, _) : _ ->
       -- Switch to the level (can be the currently selected level, too).
-      -- Pick a random representant of this level. This faction client's
-      -- selected actor may be different and will take precedence later on.
-      switchGlobalSelectedSide $ bfaction abody
-      modifyGlobal $ updateSelected aid lid
+      modifyGlobal $ updateSelectedArena lid
 
 -- TODO: We should replace this structure using a priority search queue/tree.
 -- | Perform moves for individual actors, as long as there are actors
@@ -139,8 +136,9 @@ handleActors subclipStart = withPerception $ do
       memOld <- getsGlobal $ memActor leaderOld
       let leader | memOld = leaderOld
                  | otherwise = actor
-      modifyGlobal $ updateSelected leader arena
-      modifyLocal $ updateSelected leader arena
+      modifyGlobal $ updateSelectedLeader leader
+      modifyLocal $ updateSelectedArena arena
+      modifyLocal $ updateSelectedLeader leader
       isPlayer <- getsLocal $ flip isPlayerFaction side
       if actor == leader && isPlayer
         then do

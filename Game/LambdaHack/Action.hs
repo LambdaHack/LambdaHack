@@ -685,10 +685,10 @@ cmdCli cmd = case cmd of
   SwitchLevelCli leader nln pbody -> do
     bitems <- getsLocal getLeaderItem
     modifyLocal (deleteActor leader)
-    modifyLocal $ updateSelected invalidActorId nln
+    modifyLocal $ updateSelectedArena nln
     modifyLocal (insertActor leader pbody)
     modifyLocal (updateActorItem leader (const bitems))
-    modifyLocal $ updateSelected leader nln
+    modifyLocal $ updateSelectedLeader leader
     return True
 
 pickupCli :: MonadClient m => ActorId -> Item -> Item -> m ()
@@ -801,7 +801,8 @@ selectLeader actor nln = do
   if actor == leader
     then return False -- already selected
     else do
-      modifyLocal $ updateSelected actor nln
+      modifyLocal $ updateSelectedArena nln
+      modifyLocal $ updateSelectedLeader actor
       -- Move the cursor, if active, to the new level.
       when (stgtMode /= TgtOff) $ setTgtId nln
       -- Don't continue an old run, if any.

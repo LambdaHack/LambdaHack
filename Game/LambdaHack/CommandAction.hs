@@ -110,7 +110,8 @@ cmdSemantics cmd = do
     else sem
   leader <- getsLocal sleader
   arena <- getsLocal sarena
-  modifyGlobal $ updateSelected leader arena
+  modifyGlobal $ updateSelectedArena arena
+  modifyGlobal $ updateSelectedLeader leader
   pos <- getsGlobal (bpos . getLeaderBody)
   tgtMode <- getsClient stgtMode
   when (tgtMode == TgtOff  -- targeting performs it's own, more extensive look

@@ -320,10 +320,9 @@ effLvlGoUp aid k = do
         hs <- getsGlobal heroList
         when (null hs) $
           modifyGlobal (updateArena (updateSmell (const IM.empty)))
-        -- Provisionally change level. The actor will become a leader,
-        -- but he is not inserted into the new level yet, so we have
-        -- to invalidate current leader.
-        modifyGlobal $ updateSelected invalidActorId nln
+        -- Change arena, but not the leader yet. The actor will become
+        -- a leader, but he is not inserted into the new level yet.
+        modifyGlobal $ updateSelectedArena nln
         -- Sync the actor time with the level time.
         timeLastVisited <- getsGlobal getTime
         let diff = timeAdd (btime pbodyCurrent) (timeNegate timeCurrent)
@@ -332,8 +331,8 @@ effLvlGoUp aid k = do
         -- at his old position or at his new position.
         modifyGlobal (insertActor aid pbody)
         modifyGlobal (updateActorItem aid (const bitems))
-        -- Teset level and leader for all factions.
-        modifyGlobal $ updateSelected aid nln
+        -- Reset level and leader for all factions.
+        modifyGlobal $ updateSelectedLeader aid
         void $ sendToClients (bfaction pbody) $ \fid ->
           if fid /= bfaction pbody
           then SelectLeaderCli invalidActorId nln
@@ -423,7 +422,8 @@ selectLeaderSer :: MonadAction m => ActorId -> LevelId -> m Bool
 selectLeaderSer actor lid = do
   side <- getsGlobal sside
   b <- askClient side $ SelectLeaderCli actor lid
-  modifyGlobal $ updateSelected actor lid
+  modifyGlobal $ updateSelectedArena lid
+  modifyGlobal $ updateSelectedLeader actor
   return b
 
 summonHeroes :: MonadServer m => Int -> Point -> m ()
