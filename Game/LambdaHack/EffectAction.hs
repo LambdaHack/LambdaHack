@@ -192,7 +192,7 @@ eff Effect.Dominate _ source target _power = do
   arena <- getsGlobal sarena
   if not $ isAHero s target
     then do  -- Monsters have weaker will than heroes.
-      selectLeaderSer arena target
+      selectLeaderSer target arena
         >>= assert `trueM` (source, arena, target, "leader dominates himself")
       -- Halve the speed as a side-effect of domination.
       let halfSpeed :: Actor -> Maybe Speed
@@ -425,15 +425,22 @@ itemEffectAction verbosity source target item block = do
   -- so the item gets identified.
   when (b1 && b2) $ discover discoS item
 
-selectLeaderSer :: MonadAction m => LevelId -> ActorId -> m Bool
-selectLeaderSer lid actor = do
-  b <- selectLeader lid actor
-  leader <- getsLocal sleader
-  arena <- getsLocal sarena
-  modifyGlobal $ updateSelected leader arena
+-- | Make the item known to the leader.
+discover :: MonadAction m => Discoveries -> Item -> m ()
+discover discoS i = do
+  side <- getsGlobal sside
+  let ix = jkindIx i
+      ik = discoS M.! ix
+  void $ askClient side $ DiscoverCli ik i
+
+selectLeaderSer :: MonadAction m => ActorId -> LevelId -> m Bool
+selectLeaderSer actor lid = do
+  side <- getsGlobal sside
+  b <- askClient side $ SelectLeaderCli actor lid
+  modifyGlobal $ updateSelected actor lid
   return b
 
-summonHeroes :: MonadAction m => Int -> Point -> m ()
+summonHeroes :: MonadServer m => Int -> Point -> m ()
 summonHeroes n pos =
   assert (n > 0) $ do
   cops <- getsGlobal scops
@@ -545,23 +552,6 @@ gameOver showEndingScreens = do
         when go $ do
           let upd2 f = f {gquit = Just (True, Killed arena)}
           modifyGlobal $ updateSide upd2
-
--- | Make the item known to the leader.
-discover :: MonadClient m => Discoveries -> Item -> m ()
-discover discoS i = do
-  Kind.COps{coitem} <- getsLocal scops
-  oldDisco <- getsLocal sdisco
-  let ix = jkindIx i
-      ik = discoS M.! ix
-  unless (ix `M.member` oldDisco) $ do
-    modifyLocal (updateDisco (M.insert ix ik))
-    disco <- getsLocal sdisco
-    let (object1, object2) = partItem coitem oldDisco i
-        msg = makeSentence
-          [ "the", MU.SubjectVerbSg (MU.Phrase [object1, object2])
-                                    "turn out to be"
-          , partItemAW coitem disco i ]
-    msgAdd msg
 
 -- TODO: move somewhere
 

@@ -29,6 +29,7 @@ import Game.LambdaHack.ActorState
 import Game.LambdaHack.Animation (blockHit, deathBody, twirlSplash)
 import Game.LambdaHack.Binding
 import qualified Game.LambdaHack.Command as Command hiding (CmdSer)
+import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Draw
 import Game.LambdaHack.DungeonState
@@ -539,7 +540,21 @@ data CmdCli =
     PickupCli ActorId Item Item
   | ShowItemsCli Discoveries Msg [Item]
   | AnimateDeathCli ActorId
+  | SelectLeaderCli ActorId LevelId
+  | DiscoverCli (Kind.Id ItemKind) Item
   deriving Show
+
+-- | The semantics of client commands.
+cmdCli :: MonadClient m => CmdCli -> m Bool
+cmdCli cmd = case cmd of
+  PickupCli aid i ni -> pickupCli aid i ni >> return True  -- TODO: GADT?
+  ShowItemsCli discoS loseMsg items -> do
+    io <- itemOverlay discoS True items
+    slides <- overlayToSlideshow loseMsg io
+    getManyConfirms [] slides
+  AnimateDeathCli aid -> animateDeathCli aid
+  SelectLeaderCli aid lid -> selectLeader lid aid
+  DiscoverCli ik i -> discoverCli ik i
 
 pickupCli :: MonadClient m => ActorId -> Item -> Item -> m ()
 pickupCli aid i ni = do
@@ -573,12 +588,21 @@ animateDeathCli target = do
     msgAdd "The survivors carry on."  -- TODO: reset messages at game over not to display it if there are no survivors.
   return go
 
--- | The semantics of client commands.
-cmdCli :: MonadClient m => CmdCli -> m Bool
-cmdCli cmd = case cmd of
-  PickupCli aid i ni -> pickupCli aid i ni >> return True  -- TODO: GADT?
-  ShowItemsCli discoS loseMsg items -> do
-    io <- itemOverlay discoS True items
-    slides <- overlayToSlideshow loseMsg io
-    getManyConfirms [] slides
-  AnimateDeathCli aid -> animateDeathCli aid
+-- | Make the item known to the player.
+discoverCli :: MonadClient m => Kind.Id ItemKind -> Item -> m Bool
+discoverCli ik i = do
+  Kind.COps{coitem} <- getsLocal scops
+  oldDisco <- getsLocal sdisco
+  let ix = jkindIx i
+  if (ix `M.member` oldDisco)
+    then return False
+    else do
+      modifyLocal (updateDisco (M.insert ix ik))
+      disco <- getsLocal sdisco
+      let (object1, object2) = partItem coitem oldDisco i
+          msg = makeSentence
+            [ "the", MU.SubjectVerbSg (MU.Phrase [object1, object2])
+                                      "turn out to be"
+            , partItemAW coitem disco i ]
+      msgAdd msg
+      return True
