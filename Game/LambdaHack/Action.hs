@@ -34,7 +34,7 @@ module Game.LambdaHack.Action
   , saveGameBkp, dumpCfg, endOrLoop, frontendName, startFrontend
   , switchGlobalSelectedSide
   , debug
-  , CmdCli(..), cmdCli, sendToPlayers, askClient
+  , CmdCli(..), cmdCli, sendToPlayers, sendToClients, askClient
   , itemOverlay, selectLeader, setTgtId, stopRunning
   ) where
 
@@ -647,6 +647,7 @@ data CmdCli =
   | ConfirmMoreBWCli Msg
   | RememberCli LevelId IS.IntSet Level  -- TODO: Level is an overkill
   | RememberPerCli LevelId Perception Level FactionDict
+  | SwitchLevelCli LevelId Actor
   deriving Show
 
 -- | The semantics of client commands.
@@ -658,7 +659,7 @@ cmdCli cmd = case cmd of
     slides <- overlayToSlideshow msg io
     getManyConfirms [] slides
   AnimateDeathCli aid -> animateDeathCli aid
-  SelectLeaderCli aid lid -> selectLeader lid aid
+  SelectLeaderCli aid lid -> selectLeader aid lid
   DiscoverCli ik i -> discoverCli ik i
   ConfirmYesNoCli msg -> do
     go <- displayYesNo msg
@@ -680,6 +681,15 @@ cmdCli cmd = case cmd of
     void $ cmdCli $ RememberCli arena (totalVisible per) lvl
     modifyClient $ \cli -> cli {sper = M.insert arena per (sper cli)}
     modifyLocal $ updateFaction (const faction)
+    return True
+  SwitchLevelCli nln pbody -> do
+    leader <- getsLocal sleader
+    bitems <- getsLocal getLeaderItem
+    modifyLocal (deleteActor leader)
+    modifyLocal $ updateSelected invalidActorId nln
+    modifyLocal (insertActor leader pbody)
+    modifyLocal (updateActorItem leader (const bitems))
+    modifyLocal $ updateSelected leader nln
     return True
 
 pickupCli :: MonadClient m => ActorId -> Item -> Item -> m ()
@@ -784,8 +794,8 @@ itemOverlay disco sorted is = do
 -- | Select a faction leader. Switch level, if needed.
 -- False, if nothing to do. Should only be invoked as a direct result
 -- of a player action (leader death just sets sleader to -1).
-selectLeader :: MonadClient m => LevelId -> ActorId -> m Bool
-selectLeader nln actor = do
+selectLeader :: MonadClient m => ActorId -> LevelId -> m Bool
+selectLeader actor nln = do
   Kind.COps{coactor} <- getsLocal scops
   leader <- getsLocal sleader
   stgtMode <- getsClient stgtMode

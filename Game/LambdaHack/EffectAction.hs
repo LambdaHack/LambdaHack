@@ -75,7 +75,8 @@ focusIfOurs _target = do
 -- The first bool result indicates if the effect was spectacular enough
 -- for the actors to identify it (and the item that caused it, if any).
 -- The second bool tells if the effect was seen by or affected the party.
-effectToAction :: MonadAction m => Effect.Effect -> Int -> ActorId -> ActorId -> Int -> Bool
+effectToAction :: MonadAction m
+               => Effect.Effect -> Int -> ActorId -> ActorId -> Int -> Bool
                -> m (Bool, Bool)
 effectToAction effect verbosity source target power block = do
   oldTm <- getsGlobal (getActorBody target)
@@ -304,13 +305,14 @@ squashActor source target = do
   assert (not (memActor target s) `blame` (source, target, "not killed")) $
     return ()
 
+-- TODO: let not only leader ascend
 effLvlGoUp :: MonadAction m => Int -> m ()
 effLvlGoUp k = do
   pbodyCurrent <- getsGlobal getLeaderBody
   bitems <- getsGlobal getLeaderItem
   leader <- getsGlobal sleader
   arena <- getsGlobal sarena
-  glo<- getGlobal
+  glo <- getGlobal
   case whereTo glo arena k of
     Nothing -> fleeDungeon -- we are at the "end" of the dungeon
     Just (nln, npos) ->
@@ -342,16 +344,10 @@ effLvlGoUp k = do
         modifyGlobal (updateActorItem leader (const bitems))
         -- Reset level and leader.
         modifyGlobal $ updateSelected leader nln
-        -- TODO: for now both in local and global state,
-        -- to ensure the actions performed afterwards, but before
-        -- the end of the turn, read and modify updated and consistent states.
-        -- TODO: do this only for the client of (bfaction leader),
-        -- which may be different than current side
-        modifyLocal (deleteActor leader)
-        modifyLocal $ updateSelected invalidActorId nln
-        modifyLocal (insertActor leader pbody)
-        modifyLocal (updateActorItem leader (const bitems))
-        modifyLocal $ updateSelected leader nln
+        void $ sendToClients (bfaction pbody) $ \fid ->
+          if fid /= bfaction pbody
+          then SelectLeaderCli invalidActorId nln
+          else SwitchLevelCli nln pbody
         -- Checking actors at the new posiiton of the leader.
         inhabitants <- getsGlobal (posToActor npos)
         case inhabitants of

@@ -60,7 +60,7 @@ cmdAction cli s cmd =
                       && not (bproj (getActorBody target s)) ->
           -- Select adjacent actor by bumping into him. Takes no time.
           (False,
-           selectLeader arena target
+           selectLeader target arena
              >>= assert `trueM`
                    (leader, target, "leader bumps into himself" :: Text))
         _ -> (True, cmdSerAction $ movePl dir)

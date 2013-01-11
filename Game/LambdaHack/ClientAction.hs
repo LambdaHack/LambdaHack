@@ -444,7 +444,7 @@ cycleHero = do
   hs <- heroesAfterPl
   case filter (flip memActor s . snd) hs of
     [] -> abortWith "Cannot select any other hero on this level."
-    (nl, np) : _ -> selectLeader nl np
+    (nl, np) : _ -> selectLeader np nl
                       >>= assert `trueM` (leader, nl, np, "hero duplicated")
 
 heroesAfterPl :: MonadClientRO m => m [(LevelId, ActorId)]
@@ -466,7 +466,7 @@ backCycleHero = do
   hs <- heroesAfterPl
   case reverse hs of
     [] -> abortWith "No other hero in the party."
-    (nl, np) : _ -> selectLeader nl np
+    (nl, np) : _ -> selectLeader np nl
                       >>= assert `trueM` (leader, nl, np, "hero duplicated")
 
 -- ** Help
@@ -484,4 +484,4 @@ selectHero k = do
   loc <- getLocal
   case tryFindHeroK loc k of
     Nothing  -> abortWith "No such member of the party."
-    Just (lid, aid) -> void $ selectLeader lid aid
+    Just (lid, aid) -> void $ selectLeader aid lid
