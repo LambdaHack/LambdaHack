@@ -47,7 +47,7 @@ data ColorMode =
 draw :: ColorMode -> Kind.COps -> Perception -> StateClient -> State -> Overlay
      -> SingleFrame
 draw dm cops per
-     StateClient{stgtMode, scursor, seps, sdebugCli}
+     cli@StateClient{stgtMode, scursor, seps, sdebugCli}
      s overlay =
   let Kind.COps{ coactor=Kind.Ops{okind}
                , coitem=Kind.Ops{okind=iokind}
@@ -58,15 +58,15 @@ draw dm cops per
         case stgtMode of
           TgtOff -> (sarena s, getArena s)
           _ -> (tgtLevelId stgtMode, sdungeon s M.! tgtLevelId stgtMode)
-      leader = sleader s
+      leader = getLeader cli
       (bracedL, ahpS, asmellL, bhpS, bposL)
         | leader == invalidActorId =
           (False, "--", False, "--", undefined)
         | otherwise =
-            let mpl@Actor{bkind, bhp, bpos} = getLeaderBody s
+            let mpl@Actor{bkind, bhp, bpos} = getActorBody leader s
                 ActorKind{ahp, asmell} = okind bkind
             in (braced mpl ltime, showT (maxDice ahp), asmell, showT bhp, bpos)
-      bitems = getLeaderItem s
+      bitems = getActorItem leader s
       (msgTop, over, msgBottom) = stringByLocation lxsize lysize overlay
       -- TODO:
       sVisBG = if smarkVision

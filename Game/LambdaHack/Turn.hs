@@ -131,14 +131,14 @@ handleActors subclipStart = withPerception $ do
       let side = bfaction m
       switchGlobalSelectedSide side
       arena <- getsGlobal sarena
-      leaderOld <- getsLocal sleader
+      leaderOld <- getsClient getLeader
       -- Old leader may have been killed by enemies since @side@ last moved.
       memOld <- getsGlobal $ memActor leaderOld
       let leader | memOld = leaderOld
                  | otherwise = actor
-      modifyGlobal $ updateSelectedLeader leader
       modifyLocal $ updateSelectedArena arena
-      modifyLocal $ updateSelectedLeader leader
+      loc <- getLocal
+      modifyClient $ updateSelectedLeader leader loc
       isPlayer <- getsLocal $ flip isPlayerFaction side
       if actor == leader && isPlayer
         then do
@@ -146,7 +146,7 @@ handleActors subclipStart = withPerception $ do
           displayPush
           handlePlayer
           squitNew <- getsServer squit
-          sleaderNew <- getsGlobal sleader
+          sleaderNew <- getsClient getLeader
           -- Advance time once, after the leader switched perhaps many times.
           -- Ending and especially saving does not take time.
           -- TODO: this is correct only when all heroes have the same
@@ -205,7 +205,7 @@ handleAI actor = do
 -- | Continue running in the given direction.
 continueRun :: MonadAction m => (Vector, Int) -> m ()
 continueRun dd = do
-  leader <- getsLocal sleader
+  leader <- getsClient getLeader
   dir <- continueRunDir dd
   -- Attacks and opening doors disallowed when continuing to run.
   runSer leader dir
@@ -221,7 +221,8 @@ handlePlayer = do
   tryWith (\ msg -> stopRunning >> playerCommand msg) $ do
     srunning <- getsClient srunning
     maybe abort continueRun srunning
-  addSmell
+  leader <- getsClient getLeader
+  addSmell leader
 
 -- | Determine and process the next player command. The argument is the last
 -- abort message due to running, if any.

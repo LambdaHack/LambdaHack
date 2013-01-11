@@ -54,7 +54,8 @@ retarget = do
   stgtMode <- getsClient stgtMode
   assert (stgtMode == TgtOff) $ do
     arena <- getsLocal sarena
-    ppos <- getsLocal (bpos . getLeaderBody)
+    leader <- getsClient getLeader
+    ppos <- getsLocal (bpos . getActorBody leader)
     msgAdd "Last target invalid."
     modifyClient $ \cli -> cli {scursor = ppos, seps = 0}
     targetMonster $ TgtAuto arena
@@ -122,7 +123,7 @@ doLook = do
   Kind.COps{coactor} <- getsLocal scops
   p <- getsClient scursor
   per <- askPerception
-  leader <- getsLocal sleader
+  leader <- getsClient getLeader
   target <- getsClient $ getTarget leader
   lvl <- cursorLevel
   let hms = lactor lvl
@@ -165,8 +166,9 @@ doLook = do
 inventory :: MonadClientRO m => WriterT Slideshow m ()
 inventory = do
   Kind.COps{coactor} <- getsLocal scops
-  pbody <- getsLocal getLeaderBody
-  items <- getsLocal getLeaderItem
+  leader <- getsClient getLeader
+  pbody <- getsLocal $ getActorBody leader
+  items <- getsLocal $ getActorItem leader
   disco <- getsLocal sdisco
   if null items
     then abortWith $ makeSentence
@@ -184,8 +186,8 @@ inventory = do
 -- | Start the floor targeting mode or reset the cursor position to the leader.
 targetFloor :: MonadClient m => TgtMode -> WriterT Slideshow m ()
 targetFloor stgtModeNew = do
-  ppos <- getsLocal (bpos . getLeaderBody)
-  leader <- getsLocal sleader
+  leader <- getsClient getLeader
+  ppos <- getsLocal (bpos . getActorBody leader)
   target <- getsClient $ getTarget leader
   stgtMode <- getsClient stgtMode
   let tgt = case target of
@@ -202,7 +204,8 @@ setCursor :: MonadClient m => TgtMode -> WriterT Slideshow m ()
 setCursor stgtModeNew = assert (stgtModeNew /= TgtOff) $ do
   loc <- getLocal
   cli <- getClient
-  ppos <- getsLocal (bpos . getLeaderBody)
+  leader <- getsClient getLeader
+  ppos <- getsLocal (bpos . getActorBody leader)
   stgtModeOld <- getsClient stgtMode
   scursorOld <- getsClient scursor
   sepsOld <- getsClient seps
@@ -219,8 +222,8 @@ setCursor stgtModeNew = assert (stgtModeNew /= TgtOff) $ do
 -- | Start the monster targeting mode. Cycle between monster targets.
 targetMonster :: MonadClient m => TgtMode -> WriterT Slideshow m ()
 targetMonster stgtModeNew = do
-  leader <- getsLocal sleader
-  ppos <- getsLocal (bpos . getLeaderBody)
+  leader <- getsClient getLeader
+  ppos <- getsLocal (bpos . getActorBody leader)
   side <- getsLocal sside
   per <- askPerception
   target <- getsClient $ getTarget leader
@@ -370,7 +373,7 @@ acceptCurrent h = do
 endTargeting :: MonadClient m => Bool -> m ()
 endTargeting accept = do
   when accept $ do
-    leader <- getsLocal sleader
+    leader <- getsClient getLeader
     target <- getsClient $ getTarget leader
     cpos <- getsClient scursor
     side <- getsLocal sside
@@ -394,8 +397,8 @@ endTargeting accept = do
 endTargetingMsg :: MonadClient m => m ()
 endTargetingMsg = do
   Kind.COps{coactor} <- getsLocal scops
-  pbody <- getsLocal getLeaderBody
-  leader <- getsLocal sleader
+  leader <- getsClient getLeader
+  pbody <- getsLocal $ getActorBody leader
   target <- getsClient $ getTarget leader
   loc <- getLocal
   Level{lxsize} <- cursorLevel
@@ -439,7 +442,7 @@ displayHistory = do
 -- We cycle through at most 10 heroes (\@, 1--9).
 cycleHero :: MonadClient m => m ()
 cycleHero = do
-  leader <- getsLocal sleader
+  leader <- getsClient getLeader
   s  <- getLocal
   hs <- heroesAfterPl
   case filter (flip memActor s . snd) hs of
@@ -449,7 +452,7 @@ cycleHero = do
 
 heroesAfterPl :: MonadClientRO m => m [(LevelId, ActorId)]
 heroesAfterPl = do
-  leader <- getsLocal sleader
+  leader <- getsClient getLeader
   s  <- getLocal
   let hs = map (tryFindHeroK s) [0..9]
       i = fromMaybe (-1) $ findIndex ((== Just leader) . fmap snd) hs
@@ -462,7 +465,7 @@ heroesAfterPl = do
 -- if any, wrapping. We cycle through at most 10 heroes (\@, 1--9).
 backCycleHero :: MonadClient m => m ()
 backCycleHero = do
-  leader <- getsLocal sleader
+  leader <- getsClient getLeader
   hs <- heroesAfterPl
   case reverse hs of
     [] -> abortWith "No other hero in the party."

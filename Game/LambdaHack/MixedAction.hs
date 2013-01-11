@@ -60,10 +60,10 @@ playerApplyGroupItem :: MonadClient m
                      -> m CmdSer
 playerApplyGroupItem verb object syms = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsLocal scops
-  is <- getsLocal getLeaderItem
+  leader <- getsClient getLeader
+  is <- getsLocal $ getActorItem leader
   item <- getGroupItem is object syms
             (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
-  leader <- getsLocal sleader
   disco <- getsLocal sdisco
   let verbApply = case jkind disco item of
         Nothing -> verb
@@ -94,7 +94,8 @@ playerProjectGroupItem verb object syms = do
   ms     <- getsLocal hostileList
   lxsize <- getsLocal (lxsize . getArena)
   lysize <- getsLocal (lysize . getArena)
-  ppos   <- getsLocal (bpos . getLeaderBody)
+  leader <- getsClient getLeader
+  ppos   <- getsLocal (bpos . getActorBody leader)
   if foesAdjacent lxsize lysize ppos ms
     then abortWith "You can't aim in melee."
     else playerProjectGI verb object syms
@@ -103,11 +104,11 @@ playerProjectGI :: MonadClient m => MU.Part -> MU.Part -> [Char] -> m CmdSer
 playerProjectGI verb object syms = do
   cli <- getClient
   pos <- getLocal
-  leader <- getsLocal sleader
+  leader <- getsClient getLeader
   case targetToPos cli pos of
     Just p -> do
       Kind.COps{coitem=Kind.Ops{okind}} <- getsLocal scops
-      is <- getsLocal getLeaderItem
+      is <- getsLocal $ getActorItem leader
       item <- getGroupItem is object syms
                 (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
       stgtMode <- getsClient stgtMode
@@ -135,7 +136,8 @@ playerTriggerDir feat verb = do
 -- | Leader tries to trigger a tile in a given direction.
 playerBumpDir :: MonadClientRO m => F.Feature -> Vector -> m CmdSer
 playerBumpDir feat dir = do
-  body  <- getsLocal getLeaderBody
+  leader <- getsClient getLeader
+  body <- getsLocal $ getActorBody leader
   let dpos = bpos body `shift` dir
   bumpTile dpos feat
 
@@ -144,7 +146,7 @@ bumpTile :: MonadClientRO m => Point -> F.Feature -> m CmdSer
 bumpTile dpos feat = do
   Kind.COps{cotile} <- getsLocal scops
   lvl <- getsLocal getArena
-  leader <- getsLocal sleader
+  leader <- getsClient getLeader
   let t = lvl `at` dpos
   -- Features are never invisible; visible tiles are identified accurately.
   -- A tile can be triggered even if an invisible monster occupies it.
@@ -178,14 +180,15 @@ guessBump _ _ _ = neverMind True
 -- | Leader tries to trigger the tile he's standing on.
 playerTriggerTile :: MonadClientRO m => F.Feature -> m CmdSer
 playerTriggerTile feat = do
-  ppos <- getsLocal (bpos . getLeaderBody)
+  leader <- getsClient getLeader
+  ppos <- getsLocal (bpos . getActorBody leader)
   bumpTile ppos feat
 
 -- ** Pickup
 
 pickupItem :: MonadClientRO m => m CmdSer
 pickupItem = do
-  leader <- getsLocal sleader
+  leader <- getsClient getLeader
   actorPickupItem leader
 
 actorPickupItem :: MonadClientRO m => ActorId -> m CmdSer
@@ -210,9 +213,9 @@ dropItem :: MonadClient m => m CmdSer
 dropItem = do
   -- TODO: allow dropping a given number of identical items.
   Kind.COps{coactor, coitem} <- getsLocal scops
-  leader    <- getsLocal sleader
-  pbody <- getsLocal getLeaderBody
-  ims   <- getsLocal getLeaderItem
+  leader    <- getsClient getLeader
+  pbody <- getsLocal $ getActorBody leader
+  ims   <- getsLocal $ getActorItem leader
   stack <- getAnyItem "What to drop?" ims "in inventory"
   disco <- getsLocal sdisco
   let item = stack { jcount = 1 }
@@ -246,7 +249,8 @@ getItem :: MonadClient m
         -> m Item
 getItem prompt p ptext is0 isn = do
   lvl  <- getsLocal getArena
-  body <- getsLocal getLeaderBody
+  leader <- getsClient getLeader
+  body <- getsLocal $ getActorBody leader
   let pos = bpos body
       tis = lvl `atI` pos
       floorFull = not $ null tis
@@ -306,21 +310,21 @@ getItem prompt p ptext is0 isn = do
 -- | Leader waits a turn (and blocks, etc.).
 waitBlock :: MonadClientRO m => m CmdSer
 waitBlock = do
-  leader <- getsLocal sleader
+  leader <- getsClient getLeader
   return $ WaitSer leader
 
 -- ** Move
 
 movePl :: MonadClientRO m => Vector -> m CmdSer
 movePl dir = do
-  leader <- getsLocal sleader
+  leader <- getsClient getLeader
   return $! MoveSer leader dir
 
 -- ** Run
 
 runPl :: MonadClient m => Vector -> m CmdSer
 runPl dir = do
-  leader <- getsLocal sleader
+  leader <- getsClient getLeader
   dirR <- runDir (dir, 0)
   return $! RunSer leader dirR
 

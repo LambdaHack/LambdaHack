@@ -28,9 +28,9 @@ cmdAction :: MonadAction m => StateClient -> State -> Cmd
           -> (Bool, WriterT Slideshow m ())
 cmdAction cli s cmd =
   let tgtMode = stgtMode cli
-      leader = sleader s
+      leader = getLeader cli
       arena = sarena s
-      sm = getLeaderBody s
+      sm = getActorBody leader s
       ppos = bpos sm
       tgtLoc = targetToPos cli s
       Level{lxsize} =
@@ -100,19 +100,18 @@ cmdAction cli s cmd =
 -- the level of the selected hero).
 cmdSemantics :: MonadAction m => Cmd -> WriterT Slideshow m Bool
 cmdSemantics cmd = do
+  leader <- getsClient getLeader
   arenaOld <- getsGlobal sarena
-  posOld <- getsGlobal (bpos . getLeaderBody)
+  posOld <- getsGlobal (bpos . getActorBody leader)
   cli <- getClient
   loc <- getLocal
   let (timed, sem) = cmdAction cli loc cmd
   if timed
     then checkCursor sem
     else sem
-  leader <- getsLocal sleader
   arena <- getsLocal sarena
   modifyGlobal $ updateSelectedArena arena
-  modifyGlobal $ updateSelectedLeader leader
-  pos <- getsGlobal (bpos . getLeaderBody)
+  pos <- getsGlobal (bpos . getActorBody leader)
   tgtMode <- getsClient stgtMode
   when (tgtMode == TgtOff  -- targeting performs it's own, more extensive look
         && (posOld /= pos

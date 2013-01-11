@@ -4,18 +4,18 @@ module Game.LambdaHack.State
   ( -- * Basic game state, local or global.
     State
     -- * State components
-  , sdungeon, sdepth, sdisco, sfaction, scops, sleader, sside, sarena
+  , sdungeon, sdepth, sdisco, sfaction, scops, sside, sarena
     -- * State operations
   , defStateGlobal, defStateLocal, switchGlobalSelectedSideOnlyForGlobalState
   , updateDungeon, updateDisco, updateFaction, updateCOps
-  , updateArena, updateTime, updateSide
-  , updateSelectedLeader, updateSelectedArena
+  , updateArena, updateTime, updateSide, updateSelectedArena
   , getArena, getTime, getSide
   , isPlayerFaction, isSpawningFaction
     -- * Server state and its operations
   , StateServer(..), defStateServer
     -- * Client state and its operations
-  , StateClient(..), defStateClient, defHistory, updateTarget, getTarget
+  , StateClient(..), defStateClient, defHistory
+  , updateTarget, getTarget, updateSelectedLeader, getLeader
     -- * A dictionary of client states.
   , StateDict
     -- * Components types and operations.
@@ -58,15 +58,14 @@ import Game.LambdaHack.Utils.Assert
 -- | View on game state. Clients never update @sdungeon@ and @sfaction@,
 -- but the server updates it for them depending on client exploration.
 -- Data invariant: no actor belongs to more than one @sdungeon@ level.
--- Actor @sleader@ is not on any other @sdungeon@ level than @sarena@.
--- If @sleader@ is on @sarena@, he belongs to @sside@.
+-- In alocal state, actor @sleader@ is not on any other @sdungeon@
+-- level than @sarena@. If @sleader@ is on @sarena@, he belongs to @sside@.
 data State = State
   { _sdungeon :: !Dungeon      -- ^ remembered dungeon
   , _sdepth   :: !Int          -- ^ remembered dungeon depth
   , _sdisco   :: !Discoveries  -- ^ remembered item discoveries
   , _sfaction :: !FactionDict  -- ^ remembered sides still in game
   , _scops    :: Kind.COps     -- ^ remembered content
-  , _sleader  :: !ActorId      -- ^ selected actor
   , _sside    :: !FactionId    -- ^ faction of the selected actor
   , _sarena   :: !LevelId      -- ^ level of the selected actor
   }
@@ -97,6 +96,7 @@ data StateClient = StateClient
   , shistory  :: !History       -- ^ history of messages
   , sper      :: !FactionPers   -- ^ faction perception indexed by levels
   , slastKey  :: !(Maybe K.KM)  -- ^ last command key pressed
+  , _sleader  :: !ActorId       -- ^ selected actor
   , sdebugCli :: !DebugModeCli  -- ^ debugging mode
   }
 
@@ -173,8 +173,7 @@ defStateGlobal :: Dungeon -> Int -> Discoveries
                -> State
 defStateGlobal _sdungeon _sdepth _sdisco _sfaction _scops _sarena =
   State
-    { _sleader = invalidActorId  -- no heroes yet alive
-    , _sside = -1  -- no side yet selected
+    { _sside = -1  -- no side yet selected
     , ..
     }
 
@@ -190,8 +189,7 @@ defStateLocal globalDungeon
               _sdepth _sdisco _sfaction
               _scops@Kind.COps{cotile} _sarena _sside = do
   State
-    { _sleader  = invalidActorId  -- no heroes yet alive
-    , _sdungeon =
+    { _sdungeon =
       M.map (\Level{lxsize, lysize, ldesc, lstair, lclear} ->
               unknownLevel cotile lxsize lysize ldesc lstair lclear)
             globalDungeon
@@ -230,16 +228,6 @@ updateTime f s = updateArena (\lvl@Level{ltime} -> lvl {ltime = f ltime}) s
 -- | Update current side data within state.
 updateSide :: (Faction -> Faction) -> State -> State
 updateSide f s = updateFaction (IM.adjust f (_sside s)) s
-
--- | Update selected actor within state. The actor is required
--- to belong to the selected level and selected faction.
-updateSelectedLeader :: ActorId -> State -> State
-updateSelectedLeader _sleader s =
-  let la = lactor $ _sdungeon s M.! _sarena s
-      side1 = fmap bfaction $ IM.lookup _sleader la
-      side2 = Just $ _sside s
-  in assert (side1 == side2 `blame` (side1, side2, _sleader, _sarena s, s))
-     $ s {_sleader}
 
 -- | Update selected level within state.
 updateSelectedArena :: LevelId -> State -> State
@@ -282,9 +270,6 @@ sfaction = _sfaction
 
 scops :: State -> Kind.COps
 scops = _scops
-
-sleader :: State -> ActorId
-sleader = _sleader
 
 sside :: State -> FactionId
 sside = _sside
@@ -332,6 +317,7 @@ defStateClient ppos = do
     , sreport   = emptyReport
     , shistory  = emptyHistory
     , sper      = M.empty
+    , _sleader  = invalidActorId  -- no heroes yet alive
     , slastKey  = Nothing
     , sdebugCli = defDebugModeCli
     }
@@ -358,6 +344,19 @@ updateTarget aid f cli = cli { starget = IM.alter f aid (starget cli) }
 -- | Get target parameters from client state.
 getTarget :: ActorId -> StateClient -> Maybe Target
 getTarget aid cli = IM.lookup aid (starget cli)
+
+-- | Update selected actor within state. The actor is required
+-- to belong to the selected level and selected faction.
+updateSelectedLeader :: ActorId -> State -> StateClient -> StateClient
+updateSelectedLeader _sleader s cli =
+  let la = lactor $ _sdungeon s M.! _sarena s
+      side1 = fmap bfaction $ IM.lookup _sleader la
+      side2 = Just $ _sside s
+  in assert (side1 == side2 `blame` (side1, side2, _sleader, _sarena s, s))
+     $ cli {_sleader}
+
+getLeader :: StateClient -> ActorId
+getLeader = _sleader
 
 toggleMarkVision :: StateClient -> StateClient
 toggleMarkVision s@StateClient{sdebugCli=sdebugCli@DebugModeCli{smarkVision}} =
@@ -391,7 +390,6 @@ instance Binary State where
     put _sdepth
     put _sdisco
     put _sfaction
-    put _sleader
     put _sside
     put _sarena
   get = do
@@ -399,7 +397,6 @@ instance Binary State where
     _sdepth <- get
     _sdisco <- get
     _sfaction <- get
-    _sleader <- get
     _sside <- get
     _sarena <- get
     let _scops = undefined  -- overwritten by recreated cops
@@ -431,6 +428,7 @@ instance Binary StateClient where
     put starget
     put srunning
     put sreport
+    put _sleader
   get = do
     stgtMode <- get
     scursor <- get
@@ -438,6 +436,7 @@ instance Binary StateClient where
     starget <- get
     srunning <- get
     sreport <- get
+    _sleader <- get
     let shistory = emptyHistory
         sper = M.empty
         slastKey = Nothing

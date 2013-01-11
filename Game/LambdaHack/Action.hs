@@ -682,13 +682,14 @@ cmdCli cmd = case cmd of
     modifyClient $ \cli -> cli {sper = M.insert arena per (sper cli)}
     modifyLocal $ updateFaction (const faction)
     return True
-  SwitchLevelCli leader nln pbody -> do
-    bitems <- getsLocal getLeaderItem
-    modifyLocal (deleteActor leader)
+  SwitchLevelCli aid nln pbody -> do
+    bitems <- getsLocal $ getActorItem aid
+    modifyLocal (deleteActor aid)
     modifyLocal $ updateSelectedArena nln
-    modifyLocal (insertActor leader pbody)
-    modifyLocal (updateActorItem leader (const bitems))
-    modifyLocal $ updateSelectedLeader leader
+    modifyLocal (insertActor aid pbody)
+    modifyLocal (updateActorItem aid (const bitems))
+    loc <- getLocal
+    modifyClient $ updateSelectedLeader aid loc
     return True
 
 pickupCli :: MonadClient m => ActorId -> Item -> Item -> m ()
@@ -796,19 +797,20 @@ itemOverlay disco sorted is = do
 selectLeader :: MonadClient m => ActorId -> LevelId -> m Bool
 selectLeader actor nln = do
   Kind.COps{coactor} <- getsLocal scops
-  leader <- getsLocal sleader
+  leader <- getsClient getLeader
   stgtMode <- getsClient stgtMode
   if actor == leader
     then return False -- already selected
     else do
       modifyLocal $ updateSelectedArena nln
-      modifyLocal $ updateSelectedLeader actor
+      loc <- getLocal
+      modifyClient $ updateSelectedLeader actor loc
       -- Move the cursor, if active, to the new level.
       when (stgtMode /= TgtOff) $ setTgtId nln
       -- Don't continue an old run, if any.
       stopRunning
       -- Announce.
-      pbody <- getsLocal getLeaderBody
+      pbody <- getsLocal $ getActorBody actor
       msgAdd $ makeSentence [partActor coactor pbody, "selected"]
       return True
 

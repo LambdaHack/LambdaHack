@@ -163,7 +163,6 @@ eff (Effect.Wound nDm) verbosity source target power = do
   n <- rndToAction $ rollDice nDm
   if n + power <= 0 then nullEffect else do
     void $ focusIfOurs target
-    leader <- getsGlobal sleader
     tm <- getsGlobal (getActorBody target)
     isPlayer <- getsGlobal $ flip isPlayerFaction $ bfaction tm
     let newHP = bhp tm - n - power
@@ -179,7 +178,7 @@ eff (Effect.Wound nDm) verbosity source target power = do
           | source == target =  -- a potion of wounding, etc.
             actorVerb coactor tm "feel wounded"
           | verbosity <= 0 = ""
-          | target == leader =
+          | isPlayer =
             actorVerb coactor tm $ "lose" <+> showT (n + power) <> "HP"
           | otherwise = actorVerb coactor tm "hiss in pain"
     -- Damage the target.
@@ -200,10 +199,9 @@ eff Effect.Dominate _ source target _power = do
             in Just $ speedScale (1%2) speed
       -- Sync the monster with the hero move time for better display
       -- of missiles and for the domination to actually take one player's turn.
-      leader <- getsGlobal sleader
-      modifyGlobal $ updateActorBody leader $ \ b -> b { bfaction = sside s
-                                                   , btime = getTime s
-                                                   , bspeed = halfSpeed b }
+      modifyGlobal $ updateActorBody target $ \ b -> b { bfaction = sside s
+                                                       , btime = getTime s
+                                                       , bspeed = halfSpeed b }
       -- Display status line and FOV for the new actor.
       sli <- promptToSlideshow ""
       fr <- drawOverlay ColorBW $ head $ runSlideshow sli
@@ -332,7 +330,6 @@ effLvlGoUp aid k = do
         modifyGlobal (insertActor aid pbody)
         modifyGlobal (updateActorItem aid (const bitems))
         -- Reset level and leader for all factions.
-        modifyGlobal $ updateSelectedLeader aid
         void $ sendToClients (bfaction pbody) $ \fid ->
           if fid /= bfaction pbody
           then SelectLeaderCli invalidActorId nln
@@ -423,7 +420,6 @@ selectLeaderSer actor lid = do
   side <- getsGlobal sside
   b <- askClient side $ SelectLeaderCli actor lid
   modifyGlobal $ updateSelectedArena lid
-  modifyGlobal $ updateSelectedLeader actor
   return b
 
 summonHeroes :: MonadServer m => Int -> Point -> m ()

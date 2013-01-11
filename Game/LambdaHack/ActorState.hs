@@ -3,11 +3,11 @@
 -- but not the 'Action' type.
 -- TODO: Document an export list after it's rewritten according to #17.
 module Game.LambdaHack.ActorState
-  ( isProjectile, isAHero, getLeaderBody, calculateTotal
+  ( isProjectile, isAHero, calculateTotal
   , initialHeroes, allActorsAnyLevel
   , posToActor, deleteActor, addHero, addMonster, updateActorItem
   , insertActor, heroList, memActor, getActorBody, updateActorBody
-  , hostileList, getActorItem, getLeaderItem, tryFindHeroK, dangerousList
+  , hostileList, getActorItem, tryFindHeroK, dangerousList
   , factionList, addProjectile, foesAdjacent, targetToPos, hostileAssocs
   ) where
 
@@ -77,7 +77,7 @@ factionList l s =
 -- | Calculate the position of leader's target.
 targetToPos :: StateClient -> State -> Maybe Point
 targetToPos cli@StateClient{scursor} s =
-  case getTarget (sleader s) cli of
+  case getTarget (getLeader cli) cli of
     Just (TPos pos) -> Just pos
     Just (TEnemy a _ll) -> do
       guard $ memActor a s           -- alive and visible?
@@ -234,18 +234,12 @@ tryFindHeroK s k =
 getActorBody :: ActorId -> State -> Actor
 getActorBody a s = lactor (getArena s) IM.! a
 
-getLeaderBody :: State -> Actor
-getLeaderBody s = getActorBody (sleader s) s
-
 updateActorBody :: ActorId -> (Actor -> Actor) -> State -> State
 updateActorBody actor f s = updateArena (updateActor $ IM.adjust f actor) s
 
 -- | Gets actor's items from the current level. Empty list, if not found.
 getActorItem :: ActorId -> State -> [Item]
 getActorItem a s = fromMaybe [] $ IM.lookup a (linv (getArena s))
-
-getLeaderItem :: State -> [Item]
-getLeaderItem s = getActorItem (sleader s) s
 
 updateActorItem :: ActorId -> ([Item] -> [Item]) -> State -> State
 updateActorItem actor f s =

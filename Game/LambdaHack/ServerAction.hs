@@ -133,8 +133,7 @@ projectSer source tpos _verb item = do
   cops@Kind.COps{coactor, coitem} <- getsLocal scops
   sm    <- getsLocal (getActorBody source)
   per   <- askPerceptionSer
-  leader    <- getsLocal sleader
-  Actor{btime}  <- getsLocal getLeaderBody
+  Actor{btime} <- getsLocal $ getActorBody source
   lvl   <- getsLocal getArena
   seps  <- getsClient seps
   lxsize <- getsLocal (lxsize . getArena)
@@ -155,7 +154,6 @@ projectSer source tpos _verb item = do
         [ MU.SubjectVerbSg (partActor coactor subject) "aim"
         , partItemNWs coitem disco consumed ]
       -- TODO: AI should choose the best eps.
-      eps = if source == leader then seps else 0
       -- Setting monster's projectiles time to player time ensures
       -- the projectile covers the whole normal distance already the first
       -- turn that the player observes it moving. This removes
@@ -167,10 +165,10 @@ projectSer source tpos _verb item = do
       -- and the opposite party's projectiles waiting one turn.
       btimeDelta = timeAddFromSpeed coactor sm btime
       time =
-        if bfaction sm == side || source == leader
+        if bfaction sm == side
         then btimeDelta `timeAdd` timeNegate timeClip
         else btime
-      bl = bla lxsize lysize eps spos tpos
+      bl = bla lxsize lysize seps spos tpos
   case bl of
     Nothing -> abortWith "cannot zap oneself"
     Just [] -> assert `failure` (spos, tpos, "project from the edge of level")
@@ -405,12 +403,11 @@ actorOpenDoor :: MonadAction m => ActorId -> Vector -> m ()
 actorOpenDoor actor dir = do
   Kind.COps{cotile} <- getsGlobal scops
   lvl<- getsGlobal getArena
-  leader <- getsGlobal sleader
   body <- getsGlobal (getActorBody actor)
+  glo <- getGlobal
   let dpos = shift (bpos body) dir  -- the position we act upon
       t = lvl `at` dpos
-      isLeader = actor == leader  -- TODO: check faction
-      isVerbose = isLeader  -- don't report, unless it's player-controlled
+      isVerbose = isPlayerFaction glo (bfaction body)
   unless (openable cotile lvl dpos) $ neverMind isVerbose
   if Tile.hasFeature cotile F.Closable t
     then abortIfWith isVerbose "already open"
@@ -448,7 +445,6 @@ runSer actor dir = do
 -- | When an actor runs (not walks) into another, they switch positions.
 displaceActor :: MonadAction m => ActorId -> ActorId -> m ()
 displaceActor source target = do
-  leader <- getsGlobal sleader
   sm <- getsGlobal (getActorBody source)
   tm <- getsGlobal (getActorBody target)
   let spos = bpos sm
@@ -468,6 +464,7 @@ displaceActor source target = do
   let poss = (tpos, spos)
       animFrs = animate cli loc per $ swapPlaces poss
   when visible $ displayFramesPush $ Nothing : animFrs
+  leader <- getsClient getLeader
   if source == leader
 -- TODO: The actor will stop running due to the message as soon as running
 -- is fixed to check the message before it goes into history.
@@ -571,12 +568,9 @@ regenerateLevelHP = do
   modifyGlobal (updateArena (updateActor (IM.mapWithKey (upd hi))))
 
 -- | Add new smell traces to the level. Only humans leave a strong scent.
-addSmell :: MonadServer m => m ()
-addSmell = do
-  s  <- getGlobal
-  leader <- getsGlobal sleader
-  let time = getTime s
-      ppos = bpos (getLeaderBody s)
-      upd = IM.insert ppos $ timeAdd time smellTimeout
-  when (isAHero s leader) $
-    modifyGlobal $ updateArena $ updateSmell upd
+addSmell :: MonadServer m => ActorId -> m ()
+addSmell aid = do
+  time <- getsGlobal getTime
+  ppos <- getsGlobal $ bpos . getActorBody aid
+  let upd = IM.insert ppos $ timeAdd time smellTimeout
+  modifyGlobal $ updateArena $ updateSmell upd
