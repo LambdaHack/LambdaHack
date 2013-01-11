@@ -18,7 +18,7 @@ module Game.LambdaHack.State
     -- * A dictionary of client states.
   , StateDict
     -- * Components types and operations.
-  , TgtMode(..), Target(..)
+  , FactionDict, TgtMode(..), Target(..)
   , Pers, FactionPers, dungeonPerception
   , DebugModeSer(..), cycleTryFov
   , DebugModeCli(..), toggleMarkVision, toggleMarkSmell, toggleOmniscient

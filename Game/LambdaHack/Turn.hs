@@ -15,7 +15,6 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Binding
-import Game.LambdaHack.ClientAction
 import qualified Game.LambdaHack.Command as Command
 import Game.LambdaHack.CommandAction
 import Game.LambdaHack.EffectAction

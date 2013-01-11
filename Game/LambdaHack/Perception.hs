@@ -21,10 +21,12 @@ import qualified Game.LambdaHack.Tile as Tile
 
 newtype PerceptionReachable = PerceptionReachable
   { preachable :: IS.IntSet }
+  deriving Show
 
 -- TOOD: if really needed, optimize by representing as a set of intervals.
 newtype PerceptionVisible = PerceptionVisible
   { pvisible :: IS.IntSet }
+  deriving Show
 
 -- | The type representing the perception of a faction on a level.
 -- The total visibility holds the sum of FOVs of all actors
@@ -33,6 +35,7 @@ data Perception = Perception
   { pactors :: IM.IntMap PerceptionVisible  -- ^ per actor
   , ptotal  :: PerceptionVisible            -- ^ sum for all actors
   }
+  deriving Show
 
 -- | The set of tiles visible by at least one hero.
 totalVisible :: Perception -> IS.IntSet

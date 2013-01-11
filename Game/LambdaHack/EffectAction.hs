@@ -15,13 +15,11 @@ import Data.Monoid (mempty)
 import Data.Ratio ((%))
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
-import Control.Monad.Reader.Class
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Animation (twirlSplash, blockHit)
-import Game.LambdaHack.ClientAction
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
@@ -187,7 +185,7 @@ eff (Effect.Wound nDm) verbosity source target power = do
     modifyGlobal $ updateActorBody target $ \ m -> m { bhp = newHP }
     return (True, msg)
 eff Effect.Dominate _ source target _power = do
-  cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsGlobal scops
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsGlobal scops
   s <- getGlobal
   arena <- getsGlobal sarena
   if not $ isAHero s target
@@ -218,7 +216,8 @@ eff Effect.Dominate _ source target _power = do
            let cross m = bpos m : vicinityCardinal lxsize lysize (bpos m)
                vis = IS.fromList $ concatMap cross lm
            lvl <- getsGlobal getArena
-           modifyLocal $ updateArena $ rememberLevel cops vis lvl
+           side <- getsGlobal sside
+           void $ askClient side $ RememberCli arena vis lvl
            return (True, "A dozen voices yells in anger.")
          else nullEffect
 eff Effect.SummonFriend _ source target power = do
@@ -311,8 +310,8 @@ effLvlGoUp k = do
   bitems <- getsGlobal getLeaderItem
   leader <- getsGlobal sleader
   arena <- getsGlobal sarena
-  st <- getGlobal
-  case whereTo st arena k of
+  glo<- getGlobal
+  case whereTo glo arena k of
     Nothing -> fleeDungeon -- we are at the "end" of the dungeon
     Just (nln, npos) ->
       assert (nln /= arena `blame` (nln, "stairs looped")) $ do
@@ -346,6 +345,9 @@ effLvlGoUp k = do
         -- TODO: for now both in local and global state,
         -- to ensure the actions performed afterwards, but before
         -- the end of the turn, read and modify updated and consistent states.
+        -- TODO: do this only for the client of (bfaction leader),
+        -- which may be different than current side
+        modifyLocal (deleteActor leader)
         modifyLocal $ updateSelected invalidActorId nln
         modifyLocal (insertActor leader pbody)
         modifyLocal (updateActorItem leader (const bitems))
@@ -355,7 +357,7 @@ effLvlGoUp k = do
         case inhabitants of
           Nothing -> return ()
 -- Broken if the effect happens, e.g. via a scroll and abort is not enough.
---          Just h | isAHero st h ->
+--          Just h | isAHero gloh ->
 --            -- Bail out if a party member blocks the staircase.
 --            abortWith "somebody blocks the staircase"
           Just m ->
@@ -378,8 +380,9 @@ fleeDungeon :: MonadAction m => m ()
 fleeDungeon = do
   Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsGlobal scops
   glo <- getGlobal
-  go <- displayYesNo "This is the way out. Really leave now?"
-  recordHistory  -- Prevent repeating the ending msgs.
+  side <- getsGlobal sside
+  go <- askClient side $ ConfirmYesNoCli
+          "This is the way out. Really leave now?"
   when (not go) $ abortWith "Game resumed."
   let (items, total) = calculateTotal glo
       upd f = f {gquit = Just (False, Victor)}
@@ -387,23 +390,20 @@ fleeDungeon = do
   if total == 0
   then do
     -- The player can back off at each of these steps.
-    go1 <- displayMore ColorBW
+    go1 <- askClient side $ ConfirmMoreBWCli
              "Afraid of the challenge? Leaving so soon and empty-handed?"
     when (not go1) $ abortWith "Brave soul!"
-    go2 <- displayMore ColorBW
+    go2 <- askClient side $ ConfirmMoreBWCli
             "This time try to grab some loot before escape!"
     when (not go2) $ abortWith "Here's your chance!"
   else do
     let currencyName = MU.Text $ oname $ ouniqGroup "currency"
-        winMsg = makePhrase
+        winMsg = makeSentence
           [ "Congratulations, you won!"
           , "Here's your loot, worth"
-          , MU.NWs total currencyName
-          , "." ]
+          , MU.NWs total currencyName ]
     discoS <- getsGlobal sdisco
-    io <- itemOverlay discoS True items
-    slides <- overlayToSlideshow winMsg io
-    void $ getManyConfirms [] slides
+    void $ askClient side $ ShowItemsCli discoS winMsg items
     let upd2 f = f {gquit = Just (True, Victor)}
     modifyGlobal $ updateSide upd2
 
@@ -552,30 +552,3 @@ gameOver showEndingScreens = do
         when go $ do
           let upd2 f = f {gquit = Just (True, Killed arena)}
           modifyGlobal $ updateSide upd2
-
--- TODO: move somewhere
-
-sendToPlayers :: MonadAction m => Point -> FactionId -> CmdCli -> m Bool
-sendToPlayers pos fid cmd = do
-  arena <- getsGlobal sarena
-  glo <- getGlobal
-  let f (cfid, perF) =
-        if (isPlayerFaction glo cfid)
-        then do
-          let perceived = pos `IS.member` totalVisible (perF M.! arena)
-          b <- if perceived
-            then askClient cfid cmd
-            else return False
-          return (cfid, b)
-        else return (cfid, False)
-  pers <- ask
-  lb <- mapM f $ IM.toList pers
-  return $! fromJust $! lookup fid lb
-
-askClient :: MonadAction m => FactionId -> CmdCli -> m Bool
-askClient fid cmd = do
-  side <- getsGlobal sside
-  switchGlobalSelectedSide fid
-  b <- cmdCli cmd
-  switchGlobalSelectedSide side
-  return b

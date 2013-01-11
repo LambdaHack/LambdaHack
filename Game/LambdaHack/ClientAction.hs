@@ -10,7 +10,6 @@ import qualified Paths_LambdaHack as Self (version)
 
 import Control.Monad
 import Control.Monad.Writer.Strict (WriterT, lift, tell)
-import Data.Function
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import Data.List
@@ -26,12 +25,9 @@ import Game.LambdaHack.Action hiding (MonadAction, MonadActionRO, MonadServer,
                                MonadServerRO)
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Animation (blockHit, deathBody, twirlSplash)
 import Game.LambdaHack.Binding
 import qualified Game.LambdaHack.Command as Command hiding (CmdSer)
-import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Draw
 import Game.LambdaHack.DungeonState
 import qualified Game.LambdaHack.Effect as Effect
 import qualified Game.LambdaHack.Feature as F
@@ -183,18 +179,6 @@ inventory = do
       slides <- overlayToSlideshow blurb io
       tell slides
 
--- | Create a list of item names.
-itemOverlay :: MonadClientRO m
-            => Discoveries -> Bool -> [Item] -> m Overlay
-itemOverlay disco sorted is = do
-  Kind.COps{coitem} <- getsLocal scops
-  let items | sorted = sortBy (cmpLetterMaybe `on` jletter) is
-            | otherwise = is
-      pr i = makePhrase [ letterLabel (jletter i)
-                        , partItemNWs coitem disco i ]
-             <> " "
-  return $ map pr items
-
 -- ** TgtFloor
 
 -- | Start the floor targeting mode or reset the cursor position to the leader.
@@ -301,13 +285,6 @@ tgtAscend k = do
       when (nln == tgtId) $ abortWith "no more levels in this direction"
       setTgtId nln
   doLook
-
-setTgtId :: MonadClient m => LevelId -> m ()
-setTgtId nln = do
-  stgtMode <- getsClient stgtMode
-  case stgtMode of
-    TgtAuto _ -> modifyClient $ \cli -> cli {stgtMode = TgtAuto nln}
-    _ -> modifyClient $ \cli -> cli {stgtMode = TgtExplicit nln}
 
 -- ** EpsIncr
 
@@ -470,30 +447,6 @@ cycleHero = do
     (nl, np) : _ -> selectLeader nl np
                       >>= assert `trueM` (leader, nl, np, "hero duplicated")
 
--- | Select a faction leader. Switch level, if needed.
--- False, if nothing to do. Should only be invoked as a direct result
--- of a player action (leader death just sets sleader to -1).
-selectLeader :: MonadClient m => LevelId -> ActorId -> m Bool
-selectLeader nln actor = do
-  Kind.COps{coactor} <- getsLocal scops
-  leader <- getsLocal sleader
-  stgtMode <- getsClient stgtMode
-  if actor == leader
-    then return False -- already selected
-    else do
-      modifyLocal $ updateSelected actor nln
-      -- Move the cursor, if active, to the new level.
-      when (stgtMode /= TgtOff) $ setTgtId nln
-      -- Don't continue an old run, if any.
-      stopRunning
-      -- Announce.
-      pbody <- getsLocal getLeaderBody
-      msgAdd $ makeSentence [partActor coactor pbody, "selected"]
-      return True
-
-stopRunning :: MonadClient m => m ()
-stopRunning = modifyClient (\ cli -> cli { srunning = Nothing })
-
 heroesAfterPl :: MonadClientRO m => m [(LevelId, ActorId)]
 heroesAfterPl = do
   leader <- getsLocal sleader
@@ -532,77 +485,3 @@ selectHero k = do
   case tryFindHeroK loc k of
     Nothing  -> abortWith "No such member of the party."
     Just (lid, aid) -> void $ selectLeader lid aid
-
--- TODO: move somewhere
-
--- | Abstract syntax of client commands.
-data CmdCli =
-    PickupCli ActorId Item Item
-  | ShowItemsCli Discoveries Msg [Item]
-  | AnimateDeathCli ActorId
-  | SelectLeaderCli ActorId LevelId
-  | DiscoverCli (Kind.Id ItemKind) Item
-  deriving Show
-
--- | The semantics of client commands.
-cmdCli :: MonadClient m => CmdCli -> m Bool
-cmdCli cmd = case cmd of
-  PickupCli aid i ni -> pickupCli aid i ni >> return True  -- TODO: GADT?
-  ShowItemsCli discoS loseMsg items -> do
-    io <- itemOverlay discoS True items
-    slides <- overlayToSlideshow loseMsg io
-    getManyConfirms [] slides
-  AnimateDeathCli aid -> animateDeathCli aid
-  SelectLeaderCli aid lid -> selectLeader lid aid
-  DiscoverCli ik i -> discoverCli ik i
-
-pickupCli :: MonadClient m => ActorId -> Item -> Item -> m ()
-pickupCli aid i ni = do
-  Kind.COps{coactor, coitem} <- getsLocal scops
-  body <- getsLocal (getActorBody aid)
-  side <- getsLocal sside
-  disco <- getsLocal sdisco
-  if bfaction body == side
-    then msgAdd $ makePhrase [ letterLabel (jletter ni)
-                             , partItemNWs coitem disco ni ]
-    else msgAdd $ makeSentence
-           [ MU.SubjectVerbSg (partActor coactor body) "pick up"
-           , partItemNWs coitem disco i ]  -- single, not 'ni'
-
-animateDeathCli :: MonadClient m => ActorId -> m Bool
-animateDeathCli target = do
-  Kind.COps{coactor} <- getsLocal scops
-  pbody <- getsLocal $ getActorBody target
-  side <- getsLocal sside
-  msgAdd $ makeSentence [MU.SubjectVerbSg (partActor coactor pbody) "die"]
-  go <- if bfaction pbody == side
-        then displayMore ColorBW ""
-        else return False
-  recordHistory  -- Prevent repeating the "die" msgs.
-  cli <- getClient
-  loc <- getLocal
-  per <- askPerception
-  let animFrs = animate cli loc per $ deathBody (bpos pbody)
-  displayFramesPush animFrs
-  when (bfaction pbody == side) $
-    msgAdd "The survivors carry on."  -- TODO: reset messages at game over not to display it if there are no survivors.
-  return go
-
--- | Make the item known to the player.
-discoverCli :: MonadClient m => Kind.Id ItemKind -> Item -> m Bool
-discoverCli ik i = do
-  Kind.COps{coitem} <- getsLocal scops
-  oldDisco <- getsLocal sdisco
-  let ix = jkindIx i
-  if (ix `M.member` oldDisco)
-    then return False
-    else do
-      modifyLocal (updateDisco (M.insert ix ik))
-      disco <- getsLocal sdisco
-      let (object1, object2) = partItem coitem oldDisco i
-          msg = makeSentence
-            [ "the", MU.SubjectVerbSg (MU.Phrase [object1, object2])
-                                      "turn out to be"
-            , partItemAW coitem disco i ]
-      msgAdd msg
-      return True
