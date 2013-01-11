@@ -58,9 +58,15 @@ draw dm cops per
         case stgtMode of
           TgtOff -> (sarena s, getArena s)
           _ -> (tgtLevelId stgtMode, sdungeon s M.! tgtLevelId stgtMode)
-      mpl@Actor{bkind, bhp, bpos} = getLeaderBody s
+      leader = sleader s
+      (bracedL, ahpS, asmellL, bhpS, bposL)
+        | leader == invalidActorId =
+          (False, "--", False, "--", undefined)
+        | otherwise =
+            let mpl@Actor{bkind, bhp, bpos} = getLeaderBody s
+                ActorKind{ahp, asmell} = okind bkind
+            in (braced mpl ltime, showT (maxDice ahp), asmell, showT bhp, bpos)
       bitems = getLeaderItem s
-      ActorKind{ahp, asmell} = okind bkind
       (msgTop, over, msgBottom) = stringByLocation lxsize lysize overlay
       -- TODO:
       sVisBG = if smarkVision
@@ -81,7 +87,8 @@ draw dm cops per
                           _ -> showT (Item.jpower sw)
                       Nothing -> "3d1"  -- TODO: ?
                   Nothing -> "3d1"  -- TODO; use the item 'fist'
-      bl = fromMaybe [] $ bla lxsize lysize seps bpos scursor
+      bl | leader == invalidActorId = []
+         | otherwise = fromMaybe [] $ bla lxsize lysize seps bposL scursor
       dis pxy =
         let pos0 = toPoint lxsize pxy
             tile = lvl `at` pos0
@@ -89,12 +96,14 @@ draw dm cops per
             items = lvl `atI` pos0
             sml = IM.findWithDefault timeZero pos0 lsmell
             smlt = sml `timeAdd` timeNegate ltime
-            viewActor loc Actor{bkind = bkind2, bsymbol, bcolor}
-              | loc == bpos && drawnLevelId == sarena s =
+            viewActor loc Actor{bkind, bsymbol, bcolor}
+              | leader /= invalidActorId
+                && loc == bposL
+                && drawnLevelId == sarena s =
                   (symbol, Color.defBG)  -- highlight leader
               | otherwise = (symbol, color)
              where
-              ActorKind{asymbol, acolor} = okind bkind2
+              ActorKind{asymbol, acolor} = okind bkind
               color  = fromMaybe acolor  bcolor
               symbol = fromMaybe asymbol bsymbol
             rainbow loc = toEnum $ loc `rem` 14 + 1
@@ -119,14 +128,15 @@ draw dm cops per
                                  (False, True)  -> Color.Green
                                  (False, False) -> Color.Red)
                 (Just m, _) -> viewActor pos0 m
-                _ | (smarkSmell || asmell) && smlt > timeZero ->
+                _ | (smarkSmell || asmellL) && smlt > timeZero ->
                   (timeToDigit smellTimeout smlt, rainbow pos0)
                   | otherwise ->
                   case items of
                     [] -> (tsymbol tk, if vis then tcolor tk else tcolor2 tk)
                     i : _ -> Item.viewItem i
             vis = IS.member pos0 $ totalVisible per
-            visPl = actorSeesLoc per (sleader s) pos0
+            visPl | leader == invalidActorId = False
+                  | otherwise = actorSeesLoc per leader pos0
             bg0 = if stgtMode /= TgtOff && pos0 == scursor
                   then Color.defFG       -- highlight target cursor
                   else sVisBG vis visPl  -- FOV debug or standard bg
@@ -150,15 +160,15 @@ draw dm cops per
       -- Indicate the actor is braced (was waiting last move).
       -- It's a useful feedback for the otherwise hard to observe
       -- 'wait' command.
-      braceSign | braced mpl ltime = "{"
+      braceSign | bracedL   = "{"
                 | otherwise = " "
       lvlN = T.justifyLeft 2 ' ' (showT $ levelNumber drawnLevelId)
       stats =
         T.justifyLeft 11 ' ' ("[" <> seenTxt <+> "seen]") <+>
         T.justifyLeft 9 ' ' ("$:" <+> showT wealth) <+>
         T.justifyLeft 11 ' ' ("Dmg:" <+> damage) <+>
-        T.justifyLeft 13 ' ' (braceSign <> "HP:" <+> showT bhp
-                              <+> "(" <> showT (maxDice ahp) <> ")")
+        T.justifyLeft 13 ' ' (braceSign <> "HP:" <+> bhpS
+                              <+> "(" <> ahpS <> ")")
       widthForDesc = lxsize - T.length stats - T.length lvlN - 3
       status = lvlN <+> T.justifyLeft widthForDesc ' ' ldesc <+> stats
       toWidth :: Int -> Text -> Text
