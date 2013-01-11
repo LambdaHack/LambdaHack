@@ -144,12 +144,13 @@ bumpTile :: MonadClientRO m => Point -> F.Feature -> m CmdSer
 bumpTile dpos feat = do
   Kind.COps{cotile} <- getsLocal scops
   lvl <- getsLocal getArena
+  leader <- getsLocal sleader
   let t = lvl `at` dpos
   -- Features are never invisible; visible tiles are identified accurately.
   -- A tile can be triggered even if an invisible monster occupies it.
   -- TODO: let the user choose whether to attack or activate.
   if Tile.hasFeature cotile feat t
-    then return $ TriggerSer dpos
+    then return $ TriggerSer leader dpos
     else guessBump cotile feat t
 
 -- | Guess and report why the bump command failed.

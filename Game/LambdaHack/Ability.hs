@@ -18,3 +18,8 @@ data Ability =
   | Chase   -- ^ chase the target, ignoring any actors on the way
   | Wander  -- ^ wander around, meleeing any opponents on the way
   deriving (Show, Eq, Ord, Enum, Bounded)
+
+  -- A note for when we let AI change levels:
+  -- A faction that spawns cannot switch levels (nor move between levels).
+  -- Otherwise it would constantly go to a distant level, spawn actors there
+  -- and swarm any opponent arriving on the level.

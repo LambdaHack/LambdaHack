@@ -647,7 +647,7 @@ data CmdCli =
   | ConfirmMoreBWCli Msg
   | RememberCli LevelId IS.IntSet Level  -- TODO: Level is an overkill
   | RememberPerCli LevelId Perception Level FactionDict
-  | SwitchLevelCli LevelId Actor
+  | SwitchLevelCli ActorId LevelId Actor
   deriving Show
 
 -- | The semantics of client commands.
@@ -682,8 +682,7 @@ cmdCli cmd = case cmd of
     modifyClient $ \cli -> cli {sper = M.insert arena per (sper cli)}
     modifyLocal $ updateFaction (const faction)
     return True
-  SwitchLevelCli nln pbody -> do
-    leader <- getsLocal sleader
+  SwitchLevelCli leader nln pbody -> do
     bitems <- getsLocal getLeaderItem
     modifyLocal (deleteActor leader)
     modifyLocal $ updateSelected invalidActorId nln

@@ -136,7 +136,7 @@ cmdSer :: MonadAction m => CmdSer -> m ()
 cmdSer cmd = case cmd of
   ApplySer aid v item -> applySer aid v item
   ProjectSer aid p v i -> projectSer aid p v i
-  TriggerSer p -> triggerSer p
+  TriggerSer aid p -> triggerSer aid p
   PickupSer aid i l -> pickupSer aid i l
   DropSer aid item -> dropSer aid item
   WaitSer aid -> waitSer aid

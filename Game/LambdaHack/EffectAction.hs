@@ -246,17 +246,11 @@ eff Effect.Regeneration verbosity source target power =
   eff Effect.Heal verbosity source target power
 eff Effect.Searching _ _source _target _power =
   return (True, "It gets lost and you search in vain.")
-eff Effect.Ascend _ source target power = do
+eff Effect.Ascend _ _ target power = do
   Kind.COps{coactor} <- getsGlobal scops
   tm <- getsGlobal (getActorBody target)
   void $ focusIfOurs target
-  -- A faction that spawns cannot switch levels (nor move between levels).
-  -- Otherwise it would constantly go to a distant level, spawn actors there
-  -- and swarm any opponent arriving on the level.
-  glo <- getGlobal
-  if isSpawningFaction glo (bfaction tm)
-    then squashActor source target
-    else effLvlGoUp (power + 1)
+  effLvlGoUp target (power + 1)
   -- TODO: The following message too late if a monster squashed by going up,
   -- unless it's ironic. ;) The same below.
   side <- getsGlobal sside
@@ -264,14 +258,11 @@ eff Effect.Ascend _ source target power = do
   return $ if maybe Camping snd gquit == Victor
            then (True, "")
            else (True, actorVerb coactor tm "find a way upstairs")
-eff Effect.Descend _ source target power = do
+eff Effect.Descend _ _ target power = do
   Kind.COps{coactor} <- getsGlobal scops
   tm <- getsGlobal (getActorBody target)
   void $ focusIfOurs target
-  glo <- getGlobal
-  if isSpawningFaction glo (bfaction tm)
-    then squashActor source target
-    else effLvlGoUp (- (power + 1))
+  effLvlGoUp target (- (power + 1))
   side <- getsGlobal sside
   gquit <- getsGlobal $ gquit . (IM.! side) . sfaction
   return $ if maybe Camping snd gquit == Victor
@@ -305,12 +296,10 @@ squashActor source target = do
   assert (not (memActor target s) `blame` (source, target, "not killed")) $
     return ()
 
--- TODO: let not only leader ascend
-effLvlGoUp :: MonadAction m => Int -> m ()
-effLvlGoUp k = do
-  pbodyCurrent <- getsGlobal getLeaderBody
-  bitems <- getsGlobal getLeaderItem
-  leader <- getsGlobal sleader
+effLvlGoUp :: MonadAction m => ActorId -> Int -> m ()
+effLvlGoUp aid k = do
+  pbodyCurrent <- getsGlobal $ getActorBody aid
+  bitems <- getsGlobal $ getActorItem aid
   arena <- getsGlobal sarena
   glo <- getGlobal
   case whereTo glo arena k of
@@ -318,8 +307,8 @@ effLvlGoUp k = do
     Just (nln, npos) ->
       assert (nln /= arena `blame` (nln, "stairs looped")) $ do
         timeCurrent <- getsGlobal getTime
-        -- Remove the leader from the old level.
-        modifyGlobal (deleteActor leader)
+        -- Remove the actor from the old level.
+        modifyGlobal (deleteActor aid)
         -- Remember the level (e.g., when teleporting via scroll on the floor,
         -- register the scroll vanished, also let the other factions register
         -- the actor vanished in case they switch to this level from another
@@ -331,24 +320,25 @@ effLvlGoUp k = do
         hs <- getsGlobal heroList
         when (null hs) $
           modifyGlobal (updateArena (updateSmell (const IM.empty)))
-        -- Provisionally change level, even though the leader
-        -- is not inserted there yet.
+        -- Provisionally change level. The actor will become a leader,
+        -- but he is not inserted into the new level yet, so we have
+        -- to invalidate current leader.
         modifyGlobal $ updateSelected invalidActorId nln
         -- Sync the actor time with the level time.
         timeLastVisited <- getsGlobal getTime
         let diff = timeAdd (btime pbodyCurrent) (timeNegate timeCurrent)
             pbody = pbodyCurrent {btime = timeAdd timeLastVisited diff}
-        -- The leader is added to the new level, but there can be other actors
+        -- The actor is added to the new level, but there can be other actors
         -- at his old position or at his new position.
-        modifyGlobal (insertActor leader pbody)
-        modifyGlobal (updateActorItem leader (const bitems))
-        -- Reset level and leader.
-        modifyGlobal $ updateSelected leader nln
+        modifyGlobal (insertActor aid pbody)
+        modifyGlobal (updateActorItem aid (const bitems))
+        -- Teset level and leader for all factions.
+        modifyGlobal $ updateSelected aid nln
         void $ sendToClients (bfaction pbody) $ \fid ->
           if fid /= bfaction pbody
           then SelectLeaderCli invalidActorId nln
-          else SwitchLevelCli nln pbody
-        -- Checking actors at the new posiiton of the leader.
+          else SwitchLevelCli aid nln pbody
+        -- Checking actors at the new posiiton of the aid.
         inhabitants <- getsGlobal (posToActor npos)
         case inhabitants of
           Nothing -> return ()
@@ -360,13 +350,13 @@ effLvlGoUp k = do
             -- Aquash an actor blocking the staircase.
             -- This is not a duplication with the other calls to squashActor,
             -- because here an inactive actor is squashed.
-            squashActor leader m
+            squashActor aid m
         -- Verify the monster on the staircase died.
         inhabitants2 <- getsGlobal (posToActor npos)
         when (isJust inhabitants2) $ assert `failure` inhabitants2
-        -- Land the leader at the other end of the stairs, which is now
+        -- Land the aid at the other end of the stairs, which is now
         -- clear of other actors.
-        modifyGlobal $ updateActorBody leader $ \b -> b { bpos = npos }
+        modifyGlobal $ updateActorBody aid $ \b -> b { bpos = npos }
         -- The property of at most one actor on a tile is restored.
         -- Create a backup of the savegame.
         saveGameBkp

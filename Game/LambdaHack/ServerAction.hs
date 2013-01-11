@@ -193,13 +193,12 @@ projectSer source tpos _verb item = do
 -- ** TriggerSer
 
 -- | Perform the action specified for the tile in case it's triggered.
-triggerSer :: MonadAction m => Point -> m ()
-triggerSer dpos = do
+triggerSer :: MonadAction m => ActorId -> Point -> m ()
+triggerSer aid dpos = do
   Kind.COps{cotile=Kind.Ops{okind, opick}} <- getsGlobal scops
   lvl <- getsGlobal getArena
   let f (F.Cause effect) = do
-        leader <- getsGlobal sleader
-        void $ effectToAction effect 0 leader leader 0 False  -- no block against tile
+        void $ effectToAction effect 0 aid aid 0 False  -- no block against tile
         return ()
       f (F.ChangeTo tgroup) = do
         Level{lactor} <- getsGlobal getArena
@@ -397,7 +396,7 @@ search aid = do
         let dpos = shift ppos mv
             t = lvlNew `at` dpos
         when (Tile.hasFeature cotile F.Hidden t && IM.notMember dpos leNew) $
-          triggerSer dpos
+          triggerSer aid dpos
   mapM_ triggerHidden (moves lxsize)
 
 -- TODO: bumpTile tpos F.Openable
@@ -419,7 +418,7 @@ actorOpenDoor actor dir = do
                  Tile.hasFeature cotile F.Openable t ||
                  Tile.hasFeature cotile F.Hidden t)
          then neverMind isVerbose  -- not doors at all
-         else triggerSer dpos
+         else triggerSer actor dpos
 
 -- ** RunSer
 
