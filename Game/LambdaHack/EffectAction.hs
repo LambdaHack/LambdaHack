@@ -20,7 +20,7 @@ import Control.Monad.Reader.Class
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Animation (twirlSplash, blockHit, deathBody)
+import Game.LambdaHack.Animation (twirlSplash, blockHit)
 import Game.LambdaHack.ClientAction
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Config
@@ -477,28 +477,23 @@ summonMonsters n pos = do
 -- on any level.
 checkPartyDeath :: MonadAction m => ActorId -> m ()
 checkPartyDeath target = do
-  Kind.COps{coactor} <- getsGlobal scops
-  per    <- askPerception
-  pbody  <- getsGlobal $ getActorBody target
+  pbody <- getsGlobal $ getActorBody target
   Config{configFirstDeathEnds} <- getsServer sconfig
   when (bhp pbody <= 0) $ do
-    msgAdd $ actorVerb coactor pbody "die"
-    go <- displayMore ColorBW ""
-    recordHistory  -- Prevent repeating the "die" msgs.
-    let animateDeath = do
-          cli <- getClient
-          loc <- getLocal
-          let animFrs = animate cli loc per $ deathBody (bpos pbody)
-          displayFramesPush animFrs
+    let fid = bfaction pbody
+        animateDeath = sendToPlayers (bpos pbody) fid (AnimateDeathCli target)
         animateGameOver = do
-          animateDeath
+          go <- animateDeath
           modifyGlobal $ updateActorBody target $ \b -> b {bsymbol = Just '%'}
+          -- TODO: add side argument to gameOver instead
+          side <- getsGlobal sside
+          switchGlobalSelectedSide fid
           gameOver go
-    if configFirstDeathEnds  -- TODO: only end game for target's faction.
+          switchGlobalSelectedSide side
+    if configFirstDeathEnds
       then animateGameOver
       else do
-        msgAdd "The survivors carry on."  -- TODO: add to the dead actor faction, not the attacker faction; then reset messages at game over not to display it if there are no survivors.
-        animateDeath
+        void $ animateDeath
         -- Remove the dead leader.
         modifyGlobal $ deleteActor target
         -- We don't register that the lethal potion on the floor
@@ -570,15 +565,22 @@ discover discoS i = do
 
 -- TODO: move somewhere
 
-sendToPlayers :: MonadAction m => Point -> CmdCli -> m ()
-sendToPlayers pos cmd = do
+sendToPlayers :: MonadAction m => Point -> FactionId -> CmdCli -> m Bool
+sendToPlayers pos fid cmd = do
   arena <- getsGlobal sarena
   glo <- getGlobal
-  let f (fid, perF) = when (isPlayerFaction glo fid) $ do
-        let perceived = pos `IS.member` totalVisible (perF M.! arena)
-        when perceived $ void $ askClient fid cmd
+  let f (cfid, perF) =
+        if (isPlayerFaction glo cfid)
+        then do
+          let perceived = pos `IS.member` totalVisible (perF M.! arena)
+          b <- if perceived
+            then askClient cfid cmd
+            else return False
+          return (cfid, b)
+        else return (cfid, False)
   pers <- ask
-  mapM_ f $ IM.toList pers
+  lb <- mapM f $ IM.toList pers
+  return $! fromJust $! lookup fid lb
 
 askClient :: MonadAction m => FactionId -> CmdCli -> m Bool
 askClient fid cmd = do

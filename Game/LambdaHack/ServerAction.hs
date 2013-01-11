@@ -232,7 +232,7 @@ pickupSer aid i l = do
     modifyGlobal $ updateActorBody aid $ \m ->
       m {bletter = maxLetter (fromJust $ jletter ni) (bletter m)}
     modifyGlobal (updateActorItem aid (const nitems))
-    sendToPlayers p (PickupCli aid i ni)
+    void $ sendToPlayers p side (PickupCli aid i ni)
 
 -- ** DropSer
 

@@ -26,9 +26,11 @@ import Game.LambdaHack.Action hiding (MonadAction, MonadActionRO, MonadServer,
                                MonadServerRO)
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
+import Game.LambdaHack.Animation (blockHit, deathBody, twirlSplash)
 import Game.LambdaHack.Binding
 import qualified Game.LambdaHack.Command as Command hiding (CmdSer)
 import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.Draw
 import Game.LambdaHack.DungeonState
 import qualified Game.LambdaHack.Effect as Effect
 import qualified Game.LambdaHack.Feature as F
@@ -536,6 +538,7 @@ selectHero k = do
 data CmdCli =
     PickupCli ActorId Item Item
   | ShowItemsCli Discoveries Msg [Item]
+  | AnimateDeathCli ActorId
   deriving Show
 
 pickupCli :: MonadClient m => ActorId -> Item -> Item -> m ()
@@ -551,6 +554,25 @@ pickupCli aid i ni = do
            [ MU.SubjectVerbSg (partActor coactor body) "pick up"
            , partItemNWs coitem disco i ]  -- single, not 'ni'
 
+animateDeathCli :: MonadClient m => ActorId -> m Bool
+animateDeathCli target = do
+  Kind.COps{coactor} <- getsLocal scops
+  pbody <- getsLocal $ getActorBody target
+  side <- getsLocal sside
+  msgAdd $ makeSentence [MU.SubjectVerbSg (partActor coactor pbody) "die"]
+  go <- if bfaction pbody == side
+        then displayMore ColorBW ""
+        else return False
+  recordHistory  -- Prevent repeating the "die" msgs.
+  cli <- getClient
+  loc <- getLocal
+  per <- askPerception
+  let animFrs = animate cli loc per $ deathBody (bpos pbody)
+  displayFramesPush animFrs
+  when (bfaction pbody == side) $
+    msgAdd "The survivors carry on."  -- TODO: reset messages at game over not to display it if there are no survivors.
+  return go
+
 -- | The semantics of client commands.
 cmdCli :: MonadClient m => CmdCli -> m Bool
 cmdCli cmd = case cmd of
@@ -559,3 +581,4 @@ cmdCli cmd = case cmd of
     io <- itemOverlay discoS True items
     slides <- overlayToSlideshow loseMsg io
     getManyConfirms [] slides
+  AnimateDeathCli aid -> animateDeathCli aid
