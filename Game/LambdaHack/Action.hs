@@ -50,6 +50,7 @@ import qualified Data.IntSet as IS
 import Data.List
 import qualified Data.Map as M
 import Data.Maybe
+import Data.Monoid (mempty)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
@@ -66,6 +67,7 @@ import Game.LambdaHack.ActorState
 import Game.LambdaHack.Animation (Frames, SingleFrame(..))
 import Game.LambdaHack.Animation (blockHit, deathBody, twirlSplash)
 import Game.LambdaHack.Binding
+import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
@@ -646,7 +648,8 @@ data CmdCli =
   | ConfirmMoreBWCli Msg
   | RememberCli LevelId IS.IntSet Level  -- TODO: Level is an overkill
   | RememberPerCli LevelId Perception Level FactionDict
-  | SwitchLevelCli ActorId LevelId Actor
+  | SwitchLevelCli ActorId LevelId Actor [Item]
+  | EffectCli Msg (Point, Point) Int Bool
   deriving Show
 
 -- | The semantics of client commands.
@@ -682,18 +685,33 @@ cmdCli cmd = case cmd of
     modifyClient $ \cli -> cli {sper = M.insert arena per (sper cli)}
     modifyLocal $ updateFaction (const faction)
     return True
-  SwitchLevelCli aid arena pbody -> do
+  SwitchLevelCli aid arena pbody items -> do
     arenaOld <- getsLocal sarena
     assert (arenaOld /= arena) $ do
-      bitems <- getsLocal $ getActorItem aid
       modifyClient $ invalidateSelectedLeader
-      modifyLocal (deleteActor aid)
       modifyLocal $ updateSelectedArena arena
       modifyLocal (insertActor aid pbody)
-      modifyLocal (updateActorItem aid (const bitems))
+      modifyLocal (updateActorItem aid (const items))
       loc <- getLocal
       modifyClient $ updateSelectedLeader aid loc
       return True
+  EffectCli msg poss deltaHP block -> do
+    msgAdd msg
+    cli <- getClient
+    loc <- getLocal
+    per <- askPerception
+    -- Try to show an animation. Sometimes, e.g., when HP is unchaged,
+    -- the animation will not be shown, but a single frame with @msg@ will.
+    let anim | deltaHP > 0 =
+          twirlSplash poss Color.BrBlue Color.Blue
+             | deltaHP < 0 && block =
+          blockHit    poss Color.BrRed  Color.Red
+             | deltaHP < 0 && not block =
+          twirlSplash poss Color.BrRed  Color.Red
+             | otherwise = mempty
+        animFrs = animate cli loc per anim
+    displayFramesPush $ Nothing : animFrs
+    return True
 
 pickupCli :: MonadClient m => ActorId -> Item -> Item -> m ()
 pickupCli aid i ni = do

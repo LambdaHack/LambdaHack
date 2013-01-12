@@ -11,7 +11,6 @@ import qualified Data.IntSet as IS
 import Data.List
 import qualified Data.Map as M
 import Data.Maybe
-import Data.Monoid (mempty)
 import Data.Ratio ((%))
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
@@ -19,8 +18,6 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Animation (twirlSplash, blockHit)
-import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
@@ -33,7 +30,6 @@ import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
-import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import Game.LambdaHack.Random
 import Game.LambdaHack.State
@@ -64,82 +60,33 @@ focusIfOurs _target = do
     then return True
     else return False
 
--- TODO: instead of verbosity return msg components and tailor them outside?
--- TODO: separately define messages for the case when source == target
--- and for the other case; then use the messages outside of effectToAction,
--- depending on the returned bool, perception and identity of the actors.
-
 -- | The source actor affects the target actor, with a given effect and power.
 -- The second argument is verbosity of the resulting message.
 -- Both actors are on the current level and can be the same actor.
--- The first bool result indicates if the effect was spectacular enough
+-- The boolean result indicates if the effect was spectacular enough
 -- for the actors to identify it (and the item that caused it, if any).
--- The second bool tells if the effect was seen by or affected the party.
 effectToAction :: MonadAction m
                => Effect.Effect -> Int -> ActorId -> ActorId -> Int -> Bool
-               -> m (Bool, Bool)
+               -> m Bool
 effectToAction effect verbosity source target power block = do
-  oldTm <- getsGlobal (getActorBody target)
-  let oldHP = bhp oldTm
+  oldS <- getsGlobal (getActorBody target)
+  oldT <- getsGlobal (getActorBody target)
+  let side = bfaction oldT
+      oldHP = bhp oldT
   (b, msg) <- eff effect verbosity source target power
-  s <- getGlobal
-  -- If the target killed outright by the effect (e.g., in a recursive call),
-  -- there's nothing left to do. TODO: hacky; aren't messages lost?
-  if not (memActor target s)
-   then return (b, False)
-   else do
-    sm  <- getsGlobal (getActorBody source)
-    tm  <- getsGlobal (getActorBody target)
-    per <- askPerception
-    let spos = bpos sm
-        tpos = bpos tm
-        tvisible = tpos `IS.member` totalVisible per
-        newHP = bhp $ getActorBody target s
-    bb <-
-     if isAHero s source ||
-        isAHero s target ||
-        -- Target part of message shown below, so target visibility checked.
-        tvisible
-     then do
-      -- Party sees the effect or is affected by it.
-      msgAdd msg
-      -- Try to show an animation. Sometimes, e.g., when HP is unchaged,
-      -- the animation will not be shown.
-      cli <- getClient
-      loc <- getLocal
-      let poss = (tpos, spos)
-          anim | newHP > oldHP =
-            twirlSplash poss Color.BrBlue Color.Blue
-               | newHP < oldHP && block =
-            blockHit    poss Color.BrRed  Color.Red
-               | newHP < oldHP && not block =
-            twirlSplash poss Color.BrRed  Color.Red
-               | otherwise = mempty
-          animFrs = animate cli loc per anim
-      displayFramesPush $ Nothing : animFrs
-      return (b, True)
-     else do
-      -- Hidden, but if interesting then heard.
-      when b $ msgAdd "You hear some noises."
-      return (b, False)
-    -- Now kill the actor, if needed. For monsters, no "die" message
-    -- is shown below. It should have been shown in @eff@.
-    when (newHP <= 0) $ do
-      -- Place the actor's possessions on the map.
-      bitems <- getsGlobal (getActorItem target)
-      modifyGlobal (updateArena (dropItemsAt bitems tpos))
-      -- Clean bodies up.
-      isPlayer <- getsGlobal $ flip isPlayerFaction $ bfaction tm
-      -- TODO: check if spawns, etc.
-      -- A faction that spawns cannot switch levels (nor move between levels).
-      -- Otherwise it would constantly spawn on a distant level
-      -- and an swarm any opponent arriving there.
-      if isPlayer
-        then  -- Kill a player actor and check game over.
-          checkPartyDeath target
-        else  -- Kill the enemy.
-          modifyGlobal (deleteActor target)
-    return bb
+  -- We assume if targed moved to a level, which is not the current level,
+  -- his HP is unchanged.
+  memTm <- getsGlobal $ memActor target
+  newHP <- if memTm
+           then getsGlobal (bhp . getActorBody target)
+           else return oldHP
+  -- Target part of message sent here, so target visibility checked.
+  void $ sendToPlayers (bpos oldT) side
+         $ EffectCli msg (bpos oldT, bpos oldS) (newHP - oldHP) block
+  -- TODO: use sendToPlayers2 and to those that don't see the pos show that:
+  -- when b $ msgAdd "You hear some noises."
+  when (newHP <= 0) $ checkPartyDeath target
+  return b
 
 -- | The boolean part of the result says if the ation was interesting
 -- and the string part describes how the target reacted
@@ -164,11 +111,11 @@ eff (Effect.Wound nDm) verbosity source target power = do
   if n + power <= 0 then nullEffect else do
     void $ focusIfOurs target
     tm <- getsGlobal (getActorBody target)
-    isPlayer <- getsGlobal $ flip isPlayerFaction $ bfaction tm
+    isSpawning <- getsGlobal $ flip isSpawningFaction $ bfaction tm
     let newHP = bhp tm - n - power
         msg
           | newHP <= 0 =
-            if isPlayer
+            if isSpawning
             then ""  -- Handled later on in checkPartyDeath. Suspense.
             else -- Not as important, so let the player read the message
                  -- about monster death while he watches the combat animation.
@@ -178,7 +125,7 @@ eff (Effect.Wound nDm) verbosity source target power = do
           | source == target =  -- a potion of wounding, etc.
             actorVerb coactor tm "feel wounded"
           | verbosity <= 0 = ""
-          | isPlayer =
+          | isSpawning =
             actorVerb coactor tm $ "lose" <+> showT (n + power) <> "HP"
           | otherwise = actorVerb coactor tm "hiss in pain"
     -- Damage the target.
@@ -270,24 +217,25 @@ eff Effect.Descend _ _ target power = do
 nullEffect :: MonadActionRoot m => m (Bool, Text)
 nullEffect = return (False, "Nothing happens.")
 
--- TODO: refactor with actorAttackActor.
+-- TODO: refactor with actorAttackActor or perhaps displace the other
+-- actor or swap positions with it, instead of squashing.
 squashActor :: MonadAction m => ActorId -> ActorId -> m ()
 squashActor source target = do
-  Kind.COps{coactor, coitem=Kind.Ops{okind, ouniqGroup}} <- getsGlobal scops
-  sm <- getsGlobal (getActorBody source)
-  tm <- getsGlobal (getActorBody target)
+  Kind.COps{{-coactor,-} coitem=Kind.Ops{okind, ouniqGroup}} <- getsGlobal scops
+--  sm <- getsGlobal (getActorBody source)
+--  tm <- getsGlobal (getActorBody target)
   flavour <- getsServer sflavour
   discoRev <- getsServer sdiscoRev
   let h2hKind = ouniqGroup "weight"
       kind = okind h2hKind
       power = maxDeep $ ipower kind
       h2h = buildItem flavour discoRev h2hKind kind 1 power
-      verb = iverbApply kind
-      msg = makeSentence
-        [ MU.SubjectVerbSg (partActor coactor sm) verb
-        , partActor coactor tm
-        , "in a staircase accident" ]
-  msgAdd msg
+--      verb = iverbApply kind
+--      msg = makeSentence
+--        [ MU.SubjectVerbSg (partActor coactor sm) verb
+--        , partActor coactor tm
+--        , "in a staircase accident" ]
+--  msgAdd msg
   itemEffectAction 0 source target h2h False
   s <- getGlobal
   -- The monster has to be killed first, before we step there (same turn!).
@@ -333,7 +281,7 @@ effLvlGoUp aid k = do
         void $ sendToClients (bfaction pbody) $ \fid ->
           if fid /= bfaction pbody
           then InvalidateArenaCli nln
-          else SwitchLevelCli aid nln pbody
+          else SwitchLevelCli aid nln pbody bitems
         -- Checking actors at the new posiiton of the aid.
         inhabitants <- getsGlobal (posToActor npos)
         case inhabitants of
@@ -402,11 +350,11 @@ itemEffectAction verbosity source target item block = do
   discoS <- getsGlobal sdisco
   let effect = ieffect $ okind $ fromJust $ jkind discoS item
   -- The msg describes the target part of the action.
-  (b1, b2) <- effectToAction effect verbosity source target (jpower item) block
-  -- Party sees or affected, and the effect interesting,
-  -- so the item gets identified.
-  when (b1 && b2) $ discover discoS item
+  b <- effectToAction effect verbosity source target (jpower item) block
+  -- The effect is interesting so the item gets identified, if seen.
+  when b $ discover discoS item
 
+-- TODO: send to all clients that see tpos.
 -- | Make the item known to the leader.
 discover :: MonadAction m => Discoveries -> Item -> m ()
 discover discoS i = do
@@ -460,37 +408,39 @@ summonMonsters n pos = do
   putGlobal sN
   putServer serN
 
--- | Remove dead heroes (or dead dominated monsters). Check if game is over.
--- For now we only check the selected hero and at current level,
--- but if poison, etc. is implemented, we'd need to check all heroes
--- on any level.
+-- | Remove a dead actor. Check if game over.
 checkPartyDeath :: MonadAction m => ActorId -> m ()
 checkPartyDeath target = do
   pbody <- getsGlobal $ getActorBody target
   Config{configFirstDeathEnds} <- getsServer sconfig
-  when (bhp pbody <= 0) $ do
-    let fid = bfaction pbody
-        animateDeath = sendToPlayers (bpos pbody) fid (AnimateDeathCli target)
-        animateGameOver = do
-          go <- animateDeath
-          modifyGlobal $ updateActorBody target $ \b -> b {bsymbol = Just '%'}
-          -- TODO: add side argument to gameOver instead
-          side <- getsGlobal sside
-          switchGlobalSelectedSide fid
-          gameOver go
-          switchGlobalSelectedSide side
+  -- Place the actor's possessions on the map.
+  bitems <- getsGlobal (getActorItem target)
+  modifyGlobal $ updateArena $ dropItemsAt bitems $ bpos pbody
+  let fid = bfaction pbody
+      animateDeath = sendToPlayers (bpos pbody) fid (AnimateDeathCli target)
+      animateGameOver = do
+        go <- animateDeath
+        modifyGlobal $ updateActorBody target $ \b -> b {bsymbol = Just '%'}
+        -- TODO: add side argument to gameOver instead
+        side <- getsGlobal sside
+        switchGlobalSelectedSide fid
+        gameOver go
+        switchGlobalSelectedSide side
+  isSpawning <- getsGlobal $ flip isSpawningFaction fid
+  -- For a swapning faction, no messages nor animations are shown below.
+  -- A message was shown in @eff@ and that's enough.
+  when (not isSpawning) $ do
     if configFirstDeathEnds
       then animateGameOver
-      else do
-        void $ animateDeath
-        -- Remove the dead leader.
-        modifyGlobal $ deleteActor target
-        -- We don't register that the lethal potion on the floor
-        -- is used up. If that's a problem, add a one turn delay
-        -- to the effect of all lethal objects (displaying an "agh! dying"
-        -- message). Other factions do register that the actor (and potion)
-        -- is gone, because the level is not switched and so perception
-        -- is recorded for this level.
+      else void $ animateDeath
+  -- Remove the dead actor.
+  modifyGlobal $ deleteActor target
+  -- We don't register that the lethal potion on the floor
+  -- is used up. If that's a problem, add a one turn delay
+  -- to the effect of all lethal objects (displaying an "agh! dying"
+  -- message). Other factions do register that the actor (and potion)
+  -- is gone, because the level is not switched and so perception
+  -- is recorded for this level.
 
 -- | End game, showing the ending screens, if requested.
 gameOver :: MonadAction m => Bool -> m ()

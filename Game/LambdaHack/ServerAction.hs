@@ -196,7 +196,8 @@ triggerSer aid dpos = do
   Kind.COps{cotile=Kind.Ops{okind, opick}} <- getsGlobal scops
   lvl <- getsGlobal getArena
   let f (F.Cause effect) = do
-        void $ effectToAction effect 0 aid aid 0 False  -- no block against tile
+        -- No block against tile, hence @False@.
+        void $ effectToAction effect 0 aid aid 0 False
         return ()
       f (F.ChangeTo tgroup) = do
         Level{lactor} <- getsGlobal getArena
