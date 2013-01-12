@@ -1,11 +1,12 @@
 -- | Factions taking part in the game: e.g., two players controlling
 -- the hero faction battling the monster and the animal factions.
 module Game.LambdaHack.Faction
-  ( FactionId, Faction(..), Status(..)
+  ( FactionId, Faction(..), Status(..), FactionDict
   ) where
 
 import Data.Binary
 import Data.Text (Text)
+import qualified Data.IntMap as IM
 
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.FactionKind
@@ -32,6 +33,9 @@ data Status =
   | Victor           -- ^ the player won
   | Restart          -- ^ the player quits and starts a new game
   deriving (Show, Eq, Ord)
+
+-- | All factions in the game, indexed by faction identifier.
+type FactionDict = IM.IntMap Faction
 
 instance Binary Status where
   put (Killed ln) = putWord8 0 >> put ln

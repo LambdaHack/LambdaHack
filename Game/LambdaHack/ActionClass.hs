@@ -24,9 +24,8 @@ data Session = Session
   , sconfigUI :: !ConfigUI         -- ^ the UI config for this session
   }
 
--- | The bottom of the action monads class lattice.
-class (Monad m, Functor m, Show (m ()))
-      => MonadActionRoot m where
+-- | The bottom of the action monads class semilattice.
+class (Monad m, Functor m, Show (m ())) => MonadActionRoot m where
   -- Set the current exception handler. First argument is the handler,
   -- second is the computation the handler scopes over.
   tryWith     :: (Msg -> m a) -> m a -> m a
@@ -67,14 +66,9 @@ instance (Monoid a, MonadClientRO m) => MonadClientRO (WriterT a m) where
   getLocal    = lift getLocal
   getsLocal   = lift . getsLocal
 
-class (MonadServerRO m, MonadClientRO m) => MonadClientServerRO m where
-
-instance (Monoid a, MonadClientServerRO m)
-         => MonadClientServerRO (WriterT a m) where
-
-class MonadClientServerRO m => MonadActionRO m where
-  getDict     :: m StateDict
-  getsDict    :: (StateDict -> a) -> m a
+class MonadServerRO m => MonadActionRO m where
+  getDict     :: m ClientDict
+  getsDict    :: (ClientDict -> a) -> m a
 
 instance (Monoid a, MonadActionRO m) => MonadActionRO (WriterT a m) where
   getDict     = lift getDict
@@ -93,15 +87,12 @@ class (MonadActionIO m, MonadServerRO m) => MonadServer m where
   putGlobal    :: State -> m ()
   modifyServer :: (StateServer -> StateServer) -> m ()
   putServer    :: StateServer -> m ()
-  -- Temporary hook until all clients save their local state separately.
-  getForSaveGame :: m StateDict
 
 instance (Monoid a, MonadServer m) => MonadServer (WriterT a m) where
   modifyGlobal = lift . modifyGlobal
   putGlobal    = lift . putGlobal
   modifyServer = lift . modifyServer
   putServer    = lift . putServer
-  getForSaveGame = lift getForSaveGame
 
 class (MonadActionIO m, MonadClientRO m) => MonadClient m where
   modifyClient :: (StateClient -> StateClient) -> m ()
@@ -115,17 +106,9 @@ instance (Monoid a, MonadClient m) => MonadClient (WriterT a m) where
   modifyLocal  = lift . modifyLocal
   putLocal     = lift . putLocal
 
-class (MonadActionIO m, MonadClientServerRO m, MonadServer m, MonadClient m)
-      => MonadClientServer m where
-
-instance (Monoid a, MonadClientServer m)
-          => MonadClientServer (WriterT a m) where
-
--- | The top of the action monads class lattice.
-class (MonadActionIO m, MonadActionRO m, MonadClientServer m)
-      => MonadAction m where
-  modifyDict   :: (StateDict -> StateDict) -> m ()
-  putDict      :: StateDict -> m ()
+class (MonadActionIO m, MonadActionRO m, MonadServer m) => MonadAction m where
+  modifyDict   :: (ClientDict -> ClientDict) -> m ()
+  putDict      :: ClientDict -> m ()
 
 instance (Monoid a, MonadAction m) => MonadAction (WriterT a m) where
   modifyDict   = lift . modifyDict

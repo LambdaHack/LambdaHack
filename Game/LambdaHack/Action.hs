@@ -34,7 +34,7 @@ module Game.LambdaHack.Action
   , saveGameBkp, dumpCfg, endOrLoop, frontendName, startFrontend
   , switchGlobalSelectedSide
   , debug
-  , CmdCli(..), cmdCli, sendToPlayers, sendToClients, askClient, sendToPl
+  , cmdCli, sendToPlayers, sendToClients, askClient, sendToPl
   , itemOverlay, selectLeader, setTgtId, stopRunning
   ) where
 
@@ -68,6 +68,7 @@ import Game.LambdaHack.Animation
 import Game.LambdaHack.Binding
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Config
+import Game.LambdaHack.Command
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
@@ -315,15 +316,15 @@ drawOverlay dm over = do
   loc <- getLocal
   return $! draw dm cops per cli loc over
 
--- | Draw the current level using server data, for debugging.
-_drawOverlayDebug :: MonadClientServerRO m
-                 => ColorMode -> Overlay -> m SingleFrame
-_drawOverlayDebug dm over = do
-  cops <- getsLocal scops
-  per <- askPerception
-  cli <- getClient
-  glo <- getGlobal
-  return $! draw dm cops per cli glo over
+-- -- | Draw the current level using server data, for debugging.
+-- drawOverlayDebug :: MonadActionRO m
+--                  => ColorMode -> Overlay -> m SingleFrame
+-- drawOverlayDebug dm over = do
+--   cops <- getsLocal scops
+--   per <- askPerception
+--   cli <- getClient
+--   glo <- getGlobal
+--   return $! draw dm cops per cli glo over
 
 -- | Push the frame depicting the current level to the frame queue.
 -- Only one screenful of the report is shown, the rest is ignored.
@@ -401,7 +402,7 @@ saveGameBkp :: MonadServer m => m ()
 saveGameBkp = do
   state <- getGlobal
   ser <- getServer
-  d <- getForSaveGame
+  d <- undefined -- TODO
 --  configUI <- askConfigUI
   config <- getsServer sconfig
   liftIO $ Save.saveGameBkp config state ser d
@@ -440,7 +441,7 @@ endOrLoop handleTurn = do
   gquit <- getsGlobal $ gquit . (IM.! side) . sfaction
   s <- getGlobal
   ser <- getServer
-  d <- getDict
+  d <- undefined -- getDict
   config <- getsServer sconfig
   let (_, total) = calculateTotal s
   -- The first, boolean component of squit determines
@@ -495,14 +496,14 @@ restartGame handleTurn = do
   -- Take the original config from config file, to reroll RNG, if needed
   -- (the current config file has the RNG rolled for the previous game).
   cops <- getsGlobal scops
-  shistory <- getsClient shistory
+  shistory <- undefined -- getsClient shistory
   (state, ser, dMsg) <- gameResetAction cops
   let d = case filter (isPlayerFaction state) $ IM.keys dMsg of
         [] -> dMsg  -- only robots play
         k : _ -> IM.adjust (\(cli, loc) -> (cli {shistory}, loc)) k dMsg
   putGlobal state
   putServer ser
-  putDict d
+  putDict undefined -- d
   saveGameBkp
   handleTurn
 
@@ -546,7 +547,7 @@ gameReset cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
             fo fid (gloF, serF) =
               initialHeroes cops entryLoc fid gloF serF
             (glo, ser) = foldr fo (defState, defSer) needInitialCrew
-            defCli = defStateClient entryLoc
+            defCli = defStateClient entryLoc undefined -- TODO
             -- This overwrites the "Really save/quit?" messages.
             defLoc = defStateLocal freshDungeon freshDepth
                                    disco faction cops entryLevel
@@ -590,7 +591,7 @@ startFrontend executor !copsSlow@Kind.COps{corule, cotile=tile} handleTurn = do
       -- handle the history and backup savefile.
       handleGame = do
         handleTurn
-        d <- getDict
+        d <- undefined -- getDict
         -- Save history often, at each game exit, in case of crashes.
         liftIO $ Save.rmBkpSaveHistory sconfig sconfigUI d
       loop sfs = start executor sfs cops sbinding sconfig sconfigUI handleGame
@@ -635,31 +636,6 @@ debug :: MonadActionRoot m => Text -> m ()
 debug _x = return () -- liftIO $ hPutStrLn stderr _x
 
 -- TODO: move somewhere
-
--- | Abstract syntax of client commands.
-data CmdCli =
-    PickupCli ActorId Item Item
-  | ApplyCli ActorId MU.Part Item
-  | ShowItemsCli Discoveries Msg [Item]
-  | ShowMsgCli Msg
-  | AnimateDeathCli ActorId
-  | SelectLeaderCli ActorId LevelId
-  | InvalidateArenaCli LevelId
-  | DiscoverCli (Kind.Id ItemKind) Item
-  | ConfirmYesNoCli Msg
-  | ConfirmMoreBWCli Msg
-  | ConfirmMoreFullCli Msg
-  | RememberCli LevelId IS.IntSet Level  -- TODO: Level is an overkill
-  | RememberPerCli LevelId Perception Level FactionDict
-  | SwitchLevelCli ActorId LevelId Actor [Item]
-  | EffectCli Msg (Point, Point) Int Bool
-  | ProjectCli Point ActorId Item
-  | ShowAttackCli ActorId ActorId MU.Part Item Bool
-  | AnimateBlockCli ActorId ActorId MU.Part
-  | DisplaceCli ActorId ActorId
-  | ShowSlidesCli Slideshow
-  | NullReport
-  deriving Show
 
 -- | The semantics of client commands.
 cmdCli :: MonadClient m => CmdCli -> m Bool
@@ -915,7 +891,7 @@ askClient :: MonadAction m => FactionId -> CmdCli -> m Bool
 askClient fid cmd = do
   side <- getsGlobal sside
   switchGlobalSelectedSide fid
-  b <- cmdCli cmd
+  b <- undefined -- cmdCli cmd
   switchGlobalSelectedSide side
   return b
 

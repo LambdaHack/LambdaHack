@@ -18,6 +18,7 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
+import Game.LambdaHack.Command
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
@@ -150,9 +151,9 @@ eff Effect.Dominate _ source target _power = do
                                                        , btime = getTime s
                                                        , bspeed = halfSpeed b }
       -- Display status line and FOV for the new actor.
-      sli <- promptToSlideshow ""
-      fr <- drawOverlay ColorBW $ head $ runSlideshow sli
-      displayFramesPush [Nothing, Just fr, Nothing]
+--TODO      sli <- promptToSlideshow ""
+--      fr <- drawOverlay ColorBW $ head $ runSlideshow sli
+--      displayFramesPush [Nothing, Just fr, Nothing]
       return (True, "")
     else if source == target
          then do

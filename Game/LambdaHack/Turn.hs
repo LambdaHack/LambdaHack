@@ -257,9 +257,11 @@ playerCommand msgRunAbort = do
               -- Depends on whether slastKey
               -- is needed in other parts of code.
               modifyClient (\st -> st {slastKey = Just km})
-              if (Just km == lastKey)
+              (t, arena) <- if (Just km == lastKey)
                 then cmdSemantics Command.Clear
                 else cmdSemantics cmd
+              modifyGlobal $ updateSelectedArena arena
+              return t
             Nothing -> let msgKey = "unknown command <" <> K.showKM km <> ">"
                        in abortWith msgKey
         -- The command was aborted or successful and if the latter,
@@ -302,38 +304,3 @@ advanceTime actor = do
   Kind.COps{coactor} <- getsGlobal scops
   let upd m@Actor{btime} = m {btime = timeAddFromSpeed coactor m btime}
   modifyGlobal $ updateActorBody actor upd
-
-
--- The issues below are now complicated (?) by the fact that we now generate
--- a game screen frame at least once every clip and a jointed pair
--- of frame+key input for each command that does not take time.
---
--- Design thoughts (in order to get rid or partially rid of the somewhat
--- convoluted design we have): We have three kinds of commands.
---
--- Normal commands: they take time, so after handling the command, state changes,
--- time passes and monsters get to move.
---
--- Instant commands: they take no time, and do not change the state.
---
--- Meta commands: they take no time, but may change the state.
---
--- Ideally, they can all be handled via the same (event) interface. We maintain an
--- event queue where we store what has to be handled next. The event queue is a sorted
--- list where every event contains the timestamp when the event occurs. The current game
--- time is equal to the head element of the event queue. Currently, we only have action
--- events. An actor gets to move on an event. The actor is responsible for reinsterting
--- itself in the event queue. Possible new events may include HP regeneration events,
--- monster generation events, or actor death events.
---
--- If an action does not take any time, the actor just reinserts itself with the current
--- time into the event queue. If the insert algorithm makes sure that later events with
--- the same time get precedence, this will work just fine.
---
--- It's important that we decouple issues like HP regeneration from action events if we
--- do it like that, because otherwise, HP regeneration may occur multiple times.
---
--- Given this scheme, we may get orphaned events: a HP regeneration event for a dead
--- monster may be scheduled. Or a move event for a monster suddenly put to sleep. We
--- therefore have to given handlers the option of accessing and cleaning up the event
--- queue.

@@ -20,6 +20,7 @@ import Game.LambdaHack.Action
 --                               MonadClientRO)
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
+import Game.LambdaHack.Command
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
@@ -73,7 +74,7 @@ applySer :: MonadAction m   -- MonadServer m
          -> Item     -- ^ the item to be applied
          -> m ()
 applySer actor verb item = do
-  body <- getsLocal (getActorBody actor)
+  body <- getsGlobal (getActorBody actor)
   let pos = bpos body
       -- Only one item consumed, even if several in inventory.
       consumed = item { jcount = 1 }
@@ -121,14 +122,14 @@ projectSer :: MonadAction m
            -> Item     -- ^ the item to be projected
            -> m ()
 projectSer source tpos _verb item = do
-  cops@Kind.COps{coactor} <- getsLocal scops
-  sm    <- getsLocal (getActorBody source)
-  Actor{btime} <- getsLocal $ getActorBody source
-  lvl   <- getsLocal getArena
-  seps  <- getsClient seps
-  lxsize <- getsLocal (lxsize . getArena)
-  lysize <- getsLocal (lysize . getArena)
-  side <- getsLocal sside
+  cops@Kind.COps{coactor} <- getsGlobal scops
+  sm    <- getsGlobal (getActorBody source)
+  Actor{btime} <- getsGlobal $ getActorBody source
+  lvl   <- getsGlobal getArena
+  seps  <- undefined -- getsClient seps
+  lxsize <- getsGlobal (lxsize . getArena)
+  lysize <- getsGlobal (lysize . getArena)
+  side <- getsGlobal sside
   let consumed = item { jcount = 1 }
       spos = bpos sm
       -- When projecting, the first turn is spent aiming.

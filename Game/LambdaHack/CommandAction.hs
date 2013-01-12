@@ -24,7 +24,7 @@ import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 
 -- | The basic action for a command and whether it takes time.
-cmdAction :: MonadAction m => StateClient -> State -> Cmd
+cmdAction :: MonadClient m => StateClient -> State -> Cmd
           -> (Bool, WriterT Slideshow m ())
 cmdAction cli s cmd =
   let tgtMode = stgtMode cli
@@ -89,18 +89,18 @@ cmdAction cli s cmd =
     DebugArea   -> (False, modifyClient toggleMarkVision)
     DebugOmni   -> (False, modifyClient toggleOmniscient)  -- TODO: Server
     DebugSmell  -> (False, modifyClient toggleMarkSmell)
-    DebugVision -> (False, modifyServer cycleTryFov)
+    DebugVision -> (False, undefined {-modifyServer cycleTryFov-})
 
 -- | The semantics of player commands in terms of the @Action@ monad.
 -- Decides if the action takes time and what action to perform.
 -- Time cosuming commands are marked as such in help and cannot be
 -- invoked in targeting mode on a remote level (level different than
 -- the level of the selected hero).
-cmdSemantics :: MonadAction m => Cmd -> WriterT Slideshow m Bool
+cmdSemantics :: MonadClient m => Cmd -> WriterT Slideshow m (Bool, LevelId)
 cmdSemantics cmd = do
   Just leaderOld <- getsClient getLeader
-  arenaOld <- getsGlobal sarena
-  posOld <- getsGlobal (bpos . getActorBody leaderOld)
+  arenaOld <- getsLocal sarena
+  posOld <- getsLocal (bpos . getActorBody leaderOld)
   cli <- getClient
   loc <- getLocal
   let (timed, sem) = cmdAction cli loc cmd
@@ -108,23 +108,24 @@ cmdSemantics cmd = do
     then checkCursor sem
     else sem
   arena <- getsLocal sarena
-  modifyGlobal $ updateSelectedArena arena
   leaderNew <- getsClient getLeader
   case leaderNew of
     Nothing -> return ()
     Just leader -> do
-      pos <- getsGlobal (bpos . getActorBody leader)
+      pos <- getsLocal (bpos . getActorBody leader)
       tgtMode <- getsClient stgtMode
       when (isNothing tgtMode  -- targeting performs a more extensive look
             && (posOld /= pos
                 || arenaOld /= arena)) $ do
         lookMsg <- lookAt False True pos ""
         msgAdd lookMsg
-  return timed
+  return (timed, arena)
 
 -- | If in targeting mode, check if the current level is the same
 -- as player level and refuse performing the action otherwise.
-checkCursor :: MonadActionRO m => WriterT Slideshow m () -> WriterT Slideshow m ()
+checkCursor :: MonadClientRO m
+            => WriterT Slideshow m ()
+            -> WriterT Slideshow m ()
 checkCursor h = do
   arena <- getsLocal sarena
   (lid, _) <- viewedLevel
@@ -148,6 +149,7 @@ cmdSer cmd = case cmd of
   GameRestartSer -> gameRestartSer
   GameSaveSer -> gameSaveSer
   CfgDumpSer -> cfgDumpSer
+  ClientReply _ -> undefined
 
-cmdSerAction :: MonadAction m => m CmdSer -> WriterT Slideshow m ()
-cmdSerAction m = lift $ m >>= cmdSer
+cmdSerAction :: MonadClient m => m CmdSer -> WriterT Slideshow m ()
+cmdSerAction m = undefined -- lift $ m >>= cmdSer

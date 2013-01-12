@@ -1,21 +1,52 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Abstract syntax of server and client commands.
 module Game.LambdaHack.Command
-  ( CmdSer(..), Cmd(..)
+  ( CmdCli(..), CmdSer(..), Cmd(..)
   , majorCmd, minorCmd, timedCmd, cmdDescription
   ) where
 
+import qualified Data.IntSet as IS
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Actor
+import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Item
+import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
+import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 import Game.LambdaHack.VectorXY
+import Game.LambdaHack.Content.ItemKind
+
+-- | Abstract syntax of client commands.
+data CmdCli =
+    PickupCli ActorId Item Item
+  | ApplyCli ActorId MU.Part Item
+  | ShowItemsCli Discoveries Msg [Item]
+  | ShowMsgCli Msg
+  | AnimateDeathCli ActorId
+  | SelectLeaderCli ActorId LevelId
+  | InvalidateArenaCli LevelId
+  | DiscoverCli (Kind.Id ItemKind) Item
+  | ConfirmYesNoCli Msg
+  | ConfirmMoreBWCli Msg
+  | ConfirmMoreFullCli Msg
+  | RememberCli LevelId IS.IntSet Level  -- TODO: Level is an overkill
+  | RememberPerCli LevelId Perception Level FactionDict
+  | SwitchLevelCli ActorId LevelId Actor [Item]
+  | EffectCli Msg (Point, Point) Int Bool
+  | ProjectCli Point ActorId Item
+  | ShowAttackCli ActorId ActorId MU.Part Item Bool
+  | AnimateBlockCli ActorId ActorId MU.Part
+  | DisplaceCli ActorId ActorId
+  | ShowSlidesCli Slideshow
+  | NullReport
+  deriving Show
 
 -- | Abstract syntax of server commands.
 data CmdSer =
@@ -31,6 +62,7 @@ data CmdSer =
   | GameRestartSer
   | GameSaveSer
   | CfgDumpSer
+  | ClientReply Bool
   deriving Show
 
 -- | Abstract syntax of player commands.

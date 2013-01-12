@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Server and client game state types and operations.
 module Game.LambdaHack.State
-  ( -- * Basic game state, local or global.
+  ( -- * Basic game state, local or global
     State
     -- * State components
   , sdungeon, sdepth, sdisco, sfaction, scops, sside, sarena
@@ -17,15 +17,18 @@ module Game.LambdaHack.State
   , StateClient(..), defStateClient, defHistory
   , updateTarget, getTarget
   , invalidateSelectedLeader, updateSelectedLeader, getLeader
-    -- * A dictionary of client states.
+    -- * A dictionary of client connection information
+  , ClientDict, ClientChan(..)
+    -- * A dictionary of client states, for saving game.
   , StateDict
-    -- * Components types and operations.
-  , FactionDict, TgtMode(..), Target(..)
+    -- * Components types and operations
+  , TgtMode(..), Target(..)
   , Pers, FactionPers, dungeonPerception
   , DebugModeSer(..), cycleTryFov
   , DebugModeCli(..), toggleMarkVision, toggleMarkSmell, toggleOmniscient
   ) where
 
+import Control.Concurrent.Chan
 import Control.Monad
 import Data.Binary
 import qualified Data.IntMap as IM
@@ -39,6 +42,7 @@ import qualified System.Random as R
 import System.Time
 
 import Game.LambdaHack.Actor
+import Game.LambdaHack.Command
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.TileKind
@@ -98,15 +102,26 @@ data StateClient = StateClient
   , shistory  :: !History       -- ^ history of messages
   , sper      :: !FactionPers   -- ^ faction perception indexed by levels
   , slastKey  :: !(Maybe K.KM)  -- ^ last command key pressed
-  , _sleader  :: !(Maybe ActorId)  -- ^ selected actors
+  , _sleader  :: !(Maybe ActorId)  -- ^ selected actor
+  , schan     :: ClientChan     -- ^ communication channels for this client
   , sdebugCli :: !DebugModeCli  -- ^ debugging mode
   }
+  deriving Show
+
+-- | Connection information for each client, indexed by faction identifier.
+type ClientDict = IM.IntMap ClientChan
+
+-- | Channels from client-server communication.
+data ClientChan = ClientChan
+  { toClient   :: Chan CmdCli
+  , fromClient :: Chan CmdSer
+  }
+
+instance Show ClientChan where
+  show _ = "client channels"
 
 -- | All client and local state, indexed by faction identifier.
 type StateDict = IM.IntMap (StateClient, State)
-
--- | All factions in the game, indexed by faction identifier.
-type FactionDict = IM.IntMap Faction
 
 -- | Current targeting mode of a client.
 data TgtMode =
@@ -307,11 +322,11 @@ cycleTryFov s@StateServer{sdebugSer=sdebugSer@DebugModeSer{stryFov}} =
 -- * StateClient operations
 
 -- | Initial game client state.
-defStateClient :: Point -> StateClient
-defStateClient ppos = do
+defStateClient :: Point -> ClientChan -> StateClient
+defStateClient scursor schan = do
   StateClient
     { stgtMode  = Nothing
-    , scursor   = ppos
+    , scursor
     , seps      = 0
     , starget   = IM.empty
     , srunning  = Nothing
@@ -320,6 +335,7 @@ defStateClient ppos = do
     , sper      = M.empty
     , _sleader  = Nothing  -- no heroes yet alive
     , slastKey  = Nothing
+    , schan
     , sdebugCli = defDebugModeCli
     }
 
@@ -446,6 +462,7 @@ instance Binary StateClient where
     let shistory = emptyHistory
         sper = M.empty
         slastKey = Nothing
+        schan = undefined
         sdebugCli = defDebugModeCli
     return StateClient{..}
 
