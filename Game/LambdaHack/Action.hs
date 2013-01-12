@@ -418,7 +418,7 @@ dumpCfg fn = do
 -- Warning: scores are shown during the game,
 -- so we should be careful not to leak secret information through them
 -- (e.g., the nature of the items through the total worth of inventory).
-handleScores :: (MonadActionIO m, MonadClientServerRO m)
+handleScores :: (MonadActionIO m, MonadAction m)
              => Bool -> Status -> Int
              -> m ()
 handleScores write status total =
@@ -428,7 +428,8 @@ handleScores write status total =
     curDate <- liftIO getClockTime
     slides <-
       liftIO $ register config write total time curDate status
-    go <- getManyConfirms [] slides
+    side <- getsGlobal sside
+    go <- askClient side $ ShowSlidesCli slides
     when (not go) abort
 
 -- | Continue or restart or exit the game.
@@ -453,40 +454,39 @@ endOrLoop handleTurn = do
                               `finally` putMVar mv ())
       tryIgnore $ do
         handleScores False Camping total
-        void $ displayMore ColorFull "See you soon, stronger and braver!"
+        sendToPl [] $ ConfirmMoreFullCli "See you soon, stronger and braver!"
       liftIO $ takeMVar mv  -- wait until saved
       -- Do nothing, that is, quit the game loop.
     (Nothing, Just (showScreens, status@Killed{})) -> do
-      StateClient{sreport} <- getClient
-      unless (nullReport sreport) $ do
+      nullR <- askClient side NullReport
+      unless nullR $ do
         -- Sisplay any leftover report. Suggest it could be the cause of death.
-        void $ displayMore ColorBW "Who would have thought?"
-        recordHistory  -- prevent repeating the report
+        sendToPl [] $ ConfirmMoreBWCli "Who would have thought?"
       tryWith
         (\ finalMsg ->
           let highScoreMsg = "Let's hope another party can save the day!"
               msg = if T.null finalMsg then highScoreMsg else finalMsg
-          in void $ displayMore ColorBW msg
+          in sendToPl [] $ ConfirmMoreBWCli msg
           -- Do nothing, that is, quit the game loop.
         )
         (do
            when showScreens $ handleScores True status total
-           go <- displayMore ColorBW "Next time will be different."
+           go <- sendToPlayers [] side
+                 $ ConfirmMoreBWCli "Next time will be different."
            when (not go) $ abortWith "You could really win this time."
            restartGame handleTurn
         )
     (Nothing, Just (showScreens, status@Victor)) -> do
-      StateClient{sreport} <- getClient
-      unless (nullReport sreport) $ do
+      nullR <- askClient side NullReport
+      unless nullR $ do
         -- Sisplay any leftover report. Suggest it could be the master move.
-        void $ displayMore ColorFull "Brilliant, wasn't it?"
-        recordHistory  -- prevent repeating the report
+        sendToPl [] $ ConfirmMoreFullCli "Brilliant, wasn't it?"
       when showScreens $ do
         tryIgnore $ handleScores True status total
-        void $ displayMore ColorFull "Can it be done better, though?"
+        sendToPl [] $ ConfirmMoreFullCli "Can it be done better, though?"
       restartGame handleTurn
     (Nothing, Just (_, Restart)) -> do
-      void $ displayMore ColorBW "This time for real."
+      sendToPl [] $ ConfirmMoreBWCli "This time for real."
       restartGame handleTurn
     (Nothing, _) -> handleTurn  -- just continue
 
@@ -648,6 +648,7 @@ data CmdCli =
   | DiscoverCli (Kind.Id ItemKind) Item
   | ConfirmYesNoCli Msg
   | ConfirmMoreBWCli Msg
+  | ConfirmMoreFullCli Msg
   | RememberCli LevelId IS.IntSet Level  -- TODO: Level is an overkill
   | RememberPerCli LevelId Perception Level FactionDict
   | SwitchLevelCli ActorId LevelId Actor [Item]
@@ -656,6 +657,8 @@ data CmdCli =
   | ShowAttackCli ActorId ActorId MU.Part Item Bool
   | AnimateBlockCli ActorId ActorId MU.Part
   | DisplaceCli ActorId ActorId
+  | ShowSlidesCli Slideshow
+  | NullReport
   deriving Show
 
 -- | The semantics of client commands.
@@ -676,6 +679,8 @@ cmdCli cmd = case cmd of
     getManyConfirms [] slides
   ShowMsgCli msg ->
     msgAdd msg >> return True
+  ShowSlidesCli slides -> do
+    getManyConfirms [] slides
   AnimateDeathCli aid -> animateDeathCli aid
   SelectLeaderCli aid lid -> selectLeader aid lid
   InvalidateArenaCli lid -> invalidateArenaCli lid
@@ -686,6 +691,10 @@ cmdCli cmd = case cmd of
     return go
   ConfirmMoreBWCli msg -> do
     go <- displayMore ColorBW msg
+    recordHistory  -- Prevent repeating the ending msgs.
+    return go
+  ConfirmMoreFullCli msg -> do
+    go <- displayMore ColorFull msg
     recordHistory  -- Prevent repeating the ending msgs.
     return go
   RememberCli arena vis lvl -> do
@@ -812,6 +821,9 @@ cmdCli cmd = case cmd of
         animFrs = animate cli loc per $ swapPlaces poss
     displayFramesPush $ Nothing : animFrs
     return True
+  NullReport -> do
+    StateClient{sreport} <- getClient
+    return $ nullReport sreport
 
 pickupCli :: MonadClient m => ActorId -> Item -> Item -> m ()
 pickupCli aid i ni = do
@@ -873,7 +885,9 @@ sendToPlayers poss fid cmd = do
   let f (cfid, perF) =
         if (isPlayerFaction glo cfid)
         then do
-          let perceived = any (`IS.member` totalVisible (perF M.! arena)) poss
+          let perceived =
+                null poss
+                || any (`IS.member` totalVisible (perF M.! arena)) poss
           b <- if perceived
             then askClient cfid cmd
             else return False
