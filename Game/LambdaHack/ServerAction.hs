@@ -20,13 +20,11 @@ import Game.LambdaHack.Action
 --                               MonadClientRO)
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Animation (blockMiss, swapPlaces)
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind as TileKind
-import Game.LambdaHack.Draw
 import Game.LambdaHack.EffectAction
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Feature as F
@@ -75,19 +73,12 @@ applySer :: MonadAction m   -- MonadServer m
          -> Item     -- ^ the item to be applied
          -> m ()
 applySer actor verb item = do
-  Kind.COps{coactor, coitem} <- getsLocal scops
-  per <- askPerception
-  disco <- getsLocal sdisco
   body <- getsLocal (getActorBody actor)
   let pos = bpos body
-  -- Only one item consumed, even if several in inventory.
+      -- Only one item consumed, even if several in inventory.
       consumed = item { jcount = 1 }
-      msg = makeSentence
-        [ MU.SubjectVerbSg (partActor coactor body) verb
-        , partItemNWs coitem disco consumed ]
-  when (pos `IS.member` totalVisible per) $ msgAdd msg
+  sendToPl [pos] $ ApplyCli actor verb consumed
   removeFromInventory actor consumed pos
-  -- TODO: local state is not updated here and itemEffectAction uses it
   itemEffectAction 5 actor actor consumed False
 
 -- TODO: this is subtly wrong: if identical items are on the floor and in
@@ -130,29 +121,19 @@ projectSer :: MonadAction m
            -> Item     -- ^ the item to be projected
            -> m ()
 projectSer source tpos _verb item = do
-  cops@Kind.COps{coactor, coitem} <- getsLocal scops
+  cops@Kind.COps{coactor} <- getsLocal scops
   sm    <- getsLocal (getActorBody source)
-  per   <- askPerceptionSer
   Actor{btime} <- getsLocal $ getActorBody source
   lvl   <- getsLocal getArena
   seps  <- getsClient seps
   lxsize <- getsLocal (lxsize . getArena)
   lysize <- getsLocal (lysize . getArena)
   side <- getsLocal sside
-  disco <- getsLocal sdisco
   let consumed = item { jcount = 1 }
       spos = bpos sm
-      svisible = spos `IS.member` totalVisible per
-      subject =
-        if svisible
-        then sm
-        else sm {bname = Just "somebody"}
       -- When projecting, the first turn is spent aiming.
       -- The projectile is seen one tile from the actor, giving a hint
       -- about the aim and letting the target evade.
-      msg = makeSentence
-        [ MU.SubjectVerbSg (partActor coactor subject) "aim"
-        , partItemNWs coitem disco consumed ]
       -- TODO: AI should choose the best eps.
       -- Setting monster's projectiles time to player time ensures
       -- the projectile covers the whole normal distance already the first
@@ -173,7 +154,6 @@ projectSer source tpos _verb item = do
     Nothing -> abortWith "cannot zap oneself"
     Just [] -> assert `failure` (spos, tpos, "project from the edge of level")
     Just path@(pos:_) -> do
-      let projVis = pos `IS.member` totalVisible per
       removeFromInventory source consumed spos
       inhabitants <- getsGlobal (posToActor pos)
       if accessible cops lvl spos pos && isNothing inhabitants
@@ -184,9 +164,9 @@ projectSer source tpos _verb item = do
                 addProjectile cops consumed pos (bfaction sm) path time glo ser
           putGlobal nglo
           putServer nser
+          sendToPl [spos, pos] $ ProjectCli spos source consumed
         else
           abortWith "blocked"
-      when (svisible || projVis) $ msgAdd msg
 
 -- ** TriggerSer
 
@@ -229,7 +209,7 @@ pickupSer aid i l = do
     modifyGlobal $ updateActorBody aid $ \m ->
       m {bletter = maxLetter (fromJust $ jletter ni) (bletter m)}
     modifyGlobal (updateActorItem aid (const nitems))
-    void $ sendToPlayers p side (PickupCli aid i ni)
+    void $ sendToPlayers [p] side (PickupCli aid i ni)
 
 -- ** DropSer
 
@@ -267,6 +247,7 @@ moveSer actor dir = do
       tpos = spos `shift` dir  -- target position
   -- We start by looking at the target position.
   tgt <- getsGlobal (posToActor tpos)
+  side <- getsGlobal sside
   case tgt of
     Just target ->
       -- Attacking does not require full access, adjacency is enough.
@@ -276,7 +257,9 @@ moveSer actor dir = do
           -- Perform the actual move.
           modifyGlobal $ updateActorBody actor $ \ body -> body {bpos = tpos}
       | Tile.canBeHidden cotile (okind $ lvl `at` tpos) -> do
-          msgAdd "You search all adjacent walls for half a second."
+          void $ askClient side
+                 $ ShowMsgCli
+                     "You search all adjacent walls for half a second."
           search actor
       | otherwise ->
           actorOpenDoor actor dir
@@ -288,32 +271,24 @@ moveSer actor dir = do
 -- but for melee and not using up the weapon.
 actorAttackActor :: MonadAction m => ActorId -> ActorId -> m ()
 actorAttackActor source target = do
-  smRaw <- getsGlobal (getActorBody source)
-  tmRaw <- getsGlobal (getActorBody target)
-  per   <- askPerception
-  time  <- getsGlobal getTime
+  sm <- getsGlobal (getActorBody source)
+  tm <- getsGlobal (getActorBody target)
+  time <- getsGlobal getTime
+  discoS <- getsGlobal sdisco
   s <- getGlobal
-  let spos = bpos smRaw
-      tpos = bpos tmRaw
-      svisible = spos `IS.member` totalVisible per
-      tvisible = tpos `IS.member` totalVisible per
-      sm | svisible  = smRaw
-         | otherwise = smRaw {bname = Just "somebody"}
-      tm | tvisible  = tmRaw
-         | otherwise = tmRaw {bname = Just "somebody"}
+  let spos = bpos sm
+      tpos = bpos tm
   if bfaction sm == bfaction tm && isPlayerFaction s (bfaction sm)
      && not (bproj sm) && not (bproj tm)
     then assert `failure` (source, target, "player AI bumps into friendlies")
     else do
-      cops@Kind.COps{ coactor
-                    , coitem=coitem@Kind.Ops{opick, okind}} <- getsGlobal scops
+      cops@Kind.COps{coitem=Kind.Ops{opick, okind}} <- getsGlobal scops
       state <- getGlobal
       bitems <- getsGlobal (getActorItem source)
       let h2hGroup = if isAHero state source then "unarmed" else "monstrous"
       h2hKind <- rndToAction $ opick h2hGroup (const True)
       flavour <- getsServer sflavour
       discoRev <- getsServer sdiscoRev
-      disco <- getsGlobal sdisco
       let h2hItem = buildItem flavour discoRev h2hKind (okind h2hKind) 1 0
           (stack, say, verbosity, verb) =
             if isProjectile state source
@@ -324,27 +299,12 @@ actorAttackActor source target = do
               Nothing -> (h2hItem, False, 0,
                           iverbApply $ okind h2hKind)  -- hand to hand combat
               Just w  ->
-                let verbApply = case jkind disco w of
+                let verbApply = case jkind discoS w of  -- TODO: use disco
                       Nothing -> "hit"
                       Just ik -> iverbApply $ okind ik
                 in (w, True, 0, verbApply)
-          -- The msg describes the source part of the action.
-          -- TODO: right now it also describes the victim and weapon;
-          -- perhaps, when a weapon is equipped, just say "you hit"
-          -- or "you miss" and then "nose dies" or "nose yells in pain".
-          msg = makeSentence $
-            [ MU.SubjectVerbSg (partActor coactor sm) verb
-            , partActor coactor tm ]
-            ++ if say
-               then ["with", partItemAW coitem disco stack]
-               else []
-          msgMiss = makeSentence
-            [ MU.SubjectVerbSg (partActor coactor sm) "try to"
-            , verb MU.:> ", but"
-            , MU.SubjectVerbSg (partActor coactor tm) "block"
-            ]
       let performHit block = do
-            when (svisible || tvisible) $ msgAdd msg
+            sendToPl [spos, tpos] $ ShowAttackCli source target verb stack say
             -- Msgs inside itemEffectAction describe the target part.
             itemEffectAction verbosity source target stack block
       -- Projectiles can't be blocked, can be sidestepped.
@@ -352,14 +312,7 @@ actorAttackActor source target = do
         then do
           blocked <- rndToAction $ chance $ 1%2
           if blocked
-            then do
-              when (svisible || tvisible) $ msgAdd msgMiss
-              cli <- getClient
-              loc <- getLocal
-              let poss = (tpos, spos)
-                  anim = blockMiss poss
-                  animFrs = animate cli loc per anim
-              displayFramesPush $ Nothing : animFrs
+            then sendToPl [spos, tpos] $ AnimateBlockCli source target verb
             else performHit True
         else performHit False
 
@@ -451,26 +404,14 @@ displaceActor source target = do
   let spos = bpos sm
       tpos = bpos tm
   modifyGlobal $ updateActorBody source $ \ m -> m { bpos = tpos }
-  modifyGlobal $  updateActorBody target $ \ m -> m { bpos = spos }
-  Kind.COps{coactor} <- getsGlobal scops
-  per <- askPerception
-  let visible = spos `IS.member` totalVisible per ||
-                tpos `IS.member` totalVisible per
-      msg = makeSentence
-        [ MU.SubjectVerbSg (partActor coactor sm) "displace"
-        , partActor coactor tm ]
-  when visible $ msgAdd msg
-  cli <- getClient  -- here cli possibly contains the new msg
-  loc <- getLocal
-  let poss = (tpos, spos)
-      animFrs = animate cli loc per $ swapPlaces poss
-  when visible $ displayFramesPush $ Nothing : animFrs
-  leader <- getsClient getLeader
-  if Just source == leader
+  modifyGlobal $ updateActorBody target $ \ m -> m { bpos = spos }
+  sendToPl [spos, tpos] $ DisplaceCli source target
+--  leader <- getsClient getLeader
+--  if Just source == leader
 -- TODO: The actor will stop running due to the message as soon as running
 -- is fixed to check the message before it goes into history.
-   then stopRunning  -- do not switch positions repeatedly
-   else void $ focusIfOurs target
+--   then stopRunning  -- do not switch positions repeatedly
+--   else void $ focusIfOurs target
 
 -- ** GameExit
 

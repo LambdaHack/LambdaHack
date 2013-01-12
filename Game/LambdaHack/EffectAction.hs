@@ -80,8 +80,8 @@ effectToAction effect verbosity source target power block = do
   newHP <- if memTm
            then getsGlobal (bhp . getActorBody target)
            else return oldHP
-  -- Target part of message sent here, so target visibility checked.
-  void $ sendToPlayers (bpos oldT) side
+  -- Target part of message sent here, so only target visibility checked.
+  void $ sendToPlayers [bpos oldT] side
          $ EffectCli msg (bpos oldT, bpos oldS) (newHP - oldHP) block
   -- TODO: use sendToPlayers2 and to those that don't see the pos show that:
   -- when b $ msgAdd "You hear some noises."
@@ -417,7 +417,7 @@ checkPartyDeath target = do
   bitems <- getsGlobal (getActorItem target)
   modifyGlobal $ updateArena $ dropItemsAt bitems $ bpos pbody
   let fid = bfaction pbody
-      animateDeath = sendToPlayers (bpos pbody) fid (AnimateDeathCli target)
+      animateDeath = sendToPlayers [bpos pbody] fid (AnimateDeathCli target)
       animateGameOver = do
         go <- animateDeath
         modifyGlobal $ updateActorBody target $ \b -> b {bsymbol = Just '%'}

@@ -34,7 +34,7 @@ module Game.LambdaHack.Action
   , saveGameBkp, dumpCfg, endOrLoop, frontendName, startFrontend
   , switchGlobalSelectedSide
   , debug
-  , CmdCli(..), cmdCli, sendToPlayers, sendToClients, askClient
+  , CmdCli(..), cmdCli, sendToPlayers, sendToClients, askClient, sendToPl
   , itemOverlay, selectLeader, setTgtId, stopRunning
   ) where
 
@@ -64,8 +64,7 @@ import qualified Game.LambdaHack.Action.Save as Save
 import Game.LambdaHack.ActionClass
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Animation (Frames, SingleFrame(..))
-import Game.LambdaHack.Animation (blockHit, deathBody, twirlSplash)
+import Game.LambdaHack.Animation
 import Game.LambdaHack.Binding
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Config
@@ -639,7 +638,9 @@ debug _x = return () -- liftIO $ hPutStrLn stderr _x
 -- | Abstract syntax of client commands.
 data CmdCli =
     PickupCli ActorId Item Item
+  | ApplyCli ActorId MU.Part Item
   | ShowItemsCli Discoveries Msg [Item]
+  | ShowMsgCli Msg
   | AnimateDeathCli ActorId
   | SelectLeaderCli ActorId LevelId
   | InvalidateArenaCli LevelId
@@ -650,16 +651,30 @@ data CmdCli =
   | RememberPerCli LevelId Perception Level FactionDict
   | SwitchLevelCli ActorId LevelId Actor [Item]
   | EffectCli Msg (Point, Point) Int Bool
+  | ProjectCli Point ActorId Item
+  | ShowAttackCli ActorId ActorId MU.Part Item Bool
+  | AnimateBlockCli ActorId ActorId MU.Part
+  | DisplaceCli ActorId ActorId
   deriving Show
 
 -- | The semantics of client commands.
 cmdCli :: MonadClient m => CmdCli -> m Bool
 cmdCli cmd = case cmd of
   PickupCli aid i ni -> pickupCli aid i ni >> return True  -- TODO: GADT?
+  ApplyCli actor verb item -> do
+    Kind.COps{coactor, coitem} <- getsLocal scops
+    disco <- getsLocal sdisco
+    body <- getsLocal (getActorBody actor)
+    let msg = makeSentence
+          [ MU.SubjectVerbSg (partActor coactor body) verb
+          , partItemNWs coitem disco item ]
+    msgAdd msg >> return True
   ShowItemsCli discoS msg items -> do
     io <- itemOverlay discoS True items
     slides <- overlayToSlideshow msg io
     getManyConfirms [] slides
+  ShowMsgCli msg ->
+    msgAdd msg >> return True
   AnimateDeathCli aid -> animateDeathCli aid
   SelectLeaderCli aid lid -> selectLeader aid lid
   InvalidateArenaCli lid -> invalidateArenaCli lid
@@ -710,6 +725,90 @@ cmdCli cmd = case cmd of
           twirlSplash poss Color.BrRed  Color.Red
              | otherwise = mempty
         animFrs = animate cli loc per anim
+    displayFramesPush $ Nothing : animFrs
+    return True
+  ProjectCli spos source consumed -> do
+    Kind.COps{coactor, coitem} <- getsLocal scops
+    per <- askPerception
+    disco <- getsLocal sdisco
+    sm <- getsLocal (getActorBody source)
+    let svisible = spos `IS.member` totalVisible per
+        subject =
+          if svisible
+          then sm
+          else sm {bname = Just "somebody"}
+        msg = makeSentence
+              [ MU.SubjectVerbSg (partActor coactor subject) "aim"
+              , partItemNWs coitem disco consumed ]
+    msgAdd msg
+    return True
+  ShowAttackCli source target verb stack say -> do
+    Kind.COps{ coactor, coitem } <- getsLocal scops
+    per <- askPerception
+    disco <- getsLocal sdisco
+    smRaw <- getsLocal (getActorBody source)
+    tmRaw <- getsLocal (getActorBody target)
+    let spos = bpos smRaw
+        tpos = bpos tmRaw
+        svisible = spos `IS.member` totalVisible per
+        tvisible = tpos `IS.member` totalVisible per
+        sm | svisible  = smRaw
+           | otherwise = smRaw {bname = Just "somebody"}
+        tm | tvisible  = tmRaw
+           | otherwise = tmRaw {bname = Just "somebody"}
+    -- The msg describes the source part of the action.
+    -- TODO: right now it also describes the victim and weapon;
+    -- perhaps, when a weapon is equipped, just say "you hit"
+    -- or "you miss" and then "nose dies" or "nose yells in pain".
+    let msg = makeSentence $
+          [ MU.SubjectVerbSg (partActor coactor sm) verb
+          , partActor coactor tm ]
+          ++ if say
+             then ["with", partItemAW coitem disco stack]
+             else []
+    msgAdd msg
+    return True
+  AnimateBlockCli source target verb -> do
+    Kind.COps{coactor} <- getsLocal scops
+    per <- askPerception
+    smRaw <- getsLocal (getActorBody source)
+    tmRaw <- getsLocal (getActorBody target)
+    let spos = bpos smRaw
+        tpos = bpos tmRaw
+        svisible = spos `IS.member` totalVisible per
+        tvisible = tpos `IS.member` totalVisible per
+        sm | svisible  = smRaw
+           | otherwise = smRaw {bname = Just "somebody"}
+        tm | tvisible  = tmRaw
+           | otherwise = tmRaw {bname = Just "somebody"}
+        msgMiss = makeSentence
+          [ MU.SubjectVerbSg (partActor coactor sm) "try to"
+          , verb MU.:> ", but"
+          , MU.SubjectVerbSg (partActor coactor tm) "block"
+          ]
+    msgAdd msgMiss
+    cli <- getClient
+    loc <- getLocal
+    let poss = (tpos, spos)
+        anim = blockMiss poss
+        animFrs = animate cli loc per anim
+    displayFramesPush $ Nothing : animFrs
+    return True
+  DisplaceCli source target -> do
+    Kind.COps{coactor} <- getsLocal scops
+    per <- askPerception
+    sm <- getsLocal (getActorBody source)
+    tm <- getsLocal (getActorBody target)
+    let spos = bpos sm
+        tpos = bpos tm
+        msg = makeSentence
+          [ MU.SubjectVerbSg (partActor coactor sm) "displace"
+          , partActor coactor tm ]
+    msgAdd msg
+    cli <- getClient
+    loc <- getLocal
+    let poss = (tpos, spos)
+        animFrs = animate cli loc per $ swapPlaces poss
     displayFramesPush $ Nothing : animFrs
     return True
 
@@ -766,14 +865,14 @@ discoverCli ik i = do
 
 -- TODO: move somewhere
 
-sendToPlayers :: MonadAction m => Point -> FactionId -> CmdCli -> m Bool
-sendToPlayers pos fid cmd = do
+sendToPlayers :: MonadAction m => [Point] -> FactionId -> CmdCli -> m Bool
+sendToPlayers poss fid cmd = do
   arena <- getsGlobal sarena
   glo <- getGlobal
   let f (cfid, perF) =
         if (isPlayerFaction glo cfid)
         then do
-          let perceived = pos `IS.member` totalVisible (perF M.! arena)
+          let perceived = any (`IS.member` totalVisible (perF M.! arena)) poss
           b <- if perceived
             then askClient cfid cmd
             else return False
@@ -782,6 +881,11 @@ sendToPlayers pos fid cmd = do
   pers <- ask
   lb <- mapM f $ IM.toList pers
   return $! fromMaybe True $! lookup fid lb
+
+sendToPl :: MonadAction m => [Point] -> CmdCli -> m ()
+sendToPl poss cmd = do
+  side <- getsGlobal sside
+  void $ sendToPlayers poss side cmd
 
 sendToClients :: MonadAction m => FactionId -> (FactionId -> CmdCli) -> m Bool
 sendToClients fid cmd = do
