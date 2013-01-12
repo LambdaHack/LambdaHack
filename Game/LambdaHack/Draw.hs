@@ -58,15 +58,15 @@ draw dm cops per
         case stgtMode of
           TgtOff -> (sarena s, getArena s)
           _ -> (tgtLevelId stgtMode, sdungeon s M.! tgtLevelId stgtMode)
-      leader = getLeader cli
-      (bracedL, ahpS, asmellL, bhpS, bposL)
-        | leader == invalidActorId =
-          (False, "--", False, "--", undefined)
-        | otherwise =
+      mleader = getLeader cli
+      (bitems, bracedL, ahpS, asmellL, bhpS, bposL) =
+        case mleader of
+          Nothing -> ([], False, "--", False, "--", undefined)
+          Just leader ->
             let mpl@Actor{bkind, bhp, bpos} = getActorBody leader s
                 ActorKind{ahp, asmell} = okind bkind
-            in (braced mpl ltime, showT (maxDice ahp), asmell, showT bhp, bpos)
-      bitems = getActorItem leader s
+            in (getActorItem leader s, braced mpl ltime, showT (maxDice ahp),
+                asmell, showT bhp, bpos)
       (msgTop, over, msgBottom) = stringByLocation lxsize lysize overlay
       -- TODO:
       sVisBG = if smarkVision
@@ -87,7 +87,7 @@ draw dm cops per
                           _ -> showT (Item.jpower sw)
                       Nothing -> "3d1"  -- TODO: ?
                   Nothing -> "3d1"  -- TODO; use the item 'fist'
-      bl | leader == invalidActorId = []
+      bl | isNothing mleader = []
          | otherwise = fromMaybe [] $ bla lxsize lysize seps bposL scursor
       dis pxy =
         let pos0 = toPoint lxsize pxy
@@ -97,7 +97,7 @@ draw dm cops per
             sml = IM.findWithDefault timeZero pos0 lsmell
             smlt = sml `timeAdd` timeNegate ltime
             viewActor loc Actor{bkind, bsymbol, bcolor}
-              | leader /= invalidActorId
+              | isJust mleader
                 && loc == bposL
                 && drawnLevelId == sarena s =
                   (symbol, Color.defBG)  -- highlight leader
@@ -135,8 +135,8 @@ draw dm cops per
                     [] -> (tsymbol tk, if vis then tcolor tk else tcolor2 tk)
                     i : _ -> Item.viewItem i
             vis = IS.member pos0 $ totalVisible per
-            visPl | leader == invalidActorId = False
-                  | otherwise = actorSeesLoc per leader pos0
+            visPl =
+              maybe False (\leader -> actorSeesLoc per leader pos0) mleader
             bg0 = if stgtMode /= TgtOff && pos0 == scursor
                   then Color.defFG       -- highlight target cursor
                   else sVisBG vis visPl  -- FOV debug or standard bg

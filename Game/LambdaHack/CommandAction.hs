@@ -28,7 +28,7 @@ cmdAction :: MonadAction m => StateClient -> State -> Cmd
           -> (Bool, WriterT Slideshow m ())
 cmdAction cli s cmd =
   let tgtMode = stgtMode cli
-      leader = getLeader cli
+      leader = fromJust $ getLeader cli
       arena = sarena s
       sm = getActorBody leader s
       ppos = bpos sm
@@ -100,9 +100,9 @@ cmdAction cli s cmd =
 -- the level of the selected hero).
 cmdSemantics :: MonadAction m => Cmd -> WriterT Slideshow m Bool
 cmdSemantics cmd = do
-  leader <- getsClient getLeader
+  Just leaderOld <- getsClient getLeader
   arenaOld <- getsGlobal sarena
-  posOld <- getsGlobal (bpos . getActorBody leader)
+  posOld <- getsGlobal (bpos . getActorBody leaderOld)
   cli <- getClient
   loc <- getLocal
   let (timed, sem) = cmdAction cli loc cmd
@@ -111,13 +111,17 @@ cmdSemantics cmd = do
     else sem
   arena <- getsLocal sarena
   modifyGlobal $ updateSelectedArena arena
-  pos <- getsGlobal (bpos . getActorBody leader)
-  tgtMode <- getsClient stgtMode
-  when (tgtMode == TgtOff  -- targeting performs it's own, more extensive look
-        && (posOld /= pos
-            || arenaOld /= arena)) $ do
-    lookMsg <- lookAt False True pos ""
-    msgAdd lookMsg
+  leaderNew <- getsClient getLeader
+  case leaderNew of
+    Nothing -> return ()
+    Just leader -> do
+      pos <- getsGlobal (bpos . getActorBody leader)
+      tgtMode <- getsClient stgtMode
+      when (tgtMode == TgtOff  -- targeting performs a more extensive look
+            && (posOld /= pos
+                || arenaOld /= arena)) $ do
+        lookMsg <- lookAt False True pos ""
+        msgAdd lookMsg
   return timed
 
 -- | If in targeting mode, check if the current level is the same

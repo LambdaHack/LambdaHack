@@ -3,7 +3,7 @@
 -- involves the 'State' or 'Action' type.
 module Game.LambdaHack.Actor
   ( -- * Actor identifiers and related operations
-    ActorId, findHeroName, monsterGenChance, partActor, invalidActorId
+    ActorId, findHeroName, monsterGenChance, partActor
     -- * The@ Acto@r type
   , Actor(..), template, addHp, timeAddFromSpeed, braced
   , unoccupied, heroKindId, projectileKindId, actorSpeed
@@ -92,10 +92,6 @@ instance Binary Actor where
 
 -- | A unique identifier of an actor in a dungeon.
 type ActorId = Int
-
--- | Identifier that denotes no actor.
-invalidActorId :: ActorId
-invalidActorId = -1
 
 -- | Find a hero name in the config file, or create a stock name.
 findHeroName :: Config -> Int -> Text

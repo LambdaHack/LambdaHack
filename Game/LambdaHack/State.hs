@@ -15,7 +15,8 @@ module Game.LambdaHack.State
   , StateServer(..), defStateServer
     -- * Client state and its operations
   , StateClient(..), defStateClient, defHistory
-  , updateTarget, getTarget, updateSelectedLeader, getLeader
+  , updateTarget, getTarget
+  , invalidateSelectedLeader, updateSelectedLeader, getLeader
     -- * A dictionary of client states.
   , StateDict
     -- * Components types and operations.
@@ -58,8 +59,8 @@ import Game.LambdaHack.Utils.Assert
 -- | View on game state. Clients never update @sdungeon@ and @sfaction@,
 -- but the server updates it for them depending on client exploration.
 -- Data invariant: no actor belongs to more than one @sdungeon@ level.
--- In alocal state, actor @sleader@ is not on any other @sdungeon@
--- level than @sarena@. If @sleader@ is on @sarena@, he belongs to @sside@.
+-- Each @sleader@ actor from any of the client states is on the @sarena@
+-- level and belongs to @sside@ faction of the client's local state..
 data State = State
   { _sdungeon :: !Dungeon      -- ^ remembered dungeon
   , _sdepth   :: !Int          -- ^ remembered dungeon depth
@@ -86,6 +87,7 @@ data StateServer = StateServer
 -- | Client state, belonging to a single faction.
 -- Some of the data, e.g, the history, carries over
 -- from game to game, even across playing sessions.
+-- Data invariant: if @_sleader@ is @Nothing@ then so is @srunning@.
 data StateClient = StateClient
   { stgtMode  :: !TgtMode  -- ^ targeting mode
   , scursor   :: !Point    -- ^ cursor coordinates
@@ -96,7 +98,7 @@ data StateClient = StateClient
   , shistory  :: !History       -- ^ history of messages
   , sper      :: !FactionPers   -- ^ faction perception indexed by levels
   , slastKey  :: !(Maybe K.KM)  -- ^ last command key pressed
-  , _sleader  :: !ActorId       -- ^ selected actor
+  , _sleader  :: !(Maybe ActorId)  -- ^ selected actors
   , sdebugCli :: !DebugModeCli  -- ^ debugging mode
   }
 
@@ -309,15 +311,15 @@ cycleTryFov s@StateServer{sdebugSer=sdebugSer@DebugModeSer{stryFov}} =
 defStateClient :: Point -> StateClient
 defStateClient ppos = do
   StateClient
-    { stgtMode = TgtOff
-    , scursor = ppos
+    { stgtMode  = TgtOff
+    , scursor   = ppos
     , seps      = 0
     , starget   = IM.empty
     , srunning  = Nothing
     , sreport   = emptyReport
     , shistory  = emptyHistory
     , sper      = M.empty
-    , _sleader  = invalidActorId  -- no heroes yet alive
+    , _sleader  = Nothing  -- no heroes yet alive
     , slastKey  = Nothing
     , sdebugCli = defDebugModeCli
     }
@@ -345,17 +347,22 @@ updateTarget aid f cli = cli { starget = IM.alter f aid (starget cli) }
 getTarget :: ActorId -> StateClient -> Maybe Target
 getTarget aid cli = IM.lookup aid (starget cli)
 
+-- | Invalidate selected actor, e.g., to avoid violatng the invariant.
+-- If the the leader was running, stop the run.
+invalidateSelectedLeader :: StateClient -> StateClient
+invalidateSelectedLeader cli = cli {srunning = Nothing, _sleader = Nothing}
+
 -- | Update selected actor within state. The actor is required
 -- to belong to the selected level and selected faction.
 updateSelectedLeader :: ActorId -> State -> StateClient -> StateClient
-updateSelectedLeader _sleader s cli =
+updateSelectedLeader leader s cli =
   let la = lactor $ _sdungeon s M.! _sarena s
-      side1 = fmap bfaction $ IM.lookup _sleader la
+      side1 = fmap bfaction $ IM.lookup leader la
       side2 = Just $ _sside s
-  in assert (side1 == side2 `blame` (side1, side2, _sleader, _sarena s, s))
-     $ cli {_sleader}
+  in assert (side1 == side2 `blame` (side1, side2, leader, _sarena s, s))
+     $ cli {_sleader = Just leader}
 
-getLeader :: StateClient -> ActorId
+getLeader :: StateClient -> Maybe ActorId
 getLeader = _sleader
 
 toggleMarkVision :: StateClient -> StateClient

@@ -54,7 +54,7 @@ retarget = do
   stgtMode <- getsClient stgtMode
   assert (stgtMode == TgtOff) $ do
     arena <- getsLocal sarena
-    leader <- getsClient getLeader
+    Just leader <- getsClient getLeader
     ppos <- getsLocal (bpos . getActorBody leader)
     msgAdd "Last target invalid."
     modifyClient $ \cli -> cli {scursor = ppos, seps = 0}
@@ -117,13 +117,13 @@ lookAt detailed canSee pos msg = do
     else return $! msg <+> isd
 
 -- | Perform look around in the current position of the cursor.
--- Assumes targeting mode.
+-- Assumes targeting mode and so assumes that a leader is selected.
 doLook :: MonadClient m => WriterT Slideshow m ()
 doLook = do
   Kind.COps{coactor} <- getsLocal scops
   p <- getsClient scursor
   per <- askPerception
-  leader <- getsClient getLeader
+  Just leader <- getsClient getLeader
   target <- getsClient $ getTarget leader
   lvl <- cursorLevel
   let hms = lactor lvl
@@ -166,7 +166,7 @@ doLook = do
 inventory :: MonadClientRO m => WriterT Slideshow m ()
 inventory = do
   Kind.COps{coactor} <- getsLocal scops
-  leader <- getsClient getLeader
+  Just leader <- getsClient getLeader
   pbody <- getsLocal $ getActorBody leader
   items <- getsLocal $ getActorItem leader
   disco <- getsLocal sdisco
@@ -186,7 +186,7 @@ inventory = do
 -- | Start the floor targeting mode or reset the cursor position to the leader.
 targetFloor :: MonadClient m => TgtMode -> WriterT Slideshow m ()
 targetFloor stgtModeNew = do
-  leader <- getsClient getLeader
+  Just leader <- getsClient getLeader
   ppos <- getsLocal (bpos . getActorBody leader)
   target <- getsClient $ getTarget leader
   stgtMode <- getsClient stgtMode
@@ -204,7 +204,7 @@ setCursor :: MonadClient m => TgtMode -> WriterT Slideshow m ()
 setCursor stgtModeNew = assert (stgtModeNew /= TgtOff) $ do
   loc <- getLocal
   cli <- getClient
-  leader <- getsClient getLeader
+  Just leader <- getsClient getLeader
   ppos <- getsLocal (bpos . getActorBody leader)
   stgtModeOld <- getsClient stgtMode
   scursorOld <- getsClient scursor
@@ -222,7 +222,7 @@ setCursor stgtModeNew = assert (stgtModeNew /= TgtOff) $ do
 -- | Start the monster targeting mode. Cycle between monster targets.
 targetMonster :: MonadClient m => TgtMode -> WriterT Slideshow m ()
 targetMonster stgtModeNew = do
-  leader <- getsClient getLeader
+  Just leader <- getsClient getLeader
   ppos <- getsLocal (bpos . getActorBody leader)
   side <- getsLocal sside
   per <- askPerception
@@ -373,7 +373,7 @@ acceptCurrent h = do
 endTargeting :: MonadClient m => Bool -> m ()
 endTargeting accept = do
   when accept $ do
-    leader <- getsClient getLeader
+    Just leader <- getsClient getLeader
     target <- getsClient $ getTarget leader
     cpos <- getsClient scursor
     side <- getsLocal sside
@@ -397,7 +397,7 @@ endTargeting accept = do
 endTargetingMsg :: MonadClient m => m ()
 endTargetingMsg = do
   Kind.COps{coactor} <- getsLocal scops
-  leader <- getsClient getLeader
+  Just leader <- getsClient getLeader
   pbody <- getsLocal $ getActorBody leader
   target <- getsClient $ getTarget leader
   loc <- getLocal
@@ -442,17 +442,16 @@ displayHistory = do
 -- We cycle through at most 10 heroes (\@, 1--9).
 cycleHero :: MonadClient m => m ()
 cycleHero = do
-  leader <- getsClient getLeader
+  Just leader <- getsClient getLeader
   s  <- getLocal
-  hs <- heroesAfterPl
+  hs <- partyAfterLeader leader
   case filter (flip memActor s . snd) hs of
     [] -> abortWith "Cannot select any other hero on this level."
     (nl, np) : _ -> selectLeader np nl
                       >>= assert `trueM` (leader, nl, np, "hero duplicated")
 
-heroesAfterPl :: MonadClientRO m => m [(LevelId, ActorId)]
-heroesAfterPl = do
-  leader <- getsClient getLeader
+partyAfterLeader :: MonadClientRO m => ActorId -> m [(LevelId, ActorId)]
+partyAfterLeader leader = do
   s  <- getLocal
   let hs = map (tryFindHeroK s) [0..9]
       i = fromMaybe (-1) $ findIndex ((== Just leader) . fmap snd) hs
@@ -461,12 +460,13 @@ heroesAfterPl = do
 
 -- ** HeroBack
 
+-- TODO: sort by level
 -- | Switches current hero to the previous hero in the whole dungeon,
 -- if any, wrapping. We cycle through at most 10 heroes (\@, 1--9).
 backCycleHero :: MonadClient m => m ()
 backCycleHero = do
-  leader <- getsClient getLeader
-  hs <- heroesAfterPl
+  Just leader <- getsClient getLeader
+  hs <- partyAfterLeader leader
   case reverse hs of
     [] -> abortWith "No other hero in the party."
     (nl, np) : _ -> selectLeader np nl

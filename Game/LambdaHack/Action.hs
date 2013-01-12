@@ -642,6 +642,7 @@ data CmdCli =
   | ShowItemsCli Discoveries Msg [Item]
   | AnimateDeathCli ActorId
   | SelectLeaderCli ActorId LevelId
+  | InvalidateArenaCli LevelId
   | DiscoverCli (Kind.Id ItemKind) Item
   | ConfirmYesNoCli Msg
   | ConfirmMoreBWCli Msg
@@ -660,6 +661,7 @@ cmdCli cmd = case cmd of
     getManyConfirms [] slides
   AnimateDeathCli aid -> animateDeathCli aid
   SelectLeaderCli aid lid -> selectLeader aid lid
+  InvalidateArenaCli lid -> invalidateArenaCli lid
   DiscoverCli ik i -> discoverCli ik i
   ConfirmYesNoCli msg -> do
     go <- displayYesNo msg
@@ -682,15 +684,18 @@ cmdCli cmd = case cmd of
     modifyClient $ \cli -> cli {sper = M.insert arena per (sper cli)}
     modifyLocal $ updateFaction (const faction)
     return True
-  SwitchLevelCli aid nln pbody -> do
-    bitems <- getsLocal $ getActorItem aid
-    modifyLocal (deleteActor aid)
-    modifyLocal $ updateSelectedArena nln
-    modifyLocal (insertActor aid pbody)
-    modifyLocal (updateActorItem aid (const bitems))
-    loc <- getLocal
-    modifyClient $ updateSelectedLeader aid loc
-    return True
+  SwitchLevelCli aid arena pbody -> do
+    arenaOld <- getsLocal sarena
+    assert (arenaOld /= arena) $ do
+      bitems <- getsLocal $ getActorItem aid
+      modifyClient $ invalidateSelectedLeader
+      modifyLocal (deleteActor aid)
+      modifyLocal $ updateSelectedArena arena
+      modifyLocal (insertActor aid pbody)
+      modifyLocal (updateActorItem aid (const bitems))
+      loc <- getLocal
+      modifyClient $ updateSelectedLeader aid loc
+      return True
 
 pickupCli :: MonadClient m => ActorId -> Item -> Item -> m ()
 pickupCli aid i ni = do
@@ -795,23 +800,36 @@ itemOverlay disco sorted is = do
 -- False, if nothing to do. Should only be invoked as a direct result
 -- of a player action (leader death just sets sleader to -1).
 selectLeader :: MonadClient m => ActorId -> LevelId -> m Bool
-selectLeader actor nln = do
+selectLeader actor arena = do
   Kind.COps{coactor} <- getsLocal scops
   leader <- getsClient getLeader
   stgtMode <- getsClient stgtMode
-  if actor == leader
+  if Just actor == leader
     then return False -- already selected
     else do
-      modifyLocal $ updateSelectedArena nln
+      arenaOld <- getsLocal sarena
+      when (arenaOld /= arena) $ do
+        modifyClient invalidateSelectedLeader
+        modifyLocal $ updateSelectedArena arena
       loc <- getLocal
       modifyClient $ updateSelectedLeader actor loc
       -- Move the cursor, if active, to the new level.
-      when (stgtMode /= TgtOff) $ setTgtId nln
+      when (stgtMode /= TgtOff) $ setTgtId arena
       -- Don't continue an old run, if any.
       stopRunning
       -- Announce.
       pbody <- getsLocal $ getActorBody actor
       msgAdd $ makeSentence [partActor coactor pbody, "selected"]
+      return True
+
+invalidateArenaCli :: MonadClient m => LevelId -> m Bool
+invalidateArenaCli arena = do
+  arenaOld <- getsLocal sarena
+  if arenaOld == arena
+    then return False
+    else do
+      modifyClient invalidateSelectedLeader
+      modifyLocal $ updateSelectedArena arena
       return True
 
 stopRunning :: MonadClient m => m ()

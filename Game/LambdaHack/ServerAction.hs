@@ -465,7 +465,7 @@ displaceActor source target = do
       animFrs = animate cli loc per $ swapPlaces poss
   when visible $ displayFramesPush $ Nothing : animFrs
   leader <- getsClient getLeader
-  if source == leader
+  if Just source == leader
 -- TODO: The actor will stop running due to the message as soon as running
 -- is fixed to check the message before it goes into history.
    then stopRunning  -- do not switch positions repeatedly

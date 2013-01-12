@@ -131,12 +131,17 @@ handleActors subclipStart = withPerception $ do
       let side = bfaction m
       switchGlobalSelectedSide side
       arena <- getsGlobal sarena
+      arenaOld <- getsLocal sarena
       leaderOld <- getsClient getLeader
-      -- Old leader may have been killed by enemies since @side@ last moved.
-      memOld <- getsGlobal $ memActor leaderOld
-      let leader | memOld = leaderOld
-                 | otherwise = actor
-      modifyLocal $ updateSelectedArena arena
+      -- Old leader may have been killed by enemies since @side@ last moved
+      -- or local arena changed and the side has not elected a new leader yet
+      -- or global arena changed the old leader is on the old arena.
+      leader <- if arenaOld /= arena
+                then do
+                  modifyClient invalidateSelectedLeader
+                  modifyLocal $ updateSelectedArena arena
+                  return actor
+                else return $! fromMaybe actor leaderOld
       loc <- getLocal
       modifyClient $ updateSelectedLeader leader loc
       isPlayer <- getsLocal $ flip isPlayerFaction side
@@ -144,9 +149,9 @@ handleActors subclipStart = withPerception $ do
         then do
           -- Player moves always start a new subclip.
           displayPush
-          handlePlayer
+          handlePlayer leader
           squitNew <- getsServer squit
-          sleaderNew <- getsClient getLeader
+          leaderNew <- getsClient getLeader
           -- Advance time once, after the leader switched perhaps many times.
           -- Ending and especially saving does not take time.
           -- TODO: this is correct only when all heroes have the same
@@ -158,8 +163,7 @@ handleActors subclipStart = withPerception $ do
           -- at once. This requires quite a bit of refactoring
           -- and is perhaps better done when the other factions have
           -- selected leaders as well.
-          -- TODO: if sleaderNew == invalidActorId, no time advances
-          unless (isJust squitNew) $ advanceTime sleaderNew
+          unless (isJust squitNew) $ maybe (return ()) advanceTime leaderNew
           handleActors $ btime m
         else do
           recordHistory
@@ -203,16 +207,15 @@ handleAI actor = do
   join $ rndToAction $ frequency $ bestVariant $ stratAction
 
 -- | Continue running in the given direction.
-continueRun :: MonadAction m => (Vector, Int) -> m ()
-continueRun dd = do
-  leader <- getsClient getLeader
-  dir <- continueRunDir dd
+continueRun :: MonadAction m => ActorId -> (Vector, Int) -> m ()
+continueRun leader dd = do
+  dir <- continueRunDir leader dd
   -- Attacks and opening doors disallowed when continuing to run.
   runSer leader dir
 
 -- | Handle the move of the hero.
-handlePlayer :: MonadAction m => m ()
-handlePlayer = do
+handlePlayer :: MonadAction m => ActorId -> m ()
+handlePlayer leader = do
   debug "handlePlayer"
 
   -- When running, stop if aborted by a disturbance.
@@ -220,8 +223,7 @@ handlePlayer = do
   -- First time, just after pushing frames, ask for commands in Push mode.
   tryWith (\ msg -> stopRunning >> playerCommand msg) $ do
     srunning <- getsClient srunning
-    maybe abort continueRun srunning
-  leader <- getsClient getLeader
+    maybe abort (continueRun leader) srunning
   addSmell leader
 
 -- | Determine and process the next player command. The argument is the last

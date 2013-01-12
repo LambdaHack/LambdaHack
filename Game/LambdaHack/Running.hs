@@ -7,7 +7,7 @@ import qualified Data.IntSet as IS
 import qualified Data.List as L
 
 import Game.LambdaHack.Action hiding (MonadAction, MonadActionRO, MonadServer,
-                                 MonadServerRO)
+                               MonadServerRO)
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import qualified Game.LambdaHack.Feature as F
@@ -27,10 +27,9 @@ import Game.LambdaHack.Vector
 -- succeeds much more often than subsequent turns, because most
 -- of the disturbances are ignored, since the player is aware of them
 -- and still explicitly requests a run.
-runDir :: MonadClient m => (Vector, Int) -> m Vector
-runDir (dir, dist) = do
+runDir :: MonadClient m => ActorId -> (Vector, Int) -> m Vector
+runDir leader (dir, dist) = do
   cops <- getsLocal scops
-  leader <- getsClient getLeader
   posHere <- getsLocal (bpos . getActorBody leader)
   lvl <- getsLocal getArena
   stgtMode <- getsClient stgtMode
@@ -146,10 +145,9 @@ runDisturbance locLast distLast msg hs ms per posHere
 -- it ajusts the direction given by the vector if we reached
 -- a corridor's corner (we never change direction except in corridors)
 -- and it increments the counter of traversed tiles.
-continueRunDir :: MonadClient m => (Vector, Int) -> m Vector
-continueRunDir (dirLast, distLast) = do
+continueRunDir :: MonadClient m => ActorId -> (Vector, Int) -> m Vector
+continueRunDir leader (dirLast, distLast) = do
   cops@Kind.COps{cotile} <- getsLocal scops
-  leader <- getsClient getLeader
   posHere <- getsLocal (bpos . getActorBody leader)
   per <- askPerception
   StateClient{sreport} <- getClient  -- TODO: check the message before it goes into history
@@ -163,7 +161,7 @@ continueRunDir (dirLast, distLast) = do
       tryRunDist (dir, distNew)
         | accessibleDir posHere dir =
           -- TODO: perhaps @abortWith report2?
-          maybe abort runDir $
+          maybe abort (runDir leader) $
             runDisturbance locLast distLast sreport hs ms per posHere
               posHasFeature posHasItems lxsize lysize (dir, distNew)
         | otherwise = abort  -- do not open doors in the middle of a run

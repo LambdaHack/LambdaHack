@@ -132,6 +132,7 @@ restoreGame config@Config{ configAppDataDir
                    in return $ Right (shistory, msg)
     )
 
+-- TODO: make sure it's executed eagerly.
 -- | Save the history and a backup of the save game file, in case of crashes.
 -- This is only a backup, so no problem is the game is shut down
 -- before saving finishes, so we don't wait on the mvar. However,

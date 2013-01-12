@@ -76,13 +76,14 @@ factionList l s =
 
 -- | Calculate the position of leader's target.
 targetToPos :: StateClient -> State -> Maybe Point
-targetToPos cli@StateClient{scursor} s =
-  case getTarget (getLeader cli) cli of
-    Just (TPos pos) -> Just pos
+targetToPos cli@StateClient{scursor} s = do
+  leader <- getLeader cli
+  case getTarget leader cli of
+    Just (TPos pos) -> return pos
     Just (TEnemy a _ll) -> do
       guard $ memActor a s           -- alive and visible?
       return $! bpos (getActorBody a s)
-    Nothing -> Just scursor
+    Nothing -> return scursor
 
 -- | Finds an actor at a position on the current level. Perception irrelevant.
 posToActor :: Point -> State -> Maybe ActorId

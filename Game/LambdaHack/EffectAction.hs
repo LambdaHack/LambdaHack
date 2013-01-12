@@ -332,7 +332,7 @@ effLvlGoUp aid k = do
         -- Reset level and leader for all factions.
         void $ sendToClients (bfaction pbody) $ \fid ->
           if fid /= bfaction pbody
-          then SelectLeaderCli invalidActorId nln
+          then InvalidateArenaCli nln
           else SwitchLevelCli aid nln pbody
         -- Checking actors at the new posiiton of the aid.
         inhabitants <- getsGlobal (posToActor npos)
