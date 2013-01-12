@@ -476,7 +476,7 @@ generateMonster = do
   cops <- getsGlobal scops
   state <- getGlobal
   ser <- getServer
-  per <- askPerceptionSer
+  per <- askPerceptionSer  -- TODO: sum over all not spawning factions
   (nstate, nser) <- rndToAction $ rollMonster cops per state ser
   putGlobal nstate
   srandom <- getsServer srandom
