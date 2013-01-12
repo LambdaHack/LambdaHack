@@ -42,29 +42,32 @@ import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.Frequency
 import Game.LambdaHack.Vector
 
--- | AI proposes possible targets for the actor. Never empty.
-targetStrategy :: MonadClientRO m => ActorId -> m (Strategy (Maybe Target))
-targetStrategy actor = do
-  cops@Kind.COps{costrat=Kind.Ops{okind}} <- getsLocal scops
-  per <- askPerception
-  loc <- getLocal
-  cli <- getClient
-  let Actor{bfaction} = getActorBody actor loc
-      factionAI = gAiIdle $ sfaction loc IM.! bfaction
-      factionAbilities = sabilities (okind factionAI)
-  return $! reacquireTgt cops actor cli loc per factionAbilities
+-- TODO: move AI back to Client and spawn an extra client for each
+-- faction that does the AI (perhaps unless the faction has no leader
+-- or is not controlled by player)
 
-reacquireTgt :: Kind.COps -> ActorId -> StateClient -> State
+-- | AI proposes possible targets for the actor. Never empty.
+targetStrategy :: MonadServerRO m => ActorId -> m (Strategy (Maybe Target))
+targetStrategy actor = do
+  cops@Kind.COps{costrat=Kind.Ops{okind}} <- getsGlobal scops
+  per <- askPerceptionSer
+  glo <- getGlobal
+  btarget <- undefined -- TODO: keep the AI target in an extra client
+  let Actor{bfaction} = getActorBody actor glo
+      factionAI = gAiIdle $ sfaction glo IM.! bfaction
+      factionAbilities = sabilities (okind factionAI)
+  return $! reacquireTgt cops actor btarget glo per factionAbilities
+
+reacquireTgt :: Kind.COps -> ActorId -> Maybe Target -> State
              -> Perception -> [Ability]
              -> Strategy (Maybe Target)
-reacquireTgt cops actor cli loc per factionAbilities =
+reacquireTgt cops actor btarget glo per factionAbilities =
   reacquire btarget
  where
   Kind.COps{coactor=coactor@Kind.Ops{okind}} = cops
-  lvl@Level{lxsize} = getArena loc
+  lvl@Level{lxsize} = getArena glo
   actorBody@Actor{ bkind, bpos = me, bfaction, bpath } =
-    getActorBody actor loc
-  btarget = getTarget actor cli
+    getActorBody actor glo
   mk = okind bkind
   enemyVisible l =
     asight mk
@@ -83,19 +86,19 @@ reacquireTgt cops actor cli loc per factionAbilities =
   reacquire tgt =
     case tgt of
       Just (TEnemy a ll) | focused
-                    && memActor a loc ->  -- present on this level
-        let l = bpos $ getActorBody a loc
+                    && memActor a glo ->  -- present on this level
+        let l = bpos $ getActorBody a glo
         in if enemyVisible l           -- prefer visible foes
            then returN "TEnemy" $ Just $ TEnemy a l
            else if null visibleFoes    -- prefer visible foes
-                   && me /= ll         -- not yet reached the last enemy loc
+                   && me /= ll         -- not yet reached the last enemy pos
                 then returN "last known" $ Just $ TPos ll
-                                       -- chase the last known loc
+                                       -- chase the last known pos
                 else closest
       Just TEnemy{} -> closest            -- foe is gone and we forget
-      Just (TPos pos) | me == pos -> closest  -- already reached the loc
+      Just (TPos pos) | me == pos -> closest  -- already reached the pos
       Just TPos{} | null visibleFoes -> returN "TPos" tgt
-                                       -- nothing visible, go to loc
+                                       -- nothing visible, go to pos
       Just TPos{} -> closest                -- prefer visible foes
       Nothing -> closest
   foes = hostileAssocs bfaction lvl
@@ -113,31 +116,28 @@ reacquireTgt cops actor cli loc per factionAbilities =
   -- a plan. We need pathfinding for that.
   noFoes :: Strategy (Maybe Target)
   noFoes =
-    (Just . TPos . (me `shift`)) `liftM` moveStrategy cops actor loc Nothing
+    (Just . TPos . (me `shift`)) `liftM` moveStrategy cops actor glo Nothing
 
 -- | AI strategy based on actor's sight, smell, intelligence, etc. Never empty.
-actionStrategy :: (MonadClientRO n, MonadAction m)
-               => ActorId
-               -> n (Strategy (m ()))
+actionStrategy :: MonadAction m => ActorId -> m (Strategy (m ()))
 actionStrategy actor = do
-  cops@Kind.COps{costrat=Kind.Ops{okind}} <- getsLocal scops
-  loc <- getLocal
-  cli <- getClient
-  let Actor{bfaction} = getActorBody actor loc
-      factionAI = gAiIdle $ sfaction loc IM.! bfaction
+  cops@Kind.COps{costrat=Kind.Ops{okind}} <- getsGlobal scops
+  glo <- getGlobal
+  btarget <- undefined -- TODO
+  let Actor{bfaction} = getActorBody actor glo
+      factionAI = gAiIdle $ sfaction glo IM.! bfaction
       factionAbilities = sabilities (okind factionAI)
-  return $! proposeAction cops actor cli loc factionAbilities
+  return $! proposeAction cops actor btarget glo factionAbilities
 
 proposeAction :: forall m. MonadAction m => Kind.COps -> ActorId
-              -> StateClient -> State -> [Ability]
+              -> Maybe Target -> State -> [Ability]
               -> Strategy (m ())
-proposeAction cops actor cli loc factionAbilities =
+proposeAction cops actor btarget glo factionAbilities =
   sumS prefix .| combineDistant distant .| sumS suffix
   .| waitBlockNow actor  -- wait until friends sidestep, ensures never empty
  where
   Kind.COps{coactor=Kind.Ops{okind}} = cops
-  Actor{ bkind, bpos, bpath } = getActorBody actor loc
-  btarget = getTarget actor cli
+  Actor{ bkind, bpos, bpath } = getActorBody actor glo
   (fpos, foeVisible) | isJust bpath = (bpos, False)  -- a missile
                      | otherwise =
     case btarget of
@@ -147,24 +147,24 @@ proposeAction cops actor cli loc factionAbilities =
   combineDistant = liftFrequency . sumF
   aFrequency :: Ability -> Frequency (m ())
   aFrequency Ability.Ranged = if foeVisible
-                              then rangedFreq cops actor loc fpos
+                              then rangedFreq cops actor glo fpos
                               else mzero
   aFrequency Ability.Tools  = if foeVisible
-                              then toolsFreq cops actor loc
+                              then toolsFreq cops actor glo
                               else mzero
   aFrequency Ability.Chase  = if (fpos /= bpos)
                               then chaseFreq
                               else mzero
   aFrequency _              = assert `failure` distant
   chaseFreq =
-    scaleFreq 30 $ bestVariant $ chase cops actor loc (fpos, foeVisible)
+    scaleFreq 30 $ bestVariant $ chase cops actor glo (fpos, foeVisible)
   aStrategy :: Ability -> Strategy (m ())
-  aStrategy Ability.Track  = track cops actor loc
+  aStrategy Ability.Track  = track cops actor glo
   aStrategy Ability.Heal   = mzero  -- TODO
   aStrategy Ability.Flee   = mzero  -- TODO
-  aStrategy Ability.Melee  = foeVisible .=> melee actor loc fpos
-  aStrategy Ability.Pickup = not foeVisible .=> pickup actor loc
-  aStrategy Ability.Wander = wander cops actor loc
+  aStrategy Ability.Melee  = foeVisible .=> melee actor glo fpos
+  aStrategy Ability.Pickup = not foeVisible .=> pickup actor glo
+  aStrategy Ability.Wander = wander cops actor glo
   aStrategy _              = assert `failure` actorAbilities
   actorAbilities = acanDo (okind bkind) `L.intersect` factionAbilities
   isDistant = (`elem` [Ability.Ranged, Ability.Tools, Ability.Chase])
@@ -203,11 +203,11 @@ dieNow actor = returN "die" $ do  -- TODO: explode if a potion
 -- TODO: move to server; the client and his AI does not have a say in that
 -- | Strategy for dumb missiles.
 track :: MonadAction m => Kind.COps -> ActorId -> State -> Strategy (m ())
-track cops actor loc =
+track cops actor glo =
   strat
  where
-  lvl = getArena loc
-  Actor{ bpos, bpath, bhp } = getActorBody actor loc
+  lvl = getArena glo
+  Actor{ bpos, bpath, bhp } = getActorBody actor glo
   darkenActor = modifyGlobal $ updateActorBody actor $ \ m ->
     m {bcolor = Just Color.BrBlack}
   dieOrReset | bhp <= 0  = dieNow actor
@@ -228,30 +228,30 @@ track cops actor loc =
     Nothing -> reject
 
 pickup :: MonadAction m => ActorId -> State -> Strategy (m ())
-pickup actor loc =
+pickup actor glo =
   lootHere bpos .=> actionPickup
  where
-  lvl = getArena loc
-  Actor{bpos} = getActorBody actor loc
+  lvl = getArena glo
+  Actor{bpos} = getActorBody actor glo
   lootHere x = not $ L.null $ lvl `atI` x
-  actionPickup = returN "pickup" $ actorPickupItem actor >>= cmdSer
+  actionPickup = returN "pickup" $ undefined -- TODO actorPickupItem actor >>= cmdSer
 
 melee :: MonadAction m => ActorId -> State -> Point -> Strategy (m ())
-melee actor loc fpos =
+melee actor glo fpos =
   foeAdjacent .=> (returN "melee" $ dirToAction actor True dir)
  where
-  Level{lxsize} = getArena loc
-  Actor{bpos} = getActorBody actor loc
+  Level{lxsize} = getArena glo
+  Actor{bpos} = getActorBody actor glo
   foeAdjacent = adjacent lxsize bpos fpos
   dir = displacement bpos fpos
 
 rangedFreq :: MonadAction m => Kind.COps -> ActorId -> State -> Point -> Frequency (m ())
-rangedFreq cops actor loc fpos =
+rangedFreq cops actor glo fpos =
   toFreq "throwFreq" $
     if not foesAdj
        && asight mk
        && accessible cops lvl bpos pos1      -- first accessible
-       && isNothing (posToActor pos1 loc)  -- no friends on first
+       && isNothing (posToActor pos1 glo)  -- no friends on first
     then throwFreq bitems 3 ++ throwFreq tis 6
     else []
  where
@@ -259,14 +259,14 @@ rangedFreq cops actor loc fpos =
            , coitem=Kind.Ops{okind=iokind}
            , corule
            } = cops
-  lvl@Level{lxsize, lysize} = getArena loc
-  Actor{ bkind, bpos, bfaction } = getActorBody actor loc
-  bitems = getActorItem actor loc
+  lvl@Level{lxsize, lysize} = getArena glo
+  Actor{ bkind, bpos, bfaction } = getActorBody actor glo
+  bitems = getActorItem actor glo
   mk = okind bkind
   tis = lvl `atI` bpos
   foes = hostileAssocs bfaction lvl
   foesAdj = foesAdjacent lxsize lysize bpos (map snd foes)
-  -- TODO: also don't throw if any loc on path is visibly not accessible
+  -- TODO: also don't throw if any pos on path is visibly not accessible
   -- from previous (and tweak eps in bla to make it accessible).
   -- Also don't throw if target not in range.
   eps = 0
@@ -280,7 +280,7 @@ rangedFreq cops actor loc fpos =
        projectSer actor fpos (iverbProject ik) i)
     | i <- is,
       let (ik, benefit) =
-            case jkind (sdisco loc) i of
+            case jkind (sdisco glo) i of
               Nothing -> (undefined, 0)
               Just ki ->
                 let kik = iokind ki
@@ -291,19 +291,19 @@ rangedFreq cops actor loc fpos =
       isymbol ik `elem` (ritemProject $ Kind.stdRuleset corule)]
 
 toolsFreq :: MonadAction m => Kind.COps -> ActorId -> State -> Frequency (m ())
-toolsFreq cops actor loc =
+toolsFreq cops actor glo =
   toFreq "quaffFreq" $ quaffFreq bitems 1 ++ quaffFreq tis 2
  where
   Kind.COps{coitem=Kind.Ops{okind=iokind}} = cops
-  lvl = getArena loc
-  Actor{bpos} = getActorBody actor loc
-  bitems = getActorItem actor loc
+  lvl = getArena glo
+  Actor{bpos} = getActorBody actor glo
+  bitems = getActorItem actor glo
   tis = lvl `atI` bpos
   quaffFreq is multi =
     [ (benefit * multi, applySer actor (iverbApply ik) i)
     | i <- is,
       let (ik, benefit) =
-            case jkind (sdisco loc) i of
+            case jkind (sdisco glo) i of
               Nothing -> (undefined, 0)
               Just ki ->
                 let kik = iokind ki
@@ -315,7 +315,7 @@ toolsFreq cops actor loc =
 -- This strategy can be null (e.g., if the actor is blocked by friends).
 moveStrategy :: Kind.COps -> ActorId -> State -> Maybe (Point, Bool)
              -> Strategy Vector
-moveStrategy cops actor loc mFoe =
+moveStrategy cops actor glo mFoe =
   case mFoe of
     -- Target set and we chase the foe or his last position or another target.
     Just (fpos, foeVisible) ->
@@ -352,8 +352,8 @@ moveStrategy cops actor loc mFoe =
   Kind.COps{ cotile
            , coactor=Kind.Ops{okind}
            } = cops
-  lvl@Level{lsmell, lxsize, lysize, ltime} = getArena loc
-  Actor{ bkind, bpos, bdirAI, bfaction } = getActorBody actor loc
+  lvl@Level{lsmell, lxsize, lysize, ltime} = getArena glo
+  Actor{ bkind, bpos, bdirAI, bfaction } = getActorBody actor glo
   mk = okind bkind
   lootHere x = not $ L.null $ lvl `atI` x
   onlyLoot   = onlyMoves lootHere bpos
@@ -390,22 +390,22 @@ moveStrategy cops actor loc mFoe =
   moveRandomly = liftFrequency $ uniformFreq "moveRandomly" sensible
   openableHere   = openable cotile lvl
   accessibleHere = accessible cops lvl bpos
-  noFriends | asight mk = unoccupied (factionList [bfaction] loc)
+  noFriends | asight mk = unoccupied (factionList [bfaction] glo)
             | otherwise = const True
   isSensible l = noFriends l && (accessibleHere l || openableHere l)
   sensible = filter (isSensible . (bpos `shift`)) (moves lxsize)
 
 chase :: MonadAction m => Kind.COps -> ActorId -> State -> (Point, Bool) -> Strategy (m ())
-chase cops actor loc foe@(_, foeVisible) =
+chase cops actor glo foe@(_, foeVisible) =
   -- Target set and we chase the foe or offer null strategy if we can't.
   -- The foe is visible, or we remember his last position.
   let mFoe = Just foe
       fight = not foeVisible  -- don't pick fights if the real foe is close
-  in dirToAction actor fight `liftM` moveStrategy cops actor loc mFoe
+  in dirToAction actor fight `liftM` moveStrategy cops actor glo mFoe
 
 wander :: MonadAction m => Kind.COps -> ActorId -> State -> Strategy (m ())
-wander cops actor loc =
+wander cops actor glo =
   -- Target set, but we don't chase the foe, e.g., because we are blocked
   -- or we cannot chase at all.
   let mFoe = Nothing
-  in dirToAction actor True `liftM` moveStrategy cops actor loc mFoe
+  in dirToAction actor True `liftM` moveStrategy cops actor glo mFoe
