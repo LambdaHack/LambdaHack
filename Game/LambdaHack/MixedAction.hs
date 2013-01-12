@@ -115,7 +115,7 @@ playerProjectGI leader verb object syms = do
                 (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
       stgtMode <- getsClient stgtMode
       case stgtMode of
-        TgtAuto _ -> endTargeting True
+        Just (TgtAuto _) -> endTargeting True
         _ -> return ()
       disco <- getsLocal sdisco
       let verbProject = case jkind disco item of

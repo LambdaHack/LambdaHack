@@ -171,9 +171,7 @@ askPerception :: MonadClientRO m => m Perception
 askPerception = do
   stgtMode <- getsClient stgtMode
   arena <- getsLocal sarena
-  let lid = case stgtMode of
-        TgtOff -> arena
-        _ -> tgtLevelId stgtMode
+  let lid = maybe arena tgtLevelId stgtMode
   factionPers <- getsClient sper
   return $! factionPers M.! lid
 
@@ -814,7 +812,7 @@ selectLeader actor arena = do
       loc <- getLocal
       modifyClient $ updateSelectedLeader actor loc
       -- Move the cursor, if active, to the new level.
-      when (stgtMode /= TgtOff) $ setTgtId arena
+      when (isJust stgtMode) $ setTgtId arena
       -- Don't continue an old run, if any.
       stopRunning
       -- Announce.
@@ -839,5 +837,7 @@ setTgtId :: MonadClient m => LevelId -> m ()
 setTgtId nln = do
   stgtMode <- getsClient stgtMode
   case stgtMode of
-    TgtAuto _ -> modifyClient $ \cli -> cli {stgtMode = TgtAuto nln}
-    _ -> modifyClient $ \cli -> cli {stgtMode = TgtExplicit nln}
+    Just (TgtAuto _) ->
+      modifyClient $ \cli -> cli {stgtMode = Just (TgtAuto nln)}
+    _ ->
+      modifyClient $ \cli -> cli {stgtMode = Just (TgtExplicit nln)}

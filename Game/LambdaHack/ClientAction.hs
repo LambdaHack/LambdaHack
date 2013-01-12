@@ -52,7 +52,7 @@ default (Text)
 retarget :: MonadClient m => WriterT Slideshow m ()
 retarget = do
   stgtMode <- getsClient stgtMode
-  assert (stgtMode == TgtOff) $ do
+  assert (isNothing stgtMode) $ do
     arena <- getsLocal sarena
     Just leader <- getsClient getLeader
     ppos <- getsLocal (bpos . getActorBody leader)
@@ -73,9 +73,8 @@ cursorLevel :: MonadClientRO m => m Level
 cursorLevel = do
   dungeon <- getsLocal sdungeon
   stgtMode <- getsClient stgtMode
-  let tgtId = case stgtMode of
-        TgtOff -> assert `failure` "not targetting right now"
-        _ -> tgtLevelId stgtMode
+  let tgtId =
+        maybe (assert `failure` "not targetting right now") tgtLevelId stgtMode
   return $! dungeon M.! tgtId
 
 viewedLevel :: MonadClientRO m => m (LevelId, Level)
@@ -83,9 +82,7 @@ viewedLevel = do
   arena <- getsLocal sarena
   dungeon <- getsLocal sdungeon
   stgtMode <- getsClient stgtMode
-  let tgtId = case stgtMode of
-        TgtOff -> arena
-        _ -> tgtLevelId stgtMode
+  let tgtId = maybe arena tgtLevelId stgtMode
   return $! (tgtId, dungeon M.! tgtId)
 
 -- TODO: probably move somewhere (Level?)
@@ -192,7 +189,7 @@ targetFloor stgtModeNew = do
   stgtMode <- getsClient stgtMode
   let tgt = case target of
         Just (TEnemy _ _) -> Nothing  -- forget enemy target, keep the cursor
-        _ | stgtMode /= TgtOff ->
+        _ | isJust stgtMode ->
           Just (TPos ppos)  -- double key press: reset cursor
         t -> t  -- keep the target from previous targeting session
   -- Register that we want to target only positions.
@@ -201,7 +198,7 @@ targetFloor stgtModeNew = do
 
 -- | Set, activate and display cursor information.
 setCursor :: MonadClient m => TgtMode -> WriterT Slideshow m ()
-setCursor stgtModeNew = assert (stgtModeNew /= TgtOff) $ do
+setCursor stgtModeNew = do
   loc <- getLocal
   cli <- getClient
   Just leader <- getsClient getLeader
@@ -211,8 +208,8 @@ setCursor stgtModeNew = assert (stgtModeNew /= TgtOff) $ do
   sepsOld <- getsClient seps
   let scursor = fromMaybe ppos (targetToPos cli loc)
       seps = if scursor == scursorOld then sepsOld else 0
-      stgtMode = if stgtModeOld == TgtOff
-                   then stgtModeNew
+      stgtMode = if isNothing stgtModeOld
+                   then Just stgtModeNew
                    else stgtModeOld
   modifyClient $ \cli2 -> cli2 {scursor, seps, stgtMode}
   doLook
@@ -235,7 +232,7 @@ targetMonster stgtModeNew = do
       ordPos (_, m) = (chessDist lxsize ppos $ bpos m, bpos m)
       dms = sortBy (comparing ordPos) plms
       (lt, gt) = case target of
-            Just (TEnemy n _) | stgtMode /= TgtOff ->  -- pick next monster
+            Just (TEnemy n _) | isJust stgtMode ->  -- pick next monster
               let i = fromMaybe (-1) $ findIndex ((== n) . fst) dms
               in splitAt (i + 1) dms
             Just (TEnemy n _) ->  -- try to retarget the old monster
@@ -295,7 +292,7 @@ tgtAscend k = do
 epsIncr :: MonadClient m => Bool -> m ()
 epsIncr b = do
   stgtMode <- getsClient stgtMode
-  if stgtMode /= TgtOff
+  if isJust stgtMode
     then modifyClient $ \cli -> cli {seps = seps cli + if b then 1 else -1}
     else neverMind True  -- no visual feedback, so no sense
 
@@ -306,7 +303,7 @@ epsIncr b = do
 cancelCurrent :: MonadClient m => WriterT Slideshow m () -> WriterT Slideshow m ()
 cancelCurrent h = do
   stgtMode <- getsClient stgtMode
-  if stgtMode /= TgtOff
+  if isJust stgtMode
     then lift $ endTargeting False
     else h  -- nothing to cancel right now, treat this as a command invocation
 
@@ -365,7 +362,7 @@ displayMainMenu = do
 acceptCurrent :: MonadClient m => WriterT Slideshow m () -> WriterT Slideshow m ()
 acceptCurrent h = do
   stgtMode <- getsClient stgtMode
-  if stgtMode /= TgtOff
+  if isJust stgtMode
     then lift $ endTargeting True
     else h  -- nothing to accept right now, treat this as a command invocation
 
@@ -392,7 +389,7 @@ endTargeting accept = do
   if accept
     then endTargetingMsg
     else msgAdd "targeting canceled"
-  modifyClient $ \cli -> cli { stgtMode = TgtOff }
+  modifyClient $ \cli -> cli { stgtMode = Nothing }
 
 endTargetingMsg :: MonadClient m => m ()
 endTargetingMsg = do

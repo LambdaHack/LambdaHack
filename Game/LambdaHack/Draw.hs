@@ -56,8 +56,8 @@ draw dm cops per
       (drawnLevelId, lvl@Level{lxsize, lysize, lsmell,
                                ldesc, lactor, ltime, lseen, lclear}) =
         case stgtMode of
-          TgtOff -> (sarena s, getArena s)
-          _ -> (tgtLevelId stgtMode, sdungeon s M.! tgtLevelId stgtMode)
+          Nothing -> (sarena s, getArena s)
+          Just tgtM -> (tgtLevelId tgtM, sdungeon s M.! tgtLevelId tgtM)
       mleader = getLeader cli
       (bitems, bracedL, ahpS, asmellL, bhpS, bposL) =
         case mleader of
@@ -111,7 +111,7 @@ draw dm cops per
             (char, fg0) =
               case ( L.find (\ m -> pos0 == Actor.bpos m) actorsHere
                    , L.find (\ m -> scursor == Actor.bpos m) actorsHere ) of
-                (_, actorTgt) | stgtMode /= TgtOff
+                (_, actorTgt) | isJust stgtMode
                                 && (drawnLevelId == sarena s
                                     && L.elem pos0 bl
                                     || (case actorTgt of
@@ -137,7 +137,7 @@ draw dm cops per
             vis = IS.member pos0 $ totalVisible per
             visPl =
               maybe False (\leader -> actorSeesLoc per leader pos0) mleader
-            bg0 = if stgtMode /= TgtOff && pos0 == scursor
+            bg0 = if isJust stgtMode && pos0 == scursor
                   then Color.defFG       -- highlight target cursor
                   else sVisBG vis visPl  -- FOV debug or standard bg
             reverseVideo = Color.Attr{ fg = Color.bg Color.defAttr

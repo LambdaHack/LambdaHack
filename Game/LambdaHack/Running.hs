@@ -5,6 +5,7 @@ module Game.LambdaHack.Running
 
 import qualified Data.IntSet as IS
 import qualified Data.List as L
+import Data.Maybe (isNothing)
 
 import Game.LambdaHack.Action hiding (MonadAction, MonadActionRO, MonadServer,
                                MonadServerRO)
@@ -33,7 +34,7 @@ runDir leader (dir, dist) = do
   posHere <- getsLocal (bpos . getActorBody leader)
   lvl <- getsLocal getArena
   stgtMode <- getsClient stgtMode
-  assert (stgtMode == TgtOff `blame` (dir, dist, stgtMode, "/= TgtOff")) $ do
+  assert (isNothing stgtMode `blame` (dir, dist, stgtMode, "not off")) $ do
     let accessibleDir loc d = accessible cops lvl loc (loc `shift` d)
         -- Do not count distance if we just open a door.
         distNew = if accessibleDir posHere dir then dist + 1 else dist

@@ -89,7 +89,7 @@ data StateServer = StateServer
 -- from game to game, even across playing sessions.
 -- Data invariant: if @_sleader@ is @Nothing@ then so is @srunning@.
 data StateClient = StateClient
-  { stgtMode  :: !TgtMode  -- ^ targeting mode
+  { stgtMode  :: !(Maybe TgtMode)  -- ^ targeting mode
   , scursor   :: !Point    -- ^ cursor coordinates
   , seps      :: !Int      -- ^ a parameter of the tgt digital line
   , starget   :: !(IM.IntMap Target)  -- ^ targets of all actors in the dungeon
@@ -110,8 +110,7 @@ type FactionDict = IM.IntMap Faction
 
 -- | Current targeting mode of a client.
 data TgtMode =
-    TgtOff  -- ^ not in targeting mode
-  | TgtExplicit { tgtLevelId :: !LevelId }
+    TgtExplicit { tgtLevelId :: !LevelId }
             -- ^ the player requested targeting mode explicitly
   | TgtAuto     { tgtLevelId :: !LevelId }
             -- ^ the mode was entered (and will be exited) automatically
@@ -311,7 +310,7 @@ cycleTryFov s@StateServer{sdebugSer=sdebugSer@DebugModeSer{stryFov}} =
 defStateClient :: Point -> StateClient
 defStateClient ppos = do
   StateClient
-    { stgtMode  = TgtOff
+    { stgtMode  = Nothing
     , scursor   = ppos
     , seps      = 0
     , starget   = IM.empty
@@ -451,15 +450,13 @@ instance Binary StateClient where
     return StateClient{..}
 
 instance Binary TgtMode where
-  put TgtOff      = putWord8 0
-  put (TgtExplicit l) = putWord8 1 >> put l
-  put (TgtAuto     l) = putWord8 2 >> put l
+  put (TgtExplicit l) = putWord8 0 >> put l
+  put (TgtAuto     l) = putWord8 1 >> put l
   get = do
     tag <- getWord8
     case tag of
-      0 -> return TgtOff
-      1 -> liftM TgtExplicit get
-      2 -> liftM TgtAuto get
+      0 -> liftM TgtExplicit get
+      1 -> liftM TgtAuto get
       _ -> fail "no parse (TgtMode)"
 
 instance Binary Target where

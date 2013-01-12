@@ -34,9 +34,7 @@ cmdAction cli s cmd =
       ppos = bpos sm
       tgtLoc = targetToPos cli s
       Level{lxsize} =
-        case tgtMode of
-          TgtOff -> getArena s
-          _ -> (sdungeon s M.! tgtLevelId tgtMode)
+        maybe (getArena s) ((sdungeon s M.!) . tgtLevelId) tgtMode
   in case cmd of
     Apply{..} -> (True, cmdSerAction $ playerApplyGroupItem verb object syms)
     Project{} | isNothing tgtLoc -> (False, retarget)
@@ -47,7 +45,7 @@ cmdAction cli s cmd =
     Pickup -> (True, cmdSerAction $ pickupItem)
     Drop   -> (True, cmdSerAction $ dropItem)
     Wait   -> (True, cmdSerAction $ waitBlock)
-    Move v | tgtMode /= TgtOff ->
+    Move v | isJust tgtMode ->
       let dir = toDir lxsize v
       in (False, moveCursor dir 1)
     Move v ->
@@ -64,7 +62,7 @@ cmdAction cli s cmd =
              >>= assert `trueM`
                    (leader, target, "leader bumps into himself" :: Text))
         _ -> (True, cmdSerAction $ movePl dir)
-    Run v | tgtMode /= TgtOff ->
+    Run v | isJust tgtMode ->
       let dir = toDir lxsize v
       in (False, moveCursor dir 10)
     Run v ->
@@ -117,7 +115,7 @@ cmdSemantics cmd = do
     Just leader -> do
       pos <- getsGlobal (bpos . getActorBody leader)
       tgtMode <- getsClient stgtMode
-      when (tgtMode == TgtOff  -- targeting performs a more extensive look
+      when (isNothing tgtMode  -- targeting performs a more extensive look
             && (posOld /= pos
                 || arenaOld /= arena)) $ do
         lookMsg <- lookAt False True pos ""
