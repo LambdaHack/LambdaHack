@@ -131,6 +131,8 @@ handleActors subclipStart = withPerception $ do
       let side = bfaction m
       switchGlobalSelectedSide side
       arena <- getsGlobal sarena
+      void $ askClient side $ SetArenaLeaderCli arena
+
       arenaOld <- getsLocal sarena
       leaderOld <- getsClient getLeader
       -- Old leader may have been killed by enemies since @side@ last moved
@@ -144,14 +146,19 @@ handleActors subclipStart = withPerception $ do
                 else return $! fromMaybe actor leaderOld
       loc <- getLocal
       modifyClient $ updateSelectedLeader leader loc
-      isPlayer <- getsLocal $ flip isPlayerFaction side
+      return leader
+
+      isPlayer <- getsGlobal $ flip isPlayerFaction side
       if actor == leader && isPlayer
         then do
           -- Player moves always start a new subclip.
-          displayPush
-          handlePlayer leader
-          squitNew <- getsServer squit
+          void $ sendToPl [] $ DisplayPushCli
+          void $ askClient side $ HandlePlayerCli leader
+      here read and execute commands until ResponseCli(reqNo, (arenaNew, leaderNew))
           leaderNew <- getsClient getLeader
+
+          modifyGlobal $ updateSelectedArena arenaNew
+          squitNew <- getsServer squit
           -- Advance time once, after the leader switched perhaps many times.
           -- Ending and especially saving does not take time.
           -- TODO: this is correct only when all heroes have the same
@@ -166,7 +173,7 @@ handleActors subclipStart = withPerception $ do
           unless (isJust squitNew) $ maybe (return ()) advanceTime leaderNew
           handleActors $ btime m
         else do
-          recordHistory
+--          recordHistory
           advanceTime actor  -- advance time while the actor still alive
           let subclipStartDelta = timeAddFromSpeed coactor m subclipStart
           if isPlayer && not (bproj m)
@@ -179,7 +186,7 @@ handleActors subclipStart = withPerception $ do
               -- this subclip, so his multiple moves would be collapsed.
               -- TODO: store frames somewhere for each faction and display
               -- the frames only after a "Faction X taking over..." prompt.
-              displayPush
+              void $ sendToPl [] $ DisplayPushCli
               handleAI actor
               handleActors $ btime m
             else do
@@ -207,28 +214,26 @@ handleAI actor = do
   join $ rndToAction $ frequency $ bestVariant $ stratAction
 
 -- | Continue running in the given direction.
-continueRun :: MonadAction m => ActorId -> (Vector, Int) -> m ()
+continueRun :: MonadClient m => ActorId -> (Vector, Int) -> m ()
 continueRun leader dd = do
   dir <- continueRunDir leader dd
   -- Attacks and opening doors disallowed when continuing to run.
   runSer leader dir
 
 -- | Handle the move of the hero.
-handlePlayer :: MonadAction m => ActorId -> m ()
+handlePlayer :: MonadClient m => ActorId -> m ()
 handlePlayer leader = do
-  debug "handlePlayer"
-
   -- When running, stop if aborted by a disturbance.
   -- Otherwise let the player issue commands, until any of them takes time.
   -- First time, just after pushing frames, ask for commands in Push mode.
   tryWith (\ msg -> stopRunning >> playerCommand msg) $ do
     srunning <- getsClient srunning
     maybe abort (continueRun leader) srunning
-  addSmell leader
+--  addSmell leader
 
 -- | Determine and process the next player command. The argument is the last
 -- abort message due to running, if any.
-playerCommand :: forall m. MonadAction m => Msg -> m ()
+playerCommand :: forall m. MonadClient m => Msg -> m ()
 playerCommand msgRunAbort = do
   -- The frame state is now Push.
   kmPush <- case msgRunAbort of
@@ -260,7 +265,6 @@ playerCommand msgRunAbort = do
               (t, arena) <- if (Just km == lastKey)
                 then cmdSemantics Command.Clear
                 else cmdSemantics cmd
-              modifyGlobal $ updateSelectedArena arena
               return t
             Nothing -> let msgKey = "unknown command <" <> K.showKM km <> ">"
                        in abortWith msgKey

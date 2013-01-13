@@ -114,7 +114,7 @@ type ClientDict = IM.IntMap ClientChan
 -- | Channels from client-server communication.
 data ClientChan = ClientChan
   { toClient   :: Chan CmdCli
-  , fromClient :: Chan CmdSer
+  , toServer :: Chan CmdSer
   }
 
 instance Show ClientChan where
@@ -462,7 +462,7 @@ instance Binary StateClient where
     let shistory = emptyHistory
         sper = M.empty
         slastKey = Nothing
-        schan = undefined
+        schan = undefined  -- overwritten by recreated channels
         sdebugCli = defDebugModeCli
     return StateClient{..}
 

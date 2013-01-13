@@ -10,6 +10,7 @@ import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Actor
+import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Item
@@ -21,7 +22,6 @@ import Game.LambdaHack.Point
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 import Game.LambdaHack.VectorXY
-import Game.LambdaHack.Content.ItemKind
 
 -- | Abstract syntax of client commands.
 data CmdCli =
@@ -30,6 +30,7 @@ data CmdCli =
   | ShowItemsCli Discoveries Msg [Item]
   | ShowMsgCli Msg
   | AnimateDeathCli ActorId
+  | CarryOnCli
   | SelectLeaderCli ActorId LevelId
   | InvalidateArenaCli LevelId
   | DiscoverCli (Kind.Id ItemKind) Item
@@ -45,7 +46,7 @@ data CmdCli =
   | AnimateBlockCli ActorId ActorId MU.Part
   | DisplaceCli ActorId ActorId
   | ShowSlidesCli Slideshow
-  | NullReport
+  | NullReportCli
   deriving Show
 
 -- | Abstract syntax of server commands.
@@ -62,7 +63,7 @@ data CmdSer =
   | GameRestartSer
   | GameSaveSer
   | CfgDumpSer
-  | ClientReply Bool
+  | ResponseSer Bool
   deriving Show
 
 -- | Abstract syntax of player commands.

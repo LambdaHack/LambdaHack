@@ -12,6 +12,7 @@ module Game.LambdaHack.Action
   , MonadServer( putGlobal, modifyGlobal, putServer, modifyServer )
   , MonadClient( putClient, modifyClient, putLocal, modifyLocal )
   , MonadAction
+  , liftIO -- TODO
     -- * Various ways to abort action
   , abort, abortWith, abortIfWith, neverMind
     -- * Abort exception handlers
@@ -29,13 +30,12 @@ module Game.LambdaHack.Action
     -- * Draw frames
   , drawOverlay
     -- * Turn init operations
-  , withPerception, remember, displayPush
+  , withPerception, remember, rememberLevel, displayPush
     -- * Assorted primitives
   , saveGameBkp, dumpCfg, endOrLoop, frontendName, startFrontend
   , switchGlobalSelectedSide
   , debug
-  , cmdCli, sendToPlayers, sendToClients, askClient, sendToPl
-  , itemOverlay, selectLeader, setTgtId, stopRunning
+  , sendToPlayers, sendToClients, sendToClient, askClient, sendToPl
   ) where
 
 import Control.Concurrent
@@ -44,16 +44,12 @@ import Control.Monad
 import Control.Monad.Reader.Class
 import qualified Control.Monad.State as St
 import Control.Monad.Writer.Strict (WriterT, tell, lift)
-import Data.Function
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
-import Data.List
 import qualified Data.Map as M
 import Data.Maybe
-import Data.Monoid (mempty)
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified NLP.Miniutter.English as MU
 import System.Time
 -- import System.IO (hPutStrLn, stderr) -- just for debugging
 
@@ -64,9 +60,8 @@ import qualified Game.LambdaHack.Action.Save as Save
 import Game.LambdaHack.ActionClass
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Animation
+import Game.LambdaHack.Animation (SingleFrame, Frames)
 import Game.LambdaHack.Binding
-import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Config
 import Game.LambdaHack.Command
 import Game.LambdaHack.Content.FactionKind
@@ -358,11 +353,10 @@ remember = do
   lvl <- getsGlobal getArena
   faction <- getsGlobal sfaction
   pers <- ask
-  side <- getsGlobal sside
   let f fid =
         let per = pers IM.! fid M.! arena
         in RememberPerCli arena per lvl faction
-  void $ sendToClients side f
+  sendToClients f
 
 -- | Update faction memory at the given set of positions.
 rememberLevel :: Kind.COps -> IS.IntSet -> Level -> Level -> Level
@@ -459,7 +453,7 @@ endOrLoop handleTurn = do
       liftIO $ takeMVar mv  -- wait until saved
       -- Do nothing, that is, quit the game loop.
     (Nothing, Just (showScreens, status@Killed{})) -> do
-      nullR <- askClient side NullReport
+      nullR <- askClient side NullReportCli
       unless nullR $ do
         -- Sisplay any leftover report. Suggest it could be the cause of death.
         sendToPl [] $ ConfirmMoreBWCli "Who would have thought?"
@@ -472,13 +466,13 @@ endOrLoop handleTurn = do
         )
         (do
            when showScreens $ handleScores True status total
-           go <- sendToPlayers [] side
+           go <- askClient side
                  $ ConfirmMoreBWCli "Next time will be different."
            when (not go) $ abortWith "You could really win this time."
            restartGame handleTurn
         )
     (Nothing, Just (showScreens, status@Victor)) -> do
-      nullR <- askClient side NullReport
+      nullR <- askClient side NullReportCli
       unless nullR $ do
         -- Sisplay any leftover report. Suggest it could be the master move.
         sendToPl [] $ ConfirmMoreFullCli "Brilliant, wasn't it?"
@@ -503,7 +497,7 @@ restartGame handleTurn = do
         k : _ -> IM.adjust (\(cli, loc) -> (cli {shistory}, loc)) k dMsg
   putGlobal state
   putServer ser
-  putDict undefined -- d
+  -- TODO: send to each client RestartCli; use d in its code; empty channels?
   saveGameBkp
   handleTurn
 
@@ -555,7 +549,6 @@ gameReset cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
             pers = dungeonPerception cops sconfig (sdebugSer ser) glo
             d = IM.mapWithKey (\side (cli, loc) ->
                                   (cli {sper = pers IM.! side}, loc)) dHist
-
         return (glo, ser, d)
   return $! St.evalState rnd dungeonGen
 
@@ -571,10 +564,13 @@ gameResetAction = liftIO . gameReset
 -- Then create the starting game config from the default config file
 -- and initialize the engine with the starting session.
 startFrontend :: (MonadActionIO m, MonadActionRO m)
-              => (m () -> FrontendSession -> Binding -> ConfigUI -> Pers
-                  -> State -> StateServer -> StateDict -> IO ())
-              -> Kind.COps -> m () -> IO ()
-startFrontend executor !copsSlow@Kind.COps{corule, cotile=tile} handleTurn = do
+              => (m () -> Pers -> State -> StateServer -> ClientDict -> IO ())
+                 -> (m () -> FrontendSession -> Binding -> ConfigUI
+                     -> State -> StateClient -> IO ())
+              -> Kind.COps -> m () -> m () -> IO ()
+startFrontend executor executorCli
+              !copsSlow@Kind.COps{corule, cotile=tile}
+              handleTurn handleClient = do
   -- Compute and insert auxiliary optimized components into game content,
   -- to be used in time-critical sections of the code.
   let ospeedup = Tile.speedup tile
@@ -589,23 +585,26 @@ startFrontend executor !copsSlow@Kind.COps{corule, cotile=tile} handleTurn = do
       font = configFont sconfigUI
       -- In addition to handling the turn, if the game ends or exits,
       -- handle the history and backup savefile.
-      handleGame = do
+      handleServer = do
         handleTurn
         d <- undefined -- getDict
         -- Save history often, at each game exit, in case of crashes.
         liftIO $ Save.rmBkpSaveHistory sconfig sconfigUI d
-      loop sfs = start executor sfs cops sbinding sconfig sconfigUI handleGame
+      loop sfs = start executor executorCli
+                       sfs cops sbinding sconfig sconfigUI
+                       handleServer handleClient
   startup font loop
 
 -- | Either restore a saved game, or setup a new game.
 -- Then call the main game loop.
 start :: MonadActionRoot m
-      => (m () -> FrontendSession -> Binding -> ConfigUI -> Pers
-          -> State -> StateServer -> StateDict -> IO ())
+      => (m () -> Pers -> State -> StateServer -> ClientDict -> IO ())
+      -> (m () -> FrontendSession -> Binding -> ConfigUI
+          -> State -> StateClient -> IO ())
       -> FrontendSession -> Kind.COps -> Binding -> Config -> ConfigUI
-      -> m () -> IO ()
-start executor sfs cops@Kind.COps{corule}
-      sbinding sconfig sconfigUI handleGame = do
+      -> m () -> m () -> IO ()
+start executor executorCli sfs cops@Kind.COps{corule}
+      sbinding sconfig sconfigUI handleServer handleClient = do
   let title = rtitle $ Kind.stdRuleset corule
       pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
   restored <- Save.restoreGame sconfig sconfigUI pathsDataFile title
@@ -623,9 +622,20 @@ start executor sfs cops@Kind.COps{corule}
         [] -> dMsg  -- only robots play
         k : _ -> IM.adjust (\(cli, loc) -> (cli {shistory}, loc)) k dMsg
       pers = dungeonPerception cops sconfig (sdebugSer ser) glo
-      d = IM.mapWithKey (\side (cli, loc) ->
-                            (cli {sper = pers IM.! side}, loc)) dHist
-  executor handleGame sfs sbinding sconfigUI pers glo ser d
+      dPer = IM.mapWithKey (\side (cli, loc) ->
+                               (cli {sper = pers IM.! side}, loc)) dHist
+      addChan (k, (cli, loc)) = do
+        toClient <- newChan
+        toServer <- newChan
+        let schan = ClientChan {toClient, toServer}
+        return (k, (cli {schan}, loc))
+  dAssocs <- mapM addChan $ IM.toAscList dPer
+  let dCliLoc = IM.fromAscList dAssocs
+      d = IM.map (\(cli, _) -> schan cli) dCliLoc
+  let forkClient (cli, loc) = do
+        forkIO $ executorCli handleClient sfs sbinding sconfigUI loc cli
+  mapM_ forkClient $ IM.elems dCliLoc
+  executor handleServer pers glo ser d
 
 switchGlobalSelectedSide :: MonadServer m => FactionId -> m ()
 switchGlobalSelectedSide =
@@ -635,322 +645,37 @@ switchGlobalSelectedSide =
 debug :: MonadActionRoot m => Text -> m ()
 debug _x = return () -- liftIO $ hPutStrLn stderr _x
 
--- TODO: move somewhere
-
--- | The semantics of client commands.
-cmdCli :: MonadClient m => CmdCli -> m Bool
-cmdCli cmd = case cmd of
-  PickupCli aid i ni -> pickupCli aid i ni >> return True  -- TODO: GADT?
-  ApplyCli actor verb item -> do
-    Kind.COps{coactor, coitem} <- getsLocal scops
-    disco <- getsLocal sdisco
-    body <- getsLocal (getActorBody actor)
-    let msg = makeSentence
-          [ MU.SubjectVerbSg (partActor coactor body) verb
-          , partItemNWs coitem disco item ]
-    msgAdd msg >> return True
-  ShowItemsCli discoS msg items -> do
-    io <- itemOverlay discoS True items
-    slides <- overlayToSlideshow msg io
-    getManyConfirms [] slides
-  ShowMsgCli msg ->
-    msgAdd msg >> return True
-  ShowSlidesCli slides -> do
-    getManyConfirms [] slides
-  AnimateDeathCli aid -> animateDeathCli aid
-  SelectLeaderCli aid lid -> selectLeader aid lid
-  InvalidateArenaCli lid -> invalidateArenaCli lid
-  DiscoverCli ik i -> discoverCli ik i
-  ConfirmYesNoCli msg -> do
-    go <- displayYesNo msg
-    recordHistory  -- Prevent repeating the ending msgs.
-    return go
-  ConfirmMoreBWCli msg -> do
-    go <- displayMore ColorBW msg
-    recordHistory  -- Prevent repeating the ending msgs.
-    return go
-  ConfirmMoreFullCli msg -> do
-    go <- displayMore ColorFull msg
-    recordHistory  -- Prevent repeating the ending msgs.
-    return go
-  RememberCli arena vis lvl -> do
-    cops <- getsLocal scops
-    let updArena loc =
-          let clvl = sdungeon loc M.! arena
-              nlvl = rememberLevel cops vis lvl clvl
-          in updateDungeon (M.insert arena nlvl) loc
-    modifyLocal updArena
-    return True
-  RememberPerCli arena per lvl faction -> do
-    void $ cmdCli $ RememberCli arena (totalVisible per) lvl
-    modifyClient $ \cli -> cli {sper = M.insert arena per (sper cli)}
-    modifyLocal $ updateFaction (const faction)
-    return True
-  SwitchLevelCli aid arena pbody items -> do
-    arenaOld <- getsLocal sarena
-    assert (arenaOld /= arena) $ do
-      modifyClient $ invalidateSelectedLeader
-      modifyLocal $ updateSelectedArena arena
-      modifyLocal (insertActor aid pbody)
-      modifyLocal (updateActorItem aid (const items))
-      loc <- getLocal
-      modifyClient $ updateSelectedLeader aid loc
-      return True
-  EffectCli msg poss deltaHP block -> do
-    msgAdd msg
-    cli <- getClient
-    loc <- getLocal
-    per <- askPerception
-    -- Try to show an animation. Sometimes, e.g., when HP is unchaged,
-    -- the animation will not be shown, but a single frame with @msg@ will.
-    let anim | deltaHP > 0 =
-          twirlSplash poss Color.BrBlue Color.Blue
-             | deltaHP < 0 && block =
-          blockHit    poss Color.BrRed  Color.Red
-             | deltaHP < 0 && not block =
-          twirlSplash poss Color.BrRed  Color.Red
-             | otherwise = mempty
-        animFrs = animate cli loc per anim
-    displayFramesPush $ Nothing : animFrs
-    return True
-  ProjectCli spos source consumed -> do
-    Kind.COps{coactor, coitem} <- getsLocal scops
-    per <- askPerception
-    disco <- getsLocal sdisco
-    sm <- getsLocal (getActorBody source)
-    let svisible = spos `IS.member` totalVisible per
-        subject =
-          if svisible
-          then sm
-          else sm {bname = Just "somebody"}
-        msg = makeSentence
-              [ MU.SubjectVerbSg (partActor coactor subject) "aim"
-              , partItemNWs coitem disco consumed ]
-    msgAdd msg
-    return True
-  ShowAttackCli source target verb stack say -> do
-    Kind.COps{ coactor, coitem } <- getsLocal scops
-    per <- askPerception
-    disco <- getsLocal sdisco
-    smRaw <- getsLocal (getActorBody source)
-    tmRaw <- getsLocal (getActorBody target)
-    let spos = bpos smRaw
-        tpos = bpos tmRaw
-        svisible = spos `IS.member` totalVisible per
-        tvisible = tpos `IS.member` totalVisible per
-        sm | svisible  = smRaw
-           | otherwise = smRaw {bname = Just "somebody"}
-        tm | tvisible  = tmRaw
-           | otherwise = tmRaw {bname = Just "somebody"}
-    -- The msg describes the source part of the action.
-    -- TODO: right now it also describes the victim and weapon;
-    -- perhaps, when a weapon is equipped, just say "you hit"
-    -- or "you miss" and then "nose dies" or "nose yells in pain".
-    let msg = makeSentence $
-          [ MU.SubjectVerbSg (partActor coactor sm) verb
-          , partActor coactor tm ]
-          ++ if say
-             then ["with", partItemAW coitem disco stack]
-             else []
-    msgAdd msg
-    return True
-  AnimateBlockCli source target verb -> do
-    Kind.COps{coactor} <- getsLocal scops
-    per <- askPerception
-    smRaw <- getsLocal (getActorBody source)
-    tmRaw <- getsLocal (getActorBody target)
-    let spos = bpos smRaw
-        tpos = bpos tmRaw
-        svisible = spos `IS.member` totalVisible per
-        tvisible = tpos `IS.member` totalVisible per
-        sm | svisible  = smRaw
-           | otherwise = smRaw {bname = Just "somebody"}
-        tm | tvisible  = tmRaw
-           | otherwise = tmRaw {bname = Just "somebody"}
-        msgMiss = makeSentence
-          [ MU.SubjectVerbSg (partActor coactor sm) "try to"
-          , verb MU.:> ", but"
-          , MU.SubjectVerbSg (partActor coactor tm) "block"
-          ]
-    msgAdd msgMiss
-    cli <- getClient
-    loc <- getLocal
-    let poss = (tpos, spos)
-        anim = blockMiss poss
-        animFrs = animate cli loc per anim
-    displayFramesPush $ Nothing : animFrs
-    return True
-  DisplaceCli source target -> do
-    Kind.COps{coactor} <- getsLocal scops
-    per <- askPerception
-    sm <- getsLocal (getActorBody source)
-    tm <- getsLocal (getActorBody target)
-    let spos = bpos sm
-        tpos = bpos tm
-        msg = makeSentence
-          [ MU.SubjectVerbSg (partActor coactor sm) "displace"
-          , partActor coactor tm ]
-    msgAdd msg
-    cli <- getClient
-    loc <- getLocal
-    let poss = (tpos, spos)
-        animFrs = animate cli loc per $ swapPlaces poss
-    displayFramesPush $ Nothing : animFrs
-    return True
-  NullReport -> do
-    StateClient{sreport} <- getClient
-    return $ nullReport sreport
-
-pickupCli :: MonadClient m => ActorId -> Item -> Item -> m ()
-pickupCli aid i ni = do
-  Kind.COps{coactor, coitem} <- getsLocal scops
-  body <- getsLocal (getActorBody aid)
-  side <- getsLocal sside
-  disco <- getsLocal sdisco
-  if bfaction body == side
-    then msgAdd $ makePhrase [ letterLabel (jletter ni)
-                             , partItemNWs coitem disco ni ]
-    else msgAdd $ makeSentence
-           [ MU.SubjectVerbSg (partActor coactor body) "pick up"
-           , partItemNWs coitem disco i ]  -- single, not 'ni'
-
-animateDeathCli :: MonadClient m => ActorId -> m Bool
-animateDeathCli target = do
-  Kind.COps{coactor} <- getsLocal scops
-  pbody <- getsLocal $ getActorBody target
-  side <- getsLocal sside
-  msgAdd $ makeSentence [MU.SubjectVerbSg (partActor coactor pbody) "die"]
-  go <- if bfaction pbody == side
-        then displayMore ColorBW ""
-        else return False
-  recordHistory  -- Prevent repeating the "die" msgs.
-  cli <- getClient
-  loc <- getLocal
-  per <- askPerception
-  let animFrs = animate cli loc per $ deathBody (bpos pbody)
-  displayFramesPush animFrs
-  when (bfaction pbody == side) $
-    msgAdd "The survivors carry on."  -- TODO: reset messages at game over not to display it if there are no survivors.
-  return go
-
--- | Make the item known to the player.
-discoverCli :: MonadClient m => Kind.Id ItemKind -> Item -> m Bool
-discoverCli ik i = do
-  Kind.COps{coitem} <- getsLocal scops
-  oldDisco <- getsLocal sdisco
-  let ix = jkindIx i
-  if (ix `M.member` oldDisco)
-    then return False
-    else do
-      modifyLocal (updateDisco (M.insert ix ik))
-      disco <- getsLocal sdisco
-      let (object1, object2) = partItem coitem oldDisco i
-          msg = makeSentence
-            [ "the", MU.SubjectVerbSg (MU.Phrase [object1, object2])
-                                      "turn out to be"
-            , partItemAW coitem disco i ]
-      msgAdd msg
-      return True
-
--- TODO: move somewhere
-
-sendToPlayers :: MonadAction m => [Point] -> FactionId -> CmdCli -> m Bool
-sendToPlayers poss fid cmd = do
+sendToPlayers :: MonadAction m => [Point] -> CmdCli -> m ()
+sendToPlayers poss cmd = do
   arena <- getsGlobal sarena
   glo <- getGlobal
   let f (cfid, perF) =
-        if (isPlayerFaction glo cfid)
-        then do
+        when (isPlayerFaction glo cfid) $ do
           let perceived =
                 null poss
                 || any (`IS.member` totalVisible (perF M.! arena)) poss
-          b <- if perceived
-            then askClient cfid cmd
-            else return False
-          return (cfid, b)
-        else return (cfid, False)
+          when perceived $ sendToClient cfid cmd
   pers <- ask
-  lb <- mapM f $ IM.toList pers
-  return $! fromMaybe True $! lookup fid lb
+  mapM_ f $ IM.toList pers
 
 sendToPl :: MonadAction m => [Point] -> CmdCli -> m ()
 sendToPl poss cmd = do
-  side <- getsGlobal sside
-  void $ sendToPlayers poss side cmd
+  sendToPlayers poss cmd
 
-sendToClients :: MonadAction m => FactionId -> (FactionId -> CmdCli) -> m Bool
-sendToClients fid cmd = do
+sendToClients :: MonadAction m => (FactionId -> CmdCli) -> m ()
+sendToClients cmd = do
   faction <- getsGlobal sfaction
-  let f cfid = do
-        b <- askClient cfid (cmd cfid)
-        return (cfid, b)
-  lb <- mapM f $ IM.keys faction
-  return $! fromMaybe True $! lookup fid lb
+  let f cfid = sendToClient cfid (cmd cfid)
+  mapM_ f $ IM.keys faction
 
-askClient :: MonadAction m => FactionId -> CmdCli -> m Bool
+sendToClient :: MonadAction m => FactionId -> CmdCli -> m ()
+sendToClient fid cmd = do
+  ClientChan {toClient} <- getsDict (IM.! fid)
+  liftIO $ writeChan toClient cmd
+
+askClient :: MonadAction m => FactionId -> CmdCli -> m Bool -- a, Typeable? Dynamic?
 askClient fid cmd = do
-  side <- getsGlobal sside
-  switchGlobalSelectedSide fid
-  b <- undefined -- cmdCli cmd
-  switchGlobalSelectedSide side
-  return b
-
--- | Create a list of item names.
-itemOverlay :: MonadClientRO m
-            => Discoveries -> Bool -> [Item] -> m Overlay
-itemOverlay disco sorted is = do
-  Kind.COps{coitem} <- getsLocal scops
-  let items | sorted = sortBy (cmpLetterMaybe `on` jletter) is
-            | otherwise = is
-      pr i = makePhrase [ letterLabel (jletter i)
-                        , partItemNWs coitem disco i ]
-             <> " "
-  return $ map pr items
-
--- | Select a faction leader. Switch level, if needed.
--- False, if nothing to do. Should only be invoked as a direct result
--- of a player action (leader death just sets sleader to -1).
-selectLeader :: MonadClient m => ActorId -> LevelId -> m Bool
-selectLeader actor arena = do
-  Kind.COps{coactor} <- getsLocal scops
-  leader <- getsClient getLeader
-  stgtMode <- getsClient stgtMode
-  if Just actor == leader
-    then return False -- already selected
-    else do
-      arenaOld <- getsLocal sarena
-      when (arenaOld /= arena) $ do
-        modifyClient invalidateSelectedLeader
-        modifyLocal $ updateSelectedArena arena
-      loc <- getLocal
-      modifyClient $ updateSelectedLeader actor loc
-      -- Move the cursor, if active, to the new level.
-      when (isJust stgtMode) $ setTgtId arena
-      -- Don't continue an old run, if any.
-      stopRunning
-      -- Announce.
-      pbody <- getsLocal $ getActorBody actor
-      msgAdd $ makeSentence [partActor coactor pbody, "selected"]
-      return True
-
-invalidateArenaCli :: MonadClient m => LevelId -> m Bool
-invalidateArenaCli arena = do
-  arenaOld <- getsLocal sarena
-  if arenaOld == arena
-    then return False
-    else do
-      modifyClient invalidateSelectedLeader
-      modifyLocal $ updateSelectedArena arena
-      return True
-
-stopRunning :: MonadClient m => m ()
-stopRunning = modifyClient (\ cli -> cli { srunning = Nothing })
-
-setTgtId :: MonadClient m => LevelId -> m ()
-setTgtId nln = do
-  stgtMode <- getsClient stgtMode
-  case stgtMode of
-    Just (TgtAuto _) ->
-      modifyClient $ \cli -> cli {stgtMode = Just (TgtAuto nln)}
-    _ ->
-      modifyClient $ \cli -> cli {stgtMode = Just (TgtExplicit nln)}
+  ClientChan {toClient, toServer} <- getsDict (IM.! fid)
+  liftIO $ writeChan toClient cmd
+  ResponseSer a <- liftIO $ readChan toServer
+  return a

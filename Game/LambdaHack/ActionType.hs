@@ -6,9 +6,7 @@ module Game.LambdaHack.ActionType
   ( FunAction, Action, executor, FunActionCli, ActionCli, executorCli
   ) where
 
-import Control.Arrow (first, second)
 import Control.Monad.Reader.Class
-import qualified Data.IntMap as IM
 import qualified Data.Text as T
 
 import Game.LambdaHack.Action

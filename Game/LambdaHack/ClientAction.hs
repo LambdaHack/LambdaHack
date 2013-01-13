@@ -10,6 +10,7 @@ import qualified Paths_LambdaHack as Self (version)
 
 import Control.Monad
 import Control.Monad.Writer.Strict (WriterT, lift, tell)
+import Data.Function
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import Data.List
@@ -153,6 +154,18 @@ doLook = do
      slides <- overlayToSlideshow (mode <+> lookMsg) io
      tell slides
 
+-- | Create a list of item names.
+itemOverlay :: MonadClientRO m
+            => Discoveries -> Bool -> [Item] -> m Overlay
+itemOverlay disco sorted is = do
+  Kind.COps{coitem} <- getsLocal scops
+  let items | sorted = sortBy (cmpLetterMaybe `on` jletter) is
+            | otherwise = is
+      pr i = makePhrase [ letterLabel (jletter i)
+                        , partItemNWs coitem disco i ]
+             <> " "
+  return $ map pr items
+
 -- GameSave doesn't take time, but needs the server, so it's defined elsewhere.
 
 -- ** Inventory
@@ -285,6 +298,15 @@ tgtAscend k = do
       when (nln == tgtId) $ abortWith "no more levels in this direction"
       setTgtId nln
   doLook
+
+setTgtId :: MonadClient m => LevelId -> m ()
+setTgtId nln = do
+  stgtMode <- getsClient stgtMode
+  case stgtMode of
+    Just (TgtAuto _) ->
+      modifyClient $ \cli -> cli {stgtMode = Just (TgtAuto nln)}
+    _ ->
+      modifyClient $ \cli -> cli {stgtMode = Just (TgtExplicit nln)}
 
 -- ** EpsIncr
 
@@ -454,6 +476,35 @@ partyAfterLeader leader = do
       i = fromMaybe (-1) $ findIndex ((== Just leader) . fmap snd) hs
       (lt, gt) = (take i hs, drop (i + 1) hs)
   return $ catMaybes gt ++ catMaybes lt
+
+-- | Select a faction leader. Switch level, if needed.
+-- False, if nothing to do. Should only be invoked as a direct result
+-- of a player action (leader death just sets sleader to -1).
+selectLeader :: MonadClient m => ActorId -> LevelId -> m Bool
+selectLeader actor arena = do
+  Kind.COps{coactor} <- getsLocal scops
+  leader <- getsClient getLeader
+  stgtMode <- getsClient stgtMode
+  if Just actor == leader
+    then return False -- already selected
+    else do
+      arenaOld <- getsLocal sarena
+      when (arenaOld /= arena) $ do
+        modifyClient invalidateSelectedLeader
+        modifyLocal $ updateSelectedArena arena
+      loc <- getLocal
+      modifyClient $ updateSelectedLeader actor loc
+      -- Move the cursor, if active, to the new level.
+      when (isJust stgtMode) $ setTgtId arena
+      -- Don't continue an old run, if any.
+      stopRunning
+      -- Announce.
+      pbody <- getsLocal $ getActorBody actor
+      msgAdd $ makeSentence [partActor coactor pbody, "selected"]
+      return True
+
+stopRunning :: MonadClient m => m ()
+stopRunning = modifyClient (\ cli -> cli { srunning = Nothing })
 
 -- ** HeroBack
 

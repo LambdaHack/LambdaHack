@@ -23,7 +23,6 @@ import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
-import Game.LambdaHack.Draw
 import Game.LambdaHack.DungeonState
 import qualified Game.LambdaHack.Effect as Effect
 import Game.LambdaHack.Faction
@@ -72,8 +71,7 @@ effectToAction :: MonadAction m
 effectToAction effect verbosity source target power block = do
   oldS <- getsGlobal (getActorBody target)
   oldT <- getsGlobal (getActorBody target)
-  let side = bfaction oldT
-      oldHP = bhp oldT
+  let oldHP = bhp oldT
   (b, msg) <- eff effect verbosity source target power
   -- We assume if targed moved to a level, which is not the current level,
   -- his HP is unchanged.
@@ -82,7 +80,7 @@ effectToAction effect verbosity source target power block = do
            then getsGlobal (bhp . getActorBody target)
            else return oldHP
   -- Target part of message sent here, so only target visibility checked.
-  void $ sendToPlayers [bpos oldT] side
+  void $ sendToPlayers [bpos oldT]
          $ EffectCli msg (bpos oldT, bpos oldS) (newHP - oldHP) block
   -- TODO: use sendToPlayers2 and to those that don't see the pos show that:
   -- when b $ msgAdd "You hear some noises."
@@ -279,7 +277,7 @@ effLvlGoUp aid k = do
         modifyGlobal (insertActor aid pbody)
         modifyGlobal (updateActorItem aid (const bitems))
         -- Reset level and leader for all factions.
-        void $ sendToClients (bfaction pbody) $ \fid ->
+        void $ sendToClients $ \fid ->
           if fid /= bfaction pbody
           then InvalidateArenaCli nln
           else SwitchLevelCli aid nln pbody bitems
@@ -418,7 +416,9 @@ checkPartyDeath target = do
   bitems <- getsGlobal (getActorItem target)
   modifyGlobal $ updateArena $ dropItemsAt bitems $ bpos pbody
   let fid = bfaction pbody
-      animateDeath = sendToPlayers [bpos pbody] fid (AnimateDeathCli target)
+      animateDeath = do
+        sendToPlayers [bpos pbody] (AnimateDeathCli target)
+        askClient fid $ CarryOnCli
       animateGameOver = do
         go <- animateDeath
         modifyGlobal $ updateActorBody target $ \b -> b {bsymbol = Just '%'}
