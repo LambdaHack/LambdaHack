@@ -56,7 +56,7 @@ import Game.LambdaHack.Utils.Assert
 -- every fixed number of time units, e.g., monster generation.
 -- Run the leader and other actors moves. Eventually advance the time
 -- and repeat.
-handleTurn :: MonadAction m => m ()
+handleTurn :: MonadServerChan m => m ()
 handleTurn = do
   debug "handleTurn"
   time <- getsGlobal getTime  -- the end time of this clip, inclusive
@@ -78,7 +78,7 @@ handleTurn = do
 -- if the player requests to see it.
 -- | If no actor of a non-spawning faction on the level,
 -- switch levels. If no level to switch to, end game globally.
-checkEndGame :: MonadAction m => m ()
+checkEndGame :: MonadServerChan m => m ()
 checkEndGame = do
   -- Actors on the current level go first so that we don't switch levels
   -- unnecessarily.
@@ -100,7 +100,7 @@ checkEndGame = do
 -- We start by updating perception, because the selected level of dungeon
 -- has changed since last time (every change, whether by player or AI
 -- or @generateMonster@ is followd by a call to @handleActors@).
-handleActors :: MonadAction m
+handleActors :: MonadServerChan m
              => Time  -- ^ start time of current subclip, exclusive
              -> m ()
 handleActors subclipStart = withPerception $ do
@@ -181,7 +181,7 @@ handleActors subclipStart = withPerception $ do
               handleActors subclipStart
 
 -- | Handle the move of a single monster.
-handleAI :: MonadAction m => ActorId -> m ()
+handleAI :: MonadServerChan m => ActorId -> m ()
 handleAI actor = do
   stratTarget <- targetStrategy actor
   -- Choose a target from those proposed by AI for the actor.
@@ -200,7 +200,7 @@ handleAI actor = do
   join $ rndToAction $ frequency $ bestVariant $ stratAction
 
 -- | Advance (or rewind) the move time for the given actor.
-advanceTime :: MonadAction m => ActorId -> m ()
+advanceTime :: MonadServer m => ActorId -> m ()
 advanceTime actor = do
   Kind.COps{coactor} <- getsGlobal scops
   let upd m@Actor{btime} = m {btime = timeAddFromSpeed coactor m btime}

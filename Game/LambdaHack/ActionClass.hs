@@ -87,13 +87,13 @@ instance (Monoid a, MonadServer m) => MonadServer (WriterT a m) where
   modifyServer = lift . modifyServer
   putServer    = lift . putServer
 
-class (MonadActionIO m, MonadServer m) => MonadAction m where
+class (MonadActionIO m, MonadServer m) => MonadServerChan m where
   getDict      :: m ClientDict
   getsDict     :: (ClientDict -> a) -> m a
   modifyDict   :: (ClientDict -> ClientDict) -> m ()
   putDict      :: ClientDict -> m ()
 
-instance (Monoid a, MonadAction m) => MonadAction (WriterT a m) where
+instance (Monoid a, MonadServerChan m) => MonadServerChan (WriterT a m) where
   getDict      = lift getDict
   getsDict     = lift . getsDict
   modifyDict   = lift . modifyDict

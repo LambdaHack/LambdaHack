@@ -15,9 +15,8 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Action
--- import Game.LambdaHack.Action hiding (MonadAction, MonadActionRO, MonadClient,
---                               MonadClientRO)
+import Game.LambdaHack.Action hiding (MonadClient, MonadClientChan,
+                               MonadClientRO)
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Command
@@ -68,7 +67,7 @@ cfgDumpSer = do
 -- ** ApplySer
 
 -- TODO: split into ApplyInvSer and ApplyFloorSer
-applySer :: MonadAction m   -- MonadServer m
+applySer :: MonadServerChan m   -- MonadServer m
          => ActorId  -- ^ actor applying the item (is on current level)
          -> MU.Part  -- ^ how the applying is called
          -> Item     -- ^ the item to be applied
@@ -115,7 +114,7 @@ removeFromPos i pos = do
 
 -- ** ProjectSer
 
-projectSer :: MonadAction m
+projectSer :: MonadServerChan m
            => ActorId  -- ^ actor projecting the item (is on current lvl)
            -> Point    -- ^ target position of the projectile
            -> MU.Part  -- ^ how the projecting is called
@@ -172,7 +171,7 @@ projectSer source tpos _verb item = do
 -- ** TriggerSer
 
 -- | Perform the action specified for the tile in case it's triggered.
-triggerSer :: MonadAction m => ActorId -> Point -> m ()
+triggerSer :: MonadServerChan m => ActorId -> Point -> m ()
 triggerSer aid dpos = do
   Kind.COps{cotile=Kind.Ops{okind, opick}} <- getsGlobal scops
   lvl <- getsGlobal getArena
@@ -196,7 +195,7 @@ triggerSer aid dpos = do
 
 -- * PickupSer
 
-pickupSer :: MonadAction m => ActorId -> Item -> Char -> m ()
+pickupSer :: MonadServerChan m => ActorId -> Item -> Char -> m ()
 pickupSer aid i l = do
   side <- getsGlobal sside
   body <- getsGlobal (getActorBody aid)
@@ -239,7 +238,7 @@ waitSer actor = do
 -- is authorized to check if a move is legal and it needs full context
 -- for that, e.g., the initial actor position to check if melee attack
 -- does not try to reach to a distant tile.
-moveSer :: MonadAction m => ActorId -> Vector -> m ()
+moveSer :: MonadServerChan m => ActorId -> Vector -> m ()
 moveSer actor dir = do
   cops@Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getsGlobal scops
   lvl <- getsGlobal getArena
@@ -269,7 +268,7 @@ moveSer actor dir = do
 -- For instance, an actor embedded in a wall can be attacked from
 -- an adjacent position. This function is analogous to projectGroupItem,
 -- but for melee and not using up the weapon.
-actorAttackActor :: MonadAction m => ActorId -> ActorId -> m ()
+actorAttackActor :: MonadServerChan m => ActorId -> ActorId -> m ()
 actorAttackActor source target = do
   sm <- getsGlobal (getActorBody source)
   tm <- getsGlobal (getActorBody target)
@@ -317,7 +316,7 @@ actorAttackActor source target = do
         else performHit False
 
 -- | Search for hidden doors.
-search :: MonadAction m => ActorId -> m ()
+search :: MonadServerChan m => ActorId -> m ()
 search aid = do
   Kind.COps{coitem, cotile} <- getsGlobal scops
   lvl <- getsGlobal getArena
@@ -353,7 +352,7 @@ search aid = do
 
 -- TODO: bumpTile tpos F.Openable
 -- | An actor opens a door.
-actorOpenDoor :: MonadAction m => ActorId -> Vector -> m ()
+actorOpenDoor :: MonadServerChan m => ActorId -> Vector -> m ()
 actorOpenDoor actor dir = do
   Kind.COps{cotile} <- getsGlobal scops
   lvl<- getsGlobal getArena
@@ -374,7 +373,7 @@ actorOpenDoor actor dir = do
 -- ** RunSer
 
 -- | Actor moves or swaps position with others or opens doors.
-runSer :: MonadAction m => ActorId -> Vector -> m ()
+runSer :: MonadServerChan m => ActorId -> Vector -> m ()
 runSer actor dir = do
   cops <- getsGlobal scops
   lvl <- getsGlobal getArena
@@ -397,7 +396,7 @@ runSer actor dir = do
           actorOpenDoor actor dir
 
 -- | When an actor runs (not walks) into another, they switch positions.
-displaceActor :: MonadAction m => ActorId -> ActorId -> m ()
+displaceActor :: MonadServerChan m => ActorId -> ActorId -> m ()
 displaceActor source target = do
   sm <- getsGlobal (getActorBody source)
   tm <- getsGlobal (getActorBody target)

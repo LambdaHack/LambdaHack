@@ -65,7 +65,7 @@ focusIfOurs _target = do
 -- Both actors are on the current level and can be the same actor.
 -- The boolean result indicates if the effect was spectacular enough
 -- for the actors to identify it (and the item that caused it, if any).
-effectToAction :: MonadAction m
+effectToAction :: MonadServerChan m
                => Effect.Effect -> Int -> ActorId -> ActorId -> Int -> Bool
                -> m Bool
 effectToAction effect verbosity source target power block = do
@@ -90,7 +90,7 @@ effectToAction effect verbosity source target power block = do
 -- | The boolean part of the result says if the ation was interesting
 -- and the string part describes how the target reacted
 -- (not what the source did).
-eff :: MonadAction m => Effect.Effect -> Int -> ActorId -> ActorId -> Int
+eff :: MonadServerChan m => Effect.Effect -> Int -> ActorId -> ActorId -> Int
     -> m (Bool, Text)
 eff Effect.NoEffect _ _ _ _ = nullEffect
 eff Effect.Heal _ _source target power = do
@@ -218,7 +218,7 @@ nullEffect = return (False, "Nothing happens.")
 
 -- TODO: refactor with actorAttackActor or perhaps displace the other
 -- actor or swap positions with it, instead of squashing.
-squashActor :: MonadAction m => ActorId -> ActorId -> m ()
+squashActor :: MonadServerChan m => ActorId -> ActorId -> m ()
 squashActor source target = do
   Kind.COps{{-coactor,-} coitem=Kind.Ops{okind, ouniqGroup}} <- getsGlobal scops
 --  sm <- getsGlobal (getActorBody source)
@@ -241,7 +241,7 @@ squashActor source target = do
   assert (not (memActor target s) `blame` (source, target, "not killed")) $
     return ()
 
-effLvlGoUp :: MonadAction m => ActorId -> Int -> m ()
+effLvlGoUp :: MonadServerChan m => ActorId -> Int -> m ()
 effLvlGoUp aid k = do
   pbodyCurrent <- getsGlobal $ getActorBody aid
   bitems <- getsGlobal $ getActorItem aid
@@ -305,7 +305,7 @@ effLvlGoUp aid k = do
         saveGameBkp
 
 -- | The leader leaves the dungeon.
-fleeDungeon :: MonadAction m => m ()
+fleeDungeon :: MonadServerChan m => m ()
 fleeDungeon = do
   Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsGlobal scops
   glo <- getGlobal
@@ -338,7 +338,7 @@ fleeDungeon = do
 
 -- | The source actor affects the target actor, with a given item.
 -- If the event is seen, the item may get identified.
-itemEffectAction :: MonadAction m
+itemEffectAction :: MonadServerChan m
                  => Int -> ActorId -> ActorId -> Item -> Bool -> m ()
 itemEffectAction verbosity source target item block = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsGlobal scops
@@ -355,14 +355,14 @@ itemEffectAction verbosity source target item block = do
 
 -- TODO: send to all clients that see tpos.
 -- | Make the item known to the leader.
-discover :: MonadAction m => Discoveries -> Item -> m ()
+discover :: MonadServerChan m => Discoveries -> Item -> m ()
 discover discoS i = do
   side <- getsGlobal sside
   let ix = jkindIx i
       ik = discoS M.! ix
   sendToClient side $ DiscoverCli ik i
 
-selectLeaderSer :: MonadAction m => ActorId -> LevelId -> m Bool
+selectLeaderSer :: MonadServerChan m => ActorId -> LevelId -> m Bool
 selectLeaderSer actor lid = do
   side <- getsGlobal sside
   b <- askClient side $ SelectLeaderCli actor lid
@@ -408,7 +408,7 @@ summonMonsters n pos = do
   putServer serN
 
 -- | Remove a dead actor. Check if game over.
-checkPartyDeath :: MonadAction m => ActorId -> m ()
+checkPartyDeath :: MonadServerChan m => ActorId -> m ()
 checkPartyDeath target = do
   pbody <- getsGlobal $ getActorBody target
   Config{configFirstDeathEnds} <- getsServer sconfig
@@ -444,7 +444,7 @@ checkPartyDeath target = do
   -- is recorded for this level.
 
 -- | End game, showing the ending screens, if requested.
-gameOver :: MonadAction m => Bool -> m ()
+gameOver :: MonadServerChan m => Bool -> m ()
 gameOver showEndingScreens = do
   arena <- getsGlobal sarena
   let upd f = f {gquit = Just (False, Killed arena)}

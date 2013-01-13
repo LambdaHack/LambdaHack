@@ -117,7 +117,7 @@ reacquireTgt cops actor btarget glo per factionAbilities =
     (Just . TPos . (me `shift`)) `liftM` moveStrategy cops actor glo Nothing
 
 -- | AI strategy based on actor's sight, smell, intelligence, etc. Never empty.
-actionStrategy :: MonadAction m => ActorId -> m (Strategy (m ()))
+actionStrategy :: MonadServerChan m => ActorId -> m (Strategy (m ()))
 actionStrategy actor = do
   cops@Kind.COps{costrat=Kind.Ops{okind}} <- getsGlobal scops
   glo <- getGlobal
@@ -127,7 +127,7 @@ actionStrategy actor = do
       factionAbilities = sabilities (okind factionAI)
   return $! proposeAction cops actor btarget glo factionAbilities
 
-proposeAction :: forall m. MonadAction m => Kind.COps -> ActorId
+proposeAction :: forall m. MonadServerChan m => Kind.COps -> ActorId
               -> Maybe Target -> State -> [Ability]
               -> Strategy (m ())
 proposeAction cops actor btarget glo factionAbilities =
@@ -171,7 +171,7 @@ proposeAction cops actor btarget glo factionAbilities =
   sumS = msum . map aStrategy
   sumF = msum . map aFrequency
 
-dirToAction :: MonadAction m => ActorId -> Bool -> Vector -> m ()
+dirToAction :: MonadServerChan m => ActorId -> Bool -> Vector -> m ()
 dirToAction actor allowAttacks dir = do
   -- set new direction
   modifyGlobal $ updateActorBody actor $ \ m -> m { bdirAI = Just (dir, 0) }
@@ -187,11 +187,11 @@ dirToAction actor allowAttacks dir = do
       else runSer actor dir
 
 -- | A strategy to always just wait.
-waitBlockNow :: MonadAction m => ActorId -> Strategy (m ())
+waitBlockNow :: MonadServer m => ActorId -> Strategy (m ())
 waitBlockNow actor = returN "wait" $ waitSer actor
 
 -- | A strategy to always just die.
-dieNow :: MonadAction m => ActorId -> Strategy (m ())
+dieNow :: MonadServer m => ActorId -> Strategy (m ())
 dieNow actor = returN "die" $ do  -- TODO: explode if a potion
   bitems <- getsGlobal (getActorItem actor)
   Actor{bpos} <- getsGlobal (getActorBody actor)
@@ -200,7 +200,7 @@ dieNow actor = returN "die" $ do  -- TODO: explode if a potion
 
 -- TODO: move to server; the client and his AI does not have a say in that
 -- | Strategy for dumb missiles.
-track :: MonadAction m => Kind.COps -> ActorId -> State -> Strategy (m ())
+track :: MonadServerChan m => Kind.COps -> ActorId -> State -> Strategy (m ())
 track cops actor glo =
   strat
  where
@@ -225,7 +225,7 @@ track cops actor glo =
       dirToAction actor True d
     Nothing -> reject
 
-pickup :: MonadAction m => ActorId -> State -> Strategy (m ())
+pickup :: MonadServer m => ActorId -> State -> Strategy (m ())
 pickup actor glo =
   lootHere bpos .=> actionPickup
  where
@@ -234,7 +234,7 @@ pickup actor glo =
   lootHere x = not $ L.null $ lvl `atI` x
   actionPickup = returN "pickup" $ undefined -- TODO actorPickupItem actor >>= cmdSer
 
-melee :: MonadAction m => ActorId -> State -> Point -> Strategy (m ())
+melee :: MonadServerChan m => ActorId -> State -> Point -> Strategy (m ())
 melee actor glo fpos =
   foeAdjacent .=> (returN "melee" $ dirToAction actor True dir)
  where
@@ -243,7 +243,7 @@ melee actor glo fpos =
   foeAdjacent = adjacent lxsize bpos fpos
   dir = displacement bpos fpos
 
-rangedFreq :: MonadAction m => Kind.COps -> ActorId -> State -> Point -> Frequency (m ())
+rangedFreq :: MonadServerChan m => Kind.COps -> ActorId -> State -> Point -> Frequency (m ())
 rangedFreq cops actor glo fpos =
   toFreq "throwFreq" $
     if not foesAdj
@@ -288,7 +288,7 @@ rangedFreq cops actor glo fpos =
       -- Wasting weapons and armour would be too cruel to the player.
       isymbol ik `elem` (ritemProject $ Kind.stdRuleset corule)]
 
-toolsFreq :: MonadAction m => Kind.COps -> ActorId -> State -> Frequency (m ())
+toolsFreq :: MonadServerChan m => Kind.COps -> ActorId -> State -> Frequency (m ())
 toolsFreq cops actor glo =
   toFreq "quaffFreq" $ quaffFreq bitems 1 ++ quaffFreq tis 2
  where
@@ -393,7 +393,7 @@ moveStrategy cops actor glo mFoe =
   isSensible l = noFriends l && (accessibleHere l || openableHere l)
   sensible = filter (isSensible . (bpos `shift`)) (moves lxsize)
 
-chase :: MonadAction m => Kind.COps -> ActorId -> State -> (Point, Bool) -> Strategy (m ())
+chase :: MonadServerChan m => Kind.COps -> ActorId -> State -> (Point, Bool) -> Strategy (m ())
 chase cops actor glo foe@(_, foeVisible) =
   -- Target set and we chase the foe or offer null strategy if we can't.
   -- The foe is visible, or we remember his last position.
@@ -401,7 +401,7 @@ chase cops actor glo foe@(_, foeVisible) =
       fight = not foeVisible  -- don't pick fights if the real foe is close
   in dirToAction actor fight `liftM` moveStrategy cops actor glo mFoe
 
-wander :: MonadAction m => Kind.COps -> ActorId -> State -> Strategy (m ())
+wander :: MonadServerChan m => Kind.COps -> ActorId -> State -> Strategy (m ())
 wander cops actor glo =
   -- Target set, but we don't chase the foe, e.g., because we are blocked
   -- or we cannot chase at all.

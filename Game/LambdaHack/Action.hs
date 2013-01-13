@@ -10,7 +10,7 @@ module Game.LambdaHack.Action
   , MonadClientRO( getClient, getsClient, getLocal, getsLocal )
   , MonadServer( putGlobal, modifyGlobal, putServer, modifyServer )
   , MonadClient( putClient, modifyClient, putLocal, modifyLocal )
-  , MonadAction
+  , MonadServerChan
   , MonadClientChan
     -- * Various ways to abort action
   , abort, abortWith, abortIfWith, neverMind
@@ -313,7 +313,7 @@ drawOverlay dm over = do
   return $! draw dm cops per cli loc over
 
 -- -- | Draw the current level using server data, for debugging.
--- drawOverlayDebug :: MonadActionRO m
+-- drawOverlayDebug :: MonadServerRO m
 --                  => ColorMode -> Overlay -> m SingleFrame
 -- drawOverlayDebug dm over = do
 --   cops <- getsLocal scops
@@ -348,7 +348,7 @@ displayPush = do
 -- has to be explicitely lazy and multiple updates have to collapsed
 -- when sending is forced by the server asking a client to perceive
 -- something or to act.
-remember :: MonadAction m => m ()
+remember :: MonadServerChan m => m ()
 remember = do
   arena <- getsGlobal sarena
   lvl <- getsGlobal getArena
@@ -414,7 +414,7 @@ dumpCfg fn = do
 -- Warning: scores are shown during the game,
 -- so we should be careful not to leak secret information through them
 -- (e.g., the nature of the items through the total worth of inventory).
-handleScores :: (MonadActionIO m, MonadAction m)
+handleScores :: (MonadActionIO m, MonadServerChan m)
              => Bool -> Status -> Int
              -> m ()
 handleScores write status total =
@@ -429,7 +429,7 @@ handleScores write status total =
     when (not go) abort
 
 -- | Continue or restart or exit the game.
-endOrLoop :: MonadAction m => m () -> m ()
+endOrLoop :: MonadServerChan m => m () -> m ()
 endOrLoop handleTurn = do
   squit <- getsServer squit
   side <- getsGlobal sside
@@ -486,7 +486,7 @@ endOrLoop handleTurn = do
       restartGame handleTurn
     (Nothing, _) -> handleTurn  -- just continue
 
-restartGame :: MonadAction m => m () -> m ()
+restartGame :: MonadServer m => m () -> m ()
 restartGame handleTurn = do
   -- Take the original config from config file, to reroll RNG, if needed
   -- (the current config file has the RNG rolled for the previous game).
@@ -644,7 +644,7 @@ switchGlobalSelectedSide =
 debug :: MonadActionRoot m => Text -> m ()
 debug _x = return () -- liftIO $ hPutStrLn stderr _x
 
-sendToPlayers :: MonadAction m => [Point] -> CmdCli -> m ()
+sendToPlayers :: MonadServerChan m => [Point] -> CmdCli -> m ()
 sendToPlayers poss cmd = do
   arena <- getsGlobal sarena
   glo <- getGlobal
@@ -657,22 +657,22 @@ sendToPlayers poss cmd = do
   pers <- ask
   mapM_ f $ IM.toList pers
 
-sendToPl :: MonadAction m => [Point] -> CmdCli -> m ()
+sendToPl :: MonadServerChan m => [Point] -> CmdCli -> m ()
 sendToPl poss cmd = do
   sendToPlayers poss cmd
 
-sendToClients :: MonadAction m => (FactionId -> CmdCli) -> m ()
+sendToClients :: MonadServerChan m => (FactionId -> CmdCli) -> m ()
 sendToClients cmd = do
   faction <- getsGlobal sfaction
   let f cfid = sendToClient cfid (cmd cfid)
   mapM_ f $ IM.keys faction
 
-sendToClient :: MonadAction m => FactionId -> CmdCli -> m ()
+sendToClient :: MonadServerChan m => FactionId -> CmdCli -> m ()
 sendToClient fid cmd = do
   ClientChan {toClient} <- getsDict (IM.! fid)
   liftIO $ writeChan toClient cmd
 
-askClient :: (Typeable a, MonadAction m) => FactionId -> CmdCli -> m a
+askClient :: (Typeable a, MonadServerChan m) => FactionId -> CmdCli -> m a
 askClient fid cmd = do
   ClientChan {toClient, toServer} <- getsDict (IM.! fid)
   liftIO $ writeChan toClient cmd
@@ -684,7 +684,7 @@ respondCli a = do
   toServer <- getsChan toServer
   liftIO $ writeChan toServer $ ResponseSer $ toDyn a
 
-readChanSer :: MonadAction m => FactionId -> m CmdSer
+readChanSer :: MonadServerChan m => FactionId -> m CmdSer
 readChanSer fid = do
   ClientChan {toServer} <- getsDict (IM.! fid)
   liftIO $ readChan toServer

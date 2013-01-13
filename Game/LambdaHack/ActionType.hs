@@ -84,7 +84,7 @@ instance MonadServer Action where
   modifyServer f = Action (\_p k _a s ser d -> k s (f ser) d ())
   putServer      = modifyServer . const
 
-instance MonadAction Action where
+instance MonadServerChan Action where
   getDict        = Action (\_p k _a s ser d -> k s ser d d)
   getsDict       = (`fmap` getDict)
   modifyDict f   = Action (\_p k _a s ser d -> k s ser (f d) ())

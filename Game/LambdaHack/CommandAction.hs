@@ -149,7 +149,7 @@ checkCursor h = do
 
 -- TODO: make it MonadServer
 -- | The semantics of server commands.
-cmdSer :: MonadAction m => CmdSer -> m ()
+cmdSer :: MonadServerChan m => CmdSer -> m ()
 cmdSer cmd = case cmd of
   ApplySer aid v item -> applySer aid v item
   ProjectSer aid p v i -> projectSer aid p v i
