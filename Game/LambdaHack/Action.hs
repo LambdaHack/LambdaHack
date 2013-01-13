@@ -34,7 +34,8 @@ module Game.LambdaHack.Action
   , saveGameBkp, dumpCfg, endOrLoop, frontendName, startFrontend
   , switchGlobalSelectedSide
   , debug
-  , sendToPlayers, sendToClients, sendToClient, askClient, sendToPl, respondCli
+  , sendToPlayers, sendToClients, sendToClient, askClient, sendToPl
+  , respondCli, readChanSer, writeChanSer, readChanCli
   ) where
 
 import Control.Concurrent
@@ -43,6 +44,7 @@ import Control.Monad
 import Control.Monad.Reader.Class
 import qualified Control.Monad.State as St
 import Control.Monad.Writer.Strict (WriterT, tell, lift)
+import Data.Dynamic
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import qualified Data.Map as M
@@ -50,7 +52,6 @@ import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import System.Time
-import Data.Dynamic
 -- import System.IO (hPutStrLn, stderr) -- just for debugging
 
 import qualified Game.LambdaHack.Action.ConfigIO as ConfigIO
@@ -62,8 +63,8 @@ import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Animation (SingleFrame, Frames)
 import Game.LambdaHack.Binding
-import Game.LambdaHack.Config
 import Game.LambdaHack.Command
+import Game.LambdaHack.Config
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
@@ -563,11 +564,11 @@ gameResetAction = liftIO . gameReset
 -- in particular verify content consistency.
 -- Then create the starting game config from the default config file
 -- and initialize the engine with the starting session.
-startFrontend :: (MonadActionIO m, MonadActionRO m)
+startFrontend :: (MonadActionRoot m, MonadActionRoot n)
               => (m () -> Pers -> State -> StateServer -> ClientDict -> IO ())
-                 -> (m () -> FrontendSession -> Binding -> ConfigUI
+                 -> (n () -> FrontendSession -> Binding -> ConfigUI
                      -> State -> StateClient -> IO ())
-              -> Kind.COps -> m () -> m () -> IO ()
+              -> Kind.COps -> m () -> n () -> IO ()
 startFrontend executor executorCli
               !copsSlow@Kind.COps{corule, cotile=tile}
               handleTurn handleClient = do
@@ -587,9 +588,9 @@ startFrontend executor executorCli
       -- handle the history and backup savefile.
       handleServer = do
         handleTurn
-        d <- undefined -- getDict
+--        d <- undefined -- getDict
         -- Save history often, at each game exit, in case of crashes.
-        liftIO $ Save.rmBkpSaveHistory sconfig sconfigUI d
+--        liftIO $ Save.rmBkpSaveHistory sconfig sconfigUI d
       loop sfs = start executor executorCli
                        sfs cops sbinding sconfig sconfigUI
                        handleServer handleClient
@@ -597,12 +598,12 @@ startFrontend executor executorCli
 
 -- | Either restore a saved game, or setup a new game.
 -- Then call the main game loop.
-start :: MonadActionRoot m
+start :: (MonadActionRoot m, MonadActionRoot n)
       => (m () -> Pers -> State -> StateServer -> ClientDict -> IO ())
-      -> (m () -> FrontendSession -> Binding -> ConfigUI
+      -> (n () -> FrontendSession -> Binding -> ConfigUI
           -> State -> StateClient -> IO ())
       -> FrontendSession -> Kind.COps -> Binding -> Config -> ConfigUI
-      -> m () -> m () -> IO ()
+      -> m () -> n () -> IO ()
 start executor executorCli sfs cops@Kind.COps{corule}
       sbinding sconfig sconfigUI handleServer handleClient = do
   let title = rtitle $ Kind.stdRuleset corule
@@ -684,3 +685,18 @@ respondCli :: (Typeable a, MonadClient m) => a -> m ()
 respondCli a = do
   ClientChan {toServer} <- getsClient schan
   liftIO $ writeChan toServer $ ResponseSer $ toDyn a
+
+readChanSer :: MonadAction m => FactionId -> m CmdSer
+readChanSer fid = do
+  ClientChan {toServer} <- getsDict (IM.! fid)
+  liftIO $ readChan toServer
+
+writeChanSer :: MonadClient m => CmdSer -> m ()
+writeChanSer cmd = do
+  ClientChan {toServer} <- getsClient schan
+  liftIO $ writeChan toServer cmd
+
+readChanCli :: MonadClient m => m CmdCli
+readChanCli = do
+  ClientChan {toClient} <- getsClient schan
+  liftIO $ readChan toClient

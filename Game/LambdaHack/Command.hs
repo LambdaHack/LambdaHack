@@ -5,10 +5,10 @@ module Game.LambdaHack.Command
   , majorCmd, minorCmd, timedCmd, cmdDescription
   ) where
 
+import Data.Dynamic
 import qualified Data.IntSet as IS
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
-import Data.Dynamic
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Content.ItemKind
@@ -23,7 +23,9 @@ import Game.LambdaHack.Point
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 import Game.LambdaHack.VectorXY
+import Game.LambdaHack.Animation (Frames)
 
+-- TODO: GADT
 -- | Abstract syntax of client commands.
 data CmdCli =
     PickupCli ActorId Item Item
@@ -48,6 +50,10 @@ data CmdCli =
   | DisplaceCli ActorId ActorId
   | ShowSlidesCli Slideshow
   | NullReportCli
+  | SetArenaLeaderCli LevelId ActorId
+  | DisplayPushCli
+  | HandlePlayerCli ActorId
+  | DisplayFramesPushCli Frames
   deriving Show
 
 -- | Abstract syntax of server commands.

@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 -- | The type of cave layout kinds.
 module Game.LambdaHack.Content.CaveKind
   ( CaveKind(..), cvalidate, LevelId(..)
@@ -7,6 +8,7 @@ import Data.Binary
 import qualified Data.List as L
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Typeable
 
 import Game.LambdaHack.Misc
 import Game.LambdaHack.PointXY
@@ -60,7 +62,7 @@ cvalidate = L.filter (\ CaveKind{ cgrid = RollDiceXY (gx, gy)
 -- a given cave can be generated.
 -- | Level ids are, for now, ordered linearly by depth.
 newtype LevelId = LambdaCave Int
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Typeable)
 
 instance Binary LevelId where
   put (LambdaCave n) = put n

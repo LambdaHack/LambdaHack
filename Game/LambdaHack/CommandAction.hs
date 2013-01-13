@@ -6,6 +6,7 @@ module Game.LambdaHack.CommandAction
 
 import Control.Monad
 import Control.Monad.Writer.Strict (WriterT, lift)
+import Control.Monad.Writer.Strict (WriterT, runWriterT)
 import qualified Data.IntSet as IS
 import qualified Data.Map as M
 import Data.Maybe
@@ -17,17 +18,20 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Animation
+import Game.LambdaHack.Binding
 import Game.LambdaHack.ClientAction
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Command
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Draw
 import Game.LambdaHack.Item
+import qualified Game.LambdaHack.Key as K
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.MixedAction
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
+import Game.LambdaHack.Running
 import Game.LambdaHack.ServerAction
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
@@ -106,7 +110,7 @@ cmdAction cli s cmd =
 -- Time cosuming commands are marked as such in help and cannot be
 -- invoked in targeting mode on a remote level (level different than
 -- the level of the selected hero).
-cmdSemantics :: MonadClient m => Cmd -> WriterT Slideshow m (Bool, LevelId)
+cmdSemantics :: MonadClient m => Cmd -> WriterT Slideshow m Bool
 cmdSemantics cmd = do
   Just leaderOld <- getsClient getLeader
   arenaOld <- getsLocal sarena
@@ -129,7 +133,7 @@ cmdSemantics cmd = do
                 || arenaOld /= arena)) $ do
         lookMsg <- lookAt False True pos ""
         msgAdd lookMsg
-  return (timed, arena)
+  return timed
 
 -- | If in targeting mode, check if the current level is the same
 -- as player level and refuse performing the action otherwise.
@@ -162,7 +166,7 @@ cmdSer cmd = case cmd of
   ResponseSer _ -> undefined
 
 cmdSerAction :: MonadClient m => m CmdSer -> WriterT Slideshow m ()
-cmdSerAction m = undefined -- lift $ m >>= cmdSer
+cmdSerAction m = lift $ m >>= writeChanSer
 
 -- | The semantics of client commands.
 cmdCli :: MonadClient m => CmdCli -> m ()
@@ -321,6 +325,115 @@ cmdCli cmd = case cmd of
   NullReportCli -> do
     StateClient{sreport} <- getClient
     respondCli sreport
+  SetArenaLeaderCli arena actor -> do
+    arenaOld <- getsLocal sarena
+    leaderOld <- getsClient getLeader
+    -- Old leader may have been killed by enemies since @side@ last moved
+    -- or local arena changed and the side has not elected a new leader yet
+    -- or global arena changed the old leader is on the old arena.
+    leader <- if arenaOld /= arena
+              then do
+                modifyClient invalidateSelectedLeader
+                modifyLocal $ updateSelectedArena arena
+                return actor
+              else return $! fromMaybe actor leaderOld
+    loc <- getLocal
+    modifyClient $ updateSelectedLeader leader loc
+    respondCli leader
+  DisplayPushCli -> displayPush
+  HandlePlayerCli leader -> handlePlayer leader
+  DisplayFramesPushCli frames -> displayFramesPush frames
+
+-- | Continue running in the given direction.
+continueRun :: MonadClient m => ActorId -> (Vector, Int) -> m ()
+continueRun leader dd = do
+  dir <- continueRunDir leader dd
+  -- Attacks and opening doors disallowed when continuing to run.
+  writeChanSer $ RunSer leader dir
+
+-- | Handle the move of the hero.
+handlePlayer :: MonadClient m => ActorId -> m ()
+handlePlayer leader = do
+  -- When running, stop if aborted by a disturbance.
+  -- Otherwise let the player issue commands, until any of them takes time.
+  -- First time, just after pushing frames, ask for commands in Push mode.
+  tryWith (\ msg -> stopRunning >> playerCommand msg) $ do
+    srunning <- getsClient srunning
+    maybe abort (continueRun leader) srunning
+--  addSmell leader
+  arenaNew <- getsLocal sarena
+  leaderNew <- getsClient getLeader
+  respondCli (arenaNew, leaderNew)
+
+-- | Determine and process the next player command. The argument is the last
+-- abort message due to running, if any.
+playerCommand :: forall m. MonadClient m => Msg -> m ()
+playerCommand msgRunAbort = do
+  -- The frame state is now Push.
+  kmPush <- case msgRunAbort of
+    "" -> getKeyCommand (Just True)
+    _  -> do
+      slides <- promptToSlideshow msgRunAbort
+      getKeyOverlayCommand $ head $ runSlideshow slides
+  -- The frame state is now None and remains so between each pair
+  -- of lines of @loop@ (but can change within called actions).
+  let loop :: K.KM -> m ()
+      loop km = do
+        -- Messages shown, so update history and reset current report.
+        recordHistory
+        -- On abort, just reset state and call loop again below.
+        -- Each abort that gets this far generates a slide to be shown.
+        (timed, slides) <- runWriterT $ tryWithSlide (return False) $ do
+          -- Look up the key.
+          Binding{kcmd} <- askBinding
+          case M.lookup km kcmd of
+            Just (_, _, cmd) -> do
+              -- Query and clear the last command key.
+              lastKey <- getsClient slastKey
+              -- TODO: perhaps replace slastKey
+              -- with test 'kmNext == km'
+              -- or an extra arg to 'loop'.
+              -- Depends on whether slastKey
+              -- is needed in other parts of code.
+              modifyClient (\st -> st {slastKey = Just km})
+              if (Just km == lastKey)
+                then cmdSemantics Clear
+                else cmdSemantics cmd
+            Nothing -> let msgKey = "unknown command <" <> K.showKM km <> ">"
+                       in abortWith msgKey
+        -- The command was aborted or successful and if the latter,
+        -- possibly took some time.
+        if timed
+          then assert (null (runSlideshow slides) `blame` slides) $ do
+            -- Exit the loop and let other actors act. No next key needed
+            -- and no slides could have been generated.
+            modifyClient (\st -> st {slastKey = Nothing})
+          else
+            -- If no time taken, rinse and repeat.
+            -- Analyse the obtained slides.
+            case reverse (runSlideshow slides) of
+              [] -> do
+                -- Nothing special to be shown; by default draw current state.
+                modifyClient (\st -> st {slastKey = Nothing})
+                sli <- promptToSlideshow ""
+                kmNext <- getKeyOverlayCommand $ head $ runSlideshow sli
+                loop kmNext
+              sLast : sls -> do
+                -- Show, one by one, all but the last slide.
+                -- Note: the code that generates the slides is responsible
+                -- for inserting the @more@ prompt.
+                b <- getManyConfirms [km] $ toSlideshow $ reverse sls
+                -- Display the last slide while waiting for the next key,
+                -- or display current state if slideshow interrupted.
+                kmNext <- if b
+                          then getKeyOverlayCommand sLast
+                          else do
+                            modifyClient (\st -> st {slastKey = Nothing})
+                            sli <- promptToSlideshow ""
+                            getKeyOverlayCommand $ head $ runSlideshow sli
+                -- Look up and perform the next command.
+                loop kmNext
+  loop kmPush
 
 pickupCli :: MonadClient m => ActorId -> Item -> Item -> m ()
 pickupCli aid i ni = do

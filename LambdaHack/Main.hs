@@ -33,4 +33,5 @@ main =
         , costrat = Kind.createOps Content.StrategyKind.cdefs
         , cotile  = Kind.createOps Content.TileKind.cdefs
         }
-  in startFrontend ActionType.executor cops handleTurn
+  in startFrontend ActionType.executor ActionType.executorCli
+                   cops handleTurn handleClient
