@@ -8,10 +8,10 @@ module Game.LambdaHack.Action
     MonadActionRoot
   , MonadServerRO( getGlobal, getsGlobal, getServer, getsServer )
   , MonadClientRO( getClient, getsClient, getLocal, getsLocal )
-  , MonadActionRO
   , MonadServer( putGlobal, modifyGlobal, putServer, modifyServer )
   , MonadClient( putClient, modifyClient, putLocal, modifyLocal )
   , MonadAction
+  , MonadClientChan
     -- * Various ways to abort action
   , abort, abortWith, abortIfWith, neverMind
     -- * Abort exception handlers
@@ -542,7 +542,7 @@ gameReset cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
             fo fid (gloF, serF) =
               initialHeroes cops entryLoc fid gloF serF
             (glo, ser) = foldr fo (defState, defSer) needInitialCrew
-            defCli = defStateClient entryLoc undefined -- TODO
+            defCli = defStateClient entryLoc
             -- This overwrites the "Really save/quit?" messages.
             defLoc = defStateLocal freshDungeon freshDepth
                                    disco faction cops entryLevel
@@ -567,7 +567,7 @@ gameResetAction = liftIO . gameReset
 startFrontend :: (MonadActionRoot m, MonadActionRoot n)
               => (m () -> Pers -> State -> StateServer -> ClientDict -> IO ())
                  -> (n () -> FrontendSession -> Binding -> ConfigUI
-                     -> State -> StateClient -> IO ())
+                     -> State -> StateClient -> ClientChan -> IO ())
               -> Kind.COps -> m () -> n () -> IO ()
 startFrontend executor executorCli
               !copsSlow@Kind.COps{corule, cotile=tile}
@@ -601,7 +601,7 @@ startFrontend executor executorCli
 start :: (MonadActionRoot m, MonadActionRoot n)
       => (m () -> Pers -> State -> StateServer -> ClientDict -> IO ())
       -> (n () -> FrontendSession -> Binding -> ConfigUI
-          -> State -> StateClient -> IO ())
+          -> State -> StateClient -> ClientChan -> IO ())
       -> FrontendSession -> Kind.COps -> Binding -> Config -> ConfigUI
       -> m () -> n () -> IO ()
 start executor executorCli sfs cops@Kind.COps{corule}
@@ -625,17 +625,15 @@ start executor executorCli sfs cops@Kind.COps{corule}
       pers = dungeonPerception cops sconfig (sdebugSer ser) glo
       dPer = IM.mapWithKey (\side (cli, loc) ->
                                (cli {sper = pers IM.! side}, loc)) dHist
-      addChan (k, (cli, loc)) = do
+      addChan (k, cliloc) = do
         toClient <- newChan
         toServer <- newChan
-        let schan = ClientChan {toClient, toServer}
-        return (k, (cli {schan}, loc))
+        return (k, (cliloc, ClientChan {toClient, toServer}))
   dAssocs <- mapM addChan $ IM.toAscList dPer
-  let dCliLoc = IM.fromAscList dAssocs
-      d = IM.map (\(cli, _) -> schan cli) dCliLoc
-  let forkClient (cli, loc) = do
-        forkIO $ executorCli handleClient sfs sbinding sconfigUI loc cli
-  mapM_ forkClient $ IM.elems dCliLoc
+  let d = IM.map snd $ IM.fromAscList dAssocs
+      forkClient (_, ((cli, loc), chan)) =
+        forkIO $ executorCli handleClient sfs sbinding sconfigUI loc cli chan
+  mapM_ forkClient dAssocs
   executor handleServer pers glo ser d
 
 switchGlobalSelectedSide :: MonadServer m => FactionId -> m ()
@@ -681,9 +679,9 @@ askClient fid cmd = do
   ResponseSer a <- liftIO $ readChan toServer
   return $ fromDyn a (assert `failure` (fid, cmd, a))
 
-respondCli :: (Typeable a, MonadClient m) => a -> m ()
+respondCli :: (Typeable a, MonadClientChan m) => a -> m ()
 respondCli a = do
-  ClientChan {toServer} <- getsClient schan
+  toServer <- getsChan toServer
   liftIO $ writeChan toServer $ ResponseSer $ toDyn a
 
 readChanSer :: MonadAction m => FactionId -> m CmdSer
@@ -691,12 +689,12 @@ readChanSer fid = do
   ClientChan {toServer} <- getsDict (IM.! fid)
   liftIO $ readChan toServer
 
-writeChanSer :: MonadClient m => CmdSer -> m ()
+writeChanSer :: MonadClientChan m => CmdSer -> m ()
 writeChanSer cmd = do
-  ClientChan {toServer} <- getsClient schan
+  toServer <- getsChan toServer
   liftIO $ writeChan toServer cmd
 
-readChanCli :: MonadClient m => m CmdCli
+readChanCli :: MonadClientChan m => m CmdCli
 readChanCli = do
-  ClientChan {toClient} <- getsClient schan
+  toClient <- getsChan toClient
   liftIO $ readChan toClient

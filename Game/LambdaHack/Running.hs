@@ -7,7 +7,7 @@ import qualified Data.IntSet as IS
 import qualified Data.List as L
 import Data.Maybe (isNothing)
 
-import Game.LambdaHack.Action hiding (MonadAction, MonadActionRO, MonadServer,
+import Game.LambdaHack.Action hiding (MonadAction, MonadServer,
                                MonadServerRO)
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState

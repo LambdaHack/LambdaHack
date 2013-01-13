@@ -17,8 +17,6 @@ module Game.LambdaHack.State
   , StateClient(..), defStateClient, defHistory
   , updateTarget, getTarget
   , invalidateSelectedLeader, updateSelectedLeader, getLeader
-    -- * A dictionary of client connection information
-  , ClientDict, ClientChan(..)
     -- * A dictionary of client states, for saving game.
   , StateDict
     -- * Components types and operations
@@ -28,7 +26,6 @@ module Game.LambdaHack.State
   , DebugModeCli(..), toggleMarkVision, toggleMarkSmell, toggleOmniscient
   ) where
 
-import Control.Concurrent.Chan
 import Control.Monad
 import Data.Binary
 import qualified Data.IntMap as IM
@@ -42,7 +39,6 @@ import qualified System.Random as R
 import System.Time
 
 import Game.LambdaHack.Actor
-import Game.LambdaHack.Command
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.TileKind
@@ -103,22 +99,9 @@ data StateClient = StateClient
   , sper      :: !FactionPers   -- ^ faction perception indexed by levels
   , slastKey  :: !(Maybe K.KM)  -- ^ last command key pressed
   , _sleader  :: !(Maybe ActorId)  -- ^ selected actor
-  , schan     :: ClientChan     -- ^ communication channels for this client
   , sdebugCli :: !DebugModeCli  -- ^ debugging mode
   }
   deriving Show
-
--- | Connection information for each client, indexed by faction identifier.
-type ClientDict = IM.IntMap ClientChan
-
--- | Channels from client-server communication.
-data ClientChan = ClientChan
-  { toClient   :: Chan CmdCli
-  , toServer :: Chan CmdSer
-  }
-
-instance Show ClientChan where
-  show _ = "client channels"
 
 -- | All client and local state, indexed by faction identifier.
 type StateDict = IM.IntMap (StateClient, State)
@@ -322,8 +305,8 @@ cycleTryFov s@StateServer{sdebugSer=sdebugSer@DebugModeSer{stryFov}} =
 -- * StateClient operations
 
 -- | Initial game client state.
-defStateClient :: Point -> ClientChan -> StateClient
-defStateClient scursor schan = do
+defStateClient :: Point -> StateClient
+defStateClient scursor = do
   StateClient
     { stgtMode  = Nothing
     , scursor
@@ -335,7 +318,6 @@ defStateClient scursor schan = do
     , sper      = M.empty
     , _sleader  = Nothing  -- no heroes yet alive
     , slastKey  = Nothing
-    , schan
     , sdebugCli = defDebugModeCli
     }
 
@@ -462,7 +444,6 @@ instance Binary StateClient where
     let shistory = emptyHistory
         sper = M.empty
         slastKey = Nothing
-        schan = undefined  -- overwritten by recreated channels
         sdebugCli = defDebugModeCli
     return StateClient{..}
 

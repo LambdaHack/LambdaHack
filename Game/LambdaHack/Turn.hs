@@ -206,7 +206,7 @@ advanceTime actor = do
   let upd m@Actor{btime} = m {btime = timeAddFromSpeed coactor m btime}
   modifyGlobal $ updateActorBody actor upd
 
-handleClient :: MonadClient m => m ()
+handleClient :: MonadClientChan m => m ()
 handleClient = do
   cmd <- readChanCli
   cmdCli cmd
