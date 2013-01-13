@@ -12,7 +12,6 @@ module Game.LambdaHack.Action
   , MonadServer( putGlobal, modifyGlobal, putServer, modifyServer )
   , MonadClient( putClient, modifyClient, putLocal, modifyLocal )
   , MonadAction
-  , liftIO -- TODO
     -- * Various ways to abort action
   , abort, abortWith, abortIfWith, neverMind
     -- * Abort exception handlers
@@ -35,7 +34,7 @@ module Game.LambdaHack.Action
   , saveGameBkp, dumpCfg, endOrLoop, frontendName, startFrontend
   , switchGlobalSelectedSide
   , debug
-  , sendToPlayers, sendToClients, sendToClient, askClient, sendToPl
+  , sendToPlayers, sendToClients, sendToClient, askClient, sendToPl, respondCli
   ) where
 
 import Control.Concurrent
@@ -51,6 +50,7 @@ import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import System.Time
+import Data.Dynamic
 -- import System.IO (hPutStrLn, stderr) -- just for debugging
 
 import qualified Game.LambdaHack.Action.ConfigIO as ConfigIO
@@ -673,9 +673,14 @@ sendToClient fid cmd = do
   ClientChan {toClient} <- getsDict (IM.! fid)
   liftIO $ writeChan toClient cmd
 
-askClient :: MonadAction m => FactionId -> CmdCli -> m Bool -- a, Typeable? Dynamic?
+askClient :: (Typeable a, MonadAction m) => FactionId -> CmdCli -> m a
 askClient fid cmd = do
   ClientChan {toClient, toServer} <- getsDict (IM.! fid)
   liftIO $ writeChan toClient cmd
   ResponseSer a <- liftIO $ readChan toServer
-  return a
+  return $ fromDyn a (assert `failure` (fid, cmd, a))
+
+respondCli :: (Typeable a, MonadClient m) => a -> m ()
+respondCli a = do
+  ClientChan {toServer} <- getsClient schan
+  liftIO $ writeChan toServer $ ResponseSer $ toDyn a

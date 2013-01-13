@@ -4,7 +4,6 @@ module Game.LambdaHack.CommandAction
   ( cmdSemantics, cmdSer, cmdCli
   ) where
 
-import Control.Concurrent
 import Control.Monad
 import Control.Monad.Writer.Strict (WriterT, lift)
 import qualified Data.IntSet as IS
@@ -183,33 +182,26 @@ cmdCli cmd = case cmd of
     void $ getManyConfirms [] slides
   ShowMsgCli msg ->
     msgAdd msg
-  ShowSlidesCli slides -> do
-    go <- getManyConfirms [] slides
-    ClientChan {toServer} <- getsClient schan
-    liftIO $ writeChan toServer $ ResponseSer go
+  ShowSlidesCli slides ->
+    getManyConfirms [] slides >>= respondCli
   AnimateDeathCli aid -> animateDeathCli aid
   CarryOnCli -> carryOnCli
-  SelectLeaderCli aid lid -> do
-    b <- selectLeader aid lid
-    ClientChan {toServer} <- getsClient schan
-    liftIO $ writeChan toServer $ ResponseSer b
+  SelectLeaderCli aid lid ->
+    selectLeader aid lid >>= respondCli
   InvalidateArenaCli lid -> void $ invalidateArenaCli lid
   DiscoverCli ik i -> discoverCli ik i
   ConfirmYesNoCli msg -> do
     go <- displayYesNo msg
     recordHistory  -- Prevent repeating the ending msgs.
-    ClientChan {toServer} <- getsClient schan
-    liftIO $ writeChan toServer $ ResponseSer go
+    respondCli go
   ConfirmMoreBWCli msg -> do
     go <- displayMore ColorBW msg
     recordHistory  -- Prevent repeating the ending msgs.
-    ClientChan {toServer} <- getsClient schan
-    liftIO $ writeChan toServer $ ResponseSer go
+    respondCli go
   ConfirmMoreFullCli msg -> do
     go <- displayMore ColorFull msg
     recordHistory  -- Prevent repeating the ending msgs.
-    ClientChan {toServer} <- getsClient schan
-    liftIO $ writeChan toServer $ ResponseSer go
+    respondCli go
   RememberCli arena vis lvl -> do
     cops <- getsLocal scops
     let updArena loc =
@@ -328,9 +320,7 @@ cmdCli cmd = case cmd of
     displayFramesPush $ Nothing : animFrs
   NullReportCli -> do
     StateClient{sreport} <- getClient
-    ClientChan {toServer} <- getsClient schan
-    liftIO $ writeChan toServer $ ResponseSer $ nullReport sreport
-
+    respondCli sreport
 
 pickupCli :: MonadClient m => ActorId -> Item -> Item -> m ()
 pickupCli aid i ni = do
@@ -361,8 +351,7 @@ carryOnCli :: MonadClient m => m ()
 carryOnCli = do
   go <- displayMore ColorBW ""
   msgAdd "The survivors carry on."  -- TODO: reset messages at game over not to display it if there are no survivors.
-  ClientChan {toServer} <- getsClient schan
-  liftIO $ writeChan toServer $ ResponseSer go
+  respondCli go
 
 -- | Make the item known to the player.
 discoverCli :: MonadClient m => Kind.Id ItemKind -> Item -> m ()

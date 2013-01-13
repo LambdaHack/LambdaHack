@@ -8,6 +8,7 @@ module Game.LambdaHack.Command
 import qualified Data.IntSet as IS
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
+import Data.Dynamic
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Content.ItemKind
@@ -63,7 +64,7 @@ data CmdSer =
   | GameRestartSer
   | GameSaveSer
   | CfgDumpSer
-  | ResponseSer Bool
+  | ResponseSer Dynamic
   deriving Show
 
 -- | Abstract syntax of player commands.

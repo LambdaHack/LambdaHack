@@ -162,7 +162,7 @@ eff Effect.Dominate _ source target _power = do
                vis = IS.fromList $ concatMap cross lm
            lvl <- getsGlobal getArena
            side <- getsGlobal sside
-           void $ askClient side $ RememberCli arena vis lvl
+           sendToClient side $ RememberCli arena vis lvl
            return (True, "A dozen voices yells in anger.")
          else nullEffect
 eff Effect.SummonFriend _ source target power = do
@@ -332,7 +332,7 @@ fleeDungeon = do
           , "Here's your loot, worth"
           , MU.NWs total currencyName ]
     discoS <- getsGlobal sdisco
-    void $ askClient side $ ShowItemsCli discoS winMsg items
+    sendToClient side $ ShowItemsCli discoS winMsg items
     let upd2 f = f {gquit = Just (True, Victor)}
     modifyGlobal $ updateSide upd2
 
@@ -360,7 +360,7 @@ discover discoS i = do
   side <- getsGlobal sside
   let ix = jkindIx i
       ik = discoS M.! ix
-  void $ askClient side $ DiscoverCli ik i
+  sendToClient side $ DiscoverCli ik i
 
 selectLeaderSer :: MonadAction m => ActorId -> LevelId -> m Bool
 selectLeaderSer actor lid = do

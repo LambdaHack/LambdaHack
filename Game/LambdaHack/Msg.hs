@@ -1,4 +1,5 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, OverloadedStrings #-}
+{-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving, OverloadedStrings
+             #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | Game messages displayed on top of the screen for the player to read.
 module Game.LambdaHack.Msg
@@ -21,6 +22,7 @@ import Data.Monoid hiding ((<>))
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
+import Data.Typeable
 import Game.LambdaHack.Utils.Assert
 import NLP.Miniutter.English (showT, (<+>), (<>))
 import qualified NLP.Miniutter.English as MU
@@ -63,7 +65,7 @@ padMsg w xs =
 
 -- | The type of a set of messages to show at the screen at once.
 newtype Report = Report [(BS.ByteString, Int)]
-  deriving Show
+  deriving (Show, Typeable)
 
 instance Binary Report where
   put (Report x) = put x

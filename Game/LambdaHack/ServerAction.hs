@@ -258,9 +258,8 @@ moveSer actor dir = do
           -- Perform the actual move.
           modifyGlobal $ updateActorBody actor $ \ body -> body {bpos = tpos}
       | Tile.canBeHidden cotile (okind $ lvl `at` tpos) -> do
-          void $ askClient side
-                 $ ShowMsgCli
-                     "You search all adjacent walls for half a second."
+          sendToClient side
+            $ ShowMsgCli "You search all adjacent walls for half a second."
           search actor
       | otherwise ->
           actorOpenDoor actor dir
