@@ -47,9 +47,9 @@ import Game.LambdaHack.Vector
 -- | AI proposes possible targets for the actor. Never empty.
 targetStrategy :: MonadServerRO m => ActorId -> m (Strategy (Maybe Target))
 targetStrategy actor = do
-  cops@Kind.COps{costrat=Kind.Ops{okind}} <- getsGlobal scops
+  cops@Kind.COps{costrat=Kind.Ops{okind}} <- getsState scops
   per <- askPerceptionSer
-  glo <- getGlobal
+  glo <- getState
   btarget <- undefined -- TODO: keep the AI target in an extra client
   let Actor{bfaction} = getActorBody actor glo
       factionAI = gAiIdle $ sfaction glo IM.! bfaction
@@ -119,8 +119,8 @@ reacquireTgt cops actor btarget glo per factionAbilities =
 -- | AI strategy based on actor's sight, smell, intelligence, etc. Never empty.
 actionStrategy :: MonadServerChan m => ActorId -> m (Strategy (m ()))
 actionStrategy actor = do
-  cops@Kind.COps{costrat=Kind.Ops{okind}} <- getsGlobal scops
-  glo <- getGlobal
+  cops@Kind.COps{costrat=Kind.Ops{okind}} <- getsState scops
+  glo <- getState
   btarget <- undefined -- TODO
   let Actor{bfaction} = getActorBody actor glo
       factionAI = gAiIdle $ sfaction glo IM.! bfaction
@@ -174,7 +174,7 @@ proposeAction cops actor btarget glo factionAbilities =
 dirToAction :: MonadServerChan m => ActorId -> Bool -> Vector -> m ()
 dirToAction actor allowAttacks dir = do
   -- set new direction
-  modifyGlobal $ updateActorBody actor $ \ m -> m { bdirAI = Just (dir, 0) }
+  modifyState $ updateActorBody actor $ \ m -> m { bdirAI = Just (dir, 0) }
   -- perform action
   tryWith (\ msg -> if T.null msg
                     then return ()
@@ -191,12 +191,12 @@ waitBlockNow :: MonadServer m => ActorId -> Strategy (m ())
 waitBlockNow actor = returN "wait" $ waitSer actor
 
 -- | A strategy to always just die.
-dieNow :: MonadServer m => ActorId -> Strategy (m ())
+dieNow :: MonadAction m => ActorId -> Strategy (m ())
 dieNow actor = returN "die" $ do  -- TODO: explode if a potion
-  bitems <- getsGlobal (getActorItem actor)
-  Actor{bpos} <- getsGlobal (getActorBody actor)
-  modifyGlobal (updateArena (dropItemsAt bitems bpos))
-  modifyGlobal (deleteActor actor)
+  bitems <- getsState (getActorItem actor)
+  Actor{bpos} <- getsState (getActorBody actor)
+  modifyState (updateArena (dropItemsAt bitems bpos))
+  modifyState (deleteActor actor)
 
 -- TODO: move to server; the client and his AI does not have a say in that
 -- | Strategy for dumb missiles.
@@ -206,11 +206,11 @@ track cops actor glo =
  where
   lvl = getArena glo
   Actor{ bpos, bpath, bhp } = getActorBody actor glo
-  darkenActor = modifyGlobal $ updateActorBody actor $ \ m ->
+  darkenActor = modifyState $ updateActorBody actor $ \ m ->
     m {bcolor = Just Color.BrBlack}
   dieOrReset | bhp <= 0  = dieNow actor
              | otherwise =
-                 returN "reset TPath" $ modifyGlobal $ updateActorBody actor
+                 returN "reset TPath" $ modifyState $ updateActorBody actor
                  $ \ m -> m {bpath = Nothing}
   strat = case bpath of
     Just [] -> dieOrReset
@@ -218,14 +218,14 @@ track cops actor glo =
     -- TODO: perhaps colour differently the whole second turn of movement?
     Just [d] -> returN "last TPath" $ do
       darkenActor
-      modifyGlobal $ updateActorBody actor $ \ m -> m { bpath = Just [] }
+      modifyState $ updateActorBody actor $ \ m -> m { bpath = Just [] }
       dirToAction actor True d
     Just (d : lv) -> returN "follow TPath" $ do
-      modifyGlobal $ updateActorBody actor $ \ m -> m { bpath = Just lv }
+      modifyState $ updateActorBody actor $ \ m -> m { bpath = Just lv }
       dirToAction actor True d
     Nothing -> reject
 
-pickup :: MonadServer m => ActorId -> State -> Strategy (m ())
+pickup :: MonadAction m => ActorId -> State -> Strategy (m ())
 pickup actor glo =
   lootHere bpos .=> actionPickup
  where

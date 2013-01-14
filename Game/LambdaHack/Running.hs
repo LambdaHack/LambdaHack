@@ -30,9 +30,9 @@ import Game.LambdaHack.Vector
 -- and still explicitly requests a run.
 runDir :: MonadClient m => ActorId -> (Vector, Int) -> m Vector
 runDir leader (dir, dist) = do
-  cops <- getsLocal scops
-  posHere <- getsLocal (bpos . getActorBody leader)
-  lvl <- getsLocal getArena
+  cops <- getsState scops
+  posHere <- getsState (bpos . getActorBody leader)
+  lvl <- getsState getArena
   stgtMode <- getsClient stgtMode
   assert (isNothing stgtMode `blame` (dir, dist, stgtMode, "not off")) $ do
     let accessibleDir loc d = accessible cops lvl loc (loc `shift` d)
@@ -148,14 +148,14 @@ runDisturbance locLast distLast msg hs ms per posHere
 -- and it increments the counter of traversed tiles.
 continueRunDir :: MonadClient m => ActorId -> (Vector, Int) -> m Vector
 continueRunDir leader (dirLast, distLast) = do
-  cops@Kind.COps{cotile} <- getsLocal scops
-  posHere <- getsLocal (bpos . getActorBody leader)
+  cops@Kind.COps{cotile} <- getsState scops
+  posHere <- getsState (bpos . getActorBody leader)
   per <- askPerception
   StateClient{sreport} <- getClient  -- TODO: check the message before it goes into history
-  ms  <- getsLocal dangerousList
-  side <- getsLocal sside
-  hs <- getsLocal (factionList [side])
-  lvl@Level{lxsize, lysize} <- getsLocal getArena
+  ms  <- getsState dangerousList
+  side <- getsState sside
+  hs <- getsState (factionList [side])
+  lvl@Level{lxsize, lysize} <- getsState getArena
   let posHasFeature f loc = Tile.hasFeature cotile f (lvl `at` loc)
       posHasItems loc = not $ L.null $ lvl `atI` loc
       locLast = if distLast == 0 then posHere else posHere `shift` neg dirLast

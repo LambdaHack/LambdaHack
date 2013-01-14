@@ -69,18 +69,22 @@ instance MonadReader Pers Action where
   local f m = Action (\p k a s ser d ->
                          runAction m (f p) k a s ser d)
 
-instance MonadServerRO Action where
-  getGlobal  = Action (\_p k _a s ser d -> k s ser d s)
-  getsGlobal = (`fmap` getGlobal)
-  getServer  = Action (\_p k _a s ser d -> k s ser d ser)
-  getsServer = (`fmap` getServer)
+instance MonadActionRO Action where
+  getState  = Action (\_p k _a s ser d -> k s ser d s)
+  getsState = (`fmap` getState)
 
 instance MonadActionIO Action where
   liftIO x = Action (\_p k _a s ser d -> x >>= k s ser d)
 
+instance MonadAction Action where
+  modifyState f = Action (\_p k _a s ser d -> k (f s) ser d ())
+  putState      = modifyState . const
+
+instance MonadServerRO Action where
+  getServer  = Action (\_p k _a s ser d -> k s ser d ser)
+  getsServer = (`fmap` getServer)
+
 instance MonadServer Action where
-  modifyGlobal f = Action (\_p k _a s ser d -> k (f s) ser d ())
-  putGlobal      = modifyGlobal . const
   modifyServer f = Action (\_p k _a s ser d -> k s (f ser) d ())
   putServer      = modifyServer . const
 
@@ -150,19 +154,23 @@ instance MonadActionRoot ActionCli where
              in runActionCli m c k runA s cli d)
   abortWith msg = ActionCli (\_c _k a _s _cli _d -> a msg)
 
-instance MonadClientRO ActionCli where
-  getsSession f = ActionCli (\c k _a s cli d -> k s cli d (f c))
-  getLocal      = ActionCli (\_c k _a s cli d -> k s cli d s)
-  getsLocal     = (`fmap` getLocal)
-  getClient     = ActionCli (\_c k _a s cli d -> k s cli d cli)
-  getsClient    = (`fmap` getClient)
+instance MonadActionRO ActionCli where
+  getState      = ActionCli (\_c k _a s cli d -> k s cli d s)
+  getsState     = (`fmap` getState)
 
 instance MonadActionIO ActionCli where
   liftIO x = ActionCli (\_c k _a s cli d -> x >>= k s cli d)
 
+instance MonadAction ActionCli where
+  modifyState f  = ActionCli (\_c k _a s cli d -> k (f s) cli d ())
+  putState       = modifyState . const
+
+instance MonadClientRO ActionCli where
+  getsSession f = ActionCli (\c k _a s cli d -> k s cli d (f c))
+  getClient     = ActionCli (\_c k _a s cli d -> k s cli d cli)
+  getsClient    = (`fmap` getClient)
+
 instance MonadClient ActionCli where
-  modifyLocal f  = ActionCli (\_c k _a s cli d -> k (f s) cli d ())
-  putLocal       = modifyLocal . const
   modifyClient f = ActionCli (\_c k _a s cli d -> k s (f cli) d ())
   putClient      = modifyClient . const
 

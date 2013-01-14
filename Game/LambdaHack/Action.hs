@@ -6,11 +6,13 @@
 module Game.LambdaHack.Action
   ( -- * Action monads
     MonadActionRoot
-  , MonadServerRO( getGlobal, getsGlobal, getServer, getsServer )
-  , MonadClientRO( getClient, getsClient, getLocal, getsLocal )
-  , MonadServer( putGlobal, modifyGlobal, putServer, modifyServer )
-  , MonadClient( putClient, modifyClient, putLocal, modifyLocal )
+  , MonadActionRO( getState, getsState )
+  , MonadAction( putState, modifyState )
+  , MonadServerRO( getServer, getsServer )
+  , MonadServer( putServer, modifyServer )
   , MonadServerChan
+  , MonadClientRO( getClient, getsClient )
+  , MonadClient( putClient, modifyClient )
   , MonadClientChan
     -- * Various ways to abort action
   , abort, abortWith, abortIfWith, neverMind
@@ -156,11 +158,11 @@ recordHistory = do
 -- has changed since the previous perception calculation.
 withPerception :: MonadServerRO m => m () -> m ()
 withPerception m = do
-  cops <- getsGlobal scops
+  cops <- getsState scops
   sconfig <- getsServer sconfig
   sdebugSer <- getsServer sdebugSer
-  lvl <- getsGlobal getArena
-  arena <- getsGlobal sarena
+  lvl <- getsState getArena
+  arena <- getsState sarena
   let per side = levelPerception cops sconfig (stryFov sdebugSer) side lvl
   local (IM.mapWithKey (\side lp -> M.insert arena (per side) lp)) m
 
@@ -168,7 +170,7 @@ withPerception m = do
 askPerception :: MonadClientRO m => m Perception
 askPerception = do
   stgtMode <- getsClient stgtMode
-  arena <- getsLocal sarena
+  arena <- getsState sarena
   let lid = maybe arena tgtLevelId stgtMode
   factionPers <- getsClient sper
   return $! factionPers M.! lid
@@ -176,9 +178,9 @@ askPerception = do
 -- | Get the current perception of the server.
 askPerceptionSer :: MonadServerRO m => m Perception
 askPerceptionSer = do
-  lid <- getsGlobal sarena
+  lid <- getsState sarena
   pers <- ask
-  side <- getsGlobal sside
+  side <- getsState sside
   return $! pers IM.! side M.! lid
 
 -- | Wait for a player command.
@@ -298,7 +300,7 @@ promptToSlideshow prompt = overlayToSlideshow prompt []
 -- of the screen are displayed below. As many slides as needed are shown.
 overlayToSlideshow :: MonadClientRO m => Msg -> Overlay -> m Slideshow
 overlayToSlideshow prompt overlay = do
-  lysize <- getsLocal (lysize . getArena)  -- TODO: screen length or viewLevel
+  lysize <- getsState (lysize . getArena)  -- TODO: screen length or viewLevel
   StateClient{sreport} <- getClient
   let msg = splitReport (addMsg sreport prompt)
   return $! splitOverlay lysize msg overlay
@@ -306,20 +308,20 @@ overlayToSlideshow prompt overlay = do
 -- | Draw the current level with the overlay on top.
 drawOverlay :: MonadClientRO m => ColorMode -> Overlay -> m SingleFrame
 drawOverlay dm over = do
-  cops <- getsLocal scops
+  cops <- getsState scops
   per <- askPerception
   cli <- getClient
-  loc <- getLocal
+  loc <- getState
   return $! draw dm cops per cli loc over
 
 -- -- | Draw the current level using server data, for debugging.
 -- drawOverlayDebug :: MonadServerRO m
 --                  => ColorMode -> Overlay -> m SingleFrame
 -- drawOverlayDebug dm over = do
---   cops <- getsLocal scops
+--   cops <- getsState scops
 --   per <- askPerception
 --   cli <- getClient
---   glo <- getGlobal
+--   glo <- getState
 --   return $! draw dm cops per cli glo over
 
 -- | Push the frame depicting the current level to the frame queue.
@@ -350,9 +352,9 @@ displayPush = do
 -- something or to act.
 remember :: MonadServerChan m => m ()
 remember = do
-  arena <- getsGlobal sarena
-  lvl <- getsGlobal getArena
-  faction <- getsGlobal sfaction
+  arena <- getsState sarena
+  lvl <- getsState getArena
+  faction <- getsState sfaction
   pers <- ask
   funBroadcastCli (\fid ->
     RememberPerCli arena (pers IM.! fid M.! arena) lvl faction)
@@ -393,9 +395,9 @@ rememberLevel Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} visible lvl clvl =
 -- See 'Save.saveGameBkp'.
 saveGameBkp :: MonadServerChan m => m ()
 saveGameBkp = do
-  glo <- getGlobal
+  glo <- getState
   ser <- getServer
-  faction <- getsGlobal sfaction
+  faction <- getsState sfaction
   let queryCliLoc fid = sendQueryCli fid GameSaveCli  -- TODO: do in parallel
   d <- mapM queryCliLoc $ IM.keys faction
 --  configUI <- askConfigUI
@@ -420,11 +422,11 @@ handleScores :: (MonadActionIO m, MonadServerChan m)
 handleScores write status total =
   when (total /= 0) $ do
     config <- getsServer sconfig
-    time <- getsGlobal getTime
+    time <- getsState getTime
     curDate <- liftIO getClockTime
     slides <-
       liftIO $ register config write total time curDate status
-    side <- getsGlobal sside
+    side <- getsState sside
     go <- sendQueryCli side $ ShowSlidesCli slides
     when (not go) abort
 
@@ -432,11 +434,11 @@ handleScores write status total =
 endOrLoop :: MonadServerChan m => m () -> m ()
 endOrLoop handleTurn = do
   squit <- getsServer squit
-  side <- getsGlobal sside
-  gquit <- getsGlobal $ gquit . (IM.! side) . sfaction
-  s <- getGlobal
+  side <- getsState sside
+  gquit <- getsState $ gquit . (IM.! side) . sfaction
+  s <- getState
   ser <- getServer
-  faction <- getsGlobal sfaction
+  faction <- getsState sfaction
   let queryCliLoc fid = sendQueryCli fid GameSaveCli  -- TODO: do in parallel
   d <- mapM queryCliLoc $ IM.keys faction
   config <- getsServer sconfig
@@ -493,9 +495,9 @@ restartGame :: MonadServerChan m => m () -> m ()
 restartGame handleTurn = do
   -- Take the original config from config file, to reroll RNG, if needed
   -- (the current config file has the RNG rolled for the previous game).
-  cops <- getsGlobal scops
+  cops <- getsState scops
   (state, ser, funRestart) <- gameResetAction cops
-  putGlobal state
+  putState state
   putServer ser
   funBroadcastCli (uncurry RestartCli . funRestart)
   -- TODO: send to each client RestartCli; use d in its code; empty channels?
@@ -640,7 +642,7 @@ start executor executorCli sfs cops@Kind.COps{corule}
 
 switchGlobalSelectedSide :: MonadServer m => FactionId -> m ()
 switchGlobalSelectedSide =
-  modifyGlobal . switchGlobalSelectedSideOnlyForGlobalState
+  modifyState . switchGlobalSelectedSideOnlyForGlobalState
 
 -- | Debugging.
 debug :: MonadActionRoot m => Text -> m ()
@@ -674,7 +676,7 @@ broadcastCli :: MonadServerChan m
              => [FactionId -> m Bool] -> CmdUpdateCli
              -> m ()
 broadcastCli ps cmd = do
-  faction <- getsGlobal sfaction
+  faction <- getsState sfaction
   let p fid = do
         bs <- sequence $ map (\f -> f fid) ps
         return $! and bs
@@ -682,11 +684,11 @@ broadcastCli ps cmd = do
   mapM_ (flip sendUpdateCli cmd) ks
 
 isFactionPlayer :: MonadServerChan m => FactionId -> m Bool
-isFactionPlayer fid = getsGlobal $ flip isPlayerFaction fid
+isFactionPlayer fid = getsState $ flip isPlayerFaction fid
 
 isFactionAware :: MonadServerChan m => [Point] -> FactionId -> m Bool
 isFactionAware poss fid = do
-  arena <- getsGlobal sarena
+  arena <- getsState sarena
   pers <- ask
   let per = pers IM.! fid M.! arena
       inter = IS.fromList poss `IS.intersection` totalVisible per
@@ -698,7 +700,7 @@ broadcastPosCli poss cmd =
 
 funBroadcastCli :: MonadServerChan m => (FactionId -> CmdUpdateCli) -> m ()
 funBroadcastCli cmd = do
-  faction <- getsGlobal sfaction
+  faction <- getsState sfaction
   let f fid = sendUpdateCli fid (cmd fid)
   mapM_ f $ IM.keys faction
 

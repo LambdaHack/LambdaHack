@@ -58,12 +58,12 @@ playerApplyGroupItem :: MonadClient m
                      => MU.Part -> MU.Part -> [Char]
                      -> m CmdSer
 playerApplyGroupItem verb object syms = do
-  Kind.COps{coitem=Kind.Ops{okind}} <- getsLocal scops
+  Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   Just leader <- getsClient getLeader
-  is <- getsLocal $ getActorItem leader
+  is <- getsState $ getActorItem leader
   item <- getGroupItem leader is object syms
             (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
-  disco <- getsLocal sdisco
+  disco <- getsState sdisco
   let verbApply = case jkind disco item of
         Nothing -> verb
         Just ik -> iverbApply $ okind ik
@@ -91,11 +91,11 @@ playerProjectGroupItem :: MonadClient m
                        => MU.Part -> MU.Part -> [Char]
                        -> m CmdSer
 playerProjectGroupItem verb object syms = do
-  ms     <- getsLocal hostileList
-  lxsize <- getsLocal (lxsize . getArena)
-  lysize <- getsLocal (lysize . getArena)
+  ms     <- getsState hostileList
+  lxsize <- getsState (lxsize . getArena)
+  lysize <- getsState (lysize . getArena)
   Just leader <- getsClient getLeader
-  ppos   <- getsLocal (bpos . getActorBody leader)
+  ppos   <- getsState (bpos . getActorBody leader)
   if foesAdjacent lxsize lysize ppos ms
     then abortWith "You can't aim in melee."
     else playerProjectGI leader verb object syms
@@ -105,19 +105,19 @@ playerProjectGI :: MonadClient m
                 -> m CmdSer
 playerProjectGI leader verb object syms = do
   cli <- getClient
-  pos <- getLocal
+  pos <- getState
   seps <- getsClient seps
   case targetToPos cli pos of
     Just p -> do
-      Kind.COps{coitem=Kind.Ops{okind}} <- getsLocal scops
-      is <- getsLocal $ getActorItem leader
+      Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
+      is <- getsState $ getActorItem leader
       item <- getGroupItem leader is object syms
                 (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
       stgtMode <- getsClient stgtMode
       case stgtMode of
         Just (TgtAuto _) -> endTargeting True
         _ -> return ()
-      disco <- getsLocal sdisco
+      disco <- getsState sdisco
       let verbProject = case jkind disco item of
             Nothing -> verb
             Just ik -> iverbProject $ okind ik
@@ -132,22 +132,22 @@ playerTriggerDir feat verb = do
   let keys = zip K.dirAllMoveKey $ repeat K.NoModifier
       prompt = makePhrase ["What to", verb MU.:> "? [movement key"]
   e <- displayChoiceUI prompt [] keys
-  lxsize <- getsLocal (lxsize . getArena)
+  lxsize <- getsState (lxsize . getArena)
   K.handleDir lxsize e (playerBumpDir feat) (neverMind True)
 
 -- | Leader tries to trigger a tile in a given direction.
 playerBumpDir :: MonadClientRO m => F.Feature -> Vector -> m CmdSer
 playerBumpDir feat dir = do
   Just leader <- getsClient getLeader
-  body <- getsLocal $ getActorBody leader
+  body <- getsState $ getActorBody leader
   let dpos = bpos body `shift` dir
   bumpTile leader dpos feat
 
 -- | Leader tries to trigger a tile using a feature.
 bumpTile :: MonadClientRO m => ActorId -> Point -> F.Feature -> m CmdSer
 bumpTile leader dpos feat = do
-  Kind.COps{cotile} <- getsLocal scops
-  lvl <- getsLocal getArena
+  Kind.COps{cotile} <- getsState scops
+  lvl <- getsState getArena
   let t = lvl `at` dpos
   -- Features are never invisible; visible tiles are identified accurately.
   -- A tile can be triggered even if an invisible monster occupies it.
@@ -182,7 +182,7 @@ guessBump _ _ _ = neverMind True
 playerTriggerTile :: MonadClientRO m => F.Feature -> m CmdSer
 playerTriggerTile feat = do
   Just leader <- getsClient getLeader
-  ppos <- getsLocal (bpos . getActorBody leader)
+  ppos <- getsState (bpos . getActorBody leader)
   bumpTile leader ppos feat
 
 -- ** Pickup
@@ -194,9 +194,9 @@ pickupItem = do
 
 actorPickupItem :: MonadClientRO m => ActorId -> m CmdSer
 actorPickupItem actor = do
-  lvl <- getsLocal getArena
-  body <- getsLocal (getActorBody actor)
-  bitems <- getsLocal (getActorItem actor)
+  lvl <- getsState getArena
+  body <- getsState (getActorBody actor)
+  bitems <- getsState (getActorItem actor)
   -- Check if something is here to pick up. Items are never invisible.
   case lvl `atI` bpos body of
     [] -> abortWith "nothing here"
@@ -213,12 +213,12 @@ actorPickupItem actor = do
 dropItem :: MonadClient m => m CmdSer
 dropItem = do
   -- TODO: allow dropping a given number of identical items.
-  Kind.COps{coactor, coitem} <- getsLocal scops
+  Kind.COps{coactor, coitem} <- getsState scops
   Just leader <- getsClient getLeader
-  pbody <- getsLocal $ getActorBody leader
-  ims   <- getsLocal $ getActorItem leader
+  pbody <- getsState $ getActorBody leader
+  ims   <- getsState $ getActorItem leader
   stack <- getAnyItem leader "What to drop?" ims "in inventory"
-  disco <- getsLocal sdisco
+  disco <- getsState sdisco
   let item = stack { jcount = 1 }
   -- Do not advertise if an enemy drops an item. Probably junk.
   msgAdd $ makeSentence
@@ -251,8 +251,8 @@ getItem :: MonadClient m
         -> Text            -- ^ how to refer to the collection of items
         -> m Item
 getItem leader prompt p ptext is0 isn = do
-  lvl  <- getsLocal getArena
-  body <- getsLocal $ getActorBody leader
+  lvl  <- getsState getArena
+  body <- getsState $ getActorBody leader
   let pos = bpos body
       tis = lvl `atI` pos
       floorFull = not $ null tis
@@ -286,7 +286,7 @@ getItem leader prompt p ptext is0 isn = do
               INone     -> (isp, [], prompt)
               ISuitable -> (isp, isp, ptext <+> isn <> ".")
               IAll      -> (is0, is0, allObjectsName <+> isn <> ".")
-        disco <- getsLocal sdisco
+        disco <- getsState sdisco
         io <- itemOverlay disco True imsOver
         (command, modifier) <-
           displayChoiceUI (msg <+> choice ims) io (keys ims)

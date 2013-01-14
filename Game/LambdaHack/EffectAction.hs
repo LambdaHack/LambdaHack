@@ -55,7 +55,7 @@ rndToAction r = do
 -- | Focus on the hero being wounded/displaced/etc.
 focusIfOurs :: MonadActionRoot m => ActorId -> m Bool
 focusIfOurs _target = do
---  s  <- getLocal
+--  s  <- getState
   if True -- isAHero s target
     then return True
     else return False
@@ -69,15 +69,15 @@ effectToAction :: MonadServerChan m
                => Effect.Effect -> Int -> ActorId -> ActorId -> Int -> Bool
                -> m Bool
 effectToAction effect verbosity source target power block = do
-  oldS <- getsGlobal (getActorBody target)
-  oldT <- getsGlobal (getActorBody target)
+  oldS <- getsState (getActorBody target)
+  oldT <- getsState (getActorBody target)
   let oldHP = bhp oldT
   (b, msg) <- eff effect verbosity source target power
   -- We assume if targed moved to a level, which is not the current level,
   -- his HP is unchanged.
-  memTm <- getsGlobal $ memActor target
+  memTm <- getsState $ memActor target
   newHP <- if memTm
-           then getsGlobal (bhp . getActorBody target)
+           then getsState (bhp . getActorBody target)
            else return oldHP
   -- Target part of message sent here, so only target visibility checked.
   void $ broadcastPosCli [bpos oldT]
@@ -94,23 +94,23 @@ eff :: MonadServerChan m => Effect.Effect -> Int -> ActorId -> ActorId -> Int
     -> m (Bool, Text)
 eff Effect.NoEffect _ _ _ _ = nullEffect
 eff Effect.Heal _ _source target power = do
-  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsGlobal scops
+  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
   let bhpMax m = maxDice (ahp $ okind $ bkind m)
-  tm <- getsGlobal (getActorBody target)
+  tm <- getsState (getActorBody target)
   if bhp tm >= bhpMax tm || power <= 0
     then nullEffect
     else do
       void $ focusIfOurs target
-      modifyGlobal $ updateActorBody target (addHp coactor power)
+      modifyState $ updateActorBody target (addHp coactor power)
       return (True, actorVerb coactor tm "feel better")
 eff (Effect.Wound nDm) verbosity source target power = do
-  Kind.COps{coactor} <- getsGlobal scops
-  s <- getGlobal
+  Kind.COps{coactor} <- getsState scops
+  s <- getState
   n <- rndToAction $ rollDice nDm
   if n + power <= 0 then nullEffect else do
     void $ focusIfOurs target
-    tm <- getsGlobal (getActorBody target)
-    isSpawning <- getsGlobal $ flip isSpawningFaction $ bfaction tm
+    tm <- getsState (getActorBody target)
+    isSpawning <- getsState $ flip isSpawningFaction $ bfaction tm
     let newHP = bhp tm - n - power
         msg
           | newHP <= 0 =
@@ -128,12 +128,12 @@ eff (Effect.Wound nDm) verbosity source target power = do
             actorVerb coactor tm $ "lose" <+> showT (n + power) <> "HP"
           | otherwise = actorVerb coactor tm "hiss in pain"
     -- Damage the target.
-    modifyGlobal $ updateActorBody target $ \ m -> m { bhp = newHP }
+    modifyState $ updateActorBody target $ \ m -> m { bhp = newHP }
     return (True, msg)
 eff Effect.Dominate _ source target _power = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsGlobal scops
-  s <- getGlobal
-  arena <- getsGlobal sarena
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  s <- getState
+  arena <- getsState sarena
   if not $ isAHero s target
     then do  -- Monsters have weaker will than heroes.
       selectLeaderSer target arena
@@ -145,7 +145,7 @@ eff Effect.Dominate _ source target _power = do
             in Just $ speedScale (1%2) speed
       -- Sync the monster with the hero move time for better display
       -- of missiles and for the domination to actually take one player's turn.
-      modifyGlobal $ updateActorBody target $ \ b -> b { bfaction = sside s
+      modifyState $ updateActorBody target $ \ b -> b { bfaction = sside s
                                                        , btime = getTime s
                                                        , bspeed = halfSpeed b }
       -- Display status line and FOV for the new actor.
@@ -155,26 +155,26 @@ eff Effect.Dominate _ source target _power = do
       return (True, "")
     else if source == target
          then do
-           lm <- getsGlobal hostileList
-           lxsize <- getsGlobal (lxsize . getArena)
-           lysize <- getsGlobal (lysize . getArena)
+           lm <- getsState hostileList
+           lxsize <- getsState (lxsize . getArena)
+           lysize <- getsState (lysize . getArena)
            let cross m = bpos m : vicinityCardinal lxsize lysize (bpos m)
                vis = IS.fromList $ concatMap cross lm
-           lvl <- getsGlobal getArena
-           side <- getsGlobal sside
+           lvl <- getsState getArena
+           side <- getsState sside
            sendUpdateCli side $ RememberCli arena vis lvl
            return (True, "A dozen voices yells in anger.")
          else nullEffect
 eff Effect.SummonFriend _ source target power = do
-  tm <- getsGlobal (getActorBody target)
-  s <- getGlobal
+  tm <- getsState (getActorBody target)
+  s <- getState
   if isAHero s source
     then summonHeroes (1 + power) (bpos tm)
     else summonMonsters (1 + power) (bpos tm)
   return (True, "")
 eff Effect.SummonEnemy _ source target power = do
-  tm <- getsGlobal (getActorBody target)
-  s  <- getGlobal
+  tm <- getsState (getActorBody target)
+  s  <- getState
   if isAHero s source
     then summonMonsters (1 + power) (bpos tm)
     else summonHeroes (1 + power) (bpos tm)
@@ -184,31 +184,31 @@ eff Effect.ApplyPerfume _ source target _ =
   then return (True, "Tastes like water, but with a strong rose scent.")
   else do
     let upd lvl = lvl { lsmell = IM.empty }
-    modifyGlobal (updateArena upd)
+    modifyState (updateArena upd)
     return (True, "The fragrance quells all scents in the vicinity.")
 eff Effect.Regeneration verbosity source target power =
   eff Effect.Heal verbosity source target power
 eff Effect.Searching _ _source _target _power =
   return (True, "It gets lost and you search in vain.")
 eff Effect.Ascend _ _ target power = do
-  Kind.COps{coactor} <- getsGlobal scops
-  tm <- getsGlobal (getActorBody target)
+  Kind.COps{coactor} <- getsState scops
+  tm <- getsState (getActorBody target)
   void $ focusIfOurs target
   effLvlGoUp target (power + 1)
   -- TODO: The following message too late if a monster squashed by going up,
   -- unless it's ironic. ;) The same below.
-  side <- getsGlobal sside
-  gquit <- getsGlobal $ gquit . (IM.! side) . sfaction
+  side <- getsState sside
+  gquit <- getsState $ gquit . (IM.! side) . sfaction
   return $ if maybe Camping snd gquit == Victor
            then (True, "")
            else (True, actorVerb coactor tm "find a way upstairs")
 eff Effect.Descend _ _ target power = do
-  Kind.COps{coactor} <- getsGlobal scops
-  tm <- getsGlobal (getActorBody target)
+  Kind.COps{coactor} <- getsState scops
+  tm <- getsState (getActorBody target)
   void $ focusIfOurs target
   effLvlGoUp target (- (power + 1))
-  side <- getsGlobal sside
-  gquit <- getsGlobal $ gquit . (IM.! side) . sfaction
+  side <- getsState sside
+  gquit <- getsState $ gquit . (IM.! side) . sfaction
   return $ if maybe Camping snd gquit == Victor
            then (True, "")
            else (True, actorVerb coactor tm "find a way downstairs")
@@ -220,9 +220,9 @@ nullEffect = return (False, "Nothing happens.")
 -- actor or swap positions with it, instead of squashing.
 squashActor :: MonadServerChan m => ActorId -> ActorId -> m ()
 squashActor source target = do
-  Kind.COps{{-coactor,-} coitem=Kind.Ops{okind, ouniqGroup}} <- getsGlobal scops
---  sm <- getsGlobal (getActorBody source)
---  tm <- getsGlobal (getActorBody target)
+  Kind.COps{{-coactor,-} coitem=Kind.Ops{okind, ouniqGroup}} <- getsState scops
+--  sm <- getsState (getActorBody source)
+--  tm <- getsState (getActorBody target)
   flavour <- getsServer sflavour
   discoRev <- getsServer sdiscoRev
   let h2hKind = ouniqGroup "weight"
@@ -236,24 +236,24 @@ squashActor source target = do
 --        , "in a staircase accident" ]
 --  msgAdd msg
   itemEffectAction 0 source target h2h False
-  s <- getGlobal
+  s <- getState
   -- The monster has to be killed first, before we step there (same turn!).
   assert (not (memActor target s) `blame` (source, target, "not killed")) $
     return ()
 
 effLvlGoUp :: MonadServerChan m => ActorId -> Int -> m ()
 effLvlGoUp aid k = do
-  pbodyCurrent <- getsGlobal $ getActorBody aid
-  bitems <- getsGlobal $ getActorItem aid
-  arena <- getsGlobal sarena
-  glo <- getGlobal
+  pbodyCurrent <- getsState $ getActorBody aid
+  bitems <- getsState $ getActorItem aid
+  arena <- getsState sarena
+  glo <- getState
   case whereTo glo arena k of
     Nothing -> fleeDungeon -- we are at the "end" of the dungeon
     Just (nln, npos) ->
       assert (nln /= arena `blame` (nln, "stairs looped")) $ do
-        timeCurrent <- getsGlobal getTime
+        timeCurrent <- getsState getTime
         -- Remove the actor from the old level.
-        modifyGlobal (deleteActor aid)
+        modifyState (deleteActor aid)
         -- Remember the level (e.g., when teleporting via scroll on the floor,
         -- register the scroll vanished, also let the other factions register
         -- the actor vanished in case they switch to this level from another
@@ -262,25 +262,25 @@ effLvlGoUp aid k = do
         remember
         -- Monsters hear no foe is left on the level. Cancel smell.
         -- Reduces memory load and savefile size.
-        hs <- getsGlobal heroList
+        hs <- getsState heroList
         when (null hs) $
-          modifyGlobal (updateArena (updateSmell (const IM.empty)))
+          modifyState (updateArena (updateSmell (const IM.empty)))
         -- Change arena, but not the leader yet. The actor will become
         -- a leader, but he is not inserted into the new level yet.
-        modifyGlobal $ updateSelectedArena nln
+        modifyState $ updateSelectedArena nln
         -- Sync the actor time with the level time.
-        timeLastVisited <- getsGlobal getTime
+        timeLastVisited <- getsState getTime
         let diff = timeAdd (btime pbodyCurrent) (timeNegate timeCurrent)
             pbody = pbodyCurrent {btime = timeAdd timeLastVisited diff}
         -- The actor is added to the new level, but there can be other actors
         -- at his old position or at his new position.
-        modifyGlobal (insertActor aid pbody)
-        modifyGlobal (updateActorItem aid (const bitems))
+        modifyState (insertActor aid pbody)
+        modifyState (updateActorItem aid (const bitems))
         -- Reset level and leader for all factions.
         broadcastCli [return . (/= bfaction pbody)] $ InvalidateArenaCli nln
         sendUpdateCli (bfaction pbody) $ SwitchLevelCli aid nln pbody bitems
         -- Checking actors at the new posiiton of the aid.
-        inhabitants <- getsGlobal (posToActor npos)
+        inhabitants <- getsState (posToActor npos)
         case inhabitants of
           Nothing -> return ()
 -- Broken if the effect happens, e.g. via a scroll and abort is not enough.
@@ -293,11 +293,11 @@ effLvlGoUp aid k = do
             -- because here an inactive actor is squashed.
             squashActor aid m
         -- Verify the monster on the staircase died.
-        inhabitants2 <- getsGlobal (posToActor npos)
+        inhabitants2 <- getsState (posToActor npos)
         when (isJust inhabitants2) $ assert `failure` inhabitants2
         -- Land the aid at the other end of the stairs, which is now
         -- clear of other actors.
-        modifyGlobal $ updateActorBody aid $ \b -> b { bpos = npos }
+        modifyState $ updateActorBody aid $ \b -> b { bpos = npos }
         -- The property of at most one actor on a tile is restored.
         -- Create a backup of the savegame.
         saveGameBkp
@@ -305,15 +305,15 @@ effLvlGoUp aid k = do
 -- | The leader leaves the dungeon.
 fleeDungeon :: MonadServerChan m => m ()
 fleeDungeon = do
-  Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsGlobal scops
-  glo <- getGlobal
-  side <- getsGlobal sside
+  Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsState scops
+  glo <- getState
+  side <- getsState sside
   go <- sendQueryCli side $ ConfirmYesNoCli
           "This is the way out. Really leave now?"
   when (not go) $ abortWith "Game resumed."
   let (items, total) = calculateTotal glo
       upd f = f {gquit = Just (False, Victor)}
-  modifyGlobal $ updateSide upd
+  modifyState $ updateSide upd
   if total == 0
   then do
     -- The player can back off at each of these steps.
@@ -329,22 +329,22 @@ fleeDungeon = do
           [ "Congratulations, you won!"
           , "Here's your loot, worth"
           , MU.NWs total currencyName ]
-    discoS <- getsGlobal sdisco
+    discoS <- getsState sdisco
     sendUpdateCli side $ ShowItemsCli discoS winMsg items
     let upd2 f = f {gquit = Just (True, Victor)}
-    modifyGlobal $ updateSide upd2
+    modifyState $ updateSide upd2
 
 -- | The source actor affects the target actor, with a given item.
 -- If the event is seen, the item may get identified.
 itemEffectAction :: MonadServerChan m
                  => Int -> ActorId -> ActorId -> Item -> Bool -> m ()
 itemEffectAction verbosity source target item block = do
-  Kind.COps{coitem=Kind.Ops{okind}} <- getsGlobal scops
-  st <- getGlobal
+  Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
+  st <- getState
   -- Destroys attacking actor and its items: a hack for projectiles.
   when (isProjectile st source) $
-    modifyGlobal (deleteActor source)
-  discoS <- getsGlobal sdisco
+    modifyState (deleteActor source)
+  discoS <- getsState sdisco
   let effect = ieffect $ okind $ fromJust $ jkind discoS item
   -- The msg describes the target part of the action.
   b <- effectToAction effect verbosity source target (jpower item) block
@@ -355,28 +355,28 @@ itemEffectAction verbosity source target item block = do
 -- | Make the item known to the leader.
 discover :: MonadServerChan m => Discoveries -> Item -> m ()
 discover discoS i = do
-  side <- getsGlobal sside
+  side <- getsState sside
   let ix = jkindIx i
       ik = discoS M.! ix
   sendUpdateCli side $ DiscoverCli ik i
 
 selectLeaderSer :: MonadServerChan m => ActorId -> LevelId -> m Bool
 selectLeaderSer actor lid = do
-  side <- getsGlobal sside
+  side <- getsState sside
   b <- sendQueryCli side $ SelectLeaderCli actor lid
-  modifyGlobal $ updateSelectedArena lid
+  modifyState $ updateSelectedArena lid
   return b
 
 summonHeroes :: MonadServer m => Int -> Point -> m ()
 summonHeroes n pos =
   assert (n > 0) $ do
-  cops <- getsGlobal scops
+  cops <- getsState scops
   newHeroId <- getsServer scounter
-  s <- getGlobal
+  s <- getState
   ser <- getServer
-  side <- getsGlobal sside
+  side <- getsState sside
   let (sN, serN) = iterate (uncurry $ addHero cops pos side) (s, ser) !! n
-  putGlobal sN
+  putState sN
   putServer serN
   b <- focusIfOurs newHeroId
   assert (b `blame` (newHeroId, "leader summons himself")) $
@@ -385,10 +385,10 @@ summonHeroes n pos =
 -- TODO: merge with summonHeroes; disregard "spawn" and "playable" factions and "spawn" flags for monsters; only check 'summon"
 summonMonsters :: MonadServer m => Int -> Point -> m ()
 summonMonsters n pos = do
-  faction <- getsGlobal sfaction
+  faction <- getsState sfaction
   Kind.COps{ cotile
            , coactor=Kind.Ops{opick, okind}
-           , cofact=Kind.Ops{opick=fopick, oname=foname}} <- getsGlobal scops
+           , cofact=Kind.Ops{opick=fopick, oname=foname}} <- getsState scops
   spawnKindId <- rndToAction $ fopick "playable" (\k -> fspawn k > 0)
   -- Spawn frequency required greater than zero, but otherwise ignored.
   let inFactionKind m = isJust $ lookup (foname spawnKindId) (afreq m)
@@ -398,34 +398,34 @@ summonMonsters n pos = do
   let bfaction = fst $ fromJust
                  $ find (\(_, fa) -> gkind fa == spawnKindId)
                  $ IM.toList faction
-  s <- getGlobal
+  s <- getState
   ser <- getServer
   let (sN, serN) = iterate (uncurry $ addMonster cotile mk hp pos
                                                  bfaction False) (s, ser) !! n
-  putGlobal sN
+  putState sN
   putServer serN
 
 -- | Remove a dead actor. Check if game over.
 checkPartyDeath :: MonadServerChan m => ActorId -> m ()
 checkPartyDeath target = do
-  pbody <- getsGlobal $ getActorBody target
+  pbody <- getsState $ getActorBody target
   Config{configFirstDeathEnds} <- getsServer sconfig
   -- Place the actor's possessions on the map.
-  bitems <- getsGlobal (getActorItem target)
-  modifyGlobal $ updateArena $ dropItemsAt bitems $ bpos pbody
+  bitems <- getsState (getActorItem target)
+  modifyState $ updateArena $ dropItemsAt bitems $ bpos pbody
   let fid = bfaction pbody
       animateDeath = do
         broadcastPosCli [bpos pbody] (AnimateDeathCli target)
         sendQueryCli fid $ CarryOnCli
       animateGameOver = do
         go <- animateDeath
-        modifyGlobal $ updateActorBody target $ \b -> b {bsymbol = Just '%'}
+        modifyState $ updateActorBody target $ \b -> b {bsymbol = Just '%'}
         -- TODO: add side argument to gameOver instead
-        side <- getsGlobal sside
+        side <- getsState sside
         switchGlobalSelectedSide fid
         gameOver go
         switchGlobalSelectedSide side
-  isSpawning <- getsGlobal $ flip isSpawningFaction fid
+  isSpawning <- getsState $ flip isSpawningFaction fid
   -- For a swapning faction, no messages nor animations are shown below.
   -- A message was shown in @eff@ and that's enough.
   when (not isSpawning) $ do
@@ -433,7 +433,7 @@ checkPartyDeath target = do
       then animateGameOver
       else void $ animateDeath
   -- Remove the dead actor.
-  modifyGlobal $ deleteActor target
+  modifyState $ deleteActor target
   -- We don't register that the lethal potion on the floor
   -- is used up. If that's a problem, add a one turn delay
   -- to the effect of all lethal objects (displaying an "agh! dying"
@@ -444,14 +444,14 @@ checkPartyDeath target = do
 -- | End game, showing the ending screens, if requested.
 gameOver :: MonadServerChan m => Bool -> m ()
 gameOver showEndingScreens = do
-  arena <- getsGlobal sarena
+  arena <- getsState sarena
   let upd f = f {gquit = Just (False, Killed arena)}
-  modifyGlobal $ updateSide upd
+  modifyState $ updateSide upd
   when showEndingScreens $ do
-    Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsGlobal scops
-    s <- getGlobal
-    depth <- getsGlobal sdepth
-    time <- getsGlobal getTime
+    Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsState scops
+    s <- getState
+    depth <- getsState sdepth
+    time <- getsState getTime
     let (items, total) = calculateTotal s
         deepest = levelNumber arena  -- use deepest visited instead of level of death
         failMsg | timeFit time timeTurn < 300 =
@@ -475,11 +475,11 @@ gameOver showEndingScreens = do
     if null items
       then do
         let upd2 f = f {gquit = Just (True, Killed arena)}
-        modifyGlobal $ updateSide upd2
+        modifyState $ updateSide upd2
       else do
-        discoS <- getsGlobal sdisco
-        side <- getsGlobal sside
+        discoS <- getsState sdisco
+        side <- getsState sside
         go <- sendQueryCli side $ ConfirmShowItemsCli discoS loseMsg items
         when go $ do
           let upd2 f = f {gquit = Just (True, Killed arena)}
-          modifyGlobal $ updateSide upd2
+          modifyState $ updateSide upd2

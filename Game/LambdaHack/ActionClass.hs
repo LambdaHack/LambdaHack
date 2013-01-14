@@ -19,6 +19,8 @@ import Game.LambdaHack.Config
 import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 
+-- * Component types
+
 -- | Connection information for each client, indexed by faction identifier.
 type ConnDict = IM.IntMap ConnClient
 
@@ -40,6 +42,8 @@ data Session = Session
   , sconfigUI  :: !ConfigUI         -- ^ the UI config for this session
   }
 
+-- * Basic monads
+
 -- | The bottom of the action monads class semilattice.
 class (Monad m, Functor m, Show (m ())) => MonadActionRoot m where
   -- Set the current exception handler. First argument is the handler,
@@ -56,17 +60,13 @@ instance (Monoid a, MonadActionRoot m) => MonadActionRoot (WriterT a m) where
 instance MonadActionRoot m => Show (WriterT a m b) where
   show _ = "an action"
 
-class (MonadReader Pers m, MonadActionRoot m) => MonadServerRO m where
-  getGlobal    :: m State
-  getsGlobal   :: (State -> a) -> m a
-  getServer    :: m StateServer
-  getsServer   :: (StateServer -> a) -> m a
+class MonadActionRoot m => MonadActionRO m where
+  getState    :: m State
+  getsState   :: (State -> a) -> m a
 
-instance (Monoid a, MonadServerRO m) => MonadServerRO (WriterT a m) where
-  getGlobal    = lift getGlobal
-  getsGlobal   = lift . getsGlobal
-  getServer    = lift getServer
-  getsServer   = lift . getsServer
+instance (Monoid a, MonadActionRO m) => MonadActionRO (WriterT a m) where
+  getState    = lift getState
+  getsState   = lift . getsState
 
 class MonadActionRoot m => MonadActionIO m where
   -- We do not provide a MonadIO instance, so that outside of Action/
@@ -76,19 +76,33 @@ class MonadActionRoot m => MonadActionIO m where
 instance (Monoid a, MonadActionIO m) => MonadActionIO (WriterT a m) where
   liftIO = lift . liftIO
 
-class (MonadActionIO m, MonadServerRO m) => MonadServer m where
-  modifyGlobal :: (State -> State) -> m ()
-  putGlobal    :: State -> m ()
+class (MonadActionIO m, MonadActionRO m) => MonadAction m where
+  modifyState :: (State -> State) -> m ()
+  putState    :: State -> m ()
+
+instance (Monoid a, MonadAction m) => MonadAction (WriterT a m) where
+  modifyState = lift . modifyState
+  putState    = lift . putState
+
+-- * Server monads
+
+class (MonadReader Pers m, MonadActionRO m) => MonadServerRO m where
+  getServer    :: m StateServer
+  getsServer   :: (StateServer -> a) -> m a
+
+instance (Monoid a, MonadServerRO m) => MonadServerRO (WriterT a m) where
+  getServer    = lift getServer
+  getsServer   = lift . getsServer
+
+class (MonadAction m, MonadServerRO m) => MonadServer m where
   modifyServer :: (StateServer -> StateServer) -> m ()
   putServer    :: StateServer -> m ()
 
 instance (Monoid a, MonadServer m) => MonadServer (WriterT a m) where
-  modifyGlobal = lift . modifyGlobal
-  putGlobal    = lift . putGlobal
   modifyServer = lift . modifyServer
   putServer    = lift . putServer
 
-class (MonadActionIO m, MonadServer m) => MonadServerChan m where
+class MonadServer m => MonadServerChan m where
   getDict      :: m ConnDict
   getsDict     :: (ConnDict -> a) -> m a
   modifyDict   :: (ConnDict -> ConnDict) -> m ()
@@ -100,33 +114,27 @@ instance (Monoid a, MonadServerChan m) => MonadServerChan (WriterT a m) where
   modifyDict   = lift . modifyDict
   putDict      = lift . putDict
 
-class MonadActionRoot m => MonadClientRO m where
+-- * Client monads
+
+class MonadActionRO m => MonadClientRO m where
   getsSession  :: (Session -> a) -> m a
   getClient    :: m StateClient
   getsClient   :: (StateClient -> a) -> m a
-  getLocal     :: m State
-  getsLocal    :: (State -> a) -> m a
 
 instance (Monoid a, MonadClientRO m) => MonadClientRO (WriterT a m) where
   getsSession  = lift . getsSession
   getClient    = lift getClient
   getsClient   = lift . getsClient
-  getLocal     = lift getLocal
-  getsLocal    = lift . getsLocal
 
-class (MonadActionIO m, MonadClientRO m) => MonadClient m where
+class (MonadAction m, MonadClientRO m) => MonadClient m where
   modifyClient :: (StateClient -> StateClient) -> m ()
   putClient    :: StateClient -> m ()
-  modifyLocal  :: (State -> State) -> m ()
-  putLocal     :: State -> m ()
 
 instance (Monoid a, MonadClient m) => MonadClient (WriterT a m) where
   modifyClient = lift . modifyClient
   putClient    = lift . putClient
-  modifyLocal  = lift . modifyLocal
-  putLocal     = lift . putLocal
 
-class (MonadActionIO m, MonadClient m) => MonadClientChan m where
+class MonadClient m => MonadClientChan m where
   getChan      :: m ConnClient
   getsChan     :: (ConnClient -> a) -> m a
   modifyChan   :: (ConnClient -> ConnClient) -> m ()

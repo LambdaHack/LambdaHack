@@ -253,7 +253,7 @@ updateActorItem actor f s =
 -- | Checks if the actor is present on the current level.
 -- The order of argument here and in other functions is set to allow
 --
--- > b <- getsGlobal (memActor a)
+-- > b <- getsState (memActor a)
 memActor :: ActorId -> State -> Bool
 memActor a s = IM.member a (lactor (getArena s))
 

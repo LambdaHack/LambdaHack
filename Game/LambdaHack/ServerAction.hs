@@ -73,7 +73,7 @@ applySer :: MonadServerChan m   -- MonadServer m
          -> Item     -- ^ the item to be applied
          -> m ()
 applySer actor verb item = do
-  body <- getsGlobal (getActorBody actor)
+  body <- getsState (getActorBody actor)
   let pos = bpos body
       -- Only one item consumed, even if several in inventory.
       consumed = item { jcount = 1 }
@@ -93,16 +93,16 @@ removeFromInventory :: MonadServer m => ActorId -> Item -> Point -> m ()
 removeFromInventory actor i pos = do
   b <- removeFromPos i pos
   unless b $
-    modifyGlobal (updateActorItem actor (removeItemByLetter i))
+    modifyState (updateActorItem actor (removeItemByLetter i))
 
 -- | Remove given item from the given position. Tell if successful.
 removeFromPos :: MonadServer m => Item -> Point -> m Bool
 removeFromPos i pos = do
-  lvl <- getsGlobal getArena
+  lvl <- getsState getArena
   if not $ any (equalItemIdentity i) (lvl `atI` pos)
     then return False
     else do
-      modifyGlobal (updateArena (updateIMap adj))
+      modifyState (updateArena (updateIMap adj))
       return True
      where
       rib Nothing = assert `failure` (i, pos)
@@ -122,13 +122,13 @@ projectSer :: MonadServerChan m
            -> Item     -- ^ the item to be projected
            -> m ()
 projectSer source tpos eps _verb item = do
-  cops@Kind.COps{coactor} <- getsGlobal scops
-  sm    <- getsGlobal (getActorBody source)
-  Actor{btime} <- getsGlobal $ getActorBody source
-  lvl   <- getsGlobal getArena
-  lxsize <- getsGlobal (lxsize . getArena)
-  lysize <- getsGlobal (lysize . getArena)
-  side <- getsGlobal sside
+  cops@Kind.COps{coactor} <- getsState scops
+  sm    <- getsState (getActorBody source)
+  Actor{btime} <- getsState $ getActorBody source
+  lvl   <- getsState getArena
+  lxsize <- getsState (lxsize . getArena)
+  lysize <- getsState (lysize . getArena)
+  side <- getsState sside
   let consumed = item { jcount = 1 }
       spos = bpos sm
       -- When projecting, the first turn is spent aiming.
@@ -155,14 +155,14 @@ projectSer source tpos eps _verb item = do
     Just [] -> assert `failure` (spos, tpos, "project from the edge of level")
     Just path@(pos:_) -> do
       removeFromInventory source consumed spos
-      inhabitants <- getsGlobal (posToActor pos)
+      inhabitants <- getsState (posToActor pos)
       if accessible cops lvl spos pos && isNothing inhabitants
         then do
-          glo <- getGlobal
+          glo <- getState
           ser <- getServer
           let (nglo, nser) =
                 addProjectile cops consumed pos (bfaction sm) path time glo ser
-          putGlobal nglo
+          putState nglo
           putServer nser
           broadcastPosCli [spos, pos] $ ProjectCli spos source consumed
         else
@@ -173,20 +173,20 @@ projectSer source tpos eps _verb item = do
 -- | Perform the action specified for the tile in case it's triggered.
 triggerSer :: MonadServerChan m => ActorId -> Point -> m ()
 triggerSer aid dpos = do
-  Kind.COps{cotile=Kind.Ops{okind, opick}} <- getsGlobal scops
-  lvl <- getsGlobal getArena
+  Kind.COps{cotile=Kind.Ops{okind, opick}} <- getsState scops
+  lvl <- getsState getArena
   let f (F.Cause effect) = do
         -- No block against tile, hence @False@.
         void $ effectToAction effect 0 aid aid 0 False
         return ()
       f (F.ChangeTo tgroup) = do
-        Level{lactor} <- getsGlobal getArena
+        Level{lactor} <- getsState getArena
         case lvl `atI` dpos of
           [] -> if unoccupied (IM.elems lactor) dpos
                 then do
                   newTileId <- rndToAction $ opick tgroup (const True)
                   let adj = (Kind.// [(dpos, newTileId)])
-                  modifyGlobal (updateArena (updateLMap adj))
+                  modifyState (updateArena (updateLMap adj))
 -- TODO: take care of AI using this function (aborts, etc.).
                 else abortWith "blocked"  -- by monsters or heroes
           _ : _ -> abortWith "jammed"  -- by items
@@ -197,36 +197,36 @@ triggerSer aid dpos = do
 
 pickupSer :: MonadServerChan m => ActorId -> Item -> Char -> m ()
 pickupSer aid i l = do
-  side <- getsGlobal sside
-  body <- getsGlobal (getActorBody aid)
+  side <- getsState sside
+  body <- getsState (getActorBody aid)
   -- Nobody can be forced to pick up an item.
   assert (bfaction body == side `blame` (body, side)) $ do
     let p = bpos body
-    bitems <- getsGlobal (getActorItem aid)
+    bitems <- getsState (getActorItem aid)
     removeFromPos i p
       >>= assert `trueM` (aid, i, p, "item is stuck")
     let (ni, nitems) = joinItem (i {jletter = Just l}) bitems
-    modifyGlobal $ updateActorBody aid $ \m ->
+    modifyState $ updateActorBody aid $ \m ->
       m {bletter = maxLetter (fromJust $ jletter ni) (bletter m)}
-    modifyGlobal (updateActorItem aid (const nitems))
+    modifyState (updateActorItem aid (const nitems))
     void $ broadcastPosCli [p] (PickupCli aid i ni)
 
 -- ** DropSer
 
 dropSer :: MonadServer m => ActorId -> Item -> m ()
 dropSer aid item = do
-  pos <- getsGlobal (bpos . getActorBody aid)
-  modifyGlobal (updateActorItem aid (removeItemByLetter item))
-  modifyGlobal (updateArena (dropItemsAt [item] pos))
+  pos <- getsState (bpos . getActorBody aid)
+  modifyState (updateActorItem aid (removeItemByLetter item))
+  modifyState (updateArena (dropItemsAt [item] pos))
 
 -- * WaitSer
 
 -- | Update the wait/block count.
 waitSer :: MonadServer m => ActorId -> m ()
 waitSer actor = do
-  Kind.COps{coactor} <- getsGlobal scops
-  time <- getsGlobal getTime
-  modifyGlobal $ updateActorBody actor $ \ m ->
+  Kind.COps{coactor} <- getsState scops
+  time <- getsState getTime
+  modifyState $ updateActorBody actor $ \ m ->
     m {bwait = timeAddFromSpeed coactor m time}
 
 -- ** MoveSer
@@ -240,14 +240,14 @@ waitSer actor = do
 -- does not try to reach to a distant tile.
 moveSer :: MonadServerChan m => ActorId -> Vector -> m ()
 moveSer actor dir = do
-  cops@Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getsGlobal scops
-  lvl <- getsGlobal getArena
-  sm <- getsGlobal (getActorBody actor)
+  cops@Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getsState scops
+  lvl <- getsState getArena
+  sm <- getsState (getActorBody actor)
   let spos = bpos sm           -- source position
       tpos = spos `shift` dir  -- target position
   -- We start by looking at the target position.
-  tgt <- getsGlobal (posToActor tpos)
-  side <- getsGlobal sside
+  tgt <- getsState (posToActor tpos)
+  side <- getsState sside
   case tgt of
     Just target ->
       -- Attacking does not require full access, adjacency is enough.
@@ -255,7 +255,7 @@ moveSer actor dir = do
     Nothing
       | accessible cops lvl spos tpos ->
           -- Perform the actual move.
-          modifyGlobal $ updateActorBody actor $ \ body -> body {bpos = tpos}
+          modifyState $ updateActorBody actor $ \ body -> body {bpos = tpos}
       | Tile.canBeHidden cotile (okind $ lvl `at` tpos) -> do
           sendUpdateCli side
             $ ShowMsgCli "You search all adjacent walls for half a second."
@@ -270,20 +270,20 @@ moveSer actor dir = do
 -- but for melee and not using up the weapon.
 actorAttackActor :: MonadServerChan m => ActorId -> ActorId -> m ()
 actorAttackActor source target = do
-  sm <- getsGlobal (getActorBody source)
-  tm <- getsGlobal (getActorBody target)
-  time <- getsGlobal getTime
-  discoS <- getsGlobal sdisco
-  s <- getGlobal
+  sm <- getsState (getActorBody source)
+  tm <- getsState (getActorBody target)
+  time <- getsState getTime
+  discoS <- getsState sdisco
+  s <- getState
   let spos = bpos sm
       tpos = bpos tm
   if bfaction sm == bfaction tm && isPlayerFaction s (bfaction sm)
      && not (bproj sm) && not (bproj tm)
     then assert `failure` (source, target, "player AI bumps into friendlies")
     else do
-      cops@Kind.COps{coitem=Kind.Ops{opick, okind}} <- getsGlobal scops
-      state <- getGlobal
-      bitems <- getsGlobal (getActorItem source)
+      cops@Kind.COps{coitem=Kind.Ops{opick, okind}} <- getsState scops
+      state <- getState
+      bitems <- getsState (getActorItem source)
       let h2hGroup = if isAHero state source then "unarmed" else "monstrous"
       h2hKind <- rndToAction $ opick h2hGroup (const True)
       flavour <- getsServer sflavour
@@ -318,13 +318,13 @@ actorAttackActor source target = do
 -- | Search for hidden doors.
 search :: MonadServerChan m => ActorId -> m ()
 search aid = do
-  Kind.COps{coitem, cotile} <- getsGlobal scops
-  lvl <- getsGlobal getArena
-  lsecret <- getsGlobal (lsecret . getArena)
-  lxsize <- getsGlobal (lxsize . getArena)
-  ppos <- getsGlobal (bpos . getActorBody aid)
-  pitems <- getsGlobal (getActorItem aid)
-  discoS <- getsGlobal sdisco
+  Kind.COps{coitem, cotile} <- getsState scops
+  lvl <- getsState getArena
+  lsecret <- getsState (lsecret . getArena)
+  lxsize <- getsState (lxsize . getArena)
+  ppos <- getsState (bpos . getActorBody aid)
+  pitems <- getsState (getActorItem aid)
+  discoS <- getsState sdisco
   let delta = timeScale timeTurn $
                 case strongestSearch coitem discoS pitems of
                   Just i  -> 1 + jpower i
@@ -341,8 +341,8 @@ search aid = do
                 else IM.delete loc sle
            else sle
       leNew = foldl' searchTile lsecret (moves lxsize)
-  modifyGlobal (updateArena (\ l -> l {lsecret = leNew}))
-  lvlNew <- getsGlobal getArena
+  modifyState (updateArena (\ l -> l {lsecret = leNew}))
+  lvlNew <- getsState getArena
   let triggerHidden mv = do
         let dpos = shift ppos mv
             t = lvlNew `at` dpos
@@ -354,10 +354,10 @@ search aid = do
 -- | An actor opens a door.
 actorOpenDoor :: MonadServerChan m => ActorId -> Vector -> m ()
 actorOpenDoor actor dir = do
-  Kind.COps{cotile} <- getsGlobal scops
-  lvl<- getsGlobal getArena
-  body <- getsGlobal (getActorBody actor)
-  glo <- getGlobal
+  Kind.COps{cotile} <- getsState scops
+  lvl<- getsState getArena
+  body <- getsState (getActorBody actor)
+  glo <- getState
   let dpos = shift (bpos body) dir  -- the position we act upon
       t = lvl `at` dpos
       isVerbose = isPlayerFaction glo (bfaction body)
@@ -375,13 +375,13 @@ actorOpenDoor actor dir = do
 -- | Actor moves or swaps position with others or opens doors.
 runSer :: MonadServerChan m => ActorId -> Vector -> m ()
 runSer actor dir = do
-  cops <- getsGlobal scops
-  lvl <- getsGlobal getArena
-  sm <- getsGlobal (getActorBody actor)
+  cops <- getsState scops
+  lvl <- getsState getArena
+  sm <- getsState (getActorBody actor)
   let spos = bpos sm           -- source position
       tpos = spos `shift` dir  -- target position
   -- We start by looking at the target position.
-  tgt <- getsGlobal (posToActor tpos)
+  tgt <- getsState (posToActor tpos)
   case tgt of
     Just target
       | accessible cops lvl spos tpos ->
@@ -391,19 +391,19 @@ runSer actor dir = do
     Nothing
       | accessible cops lvl spos tpos ->
           -- Perform the actual move.
-          modifyGlobal $ updateActorBody actor $ \ body -> body {bpos = tpos}
+          modifyState $ updateActorBody actor $ \ body -> body {bpos = tpos}
       | otherwise ->
           actorOpenDoor actor dir
 
 -- | When an actor runs (not walks) into another, they switch positions.
 displaceActor :: MonadServerChan m => ActorId -> ActorId -> m ()
 displaceActor source target = do
-  sm <- getsGlobal (getActorBody source)
-  tm <- getsGlobal (getActorBody target)
+  sm <- getsState (getActorBody source)
+  tm <- getsState (getActorBody target)
   let spos = bpos sm
       tpos = bpos tm
-  modifyGlobal $ updateActorBody source $ \ m -> m { bpos = tpos }
-  modifyGlobal $ updateActorBody target $ \ m -> m { bpos = spos }
+  modifyState $ updateActorBody source $ \ m -> m { bpos = tpos }
+  modifyState $ updateActorBody target $ \ m -> m { bpos = spos }
   broadcastPosCli [spos, tpos] $ DisplaceCli source target
 --  leader <- getsClient getLeader
 --  if Just source == leader
@@ -423,7 +423,7 @@ gameExitSer =
 gameRestartSer :: MonadServer m => m ()
 gameRestartSer = do
   let upd f = f {gquit = Just (False, Restart)}
-  modifyGlobal $ updateSide upd
+  modifyState $ updateSide upd
 
 -- * Assorted helper server functions.
 
@@ -472,12 +472,12 @@ rollMonster Kind.COps{ cotile
 -- | Generate a monster, possibly.
 generateMonster :: MonadServer m => m ()
 generateMonster = do
-  cops <- getsGlobal scops
-  state <- getGlobal
+  cops <- getsState scops
+  state <- getState
   ser <- getServer
   per <- askPerceptionSer  -- TODO: sum over all not spawning factions
   (nstate, nser) <- rndToAction $ rollMonster cops per state ser
-  putGlobal nstate
+  putState nstate
   srandom <- getsServer srandom
   putServer $! nser {srandom}
 
@@ -486,9 +486,9 @@ regenerateLevelHP :: MonadServer m => m ()
 regenerateLevelHP = do
   Kind.COps{ coitem
            , coactor=coactor@Kind.Ops{okind}
-           } <- getsGlobal scops
-  time <- getsGlobal getTime
-  discoS <- getsGlobal sdisco
+           } <- getsState scops
+  time <- getsState getTime
+  discoS <- getsState sdisco
   let upd itemIM a m =
         let ak = okind $ bkind m
             bitems = fromMaybe [] $ IM.lookup a itemIM
@@ -505,13 +505,13 @@ regenerateLevelHP = do
   -- Only the heroes on the current level regenerate (others are frozen
   -- in time together with their level). This prevents cheating
   -- via sending one hero to a safe level and waiting there.
-  hi <- getsGlobal (linv . getArena)
-  modifyGlobal (updateArena (updateActor (IM.mapWithKey (upd hi))))
+  hi <- getsState (linv . getArena)
+  modifyState (updateArena (updateActor (IM.mapWithKey (upd hi))))
 
 -- | Add new smell traces to the level. Only humans leave a strong scent.
 addSmell :: MonadServer m => ActorId -> m ()
 addSmell aid = do
-  time <- getsGlobal getTime
-  ppos <- getsGlobal $ bpos . getActorBody aid
+  time <- getsState getTime
+  ppos <- getsState $ bpos . getActorBody aid
   let upd = IM.insert ppos $ timeAdd time smellTimeout
-  modifyGlobal $ updateArena $ updateSmell upd
+  modifyState $ updateArena $ updateSmell upd

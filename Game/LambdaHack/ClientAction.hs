@@ -53,9 +53,9 @@ retarget :: MonadClient m => WriterT Slideshow m ()
 retarget = do
   stgtMode <- getsClient stgtMode
   assert (isNothing stgtMode) $ do
-    arena <- getsLocal sarena
+    arena <- getsState sarena
     Just leader <- getsClient getLeader
-    ppos <- getsLocal (bpos . getActorBody leader)
+    ppos <- getsState (bpos . getActorBody leader)
     msgAdd "Last target invalid."
     modifyClient $ \cli -> cli {scursor = ppos, seps = 0}
     targetMonster $ TgtAuto arena
@@ -71,7 +71,7 @@ moveCursor dir n = do
 
 cursorLevel :: MonadClientRO m => m Level
 cursorLevel = do
-  dungeon <- getsLocal sdungeon
+  dungeon <- getsState sdungeon
   stgtMode <- getsClient stgtMode
   let tgtId =
         maybe (assert `failure` "not targetting right now") tgtLevelId stgtMode
@@ -79,8 +79,8 @@ cursorLevel = do
 
 viewedLevel :: MonadClientRO m => m (LevelId, Level)
 viewedLevel = do
-  arena <- getsLocal sarena
-  dungeon <- getsLocal sdungeon
+  arena <- getsState sarena
+  dungeon <- getsState sdungeon
   stgtMode <- getsClient stgtMode
   let tgtId = maybe arena tgtLevelId stgtMode
   return $! (tgtId, dungeon M.! tgtId)
@@ -96,11 +96,11 @@ lookAt :: MonadClient m
        -> Text       -- ^ an extra sentence to print
        -> m Text
 lookAt detailed canSee pos msg = do
-  Kind.COps{coitem, cotile=Kind.Ops{oname}} <- getsLocal scops
+  Kind.COps{coitem, cotile=Kind.Ops{oname}} <- getsState scops
   (_, lvl) <- viewedLevel
   let is = lvl `atI` pos
       prefixSee = MU.Text $ if canSee then "you see" else "you remember"
-  disco <- getsLocal sdisco
+  disco <- getsState sdisco
   let nWs = partItemNWs coitem disco
       isd = case is of
               [] -> ""
@@ -117,7 +117,7 @@ lookAt detailed canSee pos msg = do
 -- Assumes targeting mode and so assumes that a leader is selected.
 doLook :: MonadClient m => WriterT Slideshow m ()
 doLook = do
-  Kind.COps{coactor} <- getsLocal scops
+  Kind.COps{coactor} <- getsState scops
   p <- getsClient scursor
   per <- askPerception
   Just leader <- getsClient getLeader
@@ -148,7 +148,7 @@ doLook = do
       slides <- promptToSlideshow (mode <+> lookMsg)
       tell slides
     else do
-     disco <- getsLocal sdisco
+     disco <- getsState sdisco
      io <- itemOverlay disco False is
      slides <- overlayToSlideshow (mode <+> lookMsg) io
      tell slides
@@ -157,7 +157,7 @@ doLook = do
 itemOverlay :: MonadClientRO m
             => Discoveries -> Bool -> [Item] -> m Overlay
 itemOverlay disco sorted is = do
-  Kind.COps{coitem} <- getsLocal scops
+  Kind.COps{coitem} <- getsState scops
   let items | sorted = sortBy (cmpLetterMaybe `on` jletter) is
             | otherwise = is
       pr i = makePhrase [ letterLabel (jletter i)
@@ -176,11 +176,11 @@ itemOverlay disco sorted is = do
 -- | Display inventory
 inventory :: MonadClientRO m => WriterT Slideshow m ()
 inventory = do
-  Kind.COps{coactor} <- getsLocal scops
+  Kind.COps{coactor} <- getsState scops
   Just leader <- getsClient getLeader
-  pbody <- getsLocal $ getActorBody leader
-  items <- getsLocal $ getActorItem leader
-  disco <- getsLocal sdisco
+  pbody <- getsState $ getActorBody leader
+  items <- getsState $ getActorItem leader
+  disco <- getsState sdisco
   if null items
     then abortWith $ makeSentence
       [ MU.SubjectVerbSg (partActor coactor pbody) "be"
@@ -198,7 +198,7 @@ inventory = do
 targetFloor :: MonadClient m => TgtMode -> WriterT Slideshow m ()
 targetFloor stgtModeNew = do
   Just leader <- getsClient getLeader
-  ppos <- getsLocal (bpos . getActorBody leader)
+  ppos <- getsState (bpos . getActorBody leader)
   target <- getsClient $ getTarget leader
   stgtMode <- getsClient stgtMode
   let tgt = case target of
@@ -213,10 +213,10 @@ targetFloor stgtModeNew = do
 -- | Set, activate and display cursor information.
 setCursor :: MonadClient m => TgtMode -> WriterT Slideshow m ()
 setCursor stgtModeNew = do
-  loc <- getLocal
+  loc <- getState
   cli <- getClient
   Just leader <- getsClient getLeader
-  ppos <- getsLocal (bpos . getActorBody leader)
+  ppos <- getsState (bpos . getActorBody leader)
   stgtModeOld <- getsClient stgtMode
   scursorOld <- getsClient scursor
   sepsOld <- getsClient seps
@@ -234,8 +234,8 @@ setCursor stgtModeNew = do
 targetMonster :: MonadClient m => TgtMode -> WriterT Slideshow m ()
 targetMonster stgtModeNew = do
   Just leader <- getsClient getLeader
-  ppos <- getsLocal (bpos . getActorBody leader)
-  side <- getsLocal sside
+  ppos <- getsState (bpos . getActorBody leader)
+  side <- getsState sside
   per <- askPerception
   target <- getsClient $ getTarget leader
   -- TODO: sort monsters by distance to the leader.
@@ -271,9 +271,9 @@ targetMonster stgtModeNew = do
 -- k levels shallower. Enters targeting mode, if not already in one.
 tgtAscend :: MonadClient m => Int -> WriterT Slideshow m ()
 tgtAscend k = do
-  Kind.COps{cotile} <- getsLocal scops
-  loc <- getLocal
-  depth <- getsLocal sdepth
+  Kind.COps{cotile} <- getsState scops
+  loc <- getState
+  depth <- getsState sdepth
   cpos <- getsClient scursor
   (tgtId, lvl) <- viewedLevel
   let tile = lvl `at` cpos
@@ -333,7 +333,7 @@ cancelCurrent h = do
 -- | Display the main menu.
 displayMainMenu :: MonadClient m => WriterT Slideshow m ()
 displayMainMenu = do
-  Kind.COps{corule} <- getsLocal scops
+  Kind.COps{corule} <- getsState scops
   Binding{krevMap} <- askBinding
   let stripFrame t = case T.uncons t of
         Just ('\n', art) -> map (T.tail . T.init) $ tail . init $ T.lines art
@@ -399,7 +399,7 @@ endTargeting accept = do
     Just leader <- getsClient getLeader
     target <- getsClient $ getTarget leader
     cpos <- getsClient scursor
-    side <- getsLocal sside
+    side <- getsState sside
     lvl <- cursorLevel
     let ms = hostileAssocs side lvl
     case target of
@@ -419,11 +419,11 @@ endTargeting accept = do
 
 endTargetingMsg :: MonadClient m => m ()
 endTargetingMsg = do
-  Kind.COps{coactor} <- getsLocal scops
+  Kind.COps{coactor} <- getsState scops
   Just leader <- getsClient getLeader
-  pbody <- getsLocal $ getActorBody leader
+  pbody <- getsState $ getActorBody leader
   target <- getsClient $ getTarget leader
-  loc <- getLocal
+  loc <- getState
   Level{lxsize} <- cursorLevel
   let targetMsg = case target of
                     Just (TEnemy a _ll) ->
@@ -449,7 +449,7 @@ clearCurrent = return ()
 displayHistory :: MonadClient m => WriterT Slideshow m ()
 displayHistory = do
   history <- getsClient shistory
-  time <- getsLocal getTime
+  time <- getsState getTime
   let turn = time `timeFit` timeTurn
       msg = makeSentence [ "You spent on this level"
                          , MU.NWs turn "half-second turn" ]
@@ -464,7 +464,7 @@ displayHistory = do
 cycleHero :: MonadClient m => m ()
 cycleHero = do
   Just leader <- getsClient getLeader
-  s  <- getLocal
+  s  <- getState
   hs <- partyAfterLeader leader
   case filter (flip memActor s . snd) hs of
     [] -> abortWith "Cannot select any other hero on this level."
@@ -473,7 +473,7 @@ cycleHero = do
 
 partyAfterLeader :: MonadClientRO m => ActorId -> m [(LevelId, ActorId)]
 partyAfterLeader leader = do
-  s  <- getLocal
+  s  <- getState
   let hs = map (tryFindHeroK s) [0..9]
       i = fromMaybe (-1) $ findIndex ((== Just leader) . fmap snd) hs
       (lt, gt) = (take i hs, drop (i + 1) hs)
@@ -484,24 +484,24 @@ partyAfterLeader leader = do
 -- of a player action (leader death just sets sleader to -1).
 selectLeader :: MonadClient m => ActorId -> LevelId -> m Bool
 selectLeader actor arena = do
-  Kind.COps{coactor} <- getsLocal scops
+  Kind.COps{coactor} <- getsState scops
   leader <- getsClient getLeader
   stgtMode <- getsClient stgtMode
   if Just actor == leader
     then return False -- already selected
     else do
-      arenaOld <- getsLocal sarena
+      arenaOld <- getsState sarena
       when (arenaOld /= arena) $ do
         modifyClient invalidateSelectedLeader
-        modifyLocal $ updateSelectedArena arena
-      loc <- getLocal
+        modifyState $ updateSelectedArena arena
+      loc <- getState
       modifyClient $ updateSelectedLeader actor loc
       -- Move the cursor, if active, to the new level.
       when (isJust stgtMode) $ setTgtId arena
       -- Don't continue an old run, if any.
       stopRunning
       -- Announce.
-      pbody <- getsLocal $ getActorBody actor
+      pbody <- getsState $ getActorBody actor
       msgAdd $ makeSentence [partActor coactor pbody, "selected"]
       return True
 
@@ -534,7 +534,7 @@ displayHelp = do
 
 selectHero :: MonadClient m => Int -> m ()
 selectHero k = do
-  loc <- getLocal
+  loc <- getState
   case tryFindHeroK loc k of
     Nothing  -> abortWith "No such member of the party."
     Just (lid, aid) -> void $ selectLeader aid lid

@@ -57,7 +57,7 @@ import Game.LambdaHack.Time
 handleTurn :: MonadServerChan m => m ()
 handleTurn = do
   debug "handleTurn"
-  time <- getsGlobal getTime  -- the end time of this clip, inclusive
+  time <- getsState getTime  -- the end time of this clip, inclusive
   let clipN = (time `timeFit` timeClip) `mod` (timeTurn `timeFit` timeClip)
   -- Regenerate HP and add monsters each turn, not each clip.
   when (clipN == 1) checkEndGame
@@ -65,7 +65,7 @@ handleTurn = do
   when (clipN == 3) generateMonster
   debug $ "handleTurn: time =" <+> showT time
   handleActors timeZero
-  modifyGlobal (updateTime (timeAdd timeClip))
+  modifyState (updateTime (timeAdd timeClip))
   endOrLoop handleTurn
 
 -- TODO: switch levels alternating between player factions,
@@ -80,14 +80,14 @@ checkEndGame :: MonadServerChan m => m ()
 checkEndGame = do
   -- Actors on the current level go first so that we don't switch levels
   -- unnecessarily.
-  as <- getsGlobal allActorsAnyLevel
-  glo <- getGlobal
+  as <- getsState allActorsAnyLevel
+  glo <- getState
   let aNotSp = filter (not . isSpawningFaction glo . bfaction . snd . snd) as
   case aNotSp of
     [] -> gameOver True
     (lid, _) : _ ->
       -- Switch to the level (can be the currently selected level, too).
-      modifyGlobal $ updateSelectedArena lid
+      modifyState $ updateSelectedArena lid
 
 -- TODO: We should replace this structure using a priority search queue/tree.
 -- | Perform moves for individual actors, as long as there are actors
@@ -104,10 +104,10 @@ handleActors :: MonadServerChan m
 handleActors subclipStart = withPerception $ do
   debug "handleActors"
   remember
-  Kind.COps{coactor} <- getsGlobal scops
-  time <- getsGlobal getTime  -- the end time of this clip, inclusive
+  Kind.COps{coactor} <- getsState scops
+  time <- getsState getTime  -- the end time of this clip, inclusive
    -- Older actors act earlier.
-  lactor <- getsGlobal (IM.toList . lactor . getArena)
+  lactor <- getsState (IM.toList . lactor . getArena)
   quit <- getsServer squit
   let mnext = if null lactor  -- wait until any actor spawned
               then Nothing
@@ -124,16 +124,16 @@ handleActors subclipStart = withPerception $ do
     Just (actor, m) -> do
       let side = bfaction m
       switchGlobalSelectedSide side
-      arena <- getsGlobal sarena
+      arena <- getsState sarena
       leader <- sendQueryCli side $ SetArenaLeaderCli arena actor
-      isPlayer <- getsGlobal $ flip isPlayerFaction side
+      isPlayer <- getsState $ flip isPlayerFaction side
       if actor == leader && isPlayer
         then do
           -- Player moves always start a new subclip.
           broadcastPosCli [] $ DisplayPushCli
           (cmdS, leaderNew, arenaNew) <-
             sendQueryCli side $ HandlePlayerCli leader
-          modifyGlobal $ updateSelectedArena arenaNew
+          modifyState $ updateSelectedArena arenaNew
           cmdSer cmdS
           -- Advance time once, after the leader switched perhaps many times.
           -- TODO: this is correct only when all heroes have the same
@@ -180,7 +180,7 @@ handleAI actor = do
 --  modifyClient $ updateTarget actor (const btarget)
   stratAction <- actionStrategy actor
   -- debug
-  loc <- getGlobal
+  loc <- getState
   debug $ "handleAI factionAI:"
      <+> showT (gAiIdle $ sfaction loc IM.! bfaction (getActorBody actor loc))
      <>          ", symbol:"    <+> showT (bsymbol (getActorBody actor loc))
@@ -193,6 +193,6 @@ handleAI actor = do
 -- | Advance (or rewind) the move time for the given actor.
 advanceTime :: MonadServer m => ActorId -> m ()
 advanceTime actor = do
-  Kind.COps{coactor} <- getsGlobal scops
+  Kind.COps{coactor} <- getsState scops
   let upd m@Actor{btime} = m {btime = timeAddFromSpeed coactor m btime}
-  modifyGlobal $ updateActorBody actor upd
+  modifyState $ updateActorBody actor upd

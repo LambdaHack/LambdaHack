@@ -112,20 +112,20 @@ cmdAction cli s cmd =
 cmdSemantics :: MonadClientChan m => Cmd -> WriterT Slideshow m (Maybe CmdSer)
 cmdSemantics cmd = do
   Just leaderOld <- getsClient getLeader
-  arenaOld <- getsLocal sarena
-  posOld <- getsLocal (bpos . getActorBody leaderOld)
+  arenaOld <- getsState sarena
+  posOld <- getsState (bpos . getActorBody leaderOld)
   cli <- getClient
-  loc <- getLocal
+  loc <- getState
   let sem = cmdAction cli loc cmd
   mcmdS <- if noRemoteCmd cmd
            then checkCursor sem
            else sem
-  arena <- getsLocal sarena
+  arena <- getsState sarena
   leaderNew <- getsClient getLeader
   case leaderNew of
     Nothing -> return ()
     Just leader -> do
-      pos <- getsLocal (bpos . getActorBody leader)
+      pos <- getsState (bpos . getActorBody leader)
       tgtMode <- getsClient stgtMode
       when (isNothing tgtMode  -- targeting performs a more extensive look
             && (posOld /= pos
@@ -140,7 +140,7 @@ checkCursor :: MonadClientRO m
             => WriterT Slideshow m (Maybe CmdSer)
             -> WriterT Slideshow m (Maybe CmdSer)
 checkCursor h = do
-  arena <- getsLocal sarena
+  arena <- getsState sarena
   (lid, _) <- viewedLevel
   if arena == lid
     then h
@@ -175,9 +175,9 @@ cmdUpdateCli :: MonadClient m => CmdUpdateCli -> m ()
 cmdUpdateCli cmd = case cmd of
   PickupCli aid i ni -> pickupCli aid i ni
   ApplyCli actor verb item -> do
-    Kind.COps{coactor, coitem} <- getsLocal scops
-    disco <- getsLocal sdisco
-    body <- getsLocal (getActorBody actor)
+    Kind.COps{coactor, coitem} <- getsState scops
+    disco <- getsState sdisco
+    body <- getsState (getActorBody actor)
     let msg = makeSentence
           [ MU.SubjectVerbSg (partActor coactor body) verb
           , partItemNWs coitem disco item ]
@@ -192,29 +192,29 @@ cmdUpdateCli cmd = case cmd of
   InvalidateArenaCli lid -> void $ invalidateArenaCli lid
   DiscoverCli ik i -> discoverCli ik i
   RememberCli arena vis lvl -> do
-    cops <- getsLocal scops
+    cops <- getsState scops
     let updArena loc =
           let clvl = sdungeon loc M.! arena
               nlvl = rememberLevel cops vis lvl clvl
           in updateDungeon (M.insert arena nlvl) loc
-    modifyLocal updArena
+    modifyState updArena
   RememberPerCli arena per lvl faction -> do
     void $ cmdUpdateCli $ RememberCli arena (totalVisible per) lvl
     modifyClient $ \cli -> cli {sper = M.insert arena per (sper cli)}
-    modifyLocal $ updateFaction (const faction)
+    modifyState $ updateFaction (const faction)
   SwitchLevelCli aid arena pbody items -> do
-    arenaOld <- getsLocal sarena
+    arenaOld <- getsState sarena
     assert (arenaOld /= arena) $ do
       modifyClient $ invalidateSelectedLeader
-      modifyLocal $ updateSelectedArena arena
-      modifyLocal (insertActor aid pbody)
-      modifyLocal (updateActorItem aid (const items))
-      loc <- getLocal
+      modifyState $ updateSelectedArena arena
+      modifyState (insertActor aid pbody)
+      modifyState (updateActorItem aid (const items))
+      loc <- getState
       modifyClient $ updateSelectedLeader aid loc
   EffectCli msg poss deltaHP block -> do
     msgAdd msg
     cli <- getClient
-    loc <- getLocal
+    loc <- getState
     per <- askPerception
     -- Try to show an animation. Sometimes, e.g., when HP is unchaged,
     -- the animation will not be shown, but a single frame with @msg@ will.
@@ -228,10 +228,10 @@ cmdUpdateCli cmd = case cmd of
         animFrs = animate cli loc per anim
     displayFramesPush $ Nothing : animFrs
   ProjectCli spos source consumed -> do
-    Kind.COps{coactor, coitem} <- getsLocal scops
+    Kind.COps{coactor, coitem} <- getsState scops
     per <- askPerception
-    disco <- getsLocal sdisco
-    sm <- getsLocal (getActorBody source)
+    disco <- getsState sdisco
+    sm <- getsState (getActorBody source)
     let svisible = spos `IS.member` totalVisible per
         subject =
           if svisible
@@ -242,11 +242,11 @@ cmdUpdateCli cmd = case cmd of
               , partItemNWs coitem disco consumed ]
     msgAdd msg
   ShowAttackCli source target verb stack say -> do
-    Kind.COps{ coactor, coitem } <- getsLocal scops
+    Kind.COps{ coactor, coitem } <- getsState scops
     per <- askPerception
-    disco <- getsLocal sdisco
-    smRaw <- getsLocal (getActorBody source)
-    tmRaw <- getsLocal (getActorBody target)
+    disco <- getsState sdisco
+    smRaw <- getsState (getActorBody source)
+    tmRaw <- getsState (getActorBody target)
     let spos = bpos smRaw
         tpos = bpos tmRaw
         svisible = spos `IS.member` totalVisible per
@@ -267,10 +267,10 @@ cmdUpdateCli cmd = case cmd of
              else []
     msgAdd msg
   AnimateBlockCli source target verb -> do
-    Kind.COps{coactor} <- getsLocal scops
+    Kind.COps{coactor} <- getsState scops
     per <- askPerception
-    smRaw <- getsLocal (getActorBody source)
-    tmRaw <- getsLocal (getActorBody target)
+    smRaw <- getsState (getActorBody source)
+    tmRaw <- getsState (getActorBody target)
     let spos = bpos smRaw
         tpos = bpos tmRaw
         svisible = spos `IS.member` totalVisible per
@@ -286,16 +286,16 @@ cmdUpdateCli cmd = case cmd of
           ]
     msgAdd msgMiss
     cli <- getClient
-    loc <- getLocal
+    loc <- getState
     let poss = (tpos, spos)
         anim = blockMiss poss
         animFrs = animate cli loc per anim
     displayFramesPush $ Nothing : animFrs
   DisplaceCli source target -> do
-    Kind.COps{coactor} <- getsLocal scops
+    Kind.COps{coactor} <- getsState scops
     per <- askPerception
-    sm <- getsLocal (getActorBody source)
-    tm <- getsLocal (getActorBody target)
+    sm <- getsState (getActorBody source)
+    tm <- getsState (getActorBody target)
     let spos = bpos sm
         tpos = bpos tm
         msg = makeSentence
@@ -303,7 +303,7 @@ cmdUpdateCli cmd = case cmd of
           , partActor coactor tm ]
     msgAdd msg
     cli <- getClient
-    loc <- getLocal
+    loc <- getState
     let poss = (tpos, spos)
         animFrs = animate cli loc per $ swapPlaces poss
     displayFramesPush $ Nothing : animFrs
@@ -318,7 +318,7 @@ cmdUpdateCli cmd = case cmd of
   RestartCli cli loc -> do
     shistory <- getsClient shistory
     putClient cli {shistory}
-    putLocal loc
+    putState loc
 
 cmdQueryCli :: MonadClientChan m => CmdQueryCli a -> m a
 cmdQueryCli cmd = case cmd of
@@ -350,7 +350,7 @@ cmdQueryCli cmd = case cmd of
     StateClient{sreport} <- getClient
     return $! nullReport sreport
   SetArenaLeaderCli arena actor -> do
-    arenaOld <- getsLocal sarena
+    arenaOld <- getsState sarena
     leaderOld <- getsClient getLeader
     -- Old leader may have been killed by enemies since @side@ last moved
     -- or local arena changed and the side has not elected a new leader yet
@@ -358,15 +358,15 @@ cmdQueryCli cmd = case cmd of
     leader <- if arenaOld /= arena
               then do
                 modifyClient invalidateSelectedLeader
-                modifyLocal $ updateSelectedArena arena
+                modifyState $ updateSelectedArena arena
                 return actor
               else return $! fromMaybe actor leaderOld
-    loc <- getLocal
+    loc <- getState
     modifyClient $ updateSelectedLeader leader loc
     return leader
   GameSaveCli -> do
     cli <- getClient
-    loc <- getLocal
+    loc <- getState
     return (cli, loc)
   HandlePlayerCli leader -> handlePlayer leader
 
@@ -390,7 +390,7 @@ handlePlayer leader = do
     maybe abort (continueRun leader) srunning
 --  addSmell leader
   leaderNew <- getsClient getLeader
-  arenaNew <- getsLocal sarena
+  arenaNew <- getsState sarena
   return (cmdS, leaderNew, arenaNew)
 
 -- | Determine and process the next player command. The argument is the last
@@ -468,10 +468,10 @@ playerCommand msgRunAbort = do
 
 pickupCli :: MonadClient m => ActorId -> Item -> Item -> m ()
 pickupCli aid i ni = do
-  Kind.COps{coactor, coitem} <- getsLocal scops
-  body <- getsLocal (getActorBody aid)
-  side <- getsLocal sside
-  disco <- getsLocal sdisco
+  Kind.COps{coactor, coitem} <- getsState scops
+  body <- getsState (getActorBody aid)
+  side <- getsState sside
+  disco <- getsState sdisco
   if bfaction body == side
     then msgAdd $ makePhrase [ letterLabel (jletter ni)
                              , partItemNWs coitem disco ni ]
@@ -481,12 +481,12 @@ pickupCli aid i ni = do
 
 animateDeathCli :: MonadClient m => ActorId -> m ()
 animateDeathCli target = do
-  Kind.COps{coactor} <- getsLocal scops
-  pbody <- getsLocal $ getActorBody target
+  Kind.COps{coactor} <- getsState scops
+  pbody <- getsState $ getActorBody target
   msgAdd $ makeSentence [MU.SubjectVerbSg (partActor coactor pbody) "die"]
   recordHistory  -- Prevent repeating the "die" msgs.
   cli <- getClient
-  loc <- getLocal
+  loc <- getState
   per <- askPerception
   let animFrs = animate cli loc per $ deathBody (bpos pbody)
   displayFramesPush animFrs
@@ -500,12 +500,12 @@ carryOnCli = do
 -- | Make the item known to the player.
 discoverCli :: MonadClient m => Kind.Id ItemKind -> Item -> m ()
 discoverCli ik i = do
-  Kind.COps{coitem} <- getsLocal scops
-  oldDisco <- getsLocal sdisco
+  Kind.COps{coitem} <- getsState scops
+  oldDisco <- getsState sdisco
   let ix = jkindIx i
   unless (ix `M.member` oldDisco) $ do
-    modifyLocal (updateDisco (M.insert ix ik))
-    disco <- getsLocal sdisco
+    modifyState (updateDisco (M.insert ix ik))
+    disco <- getsState sdisco
     let (object1, object2) = partItem coitem oldDisco i
         msg = makeSentence
           [ "the", MU.SubjectVerbSg (MU.Phrase [object1, object2])
@@ -515,10 +515,10 @@ discoverCli ik i = do
 
 invalidateArenaCli :: MonadClient m => LevelId -> m Bool
 invalidateArenaCli arena = do
-  arenaOld <- getsLocal sarena
+  arenaOld <- getsState sarena
   if arenaOld == arena
     then return False
     else do
       modifyClient invalidateSelectedLeader
-      modifyLocal $ updateSelectedArena arena
+      modifyState $ updateSelectedArena arena
       return True
