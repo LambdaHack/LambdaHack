@@ -80,9 +80,9 @@ effectToAction effect verbosity source target power block = do
            then getsGlobal (bhp . getActorBody target)
            else return oldHP
   -- Target part of message sent here, so only target visibility checked.
-  void $ sendToPlayers [bpos oldT]
+  void $ broadcastPosCli [bpos oldT]
          $ EffectCli msg (bpos oldT, bpos oldS) (newHP - oldHP) block
-  -- TODO: use sendToPlayers2 and to those that don't see the pos show that:
+  -- TODO: use broadcastPosCli2 and to those that don't see the pos show that:
   -- when b $ msgAdd "You hear some noises."
   when (newHP <= 0) $ checkPartyDeath target
   return b
@@ -277,10 +277,8 @@ effLvlGoUp aid k = do
         modifyGlobal (insertActor aid pbody)
         modifyGlobal (updateActorItem aid (const bitems))
         -- Reset level and leader for all factions.
-        void $ sendUpdateClis $ \fid ->
-          if fid /= bfaction pbody
-          then InvalidateArenaCli nln
-          else SwitchLevelCli aid nln pbody bitems
+        broadcastCli [return . (/= bfaction pbody)] $ InvalidateArenaCli nln
+        sendUpdateCli (bfaction pbody) $ SwitchLevelCli aid nln pbody bitems
         -- Checking actors at the new posiiton of the aid.
         inhabitants <- getsGlobal (posToActor npos)
         case inhabitants of
@@ -417,7 +415,7 @@ checkPartyDeath target = do
   modifyGlobal $ updateArena $ dropItemsAt bitems $ bpos pbody
   let fid = bfaction pbody
       animateDeath = do
-        sendToPlayers [bpos pbody] (AnimateDeathCli target)
+        broadcastPosCli [bpos pbody] (AnimateDeathCli target)
         sendQueryCli fid $ CarryOnCli
       animateGameOver = do
         go <- animateDeath

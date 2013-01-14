@@ -77,7 +77,7 @@ applySer actor verb item = do
   let pos = bpos body
       -- Only one item consumed, even if several in inventory.
       consumed = item { jcount = 1 }
-  sendToPl [pos] $ ApplyCli actor verb consumed
+  broadcastPosCli [pos] $ ApplyCli actor verb consumed
   removeFromInventory actor consumed pos
   itemEffectAction 5 actor actor consumed False
 
@@ -164,7 +164,7 @@ projectSer source tpos _verb item = do
                 addProjectile cops consumed pos (bfaction sm) path time glo ser
           putGlobal nglo
           putServer nser
-          sendToPl [spos, pos] $ ProjectCli spos source consumed
+          broadcastPosCli [spos, pos] $ ProjectCli spos source consumed
         else
           abortWith "blocked"
 
@@ -209,7 +209,7 @@ pickupSer aid i l = do
     modifyGlobal $ updateActorBody aid $ \m ->
       m {bletter = maxLetter (fromJust $ jletter ni) (bletter m)}
     modifyGlobal (updateActorItem aid (const nitems))
-    void $ sendToPlayers [p] (PickupCli aid i ni)
+    void $ broadcastPosCli [p] (PickupCli aid i ni)
 
 -- ** DropSer
 
@@ -303,7 +303,7 @@ actorAttackActor source target = do
                       Just ik -> iverbApply $ okind ik
                 in (w, True, 0, verbApply)
       let performHit block = do
-            sendToPl [spos, tpos] $ ShowAttackCli source target verb stack say
+            broadcastPosCli [spos, tpos] $ ShowAttackCli source target verb stack say
             -- Msgs inside itemEffectAction describe the target part.
             itemEffectAction verbosity source target stack block
       -- Projectiles can't be blocked, can be sidestepped.
@@ -311,7 +311,7 @@ actorAttackActor source target = do
         then do
           blocked <- rndToAction $ chance $ 1%2
           if blocked
-            then sendToPl [spos, tpos] $ AnimateBlockCli source target verb
+            then broadcastPosCli [spos, tpos] $ AnimateBlockCli source target verb
             else performHit True
         else performHit False
 
@@ -404,7 +404,7 @@ displaceActor source target = do
       tpos = bpos tm
   modifyGlobal $ updateActorBody source $ \ m -> m { bpos = tpos }
   modifyGlobal $ updateActorBody target $ \ m -> m { bpos = spos }
-  sendToPl [spos, tpos] $ DisplaceCli source target
+  broadcastPosCli [spos, tpos] $ DisplaceCli source target
 --  leader <- getsClient getLeader
 --  if Just source == leader
 -- TODO: The actor will stop running due to the message as soon as running

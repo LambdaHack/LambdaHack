@@ -122,7 +122,7 @@ handleActors subclipStart = withPerception $ do
   case mnext of
     _ | isJust quit -> return ()
     Nothing -> when (subclipStart == timeZero) $
-                 sendToPl [] $ DisplayFramesPushCli [Nothing]
+                 broadcastPosCli [] $ DisplayFramesPushCli [Nothing]
     Just (actor, m) -> do
       let side = bfaction m
       switchGlobalSelectedSide side
@@ -132,10 +132,10 @@ handleActors subclipStart = withPerception $ do
       if actor == leader && isPlayer
         then do
           -- Player moves always start a new subclip.
-          sendToPl [] $ DisplayPushCli
+          broadcastPosCli [] $ DisplayPushCli
           sendControlCli side $ HandlePlayerCli leader
           let loop = do
-                cmd <- readChanSer side
+                cmd <- readChanFromCli side
                 case cmd of
                   ResponseSer a ->
                     return $! fromDyn a (assert `failure` cmd)
@@ -172,7 +172,7 @@ handleActors subclipStart = withPerception $ do
               -- this subclip, so his multiple moves would be collapsed.
               -- TODO: store frames somewhere for each faction and display
               -- the frames only after a "Faction X taking over..." prompt.
-              sendToPl [] $ DisplayPushCli
+              broadcastPosCli [] $ DisplayPushCli
               handleAI actor
               handleActors $ btime m
             else do
@@ -208,6 +208,6 @@ advanceTime actor = do
 
 handleClient :: MonadConnClient m => m ()
 handleClient = do
-  cmd <- readChanCli
+  cmd <- readChanFromSer
   cmdCli cmd
   handleClient

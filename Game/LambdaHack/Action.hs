@@ -34,9 +34,9 @@ module Game.LambdaHack.Action
   , saveGameBkp, dumpCfg, endOrLoop, frontendName, startFrontend
   , switchGlobalSelectedSide
   , debug
-  , sendToPlayers, sendUpdateClis, sendUpdateCli, sendQueryCli, sendControlCli
-  , sendToPl
-  , respondCli, readChanSer, writeChanSer, readChanCli
+  , sendUpdateCli, sendQueryCli, sendControlCli
+  , readChanFromSer, writeChanToSer, readChanFromCli
+  , respondToSer, broadcastCli, broadcastPosCli
   ) where
 
 import Control.Concurrent
@@ -357,13 +357,13 @@ remember = do
   pers <- ask
   let f fid =
         let per = pers IM.! fid M.! arena
-        in RememberPerCli arena per lvl faction
-  sendUpdateClis f
+        in sendUpdateCli fid $ RememberPerCli arena per lvl faction
+  mapM_ f $ IM.keys faction
 
 -- | Update faction memory at the given set of positions.
 rememberLevel :: Kind.COps -> IS.IntSet -> Level -> Level -> Level
 rememberLevel Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} visible lvl clvl =
-  -- TODO: handle invisible actors, but then change also sendToPlayers, etc.
+  -- TODO: handle invisible actors, but then change also broadcastPosCli, etc.
   let nactor = IM.filter (\m -> bpos m `IS.member` visible) (lactor lvl)
       ninv   = IM.filterWithKey (\p _ -> p `IM.member` nactor) (linv lvl)
       alt Nothing   _ = Nothing
@@ -453,19 +453,19 @@ endOrLoop handleTurn = do
                               `finally` putMVar mv ())
       tryIgnore $ do
         handleScores False Camping total
-        sendToPl [] $ MoreFullCli "See you soon, stronger and braver!"
+        broadcastPosCli [] $ MoreFullCli "See you soon, stronger and braver!"
       liftIO $ takeMVar mv  -- wait until saved
       -- Do nothing, that is, quit the game loop.
     (Nothing, Just (showScreens, status@Killed{})) -> do
       nullR <- sendQueryCli side NullReportCli
       unless nullR $ do
         -- Sisplay any leftover report. Suggest it could be the cause of death.
-        sendToPl [] $ MoreBWCli "Who would have thought?"
+        broadcastPosCli [] $ MoreBWCli "Who would have thought?"
       tryWith
         (\ finalMsg ->
           let highScoreMsg = "Let's hope another party can save the day!"
               msg = if T.null finalMsg then highScoreMsg else finalMsg
-          in sendToPl [] $ MoreBWCli msg
+          in broadcastPosCli [] $ MoreBWCli msg
           -- Do nothing, that is, quit the game loop.
         )
         (do
@@ -479,13 +479,13 @@ endOrLoop handleTurn = do
       nullR <- sendQueryCli side NullReportCli
       unless nullR $ do
         -- Sisplay any leftover report. Suggest it could be the master move.
-        sendToPl [] $ MoreFullCli "Brilliant, wasn't it?"
+        broadcastPosCli [] $ MoreFullCli "Brilliant, wasn't it?"
       when showScreens $ do
         tryIgnore $ handleScores True status total
-        sendToPl [] $ MoreFullCli "Can it be done better, though?"
+        broadcastPosCli [] $ MoreFullCli "Can it be done better, though?"
       restartGame handleTurn
     (Nothing, Just (_, Restart)) -> do
-      sendToPl [] $ MoreBWCli "This time for real."
+      broadcastPosCli [] $ MoreBWCli "This time for real."
       restartGame handleTurn
     (Nothing, _) -> handleTurn  -- just continue
 
@@ -647,29 +647,6 @@ switchGlobalSelectedSide =
 debug :: MonadActionRoot m => Text -> m ()
 debug _x = return () -- liftIO $ hPutStrLn stderr _x
 
-sendToPlayers :: MonadServerChan m => [Point] -> CmdUpdateCli -> m ()
-sendToPlayers poss cmd = do
-  arena <- getsGlobal sarena
-  glo <- getGlobal
-  let f (cfid, perF) =
-        when (isPlayerFaction glo cfid) $ do
-          let perceived =
-                null poss
-                || any (`IS.member` totalVisible (perF M.! arena)) poss
-          when perceived $ sendUpdateCli cfid cmd
-  pers <- ask
-  mapM_ f $ IM.toList pers
-
-sendToPl :: MonadServerChan m => [Point] -> CmdUpdateCli -> m ()
-sendToPl poss cmd = do
-  sendToPlayers poss cmd
-
-sendUpdateClis :: MonadServerChan m => (FactionId -> CmdUpdateCli) -> m ()
-sendUpdateClis cmd = do
-  faction <- getsGlobal sfaction
-  let f cfid = sendUpdateCli cfid (cmd cfid)
-  mapM_ f $ IM.keys faction
-
 sendUpdateCli :: MonadServerChan m => FactionId -> CmdUpdateCli -> m ()
 sendUpdateCli fid cmd = do
   ConnClient {toClient} <- getsDict (IM.! fid)
@@ -689,22 +666,46 @@ sendControlCli fid cmd = do
   ConnClient {toClient} <- getsDict (IM.! fid)
   liftIO $ writeChan toClient $ CmdControlCli cmd
 
-respondCli :: (Typeable a, MonadConnClient m) => a -> m ()
-respondCli a = do
-  toServer <- getsChan toServer
-  liftIO $ writeChan toServer $ ResponseSer $ toDyn a
+readChanFromSer :: MonadConnClient m => m CmdCli
+readChanFromSer = do
+  toClient <- getsChan toClient
+  liftIO $ readChan toClient
 
-readChanSer :: MonadServerChan m => FactionId -> m CmdSer
-readChanSer fid = do
-  ConnClient {toServer} <- getsDict (IM.! fid)
-  liftIO $ readChan toServer
-
-writeChanSer :: MonadConnClient m => CmdSer -> m ()
-writeChanSer cmd = do
+writeChanToSer :: MonadConnClient m => CmdSer -> m ()
+writeChanToSer cmd = do
   toServer <- getsChan toServer
   liftIO $ writeChan toServer cmd
 
-readChanCli :: MonadConnClient m => m CmdCli
-readChanCli = do
-  toClient <- getsChan toClient
-  liftIO $ readChan toClient
+readChanFromCli :: MonadServerChan m => FactionId -> m CmdSer
+readChanFromCli fid = do
+  ConnClient {toServer} <- getsDict (IM.! fid)
+  liftIO $ readChan toServer
+
+respondToSer :: (Typeable a, MonadConnClient m) => a -> m ()
+respondToSer a = writeChanToSer $ ResponseSer $ toDyn a
+
+broadcastCli :: MonadServerChan m
+             => [FactionId -> m Bool] -> CmdUpdateCli
+             -> m ()
+broadcastCli ps cmd = do
+  faction <- getsGlobal sfaction
+  let p fid = do
+        bs <- sequence $ map (\f -> f fid) ps
+        return $! and bs
+  ks <- filterM p $ IM.keys faction
+  mapM_ (flip sendUpdateCli cmd) ks
+
+isFactionPlayer :: MonadServerChan m => FactionId -> m Bool
+isFactionPlayer fid = getsGlobal $ flip isPlayerFaction fid
+
+isFactionAware :: MonadServerChan m => [Point] -> FactionId -> m Bool
+isFactionAware poss fid = do
+  arena <- getsGlobal sarena
+  pers <- ask
+  let per = pers IM.! fid M.! arena
+      inter = IS.fromList poss `IS.intersection` totalVisible per
+  return $! null poss || not (IS.null inter)
+
+broadcastPosCli :: MonadServerChan m => [Point] -> CmdUpdateCli -> m ()
+broadcastPosCli poss cmd =
+  broadcastCli [isFactionPlayer, isFactionAware poss] cmd

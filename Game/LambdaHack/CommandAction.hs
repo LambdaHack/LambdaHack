@@ -166,7 +166,7 @@ cmdSer cmd = case cmd of
   ResponseSer _ -> undefined
 
 cmdSerAction :: MonadConnClient m => m CmdSer -> WriterT Slideshow m ()
-cmdSerAction m = lift $ m >>= writeChanSer
+cmdSerAction m = lift $ m >>= writeChanToSer
 
 -- | The semantics of client commands.
 cmdCli :: MonadConnClient m => CmdCli -> m ()
@@ -323,30 +323,30 @@ cmdUpdateCli cmd = case cmd of
 cmdQueryCli :: MonadConnClient m => CmdQueryCli -> m ()
 cmdQueryCli cmd = case cmd of
   ShowSlidesCli slides ->
-    getManyConfirms [] slides >>= respondCli
+    getManyConfirms [] slides >>= respondToSer
   CarryOnCli -> carryOnCli
   ConfirmShowItemsCli discoS msg items -> do
     io <- itemOverlay discoS True items
     slides <- overlayToSlideshow msg io
     go <-  getManyConfirms [] slides
-    respondCli go
+    respondToSer go
   SelectLeaderCli aid lid ->
-    selectLeader aid lid >>= respondCli
+    selectLeader aid lid >>= respondToSer
   ConfirmYesNoCli msg -> do
     go <- displayYesNo msg
     recordHistory  -- Prevent repeating the ending msgs.
-    respondCli go
+    respondToSer go
   ConfirmMoreBWCli msg -> do
     go <- displayMore ColorBW msg
     recordHistory  -- Prevent repeating the ending msgs.
-    respondCli go
+    respondToSer go
   ConfirmMoreFullCli msg -> do
     go <- displayMore ColorFull msg
     recordHistory  -- Prevent repeating the ending msgs.
-    respondCli go
+    respondToSer go
   NullReportCli -> do
     StateClient{sreport} <- getClient
-    respondCli sreport
+    respondToSer sreport
   SetArenaLeaderCli arena actor -> do
     arenaOld <- getsLocal sarena
     leaderOld <- getsClient getLeader
@@ -361,11 +361,11 @@ cmdQueryCli cmd = case cmd of
               else return $! fromMaybe actor leaderOld
     loc <- getLocal
     modifyClient $ updateSelectedLeader leader loc
-    respondCli leader
+    respondToSer leader
   GameSaveCli -> do
     cli <- getClient
     loc <- getLocal
-    respondCli (cli, loc)
+    respondToSer (cli, loc)
 
 cmdControlCli :: MonadConnClient m => CmdControlCli -> m ()
 cmdControlCli cmd = case cmd of
@@ -376,7 +376,7 @@ continueRun :: MonadConnClient m => ActorId -> (Vector, Int) -> m ()
 continueRun leader dd = do
   dir <- continueRunDir leader dd
   -- Attacks and opening doors disallowed when continuing to run.
-  writeChanSer $ RunSer leader dir
+  writeChanToSer $ RunSer leader dir
 
 -- | Handle the move of the hero.
 handlePlayer :: MonadConnClient m => ActorId -> m ()
@@ -390,7 +390,7 @@ handlePlayer leader = do
 --  addSmell leader
   arenaNew <- getsLocal sarena
   leaderNew <- getsClient getLeader
-  respondCli (arenaNew, leaderNew)
+  respondToSer (arenaNew, leaderNew)
 
 -- | Determine and process the next player command. The argument is the last
 -- abort message due to running, if any.
@@ -491,7 +491,7 @@ carryOnCli :: MonadConnClient m => m ()
 carryOnCli = do
   go <- displayMore ColorBW ""
   msgAdd "The survivors carry on."  -- TODO: reset messages at game over not to display it if there are no survivors.
-  respondCli go
+  respondToSer go
 
 -- | Make the item known to the player.
 discoverCli :: MonadClient m => Kind.Id ItemKind -> Item -> m ()
