@@ -316,6 +316,10 @@ cmdUpdateCli cmd = case cmd of
   MoreFullCli msg -> do
     void $ displayMore ColorFull msg
     recordHistory  -- Prevent repeating the ending msgs.
+  RestartCli cli loc -> do
+    shistory <- getsClient shistory
+    putClient cli {shistory}
+    putLocal loc
 
 cmdQueryCli :: MonadClientChan m => CmdQueryCli -> m Dynamic
 cmdQueryCli cmd = case cmd of
@@ -386,9 +390,9 @@ handlePlayer leader = do
     srunning <- getsClient srunning
     maybe abort (continueRun leader) srunning
 --  addSmell leader
-  leader <- getsClient getLeader
-  arena <- getsLocal sarena
-  return $! toDyn (cmdS, arena, leader)
+  leaderNew <- getsClient getLeader
+  arenaNew <- getsLocal sarena
+  return $! toDyn (cmdS, leaderNew, arenaNew)
 
 -- | Determine and process the next player command. The argument is the last
 -- abort message due to running, if any.

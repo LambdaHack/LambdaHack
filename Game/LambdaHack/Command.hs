@@ -22,6 +22,7 @@ import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
+import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 import Game.LambdaHack.VectorXY
@@ -52,6 +53,7 @@ data CmdUpdateCli =
   | DisplayFramesPushCli Frames
   | MoreFullCli Msg
   | MoreBWCli Msg
+  | RestartCli StateClient State
   deriving Show
 
 data CmdQueryCli =

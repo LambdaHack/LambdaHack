@@ -354,10 +354,8 @@ remember = do
   lvl <- getsGlobal getArena
   faction <- getsGlobal sfaction
   pers <- ask
-  let f fid =
-        let per = pers IM.! fid M.! arena
-        in sendUpdateCli fid $ RememberPerCli arena per lvl faction
-  mapM_ f $ IM.keys faction
+  funBroadcastCli (\fid ->
+    RememberPerCli arena (pers IM.! fid M.! arena) lvl faction)
 
 -- | Update faction memory at the given set of positions.
 rememberLevel :: Kind.COps -> IS.IntSet -> Level -> Level -> Level
@@ -438,7 +436,9 @@ endOrLoop handleTurn = do
   gquit <- getsGlobal $ gquit . (IM.! side) . sfaction
   s <- getGlobal
   ser <- getServer
-  d <- undefined -- getDict
+  faction <- getsGlobal sfaction
+  let queryCliLoc fid = sendQueryCli fid GameSaveCli  -- TODO: do in parallel
+  d <- mapM queryCliLoc $ IM.keys faction
   config <- getsServer sconfig
   let (_, total) = calculateTotal s
   -- The first, boolean component of squit determines
@@ -448,8 +448,9 @@ endOrLoop handleTurn = do
     (Just _, _) -> do
       -- Save and display in parallel.
       mv <- liftIO newEmptyMVar
-      liftIO $ void $ forkIO (Save.saveGameFile config s ser d
-                              `finally` putMVar mv ())
+      liftIO $ void
+        $ forkIO (Save.saveGameFile config s ser (IM.fromDistinctAscList $ zip (IM.keys faction) d)
+                  `finally` putMVar mv ())
       tryIgnore $ do
         handleScores False Camping total
         broadcastPosCli [] $ MoreFullCli "See you soon, stronger and braver!"
@@ -493,19 +494,17 @@ restartGame handleTurn = do
   -- Take the original config from config file, to reroll RNG, if needed
   -- (the current config file has the RNG rolled for the previous game).
   cops <- getsGlobal scops
-  shistory <- undefined -- getsClient shistory
-  (state, ser, dMsg) <- gameResetAction cops
-  let d = case filter (isPlayerFaction state) $ IM.keys dMsg of
-        [] -> dMsg  -- only robots play
-        k : _ -> IM.adjust (\(cli, loc) -> (cli {shistory}, loc)) k dMsg
+  (state, ser, funRestart) <- gameResetAction cops
   putGlobal state
   putServer ser
+  funBroadcastCli (uncurry RestartCli . funRestart)
   -- TODO: send to each client RestartCli; use d in its code; empty channels?
   saveGameBkp
   handleTurn
 
 -- TODO: do this inside Action ()
-gameReset :: Kind.COps -> IO (State, StateServer, Save.StateDict)
+gameReset :: Kind.COps
+          -> IO (State, StateServer, FactionId -> (StateClient, State))
 gameReset cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
                                   , coitem=coitem@Kind.Ops{okind}
                                   , corule
@@ -548,16 +547,14 @@ gameReset cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
             -- This overwrites the "Really save/quit?" messages.
             defLoc = defStateLocal freshDungeon freshDepth
                                    disco faction cops entryLevel
-            dHist = IM.mapWithKey (\fid _ -> (defCli, defLoc fid)) faction
             pers = dungeonPerception cops sconfig (sdebugSer ser) glo
-            d = IM.mapWithKey (\side (cli, loc) ->
-                                  (cli {sper = pers IM.! side}, loc)) dHist
-        return (glo, ser, d)
+            funReset fid = (defCli {sper = pers IM.! fid}, (defLoc fid))
+        return (glo, ser, funReset)
   return $! St.evalState rnd dungeonGen
 
 gameResetAction :: MonadActionIO m
                 => Kind.COps
-                -> m (State, StateServer, Save.StateDict)
+                -> m (State, StateServer, FactionId -> (StateClient, State))
 gameResetAction = liftIO . gameReset
 
 -- | Wire together content, the definitions of game commands,
@@ -590,8 +587,8 @@ startFrontend executor executorCli
       -- handle the history and backup savefile.
       handleServer = do
         handleTurn
---        d <- undefined -- getDict
-        -- Save history often, at each game exit, in case of crashes.
+--        d <- getDict
+--        -- Save history often, at each game exit, in case of crashes.
 --        liftIO $ Save.rmBkpSaveHistory sconfig sconfigUI d
       loop sfs = start executor executorCli
                        sfs cops sbinding sconfig sconfigUI
@@ -613,7 +610,10 @@ start executor executorCli sfs cops@Kind.COps{corule}
   restored <- Save.restoreGame sconfig sconfigUI pathsDataFile title
   (glo, ser, dBare, shistory, msg) <- case restored of
     Right (shistory, msg) -> do  -- Starting a new game.
-      (gloR, serR, dR) <- gameReset cops
+      (gloR, serR, funR) <- gameReset cops
+      let faction = sfaction gloR
+          d = map (\fid -> (fid, funR fid)) $ IM.keys faction
+          dR = IM.fromDistinctAscList d
       return (gloR, serR, dR, shistory, msg)
     Left (gloL, serL, dL, shistory, msg) -> do  -- Running a restored game.
       let gloCops = updateCOps (const cops) gloL
@@ -695,6 +695,12 @@ isFactionAware poss fid = do
 broadcastPosCli :: MonadServerChan m => [Point] -> CmdUpdateCli -> m ()
 broadcastPosCli poss cmd =
   broadcastCli [isFactionPlayer, isFactionAware poss] cmd
+
+funBroadcastCli :: MonadServerChan m => (FactionId -> CmdUpdateCli) -> m ()
+funBroadcastCli cmd = do
+  faction <- getsGlobal sfaction
+  let f fid = sendUpdateCli fid (cmd fid)
+  mapM_ f $ IM.keys faction
 
 handleClient2 :: MonadClientChan m
              => (CmdUpdateCli -> m ())
