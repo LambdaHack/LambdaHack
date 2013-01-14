@@ -1,12 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Semantics of player commands.
 module Game.LambdaHack.CommandAction
-  ( cmdSemantics, cmdSer, cmdCli
+  ( cmdSemantics, cmdSer, cmdUpdateCli, cmdQueryCli
   ) where
 
 import Control.Monad
 import Control.Monad.Writer.Strict (WriterT, lift)
 import Control.Monad.Writer.Strict (WriterT, runWriterT)
+import Data.Dynamic
 import qualified Data.IntSet as IS
 import qualified Data.Map as M
 import Data.Maybe
@@ -38,7 +39,7 @@ import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 
 -- | The basic action for a command and whether it takes time.
-cmdAction :: MonadConnClient m => StateClient -> State -> Cmd
+cmdAction :: MonadClientChan m => StateClient -> State -> Cmd
           -> (Bool, WriterT Slideshow m ())
 cmdAction cli s cmd =
   let tgtMode = stgtMode cli
@@ -110,7 +111,7 @@ cmdAction cli s cmd =
 -- Time cosuming commands are marked as such in help and cannot be
 -- invoked in targeting mode on a remote level (level different than
 -- the level of the selected hero).
-cmdSemantics :: MonadConnClient m => Cmd -> WriterT Slideshow m Bool
+cmdSemantics :: MonadClientChan m => Cmd -> WriterT Slideshow m Bool
 cmdSemantics cmd = do
   Just leaderOld <- getsClient getLeader
   arenaOld <- getsLocal sarena
@@ -163,19 +164,13 @@ cmdSer cmd = case cmd of
   GameRestartSer -> gameRestartSer
   GameSaveSer -> gameSaveSer
   CfgDumpSer -> cfgDumpSer
-  ResponseSer _ -> undefined
 
-cmdSerAction :: MonadConnClient m => m CmdSer -> WriterT Slideshow m ()
-cmdSerAction m = lift $ m >>= writeChanToSer
+cmdSerAction :: MonadClientChan m => m CmdSer -> WriterT Slideshow m ()
+cmdSerAction m = lift $ do
+  cmdS <- m
+  writeChanToSer $ toDyn cmdS
 
--- | The semantics of client commands.
-cmdCli :: MonadConnClient m => CmdCli -> m ()
-cmdCli cmd3 = case cmd3 of
-  CmdUpdateCli cmd -> cmdUpdateCli cmd
-  CmdQueryCli cmd -> cmdQueryCli cmd
-  CmdControlCli cmd -> cmdControlCli cmd
-
-cmdUpdateCli :: MonadConnClient m => CmdUpdateCli -> m ()
+cmdUpdateCli :: MonadClient m => CmdUpdateCli -> m ()
 cmdUpdateCli cmd = case cmd of
   PickupCli aid i ni -> pickupCli aid i ni
   ApplyCli actor verb item -> do
@@ -320,33 +315,35 @@ cmdUpdateCli cmd = case cmd of
     void $ displayMore ColorFull msg
     recordHistory  -- Prevent repeating the ending msgs.
 
-cmdQueryCli :: MonadConnClient m => CmdQueryCli -> m ()
+cmdQueryCli :: MonadClientChan m => CmdQueryCli -> m Dynamic
 cmdQueryCli cmd = case cmd of
-  ShowSlidesCli slides ->
-    getManyConfirms [] slides >>= respondToSer
+  ShowSlidesCli slides -> do
+    go <- getManyConfirms [] slides
+    return $! toDyn go
   CarryOnCli -> carryOnCli
   ConfirmShowItemsCli discoS msg items -> do
     io <- itemOverlay discoS True items
     slides <- overlayToSlideshow msg io
-    go <-  getManyConfirms [] slides
-    respondToSer go
-  SelectLeaderCli aid lid ->
-    selectLeader aid lid >>= respondToSer
+    go <- getManyConfirms [] slides
+    return $! toDyn go
+  SelectLeaderCli aid lid -> do
+    go <- selectLeader aid lid
+    return $! toDyn go
   ConfirmYesNoCli msg -> do
     go <- displayYesNo msg
     recordHistory  -- Prevent repeating the ending msgs.
-    respondToSer go
+    return $! toDyn go
   ConfirmMoreBWCli msg -> do
     go <- displayMore ColorBW msg
     recordHistory  -- Prevent repeating the ending msgs.
-    respondToSer go
+    return $! toDyn go
   ConfirmMoreFullCli msg -> do
     go <- displayMore ColorFull msg
     recordHistory  -- Prevent repeating the ending msgs.
-    respondToSer go
+    return $! toDyn go
   NullReportCli -> do
     StateClient{sreport} <- getClient
-    respondToSer sreport
+    return $! toDyn sreport
   SetArenaLeaderCli arena actor -> do
     arenaOld <- getsLocal sarena
     leaderOld <- getsClient getLeader
@@ -361,25 +358,22 @@ cmdQueryCli cmd = case cmd of
               else return $! fromMaybe actor leaderOld
     loc <- getLocal
     modifyClient $ updateSelectedLeader leader loc
-    respondToSer leader
+    return $! toDyn leader
   GameSaveCli -> do
     cli <- getClient
     loc <- getLocal
-    respondToSer (cli, loc)
-
-cmdControlCli :: MonadConnClient m => CmdControlCli -> m ()
-cmdControlCli cmd = case cmd of
-    HandlePlayerCli leader -> handlePlayer leader
+    return $! toDyn (cli, loc)
+  HandlePlayerCli leader -> handlePlayer leader
 
 -- | Continue running in the given direction.
-continueRun :: MonadConnClient m => ActorId -> (Vector, Int) -> m ()
+continueRun :: MonadClientChan m => ActorId -> (Vector, Int) -> m ()
 continueRun leader dd = do
   dir <- continueRunDir leader dd
   -- Attacks and opening doors disallowed when continuing to run.
-  writeChanToSer $ RunSer leader dir
+  writeChanToSer $ toDyn $ RunSer leader dir
 
 -- | Handle the move of the hero.
-handlePlayer :: MonadConnClient m => ActorId -> m ()
+handlePlayer :: MonadClientChan m => ActorId -> m Dynamic
 handlePlayer leader = do
   -- When running, stop if aborted by a disturbance.
   -- Otherwise let the player issue commands, until any of them takes time.
@@ -390,11 +384,11 @@ handlePlayer leader = do
 --  addSmell leader
   arenaNew <- getsLocal sarena
   leaderNew <- getsClient getLeader
-  respondToSer (arenaNew, leaderNew)
+  return $! toDyn (arenaNew, leaderNew)
 
 -- | Determine and process the next player command. The argument is the last
 -- abort message due to running, if any.
-playerCommand :: forall m. MonadConnClient m => Msg -> m ()
+playerCommand :: forall m. MonadClientChan m => Msg -> m ()
 playerCommand msgRunAbort = do
   -- The frame state is now Push.
   kmPush <- case msgRunAbort of
@@ -487,11 +481,11 @@ animateDeathCli target = do
   let animFrs = animate cli loc per $ deathBody (bpos pbody)
   displayFramesPush animFrs
 
-carryOnCli :: MonadConnClient m => m ()
+carryOnCli :: MonadClientChan m => m Dynamic
 carryOnCli = do
   go <- displayMore ColorBW ""
   msgAdd "The survivors carry on."  -- TODO: reset messages at game over not to display it if there are no survivors.
-  respondToSer go
+  return $! toDyn go
 
 -- | Make the item known to the player.
 discoverCli :: MonadClient m => Kind.Id ItemKind -> Item -> m ()

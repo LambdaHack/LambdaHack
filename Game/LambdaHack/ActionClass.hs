@@ -10,6 +10,7 @@ import Control.Monad.Reader.Class
 import Control.Monad.Writer.Strict (WriterT (WriterT), runWriterT, lift)
 import qualified Data.IntMap as IM
 import Data.Monoid
+import Data.Dynamic
 
 import Game.LambdaHack.Action.Frontend
 import Game.LambdaHack.Binding
@@ -24,7 +25,7 @@ type ConnDict = IM.IntMap ConnClient
 -- | Connection information for a client. Input and output channels, etc.
 data ConnClient = ConnClient
   { toClient   :: Chan CmdCli
-  , toServer   :: Chan CmdSer
+  , toServer   :: Chan Dynamic
   }
 
 instance Show ConnClient where
@@ -125,13 +126,13 @@ instance (Monoid a, MonadClient m) => MonadClient (WriterT a m) where
   modifyLocal  = lift . modifyLocal
   putLocal     = lift . putLocal
 
-class (MonadActionIO m, MonadClient m) => MonadConnClient m where
+class (MonadActionIO m, MonadClient m) => MonadClientChan m where
   getChan      :: m ConnClient
   getsChan     :: (ConnClient -> a) -> m a
   modifyChan   :: (ConnClient -> ConnClient) -> m ()
   putChan      :: ConnClient -> m ()
 
-instance (Monoid a, MonadConnClient m) => MonadConnClient (WriterT a m) where
+instance (Monoid a, MonadClientChan m) => MonadClientChan (WriterT a m) where
   getChan      = lift getChan
   getsChan     = lift . getsChan
   modifyChan   = lift . modifyChan

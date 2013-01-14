@@ -166,7 +166,7 @@ instance MonadClient ActionCli where
   modifyClient f = ActionCli (\_c k _a s cli d -> k s (f cli) d ())
   putClient      = modifyClient . const
 
-instance MonadConnClient ActionCli where
+instance MonadClientChan ActionCli where
   getChan        = ActionCli (\_c k _a s cli d -> k s cli d d)
   getsChan       = (`fmap` getChan)
   modifyChan f   = ActionCli (\_c k _a s cli d -> k s cli (f d) ())

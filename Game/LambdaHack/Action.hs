@@ -11,7 +11,7 @@ module Game.LambdaHack.Action
   , MonadServer( putGlobal, modifyGlobal, putServer, modifyServer )
   , MonadClient( putClient, modifyClient, putLocal, modifyLocal )
   , MonadServerChan
-  , MonadConnClient
+  , MonadClientChan
     -- * Various ways to abort action
   , abort, abortWith, abortIfWith, neverMind
     -- * Abort exception handlers
@@ -34,9 +34,9 @@ module Game.LambdaHack.Action
   , saveGameBkp, dumpCfg, endOrLoop, frontendName, startFrontend
   , switchGlobalSelectedSide
   , debug
-  , sendUpdateCli, sendQueryCli, sendControlCli
+  , sendUpdateCli, sendQueryCli
   , readChanFromSer, writeChanToSer, readChanFromCli
-  , respondToSer, broadcastCli, broadcastPosCli
+  , broadcastCli, broadcastPosCli
   ) where
 
 import Control.Concurrent
@@ -658,31 +658,23 @@ sendQueryCli :: (Typeable a, MonadServerChan m)
 sendQueryCli fid cmd = do
   ConnClient {toClient, toServer} <- getsDict (IM.! fid)
   liftIO $ writeChan toClient $ CmdQueryCli cmd
-  ResponseSer a <- liftIO $ readChan toServer
+  a <- liftIO $ readChan toServer
   return $ fromDyn a (assert `failure` (fid, cmd, a))
 
-sendControlCli :: MonadServerChan m => FactionId -> CmdControlCli -> m ()
-sendControlCli fid cmd = do
-  ConnClient {toClient} <- getsDict (IM.! fid)
-  liftIO $ writeChan toClient $ CmdControlCli cmd
-
-readChanFromSer :: MonadConnClient m => m CmdCli
+readChanFromSer :: MonadClientChan m => m CmdCli
 readChanFromSer = do
   toClient <- getsChan toClient
   liftIO $ readChan toClient
 
-writeChanToSer :: MonadConnClient m => CmdSer -> m ()
+writeChanToSer :: MonadClientChan m => Dynamic -> m ()
 writeChanToSer cmd = do
   toServer <- getsChan toServer
   liftIO $ writeChan toServer cmd
 
-readChanFromCli :: MonadServerChan m => FactionId -> m CmdSer
+readChanFromCli :: MonadServerChan m => FactionId -> m Dynamic
 readChanFromCli fid = do
   ConnClient {toServer} <- getsDict (IM.! fid)
   liftIO $ readChan toServer
-
-respondToSer :: (Typeable a, MonadConnClient m) => a -> m ()
-respondToSer a = writeChanToSer $ ResponseSer $ toDyn a
 
 broadcastCli :: MonadServerChan m
              => [FactionId -> m Bool] -> CmdUpdateCli

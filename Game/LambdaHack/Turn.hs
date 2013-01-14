@@ -133,7 +133,8 @@ handleActors subclipStart = withPerception $ do
         then do
           -- Player moves always start a new subclip.
           broadcastPosCli [] $ DisplayPushCli
-          sendControlCli side $ HandlePlayerCli leader
+          (arenaNew, leaderNew) <- sendQueryCli side $ HandlePlayerCli leader
+          {-
           let loop = do
                 cmd <- readChanFromCli side
                 case cmd of
@@ -143,6 +144,7 @@ handleActors subclipStart = withPerception $ do
                     cmdSer cmd
                     loop
           (arenaNew, leaderNew) <- loop
+-}
           modifyGlobal $ updateSelectedArena arenaNew
           squitNew <- getsServer squit
           -- Advance time once, after the leader switched perhaps many times.
@@ -206,8 +208,13 @@ advanceTime actor = do
   let upd m@Actor{btime} = m {btime = timeAddFromSpeed coactor m btime}
   modifyGlobal $ updateActorBody actor upd
 
-handleClient :: MonadConnClient m => m ()
+handleClient :: MonadClientChan m => m ()
 handleClient = do
-  cmd <- readChanFromSer
-  cmdCli cmd
+  cmd3 <- readChanFromSer
+  case cmd3 of
+    CmdUpdateCli cmd -> do
+      cmdUpdateCli cmd
+    CmdQueryCli cmd -> do
+      dyn <- cmdQueryCli cmd
+      writeChanToSer dyn
   handleClient

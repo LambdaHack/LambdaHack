@@ -1,14 +1,14 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveDataTypeable, OverloadedStrings #-}
 -- | Abstract syntax of server and client commands.
 module Game.LambdaHack.Command
-  ( CmdCli(..), CmdUpdateCli(..), CmdQueryCli(..), CmdControlCli(..)
+  ( CmdCli(..), CmdUpdateCli(..), CmdQueryCli(..)
   , CmdSer(..), Cmd(..)
   , majorCmd, minorCmd, timedCmd, cmdDescription
   ) where
 
-import Data.Dynamic
 import qualified Data.IntSet as IS
 import Data.Text (Text)
+import Data.Typeable
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Actor
@@ -30,7 +30,6 @@ import Game.LambdaHack.VectorXY
 data CmdCli =
     CmdUpdateCli CmdUpdateCli
   | CmdQueryCli CmdQueryCli
-  | CmdControlCli CmdControlCli
   deriving Show
 
 data CmdUpdateCli =
@@ -66,10 +65,7 @@ data CmdQueryCli =
   | NullReportCli
   | SetArenaLeaderCli LevelId ActorId
   | GameSaveCli
-  deriving Show
-
-data CmdControlCli =
-    HandlePlayerCli ActorId
+  | HandlePlayerCli ActorId
   deriving Show
 
 -- | Abstract syntax of server commands.
@@ -86,8 +82,7 @@ data CmdSer =
   | GameRestartSer
   | GameSaveSer
   | CfgDumpSer
-  | ResponseSer Dynamic
-  deriving Show
+  deriving (Show, Typeable)
 
 -- | Abstract syntax of player commands.
 data Cmd =
