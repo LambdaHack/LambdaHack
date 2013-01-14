@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | The main loop of the game, processing player and AI moves turn by turn.
-module Game.LambdaHack.Turn (handleTurn, handleClient) where
+module Game.LambdaHack.Turn (handleTurn) where
 
 import Control.Arrow ((&&&))
 import Control.Monad
@@ -196,14 +196,3 @@ advanceTime actor = do
   Kind.COps{coactor} <- getsGlobal scops
   let upd m@Actor{btime} = m {btime = timeAddFromSpeed coactor m btime}
   modifyGlobal $ updateActorBody actor upd
-
-handleClient :: MonadClientChan m => m ()
-handleClient = do
-  cmd2 <- readChanFromSer
-  case cmd2 of
-    CmdUpdateCli cmd -> do
-      cmdUpdateCli cmd
-    CmdQueryCli cmd -> do
-      dyn <- cmdQueryCli cmd
-      writeChanToSer dyn
-  handleClient

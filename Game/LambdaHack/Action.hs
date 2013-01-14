@@ -34,9 +34,8 @@ module Game.LambdaHack.Action
   , saveGameBkp, dumpCfg, endOrLoop, frontendName, startFrontend
   , switchGlobalSelectedSide
   , debug
-  , sendUpdateCli, sendQueryCli
-  , readChanFromSer, writeChanToSer, readChanFromCli
-  , broadcastCli, broadcastPosCli
+  , sendUpdateCli, sendQueryCli, broadcastCli, broadcastPosCli
+  , handleClient2
   ) where
 
 import Control.Concurrent
@@ -671,11 +670,6 @@ writeChanToSer cmd = do
   toServer <- getsChan toServer
   liftIO $ writeChan toServer cmd
 
-readChanFromCli :: MonadServerChan m => FactionId -> m Dynamic
-readChanFromCli fid = do
-  ConnClient {toServer} <- getsDict (IM.! fid)
-  liftIO $ readChan toServer
-
 broadcastCli :: MonadServerChan m
              => [FactionId -> m Bool] -> CmdUpdateCli
              -> m ()
@@ -701,3 +695,17 @@ isFactionAware poss fid = do
 broadcastPosCli :: MonadServerChan m => [Point] -> CmdUpdateCli -> m ()
 broadcastPosCli poss cmd =
   broadcastCli [isFactionPlayer, isFactionAware poss] cmd
+
+handleClient2 :: MonadClientChan m
+             => (CmdUpdateCli -> m ())
+             -> (CmdQueryCli -> m Dynamic)
+             -> m ()
+handleClient2 cmdUpdateCli cmdQueryCli = do
+  cmd2 <- readChanFromSer
+  case cmd2 of
+    CmdUpdateCli cmd -> do
+      cmdUpdateCli cmd
+    CmdQueryCli cmd -> do
+      dyn <- cmdQueryCli cmd
+      writeChanToSer dyn
+  handleClient2 cmdUpdateCli cmdQueryCli

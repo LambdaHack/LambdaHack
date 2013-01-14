@@ -368,29 +368,33 @@ cmdQueryCli cmd = case cmd of
   HandlePlayerCli leader -> handlePlayer leader
 
 -- | Continue running in the given direction.
-continueRun :: MonadClientChan m => ActorId -> (Vector, Int) -> m ()
+continueRun :: MonadClientChan m => ActorId -> (Vector, Int) -> m CmdSer
 continueRun leader dd = do
   dir <- continueRunDir leader dd
   -- Attacks and opening doors disallowed when continuing to run.
-  writeChanToSer $ toDyn $ RunSer leader dir
+  return $ RunSer leader dir
 
 -- | Handle the move of the hero.
-handlePlayer :: MonadClientChan m => ActorId -> m Dynamic
+handlePlayer :: MonadClientChan m
+             => ActorId
+             -> m Dynamic  -- (CmdSer, ActorId, LevelId)
 handlePlayer leader = do
   -- When running, stop if aborted by a disturbance.
   -- Otherwise let the player issue commands, until any of them takes time.
   -- First time, just after pushing frames, ask for commands in Push mode.
-  tryWith (\ msg -> stopRunning >> playerCommand msg) $ do
+  cmdS <- tryWith (\msg -> stopRunning >> playerCommand msg) $ do
     srunning <- getsClient srunning
     maybe abort (continueRun leader) srunning
 --  addSmell leader
-  arenaNew <- getsLocal sarena
-  leaderNew <- getsClient getLeader
-  return $! toDyn (arenaNew, leaderNew)
+  leader <- getsClient getLeader
+  arena <- getsLocal sarena
+  return $! toDyn (cmdS, arena, leader)
 
 -- | Determine and process the next player command. The argument is the last
 -- abort message due to running, if any.
-playerCommand :: forall m. MonadClientChan m => Msg -> m ()
+playerCommand :: forall m. MonadClientChan m
+              => Msg
+              -> m CmdSer
 playerCommand msgRunAbort = do
   -- The frame state is now Push.
   kmPush <- case msgRunAbort of
@@ -400,7 +404,7 @@ playerCommand msgRunAbort = do
       getKeyOverlayCommand $ head $ runSlideshow slides
   -- The frame state is now None and remains so between each pair
   -- of lines of @loop@ (but can change within called actions).
-  let loop :: K.KM -> m ()
+  let loop :: K.KM -> m CmdSer
       loop km = do
         -- Messages shown, so update history and reset current report.
         recordHistory
@@ -431,9 +435,7 @@ playerCommand msgRunAbort = do
             -- Exit the loop and let other actors act. No next key needed
             -- and no slides could have been generated.
             modifyClient (\st -> st {slastKey = Nothing})
-            leader <- getsClient getLeader
-            arena <- getsLocal sarena
-            writeChanToSer $ toDyn (cmdS, leader, arena)
+            return cmdS
           Nothing ->
             -- If no time taken, rinse and repeat.
             -- Analyse the obtained slides.

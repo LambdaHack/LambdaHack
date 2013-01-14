@@ -12,9 +12,10 @@ import qualified Content.RuleKind
 import qualified Content.StrategyKind
 import qualified Content.TileKind
 import Game.LambdaHack.Action
+import qualified Game.LambdaHack.ActionType as ActionType
+import Game.LambdaHack.CommandAction
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Turn
-import qualified Game.LambdaHack.ActionType as ActionType
 
 -- | Fire up the frontend with the engine fueled by content.
 -- The @Action@ type to be used is decided by the second argument
@@ -34,4 +35,4 @@ main =
         , cotile  = Kind.createOps Content.TileKind.cdefs
         }
   in startFrontend ActionType.executor ActionType.executorCli
-                   cops handleTurn handleClient
+                   cops handleTurn (handleClient2 cmdUpdateCli cmdQueryCli)
