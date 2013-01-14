@@ -343,6 +343,10 @@ cmdCli cmd = case cmd of
   DisplayPushCli -> displayPush
   HandlePlayerCli leader -> handlePlayer leader
   DisplayFramesPushCli frames -> displayFramesPush frames
+  GameSaveCli -> do
+    cli <- getClient
+    loc <- getLocal
+    respondCli (cli, loc)
 
 -- | Continue running in the given direction.
 continueRun :: MonadConnClient m => ActorId -> (Vector, Int) -> m ()

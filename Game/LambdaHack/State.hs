@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveDataTypeable, OverloadedStrings #-}
 -- | Server and client game state types and operations.
 module Game.LambdaHack.State
   ( -- * Basic game state, local or global
@@ -17,8 +17,6 @@ module Game.LambdaHack.State
   , StateClient(..), defStateClient, defHistory
   , updateTarget, getTarget
   , invalidateSelectedLeader, updateSelectedLeader, getLeader
-    -- * A dictionary of client states, for saving game.
-  , StateDict
     -- * Components types and operations
   , TgtMode(..), Target(..)
   , Pers, FactionPers, dungeonPerception
@@ -33,6 +31,7 @@ import qualified Data.Map as M
 import Data.Maybe (isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Typeable
 import Game.LambdaHack.Vector
 import qualified NLP.Miniutter.English as MU
 import qualified System.Random as R
@@ -70,7 +69,7 @@ data State = State
   , _sside    :: !FactionId    -- ^ faction of the selected actor
   , _sarena   :: !LevelId      -- ^ level of the selected actor
   }
-  deriving Show
+  deriving (Show, Typeable)
 
 -- | Global, server state.
 data StateServer = StateServer
@@ -82,7 +81,7 @@ data StateServer = StateServer
   , squit     :: !(Maybe Bool)  -- ^ just going to save the game
   , sdebugSer :: !DebugModeSer  -- ^ debugging mode
   }
-  deriving Show
+  deriving (Show, Typeable)
 
 -- | Client state, belonging to a single faction.
 -- Some of the data, e.g, the history, carries over
@@ -101,10 +100,7 @@ data StateClient = StateClient
   , _sleader  :: !(Maybe ActorId)  -- ^ selected actor
   , sdebugCli :: !DebugModeCli  -- ^ debugging mode
   }
-  deriving Show
-
--- | All client and local state, indexed by faction identifier.
-type StateDict = IM.IntMap (StateClient, State)
+  deriving (Show, Typeable)
 
 -- | Current targeting mode of a client.
 data TgtMode =

@@ -54,6 +54,7 @@ data CmdCli =
   | DisplayPushCli
   | HandlePlayerCli ActorId
   | DisplayFramesPushCli Frames
+  | GameSaveCli
   deriving Show
 
 -- | Abstract syntax of server commands.

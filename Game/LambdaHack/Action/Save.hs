@@ -2,6 +2,8 @@
 -- | Saving and restoring games and player diaries.
 module Game.LambdaHack.Action.Save
   ( saveGameFile, restoreGame, rmBkpSaveHistory, saveGameBkp
+    -- * A dictionary of client states, for saving games.
+  , StateDict
   ) where
 
 import Control.Concurrent
@@ -20,6 +22,9 @@ import Game.LambdaHack.Faction
 import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.File
+
+-- | All client and local state, indexed by faction identifier.
+type StateDict = IM.IntMap (StateClient, State)
 
 -- | Save player history.
 saveHistory :: FilePath -> StateDict -> IO ()

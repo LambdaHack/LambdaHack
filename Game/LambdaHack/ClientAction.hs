@@ -348,8 +348,11 @@ displayMainMenu = do
         let showKD cmd key = (showT key, Command.cmdDescription cmd)
             revLookup cmd =
               maybe ("", "") (showKD cmd . fst) $ M.lookup cmd krevMap
-            cmds = [Command.GameSave, Command.GameExit,
-                   Command.GameRestart, Command.Help]
+            cmds = [ Command.GameSave,
+                     Command.GameExit,
+                     Command.GameRestart,
+                     Command.Help
+                   ]
         in map revLookup cmds ++ [(fst (revLookup Command.Clear), "continue")]
       bindings =  -- key bindings to display
         let bindingLen = 25

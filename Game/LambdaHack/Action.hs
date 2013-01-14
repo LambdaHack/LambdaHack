@@ -393,14 +393,16 @@ rememberLevel Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} visible lvl clvl =
 -- | Save the history and a backup of the save game file, in case of crashes.
 --
 -- See 'Save.saveGameBkp'.
-saveGameBkp :: MonadServer m => m ()
+saveGameBkp :: MonadServerChan m => m ()
 saveGameBkp = do
-  state <- getGlobal
+  glo <- getGlobal
   ser <- getServer
-  d <- undefined -- TODO
+  faction <- getsGlobal sfaction
+  let queryCliLoc fid = askClient fid GameSaveCli  -- TODO: do in parallel
+  d <- mapM queryCliLoc $ IM.keys faction
 --  configUI <- askConfigUI
   config <- getsServer sconfig
-  liftIO $ Save.saveGameBkp config state ser d
+  liftIO $ Save.saveGameBkp config glo ser (IM.fromDistinctAscList d)
 
 -- | Dumps the current game rules configuration to a file.
 dumpCfg :: (MonadActionIO m, MonadServerRO m) => FilePath -> m ()
@@ -486,7 +488,7 @@ endOrLoop handleTurn = do
       restartGame handleTurn
     (Nothing, _) -> handleTurn  -- just continue
 
-restartGame :: MonadServer m => m () -> m ()
+restartGame :: MonadServerChan m => m () -> m ()
 restartGame handleTurn = do
   -- Take the original config from config file, to reroll RNG, if needed
   -- (the current config file has the RNG rolled for the previous game).
@@ -503,7 +505,7 @@ restartGame handleTurn = do
   handleTurn
 
 -- TODO: do this inside Action ()
-gameReset :: Kind.COps -> IO (State, StateServer, StateDict)
+gameReset :: Kind.COps -> IO (State, StateServer, Save.StateDict)
 gameReset cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
                                   , coitem=coitem@Kind.Ops{okind}
                                   , corule
@@ -555,7 +557,7 @@ gameReset cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
 
 gameResetAction :: MonadActionIO m
                 => Kind.COps
-                -> m (State, StateServer, StateDict)
+                -> m (State, StateServer, Save.StateDict)
 gameResetAction = liftIO . gameReset
 
 -- | Wire together content, the definitions of game commands,

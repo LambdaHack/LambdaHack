@@ -48,7 +48,7 @@ default (Text)
 
 -- ** GameSaveSer
 
-gameSaveSer :: MonadServer m => m ()
+gameSaveSer :: MonadServerChan m => m ()
 gameSaveSer = saveGameBkp
 
 -- ** CfgDumpSer
