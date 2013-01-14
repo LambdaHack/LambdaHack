@@ -19,15 +19,15 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 
 -- | Connection information for each client, indexed by faction identifier.
-type ClientDict = IM.IntMap ClientChan
+type ConnDict = IM.IntMap ConnClient
 
--- | Channels from client-server communication.
-data ClientChan = ClientChan
+-- | Connection information for a client. Input and output channels, etc.
+data ConnClient = ConnClient
   { toClient   :: Chan CmdCli
   , toServer   :: Chan CmdSer
   }
 
-instance Show ClientChan where
+instance Show ConnClient where
   show _ = "client channels"
 
 -- | The information that is constant across a client playing session,
@@ -88,10 +88,10 @@ instance (Monoid a, MonadServer m) => MonadServer (WriterT a m) where
   putServer    = lift . putServer
 
 class (MonadActionIO m, MonadServer m) => MonadServerChan m where
-  getDict      :: m ClientDict
-  getsDict     :: (ClientDict -> a) -> m a
-  modifyDict   :: (ClientDict -> ClientDict) -> m ()
-  putDict      :: ClientDict -> m ()
+  getDict      :: m ConnDict
+  getsDict     :: (ConnDict -> a) -> m a
+  modifyDict   :: (ConnDict -> ConnDict) -> m ()
+  putDict      :: ConnDict -> m ()
 
 instance (Monoid a, MonadServerChan m) => MonadServerChan (WriterT a m) where
   getDict      = lift getDict
@@ -125,13 +125,13 @@ instance (Monoid a, MonadClient m) => MonadClient (WriterT a m) where
   modifyLocal  = lift . modifyLocal
   putLocal     = lift . putLocal
 
-class (MonadActionIO m, MonadClient m) => MonadClientChan m where
-  getChan      :: m ClientChan
-  getsChan     :: (ClientChan -> a) -> m a
-  modifyChan   :: (ClientChan -> ClientChan) -> m ()
-  putChan      :: ClientChan -> m ()
+class (MonadActionIO m, MonadClient m) => MonadConnClient m where
+  getChan      :: m ConnClient
+  getsChan     :: (ConnClient -> a) -> m a
+  modifyChan   :: (ConnClient -> ConnClient) -> m ()
+  putChan      :: ConnClient -> m ()
 
-instance (Monoid a, MonadClientChan m) => MonadClientChan (WriterT a m) where
+instance (Monoid a, MonadConnClient m) => MonadConnClient (WriterT a m) where
   getChan      = lift getChan
   getsChan     = lift . getsChan
   modifyChan   = lift . modifyChan

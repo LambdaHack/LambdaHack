@@ -11,7 +11,7 @@ module Game.LambdaHack.Action
   , MonadServer( putGlobal, modifyGlobal, putServer, modifyServer )
   , MonadClient( putClient, modifyClient, putLocal, modifyLocal )
   , MonadServerChan
-  , MonadClientChan
+  , MonadConnClient
     -- * Various ways to abort action
   , abort, abortWith, abortIfWith, neverMind
     -- * Abort exception handlers
@@ -565,9 +565,9 @@ gameResetAction = liftIO . gameReset
 -- Then create the starting game config from the default config file
 -- and initialize the engine with the starting session.
 startFrontend :: (MonadActionRoot m, MonadActionRoot n)
-              => (m () -> Pers -> State -> StateServer -> ClientDict -> IO ())
+              => (m () -> Pers -> State -> StateServer -> ConnDict -> IO ())
                  -> (n () -> FrontendSession -> Binding -> ConfigUI
-                     -> State -> StateClient -> ClientChan -> IO ())
+                     -> State -> StateClient -> ConnClient -> IO ())
               -> Kind.COps -> m () -> n () -> IO ()
 startFrontend executor executorCli
               !copsSlow@Kind.COps{corule, cotile=tile}
@@ -599,9 +599,9 @@ startFrontend executor executorCli
 -- | Either restore a saved game, or setup a new game.
 -- Then call the main game loop.
 start :: (MonadActionRoot m, MonadActionRoot n)
-      => (m () -> Pers -> State -> StateServer -> ClientDict -> IO ())
+      => (m () -> Pers -> State -> StateServer -> ConnDict -> IO ())
       -> (n () -> FrontendSession -> Binding -> ConfigUI
-          -> State -> StateClient -> ClientChan -> IO ())
+          -> State -> StateClient -> ConnClient -> IO ())
       -> FrontendSession -> Kind.COps -> Binding -> Config -> ConfigUI
       -> m () -> n () -> IO ()
 start executor executorCli sfs cops@Kind.COps{corule}
@@ -628,7 +628,7 @@ start executor executorCli sfs cops@Kind.COps{corule}
       addChan (k, cliloc) = do
         toClient <- newChan
         toServer <- newChan
-        return (k, (cliloc, ClientChan {toClient, toServer}))
+        return (k, (cliloc, ConnClient {toClient, toServer}))
   dAssocs <- mapM addChan $ IM.toAscList dPer
   let d = IM.map snd $ IM.fromAscList dAssocs
       forkClient (_, ((cli, loc), chan)) =
@@ -669,32 +669,32 @@ sendToClients cmd = do
 
 sendToClient :: MonadServerChan m => FactionId -> CmdCli -> m ()
 sendToClient fid cmd = do
-  ClientChan {toClient} <- getsDict (IM.! fid)
+  ConnClient {toClient} <- getsDict (IM.! fid)
   liftIO $ writeChan toClient cmd
 
 askClient :: (Typeable a, MonadServerChan m) => FactionId -> CmdCli -> m a
 askClient fid cmd = do
-  ClientChan {toClient, toServer} <- getsDict (IM.! fid)
+  ConnClient {toClient, toServer} <- getsDict (IM.! fid)
   liftIO $ writeChan toClient cmd
   ResponseSer a <- liftIO $ readChan toServer
   return $ fromDyn a (assert `failure` (fid, cmd, a))
 
-respondCli :: (Typeable a, MonadClientChan m) => a -> m ()
+respondCli :: (Typeable a, MonadConnClient m) => a -> m ()
 respondCli a = do
   toServer <- getsChan toServer
   liftIO $ writeChan toServer $ ResponseSer $ toDyn a
 
 readChanSer :: MonadServerChan m => FactionId -> m CmdSer
 readChanSer fid = do
-  ClientChan {toServer} <- getsDict (IM.! fid)
+  ConnClient {toServer} <- getsDict (IM.! fid)
   liftIO $ readChan toServer
 
-writeChanSer :: MonadClientChan m => CmdSer -> m ()
+writeChanSer :: MonadConnClient m => CmdSer -> m ()
 writeChanSer cmd = do
   toServer <- getsChan toServer
   liftIO $ writeChan toServer cmd
 
-readChanCli :: MonadClientChan m => m CmdCli
+readChanCli :: MonadConnClient m => m CmdCli
 readChanCli = do
   toClient <- getsChan toClient
   liftIO $ readChan toClient

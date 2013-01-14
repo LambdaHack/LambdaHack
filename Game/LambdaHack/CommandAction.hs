@@ -38,7 +38,7 @@ import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 
 -- | The basic action for a command and whether it takes time.
-cmdAction :: MonadClientChan m => StateClient -> State -> Cmd
+cmdAction :: MonadConnClient m => StateClient -> State -> Cmd
           -> (Bool, WriterT Slideshow m ())
 cmdAction cli s cmd =
   let tgtMode = stgtMode cli
@@ -110,7 +110,7 @@ cmdAction cli s cmd =
 -- Time cosuming commands are marked as such in help and cannot be
 -- invoked in targeting mode on a remote level (level different than
 -- the level of the selected hero).
-cmdSemantics :: MonadClientChan m => Cmd -> WriterT Slideshow m Bool
+cmdSemantics :: MonadConnClient m => Cmd -> WriterT Slideshow m Bool
 cmdSemantics cmd = do
   Just leaderOld <- getsClient getLeader
   arenaOld <- getsLocal sarena
@@ -165,11 +165,11 @@ cmdSer cmd = case cmd of
   CfgDumpSer -> cfgDumpSer
   ResponseSer _ -> undefined
 
-cmdSerAction :: MonadClientChan m => m CmdSer -> WriterT Slideshow m ()
+cmdSerAction :: MonadConnClient m => m CmdSer -> WriterT Slideshow m ()
 cmdSerAction m = lift $ m >>= writeChanSer
 
 -- | The semantics of client commands.
-cmdCli :: MonadClientChan m => CmdCli -> m ()
+cmdCli :: MonadConnClient m => CmdCli -> m ()
 cmdCli cmd = case cmd of
   PickupCli aid i ni -> pickupCli aid i ni
   ApplyCli actor verb item -> do
@@ -345,14 +345,14 @@ cmdCli cmd = case cmd of
   DisplayFramesPushCli frames -> displayFramesPush frames
 
 -- | Continue running in the given direction.
-continueRun :: MonadClientChan m => ActorId -> (Vector, Int) -> m ()
+continueRun :: MonadConnClient m => ActorId -> (Vector, Int) -> m ()
 continueRun leader dd = do
   dir <- continueRunDir leader dd
   -- Attacks and opening doors disallowed when continuing to run.
   writeChanSer $ RunSer leader dir
 
 -- | Handle the move of the hero.
-handlePlayer :: MonadClientChan m => ActorId -> m ()
+handlePlayer :: MonadConnClient m => ActorId -> m ()
 handlePlayer leader = do
   -- When running, stop if aborted by a disturbance.
   -- Otherwise let the player issue commands, until any of them takes time.
@@ -367,7 +367,7 @@ handlePlayer leader = do
 
 -- | Determine and process the next player command. The argument is the last
 -- abort message due to running, if any.
-playerCommand :: forall m. MonadClientChan m => Msg -> m ()
+playerCommand :: forall m. MonadConnClient m => Msg -> m ()
 playerCommand msgRunAbort = do
   -- The frame state is now Push.
   kmPush <- case msgRunAbort of
@@ -460,7 +460,7 @@ animateDeathCli target = do
   let animFrs = animate cli loc per $ deathBody (bpos pbody)
   displayFramesPush animFrs
 
-carryOnCli :: MonadClientChan m => m ()
+carryOnCli :: MonadConnClient m => m ()
 carryOnCli = do
   go <- displayMore ColorBW ""
   msgAdd "The survivors carry on."  -- TODO: reset messages at game over not to display it if there are no survivors.

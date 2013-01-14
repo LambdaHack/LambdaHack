@@ -20,12 +20,12 @@ import Game.LambdaHack.State
 -- | The type of the function inside any full-power action.
 type FunAction a =
    Pers                               -- ^ cached perception
-   -> (State -> StateServer -> ClientDict -> a -> IO ())
+   -> (State -> StateServer -> ConnDict -> a -> IO ())
                                       -- ^ continuation
    -> (Msg -> IO ())                  -- ^ failure/reset continuation
    -> State                           -- ^ current global state
    -> StateServer                     -- ^ current server state
-   -> ClientDict                      -- ^ client connection information
+   -> ConnDict                        -- ^ client-server connection information
    -> IO ()
 
 -- | Actions of player-controlled characters and of any other actors.
@@ -91,7 +91,7 @@ instance MonadServerChan Action where
   putDict        = modifyDict . const
 
 -- | Run an action, with a given session, state and history, in the @IO@ monad.
-executor :: Action () -> Pers -> State -> StateServer -> ClientDict -> IO ()
+executor :: Action () -> Pers -> State -> StateServer -> ConnDict -> IO ()
 executor m pers s ser d =
   runAction m
     pers
@@ -106,12 +106,12 @@ executor m pers s ser d =
 -- | The type of the function inside any client action.
 type FunActionCli a =
    Session                            -- ^ client session setup data
-   -> (State -> StateClient -> ClientChan -> a -> IO ())
+   -> (State -> StateClient -> ConnClient -> a -> IO ())
                                       -- ^ continuation
    -> (Msg -> IO ())                  -- ^ failure/reset continuation
    -> State                           -- ^ current local state
    -> StateClient                     -- ^ current client state
-   -> ClientChan                      -- ^ communication channels
+   -> ConnClient                      -- ^ this client connection information
    -> IO ()
 
 -- | Client actions.
@@ -166,7 +166,7 @@ instance MonadClient ActionCli where
   modifyClient f = ActionCli (\_c k _a s cli d -> k s (f cli) d ())
   putClient      = modifyClient . const
 
-instance MonadClientChan ActionCli where
+instance MonadConnClient ActionCli where
   getChan        = ActionCli (\_c k _a s cli d -> k s cli d d)
   getsChan       = (`fmap` getChan)
   modifyChan f   = ActionCli (\_c k _a s cli d -> k s cli (f d) ())
@@ -175,7 +175,7 @@ instance MonadClientChan ActionCli where
 -- | Run an action, with a given session, state and history, in the @IO@ monad.
 executorCli :: ActionCli ()
             -> FrontendSession -> Binding -> ConfigUI
-            -> State -> StateClient -> ClientChan -> IO ()
+            -> State -> StateClient -> ConnClient -> IO ()
 executorCli m sfs sbinding sconfigUI s cli d =
   runActionCli m
     Session{..}
