@@ -167,6 +167,8 @@ itemOverlay disco sorted is = do
 
 -- GameSave doesn't take time, but needs the server, so it's defined elsewhere.
 
+-- CfgDump doesn't take time, but needs the server, so it's defined elsewhere.
+
 -- ** Inventory
 
 -- TODO: When inventory is displayed, let TAB switch the leader (without
@@ -454,8 +456,6 @@ displayHistory = do
             <+> "Past messages:"
   slides <- overlayToSlideshow msg $ renderHistory history
   tell slides
-
--- CfgDump doesn't take time, but needs the server, so it's defined elsewhere.
 
 -- ** HeroCycle
 

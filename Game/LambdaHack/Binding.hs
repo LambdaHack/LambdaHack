@@ -50,7 +50,7 @@ stdBinding !config@ConfigUI{configMacros} =
            , ((K.Char 's', K.Control), DebugSmell)
            , ((K.Char 'v', K.Control), DebugVision)
            ]
-      mkDescribed cmd = (cmdDescription cmd, timedCmd cmd, cmd)
+      mkDescribed cmd = (cmdDescription cmd, noRemoteCmd cmd, cmd)
       mkCommand (km, def) = (km, mkDescribed def)
       semList = L.map mkCommand cmdList
   in Binding

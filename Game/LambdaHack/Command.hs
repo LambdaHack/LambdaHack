@@ -3,7 +3,7 @@
 module Game.LambdaHack.Command
   ( CmdCli(..), CmdUpdateCli(..), CmdQueryCli(..)
   , CmdSer(..), Cmd(..)
-  , majorCmd, minorCmd, timedCmd, cmdDescription
+  , majorCmd, minorCmd, noRemoteCmd, cmdDescription
   ) where
 
 import qualified Data.IntSet as IS
@@ -96,10 +96,11 @@ data Cmd =
   | Wait
   | Move VectorXY
   | Run VectorXY
+    -- These do not take time.
   | GameExit
   | GameRestart
-    -- These do not take time, or not quite.
   | GameSave
+  | CfgDump
   | Inventory
   | TgtFloor
   | TgtEnemy
@@ -109,7 +110,6 @@ data Cmd =
   | Accept
   | Clear
   | History
-  | CfgDump
   | HeroCycle
   | HeroBack
   | Help
@@ -152,11 +152,13 @@ minorCmd cmd = case cmd of
   HeroBack    -> True
   _           -> False
 
--- | Commands that usually take time are marked as such in help.
--- Whether they take time in a particular situation is decided
--- each time in 'cmdAction'.
-timedCmd :: Cmd -> Bool
-timedCmd cmd = case cmd of
+-- | Commands that are forbidden on a remote level, because they
+-- would usually take time when invoked on one.
+-- Not that movement commands are not included, because they take time
+-- on normal levels, but don't take time on remote levels, that is,
+-- in targeting mode.
+noRemoteCmd :: Cmd -> Bool
+noRemoteCmd cmd = case cmd of
   Apply{}       -> True
   Project{}     -> True
   TriggerDir{}  -> True
@@ -164,10 +166,6 @@ timedCmd cmd = case cmd of
   Pickup        -> True
   Drop          -> True
   Wait          -> True
-  Move{}        -> True
-  Run{}         -> True
-  GameExit      -> True  -- takes time, then rewinds time
-  GameRestart   -> True  -- takes time, then resets state
   _             -> False
 
 -- | Description of player commands.
@@ -182,10 +180,11 @@ cmdDescription cmd = case cmd of
   Move{}      -> "move"
   Run{}       -> "run"
   Wait        -> "wait"
+
   GameExit    -> "save and exit"
   GameRestart -> "restart game"
   GameSave    -> "save game"
-
+  CfgDump     -> "dump current configuration"
   Inventory   -> "display inventory"
   TgtFloor    -> "target position"
   TgtEnemy    -> "target monster"
@@ -201,7 +200,6 @@ cmdDescription cmd = case cmd of
   Accept    -> "accept choice"
   Clear     -> "clear messages"
   History   -> "display previous messages"
-  CfgDump   -> "dump current configuration"
   HeroCycle -> "cycle among heroes on level"
   HeroBack  -> "cycle among heroes in the dungeon"
   Help      -> "display help"

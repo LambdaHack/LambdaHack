@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Semantics of player commands.
 module Game.LambdaHack.CommandAction
-  ( cmdSemantics, cmdSer, cmdUpdateCli, cmdQueryCli
+  ( cmdSemantics, timedCmd, cmdSer, cmdUpdateCli, cmdQueryCli
   ) where
 
 import Control.Monad
@@ -40,7 +40,7 @@ import Game.LambdaHack.Vector
 
 -- | The basic action for a command and whether it takes time.
 cmdAction :: MonadClientChan m => StateClient -> State -> Cmd
-          -> (Bool, WriterT Slideshow m ())
+          -> WriterT Slideshow m (Maybe CmdSer)
 cmdAction cli s cmd =
   let tgtMode = stgtMode cli
       leader = fromJust $ getLeader cli
@@ -51,18 +51,17 @@ cmdAction cli s cmd =
       Level{lxsize} =
         maybe (getArena s) ((sdungeon s M.!) . tgtLevelId) tgtMode
   in case cmd of
-    Apply{..} -> (True, cmdSerAction $ playerApplyGroupItem verb object syms)
-    Project{} | isNothing tgtLoc -> (False, retarget)
-    Project{..} ->
-      (True, cmdSerAction $ playerProjectGroupItem verb object syms)
-    TriggerDir{..} -> (True, cmdSerAction $ playerTriggerDir feature verb)
-    TriggerTile{..} -> (True, cmdSerAction $ playerTriggerTile feature)
-    Pickup -> (True, cmdSerAction $ pickupItem)
-    Drop   -> (True, cmdSerAction $ dropItem)
-    Wait   -> (True, cmdSerAction $ waitBlock)
+    Apply{..} -> lift $ fmap Just $ playerApplyGroupItem verb object syms
+    Project{} | isNothing tgtLoc -> retarget >> return Nothing
+    Project{..} -> lift $ fmap Just $ playerProjectGroupItem verb object syms
+    TriggerDir{..} -> lift $ fmap Just $ playerTriggerDir feature verb
+    TriggerTile{..} -> lift $ fmap Just $ playerTriggerTile feature
+    Pickup -> lift $ fmap Just $ pickupItem
+    Drop   -> lift $ fmap Just $ dropItem
+    Wait   -> lift $ fmap Just $ waitBlock
     Move v | isJust tgtMode ->
       let dir = toDir lxsize v
-      in (False, moveCursor dir 1)
+      in moveCursor dir 1 >> return Nothing
     Move v ->
       let dir = toDir lxsize v
           tpos = ppos `shift` dir
@@ -72,56 +71,56 @@ cmdAction cli s cmd =
         Just target | bfaction (getActorBody target s) == sside s
                       && not (bproj (getActorBody target s)) ->
           -- Select adjacent actor by bumping into him. Takes no time.
-          (False,
-           selectLeader target arena
-             >>= assert `trueM`
-                   (leader, target, "leader bumps into himself" :: Text))
-        _ -> (True, cmdSerAction $ movePl dir)
+          selectLeader target arena
+            >>= assert `trueM`
+                  (leader, target, "leader bumps into himself" :: Text)
+            >> return Nothing
+        _ -> lift $ fmap Just $ movePl dir
     Run v | isJust tgtMode ->
       let dir = toDir lxsize v
-      in (False, moveCursor dir 10)
+      in moveCursor dir 10 >> return Nothing
     Run v ->
       let dir = toDir lxsize v
-      in (True, cmdSerAction $ runPl dir)
-    GameExit    -> (True, cmdSerAction $ gameExit)     -- rewinds time
-    GameRestart -> (True, cmdSerAction $ gameRestart)  -- resets state
+      in lift $ fmap Just $ runPl dir
 
-    GameSave    -> (False, cmdSerAction $ gameSave)
-    Inventory   -> (False, inventory)
-    TgtFloor    -> (False, targetFloor   $ TgtExplicit arena)
-    TgtEnemy    -> (False, targetMonster $ TgtExplicit arena)
-    TgtAscend k -> (False, tgtAscend k)
-    EpsIncr b   -> (False, lift $ epsIncr b)
-    Cancel      -> (False, cancelCurrent displayMainMenu)
-    Accept      -> (False, acceptCurrent displayHelp)
-    Clear       -> (False, lift $ clearCurrent)
-    History     -> (False, displayHistory)
-    CfgDump     -> (False, cmdSerAction $ dumpConfig)
-    HeroCycle   -> (False, lift $ cycleHero)
-    HeroBack    -> (False, lift $ backCycleHero)
-    Help        -> (False, displayHelp)
-    SelectHero k -> (False, lift $ selectHero k)
-    DebugArea   -> (False, modifyClient toggleMarkVision)
-    DebugOmni   -> (False, modifyClient toggleOmniscient)  -- TODO: Server
-    DebugSmell  -> (False, modifyClient toggleMarkSmell)
-    DebugVision -> (False, undefined {-modifyServer cycleTryFov-})
+    GameExit    -> lift $ fmap Just $ gameExit
+    GameRestart -> lift $ fmap Just $ gameRestart
+    GameSave    -> lift $ fmap Just $ gameSave
+    CfgDump     -> lift $ fmap Just $ dumpConfig
+    Inventory   -> inventory >> return Nothing
+    TgtFloor    -> (targetFloor   $ TgtExplicit arena) >> return Nothing
+    TgtEnemy    -> (targetMonster $ TgtExplicit arena) >> return Nothing
+    TgtAscend k -> tgtAscend k >> return Nothing
+    EpsIncr b   -> lift $ epsIncr b >> return Nothing
+    Cancel      -> cancelCurrent displayMainMenu >> return Nothing
+    Accept      -> acceptCurrent displayHelp >> return Nothing
+    Clear       -> lift $ clearCurrent >> return Nothing
+    History     -> displayHistory >> return Nothing
+    HeroCycle   -> lift $ cycleHero >> return Nothing
+    HeroBack    -> lift $ backCycleHero >> return Nothing
+    Help        -> displayHelp >> return Nothing
+    SelectHero k -> lift $ selectHero k >> return Nothing
+    DebugArea   -> modifyClient toggleMarkVision >> return Nothing
+    DebugOmni   -> modifyClient toggleOmniscient >> return Nothing  -- TODO: Server
+    DebugSmell  -> modifyClient toggleMarkSmell >> return Nothing
+    DebugVision -> undefined {-modifyServer cycleTryFov-}
 
 -- | The semantics of player commands in terms of the @Action@ monad.
 -- Decides if the action takes time and what action to perform.
 -- Time cosuming commands are marked as such in help and cannot be
 -- invoked in targeting mode on a remote level (level different than
 -- the level of the selected hero).
-cmdSemantics :: MonadClientChan m => Cmd -> WriterT Slideshow m Bool
+cmdSemantics :: MonadClientChan m => Cmd -> WriterT Slideshow m (Maybe CmdSer)
 cmdSemantics cmd = do
   Just leaderOld <- getsClient getLeader
   arenaOld <- getsLocal sarena
   posOld <- getsLocal (bpos . getActorBody leaderOld)
   cli <- getClient
   loc <- getLocal
-  let (timed, sem) = cmdAction cli loc cmd
-  if timed
-    then checkCursor sem
-    else sem
+  let sem = cmdAction cli loc cmd
+  mcmdS <- if noRemoteCmd cmd
+           then checkCursor sem
+           else sem
   arena <- getsLocal sarena
   leaderNew <- getsClient getLeader
   case leaderNew of
@@ -134,19 +133,27 @@ cmdSemantics cmd = do
                 || arenaOld /= arena)) $ do
         lookMsg <- lookAt False True pos ""
         msgAdd lookMsg
-  return timed
+  return mcmdS
 
 -- | If in targeting mode, check if the current level is the same
 -- as player level and refuse performing the action otherwise.
 checkCursor :: MonadClientRO m
-            => WriterT Slideshow m ()
-            -> WriterT Slideshow m ()
+            => WriterT Slideshow m (Maybe CmdSer)
+            -> WriterT Slideshow m (Maybe CmdSer)
 checkCursor h = do
   arena <- getsLocal sarena
   (lid, _) <- viewedLevel
   if arena == lid
     then h
     else abortWith "[targeting] command disabled on a remote level, press ESC to switch back"
+
+timedCmd :: CmdSer -> Bool
+timedCmd cmd = case cmd of
+  GameExitSer -> False
+  GameRestartSer -> False
+  GameSaveSer -> False
+  CfgDumpSer -> False
+  _ -> True
 
 -- TODO: make it MonadServer
 -- | The semantics of server commands.
@@ -164,11 +171,6 @@ cmdSer cmd = case cmd of
   GameRestartSer -> gameRestartSer
   GameSaveSer -> gameSaveSer
   CfgDumpSer -> cfgDumpSer
-
-cmdSerAction :: MonadClientChan m => m CmdSer -> WriterT Slideshow m ()
-cmdSerAction m = lift $ do
-  cmdS <- m
-  writeChanToSer $ toDyn cmdS
 
 cmdUpdateCli :: MonadClient m => CmdUpdateCli -> m ()
 cmdUpdateCli cmd = case cmd of
@@ -404,7 +406,7 @@ playerCommand msgRunAbort = do
         recordHistory
         -- On abort, just reset state and call loop again below.
         -- Each abort that gets this far generates a slide to be shown.
-        (timed, slides) <- runWriterT $ tryWithSlide (return False) $ do
+        (mcmdS, slides) <- runWriterT $ tryWithSlide (return Nothing) $ do
           -- Look up the key.
           Binding{kcmd} <- askBinding
           case M.lookup km kcmd of
@@ -424,12 +426,15 @@ playerCommand msgRunAbort = do
                        in abortWith msgKey
         -- The command was aborted or successful and if the latter,
         -- possibly took some time.
-        if timed
-          then assert (null (runSlideshow slides) `blame` slides) $ do
+        case mcmdS of
+          Just cmdS -> assert (null (runSlideshow slides) `blame` slides) $ do
             -- Exit the loop and let other actors act. No next key needed
             -- and no slides could have been generated.
             modifyClient (\st -> st {slastKey = Nothing})
-          else
+            leader <- getsClient getLeader
+            arena <- getsLocal sarena
+            writeChanToSer $ toDyn (cmdS, leader, arena)
+          Nothing ->
             -- If no time taken, rinse and repeat.
             -- Analyse the obtained slides.
             case reverse (runSlideshow slides) of

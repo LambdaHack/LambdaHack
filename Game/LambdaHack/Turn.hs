@@ -4,7 +4,6 @@ module Game.LambdaHack.Turn (handleTurn, handleClient) where
 
 import Control.Arrow ((&&&))
 import Control.Monad
-import Data.Dynamic
 import qualified Data.IntMap as IM
 import qualified Data.List as L
 import Data.Maybe
@@ -26,7 +25,6 @@ import Game.LambdaHack.State
 import Game.LambdaHack.Strategy
 import Game.LambdaHack.StrategyAction
 import Game.LambdaHack.Time
-import Game.LambdaHack.Utils.Assert
 
 -- One clip proceeds through the following functions:
 --
@@ -133,22 +131,11 @@ handleActors subclipStart = withPerception $ do
         then do
           -- Player moves always start a new subclip.
           broadcastPosCli [] $ DisplayPushCli
-          (arenaNew, leaderNew) <- sendQueryCli side $ HandlePlayerCli leader
-          {-
-          let loop = do
-                cmd <- readChanFromCli side
-                case cmd of
-                  ResponseSer a ->
-                    return $! fromDyn a (assert `failure` cmd)
-                  _ -> do
-                    cmdSer cmd
-                    loop
-          (arenaNew, leaderNew) <- loop
--}
+          (cmdS, leaderNew, arenaNew) <-
+            sendQueryCli side $ HandlePlayerCli leader
           modifyGlobal $ updateSelectedArena arenaNew
-          squitNew <- getsServer squit
+          cmdSer cmdS
           -- Advance time once, after the leader switched perhaps many times.
-          -- Ending and especially saving does not take time.
           -- TODO: this is correct only when all heroes have the same
           -- speed and can't switch leaders by, e.g., aiming a wand
           -- of domination. We need to generalize by displaying
@@ -158,7 +145,9 @@ handleActors subclipStart = withPerception $ do
           -- at once. This requires quite a bit of refactoring
           -- and is perhaps better done when the other factions have
           -- selected leaders as well.
-          unless (isJust squitNew) $ maybe (return ()) advanceTime leaderNew
+          squitNew <- getsServer squit
+          when (timedCmd cmdS && isNothing squitNew) $
+            maybe (return ()) advanceTime leaderNew
           handleActors $ btime m
         else do
 --          recordHistory
@@ -210,8 +199,8 @@ advanceTime actor = do
 
 handleClient :: MonadClientChan m => m ()
 handleClient = do
-  cmd3 <- readChanFromSer
-  case cmd3 of
+  cmd2 <- readChanFromSer
+  case cmd2 of
     CmdUpdateCli cmd -> do
       cmdUpdateCli cmd
     CmdQueryCli cmd -> do
