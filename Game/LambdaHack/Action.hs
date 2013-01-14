@@ -34,7 +34,8 @@ module Game.LambdaHack.Action
   , saveGameBkp, dumpCfg, endOrLoop, frontendName, startFrontend
   , switchGlobalSelectedSide
   , debug
-  , sendToPlayers, sendToClients, sendToClient, askClient, sendToPl
+  , sendToPlayers, sendUpdateClis, sendUpdateCli, sendQueryCli, sendControlCli
+  , sendToPl
   , respondCli, readChanSer, writeChanSer, readChanCli
   ) where
 
@@ -357,7 +358,7 @@ remember = do
   let f fid =
         let per = pers IM.! fid M.! arena
         in RememberPerCli arena per lvl faction
-  sendToClients f
+  sendUpdateClis f
 
 -- | Update faction memory at the given set of positions.
 rememberLevel :: Kind.COps -> IS.IntSet -> Level -> Level -> Level
@@ -398,7 +399,7 @@ saveGameBkp = do
   glo <- getGlobal
   ser <- getServer
   faction <- getsGlobal sfaction
-  let queryCliLoc fid = askClient fid GameSaveCli  -- TODO: do in parallel
+  let queryCliLoc fid = sendQueryCli fid GameSaveCli  -- TODO: do in parallel
   d <- mapM queryCliLoc $ IM.keys faction
 --  configUI <- askConfigUI
   config <- getsServer sconfig
@@ -427,7 +428,7 @@ handleScores write status total =
     slides <-
       liftIO $ register config write total time curDate status
     side <- getsGlobal sside
-    go <- askClient side $ ShowSlidesCli slides
+    go <- sendQueryCli side $ ShowSlidesCli slides
     when (not go) abort
 
 -- | Continue or restart or exit the game.
@@ -452,39 +453,39 @@ endOrLoop handleTurn = do
                               `finally` putMVar mv ())
       tryIgnore $ do
         handleScores False Camping total
-        sendToPl [] $ ConfirmMoreFullCli "See you soon, stronger and braver!"
+        sendToPl [] $ MoreFullCli "See you soon, stronger and braver!"
       liftIO $ takeMVar mv  -- wait until saved
       -- Do nothing, that is, quit the game loop.
     (Nothing, Just (showScreens, status@Killed{})) -> do
-      nullR <- askClient side NullReportCli
+      nullR <- sendQueryCli side NullReportCli
       unless nullR $ do
         -- Sisplay any leftover report. Suggest it could be the cause of death.
-        sendToPl [] $ ConfirmMoreBWCli "Who would have thought?"
+        sendToPl [] $ MoreBWCli "Who would have thought?"
       tryWith
         (\ finalMsg ->
           let highScoreMsg = "Let's hope another party can save the day!"
               msg = if T.null finalMsg then highScoreMsg else finalMsg
-          in sendToPl [] $ ConfirmMoreBWCli msg
+          in sendToPl [] $ MoreBWCli msg
           -- Do nothing, that is, quit the game loop.
         )
         (do
            when showScreens $ handleScores True status total
-           go <- askClient side
+           go <- sendQueryCli side
                  $ ConfirmMoreBWCli "Next time will be different."
            when (not go) $ abortWith "You could really win this time."
            restartGame handleTurn
         )
     (Nothing, Just (showScreens, status@Victor)) -> do
-      nullR <- askClient side NullReportCli
+      nullR <- sendQueryCli side NullReportCli
       unless nullR $ do
         -- Sisplay any leftover report. Suggest it could be the master move.
-        sendToPl [] $ ConfirmMoreFullCli "Brilliant, wasn't it?"
+        sendToPl [] $ MoreFullCli "Brilliant, wasn't it?"
       when showScreens $ do
         tryIgnore $ handleScores True status total
-        sendToPl [] $ ConfirmMoreFullCli "Can it be done better, though?"
+        sendToPl [] $ MoreFullCli "Can it be done better, though?"
       restartGame handleTurn
     (Nothing, Just (_, Restart)) -> do
-      sendToPl [] $ ConfirmMoreBWCli "This time for real."
+      sendToPl [] $ MoreBWCli "This time for real."
       restartGame handleTurn
     (Nothing, _) -> handleTurn  -- just continue
 
@@ -646,7 +647,7 @@ switchGlobalSelectedSide =
 debug :: MonadActionRoot m => Text -> m ()
 debug _x = return () -- liftIO $ hPutStrLn stderr _x
 
-sendToPlayers :: MonadServerChan m => [Point] -> CmdCli -> m ()
+sendToPlayers :: MonadServerChan m => [Point] -> CmdUpdateCli -> m ()
 sendToPlayers poss cmd = do
   arena <- getsGlobal sarena
   glo <- getGlobal
@@ -655,31 +656,38 @@ sendToPlayers poss cmd = do
           let perceived =
                 null poss
                 || any (`IS.member` totalVisible (perF M.! arena)) poss
-          when perceived $ sendToClient cfid cmd
+          when perceived $ sendUpdateCli cfid cmd
   pers <- ask
   mapM_ f $ IM.toList pers
 
-sendToPl :: MonadServerChan m => [Point] -> CmdCli -> m ()
+sendToPl :: MonadServerChan m => [Point] -> CmdUpdateCli -> m ()
 sendToPl poss cmd = do
   sendToPlayers poss cmd
 
-sendToClients :: MonadServerChan m => (FactionId -> CmdCli) -> m ()
-sendToClients cmd = do
+sendUpdateClis :: MonadServerChan m => (FactionId -> CmdUpdateCli) -> m ()
+sendUpdateClis cmd = do
   faction <- getsGlobal sfaction
-  let f cfid = sendToClient cfid (cmd cfid)
+  let f cfid = sendUpdateCli cfid (cmd cfid)
   mapM_ f $ IM.keys faction
 
-sendToClient :: MonadServerChan m => FactionId -> CmdCli -> m ()
-sendToClient fid cmd = do
+sendUpdateCli :: MonadServerChan m => FactionId -> CmdUpdateCli -> m ()
+sendUpdateCli fid cmd = do
   ConnClient {toClient} <- getsDict (IM.! fid)
-  liftIO $ writeChan toClient cmd
+  liftIO $ writeChan toClient $ CmdUpdateCli cmd
 
-askClient :: (Typeable a, MonadServerChan m) => FactionId -> CmdCli -> m a
-askClient fid cmd = do
+sendQueryCli :: (Typeable a, MonadServerChan m)
+             => FactionId -> CmdQueryCli
+             -> m a
+sendQueryCli fid cmd = do
   ConnClient {toClient, toServer} <- getsDict (IM.! fid)
-  liftIO $ writeChan toClient cmd
+  liftIO $ writeChan toClient $ CmdQueryCli cmd
   ResponseSer a <- liftIO $ readChan toServer
   return $ fromDyn a (assert `failure` (fid, cmd, a))
+
+sendControlCli :: MonadServerChan m => FactionId -> CmdControlCli -> m ()
+sendControlCli fid cmd = do
+  ConnClient {toClient} <- getsDict (IM.! fid)
+  liftIO $ writeChan toClient $ CmdControlCli cmd
 
 respondCli :: (Typeable a, MonadConnClient m) => a -> m ()
 respondCli a = do

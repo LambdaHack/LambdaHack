@@ -127,13 +127,13 @@ handleActors subclipStart = withPerception $ do
       let side = bfaction m
       switchGlobalSelectedSide side
       arena <- getsGlobal sarena
-      leader <- askClient side $ SetArenaLeaderCli arena actor
+      leader <- sendQueryCli side $ SetArenaLeaderCli arena actor
       isPlayer <- getsGlobal $ flip isPlayerFaction side
       if actor == leader && isPlayer
         then do
           -- Player moves always start a new subclip.
           sendToPl [] $ DisplayPushCli
-          sendToClient side $ HandlePlayerCli leader
+          sendControlCli side $ HandlePlayerCli leader
           let loop = do
                 cmd <- readChanSer side
                 case cmd of

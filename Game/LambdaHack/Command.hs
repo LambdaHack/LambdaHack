@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Abstract syntax of server and client commands.
 module Game.LambdaHack.Command
-  ( CmdCli(..), CmdSer(..), Cmd(..)
+  ( CmdCli(..), CmdUpdateCli(..), CmdQueryCli(..), CmdControlCli(..)
+  , CmdSer(..), Cmd(..)
   , majorCmd, minorCmd, timedCmd, cmdDescription
   ) where
 
@@ -11,6 +12,7 @@ import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Actor
+import Game.LambdaHack.Animation (Frames)
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Feature as F
@@ -23,23 +25,22 @@ import Game.LambdaHack.Point
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 import Game.LambdaHack.VectorXY
-import Game.LambdaHack.Animation (Frames)
 
--- TODO: GADT
 -- | Abstract syntax of client commands.
 data CmdCli =
+    CmdUpdateCli CmdUpdateCli
+  | CmdQueryCli CmdQueryCli
+  | CmdControlCli CmdControlCli
+  deriving Show
+
+data CmdUpdateCli =
     PickupCli ActorId Item Item
   | ApplyCli ActorId MU.Part Item
-  | ShowItemsCli Discoveries Msg [Item]
   | ShowMsgCli Msg
+  | ShowItemsCli Discoveries Msg [Item]
   | AnimateDeathCli ActorId
-  | CarryOnCli
-  | SelectLeaderCli ActorId LevelId
   | InvalidateArenaCli LevelId
   | DiscoverCli (Kind.Id ItemKind) Item
-  | ConfirmYesNoCli Msg
-  | ConfirmMoreBWCli Msg
-  | ConfirmMoreFullCli Msg
   | RememberCli LevelId IS.IntSet Level  -- TODO: Level is an overkill
   | RememberPerCli LevelId Perception Level FactionDict
   | SwitchLevelCli ActorId LevelId Actor [Item]
@@ -48,13 +49,27 @@ data CmdCli =
   | ShowAttackCli ActorId ActorId MU.Part Item Bool
   | AnimateBlockCli ActorId ActorId MU.Part
   | DisplaceCli ActorId ActorId
-  | ShowSlidesCli Slideshow
+  | DisplayPushCli
+  | DisplayFramesPushCli Frames
+  | MoreFullCli Msg
+  | MoreBWCli Msg
+  deriving Show
+
+data CmdQueryCli =
+    ShowSlidesCli Slideshow
+  | CarryOnCli
+  | ConfirmShowItemsCli Discoveries Msg [Item]
+  | SelectLeaderCli ActorId LevelId
+  | ConfirmYesNoCli Msg
+  | ConfirmMoreBWCli Msg
+  | ConfirmMoreFullCli Msg
   | NullReportCli
   | SetArenaLeaderCli LevelId ActorId
-  | DisplayPushCli
-  | HandlePlayerCli ActorId
-  | DisplayFramesPushCli Frames
   | GameSaveCli
+  deriving Show
+
+data CmdControlCli =
+    HandlePlayerCli ActorId
   deriving Show
 
 -- | Abstract syntax of server commands.

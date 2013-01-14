@@ -170,7 +170,13 @@ cmdSerAction m = lift $ m >>= writeChanSer
 
 -- | The semantics of client commands.
 cmdCli :: MonadConnClient m => CmdCli -> m ()
-cmdCli cmd = case cmd of
+cmdCli cmd3 = case cmd3 of
+  CmdUpdateCli cmd -> cmdUpdateCli cmd
+  CmdQueryCli cmd -> cmdQueryCli cmd
+  CmdControlCli cmd -> cmdControlCli cmd
+
+cmdUpdateCli :: MonadConnClient m => CmdUpdateCli -> m ()
+cmdUpdateCli cmd = case cmd of
   PickupCli aid i ni -> pickupCli aid i ni
   ApplyCli actor verb item -> do
     Kind.COps{coactor, coitem} <- getsLocal scops
@@ -186,26 +192,9 @@ cmdCli cmd = case cmd of
     void $ getManyConfirms [] slides
   ShowMsgCli msg ->
     msgAdd msg
-  ShowSlidesCli slides ->
-    getManyConfirms [] slides >>= respondCli
   AnimateDeathCli aid -> animateDeathCli aid
-  CarryOnCli -> carryOnCli
-  SelectLeaderCli aid lid ->
-    selectLeader aid lid >>= respondCli
   InvalidateArenaCli lid -> void $ invalidateArenaCli lid
   DiscoverCli ik i -> discoverCli ik i
-  ConfirmYesNoCli msg -> do
-    go <- displayYesNo msg
-    recordHistory  -- Prevent repeating the ending msgs.
-    respondCli go
-  ConfirmMoreBWCli msg -> do
-    go <- displayMore ColorBW msg
-    recordHistory  -- Prevent repeating the ending msgs.
-    respondCli go
-  ConfirmMoreFullCli msg -> do
-    go <- displayMore ColorFull msg
-    recordHistory  -- Prevent repeating the ending msgs.
-    respondCli go
   RememberCli arena vis lvl -> do
     cops <- getsLocal scops
     let updArena loc =
@@ -214,7 +203,7 @@ cmdCli cmd = case cmd of
           in updateDungeon (M.insert arena nlvl) loc
     modifyLocal updArena
   RememberPerCli arena per lvl faction -> do
-    void $ cmdCli $ RememberCli arena (totalVisible per) lvl
+    void $ cmdUpdateCli $ RememberCli arena (totalVisible per) lvl
     modifyClient $ \cli -> cli {sper = M.insert arena per (sper cli)}
     modifyLocal $ updateFaction (const faction)
   SwitchLevelCli aid arena pbody items -> do
@@ -322,6 +311,39 @@ cmdCli cmd = case cmd of
     let poss = (tpos, spos)
         animFrs = animate cli loc per $ swapPlaces poss
     displayFramesPush $ Nothing : animFrs
+  DisplayPushCli -> displayPush
+  DisplayFramesPushCli frames -> displayFramesPush frames
+  MoreBWCli msg -> do
+    void $ displayMore ColorBW msg
+    recordHistory  -- Prevent repeating the ending msgs.
+  MoreFullCli msg -> do
+    void $ displayMore ColorFull msg
+    recordHistory  -- Prevent repeating the ending msgs.
+
+cmdQueryCli :: MonadConnClient m => CmdQueryCli -> m ()
+cmdQueryCli cmd = case cmd of
+  ShowSlidesCli slides ->
+    getManyConfirms [] slides >>= respondCli
+  CarryOnCli -> carryOnCli
+  ConfirmShowItemsCli discoS msg items -> do
+    io <- itemOverlay discoS True items
+    slides <- overlayToSlideshow msg io
+    go <-  getManyConfirms [] slides
+    respondCli go
+  SelectLeaderCli aid lid ->
+    selectLeader aid lid >>= respondCli
+  ConfirmYesNoCli msg -> do
+    go <- displayYesNo msg
+    recordHistory  -- Prevent repeating the ending msgs.
+    respondCli go
+  ConfirmMoreBWCli msg -> do
+    go <- displayMore ColorBW msg
+    recordHistory  -- Prevent repeating the ending msgs.
+    respondCli go
+  ConfirmMoreFullCli msg -> do
+    go <- displayMore ColorFull msg
+    recordHistory  -- Prevent repeating the ending msgs.
+    respondCli go
   NullReportCli -> do
     StateClient{sreport} <- getClient
     respondCli sreport
@@ -340,13 +362,14 @@ cmdCli cmd = case cmd of
     loc <- getLocal
     modifyClient $ updateSelectedLeader leader loc
     respondCli leader
-  DisplayPushCli -> displayPush
-  HandlePlayerCli leader -> handlePlayer leader
-  DisplayFramesPushCli frames -> displayFramesPush frames
   GameSaveCli -> do
     cli <- getClient
     loc <- getLocal
     respondCli (cli, loc)
+
+cmdControlCli :: MonadConnClient m => CmdControlCli -> m ()
+cmdControlCli cmd = case cmd of
+    HandlePlayerCli leader -> handlePlayer leader
 
 -- | Continue running in the given direction.
 continueRun :: MonadConnClient m => ActorId -> (Vector, Int) -> m ()

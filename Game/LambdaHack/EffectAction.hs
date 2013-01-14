@@ -162,7 +162,7 @@ eff Effect.Dominate _ source target _power = do
                vis = IS.fromList $ concatMap cross lm
            lvl <- getsGlobal getArena
            side <- getsGlobal sside
-           sendToClient side $ RememberCli arena vis lvl
+           sendUpdateCli side $ RememberCli arena vis lvl
            return (True, "A dozen voices yells in anger.")
          else nullEffect
 eff Effect.SummonFriend _ source target power = do
@@ -277,7 +277,7 @@ effLvlGoUp aid k = do
         modifyGlobal (insertActor aid pbody)
         modifyGlobal (updateActorItem aid (const bitems))
         -- Reset level and leader for all factions.
-        void $ sendToClients $ \fid ->
+        void $ sendUpdateClis $ \fid ->
           if fid /= bfaction pbody
           then InvalidateArenaCli nln
           else SwitchLevelCli aid nln pbody bitems
@@ -310,7 +310,7 @@ fleeDungeon = do
   Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsGlobal scops
   glo <- getGlobal
   side <- getsGlobal sside
-  go <- askClient side $ ConfirmYesNoCli
+  go <- sendQueryCli side $ ConfirmYesNoCli
           "This is the way out. Really leave now?"
   when (not go) $ abortWith "Game resumed."
   let (items, total) = calculateTotal glo
@@ -319,10 +319,10 @@ fleeDungeon = do
   if total == 0
   then do
     -- The player can back off at each of these steps.
-    go1 <- askClient side $ ConfirmMoreBWCli
+    go1 <- sendQueryCli side $ ConfirmMoreBWCli
              "Afraid of the challenge? Leaving so soon and empty-handed?"
     when (not go1) $ abortWith "Brave soul!"
-    go2 <- askClient side $ ConfirmMoreBWCli
+    go2 <- sendQueryCli side $ ConfirmMoreBWCli
             "This time try to grab some loot before escape!"
     when (not go2) $ abortWith "Here's your chance!"
   else do
@@ -332,7 +332,7 @@ fleeDungeon = do
           , "Here's your loot, worth"
           , MU.NWs total currencyName ]
     discoS <- getsGlobal sdisco
-    sendToClient side $ ShowItemsCli discoS winMsg items
+    sendUpdateCli side $ ShowItemsCli discoS winMsg items
     let upd2 f = f {gquit = Just (True, Victor)}
     modifyGlobal $ updateSide upd2
 
@@ -360,12 +360,12 @@ discover discoS i = do
   side <- getsGlobal sside
   let ix = jkindIx i
       ik = discoS M.! ix
-  sendToClient side $ DiscoverCli ik i
+  sendUpdateCli side $ DiscoverCli ik i
 
 selectLeaderSer :: MonadServerChan m => ActorId -> LevelId -> m Bool
 selectLeaderSer actor lid = do
   side <- getsGlobal sside
-  b <- askClient side $ SelectLeaderCli actor lid
+  b <- sendQueryCli side $ SelectLeaderCli actor lid
   modifyGlobal $ updateSelectedArena lid
   return b
 
@@ -418,7 +418,7 @@ checkPartyDeath target = do
   let fid = bfaction pbody
       animateDeath = do
         sendToPlayers [bpos pbody] (AnimateDeathCli target)
-        askClient fid $ CarryOnCli
+        sendQueryCli fid $ CarryOnCli
       animateGameOver = do
         go <- animateDeath
         modifyGlobal $ updateActorBody target $ \b -> b {bsymbol = Just '%'}
@@ -481,7 +481,7 @@ gameOver showEndingScreens = do
       else do
         discoS <- getsGlobal sdisco
         side <- getsGlobal sside
-        go <- askClient side $ ShowItemsCli discoS loseMsg items
+        go <- sendQueryCli side $ ConfirmShowItemsCli discoS loseMsg items
         when go $ do
           let upd2 f = f {gquit = Just (True, Killed arena)}
           modifyGlobal $ updateSide upd2
