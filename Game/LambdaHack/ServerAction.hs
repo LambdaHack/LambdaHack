@@ -117,15 +117,15 @@ removeFromPos i pos = do
 projectSer :: MonadServerChan m
            => ActorId  -- ^ actor projecting the item (is on current lvl)
            -> Point    -- ^ target position of the projectile
+           -> Int      -- ^ digital line parameter
            -> MU.Part  -- ^ how the projecting is called
            -> Item     -- ^ the item to be projected
            -> m ()
-projectSer source tpos _verb item = do
+projectSer source tpos eps _verb item = do
   cops@Kind.COps{coactor} <- getsGlobal scops
   sm    <- getsGlobal (getActorBody source)
   Actor{btime} <- getsGlobal $ getActorBody source
   lvl   <- getsGlobal getArena
-  seps  <- undefined -- getsClient seps
   lxsize <- getsGlobal (lxsize . getArena)
   lysize <- getsGlobal (lysize . getArena)
   side <- getsGlobal sside
@@ -149,7 +149,7 @@ projectSer source tpos _verb item = do
         if bfaction sm == side
         then btimeDelta `timeAdd` timeNegate timeClip
         else btime
-      bl = bla lxsize lysize seps spos tpos
+      bl = bla lxsize lysize eps spos tpos
   case bl of
     Nothing -> abortWith "cannot zap oneself"
     Just [] -> assert `failure` (spos, tpos, "project from the edge of level")

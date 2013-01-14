@@ -106,6 +106,7 @@ playerProjectGI :: MonadClient m
 playerProjectGI leader verb object syms = do
   cli <- getClient
   pos <- getLocal
+  seps <- getsClient seps
   case targetToPos cli pos of
     Just p -> do
       Kind.COps{coitem=Kind.Ops{okind}} <- getsLocal scops
@@ -120,7 +121,7 @@ playerProjectGI leader verb object syms = do
       let verbProject = case jkind disco item of
             Nothing -> verb
             Just ik -> iverbProject $ okind ik
-      return $! ProjectSer leader p verbProject item
+      return $! ProjectSer leader p seps verbProject item
     Nothing -> assert `failure` (pos, leader, "target unexpectedly invalid")
 
 -- ** TriggerDir

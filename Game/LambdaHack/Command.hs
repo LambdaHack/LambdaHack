@@ -76,7 +76,7 @@ deriving instance Show (CmdQueryCli a)
 -- | Abstract syntax of server commands.
 data CmdSer =
     ApplySer ActorId MU.Part Item
-  | ProjectSer ActorId Point MU.Part Item
+  | ProjectSer ActorId Point Int MU.Part Item
   | TriggerSer ActorId Point
   | PickupSer ActorId Item Char
   | DropSer ActorId Item

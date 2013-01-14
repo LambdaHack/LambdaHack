@@ -275,7 +275,7 @@ rangedFreq cops actor glo fpos =
     Just (lbl:_) -> lbl
   throwFreq is multi =
     [ (benefit * multi,
-       projectSer actor fpos (iverbProject ik) i)
+       projectSer actor fpos eps (iverbProject ik) i)
     | i <- is,
       let (ik, benefit) =
             case jkind (sdisco glo) i of
