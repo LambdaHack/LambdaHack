@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE GADTs, OverloadedStrings #-}
 -- | Semantics of player commands.
 module Game.LambdaHack.CommandAction
   ( cmdSemantics, timedCmd, cmdSer, cmdUpdateCli, cmdQueryCli
@@ -7,7 +7,6 @@ module Game.LambdaHack.CommandAction
 import Control.Monad
 import Control.Monad.Writer.Strict (WriterT, lift)
 import Control.Monad.Writer.Strict (WriterT, runWriterT)
-import Data.Dynamic
 import qualified Data.IntSet as IS
 import qualified Data.Map as M
 import Data.Maybe
@@ -321,35 +320,35 @@ cmdUpdateCli cmd = case cmd of
     putClient cli {shistory}
     putLocal loc
 
-cmdQueryCli :: MonadClientChan m => CmdQueryCli -> m Dynamic
+cmdQueryCli :: MonadClientChan m => CmdQueryCli a -> m a
 cmdQueryCli cmd = case cmd of
   ShowSlidesCli slides -> do
     go <- getManyConfirms [] slides
-    return $! toDyn go
+    return go
   CarryOnCli -> carryOnCli
   ConfirmShowItemsCli discoS msg items -> do
     io <- itemOverlay discoS True items
     slides <- overlayToSlideshow msg io
     go <- getManyConfirms [] slides
-    return $! toDyn go
+    return go
   SelectLeaderCli aid lid -> do
     go <- selectLeader aid lid
-    return $! toDyn go
+    return go
   ConfirmYesNoCli msg -> do
     go <- displayYesNo msg
     recordHistory  -- Prevent repeating the ending msgs.
-    return $! toDyn go
+    return go
   ConfirmMoreBWCli msg -> do
     go <- displayMore ColorBW msg
     recordHistory  -- Prevent repeating the ending msgs.
-    return $! toDyn go
+    return go
   ConfirmMoreFullCli msg -> do
     go <- displayMore ColorFull msg
     recordHistory  -- Prevent repeating the ending msgs.
-    return $! toDyn go
+    return go
   NullReportCli -> do
     StateClient{sreport} <- getClient
-    return $! toDyn sreport
+    return $! nullReport sreport
   SetArenaLeaderCli arena actor -> do
     arenaOld <- getsLocal sarena
     leaderOld <- getsClient getLeader
@@ -364,11 +363,11 @@ cmdQueryCli cmd = case cmd of
               else return $! fromMaybe actor leaderOld
     loc <- getLocal
     modifyClient $ updateSelectedLeader leader loc
-    return $! toDyn leader
+    return leader
   GameSaveCli -> do
     cli <- getClient
     loc <- getLocal
-    return $! toDyn (cli, loc)
+    return (cli, loc)
   HandlePlayerCli leader -> handlePlayer leader
 
 -- | Continue running in the given direction.
@@ -381,7 +380,7 @@ continueRun leader dd = do
 -- | Handle the move of the hero.
 handlePlayer :: MonadClientChan m
              => ActorId
-             -> m Dynamic  -- (CmdSer, ActorId, LevelId)
+             -> m (CmdSer, Maybe ActorId, LevelId)
 handlePlayer leader = do
   -- When running, stop if aborted by a disturbance.
   -- Otherwise let the player issue commands, until any of them takes time.
@@ -392,7 +391,7 @@ handlePlayer leader = do
 --  addSmell leader
   leaderNew <- getsClient getLeader
   arenaNew <- getsLocal sarena
-  return $! toDyn (cmdS, leaderNew, arenaNew)
+  return (cmdS, leaderNew, arenaNew)
 
 -- | Determine and process the next player command. The argument is the last
 -- abort message due to running, if any.
@@ -492,11 +491,11 @@ animateDeathCli target = do
   let animFrs = animate cli loc per $ deathBody (bpos pbody)
   displayFramesPush animFrs
 
-carryOnCli :: MonadClientChan m => m Dynamic
+carryOnCli :: MonadClientChan m => m Bool
 carryOnCli = do
   go <- displayMore ColorBW ""
   msgAdd "The survivors carry on."  -- TODO: reset messages at game over not to display it if there are no survivors.
-  return $! toDyn go
+  return go
 
 -- | Make the item known to the player.
 discoverCli :: MonadClient m => Kind.Id ItemKind -> Item -> m ()

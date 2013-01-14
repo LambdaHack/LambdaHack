@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, RankNTypes #-}
 -- | Game action monads and basic building blocks for player and monster
 -- actions. Has no access to the the main action type @Action@.
 -- Does not export the @liftIO@ operation nor a few other implementation
@@ -400,7 +400,7 @@ saveGameBkp = do
   d <- mapM queryCliLoc $ IM.keys faction
 --  configUI <- askConfigUI
   config <- getsServer sconfig
-  liftIO $ Save.saveGameBkp config glo ser (IM.fromDistinctAscList d)
+  liftIO $ Save.saveGameBkp config glo ser (IM.fromDistinctAscList $ zip (IM.keys faction) d)
 
 -- | Dumps the current game rules configuration to a file.
 dumpCfg :: (MonadActionIO m, MonadServerRO m) => FilePath -> m ()
@@ -652,7 +652,7 @@ sendUpdateCli fid cmd = do
   liftIO $ writeChan toClient $ CmdUpdateCli cmd
 
 sendQueryCli :: (Typeable a, MonadServerChan m)
-             => FactionId -> CmdQueryCli
+             => FactionId -> CmdQueryCli a
              -> m a
 sendQueryCli fid cmd = do
   ConnClient {toClient, toServer} <- getsDict (IM.! fid)
@@ -704,7 +704,7 @@ funBroadcastCli cmd = do
 
 handleClient2 :: MonadClientChan m
              => (CmdUpdateCli -> m ())
-             -> (CmdQueryCli -> m Dynamic)
+             -> (forall a. Typeable a => CmdQueryCli a -> m a)
              -> m ()
 handleClient2 cmdUpdateCli cmdQueryCli = do
   cmd2 <- readChanFromSer
@@ -712,6 +712,6 @@ handleClient2 cmdUpdateCli cmdQueryCli = do
     CmdUpdateCli cmd -> do
       cmdUpdateCli cmd
     CmdQueryCli cmd -> do
-      dyn <- cmdQueryCli cmd
-      writeChanToSer dyn
+      a <- cmdQueryCli cmd
+      writeChanToSer $ toDyn a
   handleClient2 cmdUpdateCli cmdQueryCli

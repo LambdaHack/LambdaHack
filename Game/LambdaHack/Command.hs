@@ -1,4 +1,5 @@
-{-# LANGUAGE DeriveDataTypeable, OverloadedStrings #-}
+{-# LANGUAGE DeriveDataTypeable, GADTs, OverloadedStrings, StandaloneDeriving
+             #-}
 -- | Abstract syntax of server and client commands.
 module Game.LambdaHack.Command
   ( CmdCli(..), CmdUpdateCli(..), CmdQueryCli(..)
@@ -28,10 +29,11 @@ import Game.LambdaHack.Vector
 import Game.LambdaHack.VectorXY
 
 -- | Abstract syntax of client commands.
-data CmdCli =
-    CmdUpdateCli CmdUpdateCli
-  | CmdQueryCli CmdQueryCli
-  deriving Show
+data CmdCli where
+  CmdUpdateCli :: CmdUpdateCli -> CmdCli
+  CmdQueryCli :: forall a. Typeable a => CmdQueryCli a -> CmdCli
+
+deriving instance Show CmdCli
 
 data CmdUpdateCli =
     PickupCli ActorId Item Item
@@ -56,19 +58,20 @@ data CmdUpdateCli =
   | RestartCli StateClient State
   deriving Show
 
-data CmdQueryCli =
-    ShowSlidesCli Slideshow
-  | CarryOnCli
-  | ConfirmShowItemsCli Discoveries Msg [Item]
-  | SelectLeaderCli ActorId LevelId
-  | ConfirmYesNoCli Msg
-  | ConfirmMoreBWCli Msg
-  | ConfirmMoreFullCli Msg
-  | NullReportCli
-  | SetArenaLeaderCli LevelId ActorId
-  | GameSaveCli
-  | HandlePlayerCli ActorId
-  deriving Show
+data CmdQueryCli a where
+  ShowSlidesCli :: Slideshow -> CmdQueryCli Bool
+  CarryOnCli :: CmdQueryCli Bool
+  ConfirmShowItemsCli :: Discoveries -> Msg -> [Item] -> CmdQueryCli Bool
+  SelectLeaderCli :: ActorId -> LevelId -> CmdQueryCli Bool
+  ConfirmYesNoCli :: Msg -> CmdQueryCli Bool
+  ConfirmMoreBWCli :: Msg -> CmdQueryCli Bool
+  ConfirmMoreFullCli::  Msg -> CmdQueryCli Bool
+  NullReportCli :: CmdQueryCli Bool
+  SetArenaLeaderCli :: LevelId -> ActorId -> CmdQueryCli ActorId
+  GameSaveCli :: CmdQueryCli (StateClient, State)
+  HandlePlayerCli :: ActorId -> CmdQueryCli (CmdSer, Maybe ActorId, LevelId)
+
+deriving instance Show (CmdQueryCli a)
 
 -- | Abstract syntax of server commands.
 data CmdSer =
