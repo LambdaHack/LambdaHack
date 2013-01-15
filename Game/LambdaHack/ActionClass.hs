@@ -21,8 +21,11 @@ import Game.LambdaHack.State
 
 -- * Component types
 
--- | Connection information for each client, indexed by faction identifier.
-type ConnDict = IM.IntMap ConnClient
+-- | Connection information for each client and an options AI client
+-- for the same faction, indexed by faction identifier.
+type ConnDict = IM.IntMap ConnFaction
+
+type ConnFaction = (ConnClient, Maybe ConnClient)
 
 -- | Connection information for a client. Input and output channels, etc.
 data ConnClient = ConnClient

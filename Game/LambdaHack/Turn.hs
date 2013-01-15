@@ -24,29 +24,6 @@ import Game.LambdaHack.State
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
 
--- One clip proceeds through the following functions:
---
--- handleTurn
--- handleActors
--- handleAI or handlePlayer
--- handleActors
--- handleAI or handlePlayer
--- ...
--- handleTurn (again)
-
--- What's happening where:
---
--- handleTurn: HP regeneration, monster generation, determine who moves next,
---   dispatch to handlePlayer and handleActors, advance global game time
---
--- handleActors: find an actor that can move, advance actor time,
---   update perception, remember, push frame, repeat
---
--- handlePlayer: update perception, remember, display frames,
---   get and process commmands (zero or more), update smell map
---
--- handleAI: determine and process actor's action
-
 -- | Start a clip (a part of a turn for which one or more frames
 -- will be generated). Do whatever has to be done
 -- every fixed number of time units, e.g., monster generation.
@@ -132,7 +109,12 @@ handleActors subclipStart = withPerception $ do
           (cmdS, leaderNew, arenaNew) <-
             sendQueryCli side $ HandlePlayerCli leader
           modifyState $ updateSelectedArena arenaNew
-          cmdSer cmdS
+          tryWith (\msg -> do
+                      sendUpdateCli side $ ShowMsgCli msg
+                      handleActors subclipStart
+                  )
+                  $ do
+            cmdSer cmdS
           -- Advance time once, after the leader switched perhaps many times.
           -- TODO: this is correct only when all heroes have the same
           -- speed and can't switch leaders by, e.g., aiming a wand
@@ -143,10 +125,10 @@ handleActors subclipStart = withPerception $ do
           -- at once. This requires quite a bit of refactoring
           -- and is perhaps better done when the other factions have
           -- selected leaders as well.
-          squitNew <- getsServer squit
-          when (timedCmd cmdS && isNothing squitNew) $
-            maybe (return ()) advanceTime leaderNew
-          handleActors $ btime m
+            squitNew <- getsServer squit
+            when (timedCmd cmdS && isNothing squitNew) $
+              maybe (return ()) advanceTime leaderNew
+            handleActors $ btime m
         else do
 --          recordHistory
           advanceTime actor  -- advance time while the actor still alive
@@ -162,19 +144,19 @@ handleActors subclipStart = withPerception $ do
               -- TODO: store frames somewhere for each faction and display
               -- the frames only after a "Faction X taking over..." prompt.
               broadcastPosCli [] $ DisplayPushCli
-              cmdS <- sendQueryCli side $ HandleAI actor  -- call AI client
+              cmdS <- sendAIQueryCli side $ HandleAI actor
     -- If the following action aborts, we just advance the time and continue.
     -- TODO: or just fail at each abort in AI code? or use tryWithFrame?
-              tryWith (\ msg -> if T.null msg
+              tryWith (\msg -> if T.null msg
                     then return ()
                     else assert `failure` msg <> "in AI") $ cmdSer cmdS
               handleActors $ btime m
             else do
               -- No new subclip.
-              cmdS <- sendQueryCli side $ HandleAI actor  -- call AI client
+              cmdS <- sendAIQueryCli side $ HandleAI actor
     -- If the following action aborts, we just advance the time and continue.
     -- TODO: or just fail at each abort in AI code? or use tryWithFrame?
-              tryWith (\ msg -> if T.null msg
+              tryWith (\msg -> if T.null msg
                     then return ()
                     else assert `failure` msg <> "in AI") $ cmdSer cmdS
               handleActors subclipStart

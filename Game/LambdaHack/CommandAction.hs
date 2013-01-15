@@ -220,6 +220,11 @@ cmdUpdateCli cmd = case cmd of
           in updateDungeon (M.insert arena nlvl) loc
     modifyState updArena
   RememberPerCli arena per lvl faction -> do
+    -- TODO: remove if clients are guaranteed to be on good arena:
+    arenaOld <- getsState sarena
+    when (arenaOld /= arena) $ do
+      modifyClient $ invalidateSelectedLeader
+      modifyState $ updateSelectedArena arena
     void $ cmdUpdateCli $ RememberCli arena (totalVisible per) lvl
     modifyClient $ \cli -> cli {sper = M.insert arena per (sper cli)}
     modifyState $ updateFaction (const faction)

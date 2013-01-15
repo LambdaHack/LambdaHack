@@ -100,7 +100,9 @@ executor m pers s ser d =
   runAction m
     pers
     (\_ _ _ _ -> return ())  -- final continuation returns result
-    (\msg -> fail $ T.unpack $ "unhandled abort:" <+> msg)  -- e.g., in AI code
+    (\msg -> let err = "unhandled server abort for side" <+> showT (getSide s)
+                       <+> ":" <+> msg
+             in fail $ T.unpack err)
     s
     ser
     d
@@ -188,7 +190,9 @@ executorCli m sfs sbinding sconfigUI s cli d =
   runActionCli m
     Session{..}
     (\_ _ _ _ -> return ())  -- final continuation returns result
-    (\msg -> fail $ T.unpack $ "unhandled abort:" <+> msg)  -- e.g., in AI code
+    (\msg -> let err = "unhandled abort for client" <+> showT (getSide s)
+                       <+> ":" <+> msg
+             in fail $ T.unpack err)
     s
     cli
     d

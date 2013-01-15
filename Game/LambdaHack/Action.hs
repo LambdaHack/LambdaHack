@@ -36,7 +36,8 @@ module Game.LambdaHack.Action
   , saveGameBkp, dumpCfg, endOrLoop, frontendName, startFrontend
   , switchGlobalSelectedSide
   , debug
-  , sendUpdateCli, sendQueryCli, broadcastCli, broadcastPosCli
+  , sendUpdateCli, sendQueryCli, sendAIQueryCli
+  , broadcastCli, broadcastPosCli
   , handleClient2
   ) where
 
@@ -359,6 +360,8 @@ remember = do
   pers <- ask
   funBroadcastCli (\fid ->
     RememberPerCli arena (pers IM.! fid M.! arena) lvl faction)
+  funAIBroadcastCli (\fid ->
+    RememberPerCli arena (pers IM.! fid M.! arena) lvl faction)
 
 -- | Update faction memory at the given set of positions.
 rememberLevel :: Kind.COps -> IS.IntSet -> Level -> Level -> Level
@@ -400,6 +403,7 @@ saveGameBkp = do
   ser <- getServer
   faction <- getsState sfaction
   let queryCliLoc fid = sendQueryCli fid GameSaveCli  -- TODO: do in parallel
+  -- TODO: also save the targets from AI clients
   d <- mapM queryCliLoc $ IM.keys faction
 --  configUI <- askConfigUI
   config <- getsServer sconfig
@@ -633,14 +637,32 @@ start executor executorCli sfs cops@Kind.COps{corule}
       pers = dungeonPerception cops sconfig (sdebugSer ser) glo
       dPer = IM.mapWithKey (\side (cli, loc) ->
                                (cli {sper = pers IM.! side}, loc)) dHist
-      addChan (k, cliloc) = do
+      mkConnClient = do
         toClient <- newChan
         toServer <- newChan
-        return (k, (cliloc, ConnClient {toClient, toServer}))
+        return $ ConnClient {toClient, toServer}
+      addChan (k, cliloc) = do
+        chan <- mkConnClient
+        let isPlayer = isPlayerFaction glo k
+        -- For non-humans, we don't spawn a separate AI client. In this way,
+        -- non-human players are allowed to cheat: their non-leader actors
+        -- know leader plans and act accordingly, while human non-leader
+        -- actors are controlled by an AI ignorant of human plans.
+        mchan <- if isPlayer
+                 then fmap Just mkConnClient
+                 else return Nothing
+        return (k, (cliloc, (chan, mchan)))
   dAssocs <- mapM addChan $ IM.toAscList dPer
   let d = IM.map snd $ IM.fromAscList dAssocs
-      forkClient (_, ((cli, loc), chan)) =
-        forkIO $ executorCli handleClient sfs sbinding sconfigUI loc cli chan
+      forkClient (_, ((cli, loc), (chan, mchan))) = do
+        void $ forkIO
+          $ executorCli handleClient sfs sbinding sconfigUI loc cli chan
+        case mchan of
+          Nothing -> return ()
+          Just ch ->
+            -- The AI client does not know it's not the main client.
+            void $ forkIO
+              $ executorCli handleClient sfs sbinding sconfigUI loc cli ch
   mapM_ forkClient dAssocs
   executor handleServer pers glo ser d
 
@@ -652,19 +674,38 @@ switchGlobalSelectedSide =
 debug :: MonadActionRoot m => Text -> m ()
 debug _x = return () -- liftIO $ hPutStrLn stderr _x
 
+connSendUpdateCli :: MonadServerChan m => ConnClient -> CmdUpdateCli -> m ()
+connSendUpdateCli ConnClient {toClient} cmd =
+  liftIO $ writeChan toClient $ CmdUpdateCli cmd
+
 sendUpdateCli :: MonadServerChan m => FactionId -> CmdUpdateCli -> m ()
 sendUpdateCli fid cmd = do
-  ConnClient {toClient} <- getsDict (IM.! fid)
-  liftIO $ writeChan toClient $ CmdUpdateCli cmd
+  conn <- getsDict (fst . (IM.! fid))
+  connSendUpdateCli conn cmd
+
+connSendQueryCli :: (Typeable a, MonadServerChan m)
+                 => ConnClient -> CmdQueryCli a
+                 -> m a
+connSendQueryCli ConnClient {toClient, toServer} cmd = do
+  liftIO $ writeChan toClient $ CmdQueryCli cmd
+  a <- liftIO $ readChan toServer
+  return $ fromDyn a (assert `failure` (cmd, a))
 
 sendQueryCli :: (Typeable a, MonadServerChan m)
              => FactionId -> CmdQueryCli a
              -> m a
 sendQueryCli fid cmd = do
-  ConnClient {toClient, toServer} <- getsDict (IM.! fid)
-  liftIO $ writeChan toClient $ CmdQueryCli cmd
-  a <- liftIO $ readChan toServer
-  return $ fromDyn a (assert `failure` (fid, cmd, a))
+  conn <- getsDict (fst . (IM.! fid))
+  connSendQueryCli conn cmd
+
+sendAIQueryCli :: (Typeable a, MonadServerChan m)
+                  => FactionId -> CmdQueryCli a
+                  -> m a
+sendAIQueryCli fid cmd = do
+  connFaction <- getsDict (IM.! fid)
+  -- Prefer the AI client, if it exists.
+  let conn = fromMaybe (fst connFaction) (snd connFaction)
+  connSendQueryCli conn cmd
 
 readChanFromSer :: MonadClientChan m => m CmdCli
 readChanFromSer = do
@@ -706,6 +747,15 @@ funBroadcastCli :: MonadServerChan m => (FactionId -> CmdUpdateCli) -> m ()
 funBroadcastCli cmd = do
   faction <- getsState sfaction
   let f fid = sendUpdateCli fid (cmd fid)
+  mapM_ f $ IM.keys faction
+
+funAIBroadcastCli :: MonadServerChan m => (FactionId -> CmdUpdateCli) -> m ()
+funAIBroadcastCli cmd = do
+  faction <- getsState sfaction
+  d <- getDict
+  let f fid = case snd $ d IM.! fid of
+        Nothing -> return ()
+        Just conn -> connSendUpdateCli conn (cmd fid)
   mapM_ f $ IM.keys faction
 
 handleClient2 :: MonadClientChan m
