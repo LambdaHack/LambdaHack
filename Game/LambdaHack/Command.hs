@@ -70,6 +70,7 @@ data CmdQueryCli a where
   SetArenaLeaderCli :: LevelId -> ActorId -> CmdQueryCli ActorId
   GameSaveCli :: CmdQueryCli (StateClient, State)
   HandlePlayerCli :: ActorId -> CmdQueryCli (CmdSer, Maybe ActorId, LevelId)
+  HandleAI :: ActorId -> CmdQueryCli CmdSer
 
 deriving instance Show (CmdQueryCli a)
 
@@ -87,6 +88,10 @@ data CmdSer =
   | GameRestartSer
   | GameSaveSer
   | CfgDumpSer
+  | DirToAction ActorId Bool Vector
+  | ClearPath ActorId
+  | FollowPath ActorId Vector [Vector] Bool
+  | DieSer ActorId
   deriving (Show, Typeable)
 
 -- | Abstract syntax of player commands.

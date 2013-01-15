@@ -10,14 +10,13 @@ import Data.Function
 import qualified Data.IntMap as IM
 import qualified Data.List as L
 import Data.Maybe
-import qualified Data.Text as T
 
 import Game.LambdaHack.Ability (Ability)
 import qualified Game.LambdaHack.Ability as Ability
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import qualified Game.LambdaHack.Color as Color
+import Game.LambdaHack.Command
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
@@ -28,10 +27,8 @@ import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
-import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
-import Game.LambdaHack.ServerAction
 import Game.LambdaHack.State
 import Game.LambdaHack.Strategy
 import qualified Game.LambdaHack.Tile as Tile
@@ -45,12 +42,12 @@ import Game.LambdaHack.Vector
 -- or is not controlled by player)
 
 -- | AI proposes possible targets for the actor. Never empty.
-targetStrategy :: MonadServerRO m => ActorId -> m (Strategy (Maybe Target))
+targetStrategy :: MonadClientRO m => ActorId -> m (Strategy (Maybe Target))
 targetStrategy actor = do
   cops@Kind.COps{costrat=Kind.Ops{okind}} <- getsState scops
-  per <- askPerceptionSer
+  per <- askPerception
   glo <- getState
-  btarget <- undefined -- TODO: keep the AI target in an extra client
+  btarget <- getsClient $ getTarget actor
   let Actor{bfaction} = getActorBody actor glo
       factionAI = gAiIdle $ sfaction glo IM.! bfaction
       factionAbilities = sabilities (okind factionAI)
@@ -117,19 +114,19 @@ reacquireTgt cops actor btarget glo per factionAbilities =
     (Just . TPos . (me `shift`)) `liftM` moveStrategy cops actor glo Nothing
 
 -- | AI strategy based on actor's sight, smell, intelligence, etc. Never empty.
-actionStrategy :: MonadServerChan m => ActorId -> m (Strategy (m ()))
+actionStrategy :: MonadClientRO m => ActorId -> m (Strategy CmdSer)
 actionStrategy actor = do
   cops@Kind.COps{costrat=Kind.Ops{okind}} <- getsState scops
   glo <- getState
-  btarget <- undefined -- TODO
+  btarget <- getsClient $ getTarget actor
   let Actor{bfaction} = getActorBody actor glo
       factionAI = gAiIdle $ sfaction glo IM.! bfaction
       factionAbilities = sabilities (okind factionAI)
   return $! proposeAction cops actor btarget glo factionAbilities
 
-proposeAction :: forall m. MonadServerChan m => Kind.COps -> ActorId
+proposeAction :: Kind.COps -> ActorId
               -> Maybe Target -> State -> [Ability]
-              -> Strategy (m ())
+              -> Strategy CmdSer
 proposeAction cops actor btarget glo factionAbilities =
   sumS prefix .| combineDistant distant .| sumS suffix
   .| waitBlockNow actor  -- wait until friends sidestep, ensures never empty
@@ -143,7 +140,7 @@ proposeAction cops actor btarget glo factionAbilities =
       Just (TPos l) -> (l, False)
       Nothing -> (bpos, False)  -- an actor blocked by friends
   combineDistant = liftFrequency . sumF
-  aFrequency :: Ability -> Frequency (m ())
+  aFrequency :: Ability -> Frequency CmdSer
   aFrequency Ability.Ranged = if foeVisible
                               then rangedFreq cops actor glo fpos
                               else mzero
@@ -156,7 +153,7 @@ proposeAction cops actor btarget glo factionAbilities =
   aFrequency _              = assert `failure` distant
   chaseFreq =
     scaleFreq 30 $ bestVariant $ chase cops actor glo (fpos, foeVisible)
-  aStrategy :: Ability -> Strategy (m ())
+  aStrategy :: Ability -> Strategy CmdSer
   aStrategy Ability.Track  = track cops actor glo
   aStrategy Ability.Heal   = mzero  -- TODO
   aStrategy Ability.Flee   = mzero  -- TODO
@@ -171,79 +168,52 @@ proposeAction cops actor btarget glo factionAbilities =
   sumS = msum . map aStrategy
   sumF = msum . map aFrequency
 
-dirToAction :: MonadServerChan m => ActorId -> Bool -> Vector -> m ()
-dirToAction actor allowAttacks dir = do
-  -- set new direction
-  modifyState $ updateActorBody actor $ \ m -> m { bdirAI = Just (dir, 0) }
-  -- perform action
-  tryWith (\ msg -> if T.null msg
-                    then return ()
-                    else assert `failure` msg <> "in AI") $ do
-    -- If the following action aborts, we just advance the time and continue.
-    -- TODO: ensure time is taken for other aborted actions in this file
-    -- TODO: or just fail at each abort in AI code? or use tryWithFrame?
-    if allowAttacks
-      then moveSer actor dir
-      else runSer actor dir
-
 -- | A strategy to always just wait.
-waitBlockNow :: MonadServer m => ActorId -> Strategy (m ())
-waitBlockNow actor = returN "wait" $ waitSer actor
+waitBlockNow :: ActorId -> Strategy CmdSer
+waitBlockNow actor = returN "wait" $ WaitSer actor
 
--- | A strategy to always just die.
-dieNow :: MonadAction m => ActorId -> Strategy (m ())
-dieNow actor = returN "die" $ do  -- TODO: explode if a potion
-  bitems <- getsState (getActorItem actor)
-  Actor{bpos} <- getsState (getActorBody actor)
-  modifyState (updateArena (dropItemsAt bitems bpos))
-  modifyState (deleteActor actor)
-
--- TODO: move to server; the client and his AI does not have a say in that
 -- | Strategy for dumb missiles.
-track :: MonadServerChan m => Kind.COps -> ActorId -> State -> Strategy (m ())
+track :: Kind.COps -> ActorId -> State -> Strategy CmdSer
 track cops actor glo =
   strat
  where
   lvl = getArena glo
   Actor{ bpos, bpath, bhp } = getActorBody actor glo
-  darkenActor = modifyState $ updateActorBody actor $ \ m ->
-    m {bcolor = Just Color.BrBlack}
-  dieOrReset | bhp <= 0  = dieNow actor
-             | otherwise =
-                 returN "reset TPath" $ modifyState $ updateActorBody actor
-                 $ \ m -> m {bpath = Nothing}
+  dieOrReset | bhp <= 0  = returN "die" $ DieSer actor
+             | otherwise = returN "reset TPath" $ ClearPath actor
   strat = case bpath of
     Just [] -> dieOrReset
     Just (d : _) | not $ accessible cops lvl bpos (shift bpos d) -> dieOrReset
     -- TODO: perhaps colour differently the whole second turn of movement?
-    Just [d] -> returN "last TPath" $ do
-      darkenActor
-      modifyState $ updateActorBody actor $ \ m -> m { bpath = Just [] }
-      dirToAction actor True d
-    Just (d : lv) -> returN "follow TPath" $ do
-      modifyState $ updateActorBody actor $ \ m -> m { bpath = Just lv }
-      dirToAction actor True d
+    Just [d] -> returN "last TPath" $ FollowPath actor d [] True
+    Just (d : lv) -> returN "follow TPath" $ FollowPath actor d lv False
     Nothing -> reject
 
-pickup :: MonadAction m => ActorId -> State -> Strategy (m ())
+pickup :: ActorId -> State -> Strategy CmdSer
 pickup actor glo =
   lootHere bpos .=> actionPickup
  where
   lvl = getArena glo
-  Actor{bpos} = getActorBody actor glo
+  Actor{bpos, bletter} = getActorBody actor glo
   lootHere x = not $ L.null $ lvl `atI` x
-  actionPickup = returN "pickup" $ undefined -- TODO actorPickupItem actor >>= cmdSer
+  bitems = getActorItem actor glo
+  actionPickup = case lvl `atI` bpos of
+    [] -> assert `failure` (actor, bpos, lvl)
+    i : _ ->  -- pick up first item
+      case assignLetter (jletter i) bletter bitems of
+        Just l -> returN "pickup" $ PickupSer actor i l
+        Nothing -> returN "pickup" $ WaitSer actor
 
-melee :: MonadServerChan m => ActorId -> State -> Point -> Strategy (m ())
+melee :: ActorId -> State -> Point -> Strategy CmdSer
 melee actor glo fpos =
-  foeAdjacent .=> (returN "melee" $ dirToAction actor True dir)
+  foeAdjacent .=> (returN "melee" $ MoveSer actor dir)
  where
   Level{lxsize} = getArena glo
   Actor{bpos} = getActorBody actor glo
   foeAdjacent = adjacent lxsize bpos fpos
   dir = displacement bpos fpos
 
-rangedFreq :: MonadServerChan m => Kind.COps -> ActorId -> State -> Point -> Frequency (m ())
+rangedFreq :: Kind.COps -> ActorId -> State -> Point -> Frequency CmdSer
 rangedFreq cops actor glo fpos =
   toFreq "throwFreq" $
     if not foesAdj
@@ -275,7 +245,7 @@ rangedFreq cops actor glo fpos =
     Just (lbl:_) -> lbl
   throwFreq is multi =
     [ (benefit * multi,
-       projectSer actor fpos eps (iverbProject ik) i)
+       ProjectSer actor fpos eps (iverbProject ik) i)
     | i <- is,
       let (ik, benefit) =
             case jkind (sdisco glo) i of
@@ -288,7 +258,7 @@ rangedFreq cops actor glo fpos =
       -- Wasting weapons and armour would be too cruel to the player.
       isymbol ik `elem` (ritemProject $ Kind.stdRuleset corule)]
 
-toolsFreq :: MonadServerChan m => Kind.COps -> ActorId -> State -> Frequency (m ())
+toolsFreq :: Kind.COps -> ActorId -> State -> Frequency CmdSer
 toolsFreq cops actor glo =
   toFreq "quaffFreq" $ quaffFreq bitems 1 ++ quaffFreq tis 2
  where
@@ -298,7 +268,7 @@ toolsFreq cops actor glo =
   bitems = getActorItem actor glo
   tis = lvl `atI` bpos
   quaffFreq is multi =
-    [ (benefit * multi, applySer actor (iverbApply ik) i)
+    [ (benefit * multi, ApplySer actor (iverbApply ik) i)
     | i <- is,
       let (ik, benefit) =
             case jkind (sdisco glo) i of
@@ -393,17 +363,17 @@ moveStrategy cops actor glo mFoe =
   isSensible l = noFriends l && (accessibleHere l || openableHere l)
   sensible = filter (isSensible . (bpos `shift`)) (moves lxsize)
 
-chase :: MonadServerChan m => Kind.COps -> ActorId -> State -> (Point, Bool) -> Strategy (m ())
+chase :: Kind.COps -> ActorId -> State -> (Point, Bool) -> Strategy CmdSer
 chase cops actor glo foe@(_, foeVisible) =
   -- Target set and we chase the foe or offer null strategy if we can't.
   -- The foe is visible, or we remember his last position.
   let mFoe = Just foe
       fight = not foeVisible  -- don't pick fights if the real foe is close
-  in dirToAction actor fight `liftM` moveStrategy cops actor glo mFoe
+  in DirToAction actor fight `liftM` moveStrategy cops actor glo mFoe
 
-wander :: MonadServerChan m => Kind.COps -> ActorId -> State -> Strategy (m ())
+wander :: Kind.COps -> ActorId -> State -> Strategy CmdSer
 wander cops actor glo =
   -- Target set, but we don't chase the foe, e.g., because we are blocked
   -- or we cannot chase at all.
   let mFoe = Nothing
-  in dirToAction actor True `liftM` moveStrategy cops actor glo mFoe
+  in DirToAction actor True `liftM` moveStrategy cops actor glo mFoe

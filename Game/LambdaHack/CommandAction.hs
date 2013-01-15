@@ -13,6 +13,7 @@ import Data.Maybe
 import Data.Monoid (mempty)
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
+import qualified Control.Monad.State as St
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -31,9 +32,12 @@ import Game.LambdaHack.Level
 import Game.LambdaHack.MixedAction
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
+import Game.LambdaHack.Random
 import Game.LambdaHack.Running
 import Game.LambdaHack.ServerAction
 import Game.LambdaHack.State
+import Game.LambdaHack.Strategy
+import Game.LambdaHack.StrategyAction
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 
@@ -170,6 +174,23 @@ cmdSer cmd = case cmd of
   GameRestartSer -> gameRestartSer
   GameSaveSer -> gameSaveSer
   CfgDumpSer -> cfgDumpSer
+  DirToAction actor allowAttacks dir -> do
+    modifyState $ updateActorBody actor $ \ m -> m { bdirAI = Just (dir, 0) }
+    if allowAttacks
+      then moveSer actor dir
+      else runSer actor dir
+  ClearPath aid ->
+    modifyState $ updateActorBody aid $ \m -> m {bpath = Nothing}
+  FollowPath aid dir path darken -> do
+    modifyState $ updateActorBody aid $ \m -> m {bpath = Just path}
+    when darken $
+      modifyState $ updateActorBody aid $ \m -> m {bcolor = Just Color.BrBlack}
+    moveSer aid dir
+  DieSer actor -> do  -- TODO: explode if a potion
+    bitems <- getsState (getActorItem actor)
+    Actor{bpos} <- getsState (getActorBody actor)
+    modifyState (updateArena (dropItemsAt bitems bpos))
+    modifyState (deleteActor actor)
 
 cmdUpdateCli :: MonadClient m => CmdUpdateCli -> m ()
 cmdUpdateCli cmd = case cmd of
@@ -322,18 +343,13 @@ cmdUpdateCli cmd = case cmd of
 
 cmdQueryCli :: MonadClientChan m => CmdQueryCli a -> m a
 cmdQueryCli cmd = case cmd of
-  ShowSlidesCli slides -> do
-    go <- getManyConfirms [] slides
-    return go
+  ShowSlidesCli slides -> getManyConfirms [] slides
   CarryOnCli -> carryOnCli
   ConfirmShowItemsCli discoS msg items -> do
     io <- itemOverlay discoS True items
     slides <- overlayToSlideshow msg io
-    go <- getManyConfirms [] slides
-    return go
-  SelectLeaderCli aid lid -> do
-    go <- selectLeader aid lid
-    return go
+    getManyConfirms [] slides
+  SelectLeaderCli aid lid -> selectLeader aid lid
   ConfirmYesNoCli msg -> do
     go <- displayYesNo msg
     recordHistory  -- Prevent repeating the ending msgs.
@@ -369,6 +385,22 @@ cmdQueryCli cmd = case cmd of
     loc <- getState
     return (cli, loc)
   HandlePlayerCli leader -> handlePlayer leader
+  HandleAI actor -> do
+    stratTarget <- targetStrategy actor
+    -- Choose a target from those proposed by AI for the actor.
+    btarget <- rndToClient $ frequency $ bestVariant stratTarget
+    modifyClient $ updateTarget actor (const btarget)
+    stratAction <- actionStrategy actor
+    -- Run the AI: chose an action from those given by the AI strategy.
+    rndToClient $ frequency $ bestVariant $ stratAction
+
+-- | Invoke pseudo-random computation with the generator kept in the state.
+rndToClient :: MonadClient m => Rnd a -> m a
+rndToClient r = do
+  g <- undefined -- getsState srandom
+  let (a, ng) = St.runState r g
+--  modifyState (\ s -> s {srandom = ng})
+  return a
 
 -- | Continue running in the given direction.
 continueRun :: MonadClientChan m => ActorId -> (Vector, Int) -> m CmdSer

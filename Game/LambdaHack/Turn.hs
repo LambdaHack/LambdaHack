@@ -8,6 +8,7 @@ import qualified Data.IntMap as IM
 import qualified Data.List as L
 import Data.Maybe
 import qualified Data.Ord as Ord
+import qualified Data.Text as T
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -15,16 +16,13 @@ import Game.LambdaHack.ActorState
 import Game.LambdaHack.Command
 import Game.LambdaHack.CommandAction
 import Game.LambdaHack.EffectAction
-import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
-import Game.LambdaHack.Random
 import Game.LambdaHack.ServerAction
 import Game.LambdaHack.State
-import Game.LambdaHack.Strategy
-import Game.LambdaHack.StrategyAction
 import Game.LambdaHack.Time
+import Game.LambdaHack.Utils.Assert
 
 -- One clip proceeds through the following functions:
 --
@@ -164,31 +162,22 @@ handleActors subclipStart = withPerception $ do
               -- TODO: store frames somewhere for each faction and display
               -- the frames only after a "Faction X taking over..." prompt.
               broadcastPosCli [] $ DisplayPushCli
-              handleAI actor
+              cmdS <- sendQueryCli side $ HandleAI actor  -- call AI client
+    -- If the following action aborts, we just advance the time and continue.
+    -- TODO: or just fail at each abort in AI code? or use tryWithFrame?
+              tryWith (\ msg -> if T.null msg
+                    then return ()
+                    else assert `failure` msg <> "in AI") $ cmdSer cmdS
               handleActors $ btime m
             else do
               -- No new subclip.
-              handleAI actor
+              cmdS <- sendQueryCli side $ HandleAI actor  -- call AI client
+    -- If the following action aborts, we just advance the time and continue.
+    -- TODO: or just fail at each abort in AI code? or use tryWithFrame?
+              tryWith (\ msg -> if T.null msg
+                    then return ()
+                    else assert `failure` msg <> "in AI") $ cmdSer cmdS
               handleActors subclipStart
-
--- | Handle the move of a single monster.
-handleAI :: MonadServerChan m => ActorId -> m ()
-handleAI actor = do
-  stratTarget <- targetStrategy actor
-  -- Choose a target from those proposed by AI for the actor.
-  btarget <- rndToAction $ frequency $ bestVariant stratTarget
---  modifyClient $ updateTarget actor (const btarget)
-  stratAction <- actionStrategy actor
-  -- debug
-  loc <- getState
-  debug $ "handleAI factionAI:"
-     <+> showT (gAiIdle $ sfaction loc IM.! bfaction (getActorBody actor loc))
-     <>          ", symbol:"    <+> showT (bsymbol (getActorBody actor loc))
-     <>          ", loc:"       <+> showT (bpos (getActorBody actor loc))
-     <> "\nhandleAI target:"    <+> showT stratTarget
-     <> "\nhandleAI move:"      <+> showT stratAction
-  -- Run the AI: choses an action from those given by the AI strategy.
-  join $ rndToAction $ frequency $ bestVariant $ stratAction
 
 -- | Advance (or rewind) the move time for the given actor.
 advanceTime :: MonadServer m => ActorId -> m ()
