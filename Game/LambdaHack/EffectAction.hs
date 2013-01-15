@@ -44,11 +44,11 @@ actorVerb coactor a v =
   makeSentence [MU.SubjectVerbSg (partActor coactor a) (MU.Text v)]
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
-rndToAction :: MonadServer m => Rnd a -> m a
+rndToAction :: MonadAction m => Rnd a -> m a
 rndToAction r = do
-  g <- getsServer srandom
+  g <- getsState srandom
   let (a, ng) = St.runState r g
-  modifyServer (\ ser -> ser {srandom = ng})
+  modifyState $ updateRandom $ const ng
   return a
 
 -- TODO: center screen, flash the background, etc. Perhaps wait for SPACE.

@@ -477,9 +477,9 @@ generateMonster = do
   ser <- getServer
   per <- askPerceptionSer  -- TODO: sum over all not spawning factions
   (nstate, nser) <- rndToAction $ rollMonster cops per state ser
-  putState nstate
-  srandom <- getsServer srandom
-  putServer $! nser {srandom}
+  random <- getsState srandom
+  putState $! updateRandom (const random) nstate
+  putServer nser
 
 -- | Possibly regenerate HP for all actors on the current level.
 regenerateLevelHP :: MonadServer m => m ()

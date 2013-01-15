@@ -13,7 +13,6 @@ import Data.Maybe
 import Data.Monoid (mempty)
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
-import qualified Control.Monad.State as St
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -25,6 +24,7 @@ import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Command
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Draw
+import Game.LambdaHack.EffectAction
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Key as K
 import qualified Game.LambdaHack.Kind as Kind
@@ -388,19 +388,11 @@ cmdQueryCli cmd = case cmd of
   HandleAI actor -> do
     stratTarget <- targetStrategy actor
     -- Choose a target from those proposed by AI for the actor.
-    btarget <- rndToClient $ frequency $ bestVariant stratTarget
+    btarget <- rndToAction $ frequency $ bestVariant stratTarget
     modifyClient $ updateTarget actor (const btarget)
     stratAction <- actionStrategy actor
     -- Run the AI: chose an action from those given by the AI strategy.
-    rndToClient $ frequency $ bestVariant $ stratAction
-
--- | Invoke pseudo-random computation with the generator kept in the state.
-rndToClient :: MonadClient m => Rnd a -> m a
-rndToClient r = do
-  g <- undefined -- getsState srandom
-  let (a, ng) = St.runState r g
---  modifyState (\ s -> s {srandom = ng})
-  return a
+    rndToAction $ frequency $ bestVariant $ stratAction
 
 -- | Continue running in the given direction.
 continueRun :: MonadClientChan m => ActorId -> (Vector, Int) -> m CmdSer

@@ -4,10 +4,10 @@ module Game.LambdaHack.State
   ( -- * Basic game state, local or global
     State
     -- * State components
-  , sdungeon, sdepth, sdisco, sfaction, scops, sside, sarena
+  , sdungeon, sdepth, sdisco, sfaction, scops, srandom, sside, sarena
     -- * State operations
   , defStateGlobal, defStateLocal, switchGlobalSelectedSideOnlyForGlobalState
-  , updateDungeon, updateDisco, updateFaction, updateCOps
+  , updateDungeon, updateDisco, updateFaction, updateCOps, updateRandom
   , updateArena, updateTime, updateSide, updateSelectedArena
   , getArena, getTime, getSide
   , isPlayerFaction, isSpawningFaction
@@ -66,6 +66,7 @@ data State = State
   , _sdisco   :: !Discoveries  -- ^ remembered item discoveries
   , _sfaction :: !FactionDict  -- ^ remembered sides still in game
   , _scops    :: Kind.COps     -- ^ remembered content
+  , _srandom  :: !R.StdGen     -- ^ current random generator
   , _sside    :: !FactionId    -- ^ faction of the selected actor
   , _sarena   :: !LevelId      -- ^ level of the selected actor
   }
@@ -76,7 +77,6 @@ data StateServer = StateServer
   { sdiscoRev :: !DiscoRev      -- ^ reverse map, used for item creation
   , sflavour  :: !FlavourMap    -- ^ association of flavour to items
   , scounter  :: !Int           -- ^ stores next actor index
-  , srandom   :: !R.StdGen      -- ^ current random generator
   , sconfig   :: !Config        -- ^ this game's config (including initial RNG)
   , squit     :: !(Maybe Bool)  -- ^ just going to save the game
   , sdebugSer :: !DebugModeSer  -- ^ debugging mode
@@ -164,9 +164,9 @@ unknownTileMap unknownId cxsize cysize =
 
 -- | Initial complete global game state.
 defStateGlobal :: Dungeon -> Int -> Discoveries
-               -> FactionDict -> Kind.COps -> LevelId
+               -> FactionDict -> Kind.COps -> R.StdGen -> LevelId
                -> State
-defStateGlobal _sdungeon _sdepth _sdisco _sfaction _scops _sarena =
+defStateGlobal _sdungeon _sdepth _sdisco _sfaction _scops _srandom _sarena =
   State
     { _sside = -1  -- no side yet selected
     , ..
@@ -178,11 +178,11 @@ defStateGlobal _sdungeon _sdepth _sdisco _sfaction _scops _sarena =
 -- | Initial per-faction local game state.
 defStateLocal :: Dungeon
               -> Int -> Discoveries -> FactionDict
-              -> Kind.COps -> LevelId -> FactionId
+              -> Kind.COps -> R.StdGen -> LevelId -> FactionId
               -> State
 defStateLocal globalDungeon
               _sdepth _sdisco _sfaction
-              _scops@Kind.COps{cotile} _sarena _sside = do
+              _scops@Kind.COps{cotile} _srandom _sarena _sside = do
   State
     { _sdungeon =
       M.map (\Level{lxsize, lysize, ldesc, lstair, lclear} ->
@@ -211,6 +211,10 @@ updateFaction f s = s { _sfaction = f (_sfaction s) }
 -- | Update content data within state.
 updateCOps :: (Kind.COps -> Kind.COps) -> State -> State
 updateCOps f s = s { _scops = f (_scops s) }
+
+-- | Update content data within state.
+updateRandom :: (R.StdGen -> R.StdGen) -> State -> State
+updateRandom f s = s { _srandom = f (_srandom s) }
 
 -- | Update current arena data within state.
 updateArena :: (Level -> Level) -> State -> State
@@ -266,6 +270,9 @@ sfaction = _sfaction
 scops :: State -> Kind.COps
 scops = _scops
 
+srandom :: State -> R.StdGen
+srandom = _srandom
+
 sside :: State -> FactionId
 sside = _sside
 
@@ -275,9 +282,8 @@ sarena = _sarena
 -- * StateServer operations
 
 -- | Initial game server state.
-defStateServer :: DiscoRev -> FlavourMap -> R.StdGen -> Config
-                   -> StateServer
-defStateServer sdiscoRev sflavour srandom sconfig =
+defStateServer :: DiscoRev -> FlavourMap -> Config -> StateServer
+defStateServer sdiscoRev sflavour sconfig =
   StateServer
     { scounter  = 0
     , squit     = Nothing
@@ -390,6 +396,7 @@ instance Binary State where
     put _sdepth
     put _sdisco
     put _sfaction
+    put (show _srandom)
     put _sside
     put _sarena
   get = do
@@ -397,9 +404,11 @@ instance Binary State where
     _sdepth <- get
     _sdisco <- get
     _sfaction <- get
+    g <- get
     _sside <- get
     _sarena <- get
     let _scops = undefined  -- overwritten by recreated cops
+        _srandom = read g
     return State{..}
 
 instance Binary StateServer where
@@ -407,16 +416,13 @@ instance Binary StateServer where
     put sdiscoRev
     put sflavour
     put scounter
-    put (show srandom)
     put sconfig
   get = do
     sdiscoRev <- get
     sflavour <- get
     scounter <- get
-    g <- get
     sconfig <- get
     let squit = Nothing
-        srandom = read g
         sdebugSer = defDebugModeSer
     return StateServer{..}
 

@@ -53,6 +53,7 @@ import qualified Data.Map as M
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified System.Random as R
 import System.Time
 -- import System.IO (hPutStrLn, stderr) -- just for debugging
 
@@ -512,7 +513,10 @@ gameReset cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
                                   , corule
                                   , costrat=Kind.Ops{opick=sopick}} = do
   -- Rules config reloaded at each new game start.
-  (sconfig, dungeonGen, srandom) <- ConfigIO.mkConfigRules corule
+  (sconfig, dungeonGen, random) <- ConfigIO.mkConfigRules corule
+  randomCli <- R.newStdGen  -- TODO: each AI client should have one
+  -- from sconfig (only known to server), other clients each should have
+  -- one known only to them (or server, if needed)
   let rnd = do
         sflavour <- dungeonFlavourMap coitem
         (sdiscoS, sdiscoRev) <- serverDiscos coitem
@@ -538,8 +542,8 @@ gameReset cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
         faction <- fmap fst $ ofoldrWithKey g (return (IM.empty, 0))
         let defState =
               defStateGlobal freshDungeon freshDepth sdiscoS faction
-                             cops entryLevel
-            defSer = defStateServer sdiscoRev sflavour srandom sconfig
+                             cops random entryLevel
+            defSer = defStateServer sdiscoRev sflavour sconfig
             needInitialCrew =
               filter (not . isSpawningFaction defState) $ IM.keys faction
             fo fid (gloF, serF) =
@@ -548,7 +552,7 @@ gameReset cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
             defCli = defStateClient entryLoc
             -- This overwrites the "Really save/quit?" messages.
             defLoc = defStateLocal freshDungeon freshDepth
-                                   disco faction cops entryLevel
+                                   disco faction cops randomCli entryLevel
             pers = dungeonPerception cops sconfig (sdebugSer ser) glo
             funReset fid = (defCli {sper = pers IM.! fid}, (defLoc fid))
         return (glo, ser, funReset)
