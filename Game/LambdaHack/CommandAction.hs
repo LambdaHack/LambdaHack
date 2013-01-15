@@ -42,7 +42,7 @@ import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 
 -- | The basic action for a command and whether it takes time.
-cmdAction :: MonadClientChan m => StateClient -> State -> Cmd
+cmdAction :: MonadClient m => StateClient -> State -> Cmd
           -> WriterT Slideshow m (Maybe CmdSer)
 cmdAction cli s cmd =
   let tgtMode = stgtMode cli
@@ -113,7 +113,7 @@ cmdAction cli s cmd =
 -- Time cosuming commands are marked as such in help and cannot be
 -- invoked in targeting mode on a remote level (level different than
 -- the level of the selected hero).
-cmdSemantics :: MonadClientChan m => Cmd -> WriterT Slideshow m (Maybe CmdSer)
+cmdSemantics :: MonadClient m => Cmd -> WriterT Slideshow m (Maybe CmdSer)
 cmdSemantics cmd = do
   Just leaderOld <- getsClient getLeader
   arenaOld <- getsState sarena
@@ -346,7 +346,7 @@ cmdUpdateCli cmd = case cmd of
     putClient cli {shistory}
     putState loc
 
-cmdQueryCli :: MonadClientChan m => CmdQueryCli a -> m a
+cmdQueryCli :: MonadClient m => CmdQueryCli a -> m a
 cmdQueryCli cmd = case cmd of
   ShowSlidesCli slides -> getManyConfirms [] slides
   CarryOnCli -> carryOnCli
@@ -400,14 +400,14 @@ cmdQueryCli cmd = case cmd of
     rndToAction $ frequency $ bestVariant $ stratAction
 
 -- | Continue running in the given direction.
-continueRun :: MonadClientChan m => ActorId -> (Vector, Int) -> m CmdSer
+continueRun :: MonadClient m => ActorId -> (Vector, Int) -> m CmdSer
 continueRun leader dd = do
   dir <- continueRunDir leader dd
   -- Attacks and opening doors disallowed when continuing to run.
   return $ RunSer leader dir
 
 -- | Handle the move of the hero.
-handlePlayer :: MonadClientChan m
+handlePlayer :: MonadClient m
              => ActorId
              -> m (CmdSer, Maybe ActorId, LevelId)
 handlePlayer leader = do
@@ -424,7 +424,7 @@ handlePlayer leader = do
 
 -- | Determine and process the next player command. The argument is the last
 -- abort message due to running, if any.
-playerCommand :: forall m. MonadClientChan m
+playerCommand :: forall m. MonadClient m
               => Msg
               -> m CmdSer
 playerCommand msgRunAbort = do
@@ -520,7 +520,7 @@ animateDeathCli target = do
   let animFrs = animate cli loc per $ deathBody (bpos pbody)
   displayFramesPush animFrs
 
-carryOnCli :: MonadClientChan m => m Bool
+carryOnCli :: MonadClient m => m Bool
 carryOnCli = do
   go <- displayMore ColorBW ""
   msgAdd "The survivors carry on."  -- TODO: reset messages at game over not to display it if there are no survivors.

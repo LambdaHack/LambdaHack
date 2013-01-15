@@ -13,7 +13,6 @@ module Game.LambdaHack.Action
   , MonadServerChan
   , MonadClientRO( getClient, getsClient )
   , MonadClient( putClient, modifyClient )
-  , MonadClientChan
     -- * Various ways to abort action
   , abort, abortWith, abortIfWith, neverMind
     -- * Abort exception handlers
