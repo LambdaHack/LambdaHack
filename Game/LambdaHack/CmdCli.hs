@@ -19,6 +19,7 @@ import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
+import Game.LambdaHack.State
 
 -- | Abstract syntax of client commands.
 data CmdCli where
@@ -47,7 +48,7 @@ data CmdUpdateCli =
   | DisplayDelayCli
   | MoreFullCli Msg
   | MoreBWCli Msg
---  | RestartCli StateClient State
+  | RestartCli Point FactionPers State
   deriving Show
 
 data CmdQueryCli a where

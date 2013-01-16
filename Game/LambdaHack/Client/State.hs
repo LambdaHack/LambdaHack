@@ -69,8 +69,8 @@ data DebugModeCli = DebugModeCli
   deriving Show
 
 -- | Initial game client state.
-defStateClient :: Point -> StateClient
-defStateClient scursor = do
+defStateClient :: Point -> FactionPers -> StateClient
+defStateClient scursor sper = do
   StateClient
     { stgtMode  = Nothing
     , scursor
@@ -79,7 +79,7 @@ defStateClient scursor = do
     , srunning  = Nothing
     , sreport   = emptyReport
     , shistory  = emptyHistory
-    , sper      = M.empty
+    , sper
     , _sleader  = Nothing  -- no heroes yet alive
     , slastKey  = Nothing
     , sdebugCli = defDebugModeCli

@@ -48,7 +48,6 @@ import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.CmdCli
 import Game.LambdaHack.Content.FactionKind
-import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Faction
 import Game.LambdaHack.Item
@@ -220,7 +219,8 @@ restartGame loopServer = do
   (state, ser, funRestart) <- gameResetAction cops
   putState state
   putServer ser
-  funBroadcastCli (uncurry undefined {-RestartCli-} . funRestart)
+  funBroadcastCli (\fid -> let (entryLoc, sper, loc) = funRestart fid
+                           in RestartCli entryLoc sper loc)
   -- TODO: send to each client RestartCli; use d in its code; empty channels?
   saveGameBkp
   loopServer
@@ -258,11 +258,11 @@ initialHeroes cops ppos side s ser =
 
 -- TODO: do this inside Action ()
 gameReset :: Kind.COps
-          -> IO (State, StateServer, FactionId -> (StateClient, State))
+          -> IO (State, StateServer, FactionId -> (Point, FactionPers, State))
 gameReset cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
-                                  , coitem=coitem@Kind.Ops{okind}
+                                  , coitem
                                   , corule
-                                  , costrat=Kind.Ops{opick=sopick}} = do
+                                  , costrat=Kind.Ops{opick=sopick} } = do
   -- Rules config reloaded at each new game start.
   (sconfig, dungeonGen, random) <- ConfigIO.mkConfigRules corule
   randomCli <- R.newStdGen  -- TODO: each AI client should have one
@@ -270,12 +270,9 @@ gameReset cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
   -- one known only to them (or server, if needed)
   let rnd = do
         sflavour <- dungeonFlavourMap coitem
-        (sdiscoS, sdiscoRev) <- serverDiscos coitem
-        let f ik = isymbol (okind ik)
-                   `notElem` (ritemProject $ Kind.stdRuleset corule)
-            disco = M.filter f sdiscoS
+        (discoS, discoRev) <- serverDiscos coitem
         DungeonGen.FreshDungeon{..} <-
-          DungeonGen.dungeonGen cops sflavour sdiscoRev sconfig
+          DungeonGen.dungeonGen cops sflavour discoRev sconfig
         let factionName = configFaction sconfig
         playerFactionKindId <- opick factionName (const True)
         let g gkind fk mk = do
@@ -292,28 +289,31 @@ gameReset cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
               return (IM.insert k Faction{..} m, k + 1)
         faction <- fmap fst $ ofoldrWithKey g (return (IM.empty, 0))
         let defState =
-              defStateGlobal freshDungeon freshDepth sdiscoS faction
+              defStateGlobal freshDungeon freshDepth discoS faction
                              cops random entryLevel
-            defSer = defStateServer sdiscoRev sflavour sconfig
+            defSer = defStateServer discoRev sflavour sconfig
             needInitialCrew =
               filter (not . isSpawningFaction defState) $ IM.keys faction
             fo fid (gloF, serF) =
               initialHeroes cops entryLoc fid gloF serF
             (glo, ser) = foldr fo (defState, defSer) needInitialCrew
-            defCli = defStateClient entryLoc
-            -- This overwrites the "Really save/quit?" messages.
-            defLoc = defStateLocal freshDungeon freshDepth
-                                   disco faction cops randomCli entryLevel
+            -- This state is quite small, fit for transmition to the client.
+            -- The biggest part is content, which really needs to be updated
+            -- at this point to keep clients in sync with server improvements.
+            defLoc = defStateLocal cops freshDungeon discoS
+                                   freshDepth faction randomCli entryLevel
             tryFov = stryFov $ sdebugSer ser
             fovMode = fromMaybe (configFovMode sconfig) tryFov
             pers = dungeonPerception cops fovMode glo
-            funReset fid = (defCli {sper = pers IM.! fid}, (defLoc fid))
+            funReset fid = (entryLoc, pers IM.! fid, defLoc fid)
         return (glo, ser, funReset)
   return $! St.evalState rnd dungeonGen
 
 gameResetAction :: MonadServer m
                 => Kind.COps
-                -> m (State, StateServer, FactionId -> (StateClient, State))
+                -> m ( State
+                     , StateServer
+                     , FactionId -> (Point, FactionPers, State))
 gameResetAction = liftIO . gameReset
 
 -- | Wire together content, the definitions of game commands,
@@ -371,7 +371,9 @@ start executorS executorC sfs cops@Kind.COps{corule}
     Right (shistory, msg) -> do  -- Starting a new game.
       (gloR, serR, funR) <- gameReset cops
       let faction = sfaction gloR
-          d = map (\fid -> (fid, funR fid)) $ IM.keys faction
+          d = map (\fid -> let (entryLoc, sper, loc) = funR fid
+                           in (fid, (defStateClient entryLoc sper, loc)))
+              $ IM.keys faction
           dR = IM.fromDistinctAscList d
       return (gloR, serR, dR, shistory, msg)
     Left (gloL, serL, dL, shistory, msg) -> do  -- Running a restored game.

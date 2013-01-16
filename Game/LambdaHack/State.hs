@@ -22,6 +22,8 @@ import Data.Typeable
 import qualified System.Random as R
 
 import Game.LambdaHack.Content.FactionKind
+import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Faction
 import Game.LambdaHack.Item
@@ -89,18 +91,22 @@ defStateGlobal _sdungeon _sdepth _sdisco _sfaction _scops _srandom _sarena =
 -- goUp in targeting mode (land on stairs of on the same location up a level
 -- if this set of stsirs is unknown).
 -- | Initial per-faction local game state.
-defStateLocal :: Dungeon
-              -> Int -> Discoveries -> FactionDict
-              -> Kind.COps -> R.StdGen -> LevelId -> FactionId
+defStateLocal :: Kind.COps -> Dungeon -> Discoveries
+              -> Int -> FactionDict -> R.StdGen -> LevelId -> FactionId
               -> State
-defStateLocal globalDungeon
-              _sdepth _sdisco _sfaction
-              _scops@Kind.COps{cotile} _srandom _sarena _sside = do
+defStateLocal _scops@Kind.COps{ coitem=Kind.Ops{okind}
+                              , corule
+                              , cotile }
+              globalDungeon discoS
+              _sdepth _sfaction _srandom _sarena _sside = do
   State
     { _sdungeon =
       M.map (\Level{lxsize, lysize, ldesc, lstair, lclear} ->
               unknownLevel cotile lxsize lysize ldesc lstair lclear)
             globalDungeon
+    , _sdisco = let f ik = isymbol (okind ik)
+                           `notElem` (ritemProject $ Kind.stdRuleset corule)
+                in M.filter f discoS
     , ..
     }
 

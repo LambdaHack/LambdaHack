@@ -191,10 +191,11 @@ cmdUpdateCli cmd = case cmd of
   MoreFullCli msg -> do
     void $ displayMore ColorFull msg
     recordHistory  -- Prevent repeating the ending msgs.
-  -- RestartCli cli loc -> do
-  --   shistory <- getsClient shistory
-  --   putClient cli {shistory}
-  --   putState loc
+  RestartCli entryLoc sper loc -> do
+    let cli = defStateClient entryLoc sper
+    shistory <- getsClient shistory
+    putClient cli {shistory}
+    putState loc
 
 cmdQueryCli :: MonadClient m => CmdQueryCli a -> m a
 cmdQueryCli cmd = case cmd of
