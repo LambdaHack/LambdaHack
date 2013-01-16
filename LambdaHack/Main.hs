@@ -15,7 +15,7 @@ import Game.LambdaHack.Action
 import qualified Game.LambdaHack.ActionType as ActionType
 import Game.LambdaHack.CommandAction
 import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Turn
+import Game.LambdaHack.LoopAction
 
 -- | Fire up the frontend with the engine fueled by content.
 -- The @Action@ type to be used is decided by the second argument

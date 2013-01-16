@@ -1,5 +1,5 @@
 -- | Running and disturbance.
-module Game.LambdaHack.Running
+module Game.LambdaHack.RunAction
   ( runDir, continueRunDir
   ) where
 
@@ -7,7 +7,7 @@ import qualified Data.IntSet as IS
 import qualified Data.List as L
 import Data.Maybe (isNothing)
 
-import Game.LambdaHack.Action hiding (MonadServerChan, MonadServer,
+import Game.LambdaHack.Action hiding (MonadServer, MonadServerChan,
                                MonadServerRO)
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
@@ -80,6 +80,7 @@ runMode loc dir dirEnterable lxsize =
           RunCorridor (if diagonal lxsize d1 then d2 else d1, True)
         _ -> RunHub  -- a hub of many separate corridors
 
+-- TODO: express as MonadActionRO
 -- | Check for disturbances to running such as newly visible items, monsters.
 runDisturbance :: Point -> Int -> Report
                -> [Actor] -> [Actor] -> Perception -> Point

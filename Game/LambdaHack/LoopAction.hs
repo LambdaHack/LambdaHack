@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
--- | The main loop of the game, processing player and AI moves turn by turn.
-module Game.LambdaHack.Turn (handleTurn) where
+-- | The main loop of the server, processing player and AI moves turn by turn.
+module Game.LambdaHack.LoopAction (handleTurn) where
 
 import Control.Arrow ((&&&))
 import Control.Monad

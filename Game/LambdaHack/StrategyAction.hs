@@ -37,9 +37,7 @@ import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.Frequency
 import Game.LambdaHack.Vector
 
--- TODO: move AI back to Client and spawn an extra client for each
--- faction that does the AI (perhaps unless the faction has no leader
--- or is not controlled by player)
+-- TODO: extress many (all?) functions as MonadActionRO
 
 -- | AI proposes possible targets for the actor. Never empty.
 targetStrategy :: MonadClientRO m => ActorId -> m (Strategy (Maybe Target))

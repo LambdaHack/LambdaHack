@@ -33,7 +33,7 @@ import Game.LambdaHack.MixedAction
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Random
-import Game.LambdaHack.Running
+import Game.LambdaHack.RunAction
 import Game.LambdaHack.ServerAction
 import Game.LambdaHack.State
 import Game.LambdaHack.Strategy
