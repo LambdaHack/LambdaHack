@@ -14,24 +14,25 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Tuple (swap)
 
-import Game.LambdaHack.Command
+import Game.LambdaHack.Client.CmdPlayer
 import Game.LambdaHack.Config
 import qualified Game.LambdaHack.Key as K
 import Game.LambdaHack.Msg
 
 -- | Bindings and other information about player commands.
 data Binding = Binding
-  { kcmd    :: M.Map K.KM (Text, Bool, Cmd)  -- ^ binding keys to commands
-  , kmacro  :: M.Map K.Key K.Key             -- ^ macro map
-  , kmajor  :: [K.KM]                        -- ^ major commands
-  , kminor  :: [K.KM]                        -- ^ minor commands
-  , krevMap :: M.Map Cmd K.KM                -- ^ from cmds to their main keys
+  { kcmd    :: M.Map K.KM (Text, Bool, CmdPlayer)
+                                     -- ^ binding keys to commands
+  , kmacro  :: M.Map K.Key K.Key     -- ^ macro map
+  , kmajor  :: [K.KM]                -- ^ major commands
+  , kminor  :: [K.KM]                -- ^ minor commands
+  , krevMap :: M.Map CmdPlayer K.KM  -- ^ from cmds to their main keys
   }
 
 -- | The associaction of commands to keys defined in config.
-configCmds :: ConfigUI -> [(K.KM, Cmd)]
+configCmds :: ConfigUI -> [(K.KM, CmdPlayer)]
 configCmds ConfigUI{configCommands} =
-  let mkCommand (key, def) = ((key, K.NoModifier), read def :: Cmd)
+  let mkCommand (key, def) = ((key, K.NoModifier), read def :: CmdPlayer)
   in map mkCommand configCommands
 
 -- | Binding of keys to movement and other standard commands,
@@ -50,14 +51,14 @@ stdBinding !config@ConfigUI{configMacros} =
            , ((K.Char 's', K.Control), DebugSmell)
            , ((K.Char 'v', K.Control), DebugVision)
            ]
-      mkDescribed cmd = (cmdDescription cmd, noRemoteCmd cmd, cmd)
+      mkDescribed cmd = (cmdDescription cmd, noRemoteCmdPlayer cmd, cmd)
       mkCommand (km, def) = (km, mkDescribed def)
       semList = L.map mkCommand cmdList
   in Binding
   { kcmd = M.fromList semList
   , kmacro
-  , kmajor = L.map fst $ L.filter (majorCmd . snd) cmdList
-  , kminor = L.map fst $ L.filter (minorCmd . snd) cmdList
+  , kmajor = L.map fst $ L.filter (majorCmdPlayer . snd) cmdList
+  , kminor = L.map fst $ L.filter (minorCmdPlayer . snd) cmdList
   , krevMap = M.fromList $ map swap cmdList
   }
 

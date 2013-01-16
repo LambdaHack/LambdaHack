@@ -1,9 +1,9 @@
 {-# LANGUAGE DeriveDataTypeable, GADTs, OverloadedStrings, StandaloneDeriving
              #-}
 -- | Abstract syntax human player commands.
-module Game.LambdaHack.Command
-  ( Cmd(..)
-  , majorCmd, minorCmd, noRemoteCmd, cmdDescription
+module Game.LambdaHack.Client.CmdPlayer
+  ( CmdPlayer(..)
+  , majorCmdPlayer, minorCmdPlayer, noRemoteCmdPlayer, cmdDescription
   ) where
 
 import Data.Text (Text)
@@ -15,7 +15,7 @@ import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.VectorXY
 
 -- | Abstract syntax of player commands.
-data Cmd =
+data CmdPlayer =
     -- These usually take time.
     Apply       { verb :: MU.Part, object :: MU.Part, syms :: [Char] }
   | Project     { verb :: MU.Part, object :: MU.Part, syms :: [Char] }
@@ -51,8 +51,8 @@ data Cmd =
   deriving (Show, Read, Eq, Ord)
 
 -- | Major commands land on the first page of command help.
-majorCmd :: Cmd -> Bool
-majorCmd cmd = case cmd of
+majorCmdPlayer :: CmdPlayer -> Bool
+majorCmdPlayer cmd = case cmd of
   Apply{}       -> True
   Project{}     -> True
   TriggerDir{}  -> True
@@ -67,8 +67,8 @@ majorCmd cmd = case cmd of
   _             -> False
 
 -- | Minor commands land on the second page of command help.
-minorCmd :: Cmd -> Bool
-minorCmd cmd = case cmd of
+minorCmdPlayer :: CmdPlayer -> Bool
+minorCmdPlayer cmd = case cmd of
   TgtFloor    -> True
   TgtEnemy    -> True
   TgtAscend{} -> True
@@ -87,8 +87,8 @@ minorCmd cmd = case cmd of
 -- Not that movement commands are not included, because they take time
 -- on normal levels, but don't take time on remote levels, that is,
 -- in targeting mode.
-noRemoteCmd :: Cmd -> Bool
-noRemoteCmd cmd = case cmd of
+noRemoteCmdPlayer :: CmdPlayer -> Bool
+noRemoteCmdPlayer cmd = case cmd of
   Apply{}       -> True
   Project{}     -> True
   TriggerDir{}  -> True
@@ -99,7 +99,7 @@ noRemoteCmd cmd = case cmd of
   _             -> False
 
 -- | Description of player commands.
-cmdDescription :: Cmd -> Text
+cmdDescription :: CmdPlayer -> Text
 cmdDescription cmd = case cmd of
   Apply{..}       -> makePhrase [verb, MU.AW object]
   Project{..}     -> makePhrase [verb, MU.AW object]

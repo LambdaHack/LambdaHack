@@ -1,6 +1,6 @@
 {-# LANGUAGE GADTs, OverloadedStrings #-}
 -- | Semantics of player commands.
-module Game.LambdaHack.CommandAction
+module Game.LambdaHack.Client.CmdPlayerAction
   ( cmdSemantics
   ) where
 
@@ -14,8 +14,8 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Client.Action
+import Game.LambdaHack.Client.CmdPlayer
 import Game.LambdaHack.ClientAction
-import Game.LambdaHack.Command
 import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Level
 import Game.LambdaHack.MixedAction
@@ -25,7 +25,7 @@ import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 
 -- | The basic action for a command and whether it takes time.
-cmdAction :: MonadClient m => StateClient -> State -> Cmd
+cmdAction :: MonadClient m => StateClient -> State -> CmdPlayer
           -> WriterT Slideshow m (Maybe CmdSer)
 cmdAction cli s cmd =
   let tgtMode = stgtMode cli
@@ -96,7 +96,7 @@ cmdAction cli s cmd =
 -- Time cosuming commands are marked as such in help and cannot be
 -- invoked in targeting mode on a remote level (level different than
 -- the level of the selected hero).
-cmdSemantics :: MonadClient m => Cmd -> WriterT Slideshow m (Maybe CmdSer)
+cmdSemantics :: MonadClient m => CmdPlayer -> WriterT Slideshow m (Maybe CmdSer)
 cmdSemantics cmd = do
   Just leaderOld <- getsClient getLeader
   arenaOld <- getsState sarena
@@ -104,7 +104,7 @@ cmdSemantics cmd = do
   cli <- getClient
   loc <- getState
   let sem = cmdAction cli loc cmd
-  mcmdS <- if noRemoteCmd cmd
+  mcmdS <- if noRemoteCmdPlayer cmd
            then checkCursor sem
            else sem
   arena <- getsState sarena
