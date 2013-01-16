@@ -1,11 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
--- | Dungeon operations that require 'State', 'Kind.COps'
--- or 'Config.Config' type.
-module Game.LambdaHack.DungeonState
-  ( -- * Dungeon generation
-    FreshDungeon(..), generate
-    -- * Dungeon travel
-  , whereTo
+-- | The main dungeon generation routine.
+module Game.LambdaHack.Server.DungeonGen
+  ( FreshDungeon(..), dungeonGen
   ) where
 
 import Control.Monad
@@ -17,7 +13,6 @@ import Data.Maybe
 import Data.Text (Text)
 import qualified System.Random as R
 
-import Game.LambdaHack.Cave hiding (TileMapXY)
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.ItemKind
@@ -28,11 +23,11 @@ import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
-import Game.LambdaHack.Place
 import Game.LambdaHack.Point
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Random
-import Game.LambdaHack.State
+import Game.LambdaHack.Server.DungeonGen.Cave hiding (TileMapXY)
+import Game.LambdaHack.Server.DungeonGen.Place
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
@@ -145,8 +140,8 @@ data FreshDungeon = FreshDungeon
   }
 
 -- | Generate the dungeon for a new game.
-generate :: Kind.COps -> FlavourMap -> DiscoRev -> Config -> Rnd FreshDungeon
-generate cops flavour discoRev config@Config{configDepth}  =
+dungeonGen :: Kind.COps -> FlavourMap -> DiscoRev -> Config -> Rnd FreshDungeon
+dungeonGen cops flavour discoRev config@Config{configDepth}  =
   let gen :: R.StdGen -> Int -> (R.StdGen, (LevelId, Level))
       gen g k =
         let (g1, g2) = R.split g
@@ -162,18 +157,3 @@ generate cops flavour discoRev config@Config{configDepth}  =
             freshDepth = configDepth
         in (FreshDungeon{..}, gd)
   in St.state con
-
--- | Compute the level identifier and starting position on the level,
--- after a level change.
-whereTo :: State    -- ^ game state
-        -> LevelId  -- ^ start from this level
-        -> Int      -- ^ jump this many levels
-        -> Maybe (LevelId, Point)
-                    -- ^ target level and the position of its receiving stairs
-whereTo s lid k = assert (k /= 0) $
-  let n = levelNumber lid
-      nln = n - k
-      ln = levelDefault nln
-  in case M.lookup ln (sdungeon s) of
-    Nothing     -> Nothing
-    Just lvlTrg -> Just (ln, (if k < 0 then fst else snd) (lstair lvlTrg))

@@ -1,26 +1,26 @@
 -- | Generation of places from place kinds.
 {-# LANGUAGE RankNTypes #-}
-module Game.LambdaHack.Place
+module Game.LambdaHack.Server.DungeonGen.Place
   ( TileMapXY, Place(..), placeValid, buildFence, buildPlace
   ) where
 
 import Data.Binary
-import qualified Data.Map as M
 import qualified Data.List as L
+import qualified Data.Map as M
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Content.PlaceKind
-import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Area
-import Game.LambdaHack.PointXY
-import Game.LambdaHack.Misc
-import Game.LambdaHack.Msg()
-import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.Random
 import Game.LambdaHack.Content.CaveKind
+import Game.LambdaHack.Content.PlaceKind
+import Game.LambdaHack.Content.TileKind
+import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Misc
+import Game.LambdaHack.Msg ()
+import Game.LambdaHack.PointXY
+import Game.LambdaHack.Random
+import Game.LambdaHack.Utils.Assert
 
 -- TODO: use more, rewrite as needed, document each field.
 -- | The parameters of a place. Most are immutable and set

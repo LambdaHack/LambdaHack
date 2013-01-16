@@ -4,7 +4,7 @@
 -- TODO: Document an export list after it's rewritten according to #17.
 module Game.LambdaHack.ActorState
   ( isProjectile, isAHero, calculateTotal
-  , initialHeroes, allActorsAnyLevel
+  , initialHeroes, allActorsAnyLevel, whereTo
   , posToActor, deleteActor, addHero, addMonster, updateActorItem
   , insertActor, heroList, memActor, getActorBody, updateActorBody
   , hostileList, getActorItem, tryFindHeroK, dangerousList
@@ -228,6 +228,22 @@ tryFindHeroK s k =
         | k > 0 && k < 10 = Char.intToDigit k
         | otherwise       = assert `failure` k
   in tryFindActor s ((== Just c) . bsymbol)
+
+
+-- | Compute the level identifier and starting position on the level,
+-- after a level change.
+whereTo :: State    -- ^ game state
+        -> LevelId  -- ^ start from this level
+        -> Int      -- ^ jump this many levels
+        -> Maybe (LevelId, Point)
+                    -- ^ target level and the position of its receiving stairs
+whereTo s lid k = assert (k /= 0) $
+  let n = levelNumber lid
+      nln = n - k
+      ln = levelDefault nln
+  in case M.lookup ln (sdungeon s) of
+    Nothing     -> Nothing
+    Just lvlTrg -> Just (ln, (if k < 0 then fst else snd) (lstair lvlTrg))
 
 -- * The operations below disregard levels other than the current.
 

@@ -6,13 +6,13 @@ module Game.LambdaHack.Point
   ) where
 
 import qualified Data.List as L
+import Data.Text (Text)
 
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.VectorXY
 import Game.LambdaHack.Area
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Utils.Assert
-import Data.Text (Text)
 
 -- | The type of positions on the 2D level map, heavily optimized.
 --

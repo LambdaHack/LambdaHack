@@ -1,5 +1,5 @@
 -- | Generation of caves (not yet inhabited dungeon levels) from cave kinds.
-module Game.LambdaHack.Cave
+module Game.LambdaHack.Server.DungeonGen.Cave
   ( TileMapXY, SecretMapXY, ItemMapXY, Cave(..), buildCave
   ) where
 
@@ -10,17 +10,17 @@ import Data.Maybe
 import Data.Text (Text)
 
 import Game.LambdaHack.Area
-import Game.LambdaHack.AreaRnd
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Misc
-import Game.LambdaHack.Place hiding (TileMapXY)
-import qualified Game.LambdaHack.Place as Place
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Random
+import Game.LambdaHack.Server.DungeonGen.AreaRnd
+import Game.LambdaHack.Server.DungeonGen.Place hiding (TileMapXY)
+import qualified Game.LambdaHack.Server.DungeonGen.Place as Place
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert

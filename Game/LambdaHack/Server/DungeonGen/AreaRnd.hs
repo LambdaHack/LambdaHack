@@ -1,5 +1,5 @@
 -- | Operations on the 'Area' type that involve random numbers.
-module Game.LambdaHack.AreaRnd
+module Game.LambdaHack.Server.DungeonGen.AreaRnd
   ( -- * Picking points inside areas
     xyInArea, mkRoom, mkVoidRoom
     -- * Choosing connections
@@ -10,10 +10,10 @@ module Game.LambdaHack.AreaRnd
 
 import qualified Data.Set as S
 
-import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.PointXY
 import Game.LambdaHack.Area
+import Game.LambdaHack.PointXY
 import Game.LambdaHack.Random
+import Game.LambdaHack.Utils.Assert
 
 -- Picking random points inside areas
 

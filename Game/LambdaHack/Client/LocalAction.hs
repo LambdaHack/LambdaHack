@@ -25,11 +25,10 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.Action
+import Game.LambdaHack.Client.Binding
 import qualified Game.LambdaHack.Client.CmdPlayer as CmdPlayer
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.DungeonState
 import qualified Game.LambdaHack.Effect as Effect
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Item

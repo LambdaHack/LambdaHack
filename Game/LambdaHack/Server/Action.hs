@@ -44,7 +44,7 @@ import Game.LambdaHack.Config
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
-import qualified Game.LambdaHack.DungeonState as DungeonState
+import qualified Game.LambdaHack.Server.DungeonGen as DungeonGen
 import Game.LambdaHack.Faction
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Kind as Kind
@@ -232,8 +232,8 @@ gameReset cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
         let f ik = isymbol (okind ik)
                    `notElem` (ritemProject $ Kind.stdRuleset corule)
             disco = M.filter f sdiscoS
-        DungeonState.FreshDungeon{..} <-
-          DungeonState.generate cops sflavour sdiscoRev sconfig
+        DungeonGen.FreshDungeon{..} <-
+          DungeonGen.dungeonGen cops sflavour sdiscoRev sconfig
         let factionName = configFaction sconfig
         playerFactionKindId <- opick factionName (const True)
         let g gkind fk mk = do
