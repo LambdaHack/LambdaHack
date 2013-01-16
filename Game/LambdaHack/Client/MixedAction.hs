@@ -50,7 +50,7 @@ gameSave = do
 
 -- *** CfgDump
 
-dumpConfig :: MonadActionRoot m => m CmdSer
+dumpConfig :: MonadActionAbort m => m CmdSer
 dumpConfig = return CfgDumpSer
 
 -- ** Apply
@@ -158,7 +158,7 @@ bumpTile leader dpos feat = do
     else guessBump cotile feat t
 
 -- | Guess and report why the bump command failed.
-guessBump :: MonadActionRoot m => Kind.Ops TileKind -> F.Feature -> Kind.Id TileKind -> m a
+guessBump :: MonadActionAbort m => Kind.Ops TileKind -> F.Feature -> Kind.Id TileKind -> m a
 guessBump cotile F.Openable t | Tile.hasFeature cotile F.Closable t =
   abortWith "already open"
 guessBump _ F.Openable _ =

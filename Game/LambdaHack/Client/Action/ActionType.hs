@@ -1,109 +1,21 @@
 {-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, OverloadedStrings #-}
 -- | The main game action monad type implementation. Just as any other
 -- component of the library, this implementation can be substituted.
--- This module should not be imported anywhere in the library.
-module Game.LambdaHack.ActionType
-  ( FunAction, Action, executor, FunActionCli, ActionCli, executorCli
+-- This module should not be imported anywhere except in 'Action'
+-- to expose the executor to any code using the library.
+module Game.LambdaHack.Client.Action.ActionType
+  ( FunActionCli, ActionCli, executorCli
   ) where
 
-import Control.Monad.Reader.Class
 import qualified Data.Text as T
 
 import Game.LambdaHack.Action
-import Game.LambdaHack.ActionClass
+import Game.LambdaHack.Client.Action.ActionClass
 import Game.LambdaHack.Client.Action.Frontend
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.ConfigUI
 import Game.LambdaHack.Msg
 import Game.LambdaHack.State
-
--- | The type of the function inside any server action.
-type FunAction a =
-   Pers                               -- ^ cached perception
-   -> (State -> StateServer -> ConnDict -> a -> IO ())
-                                      -- ^ continuation
-   -> (Msg -> IO ())                  -- ^ failure/reset continuation
-   -> State                           -- ^ current global state
-   -> StateServer                     -- ^ current server state
-   -> ConnDict                        -- ^ client-server connection information
-   -> IO ()
-
--- | Actions of player-controlled characters and of any other actors.
-newtype Action a = Action {runAction :: FunAction a}
-
--- | Invokes the action continuation on the provided argument.
-returnAction :: a -> Action a
-returnAction x = Action (\_p k _a s ser d -> k s ser d x)
-
--- | Distributes the session and shutdown continuation,
--- threads the state and history.
-bindAction :: Action a -> (a -> Action b) -> Action b
-bindAction m f = Action (\p k a s ser d ->
-                          let next ns nser nd x =
-                                runAction (f x) p k a ns nser nd
-                          in runAction m p next a s ser d)
-
-instance Monad Action where
-  return = returnAction
-  (>>=)  = bindAction
-
--- TODO: make sure fmap is inlinded and all else is inlined in this file
-instance Functor Action where
-  fmap f m =
-    Action (\p k a s ser d ->
-               runAction m p (\s' ser' d' ->
-                                   k s' ser' d'. f) a s ser d)
-
-instance Show (Action a) where
-  show _ = "an action"
-
-instance MonadActionRoot Action where
-  tryWith exc m =
-    Action (\p k a s ser d ->
-             let runA msg = runAction (exc msg) p k a s ser d
-             in runAction m p k runA s ser d)
-  abortWith msg = Action (\_p _k a _s _ser _d -> a msg)
-
-instance MonadReader Pers Action where
-  ask       = Action (\p k _a s ser d -> k s ser d p)
-  local f m = Action (\p k a s ser d ->
-                         runAction m (f p) k a s ser d)
-
-instance MonadActionRO Action where
-  getState  = Action (\_p k _a s ser d -> k s ser d s)
-  getsState = (`fmap` getState)
-
-instance MonadAction Action where
-  modifyState f = Action (\_p k _a s ser d -> k (f s) ser d ())
-  putState      = modifyState . const
-  liftIO x = Action (\_p k _a s ser d -> x >>= k s ser d)
-
-instance MonadServerRO Action where
-  getServer  = Action (\_p k _a s ser d -> k s ser d ser)
-  getsServer = (`fmap` getServer)
-
-instance MonadServer Action where
-  modifyServer f = Action (\_p k _a s ser d -> k s (f ser) d ())
-  putServer      = modifyServer . const
-
-instance MonadServerChan Action where
-  getDict        = Action (\_p k _a s ser d -> k s ser d d)
-  getsDict       = (`fmap` getDict)
-  modifyDict f   = Action (\_p k _a s ser d -> k s ser (f d) ())
-  putDict        = modifyDict . const
-
--- | Run an action, with a given session, state and history, in the @IO@ monad.
-executor :: Action () -> Pers -> State -> StateServer -> ConnDict -> IO ()
-executor m pers s ser d =
-  runAction m
-    pers
-    (\_ _ _ _ -> return ())  -- final continuation returns result
-    (\msg -> let err = "unhandled server abort for side" <+> showT (getSide s)
-                       <+> ":" <+> msg
-             in fail $ T.unpack err)
-    s
-    ser
-    d
 
 -- TODO: check if we can move factionPerception from state to Reader
 -- | The type of the function inside any client action.
@@ -146,7 +58,7 @@ instance Functor ActionCli where
 instance Show (ActionCli a) where
   show _ = "an action"
 
-instance MonadActionRoot ActionCli where
+instance MonadActionAbort ActionCli where
   tryWith exc m =
     ActionCli (\c k a s cli d ->
              let runA msg = runActionCli (exc msg) c k a s cli d
@@ -160,7 +72,6 @@ instance MonadActionRO ActionCli where
 instance MonadAction ActionCli where
   modifyState f  = ActionCli (\_c k _a s cli d -> k (f s) cli d ())
   putState       = modifyState . const
-  liftIO x = ActionCli (\_c k _a s cli d -> x >>= k s cli d)
 
 instance MonadClientRO ActionCli where
   getsSession f = ActionCli (\c k _a s cli d -> k s cli d (f c))
@@ -170,6 +81,7 @@ instance MonadClientRO ActionCli where
 instance MonadClient ActionCli where
   modifyClient f = ActionCli (\_c k _a s cli d -> k s (f cli) d ())
   putClient      = modifyClient . const
+  liftIO x       = ActionCli (\_c k _a s cli d -> x >>= k s cli d)
 
 instance MonadClientChan ActionCli where
   getChan        = ActionCli (\_c k _a s cli d -> k s cli d d)

@@ -7,6 +7,7 @@ module Game.LambdaHack.Client.Action
   ( -- * Action monads
     MonadClientRO( getClient, getsClient )
   , MonadClient( putClient, modifyClient )
+  , executorCli
     -- * Abort exception handlers
   , tryWithSlide
     -- * Accessors to the game session Reader and the Perception Reader
@@ -39,11 +40,13 @@ import qualified Data.Map as M
 import Data.Maybe
 
 import Game.LambdaHack.Action
-import Game.LambdaHack.ActionClass (ConnClient (..), MonadAction (..),
-                                    MonadClient (..), MonadClientChan (..),
-                                    MonadClientRO (..), Session (..))
 import Game.LambdaHack.Actor
+import Game.LambdaHack.Client.Action.ActionClass (MonadClient (..),
+                                                  MonadClientChan (..),
+                                                  MonadClientRO (..),
+                                                  Session (..))
 import Game.LambdaHack.Client.Action.Frontend
+import Game.LambdaHack.Client.Action.ActionType (executorCli)
 import Game.LambdaHack.Client.Animation (Frames, SingleFrame)
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.ConfigUI

@@ -8,6 +8,7 @@ module Game.LambdaHack.Server.Action
     MonadServerRO( getServer, getsServer )
   , MonadServer( putServer, modifyServer )
   , MonadServerChan
+  , executorSer
     -- * Accessor to the Perception Reader
   , askPerceptionSer
     -- * Turn init operations
@@ -38,7 +39,7 @@ import qualified System.Random as R
 import System.Time
 
 import Game.LambdaHack.Action
-import Game.LambdaHack.ActionClass (MonadAction (..), MonadServerRO(..), MonadServer(..), MonadServerChan(..), ConnDict, ConnClient(..))
+import Game.LambdaHack.Server.Action.ActionClass (MonadServerRO(..), MonadServer(..), MonadServerChan(..), ConnDict)
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import qualified Game.LambdaHack.Client.Action.ConfigIO as Client.ConfigIO
@@ -58,6 +59,7 @@ import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import qualified Game.LambdaHack.Server.Action.ConfigIO as ConfigIO
 import Game.LambdaHack.Server.Action.HighScore (register)
+import Game.LambdaHack.Server.Action.ActionType (executorSer)
 import qualified Game.LambdaHack.Server.Action.Save as Save
 import Game.LambdaHack.Server.Config
 import qualified Game.LambdaHack.Server.DungeonGen as DungeonGen
@@ -304,7 +306,7 @@ gameReset cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
         return (glo, ser, funReset)
   return $! St.evalState rnd dungeonGen
 
-gameResetAction :: MonadAction m
+gameResetAction :: MonadServer m
                 => Kind.COps
                 -> m (State, StateServer, FactionId -> (StateClient, State))
 gameResetAction = liftIO . gameReset
@@ -315,12 +317,12 @@ gameResetAction = liftIO . gameReset
 -- in particular verify content consistency.
 -- Then create the starting game config from the default config file
 -- and initialize the engine with the starting session.
-startFrontend :: (MonadActionRoot m, MonadActionRoot n)
+startFrontend :: (MonadActionAbort m, MonadActionAbort n)
               => (m () -> Pers -> State -> StateServer -> ConnDict -> IO ())
                  -> (n () -> FrontendSession -> Binding -> ConfigUI
                      -> State -> StateClient -> ConnClient -> IO ())
               -> Kind.COps -> m () -> n () -> IO ()
-startFrontend executor executorCli
+startFrontend executorS executorC
               !copsSlow@Kind.COps{corule, cotile=tile}
               loopServer loopClient = do
   -- Compute and insert auxiliary optimized components into game content,
@@ -342,20 +344,20 @@ startFrontend executor executorCli
 --        d <- getDict
 --        -- Save history often, at each game exit, in case of crashes.
 --        liftIO $ Save.rmBkpSaveHistory sconfig sconfigUI d
-      loop sfs = start executor executorCli
+      loop sfs = start executorS executorC
                        sfs cops sbinding sconfig sconfigUI
                        handleServer loopClient
   startup font loop
 
 -- | Either restore a saved game, or setup a new game.
 -- Then call the main game loop.
-start :: (MonadActionRoot m, MonadActionRoot n)
+start :: (MonadActionAbort m, MonadActionAbort n)
       => (m () -> Pers -> State -> StateServer -> ConnDict -> IO ())
       -> (n () -> FrontendSession -> Binding -> ConfigUI
           -> State -> StateClient -> ConnClient -> IO ())
       -> FrontendSession -> Kind.COps -> Binding -> Config -> ConfigUI
       -> m () -> n () -> IO ()
-start executor executorCli sfs cops@Kind.COps{corule}
+start executorS executorC sfs cops@Kind.COps{corule}
       sbinding sconfig sconfigUI handleServer loopClient = do
   let title = rtitle $ Kind.stdRuleset corule
       pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
@@ -398,15 +400,15 @@ start executor executorCli sfs cops@Kind.COps{corule}
   let d = IM.map snd $ IM.fromAscList dAssocs
       forkClient (_, ((cli, loc), (chan, mchan))) = do
         void $ forkIO
-          $ executorCli loopClient sfs sbinding sconfigUI loc cli chan
+          $ executorC loopClient sfs sbinding sconfigUI loc cli chan
         case mchan of
           Nothing -> return ()
           Just ch ->
             -- The AI client does not know it's not the main client.
             void $ forkIO
-              $ executorCli loopClient sfs sbinding sconfigUI loc cli ch
+              $ executorC loopClient sfs sbinding sconfigUI loc cli ch
   mapM_ forkClient dAssocs
-  executor handleServer pers glo ser d
+  executorS handleServer pers glo ser d
 
 switchGlobalSelectedSide :: MonadServer m => FactionId -> m ()
 switchGlobalSelectedSide =

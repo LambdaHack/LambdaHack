@@ -11,7 +11,6 @@ import qualified Content.PlaceKind
 import qualified Content.RuleKind
 import qualified Content.StrategyKind
 import qualified Content.TileKind
-import qualified Game.LambdaHack.ActionType as ActionType
 import Game.LambdaHack.Client
 import Game.LambdaHack.Client.Action
 import qualified Game.LambdaHack.Kind as Kind
@@ -35,5 +34,5 @@ main =
         , costrat = Kind.createOps Content.StrategyKind.cdefs
         , cotile  = Kind.createOps Content.TileKind.cdefs
         }
-  in startFrontend ActionType.executor ActionType.executorCli
+  in startFrontend executorSer executorCli
                    cops loopServer (loopClient2 cmdUpdateCli cmdQueryCli)

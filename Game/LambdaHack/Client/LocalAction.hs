@@ -437,7 +437,7 @@ endTargetingMsg = do
 -- * Clear
 
 -- | Clear current messages, show the next screen if any.
-clearCurrent :: MonadActionRoot m => m ()
+clearCurrent :: MonadActionAbort m => m ()
 clearCurrent = return ()
 
 -- * History

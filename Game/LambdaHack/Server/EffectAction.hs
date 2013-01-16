@@ -44,7 +44,7 @@ actorVerb coactor a v =
 
 -- TODO: center screen, flash the background, etc. Perhaps wait for SPACE.
 -- | Focus on the hero being wounded/displaced/etc.
-focusIfOurs :: MonadActionRoot m => ActorId -> m Bool
+focusIfOurs :: MonadActionAbort m => ActorId -> m Bool
 focusIfOurs _target = do
 --  s  <- getState
   if True -- isAHero s target
@@ -204,7 +204,7 @@ eff Effect.Descend _ _ target power = do
            then (True, "")
            else (True, actorVerb coactor tm "find a way downstairs")
 
-nullEffect :: MonadActionRoot m => m (Bool, Text)
+nullEffect :: MonadActionAbort m => m (Bool, Text)
 nullEffect = return (False, "Nothing happens.")
 
 -- TODO: refactor with actorAttackActor or perhaps displace the other
