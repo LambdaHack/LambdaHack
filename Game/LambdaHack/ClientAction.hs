@@ -27,7 +27,7 @@ import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Binding
-import qualified Game.LambdaHack.Command as Command hiding (CmdSer)
+import qualified Game.LambdaHack.Command as Command
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.DungeonState
 import qualified Game.LambdaHack.Effect as Effect

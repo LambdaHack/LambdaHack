@@ -45,7 +45,7 @@ import Game.LambdaHack.Actor
 import Game.LambdaHack.Animation (Frames, SingleFrame)
 import Game.LambdaHack.Binding
 import Game.LambdaHack.Client.Action.Frontend
-import Game.LambdaHack.Command
+import Game.LambdaHack.CmdCli
 import Game.LambdaHack.Config
 import Game.LambdaHack.Draw
 import qualified Game.LambdaHack.Key as K

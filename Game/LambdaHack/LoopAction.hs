@@ -13,12 +13,13 @@ import qualified Data.Text as T
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Command
-import Game.LambdaHack.CommandAction
+import Game.LambdaHack.CmdCli
+import Game.LambdaHack.CmdSer
 import Game.LambdaHack.EffectAction
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
+import Game.LambdaHack.Server
 import Game.LambdaHack.Server.Action
 import Game.LambdaHack.ServerAction
 import Game.LambdaHack.State
@@ -127,7 +128,7 @@ handleActors subclipStart = withPerception $ do
           -- and is perhaps better done when the other factions have
           -- selected leaders as well.
             squitNew <- getsServer squit
-            when (timedCmd cmdS && isNothing squitNew) $
+            when (timedCmdSer cmdS && isNothing squitNew) $
               maybe (return ()) advanceTime leaderNew
             handleActors $ btime m
         else do

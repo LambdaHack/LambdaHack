@@ -12,8 +12,8 @@ import qualified Content.RuleKind
 import qualified Content.StrategyKind
 import qualified Content.TileKind
 import qualified Game.LambdaHack.ActionType as ActionType
+import Game.LambdaHack.Client
 import Game.LambdaHack.Client.Action
-import Game.LambdaHack.CommandAction
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.LoopAction
 import Game.LambdaHack.Server.Action

@@ -14,7 +14,7 @@ import Data.Dynamic
 
 import Game.LambdaHack.Client.Action.Frontend
 import Game.LambdaHack.Binding
-import Game.LambdaHack.Command
+import Game.LambdaHack.CmdCli
 import Game.LambdaHack.Config
 import Game.LambdaHack.Msg
 import Game.LambdaHack.State

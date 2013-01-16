@@ -16,7 +16,8 @@ import qualified Game.LambdaHack.Ability as Ability
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Command
+import Game.LambdaHack.Client.Action
+import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
@@ -36,7 +37,6 @@ import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.Frequency
 import Game.LambdaHack.Vector
-import Game.LambdaHack.Client.Action
 
 -- TODO: extress many (all?) functions as MonadActionRO
 

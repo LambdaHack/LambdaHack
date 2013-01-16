@@ -39,7 +39,7 @@ import Game.LambdaHack.ActorState
 import Game.LambdaHack.Binding
 import qualified Game.LambdaHack.Client.Action.ConfigIO as Client.ConfigIO
 import Game.LambdaHack.Client.Action.Frontend
-import Game.LambdaHack.Command
+import Game.LambdaHack.CmdCli
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind

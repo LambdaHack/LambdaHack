@@ -15,8 +15,9 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
+import Game.LambdaHack.Client.Action
 import Game.LambdaHack.ClientAction
-import Game.LambdaHack.Command
+import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Draw
@@ -32,7 +33,6 @@ import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
-import Game.LambdaHack.Client.Action
 
 default (Text)
 
