@@ -28,6 +28,7 @@ import Game.LambdaHack.ActorState
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Binding
 import qualified Game.LambdaHack.Client.CmdPlayer as CmdPlayer
+import Game.LambdaHack.Client.State
 import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Effect as Effect
 import qualified Game.LambdaHack.Feature as F

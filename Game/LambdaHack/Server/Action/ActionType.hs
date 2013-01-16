@@ -12,7 +12,9 @@ import qualified Data.Text as T
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Msg
+import Game.LambdaHack.Perception
 import Game.LambdaHack.Server.Action.ActionClass
+import Game.LambdaHack.Server.State
 import Game.LambdaHack.State
 
 -- | The type of the function inside any server action.

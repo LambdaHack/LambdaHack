@@ -17,10 +17,12 @@ import System.Directory
 import System.FilePath
 import System.IO.Unsafe (unsafePerformIO)
 
-import Game.LambdaHack.Client.ConfigUI
+import Game.LambdaHack.Client.Config
+import Game.LambdaHack.Client.State
 import Game.LambdaHack.Faction
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Server.Config
+import Game.LambdaHack.Server.State
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.File
 

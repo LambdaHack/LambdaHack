@@ -5,13 +5,12 @@
 module Game.LambdaHack.ActorState
   ( isProjectile, isAHero, calculateTotal
   , allActorsAnyLevel, nearbyFreePos, whereTo
-  , posToActor, deleteActor, addMonster, updateActorItem
+  , posToActor, deleteActor, updateActorItem
   , insertActor, heroList, memActor, getActorBody, updateActorBody
   , hostileList, getActorItem, tryFindHeroK, dangerousList
-  , factionList, addProjectile, foesAdjacent, targetToPos, hostileAssocs
+  , factionList, foesAdjacent, hostileAssocs
   ) where
 
-import Control.Monad
 import qualified Data.Char as Char
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
@@ -19,25 +18,19 @@ import qualified Data.List as L
 import qualified Data.Map as M
 import Data.Maybe
 import Data.Text (Text)
-import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Actor
-import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
-import Game.LambdaHack.Msg
 import Game.LambdaHack.Point
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
-import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Vector
 
 -- | Checks whether an actor identifier represents a hero.
 isProjectile :: State -> ActorId -> Bool
@@ -72,17 +65,6 @@ factionAssocs l lvl =
 factionList :: [FactionId] -> State -> [Actor]
 factionList l s =
   filter (\ m -> bfaction m `elem` l) $ IM.elems $ lactor $ getArena s
-
--- | Calculate the position of leader's target.
-targetToPos :: StateClient -> State -> Maybe Point
-targetToPos cli@StateClient{scursor} s = do
-  leader <- getLeader cli
-  case getTarget leader cli of
-    Just (TPos pos) -> return pos
-    Just (TEnemy a _ll) -> do
-      guard $ memActor a s           -- alive and visible?
-      return $! bpos (getActorBody a s)
-    Nothing -> return scursor
 
 -- | Finds an actor at a position on the current level. Perception irrelevant.
 posToActor :: Point -> State -> Maybe ActorId
@@ -120,59 +102,7 @@ foesAdjacent lxsize lysize loc foes =
       lfs = IS.fromList $ L.map bpos foes
   in not $ IS.null $ IS.intersection vic lfs
 
--- Adding monsters
-
--- | Create a new monster in the level, at a given position
--- and with a given actor kind and HP.
-addMonster :: Kind.Ops TileKind -> Kind.Id ActorKind -> Int -> Point
-           -> FactionId -> Bool -> State -> StateServer
-           -> (State, StateServer)
-addMonster cotile mk hp ppos bfaction bproj s ser@StateServer{scounter} =
-  let loc = nearbyFreePos cotile ppos s
-      m = template mk Nothing Nothing hp loc (getTime s) bfaction bproj
-  in ( updateArena (updateActor (IM.insert scounter m)) s
-     , ser {scounter = scounter + 1} )
-
--- Adding projectiles
-
--- | Create a projectile actor containing the given missile.
-addProjectile :: Kind.COps -> Item -> Point -> FactionId
-              -> [Point] -> Time -> State -> StateServer
-              -> (State, StateServer)
-addProjectile Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}}
-              item loc bfaction path btime
-              s ser@StateServer{scounter} =
-  let ik = okind (fromJust $ jkind (sdisco s) item)
-      speed = speedFromWeight (iweight ik) (itoThrow ik)
-      range = rangeFromSpeed speed
-      adj | range < 5 = "falling"
-          | otherwise = "flying"
-      -- Not much details about a fast flying object.
-      (object1, object2) = partItem coitem M.empty item
-      name = makePhrase [MU.AW $ MU.Text adj, object1, object2]
-      dirPath = take range $ displacePath path
-      m = Actor
-        { bkind   = projectileKindId coactor
-        , bsymbol = Nothing
-        , bname   = Just name
-        , bcolor  = Nothing
-        , bspeed  = Just speed
-        , bhp     = 0
-        , bdirAI  = Nothing
-        , bpath   = Just dirPath
-        , bpos    = loc
-        , bletter = 'a'
-        , btime
-        , bwait   = timeZero
-        , bfaction
-        , bproj   = True
-        }
-      upd = updateActor (IM.insert scounter m)
-            . updateInv (IM.insert scounter [item])
-  in ( updateArena upd s
-     , ser {scounter = scounter + 1} )
-
--- * These few operations look at all levels of the dungeon.
+-- * These few operations look at, potentially, all levels of the dungeon.
 
 -- | The list of all non-projectile actors and their levels in the dungeon,
 -- starting with the selected level.
@@ -200,7 +130,6 @@ tryFindHeroK s k =
         | k > 0 && k < 10 = Char.intToDigit k
         | otherwise       = assert `failure` k
   in tryFindActor s ((== Just c) . bsymbol)
-
 
 -- | Compute the level identifier and starting position on the level,
 -- after a level change.

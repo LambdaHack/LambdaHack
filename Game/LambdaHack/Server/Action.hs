@@ -39,13 +39,13 @@ import qualified System.Random as R
 import System.Time
 
 import Game.LambdaHack.Action
-import Game.LambdaHack.Server.Action.ActionClass (MonadServerRO(..), MonadServer(..), MonadServerChan(..), ConnDict)
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import qualified Game.LambdaHack.Client.Action.ConfigIO as Client.ConfigIO
 import Game.LambdaHack.Client.Action.Frontend
 import Game.LambdaHack.Client.Binding
-import Game.LambdaHack.Client.ConfigUI
+import Game.LambdaHack.Client.Config
+import Game.LambdaHack.Client.State
 import Game.LambdaHack.CmdCli
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
@@ -57,12 +57,14 @@ import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
+import Game.LambdaHack.Server.Action.ActionClass (MonadServerRO(..), MonadServer(..), MonadServerChan(..), ConnDict)
+import Game.LambdaHack.Server.Action.ActionType (executorSer)
 import qualified Game.LambdaHack.Server.Action.ConfigIO as ConfigIO
 import Game.LambdaHack.Server.Action.HighScore (register)
-import Game.LambdaHack.Server.Action.ActionType (executorSer)
 import qualified Game.LambdaHack.Server.Action.Save as Save
 import Game.LambdaHack.Server.Config
 import qualified Game.LambdaHack.Server.DungeonGen as DungeonGen
+import Game.LambdaHack.Server.State
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert
@@ -77,8 +79,9 @@ withPerception m = do
   sdebugSer <- getsServer sdebugSer
   lvl <- getsState getArena
   arena <- getsState sarena
-  let per side =
-        levelPerception cops configFovMode (stryFov sdebugSer) side lvl
+  let tryFov = stryFov sdebugSer
+      fovMode = fromMaybe configFovMode tryFov
+      per side = levelPerception cops fovMode side lvl
   local (IM.mapWithKey (\side lp -> M.insert arena (per side) lp)) m
 
 -- | Get the current perception of the server.
@@ -117,7 +120,7 @@ saveGameBkp = do
   glo <- getState
   ser <- getServer
   faction <- getsState sfaction
-  let queryCliLoc fid = sendQueryCli fid GameSaveCli  -- TODO: do in parallel
+  let queryCliLoc fid = sendQueryCli fid undefined -- GameSaveCli  -- TODO: do in parallel
   -- TODO: also save the targets from AI clients
   d <- mapM queryCliLoc $ IM.keys faction
 --  configUI <- askConfigUI
@@ -157,7 +160,7 @@ endOrLoop loopServer = do
   s <- getState
   ser <- getServer
   faction <- getsState sfaction
-  let queryCliLoc fid = sendQueryCli fid GameSaveCli  -- TODO: do in parallel
+  let queryCliLoc fid = sendQueryCli fid undefined -- GameSaveCli  -- TODO: do in parallel
   d <- mapM queryCliLoc $ IM.keys faction
   config <- getsServer sconfig
   let (_, total) = calculateTotal s
@@ -217,7 +220,7 @@ restartGame loopServer = do
   (state, ser, funRestart) <- gameResetAction cops
   putState state
   putServer ser
-  funBroadcastCli (uncurry RestartCli . funRestart)
+  funBroadcastCli (uncurry undefined {-RestartCli-} . funRestart)
   -- TODO: send to each client RestartCli; use d in its code; empty channels?
   saveGameBkp
   loopServer
@@ -301,7 +304,9 @@ gameReset cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
             -- This overwrites the "Really save/quit?" messages.
             defLoc = defStateLocal freshDungeon freshDepth
                                    disco faction cops randomCli entryLevel
-            pers = dungeonPerception cops sconfig (sdebugSer ser) glo
+            tryFov = stryFov $ sdebugSer ser
+            fovMode = fromMaybe (configFovMode sconfig) tryFov
+            pers = dungeonPerception cops fovMode glo
             funReset fid = (defCli {sper = pers IM.! fid}, (defLoc fid))
         return (glo, ser, funReset)
   return $! St.evalState rnd dungeonGen
@@ -378,7 +383,9 @@ start executorS executorC sfs cops@Kind.COps{corule}
       dHist = case filter (isPlayerFaction glo) $ IM.keys dMsg of
         [] -> dMsg  -- only robots play
         k : _ -> IM.adjust (\(cli, loc) -> (cli {shistory}, loc)) k dMsg
-      pers = dungeonPerception cops sconfig (sdebugSer ser) glo
+      tryFov = stryFov $ sdebugSer ser
+      fovMode = fromMaybe (configFovMode sconfig) tryFov
+      pers = dungeonPerception cops fovMode glo
       dPer = IM.mapWithKey (\side (cli, loc) ->
                                (cli {sper = pers IM.! side}, loc)) dHist
       mkConnClient = do

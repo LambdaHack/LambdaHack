@@ -15,7 +15,7 @@ import qualified Data.Text as T
 import Data.Tuple (swap)
 
 import Game.LambdaHack.Client.CmdPlayer
-import Game.LambdaHack.Client.ConfigUI
+import Game.LambdaHack.Client.Config
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Msg
 

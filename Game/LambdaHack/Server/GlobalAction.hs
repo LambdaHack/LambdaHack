@@ -9,6 +9,7 @@ import Control.Monad
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import Data.List
+import qualified Data.Map as M
 import Data.Maybe
 import Data.Ratio
 import Data.Text (Text)
@@ -35,6 +36,7 @@ import Game.LambdaHack.Random
 import Game.LambdaHack.Server.Action
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.EffectAction
+import Game.LambdaHack.Server.State
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Time
@@ -167,6 +169,43 @@ projectSer source tpos eps _verb item = do
           broadcastPosCli [spos, pos] $ ProjectCli spos source consumed
         else
           abortWith "blocked"
+
+-- | Create a projectile actor containing the given missile.
+addProjectile :: Kind.COps -> Item -> Point -> FactionId
+              -> [Point] -> Time -> State -> StateServer
+              -> (State, StateServer)
+addProjectile Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}}
+              item loc bfaction path btime
+              s ser@StateServer{scounter} =
+  let ik = okind (fromJust $ jkind (sdisco s) item)
+      speed = speedFromWeight (iweight ik) (itoThrow ik)
+      range = rangeFromSpeed speed
+      adj | range < 5 = "falling"
+          | otherwise = "flying"
+      -- Not much details about a fast flying object.
+      (object1, object2) = partItem coitem M.empty item
+      name = makePhrase [MU.AW $ MU.Text adj, object1, object2]
+      dirPath = take range $ displacePath path
+      m = Actor
+        { bkind   = projectileKindId coactor
+        , bsymbol = Nothing
+        , bname   = Just name
+        , bcolor  = Nothing
+        , bspeed  = Just speed
+        , bhp     = 0
+        , bdirAI  = Nothing
+        , bpath   = Just dirPath
+        , bpos    = loc
+        , bletter = 'a'
+        , btime
+        , bwait   = timeZero
+        , bfaction
+        , bproj   = True
+        }
+      upd = updateActor (IM.insert scounter m)
+            . updateInv (IM.insert scounter [item])
+  in ( updateArena upd s
+     , ser {scounter = scounter + 1} )
 
 -- ** TriggerSer
 

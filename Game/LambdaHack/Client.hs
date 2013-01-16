@@ -25,6 +25,7 @@ import Game.LambdaHack.Client.Draw
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.LocalAction
 import Game.LambdaHack.Client.RunAction
+import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.Strategy
 import Game.LambdaHack.Client.StrategyAction
 import Game.LambdaHack.CmdCli
@@ -190,10 +191,10 @@ cmdUpdateCli cmd = case cmd of
   MoreFullCli msg -> do
     void $ displayMore ColorFull msg
     recordHistory  -- Prevent repeating the ending msgs.
-  RestartCli cli loc -> do
-    shistory <- getsClient shistory
-    putClient cli {shistory}
-    putState loc
+  -- RestartCli cli loc -> do
+  --   shistory <- getsClient shistory
+  --   putClient cli {shistory}
+  --   putState loc
 
 cmdQueryCli :: MonadClient m => CmdQueryCli a -> m a
 cmdQueryCli cmd = case cmd of
@@ -234,10 +235,10 @@ cmdQueryCli cmd = case cmd of
     loc <- getState
     modifyClient $ updateSelectedLeader leader loc
     return leader
-  GameSaveCli -> do
-    cli <- getClient
-    loc <- getState
-    return (cli, loc)
+  -- GameSaveCli -> do
+  --   cli <- getClient
+  --   loc <- getState
+  --   return (cli, loc)
   HandlePlayerCli leader -> handlePlayer leader
   HandleAI actor -> do
     stratTarget <- targetStrategy actor

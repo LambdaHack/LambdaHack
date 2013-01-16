@@ -22,6 +22,7 @@ import Game.LambdaHack.Server
 import Game.LambdaHack.Server.Action
 import Game.LambdaHack.Server.EffectAction
 import Game.LambdaHack.Server.GlobalAction
+import Game.LambdaHack.Server.State
 import Game.LambdaHack.State
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert

@@ -11,8 +11,8 @@ import Data.Monoid
 import Game.LambdaHack.Action
 import Game.LambdaHack.Client.Action.Frontend
 import Game.LambdaHack.Client.Binding
-import Game.LambdaHack.Client.ConfigUI
-import Game.LambdaHack.State
+import Game.LambdaHack.Client.Config
+import Game.LambdaHack.Client.State
 
 -- | The information that is constant across a client playing session,
 -- including many consecutive games in a single session,

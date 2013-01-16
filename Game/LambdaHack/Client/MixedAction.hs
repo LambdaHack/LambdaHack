@@ -20,6 +20,7 @@ import Game.LambdaHack.Client.Draw
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.LocalAction
 import Game.LambdaHack.Client.RunAction
+import Game.LambdaHack.Client.State
 import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind as TileKind

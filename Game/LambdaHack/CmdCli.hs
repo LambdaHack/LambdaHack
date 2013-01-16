@@ -19,7 +19,6 @@ import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
-import Game.LambdaHack.State
 
 -- | Abstract syntax of client commands.
 data CmdCli where
@@ -48,7 +47,7 @@ data CmdUpdateCli =
   | DisplayDelayCli
   | MoreFullCli Msg
   | MoreBWCli Msg
-  | RestartCli StateClient State
+--  | RestartCli StateClient State
   deriving Show
 
 data CmdQueryCli a where
@@ -61,7 +60,7 @@ data CmdQueryCli a where
   ConfirmMoreFullCli::  Msg -> CmdQueryCli Bool
   NullReportCli :: CmdQueryCli Bool
   SetArenaLeaderCli :: LevelId -> ActorId -> CmdQueryCli ActorId
-  GameSaveCli :: CmdQueryCli (StateClient, State)
+--  GameSaveCli :: CmdQueryCli (StateClient, State)
   HandlePlayerCli :: ActorId -> CmdQueryCli (CmdSer, Maybe ActorId, LevelId)
   HandleAI :: ActorId -> CmdQueryCli CmdSer
 

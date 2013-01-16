@@ -1,5 +1,5 @@
 -- | Personal game configuration file type definitions.
-module Game.LambdaHack.Client.ConfigUI
+module Game.LambdaHack.Client.Config
   ( ConfigUI(..)
   ) where
 

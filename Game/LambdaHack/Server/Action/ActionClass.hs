@@ -10,8 +10,9 @@ import Control.Monad.Writer.Strict (WriterT, lift)
 import qualified Data.IntMap as IM
 import Data.Monoid
 
-import Game.LambdaHack.State
 import Game.LambdaHack.Action
+import Game.LambdaHack.Perception
+import Game.LambdaHack.Server.State
 
 -- | Connection information for each client and an optional AI client
 -- for the same faction, indexed by faction identifier.

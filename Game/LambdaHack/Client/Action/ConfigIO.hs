@@ -9,7 +9,7 @@ import System.Directory
 import System.Environment
 import System.FilePath
 
-import Game.LambdaHack.Client.ConfigUI
+import Game.LambdaHack.Client.Config
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Kind as Kind

@@ -17,6 +17,8 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Client.Action
+import Game.LambdaHack.Client.State
+import Game.LambdaHack.Client.Strategy
 import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
@@ -31,7 +33,6 @@ import Game.LambdaHack.Level
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import Game.LambdaHack.State
-import Game.LambdaHack.Client.Strategy
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert

@@ -13,7 +13,8 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Client.Action.ActionClass
 import Game.LambdaHack.Client.Action.Frontend
 import Game.LambdaHack.Client.Binding
-import Game.LambdaHack.Client.ConfigUI
+import Game.LambdaHack.Client.Config
+import Game.LambdaHack.Client.State
 import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 

@@ -21,6 +21,7 @@ import Game.LambdaHack.CmdCli
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Effect as Effect
 import Game.LambdaHack.Faction
 import Game.LambdaHack.Item
@@ -31,6 +32,7 @@ import Game.LambdaHack.Point
 import Game.LambdaHack.Random
 import Game.LambdaHack.Server.Action
 import Game.LambdaHack.Server.Config
+import Game.LambdaHack.Server.State
 import Game.LambdaHack.State
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
@@ -41,6 +43,17 @@ default (Text)
 actorVerb :: Kind.Ops ActorKind -> Actor -> Text -> Text
 actorVerb coactor a v =
   makeSentence [MU.SubjectVerbSg (partActor coactor a) (MU.Text v)]
+
+-- | Create a new monster in the level, at a given position
+-- and with a given actor kind and HP.
+addMonster :: Kind.Ops TileKind -> Kind.Id ActorKind -> Int -> Point
+           -> FactionId -> Bool -> State -> StateServer
+           -> (State, StateServer)
+addMonster cotile mk hp ppos bfaction bproj s ser@StateServer{scounter} =
+  let loc = nearbyFreePos cotile ppos s
+      m = template mk Nothing Nothing hp loc (getTime s) bfaction bproj
+  in ( updateArena (updateActor (IM.insert scounter m)) s
+     , ser {scounter = scounter + 1} )
 
 -- TODO: center screen, flash the background, etc. Perhaps wait for SPACE.
 -- | Focus on the hero being wounded/displaced/etc.

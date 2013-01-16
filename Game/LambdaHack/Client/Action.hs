@@ -45,13 +45,14 @@ import Game.LambdaHack.Client.Action.ActionClass (MonadClient (..),
                                                   MonadClientChan (..),
                                                   MonadClientRO (..),
                                                   Session (..))
-import Game.LambdaHack.Client.Action.Frontend
 import Game.LambdaHack.Client.Action.ActionType (executorCli)
+import Game.LambdaHack.Client.Action.Frontend
 import Game.LambdaHack.Client.Animation (Frames, SingleFrame)
 import Game.LambdaHack.Client.Binding
-import Game.LambdaHack.Client.ConfigUI
+import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.Draw
 import qualified Game.LambdaHack.Client.Key as K
+import Game.LambdaHack.Client.State
 import Game.LambdaHack.CmdCli
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level

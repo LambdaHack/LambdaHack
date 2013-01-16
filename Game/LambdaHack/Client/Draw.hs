@@ -33,6 +33,7 @@ import Game.LambdaHack.Point
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Random
 import Game.LambdaHack.State
+import Game.LambdaHack.Client.State
 import Game.LambdaHack.Time
 import Game.LambdaHack.Vector
 

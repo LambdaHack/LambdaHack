@@ -2,11 +2,13 @@
 -- | Actors perceiving other actors and the dungeon level.
 module Game.LambdaHack.Perception
   ( Perception, levelPerception, totalVisible, actorSeesLoc
+  , Pers, FactionPers, dungeonPerception
   ) where
 
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import qualified Data.List as L
+import qualified Data.Map as M
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Content.ActorKind
@@ -16,6 +18,7 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Point
 import Game.LambdaHack.Server.Fov
+import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 
 newtype PerceptionReachable = PerceptionReachable
@@ -36,6 +39,12 @@ data Perception = Perception
   }
   deriving Show
 
+-- | Perception of a single faction, indexed by level identifier.
+type FactionPers = M.Map LevelId Perception
+
+-- | Perception indexed by faction identifier.
+type Pers = IM.IntMap FactionPers
+
 -- | The set of tiles visible by at least one hero.
 totalVisible :: Perception -> IS.IntSet
 totalVisible = pvisible . ptotal
@@ -45,13 +54,13 @@ actorSeesLoc :: Perception -> ActorId -> Point -> Bool
 actorSeesLoc per aid pos = pos `IS.member` pvisible (pactors per IM.! aid)
 
 -- | Calculate perception of the level.
-levelPerception :: Kind.COps -> FovMode -> Maybe FovMode -> FactionId -> Level
+levelPerception :: Kind.COps -> FovMode -> FactionId -> Level
                 -> Perception
-levelPerception cops@Kind.COps{cotile} configFovMode stryFov
+levelPerception cops@Kind.COps{cotile} configFovMode
                 fid lvl@Level{lactor} =
   let hs = IM.filter (\m -> bfaction m == fid && not (bproj m)) lactor
       reas =
-        IM.map (\h -> computeReachable cops configFovMode stryFov h lvl) hs
+        IM.map (\h -> computeReachable cops configFovMode h lvl) hs
       lreas = map preachable $ IM.elems reas
       totalRea = PerceptionReachable $ IS.unions lreas
       -- TODO: Instead of giving the monster a light source, alter vision.
@@ -60,6 +69,18 @@ levelPerception cops@Kind.COps{cotile} configFovMode stryFov
       f = PerceptionVisible . IS.intersection (pvisible totalVis) . preachable
   in Perception { pactors = IM.map f reas
                 , ptotal  = totalVis }
+
+-- | Calculate perception of a faction.
+factionPerception :: Kind.COps -> FovMode -> State -> FactionId
+                  -> FactionPers
+factionPerception cops configFovMode s fid =
+  M.map (levelPerception cops configFovMode fid) $ sdungeon s
+
+-- | Calculate the perception of the whole dungeon.
+dungeonPerception :: Kind.COps -> FovMode -> State -> Pers
+dungeonPerception cops configFovMode s =
+  let f fid _ = factionPerception cops configFovMode s fid
+  in IM.mapWithKey f $ sfaction s
 
 -- | A position can be directly lit by an ambient shine or a weak, portable
 -- light source, e.g,, carried by a hero. (Only lights of radius 0
@@ -95,16 +116,14 @@ isVisible cotile PerceptionReachable{preachable}
 
 -- | Reachable are all fields on an unblocked path from the hero position.
 -- Actor's own position is considred reachable by him.
-computeReachable :: Kind.COps -> FovMode -> Maybe FovMode
-                 -> Actor -> Level -> PerceptionReachable
+computeReachable :: Kind.COps -> FovMode -> Actor -> Level
+                 -> PerceptionReachable
 computeReachable Kind.COps{cotile, coactor=Kind.Ops{okind}}
-                 configFovMode smarkVision actor lvl =
+                 configFovMode actor lvl =
   let fovMode m =
         if not $ asight $ okind $ bkind m
         then Blind
-        else case smarkVision of
-          Just fm -> fm
-          Nothing -> configFovMode
+        else configFovMode
       ppos = bpos actor
   in PerceptionReachable $
        IS.insert ppos $ IS.fromList $ fullscan cotile (fovMode actor) ppos lvl
