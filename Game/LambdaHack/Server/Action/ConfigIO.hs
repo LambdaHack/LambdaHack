@@ -1,6 +1,7 @@
+-- TODO: factor out parts common with Client.ConfigIO
 -- | Personal game configuration file support.
-module Game.LambdaHack.Action.ConfigIO
-  ( mkConfigRules, mkConfigUI, dump
+module Game.LambdaHack.Server.Action.ConfigIO
+  ( mkConfigRules, dump
   ) where
 
 import qualified Data.Char as Char
@@ -14,7 +15,6 @@ import qualified System.Random as R
 
 import Game.LambdaHack.Config
 import Game.LambdaHack.Content.RuleKind
-import qualified Game.LambdaHack.Key as K
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Utils.Assert
 
@@ -145,33 +145,6 @@ parseConfigRules dataDir cp =
         in map toNumber section
   in Config{..}
 
-parseConfigUI :: FilePath -> CP -> ConfigUI
-parseConfigUI dataDir cp =
-  let mkKey s =
-        case K.keyTranslate s of
-          K.Unknown _ ->
-            assert `failure` ("unknown config file key <" ++ s ++ ">")
-          key -> key
-      configCommands =
-        let mkCommand (key, def) = (mkKey key, def)
-            section = getItems cp "commands"
-        in map mkCommand section
-      configAppDataDirUI = dataDir
-      _configHistoryFile = dataDir </> get cp "files" "historyFile"
-      configUICfgFile = dataDir </> "config.ui"
-      configMacros =
-        let trMacro (from, to) =
-              let !fromTr = mkKey from
-                  !toTr  = mkKey to
-              in if fromTr == toTr
-                 then assert `failure` "degenerate alias: " ++ show toTr
-                 else (fromTr, toTr)
-            section = getItems cp "macros"
-        in map trMacro section
-      configFont = get cp "ui" "font"
-      configHistoryMax = get cp "ui" "historyMax"
-  in ConfigUI{..}
-
 -- | Read and parse rules config file and supplement it with random seeds.
 mkConfigRules :: Kind.Ops RuleKind -> IO (Config, R.StdGen, R.StdGen)
 mkConfigRules corule = do
@@ -181,11 +154,3 @@ mkConfigRules corule = do
   (dungeonGen,  cp2) <- getSetGen cpRules "dungeonRandomGenerator"
   (startingGen, cp3) <- getSetGen cp2     "startingRandomGenerator"
   return (parseConfigRules appData cp3, dungeonGen, startingGen)
-
--- | Read and parse UI config file.
-mkConfigUI :: Kind.Ops RuleKind -> IO ConfigUI
-mkConfigUI corule = do
-  let cpUIDefault = rcfgUIDefault $ Kind.stdRuleset corule
-  appData <- appDataDir
-  cpUI <- mkConfig cpUIDefault $ appData </> "config.ui.ini"
-  return $ parseConfigUI appData cpUI

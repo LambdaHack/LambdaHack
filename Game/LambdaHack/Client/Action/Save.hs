@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Saving and restoring games and player diaries.
-module Game.LambdaHack.Action.Save
+module Game.LambdaHack.Client.Action.Save
   ( saveGameFile, restoreGame, rmBkpSaveHistory, saveGameBkp
     -- * A dictionary of client states, for saving games.
   , StateDict

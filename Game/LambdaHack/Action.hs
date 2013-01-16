@@ -57,10 +57,11 @@ import qualified System.Random as R
 import System.Time
 -- import System.IO (hPutStrLn, stderr) -- just for debugging
 
-import qualified Game.LambdaHack.Action.ConfigIO as ConfigIO
-import Game.LambdaHack.Action.Frontend
-import Game.LambdaHack.Action.HighScore (register)
-import qualified Game.LambdaHack.Action.Save as Save
+import qualified Game.LambdaHack.Server.Action.ConfigIO as ConfigIO
+import qualified Game.LambdaHack.Client.Action.ConfigIO as Client.ConfigIO
+import Game.LambdaHack.Client.Action.Frontend
+import Game.LambdaHack.Server.Action.HighScore (register)
+import qualified Game.LambdaHack.Server.Action.Save as Save
 import Game.LambdaHack.ActionClass
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
@@ -586,7 +587,7 @@ startFrontend executor executorCli
       cotile = tile {Kind.ospeedup}
       cops = copsSlow {Kind.cotile}
   -- UI config reloaded at each client start.
-  sconfigUI <- ConfigIO.mkConfigUI corule
+  sconfigUI <- Client.ConfigIO.mkConfigUI corule
   -- A throw-away copy of rules config reloaded at client start, too,
   -- until an old version of the config can be read from the savefile.
   (sconfig, _, _) <- ConfigIO.mkConfigRules corule

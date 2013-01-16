@@ -1,15 +1,15 @@
 -- | Display game data on the screen and receive user input
 -- using one of the available raw frontends and derived  operations.
-module Game.LambdaHack.Action.Frontend
+module Game.LambdaHack.Client.Action.Frontend
   ( -- * Re-exported part of the raw frontend
     FrontendSession, startup, frontendName, nextEvent
     -- * Derived operations
   , displayFrame, promptGetKey
   ) where
 
-import Game.LambdaHack.Action.Frontend.Chosen
+import Game.LambdaHack.Animation (SingleFrame (..))
+import Game.LambdaHack.Client.Action.Frontend.Chosen
 import qualified Game.LambdaHack.Key as K (KM)
-import Game.LambdaHack.Animation (SingleFrame(..))
 
 -- | Push a frame or a single frame's worth of delay to the frame queue.
 displayFrame :: FrontendSession -> Bool -> Maybe SingleFrame -> IO ()

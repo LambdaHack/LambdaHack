@@ -1,6 +1,6 @@
 -- | Text frontend based on Gtk.
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
-module Game.LambdaHack.Action.Frontend.Gtk
+module Game.LambdaHack.Client.Action.Frontend.Gtk
   ( -- * Session data type for the frontend
     FrontendSession
     -- * The output and input operations
@@ -25,8 +25,7 @@ import System.Time
 
 import Game.LambdaHack.Animation (SingleFrame (..))
 import qualified Game.LambdaHack.Color as Color
-import qualified Game.LambdaHack.Key as K (KM, Modifier (..),
-                                           keyTranslate)
+import qualified Game.LambdaHack.Key as K (KM, Modifier (..), keyTranslate)
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.LQueue
 

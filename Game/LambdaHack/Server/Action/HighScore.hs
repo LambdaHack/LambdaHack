@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | High score table operations.
-module Game.LambdaHack.Action.HighScore
+module Game.LambdaHack.Server.Action.HighScore
   ( register
   ) where
 

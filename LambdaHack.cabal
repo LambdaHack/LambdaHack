@@ -75,11 +75,6 @@ library
                       Game.LambdaHack.Action,
                       Game.LambdaHack.ActionClass,
                       Game.LambdaHack.ActionType,
-                      Game.LambdaHack.Action.ConfigIO
-                      Game.LambdaHack.Action.Frontend,
-                      Game.LambdaHack.Action.Frontend.Chosen,
-                      Game.LambdaHack.Action.HighScore,
-                      Game.LambdaHack.Action.Save,
                       Game.LambdaHack.Actor,
                       Game.LambdaHack.ActorState,
                       Game.LambdaHack.Animation,
@@ -88,6 +83,10 @@ library
                       Game.LambdaHack.Binding,
                       Game.LambdaHack.CDefs,
                       Game.LambdaHack.Cave,
+                      Game.LambdaHack.Client.Action.ConfigIO,
+                      Game.LambdaHack.Client.Action.Frontend,
+                      Game.LambdaHack.Client.Action.Frontend.Chosen,
+                      Game.LambdaHack.Client.Action.Save,
                       Game.LambdaHack.ClientAction,
                       Game.LambdaHack.Color,
                       Game.LambdaHack.Command,
@@ -127,6 +126,9 @@ library
                       Game.LambdaHack.PointXY,
                       Game.LambdaHack.Random,
                       Game.LambdaHack.RunAction,
+                      Game.LambdaHack.Server.Action.ConfigIO,
+                      Game.LambdaHack.Server.Action.HighScore,
+                      Game.LambdaHack.Server.Action.Save,
                       Game.LambdaHack.ServerAction,
                       Game.LambdaHack.State,
                       Game.LambdaHack.Strategy,
@@ -137,7 +139,7 @@ library
                       Game.LambdaHack.Utils.File,
                       Game.LambdaHack.Utils.Frequency,
                       Game.LambdaHack.Utils.LQueue,
-                      Game.LambdaHack.Vector
+                      Game.LambdaHack.Vector,
                       Game.LambdaHack.VectorXY
   other-modules:      Paths_LambdaHack
   build-depends:      ConfigFile >= 1.1.1   && < 2,
@@ -167,22 +169,22 @@ library
   ghc-options:        -fno-ignore-asserts -funbox-strict-fields
 
   if flag(gtk) {
-    other-modules:    Game.LambdaHack.Action.Frontend.Gtk
+    other-modules:    Game.LambdaHack.Client.Action.Frontend.Gtk
     build-depends:    gtk >= 0.12.1 && < 0.13
     cpp-options:      -DGTK
   } else { if flag(vty) {
-    other-modules:    Game.LambdaHack.Action.Frontend.Vty
+    other-modules:    Game.LambdaHack.Client.Action.Frontend.Vty
     build-depends:    vty >= 4.7.0.6
     cpp-options:      -DVTY
   } else { if flag(curses) {
-    other-modules:    Game.LambdaHack.Action.Frontend.Curses
+    other-modules:    Game.LambdaHack.Client.Action.Frontend.Curses
     build-depends:    hscurses >= 1.4.1 && < 2
     cpp-options:      -DCURSES
   } else { if flag(std) {
-    other-modules:    Game.LambdaHack.Action.Frontend.Std
+    other-modules:    Game.LambdaHack.Client.Action.Frontend.Std
     cpp-options:      -DSTD
   } else {
-    other-modules:    Game.LambdaHack.Action.Frontend.Gtk
+    other-modules:    Game.LambdaHack.Client.Action.Frontend.Gtk
     build-depends:    gtk >= 0.12.1 && < 0.13
   } } } }
 
