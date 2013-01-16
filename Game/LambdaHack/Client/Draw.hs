@@ -2,7 +2,7 @@
 -- | Display game data on the screen using one of the available frontends
 -- (determined at compile time with cabal flags).
 {-# LANGUAGE CPP #-}
-module Game.LambdaHack.Draw
+module Game.LambdaHack.Client.Draw
   ( ColorMode(..), draw, animate
   ) where
 
@@ -16,7 +16,7 @@ import qualified Data.Text as T
 
 import Game.LambdaHack.Actor as Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Animation (Animation, Frames, SingleFrame (..),
+import Game.LambdaHack.Client.Animation (Animation, Frames, SingleFrame (..),
                                   renderAnim)
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Content.ActorKind

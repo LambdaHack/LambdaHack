@@ -12,12 +12,12 @@ import qualified Data.Text as T
 import Game.LambdaHack.Action
 import Game.LambdaHack.Client.Action.Frontend
 import Game.LambdaHack.ActionClass
-import Game.LambdaHack.Binding
+import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Config
 import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 
--- | The type of the function inside any full-power action.
+-- | The type of the function inside any server action.
 type FunAction a =
    Pers                               -- ^ cached perception
    -> (State -> StateServer -> ConnDict -> a -> IO ())
@@ -108,7 +108,6 @@ executor m pers s ser d =
     d
 
 -- TODO: check if we can move factionPerception from state to Reader
--- TODO: check if we can unify State put/get. etc. between Client and Server
 -- | The type of the function inside any client action.
 type FunActionCli a =
    Session                            -- ^ client session setup data

@@ -1,6 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Screen frames and animations.
-module Game.LambdaHack.Animation
+module Game.LambdaHack.Client.Animation
   ( Attr(..), defAttr, AttrChar(..)
   , SingleFrame(..), Animation, Frames, renderAnim, restrictAnim
   , twirlSplash, blockHit, blockMiss, deathBody, swapPlaces

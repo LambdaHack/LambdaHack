@@ -10,7 +10,6 @@ import Data.Typeable
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Actor
-import Game.LambdaHack.Animation
 import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Faction
@@ -46,7 +45,7 @@ data CmdUpdateCli =
   | AnimateBlockCli ActorId ActorId MU.Part
   | DisplaceCli ActorId ActorId
   | DisplayPushCli
-  | DisplayFramesPushCli Frames
+  | DisplayDelayCli
   | MoreFullCli Msg
   | MoreBWCli Msg
   | RestartCli StateClient State

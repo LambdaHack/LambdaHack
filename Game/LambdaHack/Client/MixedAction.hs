@@ -3,7 +3,7 @@
 -- | Semantics of 'Command.Cmd' client commands that return server commands.
 -- A couple of them do not take time, the rest does.
 -- TODO: document
-module Game.LambdaHack.MixedAction where
+module Game.LambdaHack.Client.MixedAction where
 
 import Control.Monad
 import Data.List
@@ -16,19 +16,19 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Client.Action
-import Game.LambdaHack.ClientAction
 import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind as TileKind
-import Game.LambdaHack.Draw
+import Game.LambdaHack.Client.Draw
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Key as K
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
+import Game.LambdaHack.Client.LocalAction
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Point
-import Game.LambdaHack.RunAction
+import Game.LambdaHack.Client.RunAction
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert

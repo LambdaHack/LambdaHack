@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | AI strategies to direct actors not controlled directly by human players.
 -- No operation in this module involves the 'State' or 'Action' type.
-module Game.LambdaHack.Strategy
+module Game.LambdaHack.Client.Strategy
   ( Strategy, nullStrategy, liftFrequency
   , (.|), reject, (.=>), only, bestVariant, renameStrategy, returN
   ) where

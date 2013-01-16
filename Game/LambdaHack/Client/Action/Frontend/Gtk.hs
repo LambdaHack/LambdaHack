@@ -23,7 +23,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Graphics.UI.Gtk hiding (Point)
 import System.Time
 
-import Game.LambdaHack.Animation (SingleFrame (..))
+import Game.LambdaHack.Client.Animation (SingleFrame (..))
 import qualified Game.LambdaHack.Color as Color
 import qualified Game.LambdaHack.Key as K (KM, Modifier (..), keyTranslate)
 import Game.LambdaHack.Utils.Assert

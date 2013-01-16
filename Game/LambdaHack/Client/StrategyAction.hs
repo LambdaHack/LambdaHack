@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | AI strategy operations implemented with the 'Action' monad.
-module Game.LambdaHack.StrategyAction
+module Game.LambdaHack.Client.StrategyAction
   ( targetStrategy, actionStrategy
   ) where
 
@@ -31,7 +31,7 @@ import Game.LambdaHack.Level
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import Game.LambdaHack.State
-import Game.LambdaHack.Strategy
+import Game.LambdaHack.Client.Strategy
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert

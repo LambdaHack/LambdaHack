@@ -39,15 +39,16 @@ import qualified Data.Map as M
 import Data.Maybe
 
 import Game.LambdaHack.Action
-import Game.LambdaHack.ActionClass (MonadActionIO (..), MonadClient (..),
-                                    MonadClientChan (..), MonadClientRO (..), ConnClient(..), Session(..))
+import Game.LambdaHack.ActionClass (ConnClient (..), MonadActionIO (..),
+                                    MonadClient (..), MonadClientChan (..),
+                                    MonadClientRO (..), Session (..))
 import Game.LambdaHack.Actor
-import Game.LambdaHack.Animation (Frames, SingleFrame)
-import Game.LambdaHack.Binding
+import Game.LambdaHack.Client.Animation (Frames, SingleFrame)
 import Game.LambdaHack.Client.Action.Frontend
+import Game.LambdaHack.Client.Binding
+import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.CmdCli
 import Game.LambdaHack.Config
-import Game.LambdaHack.Draw
 import qualified Game.LambdaHack.Key as K
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level

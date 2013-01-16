@@ -97,7 +97,7 @@ handleActors subclipStart = withPerception $ do
   case mnext of
     _ | isJust quit -> return ()
     Nothing -> when (subclipStart == timeZero) $
-                 broadcastPosCli [] $ DisplayFramesPushCli [Nothing]
+                 broadcastPosCli [] $ DisplayDelayCli
     Just (actor, m) -> do
       let side = bfaction m
       switchGlobalSelectedSide side

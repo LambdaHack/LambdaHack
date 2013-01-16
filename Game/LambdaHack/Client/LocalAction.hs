@@ -3,7 +3,7 @@
 -- | Semantics of 'CmdPlayer.Cmd' client commands that do not return
 -- server commands. None of such commands takes game time.
 -- TODO: document
-module Game.LambdaHack.ClientAction where
+module Game.LambdaHack.Client.LocalAction where
 
 -- Cabal
 import qualified Paths_LambdaHack as Self (version)
@@ -25,7 +25,7 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Binding
+import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.Action
 import qualified Game.LambdaHack.Client.CmdPlayer as CmdPlayer
 import Game.LambdaHack.Content.RuleKind
@@ -46,9 +46,7 @@ import Game.LambdaHack.Vector
 
 default (Text)
 
--- + Semantics of client commands that do not return server commands
-
--- ** Project
+-- * Project
 
 retarget :: MonadClient m => WriterT Slideshow m ()
 retarget = do
@@ -61,7 +59,7 @@ retarget = do
     modifyClient $ \cli -> cli {scursor = ppos, seps = 0}
     targetMonster $ TgtAuto arena
 
--- ** Move and Run
+-- * Move and Run
 
 moveCursor :: MonadClient m => Vector -> Int -> WriterT Slideshow m ()
 moveCursor dir n = do
@@ -170,7 +168,7 @@ itemOverlay disco sorted is = do
 
 -- CfgDump doesn't take time, but needs the server, so it's defined elsewhere.
 
--- ** Inventory
+-- * Inventory
 
 -- TODO: When inventory is displayed, let TAB switch the leader (without
 -- announcing that) and show the inventory of the new leader.
@@ -193,7 +191,7 @@ inventory = do
       slides <- overlayToSlideshow blurb io
       tell slides
 
--- ** TgtFloor
+-- * TgtFloor
 
 -- | Start the floor targeting mode or reset the cursor position to the leader.
 targetFloor :: MonadClient m => TgtMode -> WriterT Slideshow m ()
@@ -229,7 +227,7 @@ setCursor stgtModeNew = do
   modifyClient $ \cli2 -> cli2 {scursor, seps, stgtMode}
   doLook
 
--- ** TgtEnemy
+-- * TgtEnemy
 
 -- | Start the monster targeting mode. Cycle between monster targets.
 targetMonster :: MonadClient m => TgtMode -> WriterT Slideshow m ()
@@ -266,7 +264,7 @@ targetMonster stgtModeNew = do
   modifyClient $ updateTarget leader (const tgt)
   setCursor stgtModeNew
 
--- ** TgtAscend
+-- * TgtAscend
 
 -- | Change the displayed level in targeting mode to (at most)
 -- k levels shallower. Enters targeting mode, if not already in one.
@@ -310,7 +308,7 @@ setTgtId nln = do
     _ ->
       modifyClient $ \cli -> cli {stgtMode = Just (TgtExplicit nln)}
 
--- ** EpsIncr
+-- * EpsIncr
 
 -- | Tweak the @eps@ parameter of the targeting digital line.
 epsIncr :: MonadClient m => Bool -> m ()
@@ -320,7 +318,7 @@ epsIncr b = do
     then modifyClient $ \cli -> cli {seps = seps cli + if b then 1 else -1}
     else neverMind True  -- no visual feedback, so no sense
 
--- ** Cancel
+-- * Cancel
 
 -- | Cancel something, e.g., targeting mode, resetting the cursor
 -- to the position of the leader. Chosen target is not invalidated.
@@ -382,7 +380,7 @@ displayMainMenu = do
       slides <- overlayToSlideshow hd tl
       tell slides
 
--- ** Accept
+-- * Accept
 
 -- | Accept something, e.g., targeting mode, keeping cursor where it was.
 -- Or perform the default action, if nothing needs accepting.
@@ -437,13 +435,13 @@ endTargetingMsg = do
   msgAdd $ makeSentence
     [MU.SubjectVerbSg (partActor coactor pbody) "target", targetMsg]
 
--- ** Clear
+-- * Clear
 
 -- | Clear current messages, show the next screen if any.
 clearCurrent :: MonadActionRoot m => m ()
 clearCurrent = return ()
 
--- ** History
+-- * History
 
 -- TODO: add times from all levels. Also, show time spend on this level alone.
 -- "You survived for x turns (y turns on this level)"
@@ -458,7 +456,7 @@ displayHistory = do
   slides <- overlayToSlideshow msg $ renderHistory history
   tell slides
 
--- ** HeroCycle
+-- * HeroCycle
 
 -- | Switches current hero to the next hero on the level, if any, wrapping.
 -- We cycle through at most 10 heroes (\@, 1--9).
@@ -509,7 +507,7 @@ selectLeader actor arena = do
 stopRunning :: MonadClient m => m ()
 stopRunning = modifyClient (\ cli -> cli { srunning = Nothing })
 
--- ** HeroBack
+-- * HeroBack
 
 -- TODO: sort by level
 -- | Switches current hero to the previous hero in the whole dungeon,
@@ -523,7 +521,7 @@ backCycleHero = do
     (nl, np) : _ -> selectLeader np nl
                       >>= assert `trueM` (leader, nl, np, "hero duplicated")
 
--- ** Help
+-- * Help
 
 -- | Display command help.
 displayHelp :: MonadClientRO m => WriterT Slideshow m ()
@@ -531,7 +529,7 @@ displayHelp = do
   keyb <- askBinding
   tell $ keyHelp keyb
 
--- ** SelectHero
+-- * SelectHero
 
 selectHero :: MonadClient m => Int -> m ()
 selectHero k = do

@@ -7,7 +7,7 @@ module Game.LambdaHack.Client.Action.Frontend
   , displayFrame, promptGetKey
   ) where
 
-import Game.LambdaHack.Animation (SingleFrame (..))
+import Game.LambdaHack.Client.Animation (SingleFrame (..))
 import Game.LambdaHack.Client.Action.Frontend.Chosen
 import qualified Game.LambdaHack.Key as K (KM)
 

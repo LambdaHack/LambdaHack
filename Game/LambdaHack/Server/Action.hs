@@ -36,7 +36,7 @@ import System.Time
 import Game.LambdaHack.Action
 import Game.LambdaHack.ActionClass (MonadServerRO(..), MonadServer(..), MonadServerChan(..), MonadActionIO(..), ConnDict, ConnClient(..))
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Binding
+import Game.LambdaHack.Client.Binding
 import qualified Game.LambdaHack.Client.Action.ConfigIO as Client.ConfigIO
 import Game.LambdaHack.Client.Action.Frontend
 import Game.LambdaHack.CmdCli

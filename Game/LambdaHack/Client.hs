@@ -16,17 +16,17 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Animation
-import Game.LambdaHack.Binding
+import Game.LambdaHack.Client.Animation
+import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.Action
-import Game.LambdaHack.ClientAction
+import Game.LambdaHack.Client.LocalAction
 import Game.LambdaHack.CmdCli
 import Game.LambdaHack.CmdSer
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Client.CmdPlayer
 import Game.LambdaHack.Client.CmdPlayerAction
 import Game.LambdaHack.Content.ItemKind
-import Game.LambdaHack.Draw
+import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.EffectAction
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Key as K
@@ -35,10 +35,10 @@ import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Random
-import Game.LambdaHack.RunAction
+import Game.LambdaHack.Client.RunAction
 import Game.LambdaHack.State
-import Game.LambdaHack.Strategy
-import Game.LambdaHack.StrategyAction
+import Game.LambdaHack.Client.Strategy
+import Game.LambdaHack.Client.StrategyAction
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 
@@ -184,7 +184,7 @@ cmdUpdateCli cmd = case cmd of
         animFrs = animate cli loc per $ swapPlaces poss
     displayFramesPush $ Nothing : animFrs
   DisplayPushCli -> displayPush
-  DisplayFramesPushCli frames -> displayFramesPush frames
+  DisplayDelayCli -> displayFramesPush [Nothing]
   MoreBWCli msg -> do
     void $ displayMore ColorBW msg
     recordHistory  -- Prevent repeating the ending msgs.

@@ -15,10 +15,10 @@ import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.CmdPlayer
-import Game.LambdaHack.ClientAction
+import Game.LambdaHack.Client.LocalAction
 import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Level
-import Game.LambdaHack.MixedAction
+import Game.LambdaHack.Client.MixedAction
 import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert

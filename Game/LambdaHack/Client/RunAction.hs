@@ -1,5 +1,5 @@
 -- | Running and disturbance.
-module Game.LambdaHack.RunAction
+module Game.LambdaHack.Client.RunAction
   ( runDir, continueRunDir
   ) where
 
@@ -10,6 +10,7 @@ import Data.Maybe (isNothing)
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
+import Game.LambdaHack.Client.Action
 import qualified Game.LambdaHack.Feature as F
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
@@ -21,7 +22,6 @@ import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
-import Game.LambdaHack.Client.Action
 
 -- | Start running in the given direction and with the given number
 -- of tiles already traversed (usually 0). The first turn of running
