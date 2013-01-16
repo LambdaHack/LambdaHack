@@ -22,7 +22,8 @@ import qualified Data.Text as T
 import Data.Version
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Action hiding (MonadServer, MonadServerRO, MonadServerChan)
+import Game.LambdaHack.Action
+import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Binding

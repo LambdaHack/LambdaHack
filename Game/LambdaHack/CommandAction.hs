@@ -19,6 +19,7 @@ import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Animation
 import Game.LambdaHack.Binding
+import Game.LambdaHack.Client.Action
 import Game.LambdaHack.ClientAction
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Command
@@ -34,6 +35,7 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Random
 import Game.LambdaHack.RunAction
+import Game.LambdaHack.Server.Action
 import Game.LambdaHack.ServerAction
 import Game.LambdaHack.State
 import Game.LambdaHack.Strategy

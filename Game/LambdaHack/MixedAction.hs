@@ -12,7 +12,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Action hiding (MonadServerRO, MonadServer, MonadServerChan)
+import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.ClientAction
@@ -32,6 +32,7 @@ import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
+import Game.LambdaHack.Client.Action
 
 default (Text)
 

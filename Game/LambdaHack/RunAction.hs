@@ -7,8 +7,7 @@ import qualified Data.IntSet as IS
 import qualified Data.List as L
 import Data.Maybe (isNothing)
 
-import Game.LambdaHack.Action hiding (MonadServer, MonadServerChan,
-                               MonadServerRO)
+import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import qualified Game.LambdaHack.Feature as F
@@ -22,6 +21,7 @@ import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
+import Game.LambdaHack.Client.Action
 
 -- | Start running in the given direction and with the given number
 -- of tiles already traversed (usually 0). The first turn of running

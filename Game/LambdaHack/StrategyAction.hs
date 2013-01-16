@@ -36,6 +36,7 @@ import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.Frequency
 import Game.LambdaHack.Vector
+import Game.LambdaHack.Client.Action
 
 -- TODO: extress many (all?) functions as MonadActionRO
 

@@ -32,6 +32,7 @@ import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Point
 import Game.LambdaHack.Random
+import Game.LambdaHack.Server.Action
 import Game.LambdaHack.State
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert

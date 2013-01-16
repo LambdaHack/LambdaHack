@@ -19,6 +19,7 @@ import Game.LambdaHack.EffectAction
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
+import Game.LambdaHack.Server.Action
 import Game.LambdaHack.ServerAction
 import Game.LambdaHack.State
 import Game.LambdaHack.Time
