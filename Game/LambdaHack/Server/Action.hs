@@ -38,7 +38,7 @@ import qualified System.Random as R
 import System.Time
 
 import Game.LambdaHack.Action
-import Game.LambdaHack.ActionClass (MonadServerRO(..), MonadServer(..), MonadServerChan(..), MonadActionIO(..), ConnDict, ConnClient(..))
+import Game.LambdaHack.ActionClass (MonadAction (..), MonadServerRO(..), MonadServer(..), MonadServerChan(..), ConnDict, ConnClient(..))
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import qualified Game.LambdaHack.Client.Action.ConfigIO as Client.ConfigIO
@@ -123,7 +123,7 @@ saveGameBkp = do
   liftIO $ Save.saveGameBkp config glo ser (IM.fromDistinctAscList $ zip (IM.keys faction) d)
 
 -- | Dumps the current game rules configuration to a file.
-dumpCfg :: (MonadActionIO m, MonadServerRO m) => FilePath -> m ()
+dumpCfg :: MonadServer m => FilePath -> m ()
 dumpCfg fn = do
   config <- getsServer sconfig
   liftIO $ ConfigIO.dump config fn
@@ -134,9 +134,7 @@ dumpCfg fn = do
 -- Warning: scores are shown during the game,
 -- so we should be careful not to leak secret information through them
 -- (e.g., the nature of the items through the total worth of inventory).
-handleScores :: (MonadActionIO m, MonadServerChan m)
-             => Bool -> Status -> Int
-             -> m ()
+handleScores :: MonadServerChan m => Bool -> Status -> Int -> m ()
 handleScores write status total =
   when (total /= 0) $ do
     config <- getsServer sconfig
@@ -306,7 +304,7 @@ gameReset cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
         return (glo, ser, funReset)
   return $! St.evalState rnd dungeonGen
 
-gameResetAction :: MonadActionIO m
+gameResetAction :: MonadAction m
                 => Kind.COps
                 -> m (State, StateServer, FactionId -> (StateClient, State))
 gameResetAction = liftIO . gameReset

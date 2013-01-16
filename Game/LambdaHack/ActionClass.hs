@@ -71,21 +71,17 @@ instance (Monoid a, MonadActionRO m) => MonadActionRO (WriterT a m) where
   getState    = lift getState
   getsState   = lift . getsState
 
-class MonadActionRoot m => MonadActionIO m where
+class MonadActionRO m => MonadAction m where
+  modifyState :: (State -> State) -> m ()
+  putState    :: State -> m ()
   -- We do not provide a MonadIO instance, so that outside of Action/
   -- nobody can subvert the action monads by invoking arbitrary IO.
   liftIO :: IO a -> m a
 
-instance (Monoid a, MonadActionIO m) => MonadActionIO (WriterT a m) where
-  liftIO = lift . liftIO
-
-class (MonadActionIO m, MonadActionRO m) => MonadAction m where
-  modifyState :: (State -> State) -> m ()
-  putState    :: State -> m ()
-
 instance (Monoid a, MonadAction m) => MonadAction (WriterT a m) where
   modifyState = lift . modifyState
   putState    = lift . putState
+  liftIO = lift . liftIO
 
 -- * Server monads
 

@@ -73,12 +73,10 @@ instance MonadActionRO Action where
   getState  = Action (\_p k _a s ser d -> k s ser d s)
   getsState = (`fmap` getState)
 
-instance MonadActionIO Action where
-  liftIO x = Action (\_p k _a s ser d -> x >>= k s ser d)
-
 instance MonadAction Action where
   modifyState f = Action (\_p k _a s ser d -> k (f s) ser d ())
   putState      = modifyState . const
+  liftIO x = Action (\_p k _a s ser d -> x >>= k s ser d)
 
 instance MonadServerRO Action where
   getServer  = Action (\_p k _a s ser d -> k s ser d ser)
@@ -159,12 +157,10 @@ instance MonadActionRO ActionCli where
   getState      = ActionCli (\_c k _a s cli d -> k s cli d s)
   getsState     = (`fmap` getState)
 
-instance MonadActionIO ActionCli where
-  liftIO x = ActionCli (\_c k _a s cli d -> x >>= k s cli d)
-
 instance MonadAction ActionCli where
   modifyState f  = ActionCli (\_c k _a s cli d -> k (f s) cli d ())
   putState       = modifyState . const
+  liftIO x = ActionCli (\_c k _a s cli d -> x >>= k s cli d)
 
 instance MonadClientRO ActionCli where
   getsSession f = ActionCli (\c k _a s cli d -> k s cli d (f c))
