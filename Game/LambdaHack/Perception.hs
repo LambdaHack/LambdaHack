@@ -13,7 +13,7 @@ import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Faction
-import Game.LambdaHack.FOV
+import Game.LambdaHack.Server.Fov
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Point

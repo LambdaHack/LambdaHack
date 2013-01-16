@@ -3,7 +3,7 @@
 -- | Semantics of 'Command.CmdSer' server commands.
 -- A couple of them do not take time, the rest does.
 -- TODO: document
-module Game.LambdaHack.ServerAction where
+module Game.LambdaHack.Server.GlobalAction where
 
 import Control.Monad
 import qualified Data.IntMap as IM
@@ -24,7 +24,6 @@ import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind as TileKind
-import Game.LambdaHack.EffectAction
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Item
@@ -35,6 +34,7 @@ import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import Game.LambdaHack.Random
 import Game.LambdaHack.Server.Action
+import Game.LambdaHack.Server.EffectAction
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Time

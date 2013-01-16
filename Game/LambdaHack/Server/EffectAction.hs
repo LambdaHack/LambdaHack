@@ -2,10 +2,9 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 -- | The @effectToAction@ function and related operations.
 -- TODO: document
-module Game.LambdaHack.EffectAction where
+module Game.LambdaHack.Server.EffectAction where
 
 import Control.Monad
-import qualified Control.Monad.State as St
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import Data.List
@@ -42,14 +41,6 @@ default (Text)
 actorVerb :: Kind.Ops ActorKind -> Actor -> Text -> Text
 actorVerb coactor a v =
   makeSentence [MU.SubjectVerbSg (partActor coactor a) (MU.Text v)]
-
--- | Invoke pseudo-random computation with the generator kept in the state.
-rndToAction :: MonadAction m => Rnd a -> m a
-rndToAction r = do
-  g <- getsState srandom
-  let (a, ng) = St.runState r g
-  modifyState $ updateRandom $ const ng
-  return a
 
 -- TODO: center screen, flash the background, etc. Perhaps wait for SPACE.
 -- | Focus on the hero being wounded/displaced/etc.

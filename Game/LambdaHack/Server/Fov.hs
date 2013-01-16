@@ -1,24 +1,24 @@
 -- | Field Of View scanning with a variety of algorithms.
 -- See <https://github.com/kosmikus/LambdaHack/wiki/Fov-and-los>
 -- for discussion.
-module Game.LambdaHack.FOV
+module Game.LambdaHack.Server.Fov
   ( fullscan
   ) where
 
 import qualified Data.List as L
 
-import Game.LambdaHack.FOV.Common
-import qualified Game.LambdaHack.FOV.Digital as Digital
-import qualified Game.LambdaHack.FOV.Permissive as Permissive
-import qualified Game.LambdaHack.FOV.Shadow as Shadow
-import Game.LambdaHack.Point
-import Game.LambdaHack.VectorXY
-import Game.LambdaHack.Vector
-import Game.LambdaHack.Level
-import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Content.TileKind
-import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Config
+import Game.LambdaHack.Content.TileKind
+import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Level
+import Game.LambdaHack.Point
+import Game.LambdaHack.Server.Fov.Common
+import qualified Game.LambdaHack.Server.Fov.Digital as Digital
+import qualified Game.LambdaHack.Server.Fov.Permissive as Permissive
+import qualified Game.LambdaHack.Server.Fov.Shadow as Shadow
+import qualified Game.LambdaHack.Tile as Tile
+import Game.LambdaHack.Vector
+import Game.LambdaHack.VectorXY
 
 -- | Perform a full scan for a given position. Returns the positions
 -- that are currently in the field of view. The Field of View

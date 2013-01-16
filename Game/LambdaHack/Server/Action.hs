@@ -142,7 +142,7 @@ handleScores write status total =
 
 -- | Continue or restart or exit the game.
 endOrLoop :: MonadServerChan m => m () -> m ()
-endOrLoop handleTurn = do
+endOrLoop loopServer = do
   squit <- getsServer squit
   side <- getsState sside
   gquit <- getsState $ gquit . (IM.! side) . sfaction
@@ -185,7 +185,7 @@ endOrLoop handleTurn = do
            go <- sendQueryCli side
                  $ ConfirmMoreBWCli "Next time will be different."
            when (not go) $ abortWith "You could really win this time."
-           restartGame handleTurn
+           restartGame loopServer
         )
     (Nothing, Just (showScreens, status@Victor)) -> do
       nullR <- sendQueryCli side NullReportCli
@@ -195,14 +195,14 @@ endOrLoop handleTurn = do
       when showScreens $ do
         tryIgnore $ handleScores True status total
         broadcastPosCli [] $ MoreFullCli "Can it be done better, though?"
-      restartGame handleTurn
+      restartGame loopServer
     (Nothing, Just (_, Restart)) -> do
       broadcastPosCli [] $ MoreBWCli "This time for real."
-      restartGame handleTurn
-    (Nothing, _) -> handleTurn  -- just continue
+      restartGame loopServer
+    (Nothing, _) -> loopServer  -- just continue
 
 restartGame :: MonadServerChan m => m () -> m ()
-restartGame handleTurn = do
+restartGame loopServer = do
   -- Take the original config from config file, to reroll RNG, if needed
   -- (the current config file has the RNG rolled for the previous game).
   cops <- getsState scops
@@ -212,7 +212,7 @@ restartGame handleTurn = do
   funBroadcastCli (uncurry RestartCli . funRestart)
   -- TODO: send to each client RestartCli; use d in its code; empty channels?
   saveGameBkp
-  handleTurn
+  loopServer
 
 -- TODO: do this inside Action ()
 gameReset :: Kind.COps
@@ -285,7 +285,7 @@ startFrontend :: (MonadActionRoot m, MonadActionRoot n)
               -> Kind.COps -> m () -> n () -> IO ()
 startFrontend executor executorCli
               !copsSlow@Kind.COps{corule, cotile=tile}
-              handleTurn handleClient = do
+              loopServer loopClient = do
   -- Compute and insert auxiliary optimized components into game content,
   -- to be used in time-critical sections of the code.
   let ospeedup = Tile.speedup tile
@@ -301,13 +301,13 @@ startFrontend executor executorCli
       -- In addition to handling the turn, if the game ends or exits,
       -- handle the history and backup savefile.
       handleServer = do
-        handleTurn
+        loopServer
 --        d <- getDict
 --        -- Save history often, at each game exit, in case of crashes.
 --        liftIO $ Save.rmBkpSaveHistory sconfig sconfigUI d
       loop sfs = start executor executorCli
                        sfs cops sbinding sconfig sconfigUI
-                       handleServer handleClient
+                       handleServer loopClient
   startup font loop
 
 -- | Either restore a saved game, or setup a new game.
@@ -319,7 +319,7 @@ start :: (MonadActionRoot m, MonadActionRoot n)
       -> FrontendSession -> Kind.COps -> Binding -> Config -> ConfigUI
       -> m () -> n () -> IO ()
 start executor executorCli sfs cops@Kind.COps{corule}
-      sbinding sconfig sconfigUI handleServer handleClient = do
+      sbinding sconfig sconfigUI handleServer loopClient = do
   let title = rtitle $ Kind.stdRuleset corule
       pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
   restored <- Save.restoreGame sconfig sconfigUI pathsDataFile title
@@ -361,13 +361,13 @@ start executor executorCli sfs cops@Kind.COps{corule}
   let d = IM.map snd $ IM.fromAscList dAssocs
       forkClient (_, ((cli, loc), (chan, mchan))) = do
         void $ forkIO
-          $ executorCli handleClient sfs sbinding sconfigUI loc cli chan
+          $ executorCli loopClient sfs sbinding sconfigUI loc cli chan
         case mchan of
           Nothing -> return ()
           Just ch ->
             -- The AI client does not know it's not the main client.
             void $ forkIO
-              $ executorCli handleClient sfs sbinding sconfigUI loc cli ch
+              $ executorCli loopClient sfs sbinding sconfigUI loc cli ch
   mapM_ forkClient dAssocs
   executor handleServer pers glo ser d
 

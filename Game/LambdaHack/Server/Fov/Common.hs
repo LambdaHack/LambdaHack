@@ -1,7 +1,7 @@
 -- | Common definitions for the Field of View algorithms.
 -- See <https://github.com/kosmikus/LambdaHack/wiki/Fov-and-los>
 -- for some more context and references.
-module Game.LambdaHack.FOV.Common
+module Game.LambdaHack.Server.Fov.Common
   ( -- * Current scan parameters
     Distance, Progress
     -- * Scanning coordinate system

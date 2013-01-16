@@ -15,8 +15,8 @@ import qualified Game.LambdaHack.ActionType as ActionType
 import Game.LambdaHack.Client
 import Game.LambdaHack.Client.Action
 import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.LoopAction
 import Game.LambdaHack.Server.Action
+import Game.LambdaHack.Server.LoopAction
 
 -- | Fire up the frontend with the engine fueled by content.
 -- The @Action@ type to be used is decided by the second argument
@@ -36,4 +36,4 @@ main =
         , cotile  = Kind.createOps Content.TileKind.cdefs
         }
   in startFrontend ActionType.executor ActionType.executorCli
-                   cops handleTurn (handleClient2 cmdUpdateCli cmdQueryCli)
+                   cops loopServer (loopClient2 cmdUpdateCli cmdQueryCli)

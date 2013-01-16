@@ -3,13 +3,13 @@
 -- as implemented in Shadow.hs. In the result, this algorithm is much faster
 -- than the original algorithm on dense maps, since it does not scan
 -- areas blocked by shadows.
-module Game.LambdaHack.FOV.Permissive
+module Game.LambdaHack.Server.Fov.Permissive
   ( scan, dline, dsteeper, intersect, debugSteeper, debugLine
   ) where
 
+import Game.LambdaHack.Server.Fov.Common
 import Game.LambdaHack.Misc
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.FOV.Common
 
 -- TODO: Scanning squares on horizontal lines in octants, not squares
 -- on diagonals in quadrants, may be much faster and a bit simpler.

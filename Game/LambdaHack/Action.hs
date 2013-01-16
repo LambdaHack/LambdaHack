@@ -13,9 +13,11 @@ module Game.LambdaHack.Action
     -- * Abort exception handlers
   , tryWith, tryRepeatedlyWith, tryIgnore
     -- * Assorted primitives
+  , rndToAction
   , debug
   ) where
 
+import qualified Control.Monad.State as St
 import Data.Text (Text)
 import qualified Data.Text as T
 -- import System.IO (hPutStrLn, stderr) -- just for debugging
@@ -23,6 +25,8 @@ import qualified Data.Text as T
 import Game.LambdaHack.ActionClass (MonadAction (..), MonadActionRO (..),
                                     MonadActionRoot (..))
 import Game.LambdaHack.Msg
+import Game.LambdaHack.Random
+import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
 
 -- | Reset the state and resume from the last backup point, i.e., invoke
@@ -51,6 +55,14 @@ tryIgnore =
   tryWith (\msg -> if T.null msg
                    then return ()
                    else assert `failure` msg <+> "in tryIgnore")
+
+-- | Invoke pseudo-random computation with the generator kept in the state.
+rndToAction :: MonadAction m => Rnd a -> m a
+rndToAction r = do
+  g <- getsState srandom
+  let (a, ng) = St.runState r g
+  modifyState $ updateRandom $ const ng
+  return a
 
 -- | Debugging.
 debug :: MonadActionRoot m => Text -> m ()

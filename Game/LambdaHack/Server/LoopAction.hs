@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | The main loop of the server, processing player and AI moves turn by turn.
-module Game.LambdaHack.LoopAction (handleTurn) where
+module Game.LambdaHack.Server.LoopAction (loopServer) where
 
 import Control.Arrow ((&&&))
 import Control.Monad
@@ -15,13 +15,13 @@ import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.CmdCli
 import Game.LambdaHack.CmdSer
-import Game.LambdaHack.EffectAction
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Server
 import Game.LambdaHack.Server.Action
-import Game.LambdaHack.ServerAction
+import Game.LambdaHack.Server.EffectAction
+import Game.LambdaHack.Server.GlobalAction
 import Game.LambdaHack.State
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
@@ -31,19 +31,19 @@ import Game.LambdaHack.Utils.Assert
 -- every fixed number of time units, e.g., monster generation.
 -- Run the leader and other actors moves. Eventually advance the time
 -- and repeat.
-handleTurn :: MonadServerChan m => m ()
-handleTurn = do
-  debug "handleTurn"
+loopServer :: MonadServerChan m => m ()
+loopServer = do
+  debug "loopServer"
   time <- getsState getTime  -- the end time of this clip, inclusive
   let clipN = (time `timeFit` timeClip) `mod` (timeTurn `timeFit` timeClip)
   -- Regenerate HP and add monsters each turn, not each clip.
   when (clipN == 1) checkEndGame
   when (clipN == 2) regenerateLevelHP
   when (clipN == 3) generateMonster
-  debug $ "handleTurn: time =" <+> showT time
+  debug $ "loopServer: time =" <+> showT time
   handleActors timeZero
   modifyState (updateTime (timeAdd timeClip))
-  endOrLoop handleTurn
+  endOrLoop loopServer
 
 -- TODO: switch levels alternating between player factions,
 -- if there are many and on distinct levels.

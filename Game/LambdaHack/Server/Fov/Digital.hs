@@ -1,13 +1,13 @@
 -- | DFOV (Digital Field of View) implemented according to specification at <http://roguebasin.roguelikedevelopment.org/index.php?title=Digital_field_of_view_implementation>.
 -- This fast version of the algorithm, based on "PFOV", has AFAIK
 -- never been described nor implemented before.
-module Game.LambdaHack.FOV.Digital
+module Game.LambdaHack.Server.Fov.Digital
   ( scan, dline, dsteeper, intersect, debugSteeper, debugLine
   ) where
 
+import Game.LambdaHack.Server.Fov.Common
 import Game.LambdaHack.Misc
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.FOV.Common
 
 -- | Calculates the list of tiles, in @Bump@ coordinates, visible from (0, 0),
 -- within the given sight range.

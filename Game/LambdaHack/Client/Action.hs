@@ -26,7 +26,7 @@ module Game.LambdaHack.Client.Action
     -- * Assorted primitives
   , frontendName
     -- * The client main loop
-  , handleClient2
+  , loopClient2
   ) where
 
 import Control.Concurrent
@@ -43,8 +43,8 @@ import Game.LambdaHack.ActionClass (ConnClient (..), MonadActionIO (..),
                                     MonadClient (..), MonadClientChan (..),
                                     MonadClientRO (..), Session (..))
 import Game.LambdaHack.Actor
-import Game.LambdaHack.Client.Animation (Frames, SingleFrame)
 import Game.LambdaHack.Client.Action.Frontend
+import Game.LambdaHack.Client.Animation (Frames, SingleFrame)
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.CmdCli
@@ -309,11 +309,11 @@ writeChanToSer cmd = do
   toServer <- getsChan toServer
   liftIO $ writeChan toServer cmd
 
-handleClient2 :: MonadClientChan m
+loopClient2 :: MonadClientChan m
               => (CmdUpdateCli -> m ())
               -> (forall a. Typeable a => CmdQueryCli a -> m a)
               -> m ()
-handleClient2 cmdUpdateCli cmdQueryCli = do
+loopClient2 cmdUpdateCli cmdQueryCli = do
   cmd2 <- readChanFromSer
   case cmd2 of
     CmdUpdateCli cmd -> do
@@ -321,4 +321,4 @@ handleClient2 cmdUpdateCli cmdQueryCli = do
     CmdQueryCli cmd -> do
       a <- cmdQueryCli cmd
       writeChanToSer $ toDyn a
-  handleClient2 cmdUpdateCli cmdQueryCli
+  loopClient2 cmdUpdateCli cmdQueryCli

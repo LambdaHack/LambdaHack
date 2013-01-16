@@ -8,11 +8,11 @@ import Control.Monad
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.CmdSer
+import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Level
 import Game.LambdaHack.Server.Action
-import Game.LambdaHack.ServerAction
+import Game.LambdaHack.Server.GlobalAction
 import Game.LambdaHack.State
 
 -- | The semantics of server commands.
