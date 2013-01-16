@@ -13,7 +13,6 @@ import Data.Maybe
 import Data.Text (Text)
 import qualified System.Random as R
 
-import Game.LambdaHack.Config
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind
@@ -26,6 +25,7 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.Point
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Random
+import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.DungeonGen.Cave hiding (TileMapXY)
 import Game.LambdaHack.Server.DungeonGen.Place
 import qualified Game.LambdaHack.Tile as Tile

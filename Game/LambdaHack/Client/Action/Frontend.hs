@@ -7,9 +7,9 @@ module Game.LambdaHack.Client.Action.Frontend
   , displayFrame, promptGetKey
   ) where
 
-import Game.LambdaHack.Client.Animation (SingleFrame (..))
 import Game.LambdaHack.Client.Action.Frontend.Chosen
-import qualified Game.LambdaHack.Key as K (KM)
+import Game.LambdaHack.Client.Animation (SingleFrame (..))
+import qualified Game.LambdaHack.Client.Key as K (KM)
 
 -- | Push a frame or a single frame's worth of delay to the frame queue.
 displayFrame :: FrontendSession -> Bool -> Maybe SingleFrame -> IO ()

@@ -18,7 +18,6 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.CmdCli
-import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
@@ -31,6 +30,7 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.Point
 import Game.LambdaHack.Random
 import Game.LambdaHack.Server.Action
+import Game.LambdaHack.Server.Config
 import Game.LambdaHack.State
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert

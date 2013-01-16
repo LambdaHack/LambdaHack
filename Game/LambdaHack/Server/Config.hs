@@ -1,22 +1,12 @@
 -- | Personal game configuration file type definitions.
-module Game.LambdaHack.Config
-  ( Config(..), ConfigUI(..), FovMode(..)
+module Game.LambdaHack.Server.Config
+  ( Config(..)
   ) where
 
 import Data.Binary
 import Data.Text (Text)
-
-import qualified Game.LambdaHack.Key as K
-
--- TODO: should Blind really be a FovMode, or a modifier? Let's decide
--- when other similar modifiers are added.
--- | Field Of View scanning mode.
-data FovMode =
-    Shadow       -- ^ restrictive shadow casting
-  | Permissive   -- ^ permissive FOV
-  | Digital Int  -- ^ digital FOV with the given radius
-  | Blind        -- ^ only feeling out adjacent tiles by touch
-  deriving (Show, Read)
+import Game.LambdaHack.Msg ()
+import Game.LambdaHack.Server.Fov
 
 -- | Fully typed contents of the rules config file. This config
 -- is a part of the game server.
@@ -44,36 +34,6 @@ data Config = Config
     -- heroNames
   , configHeroNames      :: ![(Int, Text)]
   } deriving Show
-
--- | Fully typed contents of the UI config file. This config
--- is a part of a game client.
-data ConfigUI = ConfigUI
-  { -- commands
-    configCommands     :: ![(K.Key, String)]  -- TODO: define Binary Cmd
-    -- files
-  , configAppDataDirUI :: !FilePath
---  , configHistoryFile  :: !FilePath
-  , configUICfgFile    :: !FilePath
-    -- macros
-  , configMacros       :: ![(K.Key, K.Key)]
-    -- ui
-  , configFont         :: !String
-  , configHistoryMax   :: !Int
-  } deriving Show
-
-instance Binary FovMode where
-  put Shadow      = putWord8 0
-  put Permissive  = putWord8 1
-  put (Digital r) = putWord8 2 >> put r
-  put Blind       = putWord8 3
-  get = do
-    tag <- getWord8
-    case tag of
-      0 -> return Shadow
-      1 -> return Permissive
-      2 -> fmap Digital get
-      3 -> return Blind
-      _ -> fail "no parse (FovMode)"
 
 instance Binary Config where
   put Config{..} = do
@@ -109,22 +69,3 @@ instance Binary Config where
     configFaction        <- get
     configHeroNames      <- get
     return Config{..}
-
-instance Binary ConfigUI where
-  put ConfigUI{..} = do
-    put configCommands
-    put configAppDataDirUI
---    put configHistoryFile
-    put configUICfgFile
-    put configMacros
-    put configFont
-    put configHistoryMax
-  get = do
-    configCommands     <- get
-    configAppDataDirUI <- get
---    configHistoryFile  <- get
-    configUICfgFile    <- get
-    configMacros       <- get
-    configFont         <- get
-    configHistoryMax   <- get
-    return ConfigUI{..}

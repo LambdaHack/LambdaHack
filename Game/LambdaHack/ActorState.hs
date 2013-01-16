@@ -4,8 +4,8 @@
 -- TODO: Document an export list after it's rewritten according to #17.
 module Game.LambdaHack.ActorState
   ( isProjectile, isAHero, calculateTotal
-  , initialHeroes, allActorsAnyLevel, whereTo
-  , posToActor, deleteActor, addHero, addMonster, updateActorItem
+  , allActorsAnyLevel, nearbyFreePos, whereTo
+  , posToActor, deleteActor, addMonster, updateActorItem
   , insertActor, heroList, memActor, getActorBody, updateActorBody
   , hostileList, getActorItem, tryFindHeroK, dangerousList
   , factionList, addProjectile, foesAdjacent, targetToPos, hostileAssocs
@@ -22,7 +22,6 @@ import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Actor
-import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind
@@ -120,33 +119,6 @@ foesAdjacent lxsize lysize loc foes =
   let vic = IS.fromList $ vicinity lxsize lysize loc
       lfs = IS.fromList $ L.map bpos foes
   in not $ IS.null $ IS.intersection vic lfs
-
--- Adding heroes
-
--- | Create a new hero on the current level, close to the given position.
-addHero :: Kind.COps -> Point -> FactionId -> State -> StateServer
-        -> (State, StateServer)
-addHero Kind.COps{coactor, cotile} ppos side
-        s ser@StateServer{scounter} =
-  let config@Config{configBaseHP} = sconfig ser
-      loc = nearbyFreePos cotile ppos s
-      freeHeroK = L.elemIndex Nothing $ map (tryFindHeroK s) [0..9]
-      n = fromMaybe 100 freeHeroK
-      symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
-      name = findHeroName config n
-      startHP = configBaseHP - (configBaseHP `div` 5) * min 3 n
-      m = template (heroKindId coactor) (Just symbol) (Just name)
-                   startHP loc (getTime s) side False
-  in ( updateArena (updateActor (IM.insert scounter m)) s
-     , ser { scounter = scounter + 1 } )
-
--- | Create a set of initial heroes on the current level, at position ploc.
-initialHeroes :: Kind.COps -> Point -> FactionId -> State -> StateServer
-              -> (State, StateServer)
-initialHeroes cops ppos side s ser =
-  let Config{configExtraHeroes} = sconfig ser
-      k = 1 + configExtraHeroes
-  in iterate (uncurry $ addHero cops ppos side) (s, ser) !! k
 
 -- Adding monsters
 

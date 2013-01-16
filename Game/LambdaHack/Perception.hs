@@ -9,14 +9,13 @@ import qualified Data.IntSet as IS
 import qualified Data.List as L
 
 import Game.LambdaHack.Actor
-import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Faction
-import Game.LambdaHack.Server.Fov
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Point
+import Game.LambdaHack.Server.Fov
 import qualified Game.LambdaHack.Tile as Tile
 
 newtype PerceptionReachable = PerceptionReachable
@@ -46,9 +45,9 @@ actorSeesLoc :: Perception -> ActorId -> Point -> Bool
 actorSeesLoc per aid pos = pos `IS.member` pvisible (pactors per IM.! aid)
 
 -- | Calculate perception of the level.
-levelPerception :: Kind.COps -> Config -> Maybe FovMode -> FactionId -> Level
+levelPerception :: Kind.COps -> FovMode -> Maybe FovMode -> FactionId -> Level
                 -> Perception
-levelPerception cops@Kind.COps{cotile} Config{configFovMode} stryFov
+levelPerception cops@Kind.COps{cotile} configFovMode stryFov
                 fid lvl@Level{lactor} =
   let hs = IM.filter (\m -> bfaction m == fid && not (bproj m)) lactor
       reas =

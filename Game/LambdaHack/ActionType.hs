@@ -10,10 +10,10 @@ import Control.Monad.Reader.Class
 import qualified Data.Text as T
 
 import Game.LambdaHack.Action
-import Game.LambdaHack.Client.Action.Frontend
 import Game.LambdaHack.ActionClass
+import Game.LambdaHack.Client.Action.Frontend
 import Game.LambdaHack.Client.Binding
-import Game.LambdaHack.Config
+import Game.LambdaHack.Client.ConfigUI
 import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 

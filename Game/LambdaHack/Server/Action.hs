@@ -17,6 +17,7 @@ module Game.LambdaHack.Server.Action
   , switchGlobalSelectedSide
   , sendUpdateCli, sendQueryCli, sendAIQueryCli
   , broadcastCli, broadcastPosCli
+  , addHero
   ) where
 
 import Control.Concurrent
@@ -24,36 +25,42 @@ import Control.Exception (finally)
 import Control.Monad
 import Control.Monad.Reader.Class
 import qualified Control.Monad.State as St
+import qualified Data.Char as Char
 import Data.Dynamic
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
+import Data.List
 import qualified Data.Map as M
 import Data.Maybe
+import Data.Text (Text)
 import qualified Data.Text as T
 import qualified System.Random as R
 import System.Time
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.ActionClass (MonadServerRO(..), MonadServer(..), MonadServerChan(..), MonadActionIO(..), ConnDict, ConnClient(..))
+import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Client.Binding
 import qualified Game.LambdaHack.Client.Action.ConfigIO as Client.ConfigIO
 import Game.LambdaHack.Client.Action.Frontend
+import Game.LambdaHack.Client.Binding
+import Game.LambdaHack.Client.ConfigUI
 import Game.LambdaHack.CmdCli
-import Game.LambdaHack.Config
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
-import qualified Game.LambdaHack.Server.DungeonGen as DungeonGen
 import Game.LambdaHack.Faction
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import qualified Game.LambdaHack.Server.Action.ConfigIO as ConfigIO
 import Game.LambdaHack.Server.Action.HighScore (register)
 import qualified Game.LambdaHack.Server.Action.Save as Save
+import Game.LambdaHack.Server.Config
+import qualified Game.LambdaHack.Server.DungeonGen as DungeonGen
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert
@@ -64,11 +71,12 @@ import Game.LambdaHack.Utils.Assert
 withPerception :: MonadServerRO m => m () -> m ()
 withPerception m = do
   cops <- getsState scops
-  sconfig <- getsServer sconfig
+  configFovMode <- getsServer (configFovMode . sconfig)
   sdebugSer <- getsServer sdebugSer
   lvl <- getsState getArena
   arena <- getsState sarena
-  let per side = levelPerception cops sconfig (stryFov sdebugSer) side lvl
+  let per side =
+        levelPerception cops configFovMode (stryFov sdebugSer) side lvl
   local (IM.mapWithKey (\side lp -> M.insert arena (per side) lp)) m
 
 -- | Get the current perception of the server.
@@ -213,6 +221,37 @@ restartGame loopServer = do
   -- TODO: send to each client RestartCli; use d in its code; empty channels?
   saveGameBkp
   loopServer
+
+-- | Find a hero name in the config file, or create a stock name.
+findHeroName :: Config -> Int -> Text
+findHeroName Config{configHeroNames} n =
+  let heroName = lookup n configHeroNames
+  in fromMaybe ("hero number" <+> showT n) heroName
+
+-- | Create a new hero on the current level, close to the given position.
+addHero :: Kind.COps -> Point -> FactionId -> State -> StateServer
+        -> (State, StateServer)
+addHero Kind.COps{coactor, cotile} ppos side
+        s ser@StateServer{scounter} =
+  let config@Config{configBaseHP} = sconfig ser
+      loc = nearbyFreePos cotile ppos s
+      freeHeroK = elemIndex Nothing $ map (tryFindHeroK s) [0..9]
+      n = fromMaybe 100 freeHeroK
+      symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
+      name = findHeroName config n
+      startHP = configBaseHP - (configBaseHP `div` 5) * min 3 n
+      m = template (heroKindId coactor) (Just symbol) (Just name)
+                   startHP loc (getTime s) side False
+  in ( updateArena (updateActor (IM.insert scounter m)) s
+     , ser { scounter = scounter + 1 } )
+
+-- | Create a set of initial heroes on the current level, at position ploc.
+initialHeroes :: Kind.COps -> Point -> FactionId -> State -> StateServer
+              -> (State, StateServer)
+initialHeroes cops ppos side s ser =
+  let Config{configExtraHeroes} = sconfig ser
+      k = 1 + configExtraHeroes
+  in iterate (uncurry $ addHero cops ppos side) (s, ser) !! k
 
 -- TODO: do this inside Action ()
 gameReset :: Kind.COps

@@ -13,9 +13,9 @@ import System.Environment
 import System.FilePath
 import qualified System.Random as R
 
-import Game.LambdaHack.Config
 import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Utils.Assert
 
 overrideCP :: CP -> FilePath -> IO CP

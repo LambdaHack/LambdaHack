@@ -16,19 +16,19 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Client.Action
+import Game.LambdaHack.Client.Draw
+import qualified Game.LambdaHack.Client.Key as K
+import Game.LambdaHack.Client.LocalAction
+import Game.LambdaHack.Client.RunAction
 import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind as TileKind
-import Game.LambdaHack.Client.Draw
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Item
-import qualified Game.LambdaHack.Key as K
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
-import Game.LambdaHack.Client.LocalAction
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Point
-import Game.LambdaHack.Client.RunAction
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert

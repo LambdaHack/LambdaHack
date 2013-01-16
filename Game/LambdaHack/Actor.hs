@@ -3,7 +3,7 @@
 -- involves the 'State' or 'Action' type.
 module Game.LambdaHack.Actor
   ( -- * Actor identifiers and related operations
-    ActorId, findHeroName, monsterGenChance, partActor
+    ActorId, monsterGenChance, partActor
     -- * The@ Acto@r type
   , Actor(..), template, addHp, timeAddFromSpeed, braced
   , unoccupied, heroKindId, projectileKindId, actorSpeed
@@ -18,11 +18,9 @@ import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Color as Color
-import Game.LambdaHack.Config
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Msg
 import Game.LambdaHack.Point
 import Game.LambdaHack.Random
 import Game.LambdaHack.Time
@@ -92,12 +90,6 @@ instance Binary Actor where
 
 -- | A unique identifier of an actor in a dungeon.
 type ActorId = Int
-
--- | Find a hero name in the config file, or create a stock name.
-findHeroName :: Config -> Int -> Text
-findHeroName Config{configHeroNames} n =
-  let heroName = lookup n configHeroNames
-  in fromMaybe ("hero number" <+> showT n) heroName
 
 -- | Chance that a new monster is generated. Currently depends on the
 -- number of monsters already present, and on the level. In the future,

@@ -15,7 +15,7 @@ import Data.Dynamic
 import Game.LambdaHack.Client.Action.Frontend
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.CmdCli
-import Game.LambdaHack.Config
+import Game.LambdaHack.Client.ConfigUI
 import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 
@@ -27,7 +27,7 @@ type ConnDict = IM.IntMap ConnFaction
 
 type ConnFaction = (ConnClient, Maybe ConnClient)
 
--- | Connection information for a client. Input and output channels, etc.
+-- | Connection channels between server and a single client.
 data ConnClient = ConnClient
   { toClient   :: Chan CmdCli
   , toServer   :: Chan Dynamic

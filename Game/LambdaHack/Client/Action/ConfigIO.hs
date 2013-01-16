@@ -1,20 +1,17 @@
 -- | Personal game configuration file support.
 module Game.LambdaHack.Client.Action.ConfigIO
-  ( mkConfigRules, mkConfigUI, dump
+  ( mkConfigUI
   ) where
 
 import qualified Data.Char as Char
 import qualified Data.ConfigFile as CF
-import Data.List
-import qualified Data.Text as T
 import System.Directory
 import System.Environment
 import System.FilePath
-import qualified System.Random as R
 
-import Game.LambdaHack.Config
+import Game.LambdaHack.Client.ConfigUI
+import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Content.RuleKind
-import qualified Game.LambdaHack.Key as K
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Utils.Assert
 
@@ -49,36 +46,6 @@ appDataDir = do
   let name = takeWhile Char.isAlphaNum progName
   getAppUserDataDirectory name
 
--- | Dumps the current configuration to a file.
-dump :: Config -> FilePath -> IO ()
-dump Config{configSelfString} fn = do
-  current <- getCurrentDirectory
-  let path = current </> fn
-  writeFile path configSelfString
-
--- | Simplified setting of an option in a given section. Overwriting forbidden.
-set :: CP -> CF.SectionSpec -> CF.OptionSpec -> String -> CP
-set (CP conf) s o v =
-  if CF.has_option conf s o
-  then assert `failure`"Overwritten config option: " ++ s ++ "." ++ o
-  else CP $ forceEither $ CF.set conf s o v
-
--- | Gets a random generator from the config or,
--- if not present, generates one and updates the config with it.
-getSetGen :: CP      -- ^ config
-          -> String  -- ^ name of the generator
-          -> IO (R.StdGen, CP)
-getSetGen config option =
-  case getOption config "engine" option of
-    Just sg -> return (read sg, config)
-    Nothing -> do
-      -- Pick the randomly chosen generator from the IO monad
-      -- and record it in the config for debugging (can be 'D'umped).
-      g <- R.newStdGen
-      let gs = show g
-          c = set config "engine" option gs
-      return (g, c)
-
 -- | The content of the configuration file. It's parsed
 -- in a case sensitive way (unlike by default in ConfigFile).
 newtype CP = CP CF.ConfigParser
@@ -96,15 +63,6 @@ forceEither :: Show a => Either a b -> b
 forceEither (Left a)  = assert `failure` a
 forceEither (Right b) = b
 
--- | A simplified access to an option in a given section,
--- with simple error reporting (no internal errors are caught nor hidden).
--- If there is no such option, gives Nothing.
-getOption :: CF.Get_C a => CP -> CF.SectionSpec -> CF.OptionSpec -> Maybe a
-getOption (CP conf) s o =
-  if CF.has_option conf s o
-  then Just $ forceEither $ CF.get conf s o
-  else Nothing
-
 -- | Simplified access to an option in a given section.
 -- Fails if the option is not present.
 get :: CF.Get_C a => CP -> CF.SectionSpec -> CF.OptionSpec -> a
@@ -119,31 +77,6 @@ getItems (CP conf) s =
   if CF.has_section conf s
   then forceEither $ CF.items conf s
   else assert `failure` "Unknown config section: " ++ s
-
-parseConfigRules :: FilePath -> CP -> Config
-parseConfigRules dataDir cp =
-  let configSelfString = let CP conf = cp in CF.to_string conf
-      configCaves = map (\(n, t) -> (T.pack n, T.pack t)) $ getItems cp "caves"
-      configDepth = get cp "dungeon" "depth"
-      configFovMode = get cp "engine" "fovMode"
-      configAppDataDir = dataDir
-      configSaveFile = dataDir </> get cp "files" "saveFile"
-      configBkpFile = dataDir </> get cp "files" "saveFile" <.> ".bkp"
-      configScoresFile = dataDir </> get cp "files" "scoresFile"
-      configRulesCfgFile = dataDir </> "config.rules"
-      configHistoryFile = dataDir </> get cp "files" "historyFile"
-      configBaseHP = get cp "heroes" "baseHP"
-      configExtraHeroes = get cp "heroes" "extraHeroes"
-      configFirstDeathEnds = get cp "heroes" "firstDeathEnds"
-      configFaction = T.pack $ get cp "heroes" "faction"
-      configHeroNames =
-        let toNumber (ident, name) =
-              case stripPrefix "HeroName_" ident of
-                Just n -> (read n, T.pack name)
-                Nothing -> assert `failure` ("wrong hero name id " ++ ident)
-            section = getItems cp "heroNames"
-        in map toNumber section
-  in Config{..}
 
 parseConfigUI :: FilePath -> CP -> ConfigUI
 parseConfigUI dataDir cp =
@@ -171,16 +104,6 @@ parseConfigUI dataDir cp =
       configFont = get cp "ui" "font"
       configHistoryMax = get cp "ui" "historyMax"
   in ConfigUI{..}
-
--- | Read and parse rules config file and supplement it with random seeds.
-mkConfigRules :: Kind.Ops RuleKind -> IO (Config, R.StdGen, R.StdGen)
-mkConfigRules corule = do
-  let cpRulesDefault = rcfgRulesDefault $ Kind.stdRuleset corule
-  appData <- appDataDir
-  cpRules <- mkConfig cpRulesDefault $ appData </> "config.rules.ini"
-  (dungeonGen,  cp2) <- getSetGen cpRules "dungeonRandomGenerator"
-  (startingGen, cp3) <- getSetGen cp2     "startingRandomGenerator"
-  return (parseConfigRules appData cp3, dungeonGen, startingGen)
 
 -- | Read and parse UI config file.
 mkConfigUI :: Kind.Ops RuleKind -> IO ConfigUI

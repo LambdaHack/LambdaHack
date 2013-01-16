@@ -38,18 +38,19 @@ import qualified System.Random as R
 import System.Time
 
 import Game.LambdaHack.Actor
-import Game.LambdaHack.Config
+import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Faction
 import Game.LambdaHack.Item
-import qualified Game.LambdaHack.Key as K
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import Game.LambdaHack.PointXY
+import Game.LambdaHack.Server.Config
+import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
 
@@ -385,8 +386,8 @@ dungeonPerception cops sconfig sdebug s =
 -- | Calculate perception of a faction.
 factionPerception :: Kind.COps -> Config -> DebugModeSer -> State -> FactionId
                   -> FactionPers
-factionPerception cops sconfig sdebug s fid =
-  M.map (levelPerception cops sconfig (stryFov sdebug) fid) $ sdungeon s
+factionPerception cops Config{configFovMode} sdebug s fid =
+  M.map (levelPerception cops configFovMode (stryFov sdebug) fid) $ sdungeon s
 
 -- * Binary instances
 

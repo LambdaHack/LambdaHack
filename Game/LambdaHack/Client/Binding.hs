@@ -15,8 +15,8 @@ import qualified Data.Text as T
 import Data.Tuple (swap)
 
 import Game.LambdaHack.Client.CmdPlayer
-import Game.LambdaHack.Config
-import qualified Game.LambdaHack.Key as K
+import Game.LambdaHack.Client.ConfigUI
+import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Msg
 
 -- | Bindings and other information about player commands.

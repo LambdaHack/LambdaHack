@@ -14,7 +14,7 @@ import System.Directory
 import System.Time
 import Text.Printf
 
-import Game.LambdaHack.Config
+import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Faction
 import Game.LambdaHack.Level
 import Game.LambdaHack.Misc

@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Frontend-independent keyboard input operations.
-module Game.LambdaHack.Key
+module Game.LambdaHack.Client.Key
   ( Key(..), handleDir, dirAllMoveKey
   , moveBinding, keyTranslate, Modifier(..), KM, showKM
   ) where

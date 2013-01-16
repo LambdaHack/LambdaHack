@@ -46,10 +46,10 @@ import Game.LambdaHack.Actor
 import Game.LambdaHack.Client.Action.Frontend
 import Game.LambdaHack.Client.Animation (Frames, SingleFrame)
 import Game.LambdaHack.Client.Binding
+import Game.LambdaHack.Client.ConfigUI
 import Game.LambdaHack.Client.Draw
+import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.CmdCli
-import Game.LambdaHack.Config
-import qualified Game.LambdaHack.Key as K
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg

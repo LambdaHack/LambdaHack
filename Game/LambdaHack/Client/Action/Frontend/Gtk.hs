@@ -24,8 +24,9 @@ import Graphics.UI.Gtk hiding (Point)
 import System.Time
 
 import Game.LambdaHack.Client.Animation (SingleFrame (..))
+import qualified Game.LambdaHack.Client.Key as K (KM, Modifier (..),
+                                                  keyTranslate)
 import qualified Game.LambdaHack.Color as Color
-import qualified Game.LambdaHack.Key as K (KM, Modifier (..), keyTranslate)
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.LQueue
 
