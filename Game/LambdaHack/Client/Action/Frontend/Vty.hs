@@ -1,5 +1,5 @@
 -- | Text frontend based on Vty.
-module Game.LambdaHack.Action.Frontend.Vty
+module Game.LambdaHack.Client.Action.Frontend.Vty
   ( -- * Session data type for the frontend
     FrontendSession
     -- * The output and input operations
@@ -13,9 +13,9 @@ import Data.Text.Encoding (encodeUtf8)
 import Graphics.Vty
 import qualified Graphics.Vty as Vty
 
-import Game.LambdaHack.Animation (SingleFrame (..))
+import Game.LambdaHack.Client.Animation (SingleFrame (..))
+import qualified Game.LambdaHack.Client.Key as K (KM, Key (..), Modifier (..))
 import qualified Game.LambdaHack.Color as Color
-import qualified Game.LambdaHack.Key as K (Key (..), Modifier (..), KM)
 
 -- | Session data maintained by the frontend.
 type FrontendSession = Vty

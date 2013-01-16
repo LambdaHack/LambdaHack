@@ -1,5 +1,5 @@
 -- | Text frontend based on stdin/stdout, intended for bots.
-module Game.LambdaHack.Action.Frontend.Std
+module Game.LambdaHack.Client.Action.Frontend.Std
   ( -- * Session data type for the frontend
     FrontendSession
     -- * The output and input operations
@@ -8,14 +8,14 @@ module Game.LambdaHack.Action.Frontend.Std
   , frontendName, startup
   ) where
 
-import qualified Data.List as L
 import qualified Data.ByteString.Char8 as BS
-import qualified System.IO as SIO
+import qualified Data.List as L
 import Data.Text.Encoding (encodeUtf8)
+import qualified System.IO as SIO
 
-import qualified Game.LambdaHack.Key as K (Key(..), Modifier(..), KM)
+import Game.LambdaHack.Client.Animation (SingleFrame (..))
+import qualified Game.LambdaHack.Client.Key as K (KM, Key (..), Modifier (..))
 import qualified Game.LambdaHack.Color as Color
-import Game.LambdaHack.Animation (SingleFrame(..))
 
 -- | No session data needs to be maintained by this frontend.
 type FrontendSession = ()

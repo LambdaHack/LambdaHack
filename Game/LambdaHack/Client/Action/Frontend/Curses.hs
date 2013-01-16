@@ -1,5 +1,5 @@
 -- | Text frontend based on HSCurses.
-module Game.LambdaHack.Action.Frontend.Curses
+module Game.LambdaHack.Client.Action.Frontend.Curses
   ( -- * Session data type for the frontend
     FrontendSession
     -- * The output and input operations
@@ -16,9 +16,9 @@ import qualified Data.Text as T
 import qualified UI.HSCurses.Curses as C
 import qualified UI.HSCurses.CursesHelper as C
 
-import Game.LambdaHack.Animation (SingleFrame (..))
+import Game.LambdaHack.Client.Animation (SingleFrame (..))
+import qualified Game.LambdaHack.Client.Key as K (KM, Key (..), Modifier (..))
 import qualified Game.LambdaHack.Color as Color
-import qualified Game.LambdaHack.Key as K (Key (..), Modifier (..), KM)
 import Game.LambdaHack.Utils.Assert
 
 -- | Session data maintained by the frontend.
