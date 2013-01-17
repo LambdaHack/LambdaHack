@@ -17,10 +17,11 @@ import Game.LambdaHack.Client.State
 -- | The information that is constant across a client playing session,
 -- including many consecutive games in a single session,
 -- but is completely disregarded and reset when a new playing session starts.
+-- Auxiliary AI and non-player faction clients have no @sfs@ nor @sbinding@.
 data Session = Session
-  { sfs       :: !FrontendSession  -- ^ frontend session information
-  , sbinding  :: !Binding          -- ^ binding of keys to commands
-  , sconfigUI :: !ConfigUI         -- ^ the UI config for this session
+  { sfs       :: !(Maybe FrontendSession)  -- ^ frontend session information
+  , sbinding  :: !(Maybe Binding)          -- ^ binding of keys to commands
+  , sconfigUI :: !ConfigUI                 -- ^ the UI config for this session
   }
 
 class MonadActionRO m => MonadClientRO m where

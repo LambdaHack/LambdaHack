@@ -320,7 +320,7 @@ gameResetAction = liftIO . gameReset
 -- and initialize the engine with the starting session.
 startFrontend :: (MonadActionAbort m, MonadActionAbort n)
               => (m () -> Pers -> State -> StateServer -> ConnDict -> IO ())
-                 -> (n () -> FrontendSession -> Binding -> ConfigUI
+                 -> (n () -> Maybe FrontendSession -> Maybe Binding -> ConfigUI
                      -> State -> StateClient -> ConnClient -> IO ())
               -> Kind.COps -> m () -> n () -> IO ()
 startFrontend executorS executorC
@@ -354,7 +354,7 @@ startFrontend executorS executorC
 -- Then call the main game loop.
 start :: (MonadActionAbort m, MonadActionAbort n)
       => (m () -> Pers -> State -> StateServer -> ConnDict -> IO ())
-      -> (n () -> FrontendSession -> Binding -> ConfigUI
+      -> (n () -> Maybe FrontendSession -> Maybe Binding -> ConfigUI
           -> State -> StateClient -> ConnClient -> IO ())
       -> FrontendSession -> Kind.COps -> Binding -> Config -> ConfigUI
       -> m () -> n () -> IO ()
@@ -402,15 +402,18 @@ start executorS executorC sfs cops@Kind.COps{corule}
               in (fid, chans, defStateClient defHist sper, loc))
         chanAssocs
   -- Launch clients.
-  let forkClient (_, (chan, mchan), cli, loc) = do
-        void $ forkIO
-          $ executorC loopClient sfs sbinding sconfigUI loc cli chan
+  let forkClient (fid, (chan, mchan), cli, loc) = do
+        if isPlayerFaction loc fid
+          then void $ forkIO $ executorC
+                 loopClient (Just sfs) (Just sbinding) sconfigUI loc cli chan
+          else void $ forkIO $ executorC
+                 loopClient Nothing Nothing sconfigUI loc cli chan
         case mchan of
           Nothing -> return ()
           Just ch ->
             -- The AI client does not know it's not the main client.
             void $ forkIO
-              $ executorC loopClient sfs sbinding sconfigUI loc cli ch
+              $ executorC loopClient Nothing Nothing sconfigUI loc cli ch
   mapM_ forkClient clientAssocs
   -- Launch server.
   executorS handleServer pers glo ser d

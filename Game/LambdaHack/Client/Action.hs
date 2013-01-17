@@ -38,6 +38,7 @@ import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import qualified Data.Map as M
 import Data.Maybe
+import Data.Text (Text)
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -79,11 +80,21 @@ tryWithSlide exc h =
 
 -- | Get the frontend session.
 askFrontendSession :: MonadClientRO m => m FrontendSession
-askFrontendSession = getsSession sfs
+askFrontendSession = do
+  sfs <- getsSession sfs
+  case sfs of
+    Nothing -> assert `failure`
+               ("AI or non-player faction client uses the frontend" :: Text)
+    Just fs -> return fs
 
 -- | Get the key binding.
 askBinding :: MonadClientRO m => m Binding
-askBinding = getsSession sbinding
+askBinding = do
+  sbinding <- getsSession sbinding
+  case sbinding of
+    Nothing -> assert `failure`
+               ("AI or non-player faction client uses keybindings" :: Text)
+    Just binding -> return binding
 
 -- | Get the config from the config file.
 askConfigUI :: MonadClientRO m => m ConfigUI

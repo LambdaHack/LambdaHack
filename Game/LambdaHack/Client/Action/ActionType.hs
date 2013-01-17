@@ -92,7 +92,7 @@ instance MonadClientChan ActionCli where
 
 -- | Run an action, with a given session, state and history, in the @IO@ monad.
 executorCli :: ActionCli ()
-            -> FrontendSession -> Binding -> ConfigUI
+            -> Maybe FrontendSession -> Maybe Binding -> ConfigUI
             -> State -> StateClient -> ConnClient -> IO ()
 executorCli m sfs sbinding sconfigUI s cli d =
   runActionCli m
