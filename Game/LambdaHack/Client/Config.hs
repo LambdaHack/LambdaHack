@@ -14,7 +14,6 @@ data ConfigUI = ConfigUI
     configCommands     :: ![(K.Key, String)]  -- TODO: define Binary Cmd
     -- files
   , configAppDataDirUI :: !FilePath
---  , configHistoryFile  :: !FilePath
   , configUICfgFile    :: !FilePath
     -- macros
   , configMacros       :: ![(K.Key, K.Key)]
@@ -27,7 +26,6 @@ instance Binary ConfigUI where
   put ConfigUI{..} = do
     put configCommands
     put configAppDataDirUI
---    put configHistoryFile
     put configUICfgFile
     put configMacros
     put configFont
@@ -35,7 +33,6 @@ instance Binary ConfigUI where
   get = do
     configCommands     <- get
     configAppDataDirUI <- get
---    configHistoryFile  <- get
     configUICfgFile    <- get
     configMacros       <- get
     configFont         <- get

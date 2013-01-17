@@ -116,15 +116,13 @@ remember = do
 -- See 'Save.saveGameBkp'.
 saveGameBkp :: MonadServerChan m => m ()
 saveGameBkp = do
+  -- Only save regular clients, AI clients will restore from the same saves.
+  -- TODO: also save the targets from AI clients
+  broadcastCli [] $ GameSaveCli True
   glo <- getState
   ser <- getServer
-  faction <- getsState sfaction
-  let queryCliLoc fid = sendQueryCli fid undefined -- GameSaveCli  -- TODO: do in parallel
-  -- TODO: also save the targets from AI clients
-  d <- mapM queryCliLoc $ IM.keys faction
---  configUI <- askConfigUI
   config <- getsServer sconfig
-  liftIO $ Save.saveGameBkp config glo ser (IM.fromDistinctAscList $ zip (IM.keys faction) d)
+  liftIO $ Save.saveGameBkpSer config glo ser
 
 -- | Dumps the current game rules configuration to a file.
 dumpCfg :: MonadServer m => FilePath -> m ()
@@ -158,9 +156,6 @@ endOrLoop loopServer = do
   gquit <- getsState $ gquit . (IM.! side) . sfaction
   s <- getState
   ser <- getServer
-  faction <- getsState sfaction
-  let queryCliLoc fid = sendQueryCli fid undefined -- GameSaveCli  -- TODO: do in parallel
-  d <- mapM queryCliLoc $ IM.keys faction
   config <- getsServer sconfig
   let (_, total) = calculateTotal s
   -- The first, boolean component of squit determines
@@ -171,8 +166,9 @@ endOrLoop loopServer = do
       -- Save and display in parallel.
       mv <- liftIO newEmptyMVar
       liftIO $ void
-        $ forkIO (Save.saveGameFile config s ser (IM.fromDistinctAscList $ zip (IM.keys faction) d)
+        $ forkIO (Save.saveGameSer config s ser
                   `finally` putMVar mv ())
+      broadcastCli [] $ GameSaveCli False
       tryIgnore $ do
         handleScores False Camping total
         broadcastPosCli [] $ MoreFullCli "See you soon, stronger and braver!"
@@ -219,8 +215,8 @@ restartGame loopServer = do
   (state, ser, funRestart) <- gameResetAction cops
   putState state
   putServer ser
-  funBroadcastCli (\fid -> let (entryLoc, sper, loc) = funRestart fid
-                           in RestartCli entryLoc sper loc)
+  funBroadcastCli (\fid -> let (entryPos, sper, loc) = funRestart fid
+                           in RestartCli entryPos sper loc)
   -- TODO: send to each client RestartCli; use d in its code; empty channels?
   saveGameBkp
   loopServer
@@ -295,7 +291,7 @@ gameReset cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
             needInitialCrew =
               filter (not . isSpawningFaction defState) $ IM.keys faction
             fo fid (gloF, serF) =
-              initialHeroes cops entryLoc fid gloF serF
+              initialHeroes cops entryPos fid gloF serF
             (glo, ser) = foldr fo (defState, defSer) needInitialCrew
             -- This state is quite small, fit for transmition to the client.
             -- The biggest part is content, which really needs to be updated
@@ -305,7 +301,7 @@ gameReset cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
             tryFov = stryFov $ sdebugSer ser
             fovMode = fromMaybe (configFovMode sconfig) tryFov
             pers = dungeonPerception cops fovMode glo
-            funReset fid = (entryLoc, pers IM.! fid, defLoc fid)
+            funReset fid = (entryPos, pers IM.! fid, defLoc fid)
         return (glo, ser, funReset)
   return $! St.evalState rnd dungeonGen
 
@@ -366,37 +362,27 @@ start executorS executorC sfs cops@Kind.COps{corule}
       sbinding sconfig sconfigUI handleServer loopClient = do
   let title = rtitle $ Kind.stdRuleset corule
       pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
-  restored <- Save.restoreGame sconfig sconfigUI pathsDataFile title
-  (glo, ser, dBare, shistory, msg) <- case restored of
-    Right (shistory, msg) -> do  -- Starting a new game.
-      (gloR, serR, funR) <- gameReset cops
-      let faction = sfaction gloR
-          d = map (\fid -> let (entryLoc, sper, loc) = funR fid
-                           in (fid, (defStateClient entryLoc sper, loc)))
-              $ IM.keys faction
-          dR = IM.fromDistinctAscList d
-      return (gloR, serR, dR, shistory, msg)
-    Left (gloL, serL, dL, shistory, msg) -> do  -- Running a restored game.
+  -- TODO: rewrite; this is a bit wrong
+  (gloR, serR, funR) <- gameReset cops
+  restored <- Save.restoreGameSer sconfig sconfigUI pathsDataFile title
+  (glo, ser, _msg) <- case restored of
+    Right msg -> do  -- Starting a new game.
+      return (gloR, serR, msg)
+    Left (gloL, serL, msg) -> do  -- Running a restored game.
       let gloCops = updateCOps (const cops) gloL
-          dCops = IM.map (\(cli, loc) -> (cli, updateCOps (const cops) loc)) dL
-      return (gloCops, serL, dCops, shistory, msg)
-  let singMsg (cli, loc) = (cli {sreport = singletonReport msg}, loc)
-      dMsg = IM.map singMsg dBare
-      dHist = case filter (isPlayerFaction glo) $ IM.keys dMsg of
-        [] -> dMsg  -- only robots play
-        k : _ -> IM.adjust (\(cli, loc) -> (cli {shistory}, loc)) k dMsg
-      tryFov = stryFov $ sdebugSer ser
+      return (gloCops, serL, msg)
+  -- Prepare data for the server.
+  let tryFov = stryFov $ sdebugSer ser
       fovMode = fromMaybe (configFovMode sconfig) tryFov
       pers = dungeonPerception cops fovMode glo
-      dPer = IM.mapWithKey (\side (cli, loc) ->
-                               (cli {sper = pers IM.! side}, loc)) dHist
+      faction = sfaction glo
       mkConnClient = do
         toClient <- newChan
         toServer <- newChan
         return $ ConnClient {toClient, toServer}
-      addChan (k, cliloc) = do
+      addChan fid = do
         chan <- mkConnClient
-        let isPlayer = isPlayerFaction glo k
+        let isPlayer = isPlayerFaction glo fid
         -- For non-humans, we don't spawn a separate AI client. In this way,
         -- non-human players are allowed to cheat: their non-leader actors
         -- know leader plans and act accordingly, while human non-leader
@@ -404,10 +390,19 @@ start executorS executorC sfs cops@Kind.COps{corule}
         mchan <- if isPlayer
                  then fmap Just mkConnClient
                  else return Nothing
-        return (k, (cliloc, (chan, mchan)))
-  dAssocs <- mapM addChan $ IM.toAscList dPer
-  let d = IM.map snd $ IM.fromAscList dAssocs
-      forkClient (_, ((cli, loc), (chan, mchan))) = do
+        return (fid, (chan, mchan))
+  chanAssocs <- mapM addChan $ IM.keys faction
+  let d = IM.fromAscList chanAssocs
+  -- Prepare data for clients.
+  defHist <- defHistory
+  let clientAssocs =
+        map (\(fid, chans) ->
+              let (entryPos, sper, loc) = funR fid
+              -- TODO: rewrite; this is a bit wrong
+              in (fid, chans, defStateClient entryPos defHist sper, loc))
+        chanAssocs
+  -- Launch clients.
+  let forkClient (_, (chan, mchan), cli, loc) = do
         void $ forkIO
           $ executorC loopClient sfs sbinding sconfigUI loc cli chan
         case mchan of
@@ -416,7 +411,8 @@ start executorS executorC sfs cops@Kind.COps{corule}
             -- The AI client does not know it's not the main client.
             void $ forkIO
               $ executorC loopClient sfs sbinding sconfigUI loc cli ch
-  mapM_ forkClient dAssocs
+  mapM_ forkClient clientAssocs
+  -- Launch server.
   executorS handleServer pers glo ser d
 
 switchGlobalSelectedSide :: MonadServer m => FactionId -> m ()

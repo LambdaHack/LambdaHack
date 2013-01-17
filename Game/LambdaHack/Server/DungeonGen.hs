@@ -134,7 +134,7 @@ findGenerator cops flavour discoRev Config{configCaves} k depth = do
 -- | Freshly generated and not yet populated dungeon.
 data FreshDungeon = FreshDungeon
   { entryLevel   :: LevelId  -- ^ starting level for the party
-  , entryLoc     :: Point    -- ^ starting position for the party
+  , entryPos     :: Point    -- ^ starting position for the party
   , freshDungeon :: Dungeon  -- ^ level maps
   , freshDepth   :: Int      -- ^ dungeon depth (can be different than size)
   }
@@ -152,7 +152,7 @@ dungeonGen cops flavour discoRev config@Config{configDepth}  =
       con g = assert (configDepth >= 1 `blame` configDepth) $
         let (gd, levels) = mapAccumL gen g [1..configDepth]
             entryLevel = levelDefault 1
-            entryLoc = fst (lstair (snd (head levels)))
+            entryPos = fst (lstair (snd (head levels)))
             freshDungeon = M.fromList levels
             freshDepth = configDepth
         in (FreshDungeon{..}, gd)

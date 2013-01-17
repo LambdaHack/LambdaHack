@@ -20,12 +20,8 @@ data Config = Config
   , configFovMode        :: !FovMode
     -- files
   , configAppDataDir     :: !FilePath
-  , configSaveFile       :: !FilePath
-  , configBkpFile        :: !FilePath
   , configScoresFile     :: !FilePath
   , configRulesCfgFile   :: !FilePath
-  -- Temporary hack until all clients save their local state separately.
-  , configHistoryFile    :: !FilePath
     -- heroes
   , configBaseHP         :: !Int
   , configExtraHeroes    :: !Int
@@ -42,10 +38,7 @@ instance Binary Config where
     put configDepth
     put configFovMode
     put configAppDataDir
-    put configSaveFile
-    put configBkpFile
     put configScoresFile
-    put configHistoryFile
     put configRulesCfgFile
     put configBaseHP
     put configExtraHeroes
@@ -58,11 +51,8 @@ instance Binary Config where
     configDepth          <- get
     configFovMode        <- get
     configAppDataDir     <- get
-    configSaveFile       <- get
-    configBkpFile        <- get
     configScoresFile     <- get
     configRulesCfgFile   <- get
-    configHistoryFile  <- get
     configBaseHP         <- get
     configExtraHeroes    <- get
     configFirstDeathEnds <- get

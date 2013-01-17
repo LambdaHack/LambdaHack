@@ -49,6 +49,7 @@ data CmdUpdateCli =
   | MoreFullCli Msg
   | MoreBWCli Msg
   | RestartCli Point FactionPers State
+  | GameSaveCli Bool
   deriving Show
 
 data CmdQueryCli a where
@@ -61,7 +62,6 @@ data CmdQueryCli a where
   ConfirmMoreFullCli::  Msg -> CmdQueryCli Bool
   NullReportCli :: CmdQueryCli Bool
   SetArenaLeaderCli :: LevelId -> ActorId -> CmdQueryCli ActorId
---  GameSaveCli :: CmdQueryCli (StateClient, State)
   HandlePlayerCli :: ActorId -> CmdQueryCli (CmdSer, Maybe ActorId, LevelId)
   HandleAI :: ActorId -> CmdQueryCli CmdSer
 

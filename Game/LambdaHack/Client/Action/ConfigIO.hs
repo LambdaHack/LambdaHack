@@ -90,7 +90,6 @@ parseConfigUI dataDir cp =
             section = getItems cp "commands"
         in map mkCommand section
       configAppDataDirUI = dataDir
-      _configHistoryFile = dataDir </> get cp "files" "historyFile"
       configUICfgFile = dataDir </> "config.ui"
       configMacros =
         let trMacro (from, to) =

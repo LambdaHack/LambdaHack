@@ -25,7 +25,7 @@ module Game.LambdaHack.Client.Action
     -- * Turn init operations
   , rememberLevel, displayPush
     -- * Assorted primitives
-  , frontendName
+  , clientGameSave, frontendName
     -- * The client main loop
   , loopClient2
   ) where
@@ -47,6 +47,7 @@ import Game.LambdaHack.Client.Action.ActionClass (MonadClient (..),
                                                   Session (..))
 import Game.LambdaHack.Client.Action.ActionType (executorCli)
 import Game.LambdaHack.Client.Action.Frontend
+import qualified Game.LambdaHack.Client.Action.Save as Save
 import Game.LambdaHack.Client.Animation (Frames, SingleFrame)
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.Config
@@ -54,6 +55,8 @@ import Game.LambdaHack.Client.Draw
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.CmdCli
+import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
@@ -295,6 +298,13 @@ rememberLevel Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} visible lvl clvl =
           , lsecret = IM.empty
           }
 
+clientGameSave :: MonadClient m => Bool -> m ()
+clientGameSave toBkp = do
+  s <- getState
+  cli <- getClient
+  configUI <- askConfigUI
+  liftIO $ Save.saveGameCli toBkp configUI s cli
+
 readChanFromSer :: MonadClientChan m => m CmdCli
 readChanFromSer = do
   toClient <- getsChan toClient
@@ -310,11 +320,31 @@ loopClient2 :: MonadClientChan m
               -> (forall a. Typeable a => CmdQueryCli a -> m a)
               -> m ()
 loopClient2 cmdUpdateCli cmdQueryCli = do
-  cmd2 <- readChanFromSer
-  case cmd2 of
-    CmdUpdateCli cmd -> do
-      cmdUpdateCli cmd
-    CmdQueryCli cmd -> do
-      a <- cmdQueryCli cmd
-      writeChanToSer $ toDyn a
-  loopClient2 cmdUpdateCli cmdQueryCli
+  factionName <- getsState $ gname . getSide
+  cops@Kind.COps{corule} <- getsState scops
+  sper <- getsClient sper
+  configUI <- askConfigUI
+  let pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
+      title = rtitle $ Kind.stdRuleset corule
+  restored <-
+    liftIO $ Save.restoreGameCli factionName configUI pathsDataFile title
+  case restored of
+    Right msg -> do  -- First visit ever, use the initial state.
+      msgAdd msg
+    Left (s, cli, msg) -> do  -- Restore a game or at least history.
+      let sCops = updateCOps (const cops) s
+          cliPer = cli {sper}
+      putState sCops
+      putClient cliPer
+      msgAdd msg
+  loop
+ where
+  loop = do
+    cmd2 <- readChanFromSer
+    case cmd2 of
+      CmdUpdateCli cmd -> do
+        cmdUpdateCli cmd
+      CmdQueryCli cmd -> do
+        a <- cmdQueryCli cmd
+        writeChanToSer $ toDyn a
+    loop

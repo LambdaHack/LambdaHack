@@ -191,11 +191,12 @@ cmdUpdateCli cmd = case cmd of
   MoreFullCli msg -> do
     void $ displayMore ColorFull msg
     recordHistory  -- Prevent repeating the ending msgs.
-  RestartCli entryLoc sper loc -> do
-    let cli = defStateClient entryLoc sper
+  RestartCli entryPos sper loc -> do
     shistory <- getsClient shistory
-    putClient cli {shistory}
+    let cli = defStateClient entryPos shistory sper
+    putClient cli
     putState loc
+  GameSaveCli toBkp -> clientGameSave toBkp
 
 cmdQueryCli :: MonadClient m => CmdQueryCli a -> m a
 cmdQueryCli cmd = case cmd of
@@ -236,10 +237,6 @@ cmdQueryCli cmd = case cmd of
     loc <- getState
     modifyClient $ updateSelectedLeader leader loc
     return leader
-  -- GameSaveCli -> do
-  --   cli <- getClient
-  --   loc <- getState
-  --   return (cli, loc)
   HandlePlayerCli leader -> handlePlayer leader
   HandleAI actor -> do
     stratTarget <- targetStrategy actor
