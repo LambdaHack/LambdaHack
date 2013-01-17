@@ -48,7 +48,7 @@ data CmdUpdateCli =
   | DisplayDelayCli
   | MoreFullCli Msg
   | MoreBWCli Msg
-  | RestartCli Point FactionPers State
+  | RestartCli FactionPers State
   | GameSaveCli Bool
   deriving Show
 

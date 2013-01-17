@@ -191,9 +191,9 @@ cmdUpdateCli cmd = case cmd of
   MoreFullCli msg -> do
     void $ displayMore ColorFull msg
     recordHistory  -- Prevent repeating the ending msgs.
-  RestartCli entryPos sper loc -> do
+  RestartCli sper loc -> do
     shistory <- getsClient shistory
-    let cli = defStateClient entryPos shistory sper
+    let cli = defStateClient shistory sper
     putClient cli
     putState loc
   GameSaveCli toBkp -> clientGameSave toBkp

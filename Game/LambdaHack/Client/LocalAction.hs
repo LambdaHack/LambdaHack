@@ -53,19 +53,21 @@ retarget = do
   stgtMode <- getsClient stgtMode
   assert (isNothing stgtMode) $ do
     arena <- getsState sarena
-    Just leader <- getsClient getLeader
-    ppos <- getsState (bpos . getActorBody leader)
     msgAdd "Last target invalid."
-    modifyClient $ \cli -> cli {scursor = ppos, seps = 0}
+    modifyClient $ \cli -> cli {scursor = Nothing, seps = 0}
     targetMonster $ TgtAuto arena
 
 -- * Move and Run
 
 moveCursor :: MonadClient m => Vector -> Int -> WriterT Slideshow m ()
 moveCursor dir n = do
+  Just leader <- getsClient getLeader
+  lpos <- getsState $ bpos . getActorBody leader
+  scursor <- getsClient scursor
+  let cpos = fromMaybe lpos scursor
   Level{lxsize, lysize} <- cursorLevel
   let shiftB pos = shiftBounded lxsize (1, 1, lxsize - 2, lysize - 2) pos dir
-  modifyClient $ \cli -> cli {scursor = iterate shiftB (scursor cli) !! n}
+  modifyClient $ \cli -> cli {scursor = Just $ iterate shiftB cpos !! n}
   doLook
 
 cursorLevel :: MonadClientRO m => m Level
@@ -117,12 +119,14 @@ lookAt detailed canSee pos msg = do
 doLook :: MonadClient m => WriterT Slideshow m ()
 doLook = do
   Kind.COps{coactor} <- getsState scops
-  p <- getsClient scursor
+  scursor <- getsClient scursor
   per <- askPerception
   Just leader <- getsClient getLeader
+  lpos <- getsState $ bpos . getActorBody leader
   target <- getsClient $ getTarget leader
   lvl <- cursorLevel
-  let hms = lactor lvl
+  let p = fromMaybe lpos scursor
+      hms = lactor lvl
       canSee = IS.member p (totalVisible per)
       ihabitant | canSee = find (\ m -> bpos m == p) (IM.elems hms)
                 | otherwise = Nothing
@@ -214,12 +218,10 @@ setCursor :: MonadClient m => TgtMode -> WriterT Slideshow m ()
 setCursor stgtModeNew = do
   loc <- getState
   cli <- getClient
-  Just leader <- getsClient getLeader
-  ppos <- getsState (bpos . getActorBody leader)
   stgtModeOld <- getsClient stgtMode
   scursorOld <- getsClient scursor
   sepsOld <- getsClient seps
-  let scursor = fromMaybe ppos (targetToPos cli loc)
+  let scursor = targetToPos cli loc
       seps = if scursor == scursorOld then sepsOld else 0
       stgtMode = if isNothing stgtModeOld
                    then Just stgtModeNew
@@ -273,12 +275,14 @@ tgtAscend k = do
   Kind.COps{cotile} <- getsState scops
   loc <- getState
   depth <- getsState sdepth
-  cpos <- getsClient scursor
+  cursor <- getsClient scursor
   (tgtId, lvl) <- viewedLevel
-  let tile = lvl `at` cpos
-      rightStairs =
-        k ==  1 && Tile.hasFeature cotile (F.Cause Effect.Ascend)  tile ||
-        k == -1 && Tile.hasFeature cotile (F.Cause Effect.Descend) tile
+  let rightStairs = case cursor of
+        Nothing -> False
+        Just cpos ->
+          let tile = lvl `at` cpos
+          in k ==  1 && Tile.hasFeature cotile (F.Cause Effect.Ascend)  tile
+          || k == -1 && Tile.hasFeature cotile (F.Cause Effect.Descend) tile
   if rightStairs  -- stairs, in the right direction
     then case whereTo loc tgtId k of
       Nothing ->  -- we are at the "end" of the dungeon
@@ -288,8 +292,8 @@ tgtAscend k = do
           -- Do not freely reveal the other end of the stairs.
           let scursor =
                 if Tile.hasFeature cotile F.Exit (lvl `at` npos)
-                then npos  -- already know as an exit, focus on it
-                else cpos  -- unknown, do not reveal
+                then Just npos  -- already know as an exit, focus on it
+                else cursor    -- unknown, do not reveal
           modifyClient $ \cli -> cli {scursor}
           setTgtId nln
     else do  -- no stairs in the right direction
@@ -397,7 +401,7 @@ endTargeting accept = do
   when accept $ do
     Just leader <- getsClient getLeader
     target <- getsClient $ getTarget leader
-    cpos <- getsClient scursor
+    scursor <- getsClient scursor
     side <- getsState sside
     lvl <- cursorLevel
     let ms = hostileAssocs side lvl
@@ -405,12 +409,15 @@ endTargeting accept = do
       Just TEnemy{} -> do
         -- If in monster targeting mode, switch to the monster under
         -- the current cursor position, if any.
-        case find (\ (_im, m) -> bpos m == cpos) ms of
+        case find (\ (_im, m) -> Just (bpos m) == scursor) ms of
           Just (im, m)  ->
             let tgt = Just $ TEnemy im (bpos m)
             in modifyClient $ updateTarget leader (const $ tgt)
           Nothing -> return ()
-      _ -> modifyClient $ updateTarget leader (const $ Just $ TPos cpos)
+      _ -> case scursor of
+        Nothing -> return ()
+        Just cpos ->
+          modifyClient $ updateTarget leader (const $ Just $ TPos cpos)
   if accept
     then endTargetingMsg
     else msgAdd "targeting canceled"

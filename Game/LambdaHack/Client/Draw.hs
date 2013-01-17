@@ -17,7 +17,8 @@ import qualified Data.Text as T
 import Game.LambdaHack.Actor as Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Client.Animation (Animation, Frames, SingleFrame (..),
-                                  renderAnim)
+                                         renderAnim)
+import Game.LambdaHack.Client.State
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
@@ -33,7 +34,6 @@ import Game.LambdaHack.Point
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Random
 import Game.LambdaHack.State
-import Game.LambdaHack.Client.State
 import Game.LambdaHack.Time
 import Game.LambdaHack.Vector
 
@@ -89,7 +89,9 @@ draw dm cops per
                       Nothing -> "3d1"  -- TODO: ?
                   Nothing -> "3d1"  -- TODO; use the item 'fist'
       bl | isNothing mleader = []
-         | otherwise = fromMaybe [] $ bla lxsize lysize seps bposL scursor
+         | otherwise = case scursor of
+        Nothing -> []
+        Just cursor -> fromMaybe [] $ bla lxsize lysize seps bposL cursor
       dis pxy =
         let pos0 = toPoint lxsize pxy
             tile = lvl `at` pos0
@@ -111,7 +113,8 @@ draw dm cops per
             actorsHere = IM.elems lactor
             (char, fg0) =
               case ( L.find (\ m -> pos0 == Actor.bpos m) actorsHere
-                   , L.find (\ m -> scursor == Actor.bpos m) actorsHere ) of
+                   , L.find (\ m -> scursor == Just (Actor.bpos m))
+                       actorsHere ) of
                 (_, actorTgt) | isJust stgtMode
                                 && (drawnLevelId == sarena s
                                     && L.elem pos0 bl
@@ -138,7 +141,7 @@ draw dm cops per
             vis = IS.member pos0 $ totalVisible per
             visPl =
               maybe False (\leader -> actorSeesLoc per leader pos0) mleader
-            bg0 = if isJust stgtMode && pos0 == scursor
+            bg0 = if isJust stgtMode && Just pos0 == scursor
                   then Color.defFG       -- highlight target cursor
                   else sVisBG vis visPl  -- FOV debug or standard bg
             reverseVideo = Color.Attr{ fg = Color.bg Color.defAttr

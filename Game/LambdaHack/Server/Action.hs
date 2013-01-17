@@ -215,8 +215,8 @@ restartGame loopServer = do
   (state, ser, funRestart) <- gameResetAction cops
   putState state
   putServer ser
-  funBroadcastCli (\fid -> let (entryPos, sper, loc) = funRestart fid
-                           in RestartCli entryPos sper loc)
+  funBroadcastCli (\fid -> let (sper, loc) = funRestart fid
+                           in RestartCli sper loc)
   -- TODO: send to each client RestartCli; use d in its code; empty channels?
   saveGameBkp
   loopServer
@@ -254,7 +254,7 @@ initialHeroes cops ppos side s ser =
 
 -- TODO: do this inside Action ()
 gameReset :: Kind.COps
-          -> IO (State, StateServer, FactionId -> (Point, FactionPers, State))
+          -> IO (State, StateServer, FactionId -> (FactionPers, State))
 gameReset cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
                                   , coitem
                                   , corule
@@ -301,7 +301,7 @@ gameReset cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
             tryFov = stryFov $ sdebugSer ser
             fovMode = fromMaybe (configFovMode sconfig) tryFov
             pers = dungeonPerception cops fovMode glo
-            funReset fid = (entryPos, pers IM.! fid, defLoc fid)
+            funReset fid = (pers IM.! fid, defLoc fid)
         return (glo, ser, funReset)
   return $! St.evalState rnd dungeonGen
 
@@ -309,7 +309,7 @@ gameResetAction :: MonadServer m
                 => Kind.COps
                 -> m ( State
                      , StateServer
-                     , FactionId -> (Point, FactionPers, State))
+                     , FactionId -> (FactionPers, State))
 gameResetAction = liftIO . gameReset
 
 -- | Wire together content, the definitions of game commands,
@@ -397,9 +397,9 @@ start executorS executorC sfs cops@Kind.COps{corule}
   defHist <- defHistory
   let clientAssocs =
         map (\(fid, chans) ->
-              let (entryPos, sper, loc) = funR fid
+              let (sper, loc) = funR fid
               -- TODO: rewrite; this is a bit wrong
-              in (fid, chans, defStateClient entryPos defHist sper, loc))
+              in (fid, chans, defStateClient defHist sper, loc))
         chanAssocs
   -- Launch clients.
   let forkClient (_, (chan, mchan), cli, loc) = do

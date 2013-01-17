@@ -34,8 +34,8 @@ import Game.LambdaHack.Utils.Assert
 -- Data invariant: if @_sleader@ is @Nothing@ then so is @srunning@.
 data StateClient = StateClient
   { stgtMode  :: !(Maybe TgtMode)  -- ^ targeting mode
-  , scursor   :: !Point    -- ^ cursor coordinates
-  , seps      :: !Int      -- ^ a parameter of the tgt digital line
+  , scursor   :: !(Maybe Point)    -- ^ cursor coordinates
+  , seps      :: !Int           -- ^ a parameter of the tgt digital line
   , starget   :: !(IM.IntMap Target)  -- ^ targets of all actors in the dungeon
   , srunning  :: !(Maybe (Vector, Int))  -- ^ direction and distance of running
   , sreport   :: !Report        -- ^ current messages
@@ -69,11 +69,11 @@ data DebugModeCli = DebugModeCli
   deriving Show
 
 -- | Initial game client state.
-defStateClient :: Point -> History -> FactionPers -> StateClient
-defStateClient scursor shistory sper = do
+defStateClient :: History -> FactionPers -> StateClient
+defStateClient shistory sper = do
   StateClient
     { stgtMode  = Nothing
-    , scursor
+    , scursor   = Nothing
     , seps      = 0
     , starget   = IM.empty
     , srunning  = Nothing
@@ -135,7 +135,7 @@ targetToPos cli@StateClient{scursor} s = do
     Just (TEnemy a _ll) -> do
       guard $ memActor a s           -- alive and visible?
       return $! bpos (getActorBody a s)
-    Nothing -> return scursor
+    Nothing -> scursor
 
 toggleMarkVision :: StateClient -> StateClient
 toggleMarkVision s@StateClient{sdebugCli=sdebugCli@DebugModeCli{smarkVision}} =
