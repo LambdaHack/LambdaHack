@@ -11,6 +11,12 @@
 ; LambdaCave_3: caveEmpty
 ; LambdaCave_10: caveNoise
 
+; [computerPlayers]
+; ; faction "playable" means a random choice
+; monster: computer monster
+; hero: computer hero
+; playable: computer playable
+
 ; [dungeon]
 ; depth: 10
 
@@ -28,9 +34,12 @@
 ; [heroes]
 ; baseHP: 50
 ; extraHeroes: 2
-; ; faction "playable" means a random choice
-; faction: hero
 ; firstDeathEnds: False
+
+; [humanPlayers]
+; hero: human hero 1
+; monster: human monster
+; hero: human hero 2
 
 ; [heroNames]
 ; HeroName_0: you

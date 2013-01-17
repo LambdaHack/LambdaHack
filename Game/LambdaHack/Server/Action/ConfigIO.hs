@@ -4,6 +4,7 @@ module Game.LambdaHack.Server.Action.ConfigIO
   ( mkConfigRules, dump
   ) where
 
+import Control.Arrow ((***))
 import qualified Data.Char as Char
 import qualified Data.ConfigFile as CF
 import Data.List
@@ -124,6 +125,9 @@ parseConfigRules :: FilePath -> CP -> Config
 parseConfigRules dataDir cp =
   let configSelfString = let CP conf = cp in CF.to_string conf
       configCaves = map (\(n, t) -> (T.pack n, T.pack t)) $ getItems cp "caves"
+      configComputer =
+        let section = getItems cp "computerPlayers"
+        in map (T.pack *** T.pack) section
       configDepth = get cp "dungeon" "depth"
       configFovMode = get cp "engine" "fovMode"
       configAppDataDir = dataDir
@@ -132,7 +136,9 @@ parseConfigRules dataDir cp =
       configBaseHP = get cp "heroes" "baseHP"
       configExtraHeroes = get cp "heroes" "extraHeroes"
       configFirstDeathEnds = get cp "heroes" "firstDeathEnds"
-      configFaction = T.pack $ get cp "heroes" "faction"
+      configHuman =
+        let section = getItems cp "humanPlayers"
+        in map (T.pack *** T.pack) section
       configHeroNames =
         let toNumber (ident, name) =
               case stripPrefix "HeroName_" ident of

@@ -269,7 +269,8 @@ gameReset cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
         (discoS, discoRev) <- serverDiscos coitem
         DungeonGen.FreshDungeon{..} <-
           DungeonGen.dungeonGen cops sflavour discoRev sconfig
-        let factionName = configFaction sconfig
+        -- TODO: really use configPlayers
+        let factionName = fst $ head $ configHuman sconfig
         playerFactionKindId <- opick factionName (const True)
         let g gkind fk mk = do
               (m, k) <- mk

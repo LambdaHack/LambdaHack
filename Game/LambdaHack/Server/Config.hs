@@ -5,6 +5,7 @@ module Game.LambdaHack.Server.Config
 
 import Data.Binary
 import Data.Text (Text)
+
 import Game.LambdaHack.Msg ()
 import Game.LambdaHack.Server.Fov
 
@@ -14,6 +15,8 @@ data Config = Config
   { configSelfString     :: !String
     -- caves
   , configCaves          :: ![(Text, Text)]
+    -- computerPlayers
+  , configComputer       :: ![(Text, Text)]
     -- dungeon
   , configDepth          :: !Int
     -- engine
@@ -26,7 +29,8 @@ data Config = Config
   , configBaseHP         :: !Int
   , configExtraHeroes    :: !Int
   , configFirstDeathEnds :: !Bool
-  , configFaction        :: !Text
+    -- humanPlayers
+  , configHuman          :: ![(Text, Text)]
     -- heroNames
   , configHeroNames      :: ![(Int, Text)]
   } deriving Show
@@ -35,6 +39,7 @@ instance Binary Config where
   put Config{..} = do
     put configSelfString
     put configCaves
+    put configComputer
     put configDepth
     put configFovMode
     put configAppDataDir
@@ -43,11 +48,12 @@ instance Binary Config where
     put configBaseHP
     put configExtraHeroes
     put configFirstDeathEnds
-    put configFaction
+    put configHuman
     put configHeroNames
   get = do
     configSelfString     <- get
     configCaves          <- get
+    configComputer       <- get
     configDepth          <- get
     configFovMode        <- get
     configAppDataDir     <- get
@@ -56,6 +62,6 @@ instance Binary Config where
     configBaseHP         <- get
     configExtraHeroes    <- get
     configFirstDeathEnds <- get
-    configFaction        <- get
+    configHuman          <- get
     configHeroNames      <- get
     return Config{..}
