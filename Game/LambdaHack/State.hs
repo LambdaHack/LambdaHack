@@ -10,7 +10,7 @@ module Game.LambdaHack.State
   , updateDungeon, updateDisco, updateFaction, updateCOps, updateRandom
   , updateArena, updateTime, updateSide, updateSelectedArena
   , getArena, getTime, getSide
-  , isPlayerFaction, isSpawningFaction
+  , isHumanFaction, isSpawningFaction
   ) where
 
 import Data.Binary
@@ -163,9 +163,9 @@ getTime State{_sarena, _sdungeon} = ltime $ _sdungeon M.! _sarena
 getSide :: State -> Faction
 getSide State{_sfaction, _sside} = _sfaction IM.! _sside
 
--- | Tell whether the faction is player-controlled.
-isPlayerFaction :: State -> FactionId -> Bool
-isPlayerFaction s fid = isNothing $ gAiSelected $ _sfaction s IM.! fid
+-- | Tell whether the faction is human player-controlled.
+isHumanFaction :: State -> FactionId -> Bool
+isHumanFaction s fid = isNothing $ gAiSelected $ _sfaction s IM.! fid
 
 -- | Tell whether the faction can spawn actors.
 isSpawningFaction :: State -> FactionId -> Bool

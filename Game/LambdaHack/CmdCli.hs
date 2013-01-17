@@ -62,7 +62,7 @@ data CmdQueryCli a where
   ConfirmMoreFullCli::  Msg -> CmdQueryCli Bool
   NullReportCli :: CmdQueryCli Bool
   SetArenaLeaderCli :: LevelId -> ActorId -> CmdQueryCli ActorId
-  HandlePlayerCli :: ActorId -> CmdQueryCli (CmdSer, Maybe ActorId, LevelId)
+  HandleHumanCli :: ActorId -> CmdQueryCli (CmdSer, Maybe ActorId, LevelId)
   HandleAI :: ActorId -> CmdQueryCli CmdSer
 
 deriving instance Show (CmdQueryCli a)

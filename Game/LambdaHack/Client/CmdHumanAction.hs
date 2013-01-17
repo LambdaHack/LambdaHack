@@ -1,6 +1,6 @@
 {-# LANGUAGE GADTs, OverloadedStrings #-}
--- | Semantics of player commands.
-module Game.LambdaHack.Client.CmdPlayerAction
+-- | Semantics of human player commands.
+module Game.LambdaHack.Client.CmdHumanAction
   ( cmdSemantics
   ) where
 
@@ -14,7 +14,7 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Client.Action
-import Game.LambdaHack.Client.CmdPlayer
+import Game.LambdaHack.Client.CmdHuman
 import Game.LambdaHack.Client.LocalAction
 import Game.LambdaHack.Client.MixedAction
 import Game.LambdaHack.Client.State
@@ -26,7 +26,7 @@ import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 
 -- | The basic action for a command and whether it takes time.
-cmdAction :: MonadClient m => StateClient -> State -> CmdPlayer
+cmdAction :: MonadClient m => StateClient -> State -> CmdHuman
           -> WriterT Slideshow m (Maybe CmdSer)
 cmdAction cli s cmd =
   let tgtMode = stgtMode cli
@@ -38,11 +38,11 @@ cmdAction cli s cmd =
       Level{lxsize} =
         maybe (getArena s) ((sdungeon s M.!) . tgtLevelId) tgtMode
   in case cmd of
-    Apply{..} -> lift $ fmap Just $ playerApplyGroupItem verb object syms
+    Apply{..} -> lift $ fmap Just $ leaderApplyGroupItem verb object syms
     Project{} | isNothing tgtLoc -> retarget >> return Nothing
-    Project{..} -> lift $ fmap Just $ playerProjectGroupItem verb object syms
-    TriggerDir{..} -> lift $ fmap Just $ playerTriggerDir feature verb
-    TriggerTile{..} -> lift $ fmap Just $ playerTriggerTile feature
+    Project{..} -> lift $ fmap Just $ leaderProjectGroupItem verb object syms
+    TriggerDir{..} -> lift $ fmap Just $ leaderTriggerDir feature verb
+    TriggerTile{..} -> lift $ fmap Just $ leaderTriggerTile feature
     Pickup -> lift $ fmap Just $ pickupItem
     Drop   -> lift $ fmap Just $ dropItem
     Wait   -> lift $ fmap Just $ waitBlock
@@ -76,7 +76,7 @@ cmdAction cli s cmd =
     CfgDump     -> lift $ fmap Just $ dumpConfig
     Inventory   -> inventory >> return Nothing
     TgtFloor    -> (targetFloor   $ TgtExplicit arena) >> return Nothing
-    TgtEnemy    -> (targetMonster $ TgtExplicit arena) >> return Nothing
+    TgtEnemy    -> (targetEnemy $ TgtExplicit arena) >> return Nothing
     TgtAscend k -> tgtAscend k >> return Nothing
     EpsIncr b   -> lift $ epsIncr b >> return Nothing
     Cancel      -> cancelCurrent displayMainMenu >> return Nothing
@@ -92,12 +92,12 @@ cmdAction cli s cmd =
     DebugSmell  -> modifyClient toggleMarkSmell >> return Nothing
     DebugVision -> undefined {-modifyServer cycleTryFov-}
 
--- | The semantics of player commands in terms of the @Action@ monad.
+-- | The semantics of human player commands in terms of the @Action@ monad.
 -- Decides if the action takes time and what action to perform.
 -- Time cosuming commands are marked as such in help and cannot be
 -- invoked in targeting mode on a remote level (level different than
 -- the level of the selected hero).
-cmdSemantics :: MonadClient m => CmdPlayer -> WriterT Slideshow m (Maybe CmdSer)
+cmdSemantics :: MonadClient m => CmdHuman -> WriterT Slideshow m (Maybe CmdSer)
 cmdSemantics cmd = do
   Just leaderOld <- getsClient getLeader
   arenaOld <- getsState sarena
@@ -105,7 +105,7 @@ cmdSemantics cmd = do
   cli <- getClient
   loc <- getState
   let sem = cmdAction cli loc cmd
-  mcmdS <- if noRemoteCmdPlayer cmd
+  mcmdS <- if noRemoteCmdHuman cmd
            then checkCursor sem
            else sem
   arena <- getsState sarena

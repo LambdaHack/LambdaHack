@@ -17,7 +17,7 @@ import Game.LambdaHack.Client.State
 -- | The information that is constant across a client playing session,
 -- including many consecutive games in a single session,
 -- but is completely disregarded and reset when a new playing session starts.
--- Auxiliary AI and non-player faction clients have no @sfs@ nor @sbinding@.
+-- Auxiliary AI and computer player clients have no @sfs@ nor @sbinding@.
 data Session = Session
   { sfs       :: !(Maybe FrontendSession)  -- ^ frontend session information
   , sbinding  :: !(Maybe Binding)          -- ^ binding of keys to commands

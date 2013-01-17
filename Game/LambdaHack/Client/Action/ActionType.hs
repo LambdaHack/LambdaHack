@@ -30,7 +30,7 @@ type FunActionCli a =
    -> ConnClient                      -- ^ this client connection information
    -> IO ()
 
--- | Client actions.
+-- | Client parts of actions of human and computer player characters.
 newtype ActionCli a = ActionCli {runActionCli :: FunActionCli a}
 
 -- | Invokes the action continuation on the provided argument.

@@ -97,7 +97,7 @@ defHistory = do
   dateTime <- getClockTime
   let curDate = MU.Text $ T.pack $ calendarTimeToString $ toUTCTime dateTime
   return $ singletonHistory $ singletonReport
-         $ makeSentence ["Player history log started on", curDate]
+         $ makeSentence ["Human history log started on", curDate]
 
 -- | Update target parameters within client state.
 updateTarget :: ActorId -> (Maybe Target -> Maybe Target) -> StateClient

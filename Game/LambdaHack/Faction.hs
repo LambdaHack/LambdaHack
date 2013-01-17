@@ -1,12 +1,12 @@
--- | Factions taking part in the game: e.g., two players controlling
+-- | Factions taking part in the game: e.g., two human players controlling
 -- the hero faction battling the monster and the animal factions.
 module Game.LambdaHack.Faction
   ( FactionId, Faction(..), Status(..), FactionDict
   ) where
 
 import Data.Binary
-import Data.Text (Text)
 import qualified Data.IntMap as IM
+import Data.Text (Text)
 
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.FactionKind

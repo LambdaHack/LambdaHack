@@ -1,6 +1,6 @@
 {-# LANGUAGE ExtendedDefaultRules, OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
--- | Semantics of 'CmdPlayer.Cmd' client commands that do not return
+-- | Semantics of 'CmdHuman.Cmd' client commands that do not return
 -- server commands. None of such commands takes game time.
 -- TODO: document
 module Game.LambdaHack.Client.LocalAction where
@@ -27,7 +27,7 @@ import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Binding
-import qualified Game.LambdaHack.Client.CmdPlayer as CmdPlayer
+import qualified Game.LambdaHack.Client.CmdHuman as CmdHuman
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Effect as Effect
@@ -55,7 +55,7 @@ retarget = do
     arena <- getsState sarena
     msgAdd "Last target invalid."
     modifyClient $ \cli -> cli {scursor = Nothing, seps = 0}
-    targetMonster $ TgtAuto arena
+    targetEnemy $ TgtAuto arena
 
 -- * Move and Run
 
@@ -130,7 +130,7 @@ doLook = do
       canSee = IS.member p (totalVisible per)
       ihabitant | canSee = find (\ m -> bpos m == p) (IM.elems hms)
                 | otherwise = Nothing
-      monsterMsg =
+      enemyMsg =
         maybe "" (\ m -> makeSentence
                          [MU.SubjectVerbSg (partActor coactor m) "be here"])
                  ihabitant
@@ -138,13 +138,13 @@ doLook = do
           | actorSeesLoc per leader p = ""
           | otherwise = " (not visible by you)"
       mode = case target of
-               Just TEnemy{} -> "[targeting monster" <> vis <> "]"
+               Just TEnemy{} -> "[targeting foe" <> vis <> "]"
                Just TPos{}   -> "[targeting position" <> vis <> "]"
                Nothing       -> "[targeting current" <> vis <> "]"
       -- Check if there's something lying around at current p.
       is = lvl `atI` p
   -- Show general info about current p.
-  lookMsg <- lookAt True canSee p monsterMsg
+  lookMsg <- lookAt True canSee p enemyMsg
   modifyClient (\st -> st {slastKey = Nothing})
   if length is <= 2
     then do
@@ -231,15 +231,15 @@ setCursor stgtModeNew = do
 
 -- * TgtEnemy
 
--- | Start the monster targeting mode. Cycle between monster targets.
-targetMonster :: MonadClient m => TgtMode -> WriterT Slideshow m ()
-targetMonster stgtModeNew = do
+-- | Start the enemy targeting mode. Cycle between enemy targets.
+targetEnemy :: MonadClient m => TgtMode -> WriterT Slideshow m ()
+targetEnemy stgtModeNew = do
   Just leader <- getsClient getLeader
   ppos <- getsState (bpos . getActorBody leader)
   side <- getsState sside
   per <- askPerception
   target <- getsClient $ getTarget leader
-  -- TODO: sort monsters by distance to the leader.
+  -- TODO: sort enemies by distance to the leader.
   stgtMode <- getsClient stgtMode
   (_, lvl@Level{lxsize}) <- viewedLevel
   let ms = hostileAssocs side lvl
@@ -247,22 +247,22 @@ targetMonster stgtModeNew = do
       ordPos (_, m) = (chessDist lxsize ppos $ bpos m, bpos m)
       dms = sortBy (comparing ordPos) plms
       (lt, gt) = case target of
-            Just (TEnemy n _) | isJust stgtMode ->  -- pick next monster
+            Just (TEnemy n _) | isJust stgtMode ->  -- pick next enemy
               let i = fromMaybe (-1) $ findIndex ((== n) . fst) dms
               in splitAt (i + 1) dms
-            Just (TEnemy n _) ->  -- try to retarget the old monster
+            Just (TEnemy n _) ->  -- try to retarget the old enemy
               let i = fromMaybe (-1) $ findIndex ((== n) . fst) dms
               in splitAt i dms
-            _ -> (dms, [])  -- target first monster (e.g., number 0)
+            _ -> (dms, [])  -- target first enemy (e.g., number 0)
       gtlt = gt ++ lt
       seen (_, m) =
         let mpos = bpos m            -- it is remembered by faction
         in actorSeesLoc per leader mpos  -- is it visible by actor?
       lf = filter seen gtlt
       tgt = case lf of
-              [] -> target  -- no monsters in sight, stick to last target
+              [] -> target  -- no enemies in sight, stick to last target
               (na, nm) : _ -> Just (TEnemy na (bpos nm))  -- pick the next
-  -- Register the chosen monster, to pick another on next invocation.
+  -- Register the chosen enemy, to pick another on next invocation.
   modifyClient $ updateTarget leader (const tgt)
   setCursor stgtModeNew
 
@@ -350,15 +350,15 @@ displayMainMenu = do
             versionLen = length version
         in init art ++ [take (80 - versionLen) (last art) ++ version]
       kds =  -- key-description pairs
-        let showKD cmd key = (showT key, CmdPlayer.cmdDescription cmd)
+        let showKD cmd key = (showT key, CmdHuman.cmdDescription cmd)
             revLookup cmd =
               maybe ("", "") (showKD cmd . fst) $ M.lookup cmd krevMap
-            cmds = [ CmdPlayer.GameSave,
-                     CmdPlayer.GameExit,
-                     CmdPlayer.GameRestart,
-                     CmdPlayer.Help
+            cmds = [ CmdHuman.GameSave,
+                     CmdHuman.GameExit,
+                     CmdHuman.GameRestart,
+                     CmdHuman.Help
                    ]
-        in map revLookup cmds ++ [(fst (revLookup CmdPlayer.Clear), "continue")]
+        in map revLookup cmds ++ [(fst (revLookup CmdHuman.Clear), "continue")]
       bindings =  -- key bindings to display
         let bindingLen = 25
             fmt (k, d) =
@@ -407,7 +407,7 @@ endTargeting accept = do
     let ms = hostileAssocs side lvl
     case target of
       Just TEnemy{} -> do
-        -- If in monster targeting mode, switch to the monster under
+        -- If in enemy targeting mode, switch to the enemy under
         -- the current cursor position, if any.
         case find (\ (_im, m) -> Just (bpos m) == scursor) ms of
           Just (im, m)  ->
@@ -487,7 +487,7 @@ partyAfterLeader leader = do
 
 -- | Select a faction leader. Switch level, if needed.
 -- False, if nothing to do. Should only be invoked as a direct result
--- of a player action (leader death just sets sleader to -1).
+-- of a human player action (leader death just sets sleader to -1).
 selectLeader :: MonadClient m => ActorId -> LevelId -> m Bool
 selectLeader actor arena = do
   Kind.COps{coactor} <- getsState scops

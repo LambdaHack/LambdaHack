@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, RankNTypes #-}
--- | Game action monads and basic building blocks for player and monster
--- actions. Has no access to the the main action type @Action@.
+-- | Game action monads and basic building blocks for human and computer
+-- player actions. Has no access to the the main action type.
 -- Does not export the @liftIO@ operation nor a few other implementation
 -- details.
 module Game.LambdaHack.Server.Action
@@ -382,12 +382,13 @@ start executorS executorC sfs cops@Kind.COps{corule}
         return $ ConnClient {toClient, toServer}
       addChan fid = do
         chan <- mkConnClient
-        let isPlayer = isPlayerFaction glo fid
-        -- For non-humans, we don't spawn a separate AI client. In this way,
-        -- non-human players are allowed to cheat: their non-leader actors
-        -- know leader plans and act accordingly, while human non-leader
-        -- actors are controlled by an AI ignorant of human plans.
-        mchan <- if isPlayer
+        let isHuman = isHumanFaction glo fid
+        -- For computer players we don't spawn a separate AI client.
+        -- In this way computer players are allowed to cheat:
+        -- their non-leader actors know leader plans and act accordingly,
+        -- while human non-leader actors are controlled by an AI ignorant
+        -- of human plans.
+        mchan <- if isHuman
                  then fmap Just mkConnClient
                  else return Nothing
         return (fid, (chan, mchan))
@@ -403,7 +404,7 @@ start executorS executorC sfs cops@Kind.COps{corule}
         chanAssocs
   -- Launch clients.
   let forkClient (fid, (chan, mchan), cli, loc) = do
-        if isPlayerFaction loc fid
+        if isHumanFaction loc fid
           then void $ forkIO $ executorC
                  loopClient (Just sfs) (Just sbinding) sconfigUI loc cli chan
           else void $ forkIO $ executorC
@@ -466,8 +467,8 @@ broadcastCli ps cmd = do
   ks <- filterM p $ IM.keys faction
   mapM_ (flip sendUpdateCli cmd) ks
 
-isFactionPlayer :: MonadServerChan m => FactionId -> m Bool
-isFactionPlayer fid = getsState $ flip isPlayerFaction fid
+isFactionHuman :: MonadServerChan m => FactionId -> m Bool
+isFactionHuman fid = getsState $ flip isHumanFaction fid
 
 isFactionAware :: MonadServerChan m => [Point] -> FactionId -> m Bool
 isFactionAware poss fid = do
@@ -479,7 +480,7 @@ isFactionAware poss fid = do
 
 broadcastPosCli :: MonadServerChan m => [Point] -> CmdUpdateCli -> m ()
 broadcastPosCli poss cmd =
-  broadcastCli [isFactionPlayer, isFactionAware poss] cmd
+  broadcastCli [isFactionHuman, isFactionAware poss] cmd
 
 funBroadcastCli :: MonadServerChan m => (FactionId -> CmdUpdateCli) -> m ()
 funBroadcastCli cmd = do

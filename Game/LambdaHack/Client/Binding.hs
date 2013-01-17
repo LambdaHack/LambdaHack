@@ -14,25 +14,25 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Tuple (swap)
 
-import Game.LambdaHack.Client.CmdPlayer
+import Game.LambdaHack.Client.CmdHuman
 import Game.LambdaHack.Client.Config
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Msg
 
--- | Bindings and other information about player commands.
+-- | Bindings and other information about human player commands.
 data Binding = Binding
-  { kcmd    :: M.Map K.KM (Text, Bool, CmdPlayer)
+  { kcmd    :: M.Map K.KM (Text, Bool, CmdHuman)
                                      -- ^ binding keys to commands
   , kmacro  :: M.Map K.Key K.Key     -- ^ macro map
   , kmajor  :: [K.KM]                -- ^ major commands
   , kminor  :: [K.KM]                -- ^ minor commands
-  , krevMap :: M.Map CmdPlayer K.KM  -- ^ from cmds to their main keys
+  , krevMap :: M.Map CmdHuman K.KM  -- ^ from cmds to their main keys
   }
 
 -- | The associaction of commands to keys defined in config.
-configCmds :: ConfigUI -> [(K.KM, CmdPlayer)]
+configCmds :: ConfigUI -> [(K.KM, CmdHuman)]
 configCmds ConfigUI{configCommands} =
-  let mkCommand (key, def) = ((key, K.NoModifier), read def :: CmdPlayer)
+  let mkCommand (key, def) = ((key, K.NoModifier), read def :: CmdHuman)
   in map mkCommand configCommands
 
 -- | Binding of keys to movement and other standard commands,
@@ -51,14 +51,14 @@ stdBinding !config@ConfigUI{configMacros} =
            , ((K.Char 's', K.Control), DebugSmell)
            , ((K.Char 'v', K.Control), DebugVision)
            ]
-      mkDescribed cmd = (cmdDescription cmd, noRemoteCmdPlayer cmd, cmd)
+      mkDescribed cmd = (cmdDescription cmd, noRemoteCmdHuman cmd, cmd)
       mkCommand (km, def) = (km, mkDescribed def)
       semList = L.map mkCommand cmdList
   in Binding
   { kcmd = M.fromList semList
   , kmacro
-  , kmajor = L.map fst $ L.filter (majorCmdPlayer . snd) cmdList
-  , kminor = L.map fst $ L.filter (minorCmdPlayer . snd) cmdList
+  , kmajor = L.map fst $ L.filter (majorCmdHuman . snd) cmdList
+  , kminor = L.map fst $ L.filter (minorCmdHuman . snd) cmdList
   , krevMap = M.fromList $ map swap cmdList
   }
 
@@ -87,7 +87,7 @@ keyHelp Binding{kcmd, kmacro, kmajor, kminor} =
       , "Press keypad '5' or '.' to wait a turn, bracing for blows next turn."
       , "In targeting mode the same keys move the targeting cursor."
       , ""
-      , "Search, open and attack, by bumping into walls, doors and monsters."
+      , "Search, open and attack, by bumping into walls, doors and enemies."
       , ""
       , "Press SPACE to see the next page, with the list of major commands."
       ]

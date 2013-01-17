@@ -56,10 +56,10 @@ dumpConfig = return CfgDumpSer
 
 -- ** Apply
 
-playerApplyGroupItem :: MonadClient m
+leaderApplyGroupItem :: MonadClient m
                      => MU.Part -> MU.Part -> [Char]
                      -> m CmdSer
-playerApplyGroupItem verb object syms = do
+leaderApplyGroupItem verb object syms = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   Just leader <- getsClient getLeader
   is <- getsState $ getActorItem leader
@@ -71,7 +71,7 @@ playerApplyGroupItem verb object syms = do
         Just ik -> iverbApply $ okind ik
   return $! ApplySer leader verbApply item
 
--- | Let the player choose any item with a given group name.
+-- | Let a human player choose any item with a given group name.
 -- Note that this does not guarantee the chosen item belongs to the group,
 -- as the player can override the choice.
 getGroupItem :: MonadClient m
@@ -89,10 +89,10 @@ getGroupItem leader is object syms prompt packName = do
 
 -- ** Project
 
-playerProjectGroupItem :: MonadClient m
+leaderProjectGroupItem :: MonadClient m
                        => MU.Part -> MU.Part -> [Char]
                        -> m CmdSer
-playerProjectGroupItem verb object syms = do
+leaderProjectGroupItem verb object syms = do
   ms     <- getsState hostileList
   lxsize <- getsState (lxsize . getArena)
   lysize <- getsState (lysize . getArena)
@@ -100,20 +100,20 @@ playerProjectGroupItem verb object syms = do
   ppos   <- getsState (bpos . getActorBody leader)
   if foesAdjacent lxsize lysize ppos ms
     then abortWith "You can't aim in melee."
-    else playerProjectGI leader verb object syms
+    else actorProjectGI leader verb object syms
 
-playerProjectGI :: MonadClient m
+actorProjectGI :: MonadClient m
                 => ActorId -> MU.Part -> MU.Part -> [Char]
                 -> m CmdSer
-playerProjectGI leader verb object syms = do
+actorProjectGI aid verb object syms = do
   cli <- getClient
   pos <- getState
   seps <- getsClient seps
   case targetToPos cli pos of
     Just p -> do
       Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
-      is <- getsState $ getActorItem leader
-      item <- getGroupItem leader is object syms
+      is <- getsState $ getActorItem aid
+      item <- getGroupItem aid is object syms
                 (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
       stgtMode <- getsClient stgtMode
       case stgtMode of
@@ -123,23 +123,23 @@ playerProjectGI leader verb object syms = do
       let verbProject = case jkind disco item of
             Nothing -> verb
             Just ik -> iverbProject $ okind ik
-      return $! ProjectSer leader p seps verbProject item
-    Nothing -> assert `failure` (pos, leader, "target unexpectedly invalid")
+      return $! ProjectSer aid p seps verbProject item
+    Nothing -> assert `failure` (pos, aid, "target unexpectedly invalid")
 
 -- ** TriggerDir
 
 -- | Ask for a direction and trigger a tile, if possible.
-playerTriggerDir :: MonadClient m => F.Feature -> MU.Part -> m CmdSer
-playerTriggerDir feat verb = do
+leaderTriggerDir :: MonadClient m => F.Feature -> MU.Part -> m CmdSer
+leaderTriggerDir feat verb = do
   let keys = zip K.dirAllMoveKey $ repeat K.NoModifier
       prompt = makePhrase ["What to", verb MU.:> "? [movement key"]
   e <- displayChoiceUI prompt [] keys
   lxsize <- getsState (lxsize . getArena)
-  K.handleDir lxsize e (playerBumpDir feat) (neverMind True)
+  K.handleDir lxsize e (leaderBumpDir feat) (neverMind True)
 
 -- | Leader tries to trigger a tile in a given direction.
-playerBumpDir :: MonadClientRO m => F.Feature -> Vector -> m CmdSer
-playerBumpDir feat dir = do
+leaderBumpDir :: MonadClientRO m => F.Feature -> Vector -> m CmdSer
+leaderBumpDir feat dir = do
   Just leader <- getsClient getLeader
   body <- getsState $ getActorBody leader
   let dpos = bpos body `shift` dir
@@ -181,8 +181,8 @@ guessBump _ _ _ = neverMind True
 -- ** TriggerTile
 
 -- | Leader tries to trigger the tile he's standing on.
-playerTriggerTile :: MonadClientRO m => F.Feature -> m CmdSer
-playerTriggerTile feat = do
+leaderTriggerTile :: MonadClientRO m => F.Feature -> m CmdSer
+leaderTriggerTile feat = do
   Just leader <- getsClient getLeader
   ppos <- getsState (bpos . getActorBody leader)
   bumpTile leader ppos feat
@@ -231,7 +231,7 @@ dropItem = do
 allObjectsName :: Text
 allObjectsName = "Objects"
 
--- | Let the player choose any item from a list of items.
+-- | Let the human player choose any item from a list of items.
 getAnyItem :: MonadClient m
            => ActorId
            -> Text    -- ^ prompt
@@ -242,7 +242,7 @@ getAnyItem leader prompt = getItem leader prompt (const True) allObjectsName
 
 data ItemDialogState = INone | ISuitable | IAll deriving Eq
 
--- | Let the player choose a single, preferably suitable,
+-- | Let the human player choose a single, preferably suitable,
 -- item from a list of items.
 getItem :: MonadClient m
         => ActorId

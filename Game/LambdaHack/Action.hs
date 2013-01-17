@@ -1,9 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 {-# LANGUAGE OverloadedStrings, RankNTypes #-}
--- | Game action monads and basic building blocks for player and monster
--- actions. Has no access to the the main action type @Action@.
--- Does not export the @liftIO@ operation nor a few other implementation
--- details.
+-- | Game action monads and basic building blocks for human and computer
+-- player actions. Has no access to the the main action type.
 module Game.LambdaHack.Action
   ( -- * Action monads
     MonadActionAbort(..)

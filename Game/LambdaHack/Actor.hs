@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
--- | Actors in the game: monsters and heroes. No operation in this module
+-- | Actors in the game: heroes, monsters, etc. No operation in this module
 -- involves the 'State' or 'Action' type.
 module Game.LambdaHack.Actor
   ( -- * Actor identifiers and related operations

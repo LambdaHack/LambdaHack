@@ -42,7 +42,7 @@ runDir leader (dir, dist) = do
     modifyClient $ \cli -> cli {srunning = Just (dir, distNew)}
     return dir
 
--- | Player running mode, determined from the nearby cave layout.
+-- | Human running mode, determined from the nearby cave layout.
 data RunMode =
     RunOpen                     -- ^ open space, in particular the T crossing
   | RunHub                      -- ^ a hub of separate corridors

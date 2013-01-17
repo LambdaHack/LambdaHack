@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
--- | Saving and restoring games and player diaries.
+-- | Saving and restoring client game state.
 module Game.LambdaHack.Client.Action.Save
   ( saveGameCli, restoreGameCli
   ) where

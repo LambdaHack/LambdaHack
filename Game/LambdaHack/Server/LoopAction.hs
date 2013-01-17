@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
--- | The main loop of the server, processing player and AI moves turn by turn.
+-- | The main loop of the server, processing human and computer player
+-- moves turn by turn.
 module Game.LambdaHack.Server.LoopAction (loopServer) where
 
 import Control.Arrow ((&&&))
@@ -74,7 +75,7 @@ checkEndGame = do
 -- we introduce subclips and produce many frames per clip to avoid
 -- jerky movement. Otherwise we push exactly one frame or frame delay.
 -- We start by updating perception, because the selected level of dungeon
--- has changed since last time (every change, whether by player or AI
+-- has changed since last time (every change, whether by human or AI
 -- or @generateMonster@ is followd by a call to @handleActors@).
 handleActors :: MonadServerChan m
              => Time  -- ^ start time of current subclip, exclusive
@@ -89,7 +90,7 @@ handleActors subclipStart = withPerception $ do
   quit <- getsServer squit
   let mnext = if null lactor  -- wait until any actor spawned
               then Nothing
-              else let -- Heroes move first then monsters, then the rest.
+              else let -- Actors of the same faction move together.
                        order = Ord.comparing (btime . snd &&& bfaction . snd)
                        (actor, m) = L.minimumBy order lactor
                    in if btime m > time
@@ -104,13 +105,13 @@ handleActors subclipStart = withPerception $ do
       switchGlobalSelectedSide side
       arena <- getsState sarena
       leader <- sendQueryCli side $ SetArenaLeaderCli arena actor
-      isPlayer <- getsState $ flip isPlayerFaction side
-      if actor == leader && isPlayer
+      isHuman <- getsState $ flip isHumanFaction side
+      if actor == leader && isHuman
         then do
-          -- Player moves always start a new subclip.
+          -- Human moves always start a new subclip.
           broadcastPosCli [] $ DisplayPushCli
           (cmdS, leaderNew, arenaNew) <-
-            sendQueryCli side $ HandlePlayerCli leader
+            sendQueryCli side $ HandleHumanCli leader
           modifyState $ updateSelectedArena arenaNew
           tryWith (\msg -> do
                       sendUpdateCli side $ ShowMsgCli msg
@@ -136,7 +137,7 @@ handleActors subclipStart = withPerception $ do
 --          recordHistory
           advanceTime actor  -- advance time while the actor still alive
           let subclipStartDelta = timeAddFromSpeed coactor m subclipStart
-          if isPlayer && not (bproj m)
+          if isHuman && not (bproj m)
              || subclipStart == timeZero
              || btime m > subclipStartDelta
             then do

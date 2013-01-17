@@ -1,9 +1,9 @@
 {-# LANGUAGE DeriveDataTypeable, GADTs, OverloadedStrings, StandaloneDeriving
              #-}
 -- | Abstract syntax human player commands.
-module Game.LambdaHack.Client.CmdPlayer
-  ( CmdPlayer(..)
-  , majorCmdPlayer, minorCmdPlayer, noRemoteCmdPlayer, cmdDescription
+module Game.LambdaHack.Client.CmdHuman
+  ( CmdHuman(..)
+  , majorCmdHuman, minorCmdHuman, noRemoteCmdHuman, cmdDescription
   ) where
 
 import Data.Text (Text)
@@ -15,7 +15,7 @@ import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.VectorXY
 
 -- | Abstract syntax of player commands.
-data CmdPlayer =
+data CmdHuman =
     -- These usually take time.
     Apply       { verb :: MU.Part, object :: MU.Part, syms :: [Char] }
   | Project     { verb :: MU.Part, object :: MU.Part, syms :: [Char] }
@@ -51,8 +51,8 @@ data CmdPlayer =
   deriving (Show, Read, Eq, Ord)
 
 -- | Major commands land on the first page of command help.
-majorCmdPlayer :: CmdPlayer -> Bool
-majorCmdPlayer cmd = case cmd of
+majorCmdHuman :: CmdHuman -> Bool
+majorCmdHuman cmd = case cmd of
   Apply{}       -> True
   Project{}     -> True
   TriggerDir{}  -> True
@@ -67,8 +67,8 @@ majorCmdPlayer cmd = case cmd of
   _             -> False
 
 -- | Minor commands land on the second page of command help.
-minorCmdPlayer :: CmdPlayer -> Bool
-minorCmdPlayer cmd = case cmd of
+minorCmdHuman :: CmdHuman -> Bool
+minorCmdHuman cmd = case cmd of
   TgtFloor    -> True
   TgtEnemy    -> True
   TgtAscend{} -> True
@@ -87,8 +87,8 @@ minorCmdPlayer cmd = case cmd of
 -- Not that movement commands are not included, because they take time
 -- on normal levels, but don't take time on remote levels, that is,
 -- in targeting mode.
-noRemoteCmdPlayer :: CmdPlayer -> Bool
-noRemoteCmdPlayer cmd = case cmd of
+noRemoteCmdHuman :: CmdHuman -> Bool
+noRemoteCmdHuman cmd = case cmd of
   Apply{}       -> True
   Project{}     -> True
   TriggerDir{}  -> True
@@ -99,7 +99,7 @@ noRemoteCmdPlayer cmd = case cmd of
   _             -> False
 
 -- | Description of player commands.
-cmdDescription :: CmdPlayer -> Text
+cmdDescription :: CmdHuman -> Text
 cmdDescription cmd = case cmd of
   Apply{..}       -> makePhrase [verb, MU.AW object]
   Project{..}     -> makePhrase [verb, MU.AW object]

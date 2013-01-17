@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, RankNTypes #-}
--- | Game action monads and basic building blocks for player and monster
--- actions. Has no access to the the main action type @Action@.
+-- | Game action monads and basic building blocks for human and computer
+-- player actions. Has no access to the the main action type.
 -- Does not export the @liftIO@ operation nor a few other implementation
 -- details.
 module Game.LambdaHack.Client.Action
@@ -83,8 +83,9 @@ askFrontendSession :: MonadClientRO m => m FrontendSession
 askFrontendSession = do
   sfs <- getsSession sfs
   case sfs of
-    Nothing -> assert `failure`
-               ("AI or non-player faction client uses the frontend" :: Text)
+    Nothing ->
+      assert `failure`
+      ("Auxiliary AI or computer player client uses the frontend" :: Text)
     Just fs -> return fs
 
 -- | Get the key binding.
@@ -92,8 +93,9 @@ askBinding :: MonadClientRO m => m Binding
 askBinding = do
   sbinding <- getsSession sbinding
   case sbinding of
-    Nothing -> assert `failure`
-               ("AI or non-player faction client uses keybindings" :: Text)
+    Nothing ->
+      assert `failure`
+      ("Auxiliary AI or computer player client uses keybindings" :: Text)
     Just binding -> return binding
 
 -- | Get the config from the config file.
@@ -127,7 +129,7 @@ askPerception = do
   factionPers <- getsClient sper
   return $! factionPers M.! lid
 
--- | Wait for a player command.
+-- | Wait for a human player command.
 getKeyCommand :: MonadClient m => Maybe Bool -> m K.KM
 getKeyCommand doPush = do
   fs <- askFrontendSession
@@ -137,7 +139,7 @@ getKeyCommand doPush = do
     K.NoModifier -> (fromMaybe nc $ M.lookup nc $ kmacro keyb, modifier)
     _ -> (nc, modifier)
 
--- | Display an overlay and wait for a player command.
+-- | Display an overlay and wait for a human player command.
 getKeyOverlayCommand :: MonadClient m => Overlay -> m K.KM
 getKeyOverlayCommand overlay = do
   frame <- drawOverlay ColorFull overlay

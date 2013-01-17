@@ -316,9 +316,9 @@ actorAttackActor source target = do
   s <- getState
   let spos = bpos sm
       tpos = bpos tm
-  if bfaction sm == bfaction tm && isPlayerFaction s (bfaction sm)
+  if bfaction sm == bfaction tm && isHumanFaction s (bfaction sm)
      && not (bproj sm) && not (bproj tm)
-    then assert `failure` (source, target, "player AI bumps into friendlies")
+    then assert `failure` (source, target, "human AI bumps into friendlies")
     else do
       cops@Kind.COps{coitem=Kind.Ops{opick, okind}} <- getsState scops
       state <- getState
@@ -399,7 +399,7 @@ actorOpenDoor actor dir = do
   glo <- getState
   let dpos = shift (bpos body) dir  -- the position we act upon
       t = lvl `at` dpos
-      isVerbose = isPlayerFaction glo (bfaction body)
+      isVerbose = isHumanFaction glo (bfaction body)
   unless (openable cotile lvl dpos) $ neverMind isVerbose
   if Tile.hasFeature cotile F.Closable t
     then abortIfWith isVerbose "already open"

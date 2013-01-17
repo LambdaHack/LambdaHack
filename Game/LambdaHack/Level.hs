@@ -68,11 +68,11 @@ data Level = Level
   }
   deriving Show
 
--- | Update the hero and monster maps.
+-- | Update the actor map.
 updateActor :: (ActorDict -> ActorDict) -> Level -> Level
 updateActor f lvl = lvl { lactor = f (lactor lvl) }
 
--- | Update the hero items and monster items maps.
+-- | Update the actor items map.
 updateInv :: (InvDict -> InvDict) -> Level -> Level
 updateInv f lvl = lvl { linv = f (linv lvl) }
 

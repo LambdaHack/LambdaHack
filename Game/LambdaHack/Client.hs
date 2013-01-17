@@ -19,8 +19,8 @@ import Game.LambdaHack.ActorState
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Animation
 import Game.LambdaHack.Client.Binding
-import Game.LambdaHack.Client.CmdPlayer
-import Game.LambdaHack.Client.CmdPlayerAction
+import Game.LambdaHack.Client.CmdHuman
+import Game.LambdaHack.Client.CmdHumanAction
 import Game.LambdaHack.Client.Draw
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.LocalAction
@@ -237,7 +237,7 @@ cmdQueryCli cmd = case cmd of
     loc <- getState
     modifyClient $ updateSelectedLeader leader loc
     return leader
-  HandlePlayerCli leader -> handlePlayer leader
+  HandleHumanCli leader -> handleHuman leader
   HandleAI actor -> do
     stratTarget <- targetStrategy actor
     -- Choose a target from those proposed by AI for the actor.
@@ -255,14 +255,14 @@ continueRun leader dd = do
   return $ RunSer leader dir
 
 -- | Handle the move of the hero.
-handlePlayer :: MonadClient m
+handleHuman :: MonadClient m
              => ActorId
              -> m (CmdSer, Maybe ActorId, LevelId)
-handlePlayer leader = do
-  -- When running, stop if aborted by a disturbance.
-  -- Otherwise let the player issue commands, until any of them takes time.
+handleHuman leader = do
+  -- When running, stop if aborted by a disturbance. Otherwise let
+  -- the human player issue commands, until any of them takes time.
   -- First time, just after pushing frames, ask for commands in Push mode.
-  cmdS <- tryWith (\msg -> stopRunning >> playerCommand msg) $ do
+  cmdS <- tryWith (\msg -> stopRunning >> humanCommand msg) $ do
     srunning <- getsClient srunning
     maybe abort (continueRun leader) srunning
 --  addSmell leader
@@ -270,12 +270,12 @@ handlePlayer leader = do
   arenaNew <- getsState sarena
   return (cmdS, leaderNew, arenaNew)
 
--- | Determine and process the next player command. The argument is the last
--- abort message due to running, if any.
-playerCommand :: forall m. MonadClient m
-              => Msg
-              -> m CmdSer
-playerCommand msgRunAbort = do
+-- | Determine and process the next human player command. The argument is
+-- the last abort message due to running, if any.
+humanCommand :: forall m. MonadClient m
+             => Msg
+             -> m CmdSer
+humanCommand msgRunAbort = do
   -- The frame state is now Push.
   kmPush <- case msgRunAbort of
     "" -> getKeyCommand (Just True)

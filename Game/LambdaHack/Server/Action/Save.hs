@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
--- | Saving and restoring games and player diaries.
+-- | Saving and restoring server game state.
 module Game.LambdaHack.Server.Action.Save
   ( saveGameBkpSer, saveGameSer, restoreGameSer
   ) where

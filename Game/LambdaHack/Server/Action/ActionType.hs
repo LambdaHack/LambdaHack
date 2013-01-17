@@ -28,7 +28,7 @@ type FunActionSer a =
    -> ConnDict                        -- ^ client-server connection information
    -> IO ()
 
--- | Actions of player-controlled characters and of any other actors.
+-- | Server parts of actions of human and computer player characters.
 newtype ActionSer a = ActionSer {runActionSer :: FunActionSer a}
 
 -- | Invokes the action continuation on the provided argument.
