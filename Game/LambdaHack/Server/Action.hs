@@ -236,7 +236,7 @@ addHero Kind.COps{coactor, cotile} ppos side
         s ser@StateServer{scounter} =
   let config@Config{configBaseHP} = sconfig ser
       loc = nearbyFreePos cotile ppos s
-      freeHeroK = elemIndex Nothing $ map (tryFindHeroK s) [0..9]
+      freeHeroK = elemIndex Nothing $ map (tryFindHeroK s side) [0..9]
       n = fromMaybe 100 freeHeroK
       symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
       name = findHeroName config n

@@ -480,8 +480,9 @@ cycleHero = do
 
 partyAfterLeader :: MonadClientRO m => ActorId -> m [(LevelId, ActorId)]
 partyAfterLeader leader = do
-  s  <- getState
-  let hs = map (tryFindHeroK s) [0..9]
+  bfaction <- getsState $ bfaction . getActorBody leader
+  s <- getState
+  let hs = map (tryFindHeroK s bfaction) [0..9]
       i = fromMaybe (-1) $ findIndex ((== Just leader) . fmap snd) hs
       (lt, gt) = (take i hs, drop (i + 1) hs)
   return $ catMaybes gt ++ catMaybes lt
@@ -541,7 +542,8 @@ displayHelp = do
 
 selectHero :: MonadClient m => Int -> m ()
 selectHero k = do
+  side <- getsState sside
   loc <- getState
-  case tryFindHeroK loc k of
+  case tryFindHeroK loc side k of
     Nothing  -> abortWith "No such member of the party."
     Just (lid, aid) -> void $ selectLeader aid lid

@@ -98,21 +98,22 @@ allActorsAnyLevel s =
       selectedFirst = (sarena s, sdungeon s M.! sarena s) : M.toList butFrist
   in L.concatMap one selectedFirst
 
+-- TODO: start with current level; also elsewhere
 -- | Tries to finds an actor body satisfying a predicate on any level.
 tryFindActor :: State -> (Actor -> Bool) -> Maybe (LevelId, ActorId)
 tryFindActor s p =
   let chk (ln, lvl) =
         fmap (\a -> (ln, a)) $ L.find (p . snd) $ IM.assocs $ lactor lvl
-  in case mapMaybe chk (M.toList (sdungeon s)) of
+  in case mapMaybe chk $ M.toList $ sdungeon s of
     [] -> Nothing
     (ln, (aid, _)) : _ -> Just (ln, aid)
 
-tryFindHeroK :: State -> Int -> Maybe (LevelId, ActorId)
-tryFindHeroK s k =
+tryFindHeroK :: State -> FactionId -> Int -> Maybe (LevelId, ActorId)
+tryFindHeroK s fact k =
   let c | k == 0          = '@'
         | k > 0 && k < 10 = Char.intToDigit k
         | otherwise       = assert `failure` k
-  in tryFindActor s ((== Just c) . bsymbol)
+  in tryFindActor s (\body -> bsymbol body == Just c && bfaction body == fact)
 
 -- | Compute the level identifier and starting position on the level,
 -- after a level change.
