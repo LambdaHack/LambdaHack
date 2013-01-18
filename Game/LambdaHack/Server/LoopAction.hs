@@ -109,6 +109,7 @@ handleActors subclipStart = withPerception $ do
       if actor == leader && isHuman
         then do
           -- Human moves always start a new subclip.
+          -- TODO: remove or only push to sside?
           broadcastPosCli [] $ DisplayPushCli
           (cmdS, leaderNew, arenaNew) <-
             sendQueryCli side $ HandleHumanCli leader
@@ -117,8 +118,7 @@ handleActors subclipStart = withPerception $ do
                       sendUpdateCli side $ ShowMsgCli msg
                       handleActors subclipStart
                   )
-                  $ do
-            cmdSer cmdS
+                  (cmdSer cmdS)
           -- Advance time once, after the leader switched perhaps many times.
           -- TODO: this is correct only when all heroes have the same
           -- speed and can't switch leaders by, e.g., aiming a wand
@@ -129,10 +129,13 @@ handleActors subclipStart = withPerception $ do
           -- at once. This requires quite a bit of refactoring
           -- and is perhaps better done when the other factions have
           -- selected leaders as well.
-            squitNew <- getsServer squit
-            when (timedCmdSer cmdS && isNothing squitNew) $
-              maybe (return ()) advanceTime leaderNew
-            handleActors $ btime m
+          squitNew <- getsServer squit
+          when (timedCmdSer cmdS && isNothing squitNew) $
+            maybe (return ()) advanceTime leaderNew
+          -- Human moves always start a new subclip.
+          lpos <- getsState $ bpos . getActorBody (fromMaybe actor leaderNew)
+          broadcastPosCli [lpos] $ DisplayPushCli
+          handleActors $ btime m
         else do
 --          recordHistory
           advanceTime actor  -- advance time while the actor still alive
@@ -147,13 +150,16 @@ handleActors subclipStart = withPerception $ do
               -- this subclip, so his multiple moves would be collapsed.
               -- TODO: store frames somewhere for each faction and display
               -- the frames only after a "Faction X taking over..." prompt.
-              broadcastPosCli [] $ DisplayPushCli
               cmdS <- sendAIQueryCli side $ HandleAI actor
     -- If the following action aborts, we just advance the time and continue.
     -- TODO: or just fail at each abort in AI code? or use tryWithFrame?
               tryWith (\msg -> if T.null msg
-                    then return ()
-                    else assert `failure` msg <> "in AI") $ cmdSer cmdS
+                               then return ()
+                               else assert `failure` msg <> "in AI"
+                      )
+                      (cmdSer cmdS)
+              apos <- getsState $ bpos . getActorBody actor
+              broadcastPosCli [apos] $ DisplayPushCli
               handleActors $ btime m
             else do
               -- No new subclip.
@@ -161,8 +167,10 @@ handleActors subclipStart = withPerception $ do
     -- If the following action aborts, we just advance the time and continue.
     -- TODO: or just fail at each abort in AI code? or use tryWithFrame?
               tryWith (\msg -> if T.null msg
-                    then return ()
-                    else assert `failure` msg <> "in AI") $ cmdSer cmdS
+                               then return ()
+                               else assert `failure` msg <> "in AI"
+                      )
+                      (cmdSer cmdS)
               handleActors subclipStart
 
 -- | Advance (or rewind) the move time for the given actor.

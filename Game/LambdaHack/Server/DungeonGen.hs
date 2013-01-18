@@ -131,17 +131,38 @@ findGenerator cops flavour discoRev Config{configCaves} k depth = do
   cave <- buildCave cops k depth ci
   buildLevel cops flavour discoRev cave k depth
 
+-- | Find starting postions for all factions. Try to make them distant
+-- from each other and from any stairs.
+findEntryPoss :: Kind.COps -> Int -> Level -> Rnd [Point]
+findEntryPoss Kind.COps{cotile} nPos Level{ltile, lxsize, lstair} =
+  let cminStairDist = chessDist lxsize (fst lstair) (snd lstair)
+      stairPoss = [fst lstair, snd lstair]
+      dist l poss cmin =
+        all (\pos -> chessDist lxsize l pos > cmin) $ stairPoss ++ poss
+      tryFind 0 poss = return poss
+      tryFind n poss = do
+        pos <- findPosTry 20 ltile  -- 20 only, for unpredictability
+                 [ \ l _ -> dist l poss $ 2 * cminStairDist
+                 , \ l _ -> dist l poss cminStairDist
+                 , \ l _ -> dist l poss $ cminStairDist `div` 2
+                 , \ l _ -> dist l poss $ cminStairDist `div` 4
+                 , const (Tile.hasFeature cotile F.Walkable)
+                 ]
+        tryFind (n - 1) (pos : poss)
+  in tryFind nPos []
+
 -- | Freshly generated and not yet populated dungeon.
 data FreshDungeon = FreshDungeon
-  { entryLevel   :: LevelId  -- ^ starting level for the party
-  , entryPos     :: Point    -- ^ starting position for the party
-  , freshDungeon :: Dungeon  -- ^ level maps
+  { entryLevel   :: LevelId  -- ^ starting level
+  , entryPoss    :: [Point]  -- ^ starting positions for non-spawning parties
+  , freshDungeon :: Dungeon  -- ^ maps for all levels
   , freshDepth   :: Int      -- ^ dungeon depth (can be different than size)
   }
 
 -- | Generate the dungeon for a new game.
-dungeonGen :: Kind.COps -> FlavourMap -> DiscoRev -> Config -> Rnd FreshDungeon
-dungeonGen cops flavour discoRev config@Config{configDepth}  =
+dungeonGen :: Kind.COps -> FlavourMap -> DiscoRev -> Config -> Int
+           -> Rnd FreshDungeon
+dungeonGen cops flavour discoRev config@Config{configDepth} nPos =
   let gen :: R.StdGen -> Int -> (R.StdGen, (LevelId, Level))
       gen g k =
         let (g1, g2) = R.split g
@@ -152,8 +173,9 @@ dungeonGen cops flavour discoRev config@Config{configDepth}  =
       con g = assert (configDepth >= 1 `blame` configDepth) $
         let (gd, levels) = mapAccumL gen g [1..configDepth]
             entryLevel = levelDefault 1
-            entryPos = fst (lstair (snd (head levels)))
+            (entryPoss, gp) =
+              St.runState (findEntryPoss cops nPos (snd (head levels))) gd
             freshDungeon = M.fromList levels
             freshDepth = configDepth
-        in (FreshDungeon{..}, gd)
+        in (FreshDungeon{..}, gp)
   in St.state con

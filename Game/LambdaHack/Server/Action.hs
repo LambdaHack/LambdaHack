@@ -290,7 +290,7 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
 -- TODO: do this inside Action ()
 gameReset :: Kind.COps
           -> IO (State, StateServer, FactionId -> (FactionPers, State))
-gameReset cops@Kind.COps{ coitem, corule } = do
+gameReset cops@Kind.COps{ coitem, corule, cofact=Kind.Ops{okind}} = do
   -- Rules config reloaded at each new game start.
   (sconfig, dungeonGen, random) <- ConfigIO.mkConfigRules corule
   randomCli <- R.newStdGen  -- TODO: each AI client should have one
@@ -298,20 +298,22 @@ gameReset cops@Kind.COps{ coitem, corule } = do
   -- one known only to them (or server, if needed)
   let rnd :: Rnd (State, StateServer, FactionId -> (FactionPers, State))
       rnd = do
+        faction <- createFactions cops sconfig
+        let notSpawning (_, fact) = fspawn (okind (gkind fact)) <= 0
+            needInitialCrew = map fst $ filter notSpawning $ IM.toList faction
         sflavour <- dungeonFlavourMap coitem
         (discoS, discoRev) <- serverDiscos coitem
         DungeonGen.FreshDungeon{..} <-
-          DungeonGen.dungeonGen cops sflavour discoRev sconfig
-        faction <- createFactions cops sconfig
+          DungeonGen.dungeonGen
+            cops sflavour discoRev sconfig (length needInitialCrew)
         let defState =
               defStateGlobal freshDungeon freshDepth discoS faction
                              cops random entryLevel
             defSer = defStateServer discoRev sflavour sconfig
-            needInitialCrew =
-              filter (not . isSpawningFaction defState) $ IM.keys faction
-            fo fid (gloF, serF) =
-              initialHeroes cops entryPos fid gloF serF
-            (glo, ser) = foldr fo (defState, defSer) needInitialCrew
+            fo (fid, epos) (gloF, serF) =
+              initialHeroes cops epos fid gloF serF
+            (glo, ser) =
+              foldr fo (defState, defSer) $ zip needInitialCrew entryPoss
             -- This state is quite small, fit for transmition to the client.
             -- The biggest part is content, which really needs to be updated
             -- at this point to keep clients in sync with server improvements.
