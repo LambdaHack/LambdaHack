@@ -23,7 +23,6 @@ import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Content.StrategyKind
 import qualified Game.LambdaHack.Effect as Effect
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Feature as F
@@ -42,15 +41,14 @@ import Game.LambdaHack.Vector
 -- TODO: extress many (all?) functions as MonadActionRO
 
 -- | AI proposes possible targets for the actor. Never empty.
-targetStrategy :: MonadClientRO m => ActorId -> m (Strategy (Maybe Target))
-targetStrategy actor = do
-  cops@Kind.COps{costrat=Kind.Ops{okind}} <- getsState scops
+targetStrategy :: MonadClientRO m
+               => ActorId -> [Ability]
+               -> m (Strategy (Maybe Target))
+targetStrategy actor factionAbilities = do
+  cops <- getsState scops
   per <- askPerception
   glo <- getState
   btarget <- getsClient $ getTarget actor
-  let Actor{bfaction} = getActorBody actor glo
-      factionAI = gAiIdle $ sfaction glo IM.! bfaction
-      factionAbilities = sabilities (okind factionAI)
   return $! reacquireTgt cops actor btarget glo per factionAbilities
 
 reacquireTgt :: Kind.COps -> ActorId -> Maybe Target -> State
@@ -115,14 +113,13 @@ reacquireTgt cops actor btarget glo per factionAbilities =
     (Just . TPos . (me `shift`)) `liftM` moveStrategy cops actor glo Nothing
 
 -- | AI strategy based on actor's sight, smell, intelligence, etc. Never empty.
-actionStrategy :: MonadClientRO m => ActorId -> m (Strategy CmdSer)
-actionStrategy actor = do
-  cops@Kind.COps{costrat=Kind.Ops{okind}} <- getsState scops
+actionStrategy :: MonadClientRO m
+               => ActorId -> [Ability]
+               -> m (Strategy CmdSer)
+actionStrategy actor factionAbilities = do
+  cops <- getsState scops
   glo <- getState
   btarget <- getsClient $ getTarget actor
-  let Actor{bfaction} = getActorBody actor glo
-      factionAI = gAiIdle $ sfaction glo IM.! bfaction
-      factionAbilities = sabilities (okind factionAI)
   return $! proposeAction cops actor btarget glo factionAbilities
 
 proposeAction :: Kind.COps -> ActorId

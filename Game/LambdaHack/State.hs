@@ -165,7 +165,7 @@ getSide State{_sfaction, _sside} = _sfaction IM.! _sside
 
 -- | Tell whether the faction is human player-controlled.
 isHumanFaction :: State -> FactionId -> Bool
-isHumanFaction s fid = isNothing $ gAiSelected $ _sfaction s IM.! fid
+isHumanFaction s fid = isNothing $ gAiLeader $ _sfaction s IM.! fid
 
 -- | Tell whether the faction can spawn actors.
 isSpawningFaction :: State -> FactionId -> Bool

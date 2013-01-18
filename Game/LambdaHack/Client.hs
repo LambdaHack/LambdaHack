@@ -32,6 +32,8 @@ import Game.LambdaHack.CmdCli
 import Game.LambdaHack.CmdSer
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.StrategyKind
+import Game.LambdaHack.Faction
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
@@ -239,13 +241,22 @@ cmdQueryCli cmd = case cmd of
     return leader
   HandleHumanCli leader -> handleHuman leader
   HandleAI actor -> do
-    stratTarget <- targetStrategy actor
-    -- Choose a target from those proposed by AI for the actor.
-    btarget <- rndToAction $ frequency $ bestVariant stratTarget
-    modifyClient $ updateTarget actor (const btarget)
-    stratAction <- actionStrategy actor
-    -- Run the AI: chose an action from those given by the AI strategy.
-    rndToAction $ frequency $ bestVariant $ stratAction
+    bfaction <- getsState $ bfaction . getActorBody actor
+    side <- getsState sside
+    assert (bfaction == side `blame` (actor, bfaction, side)) $ do
+      Kind.COps{costrat=Kind.Ops{okind}} <- getsState scops
+      leader <- getsClient getLeader
+      fact <- getsState getSide
+      let factionAI | Just actor /= leader = gAiMember fact
+                    | otherwise = fromJust $ gAiLeader fact
+          factionAbilities = sabilities (okind factionAI)
+      stratTarget <- targetStrategy actor factionAbilities
+      -- Choose a target from those proposed by AI for the actor.
+      btarget <- rndToAction $ frequency $ bestVariant stratTarget
+      modifyClient $ updateTarget actor (const btarget)
+      stratAction <- actionStrategy actor factionAbilities
+      -- Run the AI: chose an action from those given by the AI strategy.
+      rndToAction $ frequency $ bestVariant $ stratAction
 
 -- | Continue running in the given direction.
 continueRun :: MonadClient m => ActorId -> (Vector, Int) -> m CmdSer

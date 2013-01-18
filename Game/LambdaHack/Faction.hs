@@ -14,15 +14,15 @@ import Game.LambdaHack.Content.StrategyKind
 import qualified Game.LambdaHack.Kind as Kind
 
 data Faction = Faction
-  { gkind       :: !(Kind.Id FactionKind)   -- ^ the kind of the faction
-  , gname       :: !Text                    -- ^ individual name
-  , gAiSelected :: !(Maybe (Kind.Id StrategyKind))
-                                            -- ^ AI for the selected actor;
-                                            -- human-controlled, if Nothing
-  , gAiIdle     :: !(Kind.Id StrategyKind)  -- ^ AI to use for idle actors
-  , genemy      :: ![FactionId]  -- ^ currently in war with these factions
-  , gally       :: ![FactionId]  -- ^ currently allied with these factions
-  , gquit       :: !(Maybe (Bool, Status))  -- ^ cause of game end/exit
+  { gkind     :: !(Kind.Id FactionKind)   -- ^ the kind of the faction
+  , gname     :: !Text                    -- ^ individual name
+  , gAiLeader :: !(Maybe (Kind.Id StrategyKind))
+                                          -- ^ AI for the leaders;
+                                          -- Nothing means human-controlled
+  , gAiMember :: !(Kind.Id StrategyKind)  -- ^ AI to use for other actors
+  , genemy    :: ![FactionId]  -- ^ currently in war with these factions
+  , gally     :: ![FactionId]  -- ^ currently allied with these factions
+  , gquit     :: !(Maybe (Bool, Status))  -- ^ cause of game end/exit
   }
   deriving Show
 
@@ -55,16 +55,16 @@ instance Binary Faction where
   put Faction{..} = do
     put gkind
     put gname
-    put gAiSelected
-    put gAiIdle
+    put gAiLeader
+    put gAiMember
     put genemy
     put gally
     put gquit
   get = do
     gkind <- get
     gname <- get
-    gAiSelected <- get
-    gAiIdle <- get
+    gAiLeader <- get
+    gAiMember <- get
     genemy <- get
     gally <- get
     gquit <- get

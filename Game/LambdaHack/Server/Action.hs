@@ -263,11 +263,11 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
             genemy = []  -- fixed below
             gally  = []  -- fixed below
             gquit = Nothing
-        gAiSelected <-
+        gAiLeader <-
           if isHuman
           then return Nothing
-          else fmap Just $ sopick (fAiSelected fk) (const True)
-        gAiIdle <- sopick (fAiIdle fk) (const True)
+          else fmap Just $ sopick (fAiLeader fk) (const True)
+        gAiMember <- sopick (fAiMember fk) (const True)
         return Faction{..}
   lHuman <- mapM (g True) (configHuman config)
   lComputer <- mapM (g False) (configComputer config)
