@@ -255,7 +255,7 @@ initialHeroes cops ppos side s ser =
 -- TODO: do this inside Action ()
 gameReset :: Kind.COps
           -> IO (State, StateServer, FactionId -> (FactionPers, State))
-gameReset cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
+gameReset cops@Kind.COps{ cofact=Kind.Ops{opick, okind}
                                   , coitem
                                   , corule
                                   , costrat=Kind.Ops{opick=sopick} } = do
@@ -269,23 +269,22 @@ gameReset cops@Kind.COps{ cofact=Kind.Ops{opick, ofoldrWithKey}
         (discoS, discoRev) <- serverDiscos coitem
         DungeonGen.FreshDungeon{..} <-
           DungeonGen.dungeonGen cops sflavour discoRev sconfig
-        -- TODO: really use configPlayers
-        let factionName = fst $ head $ configHuman sconfig
-        playerFactionKindId <- opick factionName (const True)
-        let g gkind fk mk = do
-              (m, k) <- mk
-              let gname = fname fk
+        let g isHuman (fType, gname) = do
+              gkind <- opick fType (const True)
+              let fk = okind gkind
                   genemy = fenemy fk
                   gally = fally fk
+                  gquit = Nothing
               gAiSelected <-
-                if gkind == playerFactionKindId
+                if isHuman
                 then return Nothing
                 else fmap Just $ sopick (fAiSelected fk) (const True)
               gAiIdle <- sopick (fAiIdle fk) (const True)
-              let gquit = Nothing
-              return (IM.insert k Faction{..} m, k + 1)
-        faction <- fmap fst $ ofoldrWithKey g (return (IM.empty, 0))
-        let defState =
+              return Faction{..}
+        lHuman <- mapM (g True) (configHuman sconfig)
+        lComputer <- mapM (g False) (configComputer sconfig)
+        let faction = IM.fromDistinctAscList $ zip [1..] $ lHuman ++ lComputer
+            defState =
               defStateGlobal freshDungeon freshDepth discoS faction
                              cops random entryLevel
             defSer = defStateServer discoRev sflavour sconfig
