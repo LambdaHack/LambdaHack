@@ -323,7 +323,8 @@ actorAttackActor source target = do
       cops@Kind.COps{coitem=Kind.Ops{opick, okind}} <- getsState scops
       state <- getState
       bitems <- getsState (getActorItem source)
-      let h2hGroup = if isAHero state source then "unarmed" else "monstrous"
+      let h2hGroup | isSpawningFaction state (bfaction sm) = "monstrous"
+                   | otherwise = "unarmed"
       h2hKind <- rndToAction $ opick h2hGroup (const True)
       flavour <- getsServer sflavour
       discoRev <- getsServer sdiscoRev
@@ -474,8 +475,10 @@ rollMonster Kind.COps{ cotile
                      , cofact=Kind.Ops{okind=fokind}
                      } per state ser = do
   let lvl@Level{lactor} = getArena state
-      ms = hostileList state
-      hs = heroList state
+      lenemy = genemy . getSide $ state
+      ms = actorNotProjList (`elem` lenemy) . getArena $ state
+      -- TODO: should be far from anybody but the monster's faction
+      hs = actorNotProjList (== sside state) . getArena $ state
       isLit = Tile.isLit cotile
   rc <- monsterGenChance (levelNumber $ sarena state) (length ms)
   if not rc
@@ -547,7 +550,8 @@ regenerateLevelHP = do
   hi <- getsState (linv . getArena)
   modifyState (updateArena (updateActor (IM.mapWithKey (upd hi))))
 
--- | Add new smell traces to the level. Only humans leave a strong scent.
+-- | Add new smell traces to the level. Only non-spawning factions
+-- leave a scent that is easy to tell from common dungeon smells.
 addSmell :: MonadServer m => ActorId -> m ()
 addSmell aid = do
   time <- getsState getTime

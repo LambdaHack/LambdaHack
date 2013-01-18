@@ -20,8 +20,8 @@ data Faction = Faction
                                             -- ^ AI for the selected actor;
                                             -- human-controlled, if Nothing
   , gAiIdle     :: !(Kind.Id StrategyKind)  -- ^ AI to use for idle actors
-  , genemy      :: ![Text]  -- ^ currently in war with such factions
-  , gally       :: ![Text]  -- ^ currently allied with such factions
+  , genemy      :: ![FactionId]  -- ^ currently in war with these factions
+  , gally       :: ![FactionId]  -- ^ currently allied with these factions
   , gquit       :: !(Maybe (Bool, Status))  -- ^ cause of game end/exit
   }
   deriving Show

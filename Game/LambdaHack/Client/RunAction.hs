@@ -23,6 +23,7 @@ import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
+import Game.LambdaHack.Faction
 
 -- | Start running in the given direction and with the given number
 -- of tiles already traversed (usually 0). The first turn of running
@@ -154,9 +155,9 @@ continueRunDir leader (dirLast, distLast) = do
   posHere <- getsState (bpos . getActorBody leader)
   per <- askPerception
   StateClient{sreport} <- getClient  -- TODO: check the message before it goes into history
-  ms  <- getsState dangerousList
-  side <- getsState sside
-  hs <- getsState (factionList [side])
+  genemy <- getsState $ genemy . getSide
+  ms <- getsState $ actorList (`elem` genemy) . getArena
+  hs <- getsState $ actorList (not . (`elem` genemy)) . getArena
   lvl@Level{lxsize, lysize} <- getsState getArena
   let posHasFeature f loc = Tile.hasFeature cotile f (lvl `at` loc)
       posHasItems loc = not $ L.null $ lvl `atI` loc

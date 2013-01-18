@@ -24,6 +24,7 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind as TileKind
+import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Kind as Kind
@@ -93,7 +94,8 @@ leaderProjectGroupItem :: MonadClient m
                        => MU.Part -> MU.Part -> [Char]
                        -> m CmdSer
 leaderProjectGroupItem verb object syms = do
-  ms     <- getsState hostileList
+  genemy <- getsState $ genemy . getSide
+  ms <- getsState $ actorNotProjList (`elem` genemy) . getArena
   lxsize <- getsState (lxsize . getArena)
   lysize <- getsState (lysize . getArena)
   Just leader <- getsClient getLeader

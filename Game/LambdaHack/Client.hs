@@ -265,7 +265,7 @@ handleHuman leader = do
   cmdS <- tryWith (\msg -> stopRunning >> humanCommand msg) $ do
     srunning <- getsClient srunning
     maybe abort (continueRun leader) srunning
---  addSmell leader
+--  addSmell leader  -- TODO: instead do for all non-spawning factions
   leaderNew <- getsClient getLeader
   arenaNew <- getsState sarena
   return (cmdS, leaderNew, arenaNew)

@@ -3,12 +3,11 @@
 -- but not the 'Action' type.
 -- TODO: Document an export list after it's rewritten according to #17.
 module Game.LambdaHack.ActorState
-  ( isProjectile, isAHero, calculateTotal
-  , allActorsAnyLevel, nearbyFreePos, whereTo
+  ( actorAssocs, actorList, actorNotProjAssocs, actorNotProjList
+  , isProjectile, calculateTotal, allActorsAnyLevel, nearbyFreePos, whereTo
   , posToActor, deleteActor, updateActorItem
-  , insertActor, heroList, memActor, getActorBody, updateActorBody
-  , hostileList, getActorItem, tryFindHeroK, dangerousList
-  , factionList, foesAdjacent, hostileAssocs
+  , insertActor, memActor, getActorBody, updateActorBody
+  , getActorItem, tryFindHeroK, foesAdjacent
   ) where
 
 import qualified Data.Char as Char
@@ -32,39 +31,23 @@ import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert
 
+actorAssocs :: (FactionId -> Bool) -> Level -> [(ActorId, Actor)]
+actorAssocs p lvl = filter (p . bfaction . snd) $ IM.toList $ lactor lvl
+
+actorList :: (FactionId -> Bool) -> Level -> [Actor]
+actorList p lvl = filter (p . bfaction) $ IM.elems $ lactor lvl
+
+actorNotProjAssocs :: (FactionId -> Bool) -> Level -> [(ActorId, Actor)]
+actorNotProjAssocs p lvl =
+  filter (\(_, m) -> not (bproj m) && p (bfaction m)) $ IM.toList $ lactor lvl
+
+actorNotProjList :: (FactionId -> Bool) -> Level -> [Actor]
+actorNotProjList p lvl =
+  filter (\m -> not (bproj m) && p (bfaction m)) $ IM.elems $ lactor lvl
+
 -- | Checks whether an actor identifier represents a hero.
 isProjectile :: State -> ActorId -> Bool
 isProjectile s aid = bproj $ getActorBody aid s
-
--- | Checks whether an actor identifier represents a hero.
-isAHero :: State -> ActorId -> Bool
-isAHero s a =
-  let actor = getActorBody a s
-  in bfaction actor == sside s && not (bproj actor)
-
--- TODO: unify, rename
-hostileAssocs :: FactionId -> Level -> [(ActorId, Actor)]
-hostileAssocs faction lvl =
-  filter (\ (_, m) -> bfaction m /= faction && not (bproj m)) $
-    IM.toList $ lactor lvl
-heroList, hostileList, dangerousList :: State -> [Actor]
-heroList s =
-  filter (\ m -> bfaction m == sside s && not (bproj m)) $
-    IM.elems $ lactor $ getArena s
-hostileList s =
-  filter (\ m -> bfaction m /= sside s && not (bproj m)) $
-    IM.elems $ lactor $ getArena s
-dangerousList s =
-  filter (\ m -> bfaction m /= sside s) $
-    IM.elems $ lactor $ getArena s
-
-factionAssocs :: [FactionId] -> Level -> [(ActorId, Actor)]
-factionAssocs l lvl =
-  filter (\ (_, m) -> bfaction m `elem` l) $ IM.toList $ lactor lvl
-
-factionList :: [FactionId] -> State -> [Actor]
-factionList l s =
-  filter (\ m -> bfaction m `elem` l) $ IM.elems $ lactor $ getArena s
 
 -- | Finds an actor at a position on the current level. Perception irrelevant.
 posToActor :: Point -> State -> Maybe ActorId
@@ -91,7 +74,7 @@ nearbyFreePos cotile start s =
 -- | Calculate loot's worth for heroes on the current level.
 calculateTotal :: State -> ([Item], Int)
 calculateTotal s =
-  let ha = factionAssocs [sside s] $ getArena s
+  let ha = actorAssocs (== sside s) $ getArena s
       heroInv = L.concat $ catMaybes $
                   L.map ( \ (k, _) -> IM.lookup k $ linv $ getArena s) ha
   in (heroInv, L.sum $ L.map itemPrice heroInv)

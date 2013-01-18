@@ -31,6 +31,7 @@ import qualified Game.LambdaHack.Client.CmdHuman as CmdHuman
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Effect as Effect
+import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Kind as Kind
@@ -236,13 +237,13 @@ targetEnemy :: MonadClient m => TgtMode -> WriterT Slideshow m ()
 targetEnemy stgtModeNew = do
   Just leader <- getsClient getLeader
   ppos <- getsState (bpos . getActorBody leader)
-  side <- getsState sside
   per <- askPerception
   target <- getsClient $ getTarget leader
   -- TODO: sort enemies by distance to the leader.
   stgtMode <- getsClient stgtMode
   (_, lvl@Level{lxsize}) <- viewedLevel
-  let ms = hostileAssocs side lvl
+  genemy <- getsState $ genemy . getSide
+  let ms = actorNotProjAssocs (`elem` genemy) lvl
       plms = filter ((/= leader) . fst) ms  -- don't target yourself
       ordPos (_, m) = (chessDist lxsize ppos $ bpos m, bpos m)
       dms = sortBy (comparing ordPos) plms
@@ -402,9 +403,9 @@ endTargeting accept = do
     Just leader <- getsClient getLeader
     target <- getsClient $ getTarget leader
     scursor <- getsClient scursor
-    side <- getsState sside
     lvl <- cursorLevel
-    let ms = hostileAssocs side lvl
+    genemy <- getsState $ genemy . getSide
+    let ms = actorNotProjAssocs (`elem` genemy) lvl
     case target of
       Just TEnemy{} -> do
         -- If in enemy targeting mode, switch to the enemy under

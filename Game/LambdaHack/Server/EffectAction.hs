@@ -58,11 +58,7 @@ addMonster cotile mk hp ppos bfaction bproj s ser@StateServer{scounter} =
 -- TODO: center screen, flash the background, etc. Perhaps wait for SPACE.
 -- | Focus on the hero being wounded/displaced/etc.
 focusIfOurs :: MonadActionAbort m => ActorId -> m Bool
-focusIfOurs _target = do
---  s  <- getState
-  if True -- isAHero s target
-    then return True
-    else return False
+focusIfOurs _target = return True
 
 -- | The source actor affects the target actor, with a given effect and power.
 -- The second argument is verbosity of the resulting message.
@@ -138,8 +134,19 @@ eff Effect.Dominate _ source target _power = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   s <- getState
   arena <- getsState sarena
-  if not $ isAHero s target
-    then do  -- Monsters have weaker will than heroes.
+  if source == target
+    then do
+      genemy <- getsState $ genemy . getSide
+      lm <- getsState $ actorNotProjList (`elem` genemy) . getArena
+      lxsize <- getsState (lxsize . getArena)
+      lysize <- getsState (lysize . getArena)
+      let cross m = bpos m : vicinityCardinal lxsize lysize (bpos m)
+          vis = IS.fromList $ concatMap cross lm
+      lvl <- getsState getArena
+      side <- getsState sside
+      sendUpdateCli side $ RememberCli arena vis lvl
+      return (True, "A dozen voices yells in anger.")
+    else do
       selectLeaderSer target arena
         >>= assert `trueM` (source, arena, target, "leader dominates himself")
       -- Halve the speed as a side-effect of domination.
@@ -157,31 +164,21 @@ eff Effect.Dominate _ source target _power = do
 --      fr <- drawOverlay ColorBW $ head $ runSlideshow sli
 --      displayFramesPush [Nothing, Just fr, Nothing]
       return (True, "")
-    else if source == target
-         then do
-           lm <- getsState hostileList
-           lxsize <- getsState (lxsize . getArena)
-           lysize <- getsState (lysize . getArena)
-           let cross m = bpos m : vicinityCardinal lxsize lysize (bpos m)
-               vis = IS.fromList $ concatMap cross lm
-           lvl <- getsState getArena
-           side <- getsState sside
-           sendUpdateCli side $ RememberCli arena vis lvl
-           return (True, "A dozen voices yells in anger.")
-         else nullEffect
 eff Effect.SummonFriend _ source target power = do
+  sm <- getsState (getActorBody source)
   tm <- getsState (getActorBody target)
   s <- getState
-  if isAHero s source
-    then summonHeroes (1 + power) (bpos tm)
-    else summonMonsters (1 + power) (bpos tm)
-  return (True, "")
-eff Effect.SummonEnemy _ source target power = do
-  tm <- getsState (getActorBody target)
-  s  <- getState
-  if isAHero s source
+  if isSpawningFaction s (bfaction sm)
     then summonMonsters (1 + power) (bpos tm)
     else summonHeroes (1 + power) (bpos tm)
+  return (True, "")
+eff Effect.SummonEnemy _ source target power = do
+  sm <- getsState (getActorBody source)
+  tm <- getsState (getActorBody target)
+  s  <- getState
+  if isSpawningFaction s (bfaction sm)
+    then summonHeroes (1 + power) (bpos tm)
+    else summonMonsters (1 + power) (bpos tm)
   return (True, "")
 eff Effect.ApplyPerfume _ source target _ =
   if source == target
@@ -264,9 +261,9 @@ effLvlGoUp aid k = do
         -- level). Perception is unchanged, so for one turn (this level turn)
         -- there will be visibility left on the old actor location.
         remember
-        -- Monsters hear no foe is left on the level. Cancel smell.
-        -- Reduces memory load and savefile size.
-        hs <- getsState heroList
+        -- Only spawning factions left on the level, so no new smell generate.
+        -- Cancel smell. Reduces memory load and savefile size.
+        hs <- getsState $ actorList (not . isSpawningFaction glo) . getArena
         when (null hs) $
           modifyState (updateArena (updateSmell (const IM.empty)))
         -- Change arena, but not the leader yet. The actor will become
