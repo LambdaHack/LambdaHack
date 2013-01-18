@@ -11,6 +11,7 @@ import qualified Data.IntSet as IS
 import qualified Data.Map as M
 import Data.Maybe
 import Data.Monoid (mempty)
+import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Action
@@ -241,9 +242,9 @@ cmdQueryCli cmd = case cmd of
     return leader
   HandleHumanCli leader -> handleHuman leader
   HandleAI actor -> do
-    bfaction <- getsState $ bfaction . getActorBody actor
+    body <- getsState $ getActorBody actor
     side <- getsState sside
-    assert (bfaction == side `blame` (actor, bfaction, side)) $ do
+    assert (bfaction body == side `blame` (actor, bfaction body, side)) $ do
       Kind.COps{costrat=Kind.Ops{okind}} <- getsState scops
       leader <- getsClient getLeader
       fact <- getsState getSide
@@ -255,6 +256,13 @@ cmdQueryCli cmd = case cmd of
       btarget <- rndToAction $ frequency $ bestVariant stratTarget
       modifyClient $ updateTarget actor (const btarget)
       stratAction <- actionStrategy actor factionAbilities
+      let _debug = T.unpack
+            $ "HandleAI abilities:" <+> showT factionAbilities
+            <>          ", symbol:" <+> showT (bsymbol body)
+            <>          ", loc:"    <+> showT (bpos body)
+            <> "\nHandleAI target:" <+> showT stratTarget
+            <> "\nHandleAI move:"   <+> showT stratAction
+      -- trace _debug $ return ()
       -- Run the AI: chose an action from those given by the AI strategy.
       rndToAction $ frequency $ bestVariant $ stratAction
 

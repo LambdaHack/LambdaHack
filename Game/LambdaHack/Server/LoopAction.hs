@@ -35,14 +35,12 @@ import Game.LambdaHack.Utils.Assert
 -- and repeat.
 loopServer :: MonadServerChan m => m ()
 loopServer = do
-  debug "loopServer"
   time <- getsState getTime  -- the end time of this clip, inclusive
   let clipN = (time `timeFit` timeClip) `mod` (timeTurn `timeFit` timeClip)
   -- Regenerate HP and add monsters each turn, not each clip.
   when (clipN == 1) checkEndGame
   when (clipN == 2) regenerateLevelHP
   when (clipN == 3) generateMonster
-  debug $ "loopServer: time =" <+> showT time
   handleActors timeZero
   modifyState (updateTime (timeAdd timeClip))
   endOrLoop loopServer
@@ -81,7 +79,6 @@ handleActors :: MonadServerChan m
              => Time  -- ^ start time of current subclip, exclusive
              -> m ()
 handleActors subclipStart = withPerception $ do
-  debug "handleActors"
   remember
   Kind.COps{coactor} <- getsState scops
   time <- getsState getTime  -- the end time of this clip, inclusive

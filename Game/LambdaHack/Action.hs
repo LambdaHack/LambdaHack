@@ -14,7 +14,6 @@ module Game.LambdaHack.Action
   , tryRepeatedlyWith, tryIgnore
     -- * Assorted primitives
   , rndToAction
-  , debug
   ) where
 
 import Control.Concurrent.Chan
@@ -22,9 +21,7 @@ import qualified Control.Monad.State as St
 import Control.Monad.Writer.Strict (WriterT (WriterT), lift, runWriterT)
 import Data.Dynamic
 import Data.Monoid
-import Data.Text (Text)
 import qualified Data.Text as T
--- import System.IO (hPutStrLn, stderr) -- just for debugging
 
 import Game.LambdaHack.CmdCli
 import Game.LambdaHack.Msg
@@ -107,7 +104,3 @@ rndToAction r = do
   let (a, ng) = St.runState r g
   modifyState $ updateRandom $ const ng
   return a
-
--- | Debugging.
-debug :: MonadActionAbort m => Text -> m ()
-debug _x = return () -- liftIO $ hPutStrLn stderr _x
