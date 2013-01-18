@@ -37,6 +37,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified System.Random as R
 import System.Time
+import Control.Arrow (second)
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -56,6 +57,7 @@ import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
+import Game.LambdaHack.Random
 import Game.LambdaHack.Server.Action.ActionClass (MonadServerRO(..), MonadServer(..), MonadServerChan(..), ConnDict)
 import Game.LambdaHack.Server.Action.ActionType (executorSer)
 import qualified Game.LambdaHack.Server.Action.ConfigIO as ConfigIO
@@ -252,39 +254,56 @@ initialHeroes cops ppos side s ser =
       k = 1 + configExtraHeroes
   in iterate (uncurry $ addHero cops ppos side) (s, ser) !! k
 
+createFactions :: Kind.COps -> Config -> Rnd FactionDict
+createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
+                        , costrat=Kind.Ops{opick=sopick} } config = do
+  let g isHuman (fType, gname) = do
+        gkind <- opick fType (const True)
+        let fk = okind gkind
+            genemy = []  -- fixed below
+            gally  = []  -- fixed below
+            gquit = Nothing
+        gAiSelected <-
+          if isHuman
+          then return Nothing
+          else fmap Just $ sopick (fAiSelected fk) (const True)
+        gAiIdle <- sopick (fAiIdle fk) (const True)
+        return Faction{..}
+  lHuman <- mapM (g True) (configHuman config)
+  lComputer <- mapM (g False) (configComputer config)
+  let rawFs = zip [1..] $ lHuman ++ lComputer
+      isOfType fType fact =
+        let fk = okind $ gkind fact
+        in case lookup fType $ ffreq fk of
+          Just n | n > 0 -> True
+          _ -> False
+      enemyAlly fact =
+        let f fType = filter (isOfType fType . snd) rawFs
+            fk = okind $ gkind fact
+            setEnemy = IS.fromList $ map fst $ concatMap f $ fenemy fk
+            setAlly  = IS.fromList $ map fst $ concatMap f $ fally fk
+            genemy = IS.toList setEnemy
+            gally = IS.toList $ setAlly IS.\\ setEnemy
+        in fact {genemy, gally}
+  return $! IM.fromDistinctAscList $ map (second enemyAlly) rawFs
+
 -- TODO: do this inside Action ()
 gameReset :: Kind.COps
           -> IO (State, StateServer, FactionId -> (FactionPers, State))
-gameReset cops@Kind.COps{ cofact=Kind.Ops{opick, okind}
-                                  , coitem
-                                  , corule
-                                  , costrat=Kind.Ops{opick=sopick} } = do
+gameReset cops@Kind.COps{ coitem, corule } = do
   -- Rules config reloaded at each new game start.
   (sconfig, dungeonGen, random) <- ConfigIO.mkConfigRules corule
   randomCli <- R.newStdGen  -- TODO: each AI client should have one
   -- from sconfig (only known to server), other clients each should have
   -- one known only to them (or server, if needed)
-  let rnd = do
+  let rnd :: Rnd (State, StateServer, FactionId -> (FactionPers, State))
+      rnd = do
         sflavour <- dungeonFlavourMap coitem
         (discoS, discoRev) <- serverDiscos coitem
         DungeonGen.FreshDungeon{..} <-
           DungeonGen.dungeonGen cops sflavour discoRev sconfig
-        let g isHuman (fType, gname) = do
-              gkind <- opick fType (const True)
-              let fk = okind gkind
-                  genemy = fenemy fk
-                  gally = fally fk
-                  gquit = Nothing
-              gAiSelected <-
-                if isHuman
-                then return Nothing
-                else fmap Just $ sopick (fAiSelected fk) (const True)
-              gAiIdle <- sopick (fAiIdle fk) (const True)
-              return Faction{..}
-        lHuman <- mapM (g True) (configHuman sconfig)
-        lComputer <- mapM (g False) (configComputer sconfig)
-        let faction = IM.fromDistinctAscList $ zip [1..] $ lHuman ++ lComputer
-            defState =
+        faction <- createFactions cops sconfig
+        let defState =
               defStateGlobal freshDungeon freshDepth discoS faction
                              cops random entryLevel
             defSer = defStateServer discoRev sflavour sconfig
