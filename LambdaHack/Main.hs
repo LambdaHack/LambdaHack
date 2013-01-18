@@ -3,6 +3,9 @@
 -- resulting in an executable game.
 module Main ( main ) where
 
+import Game.LambdaHack.Client.Action
+import Game.LambdaHack.Server.Action
+
 import qualified Content.ActorKind
 import qualified Content.CaveKind
 import qualified Content.FactionKind
@@ -12,10 +15,8 @@ import qualified Content.RuleKind
 import qualified Content.StrategyKind
 import qualified Content.TileKind
 import Game.LambdaHack.Client
-import Game.LambdaHack.Client.Action
 import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Server.Action
-import Game.LambdaHack.Server.LoopAction
+import Game.LambdaHack.Server
 
 -- | Fire up the frontend with the engine fueled by content.
 -- The @Action@ type to be used is decided by the second argument
@@ -35,4 +36,5 @@ main =
         , cotile  = Kind.createOps Content.TileKind.cdefs
         }
   in startFrontend executorSer executorCli
-                   cops loopServer (loopClient2 cmdUpdateCli cmdQueryCli)
+                   cops
+                   (loopServer cmdSer) (loopClient2 cmdUpdateCli cmdQueryCli)

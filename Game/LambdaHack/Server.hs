@@ -1,7 +1,5 @@
 -- | Semantics of server commands.
-module Game.LambdaHack.Server
-  ( cmdSer
-  ) where
+module Game.LambdaHack.Server (cmdSer, loopServer) where
 
 import Control.Monad
 
@@ -12,7 +10,8 @@ import Game.LambdaHack.CmdSer
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Level
 import Game.LambdaHack.Server.Action
-import Game.LambdaHack.Server.GlobalAction
+import Game.LambdaHack.Server.SemAction
+import Game.LambdaHack.Server.LoopAction
 import Game.LambdaHack.State
 
 -- | The semantics of server commands.

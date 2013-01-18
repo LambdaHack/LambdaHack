@@ -1,9 +1,9 @@
 {-# LANGUAGE ExtendedDefaultRules, OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
--- | Semantics of 'Command.CmdSer' server commands.
+-- | Semantics of 'CmdSer' server commands.
 -- A couple of them do not take time, the rest does.
 -- TODO: document
-module Game.LambdaHack.Server.GlobalAction where
+module Game.LambdaHack.Server.SemAction where
 
 import Control.Monad
 import qualified Data.IntMap as IM

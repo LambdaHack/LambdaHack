@@ -19,10 +19,9 @@ import Game.LambdaHack.CmdSer
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
-import Game.LambdaHack.Server
 import Game.LambdaHack.Server.Action
 import Game.LambdaHack.Server.EffectAction
-import Game.LambdaHack.Server.GlobalAction
+import Game.LambdaHack.Server.SemAction
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.State
 import Game.LambdaHack.Time
@@ -33,17 +32,17 @@ import Game.LambdaHack.Utils.Assert
 -- every fixed number of time units, e.g., monster generation.
 -- Run the leader and other actors moves. Eventually advance the time
 -- and repeat.
-loopServer :: MonadServerChan m => m ()
-loopServer = do
+loopServer :: MonadServerChan m => (CmdSer -> m ()) -> m ()
+loopServer cmdSer = do
   time <- getsState getTime  -- the end time of this clip, inclusive
   let clipN = (time `timeFit` timeClip) `mod` (timeTurn `timeFit` timeClip)
   -- Regenerate HP and add monsters each turn, not each clip.
   when (clipN == 1) checkEndGame
   when (clipN == 2) regenerateLevelHP
   when (clipN == 3) generateMonster
-  handleActors timeZero
+  handleActors cmdSer timeZero
   modifyState (updateTime (timeAdd timeClip))
-  endOrLoop loopServer
+  endOrLoop (loopServer cmdSer)
 
 -- TODO: switch levels alternating between player factions,
 -- if there are many and on distinct levels.
@@ -76,9 +75,10 @@ checkEndGame = do
 -- has changed since last time (every change, whether by human or AI
 -- or @generateMonster@ is followd by a call to @handleActors@).
 handleActors :: MonadServerChan m
-             => Time  -- ^ start time of current subclip, exclusive
+             => (CmdSer -> m ())
+             -> Time  -- ^ start time of current subclip, exclusive
              -> m ()
-handleActors subclipStart = withPerception $ do
+handleActors cmdSer subclipStart = withPerception $ do
   remember
   Kind.COps{coactor} <- getsState scops
   time <- getsState getTime  -- the end time of this clip, inclusive
@@ -113,7 +113,7 @@ handleActors subclipStart = withPerception $ do
           modifyState $ updateSelectedArena arenaNew
           tryWith (\msg -> do
                       sendUpdateCli side $ ShowMsgCli msg
-                      handleActors subclipStart
+                      handleActors cmdSer subclipStart
                   )
                   (cmdSer cmdS)
           -- Advance time once, after the leader switched perhaps many times.
@@ -132,7 +132,7 @@ handleActors subclipStart = withPerception $ do
           -- Human moves always start a new subclip.
           lpos <- getsState $ bpos . getActorBody (fromMaybe actor leaderNew)
           broadcastPosCli [lpos] $ DisplayPushCli
-          handleActors $ btime m
+          handleActors cmdSer $ btime m
         else do
 --          recordHistory
           advanceTime actor  -- advance time while the actor still alive
@@ -157,7 +157,7 @@ handleActors subclipStart = withPerception $ do
                       (cmdSer cmdS)
               apos <- getsState $ bpos . getActorBody actor
               broadcastPosCli [apos] $ DisplayPushCli
-              handleActors $ btime m
+              handleActors cmdSer $ btime m
             else do
               -- No new subclip.
               cmdS <- sendAIQueryCli side $ HandleAI actor
@@ -168,7 +168,7 @@ handleActors subclipStart = withPerception $ do
                                else assert `failure` msg <> "in AI"
                       )
                       (cmdSer cmdS)
-              handleActors subclipStart
+              handleActors cmdSer subclipStart
 
 -- | Advance (or rewind) the move time for the given actor.
 advanceTime :: MonadServer m => ActorId -> m ()
