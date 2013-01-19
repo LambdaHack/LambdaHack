@@ -26,7 +26,8 @@ module Game.LambdaHack.Client.Action
     -- * Turn init operations
   , rememberLevel, displayPush
     -- * Assorted primitives
-  , clientGameSave, restoreGame, frontendName, readChanFromSer, writeChanToSer
+  , clientGameSave, restoreGame, readChanFromSer, writeChanToSer
+  , frontendName, startup
   ) where
 
 import Control.Concurrent
@@ -46,7 +47,7 @@ import Game.LambdaHack.Client.Action.ActionClass (MonadClient (..),
                                                   MonadClientRO (..),
                                                   Session (..))
 import Game.LambdaHack.Client.Action.ActionType (executorCli)
-import Game.LambdaHack.Client.Action.Frontend (frontendName)
+import Game.LambdaHack.Client.Action.Frontend (frontendName, startup)
 import qualified Game.LambdaHack.Client.Action.Frontend as Frontend
 import qualified Game.LambdaHack.Client.Action.Save as Save
 import Game.LambdaHack.Client.Animation (Frames, SingleFrame)

@@ -35,7 +35,10 @@ description:   This is an alpha release of LambdaHack,
                convention. If a module has the same name as a directory,
                the module is the exclusive interface to the directory.
                No references to the modules in the directory are allowed
-               except from the interface module.
+               except from the interface module. This policy is only binding
+               inside the library. The users are free to do whatever they
+               please, since the library authors are in no position to guess
+               their particular needs.
 homepage:      http://github.com/kosmikus/LambdaHack
 bug-reports:   http://github.com/kosmikus/LambdaHack/issues
 license:       BSD3
@@ -145,6 +148,7 @@ library
                       Game.LambdaHack.Server.LoopAction,
                       Game.LambdaHack.Server.SemAction,
                       Game.LambdaHack.Server.State,
+                      Game.LambdaHack.Start,
                       Game.LambdaHack.State,
                       Game.LambdaHack.Tile,
                       Game.LambdaHack.Time,

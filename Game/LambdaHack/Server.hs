@@ -1,5 +1,8 @@
 -- | Semantics of server commands.
-module Game.LambdaHack.Server (cmdSer, loopServer) where
+module Game.LambdaHack.Server
+  ( cmdSer
+  , loopServer, executorSer, gameReset
+  ) where
 
 import Control.Monad
 
