@@ -46,7 +46,8 @@ import Game.LambdaHack.Client.Action.ActionClass (MonadClient (..),
                                                   MonadClientRO (..),
                                                   Session (..))
 import Game.LambdaHack.Client.Action.ActionType (executorCli)
-import Game.LambdaHack.Client.Action.Frontend
+import Game.LambdaHack.Client.Action.Frontend (frontendName)
+import qualified Game.LambdaHack.Client.Action.Frontend as Frontend
 import qualified Game.LambdaHack.Client.Action.Save as Save
 import Game.LambdaHack.Client.Animation (Frames, SingleFrame)
 import Game.LambdaHack.Client.Binding
@@ -62,6 +63,38 @@ import Game.LambdaHack.Perception
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Faction
+
+displayFrame :: MonadClient m => Bool -> Maybe SingleFrame -> m ()
+displayFrame isRunning mf = do
+  fs <- askFrontendSession
+  faction <- getsState sfaction
+  case filter isHumanFact $ IM.elems faction of
+    _ : _ : _ ->
+      -- More than one human player; don't mix the output
+      modifyClient $ \cli -> cli {sframe = (mf, isRunning) : sframe cli}
+    _ ->
+      -- At most one human player, display everything at once.
+      liftIO $ Frontend.displayFrame fs isRunning mf
+
+flushFrames :: MonadClient m => m ()
+flushFrames = do
+  fs <- askFrontendSession
+  sframe <- getsClient sframe
+  liftIO $ mapM_ (\(mf, b) -> Frontend.displayFrame fs b mf) $ reverse sframe
+  modifyClient $ \cli -> cli {sframe = []}
+
+nextEvent :: MonadClient m => Maybe Bool -> m K.KM
+nextEvent mb = do
+  fs <- askFrontendSession
+  flushFrames
+  liftIO $ Frontend.nextEvent fs mb
+
+promptGetKey :: MonadClient m => [K.KM] -> SingleFrame -> m K.KM
+promptGetKey keys frame = do
+  fs <- askFrontendSession
+  flushFrames
+  liftIO $ Frontend.promptGetKey fs keys frame
 
 -- | Set the current exception handler. Apart of executing it,
 -- draw and pass along a slide with the abort message (even if message empty).
@@ -76,7 +109,7 @@ tryWithSlide exc h =
   in tryWith excMsg h
 
 -- | Get the frontend session.
-askFrontendSession :: MonadClientRO m => m FrontendSession
+askFrontendSession :: MonadClientRO m => m Frontend.FrontendSession
 askFrontendSession = do
   sfs <- getsSession sfs
   case sfs of
@@ -129,9 +162,8 @@ askPerception = do
 -- | Wait for a human player command.
 getKeyCommand :: MonadClient m => Maybe Bool -> m K.KM
 getKeyCommand doPush = do
-  fs <- askFrontendSession
   keyb <- askBinding
-  (nc, modifier) <- liftIO $ nextEvent fs doPush
+  (nc, modifier) <- nextEvent doPush
   return $! case modifier of
     K.NoModifier -> (fromMaybe nc $ M.lookup nc $ kmacro keyb, modifier)
     _ -> (nc, modifier)
@@ -140,9 +172,8 @@ getKeyCommand doPush = do
 getKeyOverlayCommand :: MonadClient m => Overlay -> m K.KM
 getKeyOverlayCommand overlay = do
   frame <- drawOverlay ColorFull overlay
-  fs <- askFrontendSession
   keyb <- askBinding
-  (nc, modifier) <- liftIO $ promptGetKey fs [] frame
+  (nc, modifier) <- promptGetKey [] frame
   return $! case modifier of
     K.NoModifier -> (fromMaybe nc $ M.lookup nc $ kmacro keyb, modifier)
     _ -> (nc, modifier)
@@ -150,9 +181,8 @@ getKeyOverlayCommand overlay = do
 -- | Ignore unexpected kestrokes until a SPACE or ESC is pressed.
 getConfirm :: MonadClient m => [K.KM] -> SingleFrame -> m Bool
 getConfirm clearKeys frame = do
-  fs <- askFrontendSession
   let keys = [(K.Space, K.NoModifier), (K.Esc, K.NoModifier)] ++ clearKeys
-  km <- liftIO $ promptGetKey fs keys frame
+  km <- promptGetKey keys frame
   case km of
     (K.Space, K.NoModifier) -> return True
     _ | km `elem` clearKeys -> return True
@@ -172,19 +202,16 @@ getManyConfirms clearKeys slides =
 
 -- | Push frames or frame's worth of delay to the frame queue.
 displayFramesPush :: MonadClient m => Frames -> m ()
-displayFramesPush frames = do
-  fs <- askFrontendSession
-  liftIO $ mapM_ (displayFrame fs False) frames
+displayFramesPush frames = mapM_ (displayFrame False) frames
 
 -- | A yes-no confirmation.
 getYesNo :: MonadClient m => SingleFrame -> m Bool
 getYesNo frame = do
-  fs <- askFrontendSession
   let keys = [ (K.Char 'y', K.NoModifier)
              , (K.Char 'n', K.NoModifier)
              , (K.Esc, K.NoModifier)
              ]
-  (k, _) <- liftIO $ promptGetKey fs keys frame
+  (k, _) <- promptGetKey keys frame
   case k of
     K.Char 'y' -> return True
     _          -> return False
@@ -212,12 +239,11 @@ displayYesNo prompt = do
 displayChoiceUI :: MonadClient m => Msg -> Overlay -> [K.KM] -> m K.KM
 displayChoiceUI prompt ov keys = do
   slides <- fmap runSlideshow $ overlayToSlideshow (prompt <> ", ESC]") ov
-  fs <- askFrontendSession
   let legalKeys = (K.Space, K.NoModifier) : (K.Esc, K.NoModifier) : keys
       loop [] = neverMind True
       loop (x : xs) = do
         frame <- drawOverlay ColorFull x
-        (key, modifier) <- liftIO $ promptGetKey fs legalKeys frame
+        (key, modifier) <- promptGetKey legalKeys frame
         case key of
           K.Esc -> neverMind True
           K.Space -> loop xs
@@ -263,7 +289,6 @@ drawOverlay dm over = do
 -- Only one screenful of the report is shown, the rest is ignored.
 displayPush :: MonadClient m => m ()
 displayPush = do
-  fs <- askFrontendSession
   sls <- promptToSlideshow ""
   let slide = head $ runSlideshow sls
 --  DebugModeCli{somniscient} <- getsClient sdebugCli
@@ -274,8 +299,7 @@ displayPush = do
   -- Visually speed up (by remving all empty frames) the show of the sequence
   -- of the move frames if the player is running.
   srunning <- getsClient srunning
-  liftIO $ displayFrame fs (isJust srunning) $ Just frame
-
+  displayFrame (isJust srunning) $ Just frame
 
 -- | Update faction memory at the given set of positions.
 rememberLevel :: Kind.COps -> IS.IntSet -> Level -> Level -> Level
@@ -313,6 +337,7 @@ clientGameSave toBkp = do
   s <- getState
   cli <- getClient
   configUI <- askConfigUI
+  flushFrames
   liftIO $ Save.saveGameCli toBkp configUI s cli
 
 restoreGame :: MonadClient m

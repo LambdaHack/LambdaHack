@@ -16,12 +16,10 @@ module Game.LambdaHack.State
 import Data.Binary
 import qualified Data.IntMap as IM
 import qualified Data.Map as M
-import Data.Maybe (isNothing)
 import Data.Text (Text)
 import Data.Typeable
 import qualified System.Random as R
 
-import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
@@ -165,14 +163,11 @@ getSide State{_sfaction, _sside} = _sfaction IM.! _sside
 
 -- | Tell whether the faction is human player-controlled.
 isHumanFaction :: State -> FactionId -> Bool
-isHumanFaction s fid = isNothing $ gAiLeader $ _sfaction s IM.! fid
+isHumanFaction s fid = isHumanFact $ _sfaction s IM.! fid
 
 -- | Tell whether the faction can spawn actors.
 isSpawningFaction :: State -> FactionId -> Bool
-isSpawningFaction s fid =
-  let Kind.Ops{okind} = Kind.cofact (_scops s)
-      kind = okind $ gkind $ _sfaction s IM.! fid
-  in fspawn kind > 0
+isSpawningFaction s fid = isSpawningFact (_scops s) $ _sfaction s IM.! fid
 
 sdungeon :: State -> Dungeon
 sdungeon = _sdungeon

@@ -20,6 +20,7 @@ import System.Time
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
+import Game.LambdaHack.Client.Animation
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
@@ -42,6 +43,7 @@ data StateClient = StateClient
   , shistory  :: !History       -- ^ history of messages
   , sper      :: !FactionPers   -- ^ faction perception indexed by levels
   , slastKey  :: !(Maybe K.KM)  -- ^ last command key pressed
+  , sframe    :: ![(Maybe SingleFrame, Bool)]  -- ^ accumulated frames
   , _sleader  :: !(Maybe ActorId)  -- ^ selected actor
   , sdebugCli :: !DebugModeCli  -- ^ debugging mode
   }
@@ -80,8 +82,9 @@ defStateClient shistory sper = do
     , sreport   = emptyReport
     , shistory
     , sper
-    , _sleader  = Nothing  -- no heroes yet alive
     , slastKey  = Nothing
+    , sframe    = []
+    , _sleader  = Nothing  -- no heroes yet alive
     , sdebugCli = defDebugModeCli
     }
 
@@ -150,7 +153,7 @@ toggleOmniscient s@StateClient{sdebugCli=sdebugCli@DebugModeCli{somniscient}} =
   s {sdebugCli = sdebugCli {somniscient = not somniscient}}
 
 instance Binary StateClient where
-  put StateClient{..} = do
+  put StateClient{..} = assert (null sframe `blame` sframe) $ do
     put stgtMode
     put scursor
     put seps
@@ -170,6 +173,7 @@ instance Binary StateClient where
     _sleader <- get
     let sper = M.empty
         slastKey = Nothing
+        sframe = []
         sdebugCli = defDebugModeCli
     return StateClient{..}
 

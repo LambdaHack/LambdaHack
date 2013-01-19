@@ -290,7 +290,7 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
 -- TODO: do this inside Action ()
 gameReset :: Kind.COps
           -> IO (State, StateServer, FactionId -> (FactionPers, State))
-gameReset cops@Kind.COps{ coitem, corule, cofact=Kind.Ops{okind}} = do
+gameReset cops@Kind.COps{ coitem, corule} = do
   -- Rules config reloaded at each new game start.
   (sconfig, dungeonGen, random) <- ConfigIO.mkConfigRules corule
   randomCli <- R.newStdGen  -- TODO: each AI client should have one
@@ -299,7 +299,7 @@ gameReset cops@Kind.COps{ coitem, corule, cofact=Kind.Ops{okind}} = do
   let rnd :: Rnd (State, StateServer, FactionId -> (FactionPers, State))
       rnd = do
         faction <- createFactions cops sconfig
-        let notSpawning (_, fact) = fspawn (okind (gkind fact)) <= 0
+        let notSpawning (_, fact) = not $ isSpawningFact cops fact
             needInitialCrew = map fst $ filter notSpawning $ IM.toList faction
         sflavour <- dungeonFlavourMap coitem
         (discoS, discoRev) <- serverDiscos coitem
@@ -401,9 +401,9 @@ start executorS executorC sfs cops@Kind.COps{corule}
         toClient <- newChan
         toServer <- newChan
         return $ ConnClient {toClient, toServer}
-      addChan fid = do
+      addChan (fid, fact) = do
         chan <- mkConnClient
-        let isHuman = isHumanFaction glo fid
+        let isHuman = isHumanFact fact
         -- For computer players we don't spawn a separate AI client.
         -- In this way computer players are allowed to cheat:
         -- their non-leader actors know leader plans and act accordingly,
@@ -413,7 +413,7 @@ start executorS executorC sfs cops@Kind.COps{corule}
                  then fmap Just mkConnClient
                  else return Nothing
         return (fid, (chan, mchan))
-  chanAssocs <- mapM addChan $ IM.keys faction
+  chanAssocs <- mapM addChan $ IM.toList faction
   let d = IM.fromAscList chanAssocs
   -- Prepare data for clients.
   defHist <- defHistory

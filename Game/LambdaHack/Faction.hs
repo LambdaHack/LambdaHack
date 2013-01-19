@@ -2,11 +2,13 @@
 -- the hero faction battling the monster and the animal factions.
 module Game.LambdaHack.Faction
   ( FactionId, Faction(..), Status(..), FactionDict
+  , isHumanFact, isSpawningFact
   ) where
 
 import Data.Binary
 import qualified Data.IntMap as IM
 import Data.Text (Text)
+import Data.Maybe
 
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.FactionKind
@@ -36,6 +38,15 @@ data Status =
 
 -- | All factions in the game, indexed by faction identifier.
 type FactionDict = IM.IntMap Faction
+
+-- | Tell whether the faction is human player-controlled.
+isHumanFact :: Faction -> Bool
+isHumanFact fact = isNothing $ gAiLeader fact
+
+-- | Tell whether the faction can spawn actors.
+isSpawningFact :: Kind.COps -> Faction -> Bool
+isSpawningFact Kind.COps{cofact=Kind.Ops{okind}} fact =
+  fspawn (okind $ gkind $ fact) > 0
 
 instance Binary Status where
   put (Killed ln) = putWord8 0 >> put ln
