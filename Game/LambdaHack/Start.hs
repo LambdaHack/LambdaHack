@@ -10,8 +10,8 @@ import qualified Data.IntMap as IM
 import Data.Maybe
 
 import Game.LambdaHack.Action
-import qualified Game.LambdaHack.Client.Action.ConfigIO as Client.ConfigIO
 import Game.LambdaHack.Client
+import qualified Game.LambdaHack.Client.Action.ConfigIO as Client.ConfigIO
 import Game.LambdaHack.Client.Action.Frontend
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.Config
@@ -19,13 +19,13 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Perception
+import Game.LambdaHack.Server
 import Game.LambdaHack.Server.Action.ActionClass (ConnDict)
 import qualified Game.LambdaHack.Server.Action.ConfigIO as ConfigIO
 import qualified Game.LambdaHack.Server.Action.Save as Save
 import Game.LambdaHack.Server.Config
+import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.State
-import Game.LambdaHack.Server
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 
@@ -82,7 +82,7 @@ start executorS executorC sfs cops@Kind.COps{corule}
       pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
   -- TODO: rewrite; this is a bit wrong
   (gloR, serR, funR) <- gameReset cops
-  restored <- Save.restoreGameSer sconfig sconfigUI pathsDataFile title
+  restored <- Save.restoreGameSer sconfig pathsDataFile title
   (glo, ser, _msg) <- case restored of
     Right msg -> do  -- Starting a new game.
       return (gloR, serR, msg)

@@ -59,6 +59,7 @@ import Game.LambdaHack.Server.Action.HighScore (register)
 import qualified Game.LambdaHack.Server.Action.Save as Save
 import Game.LambdaHack.Server.Config
 import qualified Game.LambdaHack.Server.DungeonGen as DungeonGen
+import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert

@@ -13,7 +13,6 @@ import System.Directory
 import System.FilePath
 import System.IO.Unsafe (unsafePerformIO)
 
-import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.State
@@ -36,19 +35,15 @@ tryCreateDir dir =
 -- | Try to copy over data files. Hide errors due to,
 -- e.g., insufficient permissions, because the game can run
 -- without data files just as well.
-tryCopyDataFiles :: Config -> ConfigUI -> (FilePath -> IO FilePath) -> IO ()
+tryCopyDataFiles :: Config -> (FilePath -> IO FilePath) -> IO ()
 tryCopyDataFiles Config{ configScoresFile
-                       , configRulesCfgFile }
-                 ConfigUI{ configUICfgFile } pathsDataFile = do
+                       , configRulesCfgFile } pathsDataFile = do
   rulesFile  <- pathsDataFile $ takeFileName configRulesCfgFile <.> ".default"
-  uiFile     <- pathsDataFile $ takeFileName configUICfgFile    <.> ".default"
   scoresFile <- pathsDataFile $ takeFileName configScoresFile
   let newRulesFile  = configRulesCfgFile <.> ".ini"
-      newUIFile     = configUICfgFile    <.> ".ini"
       newScoresFile = configScoresFile
   Ex.catch
     (copyFile rulesFile newRulesFile >>
-     copyFile uiFile newUIFile >>
      copyFile scoresFile newScoresFile)
     (\ e -> case e :: Ex.IOException of _ -> return ())
 
@@ -79,16 +74,16 @@ saveGameSer Config{configAppDataDir} s ser = do
 
 -- | Restore a saved game, if it exists. Initialize directory structure,
 -- if needed.
-restoreGameSer :: Config -> ConfigUI -> (FilePath -> IO FilePath) -> Text
+restoreGameSer :: Config -> (FilePath -> IO FilePath) -> Text
                -> IO (Either (State, StateServer, Msg) Msg)
-restoreGameSer config@Config{configAppDataDir} configUI
+restoreGameSer config@Config{configAppDataDir}
                pathsDataFile title = do
   ab <- doesDirectoryExist configAppDataDir
   -- If the directory can't be created, the current directory will be used.
   unless ab $ do
     tryCreateDir configAppDataDir
     -- Possibly copy over data files. No problem if it fails.
-    tryCopyDataFiles config configUI pathsDataFile
+    tryCopyDataFiles config pathsDataFile
   -- If the savefile exists but we get IO errors, we show them,
   -- back up the savefile and move it out of the way and start a new game.
   -- If the savefile was randomly corrupted or made read-only,
