@@ -8,7 +8,7 @@ module Game.LambdaHack.Client.Action
     MonadClientRO( getClient, getsClient )
   , MonadClient( putClient, modifyClient )
   , MonadClientChan
-  , executorCli
+  , executorCli, exeStartup, frontendName
     -- * Abort exception handlers
   , tryWithSlide
     -- * Accessors to the game session Reader and the Perception Reader
@@ -27,7 +27,6 @@ module Game.LambdaHack.Client.Action
   , rememberLevel, displayPush
     -- * Assorted primitives
   , clientGameSave, restoreGame, readChanFromSer, writeChanToSer
-  , frontendName, startup
   ) where
 
 import Control.Concurrent
@@ -56,7 +55,9 @@ import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.Draw
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.State
+import Game.LambdaHack.Client.Action.ConfigIO
 import Game.LambdaHack.CmdCli
+import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
@@ -64,7 +65,6 @@ import Game.LambdaHack.Perception
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Faction
 
 displayFrame :: MonadClient m => Bool -> Maybe SingleFrame -> m ()
 displayFrame isRunning mf = do
@@ -356,3 +356,23 @@ writeChanToSer :: MonadClientChan m => Dynamic -> m ()
 writeChanToSer cmd = do
   toServer <- getsChan toServer
   liftIO $ writeChan toServer cmd
+
+exeStartup :: MonadActionAbort m
+           => (Session -> m () -> State -> StateClient -> ConnClient -> IO ())
+           -> Kind.COps
+           -> ((m () -> State -> StateClient -> ConnClient -> IO ())
+               -> (m () -> State -> StateClient -> ConnClient -> IO ())
+               -> IO ())
+           -> IO ()
+exeStartup executorC Kind.COps{corule} loop = do
+  -- UI config reloaded at each client start.
+  sconfigUI <- mkConfigUI corule
+  let !sbinding = stdBinding sconfigUI
+      font = configFont sconfigUI
+      executorHuman sfs = executorC Session{ sfs = Just sfs
+                                           , sbinding = Just sbinding
+                                           , sconfigUI }
+      executorComputer  = executorC Session{ sfs = Nothing
+                                           , sbinding = Nothing
+                                           , sconfigUI }
+  startup font $ \sfs -> loop (executorHuman sfs) executorComputer

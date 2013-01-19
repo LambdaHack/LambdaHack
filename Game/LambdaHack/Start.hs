@@ -10,11 +10,6 @@ import qualified Data.IntMap as IM
 import Data.Maybe
 
 import Game.LambdaHack.Action
-import Game.LambdaHack.Client
-import qualified Game.LambdaHack.Client.Action.ConfigIO as Client.ConfigIO
-import Game.LambdaHack.Client.Action.Frontend
-import Game.LambdaHack.Client.Binding
-import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Faction
@@ -38,46 +33,44 @@ import qualified Game.LambdaHack.Tile as Tile
 startFrontend :: (MonadActionAbort m, MonadActionAbort n)
               => Kind.COps
               -> (m () -> Pers -> State -> StateServer -> ConnDict -> IO ())
-              -> (n () -> Maybe FrontendSession -> Maybe Binding -> ConfigUI
-                  -> State -> StateClient -> ConnClient -> IO ())
+              -> (Kind.COps
+                  -> ((n () -> State -> StateClient -> ConnClient -> IO ())
+                      -> (n () -> State -> StateClient -> ConnClient -> IO ())
+                      -> IO ())
+                  -> IO ())
               -> m () -> n () -> IO ()
 startFrontend !copsSlow@Kind.COps{corule, cotile=tile}
-              executorS executorC
+              executorS exeStartupC
               loopSer loopCli = do
   -- Compute and insert auxiliary optimized components into game content,
   -- to be used in time-critical sections of the code.
   let ospeedup = Tile.speedup tile
       cotile = tile {Kind.ospeedup}
       cops = copsSlow {Kind.cotile}
-  -- UI config reloaded at each client start.
-  sconfigUI <- Client.ConfigIO.mkConfigUI corule
   -- A throw-away copy of rules config reloaded at client start, too,
   -- until an old version of the config can be read from the savefile.
   (sconfig, _, _) <- ConfigIO.mkConfigRules corule
-  let !sbinding = stdBinding sconfigUI
-      font = configFont sconfigUI
-      -- In addition to handling the turn, if the game ends or exits,
+  let -- In addition to handling the turn, if the game ends or exits,
       -- handle the history and backup savefile.
       handleServer = do
         loopSer
 --        d <- getDict
 --        -- Save history often, at each game exit, in case of crashes.
 --        liftIO $ Save.rmBkpSaveHistory sconfig sconfigUI d
-      loop sfs = start executorS executorC
-                       sfs cops sbinding sconfig sconfigUI
-                       handleServer loopCli
-  startup font loop
+      loop executorHuman executorComputer =
+        start executorS executorHuman executorComputer
+              cops sconfig handleServer loopCli
+  exeStartupC cops loop
 
 -- | Either restore a saved game, or setup a new game.
 -- Then call the main game loop.
 start :: (MonadActionAbort m, MonadActionAbort n)
       => (m () -> Pers -> State -> StateServer -> ConnDict -> IO ())
-      -> (n () -> Maybe FrontendSession -> Maybe Binding -> ConfigUI
-          -> State -> StateClient -> ConnClient -> IO ())
-      -> FrontendSession -> Kind.COps -> Binding -> Config -> ConfigUI
-      -> m () -> n () -> IO ()
-start executorS executorC sfs cops@Kind.COps{corule}
-      sbinding sconfig sconfigUI handleServer loopClient = do
+      -> (n () -> State -> StateClient -> ConnClient -> IO ())
+      -> (n () -> State -> StateClient -> ConnClient -> IO ())
+      -> Kind.COps -> Config -> m () -> n () -> IO ()
+start executorS executorHuman executorComputer
+      cops@Kind.COps{corule} sconfig handleServer loopClient = do
   let title = rtitle $ Kind.stdRuleset corule
       pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
   -- TODO: rewrite; this is a bit wrong
@@ -123,16 +116,13 @@ start executorS executorC sfs cops@Kind.COps{corule}
   -- Launch clients.
   let forkClient (fid, (chan, mchan), cli, loc) = do
         if isHumanFaction loc fid
-          then void $ forkIO $ executorC
-                 loopClient (Just sfs) (Just sbinding) sconfigUI loc cli chan
-          else void $ forkIO $ executorC
-                 loopClient Nothing Nothing sconfigUI loc cli chan
+          then void $ forkIO $ executorHuman loopClient loc cli chan
+          else void $ forkIO $ executorComputer loopClient loc cli chan
         case mchan of
           Nothing -> return ()
           Just ch ->
             -- The AI client does not know it's not the main client.
-            void $ forkIO
-              $ executorC loopClient Nothing Nothing sconfigUI loc cli ch
+            void $ forkIO $ executorComputer loopClient loc cli ch
   mapM_ forkClient clientAssocs
   -- Launch server.
   executorS handleServer pers glo ser d

@@ -33,5 +33,5 @@ main =
         , costrat = Kind.createOps Content.StrategyKind.cdefs
         , cotile  = Kind.createOps Content.TileKind.cdefs
         }
-  in startFrontend cops executorSer executorCli
+  in startFrontend cops executorSer (exeStartup executorCli)
                    (loopServer cmdSer) (loopClient2 cmdUpdateCli cmdQueryCli)

@@ -11,9 +11,6 @@ import qualified Data.Text as T
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Client.Action.ActionClass
-import Game.LambdaHack.Client.Action.Frontend
-import Game.LambdaHack.Client.Binding
-import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Msg
 import Game.LambdaHack.State
@@ -91,12 +88,11 @@ instance MonadClientChan ActionCli where
   putChan        = modifyChan . const
 
 -- | Run an action, with a given session, state and history, in the @IO@ monad.
-executorCli :: ActionCli ()
-            -> Maybe FrontendSession -> Maybe Binding -> ConfigUI
-            -> State -> StateClient -> ConnClient -> IO ()
-executorCli m sfs sbinding sconfigUI s cli d =
+executorCli :: Session -> ActionCli () ->State -> StateClient -> ConnClient
+            -> IO ()
+executorCli sess m s cli d =
   runActionCli m
-    Session{..}
+    sess
     (\_ _ _ _ -> return ())  -- final continuation returns result
     (\msg -> let err = "unhandled abort for client" <+> showT (getSide s)
                        <+> ":" <+> msg
