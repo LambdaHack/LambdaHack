@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Actors perceiving other actors and the dungeon level.
 module Game.LambdaHack.Perception
-  ( Perception(..), totalVisible, actorSeesLoc, FactionPers
+  ( Perception(..), totalVisible, actorSeesLoc, FactionPers, Pers
   , PerceptionVisible(..)
   ) where
 
@@ -29,6 +29,9 @@ data Perception = Perception
 
 -- | Perception of a single faction, indexed by level identifier.
 type FactionPers = M.Map LevelId Perception
+
+-- | Perception indexed by faction identifier.
+type Pers = IM.IntMap FactionPers
 
 -- | The set of tiles visible by at least one hero.
 totalVisible :: Perception -> IS.IntSet

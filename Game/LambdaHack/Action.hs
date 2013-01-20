@@ -7,7 +7,7 @@ module Game.LambdaHack.Action
     MonadActionAbort(..)
   , MonadActionRO(..)
   , MonadAction(..)
-  , ConnClient(..)
+  , ConnClient(..), ConnFaction, ConnDict
     -- * Various ways to abort action
   , abort, abortIfWith, neverMind
     -- * Abort exception handlers
@@ -20,6 +20,7 @@ import Control.Concurrent.Chan
 import qualified Control.Monad.State as St
 import Control.Monad.Writer.Strict (WriterT (WriterT), lift, runWriterT)
 import Data.Dynamic
+import qualified Data.IntMap as IM
 import Data.Monoid
 import qualified Data.Text as T
 
@@ -37,6 +38,12 @@ data ConnClient = ConnClient
 
 instance Show ConnClient where
   show _ = "client channels"
+
+type ConnFaction = (ConnClient, Maybe ConnClient)
+
+-- | Connection information for each client and an optional AI client
+-- for the same faction, indexed by faction identifier.
+type ConnDict = IM.IntMap ConnFaction
 
 -- | The bottom of the action monads class semilattice.
 class (Monad m, Functor m, Show (m ())) => MonadActionAbort m where

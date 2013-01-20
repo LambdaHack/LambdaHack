@@ -1,7 +1,7 @@
 -- | Semantics of server commands.
 module Game.LambdaHack.Server
   ( cmdSer
-  , loopSer, executorSer, gameReset
+  , loopSer, executorSer, connServer
   ) where
 
 import Control.Monad

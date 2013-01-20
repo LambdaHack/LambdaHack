@@ -8,7 +8,7 @@ module Game.LambdaHack.Server.Action
     MonadServerRO( getServer, getsServer )
   , MonadServer( putServer, modifyServer )
   , MonadServerChan
-  , executorSer
+  , executorSer, connServer
     -- * Accessor to the Perception Reader
   , askPerceptionSer
     -- * Turn init operations
@@ -44,6 +44,7 @@ import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.CmdCli
 import Game.LambdaHack.Content.FactionKind
+import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Faction
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Kind as Kind
@@ -404,3 +405,59 @@ funAIBroadcastCli cmd = do
         Nothing -> return ()
         Just conn -> connSendUpdateCli conn (cmd fid)
   mapM_ f $ IM.keys faction
+
+restoreOrRestart :: Kind.COps
+                 -> (Pers -> State -> StateServer -> ConnDict -> IO ())
+                 -> IO (FactionDict, ConnDict -> IO ())
+restoreOrRestart cops@Kind.COps{corule} executorS = do
+  let title = rtitle $ Kind.stdRuleset corule
+      pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
+  -- A throw-away copy of rules config, to be used until the old
+  -- version of the config can be read from the savefile.
+  (sconfig, _, _) <- ConfigIO.mkConfigRules corule
+  restored <- Save.restoreGameSer sconfig pathsDataFile title
+  let mkPers glo ser =
+        let tryFov = stryFov $ sdebugSer ser
+            fovMode = fromMaybe (configFovMode sconfig) tryFov
+        in dungeonPerception cops fovMode glo
+  -- TODO: use the _msg somehow
+  (gloRaw, ser) <- case restored of
+    Right _msg -> do  -- Starting a new game.
+      (gloRaw, ser, _) <- gameReset cops
+      return (gloRaw, ser)
+    Left (gloRaw, ser, _msg) -> do  -- Running a restored game.
+      return (gloRaw, ser)
+  let glo = updateCOps (const cops) gloRaw
+      pers = mkPers glo ser
+  return $ (sfaction glo, executorS pers glo ser)
+
+-- | Either restore a saved game, or setup a new game, connect clients
+-- and launch the server.
+connServer :: Kind.COps
+           -> (Pers -> State -> StateServer -> ConnDict -> IO ())
+           -> (ConnDict -> IO ())
+           -> IO ()
+connServer cops executorS connectClients = do
+  -- Restor or restart game to get game factions and state.
+  (faction, exeServer) <- restoreOrRestart cops executorS
+  -- Prepare connections based on factions.
+  let mkConnClient = do
+        toClient <- newChan
+        toServer <- newChan
+        return $ ConnClient {toClient, toServer}
+      addChan (fid, fact) = do
+        chan <- mkConnClient
+        -- For computer players we don't spawn a separate AI client.
+        -- In this way computer players are allowed to cheat:
+        -- their non-leader actors know leader plans and act accordingly,
+        -- while human non-leader actors are controlled by an AI ignorant
+        -- of human plans.
+        mchan <- if isHumanFact fact
+                 then fmap Just mkConnClient
+                 else return Nothing
+        return (fid, (chan, mchan))
+  chanAssocs <- mapM addChan $ IM.toList faction
+  let d = IM.fromAscList chanAssocs
+  -- Connect clients and launch server.
+  connectClients d
+  exeServer d

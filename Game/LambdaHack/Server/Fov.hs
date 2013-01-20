@@ -2,7 +2,7 @@
 -- See <https://github.com/kosmikus/LambdaHack/wiki/Fov-and-los>
 -- for discussion.
 module Game.LambdaHack.Server.Fov
-  ( Pers, dungeonPerception, levelPerception
+  ( dungeonPerception, levelPerception
   , fullscan,  FovMode(..)
   ) where
 
@@ -32,9 +32,6 @@ import Game.LambdaHack.VectorXY
 newtype PerceptionReachable = PerceptionReachable
   { preachable :: IS.IntSet }
   deriving Show
-
--- | Perception indexed by faction identifier.
-type Pers = IM.IntMap FactionPers
 
 -- | Calculate perception of the level.
 levelPerception :: Kind.COps -> FovMode -> FactionId -> Level

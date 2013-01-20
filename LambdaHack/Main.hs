@@ -39,5 +39,5 @@ main =
       loopClient = loopCli2 cmdUpdateCli cmdQueryCli
       exeServer = executorSer loopServer
       exeClient = executorCli loopClient
-      loopFrontend = loopFront cops exeServer
-  in exeFrontend cops exeClient loopFrontend
+      loopFrontend = connServer cops exeServer
+  in exeFrontend cops exeClient launchClients loopFrontend

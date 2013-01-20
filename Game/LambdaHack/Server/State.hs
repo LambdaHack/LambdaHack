@@ -56,11 +56,12 @@ instance Binary StateServer where
     put sflavour
     put scounter
     put sconfig
+    put squit
   get = do
     sdiscoRev <- get
     sflavour <- get
     scounter <- get
     sconfig <- get
-    let squit = Nothing
-        sdebugSer = defDebugModeSer
+    squit <- get
+    let sdebugSer = defDebugModeSer
     return StateServer{..}

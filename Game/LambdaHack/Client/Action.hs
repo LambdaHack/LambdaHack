@@ -365,9 +365,10 @@ exeFrontend :: Kind.COps
             -> (Session -> State -> StateClient -> ConnClient -> IO ())
             -> ((FactionId -> ConnClient -> IO ())
                 -> (FactionId -> ConnClient -> IO ())
-                -> IO ())
+                -> a)
+            -> (a -> IO ())
             -> IO ()
-exeFrontend cops@Kind.COps{corule} executorC loopFrontend = do
+exeFrontend cops@Kind.COps{corule} executorC connectClients loopFrontend = do
   -- UI config reloaded at each client start.
   sconfigUI <- mkConfigUI corule
   let !sbinding = stdBinding sconfigUI  -- evaluate to check for errors
@@ -384,4 +385,5 @@ exeFrontend cops@Kind.COps{corule} executorC loopFrontend = do
         executorC (sessHuman sfs) (defStateLocal cops fid) cli
       executorComputer fid =
         executorC sessComputer (defStateLocal cops fid) cli
-  startup font $ \sfs -> loopFrontend (executorHuman sfs) executorComputer
+  startup font $ \sfs ->
+    loopFrontend (connectClients (executorHuman sfs) executorComputer)
