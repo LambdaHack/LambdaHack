@@ -5,6 +5,7 @@ module Game.LambdaHack.Server.LoopAction (loopSer) where
 
 import Control.Arrow ((&&&))
 import Control.Monad
+import Control.Monad.Reader.Class
 import qualified Data.IntMap as IM
 import qualified Data.List as L
 import Data.Maybe
@@ -34,15 +35,30 @@ import Game.LambdaHack.Utils.Assert
 -- and repeat.
 loopSer :: MonadServerChan m => (CmdSer -> m ()) -> m ()
 loopSer cmdSer = do
-  time <- getsState getTime  -- the end time of this clip, inclusive
-  let clipN = (time `timeFit` timeClip) `mod` (timeTurn `timeFit` timeClip)
-  -- Regenerate HP and add monsters each turn, not each clip.
-  when (clipN == 1) checkEndGame
-  when (clipN == 2) regenerateLevelHP
-  when (clipN == 3) generateMonster
-  handleActors cmdSer timeZero
-  modifyState (updateTime (timeAdd timeClip))
-  endOrLoop (loopSer cmdSer)
+  -- Startup.
+  squit <- getsServer squit
+  pers <- ask
+  defLoc <- getsState localFromGlobal
+  case squit of
+    Nothing -> do  -- game restarted
+      funBroadcastCli (\fid -> RestartCli (pers IM.! fid) defLoc)
+      -- Save ASAP in case of crashes and disconnects.
+      saveGameBkp
+    _ ->  -- game restored from a savefile
+      funBroadcastCli (\fid -> ContinueSavedCli (pers IM.! fid))
+  -- Loop.
+  let loop = do
+        time <- getsState getTime  -- the end time of this clip, inclusive
+        let clipN = (time `timeFit` timeClip)
+                    `mod` (timeTurn `timeFit` timeClip)
+        -- Regenerate HP and add monsters each turn, not each clip.
+        when (clipN == 1) checkEndGame
+        when (clipN == 2) regenerateLevelHP
+        when (clipN == 3) generateMonster
+        handleActors cmdSer timeZero
+        modifyState (updateTime (timeAdd timeClip))
+        endOrLoop loop
+  local (const pers) loop
 
 -- TODO: switch levels alternating between player factions,
 -- if there are many and on distinct levels.

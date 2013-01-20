@@ -28,13 +28,16 @@ loopCli2 cmdUpdateCli cmdQueryCli = do
   restored <- restoreGame factionName configUI pathsDataFile title
   case restored of
     Right msg -> do  -- First visit ever, use the initial state.
+      -- TODO: create or restore from config clients RNG seed
       msgAdd msg
+      -- TODO: somehow check that RestartCli arrives before any other cmd
     Left (s, cli, msg) -> do  -- Restore a game or at least history.
       let sCops = updateCOps (const cops) s
           cliPer = cli {sper}
       putState sCops
       putClient cliPer
       msgAdd msg
+      -- TODO: somehow check that ContinueSave arrives before any other cmd
   loop
  where
   loop = do

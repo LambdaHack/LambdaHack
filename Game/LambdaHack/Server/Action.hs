@@ -14,10 +14,10 @@ module Game.LambdaHack.Server.Action
     -- * Turn init operations
   , withPerception, remember
     -- * Assorted primitives
-  , saveGameBkp, dumpCfg, endOrLoop, gameReset
+  , saveGameBkp, dumpCfg, endOrLoop
   , switchGlobalSelectedSide
   , sendUpdateCli, sendQueryCli, sendAIQueryCli
-  , broadcastCli, broadcastPosCli
+  , broadcastCli, broadcastPosCli, funBroadcastCli
   , addHero
   ) where
 
@@ -35,7 +35,6 @@ import qualified Data.Map as M
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified System.Random as R
 import System.Time
 import Control.Arrow (second)
 
@@ -209,11 +208,15 @@ restartGame loopServer = do
   -- Take the original config from config file, to reroll RNG, if needed
   -- (the current config file has the RNG rolled for the previous game).
   cops <- getsState scops
-  (state, ser, funRestart) <- gameResetAction cops
+  (state, ser) <- gameResetAction cops
   putState state
   putServer ser
-  funBroadcastCli (\fid -> let (sper, loc) = funRestart fid
-                           in RestartCli sper loc)
+  pers <- ask
+  -- This state is quite small, fit for transmition to the client.
+  -- The biggest part is content, which really needs to be updated
+  -- at this point to keep clients in sync with server improvements.
+  defLoc <- getsState localFromGlobal
+  funBroadcastCli (\fid -> RestartCli (pers IM.! fid) defLoc)
   -- TODO: send to each client RestartCli; use d in its code; empty channels?
   saveGameBkp
   loopServer
@@ -283,15 +286,13 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
   return $! IM.fromDistinctAscList $ map (second enemyAlly) rawFs
 
 -- TODO: do this inside Action ()
-gameReset :: Kind.COps
-          -> IO (State, StateServer, FactionId -> (FactionPers, State))
+gameReset :: Kind.COps -> IO (State, StateServer)
 gameReset cops@Kind.COps{ coitem, corule} = do
   -- Rules config reloaded at each new game start.
   (sconfig, dungeonGen, random) <- ConfigIO.mkConfigRules corule
-  randomCli <- R.newStdGen  -- TODO: each AI client should have one
   -- from sconfig (only known to server), other clients each should have
   -- one known only to them (or server, if needed)
-  let rnd :: Rnd (State, StateServer, FactionId -> (FactionPers, State))
+  let rnd :: Rnd (State, StateServer)
       rnd = do
         faction <- createFactions cops sconfig
         let notSpawning (_, fact) = not $ isSpawningFact cops fact
@@ -309,23 +310,12 @@ gameReset cops@Kind.COps{ coitem, corule} = do
               initialHeroes cops epos fid gloF serF
             (glo, ser) =
               foldr fo (defState, defSer) $ zip needInitialCrew entryPoss
-            -- This state is quite small, fit for transmition to the client.
-            -- The biggest part is content, which really needs to be updated
-            -- at this point to keep clients in sync with server improvements.
-            defLoc = localFromGlobal cops freshDungeon discoS
-                                     freshDepth faction randomCli entryLevel
-            tryFov = stryFov $ sdebugSer ser
-            fovMode = fromMaybe (configFovMode sconfig) tryFov
-            pers = dungeonPerception cops fovMode glo
-            funReset fid = (pers IM.! fid, defLoc fid)
-        return (glo, ser, funReset)
+        return (glo, ser)
   return $! St.evalState rnd dungeonGen
 
 gameResetAction :: MonadServer m
                 => Kind.COps
-                -> m ( State
-                     , StateServer
-                     , FactionId -> (FactionPers, State))
+                -> m (State, StateServer)
 gameResetAction = liftIO . gameReset
 
 switchGlobalSelectedSide :: MonadServer m => FactionId -> m ()
@@ -422,13 +412,14 @@ restoreOrRestart cops@Kind.COps{corule} executorS = do
         in dungeonPerception cops fovMode glo
   -- TODO: use the _msg somehow
   (gloRaw, ser) <- case restored of
-    Right _msg -> do  -- Starting a new game.
-      (gloRaw, ser, _) <- gameReset cops
-      return (gloRaw, ser)
-    Left (gloRaw, ser, _msg) -> do  -- Running a restored game.
-      return (gloRaw, ser)
+    Right _msg ->  -- Starting a new game.
+      gameReset cops
+    Left (glo, ser, _msg) ->  -- Running a restored game.
+      return (glo, ser)
   let glo = updateCOps (const cops) gloRaw
-      pers = mkPers glo ser
+      tryFov = stryFov $ sdebugSer ser
+      fovMode = fromMaybe (configFovMode sconfig) tryFov
+      pers = dungeonPerception cops fovMode glo
   return $ (sfaction glo, executorS pers glo ser)
 
 -- | Either restore a saved game, or setup a new game, connect clients

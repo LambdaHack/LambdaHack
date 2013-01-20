@@ -105,22 +105,20 @@ defStateLocal _scops _sside =
 -- if this set of stsirs is unknown).
 -- | Local state created by removing secret information from global
 -- state components.
-localFromGlobal :: Kind.COps -> Dungeon -> Discoveries
-                -> Int -> FactionDict -> R.StdGen -> LevelId -> FactionId
-                -> State
-localFromGlobal _scops@Kind.COps{ coitem=Kind.Ops{okind}
-                              , corule
-                              , cotile }
-                globalDungeon discoS
-                _sdepth _sfaction _srandom _sarena _sside =
+localFromGlobal :: State -> State
+localFromGlobal State{ _scops=_scops@Kind.COps{ coitem=Kind.Ops{okind}
+                                              , corule
+                                              , cotile }
+                      , .. } =
   State
     { _sdungeon =
       M.map (\Level{lxsize, lysize, ldesc, lstair, lclear} ->
               unknownLevel cotile lxsize lysize ldesc lstair lclear)
-            globalDungeon
+            _sdungeon
     , _sdisco = let f ik = isymbol (okind ik)
                            `notElem` (ritemProject $ Kind.stdRuleset corule)
-                in M.filter f discoS
+                in M.filter f _sdisco
+    , _sside = -1  -- will be set by the client
     , ..
     }
 

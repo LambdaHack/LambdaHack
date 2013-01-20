@@ -49,6 +49,7 @@ data CmdUpdateCli =
   | MoreFullCli Msg
   | MoreBWCli Msg
   | RestartCli FactionPers State
+  | ContinueSavedCli FactionPers
   | GameSaveCli Bool
   deriving Show
 

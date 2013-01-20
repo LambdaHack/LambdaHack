@@ -195,12 +195,21 @@ cmdUpdateCli cmd = case cmd of
   MoreFullCli msg -> do
     void $ displayMore ColorFull msg
     recordHistory  -- Prevent repeating the ending msgs.
-  RestartCli sper loc -> do
+  RestartCli sper locRaw -> do
     shistory <- getsClient shistory
     let cli = defStateClient shistory
     putClient cli {sper}
+    random <- getsState srandom
+    side <- getsState sside
+    let loc = updateRandom (const random)
+              $ switchGlobalSelectedSideOnlyForGlobalState side locRaw  -- :O)
     putState loc
-  GameSaveCli toBkp -> clientGameSave toBkp
+    -- Save ASAP in case of crashes and disconnects.
+    --TODO
+  ContinueSavedCli sper ->
+    modifyClient $ \cli -> cli {sper}
+  GameSaveCli toBkp ->
+    clientGameSave toBkp
 
 cmdQueryCli :: MonadClient m => CmdQueryCli a -> m a
 cmdQueryCli cmd = case cmd of
