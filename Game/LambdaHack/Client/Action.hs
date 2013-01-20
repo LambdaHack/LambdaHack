@@ -8,7 +8,7 @@ module Game.LambdaHack.Client.Action
     MonadClientRO( getClient, getsClient )
   , MonadClient( putClient, modifyClient )
   , MonadClientChan
-  , executorCli, exeStartup, frontendName
+  , executorCli, exeFrontend, frontendName
     -- * Abort exception handlers
   , tryWithSlide
     -- * Accessors to the game session Reader and the Perception Reader
@@ -357,17 +357,20 @@ writeChanToSer cmd = do
   toServer <- getsChan toServer
   liftIO $ writeChan toServer cmd
 
-exeStartup :: MonadActionAbort m
-           => (Session -> State -> StateClient -> m () -> ConnClient -> IO ())
-           -> Kind.COps
-           -> ((FactionId -> m () -> ConnClient -> IO ())
-               -> (FactionId -> m () -> ConnClient -> IO ())
-               -> IO ())
-           -> IO ()
-exeStartup executorC cops@Kind.COps{corule} loop = do
+-- | Wire together game content, the main loop of game clients,
+-- the main game loop assigned to this frontend (possibly containing
+-- the server loop, if the whole game runs in one process),
+-- UI config and the definitions of game commands.
+exeFrontend :: Kind.COps
+            -> (Session -> State -> StateClient -> ConnClient -> IO ())
+            -> ((FactionId -> ConnClient -> IO ())
+                -> (FactionId -> ConnClient -> IO ())
+                -> IO ())
+            -> IO ()
+exeFrontend cops@Kind.COps{corule} executorC loopFrontend = do
   -- UI config reloaded at each client start.
   sconfigUI <- mkConfigUI corule
-  let !sbinding = stdBinding sconfigUI
+  let !sbinding = stdBinding sconfigUI  -- evaluate to check for errors
       font = configFont sconfigUI
       sessHuman sfs = Session{ sfs = Just sfs
                              , sbinding = Just sbinding
@@ -381,4 +384,4 @@ exeStartup executorC cops@Kind.COps{corule} loop = do
         executorC (sessHuman sfs) (defStateLocal cops fid) cli
       executorComputer fid =
         executorC sessComputer (defStateLocal cops fid) cli
-  startup font $ \sfs -> loop (executorHuman sfs) executorComputer
+  startup font $ \sfs -> loopFrontend (executorHuman sfs) executorComputer

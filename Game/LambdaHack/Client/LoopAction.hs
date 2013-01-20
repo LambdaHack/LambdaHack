@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings, RankNTypes #-}
 -- | The main loop of the client, processing human and computer player
 -- moves turn by turn.
-module Game.LambdaHack.Client.LoopAction (loopClient2) where
+module Game.LambdaHack.Client.LoopAction (loopCli2) where
 
 import Data.Dynamic
 
@@ -14,11 +14,11 @@ import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.State
 
-loopClient2 :: MonadClientChan m
-              => (CmdUpdateCli -> m ())
-              -> (forall a. Typeable a => CmdQueryCli a -> m a)
-              -> m ()
-loopClient2 cmdUpdateCli cmdQueryCli = do
+loopCli2 :: MonadClientChan m
+           => (CmdUpdateCli -> m ())
+           -> (forall a. Typeable a => CmdQueryCli a -> m a)
+           -> m ()
+loopCli2 cmdUpdateCli cmdQueryCli = do
   factionName <- getsState $ gname . getSide
   cops@Kind.COps{corule} <- getsState scops
   sper <- getsClient sper

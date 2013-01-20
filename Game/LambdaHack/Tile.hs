@@ -18,8 +18,8 @@ module Game.LambdaHack.Tile
   , isClear, isLit, isExplorable, similar, canBeHidden, speedup
   ) where
 
-import qualified Data.List as L
 import qualified Data.Array.Unboxed as A
+import qualified Data.List as L
 
 import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Feature as F

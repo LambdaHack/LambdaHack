@@ -17,13 +17,14 @@ import Game.LambdaHack.Server
 import Game.LambdaHack.Start
 
 -- | Fire up the frontend with the engine fueled by content.
--- The @Action@ type to be used is decided by the second argument
--- to @startFrontend@. It neededn't be @ActionType.Action@.
--- Which of the frontends is run depends on the flags supplied
+-- The action monad types to be used are determined by the 'executorSer'
+-- and 'executorCli' calls. If other functions are used in their place
+-- the types are different and so the whole pattern of computation
+-- is different. Which of the frontends is run depends on the flags supplied
 -- when compiling the engine library.
 main :: IO ()
 main =
-  let cops = Kind.COps
+  let copsSlow = Kind.COps
         { coactor = Kind.createOps Content.ActorKind.cdefs
         , cocave  = Kind.createOps Content.CaveKind.cdefs
         , cofact  = Kind.createOps Content.FactionKind.cdefs
@@ -33,5 +34,10 @@ main =
         , costrat = Kind.createOps Content.StrategyKind.cdefs
         , cotile  = Kind.createOps Content.TileKind.cdefs
         }
-  in startFrontend cops executorSer (exeStartup executorCli)
-                   (loopServer cmdSer) (loopClient2 cmdUpdateCli cmdQueryCli)
+      cops = speedupCOps copsSlow
+      loopServer = loopSer cmdSer
+      loopClient = loopCli2 cmdUpdateCli cmdQueryCli
+      exeServer = executorSer loopServer
+      exeClient = executorCli loopClient
+      loopFrontend = loopFront cops exeServer
+  in exeFrontend cops exeClient loopFrontend

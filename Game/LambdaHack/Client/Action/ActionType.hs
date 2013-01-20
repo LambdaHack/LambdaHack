@@ -88,9 +88,9 @@ instance MonadClientChan ActionCli where
   putChan        = modifyChan . const
 
 -- | Run an action, with a given session, state and history, in the @IO@ monad.
-executorCli :: Session -> State -> StateClient -> ActionCli () -> ConnClient
+executorCli :: ActionCli () -> Session -> State -> StateClient -> ConnClient
             -> IO ()
-executorCli sess s cli m d =
+executorCli m sess s cli d =
   runActionCli m
     sess
     (\_ _ _ _ -> return ())  -- final continuation returns result

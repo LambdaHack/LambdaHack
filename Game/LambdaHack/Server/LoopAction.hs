@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | The main loop of the server, processing human and computer player
 -- moves turn by turn.
-module Game.LambdaHack.Server.LoopAction (loopServer) where
+module Game.LambdaHack.Server.LoopAction (loopSer) where
 
 import Control.Arrow ((&&&))
 import Control.Monad
@@ -32,8 +32,8 @@ import Game.LambdaHack.Utils.Assert
 -- every fixed number of time units, e.g., monster generation.
 -- Run the leader and other actors moves. Eventually advance the time
 -- and repeat.
-loopServer :: MonadServerChan m => (CmdSer -> m ()) -> m ()
-loopServer cmdSer = do
+loopSer :: MonadServerChan m => (CmdSer -> m ()) -> m ()
+loopSer cmdSer = do
   time <- getsState getTime  -- the end time of this clip, inclusive
   let clipN = (time `timeFit` timeClip) `mod` (timeTurn `timeFit` timeClip)
   -- Regenerate HP and add monsters each turn, not each clip.
@@ -42,7 +42,7 @@ loopServer cmdSer = do
   when (clipN == 3) generateMonster
   handleActors cmdSer timeZero
   modifyState (updateTime (timeAdd timeClip))
-  endOrLoop (loopServer cmdSer)
+  endOrLoop (loopSer cmdSer)
 
 -- TODO: switch levels alternating between player factions,
 -- if there are many and on distinct levels.

@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings, RankNTypes #-}
 -- | Spwaning client threads and starting up the server.
 module Game.LambdaHack.Start
-  ( startFrontend
+  ( loopFront, speedupCOps
   ) where
 
 import Control.Concurrent
@@ -23,55 +23,28 @@ import Game.LambdaHack.Server.State
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 
--- | Wire together content, the definitions of game commands,
--- config and a high-level startup function
--- to form the starting game session. Evaluate to check for errors,
--- in particular verify content consistency.
--- Then create the starting game config from the default config file
--- and initialize the engine with the starting session.
-startFrontend :: (MonadActionAbort m, MonadActionAbort n)
-              => Kind.COps
-              -> (m () -> Pers -> State -> StateServer -> ConnDict -> IO ())
-              -> (Kind.COps
-                  -> ((FactionId -> n () -> ConnClient -> IO ())
-                      -> (FactionId -> n () -> ConnClient -> IO ())
-                      -> IO ())
-                  -> IO ())
-              -> m () -> n () -> IO ()
-startFrontend !copsSlow@Kind.COps{corule, cotile=tile}
-              executorS exeStartupC
-              loopSer loopCli = do
-  -- Compute and insert auxiliary optimized components into game content,
-  -- to be used in time-critical sections of the code.
+-- | Compute and insert auxiliary optimized components into game content,
+-- to be used in time-critical sections of the code. Also, evaluate content
+-- to check consistency.
+speedupCOps :: Kind.COps -> Kind.COps
+speedupCOps !copsSlow@Kind.COps{cotile=tile} =
   let ospeedup = Tile.speedup tile
       cotile = tile {Kind.ospeedup}
-      cops = copsSlow {Kind.cotile}
-  -- A throw-away copy of rules config reloaded at client start, too,
-  -- until an old version of the config can be read from the savefile.
-  (sconfig, _, _) <- ConfigIO.mkConfigRules corule
-  let -- In addition to handling the turn, if the game ends or exits,
-      -- handle the history and backup savefile.
-      handleServer = do
-        loopSer
---        d <- getDict
---        -- Save history often, at each game exit, in case of crashes.
---        liftIO $ Save.rmBkpSaveHistory sconfig sconfigUI d
-      loop executorHuman executorComputer =
-        start executorS executorHuman executorComputer
-              cops sconfig handleServer loopCli
-  exeStartupC cops loop
+  in copsSlow {Kind.cotile}
 
 -- | Either restore a saved game, or setup a new game.
 -- Then call the main game loop.
-start :: (MonadActionAbort m, MonadActionAbort n)
-      => (m () -> Pers -> State -> StateServer -> ConnDict -> IO ())
-      -> (FactionId -> n () -> ConnClient -> IO ())
-      -> (FactionId -> n () -> ConnClient -> IO ())
-      -> Kind.COps -> Config -> m () -> n () -> IO ()
-start executorS executorHuman executorComputer
-      cops@Kind.COps{corule} sconfig handleServer loopClient = do
+loopFront :: Kind.COps
+          -> (Pers -> State -> StateServer -> ConnDict -> IO ())
+          -> (FactionId -> ConnClient -> IO ())
+          -> (FactionId -> ConnClient -> IO ())
+          -> IO ()
+loopFront cops@Kind.COps{corule} executorS executorHuman executorComputer = do
   let title = rtitle $ Kind.stdRuleset corule
       pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
+  -- A throw-away copy of rules config reloaded at client start, too,
+  -- until an old version of the config can be read from the savefile.
+  (sconfig, _, _) <- ConfigIO.mkConfigRules corule
   -- TODO: rewrite; this is a bit wrong
   restored <- Save.restoreGameSer sconfig pathsDataFile title
   (glo, ser, _msg) <- case restored of
@@ -107,13 +80,13 @@ start executorS executorHuman executorComputer
   -- Launch clients.
   let forkClient (fid, (chan, mchan)) = do
         if isHumanFaction glo fid
-          then void $ forkIO $ executorHuman fid loopClient chan
-          else void $ forkIO $ executorComputer fid loopClient chan
+          then void $ forkIO $ executorHuman fid chan
+          else void $ forkIO $ executorComputer fid chan
         case mchan of
           Nothing -> return ()
           Just ch ->
             -- The AI client does not know it's not the main client.
-            void $ forkIO $ executorComputer fid loopClient ch
+            void $ forkIO $ executorComputer fid ch
   mapM_ forkClient chanAssocs
   -- Launch server.
-  executorS handleServer pers glo ser d
+  executorS pers glo ser d

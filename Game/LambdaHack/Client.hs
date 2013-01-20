@@ -3,7 +3,7 @@
 -- | Semantics of client commands.
 module Game.LambdaHack.Client
   ( cmdUpdateCli, cmdQueryCli
-  , loopClient2, executorCli, exeStartup
+  , loopCli2, executorCli, exeFrontend
   ) where
 
 import Game.LambdaHack.Client.Action
