@@ -197,8 +197,8 @@ cmdUpdateCli cmd = case cmd of
     recordHistory  -- Prevent repeating the ending msgs.
   RestartCli sper loc -> do
     shistory <- getsClient shistory
-    let cli = defStateClient shistory sper
-    putClient cli
+    let cli = defStateClient shistory
+    putClient cli {sper}
     putState loc
   GameSaveCli toBkp -> clientGameSave toBkp
 

@@ -10,7 +10,6 @@ import qualified Data.IntMap as IM
 import Data.Maybe
 
 import Game.LambdaHack.Action
-import Game.LambdaHack.Client.State
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Kind as Kind
@@ -34,8 +33,8 @@ startFrontend :: (MonadActionAbort m, MonadActionAbort n)
               => Kind.COps
               -> (m () -> Pers -> State -> StateServer -> ConnDict -> IO ())
               -> (Kind.COps
-                  -> ((n () -> State -> StateClient -> ConnClient -> IO ())
-                      -> (n () -> State -> StateClient -> ConnClient -> IO ())
+                  -> ((FactionId -> n () -> ConnClient -> IO ())
+                      -> (FactionId -> n () -> ConnClient -> IO ())
                       -> IO ())
                   -> IO ())
               -> m () -> n () -> IO ()
@@ -66,18 +65,18 @@ startFrontend !copsSlow@Kind.COps{corule, cotile=tile}
 -- Then call the main game loop.
 start :: (MonadActionAbort m, MonadActionAbort n)
       => (m () -> Pers -> State -> StateServer -> ConnDict -> IO ())
-      -> (n () -> State -> StateClient -> ConnClient -> IO ())
-      -> (n () -> State -> StateClient -> ConnClient -> IO ())
+      -> (FactionId -> n () -> ConnClient -> IO ())
+      -> (FactionId -> n () -> ConnClient -> IO ())
       -> Kind.COps -> Config -> m () -> n () -> IO ()
 start executorS executorHuman executorComputer
       cops@Kind.COps{corule} sconfig handleServer loopClient = do
   let title = rtitle $ Kind.stdRuleset corule
       pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
   -- TODO: rewrite; this is a bit wrong
-  (gloR, serR, funR) <- gameReset cops
   restored <- Save.restoreGameSer sconfig pathsDataFile title
   (glo, ser, _msg) <- case restored of
     Right msg -> do  -- Starting a new game.
+      (gloR, serR, _) <- gameReset cops
       return (gloR, serR, msg)
     Left (gloL, serL, msg) -> do  -- Running a restored game.
       let gloCops = updateCOps (const cops) gloL
@@ -105,24 +104,16 @@ start executorS executorHuman executorComputer
         return (fid, (chan, mchan))
   chanAssocs <- mapM addChan $ IM.toList faction
   let d = IM.fromAscList chanAssocs
-  -- Prepare data for clients.
-  defHist <- defHistory
-  let clientAssocs =
-        map (\(fid, chans) ->
-              let (sper, loc) = funR fid
-              -- TODO: rewrite; this is a bit wrong
-              in (fid, chans, defStateClient defHist sper, loc))
-        chanAssocs
   -- Launch clients.
-  let forkClient (fid, (chan, mchan), cli, loc) = do
-        if isHumanFaction loc fid
-          then void $ forkIO $ executorHuman loopClient loc cli chan
-          else void $ forkIO $ executorComputer loopClient loc cli chan
+  let forkClient (fid, (chan, mchan)) = do
+        if isHumanFaction glo fid
+          then void $ forkIO $ executorHuman fid loopClient chan
+          else void $ forkIO $ executorComputer fid loopClient chan
         case mchan of
           Nothing -> return ()
           Just ch ->
             -- The AI client does not know it's not the main client.
-            void $ forkIO $ executorComputer loopClient loc cli ch
-  mapM_ forkClient clientAssocs
+            void $ forkIO $ executorComputer fid loopClient ch
+  mapM_ forkClient chanAssocs
   -- Launch server.
   executorS handleServer pers glo ser d

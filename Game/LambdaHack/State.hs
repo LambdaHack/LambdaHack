@@ -6,7 +6,8 @@ module Game.LambdaHack.State
     -- * State components
   , sdungeon, sdepth, sdisco, sfaction, scops, srandom, sside, sarena
     -- * State operations
-  , defStateGlobal, defStateLocal, switchGlobalSelectedSideOnlyForGlobalState
+  , defStateGlobal, defStateLocal, localFromGlobal
+  , switchGlobalSelectedSideOnlyForGlobalState
   , updateDungeon, updateDisco, updateFaction, updateCOps, updateRandom
   , updateArena, updateTime, updateSide, updateSelectedArena
   , getArena, getTime, getSide
@@ -85,18 +86,33 @@ defStateGlobal _sdungeon _sdepth _sdisco _sfaction _scops _srandom _sarena =
     , ..
     }
 
+-- | Initial per-faction local game state.
+defStateLocal :: Kind.COps -> FactionId -> State
+defStateLocal _scops _sside =
+  State
+    { _sdungeon = M.empty
+    , _sdepth = 0
+    , _sdisco = M.empty
+    , _sfaction = IM.empty
+    , _scops
+    , _srandom = R.mkStdGen _sside
+    , _sside
+    , _sarena = levelDefault 1
+    }
+
 -- TODO: make lstair secret until discovered; use this later on for
 -- goUp in targeting mode (land on stairs of on the same location up a level
 -- if this set of stsirs is unknown).
--- | Initial per-faction local game state.
-defStateLocal :: Kind.COps -> Dungeon -> Discoveries
-              -> Int -> FactionDict -> R.StdGen -> LevelId -> FactionId
-              -> State
-defStateLocal _scops@Kind.COps{ coitem=Kind.Ops{okind}
+-- | Local state created by removing secret information from global
+-- state components.
+localFromGlobal :: Kind.COps -> Dungeon -> Discoveries
+                -> Int -> FactionDict -> R.StdGen -> LevelId -> FactionId
+                -> State
+localFromGlobal _scops@Kind.COps{ coitem=Kind.Ops{okind}
                               , corule
                               , cotile }
-              globalDungeon discoS
-              _sdepth _sfaction _srandom _sarena _sside = do
+                globalDungeon discoS
+                _sdepth _sfaction _srandom _sarena _sside =
   State
     { _sdungeon =
       M.map (\Level{lxsize, lysize, ldesc, lstair, lclear} ->

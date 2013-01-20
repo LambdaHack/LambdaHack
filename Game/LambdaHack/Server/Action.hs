@@ -311,8 +311,8 @@ gameReset cops@Kind.COps{ coitem, corule} = do
             -- This state is quite small, fit for transmition to the client.
             -- The biggest part is content, which really needs to be updated
             -- at this point to keep clients in sync with server improvements.
-            defLoc = defStateLocal cops freshDungeon discoS
-                                   freshDepth faction randomCli entryLevel
+            defLoc = localFromGlobal cops freshDungeon discoS
+                                     freshDepth faction randomCli entryLevel
             tryFov = stryFov $ sdebugSer ser
             fovMode = fromMaybe (configFovMode sconfig) tryFov
             pers = dungeonPerception cops fovMode glo

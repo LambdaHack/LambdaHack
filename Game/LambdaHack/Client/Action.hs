@@ -358,21 +358,27 @@ writeChanToSer cmd = do
   liftIO $ writeChan toServer cmd
 
 exeStartup :: MonadActionAbort m
-           => (Session -> m () -> State -> StateClient -> ConnClient -> IO ())
+           => (Session -> State -> StateClient -> m () -> ConnClient -> IO ())
            -> Kind.COps
-           -> ((m () -> State -> StateClient -> ConnClient -> IO ())
-               -> (m () -> State -> StateClient -> ConnClient -> IO ())
+           -> ((FactionId -> m () -> ConnClient -> IO ())
+               -> (FactionId -> m () -> ConnClient -> IO ())
                -> IO ())
            -> IO ()
-exeStartup executorC Kind.COps{corule} loop = do
+exeStartup executorC cops@Kind.COps{corule} loop = do
   -- UI config reloaded at each client start.
   sconfigUI <- mkConfigUI corule
   let !sbinding = stdBinding sconfigUI
       font = configFont sconfigUI
-      executorHuman sfs = executorC Session{ sfs = Just sfs
-                                           , sbinding = Just sbinding
-                                           , sconfigUI }
-      executorComputer  = executorC Session{ sfs = Nothing
-                                           , sbinding = Nothing
-                                           , sconfigUI }
+      sessHuman sfs = Session{ sfs = Just sfs
+                             , sbinding = Just sbinding
+                             , sconfigUI }
+      sessComputer  = Session{ sfs = Nothing
+                             , sbinding = Nothing
+                             , sconfigUI }
+  defHist <- defHistory
+  let cli = defStateClient defHist
+      executorHuman sfs fid =
+        executorC (sessHuman sfs) (defStateLocal cops fid) cli
+      executorComputer fid =
+        executorC sessComputer (defStateLocal cops fid) cli
   startup font $ \sfs -> loop (executorHuman sfs) executorComputer

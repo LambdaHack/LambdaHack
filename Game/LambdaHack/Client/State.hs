@@ -71,8 +71,8 @@ data DebugModeCli = DebugModeCli
   deriving Show
 
 -- | Initial game client state.
-defStateClient :: History -> FactionPers -> StateClient
-defStateClient shistory sper = do
+defStateClient :: History -> StateClient
+defStateClient shistory = do
   StateClient
     { stgtMode  = Nothing
     , scursor   = Nothing
@@ -81,7 +81,7 @@ defStateClient shistory sper = do
     , srunning  = Nothing
     , sreport   = emptyReport
     , shistory
-    , sper
+    , sper      = M.empty
     , slastKey  = Nothing
     , sframe    = []
     , _sleader  = Nothing  -- no heroes yet alive
