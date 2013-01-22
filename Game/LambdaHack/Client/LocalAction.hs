@@ -91,7 +91,7 @@ viewedLevel = do
 -- | Produces a textual description of the terrain and items at an already
 -- explored position. Mute for unknown positions.
 -- The detailed variant is for use in the targeting mode.
-lookAt :: MonadClient m
+lookAt :: MonadClientRO m
        => Bool       -- ^ detailed?
        -> Bool       -- ^ can be seen right now?
        -> Point      -- ^ position to describe
@@ -158,7 +158,7 @@ doLook = do
      tell slides
 
 -- | Create a list of item names.
-itemOverlay :: MonadClientRO m
+itemOverlay :: MonadActionRO m
             => Discoveries -> Bool -> [Item] -> m Overlay
 itemOverlay disco sorted is = do
   Kind.COps{coitem} <- getsState scops
@@ -335,7 +335,7 @@ cancelCurrent h = do
     else h  -- nothing to cancel right now, treat this as a command invocation
 
 -- | Display the main menu.
-displayMainMenu :: MonadClient m => WriterT Slideshow m ()
+displayMainMenu :: MonadClientUI m => WriterT Slideshow m ()
 displayMainMenu = do
   Kind.COps{corule} <- getsState scops
   Binding{krevMap} <- askBinding
@@ -453,7 +453,7 @@ clearCurrent = return ()
 
 -- TODO: add times from all levels. Also, show time spend on this level alone.
 -- "You survived for x turns (y turns on this level)"
-displayHistory :: MonadClient m => WriterT Slideshow m ()
+displayHistory :: MonadClientRO m => WriterT Slideshow m ()
 displayHistory = do
   history <- getsClient shistory
   time <- getsState getTime
@@ -478,7 +478,7 @@ cycleHero = do
     (nl, np) : _ -> selectLeader np nl
                       >>= assert `trueM` (leader, nl, np, "hero duplicated")
 
-partyAfterLeader :: MonadClientRO m => ActorId -> m [(LevelId, ActorId)]
+partyAfterLeader :: MonadActionRO m => ActorId -> m [(LevelId, ActorId)]
 partyAfterLeader leader = do
   bfaction <- getsState $ bfaction . getActorBody leader
   s <- getState
@@ -533,7 +533,7 @@ backCycleHero = do
 -- * Help
 
 -- | Display command help.
-displayHelp :: MonadClientRO m => WriterT Slideshow m ()
+displayHelp :: MonadClientUI m => WriterT Slideshow m ()
 displayHelp = do
   keyb <- askBinding
   tell $ keyHelp keyb

@@ -26,7 +26,7 @@ import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 
 -- | The basic action for a command and whether it takes time.
-cmdAction :: MonadClient m => StateClient -> State -> CmdHuman
+cmdAction :: MonadClientUI m => StateClient -> State -> CmdHuman
           -> WriterT Slideshow m (Maybe CmdSer)
 cmdAction cli s cmd =
   let tgtMode = stgtMode cli
@@ -97,7 +97,7 @@ cmdAction cli s cmd =
 -- Time cosuming commands are marked as such in help and cannot be
 -- invoked in targeting mode on a remote level (level different than
 -- the level of the selected hero).
-cmdSemantics :: MonadClient m => CmdHuman -> WriterT Slideshow m (Maybe CmdSer)
+cmdSemantics :: MonadClientUI m => CmdHuman -> WriterT Slideshow m (Maybe CmdSer)
 cmdSemantics cmd = do
   Just leaderOld <- getsClient getLeader
   arenaOld <- getsState sarena

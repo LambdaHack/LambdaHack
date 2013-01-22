@@ -23,12 +23,10 @@ data Session = Session
   }
 
 class MonadActionRO m => MonadClientRO m where
-  getsSession  :: (Session -> a) -> m a
   getClient    :: m StateClient
   getsClient   :: (StateClient -> a) -> m a
 
 instance (Monoid a, MonadClientRO m) => MonadClientRO (WriterT a m) where
-  getsSession  = lift . getsSession
   getClient    = lift getClient
   getsClient   = lift . getsClient
 
@@ -44,14 +42,14 @@ instance (Monoid a, MonadClient m) => MonadClient (WriterT a m) where
   putClient    = lift . putClient
   liftIO       = lift . liftIO
 
+class MonadClient m => MonadClientUI m where
+  getsSession  :: (Session -> a) -> m a
+
+instance (Monoid a, MonadClientUI m) => MonadClientUI (WriterT a m) where
+  getsSession  = lift . getsSession
+
 class MonadClient m => MonadClientChan m where
   getChan      :: m ConnClient
   getsChan     :: (ConnClient -> a) -> m a
   modifyChan   :: (ConnClient -> ConnClient) -> m ()
   putChan      :: ConnClient -> m ()
-
-instance (Monoid a, MonadClientChan m) => MonadClientChan (WriterT a m) where
-  getChan      = lift getChan
-  getsChan     = lift . getsChan
-  modifyChan   = lift . modifyChan
-  putChan      = lift . putChan

@@ -7,6 +7,7 @@ module Game.LambdaHack.Client.Action
   ( -- * Action monads
     MonadClientRO( getClient, getsClient )
   , MonadClient( putClient, modifyClient )
+  , MonadClientUI
   , MonadClientChan
   , executorCli, exeFrontend, frontendName
     -- * Abort exception handlers
@@ -41,10 +42,7 @@ import Data.Text (Text)
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
-import Game.LambdaHack.Client.Action.ActionClass (MonadClient (..),
-                                                  MonadClientChan (..),
-                                                  MonadClientRO (..),
-                                                  Session (..))
+import Game.LambdaHack.Client.Action.ActionClass
 import Game.LambdaHack.Client.Action.ActionType (executorCli)
 import Game.LambdaHack.Client.Action.Frontend (frontendName, startup)
 import qualified Game.LambdaHack.Client.Action.Frontend as Frontend
@@ -66,7 +64,7 @@ import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert
 
-displayFrame :: MonadClient m => Bool -> Maybe SingleFrame -> m ()
+displayFrame :: MonadClientUI m => Bool -> Maybe SingleFrame -> m ()
 displayFrame isRunning mf = do
   fs <- askFrontendSession
   faction <- getsState sfaction
@@ -78,20 +76,20 @@ displayFrame isRunning mf = do
       -- At most one human player, display everything at once.
       liftIO $ Frontend.displayFrame fs isRunning mf
 
-flushFrames :: MonadClient m => m ()
+flushFrames :: MonadClientUI m => m ()
 flushFrames = do
   fs <- askFrontendSession
   sframe <- getsClient sframe
   liftIO $ mapM_ (\(mf, b) -> Frontend.displayFrame fs b mf) $ reverse sframe
   modifyClient $ \cli -> cli {sframe = []}
 
-nextEvent :: MonadClient m => Maybe Bool -> m K.KM
+nextEvent :: MonadClientUI m => Maybe Bool -> m K.KM
 nextEvent mb = do
   fs <- askFrontendSession
   flushFrames
   liftIO $ Frontend.nextEvent fs mb
 
-promptGetKey :: MonadClient m => [K.KM] -> SingleFrame -> m K.KM
+promptGetKey :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
 promptGetKey keys frame = do
   fs <- askFrontendSession
   flushFrames
@@ -110,7 +108,7 @@ tryWithSlide exc h =
   in tryWith excMsg h
 
 -- | Get the frontend session.
-askFrontendSession :: MonadClientRO m => m Frontend.FrontendSession
+askFrontendSession :: MonadClientUI m => m Frontend.FrontendSession
 askFrontendSession = do
   sfs <- getsSession sfs
   case sfs of
@@ -120,7 +118,7 @@ askFrontendSession = do
     Just fs -> return fs
 
 -- | Get the key binding.
-askBinding :: MonadClientRO m => m Binding
+askBinding :: MonadClientUI m => m Binding
 askBinding = do
   sbinding <- getsSession sbinding
   case sbinding of
@@ -157,7 +155,7 @@ askPerception = do
   return $! factionPers M.! lid
 
 -- | Wait for a human player command.
-getKeyCommand :: MonadClient m => Maybe Bool -> m K.KM
+getKeyCommand :: MonadClientUI m => Maybe Bool -> m K.KM
 getKeyCommand doPush = do
   keyb <- askBinding
   (nc, modifier) <- nextEvent doPush
@@ -166,7 +164,7 @@ getKeyCommand doPush = do
     _ -> (nc, modifier)
 
 -- | Display an overlay and wait for a human player command.
-getKeyOverlayCommand :: MonadClient m => Overlay -> m K.KM
+getKeyOverlayCommand :: MonadClientUI m => Overlay -> m K.KM
 getKeyOverlayCommand overlay = do
   frame <- drawOverlay ColorFull overlay
   keyb <- askBinding
@@ -176,7 +174,7 @@ getKeyOverlayCommand overlay = do
     _ -> (nc, modifier)
 
 -- | Ignore unexpected kestrokes until a SPACE or ESC is pressed.
-getConfirm :: MonadClient m => [K.KM] -> SingleFrame -> m Bool
+getConfirm :: MonadClientUI m => [K.KM] -> SingleFrame -> m Bool
 getConfirm clearKeys frame = do
   let keys = [(K.Space, K.NoModifier), (K.Esc, K.NoModifier)] ++ clearKeys
   km <- promptGetKey keys frame
@@ -186,7 +184,7 @@ getConfirm clearKeys frame = do
     _ -> return False
 
 -- | Display a slideshow, awaiting confirmation for each slide.
-getManyConfirms :: MonadClient m => [K.KM] -> Slideshow -> m Bool
+getManyConfirms :: MonadClientUI m => [K.KM] -> Slideshow -> m Bool
 getManyConfirms clearKeys slides =
   case runSlideshow slides of
     [] -> return True
@@ -198,11 +196,11 @@ getManyConfirms clearKeys slides =
         else return False
 
 -- | Push frames or frame's worth of delay to the frame queue.
-displayFramesPush :: MonadClient m => Frames -> m ()
+displayFramesPush :: MonadClientUI m => Frames -> m ()
 displayFramesPush frames = mapM_ (displayFrame False) frames
 
 -- | A yes-no confirmation.
-getYesNo :: MonadClient m => SingleFrame -> m Bool
+getYesNo :: MonadClientUI m => SingleFrame -> m Bool
 getYesNo frame = do
   let keys = [ (K.Char 'y', K.NoModifier)
              , (K.Char 'n', K.NoModifier)
@@ -215,7 +213,7 @@ getYesNo frame = do
 
 -- | Display a msg with a @more@ prompt. Return value indicates if the player
 -- tried to cancel/escape.
-displayMore :: MonadClient m => ColorMode -> Msg -> m Bool
+displayMore :: MonadClientUI m => ColorMode -> Msg -> m Bool
 displayMore dm prompt = do
   sli <- promptToSlideshow $ prompt <+> moreMsg
   frame <- drawOverlay dm $ head $ runSlideshow sli
@@ -223,7 +221,7 @@ displayMore dm prompt = do
 
 -- | Print a yes/no question and return the player's answer. Use black
 -- and white colours to turn player's attention to the choice.
-displayYesNo :: MonadClient m => Msg -> m Bool
+displayYesNo :: MonadClientUI m => Msg -> m Bool
 displayYesNo prompt = do
   sli <- promptToSlideshow $ prompt <+> yesnoMsg
   frame <- drawOverlay ColorBW $ head $ runSlideshow sli
@@ -233,7 +231,7 @@ displayYesNo prompt = do
 -- | Print a prompt and an overlay and wait for a player keypress.
 -- If many overlays, scroll screenfuls with SPACE. Do not wrap screenfuls
 -- (in some menus @?@ cycles views, so the user can restart from the top).
-displayChoiceUI :: MonadClient m => Msg -> Overlay -> [K.KM] -> m K.KM
+displayChoiceUI :: MonadClientUI m => Msg -> Overlay -> [K.KM] -> m K.KM
 displayChoiceUI prompt ov keys = do
   slides <- fmap runSlideshow $ overlayToSlideshow (prompt <> ", ESC]") ov
   let legalKeys = (K.Space, K.NoModifier) : (K.Esc, K.NoModifier) : keys
@@ -284,7 +282,7 @@ drawOverlay dm over = do
 
 -- | Push the frame depicting the current level to the frame queue.
 -- Only one screenful of the report is shown, the rest is ignored.
-displayPush :: MonadClient m => m ()
+displayPush :: MonadClientUI m => m ()
 displayPush = do
   sls <- promptToSlideshow ""
   let slide = head $ runSlideshow sls
@@ -334,7 +332,7 @@ clientGameSave toBkp = do
   s <- getState
   cli <- getClient
   configUI <- getsClient sconfigUI
-  flushFrames
+--  flushFrames  -- this would force MonadClientUI; TODO: assert instead
   liftIO $ Save.saveGameCli toBkp configUI s cli
 
 restoreGame :: MonadClient m

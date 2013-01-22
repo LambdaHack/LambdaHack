@@ -68,13 +68,13 @@ applyCli actor verb item = do
         , partItemNWs coitem disco item ]
   msgAdd msg
 
-showItemsCli :: MonadClient m => Discoveries -> Msg -> [Item] -> m ()
+showItemsCli :: MonadClientUI m => Discoveries -> Msg -> [Item] -> m ()
 showItemsCli discoS msg items = do
   io <- itemOverlay discoS True items
   slides <- overlayToSlideshow msg io
   void $ getManyConfirms [] slides
 
-animateDeathCli :: MonadClient m => ActorId -> m ()
+animateDeathCli :: MonadClientUI m => ActorId -> m ()
 animateDeathCli target = do
   Kind.COps{coactor} <- getsState scops
   pbody <- getsState $ getActorBody target
@@ -112,7 +112,7 @@ discoverCli ik i = do
           , partItemAW coitem disco i ]
     msgAdd msg
 
-rememberCli :: MonadClient m => LevelId -> IS.IntSet -> Level -> m ()
+rememberCli :: MonadAction m => LevelId -> IS.IntSet -> Level -> m ()
 rememberCli arena vis lvl = do
   cops <- getsState scops
   let updArena loc =
@@ -147,7 +147,7 @@ switchLevelCli aid arena pbody items = do
     loc <- getState
     modifyClient $ updateSelectedLeader aid loc
 
-effectCli :: MonadClient m => Msg -> (Point, Point) -> Int -> Bool -> m ()
+effectCli :: MonadClientUI m => Msg -> (Point, Point) -> Int -> Bool -> m ()
 effectCli msg poss deltaHP block = do
   msgAdd msg
   cli <- getClient
@@ -210,7 +210,7 @@ showAttackCli source target verb stack say = do
            else []
   msgAdd msg
 
-animateBlockCli :: MonadClient m => ActorId -> ActorId -> MU.Part -> m ()
+animateBlockCli :: MonadClientUI m => ActorId -> ActorId -> MU.Part -> m ()
 animateBlockCli source target verb = do
   Kind.COps{coactor} <- getsState scops
   per <- askPerception
@@ -237,7 +237,7 @@ animateBlockCli source target verb = do
       animFrs = animate cli loc per anim
   displayFramesPush $ Nothing : animFrs
 
-displaceCli :: MonadClient m => ActorId -> ActorId -> m ()
+displaceCli :: MonadClientUI m => ActorId -> ActorId -> m ()
 displaceCli source target = do
   Kind.COps{coactor} <- getsState scops
   per <- askPerception
@@ -271,7 +271,7 @@ restartCli sper locRaw = do
 
 -- * cmdQueryCli
 
-carryOnCli :: MonadClient m => m Bool
+carryOnCli :: MonadClientUI m => m Bool
 carryOnCli = do
   go <- displayMore ColorBW ""
   msgAdd "The survivors carry on."  -- TODO: reset messages at game over not to display it if there are no survivors.
@@ -302,7 +302,7 @@ continueRun leader dd = do
   return $ RunSer leader dir
 
 -- | Handle the move of the hero.
-handleHuman :: MonadClient m
+handleHuman :: MonadClientUI m
              => ActorId
              -> m (CmdSer, Maybe ActorId, LevelId)
 handleHuman leader = do
@@ -319,7 +319,7 @@ handleHuman leader = do
 
 -- | Determine and process the next human player command. The argument is
 -- the last abort message due to running, if any.
-humanCommand :: forall m. MonadClient m
+humanCommand :: forall m. MonadClientUI m
              => Msg
              -> m CmdSer
 humanCommand msgRunAbort = do

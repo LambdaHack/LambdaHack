@@ -57,7 +57,7 @@ dumpConfig = return CfgDumpSer
 
 -- ** Apply
 
-leaderApplyGroupItem :: MonadClient m
+leaderApplyGroupItem :: MonadClientUI m
                      => MU.Part -> MU.Part -> [Char]
                      -> m CmdSer
 leaderApplyGroupItem verb object syms = do
@@ -75,7 +75,7 @@ leaderApplyGroupItem verb object syms = do
 -- | Let a human player choose any item with a given group name.
 -- Note that this does not guarantee the chosen item belongs to the group,
 -- as the player can override the choice.
-getGroupItem :: MonadClient m
+getGroupItem :: MonadClientUI m
              => ActorId
              -> [Item]   -- ^ all objects in question
              -> MU.Part  -- ^ name of the group
@@ -90,7 +90,7 @@ getGroupItem leader is object syms prompt packName = do
 
 -- ** Project
 
-leaderProjectGroupItem :: MonadClient m
+leaderProjectGroupItem :: MonadClientUI m
                        => MU.Part -> MU.Part -> [Char]
                        -> m CmdSer
 leaderProjectGroupItem verb object syms = do
@@ -104,9 +104,9 @@ leaderProjectGroupItem verb object syms = do
     then abortWith "You can't aim in melee."
     else actorProjectGI leader verb object syms
 
-actorProjectGI :: MonadClient m
-                => ActorId -> MU.Part -> MU.Part -> [Char]
-                -> m CmdSer
+actorProjectGI :: MonadClientUI m
+               => ActorId -> MU.Part -> MU.Part -> [Char]
+               -> m CmdSer
 actorProjectGI aid verb object syms = do
   cli <- getClient
   pos <- getState
@@ -131,7 +131,7 @@ actorProjectGI aid verb object syms = do
 -- ** TriggerDir
 
 -- | Ask for a direction and trigger a tile, if possible.
-leaderTriggerDir :: MonadClient m => F.Feature -> MU.Part -> m CmdSer
+leaderTriggerDir :: MonadClientUI m => F.Feature -> MU.Part -> m CmdSer
 leaderTriggerDir feat verb = do
   let keys = zip K.dirAllMoveKey $ repeat K.NoModifier
       prompt = makePhrase ["What to", verb MU.:> "? [movement key"]
@@ -148,7 +148,7 @@ leaderBumpDir feat dir = do
   bumpTile leader dpos feat
 
 -- | Leader tries to trigger a tile using a feature.
-bumpTile :: MonadClientRO m => ActorId -> Point -> F.Feature -> m CmdSer
+bumpTile :: MonadActionRO m => ActorId -> Point -> F.Feature -> m CmdSer
 bumpTile leader dpos feat = do
   Kind.COps{cotile} <- getsState scops
   lvl <- getsState getArena
@@ -196,7 +196,7 @@ pickupItem = do
   Just leader <- getsClient getLeader
   actorPickupItem leader
 
-actorPickupItem :: MonadClientRO m => ActorId -> m CmdSer
+actorPickupItem :: MonadActionRO m => ActorId -> m CmdSer
 actorPickupItem actor = do
   lvl <- getsState getArena
   body <- getsState (getActorBody actor)
@@ -214,7 +214,7 @@ actorPickupItem actor = do
 -- TODO: you can drop an item already on the floor, which works correctly,
 -- but is weird and useless.
 -- | Drop a single item.
-dropItem :: MonadClient m => m CmdSer
+dropItem :: MonadClientUI m => m CmdSer
 dropItem = do
   -- TODO: allow dropping a given number of identical items.
   Kind.COps{coactor, coitem} <- getsState scops
@@ -234,7 +234,7 @@ allObjectsName :: Text
 allObjectsName = "Objects"
 
 -- | Let the human player choose any item from a list of items.
-getAnyItem :: MonadClient m
+getAnyItem :: MonadClientUI m
            => ActorId
            -> Text    -- ^ prompt
            -> [Item]  -- ^ all items in question
@@ -246,7 +246,7 @@ data ItemDialogState = INone | ISuitable | IAll deriving Eq
 
 -- | Let the human player choose a single, preferably suitable,
 -- item from a list of items.
-getItem :: MonadClient m
+getItem :: MonadClientUI m
         => ActorId
         -> Text            -- ^ prompt message
         -> (Item -> Bool)  -- ^ which items to consider suitable
@@ -336,7 +336,7 @@ runPl dir = do
 
 -- ** GameExit
 
-gameExit :: MonadClient m => m CmdSer
+gameExit :: MonadClientUI m => m CmdSer
 gameExit = do
   b <- displayYesNo "Really save and exit?"
   if b
@@ -345,7 +345,7 @@ gameExit = do
 
 -- ** GameRestart
 
-gameRestart :: MonadClient m => m CmdSer
+gameRestart :: MonadClientUI m => m CmdSer
 gameRestart = do
   b1 <- displayMore ColorFull "You just requested a new game."
   when (not b1) $ neverMind True

@@ -72,7 +72,6 @@ instance MonadAction ActionCli where
   putState       = modifyState . const
 
 instance MonadClientRO ActionCli where
-  getsSession f = ActionCli (\c k _a s cli d -> k s cli d (f c))
   getClient     = ActionCli (\_c k _a s cli d -> k s cli d cli)
   getsClient    = (`fmap` getClient)
 
@@ -80,6 +79,9 @@ instance MonadClient ActionCli where
   modifyClient f = ActionCli (\_c k _a s cli d -> k s (f cli) d ())
   putClient      = modifyClient . const
   liftIO x       = ActionCli (\_c k _a s cli d -> x >>= k s cli d)
+
+instance MonadClientUI ActionCli where
+  getsSession f = ActionCli (\c k _a s cli d -> k s cli d (f c))
 
 instance MonadClientChan ActionCli where
   getChan        = ActionCli (\_c k _a s cli d -> k s cli d d)

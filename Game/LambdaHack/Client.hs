@@ -17,7 +17,7 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.LocalAction
 
-cmdUpdateCli :: MonadClient m => CmdUpdateCli -> m ()
+cmdUpdateCli :: MonadClientUI m => CmdUpdateCli -> m ()
 cmdUpdateCli cmd = case cmd of
   PickupCli aid i ni -> pickupCli aid i ni
   ApplyCli actor verb item -> applyCli actor verb item
@@ -47,7 +47,7 @@ cmdUpdateCli cmd = case cmd of
   ContinueSavedCli sper -> modifyClient $ \cli -> cli {sper}
   GameSaveCli toBkp -> clientGameSave toBkp
 
-cmdQueryCli :: MonadClient m => CmdQueryCli a -> m a
+cmdQueryCli :: MonadClientUI m => CmdQueryCli a -> m a
 cmdQueryCli cmd = case cmd of
   ShowSlidesCli slides -> getManyConfirms [] slides
   CarryOnCli -> carryOnCli
