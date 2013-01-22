@@ -406,10 +406,6 @@ restoreOrRestart cops@Kind.COps{corule} executorS = do
   -- version of the config can be read from the savefile.
   (sconfig, _, _) <- ConfigIO.mkConfigRules corule
   restored <- Save.restoreGameSer sconfig pathsDataFile title
-  let mkPers glo ser =
-        let tryFov = stryFov $ sdebugSer ser
-            fovMode = fromMaybe (configFovMode sconfig) tryFov
-        in dungeonPerception cops fovMode glo
   -- TODO: use the _msg somehow
   (gloRaw, ser) <- case restored of
     Right _msg ->  -- Starting a new game.

@@ -46,6 +46,7 @@ loopSer cmdSer = do
       saveGameBkp
     _ ->  -- game restored from a savefile
       funBroadcastCli (\fid -> ContinueSavedCli (pers IM.! fid))
+  modifyClient $ \cli -> cli {squit=Nothing}
   -- Loop.
   let loop = do
         time <- getsState getTime  -- the end time of this clip, inclusive
