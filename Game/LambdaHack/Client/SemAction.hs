@@ -1,9 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable, GADTs, OverloadedStrings, StandaloneDeriving
              #-}
 -- | Semantics of 'CmdCli' client commands.
-module Game.LambdaHack.Client.SemAction
-  ( cmdUpdateCli, cmdQueryCli
-  ) where
+module Game.LambdaHack.Client.SemAction where
 
 import Control.Monad
 import Control.Monad.Writer.Strict (WriterT, runWriterT)
@@ -29,7 +27,6 @@ import Game.LambdaHack.Client.RunAction
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.Strategy
 import Game.LambdaHack.Client.StrategyAction
-import Game.LambdaHack.CmdCli
 import Game.LambdaHack.CmdSer
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Content.ItemKind
@@ -40,74 +37,136 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
+import Game.LambdaHack.Point
 import Game.LambdaHack.Random
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 
--- TODO: name all semantic actions and move semantic functions to Client.hs
-cmdUpdateCli :: MonadClient m => CmdUpdateCli -> m ()
-cmdUpdateCli cmd = case cmd of
-  PickupCli aid i ni -> pickupCli aid i ni
-  ApplyCli actor verb item -> do
-    Kind.COps{coactor, coitem} <- getsState scops
+-- * cmdUpdateCli
+
+pickupCli :: MonadClient m => ActorId -> Item -> Item -> m ()
+pickupCli aid i ni = do
+  Kind.COps{coactor, coitem} <- getsState scops
+  body <- getsState (getActorBody aid)
+  side <- getsState sside
+  disco <- getsState sdisco
+  if bfaction body == side
+    then msgAdd $ makePhrase [ letterLabel (jletter ni)
+                             , partItemNWs coitem disco ni ]
+    else msgAdd $ makeSentence
+           [ MU.SubjectVerbSg (partActor coactor body) "pick up"
+           , partItemNWs coitem disco i ]  -- single, not 'ni'
+
+applyCli :: MonadClient m => ActorId -> MU.Part -> Item -> m ()
+applyCli actor verb item = do
+  Kind.COps{coactor, coitem} <- getsState scops
+  disco <- getsState sdisco
+  body <- getsState (getActorBody actor)
+  let msg = makeSentence
+        [ MU.SubjectVerbSg (partActor coactor body) verb
+        , partItemNWs coitem disco item ]
+  msgAdd msg
+
+showItemsCli :: MonadClient m => Discoveries -> Msg -> [Item] -> m ()
+showItemsCli discoS msg items = do
+  io <- itemOverlay discoS True items
+  slides <- overlayToSlideshow msg io
+  void $ getManyConfirms [] slides
+
+animateDeathCli :: MonadClient m => ActorId -> m ()
+animateDeathCli target = do
+  Kind.COps{coactor} <- getsState scops
+  pbody <- getsState $ getActorBody target
+  msgAdd $ makeSentence [MU.SubjectVerbSg (partActor coactor pbody) "die"]
+  recordHistory  -- Prevent repeating the "die" msgs.
+  cli <- getClient
+  loc <- getState
+  per <- askPerception
+  let animFrs = animate cli loc per $ deathBody (bpos pbody)
+  displayFramesPush animFrs
+
+invalidateArenaCli :: MonadClient m => LevelId -> m Bool
+invalidateArenaCli arena = do
+  arenaOld <- getsState sarena
+  if arenaOld == arena
+    then return False
+    else do
+      modifyClient invalidateSelectedLeader
+      modifyState $ updateSelectedArena arena
+      return True
+
+-- | Make the item known to the player.
+discoverCli :: MonadClient m => Kind.Id ItemKind -> Item -> m ()
+discoverCli ik i = do
+  Kind.COps{coitem} <- getsState scops
+  oldDisco <- getsState sdisco
+  let ix = jkindIx i
+  unless (ix `M.member` oldDisco) $ do
+    modifyState (updateDisco (M.insert ix ik))
     disco <- getsState sdisco
-    body <- getsState (getActorBody actor)
-    let msg = makeSentence
-          [ MU.SubjectVerbSg (partActor coactor body) verb
-          , partItemNWs coitem disco item ]
+    let (object1, object2) = partItem coitem oldDisco i
+        msg = makeSentence
+          [ "the", MU.SubjectVerbSg (MU.Phrase [object1, object2])
+                                    "turn out to be"
+          , partItemAW coitem disco i ]
     msgAdd msg
-  ShowItemsCli discoS msg items -> do
-    io <- itemOverlay discoS True items
-    slides <- overlayToSlideshow msg io
-    void $ getManyConfirms [] slides
-  ShowMsgCli msg ->
-    msgAdd msg
-  AnimateDeathCli aid -> animateDeathCli aid
-  InvalidateArenaCli lid -> void $ invalidateArenaCli lid
-  DiscoverCli ik i -> discoverCli ik i
-  RememberCli arena vis lvl -> do
-    cops <- getsState scops
-    let updArena loc =
-          let clvl = sdungeon loc M.! arena
-              nlvl = rememberLevel cops vis lvl clvl
-          in updateDungeon (M.insert arena nlvl) loc
-    modifyState updArena
-  RememberPerCli arena per lvl faction -> do
-    -- TODO: remove if clients are guaranteed to be on good arena:
-    arenaOld <- getsState sarena
-    when (arenaOld /= arena) $ do
-      modifyClient $ invalidateSelectedLeader
-      modifyState $ updateSelectedArena arena
-    void $ cmdUpdateCli $ RememberCli arena (totalVisible per) lvl
-    modifyClient $ \cli -> cli {sper = M.insert arena per (sper cli)}
-    modifyState $ updateFaction (const faction)
-  SwitchLevelCli aid arena pbody items -> do
-    arenaOld <- getsState sarena
-    assert (arenaOld /= arena) $ do
-      modifyClient $ invalidateSelectedLeader
-      modifyState $ updateSelectedArena arena
-      modifyState (insertActor aid pbody)
-      modifyState (updateActorItem aid (const items))
-      loc <- getState
-      modifyClient $ updateSelectedLeader aid loc
-  EffectCli msg poss deltaHP block -> do
-    msgAdd msg
-    cli <- getClient
+
+rememberCli :: MonadClient m => LevelId -> IS.IntSet -> Level -> m ()
+rememberCli arena vis lvl = do
+  cops <- getsState scops
+  let updArena loc =
+        let clvl = sdungeon loc M.! arena
+            nlvl = rememberLevel cops vis lvl clvl
+        in updateDungeon (M.insert arena nlvl) loc
+  modifyState updArena
+
+rememberPerCli :: MonadClient m
+            => LevelId -> Perception -> Level -> FactionDict
+            -> m ()
+rememberPerCli arena per lvl faction = do
+  -- TODO: remove if clients are guaranteed to be on good arena:
+  arenaOld <- getsState sarena
+  when (arenaOld /= arena) $ do
+    modifyClient $ invalidateSelectedLeader
+    modifyState $ updateSelectedArena arena
+  rememberCli arena (totalVisible per) lvl
+  modifyClient $ \cli -> cli {sper = M.insert arena per (sper cli)}
+  modifyState $ updateFaction (const faction)
+
+switchLevelCli :: MonadClient m
+               => ActorId -> LevelId -> Actor -> [Item]
+               -> m ()
+switchLevelCli aid arena pbody items = do
+  arenaOld <- getsState sarena
+  assert (arenaOld /= arena) $ do
+    modifyClient $ invalidateSelectedLeader
+    modifyState $ updateSelectedArena arena
+    modifyState (insertActor aid pbody)
+    modifyState (updateActorItem aid (const items))
     loc <- getState
-    per <- askPerception
-    -- Try to show an animation. Sometimes, e.g., when HP is unchaged,
-    -- the animation will not be shown, but a single frame with @msg@ will.
-    let anim | deltaHP > 0 =
-          twirlSplash poss Color.BrBlue Color.Blue
-             | deltaHP < 0 && block =
-          blockHit    poss Color.BrRed  Color.Red
-             | deltaHP < 0 && not block =
-          twirlSplash poss Color.BrRed  Color.Red
-             | otherwise = mempty
-        animFrs = animate cli loc per anim
-    displayFramesPush $ Nothing : animFrs
-  ProjectCli spos source consumed -> do
+    modifyClient $ updateSelectedLeader aid loc
+
+effectCli :: MonadClient m => Msg -> (Point, Point) -> Int -> Bool -> m ()
+effectCli msg poss deltaHP block = do
+  msgAdd msg
+  cli <- getClient
+  loc <- getState
+  per <- askPerception
+  -- Try to show an animation. Sometimes, e.g., when HP is unchaged,
+  -- the animation will not be shown, but a single frame with @msg@ will.
+  let anim | deltaHP > 0 =
+        twirlSplash poss Color.BrBlue Color.Blue
+           | deltaHP < 0 && block =
+        blockHit    poss Color.BrRed  Color.Red
+           | deltaHP < 0 && not block =
+        twirlSplash poss Color.BrRed  Color.Red
+           | otherwise = mempty
+      animFrs = animate cli loc per anim
+  displayFramesPush $ Nothing : animFrs
+
+projectCli :: MonadClient m => Point -> ActorId -> Item -> m ()
+projectCli spos source consumed = do
     Kind.COps{coactor, coitem} <- getsState scops
     per <- askPerception
     disco <- getsState sdisco
@@ -121,160 +180,118 @@ cmdUpdateCli cmd = case cmd of
               [ MU.SubjectVerbSg (partActor coactor subject) "aim"
               , partItemNWs coitem disco consumed ]
     msgAdd msg
-  ShowAttackCli source target verb stack say -> do
-    Kind.COps{ coactor, coitem } <- getsState scops
-    per <- askPerception
-    disco <- getsState sdisco
-    smRaw <- getsState (getActorBody source)
-    tmRaw <- getsState (getActorBody target)
-    let spos = bpos smRaw
-        tpos = bpos tmRaw
-        svisible = spos `IS.member` totalVisible per
-        tvisible = tpos `IS.member` totalVisible per
-        sm | svisible  = smRaw
-           | otherwise = smRaw {bname = Just "somebody"}
-        tm | tvisible  = tmRaw
-           | otherwise = tmRaw {bname = Just "somebody"}
-    -- The msg describes the source part of the action.
-    -- TODO: right now it also describes the victim and weapon;
-    -- perhaps, when a weapon is equipped, just say "you hit"
-    -- or "you miss" and then "nose dies" or "nose yells in pain".
-    let msg = makeSentence $
-          [ MU.SubjectVerbSg (partActor coactor sm) verb
-          , partActor coactor tm ]
-          ++ if say
-             then ["with", partItemAW coitem disco stack]
-             else []
-    msgAdd msg
-  AnimateBlockCli source target verb -> do
-    Kind.COps{coactor} <- getsState scops
-    per <- askPerception
-    smRaw <- getsState (getActorBody source)
-    tmRaw <- getsState (getActorBody target)
-    let spos = bpos smRaw
-        tpos = bpos tmRaw
-        svisible = spos `IS.member` totalVisible per
-        tvisible = tpos `IS.member` totalVisible per
-        sm | svisible  = smRaw
-           | otherwise = smRaw {bname = Just "somebody"}
-        tm | tvisible  = tmRaw
-           | otherwise = tmRaw {bname = Just "somebody"}
-        msgMiss = makeSentence
-          [ MU.SubjectVerbSg (partActor coactor sm) "try to"
-          , verb MU.:> ", but"
-          , MU.SubjectVerbSg (partActor coactor tm) "block"
-          ]
-    msgAdd msgMiss
-    cli <- getClient
-    loc <- getState
-    let poss = (tpos, spos)
-        anim = blockMiss poss
-        animFrs = animate cli loc per anim
-    displayFramesPush $ Nothing : animFrs
-  DisplaceCli source target -> do
-    Kind.COps{coactor} <- getsState scops
-    per <- askPerception
-    sm <- getsState (getActorBody source)
-    tm <- getsState (getActorBody target)
-    let spos = bpos sm
-        tpos = bpos tm
-        msg = makeSentence
-          [ MU.SubjectVerbSg (partActor coactor sm) "displace"
-          , partActor coactor tm ]
-    msgAdd msg
-    cli <- getClient
-    loc <- getState
-    let poss = (tpos, spos)
-        animFrs = animate cli loc per $ swapPlaces poss
-    displayFramesPush $ Nothing : animFrs
-  DisplayPushCli -> displayPush
-  DisplayDelayCli -> displayFramesPush [Nothing]
-  MoreBWCli msg -> do
-    void $ displayMore ColorBW msg
-    recordHistory  -- Prevent repeating the ending msgs.
-  MoreFullCli msg -> do
-    void $ displayMore ColorFull msg
-    recordHistory  -- Prevent repeating the ending msgs.
-  RestartCli sper locRaw -> do
-    shistory <- getsClient shistory
-    let cli = defStateClient shistory
-    putClient cli {sper}
-    random <- getsState srandom
-    side <- getsState sside
-    let loc = updateRandom (const random)
-              $ switchGlobalSelectedSideOnlyForGlobalState side locRaw  -- :O)
-    putState loc
-    -- Save ASAP in case of crashes and disconnects.
-    --TODO
-  ContinueSavedCli sper ->
-    modifyClient $ \cli -> cli {sper}
-  GameSaveCli toBkp ->
-    clientGameSave toBkp
 
-cmdQueryCli :: MonadClient m => CmdQueryCli a -> m a
-cmdQueryCli cmd = case cmd of
-  ShowSlidesCli slides -> getManyConfirms [] slides
-  CarryOnCli -> carryOnCli
-  ConfirmShowItemsCli discoS msg items -> do
-    io <- itemOverlay discoS True items
-    slides <- overlayToSlideshow msg io
-    getManyConfirms [] slides
-  SelectLeaderCli aid lid -> selectLeader aid lid
-  ConfirmYesNoCli msg -> do
-    go <- displayYesNo msg
-    recordHistory  -- Prevent repeating the ending msgs.
-    return go
-  ConfirmMoreBWCli msg -> do
-    go <- displayMore ColorBW msg
-    recordHistory  -- Prevent repeating the ending msgs.
-    return go
-  ConfirmMoreFullCli msg -> do
-    go <- displayMore ColorFull msg
-    recordHistory  -- Prevent repeating the ending msgs.
-    return go
-  NullReportCli -> do
-    StateClient{sreport} <- getClient
-    return $! nullReport sreport
-  SetArenaLeaderCli arena actor -> do
-    arenaOld <- getsState sarena
-    leaderOld <- getsClient getLeader
-    -- Old leader may have been killed by enemies since @side@ last moved
-    -- or local arena changed and the side has not elected a new leader yet
-    -- or global arena changed the old leader is on the old arena.
-    leader <- if arenaOld /= arena
-              then do
-                modifyClient invalidateSelectedLeader
-                modifyState $ updateSelectedArena arena
-                return actor
-              else return $! fromMaybe actor leaderOld
-    loc <- getState
-    modifyClient $ updateSelectedLeader leader loc
-    return leader
-  HandleHumanCli leader -> handleHuman leader
-  HandleAI actor -> do
-    body <- getsState $ getActorBody actor
-    side <- getsState sside
-    assert (bfaction body == side `blame` (actor, bfaction body, side)) $ do
-      Kind.COps{costrat=Kind.Ops{okind}} <- getsState scops
-      leader <- getsClient getLeader
-      fact <- getsState getSide
-      let factionAI | Just actor /= leader = gAiMember fact
-                    | otherwise = fromJust $ gAiLeader fact
-          factionAbilities = sabilities (okind factionAI)
-      stratTarget <- targetStrategy actor factionAbilities
-      -- Choose a target from those proposed by AI for the actor.
-      btarget <- rndToAction $ frequency $ bestVariant stratTarget
-      modifyClient $ updateTarget actor (const btarget)
-      stratAction <- actionStrategy actor factionAbilities
-      let _debug = T.unpack
-            $ "HandleAI abilities:" <+> showT factionAbilities
-            <>          ", symbol:" <+> showT (bsymbol body)
-            <>          ", loc:"    <+> showT (bpos body)
-            <> "\nHandleAI target:" <+> showT stratTarget
-            <> "\nHandleAI move:"   <+> showT stratAction
-      -- trace _debug $ return ()
-      -- Run the AI: chose an action from those given by the AI strategy.
-      rndToAction $ frequency $ bestVariant $ stratAction
+showAttackCli :: MonadClient m
+              => ActorId -> ActorId -> MU.Part -> Item -> Bool
+              -> m ()
+showAttackCli source target verb stack say = do
+  Kind.COps{ coactor, coitem } <- getsState scops
+  per <- askPerception
+  disco <- getsState sdisco
+  smRaw <- getsState (getActorBody source)
+  tmRaw <- getsState (getActorBody target)
+  let spos = bpos smRaw
+      tpos = bpos tmRaw
+      svisible = spos `IS.member` totalVisible per
+      tvisible = tpos `IS.member` totalVisible per
+      sm | svisible  = smRaw
+         | otherwise = smRaw {bname = Just "somebody"}
+      tm | tvisible  = tmRaw
+         | otherwise = tmRaw {bname = Just "somebody"}
+  -- The msg describes the source part of the action.
+  -- TODO: right now it also describes the victim and weapon;
+  -- perhaps, when a weapon is equipped, just say "you hit"
+  -- or "you miss" and then "nose dies" or "nose yells in pain".
+  let msg = makeSentence $
+        [ MU.SubjectVerbSg (partActor coactor sm) verb
+        , partActor coactor tm ]
+        ++ if say
+           then ["with", partItemAW coitem disco stack]
+           else []
+  msgAdd msg
+
+animateBlockCli :: MonadClient m => ActorId -> ActorId -> MU.Part -> m ()
+animateBlockCli source target verb = do
+  Kind.COps{coactor} <- getsState scops
+  per <- askPerception
+  smRaw <- getsState (getActorBody source)
+  tmRaw <- getsState (getActorBody target)
+  let spos = bpos smRaw
+      tpos = bpos tmRaw
+      svisible = spos `IS.member` totalVisible per
+      tvisible = tpos `IS.member` totalVisible per
+      sm | svisible  = smRaw
+         | otherwise = smRaw {bname = Just "somebody"}
+      tm | tvisible  = tmRaw
+         | otherwise = tmRaw {bname = Just "somebody"}
+      msgMiss = makeSentence
+        [ MU.SubjectVerbSg (partActor coactor sm) "try to"
+        , verb MU.:> ", but"
+        , MU.SubjectVerbSg (partActor coactor tm) "block"
+        ]
+  msgAdd msgMiss
+  cli <- getClient
+  loc <- getState
+  let poss = (tpos, spos)
+      anim = blockMiss poss
+      animFrs = animate cli loc per anim
+  displayFramesPush $ Nothing : animFrs
+
+displaceCli :: MonadClient m => ActorId -> ActorId -> m ()
+displaceCli source target = do
+  Kind.COps{coactor} <- getsState scops
+  per <- askPerception
+  sm <- getsState (getActorBody source)
+  tm <- getsState (getActorBody target)
+  let spos = bpos sm
+      tpos = bpos tm
+      msg = makeSentence
+        [ MU.SubjectVerbSg (partActor coactor sm) "displace"
+        , partActor coactor tm ]
+  msgAdd msg
+  cli <- getClient
+  loc <- getState
+  let poss = (tpos, spos)
+      animFrs = animate cli loc per $ swapPlaces poss
+  displayFramesPush $ Nothing : animFrs
+
+restartCli :: MonadClient m => FactionPers -> State -> m ()
+restartCli sper locRaw = do
+  shistory <- getsClient shistory
+  let cli = defStateClient shistory
+  putClient cli {sper}
+  random <- getsState srandom
+  side <- getsState sside
+  let loc = updateRandom (const random)
+            $ switchGlobalSelectedSideOnlyForGlobalState side locRaw  -- :O)
+  putState loc
+  -- Save ASAP in case of crashes and disconnects.
+  --TODO
+
+-- * cmdQueryCli
+
+carryOnCli :: MonadClient m => m Bool
+carryOnCli = do
+  go <- displayMore ColorBW ""
+  msgAdd "The survivors carry on."  -- TODO: reset messages at game over not to display it if there are no survivors.
+  return go
+
+setArenaLeaderCli :: MonadClient m => LevelId -> ActorId -> m ActorId
+setArenaLeaderCli arena actor = do
+  arenaOld <- getsState sarena
+  leaderOld <- getsClient getLeader
+  -- Old leader may have been killed by enemies since @side@ last moved
+  -- or local arena changed and the side has not elected a new leader yet
+  -- or global arena changed the old leader is on the old arena.
+  leader <- if arenaOld /= arena
+            then do
+              modifyClient invalidateSelectedLeader
+              modifyState $ updateSelectedArena arena
+              return actor
+            else return $! fromMaybe actor leaderOld
+  loc <- getState
+  modifyClient $ updateSelectedLeader leader loc
+  return leader
 
 -- | Continue running in the given direction.
 continueRun :: MonadClient m => ActorId -> (Vector, Int) -> m CmdSer
@@ -372,59 +389,28 @@ humanCommand msgRunAbort = do
                 loop kmNext
   loop kmPush
 
-pickupCli :: MonadClient m => ActorId -> Item -> Item -> m ()
-pickupCli aid i ni = do
-  Kind.COps{coactor, coitem} <- getsState scops
-  body <- getsState (getActorBody aid)
+handleAI :: MonadClient m => ActorId -> m CmdSer
+handleAI actor = do
+  body <- getsState $ getActorBody actor
   side <- getsState sside
-  disco <- getsState sdisco
-  if bfaction body == side
-    then msgAdd $ makePhrase [ letterLabel (jletter ni)
-                             , partItemNWs coitem disco ni ]
-    else msgAdd $ makeSentence
-           [ MU.SubjectVerbSg (partActor coactor body) "pick up"
-           , partItemNWs coitem disco i ]  -- single, not 'ni'
-
-animateDeathCli :: MonadClient m => ActorId -> m ()
-animateDeathCli target = do
-  Kind.COps{coactor} <- getsState scops
-  pbody <- getsState $ getActorBody target
-  msgAdd $ makeSentence [MU.SubjectVerbSg (partActor coactor pbody) "die"]
-  recordHistory  -- Prevent repeating the "die" msgs.
-  cli <- getClient
-  loc <- getState
-  per <- askPerception
-  let animFrs = animate cli loc per $ deathBody (bpos pbody)
-  displayFramesPush animFrs
-
-carryOnCli :: MonadClient m => m Bool
-carryOnCli = do
-  go <- displayMore ColorBW ""
-  msgAdd "The survivors carry on."  -- TODO: reset messages at game over not to display it if there are no survivors.
-  return go
-
--- | Make the item known to the player.
-discoverCli :: MonadClient m => Kind.Id ItemKind -> Item -> m ()
-discoverCli ik i = do
-  Kind.COps{coitem} <- getsState scops
-  oldDisco <- getsState sdisco
-  let ix = jkindIx i
-  unless (ix `M.member` oldDisco) $ do
-    modifyState (updateDisco (M.insert ix ik))
-    disco <- getsState sdisco
-    let (object1, object2) = partItem coitem oldDisco i
-        msg = makeSentence
-          [ "the", MU.SubjectVerbSg (MU.Phrase [object1, object2])
-                                    "turn out to be"
-          , partItemAW coitem disco i ]
-    msgAdd msg
-
-invalidateArenaCli :: MonadClient m => LevelId -> m Bool
-invalidateArenaCli arena = do
-  arenaOld <- getsState sarena
-  if arenaOld == arena
-    then return False
-    else do
-      modifyClient invalidateSelectedLeader
-      modifyState $ updateSelectedArena arena
-      return True
+  assert (bfaction body == side `blame` (actor, bfaction body, side)) $ do
+    Kind.COps{costrat=Kind.Ops{okind}} <- getsState scops
+    leader <- getsClient getLeader
+    fact <- getsState getSide
+    let factionAI | Just actor /= leader = gAiMember fact
+                  | otherwise = fromJust $ gAiLeader fact
+        factionAbilities = sabilities (okind factionAI)
+    stratTarget <- targetStrategy actor factionAbilities
+    -- Choose a target from those proposed by AI for the actor.
+    btarget <- rndToAction $ frequency $ bestVariant stratTarget
+    modifyClient $ updateTarget actor (const btarget)
+    stratAction <- actionStrategy actor factionAbilities
+    let _debug = T.unpack
+          $ "HandleAI abilities:" <+> showT factionAbilities
+          <>          ", symbol:" <+> showT (bsymbol body)
+          <>          ", loc:"    <+> showT (bpos body)
+          <> "\nHandleAI target:" <+> showT stratTarget
+          <> "\nHandleAI move:"   <+> showT stratAction
+    -- trace _debug $ return ()
+    -- Run the AI: chose an action from those given by the AI strategy.
+    rndToAction $ frequency $ bestVariant $ stratAction

@@ -13,6 +13,8 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 
+-- TODO Have a separate loop for AI and computer clients
+
 loopCli2 :: MonadClientChan m
            => (CmdUpdateCli -> m ())
            -> (forall a. Typeable a => CmdQueryCli a -> m a)
